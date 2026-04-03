@@ -57,9 +57,10 @@ const Payoff = (() => {
           : shortPut(spot, leg.strike, leg.premium);
         break;
       case 'stock':
+        const stockEntry = leg.entryPrice !== undefined && leg.entryPrice !== null ? leg.entryPrice : (leg.strike || 100);
         payoff = leg.position === 'long'
-          ? longStock(spot, leg.entryPrice || leg.strike || 100)
-          : shortStock(spot, leg.entryPrice || leg.strike || 100);
+          ? longStock(spot, stockEntry)
+          : shortStock(spot, stockEntry);
         break;
       case 'bond':
         payoff = bond(leg.faceValue || leg.strike || 0);
@@ -289,12 +290,12 @@ const Payoff = (() => {
         { type: 'put', position: 'short', strike: p.strike, premium: p.premiumPut, quantity: 1 }
       ],
       putCallParityLeft: [
-        { type: 'call', position: 'long', strike: p.strike, premium: p.premiumCall, quantity: 1 },
+        { type: 'call', position: 'long', strike: p.strike, premium: 0, quantity: 1 },
         { type: 'bond', faceValue: p.strike, quantity: 1 }
       ],
       putCallParityRight: [
-        { type: 'put', position: 'long', strike: p.strike, premium: p.premiumPut, quantity: 1 },
-        { type: 'stock', position: 'long', entryPrice: p.stockPrice || p.strike, quantity: 1 }
+        { type: 'put', position: 'long', strike: p.strike, premium: 0, quantity: 1 },
+        { type: 'stock', position: 'long', entryPrice: 0, quantity: 1 }
       ]
     };
 
