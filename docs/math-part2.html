@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คณิตศาสตร์สำหรับ Options — Part II</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
+<div class="sub">Part II: สถิติ ความน่าจะเป็น และ Distributions</div>
+<div class="desc">บทที่ 4-6: ค่ากลาง, Variance, Volatility, ความน่าจะเป็น, Normal, Lognormal<br>อ่านจบ Part นี้ → เข้าใจ Volatility และ N(d) ใน Black-Scholes</div>
+</div>
+
+<!-- ========== CHAPTER 4 ========== -->
+<h2 id="ch4">บทที่ 4: สถิติพื้นฐาน — "อ่านข้อมูลให้ออก"</h2>
+
+<p>Options เป็นเครื่องมือที่ซื้อขาย "ความไม่แน่นอน" — ถ้าไม่เข้าใจสถิติ ก็ไม่เข้าใจ Options บทนี้สอนตั้งแต่พื้นฐานสุด</p>
+
+<h3 id="s4-1">4.1 ข้อมูลและการนำเสนอ</h3>
+
+<p>ก่อนจะวิเคราะห์ได้ ต้อง "เห็น" ข้อมูลก่อน เครื่องมือหลัก:</p>
+
+<p><strong>Histogram (ฮิสโตแกรม):</strong> แบ่งข้อมูลเป็นช่วงๆ นับจำนวนในแต่ละช่วง</p>
+
+<svg class="d" viewBox="0 0 500 250">
+<defs><marker id="p1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="210" x2="470" y2="210" stroke="#374151" stroke-width="1" marker-end="url(#p1)"/>
+<line x1="60" y1="210" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#p1)"/>
+<text x="250" y="245" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151">Daily Return (%)</text>
+<text x="15" y="110" font-family="Sarabun" font-size="11" fill="#374151" transform="rotate(-90,15,110)">ความถี่</text>
+<!-- Histogram bars (bell-shaped distribution) -->
+<rect x="100" y="195" width="35" height="15" fill="#dc2626" opacity="0.7" rx="1"/>
+<rect x="140" y="180" width="35" height="30" fill="#dc2626" opacity="0.6" rx="1"/>
+<rect x="180" y="150" width="35" height="60" fill="#dc2626" opacity="0.5" rx="1"/>
+<rect x="220" y="100" width="35" height="110" fill="#94a3b8" opacity="0.6" rx="1"/>
+<rect x="260" y="60" width="35" height="150" fill="#16a34a" opacity="0.5" rx="1"/>
+<rect x="300" y="90" width="35" height="120" fill="#16a34a" opacity="0.6" rx="1"/>
+<rect x="340" y="140" width="35" height="70" fill="#16a34a" opacity="0.7" rx="1"/>
+<rect x="380" y="175" width="35" height="35" fill="#16a34a" opacity="0.7" rx="1"/>
+<rect x="420" y="195" width="35" height="15" fill="#16a34a" opacity="0.7" rx="1"/>
+<!-- Labels -->
+<text x="117" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">-4%</text>
+<text x="157" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">-3%</text>
+<text x="197" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">-2%</text>
+<text x="237" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">-1%</text>
+<text x="277" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">0%</text>
+<text x="317" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">+1%</text>
+<text x="357" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">+2%</text>
+<text x="397" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">+3%</text>
+<text x="437" y="208" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">+4%</text>
+<!-- Bell curve overlay -->
+<path d="M100,203 Q150,185 200,155 Q240,110 277,55 Q310,110 340,145 Q390,185 455,203" stroke="#2563eb" stroke-width="2" fill="none" stroke-dasharray="5,3"/>
+<text x="370" y="50" font-family="Sarabun" font-size="11" fill="#2563eb">← รูประฆัง!</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>Histogram ของ daily returns มักมีรูปร่างคล้าย "ระฆัง" (Bell Curve) — นี่คือ <strong>Normal Distribution</strong> ที่ Black-Scholes ใช้เป็นสมมติฐานหลัก จะเรียนละเอียดในบท 6</p>
+</div>
+
+<h3 id="s4-2">4.2 ค่ากลาง (Measures of Central Tendency)</h3>
+
+<p>เมื่อมีข้อมูลชุดหนึ่ง "ค่ากลาง" บอกว่า "ตรงกลาง" อยู่ที่ไหน</p>
+
+<p><strong>ตัวอย่าง:</strong> Daily returns ของหุ้น 6 วัน: <strong>-5%, +2%, +8%, -1%, +3%, +50%</strong></p>
+
+<table>
+<tr><th>ค่ากลาง</th><th>วิธีคำนวณ</th><th>ผลลัพธ์</th><th>จุดเด่น</th></tr>
+<tr><td><strong>Mean (ค่าเฉลี่ย)</strong></td><td>(-5+2+8-1+3+50)/6</td><td><strong>+9.5%</strong></td><td>ใช้ทุกค่า แต่ไวต่อ outlier (+50%!)</td></tr>
+<tr><td><strong>Median (มัธยฐาน)</strong></td><td>เรียง: -5,-1,2,3,8,50 → กลาง = (2+3)/2</td><td><strong>+2.5%</strong></td><td>ไม่ไวต่อ outlier — ภาพจริงมากกว่า</td></tr>
+<tr><td><strong>Mode (ฐานนิยม)</strong></td><td>ค่าที่ซ้ำบ่อยสุด</td><td>ไม่มี (ไม่ซ้ำ)</td><td>ใช้กับ discrete data</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">ระวัง: Mean ถูก Outlier บิดเบือน!</div>
+<p>ค่า +50% ทำให้ Mean = 9.5% ซึ่งสูงเกินจริงมาก — วัน "ปกติ" ได้แค่ -5% ถึง +8%<br>
+Median = 2.5% สะท้อนความเป็นจริงมากกว่า นี่คือเหตุผลที่ในการเงินมักดู Median ด้วย</p>
+</div>
+
+<p><strong>Weighted Average (ค่าเฉลี่ยถ่วงน้ำหนัก):</strong></p>
+<div class="fm">Weighted Mean = Σ(wᵢ × xᵢ) / Σ(wᵢ)</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p><strong>Portfolio Return = Σ wᵢ × rᵢ</strong> (ผลตอบแทนพอร์ต = weighted average ของ return แต่ละหุ้น)<br>
+เช่น: หุ้น A (40% ของพอร์ต, return +5%) + หุ้น B (60%, return -2%)<br>
+Portfolio Return = 0.4×5% + 0.6×(-2%) = 2% - 1.2% = <strong>+0.8%</strong></p>
+</div>
+
+<h3 id="s4-3">4.3 ค่าการกระจาย — Variance และ Standard Deviation</h3>
+
+<p><strong>Variance (ความแปรปรวน)</strong> วัดว่าข้อมูลกระจายออกจาก Mean มากแค่ไหน</p>
+
+<div class="fm">Variance (σ²) = Σ(xᵢ - μ)² / n<br>
+= "ค่าเฉลี่ยของระยะห่างจาก mean ยกกำลัง 2"</div>
+
+<p><strong>Standard Deviation (ส่วนเบี่ยงเบนมาตรฐาน)</strong> = √Variance → กลับมาหน่วยเดิม</p>
+
+<div class="fm">σ = √(Σ(xᵢ - μ)² / n)</div>
+
+<p><strong>ตัวอย่าง:</strong> หุ้น A (returns: +1%, -1%, +2%, -2%) vs หุ้น B (returns: +10%, -8%, +12%, -14%)</p>
+
+<table>
+<tr><th></th><th>หุ้น A</th><th>หุ้น B</th></tr>
+<tr><td>Mean</td><td>0%</td><td>0%</td></tr>
+<tr><td>σ (Std Dev)</td><td><strong>1.6%</strong></td><td><strong>11.7%</strong></td></tr>
+<tr><td>ความหมาย</td><td>นิ่ง สงบ</td><td>ผันผวนมาก!</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — σ = Volatility!</div>
+<p><strong>Standard Deviation ของ returns = Volatility (ความผันผวน)</strong><br>
+นี่คือค่าที่กำหนดราคา Options โดยตรง!<br>
+หุ้น B (σ=11.7%) จะมี Options แพงกว่าหุ้น A (σ=1.6%) มาก<br>
+เพราะ "ความไม่แน่นอนสูง" = "โอกาสที่ option จะมีค่า" สูง</p>
+</div>
+
+<svg class="d" viewBox="0 0 500 220">
+<!-- Stock A: narrow distribution -->
+<text x="130" y="20" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="600">หุ้น A (σ น้อย)</text>
+<line x1="30" y1="180" x2="230" y2="180" stroke="#374151" stroke-width="1"/>
+<path d="M30,180 Q60,178 80,170 Q100,140 115,80 Q125,40 130,30 Q135,40 145,80 Q160,140 180,170 Q200,178 230,180" stroke="#2563eb" stroke-width="2.5" fill="#eff6ff" fill-opacity="0.5"/>
+<text x="130" y="195" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">แคบ = นิ่ง</text>
+<!-- Stock B: wide distribution -->
+<text x="370" y="20" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#dc2626" font-weight="600">หุ้น B (σ มาก)</text>
+<line x1="270" y1="180" x2="470" y2="180" stroke="#374151" stroke-width="1"/>
+<path d="M270,180 Q290,178 310,174 Q330,165 345,145 Q355,125 365,110 Q370,100 370,95 Q370,100 375,110 Q385,125 395,145 Q410,165 430,174 Q450,178 470,180" stroke="#dc2626" stroke-width="2.5" fill="#fef2f2" fill-opacity="0.5"/>
+<text x="370" y="195" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">กว้าง = ผันผวน</text>
+<!-- σ arrows -->
+<line x1="115" y1="145" x2="145" y2="145" stroke="#2563eb" stroke-width="1.5"/>
+<text x="130" y="160" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">σ</text>
+<line x1="330" y1="155" x2="410" y2="155" stroke="#dc2626" stroke-width="1.5"/>
+<text x="370" y="170" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">σ ใหญ่กว่ามาก!</text>
+</svg>
+
+<h3 id="s4-4">4.4 Percentile และ Quartile</h3>
+
+<p><strong>Percentile</strong> = "ค่าที่มีข้อมูล X% อยู่ข้างล่าง"</p>
+
+<table>
+<tr><th>Percentile</th><th>ชื่อ</th><th>ความหมาย</th></tr>
+<tr><td>P25 (Q1)</td><td>Quartile ที่ 1</td><td>25% ของข้อมูลอยู่ต่ำกว่านี้</td></tr>
+<tr><td>P50 (Q2)</td><td>Median</td><td>50% อยู่ต่ำกว่า = กลางพอดี</td></tr>
+<tr><td>P75 (Q3)</td><td>Quartile ที่ 3</td><td>75% อยู่ต่ำกว่านี้</td></tr>
+<tr><td>P5</td><td>5th Percentile</td><td>มีแค่ 5% ที่แย่กว่านี้</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — VaR (Value at Risk)</div>
+<p><strong>VaR ที่ 95% = P5 ของ returns</strong> = "ในวันที่แย่ที่สุด 5% ขาดทุนอย่างน้อยเท่าไหร่"<br>
+เช่น: ถ้า VaR (95%, 1-day) = -3.2% บนพอร์ต ฿1 ล้าน → มีโอกาส 5% ที่จะเสีย ≥ ฿32,000 ในวันเดียว</p>
+</div>
+
+<h3 id="s4-5">4.5 Covariance และ Correlation</h3>
+
+<p><strong>Covariance</strong> วัดว่าตัวแปร 2 ตัว "เคลื่อนไหวไปด้วยกัน" หรือไม่:</p>
+<div class="fm">Cov(X,Y) = Σ(xᵢ - μₓ)(yᵢ - μᵧ) / n</div>
+
+<p><strong>Correlation (ρ)</strong> = Covariance ที่ปรับสเกลแล้ว อยู่ระหว่าง <strong>-1 ถึง +1</strong>:</p>
+<div class="fm">ρ = Cov(X,Y) / (σₓ × σᵧ)</div>
+
+<table>
+<tr><th>ρ</th><th>ความหมาย</th><th>ตัวอย่าง</th></tr>
+<tr><td>+1</td><td>ขึ้น/ลงพร้อมกันเป๊ะ</td><td>หุ้น CPALL กับ ดัชนี SET50</td></tr>
+<tr><td>0</td><td>ไม่สัมพันธ์กัน</td><td>หุ้นไทย กับ ราคาข้าวสาลี</td></tr>
+<tr><td>-1</td><td>สวนทางกันเป๊ะ</td><td>หุ้น กับ ราคาทองคำ (บางช่วง)</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>ถ้าหุ้น 2 ตัวมี ρ สูง → diversification ไม่ช่วยลด risk มาก<br>
+<strong>Portfolio Variance = Σᵢ Σⱼ wᵢwⱼσᵢσⱼρᵢⱼ</strong> — สูตรนี้จะใช้ในบท 8 (Linear Algebra)</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุปบทที่ 4</div>
+<p>✓ อ่าน Histogram ออก (เห็นรูประฆัง = Normal Distribution)<br>
+✓ เข้าใจ Mean, Median, Mode และข้อจำกัดของแต่ละตัว<br>
+✓ คำนวณ Weighted Average ได้ (Portfolio Return)<br>
+✓ <strong>σ (Standard Deviation) = Volatility</strong> — ค่าที่กำหนดราคา Options<br>
+✓ เข้าใจ Percentile → VaR<br>
+✓ เข้าใจ Correlation → Portfolio Risk</p>
+</div>
+
+<!-- ========== CHAPTER 5 ========== -->
+<h2 id="ch5">บทที่ 5: ความน่าจะเป็น — "วัดความไม่แน่นอน"</h2>
+
+<p>Options คือการ "ซื้อขายความน่าจะเป็น" — ถ้าไม่เข้าใจ probability ก็ไม่เข้าใจราคา Options</p>
+
+<h3 id="s5-1">5.1 ความน่าจะเป็นพื้นฐาน</h3>
+
+<p><strong>P(A)</strong> = ความน่าจะเป็นที่เหตุการณ์ A จะเกิด อยู่ระหว่าง 0 (ไม่มีทางเกิด) ถึง 1 (เกิดแน่นอน)</p>
+
+<div class="fm">P(not A) = 1 - P(A)<br>
+P(A or B) = P(A) + P(B) - P(A and B)<br>
+P(A and B) = P(A) × P(B) &nbsp;&nbsp; ← ถ้า A, B เป็นอิสระต่อกัน</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง</div>
+<p>ทอยลูกเต๋า: P(ได้ 6) = 1/6 ≈ 16.7%<br>
+P(ไม่ได้ 6) = 1 - 1/6 = 5/6 ≈ 83.3%<br>
+ทอย 2 ลูก P(ได้ 6 ทั้งคู่) = 1/6 × 1/6 = 1/36 ≈ 2.8%</p>
+</div>
+
+<h3 id="s5-2">5.2 Combinations (การจัดหมู่)</h3>
+
+<p><strong>C(n, k) = n! / (k! × (n-k)!)</strong> = จำนวนวิธีเลือก k ชิ้นจาก n ชิ้น (ไม่สนลำดับ)</p>
+
+<table>
+<tr><th>n</th><th>k</th><th>C(n,k)</th><th>ตัวอย่าง</th></tr>
+<tr><td>5</td><td>2</td><td>10</td><td>เลือกหุ้น 2 ตัวจาก 5 ตัว</td></tr>
+<tr><td>10</td><td>3</td><td>120</td><td>เลือก option 3 ตัวจาก 10 strike</td></tr>
+<tr><td>4</td><td>2</td><td>6</td><td>เลือกขาขึ้น 2 วันจาก 4 วัน</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>C(n,k) จะใช้ใน <strong>Binomial Distribution</strong> (บทถัดไป) ซึ่งเป็นพื้นฐานของ <strong>Binomial Tree</strong> — วิธี pricing Options แบบ discrete ที่ง่ายที่สุด</p>
+</div>
+
+<h3 id="s5-3">5.3 Conditional Probability และ Bayes' Theorem</h3>
+
+<p><strong>P(A|B)</strong> = ความน่าจะเป็นที่ A เกิด <strong>เมื่อรู้แล้วว่า</strong> B เกิด</p>
+
+<div class="fm">P(A|B) = P(A and B) / P(B)<br><br>
+Bayes' Theorem:<br>
+P(A|B) = P(B|A) × P(A) / P(B)</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: อัพเดทมุมมอง</div>
+<p>ก่อนประกาศผล: P(หุ้นขึ้น) = 60%<br>
+รู้ว่ากำไรดีกว่าคาด (B): P(กำไรดี | หุ้นขึ้น) = 80%, P(กำไรดี | หุ้นไม่ขึ้น) = 30%<br>
+P(กำไรดี) = 0.8×0.6 + 0.3×0.4 = 0.60<br>
+<strong>P(หุ้นขึ้น | กำไรดี) = 0.80×0.60 / 0.60 = 80%</strong> ← อัพจาก 60% เป็น 80%!</p>
+</div>
+
+<h3 id="s5-4">5.4 Expected Value (ค่าคาดหวัง)</h3>
+
+<p><strong>E[X]</strong> = "ค่าเฉลี่ยระยะยาว" ถ้าทำซ้ำหลายๆ ครั้ง</p>
+
+<div class="fm">E[X] = Σ xᵢ × P(xᵢ) &nbsp;&nbsp; (สำหรับ discrete)<br><br>
+สมบัติสำคัญ:<br>
+E[aX + b] = a × E[X] + b<br>
+E[X + Y] = E[X] + E[Y] &nbsp;&nbsp; ← ใช้ได้เสมอ!</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Expected Payoff</div>
+<p>ราคา Option ≈ PV ของ Expected Payoff ภายใต้ risk-neutral probability:<br>
+<strong>C = e<sup>-rT</sup> × E*[max(0, S-K)]</strong><br>
+E* = expected value ใน "โลก risk-neutral" (จะเรียนในบท 14)</p>
+</div>
+
+<h3 id="s5-5">5.5 Variance — Properties</h3>
+
+<div class="fm">Var(X) = E[(X - μ)²] = E[X²] - (E[X])²<br><br>
+สมบัติสำคัญ:<br>
+Var(aX + b) = a² × Var(X) &nbsp;&nbsp; ← บวกค่าคงที่ไม่เปลี่ยน Var!<br>
+Var(X + Y) = Var(X) + Var(Y) + 2×Cov(X,Y)</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Portfolio Variance</div>
+<p>จาก Var(X+Y) ขยายเป็นหลายตัวแปร:<br>
+<strong>Portfolio Variance = Σᵢ Σⱼ wᵢ wⱼ σᵢ σⱼ ρᵢⱼ</strong><br>
+เขียนเป็น matrix form: <strong>σ²_p = w<sup>T</sup> Σ w</strong> (จะเรียนในบท 8)</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุปบทที่ 5</div>
+<p>✓ คำนวณความน่าจะเป็นพื้นฐานได้<br>
+✓ ใช้ Combinations → Binomial coefficient<br>
+✓ อัพเดทความเชื่อด้วย Bayes<br>
+✓ คำนวณ Expected Value → Expected Payoff<br>
+✓ เข้าใจ Variance properties → Portfolio Variance</p>
+</div>
+
+<!-- ========== CHAPTER 6 ========== -->
+<h2 id="ch6">บทที่ 6: Distributions — "รูปทรงของความไม่แน่นอน"</h2>
+
+<p>ทุก Distribution คือ "รูปทรง" ที่บอกว่าค่าแต่ละค่ามีโอกาสเกิดขึ้นมากน้อยแค่ไหน บทนี้สอน Distributions ที่สำคัญที่สุดสำหรับ Options</p>
+
+<h3 id="s6-1">6.1 Binomial Distribution</h3>
+
+<p>ถ้าทำการทดลองที่ "สำเร็จ" ด้วยความน่าจะเป็น p จำนวน n ครั้ง โอกาสสำเร็จ k ครั้ง:</p>
+
+<div class="fm">P(X = k) = C(n,k) × p<sup>k</sup> × (1-p)<sup>n-k</sup></div>
+
+<p>ตัวอย่าง: โยนเหรียญ 4 ครั้ง (p=0.5) โอกาสได้หัว k ครั้ง:</p>
+<table>
+<tr><th>k (หัว)</th><th>C(4,k)</th><th>P(X=k)</th><th>เปอร์เซ็นต์</th></tr>
+<tr><td>0</td><td>1</td><td>0.0625</td><td>6.25%</td></tr>
+<tr><td>1</td><td>4</td><td>0.2500</td><td>25.0%</td></tr>
+<tr><td>2</td><td>6</td><td>0.3750</td><td>37.5%</td></tr>
+<tr><td>3</td><td>4</td><td>0.2500</td><td>25.0%</td></tr>
+<tr><td>4</td><td>1</td><td>0.0625</td><td>6.25%</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 220">
+<defs><marker id="p2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="190" x2="440" y2="190" stroke="#374151" stroke-width="1" marker-end="url(#p2)"/>
+<line x1="60" y1="190" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#p2)"/>
+<text x="250" y="212" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151">k (จำนวนครั้งที่สำเร็จ)</text>
+<!-- Bars -->
+<rect x="90" y="178" width="50" height="12" fill="#2563eb" rx="2" opacity="0.7"/>
+<text x="115" y="175" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">6.25%</text>
+<text x="115" y="205" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">0</text>
+
+<rect x="165" y="140" width="50" height="50" fill="#2563eb" rx="2" opacity="0.7"/>
+<text x="190" y="136" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">25%</text>
+<text x="190" y="205" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">1</text>
+
+<rect x="240" y="115" width="50" height="75" fill="#2563eb" rx="2"/>
+<text x="265" y="110" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb" font-weight="600">37.5%</text>
+<text x="265" y="205" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">2</text>
+
+<rect x="315" y="140" width="50" height="50" fill="#2563eb" rx="2" opacity="0.7"/>
+<text x="340" y="136" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">25%</text>
+<text x="340" y="205" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">3</text>
+
+<rect x="390" y="178" width="50" height="12" fill="#2563eb" rx="2" opacity="0.7"/>
+<text x="415" y="175" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">6.25%</text>
+<text x="415" y="205" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">4</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Binomial Tree</div>
+<p>ใน <strong>Binomial Option Pricing Model</strong> ราคาหุ้นขึ้น (probability p) หรือลง (probability 1-p) ในแต่ละ step — เป็น Binomial Distribution พอดี!<br>
+เมื่อ n → ∞ (จำนวน steps → มาก) Binomial → Normal (Central Limit Theorem)</p>
+</div>
+
+<h3 id="s6-2">6.2 Normal Distribution — หัวใจของ Black-Scholes</h3>
+
+<p><strong>Normal Distribution</strong> (การแจกแจงปกติ) มีรูปร่าง "ระฆัง" สมมาตร กำหนดโดย 2 ค่า:</p>
+<ul>
+<li><strong>μ (mean)</strong> = จุดศูนย์กลาง (ยอดระฆัง)</li>
+<li><strong>σ (standard deviation)</strong> = ความกว้างของระฆัง</li>
+</ul>
+
+<div class="fm">PDF: f(x) = (1 / σ√(2π)) × e<sup>-(x-μ)²/(2σ²)</sup><br>
+(ไม่ต้องจำสูตร แค่เข้าใจรูปร่าง)</div>
+
+<p><strong>กฎ 68-95-99.7:</strong></p>
+<table>
+<tr><th>ช่วง</th><th>ครอบคลุม</th><th>ตัวอย่าง: หุ้น μ=0%, σ=20%/ปี</th></tr>
+<tr><td>μ ± 1σ</td><td><strong>68.3%</strong></td><td>68% ของปี return อยู่ใน -20% ถึง +20%</td></tr>
+<tr><td>μ ± 2σ</td><td><strong>95.4%</strong></td><td>95% อยู่ใน -40% ถึง +40%</td></tr>
+<tr><td>μ ± 3σ</td><td><strong>99.7%</strong></td><td>99.7% อยู่ใน -60% ถึง +60%</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 240">
+<!-- Bell curve -->
+<path d="M40,200 Q80,198 120,190 Q160,170 190,130 Q210,90 230,55 Q245,30 250,25 Q255,30 270,55 Q290,90 310,130 Q340,170 380,190 Q420,198 460,200" stroke="#2563eb" stroke-width="2.5" fill="#eff6ff" fill-opacity="0.3"/>
+<!-- Axis -->
+<line x1="40" y1="200" x2="460" y2="200" stroke="#374151" stroke-width="1"/>
+<!-- μ line -->
+<line x1="250" y1="200" x2="250" y2="20" stroke="#374151" stroke-width="1" stroke-dasharray="4"/>
+<text x="250" y="215" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151" font-weight="600">μ</text>
+<!-- 1σ region -->
+<rect x="175" y="15" width="150" height="185" fill="#2563eb" opacity="0.08" rx="4"/>
+<line x1="175" y1="200" x2="175" y2="130" stroke="#2563eb" stroke-width="1" stroke-dasharray="3"/>
+<line x1="325" y1="200" x2="325" y2="130" stroke="#2563eb" stroke-width="1" stroke-dasharray="3"/>
+<text x="250" y="185" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">68.3%</text>
+<text x="175" y="215" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">μ-1σ</text>
+<text x="325" y="215" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">μ+1σ</text>
+<!-- 2σ labels -->
+<text x="105" y="215" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">μ-2σ</text>
+<text x="395" y="215" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">μ+2σ</text>
+<text x="250" y="235" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a">95.4%</text>
+<!-- Tails -->
+<text x="60" y="195" font-family="Sarabun" font-size="9" fill="#dc2626">tail</text>
+<text x="430" y="195" font-family="Sarabun" font-size="9" fill="#dc2626">tail</text>
+</svg>
+
+<h3 id="s6-3">6.3 Z-Score และ Standard Normal N(0,1)</h3>
+
+<p><strong>Z-score</strong> = "ห่างจาก mean กี่ standard deviations"</p>
+<div class="fm">Z = (x - μ) / σ</div>
+
+<p><strong>N(d)</strong> = CDF ของ Standard Normal = <strong>ความน่าจะเป็นที่ค่าจะ ≤ d</strong></p>
+
+<table>
+<tr><th>d</th><th>N(d)</th><th>ความหมาย</th></tr>
+<tr><td>-2.0</td><td>0.0228</td><td>มีแค่ 2.3% อยู่ต่ำกว่า -2σ</td></tr>
+<tr><td>-1.0</td><td>0.1587</td><td>15.9% อยู่ต่ำกว่า -1σ</td></tr>
+<tr><td>0.0</td><td>0.5000</td><td>50% พอดี (= median)</td></tr>
+<tr><td>+1.0</td><td>0.8413</td><td>84.1% อยู่ต่ำกว่า +1σ</td></tr>
+<tr><td>+2.0</td><td>0.9772</td><td>97.7% อยู่ต่ำกว่า +2σ</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — N(d₁) และ N(d₂) ใน Black-Scholes!</div>
+<p>ในสูตร BS: <strong>C = S₀×N(d₁) - K×e<sup>-rT</sup>×N(d₂)</strong><br>
+• N(d₁) ≈ ความน่าจะเป็นที่ option จะ expire ITM (ปรับแล้ว)<br>
+• N(d₂) ≈ ความน่าจะเป็นที่จะถูก exercise<br>
+<strong>d₁ และ d₂ คือ Z-scores!</strong> ที่รวม ln(S/K), r, σ, T เข้าด้วยกัน</p>
+</div>
+
+<h3 id="s6-4">6.4 Lognormal Distribution — ทำไมราคาหุ้นไม่เป็น Normal</h3>
+
+<p><strong>ปัญหา:</strong> ถ้าราคาหุ้นเป็น Normal Distribution → ราคาอาจติดลบได้! (เช่น -฿50) ← ไม่สมจริง</p>
+
+<p><strong>ทางออก:</strong> ถ้า <strong>ln(ราคา)</strong> เป็น Normal → ราคาเป็น <strong>Lognormal</strong> → ราคา &gt; 0 เสมอ!</p>
+
+<div class="fm">ถ้า ln(S) ~ Normal(μ, σ²) แล้ว S ~ Lognormal<br>
+→ S = e<sup>ln(S)</sup> > 0 เสมอ (เพราะ e ยกกำลังอะไรก็เป็นบวก)</div>
+
+<svg class="d" viewBox="0 0 500 220">
+<!-- Normal (left) -->
+<text x="125" y="18" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="600">Normal Distribution</text>
+<line x1="20" y1="180" x2="230" y2="180" stroke="#374151" stroke-width="1"/>
+<path d="M20,180 Q40,178 60,170 Q80,150 95,120 Q110,70 125,40 Q140,70 155,120 Q170,150 190,170 Q210,178 230,180" stroke="#2563eb" stroke-width="2" fill="none"/>
+<text x="125" y="198" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">สมมาตร, มีค่าลบได้</text>
+<line x1="125" y1="180" x2="125" y2="35" stroke="#2563eb" stroke-width="0.5" stroke-dasharray="3"/>
+
+<!-- Lognormal (right) -->
+<text x="370" y="18" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#16a34a" font-weight="600">Lognormal Distribution</text>
+<line x1="270" y1="180" x2="480" y2="180" stroke="#374151" stroke-width="1"/>
+<path d="M270,180 Q280,178 290,160 Q300,120 310,65 Q315,40 320,35 Q330,50 345,80 Q370,120 400,150 Q430,168 460,175 Q470,178 480,179" stroke="#16a34a" stroke-width="2" fill="none"/>
+<text x="370" y="198" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">เบ้ขวา, ≥ 0 เสมอ</text>
+<line x1="270" y1="180" x2="270" y2="150" stroke="#dc2626" stroke-width="2"/>
+<text x="265" y="145" text-anchor="end" font-family="Sarabun" font-size="9" fill="#dc2626">S=0 (ขอบล่าง)</text>
+</svg>
+
+<div class="bx bb">
+<div class="bt">เชื่อมกับ Log Return (จากบทที่ 3)</div>
+<p>จำได้ไหม? log return r = ln(S₁/S₀) = ln(S₁) - ln(S₀)<br>
+ถ้า r ~ Normal → S₁ = S₀ × e<sup>r</sup> ~ <strong>Lognormal</strong><br>
+นี่คือ chain: <strong>Log return เป็น Normal → ราคาเป็น Lognormal</strong><br>
+Black-Scholes สมมติว่า log returns เป็น Normal Distribution</p>
+</div>
+
+<h3 id="s6-5">6.5 Central Limit Theorem (CLT)</h3>
+
+<p><strong>CLT</strong> = ทฤษฎีบทที่สำคัญที่สุดในสถิติ:</p>
+
+<div class="bx bb">
+<div class="bt">Central Limit Theorem</div>
+<p>"ค่าเฉลี่ยของตัวอย่างจำนวนมาก → <strong>Normal Distribution เสมอ</strong> ไม่ว่า distribution เดิมจะเป็นอะไร"<br><br>
+นี่คือเหตุผลที่ Normal Distribution ปรากฏทุกที่ใน finance!</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>• Binomial Tree (n steps) → เมื่อ n → ∞ → Black-Scholes (CLT!)<br>
+• Return รายวันอาจไม่เป็น Normal แต่ return รายเดือน/ปี ≈ Normal (CLT!)<br>
+• Monte Carlo ใช้ CLT: เฉลี่ย payoff จากหลายๆ simulation → ค่า converge</p>
+</div>
+
+<h3 id="s6-6">6.6 Skewness และ Kurtosis</h3>
+
+<p>ตลาดจริง<strong>ไม่ใช่ Normal พอดี</strong> — มีการเบ้และหางหนา:</p>
+
+<table>
+<tr><th>สมบัติ</th><th>Normal</th><th>ตลาดจริง</th><th>ผลกระทบ</th></tr>
+<tr><td><strong>Skewness</strong> (เบ้)</td><td>0 (สมมาตร)</td><td>เบ้ซ้าย (negative)</td><td>ตกหนักกว่าขึ้น</td></tr>
+<tr><td><strong>Kurtosis</strong> (หาง)</td><td>3 (mesokurtic)</td><td>>3 (fat tails)</td><td>เหตุการณ์สุดขั้วเกิดบ่อยกว่า</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 200">
+<!-- Normal thin tails -->
+<path d="M30,170 Q70,168 110,155 Q150,130 180,85 Q200,45 210,35 Q220,45 240,85 Q270,130 310,155 Q350,168 390,170" stroke="#2563eb" stroke-width="2" fill="none"/>
+<text x="210" y="25" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#2563eb">Normal (หางบาง)</text>
+<!-- Fat tails -->
+<path d="M20,170 Q50,169 80,165 Q120,155 160,125 Q190,80 210,50 Q220,40 230,50 Q250,80 280,125 Q320,155 360,165 Q400,169 470,168" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="5,3"/>
+<text x="430" y="158" font-family="Sarabun" font-size="10" fill="#dc2626">Fat tails!</text>
+<!-- Highlight tails -->
+<circle cx="50" cy="169" r="12" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+<circle cx="440" cy="169" r="12" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+<text x="50" y="190" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">crash เกิดบ่อย</text>
+<text x="440" y="190" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">rally เกิดบ่อย</text>
+<line x1="30" y1="170" x2="470" y2="170" stroke="#374151" stroke-width="0.5"/>
+</svg>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Volatility Smile/Skew</div>
+<p>เพราะตลาดจริงมี fat tails → ตลาด "รู้" ว่า Normal ไม่พอ → <strong>OTM Puts แพงกว่าที่ BS ทำนาย</strong><br>
+ผลลัพธ์: กราฟ Implied Volatility vs Strike เป็นรูป "ยิ้ม" (Smile) หรือ "เอียง" (Skew)<br>
+นี่คือข้อจำกัดหลักของ Black-Scholes ที่ quant ทุกคนต้องรู้</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุปบทที่ 6</div>
+<p>✓ Binomial Distribution → สะพานสู่ Binomial Tree pricing<br>
+✓ <strong>Normal Distribution</strong>: Bell curve, กฎ 68-95-99.7, Z-score<br>
+✓ <strong>N(d) = CDF</strong> → อ่าน N(d₁), N(d₂) ใน BS ออกแล้ว!<br>
+✓ <strong>Lognormal</strong>: ราคาหุ้นเป็น Lognormal เพราะ log return เป็น Normal<br>
+✓ CLT: ทำไม Normal ปรากฏทุกที่<br>
+✓ Skewness/Kurtosis: ทำไม Volatility Smile เกิดขึ้น</p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid #2563eb">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:#2563eb">จบ Part II</p>
+<p>ตอนนี้คุณเข้าใจ:<br>
+<strong>Volatility (σ), Normal Distribution, N(d), Lognormal, Expected Value</strong><br>
+→ พร้อมอ่านบทเรียน Greeks และ Black-Scholes แล้ว!<br><br>
+Part III: แคลคูลัส → เข้าใจ Greeks อย่างลึกซึ้ง</p>
+</div>
+
+</body>
+</html>
