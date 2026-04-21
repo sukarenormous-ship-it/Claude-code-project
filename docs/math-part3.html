@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คณิตศาสตร์สำหรับ Options — Part III</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
+<div class="sub">Part III: แคลคูลัส — ภาษาของ Greeks</div>
+<div class="desc">บทที่ 7: Derivative, Partial Derivative, Chain Rule, Integration, Taylor Series<br>อ่านจบ Part นี้ → เข้าใจ Greeks ทุกตัวอย่างลึกซึ้ง</div>
+</div>
+
+<!-- ========== CHAPTER 7 ========== -->
+<h2 id="ch7">บทที่ 7: แคลคูลัส — "ภาษาของ Greeks"</h2>
+
+<p>Greeks ทุกตัวคือ <strong>อนุพันธ์ (derivatives)</strong> ของราคา Option — ถ้าไม่รู้จักแคลคูลัส ก็ไม่เข้าใจ Greeks อย่างลึกซึ้ง</p>
+
+<h3 id="s7-1">7.1 Limit — แนวคิด "เข้าใกล้"</h3>
+
+<p><strong>lim(x→a) f(x)</strong> = "เมื่อ x เข้าใกล้ a ค่า f(x) เข้าใกล้เท่าไหร่?"</p>
+
+<div class="fm">ตัวอย่าง: lim(x→0) sin(x)/x = 1<br>
+x = 0.1 → sin(0.1)/0.1 = 0.9983<br>
+x = 0.01 → sin(0.01)/0.01 = 0.99998<br>
+x = 0.001 → 0.9999998 → เข้าใกล้ 1!</div>
+
+<div class="bx ba">
+<div class="bt">ทำไมต้องรู้?</div>
+<p>Derivative (อนุพันธ์) นิยามจาก limit — "ถ้าเปลี่ยน x นิดเดียว y เปลี่ยนเท่าไหร่?"<br>
+นี่คือแนวคิดเดียวกับ Delta: "ถ้าราคาหุ้นเปลี่ยน ฿1 ราคา Option เปลี่ยนเท่าไหร่?"</p>
+</div>
+
+<h3 id="s7-2">7.2 Derivative (อนุพันธ์) — อัตราการเปลี่ยนแปลง</h3>
+
+<p><strong>f'(x)</strong> = อัตราการเปลี่ยนแปลงของ f(x) ณ จุด x = <strong>slope ของเส้นสัมผัส</strong></p>
+
+<div class="fm">f'(x) = lim(h→0) [f(x+h) - f(x)] / h</div>
+
+<p><strong>กฎพื้นฐาน:</strong></p>
+<table>
+<tr><th>f(x)</th><th>f'(x)</th><th>ชื่อกฎ</th></tr>
+<tr><td>x<sup>n</sup></td><td>n × x<sup>n-1</sup></td><td>Power Rule</td></tr>
+<tr><td>c (ค่าคงที่)</td><td>0</td><td>Constant Rule</td></tr>
+<tr><td>c × f(x)</td><td>c × f'(x)</td><td>Constant Multiple</td></tr>
+<tr><td>f(x) + g(x)</td><td>f'(x) + g'(x)</td><td>Sum Rule</td></tr>
+<tr><td>e<sup>x</sup></td><td>e<sup>x</sup></td><td>← <strong>อนุพันธ์ของตัวเอง!</strong></td></tr>
+<tr><td>ln(x)</td><td>1/x</td><td></td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 260">
+<defs><marker id="c1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="50" y1="220" x2="470" y2="220" stroke="#374151" stroke-width="1" marker-end="url(#c1)"/>
+<line x1="50" y1="220" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#c1)"/>
+<text x="475" y="224" font-family="Sarabun" font-size="11" fill="#374151">x</text>
+<text x="30" y="15" font-family="Sarabun" font-size="11" fill="#374151">f(x)</text>
+<!-- Curve f(x) = x² (scaled) -->
+<path d="M80,200 Q150,195 200,170 Q250,130 300,80 Q340,40 380,10" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+<text x="390" y="20" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">f(x) = x²</text>
+<!-- Tangent line at x=200 (slope) -->
+<line x1="120" y1="210" x2="320" y2="110" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
+<circle cx="200" cy="170" r="5" fill="#dc2626"/>
+<text x="210" y="166" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">slope = f'(x) ณ จุดนี้</text>
+<!-- Arrow showing slope -->
+<text x="300" y="135" font-family="Sarabun" font-size="10" fill="#dc2626">← เส้นสัมผัส (tangent)</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Delta!</div>
+<p><strong>Delta (Δ) = ∂V/∂S</strong> = derivative ของราคา Option (V) เทียบกับราคาหุ้น (S)<br>
+= "ถ้าราคาหุ้นขึ้น ฿1 ราคา Option เปลี่ยนเท่าไหร่?"<br>
+= <strong>slope ของ payoff curve ณ จุดนั้น</strong></p>
+</div>
+
+<h3 id="s7-3">7.3 อนุพันธ์ของ e<sup>x</sup> — ทำไม e สำคัญมาก</h3>
+
+<div class="fm">d/dx (e<sup>x</sup>) = e<sup>x</sup> ← อนุพันธ์ของตัวเอง!<br>
+d/dx (e<sup>ax</sup>) = a × e<sup>ax</sup> (Chain Rule)</div>
+
+<div class="bx ba">
+<div class="bt">ทำไมจึงสำคัญใน Finance?</div>
+<p>e<sup>rT</sup> คือ compound interest → d/dT(e<sup>rT</sup>) = r × e<sup>rT</sup><br>
+หมายความว่า: "อัตราการเติบโตของเงินที่ทบต้น = r × เงินปัจจุบัน"<br>
+ยิ่งเงินมาก ยิ่งโตเร็ว — นี่คือ exponential growth!</p>
+</div>
+
+<h3 id="s7-4">7.4 Chain Rule — กฎลูกโซ่</h3>
+
+<div class="fm">ถ้า y = f(g(x)) แล้ว dy/dx = f'(g(x)) × g'(x)</div>
+
+<p>ตัวอย่าง: y = e<sup>-rT</sup> หา dy/dT</p>
+<div class="fm">ให้ u = -rT → y = e<sup>u</sup><br>
+dy/dT = dy/du × du/dT = e<sup>u</sup> × (-r) = <strong>-r × e<sup>-rT</sup></strong></div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>Chain Rule คือพื้นฐานของ <strong>Ito's Lemma</strong> (บท 14) — "chain rule ของโลกสุ่ม" ที่ใช้ derive สูตร Black-Scholes</p>
+</div>
+
+<h3 id="s7-5">7.5 Partial Derivatives — อนุพันธ์ย่อย</h3>
+
+<p>เมื่อฟังก์ชันมีหลายตัวแปร: <strong>∂f/∂x</strong> = "เปลี่ยน x ค้าง y" (treat y as constant)</p>
+
+<p>ตัวอย่าง: f(x, y) = x²y + 3xy</p>
+<div class="fm">∂f/∂x = 2xy + 3y &nbsp;&nbsp; (treat y เป็นค่าคงที่)<br>
+∂f/∂y = x² + 3x &nbsp;&nbsp;&nbsp; (treat x เป็นค่าคงที่)</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Greeks ทุกตัว!</div>
+<p>ราคา Option V ขึ้นกับหลายตัวแปร: V(S, t, σ, r) ดังนั้น:</p>
+</div>
+
+<table>
+<tr><th>Greek</th><th>สูตร</th><th>ความหมาย</th><th>เปลี่ยนอะไร ค้างอะไร</th></tr>
+<tr><td style="font-size:1.2em"><strong>Δ Delta</strong></td><td>∂V/∂S</td><td>ราคาเปลี่ยนเท่าไหร่ต่อหุ้นขยับ ฿1</td><td>เปลี่ยน S, ค้าง t,σ,r</td></tr>
+<tr><td style="font-size:1.2em"><strong>Θ Theta</strong></td><td>∂V/∂t</td><td>ราคาเปลี่ยนเท่าไหร่ต่อวัน</td><td>เปลี่ยน t, ค้าง S,σ,r</td></tr>
+<tr><td style="font-size:1.2em"><strong>ν Vega</strong></td><td>∂V/∂σ</td><td>ราคาเปลี่ยนเท่าไหร่ต่อ σ เปลี่ยน 1%</td><td>เปลี่ยน σ, ค้าง S,t,r</td></tr>
+<tr><td style="font-size:1.2em"><strong>ρ Rho</strong></td><td>∂V/∂r</td><td>ราคาเปลี่ยนเท่าไหร่ต่อดอกเบี้ยเปลี่ยน</td><td>เปลี่ยน r, ค้าง S,t,σ</td></tr>
+</table>
+
+<h3 id="s7-6">7.6 อนุพันธ์อันดับ 2 — Gamma</h3>
+
+<p><strong>f''(x)</strong> = อนุพันธ์ของอนุพันธ์ = <strong>อัตราการเปลี่ยนแปลงของ slope</strong></p>
+
+<div class="fm">Gamma (Γ) = ∂²V/∂S² = ∂(Delta)/∂S<br>
+= "Delta เปลี่ยนเท่าไหร่ เมื่อราคาหุ้นเปลี่ยน ฿1"</div>
+
+<svg class="d" viewBox="0 0 500 250">
+<defs><marker id="c2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="50" y1="200" x2="470" y2="200" stroke="#374151" stroke-width="1" marker-end="url(#c2)"/>
+<line x1="50" y1="240" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#c2)"/>
+<text x="475" y="204" font-family="Sarabun" font-size="11" fill="#374151">S</text>
+<!-- Option value curve (S-shaped, convex) -->
+<path d="M60,195 Q100,193 150,185 Q200,165 250,130 Q300,85 350,50 Q400,25 450,15" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+<text x="420" y="45" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">V(S) ราคา Option</text>
+<!-- Tangent at ATM showing Delta -->
+<line x1="160" y1="195" x2="340" y2="75" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+<circle cx="250" cy="130" r="4" fill="#16a34a"/>
+<text x="260" y="125" font-family="Sarabun" font-size="10" fill="#16a34a">slope = Delta</text>
+<!-- Curvature annotation -->
+<path d="M150,185 Q200,170 250,135" stroke="#dc2626" stroke-width="1" fill="none" stroke-dasharray="2"/>
+<text x="130" y="160" font-family="Sarabun" font-size="10" fill="#dc2626">ความโค้ง = Gamma</text>
+<text x="130" y="175" font-family="Sarabun" font-size="9" fill="#dc2626">(Gamma สูงสุดที่ ATM)</text>
+<!-- Strike line -->
+<line x1="250" y1="205" x2="250" y2="125" stroke="#94a3b8" stroke-width="0.5" stroke-dasharray="3"/>
+<text x="250" y="218" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K (ATM)</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">ทำไม Gamma สำคัญ?</div>
+<p>• Gamma สูง = Delta เปลี่ยนเร็ว = <strong>ต้อง rehedge บ่อย</strong><br>
+• Gamma สูงสุดที่ ATM → Options ที่ ATM ต้องการ hedging มากที่สุด<br>
+• Long Gamma = กำไรจาก volatility, Short Gamma = เสียจาก volatility</p>
+</div>
+
+<h3 id="s7-7">7.7 อินทิกรัล (Integration) เบื้องต้น</h3>
+
+<p><strong>∫f(x)dx</strong> = "พื้นที่ใต้กราฟ" = กระบวนการย้อนกลับของ derivative</p>
+
+<div class="fm">∫x<sup>n</sup> dx = x<sup>n+1</sup>/(n+1) + C<br>
+∫e<sup>x</sup> dx = e<sup>x</sup> + C<br>
+∫(1/x) dx = ln|x| + C</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>• <strong>CDF ของ Normal = ∫ PDF</strong> → N(d) = ∫ ของ bell curve = "พื้นที่ใต้กราฟทางซ้าย"<br>
+• <strong>Expected Value ของ continuous dist = ∫ x × f(x) dx</strong><br>
+• ราคา Option = ∫ payoff × probability density = Expected Payoff</p>
+</div>
+
+<h3 id="s7-8">7.8 Taylor Series — ประมาณค่า</h3>
+
+<div class="fm">f(x+h) ≈ f(x) + f'(x)×h + ½f''(x)×h² + ...</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — Delta-Gamma Approximation!</div>
+<p>เปลี่ยน S เป็น S+ΔS:<br>
+<strong>ΔV ≈ Delta × ΔS + ½ × Gamma × (ΔS)²</strong><br><br>
+term แรก (Delta×ΔS) = ประมาณเชิงเส้น<br>
+term ที่สอง (½Gamma×ΔS²) = <strong>correction สำหรับความโค้ง</strong><br>
+นี่คือ Taylor expansion 2 term ใช้ใน risk management ทุกวัน!</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุปบทที่ 7</div>
+<p>✓ Derivative = slope = อัตราการเปลี่ยนแปลง<br>
+✓ d/dx(e<sup>x</sup>) = e<sup>x</sup> — ทำไม e สำคัญ<br>
+✓ Chain Rule → พื้นฐานของ Ito's Lemma<br>
+✓ <strong>Partial Derivatives = Greeks ทุกตัว!</strong> (Delta, Theta, Vega, Rho)<br>
+✓ <strong>f'' = Gamma</strong> — ความโค้ง, ต้อง rehedge<br>
+✓ Integration = พื้นที่ใต้กราฟ → CDF, Expected Value<br>
+✓ <strong>Taylor Series → Delta-Gamma Approximation</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid #2563eb">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:#2563eb">จบ Part III</p>
+<p>ตอนนี้คุณเข้าใจ <strong>Greeks ทุกตัว</strong> ในเชิงคณิตศาสตร์:<br>
+Delta=∂V/∂S, Gamma=∂²V/∂S², Theta=∂V/∂t, Vega=∂V/∂σ<br>
+→ พร้อมอ่านบทเรียน Greeks ของ Payoff Chart ได้อย่างลึกซึ้งแล้ว!<br><br>
+Part IV: Linear Algebra &amp; Regression → จัดการ Portfolio หลายตัวแปร</p>
+</div>
+
+</body>
+</html>
