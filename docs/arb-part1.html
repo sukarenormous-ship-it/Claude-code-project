@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbitrage — Part I</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}h4{font-size:1.1em;font-weight:600;color:var(--g7);margin-top:1em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
+<div class="sub">Part I: พื้นฐาน Arbitrage</div>
+<div class="desc">บทที่ 1-3: Arbitrage คืออะไร, เครื่องมือพื้นฐาน, คณิตศาสตร์ของ Arbitrage<br>อ่านจบ → เข้าใจว่า Arb ทำงานอย่างไร ทำไมมันมีอยู่ และทำไมมันหายไป</div>
+</div>
+
+<!-- ========== CHAPTER 1 ========== -->
+<h2 id="ch1">บทที่ 1: Arbitrage คืออะไร?</h2>
+
+<h3>1.1 นิยาม</h3>
+<p><strong>Arbitrage</strong> = การทำกำไรจากความแตกต่างของราคาสินทรัพย์เดียวกัน โดย<strong>ไม่มีความเสี่ยง</strong>และ<strong>ไม่ใช้เงินทุนสุทธิ</strong> (หรือใช้น้อยมาก)</p>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่างง่ายที่สุด</div>
+<p>ร้านทอง A ขายทองแท่ง ฿30,000 / บาท<br>
+ร้านทอง B รับซื้อทองแท่ง ฿30,500 / บาท<br>
+→ ซื้อที่ A ฿30,000 → ขายที่ B ฿30,500 → <strong>กำไร ฿500 ทันที ไม่มีความเสี่ยง</strong></p>
+</div>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- Shop A -->
+<rect x="20" y="40" width="140" height="70" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="90" y="68" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#2563eb" font-weight="700">ร้าน A</text>
+<text x="90" y="90" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#374151">ขาย ฿30,000</text>
+<!-- Shop B -->
+<rect x="360" y="40" width="140" height="70" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="430" y="68" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">ร้าน B</text>
+<text x="430" y="90" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#374151">ซื้อ ฿30,500</text>
+<!-- Arrow: Buy -->
+<line x1="160" y1="60" x2="350" y2="60" stroke="#2563eb" stroke-width="2" marker-end="url(#ar1)"/>
+<text x="255" y="52" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb">ซื้อ ฿30,000 →</text>
+<!-- Arrow: Sell -->
+<line x1="350" y1="90" x2="160" y2="90" stroke="#16a34a" stroke-width="2" marker-end="url(#ar2)"/>
+<text x="255" y="82" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a">← ขาย ฿30,500</text>
+<!-- Profit -->
+<rect x="180" y="130" width="160" height="45" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="260" y="158" text-anchor="middle" font-family="Sarabun" font-size="16" fill="#16a34a" font-weight="800">กำไร ฿500</text>
+<text x="260" y="172" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a">ไม่มีความเสี่ยง!</text>
+<defs><marker id="ar1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#2563eb"/></marker><marker id="ar2" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="#16a34a"/></marker></defs>
+</svg>
+
+<h3>1.2 No-Arbitrage Principle</h3>
+<p>ถ้ามี Arbitrage opportunity → คนจะรีบทำ → ราคาจะ <strong>converge</strong> จนหมดโอกาส</p>
+<ul>
+<li>ซื้อที่ A มาก → ราคา A ขึ้น (demand สูง)</li>
+<li>ขายที่ B มาก → ราคา B ลง (supply สูง)</li>
+<li>จนกว่า A ≈ B → Arb หายไป</li>
+</ul>
+
+<svg class="d" viewBox="0 0 520 200">
+<defs><marker id="ar3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<!-- Axes -->
+<line x1="60" y1="170" x2="490" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#ar3)"/>
+<line x1="60" y1="170" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#ar3)"/>
+<text x="495" y="174" font-family="Sarabun" font-size="11" fill="#374151">เวลา</text>
+<text x="25" y="15" font-family="Sarabun" font-size="11" fill="#374151">ราคา</text>
+<!-- Price A (starts low, rises) -->
+<polyline points="80,140 140,135 200,125 260,115 320,108 380,103 440,100" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+<text x="450" y="96" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">A ↑</text>
+<!-- Price B (starts high, falls) -->
+<polyline points="80,50 140,58 200,70 260,80 320,90 380,97 440,100" stroke="#dc2626" stroke-width="2.5" fill="none"/>
+<text x="450" y="108" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">B ↓</text>
+<!-- Convergence zone -->
+<circle cx="440" cy="100" r="12" fill="none" stroke="#16a34a" stroke-width="2"/>
+<text x="440" y="130" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Converge!</text>
+<!-- Gap label -->
+<line x1="85" y1="50" x2="85" y2="140" stroke="#d97706" stroke-width="1" stroke-dasharray="3"/>
+<text x="95" y="95" font-family="Sarabun" font-size="10" fill="#d97706">Gap = Arb</text>
+</svg>
+
+<div class="bx bb">
+<div class="bt">No-Arbitrage Principle</div>
+<p>"ในตลาดที่ทำงานปกติ Arbitrage opportunity จะหายไปอย่างรวดเร็ว เพราะ arbitrageurs เข้ามาทำกำไรจนราคา converge"<br><br>
+<strong>ผลลัพธ์:</strong> ถ้าสมมติว่าไม่มี arb → เราสามารถ <strong>หาราคาที่ถูกต้อง</strong> ของทุกสินทรัพย์ได้ (No-Arbitrage Pricing)</p>
+</div>
+
+<h3>1.3 Law of One Price</h3>
+<p><strong>"สินทรัพย์ที่ให้ payoff เดียวกันทุกสถานการณ์ → ต้องมีราคาเดียวกัน"</strong></p>
+<ul>
+<li>ทองที่ร้าน A = ทองที่ร้าน B → ราคาต้องเท่ากัน</li>
+<li>Long Call + Short Put + Bond = Stock → ราคาต้องเท่ากัน (Put-Call Parity!)</li>
+<li>SET50 Futures ≈ SET50 Spot × e^((r-d)T) → ราคาต้องสอดคล้องกัน</li>
+</ul>
+
+<div class="bx bg">
+<div class="bt">วิธีใช้ Law of One Price หา Arb</div>
+<p>ทุกครั้งที่เห็นสินทรัพย์ ถามตัวเองว่า:<br>
+<strong>"มีวิธีอื่นสร้าง payoff เดียวกันไหม? ถ้ามี ราคาเท่ากันไหม?"</strong><br>
+ถ้าราคาต่างกัน → อาจมี Arb!</p>
+</div>
+
+<h3>1.4 ทำไม Arbitrage ยังมีอยู่?</h3>
+<p>ถ้า arb หายเร็ว ทำไมยังเจอบ้าง?</p>
+
+<table>
+<tr><th>อุปสรรค</th><th>อธิบาย</th><th>ตัวอย่าง</th></tr>
+<tr><td><strong>Transaction Costs</strong></td><td>ค่าธรรมเนียม + bid-ask spread กิน profit</td><td>Arb ฿0.50 แต่ค่าธรรมเนียม ฿0.60</td></tr>
+<tr><td><strong>Execution Risk</strong></td><td>เข้าขา 1 ได้ ขา 2 ราคาหนีไป</td><td>ซื้อ spot ได้ แต่ futures ราคาเปลี่ยนแล้ว</td></tr>
+<tr><td><strong>Capital Constraints</strong></td><td>ต้องใช้เงินมาก กำไรต่อหน่วยน้อย</td><td>Arb 0.01% ต้องใช้เงิน ฿100 ล้าน</td></tr>
+<tr><td><strong>Information Lag</strong></td><td>ข้อมูลมาช้า ราคาอัพเดทไม่ทัน</td><td>ร้านทอง A ยังไม่อัพเดทราคา</td></tr>
+<tr><td><strong>Regulatory</strong></td><td>กฎหมายห้ามหรือจำกัด</td><td>Short selling ban ในบางตลาด</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 180">
+<!-- Waterfall: Gross → Net -->
+<rect x="30" y="20" width="70" height="120" rx="4" fill="#16a34a" opacity="0.8"/>
+<text x="65" y="85" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#fff" font-weight="600">Gross</text>
+<text x="65" y="100" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#fff" font-weight="700">฿0.80</text>
+<!-- Costs eating into profit -->
+<rect x="120" y="20" width="50" height="25" rx="3" fill="#dc2626" opacity="0.7"/>
+<text x="145" y="37" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#fff">Commission</text>
+<text x="145" y="17" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">-฿0.20</text>
+<rect x="180" y="20" width="50" height="40" rx="3" fill="#dc2626" opacity="0.6"/>
+<text x="205" y="44" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#fff">Spread</text>
+<text x="205" y="17" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">-฿0.40</text>
+<rect x="240" y="20" width="50" height="10" rx="3" fill="#dc2626" opacity="0.5"/>
+<text x="265" y="29" text-anchor="middle" font-family="Sarabun" font-size="7" fill="#fff">Slip</text>
+<text x="265" y="17" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">-฿0.10</text>
+<!-- Net -->
+<rect x="320" y="90" width="70" height="50" rx="4" fill="#16a34a" opacity="0.5"/>
+<text x="355" y="118" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#fff" font-weight="600">Net</text>
+<text x="355" y="133" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#fff" font-weight="700">฿0.10</text>
+<!-- Arrow -->
+<line x1="100" y1="80" x2="315" y2="115" stroke="#374151" stroke-width="1" stroke-dasharray="4"/>
+<!-- Labels -->
+<text x="260" y="170" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#64748b">Gross ฿0.80 − ค่าใช้จ่าย ฿0.70 = Net ฿0.10 (ยังเหลือ แต่น้อยมาก!)</text>
+</svg>
+
+<div class="bx br">
+<div class="bt">ความจริงที่ต้องยอมรับ</div>
+<p><strong>Pure Arbitrage (กำไรแน่ 100% ไม่มีความเสี่ยง) แทบไม่มีในตลาดจริง</strong><br>
+สิ่งที่มีอยู่จริงคือ <strong>Near-Arb</strong> (เกือบแน่นอน) และ <strong>Bounded-Loss</strong> (ขาดทุนจำกัด) — จะเรียนละเอียดในบท 7</p>
+</div>
+
+<!-- ========== CHAPTER 2 ========== -->
+<h2 id="ch2">บทที่ 2: เครื่องมือพื้นฐาน</h2>
+
+<h3>2.1 Short Selling — ยืมมาขาย</h3>
+<p>"ซื้อถูกขายแพง" ทุกคนเข้าใจ แต่ <strong>Arb ต้องทำได้ทั้ง 2 ทิศ</strong> — ต้อง "ขายก่อนซื้อ" ได้ด้วย</p>
+
+<div class="fm">Short Selling: ยืมหุ้นมา → ขาย → ซื้อคืนทีหลัง (หวังว่าราคาจะลง)<br>
+กำไร = ราคาขาย - ราคาซื้อคืน - ค่ายืม (borrow cost)</div>
+
+<svg class="d" viewBox="0 0 520 160">
+<defs><marker id="ar4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<!-- Step 1: Borrow -->
+<rect x="10" y="20" width="100" height="50" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="60" y="42" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">1. ยืมหุ้น</text>
+<text x="60" y="58" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">จาก broker</text>
+<!-- Step 2: Sell -->
+<rect x="140" y="20" width="100" height="50" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+<text x="190" y="42" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">2. ขาย ฿100</text>
+<text x="190" y="58" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">ในตลาด</text>
+<!-- Step 3: Wait -->
+<rect x="270" y="20" width="100" height="50" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="320" y="42" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#d97706" font-weight="600">3. รอราคาลง</text>
+<text x="320" y="58" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">฿100 → ฿80</text>
+<!-- Step 4: Buy back -->
+<rect x="400" y="20" width="100" height="50" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="450" y="42" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">4. ซื้อคืน ฿80</text>
+<text x="450" y="58" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">คืน broker</text>
+<!-- Arrows -->
+<line x1="110" y1="45" x2="135" y2="45" stroke="#374151" stroke-width="1.5" marker-end="url(#ar4)"/>
+<line x1="240" y1="45" x2="265" y2="45" stroke="#374151" stroke-width="1.5" marker-end="url(#ar4)"/>
+<line x1="370" y1="45" x2="395" y2="45" stroke="#374151" stroke-width="1.5" marker-end="url(#ar4)"/>
+<!-- Profit -->
+<rect x="160" y="95" width="200" height="40" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="260" y="120" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">กำไร = ฿100 - ฿80 = ฿20</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">ทำไม Short Selling สำคัญสำหรับ Arb?</div>
+<p>Arb ส่วนใหญ่ต้องทำ 2 ขาพร้อมกัน: <strong>ซื้อที่ถูก + ขายที่แพง</strong><br>
+ถ้า "ที่แพง" คือสินทรัพย์ที่ยังไม่มี → ต้อง short sell<br>
+เช่น Conversion: Long Stock + Long Put + <strong>Short Call</strong> ← ต้อง "ขาย" Call ที่ไม่มี</p>
+</div>
+
+<h3>2.2 Instruments Overview</h3>
+
+<table>
+<tr><th>Instrument</th><th>Payoff</th><th>Expiry</th><th>Funding</th><th>ใช้ทำ Arb อะไร</th></tr>
+<tr><td><strong>Spot</strong></td><td>Linear ±1</td><td>ไม่มี</td><td>ไม่มี</td><td>Cash & Carry, Pairs</td></tr>
+<tr><td><strong>Futures</strong></td><td>Linear ±1</td><td>มี (fixed)</td><td>ไม่มี</td><td>Basis Arb, Calendar</td></tr>
+<tr><td><strong>Perpetual</strong></td><td>Linear ±1</td><td>ไม่มี</td><td>จ่าย/รับ funding</td><td>Funding Arb, Hedge</td></tr>
+<tr><td><strong>Call Option</strong></td><td>max(S-K, 0)</td><td>มี</td><td>ไม่มี</td><td>PCP, Box, Vol Arb</td></tr>
+<tr><td><strong>Put Option</strong></td><td>max(K-S, 0)</td><td>มี</td><td>ไม่มี</td><td>PCP, Box, Vol Arb</td></tr>
+<tr><td><strong>PM (Prediction)</strong></td><td>Binary: 1 or 0</td><td>มี (event)</td><td>ไม่มี</td><td>Cross-platform, Overlay</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 240">
+<!-- 3 payoff shapes side by side -->
+<!-- Linear (Spot/Futures) -->
+<text x="85" y="18" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">Linear (Spot)</text>
+<line x1="20" y1="120" x2="150" y2="120" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="20" y1="200" x2="150" y2="40" stroke="#2563eb" stroke-width="2.5"/>
+<!-- Convex (Call) -->
+<text x="265" y="18" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Convex (Call)</text>
+<line x1="190" y1="120" x2="340" y2="120" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="190" y1="150" x2="265" y2="150" stroke="#dc2626" stroke-width="2.5"/>
+<line x1="265" y1="150" x2="340" y2="40" stroke="#16a34a" stroke-width="2.5"/>
+<!-- Binary (PM) -->
+<text x="445" y="18" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#7c3aed" font-weight="600">Binary (PM)</text>
+<line x1="370" y1="120" x2="520" y2="120" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="370" y1="150" x2="445" y2="150" stroke="#dc2626" stroke-width="2.5"/>
+<line x1="445" y1="60" x2="520" y2="60" stroke="#7c3aed" stroke-width="2.5"/>
+<line x1="445" y1="150" x2="445" y2="60" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3"/>
+<!-- Labels -->
+<text x="85" y="225" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">slope ±1 ทุกที่</text>
+<text x="265" y="225" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">flat แล้วหักศอก</text>
+<text x="445" y="225" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">0 หรือ 1 (ดิจิทัล)</text>
+</svg>
+
+<h3>2.3 Transaction Costs — ศัตรูตัวฉกาจของ Arb</h3>
+
+<div class="fm">Net Profit = Gross Arb<br>
+&nbsp;&nbsp;− Commission (ค่านายหน้า ทุกขา)<br>
+&nbsp;&nbsp;− Bid-Ask Spread (ซื้อที่ ask ขายที่ bid)<br>
+&nbsp;&nbsp;− Slippage (ราคาเปลี่ยนระหว่าง execute)<br>
+&nbsp;&nbsp;− Borrow Cost (ถ้า short sell)<br>
+&nbsp;&nbsp;− Margin Interest (ถ้าใช้ leverage)<br>
+&nbsp;&nbsp;− Funding Cost (ถ้าใช้ perpetual)</div>
+
+<div class="bx br">
+<div class="bt">กฎทอง: คิดค่าใช้จ่ายก่อนเสมอ!</div>
+<p>Arb ที่ดูเหมือนกำไร ฿0.80 อาจขาดทุนจริง ฿0.10 หลังหักค่าใช้จ่าย<br>
+<strong>มือใหม่ลืมคิด bid-ask spread บ่อยที่สุด</strong> — ต้องซื้อที่ Ask ขายที่ Bid ไม่ใช่ราคากลาง!</p>
+</div>
+
+<!-- ========== CHAPTER 3 ========== -->
+<h2 id="ch3">บทที่ 3: คณิตศาสตร์ของ Arbitrage</h2>
+
+<h3>3.1 No-Arbitrage Pricing</h3>
+<p>ถ้า<strong>สมมติว่าไม่มี arb</strong> → เราสามารถ<strong>หาราคาที่ถูกต้อง</strong>ของทุกสินทรัพย์ได้</p>
+
+<div class="bx bb">
+<div class="bt">หลักการ</div>
+<p>ถ้า Portfolio A และ Portfolio B ให้ payoff เท่ากันทุกสถานการณ์ ณ เวลา T:<br>
+<strong>→ ราคาวันนี้ต้องเท่ากัน</strong><br>
+ถ้าไม่เท่ากัน → ซื้อถูก ขายแพง = Arbitrage</p>
+</div>
+
+<h3>3.2 Replication Principle</h3>
+<p><strong>"ราคาที่ถูกต้องของ X = ต้นทุนในการสร้าง X ขึ้นมาเอง (replicate)"</strong></p>
+
+<table>
+<tr><th>สินทรัพย์ X</th><th>Replicate ด้วย</th><th>สมการ</th></tr>
+<tr><td>Stock</td><td>Long Call + Short Put + Bond</td><td>S = C - P + PV(K)</td></tr>
+<tr><td>Call</td><td>Long Stock + Long Put - Bond</td><td>C = S + P - PV(K)</td></tr>
+<tr><td>Bond (PV(K))</td><td>Long Stock + Long Put + Short Call</td><td>PV(K) = S + P - C</td></tr>
+<tr><td>Forward</td><td>Long Call + Short Put</td><td>F = C - P (+ financing)</td></tr>
+<tr><td>Box Spread</td><td>Bull Call + Bear Put</td><td>Box = PV(K₂ - K₁)</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 220">
+<!-- Replication: Synthetic Stock overlay -->
+<defs><marker id="ar5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="180" x2="490" y2="180" stroke="#374151" stroke-width="1" marker-end="url(#ar5)"/>
+<line x1="60" y1="200" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#ar5)"/>
+<text x="495" y="184" font-family="Sarabun" font-size="10" fill="#374151">S</text>
+<text x="30" y="15" font-family="Sarabun" font-size="10" fill="#374151">Payoff</text>
+<!-- Real Stock (blue thick) -->
+<line x1="80" y1="170" x2="460" y2="30" stroke="#2563eb" stroke-width="3"/>
+<text x="420" y="25" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">Real Stock</text>
+<!-- Synthetic Stock (orange dashed) - should perfectly overlap -->
+<line x1="80" y1="170" x2="460" y2="30" stroke="#f97316" stroke-width="2" stroke-dasharray="8,4"/>
+<text x="420" y="50" font-family="Sarabun" font-size="11" fill="#f97316" font-weight="600">Synthetic (C-P+Bond)</text>
+<!-- Note -->
+<text x="260" y="210" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">ซ้อนทับกันพอดี → ราคาต้องเท่ากัน!</text>
+</svg>
+
+<h3>3.3 Bounds & Inequalities</h3>
+<p>แม้ไม่รู้ราคา exact แต่รู้<strong>ขอบเขต</strong>ที่ราคาต้องอยู่ภายใน:</p>
+
+<div class="fm">Call Bounds:   max(0, S - Ke⁻ʳᵀ) ≤ C ≤ S<br>
+Put Bounds:    max(0, Ke⁻ʳᵀ - S) ≤ P ≤ Ke⁻ʳᵀ<br>
+Spread:        0 ≤ C(K₁) - C(K₂) ≤ (K₂-K₁)e⁻ʳᵀ  เมื่อ K₁ < K₂<br>
+Butterfly:     C(K₁) - 2C(K₂) + C(K₃) ≥ 0  (Convexity)</div>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- Call option bounds visualization -->
+<defs><marker id="ar6" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="170" x2="490" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#ar6)"/>
+<line x1="60" y1="190" x2="60" y2="10" stroke="#374151" stroke-width="1" marker-end="url(#ar6)"/>
+<text x="495" y="174" font-family="Sarabun" font-size="10" fill="#374151">S</text>
+<text x="25" y="15" font-family="Sarabun" font-size="10" fill="#374151">C</text>
+<!-- Upper bound: C ≤ S (45 degree line) -->
+<line x1="60" y1="170" x2="380" y2="20" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="350" y="15" font-family="Sarabun" font-size="10" fill="#dc2626">C = S (upper bound)</text>
+<!-- Lower bound: C ≥ max(0, S-Ke^-rT) -->
+<line x1="60" y1="170" x2="250" y2="170" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="250" y1="170" x2="460" y2="70" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="400" y="95" font-family="Sarabun" font-size="10" fill="#2563eb">C = S-Ke⁻ʳᵀ (lower)</text>
+<!-- Valid zone (shaded) -->
+<path d="M60,170 L250,170 L460,70 L380,20 L60,170" fill="#16a34a" opacity="0.08"/>
+<text x="250" y="110" text-anchor="middle" font-family="Sarabun" font-size="13" fill="#16a34a" font-weight="700">Valid Zone</text>
+<text x="250" y="128" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a">ราคา Call ต้องอยู่ในโซนนี้</text>
+<!-- Outside = arb -->
+<text x="150" y="25" font-family="Sarabun" font-size="10" fill="#dc2626">นอกโซน = Arb!</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">วิธีใช้ Bounds หา Arb</div>
+<p>1. คำนวณ bounds ก่อนดูราคาจริง<br>
+2. ดูราคาจริง → อยู่ในหรือนอก bounds?<br>
+3. <strong>นอก bounds = Arb ที่พิสูจน์ได้ทางคณิตศาสตร์</strong> [Exact Identity]<br>
+4. ใกล้ขอบ bounds = อาจเป็น Near-Arb หลังหักค่าธรรมเนียม</p>
+</div>
+
+<h3>3.4 Put-Call Parity — สมการเริ่มต้นของทุกอย่าง</h3>
+
+<div class="fm" style="text-align:center;font-size:1.2em;padding:16px">C + K·e⁻ʳᵀ = P + S</div>
+
+<p>สมการนี้คือ <strong>Law of One Price ของ Options</strong>:</p>
+<ul>
+<li>ซ้าย (Long Call + Bond) ให้ payoff = ขวา (Long Put + Stock) ทุกสถานการณ์</li>
+<li>ถ้าซ้าย ≠ ขวา → ซื้อฝั่งถูก ขายฝั่งแพง = <strong>Conversion/Reversal Arbitrage</strong></li>
+<li>เป็น <strong>[Exact Identity]</strong> — จริงเสมอ ไม่มีเงื่อนไข (European options)</li>
+</ul>
+
+<div class="bx bp">
+<div class="bt">Epistemology Label: [Exact Identity]</div>
+<p>Put-Call Parity เป็นความจริงทางคณิตศาสตร์ — ไม่ขึ้นกับ model, regime, หรือ platform<br>
+ต่างจาก "Funding rate จะกลับมา" ซึ่งเป็นแค่ [Heuristic] — จะเรียนการจำแนกในบทที่ 6</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุป Part I</div>
+<p>ตอนนี้คุณเข้าใจ:<br>
+✓ Arbitrage = กำไรจากราคาต่าง ไม่มีความเสี่ยง<br>
+✓ No-Arbitrage Principle → ราคาจะ converge<br>
+✓ Law of One Price → "ของเดียวกันราคาเดียวกัน"<br>
+✓ เครื่องมือ: Short selling, 6 instruments, transaction costs<br>
+✓ Replication → "สร้างเองได้ = รู้ราคาที่ถูกต้อง"<br>
+✓ Bounds → ราคานอกขอบเขต = Arb<br>
+✓ Put-Call Parity → สมการเริ่มต้นของทุกอย่าง<br><br>
+<strong>→ Part II: วิธีคิดแบบ Arbitrageur — สอน "วิธีมอง" ไม่ใช่แค่ "สูตร"</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part I</p>
+<p>Part II: วิธีคิดแบบ Arbitrageur →<br>Generalized Option Thinking, Payoff Algebra, Epistemology,<br>Non-Negative Design, Discovery Pipeline</p>
+</div>
+
+</body>
+</html>
