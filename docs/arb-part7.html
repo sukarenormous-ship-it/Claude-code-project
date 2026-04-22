@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Arbitrage — Part VII</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}</style></head><body>
+<div class="cover"><h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1><div class="sub">Part VII: Execution & Risk Management (บท 25-27)</div><div class="desc">Speed, Order Types, Risk Types, Position Sizing, Infrastructure</div></div>
+
+<h2 id="ch25">บทที่ 25: Execution</h2>
+<h3>25.1 Speed Matters</h3>
+<p>Arb opportunities หายภายใน <strong>milliseconds ถึง minutes</strong> ขึ้นกับประเภท:</p>
+<table><tr><th>Arb Type</th><th>Lifetime</th><th>ต้องเร็วแค่ไหน</th></tr>
+<tr><td>Triangular FX</td><td>Microseconds</td><td>Co-located servers เท่านั้น</td></tr>
+<tr><td>PCP Violation</td><td>Seconds-Minutes</td><td>API + automated execution</td></tr>
+<tr><td>Futures Basis</td><td>Hours-Days</td><td>Manual OK แต่ต้องรวดเร็ว</td></tr>
+<tr><td>Merger Spread</td><td>Weeks-Months</td><td>Manual OK ไม่รีบ</td></tr>
+<tr><td>Pairs Z-score</td><td>Days-Weeks</td><td>Daily rebalance</td></tr></table>
+
+<h3>25.2 Order Types</h3>
+<table><tr><th>Type</th><th>ใช้เมื่อ</th><th>Risk</th></tr>
+<tr><td><strong>Limit</strong></td><td>ไม่รีบ ต้องการราคาที่ต้องการ</td><td>อาจไม่ fill</td></tr>
+<tr><td><strong>Market</strong></td><td>ต้อง fill ทันที</td><td>Slippage</td></tr>
+<tr><td><strong>IOC</strong> (Immediate or Cancel)</td><td>Fill เท่าที่ได้ ยกเลิกส่วนที่เหลือ</td><td>Partial fill</td></tr>
+<tr><td><strong>FOK</strong> (Fill or Kill)</td><td>ต้อง fill ทั้งหมด หรือไม่ fill เลย</td><td>อาจไม่ fill</td></tr></table>
+
+<h3>25.3 เมื่อไร Arb ไม่คุ้ม?</h3>
+<div class="fm">ไม่คุ้มเมื่อ:<br>
+Net Profit < 0 (หลังหักทุก cost)<br>
+OR Profit / Capital < risk-free rate (ทำน้อยกว่าฝากธนาคาร)<br>
+OR Profit / Effort < minimum wage (เสียเวลาเกินไป)</div>
+
+<h2 id="ch26">บทที่ 26: Risk Management</h2>
+<h3>26.1 "Riskless" ที่ไม่ Riskless</h3>
+<table><tr><th>Risk</th><th>อธิบาย</th><th>ตัวอย่าง</th><th>Severity</th></tr>
+<tr><td><strong>Execution</strong></td><td>ขา 1 ได้ ขา 2 ไม่ได้</td><td>ซื้อ spot แล้ว futures ราคาหนี</td><td>สูง</td></tr>
+<tr><td><strong>Model</strong></td><td>สมมติฐานผิด</td><td>ใช้ BS แต่หุ้นมี jump</td><td>สูง</td></tr>
+<tr><td><strong>Liquidity</strong></td><td>เข้าได้ ออกไม่ได้</td><td>OTM option ไม่มีคนซื้อ</td><td>สูง</td></tr>
+<tr><td><strong>Funding</strong></td><td>Margin call ก่อน converge</td><td>LTCM 1998</td><td>สูงมาก (ตาย)</td></tr>
+<tr><td><strong>Counterparty</strong></td><td>อีกฝ่ายจ่ายไม่ได้</td><td>Lehman 2008</td><td>สูงมาก</td></tr>
+<tr><td><strong>Regulatory</strong></td><td>กฎหมายเปลี่ยน</td><td>Short-selling ban</td><td>กลาง</td></tr>
+<tr><td><strong>Information</strong></td><td>ข้อมูลผิด</td><td>Stale quote</td><td>กลาง</td></tr>
+<tr><td><strong>Timing</strong></td><td>ต้องรอนานกว่าคาด</td><td>Merger ล่าช้า 6 เดือน</td><td>กลาง</td></tr></table>
+
+<h3>26.2 กรณีศึกษา: LTCM</h3>
+<div class="bx br"><div class="bt">LTCM (1998) — ถูกต้องแต่ไม่รอด</div>
+<p>Strategy: Bond convergence arb (ถูกต้อง — bonds did converge eventually)<br>
+Leverage: 25:1 → <strong>เมื่อ spread กว้างขึ้นก่อน converge → margin call</strong><br>
+Russian default → spread กว้างขึ้นอีก → forced liquidation → เสีย $4.6 billion<br><br>
+<strong>บทเรียน: "ถูกต้อง" + "leverage สูง" = ตายก่อนชนะ</strong></p></div>
+
+<h3>26.3 กรณีศึกษา: Knight Capital (2012)</h3>
+<div class="bx br"><div class="bt">Knight Capital — Software Bug</div>
+<p>Bug ใน trading software → ส่ง orders ผิดพลาดเป็นล้านรายการใน 45 นาที<br>
+เสีย <strong>$440 million ใน 45 นาที</strong> → บริษัทล้มละลาย<br>
+บทเรียน: <strong>Automated execution ต้องมี kill switch + position limits</strong></p></div>
+
+<h2 id="ch27">บทที่ 27: Infrastructure & Tools</h2>
+<h3>27.1 Daily Arb Scan Checklist</h3>
+<div class="fm">□ PCP Violations    → ทุก strike ทุก expiry<br>
+□ Box Spread Value  → ทุก K₁,K₂ pairs vs PV(K₂-K₁)<br>
+□ Butterfly ≥ 0     → ทุก 3 strikes ติดกัน<br>
+□ Monotonicity      → C(K₁) ≥ C(K₂) for K₁ < K₂<br>
+□ Futures Basis     → Fair vs Actual<br>
+□ IV Surface        → smooth? anomaly?<br>
+□ Pairs Z-score     → watchlist คู่ที่ cointegrated<br>
+□ Merger Spreads    → annualized return ของ active deals<br>
+□ PM Cross-Platform → price differences<br>
+□ Earn/Promo Rates  → new subsidy opportunities</div>
+
+<h3>27.2 System Architecture</h3>
+<div class="fm">Data Feed → Scanner → Signal Generator → Risk Check → Order Router → Exchange<br>
+                                                    ↓<br>
+                                            Position Monitor → Alert System → Human Review</div>
+
+<div class="bx ba"><div class="bt">สรุป Part VII</div><p>✓ Speed ≠ everything — merger arb ไม่ต้องเร็ว แต่ FX arb ต้อง microsecond<br>✓ 8 risk types — Funding risk อันตรายที่สุด (LTCM)<br>✓ Knight Capital lesson → automated ต้องมี safeguards<br>✓ Daily scan checklist → ทำเป็น routine<br>✓ <strong>Survive first, profit second</strong></p></div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)"><div style="text-align:center;padding:20px;color:#64748b"><p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part VII</p></div></body></html>
