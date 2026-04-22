@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbitrage — Part IV</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
+<div class="sub">Part IV: Cross-Market Arbitrage (บท 15-17)</div>
+<div class="desc">Futures Basis, Forex Triangular, ETF NAV, Platform Arb</div>
+</div>
+
+<!-- ========== CHAPTER 15 ========== -->
+<h2 id="ch15">บทที่ 15: Futures-Spot Arbitrage (Cash & Carry)</h2>
+
+<h3>15.1 Cost of Carry Model</h3>
+<div class="fm" style="text-align:center;font-size:1.15em">F = S × e<sup>(r-d)T</sup></div>
+<p>F = Fair Futures Price, S = Spot, r = risk-free rate, d = dividend yield, T = time to expiry</p>
+
+<h3>15.2 Cash & Carry — ถ้า F > Fair</h3>
+<div class="fm">Futures "แพงเกินไป":<br>
+1. ซื้อ Spot (S)<br>
+2. ขาย Futures (F)<br>
+3. ถือจน expiry → Futures converge สู่ Spot<br>
+กำไร = F - S×e<sup>(r-d)T</sup> [locked at entry, Lv.2]</div>
+
+<h3>15.3 Reverse Cash & Carry — ถ้า F < Fair</h3>
+<div class="fm">Futures "ถูกเกินไป":<br>
+1. Short Spot (ยืมขาย)<br>
+2. ซื้อ Futures<br>
+3. ถือจน expiry<br>
+กำไร = S×e<sup>(r-d)T</sup> - F [ต้อง short sell ได้ + มี borrow cost]</div>
+
+<svg class="d" viewBox="0 0 520 200">
+<defs><marker id="cm1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="170" x2="490" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#cm1)"/>
+<line x1="60" y1="190" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#cm1)"/>
+<text x="495" y="174" font-family="Sarabun" font-size="10" fill="#374151">เวลา → Expiry</text>
+<text x="25" y="15" font-family="Sarabun" font-size="10" fill="#374151">ราคา</text>
+<!-- Spot (blue) -->
+<polyline points="80,100 180,95 280,105 380,90 460,100" stroke="#2563eb" stroke-width="2" fill="none"/>
+<text x="465" y="96" font-family="Sarabun" font-size="10" fill="#2563eb">Spot</text>
+<!-- Futures (red, starts higher, converges) -->
+<polyline points="80,60 180,70 280,80 380,88 460,100" stroke="#dc2626" stroke-width="2" fill="none"/>
+<text x="465" y="56" font-family="Sarabun" font-size="10" fill="#dc2626">Futures</text>
+<!-- Basis arrow -->
+<line x1="90" y1="60" x2="90" y2="100" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3"/>
+<text x="100" y="82" font-family="Sarabun" font-size="10" fill="#d97706" font-weight="600">Basis</text>
+<!-- Convergence -->
+<circle cx="460" cy="100" r="8" fill="none" stroke="#16a34a" stroke-width="2"/>
+<text x="430" y="130" font-family="Sarabun" font-size="10" fill="#16a34a" font-weight="600">Converge!</text>
+<text x="260" y="185" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">Basis = F - S → หดลงจนเป็น 0 ที่ Expiry [Exact]</text>
+</svg>
+
+<h3>15.4 ตัวอย่าง: SET50 Futures</h3>
+<div class="fm">SET50 Spot = 900, r = 2%, d = 2.5%, T = 3 เดือน (0.25 ปี)<br>
+Fair F = 900 × e<sup>(0.02-0.025)×0.25</sup> = 900 × e<sup>-0.00125</sup> = 900 × 0.99875 = <strong>898.88</strong><br><br>
+Actual F = 905 → Overpriced by 905-898.88 = <strong>฿6.12</strong><br>
+→ Cash & Carry: ซื้อ SET50 spot basket + Short Futures → locked profit ≈ ฿6</div>
+
+<h3>15.5 Contango vs Backwardation</h3>
+<table>
+<tr><th>สภาพ</th><th>ลักษณะ</th><th>Arb</th></tr>
+<tr><td><strong>Contango</strong> (F > S)</td><td>ปกติ: carry cost เป็นบวก</td><td>Cash & Carry ถ้า premium สูงเกินไป</td></tr>
+<tr><td><strong>Backwardation</strong> (F < S)</td><td>ผิดปกติ: มักเกิดช่วง panic</td><td>Reverse Cash & Carry (ต้อง short spot ได้)</td></tr>
+</table>
+
+<!-- ========== CHAPTER 16 ========== -->
+<h2 id="ch16">บทที่ 16: Forex & Triangular Arbitrage</h2>
+
+<h3>16.1 Covered Interest Rate Parity (CIRP)</h3>
+<div class="fm" style="text-align:center;font-size:1.1em">F/S = (1 + r_domestic) / (1 + r_foreign)</div>
+<p>ถ้า CIRP ไม่เท่ากัน → Arb ระหว่าง FX spot, forward, และ interest rate [Exact Identity]</p>
+
+<h3>16.2 Triangular Arbitrage</h3>
+<div class="fm">3 exchange rates: USD/EUR, EUR/GBP, GBP/USD<br>
+ถ้า USD→EUR→GBP→USD ≠ 1.0 → กำไร!<br><br>
+ตัวอย่าง:<br>
+USD/EUR = 0.92, EUR/GBP = 0.86, GBP/USD = 1.28<br>
+เริ่ม $1,000 → €920 → £791.20 → $1,012.74<br>
+กำไร = $1,012.74 - $1,000 = <strong>$12.74</strong></div>
+
+<svg class="d" viewBox="0 0 520 220">
+<!-- Triangle -->
+<circle cx="260" cy="40" r="35" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="260" y="45" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#2563eb" font-weight="700">USD</text>
+<circle cx="100" cy="180" r="35" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="100" y="185" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">EUR</text>
+<circle cx="420" cy="180" r="35" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+<text x="420" y="185" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#d97706" font-weight="700">GBP</text>
+<!-- Arrows -->
+<line x1="230" y1="60" x2="130" y2="150" stroke="#2563eb" stroke-width="2"/>
+<text x="160" y="95" font-family="Sarabun" font-size="10" fill="#2563eb">×0.92</text>
+<line x1="135" y1="180" x2="385" y2="180" stroke="#16a34a" stroke-width="2"/>
+<text x="260" y="175" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a">×0.86</text>
+<line x1="390" y1="150" x2="290" y2="60" stroke="#d97706" stroke-width="2"/>
+<text x="355" y="95" font-family="Sarabun" font-size="10" fill="#d97706">×1.28</text>
+<!-- Result -->
+<text x="260" y="215" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">$1,000 → €920 → £791 → $1,013 = +$13!</text>
+</svg>
+
+<div class="bx br">
+<div class="bt">Forex Arb แทบไม่มีแล้ว</div>
+<p>HFT firms scan ทุก currency pair ทุก millisecond → violations หายใน microseconds<br>
+ต้องมี <strong>co-located servers + direct market access</strong> ถึงจะแข่งได้</p>
+</div>
+
+<!-- ========== CHAPTER 17 ========== -->
+<h2 id="ch17">บทที่ 17: ETF, ADR & Platform Arbitrage</h2>
+
+<h3>17.1 ETF NAV Arbitrage</h3>
+<div class="fm">ถ้า ETF Price > NAV → Authorized Participant ซื้อ basket → create ETF shares → ขาย<br>
+ถ้า ETF Price < NAV → AP ซื้อ ETF shares → redeem for basket → ขาย basket</div>
+
+<h3>17.2 Index Arbitrage</h3>
+<p>ดัชนี (Index) = weighted average ของหุ้น → ถ้า Index Futures ≠ fair value ของ basket → arb</p>
+
+<h3>17.3 Platform Arbitrage ★ จาก skill</h3>
+
+<table>
+<tr><th>Platform Block</th><th>Edge Source</th><th>วิธีใช้</th></tr>
+<tr><td><strong>Convert Rate Gap</strong></td><td>Pricing lag vs spot</td><td>ซื้อ convert ถูก → ขาย spot ทันที</td></tr>
+<tr><td><strong>Earn Promo</strong></td><td>Platform subsidy</td><td>ฝากรับ yield สูง + hedge ถ้าจำเป็น</td></tr>
+<tr><td><strong>New Listing Gap</strong></td><td>Spot ก่อน perp หรือกลับกัน</td><td>Basis capture ช่วง list ใหม่</td></tr>
+<tr><td><strong>Margin Offset</strong></td><td>Portfolio Margin mode</td><td>ลด capital ที่ต้องใช้ → ROI สูงขึ้น</td></tr>
+<tr><td><strong>Cross-Exchange Funding</strong></td><td>Funding rate ต่างกัน 2 exchanges</td><td>Long ที่ได้ funding + Short ที่จ่ายน้อยกว่า</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">Platform Blocks ≠ Instrument Blocks</div>
+<p>Instrument Blocks กำหนด <strong>รูปร่าง payoff</strong> (กำไร/ขาดทุนตามราคา)<br>
+Platform Blocks กำหนด <strong>เศรษฐศาสตร์</strong> (yield, cost, margin, timing)<br>
+<strong>Best structures ผสมทั้ง 2 ชั้น</strong> เช่น: Earn (platform) + Short Perp (instrument) = delta-neutral yield</p>
+</div>
+
+<h3>17.4 กรณีศึกษา: Flash Crash 2010</h3>
+<div class="bx ba">
+<div class="bt">Flash Crash — ETF Arb Breakdown</div>
+<p>6 May 2010: S&P 500 ลงไป -9% ใน 5 นาทีแล้วดีดกลับ<br>
+ETFs ตกหนักกว่า underlying → NAV arb mechanism พัง → <strong>premium/discount กว้างสุดขีด</strong><br>
+บทเรียน: Arb mechanism ทำงานได้ <strong>เมื่อตลาดปกติ</strong> — ช่วง panic อาจพังได้</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สรุป Part IV</div>
+<p>✓ <strong>Cash & Carry</strong>: F > Fair → ซื้อ spot ขาย futures → locked profit [Lv.2]<br>
+✓ <strong>Basis converges at expiry</strong> [Exact Identity]<br>
+✓ <strong>CIRP + Triangular Arb</strong>: 3 currencies → ต้อง HFT speed<br>
+✓ <strong>ETF NAV Arb</strong>: Create/Redeem mechanism<br>
+✓ <strong>Platform Arb</strong>: Convert gap, Earn promo, Cross-exchange funding<br>
+✓ <strong>Flash Crash lesson</strong>: Arb mechanism พังได้ช่วง extreme stress</p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part IV</p>
+<p>Part V: Statistical Arbitrage → Pairs Trading, Mean Reversion, Factor Models</p>
+</div>
+</body>
+</html>
