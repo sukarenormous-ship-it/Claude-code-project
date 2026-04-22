@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbitrage — Part II-A</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}h4{font-size:1.1em;font-weight:600;color:var(--g7);margin-top:1em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
+<div class="sub">Part II-A: วิธีคิดแบบ Arbitrageur (บท 4-6)</div>
+<div class="desc">หลักการคิด 7 ข้อ, Generalized Option Thinking,<br>Payoff Algebra, Epistemology — สอนวิธี "มอง" ไม่ใช่แค่ "สูตร"</div>
+</div>
+
+<!-- ========== CHAPTER 4 ========== -->
+<h2 id="ch4">บทที่ 4: หลักการคิดแบบ Arbitrageur</h2>
+
+<p>บทนี้ไม่ได้สอนสูตร — สอน<strong>วิธีมองโลก</strong>ที่ทำให้เห็น Arb ที่คนอื่นมองไม่เห็น</p>
+
+<h3>4.1 หลักการที่ 1: "ของเดียวกันต้องราคาเดียวกัน"</h3>
+<p>ทุกครั้งที่เห็นสินทรัพย์ ถามว่า: <strong>"มีวิธีอื่นสร้าง payoff เดียวกันไหม? ราคาเท่ากันไหม?"</strong></p>
+
+<div class="bx ba">
+<div class="bt">ฝึก</div>
+<p>เห็น SET50 Futures → ถามทันที: "Spot × e^((r-d)T) เท่าไร? ตรงกับ Futures price ไหม?"<br>
+เห็น Call K=100 → ถามทันที: "P + S - PV(K) เท่าไร? ตรงกับ Call price ไหม?"</p>
+</div>
+
+<h3>4.2 หลักการที่ 2: "ถ้าสร้างเองได้ = รู้ราคา"</h3>
+<p>ราคาที่ถูกต้อง = ต้นทุน replicate ถ้าราคาจริง ≠ ต้นทุน replicate → opportunity</p>
+
+<h3>4.3 หลักการที่ 3: "ได้อะไรมาต้องเสียอะไรไป"</h3>
+<p>ถ้าเจอ "กำไรแน่นอน 5% ต่อวัน" → <strong>99% มี risk ซ่อนอยู่</strong></p>
+
+<div class="bx br">
+<div class="bt">Devil's Advocate Checklist</div>
+<p>เจอ "arb" แล้วถามตัวเอง 6 ข้อ:<br>
+1. ข้อมูลผิดหรือเปล่า? (stale quote, wrong symbol)<br>
+2. ค่าธรรมเนียมคิดครบไหม?<br>
+3. Liquidity จริงไหม? (bid-ask wide, size เล็ก)<br>
+4. Execute ได้ทั้ง 2 ขาพร้อมกันไหม?<br>
+5. มี structural reason ไหม? (ex-div, corporate action)<br>
+6. <strong>ทำไมคนอื่นไม่ทำ?</strong> ← ข้อสำคัญที่สุด</p>
+</div>
+
+<h3>4.4 หลักการที่ 4: "ไม่รู้ exact แต่รู้ขอบเขต"</h3>
+<p>ราคานอกขอบเขต = Arb ที่พิสูจน์ได้ เช่น Call ≥ max(0, S-Ke⁻ʳᵀ) ← ถ้า Call < ค่านี้ → ซื้อทันที</p>
+
+<h3>4.5 หลักการที่ 5: "ลำดับต้องถูก"</h3>
+<div class="fm">Monotonicity: C(K₁) ≥ C(K₂) เมื่อ K₁ < K₂ ← Call ถูกลงเมื่อ Strike สูงขึ้น<br>
+Convexity:    C(K₁) - 2C(K₂) + C(K₃) ≥ 0 ← Butterfly ต้อง ≥ 0</div>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- Butterfly convexity check -->
+<defs><marker id="ar7" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="170" x2="490" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#ar7)"/>
+<line x1="60" y1="180" x2="60" y2="10" stroke="#374151" stroke-width="1" marker-end="url(#ar7)"/>
+<text x="495" y="174" font-family="Sarabun" font-size="10" fill="#374151">Strike (K)</text>
+<text x="25" y="15" font-family="Sarabun" font-size="10" fill="#374151">Call Price</text>
+<!-- Correct: convex curve -->
+<polyline points="100,30 200,70 300,120 400,155" stroke="#16a34a" stroke-width="2.5" fill="none"/>
+<circle cx="100" cy="30" r="4" fill="#16a34a"/><text x="90" y="22" font-family="Sarabun" font-size="9" fill="#16a34a">C(K₁)</text>
+<circle cx="200" cy="70" r="4" fill="#16a34a"/><text x="190" y="62" font-family="Sarabun" font-size="9" fill="#16a34a">C(K₂)</text>
+<circle cx="300" cy="120" r="4" fill="#16a34a"/><text x="290" y="112" font-family="Sarabun" font-size="9" fill="#16a34a">C(K₃)</text>
+<!-- Midpoint check line -->
+<line x1="100" y1="30" x2="300" y2="120" stroke="#d97706" stroke-width="1" stroke-dasharray="4"/>
+<circle cx="200" cy="75" r="3" fill="#d97706"/>
+<text x="215" y="85" font-family="Sarabun" font-size="9" fill="#d97706">midpoint = 75</text>
+<!-- Actual C(K₂) = 70, below midpoint → convex ✓ -->
+<text x="260" y="65" font-family="Sarabun" font-size="9" fill="#16a34a">C(K₂)=70 ≤ midpoint 75 ✓</text>
+<text x="260" y="190" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Convex → ไม่มี Butterfly Arb</text>
+</svg>
+
+<h3>4.6 หลักการที่ 6: "Call บอก Put, Put บอก Call"</h3>
+<p>จาก PCP: รู้ Call → คำนวณ Put ได้ทันที ถ้า market price ≠ theoretical → opportunity</p>
+
+<h3>4.7 หลักการที่ 7: Generalized Option Thinking ★</h3>
+
+<div class="bx bp">
+<div class="bt">แนวคิดจาก quant-arb-engine</div>
+<p><strong>"ทุกอย่างที่มี conditional payoff คือ option"</strong> — ไม่ใช่แค่ Call/Put บน exchange</p>
+</div>
+
+<table>
+<tr><th>สิ่งที่เห็น</th><th>Hidden Option ที่ซ่อนอยู่</th><th>วิธีคิด</th></tr>
+<tr><td>Funding rate</td><td>Option on carry regime</td><td>จ่ายถ้า basis กว้าง รับถ้าแคบ</td></tr>
+<tr><td>Stop-loss order</td><td>Synthetic put (มี execution risk)</td><td>"ถ้าราคาลงถึง X ขายทันที" = put ที่อาจ slip</td></tr>
+<tr><td>Earn yield 11%</td><td>Option on platform solvency</td><td>ได้ 11% ถ้า platform ไม่ล้ม</td></tr>
+<tr><td>PM Yes/No</td><td>Native digital option</td><td>จ่าย $1 ถ้าเหตุการณ์เกิด</td></tr>
+<tr><td>Weekend price gap</td><td>Option on reference absence</td><td>ราคา crypto เคลื่อนไหวแต่ TradFi ปิด</td></tr>
+<tr><td>Convert rate gap</td><td>Instant exercise option on pricing lag</td><td>ถ้าราคา convert ≠ spot → arb ทันที</td></tr>
+<tr><td>Liquidation cascade</td><td>Path-dependent barrier event</td><td>"ถ้าราคาลงถึง X → forced selling เพิ่ม"</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">กระบวนการ: เห็น conditional payoff → จัดหมวด → ใช้ประโยชน์</div>
+<p>ทุกครั้งที่เจอ conditional payoff ถามว่า:<br>
+1. <strong>Underlying</strong> คืออะไร? (ราคาหุ้น, solvency, เวลา?)<br>
+2. <strong>Strike/threshold</strong> อยู่ที่ไหน?<br>
+3. <strong>Expiry</strong> เมื่อไร?<br>
+4. <strong>Shape</strong>: linear, convex, binary?<br>
+5. <strong>Long/Short</strong>?<br>
+6. สามารถ <strong>combine</strong> กับ block อื่นได้ไหม?</p>
+</div>
+
+<!-- ========== CHAPTER 5 ========== -->
+<h2 id="ch5">บทที่ 5: Payoff Algebra — "เขียนสิ่งที่อยากได้เป็นสมการ แล้ว solve"</h2>
+
+<p>หนังสือส่วนใหญ่สอนย้อนกลับ: "นี่คือ Bull Call Spread มันมีหน้าตาแบบนี้"<br>
+บทนี้สอนไปข้างหน้า: <strong>"คุณอยากได้ payoff แบบนี้ → ต้องใช้ instruments อะไร?"</strong></p>
+
+<h3>5.1 Building Blocks — ชิ้นส่วนที่ใช้ประกอบ</h3>
+
+<p><strong>2 ชั้น</strong> ที่ต้องคิดพร้อมกัน:</p>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- Two layers -->
+<rect x="20" y="100" width="480" height="80" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="260" y="128" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#2563eb" font-weight="700">Instrument Blocks → กำหนดรูปร่าง Payoff</text>
+<text x="260" y="150" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151">Spot, Futures, Call, Put, Spread, PM Above, PM Range, Box, Conversion</text>
+<text x="260" y="168" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">"ถ้าราคาเป็นแบบนี้ → ได้/เสียเท่าไร"</text>
+
+<rect x="20" y="10" width="480" height="80" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="260" y="38" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">Platform Blocks → กำหนดเศรษฐศาสตร์</text>
+<text x="260" y="60" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151">Earn Yield, Convert Rate, Promo Rate, Margin Offset, Staking</text>
+<text x="260" y="78" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">"ต้นทุน, yield, margin ลดได้ไหม"</text>
+
+<text x="510" y="95" text-anchor="end" font-family="Sarabun" font-size="12" fill="#d97706" font-weight="700">ผสมทั้ง 2 ชั้น!</text>
+</svg>
+
+<h3>5.2 Step 1: เขียน Desired Payoff เป็น Piecewise Function</h3>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: "อยากได้กำไรถ้าราคาขึ้น แต่ไม่เกิน 2500 ไม่อยากเสียถ้าลง"</div>
+<p>แปลเป็น piecewise:</p>
+</div>
+
+<div class="fm">P(S) = { 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ถ้า S &lt; 2000 (ราคาปัจจุบัน)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ S - 2000 &nbsp; ถ้า 2000 ≤ S ≤ 2500<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ 500 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ถ้า S &gt; 2500</div>
+
+<h3>5.3 Step 2: Decompose เป็น Known Building Blocks</h3>
+
+<div class="fm">Building block payoffs:<br>
+&nbsp; Long Call(K) &nbsp;&nbsp;&nbsp;&nbsp;= max(S - K, 0)<br>
+&nbsp; Short Call(K) &nbsp;&nbsp; = -max(S - K, 0)<br>
+&nbsp; Call Spread(K₁,K₂) = max(S-K₁, 0) - max(S-K₂, 0)<br>
+&nbsp; PM Above Yes(K) = 1 ถ้า S &gt; K, else 0</div>
+
+<h3>5.4 Step 3: Solve — หา instruments ที่ตรงกัน</h3>
+
+<div class="fm">P(S) = { 0 ถ้า S &lt; 2000, S-2000 ถ้า 2000≤S≤2500, 500 ถ้า S &gt; 2500 }<br><br>
+นี่คือ: <strong>Call Spread(2000, 2500)</strong><br>
+= max(S-2000, 0) - max(S-2500, 0)<br>
+= { 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ✓ | S-2000 &nbsp; ✓ | 500 ✓ }<br><br>
+<strong>คำตอบ: ซื้อ 1× Call Spread (2000/2500)</strong></div>
+
+<svg class="d" viewBox="0 0 520 240">
+<!-- Payoff algebra decomposition -->
+<defs><marker id="ar8" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="60" y1="170" x2="490" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#ar8)"/>
+<line x1="60" y1="200" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#ar8)"/>
+<text x="495" y="174" font-family="Sarabun" font-size="10" fill="#374151">S</text>
+<!-- Desired payoff (green thick) -->
+<line x1="80" y1="170" x2="250" y2="170" stroke="#16a34a" stroke-width="3"/>
+<line x1="250" y1="170" x2="400" y2="60" stroke="#16a34a" stroke-width="3"/>
+<line x1="400" y1="60" x2="480" y2="60" stroke="#16a34a" stroke-width="3"/>
+<!-- Labels -->
+<text x="250" y="190" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K₁=2000</text>
+<text x="400" y="190" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K₂=2500</text>
+<text x="160" y="160" font-family="Sarabun" font-size="10" fill="#dc2626">0 (ไม่เสีย)</text>
+<text x="310" y="100" font-family="Sarabun" font-size="10" fill="#16a34a">slope +1</text>
+<text x="440" y="52" font-family="Sarabun" font-size="10" fill="#16a34a" font-weight="600">+500 (cap)</text>
+<!-- Long Call K1 (dashed blue) -->
+<line x1="80" y1="170" x2="250" y2="170" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4"/>
+<line x1="250" y1="170" x2="480" y2="12" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4"/>
+<text x="465" y="10" font-family="Sarabun" font-size="9" fill="#2563eb">Long Call 2000</text>
+<!-- Short Call K2 (dashed red) -->
+<line x1="80" y1="170" x2="400" y2="170" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4"/>
+<line x1="400" y1="170" x2="480" y2="115" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4"/>
+<text x="465" y="125" font-family="Sarabun" font-size="9" fill="#dc2626">Short Call 2500</text>
+<!-- Title -->
+<text x="260" y="225" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#16a34a" font-weight="700">= Call Spread(2000, 2500) → ซื้อ 1 ชุดจบ!</text>
+</svg>
+
+<h3>5.5 ตัวอย่างซับซ้อน: Piecewise → PM + Options</h3>
+
+<div class="fm">"อยากได้ +$100 ถ้า S &gt; 2500, +$50 ถ้า 2200 &lt; S ≤ 2500, -$20 ถ้า S ≤ 2200"<br><br>
+Decompose by jumps:<br>
+&nbsp; ที่ S=2200: payoff เปลี่ยนจาก -20 เป็น +50 (กระโดด +70)<br>
+&nbsp; ที่ S=2500: payoff เปลี่ยนจาก +50 เป็น +100 (กระโดด +50)<br><br>
+P(S) = -20 + 70 × 1(S &gt; 2200) + 50 × 1(S &gt; 2500)<br><br>
+คำตอบ:<br>
+&nbsp; -$20 (ต้นทุน entry)<br>
+&nbsp; + 70 × PM Above Yes($2200)  ← จ่าย $70 ถ้าเกิน 2200<br>
+&nbsp; + 50 × PM Above Yes($2500)  ← จ่าย $50 ถ้าเกิน 2500</div>
+
+<div class="bx bg">
+<div class="bt">พลังของ Payoff Algebra</div>
+<p>ไม่ต้องจำชื่อกลยุทธ์ — <strong>เขียนสิ่งที่อยากได้เป็นสมการ → solve → ได้ instruments</strong><br>
+สร้าง payoff shape อะไรก็ได้ที่นึกออก → ถ้า instruments มีอยู่ → สร้างได้!</p>
+</div>
+
+<!-- ========== CHAPTER 6 ========== -->
+<h2 id="ch6">บทที่ 6: Epistemology — "รู้ว่ารู้อะไร แน่ใจแค่ไหน"</h2>
+
+<p>Arb ที่ดีต้องแยกได้ว่า: <strong>"สิ่งที่รู้แน่ 100%" vs "สิ่งที่แค่เดา"</strong> — ถ้าแยกไม่ได้ จะ treat heuristic เหมือน exact identity → อันตราย</p>
+
+<h3>6.1 4 ระดับความแน่ใจ</h3>
+
+<svg class="d" viewBox="0 0 520 280">
+<!-- Pyramid of certainty -->
+<polygon points="260,20 60,260 460,260" fill="none" stroke="#374151" stroke-width="1.5"/>
+<!-- Level 1: Exact (bottom, widest, most certain) -->
+<rect x="100" y="200" width="320" height="55" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="260" y="222" text-anchor="middle" font-family="Sarabun" font-size="13" fill="#16a34a" font-weight="700">[Exact Identity]</text>
+<text x="260" y="242" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">PCP, Box Spread, PM Yes+No=$1 — จริงเสมอ ไม่มีเงื่อนไข</text>
+<!-- Level 2: Contract-specific -->
+<rect x="140" y="145" width="240" height="48" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="260" y="165" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">[Contract-specific]</text>
+<text x="260" y="182" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">จริงตาม rules ของ platform นั้น — ต้องเช็ค rules</text>
+<!-- Level 3: Observed -->
+<rect x="175" y="95" width="170" height="44" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+<text x="260" y="113" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#d97706" font-weight="700">[Observed]</text>
+<text x="260" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">เห็นจริง แต่ตัวเลขเปลี่ยนตามเวลา</text>
+<!-- Level 4: Heuristic (top, narrowest, least certain) -->
+<rect x="210" y="45" width="100" height="44" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+<text x="260" y="63" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="700">[Heuristic]</text>
+<text x="260" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">กฎทั่วไป อาจผิดได้</text>
+<!-- Arrow labels -->
+<text x="500" y="230" font-family="Sarabun" font-size="10" fill="#16a34a" font-weight="600">แน่ใจมาก</text>
+<text x="500" y="65" font-family="Sarabun" font-size="10" fill="#dc2626" font-weight="600">ไม่แน่ใจ</text>
+<line x1="495" y1="75" x2="495" y2="220" stroke="#374151" stroke-width="1" marker-end="url(#ar8)"/>
+</svg>
+
+<h3>6.2 ตัวอย่าง: Label Claims ที่ถูกต้อง</h3>
+
+<table>
+<tr><th>Claim</th><th>Label ที่ถูก</th><th>ทำไม</th></tr>
+<tr><td>C + Ke⁻ʳᵀ = P + S</td><td style="color:#16a34a;font-weight:700">[Exact Identity]</td><td>จริงเสมอ ไม่มีเงื่อนไข (European)</td></tr>
+<tr><td>PM Yes + PM No = $1.00</td><td style="color:#16a34a;font-weight:700">[Exact Identity]</td><td>โดย contract design</td></tr>
+<tr><td>Polymarket ใช้ Binance price เป็น resolver</td><td style="color:#2563eb;font-weight:700">[Contract-specific]</td><td>อาจเปลี่ยน platform ได้ ต้องเช็ค</td></tr>
+<tr><td>BTC funding rate = -0.002% เมื่อวาน</td><td style="color:#d97706;font-weight:700">[Observed]</td><td>จริงเมื่อวาน วันนี้อาจต่างแล้ว</td></tr>
+<tr><td>Funding rate มักจะ mean-revert</td><td style="color:#dc2626;font-weight:700">[Heuristic]</td><td>มักจริง แต่ไม่เสมอ (ช่วง bull run funding สูงนาน)</td></tr>
+<tr><td>IV > RV → ขาย options ได้กำไร</td><td style="color:#dc2626;font-weight:700">[Heuristic]</td><td>ส่วนใหญ่จริง แต่ tail event ทำให้เจ็บหนัก</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">Common Mistake: Treat Heuristic เหมือน Exact Identity</div>
+<p><strong>"Funding rate จะกลับมา"</strong> ← ถ้า treat เหมือน [Exact Identity] → size ใหญ่เกินไป → เจ็บหนักเมื่อ funding ไม่กลับ<br>
+ต้อง label ว่า [Heuristic] → size เล็กลง → รับได้ถ้าผิด</p>
+</div>
+
+<h3>6.3 วิธีใช้: Label ทุก claim ก่อนตัดสินใจ</h3>
+
+<div class="fm">เจอ "arb" → ก่อน execute ถามว่า:<br><br>
+1. Edge มาจากอะไร?<br>
+&nbsp;&nbsp; → ถ้า PCP violation → [Exact] → size ได้เต็มที่<br>
+&nbsp;&nbsp; → ถ้า "IV สูงเกินไป" → [Heuristic] → size ต้องเล็ก<br><br>
+2. ข้อมูลที่ใช้เป็น level ไหน?<br>
+&nbsp;&nbsp; → ถ้า live quote → [Observed] → ยังต้องเช็ค stale ไหม<br>
+&nbsp;&nbsp; → ถ้า "เมื่อเดือนก่อน IV ≈ 30%" → [Observed - stale] → ใช้ไม่ได้!</div>
+
+<div class="bx ba">
+<div class="bt">สรุป Part II-A (บท 4-6)</div>
+<p>ตอนนี้คุณมี:<br>
+✓ <strong>7 หลักการคิด</strong> ที่ช่วยมองเห็น Arb<br>
+✓ <strong>Generalized Option Thinking</strong> — ทุก conditional payoff คือ option<br>
+✓ <strong>Payoff Algebra</strong> — เขียนสิ่งที่อยากได้ → solve → ได้ instruments<br>
+✓ <strong>Epistemology</strong> — แยกได้ว่า claim แน่ใจระดับไหน → size ตาม<br><br>
+<strong>→ Part II-B: Arb Taxonomy, Non-Negative Design, Discovery Pipeline, Belief Patterns</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part II-A</p>
+</div>
+
+</body>
+</html>
