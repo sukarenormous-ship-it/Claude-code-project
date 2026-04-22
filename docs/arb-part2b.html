@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbitrage — Part II-B</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}h4{font-size:1.1em;font-weight:600;color:var(--g7);margin-top:1em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
+<div class="sub">Part II-B: Taxonomy, Non-Negative Design, Discovery Pipeline (บท 7-10)</div>
+<div class="desc">Lv.1-5 Taxonomy, Non-Negative Design Principle,<br>6-Stage Decision Flow, 6 Discovery Prompts, Belief Patterns</div>
+</div>
+
+<!-- ========== CHAPTER 7 ========== -->
+<h2 id="ch7">บทที่ 7: Arb Taxonomy — Lv.1 ถึง Lv.5</h2>
+
+<p>Arbitrage ไม่ใช่ขาว-ดำ (มี/ไม่มี) แต่เป็น <strong>spectrum</strong> — จาก "แน่นอน 100%" ไปจนถึง "เดาอย่างมีหลักการ"</p>
+
+<svg class="d" viewBox="0 0 520 140">
+<!-- Gradient bar -->
+<defs>
+<linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" style="stop-color:#16a34a"/>
+<stop offset="25%" style="stop-color:#2563eb"/>
+<stop offset="50%" style="stop-color:#7c3aed"/>
+<stop offset="75%" style="stop-color:#d97706"/>
+<stop offset="100%" style="stop-color:#dc2626"/>
+</linearGradient>
+</defs>
+<rect x="20" y="30" width="480" height="30" rx="15" fill="url(#grad1)" opacity="0.8"/>
+<!-- Level markers -->
+<text x="45" y="25" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="700">Lv.1</text>
+<text x="45" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Pure Arb</text>
+<text x="140" y="25" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Lv.2</text>
+<text x="140" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Near-Pure</text>
+<text x="260" y="25" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#7c3aed" font-weight="700">Lv.3</text>
+<text x="260" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Near-Arb</text>
+<text x="380" y="25" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#d97706" font-weight="700">Lv.4</text>
+<text x="380" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Structured</text>
+<text x="475" y="25" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="700">Lv.5</text>
+<text x="475" y="80" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Speculation</text>
+<!-- Labels -->
+<text x="45" y="100" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#16a34a">กำไรแน่</text>
+<text x="475" y="100" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#dc2626">เดาทิศทาง</text>
+<text x="260" y="125" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">← แน่นอนมาก &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ไม่แน่นอน →</text>
+</svg>
+
+<table>
+<tr><th>Level</th><th>ชื่อ</th><th>ตัวอย่าง</th><th>Risk</th><th>Position Size</th></tr>
+<tr><td style="color:#16a34a;font-weight:700">Lv.1</td><td>Pure Arb</td><td>Conversion, Box Spread, PM Yes+No&lt;$1</td><td>≈ 0 (execution only)</td><td>เต็มที่</td></tr>
+<tr><td style="color:#2563eb;font-weight:700">Lv.2</td><td>Near-Pure</td><td>Cash & Carry, Calendar Spread</td><td>ต่ำ (convergence)</td><td>สูง</td></tr>
+<tr><td style="color:#7c3aed;font-weight:700">Lv.3</td><td>Near-Arb</td><td>Funding Harvest, Earn+Hedge</td><td>กลาง (rate flip)</td><td>กลาง</td></tr>
+<tr><td style="color:#d97706;font-weight:700">Lv.4</td><td>Structured</td><td>Sell Vol, Pairs Trading, Weekend Gap</td><td>สูง (model risk)</td><td>เล็ก-กลาง</td></tr>
+<tr><td style="color:#dc2626;font-weight:700">Lv.5</td><td>Speculation</td><td>Directional + Hedge</td><td>สูงมาก</td><td>เล็ก (Kelly)</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">กฎสำคัญ: อย่าเรียก Lv.3+ ว่า "Arbitrage"</div>
+<p>Lv.3-5 <strong>ไม่ใช่ arb จริง</strong> — มีความเสี่ยง ต้องพูดตรงๆ ว่า:<br>
+"Lv.3 Near-Arb — carry risk ยังเหลืออยู่" ไม่ใช่ "arb ที่ไม่มีความเสี่ยง"</p>
+</div>
+
+<h3>7.1 Position Sizing: Kelly Criterion</h3>
+<div class="fm">f* = (b×p - q) / b<br><br>
+b = odds (จ่ายเท่าไรต่อ 1 บาทที่เสี่ยง)<br>
+p = probability of winning<br>
+q = 1 - p = probability of losing<br><br>
+ในทางปฏิบัติ: ใช้ <strong>Half-Kelly (f*/2)</strong> เพราะ overestimate edge ง่ายกว่า underestimate</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง</div>
+<p>Merger arb: Spread = ฿2.50 ถ้า deal สำเร็จ, เสีย ฿15 ถ้า fail<br>
+b = 2.50/15 = 0.167, p = 85%, q = 15%<br>
+f* = (0.167×0.85 - 0.15) / 0.167 = (0.142 - 0.15) / 0.167 = <strong>-0.05 → ไม่คุ้ม!</strong><br>
+ถ้า p = 92%: f* = (0.167×0.92 - 0.08) / 0.167 = 0.074/0.167 = <strong>0.44 → ใช้ 22% ของพอร์ต (Half-Kelly)</strong></p>
+</div>
+
+<!-- ========== CHAPTER 8 ========== -->
+<h2 id="ch8">บทที่ 8: Non-Negative Design Principle</h2>
+
+<p>จาก quant-arb-engine: วิธีออกแบบ trade ที่ <strong>ขาดทุนสูงสุด = 0 (หรือใกล้ 0)</strong> by design</p>
+
+<div class="bx bp">
+<div class="bt">หลักการ</div>
+<p><strong>Non-Negative Structure = Locked Edge (core) + Income Layers (bounded loss)</strong><br><br>
+กฎ: Max loss ของ income layers ทั้งหมดรวมกัน <strong>≤ locked edge เสมอ</strong></p>
+</div>
+
+<h3>8.1 อะไรคือ Locked Edge?</h3>
+
+<table>
+<tr><th>Instrument</th><th>Locked?</th><th>ทำไม</th><th>Epistemology</th></tr>
+<tr><td>Conversion (ครบทุกขา)</td><td style="color:#16a34a;font-weight:700">✅ Yes</td><td>PCP [Exact Identity]</td><td>[Exact]</td></tr>
+<tr><td>Dated Futures Basis</td><td style="color:#16a34a;font-weight:700">✅ Yes</td><td>Converge at expiry</td><td>[Exact]</td></tr>
+<tr><td>Box Spread (European)</td><td style="color:#16a34a;font-weight:700">✅ Yes</td><td>= PV(width)</td><td>[Exact]</td></tr>
+<tr><td>Cross-Platform PM (same resolver)</td><td style="color:#16a34a;font-weight:700">✅ Yes</td><td>Yes+No=$1</td><td>[Exact]</td></tr>
+<tr><td>Funding Rate carry</td><td style="color:#dc2626;font-weight:700">❌ No</td><td>Rate flip ได้ทุกเมื่อ</td><td>[Heuristic]</td></tr>
+<tr><td>Credit Spread (VRP)</td><td style="color:#dc2626;font-weight:700">❌ No</td><td>มี max loss scenario</td><td>[Heuristic]</td></tr>
+<tr><td>PM Tail Fade</td><td style="color:#dc2626;font-weight:700">❌ No</td><td>Tail event = full loss</td><td>[Heuristic]</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 220">
+<!-- Non-negative architecture diagram -->
+<!-- Base: Locked Edge -->
+<rect x="60" y="130" width="400" height="60" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+<text x="260" y="155" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">Locked Edge (Core)</text>
+<text x="260" y="175" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">Conversion ฿50 | Basis ฿30 | Box ฿20 → รวม ฿100</text>
+<!-- Top: Income Layers -->
+<rect x="80" y="50" width="160" height="65" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="160" y="75" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">Income Layer 1</text>
+<text x="160" y="92" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">Sell Put: max loss ฿40</text>
+<rect x="270" y="50" width="160" height="65" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="350" y="75" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#d97706" font-weight="600">Income Layer 2</text>
+<text x="350" y="92" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">PM Tail Fade: max loss ฿50</text>
+<!-- Constraint line -->
+<line x1="40" y1="130" x2="480" y2="130" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="490" y="134" font-family="Sarabun" font-size="9" fill="#dc2626">Max loss line</text>
+<!-- Check -->
+<text x="260" y="210" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Income max loss (฿40+฿50=฿90) ≤ Locked Edge (฿100) ✓ Non-Negative!</text>
+<!-- Label -->
+<text x="260" y="35" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">ถ้า income layers เสียหมด → locked edge ยังคุ้ม!</text>
+</svg>
+
+<h3>8.2 Sizing Rule</h3>
+<div class="fm">N_max = Locked_Edge / Max_Loss_Per_Contract<br><br>
+ตัวอย่าง: Locked Edge = ฿100, ขาย Put ที่ max loss = ฿25 ต่อสัญญา<br>
+N_max = 100 / 25 = <strong>4 สัญญา</strong> (ขายมากกว่านี้ = ไม่ non-negative แล้ว!)</div>
+
+<h3>8.3 Complexity Tax</h3>
+<div class="bx br">
+<div class="bt">ทุกขาที่เพิ่มมีต้นทุน</div>
+<p>Marginal cost ต่อขา ≈ 0.05-0.1% (fee + spread) + monitoring effort<br>
+<strong>กฎ: เพิ่ม N ขา → net edge ต้องเพิ่ม > N × marginal cost</strong><br>
+ถ้าไม่ → ลดขาให้เหลือน้อยที่สุด → <strong>simple beats complex</strong></p>
+</div>
+
+<!-- ========== CHAPTER 9 ========== -->
+<h2 id="ch9">บทที่ 9: การค้นหา — 6-Stage Pipeline + 6 Discovery Prompts</h2>
+
+<p>บทนี้สอน<strong>กระบวนการค้นหา Arb อย่างเป็นระบบ</strong> — ไม่ใช่แค่ "บังเอิญเจอ" แต่ "scan หาทุกวัน"</p>
+
+<h3>9.1 The 6-Stage Decision Flow</h3>
+
+<svg class="d" viewBox="0 0 520 320">
+<!-- 6 stages as connected boxes -->
+<rect x="20" y="10" width="140" height="40" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="90" y="35" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">1. OBSERVE</text>
+<line x1="160" y1="30" x2="180" y2="30" stroke="#374151" stroke-width="1.5"/>
+
+<rect x="185" y="10" width="140" height="40" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="255" y="35" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">2. FILTER</text>
+<line x1="325" y1="30" x2="345" y2="30" stroke="#374151" stroke-width="1.5"/>
+
+<rect x="350" y="10" width="140" height="40" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="420" y="35" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">3. MATCH</text>
+
+<line x1="420" y1="50" x2="420" y2="75" stroke="#374151" stroke-width="1.5"/>
+
+<rect x="350" y="80" width="140" height="40" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="420" y="105" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#7c3aed" font-weight="700">4. CREATE</text>
+
+<line x1="350" y1="100" x2="325" y2="100" stroke="#374151" stroke-width="1.5"/>
+
+<rect x="185" y="80" width="140" height="40" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+<text x="255" y="105" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#d97706" font-weight="700">5. VERIFY</text>
+
+<line x1="185" y1="100" x2="160" y2="100" stroke="#374151" stroke-width="1.5"/>
+
+<rect x="20" y="80" width="140" height="40" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="90" y="105" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#16a34a" font-weight="700">6. RANK</text>
+
+<!-- Descriptions below -->
+<text x="90" y="150" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">ดู products →</text>
+<text x="90" y="162" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">อ่าน regime</text>
+
+<text x="255" y="150" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">ตัด strategies</text>
+<text x="255" y="162" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">ที่ผิด regime</text>
+
+<text x="420" y="150" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">จับคู่ observation</text>
+<text x="420" y="162" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">กับ profiles</text>
+
+<text x="420" y="185" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#7c3aed">สร้าง structure</text>
+<text x="420" y="197" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#7c3aed">ใหม่ (ถ้าไม่มี)</text>
+
+<text x="255" y="185" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#d97706">4 Gates:</text>
+<text x="255" y="197" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#d97706">Numbers→Base→Feas→Data</text>
+
+<text x="90" y="185" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">จัดอันดับ:</text>
+<text x="90" y="197" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">Recommend/Cond/Watch</text>
+
+<!-- Alternative entries -->
+<rect x="20" y="230" width="480" height="70" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+<text x="260" y="250" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#374151" font-weight="600">Alternative Entries (ทางเข้าอื่น):</text>
+<text x="100" y="275" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#7c3aed">Belief → Skip 1-3</text>
+<text x="260" y="275" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#d97706">Education → Explain</text>
+<text x="420" y="275" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a">Scanner → Skip 1</text>
+</svg>
+
+<h3>9.2 Stage 1: OBSERVE — อ่าน Regime จาก Products</h3>
+
+<table>
+<tr><th>Product Signal</th><th>Bull</th><th>Sideways</th><th>Bear</th></tr>
+<tr><td>Futures Curve</td><td>Contango สูง</td><td>Flat</td><td>Backwardation</td></tr>
+<tr><td>Funding Rate</td><td>Positive สูง</td><td>≈ 0</td><td>Negative</td></tr>
+<tr><td>Options IV Skew</td><td>Call IV สูง</td><td>Balanced</td><td>Put skew สูง</td></tr>
+<tr><td>Earn/Promo Rates</td><td>ปกติ</td><td>ปกติ</td><td>สูงผิดปกติ (desperate)</td></tr>
+<tr><td>Order Book</td><td>หนา + แคบ</td><td>ปกติ</td><td>บาง + กว้าง (กลัว)</td></tr>
+</table>
+
+<div class="fm">≥4 signals ชี้ทิศเดียวกัน → HIGH CONFIDENCE regime<br>
+3 → MEDIUM | scattered → TRANSITION | ขัดแย้ง → MIXED</div>
+
+<h3>9.3 Stage 4: CREATE — 6 Discovery Prompts</h3>
+
+<p>เมื่อไม่มี profile ที่ match → ใช้ 6 prompts ค้นหาโอกาสใหม่ (เรียงจากเร็ว→ช้า):</p>
+
+<table>
+<tr><th>#</th><th>Prompt</th><th>ถาม</th><th>ตัวอย่าง</th></tr>
+<tr><td>1</td><td><strong>SUBSIDY</strong></td><td>Platform กำลังโปรโมทอะไร?</td><td>Earn 12% (ปกติ 4%) → subsidy 8%</td></tr>
+<tr><td>2</td><td><strong>TIME GAP</strong></td><td>ตลาดไหนเปิด/ปิดไม่ตรงกัน?</td><td>Crypto 24/7 แต่ทองปิดวีกเอนด์</td></tr>
+<tr><td>3</td><td><strong>WRONG CROWD</strong></td><td>ใครกำลังซื้อ/ขายผิดราคา?</td><td>IV 51% แต่ RV แค่ 27% → fear premium</td></tr>
+<tr><td>4</td><td><strong>FRICTION</strong></td><td>อะไรยากที่ทำให้คนอื่นไม่ทำ?</td><td>ต้อง 2 exchanges + margin ทั้งคู่</td></tr>
+<tr><td>5</td><td><strong>NEW PRODUCT</strong></td><td>มี product ใหม่ที่ยังไม่มีคนเข้าใจ?</td><td>Token ใหม่ list มี perp แต่ยังไม่มี options</td></tr>
+<tr><td>6</td><td><strong>ANALOGY</strong></td><td>มีอะไรที่คล้ายกันในตลาดอื่น?</td><td>ทำ vol arb ใน crypto เหมือนทำใน equity</td></tr>
+</table>
+
+<h3>9.4 Stage 5: VERIFY — 4 Gates</h3>
+
+<div class="fm">Gate 1: NUMBERS     → Net profit > 0 หลังหักทุก cost?<br>
+Gate 2: BASELINE    → ดีกว่า "ทำอะไรง่ายที่สุด" ไหม? (เช่น ฝาก Earn)<br>
+Gate 3: FEASIBILITY → Liquidity, settlement, margin พอไหม?<br>
+Gate 4: DATA        → ข้อมูลครบ verified หมดไหม?<br><br>
+0 unverified → RECOMMENDATION<br>
+1 unverified → CONDITIONAL<br>
+2+ unverified → CANDIDATE (ยังไม่แนะนำ)</div>
+
+<div class="bx ba">
+<div class="bt">Baseline Comparison — ต้องทำทุกครั้ง!</div>
+<p>"ทำ 3 ขา net 6% vs ฝาก Earn 1 ขา net 4%" → ถามว่า: <strong>2% เพิ่มคุ้มกับความซับซ้อน 3 ขาไหม?</strong><br>
+ถ้าไม่คุ้ม → ทำ Earn อย่างเดียว → <strong>simple wins</strong></p>
+</div>
+
+<!-- ========== CHAPTER 10 ========== -->
+<h2 id="ch10">บทที่ 10: Belief → Structure + Mental Models + Pattern Recognition</h2>
+
+<h3>10.1 Belief-Driven Entry — เริ่มจากมุมมอง</h3>
+<p>ไม่ต้องรอ scan → ถ้ามีมุมมอง → แปลงเป็น structure ได้ทันที</p>
+
+<table>
+<tr><th>Belief (มุมมอง)</th><th>Piecewise Payoff</th><th>Structure</th></tr>
+<tr><td>"ขึ้น แต่ไม่เกิน X"</td><td>0 → linear → cap</td><td>Bull Call Spread ± PM No(X)</td></tr>
+<tr><td>"ลง แต่ไม่หลุด Y"</td><td>cap → linear → 0</td><td>Bear Put Spread ± PM overlay</td></tr>
+<tr><td>"ผันผวนแน่ แต่ extreme overpriced"</td><td>V-shape with capped wings</td><td>Long body + Short wings</td></tr>
+<tr><td>"Sideways ใน range"</td><td>profit in range, loss outside</td><td>Iron Condor / PM Range</td></tr>
+<tr><td>"จะขึ้นแรง ลงก็ได้ไม่มาก"</td><td>capped loss + unlimited upside</td><td>Long Call + PM protection</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- Belief Pattern A: "ขึ้นไม่เกิน 2500" -->
+<defs><marker id="ar9" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="50" y1="150" x2="490" y2="150" stroke="#374151" stroke-width="1" marker-end="url(#ar9)"/>
+<line x1="50" y1="180" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#ar9)"/>
+<text x="495" y="154" font-family="Sarabun" font-size="10" fill="#374151">S</text>
+<text x="30" y="15" font-family="Sarabun" font-size="10" fill="#374151">P/L</text>
+<!-- Call Spread payoff (green) -->
+<line x1="70" y1="160" x2="200" y2="160" stroke="#16a34a" stroke-width="2.5"/>
+<line x1="200" y1="160" x2="350" y2="60" stroke="#16a34a" stroke-width="2.5"/>
+<line x1="350" y1="60" x2="470" y2="60" stroke="#16a34a" stroke-width="2.5"/>
+<!-- PM No overlay (dashed purple) -->
+<line x1="350" y1="80" x2="470" y2="80" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="440" y="74" font-family="Sarabun" font-size="9" fill="#7c3aed">PM No(2500)</text>
+<text x="440" y="92" font-family="Sarabun" font-size="8" fill="#7c3aed">+income ถ้าไม่ทะลุ</text>
+<!-- Labels -->
+<text x="200" y="178" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K₁=2000</text>
+<text x="350" y="178" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K₂=2500</text>
+<text x="260" y="195" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Belief: "ขึ้นไม่เกิน 2500" → Call Spread + PM No</text>
+</svg>
+
+<h3>10.2 Mental Models — กรอบคิดที่ช่วยเห็น Arb</h3>
+
+<div class="bx bb">
+<div class="bt">Model 1: "สร้างเองได้ = รู้ราคา"</div>
+<p>เห็นราคา → "สร้าง payoff เดียวกันด้วยวิธีอื่น cost เท่าไร?" → ถ้า cost ≠ ราคา → opportunity</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Model 2: "ข้อมูลขัดแย้ง = โอกาส"</div>
+<p>Prediction Market บอก 70% แต่ Options Implied Prob บอก 50% → ใครผิด? → investigate → trade</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Model 3: "อะไรต้องเท่ากัน? เช็คแล้วจริงไหม?"</div>
+<p>Daily Scan: PCP ✓ Box ✓ Basis ✓ Butterfly ✓ Monotonicity ✓ → ถ้าอันไหนไม่ผ่าน → dig deeper</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Model 4: "ถ้าดีเกินไป พลาดอะไร?"</div>
+<p>เจอ "arb 5% ต่อวัน" → Devil's Advocate 6 ข้อ → มักพบว่ามี hidden cost หรือ risk</p>
+</div>
+
+<h3>10.3 Pattern Recognition — "รูปแบบที่มักเป็น Arb"</h3>
+
+<table>
+<tr><th>Pattern</th><th>เมื่อไร</th><th>ทำไมเกิด</th></tr>
+<tr><td><strong>ราคาวิ่งไม่ทัน</strong></td><td>หลังข่าวใหญ่, market open</td><td>Options/Futures ยังไม่ปรับตาม spot</td></tr>
+<tr><td><strong>Forced trading</strong></td><td>Index rebalancing, Options expiry, Margin call</td><td>ถูกบังคับซื้อ/ขาย ไม่สนราคา</td></tr>
+<tr><td><strong>คนละตลาด คนละเวลา</strong></td><td>Asia close vs US open, Weekend</td><td>ราคายังไม่ sync ข้ามเขตเวลา</td></tr>
+<tr><td><strong>ซับซ้อนเกินคนทั่วไป</strong></td><td>Box Spread, Butterfly, Cross-asset</td><td>ต้องดูหลาย instruments พร้อมกัน</td></tr>
+<tr><td><strong>Behavioral bias</strong></td><td>หลัง crash (fear), Lottery effect</td><td>คนจ่ายแพงเกินไปเพราะอารมณ์</td></tr>
+</table>
+
+<h3>10.4 Common Traps — "ดูเหมือน Arb แต่ไม่ใช่"</h3>
+
+<table>
+<tr><th>ดูเหมือน Arb</th><th>จริงๆ คือ</th><th>วิธีเช็ค</th></tr>
+<tr><td>PCP violation ใหญ่</td><td>Dividend ที่ยังไม่ ex</td><td>เช็ค ex-div date</td></tr>
+<tr><td>Futures basis ผิดปกติ</td><td>Borrow cost สูง</td><td>คิด borrow cost</td></tr>
+<tr><td>Warrant ถูกกว่า BS</td><td>Issuer hedge cost ใน bid-ask</td><td>ดู actual bid-ask</td></tr>
+<tr><td>Pairs diverge</td><td>Structural break (M&A)</td><td>ทดสอบ cointegration ใหม่</td></tr>
+<tr><td>IV ต่ำผิดปกติ</td><td>หลัง earnings vol crush ปกติ</td><td>เช็ค event calendar</td></tr>
+<tr><td>Cross-market ราคาต่าง</td><td>Settlement/timezone/currency</td><td>ปรับ settlement + FX</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">สรุป Part II-B (บท 7-10)</div>
+<p>✓ <strong>Lv.1-5 Taxonomy</strong> — จำแนก arb ถูกระดับ size ถูก<br>
+✓ <strong>Non-Negative Design</strong> — Locked Edge + Income Layers = ขาดทุนสูงสุด ≈ 0<br>
+✓ <strong>6-Stage Pipeline</strong> — Observe→Filter→Match→Create→Verify→Rank<br>
+✓ <strong>6 Discovery Prompts</strong> — Subsidy, Time Gap, Wrong Crowd, Friction, New Product, Analogy<br>
+✓ <strong>4 Verification Gates</strong> — Numbers→Baseline→Feasibility→Data<br>
+✓ <strong>Belief → Structure</strong> — แปลงมุมมอง → piecewise payoff → instruments<br>
+✓ <strong>4 Mental Models</strong> + <strong>5 Patterns</strong> + <strong>6 Common Traps</strong><br><br>
+<strong>→ Part III: Options Arbitrage — ลงมือทำจริงกับ PCP, Box, Vol Arb</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part II-B</p>
+</div>
+
+</body>
+</html>
