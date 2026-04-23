@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตาของ Arbitrageur — Part I</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2.2em;line-height:1.2}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<!-- ===== PREFACE (short) ===== -->
+<div class="bx br">
+<div class="bt">ข้อควรทราบก่อนอ่าน</div>
+<p>• หนังสือเล่มนี้เป็นสื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน<br>
+• Prediction Markets (Polymarket, Kalshi) อาจจำกัดการเข้าถึงจากประเทศไทย<br>
+• ใช้ exchange ที่มีใบอนุญาตจาก กลต. เท่านั้น<br>
+• กำไรจาก arb เป็นรายได้ที่ต้องเสียภาษี<br>
+• ไม่มี trade ใดที่ "ไม่มีความเสี่ยง" จริง — แม้แต่ Lv.1 Pure Arb</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">คุณเขียนโค้ดไม่ได้? ไม่มี bot? มีเงิน ฿50,000? — ทำ Arb ได้ไหม?</div>
+<p><strong>ได้!</strong> แต่ต้องเลือกถูกประเภท:</p>
+<table>
+<tr><th>ทำได้ (manual, เงินน้อย)</th><th>ทำไม่ได้ (ต้อง bot/infra)</th></tr>
+<tr><td>Earn + Hedge (ฝาก+hedge)</td><td>PCP/Box Arb (หายใน seconds)</td></tr>
+<tr><td>Merger Arb (ซื้อถือรอ)</td><td>Triangular Forex (microseconds)</td></tr>
+<tr><td>Pairs Trading (เช็ควันละครั้ง)</td><td>Gamma Scalping (rehedge ทุก ชม.)</td></tr>
+<tr><td>PM Cross-Platform (เช็คด้วยตา)</td><td>MEV/Flash Loan (ต้อง Solidity)</td></tr>
+</table>
+<p><strong>กฎ:</strong> เริ่มจาก Lv.3-4 ที่ช้าพอ → สร้าง track record → ค่อยลงทุน infra</p>
+</div>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+<h1>ตาของ Arbitrageur<br>มองทุกอย่างเป็นโอกาส</h1>
+<div class="sub">Part I: เปลี่ยนสายตา — "ทุกอย่างคือ Option"</div>
+<div class="desc">บทที่ 1-4: เห็น Hidden Options ในชีวิตประจำวัน<br>จบ Part นี้ → มองโลกด้วยสายตาใหม่ ไม่เหมือนเดิมอีกต่อไป</div>
+</div>
+
+<!-- ===== CHAPTER 1 ===== -->
+<h2 id="ch1">บทที่ 1: คุณเห็น Option กี่ตัวในชีวิตประจำวัน?</h2>
+
+<p>ก่อนจะพูดเรื่องตลาดเงิน ลองมองสิ่งรอบตัวก่อน:</p>
+
+<div class="bx ba">
+<div class="bt">ร้านทอง สองฝั่งถนน ราคาต่างกัน ฿500</div>
+<p>ซื้อฝั่ง A ฿30,000 → ขายฝั่ง B ฿30,500 → กำไร ฿500 ทันที<br>
+นี่คือ Arbitrage ที่ง่ายที่สุด — <strong>ของเดียวกัน ราคาต่างกัน ซื้อถูกขายแพง</strong></p>
+</div>
+
+<p>แต่คุณรู้ไหมว่า สิ่งที่ทำให้ Arb เป็นไปได้คือการ <strong>"มองเห็น" ว่าสองสิ่งเป็นของเดียวกัน</strong>?</p>
+
+<p>ปี ค.ศ. 1688 ร้านกาแฟ Lloyd's ในลอนดอนเป็นที่ชุมนุมของพ่อค้าเรือ พวกเขา "ขายความเสี่ยง" ให้กัน — จ่ายเงินวันนี้ ถ้าเรือจม ได้ชดเชย ถ้าเรือถึงฝั่งปลอดภัย ไม่ได้อะไรคืน <strong>นี่คือ Put Option ตัวแรกของโลก!</strong> แต่สมัยนั้นไม่มีใครเรียกมันว่า "Option" — เรียกว่า "ประกันภัย"</p>
+
+<div class="bx bg">
+<div class="bt">Insight แรก: "Option" มีอยู่ทุกที่ แค่ชื่อต่างกัน</div>
+<p>ประกันภัย = Put Option | คูปองส่วนลด = Call Option | มัดจำคอนโด = Call Option<br>
+<strong>ทุกที่ที่มี "ถ้า...แล้ว..." คือ Option ที่ซ่อนอยู่</strong></p>
+</div>
+
+<h3>Options ในชีวิตประจำวัน</h3>
+
+<table>
+<tr><th>สิ่งที่เห็น</th><th>Option ที่ซ่อนอยู่</th><th>ใครเป็น Long?</th><th>ใครเป็น Short?</th></tr>
+<tr><td>ประกันรถ</td><td>Long Put — จ่ายเบี้ย ถ้าเกิดอุบัติเหตุได้ชดเชย</td><td>คุณ</td><td>บริษัทประกัน</td></tr>
+<tr><td>คูปอง "ลด 20% ภายในเดือนนี้"</td><td>Call Option — สิทธิ์ซื้อถูก มี expiry</td><td>คุณ</td><td>ร้านค้า</td></tr>
+<tr><td>วางมัดจำคอนโด ฿50,000</td><td>Call Option — premium=มัดจำ strike=ราคาคอนโด</td><td>คุณ</td><td>developer</td></tr>
+<tr><td>"คืนได้ภายใน 7 วัน"</td><td>Free Put Option — ไม่พอใจก็คืนได้</td><td>คุณ</td><td>ร้านค้า</td></tr>
+<tr><td>เงินเดือนประจำ</td><td>Bond — ได้เงินคงที่ทุกเดือน</td><td>คุณ</td><td>บริษัท</td></tr>
+<tr><td>โบนัส "ถ้ายอดขายถึงเป้า"</td><td>Digital Call — ได้โบนัสถ้า KPI > target</td><td>คุณ</td><td>บริษัท</td></tr>
+<tr><td>ร่มราคา ฿100 วันฝนตก</td><td>Put on being wet — จ่าย ฿100 ป้องกัน downside</td><td>คุณ</td><td>คนขายร่ม</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 260">
+<!-- "Everything is an Option" concept lens -->
+<text x="260" y="25" text-anchor="middle" font-family="Sarabun" font-size="16" fill="#2563eb" font-weight="800">ทุกอย่างคือ Option</text>
+<!-- Center circle -->
+<circle cx="260" cy="140" r="50" fill="#eff6ff" stroke="#2563eb" stroke-width="2.5"/>
+<text x="260" y="135" text-anchor="middle" font-family="Sarabun" font-size="12" fill="#2563eb" font-weight="700">ถ้า...แล้ว...</text>
+<text x="260" y="152" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#2563eb">= Option</text>
+<!-- Surrounding examples -->
+<rect x="10" y="50" width="100" height="40" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="60" y="75" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a" font-weight="600">ประกัน=Put</text>
+<line x1="110" y1="70" x2="210" y2="120" stroke="#16a34a" stroke-width="1" stroke-dasharray="3"/>
+
+<rect x="10" y="170" width="100" height="40" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="60" y="195" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#d97706" font-weight="600">คูปอง=Call</text>
+<line x1="110" y1="190" x2="210" y2="160" stroke="#d97706" stroke-width="1" stroke-dasharray="3"/>
+
+<rect x="410" y="50" width="100" height="40" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+<text x="460" y="75" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#dc2626" font-weight="600">มัดจำ=Call</text>
+<line x1="410" y1="70" x2="310" y2="120" stroke="#dc2626" stroke-width="1" stroke-dasharray="3"/>
+
+<rect x="410" y="170" width="100" height="40" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="460" y="195" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#7c3aed" font-weight="600">โบนัส=Digital</text>
+<line x1="410" y1="190" x2="310" y2="160" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3"/>
+
+<rect x="170" y="220" width="180" height="30" rx="6" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+<text x="260" y="240" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">คืนได้7วัน = Free Put | เงินเดือน = Bond</text>
+</svg>
+
+<div class="bx bp">
+<div class="bt">เสียงจากสนาม — Options Trader (20 ปี)</div>
+<p><em>"Every illiquid asset has a massive embedded short put you're not pricing. Real estate, private equity, your job — they all look like steady returns until redemption gates slam shut."</em><br><br>
+แปล: ทุกสินทรัพย์ที่ซื้อง่ายขายยาก (อสังหา, PE, แม้แต่งานประจำ) มี Short Put ซ่อนอยู่ — ดูเหมือนผลตอบแทนคงที่ จนกว่าวันที่ "ขายไม่ได้"</p>
+</div>
+
+<h3>Running Example: BTC/USDT บน 2 Exchanges</h3>
+<p>ตลอดเล่มนี้ เราจะใช้ตัวอย่างเดียวกันซ้ำทุกบท เพื่อให้เห็นว่าแนวคิดเดียวกัน "มองได้หลายมุม":</p>
+
+<div class="fm">Running Example:<br>
+BTC/USDT ซื้อขายบน Exchange A (ราคา $67,500) และ Exchange B (ราคา $67,800)<br>
+ส่วนต่าง = $300 = "arb" หรือเปล่า?<br>
+→ คำตอบจะเปลี่ยนทุกบท เมื่อคุณมีเครื่องมือ "มอง" เพิ่มขึ้น</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 1)</div>
+<p>1. หาสิ่งรอบตัวที่มี "ถ้า...แล้ว..." 5 อย่าง → จัดหมวดว่าเป็น Call, Put, หรือ Digital?<br>
+2. งานประจำของคุณเป็น "Option ประเภทไหน?" (คำใบ้: เงินเดือน=Bond, โบนัส=Digital Call, ถูกไล่ออก=?)<br>
+<em>เฉลย: 1. ตัวอย่าง: warranty=Put, happy hour=Call, ฯลฯ 2. ถูกไล่ออก = Short Put ถูก exercise → เสียรายได้ทั้งหมดทันที</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 1</div>
+<p>1. <strong>ทุกที่ที่มี "ถ้า...แล้ว..." = Option ที่ซ่อนอยู่</strong><br>
+2. ประกัน = Put, คูปอง = Call, มัดจำ = Call, โบนัส = Digital<br>
+3. สิ่งที่ illiquid (ขายยาก) = มี embedded Short Put ที่ยังไม่ price</p>
+</div>
+
+<!-- ===== CHAPTER 2 ===== -->
+<h2 id="ch2">บทที่ 2: Conditional Payoff Framework — "ถ้า X แล้ว Y"</h2>
+
+<p>บทที่แล้วเราเห็นว่า Options ซ่อนอยู่ทุกที่ บทนี้สอน <strong>"วิธีจัดหมวด"</strong> อย่างเป็นระบบ — เห็นอะไรก็ได้ → ถาม 5 คำถาม → ได้โครงสร้าง Option</p>
+
+<h3>5 คำถามที่ต้องถามทุกครั้ง</h3>
+
+<div class="fm">เห็น conditional payoff → ถาม:<br>
+1. <strong>Underlying</strong> — อะไรเป็นตัวแปร? (ราคาหุ้น? สภาพอากาศ? ยอดขาย?)<br>
+2. <strong>Strike</strong> — เกณฑ์ตัดสินอยู่ที่ไหน? (ราคาเท่าไร? KPI เท่าไร?)<br>
+3. <strong>Expiry</strong> — หมดอายุเมื่อไร? (สิ้นเดือน? ไม่มีกำหนด?)<br>
+4. <strong>Shape</strong> — ได้เท่าไร? (ได้ตามส่วน=linear, ได้หมดหรือไม่ได้เลย=binary)<br>
+5. <strong>Direction</strong> — คุณเป็น Long หรือ Short? (ได้ประโยชน์เมื่อเกิด หรือเสียเมื่อเกิด?)</p>
+</div>
+
+<h3>ตัวอย่าง: "ถ้า Bitcoin > $100K ภายในธันวาคม"</h3>
+<table>
+<tr><th>คำถาม</th><th>คำตอบ</th></tr>
+<tr><td>1. Underlying</td><td>ราคา BTC/USD</td></tr>
+<tr><td>2. Strike</td><td>$100,000</td></tr>
+<tr><td>3. Expiry</td><td>31 ธันวาคม</td></tr>
+<tr><td>4. Shape</td><td>Binary — ได้ $1 หรือ $0</td></tr>
+<tr><td>5. Direction</td><td>Long (ถ้าซื้อ "Yes")</td></tr>
+</table>
+
+<p><strong>ผลลัพธ์:</strong> = Digital Call Option = PM Above Yes($100K) → <strong>ชื่อต่างกัน แต่เป็นของเดียวกัน!</strong></p>
+
+<h3>ตัวอย่าง: "Bybit Earn ให้ 11% APR ถ้าฝาก XAUT"</h3>
+<table>
+<tr><th>คำถาม</th><th>คำตอบ</th></tr>
+<tr><td>1. Underlying</td><td>Platform solvency (Bybit ไม่ล้ม)</td></tr>
+<tr><td>2. Strike</td><td>Bankruptcy threshold</td></tr>
+<tr><td>3. Expiry</td><td>Continuous (จนกว่าจะถอน)</td></tr>
+<tr><td>4. Shape</td><td>Yield ถ้า platform OK, เสียทั้งหมดถ้าล้ม</td></tr>
+<tr><td>5. Direction</td><td>Short Put on solvency (คุณรับ risk ว่า platform จะไม่ล้ม)</td></tr>
+</table>
+
+<div class="bx bp">
+<div class="bt">เสียงจากสนาม — Insurance Actuary (20 ปี)</div>
+<p><em>"When a counterparty eagerly takes your trade, ask why. You're the sick person who thinks they're the underwriter."</em><br><br>
+แปล: เมื่อ counterparty อยากทำ trade กับคุณง่ายๆ → ถามว่าทำไม — คุณอาจเป็นคนป่วยที่คิดว่าตัวเองเป็นบริษัทประกัน</p>
+</div>
+
+<h3>Running Example กลับมา</h3>
+<div class="fm">BTC/USDT: Exchange A = $67,500, Exchange B = $67,800<br><br>
+จัดหมวดส่วนต่าง $300 ด้วย 5 คำถาม:<br>
+1. Underlying = BTC price<br>
+2. Strike = ไม่มี (linear, ไม่ใช่ binary)<br>
+3. Expiry = ทันที (ถ้าโอนเร็วพอ)<br>
+4. Shape = Linear — ได้ $300 ต่อ 1 BTC<br>
+5. Direction = Long (ซื้อ A ขาย B)<br><br>
+= <strong>Spot arbitrage</strong> → แต่ต้องถามต่อว่า: "ค่าโอน + เวลาโอน + ราคาเปลี่ยนระหว่างโอน = เท่าไร?"</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 2)</div>
+<p>จัดหมวด 5 คำถาม สำหรับ:<br>
+1. "ถ้าฝนตก คอนเสิร์ตยกเลิก ได้เงินคืน" → Underlying=? Strike=? Shape=?<br>
+2. "Funding rate -0.03%/8hr บน Bybit" → ใครเป็น Long? ใครเป็น Short?<br>
+<em>เฉลย: 1. Underlying=สภาพอากาศ, Strike=ฝนตก (binary), Shape=digital put (ได้คืนหมดหรือไม่ได้เลย), Expiry=วันงาน 2. Long perp รับ funding (Short market direction), Short perp จ่าย funding (Long market direction) — funding = option on basis regime</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 2</div>
+<p>1. เห็นอะไรก็ได้ → <strong>ถาม 5 คำถาม</strong> → ได้โครงสร้าง Option<br>
+2. "Earn yield" ไม่ใช่ free money — คุณเป็น <strong>Short Put on platform solvency</strong><br>
+3. ชื่อต่างกัน ("ประกัน", "PM", "Earn") แต่โครงสร้าง Option เหมือนกัน → <strong>เปรียบเทียบราคาได้!</strong></p>
+</div>
+
+<!-- ===== CHAPTER 3 ===== -->
+<h2 id="ch3">บทที่ 3: ทำไม "มองเป็น Option" ถึงทรงพลัง?</h2>
+
+<p>ถ้าทุกอย่างเป็น Option แล้วได้อะไร? ได้ <strong>3 superpowers</strong>:</p>
+
+<h3>Superpower 1: ทุกอย่างมี "ราคาที่ถูกต้อง"</h3>
+<p>เมื่อจัดหมวดเป็น Option แล้ว → <strong>คำนวณราคาได้</strong> (ไม่ต้องเดา)<br>
+ถ้าราคาจริง ≠ ราคาที่คำนวณได้ → <strong>opportunity!</strong></p>
+
+<h3>Superpower 2: เปรียบเทียบข้ามตลาดได้</h3>
+<p>"BTC > $100K" ถูก price ใน <strong>3 ตลาด</strong>พร้อมกัน:</p>
+<table>
+<tr><th>ตลาด</th><th>Product</th><th>Implied Probability</th></tr>
+<tr><td>Prediction Market</td><td>PM Above Yes($100K) = $0.62</td><td><strong>62%</strong></td></tr>
+<tr><td>Options Market</td><td>Tight Call Spread at $100K</td><td><strong>55%</strong></td></tr>
+<tr><td>Betting</td><td>Odds 1.65 = 1/1.65</td><td><strong>61%</strong></td></tr>
+</table>
+<p><strong>สามตลาด ของเดียวกัน ราคาต่างกัน</strong> → ซื้อที่ถูกที่สุด ขายที่แพงที่สุด!</p>
+
+<h3>Superpower 3: Resolution Risk = Tradeable Edge</h3>
+<p>ตลาดที่ต่างกันมี <strong>วิธี settle ต่างกัน</strong>:</p>
+<table>
+<tr><th>ลักษณะ</th><th>PM (Polymarket)</th><th>Options (Deribit)</th><th>Betting</th></tr>
+<tr><td>Settlement</td><td>UMA oracle, 2hr challenge</td><td>Index price at expiry</td><td>Bookmaker decision</td></tr>
+<tr><td>Type</td><td>Touch (แตะ=จบ) vs Close</td><td>European (ณ expiry)</td><td>Full-time result</td></tr>
+<tr><td>Resolver</td><td>Binance spot price</td><td>Deribit BTC Index</td><td>Official result</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">ทำไม Resolution Risk สำคัญ?</div>
+<p><strong>"Touch" vs "Close"</strong> สร้าง spread ใหญ่:<br>
+PM "BTC hits $100K in June" (touch — แตะครั้งเดียวก็ resolve) = $0.62<br>
+Options Call $100K June (close — ราคา ณ expiry เท่านั้น) implied = 45%<br>
+<strong>Gap 17%!</strong> แต่ไม่ใช่ arb จริง เพราะ "touch" มีโอกาสเกิดมากกว่า "close at expiry"<br>
+→ ต้องเข้าใจ resolution ก่อนจะบอกว่า "ราคาต่าง = arb"</p>
+</div>
+
+<h3>Running Example กลับมา</h3>
+<div class="fm">BTC: Exchange A = $67,500, Exchange B = $67,800<br>
+ตอนนี้ถาม: "ของเดียวกัน" จริงไหม?<br>
+→ Exchange A อาจ settle ด้วย USDT (Tether) ส่วน Exchange B ใช้ USDC<br>
+→ USDT อาจมี risk สูงกว่า USDC → ราคาต่าง $300 อาจ = "risk premium" ไม่ใช่ "arb"!<br>
+<strong>Superpower: มองเห็นว่า "ของที่ดูเหมือนกัน อาจไม่เหมือนกันจริง"</strong></div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 3)</div>
+<p>1. PM "ETH > $3,000 by June" = $0.45 แต่ Options implied prob = 52% → gap 7% → arb ไหม? ต้องเช็คอะไร?<br>
+2. ประกันชีวิต 2 บริษัท ชดเชยเท่ากัน แต่ราคาเบี้ยต่างกัน 20% → เป็น "arb" หรือ "resolution risk"?<br>
+<em>เฉลย: 1. เช็ค: PM=touch หรือ close? resolver เดียวกันไหม? settlement date ตรงไหม? fees? → ถ้าตรงหมด gap 7% อาจเป็น edge จริง 2. Resolution risk: บริษัทไหนจ่ายเร็วกว่า? เงื่อนไขต่างกันไหม? ถ้าเงื่อนไขเหมือนกันจริง → 20% คือ mispricing!</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 3</div>
+<p>1. มองเป็น Option → <strong>คำนวณราคาได้ + เปรียบเทียบข้ามตลาดได้</strong><br>
+2. ของที่ "ดูเหมือนกัน" อาจไม่เหมือนจริง → <strong>ต้องเช็ค resolution / settlement / resolver</strong><br>
+3. Resolution Risk ไม่ใช่ปัญหา — มันเป็น <strong>tradeable edge</strong> ถ้าเข้าใจมัน</p>
+</div>
+
+<!-- ===== CHAPTER 4 ===== -->
+<h2 id="ch4">บทที่ 4: Replication — "ถ้าสร้างเองได้ = รู้ราคาที่ถูกต้อง"</h2>
+
+<p>Superpower ตัวสุดท้ายของ Part I: <strong>ถ้าสร้าง payoff เดียวกันด้วย 2 วิธี → ราคาต้องเท่ากัน</strong></p>
+
+<div class="fm">ราคาที่ถูกต้องของ X = ต้นทุนในการ "สร้าง X ขึ้นมาเอง"<br>
+ถ้าราคา X ≠ ต้นทุน replicate → ซื้อถูก ขายแพง → Arb</div>
+
+<h3>ตัวอย่าง: Synthetic Stock = Real Stock</h3>
+<p>Long Call + Short Put (Strike เดียวกัน) + Bond = <strong>Stock</strong><br>
+ถ้า Synthetic ราคา ฿95 แต่ Real Stock ราคา ฿100 → ซื้อ Synthetic ขาย Real → กำไร ฿5</p>
+
+<h3>แน่ใจแค่ไหน? — 4 ระดับของ Claim</h3>
+
+<p>ไม่ใช่ทุก "arb" ที่แน่ใจเท่ากัน — เปรียบเหมือนยา:</p>
+
+<table>
+<tr><th>ระดับ</th><th>เปรียบเทียบ</th><th>ตัวอย่าง</th><th>ควร size เท่าไร</th></tr>
+<tr><td style="color:#16a34a;font-weight:700">[Exact Identity]</td><td>ยาที่ FDA approved</td><td>PCP: C+Ke⁻ʳᵀ = P+S</td><td>เต็มที่</td></tr>
+<tr><td style="color:#2563eb;font-weight:700">[Contract-specific]</td><td>ยาที่ approved ในบางประเทศ</td><td>PM Yes+No = $1 (ตาม rules ของ platform)</td><td>สูง (เช็ค rules ก่อน)</td></tr>
+<tr><td style="color:#d97706;font-weight:700">[Observed]</td><td>ยาที่ทดลองแล้ว ได้ผลกับคน 100 คน</td><td>BTC funding rate ลบ 3 วันแล้ว</td><td>กลาง (อาจเปลี่ยน)</td></tr>
+<tr><td style="color:#dc2626;font-weight:700">[Heuristic]</td><td>ยาพื้นบ้าน "คนบอกว่าได้ผล"</td><td>"Funding rate จะ mean-revert"</td><td>เล็ก (อาจผิด!)</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">กฎทอง: Label ก่อน Size</div>
+<p>ก่อน execute ทุกครั้ง ถามว่า claim นี้เป็น [Exact] หรือ [Heuristic]?<br>
+<strong>ถ้า Exact → size เต็ม | ถ้า Heuristic → size เล็ก</strong><br>
+คนที่เจ็บหนักที่สุดคือคนที่ treat Heuristic เหมือน Exact → size เกิน → เจ็บเมื่อ heuristic ผิด</p>
+</div>
+
+<h3>Running Example — Final ของ Part I</h3>
+<div class="fm">BTC: Exchange A = $67,500, Exchange B = $67,800, gap = $300<br><br>
+ตอนนี้มีเครื่องมือ "มอง" ครบแล้ว:<br>
+1. <strong>บท 1:</strong> "ส่วนต่าง $300 = opportunity?"<br>
+2. <strong>บท 2:</strong> จัดหมวด: Underlying=BTC, Shape=linear, Expiry=ทันที<br>
+3. <strong>บท 3:</strong> เช็ค resolution: USDT vs USDC? Settlement เหมือนกัน?<br>
+4. <strong>บท 4:</strong> Label: [Observed] — gap อาจหายก่อนโอนเสร็จ<br>
+→ <strong>ไม่ใช่ [Exact] arb → size ต้องเล็ก + ต้องคิดค่าโอนและ timing risk</strong></div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 4)</div>
+<p>1. "IV > RV → ขาย Options ได้กำไร" — นี่เป็น claim ระดับอะไร? ควร size เท่าไร?<br>
+2. "Call + Ke⁻ʳᵀ = Put + Stock" — นี่เป็น claim ระดับอะไร? ถ้าผิดมีผลอะไร?<br>
+<em>เฉลย: 1. [Heuristic — Tested] → size เล็ก เพราะ tail event อาจทำให้ RV>>IV ทำลาย P&L 2. [Exact Identity] → จริงเสมอ (European, no dividend) ถ้าเห็น violation = arb ที่พิสูจน์ได้ทางคณิตศาสตร์</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 4</div>
+<p>1. <strong>ราคาที่ถูกต้อง = ต้นทุน replicate</strong> ถ้าสร้าง payoff เดียวกัน 2 วิธี ราคาต้องเท่ากัน<br>
+2. <strong>Label ก่อน Size:</strong> [Exact] → เต็มที่ | [Heuristic] → เล็กเท่านั้น<br>
+3. Running Example สอน: <strong>gap ที่เห็นไม่ได้หมายความว่าเป็น arb เสมอ</strong> — ต้องผ่าน 4 บทก่อนสรุป</p>
+</div>
+
+<!-- ===== PART I SUMMARY ===== -->
+<div class="bx bg">
+<div class="bt">สรุป Part I — คุณเปลี่ยนสายตาแล้ว! (Part 1/5 ✓)</div>
+<p>ตอนนี้คุณ:<br>
+✓ เห็น <strong>Hidden Options ในชีวิตประจำวัน</strong> (ประกัน=Put, คูปอง=Call, Earn=Short Put)<br>
+✓ ใช้ <strong>5 คำถาม</strong> จัดหมวดทุก conditional payoff ได้<br>
+✓ เข้าใจ <strong>3 superpowers</strong>: คำนวณราคาได้ + เทียบข้ามตลาดได้ + Resolution Risk = edge<br>
+✓ <strong>Label claims</strong> ก่อน size ทุกครั้ง: Exact vs Heuristic<br><br>
+<strong>Action:</strong> เปิด exchange account 1 แห่ง + ดู option chain จริงครั้งแรก<br><br>
+<strong>→ Part II: เครื่องมือมองทะลุ — ถอดโครงสร้าง + ประกอบใหม่ + แปลข้ามตลาด</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part I</p>
+</div>
+
+</body>
+</html>
