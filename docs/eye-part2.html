@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตาของ Arbitrageur — Part II</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>ตาของ Arbitrageur<br>มองทุกอย่างเป็นโอกาส</h1>
+<div class="sub">Part II: เครื่องมือมองทะลุ (บท 5-8)</div>
+<div class="desc">ถอดโครงสร้าง + ประกอบใหม่ + แปลข้ามตลาด + Adverse Selection<br>จบ Part นี้ → เปรียบเทียบราคาข้ามตลาดได้</div>
+</div>
+
+<!-- ===== CHAPTER 5 ===== -->
+<h2 id="ch5">บทที่ 5: Payoff Deconstruction — "ถอดเลโก้"</h2>
+
+<p>ทุก financial product = ชิ้นเลโก้หลายชิ้นประกอบกัน ถ้าถอดออกได้ → รู้ว่าแต่ละชิ้นราคาเท่าไร → รู้ว่าราคารวมถูกหรือแพงเกินไป</p>
+
+<h3>ตัวอย่าง: Structured Note "คืนเงินต้น + 50% upside"</h3>
+<div class="fm">ธนาคารขาย Structured Note ฿105:<br>
+"ได้เงินต้นคืนแน่ + ถ้าหุ้นขึ้น ได้ 50% ของ upside"<br><br>
+ถอดเลโก้:<br>
+ชิ้นที่ 1: Bond (คืนเงินต้น) = ฿97 (PV ของเงินต้น)<br>
+ชิ้นที่ 2: 0.5 × Call Option = ฿5 (ครึ่งหนึ่งของ Call)<br>
+ต้นทุนจริง = 97 + 5 = <strong>฿102</strong><br><br>
+ธนาคารขาย ฿105 → <strong>คุณจ่ายแพงเกิน ฿3!</strong><br>
+ถ้าซื้อ Bond + Call เอง = ถูกกว่า ฿3</div>
+
+<div class="bx bg">
+<div class="bt">หลักการ: ถ้าถอดได้ = รู้ราคาจริง</div>
+<p>ทุก product ที่ "ซับซ้อน" สามารถถอดเป็น building blocks ง่ายๆ ได้<br>
+<strong>ความซับซ้อน = premium ที่คนจ่ายเพราะไม่เข้าใจ</strong> → ถ้าเข้าใจ = ไม่ต้องจ่าย!</p>
+</div>
+
+<h3>Building Blocks พื้นฐาน</h3>
+<table>
+<tr><th>Block</th><th>Payoff</th><th>รูปร่าง</th></tr>
+<tr><td><strong>Long Call(K)</strong></td><td>max(S-K, 0)</td><td>หักศอกขึ้น ↗</td></tr>
+<tr><td><strong>Long Put(K)</strong></td><td>max(K-S, 0)</td><td>หักศอกลง ↘</td></tr>
+<tr><td><strong>Long Stock</strong></td><td>S - entry</td><td>เส้นตรงเฉียง ↗</td></tr>
+<tr><td><strong>Bond</strong></td><td>PV(K) → K at expiry</td><td>แบนราบ —</td></tr>
+<tr><td><strong>PM Above Yes(K)</strong></td><td>$1 ถ้า S>K, else $0</td><td>กระโดด ⎾</td></tr>
+<tr><td><strong>PM Range(L,U)</strong></td><td>$1 ถ้า L≤S≤U, else $0</td><td>สี่เหลี่ยม ⊓</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 5)</div>
+<p>DW (Derivative Warrant) ในตลาด SET ราคา ฿1.50 → ถอดดู = Call Option ที่ issuer กิน spread เท่าไร?<br>
+(คำใบ้: คำนวณ BS theoretical price → เทียบกับ DW price → ส่วนต่าง = issuer's margin)<br>
+<em>เฉลย: ถ้า BS price = ฿1.20 แต่ DW ขาย ฿1.50 → issuer กิน ฿0.30 (25%!) นี่คือ "complexity premium"</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 5</div>
+<p>1. ทุก product ซับซ้อน = <strong>building blocks ง่ายๆ รวมกัน</strong><br>
+2. ถอดได้ = รู้ราคาจริง → <strong>ถ้าราคาสูงกว่า = จ่าย complexity premium</strong><br>
+3. Structured Note, DW, Insurance package ล้วนมี <strong>hidden markup</strong></p>
+</div>
+
+<!-- ===== CHAPTER 6 ===== -->
+<h2 id="ch6">บทที่ 6: Payoff Construction — "ต่อเลโก้"</h2>
+
+<p>กลับด้านจากบท 5: เริ่มจาก <strong>"อยากได้ payoff แบบนี้"</strong> → ต่อจาก blocks → ได้ structure</p>
+
+<h3>ขั้นตอน 3 ขั้น</h3>
+<div class="fm">Step 1: เขียน "สิ่งที่อยากได้" เป็น piecewise function<br>
+Step 2: จับคู่กับ building blocks ที่รู้จัก<br>
+Step 3: เลือก instruments ที่ถูกที่สุด (อาจมีหลายวิธีสร้าง!)</div>
+
+<h3>ตัวอย่าง: "กำไรถ้าขึ้น แต่ไม่เกิน $2,500 ไม่อยากเสียถ้าลง"</h3>
+<div class="fm">Step 1 — Piecewise:<br>
+&nbsp; P(S) = { 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ถ้า S &lt; $2,000<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; { S-2000 &nbsp; ถ้า $2,000 ≤ S ≤ $2,500<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; { 500 &nbsp;&nbsp;&nbsp;&nbsp; ถ้า S &gt; $2,500<br><br>
+Step 2 — จับคู่:<br>
+&nbsp; = Long Call($2,000) - Long Call($2,500) = <strong>Call Spread(2000,2500)</strong><br><br>
+Step 3 — เลือก:<br>
+&nbsp; วิธี A: ซื้อ Call Spread บน exchange<br>
+&nbsp; วิธี B: ซื้อ PM Above Yes($2,000) + PM Above No($2,500)<br>
+&nbsp; → <strong>เทียบราคา → ซื้อวิธีที่ถูกกว่า!</strong></div>
+
+<div class="bx bg">
+<div class="bt">พลังของ Payoff Construction</div>
+<p>ไม่ต้องจำชื่อ strategy (Bull Call Spread, Iron Condor, Butterfly...)<br>
+<strong>แค่เขียนสิ่งที่อยากได้ → solve → ได้ instruments</strong><br>
+คุณไม่ได้ "ใช้ strategy ที่มีอยู่" — คุณ <strong>"ประดิษฐ์ strategy ที่ต้องการ"</strong></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 6)</div>
+<p>"อยากได้ +$100 ถ้าราคาอยู่ระหว่าง $80K-$100K ไม่อยากเสียเกิน $20"<br>
+→ เขียน piecewise → จับคู่ → มี 2 วิธี: Options (Butterfly) vs PM (Range Yes) → อันไหนถูกกว่า?<br>
+<em>เฉลย: Piecewise = {-20 นอก range, +100 ใน range} = PM Range Yes($80K-$100K) × N contracts, หรือ = Iron Butterfly centered at $90K → เทียบราคาทั้งสอง!</em></p>
+</div>
+
+<!-- ===== CHAPTER 7 ===== -->
+<h2 id="ch7">บทที่ 7: Cross-Market Translation — "ชุดเดียวกัน แค่ใส่ต่างกัน"</h2>
+
+<p><strong>บทสำคัญที่สุดของเล่ม</strong> — สิ่งเดียวกัน มีชื่อต่างกันในแต่ละตลาด</p>
+
+<table>
+<tr><th>สิ่งที่ต้องการ</th><th>Options</th><th>PM</th><th>Insurance</th><th>Betting</th><th>DeFi</th></tr>
+<tr><td>"จ่ายถ้าเกิน X"</td><td>Call(X)</td><td>Above Yes</td><td>ประกันภัย</td><td>Over X</td><td>Call on DEX</td></tr>
+<tr><td>"จ่ายถ้าต่ำกว่า X"</td><td>Put(X)</td><td>Above No</td><td>ชดเชย</td><td>Under X</td><td>Liquidation protect</td></tr>
+<tr><td>"จ่ายถ้าอยู่ในช่วง"</td><td>Butterfly</td><td>Range Yes</td><td>—</td><td>Band bet</td><td>Range order</td></tr>
+<tr><td>"ไม่เสียเกิน X"</td><td>Protective Put</td><td>—</td><td>Deductible</td><td>—</td><td>Stop-loss</td></tr>
+</table>
+
+<div class="bx bp">
+<div class="bt">เสียงจากสนาม — Sports Bettor (20 ปี)</div>
+<p><em>"Pinnacle (sharp, tight lines) = Deribit. Bet365 (soft, limits winners) = retail CEX. Local bookies (slow, stale lines) = illiquid DEX pools. The principle is identical: latency arbitrage against the slowest price-setter."</em><br><br>
+แปล: ตลาดทุกประเภทมีลำดับชั้นเดียวกัน: sharp → soft → slow → <strong>arb คือซื้อจาก slow ขายใน sharp</strong></p>
+</div>
+
+<h3>Overround = Skew Stripping</h3>
+<div class="fm">Bookmaker: ฟุตบอล ทีม A ชนะ odds 2.10 | เสมอ 3.30 | ทีม B ชนะ 3.50<br>
+Implied prob: 47.6% + 30.3% + 28.6% = <strong>106.5%</strong> (ไม่ใช่ 100%!)<br>
+ส่วนเกิน 6.5% = <strong>overround = margin ของ bookmaker</strong><br><br>
+เทียบกับ Options: IV ที่ quote มา ก็มี "skew markup" ซ่อนอยู่<br>
+<strong>วิธีหา fair probability: ลบ overround ออก = เหมือน strip skew ออกจาก IV</strong></div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 7)</div>
+<p>PM "Fed ลดดอกเบี้ยในมีนาคม" = 62¢, CME Fed Funds Futures implied = 74%<br>
+→ Gap 12% → เป็น arb ไหม? ต้องเช็คอะไรก่อน?<br>
+<em>เฉลย: เช็ค: PM settlement=อะไร? (UMA oracle vs CME official), Timing ตรงกันไหม?, Fees (PM 10% on profit?), Access (คนไทยซื้อ PM ได้ไหม?) → ถ้าตรงหมดและ net > 0 หลังหัก fees = real edge</em></p>
+</div>
+
+<!-- ===== CHAPTER 8 ===== -->
+<h2 id="ch8">บทที่ 8: "ราคาต่างกัน ทำไม?" — Adverse Selection + MM View</h2>
+
+<p>เมื่อเห็น "ของเดียวกัน ราคาต่าง" อย่ารีบดีใจ → ถามว่า <strong>"ทำไม?"</strong></p>
+
+<h3>8-Point Checklist</h3>
+<div class="fm">เห็นราคาต่าง → เช็ค 8 ข้อ:<br>
+1. Settlement ต่างกันไหม? (cash vs physical)<br>
+2. Expiry ตรงกันไหม?<br>
+3. Exercise style? (European vs American)<br>
+4. Liquidity? (bid-ask ของแต่ละตลาด)<br>
+5. Counterparty risk? (exchange vs DeFi vs P2P)<br>
+6. Fees? (PM 10% vs Options 0.1%)<br>
+7. Capital lock-up? (margin vs full payment)<br>
+8. Regulatory? (ทำได้ทั้ง 2 ตลาดไหม?)<br><br>
+<strong>ผ่านทั้ง 8 ข้อ + ยังราคาต่าง = arb จริง!</strong><br>
+ผ่านไม่ครบ = มี "แต่" ที่อธิบายส่วนต่าง → อาจเป็น near-arb</div>
+
+<div class="bx bp">
+<div class="bt">เสียงจากสนาม — Market Maker (20 ปี)</div>
+<p><em>"The 'arbs' retail traders find are usually the ones we've decided aren't worth defending. Your weakness: you need us more than we need you."</em><br><br>
+แปล: arb ที่คุณเห็น = arb ที่ Market Maker ตัดสินใจแล้วว่าไม่คุ้มปกป้อง คุณต้องการเขามากกว่าเขาต้องการคุณ</p>
+</div>
+
+<div class="bx br">
+<div class="bt">Adverse Selection — "ถ้า fill ง่ายเกินไป..."</div>
+<p>ถ้าคุณเข้า "arb" แล้ว <strong>fill ได้ทันที size ใหญ่ ไม่มีปัญหา</strong> → ถามตัวเอง:<br>
+<strong>"ทำไมอีกฝ่ายยินดีเป็น counterparty ให้ผม?"</strong><br>
+→ เขาอาจรู้อะไรที่คุณไม่รู้ → คุณอาจเป็น "เหยื่อ" ไม่ใช่ "arbitrageur"<br><br>
+กฎ: <strong>ยิ่ง fill ง่าย ยิ่งต้องสงสัย</strong></p>
+</div>
+
+<div class="bx bp">
+<div class="bt">เสียงจากสนาม — Insurance Actuary (20 ปี)</div>
+<p><em>"In insurance, healthy people don't buy coverage — the sick do. In arb, if you're easily filled on a 'mispricing,' you're the sick person who thinks they're the underwriter."</em></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 8)</div>
+<p>คุณเห็น BTC Call K=$70K ราคา $500 บน Exchange X แต่ Exchange Y ขาย $400 → ส่วนต่าง $100<br>
+คุณส่ง order ซื้อที่ Y fill ทันที 100 contracts → ดีใจ! แต่...<br>
+→ ทำไม fill ง่ายขนาดนั้น? เช็ค 8-point checklist → พบว่า Exchange Y มี settlement delay 3 วัน → ราคาอาจเปลี่ยนก่อน settle!<br>
+<em>เฉลย: Adverse Selection — Exchange Y ราคาถูกเพราะ settlement risk สูงกว่า → ไม่ใช่ arb จริง แค่ risk premium</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำจากบท 8</div>
+<p>1. เห็นราคาต่าง → <strong>เช็ค 8-point checklist ก่อนสรุป</strong><br>
+2. <strong>ถ้า fill ง่ายเกินไป = สงสัยไว้ก่อน</strong> (Adverse Selection)<br>
+3. Market Maker เห็นคุณก่อนที่คุณจะเห็นเขา — <strong>เข้าใจอีกฝั่งของ trade</strong></p>
+</div>
+
+<!-- ===== PART II SUMMARY ===== -->
+<div class="bx bg">
+<div class="bt">สรุป Part II — คุณมีเครื่องมือมองทะลุแล้ว! (Part 2/5 ✓)</div>
+<p>ตอนนี้คุณ:<br>
+✓ <strong>ถอดโครงสร้าง</strong> financial products ได้ (Bond + Call = Structured Note)<br>
+✓ <strong>ประกอบ payoff ที่ต้องการ</strong>ได้เอง (Belief → Piecewise → Instruments)<br>
+✓ <strong>แปลข้ามตลาด</strong>ได้ (Options ↔ PM ↔ Insurance ↔ Betting ↔ DeFi)<br>
+✓ เข้าใจ <strong>Adverse Selection</strong> + <strong>Market Maker</strong> perspective<br><br>
+<strong>Action:</strong> ทำ Daily Scan Checklist ด้วยมือ 1 ครั้ง (PCP, Basis, Monotonicity)<br><br>
+→ Part III: มองทะลุในสนามจริง — Case Studies เชิงลึก</p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part II</p>
+</div>
+</body>
+</html>
