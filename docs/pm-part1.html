@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payoff Mastery — Part I</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2.2em;line-height:1.2}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cover">
+<h1>Payoff Mastery</h1>
+<div class="sub">Part I: Put-Call Parity — สมการเดียวที่อธิบายทุกอย่าง</div>
+<div class="desc">บทที่ 1-4: ทบทวน Payoff Charts, PCP, 6 Synthetics, Conversion/Box<br>ปูจากศูนย์จนจัดรูป PCP หลับตาได้</div>
+</div>
+
+<!-- ========== CH 1 ========== -->
+<h2 id="ch1">บทที่ 1: ทบทวน Payoff Chart — "แผนที่ของทุก trade"</h2>
+
+<p>ก่อนจะเข้า PCP ต้องวาด Payoff Chart ได้คล่องก่อน — นี่คือ 4 building blocks ที่ทุกอย่างสร้างจาก:</p>
+
+<h3>4 Building Blocks (K=100, Premium=5)</h3>
+
+<table>
+<tr><th>Position</th><th>Payoff Formula</th><th>Max Profit</th><th>Max Loss</th><th>Break-even</th></tr>
+<tr><td><strong>Long Call</strong></td><td>max(0, S-K) - P</td><td>ไม่จำกัด</td><td>-฿5</td><td>฿105</td></tr>
+<tr><td><strong>Short Call</strong></td><td>P - max(0, S-K)</td><td>+฿5</td><td>ไม่จำกัด</td><td>฿105</td></tr>
+<tr><td><strong>Long Put</strong></td><td>max(0, K-S) - P</td><td>฿95</td><td>-฿5</td><td>฿95</td></tr>
+<tr><td><strong>Short Put</strong></td><td>P - max(0, K-S)</td><td>+฿5</td><td>-฿95</td><td>฿95</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 280">
+<!-- 4 payoff shapes in 2x2 grid -->
+<!-- Long Call (top-left) -->
+<text x="130" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Long Call</text>
+<line x1="20" y1="130" x2="240" y2="130" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="20" y1="90" x2="130" y2="90" stroke="#dc2626" stroke-width="2.5"/>
+<line x1="130" y1="90" x2="240" y2="25" stroke="#16a34a" stroke-width="2.5"/>
+<text x="70" y="85" font-family="Sarabun" font-size="8" fill="#dc2626">-P</text>
+<text x="130" y="108" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">K</text>
+
+<!-- Short Call (top-right) -->
+<text x="390" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">Short Call</text>
+<line x1="280" y1="130" x2="500" y2="130" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="280" y1="170" x2="390" y2="170" stroke="#16a34a" stroke-width="2.5"/>
+<line x1="390" y1="170" x2="500" y2="235" stroke="#dc2626" stroke-width="2.5"/>
+<text x="330" y="165" font-family="Sarabun" font-size="8" fill="#16a34a">+P</text>
+<text x="390" y="148" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">K</text>
+
+<!-- Long Put (bottom-left) -->
+<text x="130" y="155" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="600">Long Put</text>
+<line x1="20" y1="270" x2="240" y2="270" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="20" y1="165" x2="130" y2="230" stroke="#16a34a" stroke-width="2.5"/>
+<line x1="130" y1="230" x2="240" y2="230" stroke="#dc2626" stroke-width="2.5"/>
+<text x="190" y="225" font-family="Sarabun" font-size="8" fill="#dc2626">-P</text>
+<text x="130" y="248" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">K</text>
+
+<!-- Short Put (bottom-right) -->
+<text x="390" y="155" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">Short Put</text>
+<line x1="280" y1="270" x2="500" y2="270" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="280" y1="235" x2="390" y2="170" stroke="#dc2626" stroke-width="2.5"/>
+<line x1="390" y1="170" x2="500" y2="170" stroke="#16a34a" stroke-width="2.5"/>
+<text x="450" y="165" font-family="Sarabun" font-size="8" fill="#16a34a">+P</text>
+<text x="390" y="188" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">K</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">กฎพื้นฐาน</div>
+<p><strong>Short = พลิก Long กลับหัว</strong> (mirror ผ่านเส้นศูนย์)<br>
+จำแค่ 2 รูป (Call shape + Put shape) แล้วพลิกสำหรับ Short → ได้ 4 ตำแหน่ง</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 1)</div>
+<p>K=100, P=8 → Long Call BE = ? Max Loss = ? | Long Put BE = ? Max Loss = ?<br>
+<em>เฉลย: LC BE=108, MaxLoss=-8 | LP BE=92, MaxLoss=-8</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำ</div>
+<p>1. มี 4 building blocks: Long/Short Call + Long/Short Put<br>
+2. Short = พลิก Long → จำแค่ 2 รูป<br>
+3. ทุก strategy ที่ซับซ้อนกว่านี้ = 4 blocks นี้ประกอบกัน</p>
+</div>
+
+<!-- ========== CH 2 ========== -->
+<h2 id="ch2">บทที่ 2: Put-Call Parity — "สมการที่ทรงพลังที่สุด"</h2>
+
+<div class="fm" style="text-align:center;font-size:1.3em;padding:20px">C + K·e⁻ʳᵀ = P + S</div>
+
+<div class="bx ba">
+<div class="bt">e⁻ʳᵀ คืออะไร? (สำหรับผู้อ่านใหม่)</div>
+<p><strong>e⁻ʳᵀ = "ตัวคูณลดค่า"</strong> — แปลงเงินอนาคตเป็นมูลค่าวันนี้<br>
+K=100, r=5%, T=0.5 ปี → Ke⁻ʳᵀ = 100 × e⁻⁰·⁰²⁵ = <strong>฿97.53</strong><br>
+= "ฝาก ฿97.53 วันนี้ ดอกเบี้ย 5% → 6 เดือนหลังได้ ฿100 พอดี" = <strong>PV(K)</strong></p>
+</div>
+
+<h3>พิสูจน์ PCP ด้วย Payoff Chart</h3>
+
+<p><strong>ฝั่งซ้าย:</strong> Long Call + Bond (เงินสด K ณ expiry)</p>
+<div class="fm">ถ้า S > K: ใช้สิทธิ์ Call ซื้อที่ K + มีเงินสด K → ขาย Call ได้ S, ยังมีเงินสด K → ได้ S<br>
+ถ้า S ≤ K: Call หมดค่า + มีเงินสด K → ได้ K<br>
+→ ฝั่งซ้ายได้ = <strong>max(S, K)</strong></div>
+
+<p><strong>ฝั่งขวา:</strong> Long Put + Stock</p>
+<div class="fm">ถ้า S > K: Put หมดค่า + มีหุ้นมูลค่า S → ได้ S<br>
+ถ้า S ≤ K: ใช้สิทธิ์ Put ขายที่ K + หุ้น → ได้ K<br>
+→ ฝั่งขวาได้ = <strong>max(S, K)</strong></div>
+
+<div class="bx bg">
+<div class="bt">ทั้งสองฝั่ง = max(S, K) เสมอ!</div>
+<p>ไม่ว่าราคาจะจบที่ไหน → ทั้งสองฝั่งให้ผลเท่ากัน → <strong>ราคาวันนี้ต้องเท่ากัน</strong><br>
+นี่คือ Put-Call Parity: <strong>C + PV(K) = P + S</strong> [Exact Identity — จริงเสมอสำหรับ European Options]</p>
+</div>
+
+<svg class="d" viewBox="0 0 520 200">
+<!-- PCP overlay: two payoffs = same -->
+<defs><marker id="pm1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+<line x1="50" y1="150" x2="490" y2="150" stroke="#374151" stroke-width="1" marker-end="url(#pm1)"/>
+<line x1="50" y1="180" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#pm1)"/>
+<text x="495" y="154" font-family="Sarabun" font-size="10" fill="#374151">S</text>
+<text x="25" y="15" font-family="Sarabun" font-size="10" fill="#374151">Payoff</text>
+<!-- K line -->
+<line x1="260" y1="155" x2="260" y2="30" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3"/>
+<text x="260" y="170" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">K</text>
+<!-- Left side: Call + Bond (blue) -->
+<line x1="80" y1="80" x2="260" y2="80" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="260" y1="80" x2="460" y2="30" stroke="#2563eb" stroke-width="2.5"/>
+<text x="430" y="25" font-family="Sarabun" font-size="10" fill="#2563eb" font-weight="600">Call+Bond</text>
+<!-- Right side: Put + Stock (orange dashed) — SAME shape -->
+<line x1="80" y1="80" x2="260" y2="80" stroke="#f97316" stroke-width="2" stroke-dasharray="6,3"/>
+<line x1="260" y1="80" x2="460" y2="30" stroke="#f97316" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="430" y="45" font-family="Sarabun" font-size="10" fill="#f97316" font-weight="600">Put+Stock</text>
+<!-- Overlap note -->
+<text x="260" y="195" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="700">ซ้อนทับกันพอดี! → ราคาต้องเท่ากัน</text>
+</svg>
+
+<h3>ตัวอย่างตัวเลข</h3>
+<div class="fm">S=100, K=100, r=5%, T=0.5, C=8.50, P=5.80<br><br>
+ฝั่งซ้าย: C + PV(K) = 8.50 + 97.53 = <strong>106.03</strong><br>
+ฝั่งขวา: P + S = 5.80 + 100 = <strong>105.80</strong><br>
+ต่าง = 0.23 → <strong>Violation!</strong> แต่หลังหัก costs อาจไม่เหลือ (ดูบท 4)</div>
+
+<div class="bx br">
+<div class="bt">Phantom Arb — ระวัง!</div>
+<p>ถ้าลืมใส่ e⁻ʳᵀ แล้วคำนวณ C + K (แทนที่จะเป็น C + Ke⁻ʳᵀ):<br>
+C + K = 8.50 + 100 = 108.50 vs P + S = 105.80 → <strong>ต่าง ฿2.70!</strong><br>
+แต่ ฿2.47 ของส่วนต่างนี้คือ <strong>phantom arb</strong> จากการลืม discount!<br>
+Arb จริงมีแค่ ฿0.23 (ถ้ามี) — <strong>นี่คือ mistake ที่พบบ่อยที่สุดของ PCP</strong></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">PCP ใช้ได้เมื่อไร?</div>
+<p><strong>✅ European Options</strong> (ใช้สิทธิ์ได้แค่วันหมดอายุ)<br>
+<strong>⚠️ American Options</strong> → เป็น inequality ไม่ใช่ equality (เพราะ early exercise)<br>
+<strong>⚠️ มี Dividend</strong> → ต้องปรับ: C + PV(K) = P + S − PV(Dividends)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 2)</div>
+<p>C=12, P=7, S=100, K=100, r=2%, T=1 → PV(K) = 100×e⁻⁰·⁰² = 98.02<br>
+ฝั่งซ้าย = ? ฝั่งขวา = ? มี violation ไหม? ถ้ามีทำอะไร?<br>
+<em>เฉลย: ซ้าย=12+98.02=110.02, ขวา=7+100=107.00 → violation ฿3.02 → ซ้าย>ขวา → Conversion (ซื้อขวา ขายซ้าย)</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำ</div>
+<p>1. <strong>C + PV(K) = P + S</strong> — จริงเสมอสำหรับ European Options<br>
+2. <strong>อย่าลืม PV(K)!</strong> ใช้ Ke⁻ʳᵀ ไม่ใช่ K → ลืม = เห็น phantom arb ฿2.47<br>
+3. ทั้งสองฝั่ง = max(S,K) ที่ expiry → payoff เท่ากัน → ราคาต้องเท่ากัน</p>
+</div>
+
+<!-- ========== CH 3 ========== -->
+<h2 id="ch3">บทที่ 3: Synthetic Positions — "จัดรูป PCP = สร้างทุกอย่าง"</h2>
+
+<p>จากสมการเดียว C + B = P + S (B = PV(K)) → จัดรูปใหม่ได้ <strong>6 Synthetics</strong> (3 คู่ Long/Short):</p>
+
+<h3>คู่ที่ 1: Synthetic Stock</h3>
+<div class="fm"><strong>Synthetic Long Stock</strong> = Long Call + Short Put + Bond<br>
+S = C − P + B<br><br>
+<strong>Synthetic Short Stock</strong> = Short Call + Long Put − Bond<br>
+−S = −C + P − B</div>
+
+<div class="bx ba"><div class="bt">ใช้เมื่อไร?</div>
+<p>ยืมหุ้นไม่ได้ (short sell ban) → สร้าง Synthetic Short Stock แทน<br>
+ต้องการ stock exposure แต่ไม่อยากซื้อหุ้นจริง (leverage) → ใช้ Synthetic Long Stock</p></div>
+
+<h3>คู่ที่ 2: Synthetic Call</h3>
+<div class="fm"><strong>Synthetic Long Call</strong> = Long Stock + Long Put − Bond<br>
+C = S + P − B<br><br>
+<strong>Synthetic Short Call</strong> = Short Stock + Short Put + Bond<br>
+−C = −S − P + B</div>
+
+<h3>คู่ที่ 3: Synthetic Put</h3>
+<div class="fm"><strong>Synthetic Long Put</strong> = Long Call + Short Stock + Bond<br>
+P = C − S + B<br><br>
+<strong>Synthetic Short Put</strong> = Short Call + Long Stock − Bond<br>
+−P = −C + S − B</div>
+
+<div class="bx bg">
+<div class="bt">กฎทอง: "ถ้าไม่มี X → สร้างจาก Y + Z"</div>
+<p>ไม่ต้องจำ 6 สูตร — แค่จัดรูป C + B = P + S แล้วแยกตัวที่ต้องการไปอยู่ฝั่งซ้าย<br>
+ทุก Synthetic payoff <strong>"same shape"</strong> กับของจริง (ต่างกันแค่ค่าคงที่จาก financing)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 3)</div>
+<p>1. ต้องการ Short Put แต่ broker ไม่อนุญาต → สร้าง Synthetic ยังไง?<br>
+2. Synthetic Long Stock ราคา ฿98 แต่หุ้นจริงราคา ฿100 → ทำอะไรได้?<br>
+<em>เฉลย: 1. −P = −C + S − B → Short Call + Long Stock − Bond 2. ซื้อ Synthetic ฿98 ขาย Stock จริง ฿100 = กำไร ฿2 (ถ้าหลังหัก costs ยังเหลือ)</em></p>
+</div>
+
+<!-- ========== CH 4 ========== -->
+<h2 id="ch4">บทที่ 4: Conversion, Reversal, Box Spread</h2>
+
+<h3>4.1 Conversion = "ล็อคกำไรจาก PCP Violation"</h3>
+<div class="fm"><strong>Conversion</strong> = Long Stock + Long Put + Short Call<br>
+= S + P − C = PV(K) = Bond<br>
+→ Payoff = <strong>คงที่ทุกสถานการณ์</strong> = risk-free profit (ถ้ามี violation)</div>
+
+<h3>4.2 Reversal = "กลับด้าน Conversion"</h3>
+<div class="fm"><strong>Reversal</strong> = Short Stock + Short Put + Long Call<br>
+= −S − P + C = −PV(K)<br>
+→ ใช้เมื่อ PCP violation ไปทางตรงข้าม</div>
+
+<h3>4.3 Box Spread = "สร้าง Bond จาก Options"</h3>
+<div class="fm"><strong>Box Spread</strong> = Bull Call Spread(K₁,K₂) + Bear Put Spread(K₁,K₂)<br>
+= PV(K₂ − K₁) [Exact Identity]<br><br>
+ตัวอย่าง: K₁=90, K₂=110, r=5%, T=0.25<br>
+Fair Box = (110-90) × e⁻⁰·⁰¹²⁵ = 20 × 0.9876 = <strong>฿19.75</strong><br>
+ถ้า Box ซื้อได้ ฿18.50 → กำไร ฿1.25 risk-free!</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Box ≠ Bond ถ้า American Options!</div>
+<p>Box Spread = PV(width) เฉพาะ <strong>European Options เท่านั้น</strong><br>
+ถ้าใช้ American → Short legs อาจถูก exercise ก่อนหมดอายุ → "Bond" แตก!<br>
+<strong>กรณี Reddit 2019:</strong> User ทำ Box บน Robinhood (American Options) → เสีย $58,000<br>
+เพราะ Box "แตก" จาก early exercise → <strong>ตรวจ exercise style ก่อนเสมอ!</strong></p>
+</div>
+
+<h3>4.4 Dividend Arbitrage</h3>
+<p>ก่อน ex-div: American Call อาจคุ้มที่จะ exercise ก่อนเพื่อรับ dividend<br>
+ถ้า Options ไม่ price early exercise premium → ซื้อ Call ถูก → exercise → ได้ dividend</p>
+
+<div class="bx bb">
+<div class="bt">ลองคิดดู (บท 4)</div>
+<p>Box Spread: K₁=95, K₂=105, r=3%, T=0.5 → Fair = ? ถ้าซื้อได้ ฿9.50 → กำไรเท่าไร?<br>
+<em>เฉลย: Fair = 10 × e⁻⁰·⁰¹⁵ = 10 × 0.9851 = ฿9.85 → ซื้อ ฿9.50 → กำไร ฿0.35 at expiry [Lv.1 ถ้า European]</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">3 สิ่งที่ต้องจำ</div>
+<p>1. <strong>Conversion</strong> = S + P − C = Bond → ล็อคกำไร PCP violation<br>
+2. <strong>Box Spread</strong> = PV(K₂−K₁) → สร้าง "พันธบัตร" จาก Options [European เท่านั้น!]<br>
+3. <strong>ตรวจ exercise style ก่อนเสมอ</strong> — American Box ≠ Bond (Reddit $58K lesson)</p>
+</div>
+
+<!-- ===== PART I SUMMARY ===== -->
+<div class="bx bg">
+<div class="bt">สรุป Part I (Part 1/7 ✓)</div>
+<p>✓ วาด <strong>4 Payoff Shapes</strong> ได้คล่อง (Long/Short Call/Put)<br>
+✓ เข้าใจ <strong>PCP: C + PV(K) = P + S</strong> — พิสูจน์ได้ ใช้ตัวเลขได้<br>
+✓ จัดรูป PCP → <strong>6 Synthetics</strong> (3 คู่) — "ถ้าไม่มี X สร้างจาก Y+Z"<br>
+✓ <strong>Conversion/Box Spread</strong> → ล็อคกำไรจาก PCP violation<br>
+✓ รู้ <strong>Phantom Arb ฿2.47</strong> — อย่าลืม PV(K)!<br>
+✓ รู้ <strong>American Box ≠ Bond</strong> — ตรวจ exercise style ก่อน!<br><br>
+<strong>→ Part II: Payoff Engineering — 2-Step Slope Method + สร้าง Strategy ได้เอง</strong></p>
+</div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:20px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part I</p>
+</div>
+</body>
+</html>
