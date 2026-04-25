@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Payoff Mastery — Part VII</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:520px;width:100%}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}</style></head><body>
+<div class="cover"><h1>Payoff Mastery</h1><div class="sub">Part VII: จาก Chart สู่ Trade จริง</div><div class="desc">Feasibility Checks + Anti-Pattern Library + Execution Reality + Case Studies</div></div>
+
+<h2>Feasibility First — "ตรวจก่อน trade"</h2>
+
+<h3>แนวคิด: ทำไม payoff chart สวยแต่ trade ไม่ได้?</h3>
+<p>Payoff chart ใช้ <strong>mid price</strong> (ราคากลาง) — แต่คุณซื้อที่ <strong>ask</strong> และขายที่ <strong>bid</strong><br>
+ถ้า bid-ask กว้าง → edge ที่เห็นบน chart <strong>อาจหายไปทั้งหมด</strong></p>
+
+<div class="fm"><strong>ตัวอย่าง: Iron Condor "สวย"</strong><br>
+Mid price: เก็บ premium ฿2.00 → max profit ฿2.00, max loss ฿8.00<br>
+แต่ถ้า execute จริง (4 legs × bid-ask spread ฿0.05):<br>
+Actual premium = 2.00 - 4×0.05 = <strong>฿1.80</strong><br>
+Slippage กิน 10% ของ max profit ไปแล้ว!</div>
+
+<h3>5 Feasibility Checks — ต้องผ่านทุกข้อก่อน trade</h3>
+
+<table>
+<tr><th>#</th><th>Check</th><th>คำถาม</th><th>ถ้าไม่ผ่าน</th></tr>
+<tr><td>1</td><td><strong>Bid/Ask Test</strong></td><td>ยังกำไรไหมเมื่อใช้ bid/ask จริง (ไม่ใช่ mid)?</td><td>Edge หายไป → reject</td></tr>
+<tr><td>2</td><td><strong>Baseline Test</strong></td><td>ชนะ Bull Spread ธรรมดาไหม?</td><td>Complexity ไม่คุ้ม → ใช้ simple แทน</td></tr>
+<tr><td>3</td><td><strong>Liquidity Test</strong></td><td>exit ได้ไหมที่ ≤50% ของ daily volume?</td><td>ติดกับ → ขายไม่ได้เมื่อต้องการ</td></tr>
+<tr><td>4</td><td><strong>Stress Test</strong></td><td>ถ้า gap 3σ overnight → เสียเท่าไร?</td><td>เสียเกินรับได้ → ลด size หรือ reject</td></tr>
+<tr><td>5</td><td><strong>Margin Test</strong></td><td>มี margin พอถือผ่าน adverse move ไหม?</td><td>ถูก force liquidate → worst case realized</td></tr>
+</table>
+
+<div class="bx br"><div class="bt">กฎ: ถ้า Check ข้อใดข้อหนึ่งไม่ผ่าน → หยุด</div>
+<p>อย่า optimize สิ่งที่ยัง infeasible<br>
+<strong>"A trade that looks good on paper but can't be executed at a profit is not a trade — it's a diagram."</strong></p></div>
+
+<div class="bx bb"><div class="bt">Baseline Test — บทเรียนสำคัญที่สุด</div>
+<p><strong>ก่อนเพิ่ม leg ที่ 3 ให้ถามก่อนว่า:</strong> "มันชนะ Bull Spread ธรรมดาจริงไหม?"<br><br>
+ตัวอย่าง: Iron Condor 4 legs → net premium ฿1.80 (หลังหัก costs)<br>
+vs Bull Call Spread 2 legs → net premium เท่ากัน ฿1.80 แต่ max profit สูงกว่า<br>
+→ <strong>ทำไมต้อง trade 4 legs ถ้า 2 legs ให้ผลดีกว่า?</strong><br><br>
+Complexity ต้องพิสูจน์ตัวเอง — ถ้า simple version ชนะ อย่าใช้ complex version</p></div>
+
+<h2>Anti-Pattern Library — "5 กับดักที่ดูดีแต่พัง"</h2>
+
+<p>ทุก anti-pattern มีสิ่งเหมือนกัน: <strong>payoff chart ดูสวย แต่ reality ทำลาย edge</strong></p>
+
+<h3>Anti-Pattern 1: "Beautiful Butterfly"</h3>
+<div class="bx br"><div class="bt">กับดัก: risk/reward 10:1 บน chart</div>
+<p><strong>สิ่งที่เห็น:</strong> Butterfly max profit ฿10, max loss ฿1 → ratio 10:1 สุดยอด!<br>
+<strong>สิ่งที่ซ่อน:</strong> 4 legs × bid-ask ฿0.05 = ฿0.20 → <strong>20% ของ max profit หายไป</strong><br>
++ probability ที่ราคาจบ "ตรง" center strike = ต่ำมาก (~5-10%)<br>
+<strong>EV จริง:</strong> 0.07 × (10-0.20) + 0.93 × (-1) = 0.686 - 0.93 = <strong>-0.244</strong> → ขาดทุน!<br><br>
+<strong>บทเรียน:</strong> Risk/reward ratio สูง + probability ต่ำ = อาจมี negative EV</p></div>
+
+<h3>Anti-Pattern 2: "Calendar Spread Mirage"</h3>
+<div class="bx br"><div class="bt">กับดัก: "ได้ theta ฟรี"</div>
+<p><strong>สิ่งที่เห็น:</strong> ขาย front-month เก็บ theta, ถือ back-month ที่ยังมี value<br>
+<strong>สิ่งที่ซ่อน:</strong> Skew shift ระหว่าง expiry → IV ของ front อาจเพิ่มเร็วกว่า back<br>
+โดยเฉพาะก่อน earnings/events → <strong>"theta ที่ได้" ถูก vega กิน</strong><br><br>
+<strong>บทเรียน:</strong> Calendar Spread เดิมพันกับ term structure ไม่ใช่แค่ theta</p></div>
+
+<h3>Anti-Pattern 3: "Iron Condor in Low Vol"</h3>
+<div class="bx br"><div class="bt">กับดัก: "กำไร 80% ของเวลา"</div>
+<p><strong>สิ่งที่เห็น:</strong> VIX = 12, ขาย Iron Condor → เก็บ premium เล็กๆ ทุกเดือน<br>
+<strong>สิ่งที่ซ่อน:</strong> Premium เล็ก = reward เล็ก แต่ risk คงเดิม (width - premium)<br>
+1 gap move ลบกำไร 8 เดือน → <strong>survivorship bias ทำให้ backtest ดูดี</strong><br><br>
+<strong>บทเรียน:</strong> "กำไรบ่อย" ≠ "กำไรในระยะยาว" → คำนวณ EV ก่อนเสมอ (Ch8)</p></div>
+
+<h3>Anti-Pattern 4: "Ratio Spread Free Money"</h3>
+<div class="bx br"><div class="bt">กับดัก: "ได้ premium ฟรี"</div>
+<p><strong>สิ่งที่เห็น:</strong> 1×2 Ratio Call Spread → net credit (ได้เงินตอนเปิด trade)<br>
+<strong>สิ่งที่ซ่อน:</strong> Net slope = -1 → <strong>unlimited loss ทางขวา!</strong><br>
+ถ้าราคาพุ่ง → Short 2 Calls ขาดทุนเร็วกว่า Long 1 Call ได้กำไร<br>
++ Margin call บังคับปิดตอนราคาสูงสุด = worst execution<br><br>
+<strong>บทเรียน:</strong> "ฟรี" ในตลาดไม่มีจริง → เช็ค net slope เสมอ (Ch5)</p></div>
+
+<h3>Anti-Pattern 5: "Synthetic Arb Illusion"</h3>
+<div class="bx br"><div class="bt">กับดัก: "PCP violation = free money"</div>
+<p><strong>สิ่งที่เห็น:</strong> C + PV(K) ≠ P + S → violation ฿0.50!<br>
+<strong>สิ่งที่ซ่อน:</strong><br>
+• ใช้ mid price → executable price ต่างกัน (bid/ask กิน ฿0.30)<br>
+• Early exercise risk (American options)<br>
+• Pin risk ที่ strike<br>
+• Borrow cost สำหรับ short stock<br>
+Net: ฿0.50 - ฿0.30 (spread) - ฿0.15 (borrow) = <strong>+฿0.05</strong> → แทบไม่คุ้ม commission<br><br>
+<strong>บทเรียน:</strong> PCP violation บน screen ≠ executable arb → ต้องหัก costs ทั้งหมดก่อน</p></div>
+
+
+<div class="bx ba"><div class="bt">Anti-Pattern Summary</div>
+<p>ทุก anti-pattern มีรูปแบบเดียวกัน:<br>
+1. Payoff chart ดูดี → <strong>แต่ใช้ mid price</strong><br>
+2. Risk/reward ratio สวย → <strong>แต่ probability ไม่เอื้อ</strong><br>
+3. "ได้เงินฟรี" → <strong>แต่มี hidden risk ที่ chart ไม่แสดง</strong><br><br>
+<strong>วิธีป้องกัน: ใช้ 5 Feasibility Checks ทุกครั้ง</strong></p></div>
+
+<h2>Execution Reality — "Edge ตายตรง bid/ask"</h2>
+
+<h3>กฎ 4 ข้อสำหรับ execution</h3>
+
+<div class="bx bg"><div class="bt">กฎ 1: ซื้อ protective leg ก่อนเสมอ</div>
+<p>เมื่อเปิด multi-leg strategy → <strong>ซื้อ protection ก่อน ขาย premium ทีหลัง</strong><br>
+ถ้าซื้อ premium ก่อนแล้วตลาดขยับ → คุณมี naked position ชั่วคราว<br>
+ตัวอย่าง Iron Condor: ซื้อ wings (Long Put + Long Call) ก่อน → ค่อยขาย short legs</p></div>
+
+<div class="bx bg"><div class="bt">กฎ 2: ห้ามขาย naked ก่อนมี protection</div>
+<p>Short Call ที่ไม่มี Long Call คุ้มกัน = <strong>unlimited risk</strong> แม้แค่ 1 วินาที<br>
+"แค่จะเปิดพร้อมกัน" → <strong>ไม่พร้อมกันจริงถ้า fill ไม่พร้อม</strong></p></div>
+
+<div class="bx bg"><div class="bt">กฎ 3: ใช้ Limit Order เท่านั้น</div>
+<p>Market Order สำหรับ options = <strong>ยอมรับราคาอะไรก็ได้</strong> → อันตรายมาก<br>
+โดยเฉพาะ illiquid strikes → bid-ask อาจกว้าง 20-50%<br>
+Limit Order: ตั้งราคาที่ยอมรับได้ → ไม่ fill ก็ไม่เป็นไร (ดีกว่า fill ที่ราคาแย่)</p></div>
+
+<div class="bx bg"><div class="bt">กฎ 4: monitor dynamic edge</div>
+<p>Edge ที่เห็นตอน scan → <strong>อาจหายไปก่อน execute</strong><br>
+ถ้า edge &lt; 2× transaction cost → ไม่คุ้มเสี่ยง<br>
+ถ้าต้องรีบ fill → น่าจะเป็น edge ที่ทุกคนเห็นพร้อมกัน → <strong>อาจไม่ใช่ edge จริง</strong></p></div>
+
+<h2>Structured Products — "ถอดรหัสผลิตภัณฑ์การเงิน"</h2>
+
+<p>ผลิตภัณฑ์การเงินที่นักลงทุนไทยเจอบ่อย → ถอดเป็น payoff chart ได้ทั้งนั้น</p>
+
+<h3>Equity-Linked Note (ELN)</h3>
+<div class="fm"><strong>ELN = Zero-Coupon Bond + Long Call</strong><br><br>
+ถ้าราคาหุ้นลง → ได้เงินต้นคืน (bond component)<br>
+ถ้าราคาหุ้นขึ้น → ได้เงินต้น + upside participation (call component)<br><br>
+Payoff chart: flat ทางซ้าย (เงินต้นคืน) → slope ขึ้นทางขวา (upside)</div>
+
+<svg class="d" viewBox="0 0 520 180">
+<line x1="40" y1="100" x2="490" y2="100" stroke="#e5e7eb" stroke-width="0.5"/>
+<text x="30" y="103" font-family="Sarabun" font-size="8" fill="#999">0</text>
+<!-- ELN payoff -->
+<line x1="50" y1="85" x2="260" y2="85" stroke="#2563eb" stroke-width="2.5"/>
+<line x1="260" y1="85" x2="440" y2="35" stroke="#16a34a" stroke-width="2.5"/>
+<!-- Bond component (dashed) -->
+<line x1="50" y1="85" x2="440" y2="85" stroke="#374151" stroke-width="1" stroke-dasharray="4"/>
+<text x="450" y="88" font-family="Sarabun" font-size="8" fill="#374151">Bond</text>
+<!-- Call component (dashed) -->
+<line x1="260" y1="100" x2="440" y2="50" stroke="#16a34a" stroke-width="1" stroke-dasharray="4"/>
+<text x="450" y="53" font-family="Sarabun" font-size="8" fill="#16a34a">Call</text>
+<!-- Labels -->
+<text x="260" y="125" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">K (ราคาเริ่ม)</text>
+<text x="100" y="78" font-family="Sarabun" font-size="9" fill="#2563eb">เงินต้นคืน</text>
+<text x="370" y="25" font-family="Sarabun" font-size="9" fill="#16a34a">+ upside</text>
+<text x="260" y="155" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#2563eb" font-weight="600">ELN = Bond + Call</text>
+</svg>
+
+<h3>Convertible Bond</h3>
+<div class="fm"><strong>Convertible Bond = Straight Bond + Long Call</strong><br><br>
+ถ้าราคาหุ้นต่ำ → ถือเป็น bond ปกติ (ได้ดอกเบี้ย + เงินต้น)<br>
+ถ้าราคาหุ้นสูง → แปลงเป็นหุ้น (exercise the embedded call)<br><br>
+คล้าย ELN แต่มี coupon payments ระหว่างทาง</div>
+
+<h3>Risk Reversal — slope diagram</h3>
+<div class="fm"><strong>Risk Reversal = Short Put(K₁) + Long Call(K₂)</strong> โดย K₁ &lt; K₂<br><br>
+Slope analysis:<br>
+ก่อน K₁: slope +1 (จาก Short Put)<br>
+K₁ ถึง K₂: slope 0 (Short Put หมดผล, Call ยังไม่เริ่ม)<br>
+หลัง K₂: slope +1 (จาก Long Call)<br><br>
+Shape: ชันขึ้น → แบน → ชันขึ้น = <strong>"S-curve"</strong><br>
+Net premium ≈ 0 (ถ้าเลือก strikes ให้ premium match) = <strong>zero-cost directional bet</strong></div>
+
+<svg class="d" viewBox="0 0 520 180">
+<line x1="40" y1="90" x2="490" y2="90" stroke="#e5e7eb" stroke-width="0.5"/>
+<text x="30" y="93" font-family="Sarabun" font-size="8" fill="#999">0</text>
+<!-- Risk Reversal -->
+<line x1="50" y1="150" x2="170" y2="90" stroke="#dc2626" stroke-width="2.5"/>
+<line x1="170" y1="90" x2="330" y2="90" stroke="#374151" stroke-width="2.5"/>
+<line x1="330" y1="90" x2="450" y2="30" stroke="#16a34a" stroke-width="2.5"/>
+<!-- Labels -->
+<text x="170" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">K₁ (Put)</text>
+<text x="330" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">K₂ (Call)</text>
+<text x="100" y="155" font-family="Sarabun" font-size="9" fill="#dc2626">slope +1 (SP)</text>
+<text x="240" y="155" font-family="Sarabun" font-size="9" fill="#374151">slope 0</text>
+<text x="390" y="155" font-family="Sarabun" font-size="9" fill="#16a34a">slope +1 (LC)</text>
+<circle cx="170" cy="90" r="3" fill="#d97706"/>
+<circle cx="330" cy="90" r="3" fill="#d97706"/>
+</svg>
+
+<h3>Seagull — 3 legs สำหรับ FX hedging</h3>
+<div class="fm"><strong>Seagull = Bull Call Spread(K₂,K₃) + Short Put(K₁)</strong> โดย K₁ &lt; K₂ &lt; K₃<br><br>
+= Long Call(K₂) + Short Call(K₃) + Short Put(K₁)<br><br>
+Slope analysis:<br>
+ก่อน K₁: slope +1 (Short Put)<br>
+K₁ ถึง K₂: slope 0<br>
+K₂ ถึง K₃: slope +1 (Long Call)<br>
+หลัง K₃: slope 0 (Short Call cancel)<br><br>
+Net premium ≈ 0 (Short Put premium ชดเชย Bull Call Spread cost)<br>
+Shape: ขาดทุนถ้าลงแรง → flat → กำไรจำกัด → flat<br>
+ใช้ใน: FX hedging เมื่อต้องการ zero-cost + capped upside</div>
+
+
+<h2>Case Studies — "จาก belief → reject → redesign → final"</h2>
+
+<h3>Case 1: "Bullish but Capped" — ขึ้นแต่ไม่ทะลุ</h3>
+<div class="bx bb"><div class="bt">Belief: "หุ้น XYZ จะขึ้นจาก 100 ไป 115 แต่ไม่น่าทะลุ 120"</div>
+<p><strong>Step 1 — แปลง belief → payoff:</strong><br>
+ต้องการ: กำไรถ้าขึ้น 100→115, ไม่ต้องการ exposure หลัง 120<br>
+→ slope 0 → +1 at 100 → 0 at 120<br>
+= <strong>Bull Call Spread 100/120</strong><br><br>
+
+<strong>Step 2 — Feasibility Check:</strong><br>
+✓ Bid/Ask: net debit ฿7.00 (mid ฿6.50 + spread ฿0.50) → max profit = 20-7 = ฿13<br>
+✓ Baseline: ดีกว่า Long Call เปล่า (ลด cost, ลด vega risk)<br>
+✓ Liquidity: ทั้ง 100 และ 120 strike มี volume<br>
+✓ Stress: max loss = ฿7 (debit) → รับได้<br>
+✓ Margin: debit trade → ไม่ต้อง margin<br>
+→ <strong>ผ่านทุกข้อ → TRADE</strong><br><br>
+
+<strong>Step 3 — ทำไมไม่ใช้ Butterfly?</strong><br>
+Butterfly 100/110/120 → net debit ฿2 แต่ max profit เฉพาะ S=110 → probability ต่ำ<br>
+BCS → max profit ทั้งช่วง 120+ → <strong>Baseline Test: BCS ชนะ Butterfly</strong></p></div>
+
+<h3>Case 2: "Protective Put + PM No" — hedge แบบ cross-market</h3>
+<div class="bx bb"><div class="bt">Belief: "ถือหุ้น XYZ ฿100 อยากป้องกัน downside"</div>
+<p><strong>Option A: Long Put(90)</strong> → cost ฿3 → ป้องกันทุกบาทต่ำกว่า 90<br>
+<strong>Option B: PM Above No(90)</strong> → cost $0.25 → ถ้าราคาต่ำกว่า 90 ได้ $1<br><br>
+
+<strong>เปรียบเทียบ:</strong><br>
+ถ้า S จบที่ 70 → Put กำไร ฿20 (ชดเชย loss ฿30 → net loss ฿13)<br>
+ถ้า S จบที่ 70 → PM No ได้ $1 = ฿35 → <strong>แต่ loss จาก stock = ฿30!</strong><br>
+PM ชดเชยได้ครั้งนี้ → <strong>แต่ถ้า S จบที่ 50 → Put ได้ ฿40, PM ยังได้แค่ $1</strong><br><br>
+<strong>บทเรียน:</strong> PM (binary) ชดเชยได้ในบาง scenario แต่ <strong>ไม่ scale กับ loss</strong><br>
+→ PM เหมาะเป็น <strong>income layer</strong> หรือ <strong>boundary repair</strong> ไม่ใช่ primary hedge</p></div>
+
+<h3>Case 3: "PM Range ที่พังเพราะ Overround"</h3>
+<div class="bx bb"><div class="bt">Belief: "BTC จะอยู่ระหว่าง $90K-$100K สิ้นเดือน"</div>
+<p><strong>Strategy:</strong> ซื้อ PM Range Yes($90K-$100K) ที่ $0.35<br>
+ถ้าถูก → ได้ $1 → profit $0.65 (186% return!)<br><br>
+
+<strong>แต่ตรวจ Overround:</strong><br>
+Range $80-90K: $0.20 + Range $90-100K: $0.35 + Range $100-110K: $0.30 + Range $110K+: $0.20<br>
+= sum $1.05 → <strong>overround 5%</strong><br>
+Probability จริงของ $90-100K ≈ 0.35/1.05 = <strong>33.3%</strong> (ไม่ใช่ 35%)<br><br>
+EV = 0.333 × ($1-$0.35) + 0.667 × (-$0.35) = 0.217 - 0.233 = <strong>-$0.017</strong><br>
+→ <strong>Negative EV!</strong> Overround กิน edge ทั้งหมด<br><br>
+<strong>บทเรียน:</strong> ตรวจ overround ก่อนซื้อ PM → ถ้า sum > $1.03 → ระวัง</p></div>
+
+<h3>Case 4: "Funding Arb ที่ไม่ใช่ Arb"</h3>
+<div class="bx bb"><div class="bt">Belief: "Funding rate = +0.05%/8hr = 'free yield'"</div>
+<p><strong>Strategy:</strong> Long spot + Short perp → เก็บ funding rate<br>
+Annualized = 0.05% × 3 × 365 = <strong>54.75%/year!</strong> → ดู arb สุดๆ<br><br>
+
+<strong>แต่ reality:</strong><br>
+• Funding rate <strong>เปลี่ยนได้ทุก 8 ชั่วโมง</strong> → อาจ flip เป็นลบ<br>
+• เมื่อ flip → คุณ <strong>จ่าย</strong> funding แทนที่จะได้<br>
+• ตอน funding สูง = ตลาด euphoria → <strong>crash probability สูง</strong><br>
+• ถ้า crash → spot loss + potential liquidation บน perp<br><br>
+<strong>Payoff analysis:</strong><br>
+Funding = <strong>conditional payoff ที่ขึ้นกับ regime</strong> ไม่ใช่ fixed yield<br>
+= option-like payoff: ได้ตอน regime A, เสียตอน regime B<br>
+→ <strong>ไม่ใช่ arb → เป็น carry trade ที่มี regime risk</strong><br><br>
+<strong>บทเรียน:</strong> "yield" ที่ดูฟรี = conditional payoff → ต้องวิเคราะห์ว่า condition จะ flip เมื่อไร</p></div>
+
+<div class="bx bg"><div class="bt">3 สิ่งที่ต้องจำ</div>
+<p>1. <strong>5 Feasibility Checks</strong>: bid/ask, baseline, liquidity, stress, margin → ต้องผ่านทุกข้อ<br>
+2. <strong>5 Anti-Patterns</strong>: Beautiful Butterfly, Calendar Mirage, Iron Condor Low Vol, Ratio Free Money, Synthetic Arb Illusion → จำไว้เป็น checklist<br>
+3. <strong>Execution กฎ 4 ข้อ</strong>: buy protection first, no naked before hedge, limit orders only, monitor dynamic edge</p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part VII</div>
+<p>✓ <strong>5 Feasibility Checks</strong>: ต้องผ่านทุกข้อก่อน trade<br>
+✓ <strong>Baseline Test</strong>: complexity ต้องชนะ simplicity<br>
+✓ <strong>5 Anti-Patterns</strong>: "chart ดูดี" ≠ "trade ดี"<br>
+✓ <strong>Execution 4 กฎ</strong>: protection first, limit orders, monitor edge<br>
+✓ <strong>Structured Products</strong>: ELN = Bond+Call, Convertible = Bond+Call, Risk Reversal, Seagull<br>
+✓ <strong>4 Case Studies</strong>: Bullish-cap, PM hedge, PM overround, Funding "arb"<br><br>
+<strong>หลักการเดียว:</strong> อย่า trade สิ่งที่ยัง infeasible → ตรวจก่อน optimize</p></div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)"><div style="text-align:center;padding:20px;color:#64748b"><p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part VII</p></div></body></html>
