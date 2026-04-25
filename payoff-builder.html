@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payoff Builder — ฝึกประกอบ Payoff Chart</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--blue:#2563eb;--green:#16a34a;--red:#dc2626;--amber:#d97706;--g8:#1f2937;--g1:#f3f4f6;--g2:#e5e7eb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:#f8fafc;color:var(--g8)}
+.header{background:var(--blue);color:#fff;padding:16px 24px;text-align:center}
+.header h1{font-size:1.5em;font-weight:700}
+.header p{font-size:.9em;opacity:.8}
+.container{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:340px 1fr;gap:16px}
+@media(max-width:768px){.container{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.panel h2{font-size:1.1em;font-weight:700;margin-bottom:12px;color:var(--blue)}
+.leg-row{display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:8px;background:var(--g1);border-radius:8px;margin-bottom:6px;font-size:.85em}
+.leg-row select,.leg-row input{padding:4px 6px;border:1px solid var(--g2);border-radius:4px;font-family:'Sarabun';font-size:.9em}
+.leg-row input[type=number]{width:60px}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-family:'Sarabun';font-weight:600;font-size:.9em;transition:all .15s}
+.btn-add{background:var(--blue);color:#fff}.btn-add:hover{background:#1d4ed8}
+.btn-del{background:var(--red);color:#fff;padding:4px 8px;font-size:.8em}.btn-del:hover{background:#b91c1c}
+.btn-preset{background:var(--g1);color:var(--g8);border:1px solid var(--g2);padding:5px 10px;font-size:.8em;margin:2px}
+.btn-preset:hover{background:var(--blue);color:#fff}
+.btn-clear{background:var(--amber);color:#fff}.btn-clear:hover{background:#b45309}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:var(--g1);padding:8px 12px;border-radius:6px;text-align:center}
+.stat .label{font-size:.75em;color:#64748b}.stat .value{font-size:1.1em;font-weight:700}
+.stat .value.profit{color:var(--green)}.stat .value.loss{color:var(--red)}
+.chart-wrap{position:relative;height:400px}
+.slope-info{margin-top:12px;font-size:.85em;background:var(--g1);padding:10px;border-radius:6px}
+.slope-info code{background:#e0e7ff;padding:2px 6px;border-radius:3px;font-size:.9em}
+.presets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.leg-num{background:var(--blue);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:700}
+.toggle-legs{margin-top:8px;font-size:.85em}
+.toggle-legs label{cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>Payoff Builder</h1>
+<p>ฝึกประกอบ Payoff Chart อย่างอิสระ — เพิ่ม/ลบ legs, ปรับ strike/quantity, เห็นผลทันที</p>
+</div>
+
+<div class="container">
+<div class="left-panel">
+<div class="panel">
+<h2>Presets — โหลด Strategy สำเร็จรูป</h2>
+<div class="presets" id="presets"></div>
+</div>
+
+<div class="panel" style="margin-top:12px">
+<h2>Legs — ส่วนประกอบ</h2>
+<div id="legs-container"></div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<button class="btn btn-add" onclick="addLeg()">+ เพิ่ม Leg</button>
+<button class="btn btn-clear" onclick="clearLegs()">ล้างทั้งหมด</button>
+</div>
+</div>
+
+<div class="panel" style="margin-top:12px">
+<h2>สรุป</h2>
+<div class="summary" id="summary">
+<div class="stat"><div class="label">Max Profit</div><div class="value profit" id="maxProfit">—</div></div>
+<div class="stat"><div class="label">Max Loss</div><div class="value loss" id="maxLoss">—</div></div>
+<div class="stat"><div class="label">Break-even</div><div class="value" id="breakeven">—</div></div>
+<div class="stat"><div class="label">Net Slope (ขวา)</div><div class="value" id="netSlope">—</div></div>
+</div>
+<div class="slope-info" id="slopeInfo"></div>
+<div class="toggle-legs" style="margin-top:8px">
+<label><input type="checkbox" id="showLegs" checked onchange="updateChart()"> แสดง legs แต่ละตัว (เส้นประ)</label>
+</div>
+</div>
+</div>
+
+<div class="right-panel">
+<div class="panel">
+<h2>Payoff Chart</h2>
+<div class="chart-wrap"><canvas id="payoffChart"></canvas></div>
+</div>
+</div>
+</div>
+
+<script>
+const COLORS = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#ec4899','#0891b2','#65a30d'];
+let legs = [];
+let chart = null;
+let legCounter = 0;
+
+const PRESETS = {
+  'Bull Call Spread': [{type:'call',pos:'long',K:100,P:5,Q:1},{type:'call',pos:'short',K:110,P:2,Q:1}],
+  'Bear Put Spread': [{type:'put',pos:'long',K:110,P:6,Q:1},{type:'put',pos:'short',K:100,P:3,Q:1}],
+  'Long Straddle': [{type:'call',pos:'long',K:100,P:5,Q:1},{type:'put',pos:'long',K:100,P:5,Q:1}],
+  'Long Strangle': [{type:'put',pos:'long',K:90,P:2,Q:1},{type:'call',pos:'long',K:110,P:2,Q:1}],
+  'Butterfly': [{type:'call',pos:'long',K:90,P:8,Q:1},{type:'call',pos:'short',K:100,P:4,Q:2},{type:'call',pos:'long',K:110,P:2,Q:1}],
+  'Iron Condor': [{type:'put',pos:'long',K:85,P:1,Q:1},{type:'put',pos:'short',K:90,P:2,Q:1},{type:'call',pos:'short',K:110,P:2,Q:1},{type:'call',pos:'long',K:115,P:1,Q:1}],
+  'Covered Call': [{type:'stock',pos:'long',K:100,P:0,Q:1},{type:'call',pos:'short',K:110,P:3,Q:1}],
+  'Collar': [{type:'stock',pos:'long',K:100,P:0,Q:1},{type:'put',pos:'long',K:90,P:2,Q:1},{type:'call',pos:'short',K:110,P:3,Q:1}],
+  'Risk Reversal': [{type:'put',pos:'short',K:90,P:2,Q:1},{type:'call',pos:'long',K:110,P:2,Q:1}],
+  'Ratio 1x2': [{type:'call',pos:'long',K:100,P:5,Q:1},{type:'call',pos:'short',K:110,P:2,Q:2}],
+  '3x Bull Spread': [{type:'call',pos:'long',K:100,P:5,Q:3},{type:'call',pos:'short',K:110,P:2,Q:3}],
+  'LC+4SP+SC': [{type:'call',pos:'long',K:100,P:5,Q:1},{type:'put',pos:'short',K:100,P:4,Q:4},{type:'call',pos:'short',K:100,P:5,Q:1}],
+  'Seagull': [{type:'put',pos:'short',K:90,P:2,Q:1},{type:'call',pos:'long',K:100,P:4,Q:1},{type:'call',pos:'short',K:110,P:2,Q:1}],
+};
+
+function init() {
+  const presetsDiv = document.getElementById('presets');
+  Object.keys(PRESETS).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-preset';
+    btn.textContent = name;
+    btn.onclick = () => loadPreset(name);
+    presetsDiv.appendChild(btn);
+  });
+  addLeg();
+  addLeg();
+  initChart();
+  updateChart();
+}
+
+function addLeg(cfg) {
+  legCounter++;
+  const leg = cfg || {type:'call',pos:'long',K:100,P:5,Q:1};
+  leg.id = legCounter;
+  legs.push(leg);
+  renderLegs();
+  updateChart();
+}
+
+function removeLeg(id) {
+  legs = legs.filter(l => l.id !== id);
+  renderLegs();
+  updateChart();
+}
+
+function clearLegs() {
+  legs = [];
+  legCounter = 0;
+  renderLegs();
+  updateChart();
+}
+
+function loadPreset(name) {
+  legs = [];
+  legCounter = 0;
+  PRESETS[name].forEach(cfg => {
+    legCounter++;
+    legs.push({...cfg, id: legCounter});
+  });
+  renderLegs();
+  updateChart();
+}
+
+function renderLegs() {
+  const c = document.getElementById('legs-container');
+  c.innerHTML = '';
+  legs.forEach((leg, i) => {
+    const row = document.createElement('div');
+    row.className = 'leg-row';
+    row.innerHTML = `
+      <div class="leg-num" style="background:${COLORS[i%COLORS.length]}">${i+1}</div>
+      <select onchange="legs[${i}].type=this.value;updateChart()">
+        <option value="call" ${leg.type==='call'?'selected':''}>Call</option>
+        <option value="put" ${leg.type==='put'?'selected':''}>Put</option>
+        <option value="stock" ${leg.type==='stock'?'selected':''}>Stock</option>
+      </select>
+      <select onchange="legs[${i}].pos=this.value;updateChart()">
+        <option value="long" ${leg.pos==='long'?'selected':''}>Long</option>
+        <option value="short" ${leg.pos==='short'?'selected':''}>Short</option>
+      </select>
+      <input type="number" value="${leg.K}" placeholder="Strike" onchange="legs[${i}].K=+this.value;updateChart()">
+      <input type="number" value="${leg.Q}" min="1" placeholder="Qty" onchange="legs[${i}].Q=+this.value;updateChart()" style="width:45px">
+      <button class="btn btn-del" onclick="removeLeg(${leg.id})">✕</button>
+    `;
+    c.appendChild(row);
+  });
+}
+
+function calcLegPayoff(leg, S) {
+  const sign = leg.pos === 'long' ? 1 : -1;
+  const q = leg.Q || 1;
+  const K = leg.K;
+  const P = leg.P || 0;
+  let payoff = 0;
+  if (leg.type === 'call') {
+    payoff = sign * q * (Math.max(0, S - K) - P);
+  } else if (leg.type === 'put') {
+    payoff = sign * q * (Math.max(0, K - S) - P);
+  } else if (leg.type === 'stock') {
+    payoff = sign * q * (S - K);
+  }
+  return payoff;
+}
+
+function calcCombined(S) {
+  return legs.reduce((sum, leg) => sum + calcLegPayoff(leg, S), 0);
+}
+
+function getRange() {
+  if (legs.length === 0) return {min:50, max:150};
+  const strikes = legs.map(l => l.K);
+  const minK = Math.min(...strikes);
+  const maxK = Math.max(...strikes);
+  const spread = Math.max(maxK - minK, 20);
+  return {min: minK - spread * 0.8, max: maxK + spread * 0.8};
+}
+
+function initChart() {
+  const ctx = document.getElementById('payoffChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {labels: [], datasets: []},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {mode:'index',intersect:false},
+      plugins: {
+        legend: {display: true, position: 'top', labels:{font:{family:'Sarabun',size:11}}},
+        tooltip: {
+          callbacks: {
+            title: (items) => `S = ${items[0].label}`,
+            label: (item) => `${item.dataset.label}: ${item.parsed.y >= 0 ? '+' : ''}${item.parsed.y.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {title:{display:true,text:'ราคาสินทรัพย์ (S)',font:{family:'Sarabun',size:12}},ticks:{font:{family:'Sarabun'}}},
+        y: {title:{display:true,text:'กำไร / ขาดทุน',font:{family:'Sarabun',size:12}},ticks:{font:{family:'Sarabun'}},
+          grid:{color:(ctx)=>ctx.tick.value===0?'#374151':'#e5e7eb',lineWidth:(ctx)=>ctx.tick.value===0?2:1}}
+      }
+    }
+  });
+}
+
+function updateChart() {
+  const range = getRange();
+  const step = Math.max(0.5, (range.max - range.min) / 200);
+  const labels = [];
+  for (let s = range.min; s <= range.max; s += step) labels.push(s.toFixed(1));
+
+  const datasets = [];
+  const showLegs = document.getElementById('showLegs').checked;
+
+  if (showLegs) {
+    legs.forEach((leg, i) => {
+      const data = labels.map(s => calcLegPayoff(leg, +s));
+      datasets.push({
+        label: `${leg.pos==='long'?'+':'-'}${leg.Q>1?leg.Q:''}${leg.type==='call'?'C':leg.type==='put'?'P':'S'}(${leg.K})`,
+        data, borderColor: COLORS[i % COLORS.length], borderWidth: 1.5,
+        borderDash: [5,3], pointRadius: 0, fill: false
+      });
+    });
+  }
+
+  const combinedData = labels.map(s => calcCombined(+s));
+  datasets.push({
+    label: 'Combined Payoff',
+    data: combinedData,
+    borderColor: '#1e293b', borderWidth: 3, pointRadius: 0, fill: false,
+    segment: {borderColor: ctx => {
+      const v = ctx.p0.parsed.y;
+      return v >= 0 ? '#16a34a' : '#dc2626';
+    }}
+  });
+
+  chart.data.labels = labels;
+  chart.data.datasets = datasets;
+  chart.update('none');
+
+  updateSummary(labels.map(Number), combinedData);
+}
+
+function updateSummary(prices, payoffs) {
+  if (legs.length === 0) {
+    ['maxProfit','maxLoss','breakeven','netSlope'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('slopeInfo').innerHTML = '';
+    return;
+  }
+  const maxP = Math.max(...payoffs);
+  const minP = Math.min(...payoffs);
+  const lastSlope = payoffs.length > 2 ? (payoffs[payoffs.length-1] - payoffs[payoffs.length-3]) / (prices[prices.length-1] - prices[prices.length-3]) : 0;
+
+  document.getElementById('maxProfit').textContent = maxP > 9999 ? 'ไม่จำกัด' : maxP.toFixed(2);
+  document.getElementById('maxLoss').textContent = minP < -9999 ? 'ไม่จำกัด' : minP.toFixed(2);
+  document.getElementById('netSlope').textContent = Math.abs(lastSlope) < 0.01 ? '0 (bounded)' : lastSlope.toFixed(1) + ' (unbounded!)';
+
+  const bes = [];
+  for (let i = 1; i < payoffs.length; i++) {
+    if ((payoffs[i-1] <= 0 && payoffs[i] >= 0) || (payoffs[i-1] >= 0 && payoffs[i] <= 0)) {
+      const s = prices[i-1] + (0 - payoffs[i-1]) * (prices[i] - prices[i-1]) / (payoffs[i] - payoffs[i-1]);
+      bes.push(s.toFixed(1));
+    }
+  }
+  document.getElementById('breakeven').textContent = bes.length ? bes.join(', ') : 'ไม่มี';
+
+  // Slope analysis
+  const kinks = [];
+  const strikes = [...new Set(legs.map(l => l.K))].sort((a,b) => a-b);
+  let prevSlope = 0;
+  strikes.forEach(K => {
+    let ds = 0;
+    legs.forEach(leg => {
+      if (leg.K !== K) return;
+      const sign = leg.pos === 'long' ? 1 : -1;
+      const q = leg.Q || 1;
+      if (leg.type === 'call') ds += sign * q;
+      else if (leg.type === 'put') ds += sign * q;
+    });
+    if (Math.abs(ds) > 0.01) kinks.push({K, ds});
+  });
+
+  let slopeHtml = '<strong>Slope Analysis:</strong><br>';
+  let stockSlope = 0;
+  legs.forEach(leg => {
+    if (leg.type === 'stock') stockSlope += (leg.pos==='long'?1:-1) * (leg.Q||1);
+  });
+  if (stockSlope !== 0) slopeHtml += `s₀ = ${stockSlope > 0 ? '+' : ''}${stockSlope} (stock)<br>`;
+
+  let runSlope = stockSlope;
+  legs.forEach(leg => {
+    if (leg.type === 'put') {
+      const sign = leg.pos === 'long' ? -1 : 1;
+      runSlope += sign * (leg.Q || 1);
+    }
+  });
+
+  kinks.forEach(k => {
+    slopeHtml += `<code>Δs = ${k.ds > 0 ? '+' : ''}${k.ds}</code> ที่ K=${k.K}`;
+    slopeHtml += k.ds > 0 ? ' (Long)' : ' (Short)';
+    slopeHtml += '<br>';
+  });
+  slopeHtml += `<strong>Net slope ปลายขวา = ${Math.abs(lastSlope) < 0.01 ? '0 ✓ bounded' : lastSlope.toFixed(1) + ' ⚠️ unbounded!'}</strong>`;
+  document.getElementById('slopeInfo').innerHTML = slopeHtml;
+}
+
+init();
+</script>
+</body>
+</html>
