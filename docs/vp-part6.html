@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>View → Payoff — Part VI: Binary Options & Prediction Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Sarabun,sans-serif;font-size:15px;line-height:1.7;color:#1e293b;background:#f8fafc;padding:24px}
+h1{font-size:2em;font-weight:700;color:#0f172a;margin:20px 0 6px}
+h2{font-size:1.3em;font-weight:700;color:#1e3a5f;margin:28px 0 10px;border-left:4px solid #2563eb;padding-left:10px}
+h3{font-size:1.1em;font-weight:600;color:#1e3a5f;margin:18px 0 6px}
+p{margin:8px 0}
+ol,ul{margin:8px 0 8px 22px}
+li{margin:4px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:0.93em}
+th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+tr:nth-child(even) td{background:#f1f5f9}
+.bx{border-radius:8px;padding:14px 16px;margin:14px 0}
+.bg{background:#f0fdf4;border-left:4px solid #16a34a}
+.bb{background:#eff6ff;border-left:4px solid #2563eb}
+.ba{background:#fff7ed;border-left:4px solid #d97706}
+.bp{background:#faf5ff;border-left:4px solid #7c3aed}
+.br{background:#fff1f2;border-left:4px solid #dc2626}
+.bt{font-weight:700;margin-bottom:4px}
+.fm{font-family:monospace;background:#1e293b;color:#e2e8f0;padding:12px 16px;border-radius:6px;margin:12px 0;white-space:pre-wrap;font-size:0.88em;line-height:1.6}
+.eq{font-family:monospace;background:#f1f5f9;color:#1e293b;padding:10px 14px;border-radius:6px;margin:10px 0;border:1px solid #cbd5e1;font-size:0.95em}
+.cover{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#7c3aed 100%);color:#fff;border-radius:12px;padding:40px 32px;margin-bottom:32px;text-align:center}
+.cover h1{color:#fff;font-size:2.2em}
+.cover .sub{color:#c4b5fd;font-size:1.1em;margin-top:8px}
+.cover .series{color:#64748b;font-size:0.9em;margin-top:16px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="series">VIEW → PAYOFF MASTERY — PART VI</div>
+<h1>Binary Options &amp; Prediction Markets</h1>
+<div class="sub">Step Function Payoffs — เสริม Payoff Chart ด้วย Yes/No Contracts</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li>เข้าใจ <strong>Binary / Digital Options</strong> — payoff รูปแบบ step function</li>
+<li>เชื่อม <strong>PM Yes/No tokens</strong> (Kalshi, Polymarket) เข้ากับ options theory</li>
+<li>พิสูจน์ว่า <strong>Binary = Limit of Tight Spread</strong> — connection กับ vanilla options</li>
+<li>ขยาย slope decomposition ให้รองรับ <strong>step function payoffs</strong></li>
+<li>ผสม Binary + Vanilla สร้าง <strong>payoff รูปร่างที่ซับซ้อน</strong> จาก belief ใดก็ได้</li>
+<li>อ่าน <strong>implied probability</strong> จาก IV smile ผ่าน binary pricing</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">ทำไม Binary Options สำคัญสำหรับ Payoff Chart?</div>
+<p>Vanilla options สร้างได้เฉพาะ payoff ที่มี <strong>slope เปลี่ยนทีละน้อย (kinks)</strong><br>
+Binary options เพิ่ม <strong>vertical jumps (step functions)</strong> — ทำให้สร้าง payoff ได้ทุกรูปร่างที่ต้องการ<br>
+ใช้ได้กับ <strong>ทุกสินทรัพย์</strong>: หุ้น, ดัชนี, crypto, forex, commodity</p>
+</div>
+
+<h2>บทที่ 32: Binary / Digital Option คืออะไร?</h2>
+
+<p>Binary option จ่าย <strong>ผลตอบแทนคงที่</strong> (fixed $1) ถ้าเงื่อนไขเป็นจริง — ไม่ขึ้นกับว่าราคาอยู่เหนือ/ต่ำกว่า strike มากแค่ไหน</p>
+
+<table>
+<tr><th>ประเภท</th><th>Payoff ที่ Expiry</th><th>เปรียบ</th></tr>
+<tr><td><strong>Binary Call (Asset-or-Nothing)</strong></td><td>$1 ถ้า S_T &gt; K, else $0</td><td>Yes token ว่า "ราคาจะอยู่เหนือ K"</td></tr>
+<tr><td><strong>Binary Put</strong></td><td>$1 ถ้า S_T &lt; K, else $0</td><td>No token / Yes token ว่า "ราคาจะต่ำกว่า K"</td></tr>
+<tr><td><strong>Range Binary</strong></td><td>$1 ถ้า K₁ &lt; S_T &lt; K₂, else $0</td><td>Yes token ว่า "ราคาจะอยู่ใน range"</td></tr>
+</table>
+
+<svg viewBox="0 0 520 175" style="display:block;max-width:100%;margin:16px auto">
+  <!-- axes -->
+  <line x1="40" y1="130" x2="480" y2="130" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="40" y1="160" x2="480" y2="160" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="490" y="163" font-family="Sarabun" font-size="9" fill="#64748b">S_T</text>
+  <!-- Binary Call step function -->
+  <line x1="40" y1="130" x2="220" y2="130" stroke="#2563eb" stroke-width="3"/>
+  <line x1="220" y1="130" x2="220" y2="65" stroke="#2563eb" stroke-width="2" stroke-dasharray="4,2"/>
+  <line x1="220" y1="65" x2="480" y2="65" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="220" cy="130" r="5" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+  <circle cx="220" cy="65" r="5" fill="#2563eb"/>
+  <text x="220" y="170" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#d97706">K</text>
+  <text x="100" y="125" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">payoff = $0</text>
+  <text x="360" y="60" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">payoff = $1</text>
+  <!-- Binary Put (dashed green) -->
+  <line x1="40" y1="65" x2="220" y2="65" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,3"/>
+  <line x1="220" y1="65" x2="220" y2="130" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <line x1="220" y1="130" x2="480" y2="130" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- legend -->
+  <rect x="290" y="15" width="14" height="3" fill="#2563eb"/>
+  <text x="308" y="20" font-family="Sarabun" font-size="8.5" fill="#2563eb">Binary Call</text>
+  <rect x="290" y="28" width="14" height="3" fill="#16a34a"/>
+  <text x="308" y="33" font-family="Sarabun" font-size="8.5" fill="#16a34a">Binary Put</text>
+  <text x="30" y="68" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">$1</text>
+  <text x="30" y="133" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">$0</text>
+  <text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Binary Call + Binary Put = $1 เสมอ (risk-free portfolio)</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">กฎพื้นฐาน: Binary Call + Binary Put = $1</div>
+<div class="eq">BinaryCall(K) + BinaryPut(K) = $1  (ที่ทุก S_T)
+
+→ Yes token + No token = $1  (ใน prediction market)
+→ ถ้า Yes = $0.70  →  No = $0.30  (implied probability 70% vs 30%)</div>
+<p>ราคาของ Binary Call = <strong>implied probability</strong> ที่ตลาดให้กับเหตุการณ์ S_T &gt; K</p>
+</div>
+
+<h2>บทที่ 33: Prediction Market Yes/No = Binary Options</h2>
+
+<p>Kalshi, Polymarket, Manifold Markets ซื้อขาย Yes/No contracts ที่มีโครงสร้างเหมือน binary options ทุกประการ</p>
+
+<table>
+<tr><th>PM Concept</th><th>Options Equivalent</th><th>ตัวอย่าง</th></tr>
+<tr><td><strong>Yes token</strong></td><td>Binary Call(K)</td><td>"BTC &gt; $80K ณ Dec 31" ราคา $0.35 = 35% implied prob</td></tr>
+<tr><td><strong>No token</strong></td><td>Binary Put(K)</td><td>"BTC &lt; $80K ณ Dec 31" ราคา $0.65 = 65% implied prob</td></tr>
+<tr><td><strong>Range contract</strong></td><td>Range Binary</td><td>"BTC อยู่ $70K-$80K" = Binary Call(70K) − Binary Call(80K)</td></tr>
+<tr><td><strong>PM Spread</strong></td><td>Binary Spread</td><td>Buy Yes(70K) + Sell Yes(80K) = ได้ $1 ถ้า 70K &lt; S &lt; 80K</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Arbitrage: PM vs Options Market</div>
+<p>ถ้า Polymarket บอก "BTC &gt; $80K" = 40% แต่ Deribit option implied prob ที่ 80K = 45%<br>
+→ มี arbitrage: <strong>Buy Yes token บน PM + Short Binary Call บน Deribit</strong><br>
+→ Lock in 5% profit โดยไม่มี market risk<br>
+ในทางปฏิบัติ: friction (bid-ask, settlement risk) ลด edge แต่ยังมีโอกาสใน extreme mispricings</p>
+</div>
+
+<h2>บทที่ 34: Binary = Limit of Tight Vanilla Spread</h2>
+
+<p>นี่คือ connection ที่สำคัญที่สุดระหว่าง binary และ vanilla options:</p>
+
+<div class="eq">Binary Call(K) = lim[ε→0]  Bull Call Spread(K, K+ε) / ε
+
+หรือในเชิง calculus:
+Binary Call(K) = −∂C(K)/∂K  (negative derivative of call price w.r.t. strike)</div>
+
+<p>กล่าวคือ: <strong>Bull Call Spread ที่แคบมากๆ ≈ Binary Call</strong></p>
+
+<svg viewBox="0 0 520 185" style="display:block;max-width:100%;margin:16px auto">
+  <!-- axes -->
+  <line x1="40" y1="140" x2="480" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <!-- Wide spread (ε large) -->
+  <polyline points="40,140 160,140 300,80 480,80" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="390" y="76" font-family="Sarabun" font-size="8.5" fill="#94a3b8">Bull Spread กว้าง (ε ใหญ่)</text>
+  <!-- Medium spread -->
+  <polyline points="40,140 200,140 260,80 480,80" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="370" y="93" font-family="Sarabun" font-size="8.5" fill="#d97706">ε เล็กลง</text>
+  <!-- Tight spread (approaching binary) -->
+  <polyline points="40,140 228,140 232,80 480,80" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="350" y="110" font-family="Sarabun" font-size="8.5" fill="#dc2626">ε เล็กมาก</text>
+  <!-- Binary limit -->
+  <line x1="40" y1="140" x2="230" y2="140" stroke="#2563eb" stroke-width="3"/>
+  <line x1="230" y1="140" x2="230" y2="80" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="3,2"/>
+  <line x1="230" y1="80" x2="480" y2="80" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="230" cy="80" r="4" fill="#2563eb"/>
+  <text x="230" y="175" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">K</text>
+  <text x="100" y="165" font-family="Sarabun" font-size="8" fill="#2563eb">→ Binary Call (ε→0)</text>
+  <text x="260" y="20" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Bull Call Spread ยิ่งแคบ → เข้าใกล้ Binary Call ยิ่งขึ้น</text>
+</svg>
+
+<div class="bx bp">
+<div class="bt">ทำไมเรื่องนี้สำคัญในทางปฏิบัติ?</div>
+<ol>
+<li><strong>ราคา Binary</strong> = implied probability ภายใต้ Q-measure → อ่านจาก option chain ได้</li>
+<li><strong>IV Smile slope</strong> ที่ strike K บอกว่า market ให้ probability อะไรกับ S_T ≈ K</li>
+<li>ถ้าคุณเชื่อ probability ต่างจาก market → trade ด้วย tight spread ใกล้ K นั้น</li>
+<li>PM Yes/No token ราคาต่างจาก implied binary price → arbitrage opportunity</li>
+</ol>
+</div>
+
+<h2>บทที่ 35: ขยาย Slope Decomposition — Step Functions</h2>
+
+<p>Slope decomposition ใน Part III ใช้ได้กับ kink ±1 เท่านั้น ตอนนี้เพิ่ม step functions:</p>
+
+<table>
+<tr><th>Payoff Element</th><th>รูปร่าง</th><th>Option Component</th></tr>
+<tr><td>Slope +1 ที่ K (จากซ้าย)</td><td>/ (kink ขึ้น)</td><td>Long Call(K)</td></tr>
+<tr><td>Slope −1 ที่ K (จากซ้าย)</td><td>\ (kink ลง)</td><td>Short Call(K)</td></tr>
+<tr><td>Slope +1 ที่ K (จากขวา)</td><td>\ (kink จากขวา)</td><td>Long Put(K)</td></tr>
+<tr><td>Slope −1 ที่ K (จากขวา)</td><td>/ (kink จากขวา)</td><td>Short Put(K)</td></tr>
+<tr><td><strong>Jump +$A ที่ K (ขึ้นฉับพลัน)</strong></td><td>⌐ (step up)</td><td><strong>Long Binary Call(K) × A</strong></td></tr>
+<tr><td><strong>Jump −$A ที่ K (ลงฉับพลัน)</strong></td><td>¬ (step down)</td><td><strong>Short Binary Call(K) × A</strong></td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">Full Decomposition Algorithm (Extended)</div>
+<div class="fm">สำหรับแต่ละ feature ใน payoff ที่ต้องการ:
+
+  Kink (slope change ±1 at K):
+    → ใช้ vanilla Call หรือ Put ที่ strike K
+
+  Integer slope change (±N at K):
+    → ใช้ N vanilla options ที่ strike K
+
+  Vertical jump ($A at K):
+    → ใช้ Binary Call(K) × A (หรือ tight Call Spread ≈ Binary)
+
+  Constant payoff (baseline):
+    → ใช้ Bond / Cash position</div>
+</div>
+
+<p><strong>ตัวอย่าง: payoff ที่มีทั้ง kink และ jump</strong></p>
+
+<svg viewBox="0 0 520 175" style="display:block;max-width:100%;margin:16px auto">
+  <!-- axes -->
+  <line x1="40" y1="120" x2="480" y2="120" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="40" y1="160" x2="480" y2="160" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Bull Spread + Binary bonus at K₂ -->
+  <!-- Bull Spread part: rises from K₁ to K₂ then flat -->
+  <polyline points="40,120 120,120 260,70 480,70" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="420" y="65" font-family="Sarabun" font-size="8" fill="#94a3b8">Bull Spread เดิม</text>
+  <!-- With binary bonus: step up at K₂ by +$0.5 -->
+  <polyline points="40,120 120,120 260,70" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <line x1="260" y1="70" x2="260" y2="45" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="3,2"/>
+  <line x1="260" y1="45" x2="480" y2="45" stroke="#2563eb" stroke-width="2.5"/>
+  <circle cx="260" cy="45" r="4" fill="#7c3aed"/>
+  <!-- labels -->
+  <text x="120" y="170" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#d97706">K₁</text>
+  <text x="260" y="170" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#d97706">K₂</text>
+  <line x1="260" y1="70" x2="285" y2="55" stroke="#7c3aed" stroke-width="1"/>
+  <text x="300" y="52" font-family="Sarabun" font-size="8.5" fill="#7c3aed">+ Binary Bonus ที่ K₂</text>
+  <text x="260" y="15" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Bull Spread + Binary Call(K₂) = กำไรพิเศษถ้าราคาทะลุ K₂ พอดี</text>
+</svg>
+
+</body></html>
