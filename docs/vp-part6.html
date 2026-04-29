@@ -57,7 +57,8 @@ tr:nth-child(even) td{background:#f1f5f9}
 <div class="bt">ทำไม Binary Options สำคัญสำหรับ Payoff Chart?</div>
 <p>Vanilla options สร้างได้เฉพาะ payoff ที่มี <strong>slope เปลี่ยนทีละน้อย (kinks)</strong><br>
 Binary options เพิ่ม <strong>vertical jumps (step functions)</strong> — ทำให้สร้าง payoff ได้ทุกรูปร่างที่ต้องการ<br>
-ใช้ได้กับ <strong>ทุกสินทรัพย์</strong>: หุ้น, ดัชนี, crypto, forex, commodity</p>
+ใช้ได้กับ <strong>ทุกสินทรัพย์</strong>: หุ้น, ดัชนี, crypto, forex, commodity<br>
+ใน framework 5 มิติจาก Part I: Binary options แสดงออกถึง <strong>Dimension 3 — Probability Shape</strong> โดยตรง เพราะราคา Binary Call = ความน่าจะเป็น risk-neutral ที่ตลาดกำหนดให้กับเหตุการณ์นั้น</p>
 </div>
 
 <h2>บทที่ 32: Binary / Digital Option คืออะไร?</h2>
@@ -288,20 +289,32 @@ Binary Put(60K): −$X  [ราคา = implied probability × notional]<br>
 
 <div class="eq">Risk-neutral density:   f_Q(K) = e^(rT) × ∂²C/∂K²
 
-Binary Call price:      P_Q(S_T &gt; K) ≈ N(d₂)   [ใต้ Black-Scholes]
+Binary Call price:      P_Q(S_T &gt; K) = N(d₂)   [Black-Scholes exact]
 
-d₂ = [ln(S/K) + (r − σ²/2)T] / (σ√T)
+d₁ = [ln(S/K) + (r + σ²/2)T] / (σ√T)
+d₂ = d₁ − σ√T = [ln(S/K) + (r − σ²/2)T] / (σ√T)
 
-ในทางปฏิบัติ: Delta ของ Call option ≈ P(S_T &gt; K)
-→ อ่าน implied probability ได้จาก Call Delta บน option chain โดยตรง</div>
+Call Delta = N(d₁)   ←  ไม่ใช่ probability โดยตรง
+Risk-neutral probability = N(d₂)   ←  นี่คือ implied probability จริง
+
+ความต่าง: N(d₁) − N(d₂) = σ√T × φ(d₂) ≈ σ√T × 0.4
+ตัวอย่าง BTC (σ=65%, T=30d): σ√T ≈ 0.206 → ต่างกันประมาณ 5–8 vol points</div>
+
+<div class="bx br">
+<div class="bt">⚠ Delta ≠ Probability (แต่เป็น approximation ที่ใช้ได้ในทางปฏิบัติ)</div>
+<p><strong>Delta = N(d₁)</strong> ส่วน <strong>implied probability = N(d₂)</strong> ทั้งสองต่างกันด้วย σ√T<br>
+สำหรับ ATM option ความต่างน้อย — แต่สำหรับ deep ITM/OTM ต่างกันได้หลายเปอร์เซ็นต์<br>
+นอกจากนี้ ถ้า IV smile/skew ไม่ flat: <strong>Delta ประเมิน probability สูงเกินจริงสำหรับ OTM options</strong> ที่ถูก IV skew กด<br>
+วิธีที่แม่นยำกว่า: ใช้ Breeden-Litzenberger (∂²C/∂K²) หรือดู Binary option price จาก PM โดยตรง</p>
+</div>
 
 <table>
-<tr><th>Strike K</th><th>IV (BTC smile)</th><th>Call Delta ≈ P(S &gt; K)</th><th>แปลความ</th></tr>
-<tr><td>65,000</td><td>72%</td><td>~0.75</td><td>75% prob BTC &gt; 65K</td></tr>
-<tr><td>70,000</td><td>67%</td><td>~0.62</td><td>62% prob BTC &gt; 70K</td></tr>
-<tr><td>75,000 (ATM)</td><td>65%</td><td>~0.50</td><td>50% (ATM ≈ forward)</td></tr>
-<tr><td>80,000</td><td>66%</td><td>~0.38</td><td>38% prob BTC &gt; 80K</td></tr>
-<tr><td>85,000</td><td>70%</td><td>~0.25</td><td>25% prob BTC &gt; 85K</td></tr>
+<tr><th>Strike K</th><th>IV (BTC smile)</th><th>N(d₂) = implied prob</th><th>Call Delta = N(d₁)</th><th>แปลความ</th></tr>
+<tr><td>65,000</td><td>72%</td><td>~0.72</td><td>~0.78</td><td>72% prob BTC &gt; 65K (Delta สูงกว่าจริง ~6%)</td></tr>
+<tr><td>70,000</td><td>67%</td><td>~0.59</td><td>~0.64</td><td>59% prob BTC &gt; 70K</td></tr>
+<tr><td>75,000 (ATM)</td><td>65%</td><td>~0.50</td><td>~0.52</td><td>50% (ATM ≈ forward)</td></tr>
+<tr><td>80,000</td><td>66%</td><td>~0.37</td><td>~0.40</td><td>37% prob BTC &gt; 80K</td></tr>
+<tr><td>85,000</td><td>70%</td><td>~0.23</td><td>~0.26</td><td>23% prob BTC &gt; 85K</td></tr>
 </table>
 
 <div class="bx ba">
