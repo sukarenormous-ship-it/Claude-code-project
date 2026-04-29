@@ -225,4 +225,159 @@ Binary Call(K) = −∂C(K)/∂K  (negative derivative of call price w.r.t. stri
   <text x="260" y="15" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Bull Spread + Binary Call(K₂) = กำไรพิเศษถ้าราคาทะลุ K₂ พอดี</text>
 </svg>
 
+<h2>บทที่ 36: ผสม Binary + Vanilla — Complex Payoffs จาก Belief ที่ซับซ้อน</h2>
+
+<table>
+<tr><th>Belief</th><th>Vanilla Part</th><th>Binary Part</th><th>Combined Payoff</th></tr>
+<tr>
+  <td>"BTC อยู่ 70K-80K แต่ถ้า crash &lt;60K อยากได้ protection"</td>
+  <td>Iron Condor (70K-80K)</td>
+  <td>Long Binary Put(60K)</td>
+  <td>Corridor profit + ได้ $1 ถ้า crash ลึก</td>
+</tr>
+<tr>
+  <td>"ETH จะขึ้นถึง 3,500 — ถ้าทะลุได้ bonus"</td>
+  <td>Bull Call Spread (3000-3500)</td>
+  <td>Long Binary Call(3500)</td>
+  <td>Rising payoff + bonus ถ้าทะลุ target</td>
+</tr>
+<tr>
+  <td>"ราคาจะ bimodal: ใกล้ 70K หรือ 85K"</td>
+  <td>Long Strangle</td>
+  <td>Long Binary Put(72K) + Long Binary Call(82K)</td>
+  <td>V-shape + peaks ที่ target ทั้งสอง</td>
+</tr>
+<tr>
+  <td>"นิ่ง ยกเว้นถ้า Fed surprise"</td>
+  <td>Short Straddle (income)</td>
+  <td>Long Binary Straddle (payout ถ้า gap)</td>
+  <td>Collect theta + protect ถ้า event เกิด</td>
+</tr>
+</table>
+
+<h3>Worked Example: BTC Corridor + Crash Protection</h3>
+
+<svg viewBox="0 0 520 195" style="display:block;max-width:100%;margin:16px auto">
+  <line x1="40" y1="130" x2="480" y2="130" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <polyline points="40,155 100,155 170,95 310,95 380,155 480,155" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="410" y="148" font-family="Sarabun" font-size="8" fill="#94a3b8">Iron Condor</text>
+  <line x1="40" y1="125" x2="80" y2="125" stroke="#2563eb" stroke-width="2.5"/>
+  <line x1="80" y1="125" x2="80" y2="155" stroke="#7c3aed" stroke-width="2" stroke-dasharray="3,2"/>
+  <line x1="80" y1="155" x2="100" y2="155" stroke="#2563eb" stroke-width="2.5"/>
+  <polyline points="100,155 170,95 310,95 380,155 480,155" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <circle cx="80" cy="125" r="4" fill="#7c3aed"/>
+  <circle cx="170" cy="95" r="3.5" fill="#16a34a"/>
+  <circle cx="310" cy="95" r="3.5" fill="#16a34a"/>
+  <text x="80" y="185" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#7c3aed">60K (Binary)</text>
+  <text x="170" y="185" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#16a34a">70K</text>
+  <text x="310" y="185" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#16a34a">80K</text>
+  <line x1="65" y1="122" x2="42" y2="108" stroke="#7c3aed" stroke-width="1"/>
+  <text x="40" y="104" font-family="Sarabun" font-size="7.5" fill="#7c3aed">Binary kick</text>
+  <text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Iron Condor + Binary Put(60K) — Corridor profit + Crash protection</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">คิด Cost ของ Combined Strategy</div>
+<p>Iron Condor: +$1,200 net credit<br>
+Binary Put(60K): −$X  [ราคา = implied probability × notional]<br>
+ถ้า PM บอก "BTC &lt; 60K" = 15% → Binary Put ≈ $150<br>
+<strong>Net: $1,200 − $150 = net credit $1,050</strong> + crash protection ฟรี</p>
+</div>
+
+<h2>บทที่ 37: อ่าน Implied Probability จาก IV Smile</h2>
+
+<div class="eq">Risk-neutral density:   f_Q(K) = e^(rT) × ∂²C/∂K²
+
+Binary Call price:      P_Q(S_T &gt; K) ≈ N(d₂)   [ใต้ Black-Scholes]
+
+d₂ = [ln(S/K) + (r − σ²/2)T] / (σ√T)
+
+ในทางปฏิบัติ: Delta ของ Call option ≈ P(S_T &gt; K)
+→ อ่าน implied probability ได้จาก Call Delta บน option chain โดยตรง</div>
+
+<table>
+<tr><th>Strike K</th><th>IV (BTC smile)</th><th>Call Delta ≈ P(S &gt; K)</th><th>แปลความ</th></tr>
+<tr><td>65,000</td><td>72%</td><td>~0.75</td><td>75% prob BTC &gt; 65K</td></tr>
+<tr><td>70,000</td><td>67%</td><td>~0.62</td><td>62% prob BTC &gt; 70K</td></tr>
+<tr><td>75,000 (ATM)</td><td>65%</td><td>~0.50</td><td>50% (ATM ≈ forward)</td></tr>
+<tr><td>80,000</td><td>66%</td><td>~0.38</td><td>38% prob BTC &gt; 80K</td></tr>
+<tr><td>85,000</td><td>70%</td><td>~0.25</td><td>25% prob BTC &gt; 85K</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">อ่าน Corridor Probability ก่อน Trade Iron Condor</div>
+<p>P(70K &lt; BTC &lt; 80K) = Delta(70K) − Delta(80K) = 62% − 38% = <strong>24%</strong><br>
+Iron Condor EV threshold = 76% (จาก Part III)<br>
+→ ตลาดบอก 24% แต่ threshold ต้องการ 76% → <strong>gap ใหญ่มาก</strong><br>
+→ ถามตัวเอง: "มีข้อมูลอะไรที่ทำให้ฉันเชื่อว่า corridor probability สูงกว่า 24% จริงๆ?"<br>
+ถ้าตอบไม่ได้ → ปรับ strike ให้กว้างขึ้น หรือ trade เล็กลง</p>
+</div>
+
+<h2>บทที่ 38: Use Cases จริง — ใช้ Binary + PM อย่างชาญฉลาด</h2>
+
+<table>
+<tr><th>Situation</th><th>ปัญหาถ้าใช้ Vanilla</th><th>Binary / PM แก้ได้อย่างไร</th></tr>
+<tr>
+  <td>Earnings announcement</td>
+  <td>Long Straddle แพง (IV สูงก่อน event)</td>
+  <td>PM Yes/No "ราคา &gt; K หลัง earnings" — จ่ายน้อยกว่า, payout ชัดเจน</td>
+</tr>
+<tr>
+  <td>Fed rate decision</td>
+  <td>Options ราคาแพง, basis risk</td>
+  <td>Kalshi "Fed ขึ้น 25bps" — ตรง event, ไม่ผ่าน underlying</td>
+</tr>
+<tr>
+  <td>Range belief</td>
+  <td>Iron Condor = 4 legs, slippage สูง</td>
+  <td>PM Range contract = 1 position, 2 legs</td>
+</tr>
+<tr>
+  <td>Bimodal belief</td>
+  <td>Long Strangle = linear, ไม่ peak ที่ mode</td>
+  <td>Binary Call + Binary Put ที่ 2 modes — payoff ตรง belief</td>
+</tr>
+<tr>
+  <td>PM vs Options arb</td>
+  <td>—</td>
+  <td>Buy Yes บน PM + Short tight Call Spread = risk-free ถ้าราคาต่างกัน &gt;3%</td>
+</tr>
+</table>
+
+<div class="bx br">
+<div class="bt">⚠ ข้อควรระวัง: Binary Options Retail Products</div>
+<p>Binary options จาก unregulated broker มีปัญหาสูง:<br>
+• Payout &lt; 100% (house edge 15–20%) — ไม่มี edge ระยะยาว<br>
+• Settlement ที่ expiry ถูก manipulate ได้ง่าย<br>
+• ปัญหา withdrawal<br>
+<strong>ใช้เฉพาะ:</strong> CBOE/CME binary options, Kalshi (US regulated), Deribit digital options</p>
+</div>
+
+<h2>สรุป Part VI + Series ทั้งหมด</h2>
+
+<div class="bx bb">
+<div class="bt">View → Payoff Toolkit สมบูรณ์</div>
+<ol>
+<li><strong>Specify Belief</strong> ด้วย 5 มิติ (Part I)</li>
+<li><strong>Map to Family</strong> ผ่าน 6 Families + Master Matrix (Part II)</li>
+<li><strong>Imagine Payoff</strong> → Decompose → Enumerate → Score (Part III)</li>
+<li><strong>Optimize Construction</strong> ด้วย PCP + IV Skew (Part IV)</li>
+<li><strong>Navigate</strong> ด้วย Decision Tree + Cheat Sheet (Part V)</li>
+<li><strong>Extend</strong> ด้วย Binary + PM ถ้า belief มี event-based component (Part VI)</li>
+</ol>
+</div>
+
+<table>
+<tr><th>Asset Class</th><th>Skew</th><th>Binary / PM ที่มี</th></tr>
+<tr><td>Equity (SET50, SPY)</td><td>Left skew</td><td>CBOE binary, options delta</td></tr>
+<tr><td>Crypto (BTC, ETH)</td><td>Smile / Right skew</td><td>Deribit, Polymarket, Kalshi</td></tr>
+<tr><td>Forex</td><td>Near symmetric</td><td>FX binary options, PM</td></tr>
+<tr><td>Rates / Macro</td><td>Term structure</td><td>Kalshi (Fed, CPI)</td></tr>
+<tr><td>Commodity</td><td>Right skew</td><td>CME binary options</td></tr>
+</table>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Series: View → Payoff Mastery (6 Parts) —</p>
+
+</body></html>
+
 </body></html>
