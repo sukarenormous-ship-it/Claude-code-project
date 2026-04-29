@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View → Payoff — Part II</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:520px;width:100%}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}</style></head><body>
+
+<div class="cover">
+<h1>View → Payoff</h1>
+<div class="sub">Part II: Bias Family Map — 6 กลุ่มและ Master Matrix</div>
+<div class="desc">จาก belief ที่ชัดเจน (Part I) → เลือก strategy family ที่ถูกต้อง — ไม่ต้องจำ strategy 30+ ตัวอีกต่อไป</div>
+</div>
+
+<h2>บทที่ 8: ทำไมต้องคิดเป็น "Family"?</h2>
+
+<p>Options มี strategy ชื่อเรียกมากกว่า 50 แบบ — แต่ทุก strategy สังกัด <strong>6 Family</strong> ตามประเภทของ belief ที่มันออกแบบมาเพื่อ</p>
+
+<div class="bx bg"><div class="bt">กฎ 80/20 จาก Quant Fund</div>
+<p>80% ของ trade ใน systematic options desk สังกัด 3 Family แรก (Directional, Range, Volatility)<br>
+Family 4–6 ใช้เมื่อ belief ซับซ้อนขึ้น หรือมี existing position อยู่แล้ว<br>
+<strong>รู้ family → รู้ strategy → ไม่ต้องจำชื่อ — จำ belief pattern แทน</strong></p></div>
+
+<table>
+<tr><th>#</th><th>Family</th><th>เหมาะเมื่อ</th></tr>
+<tr><td>1</td><td><strong>Directional</strong></td><td>มั่นใจทิศทาง (ขึ้น/ลง) ชัดเจน</td></tr>
+<tr><td>2</td><td><strong>Range / Boundary</strong></td><td>รู้ขอบบน ขอบล่าง หรือทั้งสอง</td></tr>
+<tr><td>3</td><td><strong>Volatility</strong></td><td>มี view ว่า vol จะสูงหรือต่ำ แต่ไม่แน่ใจทิศ</td></tr>
+<tr><td>4</td><td><strong>Distribution Shape</strong></td><td>มี view เรื่องรูปร่างของ distribution (peak/fat tail)</td></tr>
+<tr><td>5</td><td><strong>Income / Cash Flow</strong></td><td>ต้องการ premium income ยอมรับ risk ที่กำหนด</td></tr>
+<tr><td>6</td><td><strong>Hedging</strong></td><td>มี underlying position อยู่แล้ว ต้องการ modify risk</td></tr>
+</table>
+
+<h2>บทที่ 9: Family 1 — Directional (มีทิศทาง)</h2>
+
+<p>แบ่งตาม <strong>magnitude</strong> และ <strong>conviction</strong> — ต่างกันมากกว่าที่คิด:</p>
+
+<svg class="d" viewBox="0 0 520 155">
+<text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Family 1: Strong / Mild / Pinpoint Directional</text>
+<!-- Zero lines -->
+<line x1="15" y1="95" x2="158" y2="95" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="182" y1="95" x2="338" y2="95" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="362" y1="95" x2="508" y2="95" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<!-- Strong: Long Call -->
+<polyline points="15,108 72,108 158,38" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="72" cy="108" r="3" fill="#d97706"/>
+<text x="87" y="132" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Strong</text>
+<text x="87" y="144" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Long Call</text>
+<text x="87" y="155" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#94a3b8">Unlimited upside</text>
+<!-- Mild: Bull Spread -->
+<polyline points="182,112 228,112 292,52 338,52" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="228" cy="112" r="3" fill="#d97706"/>
+<circle cx="292" cy="52" r="3" fill="#d97706"/>
+<text x="260" y="132" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Mild</text>
+<text x="260" y="144" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Bull Spread</text>
+<text x="260" y="155" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#94a3b8">Capped, ลด cost</text>
+<!-- Pinpoint: Butterfly -->
+<polyline points="362,112 393,112 435,32 477,112 508,112" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="393" cy="112" r="3" fill="#d97706"/>
+<circle cx="435" cy="32" r="3" fill="#d97706"/>
+<circle cx="477" cy="112" r="3" fill="#d97706"/>
+<text x="435" y="132" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Pinpoint</text>
+<text x="435" y="144" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Butterfly</text>
+<text x="435" y="155" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#94a3b8">Peak at target</text>
+</svg>
+
+<table>
+<tr><th>Sub-type</th><th>Belief</th><th>Strategies</th><th>เลือกเมื่อ</th></tr>
+<tr><td><strong>Strong</strong></td><td>ขึ้น/ลงแรง ไม่จำกัด</td><td>Long Call/Put</td><td>IV ต่ำ + conviction สูงมาก</td></tr>
+<tr><td><strong>Mild</strong></td><td>ขึ้น/ลงปานกลาง มีขอบ</td><td>Bull/Bear Spread</td><td>IV ใดก็ได้ — 80% ของ directional trade</td></tr>
+<tr><td><strong>Pinpoint</strong></td><td>"จะจบแถว X พอดี"</td><td>Butterfly</td><td>High reward แต่ต้องถูกมาก — size เล็ก</td></tr>
+</table>
+
+<div class="bx br"><div class="bt">กับดัก: Naked Long Option ตอน IV สูง</div>
+<p>ก่อน earnings หรือ macro event → IV สูงมาก → Long Call แพงเป็นพิเศษ<br>
+ซื้อแล้ว direction ถูก แต่ IV ลดหลัง event → option เสียราคาแม้ราคาขึ้น<br>
+<strong>กฎ: IV สูง → Spread แทน Naked เสมอ</strong></p></div>
+
+<h2>บทที่ 10: Family 2 — Range / Boundary (รู้ขอบเขต)</h2>
+
+<p>เหมาะเมื่อ belief มีขอบบน ขอบล่าง หรือ corridor ชัดเจน — ไม่ว่าจะมี direction bias ด้วยหรือไม่</p>
+
+<svg class="d" viewBox="0 0 520 155">
+<text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Family 2: Range/Boundary — Ceiling / Floor / Corridor / Breakout</text>
+<!-- Zero lines -->
+<line x1="12" y1="90" x2="118" y2="90" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="138" y1="90" x2="248" y2="90" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="268" y1="90" x2="388" y2="90" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="403" y1="90" x2="510" y2="90" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<!-- Ceiling: Covered Call -->
+<polyline points="12,112 62,62 118,62" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="62" cy="62" r="3" fill="#d97706"/>
+<text x="65" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Ceiling</text>
+<text x="65" y="142" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Covered Call</text>
+<!-- Floor: Protective Put (rising with floor) -->
+<polyline points="138,112 138,112 193,90 248,38" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round"/>
+<line x1="138" y1="112" x2="193" y2="112" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 2"/>
+<circle cx="193" cy="90" r="3" fill="#d97706"/>
+<text x="193" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Floor</text>
+<text x="193" y="142" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Protective Put</text>
+<!-- Corridor: Iron Condor -->
+<polyline points="268,112 292,112 314,62 346,62 368,112 388,112" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round"/>
+<text x="328" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Corridor</text>
+<text x="328" y="142" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Iron Condor</text>
+<!-- Breakout: Long Strangle (V) -->
+<polyline points="403,32 456,112 510,32" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="456" cy="112" r="3" fill="#d97706"/>
+<text x="456" y="130" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Breakout</text>
+<text x="456" y="142" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">Long Strangle</text>
+</svg>
+
+<table>
+<tr><th>Boundary Belief</th><th>Payoff Component</th><th>Strategies</th></tr>
+<tr><td>มีขอบบนเท่านั้น</td><td>Short Call at K</td><td>Covered Call, Bull Call Spread</td></tr>
+<tr><td>มีขอบล่างเท่านั้น</td><td>Long Put at K</td><td>Protective Put, Bear Put Spread</td></tr>
+<tr><td>มี Corridor [K₁, K₄]</td><td>Spread ทั้งสองด้าน</td><td>Iron Condor, Condor</td></tr>
+<tr><td>Breakout (ออกจาก range)</td><td>Long options ทั้งสองด้าน</td><td>Long Straddle, Long Strangle</td></tr>
+</table>
+
+<h2>บทที่ 11: Family 3 — Volatility (Trade Vol ไม่ใช่ Direction)</h2>
+
+<p>เหมาะเมื่อ <strong>ไม่แน่ใจทิศ แต่มั่นใจเรื่อง vol</strong> — ใน quant fund หลายแห่งนี่คือ primary trade ไม่ใช่ direction</p>
+
+<svg class="d" viewBox="0 0 520 145">
+<text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Family 3: Long Vol vs Short Vol</text>
+<!-- Zero lines -->
+<line x1="20" y1="88" x2="238" y2="88" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="282" y1="88" x2="500" y2="88" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<!-- Long Straddle (V) -->
+<polyline points="20,28 130,112 238,28" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="130" cy="112" r="4" fill="#d97706"/>
+<text x="130" y="128" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#16a34a" font-weight="700">Long Vol</text>
+<text x="130" y="140" text-anchor="middle" font-family="Sarabun" font-size="8.5" fill="#64748b">Straddle / Strangle — กำไรถ้า big move</text>
+<!-- Short Straddle (inverted V) -->
+<polyline points="282,112 390,28 500,112" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="390" cy="28" r="4" fill="#d97706"/>
+<text x="390" y="118" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#dc2626" font-weight="700">Short Vol</text>
+<text x="390" y="130" text-anchor="middle" font-family="Sarabun" font-size="8.5" fill="#64748b">Short Straddle / Iron Condor — กำไรถ้าราคานิ่ง</text>
+</svg>
+
+<table>
+<tr><th>Vol Belief</th><th>Direction Bias เพิ่ม</th><th>Strategy</th></tr>
+<tr><td>High vol (ไม่รู้ทิศ)</td><td>—</td><td>Long Straddle / Long Strangle</td></tr>
+<tr><td>High vol + Bullish</td><td>ขึ้นแรง</td><td>Back Ratio Call (+2 OTM Call, −1 ATM Call)</td></tr>
+<tr><td>High vol + Bearish</td><td>ลงแรง</td><td>Back Ratio Put (+2 OTM Put, −1 ATM Put)</td></tr>
+<tr><td>Low vol (ไม่รู้ทิศ)</td><td>—</td><td>Iron Condor / Short Straddle / Butterfly</td></tr>
+<tr><td>Low vol + Mild Bullish</td><td>ขึ้นเล็กน้อย</td><td>Bull Call Spread (Short Vega)</td></tr>
+<tr><td>Low vol + Mild Bearish</td><td>ลงเล็กน้อย</td><td>Bear Put Spread (Short Vega)</td></tr>
+</table>
+
+<div class="bx bp"><div class="bt">Insight จาก Quant Desk: "เราไม่ trade direction — เรา trade vol"</div>
+<p>ราคา option ถูก/แพงวัดได้ด้วย IV เทียบ realized vol<br>
+ถ้า IV &gt; Realized Vol (historically) → Short Vol มี edge<br>
+ถ้า IV &lt; Realized Vol → Long Vol มี edge<br>
+<strong>Direction เป็น secondary — Vol edge คือ primary</strong></p></div>
+
+</body></html>
