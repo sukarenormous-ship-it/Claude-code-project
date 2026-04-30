@@ -380,6 +380,154 @@ Iron Condor EV threshold = 76% (จาก Part III)<br>
 <strong>ใช้เฉพาะ:</strong> CBOE/CME binary options, Kalshi (US regulated), Deribit digital options</p>
 </div>
 
+<h2>บทที่ 39: ผสม Bet Yes/No กับ Vanilla — ปิดจุดอ่อนทุก Strategy</h2>
+
+<p>ทุก vanilla strategy มี <strong>"danger zone"</strong> ที่ payoff แย่ — Bet Yes/No ปิดได้ตรงจุด เพราะ binary payoff กระโดดแบบ step function ได้พอดีกับ zone ที่ต้องการ</p>
+
+<table>
+<tr><th>Strategy</th><th>Danger Zone 1</th><th>Danger Zone 2</th><th>ปิดด้วย Bet</th></tr>
+<tr><td><strong>Bull Call Spread</strong></td><td>ราคาดิ่งใต้ K₁ (เสีย debit)</td><td>ราคาพุ่งเกิน K₂ (FOMO)</td><td>Bet No (K &lt; K₁) + Bet Yes (K &gt; K₂) ถ้าอยากร่วม upside</td></tr>
+<tr><td><strong>Bear Put Spread</strong></td><td>ราคาพุ่งเกิน K₂ (เสีย debit)</td><td>ราคาดิ่งใต้ K₁ (FOMO)</td><td>Bet Yes (K &gt; K₂) + Bet No ถ้าอยากขยาย downside</td></tr>
+<tr><td><strong>Iron Condor</strong></td><td>ราคา breakout ขึ้น</td><td>ราคา crash ลง</td><td><strong>Bet Yes</strong> (K &gt; wing บน) + <strong>Bet No</strong> (K &lt; wing ล่าง)</td></tr>
+<tr><td><strong>Covered Call</strong></td><td>หุ้นดิ่ง (ขาดทุนเต็มๆ)</td><td>หุ้นพุ่งทะลุ strike (FOMO)</td><td>Bet No ใต้ support + Bet Yes เหนือ strike ถ้าอยากมีส่วนร่วม</td></tr>
+<tr><td><strong>Long Straddle</strong></td><td colspan="2">ราคาไม่ขยับ — กิน premium ทั้ง 2 ฝั่ง</td><td><strong>ขาย Bet Yes + ขาย Bet No</strong> far OTM เพื่อเก็บ premium ลด cost</td></tr>
+<tr><td><strong>Short Straddle</strong></td><td>ราคา breakout ขึ้นแรง</td><td>ราคา crash ลงแรง</td><td><strong>ซื้อ Bet Yes + ซื้อ Bet No</strong> far OTM เพื่อ cap max loss</td></tr>
+<tr><td><strong>Back Ratio Call</strong></td><td>ราคาอยู่ในโซน "กิน" ตรงกลาง</td><td>—</td><td>Bet No ใต้ lower kink ช่วย offset บางส่วน</td></tr>
+</table>
+
+<h3>Pattern 1 — ซื้อ Bet ปิด Tail Risk (แปลง Unlimited → Defined Loss)</h3>
+
+<p><strong>กรณีใช้:</strong> เมื่อ max loss ของ strategy ไม่มีขอบเขต หรือ loss ใหญ่เกินรับได้<br>
+<strong>วิธีคิด:</strong> danger zone อยู่ที่ไหน → ซื้อ Bet ที่จ่ายเมื่อ price ไปถึง zone นั้น</p>
+
+<svg class="d" viewBox="0 0 520 165">
+<text x="260" y="13" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Pattern 1: Iron Condor + Bet Yes (บน) + Bet No (ล่าง)</text>
+<line x1="20" y1="92" x2="500" y2="92" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<text x="14" y="95" text-anchor="end" font-family="Sarabun" font-size="7.5" fill="#94a3b8">0</text>
+<text x="8" y="55" text-anchor="start" font-family="Sarabun" font-size="8" fill="#16a34a">กำไร</text>
+<text x="8" y="150" text-anchor="start" font-family="Sarabun" font-size="8" fill="#dc2626">ขาดทุน</text>
+<!-- IC alone (orange dashed) -->
+<polyline points="20,150 100,150 180,50 340,50 420,150 500,150" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="5 3"/>
+<!-- IC + Binary tails (blue solid) -->
+<polyline points="20,120 50,120 53,150 100,150 180,50 340,50 420,150 466,150 469,120 500,120" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+<!-- Strike ticks -->
+<line x1="100" y1="86" x2="100" y2="98" stroke="#94a3b8" stroke-width="1"/>
+<text x="100" y="109" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">65K</text>
+<line x1="180" y1="86" x2="180" y2="98" stroke="#94a3b8" stroke-width="1"/>
+<text x="180" y="109" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">70K</text>
+<line x1="340" y1="86" x2="340" y2="98" stroke="#94a3b8" stroke-width="1"/>
+<text x="340" y="109" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">80K</text>
+<line x1="420" y1="86" x2="420" y2="98" stroke="#94a3b8" stroke-width="1"/>
+<text x="420" y="109" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">85K</text>
+<!-- Binary trigger ticks -->
+<line x1="52" y1="86" x2="52" y2="98" stroke="#2563eb" stroke-width="0.8" stroke-dasharray="2 2"/>
+<text x="52" y="107" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">Bet No</text>
+<text x="52" y="115" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">62K</text>
+<line x1="468" y1="86" x2="468" y2="98" stroke="#2563eb" stroke-width="0.8" stroke-dasharray="2 2"/>
+<text x="468" y="107" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">Bet Yes</text>
+<text x="468" y="115" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">88K</text>
+<!-- Loss cap annotations -->
+<text x="30" y="117" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">loss</text>
+<text x="30" y="126" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">capped</text>
+<text x="490" y="117" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">loss</text>
+<text x="490" y="126" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">capped</text>
+<!-- Legend -->
+<line x1="130" y1="140" x2="162" y2="140" stroke="#f97316" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="167" y="143" font-family="Sarabun" font-size="8.5" fill="#374151">Iron Condor alone</text>
+<line x1="295" y1="140" x2="327" y2="140" stroke="#2563eb" stroke-width="2.5"/>
+<text x="332" y="143" font-family="Sarabun" font-size="8.5" fill="#374151">+ Bet Yes/No ที่ tail</text>
+</svg>
+
+<div class="bx ba">
+<div class="bt">Worked Example: BTC Iron Condor + Binary Tail Protection</div>
+<p><strong>Setup:</strong> BTC spot = $75,000</p>
+<p class="fm" style="font-size:0.88em">Iron Condor (65K/70K/80K/85K):    net credit  = +$1,200
+ซื้อ Bet No  "BTC &lt; 62K"  (PM ราคา $200, payout $1,500):  −$200
+ซื้อ Bet Yes "BTC &gt; 88K"  (PM ราคา $200, payout $1,500):  −$200
+─────────────────────────────────────────────────────
+Net credit หลัง binary:                              = +$800</p>
+<table style="font-size:0.88em">
+<tr><th>Scenario</th><th>ไม่มี Binary</th><th>+ Binary Tails</th><th>ต่าง</th></tr>
+<tr><td>BTC อยู่ใน 70K–80K</td><td class="g" style="color:#16a34a">+$1,200</td><td class="g" style="color:#16a34a">+$800</td><td>−$400 (ต้นทุน binary)</td></tr>
+<tr><td>BTC crash &lt; 62K</td><td style="color:#dc2626">−$3,800</td><td style="color:#dc2626">−$2,500</td><td style="color:#16a34a">ดีขึ้น $1,300</td></tr>
+<tr><td>BTC spike &gt; 88K</td><td style="color:#dc2626">−$3,800</td><td style="color:#dc2626">−$2,500</td><td style="color:#16a34a">ดีขึ้น $1,300</td></tr>
+<tr><td>BTC ออก range แต่ไม่ถึง binary</td><td style="color:#dc2626">−$1,200 ถึง −$3,800</td><td style="color:#dc2626">−$1,600 ถึง −$4,200</td><td>แย่ลง $400 (binary ไม่ trigger)</td></tr>
+</table>
+<p style="font-size:0.88em;margin-top:6px">→ Binary ช่วยใน <strong>extreme tail</strong> เท่านั้น ถ้า breakout แต่ไม่ถึง trigger — จ่าย premium เปล่า</p>
+</div>
+
+<h3>Pattern 2 — ซื้อ Bet เพิ่ม Soft Cushion (ลด Loss เมื่อ Trade แพ้)</h3>
+
+<p><strong>กรณีใช้:</strong> Directional trade มีโอกาสแพ้หนักทิศเดียว — ซื้อ Bet ฝั่งนั้นช่วย offset บางส่วน</p>
+
+<svg class="d" viewBox="0 0 520 150">
+<text x="260" y="13" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Pattern 2: Bull Call Spread + Bet No (Crash Cushion)</text>
+<line x1="20" y1="85" x2="500" y2="85" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+<text x="8" y="50" text-anchor="start" font-family="Sarabun" font-size="8" fill="#16a34a">กำไร</text>
+<text x="8" y="135" text-anchor="start" font-family="Sarabun" font-size="8" fill="#dc2626">ขาดทุน</text>
+<!-- BC Spread alone (orange dashed): loss below K₁=70K(x=180), profit at K₂=80K(x=340) -->
+<polyline points="20,128 180,128 340,46 500,46" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="5 3"/>
+<!-- BC Spread + Bet No at 65K(x=100): below x=100 payoff is lifted -->
+<polyline points="20,106 98,106 101,128 180,128 340,46 500,46" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+<!-- Strike ticks -->
+<line x1="180" y1="79" x2="180" y2="91" stroke="#94a3b8" stroke-width="1"/>
+<text x="180" y="101" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">K₁=70K</text>
+<line x1="340" y1="79" x2="340" y2="91" stroke="#94a3b8" stroke-width="1"/>
+<text x="340" y="101" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">K₂=80K</text>
+<line x1="100" y1="79" x2="100" y2="91" stroke="#2563eb" stroke-width="0.8" stroke-dasharray="2 2"/>
+<text x="100" y="100" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">Bet No</text>
+<text x="100" y="108" text-anchor="middle" font-family="Sarabun" font-size="7.5" fill="#2563eb">65K</text>
+<!-- Annotation -->
+<text x="52" y="102" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#2563eb">Binary</text>
+<text x="52" y="111" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#2563eb">offset</text>
+<!-- Legend -->
+<line x1="130" y1="130" x2="162" y2="130" stroke="#f97316" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="167" y="134" font-family="Sarabun" font-size="8.5" fill="#374151">Bull Call Spread alone</text>
+<line x1="305" y1="130" x2="337" y2="130" stroke="#2563eb" stroke-width="2.5"/>
+<text x="342" y="134" font-family="Sarabun" font-size="8.5" fill="#374151">+ Bet No</text>
+</svg>
+
+<div class="bx bb">
+<div class="bt">Pattern 2 สรุป</div>
+<p>Bet No ที่ far OTM จ่ายเมื่อ market crash หนักๆ → ช่วย offset บางส่วนของ debit ที่เสียไป<br>
+<strong>แต่</strong>: ช่องว่างระหว่าง K₁ (70K) และ Bet trigger (65K) — ยังขาดทุนเต็มโดยไม่ได้รับ binary payout<br>
+→ เหมาะกับคนที่กลัว "crash หนัก" มากกว่า "ขยับลงเล็กน้อย"</p>
+</div>
+
+<h3>Pattern 3 — ขาย Bet เก็บ Premium ลด Cost (Reduce Breakeven)</h3>
+
+<div class="bx bp">
+<div class="bt">กรณีใช้: Long Straddle / Long Vol แพงเกิน</div>
+<p>ซื้อ Long Straddle แล้ว premium รวมสูง → ต้องการ big move ใหญ่มากถึงจะ break even<br>
+<strong>วิธีแก้:</strong> ขาย Bet Yes (far OTM บน) + ขาย Bet No (far OTM ล่าง)<br>
+→ เก็บ premium จาก Bet ทั้งคู่ → ลด net cost → break even ที่ move เล็กกว่า<br><br>
+<strong>Trade-off ที่หลีกเลี่ยงไม่ได้:</strong><br>
+• ถ้าราคาขยับไกลมากจริงๆ (เกิน Bet trigger) → Short Bet จ่าย → กำไร straddle ถูก cut<br>
+• ผลลัพธ์คือ: "กำไร zone กว้างขึ้นตรงกลาง แต่ถูก cap ที่ tail"<br>
+→ เหมาะกับคนที่คิดว่า "จะขยับ แต่ไม่ถึงขนาด extreme"</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠ No Free Lunch — กฎที่ทุก Pattern ต้องเจอ</div>
+<p>ทุก combination มี <strong>trade-off เดิมไม่มีทางหนี</strong>:<br>
+<strong>Pattern 1</strong> (ซื้อ Bet ปิด tail): จ่าย premium เพิ่ม → กำไร base case ลดลง<br>
+<strong>Pattern 2</strong> (ซื้อ Bet cushion): จ่าย premium เพิ่ม → ต้องการ stronger directional move<br>
+<strong>Pattern 3</strong> (ขาย Bet ลด cost): รับ premium → กำไรถูก cap ถ้า big move เกิน trigger<br><br>
+<strong>หลักการ:</strong> Bet ปิดความเสี่ยงได้จริง — แต่ต้นทุนคือ ลด upside ในทิศอื่นเสมอ</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">ใช้ Pattern ไหน? — Decision Guide</div>
+<table style="font-size:0.9em">
+<tr><th>ถ้าคุณ...</th><th>ใช้ Pattern</th></tr>
+<tr><td>กลัว max loss ไม่มีขอบ (IC, Short Straddle)</td><td><strong>Pattern 1</strong> — ซื้อ Bet ที่ tail ทั้งสองด้าน</td></tr>
+<tr><td>มี directional trade แต่กลัว crash ทิศตรงข้าม</td><td><strong>Pattern 2</strong> — ซื้อ Bet ฝั่งที่กลัว</td></tr>
+<tr><td>Long Vol แต่ premium แพงเกิน</td><td><strong>Pattern 3</strong> — ขาย Bet far OTM ทั้งสองด้าน</td></tr>
+<tr><td>Trade นิ่ง (IC) แต่กลัว event เดียว (เช่น Fed)</td><td><strong>Pattern 1 ด้านเดียว</strong> — ซื้อ Bet ทิศ event เท่านั้น</td></tr>
+<tr><td>Covered Call แต่กลัวหุ้นดิ่ง</td><td><strong>Pattern 2</strong> — ซื้อ Bet No ใต้ support level</td></tr>
+</table>
+</div>
+
 <h2>สรุป Part VI + Series ทั้งหมด</h2>
 
 <div class="bx bb">
@@ -391,6 +539,7 @@ Iron Condor EV threshold = 76% (จาก Part III)<br>
 <li><strong>Optimize Construction</strong> ด้วย PCP + IV Skew (Part IV)</li>
 <li><strong>Navigate</strong> ด้วย Decision Tree + Cheat Sheet (Part V)</li>
 <li><strong>Extend</strong> ด้วย Binary + PM ถ้า belief มี event-based component (Part VI)</li>
+<li><strong>Patch Weaknesses</strong> ด้วย Bet Yes/No ตาม 3 Patterns: Tail Cap / Cushion / Cost Reduction (Part VI Ch39)</li>
 </ol>
 </div>
 
@@ -404,7 +553,5 @@ Iron Condor EV threshold = 76% (จาก Part III)<br>
 </table>
 
 <p style="text-align:center;color:#64748b;margin-top:32px">— จบ Series: View → Payoff Mastery (6 Parts) —</p>
-
-</body></html>
 
 </body></html>
