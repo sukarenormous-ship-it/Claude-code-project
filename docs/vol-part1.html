@@ -1,0 +1,437 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Volatility Mastery — Part I: Foundations</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--teal);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{background:var(--teal-bg);border-left:4px solid var(--teal)}.bx .bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.88em;line-height:1.6}.chk{background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:12px 18px;margin:16px 0}.chk::before{content:"✓ Checkpoint: ";font-weight:700;color:var(--teal)}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:560px;width:100%}.warn{background:#fef2f2;border-left:4px solid var(--red);padding:12px 18px;border-radius:0 8px 8px 0;margin:16px 0}.warn::before{content:"⚠️  ";}.ref{font-size:.85em;color:#64748b;background:var(--g0);border:1px solid var(--g2);border-radius:6px;padding:8px 14px;margin:12px 0}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg{page-break-inside:avoid}}</style></head><body>
+
+<div class="cover">
+<div style="font-size:.9em;color:var(--teal);font-weight:600;letter-spacing:2px;margin-bottom:8px">VOLATILITY MASTERY</div>
+<h1>ความผันผวนในฐานะทรัพย์สิน</h1>
+<div class="sub">Part I: Foundations — IV, RV, และช่องว่างที่ทำเงิน</div>
+<div class="desc">ทุก option มีราคาเพราะ volatility — เข้าใจ vol คือเข้าใจ options จากราก</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li>รู้ว่า Volatility คืออะไร และวัดอย่างไรจากราคาจริง</li>
+<li>เข้าใจความต่างระหว่าง <strong>RV (ที่เกิดขึ้นจริง)</strong> กับ <strong>IV (ที่ตลาดคาด)</strong></li>
+<li>เห็น <strong>Vol Risk Premium</strong> — ช่องว่างที่เป็น edge ของ option seller</li>
+<li>ใช้ <strong>Volatility Cone</strong> เปรียบว่า IV ปัจจุบัน "ปกติ" แค่ไหน</li>
+<li>ใช้ <strong>IV Rank / IV Percentile</strong> ตัดสินใจว่าจะ long หรือ short vol</li>
+</ul>
+</div>
+
+<p class="ref">🔗 Pre-requisite: <a href="vp-part6.html">VP Part VI</a> (N(d₂) = implied probability) · <a href="vp-part1.html">VP Part I</a> (5-Dimension Belief)</p>
+
+<h2>บทที่ 1: Volatility คือความขรุขระของราคา</h2>
+
+<div class="bx ba">
+<div class="bt">🛣️ อุปมา: ถนนสองเส้น</div>
+<p>ลองนึกถึงถนน 2 เส้น<br>
+<strong>เส้นแรก (ทางด่วน):</strong> รถวิ่งเรียบ 90 km/h ตลอด ไม่มีสะดุด<br>
+<strong>เส้นสอง (ถนนชนบท):</strong> บางช่วง 30 บางช่วง 120 มีหลุมบ้าง รถสะดุด<br><br>
+<strong>"ถนนเส้นสองมี volatility สูงกว่า"</strong> — แค่นั้นเอง
+ราคาหุ้นหรือ BTC ก็เหมือนกัน ขยับเรียบหรือขรุขระ วัดได้เป็นตัวเลข</p>
+</div>
+
+<p>Volatility คือ <strong>ขนาดของการขยับ</strong> ไม่ใช่ทิศทาง:</p>
+<ul>
+<li>BTC ขึ้น 3% หรือลง 3% = vol เท่ากัน</li>
+<li>BTC ขึ้น 0.1% ทุกวันไม่ใช่ vol สูง แม้จะ "ขึ้น" ตลอด</li>
+</ul>
+
+<h3>วิธีวัด Vol จากราคาจริง</h3>
+
+<div class="fm">เหตุ → ผล:
+  ราคา BTC แต่ละวัน
+    → คำนวณ % change ต่อวัน (log return)
+    → วัดความผันผวนของ % change เหล่านั้น (stdev)
+    → แปลงเป็น "ต่อปี" (×√252)
+    → ได้ Volatility
+
+สูตร: Vol = stdev(log returns รายวัน) × √252</div>
+
+<p>ตัวอย่าง BTC ใน 5 วัน:</p>
+
+<svg class="d" viewBox="0 0 520 160">
+<text x="260" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Daily Returns: BTC (ขรุขระ) vs SPY (เรียบ)</text>
+<!-- Zero line -->
+<line x1="40" y1="90" x2="500" y2="90" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="30" y="93" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">0%</text>
+<!-- BTC bars -->
+<rect x="60" y="54" width="28" height="36" fill="#0d9488" opacity=".8" rx="2"/>
+<rect x="130" y="90" width="28" height="48" fill="#dc2626" opacity=".8" rx="2"/>
+<rect x="200" y="72" width="28" height="18" fill="#0d9488" opacity=".8" rx="2"/>
+<rect x="270" y="90" width="28" height="38" fill="#dc2626" opacity=".8" rx="2"/>
+<rect x="340" y="48" width="28" height="42" fill="#0d9488" opacity=".8" rx="2"/>
+<!-- Labels BTC -->
+<text x="74" y="48" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488">+3.2%</text>
+<text x="144" y="148" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">−4.1%</text>
+<text x="214" y="66" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488">+1.8%</text>
+<text x="284" y="138" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">−2.9%</text>
+<text x="354" y="42" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488">+3.5%</text>
+<!-- SPY bars -->
+<rect x="90" y="82" width="20" height="8" fill="#2563eb" opacity=".6" rx="2"/>
+<rect x="160" y="90" width="20" height="10" fill="#dc2626" opacity=".4" rx="2"/>
+<rect x="230" y="85" width="20" height="5" fill="#2563eb" opacity=".6" rx="2"/>
+<rect x="300" y="90" width="20" height="9" fill="#dc2626" opacity=".4" rx="2"/>
+<rect x="370" y="83" width="20" height="7" fill="#2563eb" opacity=".6" rx="2"/>
+<!-- Labels -->
+<text x="74" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">วัน 1</text>
+<text x="144" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">วัน 2</text>
+<text x="214" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">วัน 3</text>
+<text x="284" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">วัน 4</text>
+<text x="354" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">วัน 5</text>
+<!-- Legend -->
+<rect x="400" y="50" width="12" height="10" fill="#0d9488" opacity=".8" rx="2"/>
+<text x="415" y="60" font-family="Sarabun" font-size="9" fill="#374151">BTC (~3%/วัน)</text>
+<rect x="400" y="68" width="12" height="10" fill="#2563eb" opacity=".6" rx="2"/>
+<text x="415" y="78" font-family="Sarabun" font-size="9" fill="#374151">SPY (~0.8%/วัน)</text>
+</svg>
+
+<div class="fm">คำนวณ Vol จากตัวอย่าง BTC:
+  stdev(3.2%, −4.1%, 1.8%, −2.9%, 3.5%) ≈ 3.1%/วัน
+  Vol ต่อปี = 3.1% × √252 ≈ 3.1% × 15.87 ≈ <strong>49%</strong>
+
+SPY:
+  stdev(0.7%, −0.9%, 0.5%, −0.8%, 0.6%) ≈ 0.7%/วัน
+  Vol ต่อปี = 0.7% × 15.87 ≈ <strong>11%</strong>
+
+ทางลัด: daily move 1% ≈ Vol ต่อปี 16% (คูณด้วย 16)</div>
+
+<div class="warn">Vol วัดขนาดการขยับ ไม่ใช่ทิศทาง — BTC ขึ้น 3% ทุกวันสม่ำเสมอ = vol ต่ำ แม้ราคาจะขึ้นตลอด</div>
+
+<div class="chk">Volatility = ความขรุขระของราคา วัดจาก stdev ของ daily returns แล้ว annualize ×√252 · BTC ~50% ต่อปี vs SPY ~15%</div>
+
+<h2>บทที่ 2: RV — Dashcam ของอดีต</h2>
+
+<div class="bx ba">
+<div class="bt">📹 อุปมา: กล้องติดรถ (Dashcam)</div>
+<p>RV คือ dashcam ที่บันทึกว่าถนนขรุขระแค่ไหนในช่วงที่ผ่านมา<br>
+มันบอก <strong>ความจริงที่เกิดขึ้นแล้ว</strong> — แต่บอกอนาคตไม่ได้<br>
+เหมือนดู footage เมื่อวานเพื่อเดาว่าพรุ่งนี้ถนนจะเป็นยังไง — ใช้ได้แต่ไม่ perfect</p>
+</div>
+
+<h3>RV (Realized Volatility) = Vol ที่เกิดขึ้นจริง</h3>
+
+<div class="fm">สูตร:
+  RV = stdev(ln(P_t / P_{t-1}) ต่อวัน) × √252
+
+Excel:
+  =STDEV(LN(B2:B32/B1:B31)) * SQRT(252)
+  (B1:B32 คือราคาปิด 32 วัน → ได้ return 31 วัน → RV30)
+
+Python:
+  returns = np.log(prices / prices.shift(1)).dropna()
+  rv30 = returns.rolling(30).std() * np.sqrt(252)</div>
+
+<table>
+<tr><th>Window</th><th>ใช้เมื่อ</th><th>ข้อดี</th><th>ข้อเสีย</th></tr>
+<tr><td><strong>RV7</strong></td><td>จับ regime เปลี่ยนเร็ว</td><td>Responsive มาก</td><td>Noisy สูง</td></tr>
+<tr><td><strong>RV30</strong></td><td>มาตรฐานทั่วไป</td><td>Balance ดี</td><td>Lag ~15 วัน</td></tr>
+<tr><td><strong>RV90</strong></td><td>ภาพรวม long-term</td><td>Smooth สม่ำเสมอ</td><td>ช้ารับรู้ change</td></tr>
+</table>
+
+<p>ตัวอย่าง BTC — 3 windows ในวันเดียวกัน อาจให้ผลต่างกันมาก:</p>
+
+<div class="fm">BTC วันที่ 1 พ.ค. 2024:
+  RV7  = 38%   (สัปดาห์ที่แล้วนิ่งมาก)
+  RV30 = 62%   (เดือนที่แล้วมีช่วง volatile)
+  RV90 = 71%   (3 เดือนก่อนมี spike ใหญ่)
+
+→ ต้องระบุ window เสมอ ไม่งั้น "RV" บอกอะไรไม่ได้</div>
+
+<div class="warn">RV7 กับ RV90 ของ BTC วันเดียวกันอาจต่างกัน 30–40% — ต้องระบุ window เสมอเมื่อพูดถึง RV</div>
+
+<div class="chk">RV = Vol ที่เกิดขึ้นจริงย้อนหลัง คำนวณจาก stdev(log returns) × √252 · มาตรฐานใช้ RV30 แต่ต้องระบุ window</div>
+
+<h2>บทที่ 3: IV — พยากรณ์อากาศของตลาด</h2>
+
+<div class="bx ba">
+<div class="bt">🌤️ อุปมา: พยากรณ์อากาศ</div>
+<p>IV ไม่ได้บอกว่าเกิดอะไรขึ้นแล้ว — แต่บอกว่าตลาด <strong>"คาดว่า"</strong> จะผันผวนแค่ไหนข้างหน้า<br>
+เหมือนแอปพยากรณ์บอก "พรุ่งนี้มีโอกาสฝน 80%" — ไม่ได้การันตี แต่สะท้อน consensus<br><br>
+<strong>IV สูง = ตลาดกังวลมาก เหมือนพยากรณ์บอก "พายุกำลังจะมา"</strong></p>
+</div>
+
+<h3>IV ถูก "extract" ออกมาจากราคา Option อย่างไร</h3>
+
+<div class="fm">เหตุ → ผล:
+  Option มีราคาในตลาด (เช่น BTC ATM Call = $3,200)
+    → ใส่ราคานั้นเข้าสูตร Black-Scholes
+    → solve กลับหาค่า σ (volatility) ที่ทำให้ราคาตรงกัน
+    → ค่า σ นั้น คือ IV
+
+กล่าวคือ: IV = "ตลาดบอกว่า vol ต้องเท่าไหร่ ถึงยอมรับราคา option นี้"</div>
+
+<p>ตัวอย่างจริง วันที่ 1 พ.ค. 2025:</p>
+
+<table>
+<tr><th>Asset</th><th>Option</th><th>ราคา Option</th><th>IV ที่ Extract ได้</th><th>แปลว่า</th></tr>
+<tr><td>BTC $75,000</td><td>ATM Call 30d</td><td>$3,200</td><td><strong>65%</strong></td><td>คาดขยับ ~3.4%/วัน</td></tr>
+<tr><td>SPY $500</td><td>ATM Call 30d</td><td>$8.50</td><td><strong>16%</strong></td><td>คาดขยับ ~0.8%/วัน</td></tr>
+<tr><td>TSLA $180</td><td>ATM Call 30d</td><td>$12.40</td><td><strong>54%</strong></td><td>คาดขยับ ~2.7%/วัน</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">สิ่งสำคัญที่ควรจำ</div>
+<p>IV ต่างกันแต่ละ strike — เพราะตลาดกลัว OTM events มากกว่าที่ model คาด<br>
+→ เรียกว่า <strong>Volatility Smile / Skew</strong> (จะเจาะลึกใน Part II)<br><br>
+เวลาพูดว่า "IV = 65%" มักหมายถึง <strong>ATM IV</strong> ที่ใช้เป็น baseline</p>
+</div>
+
+<div class="warn">IV ≠ "vol ที่จะเกิดขึ้นจริง" — เป็นแค่ consensus ของตลาด อาจสูงหรือต่ำกว่าความเป็นจริงก็ได้ นั่นคือที่มาของ edge</div>
+
+<div class="chk">IV = Vol ที่ตลาดคาด extract กลับจากราคา option ด้วย Black-Scholes · IV สูง = option แพง = ตลาดกังวล · IV ต่ำ = option ถูก = ตลาดสบายใจ</div>
+
+<h2>บทที่ 4: Vol Risk Premium — ช่องว่างที่ทำเงิน ⭐</h2>
+
+<div class="bx ba">
+<div class="bt">🏢 อุปมา: บริษัทประกันภัย</div>
+<p>บริษัทประกันรู้ว่า <strong>คนกลัวเกินความเป็นจริง</strong><br>
+โอกาสบ้านไฟไหม้จริงๆ อาจ 1% แต่คนยอมจ่ายประกัน 1.5% ของมูลค่าบ้าน<br>
+ส่วนต่าง 0.5% คือ <strong>กำไรของบริษัทประกัน ไม่ใช่ความบังเอิญ — เป็น structural edge</strong><br><br>
+Vol Risk Premium ทำงานเหมือนกันทุกประการ</p>
+</div>
+
+<h3>IV − RV = Vol Risk Premium (VRP)</h3>
+
+<div class="fm">เหตุ → ผล:
+
+  คนถือ BTC/หุ้น กลัวตลาดร่วง
+    → ซื้อ Put option เพื่อ hedge
+    → demand Put สูง → ราคา Put สูงขึ้น
+    → IV ถูก extract ออกมาสูง
+    → IV > RV จริง
+
+  ผล: Vol Risk Premium = IV − RV > 0 โดยเฉลี่ย
+
+  นัย:
+    คนซื้อ option = จ่าย "ค่าประกัน" ส่วนเกิน
+    คนขาย option = รับ "ค่าประกัน" ส่วนเกินนั้น</div>
+
+<p>ข้อมูลย้อนหลัง 10 ปี (approximate):</p>
+
+<table>
+<tr><th>Asset</th><th>IV เฉลี่ย (30d)</th><th>RV เฉลี่ย (30d)</th><th>VRP เฉลี่ย</th><th>VRP > 0 กี่% ของเวลา</th></tr>
+<tr><td><strong>SPY</strong></td><td>18%</td><td>14%</td><td>+4%</td><td>~75%</td></tr>
+<tr><td><strong>BTC</strong></td><td>72%</td><td>64%</td><td>+8%</td><td>~68%</td></tr>
+<tr><td><strong>Gold</strong></td><td>16%</td><td>12%</td><td>+4%</td><td>~73%</td></tr>
+<tr><td><strong>SET50</strong></td><td>22%</td><td>17%</td><td>+5%</td><td>~71%</td></tr>
+</table>
+
+<!-- IV vs RV over time SVG -->
+<svg class="d" viewBox="0 0 560 180">
+<text x="280" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">IV vs RV (BTC ตัวอย่าง 12 เดือน)</text>
+<!-- axes -->
+<line x1="50" y1="150" x2="540" y2="150" stroke="#e2e8f0" stroke-width="1"/>
+<line x1="50" y1="20" x2="50" y2="150" stroke="#e2e8f0" stroke-width="1"/>
+<!-- y labels -->
+<text x="44" y="38" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">100%</text>
+<text x="44" y="75" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">70%</text>
+<text x="44" y="113" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">40%</text>
+<text x="44" y="150" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">10%</text>
+<!-- Grid -->
+<line x1="50" y1="75" x2="540" y2="75" stroke="#f1f5f9" stroke-width="1"/>
+<line x1="50" y1="113" x2="540" y2="113" stroke="#f1f5f9" stroke-width="1"/>
+<!-- VRP shaded area -->
+<polygon points="50,85 130,80 210,68 290,95 370,60 450,72 540,78 540,100 450,90 370,82 290,115 210,88 130,100 50,105" fill="#0d9488" opacity=".1"/>
+<!-- IV line -->
+<polyline points="50,85 130,80 210,68 290,95 370,60 450,72 540,78" fill="none" stroke="#0d9488" stroke-width="2.5" stroke-linejoin="round"/>
+<!-- RV line -->
+<polyline points="50,105 130,100 210,88 290,115 370,82 450,90 540,100" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 3"/>
+<!-- Labels -->
+<text x="545" y="78" font-family="Sarabun" font-size="10" fill="#0d9488" font-weight="600">IV</text>
+<text x="545" y="100" font-family="Sarabun" font-size="10" fill="#dc2626">RV</text>
+<!-- VRP label -->
+<text x="290" y="105" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#0d9488">VRP = IV − RV</text>
+<text x="50" y="164" font-family="Sarabun" font-size="9" fill="#64748b">ม.ค.</text>
+<text x="210" y="164" font-family="Sarabun" font-size="9" fill="#64748b">เม.ย.</text>
+<text x="370" y="164" font-family="Sarabun" font-size="9" fill="#64748b">ก.ค.</text>
+<text x="510" y="164" font-family="Sarabun" font-size="9" fill="#64748b">ต.ค.</text>
+</svg>
+
+<div class="bx bg">
+<div class="bt">นัยสำคัญ: Edge ของ Option Seller</div>
+<p>VRP > 0 เฉลี่ย หมายความว่า:<br>
+→ <strong>ขาย option ในระยะยาว = Positive Expected Value</strong><br>
+→ เหมือนเป็นบริษัทประกัน — กำไรสม่ำเสมอ แต่รับ tail risk<br>
+→ นั่นคือทำไม Iron Condor และ Short Strangle มี historical edge</p>
+</div>
+
+<div class="warn">VRP ไม่ได้เป็นบวกตลอด — ช่วง crisis (COVID, Volmageddon) VRP ติดลบรุนแรง คนขาย option เสียหายมาก · นี่คือ tail risk ที่ต้องจัดการ (จะเจาะลึกใน Part VI)</div>
+
+<div class="chk">VRP = IV − RV > 0 โดยเฉลี่ย เพราะ demand ของ hedger ทำให้ IV แพงกว่าความจริง · short vol มี positive EV ระยะยาว แต่รับ tail risk ด้วย</div>
+
+<h2>บทที่ 5: Volatility Cone — เปรียบ IV กับอดีต</h2>
+
+<div class="bx ba">
+<div class="bt">🏃 อุปมา: นักวิ่งดูสถิติตัวเอง</div>
+<p>ก่อนแข่ง นักวิ่งดูว่าในอดีต 5 ปี เขาวิ่ง 5km ได้ fast-slow range เท่าไหร่<br>
+วันนี้ถ้าเขาคิดว่าจะวิ่งได้ใน 15 นาที — เร็วกว่า personal record ทุกครั้ง → น่าสงสัย<br>
+วันนี้ถ้าคิดว่า 35 นาที — ช้ากว่าทุกครั้งในชีวิต → ก็น่าสงสัยเหมือนกัน<br><br>
+<strong>Volatility Cone ทำแบบเดียวกับ IV ในตลาด</strong></p>
+</div>
+
+<p>Volatility Cone แสดง range ของ RV ย้อนหลังในแต่ละ window เวลา:</p>
+
+<!-- Vol Cone SVG -->
+<svg class="d" viewBox="0 0 520 200">
+<text x="260" y="16" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Volatility Cone — BTC (ตัวอย่าง)</text>
+<!-- axes -->
+<line x1="60" y1="175" x2="480" y2="175" stroke="#94a3b8" stroke-width="1"/>
+<line x1="60" y1="25" x2="60" y2="175" stroke="#94a3b8" stroke-width="1"/>
+<!-- y axis labels -->
+<text x="52" y="30" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">120%</text>
+<text x="52" y="80" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">80%</text>
+<text x="52" y="130" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">40%</text>
+<text x="52" y="176" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">0%</text>
+<!-- x axis labels -->
+<text x="130" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">7d</text>
+<text x="220" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">30d</text>
+<text x="310" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">60d</text>
+<text x="400" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">90d</text>
+<!-- Cone: 90th percentile -->
+<polygon points="130,28 220,32 310,36 400,40 400,90 310,95 220,100 130,105" fill="#0d9488" opacity=".08"/>
+<!-- 10th-90th percentile region -->
+<polyline points="130,28 220,32 310,36 400,40" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4 2"/>
+<polyline points="130,105 220,100 310,95 400,90" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4 2"/>
+<!-- Median (50th) -->
+<polyline points="130,65 220,65 310,65 400,64" fill="none" stroke="#0d9488" stroke-width="2"/>
+<!-- Current IV line (high) -->
+<polyline points="130,38 220,40 310,44 400,48" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+<!-- Labels -->
+<text x="405" y="38" font-family="Sarabun" font-size="9" fill="#0d9488">90th%</text>
+<text x="405" y="62" font-family="Sarabun" font-size="9" fill="#0d9488">Median</text>
+<text x="405" y="92" font-family="Sarabun" font-size="9" fill="#0d9488">10th%</text>
+<text x="405" y="48" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">IV ปัจจุบัน</text>
+<!-- Annotation -->
+<text x="260" y="22" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">IV ใกล้ 90th% → สูงผิดปกติ → พิจารณา Short Vol</text>
+</svg>
+
+<div class="fm">วิธีอ่าน Volatility Cone:
+
+  IV ปัจจุบัน อยู่ที่ไหนใน cone?
+
+  ✓ อยู่เหนือ 75th%  → IV สูงผิดปกติ → option แพง → พิจารณา Short Vol
+  ✓ อยู่ใน 25–75%    → IV ปกติ        → ไม่มี edge พิเศษด้าน vol
+  ✓ อยู่ใต้ 25th%    → IV ต่ำผิดปกติ  → option ถูก  → พิจารณา Long Vol</div>
+
+<div class="warn">Cone ทำจากข้อมูลอดีต — ไม่ได้การันตีอนาคต แต่ให้ context ว่า "ผิดปกติแค่ไหน" ใช้เป็น input ประกอบการตัดสินใจ ไม่ใช่สัญญาณซื้อขายตัวเดียว</div>
+
+<div class="chk">Volatility Cone แสดง range ของ RV ในอดีต เทียบกับ IV ปัจจุบัน · IV เหนือ cone = option แพงผิดปกติ · IV ใต้ cone = option ถูกผิดปกติ</div>
+
+<h2>บทที่ 6: IV Rank vs IV Percentile — ตัดสินใจด้วยเลขเดียว</h2>
+
+<div class="bx ba">
+<div class="bt">📏 อุปมา: ส่วนสูงเด็ก</div>
+<p>เด็กสูง 160cm — สูงหรือเตี้ย?<br>
+<strong>ตอบไม่ได้ถ้าไม่รู้อายุ</strong> — 160cm สำหรับ ป.6 (สูงมาก) ≠ 160cm สำหรับ ม.6 (เตี้ย)<br><br>
+IV ก็เหมือนกัน — IV 65% สำหรับ BTC (ปกติ) ≠ IV 65% สำหรับ SPY (สูงมาก)<br>
+<strong>ต้องเทียบกับประวัติตัวเองเท่านั้น</strong></p>
+</div>
+
+<h3>IV Rank — range ใน 52 สัปดาห์</h3>
+
+<div class="fm">IV Rank = (IV ปัจจุบัน − IV ต่ำสุด 52w) / (IV สูงสุด 52w − IV ต่ำสุด 52w)
+
+ตัวอย่าง BTC:
+  IV ปัจจุบัน = 65%
+  IV ต่ำสุด 52w = 45%
+  IV สูงสุด 52w = 120%
+  → IV Rank = (65 − 45) / (120 − 45) = 20/75 = <strong>27%</strong>
+
+แปลว่า: IV ปัจจุบันอยู่ที่ 27% ของ range ปีที่ผ่านมา → ค่อนข้างต่ำ
+
+ตัวอย่าง SPY:
+  IV = 22%, Low = 11%, High = 38%
+  → IV Rank = (22 − 11) / (38 − 11) = 11/27 = <strong>41%</strong>
+  แปลว่า: ปกติ</div>
+
+<h3>IV Percentile — กี่วันที่ IV ต่ำกว่าวันนี้</h3>
+
+<div class="fm">IV Percentile = จำนวนวันที่ IV < IV วันนี้ / จำนวนวันทั้งหมด (252 วัน)
+
+ตัวอย่าง BTC:
+  จาก 252 วันที่ผ่านมา มี 85 วันที่ IV ต่ำกว่า 65%
+  → IV Percentile = 85/252 = <strong>34%</strong>
+
+แปลว่า: 34% ของเวลา IV ต่ำกว่าวันนี้ → วันนี้ไม่ได้แพงมาก</div>
+
+<table>
+<tr><th></th><th>IV Rank</th><th>IV Percentile</th></tr>
+<tr><td><strong>นับจาก</strong></td><td>High-Low range ของปี</td><td>จำนวนวันใน 1 ปี</td></tr>
+<tr><td><strong>ไวต่อ</strong></td><td>Outlier สูง/ต่ำ</td><td>Pattern ของเวลา</td></tr>
+<tr><td><strong>ใช้เมื่อ</strong></td><td>มี spike ใหม่เกิดขึ้น</td><td>ต้องการ distribution</td></tr>
+<tr><td><strong>ปัญหา</strong></td><td>1 outlier เปลี่ยนผลได้มาก</td><td>ต้องมีข้อมูลครบปี</td></tr>
+</table>
+
+<div class="fm">กฎการใช้:
+
+IV Rank > 50%  →  IV สูงกว่า midpoint ของ range ปีนี้
+IV Rank > 75%  →  IV สูงมาก → พิจารณา Short Vol
+
+IV Percentile > 50%  →  IV สูงกว่าค่าเฉลี่ย
+IV Percentile > 80%  →  IV สูงมาก → พิจารณา Short Vol
+
+ใช้ทั้งคู่ประกอบกัน:
+  Rank สูง + Percentile สูง = ยืนยัน Short Vol Signal
+  Rank สูง + Percentile ต่ำ = Spike ใหม่ รอดูก่อน (อาจยังขึ้นต่อ)</div>
+
+<div class="warn">IV Rank สูงไม่ได้แปลว่า IV จะลงทันที — Vol clustering ทำให้ IV สูงอาจสูงต่อไปอีกหลายสัปดาห์ (Part IV จะอธิบาย) ใช้ Rank เป็น signal ไม่ใช่ trigger</div>
+
+<div class="chk">IV Rank = ตำแหน่งใน high-low range ของปี · IV Percentile = % ของวันที่ IV ต่ำกว่าวันนี้ · ใช้ทั้งคู่ประกอบกัน · Rank > 50% + Percentile > 50% = IV สูงกว่าปกติ</div>
+
+<h2>บทที่ 7: Part I Summary + Mini Cheat Sheet</h2>
+
+<div class="bx bg">
+<div class="bt">สิ่งที่คุณทำได้ตอนนี้</div>
+<ol>
+<li><strong>คำนวณ Vol</strong> จากราคาจริง: stdev(log returns) × √252</li>
+<li><strong>แยก RV กับ IV</strong> และรู้ว่าต่างกันอย่างไร</li>
+<li><strong>เข้าใจ VRP</strong> ว่าเป็น structural edge ของ option seller</li>
+<li><strong>อ่าน Volatility Cone</strong> เพื่อดูว่า IV ปกติหรือผิดปกติ</li>
+<li><strong>ใช้ IV Rank / Percentile</strong> ตัดสินใจ Long vs Short Vol</li>
+</ol>
+</div>
+
+<table>
+<tr><th>ตัวเลข</th><th>คืออะไร</th><th>อ่านจาก</th><th>บอกว่า</th></tr>
+<tr><td><strong>RV</strong></td><td>Vol ที่เกิดจริง</td><td>ราคาปิดย้อนหลัง</td><td>ตลาดผันผวนแค่ไหน</td></tr>
+<tr><td><strong>IV</strong></td><td>Vol ที่ตลาดคาด</td><td>ราคา option ปัจจุบัน</td><td>ตลาดกังวลแค่ไหน</td></tr>
+<tr><td><strong>VRP</strong></td><td>IV − RV</td><td>คำนวณเอง</td><td>option แพงหรือถูกกว่าจริง</td></tr>
+<tr><td><strong>IV Rank</strong></td><td>% ใน high-low range</td><td>broker / คำนวณ</td><td>IV สูงหรือต่ำปีนี้</td></tr>
+<tr><td><strong>IV Percentile</strong></td><td>% ของวันที่ IV ต่ำกว่า</td><td>broker / คำนวณ</td><td>IV สูงหรือต่ำเทียบ 1 ปี</td></tr>
+</table>
+
+<div class="fm">══════════════════════════════════════
+  VOL TRADING DECISION — Part I Cheat
+══════════════════════════════════════
+
+SIGNAL: IV vs RV
+  IV >> RV (VRP สูง)   →  Short Vol (IC, Short Straddle)
+  IV ≈  RV             →  ไม่มี vol edge → เลือกตาม direction
+  IV << RV (VRP ต่ำ)   →  Long Vol (Straddle, Long Calendar)
+
+SIGNAL: IV Rank + Percentile
+  ทั้งคู่ > 75%  →  Short Vol Signal แรง
+  ทั้งคู่ 25–75% →  Zone กลาง ไม่แนะนำ vol trade
+  ทั้งคู่ < 25%  →  Long Vol Signal แรง
+
+⚠️  ยืนยันด้วย Vol Regime ก่อน short vol เสมอ
+    (Vol Clustering → Part IV)
+══════════════════════════════════════</div>
+
+<table>
+<tr><th>Part</th><th>หัวข้อ</th><th>Concept หลัก</th></tr>
+<tr><td><strong>I (นี้)</strong></td><td>Foundations</td><td>RV, IV, VRP, IV Rank/Percentile</td></tr>
+<tr><td><strong>II</strong></td><td>Vol Surface</td><td>Smile, Skew — vol ต่าง strike</td></tr>
+<tr><td><strong>III</strong></td><td>Term Structure</td><td>Contango/Backwardation — vol ต่าง time</td></tr>
+<tr><td><strong>IV</strong></td><td>Regimes & Forecast</td><td>Clustering, Mean Reversion, GARCH</td></tr>
+<tr><td><strong>V</strong></td><td>Long Vol Playbook</td><td>Straddle, Calendar, Gamma Scalping</td></tr>
+<tr><td><strong>VI</strong></td><td>Short Vol Playbook</td><td>IC, Blow-up, Vol Carry</td></tr>
+<tr><td><strong>VII</strong></td><td>Events & IV Crush</td><td>Earnings, Fed, Halving</td></tr>
+<tr><td><strong>VIII</strong></td><td>Vega + Vol Products</td><td>VIX, Variance Swaps, Portfolio Vega</td></tr>
+</table>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Part I — ไปต่อ <a href="vol-part2.html">Part II: Vol Surface — แผนที่ของความกลัว</a> →</p>
+
+</body></html>
