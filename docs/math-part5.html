@@ -6,16 +6,29 @@
 <title>คณิตศาสตร์สำหรับ Options — Part V</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
 h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
 p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
 .bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bt{font-weight:700;margin-bottom:5px}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bi .bt{color:var(--violet)}
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
 svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+.step{background:#fff;border:1px solid var(--g2);border-radius:8px;padding:14px 18px;margin:10px 0}
+.step-n{display:inline-block;background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:.8em;font-weight:700;margin-right:8px}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0;padding:12px 16px;background:var(--g0);border-radius:8px}
+.chain-item{background:var(--blue);color:#fff;padding:4px 12px;border-radius:4px;font-size:.9em;font-weight:600}
+.chain-arrow{color:var(--g7);font-size:1.1em;font-weight:700}
+.ex{background:#f0f9ff;border:2px solid #7dd3fc;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0369a1;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--blue);padding:8px 12px;background:var(--blue-bg);border-radius:6px;list-style:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,.bi,.step,.ex,table{page-break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -28,15 +41,39 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <!-- ========== CHAPTER 10 ========== -->
 <h2 id="ch10">บทที่ 10: Linear Programming</h2>
 
+<div class="bi">
+<div class="bt">อุปมา: ร้านขนมที่มีส่วนผสมจำกัด</div>
+<p>สมมติเปิดร้านขนม ทำได้ 2 อย่าง: <strong>ขนมปัง A</strong> (กำไร 8 บาท) และ <strong>ขนมปัง B</strong> (กำไร 5 บาท)</p>
+<p>แต่มีข้อจำกัด: แป้ง 20 ถ้วย (A ใช้ 5 ถ้วย, B ใช้ 2 ถ้วย) และ เวลา 5 ชั่วโมง (แต่ละชิ้น 1 ชั่วโมง)</p>
+<p>คำถาม: ทำ A กี่ชิ้น B กี่ชิ้น <em>จึงจะกำไรมากสุด?</em> — นี่คือ Linear Programming!</p>
+</div>
+
+<div class="chain">
+  <span class="chain-item">ทรัพยากรจำกัด</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">ตั้ง Constraints</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">เขียน Objective</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">หาจุด Optimal</span>
+</div>
+
 <p>LP = หาค่า maximum/minimum ของฟังก์ชันเชิงเส้น ภายใต้เงื่อนไข (constraints) ที่เป็นเชิงเส้น</p>
 
 <h3 id="s10-1">10.1 แนวคิดและการตั้งโจทย์</h3>
 
 <div class="fm"><strong>Maximize</strong> z = c₁x₁ + c₂x₂ &nbsp;&nbsp; (Objective Function)<br>
 <strong>Subject to:</strong><br>
-&nbsp;&nbsp;a₁₁x₁ + a₁₂x₂ ≤ b₁ &nbsp;&nbsp; (Constraint 1)<br>
-&nbsp;&nbsp;a₂₁x₁ + a₂₂x₂ ≤ b₂ &nbsp;&nbsp; (Constraint 2)<br>
-&nbsp;&nbsp;x₁, x₂ ≥ 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Non-negativity)</div>
+&nbsp;&nbsp;a₁₁x₁ + a₁₂x₂ ≤ b₁ &nbsp;&nbsp; (Constraint 1: ทรัพยากร 1)<br>
+&nbsp;&nbsp;a₂₁x₁ + a₂₂x₂ ≤ b₂ &nbsp;&nbsp; (Constraint 2: ทรัพยากร 2)<br>
+&nbsp;&nbsp;x₁, x₂ ≥ 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Non-negativity: ซื้อไม่ได้ติดลบ)</div>
+
+<div class="bi">
+<div class="bt">ทำไมสมการถึงเขียนแบบนี้?</div>
+<p><strong>c₁, c₂</strong> = "กำไรต่อหน่วย" ของแต่ละตัวเลือก → เป้าหมายคือ maximize ผลรวม</p>
+<p><strong>a, b</strong> = "ส่วนผสมที่ใช้" vs "ส่วนผสมที่มี" → ข้อจำกัดทางกายภาพ</p>
+<p>ทุก constraint เป็น "เส้นตรง" → ทำให้ feasible region เป็น "รูปหลายเหลี่ยม" → คำตอบอยู่ที่มุม!</p>
+</div>
 
 <div class="bx ba">
 <div class="bt">ตัวอย่าง: จัดพอร์ต Options</div>
@@ -50,6 +87,12 @@ x₁, x₂ ≥ 0</p>
 
 <h3 id="s10-2">10.2 Graphical Method</h3>
 
+<div class="bi">
+<div class="bt">อุปมา: แผนที่ที่มีรั้วกั้น</div>
+<p>นึกภาพแผนที่ 2 มิติ Constraint แต่ละข้อคือ "รั้ว" ที่กั้น พื้นที่ที่เหลือ (ข้างใน) คือ <strong>Feasible Region</strong> — บริเวณที่ทำได้จริง</p>
+<p>Objective Function คือ "เส้นระดับความสูง" ที่ขนานกัน → เลื่อนเส้นออกไปเรื่อยๆ จนชนรั้ว → จุดนั้นคือ optimal!</p>
+</div>
+
 <p>สำหรับ 2 ตัวแปร แก้ได้ด้วยกราฟ: วาด constraints → หา feasible region → เช็ค corner points</p>
 
 <svg class="d" viewBox="0 0 500 300">
@@ -58,14 +101,13 @@ x₁, x₂ ≥ 0</p>
 <line x1="60" y1="260" x2="60" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#o1)"/>
 <text x="475" y="264" font-family="Sarabun" font-size="11" fill="#374151">x₁</text>
 <text x="40" y="15" font-family="Sarabun" font-size="11" fill="#374151">x₂</text>
-<!-- Constraint 1: 5x1 + 2x2 = 20 → passes through (0,10) and (4,0); (0,10) off-screen, enters chart at ~(121,15) -->
+<!-- Constraint 1: 5x1 + 2x2 = 20 → passes through (0,10) and (4,0) -->
 <line x1="121" y1="15" x2="220" y2="260" stroke="#2563eb" stroke-width="2"/>
 <text x="185" y="100" font-family="Sarabun" font-size="10" fill="#2563eb" transform="rotate(-68,185,100)">5x₁+2x₂=20</text>
 <!-- Constraint 2: x1 + x2 = 5 → passes through (0,5) and (5,0) -->
 <line x1="60" y1="60" x2="260" y2="260" stroke="#dc2626" stroke-width="2"/>
 <text x="200" y="120" font-family="Sarabun" font-size="10" fill="#dc2626" transform="rotate(-45,200,120)">x₁+x₂=5</text>
-<!-- Feasible region: corners (0,0), (0,5), (10/3,5/3), (4,0) -->
-<!-- Mapping: x1: 0→60, 4→220, 10/3≈3.33→193; x2: 0→260, 5→60, 5/3≈1.67→193 -->
+<!-- Feasible region -->
 <polygon points="60,260 60,60 193,193 220,260" fill="#2563eb" opacity="0.1"/>
 <text x="110" y="220" font-family="Sarabun" font-size="10" fill="#2563eb" font-weight="600">Feasible Region</text>
 <!-- Corner points -->
@@ -85,15 +127,52 @@ x₁, x₂ ≥ 0</p>
 ดังนั้นเช็คแค่ทุก corner → เลือกค่า z สูงสุด</p>
 </div>
 
+<div class="step">
+<p><span class="step-n">1</span><strong>หา corner points</strong> จากจุดตัดของ constraints:</p>
+<ul>
+<li>(0,0) — origin</li>
+<li>(0,5) — constraint 2 ตัด y-axis: x₁=0 → x₂=5</li>
+<li>(10/3, 5/3) — constraints 1 และ 2 ตัดกัน: แก้ระบบ 5x₁+2x₂=20, x₁+x₂=5</li>
+<li>(4,0) — constraint 1 ตัด x-axis: x₂=0 → 5x₁=20 → x₁=4</li>
+</ul>
+<p><span class="step-n">2</span><strong>คำนวณ z ที่แต่ละ corner:</strong></p>
+<ul>
+<li>z(0,0) = 8(0)+5(0) = 0</li>
+<li>z(0,5) = 8(0)+5(5) = 25</li>
+<li>z(10/3, 5/3) = 8(10/3)+5(5/3) = 80/3+25/3 = 105/3 = <strong>35 ← Maximum!</strong></li>
+<li>z(4,0) = 8(4)+5(0) = 32</li>
+</ul>
+<p><span class="step-n">3</span><strong>สรุป:</strong> ซื้อ Call K=100 จำนวน 3.33 สัญญา + Call K=110 จำนวน 1.67 สัญญา → Payoff = ฿35</p>
+</div>
+
 <h3 id="s10-3">10.3 Simplex Method</h3>
+
+<div class="bi">
+<div class="bt">อุปมา: เดินป่าในความมืด หาจุดสูงสุด</div>
+<p>ลองนึกถึงการเดินป่าตอนกลางคืน มองไม่เห็นทิวทัศน์ทั้งหมด แต่ <em>รู้สึกได้</em> ว่าทิศไหนลาดขึ้นชัน</p>
+<p>วิธี Simplex: <strong>ยืนอยู่ที่มุมหนึ่ง → มองไปมุมใกล้ๆ → เดินไปมุมที่สูงกว่า → ทำซ้ำจนไม่มีมุมที่สูงกว่า</strong></p>
+<p>ไม่ต้องสำรวจทุกมุม! ในทางปฏิบัติ Simplex เร็วมากแม้มีหลายร้อยตัวแปร</p>
+</div>
 
 <p>เมื่อมีหลายตัวแปร (ใช้กราฟไม่ได้) ใช้ <strong>Simplex Algorithm</strong>:</p>
 <ol>
 <li>เริ่มที่ corner หนึ่ง (มักเป็นจุด origin)</li>
-<li>มองไปรอบๆ ว่า corner ไหนดีกว่า</li>
+<li>มองไปรอบๆ ว่า corner ไหนดีกว่า (ดู "reduced cost")</li>
 <li>เดินไปที่ corner ที่ดีขึ้นมากที่สุด (pivot)</li>
 <li>ทำซ้ำจนไม่มี corner ที่ดีกว่า → <strong>optimal!</strong></li>
 </ol>
+
+<div class="chain">
+  <span class="chain-item">Corner Point Theorem</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">คำตอบอยู่ที่มุม</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">เดินจากมุมสู่มุมที่ดีขึ้น</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">หยุดเมื่อไม่มีมุมดีกว่า</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">Optimal!</span>
+</div>
 
 <div class="bx ba">
 <div class="bt">Simplex ไม่ต้องจำขั้นตอน แค่เข้าใจหลักการ</div>
@@ -103,6 +182,12 @@ x₁, x₂ ≥ 0</p>
 
 <h3 id="s10-4">10.4 Dual Problem &amp; Shadow Price</h3>
 
+<div class="bi">
+<div class="bt">อุปมา: "ถ้าได้วัตถุดิบเพิ่ม 1 หน่วย กำไรเพิ่มเท่าไหร่?"</div>
+<p>เจ้าของร้านขนมถามว่า "ถ้าซื้อแป้งเพิ่ม 1 ถ้วย (ราคา ฿?) กำไรจะเพิ่มขึ้นเท่าไหร่?" — นั่นคือ Shadow Price!</p>
+<p>Shadow Price = "ราคาเงา" ของ constraint — บอกว่า constraint ไหน "แพง" ที่สุด ควรไปผ่อนคลายก่อน</p>
+</div>
+
 <p>ทุก LP (Primal) มีคู่ (Dual) — ให้มุมมองเพิ่มเติม:</p>
 
 <div class="fm"><strong>Primal:</strong> Max c<sup>T</sup>x s.t. Ax ≤ b, x ≥ 0<br>
@@ -110,28 +195,65 @@ x₁, x₂ ≥ 0</p>
 <strong>Weak Duality:</strong> ค่า Dual ≥ ค่า Primal เสมอ<br>
 <strong>Strong Duality:</strong> ที่ optimal ค่าเท่ากัน!</div>
 
+<div class="bi">
+<div class="bt">ทำไม Dual มีอยู่?</div>
+<p>Primal ถามว่า "จัด resource ยังไงให้ได้กำไรสูงสุด?"</p>
+<p>Dual ถามว่า "resource แต่ละอย่างมี <em>มูลค่า</em> เท่าไหร่?" (y* = shadow prices)</p>
+<p>Strong Duality: ทั้งสองคำถามมีคำตอบที่สอดคล้องกันที่ optimal → สามารถใช้ Dual แก้แทน Primal ได้เมื่อสะดวกกว่า</p>
+</div>
+
 <p><strong>Shadow Price</strong> (y*) = "ถ้าเพิ่ม resource (b) อีก 1 หน่วย ค่า objective จะเพิ่มเท่าไหร่?"</p>
+
+<div class="step">
+<p><span class="step-n">1</span>จากตัวอย่าง Options: ที่ optimal (10/3, 5/3) — budget constraint: 5x₁+2x₂=20 (active)</p>
+<p><span class="step-n">2</span>Shadow price ของ budget constraint ≈ ฿1.4/บาท budget</p>
+<p><span class="step-n">3</span>ถ้า budget เพิ่มจาก ฿20 → ฿21 → Expected Payoff เพิ่มจาก ฿35 → ฿36.4</p>
+<p><span class="step-n">4</span>ถ้า risk constraint active: shadow price บอกว่า "การเพิ่ม 1 สัญญา" มีมูลค่าเท่าไหร่</p>
+</div>
 
 <div class="bx bg">
 <div class="bt">เชื่อมกับ Options</div>
 <p>Shadow Price ของ budget constraint = "ถ้ามีเงินเพิ่มอีก ฿1 expected payoff จะเพิ่มเท่าไหร่?"<br>
-ใช้ตัดสินใจว่าควร "ขยาย budget" หรือ "ลด risk limit"</p>
+ใช้ตัดสินใจว่าควร "ขยาย budget" หรือ "ลด risk limit" — constraint ไหน "แพง" กว่า</p>
 </div>
 
 <h3 id="s10-5">10.5 Sensitivity Analysis</h3>
 
-<p><strong>ถ้า parameter เปลี่ยน คำตอบเปลี่ยนไหม?</strong></p>
+<p><strong>ถ้า parameter เปลี่ยน คำตอบเปลี่ยนไหม?</strong> — สำคัญเพราะ input มักไม่แน่นอน</p>
 <ul>
-<li><strong>Coefficient ใน objective เปลี่ยน</strong>: ถ้า expected payoff ของ Call เปลี่ยน → basis ยังเหมือนเดิมไหม?</li>
-<li><strong>RHS ของ constraint เปลี่ยน</strong>: ถ้า budget เพิ่ม → ใช้ shadow price คำนวณ</li>
+<li><strong>Coefficient ใน objective เปลี่ยน</strong>: ถ้า expected payoff ของ Call เปลี่ยน → basis ยังเหมือนเดิมไหม? (มี "allowable range")</li>
+<li><strong>RHS ของ constraint เปลี่ยน</strong>: ถ้า budget เพิ่ม → ใช้ shadow price คำนวณได้ทันที (ตราบที่อยู่ใน range)</li>
 </ul>
+
+<div class="bx bb">
+<div class="bt">Sensitivity ใน Options Trading</div>
+<p>Greeks ของ Options <em>ก็คือ</em> sensitivity analysis! Delta = sensitivity ของ option price ต่อ S, Vega = sensitivity ต่อ σ<br>
+Simplex sensitivity = sensitivity ของ optimal solution ต่อ parameters ของโจทย์ LP</p>
+</div>
 
 <h3 id="s10-6">10.6 Integer Linear Programming (ILP)</h3>
 
-<p><strong>ปัญหา:</strong> LP ตอบว่า "ซื้อ Call 2.7 สัญญา" ← ซื้อ 0.7 สัญญาไม่ได้!</p>
+<div class="bi">
+<div class="bt">อุปมา: ซื้อตั๋วเครื่องบินครึ่งใบไม่ได้</div>
+<p>LP อาจตอบว่า "ควรซื้อ 3.7 สัญญา" — แต่สัญญา Options ซื้อเป็นจำนวนเต็มเท่านั้น! (1 contract = 100 shares)</p>
+<p>ILP แก้ปัญหานี้โดยบังคับให้ตัวแปรเป็นจำนวนเต็ม</p>
+</div>
+
 <p><strong>ILP</strong> = LP ที่ตัวแปรต้องเป็นจำนวนเต็ม</p>
 
 <div class="fm">Max c<sup>T</sup>x &nbsp; s.t. Ax ≤ b, x ≥ 0, <strong>x ∈ ℤ</strong> (integers)</div>
+
+<div class="chain">
+  <span class="chain-item">แก้ LP Relaxation</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">ตัวแปรไม่เต็ม?</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">Branch (x≤3 หรือ x≥4)</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">แก้ใหม่แต่ละ branch</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">Integer Solution</span>
+</div>
 
 <div class="bx br">
 <div class="bt">ILP ยากกว่า LP มาก!</div>
@@ -148,6 +270,12 @@ x₁, x₂ ≥ 0</p>
 <!-- ========== CHAPTER 11 ========== -->
 <h2 id="ch11">บทที่ 11: Nonlinear Optimization</h2>
 
+<div class="bi">
+<div class="bt">อุปมา: โลกจริงไม่ใช่เส้นตรง</div>
+<p>Portfolio risk ไม่ใช่ linear — เพิ่ม 2 เท่าของสินทรัพย์ ไม่ได้เพิ่ม risk 2 เท่า (เพราะ diversification!)</p>
+<p>Nonlinear optimization จัดการกับฟังก์ชันที่ "โค้ง" — อย่าง Portfolio Variance = wᵀΣw ซึ่งเป็น <em>quadratic</em> (โค้งพาราโบลา)</p>
+</div>
+
 <p>โลกจริงไม่เป็นเส้นตรง — Portfolio Optimization ของ Markowitz เป็น <strong>Quadratic</strong> ไม่ใช่ Linear</p>
 
 <h3 id="s11-1">11.1 Unconstrained Optimization</h3>
@@ -155,35 +283,64 @@ x₁, x₂ ≥ 0</p>
 <p>หา min/max ของ f(x) โดยไม่มี constraints:</p>
 <div class="fm">เงื่อนไขจำเป็น: f'(x*) = 0 &nbsp;&nbsp; (slope = 0 ที่จุด optimal)<br>
 เงื่อนไขเพียงพอ:<br>
-&nbsp;&nbsp;f''(x*) > 0 → minimum (โค้งขึ้น)<br>
-&nbsp;&nbsp;f''(x*) < 0 → maximum (โค้งลง)</div>
+&nbsp;&nbsp;f''(x*) > 0 → minimum (โค้งขึ้น "ชาม")<br>
+&nbsp;&nbsp;f''(x*) < 0 → maximum (โค้งลง "อาน")</div>
+
+<div class="bi">
+<div class="bt">ทำไม f'=0 คือ optimal?</div>
+<p>ถ้า slope ≠ 0 หมายความว่าเดินไปอีกนิดจะ "ดีขึ้น" → ยังไม่ optimal!</p>
+<p>ที่ optimal จริง: ทุกทิศทางจาก x* จะ "แย่ลง" → slope ต้องเป็น 0 (หรือ gradient = 0 สำหรับหลายตัวแปร)</p>
+</div>
 
 <h3 id="s11-2">11.2 Gradient Descent — "เดินลงเขา"</h3>
 
-<p>เมื่อมีหลายตัวแปรและหาคำตอบ closed-form ไม่ได้ → ใช้ algorithm เดินทีละก้าว:</p>
+<div class="bi">
+<div class="bt">อุปมา: ตาบอด ลงเขาในหมอก</div>
+<p>ลองนึกถึงการลงเขาตอนหมอกลง มองไม่เห็นทาง แต่รู้สึกได้ว่าทิศไหน "ลาดชันลงมากที่สุด"</p>
+<p>วิธี Gradient Descent: <strong>คำนวณทิศที่ "ชันขึ้น" (gradient) แล้วเดินสวนทาง → ลงเร็วที่สุด</strong></p>
+<p>ขนาดก้าว (α = learning rate): เล็กเกินไป = ช้า, ใหญ่เกินไป = กระโดดข้ามหุบเขา!</p>
+</div>
 
 <div class="fm">x(t+1) = x(t) - α × ∇f(x(t))<br>
 α = learning rate (ขนาดก้าว)<br>
 ∇f = gradient (ทิศทางที่ f เพิ่มเร็วที่สุด) → เดินสวนทาง = ลดเร็วที่สุด</div>
 
+<div class="chain">
+  <span class="chain-item">คำนวณ ∇f (gradient)</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">เดินสวนทาง (-α∇f)</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">Update x</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">ทำซ้ำ</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">|∇f|≈0 → หยุด</span>
+</div>
+
+<div class="step">
+<p><span class="step-n">1</span><strong>โจทย์</strong>: Minimize f(x) = x² โดยใช้ Gradient Descent, α=0.3, เริ่มที่ x₀=4</p>
+<p><span class="step-n">2</span>f'(x) = 2x &nbsp;&nbsp; (gradient)</p>
+<p><span class="step-n">3</span>Iteration 1: x₁ = 4 − 0.3×(2×4) = 4 − 2.4 = <strong>1.6</strong></p>
+<p><span class="step-n">4</span>Iteration 2: x₂ = 1.6 − 0.3×(2×1.6) = 1.6 − 0.96 = <strong>0.64</strong></p>
+<p><span class="step-n">5</span>Iteration 3: x₃ = 0.64 − 0.3×(2×0.64) = 0.64 − 0.384 = <strong>0.256</strong></p>
+<p><span class="step-n">6</span>เข้าใกล้ 0 (คำตอบจริง) ทุก iteration! หลังหลาย iteration → x → 0</p>
+</div>
+
 <svg class="d" viewBox="0 0 500 250">
-<!-- Contour lines (concentric ellipses) -->
 <ellipse cx="320" cy="130" rx="150" ry="90" fill="none" stroke="#e5e7eb" stroke-width="1"/>
 <ellipse cx="320" cy="130" rx="110" ry="65" fill="none" stroke="#e5e7eb" stroke-width="1"/>
 <ellipse cx="320" cy="130" rx="70" ry="40" fill="none" stroke="#e5e7eb" stroke-width="1"/>
 <ellipse cx="320" cy="130" rx="30" ry="18" fill="none" stroke="#e5e7eb" stroke-width="1"/>
-<!-- GD path -->
-<polyline points="100,60 170,90 230,105 275,118 305,125 315,128" stroke="#dc2626" stroke-width="2.5" fill="none" marker-end="url(#o1)"/>
+<defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker></defs>
+<polyline points="100,60 170,90 230,105 275,118 305,125 315,128" stroke="#dc2626" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
 <circle cx="100" cy="60" r="5" fill="#dc2626"/>
 <text x="75" y="50" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">Start</text>
-<circle cx="320" cy="130" r="6" fill="#16a34a"/>
-<text x="330" y="128" font-family="Sarabun" font-size="12" fill="#16a34a" font-weight="700">Minimum!</text>
-<!-- Labels -->
-<text x="250" y="235" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#64748b">เดินตามทิศที่ลดเร็วที่สุด (negative gradient)</text>
-<!-- Steps -->
 <circle cx="170" cy="90" r="3" fill="#dc2626" opacity="0.6"/>
 <circle cx="230" cy="105" r="3" fill="#dc2626" opacity="0.6"/>
 <circle cx="275" cy="118" r="3" fill="#dc2626" opacity="0.6"/>
+<circle cx="320" cy="130" r="6" fill="#16a34a"/>
+<text x="330" y="128" font-family="Sarabun" font-size="12" fill="#16a34a" font-weight="700">Minimum!</text>
+<text x="250" y="235" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#64748b">เดินตามทิศที่ลดเร็วที่สุด (negative gradient)</text>
 </svg>
 
 <div class="bx bg">
@@ -195,12 +352,27 @@ x₁, x₂ ≥ 0</p>
 
 <h3 id="s11-3">11.3 Lagrange Multipliers — Optimization ที่มี Constraints</h3>
 
+<div class="bi">
+<div class="bt">อุปมา: เดินบนถนน (constraint) หาจุดที่สูงสุด</div>
+<p>ถ้าต้องเดินอยู่บนถนน (constraint g=0) แต่อยากหาจุดที่ "สูงที่สุด" (maximize f)</p>
+<p>จุด optimal คือจุดที่ "ทิศทางขึ้นสูง" ชี้ <em>ตั้งฉากกับถนน</em> — ถ้าไม่ตั้งฉาก แปลว่าเดินต่อบนถนนแล้วจะสูงขึ้นได้อีก!</p>
+<p>Lagrange Multiplier (λ) = อัตราส่วนระหว่าง gradient ของ f กับ gradient ของ g ที่จุด optimal</p>
+</div>
+
 <p>หา min/max ของ f(x) <strong>ภายใต้เงื่อนไข</strong> g(x) = 0:</p>
 
 <div class="fm">สร้าง Lagrangian: L(x, λ) = f(x) - λ × g(x)<br>
 แก้: ∂L/∂x = 0 และ ∂L/∂λ = 0 (= g(x) = 0)<br><br>
-λ = Lagrange multiplier = "ถ้าผ่อน constraint อีกนิด objective เปลี่ยนเท่าไหร่"<br>
-(คล้าย shadow price ใน LP!)</div>
+เงื่อนไข: ∇f = λ∇g &nbsp;&nbsp; (gradient ขนานกัน!)<br>
+λ = Lagrange multiplier = "ถ้าผ่อน constraint อีกนิด objective เปลี่ยนเท่าไหร่"</div>
+
+<div class="step">
+<p><span class="step-n">1</span><strong>Markowitz Problem</strong>: Minimize σ²_p = wᵀΣw s.t. wᵀμ = r* (target) และ wᵀ1 = 1</p>
+<p><span class="step-n">2</span>Lagrangian: L = wᵀΣw − λ₁(wᵀμ − r*) − λ₂(wᵀ1 − 1)</p>
+<p><span class="step-n">3</span>∂L/∂w = 0 → 2Σw − λ₁μ − λ₂1 = 0 → w* = Σ⁻¹(λ₁μ + λ₂1)/2</p>
+<p><span class="step-n">4</span>ปรับ λ₁, λ₂ ให้ตรงกับ constraints → ได้ efficient portfolio!</p>
+<p><span class="step-n">5</span>ทำสำหรับ r* ต่างๆ → ได้ <strong>Efficient Frontier</strong> (เส้นโค้ง risk vs return)</p>
+</div>
 
 <div class="bx bg">
 <div class="bt">เชื่อมกับ Options — Markowitz Portfolio Optimization!</div>
@@ -212,12 +384,18 @@ x₁, x₂ ≥ 0</p>
 
 <h3 id="s11-4">11.4 Convex Optimization</h3>
 
-<p><strong>Convex problem:</strong> minimize f(x) ที่เป็น convex function, ภายใต้ convex constraints</p>
+<div class="bi">
+<div class="bt">อุปมา: ชาม vs อาน</div>
+<p><strong>Convex function</strong> = รูปชาม → มีก้นชามเดียว ไม่ว่าเริ่มจากจุดไหน Gradient Descent จะหาก้นชามเจอ</p>
+<p><strong>Non-convex</strong> = รูปอาน (saddle) หรือภูมิประเทศขรุขระ → มีหลายหุบเขา อาจติดอยู่ที่ "หุบเขาเล็ก" ที่ไม่ใช่ที่ดีสุด</p>
+<p>ข่าวดีสำหรับ Quant: Portfolio optimization (Markowitz) เป็น <strong>convex!</strong></p>
+</div>
 
 <div class="bx bb">
 <div class="bt">ทำไม Convex สำคัญ?</div>
-<p>• Convex → <strong>มี minimum เดียว</strong> → Gradient Descent จะหาเจอเสมอ<br>
-• Non-convex → มีหลาย local minimum → อาจติดอยู่ที่จุดที่ไม่ใช่ global minimum</p>
+<p>• Convex → <strong>มี minimum เดียว (global)</strong> → Gradient Descent จะหาเจอเสมอ ไม่ว่าเริ่มจากไหน<br>
+• Non-convex → มีหลาย local minimum → อาจติดอยู่ที่จุดที่ไม่ใช่ global minimum<br>
+• การตรวจสอบ: f convex ⟺ Hessian (matrix of second derivatives) เป็น PSD</p>
 </div>
 
 <p><strong>ข่าวดี:</strong> Portfolio optimization (Markowitz) เป็น <strong>convex!</strong> → มีคำตอบเดียวที่ดีที่สุด</p>
@@ -225,25 +403,112 @@ x₁, x₂ ≥ 0</p>
 
 <h3 id="s11-5">11.5 Quadratic Programming (QP)</h3>
 
+<div class="bi">
+<div class="bt">ทำไม QP ถึงเป็น "ชั้นพิเศษ" ของ Nonlinear Optimization?</div>
+<p>QP = objective เป็น quadratic (โค้งพาราโบลา) + constraints เป็น linear</p>
+<p>นี่คือ "จุดกึ่งกลาง": ยากกว่า LP (เพราะ objective ไม่เส้นตรง) แต่ง่ายกว่า nonlinear ทั่วไป (เพราะ convex)</p>
+<p>ข้อดี: มี solver ที่เร็วและแม่นยำ — แก้ Markowitz ได้ใน milliseconds!</p>
+</div>
+
 <div class="fm"><strong>Minimize</strong> ½x<sup>T</sup>Qx + c<sup>T</sup>x<br>
 <strong>Subject to:</strong> Ax ≤ b</div>
+
+<div class="chain">
+  <span class="chain-item">Q = 2Σ (Covariance)</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">objective = wᵀΣw</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">constraints = budget + return</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">QP Solver</span>
+  <span class="chain-arrow">→</span>
+  <span class="chain-item">Efficient Portfolio!</span>
+</div>
 
 <div class="bx bg">
 <div class="bt">เชื่อมกับ Options</div>
 <p><strong>Mean-Variance Optimization ของ Markowitz เป็น QP พอดี!</strong><br>
 Q = 2Σ (covariance matrix), c = 0 หรือ -μ<br>
-ใช้ QP solver ใน Python (cvxpy, scipy) แก้ได้ในเสี้ยววินาที</p>
+ใช้ QP solver ใน Python (cvxpy, scipy) แก้ได้ในเสี้ยววินาที → optimal portfolio weights!</p>
+</div>
+
+<div class="step">
+<p><span class="step-n">1</span><strong>ตัวอย่าง QP 2 สินทรัพย์</strong>: หน้า 4, Σ = [[0.04, 0.01],[0.01, 0.09]], μ = [0.10, 0.15]</p>
+<p><span class="step-n">2</span>Minimize wᵀΣw = w₁²(0.04) + 2w₁w₂(0.01) + w₂²(0.09)</p>
+<p><span class="step-n">3</span>Subject to: w₁+w₂=1, 0.10w₁+0.15w₂ = 0.12 (target return)</p>
+<p><span class="step-n">4</span>จาก constraints: w₂=0.4, w₁=0.6 (แก้ระบบเส้นตรง)</p>
+<p><span class="step-n">5</span>σ²_p = 0.36(0.04)+2(0.24)(0.01)+0.16(0.09) = 0.0144+0.0048+0.0144 = <strong>0.0336</strong></p>
+<p><span class="step-n">6</span>σ_p = √0.0336 ≈ <strong>18.3%</strong> ← portfolio risk ที่ optimal สำหรับ return 12%</p>
+</div>
+
+<!-- Practice Problems -->
+<h2 id="practice">แบบฝึกหัด Part V</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 1: หา Optimal Solution ด้วย Corner Points</div>
+<p>Maximize z = 3x₁ + 2x₂<br>
+Subject to: 2x₁ + x₂ ≤ 10, x₁ + 2x₂ ≤ 8, x₁, x₂ ≥ 0</p>
+<p><em>หาทุก corner points และบอกว่า optimal solution คืออะไร?</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p><strong>หา corner points:</strong></p>
+<ul>
+<li>(0,0): z = 0</li>
+<li>(5,0): จาก 2x₁=10 → x₁=5, z = 3(5)+2(0) = 15</li>
+<li>(0,4): จาก 2x₂=8 → x₂=4, z = 3(0)+2(4) = 8</li>
+<li>จุดตัด 2x₁+x₂=10 กับ x₁+2x₂=8: แก้ → 3x₁=12 → x₁=4, x₂=2<br>
+  z(4,2) = 3(4)+2(2) = 12+4 = <strong>16 ← Maximum!</strong></li>
+</ul>
+<p><strong>Optimal: x₁=4, x₂=2, z=16</strong></p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 2: Shadow Price และ Sensitivity</div>
+<p>จากตัวอย่าง Options ในบทเรียน (Maximize 8x₁+5x₂ s.t. 5x₁+2x₂≤20, x₁+x₂≤5)<br>
+คำตอบ optimal คือ x₁=10/3, x₂=5/3, z=35</p>
+<p><em>ถ้า budget เพิ่มเป็น ฿21 (จาก ฿20) คาดว่า Expected Payoff จะเป็นเท่าไหร่? (ใช้ shadow price ≈ 1.4)</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p><strong>วิธีคิด:</strong></p>
+<p>Shadow price ของ budget constraint = 1.4 หมายความว่า ทุก ฿1 ที่เพิ่มขึ้น → payoff เพิ่ม 1.4</p>
+<p>Budget เพิ่ม 1 → Payoff เพิ่ม 1.4 → New payoff ≈ 35 + 1.4 = <strong>฿36.4</strong></p>
+<p><strong>ตรวจสอบ:</strong> แก้ LP ใหม่กับ budget=21: optimal ที่ (17/5, 8/5)<br>
+z = 8(17/5)+5(8/5) = 136/5+40/5 = 176/5 = 35.2 ≈ 35+1.2 (shadow price จริง ≈ 1.2)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3: Gradient Descent Iterations</div>
+<p>กำหนด f(x) = x² + 4x + 5, α = 0.1, เริ่มที่ x₀ = 3</p>
+<p><em>คำนวณ 3 iterations ของ Gradient Descent แล้วบอกว่าเข้าใกล้คำตอบจริงไหม?</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p><strong>f'(x) = 2x + 4</strong></p>
+<p>คำตอบจริง (f'=0): 2x+4=0 → x* = -2</p>
+<p><strong>Iteration 1:</strong> f'(3) = 2(3)+4 = 10 → x₁ = 3 − 0.1(10) = <strong>2.0</strong></p>
+<p><strong>Iteration 2:</strong> f'(2) = 2(2)+4 = 8 → x₂ = 2 − 0.1(8) = <strong>1.2</strong></p>
+<p><strong>Iteration 3:</strong> f'(1.2) = 2(1.2)+4 = 6.4 → x₃ = 1.2 − 0.1(6.4) = <strong>0.56</strong></p>
+<p>เข้าใกล้ -2 ทุก iteration (3 → 2 → 1.2 → 0.56 → ... → -2)</p>
+<p>ต้องใช้หลาย iterations เพิ่มเติม (เพราะ α เล็ก แต่เสถียร)</p>
+</div>
+</details>
 </div>
 
 <div class="bx ba">
 <div class="bt">สรุป Part V</div>
-<p>✓ LP: Objective + Constraints → Simplex → Optimal<br>
-✓ Dual: Shadow Price = ค่าของ constraint<br>
-✓ ILP: ตัวแปรจำนวนเต็ม → Branch & Bound<br>
-✓ Gradient Descent → Model Calibration<br>
-✓ <strong>Lagrange → Markowitz Portfolio Optimization</strong><br>
-✓ Convex → มีคำตอบเดียว, Non-convex → ระวัง local minimum<br>
-✓ <strong>QP = Mean-Variance Optimization</strong></p>
+<p>✓ LP: Objective + Constraints → Simplex → Optimal ที่มุม feasible region<br>
+✓ Dual: Shadow Price = มูลค่าของ constraint — constraint ไหน "แพง" ที่สุด?<br>
+✓ ILP: ตัวแปรจำนวนเต็ม → Branch & Bound (ใช้สำหรับ option contracts)<br>
+✓ Gradient Descent → เดินลงเขา → Model Calibration, Vol Surface Fitting<br>
+✓ <strong>Lagrange → Markowitz Portfolio Optimization → Efficient Frontier</strong><br>
+✓ Convex → มีคำตอบเดียว (global) ไม่ติด local minimum<br>
+✓ <strong>QP = Mean-Variance Optimization → แก้ด้วย cvxpy ใน milliseconds</strong></p>
 </div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
