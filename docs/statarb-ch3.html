@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.3 — Ornstein-Uhlenbeck Process</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.step-row{display:flex;align-items:flex-start;gap:12px;margin:10px 0;padding:12px 16px;background:#fff;border:1px solid var(--g2);border-radius:8px}
+.step-num{background:var(--teal);color:#fff;border-radius:50%;width:26px;height:26px;min-width:26px;text-align:center;line-height:26px;font-size:.85em;font-weight:700}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 3</div>
+<h1>Ornstein-Uhlenbeck Process</h1>
+<div class="sub">หัวใจของ Stat Arb — โมเดลที่อธิบายว่า spread "วนกลับ" อย่างไร<br>
+κ (speed) · θ (mean) · σ (noise) · Half-life · Calibration</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<p>OU Process คือ "สปริงที่มี noise" — ยิ่งดึง spread ออกจากค่ากลาง สปริงยิ่งดึงกลับแรง<br>
+Half-life บอกว่า spread ใช้เวลากลับครึ่งทางนานแค่ไหน → กำหนดว่าเราจะ trade แบบ intraday หรือ swing</p>
+<div class="ki-eq">dε = κ(θ − ε) dt + σ dW</div>
+</div>
+
+<!-- 3.1 SDE and Parameters -->
+<h2 id="s3-1">3.1 Parameters ของ OU Process</h2>
+
+<table>
+<tr><th>Parameter</th><th>ชื่อ</th><th>ความหมาย trade</th><th>ค่าปกติ</th></tr>
+<tr><td><strong>κ &gt; 0</strong></td><td>Mean-reversion speed</td><td>ยิ่งมาก spread กลับเร็ว → ต้อง execute เร็ว</td><td>1–5 ต่อวัน</td></tr>
+<tr><td><strong>θ</strong></td><td>Long-run mean</td><td>ค่ากลางที่ entry/exit อิงอยู่ — ถ้าเปลี่ยนบ่อยต้อง re-calibrate</td><td>≈0 หรือ avg funding diff</td></tr>
+<tr><td><strong>σ &gt; 0</strong></td><td>Diffusion (noise)</td><td>ยิ่งมาก spread ผันผวนมาก → threshold ต้องกว้างกว่า fee</td><td>0.01–0.5% ต่อ √วัน</td></tr>
+</table>
+
+<!-- 3.2 Solution -->
+<h2 id="s3-2">3.2 OU Solution — ε เดินไปไหนได้บ้าง</h2>
+
+<p>SDE นี้ solve ได้ closed-form ทำให้เราคำนวณ expected value ได้ทุกเวลา:</p>
+
+<div class="fm">ε_t = θ + (ε₀ − θ)·e^{−κt}  +  σ·∫₀ᵗ e^{−κ(t−s)} dW_s
+        ↑              ↑                    ↑
+     ค่ากลาง   decay จากจุดเริ่ม          noise สะสม</div>
+
+<div class="bx bb">
+<div class="bt">E[ε_t | ε₀] = θ + (ε₀ − θ)·e^{−κt}</div>
+<p>เริ่มที่ ε₀ = θ + gap₀ (ห่างจากค่ากลาง gap₀)<br>
+หลังเวลา t: ε คาดว่าจะอยู่ที่ θ + gap₀·e^{−κt}<br>
+gap ลดลงด้วยอัตรา e^{−κt} → ยิ่งนาน ยิ่งใกล้ θ</p>
+</div>
+
+<!-- 3.3 Half-life -->
+<h2 id="s3-3">3.3 Half-Life — ตัวเลขที่สำคัญที่สุดสำหรับ Trader</h2>
+
+<div class="key-idea">
+<div class="ki-label">Half-Life</div>
+<div class="ki-eq">τ₁/₂ = ln(2) / κ ≈ 0.693 / κ</div>
+<p style="margin-top:8px">เวลาที่ gap ระหว่าง ε และ θ ลดลงครึ่งหนึ่ง<br>
+ถ้า spread เบี่ยง 1% จาก θ → หลัง τ₁/₂ จะเหลือ 0.5%</p>
+</div>
+
+<!-- Half-life + trade opportunity diagram -->
+<svg class="d" viewBox="0 0 640 360">
+<defs>
+<marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+
+<text x="320" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">OU Process — Zone การ Trade และ Half-Life</text>
+
+<!-- Zone backgrounds -->
+<!-- Stop zone top (>3σ) -->
+<rect x="50" y="35" width="555" height="35" rx="0" fill="#fef2f2" opacity="0.7"/>
+<text x="610" y="58" font-size="9" fill="#dc2626" font-weight="700">STOP</text>
+<!-- Entry zone top (2-3σ) -->
+<rect x="50" y="70" width="555" height="35" rx="0" fill="#fff7ed" opacity="0.7"/>
+<text x="610" y="93" font-size="9" fill="#f59e0b" font-weight="700">ENTRY</text>
+<!-- Hold zone top (σ-2σ) -->
+<rect x="50" y="105" width="555" height="35" rx="0" fill="#f0fdf4" opacity="0.5"/>
+<!-- θ zone (±σ) -->
+<rect x="50" y="140" width="555" height="40" rx="0" fill="#f0fdfa" opacity="0.6"/>
+<!-- Hold zone bottom (σ-2σ) -->
+<rect x="50" y="180" width="555" height="35" rx="0" fill="#f0fdf4" opacity="0.5"/>
+<!-- Entry zone bottom (2-3σ) -->
+<rect x="50" y="215" width="555" height="35" rx="0" fill="#fff7ed" opacity="0.7"/>
+<text x="610" y="238" font-size="9" fill="#f59e0b" font-weight="700">ENTRY</text>
+<!-- Stop zone bottom -->
+<rect x="50" y="250" width="555" height="35" rx="0" fill="#fef2f2" opacity="0.7"/>
+<text x="610" y="273" font-size="9" fill="#dc2626" font-weight="700">STOP</text>
+
+<!-- Axes -->
+<line x1="50" y1="290" x2="610" y2="290" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
+<line x1="50" y1="295" x2="50" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
+<text x="613" y="293" font-size="10" fill="#374151">t</text>
+<text x="44" y="28" text-anchor="end" font-size="10" fill="#374151">ε</text>
+
+<!-- Horizontal reference lines -->
+<!-- θ line -->
+<line x1="50" y1="160" x2="600" y2="160" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="5,4"/>
+<text x="44" y="163" text-anchor="end" font-size="10" font-weight="700" fill="#0d9488">θ</text>
+<!-- +2σ line -->
+<line x1="50" y1="105" x2="600" y2="105" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="44" y="108" text-anchor="end" font-size="9" fill="#f59e0b">+2σ</text>
+<!-- -2σ line -->
+<line x1="50" y1="215" x2="600" y2="215" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="44" y="218" text-anchor="end" font-size="9" fill="#f59e0b">−2σ</text>
+<!-- +3σ line -->
+<line x1="50" y1="70" x2="600" y2="70" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="44" y="73" text-anchor="end" font-size="9" fill="#dc2626">+3σ</text>
+<!-- -3σ line -->
+<line x1="50" y1="250" x2="600" y2="250" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="44" y="253" text-anchor="end" font-size="9" fill="#dc2626">−3σ</text>
+
+<!-- OU path (above θ, mean-reverting) -->
+<path d="M 50,55 C 80,58 120,72 150,90 C 180,108 200,125 230,138 C 260,150 290,157 320,160 C 350,163 380,162 410,160 C 440,159 470,163 500,168 C 530,173 560,169 590,163" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- Starting point circle -->
+<circle cx="50" cy="55" r="5" fill="#0d9488"/>
+<text x="55" y="48" font-size="10" fill="#0d9488" font-weight="700">ε₀ (entry point)</text>
+
+<!-- Half-life annotation -->
+<!-- After τ₁/₂: midpoint between ε₀(55) and θ(160) = 107.5 → find x where curve hits ~107 -->
+<!-- Approximately at x=210, y=130 -->
+<circle cx="215" cy="132" r="4" fill="#374151"/>
+<line x1="215" y1="132" x2="215" y2="290" stroke="#374151" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="215" y="303" text-anchor="middle" font-size="9" fill="#374151">τ₁/₂</text>
+
+<!-- Bracket showing half gap at τ₁/₂ -->
+<line x1="35" y1="55" x2="35" y2="132" stroke="#374151" stroke-width="1.5"/>
+<line x1="32" y1="55" x2="38" y2="55" stroke="#374151" stroke-width="1.5"/>
+<line x1="32" y1="132" x2="38" y2="132" stroke="#374151" stroke-width="1.5"/>
+<text x="28" y="98" text-anchor="end" font-size="9" fill="#374151">½ gap</text>
+
+<line x1="35" y1="132" x2="35" y2="160" stroke="#374151" stroke-width="1.5"/>
+<line x1="32" y1="160" x2="38" y2="160" stroke="#374151" stroke-width="1.5"/>
+<text x="28" y="150" text-anchor="end" font-size="9" fill="#374151">½ gap</text>
+
+<!-- Time axis labels -->
+<text x="130" y="307" text-anchor="middle" font-size="9" fill="#64748b">entry</text>
+<text x="215" y="307" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">τ₁/₂ = ln2/κ</text>
+<text x="380" y="307" text-anchor="middle" font-size="9" fill="#64748b">exit (ε ≈ θ)</text>
+
+<!-- Exit annotation -->
+<circle cx="380" cy="161" r="4" fill="#16a34a"/>
+<text x="385" y="154" font-size="10" fill="#16a34a" font-weight="700">EXIT</text>
+
+<!-- Zone labels on right -->
+<text x="610" y="53" font-size="9" fill="#dc2626">(&gt;3σ)</text>
+<text x="610" y="88" font-size="9" fill="#f59e0b">(2–3σ)</text>
+<text x="610" y="126" font-size="9" fill="#16a34a">HOLD</text>
+<text x="610" y="163" font-size="9" fill="#0d9488">EXIT</text>
+
+<!-- Explanation box -->
+<rect x="55" y="318" width="555" height="30" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="1"/>
+<text x="330" y="337" text-anchor="middle" font-size="10" fill="#374151">
+  ENTRY เมื่อ ε &gt; θ+2σ → HOLD ขณะ spread กลับ → EXIT เมื่อ ε ≈ θ | STOP ถ้า ε เบี่ยงมากกว่า 3σ
+</text>
+</svg>
+<div class="caption">Half-life = ช่วงเวลาที่ spread เดินทางครึ่งทางกลับ — ใช้วางแผน expected holding time</div>
+
+<h3>Half-life กับประเภท Strategy</h3>
+
+<table>
+<tr><th>κ (ต่อวัน)</th><th>Half-life</th><th>ประเภท Trade</th><th>ข้อกำหนด Execution</th></tr>
+<tr><td>0.1</td><td>~7 วัน</td><td>Position trade / swing</td><td>ไม่เร่ง ต้องมี margin buffer</td></tr>
+<tr><td>0.5</td><td>~33 ชม.</td><td>Swing ข้ามวัน</td><td>Monitor วันละครั้ง</td></tr>
+<tr><td style="background:#f0fdf4"><strong>1–2</strong></td><td style="background:#f0fdf4"><strong>8–17 ชม.</strong></td><td style="background:#f0fdf4"><strong>Intraday (เหมาะสุด)</strong></td><td style="background:#f0fdf4"><strong>Check ทุก 1–2 ชม.</strong></td></tr>
+<tr><td>5</td><td>~3 ชม.</td><td>Fast intraday</td><td>Algo-assisted execution</td></tr>
+<tr><td>10+</td><td>&lt;2 ชม.</td><td>Near HFT</td><td>ต้องการ co-location, API</td></tr>
+</table>
+
+<!-- 3.4 Stationary Distribution and Trade Bands -->
+<h2 id="s3-4">3.4 Stationary Distribution — Band ของ Trade</h2>
+
+<p>เมื่อ t → ∞ OU process เข้าสู่ stationary distribution ซึ่งเป็น Normal:</p>
+
+<div class="fm">ε_∞ ~ N(θ,  σ²/(2κ))
+
+σ_ε = σ/√(2κ)    ← stationary std dev (ใช้ตั้ง entry band)</div>
+
+<div class="bx bg">
+<div class="bt">σ_ε ใช้ทำอะไร?</div>
+<ul>
+<li>Entry threshold: ε &gt; θ + 2σ_ε หรือ ε &lt; θ − 2σ_ε (เกิดราว 5% ของเวลา)</li>
+<li>Exit threshold: ε ≈ θ ± 0.5σ_ε</li>
+<li>Stop-loss: |ε − θ| &gt; 3σ_ε (spread "หลุด" ผิดปกติ)</li>
+<li>ตรวจสอบ: ε ควรอยู่ในช่วง θ ± 3σ_ε กว่า 99.7% ของเวลา — ถ้าไม่ใช่ = signal ให้ re-calibrate</li>
+</ul>
+</div>
+
+<!-- 3.5 AR(1) Discretization -->
+<h2 id="s3-5">3.5 AR(1): OU Process ในโลกข้อมูล Discrete</h2>
+
+<p>ข้อมูลจริงเป็น discrete (รายนาที รายชั่วโมง) เมื่อแปลง OU เป็น AR(1):</p>
+
+<div class="key-idea">
+<div class="ki-label">OU → AR(1) (time step Δt)</div>
+<div class="ki-eq">ε_t = a + b · ε_{t-1} + η_t</div>
+<p style="margin-top:8px; font-family:monospace">
+b = e^{−κΔt}  ←  mean-reversion coefficient<br>
+a = θ(1−b)    ←  intercept<br>
+η_t ~ N(0, σ²(1−b²)/(2κ))  ←  noise
+</p>
+</div>
+
+<h3>อ่าน b บน Scale — b บอกอะไร?</h3>
+
+<!-- AR(1) b-value visual: 3 panels showing different b values -->
+<svg class="d" viewBox="0 0 640 320">
+<defs>
+<marker id="a2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+
+<text x="320" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937">ค่า b ใน AR(1) บอกความเร็ว mean-reversion</text>
+
+<!-- Panel 1: b=0.99 (slow, near random walk) -->
+<rect x="15" y="28" width="190" height="260" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="110" y="46" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">b = 0.99 (ช้ามาก)</text>
+<text x="110" y="60" text-anchor="middle" font-size="9" fill="#dc2626">κ = −ln(0.99)/Δt ≈ 0.01/Δt</text>
+
+<!-- Axes p1 -->
+<line x1="35" y1="240" x2="195" y2="240" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<line x1="35" y1="240" x2="35" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<text x="35" y="250" text-anchor="middle" font-size="8" fill="#9ca3af">0</text>
+<text x="195" y="250" text-anchor="middle" font-size="8" fill="#9ca3af">t</text>
+<!-- θ line p1 -->
+<line x1="35" y1="155" x2="193" y2="155" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- b=0.99 path: very slow to revert, looks like near random walk -->
+<polyline points="35,90 47,93 59,92 71,97 83,100 95,103 107,108 119,110 131,115 143,118 155,122 167,126 179,133 191,140" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+
+<text x="110" y="270" text-anchor="middle" font-size="9" fill="#dc2626">Half-life ยาวมาก</text>
+<text x="110" y="282" text-anchor="middle" font-size="9" fill="#dc2626">คล้าย random walk</text>
+
+<!-- Panel 2: b=0.90 (moderate) -->
+<rect x="225" y="28" width="190" height="260" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="320" y="46" text-anchor="middle" font-size="11" font-weight="700" fill="#16a34a">b = 0.90 (กลางๆ ✓)</text>
+<text x="320" y="60" text-anchor="middle" font-size="9" fill="#16a34a">κ ≈ 0.105/Δt</text>
+
+<!-- Axes p2 -->
+<line x1="245" y1="240" x2="405" y2="240" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<line x1="245" y1="240" x2="245" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<text x="405" y="250" text-anchor="middle" font-size="8" fill="#9ca3af">t</text>
+<!-- θ line p2 -->
+<line x1="245" y1="155" x2="403" y2="155" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="241" y="158" text-anchor="end" font-size="8" fill="#0d9488">θ</text>
+
+<!-- b=0.90 path: moderate reversion -->
+<polyline points="245,90 257,99 269,107 281,115 293,122 305,130 317,137 329,142 341,147 353,151 365,154 377,155 389,156 401,156" fill="none" stroke="#16a34a" stroke-width="2"/>
+
+<text x="320" y="270" text-anchor="middle" font-size="9" fill="#16a34a">Intraday trade ได้</text>
+<text x="320" y="282" text-anchor="middle" font-size="9" fill="#16a34a">Half-life พอดี</text>
+
+<!-- Panel 3: b=0.50 (fast) -->
+<rect x="435" y="28" width="190" height="260" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="530" y="46" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">b = 0.50 (เร็วมาก)</text>
+<text x="530" y="60" text-anchor="middle" font-size="9" fill="#2563eb">κ = −ln(0.5)/Δt = 0.693/Δt</text>
+
+<!-- Axes p3 -->
+<line x1="455" y1="240" x2="615" y2="240" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<line x1="455" y1="240" x2="455" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a2)"/>
+<text x="615" y="250" text-anchor="middle" font-size="8" fill="#9ca3af">t</text>
+<!-- θ line p3 -->
+<line x1="455" y1="155" x2="613" y2="155" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- b=0.50 path: very fast reversion -->
+<polyline points="455,90 467,122 479,138 491,147 503,152 515,154 527,155 539,155 551,155 563,155 575,155 587,156 599,156" fill="none" stroke="#2563eb" stroke-width="2"/>
+
+<text x="530" y="270" text-anchor="middle" font-size="9" fill="#2563eb">กลับใน 1-2 time steps</text>
+<text x="530" y="282" text-anchor="middle" font-size="9" fill="#2563eb">ต้อง execute เร็วมาก</text>
+
+<!-- b scale at bottom -->
+<line x1="15" y1="302" x2="625" y2="302" stroke="#374151" stroke-width="1.5"/>
+<text x="110" y="315" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">b → 1.0 (ช้า, random walk)</text>
+<text x="320" y="315" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">b ≈ 0.9 (sweet spot)</text>
+<text x="530" y="315" text-anchor="middle" font-size="10" font-weight="700" fill="#2563eb">b → 0 (เร็วมาก, white noise)</text>
+</svg>
+<div class="caption">b ≈ 0.9–0.95 ต่อ time step มักเป็น sweet spot สำหรับ intraday stat arb</div>
+
+<div class="key-idea">
+<div class="ki-label">สูตรแปลง AR(1) → OU parameters</div>
+<div class="ki-eq">κ = −ln(b) / Δt &nbsp;&nbsp;&nbsp;&nbsp; θ = a / (1 − b)</div>
+<p style="margin-top:8px">ตัวอย่าง: b = 0.90, Δt = 1 ชม. = 1/24 วัน<br>
+κ = −ln(0.90) / (1/24) = 0.105 × 24 = <strong>2.53 ต่อวัน</strong><br>
+Half-life = ln(2) / 2.53 = <strong>0.274 วัน = 6.6 ชม.</strong></p>
+</div>
+
+<!-- 3.6 Calibration -->
+<h2 id="s3-6">3.6 Calibration — หา κ, θ, σ จากข้อมูลจริง</h2>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>สร้าง spread series:</strong> ε_t = log(P_Bybit_t) − β·log(P_Lighter_t)<br>
+(β ได้จาก OLS บน log returns — บทที่ 4)</div>
+</div>
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>Regress AR(1):</strong> ε_t = a + b·ε_{t-1} + η_t<br>
+บันทึก: a, b, และ residuals η</div>
+</div>
+<div class="step-row">
+<div class="step-num">3</div>
+<div><strong>คำนวณ OU parameters:</strong><br>
+θ = a/(1−b), κ = −ln(b)/Δt, σ_stat ≈ std(ε − θ)</div>
+</div>
+<div class="step-row">
+<div class="step-num">4</div>
+<div><strong>คำนวณ trade parameters:</strong><br>
+τ₁/₂ = ln(2)/κ → กำหนด holding time<br>
+Entry band = θ ± 2σ_stat → กำหนด entry threshold</div>
+</div>
+
+<div class="pseudo">
+<span class="c"># Pseudo-code: OU Calibration</span><br>
+<span class="kw">function</span> <span class="fn">calibrate_ou</span>(eps_series, delta_t):<br>
+&nbsp;&nbsp;<span class="c"># Step 1: AR(1) regression</span><br>
+&nbsp;&nbsp;y = eps_series[<span class="nm">1</span>:]      <span class="c"># ε_t</span><br>
+&nbsp;&nbsp;x = eps_series[:-<span class="nm">1</span>]    <span class="c"># ε_{t-1}</span><br>
+&nbsp;&nbsp;b, a = <span class="fn">ols_slope_intercept</span>(x, y)<br>
+&nbsp;&nbsp;residuals = y - (a + b * x)<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 2: OU parameters</span><br>
+&nbsp;&nbsp;theta = a / (<span class="nm">1</span> - b)<br>
+&nbsp;&nbsp;kappa = -<span class="fn">log</span>(b) / delta_t<br>
+&nbsp;&nbsp;sigma_stat = <span class="fn">std</span>(eps_series - theta)<br>
+&nbsp;&nbsp;half_life = <span class="fn">log</span>(<span class="nm">2</span>) / kappa<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 3: Trade bands</span><br>
+&nbsp;&nbsp;entry_upper = theta + <span class="nm">2</span> * sigma_stat<br>
+&nbsp;&nbsp;entry_lower = theta - <span class="nm">2</span> * sigma_stat<br>
+&nbsp;&nbsp;stop_upper  = theta + <span class="nm">3</span> * sigma_stat<br>
+&nbsp;&nbsp;stop_lower  = theta - <span class="nm">3</span> * sigma_stat<br>
+<br>
+&nbsp;&nbsp;<span class="kw">return</span> {theta, kappa, sigma_stat, half_life,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;entry_upper, entry_lower, stop_upper, stop_lower}
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Bybit↔Lighter BTC — Calibration ผล</div>
+<div class="fm">ข้อมูล: 30 วัน, รายนาที (Δt = 1/1440 วัน)
+ε_t = log(P_Bybit) − 1.003·log(P_Lighter)
+
+OLS AR(1) result:
+  b = 0.9985,  a = 2.0×10⁻⁶
+  Residual std = 0.00012
+
+OU Parameters:
+  θ  = 2.0e-6 / (1−0.9985) = 0.00133  (basis ≈ 0.133%)
+  κ  = −ln(0.9985)/(1/1440) = 2.16 ต่อวัน
+  σ_stat ≈ 0.00080  (≈ 0.08%)
+
+Trade Parameters:
+  τ₁/₂ = 0.693/2.16 = 7.7 ชั่วโมง  ← intraday trade ได้
+  Entry: ε &gt; 0.293% หรือ ε &lt; −0.027%  (θ ± 2×0.08%)
+  Stop:  ε &gt; 0.373% หรือ ε &lt; −0.107%  (θ ± 3×0.08%)</div>
+<p>สรุป: spread กลับใน ~8 ชม. เปิด position ตอนเช้า → ปิดก่อนค่ำ</p>
+</div>
+
+<!-- 3.7 Limitations -->
+<h2 id="s3-7">3.7 เมื่อไร OU เดี่ยวไม่พอ — และบทถัดไปจะแก้อย่างไร</h2>
+
+<table>
+<tr><th>สมมติฐาน OU</th><th>เมื่อไรที่ผิด</th><th>สัญญาณที่เห็น</th><th>โมเดลที่ใช้แทน</th></tr>
+<tr><td>κ, θ คงที่</td><td>ตลาด regime change: funding rate เปลี่ยนโครงสร้าง</td><td>θ drift ออก, ε ไม่กลับ</td><td>Kalman (Ch.4), Regime-Switch (Ch.9)</td></tr>
+<tr><td>σ คงที่</td><td>ช่วง volatile: market crash, news</td><td>residual variance พุ่ง</td><td>GARCH on residuals (Ch.7)</td></tr>
+<tr><td>Gaussian noise</td><td>liquidation cascade, news spike</td><td>residual มี fat tail, jump</td><td>Jump-Diffusion OU (Ch.8)</td></tr>
+<tr><td>β คงที่</td><td>ตลาดเปลี่ยน correlation</td><td>ε drift กลับมา</td><td>Kalman Filter β (Ch.4)</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Rule of thumb: เมื่อไรต้อง re-calibrate?</div>
+<ul>
+<li>θ เคลื่อนออกจากค่าเดิม &gt; 1σ_stat ใน 5 วัน → re-calibrate β และ θ</li>
+<li>Residual variance พุ่ง &gt; 2× baseline → switch ไป GARCH</li>
+<li>Half-life ยาวขึ้น &gt; 2× → regime เปลี่ยน พิจารณา exit ทั้งหมด</li>
+</ul>
+</div>
+
+<!-- Exercises -->
+<div class="ex">
+<div class="et">โจทย์ 3.1 — คำนวณ half-life และ trade parameters</div>
+<p>OLS AR(1) บน spread รายชั่วโมง (Δt = 1/24 วัน): b = 0.94, a = 0.00012<br>
+std(residuals) = 0.00015</p>
+<p><strong>ถาม:</strong> (a) κ ต่อวัน (b) half-life เป็นชั่วโมง (c) entry band (d) spread ปัจจุบัน 0.05% จาก θ — ควร enter ไหม?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> κ = −ln(0.94)/(1/24) = 0.0619×24 = <strong>1.485 ต่อวัน</strong></p>
+<p><strong>(b)</strong> τ₁/₂ = ln(2)/1.485 = <strong>11.2 ชั่วโมง</strong></p>
+<p><strong>(c)</strong> θ = 0.00012/(1−0.94) = 0.002 = 0.2%<br>
+σ_stat ≈ std(ε) — ถ้าใช้ residual std × √(1/(1−b²)) ≈ 0.00015/√(1−0.94²) ≈ 0.00043 = 0.043%<br>
+Entry band: 0.2% ± 2×0.043% = (0.114%, 0.286%)</p>
+<p><strong>(d)</strong> spread 0.05% จาก θ = ε อยู่ที่ 0.25% (สมมติอยู่เหนือ θ)<br>
+0.25% &lt; entry upper 0.286% → <strong>ยังไม่ถึง threshold → ยังไม่ enter</strong></p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.2 — แปลง b → strategy design</div>
+<p>Spread รายชั่วโมง ให้ผล AR(1): b = 0.97<br>
+ค่า fee รวม (open+close) = 0.06% per round-trip</p>
+<p><strong>ถาม:</strong> (a) half-life (b) ถ้าตั้ง entry ที่ 2σ_stat = 0.10% จะถือ position นานแค่ไหนโดยเฉลี่ย และ expected profit คืออะไร (ก่อน fee)?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> κ = −ln(0.97)/(1/24) = 0.0305×24 = 0.732 ต่อวัน<br>
+τ₁/₂ = ln(2)/0.732 = <strong>0.95 วัน ≈ 22.7 ชั่วโมง</strong></p>
+<p><strong>(b)</strong> Entry ที่ 2σ = 0.10% จาก θ<br>
+Exit ที่ θ (ครบ 2σ) → expected travel = 0.10%<br>
+แต่ถ้า exit ที่ 0.5σ = 0.025% → expected travel = 0.075%<br>
+Gross profit ≈ 0.075%–0.10%, fee = 0.06% → <strong>Net ≈ 0.015%–0.04%</strong> per trade<br>
+Holding time เฉลี่ย ≈ τ₁/₂ = 22.7 ชม. (ถ้า exit ที่ θ) หรือน้อยกว่า</p>
+<p>Trade นี้มี edge บาง — ต้อง calibrate ละเอียดและ monitor σ_stat ไม่ให้ขยาย</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.3 — วินิจฉัย OU breakdown</div>
+<p>ใช้ OU trade Bybit↔Lighter มา 2 สัปดาห์ κ เดิม = 2 ต่อวัน, θ = 0.1%<br>
+สัปดาห์ที่ 3: spread ออกไปถึง 0.4% และค้างอยู่นาน 3 วัน ไม่กลับ</p>
+<p><strong>ถาม:</strong> เกิดอะไรขึ้น และควรทำอะไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>วินิจฉัย:</strong> Regime change — OU parameters เปลี่ยน ที่เป็นไปได้:</p>
+<ul>
+<li>θ เปลี่ยน (เช่น funding rate structure เปลี่ยน) → θ ใหม่อาจอยู่ที่ 0.3-0.4%</li>
+<li>κ ลดลง → half-life ยาวขึ้น spread ใช้เวลานานกว่าจะกลับ</li>
+<li>β เปลี่ยน → ε drift ไม่หาย</li>
+</ul>
+<p><strong>ควรทำ:</strong></p>
+<ol>
+<li>ปิด position ทั้งหมด (stop-loss triggered ที่ 3σ)</li>
+<li>Re-calibrate OU ด้วยข้อมูล 2 สัปดาห์ล่าสุด → ได้ θ และ κ ใหม่</li>
+<li>ตรวจสอบว่า ADF test ยังผ่านไหม — ถ้าไม่ผ่าน = ε ไม่ stationary แล้ว หยุด trade คู่นี้</li>
+</ol>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.3 OU Process | ต่อไป → <strong>Part II: Hedge Ratio β (Ch.4–6)</strong>
+</p>
+</body>
+</html>
