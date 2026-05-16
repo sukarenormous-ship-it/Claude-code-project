@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.4 — Hedge Ratio β</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+.method-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.method-box{border-radius:8px;padding:14px;border:1.5px solid}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 4</div>
+<h1>Hedge Ratio β</h1>
+<div class="sub">OLS · TLS · Kalman Filter — สามวิธีหา "อัตราส่วนที่ถูกต้อง"<br>
+ตัวอย่าง: Bybit ↔ Lighter BTC Perpetual</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<p>β คือตัวเลขที่ทำให้ ε = log(A) − β·log(B) เป็น stationary<br>
+วิธีหา β มีผลต่อ entry ratio และ P&amp;L โดยตรง — OLS, TLS, และ Kalman ให้ β ต่างกัน</p>
+<div class="ki-eq">β_OLS = Cov(r_A, r_B) / Var(r_B)</div>
+</div>
+
+<h2 id="s4-1">4.1 ทำไมวิธีหา β จึงสำคัญ</h2>
+
+<p>จากบทที่ 1 เราทราบแล้วว่า β ≠ 1 — แต่คำถามคือ <strong>หา β ด้วยวิธีไหน?</strong> วิธีต่างกันให้ β ต่างกัน และ β ที่ต่างกันหมายถึงอัตราส่วน trade ต่างกัน → P&amp;L ต่างกัน</p>
+
+<div class="method-grid">
+<div class="method-box" style="background:#eff6ff;border-color:#93c5fd">
+<strong style="color:#2563eb">OLS</strong><br>
+Ordinary Least Squares<br>
+<small>เร็ว, simple, bias ถ้าทั้งสองตัวมี noise</small>
+</div>
+<div class="method-box" style="background:#f0fdf4;border-color:#86efac">
+<strong style="color:#16a34a">TLS</strong><br>
+Total Least Squares<br>
+<small>Symmetric, เหมาะเมื่อทั้งคู่ noisy เท่ากัน</small>
+</div>
+<div class="method-box" style="background:#f0fdfa;border-color:#5eead4">
+<strong style="color:#0d9488">Kalman</strong><br>
+Dynamic β<br>
+<small>β เปลี่ยนตามเวลา, แม่นยำสุดแต่ซับซ้อนกว่า</small>
+</div>
+</div>
+
+<h2 id="s4-2">4.2 OLS — วิธีที่ใช้บ่อยที่สุด</h2>
+
+<p>OLS หา β ที่ minimize ระยะทางแนวตั้ง (vertical residual) จากจุดข้อมูลถึงเส้น regression:</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตร OLS β</div>
+<div class="ki-eq">β_OLS = Cov(r_A, r_B) / Var(r_B) = Σ(r_A − r̄_A)(r_B − r̄_B) / Σ(r_B − r̄_B)²</div>
+</div>
+
+<p>หรือถ้า regress log(P_A) บน log(P_B) โดยตรง (level regression):</p>
+<div class="fm">log(P_A) = α + β·log(P_B) + ε
+β_OLS = slope ของ regression นี้</div>
+
+<!-- Scatter plot: OLS vs TLS -->
+<svg class="d" viewBox="0 0 640 340">
+<defs>
+<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+<marker id="arw-b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2563eb"/></marker>
+<marker id="arw-g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#16a34a"/></marker>
+</defs>
+
+<text x="320" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">OLS vs TLS — ต่างกันที่ "minimize อะไร"</text>
+
+<!-- LEFT: OLS panel -->
+<rect x="10" y="28" width="295" height="285" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="158" y="48" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">OLS — minimize vertical residual</text>
+
+<!-- OLS axes -->
+<line x1="40" y1="270" x2="290" y2="270" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<line x1="40" y1="270" x2="40" y2="55" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<text x="293" y="273" font-size="9" fill="#374151">r_B</text>
+<text x="36" y="52" text-anchor="end" font-size="9" fill="#374151">r_A</text>
+
+<!-- OLS regression line (slope ≈ 0.85) -->
+<!-- Line: from (60,240) to (270,85): slope = (85-240)/(270-60) = -155/210 ≈ -0.738 in svg coords, meaning positive β -->
+<line x1="55" y1="242" x2="278" y2="88" stroke="#2563eb" stroke-width="2"/>
+
+<!-- Data points scattered around OLS line -->
+<circle cx="70" cy="230" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="90" cy="218" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="110" cy="210" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="130" cy="195" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="150" cy="185" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="170" cy="178" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="190" cy="165" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="210" cy="155" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="230" cy="142" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="250" cy="132" r="4" fill="#3b82f6" opacity="0.7"/>
+<!-- Noise points off-line -->
+<circle cx="100" cy="198" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="160" cy="170" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="200" cy="148" r="4" fill="#3b82f6" opacity="0.7"/>
+<circle cx="240" cy="152" r="4" fill="#3b82f6" opacity="0.7"/>
+
+<!-- Vertical residual arrows (OLS) -->
+<line x1="100" y1="198" x2="100" y2="217" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="160" y1="170" x2="160" y2="181" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="200" y1="148" x2="200" y2="161" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="240" y1="152" x2="240" y2="138" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+
+<text x="158" y="288" text-anchor="middle" font-size="10" fill="#dc2626">vertical distance (↕) → minimize</text>
+<text x="158" y="302" text-anchor="middle" font-size="10" fill="#2563eb">β_OLS = 0.85 (slope ของเส้นน้ำเงิน)</text>
+
+<!-- RIGHT: TLS panel -->
+<rect x="335" y="28" width="295" height="285" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="483" y="48" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">TLS — minimize perpendicular residual</text>
+
+<!-- TLS axes -->
+<line x1="365" y1="270" x2="615" y2="270" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<line x1="365" y1="270" x2="365" y2="55" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<text x="618" y="273" font-size="9" fill="#374151">r_B</text>
+<text x="361" y="52" text-anchor="end" font-size="9" fill="#374151">r_A</text>
+
+<!-- TLS regression line (slightly different angle from OLS, steeper) -->
+<line x1="378" y1="248" x2="605" y2="82" stroke="#16a34a" stroke-width="2"/>
+<!-- OLS line ghosted for comparison -->
+<line x1="378" y1="244" x2="603" y2="90" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.4"/>
+<text x="608" y="86" font-size="8" fill="#2563eb" opacity="0.6">OLS</text>
+
+<!-- Same data points -->
+<circle cx="395" cy="232" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="415" cy="220" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="435" cy="212" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="455" cy="197" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="475" cy="187" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="495" cy="178" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="515" cy="166" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="535" cy="155" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="555" cy="143" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="575" cy="133" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="425" cy="200" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="485" cy="172" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="525" cy="150" r="4" fill="#22c55e" opacity="0.7"/>
+<circle cx="565" cy="152" r="4" fill="#22c55e" opacity="0.7"/>
+
+<!-- Perpendicular residual arrows (TLS) - diagonal -->
+<line x1="425" y1="200" x2="435" y2="211" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="485" y1="172" x2="491" y2="180" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="525" y1="150" x2="520" y2="158" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+<line x1="565" y1="152" x2="572" y2="143" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
+
+<text x="483" y="288" text-anchor="middle" font-size="10" fill="#dc2626">perpendicular distance (↗) → minimize</text>
+<text x="483" y="302" text-anchor="middle" font-size="10" fill="#16a34a">β_TLS = 0.92 (ต่างจาก OLS!)</text>
+</svg>
+<div class="caption">OLS และ TLS ให้ β ต่างกัน — OLS ใช้ B เป็น "หลัก" (no noise), TLS สมมติทั้งคู่ noisy เท่ากัน</div>
+
+<h3>สูตร TLS (Total Least Squares)</h3>
+<div class="fm">β_TLS = [Var(r_A) − Var(r_B) + √((Var(r_A)−Var(r_B))² + 4·Cov(r_A,r_B)²)] / (2·Cov(r_A,r_B))
+
+หรือใช้ SVD: β_TLS = v₁₂/v₂₂  (eigenvector ของ covariance matrix [r_A, r_B])</div>
+
+<h3>เลือก OLS หรือ TLS?</h3>
+<table>
+<tr><th>สถานการณ์</th><th>แนะนำ</th><th>เหตุผล</th></tr>
+<tr><td>B เป็น "benchmark" (spot price, reference)</td><td><strong>OLS</strong></td><td>B มี noise น้อยกว่า A — OLS assume B error-free</td></tr>
+<tr><td>ทั้งสองตลาด liquidity ใกล้เคียงกัน</td><td><strong>TLS</strong></td><td>ทั้งคู่ noisy พอๆ กัน — symmetric</td></tr>
+<tr><td>ต้องการ β เสถียร ปรับน้อย</td><td><strong>OLS rolling</strong></td><td>คำนวณง่าย เปลี่ยนได้ตามรอบ</td></tr>
+<tr><td>β เปลี่ยนเร็ว ต้องการ adaptive</td><td><strong>Kalman</strong></td><td>อัปเดตทุก tick</td></tr>
+</table>
+
+<h2 id="s4-3">4.3 Kalman Filter — Dynamic β ที่เปลี่ยนตามเวลา</h2>
+
+<p>OLS และ TLS สมมติว่า β คงที่ตลอด lookback window แต่ในตลาดจริง β อาจเปลี่ยนได้ Kalman Filter แก้ปัญหานี้โดยอัปเดต β ทุก time step:</p>
+
+<div class="key-idea">
+<div class="ki-label">Kalman State Space Model</div>
+<div class="ki-eq">β_t = β_{t-1} + w_t          (state equation: β เดินแบบ random walk)</div>
+<div class="ki-eq" style="margin-top:4px">r_{A,t} = β_t · r_{B,t} + v_t    (observation equation)</div>
+<p style="margin-top:8px; font-size:.93em">w_t ~ N(0, Q) — process noise (ความเร็วที่ β เปลี่ยน)<br>
+v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
+</div>
+
+<p>Kalman Filter ทำงาน 2 ขั้นซ้ำกันทุก time step:</p>
+
+<table>
+<tr><th>ขั้น</th><th>สูตร</th><th>ความหมาย</th></tr>
+<tr><td><strong>Predict</strong></td><td>β̂_t|t-1 = β̂_{t-1}, P_t|t-1 = P_{t-1} + Q</td><td>คาดว่า β ตอนนี้คืออะไร (ก่อนเห็นข้อมูล)</td></tr>
+<tr><td><strong>Update</strong></td><td>K = P·r_B² / (r_B²·P + R)<br>β̂_t = β̂_t|t-1 + K·(r_A − β̂·r_B)<br>P_t = (1−K·r_B²)·P</td><td>ปรับ β ตามข้อมูลจริงที่เพิ่งเห็น</td></tr>
+</table>
+
+<p>K คือ <strong>Kalman Gain</strong> — ถ้า Q สูง (β เปลี่ยนเร็ว) K ใหญ่ → เชื่อข้อมูลใหม่มาก ถ้า R สูง (noisy market) K เล็ก → เชื่อ model เก่ามากกว่า</p>
+
+<!-- Kalman β timeline diagram -->
+<svg class="d" viewBox="0 0 640 260">
+<defs>
+<marker id="arw2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+
+<text x="320" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">β ตามเวลา: Rolling OLS vs Kalman Filter</text>
+
+<!-- Axes -->
+<line x1="50" y1="220" x2="610" y2="220" stroke="#374151" stroke-width="1.5" marker-end="url(#arw2)"/>
+<line x1="50" y1="220" x2="50" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#arw2)"/>
+<text x="613" y="223" font-size="9" fill="#374151">t (วัน)</text>
+<text x="44" y="28" text-anchor="end" font-size="9" fill="#374151">β</text>
+
+<!-- Reference β = 1.003 -->
+<line x1="50" y1="130" x2="605" y2="130" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="44" y="133" text-anchor="end" font-size="9" fill="#94a3b8">1.003</text>
+
+<!-- Rolling OLS line (jumpy) -->
+<polyline points="50,135 80,120 110,145 140,108 170,132 200,152 230,118 260,140 290,125 320,155 350,110 380,138 410,120 440,148 470,132 500,115 530,142 560,128 590,135" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.8"/>
+
+<!-- Kalman β line (smooth) -->
+<polyline points="50,135 80,130 110,133 140,126 170,129 200,134 230,128 260,131 290,128 320,133 350,125 380,128 410,126 440,130 470,129 500,124 530,127 560,126 590,127" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- Labels -->
+<text x="595" y="123" font-size="10" font-weight="700" fill="#0d9488">Kalman (smooth)</text>
+<text x="595" y="110" font-size="9" fill="#0d9488">β ≈ 1.003</text>
+<text x="350" y="105" font-size="10" fill="#2563eb">Rolling OLS (30d window)</text>
+<text x="350" y="119" font-size="9" fill="#2563eb">(jumpy — sensitive to window)</text>
+
+<!-- Shaded region showing divergence -->
+<rect x="130" y="100" width="80" height="60" rx="4" fill="#fee2e2" opacity="0.3"/>
+<text x="170" y="95" text-anchor="middle" font-size="9" fill="#dc2626">OLS diverges</text>
+<text x="170" y="175" text-anchor="middle" font-size="9" fill="#374151">regime shift</text>
+
+<!-- X-axis ticks -->
+<line x1="170" y1="218" x2="170" y2="224" stroke="#374151" stroke-width="1"/>
+<text x="170" y="233" text-anchor="middle" font-size="9" fill="#374151">10</text>
+<line x1="290" y1="218" x2="290" y2="224" stroke="#374151" stroke-width="1"/>
+<text x="290" y="233" text-anchor="middle" font-size="9" fill="#374151">20</text>
+<line x1="410" y1="218" x2="410" y2="224" stroke="#374151" stroke-width="1"/>
+<text x="410" y="233" text-anchor="middle" font-size="9" fill="#374151">30</text>
+<line x1="530" y1="218" x2="530" y2="224" stroke="#374151" stroke-width="1"/>
+<text x="530" y="233" text-anchor="middle" font-size="9" fill="#374151">40</text>
+
+<text x="320" y="252" text-anchor="middle" font-size="10" fill="#64748b">Kalman smooth กว่า → ลด false signal จาก β noise</text>
+</svg>
+<div class="caption">Rolling OLS กระโดดตาม window boundary — Kalman ค่อยๆ ปรับ → position ขยับน้อยกว่า</div>
+
+<h2 id="s4-4">4.4 Lookback Window และการ Roll</h2>
+
+<p>สำหรับ OLS rolling หรือ Kalman Q/R tuning ต้องเลือก lookback ให้เหมาะกับ strategy:</p>
+
+<table>
+<tr><th>Lookback</th><th>ข้อดี</th><th>ข้อเสีย</th><th>เหมาะกับ</th></tr>
+<tr><td>7 วัน</td><td>Responsive ต่อ regime ใหม่</td><td>Noisy, β กระโดด</td><td>Fast intraday</td></tr>
+<tr><td style="background:#f0fdf4"><strong>30 วัน</strong></td><td>สมดุล stability/responsiveness</td><td>Lag ช้า</td><td><strong>Intraday-swing (แนะนำ)</strong></td></tr>
+<tr><td>90 วัน</td><td>Stable, noise น้อย</td><td>ปรับ regime เปลี่ยนช้ามาก</td><td>Position trade</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Re-estimate β เมื่อไร?</div>
+<ul>
+<li>Daily: re-run OLS บน 30 วันล่าสุด ก่อนตลาดเปิด</li>
+<li>เมื่อ ε drift ต่อเนื่อง &gt; 2 วัน → β เปลี่ยน re-estimate ทันที</li>
+<li>Kalman: ไม่ต้อง re-estimate — อัปเดต continuous ทุก bar</li>
+</ul>
+</div>
+
+<h2 id="s4-5">4.5 Pseudo-code</h2>
+
+<div class="pseudo">
+<span class="c"># OLS Beta</span><br>
+<span class="kw">function</span> <span class="fn">beta_ols</span>(r_A, r_B):<br>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">cov</span>(r_A, r_B) / <span class="fn">var</span>(r_B)<br>
+<br>
+<span class="c"># TLS Beta (via eigenvalue)</span><br>
+<span class="kw">function</span> <span class="fn">beta_tls</span>(r_A, r_B):<br>
+&nbsp;&nbsp;C = <span class="fn">cov_matrix</span>([[r_A], [r_B]])  <span class="c"># 2×2</span><br>
+&nbsp;&nbsp;eigenvalues, eigenvectors = <span class="fn">eig</span>(C)<br>
+&nbsp;&nbsp;v = eigenvectors[:, <span class="fn">argmin</span>(eigenvalues)]  <span class="c"># smallest eigenvalue</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> -v[<span class="nm">0</span>] / v[<span class="nm">1</span>]<br>
+<br>
+<span class="c"># Kalman Filter Beta (one-step update)</span><br>
+<span class="kw">function</span> <span class="fn">kalman_beta_update</span>(beta, P, r_A, r_B, Q, R):<br>
+&nbsp;&nbsp;<span class="c"># Predict</span><br>
+&nbsp;&nbsp;P_pred = P + Q<br>
+&nbsp;&nbsp;<span class="c"># Kalman gain</span><br>
+&nbsp;&nbsp;K = P_pred * r_B / (r_B**<span class="nm">2</span> * P_pred + R)<br>
+&nbsp;&nbsp;<span class="c"># Update</span><br>
+&nbsp;&nbsp;innovation = r_A - beta * r_B<br>
+&nbsp;&nbsp;beta_new = beta + K * innovation<br>
+&nbsp;&nbsp;P_new = (<span class="nm">1</span> - K * r_B) * P_pred<br>
+&nbsp;&nbsp;<span class="kw">return</span> beta_new, P_new
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: β ของ Bybit↔Lighter BTC Perp</div>
+<div class="fm">ข้อมูล: 30 วัน, log returns รายนาที
+
+OLS (30d window):
+  β_OLS = Cov(r_Bybit, r_Lighter) / Var(r_Lighter)
+        = 0.00000412 / 0.00000410
+        = 1.0049
+
+TLS:
+  β_TLS = 1.0063  (เล็กน้อยกว่า OLS)
+
+Kalman (Q=1e-7, R=1e-5, warmup 14 วัน):
+  β_Kalman_t ≈ 1.003 ± 0.002  (เปลี่ยนช้าๆ)
+
+ผลกระทบต่อ position:
+  Long Bybit $100,000:
+    OLS:   Short Lighter $100,490
+    TLS:   Short Lighter $100,630
+    Kalman: Short Lighter $100,300
+  ต่างกัน $300–$630 — ดูเล็กน้อย แต่ถ้า trade 100x/เดือน = $30,000–$63,000 ต่างกัน</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 4.1 — คำนวณ β_OLS จากข้อมูล</div>
+<p>Log returns รายวัน 5 วัน:</p>
+<table>
+<tr><th>วัน</th><th>r_Bybit (%)</th><th>r_Lighter (%)</th></tr>
+<tr><td>1</td><td>+1.20</td><td>+1.15</td></tr>
+<tr><td>2</td><td>−0.80</td><td>−0.75</td></tr>
+<tr><td>3</td><td>+2.10</td><td>+2.05</td></tr>
+<tr><td>4</td><td>−1.50</td><td>−1.48</td></tr>
+<tr><td>5</td><td>+0.60</td><td>+0.58</td></tr>
+</table>
+<p><strong>ถาม:</strong> คำนวณ β_OLS (Bybit เป็น A, Lighter เป็น B)</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>r̄_A = (1.20−0.80+2.10−1.50+0.60)/5 = 1.60/5 = 0.320%<br>
+r̄_B = (1.15−0.75+2.05−1.48+0.58)/5 = 1.55/5 = 0.310%</p>
+<p>Cov(r_A,r_B) = Σ(r_A−r̄_A)(r_B−r̄_B) / (n−1):<br>
+= [(0.88)(0.84) + (−1.12)(−1.06) + (1.78)(1.74) + (−1.82)(−1.79) + (0.28)(0.27)] / 4<br>
+= [0.739 + 1.187 + 3.097 + 3.258 + 0.076] / 4 = 8.357/4 = 2.089</p>
+<p>Var(r_B) = Σ(r_B−r̄_B)² / (n−1) = [0.706 + 1.124 + 3.024 + 3.204 + 0.073] / 4 = 2.033</p>
+<p><strong>β_OLS = 2.089 / 2.033 = 1.028</strong><br>
+→ Long Bybit $100,000 ต้อง Short Lighter $102,800</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 4.2 — เลือกวิธีหา β</div>
+<p>คุณ trade spread ระหว่าง BTC perpetual บน Binance (volume 10× ของ Lighter) กับ Lighter<br>
+ทั้งสองตลาดมี liquidity ต่างกันมาก — Binance เป็น "price discovery" หลัก</p>
+<p><strong>ถาม:</strong> ควรใช้ OLS หรือ TLS? และ Binance ควรเป็น A หรือ B ใน regression?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ใช้ OLS</strong> เพราะ Binance มี volume มากกว่า → ราคา Binance เป็น "true price" ที่ error น้อยกว่า OLS assume B ไม่มี noise ดังนั้น Binance = B (ตัวที่ regress ต่อ)</p>
+<p>Regression: r_Lighter = α + β·r_Binance + ε<br>
+β = Cov(r_Lighter, r_Binance) / Var(r_Binance)</p>
+<p>ความหมาย: ε = r_Lighter − β·r_Binance → trade Lighter เมื่อ Lighter เบี่ยงจาก Binance</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 4.3 — Kalman Q/R tuning</div>
+<p>คุณตั้ง Kalman กับ Q=1e-9 (เล็กมาก) และ R=1e-4 (ใหญ่มาก)<br>
+สังเกตว่า β_Kalman แทบไม่เปลี่ยนเลย แม้ตลาดจะเปลี่ยน</p>
+<p><strong>ถาม:</strong> อธิบายว่าเกิดอะไรขึ้น และควรปรับ Q หรือ R อย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>Q เล็กมาก → model บอกว่า β เปลี่ยนช้ามาก<br>
+R ใหญ่มาก → model บอกว่า observation noisy มาก<br>
+Kalman Gain K = P·r_B² / (r_B²·P + R) → R ใหญ่ทำให้ K เล็กมาก → β ไม่อัปเดต</p>
+<p><strong>แก้:</strong> เพิ่ม Q (เช่น 1e-6) เพื่อให้ model อนุญาตให้ β เปลี่ยนเร็วขึ้น<br>
+หรือลด R (เช่น 1e-5) เพื่อ trust ข้อมูลมากขึ้น<br>
+Tune โดย backtest: ดู β ว่า responsive พอแต่ไม่ noisy เกินไป</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.4 Hedge Ratio β | ต่อไป → <strong>Ch.5: Cointegration Tests</strong>
+</p>
+</body>
+</html>
