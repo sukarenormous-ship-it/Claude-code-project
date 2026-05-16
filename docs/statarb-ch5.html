@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.5 — Cointegration</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.step-row{display:flex;align-items:flex-start;gap:12px;margin:10px 0;padding:12px 16px;background:#fff;border:1px solid var(--g2);border-radius:8px}
+.step-num{background:var(--teal);color:#fff;border-radius:50%;width:26px;height:26px;min-width:26px;text-align:center;line-height:26px;font-size:.85em;font-weight:700}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 5</div>
+<h1>Cointegration</h1>
+<div class="sub">Engle-Granger · Johansen · VECM<br>ทดสอบว่า spread ε มีแรงดึงกลับจริงหรือแค่ correlation ชั่วคราว</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<p>Correlation สูงไม่พอสำหรับ stat arb — ต้องการ <strong>cointegration</strong>:<br>
+ε = log(A) − β·log(B) ต้องเป็น stationary (กลับหาค่ากลาง) ไม่ใช่แค่เดินไปด้วยกัน</p>
+<div class="ki-eq">H₀: ε ไม่ stationary (ไม่ cointegrated) → ถ้า p-value &lt; 0.05 → ปฏิเสธ H₀ → cointegrated ✓</div>
+</div>
+
+<h2 id="s5-1">5.1 Correlation ≠ Cointegration — ความแตกต่างที่สำคัญ</h2>
+
+<!-- Diagram: 3 scenarios -->
+<svg class="d" viewBox="0 0 640 320">
+<defs>
+<marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+<text x="320" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">3 สถานการณ์ — Correlation และ Cointegration</text>
+
+<!-- Panel 1: High corr, NO cointegration -->
+<rect x="8" y="28" width="195" height="270" rx="7" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="106" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">ρ สูง แต่ไม่ Cointegrate</text>
+<text x="106" y="58" text-anchor="middle" font-size="9" fill="#dc2626">ρ=0.85, p-ADF=0.32 ✗</text>
+<!-- axes -->
+<line x1="28" y1="250" x2="190" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<line x1="28" y1="250" x2="28" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<text x="193" y="253" font-size="8" fill="#9ca3af">t</text>
+<!-- A trending up, B trending up slower → spread diverges -->
+<polyline points="28,230 50,220 72,205 94,188 116,170 138,152 160,132 182,110" fill="none" stroke="#2563eb" stroke-width="2"/>
+<polyline points="28,235 50,228 72,218 94,210 116,200 138,192 160,185 182,178" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
+<text x="185" y="108" font-size="8" fill="#2563eb">A</text>
+<text x="185" y="178" font-size="8" fill="#dc2626">B</text>
+<!-- Spread widening -->
+<polyline points="28,245 50,241 72,235 94,227 116,218 138,208 160,196 182,182" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="100" y="265" text-anchor="middle" font-size="8" fill="#f59e0b">ε ขยาย → drift!</text>
+<text x="106" y="285" text-anchor="middle" font-size="9" fill="#dc2626">Trade ไม่ได้ — spread ไม่กลับ</text>
+
+<!-- Panel 2: High corr, cointegrated -->
+<rect x="223" y="28" width="195" height="270" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="321" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">ρ สูง + Cointegrated ✓</text>
+<text x="321" y="58" text-anchor="middle" font-size="9" fill="#16a34a">ρ=0.99, p-ADF=0.01 ✓</text>
+<!-- axes -->
+<line x1="243" y1="250" x2="405" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<line x1="243" y1="250" x2="243" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<text x="408" y="253" font-size="8" fill="#9ca3af">t</text>
+<!-- A and B move together (cointegrated) -->
+<polyline points="243,190 255,185 267,175 279,180 291,170 303,175 315,165 327,172 339,162 351,168 363,158 375,164 387,155 399,160" fill="none" stroke="#2563eb" stroke-width="2"/>
+<polyline points="243,195 255,190 267,180 279,186 291,175 303,181 315,170 327,178 339,167 351,174 363,163 375,170 387,160 399,165" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
+<text x="400" y="158" font-size="8" fill="#2563eb">A</text>
+<text x="400" y="166" font-size="8" fill="#dc2626">B</text>
+<!-- Spread oscillating around θ -->
+<line x1="243" y1="225" x2="400" y2="225" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+<polyline points="243,225 255,222 267,220 279,226 291,221 303,228 315,220 327,228 339,220 351,227 363,219 375,226 387,218 399,224" fill="none" stroke="#16a34a" stroke-width="1.8"/>
+<text x="321" y="265" text-anchor="middle" font-size="8" fill="#16a34a">ε วนรอบ θ</text>
+<text x="321" y="285" text-anchor="middle" font-size="9" fill="#16a34a">Trade ได้ — spread กลับ</text>
+
+<!-- Panel 3: Low corr, not cointegrated -->
+<rect x="438" y="28" width="195" height="270" rx="7" fill="#fff7ed" stroke="#fcd34d" stroke-width="1.5"/>
+<text x="536" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">ρ ต่ำ — ไม่เกี่ยวกัน</text>
+<text x="536" y="58" text-anchor="middle" font-size="9" fill="#d97706">ρ=0.20, p-ADF=0.45 ✗</text>
+<!-- axes -->
+<line x1="458" y1="250" x2="620" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<line x1="458" y1="250" x2="458" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
+<text x="623" y="253" font-size="8" fill="#9ca3af">t</text>
+<!-- A random walk -->
+<polyline points="458,180 470,172 482,185 494,175 506,190 518,178 530,170 542,183 554,168 566,180 578,162 590,175 602,165 614,178" fill="none" stroke="#2563eb" stroke-width="2"/>
+<!-- B different random walk -->
+<polyline points="458,200 470,210 482,195 494,205 506,192 518,208 530,215 542,205 554,218 566,208 578,220 590,210 602,218 614,205" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
+<text x="615" y="176" font-size="8" fill="#2563eb">A</text>
+<text x="615" y="206" font-size="8" fill="#dc2626">B</text>
+<text x="536" y="285" text-anchor="middle" font-size="9" fill="#d97706">ไม่มี economic link — อย่า trade</text>
+</svg>
+<div class="caption">ต้องการทั้ง correlation สูง (A และ B เดินไปด้วยกัน) AND cointegration (ε stationary)</div>
+
+<h2 id="s5-2">5.2 Engle-Granger 2-Step Test</h2>
+
+<p>วิธีที่ง่ายที่สุด ทำ 2 ขั้น:</p>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>Regress log(P_A) บน log(P_B):</strong><br>
+log(P_A) = α + β·log(P_B) + ε̂_t<br>
+บันทึก residuals ε̂_t จาก regression นี้</div>
+</div>
+
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>ADF Test บน ε̂_t:</strong><br>
+ถ้า ε̂_t stationary (p &lt; 0.05) → A และ B cointegrated ✓<br>
+ถ้าไม่ผ่าน (p ≥ 0.05) → ไม่ cointegrated → ห้าม trade</div>
+</div>
+
+<h3>ADF Test อ่านผลอย่างไร</h3>
+
+<table>
+<tr><th>p-value</th><th>ความหมาย</th><th>ควรทำ</th></tr>
+<tr><td style="color:#16a34a"><strong>&lt; 0.01</strong></td><td>Reject H₀ อย่างมั่นใจมาก</td><td><strong>Cointegrated — trade ได้</strong></td></tr>
+<tr><td style="color:#16a34a"><strong>0.01–0.05</strong></td><td>Reject H₀ ที่ 95% confidence</td><td><strong>Cointegrated — trade ได้ (standard threshold)</strong></td></tr>
+<tr><td style="color:#d97706">0.05–0.10</td><td>Borderline</td><td>ระวัง — ลด position size หรือรอข้อมูลเพิ่ม</td></tr>
+<tr><td style="color:#dc2626"><strong>&gt; 0.10</strong></td><td>ไม่ reject H₀</td><td><strong>ไม่ cointegrated — ห้าม trade spread</strong></td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ Engle-Granger</div>
+<ul>
+<li>Test เพียง 1 cointegrating vector (ดีสำหรับ 2 assets)</li>
+<li>ลำดับ regression (A บน B vs B บน A) ให้ผลต่างกัน — ควรทดสอบทั้งสองทาง</li>
+<li>มี power ต่ำเมื่อ sample น้อย (&lt; 100 observations)</li>
+</ul>
+</div>
+
+<h2 id="s5-3">5.3 Johansen Test — เมื่อมีมากกว่า 2 Assets</h2>
+
+<p>Johansen test ทดสอบ cointegration ของ n assets พร้อมกัน โดยหาจำนวน cointegrating vectors r:</p>
+
+<div class="fm">H₀: r = 0 (ไม่มี cointegration เลย)
+H₀: r ≤ 1 (มีได้อย่างมาก 1 vector)
+...
+ทดสอบต่อไปจนถึง r = n−1
+
+ถ้า Trace statistic หรือ Max eigenvalue > critical value → reject H₀</div>
+
+<table>
+<tr><th>จำนวน Assets</th><th>ใช้ Test ไหน</th><th>เหตุผล</th></tr>
+<tr><td>2 (pairs)</td><td>Engle-Granger</td><td>ง่ายกว่า ผลเท่ากัน</td></tr>
+<tr><td>3+ (basket)</td><td>Johansen</td><td>หา cointegrating vectors ทุกตัว</td></tr>
+<tr><td>ต้องการรู้ว่าใครปรับตัว</td><td>VECM</td><td>ระบุ adjustment coefficients</td></tr>
+</table>
+
+<h2 id="s5-4">5.4 VECM — ใครเป็นฝ่ายปรับตัวกลับ?</h2>
+
+<p>เมื่อรู้ว่า cointegrated แล้ว VECM (Vector Error Correction Model) บอกว่า <strong>เมื่อ spread ห่างจาก equilibrium ใคร (A หรือ B) เป็นฝ่ายปรับตัวกลับ</strong></p>
+
+<div class="key-idea">
+<div class="ki-label">VECM สำหรับ 2 assets</div>
+<div class="ki-eq">Δlog(P_A)_t = α_A · ε_{t-1} + γ_A · Δlog(P_A)_{t-1} + u_{A,t}</div>
+<div class="ki-eq" style="margin-top:4px">Δlog(P_B)_t = α_B · ε_{t-1} + γ_B · Δlog(P_B)_{t-1} + u_{B,t}</div>
+<p style="margin-top:8px">α_A, α_B = adjustment coefficients — บอกว่าใครปรับตาม error</p>
+</div>
+
+<!-- VECM adjustment diagram -->
+<svg class="d" viewBox="0 0 620 240">
+<defs>
+<marker id="a2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+<marker id="a2b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2563eb"/></marker>
+<marker id="a2r" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#dc2626"/></marker>
+</defs>
+<text x="310" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">VECM: ใครเป็นฝ่ายปรับตัวกลับ?</text>
+
+<!-- Equilibrium line -->
+<line x1="50" y1="120" x2="570" y2="120" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="5,4"/>
+<text x="574" y="123" font-size="10" fill="#0d9488">equilibrium</text>
+
+<!-- Scenario 1: A adjusts (left panel) -->
+<rect x="20" y="30" width="270" height="175" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="155" y="48" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">α_A &lt; 0, α_B ≈ 0</text>
+<text x="155" y="62" text-anchor="middle" font-size="10" fill="#2563eb">A ปรับตัวกลับ, B นิ่ง</text>
+
+<!-- A goes up, then corrects -->
+<polyline points="30,120 60,120 90,90 120,80 150,80" fill="none" stroke="#2563eb" stroke-width="2"/>
+<!-- A corrects back -->
+<polyline points="150,80 180,90 210,105 240,115 270,120" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,3"/>
+<!-- B stays flat -->
+<polyline points="30,120 270,120" fill="none" stroke="#dc2626" stroke-width="2"/>
+
+<text x="105" y="75" text-anchor="middle" font-size="9" fill="#2563eb">A ขึ้น (ห่าง equilibrium)</text>
+<text x="210" y="75" text-anchor="middle" font-size="9" fill="#2563eb">A ลงมาหา equilibrium</text>
+<!-- arrow -->
+<line x1="210" y1="90" x2="210" y2="115" stroke="#2563eb" stroke-width="1.5" marker-end="url(#a2b)"/>
+
+<text x="55" y="125" text-anchor="start" font-size="9" fill="#dc2626">B ไม่ขยับ</text>
+<text x="155" y="195" text-anchor="middle" font-size="10" fill="#2563eb">→ Short A เมื่อ A ห่าง equilibrium</text>
+
+<!-- Scenario 2: B adjusts (right panel) -->
+<rect x="330" y="30" width="270" height="175" rx="8" fill="#fff7ed" stroke="#fcd34d" stroke-width="1.5"/>
+<text x="465" y="48" text-anchor="middle" font-size="11" font-weight="700" fill="#d97706">α_A ≈ 0, α_B &gt; 0</text>
+<text x="465" y="62" text-anchor="middle" font-size="10" fill="#d97706">B ปรับตัวกลับ, A นิ่ง</text>
+
+<!-- A stays flat -->
+<polyline points="340,120 610,120" fill="none" stroke="#2563eb" stroke-width="2"/>
+<!-- B drops, then corrects -->
+<polyline points="340,120 370,120 400,150 430,160 460,160" fill="none" stroke="#dc2626" stroke-width="2"/>
+<polyline points="460,160 490,148 520,135 550,125 580,120" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
+
+<text x="415" y="168" text-anchor="middle" font-size="9" fill="#dc2626">B ลง</text>
+<text x="520" y="168" text-anchor="middle" font-size="9" fill="#dc2626">B ขึ้นมาหา equil.</text>
+<line x1="520" y1="148" x2="520" y2="125" stroke="#dc2626" stroke-width="1.5" marker-end="url(#a2r)"/>
+
+<text x="375" y="125" text-anchor="start" font-size="9" fill="#2563eb">A ไม่ขยับ</text>
+<text x="465" y="195" text-anchor="middle" font-size="10" fill="#d97706">→ Long B เมื่อ B ต่ำกว่า equilibrium</text>
+</svg>
+<div class="caption">VECM ระบุว่าควร trade ฝั่งไหน — ถ้า A ปรับ: trade A | ถ้า B ปรับ: trade B | ถ้าทั้งคู่ปรับ: trade ทั้งคู่</div>
+
+<div class="bx bg">
+<div class="bt">VECM บอกอะไรสำหรับ Bybit↔Lighter?</div>
+<p>ถ้า Bybit เป็น "price leader" (α_Bybit ≈ 0) และ Lighter ปรับตาม (α_Lighter &gt; 0):<br>
+→ เมื่อ Lighter ต่ำกว่า equilibrium: Lighter จะขึ้น → <strong>Long Lighter</strong><br>
+→ เมื่อ Lighter สูงกว่า equilibrium: Lighter จะลง → <strong>Short Lighter</strong><br>
+สรุป: trade Lighter เป็นหลัก ใช้ Bybit เป็น reference</p>
+</div>
+
+<h2 id="s5-5">5.5 Pseudo-code</h2>
+
+<div class="pseudo">
+<span class="c"># Engle-Granger Cointegration Test</span><br>
+<span class="kw">function</span> <span class="fn">test_cointegration_eg</span>(log_P_A, log_P_B):<br>
+&nbsp;&nbsp;<span class="c"># Step 1: OLS regression</span><br>
+&nbsp;&nbsp;beta, alpha = <span class="fn">ols</span>(log_P_B, log_P_A)  <span class="c"># log_P_A = alpha + beta*log_P_B</span><br>
+&nbsp;&nbsp;residuals = log_P_A - (alpha + beta * log_P_B)<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 2: ADF test on residuals</span><br>
+&nbsp;&nbsp;adf_stat, p_value = <span class="fn">adf_test</span>(residuals, lags=<span class="nm">1</span>)<br>
+<br>
+&nbsp;&nbsp;cointegrated = p_value &lt; <span class="nm">0.05</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> {cointegrated, p_value, adf_stat, beta, residuals}<br>
+<br>
+<span class="c"># Check VECM adjustment direction</span><br>
+<span class="kw">function</span> <span class="fn">vecm_adjustment</span>(log_P_A, log_P_B, residuals):<br>
+&nbsp;&nbsp;d_A = <span class="fn">diff</span>(log_P_A)   <span class="c"># Δlog(P_A)</span><br>
+&nbsp;&nbsp;d_B = <span class="fn">diff</span>(log_P_B)   <span class="c"># Δlog(P_B)</span><br>
+&nbsp;&nbsp;err_lag = residuals[:-<span class="nm">1</span>]  <span class="c"># ε_{t-1}</span><br>
+<br>
+&nbsp;&nbsp;alpha_A = <span class="fn">ols_slope</span>(err_lag, d_A[<span class="nm">1</span>:])  <span class="c"># A's adjustment coefficient</span><br>
+&nbsp;&nbsp;alpha_B = <span class="fn">ols_slope</span>(err_lag, d_B[<span class="nm">1</span>:])  <span class="c"># B's adjustment coefficient</span><br>
+<br>
+&nbsp;&nbsp;<span class="c"># Negative alpha → adjusts back to equilibrium</span><br>
+&nbsp;&nbsp;A_adjusts = alpha_A &lt; -<span class="nm">0.05</span><br>
+&nbsp;&nbsp;B_adjusts = alpha_B &gt; <span class="nm">0.05</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> {alpha_A, alpha_B, A_adjusts, B_adjusts}
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit↔Lighter ADF Test Result</div>
+<div class="fm">ข้อมูล: 90 วัน, รายชั่วโมง (2,160 observations)
+
+Step 1 — OLS:
+  log(P_Bybit) = 0.003 + 1.0049·log(P_Lighter) + ε̂
+  β = 1.0049, R² = 0.9998
+
+Step 2 — ADF test บน ε̂:
+  ADF statistic = −4.82
+  p-value = 0.0003 ← ผ่าน! (p ≪ 0.05)
+  Critical values: 1%=−3.44, 5%=−2.87, 10%=−2.57
+
+ผล: ADF stat (−4.82) < Critical (−3.44) → Reject H₀ → Stationary → Cointegrated ✓
+
+VECM:
+  α_Bybit = −0.02  (ปรับนิดหน่อย)
+  α_Lighter = +0.18  (ปรับมากกว่า)
+  → Lighter เป็นฝ่ายปรับตัว → trade Lighter เป็นหลัก</div>
+</div>
+
+<h3>Re-test เมื่อไร?</h3>
+<table>
+<tr><th>สัญญาณ</th><th>ควรทำ</th></tr>
+<tr><td>p-value ขึ้นผ่าน 0.05 ใน monthly re-test</td><td>หยุด trade ทันที re-evaluate คู่นี้</td></tr>
+<tr><td>β เปลี่ยน &gt; 5% จากค่าเดิม</td><td>Re-run test ด้วย data ใหม่</td></tr>
+<tr><td>Spread ค้างนอก 3σ &gt; 2 วัน</td><td>Emergency re-test — อาจ regime change</td></tr>
+</table>
+
+<div class="ex">
+<div class="et">โจทย์ 5.1 — อ่านผล ADF</div>
+<p>ทดสอบ ADF บน residuals ของ BTC-ETH spread ได้:<br>
+ADF = −2.31, p-value = 0.18, critical value 5% = −2.87</p>
+<p><strong>ถาม:</strong> (a) interpret ผล (b) ควร trade spread นี้ไหม?</p>
+<details><summary>ดูคำตอบ</summary><div class="ans">
+<p><strong>(a)</strong> ADF = −2.31 > −2.87 (critical) → ไม่ reject H₀ → ε ไม่ stationary<br>
+p-value = 0.18 > 0.05 → ไม่ผ่าน → residuals เป็น random walk</p>
+<p><strong>(b)</strong> ไม่ควร trade — BTC-ETH ไม่ cointegrated ในช่วงนี้<br>
+ทั้งสองอาจมี correlation สูง แต่ spread อาจ drift ออกไปเรื่อยๆ</p>
+</div></details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.2 — ใช้ VECM ตัดสิน</div>
+<p>VECM บน Bybit↔Lighter: α_Bybit = −0.21, α_Lighter = +0.03<br>
+ขณะนี้ ε &gt; 0 (Bybit แพงกว่า equilibrium)</p>
+<p><strong>ถาม:</strong> ใครเป็นฝ่ายปรับ และควร trade อะไร?</p>
+<details><summary>ดูคำตอบ</summary><div class="ans">
+<p>α_Bybit = −0.21 มีค่าลบมาก → Bybit เป็นฝ่ายปรับตัวลง<br>
+α_Lighter = +0.03 ≈ 0 → Lighter แทบไม่ขยับ</p>
+<p>เมื่อ ε &gt; 0 (Bybit เกิน equilibrium) และ Bybit จะปรับลง → <strong>Short Bybit</strong><br>
+Lighter เป็น leg ที่เสถียร — ต้องการ hedge → <strong>Long Lighter</strong> (ตาม β)</p>
+</div></details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.5 Cointegration | ต่อไป → <strong>Ch.6: Hurst Exponent &amp; Stationarity Tests</strong>
+</p>
+</body>
+</html>
