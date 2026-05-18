@@ -419,6 +419,72 @@ Trade Parameters:
 </ul>
 </div>
 
+<!-- 3.8 Notation Reference -->
+<h2 id="s3-8">3.8 ตารางสัญลักษณ์ (Notation Reference) — ใช้ตลอดทั้งเล่ม</h2>
+
+<p>ทั้งเล่มใช้ σ หลายแบบ ต่างกันที่จุดประสงค์และวิธีคำนวณ — ตารางนี้เป็นอ้างอิงกลางที่ควรกลับมาดูทุกครั้งที่สับสน:</p>
+
+<table>
+<tr><th>สัญลักษณ์</th><th>ชื่อเต็ม</th><th>ความหมาย</th><th>คำนวณจาก</th><th>ใช้ใน</th></tr>
+<tr>
+  <td><strong>σ</strong> (SDE)</td>
+  <td>Diffusion coefficient</td>
+  <td>ขนาด noise ใน OU SDE: dε = κ(θ−ε)dt + σ·dW</td>
+  <td>σ = σ_stat · √(2κ)</td>
+  <td>Ch.2–3 สมการทฤษฎี</td>
+</tr>
+<tr>
+  <td><strong>σ_stat</strong></td>
+  <td>Stationary std</td>
+  <td>Std ของ spread ε ณ steady state — ใช้กำหนด entry/exit band</td>
+  <td>σ_stat = σ/√(2κ) ≈ std(ε)</td>
+  <td>Ch.3–4 entry band θ ± 2σ_stat</td>
+</tr>
+<tr>
+  <td><strong>σ_t</strong> (GARCH)</td>
+  <td>Conditional std</td>
+  <td>Std ของ spread ε ณ เวลา t — ขยายตัวช่วง volatile</td>
+  <td>σ_t² = ω + α·ε²_{t−1} + β·σ²_{t−1}</td>
+  <td>Ch.7 GARCH z-score</td>
+</tr>
+<tr>
+  <td><strong>σ_robust</strong></td>
+  <td>Robust std (MAD-based)</td>
+  <td>Estimate σ_stat ที่ทนต่อ outlier — ไม่กระทบจาก jump</td>
+  <td>σ_robust = MAD × 1.4826</td>
+  <td>Ch.10 robust z-score</td>
+</tr>
+<tr>
+  <td><strong>σ_EMA</strong></td>
+  <td>EMA-smoothed std</td>
+  <td>Rolling std ด้วย exponential weighting — Welford-style</td>
+  <td>Welford online update (Ch.15)</td>
+  <td>Ch.15 dynamic β tracking</td>
+</tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">กฎง่าย ๆ ในการเลือก σ</div>
+<ul>
+<li><strong>ตลาดปกติ</strong>: ใช้ σ_stat (OLS residual std) — เร็วและง่าย</li>
+<li><strong>ช่วง volatile</strong> (ratio 7d/30d std &gt; 1.5): เปลี่ยนเป็น σ_t จาก GARCH(1,1)</li>
+<li><strong>มี outlier / jump</strong>: ใช้ σ_robust = MAD × 1.4826 แทน std()</li>
+<li><strong>β เปลี่ยนตาม Kalman</strong>: ε เปลี่ยนทุก bar → ใช้ σ_EMA แบบ Welford update</li>
+</ul>
+</div>
+
+<table>
+<tr><th>สัญลักษณ์อื่น ๆ</th><th>ความหมาย</th></tr>
+<tr><td><strong>ε_t</strong></td><td>Spread residual at time t: ε = log(P_A) − β·log(P_B)</td></tr>
+<tr><td><strong>θ</strong></td><td>Long-run mean ของ OU (equilibrium spread level)</td></tr>
+<tr><td><strong>κ</strong></td><td>Mean-reversion speed (ต่อวัน); τ₁/₂ = ln(2)/κ</td></tr>
+<tr><td><strong>β</strong></td><td>Hedge ratio (OLS, TLS, หรือ Kalman)</td></tr>
+<tr><td><strong>H</strong></td><td>Hurst exponent; H &lt; 0.5 = mean-reverting</td></tr>
+<tr><td><strong>z_t</strong></td><td>Z-score ของ spread: (ε_t − θ)/σ_stat หรือ (ε_t − θ)/σ_t</td></tr>
+<tr><td><strong>τ₁/₂</strong></td><td>Half-life ของ mean-reversion: τ₁/₂ = ln(2)/κ</td></tr>
+<tr><td><strong>Δt</strong></td><td>Bar size ในหน่วยวัน (1-hour bar: Δt = 1/24)</td></tr>
+</table>
+
 <!-- Exercises -->
 <div class="ex">
 <div class="et">โจทย์ 3.1 — คำนวณ half-life และ trade parameters</div>

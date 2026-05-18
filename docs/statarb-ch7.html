@@ -307,6 +307,10 @@ from arch import arch_model
 import numpy as np
 
 # residuals: spread residuals ε_t (ใช้ % return หรือ log-diff)
+# ⚠️ UNIT NOTE: scaling ×100 เปลี่ยนหน่วย ε จาก raw → % ดังนั้น:
+#   ω ที่ได้จาก fit จะมีหน่วย %²  (ไม่ใช่ raw²)
+#   ก่อนนำ ω ไปใช้ใน garch_update() ต้องหาร 10000 ถ้า code ทำงานกับ raw units
+#   หรือ scale residuals ×100 ตลอดทั้ง pipeline ให้สม่ำเสมอ
 residuals = spread_residuals * 100  # scale เป็น % เพื่อ numerical stability
 
 # Fit GARCH(1,1)
@@ -327,6 +331,19 @@ cond_var = result.conditional_volatility ** 2  # array ของ σ_t²
 forecast = result.forecast(horizon=1, reindex=False)
 sigma_next_sq = forecast.variance.values[-1, 0]
 sigma_next = np.sqrt(sigma_next_sq)</div>
+
+<div class="bx br">
+<div class="bt">หน่วย ω: ×100 Scaling ทำให้ ω อยู่ใน %² ไม่ใช่ Raw²</div>
+<p>เมื่อ <code>residuals = spread_residuals * 100</code> (scale จาก fraction เป็น %):<br>
+• ε_t มีหน่วย <strong>%</strong> (เช่น 0.08, 0.15, 0.24)<br>
+• ω ที่ fit ได้มีหน่วย <strong>%²</strong> (เช่น ω ≈ 0.000006 %²)<br>
+• σ_t จาก GARCH มีหน่วย <strong>%</strong> → GARCH z-score = ε_t (%) / σ_t (%) ✓ ไม่มีปัญหา<br><br>
+<strong>ปัญหาถ้า mix หน่วย:</strong> ถ้า ε_t ใน code เป็น raw (0.0008) แต่ ω ที่ fit ไว้เป็น %² (0.000006%) → σ_t = √(ω_%) × 0.01 ≠ σ_t ที่ถูก<br>
+<strong>วิธีแก้ที่ง่ายที่สุด:</strong> เลือก scale เดียวตลอด pipeline — แนะนำให้ scale ×100 ทั้งหมด หรือใช้ raw ทั้งหมดโดยหาร ω_% ด้วย 10000 ก่อนใช้</p>
+<div class="fm"># ถ้าอยากทำงานใน raw units หลังจาก fit ด้วย % units:
+omega_raw = omega_pct / 10000   # %² → raw² (÷ 100²)
+# จากนั้น garch_update(omega_raw, alpha, beta, ...) ด้วย raw epsilon ได้เลย</div>
+</div>
 
 <div class="bx ba">
 <div class="bt">ขนาด Sample ที่จำเป็น</div>
@@ -403,6 +420,15 @@ Correct action: REDUCE size or skip entry (storm period)</div>
 <p><strong>Rule:</strong> Always use the GARCH z-score when should_use_garch() returns True. Discard the naive z-score in volatile regimes.</p>
 </div>
 </details>
+</div>
+
+<div class="bx bi">
+<div class="bt">อ้างอิงสำคัญ (References)</div>
+<ul>
+<li><strong>Engle, R. F. (1982).</strong> Autoregressive conditional heteroscedasticity with estimates of the variance of United Kingdom inflation. <em>Econometrica</em>, 50(4), 987–1007. — บทความต้นฉบับที่นิยาม ARCH model; Nobel Prize 2003</li>
+<li><strong>Bollerslev, T. (1986).</strong> Generalized autoregressive conditional heteroskedasticity. <em>Journal of Econometrics</em>, 31(3), 307–327. — ขยาย ARCH เป็น GARCH(p,q) ที่ใช้ใน Ch.7; σ_t² = ω + Σα_i·ε²_{t-i} + Σβ_j·σ²_{t-j}</li>
+<li><strong>Nelson, D. B. (1991).</strong> Conditional heteroskedasticity in asset returns: A new approach. <em>Econometrica</em>, 59(2), 347–370. — EGARCH ที่กล่าวถึงใน Ch.7; จัดการ asymmetric volatility response</li>
+</ul>
 </div>
 
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">

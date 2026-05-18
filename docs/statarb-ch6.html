@@ -294,6 +294,66 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
     <span class="kw">return</span> {<span class="st">"H"</span>: H, <span class="st">"adf_p"</span>: adf_p, <span class="st">"kpss_p"</span>: kpss_p, <span class="st">"tradeable"</span>: tradeable}
 </div>
 
+<!-- 6.6 Bootstrap CI -->
+<h2 id="s6-6">6.6 Confidence Interval สำหรับ H — Bootstrap Test</h2>
+
+<p>H = 0.31 กับ H = 0.35 <strong>อาจแยกไม่ออกทางสถิติ</strong> เพราะ R/S estimator มี noise โดยเฉพาะเมื่อ sample size น้อย การรายงาน H โดยไม่มี SE หรือ CI อาจทำให้ตัดสินใจ trade ผิด</p>
+
+<div class="bx bb">
+<div class="bt">Bootstrap CI สำหรับ H — แนวคิด</div>
+<ol>
+<li><strong>Resample:</strong> สุ่มดึง bootstrap sample ขนาดเท่า original (with replacement) ทำ B = 500 รอบ</li>
+<li><strong>Compute H:</strong> คำนวณ H จาก R/S analysis ทุก bootstrap sample → ได้ distribution {H₁, H₂, …, H_B}</li>
+<li><strong>SE(H):</strong> SE = std({H₁, …, H_B})</li>
+<li><strong>95% CI:</strong> [H − 1.96·SE, H + 1.96·SE]</li>
+</ol>
+<p><strong>Rule:</strong> CI ต้อง <strong>ทั้งหมดอยู่ต่ำกว่า 0.5</strong> ถึงจะ trade ได้อย่างมั่นใจ ถ้า CI ทะลุ 0.5 ให้ลดขนาด position หรือรอ sample เพิ่ม</p>
+</div>
+
+<div class="pseudo">
+<span class="kw">function</span> <span class="fn">hurst_bootstrap_ci</span>(series, B=<span class="nu">500</span>, confidence=<span class="nu">0.95</span>):
+    n = len(series)
+    h_samples = []
+
+    <span class="kw">for</span> _ <span class="kw">in</span> range(B):
+        <span class="cm"># Block bootstrap: สุ่ม block ขนาด sqrt(n) เพื่อรักษา autocorrelation</span>
+        block_size = <span class="fn">int</span>(<span class="fn">sqrt</span>(n))
+        resampled = []
+        <span class="kw">while</span> len(resampled) &lt; n:
+            start = <span class="fn">randint</span>(<span class="nu">0</span>, n - block_size)
+            resampled.extend(series[start : start + block_size])
+        resampled = resampled[:n]
+
+        h_b = <span class="fn">hurst_rs</span>(resampled)
+        h_samples.append(h_b)
+
+    H_mean = <span class="fn">mean</span>(h_samples)
+    H_se   = <span class="fn">std</span>(h_samples)
+    alpha  = <span class="nu">1</span> - confidence
+    z_crit = <span class="nu">1.96</span>  <span class="cm"># 95% normal approximation</span>
+    ci_low  = H_mean - z_crit * H_se
+    ci_high = H_mean + z_crit * H_se
+
+    tradeable_ci = ci_high &lt; <span class="nu">0.50</span>   <span class="cm"># entire CI must be below 0.5</span>
+    <span class="kw">return</span> {<span class="st">"H"</span>: H_mean, <span class="st">"SE"</span>: H_se,
+            <span class="st">"CI_95"</span>: (ci_low, ci_high),
+            <span class="st">"tradeable_CI"</span>: tradeable_ci}
+</div>
+
+<div class="bx ba">
+<div class="bt">เหตุผลที่ใช้ Block Bootstrap แทน i.i.d. Bootstrap</div>
+<p>Spread residuals มี autocorrelation (นั่นคือ mean-reverting behavior ที่เราวัด H) — ถ้า resample แบบ i.i.d. (สุ่มแต่ละจุดแยกกัน) จะทำลาย autocorrelation structure ทำให้ SE ของ H ต่ำเกินจริง (overconfident CI)<br>
+Block bootstrap ขนาด √n รักษา local autocorrelation ไว้ → SE ที่ได้จริงกว่า</p>
+</div>
+
+<table>
+<tr><th>H_point</th><th>SE (bootstrap)</th><th>95% CI</th><th>CI ต่ำกว่า 0.5?</th><th>ตัดสินใจ</th></tr>
+<tr><td>0.31</td><td>0.03</td><td>[0.25, 0.37]</td><td>ใช่ ✓</td><td>Trade ได้ — confident</td></tr>
+<tr><td>0.43</td><td>0.04</td><td>[0.35, 0.51]</td><td>ไม่ — CI ทะลุ 0.5</td><td>ลด size 50%, re-test next month</td></tr>
+<tr><td>0.46</td><td>0.05</td><td>[0.36, 0.56]</td><td>ไม่ — CI ทะลุ 0.5</td><td>ไม่ trade จนกว่า H จะลง</td></tr>
+<tr><td>0.38</td><td>0.02</td><td>[0.34, 0.42]</td><td>ใช่ ✓</td><td>Trade ได้ — บาง SE → น่าเชื่อถือ</td></tr>
+</table>
+
 <!-- Running example -->
 <div class="running-ex">
 <div class="re-title">Running Example: Bybit BTC Perp ↔ Lighter BTC Perp</div>
