@@ -248,9 +248,37 @@ for each new price tick:
     z_score = (epsilon - epsilon_mean) / epsilon_std</div>
 
 <div class="bx bi">
-<div class="bt">Note: epsilon_mean และ epsilon_std</div>
-<p>เมื่อ β เปลี่ยน ค่า mean ของ ε ก็เปลี่ยนด้วย ต้องอัปเดต epsilon_mean และ epsilon_std แบบ rolling หรือใช้ Kalman อีกชั้นสำหรับ μ_ε ด้วย</p>
+<div class="bt">⚠️ Implementation Trap: epsilon_mean และ epsilon_std ต้องอัปเดตตาม β</div>
+<p>เมื่อ β เปลี่ยน ค่า ε = log(P_A) − β·log(P_B) ทั้ง series เปลี่ยนด้วย — theta (θ) และ sigma_stat ที่ calibrate ไว้ด้วย β เก่าจึง <strong>ไม่ถูกต้อง</strong> อีกต่อไป</p>
+<p>วิธีแก้ที่แนะนำ: ใช้ <strong>Exponential Moving Average (EMA)</strong> อัปเดต real-time:</p>
 </div>
+
+<div class="fm"># ✅ Concrete solution: EMA-based epsilon_mean และ epsilon_std
+# Initialization
+alpha_ema = 0.02   # EMA decay (เทียบเท่า window ≈ 1/alpha ≈ 50 bars)
+epsilon_mean = epsilon_0   # ค่าเริ่มต้นจาก historical mean
+epsilon_var  = epsilon_var0  # variance เริ่มต้น
+
+# Real-time update loop
+for each new price tick:
+    r_A = log(price_A_now / price_A_prev)
+    r_B = log(price_B_now / price_B_prev)
+
+    # 1. Update β via Kalman
+    beta, P = kalman_beta_update(beta, P, r_A, r_B, Q=1e-5, R=1e-3)
+
+    # 2. Recompute epsilon ด้วย beta ใหม่
+    epsilon = log(price_A) - beta * log(price_B)
+
+    # 3. อัปเดต epsilon_mean ด้วย EMA
+    epsilon_mean = alpha_ema * epsilon + (1 - alpha_ema) * epsilon_mean
+
+    # 4. อัปเดต epsilon_std ด้วย EMA variance
+    epsilon_var  = alpha_ema * (epsilon - epsilon_mean)**2 + (1 - alpha_ema) * epsilon_var
+    epsilon_std  = sqrt(epsilon_var + 1e-10)   # guard division by zero
+
+    # 5. z-score ที่ถูกต้อง
+    z_score = (epsilon - epsilon_mean) / epsilon_std</div>
 
 <!-- 15.6 -->
 <h2 id="s15-6">15.6 Choosing Q and R — Tuning พารามิเตอร์</h2>

@@ -297,6 +297,46 @@ sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β)</spa
     <span class="kw">if</span> abs(z) &lt; <span class="nu">0.5</span>: close_position()
 </div>
 
+<!-- 7.6 MLE Estimation -->
+<h2 id="s7-6">7.6 การ Estimate ω, α, β จากข้อมูลจริง (MLE)</h2>
+
+<p>ค่า ω, α, β <strong>ต้องหาจากข้อมูล</strong> ไม่ใช่ guess — วิธีมาตรฐานคือ Maximum Likelihood Estimation (MLE) ผ่าน library ที่ optimize log-likelihood ของ GARCH โดยอัตโนมัติ</p>
+
+<div class="fm"># Python — ใช้ arch library (pip install arch)
+from arch import arch_model
+import numpy as np
+
+# residuals: spread residuals ε_t (ใช้ % return หรือ log-diff)
+residuals = spread_residuals * 100  # scale เป็น % เพื่อ numerical stability
+
+# Fit GARCH(1,1)
+model = arch_model(residuals, vol='GARCH', p=1, q=1, mean='Constant')
+result = model.fit(disp='off')   # disp='off' ปิด iteration output
+
+# อ่านพารามิเตอร์ที่ได้
+omega = result.params['omega']   # ω (variance floor)
+alpha = result.params['alpha[1]']  # α (shock weight)
+beta  = result.params['beta[1]']   # β (persistence)
+print(f"ω={omega:.2e}, α={alpha:.4f}, β={beta:.4f}")
+print(f"α+β={alpha+beta:.4f} (ต้อง < 1 เพื่อ stationarity)")
+
+# Conditional variances ที่ model fit
+cond_var = result.conditional_volatility ** 2  # array ของ σ_t²</div>
+
+<div class="bx bg">
+<div class="bt">ผลที่คาดหวังสำหรับ BTC Spread</div>
+<p>จากประสบการณ์กับ crypto spread โดยทั่วไปพบ:<br>
+ω ≈ 1e-7 ถึง 1e-5 | α ≈ 0.05–0.15 | β ≈ 0.80–0.92<br>
+ถ้า α + β ≥ 1 → model non-stationary → ลอง EGARCH หรือ ตัดข้อมูล outlier ออกก่อน refit</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ทางเลือก: EGARCH (ถ้า volatility asymmetric)</div>
+<p>Crypto มักมี "volatility asymmetry" — ราคาลงทำให้ spread volatile มากกว่าราคาขึ้น<br>
+ใช้ EGARCH ได้: <code>arch_model(residuals, vol='EGARCH', p=1, q=1)</code><br>
+parameter เพิ่ม γ (asymmetry) — ถ้า γ &lt; 0 แปลว่า negative shock ทำให้ volatile มากกว่า</p>
+</div>
+
 <!-- Running example -->
 <div class="running-ex">
 <div class="re-title">Running Example: Bybit BTC Perp ↔ Lighter — Funding Rate War (3 Days)</div>

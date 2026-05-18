@@ -262,7 +262,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
         <span class="kw">if</span> n &gt;= n_total: <span class="kw">continue</span>
         rs_values = []
 
-        <span class="cm"># Slide window across series</span>
+        <span class="cm"># Slide window (non-overlapping). ถ้าต้องการ H แม่นยำขึ้น</span>
+        <span class="cm"># ใช้ overlapping windows (step=1) แต่ช้ากว่า O(n²)</span>
         <span class="kw">for</span> start <span class="kw">in</span> range(<span class="nu">0</span>, n_total - n, n):
             chunk = series[start : start + n]
             demeaned = chunk - mean(chunk)
@@ -274,7 +275,10 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
         <span class="kw">if</span> len(rs_values) &gt; <span class="nu">0</span>:
             log_n_list.append(log(n))
-            log_rs_list.append(log(mean(rs_values)))
+            # ✅ FIX: mean(log(RS)) ไม่ใช่ log(mean(RS))
+            # log(mean(x)) ≠ mean(log(x)) โดย Jensen's inequality
+            # การใช้ log(mean()) จะ bias H สูงขึ้น (overestimate mean-reversion)
+            log_rs_list.append(mean([log(x) <span class="kw">for</span> x <span class="kw">in</span> rs_values]))
 
     <span class="cm"># OLS regression: log(R/S) = H * log(n) + const</span>
     H, const = ols_slope_intercept(log_n_list, log_rs_list)

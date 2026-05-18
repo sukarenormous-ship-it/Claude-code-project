@@ -269,13 +269,16 @@ Basis_fair = 65,000 × 0.055 × (4/8760)
 <!-- 13.6 -->
 <h2 id="s13-6">13.6 Pseudo-code: perp_basis_signal()</h2>
 
-<div class="fm">def perp_basis_signal(perp_price, spot_index, rate, time_to_funding,
+<div class="fm">def perp_basis_signal(perp_price, spot_index, rate_per_8h,
+                      time_to_funding_h,   # ✅ FIX: ชัดเจนว่าหน่วยเป็น ชั่วโมง
                       hist_sigma, k=2.0):
     # คำนวณ basis จริง
     basis = perp_price - spot_index
 
     # คำนวณ fair value basis จาก cost of carry
-    fair_basis = spot_index * rate * (time_to_funding / (8 * 3600))
+    # ✅ FIX: rate_per_8h × (เวลาที่เหลือ/8) — unit สอดคล้องกันทั้งหมด
+    # ❌ เดิม: rate * (time_to_funding / (8 * 3600)) — ปนหน่วย seconds กับ per-8h
+    fair_basis = spot_index * rate_per_8h * (time_to_funding_h / 8.0)
 
     # คำนวณ z-score ของ basis deviation
     zscore = (basis - fair_basis) / hist_sigma
@@ -327,8 +330,8 @@ Basis_fair = 65,000 × 0.055 × (4/8760)
 <tr><td>P_spot_index</td><td>$67,100</td><td>Bybit spot index (avg หลาย exchanges)</td></tr>
 <tr><td>Basis_actual</td><td>$350 (+0.521%)</td><td>67,450 − 67,100</td></tr>
 <tr><td>rate (USD annual)</td><td>5.5%</td><td>SOFR / money market rate</td></tr>
-<tr><td>time_to_funding</td><td>3.5 ชั่วโมง (12,600 วินาที)</td><td>เวลาถึง funding ถัดไป</td></tr>
-<tr><td>Basis_fair</td><td>67,100 × 0.055 × (3.5/8760) ≈ $1.47</td><td>cost of carry model</td></tr>
+<tr><td>time_to_funding_h</td><td>3.5 ชั่วโมง</td><td>เวลาถึง funding ถัดไป (หน่วย: ชั่วโมง)</td></tr>
+<tr><td>Basis_fair</td><td>67,100 × 0.0001 × (3.5/8.0) ≈ $2.94</td><td>spot × rate_per_8h × (hours_left/8) ✅</td></tr>
 <tr><td>hist_sigma (30d rolling)</td><td>$85 (0.127%)</td><td>std ของ (basis − fair_basis)</td></tr>
 <tr><td>z-score</td><td>(350 − 1.47) / 85 ≈ <strong>+4.1σ</strong></td><td>ENTRY SIGNAL!</td></tr>
 <tr><td>funding_rate (current)</td><td>+0.065%</td><td>Bybit funding history</td></tr>
@@ -424,16 +427,17 @@ Net P&L:
 <div class="ex">
 <div class="et">โจทย์ 13.1 — คำนวณ Fair Basis และ Z-score</div>
 <p>ข้อมูล: P_perp = $42,300, P_spot_index = $42,100<br>
-rate = 4.8% (annualized), time_to_funding = 5.5 ชั่วโมง<br>
+rate_per_8h = 0.01% (Bybit default), time_to_funding_h = 5.5 ชั่วโมง<br>
 hist_sigma ของ (basis − fair_basis) = $60, k = 2.0<br>
 <strong>ถาม:</strong> คำนวณ fair_basis, z-score และระบุว่ามี signal หรือไม่ถ้า k = 2.0</p>
 <details>
 <summary>ดูคำตอบ</summary>
 <div class="ans">
 <p><strong>Basis actual:</strong> $42,300 − $42,100 = $200</p>
-<p><strong>Fair basis:</strong> 42,100 × 0.048 × (5.5/8760) = 42,100 × 0.048 × 0.000628 = $1.27</p>
-<p><strong>Basis deviation:</strong> $200 − $1.27 = $198.73</p>
-<p><strong>Z-score:</strong> 198.73 / 60 = <strong>3.31σ</strong></p>
+<p><strong>Fair basis:</strong> 42,100 × 0.0001 × (5.5/8.0) = 42,100 × 0.0001 × 0.6875 = <strong>$2.90</strong><br>
+<small>(rate_per_8h = 0.01% = 0.0001; หน่วยสอดคล้อง: spot × rate_per_8h × fraction_of_8h)</small></p>
+<p><strong>Basis deviation:</strong> $200 − $2.90 = $197.10</p>
+<p><strong>Z-score:</strong> 197.10 / 60 = <strong>3.29σ</strong></p>
 <p><strong>Signal: SHORT_PERP_LONG_SPOT</strong> (z = 3.31 &gt; k = 2.0)</p>
 <p>Interpretation: Perp แพงกว่า spot มากผิดปกติ (3.31σ) → Short perp รอ basis กลับมาใกล้ fair value</p>
 </div>

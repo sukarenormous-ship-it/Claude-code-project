@@ -234,24 +234,41 @@ Q[i,j] = P(S_t=j | S_{t-1}=i)</div>
     all_probs[0] = probs
 
     for t in range(1, T):
-        # Step 1: คำนวณ likelihood ของ y_t ในแต่ละ regime
-        likelihoods = [
-            ou_likelihood(residuals[t], residuals[t-1], p)
+        # Step 1: log-likelihood ของ y_t ในแต่ละ regime
+        # ✅ FIX: ทำงานใน log-space เพื่อป้องกัน numerical underflow
+        # เมื่อ T ยาวหรือ likelihood เล็กมาก การคูณซ้ำๆ ทำให้ค่าเป็น 0.0 (underflow)
+        log_likelihoods = [
+            log_ou_likelihood(residuals[t], residuals[t-1], p)
             for p in params
         ]
 
-        # Step 2: Prediction step (Hamilton prediction)
+        # Step 2: Prediction step ใน log-space
         # P(S_t=j) = Σ_i Q[i,j] * P(S_{t-1}=i | Y_{t-1})
-        predicted = transition_matrix.T @ probs
+        predicted = transition_matrix.T @ probs   # ยังใช้ prob-space ได้ตรงนี้
 
-        # Step 3: Update step (Bayes' rule)
-        # P(S_t=j | Y_t) ∝ f(y_t | S_t=j) * P(S_t=j)
-        updated = likelihoods * predicted
-        probs = updated / sum(updated)   # normalize
+        # Step 3: Update step ใน log-space แล้ว normalize ด้วย log-sum-exp
+        log_updated = [log_likelihoods[j] + log(predicted[j] + 1e-300)
+                       for j in range(n_regimes)]
+        # log-sum-exp trick: หา max ก่อน เพื่อ numerical stability
+        max_log = max(log_updated)
+        exp_shifted = [exp(lv - max_log) for lv in log_updated]
+        total = sum(exp_shifted)
+        probs = [e / total for e in exp_shifted]  # normalize กลับสู่ probability
 
         all_probs[t] = probs
 
     return all_probs   # shape (T, n_regimes)
+
+
+def log_ou_likelihood(y_t, y_prev, params):
+    """Log-Gaussian density ของ OU transition (ป้องกัน underflow)"""
+    kappa, theta, sigma = params
+    dt = 1.0
+    mu  = y_prev * exp(-kappa*dt) + theta * (1 - exp(-kappa*dt))
+    var = (sigma**2 / (2*kappa)) * (1 - exp(-2*kappa*dt))
+    if var <= 0: return -1e300   # guard
+    # log N(y_t; mu, var)
+    return -0.5 * log(2 * pi * var) - 0.5 * ((y_t - mu)**2 / var)
 
 
 def ou_likelihood(y_t, y_prev, params):

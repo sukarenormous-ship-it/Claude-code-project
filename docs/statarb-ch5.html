@@ -63,6 +63,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-eq">H₀: ε ไม่ stationary (ไม่ cointegrated) → ถ้า p-value &lt; 0.05 → ปฏิเสธ H₀ → cointegrated ✓</div>
 </div>
 
+<div class="bx bb">
+<div class="bt">นิยามทางการ — Cointegration (Engle &amp; Granger, 1987)</div>
+<p>Series X_t และ Y_t แต่ละตัวเป็น <strong>I(1)</strong> (integrated of order 1 — มี unit root, ไม่ stationary) แต่คู่นี้ <strong>cointegrated</strong> ถ้ามีค่า β ที่ทำให้:</p>
+<p style="text-align:center;font-family:monospace;font-size:1.1em;padding:8px 0"><strong>Z_t = X_t − β·Y_t  เป็น I(0)</strong>  (stationary, กลับหาค่ากลาง)</p>
+<p>กล่าวอีกนัย: แม้ X_t และ Y_t จะ random walk แยกกัน แต่ทั้งคู่ถูก "ดึง" ไว้ด้วย long-run equilibrium relationship เดียวกัน — spread ε = Z_t จึงไม่ drift ออกไปตลอด</p>
+</div>
+
 <h2 id="s5-1">5.1 Correlation ≠ Cointegration — ความแตกต่างที่สำคัญ</h2>
 
 <!-- Diagram: 3 scenarios -->
@@ -162,6 +169,21 @@ log(P_A) = α + β·log(P_B) + ε̂_t<br>
 <li>ลำดับ regression (A บน B vs B บน A) ให้ผลต่างกัน — ควรทดสอบทั้งสองทาง</li>
 <li>มี power ต่ำเมื่อ sample น้อย (&lt; 100 observations)</li>
 </ul>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Engle-Granger Asymmetry — จุดที่ผู้ใช้มักพลาด</div>
+<p>การ regress log(A) ~ log(B) ให้ β_AB และ residual ε_AB<br>
+การ regress log(B) ~ log(A) ให้ β_BA = 1/β_AB_OLS แต่ residual ε_BA <strong>ต่างกัน</strong></p>
+<p>ผลที่ตามมา: ADF test บน ε_AB อาจ pass (p=0.03) แต่ ADF บน ε_BA อาจ fail (p=0.12) — หรือกลับกัน<br>
+<strong>วิธีปฏิบัติ:</strong> ทดสอบทั้งสองทิศทาง แล้วเลือก β ที่ให้ ADF p-value ต่ำกว่า (residual stationary กว่า)<br>
+ถ้าทั้งสองทิศทาง fail → pair ไม่ cointegrate จริง</p>
+<div style="font-family:monospace;background:#fef2f2;padding:8px 12px;border-radius:4px;margin-top:8px;font-size:.9em">
+# Python: ทดสอบทั้งสองทิศทาง<br>
+p_AB = adfuller(log_A - beta_AB * log_B)[1]<br>
+p_BA = adfuller(log_B - beta_BA * log_A)[1]<br>
+best_direction = "A~B" if p_AB &lt; p_BA else "B~A"
+</div>
 </div>
 
 <h2 id="s5-3">5.3 Johansen Test — เมื่อมีมากกว่า 2 Assets</h2>
