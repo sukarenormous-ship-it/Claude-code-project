@@ -249,8 +249,9 @@ for each new price tick:
 
 <div class="bx bi">
 <div class="bt">⚠️ Implementation Trap: epsilon_mean และ epsilon_std ต้องอัปเดตตาม β</div>
-<p>เมื่อ β เปลี่ยน ค่า ε = log(P_A) − β·log(P_B) ทั้ง series เปลี่ยนด้วย — theta (θ) และ sigma_stat ที่ calibrate ไว้ด้วย β เก่าจึง <strong>ไม่ถูกต้อง</strong> อีกต่อไป</p>
-<p>วิธีแก้ที่แนะนำ: ใช้ <strong>Exponential Moving Average (EMA)</strong> อัปเดต real-time:</p>
+<p><strong>ทำไม θ และ σ_stat เดิมใช้ไม่ได้?</strong> เพราะ ε = log(P_A) − <em>β</em>·log(P_B) — ถ้า β เปลี่ยน ค่า ε <strong>ทุกจุดในอดีตก็เปลี่ยนด้วย</strong> ราวกับว่าเรา recompute ε series ทั้งหมดใหม่ด้วย β ใหม่ ดังนั้น mean และ std ที่ calibrate ไว้บน ε เดิมจะ mismatch กับ ε ชุดใหม่ทันที</p>
+<p>ตัวอย่าง: β เปลี่ยนจาก 1.000 → 1.005 เมื่อ log(P_B) ≈ 10 → ε เปลี่ยนทุกจุดไป −0.05 → θ เดิมที่ 0.001 กลายเป็น −0.049 ทันที ถ้า z-score ยังใช้ θ เก่า จะ off ไปถาวร</p>
+<p>วิธีแก้ที่แนะนำ: ใช้ <strong>EMA ที่อัปเดต real-time ทุก bar</strong> แทนค่าคงที่จาก calibration:</p>
 </div>
 
 <div class="fm"># ✅ Concrete solution: Welford-style EMA mean+variance

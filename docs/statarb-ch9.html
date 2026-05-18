@@ -167,7 +167,16 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <!-- 9.3 -->
 <h2 id="s9-3">9.3 Hamilton Filter</h2>
 
-<p>เราใช้ <strong>Hamilton Filter (1989)</strong> สำหรับ estimate ความน่าจะเป็นที่ตลาดอยู่ใน regime ใดโดยอิงจากข้อมูลที่สังเกตได้ ณ เวลา t:</p>
+<p>เราใช้ <strong>Hamilton Filter (1989)</strong> สำหรับ estimate ความน่าจะเป็นที่ตลาดอยู่ใน regime ใดโดยอิงจากข้อมูลที่สังเกตได้ ณ เวลา t</p>
+
+<div class="bx bb">
+<div class="bt">สัญชาตญาณ Hamilton Filter — 2 ขั้นต่อ bar</div>
+<ol>
+<li><strong>Predict:</strong> "ถ้าเมื่อวานอยู่ใน regime j ด้วยความน่าจะเป็น p_j วันนี้น่าจะอยู่ใน regime ใด?" — ตอบโดยคูณ p_j กับ transition matrix Q แต่ละ row → ได้ predicted probability ก่อนเห็นข้อมูลใหม่</li>
+<li><strong>Update:</strong> "spread วันนี้มีค่า y_t — regime ไหนที่ explain ค่านี้ได้ดีที่สุด?" — ตอบโดยคูณ predicted probability × likelihood ที่ y_t จะเกิดขึ้นในแต่ละ regime แล้ว normalize ให้บวกเป็น 1</li>
+</ol>
+<p>ทำซ้ำทุก bar → ได้ P(regime | ข้อมูลถึงวันนี้) แบบ real-time โดยไม่ต้องรู้ regime จริงล่วงหน้า</p>
+</div>
 
 <div class="key-idea">
 <div class="ki-label">Hamilton Filter — สมการหลัก</div>
@@ -254,7 +263,8 @@ Q[i,j] = P(S_t=j | S_{t-1}=i)</div>
                 log_updated.append(log_likelihoods[j] + log(predicted[j]))
             else:
                 log_updated.append(-inf)   # regime นี้เป็นไปไม่ได้
-        # log-sum-exp trick: หา max ก่อน เพื่อ numerical stability
+        # log-sum-exp trick: log(Σ eˣⁱ) = max_x + log(Σ e^{xᵢ − max_x})
+        # เหตุผล: xᵢ − max_x ≤ 0 เสมอ ดังนั้น e^{xᵢ−max_x} ∈ (0,1] → ไม่ overflow
         max_log = max(log_updated)
         if max_log == -inf:
             # ทุก regime impossible → fallback uniform
