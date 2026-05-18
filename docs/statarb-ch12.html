@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.12 — Position Sizing</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 12</div>
+<h1>Position Sizing:<br>คำนวณขนาด Position อย่างถูกต้อง</h1>
+<div class="sub">Kelly criterion + half-life scaling + jump adjustment = position ที่ optimal<br>
+ตัวอย่างหลัก: Bybit BTC Perp ↔ Lighter BTC Perp</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">Kelly criterion บอก <strong>fraction ของทุนที่ควรเสี่ยง</strong> เพื่อให้ long-run geometric growth สูงสุด แต่สำหรับ stat arb ต้องปรับด้วย half-life (ความเร็ว mean reversion) และ jump risk เพื่อให้ size เหมาะกับลักษณะ pair จริงๆ</div>
+<div class="ki-eq">f* = edge / odds — Kelly criterion</div>
+</div>
+
+<!-- 12.1 -->
+<h2 id="s12-1">12.1 Kelly Criterion พื้นฐาน</h2>
+
+<p>Kelly criterion มาจาก maximization ของ E[log(wealth)] สำหรับ gamble ที่มี edge:</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตร Kelly สำหรับ Continuous Return</div>
+<div class="ki-eq">f* = μ / σ² = edge / variance</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>μ</strong> = expected return ต่อ period (edge)<br>
+<strong>σ²</strong> = variance ของ return ต่อ period<br>
+<strong>f*</strong> = fraction ของ capital ที่ควรลงทุน (0 ถึง 1)
+</div>
+</div>
+
+<p>ในรูปแบบ bet แบบ binary (win/lose) สูตรคือ f* = (p·b − q)/b = (p·b − (1−p))/b</p>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่างตัวเลข: Kelly fraction</div>
+<p>สมมติ spread มี edge = 0.6% per trade และ σ = 1.2% per trade:</p>
+<div class="fm">f* = edge / σ² = 0.006 / (0.012)²
+   = 0.006 / 0.000144
+   = 41.67
+
+→ แต่ f* > 1 หมายถึง leverage สูงมาก
+→ ในทางปฏิบัติใช้ fractional Kelly: f_actual = f* × 0.25 (quarter Kelly)
+→ f_actual = 41.67 × 0.25 ≈ 10.4× leverage
+→ ยังสูงอยู่ → ต้องปรับด้วย half-life และ jump discount ต่อไป</div>
+</div>
+
+<h3>Kelly Fraction vs Edge/Variance — Parabola Curve</h3>
+
+<svg class="d" viewBox="0 0 700 300">
+<defs>
+<marker id="arw3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<!-- Axes -->
+<line x1="60" y1="260" x2="660" y2="260" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
+<line x1="60" y1="260" x2="60" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
+<text x="665" y="263" font-size="9" fill="#6b7280">edge/σ²</text>
+<text x="55" y="28" text-anchor="end" font-size="9" fill="#6b7280">f*</text>
+
+<!-- x-axis labels -->
+<text x="60" y="275" text-anchor="middle" font-size="9" fill="#374151">0</text>
+<text x="180" y="275" text-anchor="middle" font-size="9" fill="#374151">0.25</text>
+<text x="300" y="275" text-anchor="middle" font-size="9" fill="#374151">0.50</text>
+<text x="420" y="275" text-anchor="middle" font-size="9" fill="#374151">0.75</text>
+<text x="540" y="275" text-anchor="middle" font-size="9" fill="#374151">1.00</text>
+<text x="650" y="275" text-anchor="middle" font-size="9" fill="#6b7280">→ full Kelly</text>
+
+<!-- y-axis labels -->
+<text x="55" y="263" text-anchor="end" font-size="9" fill="#374151">0</text>
+<text x="55" y="213" text-anchor="end" font-size="9" fill="#374151">0.25</text>
+<text x="55" y="163" text-anchor="end" font-size="9" fill="#374151">0.50</text>
+<text x="55" y="113" text-anchor="end" font-size="9" fill="#374151">0.75</text>
+<text x="55" y="63" text-anchor="end" font-size="9" fill="#374151">1.00</text>
+
+<!-- Full Kelly line (linear) -->
+<line x1="60" y1="260" x2="650" y2="50" stroke="#dc2626" stroke-width="2"/>
+<text x="655" y="48" font-size="9" fill="#dc2626">Full Kelly</text>
+
+<!-- Quarter Kelly line -->
+<line x1="60" y1="260" x2="650" y2="207" stroke="#2563eb" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="655" y="205" font-size="9" fill="#2563eb">Quarter Kelly</text>
+
+<!-- Half Kelly line -->
+<line x1="60" y1="260" x2="650" y2="128" stroke="#0d9488" stroke-width="2" stroke-dasharray="4,2"/>
+<text x="655" y="126" font-size="9" fill="#0d9488">Half Kelly</text>
+
+<!-- Risk zone shading -->
+<rect x="480" y="50" width="170" height="210" rx="4" fill="#fef2f2" fill-opacity="0.5"/>
+<text x="565" y="145" text-anchor="middle" font-size="9" fill="#dc2626">zone เสี่ยง</text>
+<text x="565" y="158" text-anchor="middle" font-size="9" fill="#dc2626">over-betting</text>
+
+<!-- Sweet spot annotation -->
+<circle cx="300" cy="185" r="5" fill="#16a34a"/>
+<text x="305" y="175" font-size="9" fill="#16a34a">Quarter Kelly</text>
+<text x="305" y="190" font-size="9" fill="#16a34a">edge=0.5, f*≈0.25</text>
+
+<!-- Grid lines -->
+<line x1="60" y1="213" x2="650" y2="213" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="60" y1="163" x2="650" y2="163" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="60" y1="113" x2="650" y2="113" stroke="#e5e7eb" stroke-width="0.5"/>
+<line x1="60" y1="63" x2="650" y2="63" stroke="#e5e7eb" stroke-width="0.5"/>
+</svg>
+<div class="caption">Full Kelly ให้ growth สูงสุดในทางทฤษฎี แต่ drawdown รุนแรงมาก — ในทางปฏิบัติใช้ Quarter Kelly</div>
+
+<!-- 12.2 -->
+<h2 id="s12-2">12.2 Half-life Scaling — ปรับขนาดตาม Mean Reversion Speed</h2>
+
+<p>ถ้า half-life ยาว (spread mean-revert ช้า) เราต้อง hold position นานกว่า ความเสี่ยงสะสมมากขึ้น — Kelly เดิมไม่ได้รวม factor นี้</p>
+
+<div class="key-idea">
+<div class="ki-label">Half-life Scaling Factor</div>
+<div class="ki-eq">size_adjusted = f* × min(1, target_halflife / actual_halflife)</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>target_halflife</strong> = half-life ที่เราออกแบบ strategy สำหรับ (เช่น 5 ชั่วโมง)<br>
+<strong>actual_halflife</strong> = half-life จริงที่คำนวณได้จากข้อมูล<br>
+ถ้า actual &gt; target → scale down size (position เล็กลง เพราะ mean-revert ช้า)
+</div>
+</div>
+
+<table>
+<tr><th>actual_halflife</th><th>target_halflife</th><th>scaling factor</th><th>ผลกระทบ</th></tr>
+<tr><td>3 ชั่วโมง</td><td>5 ชั่วโมง</td><td>min(1, 5/3) = 1.0</td><td>ไม่ลด (fast mean reversion — ดี)</td></tr>
+<tr><td>5 ชั่วโมง</td><td>5 ชั่วโมง</td><td>min(1, 5/5) = 1.0</td><td>ไม่ลด (ตรงเป้า)</td></tr>
+<tr><td>10 ชั่วโมง</td><td>5 ชั่วโมง</td><td>min(1, 5/10) = 0.5</td><td>ลด size เหลือ 50%</td></tr>
+<tr><td>24 ชั่วโมง</td><td>5 ชั่วโมง</td><td>min(1, 5/24) ≈ 0.21</td><td>ลด size เหลือ 21% (slow — ระวัง)</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">สังเกตสำคัญ: Half-life เปลี่ยนตามเวลา</div>
+<p>Half-life ของ Bybit↔Lighter spread อาจสั้นกว่าช่วง sideways market (1-2h) และยาวขึ้นในช่วง trending market (8-12h) — ต้องคำนวณ half-life ใหม่ทุก N ชั่วโมง ไม่ใช่ fix ไว้ตลอด</p>
+</div>
+
+<!-- 12.3 -->
+<h2 id="s12-3">12.3 Jump-adjusted Kelly</h2>
+
+<p>ในตลาด crypto มี jump risk สูง: ราคาอาจกระโดดข้ามคืนหรือช่วง liquidation cascade ค่าพยากรณ์ E[log(1+f·R)] ลดลงอย่างมากเมื่อมี jump — Kelly สูตรปกติ assume normal returns ซึ่งไม่ถูกต้อง</p>
+
+<div class="key-idea">
+<div class="ki-label">Jump-adjusted Kelly</div>
+<div class="ki-eq">f*_adjusted = f* × jump_discount</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>jump_discount</strong> = 1 − P(jump) × (expected_loss_given_jump / max_tolerable_loss)<br>
+ค่าปกติ: jump_discount ∈ [0.6, 0.9] ขึ้นอยู่กับ volatility regime<br>
+ช่วง low vol: 0.85–0.90 | ช่วง high vol (เช่น ก่อน major news): 0.60–0.70
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">ทำไม Jump ถึงทำลาย Kelly?</div>
+<p>สมมติ Kelly บอก f* = 0.5 (ลง 50% ของทุน) แต่มี 1% chance ที่ spread จะกระโดด 5σ ในพริบตา:</p>
+<div class="fm">ขาดทุน = 0.5 × capital × 5 × σ_spread
+ถ้า σ_spread = 2% และ capital = $100,000
+ขาดทุน = 0.5 × $100,000 × 5 × 0.02 = $5,000 จากเหตุการณ์ 1 ครั้ง
+
+ถ้าลด f* ด้วย jump_discount = 0.8:
+f*_adj = 0.5 × 0.8 = 0.4
+ขาดทุน = 0.4 × $100,000 × 5 × 0.02 = $4,000 (ดีขึ้น 20%)</div>
+</div>
+
+<!-- 12.4 -->
+<h2 id="s12-4">12.4 Max Drawdown Constraint</h2>
+
+<p>นอกจาก Kelly และ half-life scaling แล้ว ต้องตั้ง hard limit จาก max drawdown ที่ยอมรับได้:</p>
+
+<div class="key-idea">
+<div class="ki-label">Max Drawdown Position Limit</div>
+<div class="ki-eq">size_dd = max_loss / (entry_z × σ_spread)</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>max_loss</strong> = capital × max_dd fraction (เช่น 2% ของ capital)<br>
+<strong>entry_z</strong> = z-score ณ จุดเข้า trade<br>
+<strong>σ_spread</strong> = volatility ของ spread<br>
+ขนาด position สุดท้าย = min(kelly_size, size_dd)
+</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ตัวอย่าง: Max Drawdown เป็น Binding Constraint</div>
+<p>Kelly บอก $80,000 แต่ drawdown limit บอก $45,000 → ใช้ $45,000<br>
+สถานการณ์นี้เกิดขึ้นเมื่อ entry_z ต่ำ (เช่น z = 2.0 ต่ำกว่า z = 3.5) หรือ σ_spread สูง<br>
+Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Drawdown limit ป้องกัน ruin ในกรณีเลวร้าย</p>
+</div>
+
+<!-- 12.5 -->
+<h2 id="s12-5">12.5 Pseudo-code: compute_position_size()</h2>
+
+<div class="fm">def compute_position_size(
+    capital, edge, sigma, halflife,
+    target_halflife=5, jump_discount=0.8, max_dd=0.02
+):
+    # Step 1: Kelly fraction
+    kelly_f = edge / (sigma ** 2)
+
+    # Step 2: Half-life scaling (ลดถ้า mean reversion ช้า)
+    hl_scale = min(1.0, target_halflife / halflife)
+
+    # Step 3: Jump discount (ลดความเสี่ยง tail event)
+    jump_scale = jump_discount
+
+    # Step 4: Max drawdown constraint (hard limit)
+    dd_limit = (capital * max_dd) / (2 * sigma)
+
+    # Step 5: รวมทุก factor
+    raw_size = capital * kelly_f * hl_scale * jump_scale
+
+    # Step 6: ใช้ขนาดที่น้อยกว่า (conservative)
+    return min(raw_size, dd_limit)</div>
+
+<div class="bx bi">
+<div class="bt">หมายเหตุเกี่ยวกับ sigma ใน dd_limit</div>
+<p>ตัวหาร <code>2 * sigma</code> ใน dd_limit มาจากสมมติว่า worst case คือ spread เคลื่อนไป 2σ ในทิศตรงข้ามกับ position ถ้าต้องการ conservative มากขึ้น ใช้ 3σ หรือ 4σ ขึ้นอยู่กับ risk appetite</p>
+</div>
+
+<!-- 12.6 -->
+<h2 id="s12-6">12.6 Running Example: Bybit↔Lighter BTC Perp</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: คำนวณขนาด Position ทีละขั้น</div>
+<p>สถานการณ์: ระบบเพิ่ง transition ไป MANUAL_GO — ต้องคำนวณขนาด order ก่อนส่ง</p>
+</div>
+
+<table>
+<tr><th>Parameter</th><th>ค่า</th><th>ที่มา</th></tr>
+<tr><td>capital</td><td>$100,000</td><td>กำหนดโดย risk manager</td></tr>
+<tr><td>edge (μ)</td><td>0.8% = 0.008</td><td>historical P&amp;L per trade</td></tr>
+<tr><td>sigma (σ)</td><td>1.5% = 0.015</td><td>std ของ spread returns (30d)</td></tr>
+<tr><td>halflife</td><td>4 ชั่วโมง</td><td>OU model calibration</td></tr>
+<tr><td>target_halflife</td><td>5 ชั่วโมง</td><td>ออกแบบ strategy สำหรับ 5h</td></tr>
+<tr><td>jump_discount</td><td>0.80</td><td>low-vol regime</td></tr>
+<tr><td>max_dd</td><td>2% = 0.02</td><td>risk limit</td></tr>
+</table>
+
+<h3>การคำนวณทีละขั้น</h3>
+
+<div class="fm">Step 1: Kelly fraction
+kelly_f = edge / sigma²
+       = 0.008 / (0.015)²
+       = 0.008 / 0.000225
+       = 35.56  ← leverage สูงมาก ต้องปรับ
+
+Step 2: Half-life scaling
+hl_scale = min(1.0, 5 / 4)
+         = min(1.0, 1.25)
+         = 1.0  ← actual (4h) เร็วกว่า target (5h) → ไม่ลด
+
+Step 3: Jump discount
+jump_scale = 0.80
+
+Step 4: Max drawdown limit
+dd_limit = (100,000 × 0.02) / (2 × 0.015)
+         = 2,000 / 0.03
+         = $66,667
+
+Step 5: Raw size
+raw_size = 100,000 × 35.56 × 1.0 × 0.80
+         = $2,844,800  ← สูงกว่า dd_limit มาก!
+
+Step 6: Final size = min($2,844,800, $66,667) = $66,667</div>
+
+<div class="bx bg">
+<div class="bt">ผลลัพธ์และการตีความ</div>
+<ul>
+<li>Position size สุดท้าย: <strong>$66,667</strong> (ถูก cap โดย drawdown limit)</li>
+<li>Kelly บอก $2.8M แต่นั่นคือ theoretical optimum ภายใต้ assumptions ที่ unrealistic</li>
+<li>Drawdown limit เป็น binding constraint — ในทางปฏิบัติ max_dd มักเป็น primary constraint</li>
+<li>ทั้งสองขา: Long Lighter ≈ $66,667 | Short Bybit ≈ $66,667 × β</li>
+</ul>
+</div>
+
+<h3>Sensitivity Analysis: ผลของ Half-life ที่ต่างกัน</h3>
+
+<svg class="d" viewBox="0 0 700 260">
+<defs>
+<marker id="arw4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<!-- Axes -->
+<line x1="80" y1="220" x2="660" y2="220" stroke="#374151" stroke-width="1.5" marker-end="url(#arw4)"/>
+<line x1="80" y1="220" x2="80" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#arw4)"/>
+<text x="665" y="223" font-size="9" fill="#6b7280">halflife (h)</text>
+<text x="75" y="28" text-anchor="end" font-size="9" fill="#6b7280">size ($k)</text>
+
+<!-- x-axis: halflife 1h to 20h -->
+<text x="80" y="235" text-anchor="middle" font-size="8" fill="#374151">1</text>
+<text x="163" y="235" text-anchor="middle" font-size="8" fill="#374151">3</text>
+<text x="247" y="235" text-anchor="middle" font-size="8" fill="#374151">5</text>
+<text x="330" y="235" text-anchor="middle" font-size="8" fill="#374151">7</text>
+<text x="413" y="235" text-anchor="middle" font-size="8" fill="#374151">10</text>
+<text x="580" y="235" text-anchor="middle" font-size="8" fill="#374151">15</text>
+<text x="650" y="235" text-anchor="middle" font-size="8" fill="#374151">20h</text>
+
+<!-- y-axis: 0 to 70k -->
+<text x="75" y="223" text-anchor="end" font-size="8" fill="#374151">0</text>
+<text x="75" y="173" text-anchor="end" font-size="8" fill="#374151">20k</text>
+<text x="75" y="123" text-anchor="end" font-size="8" fill="#374151">40k</text>
+<text x="75" y="73" text-anchor="end" font-size="8" fill="#374151">60k</text>
+
+<!-- dd_limit cap line -->
+<line x1="80" y1="73" x2="660" y2="73" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="662" y="70" font-size="8" fill="#dc2626">dd_limit $66.7k</text>
+
+<!-- Size curve: flat at dd_limit for hl <= 5, then declining -->
+<polyline points="80,73 247,73 330,100 413,135 496,160 580,185 650,205" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- Annotation: target halflife -->
+<line x1="247" y1="40" x2="247" y2="220" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="247" y="37" text-anchor="middle" font-size="8" fill="#16a34a">target=5h</text>
+
+<!-- Shading: below target (full size) -->
+<rect x="80" y="73" width="167" height="147" rx="0" fill="#f0fdf4" fill-opacity="0.4"/>
+<text x="163" y="155" text-anchor="middle" font-size="8" fill="#16a34a">full size</text>
+<text x="163" y="167" text-anchor="middle" font-size="8" fill="#16a34a">(cap)</text>
+
+<!-- Shading: above target (reduced) -->
+<rect x="247" y="73" width="403" height="147" rx="0" fill="#fef2f2" fill-opacity="0.3"/>
+<text x="450" y="100" text-anchor="middle" font-size="8" fill="#dc2626">size ลดตาม halflife ยาวขึ้น</text>
+</svg>
+<div class="caption">เมื่อ halflife น้อยกว่า target (5h) → size cap ที่ dd_limit | เมื่อยาวกว่า → size ลดลงตามสัดส่วน</div>
+
+<!-- 12.7 -->
+<h2 id="s12-7">12.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 12.1 — คำนวณ Kelly Size</div>
+<p>Pair ใหม่มี edge = 1.2% per trade, σ = 2.0% per trade<br>
+capital = $50,000, halflife = 8h, target_halflife = 5h<br>
+jump_discount = 0.75, max_dd = 3%<br>
+<strong>ถาม:</strong> คำนวณ position size ทีละขั้น และระบุว่า constraint ไหนเป็น binding?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Step 1:</strong> kelly_f = 0.012 / (0.02)² = 0.012 / 0.0004 = 30.0</p>
+<p><strong>Step 2:</strong> hl_scale = min(1.0, 5/8) = min(1.0, 0.625) = 0.625</p>
+<p><strong>Step 3:</strong> jump_scale = 0.75</p>
+<p><strong>Step 4:</strong> dd_limit = (50,000 × 0.03) / (2 × 0.02) = 1,500 / 0.04 = $37,500</p>
+<p><strong>Step 5:</strong> raw_size = 50,000 × 30.0 × 0.625 × 0.75 = $703,125</p>
+<p><strong>Step 6:</strong> Final size = min($703,125, $37,500) = <strong>$37,500</strong></p>
+<p>Binding constraint: <strong>Max drawdown limit ($37,500)</strong> — Kelly raw size สูงกว่า 18 เท่า</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 12.2 — เปรียบเทียบ Two Pairs</div>
+<p>เปรียบเทียบสอง pair ด้วย capital = $200,000 เดียวกัน:</p>
+<ul>
+<li>Pair A: edge=0.5%, σ=0.8%, halflife=3h, jump_discount=0.9, max_dd=2%</li>
+<li>Pair B: edge=1.5%, σ=3.0%, halflife=12h, jump_discount=0.65, max_dd=2%</li>
+</ul>
+<p><strong>ถาม:</strong> คำนวณ final size ของแต่ละ pair และอธิบายว่า pair ไหน "ดีกว่า" ในแง่ risk-adjusted</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Pair A:</strong></p>
+<p>kelly_f = 0.005 / (0.008)² = 78.1 | hl_scale = min(1, 5/3) = 1.0 | dd_limit = (200k×0.02)/(2×0.008) = $250,000</p>
+<p>raw_size = 200k × 78.1 × 1.0 × 0.9 = $14,058,000 → final = min($14M, $250k) = <strong>$250,000</strong></p>
+<p><strong>Pair B:</strong></p>
+<p>kelly_f = 0.015 / (0.03)² = 16.7 | hl_scale = min(1, 5/12) = 0.417 | dd_limit = (200k×0.02)/(2×0.03) = $66,667</p>
+<p>raw_size = 200k × 16.7 × 0.417 × 0.65 = $905,000 → final = min($905k, $66.7k) = <strong>$66,667</strong></p>
+<p><strong>Pair A ดีกว่า:</strong> ทั้ง edge/σ ratio (Sharpe-like) สูงกว่า และ max size ที่ dd_limit อนุญาตสูงกว่า Pair B มาก เนื่องจาก σ ต่ำกว่า</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 12.3 — Dynamic Sizing เมื่อ Regime เปลี่ยน</div>
+<p>ระหว่าง hold position อยู่ ระบบตรวจพบ volatility regime เปลี่ยนจาก low-vol เป็น high-vol:<br>
+jump_discount ลดจาก 0.85 เป็น 0.60 และ σ_spread เพิ่มจาก 1.5% เป็น 2.5%<br>
+Current position size = $80,000, capital = $100,000, max_dd = 2%<br>
+<strong>ถาม:</strong> ควรทำอะไรกับ position ที่ถืออยู่?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>คำนวณ new dd_limit:</strong></p>
+<p>new_dd_limit = (100,000 × 0.02) / (2 × 0.025) = 2,000 / 0.05 = $40,000</p>
+<p>Current position ($80,000) &gt; new_dd_limit ($40,000) → ต้อง reduce size</p>
+<p><strong>Action: ลด position จาก $80,000 ไปที่ $40,000 (ลดครึ่งหนึ่ง)</strong></p>
+<p>ทำได้โดย: ปิดครึ่งหนึ่งของแต่ละขา (ปิด $40,000 ของ short Bybit และ $40,000 ของ long Lighter)</p>
+<p>หมายเหตุ: ในทางปฏิบัติควรมี "position reduction" state ใน state machine เพื่อ handle กรณีนี้ ไม่ใช่ปิดทั้งหมดทันที</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.12 Position Sizing | ต่อไป → <strong>Ch.13: Perpetual Basis Strategy</strong>
+</p>
+</body>
+</html>

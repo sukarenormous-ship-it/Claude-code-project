@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.19 — Cost Analysis &amp; Edge</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 19</div>
+<h1>Cost Analysis &amp; Edge: คำนวณ Net Edge ก่อนเทรด</h1>
+<div class="sub">Gross spread − fee − bid/ask − slippage − funding − legging buffer = Net edge<br>
+ถ้า net edge ≤ 0 → ไม่เทรด ไม่ว่า signal จะดูดีแค่ไหน</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">Stat arb มีต้นทุนซ่อนอยู่หลายชั้น — signal ที่ดูมี edge 0.20% อาจมี net edge ลบหลัง cost หักออกทั้งหมด <strong>คำนวณก่อนเสมอ — ห้าม assume</strong></div>
+<div class="ki-eq">Net Edge = Gross − Σ(fees + spread + slippage + funding + legging)</div>
+</div>
+
+<h2 id="s19-1">19.1 Edge Waterfall Diagram</h2>
+
+<svg class="d" viewBox="0 0 680 280" style="max-height:280px">
+  <rect width="680" height="280" fill="#f9fafb" rx="8"/>
+  <text x="340" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Cost Waterfall: Gross → Net Edge</text>
+  <!-- Gross spread bar -->
+  <rect x="50" y="40" width="80" height="160" fill="#0d9488" opacity="0.85"/>
+  <text x="90" y="35" text-anchor="middle" font-size="10" fill="#0d9488" font-weight="bold">Gross</text>
+  <text x="90" y="215" text-anchor="middle" font-size="10" fill="#374151">0.20%</text>
+  <!-- Fee bar (negative) -->
+  <rect x="155" y="150" width="80" height="50" fill="#dc2626" opacity="0.75"/>
+  <text x="195" y="145" text-anchor="middle" font-size="10" fill="#dc2626">Taker Fee</text>
+  <text x="195" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.05%</text>
+  <!-- Bid-ask -->
+  <rect x="255" y="165" width="80" height="35" fill="#dc2626" opacity="0.65"/>
+  <text x="295" y="160" text-anchor="middle" font-size="10" fill="#dc2626">Bid-Ask</text>
+  <text x="295" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.03%</text>
+  <!-- Slippage -->
+  <rect x="355" y="175" width="80" height="25" fill="#dc2626" opacity="0.55"/>
+  <text x="395" y="170" text-anchor="middle" font-size="10" fill="#dc2626">Slippage</text>
+  <text x="395" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.02%</text>
+  <!-- Funding -->
+  <rect x="455" y="183" width="80" height="17" fill="#dc2626" opacity="0.45"/>
+  <text x="495" y="178" text-anchor="middle" font-size="10" fill="#dc2626">Funding</text>
+  <text x="495" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.01%</text>
+  <!-- Net Edge bar -->
+  <rect x="565" y="40" width="80" height="120" fill="#16a34a" opacity="0.85"/>
+  <text x="605" y="35" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="bold">Net Edge</text>
+  <text x="605" y="215" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="bold">+0.09%</text>
+  <!-- zero line -->
+  <line x1="40" y1="200" x2="660" y2="200" stroke="#374151" stroke-width="1"/>
+  <text x="35" y="203" text-anchor="end" font-size="9" fill="#374151">0</text>
+</svg>
+<p class="caption">Waterfall chart: แต่ละ cost component ลดลงจาก gross spread ของ 0.20% — เหลือ net edge เพียง 0.09%</p>
+
+<h2 id="s19-2">19.2 Fee Structure</h2>
+
+<table>
+<thead>
+<tr><th>Exchange</th><th>Maker Fee</th><th>Taker Fee</th><th>หมายเหตุ</th></tr>
+</thead>
+<tbody>
+<tr><td>Bybit Perp</td><td>−0.025% (rebate)</td><td>+0.055%</td><td>VIP levels ลด taker ได้</td></tr>
+<tr><td>Lighter Perp</td><td>−0.010%</td><td>+0.030%</td><td>clob-based, faster fills</td></tr>
+<tr><td>Round trip cost (2 takers)</td><td colspan="2"></td><td>(0.055+0.030)×2 = 0.17%</td></tr>
+<tr><td>Round trip cost (2 makers)</td><td colspan="2"></td><td>rebate: −0.07% (receive)</td></tr>
+</tbody>
+</table>
+
+<div class="bx bg">
+<div class="bt">Maker vs Taker Strategy</div>
+<p>ถ้า latency ไม่ critical → ใช้ limit order (maker) ทั้งคู่ — ลด cost จาก −0.17% เป็น −0.03% ต่อ round trip แต่ risk partial fill และ leg mismatch เพิ่มขึ้น</p>
+</div>
+
+<h2 id="s19-3">19.3 Bid-Ask Spread Cost</h2>
+
+<div class="fm">Cost per leg = (Ask − Bid) / 2  =  half-spread
+
+สำหรับ 2 legs round trip:
+  Total bid-ask cost = half-spread_A + half-spread_B
+
+ตัวอย่าง Bybit BTC:
+  Bid = 65,000, Ask = 65,002
+  Half-spread = $1 = 1/65,000 = 0.0015%
+
+Lighter BTC:
+  Bid = 64,998, Ask = 65,001
+  Half-spread = $1.50 = 0.0023%
+
+Total: 0.0015% + 0.0023% = 0.0038% ต่อ direction
+Round trip (entry + exit): 0.0076% ≈ 0.008%</div>
+
+<h2 id="s19-4">19.4 Slippage Model</h2>
+
+<p>Market impact (slippage) เพิ่มขึ้นตาม size ที่เทียบกับ average daily volume:</p>
+
+<div class="fm">Slippage ≈ σ_daily × sqrt(size / ADV)
+
+โดย:
+  σ_daily = daily volatility ของ asset
+  size    = ขนาด order (notional)
+  ADV     = average daily volume (notional)
+
+ตัวอย่าง:
+  σ_daily = 0.02 (2%)
+  size    = $100,000
+  ADV     = $500,000,000 (Bybit BTC perp ~$500M/day)
+
+  Slippage = 0.02 × sqrt(100,000/500,000,000)
+           = 0.02 × 0.014 = 0.00028 = 0.028%</div>
+
+<h2 id="s19-5">19.5 Funding Cost</h2>
+
+<div class="fm">Funding cost ต่อ 8h = |funding_rate| × notional
+Total funding cost = funding_rate × hold_periods × notional
+
+ตัวอย่าง:
+  Funding rate = 0.01% ต่อ 8h (positive → longs จ่าย)
+  Hold time = 2 funding periods = 16h
+  Notional = $100,000
+
+  Cost (ถ้า short perp) = +0.01% × 2 × $100,000 = +$20 (รับ)
+  Cost (ถ้า long perp)  = −0.01% × 2 × $100,000 = −$20 (จ่าย)</div>
+
+<div class="bx ba">
+<div class="bt">Funding Direction ขึ้นกับ Position</div>
+<p>ถ้า basis > 0 และ short perp → รับ funding (ลด cost)<br>
+ถ้า basis > 0 และ long perp → จ่าย funding (เพิ่ม cost)<br>
+ต้องคำนวณรวมในทุก scenario ก่อน decide trade direction</p>
+</div>
+
+<h2 id="s19-6">19.6 Legging Buffer</h2>
+
+<div class="fm">Legging risk = ความเสี่ยงจากช่วงเวลาระหว่าง fill leg A และ fill leg B
+
+ในช่วงนั้น position เป็น single-leg → exposed ต่อ market movement
+
+Legging buffer estimate:
+  buffer = σ_spread × sqrt(avg_fill_latency_s / seconds_per_period)
+
+ตัวอย่าง:
+  σ_spread = 0.05% per period
+  avg_fill_latency = 0.5 วินาที
+  seconds_per_period = 60 วินาที (1 นาที)
+
+  buffer = 0.05% × sqrt(0.5/60) = 0.05% × 0.091 = 0.0045%</div>
+
+<h2 id="s19-7">19.7 Break-even Analysis</h2>
+
+<div class="fm">Minimum σ_stat เพื่อให้ trade คุ้มค่า:
+
+  Break-even σ = total_cost / (z_entry − z_exit)
+
+ตัวอย่าง:
+  total_cost = 0.11%
+  z_entry = 2.0, z_exit = 0.5
+  σ_stat = z × σ_spread → spread ที่ entry = 2.0 × σ_spread
+
+  Break-even: 0.11% / (2.0 − 0.5) = 0.073%
+
+  → ต้องการ σ_spread ≥ 0.073% เพื่อให้ entry at z=2.0 cover cost
+  → ถ้า σ_spread = 0.05% → entry spread = 0.10%, net edge = −0.01% (ไม่ trade!)</div>
+
+<h2 id="s19-8">19.8 Pseudo-code compute_edge()</h2>
+
+<div class="fm">def compute_edge(spread_at_entry_pct, sigma_spread_pct,
+                 entry_z, exit_z,
+                 fee_a=0.00055, fee_b=0.00030,
+                 half_spread_a=0.00002, half_spread_b=0.00003,
+                 size=100_000, adv=500_000_000, sigma_daily=0.02,
+                 funding_per_8h=0.0001, hold_periods=1,
+                 avg_fill_latency_s=0.5, seconds_per_period=60):
+
+    gross = spread_at_entry_pct / 100.0   # convert to decimal
+
+    # Fee cost (round trip, taker both sides)
+    fee_cost = (fee_a + fee_b) * 2
+
+    # Bid-ask cost (round trip)
+    ba_cost = (half_spread_a + half_spread_b) * 2
+
+    # Slippage cost
+    slip_cost = sigma_daily * sqrt(size / adv) * 2  # entry + exit
+
+    # Funding cost (sign depends on direction, here assume cost)
+    fund_cost = funding_per_8h * hold_periods
+
+    # Legging buffer
+    leg_buffer = (sigma_spread_pct/100) * sqrt(avg_fill_latency_s/seconds_per_period)
+
+    total_cost = fee_cost + ba_cost + slip_cost + fund_cost + leg_buffer
+    net_edge = gross - total_cost
+
+    breakeven_sigma = total_cost / (entry_z - exit_z) * 100  # as percent
+
+    return {
+        "gross_pct": gross * 100,
+        "total_cost_pct": total_cost * 100,
+        "net_edge_pct": net_edge * 100,
+        "breakeven_sigma_pct": breakeven_sigma,
+        "viable": net_edge > 0
+    }</div>
+
+<h2 id="s19-9">19.9 Running Example — Bybit↔Lighter Cost Breakdown</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC Spread Trade Cost Analysis</div>
+
+<table>
+<thead>
+<tr><th>Component</th><th>Calculation</th><th>Cost (bps)</th></tr>
+</thead>
+<tbody>
+<tr><td>Gross spread at entry (z=2.0, σ=7.5bps)</td><td>2.0 × 7.5bps</td><td>+15.0 bps</td></tr>
+<tr><td>Taker fee Bybit (0.055% × 2)</td><td>round trip</td><td>−1.1 bps</td></tr>
+<tr><td>Taker fee Lighter (0.030% × 2)</td><td>round trip</td><td>−0.6 bps</td></tr>
+<tr><td>Bid-ask spread (both venues)</td><td>2 × half-spread</td><td>−0.8 bps</td></tr>
+<tr><td>Slippage ($100k on $500M ADV)</td><td>σ×sqrt(size/ADV)</td><td>−0.3 bps</td></tr>
+<tr><td>Funding (1 period, 0.01%/8h)</td><td>hold 8h</td><td>−1.0 bps</td></tr>
+<tr><td>Legging buffer (0.5s latency)</td><td>σ×sqrt(0.5/60)</td><td>−0.5 bps</td></tr>
+<tr><td><strong>Net Edge</strong></td><td></td><td><strong>+10.7 bps (0.107%)</strong></td></tr>
+</tbody>
+</table>
+
+<p><strong>สรุป:</strong> Gross 15bps แต่ net เพียง 10.7bps — cost กินไป 29% ของ gross edge</p>
+<p><strong>Break-even σ:</strong> total cost 4.3bps / (2.0 − 0.5) = 2.9bps → ต้องการ σ_spread ≥ 2.9bps เพื่อ trade คุ้มค่า (σ จริง = 7.5bps ✅)</p>
+</div>
+
+<h2 id="s19-10">19.10 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัดบทที่ 19</div>
+
+<details>
+<summary>ข้อ 1: ถ้า σ_spread = 3bps และ total cost = 4bps — ควรเทรดที่ z=2.0 ไหม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ไม่ควร — gross spread ที่ z=2.0 = 2.0 × 3bps = 6bps แต่ total cost = 4bps → net edge = 2bps</p>
+<p>แม้ net edge เป็นบวก แต่ risk-adjusted มันเล็กมาก margin of safety ต่ำ<br>
+ควรรอให้ z ถึง 2.5+ (gross = 7.5bps, net = 3.5bps) หรือหา venue ที่มี cost ต่ำกว่า</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: วิธีลด fee cost จาก 1.7bps เป็น 0.5bps — ทำได้อย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ใช้ limit order (maker) แทน market order (taker)</p>
+<ul>
+<li>Maker fee Bybit: −0.025% (rebate) แทน +0.055%</li>
+<li>Maker fee Lighter: −0.010% แทน +0.030%</li>
+<li>Net saving: ประหยัดได้ ~1.7bps ต่อ leg</li>
+</ul>
+<p>Trade-off: limit order อาจไม่ถูก fill ถ้า spread เคลื่อนที่ออกไปก่อน → ต้องออกแบบ order management ให้ดี</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: ถ้าต้องการ minimum net edge 5bps — คำนวณ minimum z_entry ที่ต้องใช้</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ใช้สูตร: gross_needed = net_edge + total_cost</p>
+<p>ตัวอย่าง: total_cost = 4.3bps, net_edge_min = 5bps<br>
+gross_needed = 9.3bps<br>
+z_entry_min = gross_needed / σ_spread = 9.3 / 7.5 = <strong>1.24</strong></p>
+<p>แต่ถ้า σ_spread = 3bps: z_min = 9.3 / 3 = <strong>3.1</strong> — ต้องรอสัญญาณแรงมากกว่าปกติ</p>
+</div>
+</details>
+</div>
+
+</body>
+</html>

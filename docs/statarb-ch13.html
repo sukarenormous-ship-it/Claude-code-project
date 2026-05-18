@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.13 — Perpetual Basis Strategy</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 13</div>
+<h1>Perpetual Basis Strategy:<br>Trade ความผิดปกติของ Funding</h1>
+<div class="sub">Basis = perp − spot index — เบี่ยงเกิน fair value เมื่อไหร่ให้เทรด<br>
+ตัวอย่างหลัก: Bybit BTC Perp ↔ Spot Index</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">ราคา perpetual futures ควรอยู่ใกล้ spot index เพราะมีกลไก funding rate ดึงให้กลับ แต่ในช่วงที่ sentiment รุนแรง basis เบี่ยงเกิน fair value ชั่วคราว — นี่คือโอกาส trade ที่มีขอบเขตชัดเจน</div>
+<div class="ki-eq">Basis_fair ≈ (r − q) × T/365 | entry เมื่อ |Basis_actual − Basis_fair| &gt; k × σ_basis</div>
+</div>
+
+<!-- 13.1 -->
+<h2 id="s13-1">13.1 กลไก Funding Rate</h2>
+
+<p>Perpetual futures ไม่มี expiry — กลไกที่ทำให้ราคาใกล้ spot คือ <strong>funding rate</strong> ที่จ่ายระหว่าง long และ short ทุกรอบ:</p>
+
+<div class="bx bb">
+<div class="bt">กลไก Funding Rate ทำงานอย่างไร</div>
+<ul>
+<li>ทุก 8 ชั่วโมง (Bybit) หรือทุก 1 ชั่วโมง (Lighter) คำนวณ funding rate จาก basis และ interest rate</li>
+<li>ถ้า perp &gt; spot (basis &gt; 0): <strong>longs จ่าย shorts</strong> — ดึงให้ longs ปิด position → ราคา perp ลง</li>
+<li>ถ้า perp &lt; spot (basis &lt; 0): <strong>shorts จ่าย longs</strong> — ดึงให้ shorts ปิด position → ราคา perp ขึ้น</li>
+<li>Funding amount = position_size × funding_rate × (interval / 8h)</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: Bybit BTC Funding</div>
+<p>Funding rate = +0.05% (longs จ่าย shorts) ทุก 8 ชั่วโมง = +0.15%/วัน = +4.5%/เดือน<br>
+Long BTC perp $100,000 → จ่าย $50 ทุก 8 ชั่วโมง ≈ $150/วัน<br>
+นี่คือ "cost of carry" สำหรับ long perp ในช่วง bullish market</p>
+</div>
+
+<p>สูตร funding rate มาตรฐาน (Bybit-style):</p>
+
+<div class="fm">funding_rate = clamp(
+    premium_index + clamp(interest_rate - premium_index, -0.05%, +0.05%),
+    -0.75%, +0.75%
+)
+
+premium_index = (P_perp - P_spot_index) / P_spot_index  ← basis เป็น %
+interest_rate = 0.01% (Bybit กำหนด fixed = 0.01% ต่อรอบ 8h)</div>
+
+<!-- 13.2 -->
+<h2 id="s13-2">13.2 Basis = Perp − Spot: นิยามและ Fair Value</h2>
+
+<p>ในทางปฏิบัติ basis วัดเป็น absolute price หรือ percentage:</p>
+
+<div class="key-idea">
+<div class="ki-label">นิยาม Basis</div>
+<div class="ki-eq">Basis_t = P_perp_t − P_spot_index_t</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>P_perp</strong> = mark price ของ perpetual futures<br>
+<strong>P_spot_index</strong> = weighted average ของราคา spot จาก multiple exchanges<br>
+<strong>Basis_fair</strong> = ค่าที่ basis "ควร" เป็น ตาม cost of carry model
+</div>
+</div>
+
+<p>Fair value basis มาจาก cost of carry model:</p>
+
+<div class="fm">Basis_fair = P_spot × (r - q) × T / 365
+
+r = risk-free rate (USD money market rate)
+q = dividend/yield ของ BTC (≈ 0 สำหรับ BTC)
+T = time to next funding (ใน fraction ของปี)
+
+ตัวอย่าง: P_spot = $65,000, r = 5.5%, T = 4/8760 (4 ชั่วโมง)
+Basis_fair = 65,000 × 0.055 × (4/8760)
+           = 65,000 × 0.055 × 0.000457
+           ≈ $1.63</div>
+
+<p>Fair value basis มักใกล้ศูนย์มากสำหรับ BTC perp เพราะ T ต่ำมาก (ไม่กี่ชั่วโมง) — basis เบี่ยงเกินจากการ sentiment หรือ imbalance ของ demand</p>
+
+<!-- 13.3 -->
+<h2 id="s13-3">13.3 SVG Diagram: Basis Timeline และ Funding Rate</h2>
+
+<svg class="d" viewBox="0 0 760 380">
+<defs>
+<marker id="arw5" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+
+<!-- Panel 1: Basis -->
+<rect x="10" y="10" width="740" height="185" rx="8" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+<text x="380" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#0d9488">Panel 1: Basis = P_perp − P_spot_index (USD)</text>
+
+<!-- Basis axes -->
+<line x1="60" y1="160" x2="730" y2="160" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw5)"/>
+<line x1="60" y1="180" x2="60" y2="40" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw5)"/>
+<text x="735" y="163" font-size="8" fill="#6b7280">เวลา (8h interval)</text>
+<text x="55" y="38" text-anchor="end" font-size="8" fill="#6b7280">$</text>
+
+<!-- Basis zero line -->
+<text x="55" y="163" text-anchor="end" font-size="8" fill="#374151">0</text>
+<!-- +threshold line -->
+<line x1="60" y1="100" x2="730" y2="100" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="56" y="103" text-anchor="end" font-size="8" fill="#dc2626">+k·σ</text>
+
+<!-- Fair value basis (near zero dashed green) -->
+<line x1="60" y1="157" x2="730" y2="157" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="732" y="155" font-size="7" fill="#16a34a">fair</text>
+
+<!-- Basis path -->
+<polyline points="60,158 115,150 170,140 225,118 280,95 335,88 390,100 445,120 500,140 555,155 610,160 665,150 720,142" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- Entry annotation (basis > +k*sigma) -->
+<circle cx="280" cy="95" r="5" fill="#dc2626"/>
+<text x="283" y="85" font-size="8" font-weight="700" fill="#dc2626">ENTRY: Short perp</text>
+<text x="283" y="97" font-size="8" fill="#dc2626">Long spot</text>
+
+<!-- Funding times marks on basis panel -->
+<line x1="115" y1="160" x2="115" y2="170" stroke="#374151" stroke-width="1"/>
+<text x="115" y="180" text-anchor="middle" font-size="7" fill="#374151">T1</text>
+<line x1="225" y1="160" x2="225" y2="170" stroke="#374151" stroke-width="1"/>
+<text x="225" y="180" text-anchor="middle" font-size="7" fill="#374151">T2</text>
+<line x1="335" y1="160" x2="335" y2="170" stroke="#374151" stroke-width="1"/>
+<text x="335" y="180" text-anchor="middle" font-size="7" fill="#374151">T3</text>
+<line x1="445" y1="160" x2="445" y2="170" stroke="#374151" stroke-width="1"/>
+<text x="445" y="180" text-anchor="middle" font-size="7" fill="#374151">T4</text>
+
+<!-- Panel 2: Funding Rate Bar Chart -->
+<rect x="10" y="205" width="740" height="165" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="380" y="225" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Panel 2: Funding Rate ทุก 8h (%) — longs จ่าย shorts เมื่อ basis &gt; 0</text>
+
+<!-- Funding rate axes -->
+<line x1="60" y1="355" x2="730" y2="355" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw5)"/>
+<line x1="60" y1="360" x2="60" y2="235" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw5)"/>
+<text x="55" y="340" text-anchor="end" font-size="8" fill="#374151">0</text>
+<text x="55" y="292" text-anchor="end" font-size="8" fill="#374151">+0.05%</text>
+<text x="55" y="244" text-anchor="end" font-size="8" fill="#374151">+0.10%</text>
+
+<!-- Zero funding line -->
+<line x1="60" y1="338" x2="730" y2="338" stroke="#e5e7eb" stroke-width="1"/>
+
+<!-- Funding rate bars -->
+<rect x="85" y="320" width="55" height="18" rx="2" fill="#fca5a5"/>
+<rect x="195" y="308" width="55" height="30" rx="2" fill="#f87171"/>
+<rect x="305" y="295" width="55" height="43" rx="2" fill="#dc2626"/>
+<rect x="415" y="310" width="55" height="28" rx="2" fill="#f87171"/>
+<rect x="525" y="320" width="55" height="18" rx="2" fill="#fca5a5"/>
+<rect x="635" y="326" width="55" height="12" rx="2" fill="#fecaca"/>
+
+<!-- Funding rate bar labels -->
+<text x="112" y="317" text-anchor="middle" font-size="7" fill="#991b1b">0.02%</text>
+<text x="222" y="305" text-anchor="middle" font-size="7" fill="#991b1b">0.04%</text>
+<text x="332" y="292" text-anchor="middle" font-size="7" fill="#fff">0.06%</text>
+<text x="442" y="307" text-anchor="middle" font-size="7" fill="#991b1b">0.04%</text>
+<text x="552" y="317" text-anchor="middle" font-size="7" fill="#991b1b">0.02%</text>
+<text x="662" y="323" text-anchor="middle" font-size="7" fill="#991b1b">0.01%</text>
+
+<!-- Funding time marks panel 2 -->
+<text x="115" y="370" text-anchor="middle" font-size="7" fill="#374151">T1</text>
+<text x="225" y="370" text-anchor="middle" font-size="7" fill="#374151">T2</text>
+<text x="335" y="370" text-anchor="middle" font-size="7" fill="#374151">T3</text>
+<text x="445" y="370" text-anchor="middle" font-size="7" fill="#374151">T4</text>
+<text x="555" y="370" text-anchor="middle" font-size="7" fill="#374151">T5</text>
+</svg>
+<div class="caption">Panel บน: basis สูงขึ้นจนเกิน threshold → Entry signal | Panel ล่าง: funding rate สูงสุดที่ T3 ตรงกับ basis สูงสุด</div>
+
+<!-- 13.4 -->
+<h2 id="s13-4">13.4 Entry/Exit Rules</h2>
+
+<p>กฎการเข้าและออก basis trade แบ่งตาม direction ของ basis deviation:</p>
+
+<table>
+<tr><th>เงื่อนไข</th><th>Direction</th><th>Action</th><th>เหตุผล</th></tr>
+<tr><td>basis &gt; fair + k×σ_basis</td><td>Basis บวกสูงเกิน</td><td>Short perp + Long spot</td><td>Perp แพงเกินไป รอ basis กลับลง</td></tr>
+<tr><td>basis &lt; fair − k×σ_basis</td><td>Basis ลบต่ำเกิน</td><td>Long perp + Short spot</td><td>Perp ถูกเกินไป รอ basis กลับขึ้น</td></tr>
+<tr><td>basis → fair value</td><td>กลับปกติ</td><td>ปิดทั้งสองขา</td><td>Mean reversion สำเร็จ take profit</td></tr>
+<tr><td>funding payment ≥ target yield</td><td>ได้ yield แล้ว</td><td>ปิดทั้งสองขา</td><td>เก็บ funding เพียงพอแล้ว</td></tr>
+<tr><td>|basis| &gt; 3×σ_basis (blow-up)</td><td>เกิน stop-loss</td><td>ปิด emergency</td><td>Basis ไม่กลับ — regime เปลี่ยน</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">สองแหล่ง P&amp;L ของ Basis Trade</div>
+<ol>
+<li><strong>Basis convergence:</strong> กำไรเมื่อ basis กลับมา fair value (capital gain จาก spread)</li>
+<li><strong>Funding income:</strong> ถ้า short perp ในช่วง basis &gt; 0 → รับ funding payment ทุก 8h ขณะ hold position</li>
+</ol>
+<p>Trade ที่ดีจะมีทั้งสองแหล่ง — basis กลับ + funding เข้ากระเป๋าระหว่างรอ</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยงของ Basis Trade</div>
+<ul>
+<li><strong>Basis blow-up:</strong> ในช่วง mania (เช่น bull run รุนแรง) basis อาจขยายไปเรื่อยๆ ก่อนกลับ</li>
+<li><strong>Spot execution risk:</strong> การ short spot อาจมีปัญหา borrow cost หรือ availability</li>
+<li><strong>Funding flip:</strong> funding rate อาจกลับทิศ ทำให้ long perp ต้องจ่ายแทน</li>
+<li><strong>Index divergence:</strong> spot_index อาจ diverge จาก exchange ที่ใช้ hedge จริง</li>
+</ul>
+</div>
+
+<!-- 13.5 -->
+<h2 id="s13-5">13.5 Cost Breakdown Table</h2>
+
+<p>ก่อน trade ต้องรู้ต้นทุนทุกประเภท เพื่อคำนวณ net edge:</p>
+
+<table>
+<tr><th>ประเภทต้นทุน</th><th>ค่าปกติ (Bybit BTC)</th><th>ผลต่อ P&amp;L</th><th>หมายเหตุ</th></tr>
+<tr><td>Taker fee (entry)</td><td>0.055% per leg</td><td>−0.11% รวมสองขา</td><td>ใช้ limit order ลดเหลือ −0.01% (maker)</td></tr>
+<tr><td>Taker fee (exit)</td><td>0.055% per leg</td><td>−0.11% รวมสองขา</td><td>รวม round-trip: −0.22%</td></tr>
+<tr><td>Bid-ask spread</td><td>~$1–5 (BTC perp)</td><td>≈ −0.002–0.008%</td><td>ขึ้นกับ liquidity ณ เวลานั้น</td></tr>
+<tr><td>Slippage</td><td>0.01–0.05%</td><td>−0.01 ถึง −0.05%</td><td>ขึ้นกับขนาด order vs market depth</td></tr>
+<tr><td>Funding cost (long)</td><td>±0.01–0.10% ทุก 8h</td><td>+ หรือ − ขึ้นกับทิศ</td><td>กำไรถ้า short perp ในช่วง basis+</td></tr>
+<tr><td>Spot borrow (short spot)</td><td>0.01–0.05%/วัน</td><td>−ต่อวันที่ถือ</td><td>ถ้า hedge ด้วย spot short margin</td></tr>
+<tr><td><strong>รวม round-trip</strong></td><td colspan="3"><strong>≈ −0.25 ถึง −0.40% ต่อ trade (ไม่รวม funding income)</strong></td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Breakeven Analysis: Basis ต้องกว้างแค่ไหนถึงคุ้ม?</div>
+<p>ถ้า total cost ≈ 0.35% per round-trip → basis ต้อง deviate จาก fair value อย่างน้อย 0.35% จึงจะ breakeven<br>
+ถ้า σ_basis = 0.15% → entry threshold k = 0.35/0.15 ≈ 2.3σ<br>
+ในทางปฏิบัติใช้ k ≥ 2.5σ เพื่อ buffer สำหรับ slippage และ execution uncertainty</p>
+</div>
+
+<!-- 13.6 -->
+<h2 id="s13-6">13.6 Pseudo-code: perp_basis_signal()</h2>
+
+<div class="fm">def perp_basis_signal(perp_price, spot_index, rate, time_to_funding,
+                      hist_sigma, k=2.0):
+    # คำนวณ basis จริง
+    basis = perp_price - spot_index
+
+    # คำนวณ fair value basis จาก cost of carry
+    fair_basis = spot_index * rate * (time_to_funding / (8 * 3600))
+
+    # คำนวณ z-score ของ basis deviation
+    zscore = (basis - fair_basis) / hist_sigma
+
+    # Signal logic
+    if zscore > k:
+        return "SHORT_PERP_LONG_SPOT", zscore   # basis สูงเกิน
+    elif zscore &lt; -k:
+        return "LONG_PERP_SHORT_SPOT", zscore   # basis ต่ำเกิน
+    return "NO_SIGNAL", zscore</div>
+
+<div class="bx bi">
+<div class="bt">การคำนวณ hist_sigma ของ Basis</div>
+<p><code>hist_sigma</code> ควรคำนวณจาก rolling std ของ (basis − fair_basis) ในช่วง 7–30 วัน<br>
+ไม่ควรใช้ σ คงที่ เพราะ basis volatility เปลี่ยนตาม market regime<br>
+ในช่วง sideways: σ ต่ำ → threshold ต่ำ → เข้าง่ายขึ้น<br>
+ในช่วง trending: σ สูง → threshold สูง → เข้ายากขึ้น (ป้องกัน false signal)</p>
+</div>
+
+<h3>การเพิ่ม Funding Yield Forecast ใน Signal</h3>
+
+<div class="fm">def basis_trade_expected_pnl(basis_entry, fair_basis, hist_sigma,
+                              funding_rate, hold_hours, position_size,
+                              spot_price):
+    # P&L จาก basis convergence (mean reversion)
+    basis_move = basis_entry - fair_basis  # คาดว่า basis จะกลับมา fair
+    basis_pnl = basis_move * position_size / spot_price
+
+    # P&L จาก funding (short perp receives funding)
+    n_payments = hold_hours / 8  # จำนวนรอบ funding (ทุก 8h)
+    funding_pnl = funding_rate * position_size * n_payments
+
+    # ต้นทุน round-trip (fee + slippage)
+    total_cost = position_size * 0.0035  # ≈ 0.35%
+
+    return basis_pnl + funding_pnl - total_cost</div>
+
+<!-- 13.7 -->
+<h2 id="s13-7">13.7 Running Example: Bybit BTC Perp Basis Trade</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit BTC Perp Basis Trade — ตัวเลขทีละขั้น</div>
+<p>สถานการณ์: วันที่ BTC ราคา pump แรง longs เปิดมาก basis บวกสูงผิดปกติ</p>
+</div>
+
+<table>
+<tr><th>ข้อมูล Input</th><th>ค่า</th><th>ที่มา</th></tr>
+<tr><td>P_perp (Bybit mark price)</td><td>$67,450</td><td>Bybit API</td></tr>
+<tr><td>P_spot_index</td><td>$67,100</td><td>Bybit spot index (avg หลาย exchanges)</td></tr>
+<tr><td>Basis_actual</td><td>$350 (+0.521%)</td><td>67,450 − 67,100</td></tr>
+<tr><td>rate (USD annual)</td><td>5.5%</td><td>SOFR / money market rate</td></tr>
+<tr><td>time_to_funding</td><td>3.5 ชั่วโมง (12,600 วินาที)</td><td>เวลาถึง funding ถัดไป</td></tr>
+<tr><td>Basis_fair</td><td>67,100 × 0.055 × (3.5/8760) ≈ $1.47</td><td>cost of carry model</td></tr>
+<tr><td>hist_sigma (30d rolling)</td><td>$85 (0.127%)</td><td>std ของ (basis − fair_basis)</td></tr>
+<tr><td>z-score</td><td>(350 − 1.47) / 85 ≈ <strong>+4.1σ</strong></td><td>ENTRY SIGNAL!</td></tr>
+<tr><td>funding_rate (current)</td><td>+0.065%</td><td>Bybit funding history</td></tr>
+</table>
+
+<h3>Execution Plan และ P&amp;L</h3>
+
+<div class="fm">Entry (z = +4.1σ, basis = +$350):
+  Short Bybit BTC perp : $100,000 notional at $67,450
+  Long spot BTC (หรือ spot index hedge): $100,000 at $67,100
+
+Hold 16 ชั่วโมง (2 รอบ funding):
+
+Funding received (short perp, longs pay us):
+  = 0.065% × $100,000 × 2 รอบ = $130
+
+Exit (basis กลับ fair: basis ≈ $20):
+  ปิด Short perp ที่ $67,120 → กำไร perp = $67,450 − $67,120 = $330 per BTC
+  ปิด Long spot ที่ $67,100 (สมมติ spot ไม่เปลี่ยน) → กำไร spot = $0
+  Basis P&L ≈ ($350 − $20) × (100,000 / 67,450) ≈ $489
+
+ต้นทุน:
+  Taker fee (entry + exit, 2 legs each) = 0.22% × $100,000 = $220
+  Slippage estimate = 0.03% × $100,000 = $30
+
+Net P&L:
+  = $489 (basis convergence)
+  + $130 (funding income)
+  − $220 (taker fees)
+  − $30  (slippage)
+  = +$369  →  +0.37% บน $100,000 ใน 16 ชั่วโมง
+  ≈ Annualized ~20% (ถ้า trade frequency ≈ 1 trade/วัน)</div>
+
+<div class="bx bg">
+<div class="bt">สรุป: โครงสร้าง P&amp;L ของ Basis Trade นี้</div>
+<ul>
+<li><strong>Basis convergence:</strong> $489 — แหล่งกำไรหลัก (basis เบี่ยง 4σ กลับมา fair)</li>
+<li><strong>Funding income:</strong> $130 — bonus ระหว่างรอ mean reversion</li>
+<li><strong>ต้นทุนรวม:</strong> $250 — fee + slippage</li>
+<li><strong>Net: +$369</strong> ใน 16 ชั่วโมง — measurable edge ที่ repeatable</li>
+</ul>
+</div>
+
+<h3>Z-score Timeline ของ Trade นี้</h3>
+
+<svg class="d" viewBox="0 0 700 240">
+<defs>
+<marker id="arw6" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<!-- Axes -->
+<line x1="60" y1="200" x2="660" y2="200" stroke="#374151" stroke-width="1.5" marker-end="url(#arw6)"/>
+<line x1="60" y1="215" x2="60" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#arw6)"/>
+<text x="665" y="203" font-size="9" fill="#6b7280">เวลา (h)</text>
+<text x="55" y="28" text-anchor="end" font-size="9" fill="#6b7280">z</text>
+
+<!-- Zero line -->
+<line x1="60" y1="200" x2="660" y2="200" stroke="#e5e7eb" stroke-width="1"/>
+<!-- +2σ line -->
+<line x1="60" y1="152" x2="660" y2="152" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="56" y="155" text-anchor="end" font-size="8" fill="#f59e0b">+2σ</text>
+<!-- +4σ line -->
+<line x1="60" y1="104" x2="660" y2="104" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="56" y="107" text-anchor="end" font-size="8" fill="#dc2626">+4σ</text>
+
+<!-- z-score basis path: rises to peak at ~4σ then mean reverts -->
+<polyline points="60,205 110,198 160,182 210,160 260,120 310,104 360,118 410,148 460,175 510,193 560,200 610,200 650,200" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- Entry marker -->
+<circle cx="310" cy="104" r="5" fill="#dc2626"/>
+<text x="313" y="94" font-size="8" font-weight="700" fill="#dc2626">ENTRY z=+4.1</text>
+
+<!-- Funding marks (T1 and T2) -->
+<line x1="395" y1="115" x2="395" y2="210" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="395" y="222" text-anchor="middle" font-size="7" fill="#16a34a">F1 +$65</text>
+<line x1="490" y1="180" x2="490" y2="210" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="490" y="222" text-anchor="middle" font-size="7" fill="#16a34a">F2 +$65</text>
+
+<!-- Exit marker -->
+<circle cx="560" cy="200" r="5" fill="#2563eb"/>
+<text x="563" y="195" font-size="8" font-weight="700" fill="#2563eb">EXIT z≈0</text>
+
+<!-- Time labels -->
+<text x="60" y="232" text-anchor="middle" font-size="8" fill="#374151">0h</text>
+<text x="260" y="232" text-anchor="middle" font-size="8" fill="#374151">8h</text>
+<text x="460" y="232" text-anchor="middle" font-size="8" fill="#374151">16h</text>
+<text x="650" y="232" text-anchor="middle" font-size="8" fill="#374151">24h</text>
+</svg>
+<div class="caption">Basis z-score ขึ้นถึง +4.1σ → เข้า trade → กลับมา 0 ใน 16 ชั่วโมง รับ 2 รอบ funding ระหว่างทาง</div>
+
+<!-- 13.8 -->
+<h2 id="s13-8">13.8 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 13.1 — คำนวณ Fair Basis และ Z-score</div>
+<p>ข้อมูล: P_perp = $42,300, P_spot_index = $42,100<br>
+rate = 4.8% (annualized), time_to_funding = 5.5 ชั่วโมง<br>
+hist_sigma ของ (basis − fair_basis) = $60, k = 2.0<br>
+<strong>ถาม:</strong> คำนวณ fair_basis, z-score และระบุว่ามี signal หรือไม่ถ้า k = 2.0</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Basis actual:</strong> $42,300 − $42,100 = $200</p>
+<p><strong>Fair basis:</strong> 42,100 × 0.048 × (5.5/8760) = 42,100 × 0.048 × 0.000628 = $1.27</p>
+<p><strong>Basis deviation:</strong> $200 − $1.27 = $198.73</p>
+<p><strong>Z-score:</strong> 198.73 / 60 = <strong>3.31σ</strong></p>
+<p><strong>Signal: SHORT_PERP_LONG_SPOT</strong> (z = 3.31 &gt; k = 2.0)</p>
+<p>Interpretation: Perp แพงกว่า spot มากผิดปกติ (3.31σ) → Short perp รอ basis กลับมาใกล้ fair value</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 13.2 — คำนวณ Net P&amp;L ของ Basis Trade</div>
+<p>Trade: Short perp $80,000 + Long spot $80,000<br>
+Entry basis = +$280, Exit basis = +$15<br>
+Hold 24 ชั่วโมง (3 รอบ funding), funding_rate = +0.05% ต่อรอบ<br>
+Taker fee = 0.055% per leg, 4 legs total, slippage = 0.025%<br>
+สมมติ spot_price entry ≈ $42,100<br>
+<strong>ถาม:</strong> คำนวณ net P&amp;L ทีละส่วน</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Basis P&amp;L:</strong> ($280 − $15) / $42,100 × $80,000 = $265 / $42,100 × $80,000 ≈ $503</p>
+<p><strong>Funding income (short perp, 3 รอบ):</strong> 0.05% × $80,000 × 3 = $120</p>
+<p><strong>Taker fee (4 legs × 0.055%):</strong> 4 × 0.055% × $80,000 = $176</p>
+<p><strong>Slippage (entry + exit, 2 sides):</strong> 0.025% × $80,000 × 2 = $40</p>
+<p><strong>Net P&amp;L = $503 + $120 − $176 − $40 = <span style="color:var(--green)">+$407</span></strong></p>
+<p>Return = $407 / $80,000 = +0.51% ใน 24 ชั่วโมง ≈ Annualized ~186% (ถ้า trade ได้ทุกวัน)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 13.3 — Basis Blow-up: เมื่อ Trade ขาดทุน</div>
+<p>คุณ Short perp ที่ basis = +$300 (z = +3.0σ, hist_sigma = $100)<br>
+แต่แทนที่ basis จะกลับ basis กลับขยายไปเรื่อยๆ<br>
+Stop-loss กำหนดไว้ที่ z = +5.0σ, position size = $50,000, spot_price ≈ $67,000<br>
+<strong>ถาม:</strong> (1) Stop-loss trigger ที่ basis เท่าไร? (2) ขาดทุนเท่าไรเมื่อ stop-loss ถูก trigger?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(1) Stop-loss level:</strong></p>
+<p>Stop-loss ที่ z = +5.0σ → basis = fair_basis + 5.0 × σ ≈ $0 + 5.0 × $100 = <strong>$500</strong></p>
+<p>Stop-loss trigger เมื่อ basis ≥ $500 (adverse move +$200 จาก entry)</p>
+<p><strong>(2) ขาดทุนเมื่อ stop-loss ถูก trigger ที่ basis = $500:</strong></p>
+<p>Basis P&amp;L = ($300 − $500) / $67,000 × $50,000 = −$200 / $67,000 × $50,000 ≈ −$149</p>
+<p>Fee + slippage ≈ 0.35% × $50,000 = $175</p>
+<p><strong>Total loss ≈ $149 + $175 = $324</strong> (−0.65% บน $50,000)</p>
+<p>บทเรียน: stop-loss ป้องกัน catastrophic loss — ถ้าไม่มี stop-loss และ basis ไปถึง $800 จะขาดทุน $375 + fee = $550</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.13 Perpetual Basis Strategy | ต่อไป → <strong>Ch.14: Regime Detection</strong>
+</p>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.16 — Multi-leg Portfolios</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 16</div>
+<h1>Multi-leg Portfolios: บริหาร Portfolio ของ Spreads</h1>
+<div class="sub">หลาย spread พร้อมกัน — จัดการ correlation และ allocate capital อย่างมีประสิทธิภาพ<br>
+ตัวอย่าง: BTC Bybit↔Lighter + ETH Bybit↔Lighter + BTC Basis</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">การรัน spread เดียวมีความเสี่ยงจาก idiosyncratic event ของ pair นั้น — portfolio ของหลาย spread ลด risk แต่ต้องระวัง <strong>hidden correlation</strong> ที่เพิ่มขึ้นในช่วงวิกฤต</div>
+<div class="ki-eq">w* = (1/2λ) Σ⁻¹ μ  ←  mean-variance optimal weights</div>
+</div>
+
+<h2 id="s16-1">16.1 ทำไมต้องหลาย Spread</h2>
+
+<p>การ diversify ข้าม spread ให้ประโยชน์หลัก:</p>
+
+<div class="bx bg">
+<div class="bt">ประโยชน์</div>
+<ul>
+<li>ลด variance ของ P&amp;L รวม — spread แต่ละคู่ไม่ correlated 100%</li>
+<li>Deploy capital ต่อเนื่อง — ถ้า spread หนึ่ง "ไม่มีสัญญาณ" spread อื่นอาจมี</li>
+<li>ลด dependency บน pair เดียว — ถ้า exchange หนึ่ง maintenance อีก strategy ยังรัน</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยง</div>
+<ul>
+<li>Hidden correlation — BTC dump → ทุก crypto spread volatile พร้อมกัน</li>
+<li>Capital lock-up — ต้องการ margin สำหรับแต่ละ spread แยกกัน</li>
+<li>Operational complexity — monitor หลาย pair พร้อมกัน</li>
+</ul>
+</div>
+
+<h2 id="s16-2">16.2 Covariance Matrix ของ Spreads</h2>
+
+<p>นิยาม Σ = covariance matrix ขนาด n×n (n = จำนวน spread):</p>
+
+<div class="fm">Σ_ij = Cov(ε_i, ε_j) = E[(ε_i − μ_i)(ε_j − μ_j)]
+
+ตัวอย่าง 3 spreads:
+         BTC_B↔L  ETH_B↔L  BTC_Basis
+BTC_B↔L [  1.00     0.42     0.15   ]  ← variance normalized
+ETH_B↔L [  0.42     1.00     0.08   ]
+BTC_Basis[  0.15     0.08     1.00   ]</div>
+
+<svg class="d" viewBox="0 0 400 200" style="max-height:200px">
+  <rect width="400" height="200" fill="#f9fafb" rx="8"/>
+  <text x="200" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Correlation Heatmap</text>
+  <!-- cells -->
+  <rect x="100" y="30" width="70" height="50" fill="#0d9488" opacity="1.0"/>
+  <rect x="170" y="30" width="70" height="50" fill="#0d9488" opacity="0.42"/>
+  <rect x="240" y="30" width="70" height="50" fill="#0d9488" opacity="0.15"/>
+  <rect x="100" y="80" width="70" height="50" fill="#0d9488" opacity="0.42"/>
+  <rect x="170" y="80" width="70" height="50" fill="#0d9488" opacity="1.0"/>
+  <rect x="240" y="80" width="70" height="50" fill="#0d9488" opacity="0.08"/>
+  <rect x="100" y="130" width="70" height="50" fill="#0d9488" opacity="0.15"/>
+  <rect x="170" y="130" width="70" height="50" fill="#0d9488" opacity="0.08"/>
+  <rect x="240" y="130" width="70" height="50" fill="#0d9488" opacity="1.0"/>
+  <!-- labels -->
+  <text x="135" y="58" text-anchor="middle" fill="white" font-size="11" font-weight="bold">1.00</text>
+  <text x="205" y="58" text-anchor="middle" fill="white" font-size="11">0.42</text>
+  <text x="275" y="58" text-anchor="middle" fill="#374151" font-size="11">0.15</text>
+  <text x="135" y="108" text-anchor="middle" fill="white" font-size="11">0.42</text>
+  <text x="205" y="108" text-anchor="middle" fill="white" font-size="11" font-weight="bold">1.00</text>
+  <text x="275" y="108" text-anchor="middle" fill="#374151" font-size="11">0.08</text>
+  <text x="135" y="158" text-anchor="middle" fill="#374151" font-size="11">0.15</text>
+  <text x="205" y="158" text-anchor="middle" fill="#374151" font-size="11">0.08</text>
+  <text x="275" y="158" text-anchor="middle" fill="white" font-size="11" font-weight="bold">1.00</text>
+  <!-- row labels -->
+  <text x="95" y="58" text-anchor="end" fill="#374151" font-size="9">BTC B↔L</text>
+  <text x="95" y="108" text-anchor="end" fill="#374151" font-size="9">ETH B↔L</text>
+  <text x="95" y="158" text-anchor="end" fill="#374151" font-size="9">BTC Basis</text>
+  <!-- col labels -->
+  <text x="135" y="28" text-anchor="middle" fill="#374151" font-size="9">BTC B↔L</text>
+  <text x="205" y="28" text-anchor="middle" fill="#374151" font-size="9">ETH B↔L</text>
+  <text x="275" y="28" text-anchor="middle" fill="#374151" font-size="9">BTC Basis</text>
+</svg>
+<p class="caption">Correlation heatmap — สี่เหลี่ยมเข้มหมายถึง correlation สูง (ไม่ดีสำหรับ diversification)</p>
+
+<h2 id="s16-3">16.3 Mean-Variance Allocation</h2>
+
+<p>เป้าหมาย: หา weight vector <strong>w</strong> ที่ maximize risk-adjusted return:</p>
+
+<div class="fm">max  w'μ − λ × w'Σw
+ w
+
+subject to:  Σ w_i = 1,  w_i ≥ 0,  w_i ≤ w_max
+
+Solution (unconstrained):  w* = (1/2λ) × Σ⁻¹ × μ
+
+โดย:
+  μ   = vector ของ expected return แต่ละ spread
+  Σ   = covariance matrix
+  λ   = risk aversion parameter (ยิ่งสูง = conservative มากขึ้น)
+  w*  = optimal weights</div>
+
+<div class="bx ba">
+<div class="bt">ข้อควรระวัง</div>
+<p>Mean-variance optimization <strong>sensitive มากต่อ estimate ของ μ</strong> — error เล็กน้อยใน μ ทำให้ w* เปลี่ยนแปลงมาก วิธีแก้: ใช้ shrinkage (เช่น Ledoit-Wolf) หรือ equal-weight เป็น baseline แล้วปรับ deviation ตาม conviction เท่านั้น</p>
+</div>
+
+<h2 id="s16-4">16.4 Portfolio Weight — Pie Chart</h2>
+
+<svg class="d" viewBox="0 0 500 220" style="max-height:220px">
+  <rect width="500" height="220" fill="#f9fafb" rx="8"/>
+  <text x="250" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Capital Allocation ตัวอย่าง</text>
+  <!-- Pie chart (approximate arcs) -->
+  <!-- BTC B↔L: 50% = 180° from top, green -->
+  <path d="M200,110 L200,40 A70,70 0 0,1 270,145 Z" fill="#0d9488" opacity="0.85"/>
+  <!-- ETH B↔L: 30% = 108° -->
+  <path d="M200,110 L270,145 A70,70 0 0,1 130,145 Z" fill="#2563eb" opacity="0.75"/>
+  <!-- BTC Basis: 20% = 72° -->
+  <path d="M200,110 L130,145 A70,70 0 0,1 200,40 Z" fill="#d97706" opacity="0.75"/>
+  <!-- Labels -->
+  <rect x="310" y="60" width="14" height="14" fill="#0d9488" rx="2"/>
+  <text x="330" y="72" font-size="12" fill="#374151">BTC Bybit↔Lighter: 50%</text>
+  <rect x="310" y="85" width="14" height="14" fill="#2563eb" rx="2"/>
+  <text x="330" y="97" font-size="12" fill="#374151">ETH Bybit↔Lighter: 30%</text>
+  <rect x="310" y="110" width="14" height="14" fill="#d97706" rx="2"/>
+  <text x="330" y="122" font-size="12" fill="#374151">BTC Perp Basis: 20%</text>
+  <text x="200" y="195" text-anchor="middle" font-size="10" fill="#64748b">Total Capital: $300,000</text>
+</svg>
+<p class="caption">ตัวอย่าง capital allocation — BTC spread ได้ weight มากสุดเพราะ Sharpe สูงสุดและ risk ต่ำสุด</p>
+
+<h2 id="s16-5">16.5 Drawdown Comparison</h2>
+
+<svg class="d" viewBox="0 0 680 200" style="max-height:200px">
+  <rect width="680" height="200" fill="#f9fafb" rx="8"/>
+  <text x="340" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Cumulative P&amp;L: Individual vs Portfolio</text>
+  <line x1="50" y1="160" x2="640" y2="160" stroke="#374151" stroke-width="1"/>
+  <line x1="50" y1="30" x2="50" y2="160" stroke="#374151" stroke-width="1"/>
+  <!-- BTC spread (more volatile) -->
+  <polyline points="50,100 100,85 150,70 180,90 210,60 240,80 270,50 300,75 330,45 360,70 390,55 420,40 450,60 480,35 520,50 560,30 600,45 640,35"
+    fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <!-- ETH spread (moderate) -->
+  <polyline points="50,100 100,95 150,85 180,95 210,80 240,90 270,75 300,85 330,70 360,80 390,68 420,78 450,65 480,75 520,65 560,70 600,65 640,60"
+    fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <!-- Portfolio (smoother) -->
+  <polyline points="50,100 100,90 150,80 180,85 210,72 240,80 270,65 300,75 330,60 360,70 390,58 420,65 450,55 480,60 520,50 560,55 600,48 640,45"
+    fill="none" stroke="#16a34a" stroke-width="2.5"/>
+  <!-- Legend -->
+  <line x1="55" y1="178" x2="75" y2="178" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="80" y="182" font-size="10" fill="#2563eb">BTC spread</text>
+  <line x1="155" y1="178" x2="175" y2="178" stroke="#d97706" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="180" y="182" font-size="10" fill="#d97706">ETH spread</text>
+  <line x1="260" y1="178" x2="280" y2="178" stroke="#16a34a" stroke-width="2.5"/>
+  <text x="285" y="182" font-size="10" fill="#16a34a">Portfolio (smoother)</text>
+</svg>
+<p class="caption">Portfolio ผสม (เขียว) มี drawdown น้อยกว่าและ P&amp;L smoother กว่า individual spread</p>
+
+<h2 id="s16-6">16.6 Pseudo-code portfolio_allocate()</h2>
+
+<div class="fm">def portfolio_allocate(expected_returns, cov_matrix, 
+                        risk_aversion=1.0, max_weight=0.6,
+                        min_weight=0.05):
+    """
+    expected_returns: vector of μ_i (annualized expected return)
+    cov_matrix:       Σ matrix (n×n)
+    risk_aversion:    λ parameter (higher = more conservative)
+    max_weight:       cap ต่อ strategy เดียว
+    min_weight:       minimum allocation ถ้า include strategy นั้น
+    """
+    n = len(expected_returns)
+
+    # Inverse covariance (Ledoit-Wolf shrinkage recommended)
+    inv_cov = ledoit_wolf_inverse(cov_matrix)
+
+    # Raw MV optimal weights
+    raw_weights = inv_cov @ expected_returns / (2 * risk_aversion)
+
+    # Clip to [0, max_weight]
+    weights = clip(raw_weights, 0, max_weight)
+
+    # Zero out strategies below min_weight threshold
+    weights = [w if w >= min_weight else 0.0 for w in weights]
+
+    # Normalize to sum = 1
+    total = sum(weights)
+    if total > 0:
+        weights = [w / total for w in weights]
+
+    return weights  # list of n weights summing to 1.0</div>
+
+<h2 id="s16-7">16.7 Correlation Risk ในช่วงวิกฤต</h2>
+
+<div class="bx br">
+<div class="bt">Hidden Correlation Problem</div>
+<p>ในช่วงตลาดปกติ BTC spread กับ ETH spread correlate 0.42 — แต่ในช่วง BTC dump correlation อาจพุ่งเป็น 0.85+ เพราะทั้งสองตลาดถูก panic ขายพร้อมกัน</p>
+<p>นี่คือ "correlation breakdown" — assumption ของ portfolio optimization ล้มเหลวตอนที่ต้องการ protection มากที่สุด</p>
+</div>
+
+<div class="fm">def detect_correlation_spike(spread_returns, window=30, threshold=0.70):
+    """ตรวจว่า rolling correlation ระหว่าง spreads สูงขึ้นผิดปกติ"""
+    rolling_corr = compute_rolling_correlation(spread_returns, window)
+    max_off_diagonal = max_corr_excluding_diagonal(rolling_corr)
+    
+    if max_off_diagonal > threshold:
+        return True, f"Correlation spike: {max_off_diagonal:.2f}"
+    return False, None</div>
+
+<h2 id="s16-8">16.8 Running Example — 3 Spread Portfolio</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Portfolio ของ 3 Spreads</div>
+
+<table>
+<thead>
+<tr><th>Strategy</th><th>Weight</th><th>Capital</th><th>Expected Sharpe</th><th>σ ต่อปี</th></tr>
+</thead>
+<tbody>
+<tr><td>BTC Bybit↔Lighter</td><td>50%</td><td>$150,000</td><td>2.1</td><td>12%</td></tr>
+<tr><td>ETH Bybit↔Lighter</td><td>30%</td><td>$90,000</td><td>1.7</td><td>15%</td></tr>
+<tr><td>BTC Perp Basis</td><td>20%</td><td>$60,000</td><td>1.4</td><td>8%</td></tr>
+<tr><td><strong>Portfolio</strong></td><td><strong>100%</strong></td><td><strong>$300,000</strong></td><td><strong>2.3</strong></td><td><strong>10%</strong></td></tr>
+</tbody>
+</table>
+
+<p><strong>สังเกต:</strong> Portfolio Sharpe (2.3) สูงกว่า Sharpe ของแต่ละ strategy เดี่ยว — เป็นผลจาก diversification benefit เมื่อ correlation ไม่เท่ากับ 1</p>
+</div>
+
+<h2 id="s16-9">16.9 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัดบทที่ 16</div>
+
+<details>
+<summary>ข้อ 1: ถ้า BTC dump ทำให้ correlation ระหว่าง BTC และ ETH spread เพิ่มเป็น 0.90 — ควรทำอย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ลด size ทั้ง portfolio ลง เพราะ diversification benefit หายไป</p>
+<p>เมื่อ correlation สูงขึ้น effective portfolio variance เพิ่มขึ้น — portfolio ที่เคย safe ตอนนี้มี risk สูงกว่าที่ model สมมติ</p>
+<p>วิธีปฏิบัติ: ถ้า max pairwise correlation &gt; 0.70 → ลด total exposure เป็น 50% จนกว่า correlation กลับสู่ปกติ</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม equal-weight portfolio มักดีกว่า MV optimal ในทางปฏิบัติ?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> เพราะ MV optimization sensitive มากต่อ estimation error ของ μ</p>
+<p>μ ที่ estimate ผิด 1% อาจทำให้ weight เปลี่ยนแปลง 20-30% — in-sample optimal แต่ out-of-sample แย่<br>
+Equal-weight ไม่ต้องการ estimate μ เลย — robust ต่อ model error มากกว่า<br>
+วิธีผสมที่ดี: ใช้ equal-weight เป็น prior แล้วเพิ่ม/ลด weight ตาม conviction ที่มีหลักฐานชัดเจน</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: เพิ่ม spread ที่ 4 เข้า portfolio — ควรตรวจสิ่งใดก่อน?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ตรวจ 3 สิ่งหลัก:</p>
+<ol>
+<li><strong>Correlation กับ existing spreads:</strong> ถ้า &gt; 0.60 → อาจไม่คุ้มค่า หรือต้องลด weight ของ existing spreads ลง</li>
+<li><strong>Net Sharpe ของ portfolio หลัง add:</strong> Portfolio Sharpe ต้องเพิ่มขึ้น ไม่ใช่ลง</li>
+<li><strong>Capital sufficiency:</strong> แต่ละ leg ต้องการ margin — ตรวจว่า total margin requirement ไม่เกิน available capital</li>
+</ol>
+</div>
+</details>
+</div>
+
+</body>
+</html>

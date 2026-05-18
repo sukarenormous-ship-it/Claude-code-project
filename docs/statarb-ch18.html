@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.18 — Options Overlay: Put-Call Parity Arbitrage</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 18</div>
+<h1>Options Overlay: Put-Call Parity Arbitrage</h1>
+<div class="sub">ε = Call − Put − (F−K)e^{−rT} — deviation คือโอกาส arbitrage<br>
+ค้นหาและ exploit ความไม่สมดุลใน options market อย่างเป็นระบบ</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">Put-Call Parity เป็นกฎพื้นฐานที่ต้องเป็นจริงในตลาดที่ไม่มี arbitrage เมื่อ ε ≠ 0 แสดงว่า call หรือ put ราคาผิดสัมพัทธ์กัน และสามารถทำ riskless profit ได้โดยการ construct portfolio ที่สอดคล้อง</div>
+<div class="ki-eq">ε = C − P − (F − K) × e^{−rT}</div>
+</div>
+
+<!-- 18.1 -->
+<h2 id="s18-1">18.1 Put-Call Parity — สูตรและที่มา</h2>
+
+<p>Put-Call Parity เป็น no-arbitrage relationship ที่เชื่อม call, put, forward, และ strike เข้าด้วยกัน:</p>
+
+<div class="key-idea">
+<div class="ki-label">Put-Call Parity สำหรับ European Options</div>
+<div class="ki-text">
+สำหรับ European options บน futures contract F ที่ strike K expiry T:<br>
+<strong>C − P = (F − K) × e^{−rT}</strong><br><br>
+สำหรับ European options บน spot asset S:<br>
+<strong>C − P = S × e^{−qT} − K × e^{−rT}</strong><br><br>
+โดยที่: C = call price, P = put price, r = risk-free rate, q = dividend/funding yield
+</div>
+</div>
+
+<p>ที่มาของสูตร: พิจารณา 2 portfolio ที่ให้ payoff เดียวกัน:</p>
+
+<table>
+<tr><th>Portfolio</th><th>ส่วนประกอบ</th><th>Payoff เมื่อ F_T &gt; K</th><th>Payoff เมื่อ F_T ≤ K</th></tr>
+<tr><td>A: Long Call</td><td>Buy C, Invest (F−K)e^{−rT}</td><td>(F_T − K) + (F−K)</td><td>0 + (F−K)</td></tr>
+<tr><td>B: Long Fwd + Put</td><td>Long F at K, Buy P</td><td>(F_T − K) + 0</td><td>0 + (K − F_T)</td></tr>
+</table>
+
+<p>เนื่องจาก payoff เท่ากัน ราคาต้องเท่ากัน → C − P = (F − K)e^{−rT} ต้องเป็นจริงเสมอ</p>
+
+<!-- 18.2 -->
+<h2 id="s18-2">18.2 Parity Deviation ε — เมื่อไรจึง Arbitrage ได้</h2>
+
+<div class="key-idea">
+<div class="ki-label">นิยาม Parity Deviation</div>
+<div class="ki-eq">ε = C − P − (F − K) × e^{−rT}</div>
+<div class="ki-text" style="margin-top:8px">
+ถ้า <strong>ε &gt; 0</strong>: Call แพงเกินไปเทียบกับ put → Sell call, Buy put, Buy forward<br>
+ถ้า <strong>ε &lt; 0</strong>: Put แพงเกินไปเทียบกับ call → Buy call, Sell put, Sell forward<br>
+ถ้า <strong>ε = 0</strong>: parity สมบูรณ์ — ไม่มีโอกาส arbitrage
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">เงื่อนไขที่ ε ≠ 0 ในทางปฏิบัติ</div>
+<ul>
+<li><strong>Bid-Ask spread:</strong> ε ต้องเกิน bid-ask cost รวมทุก leg ก่อนจะ profitable</li>
+<li><strong>Margin/collateral cost:</strong> ต้องใช้ margin วาง → มีต้นทุน opportunity</li>
+<li><strong>Execution risk:</strong> ต้อง fill ทุก leg พร้อมกัน ไม่เช่นนั้นเป็น legged risk</li>
+<li><strong>American vs European:</strong> American options มี early exercise premium → parity แตกต่าง</li>
+</ul>
+</div>
+
+<!-- 18.3 -->
+<h2 id="s18-3">18.3 BTC Options ตัวอย่าง — Deribit Put-Call Parity</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC Options บน Deribit</div>
+<p>ข้อมูลจาก Deribit สำหรับ BTC-28JUN-65000 (Strike K = $65,000, expiry 30 วัน):</p>
+<ul>
+<li>BTC Futures (28JUN) = <strong>$66,200</strong></li>
+<li>Call (K=65000, T=30d) = <strong>$2,850</strong></li>
+<li>Put (K=65000, T=30d) = <strong>$1,520</strong></li>
+<li>Risk-free rate r = 5% ต่อปี → e^{−rT} = e^{−0.05×30/365} = 0.9959</li>
+</ul>
+<div class="fm">
+Theoretical C - P = (F - K) × e^{-rT}
+               = ($66,200 - $65,000) × 0.9959
+               = $1,200 × 0.9959
+               = $1,195.08
+
+Observed C - P = $2,850 - $1,520 = $1,330
+
+ε = $1,330 - $1,195 = +$135  →  Call แพงเกินไปเทียบกับ Put
+Trade: Sell Call + Buy Put + Long Forward (at K=$65,000)
+Expected profit ≈ $135 (ก่อนหักค่าธรรมเนียม)
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตรวจสอบต้นทุนก่อน Trade</div>
+<p>Deribit taker fee ≈ 0.03% ต่อ option position (per leg)<br>
+4 legs: Sell C + Buy P + Long F + Short F (delta hedge) → total fee ≈ 0.12% × notional<br>
+Notional ≈ $65,000 → fee ≈ $78<br>
+Net profit ≈ $135 − $78 = <strong>$57</strong> ต่อ BTC → ยังคุ้ม แต่ต้องระวัง execution</p>
+</div>
+
+<!-- 18.4 -->
+<h2 id="s18-4">18.4 IV Surface Arbitrage — Calendar Spread ใน IV</h2>
+
+<p>นอกจาก put-call parity แล้ว ยังมีโอกาส arbitrage จากความไม่สอดคล้องของ Implied Volatility (IV) ข้าม expiry:</p>
+
+<div class="bx bg">
+<div class="bt">ประเภทของ IV Surface Arbitrage</div>
+<ul>
+<li><strong>Calendar Spread IV Arb:</strong> IV ของ near-expiry สูงกว่า far-expiry ผิดปกติ → sell near, buy far vega</li>
+<li><strong>Strike Spread (Skew Arb):</strong> IV skew ระหว่าง OTM put และ OTM call ผิดปกติ</li>
+<li><strong>Butterfly Arb:</strong> IV ของ ATM ผิดจาก weighted average ของ OTM wings</li>
+</ul>
+</div>
+
+<h3>No-Arbitrage Constraints ของ IV Surface</h3>
+
+<table>
+<tr><th>Constraint</th><th>สูตร / เงื่อนไข</th><th>ถ้าฝ่าฝืน</th></tr>
+<tr><td>Calendar spread</td><td>Total variance V(T) = IV²×T ต้องเพิ่มตาม T</td><td>Sell near, buy far → calendar arb</td></tr>
+<tr><td>Butterfly</td><td>∂²C/∂K² ≥ 0 (call spread เป็น convex)</td><td>Butterfly spread ให้ riskless profit</td></tr>
+<tr><td>Call spread</td><td>∂C/∂K ≤ 0 (call price ลดเมื่อ K ขึ้น)</td><td>Vertical spread arb</td></tr>
+<tr><td>Horizontal bound</td><td>C(K,T₂) ≥ C(K,T₁) สำหรับ T₂ &gt; T₁</td><td>Calendar spread arb</td></tr>
+</table>
+
+<!-- 18.5 SVG IV Surface -->
+<h2 id="s18-5">18.5 IV Surface Diagram (2D Slice)</h2>
+
+<p>แผนภาพ 2D slice ของ IV surface ที่ expiry คงที่ (IV vs. Strike):</p>
+
+<svg class="d" viewBox="0 0 640 300">
+<defs>
+<marker id="arw18" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<rect x="10" y="10" width="620" height="280" rx="8" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+<text x="320" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#7c3aed">IV Smile / Skew — Near Expiry vs Far Expiry</text>
+
+<!-- Axes -->
+<line x1="60" y1="240" x2="590" y2="240" stroke="#374151" stroke-width="1.5" marker-end="url(#arw18)"/>
+<line x1="60" y1="240" x2="60" y2="50" stroke="#374151" stroke-width="1.5" marker-end="url(#arw18)"/>
+<text x="595" y="244" font-size="10" fill="#6b7280">Strike (K)</text>
+<text x="55" y="48" text-anchor="end" font-size="10" fill="#6b7280">IV</text>
+
+<!-- Strike labels -->
+<text x="110" y="256" text-anchor="middle" font-size="9" fill="#374151">80%K</text>
+<text x="200" y="256" text-anchor="middle" font-size="9" fill="#374151">90%K</text>
+<text x="320" y="256" text-anchor="middle" font-size="9" fill="#374151">ATM</text>
+<text x="440" y="256" text-anchor="middle" font-size="9" fill="#374151">110%K</text>
+<text x="540" y="256" text-anchor="middle" font-size="9" fill="#374151">120%K</text>
+
+<!-- Near expiry smile (higher, more skewed) -->
+<polyline points="100,90 150,100 200,115 270,130 320,140 380,148 440,155 490,162 540,170" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+<text x="95" y="83" font-size="10" font-weight="700" fill="#dc2626">Near Expiry (30d)</text>
+
+<!-- Far expiry smile (lower, flatter) -->
+<polyline points="100,130 150,137 200,142 270,150 320,155 380,158 440,162 490,165 540,168" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="7,3"/>
+<text x="95" y="125" font-size="10" font-weight="700" fill="#2563eb">Far Expiry (90d)</text>
+
+<!-- ATM line -->
+<line x1="320" y1="240" x2="320" y2="50" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- Calendar Spread Arbitrage zone -->
+<rect x="85" y="88" width="130" height="46" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+<text x="150" y="107" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">IV Near &gt; IV Far</text>
+<text x="150" y="120" text-anchor="middle" font-size="9" fill="#dc2626">→ Calendar Arb zone</text>
+<text x="150" y="131" text-anchor="middle" font-size="8" fill="#dc2626">Sell near, Buy far</text>
+
+<!-- No-arb arrow -->
+<line x1="320" y1="140" x2="320" y2="155" stroke="#16a34a" stroke-width="2" marker-end="url(#arw18)"/>
+<text x="335" y="150" font-size="9" fill="#16a34a">ต้องไม่ฝ่าฝืน</text>
+<text x="335" y="162" font-size="9" fill="#16a34a">calendar constraint</text>
+</svg>
+<div class="caption">Near expiry IV (แดง) ต้องไม่สูงกว่า far expiry IV อย่างผิดปกติที่ strike เดียวกัน มิฉะนั้นเป็น calendar arb</div>
+
+<!-- 18.6 -->
+<h2 id="s18-6">18.6 Delta Hedge ของ Options Spread</h2>
+
+<p>เมื่อ trade put-call parity arbitrage หรือ IV surface arb ต้องระวังว่า position มี <strong>delta exposure</strong> ที่ต้อง hedge ออก:</p>
+
+<div class="bx bi">
+<div class="bt">ขั้นตอน Delta Hedge</div>
+<ol>
+<li>คำนวณ net delta ของ options portfolio: Δ_net = Δ_call − Δ_put + Δ_forward</li>
+<li>Sell/Buy futures ในปริมาณ Δ_net เพื่อให้ net delta ≈ 0</li>
+<li>Re-hedge เมื่อ delta drift (เนื่องจาก gamma effect) หรือทุก interval ที่กำหนด</li>
+<li>ระวัง gamma risk: position ที่ delta-neutral อาจมี gamma ที่ทำให้ P&L เป็น non-linear</li>
+</ol>
+</div>
+
+<div class="fm">
+ตัวอย่าง: ε trade บน BTC K=65000, T=30d
+
+Long Put:   Δ_put = −0.42  →  contribution = −1×(−0.42) = +0.42
+Short Call: Δ_call = +0.58 →  contribution = −1×(0.58)  = −0.58
+Long Fwd:  Δ_fwd = +1.00  →  contribution = +1.00
+
+Net Δ = +0.42 − 0.58 + 1.00 = +0.84
+
+→ Sell 0.84 BTC futures เพื่อ delta-neutral
+</div>
+
+<div class="bx ba">
+<div class="bt">Re-hedge Frequency</div>
+<p>สำหรับ crypto options ที่ volatile มาก: re-hedge ทุก 30–60 นาที หรือทุกครั้งที่ delta drift เกิน ±0.05<br>
+Transaction cost ของ re-hedge ต้องรวมใน edge calculation (บทที่ 19)</p>
+</div>
+
+<!-- 18.7 -->
+<h2 id="s18-7">18.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 18.1 — คำนวณ ε และ Direction</div>
+<p>ETH Options บน Deribit: Strike K = $3,500, Expiry = 45 วัน<br>
+ETH Futures (45d) = $3,620 | Call = $285 | Put = $148 | r = 5% ต่อปี</p>
+<p><strong>ถาม:</strong> คำนวณ ε และระบุ direction ของ trade arbitrage</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>e^{−rT} = e^{−0.05 × 45/365} = e^{−0.00616} ≈ 0.9939</p>
+<p>Theoretical C − P = (F − K) × e^{−rT} = ($3,620 − $3,500) × 0.9939 = $120 × 0.9939 = <strong>$119.27</strong></p>
+<p>Observed C − P = $285 − $148 = <strong>$137</strong></p>
+<p>ε = $137 − $119.27 = <strong>+$17.73</strong> → Call แพงเกินไป</p>
+<p>Trade: <strong>Sell Call + Buy Put + Long Forward at K</strong><br>
+Expected gross profit = $17.73 ต่อ ETH (ก่อนค่าธรรมเนียม)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 18.2 — IV Calendar Constraint</div>
+<p>BTC options ที่ K = ATM: IV_30d = 72%, IV_90d = 58%<br>
+Total variance: V_30 = 0.72² × (30/365) = 0.0426, V_90 = 0.58² × (90/365) = 0.0832</p>
+<p><strong>ถาม:</strong> IV surface นี้ violate calendar constraint หรือไม่? ถ้า violate ควร trade อย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>Calendar constraint: V(T) ต้องเพิ่มตาม T (ไม่ลด)<br>
+V_30 = 0.0426 &lt; V_90 = 0.0832 → <strong>ไม่ violate</strong> — constraint ถูกต้อง</p>
+<p>แต่ตรวจสอบ implied forward IV ระหว่าง 30d ถึง 90d:<br>
+Forward variance = (V_90 − V_30) / (60/365) = (0.0832 − 0.0426) / 0.1644 = 0.2469<br>
+Forward IV = √0.2469 = 49.7%</p>
+<p>ถ้าคุณเชื่อว่า realized vol ช่วง 30–90d จะสูงกว่า 49.7% → ซื้อ calendar spread (long 90d, short 30d vega)</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.18 Options Overlay | ต่อไป → <strong>Ch.19: Cost Analysis & Edge — คำนวณ Net Edge ก่อนเทรด</strong>
+</p>
+</body>
+</html>

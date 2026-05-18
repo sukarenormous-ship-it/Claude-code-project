@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.7 — GARCH on Residuals</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;font-size:.88em;line-height:1.7;padding:18px 22px;border-radius:10px;margin:16px 0;overflow-x:auto}
+.pseudo .kw{color:#cba6f7}
+.pseudo .fn{color:#89b4fa}
+.pseudo .cm{color:#6c7086;font-style:italic}
+.pseudo .st{color:#a6e3a1}
+.pseudo .nu{color:#fab387}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · Chapter 7</div>
+<h1>GARCH on Residuals</h1>
+<div class="sub">Conditional Volatility σ_t — When Spread Volatility Clusters<br>
+σ_t² = ω + α·ε²<sub>t−1</sub> + β·σ²<sub>t−1</sub></div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Core Idea — Read This First</div>
+<div class="ki-text">Ornstein-Uhlenbeck assumes <strong>constant σ</strong>. In practice, spread volatility clusters: calm periods are followed by calm, volatile periods by volatile. Using a static z-score during a storm generates false signals. GARCH(1,1) models time-varying conditional variance σ_t, giving a <strong>GARCH z-score</strong> that stays calibrated regardless of market regime.</div>
+<div class="ki-eq">σ_t² = ω + α·ε²_{t−1} + β·σ²_{t−1} &nbsp;|&nbsp; z_t = (ε_t − θ) / σ_t</div>
+</div>
+
+<!-- 7.1 -->
+<h2 id="s7-1">7.1 The Problem with Constant σ</h2>
+
+<p>Standard OU assumes the residual noise is i.i.d. with fixed σ. In real BTC markets, volatility is highly heteroskedastic — it bunches in time. Static ±2σ bands drawn at the unconditional standard deviation create two failure modes:</p>
+
+<ul>
+<li><strong>Storm false signals:</strong> During high-volatility periods, the spread crosses ±2σ (static) repeatedly, each crossing appearing to be a trading opportunity. In reality, σ has expanded 3×, and 2σ_static is only 0.67 GARCH-σ. These are not true extremes.</li>
+<li><strong>Calm missed signals:</strong> During quiet periods, a genuine 2σ move is actually a 4σ GARCH event — an extremely rare and high-conviction signal being ignored.</li>
+</ul>
+
+<!-- SVG: residual timeline with constant bands and storm -->
+<svg class="d" viewBox="0 0 860 300">
+<defs>
+<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
+</marker>
+</defs>
+
+<rect x="10" y="10" width="840" height="280" rx="8" fill="#fef9f0" stroke="#fde68a" stroke-width="1.5"/>
+<text x="430" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Residual ε_t with Static ±2σ Bands — Constant σ Model</text>
+
+<!-- Axes -->
+<line x1="40" y1="170" x2="830" y2="170" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<line x1="40" y1="270" x2="40" y2="40" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<text x="833" y="173" font-size="10" fill="#374151">t</text>
+<text x="30" y="38" text-anchor="end" font-size="10" fill="#374151">ε</text>
+
+<!-- Static +2σ and -2σ bands -->
+<line x1="40" y1="120" x2="825" y2="120" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="40" y1="220" x2="825" y2="220" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="828" y="123" font-size="9" font-weight="700" fill="#dc2626">+2σ</text>
+<text x="828" y="223" font-size="9" font-weight="700" fill="#dc2626">−2σ</text>
+<text x="828" y="172" font-size="9" fill="#374151">θ</text>
+
+<!-- Calm period label -->
+<rect x="42" y="42" width="80" height="18" rx="3" fill="#d1fae5"/>
+<text x="82" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
+
+<!-- Calm period path (tight oscillations) -->
+<polyline points="40,168 55,155 70,175 85,160 100,172 115,158 130,168 145,156 160,170 175,158 200,165 225,172 250,160 275,167 300,162 325,170 350,163 375,168" fill="none" stroke="#0d9488" stroke-width="2"/>
+
+<!-- Storm period label -->
+<rect x="395" y="42" width="80" height="18" rx="3" fill="#fee2e2"/>
+<text x="435" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">STORM</text>
+
+<!-- Storm period path (large swings) -->
+<polyline points="375,168 395,130 415,210 435,108 455,230 475,115 495,225 515,105 535,235 555,118 575,212 595,112 615,220 635,130" fill="none" stroke="#dc2626" stroke-width="2"/>
+
+<!-- False signal markers during storm -->
+<circle cx="435" cy="108" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+<text x="435" y="96" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
+<circle cx="455" cy="230" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+<text x="455" y="244" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
+<circle cx="515" cy="105" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+<text x="515" y="93" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
+<circle cx="535" cy="235" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+<text x="535" y="248" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
+
+<!-- Calm period after storm -->
+<rect x="655" y="42" width="80" height="18" rx="3" fill="#d1fae5"/>
+<text x="695" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
+<polyline points="635,165 655,158 675,172 695,161 715,168 735,157 755,164 775,170 795,160 815,166" fill="none" stroke="#0d9488" stroke-width="2"/>
+
+<text x="430" y="290" text-anchor="middle" font-size="10" fill="#b45309">Static ±2σ crosses 4 false signals during storm — each looks like a trade entry but is just noise expansion</text>
+</svg>
+<div class="caption">Static bands (red dashes) don't expand during volatile regimes — causing repeated false crossings in the storm period.</div>
+
+<!-- 7.2 -->
+<h2 id="s7-2">7.2 GARCH(1,1) Model</h2>
+
+<p>GARCH(1,1) — Generalized AutoRegressive Conditional Heteroskedasticity — updates the variance estimate each period using two inputs: the last shock squared and the last variance estimate.</p>
+
+<div class="key-idea">
+<div class="ki-label">GARCH(1,1) Equation</div>
+<div class="ki-eq">σ_t² = ω + α · ε²_{t−1} + β · σ²_{t−1}</div>
+<div class="ki-text" style="margin-top:10px">
+<strong>ω (omega)</strong> — long-run variance floor. Always positive. Prevents σ_t from collapsing to zero.<br>
+<strong>α (alpha)</strong> — shock impact coefficient. Typical range: 0.05–0.15. High α → variance reacts quickly to new shocks.<br>
+<strong>β (beta)</strong> — persistence coefficient. Typical range: 0.80–0.90. High β → variance decays slowly (long memory).<br>
+<strong>Stationarity condition:</strong> α + β &lt; 1 (otherwise variance explodes to infinity).<br>
+<strong>Long-run variance:</strong> σ²_∞ = ω / (1 − α − β)
+</div>
+</div>
+
+<table>
+<tr><th>Parameter</th><th>Typical Range</th><th>Effect of Increasing</th><th>Effect of Being Too High</th></tr>
+<tr><td>ω (omega)</td><td>1e-7 to 1e-4</td><td>Raises the variance floor</td><td>Overestimates calm-period σ</td></tr>
+<tr><td>α (alpha)</td><td>0.05 – 0.15</td><td>Faster reaction to shocks</td><td>Too noisy, σ_t unstable</td></tr>
+<tr><td>β (beta)</td><td>0.80 – 0.92</td><td>Longer variance memory</td><td>If α+β≥1: non-stationary</td></tr>
+</table>
+
+<!-- 7.3 -->
+<h2 id="s7-3">7.3 GARCH Z-Score — Adaptive Bands</h2>
+
+<p>Instead of z = (ε_t − θ) / σ_static, we use the time-varying denominator:</p>
+
+<div class="fm">GARCH z-score:  z_t = (ε_t − θ) / σ_t
+
+Entry signal:    z_t &gt; +2.0  →  short spread (expect reversion down)
+                  z_t &lt; −2.0  →  long spread (expect reversion up)
+Exit signal:     |z_t| &lt; 0.5  →  close position</div>
+
+<!-- SVG: GARCH adaptive bands -->
+<svg class="d" viewBox="0 0 860 310">
+<defs>
+<marker id="arw3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
+</marker>
+</defs>
+
+<rect x="10" y="10" width="840" height="290" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="430" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Residual ε_t with GARCH ±2σ_t Bands — Adaptive Model</text>
+
+<!-- Axes -->
+<line x1="40" y1="175" x2="830" y2="175" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
+<line x1="40" y1="275" x2="40" y2="42" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
+<text x="833" y="178" font-size="10" fill="#374151">t</text>
+<text x="30" y="40" text-anchor="end" font-size="10" fill="#374151">ε</text>
+
+<!-- Calm period: narrow GARCH bands (similar to static) -->
+<path d="M 40,148 Q 190,145 375,148" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+<path d="M 40,202 Q 190,205 375,202" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+<!-- Storm period: wide GARCH bands expanding -->
+<path d="M 375,148 Q 445,90 530,78 Q 600,78 635,130" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+<path d="M 375,202 Q 445,260 530,272 Q 600,272 635,220" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+<!-- Calm period after storm: bands narrow again -->
+<path d="M 635,130 Q 700,148 820,150" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+<path d="M 635,220 Q 700,202 820,200" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+<text x="207" y="137" text-anchor="middle" font-size="9" fill="#16a34a">+2σ_t (narrow)</text>
+<text x="207" y="215" text-anchor="middle" font-size="9" fill="#16a34a">−2σ_t (narrow)</text>
+<text x="508" y="68" text-anchor="middle" font-size="9" fill="#16a34a">+2σ_t (expanded)</text>
+<text x="508" y="290" text-anchor="middle" font-size="9" fill="#16a34a">−2σ_t (expanded)</text>
+
+<!-- Calm path -->
+<polyline points="40,173 55,160 70,180 85,165 100,177 115,163 130,173 145,161 160,175 175,163 200,170 225,177 250,165 275,172 300,167 325,175 350,168 375,173" fill="none" stroke="#0d9488" stroke-width="2"/>
+
+<!-- Storm path (same as before) -->
+<polyline points="375,173 395,135 415,215 435,113 455,235 475,120 495,230 515,110 535,240 555,123 575,217 595,117 615,225 635,135" fill="none" stroke="#dc2626" stroke-width="2"/>
+
+<!-- True signal markers (storm crossings that DON'T cross GARCH bands) -->
+<text x="430" y="100" text-anchor="middle" font-size="8" fill="#16a34a">within GARCH</text>
+<text x="450" y="250" text-anchor="middle" font-size="8" fill="#16a34a">within GARCH</text>
+
+<!-- Genuine signal in calm period -->
+<circle cx="160" cy="175" r="5" fill="#0d9488"/>
+<text x="160" y="155" text-anchor="middle" font-size="8" font-weight="700" fill="#0d9488">TRUE</text>
+
+<!-- Calm after storm -->
+<polyline points="635,170 655,163 675,177 695,166 715,173 735,162 755,169 775,175 795,165 815,171" fill="none" stroke="#0d9488" stroke-width="2"/>
+
+<text x="430" y="302" text-anchor="middle" font-size="10" fill="#16a34a">GARCH bands expand during storm — storm crossings stay INSIDE adaptive bands → no false signals</text>
+
+<!-- Labels -->
+<rect x="42" y="44" width="60" height="16" rx="3" fill="#d1fae5"/>
+<text x="72" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
+<rect x="395" y="44" width="60" height="16" rx="3" fill="#fee2e2"/>
+<text x="425" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">STORM</text>
+<rect x="655" y="44" width="60" height="16" rx="3" fill="#d1fae5"/>
+<text x="685" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
+</svg>
+<div class="caption">GARCH adaptive bands (green dashes) expand during the storm — the same residual path produces NO false signals with GARCH z-score.</div>
+
+<!-- 7.4 -->
+<h2 id="s7-4">7.4 When to Use GARCH vs Constant σ</h2>
+
+<table>
+<tr><th>Aspect</th><th>Constant σ (OU base)</th><th>GARCH(1,1)</th></tr>
+<tr><td>Assumption</td><td>σ is fixed over time</td><td>σ_t varies based on recent shocks</td></tr>
+<tr><td>Best for</td><td>Very stable pairs, low volatility</td><td>Pairs with clustering volatility</td></tr>
+<tr><td>Detects regime</td><td>No</td><td>Yes — σ_t encodes current regime</td></tr>
+<tr><td>False signals</td><td>High during vol spikes</td><td>Low — bands adapt</td></tr>
+<tr><td>Computation</td><td>Trivial (one number)</td><td>O(T) per update, very fast</td></tr>
+<tr><td>When to switch</td><td>Default</td><td>std(residuals, 7d) / std(residuals, 30d) &gt; 1.5</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">Volatility Clustering Trigger</div>
+<p>Compute the ratio of 7-day rolling std to 30-day rolling std of the spread residuals. If this ratio exceeds 1.5, the volatility regime has shifted — switch to GARCH z-score immediately. If the ratio drops below 1.1 consistently, constant σ is adequate and GARCH adds minimal benefit.</p>
+</div>
+
+<!-- Pseudo-code -->
+<h2 id="s7-pc">7.5 Pseudo-Code: GARCH Update &amp; Z-Score</h2>
+
+<div class="pseudo">
+<span class="kw">function</span> <span class="fn">garch_update</span>(omega, alpha, beta, prev_sigma_sq, prev_residual):
+    <span class="cm"># GARCH(1,1) variance recursion — call once per bar</span>
+    <span class="cm"># omega:          long-run variance floor (e.g. 1e-6)</span>
+    <span class="cm"># alpha:          shock weight (e.g. 0.10)</span>
+    <span class="cm"># beta:           persistence (e.g. 0.85)</span>
+    <span class="cm"># prev_sigma_sq:  σ²_{t-1}</span>
+    <span class="cm"># prev_residual:  ε_{t-1} (actual spread residual, not z-score)</span>
+
+    new_sigma_sq = omega + alpha * (prev_residual ** <span class="nu">2</span>) + beta * prev_sigma_sq
+    <span class="kw">return</span> new_sigma_sq
+
+
+<span class="kw">function</span> <span class="fn">garch_zscore</span>(eps, theta, sigma_t):
+    <span class="cm"># eps:     current spread residual ε_t</span>
+    <span class="cm"># theta:   OU long-run mean θ</span>
+    <span class="cm"># sigma_t: sqrt(current GARCH variance)</span>
+    z = (eps - theta) / sigma_t
+    <span class="kw">return</span> z
+
+
+<span class="kw">function</span> <span class="fn">should_use_garch</span>(residuals, window_short=<span class="nu">7</span>*<span class="nu">24</span>, window_long=<span class="nu">30</span>*<span class="nu">24</span>):
+    <span class="cm"># Returns True if volatility clustering detected</span>
+    std_short = rolling_std(residuals, window_short)[-<span class="nu">1</span>]
+    std_long  = rolling_std(residuals, window_long)[-<span class="nu">1</span>]
+    ratio = std_short / std_long
+    <span class="kw">return</span> ratio &gt; <span class="nu">1.5</span>
+
+
+<span class="cm"># Main loop (hourly bar)</span>
+sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β)</span>
+<span class="kw">for</span> each new bar:
+    prev_eps  = spread_residual[t-<span class="nu">1</span>]
+    sigma_sq  = garch_update(omega, alpha, beta, sigma_sq, prev_eps)
+    sigma_t   = sqrt(sigma_sq)
+    z         = garch_zscore(spread_residual[t], theta, sigma_t)
+
+    <span class="kw">if</span> z &gt; <span class="nu">2.0</span>:   execute_short_spread()
+    <span class="kw">if</span> z &lt; -<span class="nu">2.0</span>:  execute_long_spread()
+    <span class="kw">if</span> abs(z) &lt; <span class="nu">0.5</span>: close_position()
+</div>
+
+<!-- Running example -->
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit BTC Perp ↔ Lighter — Funding Rate War (3 Days)</div>
+<p>During a 3-day BTC funding rate divergence event, the Bybit↔Lighter spread becomes much more volatile. We compare static vs GARCH z-scores:</p>
+
+<table>
+<tr><th>Period</th><th>Spread σ (actual)</th><th>Static σ (baseline)</th><th>Static z-score</th><th>GARCH σ_t</th><th>GARCH z-score</th></tr>
+<tr><td>Normal market</td><td>0.08%</td><td>0.08%</td><td>2.0 (signal)</td><td>0.08%</td><td>2.0 (signal)</td></tr>
+<tr><td>Funding war day 1</td><td>0.24%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>6.3 (FALSE!)</strong></span></td><td>0.21%</td><td><strong>2.1 (correct)</strong></td></tr>
+<tr><td>Funding war day 2</td><td>0.22%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>5.8 (FALSE!)</strong></span></td><td>0.23%</td><td><strong>1.9 (no entry)</strong></td></tr>
+<tr><td>Recovery</td><td>0.10%</td><td>0.08%</td><td>2.5 (borderline)</td><td>0.11%</td><td>2.3 (signal)</td></tr>
+</table>
+
+<p>Parameters used: ω = 0.000006, α = 0.12, β = 0.85 (α + β = 0.97 &lt; 1 ✓). Long-run σ = sqrt(0.000006 / 0.03) ≈ 0.014 → converts to ≈ 0.08% after scaling.</p>
+
+<div class="fm">Naive z = 0.50% / 0.08% = 6.3  → looks like a huge 6σ trade opportunity
+GARCH z = 0.50% / 0.24% = 2.1  → mild signal — σ_t has already expanded
+Correct action: REDUCE size or skip entry (storm period)</div>
+</div>
+
+<!-- Exercises -->
+<div class="ex">
+<div class="et">Exercise 7.1 — Compute New σ²</div>
+<p>Given: ω = 0.0001, α = 0.10, β = 0.85, prev_σ² = 0.0004, prev_ε = 0.025</p>
+<p><strong>Q:</strong> Compute new σ². Is α + β &lt; 1? What is the long-run σ²?</p>
+<details>
+<summary>Show Answer</summary>
+<div class="ans">
+<p><strong>Step 1:</strong> Check stationarity: α + β = 0.10 + 0.85 = 0.95 &lt; 1 ✓ (stationary)</p>
+<p><strong>Step 2:</strong> new_σ² = ω + α·ε² + β·σ²<br>
+= 0.0001 + 0.10 × (0.025)² + 0.85 × 0.0004<br>
+= 0.0001 + 0.10 × 0.000625 + 0.00034<br>
+= 0.0001 + 0.0000625 + 0.00034<br>
+= <strong>0.0005025</strong></p>
+<p><strong>Long-run σ²</strong> = ω / (1 − α − β) = 0.0001 / (1 − 0.95) = 0.0001 / 0.05 = <strong>0.002</strong></p>
+<p><strong>Interpretation:</strong> The recent shock (ε = 0.025) pushed current σ² from 0.0004 to 0.0005025 — a 25% increase in variance. Long-run equilibrium is 0.002, so current conditions are calmer than average (0.0005 vs 0.002).</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">Exercise 7.2 — Naive vs GARCH Signal Conflict</div>
+<p>The spread residual shows ε = 0.48%, θ = 0.00%. Static σ = 0.14%. Current GARCH σ_t = 0.26%.</p>
+<p>Naive z = 0.48/0.14 = 3.5. GARCH z = 0.48/0.26 = 1.8.</p>
+<p><strong>Q:</strong> Should you enter a short-spread position? Explain your reasoning.</p>
+<details>
+<summary>Show Answer</summary>
+<div class="ans">
+<p><strong>Do NOT enter.</strong> The GARCH z-score of 1.8 does not meet the threshold of 2.0 for entry. The naive z of 3.5 is a <strong>false signal</strong> — it appears extreme only because the static σ is outdated.</p>
+<p><strong>What GARCH tells us:</strong> Current conditional volatility (0.26%) is almost double the historical average (0.14%). This means market conditions are stormy. The spread moved 0.48%, but given current vol, this is only a 1.8σ event — nothing unusual in this regime.</p>
+<p><strong>Risk of entering anyway:</strong> In a high-vol regime, the spread can continue to expand (mean-reversion is slower when κ is lower in stressed regimes). Entering at GARCH z = 1.8 gives poor risk/reward.</p>
+<p><strong>Rule:</strong> Always use the GARCH z-score when should_use_garch() returns True. Discard the naive z-score in volatile regimes.</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.7 GARCH on Residuals | Next → <strong>Ch.8: Jump-Diffusion OU</strong>
+</p>
+
+</body>
+</html>
