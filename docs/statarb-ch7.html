@@ -321,7 +321,19 @@ print(f"ω={omega:.2e}, α={alpha:.4f}, β={beta:.4f}")
 print(f"α+β={alpha+beta:.4f} (ต้อง < 1 เพื่อ stationarity)")
 
 # Conditional variances ที่ model fit
-cond_var = result.conditional_volatility ** 2  # array ของ σ_t²</div>
+cond_var = result.conditional_volatility ** 2  # array ของ σ_t²
+
+# Forecast σ_{t+1} สำหรับ next bar (ใช้ใน live trading)
+forecast = result.forecast(horizon=1, reindex=False)
+sigma_next_sq = forecast.variance.values[-1, 0]
+sigma_next = np.sqrt(sigma_next_sq)</div>
+
+<div class="bx ba">
+<div class="bt">ขนาด Sample ที่จำเป็น</div>
+<p>GARCH ต้องการข้อมูลพอ: <strong>≥ 250 observations</strong> สำหรับ GARCH(1,1) — น้อยกว่านี้ parameter estimate ไม่เสถียร<br>
+ในกรณี crypto perp 1-hour bars: ≥ 10 วัน, 5-minute bars: ≥ 1 วัน<br>
+Refit ทุก week หรือเมื่อ residual std เปลี่ยน &gt; 20% จาก fit ก่อนหน้า</p>
+</div>
 
 <div class="bx bg">
 <div class="bt">ผลที่คาดหวังสำหรับ BTC Spread</div>

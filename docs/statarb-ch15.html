@@ -253,11 +253,11 @@ for each new price tick:
 <p>วิธีแก้ที่แนะนำ: ใช้ <strong>Exponential Moving Average (EMA)</strong> อัปเดต real-time:</p>
 </div>
 
-<div class="fm"># ✅ Concrete solution: EMA-based epsilon_mean และ epsilon_std
-# Initialization
-alpha_ema = 0.02   # EMA decay (เทียบเท่า window ≈ 1/alpha ≈ 50 bars)
-epsilon_mean = epsilon_0   # ค่าเริ่มต้นจาก historical mean
-epsilon_var  = epsilon_var0  # variance เริ่มต้น
+<div class="fm"># ✅ Concrete solution: Welford-style EMA mean+variance
+# Initialization จาก historical calibration
+alpha_ema = 0.02   # EMA decay (effective window ≈ 1/α = 50 bars)
+epsilon_mean = epsilon_0      # ค่าเริ่มต้นจาก historical mean ของ ε
+epsilon_var  = epsilon_var0   # variance เริ่มต้นจาก historical var
 
 # Real-time update loop
 for each new price tick:
@@ -270,14 +270,18 @@ for each new price tick:
     # 2. Recompute epsilon ด้วย beta ใหม่
     epsilon = log(price_A) - beta * log(price_B)
 
-    # 3. อัปเดต epsilon_mean ด้วย EMA
-    epsilon_mean = alpha_ema * epsilon + (1 - alpha_ema) * epsilon_mean
+    # 3. ✅ FIX: คำนวณ diff ก่อน update mean (Welford-style)
+    # ป้องกัน variance bias จากการใช้ updated mean ใน variance update
+    diff = epsilon - epsilon_mean              # ใช้ OLD mean
 
-    # 4. อัปเดต epsilon_std ด้วย EMA variance
-    epsilon_var  = alpha_ema * (epsilon - epsilon_mean)**2 + (1 - alpha_ema) * epsilon_var
-    epsilon_std  = sqrt(epsilon_var + 1e-10)   # guard division by zero
+    # 4. Update mean
+    epsilon_mean = epsilon_mean + alpha_ema * diff
 
-    # 5. z-score ที่ถูกต้อง
+    # 5. Update variance ด้วย OLD diff (ไม่ใช่ new diff)
+    epsilon_var  = (1 - alpha_ema) * (epsilon_var + alpha_ema * diff**2)
+    epsilon_std  = sqrt(epsilon_var + 1e-10)   # guard zero division
+
+    # 6. z-score ที่ unbiased
     z_score = (epsilon - epsilon_mean) / epsilon_std</div>
 
 <!-- 15.6 -->

@@ -173,13 +173,18 @@ log(P_A) = α + β·log(P_B) + ε̂_t<br>
 
 <div class="bx br">
 <div class="bt">⚠️ Engle-Granger Asymmetry — จุดที่ผู้ใช้มักพลาด</div>
-<p>การ regress log(A) ~ log(B) ให้ β_AB และ residual ε_AB<br>
-การ regress log(B) ~ log(A) ให้ β_BA = 1/β_AB_OLS แต่ residual ε_BA <strong>ต่างกัน</strong></p>
+<p>การ regress log(A) ~ log(B) ให้ β_AB = Cov(A,B)/Var(B)<br>
+การ regress log(B) ~ log(A) ให้ β_BA = Cov(A,B)/Var(A)</p>
+<p><strong>ความสัมพันธ์:</strong> β_AB × β_BA = ρ² (ค่า R²) — ไม่ใช่ 1/β กลับกัน<br>
+ดังนั้น 1/β_AB ≠ β_BA ทั่วไป (เท่ากันเฉพาะกรณี ρ=1)<br>
+และ residual ε_AB กับ ε_BA <strong>ต่างกันจริงๆ</strong> ไม่ใช่แค่ scale</p>
 <p>ผลที่ตามมา: ADF test บน ε_AB อาจ pass (p=0.03) แต่ ADF บน ε_BA อาจ fail (p=0.12) — หรือกลับกัน<br>
 <strong>วิธีปฏิบัติ:</strong> ทดสอบทั้งสองทิศทาง แล้วเลือก β ที่ให้ ADF p-value ต่ำกว่า (residual stationary กว่า)<br>
 ถ้าทั้งสองทิศทาง fail → pair ไม่ cointegrate จริง</p>
 <div style="font-family:monospace;background:#fef2f2;padding:8px 12px;border-radius:4px;margin-top:8px;font-size:.9em">
-# Python: ทดสอบทั้งสองทิศทาง<br>
+# Python: ทดสอบทั้งสองทิศทาง (β แต่ละทิศไม่ได้สัมพันธ์แบบ 1/x)<br>
+beta_AB, _ = np.polyfit(log_B, log_A, 1)   # A = β_AB · B + α<br>
+beta_BA, _ = np.polyfit(log_A, log_B, 1)   # B = β_BA · A + α<br>
 p_AB = adfuller(log_A - beta_AB * log_B)[1]<br>
 p_BA = adfuller(log_B - beta_BA * log_A)[1]<br>
 best_direction = "A~B" if p_AB &lt; p_BA else "B~A"

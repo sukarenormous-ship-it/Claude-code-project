@@ -247,36 +247,44 @@ Q[i,j] = P(S_t=j | S_{t-1}=i)</div>
         predicted = transition_matrix.T @ probs   # ยังใช้ prob-space ได้ตรงนี้
 
         # Step 3: Update step ใน log-space แล้ว normalize ด้วย log-sum-exp
-        log_updated = [log_likelihoods[j] + log(predicted[j] + 1e-300)
-                       for j in range(n_regimes)]
+        # ✅ FIX: ใช้ -inf แทน log(0 + ε) เพื่อไม่ใส่ bias
+        log_updated = []
+        for j in range(n_regimes):
+            if predicted[j] > 0:
+                log_updated.append(log_likelihoods[j] + log(predicted[j]))
+            else:
+                log_updated.append(-inf)   # regime นี้เป็นไปไม่ได้
         # log-sum-exp trick: หา max ก่อน เพื่อ numerical stability
         max_log = max(log_updated)
-        exp_shifted = [exp(lv - max_log) for lv in log_updated]
-        total = sum(exp_shifted)
-        probs = [e / total for e in exp_shifted]  # normalize กลับสู่ probability
+        if max_log == -inf:
+            # ทุก regime impossible → fallback uniform
+            probs = [1.0/n_regimes] * n_regimes
+        else:
+            exp_shifted = [exp(lv - max_log) for lv in log_updated]
+            total = sum(exp_shifted)
+            probs = [e / total for e in exp_shifted]  # normalize
 
         all_probs[t] = probs
 
     return all_probs   # shape (T, n_regimes)
 
 
-def log_ou_likelihood(y_t, y_prev, params):
-    """Log-Gaussian density ของ OU transition (ป้องกัน underflow)"""
+def log_ou_likelihood(y_t, y_prev, params, dt=1.0):
+    """Log-Gaussian density ของ OU transition (ป้องกัน underflow)
+
+    ✅ FIX: รับ dt เป็น parameter เพื่อหลีกเลี่ยง NameError
+    เดิม: dt ถูกอ้างจาก global scope ซึ่งไม่ portable
+    """
     kappa, theta, sigma = params
-    dt = 1.0
     mu  = y_prev * exp(-kappa*dt) + theta * (1 - exp(-kappa*dt))
     var = (sigma**2 / (2*kappa)) * (1 - exp(-2*kappa*dt))
     if var <= 0: return -1e300   # guard
-    # log N(y_t; mu, var)
+    # log N(y_t; mu, var)  =  -½log(2πσ²) - ½(y-μ)²/σ²
     return -0.5 * log(2 * pi * var) - 0.5 * ((y_t - mu)**2 / var)
 
 
-def ou_likelihood(y_t, y_prev, params):
-    """Gaussian density ของ OU transition"""
-    kappa, theta, sigma = params
-    mu  = y_prev * exp(-kappa*dt) + theta * (1 - exp(-kappa*dt))
-    var = (sigma**2 / (2*kappa)) * (1 - exp(-2*kappa*dt))
-    return gaussian_pdf(y_t, mu, sqrt(var))</div>
+# Note: ou_likelihood() แบบเดิม (prob-space) ถูกแทนที่โดย log_ou_likelihood
+# ห้ามใช้ในการ run จริง เพราะ underflow ภายใน T > 200 bars</div>
 
 <div class="bx bg">
 <div class="bt">ข้อสังเกตสำคัญ</div>
