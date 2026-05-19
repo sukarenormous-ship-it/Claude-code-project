@@ -257,18 +257,18 @@ Legging buffer estimate:
 </thead>
 <tbody>
 <tr><td>Gross spread at entry (z=2.0, σ=7.5bps)</td><td>2.0 × 7.5bps</td><td>+15.0 bps</td></tr>
-<tr><td>Taker fee Bybit (0.055% × 2)</td><td>round trip</td><td>−1.1 bps</td></tr>
-<tr><td>Taker fee Lighter (0.030% × 2)</td><td>round trip</td><td>−0.6 bps</td></tr>
+<tr><td>Taker fee Bybit (0.055% × 2)</td><td>round trip</td><td>−11.0 bps</td></tr>
+<tr><td>Taker fee Lighter (0.030% × 2)</td><td>round trip</td><td>−6.0 bps</td></tr>
 <tr><td>Bid-ask spread (both venues)</td><td>2 × half-spread</td><td>−0.8 bps</td></tr>
 <tr><td>Slippage ($100k on $500M ADV)</td><td>σ×sqrt(size/ADV)</td><td>−0.3 bps</td></tr>
 <tr><td>Funding (1 period, 0.01%/8h)</td><td>hold 8h</td><td>−1.0 bps</td></tr>
 <tr><td>Legging buffer (0.5s latency)</td><td>σ×sqrt(0.5/60)</td><td>−0.5 bps</td></tr>
-<tr><td><strong>Net Edge</strong></td><td></td><td><strong>+10.7 bps (0.107%)</strong></td></tr>
+<tr><td><strong>Net Edge</strong></td><td></td><td><strong>−4.6 bps (−0.046%, LOSS)</strong></td></tr>
 </tbody>
 </table>
 
-<p><strong>สรุป:</strong> Gross 15bps แต่ net เพียง 10.7bps — cost กินไป 29% ของ gross edge</p>
-<p><strong>Break-even σ:</strong> total cost 4.3bps / (2.0 − 0.5) = 2.9bps → ต้องการ σ_spread ≥ 2.9bps เพื่อ trade คุ้มค่า (σ จริง = 7.5bps ✅)</p>
+<p><strong>สรุป:</strong> Gross 15bps แต่ taker cost (17bps) + อื่น ๆ (2.6bps) = 19.6bps → net = −4.6bps → ห้ามเทรดในสภาพ retail taker — ต้องใช้ maker tier (rebate) หรือรอจน z ≥ 3.3</p>
+<p><strong>Break-even σ:</strong> total cost 19.6bps / (2.0 − 0.5) = 13.1bps → ต้องการ σ_spread ≥ 13.1bps (σ จริง = 7.5bps ❌ ไม่ผ่าน) → ลด cost ด้วย maker pricing หรือเลือก venue ที่ fee ต่ำกว่า</p>
 </div>
 
 <h2 id="s19-10">19.10 แบบฝึกหัด</h2>
@@ -286,13 +286,13 @@ Legging buffer estimate:
 </details>
 
 <details>
-<summary>ข้อ 2: วิธีลด fee cost จาก 1.7bps เป็น 0.5bps — ทำได้อย่างไร?</summary>
+<summary>ข้อ 2: วิธีลด fee cost จาก 17bps (taker) เป็น rebate (maker) — ทำได้อย่างไร?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong> ใช้ limit order (maker) แทน market order (taker)</p>
 <ul>
-<li>Maker fee Bybit: −0.025% (rebate) แทน +0.055%</li>
-<li>Maker fee Lighter: −0.010% แทน +0.030%</li>
-<li>Net saving: ประหยัดได้ ~1.7bps ต่อ leg</li>
+<li>Maker fee Bybit: −0.025% (rebate) แทน +0.055% → ประหยัด 0.080%/side = 16bps round-trip</li>
+<li>Maker fee Lighter: −0.010% (rebate) แทน +0.030% → ประหยัด 0.040%/side = 8bps round-trip</li>
+<li>Net saving: 16 + 8 = 24bps round-trip (จาก +17bps → −7bps rebate)</li>
 </ul>
 <p>Trade-off: limit order อาจไม่ถูก fill ถ้า spread เคลื่อนที่ออกไปก่อน → ต้องออกแบบ order management ให้ดี</p>
 </div>
@@ -302,10 +302,10 @@ Legging buffer estimate:
 <summary>ข้อ 3: ถ้าต้องการ minimum net edge 5bps — คำนวณ minimum z_entry ที่ต้องใช้</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong> ใช้สูตร: gross_needed = net_edge + total_cost</p>
-<p>ตัวอย่าง: total_cost = 4.3bps, net_edge_min = 5bps<br>
-gross_needed = 9.3bps<br>
-z_entry_min = gross_needed / σ_spread = 9.3 / 7.5 = <strong>1.24</strong></p>
-<p>แต่ถ้า σ_spread = 3bps: z_min = 9.3 / 3 = <strong>3.1</strong> — ต้องรอสัญญาณแรงมากกว่าปกติ</p>
+<p>ตัวอย่าง: total_cost = 19.6bps (taker), net_edge_min = 5bps<br>
+gross_needed = 24.6bps<br>
+z_entry_min = gross_needed / σ_spread = 24.6 / 7.5 = <strong>3.28</strong></p>
+<p>แต่ถ้า σ_spread = 3bps: z_min = 24.6 / 3 = <strong>8.2</strong> — แทบเป็นไปไม่ได้ → ต้องลด cost ด้วย maker tier ก่อน</p>
 </div>
 </details>
 </div>
