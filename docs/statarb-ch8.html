@@ -377,11 +377,28 @@ trade ต่อได้ แต่ risk น้อยลง<br>
 <div class="running-ex">
 <div class="re-title">Running Example: Bybit BTCUSDT Perp ↔ Lighter BTCUSDT Perp — Jump Event</div>
 <p>ช่วง <strong>funding rate war</strong>: Bybit ประกาศปรับ funding rate เป็น 0.09% ต่อ 8 ชั่วโมง (ปกติ 0.01%) เพื่อดึง short position</p>
+
+<h3>Fitted Jump Model Parameters (90-day calibration)</h3>
+<div class="fm">Model: Merton Jump-Diffusion  (J ~ N(μ_J, σ_J²))
+
+Estimated from Bybit↔Lighter BTCUSDT Perp, 90 วัน (tick data):
+  λ  = 0.8 jumps/day   (≈ 1 jump ทุก 30h)
+  μ_J = 0.0%           (symmetric — jumps ไม่ bias ทิศทาง)
+  σ_J = 4 × σ_stat     = 4 × 0.003 = 0.012 (1.2%)
+
+σ_BV (bipower variation ช่วงปกติ, 30-bar window):
+  σ_BV ≈ 0.0018–0.0022 per tick  →  ใช้ 0.002 ต่อ tick
+
+Probability check (Merton):
+  P(|J| &gt; 5.5σ_stat | jump occurs) = P(|N(0,4²)| &gt; 5.5) ≈ 17%
+  P(|move| &gt; 5.5σ_stat | no jump)  = P(|N(0,1)|  &gt; 5.5) ≈ 0.00004%
+  Likelihood ratio: 17% / 0.00004% ≈ 42,500x → unambiguously a jump</div>
+
 <p>ผลกระทบต่อ spread:</p>
 <ul>
 <li>Bybit perp premium เพิ่มขึ้นทันทีจาก $10 → $80 ใน 2 นาที (8x)</li>
-<li>spread ε กระโดด ~5.5σ → detect_jump() = True</li>
-<li>L_t = 5.8 &gt; threshold 4.0 → confirmed jump</li>
+<li>spread ε กระโดด ~5.5σ_stat = 5.5 × 0.003 = 0.0165 (1.65%)</li>
+<li>L_t = Δε / σ_BV = 0.0165 / 0.002 = <strong>8.25</strong> &gt; threshold 4.0 → confirmed jump</li>
 </ul>
 <p><strong>การ handle ที่เหมาะสม:</strong></p>
 <div class="fm"># เมื่อ jump detected

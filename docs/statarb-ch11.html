@@ -433,7 +433,12 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
         self.step   = sigma_stat * step_multiplier
         self.levels = levels
 
-    def get_grid_action(self, epsilon):
+    def get_grid_action(self, epsilon, adf_pvalue=None, regime_probs=None):
+        # Hard stop: close all grid if cointegration breaks
+        if adf_pvalue is not None and regime_probs is not None:
+            if not self.is_cointegration_healthy(adf_pvalue, regime_probs):
+                return "CLOSE_ALL_GRID"
+
         z = (epsilon - self.theta) / self.step
         level = int(abs(z))  # which grid level crossed
 
