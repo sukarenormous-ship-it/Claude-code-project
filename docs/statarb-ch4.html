@@ -306,21 +306,27 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <p>OLS/TLS/Kalman ไม่ใช่แค่ตัวเลือกที่ดีกว่ากัน — แต่ละตัวถูกออกแบบมาเพื่อวัตถุประสงค์ต่างกัน เลือกให้ตรงกับสิ่งที่ต้องการ</p>
 </div>
 
-<h3>สองเส้นทาง: Funding Harvest vs Spread Arbitrage</h3>
+<h3>สามเส้นทาง: Objective-to-ε Mapping</h3>
 
 <table>
-<tr><th>วัตถุประสงค์</th><th>Model</th><th>ผลที่ต้องการ</th><th>ε target</th></tr>
+<tr><th>วัตถุประสงค์</th><th>Model</th><th>ε target (variance)</th><th>แหล่งกำไรหลัก</th></tr>
 <tr>
-<td><strong>Funding Rate Harvest</strong></td>
-<td>Kalman Filter (dynamic)</td>
-<td>β_t ติดตาม ratio จริงแบบ real-time → ε ≈ 0, variance ต่ำสุด</td>
-<td>กราฟแบน ≈ เส้นศูนย์ → lock price risk</td>
+<td><strong>Funding Rate Harvest</strong><br><small>Perp↔Perp / Spot↔Perp</small></td>
+<td>Kalman Filter (dynamic β_t)</td>
+<td><strong>σ² → 0</strong> — กราฟแบนขนานศูนย์</td>
+<td>Funding rate yield — เพิ่ม leverage ปลอดภัยได้เพราะ price risk ≈ 0</td>
 </tr>
 <tr>
-<td><strong>Spread Arbitrage</strong></td>
-<td>OLS/TLS (static)</td>
-<td>β คงที่จาก historical regression → ε แกว่งรอบ θ ตาม inefficiency</td>
-<td>กราฟ mean-reverting ที่มี variance → กินจากส่วนต่าง</td>
+<td><strong>Hybrid: Spread + Funding</strong><br><small>Spot↔Future / Pairs Trading</small></td>
+<td>OLS/TLS (static β) + walk-forward</td>
+<td><strong>σ_stat "Optimal Substantial"</strong> — กว้างพอกว่า friction แต่ half-life สั้น</td>
+<td>Capital gain จาก mean reversion <em>และ</em> basis/funding</td>
+</tr>
+<tr>
+<td><strong>Volatility Arbitrage</strong><br><small>Spot↔Option (ขั้นสูง)</small></td>
+<td>GARCH(1,1) + Delta-Neutral hedge</td>
+<td><strong>Dynamic — ขึ้นกับ IV regime</strong> — กรอง vol clustering ด้วย GARCH</td>
+<td>IV mispricing บน Options surface — นอกขอบเขตหนังสือนี้</td>
 </tr>
 </table>
 
@@ -400,7 +406,39 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <text x="512" y="188" text-anchor="middle" font-size="10" font-weight="700" fill="#2563eb">ε_t mean-reverting (Spread Arb)</text>
 <text x="512" y="199" text-anchor="middle" font-size="9" fill="#64748b">variance → โอกาสเทรด ○ entry / ○ exit</text>
 </svg>
-<div class="caption">ซ้าย: Kalman ε_t แบน — สมบูรณ์สำหรับ Funding Harvest | ขวา: OLS ε_t แกว่ง — สมบูรณ์สำหรับ Spread Arb</div>
+<div class="caption">ซ้าย: Kalman ε_t แบน — Funding Harvest (σ² → 0) | ขวา: OLS ε_t แกว่ง — Hybrid/Spread Arb (σ_stat "Optimal")</div>
+
+<h3>Breakeven σ_stat — เส้นแบ่ง "Optimal Substantial Variance"</h3>
+
+<p>สำหรับ Hybrid Strategy สิ่งที่กำหนด "กว้างพอ" ของ σ_stat คือสมการ Breakeven จาก <a href="statarb-ch19.html#s19-7">บทที่ 19.7</a>:</p>
+
+<div class="key-idea">
+<div class="ki-label">Breakeven σ Condition</div>
+<div class="ki-eq">σ_stat ≥ total_friction_cost / (z_entry − z_exit)</div>
+<p style="margin-top:8px">ถ้า σ_stat ต่ำกว่า threshold นี้ → gross spread ที่ entry ไม่ครอบคลุม friction → net_edge &lt; 0 → ห้ามเทรด</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">Optimal Substantial Variance — นิยามเชิงปฏิบัติ</div>
+<p>σ_stat ที่ "พอเหมาะ" ต้องตอบ <strong>สองเงื่อนไขพร้อมกัน</strong>:</p>
+<ul>
+<li><strong>Lower bound:</strong> σ_stat ≥ total_cost / (z_entry − z_exit) → กว้างพอกว่า friction (breakeven condition)</li>
+<li><strong>Upper bound:</strong> Half-life ≤ N bars → spread ไม่ค้างนานเกินไปจน margin cost กินกำไร</li>
+</ul>
+<p>ช่วงระหว่าง lower–upper bound นี้คือ "Tradeable Window" ของกลยุทธ์ Hybrid</p>
+</div>
+
+<div class="fm">ตัวอย่าง Bybit↔Lighter (taker-taker):
+  total_friction = 19.6 bps  (ดู ch19)
+  z_entry = 2.0, z_exit = 0.5
+
+  Breakeven σ_stat = 19.6 / (2.0 − 0.5) = 13.1 bps  (0.131%)
+
+  วัดได้จริง:  σ_stat = 30 bps  (0.30%)
+  ส่วนเกิน = 30 − 13.1 = 16.9 bps  ← gross edge สุทธิต่อรอบ
+
+  ✅ σ_stat &gt; Breakeven σ → trade ได้
+  ❌ ถ้า σ_stat = 10 bps → 10 &lt; 13.1 → ห้ามเทรด</div>
 
 <div class="running-ex">
 <div class="re-title">Running Example: Bybit↔Lighter — สองเส้นทาง</div>
