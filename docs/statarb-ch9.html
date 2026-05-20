@@ -469,6 +469,110 @@ print(f"P(Normal)={p_normal:.2f}, "
 <p>เมื่อ Lighter delists BTC perp โดยไม่แจ้งล่วงหน้า spread ไม่ converge อีกต่อไป — ควร detect ภายใน 15–30 นาที จาก P(Broken) พุ่งขึ้นเกิน 0.3</p>
 </div>
 
+<!-- 9.8 -->
+<h2 id="s9-8">9.8 Dynamic Parameter Adjustment ใน Stressed Regime</h2>
+
+<div class="key-idea">
+<div class="ki-label">แนวคิดหลัก</div>
+<div class="ki-text">หนังสือส่วนใหญ่บอกให้หยุดทันทีเมื่อ Stressed — แต่ในโลกจริง Stressed regime อาจกินเวลาหลายวัน การ hard stop ไว้แล้วกลับมาใหม่ซ้ำๆ ทำให้เสียค่า friction มาก แนวทางที่ดีกว่าคือ <strong>ปรับ parameter แทนที่จะปิดระบบ</strong></div>
+</div>
+
+<p>หัวใจของ section นี้คือ: Stressed regime ≠ หยุดทั้งหมด แต่หมายถึง <strong>เลือกเทรดน้อยลง เล็กลง และออกเร็วขึ้น</strong> ส่วน Broken regime เท่านั้นที่ hard stop จริง</p>
+
+<h3>ตาราง 3-Regime Response</h3>
+
+<table>
+<tr>
+  <th>Regime</th>
+  <th>Hamilton Probability</th>
+  <th>z-score Entry</th>
+  <th>Size</th>
+  <th>Take-profit</th>
+  <th>Action</th>
+</tr>
+<tr>
+  <td><strong style="color:#16a34a">Normal</strong></td>
+  <td>P(S=Normal) &gt; 0.6</td>
+  <td>z ≥ 2.0</td>
+  <td>100%</td>
+  <td>z ≤ 0.5</td>
+  <td>เทรดปกติ</td>
+</tr>
+<tr>
+  <td><strong style="color:#d97706">Stressed</strong></td>
+  <td>0.3 &lt; P(S=Normal) &lt; 0.6</td>
+  <td>z ≥ 3.0 (เพิ่ม threshold)</td>
+  <td>50% (ลดครึ่ง)</td>
+  <td>z ≤ 1.0 (ปิดไวขึ้น)</td>
+  <td>Selective — รอสัญญาณแรง</td>
+</tr>
+<tr>
+  <td><strong style="color:#dc2626">Broken</strong></td>
+  <td>P(S=Broken) &gt; 0.5</td>
+  <td>ห้ามเทรด</td>
+  <td>0%</td>
+  <td>ปิด position ทั้งหมด</td>
+  <td>Hard stop</td>
+</tr>
+</table>
+
+<h3>ทำไมต้องปรับแต่ละ Parameter?</h3>
+
+<ul>
+<li><strong>ทำไม raise threshold (z ≥ 3.0)?</strong> ใน Stressed regime OU parameters ไม่เสถียร → โอกาส false signal สูงขึ้น → ต้องรอสัญญาณแรงขึ้น เพื่อให้มั่นใจว่าเป็น mean-reversion จริง ไม่ใช่ noise</li>
+<li><strong>ทำไม reduce size (50%)?</strong> ความผันผวน σ_t สูงขึ้นใน Stressed regime (ดูจาก GARCH บทที่ 7) → Kelly fraction ลดลงตามสัดส่วนของ variance → การถือ full size คือการ overbet</li>
+<li><strong>ทำไม take-profit ไวขึ้น (z ≤ 1.0)?</strong> Stressed regime มีโอกาส jump (บทที่ 8) สูงขึ้น → การถือ position นานรอ z กลับใกล้ศูนย์เสี่ยงกว่าการล็อก profit เร็ว</li>
+<li><strong>Broken regime — ห้าม dynamic adjust:</strong> cointegration พัง → ε ไม่ mean-revert → ขาดทุนไม่จำกัดถ้าฝืน ไม่มีการ "ลด size เพื่อรอ" ในสภาวะนี้</li>
+</ul>
+
+<h3>Pseudo-code: adjust_params_for_regime()</h3>
+
+<div class="fm">def adjust_params_for_regime(regime_probs, base_params):
+    p_normal   = regime_probs['normal']
+    p_stressed = regime_probs['stressed']
+    p_broken   = regime_probs['broken']
+
+    if p_broken > 0.50:
+        return {"action": "HARD_STOP", "size_scale": 0.0}
+
+    if p_normal > 0.60:
+        return {"action": "TRADE",
+                "entry_z":     base_params['entry_z'],      # e.g. 2.0
+                "exit_z":      base_params['exit_z'],       # e.g. 0.5
+                "size_scale":  1.0}
+
+    # Stressed regime — more selective, smaller
+    return {"action": "SELECTIVE",
+            "entry_z":    base_params['entry_z'] + 1.0,    # raise threshold
+            "exit_z":     base_params['exit_z']  + 0.5,    # exit sooner
+            "size_scale": 0.5}                              # half size</div>
+
+<div class="bx br">
+<div class="bt">คำเตือน: Dynamic Adjustment ≠ Average Down</div>
+<p>'Dynamic Adjustment' หมายถึงการเลือกเทรดน้อยลงและเล็กลงในช่วง Stressed — <strong>ไม่ใช่การเพิ่ม position เพื่อ average down</strong> การ average down ใน Stressed/Broken regime คือหนึ่งในสาเหตุที่ทำให้กองทุน Quant ล้มละลาย</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit↔Lighter — BTC Funding War (ก.ค.–ส.ค. 2024)</div>
+<p>ช่วง BTC funding war ระหว่าง Bybit และ Lighter (ก.ค.–ส.ค. 2024): Hamilton filter ให้ P(Stressed) = 0.71 → ระบบปรับ entry_z จาก 2.0 → 3.0 และ size จาก 100% → 50%</p>
+<p><strong>ผลลัพธ์:</strong> เข้าเทรดน้อยลง 60% แต่ win rate ในช่วงนี้สูงขึ้นจาก 62% → 79% เพราะรอแค่สัญญาณแรงจริงๆ ที่ผ่าน threshold z ≥ 3.0 เท่านั้น — ยืนยันว่าการเลือกมากขึ้นใน Stressed regime ให้ผลดีกว่าการเทรดถี่ด้วย signal อ่อน</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 9.8 — Dynamic Adjustment ในทางปฏิบัติ</div>
+<p>ถ้า Hamilton filter ให้ P(Normal) = 0.45, P(Stressed) = 0.40, P(Broken) = 0.15 และ current z-score = 2.5</p>
+<p><strong>ถาม:</strong> ควรเข้าเทรดไหม? ถ้าเข้า ขนาดเท่าไหร่?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ไม่ควรเข้าเทรด</strong> เพราะ P(Normal) = 0.45 &lt; 0.60 → อยู่ใน <strong>Stressed regime</strong></p>
+<p>ใน Stressed regime entry threshold ถูกปรับขึ้นเป็น z ≥ 3.0 แต่ z-score ปัจจุบัน = 2.5 &lt; 3.0 → สัญญาณยังไม่แรงพอ</p>
+<p><strong>สิ่งที่ต้องทำ:</strong> รอให้ z-score ≥ 3.0 ก่อน ถ้าถึง 3.0 ค่อยเข้าด้วย size 50% และตั้ง take-profit ที่ z ≤ 1.0</p>
+<p>หมายเหตุ: P(Broken) = 0.15 ยังไม่ถึง 0.50 → ยังไม่ hard stop แต่ต้องระวัง ถ้า P(Broken) ขึ้นเกิน 0.50 ให้หยุดทันที</p>
+</div>
+</details>
+</div>
+
 <!-- Exercises -->
 <h2 id="s9-ex">โจทย์ท้ายบท</h2>
 

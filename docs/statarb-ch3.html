@@ -487,6 +487,172 @@ Trade Parameters:
 <tr><td><strong>Δt</strong></td><td>Bar size ในหน่วยวัน (1-hour bar: Δt = 1/24)</td></tr>
 </table>
 
+<!-- 3.9 Walk-Forward Calibration -->
+<h2 id="s3-9">3.9 Walk-Forward Calibration — ป้องกัน Overfitting</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — อ่านก่อน</div>
+<p>การ backtest แบบ <strong>Static Window คือดู historical data ครั้งเดียว → รู้อนาคตโดยไม่รู้ตัว (lookahead bias)</strong><br>
+Walk-Forward แก้ปัญหานี้โดยแบ่งเวลาแบบ rolling ลำดับเสมอ — เราใช้ข้อมูลอดีตเพื่อ fit แล้วทดสอบบนข้อมูลอนาคตที่โมเดลยังไม่เคยเห็น</p>
+</div>
+
+<h3>Concept Drift — ทำไม Parameters เปลี่ยนตลอดเวลา</h3>
+
+<p>OU parameters (κ, θ, σ) ไม่คงที่ตลอดกาล ตลาดเปลี่ยนแปลงตามสภาวะเศรษฐกิจ ความเชื่อมั่นของนักลงทุน และโครงสร้าง funding rate — สิ่งนี้เรียกว่า <strong>Concept Drift</strong></p>
+
+<ul>
+<li><strong>Static window</strong>: fit OU บนข้อมูลทั้งหมดครั้งเดียว → parameters เป็นค่าเฉลี่ยของทุกช่วงเวลา → overfits กับช่วงอดีตที่ตลาดอาจไม่มีอีกแล้ว</li>
+<li><strong>Walk-Forward</strong>: fit OU บน window อดีต → apply บน window อนาคตที่ยังไม่เคยเห็น → สะท้อน parameters ของตลาด ณ ช่วงนั้นจริง ๆ</li>
+</ul>
+
+<div class="bx ba">
+<div class="bt">อันตรายของ Static Calibration</div>
+<ul>
+<li>θ ที่ fit ได้อาจเป็นค่าเฉลี่ยของ regime หลายช่วงที่ไม่เคยเกิดพร้อมกัน</li>
+<li>κ ที่ได้อาจสูงเกินจริง เพราะ data ในช่วง volatile ดูเหมือน mean-revert เร็ว</li>
+<li>เมื่อ trade จริง parameters เหล่านั้นไม่ตรงกับตลาดปัจจุบัน → signal ผิด → ขาดทุน</li>
+</ul>
+</div>
+
+<h3>Walk-Forward Algorithm — 3 ขั้นตอนหลัก</h3>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>แบ่ง Window:</strong> Train window = 90 วัน, Test window = 30 วัน<br>
+เริ่มที่วันที่ 1–90 เป็น train, วันที่ 91–120 เป็น test — <strong>ห้าม shuffle หรือ random split เด็ดขาด</strong> ต้องเรียงตามเวลาเสมอ</div>
+</div>
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>Fit แล้ว Apply:</strong> Calibrate OU parameters บน train window → นำ parameters ไป generate signals บน test window → บันทึก PnL ของ test window<br>
+ไม่มี lookahead: test window ถูก "เปิดเผย" ทีละ bar ไม่ใช่ทั้งหมด</div>
+</div>
+<div class="step-row">
+<div class="step-num">3</div>
+<div><strong>เลื่อน Window:</strong> ขยับ window ไป 30 วัน (= test_days) → วนซ้ำขั้นตอน 1–2<br>
+แต่ละรอบให้ PnL 1 window — รวมทุก window ได้ equity curve ที่ไม่มี lookahead</div>
+</div>
+
+<!-- Walk-Forward timeline diagram -->
+<svg class="d" viewBox="0 0 680 200">
+<defs>
+<marker id="wf-arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+  <polygon points="0 0,7 2.5,0 5" fill="#374151"/>
+</marker>
+</defs>
+
+<text x="340" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937">Walk-Forward — Rolling Windows ตามเวลา</text>
+
+<!-- Window 1 -->
+<rect x="20" y="35" width="180" height="32" rx="4" fill="#2563eb" opacity="0.85"/>
+<text x="110" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Train 90d (W1)</text>
+<rect x="200" y="35" width="60" height="32" rx="4" fill="#16a34a" opacity="0.85"/>
+<text x="230" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Test 30d</text>
+
+<!-- Window 2 -->
+<rect x="60" y="80" width="180" height="32" rx="4" fill="#2563eb" opacity="0.75"/>
+<text x="150" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Train 90d (W2)</text>
+<rect x="240" y="80" width="60" height="32" rx="4" fill="#16a34a" opacity="0.85"/>
+<text x="270" y="100" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Test 30d</text>
+
+<!-- Window 3 -->
+<rect x="100" y="125" width="180" height="32" rx="4" fill="#2563eb" opacity="0.65"/>
+<text x="190" y="145" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Train 90d (W3)</text>
+<rect x="280" y="125" width="60" height="32" rx="4" fill="#16a34a" opacity="0.85"/>
+<text x="310" y="145" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Test 30d</text>
+
+<!-- Dots indicating continuation -->
+<text x="380" y="105" font-size="20" fill="#374151" font-weight="700">···</text>
+
+<!-- Last window (W_n) -->
+<rect x="430" y="80" width="180" height="32" rx="4" fill="#2563eb" opacity="0.65"/>
+<text x="520" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Train 90d (W_n)</text>
+<rect x="610" y="80" width="60" height="32" rx="4" fill="#16a34a" opacity="0.85"/>
+<text x="640" y="100" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Test 30d</text>
+
+<!-- Arrow showing direction of time -->
+<line x1="20" y1="180" x2="660" y2="180" stroke="#374151" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+<text x="340" y="196" text-anchor="middle" font-size="10" fill="#374151">เวลา →  (ห้ามย้อนกลับ / ห้าม shuffle)</text>
+
+<!-- Legend -->
+<rect x="20" y="160" width="14" height="10" rx="2" fill="#2563eb" opacity="0.85"/>
+<text x="38" y="169" font-size="9" fill="#374151">Train window (fit parameters)</text>
+<rect x="200" y="160" width="14" height="10" rx="2" fill="#16a34a" opacity="0.85"/>
+<text x="218" y="169" font-size="9" fill="#374151">Test window (วัด PnL จริง)</text>
+</svg>
+<div class="caption">แต่ละ train block (สีน้ำเงิน) ให้ parameters → apply บน test block (สีเขียว) ที่อยู่ถัดไปในอนาคต — เลื่อนซ้ำตลอดช่วงข้อมูล</div>
+
+<h3>Pseudo-code — Walk-Forward Calibration</h3>
+
+<div class="fm">def walk_forward_calibration(prices_A, prices_B,
+                              train_days=90, test_days=30):
+    results = []
+    i = 0
+    while i + train_days + test_days &lt;= len(prices_A):
+        train_A = prices_A[i : i+train_days]
+        train_B = prices_B[i : i+train_days]
+        test_A  = prices_A[i+train_days : i+train_days+test_days]
+        test_B  = prices_B[i+train_days : i+train_days+test_days]
+
+        # Fit OU parameters on train
+        beta = estimate_beta_ols(train_A, train_B)
+        epsilon_train = log(train_A) - beta * log(train_B)
+        kappa, theta, sigma_stat = calibrate_ou(epsilon_train)
+
+        # Apply on test (no lookahead)
+        epsilon_test = log(test_A) - beta * log(test_B)
+        signals = generate_signals(epsilon_test, kappa, theta, sigma_stat)
+        pnl = simulate_pnl(signals, test_A, test_B)
+
+        results.append({"window_start": i, "beta": beta,
+                        "kappa": kappa, "pnl": pnl})
+        i += test_days  # slide forward
+
+    return results</div>
+
+<div class="bx bb">
+<div class="bt">จุดสำคัญที่ต้องระวัง</div>
+<ul>
+<li><code>i += test_days</code> — เลื่อน window ด้วย test_days ไม่ใช่ 1 วัน เพื่อให้แต่ละ test window ไม่ overlap กัน</li>
+<li>Train window ขนาด 90 วัน ต้องมี data เพียงพอสำหรับ AR(1) regression — น้อยกว่า 30 obs จะไม่ reliable</li>
+<li>ห้าม reuse test data เป็น train ของ window เดิม — window ต้องเลื่อนเป็นลำดับเสมอ</li>
+</ul>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Bybit↔Lighter BTC — Walk-Forward 360 วัน</div>
+<p>ใช้ข้อมูล 360 วัน → walk-forward ได้ <strong>9 windows</strong> (train=90d, test=30d, slide=30d)</p>
+<div class="fm">Window 1:  train day 1–90,   test day 91–120   → half-life = 6.1h
+Window 2:  train day 31–120,  test day 121–150  → half-life = 5.2h
+Window 3:  train day 61–150,  test day 151–180  → half-life = 8.7h
+Window 4:  train day 91–180,  test day 181–210  → half-life = 9.4h
+Window 5:  train day 121–210, test day 211–240  → half-life = 7.1h
+Window 6:  train day 151–240, test day 241–270  → half-life = 11.3h
+Window 7:  train day 181–270, test day 271–300  → half-life = 6.8h
+Window 8:  train day 211–300, test day 301–330  → half-life = 5.9h
+Window 9:  train day 241–330, test day 331–360  → half-life = 6.5h
+
+เฉลี่ย: 7.4h  |  Range: 5.2–11.3h</div>
+<p>Half-life เฉลี่ยจาก 9 windows = <strong>7.4 ชั่วโมง</strong> (range: 5.2–11.3h) — ความผันผวนของ half-life ระหว่าง windows แสดงว่า OU parameters เปลี่ยนตามช่วงเวลาจริง → <strong>justifies การใช้ walk-forward แทน static calibration</strong> ถ้าใช้ static จะได้ค่าเดียวตลอด ซึ่งผิดพลาดในหลายช่วง</p>
+</div>
+
+<!-- Exercises for 3.9 -->
+<div class="ex">
+<div class="et">โจทย์ 3.4 — Walk-Forward Window Count</div>
+<p>มีข้อมูล <strong>180 วัน</strong>, ตั้งค่า train = 90 วัน, test = 30 วัน, slide = 30 วัน</p>
+<p><strong>ถาม:</strong> (a) ได้กี่ windows? (b) first trade เริ่มวันที่เท่าไหร่? (c) ถ้าลด train เหลือ 60 วัน จะได้กี่ windows?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> จำนวน windows = ⌊(180 − 90) / 30⌋ = ⌊90 / 30⌋ = <strong>3 windows</strong></p>
+<p>Window 1: train day 1–90, test day 91–120<br>
+Window 2: train day 31–120, test day 121–150<br>
+Window 3: train day 61–150, test day 151–180</p>
+<p><strong>(b)</strong> First trade เริ่มวันที่ <strong>91</strong> — เพราะต้องรอให้ train window แรก (90 วัน) สมบูรณ์ก่อน min lookback ก่อน trade คือวันที่ 91</p>
+<p><strong>(c)</strong> train=60d: ⌊(180 − 60) / 30⌋ = ⌊120 / 30⌋ = <strong>4 windows</strong> — ได้ windows มากขึ้น แต่ fit quality อาจลดลงเพราะ train data น้อยลง</p>
+</div>
+</details>
+</div>
+
 <!-- Exercises -->
 <div class="ex">
 <div class="et">โจทย์ 3.1 — คำนวณ half-life และ trade parameters</div>
