@@ -128,8 +128,9 @@ FX · Metals · Indices · Crypto CFD — ทุกอย่างที่ไ�
 <div class="key-idea">
 <div class="ki-label">สูตรการคำนวณ Swap Amount</div>
 <div class="ki-eq">Swap_amount = Position_Lots × Contract_Size × Swap_Points / 10</div>
-<div class="ki-text" style="margin-top:8px"><strong>Swap_Points</strong> = ค่าจาก MT5 symbol specification (pips ต่อวัน) — ค่า <em>ลบ</em> = จ่าย, ค่า <em>ลบในทิศทาง short</em> = รับ<br>
+<div class="ki-text" style="margin-top:8px"><strong>Swap_Points</strong> = ค่าจาก MT5 symbol specification (points ต่อวัน) — ค่า <em>ลบ</em> = จ่าย, ค่า <em>บวก</em> = รับ<br>
 <strong>Contract_Size</strong> = ขนาดสัญญาต่อ lot (เช่น 100 oz สำหรับ XAUUSD)<br>
+<strong>หมายเหตุ:</strong> สูตรนี้ใช้สำหรับ FX/Commodity ที่คำนวณเป็น points — บาง broker ระบุ swap เป็น % ต่อวัน (crypto CFD) ซึ่งคำนวณต่างกัน ต้องเช็ค specification<br>
 <strong>ต้อง check specification ใน MT5</strong>: คลิกขวา symbol → Properties → Swap Long / Swap Short</div>
 </div>
 
@@ -348,10 +349,10 @@ z_entry และ z_exit คือ entry/exit threshold ในหน่วย σ
         "breakeven_sigma_bps": round(breakeven_sigma * 100, 1)
     }
 
-# ตัวอย่าง XAUUSD/XAGUSD:
-# mt5_breakeven_sigma(0.003, 0.002, -0.001, 2.0, 0.5)
-# → total_friction = 0.003 + 0.002 − 0.001 = 0.004 = 40 bps
-# → breakeven_sigma = 40 / 1.5 = 26.7 bps</div>
+# ตัวอย่าง XAUUSD/XAGUSD (bid_ask=40bps, commission=20bps, swap_income=−10bps):
+# mt5_breakeven_sigma(0.004, 0.002, -0.001, 2.0, 0.5)
+# → total_friction = 0.004 + 0.002 − 0.001 = 0.005 = 50 bps
+# → breakeven_sigma = 50 / 1.5 = 33.3 bps  ← ตรงกับ §21.6</div>
 
 <!-- 21.7 -->
 <h2 id="s21-7">21.7 Practical Setup: Two-Broker Configuration</h2>
@@ -469,7 +470,7 @@ double ComputeZScore(double eps) {
 <tr><td>Total friction</td><td>50 bps</td></tr>
 <tr><td>Breakeven σ</td><td>50 / 1.5 = 33 bps ✅</td></tr>
 </table>
-<p><strong>Net alpha per trade:</strong> (0.6% − 0.33%) × 2 = 0.54% จาก mean reversion<br>
+<p><strong>Net alpha per trade:</strong> (σ_stat − BE_σ) × (z_entry − z_exit) = (0.60% − 0.33%) × 1.5 = <strong>40 bps</strong> จาก mean reversion<br>
 <strong>+ swap income:</strong> $1.20/day × 5 วัน (avg hold) = $6.00 per lot per trade<br>
 → รวม alpha ≈ 0.54% + swap เสริม — เป็น compound edge ที่น่าสนใจ</p>
 </div>
@@ -494,7 +495,7 @@ Walk-forward: calibrate ทุก 15 วัน (Crypto CFD row จากตา�
 <table>
 <tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
 <tr><td>USD Normalization</td><td>Long $100k EURUSD + Short $115k GBPUSD (β-adjusted)</td></tr>
-<tr><td>Net exposure</td><td>Long ~€74k / Short ~£55k / USD ≈ 0</td></tr>
+<tr><td>Net exposure</td><td>Long ~€74k / Short ~£55k / Net USD ≈ +$15k (residual ~13%)</td></tr>
 <tr><td>ε interpretation</td><td>≈ synthetic EURGBP; ρ = 0.96; ADF p ≈ 0.02 ✅</td></tr>
 <tr><td>Friction estimate</td><td>25 bps</td></tr>
 <tr><td>Breakeven σ</td><td>25 / 1.5 = 17 bps</td></tr>
