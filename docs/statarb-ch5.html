@@ -343,6 +343,320 @@ VECM:
 <tr><td>Spread ค้างนอก 3σ &gt; 2 วัน</td><td>Emergency re-test — อาจ regime change</td></tr>
 </table>
 
+<!-- 5.6 -->
+<h2 id="s5-6">5.6 Shapiro-Wilk Test — ตรวจ Normality ของ ε</h2>
+
+<div class="key-idea">
+<div class="ki-label">ทำไมต้องตรวจ Normality?</div>
+<div class="ki-text">Z-score threshold ±2σ อาศัยสมมติว่า ε ~ Normal distribution — ถ้า ε มี fat tail หรือ skew, threshold นี้จะ underestimate ความเสี่ยง ทำให้เข้า position บ่อยเกินจริง</div>
+</div>
+
+<p>Shapiro-Wilk test ตรวจสอบว่า sample ε มาจาก Normal distribution หรือไม่:</p>
+
+<table>
+<tr><th>Hypothesis</th><th>ความหมาย</th><th>ผลต่อการ trade</th></tr>
+<tr><td><strong>H₀: ε ~ Normal</strong></td><td>ε กระจายแบบปกติ</td><td>ใช้ standard z-score (±2σ) ได้ปลอดภัย</td></tr>
+<tr><td><strong>H₁: ε ไม่ Normal</strong></td><td>ε มี fat tail / skew</td><td>ใช้ Robust Z-score แทน (MAD-based, ดู บทที่ 10)</td></tr>
+</table>
+
+<h3>Decision Rule</h3>
+<div class="bx bb">
+<div class="bt">ตัดสินใจจาก p-value</div>
+<ul>
+<li><strong>p ≥ 0.05:</strong> Fail to reject H₀ → normality ไม่ถูก reject → ε likely normal → z-score ±2σ ใช้ได้</li>
+<li><strong>p &lt; 0.05:</strong> Reject H₀ → ε ไม่ normal (fat tail หรือ skew) → ควรใช้ MAD-based robust z-score แทน</li>
+</ul>
+</div>
+
+<div class="fm">from scipy.stats import shapiro
+
+def shapiro_test(residuals, alpha=0.05):
+    """
+    ทดสอบ Normality ของ residuals ε
+    คืนค่า: p_value, is_normal (bool), recommendation
+    """
+    stat, p_value = shapiro(residuals)
+
+    is_normal = p_value >= alpha
+
+    if is_normal:
+        recommendation = "standard_zscore"   # ใช้ σ-based threshold ได้
+    else:
+        recommendation = "robust_zscore"     # ใช้ MAD-based (ch10 §10.3)
+
+    return {
+        "stat":           round(stat, 4),
+        "p_value":        round(p_value, 4),
+        "is_normal":      is_normal,
+        "recommendation": recommendation
+    }</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ Shapiro-Wilk</div>
+<ul>
+<li>ทำงานได้ดีกับ n ≤ 5,000 — ถ้า sample ใหญ่มากจะ reject H₀ ทุกคู่ (sensitive เกิน)</li>
+<li>ถ้า n &gt; 5,000: ใช้ D'Agostino K² test หรือดู QQ-plot แทน</li>
+<li>Fat tail เล็กน้อย (p = 0.03–0.05) ≠ หยุดเทรด — แค่ใช้ robust z-score แทน</li>
+</ul>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH CFD บน MT5</div>
+<div class="fm">ข้อมูล: 180 วัน, hourly bars
+β_OLS = 0.0444 (จาก scatter plot)
+ε = log(P_BTC) − 0.0444 × log(P_ETH)
+
+Shapiro-Wilk result:
+  stat    = 0.9612
+  p_value = 0.031   → p &lt; 0.05 → Reject H₀
+
+สรุป: ε ของ BTC/ETH มี fat tail เล็กน้อย
+→ ใช้ MAD-based robust z-score (บทที่ 10 §10.3)
+→ ไม่ได้หมายความว่าคู่นี้ใช้ไม่ได้ แค่ปรับ threshold method</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.4 — Shapiro-Wilk Decision</div>
+<p>ทดสอบ Shapiro-Wilk บน ε ของ EURUSD↔GBPUSD ได้ p-value = 0.003</p>
+<p><strong>ถาม:</strong> (ก) ควรใช้ standard หรือ robust z-score? (ข) ค่า p ต่ำมากบอกอะไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก)</strong> p = 0.003 &lt; 0.05 → Reject H₀ → ε ไม่ Normal → <strong>ใช้ Robust Z-score (MAD-based)</strong></p>
+<p><strong>(ข)</strong> p ต่ำมากบอกว่า ε มี fat tail หรือ skewness ชัดเจน — อาจเกิดจาก jump events ขณะที่ ECB/BoE ประกาศนโยบายการเงิน หรือ flash crash ใน FX market ซึ่ง z-score ±2σ จะ underestimate ความเสี่ยงถ้าใช้ต่อไป</p>
+</div>
+</details>
+</div>
+
+<!-- 5.7 -->
+<h2 id="s5-7">5.7 Crossing Statistics — วัดความถี่ Mean Reversion</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด</div>
+<div class="ki-text">ADF บอกว่า ε กลับมาหา mean <em>ในที่สุด</em> — แต่ไม่บอกว่า <em>บ่อยแค่ไหน</em> Crossing Statistics ตอบคำถามนี้: ε ตัดผ่านเส้นกลางกี่ครั้งต่อหน่วยเวลา</div>
+<div class="ki-eq">E[Crossings] ≈ (1/π) · arccos(φ)</div>
+</div>
+
+<p>โดย <strong>φ</strong> คือ AR(1) coefficient จากการ regress ε_t บน ε_{t-1}:</p>
+
+<div class="fm">ε_t = φ · ε_{t-1} + η_t,   |φ| &lt; 1
+
+ความหมาย:
+  φ ≈ 0  →  E[Crossings] ≈ (1/π)·arccos(0) = 0.50/period  ← ตัดถี่มาก (ดี)
+  φ ≈ 0.65 →  E[Crossings] ≈ (1/π)·arccos(0.65) ≈ 0.28/period
+  φ ≈ 0.92 →  E[Crossings] ≈ (1/π)·arccos(0.92) ≈ 0.13/period
+  φ ≈ 1  →  E[Crossings] → 0                                ← ตัดน้อยมาก (ไม่ดี)</div>
+
+<div class="bx bg">
+<div class="bt">กฎง่ายๆ: φ น้อย = ดี เพราะ ε ตัดถี่</div>
+<p>ยิ่ง φ ต่ำ ยิ่งมี trading opportunity มาก แต่ต้อง balance กับ Half-life:</p>
+<ul>
+<li>φ ต่ำมาก (≈ 0) → ε เดินแบบ white noise → อาจ trade ไม่ทัน (spread กลับเร็วเกินจนจับไม่ได้)</li>
+<li>φ สูง (≈ 0.99) → ε persistent มาก → กินทุน margin นาน → ไม่คุ้มค่า</li>
+<li><strong>Sweet spot:</strong> φ = 0.85–0.95 สำหรับ swing (daily), φ = 0.70–0.85 สำหรับ intraday</li>
+</ul>
+</div>
+
+<h3>ความสัมพันธ์กับ Half-life</h3>
+<p>Crossing Statistics กับ Half-life บอกข้อมูลเดียวกันในมุมต่าง:</p>
+
+<table>
+<tr><th>Metric</th><th>สูตร</th><th>มุมมอง</th></tr>
+<tr><td><strong>Half-life</strong></td><td>τ₁/₂ = ln(2) / κ ≈ −ln(2) / ln(φ)</td><td>ε ใช้เวลานานแค่ไหนกลับ 50% ของ gap</td></tr>
+<tr><td><strong>E[Crossings]</strong></td><td>(1/π)·arccos(φ)</td><td>ε ตัดผ่านค่าเฉลี่ยกี่ครั้งต่อ bar</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 680 200">
+<defs>
+<marker id="arw57" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+<text x="340" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Crossing Rate vs AR(1) φ — เลือก pair ที่ φ อยู่ใน sweet spot</text>
+
+<!-- axes -->
+<line x1="60" y1="170" x2="640" y2="170" stroke="#374151" stroke-width="1.5" marker-end="url(#arw57)"/>
+<line x1="60" y1="170" x2="60" y2="30" stroke="#374151" stroke-width="1.5" marker-end="url(#arw57)"/>
+<text x="645" y="173" font-size="9" fill="#374151">φ</text>
+<text x="55" y="28" text-anchor="end" font-size="9" fill="#374151">E[X]</text>
+
+<!-- x-axis labels -->
+<text x="60"  y="185" text-anchor="middle" font-size="9" fill="#374151">0</text>
+<text x="175" y="185" text-anchor="middle" font-size="9" fill="#374151">0.25</text>
+<text x="290" y="185" text-anchor="middle" font-size="9" fill="#374151">0.50</text>
+<text x="405" y="185" text-anchor="middle" font-size="9" fill="#374151">0.75</text>
+<text x="520" y="185" text-anchor="middle" font-size="9" fill="#374151">0.95</text>
+<text x="630" y="185" text-anchor="middle" font-size="9" fill="#374151">1.0</text>
+
+<!-- y-axis labels -->
+<text x="55" y="173" text-anchor="end" font-size="9" fill="#374151">0</text>
+<text x="55" y="120" text-anchor="end" font-size="9" fill="#374151">0.25</text>
+<text x="55" y="68"  text-anchor="end" font-size="9" fill="#374151">0.50</text>
+
+<!-- arccos curve: (1/π)·arccos(φ), φ from 0→1 maps x 60→630, y: 0.5→0 maps to 68→170 -->
+<polyline points="60,68 100,77 140,84 180,91 220,98 260,106 300,114 340,122 380,131 420,140 460,150 500,159 540,166 580,169 620,170" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+
+<!-- sweet spot shading -->
+<rect x="295" y="30" width="200" height="145" fill="#fef3c7" opacity="0.4"/>
+<text x="395" y="48" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">Sweet Spot</text>
+<text x="395" y="60" text-anchor="middle" font-size="9" fill="#92400e">φ = 0.85–0.95 (swing)</text>
+
+<!-- BTC/ETH marker -->
+<circle cx="530" cy="165" r="5" fill="#dc2626"/>
+<text x="530" y="158" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">BTC/ETH</text>
+<text x="530" y="150" text-anchor="middle" font-size="8" fill="#dc2626">φ=0.96</text>
+</svg>
+<div class="caption">กราฟ E[Crossings] = (1/π)·arccos(φ) — φ น้อยลง เส้นขึ้น = ตัดถี่ขึ้น | BTC/ETH อยู่ขวาสุด (slow reversion)</div>
+
+<div class="fm">import numpy as np
+
+def crossing_rate(residuals):
+    """
+    คำนวณ AR(1) coefficient φ และ expected crossing rate
+    """
+    # Fit AR(1): ε_t = φ·ε_{t-1} + η
+    y = residuals[1:]
+    x = residuals[:-1]
+    phi = np.dot(x, y) / np.dot(x, x)   # OLS slope
+
+    # Crossing rate formula
+    e_crossings = (1 / np.pi) * np.arccos(phi)
+
+    # Half-life from φ
+    half_life = -np.log(2) / np.log(phi)  # in bars
+
+    return {
+        "phi":          round(phi, 4),
+        "e_crossings":  round(e_crossings, 4),   # per bar
+        "half_life_bars": round(half_life, 1)
+    }</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH — ผ่านหรือไม่?</div>
+<div class="fm">BTC/ETH (hourly bars, 180 วัน):
+  AR(1) coefficient φ = 0.9602
+  E[Crossings] = (1/π)·arccos(0.9602) = 0.091 crossings/bar
+
+  Half-life = −ln(2)/ln(0.9602) = 17.1 hours  ✓ (ตรงกับ screenshot)
+
+ประเมิน:
+  φ = 0.9602 → อยู่นอก sweet spot (0.85–0.95) เล็กน้อย
+  → เหมาะกับ overnight swing strategy
+  → ไม่เหมาะกับ intraday scalping (ε กลับช้าเกิน)
+  → ใช้ z_entry = 2.0, hold target = 8–20h</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.5 — เปรียบ Crossing Rate</div>
+<p>คู่ A: φ = 0.92 | คู่ B: φ = 0.65 — ทั้งสองผ่าน ADF test</p>
+<p><strong>ถาม:</strong> คู่ไหนเหมาะ intraday (hold ≤ 4h)? คู่ไหนเหมาะ swing (hold 1–3 วัน)?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>คู่ B (φ=0.65) เหมาะ intraday:</strong><br>
+E[Crossings] = (1/π)·arccos(0.65) ≈ 0.28/bar<br>
+Half-life ≈ −ln(2)/ln(0.65) ≈ 1.6 bars (ถ้า bar = 1h → ~1.6h) → กลับเร็ว เหมาะ intraday</p>
+<p><strong>คู่ A (φ=0.92) เหมาะ swing:</strong><br>
+E[Crossings] = (1/π)·arccos(0.92) ≈ 0.13/bar<br>
+Half-life ≈ −ln(2)/ln(0.92) ≈ 8.3 bars (ถ้า bar = 1h → ~8.3h) → กลับช้า เหมาะ swing</p>
+</div>
+</details>
+</div>
+
+<!-- 5.8 -->
+<h2 id="s5-8">5.8 Pair Selection Pipeline — 3-Step Funnel</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — ลำดับขั้นตอน</div>
+<div class="ki-text">ตรวจแบบ funnel: เริ่มจาก test ที่เร็วและถูก (Correlation) กรอง 80% ของคู่ออก → ค่อยทำ test ที่ละเอียดขึ้น (Cointegration) → สุดท้ายตรวจคุณภาพ residual (Normality + Crossing Rate) เพื่อยืนยัน trade-readiness</div>
+</div>
+
+<h3>3 ขั้นตอน</h3>
+
+<table>
+<tr><th>ขั้น</th><th>Test</th><th>Threshold</th><th>ถ้าผ่าน</th><th>ถ้าไม่ผ่าน</th></tr>
+<tr><td><strong>1</strong></td><td>Correlation ρ (§5.1)</td><td>ρ ≥ 0.70</td><td>→ ขั้น 2</td><td>ตัดออก (เร็ว, ถูก)</td></tr>
+<tr><td><strong>2</strong></td><td>ADF Cointegration (§5.2)</td><td>p &lt; 0.05</td><td>→ ขั้น 3</td><td>ตัดออก</td></tr>
+<tr><td><strong>3a</strong></td><td>Shapiro-Wilk (§5.6)</td><td>p ≥ 0.05 → standard z<br>p &lt; 0.05 → robust z</td><td>→ กำหนด z-score method</td><td>ไม่ตัด — แค่เปลี่ยน method</td></tr>
+<tr><td><strong>3b</strong></td><td>Crossing Rate φ (§5.7)</td><td>φ &lt; 0.95 (swing)<br>φ &lt; 0.90 (intraday)</td><td>→ เทรดได้</td><td>Hold time นานเกินไปสำหรับ target</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">Optional: Hurst Exponent (บทที่ 6)</div>
+<p>ถ้าต้องการ double-confirmation: H &lt; 0.5 → mean-reverting confirmed → เพิ่ม confidence ก่อนเปิด position ขนาดใหญ่</p>
+</div>
+
+<!-- Funnel SVG -->
+<svg class="d" viewBox="0 0 680 280">
+<defs>
+<marker id="arw58" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+<text x="340" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Pair Selection Funnel — กรอง 100 คู่ → 3–5 คู่ที่ trade ได้</text>
+
+<!-- Step 1 box -->
+<rect x="140" y="28" width="400" height="44" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="340" y="47" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">ขั้น 1: Correlation ρ ≥ 0.70</text>
+<text x="340" y="62" text-anchor="middle" font-size="10" fill="#1e40af">จาก ~100 คู่ → เหลือ ~20 คู่</text>
+
+<!-- arrow down -->
+<line x1="340" y1="72" x2="340" y2="88" stroke="#374151" stroke-width="1.5" marker-end="url(#arw58)"/>
+
+<!-- Step 2 box -->
+<rect x="170" y="90" width="340" height="44" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="340" y="109" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">ขั้น 2: Cointegration ADF p &lt; 0.05</text>
+<text x="340" y="124" text-anchor="middle" font-size="10" fill="#166534">~20 คู่ → เหลือ ~8 คู่</text>
+
+<!-- arrow down -->
+<line x1="340" y1="134" x2="340" y2="150" stroke="#374151" stroke-width="1.5" marker-end="url(#arw58)"/>
+
+<!-- Step 3 box -->
+<rect x="200" y="152" width="280" height="62" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="340" y="171" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">ขั้น 3: Residual Quality</text>
+<text x="340" y="186" text-anchor="middle" font-size="10" fill="#78350f">3a: Shapiro → เลือก z-score method</text>
+<text x="340" y="200" text-anchor="middle" font-size="10" fill="#78350f">3b: Crossing Rate φ &lt; 0.95</text>
+
+<!-- arrow down -->
+<line x1="340" y1="214" x2="340" y2="228" stroke="#374151" stroke-width="1.5" marker-end="url(#arw58)"/>
+
+<!-- Result box -->
+<rect x="230" y="230" width="220" height="38" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/>
+<text x="340" y="249" text-anchor="middle" font-size="12" font-weight="700" fill="#0d9488">✅ 3–5 คู่ที่ Trade ได้</text>
+<text x="340" y="262" text-anchor="middle" font-size="10" fill="#0d9488">พร้อม calibrate OU + z-score</text>
+</svg>
+<div class="caption">Funnel กรองจาก 100 → 3–5 คู่ที่ผ่านทุก criterion — ไม่ต้องรีบข้ามขั้น</div>
+
+<h3>BTC/ETH ผ่าน Pipeline นี้ไหม?</h3>
+
+<div class="fm">BTC/ETH CFD (180 วัน hourly):
+
+ขั้น 1 — Correlation:
+  ρ = 0.9745  ✅ (≥ 0.70)
+
+ขั้น 2 — Cointegration:
+  ADF p = 0.043  ✅ (< 0.05, implied จาก Half-life 17h)
+
+ขั้น 3a — Shapiro-Wilk:
+  p = 0.031 → Reject H₀ → fat tail → ใช้ Robust Z-score  ⚠️ (เปลี่ยน method)
+
+ขั้น 3b — Crossing Rate:
+  φ = 0.9602 → E[Crossings] = 0.091/bar → Half-life = 17h
+  → เหมาะ swing (hold overnight) ❌ ไม่เหมาะ intraday
+
+สรุป: BTC/ETH ✅ ผ่าน Pipeline สำหรับ overnight swing strategy
+       ใช้ Robust Z-score (MAD), z_entry=2.0, target hold = 8–24h</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.6 — Run Pipeline</div>
+<p>คู่หนึ่งให้ผล: ρ=0.82, ADF p=0.12, Shapiro p=0.41, φ=0.88</p>
+<p><strong>ถาม:</strong> คู่นี้ผ่าน Pipeline ไหม? ถ้าไม่ผ่าน หยุดที่ขั้นไหน?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ขั้น 1:</strong> ρ=0.82 ≥ 0.70 ✅ ผ่าน</p>
+<p><strong>ขั้น 2:</strong> ADF p=0.12 &gt; 0.05 ❌ <strong>หยุดที่นี่</strong> — residuals ไม่ stationary → spread ไม่ cointegrated → ไม่ควร trade</p>
+<p><strong>แนวทาง:</strong> ลอง log transformation หรือ adjust lookback window แล้วทดสอบใหม่ ถ้ายังไม่ผ่าน → ตัดคู่นี้ออก</p>
+</div>
+</details>
+</div>
+
 <div class="ex">
 <div class="et">โจทย์ 5.1 — อ่านผล ADF</div>
 <p>ทดสอบ ADF บน residuals ของ BTC-ETH spread ได้:<br>
