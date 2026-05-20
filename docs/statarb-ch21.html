@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.21 — Spot↔CFD Swap Arbitrage บน MT5</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 21</div>
+<h1>Spot↔CFD Swap Arbitrage บน MT5</h1>
+<div class="sub">Swap Rate = Interest Rate Alpha | Broker Compliance | Multi-Asset Universe<br>
+FX · Metals · Indices · Crypto CFD — ทุกอย่างที่ได้กำไร</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">CFD ≠ crypto perp — ไม่มี funding rate แต่มี <strong>swap overnight</strong> ซึ่งเป็นดอกเบี้ยที่จ่ายหรือรับทุกคืน กำไรมาจาก 2 ส่วน: (1) swap differential ระหว่าง 2 ขา และ (2) ε mean reversion ตามปกติ ข้อระวังสำคัญ: MT5 มี netting restriction → ต้องใช้ 2 broker แยกกัน</div>
+<div class="ki-eq">ε = log(P_A) − β·log(P_B)   |   Alpha = Swap_net + ε_reversion</div>
+</div>
+
+<!-- 21.1 -->
+<h2 id="s21-1">21.1 Spot↔CFD Mechanics</h2>
+
+<p>CFD (Contract for Difference) บน MT5 แตกต่างจาก crypto perpetual futures ในหลายมิติ แต่แก่นของ Statistical Arbitrage ยังเหมือนเดิม: ε = log(P_A) − β·log(P_B) mean-reverts กลับค่ากลาง สิ่งที่ต่างคือ <strong>แหล่ง alpha เพิ่มเติม</strong> ในรูปของ swap overnight</p>
+
+<div class="bx bb">
+<div class="bt">CFD vs Crypto Perp — ความต่างที่สำคัญ</div>
+<ul>
+<li><strong>CFD price ≈ Spot price + financing adjustment</strong> — ปรับทุกวัน ไม่ใช่ทุก 8h แบบ perp</li>
+<li><strong>ε = log(P_A) − β·log(P_B)</strong> ยังใช้แบบเดิม (อ้างอิง ch4) — ไม่ต้องเปลี่ยน framework</li>
+<li><strong>Arbitrage driver:</strong> ส่วนต่าง swap rate ระหว่าง 2 ขา = "Interest Rate Alpha" — มาจาก central bank rate differential ไม่ใช่ demand sentiment</li>
+</ul>
+</div>
+
+<table>
+<tr><th></th><th>Crypto Perp (Bybit)</th><th>CFD (MT5)</th></tr>
+<tr><td><strong>Financing mechanism</strong></td><td>Funding rate ทุก 8h</td><td>Swap overnight ทุกวัน</td></tr>
+<tr><td><strong>Rate basis</strong></td><td>Premium index (demand-driven)</td><td>Central bank interest rate differential</td></tr>
+<tr><td><strong>Rate size</strong></td><td>0.01–0.10% / 8h</td><td>0.001–0.05% / day</td></tr>
+<tr><td><strong>Rate predictability</strong></td><td>เปลี่ยนทุก 8h (volatile)</td><td>ค่อนข้างคงที่ (ผูกกับ CB rate)</td></tr>
+<tr><td><strong>Price transparency</strong></td><td>Order book สาธารณะ</td><td>Broker sets spread (ไม่ fully transparent)</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 680 180">
+<defs>
+<marker id="arw21a" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+
+<!-- Panel 1: P_spot and P_CFD -->
+<rect x="10" y="10" width="660" height="80" rx="6" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+<text x="340" y="26" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">Panel 1: P_spot (เขียว) และ P_CFD (น้ำเงิน) — ราคา converge กัน</text>
+<line x1="40" y1="70" x2="640" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw21a)"/>
+<!-- Spot line -->
+<polyline points="40,65 120,58 200,62 280,55 360,60 440,52 520,56 600,50" fill="none" stroke="#16a34a" stroke-width="2"/>
+<!-- CFD line (nearly overlapping, slightly offset) -->
+<polyline points="40,62 120,56 200,64 280,58 360,57 440,54 520,53 600,52" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,3"/>
+<text x="605" y="48" font-size="8" fill="#16a34a">Spot</text>
+<text x="605" y="58" font-size="8" fill="#2563eb">CFD</text>
+
+<!-- Panel 2: ε oscillating -->
+<rect x="10" y="96" width="660" height="76" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="340" y="112" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">Panel 2: ε = log(P_A) − β·log(P_B) — mean reversion รอบ θ=0</text>
+<line x1="40" y1="155" x2="640" y2="155" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw21a)"/>
+<!-- θ=0 line -->
+<line x1="40" y1="145" x2="640" y2="145" stroke="#374151" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="642" y="148" font-size="7" fill="#374151">θ=0</text>
+<!-- +2σ band -->
+<line x1="40" y1="128" x2="640" y2="128" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="642" y="131" font-size="7" fill="#dc2626">+2σ</text>
+<!-- -2σ band -->
+<line x1="40" y1="162" x2="640" y2="162" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="642" y="165" font-size="7" fill="#dc2626">−2σ</text>
+<!-- ε path -->
+<polyline points="40,145 100,138 160,130 220,125 280,132 340,145 400,155 460,162 520,155 580,145 630,143" fill="none" stroke="#7c3aed" stroke-width="2"/>
+</svg>
+<div class="caption">Panel บน: P_spot และ P_CFD เคลื่อนที่ใกล้กัน | Panel ล่าง: ε oscillates รอบ θ=0 ภายใน ±2σ band</div>
+
+<!-- 21.2 -->
+<h2 id="s21-2">21.2 Swap Rate Mechanics ใน MT5</h2>
+
+<p><strong>Swap overnight</strong> คือดอกเบี้ยที่จ่ายหรือรับสำหรับการถือ CFD position ข้ามคืน — broker จะ rollover ตำแหน่งทุกเที่ยงคืนเวลา server (ส่วนใหญ่ 00:00 EET) และคิด/ให้ swap points ตามที่ระบุใน symbol specification</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตรการคำนวณ Swap Amount</div>
+<div class="ki-eq">Swap_amount = Position_Lots × Contract_Size × Swap_Points / 10</div>
+<div class="ki-text" style="margin-top:8px"><strong>Swap_Points</strong> = ค่าจาก MT5 symbol specification (pips ต่อวัน) — ค่า <em>ลบ</em> = จ่าย, ค่า <em>ลบในทิศทาง short</em> = รับ<br>
+<strong>Contract_Size</strong> = ขนาดสัญญาต่อ lot (เช่น 100 oz สำหรับ XAUUSD)<br>
+<strong>ต้อง check specification ใน MT5</strong>: คลิกขวา symbol → Properties → Swap Long / Swap Short</div>
+</div>
+
+<p>ตัวอย่าง positive swap ที่พบบ่อยในตลาด (ค่าตัวอย่าง — ต้องเช็คกับ broker จริงก่อนเสมอ):</p>
+
+<table>
+<tr><th>Instrument</th><th>ทิศทาง</th><th>เหตุผล</th><th>ตัวอย่าง swap/day/lot</th></tr>
+<tr><td>XAUUSD (Gold CFD)</td><td>Short</td><td>Gold yield &lt; USD yield → short receives rate</td><td>+$0.5–2.0</td></tr>
+<tr><td>USOIL</td><td>Short (backwardation)</td><td>Futures curve downward sloping</td><td>+$1.0–3.0</td></tr>
+<tr><td>USDHUF / USDTRY</td><td>Short USD</td><td>HUF/TRY interest rate สูงกว่า USD มาก</td><td>+$5.0–15.0</td></tr>
+<tr><td>BTC CFD / ETH CFD</td><td>ขึ้นกับ broker</td><td>Varies — ต้องเช็ค specification</td><td>-$1.0–+$1.0</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">⚠️ คำเตือน: Swap Rates เปลี่ยนได้</div>
+<p>Swap rates เปลี่ยนได้ทุกสัปดาห์ตามนโยบาย broker และ central bank rate cycle — ต้อง check specification ก่อนเปิด position เสมอ อย่าใช้ค่าจากสัปดาห์ก่อนโดยไม่ verify ใหม่</p>
+</div>
+
+<div class="fm">def compute_swap_harvest(position_lots, contract_size,
+                          swap_points_per_day, days_held,
+                          price=None, pip_value=0.1):
+    """
+    คำนวณ swap income จากการถือ CFD ข้ามคืน
+    swap_points_per_day: ค่าจาก MT5 symbol spec (pips/day)
+    ค่าลบ = จ่าย swap | ค่าลบสำหรับ short = รับ swap (ขึ้นกับทิศ)
+    """
+    swap_per_lot_per_day = swap_points_per_day * pip_value
+    total_swap = position_lots * swap_per_lot_per_day * days_held
+    return {
+        "swap_per_day": position_lots * swap_per_lot_per_day,
+        "total_swap":   total_swap,
+        "annualized_pct": (total_swap / (position_lots * contract_size * (price or 1))) * 365 / days_held * 100
+    }</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: XAUUSD Short — Swap Harvest คำนวณ</div>
+<p>Position: <strong>Short 1 lot XAUUSD CFD</strong> (100 oz), ราคา = $2,000/oz<br>
+Swap specification: Swap Short = <strong>−1.20 swap points/day</strong> (ค่าลบสำหรับ short = broker จ่ายให้เรา)<br>
+Pip value สำหรับ XAUUSD = $1.00 ต่อ pip ต่อ lot (1 pip = $0.01 × 100 oz = $1.00)</p>
+<p><strong>Swap per day</strong> = 1 lot × 1.20 × $1.00 = <strong>$1.20/day</strong><br>
+<strong>ต่อเดือน</strong> (22 trading days) = $1.20 × 22 = <strong>$26.40/month per lot</strong><br>
+ต่อปี (252 days) = $1.20 × 252 = $302.40 ≈ <strong>1.5% annualized</strong> บน notional $20,000 (1 lot × 10 oz margin)</p>
+</div>
+
+<!-- 21.3 -->
+<h2 id="s21-3">21.3 Broker Compliance — กฎที่ต้องระวัง</h2>
+
+<p>นี่คือบทที่สำคัญที่สุดใน ch21 — การไม่อ่าน TOS ก่อน trade อาจทำให้ account ถูก ban และกำไรถูกยึดทั้งหมด อ่านทุกข้อด้านล่างอย่างละเอียด</p>
+
+<div class="bx br">
+<div class="bt">❌ Netting Restriction — ปัญหาหลักของ MT5</div>
+<p><strong>MT5 default = Netting mode:</strong> ไม่สามารถถือ Buy และ Sell ของ symbol เดียวกันพร้อมกันใน account เดียว — ถ้าเปิด Buy แล้วเปิด Sell จะหักล้างกันทันที</p>
+<ul>
+<li>→ <strong>ต้องใช้ 2 broker แยกกัน:</strong> Broker A สำหรับ leg หนึ่ง, Broker B สำหรับอีก leg</li>
+<li>→ บาง broker มี "Hedging" account (MT4/MT5) ที่อนุญาต hedge ใน account เดียว แต่ต้องตรวจ TOS ก่อนเสมอ</li>
+<li>→ การใช้ 2 broker แยกกันคือวิธีที่ถูกต้องและปลอดภัยที่สุด</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt">❌ TOS Anti-Arbitrage Clauses</div>
+<p>หลาย broker มีข้อห้ามใน Terms of Service ครอบคลุมคำต่อไปนี้:</p>
+<ul>
+<li>"arbitrage trading", "latency arbitrage", "swap scalping", "tick scalping"</li>
+<li>"exploiting pricing errors", "taking advantage of system delays"</li>
+</ul>
+<p>→ <strong>อ่าน TOS ของทุก broker ที่จะใช้ก่อนเสมอ</strong> โดยเฉพาะหัวข้อ Prohibited Trading Practices<br>
+→ ถ้าเจอข้อห้าม → หา broker ที่ไม่มีข้อห้ายนี้ (มีอยู่หลาย broker โดยเฉพาะ ECN/STP broker)</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ Minimum Hold Time</div>
+<p>บาง broker กำหนด minimum position hold time (เช่น ≥ 2 นาที หรือ ≥ 1 ชั่วโมง) เพื่อป้องกัน latency arbitrage<br>
+→ <strong>กระทบ intraday spread arb</strong> — ถ้า hold น้อยกว่า minimum จะถูก void profit หรือ ban<br>
+→ <strong>ไม่กระทบ overnight swing strategy</strong> ของ ch21 เพราะเราถือข้ามคืน (หลาย ชม. ถึงหลายวัน)</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ Requote และ Execution Risk</div>
+<p>MT5 CFD execution ช้ากว่า crypto exchange มาก (200ms–2s vs &lt;100ms)<br>
+→ <strong>Legging risk สูงกว่า</strong> — ขา A เข้าแล้วขา B ราคาเปลี่ยนก่อนจะ fill<br>
+→ <strong>ใช้ limit orders แทน market orders เสมอ</strong>ที่ทำได้ เพื่อลด slippage และ requote<br>
+→ เปิดทั้งสองขาภายใน 1–2 วินาทีหากเป็นไปได้</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✅ สิ่งที่ทำได้อย่างถูกต้อง</div>
+<ul>
+<li>✅ ถือ position ข้ามคืนเพื่อเก็บ swap (overnight swing) — เป็น legitimate investment activity</li>
+<li>✅ ใช้ 2 broker แยกกัน — ไม่ผิด TOS เพราะแต่ละ broker ไม่รู้ว่าอีกด้านอยู่ที่ไหน</li>
+<li>✅ Exit เมื่อ z-score กลับค่ากลาง — เป็น mean reversion trade ปกติ</li>
+<li>✅ ใช้ limit orders เพื่อรับ spread แทนจ่าย spread</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt" style="font-size:1.1em">🚫 คำเตือนสำคัญ — อ่านก่อน trade</div>
+<p><strong>อย่า trade Swap Arb บน broker เดียวกันโดยใช้ hedge account</strong> — ผิด TOS ของเกือบทุก broker และอาจถูก account ban พร้อมยึดกำไรทั้งหมด กฎนี้ใช้กับทุก broker ที่มี anti-arbitrage policy ไม่ว่าจะเรียกว่า "hedging account" หรืออะไรก็ตาม — ถ้า 2 ขาอยู่ใน broker เดียวกัน broker มองเห็นทั้งคู่และจะระบุได้ว่าเป็น arbitrage</p>
+</div>
+
+<!-- 21.4 -->
+<h2 id="s21-4">21.4 Asset Universe บน MT5</h2>
+
+<p>MT5 เปิดโอกาสให้ trade หลาย asset class ในแพลตฟอร์มเดียว แต่ละ category มี half-life และ friction ต่างกัน ต้องผ่าน Pair Selection Pipeline (ch5 §5.8) ก่อนเสมอ</p>
+
+<table>
+<tr><th>Category</th><th>Y_t</th><th>X_t</th><th>Alpha Driver</th><th>Half-life ε</th><th>Friction (est.)</th></tr>
+<tr><td><strong>Metals</strong></td><td>XAUUSD (Gold)</td><td>XAGUSD (Silver)</td><td>Commodity ratio + backwardation swap</td><td>3–10 วัน</td><td>40–70 bps</td></tr>
+<tr><td><strong>FX Crosses</strong></td><td>EURUSD CFD</td><td>GBPUSD CFD</td><td>USD leg ร่วม → synthetic EURGBP</td><td>1–5 วัน</td><td>20–40 bps</td></tr>
+<tr><td><strong>Indices</strong></td><td>US500 CFD</td><td>NAS100 CFD</td><td>US equity sector correlation</td><td>2–7 วัน</td><td>30–60 bps</td></tr>
+<tr><td><strong>Crypto CFD</strong></td><td>BTCUSD CFD</td><td>ETHUSD CFD</td><td>Crypto market cycle β</td><td>0.5–3 วัน</td><td>60–120 bps</td></tr>
+</table>
+
+<h3>กรณีพิเศษ: FX Pairs — "4 สกุลเงิน แต่ USD หักล้างกัน"</h3>
+
+<div class="bx bb">
+<div class="bt">EURUSD ↔ GBPUSD = Synthetic EURGBP</div>
+<ul>
+<li><strong>Long EURUSD + Short GBPUSD</strong> = Long EUR / Short GBP / USD ≈ cancel (หักล้างกัน)</li>
+<li><strong>ε = log(EURUSD) − β·log(GBPUSD) ≈ log(EURGBP)</strong> สำหรับ β ≈ 1</li>
+<li>ถ้า <strong>β ≠ 1</strong> → มี residual USD exposure → ต้อง normalize notional ใน USD ก่อน sizing</li>
+<li>ตัวอย่าง: β = 1.15 → Long $100k EURUSD + Short $115k GBPUSD → USD ≈ 0</li>
+</ul>
+<p><strong>ข้อดีของใช้ majors แทน cross rate:</strong> EURUSD และ GBPUSD มี bid-ask แคบกว่า EURGBP โดยตรงมาก (10–20 bps vs 30–50 bps) → friction ต่ำกว่า → edge ดีกว่า</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ต้องผ่าน Pair Selection Pipeline ก่อนเสมอ</div>
+<p>ใช้ Pair Selection Pipeline จากบทที่ 5 §5.8 กับทุกคู่ก่อนทุกครั้ง — ตรวจ: (1) cointegration test (ADF/KPSS), (2) half-life ε, (3) ρ (correlation), (4) AR(1) coefficient, (5) breakeven σ check ทุกขั้นตอน</p>
+</div>
+
+<!-- 21.5 -->
+<h2 id="s21-5">21.5 ε Quality และ Walk-Forward Calibration</h2>
+
+<p>การคำนวณ ε ใช้ OLS/TLS β เหมือนกับที่อธิบายใน ch4 ไม่ต้องเปลี่ยน framework แต่ <strong>มีสิ่งที่ต่างจาก crypto</strong> ที่ต้องระวัง:</p>
+
+<div class="bx ba">
+<div class="bt">ปัญหา θ Drift จาก Central Bank Rate Cycle</div>
+<p>Financing spread ใน CFD เปลี่ยนตาม central bank rate cycle:<br>
+→ ถ้า Fed ขึ้น/ลดดอกเบี้ย → swap rate เปลี่ยน → ค่ากลาง θ ของ ε drift ได้<br>
+→ <strong>Walk-Forward Calibration (ch3 §3.9) สำคัญยิ่งกว่าใน crypto</strong> — ต้อง re-calibrate บ่อยกว่า<br>
+→ อย่าใช้ static θ หรือ static β ที่ fit ครั้งเดียวนาน &gt; 3 เดือนโดยไม่ validate ใหม่</p>
+</div>
+
+<p>Recommended calibration window สำหรับ MT5 แต่ละ category:</p>
+
+<table>
+<tr><th>Strategy type</th><th>Train window</th><th>Test window</th><th>Slide</th></tr>
+<tr><td>FX intraday</td><td>30 วัน</td><td>10 วัน</td><td>10 วัน</td></tr>
+<tr><td>Metals swing</td><td>90 วัน</td><td>30 วัน</td><td>30 วัน</td></tr>
+<tr><td>Indices</td><td>60 วัน</td><td>20 วัน</td><td>20 วัน</td></tr>
+<tr><td>Crypto CFD</td><td>45 วัน</td><td>15 วัน</td><td>15 วัน</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: BTC/ETH CFD Walk-Forward</div>
+<p>β = 0.0444, ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h<br>
+→ ใช้ Crypto CFD row: Train 45 วัน, Test 15 วัน, Slide ทุก 15 วัน<br>
+→ Half-life 17h = overnight swing — เหมาะสำหรับ strategy ที่ถือข้ามคืน<br>
+→ Walk-forward re-calibrate β ทุก 15 วัน เพื่อจับ drift ของ crypto market cycle</p>
+</div>
+
+<!-- 21.6 -->
+<h2 id="s21-6">21.6 Breakeven Analysis สำหรับ MT5</h2>
+
+<p>Friction ของ MT5 CFD ต่างจาก crypto exchange — ต้องเข้าใจ structure ก่อน calculate edge:</p>
+
+<table>
+<tr><th>Component</th><th>Crypto (Bybit)</th><th>MT5 ECN</th><th>MT5 Market Maker</th></tr>
+<tr><td>Commission</td><td>0.055% + 0.030% (taker)</td><td>$3–7/lot (separate)</td><td>Embedded in spread</td></tr>
+<tr><td>Bid-ask spread</td><td>0.002–0.004%</td><td>0.5–2 pips FX; wider metals</td><td>1–3 pips FX; wider metals</td></tr>
+<tr><td>Maker option</td><td>✅ ลดเหลือ 0.02%</td><td>บางครั้ง (limit orders)</td><td>❌</td></tr>
+<tr><td>Overnight</td><td>สามารถ +/−</td><td>Swap (positive เมื่อ harvesting)</td><td>Swap</td></tr>
+<tr><td>Execution speed</td><td>&lt;100ms</td><td>200ms–2s</td><td>500ms–3s</td></tr>
+</table>
+
+<div class="key-idea">
+<div class="ki-label">Breakeven σ Formula (เหมือน ch19 §19.7 / ch4 §4.5)</div>
+<div class="ki-eq">σ_stat ≥ total_friction / (z_entry − z_exit)</div>
+<div class="ki-text" style="margin-top:8px">total_friction = bid-ask + commission + max(0, swap_net) — ถ้า swap เป็น income ให้ <em>หักออก</em> จาก friction<br>
+z_entry และ z_exit คือ entry/exit threshold ในหน่วย σ (เช่น 2.0 และ 0.5)</div>
+</div>
+
+<h3>ตัวอย่างคำนวณ Breakeven σ สำหรับ 3 คู่หลัก</h3>
+
+<div class="bx bg">
+<div class="bt">1. XAUUSD / XAGUSD</div>
+<p>Friction ≈ 50 bps → breakeven σ = 50 / (2.0 − 0.5) = <strong>33 bps</strong><br>
+σ_stat empirical ≈ 50–80 bps → <strong>net edge = 17–47 bps per half-cycle ✅</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">2. BTC / ETH CFD</div>
+<p>Friction ≈ 80 bps → breakeven σ = 80 / (2.0 − 0.5) = <strong>53 bps</strong><br>
+σ_stat ≈ 150–200 bps → <strong>net edge = 97–147 bps ✅</strong> (แต่ fat tail → ต้องใช้ robust z-score)</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">3. EURUSD / GBPUSD</div>
+<p>Friction ≈ 25 bps → breakeven σ = 25 / (2.0 − 0.5) = <strong>17 bps</strong><br>
+σ_stat ≈ 30–50 bps → <strong>net edge = 13–33 bps ✅</strong></p>
+</div>
+
+<div class="fm">def mt5_breakeven_sigma(bid_ask_pct, commission_pct,
+                         swap_net_pct,
+                         entry_z=2.0, exit_z=0.5):
+    """
+    คำนวณ breakeven σ_stat สำหรับ MT5 CFD pairs
+    swap_net_pct: negative ถ้ารับ swap (income), positive ถ้าจ่าย
+    ถ้า swap_net_pct &lt; 0 → หักออกจาก friction (เป็นรายได้)
+    """
+    total_friction = bid_ask_pct + commission_pct + swap_net_pct
+    breakeven_sigma = total_friction / (entry_z - exit_z)
+    return {
+        "total_friction_bps": round(total_friction * 100, 1),
+        "breakeven_sigma_bps": round(breakeven_sigma * 100, 1)
+    }
+
+# ตัวอย่าง XAUUSD/XAGUSD:
+# mt5_breakeven_sigma(0.003, 0.002, -0.001, 2.0, 0.5)
+# → total_friction = 0.003 + 0.002 − 0.001 = 0.004 = 40 bps
+# → breakeven_sigma = 40 / 1.5 = 26.7 bps</div>
+
+<!-- 21.7 -->
+<h2 id="s21-7">21.7 Practical Setup: Two-Broker Configuration</h2>
+
+<p>การ implement Swap Arb บน MT5 ต้องใช้ 2 broker แยกกัน โดย Signal Engine เป็นตัวกลางคำนวณ ε และส่ง order ไปทั้งสองฝั่ง:</p>
+
+<svg class="d" viewBox="0 0 680 200">
+<defs>
+<marker id="arw21b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+<marker id="arw21c" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#2563eb"/></marker>
+</defs>
+
+<!-- Broker A box -->
+<rect x="20" y="60" width="150" height="80" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="95" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="#15803d">Broker A</text>
+<text x="95" y="108" text-anchor="middle" font-size="10" fill="#374151">Spot / Fast exec</text>
+<text x="95" y="124" text-anchor="middle" font-size="10" fill="#374151">Leg 1</text>
+
+<!-- Signal Engine box -->
+<rect x="265" y="50" width="150" height="100" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="340" y="82" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Signal Engine</text>
+<text x="340" y="100" text-anchor="middle" font-size="10" fill="#374151">คำนวณ ε, z-score</text>
+<text x="340" y="116" text-anchor="middle" font-size="10" fill="#374151">ส่ง orders</text>
+<text x="340" y="132" text-anchor="middle" font-size="10" fill="#374151">ทั้ง 2 ฝั่ง</text>
+
+<!-- Broker B box -->
+<rect x="510" y="60" width="150" height="80" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/>
+<text x="585" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="#0f766e">Broker B</text>
+<text x="585" y="108" text-anchor="middle" font-size="10" fill="#374151">MT5 CFD broker</text>
+<text x="585" y="124" text-anchor="middle" font-size="10" fill="#374151">Leg 2 + Swap</text>
+
+<!-- Data feed arrows (broker → engine) -->
+<line x1="170" y1="88" x2="262" y2="88" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw21b)"/>
+<text x="216" y="83" text-anchor="middle" font-size="8" fill="#6b7280">price data</text>
+<line x1="510" y1="88" x2="418" y2="88" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw21b)"/>
+<text x="464" y="83" text-anchor="middle" font-size="8" fill="#6b7280">price data</text>
+
+<!-- Order arrows (engine → broker) -->
+<line x1="262" y1="118" x2="170" y2="118" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arw21c)"/>
+<text x="216" y="132" text-anchor="middle" font-size="8" fill="#1d4ed8">orders</text>
+<line x1="418" y1="118" x2="510" y2="118" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arw21c)"/>
+<text x="464" y="132" text-anchor="middle" font-size="8" fill="#1d4ed8">orders</text>
+
+<!-- Warning annotation -->
+<rect x="180" y="160" width="320" height="30" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+<text x="340" y="179" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">⚠️ 2 broker แยกกัน — ไม่ใช่ hedge ใน account เดียว</text>
+
+<!-- Top label -->
+<text x="340" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#374151">Two-Broker Architecture สำหรับ MT5 Swap Arb</text>
+</svg>
+<div class="caption">Signal Engine เชื่อมต่อทั้ง 2 broker แยกกัน — รับ price feed → คำนวณ ε → ส่ง order ไปแต่ละ broker</div>
+
+<h3>Data Synchronization</h3>
+
+<p>การ synchronize ข้อมูลจาก 2 broker ต้องทำอย่างระมัดระวัง:</p>
+<ul>
+<li>ใช้ <strong>same timeframe</strong> — bar close time ต้องตรงกัน (เช่น H1 close ทั้งคู่)</li>
+<li>ใช้ <strong>same timezone reference</strong> — แปลงเป็น UTC ก่อน align</li>
+<li>ตรวจ <strong>missing bars</strong> — หยุดเทรดถ้า data gap เกิน 2 bars ติดกัน</li>
+<li>ใช้ <strong>mid-price</strong> (bid+ask)/2 สำหรับคำนวณ ε — ไม่ใช้ bid หรือ ask อย่างเดียว</li>
+</ul>
+
+<h3>Basic MQL5 EA Structure (CFD Leg Execution)</h3>
+
+<div class="fm">// MQL5 EA skeleton for CFD leg execution
+// สำหรับ Broker B (MT5 CFD leg) — Broker A ใช้ API แยก
+
+input double ZEntryThreshold = 2.0;
+input double ZExitThreshold  = 0.5;
+input double LotSize          = 0.1;
+
+void OnTick() {
+    double epsilon = ComputeEpsilon();       // คำนวณ ε จาก 2 prices
+    double z_score = ComputeZScore(epsilon); // z = (ε − θ) / σ
+
+    if (z_score &gt; ZEntryThreshold &amp;&amp; !HasPosition())
+        OpenShort(LotSize);    // Short CFD leg (Broker B)
+    else if (z_score &lt; -ZEntryThreshold &amp;&amp; !HasPosition())
+        OpenLong(LotSize);     // Long CFD leg (Broker B)
+    else if (MathAbs(z_score) &lt; ZExitThreshold &amp;&amp; HasPosition())
+        ClosePosition();       // ปิดเมื่อ z กลับค่ากลาง
+}
+
+double ComputeEpsilon() {
+    double price_a = GetBrokerAPrice();  // รับราคาจาก Broker A (shared memory/pipe)
+    double price_b = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+    return MathLog(price_a) - g_beta * MathLog(price_b);
+}
+
+double ComputeZScore(double eps) {
+    return (eps - g_theta) / g_sigma;  // g_theta, g_sigma update จาก walk-forward
+}</div>
+
+<div class="bx bi">
+<div class="bt">Position Sizing และ Legging Risk</div>
+<ul>
+<li><strong>Kelly framework (ch12)</strong> ยังใช้ได้ — แต่ต้อง adjust สำหรับ higher friction ของ MT5</li>
+<li>แนะนำ half-Kelly หรือ quarter-Kelly สำหรับ MT5 เพราะ execution uncertainty สูงกว่า</li>
+<li><strong>Legging risk:</strong> MT5 ช้ากว่า crypto มาก → ใช้ limit orders ที่ target entry price เพื่อลด slippage</li>
+<li>ถ้า leg หนึ่ง fill แล้วอีก leg ไม่ fill ภายใน timeout (เช่น 5 วินาที) → ยกเลิก leg แรกด้วย</li>
+</ul>
+</div>
+
+<!-- Running Examples -->
+<h2 id="s21-re">ตัวอย่างหลัก: 3 คู่ที่น่าสนใจ</h2>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างที่ 1: XAUUSD Gold Swap Harvest</div>
+<p><strong>Setup:</strong> Broker A — Gold spot บน exchange | Broker B — Short XAUUSD CFD บน MT5</p>
+<table>
+<tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
+<tr><td>Swap received (short CFD)</td><td>$1.20/day per lot (backwardation)</td></tr>
+<tr><td>ε Half-life</td><td>5 วัน</td></tr>
+<tr><td>σ_stat</td><td>0.6% (60 bps)</td></tr>
+<tr><td>Total friction</td><td>50 bps</td></tr>
+<tr><td>Breakeven σ</td><td>50 / 1.5 = 33 bps ✅</td></tr>
+</table>
+<p><strong>Net alpha per trade:</strong> (0.6% − 0.33%) × 2 = 0.54% จาก mean reversion<br>
+<strong>+ swap income:</strong> $1.20/day × 5 วัน (avg hold) = $6.00 per lot per trade<br>
+→ รวม alpha ≈ 0.54% + swap เสริม — เป็น compound edge ที่น่าสนใจ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างที่ 2: BTC / ETH CFD (ตาม screenshot คู่หลัก)</div>
+<p><strong>Cointegration stats:</strong> β = 0.0444, ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h</p>
+<table>
+<tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
+<tr><td>Pair Selection Pipeline (ch5 §5.8)</td><td>✅ ผ่าน (swing only, robust z-score)</td></tr>
+<tr><td>MT5 friction estimate</td><td>~80 bps</td></tr>
+<tr><td>Breakeven σ</td><td>80 / 1.5 = 53 bps</td></tr>
+<tr><td>σ_stat empirical</td><td>≈ 170 bps (200 bps >> 53 bps ✅)</td></tr>
+</table>
+<p><strong>Strategy:</strong> overnight swing, z_entry = 2.0, ใช้ MAD-based robust z-score เพราะ fat tail<br>
+Walk-forward: calibrate ทุก 15 วัน (Crypto CFD row จากตาราง §21.5)</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างที่ 3: EURUSD ↔ GBPUSD (Synthetic EURGBP)</div>
+<p><strong>β = 1.15</strong> — ไม่ใช่ 1.0 เพราะ GBPUSD มี pip value ต่างกัน (GBPUSD pip มีค่าสูงกว่า)</p>
+<table>
+<tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
+<tr><td>USD Normalization</td><td>Long $100k EURUSD + Short $115k GBPUSD (β-adjusted)</td></tr>
+<tr><td>Net exposure</td><td>Long ~€74k / Short ~£55k / USD ≈ 0</td></tr>
+<tr><td>ε interpretation</td><td>≈ synthetic EURGBP; ρ = 0.96; ADF p ≈ 0.02 ✅</td></tr>
+<tr><td>Friction estimate</td><td>25 bps</td></tr>
+<tr><td>Breakeven σ</td><td>25 / 1.5 = 17 bps</td></tr>
+<tr><td>σ_stat typical</td><td>35–45 bps >> 17 bps ✅</td></tr>
+</table>
+<p><strong>ข้อดี:</strong> EURUSD+GBPUSD มี spread แคบกว่า EURGBP โดยตรง → friction ต่ำที่สุดในบรรดา 3 ตัวอย่าง<br>
+<strong>ข้อระวัง:</strong> ต้อง normalize notional ตาม β เสมอ — ถ้าใช้ equal notional จะมี residual USD exposure</p>
+</div>
+
+<!-- Exercises -->
+<h2 id="s21-ex">21.8 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 21.1 — คำนวณ Swap Income</div>
+<p>Short 2 lots XAUUSD CFD<br>
+Swap specification: Swap Short = −1.5 swap points/day (ค่าลบ = รับ swap)<br>
+สำหรับ XAUUSD: 1 lot = 100 oz, swap calculation: lots × swap_points × pip_value<br>
+Pip value สำหรับ XAUUSD = $1.00 ต่อ pip ต่อ lot (1 pip = $0.01 × 100 oz = $1.00)<br>
+<strong>ถาม:</strong> swap income ต่อวันเท่าไหร่? ต่อเดือน (22 trading days)?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Swap per day per lot:</strong> 1.5 swap points × $1.00/pip = $1.50 per lot per day</p>
+<p><strong>Swap per day (2 lots):</strong> 2 × $1.50 = <strong>$3.00/day</strong></p>
+<p><strong>ต่อเดือน (22 trading days):</strong> $3.00 × 22 = <strong>$66.00/month</strong></p>
+<p>หมายเหตุ: วันพุธมักถูกคิด triple swap (3x) เพื่อครอบคลุม weekend rollover → ต้องตรวจว่า broker ของคุณทำแบบนี้หรือไม่</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 21.2 — Broker Rule Check</div>
+<p>Broker X มีข้อกำหนดใน TOS ว่า: <em>"Minimum position hold time = 5 นาที. Positions closed before 5 minutes will have profits voided."</em><br>
+<strong>ถาม:</strong> กลยุทธ์ไหนของ ch21 ยังทำได้กับ Broker X? กลยุทธ์ไหนทำไม่ได้?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>✅ ทำได้: Overnight Swing Strategy</strong><br>
+ถือ position ข้ามคืน (หลายชั่วโมง ถึงหลายวัน) → ไม่มีปัญหา minimum hold time 5 นาที<br>
+เก็บ swap overnight ได้ตามปกติ</p>
+<p><strong>❌ ทำไม่ได้: Intraday Fast Mean Reversion</strong><br>
+ถ้า z-score กลับเร็ว (ภายใน 2–3 นาที) และ exit ก่อน 5 นาที → profits ถูก void<br>
+→ ต้องตั้ง exit timeout ≥ 5 นาทีจาก entry ซึ่งเพิ่ม legging risk และ adverse move risk</p>
+<p><strong>สรุป:</strong> บนประเภท strategy ที่เน้น overnight swing ตาม ch21 → Broker X ใช้ได้ แต่ถ้าต้องการ intraday ต้องหา broker อื่น</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 21.3 — Breakeven Check สำหรับ BTC/ETH CFD</div>
+<p>BTC/ETH CFD บน MT5:<br>
+σ_stat = 2.0%, total friction = 80 bps, z_entry = 2.0, z_exit = 0.5<br>
+<strong>ถาม:</strong> (1) breakeven σ = เท่าไหร่? (2) trade ได้ไหม? (3) net edge ต่อ trade คือกี่ bps?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(1) Breakeven σ:</strong><br>
+breakeven σ = total_friction / (z_entry − z_exit) = 80 / (2.0 − 0.5) = 80 / 1.5 = <strong>53.3 bps = 0.533%</strong></p>
+<p><strong>(2) Trade ได้ไหม:</strong><br>
+σ_stat = 2.0% = 200 bps ≫ breakeven σ = 53.3 bps → <strong>✅ มี edge ชัดเจน</strong></p>
+<p><strong>(3) Net edge ต่อ trade:</strong><br>
+net edge = (σ_stat − breakeven_σ) × (z_entry − z_exit)<br>
+= (200 − 53.3) × 1.5 = 146.7 × 1.5 ≈ <strong>220 bps ≈ 2.2% per trade</strong></p>
+<p>หมายเหตุ: fat tail ของ crypto → ใช้ MAD-based robust z-score และ stop-loss ≥ 3σ เสมอ</p>
+</div>
+</details>
+</div>
+
+<!-- References -->
+<h2 id="s21-ref">อ้างอิงและบทที่เกี่ยวข้อง</h2>
+
+<div class="bx bb">
+<div class="bt">บทที่เกี่ยวข้องในตำราชุดนี้</div>
+<ul>
+<li><strong>ch3 §3.9:</strong> Walk-Forward Calibration — ใช้โดยตรงสำหรับ MT5 re-calibration schedule</li>
+<li><strong>ch4 §4.5:</strong> Breakeven σ และการคำนวณ total friction — framework เดิม ใช้ได้กับ MT5</li>
+<li><strong>ch5 §5.8:</strong> Pair Selection Pipeline — ต้องใช้กับทุกคู่ใน §21.4 ก่อนเสมอ</li>
+<li><strong>ch12:</strong> Kelly Position Sizing — ปรับ half-Kelly สำหรับ MT5 execution uncertainty</li>
+<li><strong>ch19 §19.7:</strong> Breakeven Analysis framework — เหมือนกันกับ §21.6</li>
+</ul>
+</div>
+
+<div class="bx bi">
+<div class="bt">แหล่งอ้างอิงภายนอก</div>
+<ul>
+<li><strong>MetaTrader 5 Documentation</strong> — "Swap Calculation" ใน MQL5 Reference: <em>SymbolInfoDouble(symbol, SYMBOL_SWAP_LONG/SHORT)</em> และ Contract Specification</li>
+<li><strong>Hull, J.C. (2022)</strong> — <em>Options, Futures, and Other Derivatives</em>, 11th ed. — Ch.5 (Cost of Carry), Ch.3 (Futures Pricing) สำหรับ fair value framework</li>
+<li><strong>Vidyamurthy, G. (2004)</strong> — <em>Pairs Trading: Quantitative Methods and Analysis</em> — OLS/TLS β estimation และ cointegration framework</li>
+</ul>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.21 Spot↔CFD Swap Arbitrage บน MT5 | ← <strong>Ch.20</strong> | → <strong>Ch.22</strong>
+</p>
+</body>
+</html>
