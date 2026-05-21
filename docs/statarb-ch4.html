@@ -674,14 +674,91 @@ B = market_factor + noise_B
 </div>
 
 <div class="bx bg">
-<div class="bt">ต้องทดสอบ — β ทำให้ residual ไม่ directional จริงไหม</div>
-<p>หลังได้ β ต้องเช็ค ε ที่ออกมา:</p>
+<div class="bt">ทำไมต้องทดสอบ — สมการแสดงที่มาของ exposure ที่เหลือ</div>
+<p>เขียน spread change เป็นสมการ:</p>
+<div class="fm">Δε = (exposure_A − β × exposure_B) × market_return + noise</div>
+<p>ถ้า β ถูกต้อง → <code>exposure_A − β × exposure_B ≈ 0</code> → ε ไม่ขึ้นกับตลาด<br>
+ถ้า β ผิด → เทอมแรกไม่ใช่ศูนย์ → ε correlate กับ market_return → <strong>directional bet แฝง</strong><br><br>
+β ที่เหมาะสมจึงต้องอยู่ที่:</p>
+<div class="fm">β ≈ exposure_A / exposure_B</div>
+<p>เช่น BTC Lighter vs BTC Bybit — ถ้า Lighter sensitive ต่อ BTC มากกว่า Bybit 1.2× → β ≈ 1.2 ไม่ใช่ 1.0</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">6 วิธีตรวจว่า ε เป็น residual จริง ไม่ใช่ directional แฝง</div>
+
+<p><strong>Test 1 — Correlation กับ market return</strong></p>
+<div class="fm">corr(Δε, market_return)</div>
 <ul>
-<li>ε ยัง correlate กับ BTC price หรือ market return มากเกินไปไหม</li>
-<li>ε stationary ไหม · half-life เหมาะไหม · crossing กลับ mean จริงไหม</li>
-<li>เวลา BTC trend แรง — residual drift ตาม BTC ไหม</li>
+<li>|r| &lt; 0.20 → ดี (ε แทบไม่ขึ้นกับทิศตลาด)</li>
+<li>|r| &gt; 0.50 → β ยัง hedge ไม่ดี → ต้องปรับ β หรือเปลี่ยน pair</li>
 </ul>
-<p>ถ้า ε ยังขึ้นลงตาม BTC ชัดๆ → β ยัง hedge market factor ได้ไม่ดี หรือ pair นี้อาจไม่เหมาะ</p>
+
+<p><strong>Test 2 — Factor regression</strong></p>
+<div class="fm">Δε = α + γ · market_return + error</div>
+<ul>
+<li>γ ≈ 0 (p-value &gt; 0.05) → hedged ดี — market exposure ถูกหักล้างแล้ว</li>
+<li>|γ| ใหญ่ (t-stat &gt; 2) → exposure ยังหลงเหลือ → ε ไม่บริสุทธิ์</li>
+</ul>
+
+<p><strong>Test 3 — PnL แยกตามทิศทางตลาด</strong></p>
+<ul>
+<li>แบ่ง: ตลาดขึ้น &gt; 1% / ลง &gt; 1% / Sideways (±1%)</li>
+<li>stat arb จริง → PnL กระจายสม่ำเสมอ ไม่ขึ้นกับทิศทาง</li>
+<li>PnL ดีเฉพาะ "ตลาดขึ้น" → กำไรมาจาก beta ไม่ใช่ spread reversion</li>
+</ul>
+
+<p><strong>Test 4 — Stationarity (จำเป็นแต่ไม่เพียงพอ)</strong></p>
+<ul>
+<li>ADF / KPSS ต้องผ่าน — แต่ stationarity ไม่ได้พิสูจน์ว่า β ถูก</li>
+<li>ε stationary แต่ corr กับตลาดสูง → β ผิด directional ยังแฝงอยู่</li>
+<li>ε non-stationary และ corr สูง → pair ไม่ดีทั้งคู่</li>
+</ul>
+
+<p><strong>Test 5 — Half-life และ Crossing Rate</strong></p>
+<ul>
+<li>τ₁/₂ ต้องอยู่ใน target horizon (บทที่ 3)</li>
+<li>φ ควรอยู่ใน sweet spot 0.85–0.97 สำหรับ swing (<a href="statarb-ch5.html#s5-7">บทที่ 5 §5.7</a>)</li>
+<li>ถ้า Test 1–3 ผ่านแต่ half-life ยาวเกิน → pair ดี แต่ยังไม่เหมาะ intraday</li>
+</ul>
+
+<p><strong>Test 6 — Rolling β Stability</strong></p>
+<ul>
+<li>คำนวณ β_30d, β_60d, β_90d — ควรใกล้กัน (±15%)</li>
+<li>β drift เร็ว → regime เปลี่ยน → β เก่าอาจใช้ไม่ได้แล้ว</li>
+<li>ถ้า β drift → เปลี่ยนไปใช้ Rolling OLS หรือ Kalman (§4.6.3)</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt">10 สัญญาณเตือน — spread นี้อาจ directional ปลอมตัว</div>
+<ol>
+<li>|corr(Δε, market)| &gt; 0.50 — ε ยัง sensitive ต่อทิศทางตลาดอย่างมีนัย</li>
+<li>γ ≠ 0 อย่างมีนัย (t-stat &gt; 2) ใน factor regression — market exposure ค้างอยู่</li>
+<li>Sharpe ดีเฉพาะช่วงตลาดขึ้น (bull) — กำไรมาจาก beta ไม่ใช่ mean reversion</li>
+<li>Drawdown ใหญ่ในระดับเดียวกับ long position เดี่ยวขนาดเดียวกัน — hedge ไม่จริง</li>
+<li>ε ไม่ผ่าน ADF — spread ไม่กลับ mean เลย</li>
+<li>Half-life &gt; target holding period — ไม่ทันเก็บกำไร</li>
+<li>β drift &gt; 20% ภายใน 30 วัน — regime เปลี่ยน β เก่าผิดแล้ว</li>
+<li>ε correlate กับ implied vol / VIX — รับ volatility premium ปลอมตัวเป็น arb</li>
+<li>PnL จาก sideways market &lt; 30% ของกำไรรวม — ตลาดต้อง trend ถึงทำกำไร</li>
+<li>β จาก regression ห่างจาก notional ratio &gt; 30% โดยไม่มีเหตุผลเชิง factor</li>
+</ol>
+</div>
+
+<div class="bx bg">
+<div class="bt">Checklist ปฏิบัติ — 8 ขั้นตอนก่อน go live</div>
+<ol>
+<li>คำนวณ corr(Δε, market_return) → ต้องการ |r| &lt; 0.20</li>
+<li>Run factor regression → ต้องการ |γ| ไม่ significant (p &gt; 0.05)</li>
+<li>แบ่ง PnL ตามทิศทางตลาด → กระจายสม่ำเสมอ ไม่ขึ้นกับทิศ</li>
+<li>ตรวจ ADF/KPSS → ε ต้อง stationary (บทที่ 5)</li>
+<li>คำนวณ half-life และ φ → อยู่ใน target horizon และ sweet spot</li>
+<li>Plot rolling β (30d/60d/90d) → stability ±15%</li>
+<li>Walk-forward test → ε properties ยังดีใน out-of-sample (<a href="statarb-ch3.html#s3-9">บทที่ 3 §3.9</a>)</li>
+<li>ทบทวนหลัง macro event (Fed meeting / major shock) → β อาจต้อง recalibrate</li>
+</ol>
+<p><em>Residual ที่ดีควรเหลือ "ความผิดปกติระหว่างสองขา" — ไม่ใช่ "ทิศทางตลาด" ที่ hedge ไม่หมด</em></p>
 </div>
 
 <div class="bx bi">
