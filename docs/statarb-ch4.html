@@ -459,7 +459,106 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 
 <h2 id="s4-6">4.6 การหา β ในทางปฏิบัติ — เลือกข้อมูล ประเมินคุณภาพ และข้อผิดพลาด</h2>
 
-<p>§4.2–4.5 บอกว่าจะใช้ <em>method</em> ไหน — แต่มีคำถามที่ต้องตอบ <strong>ก่อน</strong> fit regression: regress อะไรกับอะไร? β ที่ได้ขึ้นกับชนิดข้อมูลที่ใส่เข้าไป ถ้าใส่ข้อมูลผิดชนิด β จะหลอกตา แม้ method จะถูก</p>
+<p>ก่อนลงรายละเอียดว่าใช้ method ไหน ต้องเข้าใจ <strong>ตำแหน่งของ β</strong> ในภาพใหญ่ก่อน — สิ่งที่เราต้องการสร้างจริงๆ ไม่ใช่ β แต่เป็น <strong>ε (synthetic process)</strong> ส่วน β คือแกนสำคัญที่สุดที่ทำให้สร้าง ε ได้ <em>ถูกสัดส่วน</em></p>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — β คือสูตรผสม, ε คือของใหม่ที่เกิดจากการผสม</div>
+<div class="ki-eq">ε = F(A) − β·F(B)</div>
+<p style="margin-top:8px">β คือ <strong>อัตราส่วนผสม (mixing ratio / hedge ratio)</strong> ที่ตอบว่า "ถ้ามี A 1 หน่วย ต้องใช้ B กี่หน่วยมาหักล้าง?" — ประโยคที่แม่นที่สุดคือ: <strong>β คืออัตราส่วนที่ใช้ผสมสองสิ่ง เพื่อให้ได้ ε ที่มีคุณสมบัติเทรดได้</strong></p>
+</div>
+
+<table>
+<tr><th>β</th><th>สมการ ε</th><th>ความหมายของการผสม</th></tr>
+<tr><td>β = 1</td><td>ε = A − B</td><td>ผสม 1:1 — ใช้ B เท่ากับ A</td></tr>
+<tr><td>β = 0.8</td><td>ε = A − 0.8B</td><td>ใช้ B แค่ 0.8 เท่าของ A</td></tr>
+<tr><td>β = 1.3</td><td>ε = A − 1.3B</td><td>ใช้ B มากกว่า A เพื่อหักล้าง exposure ให้พอดี</td></tr>
+</table>
+
+<p>β กำหนดว่า process ใหม่จะ "หน้าตา" เป็นอย่างไร — มันไม่ใช่แค่ตัวเลขประกอบสูตร แต่เป็น<strong>ตัวกำหนดโครงสร้างของ synthetic process</strong>:</p>
+
+<div class="bx bg">
+<div class="bt">β ดี → ε ที่เทรดได้</div>
+<p>common movement ถูกหักล้าง · ε นิ่งขึ้น · mean reversion ชัดขึ้น · เป็น risk-neutral จริง</p>
+</div>
+<div class="bx br">
+<div class="bt">β ผิด → process หลอก</div>
+<p>ε drift · signal หลอก · กลายเป็น directional bet · position size ผิด · risk สูงกว่าที่คิด</p>
+</div>
+
+<h3>β อยู่ตรงไหนใน Pipeline</h3>
+
+<p>β สำคัญมาก แต่ <strong>ไม่ใช่ทุกอย่าง</strong> — มันเป็นขั้นที่ 3 ของกระบวนการสร้าง process ต้องมี pair selection + transformation มาก่อน และมี diagnostics + execution gate ตามหลัง:</p>
+
+<svg class="d" viewBox="0 0 680 215">
+<defs>
+<marker id="arwpl" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+<text x="340" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">β อยู่ตรงไหน — Pipeline การสร้าง Synthetic Process</text>
+
+<!-- badge above Beta box -->
+<rect x="252" y="22" width="64" height="14" rx="7" fill="#0d9488"/>
+<text x="284" y="32" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">บทนี้</text>
+
+<!-- Box 1: Pair Selection -->
+<rect x="16" y="40" width="96" height="60" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="64" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1e40af">1. Pair</text>
+<text x="64" y="74" text-anchor="middle" font-size="8.5" fill="#1e40af">เลือกวัตถุดิบ</text>
+<text x="64" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">A,B มี mechanism</text>
+<text x="64" y="114" text-anchor="middle" font-size="8" fill="#64748b">บทที่ 5</text>
+
+<!-- Box 2: Transformation -->
+<rect x="126" y="40" width="96" height="60" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="174" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1e40af">2. Transform</text>
+<text x="174" y="74" text-anchor="middle" font-size="8.5" fill="#1e40af">แปลงให้เทียบได้</text>
+<text x="174" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">price/log/basis</text>
+<text x="174" y="114" text-anchor="middle" font-size="8" fill="#64748b">§4.6.1</text>
+
+<!-- Box 3: Beta (highlighted) -->
+<rect x="236" y="40" width="96" height="60" rx="7" fill="#f0fdfa" stroke="#0d9488" stroke-width="2.5"/>
+<text x="284" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0d9488">3. Beta</text>
+<text x="284" y="74" text-anchor="middle" font-size="8.5" fill="#0d9488">สูตรผสม</text>
+<text x="284" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">อัตราส่วน hedge</text>
+<text x="284" y="114" text-anchor="middle" font-size="8" fill="#0d9488" font-weight="700">บทที่ 4</text>
+
+<!-- Box 4: Epsilon -->
+<rect x="346" y="40" width="96" height="60" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="394" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#166534">4. Epsilon</text>
+<text x="394" y="74" text-anchor="middle" font-size="8.5" fill="#166534">process ใหม่</text>
+<text x="394" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">F(A)−βF(B)</text>
+<text x="394" y="114" text-anchor="middle" font-size="8" fill="#64748b">บทที่ 5–6</text>
+
+<!-- Box 5: Diagnostics -->
+<rect x="456" y="40" width="96" height="60" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="504" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#166534">5. Diagnostics</text>
+<text x="504" y="74" text-anchor="middle" font-size="8.5" fill="#166534">ตรวจนิสัย</text>
+<text x="504" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">stationary?</text>
+<text x="504" y="114" text-anchor="middle" font-size="8" fill="#64748b">บทที่ 5–6</text>
+
+<!-- Box 6: Execution -->
+<rect x="566" y="40" width="96" height="60" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="614" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#166534">6. Execution</text>
+<text x="614" y="74" text-anchor="middle" font-size="8.5" fill="#166534">เทรดได้จริง?</text>
+<text x="614" y="89" text-anchor="middle" font-size="7.5" fill="#64748b">หลัง cost</text>
+<text x="614" y="114" text-anchor="middle" font-size="8" fill="#64748b">บทที่ 19</text>
+
+<!-- arrows -->
+<line x1="114" y1="70" x2="123" y2="70" stroke="#374151" stroke-width="1.5" marker-end="url(#arwpl)"/>
+<line x1="224" y1="70" x2="233" y2="70" stroke="#374151" stroke-width="1.5" marker-end="url(#arwpl)"/>
+<line x1="334" y1="70" x2="343" y2="70" stroke="#374151" stroke-width="1.5" marker-end="url(#arwpl)"/>
+<line x1="444" y1="70" x2="453" y2="70" stroke="#374151" stroke-width="1.5" marker-end="url(#arwpl)"/>
+<line x1="554" y1="70" x2="563" y2="70" stroke="#374151" stroke-width="1.5" marker-end="url(#arwpl)"/>
+
+<text x="340" y="140" text-anchor="middle" font-size="10" fill="#64748b">Pair = เลือกวัตถุดิบ · Transform = แปลงให้เทียบได้ · Beta = สูตรผสม · Epsilon = ของใหม่ที่ได้</text>
+<text x="340" y="156" text-anchor="middle" font-size="10" fill="#64748b">Diagnostics = ตรวจว่านิสัยดีไหม · Execution = ตรวจว่าเทรดได้จริงไหม</text>
+</svg>
+<div class="caption">β เป็นขั้นที่ 3 — ขาดขั้นไหนก็สร้าง ε ที่เทรดได้จริงไม่ได้ บทที่ 4 โฟกัสที่ขั้น Beta</div>
+
+<div class="bx bi">
+<div class="bt">β เป็นแนวคิดทั่วไป — ใน option เรียกว่า Delta</div>
+<p>หลักการ "หาอัตราส่วนที่ถูกต้องเพื่อสร้าง process ใหม่" ใช้ได้กับทุก asset class — ใน option process: ε = Option − Δ·Underlying โดย <strong>Δ (delta) ทำหน้าที่เป็น hedge ratio แทน β</strong> แนวคิดเดียวกัน: ไม่จำเป็นต้องผสม 1:1</p>
+</div>
+
+<p>ที่เหลือของ §4.6 เจาะ 3 เรื่องที่ทำให้ β <em>ใช้ได้จริง</em> ไม่ใช่แค่ตัวเลขสวยบน backtest: เลือกข้อมูลที่ถูก (§4.6.1) · เลือก method ตามสถานการณ์ (§4.6.2–4.6.3) · ประเมินคุณภาพและเลี่ยงกับดัก (§4.6.4–4.6.5)</p>
 
 <h3>4.6.1 regress ข้อมูลแบบไหน — Raw Price, Log Price หรือ Basis</h3>
 
