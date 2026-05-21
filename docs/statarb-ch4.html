@@ -474,6 +474,11 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <tr><td>β = 1.3</td><td>ε = A − 1.3B</td><td>ใช้ B มากกว่า A เพื่อหักล้าง exposure ให้พอดี</td></tr>
 </table>
 
+<div class="bx bb">
+<div class="bt">ตัวอย่างจำง่าย — ทำไมไม่ดูแค่ A − B</div>
+<p>ให้ A = BTC basis บน Lighter, B = BTC basis บน Bybit — เราไม่ดูแค่ผลต่างดิบ <em>A − B</em> แต่ดู <strong>ε = A − βB</strong> เพราะ β ตอบว่า "Bybit basis ควรถูกถ่วงน้ำหนักเท่าไร จึงหักล้าง Lighter basis ได้พอดี" ถ้าถ่วงผิดสัดส่วน ส่วนที่เหลือจะไม่ใช่ inefficiency แท้ แต่เป็น market move ที่หักล้างไม่หมด → signal หลอก</p>
+</div>
+
 <p>β กำหนดว่า process ใหม่จะ "หน้าตา" เป็นอย่างไร — มันไม่ใช่แค่ตัวเลขประกอบสูตร แต่เป็น<strong>ตัวกำหนดโครงสร้างของ synthetic process</strong>:</p>
 
 <div class="bx bg">
@@ -558,7 +563,7 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <p>หลักการ "หาอัตราส่วนที่ถูกต้องเพื่อสร้าง process ใหม่" ใช้ได้กับทุก asset class — ใน option process: ε = Option − Δ·Underlying โดย <strong>Δ (delta) ทำหน้าที่เป็น hedge ratio แทน β</strong> แนวคิดเดียวกัน: ไม่จำเป็นต้องผสม 1:1</p>
 </div>
 
-<p>ที่เหลือของ §4.6 เจาะ 3 เรื่องที่ทำให้ β <em>ใช้ได้จริง</em> ไม่ใช่แค่ตัวเลขสวยบน backtest: เลือกข้อมูลที่ถูก (§4.6.1) · เลือก method ตามสถานการณ์ (§4.6.2–4.6.3) · ประเมินคุณภาพและเลี่ยงกับดัก (§4.6.4–4.6.5)</p>
+<p>ที่เหลือของ §4.6 เจาะเรื่องที่ทำให้ β <em>ใช้ได้จริง</em> ไม่ใช่แค่ตัวเลขสวยบน backtest: เลือกข้อมูลที่ถูก (§4.6.1) · เข้าใจว่า β หักล้างอะไร (§4.6.2) · เลือก method ตามสถานการณ์ (§4.6.3–4.6.4) · ประเมินคุณภาพและเลี่ยงกับดัก (§4.6.5–4.6.6)</p>
 
 <h3>4.6.1 regress ข้อมูลแบบไหน — Raw Price, Log Price หรือ Basis</h3>
 
@@ -582,10 +587,110 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 
 <div class="bx br">
 <div class="bt">อย่าเอา raw-price β ไปใส่ position โดยตรง</div>
-<p>β = 0.0444 เป็นแค่ slope บนกราฟ scatter — ไม่ใช่ hedge ratio ที่พร้อมใช้ ก่อนกำหนดขนาด position ต้องแปลงเป็น <strong>dollar-neutral notional</strong> ก่อนเสมอ (long $X ของ A ↔ short $X ของ B) มิฉะนั้น position จะมี directional bias แฝงโดยไม่รู้ตัว</p>
+<p>β = 0.0444 เป็นแค่ slope บนกราฟ scatter — ต้องแปลงเป็น <strong>กฎกำหนดขนาด position</strong> ที่ทำให้ exposure ต่อ common factor หักล้างกัน (ดู §4.6.2) ข้อควรระวัง: hedge ที่ถูกต้อง <em>ไม่จำเป็น</em> ต้องเป็น dollar-neutral เป๊ะ — มันคือ <strong>factor-neutral</strong></p>
 </div>
 
-<h3>4.6.2 เมนูเต็มของวิธีหา β</h3>
+<h3>4.6.2 β หักล้าง exposure — ไม่ใช่ทำมูลค่าให้เท่ากัน</h3>
+
+<p>จุดที่หลายคนสับสน: <em>A − βB</em> <strong>ไม่ได้</strong>แปลว่าต้องทำให้ βB มีค่า "เท่ากับ" A ตลอดเวลา — βB คือ <strong>ส่วนของ A ที่ B อธิบายได้</strong> ส่วนที่เหลือคือ ε</p>
+
+<div class="key-idea">
+<div class="ki-label">การแยกส่วน — A = ส่วนที่เคลื่อนตาม B + ส่วนผิดปกติ</div>
+<div class="ki-eq">A = βB + ε</div>
+<p style="margin-top:8px">βB = "เส้น fair relationship" (ส่วนที่เคลื่อนตาม B) · ε = ส่วนผิดปกติที่เหลือหลังใช้ B อธิบาย A — <strong>βB ไม่ใช่ราคาที่ต้องเท่ากับ A เสมอ</strong></p>
+</div>
+
+<table>
+<tr><th>สถานะ</th><th>ε</th><th>ความหมาย</th></tr>
+<tr><td>A = βB</td><td>ε = 0</td><td>process อยู่ที่ equilibrium / mean</td></tr>
+<tr><td>A &gt; βB</td><td>ε &gt; 0</td><td>A แพงกว่าที่ควรเป็นเมื่อเทียบกับ B</td></tr>
+<tr><td>A &lt; βB</td><td>ε &lt; 0</td><td>A ถูกกว่าที่ควรเป็นเมื่อเทียบกับ B</td></tr>
+</table>
+
+<p><strong>แล้ว β ผิด ทำให้กลายเป็น directional ได้อย่างไร?</strong> สมมติ A และ B ถูกขับเคลื่อนด้วยแรงตลาดเดียวกัน (เช่น BTC market factor):</p>
+
+<div class="fm">A = market_factor + noise_A
+B = market_factor + noise_B
+
+β ถูก:  ε = A − βB ≈ noise              ← market factor ถูกหักล้าง
+β ผิด:  ε = A − βB = noise + market exposure ที่ค้างอยู่
+                                        ← กลายเป็น directional โดยไม่รู้ตัว</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: A เคลื่อนไหวแรงกว่า B ราว 2 เท่า (A ≈ 2B)</div>
+<p>ใช้ ε = A − 1·B → ยังเหลือ exposure ต่อ B เยอะ เพราะ A ขยับมากกว่าที่ 1B หักล้างได้<br>
+ใช้ ε = A − 2·B → ส่วนที่เคลื่อนไหวร่วมกันถูกหักล้างพอดี<br>
+→ β ทำให้ <strong>ความไวต่อ common factor เท่ากัน</strong> ไม่ใช่ทำให้ <em>มูลค่า</em> เท่ากัน</p>
+</div>
+
+<svg class="d" viewBox="0 0 680 215">
+<text x="340" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">β ถูก vs β ผิด — residual หน้าตาต่างกัน</text>
+
+<rect x="10" y="24" width="315" height="170" rx="8" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+<text x="167" y="41" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">β ถูก — ε หักล้าง common factor</text>
+<line x1="36" y1="128" x2="308" y2="128" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="32" y="131" text-anchor="end" font-size="8" fill="#94a3b8">0</text>
+<polyline points="40,158 70,148 100,152 130,134 160,138 190,118 220,122 250,102 280,86 308,72" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="4,3"/>
+<text x="262" y="68" font-size="8.5" fill="#94a3b8">BTC ↑</text>
+<polyline points="40,128 67,110 94,144 121,116 148,136 175,112 202,140 229,118 256,132 283,114 308,128" fill="none" stroke="#0d9488" stroke-width="2.3"/>
+<text x="167" y="183" text-anchor="middle" font-size="9" fill="#0d9488">ε mean-revert รอบ 0 — ไม่ตามเทรนด์ BTC</text>
+
+<rect x="355" y="24" width="315" height="170" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="512" y="41" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">β ผิด — ε ค้าง market exposure</text>
+<line x1="381" y1="128" x2="653" y2="128" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="377" y="131" text-anchor="end" font-size="8" fill="#94a3b8">θ</text>
+<polyline points="385,158 415,148 445,152 475,134 505,138 535,118 565,122 595,102 625,86 653,72" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="4,3"/>
+<text x="607" y="68" font-size="8.5" fill="#94a3b8">BTC ↑</text>
+<polyline points="385,130 412,116 439,136 466,108 493,124 520,96 547,110 574,84 601,98 628,74 653,86" fill="none" stroke="#dc2626" stroke-width="2.3"/>
+<text x="512" y="183" text-anchor="middle" font-size="9" fill="#dc2626">ε drift ขึ้นตาม BTC — directional แฝง</text>
+</svg>
+<div class="caption">β ที่ถูกต้องทำให้ ε เป็น residual ที่ mean-revert — β ผิดทำให้ ε ยังพก market exposure ค้างอยู่</div>
+
+<p><strong>แยก 2 คำให้ขาด</strong> — ในการเทรดจริงต้องไม่สับสนระหว่าง:</p>
+
+<table>
+<tr><th></th><th>Value / Notional matching</th><th>Risk / Factor matching</th></tr>
+<tr><td><strong>นิยาม</strong></td><td>มูลค่าเงินสองขาเท่ากัน</td><td>exposure ต่อ factor สองขาเท่ากัน</td></tr>
+<tr><td><strong>ตัวอย่าง</strong></td><td>Long A $10,000 / Short B $10,000</td><td>Long A $10,000 / Short B $8,000 (ถ้า B ขยับแรงกว่า)</td></tr>
+<tr><td><strong>ให้อะไร</strong></td><td>dollar-neutral</td><td>hedge ที่ถูกต้องจริง (factor-neutral)</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">กับดักที่ต้องระวัง</div>
+<p>notional เท่ากัน <strong>ไม่ได้แปลว่า</strong> hedge ถูก · notional ไม่เท่ากัน <strong>ไม่ได้แปลว่า</strong> directional — สิ่งที่ตัดสินคือ exposure ต่อ common factor ถูกหักล้างหมดหรือยัง</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Bybit↔Lighter — β = 0.8 หรือ 1.2 ไม่ได้แปลว่าตั้งใจ directional</div>
+<div class="fm">A = basis_Lighter,  B = basis_Bybit   (BTC perp underlying เดียวกัน)
+
+เริ่มจาก β = 1   (underlying เดียวกัน → baseline)
+
+ถ้าข้อมูลบอกว่า basis ของ Lighter เคลื่อนแรง/ช้ากว่า Bybit:
+  β = 0.8   หรือ   β = 1.2
+
+→ ไม่ใช่การตั้งใจเปิด directional
+→ เป็นการปรับ hedge ratio ให้เข้ากับพฤติกรรมจริงของ 2 ตลาด</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">ต้องทดสอบ — β ทำให้ residual ไม่ directional จริงไหม</div>
+<p>หลังได้ β ต้องเช็ค ε ที่ออกมา:</p>
+<ul>
+<li>ε ยัง correlate กับ BTC price หรือ market return มากเกินไปไหม</li>
+<li>ε stationary ไหม · half-life เหมาะไหม · crossing กลับ mean จริงไหม</li>
+<li>เวลา BTC trend แรง — residual drift ตาม BTC ไหม</li>
+</ul>
+<p>ถ้า ε ยังขึ้นลงตาม BTC ชัดๆ → β ยัง hedge market factor ได้ไม่ดี หรือ pair นี้อาจไม่เหมาะ</p>
+</div>
+
+<div class="bx bi">
+<div class="bt">ประโยคจำ</div>
+<p>β ไม่ได้มีหน้าที่ทำให้ B "ราคาเท่ากับ" A — β มีหน้าที่ทำให้ B "หักล้าง exposure ของ A" ได้เหมาะสม<br>
+<strong>ถ้า β ดี สิ่งที่เหลือคือ residual · ถ้า β แย่ สิ่งที่เหลือคือ directional bet ที่ปลอมตัวเป็น stat arb</strong></p>
+</div>
+
+<h3>4.6.3 เมนูเต็มของวิธีหา β</h3>
 
 <p>§4.2–4.3 อธิบาย OLS / TLS / Kalman เชิงลึก — ตารางนี้รวมทุกวิธีไว้เป็น "เมนู" เดียวเพื่อเลือกใช้ตามสถานการณ์:</p>
 
@@ -601,7 +706,7 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <tr><td><strong>Greek (Delta/Vega)</strong></td><td>options / volatility strategy</td><td>ตรงกับโครงสร้าง option</td><td>ต้อง update ตลอดเพราะ Greek เปลี่ยน</td></tr>
 </table>
 
-<h3>4.6.3 Roadmap — เริ่มจากง่าย ค่อยไปยาก</h3>
+<h3>4.6.4 Roadmap — เริ่มจากง่าย ค่อยไปยาก</h3>
 
 <p>ข้อผิดพลาดที่พบบ่อยคือเริ่มจาก Kalman ทันทีเพราะ "ดูฉลาด" — แต่ Kalman มีพารามิเตอร์ให้ tune เยอะ จึง overfit ง่ายมากเมื่อข้อมูลยังน้อย ลำดับที่แนะนำสำหรับ scanner v1:</p>
 
@@ -642,7 +747,7 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 </svg>
 <div class="caption">อย่ากระโดดไป Kalman ทันที — พิสูจน์ก่อนว่า β=1 หรือ OLS ยังไม่พอ จึงค่อยไต่ขั้นถัดไป</div>
 
-<h3>4.6.4 β ดีหรือไม่ดี ดูยังไง — Checklist 7 ข้อ</h3>
+<h3>4.6.5 β ดีหรือไม่ดี ดูยังไง — Checklist 7 ข้อ</h3>
 
 <p>β ที่ดี <strong>ไม่ใช่</strong> β ที่ทำให้กราฟ backtest สวยที่สุด — แต่คือ β ที่ทำให้ process เทรดได้จริงและ robust ใช้ checklist นี้:</p>
 
@@ -654,12 +759,12 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <li><strong>Crossing behavior ดี</strong> — φ อยู่ใน sweet spot (<a href="statarb-ch5.html#s5-7">บทที่ 5 §5.7</a>)</li>
 <li><strong>Residual ไม่ drift</strong> — ε ไม่ค่อยๆ ไหลไปทางเดียว (ไม่มี trend แฝง)</li>
 <li><strong>Net edge หลัง cost ยังเหลือ</strong> — σ_stat ≥ breakeven σ (<a href="#s4-5">§4.5</a>)</li>
-<li><strong>Position ไม่กลายเป็น directional bet</strong> — dollar-neutral จริง ไม่มี market exposure แฝง</li>
+<li><strong>Position ไม่กลายเป็น directional bet</strong> — factor-neutral จริง: ε ไม่ correlate กับ underlying/market (ดู §4.6.2)</li>
 <li><strong>β เสถียรพอใน out-of-sample</strong> — ผ่าน walk-forward validation (<a href="statarb-ch3.html#s3-9">บทที่ 3 §3.9</a>)</li>
 </ol>
 </div>
 
-<h3>4.6.5 ข้อผิดพลาดที่พบบ่อย</h3>
+<h3>4.6.6 ข้อผิดพลาดที่พบบ่อย</h3>
 
 <div class="bx br">
 <div class="bt">7 กับดักเรื่องการหา β</div>
@@ -701,7 +806,7 @@ epsilon = y - (alpha + beta * x)      # diagnostics ใช้ residual รวม
   ε = log(ETH) − β_log · log(BTC)
   β_log ≈ elasticity (crypto major มักใกล้ 1) — scale-invariant
 
-ผ่าน Checklist §4.6.4:
+ผ่าน Checklist §4.6.5:
   1. stationary       — Half-life 17h → ε mean-reverting ✅
   3. crossing φ=0.96  — นอก intraday sweet spot → swing เท่านั้น (ch5 §5.7)
   7. walk-forward     — ต้อง re-check β ทุก window (ch3 §3.9)
