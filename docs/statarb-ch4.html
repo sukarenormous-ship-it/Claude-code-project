@@ -457,7 +457,180 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
   → Kalman สำหรับ Funding Harvest = ch15</div>
 </div>
 
-<h2 id="s4-6">4.6 Pseudo-code</h2>
+<h2 id="s4-6">4.6 การหา β ในทางปฏิบัติ — เลือกข้อมูล ประเมินคุณภาพ และข้อผิดพลาด</h2>
+
+<p>§4.2–4.5 บอกว่าจะใช้ <em>method</em> ไหน — แต่มีคำถามที่ต้องตอบ <strong>ก่อน</strong> fit regression: regress อะไรกับอะไร? β ที่ได้ขึ้นกับชนิดข้อมูลที่ใส่เข้าไป ถ้าใส่ข้อมูลผิดชนิด β จะหลอกตา แม้ method จะถูก</p>
+
+<h3>4.6.1 regress ข้อมูลแบบไหน — Raw Price, Log Price หรือ Basis</h3>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด</div>
+<p>β ไม่มีค่าเดียวตายตัว — ค่ามันขึ้นกับว่าคุณ regress <strong>ราคาดิบ, log price, หรือ basis</strong> สามแบบนี้ให้ β คนละตัวเลข และตอบคนละคำถาม</p>
+</div>
+
+<table>
+<tr><th>Input ที่ regress</th><th>สมการ ε</th><th>ใช้เมื่อ</th><th>β หมายถึงอะไร</th></tr>
+<tr><td>Raw price</td><td>ε = P_A − β·P_B</td><td>scale ราคาใกล้กัน / ต้องการดูภาพ scatter</td><td>$ ของ A ต่อ $1 ของ B — <strong>ขึ้นกับ scale ราคา</strong></td></tr>
+<tr><td style="background:#f0fdf4"><strong>Log price</strong></td><td><strong>ε = log P_A − β·log P_B</strong></td><td><strong>default — pairs ทั่วไป (ที่หนังสือเล่มนี้ใช้)</strong></td><td>elasticity: %A ต่อ %B — <strong>scale-invariant</strong></td></tr>
+<tr><td>Basis / spread</td><td>ε = basis_A − β·basis_B</td><td>funding arb, perp↔perp, swap arb (บทที่ 21)</td><td>sensitivity ของ basis ขาหนึ่งต่ออีกขา</td></tr>
+</table>
+
+<div class="bx bi">
+<div class="bt">BTC/ETH — ทำไม β = 0.0444 จึงหลอกตา</div>
+<p>ภาพวิเคราะห์ BTC/ETH ที่นิยมแชร์กัน fit regression บน <strong>ราคาดิบ</strong>: ETH = α + β·BTC ได้ <strong>β = 0.0444</strong> ตัวเลขนี้แปลว่า "ETH ขยับ $0.0444 ต่อทุก $1 ที่ BTC ขยับ" — มันถูกในเชิงเลขคณิต แต่ <strong>ขึ้นกับระดับราคา</strong>: ถ้า BTC แตก scale (เช่น redenominate ÷10) β จะกลายเป็น 0.444 ทันที ทั้งที่ความสัมพันธ์จริงไม่เปลี่ยน</p>
+<p>ถ้า regress <strong>log price</strong> แทน: log(ETH) = α + β·log(BTC) จะได้ β เป็น <strong>elasticity</strong> (สำหรับ crypto major มักใกล้ 1) — ค่านี้ไม่เปลี่ยนตาม scale ราคา จึงเอาไป calibrate ข้าม regime ได้ปลอดภัยกว่า หนังสือเล่มนี้ใช้สมการ ε = log P_A − β·log P_B เป็นมาตรฐานด้วยเหตุผลนี้</p>
+</div>
+
+<div class="bx br">
+<div class="bt">อย่าเอา raw-price β ไปใส่ position โดยตรง</div>
+<p>β = 0.0444 เป็นแค่ slope บนกราฟ scatter — ไม่ใช่ hedge ratio ที่พร้อมใช้ ก่อนกำหนดขนาด position ต้องแปลงเป็น <strong>dollar-neutral notional</strong> ก่อนเสมอ (long $X ของ A ↔ short $X ของ B) มิฉะนั้น position จะมี directional bias แฝงโดยไม่รู้ตัว</p>
+</div>
+
+<h3>4.6.2 เมนูเต็มของวิธีหา β</h3>
+
+<p>§4.2–4.3 อธิบาย OLS / TLS / Kalman เชิงลึก — ตารางนี้รวมทุกวิธีไว้เป็น "เมนู" เดียวเพื่อเลือกใช้ตามสถานการณ์:</p>
+
+<table>
+<tr><th>วิธี</th><th>ใช้เมื่อ</th><th>ข้อดี</th><th>ข้อเสีย</th></tr>
+<tr><td><strong>β = 1</strong></td><td>สินทรัพย์เดียวกัน, exposure เท่ากัน (BTC perp ↔ BTC perp)</td><td>ง่ายสุด, ไม่ overfit</td><td>หยาบ — venue ต่างกันเรื่อง funding/index/liquidity</td></tr>
+<tr><td><strong>Contract ratio</strong></td><td>crack spread / product ที่มี ratio เชิงกลไกชัดเจน</td><td>mechanism ชัด ไม่ต้อง fit</td><td>ใช้ได้เฉพาะบางตลาด</td></tr>
+<tr><td style="background:#f0fdf4"><strong>OLS</strong></td><td>pair 2 ตัวทั่วไป — <strong>baseline เริ่มต้น</strong></td><td>ง่าย, เร็ว, ตีความได้</td><td>β คงที่ — อาจ outdate เมื่อ regime เปลี่ยน</td></tr>
+<tr><td><strong>Rolling OLS</strong></td><td>ความสัมพันธ์เปลี่ยนตาม regime</td><td>adaptive กว่า OLS static</td><td>noisy ถ้า window สั้นเกิน</td></tr>
+<tr><td><strong>TLS</strong></td><td>ทั้ง X และ Y มี noise พอๆ กัน</td><td>สมดุลกว่า OLS (ดู §4.2)</td><td>ซับซ้อนขึ้น, ตีความยากกว่า</td></tr>
+<tr><td><strong>Kalman</strong></td><td>β เปลี่ยนตลอดเวลา / Funding Harvest (§4.5)</td><td>dynamic, online update</td><td>overfit ง่าย, tune Q/R ยาก</td></tr>
+<tr><td><strong>Johansen</strong></td><td>multi-leg / basket (≥ 3 ขา)</td><td>หา cointegrating vector หลายขาพร้อมกัน</td><td>overfit ง่าย, ต้องระวังเป็นพิเศษ</td></tr>
+<tr><td><strong>Greek (Delta/Vega)</strong></td><td>options / volatility strategy</td><td>ตรงกับโครงสร้าง option</td><td>ต้อง update ตลอดเพราะ Greek เปลี่ยน</td></tr>
+</table>
+
+<h3>4.6.3 Roadmap — เริ่มจากง่าย ค่อยไปยาก</h3>
+
+<p>ข้อผิดพลาดที่พบบ่อยคือเริ่มจาก Kalman ทันทีเพราะ "ดูฉลาด" — แต่ Kalman มีพารามิเตอร์ให้ tune เยอะ จึง overfit ง่ายมากเมื่อข้อมูลยังน้อย ลำดับที่แนะนำสำหรับ scanner v1:</p>
+
+<svg class="d" viewBox="0 0 680 250">
+<defs>
+<marker id="arw46" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+</defs>
+<text x="340" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">ขั้นบันได β — ไต่จาก baseline ไป dynamic</text>
+
+<!-- Step 1 -->
+<rect x="24" y="170" width="150" height="40" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+<text x="99" y="188" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">1. β = 1</text>
+<text x="99" y="202" text-anchor="middle" font-size="9" fill="#166534">baseline — เริ่มที่นี่</text>
+
+<!-- Step 2 -->
+<rect x="186" y="132" width="150" height="40" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>
+<text x="261" y="150" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">2. OLS β</text>
+<text x="261" y="164" text-anchor="middle" font-size="9" fill="#1e40af">เทียบกับ β=1 ตัวไหน ε ดีกว่า</text>
+
+<!-- Step 3 -->
+<rect x="348" y="94" width="150" height="40" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.8"/>
+<text x="423" y="112" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">3. Rolling OLS</text>
+<text x="423" y="126" text-anchor="middle" font-size="9" fill="#92400e">ถ้า β drift ตาม regime</text>
+
+<!-- Step 4 -->
+<rect x="510" y="56" width="150" height="40" rx="6" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.8"/>
+<text x="585" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#0d9488">4. Kalman β</text>
+<text x="585" y="88" text-anchor="middle" font-size="9" fill="#0d9488">ทีหลัง — เมื่อ data พอ</text>
+
+<!-- risers -->
+<line x1="174" y1="190" x2="186" y2="152" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3"/>
+<line x1="336" y1="152" x2="348" y2="114" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3"/>
+<line x1="498" y1="114" x2="510" y2="76" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+<!-- baseline axis -->
+<line x1="24" y1="228" x2="660" y2="228" stroke="#374151" stroke-width="1.5" marker-end="url(#arw46)"/>
+<text x="340" y="244" text-anchor="middle" font-size="10" fill="#dc2626">ความซับซ้อน + ความเสี่ยง overfit เพิ่มขึ้น →</text>
+</svg>
+<div class="caption">อย่ากระโดดไป Kalman ทันที — พิสูจน์ก่อนว่า β=1 หรือ OLS ยังไม่พอ จึงค่อยไต่ขั้นถัดไป</div>
+
+<h3>4.6.4 β ดีหรือไม่ดี ดูยังไง — Checklist 7 ข้อ</h3>
+
+<p>β ที่ดี <strong>ไม่ใช่</strong> β ที่ทำให้กราฟ backtest สวยที่สุด — แต่คือ β ที่ทำให้ process เทรดได้จริงและ robust ใช้ checklist นี้:</p>
+
+<div class="bx bg">
+<div class="bt">เกณฑ์ประเมิน β</div>
+<ol>
+<li><strong>ε stationary มากขึ้น</strong> — ADF p-value ต่ำลง / KPSS ดีขึ้น (บทที่ 5)</li>
+<li><strong>Half-life เหมาะกับ horizon</strong> — ไม่สั้นจนจับไม่ทัน ไม่ยาวจน margin cost กิน (บทที่ 3)</li>
+<li><strong>Crossing behavior ดี</strong> — φ อยู่ใน sweet spot (<a href="statarb-ch5.html#s5-7">บทที่ 5 §5.7</a>)</li>
+<li><strong>Residual ไม่ drift</strong> — ε ไม่ค่อยๆ ไหลไปทางเดียว (ไม่มี trend แฝง)</li>
+<li><strong>Net edge หลัง cost ยังเหลือ</strong> — σ_stat ≥ breakeven σ (<a href="#s4-5">§4.5</a>)</li>
+<li><strong>Position ไม่กลายเป็น directional bet</strong> — dollar-neutral จริง ไม่มี market exposure แฝง</li>
+<li><strong>β เสถียรพอใน out-of-sample</strong> — ผ่าน walk-forward validation (<a href="statarb-ch3.html#s3-9">บทที่ 3 §3.9</a>)</li>
+</ol>
+</div>
+
+<h3>4.6.5 ข้อผิดพลาดที่พบบ่อย</h3>
+
+<div class="bx br">
+<div class="bt">7 กับดักเรื่องการหา β</div>
+<ol>
+<li><strong>ใช้ β = 1 กับทุกอย่าง</strong> — สะดวกแต่หยาบ; venue ต่างกันมักทำให้ ε มี bias</li>
+<li><strong>ใช้ราคาดิบแทน log price / basis</strong> — β กลายเป็นตัวเลขที่ขึ้นกับ scale (ดู §4.6.1)</li>
+<li><strong>หา β จากข้อมูลทั้งหมดรวมอนาคต</strong> — look-ahead bias; ต้อง fit บน train window เท่านั้น</li>
+<li><strong>ใช้ window ยาวเกินไป</strong> — β ตามไม่ทัน regime ใหม่</li>
+<li><strong>Rolling window สั้นเกินไป</strong> — β noisy กระโดด → position ขยับถี่จน friction กิน</li>
+<li><strong>เลือก β ที่ backtest สวยที่สุด</strong> — overfit; ต้องผ่าน OOS / paper validation ก่อน</li>
+<li><strong>ลืมแปลง β เป็น position size จริง</strong> — β บน regression ≠ notional ratio ที่ trade</li>
+</ol>
+</div>
+
+<div class="fm">import statsmodels.api as sm
+import numpy as np
+
+# regress บน LOG price (มาตรฐานของหนังสือ) — ใช้ข้อมูล train window เท่านั้น
+y = np.log(train["price_A"])
+x = np.log(train["price_B"])
+model = sm.OLS(y, sm.add_constant(x)).fit()
+
+alpha = model.params["const"]
+beta  = model.params.iloc[1]          # hedge ratio
+epsilon = y - (alpha + beta * x)      # diagnostics ใช้ residual รวม alpha
+
+# ตอนแปลงเป็น position จริง: alpha เป็นค่าคงที่ของ model ไม่ใช่ขา trade
+#   long ε  →  long $X ของ A, short $X ของ B  (dollar-neutral)</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH — จากภาพวิเคราะห์สู่ β ที่ใช้ได้จริง</div>
+<div class="fm">ภาพวิเคราะห์ (regress ราคาดิบ ETH บน BTC):
+  β_raw   = 0.0444     ← slope บน scatter — ขึ้นกับ scale ราคา
+  Corr    = 0.9745     ✅ ผ่าน correlation screen (≥ 0.70)
+  AR(1) φ = 0.9602
+  Half-Life = 17.08 ชม.   (−ln2 / ln 0.9602 ≈ 17.06 ✓)
+
+แปลงให้ถูกหลักของหนังสือ — regress log price:
+  ε = log(ETH) − β_log · log(BTC)
+  β_log ≈ elasticity (crypto major มักใกล้ 1) — scale-invariant
+
+ผ่าน Checklist §4.6.4:
+  1. stationary       — Half-life 17h → ε mean-reverting ✅
+  3. crossing φ=0.96  — นอก intraday sweet spot → swing เท่านั้น (ch5 §5.7)
+  7. walk-forward     — ต้อง re-check β ทุก window (ch3 §3.9)
+
+สรุป: ใช้ β_log + dollar-neutral notional → trade เป็น overnight swing
+       อย่าใช้ β_raw = 0.0444 ใส่ position ตรงๆ</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 4.6 — เลือกชนิดข้อมูลที่จะ regress</div>
+<p>คุณจะหา β ของสามคู่นี้:</p>
+<ul>
+<li>(ก) BTC perp บน Bybit ↔ BTC perp บน Lighter</li>
+<li>(ข) PAXG (gold token) ↔ XAUUSD spot</li>
+<li>(ค) ETH spot ↔ ETH perpetual (เก็บ funding)</li>
+</ul>
+<p><strong>ถาม:</strong> แต่ละคู่ควร regress raw price, log price, หรือ basis?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) Log price (หรือเริ่ม β=1)</strong> — สินทรัพย์เดียวกัน scale ราคาเท่ากัน เริ่มจาก β=1 เป็น baseline แล้วเทียบกับ OLS บน log price</p>
+<p><strong>(ข) Log price</strong> — PAXG กับ XAU ราคาใกล้กันแต่ไม่ใช่ instrument เดียว 100%; log price ทำให้ β เป็น elasticity ที่ robust</p>
+<p><strong>(ค) Basis</strong> — เป้าหมายคือเก็บ funding ไม่ใช่ price reversion; regress basis = (perp − spot)/spot เพื่อให้ β สะท้อน funding driver ตรงๆ ไม่ใช่ price movement ร่วม</p>
+</div>
+</details>
+</div>
+
+<h2 id="s4-7">4.7 Pseudo-code</h2>
 
 <div class="pseudo">
 <span class="c"># OLS Beta</span><br>
