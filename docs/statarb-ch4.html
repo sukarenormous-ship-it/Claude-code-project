@@ -209,6 +209,360 @@ Dynamic β<br>
 <tr><td>β เปลี่ยนเร็ว ต้องการ adaptive</td><td><strong>Kalman</strong></td><td>อัปเดตทุก tick</td></tr>
 </table>
 
+<h2 id="s4-2b">4.2b OLS เชิงลึก — จากหลักการแรกถึงการใช้งานจริง</h2>
+
+<div class="key-idea">
+<div class="ki-label">จุดประสงค์ของ OLS ใน Stat Arb</div>
+<p>เราไม่ได้ทำ OLS เพื่อ "ทำนาย" ราคา A จาก B — เราทำ OLS เพื่อ <strong>แยก common movement ออกจาก idiosyncratic movement</strong> ส่วนที่เหลือหลังแยก (residual ε) คือสิ่งที่เราเทรด</p>
+<div class="ki-eq">ε_t = log(P_A,t) − α − β·log(P_B,t)</div>
+</div>
+
+<h3 id="s4-2b-1">OLS จากหลักการแรก — ทำไมต้อง minimize Σε²</h3>
+
+<p>ปัญหา: กำหนด N คู่ราคา (P_A,1,…,P_A,N) และ (P_B,1,…,P_B,N) — หา α และ β ที่ทำให้ residual ε_t ขึ้นๆ ลงๆ รอบ 0 น้อยที่สุด (ε มี variance ต่ำสุดที่เป็นไปได้)</p>
+
+<p>เขียนปัญหาเป็นสมการ:</p>
+<div class="fm">ให้ y_t = log(P_A,t)   และ   x_t = log(P_B,t)
+
+ε_t = y_t − α − β·x_t          ← residual คือสิ่งที่เราสร้าง
+
+objective: minimize  S(α, β) = Σ ε_t² = Σ (y_t − α − β·x_t)²
+                              t=1        t=1</div>
+
+<p>หา minimum โดยหา partial derivative เทียบเท่า 0:</p>
+
+<div class="fm">∂S/∂α = −2·Σ(y_t − α − β·x_t) = 0   →   Σy_t = N·α + β·Σx_t
+∂S/∂β = −2·Σ x_t·(y_t − α − β·x_t) = 0 →   Σx_t·y_t = α·Σx_t + β·Σx_t²
+
+แก้ระบบสมการ (Normal Equations):
+
+  β = [N·Σ(x_t·y_t) − Σx_t·Σy_t] / [N·Σx_t² − (Σx_t)²]
+    = Cov(x, y) / Var(x)                ← รูปกระทัดรัด (x = log P_B)
+
+  α = ȳ − β·x̄                          ← α เป็นตัวปรับระดับ</div>
+
+<div class="bx bb">
+<div class="bt">ความหมายของ β จาก OLS</div>
+<p>β = Cov(log P_A, log P_B) / Var(log P_B)<br>
+ตีความ: <strong>"ถ้า log(P_B) เพิ่มขึ้น 1 หน่วย (≈ B ขยับ +1%) ค่าเฉลี่ยของ log(P_A) ที่ OLS คาดไว้ จะเพิ่มขึ้น β หน่วย"</strong><br>
+หรือพูดในเชิง % ≈ "B ขยับ 1% → A คาดว่าขยับ β%"</p>
+<p style="margin-top:6px">ε_t = ส่วนที่ A ขยับ <em>มากกว่า</em> หรือ <em>น้อยกว่า</em> ที่ B อธิบายได้ — นี่คือ inefficiency ที่เราเทรด</p>
+</div>
+
+<!-- Visual: OLS geometry — project y onto space spanned by x -->
+<svg class="d" viewBox="0 0 680 260">
+<defs>
+<marker id="arwA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
+<marker id="arwR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#dc2626"/></marker>
+</defs>
+<text x="340" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">OLS แยก y_t ออกเป็น 2 ส่วน: ส่วนที่ B อธิบาย + residual ε</text>
+
+<!-- LEFT: time series decomposition -->
+<rect x="10" y="26" width="310" height="220" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="165" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Time Series: log P_A แยกเป็น 2 ส่วน</text>
+<line x1="35" y1="200" x2="300" y2="200" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
+<line x1="35" y1="200" x2="35" y2="44" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
+<text x="302" y="203" font-size="8" fill="#374151">t</text>
+<text x="29" y="42" text-anchor="end" font-size="8" fill="#374151">log P</text>
+
+<!-- log P_B (blue dashed - the "explained" trend) -->
+<polyline points="40,175 70,165 100,148 130,138 160,128 190,115 220,105 250,92 280,82 300,72" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5,3"/>
+<text x="304" y="70" font-size="8" fill="#2563eb">β·log P_B + α</text>
+<text x="304" y="80" font-size="7" fill="#2563eb">(ส่วนที่ B อธิบาย)</text>
+
+<!-- log P_A (teal solid - actual) -->
+<polyline points="40,168 70,162 100,155 130,132 160,138 190,108 220,100 250,96 280,78 300,68" fill="none" stroke="#0d9488" stroke-width="2.2"/>
+<text x="304" y="62" font-size="8" fill="#0d9488">log P_A (จริง)</text>
+
+<!-- Vertical residual arrows -->
+<line x1="130" y1="132" x2="130" y2="138" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arwR)"/>
+<text x="136" y="136" font-size="8" fill="#dc2626">ε &lt; 0</text>
+<line x1="160" y1="128" x2="160" y2="138" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="2,1"/>
+<text x="167" y="134" font-size="8" fill="#dc2626">ε &gt; 0</text>
+<line x1="250" y1="92" x2="250" y2="96" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="2,1"/>
+
+<text x="165" y="215" text-anchor="middle" font-size="9" fill="#374151">OLS minimize ผลรวม (ε_t)² ทุก t พร้อมกัน</text>
+<text x="165" y="228" text-anchor="middle" font-size="8.5" fill="#64748b">log P_A = α + β·log P_B + ε ← ε คือที่เราเทรด</text>
+
+<!-- RIGHT: epsilon plot (residual) -->
+<rect x="360" y="26" width="310" height="220" rx="8" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+<text x="515" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">ε_t — residual ที่ได้จาก OLS</text>
+<line x1="385" y1="140" x2="655" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="380" y="143" text-anchor="end" font-size="8" fill="#94a3b8">0</text>
+<line x1="385" y1="200" x2="655" y2="200" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
+<line x1="385" y1="200" x2="385" y2="44" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
+<text x="657" y="203" font-size="8" fill="#374151">t</text>
+<text x="379" y="42" text-anchor="end" font-size="8" fill="#374151">ε_t</text>
+<!-- mean-reverting ε -->
+<polyline points="390,140 420,118 450,158 480,108 510,162 540,112 570,152 600,120 630,148 650,136" fill="none" stroke="#0d9488" stroke-width="2.2"/>
+<!-- entry/exit markers -->
+<circle cx="420" cy="118" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+<circle cx="480" cy="108" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+<circle cx="540" cy="112" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+<circle cx="450" cy="158" r="4.5" fill="none" stroke="#16a34a" stroke-width="1.8"/>
+<circle cx="510" cy="162" r="4.5" fill="none" stroke="#16a34a" stroke-width="1.8"/>
+<text x="515" y="215" text-anchor="middle" font-size="9" fill="#0d9488">ε mean-revert รอบ 0 ← สิ่งที่เทรด</text>
+<text x="515" y="228" text-anchor="middle" font-size="8.5" fill="#dc2626">○ entry (ε เบี่ยง) | ○ exit (ε revert)</text>
+</svg>
+<div class="caption">OLS แยก log P_A ออกเป็น "ส่วนที่ B อธิบาย" + residual ε — ε ที่ดีควร mean-revert รอบ 0</div>
+
+<h3 id="s4-2b-2">คำนวณ OLS ทีละขั้นตอน — ตัวอย่างตัวเลข</h3>
+
+<p>สมมติมีข้อมูล log price รายวัน 6 วัน (ย่อให้คำนวณมือได้):</p>
+
+<table>
+<tr><th>t</th><th>log P_B (x)</th><th>log P_A (y)</th><th>x − x̄</th><th>y − ȳ</th><th>(x−x̄)(y−ȳ)</th><th>(x−x̄)²</th></tr>
+<tr><td>1</td><td>10.000</td><td>7.200</td><td>−0.200</td><td>−0.150</td><td>0.0300</td><td>0.0400</td></tr>
+<tr><td>2</td><td>10.050</td><td>7.240</td><td>−0.150</td><td>−0.110</td><td>0.0165</td><td>0.0225</td></tr>
+<tr><td>3</td><td>10.100</td><td>7.260</td><td>−0.100</td><td>−0.090</td><td>0.0090</td><td>0.0100</td></tr>
+<tr><td>4</td><td>10.200</td><td>7.360</td><td>+0.000</td><td>+0.010</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>5</td><td>10.350</td><td>7.410</td><td>+0.150</td><td>+0.060</td><td>0.0090</td><td>0.0225</td></tr>
+<tr><td>6</td><td>10.500</td><td>7.480</td><td>+0.300</td><td>+0.130</td><td>0.0390</td><td>0.0900</td></tr>
+<tr style="background:#f0fdf4;font-weight:700"><td>รวม</td><td>61.200</td><td>43.950</td><td>—</td><td>—</td><td>Σ = 0.1035</td><td>Σ = 0.1850</td></tr>
+</table>
+
+<div class="fm">ขั้น 1 — คำนวณ mean:
+  x̄ = 61.200/6 = 10.200   (log P_B เฉลี่ย)
+  ȳ = 43.950/6 = 7.350    (log P_A เฉลี่ย)
+
+ขั้น 2 — คำนวณ β (slope):
+  β = Σ(x−x̄)(y−ȳ) / Σ(x−x̄)²
+    = 0.1035 / 0.1850
+    = 0.5595  ≈ 0.56
+
+ขั้น 3 — คำนวณ α (intercept):
+  α = ȳ − β·x̄
+    = 7.350 − 0.5595 × 10.200
+    = 7.350 − 5.707
+    = 1.643
+
+ขั้น 4 — คำนวณ ε_t สำหรับแต่ละ t:
+  ε_t = y_t − 1.643 − 0.5595·x_t
+
+  t=1: ε = 7.200 − 1.643 − 0.5595×10.000 = 7.200 − 1.643 − 5.595 = −0.038
+  t=2: ε = 7.240 − 1.643 − 5.623 = −0.026
+  t=3: ε = 7.260 − 1.643 − 5.650 = −0.033
+  t=4: ε = 7.360 − 1.643 − 5.707 = +0.010
+  t=5: ε = 7.410 − 1.643 − 5.790 = −0.023
+  t=6: ε = 7.480 − 1.643 − 5.873 = −0.036
+
+  Σε_t ≈ 0  (property ของ OLS — residuals always sum to 0)</div>
+
+<div class="bx bg">
+<div class="bt">สิ่งที่ OLS รับประกัน (Gauss-Markov Theorem)</div>
+<ul>
+<li>Σε_t = 0 เสมอ — residuals sum to zero</li>
+<li>Σ(x_t · ε_t) = 0 — residual uncorrelated กับ x</li>
+<li>β_OLS = BLUE (Best Linear Unbiased Estimator) <em>ถ้า</em> Gauss-Markov assumptions ถือ (ε i.i.d., homoskedastic)</li>
+<li>ในราคาจริง assumptions เหล่านี้มักฝ่าฝืน → ดู §4.2b-5 ข้อจำกัด</li>
+</ul>
+</div>
+
+<h3 id="s4-2b-3">OLS ใน Python — 3 วิธีทำ</h3>
+
+<div class="pseudo">
+<span class="c">### วิธี 1: statsmodels (แนะนำ — ได้ diagnostics ครบ)</span><br>
+<span class="kw">import</span> statsmodels.api <span class="kw">as</span> sm<br>
+<span class="kw">import</span> numpy <span class="kw">as</span> np<br>
+<br>
+y = np.<span class="fn">log</span>(price_A)   <span class="c"># log P_A — dependent variable</span><br>
+x = np.<span class="fn">log</span>(price_B)   <span class="c"># log P_B — independent variable</span><br>
+<br>
+<span class="c"># add constant → fit α and β together</span><br>
+X = sm.<span class="fn">add_constant</span>(x)      <span class="c"># X = [1, x]  (N×2 matrix)</span><br>
+model = sm.<span class="fn">OLS</span>(y, X).<span class="fn">fit</span>()<br>
+<br>
+alpha = model.params[<span class="nm">0</span>]            <span class="c"># α (intercept)</span><br>
+beta  = model.params[<span class="nm">1</span>]            <span class="c"># β (hedge ratio)</span><br>
+epsilon = model.resid               <span class="c"># ε_t (residuals) — ใช้ทดสอบ stationarity</span><br>
+<br>
+r2        = model.rsquared          <span class="c"># R² — explained variance</span><br>
+p_beta    = model.pvalues[<span class="nm">1</span>]       <span class="c"># p-value ของ β (ต้องการ ≪ 0.05)</span><br>
+ci_beta   = model.conf_int().<span class="fn">iloc</span>[<span class="nm">1</span>]  <span class="c"># 95% CI ของ β [lower, upper]</span><br>
+<br>
+<span class="fn">print</span>(<span class="nm">f"β = {beta:.4f}  (p={p_beta:.4f})"</span>)<br>
+<span class="fn">print</span>(<span class="nm">f"R² = {r2:.4f}"</span>)<br>
+<span class="fn">print</span>(model.<span class="fn">summary</span>())             <span class="c"># สรุปครบ — AIC, residual std, t-stat</span><br>
+<br>
+<span class="c">### วิธี 2: numpy (เร็ว ง่าย สำหรับ loop)</span><br>
+beta, alpha = np.<span class="fn">polyfit</span>(x, y, <span class="nm">1</span>)  <span class="c"># fit linear y = β·x + α</span><br>
+epsilon = y - (alpha + beta * x)<br>
+<br>
+<span class="c">### วิธี 3: สูตรโดยตรง (เข้าใจ mechanism)</span><br>
+beta  = <span class="fn">np.cov</span>(y, x)[<span class="nm">0,1</span>] / <span class="fn">np.var</span>(x, ddof=<span class="nm">1</span>)<br>
+alpha = <span class="fn">np.mean</span>(y) - beta * <span class="fn">np.mean</span>(x)<br>
+epsilon = y - alpha - beta * x
+</div>
+
+<div class="bx ba">
+<div class="bt">เลือก window ข้อมูลอย่างไร</div>
+<ul>
+<li><strong>Train window:</strong> ข้อมูล N วันล่าสุด (เช่น 30 วัน) — fit β บน window นี้เท่านั้น</li>
+<li><strong>อย่าใช้ข้อมูลอนาคต:</strong> ห้าม fit β บน full dataset แล้วย้อนไปทดสอบ → look-ahead bias</li>
+<li><strong>Walk-forward:</strong> fit β วันนี้ → ใช้ trade พรุ่งนี้ → roll window ไป 1 วัน → fit ใหม่ (ดู <a href="statarb-ch3.html#s3-9">บทที่ 3 §3.9</a>)</li>
+</ul>
+</div>
+
+<h3 id="s4-2b-4">ตรวจ ε ที่ได้ — 4 การทดสอบหลัก</h3>
+
+<p>หลังจาก fit OLS และได้ ε มาแล้ว ต้องตรวจว่า ε มีคุณสมบัติสำหรับ mean reversion trading:</p>
+
+<table>
+<tr><th>การทดสอบ</th><th>วิธีทำ</th><th>ผ่านเมื่อ</th><th>ความหมาย</th></tr>
+<tr><td><strong>R² และ p-value</strong></td><td><code>model.rsquared</code>, <code>model.pvalues[1]</code></td><td>R² &gt; 0.7, p &lt; 0.05</td><td>β มีนัยสำคัญ, B อธิบาย A ได้ดี</td></tr>
+<tr><td><strong>Residual plot</strong></td><td>plot ε_t vs t</td><td>ε oscillate รอบ 0, ไม่ drift</td><td>ε mean-revert ตามที่ต้องการ</td></tr>
+<tr><td><strong>ADF / KPSS</strong></td><td><code>statsmodels adfuller(epsilon)</code></td><td>ADF p &lt; 0.05, KPSS p &gt; 0.05</td><td>ε stationary (ดู <a href="statarb-ch5.html">บทที่ 5</a>)</td></tr>
+<tr><td><strong>Half-life</strong></td><td>AR(1) fit บน ε: ε_t = φ·ε_{t-1} + u_t<br>τ₁/₂ = −ln(2)/ln(φ)</td><td>τ₁/₂ ≤ target hold time</td><td>ε revert เร็วพอสำหรับกลยุทธ์ (<a href="statarb-ch3.html">บทที่ 3</a>)</td></tr>
+</table>
+
+<div class="pseudo">
+<span class="c"># ตรวจ ε ครบชุด</span><br>
+<span class="kw">from</span> statsmodels.tsa.stattools <span class="kw">import</span> adfuller<br>
+<span class="kw">import</span> statsmodels.api <span class="kw">as</span> sm<br>
+<br>
+<span class="c"># 1. ADF test</span><br>
+adf_result = <span class="fn">adfuller</span>(epsilon, maxlags=<span class="nm">1</span>)<br>
+<span class="fn">print</span>(<span class="nm">f"ADF p-value: {adf_result[1]:.4f}"</span>)   <span class="c"># ต้องการ &lt; 0.05</span><br>
+<br>
+<span class="c"># 2. AR(1) → Half-life</span><br>
+ar1 = sm.<span class="fn">OLS</span>(epsilon[<span class="nm">1</span>:], sm.<span class="fn">add_constant</span>(epsilon[:-<span class="nm">1</span>])).<span class="fn">fit</span>()<br>
+phi = ar1.params[<span class="nm">1</span>]                          <span class="c"># AR(1) coefficient</span><br>
+half_life = -np.<span class="fn">log</span>(<span class="nm">2</span>) / np.<span class="fn">log</span>(phi)         <span class="c"># half-life (same unit as data freq)</span><br>
+<span class="fn">print</span>(<span class="nm">f"φ = {phi:.4f}, Half-life = {half_life:.1f} bars"</span>)<br>
+<br>
+<span class="c"># 3. σ_stat — standard deviation ของ ε (≈ canonical σ/√(2κ) เมื่อ φ ใกล้ 1)</span><br>
+sigma_stat = np.<span class="fn">std</span>(epsilon)                  <span class="c"># use in z-score: z = (ε − mean) / sigma_stat</span><br>
+<span class="fn">print</span>(<span class="nm">f"σ_stat = {sigma_stat:.4f}  ({sigma_stat*100:.2f}%)"</span>)
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH — OLS ทีละขั้น</div>
+<div class="fm">ข้อมูล: log price รายชั่วโมง 30 วัน (720 bars)
+  y = log(ETH_price),  x = log(BTC_price)
+
+ขั้น 1 — fit OLS:
+  model = OLS(y, add_constant(x)).fit()
+  β_log = 1.183   (elasticity — ETH ขยับ 1.183% ต่อทุก 1% ที่ BTC ขยับ)
+  α     = −4.021  (intercept — level adjustment)
+  R²    = 0.951   ✅ BTC อธิบาย ETH ได้ 95.1%
+  p(β)  = 0.000   ✅ β มีนัยสำคัญสูง
+
+ขั้น 2 — สร้าง ε:
+  ε_t = log(ETH_t) − (−4.021) − 1.183·log(BTC_t)
+
+ขั้น 3 — ตรวจ ε:
+  ADF p-value = 0.032  ✅ stationary
+  φ (AR1)     = 0.9602
+  Half-life   = −ln(2)/ln(0.9602) ≈ 17.1 ชม.  ✅ revert ใน ~17h
+  σ_stat      = 0.021  (2.1%)
+
+ขั้น 4 — ตัดสิน:
+  ε mean-revert ✅ | stationary ✅ | Half-life 17h → trade เป็น overnight swing ✅
+
+หมายเหตุ: β_log = 1.183 ≠ β_raw = 0.0444
+  → β_raw เป็น slope บน raw price (ETH/$1 BTC) — ขึ้นกับ scale
+  → β_log เป็น elasticity (ไม่ขึ้นกับ scale) — ใช้หนังสือเล่มนี้</div>
+</div>
+
+<h3 id="s4-2b-5">ข้อจำกัดของ OLS — 6 ข้อที่ต้องรู้ก่อนใช้จริง</h3>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 1 — β คงที่ ไม่ adaptive</div>
+<p>OLS สมมติว่า β ไม่เปลี่ยนตลอด lookback window แต่ในตลาดจริง β อาจ drift ตาม regime: ช่วง risk-on/risk-off ทำให้ correlation เปลี่ยน ช่วง high vol ทำให้ ratio ขยับ</p>
+<p><strong>สัญญาณ:</strong> rolling β (30d vs 60d) ต่างกัน &gt; 15% → ใช้ Rolling OLS หรือ Kalman แทน (§4.3, §4.6.3)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 2 — Level vs Return ให้ β ต่างกันมาก</div>
+<div class="fm">Level regression:   log P_A = α + β_level · log P_B + ε
+Return regression:  r_A = α + β_return · r_B + ε    (r = log return)
+
+β_level ≠ β_return  ในกรณีทั่วไป!
+ตัวอย่าง BTC/ETH:  β_level ≈ 1.18  vs  β_return ≈ 0.85–0.95 (แล้วแต่ period)</div>
+<p><strong>กฎ:</strong> สำหรับ ε = log P_A − β·log P_B (สมการหลักของหนังสือ) → ใช้ <strong>level regression บน log price</strong> ไม่ใช่ return regression</p>
+<p>Return regression ให้ β ที่ดีสำหรับ delta hedging (ในแต่ละ bar) แต่ไม่ใช่สำหรับสร้าง mean-reverting spread ระยะยาว</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 3 — Spurious Regression เมื่อทั้งสองตัว non-stationary</div>
+<p>log P_A และ log P_B เป็น I(1) process (random walk) — ถ้า regress สอง I(1) series ที่ <em>ไม่มี</em> cointegration จะได้ R² สูง, β มีนัยสำคัญ แต่ ε ยังคง non-stationary — ผลที่ได้ไม่มีความหมายทางเศรษฐศาสตร์</p>
+<div class="fm">กับดัก: OLS บอกว่า R² = 0.90, p &lt; 0.001 ดูน่าเชื่อถือมาก
+แต่: ADF ของ ε ได้ p = 0.45  ← non-stationary!
+→ regression นี้ spurious — เทรดไม่ได้</div>
+<p><strong>แก้:</strong> ทดสอบ ADF/KPSS บน ε เสมอ — ผ่าน ADF ก่อนจึงใช้ β นั้น (ดู <a href="statarb-ch5.html">บทที่ 5</a>)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 4 — Outliers ดึง β ให้ผิดทิศ</div>
+<p>OLS minimize ε² → จุดที่อยู่ห่างจากเส้นมาก (outlier: crash, flash crash, pump) มี weight สูงเป็นพิเศษ เพราะ ε² ใหญ่มาก → β ถูกดึงให้เข้าหา outlier เหล่านั้น</p>
+<p><strong>แก้:</strong> Winsorize ข้อมูลก่อน fit (เช่น clip return ที่ percentile 1–99) หรือใช้ Robust Regression (Huber/LAD) แทน OLS ในช่วงที่มี outlier มาก</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 5 — Look-ahead Bias ถ้า fit บน full dataset</div>
+<div class="fm">ผิด:  β = OLS(all_data)  →  ใช้ backtest ทั้ง dataset
+      → β "รู้" อนาคต → ผล backtest ดีเกินจริง
+
+ถูก: สำหรับแต่ละวัน t:
+      β_t = OLS(data[t-30 : t])    ← ใช้แค่อดีต 30 วัน
+      เทรดวันที่ t+1 ด้วย β_t     ← ไม่รู้อนาคต</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 6 — Gauss-Markov Assumptions มักถูกละเมิดในราคาจริง</div>
+<table style="margin-top:8px">
+<tr><th>Assumption</th><th>ใน OLS standard</th><th>ในราคาจริง</th><th>ผลกระทบ</th></tr>
+<tr><td>ε i.i.d.</td><td>ε ไม่มี autocorrelation</td><td>ε มักมี autocorrelation (ราคาติดต่อกัน)</td><td>SE ของ β ผิด → CI ไม่น่าเชื่อ</td></tr>
+<tr><td>Homoskedastic</td><td>Var(ε) คงที่ทุก t</td><td>Var(ε) เปลี่ยนตาม volatility (GARCH)</td><td>OLS inefficient ใน high-vol period</td></tr>
+<tr><td>No endogeneity</td><td>x และ ε ไม่ correlate</td><td>P_A และ P_B ต่างก็มี measurement noise</td><td>β_OLS biased → TLS ดีกว่า</td></tr>
+</table>
+<p style="margin-top:8px"><strong>สรุป:</strong> ใช้ OLS เป็น baseline ไม่ใช่ oracle — ตรวจ ε เสมอ อย่าเชื่อแค่ R² และ p-value</p>
+</div>
+
+<div class="bx bi">
+<div class="bt">สรุป OLS ใน 4 ประโยค</div>
+<ol>
+<li>OLS หา β ที่ทำให้ residual ε มี variance ต่ำสุด (minimize Σε²)</li>
+<li>β = Cov(log P_A, log P_B) / Var(log P_B) — ตีความว่า B อธิบาย A ได้กี่ %</li>
+<li>ε ที่ได้คือ process ใหม่ที่เทรด — ต้องตรวจ ADF + half-life ก่อนใช้เสมอ</li>
+<li>OLS ให้ β ที่ดีในหลายกรณี แต่ β คงที่ และ sensitive ต่อ window — ถ้า β drift ต้องไต่ขั้นขึ้นไป (Rolling OLS → Kalman)</li>
+</ol>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 4.0 — OLS ทีละขั้น + ตรวจ ε</div>
+<p>ได้ข้อมูล log price รายวัน 4 วัน:</p>
+<table>
+<tr><th>วัน</th><th>log P_B (x)</th><th>log P_A (y)</th></tr>
+<tr><td>1</td><td>9.00</td><td>4.50</td></tr>
+<tr><td>2</td><td>9.10</td><td>4.56</td></tr>
+<tr><td>3</td><td>9.20</td><td>4.64</td></tr>
+<tr><td>4</td><td>8.90</td><td>4.44</td></tr>
+</table>
+<p><strong>(ก)</strong> คำนวณ β_OLS และ α<br>
+<strong>(ข)</strong> คำนวณ ε สำหรับทุก t และตรวจว่า Σε_t = 0<br>
+<strong>(ค)</strong> ถ้า ADF test บน ε ให้ p=0.31 ควรทำอย่างไรต่อ?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก)</strong> x̄ = (9+9.1+9.2+8.9)/4 = 9.05 | ȳ = (4.50+4.56+4.64+4.44)/4 = 4.535<br>
+Σ(x−x̄)(y−ȳ) = (−.05)(−.035)+(0.05)(0.025)+(0.15)(0.105)+(−0.15)(−0.095)<br>
+= 0.00175 + 0.00125 + 0.01575 + 0.01425 = 0.033<br>
+Σ(x−x̄)² = 0.0025+0.0025+0.0225+0.0225 = 0.050<br>
+<strong>β = 0.033/0.050 = 0.660</strong><br>
+α = 4.535 − 0.660×9.05 = 4.535 − 5.973 = <strong>−1.438</strong></p>
+<p><strong>(ข)</strong><br>
+ε₁ = 4.50 − (−1.438) − 0.660×9.00 = 4.50 + 1.438 − 5.940 = −0.002<br>
+ε₂ = 4.56 + 1.438 − 6.006 = −0.008<br>
+ε₃ = 4.64 + 1.438 − 6.072 = +0.006<br>
+ε₄ = 4.44 + 1.438 − 5.874 = +0.004<br>
+Σε = −0.002 − 0.008 + 0.006 + 0.004 = 0.000 ✅</p>
+<p><strong>(ค)</strong> ADF p=0.31 &gt; 0.05 → ε non-stationary → pair นี้ไม่ cointegrate ด้วย β = 0.660<br>
+ทางเลือก: ลอง Johansen test เพื่อหา β ที่ดีกว่า, ขยาย lookback window, หรือเปลี่ยน pair</p>
+</div>
+</details>
+</div>
+
 <h2 id="s4-3">4.3 Kalman Filter — Dynamic β ที่เปลี่ยนตามเวลา</h2>
 
 <p>OLS และ TLS สมมติว่า β คงที่ตลอด lookback window แต่ในตลาดจริง β อาจเปลี่ยนได้ Kalman Filter แก้ปัญหานี้โดยอัปเดต β ทุก time step:</p>
