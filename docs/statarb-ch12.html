@@ -87,10 +87,16 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
    = 0.006 / 0.000144
    = 41.67
 
-→ แต่ f* > 1 หมายถึง leverage สูงมาก
+→ f* คือ fraction ของทุนที่ Kelly แนะนำให้ลงทุน — ไม่ใช่ค่า leverage
+→ f* = 41.67 (>> 1) เป็นค่าที่ไม่สมเหตุสมผล (สัญญาณว่า input ผิด — ดูหมายเหตุด้านล่าง)
 → ในทางปฏิบัติใช้ fractional Kelly: f_actual = f* × 0.25 (quarter Kelly)
-→ f_actual = 41.67 × 0.25 ≈ 10.4× leverage
-→ ยังสูงอยู่ → ต้องปรับด้วย half-life และ jump discount ต่อไป</div>
+→ f_actual = 41.67 × 0.25 ≈ 10.4 ซึ่งยังสูงเกินจริง
+→ ต้องปรับด้วย half-life, jump discount และ drawdown limit ต่อไป</div>
+</div>
+
+<div class="bx bi">
+<div class="bt">หมายเหตุ: f* > 1 คือสัญญาณเตือน input ผิด</div>
+<p>ถ้าคำนวณแล้วได้ f* &gt; 1 (เช่น 41.67) นั่นไม่ได้แปลว่าควรใช้ leverage 41 เท่า — แต่เป็น <strong>red flag</strong> ว่า μ และ σ ที่ใส่เข้าไปไม่ใช่ per-period strategy return จริง (edge 0.8% กับ vol 1.5% ต่อ trade ไม่ได้หมายความว่าควร bet 35 เท่าของทุน). f* ของ stat arb จริงหลังหัก cost อย่างซื่อสัตย์มักต่ำกว่า 1 มาก — ในทางปฏิบัติให้ใช้ <strong>drawdown-based sizing limit</strong> (§12.4) เป็นตัวกำหนดขนาดจริง</p>
 </div>
 
 <h3>Kelly Fraction vs Edge/Variance — Parabola Curve</h3>
@@ -232,7 +238,7 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
 <h2 id="s12-5">12.5 Pseudo-code: compute_position_size()</h2>
 
 <div class="fm">def compute_position_size(
-    capital, edge, sigma, halflife,
+    capital, edge, sigma, halflife, entry_z,
     target_halflife=5, jump_discount=0.8, max_dd=0.02
 ):
     # Step 1: Kelly fraction
@@ -245,7 +251,7 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
     jump_scale = jump_discount
 
     # Step 4: Max drawdown constraint (hard limit)
-    dd_limit = (capital * max_dd) / (2 * sigma)
+    dd_limit = (capital * max_dd) / (entry_z * sigma)
 
     # Step 5: รวมทุก factor
     raw_size = capital * kelly_f * hl_scale * jump_scale
@@ -255,7 +261,7 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
 
 <div class="bx bi">
 <div class="bt">หมายเหตุเกี่ยวกับ sigma ใน dd_limit</div>
-<p>ตัวหาร <code>2 * sigma</code> ใน dd_limit มาจากสมมติว่า worst case คือ spread เคลื่อนไป 2σ ในทิศตรงข้ามกับ position ถ้าต้องการ conservative มากขึ้น ใช้ 3σ หรือ 4σ ขึ้นอยู่กับ risk appetite</p>
+<p>ตัวหาร <code>entry_z * sigma</code> ใน dd_limit มาจากสมมติว่า worst-case adverse move คือ spread เคลื่อนจาก z ณ จุดเข้า (<code>entry_z</code>) กลับไปที่ค่ากลาง — ระยะที่ spread วิ่งสวน position ได้จึง scale ตาม <code>entry_z</code> โดยตรง ยิ่ง entry ที่ z สูง position ยิ่งต้องเล็กลง ถ้าต้องการ conservative มากขึ้นให้บวก buffer เข้ากับ entry_z ตาม risk appetite</p>
 </div>
 
 <!-- 12.6 -->
@@ -283,7 +289,7 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
 kelly_f = edge / sigma²
        = 0.008 / (0.015)²
        = 0.008 / 0.000225
-       = 35.56  ← leverage สูงมาก ต้องปรับ
+       = 35.56  ← f* >> 1: input ไม่ใช่ return จริง ต้องปรับ
 
 Step 2: Half-life scaling
 hl_scale = min(1.0, 5 / 4)

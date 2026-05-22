@@ -60,13 +60,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ch-num">Statistical Arbitrage · Chapter 7</div>
 <h1>GARCH on Residuals</h1>
 <div class="sub">Conditional Volatility σ_t — When Spread Volatility Clusters<br>
-σ_t² = ω + α·ε²<sub>t−1</sub> + β·σ²<sub>t−1</sub></div>
+σ_t² = ω + α·ε²<sub>t−1</sub> + β_G·σ²<sub>t−1</sub></div>
 </div>
 
 <div class="key-idea">
 <div class="ki-label">Core Idea — Read This First</div>
 <div class="ki-text">Ornstein-Uhlenbeck assumes <strong>constant σ</strong>. In practice, spread volatility clusters: calm periods are followed by calm, volatile periods by volatile. Using a static z-score during a storm generates false signals. GARCH(1,1) models time-varying conditional variance σ_t, giving a <strong>GARCH z-score</strong> that stays calibrated regardless of market regime.</div>
-<div class="ki-eq">σ_t² = ω + α·ε²_{t−1} + β·σ²_{t−1} &nbsp;|&nbsp; z_t = (ε_t − θ) / σ_t</div>
+<div class="ki-eq">σ_t² = ω + α·ε²_{t−1} + β_G·σ²_{t−1} &nbsp;|&nbsp; z_t = (ε_t − θ) / σ_t</div>
 </div>
 
 <!-- 7.1 -->
@@ -143,13 +143,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">GARCH(1,1) Equation</div>
-<div class="ki-eq">σ_t² = ω + α · ε²_{t−1} + β · σ²_{t−1}</div>
+<div class="ki-eq">σ_t² = ω + α · ε²_{t−1} + β_G · σ²_{t−1}</div>
 <div class="ki-text" style="margin-top:10px">
 <strong>ω (omega)</strong> — long-run variance floor. Always positive. Prevents σ_t from collapsing to zero.<br>
 <strong>α (alpha)</strong> — shock impact coefficient. Typical range: 0.05–0.15. High α → variance reacts quickly to new shocks.<br>
-<strong>β (beta)</strong> — persistence coefficient. Typical range: 0.80–0.90. High β → variance decays slowly (long memory).<br>
-<strong>Stationarity condition:</strong> α + β &lt; 1 (otherwise variance explodes to infinity).<br>
-<strong>Long-run variance:</strong> σ²_∞ = ω / (1 − α − β)
+<strong>β_G (GARCH beta)</strong> — persistence coefficient. Typical range: 0.80–0.90. High β_G → variance decays slowly (long memory). Note: β_G is distinct from the hedge ratio β.<br>
+<strong>Stationarity condition:</strong> α + β_G &lt; 1 (otherwise variance explodes to infinity).<br>
+<strong>Long-run variance:</strong> σ²_∞ = ω / (1 − α − β_G)
 </div>
 </div>
 
@@ -157,7 +157,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <tr><th>Parameter</th><th>Typical Range</th><th>Effect of Increasing</th><th>Effect of Being Too High</th></tr>
 <tr><td>ω (omega)</td><td>1e-7 to 1e-4</td><td>Raises the variance floor</td><td>Overestimates calm-period σ</td></tr>
 <tr><td>α (alpha)</td><td>0.05 – 0.15</td><td>Faster reaction to shocks</td><td>Too noisy, σ_t unstable</td></tr>
-<tr><td>β (beta)</td><td>0.80 – 0.92</td><td>Longer variance memory</td><td>If α+β≥1: non-stationary</td></tr>
+<tr><td>β_G (GARCH beta)</td><td>0.80 – 0.92</td><td>Longer variance memory</td><td>If α+β_G≥1: non-stationary</td></tr>
 </table>
 
 <!-- 7.3 -->
@@ -256,15 +256,15 @@ Exit signal:     |z_t| &lt; 0.5  →  close position</div>
 <h2 id="s7-pc">7.5 Pseudo-Code: GARCH Update &amp; Z-Score</h2>
 
 <div class="pseudo">
-<span class="kw">function</span> <span class="fn">garch_update</span>(omega, alpha, beta, prev_sigma_sq, prev_residual):
+<span class="kw">function</span> <span class="fn">garch_update</span>(omega, alpha, beta_G, prev_sigma_sq, prev_residual):
     <span class="cm"># GARCH(1,1) variance recursion — call once per bar</span>
     <span class="cm"># omega:          long-run variance floor (e.g. 1e-6)</span>
     <span class="cm"># alpha:          shock weight (e.g. 0.10)</span>
-    <span class="cm"># beta:           persistence (e.g. 0.85)</span>
+    <span class="cm"># beta_G:         GARCH persistence (e.g. 0.85)</span>
     <span class="cm"># prev_sigma_sq:  σ²_{t-1}</span>
     <span class="cm"># prev_residual:  ε_{t-1} (actual spread residual, not z-score)</span>
 
-    new_sigma_sq = omega + alpha * (prev_residual ** <span class="nu">2</span>) + beta * prev_sigma_sq
+    new_sigma_sq = omega + alpha * (prev_residual ** <span class="nu">2</span>) + beta_G * prev_sigma_sq
     <span class="kw">return</span> new_sigma_sq
 
 
@@ -285,10 +285,10 @@ Exit signal:     |z_t| &lt; 0.5  →  close position</div>
 
 
 <span class="cm"># Main loop (hourly bar)</span>
-sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β)</span>
+sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β_G)</span>
 <span class="kw">for</span> each new bar:
     prev_eps  = spread_residual[t-<span class="nu">1</span>]
-    sigma_sq  = garch_update(omega, alpha, beta, sigma_sq, prev_eps)
+    sigma_sq  = garch_update(omega, alpha, beta_G, sigma_sq, prev_eps)
     sigma_t   = sqrt(sigma_sq)
     z         = garch_zscore(spread_residual[t], theta, sigma_t)
 
@@ -298,9 +298,9 @@ sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β)</spa
 </div>
 
 <!-- 7.6 MLE Estimation -->
-<h2 id="s7-6">7.6 การ Estimate ω, α, β จากข้อมูลจริง (MLE)</h2>
+<h2 id="s7-6">7.6 การ Estimate ω, α, β_G จากข้อมูลจริง (MLE)</h2>
 
-<p>ค่า ω, α, β <strong>ต้องหาจากข้อมูล</strong> ไม่ใช่ guess — วิธีมาตรฐานคือ Maximum Likelihood Estimation (MLE) ผ่าน library ที่ optimize log-likelihood ของ GARCH โดยอัตโนมัติ</p>
+<p>ค่า ω, α, β_G <strong>ต้องหาจากข้อมูล</strong> ไม่ใช่ guess — วิธีมาตรฐานคือ Maximum Likelihood Estimation (MLE) ผ่าน library ที่ optimize log-likelihood ของ GARCH โดยอัตโนมัติ</p>
 
 <div class="fm"># Python — ใช้ arch library (pip install arch)
 from arch import arch_model
@@ -320,9 +320,9 @@ result = model.fit(disp='off')   # disp='off' ปิด iteration output
 # อ่านพารามิเตอร์ที่ได้
 omega = result.params['omega']   # ω (variance floor)
 alpha = result.params['alpha[1]']  # α (shock weight)
-beta  = result.params['beta[1]']   # β (persistence)
-print(f"ω={omega:.2e}, α={alpha:.4f}, β={beta:.4f}")
-print(f"α+β={alpha+beta:.4f} (ต้อง < 1 เพื่อ stationarity)")
+beta_G = result.params['beta[1]']   # β_G (GARCH persistence)
+print(f"ω={omega:.2e}, α={alpha:.4f}, β_G={beta_G:.4f}")
+print(f"α+β_G={alpha+beta_G:.4f} (ต้อง < 1 เพื่อ stationarity)")
 
 # Conditional variances ที่ model fit
 cond_var = result.conditional_volatility ** 2  # array ของ σ_t²
@@ -355,8 +355,8 @@ Refit ทุก week หรือเมื่อ residual std เปลี่ย
 <div class="bx bg">
 <div class="bt">ผลที่คาดหวังสำหรับ BTC Spread</div>
 <p>จากประสบการณ์กับ crypto spread โดยทั่วไปพบ:<br>
-ω ≈ 1e-7 ถึง 1e-5 | α ≈ 0.05–0.15 | β ≈ 0.80–0.92<br>
-ถ้า α + β ≥ 1 → model non-stationary → ลอง EGARCH หรือ ตัดข้อมูล outlier ออกก่อน refit</p>
+ω ≈ 1e-7 ถึง 1e-5 | α ≈ 0.05–0.15 | β_G ≈ 0.80–0.92<br>
+ถ้า α + β_G ≥ 1 → model non-stationary → ลอง EGARCH หรือ ตัดข้อมูล outlier ออกก่อน refit</p>
 </div>
 
 <div class="bx ba">
@@ -374,12 +374,12 @@ parameter เพิ่ม γ (asymmetry) — ถ้า γ &lt; 0 แปลว่
 <table>
 <tr><th>Period</th><th>Spread σ (actual)</th><th>Static σ (baseline)</th><th>Static z-score</th><th>GARCH σ_t</th><th>GARCH z-score</th></tr>
 <tr><td>Normal market</td><td>0.08%</td><td>0.08%</td><td>2.0 (signal)</td><td>0.08%</td><td>2.0 (signal)</td></tr>
-<tr><td>Funding war day 1</td><td>0.24%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>6.3 (FALSE!)</strong></span></td><td>0.21%</td><td><strong>2.1 (correct)</strong></td></tr>
+<tr><td>Funding war day 1</td><td>0.24%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>6.3 (FALSE!)</strong></span></td><td>0.24%</td><td><strong>2.1 (correct)</strong></td></tr>
 <tr><td>Funding war day 2</td><td>0.22%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>5.8 (FALSE!)</strong></span></td><td>0.23%</td><td><strong>1.9 (no entry)</strong></td></tr>
 <tr><td>Recovery</td><td>0.10%</td><td>0.08%</td><td>2.5 (borderline)</td><td>0.11%</td><td>2.3 (signal)</td></tr>
 </table>
 
-<p>Parameters used (residuals scaled ×100 to %): ω = 0.000192, α = 0.12, β = 0.85 (α + β = 0.97 &lt; 1 ✓). Long-run σ = sqrt(0.000192 / 0.03) ≈ 0.080 → matches normal-market σ ≈ 0.08% in the table.</p>
+<p>Parameters used (residuals scaled ×100 to %): ω = 0.000192, α = 0.12, β_G = 0.85 (α + β_G = 0.97 &lt; 1 ✓). Long-run σ = sqrt(0.000192 / 0.03) ≈ 0.080 → matches normal-market σ ≈ 0.08% in the table.</p>
 
 <div class="fm">Naive z = 0.50% / 0.08% = 6.3  → looks like a huge 6σ trade opportunity
 GARCH z = 0.50% / 0.24% = 2.1  → mild signal — σ_t has already expanded
@@ -389,18 +389,18 @@ Correct action: REDUCE size or skip entry (storm period)</div>
 <!-- Exercises -->
 <div class="ex">
 <div class="et">Exercise 7.1 — Compute New σ²</div>
-<p>Given: ω = 0.0001, α = 0.10, β = 0.85, prev_σ² = 0.0004, prev_ε = 0.025</p>
-<p><strong>Q:</strong> Compute new σ². Is α + β &lt; 1? What is the long-run σ²?</p>
+<p>Given: ω = 0.0001, α = 0.10, β_G = 0.85, prev_σ² = 0.0004, prev_ε = 0.025</p>
+<p><strong>Q:</strong> Compute new σ². Is α + β_G &lt; 1? What is the long-run σ²?</p>
 <details>
 <summary>Show Answer</summary>
 <div class="ans">
-<p><strong>Step 1:</strong> Check stationarity: α + β = 0.10 + 0.85 = 0.95 &lt; 1 ✓ (stationary)</p>
-<p><strong>Step 2:</strong> new_σ² = ω + α·ε² + β·σ²<br>
+<p><strong>Step 1:</strong> Check stationarity: α + β_G = 0.10 + 0.85 = 0.95 &lt; 1 ✓ (stationary)</p>
+<p><strong>Step 2:</strong> new_σ² = ω + α·ε² + β_G·σ²<br>
 = 0.0001 + 0.10 × (0.025)² + 0.85 × 0.0004<br>
 = 0.0001 + 0.10 × 0.000625 + 0.00034<br>
 = 0.0001 + 0.0000625 + 0.00034<br>
 = <strong>0.0005025</strong></p>
-<p><strong>Long-run σ²</strong> = ω / (1 − α − β) = 0.0001 / (1 − 0.95) = 0.0001 / 0.05 = <strong>0.002</strong></p>
+<p><strong>Long-run σ²</strong> = ω / (1 − α − β_G) = 0.0001 / (1 − 0.95) = 0.0001 / 0.05 = <strong>0.002</strong></p>
 <p><strong>Interpretation:</strong> The recent shock (ε = 0.025) pushed current σ² from 0.0004 to 0.0005025 — a 25% increase in variance. Long-run equilibrium is 0.002, so current conditions are calmer than average (0.0005 vs 0.002).</p>
 </div>
 </details>
@@ -426,7 +426,7 @@ Correct action: REDUCE size or skip entry (storm period)</div>
 <div class="bt">อ้างอิงสำคัญ (References)</div>
 <ul>
 <li><strong>Engle, R. F. (1982).</strong> Autoregressive conditional heteroscedasticity with estimates of the variance of United Kingdom inflation. <em>Econometrica</em>, 50(4), 987–1007. — บทความต้นฉบับที่นิยาม ARCH model; Nobel Prize 2003</li>
-<li><strong>Bollerslev, T. (1986).</strong> Generalized autoregressive conditional heteroskedasticity. <em>Journal of Econometrics</em>, 31(3), 307–327. — ขยาย ARCH เป็น GARCH(p,q) ที่ใช้ใน Ch.7; σ_t² = ω + Σα_i·ε²_{t-i} + Σβ_j·σ²_{t-j}</li>
+<li><strong>Bollerslev, T. (1986).</strong> Generalized autoregressive conditional heteroskedasticity. <em>Journal of Econometrics</em>, 31(3), 307–327. — ขยาย ARCH เป็น GARCH(p,q) ที่ใช้ใน Ch.7; σ_t² = ω + Σα_i·ε²_{t-i} + Σβ_G,j·σ²_{t-j}</li>
 <li><strong>Nelson, D. B. (1991).</strong> Conditional heteroskedasticity in asset returns: A new approach. <em>Econometrica</em>, 59(2), 347–370. — EGARCH ที่กล่าวถึงใน Ch.7; จัดการ asymmetric volatility response</li>
 </ul>
 </div>

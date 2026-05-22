@@ -60,7 +60,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">ราคา perpetual futures ควรอยู่ใกล้ spot index เพราะมีกลไก funding rate ดึงให้กลับ แต่ในช่วงที่ sentiment รุนแรง basis เบี่ยงเกิน fair value ชั่วคราว — นี่คือโอกาส trade ที่มีขอบเขตชัดเจน</div>
-<div class="ki-eq">Basis_fair ≈ (r − q) × T/365 | entry เมื่อ |Basis_actual − Basis_fair| &gt; k × σ_basis</div>
+<div class="ki-eq">Basis_fair ≈ spot × rate_per_8h × (hours_left/8) | entry เมื่อ |Basis_actual − Basis_fair| &gt; k × σ_basis</div>
 </div>
 
 <!-- 13.1 -->
@@ -106,24 +106,23 @@ interest_rate = 0.01% (Bybit กำหนด fixed = 0.01% ต่อรอบ 8h
 <div class="ki-text" style="margin-top:8px">
 <strong>P_perp</strong> = mark price ของ perpetual futures<br>
 <strong>P_spot_index</strong> = weighted average ของราคา spot จาก multiple exchanges<br>
-<strong>Basis_fair</strong> = ค่าที่ basis "ควร" เป็น ตาม cost of carry model
+<strong>Basis_fair</strong> = ค่าที่ basis "ควร" เป็น ตาม funding rate model
 </div>
 </div>
 
-<p>Fair value basis มาจาก cost of carry model:</p>
+<p>สำหรับ perpetual ที่ไม่มี expiry fair value basis ถูกขับเคลื่อนด้วย <strong>funding rate</strong> ไม่ใช่ cost of carry ของ money market — basis ที่ fair คือค่าที่ทำให้ funding payment ในรอบถัดไปสมดุล prorate ตามเวลาที่เหลือจนถึง funding ครั้งหน้า:</p>
 
-<div class="fm">Basis_fair = P_spot × (r - q) × T / 365
+<div class="fm">Basis_fair = P_spot × rate_per_8h × (hours_left / 8)
 
-r = risk-free rate (USD money market rate)
-q = dividend/yield ของ BTC (≈ 0 สำหรับ BTC)
-T = time to next funding (ใน fraction ของปี)
+rate_per_8h = funding rate ต่อรอบ 8 ชั่วโมง (Bybit default ≈ 0.01%)
+hours_left  = เวลาที่เหลือจนถึง funding ครั้งถัดไป (หน่วย: ชั่วโมง)
 
-ตัวอย่าง: P_spot = $65,000, r = 5.5%, T = 4/8760 (4 ชั่วโมง)
-Basis_fair = 65,000 × 0.055 × (4/8760)
-           = 65,000 × 0.055 × 0.000457
-           ≈ $1.63</div>
+ตัวอย่าง: P_spot = $65,000, rate_per_8h = 0.01% = 0.0001, hours_left = 4
+Basis_fair = 65,000 × 0.0001 × (4 / 8)
+           = 65,000 × 0.0001 × 0.5
+           ≈ $3.25</div>
 
-<p>Fair value basis มักใกล้ศูนย์มากสำหรับ BTC perp เพราะ T ต่ำมาก (ไม่กี่ชั่วโมง) — basis เบี่ยงเกินจากการ sentiment หรือ imbalance ของ demand</p>
+<p>Fair value basis มักใกล้ศูนย์มากสำหรับ BTC perp เพราะ rate_per_8h ต่ำและเหลือเวลาไม่กี่ชั่วโมง — basis เบี่ยงเกินจากการ sentiment หรือ imbalance ของ demand</p>
 
 <!-- 13.3 -->
 <h2 id="s13-3">13.3 SVG Diagram: Basis Timeline และ Funding Rate</h2>
@@ -275,7 +274,7 @@ Basis_fair = 65,000 × 0.055 × (4/8760)
     # คำนวณ basis จริง
     basis = perp_price - spot_index
 
-    # คำนวณ fair value basis จาก cost of carry
+    # คำนวณ fair value basis จาก funding rate (prorate ตามเวลาที่เหลือ)
     # ✅ FIX: rate_per_8h × (เวลาที่เหลือ/8) — unit สอดคล้องกันทั้งหมด
     # ❌ เดิม: rate * (time_to_funding / (8 * 3600)) — ปนหน่วย seconds กับ per-8h
     fair_basis = spot_index * rate_per_8h * (time_to_funding_h / 8.0)
@@ -349,9 +348,10 @@ Funding received (short perp, longs pay us):
   = 0.065% × $100,000 × 2 รอบ = $130
 
 Exit (basis กลับ fair: basis ≈ $20):
-  ปิด Short perp ที่ $67,120 → กำไร perp = $67,450 − $67,120 = $330 per BTC
-  ปิด Long spot ที่ $67,100 (สมมติ spot ไม่เปลี่ยน) → กำไร spot = $0
-  Basis P&L ≈ ($350 − $20) × (100,000 / 67,450) ≈ $489
+  ปิด Short perp และ Long spot — กำไรมาจาก basis ที่แคบลง
+  Position size = $100,000 / $67,450 ≈ 1.483 BTC
+  Basis convergence P&L = (basis_entry − basis_exit) × size
+                        = ($350 − $20) × 1.483 ≈ $489
 
 ต้นทุน:
   Taker fee (entry + exit, 2 legs each) = 0.22% × $100,000 = $220
