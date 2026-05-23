@@ -228,7 +228,8 @@ Dynamic β<br>
     ├── MLE  → maximize likelihood
     ├── Ridge → minimize Σε² + λΣβ²
     └── LAD  → minimize Σ|ε|    ← แปลงเป็น LP ได้! แต่ OLS ไม่ใช่ LP</div>
-<p><strong>จุดที่สับสนบ่อย:</strong> OLS minimize Σε² ซึ่งเป็น quadratic objective — จึงเป็น <em>Quadratic Program (QP)</em> ไม่ใช่ Linear Program แม้จะอยู่ใน "linear regression"</p>
+<p><strong>จุดที่สับสนบ่อย:</strong> OLS minimize Σε² ซึ่งเป็น quadratic objective — จึงเป็น <em>Quadratic Program (QP)</em> ไม่ใช่ Linear Program แม้จะอยู่ใน "linear regression"<br>
+<strong>หมายเหตุ:</strong> หนังสือเล่มนี้ใช้ OLS เท่านั้น — MLE/Ridge/LAD แสดงไว้เพื่อเทียบนิยามเท่านั้น ไม่ได้ใช้ใน practice</p>
 </div>
 
 <div class="key-idea">
@@ -420,8 +421,8 @@ x = np.<span class="fn">log</span>(price_B)   <span class="c"># log P_B — inde
 X = sm.<span class="fn">add_constant</span>(x)      <span class="c"># X = [1, x]  (N×2 matrix)</span><br>
 model = sm.<span class="fn">OLS</span>(y, X).<span class="fn">fit</span>()<br>
 <br>
-alpha = model.params[<span class="nm">0</span>]            <span class="c"># α (intercept)</span><br>
-beta  = model.params[<span class="nm">1</span>]            <span class="c"># β (hedge ratio)</span><br>
+alpha = model.params.<span class="fn">iloc</span>[<span class="nm">0</span>]         <span class="c"># α (intercept) — iloc safe กับทุก statsmodels version</span><br>
+beta  = model.params.<span class="fn">iloc</span>[<span class="nm">1</span>]         <span class="c"># β (hedge ratio)</span><br>
 epsilon = model.resid               <span class="c"># ε_t (residuals) — ใช้ทดสอบ stationarity</span><br>
 <br>
 r2        = model.rsquared          <span class="c"># R² — explained variance</span><br>
@@ -484,7 +485,7 @@ phi = ar1.params[<span class="nm">1</span>]                          <span class
 half_life = -np.<span class="fn">log</span>(<span class="nm">2</span>) / np.<span class="fn">log</span>(phi)         <span class="c"># half-life (same unit as data freq)</span><br>
 <span class="fn">print</span>(<span class="nm">f"φ = {phi:.4f}, Half-life = {half_life:.1f} bars"</span>)<br>
 <br>
-<span class="c"># 3. σ_stat — standard deviation ของ ε (≈ canonical σ/√(2κ) เมื่อ φ ใกล้ 1)</span><br>
+<span class="c"># 3. σ_stat — sample estimator ของ σ/√(2κ) (converges เมื่อ sample size N ใหญ่)</span><br>
 sigma_stat = np.<span class="fn">std</span>(epsilon)                  <span class="c"># use in z-score: z = (ε − mean) / sigma_stat</span><br>
 <span class="fn">print</span>(<span class="nm">f"σ_stat = {sigma_stat:.4f}  ({sigma_stat*100:.2f}%)"</span>)
 </div>
@@ -505,7 +506,7 @@ sigma_stat = np.<span class="fn">std</span>(epsilon)                  <span clas
   ε_t = log(ETH_t) − (−4.021) − 1.183·log(BTC_t)
 
 ขั้น 3 — ตรวจ ε:
-  ADF p-value = 0.032  ✅ stationary
+  ADF p-value = 0.043  ✅ stationary  (ตรงกับ ch5 §5.7)
   φ (AR1)     = 0.9602
   Half-life   = −ln(2)/ln(0.9602) ≈ 17.1 ชม.  ✅ revert ใน ~17h
   σ_stat      = 0.021  (2.1%)
@@ -518,28 +519,22 @@ sigma_stat = np.<span class="fn">std</span>(epsilon)                  <span clas
   → β_log เป็น elasticity (ไม่ขึ้นกับ scale) — ใช้หนังสือเล่มนี้</div>
 </div>
 
-<h3 id="s4-2b-5">ข้อจำกัดของ OLS — 6 ข้อที่ต้องรู้ก่อนใช้จริง</h3>
+<h3 id="s4-2b-5">ข้อจำกัดของ OLS — เรียงตามความรุนแรง</h3>
 
 <div class="bx br">
-<div class="bt">ข้อจำกัดที่ 1 — β คงที่ ไม่ adaptive</div>
-<p>OLS สมมติว่า β ไม่เปลี่ยนตลอด lookback window แต่ในตลาดจริง β อาจ drift ตาม regime: ช่วง risk-on/risk-off ทำให้ correlation เปลี่ยน ช่วง high vol ทำให้ ratio ขยับ</p>
-<p><strong>สัญญาณ:</strong> rolling β (30d vs 60d) ต่างกัน &gt; 15% → ใช้ Rolling OLS หรือ Kalman แทน (§4.3, §4.6.3)</p>
+<div class="bt">⚠️ ข้อจำกัดที่ 1 — Look-ahead Bias (อันตรายที่สุด — ทำ backtest ดีหลอกตา)</div>
+<div class="fm">ผิด:  β = OLS(all_data)  →  ใช้ backtest ทั้ง dataset
+      → β "รู้" อนาคต → ผล backtest ดีเกินจริงเสมอ
+
+ถูก: สำหรับแต่ละวัน t:
+      β_t = OLS(data[t-30 : t])    ← ใช้แค่อดีต 30 วัน
+      เทรดวันที่ t+1 ด้วย β_t     ← ไม่รู้อนาคต</div>
+<p>ดู walk-forward validation: <a href="statarb-ch3.html#s3-9">บทที่ 3 §3.9</a></p>
 </div>
 
 <div class="bx br">
-<div class="bt">ข้อจำกัดที่ 2 — Level vs Return ให้ β ต่างกันมาก</div>
-<div class="fm">Level regression:   log P_A = α + β_level · log P_B + ε
-Return regression:  r_A = α + β_return · r_B + ε    (r = log return)
-
-β_level ≠ β_return  ในกรณีทั่วไป!
-ตัวอย่าง BTC/ETH:  β_level ≈ 1.18  vs  β_return ≈ 0.85–0.95 (แล้วแต่ period)</div>
-<p><strong>กฎ:</strong> สำหรับ ε = log P_A − β·log P_B (สมการหลักของหนังสือ) → ใช้ <strong>level regression บน log price</strong> ไม่ใช่ return regression</p>
-<p>Return regression ให้ β ที่ดีสำหรับ delta hedging (ในแต่ละ bar) แต่ไม่ใช่สำหรับสร้าง mean-reverting spread ระยะยาว</p>
-</div>
-
-<div class="bx br">
-<div class="bt">ข้อจำกัดที่ 3 — Spurious Regression เมื่อทั้งสองตัว non-stationary</div>
-<p>log P_A และ log P_B เป็น I(1) process (random walk) — ถ้า regress สอง I(1) series ที่ <em>ไม่มี</em> cointegration จะได้ R² สูง, β มีนัยสำคัญ แต่ ε ยังคง non-stationary — ผลที่ได้ไม่มีความหมายทางเศรษฐศาสตร์</p>
+<div class="bt">ข้อจำกัดที่ 2 — Spurious Regression เมื่อทั้งสองตัว non-stationary</div>
+<p>log P_A และ log P_B เป็น I(1) process (random walk) — ถ้า regress สอง I(1) series ที่ <em>ไม่มี</em> cointegration จะได้ R² สูง, β มีนัยสำคัญ แต่ ε ยังคง non-stationary — ผลที่ได้ไม่มีความหมาย</p>
 <div class="fm">กับดัก: OLS บอกว่า R² = 0.90, p &lt; 0.001 ดูน่าเชื่อถือมาก
 แต่: ADF ของ ε ได้ p = 0.45  ← non-stationary!
 → regression นี้ spurious — เทรดไม่ได้</div>
@@ -547,30 +542,40 @@ Return regression:  r_A = α + β_return · r_B + ε    (r = log return)
 </div>
 
 <div class="bx br">
-<div class="bt">ข้อจำกัดที่ 4 — Outliers ดึง β ให้ผิดทิศ</div>
-<p>OLS minimize ε² → จุดที่อยู่ห่างจากเส้นมาก (outlier: crash, flash crash, pump) มี weight สูงเป็นพิเศษ เพราะ ε² ใหญ่มาก → β ถูกดึงให้เข้าหา outlier เหล่านั้น</p>
-<p><strong>แก้:</strong> Winsorize ข้อมูลก่อน fit (เช่น clip return ที่ percentile 1–99) หรือใช้ Robust Regression (Huber/LAD) แทน OLS ในช่วงที่มี outlier มาก</p>
+<div class="bt">ข้อจำกัดที่ 3 — β คงที่ ไม่ adaptive</div>
+<p>OLS สมมติว่า β ไม่เปลี่ยนตลอด lookback window แต่ในตลาดจริง β อาจ drift ตาม regime</p>
+<p><strong>สัญญาณ:</strong> rolling β (30d vs 60d) ต่างกัน &gt; 15% → ใช้ Rolling OLS หรือ Kalman แทน (§4.3, §4.6.3)<br>
+ดูรายละเอียด window และ trap เพิ่มเติม: <a href="#s4-6c">§4.6.6</a></p>
 </div>
 
 <div class="bx br">
-<div class="bt">ข้อจำกัดที่ 5 — Look-ahead Bias ถ้า fit บน full dataset</div>
-<div class="fm">ผิด:  β = OLS(all_data)  →  ใช้ backtest ทั้ง dataset
-      → β "รู้" อนาคต → ผล backtest ดีเกินจริง
+<div class="bt">ข้อจำกัดที่ 4 — Outliers ดึง β ให้ผิดทิศ</div>
+<p>OLS minimize ε² → จุดที่อยู่ห่างจากเส้นมาก (outlier: crash, flash crash, pump) มี weight สูงเป็นพิเศษ → β ถูกดึงให้เข้าหา outlier</p>
+<p><strong>แก้:</strong> Winsorize ข้อมูลก่อน fit (clip return ที่ percentile 1–99) หรือใช้ Robust Regression (Huber/LAD) — แนวคิดเดียวกับ Robust Z-score ใน <a href="statarb-ch10.html#s10-3">บทที่ 10 §10.3</a></p>
+</div>
 
-ถูก: สำหรับแต่ละวัน t:
-      β_t = OLS(data[t-30 : t])    ← ใช้แค่อดีต 30 วัน
-      เทรดวันที่ t+1 ด้วย β_t     ← ไม่รู้อนาคต</div>
+<div class="bx br">
+<div class="bt">ข้อจำกัดที่ 5 — Level vs Return ให้ β ต่างกันมาก</div>
+<div class="fm">Level regression:   log P_A = α + β_level · log P_B + ε
+Return regression:  r_A = α + β_return · r_B + ε    (r = log return)
+
+β_level ≠ β_return  ในกรณีทั่วไป!
+ตัวอย่าง BTC/ETH:  β_level ≈ 1.18  vs  β_return ≈ 0.85–0.95 (แล้วแต่ period)</div>
+<p><strong>กฎ:</strong> สำหรับ ε = log P_A − β·log P_B → ใช้ <strong>level regression บน log price</strong> ดูเหตุผลเพิ่มเติม: <a href="#s4-6b-1">§4.6.1</a></p>
 </div>
 
 <div class="bx br">
 <div class="bt">ข้อจำกัดที่ 6 — Gauss-Markov Assumptions มักถูกละเมิดในราคาจริง</div>
 <table style="margin-top:8px">
-<tr><th>Assumption</th><th>ใน OLS standard</th><th>ในราคาจริง</th><th>ผลกระทบ</th></tr>
-<tr><td>ε i.i.d.</td><td>ε ไม่มี autocorrelation</td><td>ε มักมี autocorrelation (ราคาติดต่อกัน)</td><td>SE ของ β ผิด → CI ไม่น่าเชื่อ</td></tr>
-<tr><td>Homoskedastic</td><td>Var(ε) คงที่ทุก t</td><td>Var(ε) เปลี่ยนตาม volatility (GARCH)</td><td>OLS inefficient ใน high-vol period</td></tr>
-<tr><td>No endogeneity</td><td>x และ ε ไม่ correlate</td><td>P_A และ P_B ต่างก็มี measurement noise</td><td>β_OLS biased → TLS ดีกว่า</td></tr>
+<tr><th>Assumption</th><th>ใน OLS standard</th><th>ในราคาจริง</th><th>ผลกระทบ + วิธีตรวจ</th></tr>
+<tr><td>No autocorrelation</td><td>ε_t ไม่ correlate กับ ε_{t-1}</td><td>ε มักมี autocorrelation (ราคาติดต่อกัน)</td><td>SE ของ β̂ ผิด → ใช้ <strong>Durbin-Watson test</strong> (DW ≈ 2 = ดี; DW &lt; 1.5 = autocorrelation สูง → ใช้ Newey-West SE)</td></tr>
+<tr><td>Homoskedastic</td><td>Var(ε) คงที่ทุก t</td><td>Var(ε) เปลี่ยนตาม volatility (GARCH)</td><td>OLS inefficient ใน high-vol period → ใช้ WLS หรือ GARCH-adjusted</td></tr>
+<tr><td>No endogeneity</td><td>x และ ε ไม่ correlate</td><td>P_A และ P_B ต่างก็มี measurement noise</td><td>β̂ biased → TLS ดีกว่าใน symmetric-noise case (§4.2)</td></tr>
 </table>
-<p style="margin-top:8px"><strong>สรุป:</strong> ใช้ OLS เป็น baseline ไม่ใช่ oracle — ตรวจ ε เสมอ อย่าเชื่อแค่ R² และ p-value</p>
+<div class="fm">from statsmodels.stats.stattools import durbin_watson
+dw = durbin_watson(model.resid)
+print(f"Durbin-Watson: {dw:.3f}")   # ต้องการใกล้ 2.0 (1.5–2.5 ยอมรับได้)</div>
+<p><strong>สรุป:</strong> ใช้ OLS เป็น baseline ไม่ใช่ oracle — ตรวจ ε เสมอ อย่าเชื่อแค่ R² และ p-value</p>
 </div>
 
 <div class="bx bi">
