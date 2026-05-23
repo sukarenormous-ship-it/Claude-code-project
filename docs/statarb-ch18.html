@@ -292,8 +292,102 @@ Forward IV = √0.2469 = 49.7%</p>
 </details>
 </div>
 
+<!-- 18.8 -->
+<h2 id="s18-8">18.8 PCP Violation เป็น ε — เชื่อมสู่ Stat Arb Framework</h2>
+
+<p>ตลอด §18.1–18.7 เราใช้ PCP เพื่อ <em>สร้าง</em> synthetic position — แต่มีมุมมองที่ทรงพลังกว่า: <strong>PCP violation คือ ε ในรูปแบบหนึ่ง</strong> ที่สามารถนำเข้า stat arb framework ทั้งเล่มได้ทันที</p>
+
+<div class="key-idea">
+<div class="ki-label">Key Idea — PCP Violation = ε ชนิดใหม่</div>
+<div class="ki-eq">ε_PCP = (C − P) − (S − K·e^{−rT})</div>
+<div class="ki-text" style="margin-top:8px">
+PCP บอกว่า ε นี้ควร = 0 ในตลาดไร้ friction<br>
+ในตลาดจริง ε_PCP ≠ 0 เล็กน้อยและ mean-revert รอบ 0
+</div>
+</div>
+
+<p>โครงสร้างนี้เหมือนกับ ε = log(P_A) − β·log(P_B) ใน <a href="statarb-ch3.html">บทที่ 3</a> ทุกประการ — เราสร้าง synthetic process ที่ควรเป็น 0 แล้วเทรดเมื่อมันเบี่ยงออก ความแตกต่างคือ ε_PCP มาจาก no-arbitrage constraint ของ PCP ไม่ใช่ cointegration ของราคา</p>
+
+<div class="bx bb">
+<div class="bt">ε_PCP mean-revert ได้ไหม?</div>
+<p>ε_PCP ≠ 0 เกิดจาก:</p>
+<ul>
+<li><strong>Liquidity mismatch:</strong> bid-ask spread ของ C และ P ไม่เท่ากัน</li>
+<li><strong>Borrow cost:</strong> หายากสำหรับ short stock → put premium ขึ้น</li>
+<li><strong>Vol regime:</strong> ช่วง crash IV_put เพิ่มเร็วกว่า IV_call → skew spike</li>
+<li><strong>Funding:</strong> crypto options มี basis risk ระหว่าง underlying spot กับ perp</li>
+</ul>
+<p>แต่ทั้งหมดนี้เป็น transient → ε_PCP mean-revert รอบ 0 ในระยะสั้น</p>
+</div>
+
+<table>
+<tr><th></th><th>ε ราคา (ch3–ch14)</th><th>ε_PCP (ch18.8)</th></tr>
+<tr><td>สร้างจาก</td><td>log(P_A) − β·log(P_B)</td><td>C − P − (S − K·e^{−rT})</td></tr>
+<tr><td>ควรเป็น</td><td>ค่าคงที่ θ (mean)</td><td>0 (no-arbitrage)</td></tr>
+<tr><td>เบี่ยงเพราะ</td><td>market inefficiency</td><td>liquidity/skew/funding</td></tr>
+<tr><td>test ด้วย</td><td>ADF, half-life, z-score</td><td>เหมือนกันทุกอย่าง</td></tr>
+<tr><td>trade</td><td>z-score entry/exit</td><td>เหมือนกัน</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC Options — ε_PCP จาก Deribit</div>
+<div class="fm">ข้อมูล ณ วันที่ T (BTC ≈ $95,000):
+  Call ATM (K=95,000, T=30d):  C = $4,820
+  Put ATM  (K=95,000, T=30d):  P = $4,310
+  Spot BTC:                    S = $95,000
+  r = 5%/yr,  T = 30/365
+
+PCP fair value:  S − K·e^{−rT} = 95,000 − 95,000·e^{−0.05×30/365}
+                               = 95,000 − 95,000·0.99590 = 95,000 − 94,610 = 390
+
+ε_PCP = (C − P) − 390
+       = (4,820 − 4,310) − 390
+       = 510 − 390 = +120
+
+→ ε_PCP = +$120 → Call แพงกว่า Put ผิดปกติ
+→ ถ้า ε_PCP mean-revert → เปิด: Short Call + Long Put + Long Stock (reversal)
+   รับกำไรเมื่อ ε_PCP กลับสู่ 0</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อควรระวัง — Options friction สูงกว่า Perp มาก</div>
+<ul>
+<li>Bid-ask ของ options กว้างกว่า perp 5–20x → breakeven ε_PCP สูงมาก</li>
+<li>American options (equity): early exercise ทำให้ PCP ไม่ strict — ใช้เฉพาะ European</li>
+<li>Crypto options (Deribit): European, ไม่มี dividend → PCP strict ✅</li>
+<li>ต้องคำนวณ breakeven ε_PCP ≥ total_friction ก่อนเทรดเสมอ (ดู <a href="statarb-ch19.html">บทที่ 19</a>)</li>
+</ul>
+</div>
+
+<div class="bx bi">
+<div class="bt">บทที่ 22 — Options-Based Stat Arb เต็มรูปแบบ</div>
+<p>บทที่ 22 ขยาย ε_PCP ไปสู่ IV Surface Stat Arb ครบชุด:</p>
+<p>§22.1 IV series เป็น process ใหม่ · §22.2 Box Spread Arb<br>
+§22.3 IV Skew Stat Arb · §22.4 Cross-venue IV Arb (Deribit↔Bybit)<br>
+§22.5 Vol Risk Premium · §22.6 Friction · §22.7 Practical Setup</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 18.8 — คำนวณ ε_PCP</div>
+<p>Given: BTC C(K=100k, T=7d) = $2,400, P(K=100k, T=7d) = $2,350, S = $100,000, K = $100,000, r = 5%/yr</p>
+<p><strong>(ก)</strong> คำนวณ PCP fair value = S − K·e^{−rT}<br>
+<strong>(ข)</strong> คำนวณ ε_PCP<br>
+<strong>(ค)</strong> ถ้า ε_PCP = +$80 และ normal range ±$30 → ควรเปิด position ไหน?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก)</strong> PCP fair = 100,000 − 100,000·e^{−0.05×7/365} = 100,000 − 100,000·0.99904 = 100,000 − 99,904 = <strong>$96</strong></p>
+<p><strong>(ข)</strong> ε_PCP = (2,400−2,350) − 96 = 50 − 96 = <strong>−$46</strong><br>
+→ Call ถูกกว่า Put → negative ε_PCP</p>
+<p><strong>(ค)</strong> ε_PCP = −$46 อยู่ใน normal range ±$30? ไม่ได้บอก ±$30 ใน this question<br>
+แก้: ถ้า ε_PCP = +$80 (given override) และ normal ±$30 → ε &gt; 2σ → เปิด Reversal: Short Call + Long Put + Long Stock<br>
+รอ ε_PCP revert กลับ → close เมื่อ ε_PCP &lt; $30</p>
+</div>
+</details>
+</div>
+
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
-  Ch.18 Options Overlay | ต่อไป → <strong>Ch.19: Cost Analysis & Edge — คำนวณ Net Edge ก่อนเทรด</strong>
+  Ch.18 Options Overlay | ต่อไป → <strong>Ch.19: Cost Analysis &amp; Edge — คำนวณ Net Edge ก่อนเทรด</strong> | §18.8 ดู <a href="statarb-ch22.html">ch22</a> สำหรับ Options Stat Arb เต็มรูปแบบ
 </p>
 </body>
 </html>
