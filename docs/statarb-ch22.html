@@ -75,6 +75,32 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-eq">ε_IV = IV_A − β·IV_B   |   Pipeline: ADF → half-life → z-score (เหมือน ch3–ch10)</div>
 </div>
 
+<div class="bx bb">
+<div class="bt">Prerequisites — ต้องเข้าใจก่อนอ่านบทนี้</div>
+<ul>
+<li><strong>ch3</strong> OU process, half-life, mean-reversion — ε_IV fit OU เหมือนกัน</li>
+<li><strong>ch4 §4.2b</strong> OLS β = Cov/Var — β_IV คำนวณแบบเดียวกัน</li>
+<li><strong>ch5</strong> ADF + Pair Selection Pipeline — ใช้กับ IV pairs ได้ตรงๆ</li>
+<li><strong>ch10</strong> z-score entry/exit — เหมือนกันทุกประการ</li>
+<li><strong>ch12</strong> Kelly sizing — f* × 0.3 สำหรับ short vol strategy</li>
+<li><strong>ch18 §18.8</strong> ε_PCP — starting point สำหรับ options-based ε</li>
+<li><strong>pm-part1</strong> PCP fundamentals + synthetic construction</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">Glossary — คำศัพท์ Options ที่ใช้ในบทนี้</div>
+<ul>
+<li><strong>ATM (At-the-Money)</strong>: strike K = spot price S — เป็น strike ที่ liquid ที่สุด</li>
+<li><strong>Straddle</strong>: Long Call(K) + Long Put(K) — กำไรเมื่อ vol สูง ไม่สนทิศทาง</li>
+<li><strong>Vega</strong>: sensitivity ของ option price ต่อ IV change — Long option = Long Vega</li>
+<li><strong>Gamma</strong>: sensitivity ของ delta ต่อ S change — Short straddle = Short Gamma</li>
+<li><strong>Delta hedge</strong>: ซื้อ/ขาย underlying เพื่อให้ net delta ≈ 0 (ป้องกัน directional risk)</li>
+<li><strong>Vol Smile/Skew</strong>: IV ที่แตกต่างกันตาม strike K — OTM puts มักมี IV สูงกว่า OTM calls</li>
+<li><strong>25Δ</strong>: options ที่มี absolute delta = 0.25 — OTM แต่ยัง liquid พอ</li>
+</ul>
+</div>
+
 <!-- 22.1 -->
 <h2 id="s22-1">22.1 IV เป็น Process ใหม่ — สร้าง ε บน Vol Surface</h2>
 
@@ -87,7 +113,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-eq">ε_IV,t = IV_A(K,T,t) − β·IV_B(K,T,t)</div>
 <div class="ki-text" style="margin-top:8px">
 โดยที่ K คือ strike (เลือก ATM เพื่อ liquidity สูงสุด), T คือ expiry คงที่, t คือ timestamp<br>
-β_IV คำนวณจาก OLS: β_IV = Cov(IV_A, IV_B) / Var(IV_B) — เหมือนกับ <a href="statarb-ch4.html#s4-2">บทที่ 4 §4.2b</a> ทุกประการ<br>
+β_IV คำนวณจาก OLS: β_IV = Cov(IV_A, IV_B) / Var(IV_B) — เหมือนกับ <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> ทุกประการ<br>
 θ_IV = E[ε_IV] = ค่ากลางของ spread (อาจไม่ใช่ 0 เพราะ structural premium ต่างกัน)
 </div>
 </div>
@@ -161,6 +187,12 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p><strong>Box Spread</strong> คือ synthetic bond ที่สร้างจาก options 4 legs โดยรวม long bull call spread กับ short bull put spread ที่ K เดียวกัน สิ่งที่ได้คือ fixed payoff = K2 − K1 ณ expiry ไม่ว่า underlying จะเป็นเท่าไหร่</p>
 
+<div class="bx bg">
+<div class="bt">พื้นฐาน: Bull Call Spread คืออะไร?</div>
+<p>Bull Call Spread = Long Call(K1) + Short Call(K2) ที่ K1 &lt; K2 — payoff = max(S−K1, 0) − max(S−K2, 0) ซึ่งมีค่าสูงสุด = K2−K1<br>
+<strong>Box Spread</strong> = Long Bull Call Spread (K1,K2) + Short Bull Put Spread (K1,K2) = ผลรวมที่ได้ K2−K1 แน่นอนทุก scenario ไม่ว่า S จะเป็นเท่าไหร่ → Box = synthetic zero-coupon bond ที่ maturity = K2−K1</p>
+</div>
+
 <div class="key-idea">
 <div class="ki-label">Fair Value ของ Box Spread</div>
 <div class="ki-eq">V_box = (K2 − K1) · e^{−rT}</div>
@@ -220,119 +252,144 @@ Fair box   = <span class="nm">10000</span> × e^{−<span class="nm">0.05</span>
 <li>Crypto: ใช้ Deribit เพราะ <strong>European options</strong> (ไม่มี early exercise risk) — American options จะทำให้ fair value ซับซ้อนขึ้น</li>
 <li>ε_box ≠ 0 ที่คงอยู่มักเกิดจาก execution friction ไม่ใช่ market error — ต้องวัด friction จริงก่อน</li>
 </ul>
-<p style="margin-top:8px">ดูพื้นฐาน Box Spread เพิ่มเติม: arb-part5</p>
+<p style="margin-top:8px">ดูพื้นฐาน Box Spread เพิ่มเติม: arb-part1/arb-part2/arb-part3</p>
 </div>
 
 <!-- 22.3 -->
-<h2 id="s22-3">22.3 IV Skew Stat Arb — ε_skew</h2>
+<h2 id="s22-3">22.3 IV Skew Stat Arb — Risk Reversal (RR_25Δ)</h2>
 
-<p>Put-Call Parity (ดู <a href="statarb-ch18.html#s18-1">บทที่ 18 §18.1</a>) บังคับว่า IV_call(K,T) และ IV_put(K,T) ต้องเท่ากันสำหรับ same K, T เดียวกัน เพราะการ plug IV เดียวกันลง Black-Scholes จะให้ราคา call และ put ที่ satisfy PCP — นั่นคือ <strong>implied distribution เดียวกัน</strong></p>
+<p>IV Skew หมายถึง IV ของ options ที่ strike ต่างกันนั้นไม่เท่ากัน — put ที่ strike ต่ำมักมี IV สูงกว่า call ที่ strike สูง เพราะ demand ซื้อ protective put สูงกว่า ปรากฏการณ์นี้สะท้อนอยู่ใน <strong>vol smile curve ที่เอียงซ้าย</strong></p>
 
-<p>ในตลาดจริง: IV_put &gt; IV_call สำหรับ low strikes (put skew) เพราะ demand ซื้อ protective put สูงกว่าปกติ → IV_put ถูก bid ขึ้น แต่ เมื่อ skew spike ผิดปกติ (เช่นช่วง panic) ε_skew จะหวนคืนหลังจากนั้น</p>
+<div class="bx bb">
+<div class="bt">ทำไมต้องวัด IV ข้ามสไตรก์? — PCP Constraint</div>
+<p>Put-Call Parity (<a href="statarb-ch18.html#s18-1">บทที่ 18 §18.1</a>) บังคับว่า IV_call(K,T) = IV_put(K,T) สำหรับ <strong>K เดียวกัน, T เดียวกัน</strong> เสมอ — ถ้าต่างกัน จะมี riskless arbitrage ทันที ดังนั้น ε_skew จึงวัดไม่ได้ที่ K เดียวกัน<br>
+→ "Skew" ต้องวัดโดยเปรียบ IV <em>ข้ามสองสไตรก์ที่ต่างกัน</em><br>
+→ วิธีมาตรฐานของตลาด: <strong>Risk Reversal 25Δ</strong> — เปรียบ IV ที่ 25Δ put (strike ต่ำ) กับ IV ที่ 25Δ call (strike สูง)</p>
+</div>
 
 <div class="key-idea">
-<div class="ki-label">นิยาม IV Skew Process</div>
-<div class="ki-eq">ε_skew = IV_call(K,T) − IV_put(K,T)</div>
+<div class="ki-label">Risk Reversal 25Δ — นิยาม IV Skew มาตรฐาน</div>
+<div class="ki-eq">RR_25Δ = IV_put(Δ=−0.25) − IV_call(Δ=+0.25)</div>
 <div class="ki-text" style="margin-top:8px">
-ปกติ: ε_skew ≈ −2% ถึง −5% (negative เพราะ put skew เรื้อรัง)<br>
-Spike: ε_skew ลงไป −12% ถึง −18% ระหว่าง panic — แล้ว mean-revert กลับ<br>
-→ trade: Long ε_skew เมื่อ spike ลงผิดปกติ (ซื้อ call + ขาย put same K,T)
+25Δ put: strike ≈ 80–90% ของ spot (OTM put ทางซ้ายของ smile curve)<br>
+25Δ call: strike ≈ 110–120% ของ spot (OTM call ทางขวาของ smile curve)<br><br>
+ปกติ: RR_25Δ ≈ −2% ถึง −5% (negative เสมอ เพราะ put demand สูงกว่า call)<br>
+Panic spike: RR_25Δ ลงถึง −15% ถึง −20% แล้ว mean-revert กลับ<br><br>
+ε_RR = RR_25Δ − θ_RR &nbsp;&nbsp;&nbsp;(θ_RR = mean ปกติ เช่น −3%)
 </div>
 </div>
 
-<svg class="d" viewBox="0 0 680 180">
+<p>ทฤษฎีบังคับว่า IV_call = IV_put ที่ K เดียวกัน → ในตลาดจริง smile curve เอียงทำให้ IV ต่างกันข้ามสไตรก์ → <strong>เทรด gap นั้นเมื่อ spike ผิดปกติ</strong></p>
+
+<svg class="d" viewBox="0 0 680 185">
 <defs>
 <marker id="arw22b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
 
-<!-- Left panel: IV Smile -->
-<rect x="10" y="10" width="340" height="162" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
-<text x="180" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#7c3aed">IV Smile — Put side สูงกว่า Call side</text>
+<!-- Left panel: Vol Smile with 25Δ marks -->
+<rect x="10" y="10" width="335" height="167" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+<text x="178" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#7c3aed">Vol Smile — IV เปลี่ยนตาม Strike (K/S)</text>
 
 <!-- Axes -->
-<line x1="35" y1="150" x2="335" y2="150" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
-<line x1="35" y1="150" x2="35" y2="35" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
-<text x="338" y="153" font-size="8" fill="#6b7280">K/S</text>
-<text x="30" y="33" text-anchor="end" font-size="8" fill="#6b7280">IV%</text>
+<line x1="38" y1="152" x2="330" y2="152" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
+<line x1="38" y1="152" x2="38" y2="36" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
+<text x="333" y="155" font-size="7" fill="#6b7280">K/S</text>
+<text x="33" y="34" text-anchor="end" font-size="7" fill="#6b7280">IV%</text>
 
-<!-- Strike labels -->
-<text x="70" y="162" text-anchor="middle" font-size="8" fill="#374151">0.8</text>
-<text x="120" y="162" text-anchor="middle" font-size="8" fill="#374151">0.9</text>
-<text x="180" y="162" text-anchor="middle" font-size="8" fill="#374151">ATM</text>
-<text x="250" y="162" text-anchor="middle" font-size="8" fill="#374151">1.1</text>
-<text x="310" y="162" text-anchor="middle" font-size="8" fill="#374151">1.2</text>
+<!-- Strike labels on x-axis -->
+<text x="72" y="162" text-anchor="middle" font-size="7" fill="#dc2626" font-weight="700">25Δ put</text>
+<text x="72" y="172" text-anchor="middle" font-size="7" fill="#6b7280">≈0.85S</text>
+<text x="178" y="162" text-anchor="middle" font-size="7" fill="#374151">ATM</text>
+<text x="285" y="162" text-anchor="middle" font-size="7" fill="#2563eb" font-weight="700">25Δ call</text>
+<text x="285" y="172" text-anchor="middle" font-size="7" fill="#6b7280">≈1.15S</text>
 
-<!-- IV smile curve (put side left is higher due to skew) -->
-<polyline points="65,55 100,70 140,88 180,100 220,108 260,114 310,120" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+<!-- Vol smile curve (left-skewed) -->
+<polyline points="62,52 100,68 140,86 178,103 220,113 260,118 305,121" fill="none" stroke="#7c3aed" stroke-width="2.2"/>
 
-<!-- Hypothetical call IV (lower on left side) -->
-<polyline points="65,80 100,88 140,96 180,100 220,108 260,114 310,120" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="6,3"/>
+<!-- 25Δ put dot: IV=58% -->
+<circle cx="72" cy="60" r="5" fill="#dc2626"/>
+<line x1="72" y1="65" x2="72" y2="152" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="76" y="56" font-size="7" font-weight="700" fill="#dc2626">IV=58%</text>
 
-<text x="55" y="52" font-size="8" font-weight="700" fill="#2563eb">IV_put</text>
-<text x="55" y="76" font-size="8" font-weight="700" fill="#dc2626">IV_call</text>
+<!-- ATM dot -->
+<circle cx="178" cy="103" r="4" fill="#374151"/>
+<text x="182" y="99" font-size="7" fill="#374151">IV=50%</text>
 
-<!-- ε_skew gap at ATM -->
-<line x1="180" y1="100" x2="180" y2="100" stroke="none"/>
-<line x1="175" y1="100" x2="175" y2="100" stroke="none"/>
-<!-- Arrow showing gap -->
-<line x1="165" y1="96" x2="165" y2="100" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arw22b)"/>
-<text x="100" y="94" font-size="8" font-weight="700" fill="#16a34a">ε_skew = gap</text>
+<!-- 25Δ call dot: IV=53% -->
+<circle cx="285" cy="117" r="5" fill="#2563eb"/>
+<line x1="285" y1="122" x2="285" y2="152" stroke="#2563eb" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="245" y="113" font-size="7" font-weight="700" fill="#2563eb">IV=53%</text>
 
-<!-- Right panel: ε_skew over time -->
-<rect x="360" y="10" width="310" height="162" rx="6" fill="#fff8f0" stroke="#fcd34d" stroke-width="1.5"/>
-<text x="515" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#b45309">ε_skew over time — mean-reverts รอบ −3%</text>
+<!-- RR gap bracket on left margin -->
+<line x1="28" y1="60" x2="28" y2="117" stroke="#16a34a" stroke-width="2"/>
+<line x1="24" y1="60" x2="32" y2="60" stroke="#16a34a" stroke-width="2"/>
+<line x1="24" y1="117" x2="32" y2="117" stroke="#16a34a" stroke-width="2"/>
+<text x="14" y="85" font-size="7" font-weight="700" fill="#16a34a" text-anchor="middle">RR</text>
+<text x="14" y="95" font-size="7" font-weight="700" fill="#16a34a" text-anchor="middle">−5%</text>
+
+<!-- Right panel: RR_25Δ over time -->
+<rect x="355" y="10" width="318" height="167" rx="6" fill="#fff8f0" stroke="#fcd34d" stroke-width="1.5"/>
+<text x="514" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#b45309">RR_25Δ over time — mean-reverts รอบ −3%</text>
 
 <!-- Axes right panel -->
-<line x1="380" y1="135" x2="658" y2="135" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
-<line x1="380" y1="135" x2="380" y2="38" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
-<text x="660" y="138" font-size="7" fill="#6b7280">t</text>
+<line x1="375" y1="138" x2="660" y2="138" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
+<line x1="375" y1="138" x2="375" y2="38" stroke="#374151" stroke-width="1.2" marker-end="url(#arw22b)"/>
+<text x="662" y="141" font-size="7" fill="#6b7280">t</text>
 
-<!-- θ_skew = -3% line -->
-<line x1="380" y1="95" x2="660" y2="95" stroke="#374151" stroke-width="1" stroke-dasharray="3,2"/>
-<text x="663" y="98" font-size="7" fill="#374151">−3%</text>
+<!-- θ_RR = -3% line -->
+<line x1="375" y1="82" x2="660" y2="82" stroke="#374151" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="663" y="85" font-size="7" fill="#374151">−3%</text>
 
-<!-- -2σ line at about -9% -->
-<line x1="380" y1="118" x2="660" y2="118" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
-<text x="663" y="121" font-size="7" fill="#dc2626">−9%</text>
+<!-- -2σ line at -9% -->
+<line x1="375" y1="116" x2="660" y2="116" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="663" y="119" font-size="7" fill="#dc2626">−9%</text>
 
-<!-- ε_skew path -->
-<polyline points="385,90 410,94 440,98 470,92 500,87 510,90" fill="none" stroke="#7c3aed" stroke-width="2"/>
+<!-- RR_25Δ path (normal regime) -->
+<polyline points="380,78 408,82 438,87 468,80 498,76 515,80" fill="none" stroke="#7c3aed" stroke-width="2"/>
 
-<!-- Panic spike down -->
-<polyline points="510,90 520,100 530,128 540,132 550,125 565,110 580,100 600,92 630,91 650,93" fill="none" stroke="#7c3aed" stroke-width="2"/>
+<!-- Panic spike -->
+<polyline points="515,80 525,92 535,128 545,135 555,126 568,110 582,95 600,83 628,80 650,81" fill="none" stroke="#7c3aed" stroke-width="2"/>
 
 <!-- Panic label -->
-<rect x="528" y="130" width="38" height="16" rx="3" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
-<text x="547" y="141" text-anchor="middle" font-size="7" font-weight="700" fill="#dc2626">panic</text>
-<text x="547" y="157" text-anchor="middle" font-size="7" fill="#dc2626">−12%</text>
+<rect x="526" y="133" width="40" height="16" rx="3" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+<text x="546" y="144" text-anchor="middle" font-size="7" font-weight="700" fill="#dc2626">panic</text>
+<text x="546" y="160" text-anchor="middle" font-size="7" fill="#dc2626">−15%</text>
 </svg>
-<div class="caption">ซ้าย: IV smile — put side (น้ำเงิน) สูงกว่า call side (แดง) ทำให้ ε_skew เป็นลบเสมอ | ขวา: ε_skew mean-reverts รอบ −3% spike ลงถึง −12% ระหว่าง panic แล้วกลับ</div>
+<div class="caption">ซ้าย: Vol smile เอียงซ้าย — 25Δ put (K≈85%S) มี IV=58% สูงกว่า 25Δ call (K≈115%S) มี IV=53% → RR_25Δ = −5% | ขวา: RR_25Δ mean-reverts รอบ −3% spike ลงถึง −15% ระหว่าง panic แล้วกลับ</div>
 
 <table>
-<tr><th>สถานการณ์</th><th>ε_skew</th><th>Action</th></tr>
-<tr><td>Panic: put demand พุ่ง</td><td>ε_skew spike ลง −12% ถึง −18%</td><td>Long ε_skew: Buy Call + Sell Put (same K,T)</td></tr>
-<tr><td>Post-panic: skew normalize</td><td>ε_skew กลับ −3% ถึง −5%</td><td>Close position รับกำไรจาก reversion</td></tr>
-<tr><td>Normal ε_skew ≈ −3%</td><td>ไม่ spike ผิดปกติ</td><td>ไม่มีสัญญาณ — รอ</td></tr>
+<tr><th>สถานการณ์</th><th>RR_25Δ</th><th>ε_RR = RR − θ_RR</th><th>Action</th></tr>
+<tr><td>Normal</td><td>≈ −2% ถึง −5%</td><td>ε_RR ≈ 0</td><td>ไม่มีสัญญาณ — รอ</td></tr>
+<tr><td>Panic: put demand พุ่ง</td><td>spike ลง −12% ถึง −20%</td><td>ε_RR ≪ 0, z &lt; −2</td><td>Long RR: Buy 25Δ Call + Sell 25Δ Put</td></tr>
+<tr><td>Post-panic: normalize</td><td>กลับ −3% ถึง −5%</td><td>ε_RR ≈ 0</td><td>Close position รับกำไรจาก reversion</td></tr>
 </table>
 
 <div class="running-ex">
-<div class="re-title">ตัวอย่างหลัก: BTC IV Skew — Panic Event</div>
-<p><strong>สภาวะปกติ:</strong> BTC price = $95,000, K = $95,000 (ATM), T = 30 วัน</p>
-<div class="fm">IV_call = <span class="nm">53%</span>
-IV_put  = <span class="nm">58%</span>
-ε_skew  = <span class="nm">53%</span> − <span class="nm">58%</span> = <strong>−5%</strong>  ← normal range</div>
+<div class="re-title">ตัวอย่างหลัก: BTC 25Δ Risk Reversal — Panic Event</div>
+<p><strong>สภาวะปกติ:</strong> BTC spot S = $95,000, T = 30 วัน</p>
+<div class="fm"><span class="c"># 25Δ put: strike ≈ 85% ของ spot = $80,750</span>
+<span class="c"># 25Δ call: strike ≈ 115% ของ spot = $109,250</span>
 
-<p><strong>ช่วง panic (flash crash −10%):</strong></p>
-<div class="fm">IV_call = <span class="nm">70%</span>
-IV_put  = <span class="nm">88%</span>
-ε_skew  = <span class="nm">70%</span> − <span class="nm">88%</span> = <strong>−18%</strong>  ← spike! ห่างจาก mean −5% มาก
+IV_put(25Δ)  = <span class="nm">55%</span>
+IV_call(25Δ) = <span class="nm">52%</span>
+RR_25Δ       = <span class="nm">55%</span> − <span class="nm">52%</span> = <strong>−3%</strong>  ← normal
 
-Historical σ_skew ≈ 3%
-z_skew = (−18% − (−5%)) / 3% = −13% / 3% = −4.33  ← &gt;&gt; 2σ → Signal!</div>
+Historical θ_RR = −3%, σ_RR = 2%
+ε_RR = −3% − (−3%) = <span class="nm">0%</span>   z_RR = 0 → ไม่มีสัญญาณ</div>
 
-<p><strong>Signal: Long ε_skew</strong><br>
-→ Buy C(95k, 30d) + Sell P(95k, 30d) บน Deribit<br>
-→ รอ normalize: IV_call = 65%, IV_put = 70% → ε_skew = −5% → Close</p>
+<p><strong>ช่วง panic (flash crash −15%):</strong></p>
+<div class="fm"><span class="c"># Spot ลงเหลือ ≈ $80,750 → 25Δ strikes ขยับตาม</span>
+IV_put(25Δ)  = <span class="nm">73%</span>   <span class="c"># put demand พุ่งแรง — ผู้คนแห่ซื้อ downside protection</span>
+IV_call(25Δ) = <span class="nm">57%</span>   <span class="c"># call IV ขึ้นน้อยกว่ามาก</span>
+RR_25Δ       = <span class="nm">73%</span> − <span class="nm">57%</span> = <strong>−16%</strong>  ← spike!
+
+ε_RR = −16% − (−3%) = −13%
+z_RR = −13% / 2% = <strong>−6.5</strong>  ← &gt;&gt; 2σ → Signal!
+
+Action: <strong>Long RR</strong> — Buy 25Δ Call + Sell 25Δ Put บน Deribit
+→ รอ panic subsides → RR_25Δ กลับ −3% → Close
+→ กำไร ≈ Δ_RR × Vega (per 1% IV change)</div>
+
 <p>IV Skew Selection Algorithm: vp-part4</p>
 </div>
 
@@ -346,7 +403,7 @@ z_skew = (−18% − (−5%)) / 3% = −13% / 3% = −4.33  ← &gt;&gt; 2σ →
 <div class="ki-eq">ε_xvenue = IV_Deribit(K,T) − β·IV_Bybit(K,T)</div>
 <div class="ki-text" style="margin-top:8px">
 β ≈ 1 (same underlying) แต่มี small deviation จาก structural liquidity premium<br>
-→ ใช้ OLS คำนวณ β_IV จาก historical data เหมือน <a href="statarb-ch4.html#s4-2">บทที่ 4 §4.2b</a><br>
+→ ใช้ OLS คำนวณ β_IV จาก historical data เหมือน <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a><br>
 → ε_xvenue มี θ_IV บวก = structural alpha (Deribit IV สูงกว่าเรื้อรัง)
 </div>
 </div>
@@ -355,7 +412,7 @@ z_skew = (−18% − (−5%)) / 3% = −13% / 3% = −4.33  ← &gt;&gt; 2σ →
 
 <ol>
 <li><strong>Scatter plot</strong> IV_Deribit vs IV_Bybit → ρ ≥ 0.85? (<a href="statarb-ch5.html">ch5</a>)</li>
-<li><strong>OLS β_IV</strong> = Cov(IV_D, IV_B) / Var(IV_B) (<a href="statarb-ch4.html#s4-2">ch4 §4.2b</a>)</li>
+<li><strong>OLS β_IV</strong> = Cov(IV_D, IV_B) / Var(IV_B) (<a href="statarb-ch4.html#s4-2b">ch4 §4.2b</a>)</li>
 <li><strong>ADF</strong> บน ε_xvenue → p &lt; 0.05? (<a href="statarb-ch5.html">ch5</a>)</li>
 <li><strong>Half-life</strong> → อยู่ใน target horizon? (<a href="statarb-ch3.html">ch3</a>)</li>
 <li><strong>z-score</strong> entry/exit (<a href="statarb-ch10.html">ch10</a>)</li>
@@ -596,7 +653,7 @@ z_iv    = (epsilon_iv[<span class="nm">-1</span>] - mean_iv) / std_iv
 <div class="bx bi">
 <div class="bt">Vega-Neutral Sizing</div>
 <ul>
-<li><strong>Vega</strong> ≈ S·√T·N'(d₁) — ค่าเปลี่ยนของ option price ต่อ 1% IV change</li>
+<li><strong>Vega</strong> ≈ S·√T·N'(d₁)/100 — ค่าเปลี่ยนของ option price ต่อ 1% IV change (หาร 100 เพราะ IV เป็น annualized fraction)</li>
 <li>Target: <strong>Vega_A ≈ β_IV · Vega_B</strong> ระหว่างสองขา (Vega-neutral)</li>
 <li>ตัวอย่าง: ถ้า Vega_BTC = $200/% และ Vega_ETH = $50/% และ β_IV = 1.05<br>
 → ต้องการ BTC: 1 lot, ETH: 200/(50×1.05) ≈ 3.81 lots → rounded = 4 lots</li>
@@ -625,7 +682,7 @@ z_iv    = (epsilon_iv[<span class="nm">-1</span>] - mean_iv) / std_iv
 <table>
 <tr><th>หนังสือ / บท</th><th>Content ที่ใช้ใน ch22</th></tr>
 <tr><td><strong>pm-part1</strong></td><td>PCP fundamentals, synthetic construction — พื้นฐาน options ทั้งหมด</td></tr>
-<tr><td><strong>arb-part5</strong></td><td>Box Spread concept — §22.2 ขยายเพิ่ม stat arb layer บน top</td></tr>
+<tr><td><strong>arb-part1/arb-part2/arb-part3</strong></td><td>Box Spread concept — §22.2 ขยายเพิ่ม stat arb layer บน top</td></tr>
 <tr><td><strong>vol-part4</strong></td><td>Vol Clustering, IV mean reversion — basis ทางทฤษฎีของ §22.5 VRP</td></tr>
 <tr><td><strong>vp-part4</strong></td><td>IV Skew Selection Algorithm — §22.3 ใช้โดยตรง</td></tr>
 <tr><td><strong>eye-part3</strong></td><td>Cross-venue IV gap as arb signal — §22.4 ขยาย full pipeline</td></tr>
@@ -644,7 +701,7 @@ z_iv    = (epsilon_iv[<span class="nm">-1</span>] - mean_iv) / std_iv
 <ol>
 <li><strong>§22.1</strong> ε_IV = IV cross-asset spread (BTC vs ETH IV)</li>
 <li><strong>§22.2</strong> ε_box = Box spread deviation จาก fair value</li>
-<li><strong>§22.3</strong> ε_skew = Call-put IV asymmetry spike</li>
+<li><strong>§22.3</strong> ε_RR = Risk Reversal 25Δ spike (cross-strike IV asymmetry)</li>
 <li><strong>§22.4</strong> ε_xvenue = Cross-exchange IV gap</li>
 <li><strong>§22.5</strong> ε_VRP = IV − RV premium spike</li>
 </ol>
