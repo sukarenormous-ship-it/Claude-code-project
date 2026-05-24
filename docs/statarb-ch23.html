@@ -73,7 +73,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <strong>t-Distribution</strong> แก้ปัญหา fat tails ของ ε crypto — threshold ที่ถูกต้องกว่า z-score ปกติ<br>
 ทั้งสองเทคนิคเสริมกัน: Kalman ให้ β_t ที่แม่นยำ → t-distribution แปลง ε เป็น signal ที่น่าเชื่อถือกว่า
 </div>
-<div class="ki-eq">t_stat = ε_t / σ_t   →   เทียบกับ t_{α/2}(ν)  ไม่ใช่  z_{α/2} = 1.96</div>
+<div class="ki-eq">z_t = ε_t / σ_t   →   เทียบกับ t_{α/2}(ν)  ไม่ใช่  z_{α/2} = 1.96</div>
 </div>
 
 <div class="bx bb">
@@ -209,26 +209,28 @@ y_t = β_t · x_t + v_t,  v_t ~ N(0, R)   <span class="c">// R = observation noi
 <!-- ======================================================= -->
 <h2 id="s23-3">23.3 Kalman Filter สำหรับ Dynamic β_t — BTC/ETH</h2>
 
-<p>นำทฤษฎีในข้อ §23.2 มาใช้กับ BTC/ETH pair จาก <a href="statarb-ch5.html">บทที่ 5</a> §5.8 — BTC เป็น y_t (dependent), ETH เป็น x_t (independent)</p>
+<p>นำทฤษฎีในข้อ §23.2 มาใช้กับ BTC/ETH pair จาก <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> — BTC เป็น y_t (dependent), ETH เป็น x_t (independent)</p>
 
 <div class="running-ex">
-<div class="re-title">ตัวอย่างหลัก — BTC/ETH Dynamic β_t</div>
-<p><strong>Setup:</strong> BTC = y_t, ETH = x_t | Static OLS: β̂ = 0.0444 | ρ = 0.9745 | AR(1) φ = 0.9602 | Half-life = 17h</p>
+<div class="re-title">ตัวอย่างหลัก — BTC/ETH Dynamic β_t (log-returns)</div>
+<p><strong>Pair:</strong> BTC/ETH จาก <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> | ρ = 0.9745 | AR(1) φ = 0.9602 | Half-life = 17h</p>
+<p><strong>Input scale:</strong> ใช้ <em>log-returns</em> (r_t = Δlog P_t) ไม่ใช่ log-prices — ทำให้ innovation มี mean ≈ 0 โดยไม่ต้อง fit intercept และ K_t อยู่ใน range ที่ guard condition ทำงานได้</p>
+<p><strong>Log-return OLS β:</strong> β̂₀ ≈ 1.10 (BTC return ≈ 1.10 × ETH return) — แตกต่างจาก β=0.0444 ซึ่งเป็น raw-price slope; ดู §4.2b</p>
 <p><strong>Kalman parameters:</strong> Q = 1×10⁻⁵ (β เปลี่ยนช้า), R = 0.001 (noise ปานกลาง)</p>
-<p><strong>Initial conditions:</strong> β̂₀ = 0.0444 (ค่าจาก OLS), P₀ = 0.01</p>
+<p><strong>Initial conditions:</strong> β̂₀ = 1.10 (ค่าจาก OLS log-returns), P₀ = 0.01</p>
 </div>
 
 <h3>Pseudo-code: Kalman Filter สำหรับ β_t</h3>
 <div class="pseudo">
 <span class="c"># ตั้งค่าเริ่มต้น</span><br>
-beta_hat  = <span class="nm">0.0444</span>     <span class="c"># initial β (จาก OLS)</span><br>
+beta_hat  = <span class="nm">1.10</span>       <span class="c"># initial β (จาก OLS log-returns BTC/ETH)</span><br>
 P         = <span class="nm">0.01</span>       <span class="c"># initial error covariance</span><br>
 Q         = <span class="nm">1e-5</span>       <span class="c"># process noise (tuning parameter)</span><br>
 R         = <span class="nm">0.001</span>      <span class="c"># observation noise (tuning parameter)</span><br>
 beta_series = []<br><br>
 <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(prices)):<br>
-    y_t = log_btc[t]<br>
-    x_t = log_eth[t]<br><br>
+    y_t = r_btc[t]<br>     <span class="c"># log-return Δlog(P_BTC_t)</span><br>
+    x_t = r_eth[t]<br>     <span class="c"># log-return Δlog(P_ETH_t)</span><br><br>
     <span class="c">## ① PREDICT</span><br>
     beta_prior = beta_hat               <span class="c"># β̂_{t|t-1}</span><br>
     P_prior    = P + Q                  <span class="c"># P_{t|t-1}</span><br><br>
@@ -243,7 +245,7 @@ beta_series = []<br><br>
     beta_series.<span class="fn">append</span>(beta_hat)<br>
 </div>
 
-<p>หลังจากวน loop เสร็จ <code>beta_series</code> คือ time series ของ β_t ที่ปรับตาม data ทุก step โดยอัตโนมัติ</p>
+<p>หลังจากวน loop เสร็จ <code>beta_series</code> คือ time series ของ β_t ที่ปรับตาม data ทุก step โดยอัตโนมัติ สำหรับ BTC/ETH log-returns β_t โคจรรอบ ~1.10 ± 0.1 ตามรอบตลาด</p>
 
 <svg class="d" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
   <rect width="680" height="260" fill="#f9fafb" rx="8"/>
@@ -253,11 +255,11 @@ beta_series = []<br><br>
   <text x="350" y="225" font-size="11" fill="#6b7280" text-anchor="middle">เวลา (ชั่วโมง)</text>
   <text x="350" y="25" font-size="12" fill="#374151" font-weight="700" text-anchor="middle">Kalman β_t — BTC/ETH (ตัวอย่าง 200 ชั่วโมง)</text>
   <!-- y-axis labels -->
-  <text x="55" y="80" font-size="9" fill="#9ca3af" text-anchor="end">0.055</text>
+  <text x="55" y="80" font-size="9" fill="#9ca3af" text-anchor="end">1.20</text>
   <line x1="57" y1="78" x2="63" y2="78" stroke="#9ca3af"/>
-  <text x="55" y="125" font-size="9" fill="#9ca3af" text-anchor="end">0.044</text>
+  <text x="55" y="125" font-size="9" fill="#9ca3af" text-anchor="end">1.10</text>
   <line x1="57" y1="123" x2="63" y2="123" stroke="#9ca3af"/>
-  <text x="55" y="170" font-size="9" fill="#9ca3af" text-anchor="end">0.033</text>
+  <text x="55" y="170" font-size="9" fill="#9ca3af" text-anchor="end">1.00</text>
   <line x1="57" y1="168" x2="63" y2="168" stroke="#9ca3af"/>
   <!-- OLS static line -->
   <line x1="60" y1="123" x2="640" y2="123" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,4"/>
@@ -271,11 +273,11 @@ beta_series = []<br><br>
   <line x1="210" y1="108" x2="215" y2="109" stroke="#2563eb" stroke-width="1"/>
   <!-- legend -->
   <line x1="70" y1="52" x2="100" y2="52" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <text x="108" y="56" font-size="10" fill="#374151">β_OLS = 0.0444 (คงที่)</text>
+  <text x="108" y="56" font-size="10" fill="#374151">β_OLS = 1.10 (คงที่)</text>
   <line x1="70" y1="68" x2="100" y2="68" stroke="#0d9488" stroke-width="2.5"/>
   <text x="108" y="72" font-size="10" fill="#374151">β_Kalman (dynamic)</text>
 </svg>
-<p class="caption">รูป 23.3 — β_t ของ Kalman Filter (เขียว) เลื่อนขึ้นระหว่าง altcoin season แล้วกลับสู่ระดับปกติ ขณะที่ OLS คงที่ตลอด</p>
+<p class="caption">รูป 23.3 — β_t ของ Kalman Filter (เขียว) เลื่อนขึ้นระหว่าง altcoin season แล้วกลับสู่ระดับปกติ ขณะที่ OLS คงที่ตลอด (log-return scale: β ≈ 1.0–1.2)</p>
 
 <div class="bx bg">
 <div class="bt">ข้อดีเชิงปฏิบัติ — ε_t ที่แม่นยำกว่า</div>
@@ -299,6 +301,7 @@ beta_series = []<br><br>
 <li><strong>Initial conditions sensitivity:</strong> ค่าเริ่มต้น β₀ และ P₀ ส่งผลต่อ 50–100 step แรก — burn-in period นี้ควรตัดออกจาก live trading ค่อยๆ converge</li>
 <li><strong>Linearity assumption:</strong> Model นี้สมมติ β เปลี่ยนแบบ linear random walk (Gaussian) — ถ้า jump discontinuity เกิดขึ้น (เช่น delisting) Kalman จะ overreact หรือ underreact</li>
 <li><strong>Single-factor limitation:</strong> Filter ข้างบน estimate β เดียว (slope) โดยถือ intercept ≈ 0 สำหรับ model ที่มีทั้ง α และ β ต้องขยายเป็น state vector 2×1 (Kalman เวอร์ชัน multivariate)</li>
+<li><strong>Numerical stability:</strong> P_t = (1 − K_t·x_t)·P_prior อาจมีค่าติดลบจาก floating-point rounding ในระยะยาว — production code ควรใช้ Joseph form: P_t = (1−K_t·x_t)·P_prior·(1−K_t·x_t) + K_t²·R เพื่อรับประกัน P_t &gt; 0 เสมอ</li>
 </ol>
 </div>
 
@@ -453,7 +456,8 @@ f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/
 <tbody>
 <tr><td>ν = 2</td><td>หางหนักมาก</td><td>ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td></tr>
 <tr><td>ν = 3</td><td>หางหนาก</td><td>ไม่มีที่สิ้นสุด</td><td>3.0</td></tr>
-<tr><td>ν = 4</td><td>fat tails — เหมาะ crypto</td><td>6.0</td><td>2.0</td></tr>
+<tr><td>ν = 4</td><td>fat tails — โมเมนต์ที่ 4 ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td><td>2.0</td></tr>
+<tr><td><strong>ν = 5</strong></td><td><strong>fat tails — เหมาะ crypto มาก</strong></td><td><strong>6.0</strong></td><td><strong>1.67</strong></td></tr>
 <tr><td>ν = 6</td><td>moderate fat tails</td><td>3.0</td><td>1.5</td></tr>
 <tr><td>ν = 10</td><td>ใกล้ Normal</td><td>1.0</td><td>1.25</td></tr>
 <tr><td>ν → ∞</td><td>Normal distribution</td><td>0</td><td>1.0</td></tr>
@@ -481,8 +485,8 @@ f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/
 <tbody>
 <tr><td><strong>Normal (z)</strong></td><td><strong>1.960</strong></td><td>2.326</td><td>2.576</td></tr>
 <tr><td>t (ν = 30)</td><td>2.042</td><td>2.457</td><td>2.750</td></tr>
-<tr><td>t (ν = 10)</td><td>2.228</td><td>2.634</td><td>3.169</td></tr>
-<tr><td>t (ν = 6)</td><td>2.447</td><td>2.969</td><td>3.707</td></tr>
+<tr><td>t (ν = 10)</td><td>2.228</td><td>2.764</td><td>3.169</td></tr>
+<tr><td>t (ν = 6)</td><td>2.447</td><td>3.143</td><td>3.707</td></tr>
 <tr><td><strong>t (ν = 4)</strong></td><td><strong>2.776</strong></td><td>3.747</td><td>4.604</td></tr>
 <tr><td>t (ν = 3)</td><td>3.182</td><td>4.541</td><td>5.841</td></tr>
 </tbody>
@@ -569,7 +573,7 @@ print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</sp
 <li><strong>t-distribution threshold:</strong> ใช้ ν ที่ประมาณจาก MLE บน training window → threshold = t_{α/2}(ν) แทน 1.96</li>
 <li><strong>Entry/Exit signal:</strong>
   <ul>
-    <li>Entry: |z_t| ≥ t_{α/2}(ν) AND Kalman gain K_t &lt; 0.3 (β stable, ไม่อยู่ระหว่าง fast update)</li>
+    <li>Entry: |z_t| ≥ t_{α/2}(ν) AND Kalman gain K_t &lt; 0.3 (β stable — guard นี้ใช้กับ log-return inputs ที่ x_t ≈ 0.01–0.05; สำหรับ log-price inputs ต้องปรับ threshold ตาม scale ของ x_t)</li>
     <li>Exit: |z_t| ≤ 0.5 (ε กลับ mean)</li>
     <li>Stop: |z_t| ≥ 3 × t_{α/2}(ν) (ε วิ่งไกลเกิน — ไม่ใช่ reversion)</li>
   </ul>
@@ -624,7 +628,7 @@ print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</sp
 <h3>Pseudo-code: Pipeline รวม</h3>
 <div class="pseudo">
 <span class="c"># === Initialization (ครั้งเดียวบน training data) ===</span><br>
-beta_hat, P  = <span class="fn">ols_fit</span>(y_train, x_train)   <span class="c"># β₀, P₀</span><br>
+beta_hat, P  = <span class="fn">ols_fit</span>(y_train, x_train)   <span class="c"># β₀, P₀ (log-return OLS, ~1.10 for BTC/ETH)</span><br>
 Q, R         = <span class="fn">tune_kalman</span>(y_train, x_train)   <span class="c"># walk-forward</span><br>
 nu           = <span class="fn">mle_t_fit</span>(epsilon_train)     <span class="c"># ν จาก MLE</span><br>
 threshold    = t_dist.<span class="fn">ppf</span>(<span class="nm">0.975</span>, df=nu)      <span class="c"># เช่น 2.74</span><br>
@@ -646,7 +650,7 @@ epsilon_buf  = []                           <span class="c"># rolling buffer ส
     sigma_t = <span class="fn">std</span>(epsilon_buf)<br>
     z_t     = epsilon_t / sigma_t<br><br>
     <span class="c">## ⑤ Signal</span><br>
-    <span class="kw">if</span> <span class="fn">abs</span>(z_t) &gt;= threshold <span class="kw">and</span> K &lt; <span class="nm">0.3</span>:  <span class="c"># Entry</span><br>
+    <span class="kw">if</span> <span class="fn">abs</span>(z_t) &gt;= threshold <span class="kw">and</span> K &lt; <span class="nm">0.3</span>:  <span class="c"># Entry (K&lt;0.3 ป้องกัน trade ระหว่าง β updating เร็ว; สำหรับ log-return inputs x_t~0.01-0.05)</span><br>
         signal = <span class="nm">'LONG_Y'</span> <span class="kw">if</span> z_t &lt; <span class="nm">0</span> <span class="kw">else</span> <span class="nm">'SHORT_Y'</span><br>
     <span class="kw">elif</span> <span class="fn">abs</span>(z_t) &lt;= <span class="nm">0.5</span>:                    <span class="c"># Exit</span><br>
         signal = <span class="nm">'CLOSE'</span><br>
@@ -678,25 +682,28 @@ epsilon_buf  = []                           <span class="c"># rolling buffer ส
 <div class="ex" id="s23-ex">
 <div class="et">โจทย์บทที่ 23</div>
 
-<p><strong>โจทย์ 23.1 — Kalman Filter 1 Step</strong></p>
-<p>ให้ค่า: β̂₀ = 0.0444, P₀ = 0.01, Q = 1×10⁻⁵, R = 0.001<br>
-Data ใหม่: y₁ = 10.520 (log BTC), x₁ = 7.953 (log ETH)</p>
+<p><strong>โจทย์ 23.1 — Kalman Filter 1 Step (log-returns)</strong></p>
+<p>BTC/ETH pair โดยใช้ daily log-returns (r_t = Δlog P_t)<br>
+ให้ค่า: β̂₀ = 1.10, P₀ = 0.01, Q = 1×10⁻⁵, R = 0.001<br>
+Data ใหม่: y₁ = 0.032 (BTC log-return = +3.2%), x₁ = 0.028 (ETH log-return = +2.8%)</p>
 <p><strong>(ก)</strong> คำนวณ P_{1|0} (prior covariance)<br>
-<strong>(ข)</strong> คำนวณ Kalman gain K₁<br>
-<strong>(ค)</strong> คำนวณ β̂₁ (updated estimate) และ ε₁</p>
+<strong>(ข)</strong> คำนวณ S (innovation variance) และ Kalman gain K₁<br>
+<strong>(ค)</strong> คำนวณ β̂₁ (updated estimate), P₁, และ ε₁</p>
 <details>
 <summary>ดูคำตอบ</summary>
 <div class="ans">
 <p><strong>(ก) P prior:</strong><br>
 P_{1|0} = P₀ + Q = 0.01 + 0.00001 = <strong>0.01001</strong></p>
-<p><strong>(ข) Kalman gain K₁:</strong><br>
-S = x₁² × P_{1|0} + R = 7.953² × 0.01001 + 0.001 = 63.25 × 0.01001 + 0.001 ≈ 0.6333 + 0.001 = <strong>0.6343</strong><br>
-K₁ = P_{1|0} × x₁ / S = 0.01001 × 7.953 / 0.6343 ≈ 0.07961 / 0.6343 ≈ <strong>0.1255</strong></p>
-<p><strong>(ค) Update β̂₁ และ ε₁:</strong><br>
-Innovation ν₁ = y₁ − β̂₀ × x₁ = 10.520 − 0.0444 × 7.953 = 10.520 − 0.3531 = <strong>10.167</strong><br>
-β̂₁ = β̂₀ + K₁ × ν₁ = 0.0444 + 0.1255 × 10.167 ≈ 0.0444 + 1.276 ≈ <strong>1.320</strong><br>
-<em>หมายเหตุ:</em> β วิ่งมากเพราะ innovation ใหญ่ผิดปกติ (ตัวเลข log scale นี้ไม่ได้ demean) — ในทางปฏิบัติควรทำ demean log prices หรือใช้ log-return แทน<br>
-ε₁ = y₁ − β̂₁ × x₁ = 10.520 − 1.320 × 7.953 = 10.520 − 10.498 = <strong>0.022</strong></p>
+<p><strong>(ข) S และ K₁:</strong><br>
+S = x₁² × P_{1|0} + R = 0.028² × 0.01001 + 0.001 = 7.85×10⁻⁶ + 0.001 ≈ <strong>0.001008</strong><br>
+K₁ = P_{1|0} × x₁ / S = 0.01001 × 0.028 / 0.001008 = 2.803×10⁻⁴ / 0.001008 ≈ <strong>0.278</strong><br>
+<em>สังเกต:</em> K₁ = 0.278 &lt; 0.3 → guard condition ผ่าน β กำลังอัพเดทในอัตราปกติ</p>
+<p><strong>(ค) Update β̂₁, P₁ และ ε₁:</strong><br>
+Innovation ν₁ = y₁ − β̂₀ × x₁ = 0.032 − 1.10 × 0.028 = 0.032 − 0.0308 = <strong>0.0012</strong><br>
+β̂₁ = β̂₀ + K₁ × ν₁ = 1.10 + 0.278 × 0.0012 = 1.10 + 0.000334 ≈ <strong>1.1003</strong><br>
+P₁ = (1 − K₁ × x₁) × P_{1|0} = (1 − 0.278 × 0.028) × 0.01001 = (1 − 0.00778) × 0.01001 ≈ <strong>0.009932</strong><br>
+ε₁ = y₁ − β̂₁ × x₁ = 0.032 − 1.1003 × 0.028 = 0.032 − 0.030808 ≈ <strong>0.001192</strong><br>
+<em>สังเกต:</em> β เปลี่ยนน้อยมาก (1.10 → 1.1003) เพราะ innovation เล็ก → ε ≈ 0.0012 สมเหตุสมผล</p>
 </div>
 </details>
 
@@ -717,8 +724,8 @@ Excess kurtosis = 6/(ν−4)<br>
 ν−4 = 6/5.8 ≈ 1.034<br>
 ν ≈ 5.03 → ประมาณ <strong>ν ≈ 5</strong></p>
 <p><strong>(ข) Threshold ที่ α=5%:</strong><br>
-จากตารางใน §23.7 ระหว่าง ν=4 (2.776) และ ν=6 (2.447):<br>
-ν=5 → interpolate ≈ <strong>2.57</strong> (หรือใช้ scipy: t.ppf(0.975, df=5) ≈ 2.571)</p>
+จากตารางใน §23.7: ค่าจริง t(ν=5, p=0.975) = <strong>2.571</strong> (scipy: t.ppf(0.975, df=5))<br>
+<em>หมายเหตุ:</em> linear interpolation ระหว่าง ν=4 (2.776) และ ν=6 (2.447) ให้ค่า ≈ 2.61 ซึ่งใกล้แต่ไม่ตรง — แนะนำใช้ scipy หรือ t-table ที่มีครบทุก ν</p>
 <p><strong>(ค) เปรียบเทียบ:</strong><br>
 Increase = (2.571 − 1.960) / 1.960 × 100% ≈ <strong>31% เข้มกว่า</strong><br>
 หมายความว่า ε_RR ต้องห่างจาก mean มากกว่า 31% จึงจะนับเป็น signal ที่ valid</p>
