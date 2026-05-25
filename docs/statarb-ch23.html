@@ -198,7 +198,7 @@ y_t = β_t · x_t + v_t,  v_t ~ N(0, R)   <span class="c">// R = observation noi
 
 <div class="bx bg">
 <div class="bt">ตีความ Kalman Gain K_t</div>
-<p>K_t อยู่ระหว่าง 0 ถึง 1 เสมอ:</p>
+<p>K_t อยู่ใน range ที่เหมาะสม (สำหรับ log-return inputs ที่ x_t ≪ 1):</p>
 <ul>
 <li><strong>K_t → 1:</strong> เชื่อ observation ใหม่เกือบทั้งหมด (P สูง หรือ R ต่ำ) → β ปรับตาม data ใหม่มาก</li>
 <li><strong>K_t → 0:</strong> เชื่อ prediction เกือบทั้งหมด (P ต่ำ หรือ R สูง) → β เปลี่ยนน้อยมาก</li>
@@ -455,7 +455,7 @@ f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/
 <thead><tr><th>ν (degrees of freedom)</th><th>ลักษณะ</th><th>Excess Kurtosis</th><th>Variance</th></tr></thead>
 <tbody>
 <tr><td>ν = 2</td><td>หางหนักมาก</td><td>ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td></tr>
-<tr><td>ν = 3</td><td>หางหนาก</td><td>ไม่มีที่สิ้นสุด</td><td>3.0</td></tr>
+<tr><td>ν = 3</td><td>หางหนา</td><td>ไม่มีที่สิ้นสุด</td><td>3.0</td></tr>
 <tr><td>ν = 4</td><td>fat tails — โมเมนต์ที่ 4 ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td><td>2.0</td></tr>
 <tr><td><strong>ν = 5</strong></td><td><strong>fat tails — เหมาะ crypto มาก</strong></td><td><strong>6.0</strong></td><td><strong>1.67</strong></td></tr>
 <tr><td>ν = 6</td><td>moderate fat tails</td><td>3.0</td><td>1.5</td></tr>
@@ -488,6 +488,7 @@ f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/
 <tr><td>t (ν = 10)</td><td>2.228</td><td>2.764</td><td>3.169</td></tr>
 <tr><td>t (ν = 6)</td><td>2.447</td><td>3.143</td><td>3.707</td></tr>
 <tr><td><strong>t (ν = 4)</strong></td><td><strong>2.776</strong></td><td>3.747</td><td>4.604</td></tr>
+<tr><td>t (ν = 5)</td><td>2.571</td><td>3.365</td><td>4.032</td></tr>
 <tr><td>t (ν = 3)</td><td>3.182</td><td>4.541</td><td>5.841</td></tr>
 </tbody>
 </table>
@@ -530,6 +531,8 @@ print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</sp
 <li>Win rate ต่อ trade สูงขึ้น แต่ trade น้อยลง — net Sharpe ratio ดีขึ้น</li>
 </ul>
 </div>
+
+<p>ตารางและตัวอย่างข้างต้นแสดงว่า threshold ที่ถูกต้องสำหรับ crypto ε ต้องสูงกว่า 1.96 อย่างมีนัยสำคัญ ส่วน §23.8 จะแสดงผลกระทบนี้ต่อ trading signals จริงว่าต่างกันมากแค่ไหนในทางปฏิบัติ</p>
 
 <!-- ======================================================= -->
 <h2 id="s23-8">23.8 เปรียบเทียบ Trading Signals: Normal vs t-Distribution</h2>
@@ -755,7 +758,8 @@ t(ν=4): 3.2 &gt; 2.78 → <strong>SHORT Y (Enter)</strong><br>
 
 <p><strong>โจทย์ 23.4 — Full Pipeline</strong></p>
 <p>ให้ข้อมูล BTC/ETH: ε_RR series มี ν = 4, σ_RR = 2%, θ_RR = −8%<br>
-Observe ε_RR = −14.5% (RR_25Δ = −14.5%) พร้อมกับ Kalman gain K_t = 0.18</p>
+Observe ε_RR = −14.5% (RR_25Δ = −14.5%) พร้อมกับ Kalman gain K_t = 0.18<br>
+<em>(K_t มาจาก Kalman Filter ที่ track β_IV ของ RR spread ตาม pipeline ใน §23.9)</em></p>
 <p><strong>(ก)</strong> คำนวณ z_t (ใช้ mean-adjusted ε)<br>
 <strong>(ข)</strong> เปรียบเทียบกับ t(ν=4) threshold = 2.776 — ควร enter trade ไหม?<br>
 <strong>(ค)</strong> ถ้า K_t = 0.45 แทน — pipeline ตัดสินใจอย่างไร?</p>
