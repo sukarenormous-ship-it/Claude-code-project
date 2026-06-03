@@ -70,7 +70,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">ราคา perpetual futures ควรอยู่ใกล้ spot index เพราะมีกลไก funding rate ดึงให้กลับ แต่ในช่วงที่ sentiment รุนแรง basis เบี่ยงเกิน fair value ชั่วคราว — นี่คือโอกาส trade ที่มีขอบเขตชัดเจน</div>
-<div class="ki-eq">Basis_fair ≈ spot × rate_per_8h × (hours_left/8) | entry เมื่อ |Basis_actual − Basis_fair| &gt; k × σ_basis</div>
+<div style="margin-top:10px;text-align:center">
+$$\text{Basis}_t = P_{\text{perp},t} - P_{\text{spot},t} \qquad \text{Entry: } |\text{Basis}_t - \text{Basis}_{\text{fair}}| > k\,\sigma_{\text{basis}}$$
+</div>
 </div>
 
 <!-- 13.1 -->
@@ -135,9 +137,10 @@ Basis_fair = 65,000 × 0.0001 × (4 / 8)
 <p>Fair value basis มักใกล้ศูนย์มากสำหรับ BTC perp เพราะ rate_per_8h ต่ำและเหลือเวลาไม่กี่ชั่วโมง — basis เบี่ยงเกินจากการ sentiment หรือ imbalance ของ demand</p>
 
 <!-- 13.3 -->
-<h2 id="s13-3">13.3 SVG Diagram: Basis Timeline และ Funding Rate</h2>
+<h2 id="s13-3">13.3 Basis Timeline และ Funding Rate</h2>
 
-<svg class="d" viewBox="0 0 760 380">
+<img class="chart" src="charts/ch13-basis-timeline.svg" alt="Perp basis and funding rate timeline">
+<div style="display:none"><svg class="d" viewBox="0 0 760 380">
 <defs>
 <marker id="arw5" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
@@ -216,8 +219,8 @@ Basis_fair = 65,000 × 0.0001 × (4 / 8)
 <text x="335" y="370" text-anchor="middle" font-size="7" fill="#374151">T3</text>
 <text x="445" y="370" text-anchor="middle" font-size="7" fill="#374151">T4</text>
 <text x="555" y="370" text-anchor="middle" font-size="7" fill="#374151">T5</text>
-</svg>
-<div class="caption">Panel บน: basis สูงขึ้นจนเกิน threshold → Entry signal | Panel ล่าง: funding rate สูงสุดที่ T3 ตรงกับ basis สูงสุด</div>
+</svg></div>
+<div class="caption">บน: basis (Perp−Spot) พร้อม entry/exit threshold — red dots = entry เมื่อ basis เกิน threshold, green triangles = exit เมื่อ basis กลับสู่ fair value | ล่าง: funding rate bars ที่ settlement</div>
 
 <!-- 13.4 -->
 <h2 id="s13-4">13.4 Entry/Exit Rules</h2>
@@ -385,9 +388,10 @@ Net P&L:
 </ul>
 </div>
 
-<h3>Z-score Timeline ของ Trade นี้</h3>
+<h3>P&amp;L ของ Basis Trades</h3>
 
-<svg class="d" viewBox="0 0 700 240">
+<img class="chart" src="charts/ch13-basis-pnl.svg" alt="Basis trade P&L">
+<div style="display:none"><svg class="d" viewBox="0 0 700 240">
 <defs>
 <marker id="arw6" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
@@ -428,10 +432,29 @@ Net P&L:
 <text x="260" y="232" text-anchor="middle" font-size="8" fill="#374151">8h</text>
 <text x="460" y="232" text-anchor="middle" font-size="8" fill="#374151">16h</text>
 <text x="650" y="232" text-anchor="middle" font-size="8" fill="#374151">24h</text>
-</svg>
-<div class="caption">Basis z-score ขึ้นถึง +4.1σ → เข้า trade → กลับมา 0 ใน 16 ชั่วโมง รับ 2 รอบ funding ระหว่างทาง</div>
+</svg></div>
+<div class="caption">P&amp;L per trade: green bars = wins (+0.10%–+0.20%), red bars = losses (−0.07%–−0.09%). Teal dashed = cumulative P&amp;L. Win rate 70%, avg win > avg loss → positive expectancy.</div>
 
 <!-- 13.8 -->
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Basis Trade ใน Production</div>
+<ol>
+<li><strong>Entry threshold:</strong> basis > 0.3% เหนือ 30-day rolling mean → short perp + long spot (เก็บ funding); ตรวจว่า net expected funding ≥ 2× total entry/exit cost</li>
+<li><strong>Cost checklist ก่อน entry:</strong> taker fee (0.05%), spot slippage (0.02%), borrow rate ถ้าใช้ margin — net yield ต้องเป็นบวกก่อนเปิด position</li>
+<li><strong>Exit timing:</strong> basis กลับมาใน 0.05% ของ fair value หรือ 4 ชั่วโมงก่อน funding settlement ถัดไป — อย่าถือข้ามรอบ funding ถ้า basis ยังไม่ revert</li>
+<li><strong>4-hour TWAP ของ funding rate:</strong> อย่าดู snapshot เดียว; funding สามารถ flip ใน < 1 นาทีในช่วง extreme — ใช้ TWAP 4h ก่อนตัดสินใจ entry</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Basis Model พัง</div>
+<ul>
+<li><strong>Exchange insolvency:</strong> basis trade สมมติว่าทั้งสองฝั่ง accessible พร้อมกัน — exchange ล่มหรือ API brownout ระหว่าง trade ทำให้ position เป็น naked exposure ทันที</li>
+<li><strong>Funding rate flip:</strong> funding ที่ +0.1%/8h สามารถกลายเป็น −0.3%/8h ในช่วง extreme panic — สิ่งที่ดูเหมือนกำไรแน่นอนกลายเป็น bleeding position</li>
+<li><strong>Perp/spot basis ไม่ใช่ arbitrage จริง:</strong> ถ้า spot และ perp ไม่ settle ต่อกัน (เช่น index composition ต่าง) basis อาจ persistent ไม่ revert — กลยุทธ์นี้ work ดีเฉพาะ pairs ที่ spot เป็น underlying จริงของ perp</li>
+</ul>
+</div>
+
 <h2 id="s13-8">13.8 แบบฝึกหัด</h2>
 
 <div class="ex">

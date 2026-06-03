@@ -70,7 +70,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">Kelly criterion บอก <strong>fraction ของทุนที่ควรเสี่ยง</strong> เพื่อให้ long-run geometric growth สูงสุด แต่สำหรับ stat arb ต้องปรับด้วย half-life (ความเร็ว mean reversion) และ jump risk เพื่อให้ size เหมาะกับลักษณะ pair จริงๆ</div>
-<div class="ki-eq">f* = edge / σ² — Kelly criterion (continuous return)</div>
+<div style="margin-top:10px;text-align:center">
+$$f^* = \frac{p \cdot b - q}{b} \qquad \text{where}\; p=\text{win rate},\; b=\frac{\text{avg win}}{\text{avg loss}},\; q=1-p$$
+</div>
 </div>
 
 <!-- 12.1 -->
@@ -111,7 +113,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <h3>Kelly Fraction vs Edge/Variance — Parabola Curve</h3>
 
-<svg class="d" viewBox="0 0 700 300">
+<img class="chart" src="charts/ch12-kelly-curve.svg" alt="Kelly criterion growth curve">
+<div style="display:none"><svg class="d" viewBox="0 0 700 300">
 <defs>
 <marker id="arw3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
@@ -163,8 +166,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <line x1="60" y1="163" x2="650" y2="163" stroke="#e5e7eb" stroke-width="0.5"/>
 <line x1="60" y1="113" x2="650" y2="113" stroke="#e5e7eb" stroke-width="0.5"/>
 <line x1="60" y1="63" x2="650" y2="63" stroke="#e5e7eb" stroke-width="0.5"/>
-</svg>
-<div class="caption">Full Kelly ให้ growth สูงสุดในทางทฤษฎี แต่ drawdown รุนแรงมาก — ในทางปฏิบัติใช้ Quarter Kelly</div>
+</svg></div>
+<div class="caption">Kelly growth curve g(f) = p·log(1+b·f) + q·log(1−f): RED dashed = f* (optimal), AMBER = ½f* (Half-Kelly). GREEN zone = optimal region. RED zone = overbetting/ruin.</div>
 
 <!-- 12.2 -->
 <h2 id="s12-2">12.2 Half-life Scaling — ปรับขนาดตาม Mean Reversion Speed</h2>
@@ -332,7 +335,8 @@ Step 6: Final size = min($2,844,800, $66,667) = $66,667</div>
 
 <h3>Sensitivity Analysis: ผลของ Half-life ที่ต่างกัน</h3>
 
-<svg class="d" viewBox="0 0 700 260">
+<img class="chart" src="charts/ch12-half-life-sizing.svg" alt="Position size vs half-life">
+<div style="display:none"><svg class="d" viewBox="0 0 700 260">
 <defs>
 <marker id="arw4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
@@ -376,10 +380,29 @@ Step 6: Final size = min($2,844,800, $66,667) = $66,667</div>
 <!-- Shading: above target (reduced) -->
 <rect x="247" y="73" width="403" height="147" rx="0" fill="#fef2f2" fill-opacity="0.3"/>
 <text x="450" y="100" text-anchor="middle" font-size="8" fill="#dc2626">size ลดตาม halflife ยาวขึ้น</text>
-</svg>
-<div class="caption">เมื่อ halflife น้อยกว่า target (5h) → size cap ที่ dd_limit | เมื่อยาวกว่า → size ลดลงตามสัดส่วน</div>
+</svg></div>
+<div class="caption">Position size ∝ 1/half-life — pairs ที่ revert เร็ว (HL ต่ำ) ได้ size ใหญ่กว่า; bounded เพื่อป้องกัน concentration. AMBER vertical = min useful HL=7d, BLUE = typical pair HL=30d.</div>
 
 <!-- 12.7 -->
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Kelly Sizing ใน Production</div>
+<ol>
+<li><strong>ใช้ Half-Kelly (f = f*/2) เป็น default:</strong> Full Kelly ถูกในทางทฤษฎีแต่สมมติว่ารู้ p และ b แม่นยำ — estimation error ทำให้ full Kelly overbets ในทางปฏิบัติเสมอ</li>
+<li><strong>Re-compute Kelly รายวัน</strong> จาก 30-day win rate และ average win/loss; อย่า lock parameters ไว้นาน</li>
+<li><strong>Cap position ที่ 5% NAV ต่อ pair</strong> โดยไม่คำนึงถึง Kelly output — concentration risk สำคัญกว่า theoretical optimality</li>
+<li><strong>Emergency halving:</strong> ถ้า drawdown > 3× Kelly-predicted → ลด size ทันทีครึ่งหนึ่ง อย่า restore จนกว่า drawdown recover กลับมา</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Kelly พัง</div>
+<ul>
+<li><strong>Kelly assumes i.i.d. trades:</strong> spread trades มี serial correlation (consecutive losses ในช่วง regime shift) — Kelly มาตรฐานจะ underestimate ruin probability 2–5× ในช่วง Stressed regime</li>
+<li><strong>b estimate จาก backtest:</strong> ถ้า backtest overestimate b (เช่น ลืมรวม slippage หรือมี lookahead bias) Kelly จะ prescribe fraction ที่ใหญ่เกินความเป็นจริงอย่างอันตราย</li>
+<li><strong>Half-life scaling ไม่ scale กับ correlation:</strong> pairs ที่ correlated สูง (เช่น BTC pair หลายตัว) size รวมอาจเกิน Kelly แม้แต่ละ pair อยู่ในขีดจำกัด — ต้องคำนวณ portfolio-level Kelly ด้วย</li>
+</ul>
+</div>
+
 <h2 id="s12-7">12.7 แบบฝึกหัด</h2>
 
 <div class="ex">

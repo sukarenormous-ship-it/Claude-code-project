@@ -70,7 +70,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">แทนที่จะตัดสินใจ "เข้า/ออก" แบบ ad-hoc ทุกครั้ง ให้ออกแบบ <strong>State Machine</strong> ที่กำหนด state ทั้งหมดและเงื่อนไขการ transition อย่างชัดเจน — ป้องกัน race condition, double-entry, และ logic กระจัดกระจาย</div>
-<div class="ki-eq">NO_TRADE → WATCH → PAPER_GO → MANUAL_GO → DE_RISK → EXIT → INVALIDATED</div>
+<div style="margin-top:10px;text-align:center">
+$$z_t > 2.0 \Rightarrow \text{WATCH} \to \text{PAPER\_GO} \to \text{MANUAL\_GO} \qquad |z_t| < 0.5 \Rightarrow \text{EXIT}$$
+</div>
 </div>
 
 <!-- 11.1 -->
@@ -103,7 +105,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>State machine ของเราประกอบด้วย 7 states หลัก แต่ละ state มี transitions ที่ชัดเจน:</p>
 
-<svg class="d" viewBox="0 0 820 520">
+<img class="chart" src="charts/ch11-state-machine.svg" alt="7-state entry/exit state machine">
+<div style="display:none"><svg class="d" viewBox="0 0 820 520">
 <defs>
 <marker id="arw" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#374151"/></marker>
 <marker id="arw-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#dc2626"/></marker>
@@ -192,8 +195,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <text x="763" y="274" text-anchor="middle" font-size="8" fill="#7c3aed">invalidation (any state)</text>
 <line x1="660" y1="290" x2="690" y2="290" stroke="#374151" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arw)"/>
 <text x="750" y="294" text-anchor="middle" font-size="8" fill="#374151">reset loop</text>
-</svg>
-<div class="caption">State diagram: ทุก transition มีเงื่อนไขชัดเจน — ไม่มีการข้ามขั้นตอน</div>
+</svg></div>
+<div class="caption">State diagram: 7 states พร้อม transition conditions — arrows แสดง z-score thresholds ที่กระตุ้น state change แต่ละขั้น</div>
 
 <!-- 11.3 -->
 <h2 id="s11-3">11.3 Transition Conditions Table</h2>
@@ -294,7 +297,8 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
 
 <h3>การ Visualize Sequence บน z-score Timeline</h3>
 
-<svg class="d" viewBox="0 0 760 240">
+<img class="chart" src="charts/ch11-ou-state-path.svg" alt="OU spread path with state machine activations">
+<div style="display:none"><svg class="d" viewBox="0 0 760 240">
 <defs>
 <marker id="arw2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 </defs>
@@ -338,8 +342,8 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
 <text x="190" y="135" font-size="8" fill="#d97706">z=1.7</text>
 <text x="255" y="85" font-size="8" fill="#2563eb">z=2.3</text>
 <text x="582" y="162" font-size="8" fill="#dc2626">z=0.4</text>
-</svg>
-<div class="caption">z-score ขึ้นถึง +2.3 → ผ่านทุก state → กลับมา +0.4 และออกจาก position</div>
+</svg></div>
+<div class="caption">OU spread path (บน) พร้อม state color overlay: grey=NO_TRADE, amber=WATCH, blue=PAPER_GO, green=MANUAL_GO, red=DE_RISK, teal=EXIT | z-score timeline (ล่าง)</div>
 
 <!-- 11.6 -->
 <h2 id="s11-6">11.6 Grid Trading บน OU Process</h2>
@@ -500,6 +504,25 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
 </div>
 
 <!-- 11.7 -->
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — State Machine ใน Production</div>
+<ol>
+<li><strong>Cointegration gate:</strong> ก่อนให้ transition จาก NO_TRADE → WATCH ต้อง check p-value ADF < 0.05 และ β stability (|β_t − β_{t-30}| < 0.15) ก่อนทุกครั้ง</li>
+<li><strong>PAPER_GO → MANUAL_GO manual review:</strong> 30 วันแรกของแต่ละ pair ต้องมีคน approve ก่อน auto-transition; เริ่ม auto หลังผ่าน 10 paper trades ที่ Sharpe > 0.8</li>
+<li><strong>Cooldown หลัง INVALIDATED:</strong> รอ 4 ชั่วโมงก่อน re-enter pair เดิม — ป้องกัน re-enter ทันทีหลัง cointegration fail</li>
+<li><strong>State log ทุก transition:</strong> บันทึก timestamp, z-score, regime posterior, β ณ วันที่ transition เพื่อ post-mortem</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ State Machine พัง</div>
+<ul>
+<li><strong>Cointegration break → infinite signal:</strong> ถ้า cointegration แตกแต่ไม่มี gate, state machine จะ trigger WATCH/PAPER_GO ทุก bar เพราะ spread drift ห่างจาก old mean ตลอดเวลา — loss ไม่มีที่สิ้นสุด</li>
+<li><strong>7 states อาจไม่พอ:</strong> pairs ที่มี liquidity หลาย regime (weekday vs weekend, pre/post funding) ต้องการ sub-states; ไม่งั้น MANUAL_GO อาจ fire ในช่วงที่ spread ไม่ stationary จริงๆ</li>
+<li><strong>Transition threshold ตายตัว:</strong> z > 2.0 ที่ calibrate ในช่วง low-vol จะ over-trigger ในช่วง high-vol — ควรใช้ GARCH z-score แทน raw z ใน state conditions</li>
+</ul>
+</div>
+
 <h2 id="s11-7">11.7 แบบฝึกหัด</h2>
 
 <div class="ex">

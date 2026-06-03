@@ -57,8 +57,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
   <div class="ki-label">Key Idea</div>
   <p>Z-score converts the spread residual <strong>ε</strong> into units of standard deviations from the mean, producing a dimensionless signal that drives entry and exit decisions.</p>
-  <div class="ki-eq">Standard z = (ε − θ) / σ_stat</div>
-  <div class="ki-eq">Robust  z = (ε − median) / (MAD × 1.4826)</div>
+  <div style="margin-top:10px;text-align:center">
+  $$z_t = \frac{\varepsilon_t - \theta}{\sigma_{\varepsilon}} \qquad \text{Robust:}\quad z_t = \frac{\varepsilon_t - \mathrm{median}(\varepsilon)}{1.4826 \cdot \mathrm{MAD}}$$
+  </div>
   <p style="margin-top:10px;margin-bottom:0">The robust version protects against single outliers distorting the signal — critical when exchange glitches or thin-liquidity spikes contaminate the feed.</p>
 </div>
 
@@ -89,8 +90,8 @@ where:
   </tbody>
 </table>
 
-<!-- SVG: ε timeline with z-score colored bands -->
-<svg class="d" viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" aria-label="Z-score band diagram">
+<img class="chart" src="charts/ch10-zscore-bands.svg" alt="Z-score bands with entry/exit zones">
+<div style="display:none"><svg class="d" viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" aria-label="Z-score band diagram">
   <defs>
     <clipPath id="cp1"><rect x="60" y="10" width="740" height="270"/></clipPath>
   </defs>
@@ -137,8 +138,8 @@ where:
   <!-- x-axis label -->
   <text x="430" y="298" text-anchor="middle" font-size="13" fill="#374151">Time →</text>
   <text x="18" y="155" text-anchor="middle" font-size="13" fill="#374151" transform="rotate(-90,18,155)">Z-score</text>
-</svg>
-<div class="caption">Figure 10.1 — Rolling z-score with colored signal bands. Blue curve = ε expressed in σ units. Red dot = entry signal (z &gt; 2). Green dot = exit (|z| &lt; 0.5).</div>
+</svg></div>
+<div class="caption">Rolling z-score with colored signal bands: RED zone = |z|>3 (stop-loss), AMBER zone = 2<|z|<3 (entry), GREEN zone = |z|<2 (hold/exit). Red dots = entry, green triangles = exit.</div>
 
 <!-- ==================== SECTION 10.2 ==================== -->
 <h2>10.2 The Outlier Problem</h2>
@@ -159,8 +160,8 @@ z for same ε=0.22%: z = (0.22 - 0.176)/0.212 = 0.21  ← noise, signal gone!</d
 <div class="bx br"><div class="bt">Warning: Outlier Contamination Effect</div>
 The outlier moved the mean by +0.07% (+0.47σ of the clean distribution) and inflated σ by roughly 14×. Every subsequent observation now has a z-score compressed toward zero — real signals are suppressed, and the bands become meaningless until the outlier leaves the window.</div>
 
-<!-- SVG: side-by-side before/after outlier panels -->
-<svg class="d" viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg" aria-label="Outlier effect on z-score bands">
+<img class="chart" src="charts/ch10-outlier-effect.svg" alt="Outlier inflates sigma, compressing z-score bands">
+<div style="display:none"><svg class="d" viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg" aria-label="Outlier effect on z-score bands">
   <!-- LEFT panel: clean -->
   <rect x="10" y="10" width="400" height="240" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
   <text x="210" y="35" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">Without Outlier</text>
@@ -208,8 +209,8 @@ The outlier moved the mean by +0.07% (+0.47σ of the clean distribution) and inf
   <!-- right signal path — all compressed near mean -->
   <polyline points="470,122 520,120 620,118 670,121 720,119 770,120 820,122" fill="none" stroke="#2563eb" stroke-width="2.2"/>
   <text x="650" y="258" text-anchor="middle" font-size="11" fill="#dc2626">All points compressed → signals suppressed</text>
-</svg>
-<div class="caption">Figure 10.2 — Left: healthy z-score bands (σ ≈ 0.015%). Right: one 5σ outlier inflates σ and compresses all bands, hiding real signals.</div>
+</svg></div>
+<div class="caption">Left: clean z-score bands — signals visible. Right: one outlier inflates σ by ~14×, compressing all subsequent z-scores toward zero — real signals disappear until the outlier exits the rolling window.</div>
 
 <!-- ==================== SECTION 10.3 ==================== -->
 <h2>10.3 Robust Z-Score via MAD</h2>
@@ -332,6 +333,25 @@ Use <strong>Robust Z as default</strong> for crypto stat arb on Bybit/Lighter. F
     </tbody>
   </table>
   <p style="margin-top:10px"><strong>Decision:</strong> During the BTC crash window, use <strong>robust z for entry decisions</strong>. The standard z produced a false alarm at ε=0.32% (z=3.2 suggesting strong signal, but driven by inflated σ from the spike) and missed the real signal at ε=0.22%. The robust z correctly ranked signals by true deviation from median spread.</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Z-Score Calibration ใน Production</div>
+<ol>
+<li><strong>30-day rolling window:</strong> อย่าใช้ full history — คำนวณ μ และ σ จาก 30 วันย้อนหลังเพื่อให้ responsive ต่อ regime change; re-fit ทุกวันเปิดตลาด</li>
+<li><strong>MAD-based robust z-score</strong> สำหรับ crypto: ถ้า kurtosis ของ recent residuals > 5 → switch ไป robust z-score อัตโนมัติ</li>
+<li><strong>Flag และ exclude outlier bars:</strong> bars ที่ |z_raw| > 10 ออกจากการคำนวณ σ — outlier เดียวสามารถ inflate σ ได้ 14× ทำให้ signal หายไปตลอด window</li>
+<li><strong>Stale z-score alert:</strong> ถ้า |z| ไม่เปลี่ยนเกิน 5 minute → exchange feed อาจหยุดส่งข้อมูล; หยุด trading ทันที</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Z-Score พัง</div>
+<ul>
+<li><strong>Outlier inflation:</strong> outlier เดียว (เช่น flash crash tick ที่ผิดปกติ) inflates σ ขึ้น 10–15×; z-score ทุก bar ใน window จะถูก compress ให้ < 0.5 → signal หายไปโดยสมบูรณ์ แม้ spread จะ extreme</li>
+<li><strong>MAD ไม่ทน > 25% outliers:</strong> ถ้า market breakdown ทำให้ > 25% ของ observations เป็น outlier (เช่น flash crash ยาว 30 นาที) แม้แต่ MAD จะ shift — z-score กลายเป็น meaningless</li>
+<li><strong>Structural break:</strong> ไม่มี z-score formulation ใดรับมือกับ equilibrium ใหม่ (เช่น cointegration แตก) — z-score จะยังคง "signal" ทุก bar เพราะ spread ห่างจาก old mean แต่ไม่มีทางกลับ</li>
+</ul>
 </div>
 
 <!-- ==================== EXERCISES ==================== -->

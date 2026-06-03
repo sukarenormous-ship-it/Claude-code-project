@@ -71,7 +71,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">กำไรมาจาก <strong>spread</strong> ไม่ใช่ direction — ต้องเปิดสองขาพร้อมกันเพื่อ lock spread<br>
 ถ้าเปิดได้ขาเดียว คุณไม่ได้ trade spread แต่กำลัง directional trade โดยไม่ตั้งใจ</div>
-<div class="ki-eq">กำไร = (ε_entry − ε_exit) − fees_A − fees_B</div>
+<div style="margin-top:10px;text-align:center">
+$$\text{Net P\&L} = (\varepsilon_{\text{entry}} - \varepsilon_{\text{exit}}) \cdot \text{size} - \text{fees}_A - \text{fees}_B - \text{slippage}$$
+</div>
 </div>
 
 <!-- 14.1 -->
@@ -107,8 +109,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 ผล: คุณ Long BTC $100,000 โดยไม่มี hedge — ถ้า BTC ร่วง 2% = ขาดทุน $2,000 ทันที</p>
 </div>
 
-<!-- SVG: leg timeline -->
-<svg class="d" viewBox="0 0 680 260">
+<img class="chart" src="charts/ch14-leg-risk.svg" alt="Leg risk: one leg fills, other doesn't">
+<div style="display:none"><svg class="d" viewBox="0 0 680 260">
 <defs>
 <marker id="arw14" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
 <marker id="arwR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#dc2626"/></marker>
@@ -172,8 +174,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <text x="625" y="170" text-anchor="middle" font-size="9" font-weight="700" fill="white">LEG FAIL ✗</text>
 
 <text x="340" y="245" text-anchor="middle" font-size="10" fill="#64748b">ช่วง "Leg A filled แต่ Leg B ยังไม่ fill" คือ single-leg exposure — อันตรายที่สุด</text>
-</svg>
-<div class="caption">ช่วงสีชมพูระหว่าง Leg A fill ถึง timeout คือ window ที่ directional risk เต็มๆ</div>
+</svg></div>
+<div class="caption">ซ้าย: execution สำเร็จ — ทั้งสอง leg fill พร้อมกัน, spread captured, fully hedged | ขวา: Leg B fail — position naked LONG ต้องทำ emergency exit ทันที</div>
 
 <div class="bx ba">
 <div class="bt">วิธีลด Leg Risk</div>
@@ -190,8 +192,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>กระบวนการ execution ที่สมบูรณ์ต้องจัดการ happy path และ failure path ทุก branch</p>
 
-<!-- SVG: Flowchart -->
-<svg class="d" viewBox="0 0 680 420">
+<img class="chart" src="charts/ch14-execution-flow.svg" alt="Cross-venue execution flowchart">
+<div style="display:none"><svg class="d" viewBox="0 0 680 420">
 <defs>
 <marker id="arwF" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#374151"/></marker>
 </defs>
@@ -249,8 +251,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <rect x="240" y="362" width="200" height="40" rx="8" fill="#16a34a"/>
 <text x="340" y="378" text-anchor="middle" font-size="11" font-weight="700" fill="white">Monitor Spread</text>
 <text x="340" y="393" text-anchor="middle" font-size="10" fill="#bbf7d0">รอ ε กลับ → EXIT</text>
-</svg>
-<div class="caption">Flowchart execution: ทุก branch ต้องมี handler — ไม่มี "undefined state"</div>
+</svg></div>
+<div class="caption">Execution flowchart: Submit Leg A (maker) → Leg B (taker) → ทุก branch มี handler; Leg fail → partial adjust หรือ emergency flatten; ไม่มี "undefined state"</div>
 
 <!-- 14.4 -->
 <h2 id="s14-4">14.4 Synchronization Strategy — สามแนวทาง</h2>
@@ -355,6 +357,25 @@ t=120ms  : BOTH FILLED — spread locked = $25.3
 </div>
 
 <!-- 14.8 -->
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Cross-venue Execution ใน Production</div>
+<ol>
+<li><strong>Maker-first sequencing:</strong> submit Leg A เป็น maker (fee ต่ำกว่า) ก่อน; submit Leg B taker หลังจาก maker confirm — timeout 500ms ถ้า maker ไม่ fill, cancel และรอ signal ครั้งถัดไป</li>
+<li><strong>Position reconciliation ทุก 30 วินาที:</strong> ตรวจว่า position จริงบน exchange ตรงกับ system state; ถ้า NAV difference > 0.1% → alert ทันที</li>
+<li><strong>Emergency exit protocol:</strong> ถ้า Leg B fail หลัง 3 retry → market-close Leg A ทันที ไม่ว่า cost เท่าไร; cost ของ emergency exit < risk ของ naked position overnight เสมอ</li>
+<li><strong>Separate API rate limits:</strong> exchange A และ B ใช้ rate limit pool แยกกัน — อย่าให้ retry loop ของ Leg B burn rate limit ที่ใช้ monitor Leg A</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Cross-venue Execution พัง</div>
+<ul>
+<li><strong>API brownout ในช่วง high-vol:</strong> exchange มักมี partial outage ตอน volatility สูงสุด — ช่วงที่ strategy อยากเทรดมากที่สุดคือช่วงที่ infrastructure ล้มเหลวบ่อยที่สุด; ไม่มีระบบใดรับประกัน 100% fill</li>
+<li><strong>Leg risk ไม่ symmetric:</strong> ถ้า Leg A เป็น long และ Leg B fail → naked long ในช่วง spike อาจขาดทุนหนักมาก; ถ้า Leg A เป็น short → naked short อาจถูก short squeeze; ต้องประเมิน worst case ของแต่ละทิศทาง</li>
+<li><strong>Latency arbitrage vs stat arb:</strong> cross-venue stat arb ต้องการ execution ภายใน window ที่ spread ยัง elevated — ถ้า latency > 2× expected holding time จะ systematically ซื้อสูงขายต่ำโดยไม่รู้ตัว</li>
+</ul>
+</div>
+
 <h2 id="s14-8">14.8 แบบฝึกหัด</h2>
 
 <div class="ex">
