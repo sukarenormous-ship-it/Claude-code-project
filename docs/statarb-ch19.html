@@ -70,42 +70,16 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">Stat arb มีต้นทุนซ่อนอยู่หลายชั้น — signal ที่ดูมี edge 0.20% อาจมี net edge ลบหลัง cost หักออกทั้งหมด <strong>คำนวณก่อนเสมอ — ห้าม assume</strong></div>
-<div class="ki-eq">Net Edge = Gross − Σ(fees + spread + slippage + funding + legging)</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\text{Net Edge} = \underbrace{\sigma_{\varepsilon}}_{\text{gross}} - \underbrace{2f_{\text{taker}} + \text{bid-ask} + \text{slippage} + \text{funding}}_{\text{costs}}$$
+</div>
+</div>
 </div>
 
 <h2 id="s19-1">19.1 Edge Waterfall Diagram</h2>
 
-<svg class="d" viewBox="0 0 680 280" style="max-height:280px">
-  <rect width="680" height="280" fill="#f9fafb" rx="8"/>
-  <text x="340" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Cost Waterfall: Gross → Net Edge</text>
-  <!-- Gross spread bar -->
-  <rect x="50" y="40" width="80" height="160" fill="#0d9488" opacity="0.85"/>
-  <text x="90" y="35" text-anchor="middle" font-size="10" fill="#0d9488" font-weight="bold">Gross</text>
-  <text x="90" y="215" text-anchor="middle" font-size="10" fill="#374151">0.20%</text>
-  <!-- Fee bar (negative) -->
-  <rect x="155" y="150" width="80" height="50" fill="#dc2626" opacity="0.75"/>
-  <text x="195" y="145" text-anchor="middle" font-size="10" fill="#dc2626">Taker Fee</text>
-  <text x="195" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.05%</text>
-  <!-- Bid-ask -->
-  <rect x="255" y="165" width="80" height="35" fill="#dc2626" opacity="0.65"/>
-  <text x="295" y="160" text-anchor="middle" font-size="10" fill="#dc2626">Bid-Ask</text>
-  <text x="295" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.03%</text>
-  <!-- Slippage -->
-  <rect x="355" y="175" width="80" height="25" fill="#dc2626" opacity="0.55"/>
-  <text x="395" y="170" text-anchor="middle" font-size="10" fill="#dc2626">Slippage</text>
-  <text x="395" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.02%</text>
-  <!-- Funding -->
-  <rect x="455" y="183" width="80" height="17" fill="#dc2626" opacity="0.45"/>
-  <text x="495" y="178" text-anchor="middle" font-size="10" fill="#dc2626">Funding</text>
-  <text x="495" y="215" text-anchor="middle" font-size="10" fill="#374151">−0.01%</text>
-  <!-- Net Edge bar -->
-  <rect x="565" y="40" width="80" height="120" fill="#16a34a" opacity="0.85"/>
-  <text x="605" y="35" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="bold">Net Edge</text>
-  <text x="605" y="215" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="bold">+0.09%</text>
-  <!-- zero line -->
-  <line x1="40" y1="200" x2="660" y2="200" stroke="#374151" stroke-width="1"/>
-  <text x="35" y="203" text-anchor="end" font-size="9" fill="#374151">0</text>
-</svg>
+<img class="chart" src="charts/ch19-edge-waterfall.svg" alt="Edge waterfall from gross spread to net edge">
 <p class="caption">Waterfall chart: แต่ละ cost component ลดลงจาก gross spread ของ 0.20% — เหลือ net edge เพียง 0.09%</p>
 
 <h2 id="s19-2">19.2 Fee Structure</h2>
@@ -281,6 +255,16 @@ Legging buffer estimate:
 
 <p><strong>สรุป:</strong> Gross 15bps แต่ taker cost (17bps) + อื่น ๆ (2.6bps) = 19.6bps → net = −4.6bps → ห้ามเทรดในสภาพ retail taker — ต้องใช้ maker tier (rebate) หรือรอจน z ≥ 3.3</p>
 <p><strong>Break-even σ:</strong> total cost 19.6bps / (2.0 − 0.5) = 13.1bps → ต้องการ σ_spread ≥ 13.1bps (σ จริง = 7.5bps ❌ ไม่ผ่าน) → ลด cost ด้วย maker pricing หรือเลือก venue ที่ fee ต่ำกว่า</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">Practitioner Note — Computing Net Edge</div>
+<p>Compute net edge before EVERY trade, not just at strategy launch. Use realized slippage from last 20 executions (not theoretical model) to update slippage estimate. If net edge &lt; 0.05% → skip the trade even if z-score &gt; 2.0 — discipline of not trading near-zero edge is more valuable than capturing marginal signals. Track edge decay over time: if average net edge drops 50% over 30 days → pair may be crowded.</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — Cost Stability Assumptions</div>
+<p>Edge calculation assumes costs are stable — but taker fees can change on 24h notice, bid-ask widens 5–10× during volatility spikes, and funding can flip sign. A strategy with 0.11% net edge and 0.10% cost has razor-thin margin: a 20% fee increase makes it unprofitable. Always compute "edge under stress": what is net edge if slippage doubles and funding goes against you?</p>
 </div>
 
 <h2 id="s19-10">19.10 แบบฝึกหัด</h2>
