@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.23 — Advanced: Kalman Filter &amp; t-Distribution</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -54,8 +54,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .pseudo .kw{color:#7c3aed;font-weight:700}
 .pseudo .fn{color:#0d9488}
 .pseudo .nm{color:#dc2626}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.fm{overflow:visible;white-space:pre-wrap;word-break:break-all}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -73,7 +83,11 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <strong>t-Distribution</strong> แก้ปัญหา fat tails ของ ε crypto — threshold ที่ถูกต้องกว่า z-score ปกติ<br>
 ทั้งสองเทคนิคเสริมกัน: Kalman ให้ β_t ที่แม่นยำ → t-distribution แปลง ε เป็น signal ที่น่าเชื่อถือกว่า
 </div>
-<div class="ki-eq">z_t = ε_t / σ_t   →   เทียบกับ t_{α/2}(ν)  ไม่ใช่  z_{α/2} = 1.96</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$z_t = \frac{\varepsilon_t}{\sigma_t} \quad \text{เทียบกับ} \quad t_{\alpha/2}(\nu) \quad \text{ไม่ใช่} \quad z_{\alpha/2} = 1.96$$
+</div>
+</div>
 </div>
 
 <div class="bx bb">
@@ -103,35 +117,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p><strong>Rolling-window β</strong> เป็นทางออกแรก: คำนวณ β ใหม่ทุกวันบน lookback window ที่เลื่อนไป แต่ยังเลือก window ได้ยาก และยัง lag</p>
 
-<svg class="d" viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="220" fill="#f9fafb" rx="8"/>
-  <!-- x-axis -->
-  <line x1="60" y1="170" x2="640" y2="170" stroke="#9ca3af" stroke-width="1.5"/>
-  <!-- y-axis -->
-  <line x1="60" y1="30" x2="60" y2="170" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="30" y="100" font-size="11" fill="#6b7280" transform="rotate(-90,30,100)">β_t (hedge ratio)</text>
-  <text x="350" y="195" font-size="11" fill="#6b7280" text-anchor="middle">เวลา (วัน)</text>
-  <text x="350" y="20" font-size="12" fill="#374151" font-weight="700" text-anchor="middle">Static vs Rolling vs Kalman β_t — BTC/ETH</text>
-  <!-- Static β (flat line) -->
-  <line x1="60" y1="100" x2="640" y2="100" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6,4"/>
-  <text x="645" y="104" font-size="10" fill="#9ca3af">Static</text>
-  <!-- Rolling β (lagged bumpy line) -->
-  <polyline points="60,100 100,105 140,112 180,120 220,118 260,108 300,95 340,88 380,90 420,98 460,106 500,115 540,108 580,102 620,99 640,100"
-    fill="none" stroke="#f59e0b" stroke-width="2"/>
-  <text x="645" y="103" font-size="10" fill="#f59e0b" dy="15">Rolling</text>
-  <!-- Kalman β (smooth responsive line) -->
-  <polyline points="60,100 80,102 110,107 150,115 190,121 220,119 250,111 290,97 320,88 360,87 400,93 440,101 480,109 520,112 560,107 590,102 620,99 640,100"
-    fill="none" stroke="#0d9488" stroke-width="2.5"/>
-  <text x="645" y="118" font-size="10" fill="#0d9488">Kalman</text>
-  <!-- legend box -->
-  <rect x="70" y="35" width="230" height="58" fill="white" rx="4" stroke="#e5e7eb"/>
-  <line x1="80" y1="52" x2="110" y2="52" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4,3"/>
-  <text x="118" y="56" font-size="10" fill="#374151">Static OLS (ไม่เปลี่ยน)</text>
-  <line x1="80" y1="68" x2="110" y2="68" stroke="#f59e0b" stroke-width="2"/>
-  <text x="118" y="72" font-size="10" fill="#374151">Rolling (lag สูง)</text>
-  <line x1="80" y1="84" x2="110" y2="84" stroke="#0d9488" stroke-width="2.5"/>
-  <text x="118" y="88" font-size="10" fill="#374151">Kalman (adaptive)</text>
-</svg>
+<img class="chart" src="charts/ch23-kalman-beta-compare.svg" alt="Static vs Rolling vs Kalman β_t — BTC/ETH">
 <p class="caption">รูป 23.1 — Kalman β_t (เขียว) ตอบสนองรวดเร็วกว่า rolling window (เหลือง) โดยไม่มี lag สูง</p>
 
 <p>Kalman Filter แก้ทั้งสามปัญหาในคราวเดียว: ปรับ β ทุก step, ไม่ต้องเลือก window, และ update ทันทีเมื่อ data ใหม่เข้า</p>
@@ -159,41 +145,7 @@ y_t = β_t · x_t + v_t,  v_t ~ N(0, R)   <span class="c">// R = observation noi
 
 <h3 id="s23-2a">วงจร Predict-Update ทุก time step</h3>
 
-<svg class="d" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="300" fill="#f9fafb" rx="8"/>
-  <text x="340" y="25" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">Kalman Filter — Predict-Update Cycle</text>
-  <!-- PREDICT box -->
-  <rect x="60" y="50" width="250" height="130" fill="#eff6ff" rx="8" stroke="#2563eb" stroke-width="2"/>
-  <text x="185" y="75" font-size="12" font-weight="700" fill="#2563eb" text-anchor="middle">① PREDICT (prior)</text>
-  <text x="75" y="100" font-size="11" fill="#1f2937">β̂_{t|t−1} = β̂_{t−1}</text>
-  <text x="75" y="118" font-size="10" fill="#6b7280">  (β คาดว่าไม่เปลี่ยน)</text>
-  <text x="75" y="142" font-size="11" fill="#1f2937">P_{t|t−1} = P_{t−1} + Q</text>
-  <text x="75" y="160" font-size="10" fill="#6b7280">  (uncertainty เพิ่มขึ้น)</text>
-  <!-- UPDATE box -->
-  <rect x="370" y="50" width="270" height="200" fill="#f0fdf4" rx="8" stroke="#16a34a" stroke-width="2"/>
-  <text x="505" y="75" font-size="12" font-weight="700" fill="#16a34a" text-anchor="middle">② UPDATE (posterior)</text>
-  <text x="385" y="100" font-size="11" fill="#1f2937">Innovation: ν_t = y_t − β̂_{t|t−1}·x_t</text>
-  <text x="385" y="122" font-size="11" fill="#1f2937">Kalman gain:</text>
-  <text x="385" y="142" font-size="11" fill="#1f2937">K_t = P_{t|t−1}·x_t / (x_t²·P_{t|t−1} + R)</text>
-  <text x="385" y="168" font-size="11" fill="#1f2937">Update β:</text>
-  <text x="385" y="188" font-size="11" fill="#1f2937">β̂_t = β̂_{t|t−1} + K_t · ν_t</text>
-  <text x="385" y="210" font-size="11" fill="#1f2937">Update P:</text>
-  <text x="385" y="228" font-size="11" fill="#1f2937">P_t = (1 − K_t·x_t) · P_{t|t−1}</text>
-  <!-- Arrow predict → update -->
-  <line x1="310" y1="115" x2="368" y2="115" stroke="#374151" stroke-width="2" marker-end="url(#arr)"/>
-  <!-- Arrow update → next predict (feedback) -->
-  <path d="M505,250 L505,270 L185,270 L185,182" fill="none" stroke="#374151" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arr2)"/>
-  <text x="340" y="285" font-size="10" fill="#6b7280" text-anchor="middle">loop ต่อไปทุก step</text>
-  <!-- arrows def -->
-  <defs>
-    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#374151"/>
-    </marker>
-    <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#374151"/>
-    </marker>
-  </defs>
-</svg>
+<img class="chart" src="charts/ch23-predict-update.svg" alt="Kalman Filter Predict-Update Cycle diagram">
 <p class="caption">รูป 23.2 — วงจร Predict-Update ของ Kalman Filter ทำซ้ำทุก time step</p>
 
 <div class="bx bg">
@@ -247,36 +199,7 @@ beta_series = []<br><br>
 
 <p>หลังจากวน loop เสร็จ <code>beta_series</code> คือ time series ของ β_t ที่ปรับตาม data ทุก step โดยอัตโนมัติ สำหรับ BTC/ETH log-returns β_t โคจรรอบ ~1.10 ± 0.1 ตามรอบตลาด</p>
 
-<svg class="d" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="260" fill="#f9fafb" rx="8"/>
-  <line x1="60" y1="200" x2="640" y2="200" stroke="#9ca3af" stroke-width="1.5"/>
-  <line x1="60" y1="40" x2="60" y2="200" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="25" y="120" font-size="11" fill="#6b7280" transform="rotate(-90,25,120)">β_t</text>
-  <text x="350" y="225" font-size="11" fill="#6b7280" text-anchor="middle">เวลา (ชั่วโมง)</text>
-  <text x="350" y="25" font-size="12" fill="#374151" font-weight="700" text-anchor="middle">Kalman β_t — BTC/ETH (ตัวอย่าง 200 ชั่วโมง)</text>
-  <!-- y-axis labels -->
-  <text x="55" y="80" font-size="9" fill="#9ca3af" text-anchor="end">1.20</text>
-  <line x1="57" y1="78" x2="63" y2="78" stroke="#9ca3af"/>
-  <text x="55" y="125" font-size="9" fill="#9ca3af" text-anchor="end">1.10</text>
-  <line x1="57" y1="123" x2="63" y2="123" stroke="#9ca3af"/>
-  <text x="55" y="170" font-size="9" fill="#9ca3af" text-anchor="end">1.00</text>
-  <line x1="57" y1="168" x2="63" y2="168" stroke="#9ca3af"/>
-  <!-- OLS static line -->
-  <line x1="60" y1="123" x2="640" y2="123" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <text x="648" y="127" font-size="9" fill="#9ca3af">OLS</text>
-  <!-- Kalman β_t path (simulated realistic) -->
-  <polyline points="60,123 80,121 110,118 140,115 165,112 185,108 205,105 225,103 250,106 275,110 295,114 315,116 335,118 355,120 375,121 395,119 415,117 440,120 460,124 480,128 505,125 525,122 545,120 565,121 585,123 610,122 630,123 640,123"
-    fill="none" stroke="#0d9488" stroke-width="2.5"/>
-  <!-- regime label -->
-  <rect x="170" y="88" width="100" height="20" fill="#eff6ff" rx="3" stroke="#2563eb" stroke-width="1"/>
-  <text x="220" y="101" font-size="9" fill="#2563eb" text-anchor="middle">Alt season event</text>
-  <line x1="210" y1="108" x2="215" y2="109" stroke="#2563eb" stroke-width="1"/>
-  <!-- legend -->
-  <line x1="70" y1="52" x2="100" y2="52" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <text x="108" y="56" font-size="10" fill="#374151">β_OLS = 1.10 (คงที่)</text>
-  <line x1="70" y1="68" x2="100" y2="68" stroke="#0d9488" stroke-width="2.5"/>
-  <text x="108" y="72" font-size="10" fill="#374151">β_Kalman (dynamic)</text>
-</svg>
+<img class="chart" src="charts/ch23-kalman-btceth.svg" alt="Kalman β_t BTC/ETH dynamic hedge ratio over 200 hours">
 <p class="caption">รูป 23.3 — β_t ของ Kalman Filter (เขียว) เลื่อนขึ้นระหว่าง altcoin season แล้วกลับสู่ระดับปกติ ขณะที่ OLS คงที่ตลอด (log-return scale: β ≈ 1.0–1.2)</p>
 
 <div class="bx bg">
@@ -337,52 +260,7 @@ beta_series = []<br><br>
 </ul>
 </div>
 
-<svg class="d" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="260" fill="#f9fafb" rx="8"/>
-  <line x1="60" y1="220" x2="640" y2="220" stroke="#9ca3af" stroke-width="1.5"/>
-  <line x1="60" y1="30" x2="60" y2="220" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="350" y="248" font-size="11" fill="#6b7280" text-anchor="middle">ε / σ (standard deviations)</text>
-  <text x="350" y="20" font-size="12" fill="#374151" font-weight="700" text-anchor="middle">Frequency Distribution — Normal vs Crypto Residuals</text>
-  <!-- x-axis labels -->
-  <text x="115" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">−4</text>
-  <text x="183" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">−3</text>
-  <text x="251" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">−2</text>
-  <text x="319" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">−1</text>
-  <text x="387" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">0</text>
-  <text x="455" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">+1</text>
-  <text x="523" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">+2</text>
-  <text x="591" y="235" font-size="9" fill="#9ca3af" text-anchor="middle">+3</text>
-  <!-- Normal bars (grey) -->
-  <rect x="100" y="215" width="30" height="5" fill="#9ca3af" opacity="0.6"/>
-  <rect x="168" y="205" width="30" height="15" fill="#9ca3af" opacity="0.6"/>
-  <rect x="236" y="160" width="30" height="60" fill="#9ca3af" opacity="0.6"/>
-  <rect x="304" y="100" width="30" height="120" fill="#9ca3af" opacity="0.6"/>
-  <rect x="372" y="70" width="30" height="150" fill="#9ca3af" opacity="0.6"/>
-  <rect x="440" y="100" width="30" height="120" fill="#9ca3af" opacity="0.6"/>
-  <rect x="508" y="160" width="30" height="60" fill="#9ca3af" opacity="0.6"/>
-  <rect x="576" y="205" width="30" height="15" fill="#9ca3af" opacity="0.6"/>
-  <rect x="644" y="215" width="25" height="5" fill="#9ca3af" opacity="0.6"/>
-  <!-- Crypto bars (teal) — fatter tails, taller center -->
-  <rect x="100" y="195" width="30" height="25" fill="#0d9488" opacity="0.7"/>
-  <rect x="168" y="178" width="30" height="42" fill="#0d9488" opacity="0.7"/>
-  <rect x="236" y="148" width="30" height="72" fill="#0d9488" opacity="0.7"/>
-  <rect x="304" y="115" width="30" height="105" fill="#0d9488" opacity="0.7"/>
-  <rect x="372" y="55" width="30" height="165" fill="#0d9488" opacity="0.7"/>
-  <rect x="440" y="115" width="30" height="105" fill="#0d9488" opacity="0.7"/>
-  <rect x="508" y="148" width="30" height="72" fill="#0d9488" opacity="0.7"/>
-  <rect x="576" y="178" width="30" height="42" fill="#0d9488" opacity="0.7"/>
-  <rect x="644" y="195" width="25" height="25" fill="#0d9488" opacity="0.7"/>
-  <!-- annotations -->
-  <text x="115" y="185" font-size="9" fill="#dc2626" font-weight="700" text-anchor="middle">5×</text>
-  <text x="115" y="176" font-size="8" fill="#dc2626" text-anchor="middle">more</text>
-  <text x="659" y="185" font-size="9" fill="#dc2626" font-weight="700" text-anchor="middle">5×</text>
-  <text x="659" y="176" font-size="8" fill="#dc2626" text-anchor="middle">more</text>
-  <!-- legend -->
-  <rect x="200" y="38" width="14" height="12" fill="#9ca3af" opacity="0.7"/>
-  <text x="220" y="49" font-size="10" fill="#374151">Normal distribution</text>
-  <rect x="340" y="38" width="14" height="12" fill="#0d9488" opacity="0.8"/>
-  <text x="360" y="49" font-size="10" fill="#374151">Crypto ε (fat tails)</text>
-</svg>
+<img class="chart" src="charts/ch23-fat-tails-hist.svg" alt="Frequency Distribution — Normal vs Crypto Residuals showing fat tails">
 <p class="caption">รูป 23.4 — ที่ ±4σ crypto residuals เกิดถึง 5× บ่อยกว่า Normal — z-score 2.0 แบบปกติให้ false entries มากเกิน</p>
 
 <h3>ผลต่อ Trading Signals</h3>
@@ -408,46 +286,7 @@ f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/
 <span class="c">สำหรับ crypto: ν ≈ 3–6 ให้ผลที่ fit data ดีที่สุด</span>
 </div>
 
-<svg class="d" viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="280" fill="#f9fafb" rx="8"/>
-  <line x1="60" y1="240" x2="640" y2="240" stroke="#9ca3af" stroke-width="1.5"/>
-  <line x1="60" y1="30" x2="60" y2="240" stroke="#9ca3af" stroke-width="1.5"/>
-  <text x="350" y="265" font-size="11" fill="#6b7280" text-anchor="middle">x</text>
-  <text x="350" y="22" font-size="12" fill="#374151" font-weight="700" text-anchor="middle">PDF เปรียบเทียบ: Normal vs t(ν=10) vs t(ν=4)</text>
-  <!-- x labels -->
-  <text x="128" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">−4</text>
-  <text x="196" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">−3</text>
-  <text x="264" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">−2</text>
-  <text x="332" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">−1</text>
-  <text x="400" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">0</text>
-  <text x="468" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">+1</text>
-  <text x="536" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">+2</text>
-  <text x="604" y="252" font-size="9" fill="#9ca3af" text-anchor="middle">+3</text>
-  <!-- Normal distribution curve (grey) — tallest peak -->
-  <path d="M60,238 C80,238 100,237 120,235 140,230 160,218 180,198 200,170 220,135 240,100 260,72 280,52 300,43 320,38 340,37 360,38 380,43 400,52 420,72 440,100 460,135 480,170 500,198 520,218 540,230 560,235 580,237 600,238 640,238"
-    fill="none" stroke="#9ca3af" stroke-width="2"/>
-  <!-- t(10) curve (blue) — slightly fatter -->
-  <path d="M60,238 C80,238 100,237 120,234 140,228 160,214 180,194 200,167 220,133 240,99 260,72 280,53 300,44 320,39 340,38 360,39 380,44 400,53 420,72 440,99 460,133 480,167 500,194 520,214 540,228 560,234 580,237 600,238 640,238"
-    fill="none" stroke="#2563eb" stroke-width="2"/>
-  <!-- t(4) curve (teal) — noticeably fatter tails -->
-  <path d="M60,236 C80,235 100,234 120,230 140,222 160,208 180,188 200,163 220,132 240,101 260,76 280,58 300,48 320,43 340,42 360,43 380,48 400,58 420,76 440,101 460,132 480,163 500,188 520,208 540,222 560,230 580,234 600,235 640,236"
-    fill="none" stroke="#0d9488" stroke-width="2.5"/>
-  <!-- tail area highlight t(4) -->
-  <path d="M60,238 C70,238 80,237 95,234 100,230" fill="none" stroke="#0d9488" stroke-width="4" opacity="0.4"/>
-  <path d="M600,238 C610,238 620,237 630,234 640,236" fill="none" stroke="#0d9488" stroke-width="4" opacity="0.4"/>
-  <!-- Critical value markers -->
-  <line x1="264" y1="40" x2="264" y2="240" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
-  <line x1="536" y1="40" x2="536" y2="240" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
-  <text x="264" y="36" font-size="8" fill="#dc2626" text-anchor="middle">z=−1.96</text>
-  <text x="536" y="36" font-size="8" fill="#dc2626" text-anchor="middle">z=+1.96</text>
-  <!-- legend -->
-  <line x1="100" y1="58" x2="130" y2="58" stroke="#9ca3af" stroke-width="2"/>
-  <text x="138" y="62" font-size="10" fill="#374151">Normal (ν→∞)</text>
-  <line x1="100" y1="74" x2="130" y2="74" stroke="#2563eb" stroke-width="2"/>
-  <text x="138" y="78" font-size="10" fill="#374151">t(ν=10) — ใกล้ Normal</text>
-  <line x1="100" y1="90" x2="130" y2="90" stroke="#0d9488" stroke-width="2.5"/>
-  <text x="138" y="94" font-size="10" fill="#374151">t(ν=4) — fat tails ชัดเจน</text>
-</svg>
+<img class="chart" src="charts/ch23-tdist-pdf.svg" alt="PDF comparison: Normal vs t(nu=10) vs t(nu=4) showing fat tails">
 <p class="caption">รูป 23.5 — t(ν=4) มีหางหนักกว่า Normal ชัดเจน — area นอก ±1.96 ใหญ่กว่า 2× สำหรับ crypto ν ≈ 3–6</p>
 
 <h3>คุณสมบัติสำคัญของ t-distribution</h3>
@@ -584,48 +423,7 @@ print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</sp
 </ol>
 </div>
 
-<svg class="d" viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
-  <rect width="680" height="200" fill="#f9fafb" rx="8"/>
-  <text x="340" y="22" font-size="12" font-weight="700" fill="#1f2937" text-anchor="middle">Pipeline: Kalman + t-distribution (5 steps)</text>
-  <!-- Step boxes -->
-  <rect x="15" y="40" width="95" height="50" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="62" y="62" font-size="9" font-weight="700" fill="#2563eb" text-anchor="middle">① Init</text>
-  <text x="62" y="76" font-size="8" fill="#374151" text-anchor="middle">OLS β₀, Q, R</text>
-  <text x="62" y="86" font-size="8" fill="#374151" text-anchor="middle">MLE ν</text>
-  <rect x="130" y="40" width="100" height="50" rx="6" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
-  <text x="180" y="62" font-size="9" font-weight="700" fill="#0d9488" text-anchor="middle">② Kalman</text>
-  <text x="180" y="76" font-size="8" fill="#374151" text-anchor="middle">β_t (dynamic)</text>
-  <text x="180" y="86" font-size="8" fill="#374151" text-anchor="middle">ε_t = y_t − β_t·x_t</text>
-  <rect x="250" y="40" width="100" height="50" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
-  <text x="300" y="62" font-size="9" font-weight="700" fill="#d97706" text-anchor="middle">③ σ_t</text>
-  <text x="300" y="76" font-size="8" fill="#374151" text-anchor="middle">rolling std(ε)</text>
-  <text x="300" y="86" font-size="8" fill="#374151" text-anchor="middle">z_t = ε_t/σ_t</text>
-  <rect x="370" y="40" width="110" height="50" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
-  <text x="425" y="62" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">④ t-threshold</text>
-  <text x="425" y="76" font-size="8" fill="#374151" text-anchor="middle">t_{α/2}(ν) แทน 1.96</text>
-  <text x="425" y="86" font-size="8" fill="#374151" text-anchor="middle">ν จาก MLE</text>
-  <rect x="500" y="40" width="160" height="50" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="580" y="62" font-size="9" font-weight="700" fill="#16a34a" text-anchor="middle">⑤ Signal</text>
-  <text x="580" y="76" font-size="8" fill="#374151" text-anchor="middle">|z_t| ≥ t_{α/2} → Entry</text>
-  <text x="580" y="86" font-size="8" fill="#374151" text-anchor="middle">|z_t| ≤ 0.5 → Exit</text>
-  <!-- arrows -->
-  <line x1="110" y1="65" x2="128" y2="65" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
-  <line x1="230" y1="65" x2="248" y2="65" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
-  <line x1="350" y1="65" x2="368" y2="65" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
-  <line x1="480" y1="65" x2="498" y2="65" stroke="#374151" stroke-width="1.5" marker-end="url(#a1)"/>
-  <defs>
-    <marker id="a1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L6,3 z" fill="#374151"/>
-    </marker>
-  </defs>
-  <!-- feedback arrow from step 2 back  -->
-  <path d="M180,90 L180,140 L62,140 L62,92" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a1)"/>
-  <text x="121" y="155" font-size="9" fill="#6b7280" text-anchor="middle">β_{t+1} ← β_t</text>
-  <!-- K_t guard -->
-  <rect x="130" y="155" width="220" height="30" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1"/>
-  <text x="240" y="168" font-size="9" fill="#dc2626" text-anchor="middle" font-weight="700">Guard: Skip entry ถ้า K_t &gt; 0.3 (β กำลัง update เร็ว)</text>
-  <text x="240" y="180" font-size="8" fill="#6b7280" text-anchor="middle">ป้องกัน trade ระหว่าง regime transition</text>
-</svg>
+<img class="chart" src="charts/ch23-pipeline.svg" alt="Pipeline: Kalman + t-distribution 5-step trading signal pipeline">
 <p class="caption">รูป 23.6 — Pipeline 5 ขั้นตอน: Kalman ให้ β_t แม่นยำ → t-distribution กำหนด threshold ที่เหมาะ</p>
 
 <h3>Pseudo-code: Pipeline รวม</h3>
@@ -680,6 +478,16 @@ epsilon_buf  = []                           <span class="c"># rolling buffer ส
 <tr><td><a href="statarb-ch22.html">บทที่ 22</a> §22.5</td><td>ε_VRP: Vol Risk Premium — ประโยชน์จาก Kalman เพราะ β_IV เปลี่ยนตาม term structure</td></tr>
 </tbody>
 </table>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Kalman Filter & t-Distribution</div>
+<p>ตั้ง Q/R ratio โดย cross-validate บน out-of-sample period — อย่า tune บน in-sample เพียงอย่างเดียว Q สูงเกินไปทำให้ β noisy; Q ต่ำเกินไปทำให้ lag สูงเหมือน static OLS. สำหรับ BTC/ETH pair ที่ดี ให้เริ่มต้นที่ Q=0.0001, R=0.001 แล้วปรับตาม half-life ที่ต้องการ. ใช้ t-distribution กับ ν=4–6 สำหรับ crypto spreads — Normal distribution underestimates tail risk อย่างน้อย 3× ใน regime สูง.</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — Kalman Filter Assumptions</div>
+<p>Kalman Filter assume linear Gaussian state-space — ทั้งสองข้อนี้พังในตลาด crypto: (1) ความสัมพันธ์ BTC/ETH ไม่เป็น linear เสมอในช่วง high-volatility; (2) residuals ไม่ Gaussian มี fat tails รุนแรง. ผลคือ Kalman gain K_t อาจสูงเกินไปในช่วงที่ variance พุ่ง → β_t กระโดดผิดทิศทาง → ε_t ผิด → เข้า trade ผิด side. วิธีป้องกัน: cap Kalman gain ไม่ให้เกิน K_max = 0.3 และใช้ t-filter แทน standard Kalman ในช่วงที่ residuals fat-tailed.</p>
+</div>
 
 <!-- ======================================================= -->
 <div class="ex" id="s23-ex">
