@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.1 — Synthetic Process คืออะไร?</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -45,8 +45,19 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
 .running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
 .caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.05em}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.chart{max-width:100%}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -60,7 +71,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">ราคา BTC ขึ้นลงไม่มีทิศทาง (random walk) แต่ถ้าเอาราคา BTC จากสองตลาดมาหักล้างกันด้วยอัตราส่วนที่เหมาะสม จะได้ process ใหม่ที่ <strong>วนเวียนอยู่รอบค่ากลาง</strong> — นั่นคือสิ่งที่เราจะ trade</div>
-<div class="ki-eq">ε = log(P_A) − β · log(P_B)</div>
+<div class="ki-eq">$$\varepsilon_t = \log P_A - \beta \cdot \log P_B$$</div>
 </div>
 
 <!-- 1.1 -->
@@ -83,68 +94,15 @@ Trade: Short Bybit, Long Lighter — รอให้ spread กลับมา $
 <strong>แรงดึงกลับมีอยู่จริง</strong>: ทั้งสองตลาดต้อง track ราคา BTC เดียวกัน</p>
 </div>
 
-<!-- Diagram: raw price vs spread -->
-<svg class="d" viewBox="0 0 640 300">
-<defs>
-<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
-</defs>
-
-<!-- LEFT PANEL: Raw Prices -->
-<rect x="10" y="30" width="290" height="240" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
-<text x="155" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">ราคาดิบ — random walk, ไม่กลับ</text>
-
-<!-- axes left -->
-<line x1="40" y1="220" x2="285" y2="220" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<line x1="40" y1="220" x2="40" y2="60" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<text x="288" y="223" font-size="9" fill="#6b7280">t</text>
-<text x="36" y="58" text-anchor="end" font-size="9" fill="#6b7280">P</text>
-
-<!-- Bybit price (blue) - trending up with noise -->
-<polyline points="40,185 55,180 70,175 85,170 100,165 115,155 130,150 145,148 160,143 175,135 190,130 205,125 220,120 235,115 250,110 265,105" fill="none" stroke="#2563eb" stroke-width="2"/>
-<!-- Lighter price (red) - same trend, slightly different -->
-<polyline points="40,190 55,186 70,181 85,177 100,172 115,163 130,157 145,155 160,150 175,141 190,136 205,132 220,127 235,122 250,117 265,112" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
-
-<text x="268" y="103" font-size="9" fill="#2563eb">Bybit</text>
-<text x="268" y="113" font-size="9" fill="#dc2626">Lighter</text>
-<text x="155" y="248" text-anchor="middle" font-size="10" fill="#dc2626">ทั้งคู่วิ่งขึ้นเรื่อยๆ — trade single asset เสี่ยง</text>
-
-<!-- RIGHT PANEL: Spread ε -->
-<rect x="340" y="30" width="290" height="240" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-<text x="485" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">ε = log(A) − β·log(B) — mean-reverting</text>
-
-<!-- axes right -->
-<line x1="370" y1="170" x2="615" y2="170" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<line x1="370" y1="220" x2="370" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<text x="618" y="173" font-size="9" fill="#6b7280">t</text>
-<text x="366" y="68" text-anchor="end" font-size="9" fill="#6b7280">ε</text>
-
-<!-- theta line -->
-<line x1="370" y1="170" x2="610" y2="170" stroke="#0d9488" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="366" y="173" text-anchor="end" font-size="9" fill="#0d9488">θ</text>
-
-<!-- spread bands -->
-<line x1="370" y1="138" x2="610" y2="138" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
-<line x1="370" y1="202" x2="610" y2="202" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
-<text x="368" y="137" text-anchor="end" font-size="8" fill="#f59e0b">+2σ</text>
-<text x="368" y="205" text-anchor="end" font-size="8" fill="#f59e0b">−2σ</text>
-
-<!-- ε path (mean-reverting zigzag) -->
-<polyline points="370,170 383,155 396,143 409,155 422,168 435,180 448,192 461,178 474,163 487,155 500,162 513,172 526,185 539,175 552,162 565,170 578,180 591,170 604,162" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<!-- Entry arrows -->
-<text x="396" y="136" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">← ENTRY</text>
-<text x="448" y="210" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">ENTRY →</text>
-
-<text x="485" y="248" text-anchor="middle" font-size="10" fill="#16a34a">ε วนรอบ θ — มีโอกาส trade ชัดเจน</text>
-</svg>
-<div class="caption">ซ้าย: ราคาดิบทั้งสองตลาดวิ่งขึ้นพร้อมกัน ยากจะ time | ขวา: ε = ความต่าง กลับหาค่ากลางซ้ำๆ</div>
+<img class="chart" src="charts/ch1-random-vs-spread.svg" alt="Random walk prices vs mean-reverting spread">
+<div class="caption">ซ้าย: log ราคาดิบทั้งสองตลาดวิ่งแบบ random walk ยากจะ time | ขวา: \(\varepsilon = \log P_A - \beta \log P_B\) วนกลับหาค่ากลาง \(\theta\) ซ้ำๆ</div>
 
 <!-- 1.2 -->
 <h2 id="s1-2">1.2 สร้าง Synthetic Process: สูตรและส่วนประกอบ</h2>
 
 <div class="key-idea">
 <div class="ki-label">สูตรหลัก</div>
-<div class="ki-eq">ε = F(A) − β · F(B)</div>
+<div class="ki-eq">$$\varepsilon = F(A) - \beta \cdot F(B)$$</div>
 <div class="ki-text" style="margin-top:8px">
 <strong>F(·)</strong> = transformation (log price, basis, IV)<br>
 <strong>β</strong> = อัตราส่วนที่ทำให้ ε กลับหาค่ากลาง<br>
@@ -166,57 +124,8 @@ Trade: Short Bybit, Long Lighter — รอให้ spread กลับมา $
 <p style="font-size:.92em">หมายเหตุ: β = sensitivity ratio นี้เป็นเพียงสัญชาตญาณในกรณีอุดมคติที่ไม่มี noise — ในทางปฏิบัติ β ที่เชื่อถือได้ประมาณจาก OLS regression ใน<a href="statarb-ch4.html">บทที่ 4</a></p>
 </div>
 
-<!-- Diagram: bar chart showing the math clearly -->
-<svg class="d" viewBox="0 0 640 310">
-<!-- Title -->
-<text x="320" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">ทำไม β = 0.6 ถึงทำให้ ε flat?</text>
-<text x="320" y="38" text-anchor="middle" font-size="10" fill="#64748b">เมื่อตลาดขึ้น: A +3%, B +5%</text>
-
-<!-- ROW 1: Asset A -->
-<text x="110" y="68" text-anchor="end" font-size="11" fill="#374151">A ขึ้น</text>
-<rect x="115" y="55" width="90" height="22" rx="3" fill="#2563eb"/>
-<text x="210" y="70" font-size="11" fill="#2563eb" font-weight="700">+3%</text>
-
-<!-- ROW 2: Asset B -->
-<text x="110" y="98" text-anchor="end" font-size="11" fill="#374151">B ขึ้น</text>
-<rect x="115" y="85" width="150" height="22" rx="3" fill="#dc2626"/>
-<text x="270" y="100" font-size="11" fill="#dc2626" font-weight="700">+5%</text>
-
-<!-- Divider -->
-<line x1="30" y1="118" x2="610" y2="118" stroke="#e5e7eb" stroke-width="1.5"/>
-<text x="320" y="133" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">ผลลัพธ์ ε ขึ้นอยู่กับ β ที่เลือก</text>
-
-<!-- Case 1: β = 1 (wrong) -->
-<rect x="30" y="145" width="280" height="70" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
-<text x="170" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">β = 1 (ผิด — trade 1:1)</text>
-<text x="50" y="182" font-size="10" fill="#374151">Long A: +3%</text>
-<text x="50" y="198" font-size="10" fill="#374151">Short B: −1×5% = −5%</text>
-<text x="170" y="210" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">ε เปลี่ยน = 3%−5% = −2% ↓ drift!</text>
-
-<!-- Bar showing drift -->
-<rect x="175" y="175" width="60" height="15" rx="2" fill="#fca5a5"/>
-<text x="240" y="187" font-size="10" fill="#dc2626">−2% drift</text>
-
-<!-- Case 2: β = 0.6 (correct) -->
-<rect x="330" y="145" width="280" height="70" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-<text x="470" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#16a34a">β = 0.6 (ถูก — trade 1:0.6)</text>
-<text x="350" y="182" font-size="10" fill="#374151">Long A: +3%</text>
-<text x="350" y="198" font-size="10" fill="#374151">Short 0.6×B: −0.6×5% = −3%</text>
-<text x="470" y="210" text-anchor="middle" font-size="11" font-weight="700" fill="#16a34a">ε เปลี่ยน = 3%−3% = 0% ✓ flat!</text>
-
-<!-- Bar showing flat -->
-<line x1="475" y1="182" x2="475" y2="197" stroke="#16a34a" stroke-width="3"/>
-<text x="480" y="192" font-size="10" fill="#16a34a">0% flat</text>
-
-<!-- Beta formula -->
-<rect x="180" y="228" width="280" height="50" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-<text x="320" y="248" text-anchor="middle" font-size="11" font-weight="700" fill="#1f2937">สูตรหา β จากอัตราการตอบสนอง</text>
-<text x="320" y="268" text-anchor="middle" font-family="Courier New, monospace" font-size="12" font-weight="700" fill="#0d9488">β = sensitivity(A) / sensitivity(B) = 3%/5% = 0.6</text>
-
-<!-- Note -->
-<text x="320" y="298" text-anchor="middle" font-size="10" fill="#64748b">ในทางปฏิบัติ หา β จาก OLS regression (บทที่ 4)</text>
-</svg>
-<div class="caption">β = 0.6 หมายถึง: Long A 100,000 บาท → Short B เพียง 60,000 บาท (ไม่ใช่ 1:1)</div>
+<img class="chart" src="charts/ch1-beta-sizing.svg" alt="β และ position sizing">
+<div class="caption">β กำหนดว่าต้อง short B เท่าไรเพื่อให้ \(\varepsilon\) ไม่ drift — \(\beta = 0.6\) หมายถึง short B เพียง $60K เมื่อ long A $100K</div>
 
 <h3 id="s1-3a">ตาราง: β ต่างกัน → Position Size ต่างกัน</h3>
 
@@ -228,44 +137,13 @@ Trade: Short Bybit, Long Lighter — รอให้ spread กลับมา $
 <tr><td>β = 1.003</td><td>$100,000</td><td>$100,300</td><td>Bybit↔Lighter: ต่างนิดหน่อย แต่ไม่ใช่ 1:1</td></tr>
 </table>
 
-<!-- Number line for β -->
-<svg class="d" viewBox="0 0 620 130">
-<text x="310" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2937">β — อ่านบน number line</text>
-
-<!-- Main line -->
-<line x1="50" y1="65" x2="570" y2="65" stroke="#374151" stroke-width="2"/>
-
-<!-- Ticks and labels -->
-<line x1="50" y1="58" x2="50" y2="72" stroke="#374151" stroke-width="2"/>
-<text x="50" y="85" text-anchor="middle" font-size="10" fill="#374151">0</text>
-<text x="50" y="97" text-anchor="middle" font-size="9" fill="#64748b">ไม่ short B เลย</text>
-
-<line x1="190" y1="58" x2="190" y2="72" stroke="#374151" stroke-width="2"/>
-<text x="190" y="85" text-anchor="middle" font-size="10" fill="#374151">0.6</text>
-<text x="190" y="97" text-anchor="middle" font-size="9" fill="#16a34a">short 60% ของ A</text>
-
-<line x1="310" y1="55" x2="310" y2="75" stroke="#0d9488" stroke-width="3"/>
-<text x="310" y="85" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">1.0</text>
-<text x="310" y="97" text-anchor="middle" font-size="9" fill="#0d9488">short เท่ากับ A (1:1)</text>
-<text x="310" y="109" text-anchor="middle" font-size="8" fill="#64748b">กรณีพิเศษเท่านั้น</text>
-
-<line x1="430" y1="58" x2="430" y2="72" stroke="#374151" stroke-width="2"/>
-<text x="430" y="85" text-anchor="middle" font-size="10" fill="#374151">1.5</text>
-<text x="430" y="97" text-anchor="middle" font-size="9" fill="#dc2626">short 150% ของ A</text>
-
-<line x1="570" y1="58" x2="570" y2="72" stroke="#374151" stroke-width="2"/>
-<text x="570" y="85" text-anchor="middle" font-size="10" fill="#374151">2.0</text>
-<text x="570" y="97" text-anchor="middle" font-size="9" fill="#64748b">short สองเท่าของ A</text>
-
-<!-- Arrow pointing to 0.6 area -->
-<path d="M 190,48 L 190,40" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arw2)"/>
-<text x="190" y="35" text-anchor="middle" font-size="9" fill="#16a34a">ตัวอย่าง</text>
-
-<defs>
-<marker id="arw2" markerWidth="6" markerHeight="5" refX="3" refY="2.5" orient="auto"><polygon points="0 0, 6 2.5, 0 5" fill="#16a34a"/></marker>
-</defs>
-</svg>
-<div class="caption">β = 1 เป็นแค่กรณีพิเศษ ในทางปฏิบัติ β แทบไม่เคยเป็น 1 พอดี</div>
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — β คำนวณแบบไหนในการ run จริง</div>
+<p>ใน production system ค่า β ไม่ได้ fix ไว้ตลอด แต่ re-calibrate ทุก rolling window ประมาณ 1–7 วัน
+โดยใช้ OLS regression ของ log return: <code>r_A = β·r_B + ε</code><br>
+ถ้า β เปลี่ยนเร็ว (เช่น ±5% ภายใน 1 วัน) มักเป็น signal ว่า cointegration ระหว่าง A↔B เริ่มแตก
+ควร reduce position ก่อน ไม่ใช่ average down</p>
+</div>
 
 <!-- 1.4 -->
 <h2 id="s1-4">1.4 ทำไม Bybit↔Lighter ถึงมี β ≠ 1?</h2>
@@ -312,6 +190,16 @@ Trade: Short Bybit, Long Lighter — รอให้ spread กลับมา $
 <div class="bt">ทำไมต้อง log price สำหรับ Bybit↔Lighter?</div>
 <p>ราคา BTC ระดับ $65,000 → ถ้าใช้ P_A − β·P_B ตรงๆ spread จะเปลี่ยนตามระดับราคา (high price = large absolute spread)<br>
 log(P_A) − β·log(P_B) คือ log ratio → เป็น % deviation → ไม่ขึ้นกับระดับราคา → <strong>stationary กว่า</strong></p>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ "spread ที่ดี" กลายเป็นกับดัก</div>
+<p>สูตร \(\varepsilon = \log P_A - \beta \log P_B\) ใช้ได้เฉพาะเมื่อ A กับ B <strong>cointegrated จริงๆ</strong>
+— นั่นคือมีแรงดึงกลับในระยะยาว ถ้าความสัมพันธ์นั้นสลายตัว (regime change, listing/delisting, regulatory event)
+ε จะไม่ mean-revert อีกต่อไป แต่ถ้า model ยังสั่ง entry เพราะ "ε ห่างจาก θ มาก" ก็จะ average down
+เข้าไปในขาดทุนไม่หยุด <br>
+<strong>สัญญาณเตือน:</strong> half-life ยาวขึ้นกว่าปกติ 3× หรือ ε ทะลุ 4σ และไม่กลับมาใน window ที่คาด
+→ หยุด trade ทันทีและทบทวน pair</p>
 </div>
 
 <!-- Exercises -->

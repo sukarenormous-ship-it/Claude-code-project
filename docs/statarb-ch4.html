@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.4 — Hedge Ratio β</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -47,8 +47,19 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
 .method-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
 .method-box{border-radius:8px;padding:14px;border:1.5px solid}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.05em}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.chart{max-width:100%}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -61,9 +72,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้</div>
-<p>β คือตัวเลขที่ทำให้ ε = log(A) − β·log(B) เป็น stationary<br>
+<p>β คือตัวเลขที่ทำให้ \(\varepsilon = \log P_A - \beta \log P_B\) เป็น stationary<br>
 วิธีหา β มีผลต่อ entry ratio และ P&amp;L โดยตรง — OLS, TLS, และ Kalman ให้ β ต่างกัน</p>
-<div class="ki-eq">β_OLS = Cov(r_A, r_B) / Var(r_B)</div>
+<div class="ki-eq">$$\hat{\beta}_{\text{OLS}} = \frac{\text{Cov}(r_A,\, r_B)}{\text{Var}(r_B)}$$</div>
 </div>
 
 <h2 id="s4-1">4.1 ทำไมวิธีหา β จึงสำคัญ</h2>
@@ -94,106 +105,16 @@ Dynamic β<br>
 
 <div class="key-idea">
 <div class="ki-label">สูตร OLS β</div>
-<div class="ki-eq">β_OLS = Cov(r_A, r_B) / Var(r_B) = Σ(r_A − r̄_A)(r_B − r̄_B) / Σ(r_B − r̄_B)²</div>
+<div class="ki-eq">$$\hat{\beta}_{\text{OLS}} = \frac{\text{Cov}(r_A, r_B)}{\text{Var}(r_B)} = \frac{\sum(r_A - \bar{r}_A)(r_B - \bar{r}_B)}{\sum(r_B - \bar{r}_B)^2}$$</div>
 </div>
 
 <p>หรือถ้า regress log(P_A) บน log(P_B) โดยตรง (level regression):</p>
 <div class="fm">log(P_A) = α + β·log(P_B) + ε
 β_OLS = slope ของ regression นี้</div>
-<p style="font-size:.92em">หมายเหตุ: β จาก return regression และ β จาก price-level regression เป็นคนละค่ากัน — สำหรับ synthetic process ε = log(P_A) − β·log(P_B) ค่า β ที่เป็นหลัก (canonical) คือ slope ของ log-price regression</p>
+<p style="font-size:.92em">หมายเหตุ: β จาก return regression และ β จาก price-level regression เป็นคนละค่ากัน — สำหรับ synthetic process \(\varepsilon = \log P_A - \beta\log P_B\) ค่า β ที่เป็นหลัก (canonical) คือ slope ของ log-price regression</p>
 
-<!-- Scatter plot: OLS vs TLS -->
-<svg class="d" viewBox="0 0 640 340">
-<defs>
-<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
-<marker id="arw-b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2563eb"/></marker>
-<marker id="arw-g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#16a34a"/></marker>
-</defs>
-
-<text x="320" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">OLS vs TLS — ต่างกันที่ "minimize อะไร"</text>
-
-<!-- LEFT: OLS panel -->
-<rect x="10" y="28" width="295" height="285" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-<text x="158" y="48" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">OLS — minimize vertical residual</text>
-
-<!-- OLS axes -->
-<line x1="40" y1="270" x2="290" y2="270" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<line x1="40" y1="270" x2="40" y2="55" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<text x="293" y="273" font-size="9" fill="#374151">r_B</text>
-<text x="36" y="52" text-anchor="end" font-size="9" fill="#374151">r_A</text>
-
-<!-- OLS regression line (slope ≈ 0.85) -->
-<!-- Line: from (60,240) to (270,85): slope = (85-240)/(270-60) = -155/210 ≈ -0.738 in svg coords, meaning positive β -->
-<line x1="55" y1="242" x2="278" y2="88" stroke="#2563eb" stroke-width="2"/>
-
-<!-- Data points scattered around OLS line -->
-<circle cx="70" cy="230" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="90" cy="218" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="110" cy="210" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="130" cy="195" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="150" cy="185" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="170" cy="178" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="190" cy="165" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="210" cy="155" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="230" cy="142" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="250" cy="132" r="4" fill="#3b82f6" opacity="0.7"/>
-<!-- Noise points off-line -->
-<circle cx="100" cy="198" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="160" cy="170" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="200" cy="148" r="4" fill="#3b82f6" opacity="0.7"/>
-<circle cx="240" cy="152" r="4" fill="#3b82f6" opacity="0.7"/>
-
-<!-- Vertical residual arrows (OLS) -->
-<line x1="100" y1="198" x2="100" y2="217" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="160" y1="170" x2="160" y2="181" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="200" y1="148" x2="200" y2="161" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="240" y1="152" x2="240" y2="138" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-
-<text x="158" y="288" text-anchor="middle" font-size="10" fill="#dc2626">vertical distance (↕) → minimize</text>
-<text x="158" y="302" text-anchor="middle" font-size="10" fill="#2563eb">β_OLS = 0.85 (slope ของเส้นน้ำเงิน)</text>
-
-<!-- RIGHT: TLS panel -->
-<rect x="335" y="28" width="295" height="285" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-<text x="483" y="48" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">TLS — minimize perpendicular residual</text>
-
-<!-- TLS axes -->
-<line x1="365" y1="270" x2="615" y2="270" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<line x1="365" y1="270" x2="365" y2="55" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<text x="618" y="273" font-size="9" fill="#374151">r_B</text>
-<text x="361" y="52" text-anchor="end" font-size="9" fill="#374151">r_A</text>
-
-<!-- TLS regression line (slightly different angle from OLS, steeper) -->
-<line x1="378" y1="248" x2="605" y2="82" stroke="#16a34a" stroke-width="2"/>
-<!-- OLS line ghosted for comparison -->
-<line x1="378" y1="244" x2="603" y2="90" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.4"/>
-<text x="608" y="86" font-size="8" fill="#2563eb" opacity="0.6">OLS</text>
-
-<!-- Same data points -->
-<circle cx="395" cy="232" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="415" cy="220" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="435" cy="212" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="455" cy="197" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="475" cy="187" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="495" cy="178" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="515" cy="166" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="535" cy="155" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="555" cy="143" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="575" cy="133" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="425" cy="200" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="485" cy="172" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="525" cy="150" r="4" fill="#22c55e" opacity="0.7"/>
-<circle cx="565" cy="152" r="4" fill="#22c55e" opacity="0.7"/>
-
-<!-- Perpendicular residual arrows (TLS) - diagonal -->
-<line x1="425" y1="200" x2="435" y2="211" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="485" y1="172" x2="491" y2="180" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="525" y1="150" x2="520" y2="158" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-<line x1="565" y1="152" x2="572" y2="143" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2"/>
-
-<text x="483" y="288" text-anchor="middle" font-size="10" fill="#dc2626">perpendicular distance (↗) → minimize</text>
-<text x="483" y="302" text-anchor="middle" font-size="10" fill="#16a34a">β_TLS = 0.92 (ต่างจาก OLS!)</text>
-</svg>
-<div class="caption">OLS และ TLS ให้ β ต่างกัน — OLS ใช้ B เป็น "หลัก" (no noise), TLS สมมติทั้งคู่ noisy เท่ากัน</div>
+<img class="chart" src="charts/ch4-ols-vs-tls.svg" alt="OLS vs TLS scatter">
+<div class="caption">OLS และ TLS ให้ β ต่างกัน — OLS minimize ระยะ ↕ แนวตั้ง; TLS minimize ระยะ ↗ ตั้งฉาก</div>
 
 <h3>สูตร TLS (Total Least Squares)</h3>
 <div class="fm">β_TLS = [Var(r_A) − Var(r_B) + √((Var(r_A)−Var(r_B))² + 4·Cov(r_A,r_B)²)] / (2·Cov(r_A,r_B))
@@ -297,62 +218,8 @@ objective: minimize  S(α, β) = Σ ε_t² = Σ (y_t − α − β·x_t)²
 <p style="margin-top:6px">ε_t = ส่วนที่ A ขยับ <em>มากกว่า</em> หรือ <em>น้อยกว่า</em> ที่ B อธิบายได้ — นี่คือ inefficiency ที่เราเทรด</p>
 </div>
 
-<!-- Visual: OLS geometry — project y onto space spanned by x -->
-<svg class="d" viewBox="0 0 680 260">
-<defs>
-<marker id="arwA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
-<marker id="arwR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#dc2626"/></marker>
-</defs>
-<text x="340" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">OLS แยก y_t ออกเป็น 2 ส่วน: ส่วนที่ B อธิบาย + residual ε</text>
-
-<!-- LEFT: time series decomposition -->
-<rect x="10" y="26" width="310" height="220" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-<text x="165" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Time Series: log P_A แยกเป็น 2 ส่วน</text>
-<line x1="35" y1="200" x2="300" y2="200" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
-<line x1="35" y1="200" x2="35" y2="44" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
-<text x="302" y="203" font-size="8" fill="#374151">t</text>
-<text x="29" y="42" text-anchor="end" font-size="8" fill="#374151">log P</text>
-
-<!-- log P_B (blue dashed - the "explained" trend) -->
-<polyline points="40,175 70,165 100,148 130,138 160,128 190,115 220,105 250,92 280,82 300,72" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5,3"/>
-<text x="304" y="70" font-size="8" fill="#2563eb">β·log P_B + α</text>
-<text x="304" y="80" font-size="7" fill="#2563eb">(ส่วนที่ B อธิบาย)</text>
-
-<!-- log P_A (teal solid - actual) -->
-<polyline points="40,168 70,162 100,155 130,132 160,138 190,108 220,100 250,96 280,78 300,68" fill="none" stroke="#0d9488" stroke-width="2.2"/>
-<text x="304" y="62" font-size="8" fill="#0d9488">log P_A (จริง)</text>
-
-<!-- Vertical residual arrows -->
-<line x1="130" y1="132" x2="130" y2="138" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arwR)"/>
-<text x="136" y="136" font-size="8" fill="#dc2626">ε &lt; 0</text>
-<line x1="160" y1="128" x2="160" y2="138" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="2,1"/>
-<text x="167" y="134" font-size="8" fill="#dc2626">ε &gt; 0</text>
-<line x1="250" y1="92" x2="250" y2="96" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="2,1"/>
-
-<text x="165" y="215" text-anchor="middle" font-size="9" fill="#374151">OLS minimize ผลรวม (ε_t)² ทุก t พร้อมกัน</text>
-<text x="165" y="228" text-anchor="middle" font-size="8.5" fill="#64748b">log P_A = α + β·log P_B + ε ← ε คือที่เราเทรด</text>
-
-<!-- RIGHT: epsilon plot (residual) -->
-<rect x="360" y="26" width="310" height="220" rx="8" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
-<text x="515" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">ε_t — residual ที่ได้จาก OLS</text>
-<line x1="385" y1="140" x2="655" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
-<text x="380" y="143" text-anchor="end" font-size="8" fill="#94a3b8">0</text>
-<line x1="385" y1="200" x2="655" y2="200" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
-<line x1="385" y1="200" x2="385" y2="44" stroke="#374151" stroke-width="1.3" marker-end="url(#arwA)"/>
-<text x="657" y="203" font-size="8" fill="#374151">t</text>
-<text x="379" y="42" text-anchor="end" font-size="8" fill="#374151">ε_t</text>
-<!-- mean-reverting ε -->
-<polyline points="390,140 420,118 450,158 480,108 510,162 540,112 570,152 600,120 630,148 650,136" fill="none" stroke="#0d9488" stroke-width="2.2"/>
-<!-- entry/exit markers -->
-<circle cx="420" cy="118" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
-<circle cx="480" cy="108" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
-<circle cx="540" cy="112" r="4.5" fill="none" stroke="#dc2626" stroke-width="1.8"/>
-<circle cx="450" cy="158" r="4.5" fill="none" stroke="#16a34a" stroke-width="1.8"/>
-<circle cx="510" cy="162" r="4.5" fill="none" stroke="#16a34a" stroke-width="1.8"/>
-<text x="515" y="215" text-anchor="middle" font-size="9" fill="#0d9488">ε mean-revert รอบ 0 ← สิ่งที่เทรด</text>
-<text x="515" y="228" text-anchor="middle" font-size="8.5" fill="#dc2626">○ entry (ε เบี่ยง) | ○ exit (ε revert)</text>
-</svg>
-<div class="caption">OLS แยก log P_A ออกเป็น "ส่วนที่ B อธิบาย" + residual ε — ε ที่ดีควร mean-revert รอบ 0</div>
+<img class="chart" src="charts/ch4-ols-residual.svg" alt="OLS scatter and residual">
+<div class="caption">ซ้าย: scatter \(r_A\) vs \(r_B\) พร้อม regression line \(\hat{\beta}\) | ขวา: cumulative \(\varepsilon_t = \log P_A - \hat{\alpha} - \hat{\beta}\log P_B\) mean-revert รอบ \(\theta\)</div>
 
 <h3 id="s4-2b-2">คำนวณ OLS ทีละขั้นตอน — ตัวอย่างตัวเลข</h3>
 
@@ -711,6 +578,26 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <li>เมื่อ ε drift ต่อเนื่อง &gt; 2 วัน → β เปลี่ยน re-estimate ทันที</li>
 <li>Kalman: ไม่ต้อง re-estimate — อัปเดต continuous ทุก bar</li>
 </ul>
+</div>
+
+<img class="chart" src="charts/ch4-rolling-beta.svg" alt="Rolling OLS beta">
+<div class="caption">Rolling OLS \(\hat{\beta}\) (window 60d) ตามทัน regime change ได้ แต่มี lag — ถ้า β เปลี่ยนเร็วกว่า window ต้องใช้ Kalman</div>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — วิธีเลือก β ใน production</div>
+<p>ในระบบจริงบน Bybit↔Lighter ใช้ 3 stage:</p>
+<ol>
+<li><strong>Bootstrap β</strong> ด้วย OLS rolling 30d ก่อนตลาดเปิดทุกวัน — ถ้า β เปลี่ยน &gt;5% จาก day ก่อน → reduce position size ครึ่งหนึ่งก่อน</li>
+<li><strong>Intraday refinement</strong> ด้วย Kalman Filter อัปเดตทุก bar — ใช้ค่า Q/R ที่ tune ไว้ล่วงหน้าจาก rolling window</li>
+<li><strong>Circuit breaker</strong>: ถ้า \(|\hat{\beta}_{t} - \hat{\beta}_{t-1}| > 0.1\) ใน bar เดียว → halt trading รอ 30 นาที</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — β stability assumption</div>
+<p>OLS สมมติว่า β คงที่ตลอด window ข้อมูล — แต่ในตลาดจริง β เปลี่ยนตลอดเวลาตาม liquidity ratio, funding rate differential, และ market regime<br>
+<strong>อันตรายที่สุด:</strong> ใช้ β ที่ fit บน "quiet market" เข้าไป trade ใน "volatile regime" — ε จะ drift เป็น trend แทนที่จะ mean-revert และ model จะสั่ง "average down" เข้าขาดทุนต่อเนื่อง<br>
+<strong>สัญญาณเตือน:</strong> R² ของ OLS ลดลงต่ำกว่า 0.85 จากปกติ หรือ residual autocorrelation เพิ่มสูงขึ้น → β ไม่ stable แล้ว</p>
 </div>
 
 <h2 id="s4-5">4.5 เลือก β Method ตามวัตถุประสงค์ (Objective-Driven Design)</h2>
