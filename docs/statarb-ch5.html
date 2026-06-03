@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.5 — Cointegration</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -45,8 +45,17 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .step-num{background:var(--teal);color:#fff;border-radius:50%;width:26px;height:26px;min-width:26px;text-align:center;line-height:26px;font-size:.85em;font-weight:700}
 .pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
 .pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -57,10 +66,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 </div>
 
 <div class="key-idea">
-<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-label">แก่นของบทนี้ — ADF Equation</div>
 <p>Correlation สูงไม่พอสำหรับ stat arb — ต้องการ <strong>cointegration</strong>:<br>
-ε = log(A) − β·log(B) ต้องเป็น stationary (กลับหาค่ากลาง) ไม่ใช่แค่เดินไปด้วยกัน</p>
-<div class="ki-eq">H₀: ε ไม่ stationary (ไม่ cointegrated) → ถ้า p-value &lt; 0.05 → ปฏิเสธ H₀ → cointegrated ✓</div>
+\(\varepsilon_t = \log A_t - \beta \cdot \log B_t\) ต้องเป็น stationary (กลับหาค่ากลาง) ไม่ใช่แค่เดินไปด้วยกัน</p>
+<p>ADF test ตรวจสอบด้วยสมการ Augmented Dickey-Fuller:</p>
+$$H_0: \Delta\varepsilon_t = \alpha + \delta\varepsilon_{t-1} + \sum_{k=1}^{p}\gamma_k\Delta\varepsilon_{t-k} + \eta_t$$
+<p>เงื่อนไข: \(\delta = 0\) (unit root — ε ไม่ stationary) เทียบกับ \(\delta < 0\) (stationary — ε กลับค่ากลาง)<br>
+ถ้า p-value &lt; 0.05 → ปฏิเสธ H₀ → \(\delta < 0\) → <strong>cointegrated</strong></p>
 </div>
 
 <div class="bx bb">
@@ -73,109 +85,15 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <h2 id="s5-1">5.1 Correlation ≠ Cointegration — ความแตกต่างที่สำคัญ</h2>
 
 <!-- Diagram: 3 scenarios -->
-<svg class="d" viewBox="0 0 640 320">
-<defs>
-<marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
-</defs>
-<text x="320" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">3 สถานการณ์ — Correlation และ Cointegration</text>
-
-<!-- Panel 1: High corr, NO cointegration -->
-<rect x="8" y="28" width="195" height="270" rx="7" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
-<text x="106" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">ρ สูง แต่ไม่ Cointegrate</text>
-<text x="106" y="58" text-anchor="middle" font-size="9" fill="#dc2626">ρ=0.85, p-ADF=0.32 ✗</text>
-<!-- axes -->
-<line x1="28" y1="250" x2="190" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<line x1="28" y1="250" x2="28" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<text x="193" y="253" font-size="8" fill="#9ca3af">t</text>
-<!-- A trending up, B trending up slower → spread diverges -->
-<polyline points="28,230 50,220 72,205 94,188 116,170 138,152 160,132 182,110" fill="none" stroke="#2563eb" stroke-width="2"/>
-<polyline points="28,235 50,228 72,218 94,210 116,200 138,192 160,185 182,178" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
-<text x="185" y="108" font-size="8" fill="#2563eb">A</text>
-<text x="185" y="178" font-size="8" fill="#dc2626">B</text>
-<!-- Spread widening -->
-<polyline points="28,245 50,241 72,235 94,227 116,218 138,208 160,196 182,182" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
-<text x="100" y="265" text-anchor="middle" font-size="8" fill="#f59e0b">ε ขยาย → drift!</text>
-<text x="106" y="285" text-anchor="middle" font-size="9" fill="#dc2626">Trade ไม่ได้ — spread ไม่กลับ</text>
-
-<!-- Panel 2: High corr, cointegrated -->
-<rect x="223" y="28" width="195" height="270" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
-<text x="321" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">ρ สูง + Cointegrated ✓</text>
-<text x="321" y="58" text-anchor="middle" font-size="9" fill="#16a34a">ρ=0.99, p-ADF=0.01 ✓</text>
-<!-- axes -->
-<line x1="243" y1="250" x2="405" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<line x1="243" y1="250" x2="243" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<text x="408" y="253" font-size="8" fill="#9ca3af">t</text>
-<!-- A and B move together (cointegrated) -->
-<polyline points="243,190 255,185 267,175 279,180 291,170 303,175 315,165 327,172 339,162 351,168 363,158 375,164 387,155 399,160" fill="none" stroke="#2563eb" stroke-width="2"/>
-<polyline points="243,195 255,190 267,180 279,186 291,175 303,181 315,170 327,178 339,167 351,174 363,163 375,170 387,160 399,165" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
-<text x="400" y="158" font-size="8" fill="#2563eb">A</text>
-<text x="400" y="166" font-size="8" fill="#dc2626">B</text>
-<!-- Spread oscillating around θ -->
-<line x1="243" y1="225" x2="400" y2="225" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
-<polyline points="243,225 255,222 267,220 279,226 291,221 303,228 315,220 327,228 339,220 351,227 363,219 375,226 387,218 399,224" fill="none" stroke="#16a34a" stroke-width="1.8"/>
-<text x="321" y="265" text-anchor="middle" font-size="8" fill="#16a34a">ε วนรอบ θ</text>
-<text x="321" y="285" text-anchor="middle" font-size="9" fill="#16a34a">Trade ได้ — spread กลับ</text>
-
-<!-- Panel 3: Low corr, not cointegrated -->
-<rect x="438" y="28" width="195" height="270" rx="7" fill="#fff7ed" stroke="#fcd34d" stroke-width="1.5"/>
-<text x="536" y="46" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">ρ ต่ำ — ไม่เกี่ยวกัน</text>
-<text x="536" y="58" text-anchor="middle" font-size="9" fill="#d97706">ρ=0.20, p-ADF=0.45 ✗</text>
-<!-- axes -->
-<line x1="458" y1="250" x2="620" y2="250" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<line x1="458" y1="250" x2="458" y2="70" stroke="#9ca3af" stroke-width="1" marker-end="url(#a1)"/>
-<text x="623" y="253" font-size="8" fill="#9ca3af">t</text>
-<!-- A random walk -->
-<polyline points="458,180 470,172 482,185 494,175 506,190 518,178 530,170 542,183 554,168 566,180 578,162 590,175 602,165 614,178" fill="none" stroke="#2563eb" stroke-width="2"/>
-<!-- B different random walk -->
-<polyline points="458,200 470,210 482,195 494,205 506,192 518,208 530,215 542,205 554,218 566,208 578,220 590,210 602,218 614,205" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
-<text x="615" y="176" font-size="8" fill="#2563eb">A</text>
-<text x="615" y="206" font-size="8" fill="#dc2626">B</text>
-<text x="536" y="285" text-anchor="middle" font-size="9" fill="#d97706">ไม่มี economic link — อย่า trade</text>
-</svg>
-<div class="caption">ต้องการทั้ง correlation สูง (A และ B เดินไปด้วยกัน) AND cointegration (ε stationary)</div>
+<img class="chart" src="charts/ch5-stationary-vs-nonstat.svg" alt="Stationary vs Non-stationary — ADF Test" style="display:block;margin:20px auto;width:100%;max-width:760px;height:auto">
+<div class="caption">I(1) random walk และ I(1)+drift ไม่ผ่าน ADF (unit root) — I(0) OU process ผ่าน (stationary, mean-reverting)</div>
 
 <h3>Scatter Plot — มองความสัมพันธ์ด้วยตา ก่อนลงมือทดสอบสถิติ</h3>
 
 <p>ก่อนรัน test สถิติใด ๆ ให้ <strong>plot ราคาสองขาเป็น scatter</strong> ก่อนเสมอ — แกนนอนคือ log ราคาขา B แกนตั้งคือ log ราคาขา A · จุดหนึ่งจุดคือราคาคู่กัน ณ ช่วงเวลาหนึ่ง · scatter บอกหลายอย่างที่ตัวเลข ρ ตัวเดียวบอกไม่ได้ และเป็นวิธีที่เร็วที่สุดในการคัดคู่ที่ "แย่ชัด ๆ" ออก</p>
 
-<svg class="d" viewBox="0 0 680 352">
-<defs>
-<marker id="sc-a" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#374151"/></marker>
-</defs>
-<text x="340" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Scatter Plot — log ราคา A เทียบ log ราคา B</text>
-<line x1="70" y1="310" x2="642" y2="310" stroke="#374151" stroke-width="1.4" marker-end="url(#sc-a)"/>
-<line x1="70" y1="310" x2="70" y2="34" stroke="#374151" stroke-width="1.4" marker-end="url(#sc-a)"/>
-<text x="368" y="334" text-anchor="middle" font-size="10" fill="#374151">log(P_B) — เช่น log ราคา ETH  →</text>
-<text x="22" y="178" font-size="10" fill="#374151" transform="rotate(-90 22 178)">log(P_A) — log ราคา BTC  →</text>
-<line x1="90" y1="295" x2="612" y2="70" stroke="#dc2626" stroke-width="2.2"/>
-<text x="486" y="56" font-size="10" font-weight="700" fill="#dc2626">เส้น best-fit · ความชัน = β</text>
-<line x1="340" y1="163" x2="340" y2="187" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="3,2"/>
-<text x="347" y="179" font-size="11" font-weight="700" fill="#2563eb">ε</text>
-<circle cx="110" cy="290" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="140" cy="268" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="165" cy="273" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="190" cy="246" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="215" cy="251" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="240" cy="224" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="265" cy="229" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="290" cy="212" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="315" cy="197" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="365" cy="180" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="390" cy="168" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="415" cy="150" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="440" cy="148" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="465" cy="138" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="490" cy="124" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="515" cy="110" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="540" cy="104" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="565" cy="94" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="590" cy="76" r="4.2" fill="#0d9488" fill-opacity="0.6"/>
-<circle cx="340" cy="163" r="5.4" fill="#2563eb"/>
-<text x="350" y="150" font-size="9" fill="#2563eb">จุดเหนือเส้น: A แพงกว่า fair (ε &gt; 0)</text>
-<text x="120" y="138" font-size="9.5" fill="#0d9488">cloud แน่นรอบเส้น → ρ สูง</text>
-<text x="440" y="280" font-size="9" fill="#64748b">1 จุด = ราคาคู่กัน 1 ช่วงเวลา</text>
-</svg>
-<div class="caption">scatter ของคู่ที่ดี: จุดเรียงเป็นเส้นตรงแน่น ความชัน = β · ระยะจากจุดถึงเส้น = ε</div>
+<img class="chart" src="charts/ch5-adf-critical.svg" alt="ADF Critical Values" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">ADF critical values: −3.44 (1%), −2.86 (5%), −2.57 (10%) — test stat ที่ต่ำกว่า critical value → reject H₀ → spread stationary</div>
 
 <div class="bx bb">
 <div class="bt">scatter plot บอกอะไรบ้าง</div>
@@ -244,6 +162,28 @@ log(P_A) = α + β·log(P_B) + ε̂_t<br>
 <tr><td style="color:#d97706">0.05–0.10</td><td>Borderline</td><td>ระวัง — ลด position size หรือรอข้อมูลเพิ่ม</td></tr>
 <tr><td style="color:#dc2626"><strong>&gt; 0.10</strong></td><td>ไม่ reject H₀</td><td><strong>ไม่ cointegrated — ห้าม trade spread</strong></td></tr>
 </table>
+
+<div class="bx bd">
+<div class="bt">แนวปฏิบัติ — p-value เท่าไรใช้ได้จริง?</div>
+<p><strong>Cutoff มาตรฐาน: p &lt; 0.05</strong> ใช้ได้ในกรณีทั่วไป แต่นักปฏิบัติมักพิจารณาเพิ่มเติม:</p>
+<ul>
+<li><strong>Window size สำคัญมาก</strong> — ข้อมูล &lt; 100 observations ให้ p-value ที่ไม่น่าเชื่อถือ: test มี power ต่ำ ทำให้ fail to reject H₀ แม้ spread จะ stationary จริง · ใช้ &ge; 250 observations ขึ้นไปสำหรับ hourly bars (ประมาณ 10 วัน)</li>
+<li><strong>p &lt; 0.01</strong> — ควรใช้เป็น threshold สำหรับ position ขนาดใหญ่ (high-conviction)</li>
+<li><strong>p = 0.05–0.10 (borderline)</strong> — ลด position size ลงครึ่งหนึ่ง หรือรอ re-test ด้วยข้อมูลใหม่ &ge; 30 วัน</li>
+<li><strong>Re-test ทุกเดือน</strong> (หรือเมื่อ spread ค้างนอก 3σ &gt; 2 วัน) — cointegration เปลี่ยนตาม regime ของตลาด</li>
+</ul>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — ADF มี Power ต่ำในตัวอย่างขนาดเล็ก</div>
+<p>ADF test มีจุดอ่อนที่สำคัญหลายประการที่ต้องระวัง:</p>
+<ul>
+<li><strong>Low power เมื่อ sample น้อย</strong> — ถ้า n &lt; 100 observations ADF มักจะ fail to reject H₀ แม้ spread จะ stationary จริง ผลลัพธ์คือ "false negative" — ทิ้งคู่ที่ trade ได้จริง</li>
+<li><strong>Structural break</strong> — ถ้า β หรือ equilibrium เปลี่ยนกลางทาง (เช่น event ใหญ่ หรือ delisting) ADF อาจ pass เพราะดู aggregate ที่รวม 2 regime เข้าด้วยกัน</li>
+<li><strong>Borderline cases ต้องระวังเป็นพิเศษ</strong> — p = 0.04–0.06 ไม่มีความต่างทางสถิติที่มีนัยสำคัญ การตัดสินใจจาก threshold ตายตัว (p=0.05) ใน zone นี้มีความเสี่ยงสูง</li>
+<li><strong>วิธีลด model risk</strong>: ใช้ข้อมูลยาวขึ้น + ทดสอบทั้งสองทิศทาง (A~B และ B~A) + ยืนยันด้วย Hurst exponent (บทที่ 6) + re-test ทุกเดือน</li>
+</ul>
+</div>
 
 <div class="bx ba">
 <div class="bt">ข้อจำกัดของ Engle-Granger</div>

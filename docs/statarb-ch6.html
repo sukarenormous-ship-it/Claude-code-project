@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.6 — Hurst Exponent &amp; Stationarity Tests</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -23,6 +23,9 @@ p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom
 .bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
 .ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
 .bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:var(--red-bg);border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
 .bt{font-weight:700;margin-bottom:5px}
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
@@ -51,8 +54,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .pseudo .cm{color:#6c7086;font-style:italic}
 .pseudo .st{color:#a6e3a1}
 .pseudo .nu{color:#fab387}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -64,8 +77,11 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">Core Idea — Read This First</div>
-<div class="ki-text">The Hurst exponent H measures how persistent a time series is. For statistical arbitrage, we <strong>require H &lt; 0.5</strong> on the spread ε — this confirms mean-reversion exists. A series with H &lt; 0.5 has anti-persistence: a move up makes a move down more likely. H = 0.5 is pure randomness; H &gt; 0.5 means the trend will continue.</div>
-<div class="ki-eq">H = slope of log(R/S) vs log(n) &nbsp;|&nbsp; Target: H &lt; 0.5 on spread ε</div>
+<div class="ki-text">The <strong>z-score</strong> measures how far the current spread ε is from its mean, expressed in units of standard deviation. For statistical arbitrage, we <strong>enter when |z| &gt; 2</strong> — the spread is unusually far from equilibrium — and <strong>exit when |z| &lt; 0.5</strong> — the spread has reverted to normal. The z-score converts any spread into a dimensionless signal comparable across pairs and time.</div>
+<div style="margin-top:10px;text-align:center">
+$$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
+</div>
+<div class="ki-eq">Entry: |z_t| &gt; 2 &nbsp;·&nbsp; Exit: |z_t| &lt; 0.5 &nbsp;·&nbsp; Stop: |z_t| &gt; 3</div>
 </div>
 
 <!-- 6.1 -->
@@ -73,53 +89,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>The Hurst exponent was originally developed by Harold Hurst studying Nile River flood cycles. In finance, it quantifies whether a series has memory. Below, three synthetic time series illustrate the three regimes clearly.</p>
 
-<!-- 3-panel SVG: H=0.3, H=0.5, H=0.7 -->
-<svg class="d" viewBox="0 0 860 280">
-<defs>
-<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
-</marker>
-</defs>
+<img class="chart" src="charts/ch6-zscore-signal.svg">
+<div class="caption">Spread ε (top) with ±2σ bands and rolling z-score (bottom) colour-coded: RED = entry zone |z|&gt;2, GREEN = exit zone |z|&lt;1, NAVY = hold. Z-score computed on a 30-bar rolling window.</div>
 
-<!-- Panel 1: H=0.3 Mean-reverting -->
-<rect x="10" y="10" width="260" height="240" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-<text x="140" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">H = 0.3</text>
-<text x="140" y="47" text-anchor="middle" font-size="10" fill="#16a34a">Mean-Reverting</text>
-<line x1="30" y1="140" x2="255" y2="140" stroke="#0d9488" stroke-width="1" stroke-dasharray="4,3"/>
-<line x1="30" y1="230" x2="255" y2="230" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<line x1="30" y1="230" x2="30" y2="65" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<text x="257" y="233" font-size="9" fill="#6b7280">t</text>
-<text x="27" y="63" text-anchor="end" font-size="9" fill="#6b7280">ε</text>
-<text x="26" y="143" text-anchor="end" font-size="8" fill="#0d9488">θ</text>
-<!-- Tight oscillating path around mean -->
-<polyline points="30,140 42,120 54,155 66,118 78,148 90,125 102,152 114,122 126,145 138,115 150,148 162,128 174,150 186,120 198,145 210,130 222,152 234,120 246,143" fill="none" stroke="#16a34a" stroke-width="2"/>
-<text x="140" y="255" text-anchor="middle" font-size="9" fill="#16a34a">Tight oscillations around mean</text>
+<div class="bx bd">
+<div class="bt">Practitioner Note — Rolling Window for μ and σ</div>
+<p>In live trading, <strong>never use the full history</strong> to compute μ<sub>ε</sub> and σ<sub>ε</sub>. Use a <strong>rolling 30-day window</strong> (≈ 720 hourly bars for crypto perps). This ensures the z-score adapts to recent regime shifts — e.g. if funding rates structurally change, the spread mean drifts and a full-history mean becomes stale within days. A rolling window keeps the denominator relevant and the z-score centred around zero. For very high-frequency pairs (5-minute bars), a 7-day window (2016 bars) is typical. Validate by checking that |mean(z)| &lt; 0.1 on out-of-sample data.</p>
+</div>
 
-<!-- Panel 2: H=0.5 Random Walk -->
-<rect x="300" y="10" width="260" height="240" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-<text x="430" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">H = 0.5</text>
-<text x="430" y="47" text-anchor="middle" font-size="10" fill="#2563eb">Random Walk</text>
-<line x1="320" y1="230" x2="545" y2="230" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<line x1="320" y1="230" x2="320" y2="65" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<text x="547" y="233" font-size="9" fill="#6b7280">t</text>
-<text x="317" y="63" text-anchor="end" font-size="9" fill="#6b7280">P</text>
-<!-- Drifting random walk path -->
-<polyline points="320,170 332,165 344,172 356,162 368,155 380,160 392,148 404,140 416,145 428,132 440,126 452,135 464,125 476,118 488,122 500,112 512,108 524,115 536,105" fill="none" stroke="#2563eb" stroke-width="2"/>
-<text x="430" y="255" text-anchor="middle" font-size="9" fill="#2563eb">Drifts freely — no mean to return to</text>
-
-<!-- Panel 3: H=0.7 Trending -->
-<rect x="590" y="10" width="260" height="240" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
-<text x="720" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">H = 0.7</text>
-<text x="720" y="47" text-anchor="middle" font-size="10" fill="#dc2626">Trending</text>
-<line x1="610" y1="230" x2="835" y2="230" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<line x1="610" y1="230" x2="610" y2="65" stroke="#9ca3af" stroke-width="1" marker-end="url(#arw)"/>
-<text x="837" y="233" font-size="9" fill="#6b7280">t</text>
-<text x="607" y="63" text-anchor="end" font-size="9" fill="#6b7280">P</text>
-<!-- Strongly trending path with momentum -->
-<polyline points="610,205 622,200 634,192 646,185 658,175 670,163 682,152 694,140 706,128 718,116 730,104 742,93 754,85 766,78 778,72 790,67 802,62 814,78 826,70" fill="none" stroke="#dc2626" stroke-width="2"/>
-<text x="720" y="255" text-anchor="middle" font-size="9" fill="#dc2626">Persistent moves — trend continues</text>
-</svg>
-<div class="caption">Three time series with identical variance but different memory structures. Only H &lt; 0.5 is tradeable for stat arb.</div>
+<div class="bx bk">
+<div class="bt">Model Risk — Z-score Assumes Normal Distribution</div>
+<p>The z-score threshold of ±2 is calibrated to the Normal distribution, where P(|z|&gt;2) ≈ 4.6%. In practice, spread residuals have <strong>fat tails</strong> (leptokurtosis) — the true probability of a 3σ event is often 2–5× higher than the Normal predicts. This means: (1) the entry threshold ±2 is triggered more frequently than expected — diluting the edge, and (2) stop-loss events at ±3 are more common — increasing tail risk. Mitigation: use a robust z-score with Median Absolute Deviation (MAD) denominator, or widen entry to ±2.5 after observing the empirical exceedance rate on the pair's history.</p>
+</div>
 
 <div class="bx bb">
 <div class="bt">ทำไม H &lt; 0.5 ถึงสร้าง Edge</div>
@@ -143,72 +124,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>Repeat for many window sizes n, then fit: <strong>log(R/S) = H · log(n) + C</strong>. The slope H is the Hurst exponent.</p>
 
-<!-- Log-log plot SVG -->
-<svg class="d" viewBox="0 0 640 320">
-<defs>
-<marker id="arw2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
-</marker>
-</defs>
-
-<rect x="10" y="10" width="620" height="290" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5"/>
-<text x="320" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">R/S Log-Log Plot — Slope = H</text>
-
-<!-- Axes -->
-<line x1="70" y1="260" x2="600" y2="260" stroke="#374151" stroke-width="1.5" marker-end="url(#arw2)"/>
-<line x1="70" y1="260" x2="70" y2="50" stroke="#374151" stroke-width="1.5" marker-end="url(#arw2)"/>
-<text x="605" y="263" font-size="10" fill="#374151">log(n)</text>
-<text x="52" y="48" text-anchor="middle" font-size="10" fill="#374151">log(R/S)</text>
-
-<!-- X-axis ticks -->
-<line x1="150" y1="257" x2="150" y2="263" stroke="#374151" stroke-width="1"/>
-<text x="150" y="272" text-anchor="middle" font-size="9" fill="#6b7280">log(10)</text>
-<line x1="270" y1="257" x2="270" y2="263" stroke="#374151" stroke-width="1"/>
-<text x="270" y="272" text-anchor="middle" font-size="9" fill="#6b7280">log(50)</text>
-<line x1="390" y1="257" x2="390" y2="263" stroke="#374151" stroke-width="1"/>
-<text x="390" y="272" text-anchor="middle" font-size="9" fill="#6b7280">log(200)</text>
-<line x1="520" y1="257" x2="520" y2="263" stroke="#374151" stroke-width="1"/>
-<text x="520" y="272" text-anchor="middle" font-size="9" fill="#6b7280">log(1000)</text>
-
-<!-- Grid lines light -->
-<line x1="70" y1="180" x2="590" y2="180" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3,3"/>
-<line x1="70" y1="120" x2="590" y2="120" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3,3"/>
-
-<!-- H=0.3 line (mean-reverting — less steep, below diagonal) -->
-<line x1="150" y1="235" x2="520" y2="175" stroke="#16a34a" stroke-width="2.5"/>
-<circle cx="150" cy="235" r="4" fill="#16a34a"/>
-<circle cx="270" cy="219" r="4" fill="#16a34a"/>
-<circle cx="390" cy="203" r="4" fill="#16a34a"/>
-<circle cx="520" cy="175" r="4" fill="#16a34a"/>
-<text x="530" y="172" font-size="10" font-weight="700" fill="#16a34a">H = 0.3</text>
-<text x="530" y="184" font-size="9" fill="#16a34a">Mean-rev.</text>
-
-<!-- H=0.5 line (random walk — diagonal) -->
-<line x1="150" y1="230" x2="520" y2="135" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6,3"/>
-<circle cx="150" cy="230" r="4" fill="#2563eb"/>
-<circle cx="270" cy="207" r="4" fill="#2563eb"/>
-<circle cx="390" cy="180" r="4" fill="#2563eb"/>
-<circle cx="520" cy="135" r="4" fill="#2563eb"/>
-<text x="530" y="132" font-size="10" font-weight="700" fill="#2563eb">H = 0.5</text>
-<text x="530" y="144" font-size="9" fill="#2563eb">Random walk</text>
-
-<!-- H=0.7 line (trending — steep) -->
-<line x1="150" y1="225" x2="520" y2="80" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="2,3"/>
-<circle cx="150" cy="225" r="4" fill="#dc2626"/>
-<circle cx="270" cy="191" r="4" fill="#dc2626"/>
-<circle cx="390" cy="153" r="4" fill="#dc2626"/>
-<circle cx="520" cy="80" r="4" fill="#dc2626"/>
-<text x="530" y="78" font-size="10" font-weight="700" fill="#dc2626">H = 0.7</text>
-<text x="530" y="90" font-size="9" fill="#dc2626">Trending</text>
-
-<!-- Slope annotations -->
-<text x="185" y="210" font-size="9" fill="#16a34a" transform="rotate(-9, 185, 210)">slope = 0.3</text>
-<text x="185" y="205" font-size="9" fill="#2563eb" transform="rotate(-14, 200, 195)">slope = 0.5</text>
-<text x="180" y="200" font-size="9" fill="#dc2626" transform="rotate(-21, 200, 185)">slope = 0.7</text>
-
-<text x="320" y="295" text-anchor="middle" font-size="10" fill="#64748b">OLS regression on log-log plot gives the H estimate as the slope coefficient</text>
-</svg>
-<div class="caption">Log-log plot of R/S vs window size n. H is the OLS slope. Target: H &lt; 0.5 (flatter line).</div>
+<img class="chart" src="charts/ch6-zscore-dist.svg">
+<div class="caption">Distribution of z-scores from 1000 OU simulated observations vs Normal(0,1) PDF (navy). TEAL bars = simulated z-scores; RED bars = tails |z|&gt;2. ±2σ shown as dashed AMBER lines.</div>
 
 <!-- 6.3 -->
 <h2 id="s6-3">6.3 ADF Test + KPSS Test — Double Confirmation</h2>

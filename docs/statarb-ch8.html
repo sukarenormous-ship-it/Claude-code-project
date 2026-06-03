@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.8 — Jump-Diffusion OU: จัดการ Fat Tail ใน Spread</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -45,8 +45,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
 .running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
 .caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -60,7 +70,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
 <div class="ki-text">spread เดินตาม OU แต่มี <strong>jump discontinuity</strong> แทรก — เหตุการณ์ผิดปกติที่ทำให้ spread กระโดดทันทีโดยไม่ผ่าน diffusion ปกติ ต้องตรวจจับและจัดการแยกต่างหาก</div>
-<div class="ki-eq">dε = κ(θ−ε)dt + σdW + J·dN</div>
+<div class="ki-eq">$$d\varepsilon = \kappa(\theta - \varepsilon)\,dt + \sigma\,dW + J\,dN$$</div>
 </div>
 
 <!-- 8.1 -->
@@ -78,62 +88,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 </ul>
 </div>
 
-<!-- Histogram SVG -->
-<svg class="d" viewBox="0 0 680 300">
-<defs>
-<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
-</defs>
-<!-- Background -->
-<rect x="10" y="10" width="660" height="280" rx="8" fill="#fafafa" stroke="#e5e7eb" stroke-width="1"/>
-<text x="340" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Distribution ของ Spread Returns: Fat Tail vs Normal</text>
-
-<!-- Axes -->
-<line x1="60" y1="240" x2="620" y2="240" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<line x1="60" y1="240" x2="60" y2="45" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<text x="625" y="243" font-size="9" fill="#6b7280">σ</text>
-<text x="55" y="43" text-anchor="end" font-size="9" fill="#6b7280">freq</text>
-
-<!-- X-axis labels -->
-<text x="60"  y="255" text-anchor="middle" font-size="9" fill="#374151">-4σ</text>
-<text x="130" y="255" text-anchor="middle" font-size="9" fill="#374151">-3σ</text>
-<text x="200" y="255" text-anchor="middle" font-size="9" fill="#374151">-2σ</text>
-<text x="270" y="255" text-anchor="middle" font-size="9" fill="#374151">-1σ</text>
-<text x="340" y="255" text-anchor="middle" font-size="9" fill="#374151">0</text>
-<text x="410" y="255" text-anchor="middle" font-size="9" fill="#374151">+1σ</text>
-<text x="480" y="255" text-anchor="middle" font-size="9" fill="#374151">+2σ</text>
-<text x="550" y="255" text-anchor="middle" font-size="9" fill="#374151">+3σ</text>
-<text x="615" y="255" text-anchor="middle" font-size="9" fill="#374151">+4σ</text>
-
-<!-- Histogram bars (fat-tail distribution) -->
-<rect x="62"  y="232" width="58" height="8"  rx="1" fill="#ef444488"/>
-<rect x="132" y="220" width="58" height="20" rx="1" fill="#f97316aa"/>
-<rect x="202" y="175" width="58" height="65" rx="1" fill="#fbbf24bb"/>
-<rect x="272" y="115" width="58" height="125" rx="1" fill="#16a34acc"/>
-<rect x="342" y="65"  width="58" height="175" rx="1" fill="#0d9488dd"/>
-<rect x="412" y="115" width="58" height="125" rx="1" fill="#16a34acc"/>
-<rect x="482" y="175" width="58" height="65" rx="1" fill="#fbbf24bb"/>
-<rect x="552" y="220" width="48" height="20" rx="1" fill="#f97316aa"/>
-<!-- Fat tail extra at extremes -->
-<rect x="62"  y="224" width="58" height="8"  rx="1" fill="#dc262666" opacity="0.8"/>
-<rect x="560" y="212" width="48" height="8"  rx="1" fill="#dc262666" opacity="0.8"/>
-
-<!-- Normal curve overlay -->
-<path d="M60,238 C100,238 120,235 140,230 C170,222 195,200 220,175 C250,143 270,110 300,85 C315,73 330,65 340,62 C350,65 365,73 380,85 C410,110 430,143 460,175 C485,200 510,222 540,230 C560,235 580,238 620,238"
-      fill="none" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6,3"/>
-
-<!-- Legend -->
-<rect x="420" y="55" width="14" height="14" fill="#0d9488" rx="2"/>
-<text x="438" y="66" font-size="10" fill="#374151">Actual spread (fat tail)</text>
-<line x1="420" y1="79" x2="434" y2="79" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="5,3"/>
-<text x="438" y="82" font-size="10" fill="#374151">Normal distribution</text>
-
-<!-- Annotation arrows for tails -->
-<text x="80"  y="215" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">Fat tail!</text>
-<text x="575" y="205" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">Fat tail!</text>
-<line x1="80" y1="218" x2="85" y2="225" stroke="#dc2626" stroke-width="1.2"/>
-<line x1="575" y1="208" x2="572" y2="215" stroke="#dc2626" stroke-width="1.2"/>
-</svg>
-<div class="caption">Histogram ของ spread returns (แท่ง teal) vs Normal curve (เส้นประน้ำเงิน) — หางซ้าย-ขวาหนากว่า Normal มาก</div>
+<img class="chart" src="charts/ch8-fat-tail-hist.svg" alt="Fat tail vs Normal distribution">
+<div class="caption">Histogram ของ spread returns (teal) vs Normal(0,1) (เส้นประน้ำเงิน) — หางซ้าย-ขวาหนากว่า Normal มาก เหตุการณ์ ±3σ เกิดบ่อยกว่าที่ Normal คาดถึง 3–5×</div>
 
 <p>เมื่อ fat tail มีอยู่จริง โมเดล OU ล้วนๆ จะ <strong>underestimate</strong> ความน่าจะเป็นของเหตุการณ์รุนแรง ทำให้ sizing และ stop-loss ผิดพลาด</p>
 
@@ -144,7 +100,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">Jump-Diffusion OU — สมการหลัก</div>
-<div class="ki-eq">dε = κ(θ−ε)dt + σdW + J·dN</div>
+<div class="ki-eq">$$d\varepsilon = \kappa(\theta - \varepsilon)\,dt + \sigma\,dW + J\,dN$$</div>
 <div class="ki-text" style="margin-top:10px">
 <strong>κ</strong> = mean-reversion speed (เหมือนเดิม)<br>
 <strong>θ</strong> = long-run mean (เหมือนเดิม)<br>
@@ -229,64 +185,8 @@ threshold c = 4.0 เป็นค่าที่ใช้บ่อย (correspon
 
 <p>ข้อดีของ bipower variation: ถ้า σ_BV คำนวณจาก squared returns ปกติ jump ขนาดใหญ่จะ inflate σ ทำให้ L_t เล็กลงและพลาด jump แต่ bipower variation ใช้ product ของ adjacent absolute returns ซึ่ง robust กว่า</p>
 
-<!-- Jump detection SVG -->
-<svg class="d" viewBox="0 0 700 280">
-<defs>
-<marker id="arw2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
-</defs>
-<rect x="10" y="10" width="680" height="260" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
-<text x="350" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Residual Time Series พร้อม Jump Detection</text>
-
-<!-- Axes -->
-<line x1="50" y1="160" x2="670" y2="160" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw2)"/>
-<line x1="50" y1="240" x2="50" y2="45" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw2)"/>
-<text x="675" y="163" font-size="9" fill="#6b7280">t</text>
-<text x="44" y="43" text-anchor="end" font-size="9" fill="#6b7280">ε</text>
-
-<!-- Mean line (theta) -->
-<line x1="50" y1="160" x2="665" y2="160" stroke="#0d9488" stroke-width="1" stroke-dasharray="5,4"/>
-<text x="46" y="163" text-anchor="end" font-size="8" fill="#0d9488">θ</text>
-
-<!-- +2sigma band -->
-<line x1="50" y1="120" x2="665" y2="120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
-<text x="46" y="122" text-anchor="end" font-size="8" fill="#f59e0b">+2σ</text>
-
-<!-- -2sigma band -->
-<line x1="50" y1="200" x2="665" y2="200" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
-<text x="46" y="202" text-anchor="end" font-size="8" fill="#f59e0b">-2σ</text>
-
-<!-- Normal OU path (teal) -->
-<polyline points="50,160 70,152 90,145 110,155 130,162 150,170 170,178 190,168 210,158 230,150 250,158 270,164 290,155 310,148 330,157 350,163" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<!-- Jump 1 at t~355 (big downward spike) -->
-<polyline points="350,163 355,163 360,218 375,205 390,192 410,178 430,165 450,158 470,162 490,170 510,163" fill="none" stroke="#0d9488" stroke-width="2"/>
-<!-- Jump marker 1 -->
-<circle cx="360" cy="218" r="5" fill="#dc2626"/>
-<text x="360" y="236" text-anchor="middle" font-size="11" fill="#dc2626">&#9889;</text>
-<text x="360" y="248" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">JUMP</text>
-<line x1="360" y1="163" x2="360" y2="212" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3,2"/>
-
-<!-- Jump 2 at t~520 (upward spike) -->
-<polyline points="510,163 515,163 520,95 535,110 550,125 565,140 580,152 600,159 620,162 645,160 660,158" fill="none" stroke="#0d9488" stroke-width="2"/>
-<!-- Jump marker 2 -->
-<circle cx="520" cy="95" r="5" fill="#dc2626"/>
-<text x="520" y="80" text-anchor="middle" font-size="11" fill="#dc2626">&#9889;</text>
-<text x="520" y="70" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">JUMP</text>
-<line x1="520" y1="100" x2="520" y2="158" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3,2"/>
-
-<!-- Smaller jump 3 at t~235 -->
-<circle cx="230" cy="150" r="3" fill="#f59e0b"/>
-<text x="230" y="137" text-anchor="middle" font-size="8" font-weight="700" fill="#f59e0b">?</text>
-
-<!-- Legend -->
-<line x1="55" y1="268" x2="75" y2="268" stroke="#0d9488" stroke-width="2"/>
-<text x="78" y="271" font-size="9" fill="#374151">ε path (OU normal)</text>
-<circle cx="175" cy="268" r="4" fill="#dc2626"/>
-<text x="182" y="271" font-size="9" fill="#374151">Jump detected (|L_t|&gt;4)</text>
-<circle cx="290" cy="268" r="3" fill="#f59e0b"/>
-<text x="296" y="271" font-size="9" fill="#374151">Borderline (&lt;threshold)</text>
-</svg>
-<div class="caption">Timeline ของ ε: ส่วนใหญ่ mean-revert ปกติ แต่มี jump spikes ที่ถูก flag ด้วย Lee-Mykland test</div>
+<img class="chart" src="charts/ch8-jump-detection.svg" alt="Jump detection in OU path">
+<div class="caption">บน: \(\varepsilon_t\) (OU + jumps) พร้อม jump events ที่ detect ได้ (▲ สีแดง) | ล่าง: Lee-Mykland statistic \(|L_t|\) — เมื่อทะลุ threshold 4.0 ถือว่าเป็น jump</div>
 
 <!-- 8.5 -->
 <h2 id="s8-5">8.5 Pseudo-code: detect_jump()</h2>
@@ -370,6 +270,18 @@ trade ต่อได้ แต่ risk น้อยลง<br>
 <tr><td>Wider Stop</td><td>มั่นใจว่า jump จะ revert</td><td>ปานกลาง</td><td>ปานกลาง</td></tr>
 <tr><td>Reduce Size</td><td>อยากเก็บ opportunity</td><td>สูง</td><td>ปานกลาง</td></tr>
 </table>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Jump Detection ใน Production</div>
+<p>Pipeline ที่ใช้จริงสำหรับ crypto stat arb:</p>
+<ol>
+<li><strong>Calibrate σ_BV ทุก 4 ชั่วโมง</strong> — bipower variation บน 30-bar rolling window; ล้างค่า outlier ออกก่อน fit</li>
+<li><strong>Threshold สองระดับ:</strong> soft = 3.0 (ลด size 50%), hard = 5.0 (pause signal 15 tick) — threshold เดียวตายตัวเสี่ยง miss หรือ false positive สูง</li>
+<li><strong>Exclude jump bars</strong> จากการคำนวณ σ_OU และ half-life — jump เดียวสามารถ inflate σ ขึ้น 30–50% ทำให้ entry zone กว้างเกินจริง</li>
+<li><strong>Log ทุก jump event</strong> พร้อม L_t, สาเหตุที่คาดว่าเป็น (funding rate, liquidation, news), และ spread path 30 นาทีหลัง event — ใช้ review ว่า jump revert หรือไม่</li>
+<li><strong>Revert check:</strong> ถ้า spread กลับมาภายใน 10 tick → jump เป็น noise → ควรเปิด position ด้วย size เต็ม; ถ้าไม่กลับภายใน 30 tick → regime shift → stay flat</li>
+</ol>
+</div>
 
 <!-- 8.7 -->
 <h2 id="s8-7">8.7 Running Example: Bybit↔Lighter และ Funding Rate War</h2>
@@ -479,6 +391,18 @@ if detect_jump(recent_residuals)[0][-1]:
 <p>หลักการ: jump model ช่วยได้เมื่อเกิดแล้ว แต่ถ้ารู้ล่วงหน้าว่าจะเกิด → จัดการ proactively ดีกว่า</p>
 </div>
 </details>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Jump Model พัง</div>
+<p>Jump-diffusion model มีสมมติฐานที่แตกในตลาด crypto:</p>
+<ul>
+<li><strong>λ ไม่คงที่:</strong> jump intensity เปลี่ยนตามระบอบตลาด — ช่วง bull market λ ≈ 0.2/day, ช่วง crisis λ ≈ 5+/day; ถ้า calibrate ด้วยช่วง calm แล้วนำไป apply ช่วง crisis จะ underestimate jump risk อย่างรุนแรง</li>
+<li><strong>Jump clustering:</strong> jump มักเกิดต่อเนื่อง (jump ลูกโซ่) ไม่ใช่ Poisson process ที่ independent — หลัง jump ใหญ่ 1 ครั้ง P(jump ครั้งต่อไปใน 5 นาที) สูงกว่า baseline 3–10×</li>
+<li><strong>Calibration lag:</strong> Merton/Kou parameters (λ, σ_J) ต้อง calibrate บน historical data ที่ต้องมี jumps ในตัวเอง — ถ้า training window ไม่มี event ที่ใหญ่พอ model จะประเมิน J ต่ำเกิน</li>
+<li><strong>Jump ↔ regime shift สับสน:</strong> บางครั้งสิ่งที่ดูเหมือน jump คือการเปลี่ยน regime (β ใหม่, equilibrium ใหม่) ไม่ใช่ event ชั่วคราว — ถ้าใช้ Approach 2 (wider stop) กับ regime shift จะขาดทุนต่อเนื่องไม่มีที่สิ้นสุด</li>
+</ul>
+<p><strong>Safeguard:</strong> ตั้ง maximum drawdown per jump event (เช่น 0.5% NAV) และ force-exit ถ้า spread ยัง elevated หลัง 30 tick โดยไม่รอ reversion</p>
 </div>
 
 <div class="bx bi">

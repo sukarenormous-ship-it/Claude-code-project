@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stat Arb Ch.7 — GARCH on Residuals</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -23,6 +23,9 @@ p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom
 .bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
 .ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
 .bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:var(--red-bg);border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
 .bt{font-weight:700;margin-bottom:5px}
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
@@ -51,8 +54,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .pseudo .cm{color:#6c7086;font-style:italic}
 .pseudo .st{color:#a6e3a1}
 .pseudo .nu{color:#fab387}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
 
@@ -65,8 +78,11 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">Core Idea — Read This First</div>
-<div class="ki-text">Ornstein-Uhlenbeck assumes <strong>constant σ</strong>. In practice, spread volatility clusters: calm periods are followed by calm, volatile periods by volatile. Using a static z-score during a storm generates false signals. GARCH(1,1) models time-varying conditional variance σ_t, giving a <strong>GARCH z-score</strong> that stays calibrated regardless of market regime.</div>
-<div class="ki-eq">σ_t² = ω + α·ε²_{t−1} + β_G·σ²_{t−1} &nbsp;|&nbsp; z_t = (ε_t − θ) / σ_t</div>
+<div class="ki-text">The OU spread ε gives a z-score signal. Trading zones are defined by z-score thresholds, separating entry, hold, and stop-loss regions. GARCH(1,1) models time-varying conditional variance σ_t, keeping z-scores calibrated during volatility storms by adapting the denominator each bar.</div>
+<div style="margin-top:10px;text-align:center">
+$$\sigma_t^2 = \omega + \alpha \cdot \varepsilon_{t-1}^2 + \beta_G \cdot \sigma_{t-1}^2 \qquad z_t = \frac{\varepsilon_t - \theta}{\sigma_t}$$
+</div>
+<div class="ki-eq">|z_t| &gt; 3: STOP &nbsp;·&nbsp; 2 &lt; |z_t| ≤ 3: ENTRY &nbsp;·&nbsp; |z_t| ≤ 2: HOLD/EXIT</div>
 </div>
 
 <!-- 7.1 -->
@@ -79,62 +95,18 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <li><strong>Calm missed signals:</strong> During quiet periods, a genuine 2σ move is actually a 4σ GARCH event — an extremely rare and high-conviction signal being ignored.</li>
 </ul>
 
-<!-- SVG: residual timeline with constant bands and storm -->
-<svg class="d" viewBox="0 0 860 300">
-<defs>
-<marker id="arw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
-</marker>
-</defs>
+<img class="chart" src="charts/ch7-entry-exit-zones.svg">
+<div class="caption">OU path with trading zones: RED fill = STOP (|z|&gt;3), AMBER fill = ENTRY (2&lt;|z|&lt;3), GREEN fill = HOLD/EXIT (|z|&lt;2). Red dots mark entries at |z| crossing 2; green triangles mark exits when |z| returns below 0.5.</div>
 
-<rect x="10" y="10" width="840" height="280" rx="8" fill="#fef9f0" stroke="#fde68a" stroke-width="1.5"/>
-<text x="430" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Residual ε_t with Static ±2σ Bands — Constant σ Model</text>
+<div class="bx bd">
+<div class="bt">Practitioner Note — Calibrating Zone Thresholds from Backtest</div>
+<p>The standard thresholds (Entry ±2, Stop ±3) are good starting points but <strong>should be calibrated per pair</strong>. Procedure: (1) run a walk-forward backtest on 90 days of history; (2) compute the empirical z-score exceedance rates — if |z|&gt;2 is triggered &gt;8% of bars, widen to ±2.5; (3) check the average holding time: if mean holding &lt; 2 bars, the reversion is so fast the spread may be microstructure noise rather than OU; (4) use the threshold that maximises Sharpe on the test window, then re-validate out-of-sample before live deployment. For BTC cross-exchange spreads, ±2.0 entry and ±0.5 exit is typical; for equity pairs, ±1.5 entry with ±0.3 exit is often used due to slower mean-reversion.</p>
+</div>
 
-<!-- Axes -->
-<line x1="40" y1="170" x2="830" y2="170" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<line x1="40" y1="270" x2="40" y2="40" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
-<text x="833" y="173" font-size="10" fill="#374151">t</text>
-<text x="30" y="38" text-anchor="end" font-size="10" fill="#374151">ε</text>
-
-<!-- Static +2σ and -2σ bands -->
-<line x1="40" y1="120" x2="825" y2="120" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
-<line x1="40" y1="220" x2="825" y2="220" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
-<text x="828" y="123" font-size="9" font-weight="700" fill="#dc2626">+2σ</text>
-<text x="828" y="223" font-size="9" font-weight="700" fill="#dc2626">−2σ</text>
-<text x="828" y="172" font-size="9" fill="#374151">θ</text>
-
-<!-- Calm period label -->
-<rect x="42" y="42" width="80" height="18" rx="3" fill="#d1fae5"/>
-<text x="82" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
-
-<!-- Calm period path (tight oscillations) -->
-<polyline points="40,168 55,155 70,175 85,160 100,172 115,158 130,168 145,156 160,170 175,158 200,165 225,172 250,160 275,167 300,162 325,170 350,163 375,168" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<!-- Storm period label -->
-<rect x="395" y="42" width="80" height="18" rx="3" fill="#fee2e2"/>
-<text x="435" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">STORM</text>
-
-<!-- Storm period path (large swings) -->
-<polyline points="375,168 395,130 415,210 435,108 455,230 475,115 495,225 515,105 535,235 555,118 575,212 595,112 615,220 635,130" fill="none" stroke="#dc2626" stroke-width="2"/>
-
-<!-- False signal markers during storm -->
-<circle cx="435" cy="108" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
-<text x="435" y="96" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
-<circle cx="455" cy="230" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
-<text x="455" y="244" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
-<circle cx="515" cy="105" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
-<text x="515" y="93" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
-<circle cx="535" cy="235" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
-<text x="535" y="248" text-anchor="middle" font-size="8" fill="#b45309">FALSE!</text>
-
-<!-- Calm period after storm -->
-<rect x="655" y="42" width="80" height="18" rx="3" fill="#d1fae5"/>
-<text x="695" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
-<polyline points="635,165 655,158 675,172 695,161 715,168 735,157 755,164 775,170 795,160 815,166" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<text x="430" y="290" text-anchor="middle" font-size="10" fill="#b45309">Static ±2σ crosses 4 false signals during storm — each looks like a trade entry but is just noise expansion</text>
-</svg>
-<div class="caption">Static bands (red dashes) don't expand during volatile regimes — causing repeated false crossings in the storm period.</div>
+<div class="bx bk">
+<div class="bt">Model Risk — Zone Thresholds Assume Stable OU Parameters</div>
+<p>The entry/exit zones are derived from OU parameters (κ, θ, σ) estimated over a historical window. If <strong>OU parameters shift</strong> — e.g. κ drops (slower reversion) or σ increases (higher spread volatility) — the zone thresholds become miscalibrated: the 2σ entry may correspond to only 1.3σ under the new regime, creating false signals. Mitigation: <strong>recalibrate OU parameters monthly</strong> (or after any significant market event), monitor that the z-score distribution remains centred near zero with std ≈ 1.0 in recent data, and automate an alert if std(z, 7d) &gt; 1.3 — indicating the denominator σ is stale.</p>
+</div>
 
 <!-- 7.2 -->
 <h2 id="s7-2">7.2 GARCH(1,1) Model</h2>
@@ -173,68 +145,8 @@ Entry signal:    z_t &gt; +2.0  →  short spread (expect reversion down)
                   z_t &lt; −2.0  →  long spread (expect reversion up)
 Exit signal:     |z_t| &lt; 0.5  →  close position</div>
 
-<!-- SVG: GARCH adaptive bands -->
-<svg class="d" viewBox="0 0 860 310">
-<defs>
-<marker id="arw3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-  <polygon points="0 0, 7 2.5, 0 5" fill="#6b7280"/>
-</marker>
-</defs>
-
-<rect x="10" y="10" width="840" height="290" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-<text x="430" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Residual ε_t with GARCH ±2σ_t Bands — Adaptive Model</text>
-
-<!-- Axes -->
-<line x1="40" y1="175" x2="830" y2="175" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
-<line x1="40" y1="275" x2="40" y2="42" stroke="#374151" stroke-width="1.5" marker-end="url(#arw3)"/>
-<text x="833" y="178" font-size="10" fill="#374151">t</text>
-<text x="30" y="40" text-anchor="end" font-size="10" fill="#374151">ε</text>
-
-<!-- Calm period: narrow GARCH bands (similar to static) -->
-<path d="M 40,148 Q 190,145 375,148" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-<path d="M 40,202 Q 190,205 375,202" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-
-<!-- Storm period: wide GARCH bands expanding -->
-<path d="M 375,148 Q 445,90 530,78 Q 600,78 635,130" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-<path d="M 375,202 Q 445,260 530,272 Q 600,272 635,220" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-
-<!-- Calm period after storm: bands narrow again -->
-<path d="M 635,130 Q 700,148 820,150" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-<path d="M 635,220 Q 700,202 820,200" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-
-<text x="207" y="137" text-anchor="middle" font-size="9" fill="#16a34a">+2σ_t (narrow)</text>
-<text x="207" y="215" text-anchor="middle" font-size="9" fill="#16a34a">−2σ_t (narrow)</text>
-<text x="508" y="68" text-anchor="middle" font-size="9" fill="#16a34a">+2σ_t (expanded)</text>
-<text x="508" y="290" text-anchor="middle" font-size="9" fill="#16a34a">−2σ_t (expanded)</text>
-
-<!-- Calm path -->
-<polyline points="40,173 55,160 70,180 85,165 100,177 115,163 130,173 145,161 160,175 175,163 200,170 225,177 250,165 275,172 300,167 325,175 350,168 375,173" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<!-- Storm path (same as before) -->
-<polyline points="375,173 395,135 415,215 435,113 455,235 475,120 495,230 515,110 535,240 555,123 575,217 595,117 615,225 635,135" fill="none" stroke="#dc2626" stroke-width="2"/>
-
-<!-- True signal markers (storm crossings that DON'T cross GARCH bands) -->
-<text x="430" y="100" text-anchor="middle" font-size="8" fill="#16a34a">within GARCH</text>
-<text x="450" y="250" text-anchor="middle" font-size="8" fill="#16a34a">within GARCH</text>
-
-<!-- Genuine signal in calm period -->
-<circle cx="160" cy="175" r="5" fill="#0d9488"/>
-<text x="160" y="155" text-anchor="middle" font-size="8" font-weight="700" fill="#0d9488">TRUE</text>
-
-<!-- Calm after storm -->
-<polyline points="635,170 655,163 675,177 695,166 715,173 735,162 755,169 775,175 795,165 815,171" fill="none" stroke="#0d9488" stroke-width="2"/>
-
-<text x="430" y="302" text-anchor="middle" font-size="10" fill="#16a34a">GARCH bands expand during storm — storm crossings stay INSIDE adaptive bands → no false signals</text>
-
-<!-- Labels -->
-<rect x="42" y="44" width="60" height="16" rx="3" fill="#d1fae5"/>
-<text x="72" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
-<rect x="395" y="44" width="60" height="16" rx="3" fill="#fee2e2"/>
-<text x="425" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">STORM</text>
-<rect x="655" y="44" width="60" height="16" rx="3" fill="#d1fae5"/>
-<text x="685" y="55" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">CALM</text>
-</svg>
-<div class="caption">GARCH adaptive bands (green dashes) expand during the storm — the same residual path produces NO false signals with GARCH z-score.</div>
+<img class="chart" src="charts/ch7-pnl-per-trade.svg">
+<div class="caption">P&amp;L per trade from a simple OU backtest (enter |z|&gt;2, exit |z|&lt;0.5). Green bars = profitable trades, red bars = losses. Teal dashed line = cumulative P&amp;L. Win rate and trade count shown in top-right annotation.</div>
 
 <!-- 7.4 -->
 <h2 id="s7-4">7.4 When to Use GARCH vs Constant σ</h2>
