@@ -265,6 +265,15 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 • <strong>BS สมมติ σ คงที่ ← ผิด!</strong> GARCH บอกว่า σ เปลี่ยนตลอดเวลา</p>
 </div>
 
+<div class="bx bk">
+<div class="bt">Model Risk: GARCH ใช้ Historical — ไม่รู้จัก Regime Change</div>
+<p>GARCH มีจุดอ่อนสำคัญในการใช้งานจริง:<br>
+• <strong>Regime shift</strong>: GARCH calibrate กับ low-vol period จะ underestimate vol ใน high-vol regime ใหม่ (เช่น COVID breakout ปี 2020)<br>
+• <strong>Overfitting ช่วงสงบ</strong>: α + β → 1 ใน calm markets → Integrated GARCH → ไม่มี mean reversion → forecast vol ไม่กลับ<br>
+• <strong>Asymmetry (Leverage Effect)</strong>: basic GARCH ไม่จับ "ตลาดลงแล้ว vol ขึ้นมากกว่าตลาดขึ้น" — ต้องใช้ GJR-GARCH หรือ EGARCH<br>
+แนวทาง: monitor μ drift, refit monthly, ใช้ Markov-switching GARCH ถ้า regime ชัดเจน</p>
+</div>
+
 <h3 id="s12-6">12.6 Mean Reversion</h3>
 
 <div class="bi">
@@ -371,6 +380,15 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="bt">เชื่อมกับ Options — IV Solver</div>
 <p>Newton-Raphson ใช้ <strong>Vega</strong> เป็น derivative → converge ใน 3-5 รอบ!<br>
 ทุกครั้งที่คุณเห็น "IV = 25%" บนหน้าจอ Bloomberg — เบื้องหลังคือ Newton-Raphson กำลังทำงาน</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">Quant Desk: IV Solver ทำงานตลอดเวลา — Vol Surface คือ "ราคากลาง" ของตลาด</div>
+<p>ในทุก derivatives desk Newton-Raphson IV solver runs continuously:<br>
+• <strong>Real-time IV</strong>: Bloomberg feed market prices → solve IV ทุก tick → build vol surface<br>
+• <strong>Relative value</strong>: เปรียบเทียบ model vol vs market IV → ซื้อ "ถูก" ขาย "แพง"<br>
+• <strong>Greeks from surface</strong>: Delta/Gamma คำนวณจาก Vol Surface (sticky-delta vs sticky-strike)<br>
+IV solver ที่ดีต้อง robust: handle deep OTM options (Vega → 0 → Newton แกว่ง) — ใช้ Bisection fallback</p>
 </div>
 
 <h3 id="s13-3">13.3 Numerical Differentiation</h3>
