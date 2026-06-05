@@ -382,7 +382,54 @@ Simplex sensitivity = sensitivity ของ optimal solution ต่อ parameter
 → หา <strong>Efficient Frontier</strong> (เส้นโค้งของ risk vs return ที่ดีที่สุด)</p>
 </div>
 
-<h3 id="s11-4">11.4 Convex Optimization</h3>
+<h3 id="s11-4">11.4 KKT Conditions — Optimization ที่มี Inequality Constraints</h3>
+
+<div class="bi">
+<div class="bt">อุปมา: Lagrange แก้ "ต้องอยู่บนเส้น" แต่ชีวิตจริงคือ "ห้ามเกินเพดาน" 🔍</div>
+<p>Lagrange จัดการได้แค่ constraint แบบ <strong>equality</strong> (g=0) — เหมือนบังคับว่า "ต้องเดินอยู่บนถนนเส้นนี้เป๊ะๆ"</p>
+<p>แต่ชีวิตจริงของพอร์ตคือ constraint แบบ <strong>inequality</strong>: "ห้าม short" (w≥0), "ห้าม position เกิน 10%" (w≤0.1) — เป็น "เพดาน" และ "พื้น" ไม่ใช่เส้นเดียว</p>
+<p><strong>KKT (Karush-Kuhn-Tucker) = Lagrange เวอร์ชันที่รับ inequality ได้</strong> — กุญแจสำคัญสู่การจัดพอร์ต option จริงๆ</p>
+</div>
+
+<p>หา min ของ f(x) <strong>ภายใต้เงื่อนไข inequality</strong> gᵢ(x) ≤ 0 — เงื่อนไข KKT มี 4 ข้อ:</p>
+
+<div class="fm"><strong>Minimize</strong> f(x) &nbsp; subject to gᵢ(x) ≤ 0<br><br>
+1. Stationarity: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ∇f + Σ μᵢ∇gᵢ = 0<br>
+2. Primal feasibility: &nbsp; gᵢ(x) ≤ 0<br>
+3. Dual feasibility: &nbsp;&nbsp;&nbsp; μᵢ ≥ 0<br>
+4. Complementary slackness: μᵢ · gᵢ(x) = 0</div>
+
+<div class="bx bb">
+<div class="bt">หัวใจของ KKT คือ Complementary Slackness</div>
+<p>ข้อ 4 (μᵢ·gᵢ = 0) บอกว่าแต่ละ constraint ต้องอยู่ในสถานะใดสถานะหนึ่งเท่านั้น:</p>
+<p>• <strong>Active (binding)</strong>: gᵢ=0 และ μᵢ&gt;0 → constraint "กัด" — เราชนเพดาน/พื้นพอดี เช่น โดนพื้น no-short (w=0) ดึงไว้ ทำให้ μ มีค่า (shadow price &gt; 0)</p>
+<p>• <strong>Inactive (slack)</strong>: gᵢ&lt;0 และ μᵢ=0 → constraint "ไม่กัด" — เรายังห่างจากเพดาน constraint นี้จึงไม่มีผล (μ=0)</p>
+<p>พูดอีกอย่าง: <strong>ถ้า constraint ไม่ binding มันก็ไม่มี shadow price</strong> — μ จะเป็น 0 โดยอัตโนมัติ นี่คือไอเดียที่ทำให้ KKT จัดการ inequality ได้</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: Minimize f(w)=w² s.t. w≥1</div>
+<p>เขียน constraint ในรูป gᵢ≤0: w≥1 ⟺ <strong>g(w) = 1−w ≤ 0</strong></p>
+<p><strong>สังเกตก่อน:</strong> ถ้าไม่มี constraint จุด min ของ w² คือ w=0 — แต่ w=0 ละเมิด w≥1! ดังนั้น constraint ต้อง "กัด"</p>
+<p><strong>เขียนเงื่อนไข KKT:</strong></p>
+<p>• Stationarity: 2w + μ·(−1) = 0 → <strong>2w − μ = 0</strong></p>
+<p>• Complementary slackness: <strong>μ(1−w) = 0</strong></p>
+<p><strong>ลองเคส constraint active (1−w=0 → w=1):</strong></p>
+<p>จาก stationarity: μ = 2w = 2(1) = <strong>2</strong> → μ=2 &gt; 0 ✓ (dual feasibility ผ่าน)</p>
+<p>เช็ค primal: w=1 ≥ 1 ✓ → ทุกเงื่อนไขผ่าน → คำตอบ <strong>w* = 1, μ = 2</strong></p>
+<p><strong>ตีความ μ=2 เป็น shadow price:</strong> ถ้าผ่อน constraint จาก w≥1 เป็น w≥0.9 (ขยับพื้นลง 0.1) ค่า f จะลดลงประมาณ μ×0.1 = 2×0.1 = <strong>0.2</strong><br>
+(ตรวจสอบ: f(1)=1, f(0.9)=0.81 → ลดลง 0.19 ≈ 0.2 ✓)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">เชื่อมกับ Options — Long-Only Markowitz</div>
+<p>Markowitz แบบ long-only คือ: <strong>Minimize wᵀΣw &nbsp; s.t. &nbsp; Σw=1 &nbsp;AND&nbsp; w≥0</strong></p>
+<p>constraint Σw=1 เป็น equality (ใช้ Lagrange λ) แต่ constraint <strong>w≥0 เป็น inequality</strong> — ต้องใช้ KKT (μᵢ) จัดการ</p>
+<p>กลไก: สินทรัพย์ที่ "อยาก" ได้น้ำหนักติดลบ (model อยาก short) จะโดน complementary slackness ตรึงไว้ที่ <strong>w=0 (active constraint, μ&gt;0)</strong> ส่วนสินทรัพย์ที่เหลือมี w&gt;0 (inactive, μ=0) ก็แก้ระบบ equality ตามปกติ</p>
+<p>นี่คือเหตุผลที่ optimizer จริงใช้ <strong>Quadratic Programming (QP) ที่มี KKT</strong> ไม่ใช่ Lagrange ล้วนๆ — เพราะ Lagrange จัดการ "ห้าม short" ไม่ได้</p>
+</div>
+
+<h3 id="s11-5">11.5 Convex Optimization</h3>
 
 <div class="bi">
 <div class="bt">อุปมา: ชาม vs อาน</div>
@@ -401,7 +448,7 @@ Simplex sensitivity = sensitivity ของ optimal solution ต่อ parameter
 <p><strong>ข่าวดี:</strong> Portfolio optimization (Markowitz) เป็น <strong>convex!</strong> → มีคำตอบเดียวที่ดีที่สุด</p>
 <p><strong>ข่าวร้าย:</strong> Calibration ของบาง model (เช่น Stochastic Volatility) เป็น <strong>non-convex</strong> → ต้องใช้เทคนิคพิเศษ</p>
 
-<h3 id="s11-5">11.5 Quadratic Programming (QP)</h3>
+<h3 id="s11-6">11.6 Quadratic Programming (QP)</h3>
 
 <div class="bi">
 <div class="bt">ทำไม QP ถึงเป็น "ชั้นพิเศษ" ของ Nonlinear Optimization?</div>
@@ -502,6 +549,26 @@ z = 8(11/3)+5(4/3) = 88/3+20/3 = 108/3 = <strong>36</strong> ✓ (shadow price �
 </details>
 </div>
 
+<div class="ex">
+<div class="et">โจทย์ 4: KKT Conditions กับ Inequality Constraint</div>
+<p>Minimize f(x) = (x−3)² &nbsp; subject to &nbsp; x ≤ 2</p>
+<p><em>ใช้เงื่อนไข KKT หา x* และ μ พร้อมบอกว่า constraint active หรือ inactive?</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p><strong>เขียน constraint ในรูป g≤0:</strong> x ≤ 2 ⟺ g(x) = x−2 ≤ 0</p>
+<p><strong>สังเกตก่อน:</strong> จุด min ของ (x−3)² ที่ไม่มี constraint คือ x=3 — แต่ x=3 ละเมิด x≤2! ดังนั้น constraint ต้อง active</p>
+<p><strong>เงื่อนไข KKT:</strong></p>
+<p>• Stationarity: 2(x−3) + μ(1) = 0 → 2x − 6 + μ = 0</p>
+<p>• Complementary slackness: μ(x−2) = 0</p>
+<p><strong>ลองเคส constraint active (x−2=0 → x=2):</strong></p>
+<p>จาก stationarity: μ = 6 − 2x = 6 − 2(2) = <strong>2</strong> → μ=2 &gt; 0 ✓ (dual feasibility ผ่าน)</p>
+<p>เช็ค primal: x=2 ≤ 2 ✓</p>
+<p><strong>สรุป: constraint active, x* = 2, μ = 2</strong> (shadow price = 2: ผ่อนเพดานเป็น x≤2.1 จะลด f ลงประมาณ 0.2)</p>
+</div>
+</details>
+</div>
+
 <div class="bx ba">
 <div class="bt">สรุป Part V</div>
 <p>✓ LP: Objective + Constraints → Simplex → Optimal ที่มุม feasible region<br>
@@ -509,6 +576,7 @@ z = 8(11/3)+5(4/3) = 88/3+20/3 = 108/3 = <strong>36</strong> ✓ (shadow price �
 ✓ ILP: ตัวแปรจำนวนเต็ม → Branch & Bound (ใช้สำหรับ option contracts)<br>
 ✓ Gradient Descent → เดินลงเขา → Model Calibration, Vol Surface Fitting<br>
 ✓ <strong>Lagrange → Markowitz Portfolio Optimization → Efficient Frontier</strong><br>
+✓ <strong>KKT → จัดการ inequality (ห้าม short w≥0, position limit) → Long-Only Markowitz</strong><br>
 ✓ Convex → มีคำตอบเดียว (global) ไม่ติด local minimum<br>
 ✓ <strong>QP = Mean-Variance Optimization → แก้ด้วย cvxpy ใน milliseconds</strong></p>
 </div>

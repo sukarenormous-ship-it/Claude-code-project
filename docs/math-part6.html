@@ -97,7 +97,85 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 นี่คือเหตุผลที่ GARCH model ทำงานได้ดี เพราะจำลอง clustering นี้</p>
 </div>
 
-<h3 id="s12-3">12.3 Moving Average &amp; EWMA</h3>
+<h3 id="s12-3">12.3 AR / MA / ARMA Models &amp; Realized Volatility</h3>
+
+<div class="bi">
+<div class="bt">อุปมา: "วันนี้ขึ้นกับเมื่อวาน" vs "วันนี้ขึ้นกับ shock เมื่อวาน"</div>
+<p><strong>AR (Autoregressive):</strong> วันนี้ขึ้นกับ <em>ค่าเมื่อวาน</em> — เหมือนโมเมนตัมของลูกตุ้ม: ถ้าเมื่อวานสูง วันนี้ก็มักสูงตาม (persistent) หรือดีดกลับสู่ค่าเฉลี่ย (mean-reversion)</p>
+<p><strong>MA (Moving Average):</strong> วันนี้ขึ้นกับ <em>shock (เซอร์ไพรส์) เมื่อวาน</em> — เหมือนเสียงสะท้อนของข่าว: ข่าวช็อกเมื่อวานยังดังก้องมาถึงวันนี้</p>
+<p>ทั้งสองคือ "หน่วยความจำ" ของ time series แต่จำกันคนละอย่าง: AR จำ <em>ค่า</em>, MA จำ <em>shock</em></p>
+</div>
+
+<p><strong>AR(1) — Autoregressive order 1:</strong> ค่าวันนี้เป็นฟังก์ชันเชิงเส้นของค่าเมื่อวาน + shock ใหม่</p>
+<div class="fm">xₜ = c + φ × xₜ₋₁ + εₜ<br><br>
+c = ค่าคงที่ (ระดับ baseline)<br>
+φ = สัมประสิทธิ์ "วันนี้ขึ้นกับเมื่อวานแค่ไหน"<br>
+εₜ = shock ใหม่วันนี้ (white noise, mean 0)<br>
+|φ| &lt; 1 → <strong>stationary</strong> + mean-reverting (ดึงกลับสู่ค่าเฉลี่ย c/(1−φ))<br>
+φ ใกล้ 1 → <strong>persistent</strong> (ค่าเก่าจางช้ามาก ผันผวนติดต่อกันยาว)</div>
+
+<div class="bi">
+<div class="bt">φ บอกอะไร?</div>
+<p>φ = 0.9 → ค่าเมื่อวานส่งต่อมา 90% ทุกวัน → series เคลื่อนช้า ต่อเนื่องยาว (เหมือน IV ที่ค่อยๆ ลดลงหลัง crash)</p>
+<p>φ = 0.1 → ค่าเมื่อวานแทบไม่มีผล → series กระโดดไปมาเร็ว เกือบเป็น white noise</p>
+<p>φ &lt; 0 → ดีดสลับขึ้นลง (oscillation) — วันนี้สูง พรุ่งนี้มักต่ำ</p>
+</div>
+
+<p><strong>MA(1) — Moving Average order 1:</strong> ค่าวันนี้เป็น shock วันนี้ + เศษของ shock เมื่อวาน</p>
+<div class="fm">xₜ = μ + εₜ + θ × εₜ₋₁<br><br>
+μ = ค่าเฉลี่ย<br>
+εₜ = shock วันนี้, εₜ₋₁ = shock เมื่อวาน<br>
+θ = "shock เมื่อวานยังส่งผลถึงวันนี้แค่ไหน"</div>
+
+<p><strong>ARMA(1,1) — รวมทั้งสอง:</strong> วันนี้ขึ้นกับ <em>ทั้ง</em> ค่าเมื่อวาน <em>และ</em> shock เมื่อวาน</p>
+<div class="fm">xₜ = c + φ × xₜ₋₁ + εₜ + θ × εₜ₋₁<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ AR part ─┘&nbsp;&nbsp;&nbsp;&nbsp;└─ MA part ─┘</div>
+
+<div class="bx bb">
+<div class="bt">Lineage: AR → ARCH → GARCH (วางบริบทให้บท 12.5)</div>
+<p>เทคนิค AR/MA ข้างบนใช้กับ <em>ระดับ (level)</em> ของ series แต่ในการเงินเราสนใจ <strong>ความแปรปรวน (variance)</strong> มากกว่า — เลยเอาแนวคิดเดียวกันมาใช้กับ variance:<br><br>
+• <strong>ARCH</strong> = จำลอง variance วันนี้เป็น <strong>AR บน squared-returns เมื่อวาน</strong> (σ²ₜ ขึ้นกับ r²ₜ₋₁, r²ₜ₋₂, ...)<br>
+• <strong>GARCH</strong> = เพิ่ม <strong>MA term บน variance เมื่อวาน</strong> เข้าไป (σ²ₜ ขึ้นกับ σ²ₜ₋₁ ด้วย)<br><br>
+ดังนั้น <strong>GARCH(1,1) คือโครงสร้าง ARMA(1,1) บน variance นั่นเอง!</strong> — α×r²ₜ₋₁ คือ "AR/ARCH part" และ β×σ²ₜ₋₁ คือ "MA/persistence part" นี่คือเหตุผลที่ GARCH (บท 12.5) จับ volatility clustering ได้</p>
+</div>
+
+<p><strong>Realized Volatility (RV) — วัด vol จริงจากข้อมูล intraday:</strong></p>
+<p>แทนที่จะใช้ <em>โมเดล</em> ทำนาย σ เราวัด σ ที่ <em>เกิดขึ้นจริง</em> ภายในวัน จาก return ย่อยๆ (เช่น ทุก 5 นาที) แล้วรวมกำลังสอง</p>
+<div class="fm">RV = √( Σᵢ rᵢ² )&nbsp;&nbsp; (sum over intraday intervals ภายในวัน)<br><br>
+rᵢ = return ของช่วง intraday ที่ i<br>
+RV = realized volatility ของวันนั้น (model-free!)</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: Realized Volatility จาก 4 intraday returns</div>
+<p><strong>โจทย์:</strong> วันหนึ่งมี intraday returns 4 ช่วง: +0.5%, −0.3%, +0.4%, −0.6%</p>
+<p><strong>ขั้น 1 — ยกกำลังสองแต่ละตัว:</strong><br>
+(0.005)² = 0.000025<br>
+(−0.003)² = 0.000009<br>
+(0.004)² = 0.000016<br>
+(−0.006)² = 0.000036</p>
+<p><strong>ขั้น 2 — รวม:</strong> Σrᵢ² = 0.000025 + 0.000009 + 0.000016 + 0.000036 = <strong>0.000086</strong></p>
+<p><strong>ขั้น 3 — RV รายวัน:</strong> RV = √0.000086 ≈ <strong>0.0093 = 0.93%/วัน</strong></p>
+<p><strong>ขั้น 4 — annualize ×√252:</strong> 0.93% × √252 ≈ 0.93% × 15.87 ≈ <strong>14.8%/ปี</strong></p>
+<p><strong>สำคัญ:</strong> RV เป็น <strong>model-free estimate</strong> ของ vol ที่เกิดขึ้น <em>แล้ว</em> (backward-looking, ใช้ข้อมูลจริง ไม่ต้องสมมติโมเดล) ส่วน GARCH เป็น <strong>forecast</strong> ของ vol <em>วันพรุ่งนี้</em> (forward-looking) — เทรดเดอร์มักเทียบ RV (จริง) กับ IV (ตลาดคาด) และ GARCH (โมเดลคาด) เพื่อหา edge</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์: Realized Volatility</div>
+<p>วันหนึ่งมี intraday returns 3 ช่วง: −0.8%, +0.6%, +0.4%</p>
+<p><em>คำนวณ RV รายวัน แล้ว annualize ด้วย √252 — ได้ vol รายปีเท่าไหร่?</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p>ยกกำลังสอง: (−0.008)²=0.000064, (0.006)²=0.000036, (0.004)²=0.000016</p>
+<p>Σrᵢ² = 0.000064 + 0.000036 + 0.000016 = <strong>0.000116</strong></p>
+<p>RV รายวัน = √0.000116 ≈ <strong>0.01077 = 1.08%/วัน</strong></p>
+<p>Annualize: 1.08% × √252 ≈ 1.08% × 15.87 ≈ <strong>17.1%/ปี</strong></p>
+<p>RV นี้เป็นค่า "ที่เกิดขึ้นจริง" (model-free) — ถ้าสูงกว่า IV ที่ตลาดให้ แปลว่าตลาดอาจ underprice vol</p>
+</div>
+</details>
+</div>
+
+<h3 id="s12-4">12.4 Moving Average &amp; EWMA</h3>
 
 <div class="bi">
 <div class="bt">อุปมา: คะแนนความนิยมแบบ "ใหม่กว่า = น้ำหนักมากกว่า"</div>
@@ -145,7 +223,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <text x="310" y="25" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">Volatility Spike!</text>
 </svg>
 
-<h3 id="s12-4">12.4 GARCH Model</h3>
+<h3 id="s12-5">12.5 GARCH Model</h3>
 
 <div class="bi">
 <div class="bt">อุปมา: นักพยากรณ์ที่จำ "ข่าวเมื่อวาน" + "ความแปรปรวนสะสม"</div>
@@ -189,7 +267,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 • <strong>BS สมมติ σ คงที่ ← ผิด!</strong> GARCH บอกว่า σ เปลี่ยนตลอดเวลา</p>
 </div>
 
-<h3 id="s12-5">12.5 Mean Reversion</h3>
+<h3 id="s12-6">12.6 Mean Reversion</h3>
 
 <div class="bi">
 <div class="bt">อุปมา: ยางยืดที่ดึงกลับสู่จุดกึ่งกลาง</div>

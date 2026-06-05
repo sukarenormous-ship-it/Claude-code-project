@@ -202,7 +202,39 @@ Chain Rule ยังเป็นพื้นฐานของ <strong>Ito's Lem
 </div>
 
 <!-- 7.5 -->
-<h3 id="s7-5">7.5 Partial Derivatives — Greeks ทุกตัว</h3>
+<h3 id="s7-5">7.5 Product Rule & Quotient Rule — กฎผลคูณ-ผลหาร</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: พื้นที่สี่เหลี่ยมที่ทั้งกว้างและยาวเปลี่ยนพร้อมกัน</div>
+<p>สี่เหลี่ยมผืนผ้ามีด้านกว้าง u และด้านยาว v → พื้นที่ = u·v<br>
+ถ้าทั้งสองด้าน "ขยาย" พร้อมกันนิดเดียว พื้นที่เพิ่มจาก 2 ส่วน:<br>
+• ด้านกว้างขยาย (u') × ความยาวเดิม (v) → แถบเพิ่มด้านบน = u'·v<br>
+• ด้านยาวขยาย (v') × ความกว้างเดิม (u) → แถบเพิ่มด้านข้าง = u·v'<br><br>
+(มุมเล็กๆ ที่ขยายทั้ง 2 ด้าน u'·v' เล็กจนทิ้งได้เมื่อ Δ→0)<br>
+<strong>(uv)' = u'v + uv'</strong> — "เปลี่ยนตัวแรกค้างตัวหลัง บวก เปลี่ยนตัวหลังค้างตัวแรก"</p>
+</div>
+
+<div class="fm">Product Rule: &nbsp; (u·v)' = u'·v + u·v'<br>
+Quotient Rule: &nbsp; (u/v)' = (u'·v − u·v') / v²</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: หา d/dS ของ S·N(d₁) (พจน์แรกของสูตร Black-Scholes Call)</div>
+<p>เทอม S·N(d₁) เป็น "ผลคูณ" ของ u = S และ v = N(d₁) — ต้องใช้ Product Rule!</p>
+<div class="step"><span class="step-n">1</span>u = S → u' = du/dS = 1</div>
+<div class="step"><span class="step-n">2</span>v = N(d₁) → v' = dv/dS = N'(d₁)·(∂d₁/∂S) (Chain Rule! เพราะ d₁ เป็น function ของ S)</div>
+<div class="step"><span class="step-n">3</span>Product Rule: d/dS[S·N(d₁)] = u'v + uv' = <strong>N(d₁) + S·N'(d₁)·(∂d₁/∂S)</strong></div>
+<p style="margin-top:8px"><em>นี่คือเหตุผลที่การ differentiate สูตร Black-Scholes ต้องใช้ Product Rule — ราคา Call มีเทอม S·N(d₁) ที่ทั้ง S และ N(d₁) เปลี่ยนตาม S พร้อมกัน</em></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — พจน์ S·N'(d₁) ที่ "หายไป" อย่างมหัศจรรย์</div>
+<p>เมื่อ differentiate สูตร Call ครบทุกเทอม จะได้เทอม S·N'(d₁)·(∂d₁/∂S) โผล่มา<br>
+แต่เทอมนี้ <strong>หักล้าง (cancel) กับเทอมที่มาจาก K·e⁻ʳᵀ·N(d₂)</strong> พอดี<br>
+ทำให้ผลลัพธ์เหลือเพียง <strong>Delta = N(d₁)</strong> เกลี้ยงสวยงาม (ดูรายละเอียดใน §7.7)</p>
+</div>
+
+<!-- 7.6 -->
+<h3 id="s7-6">7.6 Partial Derivatives — Greeks ทุกตัว</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: ความสุขขึ้นกับหลายปัจจัย</div>
@@ -235,8 +267,63 @@ Partial Derivative = "เปลี่ยนตัวแปรเดียว ค
 ไม่ใช่ตัวเลขลอยๆ — แต่ล้วนมาจาก partial derivative ของสูตร Black-Scholes</p>
 </div>
 
-<!-- 7.6 -->
-<h3 id="s7-6">7.6 อนุพันธ์อันดับสอง — Gamma</h3>
+<!-- 7.7 -->
+<h3 id="s7-7">7.7 Partial Derivative บนสูตร Black-Scholes จริง — The Real Greeks</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: เปิดฝากล่อง Black-Scholes ดูว่า Delta มาจากไหนจริงๆ</div>
+<p>หนังสือส่วนใหญ่บอกแค่ "Delta = N(d₁)" แล้วจบ — แต่ไม่บอกว่า <strong>ทำไม</strong><br>
+สูตร Call มีตั้ง 2 เทอม (S·N(d₁) และ K·e⁻ʳᵀ·N(d₂)) ทั้งคู่ขึ้นกับ S<br>
+ตอน differentiate ควรได้เทอมยุ่งๆ เต็มไปหมด — แต่กลับเหลือแค่ N(d₁) เกลี้ยง<br>
+ความ "มหัศจรรย์" นี้คือการหักล้างของพจน์ ที่เราจะเปิดให้ดูในหัวข้อนี้</p>
+</div>
+
+<div class="fm">Call: C = S·N(d₁) − K·e⁻ʳᵀ·N(d₂)<br>
+Delta = ∂C/∂S = N(d₁) &nbsp;&nbsp; ← เหลือเท่านี้เท่านั้น!</div>
+
+<div class="bx bb">
+<div class="bt">เหตุ → ผล: ทำไม ∂C/∂S = N(d₁) เกลี้ยงๆ</div>
+<p>differentiate ทั้ง 2 เทอมเทียบ S (ใช้ Product Rule + Chain Rule จาก §7.5):</p>
+<div class="step"><span class="step-n">1</span>เทอม 1: ∂/∂S[S·N(d₁)] = N(d₁) + S·N'(d₁)·(∂d₁/∂S)</div>
+<div class="step"><span class="step-n">2</span>เทอม 2: ∂/∂S[−K·e⁻ʳᵀ·N(d₂)] = −K·e⁻ʳᵀ·N'(d₂)·(∂d₂/∂S)</div>
+<div class="step"><span class="step-n">3</span>เพราะ d₂ = d₁ − σ√T → ∂d₂/∂S = ∂d₁/∂S (ต่างกันแค่ค่าคงที่)</div>
+<div class="step"><span class="step-n">4</span>พิสูจน์ได้ว่า <strong>S·N'(d₁) = K·e⁻ʳᵀ·N'(d₂)</strong> พอดี (เอกลักษณ์ของ lognormal)</div>
+<div class="step"><span class="step-n">5</span>ดังนั้น 2 พจน์ที่มี N' <strong>เท่ากันและตรงข้าม → หักล้างกันหมด!</strong></div>
+<p style="margin-top:8px"><em>เหลือเพียง ∂C/∂S = <strong>N(d₁)</strong> — นี่คือ "ความมหัศจรรย์" ที่หนังสือส่วนใหญ่ข้ามไป</em></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่างตัวเลขจริง: คำนวณ Delta ของ Call ATM</div>
+<p>กำหนด S=100, K=100, r=5%, σ=25%, T=1 ปี</p>
+<div class="step"><span class="step-n">1</span>d₁ = [ln(S/K) + (r + σ²/2)·T] / (σ√T) = [ln(1) + (0.05 + 0.03125)·1] / (0.25·1) = 0.08125 / 0.25 = <strong>0.325</strong></div>
+<div class="step"><span class="step-n">2</span>Delta = N(d₁) = N(0.325) ≈ <strong>0.627</strong></div>
+<div class="step"><span class="step-n">3</span>ตีความ: หุ้นขยับขึ้น ฿1 (จาก ฿100 → ฿101) → ราคา Option ขยับขึ้น ≈ <strong>฿0.627</strong></div>
+<p style="margin-top:8px"><em>Delta = 0.627 &gt; 0.5 เพราะ drift (r + σ²/2) ดันให้ Call ATM เอนไปทาง ITM เล็กน้อย</em></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Greeks ตัวอื่น = partial derivative ตัวอื่นของสูตรเดียวกัน</div>
+<p>เมื่อเข้าใจว่า Delta = ∂C/∂S แล้ว Greeks ที่เหลือก็คือ partial derivative คนละตัว:<br>
+• <strong>Gamma = ∂²C/∂S²</strong> = ∂(Delta)/∂S = N'(d₁)/(S·σ√T) — ความโค้ง (ดู §7.8)<br>
+• <strong>Vega = ∂C/∂σ</strong> = S·N'(d₁)·√T — ไวต่อความผันผวน<br>
+• <strong>Theta = −∂C/∂T</strong> (เครื่องหมายลบ เพราะเวลาเหลือน้อยลง) — time decay<br>
+• <strong>Rho = ∂C/∂r</strong> = K·T·e⁻ʳᵀ·N(d₂) — ไวต่อดอกเบี้ย</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ฝึก §7.7</div>
+<p>Call: S=50, K=50, r=4%, σ=20%, T=1 ปี</p>
+<p>(ก) คำนวณ d₁ &nbsp; (ข) หา Delta = N(d₁) เมื่อกำหนด N(0.3)≈0.618 &nbsp; (ค) ถ้าหุ้นขยับ +฿1 ราคา Option ขยับประมาณเท่าไหร่?</p>
+<details><summary>ดูเฉลย</summary>
+<div class="ans">
+(ก) d₁ = [ln(50/50) + (0.04 + 0.02)·1] / (0.20·1) = (0 + 0.06)/0.20 = <strong>0.30</strong><br>
+(ข) Delta = N(0.30) ≈ <strong>0.618</strong><br>
+(ค) หุ้น +฿1 → Option ≈ +฿0.618 (≈ Delta × ΔS)
+</div></details>
+</div>
+
+<!-- 7.8 -->
+<h3 id="s7-8">7.8 อนุพันธ์อันดับสอง — Gamma</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: ความโค้งของถนน</div>
@@ -283,8 +370,8 @@ f''(x) = 6x (slope เปลี่ยนเร็วแค่ไหน ณ x น
 • <strong>Gamma สูงสุดที่ ATM</strong>: Options ATM โค้งมากที่สุด = ไวต่อการเคลื่อนไหวของราคา</p>
 </div>
 
-<!-- 7.7 -->
-<h3 id="s7-7">7.7 Integration — พื้นที่ใต้กราฟ</h3>
+<!-- 7.9 -->
+<h3 id="s7-9">7.9 Integration — พื้นที่ใต้กราฟ</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: คิดระยะทางจากความเร็ว</div>
