@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คณิตศาสตร์สำหรับ Options — Part VII</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
@@ -28,8 +28,20 @@ details summary{cursor:pointer;font-weight:600;color:var(--blue);padding:8px 12p
 details summary::before{content:"▶ "}
 details[open] summary::before{content:"▼ "}
 details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.04em}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,.bi,.step,.ex,table{page-break-inside:avoid}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+
 </head>
 <body>
 <div class="cover">
@@ -403,6 +415,71 @@ BS แบบมีปันผล: C = S·e<sup>−qT</sup>·N(d₁) − K·e<su
 <tr><td><strong>Antithetic Variates</strong></td><td>ถ้าสุ่ม Z → ใช้ -Z ด้วย (คู่สมมาตร)</td><td>ลด variance ~50% ฟรี!</td></tr>
 <tr><td><strong>Control Variates</strong></td><td>ใช้ option ที่มี closed-form เป็น "ตัวควบคุม"</td><td>ลด error มาก</td></tr>
 </table>
+
+<h3 id="s16-4b">16.4b Standard Error — วัดความแม่นของ MC</h3>
+
+<div class="bi">
+<div class="bt">อุปมา: โพลสำรวจที่มี "ค่าความคลาดเคลื่อน ±3%"</div>
+<p>MC ให้ราคาประมาณ — แต่ <em>ประมาณแค่ไหน?</em> เหมือนโพลที่บอก "45% ± 3%" เราต้องรู้ความคลาดเคลื่อนถึงจะใช้ตัวเลขได้</p>
+<p>Standard Error (SE) คือ "ค่า ± " ของ MC: มันบอกว่าค่าเฉลี่ยที่ได้น่าจะห่างจากค่าจริงเท่าไหร่</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">สูตร SE และตัวอย่างคำนวณ</div>
+<div class="fm" style="text-align:center">SE = σ<sub>payoff</sub> / √N</div>
+<p>σ<sub>payoff</sub> = ส่วนเบี่ยงเบนมาตรฐานของ payoff ข้าม paths, N = จำนวน paths</p>
+<div class="step">
+<p><span class="step-n">1</span>สมมติ std ของ payoff = ฿15, N = 10,000</p>
+<p><span class="step-n">2</span>SE = 15 / √10,000 = 15 / 100 = <strong>฿0.15</strong></p>
+<p><span class="step-n">3</span>95% CI = estimate ± 1.96 × SE = estimate ± 1.96×0.15 = <strong>± ฿0.29</strong></p>
+<p><span class="step-n">4</span>อยากให้ SE ลดครึ่ง (฿0.15 → ฿0.075)? ต้องใช้ <strong>paths เพิ่ม 4×</strong> (40,000) — เพราะ SE ∝ 1/√N</p>
+</div>
+</div>
+
+<h3 id="s16-4c">16.4c Antithetic Variates — สุ่ม Z แล้วใช้ −Z</h3>
+
+<div class="bx ba">
+<div class="bt">วิธีการและตัวอย่าง</div>
+<p>สำหรับทุก Z ที่สุ่มมา ให้ใช้ <strong>−Z</strong> สร้างอีก path หนึ่งด้วย → สองเส้นทางนี้ <em>สหสัมพันธ์เป็นลบ</em> (ตัวหนึ่งขึ้น อีกตัวลง) ค่าเฉลี่ยของคู่จึงผันผวนน้อยลง</p>
+<div class="step">
+<p><span class="step-n">1</span>สุ่ม Z = +1.2 → S₊ = 100×exp(0.01875 + 0.25×1.2) = ฿137.5 → payoff = ฿37.5</p>
+<p><span class="step-n">2</span>ใช้คู่ −Z = −1.2 → S₋ = 100×exp(0.01875 + 0.25×(−1.2)) = 100×exp(−0.281) = ฿75.5 → payoff = ฿0</p>
+<p><span class="step-n">3</span>ค่าเฉลี่ยของคู่ = (37.5 + 0)/2 = <strong>฿18.75</strong> — เมื่อ path หนึ่งสุดโต่งขึ้น อีก path ดึงกลับลง → ค่าเฉลี่ยเสถียรกว่าการสุ่มอิสระสองครั้ง</p>
+<p><span class="step-n">4</span>ผลทั่วไป: ลด variance ได้ราว <strong>~50%</strong> ฟรี โดยไม่ต้องเพิ่มจำนวนการสุ่ม Z</p>
+</div>
+</div>
+
+<h3 id="s16-4d">16.4d Control Variates — ยืมราคาที่รู้แน่ มาแก้ค่าที่ไม่รู้</h3>
+
+<div class="bx bb">
+<div class="bt">ใช้ option ที่รู้ราคาแน่ ๆ มาแก้ MC ของ option ที่ยาก</div>
+<p>สมมติเราอยาก price <strong>Asian option</strong> (ไม่มี closed-form) แต่ <strong>vanilla option</strong> เรารู้ราคาจริงจาก BS แน่นอน → เอามาช่วยแก้ค่า:</p>
+<div class="fm" style="text-align:center">Y* = Y<sub>asian,MC</sub> − β·(Y<sub>vanilla,MC</sub> − Y<sub>vanilla,BS exact</sub>)</div>
+<p>พจน์ในวงเล็บ (Y<sub>vanilla,MC</sub> − Y<sub>vanilla,BS exact</sub>) คือ <strong>ความผิดพลาดของ MC บน vanilla</strong> — และเรารู้มันเป๊ะ เพราะรู้ราคา BS จริง</p>
+<p>ถ้า MC รอบนี้ประเมิน vanilla สูงไป → มันก็มักประเมิน Asian สูงไปด้วย (สหสัมพันธ์กัน) → เราจึง <em>ลบ error นั้นทิ้ง</em> ออกจากค่า Asian</p>
+<p>β คือสัมประสิทธิ์ที่ปรับให้เหมาะ (มักได้จาก regression ของ Y_asian กับ Y_vanilla) → ลด variance ได้ถึง <strong>80–90%</strong> เมื่อสองตัวสหสัมพันธ์สูง</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">ระวัง: variance reduction หด "ค่าคงที่" ไม่ใช่ "อัตรา"</div>
+<p>การ converge ของ MC ยังคงเป็น <strong>1/√N เสมอ</strong> — เทคนิคพวกนี้ทำให้ค่าคงที่ข้างหน้า (σ<sub>payoff</sub>) เล็กลง ไม่ได้เปลี่ยนเลขชี้กำลัง</p>
+<p>ดังนั้นถ้าอยากแม่นขึ้น 10× คุณยังต้องใช้ paths <strong>เพิ่ม 100×</strong> อยู่ดี — เว้นแต่จะลด variance ลงด้วยเทคนิคข้างต้น (ซึ่งแค่ขยับเส้นกราฟลง ไม่ได้ทำให้มันชันขึ้น)</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์: Standard Error และ Confidence Interval</div>
+<p>MC ประเมินราคา Call ได้ ฿12.34 จาก N = 40,000 paths โดยมี std ของ payoff = ฿18<br>
+<em>(ก) คำนวณ SE (ข) หา 95% CI (ค) ถ้าอยากให้ SE = ฿0.045 ต้องใช้กี่ paths?</em></p>
+<details>
+<summary>ดูเฉลย</summary>
+<div class="ans">
+<p>(ก) SE = σ<sub>payoff</sub>/√N = 18/√40,000 = 18/200 = <strong>฿0.09</strong></p>
+<p>(ข) 95% CI = 12.34 ± 1.96×0.09 = 12.34 ± 0.176 → <strong>[฿12.16, ฿12.52]</strong></p>
+<p>(ค) ต้องการ SE ลดครึ่ง (0.09 → 0.045) → ลด SE ลง 2× ต้องเพิ่ม paths 2² = 4× → N = 40,000×4 = <strong>160,000 paths</strong></p>
+<p>(ตรวจ: 18/√160,000 = 18/400 = 0.045 ✓)</p>
+</div>
+</details>
+</div>
 
 <!-- Practice Problems -->
 <h2 id="practice">แบบฝึกหัด Part VII</h2>

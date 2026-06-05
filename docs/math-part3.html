@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คณิตศาสตร์สำหรับ Options — Part III</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -41,14 +41,26 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0;padding:12px 16px;background:var(--g0);border-radius:8px}
 .chain-item{background:var(--blue);color:#fff;padding:4px 12px;border-radius:4px;font-size:.9em;font-weight:600}
 .chain-arrow{color:var(--g7);font-size:1.1em;font-weight:700}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.04em}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+
 </head>
 <body>
 <div class="cover">
 <h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
 <div class="sub">Part III: แคลคูลัส — ภาษาของ Greeks (v2)</div>
-<div class="desc">บทที่ 7: Limit · Derivative · Chain Rule · Partial · Gamma · Integration · Taylor<br>
+<div class="desc">บทที่ 7: Limit · Derivative · Chain · Product/Quotient · Partial · Real Greeks · Gamma · Integration · Expected Payoff · Taylor · Full P&amp;L<br>
 เรียนแบบ 3 ชั้น: อุปมา → เหตุ→ผล → ตัวเลขจริง</div>
 </div>
 
@@ -400,8 +412,60 @@ f''(x) = 6x (slope เปลี่ยนเร็วแค่ไหน ณ x น
 • <strong>ราคา Option = ∫ payoff × probability density</strong> = E*[payoff] ที่ discount แล้ว</p>
 </div>
 
-<!-- 7.8 -->
-<h3 id="s7-8">7.8 Taylor Series — ประมาณค่าจาก Derivative</h3>
+<!-- 7.10 -->
+<h3 id="s7-10">7.10 Integration หา Expected Payoff — ราคา Option = ∫ payoff × density</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: รวมพื้นที่ใต้กราฟ payoff×ความน่าจะเป็น = ราคายุติธรรม</div>
+<p>ถ้าจะตั้งราคา "ลอตเตอรี่" ที่ยุติธรรม → คิดทุกผลลัพธ์ที่เป็นไปได้:<br>
+(เงินที่ได้ในผลลัพธ์นั้น) × (ความน่าจะเป็นของผลลัพธ์นั้น) แล้วรวมกันทุกผล<br><br>
+Option ก็เหมือนกัน: ราคายุติธรรม = รวม (payoff ของแต่ละราคาหุ้น) × (ความน่าจะเป็นที่หุ้นจบที่ราคานั้น)<br>
+"รวมทุกผลลัพธ์ต่อเนื่อง" = <strong>Integration</strong> → แล้ว discount กลับมาเป็นมูลค่าวันนี้</p>
+</div>
+
+<div class="fm">Call price = e⁻ʳᵀ · ∫₀^∞ max(0, S − K) · f(S) dS<br><br>
+โดย f(S) = risk-neutral lognormal density (ความน่าจะเป็นที่หุ้นจบที่ราคา S)<br>
+max(0, S−K) = payoff ของ Call ที่ราคาจบ S</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่าง: ประมาณราคา Call แบบ discrete (แบ่ง bucket) — K=100, r=5%, T=1</div>
+<p>แทน integral ต่อเนื่องด้วยการแบ่งราคาหุ้นจบเป็น 5 bucket พร้อม risk-neutral probability (รวม = 1.00):</p>
+<table>
+<tr><th>S (ราคาจบ)</th><th>payoff = max(0, S−100)</th><th>p (prob)</th><th>payoff × p</th></tr>
+<tr><td>80</td><td>0</td><td>0.10</td><td>0.00</td></tr>
+<tr><td>90</td><td>0</td><td>0.20</td><td>0.00</td></tr>
+<tr><td>100</td><td>0</td><td>0.35</td><td>0.00</td></tr>
+<tr><td>110</td><td>10</td><td>0.22</td><td>2.20</td></tr>
+<tr><td>120</td><td>20</td><td>0.13</td><td>2.60</td></tr>
+<tr><td><strong>รวม</strong></td><td></td><td><strong>1.00</strong></td><td><strong>4.80</strong></td></tr>
+</table>
+<div class="step"><span class="step-n">1</span>Σ payoff × p = 0 + 0 + 0 + 2.20 + 2.60 = <strong>฿4.80</strong> (= expected payoff ที่ครบกำหนด)</div>
+<div class="step"><span class="step-n">2</span>discount กลับมาวันนี้: e⁻ʳᵀ = e⁻⁰·⁰⁵ ≈ 0.9512</div>
+<div class="step"><span class="step-n">3</span>ราคา Call ≈ 4.80 × 0.9512 ≈ <strong>฿4.57</strong></div>
+<p style="margin-top:8px"><em>นี่เป็นเพียงการประมาณหยาบด้วย 5 bucket — ถ้าใช้ bucket ละเอียดขึ้นเรื่อยๆ จนเป็น integral ต่อเนื่องกับ lognormal density จริง จะได้สูตร Black-Scholes แบบเป๊ะ</em></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options</div>
+<p>สูตร Black-Scholes ที่ดูน่ากลัว แท้จริงคือ <strong>integral ก้อนนี้ที่แก้ออกมาเป็น closed form</strong><br>
+S·N(d₁) − K·e⁻ʳᵀ·N(d₂) คือผลลัพธ์ของ ∫ max(0, S−K)·f(S) dS เมื่อ f เป็น lognormal</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ฝึก §7.10</div>
+<p>Put option, K=100, r=0% (เพื่อความง่าย, e⁻ʳᵀ=1). ใช้ราคาจบและ probability ชุดเดิม:<br>
+S = 80, 90, 100, 110, 120 กับ p = 0.10, 0.20, 0.35, 0.22, 0.13<br>
+payoff ของ Put = max(0, K − S). ประมาณราคา Put</p>
+<details><summary>ดูเฉลย</summary>
+<div class="ans">
+payoff: S=80→20, S=90→10, S=100→0, S=110→0, S=120→0<br>
+Σ payoff × p = 20×0.10 + 10×0.20 + 0 + 0 + 0 = 2.00 + 2.00 = <strong>฿4.00</strong><br>
+r=0 → ไม่ต้อง discount → ราคา Put ≈ <strong>฿4.00</strong>
+</div></details>
+</div>
+
+<!-- 7.11 -->
+<h3 id="s7-11">7.11 Taylor Series — ประมาณค่าจาก Derivative</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: ประมาณค่าจากข้อมูลใกล้เคียง</div>
@@ -431,6 +495,74 @@ f(x+h) ≈ f(x) + f'(x)·h + ½f''(x)·h²<br><br>
 ถ้า ΔS ใหญ่ (crash) → Gamma term สำคัญมาก! Short Gamma trader ระวัง</p>
 </div>
 
+<!-- 7.12 -->
+<h3 id="s7-12">7.12 Multivariate Taylor & The Full Options P&L — สมการกำไร-ขาดทุนที่เทรดเดอร์ใช้จริง</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: ประมาณการเปลี่ยนแปลงราคา Option จากหลายปัจจัยพร้อมกัน</div>
+<p>ใน §7.11 เราประมาณ ΔV จากการขยับของหุ้น (S) อย่างเดียว — แต่ในชีวิตจริง<br>
+ภายในวันเดียวกัน มีหลายอย่างเปลี่ยนพร้อมกัน: หุ้นขยับ, เวลาเดินไป 1 วัน, ความผันผวนเปลี่ยน<br><br>
+Multivariate Taylor คือการ "บวกผลจากทุกปัจจัยเข้าด้วยกัน" — แต่ละ Greek คือ slope ของแต่ละแกน<br>
+รวมทุก slope × ระยะที่ขยับ = ประมาณการเปลี่ยนแปลงราคา Option รวม</p>
+</div>
+
+<div class="fm">ΔV ≈ Delta·ΔS + ½·Gamma·(ΔS)² + Theta·Δt + Vega·Δσ<br><br>
+(สูตรที่เทรดเดอร์ใช้บ่อยที่สุด — แตกกำไร/ขาดทุนเป็นรายปัจจัย)</div>
+
+<div class="bx bb">
+<div class="bt">แต่ละเทอมหมายถึงอะไร</div>
+<p>• <strong>Delta·ΔS</strong> — กำไร/ขาดทุนจากทิศทาง (หุ้นขึ้น/ลง) = directional P&amp;L<br>
+• <strong>½·Gamma·(ΔS)²</strong> — กำไรจากความโค้ง = convexity / gamma P&amp;L (เป็นบวกเสมอถ้า long gamma ไม่ว่าหุ้นขึ้นหรือลง)<br>
+• <strong>Theta·Δt</strong> — time decay = มูลค่าที่ลดตามเวลา (มักเป็นลบสำหรับคนถือ option)<br>
+• <strong>Vega·Δσ</strong> — กำไร/ขาดทุนเมื่อความผันผวน (vol) เปลี่ยน = vol P&amp;L</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่างตัวเลขจริง: แตก P&amp;L 1 วันของ position</div>
+<p>Position: Delta=0.5, Gamma=0.03, Theta=−0.05/วัน, Vega=0.12 (ต่อ 1 vol point = 1%)<br>
+เหตุการณ์ในวันนั้น: หุ้นขยับ ΔS=+฿2, เวลาเดิน Δt=1 วัน, vol เพิ่ม Δσ=+1% (=+0.01)</p>
+<div class="step"><span class="step-n">1</span>Delta·ΔS = 0.5 × 2 = <strong>+฿1.00</strong> (directional)</div>
+<div class="step"><span class="step-n">2</span>½·Gamma·(ΔS)² = 0.5 × 0.03 × 2² = 0.5 × 0.03 × 4 = <strong>+฿0.06</strong> (convexity/gamma)</div>
+<div class="step"><span class="step-n">3</span>Theta·Δt = −0.05 × 1 = <strong>−฿0.05</strong> (time decay)</div>
+<div class="step"><span class="step-n">4</span>Vega·Δσ = 0.12 × 1 = <strong>+฿0.12</strong> (Vega ใช้ convention "ต่อ 1 vol point" → vol +1% → คูณ 1)</div>
+<div class="step"><span class="step-n">5</span>รวม: ΔV ≈ 1.00 + 0.06 − 0.05 + 0.12 = <strong>+฿1.13</strong></div>
+</div>
+
+<div class="chain">
+<span class="chain-item">Delta +฿1.00</span>
+<span class="chain-arrow">+</span>
+<span class="chain-item">Gamma +฿0.06</span>
+<span class="chain-arrow">+</span>
+<span class="chain-item">Theta −฿0.05</span>
+<span class="chain-arrow">+</span>
+<span class="chain-item">Vega +฿0.12</span>
+<span class="chain-arrow">=</span>
+<span class="chain-item">ΔV +฿1.13</span>
+</div>
+
+<div class="bx bg">
+<div class="bt">เชื่อมกับ Options — นี่คือวิธี attribute P&amp;L รายวันของเทรดเดอร์จริง</div>
+<p>คำถาม "<strong>ทำไมวันนี้กำไร/ขาดทุน?</strong>" ตอบได้ด้วยการแยกเป็นรายปัจจัย:<br>
+• กำไรเพราะเดาทิศถูก (delta) หรือเพราะตลาดเหวี่ยงแรง (gamma)?<br>
+• ขาดทุนเพราะเวลาผ่านไป (theta) หรือเพราะ vol ตก (vega)?<br>
+การแตก P&amp;L แบบนี้เรียกว่า <strong>P&amp;L attribution / Greeks explain</strong> — ใช้ทุกวันบนโต๊ะเทรด</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ฝึก §7.12</div>
+<p>Position: Delta=−0.4, Gamma=0.02, Theta=−0.03/วัน, Vega=0.10 (ต่อ 1 vol point)<br>
+ในวันนั้น: หุ้นขยับ ΔS=−฿3, Δt=1 วัน, vol ลด Δσ=−2% (=−0.02)<br>
+แตก ΔV เป็น 4 เทอม แล้วรวม</p>
+<details><summary>ดูเฉลย</summary>
+<div class="ans">
+Delta·ΔS = −0.4 × (−3) = <strong>+฿1.20</strong><br>
+½·Gamma·(ΔS)² = 0.5 × 0.02 × (−3)² = 0.5 × 0.02 × 9 = <strong>+฿0.09</strong><br>
+Theta·Δt = −0.03 × 1 = <strong>−฿0.03</strong><br>
+Vega·Δσ = 0.10 × (−2) = <strong>−฿0.20</strong><br>
+รวม: ΔV ≈ 1.20 + 0.09 − 0.03 − 0.20 = <strong>+฿1.06</strong>
+</div></details>
+</div>
+
 <!-- Ch7 Summary -->
 <div class="bx ba">
 <div class="bt">สรุปบทที่ 7</div>
@@ -438,10 +570,14 @@ f(x+h) ≈ f(x) + f'(x)·h + ½f''(x)·h²<br><br>
 ✓ Derivative = slope ณ จุดนั้น (ไม่ใช่เฉลี่ย) = <strong>Delta</strong><br>
 ✓ d/dx(eˣ) = eˣ ← อนุพันธ์ตัวเอง = ทำไม eˣ ปรากฏทุกที่ใน finance<br>
 ✓ Chain Rule = "ส่งต่อ" การเปลี่ยนแปลง → พื้นฐานของ Ito's Lemma<br>
+✓ <strong>Product/Quotient Rule</strong>: (uv)' = u'v+uv' → ใช้ differentiate S·N(d₁)<br>
 ✓ <strong>Partial Derivatives = Greeks ทุกตัว</strong>: Δ Θ ν ρ<br>
+✓ <strong>The Real Greeks</strong>: Delta = N(d₁) เพราะพจน์ S·N'(d₁) หักล้างกันพอดี<br>
 ✓ <strong>อนุพันธ์อันดับ 2 = Gamma</strong> = ความโค้ง → Long/Short Gamma<br>
 ✓ Integration = ย้อนกลับ derivative → CDF, Expected Payoff<br>
-✓ <strong>Taylor: ΔV ≈ Delta×ΔS + ½Gamma×(ΔS)²</strong> = ใช้ทุกวัน</p>
+✓ <strong>ราคา Option = e⁻ʳᵀ·∫ max(0,S−K)·f(S) dS</strong> = รวม payoff × density<br>
+✓ <strong>Taylor: ΔV ≈ Delta×ΔS + ½Gamma×(ΔS)²</strong> = ใช้ทุกวัน<br>
+✓ <strong>Full P&amp;L: ΔV ≈ Delta·ΔS + ½Γ·(ΔS)² + Theta·Δt + Vega·Δσ</strong> = P&amp;L attribution</p>
 </div>
 
 <!-- Ch7 Exercises -->

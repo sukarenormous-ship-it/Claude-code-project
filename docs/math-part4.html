@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คณิตศาสตร์สำหรับ Options — Part IV</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -41,8 +41,20 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0;padding:12px 16px;background:var(--g0);border-radius:8px}
 .chain-item{background:var(--blue);color:#fff;padding:4px 12px;border-radius:4px;font-size:.9em;font-weight:600}
 .chain-arrow{color:var(--g7);font-size:1.1em;font-weight:700}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.04em}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+
 </head>
 <body>
 <div class="cover">
@@ -356,8 +368,60 @@ Minimize: Σᵢ(yᵢ − α − βxᵢ)²  ← OLS (Ordinary Least Squares)</div
 <strong>Options Hedge Ratio</strong>: ถ้า regress การเปลี่ยนแปลงราคา option (ΔV) บนการเปลี่ยนแปลงราคา underlying (ΔS) <strong>เฉพาะช่วงสั้น ๆ (ΔS เล็ก)</strong> slope ที่ได้ ≈ <strong>Delta</strong> — แต่ระวัง: ถ้า ΔS ใหญ่ slope จะเพี้ยนเพราะ Gamma (Delta เปลี่ยน) และ Vega (σ เปลี่ยน) เข้ามาแทรก ดังนั้น regression slope ให้ delta แค่ <em>local</em> ไม่เท่ากับ analytic delta = ∂V/∂S เป๊ะ</p>
 </div>
 
-<!-- 9.2 -->
-<h3 id="s9-2">9.2 Multiple Regression — หลายปัจจัยพร้อมกัน</h3>
+<!-- 9.2 NEW: Regression Diagnostics -->
+<h3 id="s9-2">9.2 Regression Diagnostics &amp; Standard Errors — ตรวจสุขภาพโมเดล</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: ตรวจสุขภาพหลัง fit เส้น</div>
+<p>fit เส้น regression เสร็จ แล้วได้ β สวย ๆ — อย่าเพิ่งเชื่อ!<br>
+เหมือนหมอที่ต้อง "ตรวจสุขภาพ" คนไข้ก่อนบอกว่าหายดี เราต้องตรวจ <strong>residuals</strong> (ส่วนที่โมเดลทายพลาด) ก่อน<br><br>
+ถ้า residuals "สุขภาพดี" (สุ่มกระจายไม่มีแบบแผน) → เชื่อโมเดลได้<br>
+ถ้า residuals มี pattern → โมเดลมีปัญหาซ่อนอยู่</p>
+</div>
+
+<div class="fm">Residual: eᵢ = yᵢ − ŷᵢ &nbsp;&nbsp; ← ค่าจริง − ค่าที่โมเดลทาย<br><br>
+plot residual vs x → ควรเป็น <strong>random scatter</strong> รอบเส้น 0 (ไม่มีรูปทรง ไม่มีแนวโน้ม)</div>
+
+<div class="bx ba">
+<div class="bt">Heteroskedasticity — ความแปรปรวนไม่คงที่</div>
+<p>ถ้า <strong>การกระจายของ residual โตขึ้นตาม x</strong> (เล็กตอน x น้อย, บานออกตอน x มาก เป็นรูปกรวย) → variance ไม่คงที่ = heteroskedasticity<br><br>
+<strong>เหตุ → ผล:</strong> β ยัง <strong>unbiased</strong> (ค่าเฉลี่ยยังถูก) แต่ <strong>standard error ผิด</strong> → t-stat และ confidence interval เชื่อไม่ได้<br>
+พบบ่อยมากใน financial returns เพราะ <strong>volatility clustering</strong> (ช่วงตลาดผันผวน residual ใหญ่, ช่วงสงบ residual เล็ก)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Autocorrelation — residual สัมพันธ์กันข้ามเวลา</div>
+<p>ถ้า residual วันนี้ทำนาย residual พรุ่งนี้ได้ (correlated over time) → ละเมิดสมมติฐานว่า error เป็นอิสระ<br>
+ตรวจด้วย <strong>Durbin-Watson statistic</strong> (ค่าใกล้ 2 = ไม่มี autocorrelation; ใกล้ 0 = บวก; ใกล้ 4 = ลบ)<br>
+พบทั่วไปใน time-series returns → standard error ต่ำเกินจริง → คิดว่า β significant ทั้งที่จริงไม่</p>
+</div>
+
+<div class="fm">Standard error ของ β:<br>
+se(β) = σ_resid / (√n · σ_x)<br>
+&nbsp;&nbsp;σ_resid = ส่วนเบี่ยงเบนของ residual, &nbsp; n = จำนวนจุด, &nbsp; σ_x = SD ของ x<br><br>
+t-stat = β / se(β) &nbsp;&nbsp; → ถ้า |t| > 2 → β <strong>significant</strong> ทางสถิติ (95%)</div>
+
+<div class="bx ba">
+<div class="bt">ตัวอย่างคำนวณ: β significant ไหม?</div>
+<p>สมมติได้ β = 1.5, se(β) = 0.3<br>
+t-stat = β / se(β) = 1.5 / 0.3 = <strong>5.0</strong><br>
+|t| = 5 > 2 → <strong>significant!</strong> β แตกต่างจาก 0 อย่างมีนัยสำคัญ — เชื่อได้ว่าหุ้นมี exposure กับตลาดจริง</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ฝึก §9.2</div>
+<p><strong>ฝึก.</strong> regression ให้ β = 0.8, se(β) = 0.5 — β นี้ significant หรือไม่?</p>
+<details><summary>ดูเฉลย</summary>
+<div class="ans">
+t-stat = β / se(β) = 0.8 / 0.5 = <strong>1.6</strong><br>
+|t| = 1.6 &lt; 2 → <strong>NOT significant</strong><br>
+แปลว่า: ด้วยข้อมูลชุดนี้ เราแยกไม่ออกว่า β ต่างจาก 0 จริงหรือเปล่า — อาจเป็นแค่ noise<br>
+(se ใหญ่เทียบกับ β → ความไม่แน่นอนสูง — ต้องการข้อมูลมากขึ้นเพื่อยืนยัน)
+</div></details>
+</div>
+
+<!-- 9.3 (was 9.2) -->
+<h3 id="s9-3b">9.3 Multiple Regression — หลายปัจจัยพร้อมกัน</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: ราคาบ้านขึ้นกับหลายปัจจัย</div>
@@ -378,8 +442,51 @@ OLS solution: β̂ = (XᵀX)⁻¹ Xᵀy &nbsp;&nbsp; ← ใช้ Linear Algebr
 • ไม่ต้อง hedge ทีละหุ้น → hedge 3 factors ครอบ portfolio ทั้งหมด</p>
 </div>
 
-<!-- 9.3 -->
-<h3 id="s9-3">9.3 R² — วัดความดีของ Model</h3>
+<!-- 9.4 NEW: Multicollinearity -->
+<h3 id="s9-4b">9.4 Multicollinearity — ตัวแปรซ้ำซ้อน</h3>
+
+<div class="bx bi">
+<div class="bt">🔍 อุปมา: พยานสองคนเล่าเรื่องเดียวกัน</div>
+<p>ถ้ามีพยาน 2 คนในศาล แต่ทั้งคู่ <strong>เล่าเรื่องเดียวกันเป๊ะ</strong> — ผู้พิพากษาแยกไม่ออกว่าหลักฐานมาจากใคร "ทำ" จริง<br><br>
+factor model ก็เหมือนกัน: ถ้าสองปัจจัยเล่าเรื่องเดียวกัน (correlated สูง) โมเดล <strong>แยกไม่ออกว่าใครทำให้ return เปลี่ยน</strong> → β ของแต่ละตัว <strong>ไม่เสถียร</strong> (กระโดดไปมา)</p>
+</div>
+
+<div class="fm">เหตุ → ผล:<br>
+factors correlated สูง (เช่น 2 value factors P/B กับ P/E) → (XᵀX) <strong>near-singular</strong> (det ≈ 0)<br>
+→ ต้องคูณ (XᵀX)⁻¹ ที่ "ระเบิด" (ค่ามหาศาล)<br>
+→ β estimates มี <strong>variance มหาศาล</strong> → เปลี่ยนข้อมูลนิดเดียว β พลิกเครื่องหมาย (+ เป็น −)</div>
+
+<div class="bx ba">
+<div class="bt">Detection — VIF (Variance Inflation Factor)</div>
+<p>วิธีตรวจ: regress ปัจจัย j กับปัจจัยที่เหลือ ได้ R²ⱼ แล้วคำนวณ<br>
+<span style="font-family:'Courier New',monospace">VIF_j = 1 / (1 − R²ⱼ)</span><br><br>
+• ถ้าปัจจัย j ทำนายไม่ได้จากตัวอื่น (R²ⱼ ≈ 0) → VIF ≈ 1 (ดี ไม่ซ้ำซ้อน)<br>
+• ถ้าปัจจัย j ถูกตัวอื่นทำนายได้เกือบหมด (R²ⱼ = 0.9) → VIF = 1/(1−0.9) = <strong>10</strong><br>
+<strong>กฎ:</strong> VIF > 10 → มีปัญหา multicollinearity ชัดเจน<br>
+อีกวิธี: ดู <strong>correlation matrix ของ factors</strong> โดยตรง — ถ้าคู่ไหน |ρ| > 0.8 ให้ระวัง</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">วิธีแก้ — ตัด/รวม หรือใช้ PCA (เชื่อมกับบทที่ 8)</div>
+<p>• <strong>Drop</strong>: ทิ้งปัจจัยซ้ำซ้อนตัวหนึ่งทิ้งไป (เก็บตัวที่ตีความง่ายกว่า)<br>
+• <strong>Combine</strong>: รวมสองปัจจัยที่ซ้ำเป็นตัวเดียว (เช่นเฉลี่ย value score)<br>
+• <strong>PCA</strong>: แปลง factors ที่ correlated เป็น principal components ที่ <strong>orthogonal (ตั้งฉาก ไม่ correlated)</strong> โดยสร้าง — ตรงนี้ผูกกลับไปที่ §8.5 eigenvector ของ covariance matrix factors → กำจัดความซ้ำซ้อนได้ที่ราก</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ฝึก §9.4</div>
+<p><strong>ฝึก.</strong> regress ปัจจัย HML กับปัจจัยอื่น ๆ ได้ R² = 0.95 — VIF เท่าไหร่ และมีปัญหา multicollinearity ไหม?</p>
+<details><summary>ดูเฉลย</summary>
+<div class="ans">
+VIF = 1 / (1 − R²) = 1 / (1 − 0.95) = 1 / 0.05 = <strong>20</strong><br>
+VIF = 20 > 10 → <strong>มีปัญหา multicollinearity ชัดเจน</strong><br>
+ปัจจัย HML ถูกปัจจัยอื่นทำนายได้ถึง 95% → ซ้ำซ้อนสูง<br>
+แก้: ตัด HML ทิ้ง, หรือรวมกับปัจจัยที่ซ้ำ, หรือใช้ PCA สร้าง factor ใหม่ที่ตั้งฉากกัน
+</div></details>
+</div>
+
+<!-- 9.5 (was 9.3) -->
+<h3 id="s9-5b">9.5 R² — วัดความดีของ Model</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: พยากรณ์อากาศ</div>
@@ -402,7 +509,7 @@ R² = 0.30 สำหรับ daily stock return ถือว่าดีมา�
 </table>
 
 <!-- 9.4 -->
-<h3 id="s9-4">9.4 Curve Fitting — Fit Volatility Surface</h3>
+<h3 id="s9-6">9.6 Curve Fitting — Fit Volatility Surface</h3>
 
 <div class="bx bi">
 <div class="bt">🔍 อุปมา: วาดเส้นโค้งผ่านจุดข้อมูล</div>
