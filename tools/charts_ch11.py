@@ -287,6 +287,96 @@ def chart_ou_state_path():
     save(fig, "ch11-ou-state-path")
 
 
+# ============================================================
+# Chart 3 — Grid Levels on OU Spread
+# ============================================================
+def chart_grid_levels():
+    """Visualise buy/sell grid levels on a mean-reverting OU spread."""
+    rng = np.random.default_rng(42)
+    n = 200
+    kappa, theta, sigma = 0.08, 0.001, 0.003
+
+    # Simulate OU (log-spread style values matching the ch11 example)
+    eps = np.empty(n)
+    eps[0] = theta
+    for i in range(1, n):
+        eps[i] = eps[i-1] + kappa * (theta - eps[i-1]) + sigma * rng.standard_normal()
+
+    sigma_stat = eps.std()
+    t = np.arange(n)
+
+    fig, ax = plt.subplots(figsize=(7.0, 3.8))
+    ax.set_facecolor("#f8fafc")
+
+    # ---- horizontal grid levels ----
+    levels = [-3, -2, -1, 0, 1, 2, 3]
+    level_colors = {
+        3:  RED,   2:  RED,   1:  RED,
+        0:  TEAL,
+        -1: BLUE, -2: BLUE, -3: BLUE,
+    }
+    level_ls = {3: (2, 2), 2: (3, 2), 1: (5, 3),
+                0: (),
+                -1: (5, 3), -2: (3, 2), -3: (2, 2)}
+
+    for lv in levels:
+        y_val = theta + lv * sigma_stat
+        col = level_colors[lv]
+        ls_dash = level_ls[lv]
+        ls = (0, ls_dash) if ls_dash else "-"
+        lw = 1.4 if lv != 0 else 1.8
+        ax.axhline(y_val, color=col, lw=lw, ls=ls, alpha=0.85, zorder=2)
+        label = f"+{lv}σ" if lv > 0 else (f"{lv}σ" if lv < 0 else "θ")
+        ax.text(-3, y_val, label, fontsize=7.5, color=col,
+                va="center", ha="right", fontweight="bold")
+
+    # ---- buy/sell zone fills ----
+    sell_top = theta + 3 * sigma_stat
+    sell_bot = theta + 1 * sigma_stat
+    buy_top  = theta - 1 * sigma_stat
+    buy_bot  = theta - 3 * sigma_stat
+    ax.axhspan(sell_bot, sell_top, alpha=0.08, color=RED, zorder=1)
+    ax.axhspan(buy_bot,  buy_top,  alpha=0.08, color=BLUE, zorder=1)
+
+    # ---- OU path ----
+    ax.plot(t, eps, color=NAVY, lw=1.5, zorder=3, label="ε (spread)")
+
+    # ---- buy/sell markers ----
+    for i in range(1, n):
+        # cross below -1σ going down → BUY
+        lv1_down = theta - sigma_stat
+        if eps[i] < lv1_down <= eps[i-1]:
+            ax.annotate("", xy=(i, eps[i]),
+                        xytext=(i, eps[i] - sigma_stat * 0.4),
+                        arrowprops=dict(arrowstyle="->, head_width=0.3",
+                                        color=BLUE, lw=1.4))
+        # cross above +1σ going up → SELL
+        lv1_up = theta + sigma_stat
+        if eps[i] > lv1_up >= eps[i-1]:
+            ax.annotate("", xy=(i, eps[i]),
+                        xytext=(i, eps[i] + sigma_stat * 0.4),
+                        arrowprops=dict(arrowstyle="->, head_width=0.3",
+                                        color=RED, lw=1.4))
+
+    # Zone labels
+    ax.text(n * 0.85, theta + 1.6 * sigma_stat, "← Sell zone",
+            fontsize=8, color=RED, fontweight="bold", va="center")
+    ax.text(n * 0.85, theta - 1.6 * sigma_stat, "← Buy zone",
+            fontsize=8, color=BLUE, fontweight="bold", va="center")
+
+    ax.set_xlim(-5, n)
+    ax.set_xlabel("t (bars)", fontsize=9.5)
+    ax.set_ylabel("ε (spread value)", fontsize=9.5)
+    ax.set_title("Grid Levels บน ε — Buy ด้านล่าง (สีน้ำเงิน), Sell ด้านบน (สีแดง)",
+                 fontsize=11.5, fontweight="bold", color=NAVY)
+    ax.legend(fontsize=9, loc="upper right")
+    style_axes(ax)
+
+    fig.subplots_adjust(bottom=0.15, left=0.10)
+    save(fig, "ch11-grid-levels")
+
+
 if __name__ == "__main__":
     chart_state_machine()
     chart_ou_state_path()
+    chart_grid_levels()
