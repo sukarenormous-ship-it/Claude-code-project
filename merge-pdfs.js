@@ -21,7 +21,24 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-// ── Chapter list (order = book order) ──────────────────────────────────────
+// ── Math book chapter list ──────────────────────────────────────────────────
+const MATH_CHAPTERS = [
+  'math-index.html',
+  'math-part1.html',
+  'math-part2.html',
+  'math-part3.html',
+  'math-part4.html',
+  'math-part5.html',
+  'math-part6.html',
+  'math-part7.html',
+  'math-bridge.html',
+  'math-appendix-formulas.html',
+  'math-appendix-glossary.html',
+];
+
+const MATH_BOOK_PDF = path.join(__dirname, 'docs', 'math-BOOK.pdf');
+
+// ── Stat arb chapter list (order = book order) ──────────────────────────────
 const CHAPTERS = [
   'statarb-ch0.html',
   'statarb-ch1.html',
@@ -57,7 +74,7 @@ const BOOK_PDF = path.join(DOCS_DIR, 'statarb-BOOK.pdf');
 const MERGE_SCRIPT = path.join(__dirname, 'tools', 'merge_pdfs.py');
 
 // ── PDF generation ──────────────────────────────────────────────────────────
-async function generatePDFs(chapters) {
+async function generatePDFs(chapters, bookTitle = 'Statistical Arbitrage') {
   const browser = await chromium.launch();
   const results = [];
 
@@ -82,7 +99,7 @@ async function generatePDFs(chapters) {
         margin: { top: '18mm', bottom: '20mm', left: '18mm', right: '18mm' },
         printBackground: true,
         displayHeaderFooter: true,
-        headerTemplate: `<div style="font-size:7.5px;font-family:sans-serif;width:100%;text-align:center;color:#94a3b8;padding-top:4px;">Statistical Arbitrage</div>`,
+        headerTemplate: `<div style="font-size:7.5px;font-family:sans-serif;width:100%;text-align:center;color:#94a3b8;padding-top:4px;">${bookTitle}</div>`,
         footerTemplate: `<div style="font-size:7.5px;font-family:sans-serif;width:100%;text-align:center;color:#94a3b8;padding-bottom:4px;">หน้า <span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
       });
       await page.close();
@@ -127,13 +144,13 @@ if __name__ == "__main__":
   fs.writeFileSync(MERGE_SCRIPT, script);
 }
 
-function mergePDFs(pdfPaths) {
+function mergePDFs(pdfPaths, outPath = BOOK_PDF) {
   if (pdfPaths.length === 0) {
     console.error('No PDFs to merge.');
     return;
   }
   writeMergeScript();
-  const args = [...pdfPaths, BOOK_PDF].map(p => `"${p}"`).join(' ');
+  const args = [...pdfPaths, outPath].map(p => `"${p}"`).join(' ');
   try {
     execSync(`python3 "${MERGE_SCRIPT}" ${args}`, { stdio: 'inherit' });
   } catch (err) {
@@ -146,28 +163,42 @@ function mergePDFs(pdfPaths) {
   const args = process.argv.slice(2);
   const generateOnly = args.includes('--generate-only');
   const mergeOnly = args.includes('--merge-only');
+  const mathOnly = args.includes('--math');
+  const allBooks = args.includes('--all');
 
-  if (!mergeOnly) {
-    console.log(`\nGenerating ${CHAPTERS.length} chapter PDFs...`);
-    const generated = await generatePDFs(CHAPTERS);
-    console.log(`\nGenerated ${generated.length} PDFs.`);
+  // Select which book to build
+  const buildMath = mathOnly || allBooks;
+  const buildStatarb = !mathOnly || allBooks;
 
-    if (!generateOnly) {
-      console.log('\nMerging into book PDF...');
-      mergePDFs(generated);
+  async function buildBook(chapters, bookPdf, title) {
+    console.log(`\n── ${title} ──────────────────────────────`);
+    if (!mergeOnly) {
+      console.log(`Generating ${chapters.length} chapter PDFs...`);
+      const generated = await generatePDFs(chapters, title);
+      console.log(`Generated ${generated.length} PDFs.`);
+      if (!generateOnly) {
+        console.log('Merging into book PDF...');
+        mergePDFs(generated, bookPdf);
+      }
+    } else {
+      console.log('Collecting existing PDFs for merge...');
+      const existing = chapters
+        .map(html => path.join(DOCS_DIR, html.replace('.html', '.pdf')))
+        .filter(p => {
+          if (fs.existsSync(p)) return true;
+          console.warn(`  SKIP (no PDF): ${path.basename(p)}`);
+          return false;
+        });
+      console.log(`Merging ${existing.length} PDFs...`);
+      mergePDFs(existing, bookPdf);
     }
-  } else {
-    // --merge-only: collect existing PDFs in order
-    console.log('\nCollecting existing PDFs for merge...');
-    const existing = CHAPTERS
-      .map(html => path.join(DOCS_DIR, html.replace('.html', '.pdf')))
-      .filter(p => {
-        if (fs.existsSync(p)) return true;
-        console.warn(`  SKIP (no PDF): ${path.basename(p)}`);
-        return false;
-      });
-    console.log(`\nMerging ${existing.length} PDFs...`);
-    mergePDFs(existing);
+  }
+
+  if (buildStatarb) {
+    await buildBook(CHAPTERS, BOOK_PDF, 'Statistical Arbitrage');
+  }
+  if (buildMath) {
+    await buildBook(MATH_CHAPTERS, MATH_BOOK_PDF, 'คณิตศาสตร์สำหรับ Options');
   }
 
   console.log('\nDone.');
