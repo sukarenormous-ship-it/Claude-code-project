@@ -3,17 +3,23 @@
  * merge-pdfs.js — Generate individual chapter PDFs then merge into one book PDF.
  *
  * Usage:
- *   node merge-pdfs.js                  # generate + merge all chapters
+ *   node merge-pdfs.js                  # statarb book (default)
+ *   node merge-pdfs.js --math           # math book only
+ *   node merge-pdfs.js --vol --pm       # one or more specific books
+ *   node merge-pdfs.js --books          # ALL 7 books
+ *   node merge-pdfs.js --all            # legacy: math + statarb
  *   node merge-pdfs.js --generate-only  # only generate individual PDFs (no merge)
  *   node merge-pdfs.js --merge-only     # only merge existing PDFs (skip generation)
+ *
+ * Book keys: math, vp, pm, vol, arb, eye, statarb
  *
  * Requires:
  *   - playwright (already in package.json)
  *   - Python 3 + pdfrw  (pip install pdfrw)
  *
  * Output:
- *   docs/statarb-ch*.pdf  — individual chapter PDFs
- *   docs/statarb-BOOK.pdf — merged book
+ *   docs/<book>-*.pdf     — individual chapter PDFs
+ *   docs/<book>-BOOK.pdf  — merged book (e.g. statarb-BOOK.pdf, vol-BOOK.pdf)
  */
 
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
@@ -21,57 +27,81 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-// ── Math book chapter list ──────────────────────────────────────────────────
-const MATH_CHAPTERS = [
-  'math-index.html',
-  'math-part1.html',
-  'math-part2.html',
-  'math-part3.html',
-  'math-part4.html',
-  'math-part5.html',
-  'math-part6.html',
-  'math-part7.html',
-  'math-bridge.html',
-  'math-appendix-formulas.html',
-  'math-appendix-glossary.html',
-];
-
-const MATH_BOOK_PDF = path.join(__dirname, 'docs', 'math-BOOK.pdf');
-
-// ── Stat arb chapter list (order = book order) ──────────────────────────────
-const CHAPTERS = [
-  'statarb-ch0.html',
-  'statarb-ch1.html',
-  'statarb-ch2.html',
-  'statarb-ch3.html',
-  'statarb-ch4.html',
-  'statarb-ch5.html',
-  'statarb-ch6.html',
-  'statarb-ch7.html',
-  'statarb-ch8.html',
-  'statarb-ch9.html',
-  'statarb-ch10.html',
-  'statarb-ch11.html',
-  'statarb-ch12.html',
-  'statarb-ch13.html',
-  'statarb-ch14.html',
-  'statarb-ch15.html',
-  'statarb-ch16.html',
-  'statarb-ch17.html',
-  'statarb-ch18.html',
-  'statarb-ch19.html',
-  'statarb-ch20.html',
-  'statarb-ch21.html',
-  'statarb-ch22.html',
-  'statarb-ch23.html',
-  'statarb-ch24.html',
-  'statarb-appendix-formulas.html',
-  'statarb-appendix-glossary.html',
-];
-
 const DOCS_DIR = path.join(__dirname, 'docs');
-const BOOK_PDF = path.join(DOCS_DIR, 'statarb-BOOK.pdf');
 const MERGE_SCRIPT = path.join(__dirname, 'tools', 'merge_pdfs.py');
+
+// ── Book registry ───────────────────────────────────────────────────────────
+// Each book: key (CLI flag), title (PDF header), output filename, chapters in
+// reading order. `node merge-pdfs.js --<key>` builds one book; --books = all.
+const BOOKS = {
+  math: {
+    title: 'คณิตศาสตร์สำหรับ Options',
+    output: 'math-BOOK.pdf',
+    chapters: [
+      'math-index.html',
+      'math-part1.html', 'math-part2.html', 'math-part3.html', 'math-part4.html',
+      'math-part5.html', 'math-part6.html', 'math-part7.html',
+      'math-bridge.html',
+      'math-appendix-formulas.html', 'math-appendix-glossary.html',
+    ],
+  },
+  vp: {
+    title: 'View → Payoff',
+    output: 'vp-BOOK.pdf',
+    chapters: [
+      'vp-part1.html', 'vp-part2.html', 'vp-part3.html', 'vp-part4.html',
+      'vp-part5.html', 'vp-part6.html', 'vp-part7.html', 'vp-drills.html',
+    ],
+  },
+  pm: {
+    title: 'Payoff Mastery',
+    output: 'pm-BOOK.pdf',
+    chapters: [
+      'pm-part0.html', 'pm-part1.html', 'pm-part2.html', 'pm-part3.html',
+      'pm-part3a.html', 'pm-part4.html', 'pm-part4a.html', 'pm-part5.html',
+      'pm-part5a.html', 'pm-part6.html', 'pm-part7.html', 'pm-part8.html',
+    ],
+  },
+  vol: {
+    title: 'Volatility Mastery',
+    output: 'vol-BOOK.pdf',
+    chapters: [
+      'vol-part1.html', 'vol-part2.html', 'vol-part3.html', 'vol-part4.html',
+      'vol-part5.html', 'vol-part6.html', 'vol-part7.html', 'vol-part8.html',
+    ],
+  },
+  arb: {
+    title: 'Arbitrage — จากแนวคิดสู่การปฏิบัติ',
+    output: 'arb-BOOK.pdf',
+    chapters: [
+      'arb-part1.html', 'arb-part2a.html', 'arb-part2b.html', 'arb-part3.html',
+      'arb-part4.html', 'arb-part5.html', 'arb-part6.html', 'arb-part7.html',
+      'arb-part8.html', 'arb-part9.html',
+    ],
+  },
+  eye: {
+    title: 'ตาของ Arbitrageur',
+    output: 'eye-BOOK.pdf',
+    chapters: [
+      'eye-part1.html', 'eye-part2.html', 'eye-part3.html', 'eye-part4.html',
+      'eye-part5.html',
+    ],
+  },
+  statarb: {
+    title: 'Statistical Arbitrage',
+    output: 'statarb-BOOK.pdf',
+    chapters: [
+      'statarb-ch0.html', 'statarb-ch1.html', 'statarb-ch2.html', 'statarb-ch3.html',
+      'statarb-ch4.html', 'statarb-ch5.html', 'statarb-ch6.html', 'statarb-ch7.html',
+      'statarb-ch8.html', 'statarb-ch9.html', 'statarb-ch10.html', 'statarb-ch11.html',
+      'statarb-ch12.html', 'statarb-ch13.html', 'statarb-ch14.html', 'statarb-ch15.html',
+      'statarb-ch16.html', 'statarb-ch17.html', 'statarb-ch18.html', 'statarb-ch19.html',
+      'statarb-ch20.html', 'statarb-ch21.html', 'statarb-ch22.html', 'statarb-ch23.html',
+      'statarb-ch24.html',
+      'statarb-appendix-formulas.html', 'statarb-appendix-glossary.html',
+    ],
+  },
+};
 
 // ── PDF generation ──────────────────────────────────────────────────────────
 async function generatePDFs(chapters, bookTitle = 'Statistical Arbitrage') {
@@ -144,7 +174,7 @@ if __name__ == "__main__":
   fs.writeFileSync(MERGE_SCRIPT, script);
 }
 
-function mergePDFs(pdfPaths, outPath = BOOK_PDF) {
+function mergePDFs(pdfPaths, outPath) {
   if (pdfPaths.length === 0) {
     console.error('No PDFs to merge.');
     return;
@@ -163,18 +193,32 @@ function mergePDFs(pdfPaths, outPath = BOOK_PDF) {
   const args = process.argv.slice(2);
   const generateOnly = args.includes('--generate-only');
   const mergeOnly = args.includes('--merge-only');
+  const allBooks = args.includes('--books') || args.includes('--all-books');
+
+  // Backward-compat: --all = math + statarb (legacy). --math = math only.
+  const legacyAll = args.includes('--all');
   const mathOnly = args.includes('--math');
-  const allBooks = args.includes('--all');
 
-  // Select which book to build
-  const buildMath = mathOnly || allBooks;
-  const buildStatarb = !mathOnly || allBooks;
+  // Determine which book keys to build.
+  let keys;
+  if (allBooks) {
+    keys = Object.keys(BOOKS);                        // all 7
+  } else if (legacyAll) {
+    keys = ['statarb', 'math'];                       // legacy --all
+  } else if (mathOnly) {
+    keys = ['math'];
+  } else {
+    // Any explicit per-book flags (--vol, --pm, --arb, ...)?
+    const explicit = Object.keys(BOOKS).filter(k => args.includes(`--${k}`));
+    keys = explicit.length ? explicit : ['statarb'];  // default = statarb
+  }
 
-  async function buildBook(chapters, bookPdf, title) {
-    console.log(`\n── ${title} ──────────────────────────────`);
+  async function buildBook(book) {
+    const bookPdf = path.join(DOCS_DIR, book.output);
+    console.log(`\n── ${book.title} ──────────────────────────────`);
     if (!mergeOnly) {
-      console.log(`Generating ${chapters.length} chapter PDFs...`);
-      const generated = await generatePDFs(chapters, title);
+      console.log(`Generating ${book.chapters.length} chapter PDFs...`);
+      const generated = await generatePDFs(book.chapters, book.title);
       console.log(`Generated ${generated.length} PDFs.`);
       if (!generateOnly) {
         console.log('Merging into book PDF...');
@@ -182,7 +226,7 @@ function mergePDFs(pdfPaths, outPath = BOOK_PDF) {
       }
     } else {
       console.log('Collecting existing PDFs for merge...');
-      const existing = chapters
+      const existing = book.chapters
         .map(html => path.join(DOCS_DIR, html.replace('.html', '.pdf')))
         .filter(p => {
           if (fs.existsSync(p)) return true;
@@ -194,11 +238,8 @@ function mergePDFs(pdfPaths, outPath = BOOK_PDF) {
     }
   }
 
-  if (buildStatarb) {
-    await buildBook(CHAPTERS, BOOK_PDF, 'Statistical Arbitrage');
-  }
-  if (buildMath) {
-    await buildBook(MATH_CHAPTERS, MATH_BOOK_PDF, 'คณิตศาสตร์สำหรับ Options');
+  for (const key of keys) {
+    await buildBook(BOOKS[key]);
   }
 
   console.log('\nDone.');
