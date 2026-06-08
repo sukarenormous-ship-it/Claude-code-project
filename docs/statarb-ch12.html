@@ -221,9 +221,11 @@ $$f^*_{\text{adj}} = f^* \times \delta_{\text{jump}}, \quad \delta_{\text{jump}}
 </div>
 </div>
 <div class="ki-text" style="margin-top:8px">
+<strong>δ_jump = e^{−λJ²/σ²}</strong> คือ SDE-based approximation (λ = jump intensity, J = avg jump size)<br>
+ในทางปฏิบัติมักประมาณด้วยสูตรที่ intuitive กว่า:<br>
 <strong>jump_discount</strong> = 1 − P(jump) × (expected_loss_given_jump / max_tolerable_loss)<br>
-ค่าปกติ: jump_discount ∈ [0.6, 0.9] ขึ้นอยู่กับ volatility regime<br>
-ช่วง low vol: 0.85–0.90 | ช่วง high vol (เช่น ก่อน major news): 0.60–0.70
+ค่าปกติ: jump_discount ∈ [0.6, 0.9] — ช่วง low vol: 0.85–0.90 | high vol / ก่อน major news: 0.60–0.70<br>
+<em style="font-size:.88em;color:#64748b">หมายเหตุ: ทั้งสองสูตรให้ผลเดียวกันในเชิง monotonic (jump มาก → discount ต่ำ) — ใช้สูตรที่คำนวณได้จากข้อมูลที่มี</em>
 </div>
 </div>
 
@@ -285,8 +287,9 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
     # Step 4: Max drawdown constraint (hard limit)
     dd_limit = (capital * max_dd) / (entry_z * sigma)
 
-    # Step 5: รวมทุก factor
-    raw_size = capital * kelly_f * hl_scale * jump_scale
+    # Step 5: รวมทุก factor (ใช้ ¼-Kelly เพื่อลด leverage)
+    fractional_kelly = 0.25
+    raw_size = capital * (fractional_kelly * kelly_f) * hl_scale * jump_scale
 
     # Step 6: ใช้ขนาดที่น้อยกว่า (conservative)
     return min(raw_size, dd_limit)</div>
@@ -313,6 +316,7 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
 <tr><td>target_halflife</td><td>5 ชั่วโมง</td><td>ออกแบบ strategy สำหรับ 5h</td></tr>
 <tr><td>jump_discount</td><td>0.80</td><td>low-vol regime</td></tr>
 <tr><td>max_dd</td><td>2% = 0.02</td><td>risk limit</td></tr>
+<tr><td>entry_z</td><td>2.0</td><td>z-score ณ จุดเข้า trade (ใช้ใน dd_limit)</td></tr>
 </table>
 
 <h3>การคำนวณทีละขั้น</h3>
