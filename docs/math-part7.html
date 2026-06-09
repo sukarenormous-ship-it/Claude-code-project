@@ -79,8 +79,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="bx bd">
 <div class="bt">Trader's View: ตลาด Quote ด้วย Implied Vol — ไม่ใช่ราคา</div>
-<p>ในตลาด options จริง ผู้ค้ามักไม่ quote "ราคา ฿12.29" — แต่ quote "<strong>IV = 25%</strong>":<br>
-• เหตุผล: IV เปรียบเทียบได้ข้าม strike และ maturity ทันที — ฿12.29 สำหรับ Call เดือนหน้ากับ ฿12.29 Call 3 เดือนบอกอะไรไม่ได้<br>
+<p>ในตลาด options จริง ผู้ค้ามักไม่ quote "ราคา ฿12.34" — แต่ quote "<strong>IV = 25%</strong>":<br>
+• เหตุผล: IV เปรียบเทียบได้ข้าม strike และ maturity ทันที — ฿12.34 สำหรับ Call เดือนหน้ากับ ฿12.34 Call 3 เดือนบอกอะไรไม่ได้<br>
 • <strong>BS เป็น translation layer</strong>: Vol → Price (สำหรับ quote) และ Price → Vol (สำหรับ mark-to-market)<br>
 • IV = 25% แปลว่า "ตลาดคาด annualized 1σ move = 25%" — ใช้เปรียบเทียบกับ realized vol เพื่อหา edge</p>
 </div>
@@ -99,7 +99,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <tr><td><strong>ln(S₀/K)</strong></td><td>Log moneyness</td><td>บท 3: ln, log return</td></tr>
 <tr><td><strong>σ</strong></td><td>Volatility (Std Dev ของ log returns)</td><td>บท 4: σ + บท 6: Lognormal</td></tr>
 <tr><td><strong>σ√T</strong></td><td>Volatility scaled ด้วยเวลา</td><td>บท 14: Brownian Motion (variance ∝ T)</td></tr>
-<tr><td><strong>r + σ²/2</strong></td><td>Drift ใน risk-neutral world</td><td>บท 14: GBM + Ito's correction</td></tr>
+<tr><td><strong>r + σ²/2</strong></td><td>เทอมใน d₁ (drift ของ ln S ใน risk-neutral world จริงๆ คือ r − σ²/2 ซึ่งอยู่ใน d₂ — เครื่องหมาย + ใน d₁ มาจากการ shift ด้วย σ√T ไม่ใช่ drift)</td><td>บท 14: GBM + Ito's correction</td></tr>
 <tr><td><strong>σ²/2</strong></td><td>Ito's correction term</td><td>บท 14: Ito's Lemma</td></tr>
 </table>
 
@@ -134,9 +134,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <p><span class="step-n">2</span>ln(S/K) = ln(100/100) = ln(1) = 0 (ATM!)</p>
 <p><span class="step-n">3</span>d₁ = [0 + (0.05 + 0.03125)×1] / (0.25×1) = 0.08125/0.25 = <strong>0.325</strong></p>
 <p><span class="step-n">4</span>d₂ = 0.325 − 0.25 = <strong>0.075</strong></p>
-<p><span class="step-n">5</span>N(d₁) = N(0.325) ≈ 0.627, N(d₂) = N(0.075) ≈ 0.530</p>
+<p><span class="step-n">5</span>N(d₁) = N(0.325) ≈ 0.6274, N(d₂) = N(0.075) ≈ 0.5299</p>
 <p><span class="step-n">6</span>Ke⁻ʳᵀ = 100×e⁻⁰·⁰⁵ = 100×0.9512 = ฿95.12</p>
-<p><span class="step-n">7</span>C = 100×0.627 − 95.12×0.530 = 62.70 − 50.41 = <strong>฿12.29</strong></p>
+<p><span class="step-n">7</span>C = 100×0.6274 − 95.12×0.5299 = 62.74 − 50.41 = <strong>฿12.34</strong> (ค่า exact = 12.336)</p>
 </div>
 
 <h3 id="s15-3">15.3 พิสูจน์ Put-Call Parity จาก BS</h3>
@@ -182,9 +182,9 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <tr><th>Greek</th><th>นิยาม</th><th>สูตร (Call)</th><th>ความหมาย</th></tr>
 <tr><td><strong>Delta (Δ)</strong></td><td>∂C/∂S</td><td>N(d₁)</td><td>ราคาขยับต่อ ฿1 ของหุ้น</td></tr>
 <tr><td><strong>Gamma (Γ)</strong></td><td>∂²C/∂S²</td><td>φ(d₁) / (S·σ·√T)</td><td>Delta ขยับเร็วแค่ไหน</td></tr>
-<tr><td><strong>Vega (ν)</strong></td><td>∂C/∂σ</td><td>S·φ(d₁)·√T</td><td>ราคาขยับต่อ 1% ของ σ</td></tr>
-<tr><td><strong>Theta (Θ)</strong></td><td>−∂C/∂T</td><td>−S·φ(d₁)·σ/(2√T) − rK·\(e^{-rT}\)·N(d₂)</td><td>time decay ต่อวัน (T = time to expiry)</td></tr>
-<tr><td><strong>Rho (ρ)</strong></td><td>∂C/∂r</td><td>K·T·\(e^{-rT}\)·N(d₂)</td><td>ราคาขยับต่อ 1% ของ r</td></tr>
+<tr><td><strong>Vega (ν)</strong></td><td>∂C/∂σ</td><td>S·φ(d₁)·√T</td><td>ราคาขยับต่อ Δσ = 1.00 (÷100 ถ้าต้องการต่อ 1%)</td></tr>
+<tr><td><strong>Theta (Θ)</strong></td><td>−∂C/∂T</td><td>−S·φ(d₁)·σ/(2√T) − rK·\(e^{-rT}\)·N(d₂)</td><td>time decay ต่อปี (÷365 ถ้าต้องการต่อวัน; T = time to expiry)</td></tr>
+<tr><td><strong>Rho (ρ)</strong></td><td>∂C/∂r</td><td>K·T·\(e^{-rT}\)·N(d₂)</td><td>ราคาขยับต่อ Δr = 1.00 (÷100 ถ้าต้องการต่อ 1%)</td></tr>
 </table>
 
 <div class="bx bb">
@@ -485,18 +485,18 @@ Skew แสดงว่าตลาดกลัว downside มากกว่�
 <div class="et">โจทย์ 1: คำนวณ BS Call ด้วยมือ</div>
 <p>กำหนด S=100, K=105, r=4%, σ=20%, T=0.5ปี<br>
 d₁ = [ln(100/105) + (0.04+0.02)×0.5] / (0.2×√0.5) = ?<br>
-<em>คำนวณ d₁, d₂, แล้วหา C โดยใช้ N(-0.13)≈0.448, N(-0.28)≈0.390</em></p>
+<em>คำนวณ d₁, d₂ ถึง 4 ตำแหน่งทศนิยม แล้วหา C โดยใช้ N(−0.1329)≈0.4471, N(−0.2743)≈0.3919</em></p>
 <details>
 <summary>ดูเฉลย</summary>
 <div class="ans">
-<p>ln(100/105) = ln(0.952) ≈ -0.049</p>
-<p>σ√T = 0.2×√0.5 = 0.2×0.707 = 0.1414</p>
-<p>numerator = -0.049 + (0.04+0.02)×0.5 = -0.049 + 0.03 = -0.019</p>
-<p>d₁ = -0.019 / 0.1414 = <strong>-0.1343</strong> (ให้ใช้ 4 ตำแหน่งทศนิยม)</p>
-<p>d₂ = -0.1343 − 0.1414 = <strong>-0.2757</strong></p>
-<p>N(d₁) = N(-0.1343) ≈ 0.4466, N(d₂) = N(-0.2757) ≈ 0.3914</p>
+<p>ln(100/105) = ln(0.95238) ≈ -0.04879 (คงไว้ 5 ตำแหน่ง — อย่าปัดเป็น -0.049)</p>
+<p>σ√T = 0.2×√0.5 = 0.2×0.70711 = 0.14142</p>
+<p>numerator = -0.04879 + (0.04+0.02)×0.5 = -0.04879 + 0.03 = -0.01879</p>
+<p>d₁ = -0.01879 / 0.14142 = <strong>-0.1329</strong> (ให้ใช้ 4 ตำแหน่งทศนิยม)</p>
+<p>d₂ = -0.1329 − 0.1414 = <strong>-0.2743</strong></p>
+<p>N(d₁) = N(-0.1329) ≈ 0.4471, N(d₂) = N(-0.2743) ≈ 0.3919</p>
 <p>Ke⁻ʳᵀ = 105×e⁻⁰·⁰² = 105×0.9802 = <strong>102.92</strong></p>
-<p>C = 100×0.4466 − 102.92×0.3914 = 44.66 − 40.28 = <strong>฿4.38</strong></p>
+<p>C = 100×0.4471 − 102.92×0.3919 = 44.71 − 40.33 = <strong>฿4.38</strong></p>
 <p>(OTM Call ราคาต่ำ — สมเหตุสมผล เพราะ S=100 < K=105)</p>
 <p style="font-size:.85em;color:#64748b">หมายเหตุ: ถ้าปัดเป็น d₁ ≈ −0.13 ก่อน แล้วค่อยหา N(−0.13) ≈ 0.448 → C ≈ 4.7 แต่นั่นเป็น cascade rounding error (ผิด ~7%) ควรคงเลข 4 ตำแหน่งทศนิยมจนกว่าจะได้ผลลัพธ์สุดท้าย</p>
 </div>
