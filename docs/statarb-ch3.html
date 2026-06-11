@@ -543,6 +543,136 @@ Holding time เฉลี่ย ≈ τ₁/₂ = 22.7 ชม. (ถ้า exit ท
 </details>
 </div>
 
+<!-- 3.10 Lookback Selection Bias -->
+<h2 id="s3-10">3.10 Lookback Selection Bias — กับดัก "Window ที่สวย"</h2>
+
+<div class="key-idea">
+<div class="ki-label">สัญญาณอันตราย — อ่านก่อน</div>
+<p>ถ้า spread ดู mean-revert <strong>สวยมากด้วย lookback สั้น</strong> แต่พอ lookback ยาวขึ้นกลับ <strong>ดูไม่สวย</strong> — นั่นคือสัญญาณอันตราย ไม่ใช่สัญญาณว่าคู่นี้ดี</p>
+<p>เป็นอาการของ <strong>Lookback Selection Bias</strong>: combination ของ bias ทางคณิตศาสตร์ที่ทำให้ κ ดูสูงกว่าจริงและ half-life สั้นกว่าจริงเมื่อใช้ window เล็ก — ถ้าไม่แก้จะ over-trade, size ใหญ่เกินไป และขาดทุนเมื่อ live</p>
+</div>
+
+<h3>3 สาเหตุที่ Lookback สั้นทำให้ Spread "ดูสวย"</h3>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 1 — Small Sample AR(1) Bias (Kendall, 1954)</div>
+<p>OLS estimate ของ AR(1) coefficient <em>b</em> มี <strong>bias เชิงระบบ</strong> เมื่อ N (จำนวน observation) น้อย:</p>
+<div class="fm">E[b̂] ≈ b − (1 + 3b) / N   ← Kendall's formula
+
+ตัวอย่าง: true b = 0.97 (half-life ≈ 23 bars) ← ใกล้ random walk
+  N = 30 bars: E[b̂] ≈ 0.97 − (1 + 2.91)/30 = 0.97 − 0.130 = 0.840
+
+  b̂ = 0.840 → κ̂ สูงขึ้น 6× → half-life ≈ 4 bars  ← "fast mean-reversion!" (ปลอม)
+  true b = 0.97 → half-life ≈ 23 bars                ← ความจริง</div>
+<p>สรุป: random walk ที่มี b=0.97 สามารถ <strong>ดูเหมือน mean-revert เร็วมาก</strong> ด้วย window 30 bars — Kendall bias สร้างภาพลวงตาโดยไม่ต้องมี alpha จริง</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 2 — Selection Bias (เลือก Window ที่ "ดีที่สุด")</div>
+<p>ถ้าลอง lookback หลายค่า (20, 30, 40, 50, 60 วัน) แล้วเลือกค่าที่ spread ดูสวยที่สุด = ทำ <strong>5 tests โดยไม่ปรับ significance level</strong></p>
+<p>ในทางสถิติ: ถ้าทดสอบ 20 window บน random walk ล้วน ๆ คาดว่าจะพบอย่างน้อย 1 window ที่ดู stationary โดยบังเอิญที่ 5% significance — แล้วคุณก็จะเลือก window นั้น</p>
+<p><strong>กฎ:</strong> ห้ามเลือก lookback หลังจากดูผล — ต้องกำหนด lookback ก่อน แล้วค่อย calibrate</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 3 — Regime Selection (Window สั้นอาจอยู่ใน "Good Regime")</div>
+<p>Window สั้นอาจกำลังอยู่ในช่วงที่คู่นี้ "cointegrate จริงๆ" — regime ที่ดี เมื่อขยาย window รวม regime อื่น ε จึงดูไม่สวยอีกต่อไป ปัญหา: คุณไม่รู้ล่วงหน้าว่า live trade จะเจอ regime ไหน</p>
+</div>
+
+<h3>ผลรวม — ถ้าไม่แบ่ง Train / Out-of-Sample</h3>
+
+<table>
+<tr><th>สิ่งที่ทำ</th><th>Bias ที่เกิด</th><th>ผลที่เห็น (ปลอม)</th></tr>
+<tr><td>เลือก lookback ที่ "สวยที่สุด"</td><td>Selection bias</td><td>κ สูงเกินจริง, half-life สั้นเกินจริง</td></tr>
+<tr><td>ใช้ window เล็ก (N น้อย)</td><td>Kendall AR bias</td><td>b̂ ต่ำกว่าจริง → ดูเป็น mean-reversion</td></tr>
+<tr><td>ไม่แบ่ง train / test</td><td>In-sample overfit + lookahead</td><td>backtest ดูดี — live ขาดทุน</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Checklist — ตรงกับปัญหานี้ไหม?</div>
+<ul>
+<li>Lookback สั้น (≤ 30 bars) → ε ดูสวย, κ สูง, half-life สั้นมาก</li>
+<li>เมื่อขยาย lookback ยาวขึ้น → ε ดูไม่สวย, half-life ยืดออก</li>
+<li>เลือก lookback ที่ "ดูสวยที่สุด" หลังจาก run แล้ว</li>
+<li>ไม่ได้ทดสอบผลบน out-of-sample data แยกต่างหาก</li>
+</ul>
+<p>ถ้าตรงหลายข้อ → ผล backtest ไม่น่าเชื่อถือ ต้องทำ Sensitivity Test และ Walk-Forward (§3.9) ใหม่</p>
+</div>
+
+<h3>Sensitivity Test — วิธีตรวจ Robustness ของ Lookback</h3>
+
+<p>แทนที่จะเลือก lookback ที่ดูสวย ให้ run calibration <strong>ด้วย lookback หลายค่าพร้อมกัน</strong> แล้วดูว่า half-life เสถียรข้าม window หรือไม่:</p>
+
+<div class="fm">lookbacks = [30, 45, 60, 90]   # วัน
+for lb in lookbacks:
+    eps       = compute_spread(prices[-lb*bars_per_day:])
+    b, _, _   = fit_ar1(eps)
+    kappa     = -log(b) / delta_t          # ต่อวัน
+    half_life = log(2) / kappa * 24        # แปลงเป็นชั่วโมง
+    print(f"Lookback {lb}d | b={b:.3f} | half-life={half_life:.1f}h")</div>
+
+<table>
+<tr><th>Lookback</th><th>b̂ (OLS)</th><th>κ (ต่อวัน)</th><th>Half-life</th><th>สถานะ</th></tr>
+<tr><td>30 วัน</td><td>0.856</td><td>11.1</td><td>1.5 ชม.</td><td style="color:#dc2626">⚠️ Kendall bias สูง</td></tr>
+<tr><td>45 วัน</td><td>0.912</td><td>5.9</td><td>2.8 ชม.</td><td style="color:#d97706">bias ยังมีผล</td></tr>
+<tr><td>60 วัน</td><td>0.947</td><td>3.2</td><td>5.2 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ</td></tr>
+<tr><td>90 วัน</td><td>0.968</td><td>1.9</td><td>8.7 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ (reference)</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">วิธีอ่าน Sensitivity Table</div>
+<ul>
+<li><strong>half-life ลดลงมากเมื่อ lookback สั้นลง</strong> (เช่น 8.7h → 1.5h) → Kendall bias มีผลมาก — ห้ามใช้ lookback สั้น</li>
+<li><strong>half-life เสถียรระหว่าง 60–90 วัน</strong> → estimate robust — ใช้ lookback ในช่วงนี้ได้</li>
+<li><strong>half-life ผันผวนมากในทุก lookback</strong> → pair ไม่ robust — พิจารณาตัดออก</li>
+</ul>
+</div>
+
+<h3>Bias Correction — ประมาณค่า b ที่แท้จริง</h3>
+
+<p>ถ้าต้องใช้ window สั้นเป็นพิเศษ สามารถ correct Kendall bias ได้เบื้องต้น:</p>
+
+<div class="fm">b_corrected = b̂ + (1 + 3·b̂) / N     ← invert Kendall formula (first order)
+
+ตัวอย่าง: b̂ = 0.856, N = 30 obs
+  b_corrected = 0.856 + (1 + 3×0.856)/30 = 0.856 + 0.119 = 0.975
+  half-life (corrected) ≈ −ln(2)/ln(0.975) × 24h ≈ 27 ชม.
+                                                   ← ใกล้เคียงกับ 90-วัน estimate (8.7h)
+
+หมายเหตุ: correction นี้เป็น approximation — ใช้เป็น sanity check ไม่ใช่ค่าจริง
+           ถ้า b_corrected ≈ 1.0 → true process ใกล้ random walk → half-life ยาวมาก</div>
+
+<div class="bx bg">
+<div class="bt">สรุป — 4 กฎป้องกัน Lookback Selection Bias</div>
+<ol>
+<li><strong>กำหนด lookback ก่อน calibrate</strong> — อิงจาก expected half-life (train window ≥ 30× half-life) ไม่ใช่จากความสวยของกราฟ</li>
+<li><strong>ทำ Sensitivity Test เสมอ</strong> — ถ้า half-life เปลี่ยน > 3× ระหว่าง lookback สั้นและยาว = estimate ไม่ robust</li>
+<li><strong>ใช้ Walk-Forward (§3.9) แยก Train / Out-of-Sample</strong> — ห้าม calibrate และ evaluate บนข้อมูลชุดเดียวกัน</li>
+<li><strong>เชื่อ long lookback มากกว่า short lookback</strong> — Kendall bias ลดลงตาม N; window ≥ 60 วันให้ estimate น่าเชื่อถือกว่าเสมอ</li>
+</ol>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.5 — วินิจฉัย Lookback Bias</div>
+<p>ทดลองใช้ lookback 4 ค่าบน spread คู่หนึ่ง ได้ผล:</p>
+<table style="font-size:.9em">
+<tr><th>Lookback</th><th>b̂</th><th>Half-life</th></tr>
+<tr><td>20 วัน</td><td>0.72</td><td>2.1 ชม.</td></tr>
+<tr><td>40 วัน</td><td>0.89</td><td>6.0 ชม.</td></tr>
+<tr><td>60 วัน</td><td>0.95</td><td>13.4 ชม.</td></tr>
+<tr><td>90 วัน</td><td>0.97</td><td>22.7 ชม.</td></tr>
+</table>
+<p><strong>ถาม:</strong> (a) มี Lookback Selection Bias ไหม? (b) ควรใช้ lookback ไหน และ half-life ที่น่าเชื่อถือคือเท่าไหร่? (c) ถ้าต้องการ intraday strategy (hold ≤ 8h) pair นี้เหมาะไหม?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> ใช่ — half-life เปลี่ยนจาก 2.1h (lookback 20d) เป็น 22.7h (lookback 90d) = <strong>เปลี่ยน > 10×</strong> แสดง Kendall bias ชัดเจน ค่าที่ lookback 20d ไม่น่าเชื่อถือ</p>
+<p><strong>(b)</strong> ควรใช้ lookback <strong>60–90 วัน</strong> ที่ estimate เสถียร — half-life ที่น่าเชื่อถือคือ <strong>13–23 ชม.</strong></p>
+<p><strong>(c)</strong> <strong>ไม่เหมาะ intraday</strong> — half-life จริงอยู่ที่ 13–23h > 8h target holding → spread กลับช้าเกินไปสำหรับ intraday · ควรใช้เป็น overnight swing strategy แทน</p>
+</div>
+</details>
+</div>
+
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
   Ch.3 OU Process | ต่อไป → <strong>Part II: Hedge Ratio β (Ch.4–6)</strong>
 </p>
