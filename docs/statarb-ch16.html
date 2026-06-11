@@ -99,15 +99,19 @@ $$w^* = \arg\min_w\; w^\top \Sigma w \quad \text{s.t.}\;\; w^\top \mu \geq \mu_{
 
 <h2 id="s16-2">16.2 Covariance Matrix ของ Spreads</h2>
 
-<p>นิยาม Σ = covariance matrix ขนาด n×n (n = จำนวน spread):</p>
+<p>นิยาม Σ = covariance matrix ขนาด n×n (n = จำนวน spread) โดย Σ_ij = Cov(ε_i, ε_j) = E[(ε_i − μ_i)(ε_j − μ_j)]</p>
+<p>ในทางปฏิบัติมักแสดงในรูป <strong>correlation matrix</strong> (normalize ด้วย std ของแต่ละ spread) เพื่อให้อ่านค่าได้ง่ายกว่า — diagonal = 1.0 เสมอ ค่า off-diagonal = Pearson correlation ρ_ij ∈ [−1, 1]:</p>
+<div class="fm">Correlation matrix ρ_ij = Σ_ij / (σ_i × σ_j)   ← normalized covariance (ใช้แสดง/อ่านค่า)
+Covariance matrix Σ_ij   = ρ_ij × σ_i × σ_j       ← ที่ใส่ใน MVO formula จริง
 
-<div class="fm">Σ_ij = Cov(ε_i, ε_j) = E[(ε_i − μ_i)(ε_j − μ_j)]
-
-ตัวอย่าง 3 spreads:
+ตัวอย่าง 3 spreads (correlation form):
          BTC_B↔L  ETH_B↔L  BTC_Basis
-BTC_B↔L [  1.00     0.42     0.15   ]  ← variance normalized
+BTC_B↔L [  1.00     0.42     0.15   ]
 ETH_B↔L [  0.42     1.00     0.08   ]
-BTC_Basis[  0.15     0.08     1.00   ]</div>
+BTC_Basis[  0.15     0.08     1.00   ]
+
+หมายเหตุ: diagonal = 1.00 เพราะ normalize แล้ว — เมื่อใส่ใน MVO ต้อง de-normalize
+กลับเป็น Σ ก่อนโดย: Σ_ij = ρ_ij × σ_i × σ_j</div>
 
 <img class="chart" src="charts/ch16-cov-matrix.svg" alt="Spread correlation matrix">
 <p class="caption">Correlation heatmap — สี่เหลี่ยมเข้มหมายถึง correlation สูง (ไม่ดีสำหรับ diversification)</p>
@@ -121,7 +125,8 @@ BTC_Basis[  0.15     0.08     1.00   ]</div>
 
 subject to:  Σ w_i = 1,  w_i ≥ 0,  w_i ≤ w_max
 
-Solution (unconstrained):  w* = (1/2λ) × Σ⁻¹ × μ
+สูตร closed-form (ก่อนใส่ constraints):  w* = (1/2λ) × Σ⁻¹ × μ
+หมายเหตุ: สูตรนี้ใช้เมื่อ ignore constraints — ในทางปฏิบัติ clip ด้วย [0, w_max] แล้ว normalize ตาม §16.6
 
 โดย:
   μ   = vector ของ expected return แต่ละ spread

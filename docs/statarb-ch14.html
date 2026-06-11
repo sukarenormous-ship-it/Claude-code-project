@@ -304,6 +304,13 @@ $$\text{Net P\&L} = (\varepsilon_{\text{entry}} - \varepsilon_{\text{exit}}) \cd
     if signal == "LONG_A_SHORT_B":
         order_a = place_limit_order(venue="Bybit",   side="BUY",  size=size)
         order_b = place_limit_order(venue="Lighter", side="SELL", size=size)
+        close_a_side = "SELL"   # ถ้า leg B ล้มเหลว ต้องปิด leg A ด้วยฝั่งตรงข้าม
+    elif signal == "SHORT_A_LONG_B":
+        order_a = place_limit_order(venue="Bybit",   side="SELL", size=size)
+        order_b = place_limit_order(venue="Lighter", side="BUY",  size=size)
+        close_a_side = "BUY"
+    else:
+        return "UNKNOWN_SIGNAL"
 
     filled_a = wait_fill(order_a, timeout_ms=max_leg_wait_ms)
     if not filled_a:
@@ -314,7 +321,7 @@ $$\text{Net P\&L} = (\varepsilon_{\text{entry}} - \varepsilon_{\text{exit}}) \cd
     if not filled_b:
         cancel(order_b)
         # emergency: close leg A immediately with market order
-        market_close(venue="Bybit", side="SELL", size=filled_a.qty)
+        market_close(venue="Bybit", side=close_a_side, size=filled_a.qty)
         return "LEG_FAIL_B_CLOSED_A"
 
     return "SUCCESS", filled_a, filled_b</div>
