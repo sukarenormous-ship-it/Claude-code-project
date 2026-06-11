@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stat Arb Ch.6 — Hurst Exponent &amp; Stationarity Tests</title>
+<title>Stat Arb บทที่ 6 — Hurst Exponent &amp; การทดสอบ Stationarity</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
@@ -71,13 +71,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="cover">
 <div class="ch-num">Statistical Arbitrage · บทที่ 6</div>
-<h1>Hurst Exponent &amp; Stationarity Tests</h1>
+<h1>Hurst Exponent &amp; การทดสอบ Stationarity</h1>
 <div class="sub">H &lt; 0.5 = Mean-Reverting &nbsp;·&nbsp; H = 0.5 = Random Walk &nbsp;·&nbsp; H &gt; 0.5 = Trending</div>
 </div>
 
 <div class="key-idea">
-<div class="ki-label">Core Idea — Read This First</div>
-<div class="ki-text">The <strong>z-score</strong> measures how far the current spread ε is from its mean, expressed in units of standard deviation. For statistical arbitrage, we <strong>enter when |z| &gt; 2</strong> — the spread is unusually far from equilibrium — and <strong>exit when |z| &lt; 0.5</strong> — the spread has reverted to normal. The z-score converts any spread into a dimensionless signal comparable across pairs and time.</div>
+<div class="ki-label">แนวคิดหลัก — อ่านตรงนี้ก่อน</div>
+<div class="ki-text"><strong>z-score</strong> วัดว่า spread ε ปัจจุบันอยู่ห่างจากค่าเฉลี่ยแค่ไหน ในหน่วย standard deviation สำหรับ stat arb เรา <strong>เข้าเทรดเมื่อ |z| &gt; 2</strong> — spread อยู่ไกลจากสมดุลผิดปกติ — และ <strong>ออกเมื่อ |z| &lt; 0.5</strong> — spread กลับมาใกล้ค่ากลางแล้ว z-score แปลง spread ใดก็ตามให้เป็นสัญญาณไร้มิติ เปรียบเทียบข้ามคู่และข้ามช่วงเวลาได้</div>
 <div style="margin-top:10px;text-align:center">
 $$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
 </div>
@@ -85,21 +85,21 @@ $$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
 </div>
 
 <!-- 6.1 -->
-<h2 id="s6-1">6.1 What H Measures — Three Regimes</h2>
+<h2 id="s6-1">6.1 H วัดอะไร — สามโหมดของ Time Series</h2>
 
-<p>The Hurst exponent was originally developed by Harold Hurst studying Nile River flood cycles. In finance, it quantifies whether a series has memory. Below, three synthetic time series illustrate the three regimes clearly.</p>
+<p>Hurst exponent ถูกพัฒนาขึ้นโดย Harold Hurst จากการศึกษาวัฏจักรน้ำท่วมแม่น้ำไนล์ ในทางการเงิน H วัดว่า series มี "ความจำ" หรือเปล่า — กล่าวคือการเคลื่อนไหวในอดีตมีอิทธิพลต่ออนาคตอย่างไร ด้านล่างแสดง time series สังเคราะห์สามแบบที่แสดงสามโหมดอย่างชัดเจน</p>
 
 <img class="chart" src="charts/ch6-zscore-signal.svg">
 <div class="caption">Spread ε (top) with ±2σ bands and rolling z-score (bottom) colour-coded: RED = entry zone |z|&gt;2, GREEN = exit zone |z|&lt;1, NAVY = hold. Z-score computed on a 30-bar rolling window.</div>
 
 <div class="bx bd">
-<div class="bt">Practitioner Note — Rolling Window for μ and σ</div>
-<p>In live trading, <strong>never use the full history</strong> to compute μ<sub>ε</sub> and σ<sub>ε</sub>. Use a <strong>rolling 30-day window</strong> (≈ 720 hourly bars for crypto perps). This ensures the z-score adapts to recent regime shifts — e.g. if funding rates structurally change, the spread mean drifts and a full-history mean becomes stale within days. A rolling window keeps the denominator relevant and the z-score centred around zero. For very high-frequency pairs (5-minute bars), a 7-day window (2016 bars) is typical. Validate by checking that |mean(z)| &lt; 0.1 on out-of-sample data.</p>
+<div class="bt">ข้อปฏิบัติจริง — Rolling Window สำหรับ μ และ σ</div>
+<p>ในการเทรดจริง <strong>ห้ามใช้ข้อมูลทั้งหมดตั้งแต่ต้น</strong> ในการคำนวณ μ<sub>ε</sub> และ σ<sub>ε</sub> ให้ใช้ <strong>rolling window 30 วัน</strong> (≈ 720 บาร์รายชั่วโมงสำหรับ crypto perp) เพื่อให้ z-score ปรับตัวตาม regime ล่าสุด เช่น ถ้า funding rate เปลี่ยนเชิงโครงสร้าง ค่าเฉลี่ยของ spread จะดริฟต์ไป และ mean จากข้อมูลทั้งหมดจะหมดอายุภายในไม่กี่วัน Rolling window ช่วยให้ z-score วนรอบศูนย์อยู่เสมอ สำหรับคู่ที่ใช้บาร์ 5 นาที ใช้ window 7 วัน (2016 บาร์) ตรวจสอบโดยดูว่า |mean(z)| &lt; 0.1 บนข้อมูล out-of-sample</p>
 </div>
 
 <div class="bx bk">
-<div class="bt">Model Risk — Z-score Assumes Normal Distribution</div>
-<p>The z-score threshold of ±2 is calibrated to the Normal distribution, where P(|z|&gt;2) ≈ 4.6%. In practice, spread residuals have <strong>fat tails</strong> (leptokurtosis) — the true probability of a 3σ event is often 2–5× higher than the Normal predicts. This means: (1) the entry threshold ±2 is triggered more frequently than expected — diluting the edge, and (2) stop-loss events at ±3 are more common — increasing tail risk. Mitigation: use a robust z-score with Median Absolute Deviation (MAD) denominator, or widen entry to ±2.5 after observing the empirical exceedance rate on the pair's history.</p>
+<div class="bt">Model Risk — Z-score สมมติว่า residual กระจายแบบ Normal</div>
+<p>Threshold ±2 ถูก calibrate ไว้บน Normal distribution ซึ่ง P(|z|&gt;2) ≈ 4.6% แต่ในทางปฏิบัติ spread residual มี <strong>fat tail</strong> (leptokurtosis) — ความน่าจะเป็นที่จะเกิด event ขนาด 3σ สูงกว่าที่ Normal ทำนายถึง 2–5 เท่า ผลที่ตามมา: (1) entry threshold ±2 ถูก trigger บ่อยกว่าที่คิด — ทำให้ edge เจือจางลง และ (2) stop-loss ที่ ±3 เกิดบ่อยขึ้น — เพิ่ม tail risk แนวทางแก้: ใช้ robust z-score ที่ใช้ Median Absolute Deviation (MAD) เป็น denominator หรือขยาย entry เป็น ±2.5 หลังจากดู empirical exceedance rate จากประวัติ pair นั้นจริงๆ</p>
 </div>
 
 <div class="bx bb">
@@ -128,46 +128,46 @@ $$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
 <div class="caption">Distribution of z-scores from 1000 OU simulated observations vs Normal(0,1) PDF (navy). TEAL bars = simulated z-scores; RED bars = tails |z|&gt;2. ±2σ shown as dashed AMBER lines.</div>
 
 <!-- 6.3 -->
-<h2 id="s6-3">6.3 ADF Test + KPSS Test — Double Confirmation</h2>
+<h2 id="s6-3">6.3 ADF Test + KPSS Test — ยืนยันสองชั้น</h2>
 
-<p>The Augmented Dickey-Fuller (ADF) and KPSS tests have <strong>opposite null hypotheses</strong>. Using both gives a robust verdict on stationarity.</p>
+<p>ADF และ KPSS มี <strong>null hypothesis ตรงกันข้าม</strong> การใช้ทั้งสองพร้อมกันให้คำตอบที่แน่นกว่าเรื่อง stationarity</p>
 
 <table>
-<tr><th>Test</th><th>H₀ (Null)</th><th>Reject H₀ means</th><th>We want</th></tr>
-<tr><td><strong>ADF</strong></td><td>Series is non-stationary (has unit root)</td><td>Series IS stationary</td><td>p-value &lt; 0.05 (reject)</td></tr>
-<tr><td><strong>KPSS</strong></td><td>Series IS stationary</td><td>Series is non-stationary</td><td>p-value &gt; 0.05 (fail to reject)</td></tr>
+<tr><th>การทดสอบ</th><th>H₀ (สมมติฐานว่าง)</th><th>Reject H₀ หมายความว่า</th><th>เราต้องการ</th></tr>
+<tr><td><strong>ADF</strong></td><td>Series ไม่ stationary (มี unit root)</td><td>Series IS stationary</td><td>p-value &lt; 0.05 (reject)</td></tr>
+<tr><td><strong>KPSS</strong></td><td>Series IS stationary</td><td>Series ไม่ stationary</td><td>p-value &gt; 0.05 (fail to reject)</td></tr>
 </table>
 
 <div class="bx bg">
-<div class="bt">Combined Interpretation — Four Cases</div>
+<div class="bt">แปลผลรวม — สี่กรณี</div>
 <table style="margin:8px 0">
-<tr><th>ADF result</th><th>KPSS result</th><th>Verdict</th><th>Trade?</th></tr>
-<tr><td>Rejects (p &lt; 0.05)</td><td>Fails to reject (p &gt; 0.05)</td><td><strong>Strongly stationary</strong></td><td>Yes</td></tr>
-<tr><td>Rejects (p &lt; 0.05)</td><td>Rejects (p &lt; 0.05)</td><td>Borderline / short memory</td><td>Caution</td></tr>
-<tr><td>Fails to reject</td><td>Fails to reject (p &gt; 0.05)</td><td>Inconclusive — collect more data / extend the sample window</td><td>No / wait</td></tr>
-<tr><td>Fails to reject</td><td>Rejects (p &lt; 0.05)</td><td><strong>Non-stationary</strong></td><td>Never</td></tr>
+<tr><th>ผล ADF</th><th>ผล KPSS</th><th>ข้อสรุป</th><th>เทรดได้?</th></tr>
+<tr><td>Reject (p &lt; 0.05)</td><td>Fail to reject (p &gt; 0.05)</td><td><strong>Stationary แน่นหนา</strong></td><td>ได้</td></tr>
+<tr><td>Reject (p &lt; 0.05)</td><td>Reject (p &lt; 0.05)</td><td>ขอบเขต / short memory</td><td>ระวัง ลด size</td></tr>
+<tr><td>Fail to reject</td><td>Fail to reject (p &gt; 0.05)</td><td>ไม่ชัดเจน — เก็บข้อมูลเพิ่ม / ขยาย window</td><td>ไม่ / รอก่อน</td></tr>
+<tr><td>Fail to reject</td><td>Reject (p &lt; 0.05)</td><td><strong>ไม่ stationary ชัดเจน</strong></td><td>ห้ามเด็ดขาด</td></tr>
 </table>
 </div>
 
 <!-- 6.4 -->
-<h2 id="s6-4">6.4 Interpretation Table — H Range to Trade Decision</h2>
+<h2 id="s6-4">6.4 ตารางแปลผล — ช่วง H สู่การตัดสินใจเทรด</h2>
 
 <table>
-<tr><th>H Range</th><th>Behavior</th><th>Trade Decision</th><th>Approx Half-Life</th></tr>
-<tr><td>H &lt; 0.35</td><td>Strongly mean-reverting</td><td>Trade aggressively, tighter bands</td><td>Very short (hours)</td></tr>
-<tr><td>0.35 ≤ H &lt; 0.45</td><td>Moderately mean-reverting</td><td>Trade normally, standard bands</td><td>Short to medium</td></tr>
-<tr><td>0.45 ≤ H &lt; 0.55</td><td>Near random walk — uncertain</td><td>Reduce size, require ADF confirm</td><td>Long or unreliable</td></tr>
-<tr><td>0.55 ≤ H &lt; 0.65</td><td>Weakly trending</td><td>Do not trade mean-reversion</td><td>N/A (trend instead)</td></tr>
-<tr><td>H ≥ 0.65</td><td>Strongly trending</td><td>Abort pair, find new one</td><td>N/A</td></tr>
+<tr><th>ช่วง H</th><th>พฤติกรรม</th><th>การตัดสินใจเทรด</th><th>Half-Life โดยประมาณ</th></tr>
+<tr><td>H &lt; 0.35</td><td>Mean-reverting แข็งมาก</td><td>เทรดได้เต็มที่ ใช้ band แคบลงได้</td><td>สั้นมาก (ชั่วโมง)</td></tr>
+<tr><td>0.35 ≤ H &lt; 0.45</td><td>Mean-reverting ระดับปานกลาง</td><td>เทรดปกติ ใช้ band มาตรฐาน</td><td>สั้นถึงปานกลาง</td></tr>
+<tr><td>0.45 ≤ H &lt; 0.55</td><td>ใกล้ random walk — ไม่แน่นอน</td><td>ลด size ต้องการ ADF ยืนยัน</td><td>ยาวหรือไม่น่าเชื่อถือ</td></tr>
+<tr><td>0.55 ≤ H &lt; 0.65</td><td>มีแนวโน้ม (trending) เล็กน้อย</td><td>ห้ามเทรด mean-reversion</td><td>N/A (เทรด trend แทน)</td></tr>
+<tr><td>H ≥ 0.65</td><td>Trending แข็ง</td><td>ทิ้ง pair นี้ หาคู่ใหม่</td><td>N/A</td></tr>
 </table>
 
 <div class="bx ba">
-<div class="bt">Practical Note: Recalculate H Monthly</div>
-<p>H is not stable over time. A pair that had H = 0.33 last month may shift to H = 0.51 after a structural break (exchange policy change, fee restructuring, or major liquidity event). Always recalculate H on a rolling 90-day window and alert if H crosses 0.45.</p>
+<div class="bt">ข้อควรระวัง: คำนวณ H ใหม่ทุกเดือน</div>
+<p>H ไม่คงที่ตลอดไป pair ที่มี H = 0.33 เดือนที่แล้ว อาจเปลี่ยนเป็น H = 0.51 หลังเกิด structural break (นโยบาย exchange เปลี่ยน ค่า fee ปรับโครงสร้าง หรือ liquidity event ขนาดใหญ่) ควรคำนวณ H ใหม่บน rolling 90-day window เสมอ และแจ้งเตือนถ้า H ทะลุ 0.45</p>
 </div>
 
 <!-- Pseudo-code -->
-<h2 id="s6-pc">6.5 Pseudo-Code: hurst_rs()</h2>
+<h2 id="s6-pc">6.5 Pseudo-Code: hurst_rs() และ check_stationarity()</h2>
 
 <div class="pseudo">
 <span class="kw">function</span> <span class="fn">hurst_rs</span>(series, min_window=<span class="nu">10</span>):
@@ -276,7 +276,7 @@ Block bootstrap ขนาด √n รักษา local autocorrelation ไว�
 <!-- Running example -->
 <div class="running-ex">
 <div class="re-title">ตัวอย่างจริง: Bybit BTC Perp ↔ Lighter BTC Perp</div>
-<p>We compute H on two series — the spread ε and raw BTC price — over the last 90 days of hourly data:</p>
+<p>คำนวณ H บน two series — spread ε และ ราคา BTC ดิบ — จาก 90 วันล่าสุดของข้อมูลรายชั่วโมง:</p>
 
 <table>
 <tr><th>Series</th><th>H (R/S)</th><th>Interpretation</th><th>ADF p-value</th><th>KPSS p-value</th><th>Verdict</th></tr>
@@ -284,7 +284,7 @@ Block bootstrap ขนาด √n รักษา local autocorrelation ไว�
 <tr><td>Raw BTC log-price (Bybit)</td><td><strong>0.52</strong></td><td>Near random walk</td><td>0.41</td><td>0.02</td><td style="color:#dc2626"><strong>Do not trade</strong></td></tr>
 </table>
 
-<p>The spread has H = 0.31 — deeply in mean-reverting territory. ADF rejects non-stationarity (p = 0.0003) AND KPSS fails to reject stationarity (p = 0.18). This is the strongest possible confirmation. The raw BTC price, by contrast, shows H = 0.52 — a near-perfect random walk, exactly as theory predicts.</p>
+<p>Spread มี H = 0.31 — อยู่ลึกใน mean-reverting territory ADF reject non-stationarity (p = 0.0003) และ KPSS fail to reject stationarity (p = 0.18) — นี่คือการยืนยันที่แข็งแกร่งที่สุดเท่าที่จะเป็นไปได้ ในทางตรงข้าม ราคา BTC ดิบแสดง H = 0.52 — ใกล้เคียง random walk สมบูรณ์แบบ ตรงกับที่ทฤษฎีทำนาย</p>
 
 <div class="fm">Estimated half-life from H = 0.31:
   → Hurst-implied: ~4–8 hours (tight, fast reversion)
@@ -294,35 +294,35 @@ Block bootstrap ขนาด √n รักษา local autocorrelation ไว�
 <!-- Exercises -->
 <div class="ex">
 <div class="et">โจทย์ 6.1 — แปลความหมาย H = 0.43</div>
-<p>A new pair (Binance BTC Perp ↔ OKX BTC Perp) produces H = 0.43 from the R/S analysis. ADF p = 0.032, KPSS p = 0.08.</p>
-<p><strong>Q:</strong> Is this spread mean-reverting? What trading approach do you take?</p>
+<p>คู่ใหม่ (Binance BTC Perp ↔ OKX BTC Perp) ให้ H = 0.43 จาก R/S analysis, ADF p = 0.032, KPSS p = 0.08</p>
+<p><strong>คำถาม:</strong> Spread นี้ mean-reverting ไหม? ควรใช้แนวทางเทรดแบบใด?</p>
 <details>
 <summary>ดูคำตอบ</summary>
 <div class="ans">
-<p><strong>H = 0.43 &lt; 0.5 → Yes, mean-reverting</strong>, but only moderately. It sits in the "moderately mean-reverting" range (0.35–0.45).</p>
-<p><strong>ADF p = 0.032 → rejects non-stationarity (good).</strong> KPSS p = 0.08 → fails to reject stationarity (good). Both tests agree: the spread is stationary.</p>
-<p><strong>Trade decision:</strong> Trade normally but with standard (not aggressive) band settings. Use ±2σ entry rather than ±1.5σ. Monitor H monthly — if it rises above 0.45, reduce size. Half-life is moderate (likely 12–48 hours), so use multi-hour holding periods.</p>
+<p><strong>H = 0.43 &lt; 0.5 → mean-reverting</strong> แต่ระดับปานกลาง อยู่ในช่วง "mean-reverting ปานกลาง" (0.35–0.45)</p>
+<p><strong>ADF p = 0.032 → reject non-stationarity (ดี)</strong> KPSS p = 0.08 → fail to reject stationarity (ดี) ทั้งสองการทดสอบเห็นพ้อง: spread stationary</p>
+<p><strong>การตัดสินใจ:</strong> เทรดได้ปกติแต่ใช้ band มาตรฐาน (ไม่ใช่ aggressive) ใช้ entry ±2σ ไม่ใช่ ±1.5σ ติดตาม H ทุกเดือน — ถ้าขึ้นเกิน 0.45 ให้ลด size Half-life อยู่ระดับปานกลาง (น่าจะ 12–48 ชั่วโมง) ควรถือหลายชั่วโมง</p>
 </div>
 </details>
 </div>
 
 <div class="ex">
 <div class="et">โจทย์ 6.2 — ผลทดสอบขัดแย้งกัน</div>
-<p>For a candidate spread: ADF p = 0.08 (fails to reject), KPSS p = 0.03 (rejects stationarity).</p>
-<p><strong>Q:</strong> Interpret this combined result. Should you trade this spread?</p>
+<p>Spread ตัวหนึ่ง: ADF p = 0.08 (fail to reject), KPSS p = 0.03 (rejects stationarity)</p>
+<p><strong>คำถาม:</strong> แปลผลรวมนี้อย่างไร? ควรเทรด spread นี้ไหม?</p>
 <details>
 <summary>ดูคำตอบ</summary>
 <div class="ans">
-<p><strong>ADF fails to reject</strong> (p = 0.08 &gt; 0.05): evidence is insufficient to call this stationary under ADF.</p>
-<p><strong>KPSS rejects</strong> (p = 0.03 &lt; 0.05): KPSS actively rejects the null that the series is stationary.</p>
-<p><strong>Combined verdict:</strong> Both tests agree the series is <strong>non-stationary</strong>. This is the worst-case outcome — clear evidence of a unit root or trending behavior. Do NOT trade. Go back and re-estimate β or find a different pairing.</p>
-<p><strong>Possible causes:</strong> β is mis-specified (use a recent window to re-run OLS), a structural break occurred in the pair relationship, or the two assets have diverged permanently.</p>
+<p><strong>ADF fail to reject</strong> (p = 0.08 &gt; 0.05): หลักฐานไม่เพียงพอจะบอกว่า stationary ภายใต้ ADF</p>
+<p><strong>KPSS rejects</strong> (p = 0.03 &lt; 0.05): KPSS ปฏิเสธ null ว่า series เป็น stationary อย่างชัดเจน</p>
+<p><strong>ข้อสรุปรวม:</strong> ทั้งสองการทดสอบเห็นตรงกันว่า series <strong>ไม่ stationary</strong> นี่คือผลลัพธ์แย่ที่สุด — หลักฐานชัดว่ามี unit root หรือพฤติกรรม trending ห้ามเทรด ให้กลับไป re-estimate β หรือหา pair ใหม่</p>
+<p><strong>สาเหตุที่เป็นไปได้:</strong> β ไม่ถูกต้อง (ใช้ recent window รัน OLS ใหม่), เกิด structural break ในความสัมพันธ์ของ pair หรือทั้งสอง asset แยกออกจากกันถาวร</p>
 </div>
 </details>
 </div>
 
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
-Ch.6 Hurst Exponent &amp; Stationarity Tests | ต่อไป → <strong>Ch.7: GARCH on Residuals</strong>
+บทที่ 6 Hurst Exponent &amp; การทดสอบ Stationarity | ต่อไป → <strong>บทที่ 7: GARCH on Residuals</strong>
 </p>
 
 
