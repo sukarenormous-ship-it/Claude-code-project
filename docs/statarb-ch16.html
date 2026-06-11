@@ -134,6 +134,47 @@ Solution (unconstrained):  w* = (1/2λ) × Σ⁻¹ × μ
 <p>Mean-variance optimization <strong>sensitive มากต่อ estimate ของ μ</strong> — error เล็กน้อยใน μ ทำให้ w* เปลี่ยนแปลงมาก วิธีแก้: ใช้ shrinkage (เช่น Ledoit-Wolf) หรือ equal-weight เป็น baseline แล้วปรับ deviation ตาม conviction เท่านั้น</p>
 </div>
 
+<div class="bx bb">
+<div class="bt">Walk-Forward Test สำหรับ Portfolio Weights — น้ำหนักที่ได้ stable ใน out-of-sample ไหม?</div>
+<p>MVO weights ที่ optimal ใน in-sample อาจไม่ stable เลยใน out-of-sample — นี่คือ "error maximization" problem (Michaud 1989): MVO ขยาย estimation error ของ μ และ Σ ทำให้ weight swing รุนแรงระหว่างรอบ reoptimization</p>
+<ol>
+<li>แบ่งข้อมูล: 6 เดือนแรก = training → compute w*; เดือน 7–9 = out-of-sample → วัด realized Sharpe</li>
+<li>เลื่อน window ทีละเดือน (rolling) → ดูว่า w* เปลี่ยนแปลงแค่ไหนแต่ละรอบ</li>
+<li><strong>สัญญาณไม่ดี:</strong> weight ของ spread เดิมกระโดด &gt;30% ระหว่างรอบ → μ estimate ไม่ stable → ใช้ equal-weight แทน</li>
+</ol>
+<div class="fm">def portfolio_walk_forward(returns_df, train_months=6, test_months=3):
+    results = []
+    prev_w = None
+    for start in rolling_windows(returns_df, train_months, step=1):
+        train = slice(start, start + train_months)
+        test  = slice(start + train_months, start + train_months + test_months)
+
+        w_mvo   = portfolio_allocate(estimate_mu(returns_df[train]),
+                                     estimate_cov(returns_df[train]))
+        w_equal = [1/n_spreads] * n_spreads
+
+        sharpe_mvo   = compute_sharpe(returns_df[test] @ w_mvo)
+        sharpe_equal = compute_sharpe(returns_df[test] @ w_equal)
+        weight_jump  = max(abs(w_mvo[i] - prev_w[i]) for i in range(n_spreads)) if prev_w else 0
+        results.append({"sharpe_mvo": sharpe_mvo, "sharpe_equal": sharpe_equal,
+                        "max_weight_change": weight_jump})
+        prev_w = w_mvo
+    return results
+# Rule: ถ้า sharpe_equal >= 0.9 × sharpe_mvo โดยเฉลี่ย → ใช้ equal-weight ใน production</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">Concentration Risk — 3 BTC Spread ไม่ใช่ Diversification จริง</div>
+<p>Portfolio ที่ประกอบด้วย BTC Bybit↔Lighter + ETH Bybit↔Lighter + BTC Perp Basis ทั้งสามตัวมี <strong>common factor ร่วมกัน: crypto market sentiment</strong> ในช่วง BTC crash ทุก spread ถูก shock พร้อมกัน diversification benefit ที่วัดได้ในช่วงปกติจะหายไปทันที</p>
+<table>
+<tr><th>Spread</th><th>Common Factor</th><th>Risk ที่แท้จริงที่ต่างกัน</th></tr>
+<tr><td>BTC Bybit↔Lighter</td><td>BTC price + venue liquidity</td><td>Lighter-specific liquidity event</td></tr>
+<tr><td>ETH Bybit↔Lighter</td><td>BTC price (ETH corr ≈ 0.8) + venue</td><td>ETH protocol/upgrade event</td></tr>
+<tr><td>BTC Perp Basis</td><td>BTC price + market leverage sentiment</td><td>Funding rate cycle timing</td></tr>
+</table>
+<p><strong>วิธีลด concentration:</strong> เพิ่ม spread จาก asset class ที่ต่างออกไป (เช่น Gold futures basis, FX cross, Equity stat arb) — ไม่ใช่แค่เพิ่มจำนวน spread ใน crypto เพราะ diversification นั้นเป็น "ภาพลวงตา" ในช่วงวิกฤต</p>
+</div>
+
 <h2 id="s16-4">16.4 Portfolio Weight — Pie Chart</h2>
 
 <img class="chart" src="charts/ch16-portfolio-weights.svg" alt="Portfolio weight allocation">
@@ -194,6 +235,18 @@ Solution (unconstrained):  w* = (1/2λ) × Σ⁻¹ × μ
         return True, f"Correlation spike: {max_off_diagonal:.2f}"
     return False, None</div>
 
+<div class="bx ba">
+<div class="bt">Regime Covariance — Σ ใน Stressed Regime ต่างจาก Normal อย่างมาก</div>
+<p>MVO ใช้ Σ ตัวเดียวตลอด แต่ตาม Regime-Switching model (บทที่ 9) covariance matrix เปลี่ยนตาม regime:</p>
+<table>
+<tr><th>Regime</th><th>ลักษณะของ Σ</th><th>ผลต่อ Portfolio</th></tr>
+<tr><td>Normal</td><td>Correlation ต่ำ (0.3–0.5), variance ต่ำ</td><td>MVO weights ทำงานตามที่คาด</td></tr>
+<tr><td>Stressed</td><td>Correlation สูงขึ้น (0.6–0.8), variance เพิ่ม</td><td>Diversification ลดลง, ควรลด total size</td></tr>
+<tr><td>Broken</td><td>Correlation → 1.0, variance พุ่ง</td><td>Portfolio กลายเป็น undiversified — halt ทุก new entry</td></tr>
+</table>
+<p><strong>แนวทาง:</strong> estimate Σ แยกตาม regime (ใช้ข้อมูลเฉพาะช่วง Normal สำหรับ MVO ปกติ) และใช้ Σ_stressed ในการ stress-test portfolio — ถ้า stressed-Sharpe &lt; 0.5 ของ normal-Sharpe → ลด max_weight ต่อ spread ลง</p>
+</div>
+
 <h2 id="s16-8">16.8 Running Example — 3 Spread Portfolio</h2>
 
 <div class="running-ex">
@@ -215,13 +268,13 @@ Solution (unconstrained):  w* = (1/2λ) × Σ⁻¹ × μ
 </div>
 
 <div class="bx bd">
-<div class="bt">Practitioner Notes</div>
-<p>Re-optimize portfolio weights weekly (not daily — transaction cost of rebalancing 3 spreads daily &gt; diversification benefit). Set minimum weight 10% per spread (no zero allocation that creates undiversified portfolio). If correlation between any two spreads exceeds 0.7 in 7-day rolling window → treat as single position for sizing purposes.</p>
+<div class="bt">ข้อปฏิบัติจริง</div>
+<p>Re-optimize portfolio weights ทุกสัปดาห์ (ไม่ใช่ทุกวัน — transaction cost ของการ rebalance 3 spreads ทุกวันสูงกว่า diversification benefit ที่ได้) ตั้ง minimum weight 10% ต่อ spread (ไม่ให้ weight เป็น 0 เพราะจะทำให้ portfolio ไม่ diversified) ถ้า correlation ระหว่าง spread ใดก็ตามเกิน 0.70 ใน rolling 7 วัน → นับเป็น position เดียวในการคำนวณขนาด</p>
 </div>
 
 <div class="bx bk">
-<div class="bt">Model Risk</div>
-<p>Mean-variance optimization is famously input-sensitive — small errors in μ estimates cause large weight swings. In practice, equal-weight (1/N) outperforms MVO out-of-sample in most studies. Correlation spike to 1.0 during crisis means diversification benefit disappears exactly when it is most needed.</p>
+<div class="bt">Model Risk — ข้อจำกัดของ MVO</div>
+<p>MVO sensitive มากต่อ estimation error ของ μ — error เล็กน้อยทำให้ weight swing รุนแรง ในทางปฏิบัติ equal-weight (1/N) ให้ผล out-of-sample ดีกว่า MVO ในหลายงานวิจัย Correlation spike → 1.0 ในช่วงวิกฤตทำให้ diversification benefit หายไปพอดีตอนที่ต้องการมากที่สุด — ดู Walk-Forward Test ใน §16.3 เพื่อตรวจว่า weights stable หรือเปล่า</p>
 </div>
 
 <h2 id="s16-9">16.9 แบบฝึกหัด</h2>

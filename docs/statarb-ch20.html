@@ -304,6 +304,38 @@ CVaR_95 = E[loss | loss > VaR_95]
 </details>
 </div>
 
+<h2 id="s20-8">20.8 Monitoring Checklist: รายการตรวจสอบสำหรับ Live Trading</h2>
+
+<p>ทุกบทในหนังสือนี้มีกระบวนการตรวจสอบที่ต้องรันในความถี่ต่างกัน ตารางด้านล่างรวมทุกอย่างเข้าเป็น checklist เดียวเพื่อให้ง่ายต่อการ implement ใน production</p>
+
+<table>
+<tr><th>ความถี่</th><th>รายการตรวจสอบ</th><th>อ้างอิง</th><th>เงื่อนไข Alert</th></tr>
+<tr><td><strong>ทุก bar</strong></td><td>β drift — |β_t − β_{t-1}|</td><td><a href="statarb-ch4.html#s4-4">§4.4</a></td><td>&gt;5% จาก bar ก่อน → reduce size ครึ่งหนึ่ง</td></tr>
+<tr><td><strong>ทุก 60 วินาที</strong></td><td>risk_check() — drawdown hierarchy, VaR, open z-score</td><td><a href="#s20-5">§20.5</a></td><td>Pair DD &gt;3% หรือ Book DD &gt;5%</td></tr>
+<tr><td><strong>ทุก 15 นาที</strong></td><td>Hamilton regime filter — posterior P(Normal/Stressed/Broken)</td><td><a href="statarb-ch9.html#s9-3">§9.3</a></td><td>P(Broken) &gt;0.4 → halt new positions</td></tr>
+<tr><td><strong>ทุกวัน (ก่อนเปิด)</strong></td><td>Rolling ADF p-value บน trailing 90d + slope trend</td><td><a href="statarb-ch5.html#s5-9">§5.9</a></td><td>p &gt;0.05 หรือ slope &gt;0.005/step → alert</td></tr>
+<tr><td><strong>ทุกวัน (ก่อนเปิด)</strong></td><td>Re-estimate OLS β บน 30d ล่าสุด</td><td><a href="statarb-ch4.html#s4-4">§4.4</a></td><td>β เปลี่ยน &gt;5% จากวันก่อน → reduce size</td></tr>
+<tr><td><strong>ทุกสัปดาห์</strong></td><td>Walk-forward OU parameters (κ, θ, σ) บน trailing 90d</td><td><a href="statarb-ch3.html#s3-9">§3.9</a></td><td>Half-life เปลี่ยน &gt;50% → re-calibrate threshold</td></tr>
+<tr><td><strong>ทุกสัปดาห์</strong></td><td>Rolling correlation ระหว่าง spreads ใน portfolio</td><td><a href="statarb-ch16.html#s16-7">§16.7</a></td><td>Max pairwise corr &gt;0.70 → treat as single position</td></tr>
+<tr><td><strong>ทุกสัปดาห์</strong></td><td>GARCH conditional volatility — fit ω, α, β ใหม่</td><td><a href="statarb-ch7.html#s7-6">§7.6</a></td><td>σ_conditional เพิ่ม &gt;2× baseline → ขยาย band</td></tr>
+<tr><td><strong>ทุกสัปดาห์</strong></td><td>Portfolio weight walk-forward — MVO vs equal-weight</td><td><a href="statarb-ch16.html#s16-3">§16.3</a></td><td>Weight เปลี่ยน &gt;30% → check μ estimate</td></tr>
+<tr><td><strong>ทุกเดือน</strong></td><td>Hurst exponent H บน rolling 90d</td><td><a href="statarb-ch6.html#s6-4">§6.4</a></td><td>H &gt;0.45 → ลด size; H &gt;0.55 → halt pair</td></tr>
+<tr><td><strong>ทุกเดือน</strong></td><td>Lookback sensitivity test — β window 7d/30d/90d</td><td><a href="statarb-ch4.html#s4-4">§4.4</a>, <a href="statarb-ch3.html#s3-10">§3.10</a></td><td>β ต่างกัน &gt;15% ข้าม window → ใช้ longest window</td></tr>
+<tr><td><strong>ทุกเดือน</strong></td><td>Threshold re-derive: z_entry จาก fee/σ_stat formula</td><td><a href="statarb-ch3.html#s3-4">§3.4</a>, <a href="statarb-ch11.html#s11-3">§11.3</a></td><td>z_entry formula ต่างจาก config &gt;0.3 → ปรับ</td></tr>
+<tr><td><strong>ทุกเดือน</strong></td><td>Hamilton filter F1-score บน recent data</td><td><a href="statarb-ch9.html#s9-6">§9.6</a></td><td>F1 &lt;0.6 → re-calibrate probability threshold</td></tr>
+<tr><td><strong>หลัง major event</strong></td><td>Full re-calibration + cointegration re-test + breakeven re-analysis</td><td><a href="statarb-ch5.html#s5-2">§5.2</a>, <a href="statarb-ch3.html#s3-4">§3.4</a>, <a href="statarb-ch19.html">Ch.19</a></td><td>ทุกครั้งที่ exchange เปลี่ยน fee/product หรือเกิด crypto market structure event</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">4 ระดับความเร่งด่วน</div>
+<ul>
+<li><strong>Real-time (seconds–minutes):</strong> risk_check() + regime filter — ระบบทำอัตโนมัติ ไม่ต้องทำด้วยมือ</li>
+<li><strong>Daily:</strong> ADF rolling + β re-estimate — ทำก่อนตลาดเปิดทุกวัน (~5 นาที)</li>
+<li><strong>Weekly:</strong> OU recalibrate + portfolio weight + correlation + GARCH — ทำทุกวันอาทิตย์ (~30 นาที)</li>
+<li><strong>Monthly:</strong> Hurst + sensitivity test + threshold review + F1 check — ทำต้นเดือน (~1–2 ชั่วโมง)</li>
+</ul>
+</div>
+
 <p style="text-align:center;margin-top:50px;color:#94a3b8;font-size:.9em">
 จบ Statistical Arbitrage — Bybit ↔ Lighter BTC Perp Framework<br>
 บทที่ 1–22 · ครอบคลุมตั้งแต่ Synthetic Process จนถึง Live Risk Management, Spot↔CFD Swap Arbitrage และ Options-Based Stat Arb
