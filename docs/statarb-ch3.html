@@ -441,6 +441,22 @@ Walk-Forward แก้ปัญหานี้โดยแบ่งเวลา�
 </ul>
 </div>
 
+<h3>Rolling vs Expanding Window — เลือก Train Window แบบไหน?</h3>
+
+<p>Walk-forward ที่อธิบายข้างต้นใช้ <strong>rolling window</strong> (train window เริ่มต้นเลื่อนไปพร้อมกัน ทิ้งข้อมูลเก่า) แต่มีอีกทางเลือกคือ <strong>expanding window</strong> (เพิ่มข้อมูลใหม่เข้า train โดยไม่ทิ้งข้อมูลเก่า) ทั้งสองแบบเหมาะกับสถานการณ์ต่างกัน:</p>
+
+<table>
+<tr><th>ประเภท</th><th>วิธีการ</th><th>ข้อดี</th><th>ข้อเสีย</th><th>เลือกเมื่อ</th></tr>
+<tr><td><strong>Rolling</strong><br>(fixed)</td><td>ใช้ข้อมูล N วันล่าสุด<br>ทิ้งข้อมูลเก่าสุด<br><code>train = data[i : i+N]</code></td><td>ปรับ regime change ได้เร็ว<br>parameters สะท้อน "ตลาดปัจจุบัน"</td><td>estimate ผันผวนกว่า<br>sample เล็กกว่า<br>เสี่ยง lookback bias (§3.10)</td><td>ตลาด volatile<br>regime เปลี่ยนบ่อย<br>ต้องการ real-time adaptive</td></tr>
+<tr><td><strong>Expanding</strong><br>(cumulative)</td><td>รวมข้อมูลทั้งหมดตั้งแต่เริ่ม<br>N เพิ่มขึ้นทุก iteration<br><code>train = data[0 : i+N]</code></td><td>estimate เสถียรกว่า<br>ADF power สูงขึ้นตาม N<br>ลด variance ของ κ, θ</td><td>ปรับตัวช้าเมื่อ regime เปลี่ยน<br>ข้อมูลเก่า dilute ค่าปัจจุบัน<br>θ อาจ drift ออกโดยไม่รู้</td><td>pair เสถียร<br>ต้องการ estimate น่าเชื่อถือ<br>market structure ไม่เปลี่ยนมาก</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ระวัง: Rolling Window สั้น = Lookback Bias เดิม (§3.10)</div>
+<p>Walk-forward แก้ lookahead bias ได้ แต่ถ้า train window <strong>สั้นเกินไป</strong> (เช่น 20–30 วัน) จะเจอ Kendall bias เดิม: κ สูงเกินจริง, half-life สั้นเกินจริง — walk-forward และ lookback sensitivity เป็นคนละปัญหา ต้องแก้ทั้งสองด้วยกัน</p>
+<p><strong>Rule of thumb:</strong> train window ≥ 30 × expected half-life ไม่ว่าจะใช้ rolling หรือ expanding</p>
+</div>
+
 <div class="running-ex">
 <div class="re-title">ตัวอย่างจริง: Bybit↔Lighter BTC — Walk-Forward 360 วัน</div>
 <p>ใช้ข้อมูล 360 วัน → walk-forward ได้ <strong>9 windows</strong> (train=90d, test=30d, slide=30d)</p>

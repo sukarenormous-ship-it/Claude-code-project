@@ -98,6 +98,17 @@ $$\Delta\varepsilon_t = \alpha + \delta\varepsilon_{t-1} + \sum_{k=1}^{p}\gamma_
 <p style="margin-top:8px;font-size:.92em;color:#64748b"><strong>ลำดับที่ถูก:</strong> ตรวจ Correlation ก่อน (คัดคู่ที่ไม่น่าสนใจออก) → ค่อย Cointegration (พิสูจน์ว่ามีสายจูงจริง) — ข้าม Cointegration ไม่ได้ แม้ ρ จะสูงแค่ไหนก็ตาม</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">ρ คือ "pre-filter เพื่อ efficiency" ไม่ใช่ "วัดคุณภาพ"</div>
+<p>จุดประสงค์ของ threshold ρ ≥ 0.70 คือ <strong>ลดจำนวน pair ที่ต้องรัน ADF</strong> ไม่ใช่วัดว่าคู่นั้นดีหรือไม่ดี:</p>
+<ul>
+<li>คู่ที่มี ρ = 0.65 อาจ <strong>cointegrate ได้จริง</strong> — 0.70 เป็นแค่จุดเริ่มต้น ไม่ใช่เส้นแบ่ง</li>
+<li>คู่ที่มี ρ = 0.92 อาจ <strong>ไม่ cointegrate เลย</strong> (spurious correlation ที่เกิดจากทั้งคู่ trend ขึ้นพร้อมกัน)</li>
+<li><strong>สิ่งที่สำคัญกว่า ρ ณ จุดเดียว</strong>: ρ เสถียรข้ามเวลาไหม — ρ = 0.72 ที่คงที่ตลอด 90 วัน มักดีกว่า ρ = 0.88 ที่กระโดดระหว่าง 0.55–0.95</li>
+</ul>
+<p style="margin-top:6px;font-size:.9em;color:#64748b">ปรับ threshold ได้ตาม context: มี pair น้อย (≤ 20 คู่) → รัน ADF ทุกคู่เลย ไม่ต้องกรองด้วย ρ ก่อน · มี 200+ คู่ → ใช้ ρ ≥ 0.75–0.80 เพื่อลด compute cost</p>
+</div>
+
 <!-- Diagram: 3 scenarios -->
 <img class="chart" src="charts/ch5-stationary-vs-nonstat.svg" alt="Stationary vs Non-stationary — ADF Test" style="display:block;margin:20px auto;width:100%;max-width:760px;height:auto">
 <div class="caption">I(1) random walk และ I(1)+drift ไม่ผ่าน ADF (unit root) — I(0) OU process ผ่าน (stationary, mean-reverting)</div>
@@ -174,6 +185,19 @@ log(P_A) = α + β·log(P_B) + ε̂_t<br>
 <li><strong>p = 0.05–0.10 (borderline)</strong> — ลด position size ลงครึ่งหนึ่ง หรือรอ re-test ด้วยข้อมูลใหม่ &ge; 30 วัน</li>
 <li><strong>Re-test ทุกเดือน</strong> (หรือเมื่อ spread ค้างนอก 3σ &gt; 2 วัน) — cointegration เปลี่ยนตาม regime ของตลาด</li>
 </ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">ปรับ Position Size ตาม p-value — แทนการคิดแบบ pass/fail</div>
+<p>แทนที่จะคิดว่า p &lt; 0.05 = "เทรดได้เต็มที่" และ p ≥ 0.05 = "เทรดไม่ได้เลย" ให้ใช้ <strong>p-value เป็น confidence score</strong> ที่ส่งผลต่อขนาด position โดยตรง:</p>
+<table>
+<tr><th>p-value</th><th>Confidence</th><th>Size multiplier</th><th>หมายเหตุ</th></tr>
+<tr><td style="color:#16a34a"><strong>&lt; 0.01</strong></td><td>สูงมาก</td><td><strong>1.0×</strong> (full size)</td><td>High-conviction — ไม่จำกัด size (ขึ้นกับ risk budget)</td></tr>
+<tr><td style="color:#16a34a">0.01–0.05</td><td>ดี</td><td><strong>0.75×</strong></td><td>Standard — ใช้ได้ทั่วไป</td></tr>
+<tr><td style="color:#d97706">0.05–0.10</td><td>ต่ำ</td><td><strong>0.40×</strong></td><td>Borderline — ลด size, monitor ถี่ขึ้น</td></tr>
+<tr><td style="color:#dc2626"><strong>&gt; 0.10</strong></td><td>ไม่มี</td><td><strong>0×</strong></td><td>ห้ามเทรด — spread อาจเป็น random walk</td></tr>
+</table>
+<p style="margin-top:8px;font-size:.92em"><strong>กับดัก "cliff effect":</strong> p = 0.049 กับ p = 0.051 ไม่ได้ต่างกันทางสถิติอย่างมีนัยสำคัญ — ทั้งสองอยู่ใน zone ความเสี่ยงเดียวกัน การตัดแบบ hard threshold ที่ 0.050 พอดีสร้าง false precision ที่ไม่ควรมี</p>
 </div>
 
 <div class="bx bk">
@@ -514,12 +538,24 @@ Half-life ≈ −ln(2)/ln(0.92) ≈ 8.3 bars (ถ้า bar = 1h → ~8.3h) → 
 <h3>3 ขั้นตอน</h3>
 
 <table>
-<tr><th>ขั้น</th><th>Test</th><th>Threshold</th><th>ถ้าผ่าน</th><th>ถ้าไม่ผ่าน</th></tr>
-<tr><td><strong>1</strong></td><td>Correlation ρ (§5.1)</td><td>ρ ≥ 0.70</td><td>→ ขั้น 2</td><td>ตัดออก (เร็ว, ถูก)</td></tr>
-<tr><td><strong>2</strong></td><td>ADF Cointegration (§5.2)</td><td>p &lt; 0.05</td><td>→ ขั้น 3</td><td>ตัดออก</td></tr>
+<tr><th>ขั้น</th><th>Test</th><th>แนวทาง (ปรับตาม context)</th><th>ถ้าผ่าน</th><th>ถ้าไม่ผ่าน / ต่ำกว่าเกณฑ์</th></tr>
+<tr><td><strong>1</strong></td><td>Correlation ρ (§5.1)</td><td>ρ ≥ 0.70 <em>เป็นจุดเริ่มต้น</em><br><span style="font-size:.85em;color:#64748b">ปรับตาม: จำนวนคู่ / compute budget</span></td><td>→ ขั้น 2</td><td>ข้ามได้ถ้ามีคู่น้อย (รัน ADF ทุกคู่เลย)</td></tr>
+<tr><td><strong>2</strong></td><td>ADF Cointegration (§5.2)</td><td>p &lt; 0.05 = standard<br>p &lt; 0.01 = high-conviction<br><span style="font-size:.85em;color:#64748b">ปรับ size ตาม p (ดู §5.2)</span></td><td>→ ขั้น 3 (size ตาม p)</td><td>p &gt; 0.10: ห้ามเทรด<br>p 0.05–0.10: ลด size 60%</td></tr>
 <tr><td><strong>3a</strong></td><td>Shapiro-Wilk (§5.6)</td><td>p ≥ 0.05 → standard z<br>p &lt; 0.05 → robust z</td><td>→ กำหนด z-score method</td><td>ไม่ตัด — แค่เปลี่ยน method</td></tr>
-<tr><td><strong>3b</strong></td><td>Crossing Rate φ (§5.7)</td><td>φ &lt; 0.97 (swing, τ₁/₂ ≤ 24h)<br>φ &lt; 0.90 (intraday)</td><td>→ เทรดได้</td><td>Hold time นานเกินไปสำหรับ target</td></tr>
+<tr><td><strong>3b</strong></td><td>Crossing Rate φ (§5.7)</td><td>φ &lt; 0.97 (swing, τ₁/₂ ≤ 24h)<br>φ &lt; 0.90 (intraday)</td><td>→ เทรดได้</td><td>Hold time นานเกิน target — เลือก horizon อื่น</td></tr>
+<tr style="background:#f0fdf4"><td><strong>4</strong></td><td>Rolling Re-validation (§5.9)</td><td>ADF rolling ทุกสัปดาห์<br>บน trailing window 90 วัน</td><td>→ คง position size</td><td>p ↑ &gt; 0.05: ลด size<br>p ↑ &gt; 0.10: ปิดทุก position</td></tr>
 </table>
+
+<div class="bx ba">
+<div class="bt">ทำไม threshold ใน Pipeline ถึงไม่ควรเป็น "กฎตายตัว"</div>
+<p>ตัวเลข (ρ ≥ 0.70, p &lt; 0.05) คือ <strong>จุดเริ่มต้นที่ผ่านการทดสอบในทางสถิติ</strong> ไม่ใช่กฎสากล ควรปรับตาม:</p>
+<ul>
+<li><strong>Sample size</strong>: N &lt; 100 obs → ใช้ p &lt; 0.01 แทน 0.05 (ADF มี power ต่ำเมื่อข้อมูลน้อย)</li>
+<li><strong>Position size</strong>: ลง position ใหญ่ → ใช้ threshold เข้มกว่า (p &lt; 0.01, ρ &gt; 0.80)</li>
+<li><strong>จำนวน pair</strong>: มีคู่น้อย → รัน ADF ทุกคู่ ข้าม ρ pre-filter ได้</li>
+<li><strong>Volatility regime</strong>: ช่วง volatile → re-test ถี่ขึ้น (ทุกวัน แทนทุกสัปดาห์)</li>
+</ul>
+</div>
 
 <div class="bx bb">
 <div class="bt">Optional: Hurst Exponent (<a href="statarb-ch6.html">บทที่ 6</a>)</div>
@@ -651,6 +687,99 @@ Lighter เป็น leg ที่เสถียร — ต้องการ h
 <li><strong>Johansen, S. (1991).</strong> Estimation and hypothesis testing of cointegration vectors in Gaussian vector autoregressive models. <em>Econometrica</em>, 59(6), 1551–1580. — ขยาย critical values และ full likelihood approach</li>
 <li><strong>Vidyamurthy, G. (2004).</strong> <em>Pairs Trading: Quantitative Methods and Analysis.</em> Wiley. — ตำราปฏิบัติที่นำ cointegration มาใช้กับ pairs trading อย่างเป็นระบบ</li>
 </ul>
+</div>
+
+<!-- 5.9 Rolling Cointegration Monitor -->
+<h2 id="s5-9">5.9 Rolling Cointegration Monitor — ตรวจสอบอย่างต่อเนื่อง</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — Cointegration ไม่ถาวร</div>
+<p>Cointegration เปลี่ยนไปตาม regime ของตลาด — pair ที่ผ่าน ADF วันนี้อาจ "un-cointegrate" ใน 6 สัปดาห์ถ้า funding structure เปลี่ยน หรือ correlation ทะลาย การ test ครั้งเดียวตอนเลือกคู่ไม่เพียงพอ</p>
+<p><strong>สัญญาณที่สำคัญกว่า level คือ trend:</strong> p-value ที่กำลังเพิ่มขึ้นต่อเนื่อง แม้ยังต่ำกว่า 0.05 อยู่ = cointegration กำลังอ่อนแรง ต้องเริ่มลด size ก่อนที่จะข้าม threshold</p>
+</div>
+
+<h3>Rolling vs Expanding Window สำหรับ Monitoring</h3>
+
+<table>
+<tr><th>ประเภท</th><th>วิธีการ</th><th>ข้อดี</th><th>ข้อเสีย</th><th>เลือกเมื่อ</th></tr>
+<tr><td><strong>Rolling</strong><br>(fixed)</td><td>ADF บน N วันล่าสุดเสมอ<br>ทิ้งข้อมูลเก่า</td><td>ตอบสนอง regime break เร็ว<br>สะท้อนตลาด "ตอนนี้"</td><td>estimate ผันผวนกว่า</td><td>ตลาด volatile<br>ต้องการ early warning</td></tr>
+<tr><td><strong>Expanding</strong><br>(cumulative)</td><td>ADF บนข้อมูลทั้งหมดตั้งแต่เริ่ม<br>N เพิ่มขึ้นทุก check</td><td>estimate เสถียร<br>ADF power สูงขึ้นตาม N</td><td>ปรับตัวช้า<br>ข้อมูลเก่า dilute ค่าปัจจุบัน</td><td>pair เสถียร<br>ต้องการ confidence สูง</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">แนะนำสำหรับ Live Trading: ใช้ Rolling เป็นหลัก</div>
+<p>Rolling window 90–120 วันตอบสนอง regime change ได้ทัน ถ้าต้องการ double-check ให้รัน Expanding ควบคู่ — ถ้าทั้งสองเห็นตรงกัน (p สูง/ต่ำพร้อมกัน) สัญญาณน่าเชื่อถือกว่า</p>
+</div>
+
+<h3>Rolling ADF Alert System</h3>
+
+<table>
+<tr><th>สถานะ</th><th>เงื่อนไข</th><th>Action</th></tr>
+<tr style="background:#f0fdf4"><td>🟢 ปกติ</td><td>p &lt; 0.05 และ trend ลงหรือคงที่</td><td>คง position size ปัจจุบัน</td></tr>
+<tr style="background:#fffbeb"><td>🟡 เฝ้าระวัง</td><td>p = 0.05–0.08 <strong>หรือ</strong> p กำลังเพิ่มขึ้น (แม้ยัง &lt; 0.05)</td><td>ลด size 50%, monitor รายวัน</td></tr>
+<tr style="background:#fef9c3"><td>🟠 อันตราย</td><td>p = 0.08–0.10</td><td>ลด size 80%, ห้ามเปิด position ใหม่</td></tr>
+<tr style="background:#fef2f2"><td>🔴 ปิด</td><td>p &gt; 0.10</td><td>ปิดทุก position — spread อาจเป็น random walk</td></tr>
+</table>
+
+<div class="pseudo">
+<span class="c"># Rolling ADF Monitor — รัน weekly หรือ daily ช่วง volatile</span><br>
+<span class="kw">function</span> <span class="fn">rolling_adf_monitor</span>(prices_A, prices_B, window=<span class="nm">90</span>, step=<span class="nm">7</span>):<br>
+&nbsp;&nbsp;results = []<br>
+&nbsp;&nbsp;i = window<br>
+<br>
+&nbsp;&nbsp;<span class="kw">while</span> i &lt;= <span class="fn">len</span>(prices_A):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="c"># ใช้ข้อมูล window วันล่าสุด (rolling fixed)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;A_win = prices_A[i-window : i]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;B_win = prices_B[i-window : i]<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;beta  = <span class="fn">ols_slope</span>(<span class="fn">log</span>(B_win), <span class="fn">log</span>(A_win))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;eps   = <span class="fn">log</span>(A_win) - beta * <span class="fn">log</span>(B_win)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;p     = <span class="fn">adf_test</span>(eps).p_value<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span>   p &lt; <span class="nm">0.05</span>: status = <span class="nm">"green"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">elif</span> p &lt; <span class="nm">0.08</span>: status = <span class="nm">"yellow"</span>   <span class="c"># ลด size 50%</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">elif</span> p &lt; <span class="nm">0.10</span>: status = <span class="nm">"orange"</span>   <span class="c"># ห้ามเปิดใหม่</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:         status = <span class="nm">"red"</span>       <span class="c"># ปิดทุก position</span><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;results.<span class="fn">append</span>({<span class="nm">"bar"</span>: i, <span class="nm">"p"</span>: p, <span class="nm">"beta"</span>: beta, <span class="nm">"status"</span>: status})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;i += step<br>
+<br>
+&nbsp;&nbsp;<span class="kw">return</span> results<br>
+<br>
+<span class="c"># ตรวจ trend ของ p-value — อันตรายที่ซ่อนอยู่</span><br>
+<span class="kw">function</span> <span class="fn">detect_p_trend</span>(results, lookback=<span class="nm">4</span>):<br>
+&nbsp;&nbsp;p_recent = [r[<span class="nm">"p"</span>] <span class="kw">for</span> r <span class="kw">in</span> results[-lookback:]]<br>
+&nbsp;&nbsp;slope = <span class="fn">ols_slope</span>(<span class="fn">range</span>(lookback), p_recent)<br>
+&nbsp;&nbsp;<span class="kw">if</span> slope &gt; <span class="nm">0.005</span>:  <span class="c"># p เพิ่มขึ้น > 0.005 ต่อ step → deteriorating</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="nm">"DETERIORATING"</span>  <span class="c"># เตือนแม้ p ยังอยู่ใน green zone</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="nm">"STABLE"</span>
+</div>
+
+<div class="bx ba">
+<div class="bt">Monitor Trend ไม่ใช่แค่ Level — จุดที่คนพลาดบ่อยที่สุด</div>
+<ul>
+<li>p = 0.03 และ <strong>เพิ่มขึ้น</strong> (0.01 → 0.02 → 0.03 ใน 3 สัปดาห์) = อันตราย — ต้องเริ่มลด size แม้ยังอยู่ใน green</li>
+<li>p = 0.07 และ <strong>ลดลง</strong> (0.12 → 0.09 → 0.07) = กำลัง recover — รอ confirm ก่อนกลับมาเพิ่ม size</li>
+<li><strong>ห้ามรอจน p ข้าม 0.10 แล้วค่อยปิด</strong> — ถึงตอนนั้น spread ออกไปไกลแล้ว ขาดทุนมาก</li>
+</ul>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: Bybit↔Lighter — Rolling ADF รายสัปดาห์ 12 สัปดาห์</div>
+<div class="fm">สัปดาห์  p-value   β      Status    Action
+  W1     0.0003   1.005   🟢 green   —
+  W2     0.0008   1.006   🟢 green   —
+  W3     0.0012   1.007   🟢 green   —
+  W4     0.0031   1.009   🟢 green   —
+  W5     0.0088   1.012   🟢 green   ⚠️ detect_p_trend = DETERIORATING → ลด size 30%
+  W6     0.0241   1.015   🟢 green   ลด size 50% (trend warning แม้ยัง green)
+  W7     0.0614   1.019   🟡 yellow  ลด size เหลือ 20%
+  W8     0.0892   1.024   🟠 orange  ห้ามเปิดใหม่
+  W9     0.1340   1.031   🔴 red     ปิดทุก position
+  W10    0.0891   1.028   🟠 orange  รอ — ยังไม่กลับมาเทรด
+  W11    0.0412   1.022   🟡 yellow  recovering — ยังไม่เปิดใหม่
+  W12    0.0089   1.016   🟢 green   กลับมาเทรดได้ (เริ่มด้วย size 50% ก่อน)</div>
+<p>W5: p ยังอยู่ที่ 0.009 (ต่ำมาก) แต่ trend บอกสัญญาณก่อนล่วงหน้า 2 สัปดาห์ — ถ้า monitor แค่ level จะไม่เห็นจนถึง W7</p>
 </div>
 
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
