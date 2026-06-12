@@ -142,7 +142,10 @@ signal2 = pair2.make_signal()   <span class="c"># ใช้ของตัวเ
 
 <div class="key-idea">
 <div class="ki-label">Class ไม่ใช่ความรู้ใหม่</div>
-<div class="ki-text">Class = <strong>dict (เก็บข้อมูล) + function (ทำงาน) เอามาแปะติดกัน</strong> — สองอย่างที่ใช้คล่องแล้วจาก Part I ความใหม่มีแค่ syntax: <code>self</code> แปลว่า "กล่องใบนี้" และ <code>pair1.make_signal()</code> แปลว่า "เรียกฟังก์ชันที่ติดมากับกล่อง pair1" เท่านั้นเอง</div>
+<div class="ki-text">Class = <strong>dict (เก็บข้อมูล) + function (ทำงาน) เอามาผูกติดกัน</strong> — สองอย่างที่ใช้คล่องแล้วจาก Part I<br><br>
+ความใหม่มีแค่ 2 สิ่ง:<br>
+1. <code>self</code> = "กล่องใบนี้" — เมื่อ Python รัน <code>pair1.make_signal()</code> มันแปลงเป็น <code>PairStrategy.make_signal(pair1)</code> โดยอัตโนมัติ กล่าวคือ <code>self</code> คือ <code>pair1</code> ที่ถูกส่งเข้ามาเป็น argument แรกเสมอ — นี่คือ binding: function รู้ว่าตัวเองทำงานให้กล่องใบไหน<br>
+2. <code>self.window</code> = "หยิบ window จาก dict ของกล่องใบนี้" — ภายในเป็นแค่ dict ธรรมดา แค่ syntax ต่างกัน: <code>cfg["window"]</code> กับ <code>self.window</code> คือสิ่งเดียวกัน</div>
 </div>
 
 <h3 id="s18-2">18.2 Class พื้นฐาน</h3>
@@ -192,6 +195,17 @@ Valid: True</div>
 <tr><td>Class method</td><td>Method ที่แชร์ระหว่างทุก object</td><td><code>@classmethod def from_dict(cls, d):</code></td></tr>
 <tr><td>Static method</td><td>Function ใน class ที่ไม่ใช้ <code>self</code></td><td><code>@staticmethod def annualize(daily):</code></td></tr>
 </table>
+
+<div class="bx bb">
+<div class="bt"><code>self</code> กับ <code>cls</code> ต่างกันอย่างไร?</div>
+<table>
+<tr><th></th><th><code>self</code></th><th><code>cls</code></th></tr>
+<tr><td><strong>ชี้ไปที่</strong></td><td>object ตัวนั้น (กล่องใบนี้)</td><td>class เอง (แบบพิมพ์เขียว)</td></tr>
+<tr><td><strong>ใช้ใน</strong></td><td>method ทั่วไป</td><td><code>@classmethod</code></td></tr>
+<tr><td><strong>ตัวอย่าง</strong></td><td><code>self.window</code> = window ของ object นี้</td><td><code>cls(rets, name)</code> = สร้าง object ใหม่จาก class</td></tr>
+</table>
+<p style="margin-bottom:0"><code>@classmethod</code> ใช้บ่อยสำหรับ "alternative constructor" เช่น <code>TradingMetrics.from_prices(prices)</code> = "สร้าง TradingMetrics จาก prices แทนที่จะส่ง returns โดยตรง"</p>
+</div>
 
 <div class="fm">class TradingMetrics:
     """คำนวณและเก็บ performance metrics"""
@@ -425,6 +439,22 @@ print(f"เป็น BaseStrategy ไหม? {isinstance(strategy, BaseStrategy)
 <div class="output">PairTradingStrategy(BTC Pair v1, capital=500,000)
 เป็น BaseStrategy ไหม? True</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 ฝึกอ่าน: <code>super().__init__(name, capital)</code></div>
+<div class="ad-code">class PairTradingStrategy(BaseStrategy):
+    def __init__(self, name, pair_config, capital=100_000):
+        super().__init__(name, capital)   # ← บรรทัดนี้</div>
+<div class="ad-steps">
+<p>อ่านจากในออกนอก:</p>
+<ol>
+<li><code>super()</code> — "คลาสแม่ของฉัน" = <code>BaseStrategy</code> (ที่อยู่ใน parentheses ของ class definition)</li>
+<li><code>super().__init__</code> — "เรียก <code>__init__</code> <strong>ของ</strong> คลาสแม่"</li>
+<li><code>super().__init__(name, capital)</code> — ส่ง name กับ capital ให้แม่ไปตั้งค่า <code>self.name</code>, <code>self.capital</code>, <code>self.trades</code>, <code>self.equity</code> เหมือนที่แม่ทำ</li>
+</ol>
+<p>ถ้าไม่เรียก <code>super().__init__()</code> → <code>self.name</code> และ <code>self.capital</code> จะไม่ถูกสร้าง → เรียกทีหลังจะ AttributeError — <strong>ลูกต้องเรียกแม่ให้ทำงานของแม่ก่อน แล้วค่อยทำงานของตัวเอง</strong></p>
+</div>
+</div>
+
 <h3 id="s19-2">19.2 Abstract Base Class — บังคับให้ implement</h3>
 
 <div class="fm">from abc import ABC, abstractmethod
@@ -462,6 +492,25 @@ class BadStrategy(Strategy):
     pass  <span class="c"># ไม่ implement fit, signal, position_size</span>
 
 <span class="c"># s = BadStrategy("test")  ← TypeError: Can't instantiate abstract class</span></div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 ฝึกอ่าน: <code>@abstractmethod</code> และ <code>ABC</code></div>
+<div class="ad-code">from abc import ABC, abstractmethod
+
+class Strategy(ABC):          # ABC = Abstract Base Class
+    @abstractmethod
+    def signal(self, data) -> str:
+        pass</div>
+<div class="ad-steps">
+<p>อ่านทีละส่วน:</p>
+<ol>
+<li><code>ABC</code> ใน <code>(ABC)</code> — บอก Python ว่า "class นี้เป็น abstract — ห้ามสร้าง object โดยตรง"</li>
+<li><code>@abstractmethod</code> — decorator ที่ "ติดป้าย" ว่า method นี้<strong>ต้องถูก override โดยลูก</strong> — ถ้าลูกไม่ทำ สร้าง object ไม่ได้เลย</li>
+<li><code>pass</code> ใน method body — บอกว่า "แม่ไม่ได้ implement จริง ๆ แค่กำหนดชื่อ/signature ไว้"</li>
+</ol>
+<p>เปรียบ ABC กับ interface ของหมอ: "ทุกคนที่จบแพทย์ <em>ต้อง</em> มี license — ถ้าไม่มีจะทำงานเป็นหมอไม่ได้" — ABC คือการบังคับแบบเดียวกัน: ทุก strategy <em>ต้อง</em> implement <code>fit()</code> และ <code>signal()</code></p>
+</div>
+</div>
 
 <div class="bx bg">
 <div class="bt">ประโยชน์ของ ABC ใน trading system</div>

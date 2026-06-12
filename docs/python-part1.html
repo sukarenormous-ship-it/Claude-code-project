@@ -310,7 +310,7 @@ print(is_overbought)         <span class="c"># True</span></div>
 <div class="bt">Comparison Operators — เครื่องมือสร้างคำถาม</div>
 <table>
 <tr><th>Operator</th><th>อ่านว่า</th><th>ตัวอย่าง</th></tr>
-<tr><td><code>==</code></td><td>เท่ากับ...ไหม</td><td><code>signal == "LONG"</code></td></tr>
+<tr><td><code>==</code></td><td>เปรียบเทียบว่า...เท่ากับ... (ได้ True/False)</td><td><code>signal == "LONG"</code></td></tr>
 <tr><td><code>!=</code></td><td>ไม่เท่ากับ...ใช่ไหม</td><td><code>position != 0</code></td></tr>
 <tr><td><code>&gt;</code>, <code>&lt;</code></td><td>มากกว่า/น้อยกว่า...ไหม</td><td><code>z &gt; 2.0</code></td></tr>
 <tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>อย่างน้อย / ไม่เกิน...ไหม</td><td><code>drawdown &lt;= -0.1</code></td></tr>
@@ -424,13 +424,14 @@ for p in prices:              <span class="c"># หยิบสมาชิก�
     print(p)                  <span class="c"># ทำบรรทัดนี้กับ p ทุกรอบ</span></div>
 <div class="read-aloud">สำหรับแต่ละตัวใน prices — เอาตัวนั้นมาใส่ใน p แล้วทำต่อไปนี้: print ค่า p</div>
 
-<p>ดูการทำงาน<strong>ทีละรอบ</strong> (เทคนิคสำคัญ: เวลางง loop ให้ "เดินเครื่องด้วยมือ" แบบตารางนี้):</p>
+<p>ดูการทำงาน<strong>ทีละรอบ</strong> — เทคนิคสำคัญ: เวลางง loop ให้ "<strong>เดินเครื่องด้วยมือ</strong>" ตามตาราง — จดทั้ง <em>ค่าตัวแปร loop</em> (i) และ <em>state ของ list ที่กำลังสะสม</em> (returns):</p>
 
 <table>
-<tr><th>รอบที่</th><th>p ได้ค่า</th><th>สิ่งที่เกิดขึ้น</th></tr>
-<tr><td>1</td><td><code>63000</code></td><td>print 63000</td></tr>
-<tr><td>2</td><td><code>65000</code></td><td>print 65000</td></tr>
-<tr><td>3</td><td><code>64500</code></td><td>print 64500 → ของหมดรายการ → จบ loop</td></tr>
+<tr><th>รอบที่</th><th>i</th><th>prices[i]</th><th>returns (list สะสม)</th></tr>
+<tr><td>1</td><td>1</td><td>65000</td><td>[0.0317]</td></tr>
+<tr><td>2</td><td>2</td><td>64500</td><td>[0.0317, -0.0077]</td></tr>
+<tr><td>3</td><td>3</td><td>66000</td><td>[0.0317, -0.0077, 0.0233]</td></tr>
+<tr><td>4</td><td>4</td><td>65800</td><td>[0.0317, -0.0077, 0.0233, -0.0030] → loop จบ</td></tr>
 </table>
 
 <p>ตัวอย่างจริง: คำนวณ return รายวัน — ต้องใช้ "ราคาวันนี้" คู่กับ "ราคาเมื่อวาน" จึง loop ด้วยตำแหน่ง (index) แทน:</p>
@@ -458,7 +459,14 @@ for sym, w in zip(symbols, weights):
 
 <h4>while loop — วนจนกว่าเงื่อนไขจะเป็นเท็จ</h4>
 
-<p>for ใช้เมื่อ "รู้ว่าวนกี่รอบ" (มีรายการให้หยิบ) — while ใช้เมื่อ "วนไปจนกว่าเหตุการณ์บางอย่างจะเกิด" ซึ่งไม่รู้ล่วงหน้าว่ากี่รอบ:</p>
+<p>for loop กับ while loop แตกต่างกันที่ <strong>"รู้ล่วงหน้าไหมว่าจะวนกี่รอบ"</strong>:</p>
+
+<table>
+<tr><th></th><th>for loop</th><th>while loop</th></tr>
+<tr><td><strong>ใช้เมื่อ</strong></td><td>รู้จำนวนรอบล่วงหน้า</td><td>ไม่รู้จำนวนรอบ — วนจนเงื่อนไขเปลี่ยน</td></tr>
+<tr><td><strong>หยุดเมื่อ</strong></td><td>หมด list / range</td><td>เงื่อนไขกลายเป็น False</td></tr>
+<tr><td><strong>ตัวอย่าง Quant</strong></td><td>คำนวณ return 252 วัน (รู้ว่า 252 วัน)</td><td>เทรดต่อจนทุนหมด (ไม่รู้ว่ากี่วัน)</td></tr>
+</table>
 
 <div class="fm">equity = 100000      <span class="c"># เงินเริ่มต้น 100,000 บาท</span>
 max_loss = 90000     <span class="c"># ถ้าเงินเหลือน้อยกว่า 90,000 หยุดเทรด</span>
@@ -507,6 +515,22 @@ for i in range(1, len(prices)):
 loss_days = [r for r in returns if r &lt; 0]
 print(f"วันขาดทุน: {len(loss_days)} วัน")</div>
 <div class="read-aloud">สร้าง list จาก r แต่ละตัวใน returns <strong>เฉพาะตัวที่</strong> r น้อยกว่า 0 — แล้วเอามาใส่ใน loss_days</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 เมื่อ AI ใช้ if ใน comprehension + ternary — 2 รูปแบบที่ต่างกัน</div>
+<div class="ad-code"><span class="c"># รูปแบบที่ 1: กรอง (filter) — if อยู่หลัง for</span>
+loss_days = [r for r in returns if r &lt; 0]
+<span class="c"># รูปแบบที่ 2: เลือกค่า (ternary) — if อยู่หน้า for</span>
+labels = ["loss" if r &lt; 0 else "gain" for r in returns]</div>
+<div class="ad-steps">
+<p>ทั้งสองรูปแบบมี <code>if</code> แต่<strong>ตำแหน่งต่างกัน → ความหมายต่างกันสิ้นเชิง</strong>:</p>
+<ol>
+<li><strong><code>if</code> หลัง <code>for</code></strong> = กรองของ: "เอาเฉพาะ r ที่ r &lt; 0" → list สั้นลง</li>
+<li><strong><code>if...else</code> หน้า <code>for</code></strong> = เลือกค่า: "ถ้า r &lt; 0 ให้เป็น 'loss' ไม่งั้น 'gain'" → list ยาวเท่าเดิม แค่เปลี่ยนค่า</li>
+</ol>
+<p>จำง่าย: <em>ก่อน for = เลือกว่าแต่ละตัวจะเป็นอะไร, หลัง for = กรองว่าตัวไหนเข้าหรือออก</em></p>
+</div>
+</div>
 
 <h3 id="s7-4">7.5 Functions — def</h3>
 
