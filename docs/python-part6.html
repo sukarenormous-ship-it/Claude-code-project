@@ -773,21 +773,25 @@ class BinanceWebSocketClient:
     def stream_url(self) -> str:
         return f"{self.WS_URL}/{self.symbol}@kline_{self.interval}"
 
-    def _parse_kline(self, raw: dict) -> Candle:
+    def _parse_kline(self, raw: dict) -> Optional[Candle]:
         """แปลง Binance kline message เป็น Candle object"""
-        k = raw["k"]
-        return Candle(
-            exchange  = "binance",
-            symbol    = raw["s"],
-            interval  = k["i"],
-            open      = float(k["o"]),
-            high      = float(k["h"]),
-            low       = float(k["l"]),
-            close     = float(k["c"]),
-            volume    = float(k["v"]),
-            is_closed = bool(k["x"]),
-            timestamp = datetime.utcfromtimestamp(raw["E"] / 1000)
-        )
+        try:
+            k = raw["k"]
+            return Candle(
+                exchange  = "binance",
+                symbol    = raw["s"],
+                interval  = k["i"],
+                open      = float(k["o"]),
+                high      = float(k["h"]),
+                low       = float(k["l"]),
+                close     = float(k["c"]),
+                volume    = float(k["v"]),
+                is_closed = bool(k["x"]),
+                timestamp = datetime.utcfromtimestamp(raw["E"] / 1000)
+            )
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error(f"Binance parse error: {e} | raw={str(raw)[:200]}")
+            return None
 
     async def _connect_and_listen(self):
         """เชื่อมต่อและฟัง messages — 1 connection attempt"""
@@ -838,13 +842,13 @@ class BinanceWebSocketClient:
             if self._stop_event.is_set():
                 break
 
-            <span class="c"># Exponential backoff</span>
+            <span class="c"># Exponential backoff + jitter ป้องกัน thundering herd</span>
             logger.info(f"Reconnecting in {self._reconnect_delay:.1f}s...")
             await asyncio.sleep(self._reconnect_delay)
             self._reconnect_delay = min(
                 self._reconnect_delay * 2,
                 self.MAX_RECONNECT_DELAY
-            )
+            ) + random.uniform(0, 1.0)
 
         logger.info("WebSocket client stopped")
 
@@ -879,18 +883,21 @@ class BybitWebSocketClient:
         """แปลง Bybit kline message — อาจมีหลาย candle ใน 1 message"""
         candles = []
         for k in msg.get("data", []):
-            candles.append(Candle(
-                exchange  = "bybit",
-                symbol    = self.symbol,
-                interval  = self.interval,
-                open      = float(k["open"]),
-                high      = float(k["high"]),
-                low       = float(k["low"]),
-                close     = float(k["close"]),
-                volume    = float(k["volume"]),
-                is_closed = bool(k.get("confirm", False)),
-                timestamp = datetime.utcfromtimestamp(k["start"] / 1000)
-            ))
+            try:
+                candles.append(Candle(
+                    exchange  = "bybit",
+                    symbol    = self.symbol,
+                    interval  = self.interval,
+                    open      = float(k["open"]),
+                    high      = float(k["high"]),
+                    low       = float(k["low"]),
+                    close     = float(k["close"]),
+                    volume    = float(k["volume"]),
+                    is_closed = bool(k.get("confirm", False)),
+                    timestamp = datetime.utcfromtimestamp(k["start"] / 1000)
+                ))
+            except (KeyError, ValueError, TypeError) as e:
+                logger.error(f"Bybit parse error: {e} | k={str(k)[:200]}")
         return candles
 
     async def _connect_and_listen(self):
@@ -934,7 +941,7 @@ class BybitWebSocketClient:
                 await asyncio.sleep(self._reconnect_delay)
                 self._reconnect_delay = min(
                     self._reconnect_delay * 2, self.MAX_RECONNECT_DELAY
-                )
+                ) + random.uniform(0, 1.0)
 
     def stop(self):
         self._stop_event.set()</div>
@@ -1650,11 +1657,18 @@ class KillSwitch:
             logger.warning(f"Received {sig_name}")
             self.trigger(f"OS signal: {sig_name}")
 
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(
-                sig,
-                lambda s=sig: _handle_signal(s.name)
-            )</div>
+        <span class="c"># add_signal_handler รองรับเฉพาะ Unix/Linux/macOS (ไม่ทำงานบน Windows)</span>
+        if sys.platform != "win32":
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(
+                    sig,
+                    lambda s=sig: _handle_signal(s.name)
+                )
+        else:
+            <span class="c"># Windows: ใช้ signal.signal() แทน (synchronous)</span>
+            import signal as _signal
+            _signal.signal(_signal.SIGINT,
+                           lambda s, f: _handle_signal("SIGINT"))</div>
 
 <h3 id="s35-3">35.3 Health Check Loop</h3>
 
@@ -1712,9 +1726,13 @@ async def health_check_loop(health: SystemHealth,
 
         if health.last_binance_tick > 0 and binance_silence > max_feed_silence:
             logger.error(f"Binance feed silent for {binance_silence:.0f}s")
+            kill_switch.trigger(f"Binance feed silent {binance_silence:.0f}s")
+            break
 
         if health.last_bybit_tick > 0 and bybit_silence > max_feed_silence:
             logger.error(f"Bybit feed silent for {bybit_silence:.0f}s")
+            kill_switch.trigger(f"Bybit feed silent {bybit_silence:.0f}s")
+            break
 
         <span class="c"># ตรวจ order errors</span>
         if health.order_errors >= 5:

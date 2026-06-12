@@ -544,8 +544,10 @@ $$\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat
     phi = sm.OLS(df_hl["delta"], X).fit().params["lag"]
 
     if phi &gt;= 0:
-        return np.inf  <span class="c"># ไม่ mean-reverting</span>
-    half_life = -np.log(2) / phi
+        return np.inf  <span class="c"># ไม่ mean-reverting (random walk หรือ explosive)</span>
+    if phi &lt;= -1:
+        return np.inf  <span class="c"># Oscillating — ไม่ใช่ mean-reverting จริง</span>
+    half_life = -np.log(2) / np.log(1 + phi)  <span class="c"># สูตรที่ถูกต้องสำหรับ AR(1)</span>
     return half_life
 
 hl = calc_halflife(resid)
@@ -569,6 +571,8 @@ print(f"แนะนำ: rolling window ≈ {hl*3:.0f} วัน, hold ไม่
     signals[abs(z) &lt; exit_z] = "EXIT"
 
     df["signal"] = signals
+    <span class="c"># ⚠ สำคัญมาก: signal ที่ได้จาก df.index[t] ใช้ข้อมูลถึงวัน t</span>
+    <span class="c"># ต้อง .shift(1) ใน backtest ก่อน multiply ด้วย return เสมอ</span>
     return df
 
 result = pair_signal(
@@ -1074,6 +1078,17 @@ pipeline.summary()</div>
 • รวมทุกอย่างเป็น <code>PairTradingSignal</code> class ✓<br><br>
 ใน <strong>Part III</strong> เราจะ refactor code นี้ให้เป็น OOP ที่ maintainable และ extensible
 </p>
+</div>
+
+<div class="bk">
+<div class="bt">⚠ คำเตือน: ตัวเลขใน Part II คือ In-Sample — อย่าเชื่อ 100%</div>
+<p>Sharpe 2.0+ และ Return 15%+ ที่เห็นใน Part II ล้วน <strong>คำนวณจากข้อมูลชุดเดียวกับที่ optimize parameter</strong> (in-sample)<br><br>
+ในชีวิตจริง (out-of-sample) ผลลัพธ์มักต่ำกว่า <strong>50–80%</strong> เพราะ:<br>
+• ตลาดเปลี่ยน — pattern ในอดีตไม่ซ้ำแบบในอนาคต<br>
+• Parameter ที่ดีในอดีต = overfit กับ noise ในอดีต<br>
+• Transaction cost ที่ลืมใส่ กินไป 20–50% ของ gross PnL<br><br>
+<strong>Part IV จะสอน Walk-Forward Validation</strong> — วิธีเดียวที่ยืนยันได้ว่า strategy มี edge จริง ไม่ใช่แค่ overfit<br>
+อย่าใช้เงินจริงจนกว่าจะผ่านการทดสอบใน Part IV</p>
 </div>
 
 <div class="nav">
