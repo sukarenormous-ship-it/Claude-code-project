@@ -105,7 +105,47 @@ OOP แก้ปัญหาเหล่านี้ด้วยการ <stron
 <div class="ki-text">Class คือ "blueprint" — นิยามว่า object ประเภทนี้เก็บข้อมูลอะไร (attributes) และทำอะไรได้บ้าง (methods) Object คือ "ชิ้นงานจริง" ที่สร้างจาก blueprint นั้น เหมือนแบบบ้าน (class) กับบ้านจริง (object)</div>
 </div>
 
-<h3 id="s18-1">18.1 Class พื้นฐาน</h3>
+<h3 id="s18-1">18.1 ทำไมต้องมี Class — เรื่องเล่าจาก Pair ที่สอง</h3>
+
+<p>โค้ดสไตล์ Part I/II (ตัวแปร + ฟังก์ชัน) ทำงานได้ดีกับ pair เดียว:</p>
+
+<div class="fm"><span class="c"># Part II style: ตัวแปรวางไว้ระดับบนสุดของไฟล์</span>
+window  = 60
+entry_z = 2.0
+df = build_spread(btc_bybit, btc_binance, window)
+hl = calc_halflife(df["spread"])
+signal = make_signal(df, entry_z)</div>
+
+<p>ปัญหาเริ่มเมื่อเทรด <strong>pair ที่สอง</strong> ซึ่งใช้ parameter คนละชุด:</p>
+
+<div class="fm"><span class="c"># เพิ่ม pair ที่สอง... ตัวแปรเริ่มแตกหน่อ</span>
+window_2  = 90              <span class="c"># pair นี้ mean-revert ช้ากว่า ใช้ window ยาวกว่า</span>
+entry_z_2 = 1.5
+df_2 = build_spread(eth_okx, eth_bybit, window_2)
+hl_2 = calc_halflife(df_2["spread"])
+
+signal   = make_signal(df,   entry_z)
+signal_2 = make_signal(df_2, entry_z)    <span class="c"># ← bug! ลืมเปลี่ยนเป็น entry_z_2</span>
+                                         <span class="c">#   Python ไม่ฟ้องอะไรเลย — signal ผิดเงียบ ๆ</span></div>
+
+<p>สังเกตว่า bug นี้เกิดเพราะ<strong>ข้อมูลกับ parameter ของแต่ละ pair ไม่ได้ผูกกัน</strong> — มันแค่ "วางอยู่ใกล้กัน" ในไฟล์ แล้วเราต้องจำเองว่าอะไรคู่กับอะไร ลองนึกต่อ: ถ้ามี <strong>10 pairs</strong> จะมีตัวแปร 40+ ตัวลอยอยู่ และทุกการเรียกฟังก์ชันคือโอกาสหยิบผิดคู่</p>
+
+<p><strong>Class คือคำตอบ:</strong> กล่องที่มัด "ข้อมูล + parameter + ฟังก์ชันที่ทำงานกับมัน" ไว้ด้วยกันเป็นชิ้นเดียว แล้วสร้างกี่กล่องก็ได้:</p>
+
+<div class="fm"><span class="c"># แต่ละ pair คือ object หนึ่งชิ้น — ถือของของตัวเองครบ</span>
+pair1 = PairStrategy("BTC-Bybit", "BTC-Binance", window=60, entry_z=2.0)
+pair2 = PairStrategy("ETH-OKX",   "ETH-Bybit",   window=90, entry_z=1.5)
+
+signal1 = pair1.make_signal()   <span class="c"># ใช้ window=60, entry_z=2.0 ของตัวเองเสมอ</span>
+signal2 = pair2.make_signal()   <span class="c"># ใช้ของตัวเอง — หยิบสลับกันไม่ได้โดยโครงสร้าง</span></div>
+<div class="read-aloud">สั่งให้ make_signal <strong>ของ</strong> pair1 ทำงาน — จุด (.) ยังอ่านว่า "ของ" เหมือนเดิมจาก Part I แค่ตอนนี้ "ของ" หมายถึงทั้งข้อมูลและฟังก์ชันที่อยู่ในกล่องเดียวกัน</div>
+
+<div class="key-idea">
+<div class="ki-label">Class ไม่ใช่ความรู้ใหม่</div>
+<div class="ki-text">Class = <strong>dict (เก็บข้อมูล) + function (ทำงาน) เอามาแปะติดกัน</strong> — สองอย่างที่ใช้คล่องแล้วจาก Part I ความใหม่มีแค่ syntax: <code>self</code> แปลว่า "กล่องใบนี้" และ <code>pair1.make_signal()</code> แปลว่า "เรียกฟังก์ชันที่ติดมากับกล่อง pair1" เท่านั้นเอง</div>
+</div>
+
+<h3 id="s18-2">18.2 Class พื้นฐาน</h3>
 
 <div class="fm"><span class="c"># แบบ procedural (Part I/II style) — ข้อมูลกระจาย</span>
 symbol_a = "BTCUSDT-Bybit"
@@ -141,7 +181,7 @@ print(f"Valid: {cfg.is_valid()}")</div>
 <div class="output">PairConfig(BTCUSDT-Bybit / BTCUSDT-Binance, window=60, entry_z=±2.0)
 Valid: True</div>
 
-<h3 id="s18-2">18.2 ส่วนประกอบของ Class</h3>
+<h3 id="s18-3">18.3 ส่วนประกอบของ Class</h3>
 
 <table>
 <tr><th>ส่วนประกอบ</th><th>ใช้งาน</th><th>ตัวอย่าง</th></tr>
@@ -214,7 +254,7 @@ print(f"Annual Vol: {m.annual_vol:.1%}")</div>
 <div class="output">TradingMetrics(BTC Pair: Sharpe=0.66, Return=12.6%, DD=-12.8%)
 Annual Vol: 19.1%</div>
 
-<h3 id="s18-3">18.3 @property — Attribute ที่คำนวณแบบ Lazy</h3>
+<h3 id="s18-4">18.4 @property — Attribute ที่คำนวณแบบ Lazy</h3>
 
 <p><code>@property</code> ทำให้ method เรียกใช้ได้เหมือน attribute — ไม่ต้องใส่วงเล็บ และคำนวณเมื่อถูกเรียกเท่านั้น</p>
 
