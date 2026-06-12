@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python for Quant Traders — Part II: Math Tools</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;border-radius:3px;font-size:.9em}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7}
+.fm .c{color:#64748b}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+td code{background:var(--g1)}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{margin-top:10px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155;white-space:pre}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
+.nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
+.nav a{color:var(--teal);text-decoration:none;font-weight:600}
+.read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
+.ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
+.ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
+.ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
+.ai-decode .ad-code .c{color:#64748b}
+.ai-decode .ad-steps{background:var(--violet-bg);padding:14px 20px;font-size:.95em}
+.ai-decode .ad-steps ol{margin-bottom:.5em}
+.ai-decode .ad-steps p:last-child{margin-bottom:0}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+</style>
+
+
+
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mrow></mrow><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mi>r</mi><mi>i</mi><mi>g</mi><mi>h</mi><mi>t</mi><msup><mo>:</mo><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">&#x27;,right:&#x27;</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9963em;vertical-align:-0.1944em;"></span><span class="mord"><span></span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">h</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel">:</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span></span></span>',display:true},{left:'\<span class="katex-error" title="ParseError: KaTeX parse error: Unexpected character: &#x27;\&#x27; at position 10: &#x27;,right:&#x27;\̲" style="color:#cc0000">&#x27;,right:&#x27;\</span>',display:false}],throwOnError:false});});</script>
+<style>@font-face{font-display:block;font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_AMS-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_AMS-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_AMS-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Bold.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Bold.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Caligraphic-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Bold.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Bold.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Fraktur-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Bold.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Bold.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-BoldItalic.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-BoldItalic.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Italic.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Italic.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Main-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-BoldItalic.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-BoldItalic.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-Italic.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-Italic.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Math-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:700;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Bold.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Bold.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:italic;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Italic.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Italic.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_SansSerif-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Script;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Script-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Script-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Script-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size1;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size1-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size1-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size1-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size2;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size2-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size2-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size2-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size3;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size3-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size3-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size3-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size4;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size4-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size4-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Size4-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Typewriter;font-style:normal;font-weight:400;src:url(/tmp/node_modules/katex/dist/fonts/KaTeX_Typewriter-Regular.woff2) format("woff2"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Typewriter-Regular.woff) format("woff"),url(/tmp/node_modules/katex/dist/fonts/KaTeX_Typewriter-Regular.ttf) format("truetype")}.katex{font:normal 1.21em KaTeX_Main,Times New Roman,serif;line-height:1.2;position:relative;text-indent:0;text-rendering:auto}.katex *{-ms-high-contrast-adjust:none!important;border-color:currentColor}.katex .katex-version:after{content:"0.17.0"}.katex .katex-mathml{border:0;-webkit-clip-path:inset(50%);clip-path:inset(50%);height:1px;overflow:hidden;padding:0;position:absolute;width:1px}.katex .katex-html>.newline{display:block}.katex .base{position:relative;white-space:nowrap;width:-webkit-min-content;width:-moz-min-content;width:min-content}.katex .base,.katex .strut{display:inline-block}.katex .textbf{font-weight:700}.katex .textit{font-style:italic}.katex .textrm{font-family:KaTeX_Main}.katex .textsf{font-family:KaTeX_SansSerif}.katex .texttt{font-family:KaTeX_Typewriter}.katex .mathnormal{font-family:KaTeX_Math;font-style:italic}.katex .mathit{font-family:KaTeX_Main;font-style:italic}.katex .mathrm{font-style:normal}.katex .mathbf{font-family:KaTeX_Main;font-weight:700}.katex .boldsymbol{font-family:KaTeX_Math;font-style:italic;font-weight:700}.katex .amsrm,.katex .mathbb,.katex .textbb{font-family:KaTeX_AMS}.katex .mathcal{font-family:KaTeX_Caligraphic}.katex .mathfrak,.katex .textfrak{font-family:KaTeX_Fraktur}.katex .mathboldfrak,.katex .textboldfrak{font-family:KaTeX_Fraktur;font-weight:700}.katex .mathtt{font-family:KaTeX_Typewriter}.katex .mathscr,.katex .textscr{font-family:KaTeX_Script}.katex .mathsf,.katex .textsf{font-family:KaTeX_SansSerif}.katex .mathboldsf,.katex .textboldsf{font-family:KaTeX_SansSerif;font-weight:700}.katex .mathitsf,.katex .mathsfit,.katex .textitsf{font-family:KaTeX_SansSerif;font-style:italic}.katex .mainrm{font-family:KaTeX_Main;font-style:normal}.katex .vlist-t{border-collapse:collapse;display:inline-table;table-layout:fixed}.katex .vlist-r{display:table-row}.katex .vlist{display:table-cell;position:relative;vertical-align:bottom}.katex .vlist>span{display:block;height:0;position:relative}.katex .vlist>span>span{display:inline-block}.katex .vlist>span>.pstrut{overflow:hidden;width:0}.katex .vlist-t2{margin-right:-2px}.katex .vlist-s{display:table-cell;font-size:1px;min-width:2px;vertical-align:bottom;width:2px}.katex .vbox{align-items:baseline;display:inline-flex;flex-direction:column}.katex .hbox{width:100%}.katex .hbox,.katex .thinbox{display:inline-flex;flex-direction:row}.katex .thinbox{max-width:0;width:0}.katex .msupsub{text-align:left}.katex .mfrac>span>span{text-align:center}.katex .mfrac .frac-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline,.katex .hline,.katex .mfrac .frac-line,.katex .overline .overline-line,.katex .rule,.katex .underline .underline-line{min-height:1px}.katex .mspace{display:inline-block}.katex .smash{display:inline;line-height:0}.katex .clap,.katex .llap,.katex .rlap{position:relative;width:0}.katex .clap>.inner,.katex .llap>.inner,.katex .rlap>.inner{position:absolute}.katex .clap>.fix,.katex .llap>.fix,.katex .rlap>.fix{display:inline-block}.katex .llap>.inner{right:0}.katex .clap>.inner,.katex .rlap>.inner{left:0}.katex .clap>.inner>span{margin-left:-50%;margin-right:50%}.katex .rule{border:0 solid;display:inline-block;position:relative}.katex .hline,.katex .overline .overline-line,.katex .underline .underline-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline{border-bottom-style:dashed;display:inline-block;width:100%}.katex .sqrt>.root{margin-left:.2777777778em;margin-right:-.5555555556em}.katex .fontsize-ensurer.reset-size1.size1,.katex .sizing.reset-size1.size1{font-size:1em}.katex .fontsize-ensurer.reset-size1.size2,.katex .sizing.reset-size1.size2{font-size:1.2em}.katex .fontsize-ensurer.reset-size1.size3,.katex .sizing.reset-size1.size3{font-size:1.4em}.katex .fontsize-ensurer.reset-size1.size4,.katex .sizing.reset-size1.size4{font-size:1.6em}.katex .fontsize-ensurer.reset-size1.size5,.katex .sizing.reset-size1.size5{font-size:1.8em}.katex .fontsize-ensurer.reset-size1.size6,.katex .sizing.reset-size1.size6{font-size:2em}.katex .fontsize-ensurer.reset-size1.size7,.katex .sizing.reset-size1.size7{font-size:2.4em}.katex .fontsize-ensurer.reset-size1.size8,.katex .sizing.reset-size1.size8{font-size:2.88em}.katex .fontsize-ensurer.reset-size1.size9,.katex .sizing.reset-size1.size9{font-size:3.456em}.katex .fontsize-ensurer.reset-size1.size10,.katex .sizing.reset-size1.size10{font-size:4.148em}.katex .fontsize-ensurer.reset-size1.size11,.katex .sizing.reset-size1.size11{font-size:4.976em}.katex .fontsize-ensurer.reset-size2.size1,.katex .sizing.reset-size2.size1{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size2.size2,.katex .sizing.reset-size2.size2{font-size:1em}.katex .fontsize-ensurer.reset-size2.size3,.katex .sizing.reset-size2.size3{font-size:1.1666666667em}.katex .fontsize-ensurer.reset-size2.size4,.katex .sizing.reset-size2.size4{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size2.size5,.katex .sizing.reset-size2.size5{font-size:1.5em}.katex .fontsize-ensurer.reset-size2.size6,.katex .sizing.reset-size2.size6{font-size:1.6666666667em}.katex .fontsize-ensurer.reset-size2.size7,.katex .sizing.reset-size2.size7{font-size:2em}.katex .fontsize-ensurer.reset-size2.size8,.katex .sizing.reset-size2.size8{font-size:2.4em}.katex .fontsize-ensurer.reset-size2.size9,.katex .sizing.reset-size2.size9{font-size:2.88em}.katex .fontsize-ensurer.reset-size2.size10,.katex .sizing.reset-size2.size10{font-size:3.4566666667em}.katex .fontsize-ensurer.reset-size2.size11,.katex .sizing.reset-size2.size11{font-size:4.1466666667em}.katex .fontsize-ensurer.reset-size3.size1,.katex .sizing.reset-size3.size1{font-size:.7142857143em}.katex .fontsize-ensurer.reset-size3.size2,.katex .sizing.reset-size3.size2{font-size:.8571428571em}.katex .fontsize-ensurer.reset-size3.size3,.katex .sizing.reset-size3.size3{font-size:1em}.katex .fontsize-ensurer.reset-size3.size4,.katex .sizing.reset-size3.size4{font-size:1.1428571429em}.katex .fontsize-ensurer.reset-size3.size5,.katex .sizing.reset-size3.size5{font-size:1.2857142857em}.katex .fontsize-ensurer.reset-size3.size6,.katex .sizing.reset-size3.size6{font-size:1.4285714286em}.katex .fontsize-ensurer.reset-size3.size7,.katex .sizing.reset-size3.size7{font-size:1.7142857143em}.katex .fontsize-ensurer.reset-size3.size8,.katex .sizing.reset-size3.size8{font-size:2.0571428571em}.katex .fontsize-ensurer.reset-size3.size9,.katex .sizing.reset-size3.size9{font-size:2.4685714286em}.katex .fontsize-ensurer.reset-size3.size10,.katex .sizing.reset-size3.size10{font-size:2.9628571429em}.katex .fontsize-ensurer.reset-size3.size11,.katex .sizing.reset-size3.size11{font-size:3.5542857143em}.katex .fontsize-ensurer.reset-size4.size1,.katex .sizing.reset-size4.size1{font-size:.625em}.katex .fontsize-ensurer.reset-size4.size2,.katex .sizing.reset-size4.size2{font-size:.75em}.katex .fontsize-ensurer.reset-size4.size3,.katex .sizing.reset-size4.size3{font-size:.875em}.katex .fontsize-ensurer.reset-size4.size4,.katex .sizing.reset-size4.size4{font-size:1em}.katex .fontsize-ensurer.reset-size4.size5,.katex .sizing.reset-size4.size5{font-size:1.125em}.katex .fontsize-ensurer.reset-size4.size6,.katex .sizing.reset-size4.size6{font-size:1.25em}.katex .fontsize-ensurer.reset-size4.size7,.katex .sizing.reset-size4.size7{font-size:1.5em}.katex .fontsize-ensurer.reset-size4.size8,.katex .sizing.reset-size4.size8{font-size:1.8em}.katex .fontsize-ensurer.reset-size4.size9,.katex .sizing.reset-size4.size9{font-size:2.16em}.katex .fontsize-ensurer.reset-size4.size10,.katex .sizing.reset-size4.size10{font-size:2.5925em}.katex .fontsize-ensurer.reset-size4.size11,.katex .sizing.reset-size4.size11{font-size:3.11em}.katex .fontsize-ensurer.reset-size5.size1,.katex .sizing.reset-size5.size1{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size5.size2,.katex .sizing.reset-size5.size2{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size5.size3,.katex .sizing.reset-size5.size3{font-size:.7777777778em}.katex .fontsize-ensurer.reset-size5.size4,.katex .sizing.reset-size5.size4{font-size:.8888888889em}.katex .fontsize-ensurer.reset-size5.size5,.katex .sizing.reset-size5.size5{font-size:1em}.katex .fontsize-ensurer.reset-size5.size6,.katex .sizing.reset-size5.size6{font-size:1.1111111111em}.katex .fontsize-ensurer.reset-size5.size7,.katex .sizing.reset-size5.size7{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size5.size8,.katex .sizing.reset-size5.size8{font-size:1.6em}.katex .fontsize-ensurer.reset-size5.size9,.katex .sizing.reset-size5.size9{font-size:1.92em}.katex .fontsize-ensurer.reset-size5.size10,.katex .sizing.reset-size5.size10{font-size:2.3044444444em}.katex .fontsize-ensurer.reset-size5.size11,.katex .sizing.reset-size5.size11{font-size:2.7644444444em}.katex .fontsize-ensurer.reset-size6.size1,.katex .sizing.reset-size6.size1{font-size:.5em}.katex .fontsize-ensurer.reset-size6.size2,.katex .sizing.reset-size6.size2{font-size:.6em}.katex .fontsize-ensurer.reset-size6.size3,.katex .sizing.reset-size6.size3{font-size:.7em}.katex .fontsize-ensurer.reset-size6.size4,.katex .sizing.reset-size6.size4{font-size:.8em}.katex .fontsize-ensurer.reset-size6.size5,.katex .sizing.reset-size6.size5{font-size:.9em}.katex .fontsize-ensurer.reset-size6.size6,.katex .sizing.reset-size6.size6{font-size:1em}.katex .fontsize-ensurer.reset-size6.size7,.katex .sizing.reset-size6.size7{font-size:1.2em}.katex .fontsize-ensurer.reset-size6.size8,.katex .sizing.reset-size6.size8{font-size:1.44em}.katex .fontsize-ensurer.reset-size6.size9,.katex .sizing.reset-size6.size9{font-size:1.728em}.katex .fontsize-ensurer.reset-size6.size10,.katex .sizing.reset-size6.size10{font-size:2.074em}.katex .fontsize-ensurer.reset-size6.size11,.katex .sizing.reset-size6.size11{font-size:2.488em}.katex .fontsize-ensurer.reset-size7.size1,.katex .sizing.reset-size7.size1{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size7.size2,.katex .sizing.reset-size7.size2{font-size:.5em}.katex .fontsize-ensurer.reset-size7.size3,.katex .sizing.reset-size7.size3{font-size:.5833333333em}.katex .fontsize-ensurer.reset-size7.size4,.katex .sizing.reset-size7.size4{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size7.size5,.katex .sizing.reset-size7.size5{font-size:.75em}.katex .fontsize-ensurer.reset-size7.size6,.katex .sizing.reset-size7.size6{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size7.size7,.katex .sizing.reset-size7.size7{font-size:1em}.katex .fontsize-ensurer.reset-size7.size8,.katex .sizing.reset-size7.size8{font-size:1.2em}.katex .fontsize-ensurer.reset-size7.size9,.katex .sizing.reset-size7.size9{font-size:1.44em}.katex .fontsize-ensurer.reset-size7.size10,.katex .sizing.reset-size7.size10{font-size:1.7283333333em}.katex .fontsize-ensurer.reset-size7.size11,.katex .sizing.reset-size7.size11{font-size:2.0733333333em}.katex .fontsize-ensurer.reset-size8.size1,.katex .sizing.reset-size8.size1{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size8.size2,.katex .sizing.reset-size8.size2{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size8.size3,.katex .sizing.reset-size8.size3{font-size:.4861111111em}.katex .fontsize-ensurer.reset-size8.size4,.katex .sizing.reset-size8.size4{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size8.size5,.katex .sizing.reset-size8.size5{font-size:.625em}.katex .fontsize-ensurer.reset-size8.size6,.katex .sizing.reset-size8.size6{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size8.size7,.katex .sizing.reset-size8.size7{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size8.size8,.katex .sizing.reset-size8.size8{font-size:1em}.katex .fontsize-ensurer.reset-size8.size9,.katex .sizing.reset-size8.size9{font-size:1.2em}.katex .fontsize-ensurer.reset-size8.size10,.katex .sizing.reset-size8.size10{font-size:1.4402777778em}.katex .fontsize-ensurer.reset-size8.size11,.katex .sizing.reset-size8.size11{font-size:1.7277777778em}.katex .fontsize-ensurer.reset-size9.size1,.katex .sizing.reset-size9.size1{font-size:.2893518519em}.katex .fontsize-ensurer.reset-size9.size2,.katex .sizing.reset-size9.size2{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size9.size3,.katex .sizing.reset-size9.size3{font-size:.4050925926em}.katex .fontsize-ensurer.reset-size9.size4,.katex .sizing.reset-size9.size4{font-size:.462962963em}.katex .fontsize-ensurer.reset-size9.size5,.katex .sizing.reset-size9.size5{font-size:.5208333333em}.katex .fontsize-ensurer.reset-size9.size6,.katex .sizing.reset-size9.size6{font-size:.5787037037em}.katex .fontsize-ensurer.reset-size9.size7,.katex .sizing.reset-size9.size7{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size9.size8,.katex .sizing.reset-size9.size8{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size9.size9,.katex .sizing.reset-size9.size9{font-size:1em}.katex .fontsize-ensurer.reset-size9.size10,.katex .sizing.reset-size9.size10{font-size:1.2002314815em}.katex .fontsize-ensurer.reset-size9.size11,.katex .sizing.reset-size9.size11{font-size:1.4398148148em}.katex .fontsize-ensurer.reset-size10.size1,.katex .sizing.reset-size10.size1{font-size:.2410800386em}.katex .fontsize-ensurer.reset-size10.size2,.katex .sizing.reset-size10.size2{font-size:.2892960463em}.katex .fontsize-ensurer.reset-size10.size3,.katex .sizing.reset-size10.size3{font-size:.337512054em}.katex .fontsize-ensurer.reset-size10.size4,.katex .sizing.reset-size10.size4{font-size:.3857280617em}.katex .fontsize-ensurer.reset-size10.size5,.katex .sizing.reset-size10.size5{font-size:.4339440694em}.katex .fontsize-ensurer.reset-size10.size6,.katex .sizing.reset-size10.size6{font-size:.4821600771em}.katex .fontsize-ensurer.reset-size10.size7,.katex .sizing.reset-size10.size7{font-size:.5785920926em}.katex .fontsize-ensurer.reset-size10.size8,.katex .sizing.reset-size10.size8{font-size:.6943105111em}.katex .fontsize-ensurer.reset-size10.size9,.katex .sizing.reset-size10.size9{font-size:.8331726133em}.katex .fontsize-ensurer.reset-size10.size10,.katex .sizing.reset-size10.size10{font-size:1em}.katex .fontsize-ensurer.reset-size10.size11,.katex .sizing.reset-size10.size11{font-size:1.1996142719em}.katex .fontsize-ensurer.reset-size11.size1,.katex .sizing.reset-size11.size1{font-size:.2009646302em}.katex .fontsize-ensurer.reset-size11.size2,.katex .sizing.reset-size11.size2{font-size:.2411575563em}.katex .fontsize-ensurer.reset-size11.size3,.katex .sizing.reset-size11.size3{font-size:.2813504823em}.katex .fontsize-ensurer.reset-size11.size4,.katex .sizing.reset-size11.size4{font-size:.3215434084em}.katex .fontsize-ensurer.reset-size11.size5,.katex .sizing.reset-size11.size5{font-size:.3617363344em}.katex .fontsize-ensurer.reset-size11.size6,.katex .sizing.reset-size11.size6{font-size:.4019292605em}.katex .fontsize-ensurer.reset-size11.size7,.katex .sizing.reset-size11.size7{font-size:.4823151125em}.katex .fontsize-ensurer.reset-size11.size8,.katex .sizing.reset-size11.size8{font-size:.578778135em}.katex .fontsize-ensurer.reset-size11.size9,.katex .sizing.reset-size11.size9{font-size:.6945337621em}.katex .fontsize-ensurer.reset-size11.size10,.katex .sizing.reset-size11.size10{font-size:.8336012862em}.katex .fontsize-ensurer.reset-size11.size11,.katex .sizing.reset-size11.size11{font-size:1em}.katex .delimsizing.size1{font-family:KaTeX_Size1}.katex .delimsizing.size2{font-family:KaTeX_Size2}.katex .delimsizing.size3{font-family:KaTeX_Size3}.katex .delimsizing.size4{font-family:KaTeX_Size4}.katex .delimsizing.mult .delim-size1>span{font-family:KaTeX_Size1}.katex .delimsizing.mult .delim-size4>span{font-family:KaTeX_Size4}.katex .nulldelimiter{display:inline-block;width:.12em}.katex .delimcenter,.katex .op-symbol{position:relative}.katex .op-symbol.small-op{font-family:KaTeX_Size1}.katex .op-symbol.large-op{font-family:KaTeX_Size2}.katex .accent>.vlist-t,.katex .op-limits>.vlist-t{text-align:center}.katex .accent .accent-body{position:relative}.katex .accent .accent-body:not(.accent-full){width:0}.katex .overlay{display:block}.katex .mtable .vertical-separator{display:inline-block;min-width:1px}.katex .mtable .arraycolsep{display:inline-block}.katex .mtable .col-align-c>.vlist-t{text-align:center}.katex .mtable .col-align-l>.vlist-t{text-align:left}.katex .mtable .col-align-r>.vlist-t{text-align:right}.katex .svg-align{text-align:left}.katex svg{fill:currentColor;stroke:currentColor;display:block;height:inherit;position:absolute;width:100%}.katex svg path{stroke:none}.katex svg{fill-rule:nonzero;fill-opacity:1;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1}.katex img{border-style:none;max-height:none;max-width:none;min-height:0;min-width:0}.katex .stretchy{display:block;overflow:hidden;position:relative;width:100%}.katex .stretchy:after,.katex .stretchy:before{content:""}.katex .hide-tail{overflow:hidden;position:relative;width:100%}.katex .halfarrow-left{left:0;overflow:hidden;position:absolute;width:50.2%}.katex .halfarrow-right{overflow:hidden;position:absolute;right:0;width:50.2%}.katex .brace-left{left:0;overflow:hidden;position:absolute;width:25.1%}.katex .brace-center{left:25%;overflow:hidden;position:absolute;width:50%}.katex .brace-right{overflow:hidden;position:absolute;right:0;width:25.1%}.katex .x-arrow-pad{padding:0 .5em}.katex .cd-arrow-pad{padding:0 .55556em 0 .27778em}.katex .mover,.katex .munder,.katex .x-arrow{text-align:center}.katex .boxpad{padding:0 .3em}.katex .fbox,.katex .fcolorbox{border:.04em solid;box-sizing:border-box}.katex .cancel-pad{padding:0 .2em}.katex .cancel-lap{margin-left:-.2em;margin-right:-.2em}.katex .sout{border-bottom-style:solid;border-bottom-width:.08em}.katex .angl{border-right:.049em solid;border-top:.049em solid;box-sizing:border-box;margin-right:.03889em}.katex .anglpad{padding:0 .03889em}.katex .eqn-num:before{content:"(" counter(katexEqnNo) ")";counter-increment:katexEqnNo}.katex .mml-eqn-num:before{content:"(" counter(mmlEqnNo) ")";counter-increment:mmlEqnNo}.katex .mtr-glue{width:50%}.katex .cd-vert-arrow{display:inline-block;position:relative}.katex .cd-label-left{display:inline-block;position:absolute;right:calc(50% + .3em);text-align:left}.katex .cd-label-right{display:inline-block;left:calc(50% + .3em);position:absolute;text-align:right}.katex-display{display:block;margin:1em 0;text-align:center}.katex-display>.katex{display:block;text-align:center;white-space:nowrap}.katex-display>.katex>.katex-html{display:block;position:relative}.katex-display>.katex>.katex-html>.tag{position:absolute;right:0}.katex-display.leqno>.katex>.katex-html>.tag{left:0;right:auto}.katex-display.fleqn>.katex{padding-left:2em;text-align:left}body{counter-reset:katexEqnNo mmlEqnNo}
+</style>
+
+<style>
+/* Print overrides */
+@page { size: A4; margin: 2cm 2.5cm 2cm 2.5cm; }
+body  { font-size: 11pt; line-height: 1.6; }
+
+/* Light code blocks for print readability */
+.fm   { background: #f8f9fa !important; color: #1a1a1a !important;
+        border: 1px solid #dee2e6; border-radius: 6px;
+        padding: 12px 16px; font-size: 9pt; line-height: 1.5; }
+.fm .c  { color: #6c757d !important; }
+.fm .k  { color: #0d6efd !important; }
+.fm .s  { color: #198754 !important; }
+.fm .n  { color: #dc3545 !important; }
+
+.output { background: #f0f4f8 !important; color: #1a1a1a !important;
+          border: 1px solid #c8d6e5; }
+.output::before { color: #495057 !important; }
+
+/* Keep colors for boxes */
+.bx { page-break-inside: avoid; }
+details { page-break-inside: avoid; }
+
+/* Nav bar hidden in print */
+nav, .nav, header { display: none !important; }
+
+/* Page breaks before major sections */
+h1 { page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+</style>
+
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Python for Quant Traders · Part II</div>
+<h1>Math Tools — เครื่องมือคณิตศาสตร์สำหรับ Quant</h1>
+<div class="sub">บทที่ 11–17: Statistics · Time Series · OLS Regression · Cointegration · Optimization · Linear Programming · Signals<br>
+จบ Part นี้ → สร้าง pair trading strategy ตั้งแต่ต้นจนได้ signal พร้อม trade</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">สิ่งที่จะทำได้เมื่อจบ Part II</div>
+<div class="ki-text">
+• หาคู่หุ้นที่ cointegrate กัน ด้วย ADF test และ Johansen test<br>
+• ประมาณ hedge ratio <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> ด้วย OLS regression (statsmodels)<br>
+• สร้าง spread และคำนวณ z-score สำหรับ entry/exit signal<br>
+• Maximize Sharpe ratio ด้วย <code>scipy.optimize</code><br>
+• กำหนด portfolio weight constraints ด้วย Linear Programming<br>
+<strong>ทุกอย่างนี้คือ core engine ของ Statistical Arbitrage</strong>
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example ตลอด Part II — Pair Trading: BTC Perp Bybit ↔ BTC Perp Binance</div>
+<p>เราจะสร้าง pair trading strategy ทีละขั้นตอนตลอด 7 บท:<br>
+บท 11 → ตรวจสอบ distribution ของ spread · บท 12 → ทดสอบ stationarity · บท 13 → ประมาณ β ด้วย OLS<br>
+บท 14 → ยืนยัน cointegration · บท 15 → optimize position size · บท 16 → ใส่ capital constraint · บท 17 → สร้าง signal pipeline</p>
+</div>
+
+
+<!-- ===================== CHAPTER 11 ===================== -->
+<h2 id="ch11">บทที่ 11: Statistics &amp; Probability เชิงลึก</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">สถิติใน Part 0 เป็นแนวคิด — บทนี้แปลงเป็น Python จริง ด้วย <code>scipy.stats</code> และ <code>numpy</code> เน้น 3 เรื่องที่ Quant ใช้จริง: hypothesis testing (กลยุทธ์นี้ดีจริงหรือแค่โชค?), VaR/CVaR (ความเสี่ยงสูงสุดคือเท่าไหร่?), และ fat tail (ทำไมต้องระวัง Black Swan?)</div>
+</div>
+
+<h3 id="s11-1">11.1 Hypothesis Testing — กลยุทธ์ดีจริงหรือแค่โชค?</h3>
+
+<p>สมมติฐาน: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub></mrow><annotation encoding="application/x-tex">H_0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> (null) = "กลยุทธ์ไม่ดีกว่าสุ่ม" vs <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">H_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> = "กลยุทธ์ดีกว่าสุ่มจริงๆ"</p>
+
+<div class="fm">from scipy import stats
+import numpy as np
+
+<span class="c"># ผลตอบแทนรายวัน 252 วัน จากกลยุทธ์</span>
+np.random.seed(42)
+strategy_returns = np.random.normal(loc=0.0008, scale=0.015, size=252)
+
+<span class="c"># t-test: H0 = mean return = 0 (ไม่ดีกว่าสุ่ม)</span>
+t_stat, p_value = stats.ttest_1samp(strategy_returns, popmean=0)
+
+print(f"Mean Return: {strategy_returns.mean():.4f} ({strategy_returns.mean()*252:.1%}/year)")
+print(f"t-statistic: {t_stat:.3f}")
+print(f"p-value:     {p_value:.4f}")
+
+if p_value &lt; 0.05:
+    print("✓ มีนัยสำคัญ — กลยุทธ์น่าจะดีกว่าสุ่ม (p &lt; 5%)")
+else:
+    print("✗ ไม่มีนัยสำคัญ — อาจเป็นแค่โชค")</div>
+<div class="output">Mean Return: 0.0008 (20.2%/year)
+t-statistic: 0.893
+p-value:     0.3726
+✗ ไม่มีนัยสำคัญ — อาจเป็นแค่โชค</div>
+
+<div class="bx ba">
+<div class="bt">ทำไม Return ดูดีแต่ p-value ยังสูง?</div>
+<p>20% ต่อปีดูน่าสนใจ แต่ถ้า σ สูง (1.5%/วัน) — noise มากกว่า signal มาก<br>
+ต้องมีข้อมูลมากพอ (หลาย 100 วัน) ถึงจะ "แยก" signal ออกจาก noise ได้<br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>=</mo><mfrac><mover accent="true"><mi>r</mi><mo>ˉ</mo></mover><mrow><mi>σ</mi><mi mathvariant="normal">/</mi><msqrt><mi>n</mi></msqrt></mrow></mfrac></mrow><annotation encoding="application/x-tex">t = \frac{\bar{r}}{\sigma/\sqrt{n}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6151em;"></span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.3406em;vertical-align:-0.5491em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.7914em;"><span style="top:-2.6259em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">σ</span><span class="mord mtight">/</span><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8059em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mathnormal mtight">n</span></span></span><span style="top:-2.7659em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2341em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord accent mtight"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.5678em;"><span style="top:-2.7em;"><span class="pstrut" style="height:2.7em;"></span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span></span><span style="top:-2.7em;"><span class="pstrut" style="height:2.7em;"></span><span class="accent-body" style="left:-0.1944em;"><span class="mord mtight">ˉ</span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5491em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span> → ยิ่ง n มาก t ยิ่งใหญ่ → p-value ยิ่งเล็ก</p>
+</div>
+
+<h3 id="s11-2">11.2 VaR และ CVaR — ความเสี่ยงสูงสุดคือเท่าไหร่?</h3>
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mtext>VaR</mtext><mrow><mn>95</mn><mi mathvariant="normal">%</mi></mrow></msub><mo>=</mo><msub><mtext>percentile</mtext><mrow><mn>5</mn><mi mathvariant="normal">%</mi></mrow></msub><mo stretchy="false">(</mo><mi>r</mi><mo stretchy="false">)</mo><mspace width="2em"/><msub><mtext>CVaR</mtext><mrow><mn>95</mn><mi mathvariant="normal">%</mi></mrow></msub><mo>=</mo><mi>E</mi><mtext> ⁣</mtext><mrow><mo fence="true">[</mo><mi>r</mi><mo>∣</mo><mi>r</mi><mo>≤</mo><msub><mtext>VaR</mtext><mrow><mn>95</mn><mi mathvariant="normal">%</mi></mrow></msub><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">\text{VaR}_{95\%} = \text{percentile}_{5\%}(r) \qquad \text{CVaR}_{95\%} = E\!\left[r \mid r \leq \text{VaR}_{95\%}\right]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9024em;vertical-align:-0.2191em;"></span><span class="mord"><span class="mord text"><span class="mord">VaR</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">95%</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2191em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.033em;vertical-align:-0.283em;"></span><span class="mord"><span class="mord text"><span class="mord">percentile</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2809em;"><span style="top:-2.4559em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">5%</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.283em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mclose">)</span><span class="mspace" style="margin-right:2em;"></span><span class="mord"><span class="mord text"><span class="mord">CVaR</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">95%</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2191em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mspace" style="margin-right:-0.1667em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∣</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mord text"><span class="mord">VaR</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">95%</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2191em;"><span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;">]</span></span></span></span></span></span>
+
+<div class="fm"><span class="c"># VaR = ขาดทุนสูงสุดใน 95% ของวันทั้งหมด</span>
+<span class="c"># CVaR = ขาดทุนเฉลี่ยในวันที่แย่ที่สุด 5%</span>
+
+returns = strategy_returns  <span class="c"># จากข้างบน</span>
+capital = 1_000_000         <span class="c"># ทุน 1 ล้านบาท</span>
+
+var_95  = np.percentile(returns, 5)
+cvar_95 = returns[returns &lt;= var_95].mean()
+
+print(f"VaR  95%: {var_95:.2%}  → ขาดทุนไม่เกิน {abs(var_95)*capital:,.0f} บาท/วัน (95% ของเวลา)")
+print(f"CVaR 95%: {cvar_95:.2%} → เฉลี่ยขาดทุน  {abs(cvar_95)*capital:,.0f} บาท ในวันที่แย่ที่สุด 5%")</div>
+
+<div class="bx bd">
+<div class="bt">หมายเหตุ CVaR: ต้องการ sample เพียงพอ</div>
+<p>CVaR 95% ใช้เฉพาะ return ที่อยู่ใน worst 5% — ถ้ามีข้อมูล 100 วัน จะใช้แค่ 5 วัน<br>
+ถ้าข้อมูลน้อยกว่า 60 วัน CVaR อาจไม่น่าเชื่อถือ ควรใช้ <code>if len(tail) >= 5: cvar = tail.mean()</code><br>
+หรือเพิ่ม <code>n_tail = max(1, int(len(returns) * 0.05))</code> เพื่อรับประกัน minimum sample</p>
+</div>
+
+<h3 id="s11-3">11.3 Fat Tail — ทำไม Normal Distribution ถึงอันตราย?</h3>
+
+<div class="fm">from scipy import stats
+
+<span class="c"># เปรียบ Normal กับ t-distribution (fat tail)</span>
+normal_99 = stats.norm.ppf(0.01)   <span class="c"># -2.33σ</span>
+t5_99     = stats.t.ppf(0.01, df=5) <span class="c"># -3.36σ (df=5 = fat tail)</span>
+
+print(f"Normal 1% VaR: {normal_99:.2f}σ")
+print(f"t(df=5) 1% VaR: {t5_99:.2f}σ")
+print(f"ใช้ Normal จะ underestimate ความเสี่ยง {t5_99/normal_99:.1f}x")</div>
+
+<div class="bx bk">
+<div class="bt">อย่าเชื่อ Normal Distribution สำหรับ crypto และช่วง crisis</div>
+<p>BTC crash 50%+ เกิดหลายครั้ง — ถ้าใช้ Normal Distribution จะบอกว่า "แทบเป็นไปไม่ได้" (เกิน 10σ)<br>
+ในความจริง: ราคาสินทรัพย์มี "fat tail" = เหตุการณ์สุดขั้วเกิดบ่อยกว่า Normal คาด<br>
+<strong>ใช้ t-distribution, Cornish-Fisher, หรือ historical simulation แทน Normal สำหรับ risk management</strong></p>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: สรุป Return Statistics แบบมืออาชีพ</div>
+<div class="fm">def return_stats(returns, name="Strategy", capital=1_000_000):
+    """สรุป statistics สำหรับ return series"""
+    r = np.array(returns)
+    ann = 252
+
+    mean_daily  = r.mean()                  <span class="c"># return เฉลี่ยต่อวัน</span>
+    std_daily   = r.std()                   <span class="c"># ความผันผวนต่อวัน</span>
+    sharpe      = mean_daily / std_daily * np.sqrt(ann)  <span class="c"># Sharpe รายปี (คูณ √252)</span>
+    skew        = stats.skew(r)             <span class="c"># ความเบ้ (ลบ = หางซ้ายยาว = อันตราย)</span>
+    kurt        = stats.kurtosis(r)         <span class="c"># excess kurtosis (บวก = fat tail)</span>
+    var95       = np.percentile(r, 5)       <span class="c"># จุดตัด worst 5% ของวัน</span>
+    cvar95      = r[r &lt;= var95].mean()      <span class="c"># ค่าเฉลี่ยของวันที่แย่กว่า VaR</span>
+
+    equity      = capital * np.cumprod(1 + r)        <span class="c"># เส้นเงินทุนสะสมรายวัน</span>
+    rolling_max = np.maximum.accumulate(equity)      <span class="c"># จุดสูงสุดที่เคยไปถึง ณ แต่ละวัน</span>
+    max_dd      = ((equity - rolling_max) / rolling_max).min()  <span class="c"># % ร่วงจากยอดที่ลึกที่สุด</span>
+
+    print(f"=== {name} ===")
+    print(f"Annual Return: {mean_daily*ann:.1%}   Sharpe: {sharpe:.2f}")
+    print(f"Annual Vol:    {std_daily*np.sqrt(ann):.1%}   Max DD: {max_dd:.1%}")
+    print(f"Skewness: {skew:.2f}  Kurtosis: {kurt:.2f}  (Normal: 0, 0)")
+    print(f"VaR 95%: {var95:.2%}  CVaR 95%: {cvar95:.2%}")
+
+return_stats(strategy_returns)</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เปรียบ Sharpe ของสองกลยุทธ์</summary>
+<div class="ans">
+<div class="fm"><span class="c"># กลยุทธ์ A: return ต่ำ volatility ต่ำ</span>
+ret_a = np.random.normal(0.0003, 0.005, 252)
+
+<span class="c"># กลยุทธ์ B: return สูง volatility สูง</span>
+ret_b = np.random.normal(0.002, 0.04, 252)
+
+sharpe_a = ret_a.mean() / ret_a.std() * np.sqrt(252)
+sharpe_b = ret_b.mean() / ret_b.std() * np.sqrt(252)
+
+print(f"Sharpe A: {sharpe_a:.2f}  ({ret_a.mean()*252:.0%}/yr, σ={ret_a.std()*np.sqrt(252):.0%}/yr)")
+print(f"Sharpe B: {sharpe_b:.2f}  ({ret_b.mean()*252:.0%}/yr, σ={ret_b.std()*np.sqrt(252):.0%}/yr)")</div>
+<p style="margin-top:8px">บทเรียน: B อาจให้ return ต่อปีสูงกว่า แต่ถ้า Sharpe ต่ำกว่า risk ต่อหน่วย return แย่กว่า</p>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 12 ===================== -->
+<h2 id="ch12">บทที่ 12: Time Series Basics</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">ข้อมูลราคาเรียงตามเวลา มีคุณสมบัติพิเศษที่ข้อมูลทั่วไปไม่มี: แต่ละจุดสัมพันธ์กับจุดก่อนหน้า (autocorrelation) และอาจ "ล่องลอย" ไปเรื่อยๆ โดยไม่กลับ (non-stationary) การเข้าใจ 2 เรื่องนี้คือกุญแจของ Statistical Arbitrage ทั้งหมด</div>
+</div>
+
+<h3 id="s12-1">12.1 Stationarity — ล่องลอยหรือวนกลับ?</h3>
+
+<p><strong>Stationary series</strong>: mean และ variance คงที่ตลอดเวลา — "วนกลับหาค่ากลาง"<br>
+<strong>Non-stationary series</strong>: mean เปลี่ยนตามเวลา — "ล่องลอยไม่มีทิศทาง" (random walk)</p>
+
+<div class="fm">import numpy as np
+
+<span class="c"># Non-stationary: Random Walk (ราคา BTC)</span>
+np.random.seed(0)
+random_walk = np.cumsum(np.random.normal(0, 1, 300))
+
+<span class="c"># Stationary: Spread ระหว่างสองตลาด</span>
+spread = np.random.normal(0, 1, 300)  <span class="c"># OU-like (mean-reverting)</span>
+
+<span class="c"># สังเกต: random_walk drift ออกไปเรื่อยๆ</span>
+<span class="c">#          spread วนอยู่รอบ 0</span>
+print(f"Random Walk range: {random_walk.min():.1f} to {random_walk.max():.1f}")
+print(f"Spread range:      {spread.min():.1f} to {spread.max():.1f}")</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม Stationarity ถึงสำคัญสำหรับ Pair Trading?</div>
+<p>ถ้า spread ไม่ stationary → ไม่มีแรงดึงกลับ → "z-score สูง" อาจสูงต่อไปเรื่อยๆ → trade แล้วขาดทุนไม่จำกัด<br>
+ถ้า spread stationary → มีแรงดึงกลับ → z-score สูงแล้ว "ต้องลง" ในที่สุด → เป็น basis ของ arb<br>
+<strong>เราต้องพิสูจน์ก่อนเสมอว่า spread เป็น stationary จริง — ไม่ใช่แค่ดูกราฟ</strong></p>
+</div>
+
+<h3 id="s12-2">12.2 ADF Test — ทดสอบ Stationarity</h3>
+
+<p>Augmented Dickey-Fuller (ADF) test: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub></mrow><annotation encoding="application/x-tex">H_0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> = non-stationary (random walk) vs <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">H_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> = stationary</p>
+
+<div class="fm">from statsmodels.tsa.stattools import adfuller
+
+def test_stationarity(series, name="Series"):
+    """รัน ADF test และแสดงผลแบบเข้าใจง่าย"""
+    result = adfuller(series, autolag="AIC")
+    adf_stat  = result[0]
+    p_value   = result[1]
+    crit_vals = result[4]
+
+    print(f"\n--- ADF Test: {name} ---")
+    print(f"ADF Statistic: {adf_stat:.4f}")
+    print(f"p-value:       {p_value:.4f}")
+    print(f"Critical (1%): {crit_vals['1%']:.4f}")
+    print(f"Critical (5%): {crit_vals['5%']:.4f}")
+
+    if p_value &lt; 0.05:
+        print(f"✓ STATIONARY (p={p_value:.3f} &lt; 0.05) — กลับหาค่ากลาง")
+    else:
+        print(f"✗ NON-STATIONARY (p={p_value:.3f} &gt; 0.05) — random walk")
+    return p_value &lt; 0.05
+
+<span class="c"># ทดสอบกับข้อมูลจาก pair</span>
+test_stationarity(random_walk, "BTC Price (Random Walk)")
+test_stationarity(spread, "BTC Spread (Mean-Reverting)")</div>
+
+<h3 id="s12-3">12.3 Autocorrelation — ราคาวันนี้สัมพันธ์กับเมื่อวานแค่ไหน?</h3>
+
+<div class="fm">from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+
+<span class="c"># ACF/PACF ของ returns (stationary)</span>
+plot_acf(spread, lags=30, ax=axes[0][0], title="ACF — Spread (Stationary)")
+plot_pacf(spread, lags=30, ax=axes[0][1], title="PACF — Spread")
+
+<span class="c"># ACF/PACF ของ raw price (non-stationary)</span>
+plot_acf(random_walk, lags=30, ax=axes[1][0], title="ACF — Price (Non-stationary)")
+plot_pacf(random_walk, lags=30, ax=axes[1][1], title="PACF — Price")
+
+plt.tight_layout()
+plt.savefig("acf_comparison.png", dpi=150)
+plt.show()</div>
+
+<div class="bx bd">
+<div class="bt">อ่าน ACF plot อย่างไร?</div>
+<table>
+<tr><th>Pattern ที่เห็น</th><th>แปลว่า</th><th>ทำอะไรต่อ</th></tr>
+<tr><td>ค่าลด exponentially ใน ACF</td><td>AR process (mean-reverting) ✓</td><td>ใช้เป็น spread ได้</td></tr>
+<tr><td>ค่าสูงทุก lag ไม่ลด</td><td>Non-stationary (random walk)</td><td>ต้อง difference ก่อน</td></tr>
+<tr><td>ค่าตัดที่ lag 1 ใน ACF</td><td>MA(1) process</td><td>ต้องใส่ MA term ใน model</td></tr>
+</table>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: ทดสอบ stationarity ของ spread จริง</summary>
+<div class="ans">
+<div class="fm">import numpy as np
+from statsmodels.tsa.stattools import adfuller
+
+<span class="c"># จำลอง Ornstein-Uhlenbeck process (spread จริง)</span>
+np.random.seed(1)
+n, kappa, mu, sigma = 500, 0.1, 0, 0.5
+ou = np.zeros(n)
+for t in range(1, n):
+    ou[t] = ou[t-1] + kappa*(mu - ou[t-1]) + sigma*np.random.normal()
+
+result = adfuller(ou)
+print(f"ADF p-value: {result[1]:.4f}")
+print("✓ Stationary" if result[1] &lt; 0.05 else "✗ Non-stationary")
+
+<span class="c"># OU process ควร stationary เสมอ (kappa > 0)</span></div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 13 ===================== -->
+<h2 id="ch13">บทที่ 13: OLS Regression</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">OLS (Ordinary Least Squares) เป็นเครื่องมือหลักสำหรับประมาณ hedge ratio <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0528em;">β</span></span></span></span> — อัตราส่วนที่บอกว่าต้อง long/short ในสัดส่วนเท่าไหร่เพื่อสร้าง spread ที่ stationary สูตร matrix form:</div>
+<div class="ki-eq"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mover accent="true"><mi mathvariant="bold-italic">β</mi><mo>^</mo></mover><mo>=</mo><mo stretchy="false">(</mo><msup><mi mathvariant="bold">X</mi><mi mathvariant="normal">⊤</mi></msup><mi mathvariant="bold">X</mi><msup><mo stretchy="false">)</mo><mrow><mo>−</mo><mn>1</mn></mrow></msup><msup><mi mathvariant="bold">X</mi><mi mathvariant="normal">⊤</mi></msup><mi mathvariant="bold">y</mi></mrow><annotation encoding="application/x-tex">\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.1523em;vertical-align:-0.1944em;"></span><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9579em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord boldsymbol" style="margin-right:0.034em;">β</span></span></span></span><span style="top:-3.2634em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.25em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1491em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8991em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span><span class="mord mathbf">X</span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span></span></span></span></span><span class="mord"><span class="mord mathbf">X</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8991em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span><span class="mord mathbf" style="margin-right:0.016em;">y</span></span></span></span></span></div>
+</div>
+
+<h3 id="s13-1">13.1 OLS ด้วย statsmodels</h3>
+
+<div class="fm">import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+
+<span class="c"># จำลองราคา BTC สองตลาด</span>
+np.random.seed(42)
+n = 252
+btc_bybit   = 65000 + np.cumsum(np.random.normal(0, 100, n))
+btc_binance = 65000 + np.cumsum(np.random.normal(0, 100, n)) + 0.003 * btc_bybit
+
+<span class="c"># OLS: log(P_binance) = alpha + beta * log(P_bybit) + epsilon</span>
+log_bybit   = np.log(btc_bybit)
+log_binance = np.log(btc_binance)
+
+X = sm.add_constant(log_bybit)   <span class="c"># เพิ่ม intercept column</span>
+y = log_binance
+
+model  = sm.OLS(y, X).fit()
+
+alpha  = model.params['const']
+beta   = model.params['log_bybit']
+resid  = model.resid               <span class="c"># epsilon (spread)</span>
+r2     = model.rsquared
+p_beta = model.pvalues['log_bybit']
+
+print(f"alpha (intercept): {alpha:.6f}")
+print(f"beta  (hedge ratio): {beta:.6f}")
+print(f"R²:   {r2:.4f}")
+print(f"p-value (beta): {p_beta:.6f}")
+print(f"\nSpread (residuals) stats:")
+print(f"  Mean: {resid.mean():.6f}")
+print(f"  Std:  {resid.std():.6f}")</div>
+
+<h3 id="s13-2">13.2 ตีความผล OLS</h3>
+
+<table>
+<tr><th>Output</th><th>ความหมาย</th><th>ค่าที่ดี</th></tr>
+<tr><td><strong>β</strong></td><td>Hedge ratio — Long 1 บาท Bybit ต้อง Short β บาท Binance</td><td>ใกล้ 1.0 สำหรับ same asset</td></tr>
+<tr><td><strong>α</strong></td><td>Constant spread ระหว่างสองตลาด</td><td>ขึ้นอยู่กับ pair</td></tr>
+<tr><td><strong>R²</strong></td><td>สัดส่วน variance ที่ X อธิบายได้</td><td>&gt; 0.85 สำหรับ good pair</td></tr>
+<tr><td><strong>p-value (β)</strong></td><td>มั่นใจแค่ไหนว่า β ≠ 0</td><td>&lt; 0.001 สำหรับ cointegrated pair</td></tr>
+<tr><td><strong>Residuals</strong></td><td>Spread = ส่วนที่ไม่สัมพันธ์กับ X — นี่คือสิ่งที่เราจะ trade</td><td>Mean ≈ 0, Stationary</td></tr>
+</table>
+
+<h3 id="s13-3">13.3 Rolling OLS — β ที่ Adaptive</h3>
+
+<p>β ไม่คงที่ตลอดเวลา ต้องอัปเดตสม่ำเสมอ</p>
+
+<div class="fm">from statsmodels.regression.rolling import RollingOLS
+
+<span class="c"># Rolling OLS window 60 วัน</span>
+window = 60
+X = sm.add_constant(log_bybit)
+
+rolling_model = RollingOLS(log_binance, X, window=window).fit()
+rolling_beta  = rolling_model.params['log_bybit']
+
+<span class="c"># สร้าง rolling spread</span>
+rolling_alpha = rolling_model.params['const']
+spread = log_binance - (rolling_alpha + rolling_beta * log_bybit)
+
+print(f"Beta range: {rolling_beta.dropna().min():.4f} to {rolling_beta.dropna().max():.4f}")
+print(f"Spread Std: {spread.std():.6f}")</div>
+
+<div class="bx ba">
+<div class="bt">window เลือกอย่างไร?</div>
+<ul>
+<li><strong>สั้นเกินไป</strong> (เช่น 10 วัน): β volatile มาก, noise สูง → signal ผิดพลาดบ่อย</li>
+<li><strong>ยาวเกินไป</strong> (เช่น 500 วัน): β ตอบสนองช้ามาก → พลาด regime change</li>
+<li><strong>ดี</strong>: window ≈ 3–5 เท่าของ half-life ของ spread — เรียนวิธีหา half-life ในบทที่ 14</li>
+</ul>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: สร้าง Z-score จาก OLS Residuals</div>
+<div class="fm">def build_spread(price_a, price_b, window=60):
+    """
+    สร้าง spread และ z-score จาก OLS rolling regression
+    ทำ 3 ขั้น: (1) หา beta → (2) สร้าง spread → (3) คำนวณ z-score
+    Returns: DataFrame ของ spread, beta, zscore
+    """
+    log_a = np.log(price_a)            <span class="c"># แปลงเป็น log price ทั้งคู่</span>
+    log_b = np.log(price_b)
+
+    <span class="c"># ── ขั้น 1: หา hedge ratio (beta) ด้วย rolling OLS ──</span>
+    X = sm.add_constant(log_b)         <span class="c"># เติมคอลัมน์ค่าคงที่ (intercept) ให้ regression</span>
+    roll = RollingOLS(log_a, X, window=window).fit()
+    beta  = roll.params.iloc[:, 1]     <span class="c"># สัมประสิทธิ์ของ log_b = hedge ratio</span>
+    alpha = roll.params['const']       <span class="c"># intercept</span>
+
+    <span class="c"># ── ขั้น 2: spread = ส่วนที่ "เหลือ" หลังหักความสัมพันธ์ออก ──</span>
+    predicted = alpha + beta * log_b   <span class="c"># ราคา A ที่ "ควรจะเป็น" ตามราคา B</span>
+    spread = log_a - predicted         <span class="c"># ของจริง - ที่ควรเป็น = ความเพี้ยน</span>
+
+    <span class="c"># ── ขั้น 3: z-score ของ spread (สูตรเดิมจาก Part I) ──</span>
+    roll_mean = spread.rolling(window).mean()
+    roll_std  = spread.rolling(window).std()
+    zscore    = (spread - roll_mean) / roll_std
+
+    return pd.DataFrame({
+        "spread": spread,
+        "beta":   beta,
+        "zscore": zscore
+    })
+
+df_pair = build_spread(
+    pd.Series(btc_bybit),
+    pd.Series(btc_binance),
+    window=60
+)
+print(df_pair.tail())
+print(f"\nCurrent Z-score: {df_pair['zscore'].iloc[-1]:.2f}")</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: interpret OLS output</summary>
+<div class="ans">
+<p>สมมติ OLS ของ AAPL บน MSFT ได้: α=0.5, β=0.72, R²=0.81, p(β)=0.000<br><br>
+แปลว่า:<br>
+• β=0.72: MSFT ขึ้น 1% → AAPL มักขึ้น 0.72% (AAPL volatile น้อยกว่า)<br>
+• R²=0.81: 81% ของความผันผวน AAPL อธิบายได้ด้วย MSFT — 19% ที่เหลือคือ spread<br>
+• Hedge: Long AAPL $100K → Short MSFT $72K<br>
+• p=0.000: β ≠ 0 แน่นอน (มีนัยสำคัญสูงมาก)<br>
+• Residual mean ≈ 0 → spread ไม่ drift → น่าจะ stationary (ต้องยืนยันด้วย ADF)</p>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 14 ===================== -->
+<h2 id="ch14">บทที่ 14: Cointegration &amp; Z-score Signal</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Correlation บอกว่าสองสิ่งเดินไปทิศเดียวกัน — Cointegration บอกว่าสองสิ่ง <em>ผูกกันระยะยาว</em> แม้ระยะสั้นจะแยกออกจากกันได้ Cointegration = ข้อพิสูจน์ว่า spread มีแรงดึงกลับจริง = basis ของ Statistical Arbitrage ทั้งหมด</div>
+</div>
+
+<h3 id="s14-1">14.1 Correlation vs Cointegration</h3>
+
+<table>
+<tr><th></th><th>Correlation สูง</th><th>Cointegrated</th></tr>
+<tr><td><strong>หมายถึง</strong></td><td>เดินทิศเดียวกันในระยะสั้น</td><td>ผูกกันในระยะยาว มี "แรงดึง"</td></tr>
+<tr><td><strong>Spread</strong></td><td>อาจ drift ออกไปเรื่อยๆ</td><td>กลับหาค่ากลางเสมอ</td></tr>
+<tr><td><strong>ตัวอย่าง</strong></td><td>หุ้นสอง sector เดียวกัน</td><td>BTC สองตลาด, ADR vs local</td></tr>
+<tr><td><strong>Trade ได้ไหม?</strong></td><td>เสี่ยง — spread อาจไม่กลับ</td><td>ใช่ — spread ต้องกลับ (ในทฤษฎี)</td></tr>
+</table>
+
+<h3 id="s14-2">14.2 Engle-Granger Test — 2 ขั้นตอน</h3>
+
+<p>วิธี Engle-Granger: (1) OLS หา residuals → (2) ADF test บน residuals</p>
+
+<div class="fm">from statsmodels.tsa.stattools import adfuller, coint
+
+<span class="c"># วิธีที่ 1: Engle-Granger ด้วย coint() โดยตรง</span>
+score, pvalue, crit_vals = coint(np.log(btc_bybit), np.log(btc_binance))
+
+print(f"Cointegration test:")
+print(f"  Test statistic: {score:.4f}")
+print(f"  p-value:        {pvalue:.4f}")
+print(f"  Critical (5%):  {crit_vals[1]:.4f}")
+
+if pvalue &lt; 0.05:
+    print(f"✓ COINTEGRATED — spread มีแรงดึงกลับจริง")
+else:
+    print(f"✗ NOT COINTEGRATED — อย่า trade pair นี้!")
+
+<span class="c"># วิธีที่ 2: ADF บน residuals (เข้าใจกระบวนการมากขึ้น)</span>
+log_a = np.log(btc_bybit)
+log_b = np.log(btc_binance)
+X = sm.add_constant(log_b)
+residuals = sm.OLS(log_a, X).fit().resid
+adf_resid = adfuller(residuals)
+print(f"\nADF on residuals p-value: {adf_resid[1]:.4f}")</div>
+
+<h3 id="s14-3">14.3 Johansen Test — สำหรับ 3+ Pairs</h3>
+
+<div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+<span class="c"># Johansen ทดสอบ cointegration ระหว่าง 3 series พร้อมกัน</span>
+btc_okx = 65000 + np.cumsum(np.random.normal(0, 100, n))  <span class="c"># ตลาดที่ 3</span>
+
+data = np.column_stack([np.log(btc_bybit), np.log(btc_binance), np.log(btc_okx)])
+result = coint_johansen(data, det_order=0, k_ar_diff=1)
+
+print("Johansen Trace Statistics:")
+for i in range(3):
+    trace_stat = result.lr1[i]
+    crit_5pct  = result.cvt[i, 1]
+    print(f"  r≤{i}: trace={trace_stat:.2f}, crit(5%)={crit_5pct:.2f} "
+          f"{'✓' if trace_stat &gt; crit_5pct else '✗'}")
+
+<span class="c"># r=0: ทดสอบว่ามีอย่างน้อย 1 cointegrating vector</span>
+<span class="c"># r≤1: ทดสอบว่ามีอย่างน้อย 2</span></div>
+
+<h3 id="s14-4">14.4 Half-Life — Spread กลับเร็วแค่ไหน?</h3>
+
+<p>Half-life คือเวลาที่ spread ใช้กลับมาครึ่งทางจากค่าสุดขั้ว — ใช้เลือก window และ holding period</p>
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Half-life</mtext><mo>=</mo><mfrac><mrow><mo>−</mo><mi>ln</mi><mo>⁡</mo><mo stretchy="false">(</mo><mn>2</mn><mo stretchy="false">)</mo></mrow><mrow><mi>ln</mi><mo>⁡</mo><mo stretchy="false">(</mo><mover accent="true"><mi>ϕ</mi><mo>^</mo></mover><mo stretchy="false">)</mo></mrow></mfrac><mo>≈</mo><mfrac><mrow><mo>−</mo><mi>ln</mi><mo>⁡</mo><mo stretchy="false">(</mo><mn>2</mn><mo stretchy="false">)</mo></mrow><mrow><mover accent="true"><mi>ϕ</mi><mo>^</mo></mover><mo>−</mo><mn>1</mn></mrow></mfrac></mrow><annotation encoding="application/x-tex">\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat{\phi}-1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">Half-life</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.5249em;vertical-align:-1.0979em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.1521em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop">ln</span><span class="mopen">(</span><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9579em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">ϕ</span></span><span style="top:-3.2634em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="mclose">)</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">−</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">ln</span><span class="mopen">(</span><span class="mord">2</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.0979em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.4693em;vertical-align:-1.0423em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.1521em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9579em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathnormal">ϕ</span></span><span style="top:-3.2634em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1667em;"><span class="mord">^</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1944em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">−</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">ln</span><span class="mopen">(</span><span class="mord">2</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.0423em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+<div class="fm">def calc_halflife(spread):
+    """คำนวณ half-life ของ mean-reverting spread"""
+    spread_lag = pd.Series(spread).shift(1)
+    delta      = pd.Series(spread) - spread_lag
+    df_hl = pd.DataFrame({"delta": delta, "lag": spread_lag}).dropna()
+
+    X = sm.add_constant(df_hl["lag"])
+    phi = sm.OLS(df_hl["delta"], X).fit().params["lag"]
+
+    if phi &gt;= 0:
+        return np.inf  <span class="c"># ไม่ mean-reverting (random walk หรือ explosive)</span>
+    if phi &lt;= -1:
+        return np.inf  <span class="c"># Oscillating — ไม่ใช่ mean-reverting จริง</span>
+    half_life = -np.log(2) / np.log(1 + phi)  <span class="c"># สูตรที่ถูกต้องสำหรับ AR(1)</span>
+    return half_life
+
+hl = calc_halflife(resid)
+print(f"Half-life: {hl:.1f} วัน")
+print(f"แนะนำ: rolling window ≈ {hl*3:.0f} วัน, hold ไม่เกิน {hl*2:.0f} วัน")</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Signal Generation Pipeline ครบวงจร</div>
+<div class="fm">def pair_signal(price_a, price_b, window=60,
+                entry_z=2.0, exit_z=0.5):
+    """
+    สร้าง trading signal สำหรับ pair trading
+    Returns: DataFrame พร้อม signal column
+    """
+    df = build_spread(price_a, price_b, window)
+    z  = df["zscore"]
+
+    signals = pd.Series("HOLD", index=z.index)
+    signals[z >  entry_z] = "SHORT_A_LONG_B"   <span class="c"># spread แพงเกิน</span>
+    signals[z &lt; -entry_z] = "LONG_A_SHORT_B"   <span class="c"># spread ถูกเกิน</span>
+    signals[abs(z) &lt; exit_z] = "EXIT"
+
+    df["signal"] = signals
+    <span class="c"># ⚠ สำคัญมาก: signal ที่ได้จาก df.index[t] ใช้ข้อมูลถึงวัน t</span>
+    <span class="c"># ต้อง .shift(1) ใน backtest ก่อน multiply ด้วย return เสมอ</span>
+    return df
+
+result = pair_signal(
+    pd.Series(btc_bybit),
+    pd.Series(btc_binance),
+    window=60, entry_z=2.0, exit_z=0.5
+)
+print(result[["spread","beta","zscore","signal"]].tail(10))</div>
+</div>
+
+
+<!-- ===================== CHAPTER 15 ===================== -->
+<h2 id="ch15">บทที่ 15: Optimization</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Optimization คือการหาค่าตัวแปร (เช่น portfolio weights, position size) ที่ทำให้ objective function (เช่น Sharpe ratio) ดีที่สุด ภายใต้ constraints (เช่น weights รวม = 1) Python ทำได้ด้วย <code>scipy.optimize.minimize</code></div>
+<div class="ki-eq"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><munder><mrow><mi>max</mi><mo>⁡</mo></mrow><mi mathvariant="bold">w</mi></munder><mtext>Sharpe</mtext><mo stretchy="false">(</mo><mi mathvariant="bold">w</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mrow><msup><mi mathvariant="bold">w</mi><mi mathvariant="normal">⊤</mi></msup><mi mathvariant="bold-italic">μ</mi><mo>−</mo><msub><mi>r</mi><mi>f</mi></msub></mrow><msqrt><mrow><msup><mi mathvariant="bold">w</mi><mi mathvariant="normal">⊤</mi></msup><mi mathvariant="bold">Σ</mi><mi mathvariant="bold">w</mi></mrow></msqrt></mfrac><mspace width="1em"/><mtext>s.t.</mtext><mo>∑</mo><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mtext> </mtext><msub><mi>w</mi><mi>i</mi></msub><mo>≥</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\max_{\mathbf{w}} \text{Sharpe}(\mathbf{w}) = \frac{\mathbf{w}^\top \boldsymbol{\mu} - r_f}{\sqrt{\mathbf{w}^\top \boldsymbol{\Sigma} \mathbf{w}}} \quad \text{s.t.} \sum w_i = 1,\ w_i \geq 0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.45em;vertical-align:-0.7em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.4306em;"><span style="top:-2.4em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathbf mtight" style="margin-right:0.016em;">w</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">max</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">Sharpe</span></span><span class="mopen">(</span><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.4561em;vertical-align:-0.93em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5261em;"><span style="top:-2.1374em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9726em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord"><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7751em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span><span class="mord"><span class="mord"><span class="mord mathbf">Σ</span></span></span><span class="mord mathbf" style="margin-right:0.016em;">w</span></span></span><span style="top:-2.9326em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.0674em;"><span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span><span class="mord"><span class="mord"><span class="mord boldsymbol">μ</span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.93em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord">s.t.</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop op-symbol large-op" style="position:relative;top:0em;">∑</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span></span></span></span></span></div>
+</div>
+
+<h3 id="s15-1">15.1 scipy.optimize.minimize — API</h3>
+
+<div class="fm">from scipy.optimize import minimize
+import numpy as np
+
+<span class="c"># สมมติว่าต้องการหา x ที่ทำให้ f(x) = (x-3)^2 น้อยที่สุด</span>
+def f(x):
+    return (x[0] - 3)**2
+
+result = minimize(f, x0=[0], method="SLSQP")
+print(f"Optimal x: {result.x[0]:.4f}  (คาดหวัง: 3.0)")
+print(f"Min f(x):  {result.fun:.6f}")
+print(f"Success:   {result.success}")</div>
+
+<h3 id="s15-2">15.2 Sharpe Ratio Maximization</h3>
+
+<div class="fm">def sharpe_maximize(returns_df, risk_free=0.0, periods=252):
+    """
+    หา portfolio weights ที่ maximize Sharpe ratio
+    returns_df: DataFrame ของ daily returns (cols = assets)
+    """
+    n = len(returns_df.columns)
+    mu    = returns_df.mean().values * periods        <span class="c"># annualized mean</span>
+    sigma = returns_df.cov().values * periods         <span class="c"># annualized cov</span>
+
+    def neg_sharpe(weights):
+        """คืนค่า negative Sharpe (minimize = maximize Sharpe)"""
+        port_ret = weights @ mu
+        port_var = weights @ sigma @ weights
+        return -(port_ret - risk_free) / np.sqrt(port_var)
+
+    <span class="c"># Constraints</span>
+    constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]  <span class="c"># sum = 1</span>
+    bounds      = [(0, 1)] * n                                        <span class="c"># no short</span>
+    x0          = np.ones(n) / n                                      <span class="c"># equally weighted start</span>
+
+    result = minimize(neg_sharpe, x0,
+                      method="SLSQP",
+                      bounds=bounds,
+                      constraints=constraints)
+
+    if not result.success:
+        print("Warning: optimizer did not converge")
+
+    weights = result.x
+    port_ret = weights @ mu
+    port_vol = np.sqrt(weights @ sigma @ weights)
+
+    print("=== Max Sharpe Portfolio ===")
+    for name, w in zip(returns_df.columns, weights):
+        print(f"  {name}: {w:.1%}")
+    print(f"  Expected Return: {port_ret:.1%}/yr")
+    print(f"  Volatility:      {port_vol:.1%}/yr")
+    print(f"  Sharpe Ratio:    {(port_ret-risk_free)/port_vol:.2f}")
+    return weights
+
+<span class="c"># ทดสอบ</span>
+np.random.seed(0)
+rets = pd.DataFrame(np.random.multivariate_normal(
+    [0.001, 0.0007, 0.0012],
+    [[0.0004, 0.0002, 0.0001],
+     [0.0002, 0.0003, 0.0001],
+     [0.0001, 0.0001, 0.0005]], 252),
+    columns=["BTC","ETH","SOL"])
+
+optimal_w = sharpe_maximize(rets)</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 ฝึกอ่าน 2 ท่อนที่ดูลึกลับที่สุดในโค้ดข้างบน</div>
+<div class="ad-code"><span class="c"># ท่อนที่ 1</span>
+port_ret = weights @ mu
+<span class="c"># ท่อนที่ 2</span>
+constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]</div>
+<div class="ad-steps">
+<p><strong>ท่อนที่ 1:</strong> เครื่องหมาย <code>@</code> คือ "คูณแบบเวกเตอร์/เมทริกซ์" — <code>weights @ mu</code> อ่านว่า "เอาน้ำหนักแต่ละตัว คูณ return คาดหวังของ asset นั้น แล้วบวกรวมกัน" เท่ากับเขียน loop เองว่า:</p>
+<div style="font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:10px 14px;border-radius:6px;font-size:.85em;line-height:1.6;white-space:pre">port_ret = 0
+for w, m in zip(weights, mu):
+    port_ret = port_ret + w * m</div>
+<p style="margin-top:8px"><strong>ท่อนที่ 2:</strong> อ่านจากในออกนอก:</p>
+<ol>
+<li><code>lambda w: np.sum(w) - 1</code> — ฟังก์ชันจิ๋ว: "รับ w มา แล้วคืนค่า ผลรวมของ w ลบ 1"</li>
+<li><code>"type": "eq"</code> — บอก optimizer ว่าค่าที่ฟังก์ชันนี้คืน <strong>ต้องเท่ากับ 0</strong> → แปลว่า sum(w) - 1 = 0 → sum(w) = 1 = "ลงทุนเต็มพอดี ไม่ขาดไม่เกิน"</li>
+<li><code>[ { ... } ]</code> — เป็น list ของ dict เพราะใส่ได้หลายเงื่อนไข (scipy กำหนดรูปแบบนี้)</li>
+</ol>
+<p>นี่คือ "ภาษาเฉพาะ" ของ scipy — เจอครั้งแรกทุกคนงง พออ่านออกแล้วจะเห็นว่ามันแค่บอกว่า <em>"เงื่อนไข: น้ำหนักรวมกันต้องเป็น 1"</em></p>
+</div>
+</div>
+
+<h3 id="s15-3">15.3 Kelly Criterion — Optimal Position Size</h3>
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>f</mi><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi>μ</mi><mo>−</mo><msub><mi>r</mi><mi>f</mi></msub></mrow><msup><mi>σ</mi><mn>2</mn></msup></mfrac><mspace width="2em"/><mtext>(continuous Kelly)</mtext></mrow><annotation encoding="application/x-tex">f^* = \frac{\mu - r_f}{\sigma^2} \qquad \text{(continuous Kelly)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9331em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7387em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mbin mtight">∗</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.9463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.2603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">σ</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">μ</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord text"><span class="mord">(continuous Kelly)</span></span></span></span></span></span>
+
+<div class="fm">def kelly_fraction(mean_ret, std_ret, risk_free=0.0, fraction=0.25):
+    """
+    คำนวณ Kelly fraction สำหรับ continuous distribution
+    fraction: ใช้ 0.25 (Quarter-Kelly) เพื่อความปลอดภัย
+    """
+    kelly_full = (mean_ret - risk_free) / (std_ret ** 2)
+    kelly_frac = kelly_full * fraction
+
+    print(f"Full Kelly:    {kelly_full:.2f}x")
+    print(f"Quarter Kelly: {kelly_frac:.2f}x  ← แนะนำ")
+    return kelly_frac
+
+<span class="c"># ตัวอย่าง: กลยุทธ์ที่มี Sharpe = 1.5</span>
+daily_mean = 0.001      <span class="c"># 0.1% ต่อวัน</span>
+daily_std  = 0.015      <span class="c"># 1.5% ต่อวัน</span>
+f = kelly_fraction(daily_mean, daily_std)</div>
+
+<div class="bx bb">
+<div class="bt">Kelly ที่ใช้ที่นี่ = Continuous Kelly (สำหรับ return กระจาย Normal)</div>
+<p>สูตร <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>f</mi><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi>μ</mi><mo>−</mo><msub><mi>r</mi><mi>f</mi></msub></mrow><msup><mi>σ</mi><mn>2</mn></msup></mfrac></mrow><annotation encoding="application/x-tex">f^* = \frac{\mu - r_f}{\sigma^2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6887em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mbin mtight">∗</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.2664em;vertical-align:-0.345em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9214em;"><span style="top:-2.655em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">σ</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7463em;"><span style="top:-2.786em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.5131em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">μ</span><span class="mbin mtight">−</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3488em;margin-left:-0.0278em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2901em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span> เหมาะกับ asset ที่ return กระจายแบบ Normal distribution ต่อเนื่อง<br>
+สำหรับ <strong>discrete bet</strong> เช่น Binary outcome (win ได้ b เท่า, lose 1): <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>f</mi><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi>p</mi><mi>b</mi><mo>−</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>p</mi><mo stretchy="false">)</mo></mrow><mi>b</mi></mfrac></mrow><annotation encoding="application/x-tex">f^* = \frac{pb - (1-p)}{b}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6887em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mbin mtight">∗</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.355em;vertical-align:-0.345em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.01em;"><span style="top:-2.655em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.485em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">b</span><span class="mbin mtight">−</span><span class="mopen mtight">(</span><span class="mord mtight">1</span><span class="mbin mtight">−</span><span class="mord mathnormal mtight">p</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span><br><br>
+ใน Quant Trading ส่วนใหญ่ใช้ continuous Kelly หรือบ่อยกว่านั้นใช้ <strong>Half Kelly (f*/2) หรือ Quarter Kelly (f*/4)</strong> เพราะ:<br>
+• Return จริงไม่ Normal (fat tail)<br>
+• Estimate μ และ σ มี error เสมอ<br>
+• Full Kelly มี drawdown รุนแรงมากในช่วง streak ของ losing trades</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">อย่าใช้ Full Kelly ในทางปฏิบัติ</div>
+<p>Full Kelly maximize geometric growth ในทฤษฎี แต่ในทางปฏิบัติ:<br>
+• ประมาณ parameters จากข้อมูลมีความผิดพลาด → Full Kelly อาจ oversize มาก<br>
+• Drawdown จาก Full Kelly ใหญ่มาก (50%+ เป็นปกติ) → ทนไม่ไหว<br>
+<strong>ใช้ Quarter-Kelly (f*/4) เป็นจุดเริ่มต้น — เรียนเพิ่มใน Part IV</strong></p>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Mean-Variance Optimization (Efficient Frontier)</div>
+<div class="fm">def efficient_frontier(returns_df, n_points=100):
+    """
+    สร้าง efficient frontier:
+    สำหรับ return เป้าหมายแต่ละระดับ → หาพอร์ตที่ vol ต่ำสุด
+    """
+    n = len(returns_df.columns)
+    mu    = returns_df.mean().values * 252   <span class="c"># expected return รายปี</span>
+    sigma = returns_df.cov().values * 252    <span class="c"># covariance รายปี</span>
+
+    <span class="c"># ไล่ return เป้าหมาย จากต่ำสุดถึงสูงสุด เป็น n_points จุด</span>
+    target_returns = np.linspace(mu.min(), mu.max(), n_points)
+
+    def portfolio_variance(w):
+        """สิ่งที่ต้องการ minimize: ความแปรปรวนของพอร์ต"""
+        return w @ sigma @ w
+
+    frontier_vols = []                       <span class="c"># เก็บ vol ต่ำสุดของแต่ละเป้า</span>
+    for target in target_returns:
+        <span class="c"># เงื่อนไข 1: น้ำหนักรวม = 1 (ลงทุนเต็มพอดี)</span>
+        sum_to_one = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+
+        <span class="c"># เงื่อนไข 2: return ของพอร์ต = target ของรอบนี้</span>
+        <span class="c"># (t=target จำเป็น! ดูกล่องกับดักด้านล่าง)</span>
+        hit_target = {"type": "eq", "fun": lambda w, t=target: w @ mu - t}
+
+        result = minimize(portfolio_variance,
+                          x0=np.ones(n) / n,        <span class="c"># เริ่มจากน้ำหนักเท่ากันทุกตัว</span>
+                          method="SLSQP",
+                          bounds=[(0, 1)] * n,      <span class="c"># ห้าม short (0 ≤ w ≤ 1)</span>
+                          constraints=[sum_to_one, hit_target])
+
+        if result.success:
+            min_vol = np.sqrt(result.fun)    <span class="c"># ได้ variance ต่ำสุด → ถอดรากเป็น vol</span>
+        else:
+            min_vol = np.nan                 <span class="c"># แก้ไม่ได้ (เป้าสูง/ต่ำเกิน) → เว้นจุดนี้</span>
+        frontier_vols.append(min_vol)
+
+    return target_returns, np.array(frontier_vols)
+
+rets_arr, vols_arr = efficient_frontier(rets)
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(vols_arr, rets_arr, color="#0d9488", linewidth=2, label="Efficient Frontier")
+ax.set_xlabel("Annual Volatility")
+ax.set_ylabel("Annual Return")
+ax.set_title("Efficient Frontier (BTC, ETH, SOL)")
+ax.legend()
+plt.tight_layout()
+plt.show()</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠ กับดัก lambda ใน loop — ทำไมต้องเขียน <code>lambda w, t=target</code></div>
+<p>ถ้าเขียน <code>lambda w: w @ mu - target</code> เฉย ๆ — lambda จะ "จำชื่อตัวแปร" ไม่ใช่ "จำค่า" พอ loop จบ <code>target</code> ชี้ไปที่ค่าสุดท้ายแล้ว ทุก lambda ที่สร้างไว้จะใช้ค่าเดียวกันหมด → frontier ผิดทั้งเส้นแบบเงียบ ๆ ไม่มี error<br><br>
+ท่า <code>t=target</code> คือการ "ถ่ายสำเนาค่า ณ รอบนั้น" เก็บไว้ใน t ของ lambda ตัวนั้นเอง — นี่เป็นกับดัก Python คลาสสิกที่แม้แต่ AI ยังเขียนพลาดเป็นครั้งคราว <strong>เจอ lambda ใน loop เมื่อไหร่ ให้มองหา <code>=</code> แบบนี้เสมอ</strong></p>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: Minimize Portfolio Variance (Min-Vol Portfolio)</summary>
+<div class="ans">
+<div class="fm">def min_variance_portfolio(returns_df):
+    """หา portfolio ที่มี variance ต่ำที่สุด"""
+    n = len(returns_df.columns)
+    sigma = returns_df.cov().values * 252
+
+    result = minimize(
+        lambda w: w @ sigma @ w,
+        x0=np.ones(n)/n,
+        method="SLSQP",
+        bounds=[(0, 1)]*n,
+        constraints=[{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
+    )
+
+    w = result.x
+    vol = np.sqrt(w @ sigma @ w)
+    print("Min Variance Portfolio:")
+    for name, wi in zip(returns_df.columns, w):
+        print(f"  {name}: {wi:.1%}")
+    print(f"  Annual Vol: {vol:.1%}")
+    return w
+
+min_variance_portfolio(rets)</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 16 ===================== -->
+<h2 id="ch16">บทที่ 16: Linear Programming</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Linear Programming (LP) คือ optimization ที่ทั้ง objective function และ constraints เป็น linear — เร็วกว่า nonlinear optimization มาก ใช้ใน Quant สำหรับ: กำหนด portfolio weight ภายใต้หลาย constraint พร้อมกัน, minimize transaction cost, sizing หลาย position พร้อมกัน</div>
+<div class="ki-eq"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><mi mathvariant="bold">w</mi></munder><mtext> </mtext><msup><mi mathvariant="bold">c</mi><mi mathvariant="normal">⊤</mi></msup><mi mathvariant="bold">w</mi><mspace width="1em"/><mtext>s.t. </mtext><mi mathvariant="bold">A</mi><mi mathvariant="bold">w</mi><mo>≤</mo><mi mathvariant="bold">b</mi><mo separator="true">,</mo><mtext> </mtext><msub><mi mathvariant="bold">A</mi><mrow><mi>e</mi><mi>q</mi></mrow></msub><mi mathvariant="bold">w</mi><mo>=</mo><msub><mi mathvariant="bold">b</mi><mrow><mi>e</mi><mi>q</mi></mrow></msub><mo separator="true">,</mo><mtext> </mtext><mrow><mi mathvariant="bold">l</mi><mi mathvariant="bold">b</mi></mrow><mo>≤</mo><mi mathvariant="bold">w</mi><mo>≤</mo><mrow><mi mathvariant="bold">u</mi><mi mathvariant="bold">b</mi></mrow></mrow><annotation encoding="application/x-tex">\min_{\mathbf{w}}\ \mathbf{c}^\top \mathbf{w} \quad \text{s.t.}\ \mathbf{A}\mathbf{w} \leq \mathbf{b},\ \mathbf{A}_{eq}\mathbf{w} = \mathbf{b}_{eq},\ \mathbf{lb} \leq \mathbf{w} \leq \mathbf{ub}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5991em;vertical-align:-0.7em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.4em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathbf mtight" style="margin-right:0.016em;">w</span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7em;"><span></span></span></span></span></span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8991em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">⊤</span></span></span></span></span></span></span></span><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord">s.t.</span></span><span class="mspace"> </span><span class="mord mathbf" style="margin-right:0.016em;">Aw</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathbf">b</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">lb</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mord mathbf" style="margin-right:0.016em;">w</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord"><span class="mord mathbf">ub</span></span></span></span></span></span></div>
+</div>
+
+<h3 id="s16-1">16.1 scipy.linprog — API</h3>
+
+<div class="fm">from scipy.optimize import linprog
+
+<span class="c"># ตัวอย่างง่าย: minimize cost ของการซื้อ 3 assets</span>
+<span class="c"># minimize: 2*w1 + 3*w2 + 1.5*w3</span>
+<span class="c"># subject to: w1+w2+w3 = 1 (fully invested)</span>
+<span class="c">#             w1 >= 0.1 (min 10% BTC)</span>
+<span class="c">#             w2 >= 0.1 (min 10% ETH)</span>
+
+c   = [2.0, 3.0, 1.5]                   <span class="c"># objective: cost coefficients</span>
+A_eq = [[1, 1, 1]]                       <span class="c"># equality: sum = 1</span>
+b_eq = [1]
+bounds = [(0.1, 0.6), (0.1, 0.5), (0, 0.8)]  <span class="c"># min/max ของแต่ละ w</span>
+
+result = linprog(c, A_eq=A_eq, b_eq=b_eq,
+                 bounds=bounds, method="highs")
+
+print(f"Optimal weights: {result.x.round(3)}")
+print(f"Minimum cost:    {result.fun:.4f}")
+print(f"Success: {result.success}")</div>
+
+<h3 id="s16-2">16.2 Portfolio LP — ใส่ Constraints หลายอย่างพร้อมกัน</h3>
+
+<div class="fm">from scipy.optimize import linprog
+import numpy as np
+
+def lp_portfolio(expected_returns, min_return=0.10,
+                 max_weights=None, min_weights=None,
+                 max_sector=None, sectors=None):
+    """
+    Minimize portfolio variance (approximated as linear)
+    ด้วย LP — เหมาะสำหรับ constraint-heavy problem
+
+    expected_returns: array ของ expected annual return แต่ละ asset
+    min_return: minimum portfolio return ที่ต้องการ
+    """
+    n = len(expected_returns)
+
+    <span class="c"># Objective: minimize negative return (= maximize return)</span>
+    <span class="c"># Linear approximation — ใช้สำหรับ constraint-heavy problems</span>
+    c = -np.array(expected_returns)
+
+    <span class="c"># Equality: sum(w) = 1</span>
+    A_eq = [np.ones(n)]
+    b_eq = [1.0]
+
+    <span class="c"># Inequality: min return constraint</span>
+    <span class="c"># w @ returns >= min_return  →  -w @ returns <= -min_return</span>
+    A_ub = [-np.array(expected_returns)]
+    b_ub = [-min_return]
+
+    <span class="c"># Bounds: default 0–1 (long only)</span>
+    if min_weights is None: min_weights = [0.0] * n
+    if max_weights is None: max_weights = [1.0] * n
+    bounds = list(zip(min_weights, max_weights))
+
+    result = linprog(c, A_ub=A_ub, b_ub=b_ub,
+                     A_eq=A_eq, b_eq=b_eq,
+                     bounds=bounds, method="highs")
+
+    return result
+
+<span class="c"># ตัวอย่าง: 5 assets</span>
+assets  = ["BTC", "ETH", "SOL", "AAPL", "GOLD"]
+returns = [0.35,  0.25,  0.40,  0.12,   0.08]
+
+result = lp_portfolio(
+    returns,
+    min_return  = 0.20,
+    min_weights = [0.05]*5,      <span class="c"># min 5% ทุก asset</span>
+    max_weights = [0.40]*5,      <span class="c"># max 40% ทุก asset</span>
+)
+
+print("LP Portfolio Allocation:")
+for asset, w in zip(assets, result.x):
+    print(f"  {asset:5s}: {w:.1%}")
+print(f"Expected Return: {np.dot(result.x, returns):.1%}")</div>
+
+<h3 id="s16-3">16.3 PuLP — สำหรับ Integer Programming</h3>
+
+<div class="fm"><span class="c"># pip install pulp</span>
+from pulp import *
+
+<span class="c"># Integer LP: เลือก k หุ้นดีที่สุดจาก n ตัว</span>
+scores = {"BTC": 0.85, "ETH": 0.70, "SOL": 0.60,
+          "AAPL": 0.55, "GOLD": 0.40}
+costs  = {"BTC": 5000, "ETH": 2000, "SOL": 500,
+          "AAPL": 1000, "GOLD": 800}
+budget = 8000   <span class="c"># งบ 8000 บาท</span>
+
+prob = LpProblem("SelectAssets", LpMaximize)
+
+<span class="c"># ตัวแปร binary: 1=เลือก, 0=ไม่เลือก</span>
+x = {a: LpVariable(f"x_{a}", cat="Binary") for a in scores}
+
+<span class="c"># Objective: maximize total score</span>
+prob += lpSum(scores[a] * x[a] for a in scores)
+
+<span class="c"># Constraints</span>
+prob += lpSum(costs[a] * x[a] for a in scores) &lt;= budget  <span class="c"># budget</span>
+prob += lpSum(x[a] for a in scores) &lt;= 3                   <span class="c"># เลือกได้ max 3 ตัว</span>
+
+prob.solve(PULP_CBC_CMD(msg=0))
+
+print("Selected assets:")
+for a in scores:
+    if x[a].value() == 1:
+        print(f"  {a}: score={scores[a]}, cost={costs[a]}")</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Position Sizing LP สำหรับ Pair Trading</div>
+<div class="fm"><span class="c"># กำหนด: มี 3 pairs พร้อม trade, capital จำกัด</span>
+<span class="c"># objective: maximize expected PnL</span>
+<span class="c"># constraints: total capital, max drawdown per pair, correlation limit</span>
+
+pairs       = ["BTC-Bybit/Binance", "ETH-OKX/Bybit", "SOL-Binance/OKX"]
+exp_pnl     = [0.15, 0.12, 0.20]   <span class="c"># expected annual return</span>
+max_dd      = [0.05, 0.08, 0.10]   <span class="c"># max expected drawdown</span>
+capital     = 1_000_000             <span class="c"># total capital บาท</span>
+
+<span class="c"># Minimize negative PnL = maximize PnL</span>
+c   = [-e for e in exp_pnl]         <span class="c"># negate for minimization</span>
+
+<span class="c"># sum(allocation) = 1.0 (fully allocated)</span>
+A_eq = [[1, 1, 1]]
+b_eq = [1.0]
+
+<span class="c"># เงื่อนไข: drawdown ที่คาดของแต่ละ pair ≤ 5% ของ capital</span>
+<span class="c"># allocation_i × max_dd_i ≤ 0.05 — แยกกันทีละ pair = matrix แนวทแยง</span>
+A_ub = np.diag(max_dd)      <span class="c"># [[0.05, 0,    0   ],</span>
+                            <span class="c">#  [0,    0.08, 0   ],</span>
+                            <span class="c">#  [0,    0,    0.10]]</span>
+b_ub = [0.05] * 3
+
+bounds = [(0.0, 0.5)] * 3   <span class="c"># max 50% ต่อ pair</span>
+
+result = linprog(c, A_ub=A_ub, b_ub=b_ub,
+                 A_eq=A_eq, b_eq=b_eq,
+                 bounds=bounds, method="highs")
+
+print("Optimal Position Sizing:")
+for pair, alloc in zip(pairs, result.x):
+    print(f"  {pair}: {alloc:.1%} = ฿{alloc*capital:,.0f}")
+print(f"Expected Portfolio Return: {-result.fun:.1%}")</div>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 AI มักสร้าง matrix แนวทแยงด้วย nested comprehension — ฝึกอ่าน</div>
+<div class="ad-code">A_ub = [[max_dd[i] if j==i else 0 for j in range(3)] for i in range(3)]</div>
+<div class="ad-steps">
+<p>comprehension ซ้อนสองชั้น — อ่าน<strong>จากขวา (ชั้นนอก) เข้าซ้าย (ชั้นใน)</strong>:</p>
+<ol>
+<li><code>for i in range(3)</code> (ชั้นนอก, ขวาสุด) — สร้าง 3 แถว แถวละหนึ่ง i</li>
+<li><code>for j in range(3)</code> (ชั้นใน) — แต่ละแถวมี 3 ช่อง ช่องละหนึ่ง j</li>
+<li><code>max_dd[i] if j==i else 0</code> — แต่ละช่อง: "เอาค่า max_dd <strong>ถ้า</strong>อยู่บนเส้นทแยง (แถว=คอลัมน์) <strong>ไม่งั้น</strong>ใส่ 0"</li>
+</ol>
+<p>ผลคือ matrix เดียวกับ <code>np.diag(max_dd)</code> เป๊ะ — เวอร์ชัน np.diag สั้นกว่า อ่านง่ายกว่า และผิดยากกว่า ถ้า AI เขียนแบบ nested มา ขอให้มันแก้เป็น np.diag ได้เลย</p>
+</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: LP Constraint สำหรับ Sector Limits</summary>
+<div class="ans">
+<div class="fm"><span class="c"># 6 assets ใน 2 sectors: Crypto (BTC,ETH,SOL) และ Tech (AAPL,MSFT,NVDA)</span>
+assets  = ["BTC","ETH","SOL","AAPL","MSFT","NVDA"]
+returns = [0.40, 0.30, 0.50, 0.15, 0.18, 0.25]
+
+<span class="c"># Crypto = assets 0,1,2 / Tech = assets 3,4,5</span>
+crypto = [1,1,1,0,0,0]
+tech   = [0,0,0,1,1,1]
+
+c    = [-r for r in returns]
+A_eq = [[1]*6]
+b_eq = [1.0]
+
+<span class="c"># Sector limits: Crypto ≤ 60%, Tech ≤ 60%</span>
+A_ub = [crypto, tech]
+b_ub = [0.60, 0.60]
+bounds = [(0.0, 0.4)] * 6   <span class="c"># max 40% per asset</span>
+
+res = linprog(c, A_ub=A_ub, b_ub=b_ub,
+              A_eq=A_eq, b_eq=b_eq,
+              bounds=bounds, method="highs")
+
+for a, w in zip(assets, res.x):
+    print(f"  {a}: {w:.1%}")
+print(f"Crypto total: {sum(res.x[:3]):.1%}  Tech total: {sum(res.x[3:]):.1%}")</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 17 ===================== -->
+<h2 id="ch17">บทที่ 17: Signals &amp; Filters</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Signal คือ "เมื่อไหร่ควร trade" — บทนี้รวม 3 เครื่องมือ: <strong>Bollinger Bands</strong> (signal จาก volatility), <strong>Kalman Filter</strong> (track β แบบ adaptive), และ <strong>Signal Pipeline</strong> (รวมหลาย signal เข้าด้วยกัน) ซึ่งเป็น boilerplate ที่ใช้ได้กับทุก strategy</div>
+</div>
+
+<h3 id="s17-1">17.1 Bollinger Bands — Signal จาก Volatility</h3>
+
+<div class="fm">def bollinger_bands(series, window=20, n_std=2):
+    """คำนวณ Bollinger Bands"""
+    s    = pd.Series(series)
+    mean = s.rolling(window).mean()
+    std  = s.rolling(window).std()
+    upper = mean + n_std * std
+    lower = mean - n_std * std
+    return pd.DataFrame({"mid": mean, "upper": upper, "lower": lower,
+                          "pct_b": (s - lower) / (upper - lower)})
+
+<span class="c"># pct_b: 0 = ที่ lower band, 1 = ที่ upper band</span>
+<span class="c"># signal: SHORT เมื่อ pct_b > 1, LONG เมื่อ pct_b < 0</span>
+bb = bollinger_bands(spread, window=20, n_std=2)
+signal = pd.Series("HOLD", index=bb.index)
+signal[bb["pct_b"] &gt; 1.0] = "SHORT"
+signal[bb["pct_b"] &lt; 0.0] = "LONG"</div>
+
+<h3 id="s17-2">17.2 Kalman Filter — Track β แบบ Adaptive</h3>
+
+<p>Kalman Filter ประมาณ β แบบ real-time โดยอัปเดตทุกครั้งที่มีข้อมูลใหม่ — ดีกว่า rolling OLS ตรงที่ไม่มี window cutoff และ smooth กว่า</p>
+
+<div class="bx bb">
+<div class="bt">Kalman Filter ทำงานสองจังหวะ — "เดา แล้วแก้เดา" ซ้ำไปเรื่อย ๆ</div>
+<p>ลองนึกถึงการเดาน้ำหนักเพื่อนทุกครั้งที่เจอกัน:<br>
+<strong>จังหวะ 1 — เดา (Predict):</strong> "วันนี้น่าจะหนักเท่าเดิมจากครั้งก่อน แต่เวลาผ่านไปแล้ว ความมั่นใจของเราลดลงนิดหน่อย"<br>
+<strong>จังหวะ 2 — แก้เดา (Update):</strong> เห็นข้อมูลใหม่ (เพื่อนตัวจริง) → เทียบกับที่เดา → ถ้าต่างกัน ขยับคำเดาเข้าหาความจริง <em>ตามสัดส่วนความมั่นใจ</em> — มั่นใจคำเดาเดิมมากก็ขยับนิดเดียว ไม่มั่นใจก็ขยับเยอะ<br><br>
+ตัวเลข "สัดส่วนการขยับ" นี้คือ <strong>Kalman Gain (K)</strong> — หัวใจของทั้ง algorithm มีแค่นี้</p>
+</div>
+
+<div class="fm">def kalman_hedge_ratio(price_a, price_b,
+                        delta=1e-4, vt=1e-3):
+    """
+    Track hedge ratio beta ด้วย Kalman Filter
+    delta: process noise (ใหญ่ = ยอมให้ beta เปลี่ยนเร็ว)
+    vt:    observation noise (ใหญ่ = ราคามี noise มาก เชื่อข้อมูลใหม่น้อยลง)
+    Returns: array ของ beta ณ แต่ละเวลา
+    """
+    n       = len(price_a)
+    beta    = np.zeros(n)     <span class="c"># เตรียมที่เก็บ beta ของทุกวัน</span>
+    P       = np.ones(n)      <span class="c"># P = "ความไม่มั่นใจ" ในค่า beta (variance ของคำเดา)</span>
+    beta[0] = 1.0             <span class="c"># วันแรก: เดาไว้ก่อนว่า beta = 1</span>
+
+    for t in range(1, n):
+        <span class="c"># ── จังหวะ 1: เดา (Predict) ──</span>
+        <span class="c"># beta วันนี้น่าจะเท่าเมื่อวาน แต่ความไม่มั่นใจเพิ่มขึ้นตาม delta</span>
+        P_pred = P[t-1] + delta
+
+        <span class="c"># ── จังหวะ 2: แก้เดา (Update) ด้วยข้อมูลใหม่ ──</span>
+        x = price_b[t]              <span class="c"># ราคาตลาด B วันนี้ (ตัวพยากรณ์)</span>
+
+        y_pred = beta[t-1] * x      <span class="c"># ราคา A "ที่ควรเป็น" ตามคำเดาเดิม</span>
+        innov  = price_a[t] - y_pred  <span class="c"># ของจริง - ที่เดา = "เดาพลาดเท่าไหร่"</span>
+
+        S = x**2 * P_pred + vt      <span class="c"># ความแปรปรวนรวมของความพลาด</span>
+                                    <span class="c"># (จากความไม่มั่นใจใน beta + noise ของราคา)</span>
+        K = P_pred * x / S          <span class="c"># Kalman Gain: "ควรขยับคำเดากี่ %"</span>
+                                    <span class="c"># ไม่มั่นใจมาก (P สูง) → K ใหญ่ → ขยับเยอะ</span>
+                                    <span class="c"># ราคา noise มาก (vt สูง) → K เล็ก → ขยับนิดเดียว</span>
+
+        beta[t] = beta[t-1] + K * innov   <span class="c"># ขยับ beta เข้าหาความจริง ตามสัดส่วน K</span>
+        P[t]    = (1 - K * x) * P_pred    <span class="c"># แก้เดาแล้ว → ความมั่นใจเพิ่มขึ้น (P ลดลง)</span>
+
+    return beta
+
+<span class="c"># ทดสอบ</span>
+log_a = np.log(btc_bybit)
+log_b = np.log(btc_binance)
+kf_beta = kalman_hedge_ratio(log_a, log_b)
+
+print(f"Kalman Beta (latest 5): {kf_beta[-5:].round(6)}")</div>
+
+<h3 id="s17-3">17.3 Signal Pipeline — รวมทุกอย่างเข้าด้วยกัน</h3>
+
+<div class="fm">class PairTradingSignal:
+    """
+    Signal pipeline สำหรับ Pair Trading
+    รวม: OLS hedge ratio, z-score, Bollinger filter
+    """
+    def __init__(self, window=60, entry_z=2.0, exit_z=0.5):
+        self.window   = window
+        self.entry_z  = entry_z
+        self.exit_z   = exit_z
+
+    def fit(self, price_a: pd.Series, price_b: pd.Series):
+        """ประมาณ parameters จากข้อมูลประวัติ"""
+        self.price_a = price_a
+        self.price_b = price_b
+
+        <span class="c"># OLS spread</span>
+        self.df = build_spread(price_a, price_b, self.window)
+
+        <span class="c"># Half-life</span>
+        self.halflife = calc_halflife(self.df["spread"].dropna())
+        print(f"Half-life: {self.halflife:.1f} วัน")
+
+        <span class="c"># ADF test</span>
+        adf_p = adfuller(self.df["spread"].dropna())[1]
+        self.is_stationary = adf_p &lt; 0.05
+        print(f"Stationary: {self.is_stationary} (p={adf_p:.3f})")
+        return self
+
+    def signal(self) -> pd.Series:
+        """สร้าง trading signal"""
+        z = self.df["zscore"]
+        sig = pd.Series("HOLD", index=z.index)
+        sig[z &gt;  self.entry_z] = "SHORT_A"
+        sig[z &lt; -self.entry_z] = "LONG_A"
+        sig[abs(z) &lt; self.exit_z] = "EXIT"
+        return sig
+
+    def summary(self):
+        """แสดง summary ของ current state"""
+        current_z = self.df["zscore"].iloc[-1]
+        current_b = self.df["beta"].iloc[-1]
+        sig = self.signal().iloc[-1]
+        print(f"=== Pair Signal Summary ===")
+        print(f"Current Z-score: {current_z:.3f}")
+        print(f"Current Beta:    {current_b:.6f}")
+        print(f"Signal:          {sig}")
+        print(f"Is Stationary:   {self.is_stationary}")
+
+<span class="c"># ใช้งาน</span>
+pipeline = PairTradingSignal(window=60, entry_z=2.0, exit_z=0.5)
+pipeline.fit(pd.Series(btc_bybit), pd.Series(btc_binance))
+pipeline.summary()</div>
+
+<div class="bx bg" style="margin-top:28px">
+<div class="bt">จบ Part II — สิ่งที่ทำได้แล้ว</div>
+<p>
+• ทดสอบ stationarity ด้วย ADF test ✓<br>
+• ยืนยัน cointegration ด้วย Engle-Granger และ Johansen ✓<br>
+• ประมาณ β ด้วย OLS และ Kalman Filter ✓<br>
+• สร้าง z-score signal สำหรับ entry/exit ✓<br>
+• Maximize Sharpe ratio ด้วย <code>scipy.optimize</code> ✓<br>
+• กำหนด portfolio constraint ด้วย Linear Programming ✓<br>
+• รวมทุกอย่างเป็น <code>PairTradingSignal</code> class ✓<br><br>
+ใน <strong>Part III</strong> เราจะ refactor code นี้ให้เป็น OOP ที่ maintainable และ extensible
+</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠ คำเตือน: ตัวเลขใน Part II คือ In-Sample — อย่าเชื่อ 100%</div>
+<p>Sharpe 2.0+ และ Return 15%+ ที่เห็นใน Part II ล้วน <strong>คำนวณจากข้อมูลชุดเดียวกับที่ optimize parameter</strong> (in-sample)<br><br>
+ในชีวิตจริง (out-of-sample) ผลลัพธ์มักต่ำกว่า <strong>50–80%</strong> เพราะ:<br>
+• ตลาดเปลี่ยน — pattern ในอดีตไม่ซ้ำแบบในอนาคต<br>
+• Parameter ที่ดีในอดีต = overfit กับ noise ในอดีต<br>
+• Transaction cost ที่ลืมใส่ กินไป 20–50% ของ gross PnL<br><br>
+<strong>Part IV จะสอน Walk-Forward Validation</strong> — วิธีเดียวที่ยืนยันได้ว่า strategy มี edge จริง ไม่ใช่แค่ overfit<br>
+อย่าใช้เงินจริงจนกว่าจะผ่านการทดสอบใน Part IV</p>
+</div>
+
+<div class="nav">
+<a href="python-part1.html">← Part I: Python Basics</a>
+<a href="python-part3.html">Part III: OOP →</a>
+</div>
+
+</body>
+</html>
