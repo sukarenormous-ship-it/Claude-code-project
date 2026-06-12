@@ -143,120 +143,192 @@ COVER_HTML = """<!DOCTYPE html>
   font-weight: 800;
 }}
 @page {{ size: A4; margin: 0; }}
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
 body {{
   font-family: "Sarabun", sans-serif;
-  margin: 0; padding: 0;
   background: #fff;
+  width: 210mm;
   height: 297mm;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+}}
+
+/* Top teal band */
+.top-band {{
+  background: #0d9488;
+  height: 14mm;
+  width: 100%;
+}}
+
+/* Main content area */
+.main {{
+  padding: 18mm 22mm 10mm;
   text-align: center;
 }}
-.accent {{ color: #0d9488; }}
-.top-bar {{
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 12mm;
-  background: #0d9488;
-}}
-.bottom-bar {{
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 8mm;
-  background: #0d9488;
-}}
-.content {{
-  padding: 60px 80px;
-}}
-.series {{
-  font-size: 13pt;
-  color: #0d9488;
+
+.series-label {{
+  font-size: 10pt;
   font-weight: 700;
-  letter-spacing: .08em;
+  color: #0d9488;
+  letter-spacing: .15em;
   text-transform: uppercase;
-  margin-bottom: 24px;
+  margin-bottom: 10mm;
 }}
-h1 {{
-  font-size: 38pt;
+
+.title {{
+  font-size: 42pt;
   font-weight: 800;
   color: #111827;
-  line-height: 1.2;
-  margin: 0 0 16px;
+  line-height: 1.15;
+  margin-bottom: 6mm;
 }}
+
+.title-th {{
+  font-size: 28pt;
+  font-weight: 700;
+  color: #0d9488;
+  margin-bottom: 8mm;
+}}
+
 .subtitle {{
-  font-size: 15pt;
-  color: #374151;
-  margin-bottom: 40px;
-  line-height: 1.6;
+  font-size: 12pt;
+  color: #64748b;
+  line-height: 1.7;
+  margin-bottom: 10mm;
 }}
-.divider {{
-  width: 80px;
-  height: 4px;
+
+/* Horizontal rule */
+.rule {{
+  width: 60mm;
+  height: 3px;
   background: #0d9488;
-  margin: 32px auto;
+  margin: 0 auto 10mm;
   border-radius: 2px;
 }}
-.parts {{
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 24px 0;
+
+/* Parts table — 2 columns, clean */
+.parts-table {{
+  width: 130mm;
+  margin: 0 auto 10mm;
+  border-collapse: collapse;
 }}
-.part-tag {{
-  background: #f0fdfa;
-  border: 2px solid #0d9488;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 9pt;
+.parts-table td {{
+  padding: 4px 10px;
+  font-size: 10.5pt;
+  text-align: left;
+  color: #1f2937;
+  border: none;
+  background: none;
+  line-height: 1.6;
+}}
+.parts-table td .num {{
+  display: inline-block;
+  width: 18mm;
   font-weight: 700;
   color: #0d9488;
 }}
-.audience {{
-  font-size: 11pt;
-  color: #64748b;
-  margin-top: 32px;
-  font-style: italic;
+.parts-table td .name {{
+  color: #374151;
 }}
-.count {{
+
+/* Stats row */
+.stats {{
+  display: table;
+  margin: 0 auto 10mm;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 6mm 0;
+  width: 130mm;
+  text-align: center;
+}}
+.stat-item {{
+  display: table-cell;
+  padding: 0 12mm;
+  border-right: 1px solid #e5e7eb;
+}}
+.stat-item:last-child {{ border-right: none; }}
+.stat-num {{
   font-size: 22pt;
   font-weight: 800;
   color: #0d9488;
-  margin: 8px 0 4px;
+  line-height: 1;
 }}
-.count-label {{
-  font-size: 11pt;
+.stat-label {{
+  font-size: 8.5pt;
   color: #64748b;
+  margin-top: 2px;
+}}
+
+.audience {{
+  font-size: 10pt;
+  color: #64748b;
+  line-height: 1.7;
+}}
+
+/* Bottom teal band */
+.bottom-band {{
+  background: #0d9488;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 10mm;
 }}
 </style>
 </head>
 <body>
-<div class="top-bar"></div>
-<div class="content">
-  <div class="series">Python for Quant Traders</div>
-  <h1>Python<br><span class="accent">สำหรับ</span> Quant Trader</h1>
+<div class="top-band"></div>
+<div class="main">
+  <div class="series-label">Python for Quant Traders</div>
+
+  <div class="title">Python</div>
+  <div class="title-th">สำหรับ Quant Trader</div>
+
   <div class="subtitle">
     เรียน Python เพื่อวิเคราะห์ตลาดการเงิน<br>
-    ตั้งแต่พื้นฐานจนถึงระบบเทรดจริง
+    ตั้งแต่พื้นฐานจนถึงระบบเทรดสดจริง
   </div>
-  <div class="divider"></div>
-  <div class="parts">
-    <span class="part-tag">Part 0 · รากฐาน</span>
-    <span class="part-tag">Part I · Python Basics</span>
-    <span class="part-tag">Part II · Math Tools</span>
-    <span class="part-tag">Part III · OOP</span>
-    <span class="part-tag">Part IV · Backtesting</span>
-    <span class="part-tag">Part V · AI Coding</span>
-    <span class="part-tag">Part VI · Live Trading</span>
+
+  <div class="rule"></div>
+
+  <table class="parts-table">
+    <tr>
+      <td><span class="num">Part 0</span><span class="name">รากฐาน — คณิต · สถิติ · ตลาด</span></td>
+      <td><span class="num">Part I</span><span class="name">Python Basics</span></td>
+    </tr>
+    <tr>
+      <td><span class="num">Part II</span><span class="name">Math Tools — สถิติ · Optimization</span></td>
+      <td><span class="num">Part III</span><span class="name">OOP &amp; Design Patterns</span></td>
+    </tr>
+    <tr>
+      <td><span class="num">Part IV</span><span class="name">Backtesting</span></td>
+      <td><span class="num">Part V</span><span class="name">AI-Assisted Coding</span></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="text-align:center">
+        <span class="num">Part VI</span><span class="name">Async &amp; Live Trading</span>
+      </td>
+    </tr>
+  </table>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num">35</div>
+      <div class="stat-label">บท</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">7</div>
+      <div class="stat-label">Parts</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label">พื้นฐาน CS ที่ต้องการ</div>
+    </div>
   </div>
-  <div class="count">35 บท</div>
-  <div class="count-label">ครอบคลุม: คณิตศาสตร์ · สถิติ · OOP · Backtest · Async · WebSocket</div>
+
   <div class="audience">
     ออกแบบสำหรับทุกคน — หมอ ทนาย สถาปนิก นักธุรกิจ<br>
     ไม่ต้องมีพื้นฐาน Computer Science
   </div>
 </div>
-<div class="bottom-bar"></div>
+<div class="bottom-band"></div>
 </body>
 </html>
 """.format(font_dir=FONT_DIR)
