@@ -805,39 +805,127 @@ NumPy: ส่ง array ทั้งก้อนให้ C code → คำนว
 ผลลัพธ์: array ขนาด 1,000,000 element → NumPy เร็วกว่า loop ประมาณ 100–1,000x</p>
 </div>
 
-<h3 id="s9-2">9.2 Pandas Series — Array พร้อม Label</h3>
+<h3 id="s9-2">9.2 ทำไม "ตารางธรรมดา" ถึงไม่พอ</h3>
+
+<p>ก่อนตอบว่า DataFrame คืออะไร ลองดูก่อนว่า<strong>ถ้าไม่มีมัน</strong> ชีวิตเป็นยังไง — เก็บราคา 2 เหรียญด้วยเครื่องมือที่เรามีจากบทที่ 8 (list ซ้อน list = "ตารางทำมือ"):</p>
+
+<div class="fm"><span class="c"># ตารางธรรมดา: list ซ้อน list</span>
+table = [
+    <span class="c"># [วันที่,       BTC,    ETH]</span>
+    ["2024-01-01", 63000, 3100],
+    ["2024-01-02", 65000, 3250],
+    ["2024-01-03", 64500, 3200],
+]
+
+<span class="c"># คำถามง่าย ๆ: "ราคา BTC วันที่ 2024-01-02 คือเท่าไหร่?"</span>
+<span class="c"># → ต้องเขียน loop ค้นเอง:</span>
+for row in table:
+    if row[0] == "2024-01-02":     <span class="c"># ช่องที่ 0 คือวันที่ (ต้องจำเอง)</span>
+        print(row[1])              <span class="c"># ช่องที่ 1 คือ BTC (ต้องจำเอง)</span></div>
+
+<p>ใช้งานได้ แต่มีปัญหา 3 ข้อที่จะกัดเราแน่นอนเมื่อข้อมูลโตขึ้น:</p>
+
+<div class="bx br">
+<div class="bt">ปัญหาของตารางทำมือ</div>
+<ol>
+<li><strong>ต้องจำตำแหน่งเอง</strong> — "ช่องที่ 1 คือ BTC" ไม่มีเขียนไว้ในโค้ด ถ้าสลับคอลัมน์ในไฟล์ข้อมูลวันไหน โค้ดจะหยิบเลขผิดช่อง<strong>โดยไม่มี error</strong></li>
+<li><strong>ค้นหาต้อง loop ทุกครั้ง</strong> — ข้อมูล 100,000 แถว อยากรู้ราคาวันเดียว ต้องไล่ดูแสนแถว</li>
+<li><strong>ข้อมูลหายแล้วแถวเลื่อน</strong> — สมมติ ETH ไม่มีข้อมูลวันที่ 2 ถ้าเก็บแยกสอง list แล้วเอามาคู่กัน ตำแหน่งที่ 1 ของ BTC จะจับคู่กับ ETH ผิดวัน → คำนวณ correlation ผิดทั้งชุด <strong>แบบเงียบ ๆ</strong></li>
+</ol>
+</div>
+
+<p>pandas ถูกสร้างมาแก้ 3 ปัญหานี้ตรง ๆ — และกุญแจของมันคือสิ่งที่เรียกว่า <strong>index</strong></p>
+
+<h3 id="s9-3">9.3 Index คืออะไร — ป้ายชื่อประจำแถว</h3>
+
+<p>list ธรรมดาเรียกข้อมูลด้วย "ตำแหน่ง": ตัวที่ 0, ตัวที่ 1, ตัวที่ 2 — เหมือนล็อกเกอร์ที่มีแต่เลขตู้<br>
+<strong>Series</strong> ของ pandas คือ list ที่<strong>ทุกค่ามีป้ายชื่อติดอยู่</strong> — ป้ายชื่อเหล่านั้นรวมกันเรียกว่า index:</p>
 
 <div class="fm">import pandas as pd
 
-<span class="c"># Series = 1D array + index (label)</span>
 prices = pd.Series(
-    [63000, 65000, 64500, 66000, 65800],
-    index=["2024-01-01","2024-01-02","2024-01-03","2024-01-04","2024-01-05"],
+    [63000, 65000, 64500],                          <span class="c"># ค่า (values)</span>
+    index=["2024-01-01", "2024-01-02", "2024-01-03"], <span class="c"># ป้ายชื่อ (index)</span>
     name="BTC"
 )
+print(prices)</div>
+<div class="output">2024-01-01    63000
+2024-01-02    65000
+2024-01-03    64500
+Name: BTC, dtype: int64</div>
 
-print(prices["2024-01-03"])   <span class="c"># 64500 — access ด้วยวันที่</span>
-print(prices.mean())          <span class="c"># 64860.0</span>
-print(prices.pct_change())    <span class="c"># return รายวัน (ไม่ต้องเขียนสูตรเอง)</span></div>
+<p>สังเกตว่า pandas พิมพ์ป้ายชื่อ (ซ้าย) คู่กับค่า (ขวา) เสมอ — ทีนี้คำถาม "ราคาวันที่ 2 ม.ค.?" ตอบได้บรรทัดเดียว ไม่ต้อง loop:</p>
 
-<h3 id="s9-3">9.3 Pandas DataFrame — ตาราง 2 มิติ</h3>
+<div class="fm">print(prices["2024-01-02"])   <span class="c"># 65000 — ถามด้วยป้ายชื่อตรง ๆ</span>
+print(prices.iloc[1])         <span class="c"># 65000 — หรือถามด้วยตำแหน่งแบบเดิมก็ยังได้ (iloc)</span></div>
+<div class="read-aloud">หยิบค่าที่ป้ายชื่อ "2024-01-02" จาก prices — index ทำให้เราคุยกับข้อมูลด้วย "ภาษาของข้อมูล" (วันที่) แทนตำแหน่ง</div>
 
-<div class="fm"><span class="c"># DataFrame = table ที่มี row index และ column names</span>
-data = {
+<p>และพลังที่สำคัญที่สุดของ index — <strong>จับคู่แถวให้อัตโนมัติ (alignment)</strong> ซึ่งแก้ปัญหาข้อ 3 แบบถาวร:</p>
+
+<div class="fm"><span class="c"># ETH ไม่มีข้อมูลวันที่ 2 (ตลาดล่ม)</span>
+btc = pd.Series([63000, 65000, 64500],
+                index=["2024-01-01", "2024-01-02", "2024-01-03"])
+eth = pd.Series([3100, 3200],
+                index=["2024-01-01", "2024-01-03"])   <span class="c"># ขาดวันที่ 2!</span>
+
+ratio = btc / eth      <span class="c"># pandas จับคู่ด้วย "ป้ายชื่อ" ไม่ใช่ตำแหน่ง</span>
+print(ratio)</div>
+<div class="output">2024-01-01    20.322581
+2024-01-02          NaN
+2024-01-03    20.156250</div>
+
+<p>วันที่ 2 ได้ <code>NaN</code> (Not a Number = "ไม่มีข้อมูล") — pandas <strong>บอกตรง ๆ ว่าวันนี้คำนวณไม่ได้</strong> แทนที่จะจับคู่ผิดแถวเงียบ ๆ แบบ list ถ้าเป็นตารางทำมือ ราคา ETH วันที่ 3 จะถูกจับคู่กับ BTC วันที่ 2 — ผิดโดยไม่มีใครรู้</p>
+
+<h3 id="s9-4">9.4 DataFrame — หลาย Series ที่ใช้ป้ายชื่อชุดเดียวกัน</h3>
+
+<p>พอเข้าใจ Series แล้ว DataFrame ตรงไปตรงมามาก: <strong>DataFrame = ตารางที่เกิดจากหลาย Series (หลายคอลัมน์) มาแชร์ index ชุดเดียวกัน</strong> — หน้าตาเหมือน Excel sheet แต่อยู่ใน Python:</p>
+
+<div class="fm">data = {
     "BTC": [63000, 65000, 64500, 66000, 65800],
     "ETH": [3100,  3250,  3200,  3300,  3280],
     "SOL": [140,   148,   145,   152,   149],
 }
-dates = pd.date_range("2024-01-01", periods=5)
+dates = pd.date_range("2024-01-01", periods=5)   <span class="c"># สร้างป้ายวันที่ 5 วัน</span>
 df = pd.DataFrame(data, index=dates)
 
-print(df)
-<span class="c">#              BTC    ETH    SOL
-# 2024-01-01  63000   3100    140
-# 2024-01-02  65000   3250    148
-# ...</span></div>
+print(df)</div>
+<div class="output">             BTC   ETH  SOL
+2024-01-01  63000  3100  140
+2024-01-02  65000  3250  148
+2024-01-03  64500  3200  145
+2024-01-04  66000  3300  152
+2024-01-05  65800  3280  149</div>
 
-<h3 id="s9-4">9.4 Operations ที่ใช้บ่อยใน Quant</h3>
+<p>กายวิภาคของ DataFrame มี 3 ส่วน — รู้ 3 ชื่อนี้แล้วอ่านเอกสาร pandas ออกทั้งหมด:</p>
+
+<table>
+<tr><th>ส่วน</th><th>คืออะไร</th><th>ในตัวอย่างบน</th></tr>
+<tr><td><strong>index</strong></td><td>ป้ายชื่อแถว (แนวตั้งซ้ายสุด)</td><td>วันที่ 2024-01-01 ถึง 05</td></tr>
+<tr><td><strong>columns</strong></td><td>ป้ายชื่อคอลัมน์ (แนวนอนบนสุด)</td><td>BTC, ETH, SOL</td></tr>
+<tr><td><strong>values</strong></td><td>ตัวข้อมูลข้างใน (NumPy array)</td><td>ตัวเลขราคาทั้งหมด</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">แล้วใช้ Excel แทนได้ไหม?</div>
+<p>ได้ — สำหรับ "ดูข้อมูล" Excel ดีมาก แต่สำหรับงาน Quant มี 3 จุดที่ DataFrame ชนะขาด:<br>
+1. <strong>ทำซ้ำได้:</strong> โค้ด 10 บรรทัดรันกับข้อมูลใหม่ทุกวันอัตโนมัติ — Excel ต้องลากสูตรใหม่ทุกครั้ง<br>
+2. <strong>ขนาด:</strong> ข้อมูล 1 นาทีย้อนหลัง 3 ปี ≈ 1.5 ล้านแถว — Excel เริ่มค้าง pandas ทำงานเป็นวินาที<br>
+3. <strong>ตรวจสอบย้อนหลังได้:</strong> ทุกขั้นตอนคำนวณเขียนเป็นโค้ดอ่านได้ ส่งให้คนอื่น (หรือ AI) ตรวจได้ — สูตรที่ฝังใน cell ของ Excel ตรวจยากมาก<br><br>
+คิดง่าย ๆ: <strong>Excel = ทำกับข้าวด้วยมือ, DataFrame = โรงงานอาหาร</strong> — ทำกินเองมื้อเดียวใช้มือได้ แต่ถ้าต้องทำทุกวัน วันละหมื่นจาน ต้องใช้โรงงาน</p>
+</div>
+
+<p>"แล้วมันทำอะไรได้บ้าง?" — ตัวอย่างงานที่ใช้บ่อยที่สุดใน Quant แต่ละงานใช้โค้ด<strong>บรรทัดเดียว</strong> (ทุกอันได้ผลถูกต้องแม้ข้อมูลขาดบางวัน เพราะ index จับคู่ให้):</p>
+
+<table>
+<tr><th>อยากได้</th><th>โค้ด</th></tr>
+<tr><td>return รายวันของทุกเหรียญ</td><td><code>df.pct_change()</code></td></tr>
+<tr><td>ค่าเฉลี่ยเคลื่อนที่ 20 วันของ BTC</td><td><code>df["BTC"].rolling(20).mean()</code></td></tr>
+<tr><td>เฉพาะวันที่ BTC ตกเกิน 2%</td><td><code>df[df["BTC"].pct_change() &lt; -0.02]</code></td></tr>
+<tr><td>correlation ระหว่างทุกคู่เหรียญ</td><td><code>df.pct_change().corr()</code></td></tr>
+<tr><td>กราฟราคาทุกเหรียญ</td><td><code>df.plot()</code></td></tr>
+</table>
+
+<h3 id="s9-5">9.5 Operations ที่ใช้บ่อยใน Quant</h3>
 
 <div class="fm"><span class="c"># --- ดูข้อมูลเบื้องต้น ---</span>
 df.head(3)           <span class="c"># 3 แถวแรก</span>
