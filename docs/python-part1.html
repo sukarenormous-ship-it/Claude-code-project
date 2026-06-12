@@ -54,11 +54,11 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .bk{background:#fef2f2;border-left:4px solid #b91c1c}
 .bk .bt{color:#b91c1c}
 .output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155}
-.output::before{content:"► OUTPUT  ";color:#64748b;font-size:.8em}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
 .nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
 .nav a{color:var(--teal);text-decoration:none;font-weight:600}
 .read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
-.read-aloud::before{content:"🗣 อ่านว่า: ";font-weight:700;color:var(--teal)}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
 .ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
 .ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
 .ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
@@ -209,11 +209,18 @@ tax_rate = 0.15
 net = profit * (1 - tax_rate)   <span class="c"># = 850.0</span>
 
 days = 252
-annual_vol = 0.03 * (days ** 0.5)  <span class="c"># ** = ยกกำลัง</span>
+annual_vol = 0.03 * (days ** 0.5)  <span class="c"># ** = ยกกำลัง (ทำไมไม่ใช้ ^ ดูกล่องด้านล่าง)</span>
 
 shares = 1000
-remainder = shares % 100          <span class="c"># % = เศษจากหาร = 0</span>
-lots = shares // 100               <span class="c"># // = หารแบบปัดลง = 10</span></div>
+remainder = shares % 100          <span class="c"># % = เศษจากหาร: 1000 % 100 = 0</span>
+lots = shares // 100               <span class="c"># // = หารปัดทิ้งทศนิยม: 1000 // 100 = 10</span></div>
+
+<div class="bx ba">
+<div class="bt">คำถามที่พบบ่อย: ทำไม `**` ไม่ใช้ `^` แบบคณิต?</div>
+<p>ใน Python เครื่องหมาย <code>^</code> ถูกสงวนไว้สำหรับ "XOR" (bitwise operation ที่ใช้ใน cryptography) จึงต้องใช้ <code>**</code> แทนการยกกำลัง — ไม่ผิดปกติ แค่ convention ของภาษา<br><br>
+สำหรับ <code>//</code> และ <code>%</code>: ถ้า <code>1000 / 100 = 10.0</code> (float) แล้ว <code>1000 // 100 = 10</code> (int, ปัดทิ้งทศนิยม) และ <code>1000 % 100 = 0</code> (เศษ) — สามสิ่งนี้เป็นชุดเดียวกัน: ผลหาร, ผลหารปัดลง, และเศษที่เหลือ<br>
+<code>range(1, 5)</code> ให้ค่า 1, 2, 3, 4 (ไม่รวมตัวสุดท้าย 5) — rule เดียวกับ slicing <code>[1:5]</code> นี่เป็น convention ของ Python เพื่อให้ <code>len(range(1, 5)) == 5 - 1 == 4</code> นับออกง่าย</p>
+</div>
 
 <h3 id="s6-5">6.5 f-string — แสดงผลแบบมีรูปแบบ</h3>
 
@@ -453,12 +460,14 @@ for sym, w in zip(symbols, weights):
 
 <p>for ใช้เมื่อ "รู้ว่าวนกี่รอบ" (มีรายการให้หยิบ) — while ใช้เมื่อ "วนไปจนกว่าเหตุการณ์บางอย่างจะเกิด" ซึ่งไม่รู้ล่วงหน้าว่ากี่รอบ:</p>
 
-<div class="fm">equity = 100000
-max_loss = 90000
+<div class="fm">equity = 100000      <span class="c"># เงินเริ่มต้น 100,000 บาท</span>
+max_loss = 90000     <span class="c"># ถ้าเงินเหลือน้อยกว่า 90,000 หยุดเทรด</span>
+daily_return = 0.005 <span class="c"># สมมติกำไร/ขาดทุนวันละ 0.5% (จริง ๆ จะได้จาก strategy)</span>
 
-while equity &gt; max_loss:        <span class="c"># ก่อนทุกรอบ ถาม: equity ยังมากกว่า max_loss ไหม?</span>
-    equity = trade_one_day(equity)  <span class="c"># ใช่ → เทรดต่ออีกวัน</span>
-                                <span class="c"># ไม่ → ออกจาก loop (หยุดเทรด)</span>
+while equity &gt; max_loss:               <span class="c"># ก่อนทุกรอบ ถาม: equity ยังมากกว่า max_loss ไหม?</span>
+    profit = equity * daily_return     <span class="c"># คำนวณกำไร/ขาดทุนวันนี้ (ใช้ค่าสุ่มแทนจริง ๆ)</span>
+    equity = equity + profit           <span class="c"># อัปเดตเงินทุน</span>
+                                       <span class="c"># ไม่ → ออกจาก loop (หยุดเทรด)</span>
 print("หยุดเทรด — ขาดทุนถึง limit")</div>
 <div class="read-aloud">ตราบใดที่ equity ยังมากกว่า max_loss แล้วทำต่อไปนี้: เทรดหนึ่งวันแล้วอัปเดต equity — เครื่องจะกลับขึ้นไป<strong>ถามคำถามเดิมซ้ำ</strong>ก่อนเริ่มรอบใหม่ทุกครั้ง</div>
 
@@ -937,28 +946,47 @@ df.dtypes            <span class="c"># type ของแต่ละคอลั
 <span class="c"># --- เลือกข้อมูล ---</span>
 df["BTC"]            <span class="c"># คอลัมน์ BTC (Series)</span>
 df[["BTC","ETH"]]    <span class="c"># สองคอลัมน์ (DataFrame)</span>
-df.loc["2024-01-03"] <span class="c"># แถว ณ วันที่นั้น</span>
-df.iloc[0]           <span class="c"># แถวแรก (ตาม position)</span>
-df.iloc[-1]          <span class="c"># แถวสุดท้าย</span>
+df.loc["2024-01-03"] <span class="c"># .loc: เลือกด้วย "ป้ายชื่อ" (label) = วันที่</span>
+df.iloc[0]           <span class="c"># .iloc: เลือกด้วย "ตำแหน่ง" (position) = แถวที่ 0 คือแถวแรก</span>
+df.iloc[-1]          <span class="c"># .iloc[-1] = แถวสุดท้าย (เลขลบนับจากท้าย เหมือน list)</span>
 
 <span class="c"># --- คำนวณ Return ---</span>
-returns = df.pct_change()         <span class="c"># daily return ทุก column</span>
-log_returns = np.log(df/df.shift(1))  <span class="c"># log return</span>
+returns = df.pct_change()              <span class="c"># daily return ทุก column (แถวแรกเป็น NaN เพราะไม่มีวันก่อน)</span>
+log_returns = np.log(df/df.shift(1))  <span class="c"># log return: shift(1) เลื่อนข้อมูลลงหนึ่งแถว (= ราคาเมื่อวาน)</span>
 
 <span class="c"># --- Rolling Statistics ---</span>
-rolling_mean = df["BTC"].rolling(window=3).mean()
-rolling_std  = df["BTC"].rolling(window=3).std()
-zscore = (df["BTC"] - rolling_mean) / rolling_std</div>
+rolling_mean = df["BTC"].rolling(window=3).mean()  <span class="c"># ค่าเฉลี่ย 3 วันล่าสุด (2 แถวแรกเป็น NaN)</span>
+rolling_std  = df["BTC"].rolling(window=3).std()   <span class="c"># std 3 วันล่าสุด</span>
+zscore = (df["BTC"] - rolling_mean) / rolling_std  <span class="c"># z-score: ห่างจากค่าเฉลี่ยกี่ std</span></div>
 
-<div class="fm"><span class="c"># --- Filter: boolean indexing ---</span>
+<div class="bx bd">
+<div class="bt">.loc vs .iloc — เลือกตัวไหน?</div>
+<table>
+<tr><th></th><th><code>.loc["2024-01-03"]</code></th><th><code>.iloc[2]</code></th></tr>
+<tr><td><strong>เลือกด้วย</strong></td><td>ป้ายชื่อ (วันที่, ชื่อหุ้น)</td><td>ตำแหน่ง (0, 1, 2, -1)</td></tr>
+<tr><td><strong>ข้อดี</strong></td><td>ชัดเจน ไม่ผิดแม้เรียงลำดับใหม่</td><td>เร็ว ใช้ได้แม้ไม่รู้ชื่อ index</td></tr>
+<tr><td><strong>ใช้เมื่อ</strong></td><td>รู้วันที่/label ที่ต้องการ</td><td>ต้องการ "ตัวแรก" หรือ "ตัวสุดท้าย"</td></tr>
+</table>
+<p style="margin-top:8px;margin-bottom:0"><strong>NaN คืออะไร?</strong> "Not a Number" = "ไม่มีข้อมูล ณ จุดนี้" — pandas ใส่อัตโนมัติเมื่อคำนวณไม่ได้ (เช่น แถวแรกของ <code>pct_change()</code> หรือหน้าต่างแรกของ <code>rolling()</code>) — <code>dropna()</code> ลบแถวที่มี NaN ออก, <code>fillna(0)</code> แทน NaN ด้วยศูนย์ — pandas ส่วนใหญ่ข้าม NaN ให้อัตโนมัติ (<code>mean()</code>, <code>std()</code>) แต่บางงาน (เช่น <code>corr()</code>) ต้องการ <code>dropna()</code> ก่อน</p>
+</div>
+
+<div class="fm"><span class="c"># --- Filter: boolean indexing — "กรองแถวด้วยเงื่อนไข" ---</span>
 btc_returns = df["BTC"].pct_change()
 
-<span class="c"># วันที่ BTC ตกเกิน 2%</span>
-crash_days = df[btc_returns &lt; -0.02]
+<span class="c"># แทนที่จะ loop แล้ว if เองทีละแถว pandas ทำให้ในบรรทัดเดียว:</span>
+crash_days = df[btc_returns &lt; -0.02]     <span class="c"># เลือกเฉพาะแถวที่ return &lt; -2%</span>
 print(f"BTC crash days (&lt;-2%): {len(crash_days)}")
 
-<span class="c"># วันที่ BTC ขึ้น และ ETH ขึ้น</span>
+<span class="c"># เงื่อนไขสองข้อ: ต้องใช้ & และ ครอบแต่ละเงื่อนไขด้วย ()</span>
 both_up = df[(btc_returns &gt; 0) & (df["ETH"].pct_change() &gt; 0)]</div>
+
+<div class="bx bd">
+<div class="bt">ไฟล์ btc_daily.csv มาจากไหน?</div>
+<p>ดาวน์โหลดข้อมูลราคา BTC จาก <strong>CoinGecko</strong> (ฟรี) หรือ <strong>Binance API</strong>:<br>
+วิธีง่ายที่สุด: เปิด <code>https://www.coingecko.com/en/coins/bitcoin/historical_data</code> → Export CSV → เปลี่ยนชื่อไฟล์เป็น <code>btc_daily.csv</code><br>
+หรือใช้ Python: <code>pip install yfinance</code> แล้วรัน <code>yf.download("BTC-USD", start="2023-01-01").to_csv("btc_daily.csv")</code><br><br>
+ตัวอย่างด้านล่างใช้โค้ดจำลอง (สร้างข้อมูลด้วย numpy) เพื่อรันได้ทันทีโดยไม่ต้องดาวน์โหลด</p>
+</div>
 
 <div class="running-ex">
 <div class="re-title">Running Example: โหลดข้อมูลจาก CSV และคำนวณ Metrics</div>
@@ -1113,8 +1141,17 @@ plt.show()</div>
 
 <h3 id="s10-3">10.3 Scatter Plot — Correlation</h3>
 
-<div class="fm"><span class="c"># วิเคราะห์ correlation ระหว่าง BTC และ ETH returns</span>
-btc_ret = df_multi["BTC"].pct_change().dropna()
+<div class="fm"><span class="c"># สร้าง DataFrame ที่มีราคา BTC และ ETH (จำลองข้อมูล 100 วัน)</span>
+import numpy as np, pandas as pd
+np.random.seed(42)
+dates   = pd.date_range("2024-01-01", periods=100)
+df_multi = pd.DataFrame({
+    "BTC": 65000 * np.cumprod(1 + np.random.normal(0.001, 0.02, 100)),
+    "ETH": 3200  * np.cumprod(1 + np.random.normal(0.001, 0.025, 100)),
+}, index=dates)
+
+<span class="c"># วิเคราะห์ correlation ระหว่าง BTC และ ETH returns</span>
+btc_ret = df_multi["BTC"].pct_change().dropna()  <span class="c"># return รายวัน ลบแถวแรกที่เป็น NaN</span>
 eth_ret = df_multi["ETH"].pct_change().dropna()
 
 fig, ax = plt.subplots(figsize=(6, 6))
