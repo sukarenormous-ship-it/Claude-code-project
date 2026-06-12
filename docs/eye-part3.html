@@ -79,11 +79,23 @@
 
 <div class="bx ba"><div class="bt">Pattern: เห็น yield → ถามว่า "yield มาจากไหน?" → แยก risk → hedge risk ที่ไม่ต้องการ</div></div>
 
+<div class="bx br">
+<div class="bt">⚠️ ความเสี่ยงที่ต้องรู้ก่อน Execute</div>
+<ul>
+<li><strong>Funding Flip Risk (Critical):</strong> Funding rate ของ XAUT Perp เปลี่ยนทิศได้ทุกเวลา — ถ้า funding กลับเป็น positive shorts ต้องจ่าย; net yield อาจเป็น 11% − 5% borrow − 8% funding = −2% ขาดทุน; model worst-case ก่อนเข้า</li>
+<li><strong>Earn Lockup + Margin Call:</strong> XAUT ใน Earn มักมี redemption delay (ชั่วโมงถึงวัน) — ถ้า perp hedge ขาดทุนและต้องการ margin top-up แต่ Earn ยัง locked → liquidation บน hedge ก่อนที่จะถอน Earn ได้ → ต้องถือ free margin buffer แยก 10–15% ของ position</li>
+<li><strong>XAUT Issuer Risk:</strong> XAUT คือ tokenized gold ออกโดย Tether — มี Tether solvency risk + gold custody risk เพิ่มเหนือ platform risk ที่ hedge แล้ว; "delta-neutral" หมายถึง neutral ต่อราคาทอง ไม่ใช่ neutral ต่อทุก risk</li>
+</ul>
+<p>เปรียบเทียบที่ถูกต้อง: USDT Earn 4% (1 ขา, simple) vs XAUT Earn+Hedge ~6% net (3 ขา, funding variable, locked, issuer risk) — marginal 2% อาจไม่ worth it</p>
+</div>
+
 <h2 id="ch11">บทที่ 11: Time-Structure Arb (Funding + Weekend Gap)</h2>
 <p>2 case ที่เกี่ยวกับ "เวลา":</p>
 
 <h3>Case A: Funding Rate Carry</h3>
-<div class="fm">Funding rate -0.03%/8hr = -0.09%/day = -32.9%/year<br>
+<div class="fm">Funding rate -0.03%/8hr = -0.09%/วัน = -32.9%/year (simple) ≈ -28%/year (compound)<br>
+Sign convention: funding negative → Long Perp ได้รับเงินจาก Short Perp<br>
+→ Long Perp + Short Spot = รับ ~28–33%/year จาก funding (ก่อนหัก borrow cost ของ Short Spot)<br>
 → Long Perp (รับ funding) + Short Spot (hedge) = delta neutral carry<br>
 → [Heuristic] — rate อาจ flip ทุกเมื่อ</div>
 
@@ -175,21 +187,22 @@ Sandwich attack: เห็น swap ของคุณ → front-run (ดัน�
 <div class="bx br">
 <div class="bt">Failure 1: Kimchi Premium — ปิด Position ไม่ได้</div>
 <p><strong>ดูเหมือน:</strong> BTC ในเกาหลีแพงกว่า US 10–20% → ซื้อ US ขาย KRX → กำไร 10%?</p>
-<p><strong>ปัญหา:</strong> ส่ง KRW (เงินวอน) ออกนอกประเทศ = ควบคุมเงินทุน → ผิดกฎหมายเกาหลีใต้ → ปิด position ไม่ได้จริง premium ยืนอยู่หลายปีโดยไม่ converge เพราะไม่มีใช้ arbitrage ได้</p>
+<p><strong>ปัญหา:</strong> South Korea's FETA (Foreign Exchange Transactions Act) กำหนด reporting requirements, ต้องขออนุมัติสำหรับ large transfers, และมี annual cap — บวกกับ residency requirement ของ Korean exchanges → round-trip trade ทำในทางปฏิบัติแทบไม่ได้สำหรับ trader ทั่วไป ไม่ใช่ "ผิดกฎหมาย" ทุกกรณี แต่ friction สูงพอที่จะทำให้ arb loop ปิดไม่ได้</p>
 <p><strong>บทเรียน:</strong> ตรวจ <strong>ข้อ 8 (Regulatory)</strong> ของ 8-point checklist ก่อนเสมอ — ถ้าเงินทุนเคลื่อนย้ายไม่ได้ก็ไม่มี arb</p>
 </div>
 
 <div class="bx br">
 <div class="bt">Failure 2: Convergence ที่ไม่มาเร็ว</div>
-<p><strong>ดูเหมือน:</strong> BTC Futures 3 เดือน discount 5% vs Spot → ซื้อ Futures + Short Spot รอ converge → profit 5%?</p>
-<p><strong>ปัญหา:</strong> Futures discount อาจยืดต่อเนื่อง 3 เดือนจนถึง expiry → ระหว่างนั้น funding cost ของ Short Spot สะสมทุกวัน → ถ้า funding -0.05%/วัน × 90 วัน = -4.5% → net profit เหลือแค่ 0.5% แต่แบก 3 เดือน</p>
-<p><strong>บทเรียน:</strong> เช็ค <strong>"เมื่อไหร่ที่จะ converge และค่าใช้จ่ายระหว่างทาง"</strong> ก่อน size — discount อาจเกิดจาก structural bearish sentiment ที่ยืนยาว ไม่ใช่ mispricing</p>
+<p><strong>ดูเหมือน:</strong> BTC Futures 3 เดือน discount 5% vs Spot → Long Futures + Short Spot รอ converge → profit 5%?</p>
+<p><strong>ปัญหา (Fixed-Expiry Futures):</strong> Carrying cost ของ trade นี้ไม่ใช่ "funding rate" — Short Spot ต้องจ่าย <strong>borrow cost</strong> (ยืม BTC มาขาย) บวก opportunity cost ของ capital ที่ lock ไว้; ถ้า borrow + capital cost รวม ~2%/3 เดือน → net profit จริง = 5% − 2% = 3% และต้องถือ 3 เดือน</p>
+<p><strong>ปัญหา (Perpetual Swap):</strong> ถ้าใช้ Short Perp แทน Short Spot — funding rate ของ Perp เปลี่ยนทุก 8 ชั่วโมง; ถ้า perp ที่ discount กลับเป็น premium ระหว่างทาง → funding กลับเครื่องหมาย → carry cost พุ่งสูงก่อน basis converge</p>
+<p><strong>บทเรียน:</strong> ระบุให้ชัดว่าใช้ <strong>fixed-expiry futures หรือ perpetual</strong> — mechanics ต่างกัน; เสมอ model carrying cost ตลอด holding period และ stress-test กรณี funding flip ก่อน size</p>
 </div>
 
 <div class="bx br">
 <div class="bt">Failure 3: Resolution Trap</div>
 <p><strong>ดูเหมือน:</strong> PM "BTC &gt; $95K by month-end" = 70%, Options implied = 58% → Long PM เพราะ PM ถูก 12%</p>
-<p><strong>ปัญหา:</strong> PM resolve โดยใช้ Binance spot — ช่วง end of month Binance มี scheduled maintenance → ราคาอาจ "freeze" ในช่วง resolution window → resolve ที่ราคาที่ไม่ reflect ตลาดจริง</p>
+<p><strong>ปัญหา:</strong> PM resolve ผ่าน oracle (เช่น UMA หรือ in-house resolver) ที่อาจ lag, dispute, หรือ vote ผิดจาก market consensus ได้ — historical UMA oracle disputes บน Polymarket มี cases ที่ resolve ผิดทิศจากตลาด; นอกจากนั้น resolver อาจใช้ราคาจาก source ที่ต่างจากที่คุณคิด (เช่น VWAP แทน last price)</p>
 <p><strong>บทเรียน:</strong> อ่าน <strong>resolution rules ครบ</strong> ก่อนเสมอ — ไม่ใช่แค่เช็ค "touch vs close" แต่ต้องดู resolver, data source, maintenance schedule, และ dispute process ด้วย</p>
 </div>
 

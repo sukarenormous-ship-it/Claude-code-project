@@ -267,8 +267,9 @@ Implied prob: 47.6% + 30.3% + 28.6% = <strong>106.5%</strong> (ไม่ใช�
 5. Counterparty risk? (exchange vs DeFi vs P2P)<br>
 6. Fees? (PM 10% vs Options 0.1%)<br>
 7. Capital lock-up? (margin vs full payment)<br>
-8. Regulatory? (ทำได้ทั้ง 2 ตลาดไหม?)<br><br>
-<strong>ผ่านทั้ง 8 ข้อ + ยังราคาต่าง = arb จริง!</strong><br>
+8. Regulatory? (ทำได้ทั้ง 2 ตลาดไหม?)<br>
+9. ภาษี — กำไรจาก 2 ขา อาจถูก treat ต่างกัน (capital gain vs income vs tax-exempt); สำหรับ Thai trader cross-border crypto trade ภาษีอาจกิน spread ทั้งหมด<br><br>
+<strong>ผ่านทั้ง 9 ข้อ + ยังราคาต่าง = arb จริง!</strong><br>
 ผ่านไม่ครบ = มี "แต่" ที่อธิบายส่วนต่าง → อาจเป็น near-arb</div>
 
 <div class="bx bp">
@@ -311,16 +312,22 @@ Implied prob: 47.6% + 30.3% + 28.6% = <strong>106.5%</strong> (ไม่ใช�
 <div class="fm">Strike = $100,000 | Call Ask = $850 | Call Bid = $800 | Delta ≈ 0.42
 
 วิธีที่ 1 — ใช้ Delta (approximation สำหรับ OTM):
-  Implied prob ≈ |Delta| ≈ 0.42 → โอกาส ~42% ที่ BTC จะเกิน $100K
+  Implied prob ≈ |Delta| ≈ 0.42 → approximation ~42% (ดูข้อควรระวังด้านล่าง)
 
-วิธีที่ 2 — Tight Call Spread (แม่นกว่า):
+วิธีที่ 2 — Tight Call Spread (risk-neutral PDF):
   C(100,000) = $850,  C(100,100) = $840
-  Implied prob ≈ ($850 − $840) / $100 = 10/100 = 10% ... ต่อช่วง $100
-  → ต้องรวม interval ทั้งหมดจน expiry (integration)
+  ($850 − $840) / $100 = 10% ต่อ $100 ← นี่คือ probability DENSITY
+  แปลว่า: โอกาส ~10% ที่ BTC จะ expire ระหว่าง $100,000–$100,100
+  ≠ โอกาสที่ BTC จะ expire เหนือ $100,000 (นั่นคือ cumulative)
+  → สำหรับ cumulative probability ใช้วิธีที่ 3 (N(d2))
 
 วิธีที่ 3 — ใช้ N(d2) จาก Black-Scholes:
-  Implied prob = N(d2)  ← ตัวเลขนี้แสดงใน platform ส่วนใหญ่เป็น "Prob ITM"</div>
-<p><strong>กฎง่าย:</strong> ดู "Prob ITM" หรือ "|Delta|" ที่ platform ให้มา → นั่นคือ implied probability ที่ตลาดมองว่าจะ expire in-the-money</p>
+  Implied prob = N(d2)  ← ตัวเลขนี้แสดงใน platform ส่วนใหญ่เป็น "Prob ITM"
+  ⚠️ N(d2) = risk-neutral probability — ใช้สำหรับ pricing/arb
+     ≠ real-world probability ว่า BTC จะขึ้นหรือลงจริง
+     (ใช้ r = risk-free rate เป็น drift ไม่ใช่ real expected return)</div>
+<p><strong>กฎง่าย:</strong> ดู "Prob ITM" (N(d2)) เสมอ — |Delta| = N(d1) ≠ N(d2) สำหรับ BTC ที่ IV ~70% ต่างกันได้ 5–10pp; ใช้ Delta เป็น quick glance เท่านั้น</p>
+<p><small>⚠️ ทำไม Delta ≠ Prob ITM: Delta = N(d₁), Prob ITM = N(d₂), ต่างกัน σ√T — สำหรับ BTC (σ≈70%, T=30 วัน): σ√T ≈ 0.20 → N(d₁) สูงกว่า N(d₂) ได้ถึง 8pp</small></p>
 </div>
 
 <h2 id="s2-pcp">8.5 Put-Call Parity — กฎที่ห้ามละเมิด</h2>
@@ -333,6 +340,13 @@ C  = ราคา Call option (strike K, expiry T)
 P  = ราคา Put option  (strike K, expiry T เดียวกัน)
 S  = ราคา Spot ปัจจุบัน
 PV(K) = K × e^(−rT) ≈ K (ถ้า r ≈ 0 หรือ T สั้น)</div>
+
+<div class="bx ba">
+<div class="bt">ระวัง: r≈0 ไม่เป็นจริงในปัจจุบัน</div>
+<p>USD interest rates ปัจจุบัน ~5%/year — สำหรับ 30-day options บน $95,000 strike:<br>
+PV(K) = $95,000 × e^(−0.05 × 30/365) ≈ $94,612 (ต่างกัน ~$388)<br>
+ถ้าใช้ PV(K) ≈ K จะได้ false PCP violation signal — เสมอ ใส่ r จริงในสูตร หรือใช้ Prob ITM จาก platform โดยตรง</p>
+</div>
 
 <p>ถ้า PCP ไม่เป็นจริง → มี arb ทันที: Long ฝั่งที่ถูกกว่า + Short ฝั่งที่แพงกว่า</p>
 
@@ -352,7 +366,7 @@ PV(K) = K × e^(−rT) ≈ K (ถ้า r ≈ 0 หรือ T สั้น)</di
 <div class="bx ba">
 <div class="bt">ข้อควรระวัง</div>
 <ul>
-<li>PCP ใช้ได้กับ European options เท่านั้น — American options มี early exercise premium ทำให้ PCP ต่างออกไปเล็กน้อย</li>
+<li>PCP ใช้ได้กับ <strong>European options เท่านั้น</strong> — สำหรับ American options PCP กลายเป็น <strong>inequality</strong>: S − K ≤ C − P ≤ S − PV(K) สำหรับ deep ITM American put ส่วนต่างนี้ <strong>อาจสูงมาก</strong> เพราะ early exercise premium ห้ามใช้ PCP เป็น equality กับ American options เด็ดขาด (เช่น หุ้นบน TFEX ที่เป็น American-style)</li>
 <li>Crypto options บน Deribit เป็น European → PCP ใช้ได้</li>
 <li>PM "Above Yes" ≠ vanilla Call — PCP ไม่ apply ตรงๆ แต่ยังใช้เทียบ implied prob ได้</li>
 </ul>
