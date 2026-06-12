@@ -69,7 +69,8 @@ body {{
 /* ---- Headings ---- */
 h1 {{ page-break-before: always; }}
 .cover h1 {{ page-break-before: avoid; }}
-h2 {{ font-size: 1.4em; page-break-after: avoid; }}
+/* Override legacy @media print h2 rule — h2 should NOT force page break */
+h2 {{ font-size: 1.4em; page-break-before: avoid !important; page-break-after: avoid; }}
 h3 {{ font-size: 1.15em; page-break-after: avoid; }}
 
 /* ---- Light code blocks for print ---- */

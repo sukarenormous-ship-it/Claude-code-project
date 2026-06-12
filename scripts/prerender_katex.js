@@ -9,14 +9,16 @@ const fs    = require('fs');
 const [,, inFile, outFile] = process.argv;
 let html = fs.readFileSync(inFile, 'utf8');
 
-// Remove KaTeX CDN scripts (no longer needed after pre-render)
+// Remove KaTeX CDN scripts + auto-render script (math already pre-rendered)
 html = html.replace(/<link[^>]*katex[^>]*>/g, '');
 html = html.replace(/<script[^>]*katex[^>]*><\/script>/g, '');
+// Remove auto-render inline script (prevents script tag corruption artifact)
+html = html.replace(/<script>document\.addEventListener[^<]*renderMathInElement[^<]*<\/script>/g, '');
 
 // Add KaTeX CSS inline from local node_modules (for WeasyPrint)
 const katexCss = fs.readFileSync('/tmp/node_modules/katex/dist/katex.min.css', 'utf8');
-// Replace font URLs with absolute paths
-const katexFontDir = '/tmp/node_modules/katex/dist/fonts/';
+// Replace font URLs with file:// absolute paths (required by WeasyPrint)
+const katexFontDir = 'file:///tmp/node_modules/katex/dist/fonts/';
 const patchedCss   = katexCss.replace(/url\(fonts\//g, `url(${katexFontDir}`);
 html = html.replace('</head>', `<style>${patchedCss}</style>\n</head>`);
 
