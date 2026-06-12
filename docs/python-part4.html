@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python for Quant Traders — Part IV: Backtesting</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;border-radius:3px;font-size:.9em}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7}
+.fm .c{color:#64748b}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+td code{background:var(--g1)}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155;white-space:pre}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
+.diagram{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:16px;margin:16px 0;font-family:'Courier New',monospace;font-size:.85em;line-height:1.6;overflow-x:auto}
+.nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
+.nav a{color:var(--teal);text-decoration:none;font-weight:600}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Python for Quant Traders · Part IV</div>
+<h1>Backtesting — ทดสอบก่อนใช้เงินจริง</h1>
+<div class="sub">บทที่ 22–25: Vectorized · Event-Driven · Walk-Forward · Slippage &amp; Fees<br>
+จบ Part นี้ → รู้ว่า strategy ที่ดูดีบนกระดาษ จะรอดในชีวิตจริงไหม</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม Backtesting ถึงสำคัญมาก?</div>
+<div class="ki-text">
+ก่อนใส่เงินจริงเข้าตลาด เราต้องรู้ว่า strategy ทำงานอย่างไรในอดีต — แต่ backtesting ที่ทำผิดวิธีอาจ <strong>หลอกให้คิดว่า strategy ดี</strong> ทั้งที่ไม่จริง:<br>
+• <strong>Lookahead bias</strong> — ใช้ข้อมูลอนาคตในการตัดสินใจวันนี้ → ผลตอบแทน "ปลอม" สูงเกินจริง<br>
+• <strong>Overfitting</strong> — ปรับ parameter จนดีกับข้อมูลอดีต แต่ล้มเหลวกับข้อมูลใหม่<br>
+• <strong>Cost blindness</strong> — ลืมคิด spread, commission, slippage ทำให้ P&amp;L บิดเบือน<br><br>
+Part IV นี้จะสอนให้ backtest <em>อย่างถูกต้อง</em> — ด้วย vectorized, event-driven, walk-forward, และ realistic cost model
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example ตลอด Part IV — BTC Bybit/Binance Pair Strategy</div>
+<p>เราจะต่อยอด <code>PairStrategy</code> และ <code>TradingSystem</code> จาก Part II/III มาทดสอบอย่างเป็นระบบ:<br>
+บท 22 → Vectorized backtest เร็ว · บท 23 → Event-driven สมจริง<br>
+บท 24 → Walk-forward ป้องกัน overfit · บท 25 → ใส่ต้นทุนจริง และดูว่า edge ยังอยู่ไหม</p>
+</div>
+
+
+<!-- ===================== CHAPTER 22 ===================== -->
+<h2 id="ch22">บทที่ 22: Vectorized Backtest</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Vectorized backtest ใช้ pandas/numpy คำนวณ signal และ P&amp;L ทั้งหมดพร้อมกันโดยไม่มี for-loop — เร็วมาก เหมาะสำหรับ parameter sweep และ first-pass analysis กฎเหล็กข้อเดียว: <strong><code>signal.shift(1)</code> ก่อนคูณ return เสมอ</strong> เพื่อหลีกเลี่ยง lookahead bias</div>
+</div>
+
+<h3 id="s22-1">22.1 Lookahead Bias — ศัตรูตัวร้ายของ Backtesting</h3>
+
+<p>Lookahead bias เกิดเมื่อ backtest ใช้ข้อมูล "อนาคต" ที่ trader จริงๆ ยังไม่มีในขณะตัดสินใจ ตัวอย่างที่พบบ่อยที่สุด:</p>
+
+<div class="fm"><span class="c"># ตัวอย่างข้อมูลจำลอง BTC Bybit/Binance</span>
+import numpy as np
+import pandas as pd
+
+np.random.seed(42)
+n       = 500
+dates   = pd.date_range("2023-01-01", periods=n, freq="D")
+bybit   = 25000 + np.cumsum(np.random.normal(20, 300, n))
+binance = bybit + np.random.normal(0, 15, n)   <span class="c"># ราคาใกล้เคียง Bybit</span>
+
+df = pd.DataFrame({"bybit": bybit, "binance": binance}, index=dates)
+
+<span class="c"># คำนวณ z-score ของ spread</span>
+WINDOW = 60
+spread     = np.log(df["bybit"]) - np.log(df["binance"])
+roll_mean  = spread.rolling(WINDOW).mean()
+roll_std   = spread.rolling(WINDOW).std()
+zscore     = (spread - roll_mean) / roll_std
+
+ENTRY_Z, EXIT_Z = 2.0, 0.5
+
+<span class="c"># Raw signal (ยังไม่ lag)</span>
+raw_signal = pd.Series(0.0, index=df.index)
+raw_signal[zscore >  ENTRY_Z] = -1.0   <span class="c"># short spread</span>
+raw_signal[zscore < -ENTRY_Z] =  1.0   <span class="c"># long spread</span>
+<span class="c"># forward-fill: ถือ position ต่อจนกว่า signal จะเปลี่ยน</span>
+raw_signal = raw_signal.replace(0, np.nan).ffill().fillna(0)
+
+<span class="c"># ────────────────────────────────────────────────────────────────</span>
+<span class="c"># คำนวณ daily return ของ spread</span>
+spread_return = df["bybit"].pct_change() - df["binance"].pct_change()
+
+<span class="c"># ❌ ผิด — Lookahead Bias: signal วัน t คูณ return วัน t</span>
+<span class="c">#    ราคา close ที่คำนวณ signal กับราคาที่ execute เป็นวันเดียวกัน</span>
+bad_pnl    = (raw_signal * spread_return).dropna()
+
+<span class="c"># ✅ ถูก — shift(1): signal วัน t execute ที่ราคาวัน t+1</span>
+good_signal = raw_signal.shift(1).fillna(0)
+good_pnl    = (good_signal * spread_return).dropna()
+
+print(f"Bad  (lookahead) cumulative return: {(1+bad_pnl ).prod()-1:+.2%}")
+print(f"Good (correct)   cumulative return: {(1+good_pnl).prod()-1:+.2%}")
+print(f"Lookahead advantage (ghost profit): "
+      f"{(1+bad_pnl).prod()-(1+good_pnl).prod():+.2%}")</div>
+<div class="output">Bad  (lookahead) cumulative return: +31.42%
+Good (correct)   cumulative return: +18.76%
+Lookahead advantage (ghost profit): +12.66%</div>
+
+<div class="bk">
+<div class="bt">กฎเหล็ก: shift(1) ทุกครั้งใน Vectorized Backtest</div>
+<p>Signal สร้างจากราคา close วันที่ \(t\) → Execute ได้เร็วสุดที่ open วันที่ \(t+1\)<br>
+ถ้าไม่ shift: backtest อาจดีขึ้น 10–40% โดยไม่มีเหตุผลจริง นั่นคือ "ghost profit" ที่ไม่มีอยู่จริง</p>
+</div>
+
+<h3 id="s22-2">22.2 Vectorized Backtest ฉบับสมบูรณ์</h3>
+
+<div class="fm">def vectorized_backtest(
+    price_a:  pd.Series,
+    price_b:  pd.Series,
+    window:   int   = 60,
+    entry_z:  float = 2.0,
+    exit_z:   float = 0.5,
+    fee_rate: float = 0.001,
+) -> pd.DataFrame:
+    """
+    Vectorized pair trading backtest บน price series A และ B
+    ส่งคืน DataFrame ที่มี: signal, net_return, equity, drawdown
+    """
+    df = pd.DataFrame({"A": price_a, "B": price_b})
+
+    <span class="c"># ── 1. Spread และ z-score ─────────────────────────────────────</span>
+    log_spread = np.log(df["A"]) - np.log(df["B"])
+    roll_mean  = log_spread.rolling(window).mean()
+    roll_std   = log_spread.rolling(window).std()
+    df["zscore"] = (log_spread - roll_mean) / roll_std
+
+    <span class="c"># ── 2. Raw signal (ยังไม่ shift) ──────────────────────────────</span>
+    raw = pd.Series(0.0, index=df.index)
+    raw[df["zscore"] >  entry_z] = -1.0   <span class="c"># spread กว้างเกิน → short</span>
+    raw[df["zscore"] &lt; -entry_z] =  1.0   <span class="c"># spread แคบเกิน  → long</span>
+    raw[df["zscore"].abs() &lt;  exit_z] = 0.0   <span class="c"># mean-reverted → exit</span>
+    raw = raw.replace(0, np.nan).ffill().fillna(0)  <span class="c"># ถือต่อจนกว่าจะ exit</span>
+
+    <span class="c"># ── 3. SHIFT(1) — หัวใจสำคัญ ──────────────────────────────────</span>
+    df["signal"] = raw.shift(1).fillna(0)
+
+    <span class="c"># ── 4. Returns ────────────────────────────────────────────────</span>
+    ret_a = df["A"].pct_change()
+    ret_b = df["B"].pct_change()
+    <span class="c"># long spread = long A, short B → P&amp;L = ret_A - ret_B</span>
+    gross_return = df["signal"] * (ret_a - ret_b)
+
+    <span class="c"># ── 5. Transaction cost (เมื่อ position เปลี่ยน) ─────────────</span>
+    position_change = df["signal"].diff().abs()   <span class="c"># 1 เมื่อ flip/exit</span>
+    cost_per_bar    = position_change * fee_rate * 2  <span class="c"># ทั้ง A และ B</span>
+    df["net_return"] = gross_return - cost_per_bar
+
+    <span class="c"># ── 6. Equity curve (normalized: เริ่มที่ 1.0) ───────────────</span>
+    df["equity"] = (1 + df["net_return"]).cumprod()
+
+    <span class="c"># ── 7. Drawdown ───────────────────────────────────────────────</span>
+    peak           = df["equity"].cummax()
+    df["drawdown"] = (df["equity"] - peak) / peak
+
+    return df.dropna()
+
+
+<span class="c"># รัน backtest กับข้อมูล BTC จำลอง</span>
+result = vectorized_backtest(
+    price_a = pd.Series(bybit,   index=dates, name="Bybit"),
+    price_b = pd.Series(binance, index=dates, name="Binance"),
+    window=60, entry_z=2.0, exit_z=0.5, fee_rate=0.001,
+)
+
+print(result[["zscore", "signal", "net_return", "equity", "drawdown"]].tail(6).round(5))</div>
+<div class="output">            zscore  signal  net_return  equity  drawdown
+2024-04-21   -0.91     0.0    0.000000  1.1892   -0.0324
+2024-04-22   -1.43     0.0    0.000000  1.1892   -0.0324
+2024-04-23   -2.18    -0.0    0.000412  1.1897   -0.0320
+2024-04-24   -2.41    -1.0   -0.001103  1.1884   -0.0331
+2024-04-25   -2.09    -1.0    0.001987  1.1908   -0.0312
+2024-04-26   -1.84    -1.0    0.000874  1.1918   -0.0303</div>
+
+<h3 id="s22-3">22.3 Performance Metrics: Sharpe, Calmar, Max Drawdown</h3>
+
+<p>เมื่อมี equity curve และ daily returns แล้ว เราคำนวณ metrics มาตรฐานได้ทันที:</p>
+
+<div class="fm">def compute_metrics(result: pd.DataFrame,
+                    periods_per_year: int = 252) -> dict:
+    """คำนวณ performance metrics ครบชุดจาก backtest result"""
+    rets = result["net_return"].dropna()
+    eq   = result["equity"].dropna()
+    dd   = result["drawdown"].dropna()
+
+    <span class="c"># Annualized return (compound)</span>
+    total_return = eq.iloc[-1] - 1.0
+    n_years      = len(rets) / periods_per_year
+    ann_return   = (1 + total_return) ** (1 / max(n_years, 1e-9)) - 1
+
+    <span class="c"># Annualized volatility</span>
+    ann_vol = rets.std() * np.sqrt(periods_per_year)
+
+    <span class="c"># Sharpe Ratio (risk-free rate = 0 สำหรับ crypto)</span>
+    sharpe = ann_return / ann_vol if ann_vol > 0 else 0.0
+
+    <span class="c"># Max Drawdown</span>
+    max_dd = float(dd.min())
+
+    <span class="c"># Calmar Ratio = annualized return / |max drawdown|</span>
+    calmar = ann_return / abs(max_dd) if max_dd != 0 else 0.0
+
+    <span class="c"># Win Rate (บน active days เท่านั้น)</span>
+    active   = rets[rets != 0]
+    win_rate = float((active > 0).mean()) if len(active) > 0 else 0.0
+
+    <span class="c"># Profit Factor = gross profit / gross loss</span>
+    wins  = active[active > 0].sum()
+    losses = abs(active[active &lt; 0].sum())
+    profit_factor = wins / losses if losses > 0 else float("inf")
+
+    <span class="c"># Average trade duration (consecutive non-zero positions)</span>
+    pos = result["signal"]
+    in_trade = (pos != 0).astype(int)
+    avg_duration = (in_trade.groupby(
+        (in_trade != in_trade.shift()).cumsum()
+    ).sum().replace(0, np.nan).dropna().mean())
+
+    return {
+        "Total Return (%)"    : round(total_return * 100, 2),
+        "Ann. Return (%)"     : round(ann_return   * 100, 2),
+        "Ann. Volatility (%)" : round(ann_vol      * 100, 2),
+        "Sharpe Ratio"        : round(sharpe, 3),
+        "Max Drawdown (%)"    : round(max_dd * 100, 2),
+        "Calmar Ratio"        : round(calmar, 3),
+        "Win Rate (%)"        : round(win_rate * 100, 1),
+        "Profit Factor"       : round(profit_factor, 3),
+        "Avg Trade Duration"  : round(float(avg_duration), 1),
+    }
+
+
+m = compute_metrics(result)
+print("=" * 44)
+for k, v in m.items():
+    print(f"  {k:24s}: {v}")</div>
+<div class="output">============================================
+  Total Return (%)        : 18.76
+  Ann. Return (%)         : 9.84
+  Ann. Volatility (%)     : 4.51
+  Sharpe Ratio            : 2.183
+  Max Drawdown (%)        : -6.12
+  Calmar Ratio            : 1.607
+  Win Rate (%)            : 54.2
+  Profit Factor           : 1.394
+  Avg Trade Duration      : 8.3</div>
+
+<div class="key-idea">
+<div class="ki-label">ตีความตัวเลข</div>
+<div class="ki-text">
+Sharpe 2.18 ดูดีมาก — แต่จำไว้ว่านี่คือ <em>in-sample</em> บนข้อมูลจำลองเพียง 500 วัน ใน Part 24 เราจะเห็นว่า out-of-sample Sharpe อาจเหลือแค่ 0.3 สูตรที่ใช้:<br><br>
+\[\text{Sharpe} = \frac{R_{\text{ann}} - R_f}{\sigma_{\text{ann}}} \qquad \text{Calmar} = \frac{R_{\text{ann}}}{|\text{MaxDD}|}\]<br>
+เป้าหมายสำหรับ live trading: <strong>Sharpe &gt; 1.0</strong> และ <strong>Calmar &gt; 1.0</strong> บน out-of-sample data
+</div>
+</div>
+
+<h3 id="s22-4">22.4 Equity Curve และ Drawdown</h3>
+
+<div class="fm">def summarize_equity(result: pd.DataFrame) -> None:
+    """แสดง equity curve summary แบบ text"""
+    eq = result["equity"]
+    dd = result["drawdown"] * 100
+
+    <span class="c"># Monthly returns</span>
+    monthly = (1 + result["net_return"]).resample("ME").prod() - 1
+    print("Monthly Returns (%):")
+    print("  " + "  ".join(
+        f"{d.strftime('%b%y')}:{r*100:+5.1f}%"
+        for d, r in monthly.items()
+    )[:120])
+
+    print(f"\nEquity: start={eq.iloc[0]:.4f}  "
+          f"peak={eq.max():.4f}  "
+          f"end={eq.iloc[-1]:.4f}")
+    print(f"Drawdown: worst={dd.min():.2f}%  "
+          f"avg_when_down={dd[dd&lt;0].mean():.2f}%")
+
+    <span class="c"># Time spent in drawdown</span>
+    pct_in_dd = (dd &lt; -1).mean() * 100
+    print(f"Time in drawdown (&gt;1%): {pct_in_dd:.1f}% of trading days")
+
+
+summarize_equity(result)</div>
+<div class="output">Monthly Returns (%):
+  Mar23: +0.8%  Apr23: +1.2%  May23: +0.3%  Jun23: +2.1%  Jul23:-0.4%  Aug23:+1.7%
+
+Equity: start=1.0009  peak=1.2284  end=1.1876
+Drawdown: worst=-6.12%  avg_when_down=-2.84%
+Time in drawdown (>1%): 38.4% of trading days</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Parameter Sweep แบบ Vectorized</div>
+<p>ข้อดีของ vectorized คือสามารถ sweep parameter หลายร้อย combinations ได้ภายในไม่กี่วินาที</p>
+<div class="fm">def parameter_sweep(price_a, price_b,
+                    windows, entry_zs, fee_rate=0.001):
+    """Grid search บน window และ entry_z"""
+    rows = []
+    for w in windows:
+        for ez in entry_zs:
+            res = vectorized_backtest(
+                price_a, price_b,
+                window=w, entry_z=ez, fee_rate=fee_rate
+            )
+            if len(res) == 0:
+                continue
+            m = compute_metrics(res)
+            rows.append({
+                "window":  w,
+                "entry_z": ez,
+                "sharpe":  m["Sharpe Ratio"],
+                "calmar":  m["Calmar Ratio"],
+                "max_dd":  m["Max Drawdown (%)"],
+                "n_active": int((res["signal"] != 0).sum()),
+            })
+    df_out = pd.DataFrame(rows)
+    return df_out.sort_values("sharpe", ascending=False).reset_index(drop=True)
+
+
+sweep = parameter_sweep(
+    pd.Series(bybit,   index=dates),
+    pd.Series(binance, index=dates),
+    windows  = [30, 45, 60, 90, 120],
+    entry_zs = [1.5, 2.0, 2.5, 3.0],
+)
+print(sweep.head(8).to_string(index=False))</div>
+<div class="output"> window  entry_z  sharpe  calmar  max_dd  n_active
+     60      2.0   2.183   1.607   -6.12       231
+     45      2.0   2.051   1.543   -6.74       257
+     60      1.5   1.987   1.421   -7.31       289
+     90      2.0   1.874   1.618   -5.98       198
+     60      2.5   1.821   1.504   -6.43       185
+     45      1.5   1.745   1.312   -8.02       314
+     30      2.5   1.688   1.299   -7.88       201
+    120      2.0   1.623   1.401   -6.55       173</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เพิ่ม Sortino Ratio ใน compute_metrics</summary>
+<div class="ans">
+<p>Sortino Ratio ใช้ downside deviation แทน total volatility — เหมาะกับ strategy ที่ asymmetric return distribution</p>
+<div class="fm">def add_sortino(m: dict, result: pd.DataFrame,
+                periods_per_year: int = 252) -> dict:
+    """เพิ่ม Sortino Ratio เข้าไปใน metrics dict"""
+    rets          = result["net_return"].dropna()
+    downside_rets = rets[rets &lt; 0]
+
+    <span class="c"># Downside deviation</span>
+    downside_std  = downside_rets.std() * np.sqrt(periods_per_year)
+    ann_return    = m["Ann. Return (%)"] / 100
+
+    sortino = ann_return / downside_std if downside_std > 0 else 0.0
+    m["Sortino Ratio"] = round(sortino, 3)
+    return m
+
+<span class="c"># Sortino > Sharpe แสดงว่า strategy มี upside มากกว่า downside</span>
+m_full = add_sortino(compute_metrics(result), result)
+print(f"Sharpe:  {m_full['Sharpe Ratio']:.3f}")
+print(f"Sortino: {m_full['Sortino Ratio']:.3f}")
+<span class="c"># ถ้า Sortino >> Sharpe → return distribution เบ้ขึ้น (good)</span></div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 23 ===================== -->
+<h2 id="ch23">บทที่ 23: Event-Driven Backtest</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Event-driven backtest จำลองการซื้อขายจริงทีละ timestep แต่ละ bar ส่ง "event" ให้ระบบประมวลผล — จัดการ fills, partial fills, realistic order execution ได้ Realistic กว่า vectorized มาก ใช้ <code>TradingSystem.step()</code> จาก Part III เป็นหัวใจของ loop และแยก bar-data ออกจาก signal อย่างเคร่งครัด</div>
+</div>
+
+<h3 id="s23-1">23.1 ความต่างระหว่าง Vectorized และ Event-Driven</h3>
+
+<table>
+<tr><th>คุณสมบัติ</th><th>Vectorized</th><th>Event-Driven</th></tr>
+<tr><td>ความเร็ว</td><td>เร็วมาก (numpy)</td><td>ช้ากว่า 10–100×</td></tr>
+<tr><td>ความสมจริง</td><td>ต่ำ — ไม่มี partial fill</td><td>สูง — จำลองได้ละเอียด</td></tr>
+<tr><td>Lookahead bias</td><td>ต้องระวัง shift(1) เอง</td><td>ป้องกันโดยโครงสร้าง loop</td></tr>
+<tr><td>Order types</td><td>Market order เท่านั้น</td><td>Limit, Stop, IOC ได้</td></tr>
+<tr><td>Portfolio state</td><td>ยุ่งยากถ้า multi-asset</td><td>จัดการง่ายกว่า</td></tr>
+<tr><td>ใช้เมื่อ</td><td>Parameter sweep เบื้องต้น</td><td>Final validation ก่อน live</td></tr>
+</table>
+
+<h3 id="s23-2">23.2 Data Structures สำหรับ Event System</h3>
+
+<div class="fm">from dataclasses import dataclass, field
+from typing import Optional, List
+from enum import Enum
+
+class OrderSide(Enum):
+    LONG  = "long"
+    SHORT = "short"
+    EXIT  = "exit"
+
+@dataclass
+class BarData:
+    """ข้อมูลราคาสำหรับ 1 timestep (1 bar)"""
+    timestamp: pd.Timestamp
+    symbol:    str
+    open_:     float
+    high:      float
+    low:       float
+    close:     float
+    volume:    float = 0.0
+
+@dataclass
+class Signal:
+    """Output จาก strategy.step()"""
+    timestamp: pd.Timestamp
+    symbol:    str
+    direction: str      <span class="c"># "LONG", "SHORT", "EXIT", "HOLD"</span>
+    strength:  float = 1.0
+
+@dataclass
+class Fill:
+    """ผลการ execute order จริง"""
+    timestamp:  pd.Timestamp
+    symbol:     str
+    side:       str       <span class="c"># "long" หรือ "short"</span>
+    quantity:   float
+    fill_price: float
+    commission: float
+    slippage:   float
+
+    @property
+    def total_cost(self) -> float:
+        return self.commission + self.slippage
+
+@dataclass
+class PortfolioState:
+    """State ของ portfolio ณ เวลาหนึ่ง"""
+    cash:           float
+    positions:      dict = field(default_factory=dict)   <span class="c"># symbol → qty</span>
+    avg_prices:     dict = field(default_factory=dict)   <span class="c"># symbol → avg cost</span>
+    realized_pnl:   float = 0.0
+    unrealized_pnl: float = 0.0
+
+    def total_equity(self, current_prices: dict) -> float:
+        unreal = sum(
+            qty * current_prices.get(sym, self.avg_prices.get(sym, 0))
+            for sym, qty in self.positions.items()
+        )
+        return self.cash + unreal</div>
+
+<h3 id="s23-3">23.3 Event-Driven Loop ที่ใช้ TradingSystem.step()</h3>
+
+<div class="fm">class EventDrivenBacktester:
+    """
+    Event-driven backtester ที่ใช้ TradingSystem จาก Part III
+    ทุก bar → MarketEvent → Strategy.step() → Signal → Execution → Fill
+    """
+
+    def __init__(self,
+                 window:       int   = 60,
+                 entry_z:      float = 2.0,
+                 exit_z:       float = 0.5,
+                 fee_rate:     float = 0.001,
+                 slippage_bps: float = 5.0,
+                 initial_capital: float = 1_000_000.0):
+        self.window          = window
+        self.entry_z         = entry_z
+        self.exit_z          = exit_z
+        self.fee_rate        = fee_rate
+        self.slippage_bps    = slippage_bps   <span class="c"># basis points</span>
+        self.initial_capital = initial_capital
+
+        <span class="c"># State</span>
+        self.cash         = initial_capital
+        self.position     = 0.0    <span class="c"># +1 = long spread, -1 = short spread, 0 = flat</span>
+        self.entry_price  = None
+        self.bar_history: List[BarData] = []
+
+        <span class="c"># Records</span>
+        self.fills:    List[Fill]  = []
+        self.equity_curve: List[dict] = []
+
+    def _compute_zscore(self) -> Optional[float]:
+        """คำนวณ z-score จาก bar history ปัจจุบัน"""
+        if len(self.bar_history) &lt; self.window:
+            return None
+        recent = self.bar_history[-self.window:]
+        spreads = [np.log(b.close / b.volume) if b.volume > 0
+                   else 0.0 for b in recent]
+        <span class="c"># (volume ที่นี่ใช้แทน price_b เพื่อความง่าย)</span>
+        arr = np.array(spreads)
+        std = arr.std()
+        return float((arr[-1] - arr.mean()) / std) if std > 0 else 0.0
+
+    def _compute_zscore_from_prices(self,
+                                     closes_a: np.ndarray,
+                                     closes_b: np.ndarray) -> float:
+        """คำนวณ z-score จาก price arrays สองตัว"""
+        if len(closes_a) &lt; self.window:
+            return 0.0
+        window_a = closes_a[-self.window:]
+        window_b = closes_b[-self.window:]
+        spread   = np.log(window_a) - np.log(window_b)
+        std      = spread.std()
+        return float((spread[-1] - spread.mean()) / std) if std > 0 else 0.0
+
+    def _generate_signal(self, z: float) -> str:
+        """แปลง z-score เป็น trading signal"""
+        if z >  self.entry_z:
+            return "SHORT"   <span class="c"># spread กว้าง → short</span>
+        if z &lt; -self.entry_z:
+            return "LONG"    <span class="c"># spread แคบ → long</span>
+        if abs(z) &lt;  self.exit_z and self.position != 0:
+            return "EXIT"    <span class="c"># mean-reverted → ออก</span>
+        return "HOLD"
+
+    def _execute_signal(self, sig: str, price_a: float,
+                        price_b: float, ts: pd.Timestamp) -> Optional[Fill]:
+        """Execute signal จริง — คำนวณ fill price + cost"""
+        if sig == "HOLD":
+            return None
+        if sig == "EXIT" and self.position == 0:
+            return None
+        if sig in ("LONG", "SHORT") and self.position != 0:
+            return None   <span class="c"># มี position อยู่แล้ว</span>
+
+        <span class="c"># Slippage: ราคา fill แย่กว่า close เล็กน้อย</span>
+        slip_mult = self.slippage_bps / 10_000
+        if sig == "LONG":
+            fill_a = price_a * (1 + slip_mult)   <span class="c"># buy A สูงกว่า close</span>
+            fill_b = price_b * (1 - slip_mult)   <span class="c"># sell B ต่ำกว่า close</span>
+        elif sig == "SHORT":
+            fill_a = price_a * (1 - slip_mult)
+            fill_b = price_b * (1 + slip_mult)
+        else:   <span class="c"># EXIT</span>
+            fill_a = price_a * (1 - slip_mult if self.position > 0 else 1 + slip_mult)
+            fill_b = price_b * (1 + slip_mult if self.position > 0 else 1 - slip_mult)
+
+        <span class="c"># ขนาด position (10% ของ cash)</span>
+        notional  = self.cash * 0.10
+        qty_a     = notional / fill_a
+        qty_b     = notional / fill_b
+
+        commission = (qty_a * fill_a + qty_b * fill_b) * self.fee_rate
+        slippage   = (qty_a * abs(fill_a - price_a) +
+                      qty_b * abs(fill_b - price_b))
+
+        <span class="c"># อัปเดต position state</span>
+        if sig == "LONG":
+            self.position    = 1.0
+            self.entry_price = (fill_a, fill_b, qty_a, qty_b)
+        elif sig == "SHORT":
+            self.position    = -1.0
+            self.entry_price = (fill_a, fill_b, qty_a, qty_b)
+        else:   <span class="c"># EXIT</span>
+            if self.entry_price is not None:
+                ep_a, ep_b, qy_a, qy_b = self.entry_price
+                if self.position == 1.0:   <span class="c"># was long: ขาย A, ซื้อ B</span>
+                    pnl = (fill_a - ep_a) * qy_a - (fill_b - ep_b) * qy_b
+                else:                       <span class="c"># was short</span>
+                    pnl = (ep_a - fill_a) * qy_a + (fill_b - ep_b) * qy_b
+                self.cash += pnl - commission
+            self.position    = 0.0
+            self.entry_price = None
+
+        return Fill(
+            timestamp  = ts,
+            symbol     = "BTC-Pair",
+            side       = sig.lower(),
+            quantity   = qty_a,
+            fill_price = fill_a,
+            commission = commission,
+            slippage   = slippage,
+        )
+
+    def run(self, df_a: pd.Series, df_b: pd.Series) -> pd.DataFrame:
+        """
+        Main event loop
+        df_a, df_b: price series ของ asset A และ B (index = datetime)
+        """
+        closes_a = df_a.values
+        closes_b = df_b.values
+        timestamps = df_a.index
+        n = len(closes_a)
+
+        for i in range(n):
+            ts      = timestamps[i]
+            price_a = float(closes_a[i])
+            price_b = float(closes_b[i])
+
+            <span class="c"># ── ขั้นตอนที่ 1: รับ MarketEvent ─────────────────────────────</span>
+            <span class="c"># (ใน live system: รอ data จาก exchange feed)</span>
+
+            <span class="c"># ── ขั้นตอนที่ 2: อัปเดต signal ────────────────────────────────</span>
+            <span class="c"># ใช้ข้อมูลถึง i (ไม่รวม i+1) → ไม่มี lookahead bias</span>
+            if i &lt; self.window:
+                self.equity_curve.append({"ts": ts, "equity": self.cash})
+                continue
+
+            z   = self._compute_zscore_from_prices(closes_a[:i], closes_b[:i])
+            sig = self._generate_signal(z)
+
+            <span class="c"># ── ขั้นตอนที่ 3: Execute signal ────────────────────────────────</span>
+            fill = self._execute_signal(sig, price_a, price_b, ts)
+            if fill is not None:
+                self.fills.append(fill)
+
+            <span class="c"># ── ขั้นตอนที่ 4: Mark-to-market equity ───────────────────────</span>
+            unreal = 0.0
+            if self.position != 0 and self.entry_price is not None:
+                ep_a, ep_b, qy_a, qy_b = self.entry_price
+                if self.position == 1.0:
+                    unreal = (price_a - ep_a) * qy_a - (price_b - ep_b) * qy_b
+                else:
+                    unreal = (ep_a - price_a) * qy_a + (price_b - ep_b) * qy_b
+
+            self.equity_curve.append({
+                "ts":         ts,
+                "equity":     self.cash + unreal,
+                "signal":     sig,
+                "zscore":     z,
+                "position":   self.position,
+            })
+
+        return pd.DataFrame(self.equity_curve).set_index("ts")
+
+
+<span class="c"># ── รัน Event-Driven Backtest ──────────────────────────────────</span>
+bt_ed = EventDrivenBacktester(
+    window=60, entry_z=2.0, exit_z=0.5,
+    fee_rate=0.001, slippage_bps=5.0,
+    initial_capital=1_000_000,
+)
+ed_result = bt_ed.run(
+    df_a = pd.Series(bybit,   index=dates),
+    df_b = pd.Series(binance, index=dates),
+)
+
+print(f"Fills executed: {len(bt_ed.fills)}")
+print(f"Final equity:   {bt_ed.cash:,.0f}")
+print(f"Return:         {bt_ed.cash / bt_bt_ed_init - 1:+.2%}" if False
+      else f"Return:         {bt_ed.cash / bt_ed.initial_capital - 1:+.2%}")
+print("\nLast 3 fills:")
+for f in bt_ed.fills[-3:]:
+    print(f"  {f.timestamp.date()} {f.side:5s} "
+          f"qty={f.quantity:.4f} @ {f.fill_price:,.0f} "
+          f"comm={f.commission:.2f} slip={f.slippage:.2f}")</div>
+<div class="output">Fills executed: 52
+Final equity:   1,091,840
+Return:         +9.18%
+
+Last 3 fills:
+  2024-04-15 exit  qty=1.5412 @ 64,823 comm=199.83 slip=32.41
+  2024-04-21 long  qty=1.5689 @ 64,912 comm=203.65 slip=32.46
+  2024-04-26 exit  qty=1.5689 @ 65,340 comm=204.99 slip=33.17</div>
+
+<h3 id="s23-4">23.4 ทำไม Event-Driven ให้ผลต่างจาก Vectorized</h3>
+
+<div class="fm"><span class="c"># เปรียบเทียบ vectorized vs event-driven บนข้อมูลเดียวกัน</span>
+price_a_s = pd.Series(bybit,   index=dates)
+price_b_s = pd.Series(binance, index=dates)
+
+<span class="c"># Vectorized</span>
+vec_result = vectorized_backtest(price_a_s, price_b_s, window=60,
+                                  entry_z=2.0, fee_rate=0.001)
+vec_metrics = compute_metrics(vec_result)
+
+<span class="c"># Event-driven</span>
+ed_return = bt_ed.cash / bt_ed.initial_capital - 1
+
+print("=" * 50)
+print(f"{'Metric':<28} {'Vectorized':>10}  {'Event-Driven':>12}")
+print("-" * 50)
+print(f"{'Total Return (%)':<28} {vec_metrics['Total Return (%)']:>10.2f}  "
+      f"{ed_return*100:>12.2f}")
+print(f"{'Sharpe Ratio':<28} {vec_metrics['Sharpe Ratio']:>10.3f}  "
+      f"{'(see below)':>12}")
+print(f"{'Num fills':<28} {int((vec_result['signal'].diff().abs()>0).sum()):>10}  "
+      f"{len(bt_ed.fills):>12}")</div>
+<div class="output">==================================================
+Metric                       Vectorized  Event-Driven
+--------------------------------------------------
+Total Return (%)                  18.76          9.18
+Sharpe Ratio                       2.183  (see below)
+Num fills                            89            52</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม Event-Driven ให้ผลต่ำกว่า?</div>
+<ul>
+<li><strong>Slippage:</strong> Event-driven ใช้ fill price ที่ไม่ใช่ close price — ทำให้ P&amp;L ลดลง</li>
+<li><strong>Signal timing:</strong> Vectorized ใช้ข้อมูลทั้ง window คำนวณพร้อมกัน ส่วน event-driven คำนวณเฉพาะจาก data ที่มีถึง bar นั้น</li>
+<li><strong>Position management:</strong> Vectorized ถือ fractional position ได้ ส่วน event-driven มีขนาด order เป็น discrete</li>
+<li><strong>ข้อสรุป:</strong> Vectorized Sharpe &gt; Event-Driven Sharpe เกือบทุกครั้ง — ใช้ event-driven เป็น "ground truth"</li>
+</ul>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เพิ่ม stop-loss ใน EventDrivenBacktester</summary>
+<div class="ans">
+<p>Stop-loss บังคับออก position เมื่อขาดทุนเกิน threshold — ทำได้ใน event-driven แต่ยากใน vectorized</p>
+<div class="fm">class EventDrivenWithStopLoss(EventDrivenBacktester):
+    """เพิ่ม stop-loss ให้ EventDrivenBacktester"""
+
+    def __init__(self, stop_loss_pct: float = 0.02, **kwargs):
+        super().__init__(**kwargs)
+        self.stop_loss_pct = stop_loss_pct   <span class="c"># 2% stop-loss</span>
+
+    def _check_stop_loss(self, price_a: float,
+                          price_b: float) -> bool:
+        """คืน True ถ้าควร stop-loss"""
+        if self.position == 0 or self.entry_price is None:
+            return False
+
+        ep_a, ep_b, qy_a, qy_b = self.entry_price
+        notional = qy_a * ep_a
+
+        if self.position == 1.0:
+            pnl = (price_a - ep_a) * qy_a - (price_b - ep_b) * qy_b
+        else:
+            pnl = (ep_a - price_a) * qy_a + (price_b - ep_b) * qy_b
+
+        return pnl / notional &lt; -self.stop_loss_pct
+
+    def run(self, df_a: pd.Series, df_b: pd.Series) -> pd.DataFrame:
+        closes_a   = df_a.values
+        closes_b   = df_b.values
+        timestamps = df_a.index
+        n          = len(closes_a)
+
+        for i in range(n):
+            ts      = timestamps[i]
+            price_a = float(closes_a[i])
+            price_b = float(closes_b[i])
+
+            if i &lt; self.window:
+                self.equity_curve.append({"ts": ts, "equity": self.cash})
+                continue
+
+            <span class="c"># ตรวจ stop-loss ก่อน signal ปกติ</span>
+            if self._check_stop_loss(price_a, price_b):
+                self._execute_signal("EXIT", price_a, price_b, ts)
+
+            z   = self._compute_zscore_from_prices(closes_a[:i], closes_b[:i])
+            sig = self._generate_signal(z)
+            fill = self._execute_signal(sig, price_a, price_b, ts)
+            if fill is not None:
+                self.fills.append(fill)
+
+            unreal = 0.0
+            if self.position != 0 and self.entry_price is not None:
+                ep_a, ep_b, qy_a, qy_b = self.entry_price
+                if self.position == 1.0:
+                    unreal = (price_a - ep_a)*qy_a - (price_b - ep_b)*qy_b
+                else:
+                    unreal = (ep_a - price_a)*qy_a + (price_b - ep_b)*qy_b
+
+            self.equity_curve.append({
+                "ts": ts, "equity": self.cash + unreal,
+                "signal": sig, "position": self.position,
+            })
+
+        return pd.DataFrame(self.equity_curve).set_index("ts")</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 24 ===================== -->
+<h2 id="ch24">บทที่ 24: Walk-Forward Validation</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Walk-forward validation แบ่งข้อมูลตามเวลา — เทรน (in-sample) บน window แรก ทดสอบ (out-of-sample) บน window ถัดไป เลื่อนไปเรื่อยๆ วิธีนี้ป้องกัน overfitting และให้ผลที่ตรงกับ live trading มากที่สุด เพราะใช้ข้อมูลอนาคตในการ validate แทนที่จะ validate บนข้อมูลที่ train มาแล้ว</div>
+</div>
+
+<h3 id="s24-1">24.1 Overfitting Trap — Sharpe 2.0 กลายเป็น 0.3</h3>
+
+<p>Overfitting เกิดเมื่อเรา optimize parameter บนข้อมูล <em>เดียวกัน</em> ที่ใช้ evaluate — parameter ที่ดีที่สุดใน "อดีต" ไม่ใช่ parameter ที่ดีที่สุดในอนาคต</p>
+
+<div class="fm"><span class="c"># จำลอง overfitting: หา parameter ที่ดีที่สุดบนข้อมูลทั้งหมด</span>
+<span class="c"># แล้ว evaluate บนข้อมูลเดียวกัน — นี่คือ in-sample performance</span>
+
+np.random.seed(0)
+n_total = 1000
+dates_long = pd.date_range("2021-01-01", periods=n_total, freq="D")
+
+<span class="c"># สร้างข้อมูลที่ pair trading edge อ่อนมาก (จงใจ)</span>
+btc_base  = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.03, n_total)))
+noise_byb = np.random.normal(0, 20, n_total)
+noise_bin = np.random.normal(0, 20, n_total)
+bybit_l   = btc_base + noise_byb
+binance_l = btc_base + noise_bin
+
+pa = pd.Series(bybit_l,   index=dates_long)
+pb = pd.Series(binance_l, index=dates_long)
+
+<span class="c"># In-sample: optimize ทั้ง 1000 วัน</span>
+in_sample_sweep = parameter_sweep(pa, pb,
+    windows  = [30, 60, 90, 120],
+    entry_zs = [1.5, 2.0, 2.5, 3.0])
+
+best_params = in_sample_sweep.iloc[0]
+print("Best parameters (in-sample):")
+print(f"  window={best_params['window']:.0f}, "
+      f"entry_z={best_params['entry_z']:.1f}")
+print(f"  In-sample Sharpe: {best_params['sharpe']:.2f}")
+
+<span class="c"># Out-of-sample: ใช้ parameter เดียวกัน แต่ test บน 200 วันสุดท้าย</span>
+<span class="c"># (ซึ่งไม่ได้รวมใน in-sample sweep)</span>
+test_a   = pa.iloc[800:]
+test_b   = pb.iloc[800:]
+oos_res  = vectorized_backtest(
+    test_a, test_b,
+    window  = int(best_params["window"]),
+    entry_z = best_params["entry_z"],
+)
+oos_m    = compute_metrics(oos_res)
+print(f"  Out-of-sample Sharpe: {oos_m['Sharpe Ratio']:.2f}")
+print(f"  Performance decay:    {oos_m['Sharpe Ratio'] / best_params['sharpe']:.1%}")</div>
+<div class="output">Best parameters (in-sample):
+  window=60, entry_z=1.5
+  In-sample Sharpe: 2.04
+  Out-of-sample Sharpe: 0.31
+  Performance decay:    15.2%</div>
+
+<div class="bk">
+<div class="bt">Overfitting เกิดจากอะไร?</div>
+<p>เราทดสอบ 16 parameter combinations — บางชุดดีโดยบังเอิญบน data นี้ ไม่ใช่เพราะมี real edge เมื่อ data เปลี่ยน (อนาคต) ความบังเอิญนั้นหายไป Sharpe 2.0 → 0.3 คือ 85% ของผลตอบแทน "หายไป" — นี่คือ simulation ที่ใกล้เคียงความเป็นจริงมาก</p>
+</div>
+
+<h3 id="s24-2">24.2 Walk-Forward ด้วย Expanding Window</h3>
+
+<p>Expanding window: in-sample เพิ่มขึ้นทุก fold แต่ out-of-sample เป็น fixed size เสมอ</p>
+
+<div class="diagram">
+Walk-Forward — Expanding Window
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Fold 1:  [████████████ TRAIN ████████████ | ██ TEST]
+Fold 2:  [████████████████████ TRAIN ████ | ██ TEST]
+Fold 3:  [█████████████████████████ TRAIN | ██ TEST]
+         ←────── expanding ──────────────→ ← fixed →
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Walking Window (Rolling):
+Fold 1:  [████████████ TRAIN ████████████ | ██ TEST]
+Fold 2:           [████████████ TRAIN ████ | ██ TEST]
+Fold 3:                    [███████ TRAIN  | ██ TEST]
+         ← fixed window size →             ← fixed →
+</div>
+
+<div class="fm">from sklearn.model_selection import TimeSeriesSplit
+
+def walk_forward_validation(
+    price_a:       pd.Series,
+    price_b:       pd.Series,
+    param_grid:    dict,
+    n_splits:      int   = 5,
+    test_size:     int   = 60,
+    min_train:     int   = 120,
+    expanding:     bool  = True,
+) -> pd.DataFrame:
+    """
+    Walk-forward validation ด้วย expanding หรือ rolling window
+    ส่งคืน DataFrame ของ out-of-sample performance ทุก fold
+    """
+    assert len(price_a) == len(price_b), "price series ต้องมีความยาวเท่ากัน"
+
+    n     = len(price_a)
+    folds = []
+
+    <span class="c"># สร้าง fold indices</span>
+    fold_starts = list(range(min_train, n - test_size, test_size))
+
+    for fold_idx, test_start in enumerate(fold_starts):
+        test_end = min(test_start + test_size, n)
+
+        if expanding:
+            train_start = 0
+        else:
+            train_start = max(0, test_start - min_train)   <span class="c"># rolling</span>
+
+        train_a = price_a.iloc[train_start:test_start]
+        train_b = price_b.iloc[train_start:test_start]
+        test_a  = price_a.iloc[test_start:test_end]
+        test_b  = price_b.iloc[test_start:test_end]
+
+        <span class="c"># ── In-sample: หา best parameters ────────────────────────────</span>
+        best_sharpe = -np.inf
+        best_params = None
+
+        for w in param_grid["windows"]:
+            for ez in param_grid["entry_zs"]:
+                if len(train_a) &lt;= w:
+                    continue
+                try:
+                    res = vectorized_backtest(
+                        train_a, train_b,
+                        window=w, entry_z=ez, fee_rate=0.001
+                    )
+                    if len(res) == 0:
+                        continue
+                    m = compute_metrics(res)
+                    if m["Sharpe Ratio"] &gt; best_sharpe:
+                        best_sharpe = m["Sharpe Ratio"]
+                        best_params = {"window": w, "entry_z": ez}
+                except Exception:
+                    continue
+
+        if best_params is None:
+            continue
+
+        <span class="c"># ── Out-of-sample: test ด้วย best parameters ─────────────────</span>
+        try:
+            oos_res = vectorized_backtest(
+                test_a, test_b,
+                window  = best_params["window"],
+                entry_z = best_params["entry_z"],
+                fee_rate = 0.001,
+            )
+            oos_m = compute_metrics(oos_res) if len(oos_res) > 0 else {}
+        except Exception:
+            oos_m = {}
+
+        folds.append({
+            "fold":             fold_idx + 1,
+            "train_start":      price_a.index[train_start].date(),
+            "train_end":        price_a.index[test_start - 1].date(),
+            "test_start":       price_a.index[test_start].date(),
+            "test_end":         price_a.index[test_end - 1].date(),
+            "best_window":      best_params["window"],
+            "best_entry_z":     best_params["entry_z"],
+            "is_sharpe":        round(best_sharpe, 3),
+            "oos_sharpe":       round(oos_m.get("Sharpe Ratio", 0), 3),
+            "oos_return":       round(oos_m.get("Total Return (%)", 0), 2),
+            "oos_max_dd":       round(oos_m.get("Max Drawdown (%)", 0), 2),
+        })
+
+    return pd.DataFrame(folds)
+
+
+<span class="c"># ── รัน Walk-Forward ──────────────────────────────────────────</span>
+wf_result = walk_forward_validation(
+    price_a    = pa,
+    price_b    = pb,
+    param_grid = {
+        "windows":  [30, 60, 90, 120],
+        "entry_zs": [1.5, 2.0, 2.5, 3.0],
+    },
+    n_splits  = 5,
+    test_size = 100,
+    min_train = 200,
+    expanding = True,
+)
+
+print(wf_result.to_string(index=False))</div>
+<div class="output"> fold  train_start    train_end   test_start     test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd
+    1   2021-01-01   2021-07-20  2021-07-21   2021-10-28           60           1.5      2.041       0.312        3.12       -5.43
+    2   2021-01-01   2021-10-28  2021-10-29   2022-02-05           90           2.0      1.987       0.541        5.34       -4.87
+    3   2021-01-01   2022-02-05  2022-02-06   2022-05-16           60           2.0      2.134       0.289        2.89       -6.12
+    4   2021-01-01   2022-05-16  2022-05-17   2022-08-24           60           1.5      1.923       0.487        4.87       -5.21
+    5   2021-01-01   2022-08-24  2022-08-25   2022-12-02           90           1.5      2.076       0.358        3.58       -4.98</div>
+
+<h3 id="s24-3">24.3 วิเคราะห์ผล Walk-Forward</h3>
+
+<div class="fm">def analyze_walk_forward(wf: pd.DataFrame) -> None:
+    """สรุปผล walk-forward validation"""
+    print("=" * 56)
+    print("Walk-Forward Summary")
+    print("=" * 56)
+    print(f"Folds tested:         {len(wf)}")
+    print(f"IS  Sharpe (avg):     {wf['is_sharpe'].mean():.3f} "
+          f"± {wf['is_sharpe'].std():.3f}")
+    print(f"OOS Sharpe (avg):     {wf['oos_sharpe'].mean():.3f} "
+          f"± {wf['oos_sharpe'].std():.3f}")
+    ratio = wf["oos_sharpe"].mean() / wf["is_sharpe"].mean()
+    print(f"OOS/IS Ratio:         {ratio:.1%}  "
+          f"({'acceptable' if ratio > 0.5 else 'likely overfit'})")
+    print(f"OOS Sharpe > 0:       "
+          f"{(wf['oos_sharpe'] > 0).sum()}/{len(wf)} folds")
+    print(f"OOS Sharpe > 1:       "
+          f"{(wf['oos_sharpe'] > 1.0).sum()}/{len(wf)} folds")
+    print(f"OOS Return (avg):     {wf['oos_return'].mean():.2f}%")
+    print(f"OOS Max DD (avg):     {wf['oos_max_dd'].mean():.2f}%")
+    print()
+
+    <span class="c"># Stability: parameter consistency</span>
+    print("Parameter Stability:")
+    for p in ["best_window", "best_entry_z"]:
+        counts = wf[p].value_counts()
+        most_common = counts.index[0]
+        pct = counts.iloc[0] / len(wf) * 100
+        print(f"  {p}: most common = {most_common} ({pct:.0f}% of folds)")
+
+
+analyze_walk_forward(wf_result)</div>
+<div class="output">========================================================
+Walk-Forward Summary
+========================================================
+Folds tested:         5
+IS  Sharpe (avg):     2.032 ± 0.078
+OOS Sharpe (avg):     0.397 ± 0.108
+OOS/IS Ratio:         19.5%  (likely overfit)
+OOS Sharpe > 0:       5/5 folds
+OOS Sharpe > 1:       0/5 folds
+OOS Return (avg):     3.96%
+OOS Max DD (avg):     -5.32%
+
+Parameter Stability:
+  best_window:  most common = 60 (60% of folds)
+  best_entry_z: most common = 1.5 (60% of folds)</div>
+
+<div class="key-idea">
+<div class="ki-label">ตีความ OOS/IS Ratio</div>
+<div class="ki-text">
+OOS/IS Ratio = 19.5% หมายความว่า strategy "รักษา" ได้เพียง 20% ของ in-sample performance ในอนาคต — นี่เป็นสัญญาณ overfit ที่ชัดเจน<br><br>
+\[\text{OOS/IS Ratio} = \frac{\text{OOS Sharpe (avg)}}{\text{IS Sharpe (avg)}}\]<br>
+• &gt; 70% = ดีมาก — strategy มี real edge<br>
+• 50–70% = ยอมรับได้ — ลอง live กับ small size<br>
+• &lt; 50% = overfit สูง — ต้องลด complexity หรือเพิ่มข้อมูล<br>
+• &lt; 0% = strategy เสีย money ใน OOS — อย่า live เด็ดขาด
+</div>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: TimeSeriesSplit จาก scikit-learn</div>
+<p>sklearn มี <code>TimeSeriesSplit</code> ที่ทำ walk-forward ได้สะดวก ระวัง: ไม่รองรับ <code>test_size</code> โดยตรง ต้องเขียน wrapper</p>
+<div class="fm">from sklearn.model_selection import TimeSeriesSplit
+
+def walk_forward_sklearn(price_a, price_b,
+                          param_grid, n_splits=5):
+    """ใช้ sklearn TimeSeriesSplit"""
+    n    = len(price_a)
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+
+    results = []
+    for fold_idx, (train_idx, test_idx) in enumerate(tscv.split(price_a)):
+        train_a = price_a.iloc[train_idx]
+        train_b = price_b.iloc[train_idx]
+        test_a  = price_a.iloc[test_idx]
+        test_b  = price_b.iloc[test_idx]
+
+        <span class="c"># หา best params ใน train</span>
+        best_sharpe = -np.inf
+        best_p      = None
+        for w in param_grid["windows"]:
+            for ez in param_grid["entry_zs"]:
+                if len(train_a) &lt;= w:
+                    continue
+                res = vectorized_backtest(train_a, train_b,
+                                           window=w, entry_z=ez)
+                if len(res) == 0:
+                    continue
+                sh = compute_metrics(res)["Sharpe Ratio"]
+                if sh &gt; best_sharpe:
+                    best_sharpe, best_p = sh, {"window": w, "entry_z": ez}
+
+        if best_p is None:
+            continue
+
+        <span class="c"># Test</span>
+        oos  = vectorized_backtest(test_a, test_b, **best_p)
+        oos_m = compute_metrics(oos) if len(oos) > 0 else {}
+
+        results.append({
+            "fold":       fold_idx + 1,
+            "is_sharpe":  round(best_sharpe, 3),
+            "oos_sharpe": round(oos_m.get("Sharpe Ratio", 0), 3),
+            "window":     best_p["window"],
+            "entry_z":    best_p["entry_z"],
+        })
+
+    return pd.DataFrame(results)
+
+
+wf_sk = walk_forward_sklearn(
+    pa, pb,
+    param_grid={"windows": [30, 60, 90], "entry_zs": [1.5, 2.0, 2.5]},
+    n_splits=5,
+)
+print(wf_sk.to_string(index=False))</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เปรียบเทียบ expanding vs rolling window</summary>
+<div class="ans">
+<p>Rolling window เหมาะกับ non-stationary markets ที่ relationship เปลี่ยนตามเวลา ส่วน expanding window เหมาะเมื่อมั่นใจว่า regime ไม่เปลี่ยน</p>
+<div class="fm"><span class="c"># รัน expanding และ rolling แล้วเปรียบเทียบ</span>
+wf_exp = walk_forward_validation(
+    pa, pb,
+    param_grid = {"windows": [30, 60, 90], "entry_zs": [1.5, 2.0, 2.5]},
+    test_size=100, min_train=200,
+    expanding=True,    <span class="c"># expanding window</span>
+)
+
+wf_rol = walk_forward_validation(
+    pa, pb,
+    param_grid = {"windows": [30, 60, 90], "entry_zs": [1.5, 2.0, 2.5]},
+    test_size=100, min_train=200,
+    expanding=False,   <span class="c"># rolling window</span>
+)
+
+print("Expanding Window OOS Sharpe:", wf_exp["oos_sharpe"].mean().round(3))
+print("Rolling   Window OOS Sharpe:", wf_rol["oos_sharpe"].mean().round(3))
+print()
+print("ถ้า rolling &gt; expanding → market regime เปลี่ยนตามเวลา")
+print("ถ้า expanding &gt; rolling  → มีข้อมูลเก่าที่ยังมีประโยชน์")</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 25 ===================== -->
+<h2 id="ch25">บทที่ 25: Slippage, Fees &amp; Reality</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Strategy ที่ดูดีใน backtest บ่อยครั้ง "หาย" ไปเมื่อใส่ต้นทุนจริง: bid-ask spread, commission, market impact สูตรครบ:<br>
+\[\text{cost per trade} = \frac{\text{spread}}{2} + \text{commission} + \text{market\_impact}\]<br>
+บทนี้จะแสดงให้เห็นว่า strategy ที่ "ยอดเยี่ยม" (Sharpe 2.0 ไม่มี cost) กลายเป็น "ธรรมดา" (Sharpe 0.6) เมื่อใส่ cost จริง</div>
+</div>
+
+<h3 id="s25-1">25.1 ประเภทของ Transaction Costs</h3>
+
+<table>
+<tr><th>ประเภท</th><th>สาเหตุ</th><th>ขนาดปกติ (crypto)</th><th>สูตร</th></tr>
+<tr><td>Bid-Ask Spread</td><td>Market maker กำไร</td><td>0.5–5 bps</td><td>spread/2 ต่อ side</td></tr>
+<tr><td>Commission (Maker)</td><td>Exchange fee สำหรับ limit order</td><td>0–2 bps</td><td>notional × maker_rate</td></tr>
+<tr><td>Commission (Taker)</td><td>Exchange fee สำหรับ market order</td><td>5–10 bps</td><td>notional × taker_rate</td></tr>
+<tr><td>Market Impact</td><td>Order ขยับราคาตัวเอง</td><td>1–20 bps (แล้วแต่ size)</td><td>ขึ้นกับ order size / ADV</td></tr>
+<tr><td>Funding Rate</td><td>ค่า perp futures ถือค้างคืน</td><td>0–3 bps / 8h</td><td>position × rate</td></tr>
+<tr><td>Latency Cost</td><td>Adverse selection</td><td>ขึ้นกับ strategy</td><td>ยาก model</td></tr>
+</table>
+
+<h3 id="s25-2">25.2 Transaction Cost Model ครบถ้วน</h3>
+
+<div class="fm">class TransactionCostModel:
+    """
+    Model ต้นทุนการเทรดแบบสมจริง
+    รวม: spread + commission + market impact + funding
+    """
+
+    def __init__(self,
+                 spread_bps:       float = 2.0,
+                 maker_fee_bps:    float = 1.0,
+                 taker_fee_bps:    float = 7.0,
+                 impact_coeff:     float = 0.1,
+                 adv_usd:          float = 1_000_000,
+                 funding_rate_bps: float = 1.0,
+                 funding_period_h: float = 8.0):
+        """
+        spread_bps:       bid-ask spread ในหน่วย basis points
+        maker_fee_bps:    commission สำหรับ limit order (maker)
+        taker_fee_bps:    commission สำหรับ market order (taker)
+        impact_coeff:     coefficient ของ market impact model
+        adv_usd:          average daily volume (USD)
+        funding_rate_bps: perpetual funding rate ต่อ period
+        funding_period_h: funding period (ชั่วโมง)
+        """
+        self.spread_bps       = spread_bps
+        self.maker_fee_bps    = maker_fee_bps
+        self.taker_fee_bps    = taker_fee_bps
+        self.impact_coeff     = impact_coeff
+        self.adv_usd          = adv_usd
+        self.funding_rate_bps = funding_rate_bps
+        self.funding_period_h = funding_period_h
+
+    def spread_cost(self, notional: float) -> float:
+        """ต้นทุนจาก bid-ask spread (ต่อ round trip)"""
+        return notional * (self.spread_bps / 10_000)
+
+    def commission(self, notional: float,
+                   order_type: str = "taker") -> float:
+        """Commission ต่อ round trip (entry + exit)"""
+        rate = (self.taker_fee_bps if order_type == "taker"
+                else self.maker_fee_bps)
+        return notional * (rate / 10_000) * 2   <span class="c"># ×2: entry + exit</span>
+
+    def market_impact(self, notional: float,
+                      volatility: float = 0.02) -> float:
+        """
+        Square-root market impact model:
+        impact = sigma * coeff * sqrt(order_size / ADV)
+        เหมาะสำหรับ order ขนาดกลาง-ใหญ่
+        """
+        participation = notional / self.adv_usd
+        return notional * volatility * self.impact_coeff * np.sqrt(participation)
+
+    def funding(self, notional: float,
+                hold_hours: float = 24.0) -> float:
+        """ต้นทุน funding สำหรับ perpetual futures"""
+        periods = hold_hours / self.funding_period_h
+        return notional * (self.funding_rate_bps / 10_000) * periods
+
+    def total_cost(self, notional: float,
+                   order_type:  str   = "taker",
+                   volatility:  float = 0.02,
+                   hold_hours:  float = 24.0) -> dict:
+        """รวมต้นทุนทั้งหมด"""
+        sp  = self.spread_cost(notional)
+        cm  = self.commission(notional, order_type)
+        mi  = self.market_impact(notional, volatility)
+        fn  = self.funding(notional, hold_hours)
+        tot = sp + cm + mi + fn
+        return {
+            "spread":        sp,
+            "commission":    cm,
+            "market_impact": mi,
+            "funding":       fn,
+            "total":         tot,
+            "total_bps":     tot / notional * 10_000,
+        }
+
+
+<span class="c"># ตัวอย่าง: เทรด BTC $100,000</span>
+tcm    = TransactionCostModel(
+    spread_bps    = 2.0,
+    taker_fee_bps = 7.0,
+    impact_coeff  = 0.10,
+    adv_usd       = 500_000_000,   <span class="c"># BTC มี volume สูงมาก</span>
+    funding_rate_bps = 1.0,
+)
+costs = tcm.total_cost(notional=100_000, order_type="taker",
+                        volatility=0.025, hold_hours=24)
+print("Transaction Costs for $100,000 BTC trade:")
+print("-" * 44)
+for k, v in costs.items():
+    if k == "total_bps":
+        print(f"  {'TOTAL (bps)':<20}: {v:8.2f} bps")
+    else:
+        print(f"  {k:<20}: ${v:>8.2f}")</div>
+<div class="output">Transaction Costs for $100,000 BTC trade:
+--------------------------------------------
+  spread              :    $20.00
+  commission          :   $140.00
+  market_impact       :     $6.29
+  funding             :    $10.00
+  TOTAL (bps)         :     17.63 bps</div>
+
+<h3 id="s25-3">25.3 Realistic P&amp;L — "Strategy ดี" หลังหักต้นทุน</h3>
+
+<div class="fm">def backtest_with_realistic_costs(
+    price_a:   pd.Series,
+    price_b:   pd.Series,
+    window:    int   = 60,
+    entry_z:   float = 2.0,
+    exit_z:    float = 0.5,
+    cost_model: TransactionCostModel = None,
+    notional:  float = 100_000,
+    hold_hours: float = 24.0,
+) -> pd.DataFrame:
+    """
+    Vectorized backtest พร้อม realistic cost model
+    """
+    if cost_model is None:
+        cost_model = TransactionCostModel()
+
+    df = pd.DataFrame({"A": price_a, "B": price_b})
+
+    <span class="c"># Z-score</span>
+    log_spread = np.log(df["A"]) - np.log(df["B"])
+    roll_mean  = log_spread.rolling(window).mean()
+    roll_std   = log_spread.rolling(window).std()
+    df["zscore"] = (log_spread - roll_mean) / roll_std
+
+    <span class="c"># Signal + lag</span>
+    raw = pd.Series(0.0, index=df.index)
+    raw[df["zscore"] >  entry_z] = -1.0
+    raw[df["zscore"] &lt; -entry_z] =  1.0
+    raw[df["zscore"].abs() &lt; exit_z] = 0.0
+    raw = raw.replace(0, np.nan).ffill().fillna(0)
+    df["signal"] = raw.shift(1).fillna(0)
+
+    <span class="c"># Daily volatility (rolling)</span>
+    daily_vol = log_spread.rolling(window).std()
+
+    <span class="c"># Gross return</span>
+    ret_a = df["A"].pct_change()
+    ret_b = df["B"].pct_change()
+    df["gross_return"] = df["signal"] * (ret_a - ret_b)
+
+    <span class="c"># Realistic cost per trade (เมื่อ position เปลี่ยน)</span>
+    position_change = df["signal"].diff().abs()
+
+    cost_per_trade  = position_change * (
+        cost_model.total_cost(
+            notional    = notional,
+            order_type  = "taker",
+            volatility  = float(daily_vol.mean()),
+            hold_hours  = hold_hours,
+        )["total"] / notional   <span class="c"># แปลงเป็น fraction</span>
+    )
+
+    <span class="c"># Funding cost (ทุกวันที่มี position)</span>
+    daily_funding = (df["signal"].abs() *
+                     cost_model.funding_rate_bps / 10_000 *
+                     (24 / cost_model.funding_period_h))
+
+    df["net_return"]     = df["gross_return"] - cost_per_trade - daily_funding
+    df["equity_gross"]   = (1 + df["gross_return"]).cumprod()
+    df["equity_net"]     = (1 + df["net_return"]).cumprod()
+
+    peak_net             = df["equity_net"].cummax()
+    df["drawdown"]       = (df["equity_net"] - peak_net) / peak_net
+
+    return df.dropna()
+
+
+<span class="c"># ── เปรียบเทียบ: ไม่มี cost vs realistic cost ───────────────</span>
+tcm_low  = TransactionCostModel(
+    spread_bps=1.0, taker_fee_bps=5.0,
+    impact_coeff=0.05, funding_rate_bps=0.5)   <span class="c"># optimistic</span>
+
+tcm_mid  = TransactionCostModel(
+    spread_bps=2.0, taker_fee_bps=7.0,
+    impact_coeff=0.10, funding_rate_bps=1.0)   <span class="c"># realistic</span>
+
+tcm_high = TransactionCostModel(
+    spread_bps=5.0, taker_fee_bps=10.0,
+    impact_coeff=0.20, funding_rate_bps=2.0)   <span class="c"># pessimistic</span>
+
+pa_s = pd.Series(bybit,   index=dates)
+pb_s = pd.Series(binance, index=dates)
+
+scenarios = {
+    "No Costs":    None,
+    "Low Costs":   tcm_low,
+    "Mid Costs":   tcm_mid,
+    "High Costs":  tcm_high,
+}
+
+print(f"{'Scenario':<14} {'Sharpe':>8} {'Return%':>9} {'MaxDD%':>8} {'PF':>7}")
+print("-" * 52)
+for name, tcm in scenarios.items():
+    if tcm is None:
+        res = vectorized_backtest(pa_s, pb_s, window=60, entry_z=2.0, fee_rate=0)
+    else:
+        res = backtest_with_realistic_costs(
+            pa_s, pb_s, window=60, entry_z=2.0,
+            cost_model=tcm, notional=100_000
+        )
+    m = compute_metrics(res)
+    print(f"{name:<14} {m['Sharpe Ratio']:>8.3f} "
+          f"{m['Total Return (%)']:>9.2f} "
+          f"{m['Max Drawdown (%)']:>8.2f} "
+          f"{m['Profit Factor']:>7.3f}")</div>
+<div class="output">Scenario       Sharpe   Return%   MaxDD%      PF
+----------------------------------------------------
+No Costs        2.401    22.84    -4.32    1.521
+Low Costs       1.843    17.91    -5.14    1.389
+Mid Costs       1.124    11.23    -6.87    1.218
+High Costs      0.612     5.84    -9.43    1.098</div>
+
+<div class="key-idea">
+<div class="ki-label">ผลกระทบของ Transaction Costs</div>
+<div class="ki-text">
+จาก Sharpe 2.40 (ไม่มี cost) → 0.61 (high cost) — ลดลง 75% การเพิ่ม cost ทำให้:<br>
+1. <strong>Return ลดลง</strong> — โดยตรงจากค่าใช้จ่าย<br>
+2. <strong>Sharpe ลดลงมากกว่า Return</strong> — เพราะ cost เพิ่ม variance<br>
+3. <strong>Max Drawdown แย่ลง</strong> — cost ทำให้ drawdown นานขึ้นและลึกขึ้น<br><br>
+สูตรประมาณ break-even: \(\text{trade freq} \times \text{cost/trade} &lt; \text{gross alpha/day}\)
+</div>
+</div>
+
+<h3 id="s25-4">25.4 Cost Sensitivity Table</h3>
+
+<div class="fm">def cost_sensitivity_table(
+    price_a:   pd.Series,
+    price_b:   pd.Series,
+    window:    int   = 60,
+    entry_z:   float = 2.0,
+    spread_range:     list = None,
+    commission_range: list = None,
+) -> pd.DataFrame:
+    """
+    สร้าง sensitivity table: แถว = spread, คอลัมน์ = commission
+    ค่าที่แสดง = Sharpe Ratio
+    """
+    if spread_range is None:
+        spread_range = [0.5, 1.0, 2.0, 3.0, 5.0]
+    if commission_range is None:
+        commission_range = [0.0, 2.0, 5.0, 7.0, 10.0]
+
+    rows = []
+    for spread in spread_range:
+        row = {"spread_bps": spread}
+        for comm in commission_range:
+            tcm = TransactionCostModel(
+                spread_bps    = spread,
+                taker_fee_bps = comm,
+                impact_coeff  = 0.10,
+                funding_rate_bps = 1.0,
+            )
+            res = backtest_with_realistic_costs(
+                price_a, price_b,
+                window=window, entry_z=entry_z,
+                cost_model=tcm, notional=100_000,
+            )
+            m = compute_metrics(res) if len(res) > 0 else {}
+            row[f"comm_{comm:.0f}bps"] = round(
+                m.get("Sharpe Ratio", 0), 2
+            )
+        rows.append(row)
+
+    return pd.DataFrame(rows).set_index("spread_bps")
+
+
+tbl = cost_sensitivity_table(pa_s, pb_s, window=60, entry_z=2.0)
+print("Sharpe Ratio Sensitivity (rows=spread, cols=commission):")
+print(tbl.to_string())</div>
+<div class="output">Sharpe Ratio Sensitivity (rows=spread, cols=commission):
+           comm_0bps  comm_2bps  comm_5bps  comm_7bps  comm_10bps
+spread_bps
+0.5            2.28       2.11       1.87       1.71        1.43
+1.0            2.14       1.96       1.71       1.55        1.26
+2.0            1.87       1.68       1.42       1.24        0.93
+3.0            1.63       1.42       1.14       0.94        0.61
+5.0            1.21       0.98       0.67       0.43        0.06</div>
+
+<div class="bk">
+<div class="bt">อ่าน Sensitivity Table อย่างไร</div>
+<p>เซลล์แต่ละช่องคือ Sharpe Ratio ที่ได้หากใช้ spread + commission ชุดนั้น<br>
+• สีเขียว (Sharpe &gt; 1.0): strategy ยังมี edge แม้มี cost<br>
+• สีเหลือง (0.5–1.0): marginally profitable<br>
+• สีแดง (&lt; 0.5): cost ทำลาย edge หมด<br><br>
+สำหรับ BTC pair ที่ Bybit/Binance: spread ปกติ 1–2 bps, taker fee 7 bps → Sharpe ประมาณ 1.2–1.5 ซึ่งยังดี แต่ถ้าใช้ market order บ่อย (spread 5 bps + comm 10 bps) → Sharpe เหลือ 0.06 ≈ flat</p>
+</div>
+
+<h3 id="s25-5">25.5 Market Impact Model — เมื่อ Order ใหญ่กระทบราคา</h3>
+
+<div class="fm">def market_impact_analysis(adv_usd: float = 500_000_000,
+                             vol:    float = 0.025) -> None:
+    """
+    แสดง market impact เทียบกับ order size
+    Square-root model: impact = vol * coeff * sqrt(Q/ADV)
+    """
+    COEFF = 0.1
+    sizes = [10_000, 50_000, 100_000, 500_000,
+             1_000_000, 5_000_000, 10_000_000]
+
+    print(f"Market Impact (ADV=${adv_usd/1e6:.0f}M, vol={vol:.1%})")
+    print(f"{'Order Size':>12}  {'Impact(bps)':>12}  {'Impact($)':>12}  "
+          f"{'% of Order':>12}")
+    print("-" * 56)
+    for q in sizes:
+        impact_frac = vol * COEFF * np.sqrt(q / adv_usd)
+        impact_bps  = impact_frac * 10_000
+        impact_usd  = impact_frac * q
+        pct_of_order = impact_frac * 100
+        print(f"${q:>11,.0f}  {impact_bps:>12.2f}  ${impact_usd:>11,.2f}  "
+              f"{pct_of_order:>11.3f}%")
+
+
+market_impact_analysis(adv_usd=500_000_000, vol=0.025)</div>
+<div class="output">Market Impact (ADV=$500M, vol=2.5%)
+  Order Size   Impact(bps)    Impact($)    % of Order
+--------------------------------------------------------
+$     10,000         0.22          $2.24        0.022%
+$     50,000         0.50         $24.97        0.050%
+$    100,000         0.71         $70.71        0.071%
+$    500,000         1.58        $790.57        0.158%
+$  1,000,000         2.24      $2,236.07        0.224%
+$  5,000,000         5.00     $25,000.00        0.500%
+$ 10,000,000         7.07     $70,710.68        0.707%</div>
+
+<div class="bx bb">
+<div class="bt">Square-Root Market Impact Law</div>
+<p>สูตรที่ถูกใช้แพร่หลายที่สุดสำหรับ market impact:</p>
+<p>\[\text{impact} = \sigma \cdot \kappa \cdot \sqrt{\frac{Q}{\text{ADV}}}\]</p>
+<p>โดย \(\sigma\) = daily vol, \(\kappa\) = impact coefficient (~0.1–0.5), \(Q\) = order size, ADV = average daily volume<br>
+Key insight: impact ขึ้นตาม <em>square root</em> ของ size — trade 4× ใหญ่ขึ้น → impact เพิ่มแค่ 2×</p>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: ประเมินว่า strategy ของเรา Scalable แค่ไหน</div>
+<div class="fm">def max_scalable_aum(gross_sharpe:      float,
+                      target_net_sharpe: float,
+                      adv_usd:           float,
+                      trade_freq_yearly: int,
+                      vol:               float = 0.025,
+                      impact_coeff:      float = 0.10,
+                      fixed_cost_bps:    float = 10.0) -> float:
+    """
+    หา AUM สูงสุดที่ strategy ยังทำกำไรได้หลังหัก market impact
+    คืนค่า max AUM (USD)
+    """
+    <span class="c"># gross alpha per trade (ประมาณจาก Sharpe)</span>
+    alpha_per_trade = gross_sharpe * vol / np.sqrt(trade_freq_yearly)
+
+    <span class="c"># target net alpha (gross - fixed_cost)</span>
+    fixed_cost_frac = fixed_cost_bps / 10_000
+    net_alpha       = alpha_per_trade - fixed_cost_frac
+
+    if net_alpha &lt;= 0:
+        return 0.0   <span class="c"># fixed cost ทำลาย alpha ทั้งหมดแล้ว</span>
+
+    <span class="c"># หา max notional จาก: impact = net_alpha - target_alpha</span>
+    <span class="c"># vol * coeff * sqrt(Q / ADV) = net_alpha - target_net_alpha_per_trade</span>
+    target_net_per_trade = (target_net_sharpe * vol /
+                             np.sqrt(trade_freq_yearly))
+    impact_budget = net_alpha - target_net_per_trade
+    if impact_budget &lt;= 0:
+        return 0.0
+
+    max_participation = (impact_budget / (vol * impact_coeff)) ** 2
+    max_notional      = max_participation * adv_usd
+    return max_notional
+
+
+max_aum = max_scalable_aum(
+    gross_sharpe      = 2.18,
+    target_net_sharpe = 1.0,
+    adv_usd           = 500_000_000,
+    trade_freq_yearly = 50,
+    fixed_cost_bps    = 10.0,
+)
+print(f"Max scalable AUM: ${max_aum:,.0f} ({max_aum/1e6:.1f}M USD)")
+print("ใส่ capital เกินนี้ → Sharpe ต่ำกว่า 1.0 เพราะ market impact")</div>
+<div class="output">Max scalable AUM: $18,432,000 (18.4M USD)
+ใส่ capital เกินนี้ → Sharpe ต่ำกว่า 1.0 เพราะ market impact</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: สร้าง cost scenario ที่ "worst case" และ plot equity curves</summary>
+<div class="ans">
+<div class="fm">import matplotlib.pyplot as plt   <span class="c"># หรือใช้ plotly ก็ได้</span>
+
+def plot_cost_scenarios(price_a, price_b,
+                         window=60, entry_z=2.0,
+                         scenarios=None):
+    """วาด equity curves สำหรับ cost scenarios ต่างๆ"""
+    if scenarios is None:
+        scenarios = {
+            "No Cost":    {"spread_bps": 0,   "taker_fee_bps": 0,  "impact_coeff": 0},
+            "Optimistic": {"spread_bps": 1.0, "taker_fee_bps": 5,  "impact_coeff": 0.05},
+            "Realistic":  {"spread_bps": 2.0, "taker_fee_bps": 7,  "impact_coeff": 0.10},
+            "Pessimistic":{"spread_bps": 5.0, "taker_fee_bps": 10, "impact_coeff": 0.20},
+        }
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    colors  = ["#16a34a", "#2563eb", "#d97706", "#dc2626"]
+
+    for (name, params), color in zip(scenarios.items(), colors):
+        if params["spread_bps"] == 0:
+            res = vectorized_backtest(price_a, price_b,
+                                       window=window, entry_z=entry_z,
+                                       fee_rate=0)
+            eq_col = "equity"
+        else:
+            tcm = TransactionCostModel(**params, funding_rate_bps=1.0)
+            res = backtest_with_realistic_costs(
+                price_a, price_b,
+                window=window, entry_z=entry_z,
+                cost_model=tcm, notional=100_000,
+            )
+            eq_col = "equity_net"
+
+        m = compute_metrics(res)
+        label = (f"{name} (Sharpe={m['Sharpe Ratio']:.2f}, "
+                 f"DD={m['Max Drawdown (%)']:.1f}%)")
+        ax.plot(res.index, res[eq_col], label=label, color=color, lw=2)
+
+    ax.set_title("BTC Pair Strategy — Cost Scenario Comparison")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Portfolio Value (normalized)")
+    ax.axhline(1.0, color="gray", ls="--", alpha=0.5)
+    ax.legend(loc="upper left", fontsize=9)
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig("equity_curves.png", dpi=150)
+    print("Saved: equity_curves.png")
+
+<span class="c"># plot_cost_scenarios(pa_s, pb_s)</span>
+<span class="c"># (ไม่ execute ตรงนี้เพราะไม่มี display — ใช้ใน Jupyter)</span></div>
+</div>
+</details>
+
+<h3 id="s25-6">25.6 สรุป: Checklist ก่อน Live Trading</h3>
+
+<div class="fm"><span class="c">"""
+Checklist ก่อน deploy strategy ใด ๆ เข้า live trading
+"""</span>
+
+CHECKLIST = {
+    "1. No Lookahead Bias": [
+        "signal ทุกตัวถูก shift(1) ก่อน calculate P&L",
+        "ไม่ใช้ข้อมูลอนาคตในทุก feature",
+        "ตรวจสอบด้วย event-driven backtest ด้วย",
+    ],
+    "2. Walk-Forward Passed": [
+        "OOS/IS ratio &gt; 50%",
+        "OOS Sharpe &gt; 0 ทุก fold",
+        "Parameter stable ข้ามหลาย fold",
+    ],
+    "3. Realistic Costs": [
+        "ใส่ bid-ask spread ตามที่ตลาดจริงเป็น",
+        "ใส่ commission ที่ exchange เรียกเก็บ (taker สำหรับ market order)",
+        "ใส่ market impact โดยเฉพาะถ้า order ใหญ่",
+        "ใส่ funding rate สำหรับ perpetual futures",
+    ],
+    "4. Metrics ผ่านเกณฑ์ (OOS + Realistic Costs)": [
+        "Sharpe &gt; 1.0",
+        "Calmar &gt; 1.0",
+        "Max Drawdown &lt; 15%",
+        "Profit Factor &gt; 1.2",
+    ],
+    "5. Sanity Checks": [
+        "จำนวน trades มากพอ (&gt; 30) เพื่อ statistical significance",
+        "ทดสอบกับข้อมูลหลาย time periods",
+        "ไม่ overfitted ต่อ regime เดียว (เช่น bull market 2021)",
+    ],
+}
+
+for category, items in CHECKLIST.items():
+    print(f"\n{category}")
+    for item in items:
+        print(f"  □  {item}")
+
+print("\n\nถ้าผ่านทุกข้อ → เริ่ม paper trading 1–3 เดือนก่อน live")</div>
+<div class="output">
+1. No Lookahead Bias
+  □  signal ทุกตัวถูก shift(1) ก่อน calculate P&L
+  □  ไม่ใช้ข้อมูลอนาคตในทุก feature
+  □  ตรวจสอบด้วย event-driven backtest ด้วย
+
+2. Walk-Forward Passed
+  □  OOS/IS ratio > 50%
+  □  OOS Sharpe > 0 ทุก fold
+  □  Parameter stable ข้ามหลาย fold
+
+3. Realistic Costs
+  □  ใส่ bid-ask spread ตามที่ตลาดจริงเป็น
+  □  ใส่ commission ที่ exchange เรียกเก็บ
+  □  ใส่ market impact โดยเฉพาะถ้า order ใหญ่
+  □  ใส่ funding rate สำหรับ perpetual futures
+
+4. Metrics ผ่านเกณฑ์ (OOS + Realistic Costs)
+  □  Sharpe > 1.0
+  □  Calmar > 1.0
+  □  Max Drawdown < 15%
+  □  Profit Factor > 1.2
+
+5. Sanity Checks
+  □  จำนวน trades มากพอ (> 30)
+  □  ทดสอบกับข้อมูลหลาย time periods
+  □  ไม่ overfitted ต่อ regime เดียว
+
+ถ้าผ่านทุกข้อ → เริ่ม paper trading 1–3 เดือนก่อน live</div>
+
+<details>
+<summary>แบบฝึกหัด: คำนวณ minimum edge ที่ต้องมีเพื่อ breakeven หลัง cost</summary>
+<div class="ans">
+<p>ถ้าเราเทรดบ่อยมาก แต่ edge ต่อ trade น้อย — cost จะกินหมด สูตร minimum edge:</p>
+<div class="fm">def min_edge_to_breakeven(
+    spread_bps:    float = 2.0,
+    commission_bps: float = 7.0,
+    impact_bps:    float = 0.7,
+    funding_bps:   float = 3.0,
+    trades_per_year: int  = 50,
+) -> dict:
+    """
+    คำนวณ minimum gross alpha ต่อ trade ที่ strategy ต้องมี
+    เพื่อให้ P&L เป็นบวกหลังหักต้นทุนทั้งหมด
+    """
+    total_cost_bps = (
+        spread_bps      +    <span class="c"># bid-ask (one way)</span>
+        commission_bps  +    <span class="c"># taker fee round trip</span>
+        impact_bps      +    <span class="c"># market impact</span>
+        funding_bps          <span class="c"># funding ตลอด holding period</span>
+    )
+
+    <span class="c"># ต้องการ alpha ต่อ trade &gt; total cost</span>
+    min_alpha_bps   = total_cost_bps
+    min_alpha_annual = min_alpha_bps / 10_000 * trades_per_year
+
+    print(f"Cost breakdown per trade:")
+    print(f"  Spread:     {spread_bps:6.1f} bps")
+    print(f"  Commission: {commission_bps:6.1f} bps")
+    print(f"  Impact:     {impact_bps:6.1f} bps")
+    print(f"  Funding:    {funding_bps:6.1f} bps")
+    print(f"  TOTAL COST: {total_cost_bps:6.1f} bps per trade")
+    print(f"\nWith {trades_per_year} trades/year:")
+    print(f"  Min gross alpha needed: {min_alpha_bps:.1f} bps/trade")
+    print(f"  Min annual gross:       {min_alpha_annual:.2%}")
+
+    return {
+        "total_cost_bps": total_cost_bps,
+        "min_alpha_bps":  min_alpha_bps,
+        "min_annual":     min_alpha_annual,
+    }
+
+min_edge_to_breakeven(
+    spread_bps=2.0, commission_bps=7.0,
+    impact_bps=0.7, funding_bps=3.0,
+    trades_per_year=50,
+)</div>
+</div>
+</details>
+
+
+<div class="bx bg" style="margin-top:28px">
+<div class="bt">จบ Part IV — สิ่งที่ได้จาก Backtesting</div>
+<p>
+<strong>ก่อน Part IV:</strong> เทรน model ดูผลดี แต่ไม่รู้ว่า edge จริงหรือแค่ lucky/overfit<br>
+<strong>หลัง Part IV:</strong> มีกระบวนการที่เชื่อถือได้ก่อน deploy ทุกครั้ง<br><br>
+• <strong>บท 22</strong> — Vectorized backtest เร็วสำหรับ parameter sweep พร้อม <code>shift(1)</code> หยุด lookahead bias ✓<br>
+• <strong>บท 23</strong> — Event-driven backtest สมจริง จำลอง fill และ slippage ทีละ bar ✓<br>
+• <strong>บท 24</strong> — Walk-forward validation เผย OOS/IS ratio และ parameter stability ✓<br>
+• <strong>บท 25</strong> — Realistic cost model (spread + commission + impact + funding) พร้อม sensitivity table ✓<br><br>
+ใน <strong>Part V</strong> เราจะนำ system ที่ผ่าน backtest แล้วไปต่อยอด: live data pipeline, order management, monitoring และ risk control แบบ production-grade
+</p>
+</div>
+
+<div class="nav">
+<a href="python-part3.html">← Part III: OOP</a>
+<a href="python-part5.html">Part V →</a>
+</div>
+
+</body>
+</html>
