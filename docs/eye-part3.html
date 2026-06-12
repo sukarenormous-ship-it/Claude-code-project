@@ -69,7 +69,7 @@
 <div class="fm"><strong>ขั้นที่ 1 — Observe:</strong> PM "BTC > $100K by Dec" = $0.62<br>
 <strong>ขั้นที่ 2 — Translate:</strong> = Digital Call at $100K = Tight Bull Call Spread ÷ width<br>
 <strong>ขั้นที่ 3 — Compare:</strong> PM = 62% vs Options implied = 55% → gap 7%<br>
-<strong>ขั้นที่ 4 — Check:</strong> Resolution: PM ใช้ Binance price, Options ใช้ Deribit → ต่างกัน!<br>
+<strong>ขั้นที่ 4 — Check:</strong> Resolution: PM ใช้ oracle ตาม resolution rules ของแต่ละ market (เช่น Pyth Network หรือ aggregate หลาย exchange) — Options ใช้ Deribit BTC Index → ต่างกัน! ต้องอ่าน rules ของแต่ละ market<br>
 &nbsp;&nbsp;PM = "touch" (แตะ $100K ครั้งเดียวก็ resolve) vs Options = "close" (ราคา ณ expiry)<br>
 &nbsp;&nbsp;→ Touch > Close probability → gap 7% อาจเป็นแค่ resolution premium!<br>
 <strong>ขั้นที่ 5 — Net:</strong> ประเมิน resolution premium ≈ 4% → net edge ≈ 3%<br>
@@ -127,9 +127,9 @@ Hidden option: Barrier at each liquidation level → cascade = chain of barriers
 Exploit: ซื้อเมื่อ cascade กำลังจบ (capitulation) → funding flip + Open Interest (OI) ลดฮวบ = signal</div>
 
 <div class="bx bb"><div class="bt">Sidebar: Flash Loan — Capital-Free Lv.1</div>
-<p><strong>แนวคิด:</strong> ยืมเงิน $200M → ซื้อ-ขาย → คืนเงิน → ทั้งหมดใน 1 transaction (12 วินาที)<br>
-ถ้าคืนไม่ได้ → ทุกอย่างย้อนกลับเหมือนไม่เคยเกิด → <strong>ไม่เสียอะไรเลย!</strong><br>
-= Pure Arb ตามนิยาม Lv.1 (ไม่ใช้ทุน ไม่มี risk) แต่ต้องเขียน code (Solidity)<br>
+<p><strong>แนวคิด:</strong> ยืมเงิน $200M → ซื้อ-ขาย → คืนเงิน → ทั้งหมดใน 1 transaction (1 block — atomic; ย้อนกลับอัตโนมัติถ้าคืนไม่ได้)<br>
+ถ้าคืนไม่ได้ → ทุกอย่างย้อนกลับเหมือนไม่เคยเกิด แต่ <strong>ค่า gas ถูกหักทุกกรณีแม้ transaction จะ revert</strong> และ smart contract bug ในโค้ดที่เขียนเอง = เสียเงินได้จริง<br>
+= Pure Arb ตามนิยาม Lv.1 (ไม่ใช้ทุน ไม่มี risk) แต่ต้องเขียน code (Solidity หรือ Vyper บน EVM; Rust บน Solana)<br>
 <em>สำหรับ manual trader: เข้าใจแนวคิดพอ ไม่ต้อง implement เอง</em></p></div>
 
 <h2 id="ch13">บทที่ 13: New Listing + Multi-Venue Combo</h2>
@@ -215,7 +215,7 @@ Sandwich attack: เห็น swap ของคุณ → front-run (ดัน�
 <div class="bx br">
 <div class="bt">Failure 3: Resolution Trap</div>
 <p><strong>ดูเหมือน:</strong> PM "BTC &gt; $95K by month-end" = 70%, Options implied = 58% → Long PM เพราะ PM ถูก 12%</p>
-<p><strong>ปัญหา:</strong> PM resolve ผ่าน oracle (เช่น UMA หรือ in-house resolver) ที่อาจ lag, dispute, หรือ vote ผิดจาก market consensus ได้ — historical UMA oracle disputes บน Polymarket มี cases ที่ resolve ผิดทิศจากตลาด; นอกจากนั้น resolver อาจใช้ราคาจาก source ที่ต่างจากที่คุณคิด (เช่น VWAP แทน last price)</p>
+<p><strong>ปัญหา:</strong> PM resolve ผ่าน oracle ที่แตกต่างกันตาม market type: crypto price markets มักใช้ Pyth Network (automatic, dispute risk ต่ำ) ส่วน event markets ใช้ UMA Optimistic Oracle หรือ in-house resolver (dispute risk สูงกว่า, มี 48-hr challenge window) — historical UMA oracle disputes บน Polymarket มี cases ที่ resolve ผิดทิศจากตลาด; นอกจากนั้น resolver อาจใช้ราคาจาก source ที่ต่างจากที่คุณคิด (เช่น VWAP แทน last price)</p>
 <p><strong>บทเรียน:</strong> อ่าน <strong>resolution rules ครบ</strong> ก่อนเสมอ — ไม่ใช่แค่เช็ค "touch vs close" แต่ต้องดู resolver, data source, maintenance schedule, และ dispute process ด้วย</p>
 </div>
 
