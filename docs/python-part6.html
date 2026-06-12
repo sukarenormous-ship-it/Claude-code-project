@@ -81,7 +81,7 @@ Backtest บอกว่า strategy ทำกำไรได้ — แต่�
 </div>
 </div>
 
-<div class="bk">
+<div class="bx bk">
 <div class="bt">🚨 STOP — อ่านก่อนเริ่ม Part VI: Production Safety Checklist</div>
 <p>Part VI สอน async และ live trading กับเงินจริง ก่อนเดินหน้าให้ตอบ YES ทุกข้อ:</p>
 <ol>
@@ -740,6 +740,7 @@ BYBIT_KLINE_MSG = {
 <div class="fm">import asyncio
 import json
 import logging
+import random
 import websockets
 from dataclasses import dataclass
 from datetime import datetime
@@ -828,13 +829,12 @@ class BinanceWebSocketClient:
                     msg = json.loads(raw_msg)
                     if msg.get("e") == "kline":
                         candle = self._parse_kline(msg)
+                        if candle is not None:            <span class="c"># ข้ามถ้า parse ไม่ได้</span>
+                            self.on_candle(candle)
 
-                        <span class="c"># ส่ง callback</span>
-                        self.on_candle(candle)
-
-                        <span class="c"># ถ้ามี queue ให้ put ด้วย</span>
-                        if self.queue is not None:
-                            await self.queue.put(candle)
+                            <span class="c"># ถ้ามี queue ให้ put ด้วย</span>
+                            if self.queue is not None:
+                                await self.queue.put(candle)
 
                 except json.JSONDecodeError as e:
                     logger.error(f"JSON decode error: {e}")

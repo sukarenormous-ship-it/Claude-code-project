@@ -286,12 +286,14 @@ print(m.annual_vol)    <span class="c"># อ่านเหมือน attribut
 <div class="fm">class Position:
     """แทนตำแหน่งการเทรดเดี่ยว"""
 
-    def __init__(self, symbol, side, size, entry_price):
+    def __init__(self, symbol, side, size, entry_price,
+                 fee_rate: float = 0.001):
         self.symbol      = symbol
         self.side        = side          <span class="c"># "long" หรือ "short"</span>
         self.size        = size          <span class="c"># จำนวน unit</span>
         self.entry_price = entry_price
         self.exit_price  = None
+        self.fee_rate    = fee_rate
 
     @property
     def is_open(self):
@@ -384,7 +386,7 @@ Return: 3.97%</div>
     def log_trade(self, position: Position):
         """บันทึก trade ที่ปิดแล้ว"""
         if position.is_open:
-            raise ValueError("ยังปิด position ไม่ได้")
+            raise ValueError("position นี้ยังไม่ถูกปิด — ต้อง close() ก่อน")
         self.trades.append(position)
         self.capital += position.net_pnl
         self.equity.append(self.capital)
@@ -418,7 +420,7 @@ class PairTradingStrategy(BaseStrategy):
 
     def fit(self, price_a, price_b):
         """เทรน signal engine"""
-        from python_part2 import PairTradingSignal   <span class="c"># import จาก Part II</span>
+        <span class="c"># PairTradingSignal ถูก import สมมติจาก Part II — ในโปรเจกต์จริงให้วางในไฟล์เดียวกัน</span>
         self.signal_engine = PairTradingSignal(
             window  = self.config.window,
             entry_z = self.config.entry_z,
@@ -469,7 +471,7 @@ class Strategy(ABC):
 
     @abstractmethod
     def fit(self, data):
-        """ต้อง implement — เทรน model"""
+        """ต้อง implement — train model"""
         pass
 
     @abstractmethod
@@ -811,7 +813,7 @@ print(type(strat).__name__)</div>
 PairStrategy</div>
 
 <div class="bx bd">
-<div class="bt">เมื่อไหรควรใช้ Design Pattern แต่ละแบบ</div>
+<div class="bt">เมื่อไหร่ควรใช้ Design Pattern แต่ละแบบ</div>
 <table>
 <tr><th>Pattern</th><th>ใช้เมื่อ</th><th>ตัวอย่างใน trading</th></tr>
 <tr><td>Strategy</td><td>มีหลาย algorithm ที่สลับกันได้</td><td>Pair / Momentum / Volatility strategy</td></tr>

@@ -159,7 +159,7 @@ print(f"Lookahead advantage (ghost profit): "
 Good (correct)   cumulative return: +18.76%
 Lookahead advantage (ghost profit): +12.66%</div>
 
-<div class="bk">
+<div class="bx bk">
 <div class="bt">กฎเหล็ก: shift(1) ทุกครั้งใน Vectorized Backtest</div>
 <p>Signal สร้างจากราคา close วันที่ \(t\) → Execute ได้เร็วสุดที่ open วันที่ \(t+1\)<br>
 ถ้าไม่ shift: backtest อาจดีขึ้น 10–40% โดยไม่มีเหตุผลจริง นั่นคือ "ghost profit" ที่ไม่มีอยู่จริง</p>
@@ -191,8 +191,9 @@ Lookahead advantage (ghost profit): +12.66%</div>
     raw = pd.Series(0.0, index=df.index)
     raw[df["zscore"] &gt;  entry_z] = -1.0   <span class="c"># spread กว้างเกิน → short</span>
     raw[df["zscore"] &lt; -entry_z] =  1.0   <span class="c"># spread แคบเกิน  → long</span>
-    raw[df["zscore"].abs() &lt;  exit_z] = 0.0   <span class="c"># mean-reverted → exit</span>
+    <span class="c"># ffill ถือ position — แต่ต้อง apply exit หลัง ffill เท่านั้น</span>
     raw = raw.replace(0, np.nan).ffill().fillna(0)  <span class="c"># ถือต่อจนกว่าจะ exit</span>
+    raw[df["zscore"].abs() &lt;  exit_z] = 0.0    <span class="c"># ปิด position หลัง ffill</span>
 
     <span class="c"># ── 3. SHIFT(1) — หัวใจสำคัญ ──────────────────────────────────</span>
     df["signal"] = raw.shift(1).fillna(0)
@@ -876,7 +877,7 @@ print(f"  Performance decay:    {oos_m['Sharpe Ratio'] / best_params['sharpe']:.
   Out-of-sample Sharpe: 0.31
   Performance decay:    15.2%</div>
 
-<div class="bk">
+<div class="bx bk">
 <div class="bt">Overfitting เกิดจากอะไร?</div>
 <p>เราทดสอบ 16 parameter combinations — บางชุดดีโดยบังเอิญบน data นี้ ไม่ใช่เพราะมี real edge เมื่อ data เปลี่ยน (อนาคต) ความบังเอิญนั้นหายไป Sharpe 2.0 → 0.3 คือ 85% ของผลตอบแทน "หายไป" — นี่คือ simulation ที่ใกล้เคียงความเป็นจริงมาก</p>
 </div>
@@ -1467,7 +1468,7 @@ spread_bps
 3.0            1.63       1.42       1.14       0.94        0.61
 5.0            1.21       0.98       0.67       0.43        0.06</div>
 
-<div class="bk">
+<div class="bx bk">
 <div class="bt">อ่าน Sensitivity Table อย่างไร</div>
 <p>เซลล์แต่ละช่องคือ Sharpe Ratio ที่ได้หากใช้ spread + commission ชุดนั้น<br>
 • สีเขียว (Sharpe &gt; 1.0): strategy ยังมี edge แม้มี cost<br>
