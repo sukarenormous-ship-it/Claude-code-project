@@ -148,6 +148,13 @@ cvar_95 = returns[returns &lt;= var_95].mean()
 print(f"VaR  95%: {var_95:.2%}  → ขาดทุนไม่เกิน {abs(var_95)*capital:,.0f} บาท/วัน (95% ของเวลา)")
 print(f"CVaR 95%: {cvar_95:.2%} → เฉลี่ยขาดทุน  {abs(cvar_95)*capital:,.0f} บาท ในวันที่แย่ที่สุด 5%")</div>
 
+<div class="bx bd">
+<div class="bt">หมายเหตุ CVaR: ต้องการ sample เพียงพอ</div>
+<p>CVaR 95% ใช้เฉพาะ return ที่อยู่ใน worst 5% — ถ้ามีข้อมูล 100 วัน จะใช้แค่ 5 วัน<br>
+ถ้าข้อมูลน้อยกว่า 60 วัน CVaR อาจไม่น่าเชื่อถือ ควรใช้ <code>if len(tail) >= 5: cvar = tail.mean()</code><br>
+หรือเพิ่ม <code>n_tail = max(1, int(len(returns) * 0.05))</code> เพื่อรับประกัน minimum sample</p>
+</div>
+
 <h3 id="s11-3">11.3 Fat Tail — ทำไม Normal Distribution ถึงอันตราย?</h3>
 
 <div class="fm">from scipy import stats
@@ -680,6 +687,16 @@ $$f^* = \frac{\mu - r_f}{\sigma^2} \qquad \text{(continuous Kelly)}$$
 daily_mean = 0.001      <span class="c"># 0.1% ต่อวัน</span>
 daily_std  = 0.015      <span class="c"># 1.5% ต่อวัน</span>
 f = kelly_fraction(daily_mean, daily_std)</div>
+
+<div class="bx bb">
+<div class="bt">Kelly ที่ใช้ที่นี่ = Continuous Kelly (สำหรับ return กระจาย Normal)</div>
+<p>สูตร \(f^* = \frac{\mu - r_f}{\sigma^2}\) เหมาะกับ asset ที่ return กระจายแบบ Normal distribution ต่อเนื่อง<br>
+สำหรับ <strong>discrete bet</strong> เช่น Binary outcome (win ได้ b เท่า, lose 1): \(f^* = \frac{pb - (1-p)}{b}\)<br><br>
+ใน Quant Trading ส่วนใหญ่ใช้ continuous Kelly หรือบ่อยกว่านั้นใช้ <strong>Half Kelly (f*/2) หรือ Quarter Kelly (f*/4)</strong> เพราะ:<br>
+• Return จริงไม่ Normal (fat tail)<br>
+• Estimate μ และ σ มี error เสมอ<br>
+• Full Kelly มี drawdown รุนแรงมากในช่วง streak ของ losing trades</p>
+</div>
 
 <div class="bx bk">
 <div class="bt">อย่าใช้ Full Kelly ในทางปฏิบัติ</div>
