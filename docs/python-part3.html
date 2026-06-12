@@ -122,8 +122,8 @@ class PairConfig:
 
     def is_valid(self):
         """ตรวจสอบว่า config สมเหตุสมผล"""
-        return (self.window >= 20 and
-                self.entry_z > self.exit_z > 0)
+        return (self.window &gt;= 20 and
+                self.entry_z &gt; self.exit_z &gt; 0)
 
 <span class="c"># สร้าง object</span>
 cfg = PairConfig("BTCUSDT-Bybit", "BTCUSDT-Binance", window=60)
@@ -331,8 +331,8 @@ Return: 3.97%</div>
             print(f"{self.name}: ยังไม่มี trade")
             return
         pnls    = [t.net_pnl for t in self.trades]
-        winners = [p for p in pnls if p > 0]
-        losers  = [p for p in pnls if p <= 0]
+        winners = [p for p in pnls if p &gt; 0]
+        losers  = [p for p in pnls if p &lt;= 0]
         print(f"=== {self.name} ===")
         print(f"Trades:   {len(self.trades)}")
         print(f"Win Rate: {len(winners)/len(pnls):.1%}")
@@ -439,7 +439,7 @@ class BadStrategy(Strategy):
             return False
 
         <span class="c"># อัปเดต peak</span>
-        if self.__peak_equity is None or current_equity > self.__peak_equity:
+        if self.__peak_equity is None or current_equity &gt; self.__peak_equity:
             self.__peak_equity = current_equity
 
         <span class="c"># Drawdown check</span>
@@ -501,9 +501,9 @@ class PairStrategy(Strategy):
 
     def signal(self, data=None) -> str:
         z = self._zscore.iloc[-1]
-        if z >  self.entry_z: return "SHORT"
-        if z < -self.entry_z: return "LONG"
-        if abs(z) < 0.5:      return "EXIT"
+        if z &gt;  self.entry_z: return "SHORT"
+        if z &lt; -self.entry_z: return "LONG"
+        if abs(z) &lt; 0.5:      return "EXIT"
         return "HOLD"
 
     def position_size(self, signal: str) -> float:
@@ -521,7 +521,7 @@ print(strat)</div>
 <summary>แบบฝึกหัด: สร้าง MomentumStrategy ที่ implement ABC</summary>
 <div class="ans">
 <div class="fm">class MomentumStrategy(Strategy):
-    """Momentum strategy: long เมื่อ MA20 > MA50"""
+    """Momentum strategy: long เมื่อ MA20 &gt; MA50"""
 
     def __init__(self, name, symbol, fast=20, slow=50, capital=100_000):
         super().__init__(name, capital)
@@ -538,9 +538,9 @@ print(strat)</div>
         return self
 
     def signal(self, data=None) -> str:
-        if self._ma_fast.iloc[-1] > self._ma_slow.iloc[-1]:
+        if self._ma_fast.iloc[-1] &gt; self._ma_slow.iloc[-1]:
             return "LONG"
-        elif self._ma_fast.iloc[-1] < self._ma_slow.iloc[-1]:
+        elif self._ma_fast.iloc[-1] &lt; self._ma_slow.iloc[-1]:
             return "SHORT"
         return "HOLD"
 
@@ -771,7 +771,7 @@ PairStrategy</div>
         if symbol in self.open_positions:
             raise ValueError(f"มี position {symbol} อยู่แล้ว")
         cost = size * price * (1 + fee_rate)
-        if cost > self.cash:
+        if cost &gt; self.cash:
             raise ValueError(f"เงินไม่พอ: ต้องการ {cost:,.0f}, มี {self.cash:,.0f}")
         self.cash -= cost
         self.open_positions[symbol] = Position(symbol, side, size, price, fee_rate)
@@ -801,13 +801,13 @@ PairStrategy</div>
         pnls = [p.net_pnl for p in self.closed_positions]
         if not pnls:
             return {"trades": 0}
-        winners = [p for p in pnls if p > 0]
+        winners = [p for p in pnls if p &gt; 0]
         return {
             "trades":    len(pnls),
             "win_rate":  len(winners) / len(pnls),
             "total_pnl": sum(pnls),
             "avg_win":   sum(winners)/len(winners) if winners else 0,
-            "avg_loss":  sum(p for p in pnls if p <= 0) / max(1, len(pnls)-len(winners))
+            "avg_loss":  sum(p for p in pnls if p &lt;= 0) / max(1, len(pnls)-len(winners))
         }
 
     def __repr__(self):

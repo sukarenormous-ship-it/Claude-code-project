@@ -496,10 +496,10 @@ async def signal_consumer(queue: asyncio.Queue, window: int = 5):
         queue.task_done()
         processed += 1
 
-        if len(prices) >= window:
+        if len(prices) &gt;= window:
             ma = sum(prices[-window:]) / window
             latest = prices[-1]
-            signal = "LONG" if latest > ma else ("SHORT" if latest < ma else "HOLD")
+            signal = "LONG" if latest &gt; ma else ("SHORT" if latest &lt; ma else "HOLD")
             print(f"[CONS] tick #{processed:2d}: price={latest:,.1f} "
                   f"MA{window}={ma:,.1f} → {signal}")
 
@@ -634,7 +634,7 @@ asyncio.run(bulk_fetch_historical(
 
     async def consumer(n_producers: int):
         finished = 0
-        while finished < n_producers:
+        while finished &lt; n_producers:
             tick = await output_q.get()
             if tick is None:
                 finished += 1
@@ -1024,8 +1024,8 @@ async def run_dual_feed(symbol: str = "BTCUSDT",
                 candle_buf[candle.exchange].append(candle.close)
 
                 <span class="c"># คำนวณ spread เมื่อมีข้อมูลทั้งสอง exchange</span>
-                if (len(candle_buf["binance"]) > 0 and
-                        len(candle_buf["bybit"]) > 0):
+                if (len(candle_buf["binance"]) &gt; 0 and
+                        len(candle_buf["bybit"]) &gt; 0):
                     b_price = candle_buf["binance"][-1]
                     y_price = candle_buf["bybit"][-1]
                     spread  = y_price - b_price
@@ -1072,10 +1072,10 @@ def check_staleness(candle: Candle, max_age_seconds: float = 30.0) -> bool:
     """คืน True ถ้า candle ยังสด (ไม่เก่าเกิน max_age_seconds)"""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     age = (now - candle.timestamp).total_seconds()
-    if age > max_age_seconds:
+    if age &gt; max_age_seconds:
         logger.warning(
             f"[STALE] {candle.exchange} {candle.symbol} "
-            f"candle age={age:.1f}s > {max_age_seconds}s — ข้าม"
+            f"candle age={age:.1f}s &gt; {max_age_seconds}s — ข้าม"
         )
         return False
     return True
@@ -1704,10 +1704,10 @@ class SystemHealth:
     feed_disconnects:   int   = 0
 
     def update_equity(self, equity: float):
-        if equity > self.peak_equity:
+        if equity &gt; self.peak_equity:
             self.peak_equity = equity
         self.current_equity = equity
-        if self.peak_equity > 0:
+        if self.peak_equity &gt; 0:
             self.drawdown_pct = (equity - self.peak_equity) / self.peak_equity
 
 
@@ -1729,9 +1729,9 @@ async def health_check_loop(health: SystemHealth,
         now = time.time()
 
         <span class="c"># ตรวจ drawdown</span>
-        if health.drawdown_pct < max_drawdown:
+        if health.drawdown_pct &lt; max_drawdown:
             kill_switch.trigger(
-                f"Max drawdown exceeded: {health.drawdown_pct:.2%} < {max_drawdown:.2%}"
+                f"Max drawdown exceeded: {health.drawdown_pct:.2%} &lt; {max_drawdown:.2%}"
             )
             break
 
@@ -1739,18 +1739,18 @@ async def health_check_loop(health: SystemHealth,
         binance_silence = now - health.last_binance_tick
         bybit_silence   = now - health.last_bybit_tick
 
-        if health.last_binance_tick > 0 and binance_silence > max_feed_silence:
+        if health.last_binance_tick &gt; 0 and binance_silence &gt; max_feed_silence:
             logger.error(f"Binance feed silent for {binance_silence:.0f}s")
             kill_switch.trigger(f"Binance feed silent {binance_silence:.0f}s")
             break
 
-        if health.last_bybit_tick > 0 and bybit_silence > max_feed_silence:
+        if health.last_bybit_tick &gt; 0 and bybit_silence &gt; max_feed_silence:
             logger.error(f"Bybit feed silent for {bybit_silence:.0f}s")
             kill_switch.trigger(f"Bybit feed silent {bybit_silence:.0f}s")
             break
 
         <span class="c"># ตรวจ order errors</span>
-        if health.order_errors >= 5:
+        if health.order_errors &gt;= 5:
             kill_switch.trigger(
                 f"Too many order errors: {health.order_errors}"
             )
@@ -1835,8 +1835,8 @@ class BTCPairLiveSystem:
     def _compute_zscore(self) -> Optional[float]:
         """คำนวณ z-score ของ spread Binance-Bybit"""
         w = self.config["pair_window"]
-        if (len(self._binance_closes) < w or
-                len(self._bybit_closes) < w):
+        if (len(self._binance_closes) &lt; w or
+                len(self._bybit_closes) &lt; w):
             return None
 
         import statistics
@@ -1856,9 +1856,9 @@ class BTCPairLiveSystem:
         entry = self.config["entry_zscore"]
         exit_ = self.config["exit_zscore"]
 
-        if zscore >  entry: return "SHORT"
-        if zscore < -entry: return "LONG"
-        if abs(zscore) < exit_: return "EXIT"
+        if zscore &gt;  entry: return "SHORT"
+        if zscore &lt; -entry: return "LONG"
+        if abs(zscore) &lt; exit_: return "EXIT"
         return "HOLD"
 
     <span class="c"># ─── Order Execution ─────────────────────────────────────</span>
@@ -2046,8 +2046,8 @@ async def preflight_check(config: dict) -> bool:
     api_key    = os.environ.get("BYBIT_API_KEY", "")
     api_secret = os.environ.get("BYBIT_API_SECRET", "")
     results["api_keys"] = bool(api_key and api_secret and
-                                len(api_key) > 10 and
-                                len(api_secret) > 10)
+                                len(api_key) &gt; 10 and
+                                len(api_secret) &gt; 10)
     if not results["api_keys"]:
         logger.error("FAIL: BYBIT_API_KEY หรือ BYBIT_API_SECRET ไม่ได้ตั้งค่า")
 
@@ -2078,10 +2078,10 @@ async def preflight_check(config: dict) -> bool:
                         0.0
                     )
                     min_balance = config.get("initial_capital", 1000) * 0.5
-                    results["balance"] = usdt >= min_balance
+                    results["balance"] = usdt &gt;= min_balance
                     if not results["balance"]:
                         logger.error(
-                            f"FAIL: USDT balance {usdt:.2f} < required {min_balance:.2f}"
+                            f"FAIL: USDT balance {usdt:.2f} &lt; required {min_balance:.2f}"
                         )
                     else:
                         logger.info(f"OK: USDT balance = {usdt:,.2f}")
@@ -2093,9 +2093,9 @@ async def preflight_check(config: dict) -> bool:
 
     <span class="c"># 4. ตรวจ config</span>
     cfg_ok = (
-        config.get("order_qty", 0) > 0 and
-        config.get("max_drawdown", 0) < 0 and
-        config.get("entry_zscore", 0) > config.get("exit_zscore", 0) > 0
+        config.get("order_qty", 0) &gt; 0 and
+        config.get("max_drawdown", 0) &lt; 0 and
+        config.get("entry_zscore", 0) &gt; config.get("exit_zscore", 0) &gt; 0
     )
     results["config"] = cfg_ok
     if not cfg_ok:
@@ -2191,7 +2191,7 @@ async def notify_fill(order: Order):
 <tr><td><strong>Part II</strong></td><td>Math Tools</td><td>Rolling stats, z-score, cointegration, pair trading signal</td></tr>
 <tr><td><strong>Part III</strong></td><td>OOP</td><td>Classes, ABC, Strategy/Observer/Factory patterns — system ที่ขยายได้</td></tr>
 <tr><td><strong>Part IV</strong></td><td>Backtesting</td><td>Walk-forward, slippage, commission, overfitting, Sharpe/drawdown</td></tr>
-<tr><td><strong>Part V</strong></td><td>Risk &amp; Portfolio</td><td>Position sizing, VaR, Kelly criterion, correlation, portfolio optimization</td></tr>
+<tr><td><strong>Part V</strong></td><td>AI-Assisted Coding</td><td>Prompt engineering, code generation, audit checklist, quant libraries, full strategy with AI</td></tr>
 <tr><td><strong>Part VI</strong></td><td>Async &amp; Live Trading</td><td>asyncio, WebSocket, order execution, kill switch, monitoring</td></tr>
 </table>
 
@@ -2273,7 +2273,7 @@ async def notify_fill(order: Order):
 </div>
 
 <div class="nav">
-<a href="python-part5.html">← Part V: Risk &amp; Portfolio</a>
+<a href="python-part5.html">← Part V: AI-Assisted Coding</a>
 <span style="color:#94a3b8;font-size:.9em">Part VI — จบหนังสือ</span>
 </div>
 

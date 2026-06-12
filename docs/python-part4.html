@@ -99,7 +99,7 @@ Part IV นี้จะสอนให้ backtest <em>อย่างถูก�
 <div class="bx ba">
 <div class="bt">แบบทดสอบก่อนเริ่ม — Lookahead Bias คืออะไร?</div>
 <p>สมมติว่าคุณเขียนโค้ดแบบนี้:<br>
-<code>signal = (zscore > 2.0).astype(int)</code><br>
+<code>signal = (zscore &gt; 2.0).astype(int)</code><br>
 <code>ret_strategy = signal * daily_return</code><br><br>
 ❓ โค้ดนี้มี lookahead bias หรือเปล่า?<br><br>
 <strong>คำตอบ: มี</strong> — <code>signal[t]</code> คำนวณจาก zscore วัน t แต่ <code>daily_return[t]</code> = ราคาปิดวัน t / ราคาปิดวัน t-1 ซึ่งคุณยังไม่รู้ตอน t เริ่มต้น<br>
@@ -134,8 +134,8 @@ ENTRY_Z, EXIT_Z = 2.0, 0.5
 
 <span class="c"># Raw signal (ยังไม่ lag)</span>
 raw_signal = pd.Series(0.0, index=df.index)
-raw_signal[zscore >  ENTRY_Z] = -1.0   <span class="c"># short spread</span>
-raw_signal[zscore < -ENTRY_Z] =  1.0   <span class="c"># long spread</span>
+raw_signal[zscore &gt;  ENTRY_Z] = -1.0   <span class="c"># short spread</span>
+raw_signal[zscore &lt; -ENTRY_Z] =  1.0   <span class="c"># long spread</span>
 <span class="c"># forward-fill: ถือ position ต่อจนกว่า signal จะเปลี่ยน</span>
 raw_signal = raw_signal.replace(0, np.nan).ffill().fillna(0)
 
@@ -189,7 +189,7 @@ Lookahead advantage (ghost profit): +12.66%</div>
 
     <span class="c"># ── 2. Raw signal (ยังไม่ shift) ──────────────────────────────</span>
     raw = pd.Series(0.0, index=df.index)
-    raw[df["zscore"] >  entry_z] = -1.0   <span class="c"># spread กว้างเกิน → short</span>
+    raw[df["zscore"] &gt;  entry_z] = -1.0   <span class="c"># spread กว้างเกิน → short</span>
     raw[df["zscore"] &lt; -entry_z] =  1.0   <span class="c"># spread แคบเกิน  → long</span>
     raw[df["zscore"].abs() &lt;  exit_z] = 0.0   <span class="c"># mean-reverted → exit</span>
     raw = raw.replace(0, np.nan).ffill().fillna(0)  <span class="c"># ถือต่อจนกว่าจะ exit</span>
@@ -254,7 +254,7 @@ print(result[["zscore", "signal", "net_return", "equity", "drawdown"]].tail(6).r
     ann_vol = rets.std() * np.sqrt(periods_per_year)
 
     <span class="c"># Sharpe Ratio (risk-free rate = 0 สำหรับ crypto)</span>
-    sharpe = ann_return / ann_vol if ann_vol > 0 else 0.0
+    sharpe = ann_return / ann_vol if ann_vol &gt; 0 else 0.0
 
     <span class="c"># Max Drawdown</span>
     max_dd = float(dd.min())
@@ -264,12 +264,12 @@ print(result[["zscore", "signal", "net_return", "equity", "drawdown"]].tail(6).r
 
     <span class="c"># Win Rate (บน active days เท่านั้น)</span>
     active   = rets[rets != 0]
-    win_rate = float((active > 0).mean()) if len(active) > 0 else 0.0
+    win_rate = float((active &gt; 0).mean()) if len(active) &gt; 0 else 0.0
 
     <span class="c"># Profit Factor = gross profit / gross loss</span>
-    wins  = active[active > 0].sum()
+    wins  = active[active &gt; 0].sum()
     losses = abs(active[active &lt; 0].sum())
-    profit_factor = wins / losses if losses > 0 else float("inf")
+    profit_factor = wins / losses if losses &gt; 0 else float("inf")
 
     <span class="c"># Average trade duration (consecutive non-zero positions)</span>
     pos = result["signal"]
@@ -409,11 +409,11 @@ print(sweep.head(8).to_string(index=False))</div>
     downside_std  = downside_rets.std() * np.sqrt(periods_per_year)
     ann_return    = m["Ann. Return (%)"] / 100
 
-    sortino = ann_return / downside_std if downside_std > 0 else 0.0
+    sortino = ann_return / downside_std if downside_std &gt; 0 else 0.0
     m["Sortino Ratio"] = round(sortino, 3)
     return m
 
-<span class="c"># Sortino > Sharpe แสดงว่า strategy มี upside มากกว่า downside</span>
+<span class="c"># Sortino &gt; Sharpe แสดงว่า strategy มี upside มากกว่า downside</span>
 m_full = add_sortino(compute_metrics(result), result)
 print(f"Sharpe:  {m_full['Sharpe Ratio']:.3f}")
 print(f"Sortino: {m_full['Sortino Ratio']:.3f}")
@@ -540,12 +540,12 @@ class PortfolioState:
         if len(self.bar_history) &lt; self.window:
             return None
         recent = self.bar_history[-self.window:]
-        spreads = [np.log(b.close / b.volume) if b.volume > 0
+        spreads = [np.log(b.close / b.volume) if b.volume &gt; 0
                    else 0.0 for b in recent]
         <span class="c"># (volume ที่นี่ใช้แทน price_b เพื่อความง่าย)</span>
         arr = np.array(spreads)
         std = arr.std()
-        return float((arr[-1] - arr.mean()) / std) if std > 0 else 0.0
+        return float((arr[-1] - arr.mean()) / std) if std &gt; 0 else 0.0
 
     def _compute_zscore_from_prices(self,
                                      closes_a: np.ndarray,
@@ -557,11 +557,11 @@ class PortfolioState:
         window_b = closes_b[-self.window:]
         spread   = np.log(window_a) - np.log(window_b)
         std      = spread.std()
-        return float((spread[-1] - spread.mean()) / std) if std > 0 else 0.0
+        return float((spread[-1] - spread.mean()) / std) if std &gt; 0 else 0.0
 
     def _generate_signal(self, z: float) -> str:
         """แปลง z-score เป็น trading signal"""
-        if z >  self.entry_z:
+        if z &gt;  self.entry_z:
             return "SHORT"   <span class="c"># spread กว้าง → short</span>
         if z &lt; -self.entry_z:
             return "LONG"    <span class="c"># spread แคบ → long</span>
@@ -588,8 +588,8 @@ class PortfolioState:
             fill_a = price_a * (1 - slip_mult)
             fill_b = price_b * (1 + slip_mult)
         else:   <span class="c"># EXIT</span>
-            fill_a = price_a * (1 - slip_mult if self.position > 0 else 1 + slip_mult)
-            fill_b = price_b * (1 + slip_mult if self.position > 0 else 1 - slip_mult)
+            fill_a = price_a * (1 - slip_mult if self.position &gt; 0 else 1 + slip_mult)
+            fill_b = price_b * (1 + slip_mult if self.position &gt; 0 else 1 - slip_mult)
 
         <span class="c"># ขนาด position (10% ของ cash)</span>
         notional  = self.cash * 0.10
@@ -969,7 +969,7 @@ def walk_forward_validation(
                 entry_z = best_params["entry_z"],
                 fee_rate = 0.001,
             )
-            oos_m = compute_metrics(oos_res) if len(oos_res) > 0 else {}
+            oos_m = compute_metrics(oos_res) if len(oos_res) &gt; 0 else {}
         except Exception:
             oos_m = {}
 
@@ -1026,11 +1026,11 @@ print(wf_result.to_string(index=False))</div>
           f"± {wf['oos_sharpe'].std():.3f}")
     ratio = wf["oos_sharpe"].mean() / wf["is_sharpe"].mean()
     print(f"OOS/IS Ratio:         {ratio:.1%}  "
-          f"({'acceptable' if ratio > 0.5 else 'likely overfit'})")
-    print(f"OOS Sharpe > 0:       "
-          f"{(wf['oos_sharpe'] > 0).sum()}/{len(wf)} folds")
-    print(f"OOS Sharpe > 1:       "
-          f"{(wf['oos_sharpe'] > 1.0).sum()}/{len(wf)} folds")
+          f"({'acceptable' if ratio &gt; 0.5 else 'likely overfit'})")
+    print(f"OOS Sharpe &gt; 0:       "
+          f"{(wf['oos_sharpe'] &gt; 0).sum()}/{len(wf)} folds")
+    print(f"OOS Sharpe &gt; 1:       "
+          f"{(wf['oos_sharpe'] &gt; 1.0).sum()}/{len(wf)} folds")
     print(f"OOS Return (avg):     {wf['oos_return'].mean():.2f}%")
     print(f"OOS Max DD (avg):     {wf['oos_max_dd'].mean():.2f}%")
     print()
@@ -1111,7 +1111,7 @@ def walk_forward_sklearn(price_a, price_b,
 
         <span class="c"># Test</span>
         oos  = vectorized_backtest(test_a, test_b, **best_p)
-        oos_m = compute_metrics(oos) if len(oos) > 0 else {}
+        oos_m = compute_metrics(oos) if len(oos) &gt; 0 else {}
 
         results.append({
             "fold":       fold_idx + 1,
@@ -1315,7 +1315,7 @@ for k, v in costs.items():
 
     <span class="c"># Signal + lag</span>
     raw = pd.Series(0.0, index=df.index)
-    raw[df["zscore"] >  entry_z] = -1.0
+    raw[df["zscore"] &gt;  entry_z] = -1.0
     raw[df["zscore"] &lt; -entry_z] =  1.0
     raw[df["zscore"].abs() &lt; exit_z] = 0.0
     raw = raw.replace(0, np.nan).ffill().fillna(0)
@@ -1446,7 +1446,7 @@ High Costs      0.612     5.84    -9.43    1.098</div>
                 window=window, entry_z=entry_z,
                 cost_model=tcm, notional=100_000,
             )
-            m = compute_metrics(res) if len(res) > 0 else {}
+            m = compute_metrics(res) if len(res) &gt; 0 else {}
             row[f"comm_{comm:.0f}bps"] = round(
                 m.get("Sharpe Ratio", 0), 2
             )
@@ -1763,7 +1763,7 @@ min_edge_to_breakeven(
 
 <div class="nav">
 <a href="python-part3.html">← Part III: OOP</a>
-<a href="python-part5.html">Part V →</a>
+<a href="python-part5.html">Part V: AI-Assisted Coding →</a>
 </div>
 
 </body>
