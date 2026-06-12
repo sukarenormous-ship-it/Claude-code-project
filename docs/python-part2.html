@@ -54,6 +54,15 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
 .nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
 .nav a{color:var(--teal);text-decoration:none;font-weight:600}
+.read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
+.ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
+.ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
+.ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
+.ai-decode .ad-code .c{color:#64748b}
+.ai-decode .ad-steps{background:var(--violet-bg);padding:14px 20px;font-size:.95em}
+.ai-decode .ad-steps ol{margin-bottom:.5em}
+.ai-decode .ad-steps p:last-child{margin-bottom:0}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
 </style>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
@@ -181,17 +190,17 @@ print(f"ใช้ Normal จะ underestimate ความเสี่ยง {t5
     r = np.array(returns)
     ann = 252
 
-    mean_daily  = r.mean()
-    std_daily   = r.std()
-    sharpe      = mean_daily / std_daily * np.sqrt(ann)
-    skew        = stats.skew(r)
-    kurt        = stats.kurtosis(r)         <span class="c"># excess kurtosis</span>
-    var95       = np.percentile(r, 5)
-    cvar95      = r[r &lt;= var95].mean()
+    mean_daily  = r.mean()                  <span class="c"># return เฉลี่ยต่อวัน</span>
+    std_daily   = r.std()                   <span class="c"># ความผันผวนต่อวัน</span>
+    sharpe      = mean_daily / std_daily * np.sqrt(ann)  <span class="c"># Sharpe รายปี (คูณ √252)</span>
+    skew        = stats.skew(r)             <span class="c"># ความเบ้ (ลบ = หางซ้ายยาว = อันตราย)</span>
+    kurt        = stats.kurtosis(r)         <span class="c"># excess kurtosis (บวก = fat tail)</span>
+    var95       = np.percentile(r, 5)       <span class="c"># จุดตัด worst 5% ของวัน</span>
+    cvar95      = r[r &lt;= var95].mean()      <span class="c"># ค่าเฉลี่ยของวันที่แย่กว่า VaR</span>
 
-    equity      = capital * np.cumprod(1 + r)
-    rolling_max = np.maximum.accumulate(equity)
-    max_dd      = ((equity - rolling_max) / rolling_max).min()
+    equity      = capital * np.cumprod(1 + r)        <span class="c"># เส้นเงินทุนสะสมรายวัน</span>
+    rolling_max = np.maximum.accumulate(equity)      <span class="c"># จุดสูงสุดที่เคยไปถึง ณ แต่ละวัน</span>
+    max_dd      = ((equity - rolling_max) / rolling_max).min()  <span class="c"># % ร่วงจากยอดที่ลึกที่สุด</span>
 
     print(f"=== {name} ===")
     print(f"Annual Return: {mean_daily*ann:.1%}   Sharpe: {sharpe:.2f}")
@@ -424,19 +433,23 @@ print(f"Spread Std: {spread.std():.6f}")</div>
 <div class="fm">def build_spread(price_a, price_b, window=60):
     """
     สร้าง spread และ z-score จาก OLS rolling regression
+    ทำ 3 ขั้น: (1) หา beta → (2) สร้าง spread → (3) คำนวณ z-score
     Returns: DataFrame ของ spread, beta, zscore
     """
-    log_a = np.log(price_a)
+    log_a = np.log(price_a)            <span class="c"># แปลงเป็น log price ทั้งคู่</span>
     log_b = np.log(price_b)
 
-    X = sm.add_constant(log_b)
+    <span class="c"># ── ขั้น 1: หา hedge ratio (beta) ด้วย rolling OLS ──</span>
+    X = sm.add_constant(log_b)         <span class="c"># เติมคอลัมน์ค่าคงที่ (intercept) ให้ regression</span>
     roll = RollingOLS(log_a, X, window=window).fit()
+    beta  = roll.params.iloc[:, 1]     <span class="c"># สัมประสิทธิ์ของ log_b = hedge ratio</span>
+    alpha = roll.params['const']       <span class="c"># intercept</span>
 
-    beta    = roll.params.iloc[:, 1]   <span class="c"># hedge ratio</span>
-    alpha   = roll.params['const']
+    <span class="c"># ── ขั้น 2: spread = ส่วนที่ "เหลือ" หลังหักความสัมพันธ์ออก ──</span>
+    predicted = alpha + beta * log_b   <span class="c"># ราคา A ที่ "ควรจะเป็น" ตามราคา B</span>
+    spread = log_a - predicted         <span class="c"># ของจริง - ที่ควรเป็น = ความเพี้ยน</span>
 
-    spread  = log_a - (alpha + beta * log_b)
-
+    <span class="c"># ── ขั้น 3: z-score ของ spread (สูตรเดิมจาก Part I) ──</span>
     roll_mean = spread.rolling(window).mean()
     roll_std  = spread.rolling(window).std()
     zscore    = (spread - roll_mean) / roll_std
@@ -667,6 +680,27 @@ rets = pd.DataFrame(np.random.multivariate_normal(
 
 optimal_w = sharpe_maximize(rets)</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 ฝึกอ่าน 2 ท่อนที่ดูลึกลับที่สุดในโค้ดข้างบน</div>
+<div class="ad-code"><span class="c"># ท่อนที่ 1</span>
+port_ret = weights @ mu
+<span class="c"># ท่อนที่ 2</span>
+constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]</div>
+<div class="ad-steps">
+<p><strong>ท่อนที่ 1:</strong> เครื่องหมาย <code>@</code> คือ "คูณแบบเวกเตอร์/เมทริกซ์" — <code>weights @ mu</code> อ่านว่า "เอาน้ำหนักแต่ละตัว คูณ return คาดหวังของ asset นั้น แล้วบวกรวมกัน" เท่ากับเขียน loop เองว่า:</p>
+<div style="font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:10px 14px;border-radius:6px;font-size:.85em;line-height:1.6;white-space:pre">port_ret = 0
+for w, m in zip(weights, mu):
+    port_ret = port_ret + w * m</div>
+<p style="margin-top:8px"><strong>ท่อนที่ 2:</strong> อ่านจากในออกนอก:</p>
+<ol>
+<li><code>lambda w: np.sum(w) - 1</code> — ฟังก์ชันจิ๋ว: "รับ w มา แล้วคืนค่า ผลรวมของ w ลบ 1"</li>
+<li><code>"type": "eq"</code> — บอก optimizer ว่าค่าที่ฟังก์ชันนี้คืน <strong>ต้องเท่ากับ 0</strong> → แปลว่า sum(w) - 1 = 0 → sum(w) = 1 = "ลงทุนเต็มพอดี ไม่ขาดไม่เกิน"</li>
+<li><code>[ { ... } ]</code> — เป็น list ของ dict เพราะใส่ได้หลายเงื่อนไข (scipy กำหนดรูปแบบนี้)</li>
+</ol>
+<p>นี่คือ "ภาษาเฉพาะ" ของ scipy — เจอครั้งแรกทุกคนงง พออ่านออกแล้วจะเห็นว่ามันแค่บอกว่า <em>"เงื่อนไข: น้ำหนักรวมกันต้องเป็น 1"</em></p>
+</div>
+</div>
+
 <h3 id="s15-3">15.3 Kelly Criterion — Optimal Position Size</h3>
 
 $$f^* = \frac{\mu - r_f}{\sigma^2} \qquad \text{(continuous Kelly)}$$
@@ -709,26 +743,41 @@ f = kelly_fraction(daily_mean, daily_std)</div>
 <div class="ex">
 <div class="et">ตัวอย่าง: Mean-Variance Optimization (Efficient Frontier)</div>
 <div class="fm">def efficient_frontier(returns_df, n_points=100):
-    """สร้าง efficient frontier"""
+    """
+    สร้าง efficient frontier:
+    สำหรับ return เป้าหมายแต่ละระดับ → หาพอร์ตที่ vol ต่ำสุด
+    """
     n = len(returns_df.columns)
-    mu    = returns_df.mean().values * 252
-    sigma = returns_df.cov().values * 252
+    mu    = returns_df.mean().values * 252   <span class="c"># expected return รายปี</span>
+    sigma = returns_df.cov().values * 252    <span class="c"># covariance รายปี</span>
+
+    <span class="c"># ไล่ return เป้าหมาย จากต่ำสุดถึงสูงสุด เป็น n_points จุด</span>
     target_returns = np.linspace(mu.min(), mu.max(), n_points)
 
-    frontier_vols = []
+    def portfolio_variance(w):
+        """สิ่งที่ต้องการ minimize: ความแปรปรวนของพอร์ต"""
+        return w @ sigma @ w
+
+    frontier_vols = []                       <span class="c"># เก็บ vol ต่ำสุดของแต่ละเป้า</span>
     for target in target_returns:
-        constraints = [
-            {"type": "eq", "fun": lambda w: np.sum(w) - 1},
-            {"type": "eq", "fun": lambda w, t=target: w @ mu - t}
-        ]
-        result = minimize(
-            lambda w: w @ sigma @ w,  <span class="c"># minimize variance</span>
-            x0=np.ones(n)/n,
-            method="SLSQP",
-            bounds=[(0, 1)]*n,
-            constraints=constraints
-        )
-        frontier_vols.append(np.sqrt(result.fun) if result.success else np.nan)
+        <span class="c"># เงื่อนไข 1: น้ำหนักรวม = 1 (ลงทุนเต็มพอดี)</span>
+        sum_to_one = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+
+        <span class="c"># เงื่อนไข 2: return ของพอร์ต = target ของรอบนี้</span>
+        <span class="c"># (t=target จำเป็น! ดูกล่องกับดักด้านล่าง)</span>
+        hit_target = {"type": "eq", "fun": lambda w, t=target: w @ mu - t}
+
+        result = minimize(portfolio_variance,
+                          x0=np.ones(n) / n,        <span class="c"># เริ่มจากน้ำหนักเท่ากันทุกตัว</span>
+                          method="SLSQP",
+                          bounds=[(0, 1)] * n,      <span class="c"># ห้าม short (0 ≤ w ≤ 1)</span>
+                          constraints=[sum_to_one, hit_target])
+
+        if result.success:
+            min_vol = np.sqrt(result.fun)    <span class="c"># ได้ variance ต่ำสุด → ถอดรากเป็น vol</span>
+        else:
+            min_vol = np.nan                 <span class="c"># แก้ไม่ได้ (เป้าสูง/ต่ำเกิน) → เว้นจุดนี้</span>
+        frontier_vols.append(min_vol)
 
     return target_returns, np.array(frontier_vols)
 
@@ -743,6 +792,12 @@ ax.set_title("Efficient Frontier (BTC, ETH, SOL)")
 ax.legend()
 plt.tight_layout()
 plt.show()</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠ กับดัก lambda ใน loop — ทำไมต้องเขียน <code>lambda w, t=target</code></div>
+<p>ถ้าเขียน <code>lambda w: w @ mu - target</code> เฉย ๆ — lambda จะ "จำชื่อตัวแปร" ไม่ใช่ "จำค่า" พอ loop จบ <code>target</code> ชี้ไปที่ค่าสุดท้ายแล้ว ทุก lambda ที่สร้างไว้จะใช้ค่าเดียวกันหมด → frontier ผิดทั้งเส้นแบบเงียบ ๆ ไม่มี error<br><br>
+ท่า <code>t=target</code> คือการ "ถ่ายสำเนาค่า ณ รอบนั้น" เก็บไว้ใน t ของ lambda ตัวนั้นเอง — นี่เป็นกับดัก Python คลาสสิกที่แม้แต่ AI ยังเขียนพลาดเป็นครั้งคราว <strong>เจอ lambda ใน loop เมื่อไหร่ ให้มองหา <code>=</code> แบบนี้เสมอ</strong></p>
 </div>
 
 <details>
@@ -911,9 +966,11 @@ c   = [-e for e in exp_pnl]         <span class="c"># negate for minimization</s
 A_eq = [[1, 1, 1]]
 b_eq = [1.0]
 
-<span class="c"># max drawdown per pair ≤ 5% of capital each</span>
-<span class="c"># allocation_i * max_dd_i ≤ 0.05</span>
-A_ub = [[max_dd[i] if j==i else 0 for j in range(3)] for i in range(3)]
+<span class="c"># เงื่อนไข: drawdown ที่คาดของแต่ละ pair ≤ 5% ของ capital</span>
+<span class="c"># allocation_i × max_dd_i ≤ 0.05 — แยกกันทีละ pair = matrix แนวทแยง</span>
+A_ub = np.diag(max_dd)      <span class="c"># [[0.05, 0,    0   ],</span>
+                            <span class="c">#  [0,    0.08, 0   ],</span>
+                            <span class="c">#  [0,    0,    0.10]]</span>
 b_ub = [0.05] * 3
 
 bounds = [(0.0, 0.5)] * 3   <span class="c"># max 50% ต่อ pair</span>
@@ -926,6 +983,20 @@ print("Optimal Position Sizing:")
 for pair, alloc in zip(pairs, result.x):
     print(f"  {pair}: {alloc:.1%} = ฿{alloc*capital:,.0f}")
 print(f"Expected Portfolio Return: {-result.fun:.1%}")</div>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 AI มักสร้าง matrix แนวทแยงด้วย nested comprehension — ฝึกอ่าน</div>
+<div class="ad-code">A_ub = [[max_dd[i] if j==i else 0 for j in range(3)] for i in range(3)]</div>
+<div class="ad-steps">
+<p>comprehension ซ้อนสองชั้น — อ่าน<strong>จากขวา (ชั้นนอก) เข้าซ้าย (ชั้นใน)</strong>:</p>
+<ol>
+<li><code>for i in range(3)</code> (ชั้นนอก, ขวาสุด) — สร้าง 3 แถว แถวละหนึ่ง i</li>
+<li><code>for j in range(3)</code> (ชั้นใน) — แต่ละแถวมี 3 ช่อง ช่องละหนึ่ง j</li>
+<li><code>max_dd[i] if j==i else 0</code> — แต่ละช่อง: "เอาค่า max_dd <strong>ถ้า</strong>อยู่บนเส้นทแยง (แถว=คอลัมน์) <strong>ไม่งั้น</strong>ใส่ 0"</li>
+</ol>
+<p>ผลคือ matrix เดียวกับ <code>np.diag(max_dd)</code> เป๊ะ — เวอร์ชัน np.diag สั้นกว่า อ่านง่ายกว่า และผิดยากกว่า ถ้า AI เขียนแบบ nested มา ขอให้มันแก้เป็น np.diag ได้เลย</p>
+</div>
 </div>
 
 <details>
@@ -990,34 +1061,46 @@ signal[bb["pct_b"] &lt; 0.0] = "LONG"</div>
 
 <p>Kalman Filter ประมาณ β แบบ real-time โดยอัปเดตทุกครั้งที่มีข้อมูลใหม่ — ดีกว่า rolling OLS ตรงที่ไม่มี window cutoff และ smooth กว่า</p>
 
+<div class="bx bb">
+<div class="bt">Kalman Filter ทำงานสองจังหวะ — "เดา แล้วแก้เดา" ซ้ำไปเรื่อย ๆ</div>
+<p>ลองนึกถึงการเดาน้ำหนักเพื่อนทุกครั้งที่เจอกัน:<br>
+<strong>จังหวะ 1 — เดา (Predict):</strong> "วันนี้น่าจะหนักเท่าเดิมจากครั้งก่อน แต่เวลาผ่านไปแล้ว ความมั่นใจของเราลดลงนิดหน่อย"<br>
+<strong>จังหวะ 2 — แก้เดา (Update):</strong> เห็นข้อมูลใหม่ (เพื่อนตัวจริง) → เทียบกับที่เดา → ถ้าต่างกัน ขยับคำเดาเข้าหาความจริง <em>ตามสัดส่วนความมั่นใจ</em> — มั่นใจคำเดาเดิมมากก็ขยับนิดเดียว ไม่มั่นใจก็ขยับเยอะ<br><br>
+ตัวเลข "สัดส่วนการขยับ" นี้คือ <strong>Kalman Gain (K)</strong> — หัวใจของทั้ง algorithm มีแค่นี้</p>
+</div>
+
 <div class="fm">def kalman_hedge_ratio(price_a, price_b,
                         delta=1e-4, vt=1e-3):
     """
     Track hedge ratio beta ด้วย Kalman Filter
-    delta: process noise (ใหญ่ = beta เปลี่ยนเร็ว)
-    vt:    observation noise
+    delta: process noise (ใหญ่ = ยอมให้ beta เปลี่ยนเร็ว)
+    vt:    observation noise (ใหญ่ = ราคามี noise มาก เชื่อข้อมูลใหม่น้อยลง)
     Returns: array ของ beta ณ แต่ละเวลา
     """
     n       = len(price_a)
-    beta    = np.zeros(n)
-    P       = np.ones(n)      <span class="c"># error covariance</span>
-    beta[0] = 1.0             <span class="c"># initial estimate</span>
+    beta    = np.zeros(n)     <span class="c"># เตรียมที่เก็บ beta ของทุกวัน</span>
+    P       = np.ones(n)      <span class="c"># P = "ความไม่มั่นใจ" ในค่า beta (variance ของคำเดา)</span>
+    beta[0] = 1.0             <span class="c"># วันแรก: เดาไว้ก่อนว่า beta = 1</span>
 
     for t in range(1, n):
-        <span class="c"># Predict</span>
+        <span class="c"># ── จังหวะ 1: เดา (Predict) ──</span>
+        <span class="c"># beta วันนี้น่าจะเท่าเมื่อวาน แต่ความไม่มั่นใจเพิ่มขึ้นตาม delta</span>
         P_pred = P[t-1] + delta
 
-        <span class="c"># Update (Kalman Gain)</span>
-        x = price_b[t]              <span class="c"># predictor</span>
-        S = x**2 * P_pred + vt      <span class="c"># innovation variance</span>
-        K = P_pred * x / S          <span class="c"># Kalman Gain</span>
+        <span class="c"># ── จังหวะ 2: แก้เดา (Update) ด้วยข้อมูลใหม่ ──</span>
+        x = price_b[t]              <span class="c"># ราคาตลาด B วันนี้ (ตัวพยากรณ์)</span>
 
-        <span class="c"># Innovation</span>
-        y_pred = beta[t-1] * x
-        innov  = price_a[t] - y_pred
+        y_pred = beta[t-1] * x      <span class="c"># ราคา A "ที่ควรเป็น" ตามคำเดาเดิม</span>
+        innov  = price_a[t] - y_pred  <span class="c"># ของจริง - ที่เดา = "เดาพลาดเท่าไหร่"</span>
 
-        beta[t] = beta[t-1] + K * innov
-        P[t]    = (1 - K * x) * P_pred
+        S = x**2 * P_pred + vt      <span class="c"># ความแปรปรวนรวมของความพลาด</span>
+                                    <span class="c"># (จากความไม่มั่นใจใน beta + noise ของราคา)</span>
+        K = P_pred * x / S          <span class="c"># Kalman Gain: "ควรขยับคำเดากี่ %"</span>
+                                    <span class="c"># ไม่มั่นใจมาก (P สูง) → K ใหญ่ → ขยับเยอะ</span>
+                                    <span class="c"># ราคา noise มาก (vt สูง) → K เล็ก → ขยับนิดเดียว</span>
+
+        beta[t] = beta[t-1] + K * innov   <span class="c"># ขยับ beta เข้าหาความจริง ตามสัดส่วน K</span>
+        P[t]    = (1 - K * x) * P_pred    <span class="c"># แก้เดาแล้ว → ความมั่นใจเพิ่มขึ้น (P ลดลง)</span>
 
     return beta
 
