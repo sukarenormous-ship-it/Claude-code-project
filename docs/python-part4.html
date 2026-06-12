@@ -96,6 +96,17 @@ Part IV นี้จะสอนให้ backtest <em>อย่างถูก�
 <div class="ki-text">Vectorized backtest ใช้ pandas/numpy คำนวณ signal และ P&amp;L ทั้งหมดพร้อมกันโดยไม่มี for-loop — เร็วมาก เหมาะสำหรับ parameter sweep และ first-pass analysis กฎเหล็กข้อเดียว: <strong><code>signal.shift(1)</code> ก่อนคูณ return เสมอ</strong> เพื่อหลีกเลี่ยง lookahead bias</div>
 </div>
 
+<div class="bx ba">
+<div class="bt">แบบทดสอบก่อนเริ่ม — Lookahead Bias คืออะไร?</div>
+<p>สมมติว่าคุณเขียนโค้ดแบบนี้:<br>
+<code>signal = (zscore > 2.0).astype(int)</code><br>
+<code>ret_strategy = signal * daily_return</code><br><br>
+❓ โค้ดนี้มี lookahead bias หรือเปล่า?<br><br>
+<strong>คำตอบ: มี</strong> — <code>signal[t]</code> คำนวณจาก zscore วัน t แต่ <code>daily_return[t]</code> = ราคาปิดวัน t / ราคาปิดวัน t-1 ซึ่งคุณยังไม่รู้ตอน t เริ่มต้น<br>
+แก้ด้วย: <code>ret_strategy = signal.shift(1) * daily_return</code><br>
+กฎเหล็ก: <strong>signal วัน t → execute วัน t+1 เสมอ</strong></p>
+</div>
+
 <h3 id="s22-1">22.1 Lookahead Bias — ศัตรูตัวร้ายของ Backtesting</h3>
 
 <p>Lookahead bias เกิดเมื่อ backtest ใช้ข้อมูล "อนาคต" ที่ trader จริงๆ ยังไม่มีในขณะตัดสินใจ ตัวอย่างที่พบบ่อยที่สุด:</p>
