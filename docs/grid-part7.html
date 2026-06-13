@@ -112,6 +112,7 @@ def iv_adaptive_step(iv_annual_pct, current_price, fee_rate=0.001,
 <ul>
 <li>IV Rank &lt; 20 (low IV): zone แคบ, step เล็ก → grid fill บ่อย (mean-reverting regime)</li>
 <li>IV Rank 20–60 (normal): zone ปกติ, step ≈ 0.5 × IV_daily × P</li>
+<li>IV Rank 60–80 (elevated): zone กว้างขึ้น, step เพิ่ม 20–40% → ระวัง breakout</li>
 <li>IV Rank &gt; 80 (high IV): zone กว้าง, step ใหญ่ → ป้องกัน excess fill ใน high vol</li>
 </ul>
 <p>อ้างอิง: <a href="vol-part2.html">Vol Series Part 2</a> สำหรับ IV Rank calculation</p>
@@ -199,17 +200,17 @@ Net effect:
   ซื้อ BTC ที่ effective price = $90,000 − $500 = $89,500 (ถูกกว่า limit order)
   หรือเก็บ premium $500 ถ้าไม่ถูก assign
 
-def csp_vs_limit_order(target_price, option_premium, current_price):
+def csp_vs_limit_order(target_price, option_premium, expiry_price):
     """
-    เปรียบ CSP กับ limit order
+    เปรียบ CSP กับ limit order (expiry_price = ราคา ณ วันหมดอายุ ไม่ใช่ปัจจุบัน)
     """
     # Limit Order: รอ fill ที่ target_price
     limit_effective_cost = target_price
 
     # CSP: ได้ premium แน่ๆ
-    if current_price < target_price:  # ถูก assign
+    if expiry_price < target_price:  # ถูก assign (ราคา ณ expiry < strike)
         csp_effective_cost = target_price - option_premium
-    else:  # ไม่ถูก assign
+    else:  # ไม่ถูก assign (ราคา ณ expiry >= strike)
         csp_income = option_premium  # รับฟรี
 
     return {
@@ -318,10 +319,9 @@ GARCH เปลี่ยน Step อย่างไร:
   ✓ ใหญ่กว่า ATR-based ($1,250) เพราะ market expect vol สูง
 
 Step 2: Funding Rate Assessment
-  Rate = 0.08%/8h = 0.24%/วัน → HIGH positive
-  → เพิ่ม hedge short (ดู Part 1C)
-  → multiplier = 1 + (0.08% − 0.1%) / 0.1% = ยังต่ำกว่า threshold
-  → แต่เปิด hedge เพื่อเก็บ funding
+  Rate = 0.08%/8h = 0.24%/วัน
+  threshold_high = 0.1%  → Rate (0.08%) < threshold → multiplier = 1.0 (ไม่ปรับ Q)
+  แต่ positive funding → เปิด hedge short เพื่อเก็บ funding income (ดู Part 1C)
 
 Step 3: Grid Hedge (Part 1C)
   Inventory BTC (5 levels): 0.05 BTC worst case
