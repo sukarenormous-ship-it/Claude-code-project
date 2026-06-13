@@ -152,11 +152,18 @@ def main():
         if missing:
             print(f'  WARN {label}: chapters not located: {[m[:30] for m in missing]}')
 
+    # Appendix page count (rendered by build_pdf.py)
+    appendix_pdf = PDF / 'python-appendix.pdf'
+    appendix_pages = len(PdfReader(str(appendix_pdf)).pages) if appendix_pdf.exists() else 0
+    print(f'Appendix: {appendix_pages} page(s)')
+
     # 2. Build TOC entries — iterate until TOC page count stabilizes
+    # Front matter: cover(1) + howto(1) + toc(N) → content starts at page 1
+    howto_pages = 1
     toc_pages = 2  # initial guess
     toc_pdf = TMP / 'toc.pdf'
     for _ in range(4):
-        # Content numbering: first content page = 1 (immediately after cover + TOC)
+        # Content numbering: first content page = 1 (after cover + howto + TOC)
         entries = []
         offset = 0  # content page offset
         for p in part_info:
@@ -167,31 +174,42 @@ def main():
                     entries.append({'kind': 'chapter', 'label': '', 'title': ch,
                                     'page': offset + p['ch_pages'][ch] + 1})
             offset += p['n_pages']
+        if appendix_pages:
+            entries.append({'kind': 'part', 'label': 'ภาคผนวก',
+                            'title': 'คำศัพท์ Quant Trading', 'page': offset + 1})
         new_toc_pages = render_toc(entries, toc_pdf)
         if new_toc_pages == toc_pages:
             break
         toc_pages = new_toc_pages
     print(f'TOC: {toc_pages} page(s)')
 
-    # 3. Merge cover + TOC + parts
+    # 3. Merge: cover + howto + TOC + parts + appendix (back cover appended later un-numbered)
     merged = PdfWriter()
     merged.append(str(PDF / 'cover.pdf'))
+    howto_pdf = PDF / 'howto.pdf'
+    if howto_pdf.exists():
+        merged.append(str(howto_pdf))
+    else:
+        howto_pages = 0
     merged.append(str(toc_pdf))
     for p in part_info:
         merged.append(str(p['pdf']))
+    if appendix_pages:
+        merged.append(str(appendix_pdf))
 
     tmp_merged = TMP / 'merged_raw.pdf'
     with open(tmp_merged, 'wb') as f:
         merged.write(f)
 
-    # 4. Stamp page numbers (skip cover + TOC pages)
-    skip_front = 1 + toc_pages
+    # 4. Stamp page numbers (skip cover + howto + TOC pages)
+    skip_front = 1 + howto_pages + toc_pages
     reader = PdfReader(str(tmp_merged))
     writer = stamp_page_numbers(reader, skip_front)
 
-    # 5. Bookmarks: cover/TOC + part + chapter levels
+    # 5. Bookmarks: cover/howto/TOC + part + chapter levels + appendix + back cover
     writer.add_outline_item('ปก', 0)
-    writer.add_outline_item('สารบัญ', 1)
+    writer.add_outline_item('วิธีใช้หนังสือ', 1)
+    writer.add_outline_item('สารบัญ', 1 + howto_pages)
     abs_offset = skip_front
     for p in part_info:
         part_item = writer.add_outline_item(f"{p['label']} — {p['title']}", abs_offset)
@@ -199,14 +217,26 @@ def main():
             if ch in p['ch_pages']:
                 writer.add_outline_item(ch, abs_offset + p['ch_pages'][ch], parent=part_item)
         abs_offset += p['n_pages']
+    if appendix_pages:
+        writer.add_outline_item('ภาคผนวก — คำศัพท์ Quant Trading', abs_offset)
+        abs_offset += appendix_pages
+
+    # 6. Append back cover (no page number stamped)
+    back_pdf = PDF / 'backcover.pdf'
+    if back_pdf.exists():
+        back_reader = PdfReader(str(back_pdf))
+        for page in back_reader.pages:
+            writer.add_page(page)
+        writer.add_outline_item('ปกหลัง', abs_offset)
 
     out_path = PDF / 'python-for-quant-traders-complete.pdf'
     with open(out_path, 'wb') as f:
         writer.write(f)
-    print(f'Final book: {out_path.name} ({len(reader.pages)} pages, '
+    total_pages = len(reader.pages) + (len(back_reader.pages) if back_pdf.exists() else 0)
+    print(f'Final book: {out_path.name} ({total_pages} pages, '
           f'{out_path.stat().st_size / 1024 / 1024:.1f} MB)')
 
-    # 6. Thai CMap fix on final
+    # 7. Thai CMap fix on final
     sys.path.insert(0, str(BASE / 'scripts'))
     from fix_thai_cmap import fix_pdf
     fixed_path = PDF / 'fixed' / out_path.name

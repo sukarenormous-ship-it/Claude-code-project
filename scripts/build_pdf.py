@@ -13,7 +13,7 @@ TMP   = BASE / 'pdf/tmp'
 OUT.mkdir(exist_ok=True)
 TMP.mkdir(exist_ok=True)
 
-PARTS = [f'python-part{i}.html' for i in range(7)]
+PARTS = [f'python-part{i}.html' for i in range(7)] + ['python-appendix.html']
 
 # Font path — absolute so WeasyPrint finds it regardless of working dir
 FONT_DIR = DOCS / 'vendor/fonts'
@@ -337,6 +337,244 @@ body {{
 """.format(font_dir=FONT_DIR)
 
 
+HOWTO_HTML = """<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<style>
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-Regular.ttf"); font-weight:400; }}
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-Bold.ttf"); font-weight:700; }}
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-ExtraBold.ttf"); font-weight:800; }}
+@page {{ size: A4; margin: 2cm 2.5cm 2.2cm; }}
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+body {{ font-family:"Sarabun",sans-serif; color:#1f2937; font-size:10.5pt; line-height:1.7; }}
+h1 {{ font-size:19pt; font-weight:800; color:#111827; border-bottom:3px solid #0d9488;
+      padding-bottom:3mm; margin-bottom:5mm; }}
+h2 {{ font-size:12pt; font-weight:700; color:#0d9488; margin-top:5mm; margin-bottom:2mm; }}
+p {{ margin-bottom:2mm; }}
+
+/* Learning path */
+.path {{ display:flex; align-items:center; flex-wrap:wrap; gap:2mm; margin:3mm 0 4mm; }}
+.badge {{ background:#0d9488; color:#fff; font-weight:700; font-size:9pt;
+          padding:1.5mm 3.5mm; border-radius:4px; white-space:nowrap; }}
+.arrow {{ color:#0d9488; font-weight:700; font-size:13pt; line-height:1; }}
+.skip {{ background:#f0fdf4; border-left:3px solid #0d9488; padding:2mm 4mm;
+         border-radius:0 4px 4px 0; font-size:9.5pt; margin:2mm 0; }}
+.skip strong {{ color:#0d9488; }}
+
+/* Icon legend table */
+.leg {{ width:100%; border-collapse:collapse; margin:2mm 0; }}
+.leg td {{ padding:2mm 3mm; vertical-align:top; font-size:9.5pt; border:none; }}
+.leg td:first-child {{ width:38mm; font-weight:700; white-space:nowrap; }}
+.leg .ki {{ color:#0d9488; }}
+.leg .re {{ color:#7c3aed; }}
+.leg .wa {{ color:#b45309; }}
+.leg .nb {{ color:#1d4ed8; }}
+.leg .ex {{ color:#374151; }}
+
+/* Running example box */
+.ex-box {{ background:#fff8f0; border:2px dashed #f59e0b; border-radius:8px;
+           padding:3mm 5mm; margin:3mm 0; font-size:9.5pt; }}
+.ex-box strong {{ color:#b45309; }}
+</style>
+</head>
+<body>
+
+<h1>วิธีใช้หนังสือ</h1>
+
+<h2>แผนผังการเรียน</h2>
+<p>หนังสือออกแบบให้อ่านตามลำดับ แต่ถ้ามีพื้นฐานบางส่วนอยู่แล้ว สามารถข้ามได้ตามนี้</p>
+<div class="path">
+  <span class="badge">Part 0</span><span class="arrow">→</span>
+  <span class="badge">Part I</span><span class="arrow">→</span>
+  <span class="badge">Part II</span><span class="arrow">→</span>
+  <span class="badge">Part III</span><span class="arrow">→</span>
+  <span class="badge">Part IV</span><span class="arrow">→</span>
+  <span class="badge">Part V</span><span class="arrow">→</span>
+  <span class="badge">Part VI</span>
+</div>
+<div class="skip"><strong>มี Python พื้นฐานแล้ว?</strong> ข้ามไปเริ่มที่ Part II ได้เลย</div>
+<div class="skip"><strong>รู้สถิติและ pandas แล้ว?</strong> ข้ามไปเริ่มที่ Part III</div>
+<div class="skip"><strong>ต้องการ Backtesting โดยตรง?</strong> อ่าน Part 0 บท 1–3 ก่อน → แล้วข้ามไป Part IV</div>
+
+<h2>สัญลักษณ์ที่ใช้ในหนังสือ</h2>
+<table class="leg">
+  <tr>
+    <td class="ki">💡 แนวคิดหลัก</td>
+    <td>กรอบสีเขียว — แนวคิดหรือสูตรสำคัญที่ต้องจำ ปรากฏในทุก Part</td>
+  </tr>
+  <tr>
+    <td class="re">🔄 ตัวอย่างต่อเนื่อง</td>
+    <td>กรอบเส้นประสีส้ม — ตัวอย่าง BTC Pair Trading ที่ดำเนินต่อเนื่องตลอดทั้งเล่ม</td>
+  </tr>
+  <tr>
+    <td class="wa">⚠️ ข้อควรระวัง</td>
+    <td>กรอบสีแดง — จุดที่ผู้เริ่มต้นมักเข้าใจผิด หรือข้อผิดพลาดที่ควรหลีกเลี่ยง</td>
+  </tr>
+  <tr>
+    <td class="nb">📌 หมายเหตุ</td>
+    <td>กรอบสีน้ำเงิน — ข้อมูลเพิ่มเติมที่น่าสนใจแต่ไม่จำเป็นต้องจำ</td>
+  </tr>
+  <tr>
+    <td class="ex">▶ แบบฝึกหัด</td>
+    <td>กล่องสีเขียว — คลิก "ดูเฉลย" (เวอร์ชัน HTML) หรืออ่านเฉลยด้านล่างโจทย์ (PDF)</td>
+  </tr>
+</table>
+
+<h2>ตัวอย่างหลักตลอดเล่ม: BTC Pair Trading</h2>
+<div class="ex-box">
+  <strong>กลยุทธ์ตัวอย่าง:</strong> Pair Trading ระหว่าง BTC-USDT บน Bybit และ BTC-USDT บน Binance
+  ทั้งสองตลาดเคลื่อนไหวพร้อมกันเกือบสมบูรณ์ แต่มีราคาต่างกันเล็กน้อยชั่วคราว
+  ทำให้เห็นภาพได้ชัดว่าแต่ละเครื่องมือ Python — ตั้งแต่ NumPy, pandas, OOP จนถึง
+  Async WebSocket — นำไปใช้งานจริงในระบบเทรดอย่างไร
+</div>
+
+<h2>วิธีทำแบบฝึกหัด</h2>
+<p>แบบฝึกหัดท้ายบทแต่ละข้อมีโจทย์และ <strong>ดูเฉลย</strong> ที่ซ่อนอยู่
+แนะนำให้ลองทำเองก่อนแล้วค่อยเปิดดูเฉลย
+ในเวอร์ชัน PDF กดไม่ได้ — เฉลยจะอยู่ถัดจากโจทย์โดยตรง</p>
+
+<h2>โค้ดในหนังสือ</h2>
+<p>ทุกโค้ดมีคำอธิบายภาษาไทยในบรรทัดคอมเมนต์ และ output จริงแสดงด้วยกรอบสีเทา
+แนะนำให้รันโค้ดตามไปด้วยใน Jupyter Notebook หรือ Google Colab</p>
+
+</body>
+</html>
+""".format(font_dir=FONT_DIR)
+
+
+BACKCOVER_HTML = """<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<style>
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-Regular.ttf"); font-weight:400; }}
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-Bold.ttf"); font-weight:700; }}
+@font-face {{ font-family:"Sarabun"; src:url("file://{font_dir}/Sarabun-ExtraBold.ttf"); font-weight:800; }}
+@page {{ size: A4; margin: 0; }}
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+body {{
+  font-family: "Sarabun", sans-serif;
+  background: #fff;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  position: relative;
+}}
+.top-band {{ background:#0d9488; height:14mm; width:100%; }}
+.main {{ padding:14mm 22mm 10mm; }}
+
+.tagline {{
+  font-size:15pt; font-weight:700; color:#0d9488;
+  margin-bottom:5mm; line-height:1.4;
+}}
+
+.summary {{
+  font-size:11pt; color:#374151; line-height:1.75;
+  margin-bottom:7mm;
+  border-left:3px solid #0d9488;
+  padding-left:5mm;
+}}
+
+.section-label {{
+  font-size:10pt; font-weight:800; color:#111827;
+  text-transform:uppercase; letter-spacing:.08em;
+  margin-bottom:3mm; margin-top:6mm;
+}}
+
+.learn-list {{
+  list-style:none; padding:0; margin-bottom:6mm;
+}}
+.learn-list li {{
+  font-size:10.5pt; color:#1f2937; padding:1.5mm 0;
+  padding-left:6mm; position:relative; line-height:1.6;
+}}
+.learn-list li::before {{
+  content:"✓"; position:absolute; left:0;
+  color:#0d9488; font-weight:700;
+}}
+
+.for-who {{
+  background:#f0fdfa; border:1px solid #99f6e4;
+  border-radius:8px; padding:4mm 6mm; margin-bottom:6mm;
+  font-size:10pt; color:#374151; line-height:1.7;
+}}
+.for-who strong {{ color:#0d9488; }}
+
+.rule {{ width:40mm; height:2px; background:#0d9488; margin:6mm 0; border-radius:2px; }}
+
+.stats-row {{
+  display:flex; gap:10mm; align-items:center;
+  margin-bottom:5mm;
+}}
+.stat {{ text-align:center; }}
+.stat .num {{ font-size:20pt; font-weight:800; color:#0d9488; line-height:1; }}
+.stat .lbl {{ font-size:8pt; color:#64748b; }}
+.stat-sep {{ width:1px; height:10mm; background:#e5e7eb; }}
+
+.bottom-band {{
+  background:#0d9488;
+  position:absolute; bottom:0; left:0; right:0;
+  height:10mm;
+  display:flex; align-items:center;
+  padding:0 22mm;
+}}
+.bottom-band .url {{
+  color:#fff; font-size:9pt; font-weight:600; opacity:.85;
+}}
+</style>
+</head>
+<body>
+<div class="top-band"></div>
+<div class="main">
+
+  <div class="tagline">
+    จาก 0 ถึงระบบเทรดสดจริง<br>ด้วย Python ในภาษาไทย
+  </div>
+
+  <div class="summary">
+    หนังสือภาษาไทยเล่มแรกที่พาคุณสร้างระบบ Quantitative Trading ตั้งแต่พื้นฐาน Python
+    ไปจนถึงกลยุทธ์ Pair Trading แบบ Real-time บน Bybit และ Binance
+    โดยไม่ต้องมีพื้นฐาน Computer Science แม้แต่บรรทัดเดียว
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="num">35</div><div class="lbl">บท</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><div class="num">7</div><div class="lbl">Parts</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">พื้นฐาน CS</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat"><div class="num">1</div><div class="lbl">ตัวอย่างต่อเนื่อง</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="section-label">สิ่งที่คุณจะได้เรียนรู้</div>
+  <ul class="learn-list">
+    <li>เขียน Python ตั้งแต่ตัวแปรจนถึง Async WebSocket ในภาษาไทย</li>
+    <li>วิเคราะห์ข้อมูลราคาด้วย NumPy, pandas, และ Matplotlib</li>
+    <li>สร้าง Pair Trading Strategy พร้อม z-score signal และ Kalman Filter</li>
+    <li>ออกแบบ OOP Architecture ที่ขยายง่ายด้วย Design Patterns</li>
+    <li>Backtest กลยุทธ์อย่างถูกต้อง — ไม่มี Look-ahead Bias</li>
+    <li>ใช้ AI (Claude/ChatGPT) ช่วยเขียนและ Debug โค้ดอย่างมีประสิทธิภาพ</li>
+    <li>เชื่อมต่อ Bybit/Binance WebSocket และส่งคำสั่งเทรดสดจริง</li>
+  </ul>
+
+  <div class="for-who">
+    <strong>เหมาะสำหรับ:</strong> หมอ ทนาย สถาปนิก นักธุรกิจ และทุกคนที่อยากเข้าใจตลาดการเงิน
+    ผ่านโค้ด — ไม่ต้องมีพื้นฐาน CS ใช้แค่ความอยากรู้และความอดทนอ่านทีละบท
+  </div>
+
+</div>
+<div class="bottom-band">
+  <span class="url">Python for Quant Traders — ฉบับภาษาไทย</span>
+</div>
+</body>
+</html>
+""".format(font_dir=FONT_DIR)
+
+
 def prerender(src: Path, dst: Path):
     """Pre-render KaTeX and inject print CSS."""
     result = subprocess.run(
@@ -389,6 +627,18 @@ if __name__ == '__main__':
     except Exception as e:
         print(f'  Cover error: {e}', file=sys.stderr)
 
+    # 1b. How-to-read page
+    print('[How-to-read page]')
+    howto_html = TMP / 'howto.html'
+    howto_pdf  = OUT / 'howto.pdf'
+    howto_html.write_text(HOWTO_HTML, 'utf8')
+    try:
+        to_pdf(howto_html, howto_pdf)
+        pdf_parts.append(howto_pdf)
+        print(f'  OK ({howto_pdf.stat().st_size // 1024} KB)')
+    except Exception as e:
+        print(f'  How-to error: {e}', file=sys.stderr)
+
     # 2. Each part
     for part_html in PARTS:
         src  = DOCS / part_html
@@ -411,7 +661,18 @@ if __name__ == '__main__':
         except Exception as e:
             print(f'  PDF error: {e}', file=sys.stderr)
 
-    # 3. Merge
+    # 3. Back cover page
+    print('\n[Back cover page]')
+    back_html = TMP / 'backcover.html'
+    back_pdf  = OUT / 'backcover.pdf'
+    back_html.write_text(BACKCOVER_HTML, 'utf8')
+    try:
+        to_pdf(back_html, back_pdf)
+        print(f'  OK ({back_pdf.stat().st_size // 1024} KB)')
+    except Exception as e:
+        print(f'  Back cover error: {e}', file=sys.stderr)
+
+    # 4. Merge
     if len(pdf_parts) > 1:
         print('\nMerging all parts...')
         merge_pdfs(pdf_parts, OUT / 'python-for-quant-traders-complete.pdf')
