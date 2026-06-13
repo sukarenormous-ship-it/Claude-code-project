@@ -3,56 +3,561 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grid Trading Mastery · Part 9 — Python Implementation</title>
+<title>Grid Trading Mastery · Part 9 — Python Implementation Guide</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-p{margin-bottom:.8em}a{color:var(--cyan-dark)}ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
 .cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
 .cover h1{font-size:2em;line-height:1.3}
 .cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.coming-soon{background:var(--cyan-bg);border:2px dashed var(--cyan);border-radius:12px;padding:28px;text-align:center;margin:30px 0}
-.coming-soon .cs-icon{font-size:3em;margin-bottom:10px}
-.coming-soon h3{color:var(--cyan-dark);font-size:1.3em;margin-bottom:10px}
-.coming-soon p{color:#475569}
-.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0;background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
 .bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.module-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.mg-card{border:1.5px solid var(--g2);border-radius:8px;padding:12px;font-size:.9em}
+.mg-card h4{font-size:.95em;margin-bottom:4px;color:var(--g9)}
+@media(max-width:600px){.module-grid{grid-template-columns:1fr}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
 </head>
 <body>
+
 <div class="cover">
 <div class="ch-num">Grid Trading Mastery · Part 9</div>
-<h1>Python Implementation</h1>
-<div class="sub">State Machine · WebSocket Feed · Indicator Calculation · Backtester · Live Trading บน Bybit</div>
+<h1>Python Implementation Guide</h1>
+<div class="sub">Project Structure · Core Modules · Bybit API Integration<br>
+Backtesting Framework · Paper Trading → Live Migration<br>
+การ deploy Bot บน Server + Monitoring</div>
 </div>
-<div class="coming-soon">
-<div class="cs-icon">🔄</div>
-<h3>กำลังเตรียมเนื้อหา...</h3>
-<p>Part นี้อยู่ระหว่างการเขียน — กลับมาตรวจสอบเร็วๆ นี้</p>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Part นี้นำ pseudocode จาก Part 1–8 มาประกอบเป็น Python project ที่ runnable ได้จริง ทุกโค้ดที่เขียนในเล่มนี้ออกแบบมาให้ต่อกันได้ใน architecture ที่แสดงด้านล่าง</div>
 </div>
-<h2>เนื้อหาในตอนนี้จะครอบคลุม</h2>
+
+<h2 id="s9-1">9.1 Project Structure</h2>
+
+<div class="fm">grid-trading-bot/
+├── core/
+│   ├── __init__.py
+│   ├── grid_framework.py      # Zone/Step/Capital/Risk (Part 1A, 3, 5)
+│   ├── state_machine.py       # Regime Detection (Part 4)
+│   ├── execution_styles.py    # 4 Execution Styles (Part 7B)
+│   └── dd_monitor.py          # Drawdown Monitor (Part 5)
+├── strategies/
+│   ├── buy_only.py            # Part 1A
+│   ├── bidirectional.py       # Part 1B
+│   ├── hedge_grid.py          # Part 1C
+│   ├── pair_grid.py           # Part 6
+│   └── snowball.py            # Part 6B
+├── indicators/
+│   ├── hurst.py               # Hurst Exponent (Part 4)
+│   ├── atr_donchian.py        # ATR, Donchian, Keltner (Part 3)
+│   ├── composite_score.py     # RSI/BB/Vol/Hurst score (Part 3B)
+│   └── kelly.py               # Kelly Criterion (Part 5)
+├── exchange/
+│   ├── bybit_client.py        # Bybit API wrapper
+│   └── data_feed.py           # Market data fetcher
+├── backtest/
+│   ├── backtest_engine.py     # Event-driven backtester
+│   ├── metrics.py             # Sharpe, Calmar, Max DD
+│   └── bootstrap_zone.py     # Block Bootstrap (Part 3)
+├── monitoring/
+│   ├── watchdog.py            # Grid Watchdog (Part 4)
+│   ├── alerts.py              # LINE/Telegram notify
+│   └── dashboard.py           # Simple web dashboard
+├── config/
+│   ├── config.yaml            # All parameters
+│   └── secrets.yaml           # API keys (gitignored)
+├── tests/
+│   └── test_*.py              # Unit tests
+├── main.py                    # Entry point
+└── requirements.txt</div>
+
+<h2 id="s9-2">9.2 Core Grid Framework</h2>
+
+<div class="fm"># core/grid_framework.py
+
+from dataclasses import dataclass, field
+from typing import List, Optional
+import numpy as np
+
+@dataclass
+class GridLevel:
+    price: float
+    qty: float
+    side: str        # "BUY" or "SELL"
+    tp_price: float
+    sl_price: Optional[float] = None
+    order_id: Optional[str] = None
+    filled: bool = False
+
+@dataclass
+class GridFramework:
+    """
+    Core grid parameters — computed once per deployment
+    """
+    symbol: str
+    zone_high: float
+    zone_low: float
+    step: float
+    grid_capital: float
+    base_q: float        # Q per level (Kelly-based, Part 5)
+    n_levels: int = field(init=False)
+    avg_price: float = field(init=False)
+
+    def __post_init__(self):
+        self.n_levels = int((self.zone_high - self.zone_low) / self.step)
+        self.avg_price = (self.zone_high + self.zone_low) / 2
+
+    @classmethod
+    def from_market_data(cls, symbol, prices, highs, lows,
+                          grid_capital, kelly_fraction=0.19):
+        """
+        สร้าง GridFramework จากข้อมูลตลาด (Part 3 + Part 5)
+        """
+        from indicators.atr_donchian import compute_atr, compute_donchian
+
+        current_price = prices[-1]
+
+        # Zone from Donchian (Part 3)
+        dc_high, dc_low = compute_donchian(highs, lows, period=30)
+        zone_high = dc_high * 1.05
+        zone_low  = dc_low  * 0.95
+
+        # Step from ATR (Part 3)
+        atr = compute_atr(highs, lows, prices, period=14)
+        step = max(round(0.5 * atr / 100) * 100,
+                   3 * current_price * 0.001 * 2)
+
+        # Q from capital (Part 5)
+        n = int((zone_high - zone_low) / step)
+        avg_p = (zone_high + zone_low) / 2
+        base_q = grid_capital / (n * avg_p)
+
+        return cls(symbol=symbol, zone_high=zone_high, zone_low=zone_low,
+                   step=step, grid_capital=grid_capital,
+                   base_q=round(base_q, 4))
+
+    def create_buy_levels(self, current_price, sizes=None) -> List[GridLevel]:
+        """วาง BUY orders ต่ำกว่า current_price"""
+        levels = []
+        price = current_price - self.step
+        i = 0
+        while price >= self.zone_low:
+            q = sizes[i] if sizes else self.base_q
+            levels.append(GridLevel(
+                price=round(price, 0),
+                qty=q,
+                side="BUY",
+                tp_price=round(price + self.step, 0)
+            ))
+            price -= self.step
+            i += 1
+        return levels
+
+    def allocate_by_weight(self, style, size_mult=1.0) -> List[float]:
+        """คำนวณ sizes ตาม allocation style (Part 2)"""
+        import math
+        n = self.n_levels
+        if style == "equal":
+            weights = [1.0] * n
+        elif style == "bell":
+            center = n // 2
+            weights = [math.exp(-0.5 * ((i-center)/(n/4))**2) for i in range(n)]
+        elif style == "bottom_heavy":
+            weights = [1.0/(i+1) for i in range(n)]
+        else:
+            weights = [1.0] * n
+        total = sum(weights)
+        return [self.base_q * (w/total) * n * size_mult for w in weights]</div>
+
+<h2 id="s9-3">9.3 Bybit API Integration</h2>
+
+<div class="fm"># exchange/bybit_client.py
+
+import hmac, hashlib, time, requests
+from typing import Optional
+
+class BybitClient:
+    BASE_URL = "https://api.bybit.com"
+
+    def __init__(self, api_key: str, api_secret: str, testnet: bool = True):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        if testnet:
+            self.BASE_URL = "https://api-testnet.bybit.com"
+
+    def _sign(self, params: dict, timestamp: int) -> str:
+        query = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+        msg = f"{timestamp}{self.api_key}5000{query}"
+        return hmac.new(self.api_secret.encode(), msg.encode(),
+                        hashlib.sha256).hexdigest()
+
+    def _request(self, method: str, endpoint: str, params: dict = None):
+        ts = int(time.time() * 1000)
+        params = params or {}
+        sig = self._sign(params, ts)
+        headers = {
+            "X-BAPI-API-KEY": self.api_key,
+            "X-BAPI-SIGN": sig,
+            "X-BAPI-TIMESTAMP": str(ts),
+            "X-BAPI-RECV-WINDOW": "5000",
+        }
+        url = self.BASE_URL + endpoint
+        if method == "GET":
+            resp = requests.get(url, params=params, headers=headers)
+        else:
+            resp = requests.post(url, json=params, headers=headers)
+        return resp.json()
+
+    def place_order(self, symbol: str, side: str, qty: float, price: float,
+                    order_type: str = "Limit") -> dict:
+        params = {
+            "category": "spot",
+            "symbol": symbol,
+            "side": side,
+            "orderType": order_type,
+            "qty": str(qty),
+            "price": str(price),
+            "timeInForce": "GTC",   # Good Till Cancel
+        }
+        return self._request("POST", "/v5/order/create", params)
+
+    def cancel_all_orders(self, symbol: str) -> dict:
+        return self._request("POST", "/v5/order/cancel-all",
+                             {"category": "spot", "symbol": symbol})
+
+    def get_orderbook(self, symbol: str, limit: int = 5) -> dict:
+        return self._request("GET", "/v5/market/orderbook",
+                             {"category": "spot", "symbol": symbol, "limit": limit})
+
+    def get_wallet_balance(self, coin: str = "USDT") -> float:
+        resp = self._request("GET", "/v5/account/wallet-balance",
+                             {"accountType": "UNIFIED"})
+        for item in resp.get("result", {}).get("list", [{}])[0].get("coin", []):
+            if item["coin"] == coin:
+                return float(item["walletBalance"])
+        return 0.0</div>
+
+<h2 id="s9-4">9.4 Backtesting Engine</h2>
+
+<div class="fm"># backtest/backtest_engine.py
+
+import pandas as pd
+import numpy as np
+from core.grid_framework import GridFramework, GridLevel
+
+class GridBacktester:
+    """
+    Event-driven backtester สำหรับ Buy-Only Spot Grid
+    """
+    def __init__(self, grid: GridFramework, fee_rate: float = 0.001):
+        self.grid = grid
+        self.fee_rate = fee_rate
+
+    def run(self, ohlcv_df: pd.DataFrame) -> dict:
+        """
+        ohlcv_df: DataFrame ที่มีคอลัมน์ open, high, low, close, volume
+        """
+        capital = self.grid.grid_capital
+        usdt = capital      # เริ่มด้วย USDT ทั้งหมด
+        btc = 0.0           # ไม่มี BTC เริ่มต้น
+        inventory = {}      # {buy_price: qty}
+
+        trades = []
+        portfolio_values = []
+
+        # สร้าง BUY levels
+        current_price = ohlcv_df["close"].iloc[0]
+        buy_levels = self.grid.create_buy_levels(current_price)
+
+        for idx, row in ohlcv_df.iterrows():
+            low_price  = row["low"]
+            high_price = row["high"]
+            close      = row["close"]
+
+            # Check BUY fills (price ลงถึง BUY level)
+            for level in buy_levels:
+                if not level.filled and low_price <= level.price:
+                    cost = level.qty * level.price * (1 + self.fee_rate)
+                    if usdt >= cost:
+                        usdt -= cost
+                        btc  += level.qty
+                        inventory[level.price] = level.qty
+                        level.filled = True
+                        trades.append({"date": idx, "side": "BUY",
+                                       "price": level.price, "qty": level.qty})
+
+            # Check SELL fills (TP hit)
+            for buy_price, qty in list(inventory.items()):
+                tp_price = buy_price + self.grid.step
+                if high_price >= tp_price:
+                    proceeds = qty * tp_price * (1 - self.fee_rate)
+                    usdt += proceeds
+                    btc  -= qty
+                    del inventory[buy_price]
+                    # Reset BUY level
+                    for level in buy_levels:
+                        if level.price == buy_price:
+                            level.filled = False
+
+                    trades.append({"date": idx, "side": "SELL",
+                                   "price": tp_price, "qty": qty})
+
+            # Portfolio value
+            portfolio_values.append(usdt + btc * close)
+
+        # Metrics
+        pv = pd.Series(portfolio_values, index=ohlcv_df.index)
+        returns = pv.pct_change().dropna()
+        max_dd = (pv / pv.cummax() - 1).min()
+        sharpe = returns.mean() / returns.std() * np.sqrt(365) if returns.std() > 0 else 0
+
+        return {
+            "final_portfolio": portfolio_values[-1],
+            "total_return": (portfolio_values[-1] / capital - 1),
+            "max_drawdown": max_dd,
+            "sharpe_ratio": sharpe,
+            "n_trades": len(trades),
+            "trades": pd.DataFrame(trades),
+            "portfolio_values": pv,
+        }</div>
+
+<h2 id="s9-5">9.5 Main Entry Point + Config</h2>
+
+<div class="fm"># config/config.yaml
+
+grid:
+  symbol: "BTCUSDT"
+  grid_capital: 20000
+  kelly_fraction: 0.19   # Fractional Kelly 25% × f* (Part 5)
+  donchian_period: 30
+  atr_period: 14
+  step_factor: 0.5       # Step = step_factor × ATR
+
+risk:
+  dd_halt_threshold: -0.08   # −8% drawdown → HALT (Part 5)
+  dd_resume_threshold: -0.04 # −4% → resume
+  max_notional_per_level: 0.05  # 5% of capital (Part 5)
+
+regime:
+  hurst_on: 0.50         # Grid ON ถ้า H < 0.50
+  hurst_caution: 0.58    # CAUTION ถ้า H 0.50–0.58
+  adx_caution: 25
+  adx_off: 35
+  bb_width_caution: 0.04
+  bb_width_off: 0.08
+
+execution:
+  style: "composite"     # mean_reversion / trend_adaptive / volume_adaptive / composite
+  recheck_hours: 1       # ตรวจ regime ทุก 1 ชั่วโมง
+
+snowball:
+  enabled: true
+  type: 1                # 1=simple compound, 2=triggered layer, 3=zone upgrade
+  dca_pct: 0.30          # 30% ของ profit ไป DCA
+
+---
+
+# main.py
+
+import yaml
+from core.grid_framework import GridFramework
+from core.state_machine import GridStateMachine
+from core.dd_monitor import DrawdownMonitor
+from core.execution_styles import UnifiedGridController
+from exchange.bybit_client import BybitClient
+from exchange.data_feed import DataFeed
+from monitoring.watchdog import GridWatchdog
+import time, logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s")
+
+def main():
+    # Load config
+    with open("config/config.yaml") as f:
+        cfg = yaml.safe_load(f)
+    with open("config/secrets.yaml") as f:
+        secrets = yaml.safe_load(f)
+
+    # Initialize
+    client = BybitClient(secrets["api_key"], secrets["api_secret"], testnet=True)
+    data   = DataFeed(client, cfg["grid"]["symbol"])
+
+    # Get market data
+    prices, highs, lows, volumes = data.get_ohlcv(days=60)
+    current_price = prices[-1]
+
+    # Build framework
+    framework = GridFramework.from_market_data(
+        symbol=cfg["grid"]["symbol"],
+        prices=prices, highs=highs, lows=lows,
+        grid_capital=cfg["grid"]["grid_capital"]
+    )
+    logging.info(f"Grid: zone=[{framework.zone_low:.0f},{framework.zone_high:.0f}] "
+                 f"step={framework.step:.0f} Q={framework.base_q:.4f} N={framework.n_levels}")
+
+    # Controller
+    controller = UnifiedGridController(framework, style=cfg["execution"]["style"])
+    watchdog = GridWatchdog(controller, check_interval_hours=cfg["execution"]["recheck_hours"])
+
+    # Main loop
+    portfolio_history = [cfg["grid"]["grid_capital"]]
+
+    while True:
+        market_data = data.get_indicators(prices, highs, lows, volumes)
+        market_data["portfolio_history"] = portfolio_history
+
+        result = watchdog.run_checks(market_data)
+        logging.info(f"State: {result['state']} | Actions: {result['actions']}")
+
+        for action in result["actions"]:
+            if action["action"] == "CANCEL_ALL_ORDERS":
+                client.cancel_all_orders(cfg["grid"]["symbol"])
+                logging.warning(f"Cancelled all orders: {action['reason']}")
+
+            elif action["action"] == "PLACE_ORDERS":
+                for order in action.get("orders", []):
+                    resp = client.place_order(
+                        symbol=cfg["grid"]["symbol"],
+                        side=order["side"],
+                        qty=order["qty"],
+                        price=order["price"]
+                    )
+                    logging.info(f"Order placed: {resp}")
+
+        # Update portfolio value
+        balance = client.get_wallet_balance("USDT")
+        portfolio_history.append(balance)
+
+        time.sleep(cfg["execution"]["recheck_hours"] * 3600)
+
+if __name__ == "__main__":
+    main()</div>
+
+<h2 id="s9-6">9.6 Paper Trading → Live Migration</h2>
+
+<table>
+<tr><th>Phase</th><th>ระยะเวลา</th><th>ทำอะไร</th><th>Success Criteria</th></tr>
+<tr><td>Phase 0: Backtest</td><td>1 สัปดาห์</td><td>Run backtester บน 1–2 ปีย้อนหลัง</td><td>Sharpe &gt; 1.5, Max DD &lt; 15%</td></tr>
+<tr><td>Phase 1: Paper Trade</td><td>2–4 สัปดาห์</td><td>Run bot บน Testnet (API จริง, เงินปลอม)</td><td>ไม่มี bug, state machine ทำงาน</td></tr>
+<tr><td>Phase 2: Small Live</td><td>1 เดือน</td><td>$1,000 จริง บน Bybit</td><td>P&L ≈ backtest, DD ≤ −8%</td></tr>
+<tr><td>Phase 3: Scale Up</td><td>ต่อเนื่อง</td><td>เพิ่ม capital หลังผ่าน Phase 2</td><td>Compound + DCA Stack</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">สิ่งที่ต้องตรวจก่อน Live</div>
 <ul>
-<li><strong>9.1 Architecture:</strong> Data Layer → Calculation → Order Management → Risk → Logging</li>
-<li><strong>9.2 State Machine:</strong> IDLE/ACTIVE/PAUSED/ERROR transitions + trigger conditions</li>
-<li><strong>9.3 WebSocket Feed:</strong> Bybit testnet · subscribe klines · async price updates</li>
-<li><strong>9.4 Indicator Calculation:</strong> ATR vectorized NumPy · Hurst R/S · GARCH(1,1)</li>
-<li><strong>9.5 Backtester:</strong> simulate fills on OHLCV · calculate Sharpe/DD/return</li>
-<li><strong>9.6 Live Trading:</strong> place/cancel orders · monitor fills · check risk budget</li>
-<li><strong>9.7 Trade Journal:</strong> log every cycle · daily summary · P&amp;L reporting</li>
+<li>API Rate Limit: Bybit อนุญาต 600 requests/นาที → grid 30 levels × 2 (place/cancel) = 60/cycle ✓</li>
+<li>Minimum Order Size: BTC บน Bybit ขั้นต่ำ 0.001 BTC → Q ต้องมากกว่านี้</li>
+<li>Price Precision: BTC round ถึง $0.01 → step ต้องเป็น multiple ของ $0.01</li>
+<li>Network Redundancy: รัน bot บน VPS (ไม่ใช่ local machine) พร้อม reconnect logic</li>
+<li>Secret Management: API key ใน environment variable ไม่ใช่ hardcode</li>
 </ul>
-<div class="bx">
-<div class="bt">Cross-References</div>
-<p>ความรู้ที่ใช้: Python series (WebSocket, async, backtesting) · <a href="statarb-ch11.html">Statarb Ch.11</a> (state machine) · <a href="statarb-ch14.html">Statarb Ch.14</a> (leg execution) · <a href="grid-part4.html">Part 4</a> (regime detection logic)</p>
 </div>
-<nav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
-<a href="grid-index.html" style="color:#64748b;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a>
-<span><a href="grid-part8.html" style="color:#64748b">← Part 8</a></span>
-<a href="grid-appendix.html" style="color:var(--cyan-dark);font-weight:700">Appendix →</a>
-</nav>
+
+<h2 id="s9-7">9.7 Monitoring Dashboard</h2>
+
+<div class="fm"># monitoring/dashboard.py (Flask simple dashboard)
+
+from flask import Flask, jsonify, render_template_string
+import json
+
+app = Flask(__name__)
+
+HTML = """
+<!DOCTYPE html><html><head><title>Grid Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
+<body style="font-family:monospace;padding:20px;background:#0f172a;color:#e2e8f0">
+<h2>Grid Bot Dashboard</h2>
+<div id="status">Loading...</div>
+<canvas id="chart" width="800" height="300"></canvas>
+<script>
+fetch('/api/status').then(r=>r.json()).then(data=>{
+  document.getElementById('status').innerHTML =
+    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+});
+</script>
+</body></html>
+"""
+
+@app.route("/")
+def dashboard():
+    return render_template_string(HTML)
+
+@app.route("/api/status")
+def status():
+    # อ่านจาก state file ที่ bot เขียนไว้
+    try:
+        with open("state.json") as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify({"error": "Bot not running"})
+
+# รัน: python -m monitoring.dashboard
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)</div>
+
+<div class="ex">
+<div class="et">สรุปเนื้อหาทั้งเล่ม — Cheat Sheet</div>
+<div class="fm">GRID TRADING MASTERY — Quick Reference
+
+ZONE:  Donchian(30) ± 5% buffer | min_width ≥ 6×ATR
+STEP:  max(0.5×ATR(14), 3×fee_per_cycle) → round to $100
+Q:     grid_capital / (N × avg_price) → ตรวจ 5% max notional
+N:     zone_width / step → ควรอยู่ระหว่าง 15–25
+
+KELLY: f* = (p×b − q)/b | f_safe = 0.25 × f*
+       grid_capital = net_worth × f_safe
+
+REGIME (Part 4):
+  H < 0.50 + ADX < 25 + BB_width < 4%  → GRID ON  (full deploy)
+  H 0.50–0.58 + ...                      → CAUTION  (50% size)
+  H > 0.58 + ADX > 35 + BB_width > 8%   → GRID OFF (pause)
+
+RISK (Part 5):
+  DD ≥ −8%  → HALT (cancel all, wait for recovery)
+  DD ≥ −4%  + H < 0.55 + 24h cooloff → RESUME
+
+SNOWBALL (Part 6B):
+  Type 1: Q(t) = Q₀ × (1 + r_daily)^t
+  DCA Stack: 30% profit → weekly BTC buy
+
+COMPOSITE SCORE (Part 3B):
+  30%×RSI + 30%×BB + 20%×Vol + 20%×Hurst → 0–100
+  >75: Full Deploy | 55–75: 60% | 35–55: 30% | <35: Wait</div>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part8.html" style="color:#64748b">Part 8</a></span><a href="grid-appendix.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Appendix →</a></nav>
 </body>
 </html>
