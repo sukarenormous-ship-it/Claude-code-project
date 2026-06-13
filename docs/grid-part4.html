@@ -136,8 +136,90 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
 <p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 (mean-reverting ชัด) หรือ H &gt; 0.60 (trending ชัด) เชื่อถือได้ — zone 0.45–0.60 ควรรอสัญญาณเพิ่มจาก ADX/BB</p>
 </div>
 
-<img class="chart" src="charts/grid-part4-regime.svg" alt="Regime Detection State Machine + Rolling Hurst">
-<p class="caption">State Machine: GRID ON ↔ CAUTION ↔ GRID OFF · กราฟล่าง: Hurst rolling 30 วัน เปลี่ยน regime ตามเวลา</p>
+<div style="margin:20px 0;font-family:'Sarabun',sans-serif">
+  <p style="text-align:center;font-size:12px;font-weight:700;color:#374151;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em">Regime Detection — State Machine</p>
+
+  <!-- State boxes row -->
+  <div style="display:flex;align-items:stretch;gap:0;margin-bottom:20px">
+
+    <!-- GRID ON -->
+    <div style="flex:1;background:linear-gradient(160deg,#f0fdf4,#dcfce7);border:2.5px solid #16a34a;border-radius:14px 0 0 14px;padding:18px 16px;box-shadow:0 4px 14px rgba(22,163,74,.14)">
+      <div style="font-size:14px;font-weight:800;color:#15803d;margin-bottom:3px">GRID ON</div>
+      <div style="font-size:10px;color:#166534;margin-bottom:10px">mean-reverting</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#166534">
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H &lt; 0.50 (Hurst)</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ADX &lt; 40 (BTC)</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">BB width ปกติ</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;font-weight:700;color:#15803d;text-align:center;background:rgba(255,255,255,.5);border-radius:6px;padding:5px">Full Deploy</div>
+    </div>
+
+    <!-- Transition arrows: ON <-> CAUTION -->
+    <div style="width:80px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:0 4px">
+      <div style="font-size:9px;color:#d97706;text-align:center">H rising</div>
+      <div style="font-size:16px;color:#d97706">&#8594;</div>
+      <div style="font-size:16px;color:#16a34a">&#8592;</div>
+      <div style="font-size:9px;color:#16a34a;text-align:center">H drops</div>
+    </div>
+
+    <!-- CAUTION -->
+    <div style="flex:1;background:linear-gradient(160deg,#fffbeb,#fef3c7);border:2px solid #d97706;border-radius:0;padding:18px 16px;box-shadow:0 4px 14px rgba(217,119,6,.12)">
+      <div style="font-size:14px;font-weight:800;color:#b45309;margin-bottom:3px">CAUTION</div>
+      <div style="font-size:10px;color:#92400e;margin-bottom:10px">borderline regime</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#92400e">
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H = 0.50–0.60</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ADX = 40–50</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">Vol spike เริ่มขึ้น</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;font-weight:700;color:#b45309;text-align:center;background:rgba(255,255,255,.5);border-radius:6px;padding:5px">Reduce 50% size</div>
+    </div>
+
+    <!-- Transition arrows: CAUTION <-> OFF -->
+    <div style="width:80px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:0 4px">
+      <div style="font-size:9px;color:#dc2626;text-align:center">ADX spike</div>
+      <div style="font-size:16px;color:#dc2626">&#8594;</div>
+      <div style="font-size:16px;color:#d97706">&#8592;</div>
+      <div style="font-size:9px;color:#d97706;text-align:center">ADX drops</div>
+    </div>
+
+    <!-- GRID OFF -->
+    <div style="flex:1;background:linear-gradient(160deg,#fef2f2,#fee2e2);border:2.5px solid #dc2626;border-radius:0 14px 14px 0;padding:18px 16px;box-shadow:0 4px 14px rgba(220,38,38,.14)">
+      <div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:3px">GRID OFF</div>
+      <div style="font-size:10px;color:#b91c1c;margin-bottom:10px">trending / breakout</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#b91c1c">
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H &gt; 0.60</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ADX &gt; 50</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ราคาออกนอก Donchian</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;font-weight:700;color:#991b1b;text-align:center;background:rgba(255,255,255,.5);border-radius:6px;padding:5px">Pause — Cancel all</div>
+    </div>
+  </div>
+
+  <!-- Hurst timeline indicator strip -->
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px">
+    <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:8px">ตัวอย่าง Hurst timeline — สี = regime ที่ active</div>
+    <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+      <div style="flex:2.5;background:linear-gradient(135deg,#dcfce7,#bbf7d0);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:9px;font-weight:700;color:#15803d">GRID ON</span>
+      </div>
+      <div style="flex:1;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:9px;font-weight:700;color:#b45309">CAUTION</span>
+      </div>
+      <div style="flex:1.5;background:linear-gradient(135deg,#fee2e2,#fecaca);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:9px;font-weight:700;color:#991b1b">GRID OFF</span>
+      </div>
+      <div style="flex:3;background:linear-gradient(135deg,#dcfce7,#bbf7d0);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:9px;font-weight:700;color:#15803d">GRID ON (กลับมา)</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px">
+      <span style="font-size:9px;color:#94a3b8">เดือน 1</span>
+      <span style="font-size:9px;color:#94a3b8">เดือน 3</span>
+      <span style="font-size:9px;color:#94a3b8">เดือน 6</span>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">H &lt; 0.50 = grid เต็ม · 0.50–0.60 = ลด size · H &gt; 0.60 = หยุด grid (ADX threshold ปรับสำหรับ BTC)</p>
+</div>
 
 <h2 id="s4-2">4.2 ADX — ยืนยัน Trend Strength</h2>
 
