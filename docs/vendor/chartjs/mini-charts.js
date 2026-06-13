@@ -295,9 +295,9 @@
     const nSets   = datasets.length;
 
     const allVals = datasets.flatMap(d => d.data || []);
-    let yMin = 0;
-    let yMax = Math.max(...allVals, 0);
-    if (yMax === 0) yMax = 1;
+    let yMin = (opts.yMin != null) ? opts.yMin : Math.min(...allVals, 0);
+    let yMax = (opts.yMax != null) ? opts.yMax : Math.max(...allVals, 0);
+    if (yMax === yMin) { yMin -= 1; yMax += 1; }
     const ticks = niceAxis(yMin, yMax);
     const tMin  = ticks[0];
     const tMax  = ticks[ticks.length - 1];
@@ -355,8 +355,22 @@
     ctx.lineTo(px + pw, py + ph);
     ctx.stroke();
 
-    // Bars
-    const baseline = yPos(tMin);
+    // Bars — baseline at y=0 (clamped within axis range)
+    const baseline = yPos(Math.max(tMin, Math.min(0, tMax)));
+
+    // Zero line when range spans positive and negative
+    if (tMin < 0 && tMax > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(px, baseline);
+      ctx.lineTo(px + pw, baseline);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     groups.forEach((grp, gi) => {
       const groupCenterX = px + (gi + 0.5) * groupW;
       const totalBarsW   = nSets * barW + (nSets - 1) * barGap;
@@ -366,25 +380,38 @@
         const val    = (d.data || [])[gi] || 0;
         const color  = d.color || STYLE.primary;
         const bx     = startX + di * (barW + barGap);
-        const barTop = yPos(val);
-        const barH   = baseline - barTop;
+        const isNeg  = val < 0;
+        const top    = isNeg ? baseline : yPos(val);
+        const bottom = isNeg ? yPos(val) : baseline;
+        const barH   = bottom - top;
+
+        if (barH <= 0) return; // skip zero-height bars
 
         // Gradient fill
-        const grad = ctx.createLinearGradient(bx, barTop, bx, baseline);
+        const grad = ctx.createLinearGradient(bx, top, bx, bottom);
         grad.addColorStop(0, lightenColor(color, 40));
         grad.addColorStop(1, color);
 
-        // Rounded top corners via clip + fill
+        // Rounded corners: top for positive bars, bottom for negative bars
         ctx.save();
         const r = Math.min(4, barW / 2, barH / 2);
         ctx.beginPath();
-        ctx.moveTo(bx + r, barTop);
-        ctx.lineTo(bx + barW - r, barTop);
-        ctx.quadraticCurveTo(bx + barW, barTop, bx + barW, barTop + r);
-        ctx.lineTo(bx + barW, baseline);
-        ctx.lineTo(bx, baseline);
-        ctx.lineTo(bx, barTop + r);
-        ctx.quadraticCurveTo(bx, barTop, bx + r, barTop);
+        if (isNeg) {
+          ctx.moveTo(bx, top);
+          ctx.lineTo(bx + barW, top);
+          ctx.lineTo(bx + barW, bottom - r);
+          ctx.quadraticCurveTo(bx + barW, bottom, bx + barW - r, bottom);
+          ctx.lineTo(bx + r, bottom);
+          ctx.quadraticCurveTo(bx, bottom, bx, bottom - r);
+        } else {
+          ctx.moveTo(bx + r, top);
+          ctx.lineTo(bx + barW - r, top);
+          ctx.quadraticCurveTo(bx + barW, top, bx + barW, top + r);
+          ctx.lineTo(bx + barW, bottom);
+          ctx.lineTo(bx, bottom);
+          ctx.lineTo(bx, top + r);
+          ctx.quadraticCurveTo(bx, top, bx + r, top);
+        }
         ctx.closePath();
         ctx.fillStyle = grad;
         drawShadow(ctx);
@@ -392,17 +419,22 @@
         clearShadow(ctx);
         ctx.restore();
 
-        // Value label on top
+        // Value label: above bar for positive, below for negative
         if (barH > 12) {
           ctx.font      = `9px ${STYLE.font}`;
           ctx.fillStyle = '#475569';
           ctx.textAlign    = 'center';
-          ctx.textBaseline = 'bottom';
-          ctx.fillText(fmtNum(val, false), bx + barW / 2, barTop - 2);
+          if (isNeg) {
+            ctx.textBaseline = 'top';
+            ctx.fillText(fmtNum(val, false), bx + barW / 2, bottom + 2);
+          } else {
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(fmtNum(val, false), bx + barW / 2, top - 2);
+          }
         }
       });
 
-      // X group label
+      // X group label at baseline (zero line)
       ctx.font      = `10px ${STYLE.font}`;
       ctx.fillStyle = '#64748b';
       ctx.textAlign    = 'center';
