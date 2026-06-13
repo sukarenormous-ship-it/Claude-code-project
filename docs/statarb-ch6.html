@@ -77,11 +77,11 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">แนวคิดหลัก — อ่านตรงนี้ก่อน</div>
-<div class="ki-text"><strong>z-score</strong> วัดว่า spread ε ปัจจุบันอยู่ห่างจากค่าเฉลี่ยแค่ไหน ในหน่วย standard deviation สำหรับ stat arb เรา <strong>เข้าเทรดเมื่อ |z| &gt; 2</strong> — spread อยู่ไกลจากสมดุลผิดปกติ — และ <strong>ออกเมื่อ |z| &lt; 0.5</strong> — spread กลับมาใกล้ค่ากลางแล้ว z-score แปลง spread ใดก็ตามให้เป็นสัญญาณไร้มิติ เปรียบเทียบข้ามคู่และข้ามช่วงเวลาได้</div>
+<div class="ki-text"><strong>Hurst Exponent (H)</strong> วัด "ความจำ" ของ time series — กล่าวคือ การเคลื่อนไหวในอดีตส่งผลต่ออนาคตแค่ไหน คำนวณจาก Rescaled Range (R/S) analysis: ยิ่ง n (ขนาด window) ใหญ่ขึ้น R/S โตตาม n<sup>H</sup> ค่า H ต่ำกว่า 0.5 บ่งว่า series มีแนวโน้ม <strong>mean-revert</strong> — เหมาะกับ stat arb; H = 0.5 คือ random walk ที่เทรดไม่ได้กำไร; H เกิน 0.5 แสดงถึง trend ที่ควรใช้ momentum แทน</div>
 <div style="margin-top:10px;text-align:center">
-$$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
+$$\log\!\left(\frac{R}{S}\right) = H \cdot \log(n) + C \qquad \Longrightarrow \qquad H = \text{slope ของ log-log plot}$$
 </div>
-<div class="ki-eq">Entry: |z_t| &gt; 2 &nbsp;·&nbsp; Exit: |z_t| &lt; 0.5 &nbsp;·&nbsp; Stop: |z_t| &gt; 3</div>
+<div class="ki-eq">H &lt; 0.5: mean-reverting &nbsp;·&nbsp; H = 0.5: random walk &nbsp;·&nbsp; H &gt; 0.5: trending</div>
 </div>
 
 <!-- 6.1 -->
@@ -90,7 +90,7 @@ $$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
 <p>Hurst exponent ถูกพัฒนาขึ้นโดย Harold Hurst จากการศึกษาวัฏจักรน้ำท่วมแม่น้ำไนล์ ในทางการเงิน H วัดว่า series มี "ความจำ" หรือเปล่า — กล่าวคือการเคลื่อนไหวในอดีตมีอิทธิพลต่ออนาคตอย่างไร ด้านล่างแสดง time series สังเคราะห์สามแบบที่แสดงสามโหมดอย่างชัดเจน</p>
 
 <img class="chart" src="charts/ch6-zscore-signal.svg">
-<div class="caption">Spread ε (top) with ±2σ bands and rolling z-score (bottom) colour-coded: RED = entry zone |z|&gt;2, GREEN = exit zone |z|&lt;1, NAVY = hold. Z-score computed on a 30-bar rolling window.</div>
+<div class="caption">Time series สังเคราะห์สามแบบ: mean-reverting (H≈0.3), random walk (H≈0.5), trending (H≈0.7) — แสดงให้เห็นความแตกต่างของ "ความจำ" ใน series แต่ละประเภท</div>
 
 <div class="bx bd">
 <div class="bt">ข้อปฏิบัติจริง — Rolling Window สำหรับ μ และ σ</div>
@@ -125,7 +125,7 @@ $$z_t = \frac{\varepsilon_t - \mu_\varepsilon}{\sigma_\varepsilon}$$
 <p>Repeat for many window sizes n, then fit: <strong>log(R/S) = H · log(n) + C</strong>. The slope H is the Hurst exponent.</p>
 
 <img class="chart" src="charts/ch6-zscore-dist.svg">
-<div class="caption">Distribution of z-scores from 1000 OU simulated observations vs Normal(0,1) PDF (navy). TEAL bars = simulated z-scores; RED bars = tails |z|&gt;2. ±2σ shown as dashed AMBER lines.</div>
+<div class="caption">R/S log-log plot: แกน x = log(n), แกน y = log(R/S) — slope ของเส้นที่ fit คือ Hurst exponent H; ตัวอย่างแสดง H ≈ 0.35 (mean-reverting spread)</div>
 
 <!-- 6.3 -->
 <h2 id="s6-3">6.3 ADF Test + KPSS Test — ยืนยันสองชั้น</h2>

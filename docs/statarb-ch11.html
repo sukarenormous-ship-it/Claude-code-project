@@ -210,7 +210,7 @@ $$z_t > 2.0 \Rightarrow \text{WATCH} \to \text{PAPER\_GO} \to \text{MANUAL\_GO} 
 <tr><td>WATCH</td><td>!coint_ok OR regime = Broken</td><td>INVALIDATED</td><td>ล้าง watch state, log เหตุผล</td></tr>
 <tr><td>WATCH</td><td>|z| &lt; 1.0 (signal หาย)</td><td>NO_TRADE</td><td>reset กลับ</td></tr>
 <tr><td>PAPER_GO</td><td>manual_ok = True (หรือ auto_mode)</td><td>MANUAL_GO</td><td>ส่ง order จริงทั้งสองขา</td></tr>
-<tr><td>MANUAL_GO</td><td>z × sign(entry_z) &lt; 0.5 OR stop_loss_hit()</td><td>DE_RISK</td><td>เริ่มปิด position ทีละขา</td></tr>
+<tr><td>MANUAL_GO</td><td>z × entry_sign &lt; 0.5 OR stop_loss_hit()</td><td>DE_RISK</td><td>เริ่มปิด position ทีละขา</td></tr>
 <tr><td>MANUAL_GO</td><td>!coint_ok OR regime = Broken</td><td>INVALIDATED</td><td>ปิด position ทันที (emergency)</td></tr>
 <tr><td>DE_RISK</td><td>legs_closed() = True</td><td>EXIT</td><td>บันทึก P&amp;L, ล้าง state</td></tr>
 <tr><td>EXIT / INVALIDATED</td><td>หลัง cooldown</td><td>NO_TRADE</td><td>reset ทุก field</td></tr>
@@ -260,7 +260,8 @@ $$z_t > 2.0 \Rightarrow \text{WATCH} \to \text{PAPER\_GO} \to \text{MANUAL\_GO} 
                 self.state = "MANUAL_GO"
 
         elif self.state == "MANUAL_GO":
-            if zscore * sign(self.entry_zscore) &lt; 0.5 or stop_loss_hit():
+            entry_sign = 1 if self.entry_zscore &gt; 0 else -1
+            if zscore * entry_sign &lt; 0.5 or stop_loss_hit():
                 self.state = "DE_RISK"
             elif not coint_ok or regime == "Broken":
                 self.state = "INVALIDATED"
@@ -274,7 +275,7 @@ $$z_t > 2.0 \Rightarrow \text{WATCH} \to \text{PAPER\_GO} \to \text{MANUAL\_GO} 
 <div class="bx bb">
 <div class="bt">หมายเหตุสำคัญเกี่ยวกับโค้ด</div>
 <ul>
-<li><code>sign(self.entry_zscore)</code> บอกทิศทาง: ถ้า entry ที่ z = +2.3 → รอให้ z กลับมาต่ำกว่า +0.5</li>
+<li><code>entry_sign</code> บอกทิศทาง (1 ถ้า entry z บวก, −1 ถ้าลบ): ถ้า entry ที่ z = +2.3 → รอให้ z กลับมาต่ำกว่า +0.5</li>
 <li><code>stop_loss_hit()</code> ควร implement แยกต่างหาก เช็คทั้ง unrealized P&amp;L และ z-score absolute</li>
 <li><code>legs_closed()</code> เช็คว่าทั้งสองขา (long และ short) ได้รับ fill ครบแล้ว</li>
 <li>ใน production ควรเพิ่ม persistence — บันทึก state ลง DB เพื่อกู้คืนได้หลัง crash</li>
@@ -489,8 +490,8 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
 <summary>ดูคำตอบ</summary>
 <div class="ans">
 <p><strong>Transition ไป: DE_RISK</strong></p>
-<p>เหตุผล: z × sign(entry_zscore) = 0.3 × sign(+2.5) = 0.3 × 1 = 0.3 ซึ่ง &lt; 0.5</p>
-<p>เงื่อนไข <code>zscore * sign(self.entry_zscore) &lt; 0.5</code> เป็นจริง → transition ไป DE_RISK</p>
+<p>เหตุผล: entry_sign = 1 (entry_zscore = +2.5 &gt; 0); z × entry_sign = 0.3 × 1 = 0.3 ซึ่ง &lt; 0.5</p>
+<p>เงื่อนไข <code>zscore * entry_sign &lt; 0.5</code> เป็นจริง → transition ไป DE_RISK</p>
 <p>ความหมาย: spread ได้ mean-revert กลับมาใกล้ค่ากลางแล้ว (จาก 2.5σ เหลือ 0.3σ) ถึงเวลาปิด position</p>
 <p>cointegration OK ไม่เปลี่ยนแปลงผล เพราะเงื่อนไข z กลับมาถึงก่อน</p>
 </div>
