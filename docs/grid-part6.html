@@ -56,6 +56,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <script src="vendor/katex/katex.min.js"></script>
 <script src="vendor/katex/contrib/auto-render.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
 </head>
 <body>
 
@@ -104,6 +105,30 @@ Short ETH ถ้า spread ต่ำกว่า mean<br>
 <p>Cointegration (จาก <a href="statarb-ch0.html">Statarb Ch.4</a>) หมายความว่า: แม้ราคาสองตัวจะ random walk แต่ linear combination ของมันเป็น stationary:</p>
 
 $$\text{Spread}_t = \log(P_{BTC,t}) - \beta \cdot \log(P_{ETH,t}) - \alpha \sim \text{Stationary}$$
+
+<canvas id="chartSpread" class="chart" style="height:360px"></canvas>
+<p class="caption">BTC/ETH Spread (log ratio) — mean-revert กลับสู่ค่าเฉลี่ยอยู่เสมอ → Grid บน spread ทำกำไรได้ต่อเนื่อง</p>
+<script>
+(function(){
+  MiniChart.line(document.getElementById('chartSpread'), {
+    title: 'BTC/ETH Log Spread — Cointegration Mean-Reversion (สมมติ 16 สัปดาห์)',
+    labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16'],
+    datasets: [
+      { label: 'Spread = log(BTC) − β·log(ETH)', color: '#06b6d4', fill: true,
+        data: [0.05, 0.18, 0.32, 0.28, 0.12, -0.05, -0.22, -0.35, -0.28, -0.10, 0.08, 0.25, 0.38, 0.22, 0.05, -0.08] },
+      { label: 'Mean (μ = 0)',  color: '#64748b', fill: false,
+        data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { label: 'Grid Upper (+1σ)', color: '#16a34a', fill: false,
+        data: [0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3] },
+      { label: 'Grid Lower (−1σ)', color: '#dc2626', fill: false,
+        data: [-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3] }
+    ],
+    yMin: -0.5, yMax: 0.5,
+    yLabel: 'Spread (log ratio)',
+    caption: 'เมื่อ spread > +1σ: Short BTC / Long ETH → เมื่อ spread < −1σ: Long BTC / Short ETH → profit เมื่อ revert'
+  });
+})();
+</script>
 
 <div class="fm">ทดสอบ Cointegration สำหรับ Pair Grid:
 

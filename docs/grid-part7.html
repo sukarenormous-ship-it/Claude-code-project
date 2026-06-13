@@ -50,6 +50,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <script src="vendor/katex/katex.min.js"></script>
 <script src="vendor/katex/contrib/auto-render.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
 </head>
 <body>
 
@@ -116,6 +117,26 @@ def iv_adaptive_step(iv_annual_pct, current_price, fee_rate=0.001,
 <p>อ้างอิง: <a href="vol-part2.html">Vol Series Part 2</a> สำหรับ IV Rank calculation</p>
 </div>
 
+<canvas id="chartIVRegime" class="chart" style="height:360px"></canvas>
+<p class="caption">IV Rank กำหนด Step และ Zone Width — IV ต่ำ: grid แน่น / IV สูง: grid กว้าง ป้องกัน over-fill</p>
+<script>
+(function(){
+  MiniChart.bar(document.getElementById('chartIVRegime'), {
+    title: 'IV Rank Regime → Grid Parameters (BTC/USDT สมมติ Price=$100k)',
+    groups: ['Low IV\n(Rank < 20)', 'Normal IV\n(Rank 20–60)', 'High IV\n(Rank > 80)'],
+    datasets: [
+      { label: 'Step Size (% of price)', color: '#06b6d4',
+        data: [1.5, 2.5, 4.5] },
+      { label: 'Zone Width (% of price)', color: '#7c3aed',
+        data: [6, 10, 18] },
+      { label: 'Expected Fill/day (ครั้ง)', color: '#16a34a',
+        data: [8, 5, 2] }
+    ],
+    yLabel: '% หรือ จำนวนครั้ง',
+    caption: 'Low IV: Step เล็ก-Fill บ่อย-Zone แคบ / Normal: ปกติ / High IV: Step ใหญ่-Fill น้อย-Zone กว้าง (ป้องกัน excess inventory)'
+  });
+})();
+</script>
 <h2 id="s7-2">7.2 Funding Rate Adaptive Grid</h2>
 
 <p>Funding rate ของ BTC Perpetual เปลี่ยนตาม market sentiment — grid สามารถ adapt ตาม funding rate ได้:</p>
