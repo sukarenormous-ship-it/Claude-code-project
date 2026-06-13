@@ -60,6 +60,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <script src="vendor/katex/katex.min.js"></script>
 <script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script src="vendor/chartjs/mini-charts.js"></script>
 <script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
@@ -296,8 +297,19 @@ Capital ที่ประหยัด: Grid levels $110k-$120k ไม่ต้�
 
 <h2 id="s1a-5">1A.5 Bell Curve Grid Density</h2>
 
-<img class="chart" src="charts/grid-part1a-bell.svg" alt="Bell Curve Grid Density">
+<canvas id="chartBell" class="chart" style="height:360px"></canvas>
 <p class="caption">Grid หนาแน่นที่ mean — Step เล็กในโซนที่ราคาอยู่บ่อย ประหยัด capital ในโซนที่ราคามาน้อย</p>
+<script>
+(function(){
+  MiniChart.bell(document.getElementById('chartBell'), {
+    mean: 100000, std: 10000,
+    title: 'Bell Curve Grid Density — BTC/USDT',
+    denseLabel: 'Dense Grid ±1σ ($90k–$110k) — step เล็ก fill บ่อย',
+    sparseLabel: 'Sparse Grid ±2σ ($80k–$120k) — step ใหญ่ ประหยัด capital',
+    caption: '68% ของเวลา ราคาอยู่ใน ±1σ / 95% อยู่ใน ±2σ — จัด grid หนาแน่นตรงกลาง'
+  });
+})();
+</script>
 
 <div class="trick-box">
 <div class="trick-label">Zone Trick #2 — Variable Step (Bell Curve Density)</div>
@@ -368,8 +380,26 @@ Capital ที่ประหยัด: Grid levels $110k-$120k ไม่ต้�
 
 <p><strong>Soft Martingale:</strong> ใช้ r ∈ [1.0, 2.0] (ปรับได้) แทน r = 2 ตายตัว</p>
 
-<img class="chart" src="charts/grid-part1a-martingale.svg" alt="Soft vs Hard Martingale">
+<canvas id="chartMartingale" class="chart" style="height:360px"></canvas>
 <p class="caption">Soft Martingale (r=1.4) เพิ่ม size ช้ากว่า Hard Martingale (r=2) — capital requirement ต่างกันมาก</p>
+<script>
+(function(){
+  MiniChart.bar(document.getElementById('chartMartingale'), {
+    title: 'Order Size per Level: Hard vs Soft vs Equal Martingale',
+    groups: ['Level 1', 'Level 2', 'Level 3', 'Level 4'],
+    datasets: [
+      { label: 'Hard (r=2.0)', color: '#dc2626',
+        data: [1, 2, 4, 8] },
+      { label: 'Soft (r=1.4)', color: '#06b6d4',
+        data: [1, 1.4, 2.0, 2.8] },
+      { label: 'Equal (r=1.0)', color: '#16a34a',
+        data: [1, 1, 1, 1] }
+    ],
+    yLabel: 'Multiplier (×base)',
+    caption: 'Hard: 1×→2×→4×→8× (bust risk สูง) / Soft: 1×→1.4×→2×→2.8× (ควบคุมได้) / Equal: คงที่ 1×'
+  });
+})();
+</script>
 
 <div class="fm">def soft_martingale_sizes(n_levels, base_q, r):
     """คำนวณขนาด order ในแต่ละ level ด้วย soft martingale"""
