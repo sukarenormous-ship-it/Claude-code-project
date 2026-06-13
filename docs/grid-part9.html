@@ -204,7 +204,9 @@ class GridFramework:
 
 <div class="fm"># exchange/bybit_client.py
 
-import hmac, hashlib, time, requests
+import hmac
+import hashlib
+import time, requests
 from typing import Optional
 
 class BybitClient:
@@ -305,6 +307,8 @@ class GridBacktester:
             high_price = row["high"]
             close      = row["close"]
 
+            # หมายเหตุ: logic นี้เป็น optimistic assumption — ราคา candle แตะ level ไม่ได้หมายความว่า fill ทุกครั้ง
+            # ใน production ให้ใช้ WebSocket order events แทน
             # Check BUY fills (price ลงถึง BUY level)
             for level in buy_levels:
                 if not level.filled and low_price <= level.price:
@@ -460,6 +464,9 @@ def main():
         balance = client.get_wallet_balance("USDT")
         portfolio_history.append(balance)
 
+        # ⚠️ Production Note: sleep(3600) จะพลาด order fills ระหว่างรอ
+        # ใช้ WebSocket private channel (wss://stream.bybit.com/v5/private) แทน polling
+        # ดู Bybit API docs: subscribe to "order" channel เพื่อรับ fill events real-time
         time.sleep(cfg["execution"]["recheck_hours"] * 3600)
 
 if __name__ == "__main__":

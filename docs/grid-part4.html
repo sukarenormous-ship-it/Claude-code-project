@@ -124,6 +124,18 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
 # H = 0.51 → random walk → CAUTION
 # H = 0.63 → trending → GRID OFF</div>
 
+<div class="bx ba">
+<div class="bt">⚠️ R/S Method มี Bias — แนะนำ DFA แทน</div>
+<p>ฟังก์ชัน hurst_exponent ด้านบนใช้ R/S (Rescaled Range) ซึ่งมีปัญหา:</p>
+<ul>
+<li><strong>Upward bias ใน short series:</strong> N=90 วัน → ค่า H มักสูงเกิน 5–10%</li>
+<li><strong>Standard Error สูง:</strong> SE ≈ 0.05–0.10 สำหรับ N=90 — threshold H=0.45/0.55 ใน Part 4 อาจคลาดเคลื่อน</li>
+<li><strong>วิธีที่ดีกว่า: DFA (Detrended Fluctuation Analysis)</strong> — bias ต่ำกว่าและ SE ต่ำกว่าสำหรับ financial data</li>
+</ul>
+<p>ใช้ library <code>nolds</code>: <code>pip install nolds</code> แล้ว <code>import nolds; H = nolds.dfa(log_returns)</code></p>
+<p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 (mean-reverting ชัด) หรือ H &gt; 0.60 (trending ชัด) เชื่อถือได้ — zone 0.45–0.60 ควรรอสัญญาณเพิ่มจาก ADX/BB</p>
+</div>
+
 <img class="chart" src="charts/grid-part4-regime.svg" alt="Regime Detection State Machine + Rolling Hurst">
 <p class="caption">State Machine: GRID ON ↔ CAUTION ↔ GRID OFF · กราฟล่าง: Hurst rolling 30 วัน เปลี่ยน regime ตามเวลา</p>
 
@@ -133,12 +145,26 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
 
 $$\text{ADX} = \text{Smoothed MA of DX} \qquad \text{DX} = \frac{|+DI - -DI|}{+DI + -DI} \times 100$$
 
+<div class="bx ba">
+<div class="bt">ADX Threshold สำหรับ BTC ≠ Forex/Equity</div>
+<p>ADX 25 = "trend" ใน textbook ถูก calibrate สำหรับ Forex และ Equity — BTC มี volatility สูงกว่า 3–5×</p>
+<p>BTC ADX มักอยู่ที่ 30–50 แม้ใน sideways market — threshold ที่เหมาะสมกว่า:</p>
+<table>
+<tr><th>ADX Range</th><th>Forex/Equity</th><th>BTC (แนะนำ)</th></tr>
+<tr><td>&lt;25</td><td>Sideways</td><td>Sideways / Weak trend</td></tr>
+<tr><td>25–40</td><td>Trend emerging</td><td>ยังคือ Sideways สำหรับ BTC</td></tr>
+<tr><td>40–50</td><td>Strong trend</td><td>Trend emerging (CAUTION)</td></tr>
+<tr><td>&gt;50</td><td>Very strong</td><td>Strong trend (GRID_OFF candidate)</td></tr>
+</table>
+<p>Backtest บน BTC data จริง (2020–2024) แนะนำ threshold ≈ 40–45 สำหรับ GRID_OFF trigger</p>
+</div>
+
 <table>
 <tr><th>ADX Value</th><th>ความหมาย</th><th>Grid Action</th></tr>
 <tr><td>&lt; 15</td><td>ไม่มี trend (choppy)</td><td>GRID ON — ideal condition</td></tr>
 <tr><td>15–25</td><td>trend อ่อน</td><td>GRID ON (ระวัง upper zone)</td></tr>
-<tr><td>25–35</td><td>trend ปานกลาง</td><td>CAUTION — ลด size 50%</td></tr>
-<tr><td>&gt; 35</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
+<tr><td>25–40</td><td>trend ปานกลาง (BTC: ยัง sideways)</td><td>CAUTION — ลด size 50%</td></tr>
+<tr><td>&gt; 40 (BTC: &gt; 45)</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
 </table>
 
 <div class="fm">def compute_adx(highs, lows, closes, period=14):
@@ -206,12 +232,12 @@ Thresholds สำหรับ Grid:
 <div class="state-box sb-ca">
 <strong style="color:#b45309">CAUTION</strong><br>
 <small>Reduce 50% size</small><br>
-<small style="color:#92400e">H 0.50–0.58<br>ADX 25–35<br>BB_width 4–8%</small>
+<small style="color:#92400e">H 0.50–0.58<br>ADX 25–40 (BTC: 25–45)<br>BB_width 4–8%</small>
 </div>
 <div class="state-box sb-off">
 <strong style="color:#991b1b">GRID OFF</strong><br>
 <small>Pause / Cancel all</small><br>
-<small style="color:#b91c1c">H &gt; 0.58<br>ADX &gt; 35<br>BB_width &gt; 8%</small>
+<small style="color:#b91c1c">H &gt; 0.58<br>ADX &gt; 40 (BTC: &gt; 45)<br>BB_width &gt; 8%</small>
 </div>
 </div>
 
@@ -229,7 +255,7 @@ Thresholds สำหรับ Grid:
         """
         signals = {
             "hurst": "OFF" if hurst > 0.58 else ("CAUTION" if hurst > 0.50 else "ON"),
-            "adx":   "OFF" if adx > 35 else ("CAUTION" if adx > 25 else "ON"),
+            "adx":   "OFF" if adx > 45 else ("CAUTION" if adx > 25 else "ON"),  # BTC-calibrated: 45 แทน 35 (textbook Forex threshold)
             "bb":    "OFF" if bb_width > 0.08 else ("CAUTION" if bb_width > 0.04 else "ON"),
         }
 

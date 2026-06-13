@@ -247,6 +247,12 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 
 <p>Donchian ดูแค่ high/low ในช่วงเวลา แต่ไม่บอกว่า "ความน่าจะเป็นที่ราคาจะอยู่ในช่วงนี้" คือเท่าไหร่ Block Bootstrap ช่วยตอบคำถามนี้</p>
 
+<div class="bx ba">
+<div class="bt">⚠️ Bootstrap วัด Path Excursion ไม่ใช่ Final Price</div>
+<p>สำหรับ Grid Trading: สิ่งที่สำคัญคือ <strong>ราคาต่ำสุดระหว่างทาง</strong> (max path excursion) ไม่ใช่ราคาสุดท้าย — grid ต้องอยู่รอดตลอด path ไม่ใช่แค่ตอนสิ้นสุด</p>
+<p>ฟังก์ชันด้านล่างคำนวณทั้ง final price และ <code>min_price_in_path</code> — ใช้ <code>p5_min_path</code> (5th percentile ของราคาต่ำสุด) เป็นตัวกำหนด zone_low</p>
+</div>
+
 <div class="fm">แนวคิด Block Bootstrap Monte Carlo:
 
 1. เก็บ daily return ของ BTC ย้อนหลัง 90 วัน
@@ -254,17 +260,23 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 3. ประกอบ synthetic price path จาก blocks ที่สุ่มได้
 4. ทำซ้ำ 1,000 ครั้ง → ได้ distribution ของ "ราคาจะไปถึงไหนใน 30 วัน"
 5. ใช้ percentile 5 และ 95 เป็น zone boundaries
+   (ใช้ min_price_in_path สำหรับ zone_low — grid ต้องอยู่รอดตลอด path)
 
 def block_bootstrap_zone(daily_returns, n_sim=1000, horizon=30,
                           block_size=5, start_price=100000):
     """
     Bootstrap zone boundaries ด้วย 95% confidence interval
+    คำนวณทั้ง final price และ min_price_in_path (path excursion metric)
+    สำหรับ grid trading: zone_low ควรใช้ p5_min_path ไม่ใช่ p5_final
+    เพราะ grid ต้องอยู่รอดตลอด path — ไม่ใช่แค่ตอนสิ้นสุด
     """
     import random
     final_prices = []
+    min_prices_in_path = []  # path excursion metric: ราคาต่ำสุดระหว่างทาง
 
     for _ in range(n_sim):
         price = start_price
+        min_price = start_price  # ติดตามราคาต่ำสุดตลอด path
         days = 0
         while days < horizon:
             # สุ่ม block ของ returns
@@ -272,22 +284,46 @@ def block_bootstrap_zone(daily_returns, n_sim=1000, horizon=30,
             block = daily_returns[start_idx : start_idx + block_size]
             for r in block:
                 price *= (1 + r)
+                min_price = min(min_price, price)  # บันทึก worst excursion
                 days += 1
                 if days >= horizon:
                     break
         final_prices.append(price)
+        min_prices_in_path.append(min_price)  # max drawdown from start
 
-    # Zone = 5th to 95th percentile ของ simulated prices
+    # Zone จาก final price (95% CI ของ final distribution)
     final_prices.sort()
-    zone_low  = final_prices[int(0.05 * n_sim)]  # 5th percentile
-    zone_high = final_prices[int(0.95 * n_sim)]  # 95th percentile
-    return zone_low, zone_high
+    p5_final  = final_prices[int(0.05 * n_sim)]  # 5th percentile final
+    p95_final = final_prices[int(0.95 * n_sim)]  # 95th percentile final
+
+    # Path excursion metric: zone_low ควรใช้ค่านี้แทน p5_final
+    # เพราะ grid ต้องอยู่รอดตลอด path ไม่ใช่แค่ตอนสิ้นสุด
+    min_prices_in_path.sort()
+    p5_min_path = min_prices_in_path[int(0.05 * n_sim)]  # worst 5% path low
+
+    return {
+        "zone_low":    p5_min_path,   # ใช้ path excursion เป็น zone_low
+        "zone_high":   p95_final,     # 95th percentile final price
+        "p5_final":    p5_final,      # final price 5th pctile (reference)
+        "p5_min_path": p5_min_path,   # path excursion 5th pctile (primary)
+    }
 
 ตัวอย่าง BTC:
   1,000 simulations, 30-day horizon
-  zone_low  = $84,200  (5th pctile)
-  zone_high = $119,800 (95th pctile)
-  → Zone: $84k–$120k (ครอบ 90% ของ simulated scenarios)</div>
+  p5_final    = $87,500  (ราคาสุดท้าย 5th pctile — ไม่พอสำหรับ grid)
+  p5_min_path = $84,200  (ราคาต่ำสุดระหว่างทาง 5th pctile — ใช้เป็น zone_low)
+  p95_final   = $119,800 (95th pctile)
+  → Zone: $84k–$120k (grid ต้องอยู่รอดถึง $84k ระหว่างทาง)</div>
+
+<div class="bx bc">
+<div class="bt">การเลือก block_size</div>
+<p>block_size=5 (วัน) เป็นค่าเริ่มต้นที่สมเหตุสมผลสำหรับ BTC แต่ควร test หลายค่า:</p>
+<ul>
+<li>block_size เล็ก (3–5): ล้อมรับ autocorrelation สั้น (ความผันผวนรายวัน)</li>
+<li>block_size ใหญ่ (10–20): ล้อมรับ momentum / trend ยาวกว่า</li>
+<li>วิธีที่ดีกว่า: Politis-Romano Stationary Bootstrap (ไม่ต้องกำหนด block_size ตายตัว) — ใช้ <code>arch</code> library: <code>from arch.bootstrap import StationaryBootstrap</code></li>
+</ul>
+</div>
 
 <div class="bx bg">
 <div class="bt">ทำไม Block Bootstrap ดีกว่า Simple Historical Range?</div>

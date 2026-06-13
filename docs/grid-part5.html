@@ -93,6 +93,13 @@ $$f^* = \frac{p \cdot b - q}{b}$$
   → ใช้ Kelly กำหนด "ขนาด grid รวม" vs total capital (ไม่ใช่ต่อ cycle)
   → f* = optimal fraction ของ net worth ที่ควรใส่ใน grid portfolio</div>
 
+<div class="bx ba">
+<div class="bt">⚠️ p=0.55–0.65 เป็นสมมติฐาน ไม่ใช่ความจริงที่รับประกัน</div>
+<p>ค่า p ที่ถูกต้องขึ้นอยู่กับ: asset ที่เทรด, ช่วงเวลา, regime ปัจจุบัน — ค่าที่ backtest ได้จาก 90 วันมี Standard Error สูง</p>
+<p>ตัวอย่าง error propagation: p จริง = 0.60 แต่ estimate error ±0.05 → f* error ±30–40%</p>
+<p><strong>แนะนำ: ใช้ Fractional Kelly (25% × f*) เสมอ</strong> เพื่อ buffer uncertainty ใน p</p>
+</div>
+
 <h2 id="s5-2">5.2 Kelly สำหรับ Grid Portfolio (Practical Approach)</h2>
 
 <p>วิธีง่ายสุด: backtest grid ด้วยข้อมูลย้อนหลัง → วัด win rate และ profit ratio ต่อ "month" → apply Kelly</p>
@@ -115,6 +122,26 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 
   ถ้า net worth = $100,000:
     Grid capital = $100,000 × 19% = $19,000</div>
+
+<div class="bx ba">
+<div class="bt">Sample Size Warning</div>
+<p>90 วัน × ~3 fills/วัน = ~270 trades — ยังน้อยเกินสำหรับ p estimate ที่แม่นยำ</p>
+<p>Standard Error of proportion: SE = √(p(1−p)/n) = √(0.6×0.4/270) ≈ <strong>±3%</strong></p>
+<p>ใช้ 6–12 เดือนข้อมูล (500+ trades) เพื่อ SE &lt; 2% — หรือใช้ Fractional Kelly ตลอด</p>
+</div>
+
+<div class="bx bc">
+<div class="bt">Kelly Sensitivity Analysis — ผลกระทบของ p ที่คาดเคลื่อน</div>
+<table>
+<tr><th>p (win rate)</th><th>b (win/loss ratio)</th><th>f* (Full Kelly)</th><th>25% × f* (Fractional)</th><th>Max Q ต่อ Capital</th></tr>
+<tr><td>0.50 (coin flip)</td><td>1.0</td><td>0%</td><td>0%</td><td>ไม่เล่น</td></tr>
+<tr><td>0.55</td><td>1.0</td><td>10%</td><td>2.5%</td><td>ต่ำมาก</td></tr>
+<tr><td>0.60</td><td>1.0</td><td>20%</td><td>5%</td><td>ปานกลาง</td></tr>
+<tr><td>0.65</td><td>1.0</td><td>30%</td><td>7.5%</td><td>สูง</td></tr>
+<tr><td>0.55 (overestimate)</td><td>1.0</td><td>10%</td><td>2.5%</td><td>—</td></tr>
+</table>
+<p><em>หาก p จริงต่ำกว่าที่ estimate 5% → f* ลดลงครึ่งหนึ่ง — ใช้ Fractional Kelly ป้องกัน overbet</em></p>
+</div>
 
 <div class="bx ba">
 <div class="bt">ทำไมต้อง Fractional Kelly (25% ของ f*)?</div>

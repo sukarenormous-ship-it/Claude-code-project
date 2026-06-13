@@ -197,6 +197,17 @@ C_floor_martingale = Σ(i=1 to N) Q_i × P_i
 # active=$5,000 · standby=$3,000 · floor=$2,000
 # standby_daily_yield = $3,000 × 5%/365 = $0.41/วัน (ลด opportunity cost)</div>
 
+<div class="bx ba">
+<div class="bt">⚠️ Counterparty Risk ของ Lending Protocol</div>
+<p>Yield 4–8% APY จาก Aave/Compound/lending platforms <strong>ไม่ใช่ risk-free</strong>:</p>
+<ul>
+<li><strong>Smart contract risk:</strong> bug หรือ exploit → เงินอาจหายทั้งหมด (เกิดกับ Euler Finance $197M ปี 2023)</li>
+<li><strong>Liquidity risk:</strong> ในช่วง market crash → ถอน USDT ออกไม่ได้ทันที (utilization rate สูง)</li>
+<li><strong>เหมาะสำหรับ:</strong> Standby capital ที่รอ &gt; 30 วัน และยอมรับ smart contract risk ได้</li>
+<li><strong>ทางเลือกที่ safer กว่า:</strong> CEX savings product (Binance Earn, OKX Earn) — counterparty risk ต่ำกว่าแต่ yield ต่ำกว่า</li>
+</ul>
+</div>
+
 <h2 id="s1a-4">1A.4 Buy-Only Zone Asymmetry — Trick ที่ทรงพลัง</h2>
 
 <div class="trick-box">
@@ -330,6 +341,23 @@ def calculate_capital_requirement(prices, base_q, r):
 <tr><td>1.6</td><td>Aggressive Soft</td><td>6.6×</td><td>มั่นใจ mean-reversion มาก</td></tr>
 <tr><td>2.0</td><td>Hard Martingale</td><td>16×</td><td>ไม่แนะนำ — bust risk สูง</td></tr>
 </table>
+
+<div class="bx ba">
+<div class="bt">Stress Test ก่อนเลือก r — BTC ลง 40% ต้องใช้ทุนเท่าไหร่?</div>
+<p>ตัวอย่าง: Grid 5 levels · Q=0.001 BTC · r=1.4 · Price $100k</p>
+<table>
+<tr><th>Level ที่ Fill</th><th>Q (Soft Martingale r=1.4)</th><th>Capital Deployed</th><th>Cumulative BTC</th></tr>
+<tr><td>1 ($98k)</td><td>0.001</td><td>$98</td><td>0.001</td></tr>
+<tr><td>2 ($96k)</td><td>0.0014</td><td>$134</td><td>0.0024</td></tr>
+<tr><td>3 ($94k)</td><td>0.00196</td><td>$184</td><td>0.00436</td></tr>
+<tr><td>4 ($92k)</td><td>0.00274</td><td>$252</td><td>0.00710</td></tr>
+<tr><td>5 ($90k)</td><td>0.00384</td><td>$346</td><td>0.01094</td></tr>
+<tr><td><strong>รวม</strong></td><td>—</td><td><strong>$1,014</strong></td><td><strong>0.01094 BTC</strong></td></tr>
+</table>
+<p>ถ้า BTC ลงต่อถึง $60k (−40% จาก $100k): Inventory loss = 0.01094 × ($100k − $60k) = <strong>−$437.6</strong></p>
+<p><strong>กฎ:</strong> ก่อนเลือก r ให้ทำ stress test: Close System capital ต้อง ≥ (cumulative Q ทุก level × worst-case price drop)</p>
+<p>r &gt; 1.5 เสี่ยงมากใน bear market — Close System อาจหมดก่อนถึง floor</p>
+</div>
 
 <div class="bx br">
 <div class="bt">ข้อจำกัดสำคัญของ Soft Martingale</div>

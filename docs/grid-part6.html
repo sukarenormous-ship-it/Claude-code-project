@@ -138,6 +138,64 @@ def test_cointegration(btc_prices, eth_prices, significance=0.05):
 # ADF stat = −3.47 (critical at 5% = −2.89) → p < 0.05 → cointegrated ✓
 # Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days</div>
 
+<div class="bx bc">
+<div class="bt">Johansen Test — ดีกว่า Engle-Granger สำหรับ Pair Grid</div>
+<p>Engle-Granger มี low statistical power (พลาด cointegration จริงบ่อย) — ใช้ Johansen เป็น confirmation:</p>
+</div>
+
+<div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+def johansen_cointegration(btc_prices, eth_prices, significance_level=0.05):
+    """
+    Johansen test — ดีกว่า Engle-Granger สำหรับ 2+ variables
+    Returns True ถ้า cointegrated
+    """
+    import numpy as np
+    data = np.column_stack([np.log(btc_prices), np.log(eth_prices)])
+    result = coint_johansen(data, det_order=0, k_ar_diff=1)
+
+    # Trace statistic: critical values at 5%
+    # result.cvt[:, 1] = 5% critical values
+    trace_stat = result.lr1[0]  # rank=0 hypothesis
+    crit_val = result.cvt[0, 1]  # 5% critical value
+
+    is_cointegrated = trace_stat > crit_val
+    return {
+        "cointegrated": is_cointegrated,
+        "trace_stat": trace_stat,
+        "crit_val_5pct": crit_val,
+        "eigenvectors": result.evec  # loading vectors
+    }
+
+# ใช้ทั้งสอง test ร่วมกัน:
+# ถ้า Engle-Granger AND Johansen ทั้งคู่ = cointegrated → เชื่อถือได้สูง
+# ถ้าแค่อันเดียว → ระวัง (อาจเป็น spurious)</div>
+
+<div class="fm">def rolling_cointegration_check(btc_prices, eth_prices, window=60, step=5):
+    """
+    ตรวจ cointegration แบบ rolling — ความสัมพันธ์อาจเปลี่ยนตาม regime
+    window: วันที่ใช้ test
+    step: ขยับ window ทีละกี่วัน
+    """
+    from statsmodels.tsa.stattools import coint
+    results = []
+
+    for start in range(0, len(btc_prices) - window, step):
+        end = start + window
+        _, pvalue, _ = coint(btc_prices[start:end], eth_prices[start:end])
+        results.append({
+            "start_day": start,
+            "end_day": end,
+            "p_value": pvalue,
+            "cointegrated": pvalue < 0.05
+        })
+
+    # นับ % ของ windows ที่ cointegrated
+    cointegrated_pct = sum(r["cointegrated"] for r in results) / len(results)
+    return results, cointegrated_pct
+
+# ถ้า cointegrated_pct < 70% → relationship ไม่เสถียร → ระวัง Pair Grid</div>
+
 <h2 id="s6-3">6.3 Spread Grid — โครงสร้าง</h2>
 
 <p>เมื่อรู้ว่า spread cointegrated แล้ว วาง grid บน spread โดยตรง:</p>
@@ -210,6 +268,28 @@ Total pair grid capital: 7 × $1,082 ≈ $7,574
   ETH leg:  0.2343 ETH × $3,500 × 0.045 × 0.82 ≈ $30
   Net gain: ≈ $45 − $30 = $15 per cycle (net of both legs)
   Note: กำไรจาก spread convergence ไม่ใช่ price direction</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Beta (β) ระหว่าง BTC/ETH ไม่คงที่ตาม Regime</div>
+<p>Beta ที่คำนวณจาก 60–90 วัน อาจเปลี่ยนมากใน regime ต่างกัน:</p>
+<ul>
+<li>Bull market: β ≈ 1.1–1.3 (ETH outperforms BTC)</li>
+<li>Bear market: β ≈ 0.8–1.0 (ETH underperforms ชัดกว่า)</li>
+<li>ถ้าใช้ static β ที่คำนวณในช่วง bull แล้วเข้าสู่ bear → spread signal ผิดทั้งหมด</li>
+</ul>
+<p><strong>แก้:</strong> ใช้ rolling β (window 30 วัน) และ recalibrate ทุก 2 สัปดาห์ หรือตรวจ β drift &gt; 20% → หยุด Pair Grid ชั่วคราว</p>
+<div class="fm">def rolling_beta(btc_returns, eth_returns, window=30):
+    """คำนวณ beta แบบ rolling"""
+    betas = []
+    for i in range(window, len(btc_returns)):
+        x = btc_returns[i-window:i]
+        y = eth_returns[i-window:i]
+        beta = np.cov(x, y)[0,1] / np.var(x)
+        betas.append(beta)
+    return betas
+
+# ถ้า |beta_current - beta_initial| > 0.2 → recalibrate หรือหยุด Pair Grid</div>
+</div>
 
 <div class="bx bc">
 <div class="bt">ข้อดีของ Pair Grid vs Single-Asset Grid</div>
