@@ -6,55 +6,266 @@
 <title>Grid Trading Mastery · Part 1C — Grid Hedge (Spot-Perp Delta-Neutral)</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-p{margin-bottom:.8em}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
 .cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
 .cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.coming-soon{background:var(--cyan-bg);border:2px dashed var(--cyan);border-radius:12px;padding:28px;text-align:center;margin:30px 0}
-.coming-soon .cs-icon{font-size:3em;margin-bottom:10px}
-.coming-soon h3{color:var(--cyan-dark);font-size:1.3em;margin-bottom:10px}
-.coming-soon p{color:#475569}
-ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}
-a{color:var(--cyan-dark)}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.hedge-diagram{display:flex;gap:16px;align-items:stretch;margin:16px 0;flex-wrap:wrap}
+.hd-box{flex:1;min-width:200px;border:2px solid;border-radius:8px;padding:12px;text-align:center}
+.hd-spot{border-color:#16a34a;background:#f0fdf4}
+.hd-perp{border-color:#06b6d4;background:var(--cyan-bg)}
+.hd-net{border-color:#7c3aed;background:#f5f3ff}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
+
 <div class="cover">
 <div class="ch-num">Grid Trading Mastery · Part 1C</div>
-<h1>Grid Hedge: Spot-Perp Delta-Neutral</h1>
-<div class="sub">การรัน Grid บน Spot พร้อม Hedge ด้วย Perpetual — สร้างสถานะ Delta-Neutral เพื่อลดความเสี่ยงทิศทางตลาด</div>
+<h1>Grid Hedge — Spot + Perp Delta-Neutral</h1>
+<div class="sub">ป้องกัน Inventory Risk · Funding Rate Income · Cash &amp; Carry + Grid · Hedge Ratio<br>
+อ้างอิง: <a href="arb-part1.html" style="color:#0e7490">Arbitrage Series</a> (Funding Rate, Spot-Perp Basis)</div>
 </div>
 
-<div class="coming-soon">
-<div class="cs-icon">🔄</div>
-<h3>กำลังเตรียมเนื้อหา...</h3>
-<p>Part นี้อยู่ระหว่างการเขียน — กลับมาตรวจสอบเร็วๆ นี้</p>
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text"><strong>Grid Hedge</strong> คือการใช้ Perp Short ป้องกัน inventory risk ของ Spot Grid — ถือ spot BTC เพื่อ grid trading แต่ short perp เท่าๆ กัน → net delta ≈ 0 → กำไรจาก grid cashflow + funding rate เท่านั้น (ไม่สนใจ BTC price direction)</div>
+<div class="ki-eq">Net P&L = Grid Cashflow + Funding Income − (Spot P&L + Perp P&L) ≈ Grid + Funding  [ถ้า hedge สมบูรณ์]</div>
 </div>
 
-<h2>เนื้อหาในตอนนี้จะครอบคลุม</h2>
+<h2 id="s1c-1">1C.1 ทำไมต้อง Hedge Spot Grid</h2>
+
+<p>ปัญหาของ Buy-Only Spot Grid: เมื่อราคาลงมาก grid ซื้อ BTC ทั้งหมด → ถือ BTC ที่มีมูลค่าน้อยกว่าที่ซื้อ → unrealized loss สูง</p>
+
+<div class="hedge-diagram">
+<div class="hd-box hd-spot">
+<strong style="color:#15803d">Spot Grid (ไม่ Hedge)</strong><br>
+BTC ลง 20%<br>
+→ Inventory loss: −20% × Capital<br>
+→ Grid cashflow: +$450<br>
+<strong style="color:#dc2626">Net: ขาดทุน</strong>
+</div>
+<div style="display:flex;align-items:center;font-size:1.5em;color:#94a3b8">+</div>
+<div class="hd-box hd-perp">
+<strong style="color:#0891b2">Perp Short Hedge</strong><br>
+BTC ลง 20%<br>
+→ Short profit: +20% × Notional<br>
+→ Funding received: +$XX<br>
+<strong style="color:#16a34a">Net: กำไร</strong>
+</div>
+<div style="display:flex;align-items:center;font-size:1.5em;color:#94a3b8">=</div>
+<div class="hd-box hd-net">
+<strong style="color:#7c3aed">Hedged Grid</strong><br>
+BTC ลง 20%<br>
+→ Spot + Short = ~0<br>
+→ Grid cashflow: +$450<br>
+<strong style="color:#16a34a">Net: +$450 + Funding</strong>
+</div>
+</div>
+
+<h2 id="s1c-2">1C.2 โครงสร้าง Spot Grid + Perp Short</h2>
+
+<div class="fm">Setup Delta-Neutral Grid:
+
+Spot Leg (Buy-Only Grid):
+  ซื้อ BTC ที่ $98k, $96k, $94k ... (Close System)
+  Capital: $4,700 (5 levels × avg $940)
+  Inventory หลัง fill ทั้งหมด: 0.05 BTC
+
+Perp Leg (Short Hedge):
+  Short 0.05 BTC perpetual ที่ current price $100k
+  Notional: 0.05 × $100k = $5,000
+  Margin (10×): $500
+
+  → Net delta = +0.05 BTC (spot) − 0.05 BTC (perp short) = 0
+
+กำไรจาก Price Movement:
+  BTC ลง $20k:
+    Spot loss = 0.05 × −$20k = −$1,000
+    Perp gain = 0.05 × +$20k = +$1,000
+    Net price P&L = $0 ✓
+
+  กำไรที่เหลือ = Grid cashflow + Funding received</div>
+
+<div class="bx ba">
+<div class="bt">ปัญหา: Inventory เปลี่ยนตลอดเวลา</div>
+<p>Spot grid ไม่ได้ถือ BTC คงที่ — เมื่อ buy order fill, inventory เพิ่ม; เมื่อ sell order fill, inventory ลด</p>
+<p>ดังนั้น hedge perp ต้องปรับตาม inventory: ถ้า inventory = 0.03 BTC → short 0.03 BTC; ถ้า inventory = 0.08 BTC → short 0.08 BTC</p>
+<p><strong>Dynamic Hedge Rebalancing:</strong> ปรับ perp short ทุกครั้งที่ grid fill (หรือ rebalance ทุก 1 ชั่วโมง)</p>
+</div>
+
+<h2 id="s1c-3">1C.3 Funding Rate Income จาก Perp Short</h2>
+
+<p>เมื่อ funding rate เป็นบวก (ซึ่งเป็นกรณีปกติใน bull market): ฝั่ง short ได้รับ funding จากฝั่ง long</p>
+
+<div class="fm">Funding Rate Income:
+  funding_income = short_notional × funding_rate_per_8h × 3/วัน
+                = (0.05 BTC × $100k) × 0.05% × 3
+                = $5,000 × 0.05% × 3
+                = $7.50/วัน
+
+Grid cashflow:
+  1.5 รอบ/วัน × $18/รอบ = $27/วัน
+
+Total daily income:
+  $27 (grid) + $7.50 (funding) = $34.50/วัน
+  = 34.50 / (4,700 + 500) × 100% = 0.66%/วัน บน total capital $5,200
+
+เทียบกับ Buy-Only (ไม่ hedge): $27/วัน = 0.57%/วัน บน $4,700
+Grid Hedge เพิ่ม income 28% โดยใช้ capital เพิ่มแค่ 11% (margin)</div>
+
+<h2 id="s1c-4">1C.4 Hedge Ratio — ไม่ต้อง 1:1 เสมอ</h2>
+
+<p>Hedge ratio ≠ 1 เสมอ — ขึ้นอยู่กับ view และ risk tolerance:</p>
+
+<table>
+<tr><th>Hedge Ratio (Short/Spot)</th><th>Net Delta</th><th>เหมาะกับ</th></tr>
+<tr><td>0% (ไม่ hedge)</td><td>+1.0 (full long)</td><td>Bull view แรง — รับ inventory risk ทั้งหมด</td></tr>
+<tr><td>50%</td><td>+0.5 (half long)</td><td>Mild bull view — ลด risk ครึ่งหนึ่ง</td></tr>
+<tr><td>100% (full hedge)</td><td>0 (delta-neutral)</td><td>ไม่มี view — grid + funding เท่านั้น</td></tr>
+<tr><td>150%</td><td>−0.5 (net short)</td><td>Bear view — ได้ทั้ง grid + directional short gain</td></tr>
+</table>
+
+<div class="bx bc">
+<div class="bt">Adaptive Hedge Ratio</div>
+<p>ปรับ hedge ratio ตาม signal:</p>
 <ul>
-  <li>แนวคิด Delta-Neutral: ทำไมต้องกำจัดความเสี่ยงทิศทาง</li>
-  <li>โครงสร้าง Spot-Perp Hedge: ถือ Spot Long + Perp Short พร้อมกัน</li>
-  <li>การคำนวณ Hedge Ratio: จำนวน Perp Short ที่ต้องใช้เทียบกับ Spot Grid</li>
-  <li>Funding Rate: แหล่งรายได้เสริมและต้นทุนแฝงของ Perp Short</li>
-  <li>Dynamic Rebalancing: ปรับ Hedge เมื่อ Grid Fill เปลี่ยน Delta</li>
-  <li>กรณีที่ Delta-Neutral Hedge เหมาะสม vs ไม่เหมาะสม</li>
-  <li>ตัวอย่างการคำนวณ PnL แบบ Hedged Grid</li>
-  <li>ความเสี่ยงพิเศษ: Liquidation Risk ของ Perp Leg, Basis Risk</li>
-  <li>เปรียบเทียบต้นทุนการ Hedge กับกำไร Grid ที่ได้รับ</li>
+<li>Funding rate &gt; 0.1%/8h → เพิ่ม hedge ratio (short มากขึ้น → เก็บ funding มากขึ้น)</li>
+<li>H &gt; 0.55 (trending up) → ลด hedge ratio (ถือ long มากขึ้น เพื่อ capture trend)</li>
+<li>Crash signal → เพิ่ม hedge ratio เป็น 100% หรือมากกว่า</li>
 </ul>
+</div>
 
-<h2>Cross-References</h2>
-<p>ความรู้ที่ใช้จากเล่มอื่น: Part 1A/1B (พื้นฐาน Grid), Part 5 (Sizing & Risk สำหรับ Hedged Position), Part 7 (Funding Rate Adaptive Grid), Perp Book (Funding Mechanics)</p>
+<h2 id="s1c-5">1C.5 Cash & Carry + Grid — Combination</h2>
 
-<nav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
-<a href="grid-index.html" style="color:#64748b;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a>
-<a href="grid-index.html" style="color:var(--cyan-dark);font-weight:700">← กลับสารบัญ</a>
-</nav>
+<p>Cash & Carry Arbitrage (จาก <a href="arb-part1.html">Arbitrage Series</a>): ซื้อ Spot + Short Futures Delivery ต่างเดือน → lock in basis spread</p>
+
+<p>Grid Hedge เป็นรูปแบบหนึ่งของ Cash & Carry แต่ใช้ Perpetual แทน Fixed-Term Futures:</p>
+
+<div class="fm">Classical Cash & Carry:
+  ซื้อ 1 BTC Spot @ $100k
+  Short 1 BTC Futures Dec @ $102k (basis = $2k)
+  → ได้ $2k ที่ expiry ไม่ว่า BTC จะเป็นเท่าไหร่
+
+Grid Hedge (Perpetual Variation):
+  ซื้อ BTC Spot (ทยอยผ่าน grid)
+  Short 1 BTC Perp (dynamic, ตาม inventory)
+  → ได้ grid cashflow + funding แทน basis ที่ fixed
+
+ข้อดีของ Perpetual vs Futures:
+  + ไม่มีวันหมดอายุ (ไม่ต้อง rollover)
+  + Funding rate ปรับตลาด (บางทีได้มากกว่า basis)
+  − Funding rate ลบได้ (ถ้า bear sentiment)
+  − ต้องปรับ hedge ratio อยู่เสมอ</div>
+
+<h2 id="s1c-6">1C.6 Running Example — Complete Grid Hedge</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC Spot Grid + Perp Short Hedge</div>
+<p><strong>Setup:</strong> Capital $6,000 · Spot grid $5,000 (5 levels $98k–$90k) · Perp margin $1,000 (10× = $10k notional)</p>
+
+<table>
+<tr><th>สถานการณ์</th><th>Spot P&L</th><th>Perp P&L</th><th>Grid Cashflow</th><th>Funding</th><th>Net</th></tr>
+<tr><td>BTC ลง $5k (sideway)</td><td>−$250</td><td>+$250</td><td>+$40</td><td>+$7.5</td><td><strong>+$47.5</strong></td></tr>
+<tr><td>BTC ขึ้น $5k (sideway)</td><td>+$250</td><td>−$250</td><td>+$35</td><td>+$7.5</td><td><strong>+$42.5</strong></td></tr>
+<tr><td>BTC ลง $20k (crash)</td><td>−$1,000</td><td>+$1,000</td><td>+$80</td><td>+$7.5</td><td><strong>+$87.5</strong></td></tr>
+<tr><td>BTC ขึ้น $20k (pump)</td><td>+$1,000</td><td>−$1,000</td><td>+$25</td><td>+$7.5</td><td><strong>+$32.5</strong></td></tr>
+</table>
+
+<p><strong>สังเกต:</strong> ทุกสถานการณ์กำไร — เพราะ hedge ป้องกัน directional risk สมบูรณ์ กำไรมาจาก grid + funding เท่านั้น</p>
+<p><strong>Return:</strong> ~$40–$88/วัน บน $6,000 = 0.66–1.47%/วัน (ขึ้นอยู่กับ volatility)</p>
+</div>
+
+<h2 id="s1c-7">1C.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 1C</div>
+
+<details>
+<summary>ข้อ 1: Spot grid inventory = 0.07 BTC · BTC = $100k · Hedge ratio 80% — Perp short notional เท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Perp short notional = Inventory × Price × Hedge Ratio</p>
+<p>= 0.07 BTC × $100,000 × 80% = <strong>$5,600</strong></p>
+<p>Margin ที่ต้องการ (10× leverage) = $5,600 / 10 = $560</p>
+<p>Net delta = +0.07 − 0.07 × 0.80 = +0.07 × 0.20 = +0.014 BTC (still slightly long)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: Funding rate −0.05%/8h · Short notional $5,000 · Grid profit $30/วัน — Net P&L/วัน?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Funding cost (short จ่าย เพราะ rate ลบ) = $5,000 × 0.05% × 3 = $7.50/วัน</p>
+<p>Grid profit = $30/วัน</p>
+<p>Net P&L = $30 − $7.50 = <strong>$22.50/วัน</strong></p>
+<p>ยังกำไรอยู่ — funding cost ไม่ได้กินกำไร grid ทั้งหมด แต่ถ้า rate ลบมากกว่า (−0.2%+) อาจถึงจุดคุ้มทุน</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: ทำไม Grid Hedge ถึงดีกว่า Buy-Only ในตลาด Bear?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Buy-Only: ราคาลง → inventory ขาดทุน unrealized → equity ลดลงต่อเนื่อง แม้จะมี grid cashflow</p>
+<p>Grid Hedge: ราคาลง → Spot inventory ขาดทุน แต่ Perp short กำไรเท่ากัน → ยกเลิกกัน → เหลือแค่ grid cashflow + funding</p>
+<p>ในตลาด bear ที่มี funding ลบ (short จ่าย) → Grid Hedge อาจน้อยกว่า แต่ยังดีกว่า Buy-Only ที่ขาดทุน directional</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: เมื่อไหร่ควรเพิ่ม Hedge Ratio เกิน 100%?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>เพิ่ม hedge ratio &gt; 100% เมื่อมี <strong>Bear view ชัดเจน</strong>:</p>
+<ul>
+<li>H &gt; 0.60 และ ADX ชี้ downtrend</li>
+<li>Funding rate ลบมาก (market sentiment bearish)</li>
+<li>On-chain signal: large outflow จาก exchange</li>
+</ul>
+<p>ตัวอย่าง: Hedge 130% → net delta = 1 − 1.3 = −0.3 (net short) → ได้กำไรถ้า BTC ลง + ยังได้ grid cashflow</p>
+<p><strong>ข้อระวัง:</strong> ถ้า BTC กลับขึ้น → short เกินทำให้ขาดทุน → ต้องมี stop-loss สำหรับส่วนที่เกิน 100%</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1b.html" style="color:#64748b">Part 1B</a></span><a href="grid-part2.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 2: Bloating Patterns →</a></nav>
 </body>
 </html>

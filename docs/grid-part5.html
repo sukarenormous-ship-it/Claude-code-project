@@ -3,58 +3,309 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grid Trading Mastery · Part 5 — Sizing &amp; Risk (Kelly)</title>
+<title>Grid Trading Mastery · Part 5 — Sizing &amp; Risk: Kelly, Position Limit, Drawdown</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-p{margin-bottom:.8em}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
 .cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
 .cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.coming-soon{background:var(--cyan-bg);border:2px dashed var(--cyan);border-radius:12px;padding:28px;text-align:center;margin:30px 0}
-.coming-soon .cs-icon{font-size:3em;margin-bottom:10px}
-.coming-soon h3{color:var(--cyan-dark);font-size:1.3em;margin-bottom:10px}
-.coming-soon p{color:#475569}
-ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}
-a{color:var(--cyan-dark)}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bk{background:var(--red-bg);border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
+
 <div class="cover">
 <div class="ch-num">Grid Trading Mastery · Part 5</div>
-<h1>Sizing &amp; Risk: Kelly Criterion สำหรับ Grid</h1>
-<div class="sub">การกำหนดขนาด Position อย่างเหมาะสมด้วย Kelly Criterion และ Fractional Kelly — สมดุลระหว่างการเติบโตของ Portfolio กับ Drawdown ที่ยอมรับได้</div>
+<h1>Sizing &amp; Risk — Kelly, Position Limit, Drawdown Control</h1>
+<div class="sub">Kelly Criterion บน Grid · Fractional Kelly · Max Notional ต่อ Level · DD Halt<br>
+อ้างอิง: <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.12</a> (Kelly, Position Sizing)</div>
 </div>
 
-<div class="coming-soon">
-<div class="cs-icon">🔄</div>
-<h3>กำลังเตรียมเนื้อหา...</h3>
-<p>Part นี้อยู่ระหว่างการเขียน — กลับมาตรวจสอบเร็วๆ นี้</p>
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Sizing ที่ดีไม่ได้ทำให้กำไรเพิ่มมากขึ้น แต่ป้องกัน <strong>ruin</strong> — grid ที่กำไรได้ต่อเนื่องจะหยุดถ้า capital หมดก่อน Kelly ช่วยตอบ "ควร deploy กี่% ของ capital ต่อ grid level"</div>
+<div class="ki-eq">Kelly f* = (p × b − q) / b · Fractional = 0.25 × f* · Q = f* × capital / (N × P)</div>
 </div>
 
-<h2>เนื้อหาในตอนนี้จะครอบคลุม</h2>
+<h2 id="s5-1">5.1 Kelly Criterion บน Grid — แนวคิด</h2>
+
+<p>Kelly Criterion ดั้งเดิม (จาก <a href="statarb-ch0.html">Statarb Ch.12</a>) ให้ optimal fraction ของ capital ที่ควร risk ต่อ trade:</p>
+
+$$f^* = \frac{p \cdot b - q}{b}$$
+
+<p>โดย: \(p\) = ความน่าจะเป็นที่ trade นั้นกำไร, \(b\) = อัตราส่วน win/loss, \(q = 1-p\)</p>
+
+<p>สำหรับ Grid Trading: "1 trade" = 1 grid cycle (BUY fill → SELL fill ที่ level ถัดไป)</p>
+
+<div class="fm">การประมาณ Kelly สำหรับ Grid:
+
+กรณี BTC/USDT Bybit:
+  P(cycle completes) = p  ← ความน่าจะเป็นที่ราคาขึ้นถึง TP หลัง BUY fill
+  ประมาณ: สำหรับ mean-reverting asset (H<0.5), p ≈ 0.55–0.65
+
+  Win amount per cycle  = Q × Step − Fees = $18
+  Loss amount per cycle = ไม่มี "loss" ต่อ cycle ใน Close System
+                          (loss = opportunity cost ของ capital ที่ lock)
+
+ปัญหา: Kelly classic ไม่ fit grid โดยตรง เพราะ grid ไม่มี "cut loss"
+แนวทางประยุกต์:
+  → ใช้ Kelly กำหนด "ขนาด grid รวม" vs total capital (ไม่ใช่ต่อ cycle)
+  → f* = optimal fraction ของ net worth ที่ควรใส่ใน grid portfolio</div>
+
+<h2 id="s5-2">5.2 Kelly สำหรับ Grid Portfolio (Practical Approach)</h2>
+
+<p>วิธีง่ายสุด: backtest grid ด้วยข้อมูลย้อนหลัง → วัด win rate และ profit ratio ต่อ "month" → apply Kelly</p>
+
+<div class="fm">ตัวอย่างจาก Backtest (90 วัน):
+  เดือนที่ผลรวม > 0: 2.5 เดือน จาก 3 → p = 0.83 (83%)
+  เดือนที่ผลรวม < 0: 0.5 เดือน → q = 0.17
+
+  Avg monthly win  = +$450 บน $10,000 capital (+4.5%)
+  Avg monthly loss = −$200 บน $10,000 capital (−2.0%)
+  b = avg_win / avg_loss = 450 / 200 = 2.25
+
+  Kelly f* = (0.83 × 2.25 − 0.17) / 2.25
+           = (1.8675 − 0.17) / 2.25
+           = 1.6975 / 2.25 ≈ 0.755 (75.5%)
+
+  Fractional Kelly (25%): f_safe = 0.755 × 0.25 = 0.189 ≈ 19%
+
+  → ควรใส่เงินในกลยุทธ์ grid นี้ไม่เกิน 19% ของ net worth
+
+  ถ้า net worth = $100,000:
+    Grid capital = $100,000 × 19% = $19,000</div>
+
+<div class="bx ba">
+<div class="bt">ทำไมต้อง Fractional Kelly (25% ของ f*)?</div>
+<p>Kelly เต็มๆ (f* = 75%) ให้ growth สูงสุดทางทฤษฎี แต่ในทางปฏิบัติ:</p>
 <ul>
-  <li>Kelly Criterion คืออะไร: สูตรหา Optimal Bet Size เพื่อ Maximize Growth Rate</li>
-  <li>การแปลง Kelly เข้าสู่ Grid Context: Grid ไม่ใช่ Binary Bet</li>
-  <li>Fractional Kelly (f* × 0.25–0.5): ลด Variance โดยยอมสละ Growth บางส่วน</li>
-  <li>การประมาณ Win Rate และ Win/Loss Ratio จาก Grid Backtest</li>
-  <li>Kelly สำหรับ Multiple Simultaneous Grid: แบ่ง Capital ระหว่าง Grid หลาย Pair</li>
-  <li>Maximum Drawdown Constraint: กำหนด Kelly ให้ Max DD ไม่เกิน X%</li>
-  <li>Volatility-adjusted Sizing: ลด Size เมื่อ Vol สูงขึ้น</li>
-  <li>Portfolio-level Risk: Correlation ระหว่าง Grid ต่างๆ ใน Portfolio</li>
-  <li>ตัวอย่างการคำนวณ: จาก Backtest Stats สู่ Kelly Fraction จริง</li>
+<li>p และ b ที่ estimate มีความผิดพลาด — Kelly sensitive มากต่อ error</li>
+<li>Kelly เต็มทำให้ variance สูงมาก — drawdown ลึก</li>
+<li>Fractional Kelly 25% ให้ ~80% ของ growth แต่ variance ลดลง 75%</li>
 </ul>
+<p>ดูรายละเอียดใน <a href="statarb-ch0.html">Statarb Ch.12</a></p>
+</div>
 
-<h2>Cross-References</h2>
-<p>ความรู้ที่ใช้จากเล่มอื่น: Part 2 (Bloating = Sizing ผิดพลาด), Part 4 (Regime เปลี่ยน Sizing), Part 6 (Pair Grid ต้องการ Kelly หลาย Asset), Risk Management Book (Kelly, Drawdown, Ruin Probability)</p>
+<h2 id="s5-3">5.3 Q (Quantity) ต่อ Level — จาก Kelly</h2>
 
-<nav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
-<a href="grid-index.html" style="color:#64748b;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a>
-<a href="grid-index.html" style="color:var(--cyan-dark);font-weight:700">← กลับสารบัญ</a>
-</nav>
+<div class="fm">คำนวณ Q ต่อ Level จาก Kelly fraction:
+
+Grid capital     = net_worth × f_safe = $100k × 0.19 = $19,000
+N levels (total) = (Zone_high − Zone_low) / Step = ($110k − $90k) / $2k = 10 levels
+Avg price        = ($90k + $110k) / 2 = $100k
+
+Q per level = grid_capital / (N × avg_price)
+            = $19,000 / (10 × $100,000)
+            = $19,000 / $1,000,000
+            ≈ 0.019 BTC ≈ 0.02 BTC (round down)
+
+ตรวจสอบ: 10 levels × 0.02 BTC × $100k = $20,000 ≈ $19,000 ✓
+
+Capital ที่ใช้จริง (ถ้าซื้อครบ floor):
+  Σ Q × P_i = 0.02 × ($100k + $98k + ... + $90k) + sell side
+  = 0.02 × $940k (10 levels avg) = $18,800 ≈ $19,000 ✓</div>
+
+<h2 id="s5-4">5.4 Max Notional ต่อ Level — Position Limit</h2>
+
+<p>นอกจาก Kelly ที่กำหนด grid size รวม ควรมี position limit ต่อ level เพื่อป้องกันความเสี่ยงกระจุก:</p>
+
+<div class="fm">Position Limit Rules:
+
+Rule 1: Max Notional ต่อ Level ≤ 5% ของ total capital
+  Max_notional_level = $100k × 5% = $5,000 per level
+  Max Q per level = $5,000 / P = $5,000 / $100,000 = 0.05 BTC
+
+Rule 2: ในช่วงที่ Hurst สูง (trending) → ลด limit ลงอีก
+  ถ้า H > 0.55: max_q × 0.7  (ลด 30%)
+  ถ้า H > 0.60: max_q × 0.4  (ลด 60%)
+
+Rule 3: Concentration cap — ไม่ให้ 3 levels ติดกันมี Q รวม > 10% ของ capital
+  (ป้องกัน bottom-heavy bloating ที่เกินไป)
+
+def check_position_limits(grid_levels, total_capital, hurst):
+    max_per_level = total_capital * 0.05
+    if hurst > 0.60:
+        max_per_level *= 0.4
+    elif hurst > 0.55:
+        max_per_level *= 0.7
+
+    for level in grid_levels:
+        notional = level.qty * level.price
+        if notional > max_per_level:
+            level.qty = max_per_level / level.price  # trim
+    return grid_levels</div>
+
+<h2 id="s5-5">5.5 Drawdown Control — DD Halt</h2>
+
+<p>Drawdown (DD) = peak portfolio value ลบด้วย current value ÷ peak:</p>
+
+$$\text{DD}_t = \frac{P_{\text{peak}} - P_t}{P_{\text{peak}}}$$
+
+<div class="fm">DD Halt System:
+
+def check_drawdown_halt(portfolio_value_history, halt_threshold=-0.08):
+    """
+    ถ้า DD > threshold → หยุด grid ทั้งหมด
+    threshold = -8% ของ peak (ปรับได้ตาม risk tolerance)
+    """
+    peak = max(portfolio_value_history)
+    current = portfolio_value_history[-1]
+    dd = (current - peak) / peak  # จะเป็นลบเมื่อ current < peak
+
+    if dd < halt_threshold:
+        return "HALT", dd, peak
+    elif dd < halt_threshold * 0.5:  # -4% = warning zone
+        return "WARNING", dd, peak
+    return "OK", dd, peak
+
+Halt ทำอะไร:
+  1. Cancel orders ทั้งหมด
+  2. ไม่เปิด order ใหม่ (แต่ไม่ขาย inventory — Close System)
+  3. รอให้ DD ฟื้นกลับ > threshold/2 ก่อน restart
+  4. Log และ alert
+
+Resume Condition:
+  DD ฟื้นกลับ > −4% (ครึ่งหนึ่งของ halt threshold)
+  + H < 0.55 (กลับมา mean-reverting)
+  + ผ่านไปอย่างน้อย 24 ชั่วโมง (cooling off period)</div>
+
+<table>
+<tr><th>Risk Level</th><th>DD Halt Threshold</th><th>ลักษณะ</th></tr>
+<tr><td>Conservative</td><td>−5%</td><td>หยุดเร็ว ทำกำไรน้อยลง แต่ปลอดภัย</td></tr>
+<tr><td>Moderate (แนะนำ)</td><td>−8%</td><td>สมดุล — ให้ grid ทำงานในความผันผวนปกติ</td></tr>
+<tr><td>Aggressive</td><td>−15%</td><td>ทน volatility ได้มาก แต่ DD ลึก</td></tr>
+<tr><td>Close System Pure</td><td>ไม่มี (ถึง floor)</td><td>รอ BTC กลับเสมอ — ต้องมี capital พอ</td></tr>
+</table>
+
+<h2 id="s5-6">5.6 Running Example — Full Sizing Calculation</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Sizing BTC Grid จาก Kelly</div>
+<p><strong>โจทย์:</strong> Net worth $200,000 · Backtest 6 เดือน: p=0.78 · b=1.9 · Grid Zone $90k–$110k · Step $2k</p>
+
+<div class="fm">Step 1: คำนวณ Kelly f*
+  f* = (0.78 × 1.9 − 0.22) / 1.9
+     = (1.482 − 0.22) / 1.9
+     = 1.262 / 1.9 ≈ 0.664 (66.4%)
+
+Step 2: Fractional Kelly (25%)
+  f_safe = 0.664 × 0.25 = 0.166 = 16.6%
+
+Step 3: Grid Capital
+  Grid capital = $200,000 × 16.6% = $33,200
+
+Step 4: Q per Level
+  N = (110k − 90k) / 2k = 10 levels
+  Avg price = $100k
+  Q = $33,200 / (10 × $100k) = 0.0332 BTC ≈ 0.033 BTC
+
+Step 5: ตรวจ Position Limit (5% rule)
+  Max notional = $200k × 5% = $10,000
+  Q max = $10,000 / $100k = 0.10 BTC
+  Q actual = 0.033 < 0.10 ✓ (ผ่าน)
+
+Step 6: Zone Waterfall
+  Active (50%): $16,600 → deploy as orders
+  Standby (30%): $9,960 → lending/yield
+  Floor (20%): $6,640 → reserve
+
+Summary:
+  Grid capital: $33,200 (16.6% ของ net worth)
+  Q per level: 0.033 BTC
+  Daily P&L estimate: 1.5 รอบ × ($66 − fee) ≈ $90/วัน = 0.27%/วัน</div>
+</div>
+
+<h2 id="s5-7">5.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 5</div>
+
+<details>
+<summary>ข้อ 1: Backtest: p=0.70, win=$300, loss=$150 — Kelly f* เป็นเท่าไหร่? ควรใช้ capital เท่าไหร่จาก $50k?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>b = win/loss = $300/$150 = 2.0 | q = 1 − 0.70 = 0.30</p>
+<p>f* = (0.70 × 2.0 − 0.30) / 2.0 = (1.40 − 0.30) / 2.0 = 1.10 / 2.0 = <strong>0.55 (55%)</strong></p>
+<p>Fractional Kelly (25%) = 0.55 × 0.25 = <strong>0.1375 ≈ 13.75%</strong></p>
+<p>Grid capital from $50k = $50,000 × 13.75% = <strong>$6,875</strong></p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: Grid capital $10k · Zone $85k–$115k · Step $2k · BTC = $100k — Q ต่อ level เท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>N = (115k − 85k) / 2k = 15 levels | avg price = $100k</p>
+<p>Q = $10,000 / (15 × $100,000) = $10,000 / $1,500,000 = 0.00667 BTC</p>
+<p>≈ <strong>0.006 BTC</strong> (round down for safety)</p>
+<p>ตรวจ: 15 × 0.006 BTC × $100k = $9,000 ≤ $10,000 ✓</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Portfolio peak = $115,000 · Current = $105,000 · Halt threshold = −8% — ควร halt หรือไม่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>DD = (105k − 115k) / 115k = −10k / 115k = <strong>−8.70%</strong></p>
+<p>−8.70% < −8.0% threshold → <strong>HALT triggered</strong></p>
+<p>Action: Cancel all grid orders, ไม่เปิดใหม่, รอ DD ฟื้นกลับ > −4%</p>
+<p>DD ฟื้น: portfolio ต้องกลับมา $115k × (1 − 0.04) = $110,400 ก่อน resume</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4 (Challenge): Hurst = 0.62 · กำลังจะเปิด grid ด้วย Q = 0.03 BTC — ควรปรับ Q อย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>H = 0.62 > 0.60 → ใช้ Q multiplier 0.4 (ลด 60%)</p>
+<p>Q adjusted = 0.03 × 0.40 = <strong>0.012 BTC</strong></p>
+<p>เหตุผล: H > 0.60 = trending regime = grid fill น้อย + inventory accumulate ไม่หยุด → ลด size ก่อน</p>
+<p>หรือพิจารณา: H > 0.60 → <strong>pause grid ทั้งหมด</strong> จนกว่า H &lt; 0.55 (ดู <a href="grid-part4.html">Part 4</a>)</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part4.html" style="color:#64748b">Part 4</a></span><a href="grid-part6.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 6: Pair Grid →</a></nav>
 </body>
 </html>
