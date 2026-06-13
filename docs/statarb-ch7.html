@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stat Arb Ch.7 — GARCH on Residuals</title>
+<title>Stat Arb บทที่ 7 — GARCH บน Residuals</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
@@ -71,99 +71,99 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="cover">
 <div class="ch-num">Statistical Arbitrage · บทที่ 7</div>
-<h1>GARCH on Residuals</h1>
-<div class="sub">Conditional Volatility σ_t — When Spread Volatility Clusters<br>
+<h1>GARCH บน Residuals</h1>
+<div class="sub">Volatility แบบ Conditional σ_t — เมื่อความผันผวนของ Spread รวมตัวเป็นกลุ่ม<br>
 σ_t² = ω + α·ε²<sub>t−1</sub> + β_G·σ²<sub>t−1</sub></div>
 </div>
 
 <div class="key-idea">
-<div class="ki-label">Core Idea — Read This First</div>
-<div class="ki-text">The OU spread ε gives a z-score signal. Trading zones are defined by z-score thresholds, separating entry, hold, and stop-loss regions. GARCH(1,1) models time-varying conditional variance σ_t, keeping z-scores calibrated during volatility storms by adapting the denominator each bar.</div>
+<div class="ki-label">แนวคิดหลัก — อ่านก่อน</div>
+<div class="ki-text">Spread ε จาก OU ให้ z-score เป็นสัญญาณซื้อขาย โดยแบ่งโซนด้วย threshold ของ z-score GARCH(1,1) ทำให้ σ_t ปรับตัวตามสถานการณ์จริงทุก bar — แถบสัญญาณ ±2σ จะไม่ตายตัว แต่ขยายตัวในช่วง volatile และหดตัวในช่วงสงบ ป้องกันสัญญาณเท็จและสัญญาณพลาด</div>
 <div style="margin-top:10px;text-align:center">
 $$\sigma_t^2 = \omega + \alpha \cdot \varepsilon_{t-1}^2 + \beta_G \cdot \sigma_{t-1}^2 \qquad z_t = \frac{\varepsilon_t - \theta}{\sigma_t}$$
 </div>
-<div class="ki-eq">|z_t| &gt; 3: STOP &nbsp;·&nbsp; 2 &lt; |z_t| ≤ 3: ENTRY &nbsp;·&nbsp; |z_t| ≤ 2: HOLD/EXIT</div>
+<div class="ki-eq">|z_t| &gt; 3: หยุด (STOP) &nbsp;·&nbsp; 2 &lt; |z_t| ≤ 3: เข้า (ENTRY) &nbsp;·&nbsp; |z_t| ≤ 2: ถือ/ออก</div>
 </div>
 
 <!-- 7.1 -->
-<h2 id="s7-1">7.1 The Problem with Constant σ</h2>
+<h2 id="s7-1">7.1 ปัญหาของ σ คงที่</h2>
 
-<p>Standard OU assumes the residual noise is i.i.d. with fixed σ. In real BTC markets, volatility is highly heteroskedastic — it bunches in time. Static ±2σ bands drawn at the unconditional standard deviation create two failure modes:</p>
+<p>OU มาตรฐานสมมติว่า residual ε มีการกระจายแบบ i.i.d. (อิสระต่อกัน) ด้วย σ คงที่ แต่ในตลาด BTC จริง volatility มีลักษณะ <strong>heteroskedastic</strong> สูง — ผันผวนหนักแล้วสงบ สลับกันเป็นกลุ่ม ถ้าใช้แถบ ±2σ ที่คำนวณจาก unconditional σ ตลอดเวลา จะเกิดความผิดพลาด 2 แบบ:</p>
 
 <ul>
-<li><strong>Storm false signals:</strong> During high-volatility periods, the spread crosses ±2σ (static) repeatedly, each crossing appearing to be a trading opportunity. In reality, σ has expanded 3×, and 2σ_static is only 0.67 GARCH-σ. These are not true extremes.</li>
-<li><strong>Calm missed signals:</strong> During quiet periods, a genuine 2σ move is actually a 4σ GARCH event — an extremely rare and high-conviction signal being ignored.</li>
+<li><strong>สัญญาณเท็จในช่วง Storm:</strong> ช่วง volatility สูง spread ข้ามแถบ ±2σ (static) บ่อยๆ ดูเหมือนมีโอกาสเทรดตลอด แต่จริงๆ σ ขยายตัว 3 เท่า ทำให้ 2σ_static = 0.67 ของ GARCH-σ เท่านั้น — ไม่ใช่ extreme จริง</li>
+<li><strong>สัญญาณพลาดในช่วงสงบ:</strong> ช่วงตลาดเงียบ การเคลื่อนที่ 2σ (static) อาจเป็น 4σ ในแง่ GARCH — สัญญาณที่หายากและ high-conviction กลับถูกมองข้าม</li>
 </ul>
 
 <img class="chart" src="charts/ch7-entry-exit-zones.svg">
-<div class="caption">OU path with trading zones: RED fill = STOP (|z|&gt;3), AMBER fill = ENTRY (2&lt;|z|&lt;3), GREEN fill = HOLD/EXIT (|z|&lt;2). Red dots mark entries at |z| crossing 2; green triangles mark exits when |z| returns below 0.5.</div>
+<div class="caption">OU path พร้อมโซนสัญญาณ: สีแดง = STOP (|z|&gt;3), สีส้ม = ENTRY (2&lt;|z|&lt;3), สีเขียว = HOLD/EXIT (|z|&lt;2) จุดแดง = จุดเข้าเมื่อ |z| ข้าม 2 สามเหลี่ยมเขียว = ออกเมื่อ |z| กลับต่ำกว่า 0.5</div>
 
 <div class="bx bd">
-<div class="bt">Practitioner Note — Calibrating Zone Thresholds from Backtest</div>
-<p>The standard thresholds (Entry ±2, Stop ±3) are good starting points but <strong>should be calibrated per pair</strong>. Procedure: (1) run a walk-forward backtest on 90 days of history; (2) compute the empirical z-score exceedance rates — if |z|&gt;2 is triggered &gt;8% of bars, widen to ±2.5; (3) check the average holding time: if mean holding &lt; 2 bars, the reversion is so fast the spread may be microstructure noise rather than OU; (4) use the threshold that maximises Sharpe on the test window, then re-validate out-of-sample before live deployment. For BTC cross-exchange spreads, ±2.0 entry and ±0.5 exit is typical; for equity pairs, ±1.5 entry with ±0.3 exit is often used due to slower mean-reversion.</p>
+<div class="bt">บันทึก Practitioner — การ Calibrate Threshold ของ Zone จาก Backtest</div>
+<p>Threshold มาตรฐาน (Entry ±2, Stop ±3) เป็นจุดเริ่มต้นที่ดี แต่ <strong>ควร calibrate แยกต่างหากสำหรับแต่ละคู่</strong> ขั้นตอน: (1) ทำ walk-forward backtest บนข้อมูล 90 วัน (2) คำนวณ empirical exceedance rate — ถ้า |z|&gt;2 เกิดขึ้น &gt;8% ของ bar ให้ขยายเป็น ±2.5 (3) ตรวจ average holding time: ถ้าน้อยกว่า 2 bar อาจเป็น microstructure noise แทนที่จะเป็น OU (4) ใช้ threshold ที่ maximize Sharpe บน test window แล้ว validate out-of-sample ก่อน deploy จริง สำหรับ BTC cross-exchange spread มักใช้ Entry ±2.0 Exit ±0.5 สำหรับ equity pair ใช้ Entry ±1.5 Exit ±0.3 เนื่องจาก mean-reversion ช้ากว่า</p>
 </div>
 
 <div class="bx bk">
-<div class="bt">Model Risk — Zone Thresholds Assume Stable OU Parameters</div>
-<p>The entry/exit zones are derived from OU parameters (κ, θ, σ) estimated over a historical window. If <strong>OU parameters shift</strong> — e.g. κ drops (slower reversion) or σ increases (higher spread volatility) — the zone thresholds become miscalibrated: the 2σ entry may correspond to only 1.3σ under the new regime, creating false signals. Mitigation: <strong>recalibrate OU parameters monthly</strong> (or after any significant market event), monitor that the z-score distribution remains centred near zero with std ≈ 1.0 in recent data, and automate an alert if std(z, 7d) &gt; 1.3 — indicating the denominator σ is stale.</p>
+<div class="bt">ความเสี่ยงของแบบจำลอง — Threshold ขึ้นอยู่กับความเสถียรของพารามิเตอร์ OU</div>
+<p>Threshold ของ zone คำนวณจากพารามิเตอร์ OU (κ, θ, σ) ที่ estimate จากข้อมูลอดีต ถ้า <strong>พารามิเตอร์ OU เปลี่ยน</strong> เช่น κ ลดลง (mean-reversion ช้าลง) หรือ σ เพิ่มขึ้น — threshold จะ miscalibrate: entry 2σ อาจเป็นแค่ 1.3σ ในระบอบใหม่ ทำให้สัญญาณเท็จ วิธีป้องกัน: <strong>recalibrate OU parameters ทุกเดือน</strong> (หรือหลังเหตุการณ์ใหญ่ในตลาด) ตรวจว่า distribution ของ z-score ยังอยู่รอบ 0 โดย std ≈ 1.0 ในข้อมูลล่าสุด และตั้ง alert อัตโนมัติถ้า std(z, 7d) &gt; 1.3 — แสดงว่า σ ที่ใช้ใน denominator เก่าเกินไปแล้ว</p>
 </div>
 
 <!-- 7.2 -->
-<h2 id="s7-2">7.2 GARCH(1,1) Model</h2>
+<h2 id="s7-2">7.2 แบบจำลอง GARCH(1,1)</h2>
 
-<p>GARCH(1,1) — Generalized AutoRegressive Conditional Heteroskedasticity — updates the variance estimate each period using two inputs: the last shock squared and the last variance estimate.</p>
+<p>GARCH(1,1) — Generalized AutoRegressive Conditional Heteroskedasticity — อัปเดต variance estimate ทุก period โดยใช้ข้อมูล 2 อย่าง: shock ครั้งล่าสุดยกกำลังสอง และ variance estimate ล่าสุด</p>
 
 <div class="key-idea">
-<div class="ki-label">GARCH(1,1) Equation</div>
+<div class="ki-label">สมการ GARCH(1,1)</div>
 <div class="ki-eq">σ_t² = ω + α · ε²_{t−1} + β_G · σ²_{t−1}</div>
 <div class="ki-text" style="margin-top:10px">
-<strong>ω (omega)</strong> — long-run variance floor. Always positive. Prevents σ_t from collapsing to zero.<br>
-<strong>α (alpha)</strong> — shock impact coefficient. Typical range: 0.05–0.15. High α → variance reacts quickly to new shocks.<br>
-<strong>β_G (GARCH beta)</strong> — persistence coefficient. Typical range: 0.80–0.90. High β_G → variance decays slowly (long memory). Note: β_G is distinct from the hedge ratio β.<br>
-<strong>Stationarity condition:</strong> α + β_G &lt; 1 (otherwise variance explodes to infinity).<br>
-<strong>Long-run variance:</strong> σ²_∞ = ω / (1 − α − β_G)
+<strong>ω (omega)</strong> — variance floor ระยะยาว ต้องเป็นบวกเสมอ ป้องกันไม่ให้ σ_t ยุบเป็นศูนย์<br>
+<strong>α (alpha)</strong> — น้ำหนักของ shock ล่าสุด ช่วงปกติ: 0.05–0.15 ยิ่ง α สูง → variance ตอบสนองต่อ shock ได้เร็วกว่า<br>
+<strong>β_G (GARCH beta)</strong> — ความคงอยู่ของ variance ช่วงปกติ: 0.80–0.90 ยิ่ง β_G สูง → variance ลดลงช้า (ความจำยาว) หมายเหตุ: β_G คนละตัวกับ hedge ratio β<br>
+<strong>เงื่อนไข stationarity:</strong> α + β_G &lt; 1 (ถ้าเกิน variance จะระเบิดเป็นอนันต์)<br>
+<strong>Variance ระยะยาว:</strong> σ²_∞ = ω / (1 − α − β_G)
 </div>
 </div>
 
 <table>
-<tr><th>Parameter</th><th>Typical Range</th><th>Effect of Increasing</th><th>Effect of Being Too High</th></tr>
-<tr><td>ω (omega)</td><td>1e-7 to 1e-4</td><td>Raises the variance floor</td><td>Overestimates calm-period σ</td></tr>
-<tr><td>α (alpha)</td><td>0.05 – 0.15</td><td>Faster reaction to shocks</td><td>Too noisy, σ_t unstable</td></tr>
-<tr><td>β_G (GARCH beta)</td><td>0.80 – 0.92</td><td>Longer variance memory</td><td>If α+β_G≥1: non-stationary</td></tr>
+<tr><th>พารามิเตอร์</th><th>ช่วงทั่วไป</th><th>ผลถ้าเพิ่มค่า</th><th>ผลถ้าสูงเกินไป</th></tr>
+<tr><td>ω (omega)</td><td>1e-7 ถึง 1e-4</td><td>ยก variance floor ขึ้น</td><td>ประเมิน σ สูงเกินจริงช่วงสงบ</td></tr>
+<tr><td>α (alpha)</td><td>0.05 – 0.15</td><td>ตอบสนองต่อ shock เร็วขึ้น</td><td>σ_t ไม่เสถียร, noise มาก</td></tr>
+<tr><td>β_G (GARCH beta)</td><td>0.80 – 0.92</td><td>ความจำ variance ยาวขึ้น</td><td>ถ้า α+β_G≥1: ไม่ stationary</td></tr>
 </table>
 
 <!-- 7.3 -->
-<h2 id="s7-3">7.3 GARCH Z-Score — Adaptive Bands</h2>
+<h2 id="s7-3">7.3 GARCH Z-Score — แถบสัญญาณปรับตัว</h2>
 
-<p>Instead of z = (ε_t − θ) / σ_static, we use the time-varying denominator:</p>
+<p>แทนที่จะใช้ z = (ε_t − θ) / σ_static ให้ใช้ <strong>ตัวหาร time-varying</strong> จาก GARCH:</p>
 
 <p style="font-size:.88em;color:#64748b;margin:6px 0 0">หมายเหตุ: z-score คือสัญญาณหลักของการเข้า/ออก — ตอนนี้เข้าใจว่า z = (ε−θ)/σ บอกว่า spread ห่างจากค่ากลางกี่ "ส่วนเบี่ยงเบนมาตรฐาน" ก็พอ — <strong>นิยามเต็ม รวมถึง Robust z-score</strong> อยู่ใน <a href="statarb-ch10.html">บทที่ 10</a></p>
 
 <div class="fm">GARCH z-score:  z_t = (ε_t − θ) / σ_t
 
-Entry signal:    z_t &gt; +2.0  →  short spread (expect reversion down)
-                  z_t &lt; −2.0  →  long spread (expect reversion up)
-Exit signal:     |z_t| &lt; 0.5  →  close position</div>
+สัญญาณเข้า:    z_t > +2.0  →  short spread (คาดว่า spread จะลดลง)
+                z_t < −2.0  →  long spread  (คาดว่า spread จะเพิ่มขึ้น)
+สัญญาณออก:     |z_t| < 0.5  →  ปิด position</div>
 
 <img class="chart" src="charts/ch7-pnl-per-trade.svg">
-<div class="caption">P&amp;L per trade from a simple OU backtest (enter |z|&gt;2, exit |z|&lt;0.5). Green bars = profitable trades, red bars = losses. Teal dashed line = cumulative P&amp;L. Win rate and trade count shown in top-right annotation.</div>
+<div class="caption">P&amp;L ต่อการเทรดจาก backtest แบบ OU อย่างง่าย (เข้าเมื่อ |z|&gt;2, ออกเมื่อ |z|&lt;0.5) แท่งเขียว = กำไร แท่งแดง = ขาดทุน เส้น teal = Cumulative P&amp;L Win rate และจำนวน trade แสดงมุมขวาบน</div>
 
 <!-- 7.4 -->
-<h2 id="s7-4">7.4 When to Use GARCH vs Constant σ</h2>
+<h2 id="s7-4">7.4 เมื่อไหร่ควรใช้ GARCH แทน σ คงที่</h2>
 
 <table>
-<tr><th>Aspect</th><th>Constant σ (OU base)</th><th>GARCH(1,1)</th></tr>
-<tr><td>Assumption</td><td>σ is fixed over time</td><td>σ_t varies based on recent shocks</td></tr>
-<tr><td>Best for</td><td>Very stable pairs, low volatility</td><td>Pairs with clustering volatility</td></tr>
-<tr><td>Detects regime</td><td>No</td><td>Yes — σ_t encodes current regime</td></tr>
-<tr><td>False signals</td><td>High during vol spikes</td><td>Low — bands adapt</td></tr>
-<tr><td>Computation</td><td>Trivial (one number)</td><td>O(T) per update, very fast</td></tr>
-<tr><td>When to switch</td><td>Default</td><td>std(residuals, 7d) / std(residuals, 30d) &gt; 1.5</td></tr>
+<tr><th>มิติ</th><th>σ คงที่ (OU พื้นฐาน)</th><th>GARCH(1,1)</th></tr>
+<tr><td>สมมติฐาน</td><td>σ คงที่ตลอดเวลา</td><td>σ_t เปลี่ยนตาม shock ล่าสุด</td></tr>
+<tr><td>เหมาะกับ</td><td>คู่ที่เสถียรมาก volatility ต่ำ</td><td>คู่ที่มี volatility clustering</td></tr>
+<tr><td>ตรวจ regime ได้</td><td>ไม่ได้</td><td>ได้ — σ_t เข้ารหัส regime ปัจจุบัน</td></tr>
+<tr><td>สัญญาณเท็จ</td><td>สูงช่วง vol spike</td><td>ต่ำ — แถบปรับตาม volatility</td></tr>
+<tr><td>การคำนวณ</td><td>ง่ายมาก (ตัวเลขเดียว)</td><td>O(T) ต่อการ update เร็วมาก</td></tr>
+<tr><td>เวลาเปลี่ยน</td><td>ค่าเริ่มต้น</td><td>std(residuals, 7d) / std(residuals, 30d) &gt; 1.5</td></tr>
 </table>
 
 <div class="bx bb">
-<div class="bt">Volatility Clustering Trigger</div>
-<p>Compute the ratio of 7-day rolling std to 30-day rolling std of the spread residuals. If this ratio exceeds 1.5, the volatility regime has shifted — switch to GARCH z-score immediately. If the ratio drops below 1.1 consistently, constant σ is adequate and GARCH adds minimal benefit.</p>
+<div class="bt">ทริกเกอร์การรวมตัวของ Volatility</div>
+<p>คำนวณอัตราส่วนระหว่าง rolling std 7 วัน กับ rolling std 30 วัน ของ spread residuals ถ้าอัตราส่วนเกิน 1.5 แสดงว่า volatility regime เปลี่ยนแล้ว — สลับไปใช้ GARCH z-score ทันที ถ้าอัตราส่วนต่ำกว่า 1.1 อย่างสม่ำเสมอ σ คงที่เพียงพอแล้วและ GARCH ไม่ได้ช่วยเพิ่มอะไร</p>
 </div>
 
 <!-- Pseudo-code -->
@@ -171,27 +171,27 @@ Exit signal:     |z_t| &lt; 0.5  →  close position</div>
 
 <div class="pseudo">
 <span class="kw">function</span> <span class="fn">garch_update</span>(omega, alpha, beta_G, prev_sigma_sq, prev_residual):
-    <span class="cm"># GARCH(1,1) variance recursion — call once per bar</span>
-    <span class="cm"># omega:          long-run variance floor (e.g. 1e-6)</span>
-    <span class="cm"># alpha:          shock weight (e.g. 0.10)</span>
-    <span class="cm"># beta_G:         GARCH persistence (e.g. 0.85)</span>
+    <span class="cm"># GARCH(1,1) variance recursion — เรียกทุก bar</span>
+    <span class="cm"># omega:          variance floor ระยะยาว (เช่น 1e-6)</span>
+    <span class="cm"># alpha:          น้ำหนัก shock (เช่น 0.10)</span>
+    <span class="cm"># beta_G:         GARCH persistence (เช่น 0.85)</span>
     <span class="cm"># prev_sigma_sq:  σ²_{t-1}</span>
-    <span class="cm"># prev_residual:  ε_{t-1} (actual spread residual, not z-score)</span>
+    <span class="cm"># prev_residual:  ε_{t-1} (spread residual จริง ไม่ใช่ z-score)</span>
 
     new_sigma_sq = omega + alpha * (prev_residual ** <span class="nu">2</span>) + beta_G * prev_sigma_sq
     <span class="kw">return</span> new_sigma_sq
 
 
 <span class="kw">function</span> <span class="fn">garch_zscore</span>(eps, theta, sigma_t):
-    <span class="cm"># eps:     current spread residual ε_t</span>
-    <span class="cm"># theta:   OU long-run mean θ</span>
-    <span class="cm"># sigma_t: sqrt(current GARCH variance)</span>
+    <span class="cm"># eps:     spread residual ปัจจุบัน ε_t</span>
+    <span class="cm"># theta:   ค่ากลาง OU ระยะยาว θ</span>
+    <span class="cm"># sigma_t: sqrt(GARCH variance ปัจจุบัน)</span>
     z = (eps - theta) / sigma_t
     <span class="kw">return</span> z
 
 
 <span class="kw">function</span> <span class="fn">should_use_garch</span>(residuals, window_short=<span class="nu">7</span>*<span class="nu">24</span>, window_long=<span class="nu">30</span>*<span class="nu">24</span>):
-    <span class="cm"># Returns True if volatility clustering detected</span>
+    <span class="cm"># คืนค่า True ถ้าตรวจพบ volatility clustering</span>
     std_short = rolling_std(residuals, window_short)[-<span class="nu">1</span>]
     std_long  = rolling_std(residuals, window_long)[-<span class="nu">1</span>]
     ratio = std_short / std_long
@@ -199,7 +199,7 @@ Exit signal:     |z_t| &lt; 0.5  →  close position</div>
 
 
 <span class="cm"># Main loop (hourly bar)</span>
-sigma_sq = long_run_variance  <span class="cm"># initialize to ω/(1-α-β_G)</span>
+sigma_sq = long_run_variance  <span class="cm"># initialize เป็น ω/(1-α-β_G)</span>
 <span class="kw">for</span> each new bar:
     prev_eps  = spread_residual[t-<span class="nu">1</span>]
     sigma_sq  = garch_update(omega, alpha, beta_G, sigma_sq, prev_eps)
@@ -282,56 +282,56 @@ parameter เพิ่ม γ (asymmetry) — ถ้า γ &lt; 0 แปลว่
 
 <!-- Running example -->
 <div class="running-ex">
-<div class="re-title">Running Example: Bybit BTC Perp ↔ Lighter — Funding Rate War (3 Days)</div>
-<p>During a 3-day BTC funding rate divergence event, the Bybit↔Lighter spread becomes much more volatile. We compare static vs GARCH z-scores:</p>
+<div class="re-title">ตัวอย่างต่อเนื่อง: Bybit BTC Perp ↔ Lighter — Funding Rate War (3 วัน)</div>
+<p>ช่วง BTC funding rate divergence 3 วัน spread Bybit↔Lighter volatile มากผิดปกติ เปรียบเทียบ z-score แบบ static กับ GARCH:</p>
 
 <table>
-<tr><th>Period</th><th>Spread σ (actual)</th><th>Static σ (baseline)</th><th>Static z-score</th><th>GARCH σ_t</th><th>GARCH z-score</th></tr>
-<tr><td>Normal market</td><td>0.08%</td><td>0.08%</td><td>2.0 (signal)</td><td>0.08%</td><td>2.0 (signal)</td></tr>
-<tr><td>Funding war day 1</td><td>0.24%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>6.3 (FALSE!)</strong></span></td><td>0.24%</td><td><strong>2.1 (correct)</strong></td></tr>
-<tr><td>Funding war day 2</td><td>0.22%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>5.8 (FALSE!)</strong></span></td><td>0.23%</td><td><strong>1.9 (no entry)</strong></td></tr>
-<tr><td>Recovery</td><td>0.10%</td><td>0.08%</td><td>2.5 (borderline)</td><td>0.11%</td><td>2.3 (signal)</td></tr>
+<tr><th>ช่วงเวลา</th><th>Spread σ (จริง)</th><th>Static σ (baseline)</th><th>Static z-score</th><th>GARCH σ_t</th><th>GARCH z-score</th></tr>
+<tr><td>ตลาดปกติ</td><td>0.08%</td><td>0.08%</td><td>2.0 (signal)</td><td>0.08%</td><td>2.0 (signal)</td></tr>
+<tr><td>Funding war วัน 1</td><td>0.24%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>6.3 (สัญญาณเท็จ!)</strong></span></td><td>0.24%</td><td><strong>2.1 (ถูกต้อง)</strong></td></tr>
+<tr><td>Funding war วัน 2</td><td>0.22%</td><td>0.08%</td><td><span style="color:#dc2626"><strong>5.8 (สัญญาณเท็จ!)</strong></span></td><td>0.23%</td><td><strong>1.9 (ยังไม่เข้า)</strong></td></tr>
+<tr><td>ช่วง Recovery</td><td>0.10%</td><td>0.08%</td><td>2.5 (borderline)</td><td>0.11%</td><td>2.3 (signal)</td></tr>
 </table>
 
-<p>Parameters used (residuals scaled ×100 to %): ω = 0.000192, α = 0.12, β_G = 0.85 (α + β_G = 0.97 &lt; 1 ✓). Long-run σ = sqrt(0.000192 / 0.03) ≈ 0.080 → matches normal-market σ ≈ 0.08% in the table.</p>
+<p>พารามิเตอร์ที่ใช้ (residuals scale ×100 เป็น %): ω = 0.000192, α = 0.12, β_G = 0.85 (α + β_G = 0.97 &lt; 1 ✓) Long-run σ = sqrt(0.000192 / 0.03) ≈ 0.080 → ตรงกับ σ ในตลาดปกติ ≈ 0.08% ในตาราง</p>
 
-<div class="fm">Naive z = 0.50% / 0.08% = 6.3  → looks like a huge 6σ trade opportunity
-GARCH z = 0.50% / 0.24% = 2.1  → mild signal — σ_t has already expanded
-Correct action: REDUCE size or skip entry (storm period)</div>
+<div class="fm">Naive z = 0.50% / 0.08% = 6.3  → ดูเหมือนโอกาสเทรด 6σ
+GARCH z = 0.50% / 0.24% = 2.1  → สัญญาณอ่อน — σ_t ขยายตัวแล้ว
+การกระทำที่ถูก: ลด size หรือข้ามการเทรดในช่วง storm</div>
 </div>
 
 <!-- Exercises -->
 <div class="ex">
-<div class="et">Exercise 7.1 — Compute New σ²</div>
-<p>Given: ω = 0.0001, α = 0.10, β_G = 0.85, prev_σ² = 0.0004, prev_ε = 0.025</p>
-<p><strong>Q:</strong> Compute new σ². Is α + β_G &lt; 1? What is the long-run σ²?</p>
+<div class="et">โจทย์ 7.1 — คำนวณ σ² ใหม่</div>
+<p>กำหนดให้: ω = 0.0001, α = 0.10, β_G = 0.85, prev_σ² = 0.0004, prev_ε = 0.025</p>
+<p><strong>คำถาม:</strong> คำนวณ σ² ใหม่ α + β_G &lt; 1 หรือไม่? Variance ระยะยาวคือเท่าไร?</p>
 <details>
-<summary>Show Answer</summary>
+<summary>ดูเฉลย</summary>
 <div class="ans">
-<p><strong>Step 1:</strong> Check stationarity: α + β_G = 0.10 + 0.85 = 0.95 &lt; 1 ✓ (stationary)</p>
-<p><strong>Step 2:</strong> new_σ² = ω + α·ε² + β_G·σ²<br>
+<p><strong>ขั้นที่ 1:</strong> ตรวจ stationarity: α + β_G = 0.10 + 0.85 = 0.95 &lt; 1 ✓ (stationary)</p>
+<p><strong>ขั้นที่ 2:</strong> σ² ใหม่ = ω + α·ε² + β_G·σ²<br>
 = 0.0001 + 0.10 × (0.025)² + 0.85 × 0.0004<br>
 = 0.0001 + 0.10 × 0.000625 + 0.00034<br>
 = 0.0001 + 0.0000625 + 0.00034<br>
 = <strong>0.0005025</strong></p>
-<p><strong>Long-run σ²</strong> = ω / (1 − α − β_G) = 0.0001 / (1 − 0.95) = 0.0001 / 0.05 = <strong>0.002</strong></p>
-<p><strong>Interpretation:</strong> The recent shock (ε = 0.025) pushed current σ² from 0.0004 to 0.0005025 — a 25% increase in variance. Long-run equilibrium is 0.002, so current conditions are calmer than average (0.0005 vs 0.002).</p>
+<p><strong>Variance ระยะยาว</strong> = ω / (1 − α − β_G) = 0.0001 / (1 − 0.95) = 0.0001 / 0.05 = <strong>0.002</strong></p>
+<p><strong>ตีความ:</strong> shock ล่าสุด (ε = 0.025) ดัน σ² จาก 0.0004 เป็น 0.0005025 — variance เพิ่มขึ้น 25% ค่าสมดุลระยะยาวคือ 0.002 ดังนั้นสภาวะปัจจุบันยังเงียบกว่าค่าเฉลี่ย (0.0005 vs 0.002)</p>
 </div>
 </details>
 </div>
 
 <div class="ex">
-<div class="et">Exercise 7.2 — Naive vs GARCH Signal Conflict</div>
-<p>The spread residual shows ε = 0.48%, θ = 0.00%. Static σ = 0.14%. Current GARCH σ_t = 0.26%.</p>
-<p>Naive z = 0.48/0.14 = 3.5. GARCH z = 0.48/0.26 = 1.8.</p>
-<p><strong>Q:</strong> Should you enter a short-spread position? Explain your reasoning.</p>
+<div class="et">โจทย์ 7.2 — Naive vs GARCH Signal ขัดแย้งกัน</div>
+<p>Spread residual ปัจจุบัน ε = 0.48%, θ = 0.00% Static σ = 0.14% GARCH σ_t ปัจจุบัน = 0.26%</p>
+<p>Naive z = 0.48/0.14 = 3.5 &nbsp;·&nbsp; GARCH z = 0.48/0.26 = 1.8</p>
+<p><strong>คำถาม:</strong> ควรเปิด short spread หรือไม่? อธิบายเหตุผล</p>
 <details>
-<summary>Show Answer</summary>
+<summary>ดูเฉลย</summary>
 <div class="ans">
-<p><strong>Do NOT enter.</strong> The GARCH z-score of 1.8 does not meet the threshold of 2.0 for entry. The naive z of 3.5 is a <strong>false signal</strong> — it appears extreme only because the static σ is outdated.</p>
-<p><strong>What GARCH tells us:</strong> Current conditional volatility (0.26%) is almost double the historical average (0.14%). This means market conditions are stormy. The spread moved 0.48%, but given current vol, this is only a 1.8σ event — nothing unusual in this regime.</p>
-<p><strong>Risk of entering anyway:</strong> In a high-vol regime, the spread can continue to expand (mean-reversion is slower when κ is lower in stressed regimes). Entering at GARCH z = 1.8 gives poor risk/reward.</p>
-<p><strong>Rule:</strong> Always use the GARCH z-score when should_use_garch() returns True. Discard the naive z-score in volatile regimes.</p>
+<p><strong>ไม่ควรเข้า</strong> GARCH z-score = 1.8 ไม่ถึง threshold 2.0 ที่กำหนด Naive z = 3.5 เป็น <strong>สัญญาณเท็จ</strong> — ดูสูงเพราะ σ static เก่าเกินไป</p>
+<p><strong>สิ่งที่ GARCH บอก:</strong> conditional volatility ปัจจุบัน (0.26%) เกือบ 2 เท่าของค่าเฉลี่ยประวัติศาสตร์ (0.14%) ตลาดอยู่ในสภาวะ volatile spread เคลื่อน 0.48% แต่เทียบกับ vol ปัจจุบัน นี่คือแค่เหตุการณ์ 1.8σ — ปกติสำหรับ regime นี้</p>
+<p><strong>ความเสี่ยงถ้าเข้าอยู่ดี:</strong> ใน high-vol regime spread อาจขยายต่อ (mean-reversion ช้าลงเมื่อ κ ลดลงในสภาวะกดดัน) การเข้าที่ GARCH z = 1.8 ให้ risk/reward ไม่ดี</p>
+<p><strong>กฎ:</strong> ใช้ GARCH z-score เสมอเมื่อ should_use_garch() คืนค่า True และเพิกเฉยต่อ naive z-score ใน volatile regime</p>
 </div>
 </details>
 </div>
@@ -346,9 +346,8 @@ Correct action: REDUCE size or skip entry (storm period)</div>
 </div>
 
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
-Ch.7 GARCH on Residuals | ต่อไป → <strong>Ch.8: Jump-Diffusion OU</strong>
+<a href="statarb-ch6.html">← บทที่ 6: Hurst Exponent &amp; Stationarity</a> &nbsp;|&nbsp; <a href="statarb-ch8.html">บทที่ 8: Jump-Diffusion OU →</a>
 </p>
-
 
 <nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
 </body>
