@@ -196,6 +196,18 @@ def johansen_cointegration(btc_prices, eth_prices, significance_level=0.05):
 # ถ้า Engle-Granger AND Johansen ทั้งคู่ = cointegrated → เชื่อถือได้สูง
 # ถ้าแค่อันเดียว → ระวัง (อาจเป็น spurious)</div>
 
+<div class="bx br">
+<div class="bt">⚠️ Cointegration Break Risk</div>
+<p>Cointegration ไม่ถาวร — ความสัมพันธ์ระหว่าง BTC/ETH อาจพังได้เมื่อ:</p>
+<ul>
+<li>Structural regime change (เช่น ETH ถูก SEC classify เป็น security)</li>
+<li>Exchange listing/delisting ของ asset ใดอีกตัว</li>
+<li>Regulatory event ที่กระทบ asset ตัวใดตัวหนึ่งเฉพาะ</li>
+</ul>
+<p><strong>เมื่อ cointegration พัง:</strong> spread ไม่ revert → Pair Grid สะสม unrealized loss ไม่จำกัด ต้องปิด position ทันที</p>
+<p><strong>Re-validate ทุก 30 วัน:</strong> run ADF test + Johansen test ใหม่ ถ้า p-value &gt; 0.05 → หยุด Pair Grid ทันที</p>
+</div>
+
 <div class="fm">def rolling_cointegration_check(btc_prices, eth_prices, window=60, step=5):
     """
     ตรวจ cointegration แบบ rolling — ความสัมพันธ์อาจเปลี่ยนตาม regime
@@ -309,7 +321,7 @@ Total pair grid capital: 7 × $1,082 ≈ $7,574
     for i in range(window, len(btc_returns)):
         x = btc_returns[i-window:i]
         y = eth_returns[i-window:i]
-        beta = np.cov(x, y)[0,1] / np.var(x)
+        beta = np.cov(x, y)[0,1] / np.var(y)
         betas.append(beta)
     return betas
 

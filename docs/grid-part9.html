@@ -218,6 +218,8 @@ class BybitClient:
         if testnet:
             self.BASE_URL = "https://api-testnet.bybit.com"
 
+    # ⚠️ Security: Never log api_secret or the resulting signature.
+    # Load api_secret from env var only: os.environ["BYBIT_API_SECRET"]
     def _sign(self, params: dict, timestamp: int) -> str:
         query = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
         msg = f"{timestamp}{self.api_key}5000{query}"
@@ -413,6 +415,9 @@ def main():
         cfg = yaml.safe_load(f)
     with open("config/secrets.yaml") as f:
         secrets = yaml.safe_load(f)
+    # Alternative (recommended): load from env vars instead of secrets.yaml
+    # api_key = os.environ["BYBIT_API_KEY"]
+    # api_secret = os.environ["BYBIT_API_SECRET"]
 
     # Initialize
     client = BybitClient(secrets["api_key"], secrets["api_secret"], testnet=True)
@@ -467,6 +472,8 @@ def main():
         # ⚠️ Production Note: sleep(3600) จะพลาด order fills ระหว่างรอ
         # ใช้ WebSocket private channel (wss://stream.bybit.com/v5/private) แทน polling
         # ดู Bybit API docs: subscribe to "order" channel เพื่อรับ fill events real-time
+        # ⚠️ Production: implement exponential back-off reconnect — connection drop = missed fills
+        # while True: try: ws.run_forever() except: time.sleep(min(2**attempt, 60)); attempt += 1
         time.sleep(cfg["execution"]["recheck_hours"] * 3600)
 
 if __name__ == "__main__":

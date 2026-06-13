@@ -108,21 +108,22 @@ def rsi_score_for_grid(rsi_value):
     """
     # RSI extremes (< 30 หรือ > 70) = mean-reversion opportunity
     if rsi_value < 30:
-        score = 100 * (30 - rsi_value) / 30   # ยิ่ง oversold ยิ่งสูง
+        score = 70 + 100 * (30 - rsi_value) / 30   # ยิ่ง oversold ยิ่งสูง (70–100)
     elif rsi_value > 70:
-        score = 100 * (rsi_value - 70) / 30   # ยิ่ง overbought ยิ่งสูง
+        score = 70 + 100 * (rsi_value - 70) / 30   # ยิ่ง overbought ยิ่งสูง (70–100)
     else:
         # RSI 30–70 = middle zone
-        # 50 = perfect balance (score ปานกลาง)
+        # 50 = neutral (score ปานกลาง), ยิ่งห่างจาก 50 ยิ่งสูง
         distance_from_50 = abs(rsi_value - 50)
-        score = 50 - distance_from_50  # 50 → score=50, 30→score=30, 70→score=30
+        score = 50 + distance_from_50  # 50 → score=50, 30→score=70, 70→score=70
 
     return min(100, max(0, score))
 
 # ตัวอย่าง:
-# RSI=25 → score = 100 × (30-25)/30 = 16.7 (oversold มาก → grid entry ดี)
+# RSI=25 → score = 70 + 100×(30-25)/30 = 86.7 (oversold มาก → grid entry ดี)
+# RSI=31 → score = 50 + |31-50| = 69 ≈ 70 (ใกล้ oversold → โอกาสดี)
 # RSI=50 → score = 50 (neutral → ปานกลาง)
-# RSI=75 → score = 100 × (75-70)/30 = 16.7 (overbought → grid sell ดี)</div>
+# RSI=72 → score = 70 + 100×(72-70)/30 = 76.7 (overbought → grid sell ดี)</div>
 
 <div class="bx bc">
 <div class="bt">RSI สำหรับ Entry Timing</div>
@@ -281,15 +282,15 @@ ACTION_TABLE = {
 }
 
 ตัวอย่างผล:
-  RSI=32 (oversold)    → rsi_score   = 60
+  RSI=32 (oversold)    → rsi_score   = 68
   %B=0.1 (near lower)  → bb_score    = 72
   Vol ratio=0.9         → vol_score   = 85
   Hurst=0.46            → hurst_score = 85
 
-  Composite = 0.30×60 + 0.30×72 + 0.20×85 + 0.20×85
-            = 18 + 21.6 + 17 + 17 = 73.6
+  Composite = 0.30×68 + 0.30×72 + 0.20×85 + 0.20×85
+            = 20.4 + 21.6 + 17 + 17 = 76.0
 
-  Action: PARTIAL_DEPLOY (deploy 60%)</div>
+  Action: FULL_DEPLOY (deploy 100%)</div>
 
 <h2 id="s3b-7">3B.7 Order Accumulation — เปิด Grid แบบ TWAP</h2>
 
