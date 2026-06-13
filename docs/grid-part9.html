@@ -365,7 +365,7 @@ class GridBacktester:
 grid:
   symbol: "BTCUSDT"
   grid_capital: 20000
-  kelly_fraction: 0.19   # Fractional Kelly 25% × f* (Part 5)
+  kelly_fraction: 0.19   # f_safe = 25% × f* ≈ 19% (ตาม Part 5 ตัวอย่าง f*=0.755)
   donchian_period: 30
   atr_period: 14
   step_factor: 0.5       # Step = step_factor × ATR
@@ -496,7 +496,7 @@ if __name__ == "__main__":
 <li>API Rate Limit: Bybit อนุญาต 600 requests/นาที → grid 30 levels × 2 (place/cancel) = 60/cycle ✓</li>
 <li>Minimum Order Size: BTC บน Bybit ขั้นต่ำ 0.001 BTC → Q ต้องมากกว่านี้</li>
 <li>Price Precision: BTC round ถึง $0.01 → step ต้องเป็น multiple ของ $0.01</li>
-<li>Network Redundancy: รัน bot บน VPS (ไม่ใช่ local machine) พร้อม reconnect logic</li>
+<li>Network Redundancy: รัน bot บน VPS (Virtual Private Server — เซิร์ฟเวอร์เช่าที่ online ตลอด 24/7) พร้อม reconnect logic ไม่ควรรัน bot บน local machine ที่อาจปิดหรือ internet หลุด</li>
 <li>Secret Management: API key ใน environment variable ไม่ใช่ hardcode</li>
 </ul>
 </div>
@@ -555,10 +555,10 @@ N:     zone_width / step → ควรอยู่ระหว่าง 15–25
 KELLY: f* = (p×b − q)/b | f_safe = 0.25 × f*
        grid_capital = net_worth × f_safe
 
-REGIME (Part 4):
-  H < 0.50 + ADX < 25 + BB_width < 4%  → GRID ON  (full deploy)
-  H 0.50–0.58 + ...                      → CAUTION  (50% size)
-  H > 0.58 + ADX > 35 + BB_width > 8%   → GRID OFF (pause)
+REGIME (Part 4, BTC-calibrated):
+  H < 0.50 + ADX < 40 + BB_width < 4%   → GRID ON  (full deploy)
+  H 0.50–0.58 + ADX 40–50 + ...         → CAUTION  (50% size)
+  H > 0.58 + ADX > 50 + BB_width > 8%   → GRID OFF (pause)
 
 RISK (Part 5):
   DD ≥ −8%  → HALT (cancel all, wait for recovery)
@@ -571,6 +571,57 @@ SNOWBALL (Part 6B):
 COMPOSITE SCORE (Part 3B):
   30%×RSI + 30%×BB + 20%×Vol + 20%×Hurst → 0–100
   >75: Full Deploy | 55–75: 60% | 35–55: 30% | <35: Wait</div>
+</div>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 9</div>
+
+<details>
+<summary>ข้อ 1: อ่าน config.yaml แล้วอธิบายว่า kelly_fraction=0.19 หมายความว่าอย่างไร และ grid_capital=$20,000 มาจากการคำนวณอย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>kelly_fraction=0.19 คือ f_safe = Fractional Kelly = 25% × f* ≈ 19% (จาก Part 5: f*=75.5%, 25%×75.5%≈18.9%)</p>
+<p>หมายความว่า: deploy เพียง 19% ของ net worth ทั้งหมดเป็น grid capital เพื่อ buffer uncertainty ใน win rate estimate</p>
+<p>ถ้า net worth = $105,000 → grid_capital = $105,000 × 0.19 ≈ $20,000 (ตัวเลขในตัวอย่าง)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ใน run_cycle() ถ้า DD = −9% เกิดอะไรขึ้น? bot ยังคงทำงานไหม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>DD = −9% &lt; halt_threshold (−8%) → check_drawdown_halt() คืน "HALT"</p>
+<p>Bot ใน run_cycle(): cancel orders ทั้งหมด, ตั้ง state = HALT, ไม่เปิด order ใหม่ (แต่ไม่ขาย inventory)</p>
+<p>Bot รอจนกว่า DD ฟื้นกลับสู่ &gt; −4% และ Hurst &lt; 0.55 และผ่าน 24 ชั่วโมง cooloff จึงจะ restart</p>
+<p>⚠️ ระหว่าง HALT: grid ไม่ทำกำไร → compound ใน Part 6B จะหยุดชั่วคราว</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: ทำไม testnet=True ต้องถูกเปลี่ยนเป็น False ก่อน Live? มีความเสี่ยงอะไรถ้าลืม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>testnet=True → bot เชื่อมต่อกับ Bybit Testnet ซึ่งใช้เงินจำลอง (paper money) ไม่ใช่เงินจริง</p>
+<p>ถ้าลืมเปลี่ยน: bot ทำงาน "เสมือน" อย่างถูกต้อง แต่ไม่มี order จริงเกิดขึ้นบนตลาด → กำไร/ขาดทุนเป็นตัวเลขสมมติ ไม่ใช่เงินจริง</p>
+<p>วิธีตรวจสอบ: ดู URL ที่ bot ใช้ — testnet จะเป็น testnet.bybit.com, live จะเป็น api.bybit.com</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: Backtester ใน Part 9 มี "optimistic assumption" อะไรที่ทำให้ผลดีกว่าความเป็นจริง?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Optimistic assumptions หลักในตัวอย่าง backtester:</p>
+<ul>
+<li><strong>Fill assumption:</strong> สมมติว่า limit order fill ทันทีที่ราคาถึง level — ในทางปฏิบัติอาจ partial fill หรือ miss เพราะ slippage</li>
+<li><strong>Fee calculation:</strong> ใช้ fee คงที่ 0.1% ต่อ side — ในความเป็นจริง fee อาจเปลี่ยนตาม tier หรือ market condition</li>
+<li><strong>No market impact:</strong> ไม่คำนึง market impact ของ order ตัวเอง — ใน large grid อาจ move price ได้</li>
+<li><strong>Continuous execution:</strong> สมมติ bot ทำงานตลอด 24/7 โดยไม่มี downtime — ใน production มี reconnect, maintenance window</li>
+</ul>
+<p>แนะนำ: ใช้ WebSocket order events จริง (ไม่ใช่ price comparison) และทดสอบบน testnet ก่อน live</p>
+</div>
+</details>
+
 </div>
 
 <nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part8.html" style="color:#64748b">Part 8</a></span><a href="grid-appendix.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Appendix →</a></nav>
