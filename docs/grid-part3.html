@@ -3,58 +3,505 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grid Trading Mastery · Part 3 — Zone Sizing (ATR/Vol/Bootstrap/Donchian/Keltner)</title>
+<title>Grid Trading Mastery · Part 3 — Zone Sizing: ATR, Donchian, Keltner, Bootstrap</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-p{margin-bottom:.8em}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
 .cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
 .cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.coming-soon{background:var(--cyan-bg);border:2px dashed var(--cyan);border-radius:12px;padding:28px;text-align:center;margin:30px 0}
-.coming-soon .cs-icon{font-size:3em;margin-bottom:10px}
-.coming-soon h3{color:var(--cyan-dark);font-size:1.3em;margin-bottom:10px}
-.coming-soon p{color:#475569}
-ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}
-a{color:var(--cyan-dark)}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.mg-box{border:2px solid var(--g2);border-radius:8px;padding:14px}
+.mg-box.active{border-color:var(--cyan);background:var(--cyan-bg)}
+.mg-box h4{margin-bottom:6px;font-size:.95em}
+@media(max-width:600px){.method-grid{grid-template-columns:1fr}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
+
 <div class="cover">
 <div class="ch-num">Grid Trading Mastery · Part 3</div>
-<h1>Zone Sizing: ATR / Vol / Bootstrap / Donchian / Keltner</h1>
-<div class="sub">การกำหนดขนาด Grid Zone โดยใช้ Volatility Indicators — ให้ Grid ปรับตัวตามสภาพตลาดจริงแทนการใช้ Spacing คงที่</div>
+<h1>Zone Sizing — ATR, Donchian, Keltner &amp; Bootstrap</h1>
+<div class="sub">วิธีกำหนด Zone และ Step จากข้อมูลตลาด · Donchian Channel · Keltner Channel<br>
+Block Bootstrap Monte Carlo · GARCH Volatility Forecast<br>
+อ้างอิง: <a href="vol-part2.html" style="color:#0e7490">Vol Series Part 2</a> (ATR/Volatility), <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.3</a> (OU Process)</div>
 </div>
 
-<div class="coming-soon">
-<div class="cs-icon">🔄</div>
-<h3>กำลังเตรียมเนื้อหา...</h3>
-<p>Part นี้อยู่ระหว่างการเขียน — กลับมาตรวจสอบเร็วๆ นี้</p>
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Zone และ Step ไม่ควรตั้งแบบ "ลองดู" — ควรมาจากข้อมูล volatility ของตลาดจริง ATR บอก "ราคาเดินกี่ USD/วัน" → ใช้ตั้ง Step | Donchian Channel บอก "range ของตลาดในช่วงนี้" → ใช้ตั้ง Zone</div>
+<div class="ki-eq">Step ≈ 0.5 × ATR(14) · Zone = Donchian(20) · Keltner = EMA ± ATR × k</div>
 </div>
 
-<h2>เนื้อหาในตอนนี้จะครอบคลุม</h2>
+<h2 id="s3-1">3.1 ATR — ตัววัด Volatility สำหรับ Step</h2>
+
+<p>ATR (Average True Range) วัด "ขนาดเฉลี่ยของการเคลื่อนไหวต่อวัน" — เหมาะมากสำหรับกำหนด Step ของ grid:</p>
+
+$$\text{ATR}(n) = \frac{1}{n} \sum_{i=1}^{n} \text{TR}_i \quad \text{โดย} \quad \text{TR}_i = \max(H_i - L_i,\ |H_i - C_{i-1}|,\ |L_i - C_{i-1}|)$$
+
+<div class="fm">หลักการ: Step ควรเป็น "หนึ่งหน่วยของความผันผวน"
+
+BTC/USDT — ATR(14) = $2,500/วัน
+
+Step ที่แนะนำ:
+  Step_tight    = 0.25 × ATR = $625   → fill บ่อย แต่ fee สูง
+  Step_moderate = 0.50 × ATR = $1,250 → สมดุล (แนะนำ)
+  Step_wide     = 1.00 × ATR = $2,500 → fill น้อย cashflow ต่ำ แต่ตาม volatility พอดี
+
+Rule of Thumb: ตั้ง Step ≈ 0.5 × ATR(14)
+  → ราคาต้อง "เดินครึ่งวัน" เพื่อ complete 1 grid cycle
+  → ไม่ fill ถี่เกินไป (fee ไม่กิน profit)
+  → ไม่ช้าเกินไปจนไม่ได้ทำเงิน
+
+ตรวจสอบ: กำไรต่อรอบ > 3 × ค่า Fee ต่อรอบ
+  Q × Step > 3 × (Q × P × 0.1% × 2)
+  Step > 3 × P × 0.002 = 3 × $100k × 0.002 = $600
+  ∴ Step ≥ $600 สำหรับ BTC ที่ $100k</div>
+
+<div class="bx ba">
+<div class="bt">ทำไม ATR(14) ไม่ใช่ ATR(7) หรือ ATR(30)?</div>
+<p>ATR(7) = ตอบสนองเร็วเกินไป — volatility spike 2 วันทำให้ Step พุ่งแล้วหด grid ปรับถี่เกิน</p>
+<p>ATR(14) = 2 สัปดาห์ = ค่ากลางที่ดี: ตาม regime ปัจจุบัน แต่ไม่ noisy</p>
+<p>ATR(30) = ตามช้าเกินไป — ใน volatility cluster ที่ ATR พุ่งแล้ว ATR(30) ยังต่ำ = step เล็กเกิน</p>
+</div>
+
+<h2 id="s3-2">3.2 Donchian Channel — กำหนด Zone จาก Price Range</h2>
+
+<p>Donchian Channel(N) = highest high − lowest low ของ N periods ที่ผ่านมา:</p>
+
+$$\text{Donchian}_\text{high}(N) = \max_{i=0}^{N-1}(H_{t-i}) \qquad \text{Donchian}_\text{low}(N) = \min_{i=0}^{N-1}(L_{t-i})$$
+
+<img class="chart" src="charts/grid-part3-donchian.svg" alt="Donchian and Keltner Channels">
+<p class="caption">Donchian Channel (กว้าง, สีม่วง) กำหนด Zone · Keltner Channel (แคบ, สีฟ้า) กำหนด Step · ราคาแกว่งภายใน Keltner มากกว่า 68% ของเวลา</p>
+
+<div class="fm">Donchian Zone Sizing:
+
+# Zone = Donchian(20) — range ของ 20 วันที่ผ่านมา
+zone_high = max(high[-20:])  # highest high 20 วัน
+zone_low  = min(low[-20:])   # lowest low 20 วัน
+
+ตัวอย่าง BTC:
+  20-day high = $108,000
+  20-day low  = $91,000
+  Zone width  = $17,000
+
+# เพิ่ม buffer 10% เพื่อรองรับ breakout
+zone_high_buffered = zone_high * 1.05  # $113,400
+zone_low_buffered  = zone_low  * 0.95  # $86,450
+
+# ทดสอบ: zone กว้างพอไหม?
+min_zone_width = ATR(14) * 6  # อย่างน้อย 6 ATR = 6 ×$2,500 = $15,000
+if zone_width < min_zone_width:
+    zone_high = current_price * 1.08  # ขยายเป็น ±8%
+    zone_low  = current_price * 0.92</div>
+
+<div class="bx bc">
+<div class="bt">Donchian(20) vs Donchian(30) vs Donchian(60)</div>
 <ul>
-  <li>ทำไม Fixed Spacing ถึงล้มเหลวในตลาดที่ Volatility เปลี่ยน</li>
-  <li>ATR-based Zone Sizing: ใช้ Average True Range กำหนด Grid Spacing</li>
-  <li>Volatility-based Sizing: ใช้ Rolling StdDev ของ Returns</li>
-  <li>Bootstrap Confidence Interval: ประมาณ Expected Range โดยไม่สมมติ Distribution</li>
-  <li>Donchian Channel Grid: ใช้ High/Low ของ N periods เป็น Upper/Lower Band</li>
-  <li>Keltner Channel Grid: EMA ± (ATR × Multiplier) เป็น Zone Boundary</li>
-  <li>การเปรียบเทียบทั้ง 5 วิธี: ข้อดี ข้อเสีย และสถานการณ์ที่เหมาะสม</li>
-  <li>Dynamic Re-zoning: อัปเดต Zone ทุก N แท่งเทียนโดยอัตโนมัติ</li>
-  <li>Backtest: Zone Sizing แต่ละแบบบน BTC 2021-2024</li>
+<li><strong>Donchian(20)</strong> — ≈ 1 เดือน trading: ตาม regime ปัจจุบัน ปรับตัวเร็ว เหมาะ swing grid</li>
+<li><strong>Donchian(30)</strong> — ≈ 6 สัปดาห์: สมดุล หน้าต่างยอดนิยม (แนะนำ)</li>
+<li><strong>Donchian(60)</strong> — ≈ 3 เดือน: zone กว้าง grid อยู่ได้นาน แต่ capital ใช้มาก</li>
 </ul>
+<p>เลือกตาม holding period ที่วางแผน: grid 1 เดือน → Donchian(20); grid 3 เดือน → Donchian(60)</p>
+</div>
 
-<h2>Cross-References</h2>
-<p>ความรู้ที่ใช้จากเล่มอื่น: Part 2 (Bloating ที่เกิดจาก Zone แคบเกินไป), Part 3B (Indicator Filter ร่วมกับ Zone), Part 4 (Regime เปลี่ยน Zone Strategy), Technical Analysis Book (ATR, Donchian, Keltner คำนวณ)</p>
+<h2 id="s3-3">3.3 Keltner Channel — Step จาก ATR Bands</h2>
 
-<nav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
-<a href="grid-index.html" style="color:#64748b;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a>
-<a href="grid-index.html" style="color:var(--cyan-dark);font-weight:700">← กลับสารบัญ</a>
-</nav>
+<p>Keltner Channel ใช้ EMA เป็น midline + ATR เป็น band width — เหมาะสำหรับกำหนด Step ที่ "ตาม volatility อย่าง adaptive":</p>
+
+$$\text{KC}_\text{upper} = \text{EMA}(20) + k \times \text{ATR}(14) \qquad \text{KC}_\text{lower} = \text{EMA}(20) - k \times \text{ATR}(14)$$
+
+<div class="fm">Keltner-Based Step Sizing:
+
+k = 1.0  (standard Keltner bandwidth = 1 ATR each side)
+
+KC_upper = EMA(20) + 1.0 × ATR(14) = $100k + $2,500 = $102,500
+KC_lower = EMA(20) − 1.0 × ATR(14) = $100k − $2,500 = $97,500
+KC_width = $5,000 (total 2 ATR range)
+
+# Step = Keltner half-width / desired levels per ATR
+desired_levels_per_atr = 2  # 2 grid levels ต่อ 1 ATR ฝั่ง
+step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
+
+หรือ: step = KC_width / total_levels_in_keltner_zone
+           = $5,000 / 4 levels = $1,250
+
+ข้อดี Keltner Step:
+  + Step ปรับตาม volatility อัตโนมัติ
+  + ช่วง volatility สูง: ATR สูง → step ใหญ่ → fill ช้าลง (ป้องกัน overtrading)
+  + ช่วง volatility ต่ำ: ATR ต่ำ → step เล็ก → fill บ่อยขึ้น (เก็บ cashflow)</div>
+
+<h3>3.3.1 Adaptive Step Implementation</h3>
+
+<div class="fm">def adaptive_step(atr14, current_price, fee_rate=0.001):
+    """
+    คำนวณ step ที่ปรับตาม ATR โดยรับประกันว่ากำไรต่อรอบ > 3× fee
+    """
+    # Step พื้นฐาน = 0.5 × ATR
+    step_base = 0.5 * atr14
+
+    # ตรวจสอบ fee threshold
+    fee_per_cycle = current_price * fee_rate * 2  # buy + sell
+    min_step = 3 * fee_per_cycle                   # กำไร ≥ 3× fee
+
+    step = max(step_base, min_step)
+
+    # Round ให้สวยงาม (nearest 100 USD สำหรับ BTC)
+    step = round(step / 100) * 100
+    return step
+
+# ตัวอย่าง:
+# ATR(14) = $2,500, P = $100k, fee = 0.1%
+# step_base = $1,250
+# fee_per_cycle = $100k × 0.001 × 2 = $200
+# min_step = $600
+# step = max($1,250, $600) = $1,250 → round → $1,300</div>
+
+<h2 id="s3-4">3.4 Combining Donchian + Keltner — Dual Channel Method</h2>
+
+<p>วิธีที่ดีที่สุด: ใช้ทั้งสองร่วมกัน — Donchian กำหนด Zone (wide), Keltner กำหนด Step (inner)</p>
+
+<table>
+<tr><th>Parameter</th><th>วิธีคำนวณ</th><th>ตัวอย่าง BTC</th></tr>
+<tr><td>Zone High</td><td>Donchian(30) high × 1.05</td><td>$108k × 1.05 = $113,400</td></tr>
+<tr><td>Zone Low</td><td>Donchian(30) low × 0.95</td><td>$91k × 0.95 = $86,450</td></tr>
+<tr><td>Step</td><td>ATR(14) × 0.5 (Keltner-based)</td><td>$2,500 × 0.5 = $1,250</td></tr>
+<tr><td>N (levels)</td><td>(Zone_high − Zone_low) / Step</td><td>($113,400 − $86,450) / $1,250 ≈ 22 levels</td></tr>
+<tr><td>Q (per level)</td><td>grid_capital / (N × avg_price)</td><td>$20k / (22 × $100k) = 0.0091 BTC ≈ 0.009</td></tr>
+</table>
+
+<div class="fm">def dual_channel_sizing(prices, highs, lows, current_price,
+                         dc_period=30, atr_period=14, grid_capital=20000):
+    """
+    Zone จาก Donchian(30), Step จาก ATR(14)
+    """
+    # Donchian Zone
+    dc_high = max(highs[-dc_period:]) * 1.05
+    dc_low  = min(lows[-dc_period:]) * 0.95
+
+    # ATR Step
+    true_ranges = []
+    for i in range(1, atr_period + 1):
+        tr = max(highs[-i] - lows[-i],
+                 abs(highs[-i] - prices[-i-1]),
+                 abs(lows[-i]  - prices[-i-1]))
+        true_ranges.append(tr)
+    atr = sum(true_ranges) / len(true_ranges)
+    step = round(0.5 * atr / 100) * 100  # round to $100
+
+    # Grid Parameters
+    n_levels = int((dc_high - dc_low) / step)
+    avg_price = (dc_high + dc_low) / 2
+    q_per_level = grid_capital / (n_levels * avg_price)
+
+    return {
+        "zone_high": dc_high,
+        "zone_low": dc_low,
+        "step": step,
+        "n_levels": n_levels,
+        "q_per_level": round(q_per_level, 4)
+    }</div>
+
+<h2 id="s3-5">3.5 Block Bootstrap — Zone Sizing ที่แข็งแกร่ง</h2>
+
+<p>Donchian ดูแค่ high/low ในช่วงเวลา แต่ไม่บอกว่า "ความน่าจะเป็นที่ราคาจะอยู่ในช่วงนี้" คือเท่าไหร่ Block Bootstrap ช่วยตอบคำถามนี้</p>
+
+<div class="fm">แนวคิด Block Bootstrap Monte Carlo:
+
+1. เก็บ daily return ของ BTC ย้อนหลัง 90 วัน
+2. สุ่ม "blocks" ของ return (ขนาด block = 5 วัน) → เพื่อรักษา autocorrelation
+3. ประกอบ synthetic price path จาก blocks ที่สุ่มได้
+4. ทำซ้ำ 1,000 ครั้ง → ได้ distribution ของ "ราคาจะไปถึงไหนใน 30 วัน"
+5. ใช้ percentile 5 และ 95 เป็น zone boundaries
+
+def block_bootstrap_zone(daily_returns, n_sim=1000, horizon=30,
+                          block_size=5, start_price=100000):
+    """
+    Bootstrap zone boundaries ด้วย 95% confidence interval
+    """
+    import random
+    final_prices = []
+
+    for _ in range(n_sim):
+        price = start_price
+        days = 0
+        while days < horizon:
+            # สุ่ม block ของ returns
+            start_idx = random.randint(0, len(daily_returns) - block_size)
+            block = daily_returns[start_idx : start_idx + block_size]
+            for r in block:
+                price *= (1 + r)
+                days += 1
+                if days >= horizon:
+                    break
+        final_prices.append(price)
+
+    # Zone = 5th to 95th percentile ของ simulated prices
+    final_prices.sort()
+    zone_low  = final_prices[int(0.05 * n_sim)]  # 5th percentile
+    zone_high = final_prices[int(0.95 * n_sim)]  # 95th percentile
+    return zone_low, zone_high
+
+ตัวอย่าง BTC:
+  1,000 simulations, 30-day horizon
+  zone_low  = $84,200  (5th pctile)
+  zone_high = $119,800 (95th pctile)
+  → Zone: $84k–$120k (ครอบ 90% ของ simulated scenarios)</div>
+
+<div class="bx bg">
+<div class="bt">ทำไม Block Bootstrap ดีกว่า Simple Historical Range?</div>
+<ul>
+<li><strong>Simple range</strong>: max − min ของ 30 วัน — อาจกว้างเกิน (ถ้ามี spike) หรือแคบเกิน (ถ้าช่วง low-vol)</li>
+<li><strong>Block Bootstrap</strong>: preserve autocorrelation (volatility cluster), ให้ probabilistic range ที่ถูกกว่า</li>
+<li>Zone จาก 95% CI หมายความว่า: "90% ของ scenarios ราคาอยู่ใน zone นี้" — เข้าใจง่าย จัดการ capital ได้ตาม probability</li>
+</ul>
+</div>
+
+<h2 id="s3-6">3.6 GARCH(1,1) สำหรับ Volatility-Adaptive Step</h2>
+
+<p>GARCH(1,1) จาก <a href="vol-part2.html">Vol Series</a> ให้ค่า volatility forecast ที่ดีกว่า ATR ธรรมดาในช่วง volatility cluster:</p>
+
+$$\sigma_t^2 = \omega + \alpha \cdot \epsilon_{t-1}^2 + \beta \cdot \sigma_{t-1}^2$$
+
+<div class="fm">GARCH Step Sizing:
+
+# สมมติ GARCH fitted: ω=1e-6, α=0.08, β=0.91
+# σ_today = 0.025 (2.5% daily vol)
+
+sigma_daily = 0.025   # จาก GARCH forecast
+price = 100000
+
+# 1-day VaR = σ × price
+atr_garch = sigma_daily * price  # = $2,500
+
+# Step = 0.5 × GARCH-ATR (เหมือน ATR method แต่ forward-looking)
+step = 0.5 * atr_garch  # = $1,250
+
+# ข้อดีของ GARCH vs ATR:
+# ATR: backward-looking (เฉลี่ย 14 วันที่แล้ว)
+# GARCH: forward-looking (forecast vol วันพรุ่งนี้จาก cluster ปัจจุบัน)
+# ช่วง volatility เพิ่ง spike → GARCH ตอบสนองเร็วกว่า ATR(14)
+
+# Practical: ถ้าไม่ fit GARCH เอง → ใช้ implied vol จาก options
+# IV ของ BTC 7-day ATM option = 65% annualized
+# σ_daily = 65% / sqrt(365) = 3.4%/day → ATR_implied = $3,400</div>
+
+<h2 id="s3-7">3.7 Volatility Regime — ปรับ Zone/Step ตาม Regime</h2>
+
+<p>Zone และ Step ไม่ใช่ fixed — ควรปรับตาม volatility regime ปัจจุบัน:</p>
+
+<table>
+<tr><th>Regime</th><th>ATR (BTC ตัวอย่าง)</th><th>Step แนะนำ</th><th>Zone Width</th><th>N Levels</th></tr>
+<tr><td>Low Vol (Consolidation)</td><td>$1,000–$1,500</td><td>$500–$700</td><td>$8k–$12k</td><td>16–24</td></tr>
+<tr><td>Normal Vol</td><td>$1,500–$3,000</td><td>$750–$1,500</td><td>$15k–$25k</td><td>16–22</td></tr>
+<tr><td>High Vol</td><td>$3,000–$5,000</td><td>$1,500–$2,500</td><td>$25k–$40k</td><td>16–22</td></tr>
+<tr><td>Extreme Vol (Crash/Pump)</td><td>>$5,000</td><td>$2,500+</td><td>$40k+</td><td>≤ 16</td></tr>
+</table>
+
+<div class="fm">def vol_regime_step(atr14, current_price):
+    """
+    กำหนด step ตาม vol regime โดยรักษา N ≈ 16–22 levels
+    """
+    atr_pct = atr14 / current_price
+
+    if atr_pct < 0.015:      # Low vol: ATR < 1.5%
+        regime = "low"
+        step_factor = 0.35
+    elif atr_pct < 0.030:    # Normal: ATR 1.5–3%
+        regime = "normal"
+        step_factor = 0.50
+    elif atr_pct < 0.050:    # High: ATR 3–5%
+        regime = "high"
+        step_factor = 0.60
+    else:                    # Extreme: ATR > 5%
+        regime = "extreme"
+        step_factor = 0.70
+
+    step = round(step_factor * atr14 / 100) * 100
+    return regime, step</div>
+
+<h2 id="s3-8">3.8 Practical Zone Validation Checklist</h2>
+
+<p>ก่อน deploy grid ทุกครั้ง ตรวจสอบ 5 ข้อนี้:</p>
+
+<div class="fm">def validate_zone(zone_high, zone_low, step, current_price, atr14,
+                  grid_capital, q_per_level, fee_rate=0.001):
+    """
+    ตรวจสอบ zone ก่อน deploy
+    Returns: list of (check_name, passed, message)
+    """
+    checks = []
+
+    # 1. Current price อยู่ใน zone
+    in_zone = zone_low < current_price < zone_high
+    checks.append(("Price in Zone", in_zone,
+                   f"P={current_price:,} Zone=[{zone_low:,},{zone_high:,}]"))
+
+    # 2. Zone กว้างพอ (≥ 6 ATR)
+    zone_width = zone_high - zone_low
+    wide_enough = zone_width >= 6 * atr14
+    checks.append(("Zone Width", wide_enough,
+                   f"Width={zone_width:,.0f} Min={6*atr14:,.0f} (6×ATR)"))
+
+    # 3. Step ≥ 3× fee per cycle
+    profit_per_cycle = q_per_level * step
+    fee_per_cycle = q_per_level * current_price * fee_rate * 2
+    profitable = profit_per_cycle > 3 * fee_per_cycle
+    checks.append(("Profitability", profitable,
+                   f"Profit/cycle=${profit_per_cycle:.1f} Fee=${fee_per_cycle:.1f}"))
+
+    # 4. Capital พอสำหรับ worst case
+    n_buy_levels = (current_price - zone_low) / step
+    worst_case_capital = n_buy_levels * q_per_level * current_price * 0.9
+    capital_ok = grid_capital >= worst_case_capital
+    checks.append(("Capital Sufficient", capital_ok,
+                   f"Grid=${grid_capital:,} WorstCase=${worst_case_capital:,.0f}"))
+
+    # 5. N levels ≤ 30 (manageable)
+    n_total = int(zone_width / step)
+    manageable = n_total <= 30
+    checks.append(("N Levels OK", manageable, f"N={n_total}"))
+
+    return checks</div>
+
+<h2 id="s3-9">3.9 Running Example — BTC Zone Sizing จากศูนย์</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: คำนวณ Zone + Step สำหรับ BTC/USDT</div>
+<p><strong>ข้อมูล:</strong> BTC = $102,000 · ATR(14) = $2,800 · Donchian(30): high=$112,000 low=$89,000</p>
+
+<div class="fm">Step 1: Zone จาก Donchian(30) + Buffer
+  zone_high = $112,000 × 1.05 = $117,600 → ปัดเป็น $117,000 (round)
+  zone_low  = $89,000  × 0.95 = $84,550  → ปัดเป็น $85,000
+  zone_width = $117,000 − $85,000 = $32,000
+
+Step 2: ตรวจสอบ minimum zone width
+  min_width = 6 × ATR(14) = 6 × $2,800 = $16,800
+  $32,000 > $16,800 ✓
+
+Step 3: Step จาก ATR
+  step_base = 0.5 × $2,800 = $1,400
+  fee_min   = 3 × ($102k × 0.001 × 2) = $612
+  step = max($1,400, $612) = $1,400 → round to nearest $500 = $1,500
+
+Step 4: N และ Q
+  N = $32,000 / $1,500 ≈ 21 levels
+  grid_capital = $20,000 (สมมติ)
+  avg_price = ($117k + $85k) / 2 = $101,000
+  Q = $20,000 / (21 × $101,000) = 0.00943 BTC ≈ 0.009 BTC
+
+Step 5: Validation
+  ✓ Price in zone: $102k ∈ [$85k, $117k]
+  ✓ Zone width: $32k > $16.8k
+  ✓ Profitability: 0.009 × $1,500 = $13.5 vs fee $1.84/cycle → 7.3× ✓
+  ✓ N levels: 21 ≤ 30 ✓
+
+Step 6: Distribution ของ BUY orders (Asymmetric Zone Part 1A)
+  ราคาปัจจุบัน $102k → ใกล้กลาง zone
+  Upper zone ($102k → $117k): ใส่ SELL รอ หรือไม่วาง order
+  Lower zone ($102k → $85k): วาง BUY orders 11 levels × 0.009 BTC
+  Capital ที่ต้องใช้ worst-case: 11 × 0.009 × $93k (avg) = $9,207</div>
+</div>
+
+<h2 id="s3-10">3.10 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 3</div>
+
+<details>
+<summary>ข้อ 1: BTC = $95,000 · ATR(14) = $3,200 · Fee = 0.1% — Step ที่แนะนำคือเท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>step_base = 0.5 × $3,200 = $1,600</p>
+<p>fee_min = 3 × ($95,000 × 0.001 × 2) = 3 × $190 = $570</p>
+<p>Step = max($1,600, $570) = $1,600 → ปัดเป็น <strong>$1,500 หรือ $2,000</strong> (nearest $500)</p>
+<p>แนะนำ: $1,500 (conservative, fill บ่อยกว่า) หรือ $2,000 (ถ้า transaction cost สูง)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: Donchian(30) high=$108k, low=$88k · Buffer=5% · Current=$100k — Zone boundaries คืออะไร? ราคา in-zone ไหม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>zone_high = $108,000 × 1.05 = <strong>$113,400</strong></p>
+<p>zone_low  = $88,000  × 0.95 = <strong>$83,600</strong></p>
+<p>zone_width = $113,400 − $83,600 = $29,800</p>
+<p>Current price $100,000 ∈ [$83,600, $113,400] → <strong>In Zone ✓</strong></p>
+<p>ราคาอยู่ที่ประมาณ 55% ของ zone width นับจากล่าง</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Grid capital $15,000 · N=20 levels · avg_price=$100k — Q per level คือเท่าไหร่? กำไรต่อรอบถ้า Step=$1,500?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Q = $15,000 / (20 × $100,000) = $15,000 / $2,000,000 = <strong>0.0075 BTC</strong></p>
+<p>กำไรต่อรอบ (gross) = Q × Step = 0.0075 × $1,500 = <strong>$11.25</strong></p>
+<p>ค่า Fee = 0.0075 × $100k × 0.1% × 2 = $1.50</p>
+<p>กำไรสุทธิต่อรอบ = $11.25 − $1.50 = <strong>$9.75</strong></p>
+<p>Profit/Fee ratio = $11.25/$1.50 = 7.5× ✓ (ดีมาก, ควร ≥ 3×)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4 (Challenge): ATR ของ BTC ขึ้นจาก $2,000 → $5,000 ใน 1 สัปดาห์ (volatility spike) — ควรปรับ grid อย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ATR เพิ่ม 2.5× → vol regime เปลี่ยนจาก Normal → High/Extreme</p>
+<p><strong>การปรับที่ควรทำ:</strong></p>
+<ul>
+<li>Step เก่า $1,000 (0.5 × $2,000) → Step ใหม่ = 0.6 × $5,000 = $3,000</li>
+<li>Step ใหญ่ขึ้น 3× → N ลดลง (ถ้า zone เดิม $20k: N จาก 20 → 7 levels)</li>
+<li>ควร expand zone ด้วย Donchian ใหม่ → zone กว้างขึ้น</li>
+<li>ลด Q ลง 30–50% เพื่อลด capital at risk ในช่วง high vol</li>
+</ul>
+<p><strong>ระวัง:</strong> อย่าเพิ่ม step ทันทีระหว่างที่ grid กำลัง run — รอ grid cycle ปิดหรือทำ grid reset ก่อน</p>
+<p><strong>ข้อแนะนำ:</strong> ถ้า ATR พุ่งเกิน 3× baseline → พิจารณา pause grid ทั้งหมด (ดู Part 4 Regime Detection)</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part2.html" style="color:#64748b">Part 2</a></span><a href="grid-part3b.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 3B: Indicator Filter →</a></nav>
 </body>
 </html>

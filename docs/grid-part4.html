@@ -3,58 +3,480 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grid Trading Mastery · Part 4 — Regime Detection</title>
+<title>Grid Trading Mastery · Part 4 — Regime Detection (Hurst, ADX, State Machine)</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
 <style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-p{margin-bottom:.8em}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
 .cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
 .cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
 .cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.coming-soon{background:var(--cyan-bg);border:2px dashed var(--cyan);border-radius:12px;padding:28px;text-align:center;margin:30px 0}
-.coming-soon .cs-icon{font-size:3em;margin-bottom:10px}
-.coming-soon h3{color:var(--cyan-dark);font-size:1.3em;margin-bottom:10px}
-.coming-soon p{color:#475569}
-ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}
-a{color:var(--cyan-dark)}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.state-row{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
+.state-box{flex:1;min-width:170px;border:2px solid;border-radius:10px;padding:14px;text-align:center}
+.sb-on{border-color:#16a34a;background:#f0fdf4}
+.sb-ca{border-color:#d97706;background:#fffbeb}
+.sb-off{border-color:#dc2626;background:#fef2f2}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
 </style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 </head>
 <body>
+
 <div class="cover">
 <div class="ch-num">Grid Trading Mastery · Part 4</div>
-<h1>Regime Detection: อ่านสภาพตลาดก่อนเปิด Grid</h1>
-<div class="sub">การจำแนก Market Regime (Trending / Ranging / Volatile) และการปรับกลยุทธ์ Grid ให้เหมาะสมกับแต่ละ Regime โดยอัตโนมัติ</div>
+<h1>Regime Detection — เมื่อไหร่เปิด/หยุด Grid</h1>
+<div class="sub">Hurst Exponent · ADX · Bollinger Band Width · State Machine (GRID ON / CAUTION / GRID OFF)<br>
+Grid Reset + Zone Migration · Practical Watchdog System<br>
+อ้างอิง: <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.3</a> (Hurst, OU Process), <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.11</a> (State Machine)</div>
 </div>
 
-<div class="coming-soon">
-<div class="cs-icon">🔄</div>
-<h3>กำลังเตรียมเนื้อหา...</h3>
-<p>Part นี้อยู่ระหว่างการเขียน — กลับมาตรวจสอบเร็วๆ นี้</p>
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Grid ทำงานได้ดีใน <strong>mean-reverting regime</strong> (H &lt; 0.5) เท่านั้น — การรู้ว่า regime เปลี่ยนแปลงและตอบสนองทันทีคือความแตกต่างระหว่าง "grid ที่กำไรต่อเนื่อง" กับ "grid ที่ติดหล่ม" State Machine ช่วยเปลี่ยน grid behavior อัตโนมัติตาม regime</div>
+<div class="ki-eq">GRID ON (H &lt; 0.50, ADX &lt; 25) → CAUTION (H 0.50–0.58) → GRID OFF (H &gt; 0.58, ADX &gt; 30)</div>
 </div>
 
-<h2>เนื้อหาในตอนนี้จะครอบคลุม</h2>
+<h2 id="s4-1">4.1 Hurst Exponent — ตัววัด Mean-Reversion</h2>
+
+<p>Hurst Exponent H วัดว่าราคาเป็น mean-reverting (H &lt; 0.5), random walk (H = 0.5), หรือ trending (H &gt; 0.5):</p>
+
+$$H = \frac{\log(R/S)}{\log(n)} \qquad \text{โดย } R/S = \text{Rescaled Range}$$
+
+<div class="fm">Hurst Exponent สำหรับ Grid:
+
+คำนวณด้วย R/S Analysis (rolling 30 วัน):
+  1. เก็บ daily return r_i = log(P_i / P_{i-1})
+  2. R/S ของ n วัน = (max cumulative dev − min cumulative dev) / std(returns)
+  3. Plot log(R/S) vs log(n) → slope = H
+
+def hurst_exponent(prices, min_lag=10, max_lag=100):
+    """
+    คำนวณ Hurst จาก price series (R/S method)
+    """
+    import numpy as np
+
+    returns = np.diff(np.log(prices))
+    lags = range(min_lag, min(max_lag, len(returns) // 2))
+
+    rs_values = []
+    for lag in lags:
+        # คำนวณ R/S สำหรับแต่ละ lag
+        sub_series = [returns[i:i+lag] for i in range(0, len(returns)-lag, lag)]
+        rs_per_sub = []
+        for sub in sub_series:
+            mean_sub = np.mean(sub)
+            dev = np.cumsum(sub - mean_sub)
+            R = np.max(dev) - np.min(dev)
+            S = np.std(sub, ddof=1)
+            if S > 0:
+                rs_per_sub.append(R / S)
+        if rs_per_sub:
+            rs_values.append((lag, np.mean(rs_per_sub)))
+
+    if len(rs_values) < 2:
+        return 0.5  # default random walk
+
+    log_lags = np.log([x[0] for x in rs_values])
+    log_rs   = np.log([x[1] for x in rs_values])
+    H = np.polyfit(log_lags, log_rs, 1)[0]
+    return H
+
+# ตัวอย่าง:
+# H = 0.42 → mean-reverting → GRID ON
+# H = 0.51 → random walk → CAUTION
+# H = 0.63 → trending → GRID OFF</div>
+
+<img class="chart" src="charts/grid-part4-regime.svg" alt="Regime Detection State Machine + Rolling Hurst">
+<p class="caption">State Machine: GRID ON ↔ CAUTION ↔ GRID OFF · กราฟล่าง: Hurst rolling 30 วัน เปลี่ยน regime ตามเวลา</p>
+
+<h2 id="s4-2">4.2 ADX — ยืนยัน Trend Strength</h2>
+
+<p>ADX (Average Directional Index) วัดความแรงของ trend โดยไม่บอกทิศทาง — ใช้ยืนยัน Hurst signal:</p>
+
+$$\text{ADX} = \text{Smoothed MA of DX} \qquad \text{DX} = \frac{|+DI - -DI|}{+DI + -DI} \times 100$$
+
+<table>
+<tr><th>ADX Value</th><th>ความหมาย</th><th>Grid Action</th></tr>
+<tr><td>&lt; 15</td><td>ไม่มี trend (choppy)</td><td>GRID ON — ideal condition</td></tr>
+<tr><td>15–25</td><td>trend อ่อน</td><td>GRID ON (ระวัง upper zone)</td></tr>
+<tr><td>25–35</td><td>trend ปานกลาง</td><td>CAUTION — ลด size 50%</td></tr>
+<tr><td>&gt; 35</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
+</table>
+
+<div class="fm">def compute_adx(highs, lows, closes, period=14):
+    """
+    คำนวณ ADX จาก OHLC data
+    """
+    import numpy as np
+
+    tr_list, dm_plus, dm_minus = [], [], []
+    for i in range(1, len(closes)):
+        high_diff = highs[i] - highs[i-1]
+        low_diff  = lows[i-1] - lows[i]
+        dm_plus.append(max(high_diff, 0) if high_diff > low_diff else 0)
+        dm_minus.append(max(low_diff, 0) if low_diff > high_diff else 0)
+        tr = max(highs[i] - lows[i],
+                 abs(highs[i] - closes[i-1]),
+                 abs(lows[i] - closes[i-1]))
+        tr_list.append(tr)
+
+    # Smooth ด้วย Wilder MA
+    def wilder_ma(data, n):
+        result = [sum(data[:n]) / n]
+        for i in range(n, len(data)):
+            result.append(result[-1] * (n-1)/n + data[i] / n)
+        return result
+
+    atr14  = wilder_ma(tr_list, period)
+    dmp14  = wilder_ma(dm_plus, period)
+    dmm14  = wilder_ma(dm_minus, period)
+
+    di_plus  = [100 * p / a for p, a in zip(dmp14, atr14)]
+    di_minus = [100 * m / a for m, a in zip(dmm14, atr14)]
+    dx_list  = [100 * abs(p - m) / (p + m) for p, m in zip(di_plus, di_minus)]
+    adx = wilder_ma(dx_list, period)
+
+    return adx[-1]</div>
+
+<h2 id="s4-3">4.3 Bollinger Band Width — Squeeze Detection</h2>
+
+<p>BB Width ต่ำ (squeeze) = ราคากำลัง consolidate → mean-reversion regime → grid ทำงานดี BB Width พุ่งสูง = volatility expansion = breakout → grid อาจติดหล่ม</p>
+
+<div class="fm">BB Width = (BB_upper − BB_lower) / SMA(20)
+
+Thresholds สำหรับ Grid:
+  BB_width < 0.02 (2%)   → Squeeze — GRID ON (ideal)
+  BB_width 0.02–0.04     → Normal — GRID ON
+  BB_width 0.04–0.08     → Expanding — CAUTION
+  BB_width > 0.08 (8%)   → Wide — GRID OFF (high vol)
+
+ตัวอย่าง BTC ที่ $100k:
+  BB_upper = $104,000, BB_lower = $96,000
+  BB_width = ($104k − $96k) / $100k = 8% → GRID OFF threshold
+
+  BB_upper = $101,500, BB_lower = $98,500
+  BB_width = $3k / $100k = 3% → Normal → GRID ON</div>
+
+<h2 id="s4-4">4.4 State Machine — GRID ON / CAUTION / GRID OFF</h2>
+
+<div class="state-row">
+<div class="state-box sb-on">
+<strong style="color:#15803d">GRID ON</strong><br>
+<small>Full Deploy 100%</small><br>
+<small style="color:#166534">H &lt; 0.50<br>ADX &lt; 25<br>BB_width &lt; 4%</small>
+</div>
+<div class="state-box sb-ca">
+<strong style="color:#b45309">CAUTION</strong><br>
+<small>Reduce 50% size</small><br>
+<small style="color:#92400e">H 0.50–0.58<br>ADX 25–35<br>BB_width 4–8%</small>
+</div>
+<div class="state-box sb-off">
+<strong style="color:#991b1b">GRID OFF</strong><br>
+<small>Pause / Cancel all</small><br>
+<small style="color:#b91c1c">H &gt; 0.58<br>ADX &gt; 35<br>BB_width &gt; 8%</small>
+</div>
+</div>
+
+<div class="fm">class GridStateMachine:
+    STATES = ["GRID_ON", "CAUTION", "GRID_OFF"]
+
+    def __init__(self):
+        self.state = "GRID_ON"
+        self.state_history = []
+
+    def evaluate(self, hurst, adx, bb_width):
+        """
+        Determine grid state from 3 indicators.
+        Requires 2-of-3 indicators to agree before state change (noise filter).
+        """
+        signals = {
+            "hurst": "OFF" if hurst > 0.58 else ("CAUTION" if hurst > 0.50 else "ON"),
+            "adx":   "OFF" if adx > 35 else ("CAUTION" if adx > 25 else "ON"),
+            "bb":    "OFF" if bb_width > 0.08 else ("CAUTION" if bb_width > 0.04 else "ON"),
+        }
+
+        counts = {"ON": 0, "CAUTION": 0, "OFF": 0}
+        for sig in signals.values():
+            counts[sig] += 1
+
+        # Majority vote (2 of 3)
+        if counts["OFF"] >= 2:
+            new_state = "GRID_OFF"
+        elif counts["CAUTION"] >= 2 or (counts["OFF"] == 1 and counts["CAUTION"] == 1):
+            new_state = "CAUTION"
+        else:
+            new_state = "GRID_ON"
+
+        if new_state != self.state:
+            self.state_history.append((self.state, new_state))
+            self.state = new_state
+
+        return self.state, signals
+
+    def get_size_multiplier(self):
+        return {"GRID_ON": 1.0, "CAUTION": 0.5, "GRID_OFF": 0.0}[self.state]</div>
+
+<div class="bx bc">
+<div class="bt">Hysteresis — ป้องกัน State Flip ถี่เกินไป</div>
+<p>ปัญหา: ถ้า Hurst แกว่งรอบ 0.50 (บางครั้ง 0.49 บางครั้ง 0.51) → state เปลี่ยนทุกชั่วโมง = สั่ง cancel/open orders บ่อยเกิน = fee เสียเยอะ</p>
+<p><strong>Solution: Hysteresis (Dead Band)</strong></p>
 <ul>
-  <li>3 Regime หลัก: Trending (ห้าม Grid), Ranging (เหมาะ Grid), High-Vol Chaos</li>
-  <li>ADX-based Regime: ADX &lt; 20 = Ranging, ADX > 25 = Trending</li>
-  <li>Hurst Exponent: วัด Mean-Reversion vs Momentum ของ Price Series</li>
-  <li>Hidden Markov Model (HMM): จำแนก Regime ด้วย Probabilistic Model</li>
-  <li>Volatility Regime: VIX-equivalent สำหรับ Crypto (Realized Vol vs Implied Vol)</li>
-  <li>Multi-Timeframe Regime: ใช้ Regime ระดับ Daily กำกับ Grid ระดับ 4H</li>
-  <li>Regime Transition: ตรวจจับการเปลี่ยน Regime และปรับ Grid ก่อนสาย</li>
-  <li>Decision Tree: Grid ควรทำอะไรในแต่ละ Regime Combination</li>
-  <li>Live Implementation: ตัวอย่าง Python Code สำหรับ Regime Classifier</li>
+<li>เปลี่ยนจาก GRID_ON → CAUTION ต้องมี H &gt; 0.52 (ไม่ใช่ 0.50)</li>
+<li>เปลี่ยนกลับจาก CAUTION → GRID_ON ต้องมี H &lt; 0.47 (ต่ำกว่า threshold)</li>
+<li>Dead band = 0.05 รอบ threshold ทำให้ state stable กว่า</li>
 </ul>
+</div>
 
-<h2>Cross-References</h2>
-<p>ความรู้ที่ใช้จากเล่มอื่น: Part 1A/1B (Grid ที่ต้องการ Regime ที่ถูกต้อง), Part 2 (Bloating เกิดในผิด Regime), Part 3 (Zone Sizing เปลี่ยนตาม Regime), Part 9 (Python Implementation ของ Regime Detector)</p>
+<h2 id="s4-5">4.5 Grid Reset — ย้าย Zone เมื่อ Regime กลับมา</h2>
 
-<nav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
-<a href="grid-index.html" style="color:#64748b;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a>
-<a href="grid-index.html" style="color:var(--cyan-dark);font-weight:700">← กลับสารบัญ</a>
-</nav>
+<p>เมื่อ Grid OFF แล้ว regime กลับมาเป็น mean-reverting: ราคาอาจเปลี่ยนไปมากจนต้อง reset zone ใหม่</p>
+
+<div class="fm">Grid Reset Decision:
+
+สถานการณ์ที่ต้อง Reset (ไม่ใช่แค่ restart):
+  1. ราคาหลุดออกนอก original zone (ต่ำกว่า zone_low หรือสูงกว่า zone_high)
+  2. ราคา mean เปลี่ยนไป > 15% จากตอนตั้ง grid เดิม
+  3. ผ่านไปนานกว่า 30 วัน (regime อาจเปลี่ยนโครงสร้าง)
+
+def should_reset_zone(original_zone_mid, current_price, original_zone_low,
+                       original_zone_high, days_since_open):
+    """
+    Returns True ถ้าควร reset zone ใหม่
+    """
+    price_drift = abs(current_price - original_zone_mid) / original_zone_mid
+
+    out_of_zone = current_price < original_zone_low or current_price > original_zone_high
+    large_drift = price_drift > 0.15
+    stale       = days_since_open > 30
+
+    return out_of_zone or large_drift or stale
+
+Grid Reset Steps:
+  1. Cancel orders ทั้งหมดที่ pending
+  2. ขาย inventory บางส่วน (ถ้า unrealized loss < 15%)
+     หรือ รักษา inventory ไว้ถ้า BTC (ถือได้)
+  3. คำนวณ zone ใหม่จาก Donchian + ATR ปัจจุบัน
+  4. คำนวณ Q ใหม่ตาม capital ที่เหลือ
+  5. วาง orders ใหม่ในชั่วโมงที่ score > 55</div>
+
+<h2 id="s4-6">4.6 Zone Migration — Shift Zone ตาม Trend</h2>
+
+<p>แทนที่จะ reset ทั้งหมด บางครั้งแค่ "เลื่อน zone" ขึ้นหรือลงตาม EMA ก็เพียงพอ:</p>
+
+<div class="fm">Zone Migration (Trailing Zone):
+
+ทุก 24 ชั่วโมง:
+  new_zone_mid = EMA(20) ของ current price
+  zone_high = new_zone_mid × (1 + zone_half_width_pct)
+  zone_low  = new_zone_mid × (1 - zone_half_width_pct)
+
+ตัวอย่าง: BTC ขยับจาก $100k → $110k ใน 1 สัปดาห์
+  Old zone: $90k–$115k (mid=$102.5k)
+  EMA(20) = $107k
+  zone_half_width = 15% (ตาม Donchian width)
+  New zone: $107k × 0.85 = $90.95k → $107k × 1.15 = $123.05k
+
+การย้าย:
+  + Cancel orders ที่อยู่นอก new zone
+  + เพิ่ม orders ใน upper zone ที่เพิ่งเข้ามา
+  + inventory ที่ BUY ไปแล้วในชั้นเก่า → ยังคง TP เดิม
+
+Zone Migration ดีกว่า Grid Reset เมื่อ:
+  - ราคา drift ช้า (trending แต่ไม่เร็ว)
+  - Inventory ยังไม่ได้ขาดทุนมาก
+  - ไม่อยากเสีย inventory ที่ BUY ไปแล้ว</div>
+
+<h2 id="s4-7">4.7 Practical Watchdog System</h2>
+
+<p>ระบบ watchdog ทำงาน background ตรวจ regime ทุก 1 ชั่วโมงและส่ง alert เมื่อต้องปรับ:</p>
+
+<div class="fm">class GridWatchdog:
+    def __init__(self, grid_bot, check_interval_hours=1):
+        self.grid = grid_bot
+        self.state_machine = GridStateMachine()
+        self.interval = check_interval_hours
+        self.alert_log = []
+
+    def run_checks(self, market_data):
+        """
+        ทำงานทุก 1 ชั่วโมง (หรือตาม interval)
+        """
+        hurst    = compute_hurst(market_data["prices_30d"])
+        adx      = compute_adx(market_data["highs"], market_data["lows"], market_data["closes"])
+        bb_width = compute_bb_width(market_data["prices_20d"])
+
+        new_state, signals = self.state_machine.evaluate(hurst, adx, bb_width)
+        size_mult = self.state_machine.get_size_multiplier()
+
+        actions = []
+
+        if new_state == "GRID_OFF":
+            actions.append({"action": "CANCEL_ALL_ORDERS", "reason": "regime trending"})
+            self.alert_log.append(f"GRID_OFF: H={hurst:.2f} ADX={adx:.1f} BB={bb_width:.2%}")
+
+        elif new_state == "CAUTION":
+            current_size = self.grid.get_deployed_size()
+            if current_size > 0.5:
+                reduce_amount = current_size - 0.5
+                actions.append({"action": "REDUCE_SIZE", "amount": reduce_amount,
+                                "reason": "caution regime"})
+
+        elif new_state == "GRID_ON":
+            current_size = self.grid.get_deployed_size()
+            if current_size < 1.0:
+                actions.append({"action": "INCREASE_SIZE",
+                                "target": 1.0, "reason": "regime cleared"})
+
+        # ตรวจ zone migration
+        if should_reset_zone(self.grid.zone_mid, market_data["current_price"],
+                              self.grid.zone_low, self.grid.zone_high,
+                              self.grid.days_running):
+            actions.append({"action": "ZONE_MIGRATION", "reason": "price drifted"})
+
+        return {"state": new_state, "signals": signals, "actions": actions}
+
+Watchdog Alert Types:
+  1. REGIME_CHANGE → ส่ง LINE/Telegram notify
+  2. ZONE_BREACH   → ราคาหลุด zone boundary
+  3. DD_WARNING    → Drawdown > 4% (ดู Part 5)
+  4. DD_HALT       → Drawdown > 8% → cancel all
+  5. RESET_REQUIRED → Zone stale > 30 วัน</div>
+
+<h2 id="s4-8">4.8 Running Example — Regime Change Sequence</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC Regime เปลี่ยนจาก Mean-Reverting → Trending</div>
+<p><strong>Timeline:</strong> 3 สัปดาห์ · Grid เปิดที่ $95k–$115k · Step $2k · Capital $25,000</p>
+
+<table>
+<tr><th>วันที่</th><th>BTC Price</th><th>Hurst (30d)</th><th>ADX (14d)</th><th>BB Width</th><th>State</th><th>Action</th></tr>
+<tr><td>Day 1</td><td>$103k</td><td>0.44</td><td>18</td><td>3.2%</td><td style="color:#16a34a"><strong>GRID ON</strong></td><td>Deploy 100%</td></tr>
+<tr><td>Day 5</td><td>$106k</td><td>0.47</td><td>21</td><td>3.8%</td><td style="color:#16a34a"><strong>GRID ON</strong></td><td>ทำงานปกติ</td></tr>
+<tr><td>Day 10</td><td>$112k</td><td>0.52</td><td>27</td><td>5.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>Reduce to 50%</td></tr>
+<tr><td>Day 12</td><td>$118k</td><td>0.59</td><td>34</td><td>7.8%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>Cancel all orders</td></tr>
+<tr><td>Day 15</td><td>$125k</td><td>0.61</td><td>38</td><td>9.2%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>รอ regime กลับ</td></tr>
+<tr><td>Day 18</td><td>$121k</td><td>0.55</td><td>29</td><td>6.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>รอ H &lt; 0.50</td></tr>
+<tr><td>Day 21</td><td>$118k</td><td>0.47</td><td>22</td><td>4.0%</td><td style="color:#16a34a"><strong>GRID ON</strong></td><td>Zone Migration → $105k–$135k</td></tr>
+</table>
+
+<div class="fm">สรุปผลระหว่าง Day 1–21:
+  Grid ON (Day 1–9):   +$180 cashflow (ทำงานปกติ)
+  CAUTION (Day 10–11): +$20 cashflow (ลด size 50%)
+  GRID OFF (Day 12–17): $0 cashflow (ถือ inventory, รอ)
+  Zone Migration (Day 21): เปิด grid ใหม่ที่ $105k–$135k
+
+  Inventory ที่ถือ: BUY ที่ $98k, $100k, $102k, $104k (ตอน grid เปิด)
+  ราคาปัจจุบัน $118k → inventory กำไร unrealized = 4 × 0.01 BTC × $16k avg = $640
+
+  ถ้าไม่มี state machine:
+  → grid ยังเปิด order ที่ $120k, $122k, $124k ระหว่าง uptrend
+  → ขาย inventory เร็วเกินไป (SELL TP ที่ $100k, $102k หรือต่ำกว่าราคาตลาด)
+  → พลาด upside gain ของ BTC</div>
+</div>
+
+<h2 id="s4-9">4.9 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 4</div>
+
+<details>
+<summary>ข้อ 1: Hurst=0.46, ADX=28, BB_width=3.5% — State Machine ส่งผลให้ state เป็นอะไร? (2-of-3 majority vote)</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Hurst=0.46 &lt; 0.50 → signal = <strong>ON</strong></p>
+<p>ADX=28 ∈ (25,35) → signal = <strong>CAUTION</strong></p>
+<p>BB_width=3.5% ∈ (2%,4%) → สมมติ "normal" threshold → signal = <strong>ON</strong></p>
+<p>Vote: ON=2, CAUTION=1 → majority ON → State = <strong>GRID ON</strong></p>
+<p>Action: ทำงานปกติ แต่ monitor ADX ที่ใกล้ 30 — ถ้าขึ้นอีกนิดอาจเป็น CAUTION</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: State เปลี่ยนจาก GRID_ON → GRID_OFF โดยตรง (ข้าม CAUTION) — เป็นไปได้ไหม? เกิดอย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>เป็นไปได้</strong> — ถ้า indicator ทั้ง 3 ตัวเปลี่ยนพร้อมกัน (Flash Crash / Sudden Breakout)</p>
+<p>ตัวอย่าง: BTC pump +15% ใน 1 ชั่วโมง (leverage liquidation cascade)</p>
+<ul>
+<li>Hurst พุ่งจาก 0.46 → 0.64 ทันที (extreme momentum)</li>
+<li>ADX พุ่งจาก 18 → 38 (trend แรงมาก)</li>
+<li>BB_width พุ่งจาก 3% → 12% (volatility explosion)</li>
+</ul>
+<p>Vote: OFF=3 → State = GRID_OFF โดยตรง</p>
+<p>Action ฉุกเฉิน: Cancel all orders ทันที (โดยเฉพาะ short layer ถ้ามี)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Grid run 35 วัน · Original zone_mid = $100k · Current price = $118k · Zone $88k–$115k — ควร reset หรือ migrate?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ตรวจ 3 เงื่อนไข Reset:</p>
+<ol>
+<li>Price out of zone: $118k &gt; zone_high $115k → <strong>Out of zone ✓</strong></li>
+<li>Price drift: |$118k − $100k| / $100k = 18% &gt; 15% → <strong>Large drift ✓</strong></li>
+<li>Days: 35 วัน &gt; 30 → <strong>Stale ✓</strong></li>
+</ol>
+<p>ทั้ง 3 เงื่อนไขใช่ → <strong>Reset Zone ใหม่</strong> (ไม่ใช่แค่ migrate)</p>
+<p>New zone: Donchian(30) จากข้อมูลปัจจุบัน · คำนวณ Step ใหม่จาก ATR ปัจจุบัน</p>
+<p>Inventory จาก zone เก่า: ถ้า BUY ที่ $100k–$115k และตอนนี้ $118k → ขาย inventory ออก (กำไร) แล้วใช้ capital reset grid ใหม่</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4 (Challenge): ออกแบบ Hysteresis rules สำหรับ Hurst transitions เพื่อลด false state changes</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>Hysteresis Design:</strong></p>
+<table>
+<tr><th>Transition</th><th>Standard Threshold</th><th>Hysteresis (Entry)</th><th>Hysteresis (Exit)</th></tr>
+<tr><td>ON → CAUTION</td><td>H &gt; 0.50</td><td>H &gt; <strong>0.52</strong></td><td>H &lt; <strong>0.48</strong> กลับ ON</td></tr>
+<tr><td>CAUTION → OFF</td><td>H &gt; 0.58</td><td>H &gt; <strong>0.60</strong></td><td>H &lt; <strong>0.55</strong> กลับ CAUTION</td></tr>
+</table>
+<p><strong>Time filter เพิ่มเติม:</strong> ต้องอยู่ใน new regime ≥ 3 ชั่วโมงก่อนเปลี่ยน state</p>
+<p>ผล: ถ้า Hurst แกว่ง 0.49–0.51 → state ไม่เปลี่ยน (อยู่ใน dead band) → ลด cancel/reopen orders ที่ไม่จำเป็น</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part3b.html" style="color:#64748b">Part 3B</a></span><a href="grid-part5.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 5: Kelly &amp; Risk →</a></nav>
 </body>
 </html>
