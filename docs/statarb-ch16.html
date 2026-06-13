@@ -151,16 +151,19 @@ subject to:  Σ w_i = 1,  w_i ≥ 0,  w_i ≤ w_max
     results = []
     prev_w = None
     n_spreads = returns_df.shape[1]   # จำนวน spread columns
+    # rolling_windows() yields month-start integer indices (0, 1, 2, ...)
     for start in rolling_windows(returns_df, train_months, step=1):
-        train = slice(start, start + train_months)
-        test  = slice(start + train_months, start + train_months + test_months)
+        train_end = start + train_months
+        test_end  = train_end + test_months
+        train_df  = returns_df.iloc[start:train_end]
+        test_df   = returns_df.iloc[train_end:test_end]
 
-        w_mvo   = portfolio_allocate(estimate_mu(returns_df[train]),
-                                     estimate_cov(returns_df[train]))
+        w_mvo   = portfolio_allocate(estimate_mu(train_df),
+                                     estimate_cov(train_df))
         w_equal = [1/n_spreads] * n_spreads
 
-        sharpe_mvo   = compute_sharpe(returns_df[test] @ w_mvo)
-        sharpe_equal = compute_sharpe(returns_df[test] @ w_equal)
+        sharpe_mvo   = compute_sharpe(test_df @ w_mvo)
+        sharpe_equal = compute_sharpe(test_df @ w_equal)
         weight_jump  = max(abs(w_mvo[i] - prev_w[i]) for i in range(n_spreads)) if prev_w else 0
         results.append({"sharpe_mvo": sharpe_mvo, "sharpe_equal": sharpe_equal,
                         "max_weight_change": weight_jump})
@@ -205,14 +208,14 @@ subject to:  Σ w_i = 1,  w_i ≥ 0,  w_i ≤ w_max
     """
     n = len(expected_returns)
 
-    # Inverse covariance (Ledoit-Wolf shrinkage recommended)
+    # Inverse covariance — ใช้ sklearn LedoitWolf หรือ np.linalg.inv ใน production
     inv_cov = ledoit_wolf_inverse(cov_matrix)
 
     # Raw MV optimal weights
     raw_weights = inv_cov @ expected_returns / (2 * risk_aversion)
 
     # Clip to [0, max_weight]
-    weights = clip(raw_weights, 0, max_weight)
+    weights = np.clip(raw_weights, 0, max_weight)
 
     # Zero out strategies below min_weight threshold
     weights = [w if w >= min_weight else 0.0 for w in weights]
