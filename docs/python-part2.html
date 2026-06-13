@@ -83,7 +83,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-label">สิ่งที่จะทำได้เมื่อจบ Part II</div>
 <div class="ki-text">
 • หาคู่หุ้นที่ cointegrate กัน ด้วย ADF test และ Johansen test<br>
-• ประมาณ hedge ratio \(\beta\) ด้วย OLS regression (statsmodels)<br>
+• ประมาณค่า (estimate) hedge ratio \(\beta\) ด้วย OLS regression (statsmodels)<br>
 • สร้าง spread และคำนวณ z-score สำหรับ entry/exit signal<br>
 • Maximize Sharpe ratio ด้วย <code>scipy.optimize</code><br>
 • กำหนด portfolio weight constraints ด้วย Linear Programming<br>
@@ -178,7 +178,7 @@ print(f"ใช้ Normal จะ underestimate ความเสี่ยง {t5
 
 <div class="bx bk">
 <div class="bt">อย่าเชื่อ Normal Distribution สำหรับ crypto และช่วง crisis</div>
-<p>BTC crash 50%+ เกิดหลายครั้ง — ถ้าใช้ Normal Distribution จะบอกว่า "แทบเป็นไปไม่ได้" (เกิน 10σ)<br>
+<p>BTC crash 50%+ เกิดหลายครั้ง — ถ้าใช้ Normal Distribution จะบอกว่า "แทบเป็นไปไม่ได้" (เกิน 10σ — เหตุการณ์ที่สูตร Normal บอกว่าแทบเป็นไปไม่ได้เลยในช่วงชีวิตเรา)<br>
 ในความจริง: ราคาสินทรัพย์มี "fat tail" = เหตุการณ์สุดขั้วเกิดบ่อยกว่า Normal คาด<br>
 <strong>ใช้ t-distribution, Cornish-Fisher, หรือ historical simulation แทน Normal สำหรับ risk management</strong></p>
 </div>
@@ -259,7 +259,7 @@ print(f"Spread range:      {spread.min():.1f} to {spread.max():.1f}")</div>
 
 <div class="bx bb">
 <div class="bt">ทำไม Stationarity ถึงสำคัญสำหรับ Pair Trading?</div>
-<p>ถ้า spread ไม่ stationary → ไม่มีแรงดึงกลับ → "z-score สูง" อาจสูงต่อไปเรื่อยๆ → trade แล้วขาดทุนไม่จำกัด<br>
+<p>ถ้า spread ไม่ stationary แปลว่าไม่มีแรงดึงกลับ — z-score ที่สูงอยู่อาจสูงต่อไปเรื่อย ๆ โดยไม่กลับมา เท่ากับเปิด trade แล้วอาจขาดทุนไม่หยุด<br>
 ถ้า spread stationary → มีแรงดึงกลับ → z-score สูงแล้ว "ต้องลง" ในที่สุด → เป็น basis ของ arb<br>
 <strong>เราต้องพิสูจน์ก่อนเสมอว่า spread เป็น stationary จริง — ไม่ใช่แค่ดูกราฟ</strong></p>
 </div>
@@ -349,7 +349,7 @@ print("✓ Stationary" if result[1] &lt; 0.05 else "✗ Non-stationary")
 
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้</div>
-<div class="ki-text">OLS (Ordinary Least Squares) เป็นเครื่องมือหลักสำหรับประมาณ hedge ratio \(\beta\) — อัตราส่วนที่บอกว่าต้อง long/short ในสัดส่วนเท่าไหร่เพื่อสร้าง spread ที่ stationary สูตร matrix form:</div>
+<div class="ki-text">OLS (Ordinary Least Squares) เป็นเครื่องมือหลักสำหรับประมาณ hedge ratio \(\beta\) — อัตราส่วนที่บอกว่าต้อง long/short ในสัดส่วนเท่าไหร่เพื่อสร้าง spread ที่ stationary — คำว่า 'ประมาณ' ในที่นี้หมายถึงการคำนวณหาค่าที่เหมาะสมที่สุดจากข้อมูล ไม่ใช่การเดาคร่าว ๆ สูตร matrix form:</div>
 <div class="ki-eq">$$\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}$$</div>
 </div>
 
@@ -442,7 +442,7 @@ print(f"Spread Std: {spread.std():.6f}")</div>
     <span class="c"># ── ขั้น 1: หา hedge ratio (beta) ด้วย rolling OLS ──</span>
     X = sm.add_constant(log_b)         <span class="c"># เติมคอลัมน์ค่าคงที่ (intercept) ให้ regression</span>
     roll = RollingOLS(log_a, X, window=window).fit()
-    beta  = roll.params.iloc[:, 1]     <span class="c"># สัมประสิทธิ์ของ log_b = hedge ratio</span>
+    beta  = roll.params.iloc[:, 1]     <span class="c"># คอลัมน์ 0 คือ const (จาก add_constant), คอลัมน์ 1 คือสัมประสิทธิ์ของ log_b = hedge ratio</span>
     alpha = roll.params['const']       <span class="c"># intercept</span>
 
     <span class="c"># ── ขั้น 2: spread = ส่วนที่ "เหลือ" หลังหักความสัมพันธ์ออก ──</span>
@@ -553,6 +553,7 @@ for i in range(3):
 <p>Half-life คือเวลาที่ spread ใช้กลับมาครึ่งทางจากค่าสุดขั้ว — ใช้เลือก window และ holding period</p>
 
 $$\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat{\phi}-1}$$
+<p class="caption">ซ้าย = สูตรแม่นยำ (โค้ดด้านล่างใช้สูตรนี้) · ขวา = ค่าประมาณ (ใช้ได้เมื่อ \(\hat{\phi}\) ใกล้ 1)</p>
 
 <div class="fm">def calc_halflife(spread):
     """คำนวณ half-life ของ mean-reverting spread"""
@@ -567,7 +568,7 @@ $$\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat
         return np.inf  <span class="c"># ไม่ mean-reverting (random walk หรือ explosive)</span>
     if phi &lt;= -1:
         return np.inf  <span class="c"># Oscillating — ไม่ใช่ mean-reverting จริง</span>
-    half_life = -np.log(2) / np.log(1 + phi)  <span class="c"># สูตรที่ถูกต้องสำหรับ AR(1)</span>
+    half_life = -np.log(2) / np.log(1 + phi)  <span class="c"># สูตรแม่นยำ: phi จาก regression = φ̂-1 ดังนั้น 1+phi = φ̂ → -ln(2)/ln(φ̂)</span>
     return half_life
 
 hl = calc_halflife(resid)
@@ -737,7 +738,7 @@ f = kelly_fraction(daily_mean, daily_std)</div>
 <p>Full Kelly maximize geometric growth ในทฤษฎี แต่ในทางปฏิบัติ:<br>
 • ประมาณ parameters จากข้อมูลมีความผิดพลาด → Full Kelly อาจ oversize มาก<br>
 • Drawdown จาก Full Kelly ใหญ่มาก (50%+ เป็นปกติ) → ทนไม่ไหว<br>
-<strong>ใช้ Quarter-Kelly (f*/4) เป็นจุดเริ่มต้น — เรียนเพิ่มใน Part IV</strong></p>
+<strong>ใช้ Quarter-Kelly (f*/4) เป็นจุดเริ่มต้น — Part IV จะพาไปลึกขึ้นในเรื่องนี้</strong></p>
 </div>
 
 <div class="ex">
@@ -989,7 +990,7 @@ print(f"Expected Portfolio Return: {-result.fun:.1%}")</div>
 <div class="ad-title">🤖 AI มักสร้าง matrix แนวทแยงด้วย nested comprehension — ฝึกอ่าน</div>
 <div class="ad-code">A_ub = [[max_dd[i] if j==i else 0 for j in range(3)] for i in range(3)]</div>
 <div class="ad-steps">
-<p>comprehension ซ้อนสองชั้น — อ่าน<strong>จากขวา (ชั้นนอก) เข้าซ้าย (ชั้นใน)</strong>:</p>
+<p>comprehension ซ้อนสองชั้น — <strong>อ่านจาก <code>for</code> ขวาสุดก่อน</strong>: <code>for i</code> สร้างทีละแถว แล้วค่อยอ่าน <code>for j</code> ที่อยู่ถัดมาทางซ้าย เพื่อสร้างทีละช่องในแถวนั้น:</p>
 <ol>
 <li><code>for i in range(3)</code> (ชั้นนอก, ขวาสุด) — สร้าง 3 แถว แถวละหนึ่ง i</li>
 <li><code>for j in range(3)</code> (ชั้นใน) — แต่ละแถวมี 3 ช่อง ช่องละหนึ่ง j</li>
@@ -1182,7 +1183,7 @@ pipeline.summary()</div>
 
 <div class="bx bk">
 <div class="bt">⚠ คำเตือน: ตัวเลขใน Part II คือ In-Sample — อย่าเชื่อ 100%</div>
-<p>Sharpe 2.0+ และ Return 15%+ ที่เห็นใน Part II ล้วน <strong>คำนวณจากข้อมูลชุดเดียวกับที่ optimize parameter</strong> (in-sample)<br><br>
+<p>ยินดีด้วย — มาถึงตรงนี้แสดงว่าคุณสร้าง strategy แรกได้แล้ว แต่มีเรื่องสำคัญหนึ่งอย่างที่ต้องรู้ก่อนใช้เงินจริง: Sharpe 2.0+ และ Return 15%+ ที่เห็นใน Part II ล้วน <strong>คำนวณจากข้อมูลชุดเดียวกับที่ optimize parameter</strong> (in-sample)<br><br>
 ในชีวิตจริง (out-of-sample) ผลลัพธ์มักต่ำกว่า <strong>50–80%</strong> เพราะ:<br>
 • ตลาดเปลี่ยน — pattern ในอดีตไม่ซ้ำแบบในอนาคต<br>
 • Parameter ที่ดีในอดีต = overfit กับ noise ในอดีต<br>

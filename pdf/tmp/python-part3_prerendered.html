@@ -121,8 +121,8 @@ body {
 /* ---- Headings ---- */
 h1 { page-break-before: always; }
 .cover h1 { page-break-before: avoid; }
-/* Override legacy @media print h2 rule — h2 should NOT force page break */
-h2 { font-size: 1.4em; page-break-before: avoid !important; page-break-after: avoid; }
+/* h2 = chapter heading (บทที่ N) — each chapter starts a new page */
+h2 { font-size: 1.4em; page-break-before: always; page-break-after: avoid; }
 h3 { font-size: 1.15em; page-break-after: avoid; }
 
 /* ---- Light code blocks for print ---- */
@@ -189,10 +189,7 @@ p { orphans: 3; widows: 3; }
 <div class="key-idea">
 <div class="ki-label">ทำไมต้องเรียน OOP?</div>
 <div class="ki-text">
-Code จาก Part II ทำงานได้ แต่มีปัญหาเมื่อโตขึ้น:<br>
-• เพิ่ม strategy ใหม่ → ต้องแก้ไขทุกที่ที่มีโค้ดเก่า<br>
-• แชร์ code ระหว่าง strategy → copy-paste แล้วแก้<br>
-• เพิ่ม asset ใหม่ → เพิ่มตัวแปรกระจาย codebase<br><br>
+โค้ดจาก Part II ทำงานได้ดีกับ pair เดียว แต่พอเพิ่มกลยุทธ์หรือสินทรัพย์ใหม่จะเริ่มยุ่งยาก: ต้องแก้โค้ดหลายที่พร้อมกัน, copy-paste แล้วแก้ทีละจุด, และตัวแปรกระจายไปทั่วโปรเจกต์<br><br>
 OOP แก้ปัญหาเหล่านี้ด้วยการ <strong>จัดกลุ่มข้อมูลและ behavior</strong> เข้าด้วยกันเป็น class — เปลี่ยนที่เดียว กระทบทุกที่
 </div>
 </div>
@@ -222,6 +219,7 @@ window  = 60
 entry_z = 2.0
 df = build_spread(btc_bybit, btc_binance, window)
 hl = calc_halflife(df["spread"])
+<span class="c"># สมมติว่า make_signal คือฟังก์ชันสร้างสัญญาณที่เราเขียนไว้แล้วใน Part II</span>
 signal = make_signal(df, entry_z)</div>
 
 <p>ปัญหาเริ่มเมื่อเทรด <strong>pair ที่สอง</strong> ซึ่งใช้ parameter คนละชุด:</p>
@@ -252,7 +250,7 @@ signal2 = pair2.make_signal()   <span class="c"># ใช้ของตัวเ
 <div class="ki-label">Class ไม่ใช่ความรู้ใหม่</div>
 <div class="ki-text">Class = <strong>dict (เก็บข้อมูล) + function (ทำงาน) เอามาผูกติดกัน</strong> — สองอย่างที่ใช้คล่องแล้วจาก Part I<br><br>
 ความใหม่มีแค่ 2 สิ่ง:<br>
-1. <code>self</code> = "กล่องใบนี้" — เมื่อ Python รัน <code>pair1.make_signal()</code> มันแปลงเป็น <code>PairStrategy.make_signal(pair1)</code> โดยอัตโนมัติ กล่าวคือ <code>self</code> คือ <code>pair1</code> ที่ถูกส่งเข้ามาเป็น argument แรกเสมอ — นี่คือ binding: function รู้ว่าตัวเองทำงานให้กล่องใบไหน<br>
+1. <code>self</code> = "กล่องใบนี้" — เมื่อเราพิมพ์ <code>pair1.make_signal()</code> Python จะแปลงเป็น <code>PairStrategy.make_signal(pair1)</code> ให้อัตโนมัติ<br>พูดง่าย ๆ คือ <code>self</code> ก็คือ <code>pair1</code> ที่ถูกส่งเข้ามาเป็น argument แรกเสมอ — เราไม่ต้องส่งเอง Python จัดการให้<br>
 2. <code>self.window</code> = "หยิบ window จาก dict ของกล่องใบนี้" — ภายในเป็นแค่ dict ธรรมดา แค่ syntax ต่างกัน: <code>cfg["window"]</code> กับ <code>self.window</code> คือสิ่งเดียวกัน</div>
 </div>
 
@@ -603,6 +601,8 @@ class BadStrategy(Strategy):
 
 <span class="c"># s = BadStrategy("test")  ← TypeError: Can't instantiate abstract class</span></div>
 
+<p><strong>concrete method</strong> คือเมธอดที่ไม่มี <code>@abstractmethod</code> — class แม่เขียน implementation ไว้ครบแล้ว class ลูกใช้ได้เลยโดยไม่ต้องเขียนซ้ำ (ตรงข้ามกับ abstract method ที่ลูกต้องเขียนเอง)</p>
+
 <div class="ai-decode">
 <div class="ad-title">🤖 ฝึกอ่าน: <code>@abstractmethod</code> และ <code>ABC</code></div>
 <div class="ad-code">from abc import ABC, abstractmethod
@@ -618,7 +618,7 @@ class Strategy(ABC):          # ABC = Abstract Base Class
 <li><code>@abstractmethod</code> — decorator ที่ "ติดป้าย" ว่า method นี้<strong>ต้องถูก override โดยลูก</strong> — ถ้าลูกไม่ทำ สร้าง object ไม่ได้เลย</li>
 <li><code>pass</code> ใน method body — บอกว่า "แม่ไม่ได้ implement จริง ๆ แค่กำหนดชื่อ/signature ไว้"</li>
 </ol>
-<p>เปรียบ ABC กับ interface ของหมอ: "ทุกคนที่จบแพทย์ <em>ต้อง</em> มี license — ถ้าไม่มีจะทำงานเป็นหมอไม่ได้" — ABC คือการบังคับแบบเดียวกัน: ทุก strategy <em>ต้อง</em> implement <code>fit()</code> และ <code>signal()</code></p>
+<p>เปรียบ ABC กับ interface ของหมอ: "ทุกคนที่จบแพทย์ <em>ต้อง</em> มี license — ถ้าไม่มีจะทำงานเป็นหมอไม่ได้" — ABC คือการบังคับแบบเดียวกัน: ทุก strategy <em>ต้อง</em> implement ทั้ง <code>fit()</code>, <code>signal()</code> และ <code>position_size()</code></p>
 </div>
 </div>
 
@@ -708,6 +708,8 @@ class PairStrategy(Strategy):
         return self
 
     def signal(self, data=None) -> str:
+        if self._zscore is None:
+            raise RuntimeError("ต้องเรียก fit() ก่อน signal()")
         z = self._zscore.iloc[-1]
         if z &gt;  self.entry_z: return "SHORT"
         if z &lt; -self.entry_z: return "LONG"
@@ -746,6 +748,8 @@ print(strat)</div>
         return self
 
     def signal(self, data=None) -> str:
+        if self._ma_fast is None:
+            raise RuntimeError("ต้องเรียก fit() ก่อน signal()")
         if self._ma_fast.iloc[-1] &gt; self._ma_slow.iloc[-1]:
             return "LONG"
         elif self._ma_fast.iloc[-1] &lt; self._ma_slow.iloc[-1]:
@@ -763,7 +767,7 @@ print(strat)</div>
 
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้</div>
-<div class="ki-text">Design Patterns คือ "วิธีแก้ปัญหาซ้ำๆ ที่ผ่านการพิสูจน์แล้ว" ใน Quant system ใช้บ่อย 3 patterns: <strong>Strategy Pattern</strong> (สลับ algorithm ได้โดยไม่แก้ backtester), <strong>Observer Pattern</strong> (แจ้งเตือนเมื่อมี event เช่น signal เกิด), <strong>Factory Pattern</strong> (สร้าง object จาก config โดยไม่ hard-code ชื่อ class)</div>
+<div class="ki-text">Design Pattern คือ "สูตรสำเร็จ" ที่นักพัฒนาทั่วโลกใช้แก้ปัญหาเดิม ๆ มาหลายสิบปี — ไม่ต้องคิดใหม่ตั้งแต่ต้น ใน Quant system ใช้บ่อย 3 patterns: <strong>Strategy Pattern</strong> (สลับ algorithm ได้โดยไม่แก้ backtester), <strong>Observer Pattern</strong> (แจ้งเตือนเมื่อมี event เช่น signal เกิด), <strong>Factory Pattern</strong> (สร้าง object จาก config โดยไม่ hard-code ชื่อ class)</div>
 </div>
 
 <h3 id="s20-1">20.1 Strategy Pattern — สลับ Algorithm</h3>
@@ -991,7 +995,7 @@ PairStrategy</div>
             raise ValueError(f"ไม่มี position {symbol}")
         pos = self.open_positions.pop(symbol)
         pos.close(price)
-        self.cash += pos.size * price * (1 - pos.fee_rate)
+        self.cash += pos.size * price * (1 - pos.fee_rate)  <span class="c"># หมายเหตุ: คิด fee ขาออกขาเดียว — ฉบับสมบูรณ์ดู Position.net_pnl ในแบบฝึกหัดบท 18 ที่คิด fee ทั้งสองขา</span>
         self.closed_positions.append(pos)
         self._equity_history.append(self.total_equity({symbol: price}))
         return pos
@@ -1024,6 +1028,8 @@ PairStrategy</div>
                 f"trades={len(self.closed_positions)})")</div>
 
 <h3 id="s21-3">21.3 ประกอบทุก Component เป็น TradingSystem</h3>
+
+<p><code>TradingSystem</code> ออกแบบตามแนวคิด <strong>Facade</strong> — เป็น "จุดติดต่อเดียว" ที่ซ่อนความซับซ้อนข้างในไว้ เหมือนรีโมตทีวีที่กดปุ่มเดียวแต่ข้างในสั่งงานหลายวงจร ผู้ใช้ไม่ต้องรู้ว่ามี Strategy, Portfolio, RiskManager ทำงานประสานกันอย่างไร</p>
 
 <div class="fm">class TradingSystem:
     """

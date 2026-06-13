@@ -130,8 +130,8 @@ body {
 /* ---- Headings ---- */
 h1 { page-break-before: always; }
 .cover h1 { page-break-before: avoid; }
-/* Override legacy @media print h2 rule — h2 should NOT force page break */
-h2 { font-size: 1.4em; page-break-before: avoid !important; page-break-after: avoid; }
+/* h2 = chapter heading (บทที่ N) — each chapter starts a new page */
+h2 { font-size: 1.4em; page-break-before: always; page-break-after: avoid; }
 h3 { font-size: 1.15em; page-break-after: avoid; }
 
 /* ---- Light code blocks for print ---- */
@@ -282,12 +282,13 @@ print(type(return_pct))<span class="c"># &lt;class 'float'&gt;</span></div>
 <tr><td><code>=</code></td><td>"เอา...มาใส่ใน..."</td><td><code>z = 2.5</code></td><td>เอา 2.5 มาใส่ใน z</td></tr>
 <tr><td><code>==</code></td><td>"ถามว่า...เท่ากับ...ไหม"</td><td><code>z == 2.5</code></td><td>ถามว่า z เท่ากับ 2.5 ไหม (ได้คำตอบ True/False)</td></tr>
 <tr><td><code>!=</code></td><td>"ถามว่า...ไม่เท่ากับ...ไหม"</td><td><code>signal != 0</code></td><td>ถามว่า signal ไม่เท่ากับ 0 ใช่ไหม</td></tr>
-<tr><td><code>&gt;=</code></td><td>"ถามว่า...อย่างน้อย...ไหม"</td><td><code>z &gt;= 2.0</code></td><td>ถามว่า z มากกว่าหรือเท่ากับ 2.0 ไหม</td></tr>
+<tr><td><code>&gt;=</code></td><td>"ถามว่า...มากกว่าหรือเท่ากับ...ไหม"</td><td><code>z &gt;= 2.0</code></td><td>ถามว่า z มากกว่าหรือเท่ากับ 2.0 ไหม</td></tr>
 <tr><td><code>.</code></td><td>"ของ" (อ่านย้อนจากขวา)</td><td><code>df.mean()</code></td><td>ค่าเฉลี่ย<strong>ของ</strong> df</td></tr>
 <tr><td><code>[ ]</code></td><td>"หยิบตัวที่..."</td><td><code>prices[0]</code></td><td>หยิบตัวแรกจาก prices</td></tr>
 <tr><td><code>( )</code> หลังชื่อ</td><td>"สั่งให้ทำงาน"</td><td><code>calc_return()</code></td><td>สั่งให้ calc_return ทำงาน</td></tr>
 <tr><td><code>:</code> ท้ายบรรทัด</td><td>"แล้วทำต่อไปนี้"</td><td><code>if z &gt; 2:</code></td><td>ถ้า z มากกว่า 2 แล้วทำต่อไปนี้</td></tr>
 </table>
+<p><strong>หมายเหตุ:</strong> วงเล็บ <code>( )</code> มีสองบทบาท — ถ้าอยู่หลังชื่อ (เช่น <code>print(...)</code>) แปลว่า "สั่งให้ทำงาน" แต่ถ้าครอบนิพจน์คณิตศาสตร์ (เช่น <code>(a - b) / b</code>) แปลว่า "ทำส่วนนี้ก่อน"</p>
 </div>
 
 <div class="bx bk">
@@ -579,14 +580,22 @@ for sym, w in zip(symbols, weights):
 
 <div class="fm">equity = 100000      <span class="c"># เงินเริ่มต้น 100,000 บาท</span>
 max_loss = 90000     <span class="c"># ถ้าเงินเหลือน้อยกว่า 90,000 หยุดเทรด</span>
-daily_return = 0.005 <span class="c"># สมมติกำไร/ขาดทุนวันละ 0.5% (จริง ๆ จะได้จาก strategy)</span>
+daily_return = -0.004   <span class="c"># สมมติขาดทุนวันละ 0.4% (จงใจให้ติดลบ เพื่อให้ loop มีวันจบ — จริง ๆ จะได้จาก strategy)</span>
+day = 0              <span class="c"># ตัวนับรอบ</span>
 
 while equity &gt; max_loss:               <span class="c"># ก่อนทุกรอบ ถาม: equity ยังมากกว่า max_loss ไหม?</span>
-    profit = equity * daily_return     <span class="c"># คำนวณกำไร/ขาดทุนวันนี้ (ใช้ค่าสุ่มแทนจริง ๆ)</span>
-    equity = equity + profit           <span class="c"># อัปเดตเงินทุน</span>
+    day = day + 1                      <span class="c"># นับรอบที่เทรด</span>
+    profit = equity * daily_return     <span class="c"># คำนวณกำไร/ขาดทุนวันนี้ (ติดลบ = ขาดทุน)</span>
+    equity = equity + profit           <span class="c"># อัปเดตเงินทุน (ลดลงเรื่อย ๆ)</span>
+    print(f"รอบ {day}: equity = {equity:.2f}")
                                        <span class="c"># ไม่ → ออกจาก loop (หยุดเทรด)</span>
 print("หยุดเทรด — ขาดทุนถึง limit")</div>
-<div class="read-aloud">ตราบใดที่ equity ยังมากกว่า max_loss ก็ทำต่อไปนี้: เทรดหนึ่งวันแล้วอัปเดต equity — เครื่องจะกลับขึ้นไป<strong>ถามคำถามเดิมซ้ำ</strong>ก่อนเริ่มรอบใหม่ทุกครั้ง</div>
+<div class="output">รอบ 1: equity = 99600.00
+รอบ 2: equity = 99201.60
+...
+รอบ 27: equity = 89743.32  ← ต่ำกว่า 90,000 แล้ว loop จึงหยุด
+หยุดเทรด — ขาดทุนถึง limit</div>
+<div class="read-aloud">ตราบใดที่ equity ยังมากกว่า max_loss ก็ทำต่อไปนี้: เทรดหนึ่งวันแล้วอัปเดต equity (ขาดทุนวันละ 0.4% จึงลดลงทุกรอบ) — เครื่องจะกลับขึ้นไป<strong>ถามคำถามเดิมซ้ำ</strong>ก่อนเริ่มรอบใหม่ทุกครั้ง พอ equity ตกลงต่ำกว่า 90,000 ในรอบที่ 27 เงื่อนไขเป็น False loop จึงจบ</div>
 
 <div class="bx bk">
 <div class="bt">⚠ Infinite loop — while ที่ไม่มีวันจบ</div>
@@ -703,6 +712,7 @@ print(z[-3:])  <span class="c"># z-score 3 วันล่าสุด</span></d
 <div class="ad-title">🤖 AI เขียนฟังก์ชันเดียวกันนี้ใน 1 บรรทัด — ฝึกอ่านกัน</div>
 <div class="ad-code">z = (s - s.rolling(60).mean()) / s.rolling(60).std()</div>
 <div class="ad-steps">
+<p>กล่องนี้คือ "ดูตัวอย่างล่วงหน้า" — <code>.rolling()</code> จะเรียนละเอียดในบทที่ 9 ตอนนี้แค่ฝึกอ่านโครงสร้างให้ออก</p>
 <p>(<code>s</code> คือ pandas Series — จะเรียนบทที่ 9) อ่านทีละชิ้นจากในออกนอก:</p>
 <ol>
 <li><code>s.rolling(60)</code> — "หน้าต่างเลื่อน 60 วัน <strong>ของ</strong> s" (จุด = "ของ")</li>
@@ -937,7 +947,7 @@ print(f"Max:    {np.max(returns):.4f}")
 print(f"Min:    {np.min(returns):.4f}")
 
 <span class="c"># Annualized Vol</span>
-annual_vol = np.std(returns) * np.sqrt(252)
+annual_vol = np.std(returns) * np.sqrt(252)  <span class="c"># ใช้ 252 เพื่อความง่าย — crypto เทรด 24/7 จริงๆ ใช้ 365 (ดู Part 0 บท 3.3)</span>
 print(f"Annual Vol: {annual_vol:.1%}")</div>
 
 <div class="bx ba">
@@ -1002,7 +1012,7 @@ Name: BTC, dtype: int64</div>
 print(prices.iloc[1])         <span class="c"># 65000 — หรือถามด้วยตำแหน่งแบบเดิมก็ยังได้ (iloc)</span></div>
 <div class="read-aloud">หยิบค่าที่ป้ายชื่อ "2024-01-02" จาก prices — index ทำให้เราคุยกับข้อมูลด้วย "ภาษาของข้อมูล" (วันที่) แทนตำแหน่ง</div>
 
-<p>และพลังที่สำคัญที่สุดของ index — <strong>จับคู่แถวให้อัตโนมัติ (alignment)</strong> ซึ่งแก้ปัญหาข้อ 3 แบบถาวร:</p>
+<p>และพลังที่สำคัญที่สุดของ index — <strong>จับคู่แถวให้อัตโนมัติ (alignment)</strong> ซึ่งแก้ปัญหาข้อ 3 ได้อย่างถาวร:</p>
 
 <div class="fm"><span class="c"># ETH ไม่มีข้อมูลวันที่ 2 (ตลาดล่ม)</span>
 btc = pd.Series([63000, 65000, 64500],
@@ -1138,7 +1148,7 @@ df["log_ret"] = np.log(close / prev_close)
 
 <span class="c"># 3) annualized volatility จากหน้าต่าง 20 วัน</span>
 daily_vol_20 = df["return"].rolling(20).std()   <span class="c"># std ของ return 20 วันล่าสุด</span>
-df["vol_20"] = daily_vol_20 * np.sqrt(252)      <span class="c"># คูณ √252 เพื่อแปลงเป็นรายปี</span>
+df["vol_20"] = daily_vol_20 * np.sqrt(252)      <span class="c"># ใช้ 252 เพื่อความง่าย — crypto เทรด 24/7 จริงๆ ใช้ 365 (ดู Part 0 บท 3.3)</span>
 
 <span class="c"># 4) moving average 50 วัน</span>
 df["ma_50"] = close.rolling(50).mean()
