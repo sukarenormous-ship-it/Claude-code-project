@@ -5,40 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Playground · Part 1 — Calculated Risk Framework</title>
 <link href="vendor/fonts/sarabun.css" rel="stylesheet">
-<style>
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
-h3{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
-p{margin-bottom:.8em}a{color:var(--cyan-dark)}ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}strong{color:var(--g9)}
-.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
-.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
-.cover h1{font-size:2.2em;line-height:1.3}
-.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
-.fm{font-family:'Courier New',monospace;background:#f3f4f6;padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.88em;line-height:1.6;overflow-x:auto;white-space:pre}
-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
-th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
-td{padding:8px 12px;border-bottom:1px solid var(--g2);vertical-align:top}
-tr:nth-child(even){background:var(--g0)}
-.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
-.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
-.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
-.danger{background:var(--red-bg);border-left:4px solid var(--red);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
-.gate{background:var(--red-bg);border:2px solid var(--red);border-radius:8px;padding:16px 20px;margin:16px 0;font-family:'Courier New',monospace;font-size:.9em;line-height:1.7}
-</style>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <script src="vendor/katex/katex.min.js"></script>
 <script src="vendor/katex/contrib/auto-render.min.js"></script>
-<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g7:#374151;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+h4{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+a{color:var(--cyan-dark);text-decoration:none}a:hover{text-decoration:underline}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);color:var(--g9);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1em;font-weight:700;color:var(--g9);margin-top:8px;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;white-space:pre-wrap}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.philosophy-box{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--cyan);border-radius:12px;padding:22px 28px;margin:24px 0;text-align:center}
+.philosophy-box .ph-title{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.philosophy-box .ph-statement{font-size:1.3em;font-weight:700;color:var(--g9);line-height:1.5}
+.philosophy-box .ph-sub{font-size:.95em;color:#64748b;margin-top:10px}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.gate{background:var(--red-bg);border:2px solid var(--red);border-radius:8px;padding:16px 18px;margin:16px 0}
+.gate .bt{color:var(--red)}
+.zone-bar{height:28px;border-radius:4px;margin:4px 0;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:.92em;color:#fff}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}table{page-break-inside:avoid}}
+</style>
 </head>
 <body>
 
 <div class="cover">
-<div class="ch-num">The Playground · Part 1</div>
+<div class="ch-num">The Playground · Part 1 of 10</div>
 <h1>Calculated Risk Framework</h1>
 <div class="sub">3 คำถามบังคับ · Worst-Case Formulas · Gate A &amp; Gate B · 5 Warning Cases · CRS Template</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้ — อ่านก่อน</div>
+<div class="ki-text">Calculated Risk ไม่ใช่การหลีกเลี่ยงความเสี่ยง — มันคือ <strong>การคำนวณก่อนว่า Worst Case คือเท่าไหร่</strong> แล้วตัดสินใจว่ารับได้ไหม ถ้ารับได้ เล่นได้ทุกอย่าง</div>
+<div class="ki-eq">WCL = sup_{s ∈ S_adverse} L(s)   →   Gate A + Gate B   →   PROCEED</div>
 </div>
 
 <h2>A — นิยามและ Notation</h2>
@@ -56,9 +92,9 @@ H_dd     = DD Halt threshold (หยุดทุก game เมื่อ portfol
 
 <h2>B — 3 คำถาม Calculated Risk</h2>
 
-<div class="box">
-<strong>กฎเหล็ก: ต้องตอบได้ทั้ง 3 คำถามก่อน deploy ทุก technique</strong><br>
-ขาดคำถามใดคำถามหนึ่ง = ไม่ใช่ Calculated Risk = เสี่ยงโดยไม่รู้ตัว
+<div class="bx bc">
+<div class="bt">กฎเหล็ก: ต้องตอบได้ทั้ง 3 คำถามก่อน deploy ทุก technique</div>
+<p>ขาดคำถามใดคำถามหนึ่ง = ไม่ใช่ Calculated Risk = เสี่ยงโดยไม่รู้ตัว</p>
 </div>
 
 <h3>Q1 — Identify: Worst Case คืออะไร?</h3>
@@ -205,10 +241,10 @@ Vol Carry (Short near-term vol):
 
 <h2>D — กฎ Micro ≤ Macro: 3 ตัวอย่างจริง</h2>
 
-<div class="box">
-<strong>ภาพรวมระบบ (C₀ = $100,000)</strong><br>
-Macro Floor: F = $100,000 × (1 − 0.20) = <strong>$80,000</strong><br>
-ห้ามขาดทุนเกิน $20,000 ในทุกกรณี (Gate B = $20,000)
+<div class="bx bc">
+<div class="bt">ภาพรวมระบบ (C₀ = $100,000)</div>
+<p>Macro Floor: F = $100,000 × (1 − 0.20) = <strong>$80,000</strong><br>
+ห้ามขาดทุนเกิน $20,000 ในทุกกรณี (Gate B = $20,000)</p>
 </div>
 
 <h3>ตัวอย่างที่ 1: Soft Martingale — PASS</h3>
@@ -265,8 +301,8 @@ Resize: ลด position เหลือ 0.6 BTC / 9 ETH
 
 <h2>E — 5 Warning Cases: False Security</h2>
 
-<div class="warn">
-<strong>คิดว่า Calculated แล้ว แต่จริงๆ ยังไม่ได้ Calculate</strong>
+<div class="bx ba">
+<div class="bt">คิดว่า Calculated แล้ว แต่จริงๆ ยังไม่ได้ Calculate</div>
 </div>
 
 <h3>⚠ Warning 1: Scenario ไม่ครอบ Tail Events</h3>
@@ -422,12 +458,12 @@ Fix: Monte Carlo simulation ของ path
 ║  วันที่: __________  เวลา: __________                           ║
 ╚══════════════════════════════════════════════════════════════════╝</div>
 
-<div class="tip">
-<strong>ดาวน์โหลด CRS Template ฉบับเต็ม</strong><br>
-CRS Template แบบ printable อยู่ใน <a href="playground-appendix.html">Appendix</a> — พิมพ์ออกมาหรือเปิดในโทรศัพท์ก่อน deploy ทุก technique
+<div class="bx bg">
+<div class="bt">ดาวน์โหลด CRS Template ฉบับเต็ม</div>
+<p>CRS Template แบบ printable อยู่ใน <a href="playground-appendix.html">Appendix</a> — พิมพ์ออกมาหรือเปิดในโทรศัพท์ก่อน deploy ทุก technique</p>
 </div>
 
-<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif">
 <a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
 <span><a href="playground-part0.html" style="color:#64748b">← Part 0</a> · <a href="playground-part2.html" style="color:var(--cyan-dark)">Part 2: สร้างสนาม →</a></span>
 <a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
