@@ -243,6 +243,113 @@ Macro Gate: $4,000 ≤ $20,000 ✓
 ตอนนี้เริ่ม Games Library ได้เลย → <a href="playground-part3.html">Part 3: Games Library A</a></p>
 </div>
 
+<h2>H — Edge Cases: เมื่อสนามเจอสถานการณ์ยาก</h2>
+
+<p>Zone Waterfall ทำงานได้ดีในสภาวะปกติ แต่มีสถานการณ์พิเศษที่ต้องรู้วิธีรับมือ — ก่อนที่มันจะเกิดขึ้นจริง</p>
+
+<h3>H-1: Active Zone หมด — ทำอะไรต่อ?</h3>
+
+<div class="bx ba">
+<div class="bt">⚠ Active Zone Utilization = 100%</div>
+<p>เมื่อ Active Zone ถูก deploy ครบแล้ว ไม่สามารถเปิด Game ใหม่จาก Active Zone ได้อีก — ต้องเลือก 1 ใน 3 ทางเลือกต่อไปนี้</p>
+</div>
+
+<div class="fm">ถ้า Active Zone ถูก deploy ครบ (Utilization = 100%):
+
+Option 1: รอจนมี Game ปิด แล้วค่อยเปิดใหม่
+  → เหมาะเมื่อ: Regime ไม่เปลี่ยน, Games ที่เปิดอยู่ยัง Valid
+  → วิธี: ตั้ง Alert เมื่อ Game ใดปิด → reassess Regime ก่อนเปิดใหม่
+
+Option 2: ดึงจาก Standby Zone ไม่เกิน 10% ของ C₀
+  → เหมาะเมื่อ: Regime เปลี่ยนและพบ High-Conviction Opportunity
+  → ต้อง: Recalculate WCL_total หลังเพิ่ม Game ใหม่
+  → ห้าม: ดึง Standby เกิน 10% ต่อครั้ง
+  → ต้อง: WCL_total ≤ MaxDD_macro × C₀ ยังคงถูกต้องหลังดึง
+
+Option 3: ไม่ทำอะไร (Preserve)
+  → เหมาะเมื่อ: ไม่มี Opportunity ที่ผ่าน CRS Gate
+  → จำไว้: "ไม่เปิด Game" เป็น Valid Decision เสมอ
+  → Cash ใน Standby ยังทำ Standby Yield ได้ระหว่างรอ</div>
+
+<h3>H-2: DD Halt × Zone Interaction</h3>
+
+<p>เมื่อ Drawdown ถึง threshold ต่างๆ แต่ละ Zone ได้รับผลกระทบต่างกัน:</p>
+
+<table>
+<tr><th>DD Level</th><th>Active Zone</th><th>Standby Zone</th><th>Floor Zone</th><th>Action</th></tr>
+<tr><td>&lt; 4%</td><td>เปิดได้ปกติ</td><td>รอ deploy</td><td>ล็อค</td><td>ปกติ</td></tr>
+<tr><td>4–8%</td><td>ห้ามเปิดใหม่</td><td>ห้ามดึง</td><td>ล็อค</td><td>Monitor สูง</td></tr>
+<tr><td>DD Halt (8%)</td><td>ปิดทั้งหมด</td><td>ปิดทั้งหมด</td><td>ล็อค</td><td>หยุดเล่น</td></tr>
+<tr><td>Kill Switch (12%)</td><td>ปิดทันที</td><td>ปิดทันที</td><td>ล็อค</td><td>Emergency Exit</td></tr>
+</table>
+
+<div class="bx bc">
+<div class="bt">สำคัญ: DD Halt ไม่ได้แตะ Floor</div>
+<p>Floor Zone ล็อคอยู่ตลอดเวลา — ทั้งก่อน ระหว่าง และหลัง DD Halt<br><br>
+DD Halt เป็นแค่ "หยุดส่วน Active + Standby" ชั่วคราว เพื่อประเมินสถานการณ์ก่อนกลับมาเล่น Floor คือ absolute boundary ที่ไม่มีเหตุการณ์ใดสามารถทะลุได้นอกจาก macro crisis ระดับ system</p>
+</div>
+
+<h3>H-3: Zone Replenishment — ฟื้นตัวหลัง DD Halt</h3>
+
+<div class="fm">หลัง DD Halt Triggered:
+
+  ขั้น 1: รอจนกว่า DD จะลดลงครึ่งหนึ่ง
+           DD_current ≤ DD_halt / 2 = 4%
+           เหตุผล: ให้แน่ใจว่าตลาดเสถียรขึ้นจริงก่อนกลับมา
+
+  ขั้น 2: ประเมิน Post-Mortem ก่อน Restart
+           Q: WCL ที่ตั้งไว้ถูกต้องไหม?
+           Q: Regime ตอนนี้คืออะไร?
+           Q: Games ที่ขาดทุน — Thesis ยังถูกอยู่ไหม?
+
+  ขั้น 3: เปิดเกมใหม่ด้วย 50% ของ Normal Size ก่อน
+           เหตุผล: ลด Risk ขณะที่ Confidence กำลังสร้างกลับ
+           ระยะ: 2 สัปดาห์แรก หรือจนกว่าจะมีกำไรจาก 3 Games
+
+  ขั้น 4: กลับ Full Size หลังผ่าน 3 Games ด้วย Normal WCL
+           เงื่อนไข: WCL_total ≤ MaxDD_macro × C₀ ยังคงถูกต้อง</div>
+
+<div class="bx bg">
+<div class="bt">Zone Replenishment ≠ Revenge Trading</div>
+<p><strong>Zone Replenishment</strong> คือกระบวนการที่มีโครงสร้าง: รอให้ DD ลด → Post-Mortem → เริ่ม 50% Size → ค่อยกลับ Full Size หลังผ่าน 3 Games<br><br>
+<strong>Revenge Trading</strong> คือกลับมาเล่น <em>ทันที</em> ด้วย <em>Size ใหญ่กว่าเดิม</em> เพื่อ "เอาเงินคืน" — ไม่มีการประเมิน Regime หรือ WCL ก่อน<br><br>
+ความต่างหลัก: Replenishment เริ่มจาก <em>Process</em> — Revenge Trading เริ่มจาก <em>Emotion</em></p>
+</div>
+
+<h3>H-4: Zone Rebalancing รายเดือน</h3>
+
+<p>P&amp;L ที่เกิดขึ้นตลอดเดือนทำให้สัดส่วน Zone เปลี่ยนไปจาก 50/30/20 — ต้องทำ Rebalancing เป็นประจำ</p>
+
+<div class="fm">วันที่ 1 ของทุกเดือน — Zone Rebalancing Checklist:
+
+  ขั้น 1: คำนวณ Current Zone Allocation
+           Active_current   = ทุนที่ deploy อยู่จริง
+           Standby_current  = ทุนที่ถือ Stablecoin/Yield
+           Floor_current    = ทุนที่ล็อค
+
+  ขั้น 2: เปรียบเทียบกับ Target 50/30/20
+           Active_target   = C₀_current × 50%
+           Standby_target  = C₀_current × 30%
+           Floor_target    = C₀_current × 20%
+
+  ขั้น 3: ตรวจสภาพ Floor
+           Case A: Floor เติบโต (กำไรสะสมเข้า Floor)
+             → สามารถย้ายส่วนเกินจาก Floor กลับไป Active/Standby ได้
+             → ไม่บังคับ — ขึ้นอยู่กับ Opportunity ใน Regime ปัจจุบัน
+
+           Case B: Floor หดตัว (ขาดทุนบางส่วนมาจาก Floor)
+             → ห้ามเพิ่ม Active/Standby จนกว่า Floor จะกลับ 20% ก่อน
+             → ลำดับความสำคัญ: Rebuild Floor → Standby → Active
+
+  ขั้น 4: Rebalance ตาม Target ใหม่
+           หมายเหตุ: ไม่ต้องปิด Active Games เพื่อ Rebalance
+           รอให้ Games ปิดตามปกติ แล้วจัด allocation ของ capital ที่ว่าง</div>
+
+<div class="bx bc">
+<div class="bt">ทำไม Rebalancing รายเดือน ไม่ใช่รายวัน?</div>
+<p>Rebalancing บ่อยเกินไปทำให้ต้องปิด Games ก่อนกำหนด และเสีย transaction cost โดยไม่จำเป็น รายเดือนให้เวลาเพียงพอให้ Games ปิดตามธรรมชาติ และ Regime มีเวลาพิสูจน์ตัวเองก่อน Rebalance</p>
+</div>
+
 <nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif">
 <a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
 <span><a href="playground-part1.html" style="color:#64748b">← Part 1</a> · <a href="playground-part3.html" style="color:var(--cyan-dark)">Part 3: Games Library A →</a></span>
