@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Playground · Part 5 — Games Library C: Spread, Geometry &amp; Opportunistic</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}a{color:var(--cyan-dark)}ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2.2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.fm{font-family:'Courier New',monospace;background:#f3f4f6;padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.88em;line-height:1.6;overflow-x:auto;white-space:pre}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2);vertical-align:top}
+tr:nth-child(even){background:var(--g0)}
+.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.game{border:1px solid var(--g2);border-radius:8px;padding:18px 20px;margin:20px 0;border-top:4px solid var(--cyan)}
+.game h3{color:var(--cyan-dark);margin-top:0;font-size:1.15em}
+.game .tag{display:inline-block;font-size:.75em;font-weight:700;color:#fff;background:#64748b;padding:1px 8px;border-radius:12px;margin-right:6px}
+.game .tag.mr{background:var(--cyan)}
+.game .tag.tr{background:#7c3aed}
+.game .tag.hv{background:#dc2626}
+.game .tag.lv{background:#16a34a}
+.game .tag.all{background:#0f172a}
+.game table{margin:8px 0;font-size:.88em}
+.game table th{background:#f1f5f9;color:var(--g9);font-size:.88em}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">The Playground · Part 5</div>
+<h1>Games Library C</h1>
+<div class="sub">Spread Games (3) · Geometry Games (4) · Opportunistic Games (4) · ทั้งหมด 11 เกม</div>
+</div>
+
+<h2>หมวด C1 — Spread Games (3 เกม)</h2>
+<p>เกมที่ทำกำไรจาก spread ระหว่าง 2 assets หรือ 2 instruments — ต้องใช้ Statarb knowledge</p>
+
+<div class="game">
+<h3>เกม SP1 · Pair Grid <span class="tag mr">Mean-Revert</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Spread ระหว่าง BTC/ETH (หรือ correlated pair) จะ mean-revert — long asset ที่ underperform + short asset ที่ outperform</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Correlation breakdown (ρ จาก 0.85 → 0.3 ในวิกฤต) → hedge ไม่ work → ขาดทุนทั้ง 2 ฝั่ง</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>BTC ลง 20% ETH ลงเพียง 5% (ρ ต่ำ): Net WCL = 20% × BTC_position − 5% × ETH_hedge ≤ $10,000 → ต้อง resize ให้ผ่าน Gate</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Statarb Ch.5 (Cointegration), Ch.8 (Pairs Setup), Grid Mastery Part 6</td>
+</tr><tr>
+<th>Synergy</th>
+<td>Basis Trade (ใช้ spread concept เดียวกัน), Vol Surface Arb (วัด correlation ผ่าน vol)</td>
+</tr></table>
+<div class="warn" style="margin:8px 0;padding:8px 12px">Prerequisite: ต้องทำ Cointegration test (ADF) และคำนวณ Half-life ก่อน — ถ้า Half-life &gt; 30 วัน grid step ต้องกว้างมาก</div>
+</div>
+
+<div class="game">
+<h3>เกม SP2 · Basis Trade (Spot-Perp) <span class="tag mr">Mean-Revert</span> <span class="tag lv">Low-Vol</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Futures basis (Spot − Perp) จะ converge เมื่อเวลาผ่านไป + เก็บ Funding Rate ระหว่างรอ — delta neutral ตลอด</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Basis blow-out ในวิกฤต (short squeeze บน Perp) → WCL = ΔBasis_max × position size</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>ΔBasis_max จาก historical (FTX collapse) = $2,000 per BTC: WCL = $2,000 × 1 BTC = $2,000 (+ funding cost)</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Arbitrage Part 2B (Cash-Carry), Statarb (OU Process ของ Basis)</td>
+</tr><tr>
+<th>Synergy</th>
+<td>Carry Stack (เหมือนกันแต่ต่าง emphasis), Standby Yield</td>
+</tr></table>
+</div>
+
+<div class="game">
+<h3>เกม SP3 · Synthetic Stock <span class="tag tr">Trending</span> <span class="tag mr">Mean-Revert</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>ต้องการ exposure เหมือน long spot แต่ไม่ต้องการถือ physical BTC — สร้าง Synthetic Long (Long Call + Short Put, same strike/expiry)</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>BTC ลงต่ำกว่า Short Put strike → assignment + P&amp;L เหมือนถือ spot ลง · Funding Rate ของ Perp leg อาจ spike</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>เหมือน holding spot: ถ้า BTC ลง 15% = เสีย 15% ของ position size + Funding Rate cost ที่ซ่อน</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>PM Part 5 (Synthetic), Arbitrage Part 1 (Funding Rate — hidden cost!)</td>
+</tr></table>
+<div class="box" style="margin:8px 0;padding:8px 12px"><strong>Cross-Book Connection (จุดเชื่อมที่ 4):</strong> ก่อนเปิด Synthetic ใดๆ ใน Crypto → ตรวจ Funding Rate จาก Arbitrage book ก่อนเสมอ — FR สูงในช่วง bull run อาจสูง 32%/ปี</div>
+</div>
+
+<h2>หมวด C2 — Geometry Games (4 เกม)</h2>
+<p>เกมที่ปรับ <em>รูปทรงและตำแหน่ง</em> ของ Grid — ไม่ปรับ size แต่ปรับ geometry</p>
+
+<div class="game">
+<h3>เกม G1 · Skip-Level <span class="tag tr">Trending</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Momentum แรง — level ถัดไปจะถูก "กินข้าม" เร็วเกิน จึงข้ามไปวาง order ที่ level ถัดถัดไปแทน (ข้าม S/R ที่คนอื่นกำลังมองอยู่)</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Momentum หยุดที่ level ที่ข้ามไป → มี gap ใน coverage → ไม่ fill levels ที่ข้าม</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>Missed fills ที่ levels ที่ข้าม = opportunity cost ไม่ใช่ capital loss</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 2 (Geometry), Eye Part 2 (มอง Liquidity Pocket)</td>
+</tr></table>
+<div class="tip" style="margin:8px 0;padding:8px 12px">Dimension Lens: "ทุกคนดู level ถัดไป" → เปลี่ยนเป็นดู level ถัดถัดไป (เปลี่ยน dimension)</div>
+</div>
+
+<div class="game">
+<h3>เกม G2 · Zone Front-Load <span class="tag mr">Mean-Revert</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Support แถว lower boundary แข็งมาก — วาง orders หนักกว่าปกติในโซนล่าง รอ mean-revert ขึ้น</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Support พัง ราคาลงต่อ → ถือ inventory หนักในโซนที่ยังลงอยู่ — WCL มากกว่า Standard Grid</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>Bottom support พัง ลงอีก 10%: WCL = Front-loaded Q × 10% ΔP — คำนวณก่อนเปิดเสมอ</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 2</td>
+</tr></table>
+<div class="tip" style="margin:8px 0;padding:8px 12px">Sequence Inversion: Entry ก่อน (front-load) แล้วให้ market confirm ทีหลัง แทนที่จะรอ confirm แล้วค่อย entry</div>
+</div>
+
+<div class="game">
+<h3>เกม G3 · Step Pyramid <span class="tag mr">Mean-Revert</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Range มีหลาย sub-zones ที่แต่ละโซนมี support/resistance strength ต่างกัน — วาง step ห่างในโซนที่ volatility ต่ำ และชิดในโซนที่ volatility สูง</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>ราคาเคลื่อนผ่านโซน step ชิด เร็วผิดคาด → fills ที่ไม่ต้องการ</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>เหมือน Standard Grid แต่ step sizes ต่างกัน — WCL ขึ้นอยู่กับ Q_total × ΔP ถึง floor</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 2, Vol Mastery Part 1 (ATR per zone)</td>
+</tr></table>
+</div>
+
+<div class="game">
+<h3>เกม G4 · Dynamic Step <span class="tag mr">Mean-Revert</span> <span class="tag hv">High-Vol</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Volatility เปลี่ยนแปลงตามเวลา — step size ควรขยายเมื่อ vol สูง (ป้องกัน whipsaw) และแคบเมื่อ vol ต่ำ (เก็บกำไรถี่ขึ้น)</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>GARCH forecast vol ผิด → step ผิด → grid ไม่ทำงานตามที่ตั้งใจ</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>Vol spike ขณะ step แคบ → ราคาออกนอก grid เร็วมาก → หมด inventory ก่อนเวลา WCL ≈ Standard Grid</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 2, Vol Mastery Part 2 (GARCH)</td>
+</tr></table>
+<div class="box" style="margin:8px 0;padding:8px 12px"><strong>Cross-Book Connection (จุดเชื่อมที่ 5):</strong> Zone_width(t) = base_ATR × GARCH_forecast(t) / current_vol — GARCH บอก vol พรุ่งนี้ → Grid step ปรับอัตโนมัติ</div>
+</div>
+
+<h2>หมวด C3 — Opportunistic Games (4 เกม)</h2>
+<p>เกมที่ activate เฉพาะ scenario พิเศษ — ไม่เล่นตลอดเวลา</p>
+
+<div class="game">
+<h3>เกม OP1 · Flash Crash Reserve <span class="tag hv">High-Vol</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Flash Crash (ราคาลงแรง ≥ 15% ใน 1–4 ชั่วโมง) คือ "ของถูกชั่วคราว" — ถือ cash reserve ไว้เสมอ เพื่อ buy ทันทีเมื่อ crash</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Crash ไม่ recover (fundamental breakdown) → ถือ BTC ที่ขาดทุนนาน · Worst case: BTC ไม่ recover ใน 2 สัปดาห์ → ลด inventory 50%</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>Buy ที่ $85k (−15%) BTC ลงต่อถึง $70k: WCL = $15,000 × lot size → ต้องตั้ง stop ไว้</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 8 (Flash Crash strategy), Eye Part 1</td>
+</tr></table>
+<div class="fm">เหตุผล threshold 15%:
+ใต้ระดับนี้ market makers มักเข้าซื้อ + liquidation cascade ล้างแล้ว
++ ราคาต่ำกว่า fair value อย่างชัดเจน</div>
+</div>
+
+<div class="game">
+<h3>เกม OP2 · Snowball <span class="tag tr">Trending</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Grid กำไรสะสมพอที่จะ compound — เพิ่ม capital เข้า Grid จากกำไรที่ได้รับ ทำให้ทุกรอบถัดไปทำกำไรได้มากขึ้น</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>Snowball ใน trending up market ที่กลับทิศทาง → exposure เพิ่มขึ้นพอดีกับ drawdown</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>Snowball เพิ่ม position 20% แล้วตลาดกลับ: ขาดทุนเพิ่มจาก standard 20% — ต้อง cap Snowball ไม่เกิน 150% ของ original size</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 7, Math Part 4 (Compound Growth)</td>
+</tr></table>
+</div>
+
+<div class="game">
+<h3>เกม OP3 · Zone Migration <span class="tag tr">Trending</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>ราคาออกจาก Zone ปัจจุบันอย่างถาวร (breakout ที่ confirmed) — ย้าย Grid Zone ทั้งหมดไปยังราคาใหม่</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>False breakout: ย้าย Zone แล้วราคากลับ → เสีย orders ที่ส่งไว้ใน Zone เก่า</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>False breakout: ย้าย Zone + ราคากลับ 5% = WCL ≈ Q_total ใน Zone เก่า × 5% ΔP</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>Grid Mastery Part 9 (Migration criteria)</td>
+</tr></table>
+</div>
+
+<div class="game">
+<h3>เกม OP4 · Synthetic Grid (Options-as-Grid) <span class="tag mr">Mean-Revert</span></h3>
+<table><tr>
+<th>Market Thesis</th>
+<td>Sideways range ชัดเจน — แทนที่จะวาง Limit orders ธรรมดา ใช้ Options (CSP ที่ lower boundary, CC ที่ upper) สร้าง "synthetic" buy/sell signals ที่มี premium เป็น bonus</td>
+</tr><tr>
+<th>Risk Thesis</th>
+<td>ราคาทะลุ boundary ทั้งสองด้าน → assignment จาก short options + missed upside</td>
+</tr><tr>
+<th>Worst Case (ตัวเลข)</th>
+<td>WCL = CSP side ถูก assign + basis ลงต่อ → ดู Game O1 (CSP) สำหรับสูตรเต็ม</td>
+</tr><tr>
+<th>ดึงจากเล่ม</th>
+<td>PM Part 3 (CSP/CC), Grid Mastery Part 8 (Options+Grid)</td>
+</tr></table>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+<a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
+<span><a href="playground-part4.html" style="color:#64748b">← Part 4</a> · <a href="playground-part6.html" style="color:var(--cyan-dark)">Part 6: New Games →</a></span>
+<a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
+</nav>
+
+</body>
+</html>

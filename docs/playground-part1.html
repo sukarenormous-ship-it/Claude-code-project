@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Playground · Part 1 — Calculated Risk Framework</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}a{color:var(--cyan-dark)}ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2.2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.fm{font-family:'Courier New',monospace;background:#f3f4f6;padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.88em;line-height:1.6;overflow-x:auto;white-space:pre}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2);vertical-align:top}
+tr:nth-child(even){background:var(--g0)}
+.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.danger{background:var(--red-bg);border-left:4px solid var(--red);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.gate{background:var(--red-bg);border:2px solid var(--red);border-radius:8px;padding:16px 20px;margin:16px 0;font-family:'Courier New',monospace;font-size:.9em;line-height:1.7}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">The Playground · Part 1</div>
+<h1>Calculated Risk Framework</h1>
+<div class="sub">3 คำถามบังคับ · Worst-Case Formulas · Gate A &amp; Gate B · 5 Warning Cases · CRS Template</div>
+</div>
+
+<h2>A — นิยามและ Notation</h2>
+
+<p>ก่อนเริ่ม ต้องกำหนด Universe ของระบบให้ชัดเจน:</p>
+
+<div class="fm">C₀       = ทุนเริ่มต้นทั้งหมด (Total Capital)
+Z        = Zone allocation = สัดส่วนทุนที่จัดสรรให้ game นี้, Z ∈ (0,1]
+           โดย Σ Zᵢ ≤ 1 (ทุก game รวมกันไม่เกิน 100%)
+F        = Floor = ระดับทุนต่ำสุดที่ยอมรับได้ (absolute)
+         = C₀ × (1 − MaxDD_macro)
+MaxDD_macro = DD limit ระดับ system (เช่น 20% ของ C₀)
+MaxDD_micro = DD limit ของแต่ละ game (เช่น 25-30% ของ Zone)
+H_dd     = DD Halt threshold (หยุดทุก game เมื่อ portfolio DD ถึง %นี้)</div>
+
+<h2>B — 3 คำถาม Calculated Risk</h2>
+
+<div class="box">
+<strong>กฎเหล็ก: ต้องตอบได้ทั้ง 3 คำถามก่อน deploy ทุก technique</strong><br>
+ขาดคำถามใดคำถามหนึ่ง = ไม่ใช่ Calculated Risk = เสี่ยงโดยไม่รู้ตัว
+</div>
+
+<h3>Q1 — Identify: Worst Case คืออะไร?</h3>
+
+<p>ต้องระบุ <em>scenario</em> ที่สร้างผลขาดทุนมากที่สุด ไม่ใช่แค่ "ขาดทุน" แต่ต้องชี้ให้ได้ว่า:</p>
+
+<div class="fm">W(θ, S) = worst-case loss scenario
+         = f(strategy θ, state space S)
+
+"ถ้า BTC ทำ X ในเวลา T โดยมีเงื่อนไข Y — portfolio จะเกิดอะไร?"
+
+S_adverse = {scenarios ที่ price/vol/correlation เคลื่อนที่ไม่เป็นคุณ}</div>
+
+<h3>Q2 — Quantify: ตัวเลขคือเท่าไหร่?</h3>
+
+<div class="fm">WCL(θ) = sup_{s ∈ S_adverse} |Loss(θ, s)|
+
+WCL$  = Worst-Case Loss ในหน่วย USDT (absolute)
+WCL%  = WCL / (C₀ × Z)     ← % ของ zone allocation ที่จัดสรร
+
+สำคัญ: ต้องคำนวณเป็นตัวเลข USDT จริงๆ
+        ไม่ใช่แค่ % ที่ฟังดูเล็กน้อย</div>
+
+<h3>Q3 — Accept: รับได้ไหม?</h3>
+
+<div class="gate">Gate condition — ต้องผ่านทั้งสองข้อ:
+
+    Gate A: WCL$ ≤ C₀ × Z × MaxDD_micro     (Micro DD limit)
+    Gate B: WCL$ ≤ C₀ × MaxDD_macro          (System Floor)
+
+    Hard Gate = min(Gate A, Gate B)
+
+    ถ้า WCL$ ≤ Hard Gate → DEPLOY ได้
+    ถ้า WCL$ &gt; Hard Gate → RESIZE / HEDGE / REJECT ก่อน</div>
+
+<h2>C — Worst-Case Formula ตาม Game Category</h2>
+
+<h3>Category A: Sizing Games (Soft Martingale, Bell Curve, Pyramid)</h3>
+
+<p><strong>Soft Martingale</strong> — N levels, multiplier m, base size q₀:</p>
+
+<div class="fm">Position size ที่ level k:  qₖ = q₀ × mᵏ
+
+Total exposure ถ้าเข้าทุก level:
+    Q_total = q₀ × (mᴺ − 1)/(m − 1)
+
+WCL_martingale = Q_total × |P_entry_avg − P_stop|
+
+โดย:
+    P_entry_avg = Σ(qₖ × Pₖ) / Q_total
+    P_stop      = ราคา hard stop ของ level สุดท้าย
+
+ตัวอย่าง BTC (C₀ = $100k, m = 1.5, N = 3):
+    q: 0.02, 0.03, 0.045 BTC → Q_total = 0.095 BTC
+    Entry: $100k, $97k, $94k → P_avg ≈ $96,211
+    Hard stop: $90,000
+    WCL = 0.095 × ($96,211 − $90,000) = 0.095 × $6,211 ≈ $590</div>
+
+<p><strong>Bell Curve Sizing (Kelly-variant):</strong></p>
+
+<div class="fm">f* = (p × b − q) / b     ← Kelly fraction
+p = P(win), b = win/loss ratio, q = 1 − p
+
+WCL_kelly = C₀ × Z × f* × |max adverse move|
+
+Conservative (Half-Kelly):
+    f_safe = f*/2
+    WCL_halfkelly = C₀ × Z × (f*/2) × |max adverse move|</div>
+
+<h3>Category B: Options Games (CSP, Iron Condor, Butterfly)</h3>
+
+<p><strong>Cash-Secured Put (CSP):</strong></p>
+
+<div class="fm">WCL_CSP_practical = (K_s − P_floor) × Lot − Prem_received
+
+K_s    = strike ที่ short
+P_floor = ราคาที่จะ close/defend (ไม่ยอมให้ต่ำกว่า)
+Lot    = จำนวน BTC
+Prem   = premium received
+
+ตัวอย่าง BTC:
+    K_s = $90,000, Lot = 1 BTC, Prem = $800, P_floor = $75,000
+    WCL_CSP = ($90,000 − $75,000) × 1 − $800 = $14,200</div>
+
+<p><strong>Iron Condor (Put spread + Call spread):</strong></p>
+
+<div class="fm">WCL_IC = max(W_put, W_call) × Lot − Total_Prem
+
+W_put  = K_short_put − K_long_put
+W_call = K_long_call − K_short_call
+
+Note: IC ขาดทุนได้เพียง 1 side (ไม่ใช่ทั้งคู่พร้อมกัน
+      ยกเว้น gap/flash crash ที่ผ่าน body ทั้งหมด)
+
+ตัวอย่าง BTC (Grid Zone $90k–$110k):
+    Short $88k put / Long $82k put  → W_put  = $6,000
+    Short $113k call / Long $120k call → W_call = $7,000
+    Prem received = $1,050, Lot = 1 BTC
+    WCL_IC = max($6,000, $7,000) × 1 − $1,050 = $5,950</div>
+
+<p><strong>Butterfly:</strong></p>
+
+<div class="fm">Long Butterfly (ซื้อ 2 wing, ขาย body):
+    WCL_longfly = Net_Debit_Paid  ← จำกัด, รู้ตั้งแต่เปิด
+
+Short Butterfly (ขาย body, ซื้อ wing):
+    WCL_shortfly = W × Lot − Prem_received
+    W = ระยะห่างระหว่าง wing กับ body</div>
+
+<h3>Category C: Spread Games (Pair Grid, Basis Trade, Stat Arb)</h3>
+
+<div class="fm">Spread = Sₐ − β × S_b
+β      = hedge ratio (จาก regression หรือ cointegration)
+σ_sp   = volatility ของ spread
+
+WCL_spread = |Spread_entry − Spread_worst| × Lot
+
+ΔSpread_max (scenario-based):
+    Conservative: μ ± k × σ_sp, k = 3~5
+    Stress test:  historical max dislocation (FTX collapse, COVID)
+
+ตัวอย่าง BTC Basis Trade:
+    Long BTC spot @ $100k, Short BTC Perp @ $100.3k (basis = $300)
+    Worst case: basis blow-out (short squeeze) → ΔBasis_max = $2,000
+    WCL_basis = $2,000 × 1 BTC = $2,000 (+ funding cost แยก)</div>
+
+<h3>Category D: Decay Games (Calendar, Vol Carry, Theta)</h3>
+
+<div class="fm">Calendar Spread (Long far / Short near):
+
+WCL_calendar = Loss_vega + Loss_gamma − Theta_collected
+
+    1. Vol Inversion Risk (สำคัญมาก!):
+       ปกติ: IV_near &lt; IV_far (term structure normal)
+       Crisis: IV_near &gt; IV_far → calendar กลับเป็นลบ
+       WCL_volinv = (IV_near_spike − IV_far) × Vega_near × Lot
+
+    2. Spot jump ผ่าน short strike:
+       Loss_gamma = Gamma_near × (ΔS)² / 2
+
+Vol Carry (Short near-term vol):
+    WCL_volcarry = (RV_max_historical − IV_sold) × Vega × Lot
+    RV_max ของ BTC ≈ 200%+ annualized (March 2020, FTX)</div>
+
+<h2>D — กฎ Micro ≤ Macro: 3 ตัวอย่างจริง</h2>
+
+<div class="box">
+<strong>ภาพรวมระบบ (C₀ = $100,000)</strong><br>
+Macro Floor: F = $100,000 × (1 − 0.20) = <strong>$80,000</strong><br>
+ห้ามขาดทุนเกิน $20,000 ในทุกกรณี (Gate B = $20,000)
+</div>
+
+<h3>ตัวอย่างที่ 1: Soft Martingale — PASS</h3>
+
+<div class="fm">Setup:
+    C₀ = $100,000 · Zone = 30% = $30,000
+    MaxDD_micro = 30% → Gate A = $9,000
+    MaxDD_macro = 20% → Gate B = $20,000
+    Hard Gate = min($9,000, $20,000) = $9,000
+
+WCL ที่คำนวณได้ = $590
+
+Gate A: $590 ≤ $9,000  ✓
+Gate B: $590 ≤ $20,000 ✓
+
+→ DEPLOY ได้
+→ Worst case: เสีย $590 = 0.59% ของทุนรวม</div>
+
+<h3>ตัวอย่างที่ 2: Iron Condor — PASS (barely)</h3>
+
+<div class="fm">Setup:
+    Zone = 25% = $25,000
+    MaxDD_micro = 25% → Gate A = $6,250
+    MaxDD_macro = 20% → Gate B = $20,000
+
+WCL_IC = max($5,000, $5,000) × 1 − $1,500 = $3,500
+
+Gate A: $3,500 ≤ $6,250  ✓
+Gate B: $3,500 ≤ $20,000 ✓ → DEPLOY ได้
+
+แต่ถ้าเพิ่ม Lot เป็น 2 BTC:
+    WCL = $7,000 → Gate A FAIL ($7,000 &gt; $6,250)
+    → ต้อง resize หรือเพิ่ม Zone ก่อน</div>
+
+<h3>ตัวอย่างที่ 3: Pair Grid — REJECT → Resize</h3>
+
+<div class="fm">Setup:
+    Zone = 25% = $25,000
+    MaxDD_micro = 30% → Gate A = $7,500
+    Initial: Long 1.0 BTC / Short 15 ETH (β = 15)
+
+Correlation break scenario (ρ drops 0.85 → 0.3):
+    BTC drops 20%: Loss_BTC = $20,000
+    ETH drops  5%: Gain_ETH = 15 × $500 = $7,500
+    Net WCL = $20,000 − $7,500 = $12,500
+
+Gate A: $12,500 ≤ $7,500  ✗ FAIL!
+→ REJECT — ต้อง resize
+
+Resize: ลด position เหลือ 0.6 BTC / 9 ETH
+    WCL_resized = $12,500 × 0.6 = $7,500
+    Gate A: $7,500 ≤ $7,500 ✓ (ผ่านพอดี — monitor อย่างใกล้ชิด)
+    Gate B: $7,500 ≤ $20,000 ✓ → DEPLOY ได้หลัง resize</div>
+
+<h2>E — 5 Warning Cases: False Security</h2>
+
+<div class="warn">
+<strong>คิดว่า Calculated แล้ว แต่จริงๆ ยังไม่ได้ Calculate</strong>
+</div>
+
+<h3>⚠ Warning 1: Scenario ไม่ครอบ Tail Events</h3>
+
+<div class="fm">กับดัก: "ฉัน stress test ด้วย BTC ลง 20% แล้ว WCL ผ่าน Gate"
+
+ปัญหา: Historical tail ของ BTC:
+    - March 2020: ลง 50% ใน 2 วัน
+    - FTX collapse: ลง 30% + liquidity หาย + basis blow-out
+    - Leverage unwind: ลง 20% ใน 4 ชั่วโมง
+
+Fix:
+    WCL_true = max(WCL_σ, WCL_historical_max, WCL_scenario_stress)
+    ใช้ค่ามากสุดเสมอ — ไม่ใช่ค่าเฉลี่ย</div>
+
+<h3>⚠ Warning 2: ลืม Correlation Breakdown</h3>
+
+<div class="fm">กับดัก: "BTC/ETH Pair Grid ปลอดภัย เพราะ correlation 0.85"
+
+ปัญหา: ρ(BTC,ETH) ในสภาวะปกติ ≠ ρ(BTC,ETH) ในวิกฤต
+
+Crisis correlation ที่พบจริง:
+              BTC   ETH
+    BTC        1    0.3    ← ไม่ใช่ 0.85 อีกต่อไป
+    ETH       0.3    1
+
+Fix: คำนวณ β_stress แยก สำหรับ crisis period
+     ใช้ WCL_worst = WCL(β_stress) ไม่ใช่ WCL(β_normal)</div>
+
+<h3>⚠ Warning 3: Liquidity Risk ไม่ถูก Quantify</h3>
+
+<div class="fm">กับดัก: "Iron Condor WCL = $2,800 ตาม formula
+         ฉันจะ close ถ้า BTC วิ่งออก range"
+
+ปัญหา: Slippage + Bid-ask spread ใน crisis ≠ normal
+
+BTC options ปกติ:   bid-ask spread = $50–100
+BTC options crisis: spread = $500–2,000+
+                    หรือไม่มี liquidity เลย
+
+Fix: WCL_adjusted = WCL_formula × Liquidity_multiplier
+     Liquidity_multiplier สำหรับ BTC options = 1.3–2.0x ใน stress</div>
+
+<h3>⚠ Warning 4: Aggregation Risk (Portfolio Level)</h3>
+
+<div class="fm">กับดัก: "ทุก technique ผ่าน Gate ทีละตัว ดังนั้นรวมก็ปลอดภัย"
+
+ปัญหา: ใน BTC crisis ทุก game ขาดทุนพร้อมกัน:
+    - Soft Martingale: BTC ร่วง → ขาดทุน
+    - Iron Condor:     short put ITM → ขาดทุน
+    - Pair Grid:       correlation break → hedge ล้มเหลว
+    - Calendar:        vol spike → calendar inversion
+
+WCL_correlated ≈ Σ WCL_i × ρ_stress_factor (≈ 1.0 ในวิกฤต!)
+
+Fix: Macro Gate ต้องรองรับ "all techniques lose simultaneously"
+     Sum of all WCL_i ≤ MaxDD_macro × C₀</div>
+
+<h3>⚠ Warning 5: Path Dependency</h3>
+
+<div class="fm">กับดัก: "Soft Martingale WCL = $590 ถ้าราคาไปถึง stop"
+
+ปัญหา: path อาจทำให้ Q_total ใหญ่กว่าที่ estimate:
+
+Path A: $100k → $90k (ตรง) → WCL = $590
+Path B: $100k → $97k (เข้า L2) → $100k (ดูเหมือน OK)
+              → $94k (เข้า L3) → $90k
+              → Q_total ณ จุดนั้นใหญ่กว่า Path A → WCL จริง &gt; $590
+
+Fix: Monte Carlo simulation ของ path
+     WCL_path = E[max loss | path through all levels]</div>
+
+<h2>F — Calculated Risk Sheet (CRS) Template</h2>
+
+<p>กรอกก่อน deploy ทุก technique โดยไม่มีข้อยกเว้น:</p>
+
+<div class="fm">╔══════════════════════════════════════════════════════════════════╗
+║            CALCULATED RISK SHEET (CRS) v1.0                     ║
+║            สำหรับ Deploy ทุก Technique                          ║
+╠══════════════════════════════════════════════════════════════════╣
+║ วันที่: ____________  Asset: BTC/USDT  Exchange: __________     ║
+║ Technique: _________________  Book: ______________________      ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 0: MACRO CONTEXT                                         ║
+║  C₀ (Total Capital)      = $__________                          ║
+║  MaxDD_macro              = ____%  → Hard limit: $__________    ║
+║  Floor F                  = $__________                          ║
+║  Current Portfolio DD     = $________ (___%)                    ║
+║  Available DD Headroom    = $__________                          ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 1: ZONE SETUP                                            ║
+║  Zone Allocation (Z)      = ____%  → $__________               ║
+║  MaxDD_micro              = ____%  → $__________               ║
+║  Gate A limit             = $__________ (= Zone × MaxDD_micro)  ║
+║  Gate B limit             = $__________ (= C₀ × MaxDD_macro)   ║
+║  Hard Gate                = $__________ (= min Gate A, Gate B)  ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 2: Q1 — IDENTIFY WORST CASE                             ║
+║  Category: □ Sizing  □ Options  □ Spread  □ Decay              ║
+║  Worst-case scenario:                                            ║
+║  _______________________________________________________________  ║
+║  Key assumptions ที่อาจผิดพลาด:                                ║
+║  1. ___________________________________________________________ ║
+║  2. ___________________________________________________________ ║
+║  3. ___________________________________________________________ ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 3: Q2 — QUANTIFY                                         ║
+║  Formula: ______________________                                 ║
+║  Entry Price / Strike    = $__________                          ║
+║  Stop / Worst Level      = $__________                          ║
+║  Position Size / Lot     = __________ BTC                       ║
+║  Premium/Credit (ถ้ามี) = $__________                          ║
+║                                                                  ║
+║  WCL_base calculation:                                           ║
+║  _______________________ = $__________                          ║
+║                                                                  ║
+║  Adjustment Factors:                                             ║
+║    × Liquidity multiplier      = _____ (1.0–2.0x)              ║
+║    × Correlation stress factor = _____ (1.0–1.5x)              ║
+║    × Path dependency buffer    = _____ (1.0–1.3x)              ║
+║                                                                  ║
+║  WCL_adjusted = WCL_base × factors = $__________               ║
+║  WCL% of Zone = ____%  |  WCL% of C₀ = ____%                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 4: Q3 — ACCEPT?                                          ║
+║  Gate A: $______ ≤ $______?  □ YES  □ NO                       ║
+║  Gate B: $______ ≤ $______?  □ YES  □ NO                       ║
+║                                                                  ║
+║  DECISION:                                                       ║
+║    □ DEPLOY     (ผ่านทั้ง Gate A และ Gate B)                   ║
+║    □ RESIZE     (fail Gate A → ลด size → recalculate)          ║
+║    □ REJECT     (fail Gate B หรือ scenario ไม่ acceptable)     ║
+║    □ HEDGE FIRST (เพิ่ม hedge → recalculate WCL ใหม่)          ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 5: MONITORING TRIGGERS                                   ║
+║  ราคา BTC ที่ต้อง re-evaluate:  @ $__________                  ║
+║  IV level ที่ต้อง re-evaluate:  IV @ ____%                     ║
+║  P&L level ที่ trigger DD Halt: −$________ (___%)               ║
+║  Time-based review:              ทุก _____ วัน                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SECTION 6: FALSE SECURITY CHECKLIST                             ║
+║  □ ใช้ historical tail (ไม่ใช่แค่ 1σ)?                        ║
+║  □ test correlation breakdown (ρ_stress)?                       ║
+║  □ รวม liquidity cost ใน WCL?                                  ║
+║  □ check portfolio-level aggregation?                           ║
+║  □ simulate path dependency (ไม่ใช่แค่ endpoint)?              ║
+║                                                                  ║
+║  ถ้า □ ใดไม่ check → WCL อาจ underestimate → ระวัง!           ║
+╠══════════════════════════════════════════════════════════════════╣
+║ SIGN-OFF                                                         ║
+║  "ฉันยืนยันว่า WCL_adjusted ≤ Hard Gate                        ║
+║   และยอมรับ worst case นี้ได้จริงๆ"                            ║
+║  วันที่: __________  เวลา: __________                           ║
+╚══════════════════════════════════════════════════════════════════╝</div>
+
+<div class="tip">
+<strong>ดาวน์โหลด CRS Template ฉบับเต็ม</strong><br>
+CRS Template แบบ printable อยู่ใน <a href="playground-appendix.html">Appendix</a> — พิมพ์ออกมาหรือเปิดในโทรศัพท์ก่อน deploy ทุก technique
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+<a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
+<span><a href="playground-part0.html" style="color:#64748b">← Part 0</a> · <a href="playground-part2.html" style="color:var(--cyan-dark)">Part 2: สร้างสนาม →</a></span>
+<a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
+</nav>
+
+</body>
+</html>

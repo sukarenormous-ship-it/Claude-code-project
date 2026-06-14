@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Playground · Part 2 — สร้างสนาม: Zone · Capital · Floor</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.5em;font-weight:700;color:var(--g9);margin-top:1.5em;margin-bottom:.6em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}a{color:var(--cyan-dark)}ul{padding-left:1.6em;margin:12px 0}li{margin-bottom:4px}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2.2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.fm{font-family:'Courier New',monospace;background:#f3f4f6;padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.88em;line-height:1.6;overflow-x:auto;white-space:pre}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2);vertical-align:top}
+tr:nth-child(even){background:var(--g0)}
+.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.danger{background:var(--red-bg);border-left:4px solid var(--red);padding:14px 18px;border-radius:0 6px 6px 0;margin:16px 0}
+.zone-bar{display:flex;height:48px;border-radius:8px;overflow:hidden;margin:20px 0;font-size:.88em;font-weight:700;color:#fff}
+.zone-bar .active{background:#06b6d4;display:flex;align-items:center;justify-content:center}
+.zone-bar .standby{background:#0e7490;display:flex;align-items:center;justify-content:center}
+.zone-bar .floor{background:#334155;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">The Playground · Part 2</div>
+<h1>สร้างสนาม: Zone · Capital · Floor</h1>
+<div class="sub">Close System · Zone Waterfall · DD Halt · คำนวณ Macro Worst Case · สนามสร้างแล้ว เล่นได้</div>
+</div>
+
+<h2>A — ทำไมต้องสร้างสนามก่อน?</h2>
+
+<p>เปรียบเหมือนนักปีนเขา: ก่อนออกเดินทาง ต้องรู้ว่า <em>ถ้าสภาพอากาศแย่ที่สุด จะถอยกลับที่จุดไหน</em> — ไม่ใช่ตัดสินใจกลางทาง</p>
+
+<p>สนามเด็กเล่นทางการเงินก็เช่นกัน: <strong>ตัดสินใจ worst case ก่อนเริ่มเล่น ไม่ใช่ขณะที่กำลังขาดทุน</strong></p>
+
+<p>การ "สร้างสนาม" ทำครั้งเดียวก่อนเริ่ม Games Library ทั้งหมด แล้ว macro boundary นั้นจะเป็นเพดานของทุก game ที่ตามมา</p>
+
+<h2>B — Close System: หลักการแกน</h2>
+
+<p>Close System หมายความว่า: <strong>จัดสรร capital ถึง floor ก่อนเปิดสนาม</strong></p>
+
+<div class="fm">Open System  = เปิด position ก่อน แล้วค่อยหา capital เพิ่มทีหลัง
+               → worst case ไม่รู้ ณ เวลาเปิด
+
+Close System = pre-allocate capital ทั้งหมดที่จำเป็นก่อน
+               → worst case รู้ตั้งแต่วันแรก
+
+กฎ: ถ้าไม่มีทุนครบทั้ง system → ห้ามเปิด</div>
+
+<p>Close System เป็นเหตุผลที่ Soft Martingale "ปลอดภัย" — เพราะก่อนเปิด level แรก เราวาง capital สำหรับ N levels ทั้งหมดไว้แล้ว worst case รู้ตั้งแต่ต้น</p>
+
+<h2>C — Zone Waterfall: Active / Standby / Floor</h2>
+
+<div class="zone-bar">
+<div class="active" style="width:50%">Active Zone · 50%</div>
+<div class="standby" style="width:30%">Standby Zone · 30%</div>
+<div class="floor" style="width:20%">Floor Zone · 20%</div>
+</div>
+
+<table>
+<tr><th>Zone</th><th>สัดส่วน</th><th>หน้าที่</th><th>เงื่อนไข</th></tr>
+<tr>
+<td><strong>Active Zone</strong></td>
+<td>~50%</td>
+<td>Deploy เป็น Games อยู่ในตลาด ณ ปัจจุบัน</td>
+<td>เปิด/ปิด Games ได้อิสระ ตาม Regime</td>
+</tr>
+<tr>
+<td><strong>Standby Zone</strong></td>
+<td>~30%</td>
+<td>รอ deploy + ฝากรับดอกเบี้ย (Standby Yield game)</td>
+<td>เปิดเพิ่มเมื่อ opportunity สูงผิดปกติ หรือ replace Active</td>
+</tr>
+<tr>
+<td><strong>Floor Zone</strong></td>
+<td>~20%</td>
+<td>ทุนสำรองสุดท้าย ไม่แตะยกเว้น worst case</td>
+<td>แตะได้เฉพาะเมื่อ DD_macro ถึง threshold เท่านั้น</td>
+</tr>
+</table>
+
+<div class="box">
+<strong>ทำไม 50/30/20?</strong><br>
+สัดส่วนนี้ไม่ตายตัว แต่ logic คือ: Active 50% ทำกำไร, Standby 30% เป็น reserve ที่ยังทำงาน, Floor 20% คือ "never lose more than this" guarantee<br><br>
+ปรับได้ตาม risk appetite: Conservative → 30/30/40, Aggressive → 60/25/15
+</div>
+
+<h3>Zone Waterfall ในทางปฏิบัติ</h3>
+
+<div class="fm">C₀ = $100,000
+
+Active Zone  = $50,000  ← deploy เป็น Games ตาม Regime
+  └─ Game 1: Standard Grid    $20,000 (Zone = 20%)
+  └─ Game 2: Iron Condor      $15,000 (Zone = 15%)
+  └─ Game 3: Basis Trade      $15,000 (Zone = 15%)
+
+Standby Zone = $30,000  ← ฝาก Stable yield ≈ 5-8%/ปี
+  └─ Standby Yield game
+  └─ Reserve สำหรับ Flash Crash
+
+Floor Zone   = $20,000  ← ห้ามแตะ ยกเว้น macro crisis
+  └─ DD Halt trigger: ถ้า portfolio DD &gt; 8%
+     → cancel all games → ถือ cash → assess</div>
+
+<h2>D — DD Halt: Safety Switch ของสนาม</h2>
+
+<p>DD Halt คือ circuit breaker อัตโนมัติที่หยุดทุกอย่างเมื่อ drawdown ถึงจุดที่ "ไม่ควรเกิดขึ้น"</p>
+
+<div class="fm">DD_t = (P_peak − P_t) / P_peak
+
+DD Halt Trigger (แนะนำ): DD &lt; −8% จาก peak portfolio
+ถ้า DD ถึง threshold:
+  1. ยกเลิก Open orders ทั้งหมด
+  2. ปิด Positions ที่ไม่ใช่ Floor Zone
+  3. ถือ Stablecoin จนกว่าจะ assess สถานการณ์
+  4. ไม่เปิด Game ใหม่จนกว่า DD จะหายไปครึ่งหนึ่ง</div>
+
+<div class="warn">
+<strong>DD Halt ≠ ความพ่ายแพ้</strong><br>
+DD Halt คือ "ระบบทำงานถูกต้อง" ไม่ใช่ความผิดพลาด มันหมายความว่า worst case scenario ที่เราคำนวณไว้ถูก triggered — ตอนนี้ให้ประเมินว่า thesis ยังถูกอยู่ไหมก่อนกลับมา
+</div>
+
+<h2>E — คำนวณ Macro Worst Case</h2>
+
+<p>ก่อนเปิด Games ใดๆ ตอบ 3 คำถามนี้:</p>
+
+<div class="fm">Q1: ถ้า ALL games ขาดทุน worst case พร้อมกัน เสียเท่าไหร่?
+
+    WCL_total = Σ WCL_i (ทุก game)
+
+    ตัวอย่าง:
+    WCL_game1 (Standard Grid) = $1,500
+    WCL_game2 (Iron Condor)   = $3,500
+    WCL_game3 (Basis Trade)   = $2,000
+    WCL_total = $7,000
+
+Q2: WCL_total ≤ MaxDD_macro × C₀?
+    $7,000 ≤ 20% × $100,000 = $20,000  ✓
+
+Q3: รับได้ไหมถ้าขาดทุน $7,000 พร้อมกัน?
+    ถ้าใช่ → เปิดสนาม
+    ถ้าไม่ → ลด size ทุก game ก่อน</div>
+
+<h2>F — ตัวอย่างจริง: สร้างสนาม $100,000</h2>
+
+<h3>ขั้นตอนที่ 1: กำหนด Macro Parameters</h3>
+
+<div class="fm">C₀              = $100,000
+MaxDD_macro     = 20%  → Floor = $80,000
+DD_halt         = 8%   → หยุดทุกอย่างถ้า portfolio &lt; $92,000
+Target annual   = 15–25% ($15,000–$25,000)</div>
+
+<h3>ขั้นตอนที่ 2: จัด Zone Waterfall</h3>
+
+<div class="fm">Active Zone  (50%) = $50,000
+  เล่นได้ถึง 3 games พร้อมกัน (ขึ้นอยู่กับ Regime)
+  WCL ต่อ game ≤ $5,000–$7,500 โดยทั่วไป
+
+Standby Zone (30%) = $30,000
+  Standby Yield: ฝาก Stablecoin ≈ 5%/ปี = $1,500
+  หรือ deploy เมื่อ Flash Crash Reserve trigger
+
+Floor Zone   (20%) = $20,000
+  ไม่แตะ — นี่คือ "worst case ที่รับได้" ของทั้ง system</div>
+
+<h3>ขั้นตอนที่ 3: ตรวจ Macro Gate ก่อนเปิด</h3>
+
+<div class="fm">Regime วันนี้: Mean-Revert Calm (H=0.42, ADX=18, IVR=25)
+
+Games ที่วางแผนเปิด (เลือกตาม Regime):
+  Game 1: Standard Grid  Zone=20% WCL=$1,200
+  Game 2: Iron Condor    Zone=15% WCL=$2,800
+  Game 3: Standby Yield  Zone=30% WCL=$0 (risk-free)
+
+WCL_total = $1,200 + $2,800 = $4,000
+Macro Gate: $4,000 ≤ $20,000 ✓
+
+→ เปิดสนามได้  ✓
+→ Monitor: ถ้า DD ถึง $8,000 (8%) → DD Halt</div>
+
+<h2>G — สนามสร้างแล้ว: สิ่งที่เปลี่ยนไป</h2>
+
+<p>เมื่อสร้างสนามแล้ว คุณรู้ว่า:</p>
+
+<ul>
+<li><strong>Worst case = $X</strong> และ $X นั้นรับได้</li>
+<li><strong>Floor คือเท่าไหร่</strong> — ทุนที่ "ต้องเหลือ" ไม่ว่าจะเกิดอะไร</li>
+<li><strong>DD Halt trigger ที่ $Y</strong> — ไม่ต้องตัดสินใจกลางวิกฤต</li>
+<li><strong>Macro budget ของแต่ละ Game</strong> — ไม่ต้องคิดซ้ำทุกครั้ง</li>
+</ul>
+
+<div class="box">
+<strong>ผลที่ได้: เล่นได้อิสระ</strong><br>
+เมื่อสนามสร้างและรั้วตั้งแล้ว — เด็กในสนามเล่นได้เต็มที่ ไม่ต้องกังวลว่าจะหลงออกป่า<br><br>
+ตอนนี้เริ่ม Games Library ได้เลย → <a href="playground-part3.html">Part 3: Games Library A</a>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+<a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
+<span><a href="playground-part1.html" style="color:#64748b">← Part 1</a> · <a href="playground-part3.html" style="color:var(--cyan-dark)">Part 3: Games Library A →</a></span>
+<a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part 8 · Multi-Game Portfolio & Monitoring — The Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--purple:#7c3aed}
+body{font-family:'Sarabun',sans-serif;background:#fff;color:var(--g9);line-height:1.7;font-size:1.05rem}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:2rem;font-weight:700;color:var(--cyan-dark);margin-bottom:6px}
+h2{font-size:1.35rem;font-weight:700;color:var(--g9);margin:40px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--cyan)}
+h3{font-size:1.1rem;font-weight:700;color:var(--cyan-dark);margin:24px 0 8px}
+p{margin:10px 0}
+.subtitle{color:#64748b;font-size:1rem;margin-bottom:32px}
+.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
+.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
+.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
+.danger{background:var(--red-bg);border-left:4px solid var(--red);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
+.gate{border:2px solid var(--red);border-radius:8px;padding:16px 18px;margin:18px 0;background:var(--red-bg)}
+.fm{background:#0f172a;color:#e2e8f0;padding:16px 18px;border-radius:8px;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.6;overflow-x:auto;margin:14px 0;white-space:pre}
+table{width:100%;border-collapse:collapse;margin:14px 0}
+th,td{text-align:left;padding:9px 12px;border:1px solid var(--g2)}
+th{background:var(--g0);font-weight:600;color:var(--g9)}
+tr:nth-child(even){background:var(--g0)}
+.dashboard{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.metric-card{border:1px solid var(--g2);border-radius:8px;padding:14px;text-align:center}
+.metric-value{font-size:1.5rem;font-weight:700;color:var(--cyan-dark)}
+.metric-label{font-size:.85rem;color:#64748b;margin-top:4px}
+.metric-ok{border-color:var(--green);background:var(--green-bg)}
+.metric-warn{border-color:var(--amber);background:var(--amber-bg)}
+.metric-bad{border-color:var(--red);background:var(--red-bg)}
+.kill-switch{background:#7f1d1d;color:#fee2e2;padding:20px;border-radius:8px;margin:18px 0}
+.kill-switch h3{color:#fca5a5;margin-bottom:10px}
+a{color:var(--cyan-dark)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="box" style="margin-bottom:24px">
+  <strong>Part 8 of 10</strong> · The Playground: คำนวณก่อน เล่นได้ทุกอย่าง
+</div>
+
+<h1>Multi-Game Portfolio &amp; Monitoring</h1>
+<p class="subtitle">วิธีรัน 42 เกมพร้อมกันโดยไม่ให้ระบบพังหรือขาดสติ</p>
+
+<p>เกมแต่ละเกมมี WCL ของตัวเองที่ผ่าน Gate A และ Gate B แล้ว
+แต่เมื่อรันหลายเกมพร้อมกัน ความเสี่ยงในระดับ Portfolio ไม่ใช่แค่ผลรวมแบบ Linear —
+ในช่วง Market Stress ค่า Correlation พุ่ง และเกมหลายเกมขาดทุนพร้อมกัน</p>
+
+<div class="warn">
+  <strong>Aggregation Risk คือ Warning Case #4</strong> จาก Part 1 — อย่าลืมว่า
+  WCL_portfolio ≠ Σ WCL_individual เมื่อ Correlation สูงขึ้นในช่วง Stress
+</div>
+
+<!-- ============================================================ -->
+<h2>Portfolio Architecture</h2>
+
+<p>The Playground แบ่ง Portfolio เป็น 3 ชั้น ที่ทำงานซ้อนกัน:</p>
+
+<div class="fm">
+PORTFOLIO ARCHITECTURE (3 Layers):
+
+Layer 1: MACRO BOUNDARY (ดู Part 2)
+  ├── Active Zone (50% of C₀) ← เกมทั้งหมดใช้ Capital จากนี้
+  ├── Standby Zone (30% of C₀) ← รอ Opportunity + Buffer
+  └── Floor Zone (20% of C₀) ← ล็อคไว้ก่อนเล่น, ไม่แตะ
+
+Layer 2: GAME ALLOCATION (แต่ละเกม)
+  ├── Income Core (40% ของ Active Zone)
+  │     เกม 1, 15, 16, 17, 19, 21, 41 ← สร้าง Cash Flow
+  ├── Growth Satellite (35% ของ Active Zone)
+  │     เกม 6, 7, 9, 25, 30, 32, 37 ← สร้าง Capital Gain
+  └── Defensive Shell (25% ของ Active Zone)
+        เกม 27, 38, 39, 3 ← ป้องกัน Tail Risk
+
+Layer 3: GAME-LEVEL LIMITS
+  ├── Single Game Max: ≤ 15% of Active Zone
+  ├── Single Category Max: ≤ 40% of Active Zone
+  └── Correlated Games Max: ≤ 50% of Active Zone
+        (e.g., Basis Trade + FRMR + Rolling Wheel = "Short Vol" cluster)
+</div>
+
+<!-- ============================================================ -->
+<h2>Aggregation Risk: Portfolio WCL</h2>
+
+<p>Macro-level WCL คำนวณสมมติว่าทุกเกมขาดทุนสูงสุดพร้อมกัน
+แต่ในความเป็นจริง เกมต่างๆ มี Correlation กัน ทำให้ WCL จริงอยู่ระหว่าง Best และ Worst Case</p>
+
+$$WCL_{portfolio} = \sqrt{\sum_i WCL_i^2 + 2\sum_{i<j} \rho_{ij} \cdot WCL_i \cdot WCL_j}$$
+
+<p>โดย $\rho_{ij}$ คือ Correlation ระหว่างเกม $i$ และ $j$ ภายใต้ Stress scenario
+(ใน Normal: ρ ≈ 0.3–0.5; ในช่วง Stress: ρ อาจพุ่งถึง 0.8–0.95)</p>
+
+<div class="box">
+  <strong>Conservative Approach:</strong> ในการคำนวณ Gate B สำหรับ Portfolio
+  ให้ใช้ $\rho_{stress} = 0.80$ แทน $\rho_{normal}$ เสมอ
+  — นี่คือ Warning Case #2 (Correlation Breakdown) ที่กล่าวไว้ใน Part 1
+</div>
+
+<h3>ตัวอย่าง: Portfolio 5 เกม</h3>
+
+<div class="fm">
+PORTFOLIO WCL EXAMPLE (C₀ = $100,000):
+
+Games Running:
+  G1: Standard Grid    WCL = $2,000
+  G6: TP2 Grid         WCL = $1,500
+  G17: Iron Condor     WCL = $1,200
+  G21: Pair Grid       WCL = $1,800
+  G38: Put Ladder      WCL = $500
+
+Naive Sum: $7,000  (7.0% of C₀)
+Gate B Max: $100,000 × 0.08 = $8,000 → ✓ PASS (naive)
+
+Stress-Adjusted (ρ_stress = 0.80):
+  WCL_portfolio = √(Σ WCL²_i + 2×0.80×Σ WCL_i×WCL_j)
+
+  Σ WCL²_i = 4,000,000 + 2,250,000 + 1,440,000 + 3,240,000 + 250,000
+            = 11,180,000
+
+  Stress_corr_term = 2 × 0.80 × [
+    (2000×1500)+(2000×1200)+(2000×1800)+(2000×500)+
+    (1500×1200)+(1500×1800)+(1500×500)+
+    (1200×1800)+(1200×500)+(1800×500)
+  ]
+  = 2 × 0.80 × [3M+2.4M+3.6M+1M+1.8M+2.7M+0.75M+2.16M+0.6M+0.9M]
+  = 1.6 × 18,910,000 = 30,256,000
+
+  WCL_portfolio = √(11,180,000 + 30,256,000)
+               = √41,436,000 ≈ $6,437
+
+Gate B Check: $6,437 &lt; $8,000 → ✓ PASS (Stress-Adjusted)
+
+⚠ Note: If ρ_stress = 0.95 → WCL ≈ $6,950 → Still pass but close
+  → Consider removing 1 game to create buffer
+</div>
+
+<!-- ============================================================ -->
+<h2>OS Dashboard</h2>
+
+<p>Dashboard นี้คือ Mental Model ที่ต้องอ่านทุกเช้าก่อนทำอะไรในตลาด
+ใช้เวลา 5–10 นาที แต่ป้องกันการตัดสินใจที่ผิดพลาดได้มหาศาล</p>
+
+<h3>ตัวอย่าง Dashboard (สถานะปัจจุบัน)</h3>
+
+<div class="dashboard">
+  <div class="metric-card metric-ok">
+    <div class="metric-value">$87,420</div>
+    <div class="metric-label">Portfolio Value</div>
+  </div>
+  <div class="metric-card metric-ok">
+    <div class="metric-value">−2.1%</div>
+    <div class="metric-label">DD from Peak</div>
+  </div>
+  <div class="metric-card metric-ok">
+    <div class="metric-value">$5,840</div>
+    <div class="metric-label">WCL Portfolio</div>
+  </div>
+  <div class="metric-card metric-ok">
+    <div class="metric-value">R1</div>
+    <div class="metric-label">Current Regime</div>
+  </div>
+  <div class="metric-card metric-warn">
+    <div class="metric-value">IVR 58</div>
+    <div class="metric-label">Vol Environment</div>
+  </div>
+  <div class="metric-card metric-ok">
+    <div class="metric-value">4 เกม</div>
+    <div class="metric-label">Active Games</div>
+  </div>
+</div>
+
+<div class="fm">
+DAILY MONITORING CHECKLIST (5 นาที):
+
+[ ] 1. Portfolio Value vs Yesterday
+[ ] 2. Current DD from Peak — ถ้า &gt; 5% → Review; ถ้า &gt; 8% → DD Halt
+[ ] 3. Regime Check (H, ADX, IVR, FR) — Same as yesterday?
+[ ] 4. WCL_portfolio (Stress-adjusted) vs Gate B limit
+[ ] 5. Any game past Stop → Execute Exit, no hesitation
+[ ] 6. Any Options Expiring this week → Plan Roll or Let Expire
+[ ] 7. Any Scheduled Events (FOMC, Halving, ETF report) → Prep FOMC Strangle
+
+WEEKLY REVIEW (30 นาที, every Monday):
+[ ] 1. P&L attribution: which game contributed / detracted?
+[ ] 2. Regime stability: H, ADX trending up or down?
+[ ] 3. Zone rebalancing: Active/Standby/Floor still at 50/30/20?
+[ ] 4. Game rotation: close underperforming, open better-fit games?
+[ ] 5. CRS Refresh: re-run Calculated Risk Sheet for any game &gt;30 days old
+[ ] 6. Journal: write 3 things you learned this week
+</div>
+
+<!-- ============================================================ -->
+<h2>Kill Switch Protocol</h2>
+
+<div class="kill-switch">
+  <h3>🔴 KILL SWITCH — เมื่อไหร่ต้องกด</h3>
+  <p>Kill Switch คือการ <strong>ปิดทุกเกมทั้งหมดพร้อมกัน</strong> ในทันที
+  ไม่ใช่การลด Position — คือการยุติการทำงานของ System ทั้งระบบ</p>
+
+  <p style="margin-top:12px"><strong>Trigger Conditions (กด Kill Switch เมื่อ):</strong></p>
+  <ul style="margin:8px 0 0 20px;line-height:2">
+    <li>Portfolio DD ≥ 12% จาก High-Water Mark (ไม่ใช่ 8% — 8% คือ DD Halt เท่านั้น)</li>
+    <li>เกิด Black Swan Event (Exchange Hack, Regulatory Ban, Critical Bug)</li>
+    <li>ไม่สามารถ Monitor Portfolio ได้ &gt; 48 ชั่วโมง (เจ็บป่วย, เดินทาง)</li>
+    <li>WCL_portfolio (Stress) เกิน Gate B × 1.5 เป็นเวลา 3 วันติดต่อกัน</li>
+    <li>ตรวจพบ Logic Error ในระบบที่ทำให้ WCL คำนวณผิด</li>
+  </ul>
+</div>
+
+<div class="fm">
+KILL SWITCH EXECUTION (ลำดับ):
+
+Step 1: CLOSE ALL OPTIONS (Market Order, ทันที)
+  Priority: Short options ก่อน (Unlimited Risk) → Long options ทีหลัง
+  Accept slippage — Speed &gt; Price
+
+Step 2: CLOSE FUTURES/PERP (Market Order)
+  ปิดตามขนาด Largest → Smallest
+  Note: อาจต้องแยกเป็นหลาย Order ถ้า Position ใหญ่
+
+Step 3: CLOSE SPOT GRIDS (Cancel all open orders, ปิด Market)
+  Cancel Open Buy/Sell Orders ก่อน
+  Then: Close open Spot positions
+
+Step 4: RECORD EVERYTHING
+  Screenshot P&L ทุก Exchange
+  Note เวลาและสาเหตุ Kill Switch
+
+Step 5: COOL-DOWN PERIOD
+  ห้ามเปิดสถานะใหม่ 72 ชั่วโมง ขั้นต่ำ
+  ทำ Post-Mortem ก่อน Resume
+
+Step 6: RESUME PROCEDURE
+  ทำ Full CRS ใหม่
+  เริ่มด้วย 25% Normal Size
+  กลับ 100% หลังจาก 30 วัน profitable
+</div>
+
+<!-- ============================================================ -->
+<h2>DD Halt vs Kill Switch</h2>
+
+<table>
+  <tr><th>Feature</th><th>DD Halt (−8%)</th><th>Kill Switch (−12%)</th></tr>
+  <tr><td>Trigger</td><td>Portfolio DD ≥ 8% from Peak</td><td>Portfolio DD ≥ 12% from Peak</td></tr>
+  <tr><td>Action</td><td>ห้ามเปิดเกมใหม่, ไม่ปิดเก่า</td><td>ปิดทุกเกมทั้งหมดทันที</td></tr>
+  <tr><td>Duration</td><td>จนกว่า DD กลับ &lt; 5%</td><td>72 ชั่วโมง ขั้นต่ำ + Post-Mortem</td></tr>
+  <tr><td>Resume Size</td><td>100% Normal</td><td>25% แล้ว Scale ขึ้น</td></tr>
+  <tr><td>เปรียบ</td><td>Circuit Breaker — หยุดชั่วคราว</td><td>Emergency Exit — หนีออกจากตึก</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>Performance Attribution</h2>
+
+<p>เมื่อ Portfolio มีหลายเกม สำคัญมากที่จะรู้ว่า กำไรหรือขาดทุนมาจากที่ไหน
+เพื่อตัดสินใจว่าจะ Scale ขึ้นหรือปิดเกมไหน</p>
+
+<div class="fm">
+MONTHLY P&L ATTRIBUTION TEMPLATE:
+
+Month: [Month Year]
+Starting Capital (Active Zone): $___________
+Ending Capital (Active Zone):   $___________
+Net P&L:                        $___________
+
+BY GAME:
+  Game                WCL_deployed  P&L_actual  Sharpe  Status
+  ─────────────────   ────────────  ──────────  ──────  ──────
+  Standard Grid (1)   $X,XXX        $+XXX       1.2     KEEP
+  TP2 Grid (6)        $X,XXX        $+XXX       1.8     SCALE UP
+  Iron Condor (17)    $X,XXX        $−XXX      −0.4     REVIEW
+  Pair Grid (21)      $X,XXX        $+XXX       0.9     KEEP
+
+BY CATEGORY:
+  Income Core:     $____   ___% of Net P&L
+  Growth Satellite: $____  ___% of Net P&L
+  Defensive Shell: $____   ___% of Net P&L
+
+BY REGIME:
+  Days in R1: ___  P&L in R1: $____
+  Days in R2: ___  P&L in R2: $____
+  Days in R4: ___  P&L in R4: $____
+
+RISK EFFICIENCY:
+  Capital Deployed (avg): $______
+  Max WCL in Month:       $______
+  Actual Max Drawdown:    $______
+  Sharpe (Monthly):       ______
+  Calmar (Monthly):       ______
+</div>
+
+<div class="tip">
+  <strong>Decision Rule จาก Attribution:</strong>
+  ถ้าเกมใดมี Risk-Adjusted Return (Sharpe) ต่ำกว่า 0.5 ติดต่อกัน 3 เดือน
+  → Review ว่า (1) Regime ไม่เหมาะ หรือ (2) เกมนั้น Edge หายไปแล้ว
+  → ถ้าเป็น Regime → รอ Regime กลับมา; ถ้า Edge หาย → ปิดถาวรและหาเกมใหม่
+</div>
+
+<!-- ============================================================ -->
+<h2>Game Rotation Framework</h2>
+
+<p>Portfolio ต้องการ Dynamic — เกมที่ดีใน Q1 อาจไม่ดีใน Q3 เพราะ Regime เปลี่ยน
+ทำ Game Rotation Review ทุกไตรมาสหรือเมื่อ Regime เปลี่ยน</p>
+
+<div class="fm">
+GAME ROTATION PROCEDURE (ทุก 90 วัน หรือ Regime Shift):
+
+Step 1: PERFORMANCE REVIEW
+  เรียงเกม Core ทั้งหมดตาม Risk-Adjusted Return (Sharpe)
+  Top 25%: Scale Up (เพิ่ม Allocation 20–50%)
+  Middle 50%: Keep As-Is
+  Bottom 25%: Review — Close if Sharpe &lt; 0.3
+
+Step 2: REGIME CHECK
+  Run Regime Detection (Part 7)
+  Remove games "Wrong Regime" → Replace with Regime-appropriate games
+
+Step 3: WCL BUDGET REBALANCE
+  After rotation: Re-run Portfolio WCL calculation
+  Ensure: WCL_portfolio (Stress) ≤ Gate B (C₀ × MaxDD_macro)
+
+Step 4: CAPACITY CHECK
+  Can you Monitor all remaining games adequately?
+  Rule: Max 6 active games simultaneously for Part-time Trader
+        Max 12 for Full-time Trader with dedicated monitoring
+
+Step 5: DOCUMENT
+  Write rotation log: What closed, what opened, why
+  Reference: Last month Attribution report
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+  <a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
+  <span><a href="playground-part7.html" style="color:#64748b">← Part 7</a> · <a href="playground-part9.html" style="color:var(--cyan-dark)">Part 9 →</a></span>
+  <a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
+</nav>
+
+</div>
+</body>
+</html>
