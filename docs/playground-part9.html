@@ -4,50 +4,95 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Part 9 · OS Decision Flow — The Playground</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g0:#f9fafb;--amber:#f59e0b;--amber-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--purple:#7c3aed}
-body{font-family:'Sarabun',sans-serif;background:#fff;color:var(--g9);line-height:1.7;font-size:1.05rem}
-.wrap{max-width:860px;margin:0 auto;padding:28px 20px 60px}
-h1{font-size:2rem;font-weight:700;color:var(--cyan-dark);margin-bottom:6px}
-h2{font-size:1.35rem;font-weight:700;color:var(--g9);margin:40px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--cyan)}
-h3{font-size:1.1rem;font-weight:700;color:var(--cyan-dark);margin:24px 0 8px}
-p{margin:10px 0}
-.subtitle{color:#64748b;font-size:1rem;margin-bottom:32px}
-.box{background:var(--cyan-bg);border-left:4px solid var(--cyan);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
-.warn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
-.tip{background:var(--green-bg);border-left:4px solid var(--green);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
-.danger{background:var(--red-bg);border-left:4px solid var(--red);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}
-.fm{background:#0f172a;color:#e2e8f0;padding:16px 18px;border-radius:8px;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.6;overflow-x:auto;margin:14px 0;white-space:pre}
-table{width:100%;border-collapse:collapse;margin:14px 0}
-th,td{text-align:left;padding:9px 12px;border:1px solid var(--g2)}
-th{background:var(--g0);font-weight:600;color:var(--g9)}
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g7:#374151;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+h4{font-size:1.1em;font-weight:700;color:var(--g8);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+a{color:var(--cyan-dark);text-decoration:none}a:hover{text-decoration:underline}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);color:var(--g9);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
 tr:nth-child(even){background:var(--g0)}
-.step-card{display:flex;gap:16px;padding:16px;border:1px solid var(--g2);border-radius:8px;margin:14px 0;align-items:flex-start}
-.step-num{background:var(--cyan);color:#fff;font-weight:700;font-size:1.1rem;min-width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1em;font-weight:700;color:var(--g9);margin-top:8px;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;white-space:pre-wrap}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.philosophy-box{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--cyan);border-radius:12px;padding:22px 28px;margin:24px 0;text-align:center}
+.philosophy-box .ph-title{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.philosophy-box .ph-statement{font-size:1.3em;font-weight:700;color:var(--g9);line-height:1.5}
+.philosophy-box .ph-sub{font-size:.95em;color:#64748b;margin-top:10px}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.step-card{display:flex;gap:16px;padding:14px;border:1px solid var(--g2);border-radius:8px;margin:12px 0;align-items:flex-start}
+.step-num{background:var(--cyan);color:#fff;font-weight:700;font-size:1.1em;min-width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .step-body{flex:1}
 .step-title{font-weight:700;color:var(--cyan-dark);margin-bottom:4px}
-.connection-map{background:#0f172a;color:#e2e8f0;padding:20px;border-radius:8px;font-family:'Courier New',monospace;font-size:.85rem;line-height:1.8;margin:18px 0}
-.cross-link{color:#67e8f9}
-.cross-highlight{background:#1e3a5f;padding:2px 6px;border-radius:4px}
-a{color:var(--cyan-dark)}
+.connection-map{background:var(--g1);color:var(--g9);padding:14px 16px;border-radius:6px;font-family:'Courier New',monospace;font-size:.88em;line-height:1.8;margin:14px 0;white-space:pre-wrap;word-break:break-word}
+.cross-link{color:var(--cyan-dark);font-weight:700}
+.lens-card{border:2px solid var(--violet);border-radius:10px;padding:16px;margin:16px 0;background:var(--violet-bg)}
+.lens-num{display:inline-block;background:var(--violet);color:#fff;font-weight:700;padding:2px 10px;border-radius:12px;font-size:.85em;margin-bottom:6px}
+.lens-title{font-size:1.05em;font-weight:700;color:#4c1d95;margin-bottom:6px}
+.arrow-row{display:flex;align-items:center;gap:12px;margin:8px 0}
+.arrow-from{background:var(--g1);padding:8px 12px;border-radius:6px;flex:1;font-size:.93em}
+.arrow-sym{font-size:1.4em;color:var(--violet);font-weight:700;flex-shrink:0}
+.arrow-to{background:var(--violet-bg);border:1px solid var(--violet);padding:8px 12px;border-radius:6px;flex:1;font-size:.93em}
+.new-game{border:2px solid var(--cyan);border-radius:8px;padding:12px;margin:8px 0;background:var(--cyan-bg)}
+.new-game-title{font-weight:700;color:var(--cyan-dark);margin-bottom:4px}
+.crs-print{background:#fff;border:2px solid var(--g9);border-radius:8px;padding:24px;margin:16px 0;font-family:'Courier New',monospace;font-size:.85em;line-height:1.8}
+.gloss-term{font-weight:700;color:var(--cyan-dark)}
+.toc-link{color:var(--cyan-dark);display:block;padding:3px 0}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}table{page-break-inside:avoid}.crs-print{page-break-inside:avoid}}
+@media(max-width:640px){.step-card{flex-direction:column}.arrow-row{flex-direction:column}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<div class="box" style="margin-bottom:24px">
-  <strong>Part 9 of 10</strong> · The Playground: คำนวณก่อน เล่นได้ทุกอย่าง
+<div class="cover">
+<div class="ch-num">The Playground · Part 9 of 10</div>
+<h1>OS Decision Flow</h1>
+<div class="sub">8 ขั้นตอน จาก Market Scan สู่ Exit &amp; Recycle</div>
 </div>
 
-<h1>OS Decision Flow</h1>
-<p class="subtitle">8 ขั้นตอน จาก Market Scan สู่ Exit &amp; Recycle</p>
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้ — อ่านก่อน</div>
+<div class="ki-text">OS Flow คือ <strong>กระบวนการที่ทำซ้ำได้ไม่สิ้นสุด</strong> — Step 8 (Exit) กลับไป Step 1 (Scan) ทำให้ Portfolio เรียนรู้จากตัวเองในทุก Iteration Cross-Book Connections 5 ข้อในส่วนนี้คือ Edge ที่ OS ให้แต่ Library แต่ละเล่มให้ไม่ได้</div>
+<div class="ki-eq">Step 1: Scan → Step 2: Regime → Step 3: Game → Step 4: Instrument
+Step 5: CRS  → Step 6: Execute → Step 7: Monitor → Step 8: Exit → Step 1</div>
+</div>
 
 <p>ถ้า Part 2 คือ "การสร้างสนามเด็กเล่น" (Macro Boundary) และ Part 3–6 คือ "เกม" (42 เกม)
 แล้ว Part 9 คือ <strong>OS</strong> ที่บอกว่า: เมื่อไหร่เปิดเกมไหน, ต้องใช้ข้อมูลจากเล่มไหน,
@@ -71,8 +116,9 @@ INPUTS:
 
 OUTPUT: "Market Context Snapshot"
   → ส่งต่อ Step 2 (Regime Detection)</div>
-    <div class="box" style="margin:8px 0">
-      <strong>เล่มที่ใช้:</strong> Grid Trading Ch.2 (Market Scanning), Vol Trading Ch.1 (Macro Context)
+    <div class="bx bc" style="margin:8px 0">
+      <div class="bt">เล่มที่ใช้:</div>
+      Grid Trading Ch.2 (Market Scanning), Vol Trading Ch.1 (Macro Context)
     </div>
   </div>
 </div>
@@ -107,8 +153,9 @@ FILTERS:
 
 OUTPUT: "Selected Game + Rationale"
   E.g.: "เลือก Iron Condor (เกม 17) — Regime R1, IVR=55, ไม่มี Conflict"</div>
-    <div class="box" style="margin:8px 0">
-      <strong>เล่มที่ใช้:</strong> เล่มที่ตรงกับเกมที่เลือก (ดู Source Book ใน Part 3–6)
+    <div class="bx bc" style="margin:8px 0">
+      <div class="bt">เล่มที่ใช้:</div>
+      เล่มที่ตรงกับเกมที่เลือก (ดู Source Book ใน Part 3–6)
     </div>
   </div>
 </div>
@@ -152,8 +199,9 @@ CRS QUICK VERSION:
 
 If both PASS: Proceed to Step 6
 If any FAIL: Loop back to Step 3 (choose different game or smaller size)</div>
-    <div class="danger" style="margin:8px 0">
-      <strong>ห้ามข้ามขั้นตอนนี้:</strong> CRS คือ License to Play ของทุกเกม
+    <div class="bx br" style="margin:8px 0">
+      <div class="bt">ห้ามข้ามขั้นตอนนี้:</div>
+      CRS คือ License to Play ของทุกเกม
       เกมที่เปิดโดยไม่มี CRS ถือว่า "ผิดกฎของ Playground" ไม่ว่าจะกำไรหรือขาดทุน
     </div>
   </div>
@@ -240,8 +288,9 @@ JOURNAL ENTRY (every close):
   WCL budgeted: $___  WCL actual risk: $___
   Regime at Open: ___  Regime at Close: ___
   Lesson: ___________________________________________</div>
-    <div class="tip" style="margin:8px 0">
-      <strong>The Loop:</strong> Step 8 → Step 1 → Step 2 → … คือ Operating System ที่ทำงานต่อเนื่อง
+    <div class="bx bg" style="margin:8px 0">
+      <div class="bt">The Loop:</div>
+      Step 8 → Step 1 → Step 2 → … คือ Operating System ที่ทำงานต่อเนื่อง
       แต่ละ Iteration ทำให้คุณเก่งขึ้นเพราะ Journal สะสมข้อมูลเปรียบเทียบ WCL ที่คาดไว้กับความเป็นจริง
     </div>
   </div>
@@ -302,8 +351,9 @@ Step 8 (Exit)
 
 <h3>Connection 1: Half-Life ควบคุม Grid Step</h3>
 
-<div class="box">
-  <strong>แหล่ง:</strong> Statarb Ch.4 (Half-Life) → Grid Trading Ch.3 (Step Design)<br><br>
+<div class="bx bc">
+  <div class="bt">แหล่ง:</div>
+  Statarb Ch.4 (Half-Life) → Grid Trading Ch.3 (Step Design)<br><br>
   Standard Grid ใช้ ATR เป็น Step — แต่ ATR บอกแค่ "ราคาขยับเท่าไหร่เฉลี่ย"
   Half-Life ของ Mean-Reversion บอก "ราคาใช้เวลาเฉลี่ยกี่วันในการกลับหา Mean"<br><br>
   <strong>Rule:</strong> $\text{Step}_{optimal} = \frac{\text{Half-Life (days)} \times \text{Daily ATR}}{2}$<br><br>
@@ -313,8 +363,9 @@ Step 8 (Exit)
 
 <h3>Connection 2: Kelly ต้องการ Payoff Distribution ไม่ใช่แค่ Win Rate</h3>
 
-<div class="box">
-  <strong>แหล่ง:</strong> PM Ch.9 (Kelly Criterion) → Vol Trading (Payoff Distribution)<br><br>
+<div class="bx bc">
+  <div class="bt">แหล่ง:</div>
+  PM Ch.9 (Kelly Criterion) → Vol Trading (Payoff Distribution)<br><br>
   Kelly Formula ที่สอนทั่วไป: $f^* = \frac{p}{a} - \frac{q}{b}$ ใช้ Fixed Win/Loss<br>
   แต่ Grid Trading มี Payoff Distribution ที่ไม่ Fixed — บาง Trade กำไร 1 Step บาง Trade
   กำไร 5 Steps (ถ้า Trend พา Price ออกไป)<br><br>
@@ -325,8 +376,9 @@ Step 8 (Exit)
 
 <h3>Connection 3: Vol Surface Skew บอก Pair ที่ควรเทรด</h3>
 
-<div class="box">
-  <strong>แหล่ง:</strong> Options Trading Ch.7 (Vol Surface) → Statarb (Pair Selection)<br><br>
+<div class="bx bc">
+  <div class="bt">แหล่ง:</div>
+  Options Trading Ch.7 (Vol Surface) → Statarb (Pair Selection)<br><br>
   Statarb มักเลือก Pair จาก Price Correlation — แต่ถ้า Vol Surface ของทั้งคู่มี Skew ไป
   ทิศทางเดียวกัน หมายความว่า Options Market มองทั้งคู่เหมือนกัน → Pair นั้นอ้วนมาก<br><br>
   <strong>Rule:</strong> เลือก Pair ที่ Price Correlation &gt; 0.75 <em>แต่</em> Vol Surface Skew ต่างกัน
@@ -335,8 +387,9 @@ Step 8 (Exit)
 
 <h3>Connection 4: Funding Rate คือต้นทุนซ่อนของ Synthetic Position</h3>
 
-<div class="box">
-  <strong>แหล่ง:</strong> Arb Trading Ch.5 (Funding Rate) → PM Ch.5 (Hidden Cost)<br><br>
+<div class="bx bc">
+  <div class="bt">แหล่ง:</div>
+  Arb Trading Ch.5 (Funding Rate) → PM Ch.5 (Hidden Cost)<br><br>
   Synthetic Stock (เกม 23) = Long Call + Short Put ราคาเดียวกัน → สร้าง Exposure เหมือน Long Spot<br>
   แต่ในตลาด Crypto: Synthetic ผ่าน Perp Futures จ่าย Funding Rate<br><br>
   <strong>Rule:</strong> Cost of Synthetic = Borrow Rate + Funding Rate × Time<br>
@@ -346,8 +399,9 @@ Step 8 (Exit)
 
 <h3>Connection 5: GARCH Forecast กำหนด Dynamic Grid Zone Width</h3>
 
-<div class="box">
-  <strong>แหล่ง:</strong> Vol Trading Ch.6 (GARCH) → Grid Trading Ch.3 (Zone Design)<br><br>
+<div class="bx bc">
+  <div class="bt">แหล่ง:</div>
+  Vol Trading Ch.6 (GARCH) → Grid Trading Ch.3 (Zone Design)<br><br>
   Standard Grid ใช้ Fixed Zone Width (e.g., ±10% จาก Current Price)<br>
   GARCH(1,1) บอก Expected Volatility ใน 5–10 วันข้างหน้า → ปรับ Zone Width แบบ Dynamic<br><br>
   <strong>Rule:</strong> $\text{Zone Width} = K \times \sigma_{GARCH} \times \sqrt{T_{hold}}$<br>
@@ -401,12 +455,11 @@ Monthly (30 นาที):
   → Zone Rebalance
 </div>
 
-<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em">
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif">
   <a href="playground-index.html" style="color:#64748b;font-weight:700">🏟️ สารบัญ The Playground</a>
   <span><a href="playground-part8.html" style="color:#64748b">← Part 8</a> · <a href="playground-part10.html" style="color:var(--cyan-dark)">Part 10 →</a></span>
   <a href="index.html" style="color:var(--cyan-dark);font-weight:700">🏛️ ห้องสมุดหลัก</a>
 </nav>
 
-</div>
 </body>
 </html>
