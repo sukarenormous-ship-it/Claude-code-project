@@ -259,7 +259,22 @@ Scenarios:
 
 ข้อดี: ทั้ง 3 scenarios เป็นผลดี — strangle "align" กับ grid zone
 ข้อระวัง: ถ้า BTC พุ่งเกิน $110k ไกลมาก → CALL loss สูง (unlimited loss) → ต้อง hedge CALL
-           → ซื้อ OTM CALL เป็น hedge (Iron Condor แทน Short Strangle)
+           → ซื้อ OTM CALL เป็น hedge → เปลี่ยนเป็น Iron Condor (max loss ถูก cap)
+
+Iron Condor ตัวอย่าง (Grid zone $90k–$110k):
+  Short Strangle เดิม: SELL PUT $90k + SELL CALL $110k → premium $1,400 (unlimited risk)
+
+  Iron Condor (เพิ่ม long wings):
+    SELL PUT $88k  + BUY PUT  $82k  → net premium: +$800 − $150 = +$650
+    SELL CALL $113k + BUY CALL $120k → net premium: +$600 − $200 = +$400
+    Total net premium = +$1,050 (ลดลงจาก $1,400 แต่ risk ถูก cap)
+
+    Max loss (PUT spread):  ($88k − $82k) − $650 = $5,350 per lot
+    Max loss (CALL spread): ($120k − $113k) − $400 = $6,600 per lot
+
+  เปรียบเทียบ:
+    Short Strangle: premium $1,400 · CALL loss ไม่จำกัด
+    Iron Condor:    premium $1,050 · max loss ~$6,600 (defined risk)
 
 def grid_strangle_income(zone_low, zone_high, put_premium, call_premium,
                           grid_daily_cashflow, days_to_expiry):
