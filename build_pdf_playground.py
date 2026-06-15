@@ -33,21 +33,21 @@ PARTS = [
 
 PDF_OPTIONS = dict(
     format="A4",
-    margin={"top": "18mm", "bottom": "18mm", "left": "18mm", "right": "18mm"},
+    margin={"top": "15mm", "bottom": "15mm", "left": "12mm", "right": "12mm"},
     print_background=True,
 )
 
 PRINT_CSS = """
 <style>
 .fm {
-    font-family: 'Courier New', 'Sarabun', monospace !important;
-    font-size: 11px !important;
-    line-height: 1.65 !important;
+    font-family: 'Sarabun', 'Courier New', monospace !important;
+    font-size: 10px !important;
+    line-height: 1.6 !important;
     white-space: pre-wrap !important;
     overflow-wrap: break-word !important;
     word-break: normal !important;
     background: #f3f4f6 !important;
-    padding: 12px 14px !important;
+    padding: 10px 12px !important;
     border-radius: 6px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
