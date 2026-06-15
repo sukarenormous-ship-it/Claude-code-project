@@ -224,15 +224,17 @@
       ctx.restore();
     }
 
-    // X-axis labels
+    // X-axis labels — left-align first, right-align last to prevent clipping
     ctx.font      = `10px ${STYLE.font}`;
     ctx.fillStyle = '#64748b';
-    ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     labels.forEach((lbl, i) => {
-      if (labels.length <= 12 || i % Math.ceil(labels.length / 10) === 0)
+      if (labels.length <= 12 || i % Math.ceil(labels.length / 10) === 0) {
+        ctx.textAlign = (i === 0) ? 'left' : (i === labels.length - 1) ? 'right' : 'center';
         ctx.fillText(lbl, xPos(i), py + ph + 6);
+      }
     });
+    ctx.textAlign = 'center';
 
     // Axis lines
     ctx.strokeStyle = '#cbd5e1';
