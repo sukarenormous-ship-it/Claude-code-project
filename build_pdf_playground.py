@@ -40,11 +40,12 @@ PDF_OPTIONS = dict(
 PRINT_CSS = """
 <style>
 .fm {
-    font-family: 'Liberation Mono', 'DejaVu Sans Mono', 'Courier New', monospace !important;
-    font-size: 11.5px !important;
-    line-height: 1.55 !important;
+    font-family: 'Courier New', 'Sarabun', monospace !important;
+    font-size: 11px !important;
+    line-height: 1.65 !important;
     white-space: pre-wrap !important;
-    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
     background: #f3f4f6 !important;
     padding: 12px 14px !important;
     border-radius: 6px !important;
@@ -52,6 +53,7 @@ PRINT_CSS = """
     print-color-adjust: exact !important;
 }
 body {
+    font-family: 'Sarabun', sans-serif !important;
     font-size: 15px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
