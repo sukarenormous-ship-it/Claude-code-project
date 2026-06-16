@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>View → Payoff — Part IV: PCP as Construction Tool</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Sarabun,sans-serif;font-size:15px;line-height:1.7;color:#1e293b;background:#f8fafc;padding:24px}
+h1{font-size:2em;font-weight:700;color:#0f172a;margin:20px 0 6px}
+h2{font-size:1.3em;font-weight:700;color:#1e3a5f;margin:28px 0 10px;border-left:4px solid #2563eb;padding-left:10px}
+h3{font-size:1.1em;font-weight:600;color:#1e3a5f;margin:18px 0 6px}
+p{margin:8px 0}
+ol,ul{margin:8px 0 8px 22px}
+li{margin:4px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:0.93em}
+th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+tr:nth-child(even) td{background:#f1f5f9}
+.bx{border-radius:8px;padding:14px 16px;margin:14px 0}
+.bg{background:#f0fdf4;border-left:4px solid #16a34a}
+.bb{background:#eff6ff;border-left:4px solid #2563eb}
+.ba{background:#fff7ed;border-left:4px solid #d97706}
+.bp{background:#faf5ff;border-left:4px solid #7c3aed}
+.br{background:#fff1f2;border-left:4px solid #dc2626}
+.bt{font-weight:700;margin-bottom:4px}
+.fm{font-family:monospace;background:#1e293b;color:#e2e8f0;padding:12px 16px;border-radius:6px;margin:12px 0;white-space:pre-wrap;font-size:0.88em;line-height:1.6}
+.eq{font-family:monospace;background:#f1f5f9;color:#1e293b;padding:10px 14px;border-radius:6px;margin:10px 0;border:1px solid #cbd5e1;font-size:0.95em}
+.cover{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#2563eb 100%);color:#fff;border-radius:12px;padding:40px 32px;margin-bottom:32px;text-align:center}
+.cover h1{color:#fff;font-size:2.2em}
+.cover .sub{color:#93c5fd;font-size:1.1em;margin-top:8px}
+.cover .series{color:#64748b;font-size:0.9em;margin-top:16px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="series">VIEW → PAYOFF MASTERY — PART IV</div>
+<h1>PCP as Construction Tool</h1>
+<div class="sub">Equivalence Proofs + IV Skew Selection Algorithm</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li>เข้าใจ <strong>Put-Call Parity (PCP)</strong> อย่างลึกซึ้งในฐานะ equivalence converter</li>
+<li>พิสูจน์ว่า <strong>constructions ต่างกันให้ payoff เหมือนกัน</strong> ด้วย PCP</li>
+<li>ใช้ <strong>IV Skew Selection Algorithm</strong> เพื่อเลือก construction ที่ถูกกว่า</li>
+<li>ฝึกกับ <strong>3 case studies</strong>: Bull Spread, Iron Condor, Long Vol</li>
+</ul>
+</div>
+
+<h2>บทที่ 22: Put-Call Parity — พื้นฐานและนัยยะ</h2>
+
+<div class="bx bg">
+<div class="bt">สูตร PCP พื้นฐาน (European Options เท่านั้น)</div>
+<div class="eq">C(K,T) − P(K,T) = S − PV(K) = S − K·e^(−rT)
+
+โดยที่:
+  C = ราคา Call option (Strike K, Expiry T)
+  P = ราคา Put option (Strike K, Expiry T)
+  S = ราคา spot ปัจจุบัน
+  K = strike price
+  r = risk-free rate</div>
+<p style="margin-top:8px;font-size:0.9em;color:#dc2626">⚠ PCP ใช้ได้เฉพาะ <strong>European-style options</strong> (exercise ได้เฉพาะ expiry) เท่านั้น สำหรับ American-style options (equity options ส่วนใหญ่) early exercise premium ทำให้ PCP equivalence ไม่สมบูรณ์</p>
+</div>
+
+<p>PCP บอกว่า: <strong>Long Call + Short Put (same K) = Synthetic Long Forward</strong></p>
+
+<div class="bx bg">
+<div class="bt">PCP ในภาษาคน (Plain English)</div>
+<p>"ถ้าซื้อ Call และขาย Put ที่ strike เดียวกัน — ผลลัพธ์เหมือนถือ forward contract ทุกประการ"<br>
+<strong>e^(−rT)</strong> คือตัวคูณลด "มูลค่าอนาคต → มูลค่าปัจจุบัน" (discount factor) — ถ้า r≈0 ก็ ≈ 1 เลย<br>
+<strong>PV(K)</strong> = มูลค่าปัจจุบันของ strike K หรือพูดง่ายๆ คือ "K ที่ลดดอกเบี้ยออกแล้ว"<br><br>
+สรุปสั้น: <strong>Call − Put = Fwd</strong> · <strong>Call = Put + Fwd</strong> · <strong>Put = Call − Fwd</strong><br>
+→ ใช้ conversion นี้เพื่อเลือก construction ที่ถูกกว่าใน IV skew ที่แตกต่างกัน</p>
+</div>
+
+<div class="fm">Rearrangements ที่มีประโยชน์:
+C = P + S − PV(K)        → Long Call = Long Put + Synthetic Fwd
+P = C − S + PV(K)        → Long Put  = Long Call + Synthetic Short Fwd
+
+Synthetic Long Fwd(K) = C(K) − P(K)
+  [ไม่ใช่ zero-cost: มีมูลค่า = S − PV(K) ณ วันนี้]
+
+Short Put = Short Call + Synthetic Long Fwd  → Short Put ≡ Short Call + Fwd</div>
+
+<div class="bx ba">
+<div class="bt">ทำไม PCP สำคัญสำหรับ Construction?</div>
+<p>PCP บอกว่า: <strong>ทุก leg ที่เป็น Call มี Put equivalent</strong> (และกลับกัน)<br>
+ดังนั้น construction ใดๆ ที่ประกอบด้วย Calls สามารถแปลงเป็นเวอร์ชัน Puts ได้ทั้งหมด<br>
+→ นี่คือแหล่ง generate constructions ทางเลือกทั้งหมดใน Step 3</p>
+</div>
+
+<h2>บทที่ 23: Equivalence Proof — Bull Spread</h2>
+
+<h3>Bull Call Spread vs Bull Put Spread</h3>
+
+<p>Belief: "ราคาจะขึ้นจาก K₁ ถึง K₂ (Mild Bullish)"</p>
+
+<div class="fm">Construction A (Call Spread):
+  Long  C(K₁) + Short C(K₂)
+  Payoff: 0 ถ้า S&lt;K₁, ขึ้นถ้า K₁&lt;S&lt;K₂, max ถ้า S&gt;K₂
+  Net: Debit (K₁ &lt; K₂ → C(K₁) &gt; C(K₂))
+
+Construction B (Put Spread via PCP):
+  Long  P(K₁) + Short P(K₂)
+  = [C(K₁) − S + PV(K₁)] + [−C(K₂) + S − PV(K₂)]
+  = C(K₁) − C(K₂) + PV(K₁−K₂)
+  = Bull Call Spread + constant (PV adjustment)
+
+→ Payoff shape เหมือนกันทุกประการ ✓
+→ ต่างกันที่: Net Debit/Credit (ขึ้นกับ skew)</div>
+
+<svg viewBox="0 0 520 150" style="display:block;max-width:100%;margin:16px auto">
+  <text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Bull Call Spread ≡ Bull Put Spread (Same Payoff)</text>
+  <line x1="40" y1="110" x2="480" y2="110" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <!-- P&L axis labels -->
+  <text x="36" y="63" font-family="Sarabun" font-size="8" fill="#16a34a" text-anchor="end">K₂−K₁−debit</text>
+  <text x="36" y="113" font-family="Sarabun" font-size="8" fill="#94a3b8" text-anchor="end">0</text>
+  <text x="36" y="133" font-family="Sarabun" font-size="8" fill="#dc2626" text-anchor="end">−debit</text>
+  <polygon points="220,110 320,60 480,60 480,110" fill="#dbeafe" fill-opacity="0.4"/>
+  <!-- Bull Call Spread -->
+  <polyline points="40,130 180,130 320,60 480,60" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="370" y="55" font-family="Sarabun" font-size="9" fill="#2563eb">Bull Call Spread</text>
+  <!-- Bull Put Spread (same payoff shape, slightly offset for visibility) -->
+  <polyline points="40,135 180,135 320,65 480,65" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="370" y="72" font-family="Sarabun" font-size="9" fill="#16a34a">Bull Put Spread (equivalent)</text>
+  <!-- kinks -->
+  <circle cx="180" cy="130" r="3.5" fill="#d97706"/>
+  <circle cx="320" cy="60" r="3.5" fill="#d97706"/>
+  <text x="180" y="143" text-anchor="middle" font-family="Sarabun" font-size="8.5" fill="#d97706">K₁</text>
+  <text x="320" y="143" text-anchor="middle" font-family="Sarabun" font-size="8.5" fill="#d97706">K₂</text>
+</svg>
+
+<div class="bx bb">
+<div class="bt">เลือกอันไหนดีกว่า? → ดู IV Skew</div>
+<table>
+<tr><th>ตลาด</th><th>OTM Put IV</th><th>OTM Call IV</th><th>เลือก</th></tr>
+<tr><td>Equity (left skew)</td><td>สูง</td><td>ต่ำ</td><td>Bull Call Spread (Long low IV Call, Short low IV Call)</td></tr>
+<tr><td>Crypto (smile)</td><td>กลาง</td><td>กลาง</td><td>ใกล้เคียงกัน → เลือกตาม net premium</td></tr>
+<tr><td>Crypto (right skew)</td><td>ต่ำ</td><td>สูง</td><td>Bull Put Spread (Long low IV Put, Short high IV Put)</td></tr>
+</table>
+</div>
+
+<h2>บทที่ 24: Equivalence Proof — Iron Condor</h2>
+
+<h3>Iron Condor = Short Strangle + Long Strangle (Wings)</h3>
+
+<div class="fm">Decomposition:
+Iron Condor = Long P(K₁) + Short P(K₂) + Short C(K₃) + Long C(K₄)
+            = [Short P(K₂) + Short C(K₃)]  ← Short Strangle (core)
+            + [Long P(K₁) + Long C(K₄)]    ← Long Strangle (wings)
+
+PCP Equivalent — แทน Short P(K₂) ด้วย Short C(K₂) + Fwd:
+Iron Condor (all calls) = Long C(K₁) + Short C(K₂) + Short C(K₃) + Long C(K₄)
+                        = Call Condor
+
+PCP Equivalent — แทน Short C(K₃) ด้วย Short P(K₃) − Fwd:
+Iron Condor (all puts)  = Long P(K₁) + Short P(K₂) + Short P(K₃) + Long P(K₄)
+                        = Put Condor</div>
+
+<table>
+<tr><th>Construction</th><th>เหมาะเมื่อ</th><th>ข้อดี</th></tr>
+<tr><td>Iron Condor (mixed)</td><td>IV smile balanced</td><td>Net credit, 4 legs</td></tr>
+<tr><td>Call Condor</td><td>Left skew ชัน (Put แพง)</td><td>หลีกเลี่ยง Put ที่ IV สูง</td></tr>
+<tr><td>Put Condor</td><td>Right skew (Call แพง)</td><td>หลีกเลี่ยง Call ที่ IV สูง</td></tr>
+<tr><td>Short Strangle</td><td>นักลงทุน risk-tolerant + margin OK</td><td>Max credit, 2 legs</td></tr>
+</table>
+
+<h2>บทที่ 25: Equivalence Proof — Long Vol (Straddle vs Strangle)</h2>
+
+<div class="fm">Long Straddle: Long C(K) + Long P(K)  [same strike = ATM]
+Long Strangle: Long C(K₂) + Long P(K₁) [K₁ &lt; K₂, both OTM]
+
+PCP shows:
+Long Straddle = 2·Long P(K) + Long Fwd   [via C = P + Fwd]
+             = 2·Long C(K) − Long Fwd    [via P = C − Fwd]
+
+Key difference:
+- Straddle: แพงกว่า (ATM premium สูง), profit zone เริ่มใกล้กว่า
+- Strangle: ถูกกว่า (OTM premium ต่ำ), ต้องการ vol มากกว่าจึงกำไร</div>
+
+<svg viewBox="0 0 520 175" style="display:block;max-width:100%;margin:16px auto">
+  <text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">Straddle vs Strangle: Long Volatility</text>
+  <line x1="40" y1="115" x2="480" y2="115" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <!-- P&L axis labels -->
+  <text x="36" y="73" font-family="Sarabun" font-size="8" fill="#16a34a" text-anchor="end">กำไร</text>
+  <text x="36" y="118" font-family="Sarabun" font-size="8" fill="#94a3b8" text-anchor="end">0</text>
+  <text x="36" y="143" font-family="Sarabun" font-size="8" fill="#dc2626" text-anchor="end">−premium</text>
+  <!-- straddle profit zone shading -->
+  <polygon points="40,70 181,115 40,115" fill="#dbeafe" fill-opacity="0.4"/>
+  <polygon points="339,115 480,115 480,70" fill="#dbeafe" fill-opacity="0.4"/>
+  <!-- Straddle -->
+  <polyline points="40,70 260,140 480,70" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="260" y="162" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">Long Straddle (ATM)</text>
+  <!-- Strangle -->
+  <polyline points="40,55 160,130 360,130 480,55" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="260" y="122" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#7c3aed">Long Strangle (OTM)</text>
+  <!-- kink dots straddle -->
+  <circle cx="260" cy="140" r="3.5" fill="#2563eb"/>
+  <!-- kink dots strangle -->
+  <circle cx="160" cy="130" r="3.5" fill="#7c3aed"/>
+  <circle cx="360" cy="130" r="3.5" fill="#7c3aed"/>
+  <text x="130" y="143" font-family="Sarabun" font-size="8" fill="#7c3aed">K₁</text>
+  <text x="254" y="143" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#2563eb">K</text>
+  <text x="365" y="143" font-family="Sarabun" font-size="8" fill="#7c3aed">K₂</text>
+</svg>
+
+<h2>บทที่ 26: IV Skew Selection Algorithm</h2>
+
+<div class="bx bg">
+<div class="bt">Algorithm: เลือก Construction ที่ถูกที่สุดจาก IV Skew</div>
+</div>
+
+<div class="fm">IV_SKEW_SELECT(belief, constructions, iv_surface):
+
+1. สำหรับแต่ละ construction ใน constructions:
+   a. สำหรับแต่ละ leg:
+      - ถ้า Long leg: cost += IV(strike, expiry) × vega  ← ยิ่ง IV ต่ำ ยิ่งดี
+      - ถ้า Short leg: credit += IV(strike, expiry) × vega ← ยิ่ง IV สูง ยิ่งดี
+   b. net_premium = credit − cost
+   c. net_premium_adj = net_premium / (max_profit − max_loss)  [normalize]
+
+2. เลือก construction ที่มี net_premium_adj สูงสุด
+
+หลักการ:
+  Long legs → อยากให้ IV ต่ำ (ซื้อถูก)
+  Short legs → อยากให้ IV สูง (ขายแพง)
+
+⚠ ข้อจำกัดของ algorithm นี้:
+  - ใช้ mid-market IV เท่านั้น — ไม่รวม bid-ask spread
+  - BTC options bid-ask อาจกว้าง 2–4 vol points ต่อ leg
+  - ความได้เปรียบ IV ที่คำนวณได้อาจหายหมดหลังหักค่า execution
+  - ใช้เป็น ranking tool เท่านั้น ไม่ใช่ตัวเลข P&L จริง</div>
+
+<h3>ตัวอย่าง: BTC Iron Condor vs Call Condor</h3>
+
+<table>
+<tr><th>Strike</th><th>Type</th><th>IV (สมมติ)</th><th>Iron Condor</th><th>Call Condor</th></tr>
+<tr>
+  <td>65K</td><td>OTM Put / ITM Call</td><td>Put: 70%, Call: 68%</td>
+  <td>Long Put @ IV=70% (แพง)</td>
+  <td>Long Call @ IV=68% (ถูกกว่า)</td>
+</tr>
+<tr>
+  <td>70K</td><td>Slightly OTM Put / Call</td><td>Put: 63%, Call: 61%</td>
+  <td>Short Put @ IV=63% (OK)</td>
+  <td>Short Call @ IV=61% (น้อยกว่า)</td>
+</tr>
+<tr>
+  <td>80K</td><td>Slightly OTM Call / Put</td><td>Call: 63%, Put: 65%</td>
+  <td>Short Call @ IV=63% (OK)</td>
+  <td>Short Call @ IV=63% (เท่ากัน)</td>
+</tr>
+<tr>
+  <td>85K</td><td>OTM Call / ITM Put</td><td>Call: 70%, Put: 72%</td>
+  <td>Long Call @ IV=70% (ถูกกว่า)</td>
+  <td>Long Call @ IV=70% (เท่ากัน)</td>
+</tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ผลการวิเคราะห์</div>
+<p>ในตัวอย่างนี้ (BTC smile ที่ค่อนข้าง symmetric):<br>
+Iron Condor Long Put(65K) มี IV=70% vs Call Condor Long Call(65K) มี IV=68%<br>
+→ Long Call ที่ 65K ถูกกว่า Long Put ที่ 65K เล็กน้อย<br>
+→ <strong>Call Condor อาจถูกกว่า Iron Condor เล็กน้อยในกรณีนี้</strong><br>
+แต่ถ้าตลาดมี right skew (BTC rally ทำให้ OTM Call แพง) → Iron Condor ดีกว่า</p>
+</div>
+
+<h2>บทที่ 27: Quick Reference — PCP Conversion Table</h2>
+
+<table>
+<tr><th>Original</th><th>PCP Equivalent</th><th>ใช้เมื่อ</th></tr>
+<tr><td>Long Call(K)</td><td>Long Put(K) + Long Forward</td><td>Put IV ต่ำกว่า Call IV</td></tr>
+<tr><td>Short Call(K)</td><td>Short Put(K) − Long Forward</td><td>Put IV สูงกว่า Call IV</td></tr>
+<tr><td>Long Put(K)</td><td>Long Call(K) − Long Forward</td><td>Call IV ต่ำกว่า Put IV</td></tr>
+<tr><td>Short Put(K)</td><td>Short Call(K) + Long Forward</td><td>Call IV สูงกว่า Put IV</td></tr>
+<tr><td>Bull Call Spread</td><td>Bull Put Spread</td><td>Put skew flat หรือ right skew</td></tr>
+<tr><td>Bear Put Spread</td><td>Bear Call Spread</td><td>Call skew flat หรือ left skew</td></tr>
+<tr><td>Iron Condor</td><td>Call Condor / Put Condor</td><td>ขึ้นกับ smile shape</td></tr>
+<tr><td>Long Straddle</td><td>Long Strangle (wider)</td><td>ต้องการลด theta burn</td></tr>
+</table>
+
+<h2>สรุป Part IV</h2>
+
+<div class="bx bb">
+<div class="bt">Key Takeaways</div>
+<ol>
+<li>PCP ไม่ใช่แค่ทฤษฎี — มันเป็น <strong>construction converter ใน Step 3</strong></li>
+<li>ทุก Call มี Put equivalent (และกลับกัน) → constructions ทางเลือกเสมอ</li>
+<li>IV Skew บอกว่า construction ไหน <strong>ถูกกว่า</strong> ณ ขณะนั้น</li>
+<li>Long legs: อยากให้ IV ต่ำ; Short legs: อยากให้ IV สูง</li>
+<li>Crypto smile → แต่ละ leg ต้องดู IV แยกกันทุกครั้ง</li>
+</ol>
+</div>
+
+<table>
+<tr><th>Part</th><th>สิ่งที่เรียนรู้</th></tr>
+<tr><td>Part I</td><td>5-Dimension Belief Framework</td></tr>
+<tr><td>Part II</td><td>6 Bias Families + Master Matrix</td></tr>
+<tr><td>Part III</td><td>4-Step Method + BTC Worked Example</td></tr>
+<tr><td>Part IV (นี้)</td><td>PCP as Construction Tool + IV Skew Algorithm</td></tr>
+<tr><td>Part V (ต่อไป)</td><td>Decision Tree SVG + Master Cheat Sheet</td></tr>
+<tr><td>Part VI</td><td>Binary Options & Prediction Markets — implied probability จาก N(d₂)</td></tr>
+<tr><td>Part VII</td><td>Trade Management — Greeks evolution, adjustment, position sizing</td></tr>
+</table>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Part IV — ไปต่อ <a href="vp-part5.html">Part V: Decision Tree + Cheat Sheet</a> →</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #16a34a;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vp-part1.html" style="color:#16a34a;text-decoration:none;font-weight:700">View → Payoff — เริ่มต้น</a></nav>
+</body></html>

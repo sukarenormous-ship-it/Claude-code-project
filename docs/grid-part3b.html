@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 3B — Indicator Filter + Order Accumulation</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.score-meter{display:flex;gap:4px;align-items:center;margin:8px 0}
+.score-bar{height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.78em;font-weight:700;color:#fff;transition:width .3s}
+.filter-pipeline{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0;align-items:center}
+.fp-box{background:var(--g1);border:2px solid var(--g2);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px}
+.fp-box.active{background:var(--green-bg);border-color:var(--green)}
+.fp-box.warn{background:var(--amber-bg);border-color:var(--amber)}
+.fp-box.stop{background:var(--red-bg);border-color:var(--red)}
+.fp-arrow{font-size:1.5em;color:#94a3b8}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 3B</div>
+<h1>Indicator Filter + Order Accumulation</h1>
+<div class="sub">RSI · Bollinger Band · Volume Filter · Composite Score 0–100<br>
+Order Accumulation Strategy · TWAP Grid · Partial Deploy<br>
+อ้างอิง: <a href="vol-part2.html" style="color:#0e7490">Vol Part 2</a> (BB/ATR), <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.11</a> (State Machine)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Grid math กำหนด "ขนาด" — Indicator filter กำหนด "เวลา" ไม่ใช่ทุก indicator ที่เหมาะ ต้องเลือกเฉพาะ indicator ที่บอก "mean-reversion opportunity" ไม่ใช่ trend-following | Order Accumulation ช่วยลด timing risk เมื่อ entry ไม่แน่ใจ</div>
+<div class="ki-eq">Composite Score = 30×RSI_score + 30×BB_score + 20×Vol_score + 20×Hurst_score ∈ [0, 100]</div>
+</div>
+
+<h2 id="s3b-1">3B.1 ทำไมต้อง Indicator Filter</h2>
+
+<p>Grid trading ทำงานได้ดีใน "mean-reverting" market — แต่ไม่ใช่ทุกเวลาที่ตลาดเป็น mean-reverting Indicator filter ช่วย:</p>
+
+<ul>
+<li><strong>Gate keeper:</strong> บอกว่า "ตอนนี้ควรเปิด grid หรือไม่"</li>
+<li><strong>Size adjuster:</strong> บอกว่า "ควร deploy เต็มหรือ partial"</li>
+<li><strong>Entry timing:</strong> บอกว่า "เปิด grid ตอนนี้หรือรอ dip ก่อน"</li>
+</ul>
+
+<div class="bx ba">
+<div class="bt">สิ่งที่ Indicator Filter ไม่ควรทำ</div>
+<p>ไม่ใช้ indicator เพื่อ "predict direction" — grid ไม่ต้องรู้ว่าราคาจะขึ้นหรือลง</p>
+<p>ใช้ indicator เพื่อตอบคำถาม: <strong>"ตลาดเป็น mean-reverting ระดับไหน?"</strong> เท่านั้น</p>
+<p>ถ้าใช้ MACD crossover หรือ Moving Average crossover เพื่อ "signal" — คุณกำลัง overlay trend-following บน grid ซึ่งขัดกับ grid philosophy</p>
+</div>
+
+<h2 id="s3b-2">3B.2 RSI Filter — Mean-Reversion Opportunity</h2>
+
+<p>RSI (Relative Strength Index) วัด "overbought/oversold" — สำหรับ grid เราต้องการรู้ว่า "ราคาเบี่ยงจาก mean มากแค่ไหน":</p>
+
+$$\text{RSI} = 100 - \frac{100}{1 + \text{RS}} \qquad \text{RS} = \frac{\text{avg gain (14 periods)}}{\text{avg loss (14 periods)}}$$
+
+<div class="fm">RSI Score สำหรับ Grid (ใช้ RSI ใน Mean-Reversion Context):
+
+def rsi_score_for_grid(rsi_value):
+    """
+    Score สูง = โอกาส mean-reversion สูง (ดีสำหรับ grid entry)
+    Score ต่ำ = ตลาด momentum สูง (ไม่เหมาะ grid)
+    """
+    # RSI extremes (< 30 หรือ > 70) = mean-reversion opportunity
+    if rsi_value < 30:
+        score = 70 + 100 * (30 - rsi_value) / 30   # ยิ่ง oversold ยิ่งสูง (70–100)
+    elif rsi_value > 70:
+        score = 70 + 100 * (rsi_value - 70) / 30   # ยิ่ง overbought ยิ่งสูง (70–100)
+    else:
+        # RSI 30–70 = middle zone
+        # 50 = neutral (score ปานกลาง), ยิ่งห่างจาก 50 ยิ่งสูง
+        distance_from_50 = abs(rsi_value - 50)
+        score = 50 + distance_from_50  # 50 → score=50, 30→score=70, 70→score=70
+
+    return min(100, max(0, score))
+
+# ตัวอย่าง:
+# RSI=25 → score = 70 + 100×(30-25)/30 = 86.7 (oversold มาก → grid entry ดี)
+# RSI=31 → score = 50 + |31-50| = 69 ≈ 70 (ใกล้ oversold → โอกาสดี)
+# RSI=50 → score = 50 (neutral → ปานกลาง)
+# RSI=72 → score = 70 + 100×(72-70)/30 = 76.7 (overbought → grid sell ดี)</div>
+
+<div class="bx bc">
+<div class="bt">RSI สำหรับ Entry Timing</div>
+<p>นอกจาก filter แล้ว RSI ยังใช้กำหนด "เปิด grid ที่ชั้นไหนก่อน":</p>
+<ul>
+<li>RSI &lt; 35 (oversold): เปิด lower zone ก่อน (ราคาน่าจะฟื้น) → deploy 70% ของ capital ที่ lower levels</li>
+<li>RSI 35–65 (neutral): deploy equal weight ตามปกติ</li>
+<li>RSI &gt; 65 (overbought): เน้น upper zone / รอ pull-back ก่อน deploy lower zone</li>
+</ul>
+</div>
+
+<h2 id="s3b-3">3B.3 Bollinger Band Score — Volatility Gate</h2>
+
+<p>Bollinger Band (BB) ให้ข้อมูล 2 อย่าง: ตำแหน่งของราคาเทียบ band และ width ของ band (BB Width):</p>
+
+$$\text{BB}_\text{upper} = \text{SMA}(20) + 2\sigma_{20} \qquad \text{BB}_\text{lower} = \text{SMA}(20) - 2\sigma_{20}$$
+
+$$\%B = \frac{P - \text{BB}_\text{lower}}{\text{BB}_\text{upper} - \text{BB}_\text{lower}} \qquad \text{BB Width} = \frac{\text{BB}_\text{upper} - \text{BB}_\text{lower}}{\text{SMA}(20)}$$
+
+<div class="fm">def bb_score_for_grid(price, sma20, upper, lower):
+    """
+    Score สูง = ราคาอยู่ใกล้ band (ใกล้ extreme = mean-reversion โอกาส)
+    Score ต่ำ = ราคาอยู่กลาง (ไม่มี extreme signal)
+    BB Width ต่ำ (squeeze) = ดีสำหรับ grid เพราะ vol ต่ำ fill บ่อย
+    """
+    # %B: ตำแหน่งของราคาใน band
+    if upper == lower:
+        return 50
+    pct_b = (price - lower) / (upper - lower)
+
+    # ถ้าอยู่นอก band (%B < 0 หรือ > 1) = extreme = โอกาสสูง
+    if pct_b < 0:
+        position_score = min(100, 60 + (0 - pct_b) * 200)
+    elif pct_b > 1:
+        position_score = min(100, 60 + (pct_b - 1) * 200)
+    else:
+        # ภายใน band: ยิ่งใกล้ขอบ ยิ่งดี
+        distance_from_edge = min(pct_b, 1 - pct_b)  # 0 = ที่ band edge, 0.5 = กลาง
+        position_score = 60 - distance_from_edge * 80  # 60 at edge, 20 at center
+
+    # BB Width score: narrow band = low vol = grid-friendly
+    bb_width = (upper - lower) / sma20
+    if bb_width < 0.02:       # squeeze (&lt;2%)
+        width_score = 100
+    elif bb_width < 0.04:     # narrow
+        width_score = 75
+    elif bb_width < 0.08:     # normal
+        width_score = 50
+    else:                     # wide (high vol)
+        width_score = 25
+
+    return 0.6 * position_score + 0.4 * width_score</div>
+
+<h2 id="s3b-4">3B.4 Volume Filter — ยืนยัน Mean-Reversion</h2>
+
+<p>Volume สูงผิดปกติมักเกิดพร้อม trend / breakout — volume ต่ำปกติเหมาะกับ grid มากกว่า:</p>
+
+<div class="fm">def volume_score_for_grid(current_volume, volume_sma20):
+    """
+    Volume ratio = current_volume / sma_volume_20
+    Score สูง = volume ปกติหรือต่ำ (grid-friendly)
+    Score ต่ำ = volume spike (breakout risk)
+    """
+    vol_ratio = current_volume / volume_sma20
+
+    if vol_ratio < 0.7:       # volume ต่ำผิดปกติ (อาจไม่มี liquidity)
+        return 40
+    elif vol_ratio < 1.0:     # volume ปกติต่ำ = ideal
+        return 85
+    elif vol_ratio < 1.5:     # volume ปกติสูง
+        return 70
+    elif vol_ratio < 2.0:     # volume สูง = ระวัง
+        return 45
+    elif vol_ratio < 3.0:     # volume spike = breakout warning
+        return 20
+    else:                     # extreme volume spike = หยุด grid
+        return 0
+
+# ตัวอย่าง:
+# Daily volume ปกติ = 50,000 BTC
+# วันนี้ volume = 75,000 BTC (vol_ratio = 1.5)
+# → score = 70 (ระวังเล็กน้อย แต่ยังเปิด grid ได้)</div>
+
+<h2 id="s3b-5">3B.5 Hurst Score — Mean-Reversion Regime Check</h2>
+
+<p>Hurst Exponent จาก <a href="statarb-ch0.html">Statarb</a> คือ indicator หลักของ grid — ควรเป็น component สำคัญใน composite score:</p>
+
+<div class="fm">def hurst_score_for_grid(hurst_value):
+    """
+    Hurst < 0.5 = mean-reverting = grid ดี → score สูง
+    Hurst > 0.5 = trending = grid ไม่ดี → score ต่ำ
+    """
+    if hurst_value < 0.40:      # strongly mean-reverting
+        return 100
+    elif hurst_value < 0.45:    # mean-reverting
+        return 85
+    elif hurst_value < 0.50:    # mildly mean-reverting
+        return 65
+    elif hurst_value < 0.55:    # borderline
+        return 40
+    elif hurst_value < 0.60:    # mildly trending
+        return 20
+    else:                       # trending / breakout
+        return 0
+
+# Hurst = 0.47 → score = 85 (เปิด grid ได้ดี)
+# Hurst = 0.52 → score = 40 (เปิดได้ แต่ลด size)
+# Hurst = 0.62 → score = 0  (หยุด grid)</div>
+
+<h2 id="s3b-6">3B.6 Composite Score 0–100 — Grid Readiness Index</h2>
+
+<p>รวม 4 indicators เป็น Composite Score เพื่อตัดสินใจ:</p>
+
+<canvas id="chartComposite" class="chart" style="height:360px"></canvas>
+<p class="caption">Running Example: RSI=25 (oversold), BB=%B=0.04 (lower band), Vol=0.4× (quiet), Hurst=0.43 → Composite Score = 85 → FULL DEPLOY</p>
+<script>
+(function(){
+  MiniChart.bar(document.getElementById('chartComposite'), {
+    title: 'Composite Score Breakdown — RSI=25 / BB=%B=0.04 / Vol=0.4× / H=0.43 (oversold scenario)',
+    groups: ['RSI Score\n(น้ำหนัก 30%)', 'BB Score\n(น้ำหนัก 30%)', 'Vol Score\n(น้ำหนัก 20%)', 'Hurst Score\n(น้ำหนัก 20%)'],
+    datasets: [
+      { label: 'Raw Score (0–100)', color: '#06b6d4',
+        data: [85, 88, 82, 85] },
+      { label: 'Contribution to Total', color: '#0891b2',
+        data: [25.5, 26.4, 16.4, 17.0] }
+    ],
+    yLabel: 'Score',
+    caption: 'Raw Score × น้ำหนัก = Contribution → รวม 4 contributions = Composite Score 85.3 → FULL DEPLOY (≥ 70)'
+  });
+})();
+</script>
+
+<div class="fm">WEIGHTS = {
+    "rsi":   0.30,   # 30% — mean-reversion extremity
+    "bb":    0.30,   # 30% — position + volatility
+    "vol":   0.20,   # 20% — liquidity/breakout check
+    "hurst": 0.20,   # 20% — regime check
+}
+
+def composite_grid_score(price, rsi, bb_upper, bb_lower, sma20,
+                          volume, volume_sma20, hurst):
+    scores = {
+        "rsi":   rsi_score_for_grid(rsi),
+        "bb":    bb_score_for_grid(price, sma20, bb_upper, bb_lower),
+        "vol":   volume_score_for_grid(volume, volume_sma20),
+        "hurst": hurst_score_for_grid(hurst),
+    }
+    composite = sum(scores[k] * WEIGHTS[k] for k in WEIGHTS)
+    return composite, scores
+
+ACTION_TABLE = {
+    (75, 100): ("FULL_DEPLOY",   "deploy 100% grid capital"),
+    (55, 75):  ("PARTIAL_DEPLOY","deploy 60% grid capital, hold 40% standby"),
+    (35, 55):  ("MINIMAL_DEPLOY","deploy 30% grid capital, observe"),
+    (0,  35):  ("WAIT",         "รอ score ดีขึ้น ไม่เปิด grid"),
+}
+
+ตัวอย่างผล:
+  RSI=32 (oversold)    → rsi_score   = 68
+  %B=0.1 (near lower)  → bb_score    = 72
+  Vol ratio=0.9         → vol_score   = 85
+  Hurst=0.46            → hurst_score = 85
+
+  Composite = 0.30×68 + 0.30×72 + 0.20×85 + 0.20×85
+            = 20.4 + 21.6 + 17 + 17 = 76.0
+
+  Action: FULL_DEPLOY (deploy 100%)</div>
+
+<h2 id="s3b-7">3B.7 Order Accumulation — เปิด Grid แบบ TWAP</h2>
+
+<p>แทนที่จะเปิด grid order ทุก level ทันที ("all-in") — Order Accumulation ค่อยๆ วาง order ทีละชั้นตามเวลา (TWAP-like)</p>
+
+<div class="fm">กลยุทธ์ Order Accumulation:
+
+แบบ 1: Time-Spread (TWAP Grid)
+  วาง 20% ของ orders ทุก 1 ชั่วโมง → ใช้เวลา 5 ชั่วโมงกว่าจะ full deploy
+  ข้อดี: ถ้าราคาลงต่อหลัง open → ชั้นล่างซื้อได้ราคาดีกว่า
+  ข้อเสีย: เสียโอกาสถ้าราคากลับขึ้นทันที
+
+แบบ 2: Price-Level Triggered
+  เปิด order ที่ level ถัดไปก็ต่อเมื่อ level ปัจจุบัน fill แล้ว
+  ข้อดี: ไม่ lock capital ใน pending orders
+  ข้อเสีย: ถ้าราคากระโดด ข้าม levels → พลาด fill
+
+แบบ 3: Score-Triggered Deployment
+  ตรวจ composite score ทุก 1 ชั่วโมง:
+    Score > 75: deploy 20% เพิ่ม (จน 100%)
+    Score 55–75: คง size ปัจจุบัน
+    Score < 35: หยุด deploy เพิ่ม
+
+def order_accumulation_plan(total_capital, composite_score, current_deployed):
+    """
+    คำนวณว่าควร deploy เพิ่มเท่าไหร่
+    """
+    if composite_score > 75:
+        target_deploy = 1.00   # 100%
+    elif composite_score > 55:
+        target_deploy = 0.60   # 60%
+    elif composite_score > 35:
+        target_deploy = 0.30   # 30%
+    else:
+        target_deploy = 0.0    # หยุด
+
+    additional = max(0, target_deploy - current_deployed)
+    return additional * total_capital  # จำนวน capital ที่ deploy เพิ่ม</div>
+
+<div class="bx bg">
+<div class="bt">Order Accumulation ช่วยลด "Timing Risk"</div>
+<p>ปัญหา: เปิด grid ทั้งหมดวันเดียว แต่ราคาลงต่ออีก 10% วันถัดไป → ทุก BUY order fill ที่ราคาสูงกว่าที่ควร</p>
+<p>Order Accumulation: วาง 30% แรก → ถ้าราคาลง → วางอีก 30% ที่ระดับต่ำกว่า → average entry ดีกว่า</p>
+<p>คล้ายกับ DCA แต่ structured: มี systematic trigger (score/time/price level) แทนที่จะเป็น random</p>
+</div>
+
+<h2 id="s3b-8">3B.8 Filter Pipeline — Flow สมบูรณ์</h2>
+
+<div class="filter-pipeline">
+<div class="fp-box active"><strong>Market Data</strong><br><small>Price, Volume,<br>ATR, Hurst</small></div>
+<div class="fp-arrow">→</div>
+<div class="fp-box active"><strong>Compute Scores</strong><br><small>RSI, BB, Vol,<br>Hurst (0–100)</small></div>
+<div class="fp-arrow">→</div>
+<div class="fp-box active"><strong>Composite Score</strong><br><small>Weighted average<br>0–100</small></div>
+<div class="fp-arrow">→</div>
+<div class="fp-box warn"><strong>Deploy Decision</strong><br><small>Full/Partial/<br>Wait</small></div>
+<div class="fp-arrow">→</div>
+<div class="fp-box active"><strong>Zone + Step</strong><br><small>From Part 3<br>(Donchian/ATR)</small></div>
+<div class="fp-arrow">→</div>
+<div class="fp-box active"><strong>Place Orders</strong><br><small>BUY/SELL<br>grid levels</small></div>
+</div>
+
+<div class="fm">class GridFilterPipeline:
+    def __init__(self, zone_high, zone_low, step, grid_capital):
+        self.zone_high = zone_high
+        self.zone_low  = zone_low
+        self.step      = step
+        self.grid_capital = grid_capital
+        self.deployed_pct = 0.0
+
+    def evaluate(self, market_data):
+        """
+        market_data: dict ของ indicators
+        Returns: action + capital_to_deploy
+        """
+        score, sub_scores = composite_grid_score(
+            price=market_data["price"],
+            rsi=market_data["rsi14"],
+            bb_upper=market_data["bb_upper"],
+            bb_lower=market_data["bb_lower"],
+            sma20=market_data["sma20"],
+            volume=market_data["volume"],
+            volume_sma20=market_data["volume_sma20"],
+            hurst=market_data["hurst30"]
+        )
+
+        additional = order_accumulation_plan(
+            self.grid_capital, score, self.deployed_pct
+        )
+
+        action = "DEPLOY" if additional > 0 else "HOLD"
+        self.deployed_pct += additional / self.grid_capital
+
+        return {
+            "score": round(score, 1),
+            "sub_scores": sub_scores,
+            "action": action,
+            "deploy_amount": additional,
+            "total_deployed_pct": self.deployed_pct
+        }</div>
+
+<h2 id="s3b-9">3B.9 Running Example — Full Pipeline</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Filter Pipeline ตัดสินใจ Deploy Grid</div>
+<p><strong>Setup:</strong> BTC = $98,500 · Grid capital = $20,000 · Zone $85k–$113k · Step $1,500</p>
+
+<table>
+<tr><th>Indicator</th><th>ค่า</th><th>Score (0–100)</th><th>น้ำหนัก</th><th>Contribution</th></tr>
+<tr><td>RSI(14)</td><td>31 (oversold)</td><td>70</td><td>30%</td><td>21.0</td></tr>
+<tr><td>BB Position + Width</td><td>%B=0.08, Width=3.2%</td><td>78</td><td>30%</td><td>23.4</td></tr>
+<tr><td>Volume Ratio</td><td>0.85× (ต่ำกว่าปกติ)</td><td>85</td><td>20%</td><td>17.0</td></tr>
+<tr><td>Hurst(30)</td><td>0.44 (mean-reverting)</td><td>90</td><td>20%</td><td>18.0</td></tr>
+<tr><td colspan="3"><strong>Composite Score</strong></td><td colspan="2"><strong>79.4 → FULL DEPLOY</strong></td></tr>
+</table>
+
+<div class="fm">Action: FULL_DEPLOY (score 79.4 > 75)
+
+Order Accumulation Plan (ยังไม่ได้ deploy อะไรเลย):
+  ชั่วโมงที่ 0: deploy 20% = $4,000
+  ชั่วโมงที่ 1: re-evaluate score → ยังสูง → deploy อีก 20% = $4,000
+  ชั่วโมงที่ 2–4: ทำซ้ำ → full deploy ภายใน 5 ชั่วโมง
+
+หรือถ้าใช้ One-shot (score > 75):
+  Deploy 100% ทันที = $20,000
+
+Entry Zone Analysis:
+  ราคาปัจจุบัน $98,500 (ใกล้ lower half ของ zone)
+  BUY orders: $97k, $95.5k, $94k, ..., $85k (9 levels)
+  Capital ที่ต้องใช้ (worst case all fill): 9 × 0.009 × $91k avg = $7,371
+  Capital remaining ใน Standby: $20,000 − $7,371 = $12,629 (63%)
+
+Score Report:
+  ✓ RSI oversold → BTC น่าจะ rebound → lower zone เปิดก่อน
+  ✓ BB near lower band → mean-reversion signal ชัด
+  ✓ Volume ต่ำ → ไม่มี breakout risk
+  ✓ Hurst 0.44 → strongly mean-reverting
+  → เหมาะมากสำหรับ grid entry</div>
+</div>
+
+<h2 id="s3b-10">3B.10 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 3B</div>
+
+<details>
+<summary>ข้อ 1: RSI=72, BB %B=0.95, Volume ratio=2.5×, Hurst=0.56 — Composite Score และ Action คืออะไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>RSI=72 (overbought) → rsi_score = 70 + 100×(72−70)/30 = <strong>76.7</strong> (ตามสูตร: ยิ่ง overbought ยิ่งสูง เพราะ grid ได้โอกาส SELL)</p>
+<p>BB %B=0.95 (ใกล้ upper band) → distance_from_edge = min(0.95, 0.05) = 0.05 → position_score = 60−0.05×80 = 56; width สมมติ normal → width_score = 50 → bb_score = 0.6×56 + 0.4×50 = <strong>53.6</strong></p>
+<p>Volume ratio=2.5× → vol_score = <strong>20</strong></p>
+<p>Hurst=0.56 → hurst_score = <strong>20</strong></p>
+<p>Composite = 0.30×76.7 + 0.30×53.6 + 0.20×20 + 0.20×20</p>
+<p>= 23.0 + 16.1 + 4.0 + 4.0 = <strong>47.1 → WAIT</strong></p>
+<p>ไม่เปิด grid: แม้ RSI overbought (ดีสำหรับ SELL layer) แต่ volume spike + Hurst trending → ตลาดกำลัง breakout ขึ้น ไม่ใช่ mean-reversion</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม Volume spike ถึงเป็น signal ลบสำหรับ grid (ทั้งที่ volume สูงแสดง "activity")?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Grid ต้องการ <strong>mean-reversion</strong> ไม่ใช่ trend/momentum</p>
+<p>Volume spike มักเกิดพร้อม: breakout จาก range, institutional order flow, news event — ทั้งหมดนี้เป็น trend signal ไม่ใช่ mean-reversion</p>
+<p>ช่วง volume spike: grid ที่ set ไว้อาจ fill ทั้งหมดฝั่งเดียว (ซื้อแล้วราคาลงต่อ หรือขายแล้วขึ้นต่อ) → inventory bloat + unrealized loss</p>
+<p>Volume ปกติ/ต่ำ = ตลาดแกว่งตาม microstructure ปกติ = grid ทำกำไรได้</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Composite Score = 62 · Grid capital = $10,000 · ปัจจุบัน deployed = 0% — ควร deploy เท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Score 62 ∈ (55, 75) → PARTIAL_DEPLOY → target = 60%</p>
+<p>Current deployed = 0% → Additional = 60% − 0% = 60%</p>
+<p>Deploy amount = $10,000 × 60% = <strong>$6,000</strong></p>
+<p>Remaining $4,000 อยู่ใน Standby — รอ score เพิ่มขึ้น > 75 ก่อน deploy เพิ่ม</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4 (Challenge): Order Accumulation แบบ Price-Level Triggered เหมาะกับ market condition แบบไหนที่สุด?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Price-Level Triggered เหมาะกับ <strong>slowly declining market</strong> (downtrend ช้า หรือ stair-step down):</p>
+<ul>
+<li>ราคาลงจาก $100k → $98k → $95k → $92k ทีละ step</li>
+<li>กลยุทธ์: วาง BUY ที่ $98k แล้วรอ fill → เมื่อ fill แล้วค่อยวาง BUY ที่ $95k</li>
+<li>ไม่ต้อง lock capital ทั้ง $92k, $95k, $98k ไว้พร้อมกัน</li>
+<li>ผลลัพธ์: average buy price ต่ำกว่าการวางทุก level พร้อมกัน</li>
+</ul>
+<p><strong>ไม่เหมาะกับ:</strong> volatile market ที่ราคากระโดดข้าม levels — จะพลาด fill บางชั้น</p>
+<p><strong>ข้อเสียหลัก:</strong> ถ้าราคากลับขึ้นหลัง fill แค่ 1 level → ได้ inventory น้อยมาก cashflow น้อย</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part3.html" style="color:#64748b">Part 3</a></span><a href="grid-part4.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 4: Regime Detection →</a></nav>
+</body>
+</html>

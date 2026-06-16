@@ -1,0 +1,500 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Volatility Mastery — Part II: Vol Surface</title><link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--teal);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{background:var(--teal-bg);border-left:4px solid var(--teal)}.bx .bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.88em;line-height:1.6}.chk{background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:12px 18px;margin:16px 0}.chk::before{content:"✓ Checkpoint: ";font-weight:700;color:var(--teal)}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:560px;width:100%}.warn{background:#fef2f2;border-left:4px solid var(--red);padding:12px 18px;border-radius:0 8px 8px 0;margin:16px 0}.warn::before{content:"⚠️  ";}.ref{font-size:.85em;color:#64748b;background:var(--g0);border:1px solid var(--g2);border-radius:6px;padding:8px 14px;margin:12px 0}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg{page-break-inside:avoid}}</style></head><body>
+
+<div class="cover">
+<div style="font-size:.9em;color:var(--teal);font-weight:600;letter-spacing:2px;margin-bottom:8px">VOLATILITY MASTERY</div>
+<h1>Vol Surface</h1>
+<div class="sub">Part II: Smile, Skew & Smirk — แผนที่ของความกลัว</div>
+<div class="desc">ทำไม option ที่ strike ต่างกันถึงแพงต่างกัน — และตลาดบอกอะไรผ่านความต่างนั้น</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li>เข้าใจว่าทำไม Black-Scholes "คิดผิด" และตลาดปรับตัวอย่างไร</li>
+<li>รู้จัก <strong>Vol Smile</strong> — รูป U ของ IV กับ Strike</li>
+<li>เข้าใจ <strong>Equity Skew</strong> vs <strong>Crypto Smile</strong> — ต่างกันเพราะอะไร</li>
+<li>ใช้ <strong>Risk Reversal (RR) และ Butterfly (BF)</strong> วัด skew เป็นตัวเลข</li>
+<li>อ่าน vol surface → รู้ว่าตลาดกลัวอะไร → ใช้ประโยชน์ใน trade</li>
+</ul>
+</div>
+
+<p class="ref">🔗 ต่อจาก: <a href="vol-part1.html">Vol Part I</a> (IV, RV, VRP) · <a href="vp-part4.html">VP Part IV</a> (PCP + IV Skew Algorithm)</p>
+
+<h2>บทที่ 8: ทำไม Black-Scholes คิดผิด — Fat Tails</h2>
+
+<div class="bx ba">
+<div class="bt">🌪️ อุปมา: นักอุตุฯ ที่ไม่เชื่อเรื่องพายุใหญ่</div>
+<p>สมมตินักอุตุฯ ที่ใช้ข้อมูลอากาศ "ปกติ" วัด stdev แล้วบอกว่า<br>
+<strong>"พายุระดับ Category 5 มีโอกาสเกิด 0.00001% ในชีวิตนี้ — เป็นไปไม่ได้"</strong><br>
+แต่ความจริง พายุใหญ่เกิดทุกปี เพราะธรรมชาติไม่ได้ follow Normal Distribution<br><br>
+<strong>Black-Scholes เป็นนักอุตุฯ คนนั้น</strong> — assume normal distribution แต่ตลาดจริงมี fat tail</p>
+</div>
+
+<h3>Normal Distribution กับตลาดจริง</h3>
+
+<p>Black-Scholes สร้างขึ้นในปี 1973 โดยมี assumption หลักว่า:</p>
+<ul>
+<li>ราคาเคลื่อนที่แบบ <strong>Random Walk</strong></li>
+<li>Log returns มี <strong>Normal Distribution</strong></li>
+<li>ไม่มี jump ขนาดใหญ่ในชั่วข้ามคืน</li>
+</ul>
+
+<!-- Normal vs Fat Tail SVG -->
+<svg class="d" viewBox="0 0 540 190">
+<text x="270" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Normal Distribution vs ตลาดจริง (Fat Tail)</text>
+<!-- axes -->
+<line x1="30" y1="160" x2="510" y2="160" stroke="#94a3b8" stroke-width="1"/>
+<line x1="270" y1="20" x2="270" y2="160" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 2"/>
+<!-- Normal distribution curve -->
+<path d="M 60,158 C 100,156 130,145 160,120 C 190,95 220,50 270,28 C 320,50 350,95 380,120 C 410,145 440,156 480,158" fill="none" stroke="#2563eb" stroke-width="2"/>
+<!-- Fat tail curve (higher tails, slightly lower peak) -->
+<path d="M 60,155 C 90,148 120,138 155,118 C 190,98 225,55 270,33 C 315,55 350,98 385,118 C 420,138 450,148 480,155" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 3"/>
+<!-- Fat tails highlight -->
+<path d="M 60,155 C 90,148 120,138 155,118 L 110,160 L 60,160 Z" fill="#dc2626" opacity=".15"/>
+<path d="M 480,155 C 450,148 420,138 385,118 L 430,160 L 480,160 Z" fill="#dc2626" opacity=".15"/>
+<!-- Labels -->
+<text x="100" y="150" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">Fat Tail!</text>
+<text x="440" y="150" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">Fat Tail!</text>
+<text x="270" y="175" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">Returns</text>
+<!-- Legend -->
+<line x1="330" y1="40" x2="360" y2="40" stroke="#2563eb" stroke-width="2"/>
+<text x="365" y="44" font-family="Sarabun" font-size="9" fill="#374151">Black-Scholes (Normal)</text>
+<line x1="330" y1="58" x2="360" y2="58" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 3"/>
+<text x="365" y="62" font-family="Sarabun" font-size="9" fill="#374151">ตลาดจริง (Fat Tail)</text>
+<!-- Annotations -->
+<text x="270" y="175" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">← tail ใหญ่กว่า model คาด</text>
+</svg>
+
+<div class="fm">เหตุ → ผล:
+
+  Black-Scholes: โอกาส S&P500 ลง 20% ในวันเดียว ≈ 10⁻⁵⁰ (แทบเป็น 0)
+  ความจริง: เกิดแล้ว — Black Monday 1987 ลง 22.6% ในวัน 19 ต.ค.
+
+  Black-Scholes: โอกาส BTC ลง 50% ใน 1 สัปดาห์ ≈ น้อยมาก
+  ความจริง: เกิดหลายครั้ง (Mar 2020: −55%, Nov 2022: −24% ใน 1 วัน)
+
+ผล:
+  คนรู้ว่า model ผิด → ซื้อ OTM option เยอะกว่าที่ model บอก
+  → demand OTM สูง → ราคาสูง → IV สูง
+  → เกิด Volatility Smile</div>
+
+<div class="bx bg">
+<div class="bt">Black Monday 1987 เปลี่ยนตลาดตลอดกาล</div>
+<p>ก่อน 1987: Vol surface ค่อนข้างแบน (flat smile)<br>
+หลัง 1987: <strong>Equity skew ชัดขึ้นถาวร</strong> — นักลงทุนไม่ลืมว่า tail events เกิดได้จริง<br>
+Crypto: ยังเป็น smile (สมมาตร) เพราะ asset class ใหม่กว่า มี two-sided fear</p>
+</div>
+
+<div class="chk">Black-Scholes สมมติ Normal Distribution แต่ตลาดจริงมี Fat Tail — demand OTM protection สูงกว่า model คาด → เกิด Volatility Smile</div>
+
+<h2>บทที่ 9: Volatility Smile — รูป U ที่บอกทุกอย่าง</h2>
+
+<div class="bx ba">
+<div class="bt">🎪 อุปมา: ตั๋วแถวสุดซ้ายและขวาแพงกว่าตรงกลาง</div>
+<p>ในโรงละครที่นั่งแถวกลาง (ATM) ราคาปกติ<br>
+แถวสุดซ้าย-ขวา (OTM) — คนอยากได้ "ประสบการณ์สุดโต่ง" เลยแย่งกันซื้อ ราคาสูง<br><br>
+<strong>Volatility Smile คือปรากฏการณ์เดียวกัน — OTM options แพงกว่าที่ควร</strong></p>
+</div>
+
+<!-- Vol Smile SVG -->
+<svg class="d" viewBox="0 0 540 200">
+<text x="270" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Volatility Smile — IV vs Strike (Crypto)</text>
+<!-- axes -->
+<line x1="50" y1="165" x2="500" y2="165" stroke="#94a3b8" stroke-width="1"/>
+<line x1="50" y1="25" x2="50" y2="165" stroke="#94a3b8" stroke-width="1"/>
+<!-- y labels -->
+<text x="44" y="40" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">85%</text>
+<text x="44" y="80" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">70%</text>
+<text x="44" y="120" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">55%</text>
+<text x="44" y="165" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">40%</text>
+<!-- x labels -->
+<text x="100" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">$60K</text>
+<text x="180" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">$68K</text>
+<text x="270" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">$75K (ATM)</text>
+<text x="360" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">$82K</text>
+<text x="450" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">$90K</text>
+<!-- Smile curve (U shape) -->
+<path d="M 100,42 C 140,68 200,100 270,118 C 340,100 400,68 450,42" fill="none" stroke="#0d9488" stroke-width="3"/>
+<!-- Flat B-S line -->
+<line x1="100" y1="118" x2="450" y2="118" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3"/>
+<!-- Dots at each strike -->
+<circle cx="100" cy="42" r="5" fill="#0d9488"/>
+<circle cx="180" cy="82" r="5" fill="#0d9488"/>
+<circle cx="270" cy="118" r="5" fill="#0d9488"/>
+<circle cx="360" cy="82" r="5" fill="#0d9488"/>
+<circle cx="450" cy="42" r="5" fill="#0d9488"/>
+<!-- IV values -->
+<text x="100" y="35" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">82%</text>
+<text x="180" y="75" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">71%</text>
+<text x="270" y="111" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">65%</text>
+<text x="360" y="75" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">70%</text>
+<text x="450" y="35" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">80%</text>
+<!-- B-S label -->
+<text x="460" y="115" font-family="Sarabun" font-size="9" fill="#94a3b8">B-S flat</text>
+<!-- Labels -->
+<text x="100" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#dc2626">OTM Put</text>
+<text x="450" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#dc2626">OTM Call</text>
+<text x="270" y="155" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">ATM (ถูกสุด)</text>
+</svg>
+
+<div class="fm">เหตุ → ผล (Smile เกิดขึ้นได้อย่างไร):
+
+  OTM Put ($60K):
+    คนซื้อ BTC กลัวตลาดดิ่ง → ซื้อ Put $60K เยอะ
+    → demand สูง → ราคา Put $60K สูง → IV extract ออกมาสูง (82%)
+
+  ATM ($75K):
+    ซื้อขายมากสุด แต่ไม่มี "fear premium" พิเศษ
+    → IV ต่ำสุด (65%)
+
+  OTM Call ($90K):
+    Short seller กลัว squeeze (BTC พุ่ง) → ซื้อ Call $90K hedge
+    → demand สูง → IV สูง (80%)
+
+  ผล: IV รูปตัว U = Volatility Smile</div>
+
+<div class="chk">Vol Smile เกิดเพราะ demand OTM options (ทั้งสองฝั่ง) สูงกว่าที่ B-S คาด · ATM IV ต่ำสุด · OTM IV สูงกว่าทั้ง put และ call side</div>
+
+<h2>บทที่ 10: Equity Skew — เมื่อซ้ายแพงกว่าขวา</h2>
+
+<div class="bx ba">
+<div class="bt">😰 อุปมา: Loss Aversion — กลัวเสียมากกว่ากลัวพลาด</div>
+<p>ทดลองจิตวิทยา: คุณเลือกอะไร?<br>
+ตัวเลือก A: ได้เงิน $100 แน่นอน<br>
+ตัวเลือก B: 50% ได้ $250, 50% ได้ $0 (EV = $125)<br>
+<strong>คนส่วนใหญ่เลือก A แม้ B มี EV สูงกว่า</strong><br><br>
+Equity investors ก็เช่นกัน — กลัว "เสีย $100K" มากกว่า "พลาด $100K" → ซื้อ Put เยอะ → Put แพงกว่า Call</p>
+</div>
+
+<!-- Equity Skew SVG -->
+<svg class="d" viewBox="0 0 540 200">
+<text x="270" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Equity Skew (Left Skew) — SPY / SET50</text>
+<!-- axes -->
+<line x1="50" y1="165" x2="500" y2="165" stroke="#94a3b8" stroke-width="1"/>
+<line x1="50" y1="25" x2="50" y2="165" stroke="#94a3b8" stroke-width="1"/>
+<!-- y labels -->
+<text x="44" y="35" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">35%</text>
+<text x="44" y="75" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">25%</text>
+<text x="44" y="115" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">15%</text>
+<text x="44" y="165" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">5%</text>
+<!-- x labels -->
+<text x="100" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">80% (OTM Put)</text>
+<text x="230" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">90%</text>
+<text x="310" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">ATM</text>
+<text x="390" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">110%</text>
+<text x="460" y="178" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">120% (OTM Call)</text>
+<!-- Skew curve -->
+<path d="M 100,30 C 150,48 200,72 310,118 C 380,138 420,150 470,158" fill="none" stroke="#dc2626" stroke-width="3"/>
+<!-- Smile reference (dashed) -->
+<path d="M 100,55 C 150,80 200,100 310,118 C 380,100 420,82 470,60" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3"/>
+<!-- Dots -->
+<circle cx="100" cy="30" r="5" fill="#dc2626"/>
+<circle cx="230" cy="72" r="5" fill="#dc2626"/>
+<circle cx="310" cy="118" r="5" fill="#dc2626"/>
+<circle cx="390" cy="138" r="5" fill="#dc2626"/>
+<circle cx="460" cy="155" r="5" fill="#dc2626"/>
+<!-- IV values -->
+<text x="100" y="23" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">32%</text>
+<text x="230" y="65" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">24%</text>
+<text x="310" y="111" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">18%</text>
+<text x="390" y="131" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">15%</text>
+<text x="460" y="148" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">13%</text>
+<!-- Labels -->
+<text x="130" y="55" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">Put แพงมาก</text>
+<text x="415" y="148" font-family="Sarabun" font-size="9" fill="#64748b">Call ถูก</text>
+<text x="470" y="60" text-anchor="end" font-family="Sarabun" font-size="8" fill="#94a3b8">← Smile (ถ้าสมมาตร)</text>
+<!-- Arrow pointing left -->
+<text x="270" y="52" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">เอียงซ้าย = "Left Skew"</text>
+</svg>
+
+<div class="fm">ทำไม Equity มี Left Skew:
+
+  เหตุที่ 1 — Institutional Hedging:
+    กองทุน pension ถือหุ้นหลายพันล้าน
+    → ต้องซื้อ OTM Put เพื่อ hedge downside
+    → demand Put สูงเรื้อรัง → Put แพงตลอด
+
+  เหตุที่ 2 — Leverage (Margin Calls):
+    คนถือหุ้น margin → ถ้าตลาดลง → forced sell → ลงอีก
+    → crash เป็น cascade ไม่ใช่ slow decline
+    → ตลาดรู้เรื่องนี้ → Put แพงขึ้นสะท้อน jump risk
+
+  เหตุที่ 3 — PTSD จาก Black Monday 1987:
+    ตลาดลง 22% ในวันเดียว → นักลงทุนไม่ลืม
+    → ซื้อ Put OTM ไว้ตลอด "เผื่อไว้"
+
+  ผล: Put (ซ้าย) แพงกว่า Call (ขวา) อย่างมีนัยสำคัญ</div>
+
+<table>
+<tr><th>Strike (% ของ ATM)</th><th>SPY IV (ตย.)</th><th>B-S Flat (ถ้าไม่มี skew)</th><th>Premium ที่จ่ายเพิ่ม</th></tr>
+<tr><td>80% (OTM Put)</td><td>32%</td><td>18%</td><td>+14% — จ่ายแพงมาก</td></tr>
+<tr><td>90% (OTM Put)</td><td>24%</td><td>18%</td><td>+6%</td></tr>
+<tr><td>100% (ATM)</td><td>18%</td><td>18%</td><td>ปกติ</td></tr>
+<tr><td>110% (OTM Call)</td><td>15%</td><td>18%</td><td>−3% — ถูกกว่า model</td></tr>
+<tr><td>120% (OTM Call)</td><td>13%</td><td>18%</td><td>−5% — ถูกกว่ามาก</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">นัยสำหรับการ Trade</div>
+<p><strong>ซื้อ OTM Put equity = จ่าย "fear premium" แพงเกินจริง</strong><br>
+→ ถ้า bullish และต้องการ hedge → ใช้ Bear Call Spread แทน (ขายฝั่งขวาที่ถูกกว่า)<br>
+→ ถ้า neutral และต้องการ premium → Short Put สูงกว่าที่ควร แต่รับ tail risk<br>
+→ ถ้าต้องการ long vol equity → Straddle ถูกกว่า Strangle ด้านซ้าย</p>
+</div>
+
+<div class="chk">Equity Left Skew เกิดจาก institutional hedging + leverage cascade risk + historical PTSD · OTM Put แพงกว่า OTM Call อย่างมีนัยสำคัญ</div>
+
+<h2>บทที่ 11: Crypto Smile — สมมาตรกว่าเพราะกลัวทั้งสองทาง</h2>
+
+<div class="bx ba">
+<div class="bt">⚖️ อุปมา: สองฝ่ายกลัวกันคนละทิศ</div>
+<p>ในตลาด BTC มีสองกลุ่มใหญ่:<br>
+<strong>Long holders (ถือ BTC):</strong> กลัว BTC ร่วง → ซื้อ OTM Put<br>
+<strong>Short sellers (short BTC):</strong> กลัว BTC พุ่ง (short squeeze) → ซื้อ OTM Call<br><br>
+<strong>ทั้งสองฝ่ายสู้กัน → demand OTM Put ≈ demand OTM Call → Smile สมมาตร</strong></p>
+</div>
+
+<!-- Crypto Smile vs Equity Skew comparison -->
+<svg class="d" viewBox="0 0 540 210">
+<text x="270" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">Crypto Smile vs Equity Skew — เปรียบเทียบ</text>
+<!-- axes -->
+<line x1="50" y1="175" x2="500" y2="175" stroke="#94a3b8" stroke-width="1"/>
+<line x1="50" y1="30" x2="50" y2="175" stroke="#94a3b8" stroke-width="1"/>
+<!-- y labels -->
+<text x="44" y="40" text-anchor="end" font-family="Sarabun" font-size="8" fill="#64748b">High IV</text>
+<text x="44" y="175" text-anchor="end" font-family="Sarabun" font-size="8" fill="#64748b">Low IV</text>
+<!-- x labels -->
+<text x="100" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">OTM Put</text>
+<text x="270" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">ATM</text>
+<text x="460" y="188" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#64748b">OTM Call</text>
+<!-- Crypto Smile (symmetric U) -->
+<path d="M 100,48 C 150,72 210,110 270,130 C 330,110 390,72 460,48" fill="none" stroke="#0d9488" stroke-width="2.5"/>
+<!-- Equity Skew (asymmetric) -->
+<path d="M 100,35 C 150,55 210,90 270,130 C 330,148 390,158 460,165" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="7 3"/>
+<!-- Labels on curves -->
+<text x="108" y="42" font-family="Sarabun" font-size="9" fill="#0d9488" font-weight="600">BTC Smile</text>
+<text x="108" y="29" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="600">SPY Skew</text>
+<!-- Annotations -->
+<text x="100" y="200" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#0d9488">BTC Put ≈ Call IV</text>
+<text x="460" y="200" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">SPY Call ถูกกว่า Put มาก</text>
+<!-- Symmetry arrows for BTC -->
+<line x1="270" y1="75" x2="160" y2="75" stroke="#0d9488" stroke-width="1" marker-end="url(#arr)"/>
+<line x1="270" y1="75" x2="380" y2="75" stroke="#0d9488" stroke-width="1"/>
+<text x="270" y="70" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#0d9488">สมมาตร</text>
+</svg>
+
+<table>
+<tr><th>Feature</th><th>BTC / Crypto</th><th>SPY / Equity</th><th>SET50</th></tr>
+<tr><td><strong>รูปร่าง</strong></td><td>Smile (U สมมาตร)</td><td>Smirk/Skew (เอียงซ้าย)</td><td>Left Skew (ปานกลาง)</td></tr>
+<tr><td><strong>OTM Put premium</strong></td><td>สูง ~15–20%</td><td>สูงมาก ~12–16%</td><td>สูง ~8–12%</td></tr>
+<tr><td><strong>OTM Call premium</strong></td><td>สูงพอๆ กัน</td><td>ต่ำ ~0–5%</td><td>ต่ำ ~3–6%</td></tr>
+<tr><td><strong>ทำไม</strong></td><td>Long + Short สองฝ่าย</td><td>Hedging demand ฝั่ง put</td><td>ตลาดเล็ก, institutional</td></tr>
+<tr><td><strong>Trade นัย</strong></td><td>IC ทั้งสองฝั่งพอๆ กัน</td><td>Call Condor ถูกกว่า IC</td><td>Call Condor ดีกว่า</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">ETH มี Right Skew เล็กน้อย (ใน Bull Market)</div>
+<p>ETH มีลักษณะพิเศษใน bull market: OTM Call มักแพงกว่า OTM Put เล็กน้อย<br>
+เหตุ: คนเชื่อ ETH มี upside จาก DeFi/staking growth มากกว่า downside → demand OTM Call สูงกว่า → right skew เล็กน้อย<br>
+→ ถ้า bullish ETH: OTM Call ratio spread อาจให้ edge ดีกว่า IC ปกติ</p>
+<p style="font-size:.9em;color:#64748b;margin-top:6px">⚠️ <strong>สำคัญ: ETH skew ไม่คงที่ตาม regime</strong> — ในช่วง bear market / deleveraging ETH skew มักกลับเป็น symmetric หรือ left-skewed (Put แพงกว่า Call) เพราะ liquidation demand เพิ่ม · ตรวจ skew จริงจาก Deribit/exchange ทุกครั้งก่อน trade — อย่าสมมติทิศทาง</p>
+</div>
+
+<div class="chk">Crypto (BTC) มี Smile สมมาตร เพราะ long/short สองฝ่ายมี demand OTM ทั้งคู่ · ต่างจาก Equity ที่ Put แพงกว่า Call มาก</div>
+
+<h2>บทที่ 12: Sticky Strike vs Sticky Delta — Vol Surface เคลื่อนยังไง</h2>
+
+<div class="bx ba">
+<div class="bt">🗺️ อุปมา: ตำแหน่งแบบ 2 วิธี</div>
+<p>ลองนึกถึงการระบุตำแหน่งบนแผนที่:<br>
+<strong>Sticky Strike = พิกัด GPS (lat/long ตายตัว)</strong> — จุด A คือ 13°N 100°E ไม่ว่าคุณจะอยู่ที่ไหน<br>
+<strong>Sticky Delta = "เลี้ยวซ้ายจากที่คุณยืน"</strong> — ATM คือตรงหน้าคุณเสมอ ไม่ว่าคุณจะขยับไปไหน<br><br>
+Vol surface ของแต่ละตลาดมี "วิธีเคลื่อน" ต่างกัน</p>
+</div>
+
+<h3>Sticky Strike: IV ติดอยู่กับ Strike</h3>
+
+<div class="fm">Sticky Strike:
+  วันนี้:  BTC = $75K, IV(K=$70K) = 72%, IV(K=$80K) = 58%
+  พรุ่งนี้: BTC ขยับขึ้นเป็น $78K
+  → IV(K=$70K) ยังคง ≈ 72%, IV(K=$80K) ยังคง ≈ 58%
+
+  แต่ K=$78K กลายเป็น ATM ใหม่
+  → ATM IV ใหม่ ≈ IV(K=$78K) ≈ 60% (ระหว่าง 58% และ 65%)
+
+  ใช้เมื่อ: market makers hedge แบบ static, equity markets ปกติ</div>
+
+<h3>Sticky Delta: IV ติดอยู่กับ Moneyness</h3>
+
+<div class="fm">Sticky Delta:
+  วันนี้:  BTC = $75K, ATM IV = 65%, 25-delta Put IV = 72%
+  พรุ่งนี้: BTC ขยับขึ้นเป็น $78K
+  → ATM ใหม่ (K=$78K) ยังมี IV = 65%
+  → 25-delta Put ใหม่ คือ strike ที่ต่ำกว่า $78K อีกหน่อย IV = 72%
+  → Vol surface "เลื่อนไปพร้อม BTC"
+
+  ใช้เมื่อ: FX markets, crypto, markets ที่ trade กันเป็น delta</div>
+
+<table>
+<tr><th></th><th>Sticky Strike</th><th>Sticky Delta</th></tr>
+<tr><td><strong>IV ติดกับ</strong></td><td>Strike level (K ตายตัว)</td><td>Moneyness/Delta</td></tr>
+<tr><td><strong>พบใน</strong></td><td>Equity (SPY, SET50)</td><td>Crypto, FX</td></tr>
+<tr><td><strong>ถ้าตลาดขึ้น</strong></td><td>OTM Call IV ไม่เปลี่ยน</td><td>OTM Call IV เปลี่ยน (เพราะ delta เปลี่ยน)</td></tr>
+<tr><td><strong>นัยสำหรับ hedge</strong></td><td>Delta hedge ง่ายกว่า</td><td>ต้อง re-hedge บ่อยกว่า</td></tr>
+</table>
+
+<div class="warn">ในทางปฏิบัติ ตลาดส่วนใหญ่เป็นแบบผสม — ไม่ sticky strike หรือ sticky delta 100% ใช้เป็น model ประมาณเท่านั้น อย่า hard-code assumption ไว้ใน strategy</div>
+
+<div class="chk">Sticky Strike: IV ติดกับ K ตายตัว (equity) · Sticky Delta: IV เลื่อนตาม moneyness (crypto, FX) · มีผลต่อวิธี hedge และ roll position</div>
+
+<h2>บทที่ 13: อ่าน Skew เป็นตัวเลข — Risk Reversal & Butterfly</h2>
+
+<div class="bx ba">
+<div class="bt">📊 อุปมา: เทอร์โมมิเตอร์วัดความกลัว</div>
+<p>แทนที่จะดู skew ด้วยตา นักเทรดสร้างตัวเลขง่ายๆ 2 ตัวเพื่อวัด:<br>
+<strong>Risk Reversal (RR):</strong> วัดว่า put แพงกว่า call แค่ไหน = "ความเอียง"<br>
+<strong>Butterfly (BF):</strong> วัดว่า OTM options แพงกว่า ATM แค่ไหน = "ความโค้ง"<br><br>
+เหมือนอุณหภูมิ + ความชื้น — ใช้สองตัวเลขเพื่อบอกสภาพอากาศได้ครบ</p>
+</div>
+
+<h3>25-Delta Risk Reversal (25RR)</h3>
+
+<div class="fm">25RR = IV(25-delta Call) − IV(25-delta Put)   ← convention ในตำรานี้
+  (Bloomberg / Deribit ใช้ตรงข้าม: 25RR = IV(Put) − IV(Call) → SPX บน Bloomberg เป็น +บวก)
+  ตรวจ sign convention ทุกครั้งก่อนนำไปใช้จาก platform อื่น
+
+ตัวอย่าง SPY:
+  25-delta Call (OTM Call ~110%): IV = 15%
+  25-delta Put  (OTM Put  ~90%):  IV = 24%
+  25RR = 15% − 24% = <strong>−9%</strong>   ← ลบ = Put แพงกว่า = Left Skew
+
+ตัวอย่าง BTC:
+  25-delta Call: IV = 70%
+  25-delta Put:  IV = 73%
+  25RR = 70% − 73% = <strong>−3%</strong>   ← ใกล้ศูนย์ = Smile สมมาตรกว่า
+
+สรุป:
+  25RR << 0  →  Left skew ชัน  →  ตลาดกลัว downside มาก
+  25RR ≈ 0   →  Smile สมมาตร  →  กลัวสองทางพอๆ กัน
+  25RR >> 0  →  Right skew    →  ตลาดกลัว upside (เช่น short squeeze)</div>
+
+<h3>25-Delta Butterfly (25BF)</h3>
+
+<div class="fm">25BF = [IV(25d Call) + IV(25d Put)] / 2 − IV(ATM)
+
+ตัวอย่าง BTC:
+  IV(25d Call) = 70%, IV(25d Put) = 73%, IV(ATM) = 65%
+  25BF = (70 + 73) / 2 − 65 = 71.5 − 65 = <strong>+6.5%</strong>
+
+แปลว่า: OTM options (เฉลี่ย) แพงกว่า ATM ถึง 6.5 vol points
+→ Smile โค้งมาก = tail risk premium สูง
+
+สรุป:
+  25BF สูง  →  Smile โค้งชัน  →  ตลาดกลัว tail events มาก
+  25BF ต่ำ  →  Smile แบน     →  ตลาดคิดว่า distribution ค่อนข้าง normal</div>
+
+<!-- Skew as Fear Gauge -->
+<svg class="d" viewBox="0 0 520 140">
+<text x="260" y="15" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#0d9488" font-weight="700">25RR เป็น "Fear Gauge" ของตลาด</text>
+<!-- Timeline -->
+<line x1="40" y1="75" x2="480" y2="75" stroke="#94a3b8" stroke-width="1.5"/>
+<!-- Zero line label -->
+<text x="34" y="78" text-anchor="end" font-family="Sarabun" font-size="9" fill="#64748b">0%</text>
+<!-- Negative zone -->
+<rect x="40" y="80" width="440" height="35" fill="#fef2f2" opacity=".5" rx="3"/>
+<text x="200" y="102" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">Put แพงกว่า Call (กลัว downside)</text>
+<!-- Positive zone -->
+<rect x="40" y="35" width="440" height="40" fill="#f0fdf4" opacity=".5" rx="3"/>
+<text x="200" y="58" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">Call แพงกว่า Put (กลัว upside)</text>
+<!-- RR values on timeline -->
+<line x1="260" y1="68" x2="260" y2="82" stroke="#64748b" stroke-width="1"/>
+<line x1="160" y1="68" x2="160" y2="82" stroke="#64748b" stroke-width="1"/>
+<line x1="80" y1="68" x2="80" y2="82" stroke="#dc2626" stroke-width="1.5"/>
+<text x="80" y="62" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">−20%</text>
+<text x="80" y="95" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#dc2626">Crisis!</text>
+<text x="160" y="62" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">−9%</text>
+<text x="160" y="95" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">SPY ปกติ</text>
+<text x="260" y="62" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">0%</text>
+<text x="260" y="95" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">Smile สมมาตร</text>
+<text x="360" y="62" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151">−3%</text>
+<text x="360" y="95" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151">BTC ปกติ</text>
+<text x="440" y="62" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#16a34a">+5%</text>
+<text x="440" y="95" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#16a34a">Short Squeeze</text>
+<line x1="360" y1="68" x2="360" y2="82" stroke="#64748b" stroke-width="1"/>
+<line x1="440" y1="68" x2="440" y2="82" stroke="#16a34a" stroke-width="1.5"/>
+</svg>
+
+<div class="bx bp">
+<div class="bt">Trade นัยจาก RR และ BF</div>
+<table>
+<tr><th>สัญญาณ</th><th>แปลว่า</th><th>Trade idea</th></tr>
+<tr><td>25RR ลบมากขึ้น</td><td>Fear เพิ่ม, Put premium สูงขึ้น</td><td>ขาย OTM Put ถ้า IV Rank สูง หรือ ใช้ Call Condor แทน IC</td></tr>
+<tr><td>25RR ใกล้ศูนย์ (BTC)</td><td>Smile สมมาตร</td><td>IC ทั้งสองฝั่งพอๆ กัน</td></tr>
+<tr><td>25BF เพิ่มขึ้น</td><td>Tail fear สูงขึ้น</td><td>OTM options แพง → Straddle ดีกว่า Strangle</td></tr>
+<tr><td>25BF ลดลง</td><td>Smile แบนลง</td><td>OTM options ถูกลง → Strangle ดีกว่า Straddle</td></tr>
+</table>
+</div>
+
+<div class="chk">25RR = IV(Call) − IV(Put) วัดความเอียง · 25BF = OTM avg IV − ATM IV วัดความโค้ง · RR ลบมาก = Left skew ชัน = ตลาดกลัว downside มาก</div>
+
+<h2>บทที่ 14: Part II Summary + Mini Cheat Sheet</h2>
+
+<div class="bx bg">
+<div class="bt">สิ่งที่คุณทำได้ตอนนี้</div>
+<ol>
+<li><strong>อธิบาย</strong> ได้ว่าทำไม Black-Scholes ถึง underestimate OTM options</li>
+<li><strong>อ่าน Vol Smile</strong> และรู้ว่ารูป U เกิดขึ้นเพราะอะไร</li>
+<li><strong>แยก Equity Skew กับ Crypto Smile</strong> ได้ และรู้ trade implication</li>
+<li><strong>ใช้ 25RR และ 25BF</strong> วัด skew เป็นตัวเลข</li>
+<li><strong>เลือก strategy</strong> ตาม skew: IC vs Call Condor, Straddle vs Strangle</li>
+</ol>
+</div>
+
+<div class="fm">══════════════════════════════════════════════
+  VOL SURFACE CHEAT SHEET — Part II
+══════════════════════════════════════════════
+
+รูปร่าง Surface:
+  Smile (U สมมาตร)  →  Crypto (BTC) — IC สองฝั่งพอๆ กัน
+  Left Skew          →  Equity (SPY, SET50) — Call Condor > IC
+  Right Skew         →  Commodity บางตัว, ETH บางช่วง
+
+วัด Skew:
+  25RR = IV(25d Call) − IV(25d Put)   ← convention ในตำรานี้
+    << 0  →  Put แพงกว่า (กลัว downside)
+    ≈  0  →  Smile สมมาตร
+    >> 0  →  Call แพงกว่า (กลัว upside)
+  ⚠️ Bloomberg/Deribit ใช้ตรงข้าม: 25RR = IV(Put) − IV(Call)
+     → SPX บน Bloomberg เป็น +บวก ขณะที่ตำรานี้ให้ผลลบ
+
+  25BF = [IV(25d Call) + IV(25d Put)]/2 − IV(ATM)
+    สูง  →  Smile โค้ง, tail premium สูง
+    ต่ำ  →  Smile แบน, distribution ค่อนข้าง normal
+
+Trade Rules:
+  Left Skew ชัน → ใช้ Call Condor แทน Iron Condor
+  Left Skew ชัน → ซื้อ OTM Put ด้วย Spread ไม่ใช่ Naked
+  25BF สูง      → Straddle ดีกว่า Strangle (OTM แพงแล้ว)
+  25BF ต่ำ      → Strangle ดีกว่า Straddle
+
+🔗 VP Part IV: IV Skew Algorithm (enumerate constructions)
+══════════════════════════════════════════════</div>
+
+<table>
+<tr><th>Part</th><th>หัวข้อ</th><th>Concept หลัก</th></tr>
+<tr><td><strong>I</strong></td><td>Foundations</td><td>RV, IV, VRP, IV Rank/Percentile</td></tr>
+<tr><td><strong>II (นี้)</strong></td><td>Vol Surface</td><td>Smile, Skew, 25RR, 25BF</td></tr>
+<tr><td><strong>III</strong></td><td>Term Structure</td><td>Contango/Backwardation — vol ต่าง time</td></tr>
+<tr><td><strong>IV</strong></td><td>Regimes & Forecast</td><td>Clustering, Mean Reversion, GARCH</td></tr>
+<tr><td><strong>V</strong></td><td>Long Vol Playbook</td><td>Straddle, Calendar, Gamma Scalping</td></tr>
+<tr><td><strong>VI</strong></td><td>Short Vol Playbook</td><td>IC, Blow-up, Vol Carry</td></tr>
+<tr><td><strong>VII</strong></td><td>Events & IV Crush</td><td>Earnings, Fed, Halving</td></tr>
+<tr><td><strong>VIII</strong></td><td>Vega + Vol Products</td><td>VIX, Variance Swaps, Portfolio Vega</td></tr>
+</table>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Part II — ไปต่อ <a href="vol-part3.html">Part III: Term Structure — Vol ตามเวลา</a> →</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #0d9488;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vol-part1.html" style="color:#0d9488;text-decoration:none;font-weight:700">Volatility Mastery — เริ่มต้น</a></nav>
+</body></html>

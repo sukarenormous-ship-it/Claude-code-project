@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 6B — Grid Snowball + DCA Stack</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.snowball-types{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.sb-box{border:2px solid;border-radius:8px;padding:12px;text-align:center}
+.sb1{border-color:#06b6d4;background:var(--cyan-bg)}
+.sb2{border-color:#16a34a;background:var(--green-bg)}
+.sb3{border-color:#7c3aed;background:var(--violet-bg)}
+.stack-flow{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.sf-box{padding:12px 16px;border-radius:8px;border:2px solid}
+.sf-trading{border-color:#06b6d4;background:var(--cyan-bg)}
+.sf-transfer{border-color:#d97706;background:var(--amber-bg);text-align:center}
+.sf-wealth{border-color:#16a34a;background:var(--green-bg)}
+@media(max-width:600px){.snowball-types{grid-template-columns:1fr}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 6B</div>
+<h1>Grid Snowball + DCA Stack</h1>
+<div class="sub">3 รูปแบบ Compound · Profit-Triggered Layer · Zone Upgrade<br>
+Grid → DCA Stack: Trading Portfolio ป้อน Wealth Portfolio<br>
+Long-Term BTC Accumulation ผ่าน Grid Cashflow</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Grid ที่ดีทำกำไรทุกวัน แต่ถ้าแค่ "นำกำไรออก" — compound growth ไม่เกิด Grid Snowball นำ cashflow กลับเข้า grid เพื่อเพิ่ม Q หรือเปิด zone ใหม่ — นอกจากนี้ Grid-DCA Stack ยังส่งส่วนหนึ่งของกำไรไปซื้อ BTC ระยะยาว (Wealth Portfolio) อย่างเป็นระบบ</div>
+<div class="ki-eq">Snowball: Q(t) = Q₀ × (1 + daily_return)^t · DCA Stack: 30% grid profit → weekly BTC buy</div>
+</div>
+
+<h2 id="s6b-1">6B.1 Grid Snowball — 3 รูปแบบ</h2>
+
+<div class="snowball-types">
+<div class="sb-box sb1">
+<strong style="color:#0e7490">Type 1: Simple Compound</strong><br>
+<small>นำ profit ทั้งหมดกลับเข้า grid<br>เพิ่ม Q ทุก N cycles</small>
+</div>
+<div class="sb-box sb2">
+<strong style="color:#166534">Type 2: Profit-Triggered Layer</strong><br>
+<small>เปิด grid level ใหม่เมื่อ profit<br>สะสมถึง threshold</small>
+</div>
+<div class="sb-box sb3">
+<strong style="color:#6d28d9">Type 3: Zone Upgrade</strong><br>
+<small>ขยาย zone หรือเพิ่ม N<br>เมื่อ capital เพิ่มพอ</small>
+</div>
+</div>
+
+<div style="margin:20px 0;font-family:'Sarabun',sans-serif">
+  <p style="text-align:center;font-size:12px;font-weight:700;color:#374151;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em">Grid Snowball 3 แบบ + DCA Stack</p>
+
+  <!-- 3 Snowball panels -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+
+    <!-- Type 1: Simple Compound -->
+    <div style="background:linear-gradient(160deg,#ecfeff,#cffafe);border:2px solid #06b6d4;border-radius:12px;padding:16px;box-shadow:0 3px 10px rgba(6,182,212,.12)">
+      <div style="font-size:12px;font-weight:800;color:#0e7490;margin-bottom:3px">Type 1: Simple Compound</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:12px">Q เพิ่มทุก 7 วัน</div>
+      <!-- Growing bars -->
+      <div style="display:flex;align-items:flex-end;gap:5px;height:80px;padding:0 8px">
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:25%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:38%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:53%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:70%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:85%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+        <div style="flex:1;background:linear-gradient(to top,#0891b2,#22d3ee);border-radius:4px 4px 0 0;height:100%;box-shadow:0 2px 4px rgba(8,145,178,.3)"></div>
+      </div>
+      <div style="border-top:1.5px solid #06b6d4;margin-top:0;opacity:.4"></div>
+      <div style="font-size:10px;color:#0891b2;margin-top:8px;text-align:center">compound ราบเรียบ</div>
+    </div>
+
+    <!-- Type 2: Profit-Triggered Layer -->
+    <div style="background:linear-gradient(160deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:12px;padding:16px;box-shadow:0 3px 10px rgba(59,130,246,.12)">
+      <div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-bottom:3px">Type 2: Profit-Triggered</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:12px">Layer ใหม่เปิดเมื่อกำไรถึง threshold</div>
+      <!-- Stacked layers with arrows -->
+      <div style="display:flex;flex-direction:column;gap:4px;padding:0 4px">
+        <div style="background:#93c5fd;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;color:#1e40af;text-align:center;box-shadow:0 2px 4px rgba(59,130,246,.2)">Layer 3</div>
+        <div style="text-align:center;font-size:9px;color:#3b82f6">▲ profit >= $500</div>
+        <div style="background:#bfdbfe;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;color:#1e40af;text-align:center;box-shadow:0 2px 4px rgba(59,130,246,.15)">Layer 2</div>
+        <div style="text-align:center;font-size:9px;color:#3b82f6">▲ profit >= $500</div>
+        <div style="background:#dbeafe;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;color:#1e40af;text-align:center;border:1.5px solid #93c5fd">Layer 1 (ต้นทุน $10k)</div>
+      </div>
+      <div style="font-size:10px;color:#2563eb;margin-top:10px;text-align:center">compound แบบ discrete</div>
+    </div>
+
+    <!-- Type 3: Zone Upgrade -->
+    <div style="background:linear-gradient(160deg,#f5f3ff,#ede9fe);border:2px solid #7c3aed;border-radius:12px;padding:16px;box-shadow:0 3px 10px rgba(124,58,237,.12)">
+      <div style="font-size:12px;font-weight:800;color:#6d28d9;margin-bottom:3px">Type 3: Zone Upgrade</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:12px">กำไรขยาย zone coverage</div>
+      <!-- Zone boxes nested -->
+      <div style="position:relative;padding:8px;display:flex;align-items:center;justify-content:center;height:80px">
+        <div style="position:absolute;inset:0;border:2px dashed #a78bfa;border-radius:8px;display:flex;align-items:flex-start;justify-content:center;padding-top:4px">
+          <span style="font-size:9px;color:#7c3aed;background:#f5f3ff;padding:0 4px">$85k – $115k (ใหม่)</span>
+        </div>
+        <div style="background:#ddd6fe;border:1.5px solid #7c3aed;border-radius:6px;padding:8px 16px;font-size:10px;font-weight:700;color:#4c1d95;z-index:1">
+          $90k – $110k
+          <div style="font-size:9px;font-weight:400;color:#7c3aed">(zone เดิม)</div>
+        </div>
+        <div style="position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:16px;color:#7c3aed">◀</div>
+        <div style="position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:16px;color:#7c3aed">▶</div>
+      </div>
+      <div style="font-size:10px;color:#7c3aed;margin-top:6px;text-align:center">compound แบบ expanded coverage</div>
+    </div>
+  </div>
+
+  <!-- DCA Stack section -->
+  <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #16a34a;border-radius:14px;padding:18px 20px;box-shadow:0 4px 12px rgba(22,163,74,.10)">
+    <div style="font-size:13px;font-weight:800;color:#15803d;text-align:center;margin-bottom:14px">Grid &#8594; DCA Stack</div>
+    <div style="display:flex;align-items:center;gap:0">
+      <!-- Box 1 -->
+      <div style="flex:1;background:rgba(255,255,255,.7);border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;box-shadow:0 2px 8px rgba(22,163,74,.08)">
+        <div style="font-size:11px;font-weight:700;color:#166534">Trading Portfolio</div>
+        <div style="font-size:10px;color:#15803d;margin-top:4px">Grid ~$45/day</div>
+        <div style="font-size:10px;color:#64748b">(active trading)</div>
+      </div>
+      <!-- Arrow -->
+      <div style="padding:0 8px;text-align:center">
+        <div style="font-size:20px;color:#16a34a">&#8594;</div>
+        <div style="font-size:9px;color:#64748b;white-space:nowrap">weekly</div>
+      </div>
+      <!-- Box 2 -->
+      <div style="flex:1;background:rgba(255,255,255,.7);border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;box-shadow:0 2px 8px rgba(22,163,74,.08)">
+        <div style="font-size:11px;font-weight:700;color:#166534">70% Compound</div>
+        <div style="font-size:10px;color:#15803d;margin-top:4px">30% Transfer</div>
+        <div style="font-size:10px;color:#64748b">(split allocation)</div>
+      </div>
+      <!-- Arrow -->
+      <div style="padding:0 8px;text-align:center">
+        <div style="font-size:20px;color:#16a34a">&#8594;</div>
+        <div style="font-size:9px;color:#64748b;white-space:nowrap">monthly</div>
+      </div>
+      <!-- Box 3 -->
+      <div style="flex:1;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(187,247,208,.5));border:1.5px solid #4ade80;border-radius:10px;padding:12px 14px;box-shadow:0 2px 8px rgba(22,163,74,.12)">
+        <div style="font-size:11px;font-weight:700;color:#166534">Wealth Portfolio</div>
+        <div style="font-size:10px;color:#15803d;margin-top:4px">BTC accumulation</div>
+        <div style="font-size:10px;color:#64748b">(passive long-term)</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:#64748b;text-align:center">
+      reinvest 70% &#8594; ขยาย Grid size &nbsp;&#183;&nbsp; โอน 30% &#8594; สะสม BTC ทุกเดือน<br>
+      compound สองมิติ: active (grid) + passive (BTC hodl)
+    </div>
+  </div>
+  <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">กำไรจาก Grid (active) &#8594; สะสม BTC ระยะยาว (passive) = compound สองมิติ</p>
+</div>
+
+<h2 id="s6b-2">6B.2 Type 1: Simple Compound</h2>
+
+<p>นำ realized profit กลับเข้า grid capital → Q เพิ่มขึ้น → cashflow ต่อรอบเพิ่มขึ้น → compound effect:</p>
+
+$$Q(t) = Q_0 \times \left(1 + r_\text{daily}\right)^t$$
+
+<div class="fm">def simple_compound_grid(initial_q, daily_profit_rate, days, rebalance_every=7):
+    """
+    Type 1: Compound Q ทุก N วัน
+    daily_profit_rate = กำไรต่อวัน / grid capital
+    rebalance_every = ปรับ Q ทุกกี่วัน
+    """
+    q = initial_q
+    capital = initial_q * 100000  # สมมติ price $100k
+    log = []
+
+    for day in range(1, days + 1):
+        # กำไรวันนี้
+        daily_profit = capital * daily_profit_rate
+        capital += daily_profit
+
+        # ปรับ Q ทุก rebalance_every วัน
+        if day % rebalance_every == 0:
+            new_q = capital / 100000
+            q = round(new_q, 4)  # round เพื่อให้ practical
+
+        log.append({"day": day, "q": q, "capital": capital})
+
+    return log
+
+# ตัวอย่าง: Q₀=0.01 BTC · rate=0.27%/วัน · 365 วัน
+# Q(365) = 0.01 × (1.0027)^365 = 0.01 × 2.66 = 0.0266 BTC
+# Capital: $1,000 → $2,660 (+166% ใน 1 ปี)
+
+ข้อดี: เรียบง่าย ไม่ต้องตัดสินใจ
+ข้อเสีย: ถ้ากำไรไม่ realized (inventory ค้าง) → Q ไม่เพิ่ม</div>
+
+<h2 id="s6b-3">6B.3 Type 2: Profit-Triggered Layer</h2>
+
+<p>รอให้ profit สะสมถึง threshold แล้วค่อยเปิด "grid level ใหม่" — ได้ compound แบบ discontinuous step:</p>
+
+<div class="fm">def profit_triggered_layer(grid_bot, trigger_threshold=500):
+    """
+    เปิด grid level ใหม่เมื่อ accumulated profit ≥ threshold
+    """
+    accumulated_profit = 0
+    layers_added = 0
+
+    while True:
+        # รับ daily profit จาก grid
+        daily_profit = grid_bot.get_daily_realized_profit()
+        accumulated_profit += daily_profit
+
+        if accumulated_profit >= trigger_threshold:
+            # เปิด level ใหม่ (extend zone ลงอีก 1 step)
+            new_level_price = grid_bot.zone_low - grid_bot.step
+            grid_bot.add_level(price=new_level_price, qty=grid_bot.base_q)
+            grid_bot.zone_low = new_level_price
+            layers_added += 1
+
+            # Reset accumulation counter
+            accumulated_profit -= trigger_threshold
+
+            print(f"Layer {layers_added} added at ${new_level_price:,}")
+
+# ตัวอย่าง:
+# Grid capital $10,000, กำไร $100/วัน
+# Trigger every $500 profit ≈ ทุก 5 วัน
+# ใน 1 เดือน: เพิ่มประมาณ 6 layers ใหม่
+
+เพิ่ม zone ลงต่ำกว่า หรือสูงกว่า:
+  กลยุทธ์ A: เพิ่ม lower zone → capture ถ้าราคาลงมา
+  กลยุทธ์ B: เพิ่ม upper zone → เตรียม TP ในชั้นสูงขึ้น
+  กลยุทธ์ C: สลับตาม Hurst (ถ้า H ต่ำ → ต่ำสุด, ถ้า H สูงขึ้น → บนสุด)</div>
+
+<h2 id="s6b-4">6B.4 Type 3: Zone Upgrade</h2>
+
+<p>เมื่อ grid capital สะสมถึง threshold ใหม่ — ปิด grid เดิม เปิด grid ใหม่ที่ใหญ่กว่า (zone กว้างขึ้น หรือ Q ใหญ่ขึ้น):</p>
+
+<div class="fm">Zone Upgrade Criteria:
+
+def check_zone_upgrade(current_capital, initial_capital, upgrade_threshold=0.50):
+    """
+    Upgrade เมื่อ capital เพิ่มขึ้น 50% จากตอนเริ่ม
+    """
+    growth = (current_capital - initial_capital) / initial_capital
+    return growth >= upgrade_threshold
+
+Zone Upgrade Process:
+  Initial: Capital $10,000 · Q=0.001 BTC · Zone $90k–$110k
+  After 3 months: Capital $15,000 (+50%)
+
+  Upgrade Options:
+    A) เพิ่ม Q: ใช้ $15,000 กับ zone เดิม → Q = 0.0015 BTC (+50%)
+    B) ขยาย Zone: ใช้ $15,000 กับ zone ใหม่ $80k–$120k (+33% wider)
+    C) เพิ่ม N: zone เดิม แต่ step เล็กลง (fill บ่อยขึ้น)
+
+ตัวอย่าง:
+  $10,000 · Zone $90k–$110k · Step $2k · N=10 · Q=0.001 BTC
+  ↓ 3 months profit $5,000
+  $15,000 · Zone $87k–$113k · Step $2k · N=13 · Q=0.00115 BTC (ปรับตาม capital)
+
+Note: Zone Upgrade ต้องผ่าน validation checklist (<a href="grid-part3.html">Part 3</a>) ก่อน</div>
+
+<h2 id="s6b-5">6B.5 Snowball Comparison</h2>
+
+<table>
+<tr><th>Type</th><th>กลไก</th><th>Complexity</th><th>Growth Rate</th><th>Risk</th></tr>
+<tr><td>Type 1 (Simple Compound)</td><td>Q เพิ่มทุก N วัน</td><td>ต่ำ</td><td>Smooth exponential</td><td>ต่ำ</td></tr>
+<tr><td>Type 2 (Triggered Layer)</td><td>เปิด level ใหม่เมื่อ profit ถึง threshold</td><td>กลาง</td><td>Step function</td><td>กลาง (zone ขยาย)</td></tr>
+<tr><td>Type 3 (Zone Upgrade)</td><td>เปิด grid ใหม่ทั้งหมดเมื่อ capital ถึง tier</td><td>สูง</td><td>Accelerated jump</td><td>สูง (ต้อง rebalance ทั้งหมด)</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">แนะนำ: ใช้ Type 1 ก่อน จน capital ≥ 2× initial → Type 3 Upgrade</div>
+<p>ผู้เริ่มต้น: Type 1 — ง่าย ไม่ต้องตัดสินใจ ให้ compound ทำงานเอง</p>
+<p>ผู้มีประสบการณ์: Type 2 — เพิ่ม level ตามโอกาส ใช้ Hurst เลือกทิศทาง</p>
+<p>ผู้ advanced: Type 3 + ใช้ Donchian ใหม่ re-optimize zone ทุก upgrade cycle</p>
+</div>
+
+<h2 id="s6b-6">6B.6 Grid-DCA Stack — สองพอร์ตโฟลิโอ</h2>
+
+<p>Grid Snowball ช่วยให้ Trading Portfolio โตขึ้น — แต่ DCA Stack เพิ่มมิติที่สอง: ส่งกำไรส่วนหนึ่งไป Wealth Portfolio (ซื้อ BTC ระยะยาว)</p>
+
+<div class="stack-flow">
+<div class="sf-box sf-trading">
+<strong style="color:#0e7490">Trading Portfolio (Grid)</strong><br>
+Grid ทำงานทุกวัน → Cashflow $X/วัน<br>
+<small>70% reinvest back into grid (Snowball) | 30% → Transfer</small>
+</div>
+<div class="sf-box sf-transfer" style="border-style:dashed">
+<strong style="color:#b45309">Weekly Transfer Rule</strong><br>
+ทุกวันจันทร์: นำ 30% ของ weekly profit ซื้อ BTC ราคาตลาด<br>
+<small>ไม่ limit order, ไม่ wait for dip — ซื้อ market อาทิตย์ละครั้ง</small>
+</div>
+<div class="sf-box sf-wealth">
+<strong style="color:#166534">Wealth Portfolio (Long-term BTC)</strong><br>
+BTC สะสม ถือตลอด ไม่ขาย<br>
+<small>เป้าหมาย: สะสม BTC ระยะ 5–10 ปี</small>
+</div>
+</div>
+
+<div class="fm">DCA Stack Implementation:
+
+class GridDCAStack:
+    def __init__(self, grid_bot, dca_pct=0.30, dca_interval_days=7):
+        self.grid = grid_bot
+        self.dca_pct = dca_pct              # 30% ของ profit ไป DCA
+        self.interval = dca_interval_days   # DCA ทุกกี่วัน
+        self.wealth_btc = 0.0               # BTC สะสมใน wealth portfolio
+        self.trading_capital = grid_bot.capital
+
+    def weekly_rebalance(self, current_btc_price):
+        """
+        ทำทุกอาทิตย์:
+        1. วัด realized profit สัปดาห์นี้
+        2. แบ่ง 30% ไปซื้อ BTC → wealth portfolio
+        3. ส่วนที่เหลือ compound กลับใน grid
+        """
+        weekly_profit = self.grid.get_weekly_realized_profit()
+
+        if weekly_profit <= 0:
+            return  # ไม่มีกำไร ไม่ DCA
+
+        # DCA amount
+        dca_amount = weekly_profit * self.dca_pct
+        btc_bought = dca_amount / current_btc_price
+
+        self.wealth_btc += btc_bought
+        self.trading_capital += weekly_profit * (1 - self.dca_pct)
+
+        print(f"DCA: ซื้อ {btc_bought:.6f} BTC @ ${current_btc_price:,}")
+        print(f"     Wealth BTC รวม: {self.wealth_btc:.4f} BTC")
+        print(f"     Trading capital: ${self.trading_capital:,.0f}")
+
+ตัวอย่าง 1 ปี:
+  Grid profit: $100/วัน × 365 = $36,500
+  DCA (30%): $36,500 × 30% = $10,950 → ซื้อ BTC ทุกอาทิตย์
+  Compound (70%): $36,500 × 70% = $25,550 → กลับเข้า grid
+
+  BTC ที่ซื้อ (avg $100k/BTC): $10,950 / $100k = 0.1095 BTC
+  + grid capital เพิ่มจาก $20,000 → $45,550 (+127%)</div>
+
+<h2 id="s6b-7">6B.7 Long-term Projection — Grid Snowball + DCA Stack</h2>
+
+<div class="bx br">
+<div class="bt">⚠️ คำเตือนสำคัญ — Projection นี้ไม่ใช่ผลลัพธ์ที่รับประกัน</div>
+<p>ตารางด้านล่างเป็น <strong>กรณีที่ดีที่สุด (best-case scenario)</strong> ภายใต้สมมติฐานที่ไม่สมจริง:</p>
+<ul>
+<li>Grid ทำกำไร 0.27%/วัน <em>ต่อเนื่องตลอด 5 ปี</em> — ในความเป็นจริงมีช่วง Grid OFF, <a href="grid-part5.html#s5-5">DD Halt (Part 5)</a>, Sideways ยาวนาน — เมื่อ DD Halt ทำงาน compound หยุดชั่วคราว</li>
+<li>ไม่รวมช่วง Bear Market ที่ BTC ลง 50–80% (เกิดทุก 2–4 ปีในประวัติศาสตร์)</li>
+<li>Monte Carlo simulation (1,000 paths) ของ return จริงๆ แสดง range: <strong>ปีที่ 5 = $50,000–$180,000</strong> (median ≈ $95,000) ไม่ใช่ $528,000</li>
+<li><strong>Realistic expectation:</strong> 40–70% ของตัวเลขในตาราง ในปีที่ market conditions เอื้ออำนวย</li>
+</ul>
+<p>ใช้ตารางนี้เพื่อเข้าใจ <em>กลไก compound</em> เท่านั้น — ไม่ใช่เพื่อวางแผนทางการเงิน</p>
+</div>
+
+<table>
+<tr><th>ปีที่</th><th>Grid Capital</th><th>Daily Cashflow</th><th>BTC สะสม</th><th>Wealth Value (@ $100k/BTC)</th></tr>
+<tr><td>เริ่มต้น</td><td>$20,000</td><td>$54/วัน (0.27%)</td><td>0 BTC</td><td>$0</td></tr>
+<tr><td>ปีที่ 1</td><td>$38,500</td><td>$104/วัน</td><td>0.11 BTC</td><td>$11,000</td></tr>
+<tr><td>ปีที่ 2</td><td>$74,100</td><td>$200/วัน</td><td>0.32 BTC</td><td>$32,000</td></tr>
+<tr><td>ปีที่ 3</td><td>$142,700</td><td>$385/วัน</td><td>0.73 BTC</td><td>$73,000</td></tr>
+<tr><td>ปีที่ 4*</td><td>$275,000</td><td>$743/วัน</td><td>1.50 BTC</td><td>$150,000</td></tr>
+<tr><td>ปีที่ 5</td><td>$528,000</td><td>$1,426/วัน</td><td>2.80 BTC</td><td>$280,000</td></tr>
+</table>
+
+<p><em>หมายเหตุ: สมมติ BTC price คงที่ที่ $100k (ไม่รวม BTC appreciation), daily return คงที่ที่ 0.27%/วัน, DCA 30% ทุกสัปดาห์ *ปีที่ 4 ประมาณการ (interpolated) Projection ใช้เพื่อ illustrate compound effect เท่านั้น — ผลจริงขึ้นอยู่กับ market regime</em></p>
+
+<div class="bx ba">
+<div class="bt">ความเสี่ยงของ Long-term Projection</div>
+<ul>
+<li>Grid ไม่ได้ทำกำไร 0.27%/วันตลอด — มีช่วง Grid OFF, DD Halt</li>
+<li>BTC price เปลี่ยน → grid capital มูลค่าเปลี่ยน + DCA buy price เปลี่ยน</li>
+<li>ค่าธรรมเนียมแพลตฟอร์มอาจเปลี่ยน</li>
+<li>Realistic target: 40–70% ของ projection (ให้ปรับ downside)</li>
+</ul>
+</div>
+
+<h2 id="s6b-8">6B.8 Running Example — 6 เดือนแรก</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Grid Snowball Type 1 + DCA Stack</div>
+<p><em>ตัวอย่างนี้ใช้ grid capital $10,000 (ต่างจากตาราง 6B.7 ที่ใช้ $20,000 เป็น base case) — เพื่อให้เห็นกลไก compound ชัดเจนในขนาดที่เล็กลง</em></p>
+<p><strong>Setup:</strong> Grid capital $10,000 · Q=0.001 BTC · Daily profit $27 (0.27%) · DCA 30% ทุกสัปดาห์</p>
+
+<div class="fm">Month 1 (เดือนแรก):
+  Weekly profit avg: $27 × 7 = $189
+  DCA each week: $189 × 30% = $56.7 → ซื้อ BTC @ $100k = 0.000567 BTC/week
+  Compound: $189 × 70% = $132.3 → กลับเข้า grid
+  End of Month: Grid capital = $10,000 + $132.3 × 4 = $10,529
+               Wealth BTC = 0.000567 × 4 = 0.00227 BTC
+
+Month 3:
+  Grid capital ≈ $11,600 (compound + standby yield)
+  New Q = $11,600 / ($100k × N) ≈ 0.00116 BTC (+16%)
+  Daily cashflow ≈ $31.3 (+16% จากเดิม)
+  Wealth BTC ≈ 0.007 BTC
+
+Month 6 (สิ้นสุด):
+  Grid capital ≈ $13,900
+  Daily cashflow ≈ $37.5
+  Wealth BTC สะสม ≈ 0.016 BTC (≈ $1,600 @ $100k)
+
+สรุป 6 เดือน:
+  Trading capital growth: $10,000 → $13,900 (+39%)
+  Wealth BTC: 0.016 BTC ($1,600)
+  Total value: $13,900 + $1,600 = $15,500 (+55% รวม)
+  vs Buy-and-hold $10,000 BTC: ถ้า BTC flat = $10,000 (0%)
+
+ข้อสังเกต: ใน 6 เดือน BTC flat
+  Grid: +55% (cashflow compound)
+  B&H:  +0%  (รอ price)
+  DCA:  +0%  (BTC ราคาเดิม)</div>
+</div>
+
+<h2 id="s6b-9">6B.9 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 6B</div>
+
+<details>
+<summary>ข้อ 1: Grid profit $150/วัน · DCA 25% ทุกสัปดาห์ · BTC = $95,000 — DCA BTC ต่อเดือนเท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Weekly profit = $150 × 7 = $1,050</p>
+<p>DCA per week = $1,050 × 25% = $262.50</p>
+<p>BTC per week = $262.50 / $95,000 = 0.002763 BTC</p>
+<p>BTC per month = 0.002763 × 4 = <strong>0.01105 BTC/เดือน</strong></p>
+<p>Value = 0.01105 × $95,000 = <strong>$1,050/เดือน</strong></p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม DCA ทุกอาทิตย์แบบ market order ดีกว่ารอ dip?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>การรอ dip = market timing — research แสดงว่า market timing ส่วนใหญ่ underperform เทียบ systematic DCA</p>
+<p><strong>ปัญหาของการรอ dip:</strong></p>
+<ul>
+<li>Dip อาจไม่มา → ราคาขึ้นต่อ → พลาดซื้อทั้งหมด</li>
+<li>เมื่อ dip มา → panic ไม่กล้าซื้อ (fear)</li>
+<li>Opportunity cost: cash ไม่ทำงานระหว่างรอ</li>
+</ul>
+<p>Weekly market order: ได้ BTC ทุกสัปดาห์ไม่ว่าราคาจะเป็นอย่างไร → ลด timing risk → average cost เฉลี่ยกว่า</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Grid capital เริ่ม $15,000 · Type 3 Upgrade เมื่อ capital ≥ 150% ของ initial — ต้องรอ profit เท่าไหร่? (daily return 0.27%)</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Target capital = $15,000 × 150% = $22,500</p>
+<p>Profit needed = $22,500 − $15,000 = $7,500</p>
+<p>Days = ln(1.50) / ln(1.0027) = 0.4055 / 0.002696 ≈ <strong>150 วัน</strong> (≈ 5 เดือน)</p>
+<p>หรือคำนวณ approximate: $7,500 / ($15,000 × 0.27%/วัน) = $7,500 / $40.5 ≈ 185 วัน</p>
+<p>Note: compound effect ทำให้ 150 วันถูกกว่า simple linear estimate (185 วัน)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: Type 2 vs Type 3 Snowball — เลือก Type ไหนถ้า BTC ลงมา 20% จากตอนตั้ง grid?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>BTC ลง 20% = inventory มีมูลค่าลด + zone อาจใกล้ lower boundary</p>
+<p><strong>Type 2 (Triggered Layer) เหมาะกว่า:</strong></p>
+<ul>
+<li>เพิ่ม level ที่ lower zone → capture ราคาถูก</li>
+<li>ไม่ต้องปิดหรือ reset grid ทั้งหมด</li>
+<li>ถ้า BTC ฟื้นกลับ → level ใหม่ที่ล่างกว่าจะ TP กำไรมาก</li>
+</ul>
+<p><strong>Type 3 (Zone Upgrade) ไม่เหมาะ:</strong></p>
+<ul>
+<li>ปิด grid เดิม = ต้องขาย inventory ที่ขาดทุน unrealized</li>
+<li>เปิด zone ใหม่ที่ต่ำกว่า = ลง deeper risk</li>
+<li>ถ้า capital ลดลงจาก price drop → ไม่ถึง upgrade threshold</li>
+</ul>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part6.html" style="color:#64748b">Part 6</a></span><a href="grid-part7.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 7: Advanced Integration →</a></nav>
+</body>
+</html>

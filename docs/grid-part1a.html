@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 1A — Close System + Zone Tricks + Soft Martingale</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g7:#374151;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;color:var(--g9);margin-top:8px;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:var(--red-bg);border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.trick-box{background:linear-gradient(135deg,#f5f3ff,var(--cyan-bg));border:2px solid #a78bfa;border-radius:10px;padding:16px 20px;margin:16px 0}
+.trick-box .trick-label{font-size:.8em;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.waterfall-zone{border-radius:8px;padding:12px 18px;margin:6px 0;display:flex;justify-content:space-between;align-items:center}
+.wz-active{background:#ecfeff;border:2px solid #06b6d4}
+.wz-standby{background:#eff6ff;border:2px solid #93c5fd}
+.wz-floor{background:#f1f5f9;border:2px solid #94a3b8}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 1A</div>
+<h1>Close System + Zone Tricks + Soft Martingale</h1>
+<div class="sub">ระบบปิด (ไม่มี SL) · Zone Waterfall · Bell Curve Density · Capital Front-Loading · r-parameter<br>
+แนวคิดจาก: Close System (พี่ต้าน Mudley Group)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text"><strong>Close System</strong> หมายถึง: วาง capital ทั้งหมดที่ต้องการ <em>ก่อน</em> เข้าเล่น จนถึง "floor" หรือ give-up point — ไม่มี stop-loss นอกจากทุนหมด ข้อได้เปรียบ: ไม่โดน stop hunt, ไม่ต้อง top-up กลางทาง, รู้ maximum loss ล่วงหน้า</div>
+<div class="ki-eq">C_floor = Σ(i=1 to N) Q_i × P_i   [ทุน reserve ถึง floor]</div>
+</div>
+
+<h2 id="s1a-1">1A.1 Close System คืออะไร</h2>
+
+<p>Grid ส่วนใหญ่ที่สอนกันทั่วไปมี stop-loss — ถ้าราคาลงถึงจุดหนึ่งก็ปิด position ยอมขาดทุน</p>
+
+<p><strong>Close System คือแนวคิดตรงกันข้าม:</strong></p>
+
+<div class="bx bc">
+<div class="bt">หลักการ Close System (ระบบปิด)</div>
+<ol>
+<li><strong>กำหนด give-up point (floor)</strong> — จุดที่ถ้าราคาลงถึง คุณยอมรับการถือ inventory ทั้งหมด (หรือ capital หมด)</li>
+<li><strong>วาง capital ทั้งหมด ล่วงหน้า</strong> — คำนวณว่าต้องใช้เงินเท่าไหร่ถ้าราคาลงถึง floor และวาง capital นั้นไว้ก่อน</li>
+<li><strong>ไม่มี stop-loss ระหว่างทาง</strong> — ยกเว้น capital หมดถึง floor เท่านั้น</li>
+<li><strong>รู้ worst-case ล่วงหน้า</strong> — maximum loss = capital ที่วางไว้ทั้งหมด (ไม่มีเซอร์ไพรส์)</li>
+</ol>
+</div>
+
+<div class="bx ba">
+<div class="bt">ทำไมไม่มี SL กลาง grid?</div>
+<p>ปัญหาของ SL กลาง grid: ถ้า BTC ลงจาก $100k → $95k → SL triggered → ขาดทุน $5k → จากนั้น BTC ฟื้นกลับ $105k — คุณเสียโอกาสทำกำไรทั้งหมด</p>
+<p>Close System ไม่มี SL กลาง → ถ้า BTC ลง $95k ก็รอ → ถ้ากลับ $105k → กำไร | ถ้าไม่กลับเลย → ขาดทุนเท่า capital ที่ reserve ไว้</p>
+<p><strong>Trade-off:</strong> ยอมรับ maximum loss ที่ชัดเจน เพื่อแลกกับโอกาสไม่โดน stop hunt</p>
+</div>
+
+<h2 id="s1a-2">1A.2 Floor Capital — การคำนวณ</h2>
+
+<p>Floor = ราคาต่ำสุดที่ยอมรับให้ grid ทำงานถึง (เช่น $80,000 สำหรับ BTC ที่ $100,000)</p>
+
+<div class="fm">สูตร Capital ที่ต้องการถึง Floor (Equal Weight):
+C_floor = Q × Σ(P_i)   สำหรับทุก i ที่ P_i อยู่ระหว่าง [floor, entry]
+
+ตัวอย่าง: BTC entry = $100k, floor = $90k, step = $2k, Q = 0.01 BTC/level
+  Levels: $98k, $96k, $94k, $92k, $90k  (5 levels ด้านล่าง)
+  C_floor = 0.01 × ($98k + $96k + $94k + $92k + $90k)
+          = 0.01 × $470k
+          = $4,700
+
+นี่คือทุน "Reserve" ที่ต้องมีก่อนเปิด grid
+ถ้าไม่มีครบ $4,700 → ไม่เปิด grid (ไม่ใช่ลดขนาด order)
+
+สูตร Soft Martingale (ขนาด Q เพิ่มขึ้นตาม level):
+Q_i = Q_0 × r^(i-1)   โดย r ∈ [1.1, 1.5], i = 1,2,3,...,N
+C_floor_martingale = Σ(i=1 to N) Q_i × P_i
+                   = Σ (Q_0 × r^(i-1)) × P_i   [ต้องคำนวณ case-by-case]</div>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: คำนวณ Floor Capital</div>
+<table>
+<tr><th>Level</th><th>ราคา</th><th>Q (BTC)</th><th>Capital ที่ใช้</th><th>Cumulative</th></tr>
+<tr><td>Entry</td><td>$100,000</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>L1</td><td>$98,000</td><td>0.010</td><td>$980</td><td>$980</td></tr>
+<tr><td>L2</td><td>$96,000</td><td>0.010</td><td>$960</td><td>$1,940</td></tr>
+<tr><td>L3</td><td>$94,000</td><td>0.010</td><td>$940</td><td>$2,880</td></tr>
+<tr><td>L4</td><td>$92,000</td><td>0.010</td><td>$920</td><td>$3,800</td></tr>
+<tr><td>L5 (floor)</td><td>$90,000</td><td>0.010</td><td>$900</td><td><strong>$4,700</strong></td></tr>
+</table>
+<p><strong>สรุป:</strong> ต้องมีทุน $4,700 reserve ก่อนเปิด grid | ถ้า BTC ลงถึง $90k โดยไม่กลับ → unrealized loss = $4,700 − (0.05 BTC × $90k) = $4,700 − $4,500 = $200 เท่านั้น เพราะถือ BTC ไว้</p>
+</div>
+
+<h2 id="s1a-3">1A.3 Zone Waterfall — Active / Standby / Floor</h2>
+
+<p>ปัญหาใหญ่ของ Close System: ต้องวาง capital ทั้งหมดไว้เฉยๆ (idle) รอราคาลงถึง — <strong>Zone Waterfall แก้ปัญหานี้</strong></p>
+
+<div style="margin:20px 0;font-family:'Sarabun',sans-serif">
+  <p style="text-align:center;font-size:12px;color:#64748b;margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Zone Waterfall — Active / Standby / Floor</p>
+  <div style="display:flex;gap:20px;align-items:stretch">
+    <!-- Left: 3 stacked zones -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:0">
+      <!-- ACTIVE ZONE -->
+      <div style="background:linear-gradient(135deg,#ecfeff,#cffafe);border:2px solid #06b6d4;border-radius:12px 12px 0 0;padding:16px 20px;box-shadow:0 4px 12px rgba(6,182,212,.15)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#0e7490;letter-spacing:.02em">ACTIVE ZONE</div>
+            <div style="font-size:11px;color:#0891b2;margin-top:3px">Deploy เป็น Grid Orders ตอนนี้</div>
+          </div>
+          <div style="font-size:32px;font-weight:800;color:#06b6d4;opacity:.9">50%</div>
+        </div>
+      </div>
+      <!-- Arrow -->
+      <div style="text-align:center;line-height:1;color:#94a3b8;font-size:18px;margin:-1px 0;z-index:1">▼</div>
+      <!-- STANDBY ZONE -->
+      <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-left:2px solid #3b82f6;border-right:2px solid #3b82f6;border-top:none;border-bottom:none;padding:16px 20px;box-shadow:0 2px 8px rgba(59,130,246,.10)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#1d4ed8">STANDBY ZONE</div>
+            <div style="font-size:11px;color:#2563eb;margin-top:3px">ฝาก lending / T-bill รับดอกเบี้ย</div>
+          </div>
+          <div style="font-size:32px;font-weight:800;color:#3b82f6;opacity:.9">30%</div>
+        </div>
+      </div>
+      <!-- Arrow -->
+      <div style="text-align:center;line-height:1;color:#94a3b8;font-size:18px;margin:-1px 0;z-index:1">▼</div>
+      <!-- FLOOR ZONE -->
+      <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:2px solid #94a3b8;border-radius:0 0 12px 12px;padding:16px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#475569">FLOOR ZONE</div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px">สำรองฉุกเฉิน — ไม่แตะยกเว้นกรณีสุดท้าย</div>
+          </div>
+          <div style="font-size:32px;font-weight:800;color:#94a3b8;opacity:.9">20%</div>
+        </div>
+      </div>
+    </div>
+    <!-- Right: flow description -->
+    <div style="width:260px;display:flex;flex-direction:column;gap:8px;justify-content:center">
+      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">การไหลของทุน</div>
+      <div style="background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:10px 12px;font-size:10px;color:#0e7490">
+        <strong>Grid fill</strong> → คืนทุน + กำไร<br>
+        ส่งกลับมาใช้ Active Zone ใหม่
+      </div>
+      <div style="text-align:center;color:#94a3b8;font-size:14px">↓</div>
+      <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:10px 12px;font-size:10px;color:#1d4ed8">
+        <strong>กำไรส่วนเกิน</strong> → Standby<br>
+        ฝากรับดอกเบี้ย 4–8% APY
+      </div>
+      <div style="text-align:center;color:#94a3b8;font-size:14px">↓</div>
+      <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:10px;color:#475569">
+        <strong>Floor</strong>: ไม่แตะจนถึง<br>
+        give-up point (Close System)
+      </div>
+    </div>
+  </div>
+  <!-- Summary bar -->
+  <div style="margin-top:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 16px;text-align:center;font-size:11px;color:#374151">
+    <strong>Active (50%) + Standby (30%) + Floor (20%) = 100%</strong> — ทุนทุกบาทมีบทบาท
+  </div>
+  <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">ไม่ต้องใช้ทุนทั้งหมดเป็น grid orders — Standby หาดอกเบี้ยระหว่างรอ</p>
+</div>
+
+<div class="bx bc">
+<div class="bt">วิธีทำงานของ Zone Waterfall</div>
+<ol>
+<li>เริ่มต้น: Active Zone deploy grid orders ตาม price range ปัจจุบัน</li>
+<li>เมื่อราคาลง → Active Zone depletes → Standby เลื่อนมาเป็น Active ใหม่</li>
+<li>เมื่อ Standby depletes → Floor เลื่อนมา (นี่คือ warning signal)</li>
+<li>เมื่อ Floor depletes → Close System ถึง give-up point → หยุด grid</li>
+</ol>
+<p><strong>ข้อดี:</strong> Standby Zone ฝากรับดอกเบี้ยได้ขณะรอ → ลด opportunity cost ของ capital ที่ idle</p>
+</div>
+
+<div class="fm">def zone_waterfall_capital(total_capital, zone_ratios=(0.5, 0.3, 0.2)):
+    """คำนวณ capital ใน each zone"""
+    active_ratio, standby_ratio, floor_ratio = zone_ratios
+    active_capital   = total_capital * active_ratio   # deploy เป็น orders
+    standby_capital  = total_capital * standby_ratio  # ฝาก lending/yield
+    floor_capital    = total_capital * floor_ratio    # ไม่แตะ
+
+    # Standby yield (สมมติ 5% APY)
+    standby_yield_daily = standby_capital * 0.05 / 365
+    return {
+        "active": active_capital,
+        "standby": standby_capital,
+        "floor": floor_capital,
+        "standby_daily_yield": standby_yield_daily
+    }
+
+# ตัวอย่าง: total = $10,000
+# active=$5,000 · standby=$3,000 · floor=$2,000
+# standby_daily_yield = $3,000 × 5%/365 = $0.41/วัน (ลด opportunity cost)</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ Counterparty Risk ของ Lending Protocol</div>
+<p>Yield 4–8% APY จาก Aave/Compound/lending platforms <strong>ไม่ใช่ risk-free</strong>:</p>
+<ul>
+<li><strong>Smart contract risk:</strong> bug หรือ exploit → เงินอาจหายทั้งหมด (เกิดกับ Euler Finance $197M ปี 2023)</li>
+<li><strong>Liquidity risk:</strong> ในช่วง market crash → ถอน USDT ออกไม่ได้ทันที (utilization rate สูง)</li>
+<li><strong>เหมาะสำหรับ:</strong> Standby capital ที่รอ &gt; 30 วัน และยอมรับ smart contract risk ได้</li>
+<li><strong>ทางเลือกที่ safer กว่า:</strong> CEX savings product (Binance Earn, OKX Earn) — counterparty risk ต่ำกว่าแต่ yield ต่ำกว่า</li>
+</ul>
+</div>
+
+<h2 id="s1a-4">1A.4 Buy-Only Zone Asymmetry — Trick ที่ทรงพลัง</h2>
+
+<div class="trick-box">
+<div class="trick-label">Zone Trick #1 — Asymmetric Zone</div>
+<p><strong>Grid ทั่วไป:</strong> วาง zone −2σ ถึง +2σ (symmetric)</p>
+<p><strong>Zone Trick:</strong> วาง zone −2σ ถึง <em>+1σ</em> (ไม่ถึง +2σ) สำหรับ Buy-Only Grid</p>
+<p><strong>ทำไม:</strong> ราคาอยู่เหนือ +1σ น้อยมาก — วาง grid สูงเกิน +1σ เหมือน "ซื้อบนดอย" ที่ไม่ค่อย fill หรือ fill แล้วราคาไม่กลับลงมา</p>
+<p><strong>ข้อดีของ −2σ ถึง +1σ:</strong> ประหยัดทุนได้ ~25% (ตัดส่วนบนออก) + ลด inventory risk บนสุด</p>
+</div>
+
+<div class="fm">สมมติ BTC mean = $100k, σ = $10k (10%)
+Zone ทั่วไป (−2σ ถึง +2σ): $80k ถึง $120k  (range $40k)
+Zone Trick   (−2σ ถึง +1σ): $80k ถึง $110k  (range $30k)
+
+Capital ที่ประหยัด: Grid levels $110k-$120k ไม่ต้องวาง
+  → ถ้า step = $2k → ประหยัด 5 levels × capital ต่อ level
+  → ≈ 25% less capital สำหรับ upper zone ที่ "ไม่ค่อย fill"
+
+ทดสอบ: ในช่วง 1 ปี BTC อยู่เหนือ +1σ เท่าไหร่?
+  → ตามทฤษฎีปกติ: ~16% ของเวลา (1 − 84th percentile)
+  → จริงๆ BTC: ≈ 15-20% (ใกล้เคียง) เพราะ crypto skewed right
+  → สรุป: 80% ของเวลาราคาอยู่ใน −2σ ถึง +1σ = Zone ที่เลือก</div>
+
+<h2 id="s1a-5">1A.5 Bell Curve Grid Density</h2>
+
+<canvas id="chartBell" class="chart" style="height:360px"></canvas>
+<p class="caption">Grid หนาแน่นที่ mean — Step เล็กในโซนที่ราคาอยู่บ่อย ประหยัด capital ในโซนที่ราคามาน้อย</p>
+<script>
+(function(){
+  MiniChart.bell(document.getElementById('chartBell'), {
+    mean: 100000, std: 10000,
+    title: 'Bell Curve Grid Density — BTC/USDT',
+    denseLabel: 'Dense Grid ±1σ ($90k–$110k) — step เล็ก fill บ่อย',
+    sparseLabel: 'Sparse Grid ±2σ ($80k–$120k) — step ใหญ่ ประหยัด capital',
+    caption: '68% ของเวลา ราคาอยู่ใน ±1σ / 95% อยู่ใน ±2σ — จัด grid หนาแน่นตรงกลาง'
+  });
+})();
+</script>
+
+<div class="trick-box">
+<div class="trick-label">Zone Trick #2 — Variable Step (Bell Curve Density)</div>
+<p>แทนที่จะใช้ step เท่ากันทุก level ลองปรับ step ตามระยะห่างจาก mean:</p>
+<ul>
+<li>ใกล้ mean (±0.5σ): step เล็ก → fill บ่อย → cashflow ดี</li>
+<li>ห่าง mean (1σ–2σ): step ใหญ่ขึ้น → fill น้อย → ประหยัด capital</li>
+</ul>
+</div>
+
+<div class="fm">def variable_step(price, mean, sigma, base_step):
+    """คำนวณ step size ตามระยะห่างจาก mean (bell curve density)"""
+    z = abs(price - mean) / sigma  # z-score ของ price
+    multiplier = 1 + z * 0.5      # step เพิ่ม 50% ต่อ 1σ ที่ห่างออกไป
+    return base_step * multiplier
+
+# ตัวอย่าง: mean=$100k, σ=$10k, base_step=$2k
+# ที่ $100k (z=0):   step = $2,000 × 1.0  = $2,000  (dense)
+# ที่ $95k  (z=0.5): step = $2,000 × 1.25 = $2,500
+# ที่ $90k  (z=1.0): step = $2,000 × 1.5  = $3,000
+# ที่ $80k  (z=2.0): step = $2,000 × 2.0  = $4,000  (sparse)
+
+# ผลลัพธ์: cashflow จาก center สูง, capital ที่ extremes น้อย</div>
+
+<div class="bx bg">
+<div class="bt">ข้อดีของ Bell Curve Density</div>
+<ul>
+<li>Cashflow concentration: 70%+ ของรอบ grid อยู่ใน ±1σ จาก mean → step เล็กในโซนนี้ให้ cashflow สูง</li>
+<li>Capital efficiency: ไม่ต้องใส่ทุนเยอะที่ extreme level ที่ fill น้อย</li>
+<li>Natural risk reduction: ถ้าราคาออกไปที่ extreme, step ใหญ่ → ซื้อน้อยกว่าในวิธี equal step</li>
+</ul>
+</div>
+
+<h2 id="s1a-6">1A.6 Capital Front-Loading — ยืมจาก Upper Zone</h2>
+
+<div class="trick-box">
+<div class="trick-label">Zone Trick #3 — Capital Front-Loading</div>
+<p>ถ้าราคาอยู่ที่ mean และ upper zone ว่างเปล่า (ไม่มี sell order fill) — ทำไมต้องปล่อยทุนนั้นนอนเฉยๆ?</p>
+<p><strong>Idea:</strong> ยืม capital จาก upper zone (ที่ยังไม่ถูกใช้) มาเปิด grid ในราคาปัจจุบัน — เมื่อ sell order fill ที่ upper zone ทีหลัง → คืนทุนอัตโนมัติ</p>
+</div>
+
+<div class="fm">ตัวอย่าง Capital Front-Loading:
+  Grid zone: $90k ถึง $110k · Step $2k · Q = 0.01 BTC · ราคาปัจจุบัน = $100k
+
+  ปกติ:
+    - BUY orders ที่ $98k, $96k, $94k, $92k, $90k (ด้านล่าง)
+    - SELL orders ที่ $102k, $104k, $106k, $108k, $110k (ด้านบน)
+    - Capital ใน BUY side = $4,700  (ตามที่คำนวณ)
+    - Capital ใน upper zone = 0 (ยังไม่มี inventory)
+
+  Front-Loading:
+    - เปิด BUY orders เพิ่มจาก $100k ลงมา (aggressive, เต็ม zone)
+    - รวม BUY จาก $100k ลงถึง $90k = 5 + 1 orders เพิ่มขึ้น
+    - ใช้ capital จาก "upper zone allocation" มา deploy เพิ่ม
+    - เมื่อ SELL orders fill ที่ upper zone → คืน capital
+
+  ข้อดี: deploy capital productive มากขึ้น | ข้อเสีย: ถ้าราคาลงก่อน = inventory เยอะกว่าปกติ</div>
+
+<div class="bx ba">
+<div class="bt">ความเสี่ยงของ Front-Loading</div>
+<p>ถ้าราคาลงก่อนที่ upper zone จะ fill → front-loaded capital กลายเป็น "ขาดทุน unrealized" มากกว่าปกติ</p>
+<p><strong>วิธีลด risk:</strong> Front-load เฉพาะเมื่อ H &lt; 0.45 (mean-reverting ชัดเจน) และ ATR ต่ำกว่าค่าเฉลี่ย (ตลาดเงียบ)</p>
+</div>
+
+<h2 id="s1a-7">1A.7 Soft Martingale — r-parameter</h2>
+
+<p>Martingale ดั้งเดิม: เพิ่ม size เป็น 2×, 4×, 8× ทุกครั้งที่ราคาลง → capital เพิ่มแบบ exponential จนอาจ bust</p>
+
+<p><strong>Soft Martingale:</strong> ใช้ r ∈ [1.0, 2.0] (ปรับได้) แทน r = 2 ตายตัว</p>
+
+<canvas id="chartMartingale" class="chart" style="height:360px"></canvas>
+<p class="caption">Soft Martingale (r=1.4) เพิ่ม size ช้ากว่า Hard Martingale (r=2) — capital requirement ต่างกันมาก</p>
+<script>
+(function(){
+  MiniChart.bar(document.getElementById('chartMartingale'), {
+    title: 'Order Size per Level: Hard vs Soft vs Equal Martingale',
+    groups: ['Level 1', 'Level 2', 'Level 3', 'Level 4'],
+    datasets: [
+      { label: 'Hard (r=2.0)', color: '#dc2626',
+        data: [1, 2, 4, 8] },
+      { label: 'Soft (r=1.4)', color: '#06b6d4',
+        data: [1, 1.4, 2.0, 2.8] },
+      { label: 'Equal (r=1.0)', color: '#16a34a',
+        data: [1, 1, 1, 1] }
+    ],
+    yLabel: 'Multiplier (×base)',
+    caption: 'Hard: 1×→2×→4×→8× (bust risk สูง) / Soft: 1×→1.4×→2×→2.8× (ควบคุมได้) / Equal: คงที่ 1×'
+  });
+})();
+</script>
+
+<div class="fm">def soft_martingale_sizes(n_levels, base_q, r):
+    """คำนวณขนาด order ในแต่ละ level ด้วย soft martingale"""
+    sizes = [base_q * (r ** i) for i in range(n_levels)]
+    return sizes
+
+# Hard Martingale r=2.0 (n=5 levels):
+# [1×, 2×, 4×, 8×, 16×] × base_q
+# Total capital ∝ 1+2+4+8+16 = 31× base_q (สูงมาก)
+
+# Soft Martingale r=1.4 (n=5 levels):
+# [1×, 1.4×, 2.0×, 2.7×, 3.8×] × base_q
+# Total capital ∝ 1+1.4+2.0+2.7+3.8 = 10.9× base_q (ต่ำกว่ามาก)
+
+# Equal Weight r=1.0 (baseline):
+# [1×, 1×, 1×, 1×, 1×] × base_q
+# Total capital ∝ 5× base_q (ต่ำสุด, safe)
+
+def calculate_capital_requirement(prices, base_q, r):
+    """คำนวณ capital ทั้งหมดสำหรับ soft martingale grid"""
+    total = 0
+    for i, price in enumerate(prices):
+        q_i = base_q * (r ** i)
+        total += q_i * price
+    return total</div>
+
+<table>
+<tr><th>r parameter</th><th>ชื่อ</th><th>Capital ที่ Level 5 (relative)</th><th>เหมาะกับ</th></tr>
+<tr><td>1.0</td><td>Equal Weight</td><td>1×</td><td>Conservative, baseline</td></tr>
+<tr><td>1.2</td><td>Gentle Soft</td><td>2.1×</td><td>มั่นใจ mean-reversion เล็กน้อย</td></tr>
+<tr><td>1.4</td><td>Moderate Soft</td><td>3.8×</td><td>สมดุล (แนะนำ)</td></tr>
+<tr><td>1.6</td><td>Aggressive Soft</td><td>6.6×</td><td>มั่นใจ mean-reversion มาก</td></tr>
+<tr><td>2.0</td><td>Hard Martingale</td><td>16×</td><td>ไม่แนะนำ — bust risk สูง</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Stress Test ก่อนเลือก r — BTC ลง 40% ต้องใช้ทุนเท่าไหร่?</div>
+<p>ตัวอย่าง: Grid 5 levels · Q=0.001 BTC · r=1.4 · Price $100k</p>
+<table>
+<tr><th>Level ที่ Fill</th><th>Q (Soft Martingale r=1.4)</th><th>Capital Deployed</th><th>Cumulative BTC</th></tr>
+<tr><td>1 ($98k)</td><td>0.001</td><td>$98</td><td>0.001</td></tr>
+<tr><td>2 ($96k)</td><td>0.0014</td><td>$134</td><td>0.0024</td></tr>
+<tr><td>3 ($94k)</td><td>0.00196</td><td>$184</td><td>0.00436</td></tr>
+<tr><td>4 ($92k)</td><td>0.00274</td><td>$252</td><td>0.00710</td></tr>
+<tr><td>5 ($90k)</td><td>0.00384</td><td>$346</td><td>0.01094</td></tr>
+<tr><td><strong>รวม</strong></td><td>—</td><td><strong>$1,014</strong></td><td><strong>0.01094 BTC</strong></td></tr>
+</table>
+<p>ถ้า BTC ลงต่อถึง $60k (−40% จาก $100k): Inventory loss = 0.01094 × ($100k − $60k) = <strong>−$437.6</strong></p>
+<p><strong>กฎ:</strong> ก่อนเลือก r ให้ทำ stress test: Close System capital ต้อง ≥ (cumulative Q ทุก level × worst-case price drop)</p>
+<p>r &gt; 1.5 เสี่ยงมากใน bear market — Close System อาจหมดก่อนถึง floor</p>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อจำกัดสำคัญของ Soft Martingale</div>
+<p>Soft Martingale ไม่ได้ลบ risk ออก — มันแค่ <em>ลดความเร็ว</em> ที่ capital เพิ่มขึ้น</p>
+<p>ต้องใช้ร่วมกับ Close System เสมอ: คำนวณ capital requirement ทั้งหมดถึง floor ก่อน แล้วค่อยตัดสินใจว่า r เท่าไหร่ที่ capital พอ</p>
+<p><strong>Rule:</strong> ถ้า capital ที่ต้องการถึง floor &gt; 50% ของ net worth → ลด r ลงหรือลด N</p>
+</div>
+
+<h2 id="s1a-8">1A.8 Step Pyramid — เพิ่ม Step แทน Size ในช่วง Trend</h2>
+
+<div class="trick-box">
+<div class="trick-label">Idea ใหม่ — Step Pyramid (ต่างจาก Size Pyramid)</div>
+<p>ในช่วง uptrend ชั่วคราว (H ขึ้นแต่ยังไม่ถึง 0.6): แทนที่จะเพิ่ม size ของ order (martingale) → <strong>เพิ่ม step size</strong> แทน</p>
+<ul>
+<li><strong>Size Pyramid:</strong> step คงที่, size เพิ่ม → inventory risk เพิ่ม</li>
+<li><strong>Step Pyramid:</strong> size คงที่, step เพิ่ม → inventory risk เท่าเดิม แต่ fill น้อยลง</li>
+</ul>
+<p><strong>ผล:</strong> cashflow คล้ายกัน (step ใหญ่ × fill น้อย ≈ step เล็ก × fill เยอะ) แต่ inventory accumulation ช้าลงในช่วง trend</p>
+</div>
+
+<div class="fm">def step_pyramid(base_step, current_h, h_normal=0.45, h_max=0.60):
+    """
+    ปรับ step size ตาม Hurst Exponent:
+    - H ต่ำ (mean-reverting): step = base_step (หรือเล็กกว่า)
+    - H สูง (trending): step เพิ่มขึ้น เพื่อหยุดการ accumulate inventory เร็วเกินไป
+    """
+    if current_h <= h_normal:
+        return base_step
+    elif current_h >= h_max:
+        return base_step * 2.0  # ช่วง trending — double step (fill น้อยลง 50%)
+    else:
+        # interpolate
+        ratio = (current_h - h_normal) / (h_max - h_normal)
+        return base_step * (1.0 + ratio * 1.0)
+
+# ตัวอย่าง: base_step = $2,000
+# H=0.45 → step = $2,000  (ปกติ)
+# H=0.52 → step = $2,467  (เริ่ม trend)
+# H=0.60 → step = $4,000  (trending ชัด → ไม่ค่อย fill)
+# H>0.60 → พิจารณา pause grid (ดู Part 4)</div>
+
+<h2 id="s1a-9">1A.9 Running Example รวม — Close System + Soft Martingale</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC/USDT Close System สมบูรณ์</div>
+
+<p><strong>Parameters:</strong> Entry = $100k · Floor = $90k · Step = $2k · r = 1.3 · Base Q = 0.01 BTC</p>
+
+<table>
+<tr><th>Level</th><th>ราคา</th><th>Q (BTC)</th><th>Capital ($)</th><th>Cumulative ($)</th><th>กำไรถ้า Sell</th></tr>
+<tr><td>L1</td><td>$98,000</td><td>0.010</td><td>$980</td><td>$980</td><td>+$20</td></tr>
+<tr><td>L2</td><td>$96,000</td><td>0.013</td><td>$1,248</td><td>$2,228</td><td>+$26</td></tr>
+<tr><td>L3</td><td>$94,000</td><td>0.017</td><td>$1,598</td><td>$3,826</td><td>+$34</td></tr>
+<tr><td>L4</td><td>$92,000</td><td>0.022</td><td>$2,024</td><td>$5,850</td><td>+$44</td></tr>
+<tr><td>L5 (floor)</td><td>$90,000</td><td>0.029</td><td>$2,610</td><td><strong>$8,460</strong></td><td>+$58</td></tr>
+</table>
+
+<p><strong>Capital ที่ต้องมี (Close System):</strong> $8,460</p>
+<p><strong>Zone Waterfall:</strong> Active $4,230 (ใช้งาน) · Standby $2,538 (lending ~5% APY → $0.35/วัน) · Floor $1,692 (สำรอง)</p>
+<p><strong>Max Drawdown (worst case):</strong> ถ้า BTC ลงถึง $90k ตรงๆ = unrealized ~$1,500 (เพราะถือ BTC ที่ซื้อมาทั้งหมด)</p>
+<p><strong>Daily cashflow (ประมาณ, 1.5 รอบ/วัน, เฉลี่ย):</strong> ≈ 1.5 × ($30 avg profit) = $45/วัน = 0.53%/วัน บน $8,460</p>
+</div>
+
+<h2 id="s1a-10">1A.10 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 1A</div>
+
+<details>
+<summary>ข้อ 1: Close System BTC entry $100k, floor $85k, step $2k, Q = 0.01 BTC — ต้องการ capital เท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ที่ step $2k จาก entry $100k ถึง floor $85k: $98k, $96k, $94k, $92k, $90k, $88k, $86k → 7 levels</p>
+<p>C = 0.01 × ($98k + $96k + $94k + $92k + $90k + $88k + $86k)</p>
+<p>= 0.01 × $644k = <strong>$6,440</strong></p>
+<p>(ถ้า floor = $84k เพิ่ม level $86k: C = 0.01 × ($98k+...+$84k) = 0.01 × $742k = $7,420)</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม Buy-Only zone ถึงแนะนำ −2σ ถึง +1σ แทน −2σ ถึง +2σ?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>สำหรับ Buy-Only grid: เราซื้อทุกครั้งที่ราคาลง แล้วขาย (TP) เมื่อราคาขึ้นผ่าน 1 step</p>
+<p>ปัญหาของโซน +2σ: ราคาอยู่เหนือ +1σ เพียง ~16% ของเวลา → ถ้าเราวาง BUY ที่ +1.5σ หรือ +2σ หมายถึงซื้อที่ "ดอย" — โอกาสที่ราคาจะขึ้นต่อแล้วไม่กลับมาสูง</p>
+<p>วาง −2σ ถึง +1σ แทน: ประหยัด capital ~25% ในโซนบน + หลีกเลี่ยงการ "ดอย" ที่ +1σ ถึง +2σ</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Soft Martingale r=1.4, base_q=0.01 BTC, 5 levels — capital รวมมากกว่า Equal Weight กี่%?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Sizes: [0.010, 0.014, 0.020, 0.027, 0.038] BTC (r=1.4^i)</p>
+<p>สมมติ prices ≈ $98k (เพื่อง่าย): capital ∝ sum of sizes = 0.010+0.014+0.020+0.027+0.038 = <strong>0.109</strong></p>
+<p>Equal Weight: 5 × 0.010 = 0.050</p>
+<p>Soft Martingale capital = 0.109/0.050 = <strong>2.18× มากกว่า Equal Weight</strong> (118% สูงกว่า)</p>
+<p>ข้อสรุป: Soft Martingale r=1.4 ต้องการ capital เพิ่มขึ้นกว่า 2× — ต้องแน่ใจว่ามี capital พอ</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: ทำไม Step Pyramid ดีกว่า Size Pyramid ในช่วง uptrend?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>Size Pyramid:</strong> เพิ่ม Q ในระดับที่ลึกกว่า → ถ้าราคาดิ่งลงในช่วง uptrend (pull-back) inventory สะสมเร็วมาก เพราะซื้อขนาดใหญ่</p>
+<p><strong>Step Pyramid:</strong> เพิ่ม step แทน → ซื้อช้าลง (fill น้อยกว่า) ในช่วงที่ราคา trend — inventory สะสมช้ากว่า</p>
+<p>กำไรสุทธิ: ในช่วง uptrend ที่ mean-reverting อ่อนๆ → Step Pyramid ได้ประมาณเท่ากันหรือน้อยกว่าเล็กน้อย แต่ inventory risk (holding paper loss) ต่ำกว่ามาก</p>
+<p>สรุป: Step Pyramid trade-off = กำไรใกล้เคียง + ความเครียดน้อยกว่า</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 5 (Challenge): ออกแบบ Close System + Soft Martingale สำหรับ $20,000 capital — BTC $100k, floor $80k, step $2k</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Floor range: $98k → $80k ที่ step $2k = <strong>10 levels</strong> ($98k, $96k, ..., $82k, $80k)</p>
+<p>ทดลอง r=1.2, base_q=0.005 BTC:</p>
+<p>sizes: 0.005 × [1, 1.2, 1.44, 1.73, 2.07, 2.49, 2.99, 3.58, 4.30, 5.16] = [0.005, 0.006, 0.007, 0.009, 0.010, 0.012, 0.015, 0.018, 0.022, 0.026]</p>
+<p>prices: [$98k, $96k, $94k, $92k, $90k, $88k, $86k, $84k, $82k, $80k]</p>
+<p>ทดสอบ capital: 0.005×$98k + 0.006×$96k + 0.007×$94k + 0.009×$92k + 0.010×$90k + 0.012×$88k + 0.015×$86k + 0.018×$84k + 0.022×$82k + 0.026×$80k</p>
+<p>= $490 + $576 + $658 + $828 + $900 + $1,056 + $1,290 + $1,512 + $1,804 + $2,080 = รวม ~$11,194</p>
+<p>Zone Waterfall: Active $5,597 · Standby $3,358 · Floor $2,239 — รวม $11,194 (เหลือ capital $8,806 สำรอง)</p>
+<p><strong>แนะนำ:</strong> $20k เพียงพอสำหรับ setup นี้ — ยังเหลือ buffer ดี (~44%)</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part0.html" style="color:#64748b">Part 0</a></span><a href="grid-part1b.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 1B: Buy-and-Sell Grid →</a></nav>
+</body>
+</html>

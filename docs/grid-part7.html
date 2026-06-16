@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 7 — Advanced Integrations: IV, Funding, Options</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 7</div>
+<h1>Advanced Integrations — IV, Funding Rate &amp; Options</h1>
+<div class="sub">IV-Adaptive Grid · Funding Rate Grid · Options + Grid Combination<br>
+CSP ป้องกัน Inventory · Grid + Short Strangle<br>
+อ้างอิง: <a href="vol-part2.html" style="color:#0e7490">Vol Series</a> (IV Rank, GARCH), <a href="arb-part1.html" style="color:#0e7490">Arb Series</a> (Funding Rate), <a href="pm-part1.html" style="color:#0e7490">PM Series</a> (CSP, Strangle)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Advanced Grid รวม 3 โลก: Grid mechanics (Part 1–6) + Volatility intelligence (Vol Series) + Derivatives income (Arb/PM Series) — เมื่อทำงานร่วมกัน ทำให้ capital efficiency สูงขึ้นโดยไม่เพิ่ม risk มากนัก</div>
+<div class="ki-eq">IV-Adaptive Step: Step = 0.5 × σ_implied × P · Funding Grid: income = short_notional × rate × 3/day</div>
+</div>
+
+<h2 id="s7-1">7.1 IV-Adaptive Grid — ปรับ Step ตาม Implied Volatility</h2>
+
+<p>แทนที่จะใช้ ATR (backward-looking) — ใช้ Implied Volatility จาก Options market ซึ่งเป็น forward-looking:</p>
+
+$$\text{Step}_\text{IV} = 0.5 \times \frac{\text{IV}_\text{annual}}{\sqrt{365}} \times P \qquad \text{(1-day vol × price)}$$
+
+<div class="fm">IV-Adaptive Step Implementation:
+
+def iv_adaptive_step(iv_annual_pct, current_price, fee_rate=0.001,
+                      step_factor=0.5):
+    """
+    iv_annual_pct: Implied Volatility ต่อปี (เช่น 0.65 = 65%)
+    """
+    # Convert annual IV to daily IV
+    iv_daily = iv_annual_pct / (365 ** 0.5)
+
+    # 1-day expected move (1σ)
+    expected_daily_move = iv_daily * current_price
+
+    # Step = fraction of expected daily move
+    step = step_factor * expected_daily_move
+
+    # Ensure profitability (≥ 3× fee)
+    min_step = 3 * current_price * fee_rate * 2
+    step = max(step, min_step)
+
+    return round(step / 100) * 100  # round to $100
+
+# ตัวอย่าง:
+# BTC IV (7d ATM) = 65% annualized, P = $100,000
+# iv_daily = 65% / sqrt(365) = 3.40%/day
+# expected_move = 3.40% × $100,000 = $3,400
+# step = 0.5 × $3,400 = $1,700 → round → $1,700
+
+# เทียบ ATR-based (ATR=2,500):
+# step_atr = 0.5 × $2,500 = $1,250
+# → IV-based step ใหญ่กว่า เพราะ market expect volatility สูง</div>
+
+<div class="bx bc">
+<div class="bt">IV Rank — เลือก Zone Width ตาม IV Percentile</div>
+<p>IV Rank = (IV_current − IV_min_52w) / (IV_max_52w − IV_min_52w) × 100</p>
+<ul>
+<li>IV Rank &lt; 20 (low IV): zone แคบ, step เล็ก → grid fill บ่อย (mean-reverting regime)</li>
+<li>IV Rank 20–60 (normal): zone ปกติ, step ≈ 0.5 × IV_daily × P</li>
+<li>IV Rank 60–80 (elevated): zone กว้างขึ้น, step เพิ่ม 20–40% → ระวัง breakout</li>
+<li>IV Rank &gt; 80 (high IV): zone กว้าง, step ใหญ่ → ป้องกัน excess fill ใน high vol</li>
+</ul>
+<p>อ้างอิง: <a href="vol-part2.html">Vol Series Part 2</a> สำหรับ IV Rank calculation</p>
+</div>
+
+<canvas id="chartIVRegime" class="chart" style="height:360px"></canvas>
+<p class="caption">IV Rank กำหนด Step และ Zone Width — IV ต่ำ: grid แน่น / IV สูง: grid กว้าง ป้องกัน over-fill</p>
+<script>
+(function(){
+  MiniChart.bar(document.getElementById('chartIVRegime'), {
+    title: 'IV Rank Regime → Grid Parameters (BTC/USDT สมมติ Price=$100k)',
+    groups: ['Low IV\n(Rank < 20)', 'Normal IV\n(Rank 20–60)', 'High IV\n(Rank > 80)'],
+    datasets: [
+      { label: 'Step Size (% of price)', color: '#06b6d4',
+        data: [1.5, 2.5, 4.5] },
+      { label: 'Zone Width (% of price)', color: '#7c3aed',
+        data: [6, 10, 18] },
+      { label: 'Expected Fill/day (ครั้ง)', color: '#16a34a',
+        data: [8, 5, 2] }
+    ],
+    yLabel: '% หรือ จำนวนครั้ง',
+    caption: 'Low IV: Step เล็ก-Fill บ่อย-Zone แคบ / Normal: ปกติ / High IV: Step ใหญ่-Fill น้อย-Zone กว้าง (ป้องกัน excess inventory)'
+  });
+})();
+</script>
+<h2 id="s7-2">7.2 Funding Rate Adaptive Grid</h2>
+
+<p>Funding Rate ของ BTC Perpetual เปลี่ยนตาม market sentiment — grid สามารถ adapt ตาม Funding Rate ได้:</p>
+
+<div class="fm">Funding Rate Grid Rules:
+
+Funding Rate > 0 (Long จ่าย Short รับ):
+  → Short Layer (Part 1B) ได้ income เพิ่ม
+  → เพิ่ม Q ของ short layer
+  → เปิด Grid Hedge (Part 1C) ได้ดี
+
+Funding Rate < 0 (Short จ่าย Long รับ):
+  → Short layer เสียต้นทุนเพิ่ม
+  → ลด Q short layer หรือปิด short ชั่วคราว
+  → ถ้า negative มาก → หยุด hedge
+
+def funding_adaptive_short_size(funding_rate_8h, base_q_short, threshold_high=0.001,
+                                  threshold_low=-0.0005):
+    """
+    funding_rate_8h: funding rate ต่อ 8 ชั่วโมง (เช่น 0.001 = 0.1%)
+    """
+    if funding_rate_8h > threshold_high:
+        # High positive funding → เพิ่ม short (เก็บ funding มากขึ้น)
+        multiplier = min(2.0, 1 + (funding_rate_8h - threshold_high) / 0.001)
+    elif funding_rate_8h < threshold_low:
+        # Negative funding → ลด short (ลด cost)
+        multiplier = max(0.0, 1 + (funding_rate_8h - threshold_low) / 0.001)
+    else:
+        # Normal range → ไม่เปลี่ยน
+        multiplier = 1.0
+
+    return base_q_short * multiplier
+
+Funding Income Calculation (สำหรับ Hedge Grid):
+  short_notional = inventory_btc × current_price
+  daily_funding  = short_notional × funding_rate_8h × 3  # 3 periods/วัน
+  monthly_funding = daily_funding × 30
+
+ตัวอย่าง:
+  Inventory = 0.05 BTC, Price = $100k, Rate = 0.05%/8h
+  Daily funding = (0.05 × $100k) × 0.05% × 3 = $5,000 × 0.15% = $7.50/วัน
+  Monthly = $7.50 × 30 = $225/เดือน (ได้เพิ่มจาก hedge)</div>
+
+<h2 id="s7-3">7.3 Cash-Secured Put (CSP) + Grid — Inventory Entry</h2>
+
+<p>แทนที่จะซื้อ BTC ตรงๆ ผ่าน BUY limit order — ใช้ CSP (Cash-Secured Put) เพื่อซื้อ BTC ในราคาที่ต้องการ พร้อมรับ premium:</p>
+
+<div class="fm">CSP + Grid Concept:
+
+ปัญหาของ BUY limit order:
+  วาง BUY $90,000 รอ → อาจรอนาน หรือไม่ fill เลย → capital idle
+
+CSP Solution:
+  SELL PUT $90,000 expiry 2 สัปดาห์
+  → รับ premium $500 ทันที
+  → ถ้า BTC &lt; $90,000 → ถูก assign = ซื้อ BTC ที่ $90,000 (ตามแผน)
+  → ถ้า BTC &gt; $90,000 → PUT หมดอายุ = เก็บ premium $500 โดยไม่ต้องซื้อ
+
+Net effect:
+  ซื้อ BTC ที่ effective price = $90,000 − $500 = $89,500 (ถูกกว่า limit order)
+  หรือเก็บ premium $500 ถ้าไม่ถูก assign
+
+def csp_vs_limit_order(target_price, option_premium, expiry_price):
+    """
+    เปรียบ CSP กับ limit order (expiry_price = ราคา ณ วันหมดอายุ ไม่ใช่ปัจจุบัน)
+    """
+    # Limit Order: รอ fill ที่ target_price
+    limit_effective_cost = target_price
+
+    # CSP: ได้ premium แน่ๆ
+    if expiry_price < target_price:  # ถูก assign (ราคา ณ expiry < strike)
+        csp_effective_cost = target_price - option_premium
+    else:  # ไม่ถูก assign (ราคา ณ expiry >= strike)
+        csp_income = option_premium  # รับฟรี
+
+    return {
+        "limit_cost": limit_effective_cost,
+        "csp_cost_if_assigned": target_price - option_premium,
+        "csp_income_if_not_assigned": option_premium
+    }
+
+สำหรับ Grid: แทน BUY order แต่ละ level ด้วย CSP
+  Level $90k → SELL PUT $90k strike
+  Level $92k → SELL PUT $92k strike
+  Level $94k → SELL PUT $94k strike
+  (ขาย multiple CSP แทน multiple limit orders)</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ CSP + Grid</div>
+<ul>
+<li>ต้องการ capital เต็มสำหรับ assignment (เช่น SELL PUT $90k ต้องมี $90,000 พร้อม)</li>
+<li>BTC Options บน Deribit/Bybit — liquidity ต่ำกว่า spot หรือ perp</li>
+<li>Expiry ต้องตรงกับ grid horizon (ไม่ควร expiry นานเกินกว่า 2× grid rebalance cycle)</li>
+<li>ใน downtrend แรง: PUT ถูก assign ทุก level → ซื้อ BTC ที่ราคาลงต่อ (เหมือน Close System)</li>
+</ul>
+</div>
+
+<h2 id="s7-4">7.4 Short Strangle + Grid — Income Enhancement</h2>
+
+<p>เมื่อ grid อยู่ในโซน sideway + IV สูง: SELL CALL ที่ zone_high และ SELL PUT ที่ zone_low → เก็บ premium จาก "range-bound expectation":</p>
+
+<div class="fm">Short Strangle + Grid:
+
+Grid Zone: BTC $90k–$110k
+Short Strangle:
+  SELL PUT  $90,000 (strike = zone_low)
+  SELL CALL $110,000 (strike = zone_high)
+  Premium received: PUT $800 + CALL $600 = $1,400 total
+
+Scenarios:
+  1. BTC อยู่ $90k–$110k → Strangle ไม่ถูก assign → เก็บ $1,400
+     Grid cashflow ยังทำงาน → Double income
+
+  2. BTC &lt; $90k → PUT assign → ซื้อ BTC $90k (= zone_low grid ทำงาน)
+     Grid ก็ BUY ที่ $90k อยู่แล้ว → Strangle ช่วยลด cost
+
+  3. BTC &gt; $110k → CALL assign → ขาย BTC $110k (= zone_high grid ก็ขาย)
+     Grid SELL ที่ $110k อยู่แล้ว → Strangle ช่วยเพิ่ม income
+
+ข้อดี: ทั้ง 3 scenarios เป็นผลดี — strangle "align" กับ grid zone
+ข้อระวัง: ถ้า BTC พุ่งเกิน $110k ไกลมาก → CALL loss สูง (unlimited loss) → ต้อง hedge CALL
+           → ซื้อ OTM CALL เป็น hedge → เปลี่ยนเป็น Iron Condor (max loss ถูก cap)
+
+Iron Condor ตัวอย่าง (Grid zone $90k–$110k):
+  Short Strangle เดิม: SELL PUT $90k + SELL CALL $110k → premium $1,400 (unlimited risk)
+
+  Iron Condor (เพิ่ม long wings):
+    SELL PUT $88k  + BUY PUT  $82k  → net premium: +$800 − $150 = +$650
+    SELL CALL $113k + BUY CALL $120k → net premium: +$600 − $200 = +$400
+    Total net premium = +$1,050 (ลดลงจาก $1,400 แต่ risk ถูก cap)
+
+    Max loss (PUT spread):  ($88k − $82k) − $650 = $5,350 per lot
+    Max loss (CALL spread): ($120k − $113k) − $400 = $6,600 per lot
+
+  เปรียบเทียบ:
+    Short Strangle: premium $1,400 · CALL loss ไม่จำกัด
+    Iron Condor:    premium $1,050 · max loss ~$6,600 (defined risk)
+
+def grid_strangle_income(zone_low, zone_high, put_premium, call_premium,
+                          grid_daily_cashflow, days_to_expiry):
+    """
+    ประมาณ total income ต่อ expiry cycle
+    """
+    option_income = put_premium + call_premium
+    grid_income = grid_daily_cashflow * days_to_expiry
+    total = option_income + grid_income
+    return {
+        "option_premium": option_income,
+        "grid_cashflow": grid_income,
+        "total": total,
+        "daily_equivalent": total / days_to_expiry
+    }</div>
+
+<h2 id="s7-5">7.5 GARCH-Based Volatility Forecasting สำหรับ Step</h2>
+
+<p>GARCH (Generalized Autoregressive Conditional Heteroskedasticity) คือโมเดลทำนาย volatility ที่คำนึงถึง volatility clustering — ช่วง vol สูงมักตามด้วย vol สูงต่อเนื่อง (อ้างอิงเต็มใน <a href="vol-part2.html">Vol Series Part 2</a>) GARCH(1,1) ให้ vol forecast ที่ดีกว่า ATR ธรรมดา ในช่วง volatility cluster:</p>
+
+<div class="fm">GARCH Grid Integration:
+
+from vol_series_tools import fit_garch, forecast_vol
+
+# Fit GARCH(1,1) บน 90 วันย้อนหลัง
+garch_params = fit_garch(daily_returns[-90:])
+
+# Forecast vol สำหรับ 7 วันข้างหน้า
+vol_forecast_7d = forecast_vol(garch_params, horizon=7)
+
+# ใช้ 1-day vol forecast เป็น ATR
+sigma_1d = vol_forecast_7d[0]  # day 1 forecast
+atr_garch = sigma_1d * current_price
+
+# Step based on GARCH
+step_garch = 0.5 * atr_garch
+
+# เปรียบ ATR vs GARCH:
+# ATR(14) = เฉลี่ย 14 วันที่แล้ว → lag
+# GARCH   = มองไปข้างหน้า + ตอบสนองต่อ vol cluster ปัจจุบัน
+
+GARCH เปลี่ยน Step อย่างไร:
+  วันปกติ (σ=2.5%): step_garch = 0.5 × 2.5% × $100k = $1,250
+  หลัง flash crash (σ=6%): step_garch = 0.5 × 6% × $100k = $3,000
+  สัปดาห์ต่อมา (σ ลดเหลือ 3.5%): step_garch = $1,750
+  → GARCH ปรับ step เร็วกว่า ATR(14) ที่ยังติด MA ของ 14 วันก่อน</div>
+
+<h2 id="s7-6">7.6 Running Example — IV + Funding + Grid</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Advanced Grid ที่ใช้ IV + Funding Rate</div>
+<p><strong>Setup:</strong> BTC=$100k · IV(7d)=70% · Funding rate=0.08%/8h · Grid capital=$20,000</p>
+
+<div class="fm">Step 1: IV-Adaptive Step
+  iv_daily = 70% / sqrt(365) = 3.66%/day
+  step = 0.5 × 3.66% × $100k = $1,830 → $1,800 (round)
+  ✓ ใหญ่กว่า ATR-based ($1,250) เพราะ market expect vol สูง
+
+Step 2: Funding Rate Assessment
+  Rate = 0.08%/8h = 0.24%/วัน
+  threshold_high = 0.1%  → Rate (0.08%) < threshold → multiplier = 1.0 (ไม่ปรับ Q)
+  แต่ positive funding → เปิด hedge short เพื่อเก็บ funding income (ดู Part 1C)
+
+Step 3: Grid Hedge (Part 1C)
+  Inventory BTC (5 levels): 0.05 BTC worst case
+  Perp short: 0.05 BTC × $100k = $5,000 notional (10× → $500 margin)
+  Daily funding: $5,000 × 0.08% × 3 = $12/วัน
+
+Step 4: Short Strangle
+  SELL PUT $88,000 (zone_low − 2σ buffer) → premium $400
+  SELL CALL $113,000 (zone_high + 1σ buffer) → premium $350
+  Total premium = $750 / 14 วัน = $53.6/วัน
+
+Step 5: Total Daily Income
+  Grid cashflow: $54/วัน
+  Funding income: $12/วัน
+  Strangle income: $53.6/วัน
+  Total: $119.6/วัน = 0.60%/วัน บน $20,000
+
+  ✓ เทียบ grid alone: $54/วัน = 0.27%/วัน (+121% จาก integration)</div>
+</div>
+
+<h2 id="s7-7">7.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 7</div>
+
+<details>
+<summary>ข้อ 1: BTC IV(7d)=80%, P=$95,000 — IV-adaptive Step คือเท่าไหร่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>iv_daily = 80% / √365 = 80% / 19.1 = 4.19%/day</p>
+<p>expected_move = 4.19% × $95,000 = $3,980</p>
+<p>step = 0.5 × $3,980 = $1,990 → round → <strong>$2,000</strong></p>
+<p>min_step = 3 × $95k × 0.1% × 2 = $570 → ผ่าน (2,000 > 570) ✓</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: Funding rate = −0.03%/8h · Short notional $8,000 · Grid cashflow $40/วัน — Net P&L/วัน?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Funding cost (short จ่ายเพราะ rate ลบ) = $8,000 × 0.03% × 3 = $7.2/วัน</p>
+<p>Grid cashflow = $40/วัน</p>
+<p>Net P&L = $40 − $7.2 = <strong>$32.8/วัน</strong></p>
+<p>ยังกำไรอยู่ แต่ถ้า rate ลบเพิ่มเป็น −0.15%/8h → cost = $36/วัน → net = $4/วัน → ควรลด short size</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Short Strangle: SELL PUT $88k + SELL CALL $115k · Premium $1,200 · Grid คาดว่า BTC อยู่ $90k–$112k · Expiry 2 สัปดาห์ — ความเสี่ยงหลักคืออะไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>ความเสี่ยงหลัก: Tail events</strong></p>
+<p>CALL risk: BTC พุ่งเกิน $115k → CALL assign → ต้องขาย BTC ที่ $115k แม้ราคาตลาดสูงกว่า → เสียโอกาสกำไร (หรือขาดทุนถ้าไม่มี BTC)</p>
+<p>PUT risk: BTC ดิ่งต่ำกว่า $88k → PUT assign → ซื้อ BTC $88k แม้ราคาต่ำกว่า → Inventory เพิ่มเยอะ</p>
+<p><strong>ป้องกัน:</strong> ซื้อ Iron Condor แทน (SELL PUT $88k + BUY PUT $82k + SELL CALL $115k + BUY CALL $121k) → จำกัด max loss แต่เสียบาง premium</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: เมื่อไหร่ควรใช้ CSP แทน BUY limit order ใน grid?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ใช้ CSP แทน BUY limit order เมื่อ:</p>
+<ul>
+<li><strong>IV สูง</strong> (IV Rank &gt; 50) → premium สูงคุ้มกว่า rounding ของ limit order</li>
+<li><strong>Sideways market ชัดเจน</strong> → PUT likely expire worthless → เก็บ premium โดยไม่ต้องซื้อ BTC</li>
+<li><strong>มี Options liquidity</strong> บน Exchange นั้น (Deribit, OKX)</li>
+<li><strong>Horizon ตรงกัน</strong>: ถ้า grid rebalance ทุก 2 สัปดาห์ → expiry 2 สัปดาห์</li>
+</ul>
+<p>ไม่ใช้ CSP เมื่อ: IV ต่ำมาก (premium น้อยเกิน), Options spread กว้าง (bid-ask cost เยอะ), ราคาใกล้ zone_low มาก (PUT likely assign ทันที)</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part6b.html" style="color:#64748b">Part 6B</a></span><a href="grid-part7b.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 7B: Framework →</a></nav>
+</body>
+</html>

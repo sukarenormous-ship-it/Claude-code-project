@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>View → Payoff — Part VII: Trade Management</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Sarabun,sans-serif;font-size:15px;line-height:1.7;color:#1e293b;background:#f8fafc;padding:24px}
+h1{font-size:2em;font-weight:700;color:#0f172a;margin:20px 0 6px}
+h2{font-size:1.3em;font-weight:700;color:#1e3a5f;margin:28px 0 10px;border-left:4px solid #2563eb;padding-left:10px}
+h3{font-size:1.1em;font-weight:600;color:#1e3a5f;margin:18px 0 6px}
+p{margin:8px 0}
+ol,ul{margin:8px 0 8px 22px}
+li{margin:4px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:0.9em}
+th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+tr:nth-child(even) td{background:#f1f5f9}
+.bx{border-radius:8px;padding:14px 16px;margin:14px 0}
+.bg{background:#f0fdf4;border-left:4px solid #16a34a}
+.bb{background:#eff6ff;border-left:4px solid #2563eb}
+.ba{background:#fff7ed;border-left:4px solid #d97706}
+.bp{background:#faf5ff;border-left:4px solid #7c3aed}
+.br{background:#fff1f2;border-left:4px solid #dc2626}
+.bt{font-weight:700;margin-bottom:4px}
+.fm{font-family:monospace;background:#1e293b;color:#e2e8f0;padding:12px 16px;border-radius:6px;margin:12px 0;white-space:pre-wrap;font-size:0.88em;line-height:1.6}
+.eq{font-family:monospace;background:#f1f5f9;color:#1e293b;padding:10px 14px;border-radius:6px;margin:10px 0;border:1px solid #cbd5e1;font-size:0.95em}
+.cover{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#d97706 100%);color:#fff;border-radius:12px;padding:40px 32px;margin-bottom:32px;text-align:center}
+.cover h1{color:#fff;font-size:2.2em}
+.cover .sub{color:#fde68a;font-size:1.1em;margin-top:8px}
+.cover .series{color:#94a3b8;font-size:0.9em;margin-top:16px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<div class="series">VIEW → PAYOFF MASTERY — PART VII</div>
+<h1>Trade Management</h1>
+<div class="sub">เข้า trade ไม่ใช่จุดสิ้นสุด — Greeks วิ่งทุกวัน, belief อาจเปลี่ยน, ตลาดไม่หยุดรอ</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li><strong>Greeks Evolution</strong> — Theta, Gamma, Vega เปลี่ยนอย่างไรระหว่างถือ position</li>
+<li><strong>Trigger → Action Table</strong> — 5 สัญญาณที่ต้องตัดสินใจ</li>
+<li><strong>3 Adjustment Techniques</strong> — Roll, Hedge, Close Early</li>
+<li><strong>Position Sizing + Margin</strong> — ขนาด position ที่เหมาะสมต่อ account</li>
+<li><strong>Daily Monitoring Checklist</strong> — สิ่งที่ต้องตรวจทุกวัน</li>
+</ul>
+</div>
+
+<h2>บทที่ 40: ทำไม Trade Management จึงสำคัญ</h2>
+
+<div class="bx br">
+<div class="bt">ข้อผิดพลาดที่พบบ่อยที่สุด</div>
+<p>"เข้า Iron Condor ที่ net credit $1,200 แล้วปล่อยทิ้งถึง expiry"</p>
+<p>→ BTC วิ่งเข้า short strike ใน week 3 → Gamma พุ่ง → ขาดทุน $3,800 ทั้งที่มีโอกาส close ที่ +$600 ใน week 2</p>
+</div>
+
+<p>การ manage trade มีเป้าหมายหลัก 3 ข้อ:</p>
+
+<table>
+<tr><th>สถานการณ์</th><th>สัญญาณ</th><th>การกระทำ</th></tr>
+<tr><td><strong>Hold</strong></td><td>ราคาอยู่ใน profit zone, Greeks ปกติ, belief ยังเดิม</td><td>ถือต่อ — ปล่อย theta ทำงาน</td></tr>
+<tr><td><strong>Adjust</strong></td><td>ราคาเข้าใกล้ short strike หรือ IV เปลี่ยนแรง</td><td>Roll strikes / เพิ่ม hedge</td></tr>
+<tr><td><strong>Close</strong></td><td>ได้กำไร 50%+ หรือ belief เปลี่ยน หรือ DTE &lt; 21</td><td>ปิด position ทันที</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">กฎพื้นฐาน</div>
+<p><strong>Belief เปลี่ยน → Position ต้องเปลี่ยนทันที</strong> — อย่า "hope" ว่าตลาดจะกลับมา thesis เดิม</p>
+</div>
+
+<h2>บทที่ 41: Greeks ที่เปลี่ยนไประหว่างถือ Position</h2>
+
+<h3>Theta — เวลาเป็นมิตรหรือศัตรู?</h3>
+
+<p>Theta decay ไม่ใช่เส้นตรง — เร่งขึ้นอย่างชัดเจนใน 30% สุดท้ายของอายุ option:</p>
+
+<!-- Theta decay SVG -->
+<svg viewBox="0 0 440 155" style="display:block;max-width:100%;margin:14px auto;font-family:Sarabun,sans-serif">
+  <!-- Accelerated zone shading (last ~10 DTE) -->
+  <rect x="287" y="12" width="133" height="118" fill="#fef3c7" opacity="0.7" rx="3"/>
+  <!-- Axes -->
+  <line x1="20" y1="130" x2="425" y2="130" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="20" y1="10" x2="20" y2="130" stroke="#94a3b8" stroke-width="1.5"/>
+  <!-- 50% DTE dashed line at 15 DTE (x=220) -->
+  <line x1="220" y1="12" x2="220" y2="130" stroke="#2563eb" stroke-width="1" stroke-dasharray="4,3"/>
+  <!-- Theta curve (sqrt decay approximation) -->
+  <polyline points="20,20 87,30 153,40 220,52 287,67 327,77 353,85 380,95 407,110 420,128"
+    fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Kink dots -->
+  <circle cx="220" cy="52" r="4" fill="#d97706"/>
+  <circle cx="287" cy="67" r="4" fill="#dc2626"/>
+  <!-- Labels -->
+  <text x="20" y="148" text-anchor="middle" font-size="9" fill="#64748b">30 DTE</text>
+  <text x="220" y="148" text-anchor="middle" font-size="9" fill="#2563eb">15 DTE</text>
+  <text x="287" y="148" text-anchor="middle" font-size="9" fill="#dc2626">10 DTE</text>
+  <text x="420" y="148" text-anchor="middle" font-size="9" fill="#64748b">0</text>
+  <text x="24" y="22" font-size="9" fill="#1e3a5f" font-weight="700">Premium</text>
+  <text x="295" y="24" font-size="8.5" fill="#b45309" font-weight="700">⚠ Gamma zone</text>
+  <text x="225" y="47" font-size="8" fill="#2563eb">50% elapsed</text>
+  <text x="430" y="132" font-size="9" fill="#64748b">DTE →</text>
+</svg>
+
+<table>
+<tr><th>Strategy</th><th>Theta Direction</th><th>ผลต่อ P&L ทุกวัน</th></tr>
+<tr><td>Iron Condor, Butterfly, Covered Call, Short Straddle</td><td>Short Theta (เก็บ theta)</td><td>+$$/วัน — เวลาเป็นมิตร</td></tr>
+<tr><td>Long Straddle, Long Strangle, Long Call, Long Put</td><td>Long Theta (จ่าย theta)</td><td>−$$/วัน — เวลาเป็นศัตรู</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">กฎการ exit สำหรับ Short Premium</div>
+<p>ปิด position เมื่อถึงเกณฑ์ใดก่อน:</p>
+<ol>
+<li><strong>ได้กำไร 50% ของ max credit</strong> — เช่น IC credit $1,200 → close เมื่อ mark-to-market ≥ $600</li>
+<li><strong>DTE เหลือ 21 วัน</strong> — ใกล้ expiry Gamma พุ่ง risk เพิ่มเร็วกว่า theta income</li>
+</ol>
+</div>
+
+<h3>Gamma — ความเสี่ยงที่พุ่งขึ้นเมื่อใกล้ Expiry</h3>
+
+<p>Gamma คือความเร็วที่ Delta เปลี่ยนเมื่อราคาขยับ — สูงที่สุดสำหรับ ATM options ใกล้ expiry</p>
+
+<div class="bx br">
+<div class="bt">Short Gamma = Iron Condor, Butterfly, Short Straddle</div>
+<p>เมื่อราคาวิ่งเข้าหา short strike <strong>ใน 7 วันสุดท้าย</strong>: delta ของ short leg เปลี่ยนเร็วมาก position ที่เพิ่งเป็น +$400 อาจกลายเป็น −$1,500 ภายใน 1–2 วัน</p>
+<p><strong>กฎ:</strong> ถ้าราคาใกล้ short strike ภายใน 7 DTE → ปิด position ทันที ไม่ว่า P&L จะเป็นเท่าไร</p>
+</div>
+
+<h3>Vega — IV เปลี่ยน Position Value</h3>
+
+<p>Vega คือมูลค่าที่ position เปลี่ยนเมื่อ IV เพิ่มขึ้น 1% — สูงที่สุดสำหรับ ATM options ที่มี DTE มาก</p>
+
+<table>
+<tr><th>IV เปลี่ยน</th><th>Short Vega Strategies (IC, Butterfly, Short Straddle)</th><th>Long Vega Strategies (Long Straddle, Long Call)</th></tr>
+<tr><td>IV +10% (spike)</td><td>ขาดทุน — short leg มีราคาสูงขึ้น</td><td>กำไร — long leg มีราคาสูงขึ้น</td></tr>
+<tr><td>IV −10% (crush)</td><td>กำไร — short leg มีราคาลดลง</td><td>ขาดทุน — long leg มีราคาลดลง</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">IV Spike + Short Premium = สองอันตรายพร้อมกัน</div>
+<p>เมื่อ IV พุ่งขึ้น position ขาดทุนจาก Vega <em>และ</em> ราคามักวิ่งแรง (short Gamma เจ็บเพิ่ม) — ทั้งสองเกิดพร้อมกันเสมอในช่วง market stress</p>
+</div>
+
+<h2>บทที่ 42: สัญญาณ Trigger → Action</h2>
+
+<table>
+<tr><th>สัญญาณ</th><th>ความหมาย</th><th>Action</th></tr>
+<tr>
+  <td>ราคาแตะหรือเกิน short strike</td>
+  <td>Gamma risk สูง — max loss ใกล้</td>
+  <td>Close ทันที หรือ Roll strike ออกไป 1–2 strike</td>
+</tr>
+<tr>
+  <td>IV spike ≥ 20% จาก entry IV</td>
+  <td>Short Vega position ขาดทุนเพิ่มอย่างรวดเร็ว</td>
+  <td>ประเมินว่าจะ close หรือ hedge Vega ด้วย long wing เพิ่ม</td>
+</tr>
+<tr>
+  <td>ได้กำไร ≥ 50% ของ max credit</td>
+  <td>เก็บ theta ส่วนใหญ่แล้ว risk/reward เปลี่ยน</td>
+  <td>Close early — lock profit, free margin ไปทำ trade ใหม่</td>
+</tr>
+<tr>
+  <td>DTE เหลือ &lt; 21 วัน</td>
+  <td>เข้าสู่ Gamma zone — risk เพิ่มเร็วกว่า theta income</td>
+  <td>Close หรือ Roll ไป expiry ถัดไป</td>
+</tr>
+<tr>
+  <td>Belief หลักเปลี่ยน (catalyst ใหม่)</td>
+  <td>Original thesis ไม่ valid แล้ว</td>
+  <td>Close ทันที — ไม่ต้อง "hope" ว่าตลาดจะกลับ</td>
+</tr>
+</table>
+
+<h2>บทที่ 43: 3 เทคนิค Adjust Position</h2>
+
+<h3>1. Rolling — เลื่อน Strike หรือ Expiry</h3>
+
+<p>ใช้เมื่อ: ราคาเข้าใกล้ short strike แต่ยังเชื่อ thesis ว่าตลาดจะกลับมา range</p>
+
+<div class="fm">Roll Iron Condor Call Side (BTC ราคาขึ้นใกล้ short call $80K):
+
+Close:  Short C(80K) T+10  → Buy back ที่ราคาตลาด (จ่าย debit)
+Open:   Short C(83K) T+45  → Sell ที่ strike ใหม่ (รับ credit ใหม่)
+
+หลักการ: Roll out-and-up
+  - ได้ strike ห่างขึ้น (ปลอดภัยขึ้น)
+  - ได้ time เพิ่ม (theta ทำงานต่อ)
+  - ถ้า net credit ≥ $0 → ไม่จ่ายเพิ่ม
+  - ถ้า net debit → จ่ายเพื่อ extend — คำนวณใหม่ว่า trade ยังคุ้มไหม</div>
+
+<div class="bx ba">
+<div class="bt">ข้อระวัง Rolling</div>
+<p>Roll เพื่อหนี loss มักสร้างปัญหาใหญ่กว่า — ถ้าตลาดเทรนด์แรงต้านทาง, rolling ซ้ำๆ = เพิ่ม commitment ใน thesis ที่อาจผิดแล้ว ตั้ง max จำนวน roll ไว้ก่อนเข้า trade เช่น "roll ได้ไม่เกิน 1 ครั้ง หลังจากนั้น close"</p>
+</div>
+
+<h3>2. Adding a Hedge — เพิ่ม Protection ราคาถูก</h3>
+
+<p>ใช้เมื่อ: position delta drift ไปทางหนึ่ง หรือ IV ต่ำพอที่จะซื้อ wing เพิ่มได้ถูก</p>
+
+<table>
+<tr><th>สถานการณ์</th><th>Hedge ที่เพิ่ม</th><th>ผล</th></tr>
+<tr>
+  <td>Iron Condor — BTC วิ่งขึ้นใกล้ short call</td>
+  <td>ซื้อ OTM Call ที่ strike สูงกว่า (wide long call)</td>
+  <td>จำกัด max loss ด้านบนเพิ่ม แลกกับ premium เพิ่มเล็กน้อย</td>
+</tr>
+<tr>
+  <td>Long Call — กังวล downside ระยะสั้น</td>
+  <td>ซื้อ OTM Put (temporary hedge)</td>
+  <td>ป้องกัน downside ชั่วคราว ไม่ต้องปิด long call</td>
+</tr>
+<tr>
+  <td>Short Premium ก่อน event (earnings/FOMC)</td>
+  <td>ซื้อ Binary Bet เพื่อป้องกัน tail (ดู Part VI)</td>
+  <td>จำกัด max loss ถ้า event ใหญ่เกินคาด</td>
+</tr>
+</table>
+
+<h3>3. Close Early — กฎ 50%</h3>
+
+<div class="bx bg">
+<div class="bt">กฎ 50% สำหรับ Short Premium</div>
+<p>ปิด position เมื่อกำไร mark-to-market = 50% ของ max credit ที่รับมา</p>
+<p><strong>ตัวอย่าง:</strong> Iron Condor net credit $1,200 → close เมื่อ position value ลดลงเหลือ $600 (กำไร $600)</p>
+<p><strong>เหตุผล:</strong> theta ที่เหลือในช่วง 50% หลังคือเพียง ~25% ของ total credit แต่ risk ยังคงเต็ม 100% — risk/reward เปลี่ยนไปไม่คุ้มแล้ว</p>
+</div>
+
+<h2>บทที่ 44: Position Sizing สำหรับ Options</h2>
+
+<p>เป้าหมาย: max loss ต่อ trade ต้องไม่ทำลาย account และไม่บังคับให้ตัดสินใจจากความกลัว</p>
+
+<table>
+<tr><th>วิธี</th><th>สูตร</th><th>ตัวอย่าง account $50K</th></tr>
+<tr>
+  <td><strong>% Capital at Risk</strong></td>
+  <td>Max loss ≤ 2–3% ของ account</td>
+  <td>Max loss ≤ $1,000–$1,500 ต่อ trade</td>
+</tr>
+<tr>
+  <td><strong>Fixed Contracts</strong></td>
+  <td>เริ่มด้วย 1 contract จนคล่อง แล้วเพิ่ม</td>
+  <td>1 BTC Iron Condor = max loss $3,800 → 7.6% ของ $50K = <em>เยอะเกิน</em> (เกิน 2–3% rule) — ต้องใช้ ~0.35 BTC (max loss ≈ $1,330)</td>
+</tr>
+<tr>
+  <td><strong>Vega Budget</strong></td>
+  <td>Net portfolio Vega ≤ 1–2% ของ NAV ต่อ +1% IV</td>
+  <td>ถ้า portfolio Vega = −$500 ต่อ 1% IV → IV spike 10% = −$5,000 (10% NAV) = สูงเกิน</td>
+</tr>
+</table>
+
+<div class="bx br">
+<div class="bt">สัญญาณว่า position ใหญ่เกินไป</div>
+<p>ถ้าคุณเช็คราคาทุก 10 นาทีเพราะกังวล → position ใหญ่เกินกว่าที่คุณรับได้ทางจิตใจ ลด size ลงจนสามารถถือได้โดยไม่ต้อง stare</p>
+</div>
+
+<h2>บทที่ 45: Margin Requirements ต่อ Strategy</h2>
+
+<table>
+<tr><th>Strategy</th><th>ประเภท Margin</th><th>ประมาณ (BTC $75K)</th></tr>
+<tr>
+  <td>Long Call / Long Put</td>
+  <td>Premium only (debit)</td>
+  <td>จ่ายเฉพาะ premium เช่น $1,500–$3,000</td>
+</tr>
+<tr>
+  <td>Bull/Bear Spread, Iron Condor, Butterfly</td>
+  <td>Spread margin = wing width (defined risk)</td>
+  <td>IC wings $5K wide → margin = $5,000 ต่อ contract</td>
+</tr>
+<tr>
+  <td>Covered Call</td>
+  <td>ถือ underlying เป็น collateral</td>
+  <td>ต้องถือ BTC 1 เหรียญต่อ 1 Call ที่ short</td>
+</tr>
+<tr>
+  <td>Short Straddle / Short Strangle (naked)</td>
+  <td>Naked margin — คำนวณโดย exchange</td>
+  <td>~10–20% ของ notional = $7,500–$15,000 ต่อ contract</td>
+</tr>
+<tr>
+  <td>Protective Put</td>
+  <td>Premium only (debit)</td>
+  <td>จ่ายเฉพาะ put premium</td>
+</tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Iron Condor Margin ≠ ทั้งสอง spread รวมกัน</div>
+<p>เนื่องจาก IC สามารถขาดทุนได้ด้านเดียวเท่านั้น (ไม่ใช่ทั้งสองด้านพร้อมกัน) exchange จึงคิด margin = <strong>max(put spread, call spread)</strong> ไม่ใช่ผลรวม — นี่คือ capital efficiency ของ defined-risk spread</p>
+</div>
+
+<h2>บทที่ 46: Daily Monitoring Checklist + Belief Loop</h2>
+
+<p>ตรวจสิ่งเหล่านี้ทุกวันที่ตลาดเปิด:</p>
+
+<div class="fm">Daily Trade Monitor Checklist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+□ ราคาปัจจุบัน vs short strikes (ห่างกี่ %?)
+□ DTE เหลือกี่วัน? (ถ้า < 21 → ประเมิน exit)
+□ IV ตอนนี้ vs IV ตอน entry (เปลี่ยนกี่ %?)
+□ P&L mark-to-market (ถึง 50% max profit หรือยัง?)
+□ ข่าว/event ที่จะมาใน 7 วัน (earnings, FOMC, CPI)
+□ Belief ยังเหมือนเดิมไหม? (ถ้าไม่ → close)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+เวลาที่ใช้: ~5 นาที/วัน</div>
+
+<p>วงจรการ manage trade ที่สมบูรณ์:</p>
+
+<div class="fm">    ┌─────────────────────────────────────────────────────┐
+    │  เขียน Belief ด้วย 5 มิติ  (Part I)                │
+    │  → เลือก Strategy + Construction  (Parts II–IV)    │
+    │  → ตั้ง Trigger Rules ก่อนเข้า trade               │
+    │      (เช่น "close ถ้า 50% profit หรือ DTE < 21")  │
+    └────────────────────┬────────────────────────────────┘
+                         │ Enter Position
+                         ▼
+    ┌─────────────────────────────────────────────────────┐
+    │  Monitor ทุกวัน (Checklist ด้านบน)                 │
+    │                                                     │
+    │  Belief ยังเดิม? ─── YES ──→ ตรวจ Trigger Table    │
+    │         │                         │                 │
+    │         NO                   Triggered?             │
+    │         │                    YES → Adjust/Close     │
+    │         ▼                    NO  → Hold             │
+    │  Close ทันที                                        │
+    │  → เขียน Belief ใหม่ → วนซ้ำ                       │
+    └─────────────────────────────────────────────────────┘</div>
+
+<div class="bx bg">
+<div class="bt">3 กฎทองของ Trade Management</div>
+<ol>
+<li><strong>ตั้ง exit rules ก่อนเข้า trade เสมอ</strong> — "ปิดเมื่อ 50% profit หรือ DTE &lt; 21 หรือ ราคาแตะ short strike"</li>
+<li><strong>50% rule สำหรับ short premium</strong> — กำไรครึ่งนึงพอ, ที่เหลือ risk/reward ไม่คุ้ม</li>
+<li><strong>Belief เปลี่ยน = ปิด position ทันที</strong> — ไม่มีข้อยกเว้น, ไม่ "hope"</li>
+</ol>
+</div>
+
+<div class="bx bb" style="margin-top:24px">
+<div class="bt" style="font-size:1.1em">Series ครบทั้ง 7 Part</div>
+<table>
+<tr><th>Part</th><th>หัวข้อ</th><th>Concept หลัก</th></tr>
+<tr><td><strong>I</strong></td><td>Belief Precision</td><td>5 มิติ: Direction, Range, Prob Shape, Vol, Time</td></tr>
+<tr><td><strong>II</strong></td><td>Bias Family Map</td><td>6 Families + Master Matrix</td></tr>
+<tr><td><strong>III</strong></td><td>Imagine Payoff First</td><td>4-Step: Imagine → Decompose → Enumerate → Score</td></tr>
+<tr><td><strong>IV</strong></td><td>PCP as Construction Tool</td><td>Equivalence Proofs + IV Skew Algorithm</td></tr>
+<tr><td><strong>V</strong></td><td>Decision Tree + Cheat Sheet</td><td>4-Question Flowchart + 15-Strategy Reference</td></tr>
+<tr><td><strong>VI</strong></td><td>Binary Options &amp; Prediction Markets</td><td>Digital Payoffs + Implied Probability</td></tr>
+<tr><td><strong>VII (นี้)</strong></td><td>Trade Management</td><td>Greeks Evolution + Trigger Rules + Sizing</td></tr>
+</table>
+</div>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Series: View → Payoff Mastery (Parts I–VII) — ฝึกต่อได้ที่ <a href="vp-drills.html">Drill Set (5 ด่าน · 27 ข้อ)</a> —</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #16a34a;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vp-part1.html" style="color:#16a34a;text-decoration:none;font-weight:700">View → Payoff — เริ่มต้น</a></nav>
+</body>
+</html>

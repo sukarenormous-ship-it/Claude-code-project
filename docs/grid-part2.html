@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 2 — Bloating Patterns + Step Pyramid</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bloat-card{display:inline-block;border:2px solid;border-radius:10px;padding:14px 18px;margin:6px;vertical-align:top;width:calc(33% - 20px);min-width:190px}
+.bc-top{border-color:#dc2626;background:#fef2f2}
+.bc-bot{border-color:#2563eb;background:#eff6ff}
+.bc-cen{border-color:#16a34a;background:#f0fdf4}
+@media(max-width:640px){.bloat-card{width:100%;display:block}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 2</div>
+<h1>Bloating Patterns + Step Pyramid</h1>
+<div class="sub">บวมบน · บวมล่าง · บวมกลาง · Dynamic Sizing · Step Pyramid vs Size Pyramid<br>
+จุดหักล้างความเชื่อเดิม: Martingale ทำได้ใน Grid เพราะรู้ทุนล่วงหน้า</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Grid <strong>บวม</strong> หมายถึง inventory สะสมหนาแน่นในโซนใดโซนหนึ่ง — ไม่ใช่สิ่งผิดปกติ แต่ต้องเข้าใจ pattern และออกแบบล่วงหน้า Close System ทำให้เราสามารถ <strong>ใช้ Martingale/Dynamic Sizing</strong> ได้อย่างปลอดภัย เพราะรู้ worst-case capital requirement แล้ว</div>
+</div>
+
+<h2 id="s2-1">2.1 Grid Bloating คืออะไร</h2>
+
+<p>เมื่อราคาอยู่ในโซนหนึ่งนานๆ grid ซื้อสะสม inventory ในโซนนั้น — เรียกว่า <strong>grid บวม</strong> ในโซนนั้น</p>
+
+<p>ตัวอย่าง: BTC ลงจาก $100k → $90k แล้วแกว่งที่ $90k–$95k นาน 2 สัปดาห์</p>
+<ul>
+<li>Levels $98k–$92k ซื้อสะสม แต่ยังไม่ sell (ราคาไม่กลับมา)</li>
+<li>Levels $92k–$90k fill และ sell ซ้ำๆ (cashflow ดี)</li>
+<li>ผลลัพธ์: inventory "บวม" ที่ระดับ $90k–$98k มี BTC ค้างอยู่มาก</li>
+</ul>
+
+<img class="chart" src="charts/grid-part2-bloating.svg" alt="Grid Bloating Patterns">
+<p class="caption">3 รูปแบบ bloating — P&L รวมใกล้เคียงกัน แต่ risk distribution และ cashflow timing ต่างกัน</p>
+
+<h2 id="s2-2">2.2 บวมบน (Top-Heavy) — Inventory สะสมสูง</h2>
+
+<div class="bloat-card bc-top">
+<strong style="color:#dc2626">บวมบน (Top-Heavy)</strong><br>
+<small>inventory มากในโซนบน<br>
+ราคาลง → ซื้อสูง รอขาย</small>
+</div>
+
+<p>เกิดเมื่อ: ราคา <em>เคยสูง</em> แล้วลงมา — grid ซื้อระหว่างทางลง แต่ราคาไม่กลับขึ้นไปขาย</p>
+
+<div class="fm">สาเหตุ Top-Heavy:
+  1. เปิด grid ที่ราคาสูงกว่า mean ปัจจุบัน
+  2. BTC ดิ่งลง → grid ซื้อทุก level
+  3. ราคาหยุดแกว่งที่ต่ำกว่า zone กลาง
+
+ผลกระทบ:
+  + Grid levels ต่ำยังทำ cashflow ได้ปกติ
+  − Upper inventory ขาดทุน unrealized สูง
+  − ถ้าราคาพุ่งกลับ → ขายได้ทันที + กำไรมาก
+  − ถ้าราคาลงต่อ → inventory เพิ่มต่อ
+
+แนวทางจัดการ:
+  Option A: รอ (Close System — ถือไว้)
+  Option B: ลด Q ของ upper levels ลง 50%
+             (ใช้ทุนน้อยลงในส่วนที่ "ดอย")
+  Option C: เพิ่ม hedge (short perp ส่วนที่ upper inventory)</div>
+
+<h2 id="s2-3">2.3 บวมล่าง (Bottom-Heavy) — Inventory สะสมต่ำ</h2>
+
+<div class="bloat-card bc-bot">
+<strong style="color:#2563eb">บวมล่าง (Bottom-Heavy)</strong><br>
+<small>inventory มากในโซนล่าง<br>
+ราคาลงมากก่อน กลับมา</small>
+</div>
+
+<p>เกิดเมื่อ: ราคา <em>ดิ่งลงไกล</em> สะสม inventory มาก แล้วค่อยๆ ฟื้น — levels ล่างๆ fill ซ้ำๆ บ่อย</p>
+
+<div class="fm">สาเหตุ Bottom-Heavy:
+  1. BTC crash ลง 30%+ จาก entry
+  2. Grid ซื้อ level ล่างสุดทั้งหมด (Close System สำเร็จ)
+  3. ราคาฟื้นช้า แกว่งที่ bottom zone
+
+ผลกระทบ:
+  + Cashflow จาก lower zone ดี (รอบเยอะ)
+  + ถ้าราคาพุ่งกลับ → ขายได้ทั้งหมด กำไรใหญ่
+  − Capital lock ในโซนล่างมาก
+  − Upper zone ว่าง → ไม่ได้ใช้ชั้นบน
+
+แนวทางจัดการ:
+  Option A: เพิ่ม grid levels ใหม่ที่โซนบน
+             (Front-load capital จาก Zone ที่ว่าง)
+  Option B: นำ inventory ล่างขาย แล้วซื้อใหม่สูงกว่า
+             (Grid Reset — ดูใน Part 4)</div>
+
+<h2 id="s2-4">2.4 บวมกลาง (Center-Heavy / Bell) — Ideal Pattern</h2>
+
+<div class="bloat-card bc-cen">
+<strong style="color:#16a34a">บวมกลาง (Bell)</strong><br>
+<small>inventory หนาแน่น ±1σ<br>
+cashflow ดีที่สุด</small>
+</div>
+
+<p>เกิดเมื่อ: ราคาแกว่งรอบ mean อย่างสมดุล — Bell Curve Density (Part 1A) ออกแบบมาให้ได้ pattern นี้</p>
+
+<div class="fm">ทำไม Bell Curve Pattern ดีที่สุด:
+  1. Inventory กระจายรอบ mean
+  2. Fill บ่อยสุดในโซนที่ราคาอยู่นานสุด (±1σ)
+  3. Capital ไม่กระจุกตัวที่ extreme
+  4. ถ้าราคาออกนอก zone → inventory น้อย (step ใหญ่ไม่ fill บ่อย)
+
+วิธีรักษา Bell Pattern:
+  - ใช้ Variable Step (bell curve density จาก Part 1A)
+  - Rebalance ทุกสัปดาห์ถ้า inventory เบี้ยวมาก
+  - ดู Hurst — ถ้า H ต่ำ (mean-reverting) pattern นี้ stable</div>
+
+<h2 id="s2-5">2.5 Dynamic Sizing — จุดหักล้างความเชื่อเดิม</h2>
+
+<div class="bx bc">
+<div class="bt">ทำไม Martingale ปลอดภัยใน Close System</div>
+<p><strong>ความเชื่อเดิม:</strong> Martingale อันตราย — เพิ่ม size เรื่อยๆ จนทุนหมด</p>
+<p><strong>ใน Close System:</strong> เราคำนวณ capital ทั้งหมดที่ต้องใช้ถึง floor <em>ก่อน</em> เปิด grid — Martingale แค่กำหนดว่าจะ allocate capital อย่างไรใน range ที่คำนวณไว้แล้ว</p>
+<p>ตัวอย่าง: มี $10,000 · Close System บอกว่า worst case ใช้ $8,000 | Soft Martingale กำหนดว่าจาก $8,000 นั้นจะใช้มากขึ้นที่ level ล่าง — แต่ไม่เกิน $8,000 รวม</p>
+</div>
+
+<div class="fm">Dynamic Sizing Pseudocode:
+
+def allocate_grid_capital(total_capital, n_levels, style="bell"):
+    """
+    Allocate capital across grid levels (all styles stay within total_capital)
+    """
+    if style == "equal":
+        weights = [1.0 / n_levels] * n_levels
+
+    elif style == "top_heavy":      # บวมบน: น้ำหนักมากที่บน
+        weights = [1.0 / (n_levels - i) for i in range(n_levels)]
+
+    elif style == "bottom_heavy":   # บวมล่าง: น้ำหนักมากที่ล่าง
+        weights = [1.0 / (i + 1) for i in range(n_levels)]
+
+    elif style == "bell":           # บวมกลาง: Gaussian weights
+        center = n_levels // 2
+        weights = [math.exp(-0.5 * ((i - center) / (n_levels/4))**2)
+                   for i in range(n_levels)]
+
+    # Normalize weights to sum to 1
+    total = sum(weights)
+    weights = [w / total for w in weights]
+
+    # Allocate capital
+    capital_per_level = [total_capital * w for w in weights]
+    return capital_per_level
+
+# ตัวอย่าง: $10,000 · 5 levels · bell style
+# → [$1,500, $2,500, $3,000, $2,500, $1,500]  ← หนาแน่นกลาง (weights ก่อน normalize)
+# หลัง normalize: ทั้งหมด = $10,000 ✓ (normalize step บรรทัด 192–193 ด้านบน)</div>
+
+<h2 id="s2-6">2.6 Step Pyramid vs Size Pyramid</h2>
+
+<p>เมื่อตลาดมีแนวโน้ม (H เพิ่มขึ้น) — มีทางเลือก 2 แบบในการ "respond":</p>
+
+<table>
+<tr><th>Strategy</th><th>วิธี</th><th>ผลต่อ Cashflow</th><th>ผลต่อ Inventory Risk</th></tr>
+<tr><td><strong>Size Pyramid</strong></td><td>เพิ่ม Q ที่ level ลึก (martingale)</td><td>คงที่</td><td>สูงขึ้น (ซื้อมากถ้าลง)</td></tr>
+<tr><td><strong>Step Pyramid</strong></td><td>เพิ่ม Step size แทน</td><td>ลดลงเล็กน้อย</td><td>ต่ำกว่า (fill น้อยกว่า)</td></tr>
+<tr><td><strong>Equal Weight</strong></td><td>ไม่เปลี่ยนอะไร (baseline)</td><td>ลดลงตาม trend</td><td>สะสมเร็ว</td></tr>
+</table>
+
+<div class="fm">Step Pyramid Implementation:
+
+def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
+    """
+    เพิ่ม step ตามความลึกของ level (ห่างจาก current price)
+    และ Hurst exponent
+    """
+    # ถ้า Hurst สูง (trending) → เพิ่ม step มากขึ้น
+    hurst_multiplier = 1 + max(0, (hurst - 0.45) / 0.15) * trend_factor
+    # ถ้า level ลึก (ห่างจาก mean มาก) → เพิ่ม step
+    depth_multiplier = 1 + level_depth * 0.1  # 10% ต่อ 1 level ลึก
+    return base_step * hurst_multiplier * depth_multiplier
+
+# ตัวอย่าง: base_step = $2,000 · Hurst = 0.55 · level depth = 3
+# hurst_multiplier = 1 + (0.55-0.45)/0.15 * 0.5 = 1 + 0.333 = 1.333
+# depth_multiplier = 1 + 3 × 0.10 = 1.30
+# step = $2,000 × 1.333 × 1.30 = $3,467 (ใหญ่ขึ้น → fill น้อยลง)</div>
+
+<div class="bx bg">
+<div class="bt">Step Pyramid: กำไรเท่าเดิม สบายใจกว่า</div>
+<p>ทำไม Step Pyramid ดี: ในช่วง trend</p>
+<ul>
+<li>Size Pyramid: ซื้อมากขึ้นที่ราคาต่ำ → ถ้า trend กลับ กำไรมาก แต่ถ้า trend ต่อ → inventory massive</li>
+<li>Step Pyramid: ซื้อช้าลง (fill น้อยกว่า) → inventory สะสมช้า → ถ้า trend ต่อ ไม่ติดสต็อกมาก</li>
+<li>P&L รวมใกล้เคียงกัน แต่ <strong>drawdown ต่างกันมาก</strong></li>
+</ul>
+</div>
+
+<h2 id="s2-7">2.7 Running Example — Comparing 3 Bloating Patterns</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC ลงจาก $100k → $85k แล้วแกว่ง</div>
+<p><strong>Setup:</strong> Zone $80k–$110k · Step $2k · Capital $15,000 · 3 strategies เปรียบกัน</p>
+
+<table>
+<tr><th>Strategy</th><th>Inventory ที่ $85k</th><th>Capital ที่ใช้</th><th>Cashflow/วัน (ที่ $83k–$88k)</th><th>Profit ถ้า BTC กลับ $100k</th></tr>
+<tr><td>Equal Weight</td><td>0.08 BTC</td><td>$7,200</td><td>$36</td><td>+$1,200</td></tr>
+<tr><td>Bottom-Heavy (บวมล่าง)</td><td>0.14 BTC</td><td>$9,800</td><td>$54</td><td>+$2,100</td></tr>
+<tr><td>Bell Curve</td><td>0.06 BTC</td><td>$5,400</td><td>$28</td><td>+$900</td></tr>
+</table>
+
+<p><strong>สังเกต:</strong> Bottom-Heavy ได้ทั้ง cashflow สูงสุดและ profit กลับมากสุด แต่ใช้ capital มากสุดด้วย</p>
+<p><strong>ถ้า BTC ลงต่อไป $70k:</strong> Bottom-Heavy มี max loss สูงสุด | Bell Curve มี max loss ต่ำสุด</p>
+<p><strong>สรุป:</strong> เลือก style ตาม <em>conviction</em> — ถ้ามั่นใจ BTC จะกลับ → Bottom-Heavy | ถ้าไม่แน่ใจ → Bell Curve</p>
+</div>
+
+<h2 id="s2-8">2.8 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 2</div>
+
+<details>
+<summary>ข้อ 1: Grid บวมบน (Top-Heavy) มักเกิดใน market condition แบบไหน?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Top-Heavy เกิดเมื่อ grid เปิดที่ราคาสูง แล้วตลาดหัน <strong>downtrend</strong></p>
+<p>ตัวอย่าง: เปิด grid ที่ $110k (ATH) → BTC ลงมา $90k โดยไม่กลับ → inventory ที่ $108k, $106k, $104k, $102k, $100k ยังค้างอยู่</p>
+<p>Signal: H เพิ่มจาก 0.45 → 0.60 (trending down) + ADX &gt; 40 (BTC threshold)</p>
+<p>Prevention: เปิด grid เมื่อ H &lt; 0.50 เท่านั้น ไม่เปิดตอนราคา ATH</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม Size Pyramid ถึงเสี่ยงกว่า Step Pyramid ใน trending market?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>Size Pyramid:</strong> ในช่วง downtrend แต่ละ level ที่ลึกกว่ามี Q มากกว่า → ราคาลง $10k → ซื้อ 0.04 BTC แทน 0.01 → inventory เพิ่ม 4× เร็วกว่า</p>
+<p><strong>ถ้า trend ต่อเนื่อง:</strong> inventory "พอกพูน" exponentially → capital หมดเร็ว → margin call</p>
+<p><strong>Step Pyramid:</strong> Q คงที่แต่ step ใหญ่ขึ้น → fill ช้าลง → inventory สะสมช้า → capital ปลอดภัยกว่า</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: Bell Curve Grid density ให้ Q_center = 0.02 BTC · Q_extreme = 0.005 BTC · Step เท่ากัน $2k — เปรียบ cashflow vs Equal Weight Q=0.01 BTC ทุก level</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ราคาอยู่ที่ center (±1σ) 68% ของเวลา:</p>
+<p><strong>Bell Curve cashflow:</strong> 68% ของเวลา × 2 รอบ/วัน × (0.02 × $2k − fee) ≈ 68% × 2 × $38 = $51.7/วัน (center zone)</p>
+<p>+ 32% ของเวลา × 0.5 รอบ/วัน × $8 (extreme, Q เล็ก) = $1.3/วัน</p>
+<p>= <strong>$53/วัน Bell Curve</strong></p>
+<p><strong>Equal Weight:</strong> 2 รอบ/วัน × 0.01 × $2k = $40/วัน (ทุก zone เท่ากัน)</p>
+<p>Bell Curve ดีกว่า 33% เพราะ concentrate Q ในโซนที่ราคาอยู่นานที่สุด</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: ถ้า inventory ค้าง "บวมล่าง" มาก ควร Reset Grid หรือรอ?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>รอ (Close System):</strong> ถ้ายังเชื่อว่าราคาจะกลับ → รอ inventory ขายออกเองเมื่อราคาฟื้น | ไม่มี loss realized</p>
+<p><strong>Reset Grid:</strong> ถ้า Hurst เพิ่ม (trending down), ATR เพิ่ม, fundamentals เปลี่ยน → ขาย inventory บางส่วน (ยอม realize loss) แล้วเปิด grid ใหม่ที่ lower zone</p>
+<p><strong>Rule of Thumb:</strong> รอถ้า unrealized loss &lt; 15% ของ capital | Reset ถ้า &gt; 25% และ regime ชัดว่า trending</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1c.html" style="color:#64748b">Part 1C</a></span><a href="grid-part3.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 3: Zone Sizing →</a></nav>
+</body>
+</html>

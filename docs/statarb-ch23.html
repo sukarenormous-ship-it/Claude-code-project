@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.23 — Advanced: Kalman Filter &amp; t-Distribution</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+.fm .c{color:#6b7280}
+.fm .kw{color:#7c3aed;font-weight:700}
+.fm .fn{color:#0d9488}
+.fm .nm{color:#dc2626}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{font-family:'Courier New',monospace;background:var(--g1);padding:14px 18px;border-radius:6px;margin:14px 0;overflow-x:auto;font-size:.92em;line-height:1.7;border-left:3px solid var(--teal)}
+.pseudo .c{color:#6b7280}
+.pseudo .kw{color:#7c3aed;font-weight:700}
+.pseudo .fn{color:#0d9488}
+.pseudo .nm{color:#dc2626}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.fm{overflow:visible;white-space:pre-wrap;word-break:break-all}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 23 — บทเสริม Advanced</div>
+<h1>Kalman Filter &amp; t-Distribution</h1>
+<div class="sub">Dynamic β_t | Predict-Update Cycle | Fat Tails | Critical Values<br>
+สัญญาณซื้อขายใต้ Normal vs t-Distribution</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">
+<strong>Kalman Filter</strong> แก้ปัญหา β_t ที่เปลี่ยนตามเวลา — ปรับ β ทุก tick แทน rolling window<br>
+<strong>t-Distribution</strong> แก้ปัญหา fat tails ของ ε crypto — threshold ที่ถูกต้องกว่า z-score ปกติ<br>
+ทั้งสองเทคนิคเสริมกัน: Kalman ให้ β_t ที่แม่นยำ → t-distribution แปลง ε เป็น signal ที่น่าเชื่อถือกว่า
+</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$z_t = \frac{\varepsilon_t}{\sigma_t} \quad \text{เทียบกับ} \quad t_{\alpha/2}(\nu) \quad \text{ไม่ใช่} \quad z_{\alpha/2} = 1.96$$
+</div>
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">Prerequisites — ต้องเข้าใจก่อนอ่านบทนี้</div>
+<ul>
+<li><a href="statarb-ch3.html">บทที่ 3</a> §3.3 Half-life และ AR(1) ของ ε</li>
+<li><a href="statarb-ch4.html">บทที่ 4</a> §4.2 OLS สำหรับ β (static β foundation)</li>
+<li><a href="statarb-ch5.html">บทที่ 5</a> §5.6 Shapiro-Wilk, §5.7 Crossing Statistics</li>
+<li><a href="statarb-ch10.html">บทที่ 10</a> §10.3 Robust Z-score (MAD-based)</li>
+<li><a href="statarb-ch22.html">บทที่ 22</a> §22.3 Risk Reversal, §22.5 VRP (ε ที่มี fat tails)</li>
+</ul>
+</div>
+
+<!-- ======================================================= -->
+<h2 id="s23-1">23.1 ปัญหาของ β คงที่ — ทำไม OLS ไม่พอ</h2>
+
+<p>ใน <a href="statarb-ch4.html">บทที่ 4</a> เราประมาณ β ด้วย OLS บน lookback window เดียว เช่น 250 วัน โมเดลถือว่า β ไม่เปลี่ยนแปลงตลอดช่วงเวลานั้น แต่ในทางปฏิบัติ hedge ratio ของ crypto pairs เช่น BTC/ETH ขยับตามรอบตลาด</p>
+
+<div class="bx ba">
+<div class="bt">สามข้อจำกัดของ Static OLS β</div>
+<ol>
+<li><strong>Window selection dilemma:</strong> Window สั้น (30 วัน) → β ตอบสนองเร็วแต่ noisy มาก | Window ยาว (250 วัน) → smooth แต่ lag สูง lag เกิดขึ้นเมื่อระบอบตลาดเปลี่ยน</li>
+<li><strong>Regime change blindness:</strong> เมื่อ correlation ระหว่าง BTC/ETH ลดลงชั่วคราว (เช่น altcoin season) OLS β ที่ fit บน data เก่าจะให้ ε ที่ biased — z-score ผิดพลาด ทำให้เข้า trade ผิด side</li>
+<li><strong>Abrupt structural break:</strong> Hard fork, exchange hack, macro event → β เปลี่ยนทันที แต่ OLS ใช้เวลาหลายสัปดาห์กว่าจะ update — ช่วงนั้น strategy ขาดทุนทุก trade</li>
+</ol>
+</div>
+
+<p><strong>Rolling-window β</strong> เป็นทางออกแรก: คำนวณ β ใหม่ทุกวันบน lookback window ที่เลื่อนไป แต่ยังเลือก window ได้ยาก และยัง lag</p>
+
+<img class="chart" src="charts/ch23-kalman-beta-compare.svg" alt="Static vs Rolling vs Kalman β_t — BTC/ETH">
+<p class="caption">รูป 23.1 — Kalman β_t (เขียว) ตอบสนองรวดเร็วกว่า rolling window (เหลือง) โดยไม่มี lag สูง</p>
+
+<p>Kalman Filter แก้ทั้งสามปัญหาในคราวเดียว: ปรับ β ทุก step, ไม่ต้องเลือก window, และ update ทันทีเมื่อ data ใหม่เข้า</p>
+
+<!-- ======================================================= -->
+<h2 id="s23-2">23.2 Kalman Filter — ทฤษฎีและวงจร Predict-Update</h2>
+
+<p>Kalman Filter คือ <strong>recursive Bayesian estimator</strong> — ในแต่ละ step เราประมาณ state ล่าสุดจากการผสม prediction จาก model กับ observation ใหม่ น้ำหนักที่ให้แต่ละส่วนขึ้นอยู่กับความไม่แน่นอนสัมพัทธ์ของทั้งสอง</p>
+
+<h3>State-Space Model สำหรับ β_t</h3>
+<p>กำหนด state equation และ observation equation:</p>
+
+<div class="fm">
+<span class="c">// State equation (β เปลี่ยนช้าๆ แบบ random walk)</span><br>
+β_t = β_{t−1} + w_t,    w_t ~ N(0, Q)   <span class="c">// Q = process noise variance</span><br><br>
+<span class="c">// Observation equation (ราคาที่สังเกตได้)</span><br>
+y_t = β_t · x_t + v_t,  v_t ~ N(0, R)   <span class="c">// R = observation noise variance</span>
+</div>
+
+<ul>
+<li><strong>Q (Process noise):</strong> ควบคุมความเร็วที่ β_t เปลี่ยนได้ — ค่ามากขึ้น → β ตอบสนองเร็วขึ้นแต่ noisy มากขึ้น</li>
+<li><strong>R (Observation noise):</strong> สะท้อน noise ใน price relationship — ค่ามากขึ้น → filter เชื่อ observation น้อยลง เชื่อ model มากขึ้น</li>
+<li><strong>P_t (Error covariance):</strong> ความไม่แน่นอนของ estimate β̂_t — ยิ่งสูง filter ยิ่งให้น้ำหนัก observation ใหม่มากขึ้น</li>
+</ul>
+
+<h3 id="s23-2a">วงจร Predict-Update ทุก time step</h3>
+
+<img class="chart" src="charts/ch23-predict-update.svg" alt="Kalman Filter Predict-Update Cycle diagram">
+<p class="caption">รูป 23.2 — วงจร Predict-Update ของ Kalman Filter ทำซ้ำทุก time step</p>
+
+<div class="bx bg">
+<div class="bt">ตีความ Kalman Gain K_t</div>
+<p>K_t อยู่ใน range ที่เหมาะสม (สำหรับ log-return inputs ที่ x_t ≪ 1):</p>
+<ul>
+<li><strong>K_t → 1:</strong> เชื่อ observation ใหม่เกือบทั้งหมด (P สูง หรือ R ต่ำ) → β ปรับตาม data ใหม่มาก</li>
+<li><strong>K_t → 0:</strong> เชื่อ prediction เกือบทั้งหมด (P ต่ำ หรือ R สูง) → β เปลี่ยนน้อยมาก</li>
+<li><strong>K_t ≈ 0.5:</strong> ถ่วงน้ำหนักเท่ากัน — filter อยู่ในสมดุล</li>
+</ul>
+</div>
+
+<!-- ======================================================= -->
+<h2 id="s23-3">23.3 Kalman Filter สำหรับ Dynamic β_t — BTC/ETH</h2>
+
+<p>นำทฤษฎีในข้อ §23.2 มาใช้กับ BTC/ETH pair จาก <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> — BTC เป็น y_t (dependent), ETH เป็น x_t (independent)</p>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก — BTC/ETH Dynamic β_t (log-returns)</div>
+<p><strong>Pair:</strong> BTC/ETH จาก <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> | ρ = 0.9745 | AR(1) φ = 0.9602 | Half-life = 17h</p>
+<p><strong>Input scale:</strong> ใช้ <em>log-returns</em> (r_t = Δlog P_t) ไม่ใช่ log-prices — ทำให้ innovation มี mean ≈ 0 โดยไม่ต้อง fit intercept และ K_t อยู่ใน range ที่ guard condition ทำงานได้</p>
+<p><strong>Log-return OLS β:</strong> β̂₀ ≈ 1.10 (BTC return ≈ 1.10 × ETH return) — ค่านี้ต่างจาก β ใน <a href="statarb-ch4.html#s4-2b">Ch.4 §4.2b</a> (log-price β ≈ 0.04–0.06) อย่างมาก เพราะเป็นคนละ quantity: <em>log-price β</em> วัด hedge ratio ของ price level (BTC ≈ 25× ETH → β ≈ 1/25 ≈ 0.04) ขณะที่ <em>log-return β</em> วัดว่า BTC return เป็นกี่เท่าของ ETH return (≈ 1.0–1.2 เพราะทั้งคู่ขึ้นลงคล้ายกัน) ใช้ log-return β เฉพาะใน Kalman filter แบบ Ch.23 เท่านั้น — สำหรับ spread construction ε = log(P_A) − β·log(P_B) ให้ใช้ log-price β จาก Ch.4 เสมอ</p>
+<p><strong>Kalman parameters:</strong> Q = 1×10⁻⁵ (β เปลี่ยนช้า), R = 0.001 (noise ปานกลาง)</p>
+<p><strong>Initial conditions:</strong> β̂₀ = 1.10 (ค่าจาก OLS log-returns), P₀ = 0.01</p>
+</div>
+
+<h3>Pseudo-code: Kalman Filter สำหรับ β_t</h3>
+<div class="pseudo">
+<span class="c"># ตั้งค่าเริ่มต้น</span><br>
+beta_hat  = <span class="nm">1.10</span>       <span class="c"># initial β (จาก OLS log-returns BTC/ETH)</span><br>
+P         = <span class="nm">0.01</span>       <span class="c"># initial error covariance</span><br>
+Q         = <span class="nm">1e-5</span>       <span class="c"># process noise (tuning parameter)</span><br>
+R         = <span class="nm">0.001</span>      <span class="c"># observation noise (tuning parameter)</span><br>
+beta_series = []<br><br>
+<span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(prices)):<br>
+    y_t = r_btc[t]<br>     <span class="c"># log-return Δlog(P_BTC_t)</span><br>
+    x_t = r_eth[t]<br>     <span class="c"># log-return Δlog(P_ETH_t)</span><br><br>
+    <span class="c">## ① PREDICT</span><br>
+    beta_prior = beta_hat               <span class="c"># β̂_{t|t-1}</span><br>
+    P_prior    = P + Q                  <span class="c"># P_{t|t-1}</span><br><br>
+    <span class="c">## ② UPDATE</span><br>
+    innovation = y_t - beta_prior * x_t  <span class="c"># ν_t (residual)</span><br>
+    S          = x_t**<span class="nm">2</span> * P_prior + R   <span class="c"># innovation variance</span><br>
+    K          = P_prior * x_t / S       <span class="c"># Kalman gain</span><br>
+    beta_hat   = beta_prior + K * innovation<br>
+    P          = (<span class="nm">1</span> - K * x_t) * P_prior<br><br>
+    <span class="c">## คำนวณ ε_t ด้วย β_t ที่ update แล้ว</span><br>
+    epsilon_t  = y_t - beta_hat * x_t<br>
+    beta_series.<span class="fn">append</span>(beta_hat)<br>
+</div>
+
+<p>หลังจากวน loop เสร็จ <code>beta_series</code> คือ time series ของ β_t ที่ปรับตาม data ทุก step โดยอัตโนมัติ สำหรับ BTC/ETH log-returns β_t โคจรรอบ ~1.10 ± 0.1 ตามรอบตลาด</p>
+
+<img class="chart" src="charts/ch23-kalman-btceth.svg" alt="Kalman β_t BTC/ETH dynamic hedge ratio over 200 hours">
+<p class="caption">รูป 23.3 — β_t ของ Kalman Filter (เขียว) เลื่อนขึ้นระหว่าง altcoin season แล้วกลับสู่ระดับปกติ ขณะที่ OLS คงที่ตลอด (log-return scale: β ≈ 1.0–1.2)</p>
+
+<div class="bx bg">
+<div class="bt">ข้อดีเชิงปฏิบัติ — ε_t ที่แม่นยำกว่า</div>
+<p>เมื่อใช้ Kalman β_t แทน OLS β:</p>
+<ul>
+<li>ε_t = y_t − β_t·x_t มี <strong>variance ต่ำกว่า</strong> และ <strong>mean ≈ 0 สม่ำเสมอกว่า</strong></li>
+<li>z-score threshold ยังใช้เดิม (±2σ) แต่ <strong>false signals ลดลง</strong> เพราะ ε ไม่มี drift จาก stale β</li>
+<li>Half-life ของ ε_t สั้นลง → reversion เร็วขึ้น → สามารถ trade ได้ถี่ขึ้นหรือ hold time ลดลง</li>
+</ul>
+</div>
+
+<!-- ======================================================= -->
+<h2 id="s23-4">23.4 ข้อจำกัดและการ Tune Kalman Filter</h2>
+
+<p>Kalman Filter มีพลัง แต่ต้องเข้าใจข้อจำกัดก่อนนำไปใช้จริง</p>
+
+<div class="bx br">
+<div class="bt">⚠ ข้อจำกัดสำคัญ 5 ข้อ</div>
+<ol>
+<li><strong>Q/R tuning:</strong> ไม่มีสูตรตายตัวสำหรับ Q และ R — ต้องทำ walk-forward validation (ch3 §3.9) เพื่อหาค่าที่ให้ Sharpe ratio สูงสุดบน out-of-sample data</li>
+<li><strong>Initial conditions sensitivity:</strong> ค่าเริ่มต้น β₀ และ P₀ ส่งผลต่อ 50–100 step แรก — burn-in period นี้ควรตัดออกจาก live trading ค่อยๆ converge</li>
+<li><strong>Linearity assumption:</strong> Model นี้สมมติ β เปลี่ยนแบบ linear random walk (Gaussian) — ถ้า jump discontinuity เกิดขึ้น (เช่น delisting) Kalman จะ overreact หรือ underreact</li>
+<li><strong>Single-factor limitation:</strong> Filter ข้างบน estimate β เดียว (slope) โดยถือ intercept ≈ 0 สำหรับ model ที่มีทั้ง α และ β ต้องขยายเป็น state vector 2×1 (Kalman เวอร์ชัน multivariate)</li>
+<li><strong>Numerical stability:</strong> P_t = (1 − K_t·x_t)·P_prior อาจมีค่าติดลบจาก floating-point rounding ในระยะยาว — production code ควรใช้ Joseph form: P_t = (1−K_t·x_t)·P_prior·(1−K_t·x_t) + K_t²·R เพื่อรับประกัน P_t &gt; 0 เสมอ</li>
+</ol>
+</div>
+
+<h3>แนวทาง Tune Q และ R</h3>
+<table>
+<thead><tr><th>Parameter</th><th>ค่าต่ำ</th><th>ค่าสูง</th><th>Rule of thumb</th></tr></thead>
+<tbody>
+<tr><td><strong>Q</strong> (process noise)</td><td>β เปลี่ยนช้า — smooth แต่ lag</td><td>β ตอบสนองเร็ว — แต่ noisy</td><td>เริ่มที่ 1e-5 ถึง 1e-4; หาจาก grid search</td></tr>
+<tr><td><strong>R</strong> (observation noise)</td><td>เชื่อ price มาก — β วิ่งตาม</td><td>เชื่อ model มาก — β stable</td><td>ประมาณจาก Var(ε) ของ OLS residual</td></tr>
+<tr><td><strong>P₀</strong> (initial P)</td><td>confident เรื่อง β₀</td><td>uncertain เรื่อง β₀</td><td>ถ้าไม่แน่ใจ ใส่ P₀ = 1.0 แล้ว burn-in</td></tr>
+</tbody>
+</table>
+
+<div class="bx bb">
+<div class="bt">EM Algorithm สำหรับ Q/R (Advanced)</div>
+<p>สามารถประมาณ Q และ R จาก data โดยตรงด้วย <strong>Expectation-Maximization (EM)</strong> บน log-likelihood ของ state-space model — ไม่ต้อง tune ด้วยมือ แต่ต้องการ training window ยาวพอ (อย่างน้อย 500+ observations) ห้องสมุด Python ที่ใช้ได้: <code>pykalman</code>, <code>statsmodels.tsa.statespace</code></p>
+</div>
+
+<p>เส้นทางจาก §23.1–23.4 ครอบคลุม Dynamic β ด้วย Kalman Filter ครบถ้วน ส่วนต่อไป §23.5–23.8 จะแก้อีกปัญหาหนึ่งที่เกี่ยวข้องกัน — fat tails ของ ε ที่ทำให้ z-score แบบ Normal ไม่น่าเชื่อถือ</p>
+
+<!-- ======================================================= -->
+<h2 id="s23-5">23.5 ปัญหา Fat Tails ใน Crypto Residuals</h2>
+
+<p>ε ของ crypto pairs และ options residuals (เช่น ε_RR จาก §22.3) มักมีหางที่หนากว่าการแจกแจงปกติมาก — ปัญหานี้ทำให้ z-score ที่คำนวณจาก Normal distribution ให้ false signals มากเกินจริง</p>
+
+<div class="bx ba">
+<div class="bt">Kurtosis — วัดความ "heavy" ของหาง</div>
+<p><strong>Kurtosis (excess) = E[(ε/σ)⁴] − 3</strong></p>
+<ul>
+<li><strong>Normal distribution:</strong> excess kurtosis = 0 (kurtosis = 3)</li>
+<li><strong>BTC/ETH residuals:</strong> excess kurtosis ≈ 3–9 (kurtosis 6–12) — เหตุการณ์ 4σ เกิดถี่กว่า Normal หลายเท่า</li>
+<li><strong>ε_RR (Risk Reversal):</strong> excess kurtosis ≈ 5–12 — IV spike ระหว่าง fear events สร้าง extreme ε</li>
+</ul>
+</div>
+
+<img class="chart" src="charts/ch23-fat-tails-hist.svg" alt="Frequency Distribution — Normal vs Crypto Residuals showing fat tails">
+<p class="caption">รูป 23.4 — ที่ ±4σ crypto residuals เกิดถึง 5× บ่อยกว่า Normal — z-score 2.0 แบบปกติให้ false entries มากเกิน</p>
+
+<h3>ผลต่อ Trading Signals</h3>
+<p>ถ้าใช้ z-score threshold = ±2.0 โดยสมมติ Normal distribution:</p>
+<ul>
+<li>ตาม Normal: P(|z| &gt; 2.0) = 4.6% → คาด 4.6% ของ observations เป็น signal</li>
+<li>สำหรับ crypto ε ที่มี excess kurtosis = 6: P(|z| &gt; 2.0) ≈ 8–12% จริงๆ → <strong>signals เกือบ 2–3× มากเกินที่ควรจะเป็น</strong></li>
+<li>ส่วนใหญ่ที่เกินมาคือ <strong>false signals</strong> จากหาง → เข้า trade ตอน momentum ยังแรง แล้วขาดทุน</li>
+</ul>
+
+<p>ทางออก: ใช้ <strong>t-distribution ที่มี degrees of freedom ν ต่ำ</strong> เพื่อสะท้อน fat tails ที่แท้จริง</p>
+
+<!-- ======================================================= -->
+<h2 id="s23-6">23.6 t-Distribution — สูตรและ Degrees of Freedom</h2>
+
+<p>t-distribution (Student's t) มีรูปทรงคล้าย Normal แต่มีหางหนักกว่าที่ปรับได้ด้วยพารามิเตอร์ <strong>degrees of freedom ν (nu)</strong></p>
+
+<h3>Probability Density Function</h3>
+<div class="fm">
+f(t ; ν) = Γ((ν+1)/2) / ( √(νπ) · Γ(ν/2) ) · (1 + t²/ν)^{−(ν+1)/2}<br><br>
+<span class="c">เมื่อ ν → ∞ : f(t;ν) → Normal PDF  N(0,1)</span><br>
+<span class="c">เมื่อ ν ↓ 1  : หางหนักมาก (Cauchy distribution)</span><br>
+<span class="c">สำหรับ crypto: ν ≈ 3–6 ให้ผลที่ fit data ดีที่สุด</span>
+</div>
+
+<img class="chart" src="charts/ch23-tdist-pdf.svg" alt="PDF comparison: Normal vs t(nu=10) vs t(nu=4) showing fat tails">
+<p class="caption">รูป 23.5 — t(ν=4) มีหางหนักกว่า Normal ชัดเจน — area นอก ±1.96 ใหญ่กว่า 2× สำหรับ crypto ν ≈ 3–6</p>
+
+<h3>คุณสมบัติสำคัญของ t-distribution</h3>
+<table>
+<thead><tr><th>ν (degrees of freedom)</th><th>ลักษณะ</th><th>Excess Kurtosis</th><th>Variance</th></tr></thead>
+<tbody>
+<tr><td>ν = 2</td><td>หางหนักมาก</td><td>ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td></tr>
+<tr><td>ν = 3</td><td>หางหนา</td><td>ไม่มีที่สิ้นสุด</td><td>3.0</td></tr>
+<tr><td>ν = 4</td><td>fat tails — โมเมนต์ที่ 4 ไม่มีที่สิ้นสุด</td><td>ไม่มีที่สิ้นสุด</td><td>2.0</td></tr>
+<tr><td><strong>ν = 5</strong></td><td><strong>fat tails — เหมาะ crypto มาก</strong></td><td><strong>6.0</strong></td><td><strong>1.67</strong></td></tr>
+<tr><td>ν = 6</td><td>moderate fat tails</td><td>3.0</td><td>1.5</td></tr>
+<tr><td>ν = 10</td><td>ใกล้ Normal</td><td>1.0</td><td>1.25</td></tr>
+<tr><td>ν → ∞</td><td>Normal distribution</td><td>0</td><td>1.0</td></tr>
+</tbody>
+</table>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก — ε_RR (Risk Reversal) Options Residual</div>
+<p>ε_RR จาก §22.3 ของ BTC options มี distribution ที่ fat-tailed เนื่องจาก IV spikes ระหว่าง market stress:</p>
+<ul>
+<li>BTC 30-day IV สามารถ jump จาก 50% → 120% ภายใน 48 ชั่วโมง (Black Thursday 2020, FTX collapse 2022)</li>
+<li>MLE estimate ν ≈ 4–5 สำหรับ ε_RR บน 1-year data</li>
+<li>ถ้าใช้ Normal threshold z = 2.0 → จะ flag ε_RR ที่ IV spike ว่าเป็น "entry signal" ทั้งที่จริงๆ คือ regime change ที่ควรหลีกเลี่ยง</li>
+<li>t(ν=4) threshold = 2.78 → กรองสัญญาณ IV spike ออกไปได้ดีกว่า</li>
+</ul>
+</div>
+
+<!-- ======================================================= -->
+<h2 id="s23-7">23.7 Critical Values — Normal vs t-Distribution</h2>
+
+<p>ความแตกต่างใน threshold นี้มีผลโดยตรงต่อจำนวนครั้งที่ strategy เข้า trade</p>
+
+<table>
+<thead><tr><th>Distribution</th><th>Two-tailed α=5%</th><th>Two-tailed α=2%</th><th>Two-tailed α=1%</th></tr></thead>
+<tbody>
+<tr><td><strong>Normal (z)</strong></td><td><strong>1.960</strong></td><td>2.326</td><td>2.576</td></tr>
+<tr><td>t (ν = 30)</td><td>2.042</td><td>2.457</td><td>2.750</td></tr>
+<tr><td>t (ν = 10)</td><td>2.228</td><td>2.764</td><td>3.169</td></tr>
+<tr><td>t (ν = 6)</td><td>2.447</td><td>3.143</td><td>3.707</td></tr>
+<tr><td><strong>t (ν = 4)</strong></td><td><strong>2.776</strong></td><td>3.747</td><td>4.604</td></tr>
+<tr><td>t (ν = 5)</td><td>2.571</td><td>3.365</td><td>4.032</td></tr>
+<tr><td>t (ν = 3)</td><td>3.182</td><td>4.541</td><td>5.841</td></tr>
+</tbody>
+</table>
+
+<div class="bx ba">
+<div class="bt">ตีความตาราง</div>
+<p>ถ้าใช้ t(ν=4) แทน Normal สำหรับ two-tailed α=5% (threshold แบบ "95% confidence"):</p>
+<ul>
+<li>Normal threshold: |z| ≥ <strong>1.96</strong></li>
+<li>t(ν=4) threshold: |t| ≥ <strong>2.78</strong> → เข้มกว่า 42%</li>
+<li>ความหมาย: ε ต้องห่างจาก mean มากกว่า 42% จึงจะเรียกว่า "significant" — กรอง noise ออกมากขึ้น</li>
+</ul>
+</div>
+
+<h3>การประมาณ ν จากข้อมูล (MLE)</h3>
+<p>หา ν ที่เหมาะสมกับ ε โดยใช้ Maximum Likelihood Estimation:</p>
+
+<div class="pseudo">
+<span class="kw">from</span> scipy.stats <span class="kw">import</span> t <span class="kw">as</span> t_dist<br>
+<span class="kw">import</span> numpy <span class="kw">as</span> np<br><br>
+<span class="c"># MLE fit ของ t-distribution บน ε_RR หรือ ε BTC/ETH</span><br>
+epsilon = np.<span class="fn">array</span>([...])  <span class="c"># residuals series</span><br><br>
+<span class="c"># fit returns (df, loc, scale) — df คือ ν ที่ fit ดีที่สุด</span><br>
+nu, loc, scale = t_dist.<span class="fn">fit</span>(epsilon, floc=<span class="nm">0</span>)  <span class="c"># fix loc=0 (mean-zero ε)</span><br><br>
+print(f<span class="nm">"Estimated ν = {nu:.2f}"</span>)   <span class="c"># ตัวอย่าง: ν ≈ 4.2</span><br><br>
+<span class="c"># critical value สำหรับ two-tailed 5%</span><br>
+threshold = t_dist.<span class="fn">ppf</span>(<span class="nm">0.975</span>, df=nu)   <span class="c"># ตัวอย่าง: 2.74</span><br>
+print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</span>)
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก — MLE บน ε_RR BTC Options</div>
+<p><strong>Input:</strong> ε_RR series จาก 1 ปีของ BTC 25Δ Risk Reversal (≈250 daily observations)</p>
+<p><strong>MLE result:</strong> ν̂ ≈ 4.3 → ยืนยันว่า fat-tailed</p>
+<p><strong>New threshold:</strong> t_{0.025}(ν=4.3) ≈ 2.72 (แทน 1.96)</p>
+<p><strong>ผลต่อ strategy:</strong></p>
+<ul>
+<li>Signals ลดลงจาก ≈28 ครั้ง/ปี (Normal) → ≈17 ครั้ง/ปี (t-dist)</li>
+<li>False positive rate ลดลงจาก ≈8% → ≈4.8% (ใกล้เคียงทางทฤษฎี α=5% จริงๆ)</li>
+<li>Win rate ต่อ trade สูงขึ้น แต่ trade น้อยลง — net Sharpe ratio ดีขึ้น</li>
+</ul>
+</div>
+
+<p>ตารางและตัวอย่างข้างต้นแสดงว่า threshold ที่ถูกต้องสำหรับ crypto ε ต้องสูงกว่า 1.96 อย่างมีนัยสำคัญ ส่วน §23.8 จะแสดงผลกระทบนี้ต่อ trading signals จริงว่าต่างกันมากแค่ไหนในทางปฏิบัติ</p>
+
+<!-- ======================================================= -->
+<h2 id="s23-8">23.8 เปรียบเทียบ Trading Signals: Normal vs t-Distribution</h2>
+
+<p>ส่วนนี้แสดงผลต่างเชิงปฏิบัติของการใช้ Normal vs t-distribution ในการสร้าง trading signals บน pipeline เดิม</p>
+
+<table>
+<thead><tr><th>Scenario</th><th>Normal (z=2.0)</th><th>t(ν=4, t=2.78)</th><th>ผล</th></tr></thead>
+<tbody>
+<tr><td>ε_RR = −12% (σ_RR=2%, θ=−8%)</td><td>z = (−12−(−8))/2 = −2.0 → <strong>ENTER</strong></td><td>t = −2.0 &lt; 2.78 → <strong>WAIT</strong></td><td>t กรอง marginal signal</td></tr>
+<tr><td>ε_RR = −15% (σ_RR=2%, θ=−8%)</td><td>z = −3.5 → <strong>ENTER</strong></td><td>t = −3.5 &gt; 2.78 → <strong>ENTER</strong></td><td>ทั้งคู่เห็นตรงกัน</td></tr>
+<tr><td>ε_BTC = +2.3σ (half-life event)</td><td>z = 2.3 → <strong>ENTER</strong></td><td>t = 2.3 &lt; 2.78 → <strong>WAIT</strong></td><td>t กรอง noise trade</td></tr>
+<tr><td>ε_BTC = +3.1σ (IV spike event)</td><td>z = 3.1 → <strong>ENTER</strong></td><td>t = 3.1 &gt; 2.78 → <strong>ENTER</strong></td><td>ทั้งคู่เห็นตรงกัน</td></tr>
+<tr><td>ε_PCP = −1.8σ (PCP violation)</td><td>z = 1.8 → <strong>WAIT</strong></td><td>t = 1.8 → <strong>WAIT</strong></td><td>ทั้งคู่ผ่าน — ถูกต้อง</td></tr>
+</tbody>
+</table>
+
+<div class="bx bg">
+<div class="bt">สรุปผลต่างเชิงปฏิบัติ</div>
+<ul>
+<li><strong>t-distribution ช่วยลด false positives</strong> โดยเฉพาะสัญญาณที่ z อยู่ในโซน 2.0–2.7 — ซึ่งใน crypto เป็น noise มากกว่า signal</li>
+<li>Signals ที่ผ่าน t-threshold มักอยู่ใกล้ขอบเขต extreme ของ distribution จริงๆ → higher conviction trades</li>
+<li>สำหรับ <strong>options ε (ε_RR, ε_PCP)</strong>: ควรใช้ t เสมอเพราะ fat tails จาก IV dynamics รุนแรงกว่า spot ε</li>
+<li>สำหรับ <strong>spot pair ε</strong> ที่ผ่าน Shapiro-Wilk (ch5 §5.6): ใช้ Normal ก็ได้ — แต่ถ้า kurtosis &gt; 5 → เปลี่ยนเป็น t</li>
+</ul>
+</div>
+
+<p>§23.5–23.8 แสดงว่า t-distribution ให้ threshold ที่สะท้อน tail risk ของ crypto จริงมากกว่า ส่วนต่อไป §23.9 จะรวม Kalman Filter กับ t-distribution เป็น pipeline เดียว</p>
+
+<!-- ======================================================= -->
+<h2 id="s23-9">23.9 Pipeline รวม: Kalman β_t + t-Distribution Signal</h2>
+
+<p>Pipeline ต่อไปนี้รวม 2 เทคนิคจาก §23.1–23.8 เข้าด้วยกัน ให้ signal ที่แม่นยำและน่าเชื่อถือกว่า static β + Normal threshold</p>
+
+<div class="bx bb">
+<div class="bt">5-Step Pipeline: Kalman + t-distribution</div>
+<ol>
+<li><strong>Initialization:</strong> OLS β บน training window (≥250 obs) → ได้ β₀ เริ่มต้น และ Var(ε) สำหรับ R; ตั้ง Q จาก walk-forward validation</li>
+<li><strong>Kalman update (ทุก tick/bar):</strong> รัน predict-update cycle → ได้ β_t และ ε_t = y_t − β_t·x_t</li>
+<li><strong>Estimate σ_t:</strong> คำนวณ rolling std ของ ε_t (lookback 50–100 bars) → ได้ z_t = ε_t / σ_t</li>
+<li><strong>t-distribution threshold:</strong> ใช้ ν ที่ประมาณจาก MLE บน training window → threshold = t_{α/2}(ν) แทน 1.96</li>
+<li><strong>Entry/Exit signal:</strong>
+  <ul>
+    <li>Entry: |z_t| ≥ t_{α/2}(ν) AND Kalman gain K_t &lt; 0.3 (β stable — guard นี้ใช้กับ log-return inputs ที่ x_t ≈ 0.01–0.05; สำหรับ log-price inputs ต้องปรับ threshold ตาม scale ของ x_t)</li>
+    <li>Exit: |z_t| ≤ 0.5 (ε กลับ mean)</li>
+    <li>Stop: |z_t| ≥ 3 × t_{α/2}(ν) (ε วิ่งไกลเกิน — ไม่ใช่ reversion)</li>
+  </ul>
+</li>
+</ol>
+</div>
+
+<img class="chart" src="charts/ch23-pipeline.svg" alt="Pipeline: Kalman + t-distribution 5-step trading signal pipeline">
+<p class="caption">รูป 23.6 — Pipeline 5 ขั้นตอน: Kalman ให้ β_t แม่นยำ → t-distribution กำหนด threshold ที่เหมาะ</p>
+
+<h3>Pseudo-code: Pipeline รวม</h3>
+<div class="pseudo">
+<span class="c"># === Initialization (ครั้งเดียวบน training data) ===</span><br>
+beta_hat, P  = <span class="fn">ols_fit</span>(y_train, x_train)   <span class="c"># β₀, P₀ (log-return OLS, ~1.10 for BTC/ETH)</span><br>
+Q, R         = <span class="fn">tune_kalman</span>(y_train, x_train)   <span class="c"># walk-forward</span><br>
+nu           = <span class="fn">mle_t_fit</span>(epsilon_train)     <span class="c"># ν จาก MLE</span><br>
+threshold    = t_dist.<span class="fn">ppf</span>(<span class="nm">0.975</span>, df=nu)      <span class="c"># เช่น 2.74</span><br>
+epsilon_buf  = []                           <span class="c"># rolling buffer สำหรับ σ_t</span><br><br>
+<span class="c"># === Live Trading Loop ===</span><br>
+<span class="kw">for</span> bar <span class="kw">in</span> live_stream:<br>
+    y_t, x_t = bar[<span class="nm">'log_y'</span>], bar[<span class="nm">'log_x'</span>]<br><br>
+    <span class="c">## ② Kalman update</span><br>
+    P_prior      = P + Q<br>
+    innovation   = y_t - beta_hat * x_t<br>
+    S            = x_t**<span class="nm">2</span> * P_prior + R<br>
+    K            = P_prior * x_t / S<br>
+    beta_hat     = beta_hat + K * innovation<br>
+    P            = (<span class="nm">1</span> - K * x_t) * P_prior<br>
+    epsilon_t    = y_t - beta_hat * x_t<br><br>
+    <span class="c">## ③ σ_t estimate</span><br>
+    epsilon_buf.<span class="fn">append</span>(epsilon_t)<br>
+    <span class="kw">if</span> <span class="fn">len</span>(epsilon_buf) &gt; <span class="nm">100</span>: epsilon_buf.<span class="fn">pop</span>(<span class="nm">0</span>)<br>
+    sigma_t = <span class="fn">std</span>(epsilon_buf)<br>
+    z_t     = epsilon_t / sigma_t<br><br>
+    <span class="c">## ⑤ Signal</span><br>
+    <span class="kw">if</span> <span class="fn">abs</span>(z_t) &gt;= threshold <span class="kw">and</span> K &lt; <span class="nm">0.3</span>:  <span class="c"># Entry (K&lt;0.3 ป้องกัน trade ระหว่าง β updating เร็ว; สำหรับ log-return inputs x_t~0.01-0.05)</span><br>
+        signal = <span class="nm">'LONG_Y'</span> <span class="kw">if</span> z_t &lt; <span class="nm">0</span> <span class="kw">else</span> <span class="nm">'SHORT_Y'</span><br>
+    <span class="kw">elif</span> <span class="fn">abs</span>(z_t) &lt;= <span class="nm">0.5</span>:                    <span class="c"># Exit</span><br>
+        signal = <span class="nm">'CLOSE'</span><br>
+    <span class="kw">elif</span> <span class="fn">abs</span>(z_t) &gt;= <span class="nm">3</span> * threshold:           <span class="c"># Stop</span><br>
+        signal = <span class="nm">'STOP'</span><br>
+</div>
+
+<!-- ======================================================= -->
+<h2 id="s23-10">23.10 Cross-Reference ทั้งเล่ม</h2>
+
+<p>บทนี้สร้างขึ้นบนฐานของหลายบทก่อนหน้า และเพิ่มเติมให้บทที่จะใช้ต่อ:</p>
+
+<table>
+<thead><tr><th>บท</th><th>เชื่อมโยงกับ ch23</th></tr></thead>
+<tbody>
+<tr><td><a href="statarb-ch3.html">บทที่ 3</a> §3.9</td><td>Walk-forward calibration — ใช้สำหรับ Q/R tuning ของ Kalman</td></tr>
+<tr><td><a href="statarb-ch4.html">บทที่ 4</a> §4.2b</td><td>OLS β เป็นค่าเริ่มต้น β₀ ของ Kalman Filter</td></tr>
+<tr><td><a href="statarb-ch5.html">บทที่ 5</a> §5.6</td><td>Shapiro-Wilk: ถ้า p ≥ 0.05 ใช้ Normal; ถ้า p &lt; 0.05 ใช้ t-distribution</td></tr>
+<tr><td><a href="statarb-ch5.html">บทที่ 5</a> §5.7</td><td>Crossing rate φ: AR(1) coefficient เดียวกับที่ใช้ประมาณ Half-life</td></tr>
+<tr><td><a href="statarb-ch10.html">บทที่ 10</a> §10.3</td><td>Robust Z-score (MAD): ทางเลือกแทน σ-based z เมื่อ outlier มาก</td></tr>
+<tr><td><a href="statarb-ch12.html">บทที่ 12</a></td><td>Kelly criterion: ปรับ position size ตาม win rate จาก t-distribution threshold</td></tr>
+<tr><td><a href="statarb-ch18.html">บทที่ 18</a> §18.8</td><td>ε_PCP: ตัวอย่าง fat-tailed options residual ที่ใช้ t-distribution</td></tr>
+<tr><td><a href="statarb-ch22.html">บทที่ 22</a> §22.3</td><td>ε_RR: Risk Reversal residual — ตัวอย่างหลักสำหรับ MLE ν ใน §23.7</td></tr>
+<tr><td><a href="statarb-ch22.html">บทที่ 22</a> §22.5</td><td>ε_VRP: Vol Risk Premium — ประโยชน์จาก Kalman เพราะ β_IV เปลี่ยนตาม term structure</td></tr>
+</tbody>
+</table>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Kalman Filter & t-Distribution</div>
+<p>ตั้ง Q/R ratio โดย cross-validate บน out-of-sample period — อย่า tune บน in-sample เพียงอย่างเดียว Q สูงเกินไปทำให้ β noisy; Q ต่ำเกินไปทำให้ lag สูงเหมือน static OLS. สำหรับ BTC/ETH pair ที่ดี ให้เริ่มต้นที่ Q=0.0001, R=0.001 แล้วปรับตาม half-life ที่ต้องการ. ใช้ t-distribution กับ ν=4–6 สำหรับ crypto spreads — Normal distribution underestimates tail risk อย่างน้อย 3× ใน regime สูง.</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — Kalman Filter Assumptions</div>
+<p>Kalman Filter assume linear Gaussian state-space — ทั้งสองข้อนี้พังในตลาด crypto: (1) ความสัมพันธ์ BTC/ETH ไม่เป็น linear เสมอในช่วง high-volatility; (2) residuals ไม่ Gaussian มี fat tails รุนแรง. ผลคือ Kalman gain K_t อาจสูงเกินไปในช่วงที่ variance พุ่ง → β_t กระโดดผิดทิศทาง → ε_t ผิด → เข้า trade ผิด side. วิธีป้องกัน: cap Kalman gain ไม่ให้เกิน K_max = 0.3 และใช้ t-filter แทน standard Kalman ในช่วงที่ residuals fat-tailed.</p>
+</div>
+
+<!-- ======================================================= -->
+<div class="ex" id="s23-ex">
+<div class="et">โจทย์บทที่ 23</div>
+
+<p><strong>โจทย์ 23.1 — Kalman Filter 1 Step (log-returns)</strong></p>
+<p>BTC/ETH pair โดยใช้ daily log-returns (r_t = Δlog P_t)<br>
+ให้ค่า: β̂₀ = 1.10, P₀ = 0.01, Q = 1×10⁻⁵, R = 0.001<br>
+Data ใหม่: y₁ = 0.032 (BTC log-return = +3.2%), x₁ = 0.028 (ETH log-return = +2.8%)</p>
+<p><strong>(ก)</strong> คำนวณ P_{1|0} (prior covariance)<br>
+<strong>(ข)</strong> คำนวณ S (innovation variance) และ Kalman gain K₁<br>
+<strong>(ค)</strong> คำนวณ β̂₁ (updated estimate), P₁, และ ε₁</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) P prior:</strong><br>
+P_{1|0} = P₀ + Q = 0.01 + 0.00001 = <strong>0.01001</strong></p>
+<p><strong>(ข) S และ K₁:</strong><br>
+S = x₁² × P_{1|0} + R = 0.028² × 0.01001 + 0.001 = 7.85×10⁻⁶ + 0.001 ≈ <strong>0.001008</strong><br>
+K₁ = P_{1|0} × x₁ / S = 0.01001 × 0.028 / 0.001008 = 2.803×10⁻⁴ / 0.001008 ≈ <strong>0.278</strong><br>
+<em>สังเกต:</em> K₁ = 0.278 &lt; 0.3 → guard condition ผ่าน β กำลังอัพเดทในอัตราปกติ</p>
+<p><strong>(ค) Update β̂₁, P₁ และ ε₁:</strong><br>
+Innovation ν₁ = y₁ − β̂₀ × x₁ = 0.032 − 1.10 × 0.028 = 0.032 − 0.0308 = <strong>0.0012</strong><br>
+β̂₁ = β̂₀ + K₁ × ν₁ = 1.10 + 0.278 × 0.0012 = 1.10 + 0.000334 ≈ <strong>1.1003</strong><br>
+P₁ = (1 − K₁ × x₁) × P_{1|0} = (1 − 0.278 × 0.028) × 0.01001 = (1 − 0.00778) × 0.01001 ≈ <strong>0.009932</strong><br>
+ε₁ = y₁ − β̂₁ × x₁ = 0.032 − 1.1003 × 0.028 = 0.032 − 0.030808 ≈ <strong>0.001192</strong><br>
+<em>สังเกต:</em> β เปลี่ยนน้อยมาก (1.10 → 1.1003) เพราะ innovation เล็ก → ε ≈ 0.0012 สมเหตุสมผล</p>
+</div>
+</details>
+
+<hr style="margin:16px 0;border-color:#e5e7eb">
+
+<p><strong>โจทย์ 23.2 — MLE ประมาณ ν</strong></p>
+<p>ε_RR ของ BTC 25Δ Risk Reversal มีสถิติต่อไปนี้จาก 252 observations:<br>
+Mean = 0.0%, Std = 2.1%, Skewness = −0.3, <strong>Kurtosis (excess) = 5.8</strong></p>
+<p><strong>(ก)</strong> จาก kurtosis = 5.8 ประมาณ ν คร่าวๆ ได้เท่าไร? (ใช้สูตร excess kurtosis = 6/(ν−4) สำหรับ ν &gt; 4)<br>
+<strong>(ข)</strong> ถ้า ν ≈ 5 ให้คำนวณ two-tailed threshold ที่ α=5% (ใช้ตารางใน §23.7)<br>
+<strong>(ค)</strong> เปรียบเทียบกับ Normal z = 1.96 — threshold ต่างกันกี่ %?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) ประมาณ ν:</strong><br>
+Excess kurtosis = 6/(ν−4)<br>
+5.8 = 6/(ν−4)<br>
+ν−4 = 6/5.8 ≈ 1.034<br>
+ν ≈ 5.03 → ประมาณ <strong>ν ≈ 5</strong></p>
+<p><strong>(ข) Threshold ที่ α=5%:</strong><br>
+จากตารางใน §23.7: ค่าจริง t(ν=5, p=0.975) = <strong>2.571</strong> (scipy: t.ppf(0.975, df=5))<br>
+<em>หมายเหตุ:</em> linear interpolation ระหว่าง ν=4 (2.776) และ ν=6 (2.447) ให้ค่า ≈ 2.61 ซึ่งใกล้แต่ไม่ตรง — แนะนำใช้ scipy หรือ t-table ที่มีครบทุก ν</p>
+<p><strong>(ค) เปรียบเทียบ:</strong><br>
+Increase = (2.571 − 1.960) / 1.960 × 100% ≈ <strong>31% เข้มกว่า</strong><br>
+หมายความว่า ε_RR ต้องห่างจาก mean มากกว่า 31% จึงจะนับเป็น signal ที่ valid</p>
+</div>
+</details>
+
+<hr style="margin:16px 0;border-color:#e5e7eb">
+
+<p><strong>โจทย์ 23.3 — เปรียบเทียบ Normal vs t Signal</strong></p>
+<p>BTC/ETH pair: ε_t = +2.4σ (คำนวณจาก Kalman β_t), ν = 4 สำหรับ t-distribution</p>
+<p><strong>(ก)</strong> Normal (threshold = 1.96): เข้า trade หรือ wait?<br>
+<strong>(ข)</strong> t(ν=4) (threshold = 2.78): เข้า trade หรือ wait?<br>
+<strong>(ค)</strong> ถ้าหลังจากนี้ ε เพิ่มขึ้นเป็น +3.2σ — ทั้งสองระบบตัดสินใจอย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) Normal:</strong> 2.4 &gt; 1.96 → <strong>SHORT Y (Enter)</strong></p>
+<p><strong>(ข) t(ν=4):</strong> 2.4 &lt; 2.78 → <strong>WAIT</strong> — ยังไม่ถึง threshold</p>
+<p><strong>(ค) ε = +3.2σ:</strong><br>
+Normal: 3.2 &gt; 1.96 → <strong>SHORT Y (Enter)</strong><br>
+t(ν=4): 3.2 &gt; 2.78 → <strong>SHORT Y (Enter)</strong><br>
+ทั้งสองระบบเห็นตรงกัน — แต่ t ช้ากว่า 1 step — สำคัญคือ 42% ของ signal ที่ Normal เห็น (โซน 1.96–2.78) จะไม่ถูกนับใน t-distribution</p>
+</div>
+</details>
+
+<hr style="margin:16px 0;border-color:#e5e7eb">
+
+<p><strong>โจทย์ 23.4 — Full Pipeline</strong></p>
+<p>ให้ข้อมูล BTC/ETH: ε_RR series มี ν = 4, σ_RR = 2%, θ_RR = −8%<br>
+Observe ε_RR = −14.5% (RR_25Δ = −14.5%) พร้อมกับ Kalman gain K_t = 0.18<br>
+<em>(K_t มาจาก Kalman Filter ที่ track β_IV ของ RR spread ตาม pipeline ใน §23.9)</em></p>
+<p><strong>(ก)</strong> คำนวณ z_t (ใช้ mean-adjusted ε)<br>
+<strong>(ข)</strong> เปรียบเทียบกับ t(ν=4) threshold = 2.776 — ควร enter trade ไหม?<br>
+<strong>(ค)</strong> ถ้า K_t = 0.45 แทน — pipeline ตัดสินใจอย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) z_t:</strong><br>
+ε_t = ε_RR − θ_RR = −14.5% − (−8%) = −6.5%<br>
+z_t = ε_t / σ_RR = −6.5% / 2% = <strong>−3.25</strong></p>
+<p><strong>(ข) Entry decision (K_t = 0.18):</strong><br>
+|z_t| = 3.25 &gt; 2.776 ✅ (t-threshold ผ่าน)<br>
+K_t = 0.18 &lt; 0.3 ✅ (β stable, ไม่อยู่ระหว่าง fast update)<br>
+→ <strong>LONG RR: Buy 25Δ Call + Sell 25Δ Put</strong> (คาด RR กลับสู่ −8%) พร้อม delta-hedge ทันที</p>
+<p><strong>(ค) ถ้า K_t = 0.45:</strong><br>
+|z_t| = 3.25 ผ่าน threshold แต่ K_t = 0.45 &gt; 0.3 ❌ (β กำลัง update เร็ว)<br>
+→ <strong>WAIT</strong> — pipeline block entry เพราะ β_t กำลัง adjust ต่อ regime change อยู่ ควรรอ K_t ลดลงก่อน</p>
+</div>
+</details>
+
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.23 Advanced: Kalman Filter &amp; t-Distribution | ← <a href="statarb-ch22.html">Ch.22: Options-Based Stat Arb</a>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

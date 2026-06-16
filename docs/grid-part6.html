@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 6 — Pair Grid + Relative Value Switching</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.05em;font-weight:700;background:rgba(6,182,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.pair-diagram{display:flex;gap:16px;align-items:center;margin:16px 0;flex-wrap:wrap}
+.pd-box{flex:1;min-width:180px;border:2px solid;border-radius:8px;padding:12px 14px}
+.pd-btc{border-color:#f59e0b;background:#fffbeb}
+.pd-eth{border-color:#6366f1;background:#f5f3ff}
+.pd-spread{border-color:#06b6d4;background:var(--cyan-bg);text-align:center}
+.pd-arrow{font-size:1.8em;color:#94a3b8;display:flex;align-items:center}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+<script src="vendor/chartjs/mini-charts.js"></script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 6</div>
+<h1>Pair Grid + Relative Value Switching</h1>
+<div class="sub">BTC/ETH Spread Grid · Cointegration Test · Relative Value Signal<br>
+Multi-Asset Grid Portfolio · Switching Between Instruments<br>
+อ้างอิง: <a href="statarb-ch0.html" style="color:#0e7490">Statarb Ch.4–6</a> (Cointegration, Spread, OU Process)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">Pair Grid ไม่ใช้ grid บน BTC price โดยตรง แต่ใช้ grid บน <strong>spread ระหว่างสองสินทรัพย์</strong> (เช่น BTC/ETH ratio) — spread cointegrated มี mean-reversion ที่แข็งแกร่งกว่าราคาเดี่ยว + ไม่ขึ้นกับทิศทางตลาด</div>
+<div class="ki-eq">Spread = log(BTC/USDT) − β × log(ETH/USDT) · Grid on spread reversion to mean</div>
+</div>
+
+<h2 id="s6-1">6.1 ทำไม Pair Grid?</h2>
+
+<p>ปัญหาของ Single-Asset Grid: ถ้า BTC uptrend → grid ขาย inventory เร็ว (ดี) แต่ถ้า BTC downtrend → inventory สะสม (ไม่ดี)</p>
+
+<p>Pair Grid แก้ด้วย: สร้าง grid บน spread ที่ cointegrated — spread revert ไม่ว่า BTC จะขึ้นหรือลง (ตราบใดที่ BTC/ETH ratio กลับสู่ค่าเฉลี่ย)</p>
+
+<div class="pair-diagram">
+<div class="pd-box pd-btc">
+<strong style="color:#b45309">BTC/USDT</strong><br>
+Long BTC ถ้า spread ต่ำกว่า mean<br>
+(BTC "ถูก" เทียบ ETH)
+</div>
+<div class="pd-arrow">↔</div>
+<div class="pd-box pd-spread">
+<strong style="color:#0e7490">SPREAD = log(BTC) − β·log(ETH)</strong><br>
+Grid บน spread<br>
+BUY spread ต่ำ → SELL spread สูง
+</div>
+<div class="pd-arrow">↔</div>
+<div class="pd-box pd-eth">
+<strong style="color:#4f46e5">ETH/USDT</strong><br>
+Short ETH ถ้า spread ต่ำกว่า mean<br>
+(ETH "แพง" เทียบ BTC)
+</div>
+</div>
+
+<h2 id="s6-2">6.2 Cointegration — พื้นฐาน Pair Grid</h2>
+
+<div class="bx bc"><div class="bt">Correlation ≠ Cointegration</div><p>BTC และ ETH อาจมี correlation สูง (ขึ้นลงพร้อมกัน) แต่นั่นไม่รับประกันว่า spread จะ mean-revert — ต้องผ่าน Cointegration Test จึงจะ trade ได้อย่างมั่นใจ</p></div>
+<p>Cointegration (จาก <a href="statarb-ch0.html">Statarb Ch.5</a>) หมายความว่า: แม้ราคาสองตัวจะ random walk แต่ linear combination ของมันเป็น stationary:</p>
+
+$$\text{Spread}_t = \log(P_{BTC,t}) - \beta \cdot \log(P_{ETH,t}) - \alpha \sim \text{Stationary}$$
+
+<canvas id="chartSpread" class="chart" style="height:360px"></canvas>
+<p class="caption">BTC/ETH Spread (log ratio) — mean-revert กลับสู่ค่าเฉลี่ยอยู่เสมอ → Grid บน spread ทำกำไรได้ต่อเนื่อง</p>
+<script>
+(function(){
+  MiniChart.line(document.getElementById('chartSpread'), {
+    title: 'BTC/ETH Log Spread — Cointegration Mean-Reversion (สมมติ 16 สัปดาห์)',
+    labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16'],
+    datasets: [
+      { label: 'Spread = log(BTC) − β·log(ETH)', color: '#06b6d4', fill: true,
+        data: [0.05, 0.18, 0.32, 0.28, 0.12, -0.05, -0.22, -0.35, -0.28, -0.10, 0.08, 0.25, 0.38, 0.22, 0.05, -0.08] },
+      { label: 'Mean (μ = 0)',  color: '#64748b', fill: false,
+        data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+      { label: 'Grid Upper (+1σ)', color: '#16a34a', fill: false,
+        data: [0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3] },
+      { label: 'Grid Lower (−1σ)', color: '#dc2626', fill: false,
+        data: [-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3] }
+    ],
+    yMin: -0.5, yMax: 0.5,
+    yLabel: 'Spread (log ratio)',
+    caption: 'เมื่อ spread > +1σ: Short BTC / Long ETH → เมื่อ spread < −1σ: Long BTC / Short ETH → profit เมื่อ revert'
+  });
+})();
+</script>
+
+<div class="fm">ทดสอบ Cointegration สำหรับ Pair Grid:
+
+def test_cointegration(btc_prices, eth_prices, significance=0.05):
+    """
+    Engle-Granger 2-step cointegration test
+    Returns: (is_cointegrated, beta, alpha, adf_stat, p_value)
+    """
+    import numpy as np
+    from scipy import stats
+
+    log_btc = np.log(btc_prices)
+    log_eth = np.log(eth_prices)
+
+    # Step 1: OLS regression log_BTC = alpha + beta × log_ETH
+    slope, intercept, r, p, se = stats.linregress(log_eth, log_btc)
+    beta  = slope
+    alpha = intercept
+
+    # Step 2: คำนวณ spread (residuals)
+    spread = log_btc - beta * log_eth - alpha
+
+    # Step 3: ADF test บน spread
+    adf_stat = adf_test(spread)  # implementation ดูใน statarb
+    p_value  = adf_p_value(adf_stat, len(spread))
+
+    is_cointegrated = p_value < significance
+    return is_cointegrated, beta, alpha, spread
+
+# ตัวอย่าง BTC/ETH (180 วัน):
+# OLS: log(BTC) = 2.14 + 0.82 × log(ETH)  → beta = 0.82
+# ADF stat = −3.47 (critical at 5% = −2.89) → p < 0.05 → cointegrated ✓
+# Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days</div>
+
+<div class="bx bc">
+<div class="bt">Johansen Test — ดีกว่า Engle-Granger สำหรับ Pair Grid</div>
+<p>Engle-Granger มี low statistical power (พลาด cointegration จริงบ่อย) — ใช้ Johansen เป็น confirmation:</p>
+</div>
+
+<div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+def johansen_cointegration(btc_prices, eth_prices, significance_level=0.05):
+    """
+    Johansen test — ดีกว่า Engle-Granger สำหรับ 2+ variables
+    Returns True ถ้า cointegrated
+    """
+    import numpy as np
+    data = np.column_stack([np.log(btc_prices), np.log(eth_prices)])
+    result = coint_johansen(data, det_order=0, k_ar_diff=1)
+
+    # Trace statistic: critical values at 5%
+    # result.cvt[:, 1] = 5% critical values
+    trace_stat = result.lr1[0]  # rank=0 hypothesis
+    crit_val = result.cvt[0, 1]  # 5% critical value
+
+    is_cointegrated = trace_stat > crit_val
+    return {
+        "cointegrated": is_cointegrated,
+        "trace_stat": trace_stat,
+        "crit_val_5pct": crit_val,
+        "eigenvectors": result.evec  # loading vectors
+    }
+
+# ใช้ทั้งสอง test ร่วมกัน:
+# ถ้า Engle-Granger AND Johansen ทั้งคู่ = cointegrated → เชื่อถือได้สูง
+# ถ้าแค่อันเดียว → ระวัง (อาจเป็น spurious)</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Cointegration Break Risk</div>
+<p>Cointegration ไม่ถาวร — ความสัมพันธ์ระหว่าง BTC/ETH อาจพังได้เมื่อ:</p>
+<ul>
+<li>Structural regime change (เช่น ETH ถูก SEC classify เป็น security)</li>
+<li>Exchange listing/delisting ของ asset ใดอีกตัว</li>
+<li>Regulatory event ที่กระทบ asset ตัวใดตัวหนึ่งเฉพาะ</li>
+</ul>
+<p><strong>เมื่อ cointegration พัง:</strong> spread ไม่ revert → Pair Grid สะสม unrealized loss ไม่จำกัด ต้องปิด position ทันที</p>
+<p><strong>Re-validate ทุก 30 วัน:</strong> run ADF test + Johansen test ใหม่ ถ้า p-value &gt; 0.05 → หยุด Pair Grid ทันที</p>
+</div>
+
+<div class="fm">def rolling_cointegration_check(btc_prices, eth_prices, window=60, step=5):
+    """
+    ตรวจ cointegration แบบ rolling — ความสัมพันธ์อาจเปลี่ยนตาม regime
+    window: วันที่ใช้ test
+    step: ขยับ window ทีละกี่วัน
+    """
+    from statsmodels.tsa.stattools import coint
+    results = []
+
+    for start in range(0, len(btc_prices) - window, step):
+        end = start + window
+        _, pvalue, _ = coint(btc_prices[start:end], eth_prices[start:end])
+        results.append({
+            "start_day": start,
+            "end_day": end,
+            "p_value": pvalue,
+            "cointegrated": pvalue < 0.05
+        })
+
+    # นับ % ของ windows ที่ cointegrated
+    cointegrated_pct = sum(r["cointegrated"] for r in results) / len(results)
+    return results, cointegrated_pct
+
+# ถ้า cointegrated_pct < 70% → relationship ไม่เสถียร → ระวัง Pair Grid</div>
+
+<h2 id="s6-3">6.3 Spread Grid — โครงสร้าง</h2>
+
+<p>เมื่อรู้ว่า spread cointegrated แล้ว วาง grid บน spread โดยตรง:</p>
+
+<div class="fm">Spread Grid Setup:
+
+spread_mean  = 0.0     (โดย construction จาก OLS)
+spread_std   = 0.045   (จาก historical spread distribution)
+zone_width   = 3σ each side = ±0.135
+
+# Grid levels (spread units)
+spread_levels = [-0.135, -0.090, -0.045, 0.0, +0.045, +0.090, +0.135]
+               = [-3σ,   -2σ,   -1σ,   0,   +1σ,    +2σ,   +3σ  ]
+
+# แต่ละ level: ถ้า spread < level → BUY BTC + SHORT ETH
+#              ถ้า spread > level → SELL BTC + LONG ETH
+
+def pair_grid_signal(current_spread, spread_levels, prev_spread, beta,
+                      btc_price, eth_price, q_btc):
+    """
+    ตรวจสอบว่า spread ข้ามผ่าน level ไหน → ส่ง orders
+    """
+    orders = []
+    q_eth = q_btc * btc_price / eth_price * beta  # ETH qty ที่ match BTC
+
+    for level in spread_levels:
+        if prev_spread > level and current_spread <= level:
+            # Spread ลงผ่าน level → spread กำลังต่ำ → BUY spread (Long BTC, Short ETH)
+            orders.append({"action": "BUY_SPREAD",
+                           "btc": f"BUY {q_btc} BTC",
+                           "eth": f"SHORT {q_eth:.4f} ETH",
+                           "tp_spread": level + 0.045})  # TP ที่ level + 1σ
+
+        elif prev_spread < level and current_spread >= level:
+            # Spread ขึ้นผ่าน level → spread กำลังสูง → SELL spread (Short BTC, Long ETH)
+            orders.append({"action": "SELL_SPREAD",
+                           "btc": f"SHORT {q_btc} BTC",
+                           "eth": f"BUY {q_eth:.4f} ETH",
+                           "tp_spread": level - 0.045})  # TP ที่ level − 1σ
+
+    return orders</div>
+
+<h2 id="s6-4">6.4 Capital Allocation สำหรับ Pair Grid</h2>
+
+<div class="fm">Capital Allocation — Pair Grid:
+
+สมมติ: BTC = $100k · ETH = $3,500 · beta = 0.82
+Q_btc = 0.01 BTC per level
+
+Q_eth = Q_btc × BTC_price / ETH_price × beta
+      = 0.01 × $100,000 / $3,500 × 0.82
+      = 0.01 × 28.57 × 0.82 = 0.2343 ETH
+
+# ตรวจ dollar parity
+BTC_notional = 0.01 × $100k = $1,000
+ETH_notional = 0.2343 × $3,500 = $820
+
+# beta-adjusted hedge ratio ทำให้ไม่ต้องเท่ากันพอดี (beta = 0.82 ≠ 1)
+
+Capital ต่อ level (worst case):
+  Long BTC:  $1,000 (ซื้อ BTC)
+  Short ETH: margin $82 (10× leverage)
+  Total per level: $1,082
+
+# 7 levels total:
+Total pair grid capital: 7 × $1,082 ≈ $7,574
+
+กำไรต่อรอบ (spread กลับ 1σ = 0.045):
+  BTC leg:  0.01 BTC × $100k × 0.045 = $45 (ถ้า spread mean-reverts ผ่าน 1σ)
+  ETH leg:  0.2343 ETH × $3,500 × 0.045 × 0.82 ≈ $30
+  Net gain: ≈ $45 − $30 = $15 per cycle (net of both legs)
+  Note: กำไรจาก spread convergence ไม่ใช่ price direction</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Beta (β) ระหว่าง BTC/ETH ไม่คงที่ตาม Regime</div>
+<p>Beta ที่คำนวณจาก 60–90 วัน อาจเปลี่ยนมากใน regime ต่างกัน:</p>
+<ul>
+<li>Bull market: β ≈ 1.1–1.3 (ETH outperforms BTC)</li>
+<li>Bear market: β ≈ 0.8–1.0 (ETH underperforms ชัดกว่า)</li>
+<li>ถ้าใช้ static β ที่คำนวณในช่วง bull แล้วเข้าสู่ bear → spread signal ผิดทั้งหมด</li>
+</ul>
+<p><strong>แก้:</strong> ใช้ rolling β (window 30 วัน) และ recalibrate ทุก 2 สัปดาห์ หรือตรวจ β drift &gt; 20% → หยุด Pair Grid ชั่วคราว</p>
+<div class="fm">def rolling_beta(btc_returns, eth_returns, window=30):
+    """คำนวณ beta แบบ rolling"""
+    betas = []
+    for i in range(window, len(btc_returns)):
+        x = btc_returns[i-window:i]
+        y = eth_returns[i-window:i]
+        beta = np.cov(x, y)[0,1] / np.var(y)
+        betas.append(beta)
+    return betas
+
+# ถ้า |beta_current - beta_initial| > 0.2 → recalibrate หรือหยุด Pair Grid</div>
+</div>
+
+<div class="bx bc">
+<div class="bt">ข้อดีของ Pair Grid vs Single-Asset Grid</div>
+<ul>
+<li>Market-neutral: BTC pump/dump ไม่ affect pair grid มากนัก (ถ้า cointegration คงอยู่)</li>
+<li>Spread mean-reversion แข็งแกร่งกว่า price mean-reversion (half-life สั้นกว่า)</li>
+<li>2 sources of income: spread reversion + funding rate ของ short leg</li>
+</ul>
+</div>
+
+<h2 id="s6-5">6.5 Relative Value Switching — เลือก Asset ที่ดีที่สุด</h2>
+
+<p>เมื่อมีหลาย pair หรือหลาย asset — Relative Value Switching เลือก grid บน pair/asset ที่มี mean-reversion signal แรงที่สุด ณ เวลานั้น:</p>
+
+<div class="fm">Relative Value Score — เปรียบ 3 grids:
+
+ตัวเลือก:
+  A: BTC/USDT Spot Grid
+  B: BTC/ETH Pair Grid
+  C: ETH/USDT Spot Grid
+
+Score ต่อ asset (0–100):
+  = 0.40 × Hurst_score + 0.30 × Spread_z_score + 0.30 × Momentum_score
+
+def relative_value_score(hurst, spread_zscore, momentum_reversal):
+    """
+    spread_zscore = |current spread − mean| / std (ยิ่งสูง = ยิ่งน่า trade)
+    momentum_reversal = RSI extreme (ดูจาก Part 3B)
+    """
+    h_score = hurst_score_for_grid(hurst)  # จาก Part 3B
+
+    # Spread z-score: ยิ่งสูง ยิ่งดี (spread ห่างจาก mean มาก)
+    z_score_clamped = min(3.0, abs(spread_zscore))
+    z_score_score = z_score_clamped / 3.0 * 100  # map to 0–100
+
+    mom_score = rsi_score_for_grid(momentum_reversal)  # จาก Part 3B
+
+    return 0.40 * h_score + 0.30 * z_score_score + 0.30 * mom_score
+
+# ตัวอย่าง:
+# A (BTC Spot): Hurst=0.48, z=0.5, RSI=45 → score=62
+# B (BTC/ETH): Hurst=0.43, z=2.1, RSI=32 → score=79 ← WINNER
+# C (ETH Spot): Hurst=0.53, z=0.8, RSI=50 → score=45
+
+# → Allocate 70% capital ไปที่ Pair Grid (B) + 30% ไปที่ BTC Spot (A)</div>
+
+<h2 id="s6-6">6.6 Multi-Asset Grid Portfolio</h2>
+
+<p>เมื่อมี capital มากพอ — เปิดหลาย grid พร้อมกัน แต่ต้องจัดการ correlation ระหว่าง assets:</p>
+
+<table>
+<tr><th>Grid</th><th>Asset</th><th>Correlation กับ BTC Grid</th><th>Max Allocation</th></tr>
+<tr><td>Grid 1</td><td>BTC/USDT Spot</td><td>1.0 (ตัวเอง)</td><td>40% ของ grid portfolio</td></tr>
+<tr><td>Grid 2</td><td>ETH/USDT Spot</td><td>0.75 (สูง)</td><td>20%</td></tr>
+<tr><td>Grid 3</td><td>BTC/ETH Pair</td><td>0.10 (ต่ำ — market neutral)</td><td>30%</td></tr>
+<tr><td>Grid 4</td><td>SOL/USDT</td><td>0.55 (ปานกลาง)</td><td>10%</td></tr>
+</table>
+
+<div class="fm">Portfolio Correlation Management:
+
+def max_allocation_by_correlation(correlation_with_btc):
+    """
+    ยิ่ง correlation สูง → max allocation น้อยลง (ป้องกัน concentration)
+    """
+    if correlation_with_btc > 0.80:
+        return 0.20   # max 20%
+    elif correlation_with_btc > 0.60:
+        return 0.25   # max 25%
+    elif correlation_with_btc > 0.40:
+        return 0.35   # max 35%
+    else:
+        return 0.50   # market-neutral: max 50%
+
+ข้อดี Multi-Asset Grid:
+  + Diversification ลด drawdown รวม
+  + เมื่อ BTC trending (grid BTC หยุด) → Pair Grid ยังทำงาน
+  + ลด "idle capital" ในช่วง single-asset dead zone
+
+ข้อเสีย:
+  − ต้องการ capital มากกว่า
+  − การ monitor ซับซ้อนขึ้น
+  − Correlation พัง ใน market crash (all correlate to 1)</div>
+
+<h2 id="s6-7">6.7 Running Example — BTC/ETH Pair Grid</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC/ETH Pair Grid Implementation</div>
+<p><strong>Setup:</strong> Capital $15,000 · BTC=$102k · ETH=$3,600 · beta=0.80 · spread_std=0.040</p>
+
+<div class="fm">Step 1: คำนวณ Q
+  Q_btc = 0.008 BTC per level (จาก capital / N × price)
+  Q_eth = 0.008 × $102k / $3,600 × 0.80 = 0.1813 ETH
+
+Step 2: Spread levels (7 levels ±3σ)
+  σ = 0.040 → levels: −0.12, −0.08, −0.04, 0, +0.04, +0.08, +0.12
+
+Step 3: Current spread
+  log(102,000) − 0.80 × log(3,600) = 11.533 − 0.80×8.188 = 11.533 − 6.550 = 4.983
+  spread_mean (OLS fit) ≈ 4.983 → normalized spread = (4.983−4.983)/0.040 = 0
+
+Day 5: BTC ลง $4k → $98k, ETH ขึ้น $200 → $3,800
+  new spread = log(98k) − 0.80×log(3,800) = 11.493 − 0.80×8.243 = 11.493−6.594 = 4.899
+  normalized: (4.899 − 4.983)/0.040 = −2.1σ → ใกล้ −2σ level
+
+Action: BUY spread ที่ −2σ
+  BUY 0.008 BTC @ $98,000 = $784
+  SHORT 0.1813 ETH @ $3,800 = $689 notional (margin 10× = $69)
+  TP: spread กลับมา −1σ level
+
+Day 8: BTC $103k, ETH $3,700 → spread กลับมา −0.5σ
+  ไม่ถึง TP (−1σ) ยังถือ position
+
+Day 10: BTC $106k, ETH $3,650 → spread = +0.3σ (กลับมา near mean)
+  TP hit!
+  BTC gain: 0.008 × ($106k − $98k) = $64
+  ETH short gain: 0.1813 × ($3,800 − $3,650) = $27.2
+  Net P&L: $64 + $27.2 = $91.2 per cycle (ใน 5 วัน)
+  ≈ $91 / $853 capital used = 10.7% ใน 5 วัน  ← best-case (spread revert ตรงเวลา, ไม่มี slippage)
+
+Note: BTC ขึ้น $8k แต่ ETH ขึ้นน้อยกว่า (relative) → spread converge → กำไรจาก spread ไม่ใช่ direction
+ในทางปฏิบัติ spread ไม่ revert ทุก cycle — ผลจริงต่ำกว่านี้ได้</div>
+</div>
+
+<h2 id="s6-8">6.8 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 6</div>
+
+<details>
+<summary>ข้อ 1: ADF stat = −2.45 บน BTC/ETH spread · Critical value 5% = −2.89 — Cointegrated หรือไม่?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ADF test: reject H₀ (unit root) ถ้า ADF stat < critical value</p>
+<p>−2.45 > −2.89 (ไม่น้อยกว่า critical value) → <strong>ไม่สามารถ reject H₀</strong></p>
+<p>→ spread มี unit root → <strong>NOT cointegrated</strong> ที่ระดับนัยสำคัญ 5%</p>
+<p>Action: ไม่ควรเปิด pair grid บน BTC/ETH ตอนนี้ | รอ test ใหม่ใน 30 วัน</p>
+<p>หมายเหตุ: ถ้า ADF stat = −3.10 → reject H₀ → cointegrated ✓</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: Pair Grid BTC/ETH มี correlation กับ BTC Spot Grid ต่ำ (~0.10) — ทำไม Pair Grid ถึง market-neutral?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Pair Grid ทำกำไรจาก <strong>spread convergence</strong> ไม่ใช่ price direction</p>
+<p>ถ้า BTC ขึ้น +10% และ ETH ขึ้น +8% → spread เพิ่ม (BTC outperform) → SELL spread position กำไร</p>
+<p>ถ้า BTC ลง −10% และ ETH ลง −12% → spread เพิ่ม (BTC outperform relative) → SELL spread position ก็กำไร</p>
+<p>ถ้า BTC ขึ้น +10% และ ETH ขึ้น +12% → spread ลด → BUY spread position กำไร</p>
+<p>ทุกกรณี: P&L มาจาก relative performance ไม่ใช่ absolute direction = market-neutral</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: beta=0.80 · Q_btc=0.01 BTC · BTC=$100k · ETH=$4,000 — Q_eth เท่าไหร่? Dollar value match ไหม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Q_eth = Q_btc × BTC_price / ETH_price × beta</p>
+<p>= 0.01 × $100,000 / $4,000 × 0.80 = 0.01 × 25 × 0.80 = <strong>0.20 ETH</strong></p>
+<p>Dollar check:</p>
+<p>BTC notional = 0.01 × $100,000 = $1,000</p>
+<p>ETH notional = 0.20 × $4,000 = $800</p>
+<p>ratio = $800/$1,000 = 0.80 = beta ✓ (beta-weighted, ไม่ใช่ dollar-neutral)</p>
+<p>เหตุผล: beta=0.80 หมายความว่า 1% change ใน log(ETH) → 0.80% change ใน log(BTC) historically</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 4: ทำไม correlation ระหว่าง assets พัง (→ 1) ใน market crash? และ Pair Grid จะเป็นอย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p><strong>ทำไม correlation พัง:</strong> ใน crash การขายเกิดจาก margin call + panic → ขายทุก asset พร้อมกัน → BTC, ETH, SOL ทุกตัวลงพร้อมกัน → correlation → 1</p>
+<p><strong>ผลต่อ Pair Grid:</strong></p>
+<ul>
+<li>ถ้า BTC ลง −30% และ ETH ลง −30% เท่ากัน → spread ไม่เปลี่ยน → Pair Grid ไม่ได้ทำรอบ</li>
+<li>ถ้า ETH ลงมากกว่า (−35%) → spread เพิ่ม → BUY spread กำไร</li>
+<li>ถ้า cointegration พัง (spread drift ไม่กลับ) → Pair Grid ขาดทุน unrealized</li>
+</ul>
+<p><strong>Protection:</strong> DD Halt (Part 5) หยุด grid เมื่อ portfolio loss > threshold | ตรวจ ADF ใหม่ทุก 30 วัน re-validate cointegration</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part5.html" style="color:#64748b">Part 5</a></span><a href="grid-part6b.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 6B: Snowball →</a></nav>
+</body>
+</html>

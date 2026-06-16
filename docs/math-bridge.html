@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คณิตศาสตร์สำหรับ Options — Bridge: จากคณิตศาสตร์สู่ Stat Arb</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+h4{font-size:1.05em;font-weight:700;color:var(--violet);margin-top:1.2em;margin-bottom:.4em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+.step{background:#fff;border:1px solid var(--g2);border-radius:8px;padding:14px 18px;margin:10px 0}
+.step-n{display:inline-block;background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:.8em;font-weight:700;margin-right:8px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.ex{background:#f0f9ff;border:2px solid #7dd3fc;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0369a1;margin-bottom:10px;font-size:1.05em}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.04em}
+
+/* Bridge-specific */
+.bridge-card{border:1px solid var(--g2);border-radius:12px;margin:20px 0;overflow:hidden}
+.bridge-card .bc-header{padding:14px 20px;font-weight:700;font-size:1.1em;color:#fff}
+.bridge-card .bc-body{padding:16px 20px}
+.bc-p1{background:#1e40af}.bc-p2{background:#166534}.bc-p3{background:#7c2d12}
+.bc-p4{background:#4c1d95}.bc-p5{background:#92400e}.bc-p6{background:#164e63}
+.bc-p7{background:#4a044e}
+.flow-row{display:flex;align-items:flex-start;gap:12px;margin:10px 0;padding:12px 16px;background:var(--g0);border-radius:8px}
+.flow-math{flex:0 0 200px;background:var(--blue);color:#fff;padding:6px 12px;border-radius:6px;font-weight:600;font-size:.9em;text-align:center}
+.flow-arrow{font-size:1.3em;color:var(--g7);padding-top:4px;flex-shrink:0}
+.flow-sa{flex:1;font-size:.9em;color:var(--g8)}
+.flow-sa .ch{color:var(--green);font-weight:700}
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+@media(max-width:640px){.concept-grid{grid-template-columns:1fr}}
+.concept-cell{background:var(--g0);border-radius:8px;padding:12px 14px;border-left:3px solid var(--blue)}
+.concept-cell .cc-label{font-weight:700;color:var(--g9);font-size:.95em;margin-bottom:4px}
+.concept-cell .cc-sa{font-size:.88em;color:var(--g7)}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.bridge-card{page-break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+  <div class="sub">Bridge Chapter</div>
+  <h1>จากคณิตศาสตร์สู่ Statistical Arbitrage</h1>
+  <div class="sub">From Math Tools → How They Appear in the Stat Arb Book</div>
+  <div class="desc">บทนี้เชื่อมโยงแต่ละเครื่องมือทางคณิตศาสตร์กับบทเฉพาะใน Statistical Arbitrage book (25 บท, Ch 0–24) — เพื่อให้เห็นว่า "ใช้ตรงไหน" ก่อนอ่านต่อ</div>
+</div>
+
+<!-- ─── Intro ──────────────────────────────────────────────── -->
+<h2>ทำไมต้องมี Bridge Chapter?</h2>
+
+<p>Stat Arb book มีโจทย์เดียว: สร้าง <strong>Synthetic Process</strong> จากสองราคา แล้วเทรดบน mean-reversion ของ spread — แต่เบื้องหลังนั้นเต็มไปด้วยคณิตศาสตร์จากทั้ง 7 Part</p>
+
+<div class="bx bb">
+  <div class="bt">แผนที่หนังสือ Stat Arb (25 บท)</div>
+  <table style="margin:8px 0;font-size:.88em">
+  <tr><th>กลุ่ม</th><th>บท</th><th>หัวข้อ</th></tr>
+  <tr><td><strong>Foundations</strong></td><td>Ch 0–2</td><td>Intro, Synthetic Process, Stochastic Calculus</td></tr>
+  <tr><td><strong>Spread Models</strong></td><td>Ch 3–6</td><td>OU Process, Hedge Ratio β, Cointegration, Hurst/ADF</td></tr>
+  <tr><td><strong>Vol &amp; Regime</strong></td><td>Ch 7–9</td><td>GARCH, Jump-Diffusion, Regime-Switching</td></tr>
+  <tr><td><strong>Signal &amp; Execution</strong></td><td>Ch 10–14</td><td>Z-score, State Machine, Position Sizing, Perpetual Basis, Cross-venue</td></tr>
+  <tr><td><strong>Advanced Strategies</strong></td><td>Ch 15–22</td><td>Kalman β, Multi-leg, Commodity, Options Overlay, Cost, Risk, CFD, Options Arb</td></tr>
+  <tr><td><strong>Capstone</strong></td><td>Ch 23–24</td><td>Kalman+t-dist, Case Studies (LTCM, Quant Quake)</td></tr>
+  </table>
+</div>
+
+<!-- ─── Part I Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p1">Part I: Algebra &amp; Functions → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§1: Log Return &amp; % Change</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Log Return<br>\(r_t = \ln(P_t / P_{t-1})\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 1 (Synthetic Process):</span> spread ε = ln(P_A) − β·ln(P_B) สร้างจาก log price โดยตรง<br>
+    <span class="ch">Ch 4 (Hedge Ratio β):</span> OLS regression ทำบน log prices เพื่อหา β<br>
+    <span class="ch">Ch 7 (GARCH):</span> GARCH ประมาณ vol จาก daily log returns ของ spread residuals
+  </div>
+</div>
+
+<h3>§3: Option Payoff — max(S−K, 0)</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Call Payoff<br>\(\max(S_T - K, 0)\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 18 (Options Overlay):</span> PCP deviation เป็น signal — ต้องเข้าใจ payoff structure ก่อน<br>
+    <span class="ch">Ch 22 (Options Stat Arb):</span> IV skew arb ใช้ Risk Reversal = Call payoff − Put payoff
+  </div>
+</div>
+
+<h3>§4: Put-Call Parity (PCP)</h3>
+
+<div class="flow-row">
+  <div class="flow-math">PCP<br>\(C - P = S - Ke^{-rT}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 18 §18.1–18.2:</span> PCP deviation ε_pcp คือ spread signal ใหม่ใน Stat Arb framework<br>
+    <span class="ch">Ch 18 §18.3:</span> BTC options บน Deribit — ตัวอย่าง PCP violation จริง<br>
+    <span class="ch">Ch 22 §22.2:</span> Box Spread Stat Arb — ε_box สร้างจาก PCP ทั้งสองฝั่ง
+  </div>
+</div>
+
+<h3>§2: Compound Growth &amp; Cost of Carry</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Cost of Carry<br>\(F = Se^{rT}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 17 (Commodity Basis):</span> Fair Basis = F − S·e^{rT} — cost of carry model สำหรับ Futures spread<br>
+    <span class="ch">Ch 13 (Perpetual Basis):</span> funding rate ใน crypto perp สอดคล้องกับ cost of carry
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part II Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p2">Part II: Statistics &amp; Probability → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§3–4: Mean, Variance, Rolling Statistics</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Sample Variance<br>\(s^2 = \frac{1}{n-1}\sum(r_i-\bar{r})^2\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 7 (GARCH):</span> constant σ ≡ rolling variance — GARCH ปรับปรุงสิ่งนี้ให้ time-varying<br>
+    <span class="ch">Ch 10 (Z-score):</span> standard Z = (ε − μ)/σ — พื้นฐานของ trading signal<br>
+    <span class="ch">Ch 12 (Position Sizing):</span> σ ของ spread ใช้ใน Kelly criterion เพื่อกำหนดขนาด position
+  </div>
+</div>
+
+<h3>§5: Normal Distribution &amp; Z-score</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Z-score<br>\(Z = (\varepsilon_t - \mu) / \sigma\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 10 §10.1–10.4:</span> Standard Z-score → Robust Z-score (MAD) → Rolling Z-score — 3 variants<br>
+    <span class="ch">Ch 3 (OU Process):</span> stationary distribution ของ OU เป็น Normal — band = μ ± 2σ<br>
+    <span class="ch">Ch 11 (State Machine):</span> Z-score threshold เป็น trigger condition สำหรับ entry/exit
+  </div>
+</div>
+
+<h3>§6: Fat Tails &amp; Non-Normal Returns</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Excess Kurtosis<br>\(\kappa - 3 &gt; 0\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 8 (Jump-Diffusion):</span> fat tails ใน crypto spread = jumps — ต้องใช้ Merton/Kou model<br>
+    <span class="ch">Ch 20 §20.4 (Risk):</span> Black Swan scenarios — Normal VaR understates จริง<br>
+    <span class="ch">Ch 23 §23.5–23.8:</span> t-distribution แทน Normal สำหรับ crypto residuals — critical values ต่างกัน
+  </div>
+</div>
+
+<div class="bx bk">
+  <div class="bt">Model Risk: Normal Z-score ใน Crypto</div>
+  Crypto spread residuals มี excess kurtosis สูงกว่า equity มาก (kurtosis &gt; 10 เป็นเรื่องปกติ) — Z = 2 ใน Normal แปลว่า 5% chance แต่ใน t-dist (df=5) แปลว่า ~10% ดังนั้น Ch 23 แนะนำให้ใช้ t-distribution สำหรับ crypto
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part III Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p3">Part III: Calculus &amp; Greeks → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§7–8: Greeks ใน Options Overlay</h3>
+
+<div class="concept-grid">
+  <div class="concept-cell">
+    <div class="cc-label">Delta \(\Delta = \partial C / \partial S\)</div>
+    <div class="cc-sa">Ch 18 §18.6: delta hedge ของ options spread ใน PCP arb<br>Ch 22 §22.3: IV skew arb ใช้ delta-neutral Risk Reversal</div>
+  </div>
+  <div class="concept-cell">
+    <div class="cc-label">Vega \(\mathcal{V} = \partial C / \partial \sigma\)</div>
+    <div class="cc-sa">Ch 22 §22.5: Vol Risk Premium = IV − RV — เมื่อ vega ของ position &gt; 0<br>Ch 22 §22.4: IV Skew Arb ระหว่าง Deribit ↔ Bybit</div>
+  </div>
+  <div class="concept-cell">
+    <div class="cc-label">Theta \(\Theta = \partial C / \partial t\)</div>
+    <div class="cc-sa">Ch 22 §22.6: friction &amp; breakeven — theta decay คือต้นทุนของ long option position</div>
+  </div>
+  <div class="concept-cell">
+    <div class="cc-label">Gamma \(\Gamma = \partial^2 C / \partial S^2\)</div>
+    <div class="cc-sa">Ch 18 §18.6: gamma ของ options spread ทำให้ delta ต้องถูก rehedge เมื่อ S เคลื่อน</div>
+  </div>
+</div>
+
+<h3>§7: Derivative คือ Rate of Change — ใช้ใน Calibration</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Newton-Raphson<br>\(\sigma_{n+1} = \sigma_n - \frac{C_{BS}(\sigma_n)-C_{mkt}}{Vega(\sigma_n)}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 22 §22.1:</span> สร้าง IV surface จาก market option prices — Newton-Raphson solve implied vol<br>
+    <span class="ch">Ch 18 §18.4:</span> IV Surface Arbitrage ต้องใช้ IV ที่ accurate จาก Newton-Raphson
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part IV Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p4">Part IV: Linear Algebra &amp; Regression → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§8: OLS Regression — หัวใจของ Hedge Ratio</h3>
+
+<div class="flow-row">
+  <div class="flow-math">OLS Beta<br>\(\hat{\beta} = (X^\top X)^{-1} X^\top y\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 4 §4.2 (Hedge Ratio β):</span> OLS คือ method หลักในการหา β ของ spread<br>
+    <span class="ch">Ch 1 §1.3:</span> β คือ entry ratio — ซื้อ 1 unit A ต้องขาย β units B<br>
+    <span class="ch">Ch 4 §4.4:</span> lookback window ส่งผลต่อ β — OLS ด้วย window ต่างกันให้ β ต่างกัน
+  </div>
+</div>
+
+<h3>§8: Residuals = Spread = Synthetic Process</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Spread<br>\(\varepsilon_t = P_A - \hat{\beta} P_B - \hat{\alpha}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 1 §1.2:</span> ε คือ synthetic process — สิ่งที่เราเทรดจริงๆ<br>
+    <span class="ch">Ch 5 §5.2 (Cointegration):</span> Engle-Granger test เช็ค stationarity ของ residuals จาก OLS<br>
+    <span class="ch">Ch 7 (GARCH):</span> GARCH ประมาณ vol ของ ε residuals ไม่ใช่ raw prices
+  </div>
+</div>
+
+<h3>§9: Covariance Matrix — Multi-leg Portfolio</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Portfolio Var<br>\(\sigma_p^2 = \mathbf{w}^\top \Sigma \mathbf{w}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 16 §16.2 (Multi-leg):</span> Covariance Matrix ของ Spreads — สร้าง Σ ระหว่าง spread pairs<br>
+    <span class="ch">Ch 16 §16.3:</span> Mean-Variance Allocation ใช้ wᵀΣw เพื่อหา optimal weights<br>
+    <span class="ch">Ch 20 §20.3 (Risk):</span> VaR/CVaR ของ spread position สร้างจาก Σ
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part V Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p5">Part V: Optimization → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§11: Kelly Criterion — Position Sizing</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Kelly<br>\(f^* = \mu / \sigma^2\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 12 §12.1 (Position Sizing):</span> Kelly criterion พื้นฐาน — f* = edge/variance<br>
+    <span class="ch">Ch 12 §12.2:</span> Half-life Scaling ปรับ Kelly ตาม OU speed of reversion<br>
+    <span class="ch">Ch 12 §12.3:</span> Jump-adjusted Kelly ลด f* เมื่อ detect jump risk
+  </div>
+</div>
+
+<h3>§11: Mean-Variance Optimization — Multi-leg Allocation</h3>
+
+<div class="flow-row">
+  <div class="flow-math">MVO<br>\(\max \mu^\top \mathbf{w} - \tfrac{\lambda}{2}\mathbf{w}^\top \Sigma \mathbf{w}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 16 §16.3 (Multi-leg):</span> Mean-Variance Allocation ระหว่าง spreads หลายคู่<br>
+    <span class="ch">Ch 20 §20.2 (Risk Mgmt):</span> drawdown constraint เป็น LP constraint เพิ่มเติมใน optimization
+  </div>
+</div>
+
+<h3>§10: LP Constraints — Risk Limits</h3>
+
+<div class="flow-row">
+  <div class="flow-math">LP<br>\(\max \mathbf{c}^\top \mathbf{x}, \; A\mathbf{x} \leq \mathbf{b}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 20 §20.2 (Risk Mgmt):</span> max drawdown limit, max single-spread exposure เป็น linear constraints<br>
+    <span class="ch">Ch 19 §19.7 (Cost Analysis):</span> minimum viable σ_stat — breakeven analysis เป็น LP feasibility check
+  </div>
+</div>
+
+<div class="bx bd">
+  <div class="bt">Quant Insight: Kelly ใน Stat Arb</div>
+  Kelly ทฤษฎีบอก f* = μ/σ² แต่ใน Ch 12 ต้องปรับด้วย: (1) half-life ของ OU — reversion ช้า = ลด f, (2) jump risk — crypto มี funding rate war ทำให้ spread กระโดดทันที, (3) max drawdown constraint — Kelly เต็มมักใช้ leverage มากเกินไปสำหรับ live trading
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part VI Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p6">Part VI: Time Series &amp; Stochastic Calculus → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§14: GBM &amp; SDE — รากฐานของ OU</h3>
+
+<div class="flow-row">
+  <div class="flow-math">GBM<br>\(dS = \mu S\,dt + \sigma S\,dW_t\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 2 §2.1–2.3 (Stochastic Calculus):</span> Brownian Motion, dW, SDE — เบื้องหลัง GBM<br>
+    <span class="ch">Ch 2 §2.5:</span> preview ว่า OU Process คือ mean-reverting SDE ต่างจาก GBM ตรงไหน
+  </div>
+</div>
+
+<h3>§14: Ito's Lemma — ขั้นตอนสู่ OU Solution</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Ito's Lemma<br>\(df = \frac{\partial f}{\partial t}dt + \frac{\partial f}{\partial S}dS + \frac{1}{2}\frac{\partial^2 f}{\partial S^2}(dS)^2\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 2 §2.4:</span> Ito's Lemma เป็น chain rule สำหรับ stochastic world — ใช้หา dε จาก OU SDE<br>
+    <span class="ch">Ch 3 §3.2 (OU):</span> solution ε_t = θ + (ε₀−θ)e^{−κt} + ... มาจาก Ito ที่ apply กับ OU SDE
+  </div>
+</div>
+
+<h3>§12: GARCH — Vol-Adjusted Z-score</h3>
+
+<div class="flow-row">
+  <div class="flow-math">GARCH(1,1)<br>\(\sigma_t^2 = \omega + \alpha r_{t-1}^2 + \beta_G \sigma_{t-1}^2\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 7 §7.2–7.3 (GARCH on Residuals):</span> GARCH ประมาณ σ_t ของ spread residuals แล้วสร้าง GARCH Z-score = ε_t/σ_t<br>
+    <span class="ch">Ch 7 §7.4:</span> when to use GARCH vs constant σ — ถ้า spread vol volatile ใช้ GARCH<br>
+    <span class="ch">Ch 7 §7.6:</span> estimate ω, α, β_G จากข้อมูลจริงด้วย MLE
+  </div>
+</div>
+
+<h3>§13: OU Process — แกนหลักของ Stat Arb Book ทั้งเล่ม</h3>
+<div style="background:#fef3c7;border-left:3px solid #d97706;padding:8px 14px;border-radius:0 6px 6px 0;font-size:.88em;margin:8px 0 12px">⚠️ <strong>หมายเหตุ:</strong> OU Process (Ornstein-Uhlenbeck) ไม่ได้อยู่ในหนังสือ Math — อยู่ใน <strong>Stat Arb Book บทที่ 3</strong> · Math prerequisites ที่ต้องมีก่อน: Part VI (Ito's Lemma, SDE) + Part II (Statistics) · บทนี้ในหนังสือ Math Chapter 13 = <em>IV Solver (Bisection/Newton-Raphson)</em> ไม่ใช่ OU</div>
+
+<div class="flow-row">
+  <div class="flow-math">OU SDE<br>\(d\varepsilon = \kappa(\theta - \varepsilon)\,dt + \sigma\,dW\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 3 §3.1–3.6:</span> parameters κ (speed), θ (mean), σ (vol) — calibration จาก AR(1) regression<br>
+    <span class="ch">Ch 3 §3.3:</span> Half-life = ln(2)/κ — ตัวเลขสำคัญที่สุดสำหรับ trader<br>
+    <span class="ch">Ch 9 (Regime-Switching):</span> 3-state Markov — κ, θ, σ ต่างกันในแต่ละ regime<br>
+    <span class="ch">Ch 8 (Jump-Diffusion):</span> OU + Poisson jumps — จัดการ fat tail ใน crypto
+  </div>
+</div>
+
+<div class="bx bd">
+  <div class="bt">Quant Insight: OU คือ mean-reverting SDE</div>
+  OU ต่างจาก GBM ตรงที่มี drift term κ(θ−ε) ที่ "ดึง" ε กลับหาค่าเฉลี่ย θ เสมอ — ยิ่ง ε ห่างจาก θ มาก drift กลับยิ่งแรง นี่คือ mathematical guarantee ของ mean reversion ที่ทำให้ Stat Arb มีกำไร
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Part VII Bridge ──────────────────────────────────────── -->
+<div class="bridge-card">
+  <div class="bc-header bc-p7">Part VII: Black-Scholes &amp; Monte Carlo → Stat Arb</div>
+  <div class="bc-body">
+
+<h3>§15: Black-Scholes — IV Surface</h3>
+
+<div class="flow-row">
+  <div class="flow-math">BS Call<br>\(C = SN(d_1) - Ke^{-rT}N(d_2)\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 18 §18.1 (Options Overlay):</span> BS เป็น pricing model สำหรับ PCP arbitrage<br>
+    <span class="ch">Ch 22 §22.1:</span> IV surface สร้างโดย invert BS ด้วย Newton-Raphson ทุก strike<br>
+    <span class="ch">Ch 22 §22.4:</span> Cross-venue IV Stat Arb — IV(Deribit) vs IV(Bybit) ควร converge
+  </div>
+</div>
+
+<h3>§16: Greeks &amp; Delta Hedge</h3>
+
+<div class="flow-row">
+  <div class="flow-math">Delta-neutral<br>Portfolio = Option \(-\Delta \cdot S\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 18 §18.6 (Options Overlay):</span> delta hedge options spread เพื่อ isolate IV arb signal<br>
+    <span class="ch">Ch 22 §22.3:</span> IV Skew Arb ใช้ delta-neutral Risk Reversal — long call + short put ด้วย equal delta
+  </div>
+</div>
+
+<h3>§16: Monte Carlo — Scenario Generation</h3>
+
+<div class="flow-row">
+  <div class="flow-math">MC Simulation<br>\(S_T = S_0 e^{(r-\sigma^2/2)T + \sigma\sqrt{T}Z}\)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-sa">
+    <span class="ch">Ch 20 §20.4 (Risk Mgmt):</span> Black Swan scenarios — simulate extreme spread paths<br>
+    <span class="ch">Ch 24 §24.1–24.3 (Case Studies):</span> LTCM, Quant Quake — ทำความเข้าใจว่า model พังอย่างไรด้วย scenario thinking<br>
+    <span class="ch">Ch 8 §8.3 (Jump-Diffusion):</span> Merton model = GBM + Poisson jumps — MC simulate paths ที่มี jump
+  </div>
+</div>
+
+<div class="bx bk">
+  <div class="bt">Model Risk: BS ใน Crypto Options</div>
+  BS สมมติ constant σ แต่ BTC options มี IV smile ชัดมาก (OTM puts แพงกว่า ATM) — นั่นคือเหตุผลที่ Ch 22 trade IV skew ไม่ใช่แค่ level และ Ch 23 ใช้ t-distribution แทน Normal สำหรับ residual modeling
+</div>
+
+  </div>
+</div>
+
+<!-- ─── Reverse Lookup ──────────────────────────────────────── -->
+<h2>Reverse Lookup: Stat Arb Chapter → Math Background</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Stat Arb Chapter</th>
+  <th>หัวข้อ</th>
+  <th>Math Parts ที่ต้องการ</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><strong>Ch 0</strong></td><td>Introduction</td><td>—</td></tr>
+<tr><td><strong>Ch 1</strong></td><td>Synthetic Process (ε = P_A − β·P_B)</td><td>Part I (log return), Part IV (OLS β, residuals)</td></tr>
+<tr><td><strong>Ch 2</strong></td><td>Stochastic Calculus (BM, Ito, SDE)</td><td>Part VI (GBM, Ito's Lemma, dW)</td></tr>
+<tr><td><strong>Ch 3</strong></td><td>OU Process (κ, θ, σ, half-life, AR(1))</td><td>Part VI (OU SDE, stochastic processes)</td></tr>
+<tr><td><strong>Ch 4</strong></td><td>Hedge Ratio β (OLS, Kalman, lookback)</td><td>Part IV (OLS regression)</td></tr>
+<tr><td><strong>Ch 5</strong></td><td>Cointegration (Engle-Granger, Johansen, VECM)</td><td>Part IV (regression, residuals), Part VI (stationarity)</td></tr>
+<tr><td><strong>Ch 6</strong></td><td>Hurst Exponent &amp; Stationarity (ADF, KPSS)</td><td>Part II (statistics, variance), Part VI (time series)</td></tr>
+<tr><td><strong>Ch 7</strong></td><td>GARCH on Residuals</td><td>Part II (variance), Part VI (GARCH, EWMA)</td></tr>
+<tr><td><strong>Ch 8</strong></td><td>Jump-Diffusion OU</td><td>Part II (fat tails), Part VI (OU, GBM)</td></tr>
+<tr><td><strong>Ch 9</strong></td><td>Regime-Switching OU (3-state Markov)</td><td>Part VI (OU process, stochastic)</td></tr>
+<tr><td><strong>Ch 10</strong></td><td>Z-score &amp; Robust Statistics (MAD)</td><td>Part II (mean, variance, Z-score, robust stats)</td></tr>
+<tr><td><strong>Ch 11</strong></td><td>Entry/Exit State Machine</td><td>Part II (Z-score thresholds)</td></tr>
+<tr><td><strong>Ch 12</strong></td><td>Position Sizing (Kelly, half-life)</td><td>Part II (variance), Part V (Kelly = optimization), Part VI (half-life from OU)</td></tr>
+<tr><td><strong>Ch 13</strong></td><td>Perpetual Basis (Funding Rate, crypto)</td><td>Part I (compound growth, cost of carry)</td></tr>
+<tr><td><strong>Ch 14</strong></td><td>Cross-venue Execution</td><td>—</td></tr>
+<tr><td><strong>Ch 15</strong></td><td>Dynamic β via Kalman Filter</td><td>Part IV (OLS β as state), Part V (optimization)</td></tr>
+<tr><td><strong>Ch 16</strong></td><td>Multi-leg Portfolio (MVO, Σ)</td><td>Part IV (covariance matrix), Part V (MVO)</td></tr>
+<tr><td><strong>Ch 17</strong></td><td>Commodity Basis (Calendar Spread)</td><td>Part I (cost of carry, e^{rT})</td></tr>
+<tr><td><strong>Ch 18</strong></td><td>Options Overlay (PCP, IV Surface, Delta Hedge)</td><td>Part I (PCP), Part III (Greeks), Part VII (BS, delta hedge)</td></tr>
+<tr><td><strong>Ch 19</strong></td><td>Cost Analysis &amp; Edge</td><td>Part I (% change), Part II (breakeven statistics)</td></tr>
+<tr><td><strong>Ch 20</strong></td><td>Risk Management (VaR, Drawdown)</td><td>Part II (fat tails, distributions), Part IV (Σ), Part V (LP constraints)</td></tr>
+<tr><td><strong>Ch 21</strong></td><td>Spot↔CFD Swap Arb (MT5)</td><td>Part I (cost of carry)</td></tr>
+<tr><td><strong>Ch 22</strong></td><td>Options-Based Stat Arb (IV Skew, Vol Risk Premium)</td><td>Part III (Greeks, Vega), Part VII (BS, IV, MC)</td></tr>
+<tr><td><strong>Ch 23</strong></td><td>Kalman Filter &amp; t-Distribution</td><td>Part II (fat tails, t-dist), Part IV (OLS → Kalman state)</td></tr>
+<tr><td><strong>Ch 24</strong></td><td>Case Studies (LTCM, Quant Quake, Amaranth)</td><td>Part II (correlation breakdown), Part VII (MC scenario)</td></tr>
+</tbody>
+</table>
+
+<!-- ─── Core Pipeline ───────────────────────────────────────── -->
+<h2>Core Pipeline: จาก Raw Price → Stat Arb Trade</h2>
+
+<div class="step">
+  <span class="step-n">1</span>
+  <strong>Data</strong> — แปลง raw prices เป็น log prices
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part I §1 \(\ln P_t\) | SA: Ch 1</div>
+</div>
+
+<div class="step">
+  <span class="step-n">2</span>
+  <strong>Hedge Ratio</strong> — OLS regression หา β และ construct spread ε
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part IV §8 OLS | SA: Ch 4 → Ch 1</div>
+</div>
+
+<div class="step">
+  <span class="step-n">3</span>
+  <strong>Stationarity Test</strong> — ADF/KPSS/Hurst เช็คว่า ε mean-reverts
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part VI (stationarity), Part II (variance) | SA: Ch 5–6</div>
+</div>
+
+<div class="step">
+  <span class="step-n">4</span>
+  <strong>OU Calibration</strong> — หา κ, θ, σ และคำนวณ half-life
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">SA: Ch 3 (OU SDE — ไม่ได้อยู่ในหนังสือ Math; Math prerequisites: Part VI Ito/SDE, Part II Statistics)</div>
+</div>
+
+<div class="step">
+  <span class="step-n">5</span>
+  <strong>Vol Model</strong> — GARCH หรือ rolling σ สร้าง vol-adjusted Z-score
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part VI §12 GARCH, Part II §3 variance | SA: Ch 7, Ch 10</div>
+</div>
+
+<div class="step">
+  <span class="step-n">6</span>
+  <strong>Regime Filter</strong> — Hamilton filter เทรดเฉพาะ Normal Regime
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part VI (stochastic processes) | SA: Ch 9</div>
+</div>
+
+<div class="step">
+  <span class="step-n">7</span>
+  <strong>Signal &amp; State Machine</strong> — Z &gt; threshold → entry, Z → 0 → exit
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part II §5 Z-score | SA: Ch 10–11</div>
+</div>
+
+<div class="step">
+  <span class="step-n">8</span>
+  <strong>Position Sizing</strong> — Kelly ปรับด้วย half-life และ jump risk
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part V §11 Kelly | SA: Ch 3 §3.3 (half-life จาก OU), Ch 12</div>
+</div>
+
+<div class="step">
+  <span class="step-n">9</span>
+  <strong>Risk Check</strong> — VaR/CVaR, drawdown limit, Black Swan
+  <div style="margin-top:6px;font-size:.9em;color:var(--g7)">Math: Part II (fat tails), Part IV (Σ) | SA: Ch 20</div>
+</div>
+
+<!-- ─── Footer ─────────────────────────────────────────────── -->
+<div style="margin-top:30px;padding-top:16px;border-top:2px solid var(--g2);font-size:.88em;color:#94a3b8;text-align:center">
+  Bridge Chapter — คณิตศาสตร์สำหรับ Options &amp; Statistical Arbitrage
+</div>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #2563eb;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="math-index.html" style="color:#2563eb;text-decoration:none;font-weight:700">คณิตศาสตร์สำหรับ Options — เริ่มต้น</a></nav>
+</body>
+</html>

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volatility Mastery — Part IV: Volatility Regimes</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+  :root {
+    --teal:#0d9488; --teal-light:#ccfbf1; --teal-mid:#5eead4;
+    --navy:#0f172a; --slate:#334155; --muted:#64748b;
+    --warn-bg:#fef3c7; --warn-border:#f59e0b;
+    --chk-bg:#f0fdf4; --chk-border:#22c55e;
+    --ref-bg:#f8fafc; --ref-border:#cbd5e1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#f8fafc;color:var(--navy);line-height:1.75;font-size:17px}
+  .hero{background:linear-gradient(135deg,#134e4a,#0d9488);color:#fff;padding:60px 40px;text-align:center}
+  .hero .series{font-size:0.85em;opacity:0.7;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+  .hero h1{font-size:2.4em;font-weight:800;margin-bottom:10px}
+  .hero .sub{font-size:1.1em;opacity:0.85;max-width:600px;margin:0 auto 20px}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 16px;font-size:0.85em;margin:4px}
+  .intro-box{background:var(--teal-light);border-left:4px solid var(--teal);border-radius:0 8px 8px 0;padding:18px 22px;margin:24px 0;font-size:0.97em}
+  .intro-box strong{color:var(--teal);display:block;margin-bottom:6px;font-size:1.05em}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px}
+  h2{font-size:1.6em;color:var(--teal);margin:48px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--teal-light)}
+  h3{font-size:1.15em;color:var(--slate);margin:28px 0 10px}
+  p{margin-bottom:14px}
+  ul,ol{margin:10px 0 16px 22px}
+  li{margin-bottom:6px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin:20px 0;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .warn{background:var(--warn-bg);border-left:4px solid var(--warn-border);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;font-size:0.95em}
+  .warn strong{color:#92400e}
+  .chk{background:var(--chk-bg);border-left:4px solid var(--chk-border);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;font-size:0.95em}
+  .chk strong{color:#166534}
+  .ref{background:var(--ref-bg);border:1px solid var(--ref-border);border-radius:8px;padding:14px 18px;margin:18px 0;font-size:0.93em;color:var(--muted)}
+  .formula{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:16px 20px;margin:16px 0;font-family:monospace;font-size:0.97em;line-height:1.8}
+  .formula .comment{color:#94a3b8}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.95em}
+  th{background:var(--teal);color:#fff;padding:10px 14px;text-align:left}
+  td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
+  tr:nth-child(even) td{background:#f8fafc}
+  .highlight{background:linear-gradient(120deg,var(--teal-light) 0%,var(--teal-light) 100%);padding:2px 5px;border-radius:3px}
+  .svg-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;overflow-x:auto}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+  @media(max-width:600px){.two-col{grid-template-columns:1fr}}
+  .stat-row{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}
+  .stat{flex:1;min-width:140px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center}
+  .stat .num{font-size:2em;font-weight:800;color:var(--teal)}
+  .stat .label{font-size:0.82em;color:var(--muted);margin-top:4px}
+  .regime-low{background:#dcfce7;border-left:4px solid #22c55e;border-radius:0 8px 8px 0;padding:14px 18px;margin:12px 0}
+  .regime-high{background:#fee2e2;border-left:4px solid #ef4444;border-radius:0 8px 8px 0;padding:14px 18px;margin:12px 0}
+  .regime-trans{background:#fef9c3;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:14px 18px;margin:12px 0}
+  .cheat{background:linear-gradient(135deg,#134e4a,#0f766e);color:#fff;border-radius:16px;padding:28px 32px;margin:40px 0}
+  .cheat h3{color:var(--teal-mid);margin-bottom:16px;font-size:1.2em}
+  .cheat li{margin-bottom:8px;opacity:0.92}
+  .footer-nav{text-align:center;padding:40px 24px;background:#fff;border-top:1px solid #e2e8f0;color:var(--muted);font-size:0.95em}
+  .footer-nav a{color:var(--teal);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="series">Volatility Mastery Series · Part IV of VIII</div>
+  <h1>Volatility Regimes</h1>
+  <h1 style="font-size:1.3em;font-weight:400;margin-top:6px">Vol Clustering · Mean Reversion · GARCH · Regime Detection</h1>
+  <p class="sub">ทำไม Vol ไม่สุ่ม? และเราใช้รูปแบบนั้นหากำไรได้อย่างไร</p>
+  <div>
+    <span class="badge">บท 21–26</span>
+    <span class="badge">~35 นาที</span>
+    <span class="badge">⚡ Intermediate-Advanced</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="intro-box">
+    <strong>ใน Part นี้คุณจะได้เรียนรู้</strong>
+    ✓ Vol Clustering คืออะไร และทำไม Vol ไม่สุ่ม<br>
+    ✓ Mean Reversion ของ Vol — Vol สูงไม่ได้อยู่ตลอด<br>
+    ✓ GARCH Model — วิธีพยากรณ์ Vol ขั้นพื้นฐาน<br>
+    ✓ Low Vol / High Vol Regime — รู้จักสภาพแวดล้อมตลาด<br>
+    ✓ Regime Detection — วิธีรู้ว่าตอนนี้อยู่ใน Regime ไหน<br>
+    ✓ Playbook ตาม Regime
+  </div>
+
+  <!-- ===== บท 21 ===== -->
+  <h2>บท 21 — Vol Clustering: "พายุมาเป็นฤดู" 🌩️</h2>
+
+  <div class="card">
+    <h3>อุปมา: ฤดูพายุ vs ฤดูสบาย</h3>
+    <p>ลองนึกถึงเมืองที่มีฤดูพายุ:</p>
+    <ul>
+      <li><strong>มิถุนายน–กันยายน</strong> = ฤดูพายุ — มีพายุเกือบทุกสัปดาห์ พอมีพายุ 1 ลูก โอกาสมีลูกถัดมาสูงมาก</li>
+      <li><strong>ธันวาคม–มีนาคม</strong> = ฤดูสบาย — หายากที่จะมีพายุ และถ้าไม่มีสัปดาห์นี้ สัปดาห์หน้าก็ยังน่าจะสบาย</li>
+    </ul>
+    <p><strong>ตลาดการเงินเหมือนกัน:</strong> Volatility มาเป็น "ฤดู" — ถ้าเมื่อวาน Vol สูง วันนี้มีแนวโน้มสูงต่อ ถ้าเมื่อวาน Vol ต่ำ วันนี้น่าจะยังต่ำ</p>
+  </div>
+
+  <h3>Vol Clustering = ปรากฏการณ์ที่พิสูจน์แล้ว</h3>
+  <p><span class="highlight">Volatility Clustering</span> คือปรากฏการณ์ที่ Volatility สูงมักตามด้วย Volatility สูง และ Volatility ต่ำมักตามด้วยต่ำ — Mandelbrot สังเกตพบตั้งแต่ 1963</p>
+
+  <div class="formula">
+ถ้า |r_t| สูง → Prob(|r_{t+1}| สูง) > 50%
+ถ้า |r_t| ต่ำ  → Prob(|r_{t+1}| ต่ำ)  > 50%
+<span class="comment">
+|r_t| = ขนาดของ daily return วันที่ t (ไม่สนทิศทาง)
+Volatility Clustering ≠ Return Autocorrelation (ทิศทาง)
+(ทิศทางยังสุ่ม แต่ขนาดมี memory)
+</span>
+  </div>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Vol Clustering — Daily Returns (สมมติ)</text>
+
+      <!-- axes -->
+      <line x1="50" y1="200" x2="640" y2="200" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr4)"/>
+      <line x1="50" y1="200" x2="50" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr4)"/>
+      <text x="345" y="225" text-anchor="middle" font-size="11" fill="#64748b">วัน (trading days)</text>
+      <text x="20" y="120" font-size="11" fill="#64748b" transform="rotate(-90,20,120)">|Return|</text>
+      <line x1="50" y1="130" x2="640" y2="130" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <text x="44" y="133" text-anchor="end" font-size="9" fill="#94a3b8">avg</text>
+
+      <!-- Low vol cluster -->
+      <rect x="52" y="175" width="6" height="25" fill="#0d9488" opacity="0.6"/>
+      <rect x="62" y="180" width="6" height="20" fill="#0d9488" opacity="0.6"/>
+      <rect x="72" y="185" width="6" height="15" fill="#0d9488" opacity="0.6"/>
+      <rect x="82" y="177" width="6" height="23" fill="#0d9488" opacity="0.6"/>
+      <rect x="92" y="183" width="6" height="17" fill="#0d9488" opacity="0.6"/>
+      <rect x="102" y="179" width="6" height="21" fill="#0d9488" opacity="0.6"/>
+      <rect x="112" y="186" width="6" height="14" fill="#0d9488" opacity="0.6"/>
+      <rect x="122" y="182" width="6" height="18" fill="#0d9488" opacity="0.6"/>
+      <rect x="132" y="176" width="6" height="24" fill="#0d9488" opacity="0.6"/>
+      <!-- label -->
+      <rect x="58" y="36" width="90" height="22" rx="4" fill="var(--teal-light)"/>
+      <text x="103" y="51" text-anchor="middle" font-size="10" fill="#0d9488">Low Vol Cluster</text>
+      <line x1="103" y1="58" x2="103" y2="175" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- High vol cluster -->
+      <rect x="182" y="105" width="6" height="95" fill="#ef4444" opacity="0.7"/>
+      <rect x="192" y="68" width="6" height="132" fill="#ef4444" opacity="0.7"/>
+      <rect x="202" y="88" width="6" height="112" fill="#ef4444" opacity="0.7"/>
+      <rect x="212" y="75" width="6" height="125" fill="#ef4444" opacity="0.7"/>
+      <rect x="222" y="95" width="6" height="105" fill="#ef4444" opacity="0.7"/>
+      <rect x="232" y="115" width="6" height="85" fill="#ef4444" opacity="0.7"/>
+      <rect x="242" y="100" width="6" height="100" fill="#ef4444" opacity="0.7"/>
+      <!-- label -->
+      <rect x="185" y="36" width="90" height="22" rx="4" fill="#fee2e2"/>
+      <text x="230" y="51" text-anchor="middle" font-size="10" fill="#ef4444">High Vol Cluster</text>
+      <line x1="230" y1="58" x2="215" y2="105" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Low vol cluster 2 -->
+      <rect x="282" y="178" width="6" height="22" fill="#0d9488" opacity="0.6"/>
+      <rect x="292" y="181" width="6" height="19" fill="#0d9488" opacity="0.6"/>
+      <rect x="302" y="184" width="6" height="16" fill="#0d9488" opacity="0.6"/>
+      <rect x="312" y="177" width="6" height="23" fill="#0d9488" opacity="0.6"/>
+      <rect x="322" y="180" width="6" height="20" fill="#0d9488" opacity="0.6"/>
+      <rect x="332" y="186" width="6" height="14" fill="#0d9488" opacity="0.6"/>
+      <rect x="342" y="182" width="6" height="18" fill="#0d9488" opacity="0.6"/>
+      <rect x="352" y="178" width="6" height="22" fill="#0d9488" opacity="0.6"/>
+      <rect x="362" y="184" width="6" height="16" fill="#0d9488" opacity="0.6"/>
+      <rect x="372" y="181" width="6" height="19" fill="#0d9488" opacity="0.6"/>
+      <rect x="382" y="176" width="6" height="24" fill="#0d9488" opacity="0.6"/>
+
+      <!-- High vol cluster 2 (smaller) -->
+      <rect x="432" y="130" width="6" height="70" fill="#ef4444" opacity="0.7"/>
+      <rect x="442" y="110" width="6" height="90" fill="#ef4444" opacity="0.7"/>
+      <rect x="452" y="118" width="6" height="82" fill="#ef4444" opacity="0.7"/>
+      <rect x="462" y="125" width="6" height="75" fill="#ef4444" opacity="0.7"/>
+      <rect x="472" y="135" width="6" height="65" fill="#ef4444" opacity="0.7"/>
+
+      <!-- Low vol again -->
+      <rect x="512" y="182" width="6" height="18" fill="#0d9488" opacity="0.6"/>
+      <rect x="522" y="178" width="6" height="22" fill="#0d9488" opacity="0.6"/>
+      <rect x="532" y="185" width="6" height="15" fill="#0d9488" opacity="0.6"/>
+      <rect x="542" y="180" width="6" height="20" fill="#0d9488" opacity="0.6"/>
+      <rect x="552" y="183" width="6" height="17" fill="#0d9488" opacity="0.6"/>
+      <rect x="562" y="177" width="6" height="23" fill="#0d9488" opacity="0.6"/>
+      <rect x="572" y="184" width="6" height="16" fill="#0d9488" opacity="0.6"/>
+      <rect x="582" y="181" width="6" height="19" fill="#0d9488" opacity="0.6"/>
+      <rect x="592" y="179" width="6" height="21" fill="#0d9488" opacity="0.6"/>
+      <rect x="602" y="185" width="6" height="15" fill="#0d9488" opacity="0.6"/>
+    </svg>
+    <p style="text-align:center;font-size:0.85em;color:#64748b;margin-top:8px">สีเขียว = Low Vol Cluster · สีแดง = High Vol Cluster — Vol มาเป็นกลุ่มชัดเจน</p>
+  </div>
+
+  <h3>ทำไม Vol Clustering ถึงเกิด? (เหตุ → ผล)</h3>
+  <ol>
+    <li><strong>Information flows</strong> — ข่าวสำคัญไม่ได้กระจายทันทีทั้งตลาด ใช้เวลาหลายวัน → return เคลื่อนไหวต่อเนื่อง</li>
+    <li><strong>Leverage feedback</strong> — ราคาตก → margin calls → ขายเพิ่ม → ราคาตกต่อ → Vol สูงต่อเนื่อง</li>
+    <li><strong>Risk aversion switching</strong> — นักลงทุนสลับจาก risk-on → risk-off พร้อมกัน → Vol พุ่งเป็นคลื่น</li>
+    <li><strong>Options hedging feedback</strong> — MM hedge delta ขนาดใหญ่ → ยิ่งทำให้ราคาเคลื่อนไหวมากขึ้น</li>
+  </ol>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="num">0.10–0.40</div>
+      <div class="label">Autocorrelation ของ |r_t| ใน S&P 500 (lag 1, daily data)</div>
+    </div>
+    <div class="stat">
+      <div class="num">60 ปี</div>
+      <div class="label">Vol Clustering ถูกพิสูจน์ย้อนหลัง</div>
+    </div>
+    <div class="stat">
+      <div class="num">GARCH</div>
+      <div class="label">Model ที่แม่นที่สุดสำหรับ Cluster</div>
+    </div>
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 21</strong><br>
+    Vol Clustering = Vol สูงตามด้วยสูง, ต่ำตามด้วยต่ำ<br>
+    เกิดจาก: information lag + leverage + risk aversion switching
+  </div>
+
+  <!-- ===== บท 22 ===== -->
+  <h2>บท 22 — Mean Reversion: "พายุไม่ได้อยู่ตลอดไป" 🌤️</h2>
+
+  <div class="card">
+    <h3>อุปมา: Body Temperature (อุณหภูมิร่างกาย)</h3>
+    <p>ไข้สูง 40°C ไม่ได้อยู่ตลอดชีวิต — ร่างกายมีระบบปรับอุณหภูมิกลับสู่ปกติ 37°C</p>
+    <p>Volatility เหมือนกัน: มี "ค่าปกติ" (Long-run average) ที่มันดึงดูดกลับ<br>
+    ถ้าพุ่งสูงผิดปกติ → มักลดกลับมา · ถ้าต่ำผิดปกติ → มักจะเพิ่มขึ้น</p>
+  </div>
+
+  <h3>Mean Reversion ใน Vol — ข้อเท็จจริง</h3>
+  <p>VIX มี Long-run mean ประมาณ <strong>18–20%</strong> สำหรับ S&P 500:</p>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">VIX Mean Reversion — แนวคิด</text>
+
+      <!-- axes -->
+      <line x1="60" y1="220" x2="640" y2="220" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr5)"/>
+      <line x1="60" y1="220" x2="60" y2="30" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr5)"/>
+      <text x="355" y="245" text-anchor="middle" font-size="11" fill="#64748b">เวลา</text>
+      <text x="25" y="130" font-size="11" fill="#64748b" transform="rotate(-90,25,130)">VIX (%)</text>
+
+      <!-- Mean line -->
+      <line x1="60" y1="155" x2="630" y2="155" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8,4"/>
+      <text x="632" y="159" font-size="10" fill="#f59e0b">Mean ~19%</text>
+
+      <!-- VIX path with peaks and troughs -->
+      <!-- Normal low period -->
+      <polyline points="70,175 100,170 130,168 160,172 190,165"
+        stroke="#0d9488" stroke-width="2" fill="none"/>
+      <!-- Rising to spike 1 -->
+      <polyline points="190,165 210,145 230,115 250,80 260,65"
+        stroke="#ef4444" stroke-width="2.5" fill="none"/>
+      <!-- Peak 1 -->
+      <circle cx="260" cy="65" r="5" fill="#ef4444"/>
+      <text x="260" y="58" text-anchor="middle" font-size="9" fill="#ef4444">~45%</text>
+      <!-- Mean revert down -->
+      <polyline points="260,65 280,90 310,125 340,148 370,158 400,162"
+        stroke="#0d9488" stroke-width="2" fill="none"/>
+      <!-- Low vol -->
+      <polyline points="400,162 430,168 445,175 455,170"
+        stroke="#0d9488" stroke-width="2" fill="none"/>
+      <!-- Spike 2 -->
+      <polyline points="455,170 470,140 480,100 490,70"
+        stroke="#ef4444" stroke-width="2.5" fill="none"/>
+      <circle cx="490" cy="70" r="5" fill="#ef4444"/>
+      <text x="490" y="63" text-anchor="middle" font-size="9" fill="#ef4444">~55%</text>
+      <!-- Mean revert again -->
+      <polyline points="490,70 510,95 535,130 560,153 590,162 620,166"
+        stroke="#0d9488" stroke-width="2" fill="none"/>
+
+      <!-- annotations -->
+      <!-- Arrows showing pull back to mean -->
+      <path d="M265,80 Q290,110 330,148" stroke="#64748b" stroke-width="1" fill="none" stroke-dasharray="3,3" marker-end="url(#arr5)"/>
+      <text x="310" y="120" font-size="10" fill="#64748b">Mean Revert</text>
+
+      <path d="M495,85 Q520,115 555,150" stroke="#64748b" stroke-width="1" fill="none" stroke-dasharray="3,3" marker-end="url(#arr5)"/>
+      <text x="540" y="120" font-size="10" fill="#64748b">Mean Revert</text>
+
+      <!-- Low annotation -->
+      <text x="160" y="218" text-anchor="middle" font-size="9" fill="#0d9488">~12% (ต่ำกว่า mean)</text>
+      <text x="430" y="218" text-anchor="middle" font-size="9" fill="#0d9488">~14% (ต่ำ)</text>
+    </svg>
+    <p style="text-align:center;font-size:0.85em;color:#64748b;margin-top:8px">VIX พุ่งสูงในวิกฤต แต่ดึงกลับหา Mean ~19% เสมอ — ไม่มีครั้งไหนที่สูงตลอดไปหรือต่ำตลอดไป</p>
+  </div>
+
+  <h3>Half-Life ของ Vol — กลับเร็วแค่ไหน?</h3>
+  <p><span class="highlight">Half-life</span> คือเวลาที่ Vol จะกลับมาครึ่งหนึ่งของ deviation จาก mean</p>
+
+  <table>
+    <thead><tr><th>Asset</th><th>Half-life โดยประมาณ</th><th>ความหมาย</th></tr></thead>
+    <tbody>
+      <tr><td>S&P 500 (VIX)</td><td>~15–25 วัน</td><td>ถ้า VIX พุ่งจาก 18 → 40 ใน 1 วัน ใช้เวลา ~20 วันกลับมา 29</td></tr>
+      <tr><td>BTC IV</td><td>~10–15 วัน</td><td>Crypto กลับเร็วกว่า เพราะ 24/7 ซื้อขาย</td></tr>
+      <tr><td>Gold</td><td>~20–30 วัน</td><td>ช้ากว่า — ตลาดไม่เปิด 24/7</td></tr>
+      <tr><td>Individual Stocks</td><td>~30–45 วัน</td><td>ช้ากว่า Index เพราะ idiosyncratic risk</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ประยุกต์ใช้: Trade Mean Reversion</h3>
+  <ul>
+    <li>VIX พุ่ง &gt;30 → <strong>ขาย Vol</strong> (sell straddle / sell strangle) รอ mean revert</li>
+    <li>VIX ต่ำมาก &lt;12 → <strong>ซื้อ Vol insurance</strong> ราคาถูก รอพุ่ง</li>
+    <li>ใช้ IV Rank (Part I) ช่วยระบุว่า "สูงหรือต่ำเกินไป" เทียบกับ history</li>
+  </ul>
+
+  <div class="warn">
+    <strong>⚠️ Mean Reversion ≠ Mean Reversion ทันที</strong><br>
+    Vol อาจอยู่สูงนาน 1–3 เดือนก่อนกลับ เช่น 2020 VIX อยู่ &gt;30 กว่า 60 วัน
+    อย่า over-leverage เมื่อ sell vol หลังวิกฤต
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 22</strong><br>
+    Vol มี Mean Reversion — ไม่สูงตลอดไปไม่ต่ำตลอดไป<br>
+    VIX half-life ~15–25 วัน · BTC half-life ~10–15 วัน
+  </div>
+
+  <!-- ===== บท 23 ===== -->
+  <h2>บท 23 — GARCH Model: พยากรณ์ Vol ด้วยสถิติ 📐</h2>
+
+  <div class="card">
+    <h3>อุปมา: พยากรณ์อากาศ</h3>
+    <p>นักอุตุนิยมวิทยาพยากรณ์ฝนพรุ่งนี้ด้วย:</p>
+    <ul>
+      <li>ความชื้นวันนี้ (recent data)</li>
+      <li>pattern ฤดูกาล (long-run average)</li>
+      <li>ระบบพายุที่กำลังเคลื่อนมา (momentum)</li>
+    </ul>
+    <p>GARCH ทำแบบเดียวกันกับ Volatility: ผสม (1) Vol เมื่อวาน + (2) Long-run Vol + (3) Shock เมื่อวาน</p>
+  </div>
+
+  <h3>GARCH(1,1) — Model พื้นฐาน</h3>
+  <p>GARCH = <strong>Generalized Autoregressive Conditional Heteroskedasticity</strong> (ชื่อยาว, ไอเดียตรงไปตรงมา)</p>
+
+  <div class="formula">
+σ²_t = ω + α·ε²_{t-1} + β·σ²_{t-1}
+<span class="comment">
+σ²_t    = variance พยากรณ์วันนี้
+ω       = long-run variance component (ค่า baseline)
+α       = น้ำหนักของ shock เมื่อวาน (ε² = return² เมื่อวาน)
+β       = น้ำหนักของ variance เมื่อวาน (persistence)
+α + β   = persistence รวม (ยิ่งใกล้ 1 = mean revert ช้า)
+
+ตัวเลขทั่วไปสำหรับ S&P 500:
+  ω ≈ 0.000002, α ≈ 0.09, β ≈ 0.90
+  α + β ≈ 0.99 (persistence สูง = cluster นาน)
+</span>
+  </div>
+
+  <h3>เหตุ → ผล: GARCH อธิบายอะไร?</h3>
+  <ol>
+    <li><strong>α (alpha) — Shock sensitivity</strong>: ถ้า α สูง → Vol ตอบสนองต่อ shock เร็ว (volatile vol)</li>
+    <li><strong>β (beta) — Persistence</strong>: ถ้า β สูง → Vol อยู่นานหลัง shock (cluster ยาว)</li>
+    <li><strong>ω (omega) — Long-run pull</strong>: ดึง Vol กลับหา long-run average เสมอ</li>
+    <li><strong>α + β &lt; 1</strong>: รับประกัน Mean Reversion ในระยะยาว</li>
+  </ol>
+
+  <div class="two-col">
+    <div class="card">
+      <h3 style="color:#ef4444">High α, Low β</h3>
+      <p>Vol ตอบสนองเร็ว แต่กลับเร็ว → Cluster สั้น</p>
+      <p style="font-size:0.88em;color:var(--muted)">เช่น Crypto: α≈0.15, β≈0.80</p>
+    </div>
+    <div class="card">
+      <h3 style="color:#0d9488">Low α, High β</h3>
+      <p>Vol ตอบสนองช้า แต่อยู่นาน → Cluster ยาว</p>
+      <p style="font-size:0.88em;color:var(--muted)">เช่น S&P 500: α≈0.09, β≈0.90</p>
+    </div>
+  </div>
+
+  <h3>ตัวเลขจริง: GARCH ทำนาย Vol ยังไง?</h3>
+  <div class="card">
+    <p><strong>วันนี้:</strong> S&P 500 ลง 3% (shock ใหญ่)</p>
+    <p>ε²_{t} = (0.03)² = 0.0009</p>
+    <p>σ²_{t-1} (ก่อนหน้า) = (0.01)² = 0.0001 (Vol ก่อนหน้า = 1%/วัน ≈ 16%/ปี)</p>
+    <div class="formula">
+σ²_t = 0.000002 + 0.09 × 0.0009 + 0.90 × 0.0001
+     = 0.000002 + 0.000081 + 0.000090
+     = 0.000173
+σ_t  = √0.000173 ≈ 1.32% ต่อวัน ≈ 21% ต่อปี
+<span class="comment">Vol พุ่งจาก 16% → 21% เพราะ shock 3% เมื่อวาน</span>
+    </div>
+  </div>
+
+  <div class="ref">
+    <strong>ใช้ GARCH ได้ที่ไหน?</strong>
+    Python: <code>arch</code> library (<code>pip install arch</code>) · R: <code>rugarch</code> package · Excel: ซับซ้อนกว่า แนะนำ Python
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 23</strong><br>
+    GARCH(1,1) = ω + α×(shock เมื่อวาน) + β×(Vol เมื่อวาน)<br>
+    α+β ใกล้ 1 = cluster นาน · &lt;1 = mean revert ในที่สุด
+  </div>
+
+  <!-- ===== บท 24 ===== -->
+  <h2>บท 24 — Low Vol vs High Vol Regime 🚦</h2>
+
+  <h3>Regime คืออะไร?</h3>
+  <p><span class="highlight">Regime</span> = สภาวะตลาดที่มีลักษณะเฉพาะ ซึ่งคงอยู่ระยะหนึ่งก่อนเปลี่ยน</p>
+
+  <div class="regime-low">
+    <strong>🟢 Low Vol Regime</strong><br>
+    VIX &lt; 15 (หรือ RV ต่อวัน &lt; 0.8%) · ตลาดสบาย · premium option ถูก<br>
+    <em>กลยุทธ์: Sell Vol, Sell premium, Carry trade</em>
+  </div>
+
+  <div class="regime-trans">
+    <strong>🟡 Transition / Normal Regime</strong><br>
+    VIX 15–25 · ตลาดปกติ · option pricing fair<br>
+    <em>กลยุทธ์: Selective premium selling + event protection</em>
+  </div>
+
+  <div class="regime-high">
+    <strong>🔴 High Vol Regime</strong><br>
+    VIX &gt; 25 · ตลาดกลัว · premium option แพง มาก<br>
+    <em>กลยุทธ์: Buy protection ถูก, ขาย Vol รอ mean revert</em>
+  </div>
+
+  <h3>Characteristics ของแต่ละ Regime</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ลักษณะ</th>
+        <th>🟢 Low Vol</th>
+        <th>🟡 Normal</th>
+        <th>🔴 High Vol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>VIX range</td><td>&lt;15</td><td>15–25</td><td>&gt;25</td></tr>
+      <tr><td>Daily Move (S&P)</td><td>&lt;0.5%</td><td>0.5–1.5%</td><td>&gt;1.5%</td></tr>
+      <tr><td>Premium pricing</td><td>ถูก (IV ต่ำ)</td><td>ปกติ</td><td>แพง (IV สูง)</td></tr>
+      <tr><td>VRP opportunity</td><td>น้อย (IV≈RV)</td><td>ปานกลาง</td><td>สูง (IV>>RV)</td></tr>
+      <tr><td>Duration เฉลี่ย</td><td>3–12 เดือน</td><td>2–6 เดือน</td><td>1–3 เดือน</td></tr>
+      <tr><td>ผลตอบแทน Short Vol</td><td>Steady แต่น้อย</td><td>Decent</td><td>สูงมาก แต่เสี่ยง</td></tr>
+    </tbody>
+  </table>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">VIX Regime Map (Schematic)</text>
+
+      <!-- axes -->
+      <line x1="60" y1="180" x2="630" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="60" y1="180" x2="60" y2="35" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="25" y="110" font-size="11" fill="#64748b" transform="rotate(-90,25,110)">VIX</text>
+
+      <!-- zone bands -->
+      <rect x="62" y="140" width="566" height="38" fill="#dcfce7" opacity="0.5"/>
+      <text x="340" y="163" text-anchor="middle" font-size="10" fill="#166534">Low Vol Zone (VIX &lt; 15)</text>
+
+      <rect x="62" y="100" width="566" height="40" fill="#fef9c3" opacity="0.5"/>
+      <text x="340" y="124" text-anchor="middle" font-size="10" fill="#854d0e">Normal Zone (VIX 15–25)</text>
+
+      <rect x="62" y="40" width="566" height="60" fill="#fee2e2" opacity="0.5"/>
+      <text x="340" y="75" text-anchor="middle" font-size="10" fill="#991b1b">High Vol Zone (VIX &gt; 25)</text>
+
+      <!-- boundary lines -->
+      <line x1="62" y1="140" x2="628" y2="140" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="632" y="143" font-size="9" fill="#22c55e">15</text>
+      <line x1="62" y1="100" x2="628" y2="100" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="632" y="103" font-size="9" fill="#f59e0b">25</text>
+
+      <!-- VIX path -->
+      <polyline points="70,148 100,150 130,145 160,142 200,138 220,125 240,105 260,78 280,60 300,72 320,88 350,105 380,118 410,130 440,140 470,145 500,142 530,138 560,148 590,150 620,147"
+        stroke="#1e293b" stroke-width="2" fill="none"/>
+
+      <!-- period labels -->
+      <text x="155" y="195" text-anchor="middle" font-size="9" fill="#166534">Bull Market</text>
+      <text x="280" y="195" text-anchor="middle" font-size="9" fill="#991b1b">Crisis</text>
+      <text x="520" y="195" text-anchor="middle" font-size="9" fill="#166534">Recovery</text>
+    </svg>
+    <p style="text-align:center;font-size:0.85em;color:#64748b;margin-top:8px">VIX ย้าย Regime — Bull market (Low) → Crisis (High) → Recovery (กลับ Low)</p>
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 24</strong><br>
+    Low Vol: VIX &lt;15 (Sell premium ได้แต่น้อย)<br>
+    High Vol: VIX &gt;25 (Premium แพง, VRP สูง, เสี่ยงสูง)
+  </div>
+
+  <!-- ===== บท 25 ===== -->
+  <h2>บท 25 — Regime Detection: รู้ว่าตอนนี้อยู่ Regime ไหน? 🔍</h2>
+
+  <h3>วิธีที่ 1: VIX Level (ง่ายที่สุด)</h3>
+  <table>
+    <thead><tr><th>VIX</th><th>Regime</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>&lt;12</td><td>Extremely Low Vol</td><td>ซื้อ cheap Vol insurance, ระวัง complacency</td></tr>
+      <tr><td>12–18</td><td>Low Vol</td><td>Sell premium ได้ แต่ size เล็ก</td></tr>
+      <tr><td>18–25</td><td>Normal</td><td>Standard option strategies</td></tr>
+      <tr><td>25–35</td><td>Elevated Vol</td><td>Premium แพง → Sell แต่ระวัง tail risk</td></tr>
+      <tr><td>&gt;35</td><td>Crisis/Panic</td><td>ขาย Vol ได้ผลตอบแทนสูง แต่ต้อง size เล็ก มาก</td></tr>
+    </tbody>
+  </table>
+
+  <h3>วิธีที่ 2: VIX/VIX3M Ratio (เหมือน VX1/VX2)</h3>
+  <div class="formula">
+VIX/VIX3M Ratio:
+  &lt; 0.85  = Deep Contango = Low Vol Regime อย่างแน่นอน
+  0.85–1.0 = Normal
+  &gt; 1.0   = Term Inversion = เริ่ม High Vol / Transition
+  &gt; 1.2   = Backwardation ลึก = High Vol Crisis
+  </div>
+
+  <h3>วิธีที่ 3: IV vs RV Spread (VRP)</h3>
+  <div class="formula">
+VRP = IV(30d) − RV(30d)
+  VRP &gt; 5%  = ปกติ (market pricing extra buffer)
+  VRP &lt; 0%  = ผิดปกติ (RV เกิน IV → likely High Vol Regime จริง)
+  VRP &gt; 15% = Very high opportunity เพราะ IV แพงมากกว่า RV มาก
+  </div>
+
+  <h3>วิธีที่ 4: 20-day Realized Vol vs 252-day Moving Average</h3>
+  <div class="formula">
+Signal:
+  RV_20d &gt; RV_252d × 1.5  → High Vol Regime (short-term spike)
+  RV_20d &lt; RV_252d × 0.7  → Low Vol Regime (quiet market)
+  </div>
+
+  <div class="card">
+    <h3>Practical Regime Dashboard (ตรวจ 4 อย่างนี้ทุกวัน)</h3>
+    <table>
+      <thead><tr><th>Indicator</th><th>Low Vol Signal</th><th>High Vol Signal</th></tr></thead>
+      <tbody>
+        <tr><td>VIX Level</td><td>&lt;15</td><td>&gt;25</td></tr>
+        <tr><td>VIX/VIX3M</td><td>&lt;0.9</td><td>&gt;1.05</td></tr>
+        <tr><td>VRP (IV-RV)</td><td>&gt;8%</td><td>&lt;2%</td></tr>
+        <tr><td>RV_20d vs RV_252d</td><td>&lt;0.8x</td><td>&gt;1.5x</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.88em;color:var(--muted)">ตรวจทั้ง 4 — ถ้า 3/4 ชี้ High Vol → High Vol Regime · ถ้า 3/4 ชี้ Low Vol → Low Vol Regime</p>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ Regime Transitions เป็นช่วงอันตรายที่สุด</strong><br>
+    การเปลี่ยน Regime จาก Low → High มักเกิดเร็วมาก (1–3 วัน) ในขณะที่ High → Low ช้ากว่า (หลายสัปดาห์)
+    อย่าเพิ่ม size ใน Low Vol Regime ช่วงก่อน event สำคัญ
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 25</strong><br>
+    ตรวจ Regime ด้วย VIX level + VIX/VIX3M + VRP + RV comparison<br>
+    3/4 indicators ชี้เดียวกัน → เชื่อ Regime นั้น
+  </div>
+
+  <!-- ===== บท 26 ===== -->
+  <h2>บท 26 — Playbook ตาม Regime 🎯</h2>
+
+  <h3>Playbook สำหรับแต่ละ Regime</h3>
+
+  <div class="regime-low" style="border-radius:8px">
+    <strong>🟢 Low Vol Regime — Sell Premium Steadily</strong>
+    <ul style="margin-top:10px">
+      <li><strong>กลยุทธ์หลัก:</strong> Iron Condor 30–45 DTE, Short Strangle, Covered Call</li>
+      <li><strong>Position Size:</strong> ปกติ แต่ไม่ oversize (premium น้อย → profit/risk ratio ต่ำ)</li>
+      <li><strong>ระวัง:</strong> Cheap puts อาจ not worth it → แต่ถ้า VIX &lt;12 ซื้อ tail hedge ราคาถูกมาก</li>
+      <li><strong>Calendar Spread:</strong> ดีในช่วงนี้ เพราะ Contango ลึก</li>
+    </ul>
+  </div>
+
+  <div class="regime-trans" style="border-radius:8px;margin-top:16px">
+    <strong>🟡 Normal Regime — Selective and Patient</strong>
+    <ul style="margin-top:10px">
+      <li><strong>กลยุทธ์หลัก:</strong> Short Straddle บน event (earnings/FOMC), Iron Condor ที่ IV สูงกว่าปกติ</li>
+      <li><strong>Position Size:</strong> ปกติ</li>
+      <li><strong>Selective:</strong> เลือก underlying ที่ IV สูงกว่า normal (IV Rank &gt;50th percentile)</li>
+      <li><strong>Hedge:</strong> ซื้อ long-dated puts ถ้าเห็น macro risk</li>
+    </ul>
+  </div>
+
+  <div class="regime-high" style="border-radius:8px;margin-top:16px">
+    <strong>🔴 High Vol Regime — Mean Reversion Selling (Careful!)</strong>
+    <ul style="margin-top:10px">
+      <li><strong>กลยุทธ์หลัก:</strong> Short Straddle ที่ strikes ไกล (Strangle กว้างๆ), รอ vol crush</li>
+      <li><strong>Position Size:</strong> เล็กกว่าปกติ 50–75% — premium แพง แต่ gamma risk สูง</li>
+      <li><strong>Timing:</strong> รอให้ VIX เริ่มลดก่อน เปิดหลัง peak ไม่ใช่ตอน panic กำลังเร่ง</li>
+      <li><strong>Long Vol เพื่อ hedge:</strong> ถ้ายังไม่แน่ใจ ซื้อ long-dated puts ก่อน แล้วค่อย sell near-term</li>
+    </ul>
+  </div>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Regime → Strategy Decision Tree</text>
+
+      <!-- VIX check box -->
+      <rect x="265" y="35" width="150" height="38" rx="8" fill="#0d9488"/>
+      <text x="340" y="50" text-anchor="middle" font-size="11" fill="#fff" font-weight="bold">ตรวจ VIX + Term Structure</text>
+      <text x="340" y="65" text-anchor="middle" font-size="10" fill="#ccfbf1">ทุกวันก่อน trade</text>
+
+      <!-- arrows -->
+      <line x1="265" y1="54" x2="155" y2="100" stroke="#22c55e" stroke-width="1.5"/>
+      <line x1="340" y1="73" x2="340" y2="100" stroke="#f59e0b" stroke-width="1.5"/>
+      <line x1="415" y1="54" x2="530" y2="100" stroke="#ef4444" stroke-width="1.5"/>
+
+      <!-- Labels on arrows -->
+      <text x="190" y="88" font-size="10" fill="#22c55e">VIX &lt;15</text>
+      <text x="345" y="92" font-size="10" fill="#f59e0b">15–25</text>
+      <text x="458" y="88" font-size="10" fill="#ef4444">VIX &gt;25</text>
+
+      <!-- Low vol box -->
+      <rect x="60" y="100" width="180" height="55" rx="8" fill="#dcfce7" stroke="#22c55e"/>
+      <text x="150" y="118" text-anchor="middle" font-size="11" fill="#166534" font-weight="bold">Low Vol</text>
+      <text x="150" y="133" text-anchor="middle" font-size="9" fill="#166534">Iron Condor, Strangle</text>
+      <text x="150" y="147" text-anchor="middle" font-size="9" fill="#166534">Calendar Sell near</text>
+
+      <!-- Normal box -->
+      <rect x="255" y="100" width="170" height="55" rx="8" fill="#fef9c3" stroke="#f59e0b"/>
+      <text x="340" y="118" text-anchor="middle" font-size="11" fill="#854d0e" font-weight="bold">Normal</text>
+      <text x="340" y="133" text-anchor="middle" font-size="9" fill="#854d0e">Selective premium sell</text>
+      <text x="340" y="147" text-anchor="middle" font-size="9" fill="#854d0e">Event Straddle</text>
+
+      <!-- High vol box -->
+      <rect x="440" y="100" width="190" height="55" rx="8" fill="#fee2e2" stroke="#ef4444"/>
+      <text x="535" y="118" text-anchor="middle" font-size="11" fill="#991b1b" font-weight="bold">High Vol</text>
+      <text x="535" y="133" text-anchor="middle" font-size="9" fill="#991b1b">Size down, Wide Strangle</text>
+      <text x="535" y="147" text-anchor="middle" font-size="9" fill="#991b1b">Wait for vol peak</text>
+
+      <!-- Second layer: size decision -->
+      <line x1="150" y1="155" x2="150" y2="180" stroke="#64748b" stroke-width="1"/>
+      <line x1="340" y1="155" x2="340" y2="180" stroke="#64748b" stroke-width="1"/>
+      <line x1="535" y1="155" x2="535" y2="180" stroke="#64748b" stroke-width="1"/>
+
+      <rect x="80" y="180" width="140" height="30" rx="6" fill="#f0fdf4" stroke="#22c55e"/>
+      <text x="150" y="199" text-anchor="middle" font-size="10" fill="#166534">Size: Normal</text>
+
+      <rect x="270" y="180" width="140" height="30" rx="6" fill="#fefce8" stroke="#f59e0b"/>
+      <text x="340" y="199" text-anchor="middle" font-size="10" fill="#854d0e">Size: Normal</text>
+
+      <rect x="460" y="180" width="150" height="30" rx="6" fill="#fff1f2" stroke="#ef4444"/>
+      <text x="535" y="199" text-anchor="middle" font-size="10" fill="#991b1b">⚠️ Size: 50–75% ปกติ</text>
+    </svg>
+  </div>
+
+  <h3>ตัวเลขจริง: Portfolio Allocation ตาม Regime</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Regime</th>
+        <th>Short Vol Allocation</th>
+        <th>Long Vol Hedge</th>
+        <th>Cash/Other</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>🟢 Low Vol (VIX &lt;15)</td>
+        <td>40–50% ของ portfolio</td>
+        <td>5–10% (ถูกมาก ซื้อเลย)</td>
+        <td>40–55%</td>
+      </tr>
+      <tr>
+        <td>🟡 Normal (VIX 15–25)</td>
+        <td>30–40%</td>
+        <td>10–15%</td>
+        <td>45–60%</td>
+      </tr>
+      <tr>
+        <td>🔴 High Vol (VIX &gt;25)</td>
+        <td>15–25% (size ลง)</td>
+        <td>20–30% (แพงแต่ต้องมี)</td>
+        <td>45–65%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 26</strong><br>
+    Low Vol → Sell steady, Normal size · High Vol → Size down, รอ peak<br>
+    ซื้อ Tail Hedge ถูกที่สุดใน Low Vol Regime
+  </div>
+
+  <!-- ===== Mini Cheat Sheet ===== -->
+  <div class="cheat">
+    <h3>📋 Mini-Cheat Sheet: Vol Regimes</h3>
+    <div class="two-col" style="color:#fff">
+      <div>
+        <strong style="color:var(--teal-mid)">Vol Clustering</strong>
+        <ul style="margin-top:8px">
+          <li>Vol สูงตามด้วยสูง ต่ำตามด้วยต่ำ</li>
+          <li>Autocorrelation |returns| สูง</li>
+          <li>ทำให้: Regime ยาวนาน</li>
+          <li>Model: GARCH(1,1)</li>
+        </ul>
+      </div>
+      <div>
+        <strong style="color:var(--teal-mid)">Mean Reversion</strong>
+        <ul style="margin-top:8px">
+          <li>Vol ไม่สูง/ต่ำตลอดไป</li>
+          <li>VIX mean ~18–20% (S&P)</li>
+          <li>Half-life VIX ~15–25 วัน</li>
+          <li>→ Sell high Vol, Buy low Vol</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px">
+      <strong style="color:var(--teal-mid)">GARCH(1,1) Intuition</strong>
+      <ul style="margin-top:8px">
+        <li>σ²_t = ω + α×shock² + β×σ²_prev</li>
+        <li>α = ตอบสนองต่อ shock · β = persistence</li>
+        <li>α+β &lt; 1 = mean revert ในที่สุด</li>
+        <li>S&P: α≈0.09, β≈0.90 (persistent)</li>
+      </ul>
+    </div>
+    <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px">
+      <strong style="color:var(--teal-mid)">Regime Playbook</strong>
+      <ul style="margin-top:8px">
+        <li>🟢 VIX &lt;15: Sell premium + ซื้อ cheap tail hedge</li>
+        <li>🟡 VIX 15–25: Selective, event-driven</li>
+        <li>🔴 VIX &gt;25: Size down, wait peak, then sell</li>
+        <li>ตรวจ 4 indicators: VIX + Term Structure + VRP + RV</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Part Summary -->
+  <h2>สรุป Part IV 📌</h2>
+  <table>
+    <thead><tr><th>บท</th><th>หัวข้อ</th><th>Takeaway หลัก</th></tr></thead>
+    <tbody>
+      <tr><td>21</td><td>Vol Clustering</td><td>Vol มา Cluster — ไม่ได้สุ่ม ทำนายได้บางส่วน</td></tr>
+      <tr><td>22</td><td>Mean Reversion</td><td>Vol มี Long-run anchor · Half-life ~15–25 วัน (VIX)</td></tr>
+      <tr><td>23</td><td>GARCH Model</td><td>σ²_t = ω + α×ε²_{t-1} + β×σ²_{t-1} · แม่นกว่า simple RV</td></tr>
+      <tr><td>24</td><td>Regime Types</td><td>Low / Normal / High Vol → ลักษณะต่างกัน</td></tr>
+      <tr><td>25</td><td>Regime Detection</td><td>ตรวจ VIX + Term + VRP + RV (3/4 สัญญาณ)</td></tr>
+      <tr><td>26</td><td>Regime Playbook</td><td>Size และ strategy ตาม Regime เสมอ</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Series Map -->
+  <h2>Series Map: Volatility Mastery 🗺️</h2>
+  <table>
+    <thead><tr><th>Part</th><th>หัวข้อ</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><a href="vol-part1.html" style="color:var(--teal)">I</a></td><td>Foundations — IV, RV, VRP, Cone</td><td>✅ เสร็จ</td></tr>
+      <tr><td><a href="vol-part2.html" style="color:var(--teal)">II</a></td><td>Vol Surface — Smile, Skew, 25RR/25BF</td><td>✅ เสร็จ</td></tr>
+      <tr><td><a href="vol-part3.html" style="color:var(--teal)">III</a></td><td>Term Structure — Contango, Backwardation</td><td>✅ เสร็จ</td></tr>
+      <tr><td><strong>IV</strong></td><td><strong>Vol Regimes — Clustering, GARCH</strong></td><td>📍 คุณอยู่ที่นี่</td></tr>
+      <tr><td>V</td><td>Long Vol Playbook — Straddle, Calendar, Gamma Scalp</td><td>⏳ ถัดไป</td></tr>
+      <tr><td>VI</td><td>Short Vol Playbook — IC, Blow-up, Vol Carry</td><td>⏳</td></tr>
+      <tr><td>VII</td><td>Events & IV Crush — Earnings, Fed, Halving</td><td>⏳</td></tr>
+      <tr><td>VIII</td><td>Vega + Vol Products — VIX, Variance Swaps</td><td>⏳</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<div class="footer-nav">
+  ← <a href="vol-part3.html">Part III: Term Structure</a>
+  &nbsp;·&nbsp;
+  <strong>Part IV: Vol Regimes</strong>
+  &nbsp;·&nbsp;
+  <a href="vol-part5.html">Part V: Long Vol Playbook →</a>
+</div>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #0d9488;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vol-part1.html" style="color:#0d9488;text-decoration:none;font-weight:700">Volatility Mastery — เริ่มต้น</a></nav>
+</body>
+</html>

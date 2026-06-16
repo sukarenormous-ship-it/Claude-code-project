@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View → Payoff — Part I</title><link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:520px;width:100%}@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}</style></head><body>
+
+<div class="cover">
+<h1>View → Payoff</h1>
+<div class="sub">Part I: Belief Precision — ระบุ View ให้ครบ 5 มิติ</div>
+<div class="desc">ก่อนสร้าง strategy ต้องรู้ว่า "เชื่ออะไรจริงๆ" — vague belief = wrong strategy = เสียเงินโดยไม่รู้ตัว</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ใน Part นี้คุณจะได้</div>
+<ul>
+<li>เข้าใจว่าทำไม "Bullish" เพียงคำเดียวไม่พอสำหรับการเลือก strategy</li>
+<li>ฝึก Belief Framework ครบ <strong>5 มิติ</strong>: Direction · Range · Probability Shape · Volatility View · Time/Path</li>
+<li>เขียน Belief Statement ที่ใช้งานได้จริง — ก่อนเปิด option chain</li>
+<li>เห็น payoff shape 5 แบบที่แตกต่างกันแม้ทุกคนจะ "Bullish" เหมือนกัน</li>
+</ul>
+</div>
+
+<h2>คำศัพท์พื้นฐาน — อ่านก่อน 5 นาที</h2>
+
+<div class="bx bb">
+<div class="bt">Options 101: คำที่จะเจอตลอดทั้ง Series</div>
+<table>
+<tr><th>คำศัพท์</th><th>ความหมายง่ายๆ</th><th>ตัวอย่าง</th></tr>
+<tr><td><strong>Call Option</strong></td><td>สิทธิ์ "ซื้อ" สินทรัพย์ที่ราคา K ในอนาคต — จ่ายเพื่อรับสิทธิ์นั้น</td><td>ซื้อ Call BTC Strike $75K = มีสิทธิ์ซื้อ BTC ที่ $75K ตอน expiry</td></tr>
+<tr><td><strong>Put Option</strong></td><td>สิทธิ์ "ขาย" สินทรัพย์ที่ราคา K ในอนาคต — ใช้ hedging หรือ bet ขาลง</td><td>ซื้อ Put BTC Strike $70K = กำไรถ้า BTC ต่ำกว่า $70K ตอน expiry</td></tr>
+<tr><td><strong>Strike (K)</strong></td><td>ราคาที่กำหนดไว้ในสัญญา option</td><td>Strike $75K = ราคาอ้างอิงในสัญญา</td></tr>
+<tr><td><strong>Premium</strong></td><td>ราคาที่จ่ายเพื่อซื้อ option (ต้นทุน)</td><td>Premium $2,000 = จ่ายล่วงหน้า $2,000 ก่อน expiry</td></tr>
+<tr><td><strong>Expiry (T)</strong></td><td>วันหมดอายุสัญญา — options มีอายุจำกัด</td><td>Expiry 30 วัน = option หมดอายุใน 30 วัน</td></tr>
+<tr><td><strong>ATM / ITM / OTM</strong></td><td>ATM = strike ≈ ราคาปัจจุบัน · ITM = มีมูลค่าทันทีถ้า exercise · OTM = ยังไม่มีมูลค่า</td><td>BTC $75K: ATM Call $75K, ITM Call $70K, OTM Call $80K</td></tr>
+<tr><td><strong>Delta (Δ)</strong></td><td>option เคลื่อนที่กี่ $ เมื่อสินทรัพย์ขึ้น $1 — วัด sensitivity ต่อราคา (0 ถึง 1 สำหรับ Call)</td><td>Delta 0.5 = Call ขึ้น $0.50 ทุกที่ BTC ขึ้น $1</td></tr>
+<tr><td><strong>Vega (ν)</strong></td><td>option เคลื่อนที่กี่ $ เมื่อ volatility เปลี่ยน 1% — วัด sensitivity ต่อ vol</td><td>Vega $100 = option แพงขึ้น $100 ทุก IV +1%</td></tr>
+<tr><td><strong>Theta (θ)</strong></td><td>option เสียมูลค่ากี่ $ ต่อวันเพียงเพราะเวลาผ่านไป</td><td>Theta −$50 = option ถูกลง $50 ทุกวัน</td></tr>
+<tr><td><strong>IV (Implied Volatility)</strong></td><td>ความผันผวนที่ "ตลาดคาดว่าจะเกิด" — ยิ่งสูง option ยิ่งแพง</td><td>IV 65% = ตลาดคาด BTC จะขึ้นหรือลงรวมกันประมาณ 65% ต่อปี</td></tr>
+<tr><td><strong>Payoff Diagram</strong></td><td>กราฟแสดงกำไร/ขาดทุน ณ ราคาต่างๆ ที่ expiry</td><td>แกน X = ราคา BTC, แกน Y = กำไร/ขาดทุน</td></tr>
+<tr><td><strong>Long / Short</strong></td><td>Long = ซื้อ/มีสิทธิ์ · Short = ขาย/รับภาระ</td><td>Long Call = ซื้อ Call · Short Put = ขาย Put รับ premium</td></tr>
+</table>
+<p style="font-size:0.9em;color:#555;margin-top:8px">💡 ไม่ต้องจำทั้งหมดในครั้งเดียว — กลับมาดู glossary นี้ได้ตลอดเวลาที่เจอคำไม่คุ้นเคย</p>
+</div>
+
+<h2>บทที่ 1: ทำไม "Bullish" ไม่พอ</h2>
+
+<p>สมมติ 5 คนบอกว่า "Bullish BTC" พร้อมกัน — แต่ละคนหมายถึงอะไร?</p>
+
+<table>
+<tr><th>คน</th><th>ความหมายที่แท้จริง</th><th>Strategy ที่เหมาะสม</th></tr>
+<tr><td>ก</td><td>"ขึ้น 10% จบแถว $79K พอดี"</td><td>Butterfly peak at $79K</td></tr>
+<tr><td>ข</td><td>"ขึ้น 20–30% แต่ไม่น่าทะลุ $90K"</td><td>Bull Call Spread</td></tr>
+<tr><td>ค</td><td>"ขึ้นแรง 50%+ vol จะระเบิด"</td><td>Long Call หรือ Back Ratio</td></tr>
+<tr><td>ง</td><td>"ขึ้น แต่กลัว crash ด้วย อยากป้องกัน"</td><td>Long Strangle (Long Call + Long OTM Put — กำไรทั้งขึ้นและลงแรง)</td></tr>
+<tr><td>จ</td><td>"ถือหุ้นอยู่ ขึ้นช้าๆ ไม่เกิน $80K"</td><td>Covered Call at $80K</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 520 130">
+<text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">"Bullish" 5 แบบ — payoff ต่างกันทั้งหมด</text>
+<line x1="10" y1="75" x2="100" y2="75" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 2"/>
+<line x1="110" y1="75" x2="200" y2="75" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 2"/>
+<line x1="210" y1="75" x2="310" y2="75" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 2"/>
+<line x1="320" y1="75" x2="415" y2="75" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 2"/>
+<line x1="420" y1="75" x2="510" y2="75" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3 2"/>
+<!-- ก Butterfly -->
+<polyline points="10,90 28,90 55,28 82,90 100,90" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<text x="55" y="112" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151" font-weight="600">ก: Butterfly</text>
+<!-- ข Bull Spread -->
+<polyline points="110,88 135,88 168,42 200,42" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<text x="155" y="112" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151" font-weight="600">ข: Bull Spread</text>
+<!-- ค Long Call -->
+<polyline points="210,88 248,88 310,28" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<text x="260" y="112" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151" font-weight="600">ค: Long Call</text>
+<!-- ง Long Strangle (Long Call + Long OTM Put) -->
+<polyline points="320,55 362,88 415,35" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<text x="368" y="112" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151" font-weight="600">ง: Long Strangle</text>
+<!-- จ Covered Call -->
+<polyline points="420,95 465,48 510,48" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<text x="465" y="112" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#374151" font-weight="600">จ: Covered Call</text>
+</svg>
+
+<div class="bx br"><div class="bt">ข้อผิดพลาดที่พบบ่อยที่สุด</div>
+<p>"Bullish" + "ซื้อ Call" ดูเหมือน logic ที่สมเหตุสมผล — แต่ผิดใน 4 ใน 5 กรณีข้างต้น<br>
+Strategy ที่เหมาะแต่ละ belief <strong>ต่างกันมาก</strong> ทั้ง cost, risk profile, และ payout</p></div>
+
+<div class="bx bg"><div class="bt">กฎ: Belief ที่ดีต้องตอบ 5 คำถาม</div>
+<p><strong>Direction · Range · Probability Shape · Volatility View · Time/Path</strong><br>
+ตอบไม่ครบ = strategy ที่เลือกอาจ mismatch กับสิ่งที่เชื่อจริงๆ</p></div>
+
+<h2>บทที่ 2: มิติที่ 1 — Direction (ทิศทาง)</h2>
+
+<p>"ขึ้นหรือลง?" ยังไม่พอ — Direction ที่ใช้งานได้ต้องระบุ 3 องค์ประกอบ:</p>
+
+<div class="bx bb"><div class="bt">3 องค์ประกอบของ Direction</div>
+<p><strong>1. Magnitude (ขนาด):</strong> ขึ้น/ลงกี่ %?<br>
+&nbsp;&nbsp;→ Magnitude ต่ำ (5–15%): Spread ดีกว่า naked option — จำกัด cost + vega<br>
+&nbsp;&nbsp;→ Magnitude สูง (30%+): Long option หรือ Back Ratio — ต้องการ unlimited upside<br><br>
+<strong>2. Confidence (ความมั่นใจ):</strong> 55% หรือ 90%?<br>
+&nbsp;&nbsp;→ Confidence ต่ำ: จ่าย premium น้อย, รับ risk จำกัด (Spread)<br>
+&nbsp;&nbsp;→ Confidence สูง: Long option เต็มที่ได้ — แต่ต้องดู IV ก่อน<br><br>
+<strong>3. Asymmetry (ความเบี่ยง):</strong> กลัวทิศไหนมากกว่า?<br>
+&nbsp;&nbsp;→ กลัว downside มากกว่า upside → เพิ่ม Put protection<br>
+&nbsp;&nbsp;→ กลัว upside spike (short position) → เพิ่ม Call hedge</p></div>
+
+<div class="fm">Template มิติที่ 1:<br>
+"[Asset] จะ [ขึ้น/ลง] ประมาณ [X%] ด้วยความมั่นใจ [Y%]<br>
+ โดยกลัว [downside/upside] มากกว่าอีกฝั่ง"</div>
+
+<h2>บทที่ 3: มิติที่ 2 — Range / Boundaries (ขอบเขต)</h2>
+
+<p>"มีขอบไหม?" — คำถามนี้เปลี่ยน strategy อย่างสิ้นเชิง แค่รู้ว่ามีขอบหรือไม่ก็ช่วย filter ได้ 60%</p>
+
+<table>
+<tr><th>Boundary Belief</th><th>ความหมาย</th><th>Payoff Component</th><th>ตัวอย่าง</th></tr>
+<tr><td>มีขอบบน (Ceiling)</td><td>"ราคาจะไม่เกิน K"</td><td>Short Call at K</td><td>Covered Call, Bull Spread</td></tr>
+<tr><td>มีขอบล่าง (Floor)</td><td>"ราคาจะไม่ต่ำกว่า K"</td><td>Long Put at K</td><td>Protective Put, Bear Spread</td></tr>
+<tr><td>มี Corridor [K₁, K₄]</td><td>"ราคาจะอยู่ในกรอบ"</td><td>Spread ทั้งสองด้าน</td><td>Iron Condor, Condor</td></tr>
+<tr><td>ไม่มีขอบ (Unbounded)</td><td>"จะวิ่งออกไปไม่จำกัด"</td><td>Long option เปล่า</td><td>Long Call/Put, Back Ratio</td></tr>
+</table>
+
+<div class="bx ba"><div class="bt">ตัวอย่าง: BTC Corridor</div>
+<p>Belief: "BTC จะอยู่ระหว่าง $70,000–$80,000 ใน 30 วัน" = <strong>Corridor belief</strong><br>
+→ ต้องการ payoff สูงใน corridor + จำกัดขาดทุนนอก corridor<br>
+→ Iron Condor shape = คำตอบทันที<br>
+<strong>แค่ระบุ boundary ได้ → รู้ strategy family แล้ว 70%</strong></p></div>
+
+<h2>บทที่ 4: มิติที่ 3 — Probability Shape (รูปร่างการกระจาย)</h2>
+
+<p>คำถามคือ "ราคาน่าจะจบที่ไหน มากที่สุด?" ไม่ใช่แค่ "ขึ้นหรือลง" — 4 รูปแบบหลัก:</p>
+
+<svg class="d" viewBox="0 0 520 155">
+<text x="260" y="14" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="700">4 Probability Shapes → Strategy ที่ match</text>
+<!-- Uniform -->
+<rect x="18" y="50" width="88" height="55" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" rx="2"/>
+<text x="62" y="122" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Uniform</text>
+<text x="62" y="134" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">→ Iron Condor</text>
+<!-- Peak -->
+<polyline points="142,105 165,80 188,45 210,80 233,105" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="188" y="122" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Peak</text>
+<text x="188" y="134" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">→ Butterfly</text>
+<!-- Fat Tail -->
+<polyline points="260,105 272,88 290,78 308,82 322,60 340,105" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="300" y="122" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Fat Tail</text>
+<text x="300" y="134" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">→ + Long Wing</text>
+<!-- Bimodal -->
+<polyline points="378,105 392,55 406,85 422,85 436,55 450,105" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="414" y="122" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#374151" font-weight="600">Bimodal</text>
+<text x="414" y="134" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#64748b">→ Wide Strangle</text>
+<!-- Labels -->
+<text x="62" y="46" text-anchor="middle" font-family="Sarabun" font-size="8" fill="#2563eb">─ ─ ─ ─</text>
+<text x="188" y="42" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#2563eb">▲</text>
+<text x="322" y="56" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">!</text>
+</svg>
+
+<div class="bx bb"><div class="bt">4 Shapes → Strategy</div>
+<p><strong>Uniform:</strong> "อยู่ช่วง X–Y โอกาสเท่ากันทุกจุด" → Iron Condor<br>
+<strong>Peak:</strong> "น่าจะจบแถว X พอดี" → Butterfly centered at X<br>
+<strong>Fat Tail:</strong> "ส่วนมากนิ่ง แต่กลัว extreme move" → Condor + Long protective wings<br>
+<strong>Bimodal:</strong> "จะไปสองทาง ไม่รู้อันไหน" (earnings, macro event) → Wide Strangle</p></div>
+
+
+<h2>บทที่ 5: มิติที่ 4 — Volatility View (มุมมองต่อ Vol)</h2>
+
+<p>Options ซื้อขาย <strong>Implied Volatility (IV)</strong> ไม่ใช่ราคาโดยตรง — การไม่มี vol view คือการซื้อ/ขาย IV โดยไม่รู้ตัว</p>
+
+<div class="bx br"><div class="bt">กับดัก: "ฉันไม่มี vol view"</div>
+<p>ซื้อ Long Call → คุณ <strong>Long Vega</strong> โดยอัตโนมัติ<br>
+ถ้า IV สูงอยู่แล้วแล้วลด → option เสียราคา <strong>แม้ direction ถูก</strong><br>
+→ ต้องมี vol view เสมอ หรืออย่างน้อยรู้ว่า IV ปัจจุบันสูง/ต่ำเทียบกับ historical</p></div>
+
+<table>
+<tr><th>Vol Bias</th><th>ความหมาย</th><th>Vega Position</th><th>Strategies</th></tr>
+<tr><td>IV จะขึ้น (High vol expected)</td><td>"จะมี big move"</td><td>Long Vega</td><td>Straddle, Strangle, Long wings</td></tr>
+<tr><td>IV จะลด (Low vol expected)</td><td>"ตลาดจะนิ่ง"</td><td>Short Vega</td><td>Iron Condor, Butterfly, Short Straddle</td></tr>
+<tr><td>Vol neutral</td><td>"ไม่รู้เรื่อง vol"</td><td>ควร hedge vega</td><td>Spread (vega ต่ำกว่า naked)</td></tr>
+</table>
+
+<div class="bx bg"><div class="bt">กฎ: Direction × Vol → Strategy</div>
+<p>Bullish + IV ต่ำ (คาด IV จะขึ้น) → Long Call / Back Ratio Call*<br>
+Bullish + IV สูง (คาด IV จะลด) → Bull Call Spread (ขาย vega ที่แพง)<br>
+Neutral + IV สูง (คาด IV จะลด) → Iron Condor, Butterfly (Short Vega)<br>
+Neutral + IV ต่ำ (คาด IV จะขึ้น) → Long Straddle/Strangle (Long Vega)</p>
+<p style="font-size:0.85em;color:#64748b">* Back Ratio Call เหมาะเมื่อ OTM IV <em>ต่ำกว่า</em> ATM IV (skew ราบ) — short ATM ให้ credit พอ finance 2× OTM long ได้ ไม่ใช่แค่ดู IV level สูง/ต่ำเพียงอย่างเดียว</p></div>
+
+<h2>บทที่ 6: มิติที่ 5 — Time / Path (เวลาและเส้นทาง)</h2>
+
+<h3>Time: Expiry เลือกผิด = Strategy พัง แม้ Direction ถูก</h3>
+
+<table>
+<tr><th>Time Belief</th><th>Expiry</th><th>เหตุผล</th></tr>
+<tr><td>"Move จะเกิดภายใน 1–2 สัปดาห์"</td><td>14–21 วัน</td><td>Gamma สูง ถ้าถูก = กำไรมาก แต่ theta กัดเร็ว</td></tr>
+<tr><td>"Move จะเกิดใน 1–3 เดือน"</td><td>30–90 วัน</td><td>Balance gamma/theta ที่ดีที่สุด</td></tr>
+<tr><td>"Slow grind ขึ้น 6–12 เดือน"</td><td>LEAPS (&gt;180 วัน)</td><td>ให้เวลา thesis เป็นจริง theta ต่ำ</td></tr>
+<tr><td>"Vol จะขึ้น near-term แล้วลง"</td><td>Calendar Spread</td><td>Short near-term vol + Long far-term vol</td></tr>
+</table>
+
+<h3>Path: เส้นทางสำคัญไหม?</h3>
+
+<div class="bx bb"><div class="bt">2 ประเภท Path Belief</div>
+<p><strong>Path-independent:</strong> "ไม่สนใจระหว่างทาง สนใจแค่ตอน expiry"<br>
+→ ใช้ payoff chart ได้เต็มที่ (European-style thinking) ← ซีรีส์นี้เน้นตรงนี้<br><br>
+<strong>Path-dependent:</strong> "กลัวราคาวิ่งออกไปก่อนแล้วกลับ"<br>
+→ ต้องระวัง Gamma และ Delta ระหว่างทาง → Greeks จาก <a href="vp-part7.html">Part VII: Trade Management</a> สำคัญ</p></div>
+
+<h2>บทที่ 7: Belief Statement Template</h2>
+
+<div class="fm">Template ครบ 5 มิติ:<br><br>
+"[Asset] จะ [Direction + Magnitude]<br>
+ ภายใน [Time]<br>
+ โดยราคาจะ [Range: อยู่ใน K₁–K₂ / ไม่เกิน K / ไม่ต่ำกว่า K / ไม่มีขอบ]<br>
+ Distribution: [Uniform / Peak ที่ X / Fat tail ด้าน Y / Bimodal]<br>
+ Vol view: [IV จะขึ้น / IV จะลด / เป็นกลาง]"</div>
+
+<table>
+<tr><th>Belief Statement</th><th>มิติครบ?</th><th>Strategy ที่ match</th></tr>
+<tr><td>"BTC จะขึ้น"</td><td>❌ ขาด 4 มิติ</td><td>ไม่ทราบ</td></tr>
+<tr><td>"BTC จะขึ้น 15% ใน 30 วัน"</td><td>⚠️ ขาด Range, Vol</td><td>Long Call หรือ Bull Spread? ยังไม่แน่</td></tr>
+<tr><td>"BTC จะอยู่ $70K–$80K ใน 30 วัน, IV จะลด"</td><td>✓ ครบ 4 มิติ</td><td>Iron Condor — ชัดเจน</td></tr>
+<tr><td>"BTC จะขึ้น 30%+ ใน 30 วัน, vol ระเบิด, distribution: fat right tail, กลัว crash &lt;$60K"</td><td>✓ ครบ 5 มิติ</td><td>Back Ratio Call + Long Put $60K</td></tr>
+</table>
+
+<div class="bx bg"><div class="bt">ตัวอย่างที่ 1: ETH Mild Bullish + Ceiling</div>
+<div class="fm">"ETH จะขึ้นประมาณ 15–20%
+ ภายใน 30 วัน
+ ราคาจะไม่เกิน $3,500 (ceiling ชัดเจน)
+ Distribution: Peak แถว $3,300
+ Vol view: IV ปัจจุบัน 55% เป็นกลาง (ไม่มี vol edge)"</div>
+<p>
+→ <strong>Direction:</strong> Mild Bullish (magnitude 15–20%, confidence ~70%)<br>
+→ <strong>Range:</strong> มี ceiling $3,500 → ไม่ต้องการ unlimited upside<br>
+→ <strong>Payoff:</strong> /‾ (rising plateau) · Kinks ที่ $3,000 (ATM) และ $3,500 (ceiling)<br>
+→ <strong>Strategy:</strong> Bull Call Spread — Long C(3,000) + Short C(3,500) · จ่าย debit ~$120 · Max profit $500−$120 = $380
+</p></div>
+
+<div class="bx bg"><div class="bt">ตัวอย่างที่ 2: BTC Neutral + Corridor + Short Vol</div>
+<div class="fm">"BTC จะอยู่ระหว่าง $65,000–$85,000
+ ภายใน 45 วัน
+ ราคาจะไม่ออกนอก corridor (muted catalyst environment)
+ Distribution: Uniform ในกรอบ — ไม่มี peak ชัด
+ Vol view: IV ปัจจุบัน 75% สูงมาก (rank 80th percentile) → คาด IV จะลด"</div>
+<p>
+→ <strong>Direction:</strong> Neutral (ไม่มี directional bias)<br>
+→ <strong>Range:</strong> Corridor $65K–$85K (มีทั้งขอบบนและล่าง)<br>
+→ <strong>Vol:</strong> Short Vol — ขาย IV ที่แพง, รับ theta income<br>
+→ <strong>Payoff:</strong> ⌂ (flat top corridor) · Kinks ที่ $65K, $70K, $80K, $85K<br>
+→ <strong>Strategy:</strong> Iron Condor — LP(65K)+SP(70K)+SC(80K)+LC(85K) · net credit $1,200 · max loss $3,800
+</p></div>
+
+<div class="bx ba"><div class="bt">แบบฝึกหัด: เขียน Belief Statement ของคุณตอนนี้</div>
+<p>เลือก 1 asset ที่คุณมี view อยู่ → กรอก template ด้านบน<br>
+ถ้าตอบคำถามไหนไม่ได้ → นั่นคือ "blind spot" ของ thesis คุณ<br>
+<strong>Blind spot = risk ที่คุณรับอยู่โดยไม่รู้ตัว</strong></p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part I</div>
+<p>✓ <strong>Direction:</strong> magnitude + confidence + asymmetry<br>
+✓ <strong>Range:</strong> ceiling / floor / corridor / unbounded<br>
+✓ <strong>Probability Shape:</strong> uniform / peak / fat tail / bimodal<br>
+✓ <strong>Volatility View:</strong> long vol / short vol / neutral<br>
+✓ <strong>Time/Path:</strong> expiry timing + path dependence<br><br>
+Belief ที่ครบ 5 มิติ → strategy selection แม่นยำขึ้นทันที<br>
+<strong>ใน Part II: 5 มิติ → 6 Strategy Families + Master Matrix</strong></p></div>
+
+<p style="text-align:center;color:#64748b;margin-top:32px">— จบ Part I — ไปต่อ <a href="vp-part2.html">Part II: Bias Family Map</a> →</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #16a34a;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vp-part1.html" style="color:#16a34a;text-decoration:none;font-weight:700">View → Payoff — เริ่มต้น</a></nav>
+</body></html>
+

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volatility Mastery — Part VIII: Vega + Vol Products</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+  :root {
+    --teal:#0d9488; --teal-light:#ccfbf1; --teal-mid:#5eead4;
+    --navy:#0f172a; --slate:#334155; --muted:#64748b;
+    --warn-bg:#fef3c7; --warn-border:#f59e0b;
+    --chk-bg:#f0fdf4; --chk-border:#22c55e;
+    --ref-bg:#f8fafc; --ref-border:#cbd5e1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#f8fafc;color:var(--navy);line-height:1.75;font-size:17px}
+  .hero{background:linear-gradient(135deg,#134e4a,#0d9488);color:#fff;padding:60px 40px;text-align:center}
+  .hero .series{font-size:0.85em;opacity:0.7;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+  .hero h1{font-size:2.4em;font-weight:800;margin-bottom:10px}
+  .hero .sub{font-size:1.1em;opacity:0.85;max-width:600px;margin:0 auto 20px}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 16px;font-size:0.85em;margin:4px}
+  .intro-box{background:var(--teal-light);border-left:4px solid var(--teal);border-radius:0 8px 8px 0;padding:18px 22px;margin:24px 0;font-size:0.97em}
+  .intro-box strong{color:var(--teal);display:block;margin-bottom:6px;font-size:1.05em}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px}
+  h2{font-size:1.6em;color:var(--teal);margin:48px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--teal-light)}
+  h3{font-size:1.15em;color:var(--slate);margin:28px 0 10px}
+  p{margin-bottom:14px}
+  ul,ol{margin:10px 0 16px 22px}
+  li{margin-bottom:6px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin:20px 0;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .warn{background:var(--warn-bg);border-left:4px solid var(--warn-border);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;font-size:0.95em}
+  .warn strong{color:#92400e}
+  .chk{background:var(--chk-bg);border-left:4px solid var(--chk-border);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;font-size:0.95em}
+  .chk strong{color:#166534}
+  .ref{background:var(--ref-bg);border:1px solid var(--ref-border);border-radius:8px;padding:14px 18px;margin:18px 0;font-size:0.93em;color:var(--muted)}
+  .formula{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:16px 20px;margin:16px 0;font-family:monospace;font-size:0.97em;line-height:1.8}
+  .formula .comment{color:#94a3b8}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:0.95em}
+  th{background:var(--teal);color:#fff;padding:10px 14px;text-align:left}
+  td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
+  tr:nth-child(even) td{background:#f8fafc}
+  .highlight{background:linear-gradient(120deg,var(--teal-light) 0%,var(--teal-light) 100%);padding:2px 5px;border-radius:3px}
+  .svg-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;overflow-x:auto}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+  @media(max-width:600px){.two-col{grid-template-columns:1fr}}
+  .stat-row{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}
+  .stat{flex:1;min-width:140px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center}
+  .stat .num{font-size:2em;font-weight:800;color:var(--teal)}
+  .stat .label{font-size:0.82em;color:var(--muted);margin-top:4px}
+  .product-box{border-radius:12px;padding:18px 22px;margin:14px 0}
+  .cheat{background:linear-gradient(135deg,#134e4a,#0f766e);color:#fff;border-radius:16px;padding:28px 32px;margin:40px 0}
+  .cheat h3{color:var(--teal-mid);margin-bottom:16px;font-size:1.2em}
+  .cheat li{margin-bottom:8px;opacity:0.92}
+  .series-complete{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:16px;padding:32px;margin:40px 0;text-align:center}
+  .series-complete h3{font-size:1.6em;margin-bottom:12px;color:var(--teal-mid)}
+  .footer-nav{text-align:center;padding:40px 24px;background:#fff;border-top:1px solid #e2e8f0;color:var(--muted);font-size:0.95em}
+  .footer-nav a{color:var(--teal);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="series">Volatility Mastery Series · Part VIII of VIII — บทสุดท้าย</div>
+  <h1>Vega + Vol Products</h1>
+  <h1 style="font-size:1.3em;font-weight:400;margin-top:6px">Vega · VIX Products · Variance Swaps · Vol ETF · Putting It All Together</h1>
+  <p class="sub">เครื่องมือ Volatility ระดับ Professional และการนำทุกอย่างมาใช้ร่วมกัน</p>
+  <div>
+    <span class="badge">บท 45–50</span>
+    <span class="badge">~40 นาที</span>
+    <span class="badge">⚡ Advanced</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="intro-box">
+    <strong>ใน Part สุดท้ายนี้คุณจะได้เรียนรู้</strong>
+    ✓ Vega อย่างละเอียด — Vega Exposure, Vega Hedging<br>
+    ✓ VIX Index — คำนวณอย่างไร และใช้งานยังไง<br>
+    ✓ VIX Products — VX Futures, VXX ETF, UVXY<br>
+    ✓ Variance Swaps — Pure Vol instrument สำหรับ Institutional<br>
+    ✓ Vol ETF & ETP — ของง่ายสำหรับ Retail เข้าถึง Vol<br>
+    ✓ Putting It All Together — Framework ครบสำหรับ Vol Trader
+  </div>
+
+  <!-- ===== บท 45 ===== -->
+  <h2>บท 45 — Vega อย่างละเอียด: ความไวต่อ IV 📐</h2>
+
+  <div class="card">
+    <h3>อุปมา: เซ็นเซอร์ความชื้น</h3>
+    <p>เซ็นเซอร์วัดความชื้น: ถ้าความชื้นขึ้น 1% → อุณหภูมิที่รู้สึกเพิ่ม 0.5°C<br>
+    Vega ทำงานแบบเดียวกัน: ถ้า IV ขึ้น 1% → ราคา option เพิ่มขึ้น $Vega</p>
+    <p><span class="highlight">Vega</span> = การเปลี่ยนแปลงของราคา option ต่อ IV ที่เปลี่ยน 1% (1 volatility point)</p>
+  </div>
+
+  <h3>นิยามและสูตร Vega</h3>
+  <div class="formula">
+Vega = ∂C/∂σ = S × √T × N'(d₁)
+<span class="comment">
+โดย:
+  S    = ราคา underlying
+  T    = เวลาถึง expiry (ปี)
+  N'() = Standard Normal PDF
+  d₁   = (ln(S/K) + (r + σ²/2)T) / (σ√T)
+
+ความหมายง่ายๆ: Vega = $X ต่อ IV 1%
+  ถ้า Vega = $50 และ IV ขึ้น 1% → option ขึ้น $50
+  ถ้า Vega = $50 และ IV ลง 5% → option ลง $250
+</span>
+  </div>
+
+  <h3>Vega ตาม Expiry และ Moneyness</h3>
+  <table>
+    <thead><tr><th>Option Type</th><th>Vega สูงหรือต่ำ?</th><th>เหตุผล</th></tr></thead>
+    <tbody>
+      <tr><td>ATM Option</td><td>สูงสุด</td><td>ความไม่แน่นอนสูงสุดที่ ATM — IV มีผลมากที่สุด</td></tr>
+      <tr><td>Deep ITM</td><td>ต่ำมาก</td><td>ราคา option = intrinsic value แทบทั้งหมด IV ไม่ค่อยมีผล</td></tr>
+      <tr><td>Deep OTM</td><td>ต่ำ</td><td>option มีค่าน้อยมาก IV ขึ้นก็ยังเพิ่มไม่มาก</td></tr>
+      <tr><td>Long Dated (180d+)</td><td>สูงมาก</td><td>เวลานาน = ผลกระทบจาก IV change สะสมนาน</td></tr>
+      <tr><td>Short Dated (7d)</td><td>ต่ำ</td><td>เวลาน้อย = IV ไม่มีเวลาส่งผล</td></tr>
+    </tbody>
+  </table>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 250" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr15" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Vega Profile — ตาม Strike (ATM สูงสุด)</text>
+
+      <line x1="60" y1="200" x2="630" y2="200" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr15)"/>
+      <line x1="60" y1="220" x2="60" y2="30" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr15)"/>
+      <text x="345" y="235" text-anchor="middle" font-size="11" fill="#64748b">Strike (OTM ← ATM → ITM)</text>
+      <text x="25" y="120" font-size="11" fill="#64748b" transform="rotate(-90,25,120)">Vega ($)</text>
+
+      <!-- x labels -->
+      <text x="120" y="215" text-anchor="middle" font-size="10" fill="#64748b">Deep OTM</text>
+      <text x="250" y="215" text-anchor="middle" font-size="10" fill="#64748b">OTM</text>
+      <text x="345" y="215" text-anchor="middle" font-size="10" fill="#64748b">ATM</text>
+      <text x="440" y="215" text-anchor="middle" font-size="10" fill="#64748b">ITM</text>
+      <text x="570" y="215" text-anchor="middle" font-size="10" fill="#64748b">Deep ITM</text>
+
+      <!-- 7d Vega curve (low) -->
+      <polyline points="80,195 150,192 250,182 345,165 440,182 550,192 620,195"
+        stroke="#94a3b8" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+      <text x="630" y="168" font-size="9" fill="#94a3b8">7d</text>
+
+      <!-- 30d Vega curve -->
+      <polyline points="80,192 150,185 250,168 345,140 440,168 550,185 620,192"
+        stroke="#f59e0b" stroke-width="2" fill="none"/>
+      <text x="630" y="143" font-size="9" fill="#f59e0b">30d</text>
+
+      <!-- 90d Vega curve (high) -->
+      <polyline points="80,188 150,175 250,148 345,100 440,148 550,175 620,188"
+        stroke="#0d9488" stroke-width="2.5" fill="none"/>
+      <text x="630" y="103" font-size="9" fill="#0d9488">90d</text>
+
+      <!-- ATM mark -->
+      <line x1="345" y1="40" x2="345" y2="205" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="345" y="36" text-anchor="middle" font-size="9" fill="#94a3b8">ATM Max</text>
+
+      <!-- Legend -->
+      <line x1="80" y1="50" x2="110" y2="50" stroke="#0d9488" stroke-width="2.5"/>
+      <text x="115" y="54" font-size="10" fill="#0d9488">90d (Vega สูง)</text>
+      <line x1="80" y1="68" x2="110" y2="68" stroke="#f59e0b" stroke-width="2"/>
+      <text x="115" y="72" font-size="10" fill="#f59e0b">30d</text>
+      <line x1="80" y1="86" x2="110" y2="86" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,3"/>
+      <text x="115" y="90" font-size="10" fill="#94a3b8">7d (Vega ต่ำ)</text>
+    </svg>
+    <p style="text-align:center;font-size:0.85em;color:#64748b;margin-top:8px">ATM options มี Vega สูงสุด · Long Dated options มี Vega สูงกว่า Short Dated</p>
+  </div>
+
+  <h3>Vega Hedging</h3>
+  <p>ถ้าต้องการ <strong>Vega Neutral</strong> — ไม่รับ/ไม่เสียจากการเปลี่ยน IV:</p>
+  <div class="formula">
+Net Vega = Σ(Vega ของทุก position)
+ถ้า Net Vega &gt; 0 → Long Vega (กำไรเมื่อ IV ขึ้น)
+ถ้า Net Vega &lt; 0 → Short Vega (กำไรเมื่อ IV ลง)
+ถ้า Net Vega = 0 → Vega Neutral (ไม่สนใจ IV)
+
+วิธี Hedge:
+  Long Vega มากเกินไป → Sell ATM far-dated options
+  Short Vega มากเกินไป → Buy ATM far-dated options
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 45</strong><br>
+    Vega = $ ที่ option เปลี่ยนต่อ IV 1%<br>
+    ATM สูงสุด · Long Dated สูงกว่า Short Dated · Vega Neutral = ไม่ขึ้นกับ IV
+  </div>
+
+  <!-- ===== บท 46 ===== -->
+  <h2>บท 46 — VIX Index: "Fear Gauge" ของตลาด 😰</h2>
+
+  <div class="card">
+    <h3>อุปมา: Barometer วัดพายุ</h3>
+    <p>Barometer วัดความกดอากาศ — ความกดต่ำ = พายุกำลังมา<br>
+    VIX เหมือน Barometer ของตลาด: VIX สูง = ตลาด "กลัว" มาก กำลังมีพายุ<br>
+    แต่ VIX วัด "ความคาดการณ์ความกลัว" ในอีก 30 วัน — ไม่ใช่ความกลัวที่เกิดแล้ว</p>
+  </div>
+
+  <h3>VIX คำนวณอย่างไร?</h3>
+  <div class="formula">
+VIX = 100 × √[ (2/T) × Σ(ΔK_i/K_i²) × e^(rT) × Q(K_i) - (1/T)(F/K₀-1)² ]
+<span class="comment">
+ดูซับซ้อน แต่ไอเดียง่ายกว่า:
+  1. ดึง option prices ทุก strike ของ SPX (S&P 500 Index)
+  2. คำนวณ "model-free" implied variance จาก out-of-money options
+  3. Annualize และ express เป็น %
+
+สำคัญ: VIX เป็น Model-Free — ไม่ต้องสมมติ distribution
+       จึงแม่นกว่า Black-Scholes IV สำหรับ tail risk
+
+ตัวอย่างประมาณ (simplified): SPX ~5000, T = 30/365, r = 5%
+  สมมติ OTM options 3 strikes (P = Put, C = Call):
+  K=4900 Put, Q=8.5, ΔK=100 → 100/4900² × e^(0.05×0.082) × 8.5 ≈ 3.54×10⁻⁵
+  K=5000 ATM, Q=5.2                                               ≈ 2.08×10⁻⁵
+  K=5100 Call, Q=7.1, ΔK=100 → 100/5100² × ... × 7.1           ≈ 2.73×10⁻⁵
+  Σ ≈ 8.35×10⁻⁵ ; (2/T) × Σ ≈ 2/0.082 × 8.35×10⁻⁵ ≈ 0.00204
+  VIX ≈ 100 × √0.00204 ≈ 100 × 0.0452 ≈ 4.52% ... ← ต้องใช้ options ทุก strike จริงๆ
+  ในทางปฏิบัติ: ถ้า ATM IV ≈ 20% → VIX ≈ 20 (rough approximation)
+</span>
+  </div>
+
+  <h3>VIX Levels ที่ควรรู้</h3>
+  <table>
+    <thead><tr><th>VIX Level</th><th>ตลาด</th><th>S&P 500 Daily Move คาดหวัง</th><th>สถานะ</th></tr></thead>
+    <tbody>
+      <tr><td>&lt;12</td><td>Complacency ผิดปกติ</td><td>&lt;0.75%/วัน</td><td style="color:#0d9488">ซื้อ Cheap Puts</td></tr>
+      <tr><td>12–18</td><td>ปกติ-สบาย</td><td>0.75–1.1%/วัน</td><td style="color:#0d9488">Sell Vol ได้</td></tr>
+      <tr><td>18–25</td><td>ระวัง</td><td>1.1–1.6%/วัน</td><td style="color:#f59e0b">Selective</td></tr>
+      <tr><td>25–35</td><td>กลัว</td><td>1.6–2.2%/วัน</td><td style="color:#ef4444">ลด Short Vol</td></tr>
+      <tr><td>&gt;35</td><td>Panic / Crisis</td><td>&gt;2.2%/วัน</td><td style="color:#ef4444">Buy Vol / Wait</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.88em;color:var(--muted)">Daily Move คาดหวัง = VIX / √252 — เช่น VIX=20 → 20/√252 ≈ 1.26%/วัน</p>
+
+  <h3>VIX Family</h3>
+  <table>
+    <thead><tr><th>Index</th><th>คำนวณจาก</th><th>ใช้ดู</th></tr></thead>
+    <tbody>
+      <tr><td>VIX9D</td><td>SPX options 9 วัน</td><td>Short-term fear</td></tr>
+      <tr><td>VIX</td><td>SPX options 30 วัน</td><td>Standard fear gauge</td></tr>
+      <tr><td>VIX3M</td><td>SPX options 3 เดือน</td><td>Medium-term outlook</td></tr>
+      <tr><td>VIX6M</td><td>SPX options 6 เดือน</td><td>Long-term outlook</td></tr>
+      <tr><td>VVIX</td><td>Options บน VIX</td><td>Vol of Vol (ความผันผวนของ VIX)</td></tr>
+      <tr><td>BVIV / DVOL</td><td>BTC options (Deribit)</td><td>Crypto fear gauge</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 46</strong><br>
+    VIX = Model-free IV 30 วันของ S&P 500 · VIX&gt;25 = กลัว · &lt;15 = สบาย<br>
+    Daily Move ≈ VIX/√252 · VVIX = Vol of Vol
+  </div>
+
+  <!-- ===== บท 47 ===== -->
+  <h2>บท 47 — VIX Products: เดิมพัน Vol โดยตรง 📊</h2>
+
+  <div class="card">
+    <h3>อุปมา: เดิมพันราคาน้ำมันแทน Vol หุ้น</h3>
+    <p>แทนที่จะซื้อหุ้นน้ำมัน คุณซื้อ Oil Futures โดยตรง<br>
+    VIX Products คือ "Futures บน Volatility" ซื้อขาย Vol ได้โดยไม่ต้องผ่าน options</p>
+  </div>
+
+  <h3>VX Futures (CBOE)</h3>
+  <div class="formula">
+VX Futures = Futures สัญญาซื้อ/ขาย VIX ณ วันที่ในอนาคต
+
+ตัวอย่าง:
+  VX May Futures = $18.50 (VIX ปัจจุบัน = $17)
+  VX Jun Futures = $19.20
+  VX Jul Futures = $19.80
+
+→ Contango: VX Futures สูงกว่า VIX Spot
+→ ถ้าถือ Long VX ใน Contango → เสีย "roll cost" ทุกเดือน
+<span class="comment">
+Roll Cost = VX ลง convergence ไปหา VIX Spot เมื่อ expire
+ถ้า VIX ไม่ขึ้น → Long VX เสียเงินทุกเดือน
+</span>
+  </div>
+
+  <h3>VIX ETP (Exchange-Traded Products)</h3>
+  <table>
+    <thead><tr><th>Product</th><th>กลไก</th><th>ใช้สำหรับ</th><th>ข้อควรระวัง</th></tr></thead>
+    <tbody>
+      <tr><td><strong>VXX</strong></td><td>Long Short-term VX Futures (1M+2M blend)</td><td>Long Vol / Tail Hedge</td><td>Contango Roll = decay เรื้อรัง (~70–80% ต่อปีในช่วงปกติ)</td></tr>
+      <tr><td><strong>UVXY</strong></td><td>1.5x Long Short-term VX</td><td>Aggressive Long Vol</td><td>ขาดทุนเร็วมากใน Low Vol Regime</td></tr>
+      <tr><td><strong>SVXY</strong></td><td>-0.5x Short VX Futures</td><td>Systematic Short Vol</td><td>ล้างพอร์ตได้ในวิกฤต (Feb 2018: -90% ใน 1 วัน)</td></tr>
+      <tr><td><strong>BVIV ETF</strong></td><td>BTC IV index tracking</td><td>BTC Vol exposure</td><td>Liquidity ต่ำกว่า VXX มาก</td></tr>
+    </tbody>
+  </table>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr16" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">VXX Decay vs VIX Spike — Long Vol ETP ใช้งานอย่างไร</text>
+
+      <line x1="60" y1="190" x2="630" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr16)"/>
+      <line x1="60" y1="215" x2="60" y2="30" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr16)"/>
+      <text x="345" y="230" text-anchor="middle" font-size="11" fill="#64748b">เวลา (เดือน)</text>
+
+      <!-- Contango roll decay (normal) -->
+      <polyline points="70,100 130,108 190,116 250,125 310,133 370,141"
+        stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+
+      <!-- VIX spike saves VXX -->
+      <polyline points="370,141 390,118 410,90 430,70"
+        stroke="#0d9488" stroke-width="2.5" fill="none"/>
+      <!-- After spike, decay again -->
+      <polyline points="430,70 480,85 530,95 580,105 620,113"
+        stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+
+      <!-- Labels -->
+      <text x="210" y="100" text-anchor="middle" font-size="10" fill="#ef4444">Contango Decay</text>
+      <text x="210" y="114" text-anchor="middle" font-size="10" fill="#ef4444">(~6–8%/เดือน)</text>
+      <text x="405" y="62" text-anchor="middle" font-size="10" fill="#0d9488">VIX Spike!</text>
+      <text x="405" y="76" text-anchor="middle" font-size="10" fill="#0d9488">VXX พุ่ง</text>
+      <text x="550" y="78" text-anchor="middle" font-size="10" fill="#ef4444">Decay ต่อ</text>
+
+      <!-- Month labels -->
+      <text x="130" y="205" text-anchor="middle" font-size="9" fill="#64748b">Jan</text>
+      <text x="250" y="205" text-anchor="middle" font-size="9" fill="#64748b">Mar</text>
+      <text x="370" y="205" text-anchor="middle" font-size="9" fill="#64748b">May</text>
+      <text x="480" y="205" text-anchor="middle" font-size="9" fill="#64748b">Jul</text>
+      <text x="580" y="205" text-anchor="middle" font-size="9" fill="#64748b">Sep</text>
+
+      <!-- Annotation: VXX not for holding -->
+      <rect x="80" y="35" width="180" height="30" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+      <text x="170" y="48" text-anchor="middle" font-size="10" fill="#991b1b">VXX ไม่เหมาะสำหรับถือยาว</text>
+      <text x="170" y="60" text-anchor="middle" font-size="10" fill="#991b1b">ในช่วง Low Vol (Decay มาก)</text>
+    </svg>
+    <p style="text-align:center;font-size:0.85em;color:#64748b;margin-top:8px">VXX decay ต่อเนื่องใน Contango · แต่พุ่งแรงเมื่อ VIX Spike → ใช้เป็น tail hedge ระยะสั้น</p>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ VXX/UVXY ไม่เหมาะสำหรับถือยาว</strong><br>
+    ใน Contango ปกติ VXX เสียค่า Roll ~70–80% ต่อปี — ถือ 1 ปีโดยไม่มี VIX spike แทบหมด<br>
+    ใช้ได้ดีสำหรับ: Short-term tail hedge (1–4 สัปดาห์) หรือ Tactical Vol play
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 47</strong><br>
+    VX Futures = เดิมพัน VIX โดยตรง · VXX = Long VX (Decay ใน Contango)<br>
+    SVXY = Short VX (กำไรใน Contango แต่ Blow-up ในวิกฤต)
+  </div>
+
+  <!-- ===== บท 48 ===== -->
+  <h2>บท 48 — Variance Swaps: Pure Vol สำหรับ Institutional 🏛️</h2>
+
+  <div class="card">
+    <h3>อุปมา: สัญญา "จ่ายตามความกลัวจริง"</h3>
+    <p>แทนที่จะซื้อประกันบ้านราคาคงที่ คุณทำสัญญาว่า:<br>
+    "ฉันจ่ายค่าประกัน $X ต่อปี แต่ถ้าพายุเกิดขึ้น คุณจ่ายตาม 'ขนาดจริง' ของพายุ"<br>
+    Variance Swap คือสัญญาที่จ่ายตาม RV จริง เทียบกับ IV ที่ตกลงไว้</p>
+  </div>
+
+  <h3>Variance Swap Structure</h3>
+  <div class="formula">
+Variance Swap Payoff = Notional × (σ²_realized − σ²_strike)
+
+โดย:
+  σ²_realized = Realized Variance ตลอดอายุสัญญา
+  σ²_strike   = Strike Variance ที่ตกลงกัน (ณ เริ่มสัญญา)
+  Notional    = Variance Notional ($ ต่อ 1 variance point)
+                เช่น $1,000 ต่อ vol point²
+<span class="comment">
+ตัวอย่าง:
+  ตกลงซื้อ Variance Swap ที่ Strike = 20% (Strike Variance = 400)
+  Actual RV ปรากฏว่า = 25% (Realized Variance = 625)
+
+  Payoff = Notional × (25² − 20²)
+         = $1,000 × (625 − 400) = $225,000 กำไร
+
+ถ้า RV = 15% (Realized Variance = 225):
+  Payoff = $1,000 × (225 − 400) = −$175,000 ขาดทุน
+</span>
+  </div>
+
+  <h3>Variance Swap vs Options — ต่างกันอย่างไร?</h3>
+  <table>
+    <thead><tr><th>ลักษณะ</th><th>Options</th><th>Variance Swap</th></tr></thead>
+    <tbody>
+      <tr><td>สิ่งที่ trade</td><td>Option premium (IV embedded)</td><td>Pure Variance โดยตรง</td></tr>
+      <tr><td>Delta</td><td>มี Delta exposure</td><td>ไม่มี Delta (pure vol)</td></tr>
+      <tr><td>Model dependency</td><td>ต้องการ pricing model</td><td>Model-free (settle ที่ RV จริง)</td></tr>
+      <tr><td>ผู้ใช้หลัก</td><td>Retail + Institutional</td><td>Institutional เท่านั้น (OTC)</td></tr>
+      <tr><td>Convexity</td><td>ปานกลาง</td><td>Convex มาก (payoff = variance ไม่ใช่ vol)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ref">
+    <strong>ทำไม Variance Swap สำคัญ?</strong>
+    Variance Swap คือ "pure bet" บน RV โดยไม่มี path dependency หรือ model risk
+    Hedge Funds ใช้เพื่อ hedge Vega exposure ของ options portfolio โดยตรง
+    สำหรับ Retail — เข้าไม่ถึง แต่การเข้าใจช่วยให้เข้าใจว่า IV กับ RV ต่างกันอย่างไรในทางปฏิบัติ
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 48</strong><br>
+    Variance Swap = OTC contract จ่ายตาม RV² − Strike² · Pure Vol without Delta<br>
+    ใช้โดย Institutional เพื่อ hedge Vega / เดิมพัน Vol โดยตรง
+  </div>
+
+  <!-- ===== บท 49 ===== -->
+  <h2>บท 49 — Vol ETF สำหรับ Retail: ทางเลือกที่เข้าถึงได้ 📦</h2>
+
+  <h3>ทางเลือก Vol Products สำหรับ Retail Trader</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>ประเภท</th>
+        <th>เหมาะสำหรับ</th>
+        <th>ข้อดี/เสีย</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>VXX</strong></td>
+        <td>ETN Long VX 1M+2M</td>
+        <td>Short-term tail hedge</td>
+        <td>+ Liquid · − Decay เรื้อรัง</td>
+      </tr>
+      <tr>
+        <td><strong>UVXY</strong></td>
+        <td>ETF 1.5x Long VX</td>
+        <td>Aggressive tail hedge / Short-term</td>
+        <td>+ เพิ่มขึ้นเร็วใน Spike · − Decay เร็วมาก</td>
+      </tr>
+      <tr>
+        <td><strong>SVXY</strong></td>
+        <td>ETF -0.5x Short VX</td>
+        <td>Short Vol exposure ง่าย</td>
+        <td>+ Contango roll กำไร · − Blow-up ในวิกฤต</td>
+      </tr>
+      <tr>
+        <td><strong>VIXM</strong></td>
+        <td>ETF Medium-term VX</td>
+        <td>Tail hedge ด้วย Decay น้อยกว่า VXX</td>
+        <td>+ Decay ช้ากว่า · − ขึ้นช้ากว่าในวิกฤต</td>
+      </tr>
+      <tr>
+        <td><strong>PUTW</strong></td>
+        <td>ETF ขาย S&P 500 Puts</td>
+        <td>Systematic Short Put exposure</td>
+        <td>+ Premium income · − ขาดทุนในตลาดหมี</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card">
+    <h3>กลยุทธ์ง่ายด้วย Vol ETF</h3>
+    <p><strong>Portfolio Tail Hedge (ง่ายที่สุด):</strong></p>
+    <ul>
+      <li>ถือ Stock/Bond portfolio 95–98%</li>
+      <li>ถือ VXX หรือ UVXY 2–5%</li>
+      <li>ใน Low Vol (VIX &lt;15): VXX decay แต่น้อย (2–5% ของ portfolio)</li>
+      <li>ใน Crisis (VIX &gt;35): VXX/UVXY พุ่ง +50–200% → ชดเชย portfolio loss ได้บางส่วน</li>
+    </ul>
+    <p style="margin-top:12px"><strong>Systematic Short Vol (ง่ายพอสำหรับ Retail):</strong></p>
+    <ul>
+      <li>ถือ SVXY 10–20% ของ portfolio</li>
+      <li>รับ roll yield จาก Contango (~3–5%/เดือนในปกติ)</li>
+      <li>ต้องยอมรับ: drawdown ใหญ่ในวิกฤต</li>
+    </ul>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ SVXY ≠ Free Money</strong><br>
+    SVXY เสีย ~90% ใน 1 วัน (Feb 5, 2018 VIX Spike จาก 17 → 37)<br>
+    ใช้ size เล็กมาก (5–10% max) และมี stop-loss ชัดเจน
+  </div>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 49</strong><br>
+    VXX/UVXY = Long Vol (Tail Hedge) · SVXY = Short Vol (Carry)<br>
+    ไม่มี free lunch — Long Vol Decay ในปกติ · Short Vol Blow-up ในวิกฤต
+  </div>
+
+  <!-- ===== บท 50 ===== -->
+  <h2>บท 50 — Putting It All Together: Vol Trader Framework 🗺️</h2>
+
+  <h3>Full Vol Framework ในทุก Trade</h3>
+  <div class="card">
+    <p><strong>ก่อนเปิด trade ทุกครั้ง — ถามตัวเอง 5 คำถาม:</strong></p>
+    <ol>
+      <li><strong>Regime คืออะไร?</strong> — VIX level + Term Structure (Contango/Back) + VRP</li>
+      <li><strong>IV แพงหรือถูก?</strong> — IV Rank / IV Percentile vs history 52 สัปดาห์</li>
+      <li><strong>Event อะไรกำลังจะมา?</strong> — FOMC, Earnings, CPI ใน 1–4 สัปดาห์?</li>
+      <li><strong>Vol Surface บอกอะไร?</strong> — Skew (equity left / crypto smile)? 25RR?</li>
+      <li><strong>Risk ของ position คืออะไร?</strong> — Max loss, Gamma risk, Stop-loss level?</li>
+    </ol>
+  </div>
+
+  <h3>Decision Tree สำหรับ Vol Trader</h3>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px">
+      <defs>
+        <marker id="arr17" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <text x="340" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e293b">Vol Master Decision Framework</text>
+
+      <!-- Step 1: Regime -->
+      <rect x="240" y="35" width="200" height="38" rx="8" fill="#0d9488"/>
+      <text x="340" y="50" text-anchor="middle" font-size="11" fill="#fff" font-weight="bold">1. ตรวจ Regime</text>
+      <text x="340" y="65" text-anchor="middle" font-size="9" fill="#ccfbf1">VIX + Term Structure + VRP</text>
+
+      <!-- Arrow to Step 2 -->
+      <line x1="340" y1="73" x2="340" y2="88" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr17)"/>
+
+      <!-- Step 2: IV Level -->
+      <rect x="240" y="88" width="200" height="38" rx="8" fill="#0f766e"/>
+      <text x="340" y="103" text-anchor="middle" font-size="11" fill="#fff" font-weight="bold">2. ตรวจ IV Level</text>
+      <text x="340" y="118" text-anchor="middle" font-size="9" fill="#ccfbf1">IVR / IVP vs 52-week range</text>
+
+      <!-- Two branches -->
+      <line x1="240" y1="107" x2="150" y2="150" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr17)"/>
+      <text x="175" y="140" text-anchor="middle" font-size="9" fill="#0d9488">IV ต่ำ</text>
+      <line x1="440" y1="107" x2="530" y2="150" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr17)"/>
+      <text x="505" y="140" text-anchor="middle" font-size="9" fill="#ef4444">IV สูง</text>
+
+      <!-- Low IV box -->
+      <rect x="60" y="150" width="175" height="50" rx="6" fill="#dcfce7" stroke="#22c55e"/>
+      <text x="147" y="168" text-anchor="middle" font-size="10" fill="#166534" font-weight="bold">Long Vol / Tail Hedge</text>
+      <text x="147" y="182" text-anchor="middle" font-size="9" fill="#166534">Straddle, Strangle</text>
+      <text x="147" y="194" text-anchor="middle" font-size="9" fill="#166534">Calendar (Long Vega)</text>
+
+      <!-- High IV box -->
+      <rect x="445" y="150" width="175" height="50" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+      <text x="532" y="168" text-anchor="middle" font-size="10" fill="#991b1b" font-weight="bold">Short Vol / Sell Premium</text>
+      <text x="532" y="182" text-anchor="middle" font-size="9" fill="#991b1b">Iron Condor, Strangle</text>
+      <text x="532" y="194" text-anchor="middle" font-size="9" fill="#991b1b">Calendar (Sell near)</text>
+
+      <!-- Arrow to Step 3 -->
+      <line x1="340" y1="126" x2="340" y2="218" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr17)"/>
+
+      <!-- Step 3: Event Check -->
+      <rect x="240" y="218" width="200" height="38" rx="8" fill="#0f766e"/>
+      <text x="340" y="233" text-anchor="middle" font-size="11" fill="#fff" font-weight="bold">3. ตรวจ Event Calendar</text>
+      <text x="340" y="248" text-anchor="middle" font-size="9" fill="#ccfbf1">FOMC, Earnings, CPI, OpEx</text>
+
+      <!-- Arrow to Step 4 -->
+      <line x1="340" y1="256" x2="340" y2="275" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr17)"/>
+
+      <!-- Step 4: Strike/Expiry -->
+      <rect x="240" y="275" width="200" height="38" rx="8" fill="#0f766e"/>
+      <text x="340" y="290" text-anchor="middle" font-size="11" fill="#fff" font-weight="bold">4. เลือก Strike &amp; Expiry</text>
+      <text x="340" y="305" text-anchor="middle" font-size="9" fill="#ccfbf1">Vol Cone + Skew + 1σ rule</text>
+
+      <!-- Event label at Step 3 -->
+      <text x="150" y="238" text-anchor="middle" font-size="9" fill="#f59e0b">มี Event → Long Vol ก่อน</text>
+      <text x="530" y="238" text-anchor="middle" font-size="9" fill="#f59e0b">ไม่มี Event → Short Vol ได้</text>
+    </svg>
+  </div>
+
+  <h3>Master Summary: 8 Parts รวมในตาราง</h3>
+  <table>
+    <thead><tr><th>Part</th><th>หัวข้อ</th><th>Key Tool/Concept</th><th>ใช้เมื่อ</th></tr></thead>
+    <tbody>
+      <tr><td>I</td><td>Foundations</td><td>IV, RV, VRP, Vol Cone</td><td>ทุกครั้งก่อน trade</td></tr>
+      <tr><td>II</td><td>Vol Surface</td><td>Smile, Skew, 25RR, 25BF</td><td>เลือก strikes ตาม skew</td></tr>
+      <tr><td>III</td><td>Term Structure</td><td>Contango/Back, Calendar</td><td>เลือก expiry ที่เหมาะ</td></tr>
+      <tr><td>IV</td><td>Regimes</td><td>GARCH, Low/High Vol</td><td>กำหนด size และ strategy</td></tr>
+      <tr><td>V</td><td>Long Vol</td><td>Straddle, Strangle, Calendar, Gamma Scalp</td><td>IV ต่ำ / Event ใกล้</td></tr>
+      <tr><td>VI</td><td>Short Vol</td><td>IC, Strangle, Blow-up Rules</td><td>IV สูง / Contango / ไม่มี Event</td></tr>
+      <tr><td>VII</td><td>Events</td><td>IV Crush, Earnings, FOMC</td><td>รอบ Catalyst สำคัญ</td></tr>
+      <tr><td>VIII</td><td>Vega + Products</td><td>VIX, VXX, Variance Swaps</td><td>Portfolio-level Vol management</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chk">
+    <strong>✓ Checkpoint 50 — Final Checkpoint</strong><br>
+    Vol Trader = ผู้ใช้ IV, RV, Term Structure, Regime, และ Events ร่วมกัน<br>
+    ไม่ใช่แค่ "ขาย premium" หรือ "ซื้อ Vol" — แต่เลือกเครื่องมือที่ถูกต้องตามบริบท
+  </div>
+
+  <!-- Final Cheat Sheet -->
+  <div class="cheat">
+    <h3>📋 Final Cheat Sheet: Vol Trader Toolkit</h3>
+    <div class="two-col" style="color:#fff">
+      <div>
+        <strong style="color:var(--teal-mid)">Vega & Products</strong>
+        <ul style="margin-top:8px">
+          <li>Vega = $/1% IV change</li>
+          <li>ATM &amp; Long-dated = Vega สูง</li>
+          <li>VIX = Fear gauge (30d SPX IV)</li>
+          <li>VXX = Long Vol (decay ใน Contango)</li>
+          <li>SVXY = Short Vol (blow-up ในวิกฤต)</li>
+        </ul>
+      </div>
+      <div>
+        <strong style="color:var(--teal-mid)">Key Numbers จำไว้</strong>
+        <ul style="margin-top:8px">
+          <li>VIX Daily Move = VIX/√252</li>
+          <li>VIX normal ~18–20 · Crisis &gt;35</li>
+          <li>VRP avg = 5–8% (S&amp;P)</li>
+          <li>Options expire worthless ~70%</li>
+          <li>Earnings Crush = 30–60%</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px">
+      <strong style="color:var(--teal-mid)">5 คำถามก่อน Trade ทุกครั้ง</strong>
+      <ul style="margin-top:8px">
+        <li>1. Regime คืออะไร? (VIX + Term Structure)</li>
+        <li>2. IV แพงหรือถูก? (IVR/IVP)</li>
+        <li>3. มี Event ใน 1–4 สัปดาห์?</li>
+        <li>4. Vol Surface บอกอะไร? (Skew)</li>
+        <li>5. Risk ของ position คืออะไร? (Max loss / Stop)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Series Complete -->
+  <div class="series-complete">
+    <h3>🎓 Volatility Mastery Series — จบแล้ว!</h3>
+    <p style="opacity:0.85;max-width:560px;margin:0 auto 20px">คุณได้เรียนรู้ครบ 8 Parts — จาก IV พื้นฐาน สู่ Vol Surface, Term Structure, Regimes, Long/Short Vol Playbooks, Events, และ Vol Products ขั้นสูง</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px">
+      <a href="vol-part1.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part I: Foundations</a>
+      <a href="vol-part2.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part II: Vol Surface</a>
+      <a href="vol-part3.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part III: Term Structure</a>
+      <a href="vol-part4.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part IV: Regimes</a>
+      <a href="vol-part5.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part V: Long Vol</a>
+      <a href="vol-part6.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part VI: Short Vol</a>
+      <a href="vol-part7.html" style="color:var(--teal-mid);text-decoration:none;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 16px;font-size:0.9em">Part VII: Events</a>
+      <strong style="color:#fff;background:rgba(255,255,255,0.2);border-radius:8px;padding:8px 16px;font-size:0.9em">Part VIII: Vega + Products</strong>
+    </div>
+  </div>
+
+  <!-- Part Summary -->
+  <h2>สรุป Part VIII 📌</h2>
+  <table>
+    <thead><tr><th>บท</th><th>หัวข้อ</th><th>Takeaway หลัก</th></tr></thead>
+    <tbody>
+      <tr><td>45</td><td>Vega อย่างละเอียด</td><td>ATM + Long-dated = Vega สูง · Hedge ด้วย opposite options</td></tr>
+      <tr><td>46</td><td>VIX Index</td><td>Model-free IV 30d · VIX&gt;25=กลัว · Daily≈VIX/√252</td></tr>
+      <tr><td>47</td><td>VX Futures / ETPs</td><td>VXX Decay ใน Contango · SVXY Blow-up ในวิกฤต</td></tr>
+      <tr><td>48</td><td>Variance Swaps</td><td>Pure Vol OTC · Payoff = (RV² − Strike²) × Notional</td></tr>
+      <tr><td>49</td><td>Vol ETF สำหรับ Retail</td><td>VXX = Tail Hedge · SVXY = Short Vol Carry (เสี่ยง)</td></tr>
+      <tr><td>50</td><td>Putting It All Together</td><td>5 คำถาม + Decision Framework ก่อน trade ทุกครั้ง</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<div class="footer-nav">
+  ← <a href="vol-part7.html">Part VII: Events & IV Crush</a>
+  &nbsp;·&nbsp;
+  <strong>Part VIII: Vega + Vol Products — จบ Series</strong>
+  &nbsp;·&nbsp;
+  <a href="vol-part1.html">กลับ Part I →</a>
+</div>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #0d9488;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="vol-part1.html" style="color:#0d9488;text-decoration:none;font-weight:700">Volatility Mastery — เริ่มต้น</a></nav>
+</body>
+</html>
