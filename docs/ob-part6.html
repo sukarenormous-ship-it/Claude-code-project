@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 6</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 6: ทำไม Market Order สำคัญ — ใครมีข้อมูล</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · เลนส์ execution ของซีรีส์<br>จาก "ของที่ยืนรอ" (OBI) สู่ "ของที่ลงมือจริง" (market order / Delta / CVD)</div>
+</div>
+
+<!-- ========== PART 6 ========== -->
+<h2 id="p6">Part 6 — ทำไม Market Order สำคัญ</h2>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่าทำไม <strong>market order มีข้อมูลมากกว่า limit/cancel</strong> (informativeness) — เพราะ "ยอมจ่ายเพื่อได้ทันที"</li>
+<li>รู้จัก <strong>adverse selection</strong>: ทำไมคนตั้ง limit ถึงเสี่ยงโดน "คนรู้ข้อมูล" กิน</li>
+<li>เข้าใจพฤติกรรม <strong>non-Markovian</strong>: คิวหมดเพราะ market → ราคา <em>follow</em> / เพราะ cancel → ราคา <em>revert</em></li>
+<li>วัด "แรง market order" ได้จริงด้วย <strong>Delta (Δ) และ CVD</strong> จากข้อมูล Binance aggTrade</li>
+</ul>
+</div>
+
+<h3 id="p6-hook">ใครยอมจ่ายแพงเพื่อได้เดี๋ยวนี้ มักรู้อะไร</h3>
+
+<p>ลองนึก: ของชิ้นเดียวกัน คนหนึ่ง "ตั้งรอ" ขอซื้อราคาถูกลงหน่อย อีกคน "ควักจ่ายราคาเต็ม ขอเอาเดี๋ยวนี้" — ใครดูเหมือนมีเหตุผลเร่งด่วนกว่า? คนที่ <strong>ยอมข้าม spread จ่าย ask เต็ม ๆ เพื่อให้ได้ของทันที</strong> มักเป็นคนที่ <em>เชื่อว่าราคากำลังจะวิ่งหนี</em> — เขายอมจ่าย "ค่าผ่านทาง" เพราะคิดว่ารออีกนิดจะแพงกว่านี้</p>
+
+<p>นั่นคือเหตุผลที่ <strong>market order เป็นสัญญาณที่ "informative"</strong> ส่วน limit order ที่ตั้งรอ (ยกเลิกฟรีเมื่อไรก็ได้) เป็นสัญญาณที่ <em>อ่อน</em> — มันแค่ "ความตั้งใจ" ที่ถอนได้</p>
+
+<table>
+<tr><th>เหตุการณ์</th><th>ต้นทุน/ความมุ่งมั่น</th><th>ความ informative</th></tr>
+<tr><td><strong>Market order</strong> (taker)</td><td>จ่าย spread + เสี่ยง slippage</td><td>สูง — ลงมือจริง เอาเดี๋ยวนี้</td></tr>
+<tr><td><strong>Limit order</strong> (provide)</td><td>ฟรี ถอนได้</td><td>ต่ำ — แค่ตั้งรอ</td></tr>
+<tr><td><strong>Cancel</strong></td><td>ฟรี</td><td>ต่ำ — ถอนความตั้งใจ</td></tr>
+</table>
+
+<h3 id="p6-adverse">Adverse selection — กับดักของคนตั้ง limit</h3>
+
+<p>คุณตั้ง limit buy ที่ best bid รอกินครึ่ง spread แต่... ใครจะมาเทรดกับคุณ? ถ้าคนที่มา "ขายชน" limit ของคุณคือคนที่ <strong>รู้ว่าราคากำลังจะลง</strong> คุณก็เพิ่งซื้อของที่กำลังจะถูกลง — fill ของคุณคือ "ของเสีย" นี่คือ <strong>adverse selection</strong>: คุณมักได้ fill <em>ในจังหวะที่ไม่ดีสำหรับคุณ</em></p>
+
+<div class="fm">
+กำไรคาดหวังของ limit order (maker):<br>
+&nbsp;&nbsp;E[กำไร] = (ครึ่ง spread) − E[ราคาวิ่งสวน | ได้ fill]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= edge ที่หวัง   −   ต้นทุน adverse selection<br>
+<br>
+ถ้า adverse move &gt; ครึ่ง spread → maker ขาดทุนแม้ได้ fill!
+</div>
+
+<svg class="d" viewBox="0 0 500 190" role="img" aria-label="adverse selection สองช่อง limit โดน fill ตอนราคาสวน">
+<rect x="20" y="30" width="210" height="140" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.5"/>
+<text x="125" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">fill ที่ "ดี" (noise)</text>
+<line x1="40" y1="120" x2="210" y2="120" stroke="var(--g2)"/>
+<polyline points="40,120 90,118 140,122 190,119" fill="none" stroke="var(--blue)" stroke-width="2"/>
+<circle cx="90" cy="118" r="5" fill="var(--green)"/>
+<text x="125" y="150" text-anchor="middle" font-size="10" fill="var(--g7)">fill แล้วราคาอยู่นิ่ง → เก็บ spread</text>
+<rect x="270" y="30" width="210" height="140" rx="8" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="375" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">fill ที่ "เสีย" (informed)</text>
+<line x1="290" y1="120" x2="460" y2="120" stroke="var(--g2)"/>
+<polyline points="290,90 330,95 370,120 420,150 460,162" fill="none" stroke="var(--blue)" stroke-width="2"/>
+<circle cx="370" cy="120" r="5" fill="var(--red)"/>
+<text x="375" y="150" text-anchor="middle" font-size="10" fill="var(--g7)">โดน fill แล้วราคาวิ่งสวน → ขาดทุน</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 6.3 · maker ได้ fill ตอน "ดี" บ้าง "เสีย" บ้าง — informed trader ทำให้ฝั่งเสียหนัก</p>
+
+<h3 id="p6-nonmarkov">Non-Markovian — สาเหตุที่คิวหมดสำคัญกว่าตัวเลข</h3>
+
+<p>สมมติ best bid คิวหมดเกลี้ยง ราคากำลังจะขยับ — แต่ "หมดเพราะอะไร" สำคัญมาก:</p>
+<ul>
+<li><strong>หมดเพราะ market sell (M)</strong> มากินจนเกลี้ยง → มีแรงขายจริงดันลง → ราคามักจะ <strong>follow</strong> (ลงต่อ)</li>
+<li><strong>หมดเพราะคน cancel (C)</strong> ถอน limit ออกไปเอง → ไม่มีเงินเปลี่ยนมือ มักเป็นการขยับเชิงรับ → ราคามักจะ <strong>revert</strong> (เด้งกลับ)</li>
+</ul>
+<p>นี่เรียกว่า <strong>non-Markovian</strong>: "สถานะปัจจุบัน" (คิวหมด) อย่างเดียวไม่พอ ต้องรู้ <em>ประวัติว่ามันหมดได้ยังไง</em> ด้วย — นี่คือเหตุผลหลักที่ OBI (ภาพนิ่ง) ไม่พอ และทำไม Part 7 (OFI) ต้องจับ "เหตุการณ์การเปลี่ยน"</p>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="คิวหมดเพราะ market แล้ว follow เทียบกับเพราะ cancel แล้ว revert">
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">best bid คิวหมด → แล้วยังไงต่อ?</text>
+<rect x="220" y="35" width="60" height="26" rx="5" fill="var(--g1)" stroke="var(--g7)"/>
+<text x="250" y="53" text-anchor="middle" font-size="11" fill="var(--g8)">คิวหมด</text>
+<line x1="230" y1="61" x2="140" y2="95" stroke="var(--g7)" stroke-width="1"/>
+<line x1="270" y1="61" x2="360" y2="95" stroke="var(--g7)" stroke-width="1"/>
+<rect x="60" y="98" width="160" height="34" rx="5" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="140" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">หมดเพราะ Market (M)</text>
+<rect x="280" y="98" width="160" height="34" rx="5" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+<text x="360" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">หมดเพราะ Cancel (C)</text>
+<polyline points="70,165 110,170 150,185 190,200" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+<text x="140" y="222" text-anchor="middle" font-size="11" fill="var(--red)">FOLLOW (ลงต่อ) ~84%</text>
+<polyline points="290,185 330,182 370,170 410,160" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="360" y="222" text-anchor="middle" font-size="11" fill="var(--blue)">REVERT (เด้งกลับ)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 6.2 · (หัวใจ Part นี้) สาเหตุที่คิวหมด ชี้ทิศต่อ — M→follow / C→revert</p>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ — และข้อควรระวังเรื่องตัวเลข</div>
+<p><strong>Lu &amp; Abergel (2018)</strong> และตระกูล queue-reactive models พบว่าเมื่อคิวที่ best หมดด้วย market order ราคามักเคลื่อนต่อทิศเดิม (continuation) ในสัดส่วนสูง — ตัวเลขที่มักอ้างราว <strong>~84% continuation</strong> นั้น <strong>ขึ้นกับสินทรัพย์ / large-tick vs small-tick / นิยามและ calibration</strong> ควรตรวจกับ paper ต้นฉบับและ market ของคุณเอง อย่ายึดเป็นค่าตายตัว</p>
+</div>
+
+<h3 id="p6-delta">Delta (Δ) และ CVD — วัด "แรง market order" ได้จริง</h3>
+
+<p>เราวัด market order flow ได้ตรง ๆ ด้วย <strong>Delta</strong> = ปริมาณที่ taker ซื้อชน ลบด้วยปริมาณที่ taker ขายชน และสะสมเป็น <strong>CVD (Cumulative Volume Delta)</strong> เพื่อดูเทรนด์แรงซื้อ/ขาย:</p>
+
+<div class="fm">
+Δ (Delta)  = BuyVol − SellVol      ← นับ "ของที่เทรดไปแล้ว" (aggressor)<br>
+CVD_t      = Σ Δ  (running sum)    ← เทรนด์แรงซื้อ/ขายสะสม<br>
+<br>
+การจำแนก aggressor (signed volume):<br>
+&nbsp;&nbsp;Binance aggTrade ให้ flag m (isBuyerMaker):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;m = true  → ผู้ซื้อเป็น maker → taker คือ "ขายชน" → Sell<br>
+&nbsp;&nbsp;&nbsp;&nbsp;m = false → ผู้ขายเป็น maker → taker คือ "ซื้อชน" → Buy<br>
+&nbsp;&nbsp;(ไม่ต้องเดาด้วย Lee-Ready เพราะ exchange บอก aggressor ให้ตรง ๆ)
+</div>
+
+<svg class="d" viewBox="0 0 500 220" role="img" aria-label="แท่ง Delta เขียวแดงต่อบักเก็ต พร้อมเส้น CVD สะสม">
+<line x1="40" y1="130" x2="470" y2="130" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="20" y="40" font-size="10" fill="var(--g7)">Δ</text>
+<rect x="55"  y="90"  width="22" height="40" fill="var(--green)"/>
+<rect x="90"  y="105" width="22" height="25" fill="var(--green)"/>
+<rect x="125" y="130" width="22" height="30" fill="var(--red)"/>
+<rect x="160" y="80"  width="22" height="50" fill="var(--green)"/>
+<rect x="195" y="70"  width="22" height="60" fill="var(--green)"/>
+<rect x="230" y="130" width="22" height="20" fill="var(--red)"/>
+<rect x="265" y="60"  width="22" height="70" fill="var(--green)"/>
+<rect x="300" y="100" width="22" height="30" fill="var(--green)"/>
+<rect x="335" y="130" width="22" height="35" fill="var(--red)"/>
+<rect x="370" y="78"  width="22" height="52" fill="var(--green)"/>
+<rect x="405" y="68"  width="22" height="62" fill="var(--green)"/>
+<polyline points="66,180 101,175 136,182 171,168 206,150 241,156 276,135 311,128 346,138 381,122 416,108" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="430" y="104" font-size="11" font-weight="700" fill="var(--blue)">CVD</text>
+<text x="120" y="208" text-anchor="middle" font-size="10" fill="var(--green)">แท่ง = Δ ต่อช่วง</text>
+<text x="370" y="208" text-anchor="middle" font-size="10" fill="var(--blue)">เส้น = CVD ไต่ขึ้น (แรงซื้อสะสม)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 6.4 · Δ แท่งเขียว(buy)/แดง(sell) + เส้น CVD สะสม</p>
+
+<div class="bx bb">
+<div class="bt">🧰 Binance-ready Orderflow Toolkit — ผูกศัพท์เทรดเดอร์ ↔ ศัพท์วิชาการ ↔ paper</div>
+<table>
+<tr><th>ศัพท์เทรดเดอร์</th><th>ศัพท์วิชาการ</th><th>วัดอะไร</th><th>Paper รองรับ</th></tr>
+<tr><td><strong>Delta (Δ)</strong></td><td>Trade imbalance / signed volume</td><td>flow ที่เทรดไปแล้ว (taker)</td><td>Lee &amp; Ready (1991); Chordia-Subrahmanyam (2004)</td></tr>
+<tr><td><strong>Cumulative Delta (CVD)</strong></td><td>Cumulative signed order flow</td><td>trend แรงซื้อ/ขายสะสม</td><td>Chordia-Roll-Subrahmanyam (2002)</td></tr>
+<tr><td><strong>Volume Imbalance</strong></td><td>Queue / order-book imbalance</td><td>state ของ depth ที่ตั้งรอ</td><td>Gould &amp; Bonart (2015)</td></tr>
+</table>
+<p style="margin-top:8px"><strong>ข้อมูล Binance ที่ใช้:</strong> <code>@aggTrade</code> stream (ได้ flag <code>m</code> = aggressor) สำหรับ Δ/CVD · <code>@depth</code> สำหรับ Volume Imbalance/OBI</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 Nuance จากงานวิจัย</div>
+<p><strong>(1) OFI &gt; Trade Imbalance:</strong> Δ/CVD ใช้ได้ดี แต่จับเฉพาะ "ของที่เทรดไปแล้ว" — <strong>OFI (Part 7)</strong> รวม cancel และ limit ด้วย จึงมีข้อมูลมากกว่า นี่คือทางอัปเกรดที่ชี้ตรงไป Part 7 · <strong>(2) พลังทำนายเสื่อมตามเวลา:</strong> ทุกสัญญาณ orderflow มี horizon สั้น ตอกย้ำบทเรียน signal horizon จาก Part 4</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่</div>
+<ul>
+<li>เห็น best หมดคิวแล้ว <strong>เดาทิศทันที</strong> — ต้องดู <em>สาเหตุ</em> (M หรือ C) ก่อน</li>
+<li><strong>CVD divergence ≠ กลับตัวเสมอ</strong> — CVD ขึ้นแต่ราคาไม่ขึ้น อาจเป็น <em>absorption</em> (มีกำแพง limit ดูดแรงซื้อไว้) ไม่ใช่สัญญาณกลับตัวอัตโนมัติ</li>
+<li>จำแนก aggressor <strong>ผิด</strong> ทำให้ Δ ผิดทั้งแผง — ใช้ flag <code>m</code> ของ Binance ให้ถูก อย่าเดาเอง</li>
+</ul>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>"ใครมีข้อมูล" เป็นเลนส์เดียวกับเล่ม <strong>eye</strong> (mindset: อ่านว่าใครกำลังลงมือจริง) ส่วนแนวคิด adverse selection จะกลับมาเป็นหัวใจของ <strong>Part 9–10 (Market Making)</strong> — MM ต้อง skew quote เพื่อหนี informed flow และ <strong>Part 7</strong> จะเปลี่ยน "Δ/CVD" ให้กลายเป็น OFI ที่ใส่ลง regression วัด price impact (λ) ได้ (ตรงนี้เล่ม <strong>math</strong> เข้ามาเต็มตัว)</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>เชื่อม Binance <code>@aggTrade</code> ของ BTC/USDT เก็บ 200 เทรด ติดป้าย buy/sell ด้วย flag <code>m</code> คำนวณ Δ ต่อช่วงเวลา (เช่นทุก 5 วินาที) แล้ว <strong>plot CVD</strong> เทียบกับเส้น mid — สังเกตช่วงที่ CVD ไต่ขึ้นแต่ราคาไม่ขึ้นตาม (= candidate absorption) นั่นคือจุดที่ "เดา CVD ตรง ๆ" จะพลาด</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 7: OFI &amp; Price Impact — จากภาพนิ่งสู่วิดีโอ และวัด λ ด้วย regression →</p>
+
+</body>
+</html>
