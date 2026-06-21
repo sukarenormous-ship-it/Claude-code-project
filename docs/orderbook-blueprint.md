@@ -43,6 +43,12 @@
 - โครงสร้าง **fee/rebate** Binance/Bybit → เปลี่ยนตามโปรโมชัน ให้ผู้อ่านเช็คหน้า fee schedule
 - นิยาม **OFI** ใช้เวอร์ชัน event-based ที่ best level (Cont-Kukanov-Stoikov)
 
+**สถานะ polish pass (รอบล่าสุด):**
+- ✅ สูตร Avellaneda-Stoikov (reservation price + optimal spread) และ arXiv IDs ทั้งหมด — verified ตรงต้นฉบับ
+- ✅ ตัวเลขที่ดู "เหมือนผลวิจัย" เปลี่ยนเป็นเชิงคุณภาพ/กำกับว่าสาธิต: ภาพ 7.3 (R²) → "ต่ำกว่า/สูงกว่า", ภาพ 13.3 (เมทริกซ์ γ) → กำกับ "ตัวเลขสาธิต"
+- ✅ R²~65% / continuation~84% มีกล่อง `.ba` กำกับ "ขึ้นกับ calibration/ตลาด" ทุกจุด
+- ⏳ คงเหลือ: **fee/rebate** ให้ผู้อ่านเช็ค fee schedule จริง (เลี่ยงระบุเลขตายตัวโดยเจตนา)
+
 ---
 
 ## 3. สารบัญแม่บท (5 องก์ · 15 ตอน)
