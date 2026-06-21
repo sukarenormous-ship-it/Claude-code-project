@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 12</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 12: Grid Trading กับกระดาน — ยกระดับ grid ด้วย order flow</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · เลนส์ execution ของซีรีส์<br>เปลี่ยน grid bot ตายตัวให้ "มองเห็นกระดาน" — เอียงตาม imbalance, หยุดเมื่อ flow เป็นพิษ</div>
+</div>
+
+<!-- ========== PART 12 ========== -->
+<h2 id="p12">Part 12 — Grid Trading กับกระดาน</h2>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่า <strong>grid trading คือ market making ที่มี "กฎตายตัว"</strong> — วาง bid/ask เป็นชั้น ๆ รอกินส่วนต่าง</li>
+<li>รู้จุดอ่อนคลาสสิกของ grid: <strong>เทรนด์เดียวล้างพอร์ต</strong> และ <strong>กำไรต่อไม้ &lt; fee×2</strong></li>
+<li><strong>เอียง (skew) grid ด้วย OBI/OFI</strong> เพื่อหลบฝั่งที่กระดานกำลังกดดัน</li>
+<li>ใช้ <strong>VPIN เป็นสวิตช์หยุด grid</strong> ก่อนกระดานจะ "แตก" และตั้ง <strong>spacing ไดนามิก</strong> ตาม spread/volatility จริง</li>
+</ul>
+</div>
+
+<h3 id="p12-hook">เริ่มจากตาข่ายจับปลาหลายชั้น</h3>
+
+<p>นึกถึงชาวประมงวาง <strong>ตาข่ายหลายชั้นขวางลำน้ำ</strong> — ปลาที่ว่ายไป-มาในระดับน้ำปกติจะติดตาข่ายเรื่อย ๆ ทีละตัว นั่นคือกำไรของ grid ในตลาด <strong>sideway</strong> (ราคาแกว่งขึ้นลงในกรอบ)</p>
+
+<p>แต่ถ้า <strong>น้ำหลาก</strong> (เทรนด์แรงทิศเดียว) — ตาข่ายทุกชั้นจะถูกกระแสน้ำพัดไปกองรวมกันด้านเดียว แล้วขาดยับ นั่นคือเวลาที่ grid bot "ถือของฝั่งผิดเต็มมือ" แล้วล้างพอร์ต <strong>กระดาน (order book) คือเครื่องวัดกระแสน้ำ</strong> ที่ช่วยให้เรารู้ก่อนว่าน้ำกำลังจะหลาก</p>
+
+<svg class="d" viewBox="0 0 500 240" role="img" aria-label="ตาข่ายหลายชั้นในน้ำนิ่งจับปลาได้ vs น้ำหลากตาข่ายขาด">
+<text x="125" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="var(--green)">น้ำนิ่ง (sideway) → กำไร</text>
+<rect x="20" y="35" width="210" height="170" rx="6" fill="var(--blue-bg)" stroke="var(--g2)"/>
+<line x1="30" y1="70" x2="220" y2="70" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="30" y1="105" x2="220" y2="105" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="30" y1="140" x2="220" y2="140" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="30" y1="175" x2="220" y2="175" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<path d="M40,120 Q70,80 100,120 Q130,160 160,120 Q190,80 210,120" fill="none" stroke="var(--blue)" stroke-width="2"/>
+<circle cx="70" cy="105" r="5" fill="var(--green)"/><circle cx="130" cy="140" r="5" fill="var(--green)"/><circle cx="180" cy="105" r="5" fill="var(--green)"/>
+<text x="125" y="225" text-anchor="middle" font-size="10" fill="var(--g7)">ติดตาข่ายทีละตัว = กินส่วนต่าง</text>
+<text x="375" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="var(--red)">น้ำหลาก (trend) → ตาข่ายขาด</text>
+<rect x="270" y="35" width="210" height="170" rx="6" fill="var(--red-bg)" stroke="var(--g2)"/>
+<line x1="280" y1="70" x2="470" y2="70" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="280" y1="105" x2="470" y2="105" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="280" y1="140" x2="470" y2="140" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="280" y1="175" x2="470" y2="175" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<path d="M285,185 L330,150 L375,115 L420,80 L465,55" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+<text x="375" y="225" text-anchor="middle" font-size="10" fill="var(--red)">ถือของฝั่งผิดเต็มมือ = ล้างพอร์ต</text>
+</svg>
+
+<h3 id="p12-mm">ชั้นที่ 1 — grid คือ MM ที่มีกฎตายตัว</h3>
+
+<p>ใน Part 9–11 เราเรียน market making ที่ปรับ quote ตลอดเวลา <strong>grid trading คือเวอร์ชันที่ "ล็อกราคา quote ไว้ล่วงหน้า" เป็นชั้น ๆ</strong> ห่างเท่ากัน ไม่ขยับตามทุก tick:</p>
+<ul>
+<li>วาง <strong>limit buy (bid)</strong> เป็นบันไดลงด้านล่าง mid — เหมือน MM ฝั่งให้สภาพคล่องซื้อ</li>
+<li>วาง <strong>limit sell (ask)</strong> เป็นบันไดขึ้นด้านบน mid — ฝั่งให้สภาพคล่องขาย</li>
+<li>เมื่อราคาแกว่งลงมาโดน bid → ซื้อได้ แล้วตั้ง sell ที่ชั้นบนถัดไป → ขายปิดกินส่วนต่าง <strong>Δ_grid</strong></li>
+</ul>
+
+<svg class="d" viewBox="0 0 500 300" role="img" aria-label="grid ladder bid เขียวด้านล่าง ask แดงด้านบน mid ตรงกลาง">
+<line x1="250" y1="20" x2="250" y2="280" stroke="var(--g7)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="250" y="16" text-anchor="middle" font-size="11" fill="var(--g7)">Mid 60,000</text>
+<!-- ask ladder (red, above) -->
+<rect x="270" y="40"  width="150" height="22" rx="3" fill="var(--red-bg)" stroke="var(--red)"/><text x="345" y="56" text-anchor="middle" font-size="11" fill="var(--red)">SELL 60,300</text>
+<rect x="270" y="70"  width="150" height="22" rx="3" fill="var(--red-bg)" stroke="var(--red)"/><text x="345" y="86" text-anchor="middle" font-size="11" fill="var(--red)">SELL 60,200</text>
+<rect x="270" y="100" width="150" height="22" rx="3" fill="var(--red-bg)" stroke="var(--red)"/><text x="345" y="116" text-anchor="middle" font-size="11" fill="var(--red)">SELL 60,100</text>
+<!-- bid ladder (green, below) -->
+<rect x="80" y="178" width="150" height="22" rx="3" fill="var(--green-bg)" stroke="var(--green)"/><text x="155" y="194" text-anchor="middle" font-size="11" fill="var(--green)">BUY 59,900</text>
+<rect x="80" y="208" width="150" height="22" rx="3" fill="var(--green-bg)" stroke="var(--green)"/><text x="155" y="224" text-anchor="middle" font-size="11" fill="var(--green)">BUY 59,800</text>
+<rect x="80" y="238" width="150" height="22" rx="3" fill="var(--green-bg)" stroke="var(--green)"/><text x="155" y="254" text-anchor="middle" font-size="11" fill="var(--green)">BUY 59,700</text>
+<!-- spacing arrow -->
+<line x1="60" y1="189" x2="60" y2="219" stroke="var(--blue)" stroke-width="1.5" marker-start="url(#aU)" marker-end="url(#aD)"/>
+<text x="48" y="207" text-anchor="end" font-size="10" font-weight="700" fill="var(--blue)">Δ_grid</text>
+<text x="345" y="160" text-anchor="middle" font-size="10" fill="var(--g7)">ขายเมื่อราคาเด้งขึ้น</text>
+<text x="155" y="290" text-anchor="middle" font-size="10" fill="var(--g7)">ซื้อเมื่อราคาแกว่งลง</text>
+<defs>
+<marker id="aD" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,0 L3,6 L6,0 Z" fill="var(--blue)"/></marker>
+<marker id="aU" markerWidth="8" markerHeight="8" refX="3" refY="0" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="var(--blue)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 12.1 · grid ladder — บันได bid/ask รอบ mid (ต่อยอดจากเทมเพลตแม่)</p>
+
+<div class="bx br">
+<div class="bt">⚠️ ความจริงรายย่อย — grid ที่ "ตาบอด" คือเครื่องเก็บ fee ให้ exchange</div>
+<p>grid bot ทั่วไปไม่มองกระดานเลย — มันเด้งกินส่วนต่างไป-มาในตลาด sideway ดูสวย แต่มี <strong>2 จุดตายที่คนส่วนใหญ่เจ็บ</strong>: (1) <strong>กำไรต่อไม้ &lt; ค่าธรรมเนียม×2</strong> — ทุกไม้ต้องจ่าย fee ทั้งขาเข้าและขาออก ถ้า Δ_grid แคบกว่า fee 2 เด้ง คุณเด้งบ่อยแต่ยิ่งเด้งยิ่งจน (2) <strong>เทรนด์เดียวล้างพอร์ต</strong> — พอราคาวิ่งทางเดียว grid จะ "ซื้อตลอดทาง" สะสมของฝั่งผิดเต็มมือแล้วลอยตัวขาดทุนหนัก order book ช่วยแก้ทั้งสองข้อนี้ได้</p>
+</div>
+
+<h3 id="p12-skew">ชั้นที่ 2 — เอียง grid ด้วย OBI/OFI</h3>
+
+<p>grid ตายตัววางศูนย์กลางไว้ที่ mid เสมอ แต่ถ้ากระดานบอกว่า <strong>ฝั่งขายหนักกว่าฝั่งซื้อ (OBI ติดลบ / OFI ไหลออก)</strong> แปลว่ามีโอกาสราคาจะลงต่อ — เราควร <strong>เลื่อนศูนย์กลาง grid ลง</strong> เพื่อไม่ให้ bid ของเราโดนกินก่อนเวลาอันควร (หลีกเลี่ยง adverse selection จาก Part 6)</p>
+
+<p>นี่คือการยืม <strong>reservation price จาก Avellaneda-Stoikov (Part 10)</strong> มาใช้: แทนที่จะวาง grid รอบ mid เฉย ๆ เราวางรอบ "ราคากลางที่ปรับด้วยแรงกระดาน"</p>
+
+<svg class="d" viewBox="0 0 500 240" role="img" aria-label="เทียบ grid ปกติรอบ mid กับ grid เอียงลงเมื่อ OBI ติดลบ">
+<text x="120" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g7)">grid ปกติ (รอบ mid)</text>
+<line x1="30" y1="120" x2="210" y2="120" stroke="var(--g7)" stroke-dasharray="5 4"/>
+<text x="120" y="135" text-anchor="middle" font-size="9" fill="var(--g7)">mid</text>
+<rect x="60" y="60"  width="120" height="14" rx="2" fill="var(--red-bg)" stroke="var(--red)"/>
+<rect x="60" y="82"  width="120" height="14" rx="2" fill="var(--red-bg)" stroke="var(--red)"/>
+<rect x="60" y="144" width="120" height="14" rx="2" fill="var(--green-bg)" stroke="var(--green)"/>
+<rect x="60" y="166" width="120" height="14" rx="2" fill="var(--green-bg)" stroke="var(--green)"/>
+<line x1="245" y1="30" x2="245" y2="215" stroke="var(--g2)" stroke-dasharray="3 3"/>
+<text x="380" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">เอียงลง (OBI &lt; 0)</text>
+<line x1="290" y1="120" x2="470" y2="120" stroke="var(--g2)" stroke-dasharray="4 3"/>
+<text x="478" y="123" text-anchor="end" font-size="8" fill="var(--g2)">mid</text>
+<line x1="290" y1="150" x2="470" y2="150" stroke="var(--blue)" stroke-width="2"/>
+<text x="380" y="165" text-anchor="middle" font-size="9" fill="var(--blue)">P_center' (เลื่อนลง)</text>
+<rect x="320" y="92"  width="120" height="14" rx="2" fill="var(--red-bg)" stroke="var(--red)"/>
+<rect x="320" y="114" width="120" height="14" rx="2" fill="var(--red-bg)" stroke="var(--red)"/>
+<rect x="320" y="174" width="120" height="14" rx="2" fill="var(--green-bg)" stroke="var(--green)"/>
+<rect x="320" y="196" width="120" height="14" rx="2" fill="var(--green-bg)" stroke="var(--green)"/>
+<text x="380" y="228" text-anchor="middle" font-size="9" fill="var(--g7)">ทั้งบันไดเลื่อนหนีฝั่งที่ถูกกดดัน</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 12.2 · เอียง grid ตาม imbalance — เลื่อนศูนย์กลางหนีฝั่งที่กระดานกดดัน</p>
+
+<h3 id="p12-vpin">ชั้นที่ 3 — VPIN เป็นสวิตช์หยุด grid</h3>
+
+<p>จาก Part 8 เราเรียนว่า <strong>VPIN วัด "ความเป็นพิษ" ของ flow</strong> — เมื่อ flow ข้างเดียวรุนแรง (มัก = มีคนรู้ข้อมูลกำลังลากราคา) VPIN จะพุ่งขึ้น นั่นคือสัญญาณว่า "น้ำกำลังหลาก" และ grid กำลังจะถูกพัดขาด</p>
+
+<p>กฎง่าย ๆ: <strong>เมื่อ VPIN &gt; θ (เกณฑ์) ให้ระงับการวางไม้ที่ "ทวนเทรนด์"</strong> — เช่น ถ้า flow ไหลขายแรง อย่าวาง buy ดักรับเพิ่ม ปล่อยให้ราคาลงไปก่อน แล้วค่อยกลับมาวาง grid เต็มเมื่อ flow สงบ นี่คือเกราะกัน "เทรนด์เดียวล้างพอร์ต"</p>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="กราฟ VPIN พุ่งเกินเส้น threshold แล้ว grid ถูกระงับ">
+<line x1="50" y1="190" x2="470" y2="190" stroke="var(--g2)" stroke-width="1.5"/>
+<line x1="50" y1="30" x2="50" y2="190" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="45" y="28" text-anchor="end" font-size="10" fill="var(--g7)">VPIN</text>
+<line x1="50" y1="90" x2="470" y2="90" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="465" y="84" text-anchor="end" font-size="10" font-weight="700" fill="var(--amber)">θ (เกณฑ์หยุด)</text>
+<path d="M50,170 L110,165 L170,150 L230,120 L280,70 L320,55 L370,75 L430,140" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<rect x="255" y="30" width="100" height="160" fill="var(--red)" opacity="0.08"/>
+<line x1="255" y1="30" x2="255" y2="190" stroke="var(--red)" stroke-dasharray="3 3"/>
+<line x1="355" y1="30" x2="355" y2="190" stroke="var(--red)" stroke-dasharray="3 3"/>
+<text x="305" y="45" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">ระงับ grid</text>
+<text x="305" y="210" text-anchor="middle" font-size="9" fill="var(--red)">ช่วง flow เป็นพิษ</text>
+<text x="150" y="210" text-anchor="middle" font-size="9" fill="var(--green)">grid ทำงานปกติ</text>
+<text x="410" y="210" text-anchor="middle" font-size="9" fill="var(--green)">กลับมาทำงาน</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 12.3 · VPIN หยุด grid — ตัดไม้ทวนเทรนด์ในช่วง flow เป็นพิษ</p>
+
+<h3 id="p12-fm">สูตรหลัก</h3>
+
+<div class="fm">
+// 1) spacing ไดนามิก — เอาค่ามากกว่าระหว่าง spread เฉลี่ย กับ volatility<br>
+&Delta;_grid   = max( c1 &middot; spread&#772; , c2 &middot; &sigma; &middot; &radic;&tau; )<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c1,c2 = ตัวคูณกันชน (เช่น 1.5, 1.0)<br>
+<br>
+// 2) เลื่อนศูนย์กลาง grid ด้วย imbalance (ยืม reservation price)<br>
+P_center' = P_mid + &alpha; &middot; OBI &middot; &Delta;_grid&nbsp;&nbsp;&nbsp;(&alpha; &gt; 0 = ตามแรง, OBI&lt;0 เลื่อนลง)<br>
+<br>
+// 3) สวิตช์ VPIN<br>
+ถ้า VPIN &gt; &theta;  &rarr;  ระงับไม้ที่ทวนทิศ flow (กันเทรนด์เดียวล้างพอร์ต)<br>
+<br>
+// เงื่อนไขกำไรต่อไม้ (กับดักข้อ 1)<br>
+&Delta;_grid &gt; 2 &middot; fee_taker  (หรือ 2&middot;fee_maker ถ้าใช้ post-only) &mdash; ไม่งั้นยิ่งเด้งยิ่งจน
+</div>
+
+<table>
+<tr><th>พารามิเตอร์</th><th>ตายตัว (grid ดิบ)</th><th>มองกระดาน (grid + flow)</th></tr>
+<tr><td>spacing Δ_grid</td><td>คงที่ (เช่น 0.5%)</td><td>max(spread̄, σ√τ) — กว้างเมื่อผันผวน</td></tr>
+<tr><td>ศูนย์กลาง</td><td>mid เสมอ</td><td>P_center' เอียงตาม OBI/OFI</td></tr>
+<tr><td>ช่วง flow เป็นพิษ</td><td>วางต่อ → โดนลาก</td><td>VPIN&gt;θ → ระงับไม้ทวนเทรนด์</td></tr>
+<tr><td>fee</td><td>มักลืม → ขาดทุนเงียบ</td><td>บังคับ Δ_grid &gt; 2×fee</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>การเอียง quote ตาม inventory และ signal มีรากจาก <strong>Avellaneda-Stoikov (2008)</strong> ที่ derive reservation price <code>r = s − q·γσ²(T−t)</code> — grid ที่เอียงด้วย OBI คือการนำหลักเดียวกันมาใช้กับ "แรงกระดาน" แทน inventory ส่วนการใช้ <strong>VPIN (Easley-López de Prado-O'Hara 2012)</strong> เป็นตัวตัดความเสี่ยง toxic flow ก็คือการ "ปิดร้านชั่วคราว" ตามที่ MM มืออาชีพทำจริง อย่างไรก็ดี ค่า θ และ α ต้อง <strong>calibrate กับตลาด/timeframe เอง</strong> ไม่มีเลขวิเศษตายตัว</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น &amp; ในซีรีส์</div>
+<p>Part 12 มัด 3 เครื่องมือที่เรียนมารวมกัน: <strong>OBI (Part 5)</strong> เอียง grid, <strong>OFI (Part 7)</strong> ทำนายทิศแม่นขึ้น, <strong>VPIN (Part 8)</strong> เป็นเบรก และโครง MM ทั้งหมดมาจาก <strong>Part 9–11</strong> ในแง่คณิตศาสตร์ <code>Δ_grid=max(...)</code> และ <code>P_center'</code> คือ optimization ภายใต้ความผันผวน (เชื่อม <strong>math</strong>) ส่วนการคิด P&amp;L ต่อไม้และ inventory ที่สะสมก็คือ payoff จริงในเล่ม <strong>pm/payoff</strong> — อย่าลืมว่าราคาเข้า-ออกคือ bid/ask ไม่ใช่ mid</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญหนึ่ง (เช่น ETH/USDT บน Binance) ดึงราคาย้อนหลัง 2 วัน: <strong>วันที่ sideway</strong> กับ <strong>วันที่ trending</strong> จำลอง grid 10 ชั้น spacing 0.4% แล้ว <strong>หัก taker fee 0.04% ทุกไม้ทั้งขาเข้า-ออก</strong> เทียบ P&amp;L สองวัน — คุณจะเห็นว่า grid ดิบกำไรวัน sideway แต่ขาดทุนหนักวัน trending จากนั้นเพิ่มกฎ "ถ้า OBI &lt; −0.3 หยุดวาง buy" แล้ววัดว่าวัน trending ขาดทุนน้อยลงไหม</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 13: Statistical Arbitrage ด้วย OFI — ทำนายราคาด้วยแรง flow →</p>
+
+</body>
+</html>

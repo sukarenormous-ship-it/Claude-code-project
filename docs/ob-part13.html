@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 13</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 13: Statistical Arbitrage ด้วย OFI — ทำนายราคาด้วยแรง flow</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · เลนส์ execution ของซีรีส์<br>OFI มาก่อนราคา — แปลงให้นิ่ง ทำ regression แล้วต่อยอดเป็น cross-asset (BTC ดัน ETH)</div>
+</div>
+
+<!-- ========== PART 13 ========== -->
+<h2 id="p13">Part 13 — Statistical Arbitrage ด้วย OFI</h2>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่า <strong>OFI (order flow imbalance) "มาก่อน" การเปลี่ยนแปลงราคา</strong> — เป็น predictor ไม่ใช่ภาพสะท้อน</li>
+<li>รู้ว่าทำไมต้อง <strong>แปลง OFI ให้ stationary (log/normalize)</strong> ก่อนทำ regression ไม่งั้นได้ผลลวง (spurious)</li>
+<li>ทำ <strong>mean-reversion stat-arb</strong>: เข้าเทรดเมื่อราคาคาดการณ์เบนจากราคาจริงเกินต้นทุน</li>
+<li>ต่อยอดเป็น <strong>cross-asset / cross-impact</strong>: flow ของ BTC ทำนายราคา ETH ได้ (เมทริกซ์ γ)</li>
+</ul>
+</div>
+
+<h3 id="p13-hook">เริ่มจากแรงดันน้ำในท่อ</h3>
+
+<p>นึกถึงน้ำในท่อประปา — ก่อนที่ <strong>ระดับน้ำ</strong> (ราคา) จะขยับ ต้องมี <strong>แรงดัน</strong> (flow) ดันมาก่อนเสมอ ถ้าคุณวัดได้แค่ระดับน้ำ คุณรู้ทีหลังเสมอ แต่ถ้าคุณวัด "แรงดัน" ได้ คุณรู้ <strong>ก่อน</strong> ว่าน้ำกำลังจะขึ้นหรือลง</p>
+
+<p><strong>OFI คือเกจวัดแรงดันของกระดาน</strong> — มันรวมทั้ง limit ที่เติมเข้า, cancel ที่ถอนออก, และ market ที่กิน เป็นตัวเลขเดียวที่บอก "แรงสุทธิ" ที่กำลังดันราคา และเมื่อ <strong>ท่อหลายเส้นต่อกัน</strong> (BTC, ETH, SOL อยู่ในระบบเดียวกัน) แรงดันในท่อใหญ่ย่อมส่งผลถึงท่อเล็ก — นั่นคือ cross-asset</p>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="แรงดันน้ำในท่อมาก่อนระดับน้ำ">
+<rect x="40" y="40" width="420" height="60" rx="8" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>
+<text x="250" y="32" text-anchor="middle" font-size="11" fill="var(--g7)">ท่อ (กระดาน)</text>
+<!-- pressure arrows (flow) -->
+<line x1="60" y1="70" x2="120" y2="70" stroke="var(--green)" stroke-width="3" marker-end="url(#aF)"/>
+<line x1="130" y1="70" x2="190" y2="70" stroke="var(--green)" stroke-width="3" marker-end="url(#aF)"/>
+<text x="125" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="var(--green)">แรงดัน = OFI (มาก่อน)</text>
+<!-- water level rising downstream -->
+<rect x="360" y="55" width="90" height="45" fill="var(--blue)" opacity="0.3"/>
+<line x1="360" y1="55" x2="450" y2="55" stroke="var(--blue)" stroke-width="2"/>
+<line x1="405" y1="55" x2="405" y2="20" stroke="var(--blue)" stroke-width="1.5" marker-end="url(#aFU)"/>
+<text x="405" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">ระดับน้ำ = ราคา</text>
+<text x="405" y="125" text-anchor="middle" font-size="11" fill="var(--g7)">(ขึ้นทีหลัง)</text>
+<text x="250" y="165" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">วัดแรงดันได้ = รู้ก่อนว่าราคาจะไปทางไหน</text>
+<defs>
+<marker id="aF" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--green)"/></marker>
+<marker id="aFU" markerWidth="9" markerHeight="9" refX="3" refY="1" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="var(--blue)"/></marker>
+</defs>
+</svg>
+
+<h3 id="p13-lead">ชั้นที่ 1 — OFI นำหน้าราคา</h3>
+
+<p>จาก Part 7 เรารู้ว่า <strong>ΔP ≈ λ·OFI</strong> (Kyle's λ) — แต่สิ่งที่ทำให้มันเป็น stat-arb ได้คือ <strong>ความล่าช้า (lag)</strong>: OFI ที่ช่วงเวลานี้มักทำนาย ΔP ของช่วงถัดไปได้เล็กน้อย เพราะตลาดใช้เวลา "ย่อย" flow ไม่ทันที ถ้าราคา ณ ตอนนี้ <strong>ยังไม่ขยับตามที่ OFI บอก</strong> นั่นคือช่องว่างที่กิน mean-reversion ได้</p>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="กราฟ OFI พุ่งขึ้นก่อน แล้วราคาตามทีหลัง">
+<line x1="50" y1="120" x2="470" y2="120" stroke="var(--g2)" stroke-width="1.5"/>
+<line x1="50" y1="20" x2="50" y2="210" stroke="var(--g2)" stroke-width="1.5"/>
+<!-- OFI line (leads) -->
+<path d="M50,120 L100,118 L140,90 L175,55 L210,60 L260,110 L320,118 L400,120" fill="none" stroke="var(--green)" stroke-width="2.5"/>
+<text x="175" y="48" text-anchor="middle" font-size="10" font-weight="700" fill="var(--green)">OFI (นำ)</text>
+<!-- Price line (lags) -->
+<path d="M50,160 L120,159 L180,150 L230,118 L270,95 L310,100 L360,150 L430,158" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-dasharray="2 2"/>
+<text x="290" y="88" text-anchor="middle" font-size="10" font-weight="700" fill="var(--blue)">ราคา (ตาม)</text>
+<!-- lag arrow -->
+<line x1="175" y1="190" x2="270" y2="190" stroke="var(--amber)" stroke-width="1.5" marker-start="url(#aLL)" marker-end="url(#aRR)"/>
+<text x="222" y="205" text-anchor="middle" font-size="10" font-weight="700" fill="var(--amber)">lag = ช่องกินกำไร</text>
+<text x="250" y="225" text-anchor="middle" font-size="9" fill="var(--g7)">เวลา &rarr;</text>
+<defs>
+<marker id="aRR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--amber)"/></marker>
+<marker id="aLL" markerWidth="8" markerHeight="8" refX="0" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="var(--amber)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 13.1 · OFI นำหน้าราคา — flow พุ่งก่อน ราคาขยับตามทีหลัง</p>
+
+<h3 id="p13-stat">ชั้นที่ 2 — แปลง OFI ให้นิ่งก่อน regression</h3>
+
+<p>นี่คือจุดที่รายย่อยส่วนใหญ่พลาด: <strong>OFI ดิบมีหางหนา (fat tails) และไม่ stationary</strong> — บางวินาที OFI กระโดดเป็นหมื่น บางวินาทีเกือบศูนย์ ถ้าเอาไป regress ตรง ๆ ค่า β จะถูกครอบงำด้วยค่าสุดโต่งไม่กี่ตัว ได้ความสัมพันธ์ลวง (spurious regression)</p>
+
+<p>วิธีแก้: <strong>(1) บีบหางด้วย log</strong> <code>sign(OFI)·log(1+|OFI|)</code> และ <strong>(2) normalize ด้วย depth</strong> เพื่อให้เทียบข้ามช่วงเวลา/ข้ามเหรียญได้ — ผลคือกระจายตัวเข้าใกล้ปกติและนิ่งขึ้น regression จึงเชื่อถือได้</p>
+
+<svg class="d" viewBox="0 0 500 220" role="img" aria-label="ฮิสโตแกรม OFI ดิบหางหนา vs หลัง log แปลงเป็นทรงระฆัง">
+<text x="125" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">OFI ดิบ (หางหนา)</text>
+<line x1="30" y1="180" x2="220" y2="180" stroke="var(--g2)"/>
+<rect x="115" y="60"  width="20" height="120" fill="var(--red)" opacity="0.6"/>
+<rect x="95"  y="120" width="20" height="60"  fill="var(--red)" opacity="0.5"/>
+<rect x="135" y="120" width="20" height="60"  fill="var(--red)" opacity="0.5"/>
+<rect x="40"  y="170" width="20" height="10"  fill="var(--red)" opacity="0.4"/>
+<rect x="190" y="168" width="20" height="12"  fill="var(--red)" opacity="0.4"/>
+<text x="50"  y="160" font-size="9" fill="var(--red)">outlier</text>
+<text x="175" y="158" font-size="9" fill="var(--red)">outlier</text>
+<text x="125" y="200" text-anchor="middle" font-size="9" fill="var(--g7)">ค่าสุดโต่งครอบงำ β</text>
+<line x1="245" y1="30" x2="245" y2="195" stroke="var(--g2)" stroke-dasharray="3 3"/>
+<text x="375" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">หลัง log + normalize</text>
+<line x1="280" y1="180" x2="470" y2="180" stroke="var(--g2)"/>
+<rect x="365" y="60"  width="20" height="120" fill="var(--green)" opacity="0.7"/>
+<rect x="345" y="90"  width="20" height="90"  fill="var(--green)" opacity="0.6"/>
+<rect x="385" y="90"  width="20" height="90"  fill="var(--green)" opacity="0.6"/>
+<rect x="325" y="130" width="20" height="50"  fill="var(--green)" opacity="0.5"/>
+<rect x="405" y="130" width="20" height="50"  fill="var(--green)" opacity="0.5"/>
+<rect x="305" y="160" width="20" height="20"  fill="var(--green)" opacity="0.4"/>
+<rect x="425" y="160" width="20" height="20"  fill="var(--green)" opacity="0.4"/>
+<text x="375" y="200" text-anchor="middle" font-size="9" fill="var(--g7)">ทรงระฆัง นิ่ง → regression เชื่อได้</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 13.2 · stationarize ก่อน/หลัง — log บีบหางหนาให้เข้าใกล้ปกติ</p>
+
+<h3 id="p13-cross">ชั้นที่ 3 — cross-asset / cross-impact (BTC → ETH)</h3>
+
+<p>เหรียญใหญ่ในคริปโตเคลื่อนพร้อมกันสูง — flow ที่ดัน BTC มัก "ลาก" ETH ตามในเสี้ยววินาทีถัดมา (cross-impact) เราขยาย regression จากตัวแปรเดียวเป็น <strong>เมทริกซ์</strong>: ราคาของเหรียญ i ขึ้นกับ OFI ของตัวเอง <em>บวก</em> OFI ของเหรียญอื่น ๆ ถ่วงด้วยสัมประสิทธิ์ <strong>γ_ij</strong></p>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="เมทริกซ์ cross-impact gamma ระหว่าง BTC ETH SOL">
+<text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">เมทริกซ์ cross-impact &gamma;_ij</text>
+<!-- column headers (source of flow) -->
+<text x="180" y="55" text-anchor="middle" font-size="11" fill="var(--g7)">ofi BTC</text>
+<text x="280" y="55" text-anchor="middle" font-size="11" fill="var(--g7)">ofi ETH</text>
+<text x="380" y="55" text-anchor="middle" font-size="11" fill="var(--g7)">ofi SOL</text>
+<!-- row headers (price affected) -->
+<text x="120" y="90"  text-anchor="end" font-size="11" fill="var(--g7)">&Delta;p BTC</text>
+<text x="120" y="135" text-anchor="end" font-size="11" fill="var(--g7)">&Delta;p ETH</text>
+<text x="120" y="180" text-anchor="end" font-size="11" fill="var(--g7)">&Delta;p SOL</text>
+<!-- cells -->
+<rect x="135" y="70"  width="90" height="36" fill="var(--green)" opacity="0.55"/><text x="180" y="93"  text-anchor="middle" font-size="11" fill="#fff">0.42</text>
+<rect x="235" y="70"  width="90" height="36" fill="var(--green)" opacity="0.18"/><text x="280" y="93"  text-anchor="middle" font-size="11" fill="var(--g8)">0.08</text>
+<rect x="335" y="70"  width="90" height="36" fill="var(--green)" opacity="0.10"/><text x="380" y="93"  text-anchor="middle" font-size="11" fill="var(--g8)">0.03</text>
+<rect x="135" y="115" width="90" height="36" fill="var(--green)" opacity="0.32"/><text x="180" y="138" text-anchor="middle" font-size="11" fill="var(--g8)">0.21</text>
+<rect x="235" y="115" width="90" height="36" fill="var(--green)" opacity="0.55"/><text x="280" y="138" text-anchor="middle" font-size="11" fill="#fff">0.38</text>
+<rect x="335" y="115" width="90" height="36" fill="var(--green)" opacity="0.12"/><text x="380" y="138" text-anchor="middle" font-size="11" fill="var(--g8)">0.05</text>
+<rect x="135" y="160" width="90" height="36" fill="var(--green)" opacity="0.28"/><text x="180" y="183" text-anchor="middle" font-size="11" fill="var(--g8)">0.18</text>
+<rect x="235" y="160" width="90" height="36" fill="var(--green)" opacity="0.22"/><text x="280" y="183" text-anchor="middle" font-size="11" fill="var(--g8)">0.12</text>
+<rect x="335" y="160" width="90" height="36" fill="var(--green)" opacity="0.5"/><text x="380" y="183" text-anchor="middle" font-size="11" fill="#fff">0.34</text>
+<text x="250" y="218" text-anchor="middle" font-size="10" fill="var(--g7)">นอกแนวทแยง = แรงข้ามเหรียญ (BTC→ETH = 0.21)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 13.3 · เมทริกซ์ γ — flow ของ BTC ส่งผลถึงราคา ETH/SOL</p>
+
+<h3 id="p13-fm">สูตรหลัก</h3>
+
+<div class="fm">
+// 1) แปลง OFI ให้นิ่ง (log + normalize ด้วย depth D)<br>
+ofi = sign(OFI) &middot; log(1 + |OFI|) / D<br>
+<br>
+// 2) cross-asset regression (เหรียญ i ขึ้นกับ flow ตัวเอง + ตัวอื่น)<br>
+&Delta;p_i = &beta;&middot;ofi_i + &Sigma;_j &gamma;_ij &middot; ofi_j + &epsilon;<br>
+<br>
+// 3) สัญญาณ mean-reversion (ราคาคาดการณ์ vs ราคาจริง)<br>
+&Delta;p&#770; = ราคาที่โมเดลทำนาย ;  เข้าเทรดเมื่อ |&Delta;p&#770;| &gt; cost<br>
+&nbsp;&nbsp;&nbsp;cost = fee&times;2 + spread + slippage&nbsp;&nbsp;(edge ต้องชนะต้นทุนก่อน)
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ ความจริงรายย่อย — edge บางมาก ต้นทุนกินหมด</div>
+<p>stat-arb ด้วย OFI เป็น <strong>กลยุทธ์ที่รายย่อยทำได้จริงที่สุดในกลุ่ม advanced</strong> (จะเทียบให้เห็นชัดใน Part 14) เพราะใช้ข้อมูล L2 ฟรีและไม่ต้องแข่ง latency ระดับ HFT — <strong>แต่</strong> edge ต่อไม้เล็กมาก (มัก &lt; 1 bps) ถ้า cost (fee×2 + spread + slippage) ไม่ต่ำกว่า edge คุณจะ "ทำนายถูกแต่ขาดทุน" และระวัง <strong>spurious regression</strong> จาก OFI ดิบ: ถ้าไม่ stationarize ก่อน R² ที่เห็นในอดีตจะหลอกคุณ พอรันจริงพังทันที</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>นิยาม OFI event-based มาจาก <strong>Cont-Kukanov-Stoikov (2014)</strong> ส่วนการขยายเป็น <strong>multi-level + cross-impact</strong> มาจาก <strong>Cont-Cucuringu-Zhang (2023)</strong> ซึ่งแสดงว่า OFI ข้ามหลักทรัพย์ช่วยอธิบายการเคลื่อนราคาได้เพิ่ม และมีงาน <strong>HF Stat-Arb with Stationarized OFI</strong> ที่ยืนยันว่าการแปลงให้ stationary สำคัญต่อความเสถียรของสัญญาณ <em>ข้อควรระวัง:</em> ค่า β, γ และ R² ขึ้นกับตลาด/timeframe และ <strong>เสื่อมตามเวลา</strong> ต้อง re-fit สม่ำเสมอ</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น &amp; math</div>
+<p>Part 13 คือการต่อยอด <strong>OFI/Kyle's λ (Part 7)</strong> ตรง ๆ ในเชิงคณิตศาสตร์นี่คือ <strong>multivariate linear regression</strong> เต็มตัว (เชื่อม <strong>math</strong>: OLS, R², และเมทริกซ์ γ ก็คือ multi-output regression / สัมพันธ์กับ PCA ของ flow) การ stationarize ด้วย log เชื่อมกับบท log/returns ในเล่ม math ส่วนสัญญาณ <code>|Δp̂| &gt; cost</code> คือการเปรียบ payoff ที่คาดหวังกับต้นทุนจริง — หลักเดียวกับการหา edge ใน <strong>arb</strong> และคิด P&amp;L ใน <strong>pm</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>ดึง L2 depth + trade stream ของ <strong>ETH/USDT และ BTC/USDT</strong> พร้อมกันสัก 1 ชั่วโมง คำนวณ OFI ทุก ๆ 1 วินาที แล้วทำ regression สองแบบเทียบกัน: <strong>(ก)</strong> <code>Δp(ETH) ~ ofi(ETH)</code> กับ <strong>(ข)</strong> <code>Δp(ETH) ~ ofi(ETH) + ofi(BTC)</code> ดูว่า R² เพิ่มขึ้นไหมเมื่อใส่ flow ของ BTC เข้าไป จากนั้นลองไม่ stationarize vs stationarize แล้วสังเกตว่า β เสถียรต่างกันแค่ไหน</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 14: Cross-Exchange / Latency / Triangular Arb — arb จริงทำได้แค่ไหน →</p>
+
+</body>
+</html>
