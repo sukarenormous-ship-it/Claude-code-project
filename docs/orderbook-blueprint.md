@@ -103,6 +103,21 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 - ภาพ: 2.1 ก่อน/หลัง 3 เหตุการณ์, 2.2 maker vs taker, 2.3 walk the book
 - กับดัก: market order บนเหรียญบาง→ดันราคาตัวเอง | แบบฝึก: คำนวณ slippage market buy $5000
 
+> **กล่องสรุป `.bb` — Maker / Taker / Market Order: ใช้อันไหนเมื่อไหร่** (หัวใจของ Part 2)
+>
+> | มิติ | Limit (Maker) | Market Order (Taker) |
+> |---|---|---|
+> | ทำอะไร | วางคำสั่งรอที่ราคาที่เลือก | สั่งซื้อ/ขายทันทีที่ราคาดีสุดที่มี |
+> | บทบาทสภาพคล่อง | **ให้ (provide)** เติมของเข้ากระดาน | **กิน (consume)** หยิบของออก |
+> | ค่าธรรมเนียม | maker fee ต่ำ / บางที่ได้ **rebate** | taker fee สูงกว่า + จ่าย **spread** |
+> | ความเร็ว/ความแน่นอน | อาจไม่ได้ fill (queue risk) | fill ทันที (แต่เสี่ยง slippage) |
+> | ความเสี่ยงหลัก | **adverse selection** (โดนคนรู้ข้อมูลกิน) | **slippage / walk the book** |
+> | เหมาะเมื่อ | ไม่รีบ, อยากได้ราคาดี, เป็น MM/grid | รีบ, ต้องการความแน่นอน, ปิดด่วน/hedge |
+> | "มีข้อมูล" ไหม | สัญญาณอ่อน (ตั้งรอ ยกเลิกฟรี) | **informative** (ยอมจ่ายเพื่อได้ทันที → Part 6) |
+>
+> *หมายเหตุ:* **Cancel** เป็นเหตุการณ์ที่สาม (ถอน limit ออก = ลดสภาพคล่อง ไม่มีเงินเปลี่ยนมือ) — ไม่ใช่ maker/taker แต่เป็นส่วนของ event flow ที่ขยับกระดาน
+> *post-only* (Part 11) = limit order ที่ยกเลิกอัตโนมัติถ้าจะกลายเป็น taker → การันตีเป็น maker เสมอ
+
 **Part 3 · Spread แยกส่วน** — อุปมา: ร้านแลกเงินสนามบิน
 - แกน: 3 ก้อนต้นทุน (order processing + inventory + **adverse selection**), ปัจจัยกว้าง/แคบ (tick, volatility, volume, การแข่งขัน MM, เวลา/ข่าว)
 - สูตร: `Spread=Processing+Inventory+AdverseSelection`, `EffSpread=2×|P_trade−Mid|`
