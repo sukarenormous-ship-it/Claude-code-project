@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 9</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 9: MM-1 พื้นฐาน — กินสปรดยังไงให้รอด</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ IV Market Making<br>อ่านจบแล้วเข้าใจกลไกกินสปรด, maker vs taker + rebate, inventory risk และสัญชาตญาณ skew quote</div>
+</div>
+
+<!-- ========== PART 9 ========== -->
+<h2 id="p9">Part 9 — MM-1 พื้นฐาน: กินสปรดยังไง</h2>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่า market maker (MM) ทำเงินจาก <strong>"กินสปรด"</strong> ได้อย่างไร — ตั้ง bid และ ask พร้อมกันแล้วเก็บส่วนต่าง</li>
+<li>แยก <strong>maker vs taker</strong> และรู้ว่าทำไม rebate ในตลาดคริปโตทำให้ MM ได้เปรียบ</li>
+<li>เข้าใจ <strong>inventory risk</strong> — ความเสี่ยงที่อันตรายที่สุดของ MM ไม่ใช่สปรดแคบ แต่คือสต็อกค้างมือ</li>
+<li>จับสัญชาตญาณของ <strong>skew quote</strong> — เอียงราคาทั้งสองฝั่งเพื่อระบายสต็อก (ปูทางสู่สูตร Avellaneda-Stoikov ใน Part 10)</li>
+</ul>
+</div>
+
+<h3 id="p9-hook">เริ่มจากร้านแลกเงินสนามบิน</h3>
+
+<p>นึกถึงร้านแลกเงินที่สนามบิน — เขาไม่ได้เก็งกำไรว่าค่าเงินจะขึ้นหรือลง เขาแค่ <strong>"รับซื้อถูก ขายแพง"</strong> ตลอดทั้งวัน คนเดินทางมาเรื่อย ๆ บางคนเอาดอลลาร์มาแลกบาท บางคนเอาบาทมาแลกดอลลาร์ ร้านอยู่ตรงกลางคอยจับคู่และเก็บส่วนต่างทุกครั้ง</p>
+
+<p><strong>Market maker ก็คือร้านแลกเงินบนกระดานเทรด</strong> — ตั้ง bid (รับซื้อ) ต่ำกว่า mid นิดหน่อย และตั้ง ask (ขาย) สูงกว่า mid นิดหน่อย ถ้ามีคนมา "กิน" ทั้งสองฝั่งสลับกัน MM ก็เก็บสปรดไปเรื่อย ๆ โดยไม่ต้องเดาทิศทางราคาเลย</p>
+
+<p>แต่มีปัญหาหนึ่งที่ร้านแลกเงินก็เจอ — <strong>ลิ้นชักเต็มไปด้วยดอลลาร์ แต่ไม่มีคนเอาบาทมาแลกคืน</strong> ถ้าดอลลาร์ราคาตกระหว่างนั้น ร้านขาดทุนทันที นี่แหละคือ <em>inventory risk</em> หัวใจของทั้ง Part นี้</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="ร้านแลกเงินรับซื้อถูกขายแพง">
+<rect x="170" y="40" width="160" height="120" rx="8" fill="#fff" stroke="var(--g2)" stroke-width="2"/>
+<text x="250" y="66" text-anchor="middle" font-size="14" font-weight="700" fill="var(--g8)">ร้านแลกเงิน (MM)</text>
+<rect x="205" y="80" width="90" height="30" rx="5" fill="var(--g1)"/>
+<text x="250" y="100" text-anchor="middle" font-size="11" fill="var(--g7)">สต็อก / ลิ้นชัก</text>
+<rect x="20" y="65" width="120" height="55" rx="6" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="80" y="86" text-anchor="middle" font-size="11" fill="var(--g8)">รับซื้อ (BID)</text>
+<text x="80" y="106" text-anchor="middle" font-size="14" font-weight="700" fill="var(--green)">59,997</text>
+<rect x="360" y="65" width="120" height="55" rx="6" fill="var(--red-bg)" stroke="var(--red)" stroke-width="2"/>
+<text x="420" y="86" text-anchor="middle" font-size="11" fill="var(--g8)">ขายให้ (ASK)</text>
+<text x="420" y="106" text-anchor="middle" font-size="14" font-weight="700" fill="var(--red)">60,003</text>
+<line x1="140" y1="92" x2="170" y2="100" stroke="var(--green)" stroke-width="2"/>
+<line x1="330" y1="100" x2="360" y2="92" stroke="var(--red)" stroke-width="2"/>
+<text x="250" y="185" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">เก็บสปรด 6 ทุกครั้งที่จับคู่ครบรอบ (ซื้อ→ขาย)</text>
+<text x="250" y="203" text-anchor="middle" font-size="11" fill="var(--g7)">ไม่เดาทิศทาง — กลัวอย่างเดียวคือลิ้นชักเอียงข้างเดียว</text>
+</svg>
+
+<h3 id="p9-spread">กลไกกินสปรด: ทำเงินโดยไม่เดาทิศ</h3>
+
+<p>สมมติ BTC มี mid = 60,000 MM ตั้ง quote สองฝั่ง:</p>
+<ul>
+<li><strong>Bid 59,997</strong> — รอรับซื้อ (เป็น limit order ฝั่งซื้อ → เป็น maker)</li>
+<li><strong>Ask 60,003</strong> — รอขาย (เป็น limit order ฝั่งขาย → เป็น maker)</li>
+</ul>
+
+<p>ถ้ามี taker คนหนึ่ง "ขายทันที" มาชน bid ของเรา → เราได้ BTC มาที่ 59,997 จากนั้นมี taker อีกคน "ซื้อทันที" มาชน ask ของเรา → เราขาย BTC ออกที่ 60,003 ครบรอบหนึ่ง <strong>เราเก็บ 6 USDT</strong> โดยที่ราคา BTC แทบไม่ขยับเลย</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="กลไกกินสปรด ซื้อที่ bid ขายที่ ask รอบครบเก็บสปรด">
+<line x1="60" y1="125" x2="440" y2="125" stroke="var(--g2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="450" y="129" font-size="10" fill="var(--g7)">mid</text>
+<text x="450" y="142" font-size="9" fill="var(--g7)">60,000</text>
+<!-- ask line -->
+<line x1="60" y1="80" x2="440" y2="80" stroke="var(--red)" stroke-width="1.5"/>
+<text x="50" y="84" text-anchor="end" font-size="10" font-weight="700" fill="var(--red)">ASK 60,003</text>
+<!-- bid line -->
+<line x1="60" y1="170" x2="440" y2="170" stroke="var(--green)" stroke-width="1.5"/>
+<text x="50" y="174" text-anchor="end" font-size="10" font-weight="700" fill="var(--green)">BID 59,997</text>
+<!-- step 1 buy at bid -->
+<circle cx="160" cy="170" r="9" fill="var(--green)"/>
+<text x="160" y="174" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">1</text>
+<text x="160" y="200" text-anchor="middle" font-size="10" fill="var(--g7)">taker ขายชน bid</text>
+<text x="160" y="214" text-anchor="middle" font-size="10" font-weight="700" fill="var(--green)">เราซื้อได้ +1 BTC</text>
+<!-- step 2 sell at ask -->
+<circle cx="320" cy="80" r="9" fill="var(--red)"/>
+<text x="320" y="84" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">2</text>
+<text x="320" y="50" text-anchor="middle" font-size="10" fill="var(--g7)">taker ซื้อชน ask</text>
+<text x="320" y="36" text-anchor="middle" font-size="10" font-weight="700" fill="var(--red)">เราขายออก −1 BTC</text>
+<line x1="160" y1="170" x2="320" y2="80" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="4 3"/>
+<rect x="180" y="225" width="140" height="22" rx="4" fill="var(--blue-bg)" stroke="var(--blue)"/>
+<text x="250" y="240" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">ครบรอบ → กำไร +6 USDT</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 9.1 · กลไกกินสปรด — ซื้อที่ bid ขายที่ ask ไม่ต้องเดาทิศ</p>
+
+<div class="fm">
+PnL ต่อรอบ (ครบ buy→sell) = (ask − bid)              = 60,003 − 59,997 = 6 USDT<br>
+ถ้ามี maker rebate r        = (ask − bid) + 2·r        (ได้ rebate ทั้งสองขา)<br>
+ตัวอย่าง rebate 0.01%        = 6 + 2·(0.0001·60,000)    = 6 + 12 = 18 USDT/รอบ
+</div>
+
+<h3 id="p9-makertaker">Maker vs Taker + Rebate คริปโต</h3>
+
+<p>หัวใจที่ทำให้ MM มีกำไรไม่ใช่แค่สปรด แต่คือ <strong>โครงสร้างค่าธรรมเนียม</strong> ในตลาดส่วนใหญ่:</p>
+<ul>
+<li><strong>Maker</strong> = คนตั้ง limit รอ (เติมสภาพคล่อง) → จ่าย fee ต่ำ บางตลาดถึงขั้น <strong>ได้เงินคืน (rebate)</strong></li>
+<li><strong>Taker</strong> = คนยิง market กินทันที (ดึงสภาพคล่องออก) → จ่าย fee สูงกว่า + จ่ายสปรด</li>
+</ul>
+
+<table>
+<tr><th>มิติ</th><th>Maker (MM)</th><th>Taker</th></tr>
+<tr><td>บทบาท</td><td>เติมสภาพคล่อง (limit)</td><td>กินสภาพคล่อง (market)</td></tr>
+<tr><td>ค่าธรรมเนียม</td><td>ต่ำ / ได้ rebate</td><td>สูงกว่า</td></tr>
+<tr><td>ได้ fill ทันทีไหม</td><td>ไม่ (queue risk)</td><td>ได้ทันที</td></tr>
+<tr><td>ความเสี่ยงหลัก</td><td>adverse selection + inventory</td><td>slippage</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">📑 fee/rebate เปลี่ยนได้ — เช็คก่อนใช้จริง</div>
+<p>โครงสร้าง maker/taker fee และ rebate ของ Binance/Bybit <strong>เปลี่ยนตามโปรโมชันและระดับ VIP เสมอ</strong> บางคู่ในบางช่วง maker fee = 0% หรือติดลบ (rebate) ตัวเลขในตัวอย่างเป็นเพียงการสาธิต — ก่อนรันจริงต้องเปิดหน้า fee schedule ของตลาดนั้นและคำนวณใหม่ทุกครั้ง เพราะ <strong>edge ของ MM รายย่อยบาง ๆ มาก ค่าธรรมเนียมที่คลาดเคลื่อนนิดเดียวพลิกจากกำไรเป็นขาดทุนได้</strong></p>
+</div>
+
+<h3 id="p9-inventory">Inventory risk: ศัตรูตัวจริงของ MM</h3>
+
+<p>กลับมาที่ร้านแลกเงิน — ถ้าทั้งวันมีแต่คนเอาดอลลาร์มาแลกบาท ไม่มีใครเอาบาทมาแลกคืน ลิ้นชักของร้านจะ <strong>เต็มไปด้วยดอลลาร์ฝั่งเดียว</strong> ตอนนี้ร้านไม่ได้เป็นกลางอีกแล้ว — ร้านกำลัง "ถือดอลลาร์" และถ้าดอลลาร์ตก ร้านขาดทุน</p>
+
+<p>บนกระดานก็เหมือนกัน ถ้า flow ไม่สมดุล (มีคนขายชน bid ของเรารัว ๆ) เราจะ <strong>สะสม inventory ฝั่ง long</strong> เรื่อย ๆ — เก็บสปรดได้ก็จริง แต่ถ้าราคาร่วงลงต่อ ขาดทุนจาก inventory จะกลบสปรดที่เก็บมาทั้งหมด</p>
+
+<svg class="d" viewBox="0 0 500 240" role="img" aria-label="inventory สะสมเมื่อ flow ไม่สมดุล ราคาตกแล้วขาดทุน">
+<line x1="50" y1="190" x2="470" y2="190" stroke="var(--g2)" stroke-width="1.5"/>
+<line x1="50" y1="40" x2="50" y2="190" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="46" y="44" text-anchor="end" font-size="10" fill="var(--g7)">inventory q</text>
+<text x="470" y="205" text-anchor="end" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- inventory accumulating curve (rising) -->
+<polyline points="50,180 110,165 170,140 230,115 290,95 350,80 410,72" fill="none" stroke="var(--green)" stroke-width="2.5"/>
+<text x="410" y="62" text-anchor="middle" font-size="10" font-weight="700" fill="var(--green)">q = +10 BTC</text>
+<text x="160" y="135" font-size="10" fill="var(--g7)">flow เข้าฝั่งเดียว → สะสม long</text>
+<!-- price dropping (red dashed) -->
+<polyline points="50,90 110,95 170,105 230,120 290,140 350,160 410,178" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="410" y="195" text-anchor="middle" font-size="10" font-weight="700" fill="var(--red)">ราคา ↓</text>
+<rect x="120" y="212" width="280" height="24" rx="4" fill="var(--red-bg)" stroke="var(--red)"/>
+<text x="260" y="228" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">สต็อกยิ่งโต + ราคายิ่งตก = ขาดทุน inventory</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 9.2 · inventory สะสมเมื่อ flow ไม่สมดุล</p>
+
+<div class="fm">
+PnL รวม = PnL_spread + PnL_inventory<br>
+PnL_inventory = q · Δp     (q = สต็อกสุทธิ, Δp = ราคาเปลี่ยน)<br>
+ตัวอย่าง: q = +10 BTC, ราคาตก Δp = −50 → PnL_inv = 10·(−50) = −500 USDT<br>
+สปรดที่เก็บมา 30 รอบ × 6 = +180 → รวมสุทธิ = −320 (ขาดทุน!)
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่ — "สปรดกว้าง = ปลอดภัย"</div>
+<p>มือใหม่มัก "ตั้งสปรดกว้าง ๆ ไว้ก่อนจะได้กำไรเยอะต่อรอบ" — <strong>ผิดมุม!</strong> สปรดกว้างทำให้ quote ของคุณอยู่ไกล mid โอกาส fill ต่ำ และที่สำคัญกว่า: <strong>คนที่ยอมมา fill quote ห่าง ๆ ของคุณ มักเป็นคนที่ "รู้ว่าราคากำลังจะวิ่งมาทางคุณ"</strong> (adverse selection — Part 3/6) งานจริงของ MM ไม่ใช่ตั้งสปรดให้กว้าง แต่คือ <strong>จัดการ inventory</strong> ให้ลิ้นชักไม่เอียงข้างเดียว สปรดเป็นแค่ค่าตอบแทน ความเสี่ยงตัวจริงคือสต็อกค้างมือ</p>
+</div>
+
+<h3 id="p9-skew">สัญชาตญาณ skew: เอียงราคาเพื่อระบายสต็อก</h3>
+
+<p>ถ้าลิ้นชักเต็มไปด้วย BTC (long มากไป) MM ฉลาดจะทำอะไร? — <strong>"อยากขายมากกว่าซื้อ"</strong> วิธีง่ายที่สุดคือเลื่อน quote ทั้งสองฝั่งลง: ลด ask ให้คนมาซื้อจากเราง่ายขึ้น (ระบาย BTC ออก) และลด bid ให้คนมาขายใส่เรายากขึ้น (ไม่อยากรับเพิ่ม) — นี่คือ <strong>skew</strong></p>
+
+<p>สังเกตว่า skew ไม่ได้แปลว่า "เดาว่าราคาจะลง" — มันแปลว่า "ฉันถือเยอะไป ขอเลื่อนราคายุติธรรมในใจฉันลงมาเพื่อจูงใจให้ตลาดช่วยระบายสต็อก" นี่คือ <strong>เมล็ดพันธุ์ของ reservation price</strong> ที่จะกลายเป็นสูตรเต็มใน Part 10</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="skew quote เลื่อนทั้งสองฝั่งลงเมื่อถือ long มากไป">
+<!-- left: neutral -->
+<text x="125" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">q = 0 (กลาง)</text>
+<line x1="40" y1="135" x2="210" y2="135" stroke="var(--g2)" stroke-dasharray="4 3"/>
+<text x="30" y="139" text-anchor="end" font-size="9" fill="var(--g7)">mid</text>
+<rect x="80" y="95" width="90" height="20" rx="3" fill="var(--red-bg)" stroke="var(--red)"/>
+<text x="125" y="109" text-anchor="middle" font-size="10" fill="var(--red)">ask</text>
+<rect x="80" y="155" width="90" height="20" rx="3" fill="var(--green-bg)" stroke="var(--green)"/>
+<text x="125" y="169" text-anchor="middle" font-size="10" fill="var(--green)">bid</text>
+<text x="125" y="200" text-anchor="middle" font-size="9" fill="var(--g7)">สมมาตรรอบ mid</text>
+<!-- divider -->
+<line x1="250" y1="20" x2="250" y2="220" stroke="var(--g2)" stroke-dasharray="3 3"/>
+<!-- right: long, skew down -->
+<text x="375" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">q = +10 (long มาก)</text>
+<line x1="290" y1="135" x2="460" y2="135" stroke="var(--g2)" stroke-dasharray="4 3"/>
+<text x="280" y="139" text-anchor="end" font-size="9" fill="var(--g7)">mid</text>
+<!-- shifted down both -->
+<rect x="330" y="130" width="90" height="20" rx="3" fill="var(--red-bg)" stroke="var(--red)"/>
+<text x="375" y="144" text-anchor="middle" font-size="10" fill="var(--red)">ask ↓ (ขายง่าย)</text>
+<rect x="330" y="185" width="90" height="20" rx="3" fill="var(--green-bg)" stroke="var(--green)"/>
+<text x="375" y="199" text-anchor="middle" font-size="10" fill="var(--green)">bid ↓ (รับยาก)</text>
+<line x1="375" y1="100" x2="375" y2="125" stroke="var(--amber)" stroke-width="2" marker-end="url(#dn)"/>
+<text x="375" y="95" text-anchor="middle" font-size="9" fill="var(--amber)">เลื่อนลงทั้งคู่</text>
+<defs><marker id="dn" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,0 L6,0 L3,6 Z" fill="var(--amber)"/></marker></defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 9.3 · skew quote — ถือ long มาก เลื่อน quote ลงเพื่อระบายสต็อก (ปูทาง Part 10)</p>
+
+<div class="fm">
+สูตรสัญชาตญาณ (เวอร์ชันง่าย ก่อนเข้า A-S เต็ม):<br>
+bid_skew = mid − δ/2 − k·q<br>
+ask_skew = mid + δ/2 − k·q<br>
+&nbsp;&nbsp;δ = สปรดฐาน,  q = inventory สุทธิ,  k = ความแรงของการ skew (k>0)<br>
+q > 0 (long) → ทั้ง bid,ask เลื่อนลง → อยากขายมากกว่าซื้อ<br>
+q < 0 (short) → ทั้ง bid,ask เลื่อนขึ้น → อยากซื้อมากกว่าขาย
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>แนวคิด "MM ต้องถ่วงดุล inventory ด้วยการเอียงราคา" ถูกวางรากฐานโดย <strong>Ho &amp; Stoll (1981)</strong> ที่มองว่า dealer ปรับ quote ตามระดับสต็อกเพื่อคุมความเสี่ยง และ <strong>Glosten &amp; Milgrom (1985)</strong> ที่อธิบายว่าสปรดส่วนหนึ่งมีไว้ป้องกัน adverse selection — ทั้งสองงานคือฐานที่ <strong>Avellaneda &amp; Stoikov (2008)</strong> นำมาเขียนเป็นสูตร reservation price ใน Part 10 และต่อยอดสู่ยุค reinforcement learning ในเวลาต่อมา</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>PnL ของ MM = PnL_spread + q·Δp นั้นคือ <strong>payoff ที่มี inventory เป็นตัวคูณความเสี่ยง</strong> — ตรงกับมุมมองใน <strong>Payoff Mastery (pm)</strong> ที่ว่ากำไรขาดทุนต้องคิดบนตำแหน่งจริง ไม่ใช่แค่ราคา ส่วนเครื่องมือคำนวณ k, δ และการ optimize จะใช้ความรู้ regression/optimization จากเล่ม <strong>math</strong> เต็มตัวใน Part 10</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>จำลองด้วยมือ: สมมติ mid = 60,000 คงที่, สปรด δ = 6, คุณตั้ง bid 59,997 / ask 60,003 ระหว่างวันมี taker มา fill <strong>bid 7 ครั้ง และ ask 3 ครั้ง</strong> (อย่างละ 1 BTC)</p>
+<ol>
+<li>คำนวณ inventory สุทธิ q หลังจบวัน (เฉลย: q = +7 − 3 = +4 BTC)</li>
+<li>คำนวณ PnL_spread ที่เก็บได้จากคู่ที่จับครบ (3 รอบ × 6 = 18 USDT)</li>
+<li>ถ้าตอนปิดราคาตก 50 USDT คำนวณ PnL_inventory = q·Δp (= 4·(−50) = −200) แล้วรวมสุทธิ</li>
+<li>ลองใส่ skew k = 1.5: คำนวณ bid_skew/ask_skew ใหม่ตอน q = +4 แล้วอธิบายว่าทำไมมันช่วยลดความเสี่ยง</li>
+</ol>
+<p>จากนั้นเปิด Binance ดู maker/taker fee จริงของคู่ BTC/USDT แล้วคำนวณว่าสปรด 6 USDT ยังเหลือกำไรหลังหัก fee ไหม</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 10: MM-2 Optimal — วาง quote ตรงไหนถึงจะ optimal (Avellaneda-Stoikov → RL) →</p>
+
+</body>
+</html>
