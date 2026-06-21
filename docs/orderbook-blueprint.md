@@ -135,15 +135,28 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 
 **Part 5 · OBI** — อุปมา: นับหัวคนชักเย่อ (ยืนอยู่ ≠ ลงมือ)
 - แกน: OBI best/multi-level, R²~65% (กำกับว่าขึ้นกับตลาด), **OBI=ภาพนิ่ง ไม่ใช่ flow**, spoof หลอกได้
-- สูตร: `OBI=(V_bid−V_ask)/(V_bid+V_ask)`, OBI_N depth-weighted
+- **= "Volume Imbalance" ในศัพท์เทรดเดอร์** (queue imbalance ทางวิชาการ) → มี paper รองรับตรง: **Gould & Bonart (2015)** ทำนายทิศ mid-price ถัดไปได้ดี โดยเฉพาะ large-tick
+- สูตร: `OBI=(V_bid−V_ask)/(V_bid+V_ask)` (สเกล −1..+1, กลาง=0), OBI_N depth-weighted
+  - *เวอร์ชันสเกล 0..1:* `Imbalance=V_bid/(V_bid+V_ask)` (กลาง=0.5) → แปลงกัน `OBI=2×Imbalance−1`; **เลือกใช้อันเดียวให้ทั้งเล่มสม่ำเสมอ**
 - ภาพ: 5.1 เชือกชักเย่อ, 5.2 OBI ทับ mid (มี false signal จาก cancel), 5.3 spoof wall 3 เฟรม
 - กับดัก: OBI≠ทิศนาทีถัดไป (แค่วินาที) | แบบฝึก: คำนวณ OBI best vs 5 ชั้นจาก REST depth
 
 **Part 6 · ทำไม Market Order สำคัญ** — อุปมา: ใครยอมจ่ายแพงเพื่อได้เดี๋ยวนี้ มักรู้อะไร
 - แกน: market>cancel (informativeness), **adverse selection**, **non-Markovian** (คิวหมดเพราะ M→follow ~84% / เพราะ C→revert)
-- สูตร: signed volume classification, `กำไร limit = ครึ่ง spread − E[adverse move|fill]`
-- ภาพ: 6.1 สามเหตุการณ์ใครมีข้อมูล, **6.2 คิวหมด M vs C → follow/revert (ภาพหัวใจ)**, 6.3 adverse selection 2 ช่อง
-- กับดัก: เห็น best หมดคิวแล้วเดาทิศทันที (ต้องดูสาเหตุ) | แบบฝึก: ติดป้าย buy/sell 200 trade เทียบทิศ mid
+- **Delta (Δ) & Cumulative Delta (CVD)** — เครื่องมือวัดได้จริงของ "แรง market order": Δ = Buy vol − Sell vol (ของที่เทรดไปแล้ว, aggressor), CVD = running sum ของ Δ → trend แรงซื้อ/ขายสะสม
+- สูตร: `Δ=BuyVol−SellVol`, `CVD_t=Σ Δ`, signed volume classification, `กำไร limit = ครึ่ง spread − E[adverse move|fill]`
+- ภาพ: 6.1 สามเหตุการณ์ใครมีข้อมูล, **6.2 คิวหมด M vs C → follow/revert (ภาพหัวใจ)**, 6.3 adverse selection 2 ช่อง, 6.4 Δ/CVD แท่งเขียว-แดง + เส้น CVD สะสม
+- กับดัก: เห็น best หมดคิวแล้วเดาทิศทันที (ต้องดูสาเหตุ); **CVD divergence ≠ กลับตัวเสมอ** (ระวัง absorption); aggressor ต้องจำแนกถูก (ใช้ flag `m` ของ Binance) | แบบฝึก: ติดป้าย buy/sell 200 trade เทียบทิศ mid + plot CVD
+
+> **กล่อง `.bb` — Binance-ready Orderflow Toolkit (ผูกศัพท์เทรดเดอร์ ↔ ศัพท์วิชาการ ↔ paper)**
+>
+> | ศัพท์เทรดเดอร์ | ศัพท์วิชาการ | วัดอะไร | Paper รองรับ |
+> |---|---|---|---|
+> | **Delta (Δ)** | Trade imbalance / signed volume | flow ที่เทรดไปแล้ว (taker) | Lee & Ready (1991); Chordia-Subrahmanyam (2004) |
+> | **Cumulative Delta (CVD)** | Cumulative signed order flow | trend แรงซื้อ/ขายสะสม | Chordia-Roll-Subrahmanyam (2002) |
+> | **Volume Imbalance** | Queue / order-book imbalance | state ของ depth ที่ตั้งรอ | Gould & Bonart (2015) |
+>
+> **Nuance จากงานวิจัย (ใส่ `.ba`):** (1) **OFI > Trade Imbalance** — Δ/CVD ใช้ได้ดี แต่ OFI (Part 7) รวม cancel/limit ด้วย จึงมีข้อมูลมากกว่า → ชี้ทางอัปเกรด; (2) พลังทำนาย **เสื่อมตามเวลา** → ตอกย้ำ signal horizon สั้น (Part 4)
 
 **Part 7 · OFI & Price Impact** — อุปมา: OBI=ภาพนิ่ง / OFI=วิดีโอการเปลี่ยน
 - แกน: **OBI(state) vs OFI(flow)** (ตารางเทียบ), OFI event-based, Kyle's λ=OLS slope, **multi-level OFI (Cont 2023, PCA)**, stationarize
@@ -209,6 +222,7 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 ## 6. แหล่งอ้างอิง (timeline 1985–2025)
 
 - **รากฐาน:** Glosten-Milgrom (1985), Kyle (1985), Ho-Stoll (1981), Stoll (spread components)
+- **Trade/Queue imbalance (Delta/CVD/Volume Imbalance):** Lee & Ready (1991, trade classification), Chordia-Roll-Subrahmanyam (2002), Chordia-Subrahmanyam (2004, order imbalance→returns), **Gould & Bonart (2015, queue imbalance one-tick-ahead predictor, arXiv 1512.03492)**
 - **OFI/impact:** Cont-Kukanov-Stoikov (2014), **Cont-Cucuringu-Zhang (2023) cross-impact multi-level OFI**, Generalized OFI (arXiv 2112.02947), HF Stat-Arb Stationarized OFI
 - **Toxicity:** Easley-López de Prado-O'Hara (2012, VPIN), Nowcasting Bitcoin crash with order imbalance
 - **Queue/non-Markovian:** Lu-Abergel (2018), Queue-Reactive Hawkes (arXiv 1901.08938), Importance of Order Sizes (arXiv 2405.18594)
