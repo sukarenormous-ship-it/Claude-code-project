@@ -71,6 +71,7 @@
 | | 13 | Statistical Arbitrage ด้วย OFI | ทำนายราคาด้วย flow |
 | | 14 | Cross-Exchange / Latency / Triangular Arb | arb จริงทำได้แค่ไหน |
 | | โบนัส | เครื่องจักรอ่านกระดาน (DeepLOB/Transformers) | ปลายทาง ML |
+| **ภาคเครื่องมือ** | สถิติ | ทบทวนสถิติพื้นฐานสำหรับ Order Flow (mean/median/mode, variance/SD, z-score, t-score, normal & t-dist) | อ่านก่อน Part 5–11 ถ้าสถิติไม่แน่น |
 
 **เส้นเรื่องหลัก:** ราคาสองฝั่ง → คิว → เหตุการณ์ → spread → ความน่าเชื่อถือ → **static (OBI) → flow (OFI) → toxicity (VPIN)** → market making → ประยุกต์ (grid/arb) → ML
 
