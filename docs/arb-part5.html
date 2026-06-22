@@ -15,7 +15,12 @@ p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
 svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+.bx .src{display:block;font-size:.8em;color:#64748b;margin-top:8px;line-height:1.55}
+sup.c{color:var(--blue);font-weight:700;font-size:.72em}
+.ev{background:var(--purple-bg);border-left:4px solid var(--purple)}
+.tag{display:inline-block;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:4px;vertical-align:middle}.tag-ok{background:var(--green-bg);color:var(--green)}.tag-no{background:var(--red-bg);color:var(--red)}.tag-warn{background:var(--amber-bg);color:var(--amber)}
+.refs{font-size:.86em;color:var(--g7);background:var(--g0);padding:18px 24px;border-radius:8px}.refs ol{padding-left:1.4em}.refs li{margin-bottom:.7em}.refs a{color:var(--blue);word-break:break-all}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}.refs a{color:var(--g8)}}
 </style>
 </head>
 <body>
@@ -23,6 +28,15 @@ svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
 <h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
 <div class="sub">Part V: Statistical Arbitrage (บท 18-21)</div>
 <div class="desc">Pairs Trading, Mean Reversion, Factor Models, ML Overview</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚖️ อ่านก่อน: Stat Arb กับ "รายย่อย" — ความจริงที่งานวิจัยบอก</div>
+<p>เนื้อหา Part นี้สอน <strong>คณิตศาสตร์และเครื่องมือที่รายย่อยทำได้จริง</strong> (cointegration test, OU, Kalman — เขียน Python ฟรีได้ทั้งหมด) แต่ต้องแยกให้ออกระหว่าง <em>"ทำได้"</em> กับ <em>"กำไรจริงหลังหักต้นทุน"</em>:</p>
+<p><span class="tag tag-ok">รายย่อยทำได้</span> สร้าง/วิจัยโมเดล, เทรดคู่หุ้นใหญ่สภาพคล่องสูงด้วยทุนพอประมาณ, ใช้เป็นเครื่องมือ <em>เรียนรู้</em> market-neutral<br>
+<span class="tag tag-warn">ระวัง</span> งานวิจัยเกือบทั้งหมดรายงานเป็นผลตอบแทน <strong>ก่อนหักต้นทุน (gross)</strong> และ edge เสื่อมลงต่อเนื่องหลังปี 2000<br>
+<span class="tag tag-no">เกินกำลังรายย่อยมาก</span> พอร์ต market-neutral หลายร้อยตัว, short หุ้นเล็ก/หา borrow ยาก, แข่ง execution กับ HFT</p>
+<p class="src">หลักฐานเรื่อง decay และต้นทุนอยู่ในกล่องของแต่ละบท + รายการอ้างอิงท้าย Part</p>
 </div>
 
 <!-- ========== CHAPTER 18 ========== -->
@@ -40,7 +54,7 @@ svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
 </table>
 
 <div class="bx bb">
-<div class="bt">Engle-Granger Cointegration Test</div>
+<div class="bt">Engle-Granger Cointegration Test<sup class="c">[13]</sup></div>
 <p>1. Regress A vs B: A = α + β×B + ε<br>
 2. ทดสอบ residuals (ε) ว่า stationary ไหม (ADF test)<br>
 3. ถ้า ε stationary → A กับ B cointegrated → <strong>Spread = A - β×B จะ mean-revert!</strong></p>
@@ -80,6 +94,14 @@ Stop:  |Z| > 4 → Cut loss (structural break?)</div>
 <circle cx="440" cy="110" r="4" fill="#16a34a"/>
 <text x="445" y="100" font-family="Sarabun" font-size="9" fill="#16a34a">Exit</text>
 </svg>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Pairs Trading ได้ผลจริงไหม?</div>
+<p>งานต้นฉบับ <strong>Gatev, Goetzmann &amp; Rouwenhorst (2006)</strong><sup class="c">[1]</sup> ใช้ distance method (formation 12 เดือน, เทรด 6 เดือน, เปิดที่ 2σ) บนหุ้นสหรัฐ ปี 1962–2002 พบผลตอบแทนส่วนเกิน <strong>~11% ต่อปี (ก่อนหักต้นทุน)</strong></p>
+<p>แต่ <strong>Do &amp; Faff (2010)</strong><sup class="c">[2]</sup> แสดงว่ากำไร <strong>เสื่อมลงชัดเจน</strong>: top-20 pairs ได้ 0.86%/เดือน (1962–1988) → 0.37% (1989–2002) → <strong>0.24% (2003–2009)</strong> และ Do &amp; Faff (2012)<sup class="c">[3]</sup> พบว่า <strong>เมื่อหักค่าคอม + market impact + ค่า borrow แล้ว เหลือ ~0.30%/เดือน เฉพาะคู่ที่จับคู่ดีมากเท่านั้น</strong> — คู่ทั่วไปต้นทุนกินกำไรเกือบหมด</p>
+<p><span class="tag tag-warn">รายย่อย</span> ค่าคอม $0 ช่วยได้ แต่ <strong>spread + slippage + ค่า borrow ฝั่ง short</strong> คือต้นทุนจริงที่ยังอยู่ และโอกาสที่เหลือมักอยู่ในหุ้นเล็กที่ short ยาก — บทวิจารณ์รวม <strong>Krauss (2017)</strong><sup class="c">[4]</sup> สรุปว่าวิธี distance แบบง่ายเสื่อมไปนานแล้ว ส่วน cointegration มีพื้นฐานทฤษฎีแข็งกว่า</p>
+<p class="src">ดูคำเตือนเรื่อง data-snooping และ short-sale constraints ใน Krauss (2017) — รายการ [1]–[4] ท้าย Part</p>
+</div>
 
 <!-- ========== CHAPTER 19 ========== -->
 <h2 id="ch19">บทที่ 19: Mean Reversion</h2>
@@ -122,9 +144,21 @@ Half-life = ln(2) / θ ← "นานแค่ไหนกว่า spread จ�
 ถ้า Half-life = 60 วัน → ช้าเกินไป → tie up capital นาน → อาจไม่คุ้ม</p>
 </div>
 
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: OU + Half-life ใช้กันจริง</div>
+<p>โมเดล OU และสูตร <strong>Half-life = ln(2)/θ</strong> เป็นมาตรฐานในงาน stat arb จริง — <strong>Avellaneda &amp; Lee (2010)</strong><sup class="c">[5]</sup> ใช้ OU จับ residual ของหุ้นหลังหักปัจจัย (PCA / sector ETF) บนตลาดสหรัฐ 1997–2007 ได้ <strong>Sharpe ~1.44 (PCA)</strong> แต่ <strong>ลดเหลือ ~0.9 ในช่วง 2003–2007</strong> — ตอกย้ำธีม "edge เสื่อม" เหมือนบท 18</p>
+<p><span class="tag tag-ok">รายย่อยทำได้</span> ส่วนคำนวณ (fit OU/half-life ด้วย AR(1)/OLS) ทำได้ 100% บน <code>statsmodels</code> — ไม่ต้อง short ไม่ต้องใช้ทุน ใช้กรองคู่ที่ half-life สั้น (&lt; ~30 วัน) ได้เลย</p>
+</div>
+
 <h3>19.2 Kalman Filter — Dynamic Hedge Ratio</h3>
 <p>ปัญหา: β (hedge ratio) เปลี่ยนตามเวลา → ใช้ rolling regression ไม่ดีพอ<br>
 Kalman Filter: อัพเดท β แบบ real-time ตามข้อมูลใหม่ → <strong>adaptive pairs trading</strong></p>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Kalman ดีกว่า rolling regression อย่างไร</div>
+<p><strong>Palomar (2025), <em>Portfolio Optimization</em> (Cambridge), บท 15</strong><sup class="c">[6]</sup> แสดงว่า hedge ratio จาก rolling regression <strong>แกว่งแรงและ noisy</strong> (เช่น 0.6–1.2) ขณะที่ Kalman ให้ค่าที่ <strong>นิ่งกว่าแต่ยังปรับตามได้</strong> (เช่น 0.55–0.65) และตัด parameter "ความยาว window" ที่ต้องเดาออกไป</p>
+<p><span class="tag tag-ok">รายย่อยทำได้</span> มีไลบรารีพร้อม (<code>pykalman</code>, <code>statsmodels</code>) — ส่วนการเทรดจริงยังติดข้อจำกัด short เหมือนทุกกลยุทธ์ long/short</p>
+</div>
 
 <h3>19.3 Regime Detection</h3>
 <div class="bx br">
@@ -158,6 +192,16 @@ PC1 ≈ market factor, PC2 ≈ sector rotation, PC3 ≈ size/value<br>
 → Hedge ทีละ factor → เหลือแค่ alpha</p>
 </div>
 
+<div class="bx br">
+<div class="bt">⚠️ ความจริงสำหรับรายย่อย: Market-Neutral เต็มรูปแบบ = เกินกำลัง</div>
+<p>การถือพอร์ต long-short หลายสิบ–หลายร้อยตัวเพื่อให้ beta = 0 ต้องใช้:</p>
+<p>• <strong>Short ได้ทุกตัว</strong> — แต่หุ้นเล็กที่มี alpha สูงมักหา borrow ไม่ได้/ค่า borrow แพง (HTB 5–50%+/ปี)<br>
+• <strong>ทุนมาก</strong> — margin ทั้งสองขา + ต้องกระจายหลายตำแหน่งเพื่อลด single-pair risk<br>
+• <strong>ข้อมูลคุณภาพสถาบัน</strong> — point-in-time, survivorship-bias-free (CRSP/Compustat)</p>
+<p>Avellaneda &amp; Lee เองจำกัดเฉพาะหุ้นใหญ่ที่ borrow ได้ และผลตอบแทนที่รายงานเป็น gross — งานปี 2015–2025 ชี้ว่า edge ถูกบีบจากการแข่งขัน + ค่า borrow ที่ <em>สูงขึ้น</em></p>
+<p class="src"><span class="tag tag-ok">รายย่อยทำได้แทน</span> เริ่มจากพอร์ต pairs ไม่กี่คู่ในหุ้นใหญ่/ETF สภาพคล่องสูง — เก็บ market-neutral หลายร้อยตัวไว้เป็น "ของสถาบัน"</p>
+</div>
+
 <!-- ========== CHAPTER 21 ========== -->
 <h2 id="ch21">บทที่ 21: Machine Learning ใน Stat Arb</h2>
 
@@ -172,12 +216,24 @@ PC1 ≈ market factor, PC2 ≈ sector rotation, PC3 ≈ size/value<br>
 </div>
 
 <h3>21.3 Overfitting — ศัตรูตัวฉกาจ</h3>
-<div class="fm">ถ้า backtest Sharpe = 5.0 → 99% overfitted<br>
-ถ้า backtest Sharpe = 1.5 → อาจจริง → ทดสอบ out-of-sample<br><br>
-กฎ: <strong>Simple models > Complex models</strong> (ส่วนใหญ่)<br>
-Linear regression มักชนะ neural network ใน finance</div>
+<div class="fm">Backtest Sharpe สูงผิดปกติ (เช่น 4–5) → สันนิษฐานไว้ก่อนว่า overfit<br>
+Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้องทดสอบ out-of-sample จริง<br><br>
+(ตัวเลข 5 vs 1.5 เป็น <em>rule of thumb</em> ไม่ใช่เกณฑ์ที่พิสูจน์ในงานวิจัย — ดูหลักฐานด้านล่าง)</div>
 
-<div class="bx ba">
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: ทำไม Backtest Sharpe สวยๆ ถึงหลอก</div>
+<p><strong>Bailey, Borwein, López de Prado &amp; Zhu (2014)</strong><sup class="c">[7]</sup> พิสูจน์ว่า แค่มีข้อมูลรายวัน 5 ปี แล้วลองสัก <strong>~45 กลยุทธ์</strong> ก็เกือบการันตีว่าจะเจออย่างน้อย 1 ตัวที่ in-sample Sharpe = 1.0 ทั้งที่ <strong>out-of-sample ที่แท้จริง = 0</strong> — Sharpe สูงสุดที่ "ฟลุ๊ค" ได้โตตาม <strong>√(2·ln N)</strong> ของจำนวนครั้งที่ลอง (N)</p>
+<p>ทางแก้: <strong>Deflated Sharpe Ratio</strong> ของ Bailey &amp; López de Prado (2014)<sup class="c">[8]</sup> ปรับ Sharpe ตามจำนวนครั้งที่ลอง + ความยาวข้อมูล + skew/kurtosis ส่วน <strong>Harvey, Liu &amp; Zhu (2016)</strong><sup class="c">[9]</sup> (สำรวจ "factor zoo" 316+ ปัจจัย) แนะนำว่าสัญญาณใหม่ควรผ่าน <strong>t-stat &gt; 3.0</strong> ไม่ใช่ 2.0</p>
+<p><span class="tag tag-warn">รายย่อย</span> การจูน parameter หลายๆ ค่าแล้วเก็บตัวที่ดีสุด = กระบวนการ overfit ตรงเป๊ะ — และเครื่องมือ retail มักไม่นับ N ให้ ทำให้ Sharpe ที่เห็น "มองโลกในแง่ดีเกินจริง" เสมอ</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: "Linear ชนะ Neural Net เสมอ" — จริงหรือไม่?</div>
+<p><strong>ไม่จริงตามที่เคยเชื่อ.</strong> <strong>Gu, Kelly &amp; Xiu (2020)</strong><sup class="c">[10]</sup> (RFS, หุ้นสหรัฐ 1957–2016) พบว่า <strong>neural net ตื้นๆ และ tree ชนะ linear แบบชัดเจน</strong> — long-short Sharpe ของ NN ≈ 1.35 (value-weighted) เทียบ linear ≈ 0.61 (เกือบเท่าตัว) โดยเก่งจากการจับ <strong>ปฏิสัมพันธ์ที่ไม่เป็นเส้นตรง</strong> และที่น่าสนใจคือ <strong>NN ตื้น (~3 ชั้น) ชนะ NN ลึก</strong> เพราะ finance มี signal-to-noise ต่ำ deep net จึง overfit</p>
+<p><strong>แต่</strong> Krauss, Do &amp; Huck (2017)<sup class="c">[11]</sup> (ML บน S&amp;P 500): gross &gt;0.45%/วัน <strong>เหลือ ~0.25%/วันหลังหักต้นทุน</strong> และเสื่อมหลังปี 2001 ส่วน <strong>Avramov, Cheng &amp; Metzker (2023)</strong><sup class="c">[12]</sup> พบว่าความได้เปรียบของ ML <strong>หดหรือหายไป</strong> เมื่อตัดหุ้นเล็ก/distressed ออกและคิดต้นทุนเทรดจริง</p>
+<p><strong>ข้อสรุปที่ถูกต้อง:</strong> NN/tree ชนะ <em>ในผลตอบแทน gross บนตัวอย่างใหญ่</em> แต่ linear ยังแข่งได้กับโจทย์สัญญาณเดียว/ไม่มี interaction และ <strong>edge ของ ML ส่วนใหญ่ถูกต้นทุนเทรดกลืน</strong> — รายย่อย <em>replicate งานวิจัยได้</em> แต่ <em>เก็บกำไร gross เหล่านั้นหลังต้นทุนแทบไม่ได้</em></p>
+</div>
+
 <div class="bx ba">
 <div class="bt">เรื่องจริง: Pairs Trading — Royal Dutch Shell A vs B (1907-2005)</div>
 <p>Shell มีหุ้น 2 classes (Dutch=A, English=B) สัดส่วน 60:40 → ราคาควรเป็น 60:40 ตลอด<br>
@@ -193,14 +249,37 @@ Linear regression มักชนะ neural network ใน finance</div>
 <em>เฉลย: 1. Correlation สูงไม่พอ! ต้องทดสอบ cointegration — ถ้าไม่ cointegrated spread อาจ drift ไปเรื่อยๆ 2. 3 วันดีกว่ามาก — กลับเร็วกว่า tie up capital น้อยกว่า</em></p>
 </div>
 
+<div class="bx bg">
 <div class="bt">สรุป Part V (บท 18-21) — Part 6/9 ✓</div>
 <p>✓ <strong>Pairs Trading</strong>: Cointegration > Correlation, Z-score entry/exit<br>
 ✓ <strong>OU Process</strong>: θ = speed, Half-life กำหนดว่าคุ้มไหม<br>
 ✓ <strong>Kalman Filter</strong>: Dynamic hedge ratio<br>
 ✓ <strong>Factor Models</strong>: alpha = edge, beta = hedge ออกได้<br>
 ✓ <strong>Market-Neutral</strong>: Long alpha + Short alpha, beta = 0<br>
-✓ <strong>ML</strong>: Walk-Forward CV, Overfitting = ศัตรู, Simple > Complex<br>
-✓ <strong>ทั้งหมดเป็น Lv.4 [Heuristic]</strong> — ไม่ใช่ arb จริง มี statistical edge</p>
+✓ <strong>ML</strong>: Walk-Forward CV, Overfitting = ศัตรู; NN/tree ชนะ gross แต่ต้นทุนกลืน edge<br>
+✓ <strong>หลักฐาน decay</strong>: pairs &amp; stat-arb เสื่อมลงหลังปี 2000 — gross ≠ net<br>
+✓ <strong>ทั้งหมดเป็น Lv.4 [Heuristic]</strong> — ไม่ใช่ arb จริง มี statistical edge (และ edge บางลงเรื่อยๆ)</p>
+</div>
+
+<h2 id="refs">📚 อ้างอิง (References) — Part V</h2>
+<p style="font-size:.92em;color:#64748b">งานวิจัย peer-reviewed ที่ใช้สนับสนุนกล่องหลักฐานในบท 18–21 (citation/ปี/วารสาร ตรวจสอบแล้ว) — ใช้เป็นจุดเริ่มอ่านต่อ ไม่ใช่คำแนะนำการลงทุน</p>
+<div class="refs">
+<ol>
+<li>Gatev, E., Goetzmann, W. N., &amp; Rouwenhorst, K. G. (2006). "Pairs Trading: Performance of a Relative-Value Arbitrage Rule." <em>The Review of Financial Studies</em>, 19(3), 797–827. <a href="https://academic.oup.com/rfs/article-abstract/19/3/797/1646694">link</a></li>
+<li>Do, B., &amp; Faff, R. (2010). "Does Simple Pairs Trading Still Work?" <em>Financial Analysts Journal</em>, 66(4), 83–95. <a href="https://www.tandfonline.com/doi/abs/10.2469/faj.v66.n4.1">link</a></li>
+<li>Do, B., &amp; Faff, R. (2012). "Are Pairs Trading Profits Robust to Trading Costs?" <em>Journal of Financial Research</em>, 35(2), 261–287. <a href="https://onlinelibrary.wiley.com/doi/10.1111/j.1475-6803.2012.01317.x">link</a></li>
+<li>Krauss, C. (2017). "Statistical Arbitrage Pairs Trading Strategies: Review and Outlook." <em>Journal of Economic Surveys</em>, 31(2), 513–545. <a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/joes.12153">link</a></li>
+<li>Avellaneda, M., &amp; Lee, J.-H. (2010). "Statistical Arbitrage in the US Equities Market." <em>Quantitative Finance</em>, 10(7), 761–782. <a href="https://www.tandfonline.com/doi/abs/10.1080/14697680903124632">link</a></li>
+<li>Palomar, D. P. (2025). <em>Portfolio Optimization: Theory and Application</em>, Ch. 15 (Pairs Trading / Kalman). Cambridge University Press. <a href="https://bookdown.org/palomar/portfoliooptimizationbook/15.6-kalman-pairs-trading.html">link</a></li>
+<li>Bailey, D., Borwein, J., López de Prado, M., &amp; Zhu, Q. (2014). "Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance." <em>Notices of the AMS</em>, 61(5), 458–471. <a href="https://www.ams.org/notices/201405/rnoti-p458.pdf">link</a></li>
+<li>Bailey, D., &amp; López de Prado, M. (2014). "The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality." <em>The Journal of Portfolio Management</em>, 40(5), 94–107. <a href="https://jpm.pm-research.com/content/40/5/94.short">link</a></li>
+<li>Harvey, C. R., Liu, Y., &amp; Zhu, H. (2016). "…and the Cross-Section of Expected Returns." <em>The Review of Financial Studies</em>, 29(1), 5–68. <a href="https://academic.oup.com/rfs/article-abstract/29/1/5/1843824">link</a></li>
+<li>Gu, S., Kelly, B., &amp; Xiu, D. (2020). "Empirical Asset Pricing via Machine Learning." <em>The Review of Financial Studies</em>, 33(5), 2223–2273. <a href="https://academic.oup.com/rfs/article/33/5/2223/5758276">link</a></li>
+<li>Krauss, C., Do, X. A., &amp; Huck, N. (2017). "Deep neural networks, gradient-boosted trees, random forests: Statistical arbitrage on the S&amp;P 500." <em>European Journal of Operational Research</em>, 259(2), 689–702. <a href="https://www.sciencedirect.com/science/article/abs/pii/S0377221716308657">link</a></li>
+<li>Avramov, D., Cheng, S., &amp; Metzker, L. (2023). "Machine Learning vs. Economic Restrictions: Evidence from Stock Return Predictability." <em>Management Science</em>, 69(5), 2587–2619. <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3450322">link</a></li>
+<li>Engle, R. F., &amp; Granger, C. W. J. (1987). "Co-integration and Error Correction: Representation, Estimation, and Testing." <em>Econometrica</em>, 55(2), 251–276. <a href="https://www.jstor.org/stable/1913236">link</a></li>
+</ol>
+<p class="src"><strong>หมายเหตุความถูกต้อง:</strong> ตัวเลข ~11%/ปี ของ [1] เป็นผลตอบแทนส่วนเกิน <em>ก่อนหักต้นทุน</em> (1962–2002); ตัวเลข Sharpe ที่อ้างจาก [5] และ [10] เป็นค่า gross/out-of-sample จากตัวบทความ — ผลจริงหลังต้นทุนของรายย่อยจะต่ำกว่านี้มาก เกณฑ์ "Sharpe 5 vs 1.5" เป็น rule of thumb ไม่ใช่ผลพิสูจน์ใน [7]–[8]</p>
 </div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
