@@ -268,6 +268,78 @@ Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้อง�
 ✓ <strong>ทั้งหมดเป็น Lv.4 [Structured]</strong> — ไม่ใช่ arb จริง มี statistical edge (และ edge บางลงเรื่อยๆ)</p>
 </div>
 
+<!-- ========== PRACTICAL LAYER ========== -->
+<h2 id="do">🛠️ ลงมือทำ: จากอ่าน → เทรดคู่แรก</h2>
+<p>ความรู้ในบท 18–21 จะเป็นแค่ทฤษฎีถ้าไม่ได้ลงมือ — ส่วนนี้คือ <strong>playbook ทำตามได้จริง</strong> ด้วย Python ฟรี โค้ดเต็มที่รันได้อยู่ใน repo: <code>code/pairs_trading_starter.py</code></p>
+
+<h3>Workflow 6 ขั้น (จากศูนย์ → คู่แรก)</h3>
+<div class="fm">1) เลือก universe       → หุ้นใหญ่/ETF กลุ่มเดียวกัน สภาพคล่องสูง (เช่น KO–PEP)
+2) ทดสอบ cointegration  → Engle-Granger p &lt; 0.05 (ไม่ผ่าน = ทิ้งคู่นี้)
+3) กรอง half-life       → 5–30 วัน (สั้นไป = noise, ยาวไป = ทุนจม)
+4) ตั้งกฎ Z-score       → entry ±2, exit ~0, stop ±4
+5) Backtest walk-forward → ดู Sharpe "หลังหักต้นทุน" (gross หลอกตา)
+6) Paper trade ก่อน     → แล้วค่อย size เล็กด้วยเงินที่เสียได้</div>
+
+<h3>Go / No-Go Checklist — เข้าได้ไหม?</h3>
+<table>
+<tr><th>เกณฑ์</th><th>ผ่าน ✓</th><th>ห้ามแตะ ✗</th></tr>
+<tr><td>Cointegration (p-value)</td><td>&lt; 0.05</td><td>≥ 0.05 (ใช้ correlation เฉยๆ ไม่พอ)</td></tr>
+<tr><td>Half-life</td><td>~5–30 วัน</td><td>&lt; 2 วัน (noise) หรือ &gt; 60 วัน (ทุนจม)</td></tr>
+<tr><td>Short ได้ทั้งสองขา</td><td>หุ้นใหญ่ borrow ถูก/ง่าย</td><td>หุ้นเล็ก หา borrow ไม่ได้/แพง</td></tr>
+<tr><td>สภาพคล่อง</td><td>bid-ask แคบ, วอลุ่มพอ</td><td>spread กว้าง → ต้นทุนกินกำไร</td></tr>
+<tr><td>Backtest (Sharpe หลังต้นทุน)</td><td>&gt; 1 และผ่าน out-of-sample</td><td>&gt; 3 (สงสัย overfit) หรือพังเมื่อทดสอบนอกตัวอย่าง</td></tr>
+<tr><td>Risk plan</td><td>มี stop + จำกัดขนาด</td><td>ไม่มี stop / size ใหญ่</td></tr>
+</table>
+
+<h3>โค้ด: ทดสอบคู่หุ้นใน ~10 บรรทัด</h3>
+<div class="fm">import yfinance as yf, statsmodels.api as sm
+from statsmodels.tsa.stattools import coint
+
+px = yf.download(["KO","PEP"], start="2018-01-01",
+       auto_adjust=True, progress=False)["Close"][["KO","PEP"]].dropna()
+a, b = px["KO"], px["PEP"]
+
+t, pval, _ = coint(a, b)              # 1) cointegration
+print("p-value:", round(pval, 4))     # ผ่านถ้า &lt; 0.05
+
+beta   = sm.OLS(a, sm.add_constant(b)).fit().params.iloc[1]
+spread = a - beta * b                 # 2) spread = A - beta*B</div>
+<p class="src">โค้ดเต็ม (half-life + สัญญาณ Z-score + backtest มีต้นทุน) อยู่ที่ <code>code/pairs_trading_starter.py</code> — รัน <code>python pairs_trading_starter.py KO PEP</code> แล้วได้ผลครบทั้ง 6 ขั้น</p>
+
+<h3>ตัวอย่างการตัดสินใจ (เดินจริง 1 คู่)</h3>
+<div class="bx bb">
+<div class="bt">สมมติรันคู่ A–B แล้วได้:</div>
+<p>• p-value = <strong>0.03</strong> → ผ่าน (cointegrated) ✓<br>
+• half-life = <strong>12 วัน</strong> → อยู่ในช่วง 5–30 ✓<br>
+• Backtest Sharpe: gross 2.1 → <strong>net 0.8</strong> (หลังต้นทุน 10bps) → <em>ต่ำกว่า 1 ก้ำกึ่ง</em> ⚠️<br>
+• ทั้งสองตัวเป็นหุ้นใหญ่ borrow ง่าย ✓</p>
+<p><strong>คำตัดสิน:</strong> โครงสร้างดี แต่ net Sharpe ก้ำกึ่ง → <strong>ยังไม่เทรดเงินจริง</strong> ให้ paper trade 1 เดือนก่อน ถ้าผลตรงกับ backtest ค่อย size เล็ก; ถ้า net Sharpe ติดลบ → ทิ้ง</p>
+</div>
+
+<h3>Action Plan — เดือนแรก (ไม่เสี่ยงเงินก่อน)</h3>
+<div class="fm">วันนี้      : ติดตั้ง Python + รันโค้ดกับ 1 คู่ที่คุณสนใจ
+สัปดาห์ 1   : คัด 3–5 คู่ที่ผ่าน Checklist ทั้งหมด
+สัปดาห์ 2–4 : paper trade — จดทุกสัญญาณ entry/exit (ไม่ใช้เงินจริง)
+สิ้นเดือน    : เทียบ paper กับที่คาด → ตรง: size เล็กมาก | ไม่ตรง: กลับไปแก้</div>
+
+<h3>Pitfalls — ทำ / ไม่ทำ</h3>
+<table>
+<tr><th>✓ ทำ</th><th>✗ ไม่ทำ</th></tr>
+<tr><td>ทดสอบ cointegration ก่อนเสมอ</td><td>เชื่อ correlation สูงอย่างเดียว</td></tr>
+<tr><td>ดู Sharpe "หลังหักต้นทุน"</td><td>ตื่นเต้นกับ Sharpe สูงๆ จาก backtest</td></tr>
+<tr><td>คิดค่า borrow + spread + slippage</td><td>ลืมต้นทุนฝั่ง short</td></tr>
+<tr><td>walk-forward / out-of-sample</td><td>random K-fold (data leakage)</td></tr>
+<tr><td>paper trade ก่อน, size เล็ก</td><td>ลงเงินก้อนใหญ่ตั้งแต่คู่แรก</td></tr>
+<tr><td>เริ่มหุ้นใหญ่ borrow ง่าย</td><td>ไล่หุ้นเล็กที่ "ส่วนต่างเยอะ" แต่ short ไม่ได้</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">🧰 Starter Kit</div>
+<p><strong>ติดตั้ง:</strong> <code>pip install yfinance statsmodels pandas numpy</code><br>
+<strong>ข้อมูลฟรี:</strong> Yahoo Finance (yfinance), Stooq — พอสำหรับงานรายวัน (ระวัง survivorship bias)<br>
+<strong>อ่านต่อ:</strong> บทวิจารณ์รวม [4] (ภาพรวมวิธีทั้งหมด) และวิธี OU/PCA [5] ในรายการอ้างอิงด้านล่าง</p>
+</div>
+
 <h2 id="refs">📚 อ้างอิง (References) — Part V</h2>
 <p style="font-size:.92em;color:#64748b">งานวิจัย peer-reviewed ที่ใช้สนับสนุนกล่องหลักฐานในบท 18–21 (citation/ปี/วารสาร ตรวจสอบแล้ว) — ใช้เป็นจุดเริ่มอ่านต่อ ไม่ใช่คำแนะนำการลงทุน</p>
 <div class="refs">
