@@ -63,7 +63,7 @@
 | **III. อ่าน Flow** | 5 | Order Book Imbalance (OBI) | ฝั่งไหนหนัก (ภาพนิ่ง) |
 | | 6 | ทำไม Market Order สำคัญ | ใครมีข้อมูล |
 | | 7 | Order Flow Imbalance & Price Impact | flow ดันราคายังไง (Kyle's λ) |
-| | 8 | VPIN / ความเป็นพิษของ flow | flow อันตรายแค่ไหน |
+| | 8 | VPIN / toxic flow | flow อันตรายแค่ไหน |
 | **IV. Market Making** | 9 | MM-1 พื้นฐาน + inventory + fee | กินสปรดยังไง |
 | | 10 | MM-2 Optimal (Avellaneda-Stoikov→RL) | วาง quote ตรงไหนถึง optimal |
 | | 11 | MM-3 ลงมือจริงคริปโต + กับดัก backtest | จาก quote สู่ระบบรันได้ |
@@ -264,7 +264,7 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 - **bid-ask spread เปลี่ยน** (กว้างขึ้น/แคบลง) → แปลว่าอะไร (ต่อยอด Part 3/4 — ทำตาราง "เห็นแบบนี้ = อาจหมายถึง")
 - **ลำดับคิว order ขยับ** (คิวสั้นลง / หายทั้งชั้น / เติมกลับเร็ว-ช้า) → แปลผล (ต่อยอด Part 1 queue + Part 4 resiliency)
 - **⭐ MM ถอน bid/ask (pull quotes)** → สัญญาณอะไร:
-  - ถอน **สองฝั่ง** = MM หลบความเสี่ยง / ก่อนข่าว / flow เป็นพิษ (โยง VPIN Part 8) → spread กว้าง สภาพคล่องหด
+  - ถอน **สองฝั่ง** = MM หลบความเสี่ยง / ก่อนข่าว / toxic flow (โยง VPIN Part 8) → spread กว้าง สภาพคล่องหด
   - ถอน **ฝั่งเดียว** = เอียงมุมมอง/สะสม inventory ฝั่งนั้น (โยง skew Part 9–10)
   - ต่างจาก **spoof** (ตั้งกำแพงหลอกแล้วถอนก่อนโดนแตะ — Part 4)
   - เชื่อม Part 2 (cancel = ถอนสภาพคล่อง) + Part 6 (คิวหมดเพราะ cancel → มัก revert)
