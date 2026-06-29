@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — EX-1</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">องก์ VI · Execution — EX-1: ปัญหา Execution &amp; Implementation Shortfall</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · ฝั่ง taker ที่อยาก execute ดีที่สุด<br>ทำไมส่งไม้ใหญ่ทีเดียว "แพง" — และวัดต้นทุนซ่อนยังไง</div>
+</div>
+
+<!-- ========== EX-1 ========== -->
+<h2 id="ex1">EX-1 — ปัญหา Execution &amp; Implementation Shortfall</h2>
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากเล่มหลัก</div>
+<p><strong>เพิ่งรู้มา:</strong> เล่มหลักจบที่ Capstone — เรา "อ่านกระดาน → รู้ flow → ตัดสินใจเข้า/วาง quote → คุมเสี่ยง" ได้แล้ว และ Capstone ขั้น 5 บอกว่า "ไม้ใหญ่ → ทยอยส่ง" · <strong>ตอนนี้จะเติม:</strong> เจาะ "ทยอยส่งยังไง" ให้เป็นวิชา — เริ่มจากเข้าใจก่อนว่าทำไมไม้ใหญ่ทีเดียวถึงแพง และจะ <strong>วัด</strong> ต้นทุนนั้นยังไง</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่า execution = "ฝั่งกลับ" ของ market making — เราเป็น taker ที่อยากได้ของโดย <strong>จ่ายต้นทุนน้อยสุด</strong></li>
+<li>เห็น <strong>trade-off หัวใจ</strong>: ส่งเร็ว → market impact สูง · ส่งช้า → timing risk (ราคาวิ่งหนีระหว่างรอ)</li>
+<li>นิยาม <strong>Implementation Shortfall (IS = ต้นทุนการลงมือจริง)</strong> เทียบกับ arrival price</li>
+<li>แยก <strong>temporary impact</strong> (เด้งกลับ) ออกจาก <strong>permanent impact</strong> (ถาวร)</li>
+</ul>
+</div>
+
+<h3 id="ex1-hook">เริ่มจากการเทน้ำลงแก้ว</h3>
+<p>นึกถึงการเทน้ำจากเหยือกลงแก้วให้ครบพอดี — <strong>เทเร็วเกินไป น้ำกระเด็นล้น</strong> (เสียของ) แต่ <strong>เทช้าเกินไป น้ำในเหยือกระเหย/มือเมื่อย</strong> (เสียเวลา/โอกาส) การส่งคำสั่งซื้อก้อนใหญ่ก็เหมือนกันเป๊ะ:</p>
+<ul>
+<li><strong>ส่งทีเดียว (เทเร็ว)</strong> → คุณ "walk the book" (Part 2) ดันราคาตัวเองขึ้น = <strong>market impact</strong> สูง</li>
+<li><strong>ทยอยช้า ๆ (เทช้า)</strong> → ระหว่างที่ค่อย ๆ ซื้อ ราคาอาจวิ่งหนีขึ้นไปก่อน = <strong>timing risk</strong></li>
+</ul>
+<p>หัวใจของ execution คือ <strong>หาจุดสมดุลระหว่างสองความเสี่ยงนี้</strong> — ไม่มีคำตอบเดียว ขึ้นกับขนาดไม้ สภาพคล่อง และว่าคุณกลัวความเสี่ยงแค่ไหน</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="อุปมาเทน้ำ เร็วกระเด็น ช้าระเหย">
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ส่งไม้ใหญ่ = เทน้ำลงแก้วให้พอดี</text>
+<!-- fast -->
+<rect x="40" y="40" width="180" height="140" rx="8" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="130" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">เทเร็ว (ส่งทีเดียว)</text>
+<rect x="105" y="110" width="50" height="55" rx="3" fill="#fff" stroke="var(--g7)"/>
+<line x1="130" y1="75" x2="130" y2="108" stroke="var(--blue)" stroke-width="6" opacity="0.5"/>
+<text x="70" y="100" font-size="16">💦</text><text x="180" y="100" font-size="16">💦</text>
+<text x="130" y="178" text-anchor="middle" font-size="10.5" fill="var(--red)">กระเด็นล้น = market impact</text>
+<!-- slow -->
+<rect x="280" y="40" width="180" height="140" rx="8" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="1.5"/>
+<text x="370" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--amber)">เทช้า (ทยอยนาน)</text>
+<rect x="345" y="110" width="50" height="55" rx="3" fill="#fff" stroke="var(--g7)"/>
+<line x1="370" y1="78" x2="370" y2="108" stroke="var(--blue)" stroke-width="2" opacity="0.5" stroke-dasharray="2 3"/>
+<text x="408" y="92" font-size="14">☁️</text>
+<text x="370" y="178" text-anchor="middle" font-size="10.5" fill="var(--amber)">ระเหย/ราคาหนี = timing risk</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.1 · trade-off ของ execution — เร็วเสีย impact / ช้าเสีย timing risk</p>
+
+<h3 id="ex1-is">Implementation Shortfall — วัด "ต้นทุนซ่อน" ของการลงมือ</h3>
+<p>ตอนคุณ <em>ตัดสินใจ</em> จะซื้อ ราคาบนจอคือ <strong>arrival price</strong> (ราคา ณ จังหวะตัดสินใจ — มักใช้ mid ตอนนั้น) แต่กว่าจะซื้อครบจริง ราคาเฉลี่ยที่ได้มักแพงกว่านั้น <strong>Implementation Shortfall (IS)</strong> คือส่วนต่างนี้ — "กำไรบนกระดาษ" หายไปเท่าไรตอนลงมือจริง</p>
+
+<div class="fm">
+IS (ต่อ 1 หน่วย, ฝั่งซื้อ) = ราคาเฉลี่ยที่ได้จริง − arrival price<br>
+&nbsp;&nbsp;arrival price = mid ณ จังหวะ "ตัดสินใจ" (benchmark)<br>
+<br>
+IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื้อไม่ครบ)·(P_สุดท้าย − P_arrival)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ ต้นทุน execution ────┘   └─ opportunity cost (ราคาหนีไปก่อนซื้อครบ) ─┘
+</div>
+<p>IS รวม 2 ก้อน: (1) <strong>ต้นทุน execution</strong> ที่จ่ายจริง (impact + spread + fee) และ (2) <strong>opportunity cost</strong> ถ้าทยอยช้าจนซื้อไม่ทันราคาที่หนีไป — สังเกตว่าสองก้อนนี้คือ trade-off เดียวกับการเทน้ำ</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="IS แยกเป็น market impact กับ timing risk">
+<line x1="60" y1="175" x2="470" y2="175" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="30" y="60" font-size="10" fill="var(--g7)">ต้นทุน</text>
+<!-- stacked bar: impact (bottom) + timing (top) -->
+<rect x="150" y="95" width="90" height="80" fill="var(--red)" opacity="0.8"/>
+<text x="195" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">market</text>
+<text x="195" y="156" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">impact</text>
+<rect x="150" y="55" width="90" height="40" fill="var(--amber)" opacity="0.85"/>
+<text x="195" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">timing risk</text>
+<text x="195" y="190" text-anchor="middle" font-size="10.5" fill="var(--g7)">IS รวม</text>
+<!-- labels -->
+<text x="300" y="80" font-size="11" fill="var(--amber)">← ราคาหนีระหว่างทยอย (ช้า)</text>
+<text x="300" y="135" font-size="11" fill="var(--red)">← ดันราคาตัวเอง (เร็ว)</text>
+<text x="300" y="158" font-size="10" fill="var(--g7)">+ spread + fee</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.2 · IS = market impact (เทเร็ว) + timing risk (เทช้า) — ลดอันหนึ่งมักเพิ่มอีกอัน</p>
+
+<h3 id="ex1-tmp">Temporary vs Permanent Impact</h3>
+<p>เวลาคุณกวาดซื้อ ราคาจะถูกดันขึ้น — แต่ impact มี 2 ส่วนที่ต่างกันมาก:</p>
+<ul>
+<li><strong>Temporary impact:</strong> ราคาถูกดันขึ้นชั่วคราวเพราะคุณกินสภาพคล่อง พอคุณหยุด ผู้เล่นอื่นเติม limit กลับ ราคา <strong>เด้งลงมาบางส่วน</strong> (โยง resiliency, Part 4)</li>
+<li><strong>Permanent impact:</strong> ส่วนที่ <strong>ค้างอยู่ถาวร</strong> เพราะตลาดตีความว่า "มีคนรู้อะไร" (โยง informativeness/adverse selection, Part 6) — ราคาไม่กลับมาที่เดิม</li>
+</ul>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="ราคาระหว่างเทรด temporary เด้งกลับ permanent ค้าง">
+<line x1="55" y1="185" x2="475" y2="185" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="265" y="210" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- arrival price line -->
+<line x1="55" y1="150" x2="475" y2="150" stroke="var(--g7)" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="92" y="145" text-anchor="middle" font-size="10" fill="var(--g7)">arrival price</text>
+<!-- price path: flat, ramp up during exec, peak, drop partway, settle above arrival -->
+<path d="M55,150 L150,150 C210,150 230,70 270,68 L300,68 C330,68 345,108 360,112 L475,112" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<!-- exec window -->
+<rect x="150" y="40" width="120" height="145" fill="var(--blue)" opacity="0.06"/>
+<text x="210" y="56" text-anchor="middle" font-size="10" fill="var(--blue)">ช่วงเรากวาดซื้อ</text>
+<!-- peak / temporary / permanent markers -->
+<line x1="270" y1="68" x2="475" y2="68" stroke="var(--g2)" stroke-width="0.8" stroke-dasharray="2 2"/>
+<text x="430" y="92" font-size="10" font-weight="700" fill="var(--amber)">temporary</text>
+<text x="430" y="103" font-size="9" fill="var(--amber)">(เด้งกลับ)</text>
+<text x="430" y="132" font-size="10" font-weight="700" fill="var(--red)">permanent</text>
+<text x="430" y="143" font-size="9" fill="var(--red)">(ค้างถาวร)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.3 · กวาดซื้อดันราคาขึ้น → หยุดแล้วเด้งกลับบางส่วน (temporary) เหลือส่วนค้าง (permanent)</p>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคสเดิม $5,000 บน BTC (สภาพคล่องสูง) — impact แทบไม่มี ส่ง market ก็พอ · แต่ลองนึกว่าไม้โตขึ้นเป็น <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong> ที่ depth ที่ best มีไม่กี่พันดอลลาร์ — ส่งทีเดียวจะ walk the book ดันราคาตัวเองหลาย % ทันที นี่คือจุดที่ execution เริ่มสำคัญ และ IS คือเครื่องวัดว่าเราเสียไปเท่าไร</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>คำว่า <strong>Implementation Shortfall</strong> มาจาก Perold (1988) · กรอบ trade-off impact↔risk และการแยก temporary/permanent impact เป็นรากฐานของ <strong>Almgren &amp; Chriss (2000)</strong> ที่เราจะลงลึกใน EX-2 — และเชื่อมกับ square-root impact law (Part 7) ที่ว่า impact โตตาม √(ขนาดไม้)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มหลัก</div>
+<p><strong>Part 2</strong> (walk the book/slippage) = ต้นกำเนิดของ market impact · <strong>Part 7</strong> (Kyle's λ) = impact ต่อหน่วย flow · <strong>Part 4</strong> (resiliency) = ทำไม temporary impact ถึงเด้งกลับ · <strong>Part 6</strong> (informativeness) = ทำไม permanent impact ถึงค้าง</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่</div>
+<ul>
+<li><strong>ไม้เล็กไม่ต้องคิดเยอะ:</strong> ถ้าไม้คุณเล็กเทียบ depth (เช่น $100 บน BTC) impact ~0 — ส่ง market จบ อย่า over-engineer</li>
+<li><strong>วัดจาก last price:</strong> IS ต้องเทียบ arrival price (mid ตอนตัดสินใจ) ไม่ใช่ last หรือราคาปิด ไม่งั้นวัดผิด</li>
+<li><strong>ลืม opportunity cost:</strong> ทยอยช้าเพื่อลด impact แต่ถ้าราคาหนีไปก่อนซื้อครบ ก็ขาดทุนเหมือนกัน — สองด้านของเหรียญเดียว</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลาง ดึง order book snapshot — จด mid (= arrival price) · จำลอง market buy มูลค่า X ที่ใหญ่กว่า depth ที่ best · คำนวณ <strong>AvgFill</strong> (จาก Part 2) แล้วหา <strong>IS = AvgFill − mid</strong> เป็น % · ลองเพิ่ม X เป็น 2 เท่า ดูว่า IS โตเร็วแค่ไหน (เทียบ √-law)</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> EX-2: ถ้ารู้ว่าเร็วเสีย impact/ช้าเสีย timing risk แล้ว — มี "ตารางการทยอยส่ง" ที่ optimal ไหม? (Almgren-Chriss)</p>
+
+</body>
+</html>
