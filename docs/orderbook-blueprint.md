@@ -272,3 +272,32 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 
 ### 8.3 หมายเหตุการ implement
 - ทำ 8.1 + 8.2 พร้อมกัน → regen Part 0/4/9 (+ส่วนที่แตะ) → rebuild `ob-book.pdf` + `ob-all.zip` → cross-review รอบสั้น (legibility + ความถูกต้องของการตีความ) ก่อน commit
+
+### 8.4 Reading list + ผู้สมัครองก์/เล่มถัดไป (เรียงตามความคุ้มสำหรับรายย่อย)
+1. **⭐ องก์ "Optimal Execution" ใหม่** (ช่องว่างใหญ่สุด — เล่มมี MM แต่ไม่มี execution):
+   - Almgren & Chriss (2000) *Optimal Execution of Portfolio Transactions* — IS, trade-off impact↔risk, closed-form
+   - Obizhaeva & Wang (2013) — execution บน LOB จริง · Bertsimas & Lo (1998) — ต้นกำเนิด
+   - เชื่อม Part 2 (slippage/walk the book) + Part 7 (Kyle's λ)
+2. **Benign vs Toxic flow** (ต่อ Part 8 VPIN):
+   - **Detecting Toxic Flow (Cartea, Sánchez-Betancourt et al. 2023, arXiv 2312.05827)** — แยก toxic/benign จาก feature, ทำนาย price move (สมัยใหม่กว่า VPIN)
+   - Unwinding Toxic Flow with Partial Information (arXiv 2407.04510) · PIN: Easley-Kiefer-O'Hara-Paperman (1996)
+3. **Market impact เชิงลึก** (ต่อ Part 7):
+   - Bouchaud et al. — propagator model + **square-root law** (impact ∝ √volume) · Gatheral (2010) no-dynamic-arbitrage
+4. **Optimal MM ต่อยอด** (ต่อ Part 10): Guéant (2017) *Optimal market making* · Guilbaud & Pham (2013)
+5. **ภาคผนวก "ตำราต่อยอด":** O'Hara *Market Microstructure Theory* (1995) · Harris *Trading & Exchanges* (2003) · Bouchaud-Bonart-Donier-Gould *Trades, Quotes and Prices* (2018) · Cartea-Jaimungal-Penalva *Algorithmic & HF Trading*
+
+### 8.5 Survey/Completeness pass + review literature (ใช้เป็น checklist ความครบ)
+**Survey หลัก (แผนที่หัวข้อ):** Madhavan (2000) *Market Microstructure: A Survey* · Biais-Glosten-Spatt (2005) · **Gould et al. (2013) *Limit Order Books*** (survey เฉพาะ LOB — ตรงแกนเล่ม)
+
+**Review ฉบับอัปเดต (2021–2025):**
+- **⭐ Briola et al. (2024/25) "Deep Limit Order Book Forecasting: a microstructural guide" (arXiv 2403.09267, Quant. Finance 2025)** — review+framework + LOBFrame (open-source) · เตือน *"forecasting power สูง ≠ สัญญาณเทรดได้จริง"* → ตรงโทนซื่อสัตย์ของเล่ม (เสริม Part โบนัส + Part 4)
+- Gašperov et al. (2021) *RL Approaches to Optimal Market Making* (survey) → ต่อ Part 10/โบนัส
+- Cont (2011) *Statistical Modeling of HF Data* → stylized facts
+
+**ช่องว่างที่ survey ชี้ว่าควรเติม (เรียงความคุ้ม):**
+1. **⭐ Stylized facts ของตลาดจริง** — fat tails (มีแล้วในภาคสถิติ) + **volatility clustering, sign autocorrelation ของ order flow, intraday U-shape** → กล่อง/หัวข้อ "ลักษณะข้อมูลตลาดจริง" เชื่อมภาคสถิติ + Part 6 (Hawkes/clustering)
+2. **Intraday seasonality** — spread/volume/volatility รูป U ตลอดวัน (ตอนนี้แตะแค่แบบฝึก Part 3)
+3. **Resiliency เชิงรูปนัย** — Part 4 มีเชิงสัญชาตญาณ, survey LOB มี framework วัดจริง
+4. **Market design / transparency / fragmentation** (lit vs dark) — priority ต่ำสำหรับรายย่อย แต่เติมความครบ
+
+**Action เมื่อทำจริง:** ใช้ Madhavan + Gould et al. เป็น checklist ก่อนตีพิมพ์ · เติม stylized facts + intraday (2 อันแรก คุ้มสุด) · เพิ่ม survey/review ทั้งหมดในภาคผนวก "อ่านต่อ"
