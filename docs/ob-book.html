@@ -3620,7 +3620,7 @@ min  CrossEntropy( softmax(f(X)) , y )<br>
 <div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
 <ul>
 <li>เข้าใจว่า execution = "ฝั่งกลับ" ของ market making — เราเป็น taker ที่อยากได้ของโดย <strong>จ่ายต้นทุนน้อยสุด</strong></li>
-<li>เห็น <strong>trade-off หัวใจ</strong>: ส่งเร็ว → market impact สูง · ส่งช้า → timing risk (ราคาวิ่งหนีระหว่างรอ)</li>
+<li>เห็น <strong>trade-off หัวใจ</strong>: ส่งเร็ว → market impact (ผลกระทบต่อราคาจากไม้เราเอง) สูง · ส่งช้า → timing risk (ความเสี่ยงราคาวิ่งหนีระหว่างรอ) สูง</li>
 <li>นิยาม <strong>Implementation Shortfall (IS = ต้นทุนการลงมือจริง)</strong> เทียบกับ arrival price</li>
 <li>แยก <strong>temporary impact</strong> (เด้งกลับ) ออกจาก <strong>permanent impact</strong> (ถาวร)</li>
 </ul>
@@ -3686,7 +3686,7 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 <p>เวลาคุณกวาดซื้อ ราคาจะถูกดันขึ้น — แต่ impact มี 2 ส่วนที่ต่างกันมาก:</p>
 <ul>
 <li><strong>Temporary impact:</strong> ราคาถูกดันขึ้นชั่วคราวเพราะคุณกินสภาพคล่อง พอคุณหยุด ผู้เล่นอื่นเติม limit กลับ ราคา <strong>เด้งลงมาบางส่วน</strong> (โยง resiliency, Part 4)</li>
-<li><strong>Permanent impact:</strong> ส่วนที่ <strong>ค้างอยู่ถาวร</strong> เพราะตลาดตีความว่า "มีคนรู้อะไร" (โยง informativeness/adverse selection, Part 6) — ราคาไม่กลับมาที่เดิม</li>
+<li><strong>Permanent impact:</strong> ส่วนที่ <strong>ค้างอยู่ถาวร</strong> เพราะตลาดตีความว่า "มีคนรู้อะไร" (โยง adverse selection — Part 3 ส่วนแยก spread, Part 8 toxicity) — ราคาไม่กลับมาที่เดิม</li>
 </ul>
 
 <svg class="d" viewBox="0 0 500 230" role="img" aria-label="ราคาระหว่างเทรด temporary เด้งกลับ permanent ค้าง">
@@ -3735,7 +3735,7 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 
 <div class="bx bg">
 <div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
-<p>เลือกเหรียญ alt สภาพคล่องปานกลาง ดึง order book snapshot — จด mid (= arrival price) · จำลอง market buy มูลค่า X ที่ใหญ่กว่า depth ที่ best · คำนวณ <strong>AvgFill</strong> (จาก Part 2) แล้วหา <strong>IS = AvgFill − mid</strong> เป็น % · ลองเพิ่ม X เป็น 2 เท่า ดูว่า IS โตเร็วแค่ไหน (เทียบ √-law)</p>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลาง ดึง order book snapshot — จด mid (= arrival price) · จำลอง market buy มูลค่า X ที่ใหญ่กว่า depth ที่ best · คำนวณ <strong>AvgFill</strong> (จาก Part 2) แล้วหา <strong>IS = AvgFill − mid</strong> เป็น % · ลองเพิ่ม X เป็น 2 เท่า ดูว่า IS โตเร็วแค่ไหน — จะเห็น "ความโค้ง" ของการ walk the book · <em>หมายเหตุ:</em> นี่เป็น convexity จาก snapshot เดียว ส่วน <strong>square-root law</strong> ตัวจริง (Part 7) เป็นกฎ <strong>เชิงประจักษ์</strong>ของ metaorder ที่ทยอยส่งตามเวลา และวัดขนาดเทียบ <strong>volume/ADV</strong> ไม่ใช่มูลค่าดิบ — สองอย่างนี้คนละระดับกัน</p>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
@@ -3761,7 +3761,7 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 <ul>
 <li>เข้าใจโมเดล Almgren-Chriss: temporary impact ∝ <strong>อัตราเทรด</strong> · permanent impact ∝ <strong>ปริมาณสะสม</strong></li>
 <li>เห็นว่า optimal schedule = minimize <strong>E[cost] + λ·Var[cost]</strong> → ได้ trajectory แบบ <strong>front-loaded</strong></li>
-<li>อ่าน <strong>efficient frontier</strong> (expected cost ↔ variance) ได้ และรู้ว่า risk aversion γ/λ เลื่อนเราไปจุดไหน</li>
+<li>อ่าน <strong>efficient frontier</strong> (expected cost ↔ variance) ได้ และรู้ว่า risk aversion λ เลื่อนเราไปจุดไหน</li>
 <li>เทียบ <strong>TWAP / VWAP / IS-optimal</strong> ว่าอันไหนเหมาะเมื่อไหร่</li>
 </ul>
 </div>
@@ -3774,12 +3774,13 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 </ul>
 
 <div class="fm">
+สัญลักษณ์: γ = ค่า permanent impact ต่อหน่วย · η = ค่า temporary impact · σ = ความผันผวน · λ = ความกลัวเสี่ยง<br>
 ขายไม้ X หน่วยใน T เวลา · x(t) = จำนวนที่ "ยังถืออยู่" ตอนเวลา t   (x(0)=X, x(T)=0)<br>
 v(t) = −dx/dt = อัตราเทรด (เร็วแค่ไหน)<br>
 <br>
 ต้นทุนคาดหวัง  E[cost] = <b>½·γ·X²</b>  +  <b>η·∫ v(t)² dt</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ permanent (คงที่) ┘   └ temporary (ยิ่งเร็วยิ่งแพง²) ┘<br>
-ความแปรปรวน  Var[cost] = σ²·∫ x(t)² dt   ← ยิ่งถือนาน/ถือเยอะ ยิ่งเสี่ยงราคาแกว่ง
+ความแปรปรวน  Var[cost] = σ²·∫ x(t)² dt   ← (ภาษาคน: ยิ่งของค้างในมือเยอะ และค้างนาน ความเสี่ยงราคาแกว่งยิ่งทบ)
 </div>
 <p>สังเกตหัวใจ: <strong>permanent (½γX²) ไม่ขึ้นกับ schedule เลย</strong> — เลือกยังไงก็จ่ายเท่านี้ ดังนั้นเกมจริงคือ trade-off ระหว่าง <strong>temporary impact</strong> (อยากส่งช้าให้ v ต่ำ) กับ <strong>variance</strong> (อยากส่งเร็วให้ x ลดไว ไม่ต้องแบกความเสี่ยงนาน) — เหมือนเทน้ำใน EX-1 เป๊ะ แต่คราวนี้เขียนเป็นสมการได้</p>
 
@@ -3794,6 +3795,7 @@ x(t) = X · sinh( κ·(T − t) ) / sinh( κ·T )<br>
 &nbsp;&nbsp;• λ → 0 (ไม่กลัวเสี่ยง) → κ → 0 → x(t) = X·(1 − t/T) = เส้นตรง = <b>TWAP</b><br>
 &nbsp;&nbsp;• 1/κ = "half-life" ของไม้ — เวลาที่ใช้รีดของออกส่วนใหญ่
 </div>
+<p style="font-size:.9em;color:var(--g7)"><em>หมายเหตุความเป๊ะ:</em> รูป κ=√(λσ²/η) นี้คือรูป <strong>continuous-time limit</strong> (เวลาแบ่งย่อยถี่มาก) — เวอร์ชันจริงแบบ discrete ของ Almgren-Chriss มีพจน์แก้เล็ก ๆ (∝ γτ) บวกเข้ามา แต่ไม่เปลี่ยนภาพรวม จึงใช้รูปนี้เป็นกรอบคิดได้</p>
 <p>ความหมายเชิงสัญชาตญาณ: ถ้าคุณกลัวว่าราคาจะวิ่งหนี (variance น่ากลัว) คุณควร <strong>เทออกหนักช่วงแรก</strong> แล้วค่อย ๆ เบาลง — เพราะของที่ยังถือคือความเสี่ยง รีบลดมันก่อน · แต่ถ้าไม่กลัวเสี่ยงเลย ก็ทยอยเท่า ๆ กัน (TWAP) เพื่อกด temporary impact ให้ต่ำสุด</p>
 
 <svg class="d" viewBox="0 0 500 250" role="img" aria-label="trade schedule TWAP เส้นตรง vs Almgren-Chriss front-loaded">
@@ -4028,7 +4030,7 @@ x(t) = X · sinh( κ·(T − t) ) / sinh( κ·T )<br>
 </ul></div>
 
 <div class="bx bg"><div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
-<p>เลือกเหรียญ alt สภาพคล่องปานกลางบน Binance/Bybit · จด L2 snapshot: รวม depth ฝั่ง ask 5 ระดับแรก · ถ้าจะซื้อ $20,000 ลองคำนวณว่าถ้า market ทีเดียวจะ walk the book ไปกี่ระดับ (= IS จาก EX-1) · แล้วออกแบบแผน slice: กี่ child, TWAP หรือ POV, child ไหน limit/market · สุดท้ายเขียนกฎ "ถ้า VPIN/спред เป็นแบบนี้ จะชะลอ" — นี่คือ execution plan ฉบับรายย่อยของคุณเอง</p></div>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลางบน Binance/Bybit · จด L2 snapshot: รวม depth ฝั่ง ask 5 ระดับแรก · ถ้าจะซื้อ $20,000 ลองคำนวณว่าถ้า market ทีเดียวจะ walk the book ไปกี่ระดับ (= IS จาก EX-1) · แล้วออกแบบแผน slice: กี่ child, TWAP หรือ POV, child ไหน limit/market · สุดท้ายเขียนกฎ "ถ้า VPIN/spread เป็นแบบนี้ จะชะลอ" — นี่คือ execution plan ฉบับรายย่อยของคุณเอง</p></div>
 
 <p style="text-align:center;font-size:.9em;color:var(--g7);border-top:1px solid var(--g2);padding-top:14px;margin-top:24px">จบองก์ VI · Execution — คุณครบวงจรแล้ว: <strong>อ่านกระดาน → รู้ flow → ตัดสินใจ → วาง quote → คุมเสี่ยง → execute ไม้ใหญ่อย่างมีวิชา</strong> 🎯</p>
 
