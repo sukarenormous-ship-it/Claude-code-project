@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — EX-3</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">องก์ VI · Execution — EX-3: ลงมือจริง (รายย่อยคริปโต)</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · จากทฤษฎีสู่ปุ่มกดจริง<br>slice parent→child · ใช้สัญญาณกระดานจับจังหวะ · ไม้ขนาดไหน "ต้อง" slice</div>
+</div>
+
+<!-- ========== EX-3 ========== -->
+<h2 id="ex3">EX-3 — ลงมือจริง (รายย่อยคริปโต)</h2>
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจาก EX-2</div>
+<p><strong>เพิ่งรู้มา:</strong> Almgren-Chriss ให้ "รูปร่าง" ตารางส่ง (front-load ตามความกลัวเสี่ยง) และ efficient frontier ให้เลือกจุดที่ใช่ · <strong>ตอนนี้จะเติม:</strong> แล้วบนแอป Binance/Bybit กดยังไงจริง ๆ? เราจะแปลง trajectory เป็น <strong>child orders</strong> ที่ส่งได้จริง ใช้สัญญาณกระดานจากเล่มหลัก (OBI/OFI/VPIN) ปรับจังหวะ และที่สำคัญสุด — ตอบตรง ๆ ว่า <strong>ไม้ขนาดไหนต้องทำ ขนาดไหนไม่ต้อง</strong></p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>แบ่ง parent order → child orders เป็น <strong>TWAP / VWAP / POV (percentage of volume)</strong> ได้</li>
+<li>เลือกได้ว่า child ควรเป็น <strong>limit</strong> (post ในคิว) หรือ <strong>market</strong> (จ่าย spread กินทันที)</li>
+<li>ใช้ <strong>OBI/OFI (Part 5–7)</strong> และ <strong>VPIN (Part 8)</strong> จับจังหวะว่า "ตอนนี้เร่ง child หรือชะลอดี"</li>
+<li>มี <strong>ตารางความจริงรายย่อย</strong>: ไม้เล็ก → market พอ · ไม้ใหญ่/เหรียญบาง → ต้อง slice · HFT execution = เกินสนามเรา</li>
+</ul>
+</div>
+
+<h3 id="ex3-slice">parent → child: แบ่งไม้ใหญ่เป็นไม้เล็ก</h3>
+<p>หัวใจปฏิบัติคือแตก "parent order" (ไม้ใหญ่ที่ตั้งใจซื้อ) ออกเป็น "child orders" (ไม้ย่อยที่ทยอยส่งจริง) ตามรูปร่างที่ EX-2 บอก แล้วแต่ละ child เลือกได้ว่าจะ limit หรือ market:</p>
+
+<svg class="d" viewBox="0 0 500 235" role="img" aria-label="parent order แตกเป็น child orders ตามเวลา">
+<text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">Parent $50,000 → ทยอยเป็น child orders</text>
+<!-- parent box -->
+<rect x="190" y="32" width="120" height="34" rx="6" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+<text x="250" y="53" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">Parent $50,000</text>
+<!-- arrows down -->
+<line x1="250" y1="66" x2="250" y2="84" stroke="var(--g7)" stroke-width="1.2"/>
+<line x1="90" y1="84" x2="410" y2="84" stroke="var(--g7)" stroke-width="1.2"/>
+<!-- child bars heights front-loaded (AC) -->
+<g font-size="9" text-anchor="middle">
+<line x1="90" y1="84" x2="90" y2="95" stroke="var(--g7)"/><rect x="72" y="95" width="36" height="70" rx="3" fill="var(--red)" opacity="0.8"/><text x="90" y="180" fill="var(--g7)">c1</text><text x="90" y="193" fill="var(--g7)">$14k</text>
+<line x1="170" y1="84" x2="170" y2="95" stroke="var(--g7)"/><rect x="152" y="110" width="36" height="55" rx="3" fill="var(--red)" opacity="0.65"/><text x="170" y="180" fill="var(--g7)">c2</text><text x="170" y="193" fill="var(--g7)">$12k</text>
+<line x1="250" y1="84" x2="250" y2="95" stroke="var(--g7)"/><rect x="232" y="125" width="36" height="40" rx="3" fill="var(--amber)" opacity="0.75"/><text x="250" y="180" fill="var(--g7)">c3</text><text x="250" y="193" fill="var(--g7)">$10k</text>
+<line x1="330" y1="84" x2="330" y2="95" stroke="var(--g7)"/><rect x="312" y="137" width="36" height="28" rx="3" fill="var(--amber)" opacity="0.6"/><text x="330" y="180" fill="var(--g7)">c4</text><text x="330" y="193" fill="var(--g7)">$8k</text>
+<line x1="410" y1="84" x2="410" y2="95" stroke="var(--g7)"/><rect x="392" y="146" width="36" height="19" rx="3" fill="var(--green)" opacity="0.7"/><text x="410" y="180" fill="var(--g7)">c5</text><text x="410" y="193" fill="var(--g7)">$6k</text>
+</g>
+<text x="250" y="220" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →  (front-load: ไม้ต้นใหญ่ ไม้ท้ายเล็ก ตามรูป AC ใน EX-2)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.1 · ขนาด child ลดหลั่นแบบ front-loaded — ตัวเลขเป็นภาพประกอบเชิงสาธิต</p>
+
+<p>3 วิธีกำหนด "ขนาด/จังหวะ" child ที่รายย่อยใช้ได้จริง:</p>
+<table>
+<tr><th>วิธี</th><th>กฎการส่ง child</th><th>เหมาะกับ</th></tr>
+<tr><td><strong>TWAP</strong></td><td>child เท่า ๆ กันทุก N นาที (เช่น $5k ทุก 10 นาที)</td><td>ง่ายสุด · ทำมือได้ · flow สม่ำเสมอ</td></tr>
+<tr><td><strong>VWAP</strong></td><td>child ใหญ่ตอนชั่วโมงที่ตลาด volume เยอะ (ดู volume profile ย้อนหลัง)</td><td>อยากกลมกลืนฝูง · เหรียญที่มีจังหวะ volume ชัด</td></tr>
+<tr><td><strong>POV</strong><br>(percentage of volume)</td><td>ส่ง child = X% ของ volume ที่กำลังเทรดจริง (เช่น 10% ของ volume 1 นาที)</td><td>ปรับตามสภาพคล่อง real-time · ไม่ฝืนตลาดเงียบ</td></tr>
+</table>
+<p>POV คือตัวที่ "ปลอดภัย" ที่สุดเชิงสัญชาตญาณสำหรับเหรียญบาง: ตลาดคึก → ส่งเยอะตาม · ตลาดเงียบ → ส่งน้อยลงเอง ไม่ไปดันราคาในช่วงสภาพคล่องหด</p>
+
+<h3 id="ex3-limit">child เป็น limit หรือ market?</h3>
+<p>นี่คือจุดที่เล่มหลักทั้งเล่มมาบรรจบ — maker/taker (Part 3), คิว (Part 3), spread (Part 1):</p>
+<ul>
+<li><strong>Limit child (post-only):</strong> วางในคิว รอคนมาชน → ได้ราคาดี/อาจได้ rebate แต่ <strong>เสี่ยงไม่ได้คิว</strong> ถ้าราคาวิ่งหนี (กลายเป็น opportunity cost ที่ EX-1 เตือน)</li>
+<li><strong>Market child (taker):</strong> กินทันที จ่าย spread + walk the book → <strong>ได้ของแน่นอน</strong> แต่จ่าย temporary impact เต็ม ๆ</li>
+</ul>
+<p>กฎหยาบ: ช่วงที่ไม่รีบและ OBI หนุนฝั่งเรา → ใช้ limit รอคิว · ช่วงที่ราคากำลังจะหนีหรือใกล้หมดเวลา → ยอมจ่ายเป็น market สรุปคือ <strong>front ของ trajectory (รีบ) มักใช้ market มากกว่า, ปลาย (เหลือน้อย/มีเวลา) เอนไป limit</strong></p>
+
+<h3 id="ex3-signal">ใช้สัญญาณกระดานจับจังหวะ child</h3>
+<p>ตรงนี้คือที่เล่มหลักจ่ายคืน: AC ให้ "ตารางฐาน" แต่เราเอาสัญญาณ real-time มา <strong>ปรับจังหวะรอบ ๆ ตาราง</strong> (ไม่ใช่ทิ้งตาราง — แค่เร่ง/ชะลอ child ถัดไป):</p>
+<table>
+<tr><th>สัญญาณ (เล่มหลัก)</th><th>อ่านได้ว่า</th><th>ทำกับ child ถัดไป</th></tr>
+<tr><td><strong>OBI</strong> หนุนฝั่งซื้อ (Part 5)</td><td>แรงซื้อรออยู่เยอะ ราคามีแนวโน้มขยับขึ้น</td><td>เร่ง child / เอนไป market ก่อนราคาหนี</td></tr>
+<tr><td><strong>OFI</strong> เป็นบวกแรง (Part 6–7)</td><td>flow ผลักราคาขึ้นกำลังมา</td><td>เร่ง — อย่ารอช้าจนแพง</td></tr>
+<tr><td><strong>VPIN/toxicity</strong> พุ่ง (Part 8)</td><td>flow toxic — มี informed trader ราคาอาจ gap</td><td><strong>ชะลอ</strong> / ถอน limit / รอให้สงบ อย่าเป็นเหยื่อ adverse selection</td></tr>
+<tr><td>spread กว้างผิดปกติ (Part 1)</td><td>สภาพคล่องหด ต้นทุน taker แพง</td><td>หลีกเลี่ยง market · ใช้ limit หรือรอ</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 215" role="img" aria-label="ใช้สัญญาณ OFI และ VPIN ปรับจังหวะ child orders">
+<text x="250" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ตาราง AC = เส้นฐาน · สัญญาณ = เร่ง/ชะลอรอบ ๆ</text>
+<line x1="55" y1="150" x2="460" y2="150" stroke="var(--g7)" stroke-width="1.3"/>
+<text x="257" y="172" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- baseline schedule ticks -->
+<g fill="var(--g2)"><rect x="90" y="120" width="20" height="30"/><rect x="170" y="120" width="20" height="30"/><rect x="250" y="120" width="20" height="30"/><rect x="330" y="120" width="20" height="30"/><rect x="410" y="120" width="20" height="30"/></g>
+<text x="250" y="190" text-anchor="middle" font-size="9" fill="var(--g7)">เทา = child ตามตารางฐาน</text>
+<!-- accel arrow green -->
+<path d="M100,112 L100,70" stroke="var(--green)" stroke-width="2" marker-end="url(#ag)"/>
+<text x="100" y="60" text-anchor="middle" font-size="9" fill="var(--green)">OFI+ → เร่ง</text>
+<!-- slow arrow red -->
+<path d="M340,118 L340,70" stroke="var(--red)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="340" y="60" text-anchor="middle" font-size="9" fill="var(--red)">VPIN↑ → ชะลอ</text>
+<defs>
+<marker id="ag" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto"><path d="M0,6 L4,0 L8,6" fill="none" stroke="var(--green)" stroke-width="1.5"/></marker>
+<marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="2" orient="auto"><path d="M0,0 L4,6 L8,0" fill="none" stroke="var(--red)" stroke-width="1.5"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.2 · สัญญาณกระดานไม่ล้มตาราง — แค่ขยับ child ถัดไปให้เร็วขึ้น (flow หนุน) หรือช้าลง (toxic)</p>
+
+<h3 id="ex3-truth">ตารางความจริงรายย่อย: ต้อง slice เมื่อไหร่</h3>
+<p>ส่วนที่ซื่อสัตย์ที่สุดขององก์นี้ — <strong>รายย่อยส่วนใหญ่ไม่ต้องทำ execution algo เลย</strong> มันสำคัญเฉพาะเมื่อไม้ใหญ่เทียบสภาพคล่อง:</p>
+<table>
+<tr><th>สถานการณ์</th><th>ไม้เทียบ depth ฝั่งตรงข้าม</th><th>ทำยังไง</th></tr>
+<tr><td>ไม้เล็ก เหรียญสภาพคล่องลึก (BTC/ETH)</td><td>&lt; ~10% ของ best levels</td><td><strong>market ทีเดียวพอ</strong> — impact น้อยกว่าความยุ่งยาก</td></tr>
+<tr><td>ไม้กลาง หรือเหรียญสภาพคล่องปานกลาง</td><td>กิน 2–5 ระดับราคา</td><td>slice ง่าย ๆ แบบ TWAP/POV 3–5 ไม้ก็ช่วยได้มาก</td></tr>
+<tr><td>ไม้ใหญ่เทียบ depth / เหรียญ alt บาง</td><td>walk the book หลายระดับ</td><td><strong>ต้อง slice จริงจัง</strong> + ใช้สัญญาณ + POV ตาม volume</td></tr>
+<tr><td>HFT smart order routing ข้าม venue ระดับ ms</td><td>—</td><td><strong>เกินสนามรายย่อย</strong> — ไม่ต้องไปแข่ง</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 240" role="img" aria-label="flowchart เลือกกลยุทธ์ตามขนาดไม้และสภาพคล่อง">
+<text x="250" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">เลือกกลยุทธ์: ไม้ของฉันเทียบ depth เท่าไหร่?</text>
+<rect x="180" y="28" width="140" height="32" rx="6" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.4"/>
+<text x="250" y="48" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--blue)">ไม้ ÷ depth ฝั่งตรงข้าม</text>
+<!-- branch small -->
+<path d="M250,60 L100,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="30" y="90" width="140" height="46" rx="6" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.4"/>
+<text x="100" y="108" text-anchor="middle" font-size="9.5" fill="var(--green)" font-weight="700">เล็ก (&lt;10%)</text>
+<text x="100" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">market ทีเดียว</text>
+<!-- branch mid -->
+<path d="M250,60 L250,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="180" y="90" width="140" height="46" rx="6" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="1.4"/>
+<text x="250" y="108" text-anchor="middle" font-size="9.5" fill="var(--amber)" font-weight="700">กลาง</text>
+<text x="250" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">TWAP/POV 3–5 ไม้</text>
+<!-- branch big -->
+<path d="M250,60 L400,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="330" y="90" width="150" height="46" rx="6" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.4"/>
+<text x="405" y="108" text-anchor="middle" font-size="9.5" fill="var(--red)" font-weight="700">ใหญ่/เหรียญบาง</text>
+<text x="405" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">AC front-load + สัญญาณ</text>
+<!-- bottom note -->
+<rect x="120" y="170" width="260" height="40" rx="6" fill="var(--g0)" stroke="var(--g2)"/>
+<text x="250" y="188" text-anchor="middle" font-size="9.5" fill="var(--g7)">ทุกกรณี: เช็ก VPIN/spread ก่อนยิง market —</text>
+<text x="250" y="202" text-anchor="middle" font-size="9.5" fill="var(--g7)">toxic/spread กว้าง = รอหรือใช้ limit</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.3 · flowchart เลือกกลยุทธ์ตามขนาดไม้เทียบสภาพคล่อง</p>
+
+<div class="bx bg"><div class="bt">🎯 กับเคสของเรา — ปิดวง</div>
+<p>ไม้ <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong>: depth ฝั่ง ask รวม 3 ระดับแรกมีแค่ ~$15k → ไม้เราใหญ่กว่า depth = ช่องขวาสุดของ flowchart · แผน: แตกเป็น ~5 child แบบ front-loaded (EX-2), ส่งแบบ POV ~10–15% ของ volume, child ต้น ๆ เอนไป market (รีบลดความเสี่ยง) child ท้าย ๆ ใช้ limit รอคิว, และ <strong>ถ้า VPIN พุ่ง → หยุดชั่วคราว</strong> รอ flow สงบ · นี่คือคำตอบเต็มของคำถามที่เปิดใน EX-1 ว่า "ส่งไม้ใหญ่ยังไงไม่ให้ดันราคาตัวเอง"</p></div>
+
+<div class="bx ba"><div class="bt">📑 งานวิจัยรองรับ</div>
+<p>การ slice + ใช้ benchmark TWAP/VWAP/POV เป็นมาตรฐานอุตสาหกรรมที่ต่อยอดจาก <strong>Almgren &amp; Chriss (2000)</strong> · <strong>Obizhaeva &amp; Wang (2013)</strong> อธิบายว่าทำไม POV ฉลาด — สภาพคล่องฟื้นเป็นเวลา (resiliency) จึงควรเทรดตามจังหวะที่ตลาด "พร้อมรับ" · การใช้ toxicity จับจังหวะหลบอิงงานสาย <strong>VPIN (Easley, López de Prado &amp; O'Hara 2012)</strong> และงาน detecting toxic flow ที่เล่มหลัก Part 8 อ้างถึง</p></div>
+
+<div class="bx bb"><div class="bt">🔗 เชื่อมโยงเล่มหลัก — องก์นี้ทำให้ทั้งเล่มมาบรรจบ</div>
+<p><strong>Part 1</strong> (spread) · <strong>Part 2</strong> (walk the book/slippage) · <strong>Part 3</strong> (maker/taker, คิว → limit vs market child) · <strong>Part 5–7</strong> (OBI/OFI จับจังหวะเร่ง) · <strong>Part 8</strong> (VPIN จับ toxic เพื่อชะลอ) · <strong>Part 11</strong> (กับดัก latency/backtest) · <strong>Capstone</strong> (ขั้น 5 "ไม้ใหญ่ทยอยส่ง" ที่องก์นี้กางออกเต็ม)</p></div>
+
+<div class="bx br"><div class="bt">⚠️ กับดักที่ต้องระวัง (รายย่อยคริปโต)</div>
+<ul>
+<li><strong>front-run เงาตัวเอง:</strong> ส่ง child แบบคาดเดาได้ (เป๊ะทุก 10 นาที ขนาดเท่ากัน) บนเหรียญบาง บอตอาจจับทางได้ — สุ่ม jitter เวลา/ขนาดเล็กน้อย</li>
+<li><strong>fee สะสม:</strong> แตก child เยอะเกิน = จ่าย taker fee หลายรอบ อาจกินกำไรที่ประหยัด impact ได้ — ใช้ post-only/limit ช่วยลด และอย่า slice ละเอียดเกินจำเป็น</li>
+<li><strong>เหรียญยิ่งบาง impact ยิ่งสูง:</strong> alt เล็ก ๆ บางตัว ไม้ $5k ก็ walk the book แล้ว — เช็ก depth จริงก่อนเสมอ อย่าเชื่อกราฟราคาอย่างเดียว</li>
+<li><strong>latency รายย่อย:</strong> เราช้ากว่า HFT เสมอ — อย่าออกแบบกลยุทธ์ที่ต้องชนะเรื่องความเร็ว (Part 11) ใช้สัญญาณเชิงทิศทาง/จังหวะ ไม่ใช่ race</li>
+<li><strong>POV ต้องมีข้อมูล volume real-time:</strong> ถ้าดูไม่ทันจริง ใช้ TWAP + เช็ก spread/VPIN ก่อนยิงก็ปลอดภัยกว่าฝืนทำ POV มั่ว ๆ</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลางบน Binance/Bybit · จด L2 snapshot: รวม depth ฝั่ง ask 5 ระดับแรก · ถ้าจะซื้อ $20,000 ลองคำนวณว่าถ้า market ทีเดียวจะ walk the book ไปกี่ระดับ (= IS จาก EX-1) · แล้วออกแบบแผน slice: กี่ child, TWAP หรือ POV, child ไหน limit/market · สุดท้ายเขียนกฎ "ถ้า VPIN/спред เป็นแบบนี้ จะชะลอ" — นี่คือ execution plan ฉบับรายย่อยของคุณเอง</p></div>
+
+<p style="text-align:center;font-size:.9em;color:var(--g7);border-top:1px solid var(--g2);padding-top:14px;margin-top:24px">จบองก์ VI · Execution — คุณครบวงจรแล้ว: <strong>อ่านกระดาน → รู้ flow → ตัดสินใจ → วาง quote → คุมเสี่ยง → execute ไม้ใหญ่อย่างมีวิชา</strong> 🎯</p>
+
+</body>
+</html>
