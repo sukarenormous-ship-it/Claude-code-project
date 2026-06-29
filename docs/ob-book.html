@@ -20,9 +20,9 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 .toc li{margin-bottom:6px}
 </style></head><body><div class="cover" style="page-break-before:auto">
 <h1>อ่านกระดาน<br>Reading the Book</h1>
-<div class="sub">Order Flow &amp; Microstructure สำหรับรายย่อย — ฉบับรวมเล่ม 17 ตอน</div>
-<div class="desc">เลนส์ execution ของซีรีส์ · เทรด "ตรงไหน / เมื่อไหร่ / ต้นทุนจริงเท่าไหร่"<br>5 องก์ + ภาคเครื่องมือ · ตัวอย่างคริปโต (Binance/Bybit L2 ฟรี)</div>
-</div><h2 id="toc">สารบัญ</h2><ol class="toc"><li>Part 0 — กระดานคืออะไร</li><li>Part 1 — กายวิภาคของคิว</li><li>Part 2 — 3 เหตุการณ์ที่ขยับกระดาน</li><li>Part 3 — Bid-Ask Spread แยกส่วน</li><li>Part 4 — กระดานเชื่อถือได้แค่ไหน</li><li>ภาคทบทวน — สถิติพื้นฐาน</li><li>Part 5 — Order Book Imbalance (OBI)</li><li>Part 6 — ทำไม Market Order สำคัญ</li><li>Part 7 — OFI & Price Impact</li><li>Part 8 — VPIN ความเป็นพิษของ flow</li><li>Part 9 — Market Making พื้นฐาน</li><li>Part 10 — Optimal Market Making</li><li>Part 11 — ลงมือจริงในคริปโต</li><li>Part 12 — Grid Trading</li><li>Part 13 — Statistical Arbitrage ด้วย OFI</li><li>Part 14 — Cross-Exchange Arbitrage</li><li>Part โบนัส — เครื่องจักรอ่านกระดาน</li><li>บทปิด — อ่านกระดานจริง 1 รอบ</li></ol>
+<div class="sub">Order Flow &amp; Microstructure สำหรับรายย่อย — ฉบับรวมเล่ม 20 ตอน</div>
+<div class="desc">เลนส์ execution ของซีรีส์ · เทรด "ตรงไหน / เมื่อไหร่ / ต้นทุนจริงเท่าไหร่"<br>6 องก์ + ภาคเครื่องมือ · ตัวอย่างคริปโต (Binance/Bybit L2 ฟรี)</div>
+</div><h2 id="toc">สารบัญ</h2><ol class="toc"><li>Part 0 — กระดานคืออะไร</li><li>Part 1 — กายวิภาคของคิว</li><li>Part 2 — 3 เหตุการณ์ที่ขยับกระดาน</li><li>Part 3 — Bid-Ask Spread แยกส่วน</li><li>Part 4 — กระดานเชื่อถือได้แค่ไหน</li><li>ภาคทบทวน — สถิติพื้นฐาน</li><li>Part 5 — Order Book Imbalance (OBI)</li><li>Part 6 — ทำไม Market Order สำคัญ</li><li>Part 7 — OFI & Price Impact</li><li>Part 8 — VPIN ความเป็นพิษของ flow</li><li>Part 9 — Market Making พื้นฐาน</li><li>Part 10 — Optimal Market Making</li><li>Part 11 — ลงมือจริงในคริปโต</li><li>Part 12 — Grid Trading</li><li>Part 13 — Statistical Arbitrage ด้วย OFI</li><li>Part 14 — Cross-Exchange Arbitrage</li><li>Part โบนัส — เครื่องจักรอ่านกระดาน</li><li>บทปิด — อ่านกระดานจริง 1 รอบ</li><li>องก์ VI · EX-1 — Execution & Implementation Shortfall</li><li>องก์ VI · EX-2 — Almgren-Chriss & ตารางการทยอยส่ง</li><li>องก์ VI · EX-3 — ลงมือจริงรายย่อยคริปโต</li></ol>
 
 <div class="cover">
 <h1>อ่านกระดาน<br>Reading the Book</h1>
@@ -3583,12 +3583,453 @@ min  CrossEntropy( softmax(f(X)) , y )<br>
 <p>เครื่องมือทุกตัวบอก "ความน่าจะเป็น/ความเสี่ยง" <strong>ไม่ใช่คำทำนายที่แน่นอน</strong> · สัญญาณกระดาน <strong>อายุสั้น</strong> (วินาที) · และทุกอย่างต้องหัก <strong>ต้นทุนจริง</strong> (spread + slippage + fee) ก่อนถึงจะรู้ว่าคุ้ม — z สูง/forecasting ดี ≠ กำไร</p>
 </div>
 
+<div class="bx bg">
+<div class="bt">➡️ อ่านต่อในเล่มนี้ — องก์ VI · Execution</div>
+<p>ขั้น 5 ข้างบน ("ไม้ใหญ่ → ทยอยส่ง") กางออกเต็มเป็น <strong>องก์ VI</strong> ของเล่มนี้ — ตอบคำถาม "ส่งไม้ใหญ่ยังไงไม่ให้ดันราคาตัวเอง":</p>
+<ul>
+<li><strong>EX-1</strong> — ปัญหา Execution &amp; Implementation Shortfall (trade-off เร็ว/ช้า, temporary vs permanent impact)</li>
+<li><strong>EX-2</strong> — Almgren-Chriss &amp; ตารางการทยอยส่ง (front-load, efficient frontier, TWAP/VWAP/IS-optimal)</li>
+<li><strong>EX-3</strong> — ลงมือจริงรายย่อยคริปโต (slice parent→child, POV, ใช้ OBI/OFI/VPIN จับจังหวะ)</li>
+</ul>
+</div>
+
 <div class="bx bb">
-<div class="bt">🔗 อ่านต่อ / ต่อยอด</div>
-<p>อยากไปไกลกว่านี้: <strong>optimal execution</strong> (Almgren-Chriss — ทยอยส่งไม้ใหญ่), <strong>benign vs toxic flow</strong> (Cartea 2023), <strong>square-root impact law</strong> และตำรา O'Hara / Bouchaud / Cartea-Jaimungal-Penalva (ดูภาคผนวก "อ่านต่อ")</p>
+<div class="bt">🔗 อ่านต่อ / ต่อยอด (นอกเล่ม)</div>
+<p>ลึกกว่านั้น: <strong>benign vs toxic flow</strong> (Cartea 2023), <strong>square-root impact law</strong> (Bouchaud), <strong>Obizhaeva-Wang</strong> (execution บน LOB จริง) และตำรา O'Hara / Cartea-Jaimungal-Penalva / Guéant (ดูภาคผนวก "อ่านต่อ")</p>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
 <p style="text-align:center;color:var(--g7);font-size:.9em"><strong>จบเล่ม</strong> — เปิดจอ Binance แล้วลองเดิน 6 ขั้นนี้กับเงินจำลองดู 🎯</p>
+
+
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">องก์ VI · Execution — EX-1: ปัญหา Execution &amp; Implementation Shortfall</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · ฝั่ง taker ที่อยาก execute ดีที่สุด<br>ทำไมส่งไม้ใหญ่ทีเดียว "แพง" — และวัดต้นทุนซ่อนยังไง</div>
+</div>
+
+<!-- ========== EX-1 ========== -->
+<h2 id="ex1">EX-1 — ปัญหา Execution &amp; Implementation Shortfall</h2>
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากเล่มหลัก</div>
+<p><strong>เพิ่งรู้มา:</strong> เล่มหลักจบที่ Capstone — เรา "อ่านกระดาน → รู้ flow → ตัดสินใจเข้า/วาง quote → คุมเสี่ยง" ได้แล้ว และ Capstone ขั้น 5 บอกว่า "ไม้ใหญ่ → ทยอยส่ง" · <strong>ตอนนี้จะเติม:</strong> เจาะ "ทยอยส่งยังไง" ให้เป็นวิชา — เริ่มจากเข้าใจก่อนว่าทำไมไม้ใหญ่ทีเดียวถึงแพง และจะ <strong>วัด</strong> ต้นทุนนั้นยังไง</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจว่า execution = "ฝั่งกลับ" ของ market making — เราเป็น taker ที่อยากได้ของโดย <strong>จ่ายต้นทุนน้อยสุด</strong></li>
+<li>เห็น <strong>trade-off หัวใจ</strong>: ส่งเร็ว → market impact สูง · ส่งช้า → timing risk (ราคาวิ่งหนีระหว่างรอ)</li>
+<li>นิยาม <strong>Implementation Shortfall (IS = ต้นทุนการลงมือจริง)</strong> เทียบกับ arrival price</li>
+<li>แยก <strong>temporary impact</strong> (เด้งกลับ) ออกจาก <strong>permanent impact</strong> (ถาวร)</li>
+</ul>
+</div>
+
+<h3 id="ex1-hook">เริ่มจากการเทน้ำลงแก้ว</h3>
+<p>นึกถึงการเทน้ำจากเหยือกลงแก้วให้ครบพอดี — <strong>เทเร็วเกินไป น้ำกระเด็นล้น</strong> (เสียของ) แต่ <strong>เทช้าเกินไป น้ำในเหยือกระเหย/มือเมื่อย</strong> (เสียเวลา/โอกาส) การส่งคำสั่งซื้อก้อนใหญ่ก็เหมือนกันเป๊ะ:</p>
+<ul>
+<li><strong>ส่งทีเดียว (เทเร็ว)</strong> → คุณ "walk the book" (Part 2) ดันราคาตัวเองขึ้น = <strong>market impact</strong> สูง</li>
+<li><strong>ทยอยช้า ๆ (เทช้า)</strong> → ระหว่างที่ค่อย ๆ ซื้อ ราคาอาจวิ่งหนีขึ้นไปก่อน = <strong>timing risk</strong></li>
+</ul>
+<p>หัวใจของ execution คือ <strong>หาจุดสมดุลระหว่างสองความเสี่ยงนี้</strong> — ไม่มีคำตอบเดียว ขึ้นกับขนาดไม้ สภาพคล่อง และว่าคุณกลัวความเสี่ยงแค่ไหน</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="อุปมาเทน้ำ เร็วกระเด็น ช้าระเหย">
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ส่งไม้ใหญ่ = เทน้ำลงแก้วให้พอดี</text>
+<!-- fast -->
+<rect x="40" y="40" width="180" height="140" rx="8" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="130" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">เทเร็ว (ส่งทีเดียว)</text>
+<rect x="105" y="110" width="50" height="55" rx="3" fill="#fff" stroke="var(--g7)"/>
+<line x1="130" y1="75" x2="130" y2="108" stroke="var(--blue)" stroke-width="6" opacity="0.5"/>
+<text x="70" y="100" font-size="16">💦</text><text x="180" y="100" font-size="16">💦</text>
+<text x="130" y="178" text-anchor="middle" font-size="10.5" fill="var(--red)">กระเด็นล้น = market impact</text>
+<!-- slow -->
+<rect x="280" y="40" width="180" height="140" rx="8" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="1.5"/>
+<text x="370" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--amber)">เทช้า (ทยอยนาน)</text>
+<rect x="345" y="110" width="50" height="55" rx="3" fill="#fff" stroke="var(--g7)"/>
+<line x1="370" y1="78" x2="370" y2="108" stroke="var(--blue)" stroke-width="2" opacity="0.5" stroke-dasharray="2 3"/>
+<text x="408" y="92" font-size="14">☁️</text>
+<text x="370" y="178" text-anchor="middle" font-size="10.5" fill="var(--amber)">ระเหย/ราคาหนี = timing risk</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.1 · trade-off ของ execution — เร็วเสีย impact / ช้าเสีย timing risk</p>
+
+<h3 id="ex1-is">Implementation Shortfall — วัด "ต้นทุนซ่อน" ของการลงมือ</h3>
+<p>ตอนคุณ <em>ตัดสินใจ</em> จะซื้อ ราคาบนจอคือ <strong>arrival price</strong> (ราคา ณ จังหวะตัดสินใจ — มักใช้ mid ตอนนั้น) แต่กว่าจะซื้อครบจริง ราคาเฉลี่ยที่ได้มักแพงกว่านั้น <strong>Implementation Shortfall (IS)</strong> คือส่วนต่างนี้ — "กำไรบนกระดาษ" หายไปเท่าไรตอนลงมือจริง</p>
+
+<div class="fm">
+IS (ต่อ 1 หน่วย, ฝั่งซื้อ) = ราคาเฉลี่ยที่ได้จริง − arrival price<br>
+&nbsp;&nbsp;arrival price = mid ณ จังหวะ "ตัดสินใจ" (benchmark)<br>
+<br>
+IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื้อไม่ครบ)·(P_สุดท้าย − P_arrival)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ ต้นทุน execution ────┘   └─ opportunity cost (ราคาหนีไปก่อนซื้อครบ) ─┘
+</div>
+<p>IS รวม 2 ก้อน: (1) <strong>ต้นทุน execution</strong> ที่จ่ายจริง (impact + spread + fee) และ (2) <strong>opportunity cost</strong> ถ้าทยอยช้าจนซื้อไม่ทันราคาที่หนีไป — สังเกตว่าสองก้อนนี้คือ trade-off เดียวกับการเทน้ำ</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="IS แยกเป็น market impact กับ timing risk">
+<line x1="60" y1="175" x2="470" y2="175" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="30" y="60" font-size="10" fill="var(--g7)">ต้นทุน</text>
+<!-- stacked bar: impact (bottom) + timing (top) -->
+<rect x="150" y="95" width="90" height="80" fill="var(--red)" opacity="0.8"/>
+<text x="195" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">market</text>
+<text x="195" y="156" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">impact</text>
+<rect x="150" y="55" width="90" height="40" fill="var(--amber)" opacity="0.85"/>
+<text x="195" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">timing risk</text>
+<text x="195" y="190" text-anchor="middle" font-size="10.5" fill="var(--g7)">IS รวม</text>
+<!-- labels -->
+<text x="300" y="80" font-size="11" fill="var(--amber)">← ราคาหนีระหว่างทยอย (ช้า)</text>
+<text x="300" y="135" font-size="11" fill="var(--red)">← ดันราคาตัวเอง (เร็ว)</text>
+<text x="300" y="158" font-size="10" fill="var(--g7)">+ spread + fee</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.2 · IS = market impact (เทเร็ว) + timing risk (เทช้า) — ลดอันหนึ่งมักเพิ่มอีกอัน</p>
+
+<h3 id="ex1-tmp">Temporary vs Permanent Impact</h3>
+<p>เวลาคุณกวาดซื้อ ราคาจะถูกดันขึ้น — แต่ impact มี 2 ส่วนที่ต่างกันมาก:</p>
+<ul>
+<li><strong>Temporary impact:</strong> ราคาถูกดันขึ้นชั่วคราวเพราะคุณกินสภาพคล่อง พอคุณหยุด ผู้เล่นอื่นเติม limit กลับ ราคา <strong>เด้งลงมาบางส่วน</strong> (โยง resiliency, Part 4)</li>
+<li><strong>Permanent impact:</strong> ส่วนที่ <strong>ค้างอยู่ถาวร</strong> เพราะตลาดตีความว่า "มีคนรู้อะไร" (โยง informativeness/adverse selection, Part 6) — ราคาไม่กลับมาที่เดิม</li>
+</ul>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="ราคาระหว่างเทรด temporary เด้งกลับ permanent ค้าง">
+<line x1="55" y1="185" x2="475" y2="185" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="265" y="210" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- arrival price line -->
+<line x1="55" y1="150" x2="475" y2="150" stroke="var(--g7)" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="92" y="145" text-anchor="middle" font-size="10" fill="var(--g7)">arrival price</text>
+<!-- price path: flat, ramp up during exec, peak, drop partway, settle above arrival -->
+<path d="M55,150 L150,150 C210,150 230,70 270,68 L300,68 C330,68 345,108 360,112 L475,112" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<!-- exec window -->
+<rect x="150" y="40" width="120" height="145" fill="var(--blue)" opacity="0.06"/>
+<text x="210" y="56" text-anchor="middle" font-size="10" fill="var(--blue)">ช่วงเรากวาดซื้อ</text>
+<!-- peak / temporary / permanent markers -->
+<line x1="270" y1="68" x2="475" y2="68" stroke="var(--g2)" stroke-width="0.8" stroke-dasharray="2 2"/>
+<text x="430" y="92" font-size="10" font-weight="700" fill="var(--amber)">temporary</text>
+<text x="430" y="103" font-size="9" fill="var(--amber)">(เด้งกลับ)</text>
+<text x="430" y="132" font-size="10" font-weight="700" fill="var(--red)">permanent</text>
+<text x="430" y="143" font-size="9" fill="var(--red)">(ค้างถาวร)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.3 · กวาดซื้อดันราคาขึ้น → หยุดแล้วเด้งกลับบางส่วน (temporary) เหลือส่วนค้าง (permanent)</p>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคสเดิม $5,000 บน BTC (สภาพคล่องสูง) — impact แทบไม่มี ส่ง market ก็พอ · แต่ลองนึกว่าไม้โตขึ้นเป็น <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong> ที่ depth ที่ best มีไม่กี่พันดอลลาร์ — ส่งทีเดียวจะ walk the book ดันราคาตัวเองหลาย % ทันที นี่คือจุดที่ execution เริ่มสำคัญ และ IS คือเครื่องวัดว่าเราเสียไปเท่าไร</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>คำว่า <strong>Implementation Shortfall</strong> มาจาก Perold (1988) · กรอบ trade-off impact↔risk และการแยก temporary/permanent impact เป็นรากฐานของ <strong>Almgren &amp; Chriss (2000)</strong> ที่เราจะลงลึกใน EX-2 — และเชื่อมกับ square-root impact law (Part 7) ที่ว่า impact โตตาม √(ขนาดไม้)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มหลัก</div>
+<p><strong>Part 2</strong> (walk the book/slippage) = ต้นกำเนิดของ market impact · <strong>Part 7</strong> (Kyle's λ) = impact ต่อหน่วย flow · <strong>Part 4</strong> (resiliency) = ทำไม temporary impact ถึงเด้งกลับ · <strong>Part 6</strong> (informativeness) = ทำไม permanent impact ถึงค้าง</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่</div>
+<ul>
+<li><strong>ไม้เล็กไม่ต้องคิดเยอะ:</strong> ถ้าไม้คุณเล็กเทียบ depth (เช่น $100 บน BTC) impact ~0 — ส่ง market จบ อย่า over-engineer</li>
+<li><strong>วัดจาก last price:</strong> IS ต้องเทียบ arrival price (mid ตอนตัดสินใจ) ไม่ใช่ last หรือราคาปิด ไม่งั้นวัดผิด</li>
+<li><strong>ลืม opportunity cost:</strong> ทยอยช้าเพื่อลด impact แต่ถ้าราคาหนีไปก่อนซื้อครบ ก็ขาดทุนเหมือนกัน — สองด้านของเหรียญเดียว</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลาง ดึง order book snapshot — จด mid (= arrival price) · จำลอง market buy มูลค่า X ที่ใหญ่กว่า depth ที่ best · คำนวณ <strong>AvgFill</strong> (จาก Part 2) แล้วหา <strong>IS = AvgFill − mid</strong> เป็น % · ลองเพิ่ม X เป็น 2 เท่า ดูว่า IS โตเร็วแค่ไหน (เทียบ √-law)</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> EX-2: ถ้ารู้ว่าเร็วเสีย impact/ช้าเสีย timing risk แล้ว — มี "ตารางการทยอยส่ง" ที่ optimal ไหม? (Almgren-Chriss)</p>
+
+
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">องก์ VI · Execution — EX-2: Almgren-Chriss &amp; ตารางการทยอยส่ง</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · จาก "trade-off" สู่ "ตารางส่งจริง"<br>ทำไมต้อง front-load — และ efficient frontier บอกอะไรเรา</div>
+</div>
+
+<!-- ========== EX-2 ========== -->
+<h2 id="ex2">EX-2 — Almgren-Chriss &amp; ตารางการทยอยส่ง</h2>
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจาก EX-1</div>
+<p><strong>เพิ่งรู้มา:</strong> ใน EX-1 เราเจอ <strong>trade-off หัวใจ</strong> — ส่งเร็วเสีย market impact / ส่งช้าเสีย timing risk — และวัดต้นทุนรวมเป็น <strong>Implementation Shortfall (IS)</strong> · <strong>ตอนนี้จะเติม:</strong> ถ้ารู้ว่ามี trade-off แล้ว มี "ตารางการทยอยส่ง" (trade schedule) ที่ <strong>optimal</strong> ไหม? Almgren-Chriss (2000) ตอบคำถามนี้ด้วยคณิตศาสตร์ — และคำตอบสวยกว่าที่คิด</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจโมเดล Almgren-Chriss: temporary impact ∝ <strong>อัตราเทรด</strong> · permanent impact ∝ <strong>ปริมาณสะสม</strong></li>
+<li>เห็นว่า optimal schedule = minimize <strong>E[cost] + λ·Var[cost]</strong> → ได้ trajectory แบบ <strong>front-loaded</strong></li>
+<li>อ่าน <strong>efficient frontier</strong> (expected cost ↔ variance) ได้ และรู้ว่า risk aversion γ/λ เลื่อนเราไปจุดไหน</li>
+<li>เทียบ <strong>TWAP / VWAP / IS-optimal</strong> ว่าอันไหนเหมาะเมื่อไหร่</li>
+</ul>
+</div>
+
+<h3 id="ex2-model">โมเดล: impact 2 แบบที่ขับทุกอย่าง</h3>
+<p>Almgren-Chriss แยก market impact ออกเป็น 2 ก้อนที่มีพฤติกรรมต่างกัน (ตรงกับ temporary vs permanent ใน EX-1):</p>
+<ul>
+<li><strong>Permanent impact ∝ ปริมาณสะสม</strong> — ทุกหน่วยที่เราเทรดดันราคา "ฐาน" ค้างไว้ ไม่ว่าจะส่งเร็วช้า ก้อนนี้ <strong>เท่ากันเสมอ</strong> (ขึ้นกับขนาดไม้รวม X ไม่ใช่ความเร็ว) — เป็นต้นทุนที่ <em>หนีไม่ได้</em></li>
+<li><strong>Temporary impact ∝ อัตราเทรด</strong> — ยิ่งดันของเข้าตลาด "ต่อหน่วยเวลา" เร็ว ราคาเฉลี่ยช่วงนั้นยิ่งแพง แต่พอหยุด ราคาเด้งกลับ — ก้อนนี้คือสิ่งที่ <strong>schedule ควบคุมได้</strong></li>
+</ul>
+
+<div class="fm">
+ขายไม้ X หน่วยใน T เวลา · x(t) = จำนวนที่ "ยังถืออยู่" ตอนเวลา t   (x(0)=X, x(T)=0)<br>
+v(t) = −dx/dt = อัตราเทรด (เร็วแค่ไหน)<br>
+<br>
+ต้นทุนคาดหวัง  E[cost] = <b>½·γ·X²</b>  +  <b>η·∫ v(t)² dt</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ permanent (คงที่) ┘   └ temporary (ยิ่งเร็วยิ่งแพง²) ┘<br>
+ความแปรปรวน  Var[cost] = σ²·∫ x(t)² dt   ← ยิ่งถือนาน/ถือเยอะ ยิ่งเสี่ยงราคาแกว่ง
+</div>
+<p>สังเกตหัวใจ: <strong>permanent (½γX²) ไม่ขึ้นกับ schedule เลย</strong> — เลือกยังไงก็จ่ายเท่านี้ ดังนั้นเกมจริงคือ trade-off ระหว่าง <strong>temporary impact</strong> (อยากส่งช้าให้ v ต่ำ) กับ <strong>variance</strong> (อยากส่งเร็วให้ x ลดไว ไม่ต้องแบกความเสี่ยงนาน) — เหมือนเทน้ำใน EX-1 เป๊ะ แต่คราวนี้เขียนเป็นสมการได้</p>
+
+<h3 id="ex2-opt">คำตอบ optimal: ทำไมต้อง "front-load"</h3>
+<p>Almgren-Chriss แก้ปัญหา minimize <code>E[cost] + λ·Var[cost]</code> (λ = ระดับความกลัวความเสี่ยง) คำตอบของ trajectory ออกมาเป็นรูปปิดสวย ๆ:</p>
+
+<div class="fm">
+x(t) = X · sinh( κ·(T − t) ) / sinh( κ·T )<br>
+<br>
+โดย  κ = √( λ·σ² / η )   ← "ความรีบ" (urgency)<br>
+&nbsp;&nbsp;• λ มาก (กลัวเสี่ยง) → κ มาก → ขายไวตอนต้น (front-load)<br>
+&nbsp;&nbsp;• λ → 0 (ไม่กลัวเสี่ยง) → κ → 0 → x(t) = X·(1 − t/T) = เส้นตรง = <b>TWAP</b><br>
+&nbsp;&nbsp;• 1/κ = "half-life" ของไม้ — เวลาที่ใช้รีดของออกส่วนใหญ่
+</div>
+<p>ความหมายเชิงสัญชาตญาณ: ถ้าคุณกลัวว่าราคาจะวิ่งหนี (variance น่ากลัว) คุณควร <strong>เทออกหนักช่วงแรก</strong> แล้วค่อย ๆ เบาลง — เพราะของที่ยังถือคือความเสี่ยง รีบลดมันก่อน · แต่ถ้าไม่กลัวเสี่ยงเลย ก็ทยอยเท่า ๆ กัน (TWAP) เพื่อกด temporary impact ให้ต่ำสุด</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="trade schedule TWAP เส้นตรง vs Almgren-Chriss front-loaded">
+<text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ตารางการถือครอง x(t): ของที่ "ยังเหลือต้องขาย"</text>
+<!-- axes -->
+<line x1="55" y1="200" x2="460" y2="200" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="55" y1="200" x2="55" y2="45" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="257" y="228" text-anchor="middle" font-size="11" fill="var(--g7)">เวลา t  →  (0 = เริ่ม, T = เส้นตาย)</text>
+<text x="18" y="125" text-anchor="middle" font-size="11" fill="var(--g7)" transform="rotate(-90 18 125)">x(t) เหลือถือ</text>
+<text x="50" y="52" text-anchor="end" font-size="10" fill="var(--g7)">X</text>
+<text x="50" y="203" text-anchor="end" font-size="10" fill="var(--g7)">0</text>
+<line x1="52" y1="48" x2="58" y2="48" stroke="var(--g7)"/>
+<!-- TWAP straight -->
+<line x1="55" y1="48" x2="440" y2="200" stroke="var(--blue)" stroke-width="2.5"/>
+<!-- AC front-loaded convex (sinh) -->
+<path d="M55,48 Q150,150 250,178 T440,200" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+<!-- legend -->
+<rect x="300" y="60" width="150" height="56" rx="6" fill="#fff" stroke="var(--g2)"/>
+<line x1="312" y1="76" x2="338" y2="76" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="344" y="80" font-size="10.5" fill="var(--g8)">TWAP (λ→0, เส้นตรง)</text>
+<line x1="312" y1="100" x2="338" y2="100" stroke="var(--red)" stroke-width="2.5"/>
+<text x="344" y="104" font-size="10.5" fill="var(--g8)">Almgren-Chriss (front-load)</text>
+<text x="440" y="195" text-anchor="middle" font-size="10" fill="var(--g7)">T</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX2.1 · AC เทหนักช่วงแรก (เส้นแดงดิ่งเร็ว) เพื่อลดความเสี่ยง ส่วน TWAP ทยอยเท่ากัน (เส้นน้ำเงินตรง)</p>
+
+<h3 id="ex2-frontier">Efficient frontier: เลือก "จุด" ที่ใช่สำหรับคุณ</h3>
+<p>λ แต่ละค่าให้ schedule หนึ่ง และ schedule นั้นมีคู่ตัวเลข (expected cost, variance) หนึ่งจุด ลากทุกจุดที่ <em>optimal</em> ได้เส้นโค้งเรียกว่า <strong>efficient frontier</strong> — แนวคิดเดียวกับ Markowitz ในพอร์ตหุ้น แต่นี่คือ frontier ของ "การ execute":</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="efficient frontier ของ execution expected cost เทียบ variance">
+<text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">Efficient frontier ของ execution</text>
+<line x1="60" y1="205" x2="460" y2="205" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="60" y1="205" x2="60" y2="40" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="260" y="232" text-anchor="middle" font-size="11" fill="var(--g7)">Var[cost] (ความเสี่ยงราคาแกว่ง)  →</text>
+<text x="22" y="125" text-anchor="middle" font-size="11" fill="var(--g7)" transform="rotate(-90 22 125)">E[cost] คาดหวัง  →</text>
+<!-- frontier curve: low cost high var (right) up to high cost low var (left) -->
+<path d="M110,60 Q150,120 250,160 T440,190" fill="none" stroke="var(--green)" stroke-width="3"/>
+<!-- TWAP point: lowest cost, highest var (right end) -->
+<circle cx="430" cy="188" r="6" fill="var(--blue)"/>
+<text x="430" y="178" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--blue)">TWAP</text>
+<text x="430" y="203" text-anchor="middle" font-size="9" fill="var(--g7)">λ→0: ถูกสุด/เสี่ยงสุด</text>
+<!-- aggressive point: high cost low var (left) -->
+<circle cx="120" cy="72" r="6" fill="var(--red)"/>
+<text x="150" y="64" text-anchor="start" font-size="10.5" font-weight="700" fill="var(--red)">รีบมาก (λ สูง)</text>
+<text x="150" y="78" text-anchor="start" font-size="9" fill="var(--g7)">แพงขึ้น/เสี่ยงต่ำ</text>
+<!-- mid point -->
+<circle cx="250" cy="160" r="5.5" fill="var(--amber)"/>
+<text x="262" y="150" text-anchor="start" font-size="10" font-weight="700" fill="var(--amber)">สมดุล</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX2.2 · ทุกจุดบนเส้นเขียว "คุ้ม" หมด — เลือกตามว่าคุณกลัวเสี่ยงแค่ไหน ไม่มีจุดไหน "ถูกที่สุด" พร้อม "เสี่ยงต่ำสุด"</p>
+
+<p>อ่าน frontier ยังไง: เลื่อนไป <strong>ขวา</strong> (TWAP) = จ่ายต้นทุนคาดหวังต่ำ แต่ยอมแบกความเสี่ยงราคาแกว่งสูง (เพราะถือนาน) · เลื่อนไป <strong>ซ้าย</strong> = รีบเคลียร์ของ ความเสี่ยงต่ำลง แต่จ่าย temporary impact แพงขึ้น · <strong>ไม่มี "จุดที่ดีที่สุด" สากล</strong> — ขึ้นกับ γ/λ ของคุณ (กลัวพลาดดีลแค่ไหน vs กลัวจ่ายแพงแค่ไหน)</p>
+
+<h3 id="ex2-compare">TWAP / VWAP / IS-optimal — อันไหนเมื่อไหร่</h3>
+<table>
+<tr><th>กลยุทธ์</th><th>ส่งยังไง</th><th>เหมาะเมื่อ</th><th>จุดอ่อน</th></tr>
+<tr><td><strong>TWAP</strong><br>(time-weighted)</td><td>แบ่งเท่า ๆ กันตามเวลา (เส้นตรง)</td><td>ไม่กลัวเสี่ยง · อยากกด impact · ตลาด flow สม่ำเสมอ</td><td>ถือนาน = เสี่ยงราคาหนี · คาดเดาง่าย โดน front-run</td></tr>
+<tr><td><strong>VWAP</strong><br>(volume-weighted)</td><td>ส่งหนักตอนตลาด volume เยอะ (กลมกลืนกับฝูง)</td><td>อยากซ่อนตัวในปริมาณตลาด · benchmark เป็น VWAP</td><td>ต้องเดา volume profile · เหรียญบางคาดยาก</td></tr>
+<tr><td><strong>IS-optimal</strong><br>(Almgren-Chriss)</td><td>front-load ตาม λ (เทหนักช่วงแรก)</td><td>กลัวราคาวิ่งหนี · มี view ทิศทาง · ไม้ใหญ่เทียบสภาพคล่อง</td><td>ต้องประมาณ η, σ, γ · พารามิเตอร์ผิด = schedule เพี้ยน</td></tr>
+</table>
+<p>เส้นเชื่อม: <strong>TWAP คือ IS-optimal ตอน λ=0</strong> (ปลายขวาสุดของ frontier) — มันไม่ใช่คนละโลกกัน VWAP เป็นญาติที่เอา "รูปร่าง volume ของตลาด" มาเป็นตารางแทนเวลา ทั้งสามคือจุด/เส้นบนแผนที่เดียวกัน</p>
+
+<div class="bx bg"><div class="bt">🎯 กับเคสของเรา</div>
+<p>เคสไม้ใหญ่ <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong> (จาก EX-1): สมมติ σ สูง (เหรียญแกว่งแรง) → λσ²/η ใหญ่ → κ ใหญ่ → AC บอกให้ <strong>front-load</strong>: เทอาจ 40% ในไตรมาสเวลาแรก แล้วค่อยเบา เพราะการถือ alt ผันผวนไว้นานคือความเสี่ยงที่แพงกว่า impact ที่ประหยัดได้ · ถ้าเป็น BTC สภาพคล่องลึก (η ต่ำ, σ ต่ำกว่า) → κ เล็กลง → เข้าใกล้ TWAP ได้สบายขึ้น</p></div>
+
+<div class="bx ba"><div class="bt">📑 งานวิจัยรองรับ</div>
+<p><strong>Almgren &amp; Chriss (2000)</strong> <em>Optimal Execution of Portfolio Transactions</em> คือต้นฉบับของ trajectory แบบ sinh และ efficient frontier นี้ · ต่อยอดจาก <strong>Bertsimas &amp; Lo (1998)</strong> (กรณี risk-neutral ล้วน → ได้ TWAP) · <strong>Obizhaeva &amp; Wang (2013)</strong> เติมมิติ LOB จริง: สภาพคล่องไม่ฟื้นทันที (resiliency) — เชื่อมกับ Part 4 · ส่วน <strong>square-root impact law</strong> (Bouchaud และคณะ) จาก Part 7 เตือนว่า impact จริงมัก ∝ √(ขนาด) ไม่ใช่เชิงเส้นเป๊ะอย่างที่ AC สมมติ</p></div>
+
+<div class="bx bb"><div class="bt">🔗 เชื่อมโยงเล่มหลัก</div>
+<p><strong>Part 2</strong> (walk the book) = ที่มาของ temporary impact · <strong>Part 4</strong> (resiliency/การถอน-เติม liquidity) = ทำไม impact เด้งกลับ และทำไม Obizhaeva-Wang ถึงสำคัญ · <strong>Part 7</strong> (Kyle's λ, square-root law) = วิธีประมาณ η จริง · <strong>Part 8</strong> (VPIN/toxicity) = ใช้จับว่าช่วงไหนตลาดอันตราย ควรชะลอ schedule</p></div>
+
+<div class="bx br"><div class="bt">⚠️ กับดักที่ต้องระวัง</div>
+<ul>
+<li><strong>AC = กรอบคิด ไม่ใช่สูตรรันเป๊ะ:</strong> รายย่อยประมาณ η, γ, σ ได้หยาบมาก — ใช้รูป trajectory เป็น "ทิศทาง" (front-load แค่ไหน) ไม่ใช่ตัวเลขศักดิ์สิทธิ์</li>
+<li><strong>impact จริงไม่เชิงเส้น:</strong> AC สมมติ temporary ∝ v เชิงเส้น แต่ของจริงมัก √ (Part 7) — อย่าเชื่อ closed-form เกินไป</li>
+<li><strong>schedule คงที่ = เหยื่อ:</strong> ส่งตามนาฬิกาเป๊ะ ๆ คาดเดาง่าย โดน detect/front-run — EX-3 จะเติมการใช้สัญญาณกระดานปรับจังหวะ child orders</li>
+<li><strong>λ ไม่ใช่ค่าคงที่ของจักรวาล:</strong> มันคือ "ความกลัวเสี่ยง" ของ <em>คุณเอง</em> — ไม่มีค่าถูก/ผิด มีแต่เหมาะ/ไม่เหมาะกับสถานการณ์</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญ 2 ตัว: ตัวสภาพคล่องลึก (เช่น BTC) กับตัวบาง (alt) — ประมาณ σ รายชั่วโมงของแต่ละตัว (Part ภาคสถิติ) แล้วถามตัวเอง: ตัวไหน κ=√(λσ²/η) ควรใหญ่กว่า? AC บอกให้ front-load ตัวไหนมากกว่า? · จากนั้นวาด schedule คร่าว ๆ ของไม้ $10,000 บนแต่ละตัว เทียบกับ TWAP เส้นตรง</p></div>
+
+<p style="text-align:center;font-size:.9em;color:var(--g7);border-top:1px solid var(--g2);padding-top:14px;margin-top:24px">ส่งต่อ → <strong>EX-3:</strong> เอา trajectory นี้ไปลงมือจริงบนคริปโต — slice parent→child, ใช้ OBI/OFI/VPIN จับจังหวะ child orders, และตารางความจริงว่าไม้ขนาดไหน "ต้อง" slice จริง ๆ</p>
+
+
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">องก์ VI · Execution — EX-3: ลงมือจริง (รายย่อยคริปโต)</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · จากทฤษฎีสู่ปุ่มกดจริง<br>slice parent→child · ใช้สัญญาณกระดานจับจังหวะ · ไม้ขนาดไหน "ต้อง" slice</div>
+</div>
+
+<!-- ========== EX-3 ========== -->
+<h2 id="ex3">EX-3 — ลงมือจริง (รายย่อยคริปโต)</h2>
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจาก EX-2</div>
+<p><strong>เพิ่งรู้มา:</strong> Almgren-Chriss ให้ "รูปร่าง" ตารางส่ง (front-load ตามความกลัวเสี่ยง) และ efficient frontier ให้เลือกจุดที่ใช่ · <strong>ตอนนี้จะเติม:</strong> แล้วบนแอป Binance/Bybit กดยังไงจริง ๆ? เราจะแปลง trajectory เป็น <strong>child orders</strong> ที่ส่งได้จริง ใช้สัญญาณกระดานจากเล่มหลัก (OBI/OFI/VPIN) ปรับจังหวะ และที่สำคัญสุด — ตอบตรง ๆ ว่า <strong>ไม้ขนาดไหนต้องทำ ขนาดไหนไม่ต้อง</strong></p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>แบ่ง parent order → child orders เป็น <strong>TWAP / VWAP / POV (percentage of volume)</strong> ได้</li>
+<li>เลือกได้ว่า child ควรเป็น <strong>limit</strong> (post ในคิว) หรือ <strong>market</strong> (จ่าย spread กินทันที)</li>
+<li>ใช้ <strong>OBI/OFI (Part 5–7)</strong> และ <strong>VPIN (Part 8)</strong> จับจังหวะว่า "ตอนนี้เร่ง child หรือชะลอดี"</li>
+<li>มี <strong>ตารางความจริงรายย่อย</strong>: ไม้เล็ก → market พอ · ไม้ใหญ่/เหรียญบาง → ต้อง slice · HFT execution = เกินสนามเรา</li>
+</ul>
+</div>
+
+<h3 id="ex3-slice">parent → child: แบ่งไม้ใหญ่เป็นไม้เล็ก</h3>
+<p>หัวใจปฏิบัติคือแตก "parent order" (ไม้ใหญ่ที่ตั้งใจซื้อ) ออกเป็น "child orders" (ไม้ย่อยที่ทยอยส่งจริง) ตามรูปร่างที่ EX-2 บอก แล้วแต่ละ child เลือกได้ว่าจะ limit หรือ market:</p>
+
+<svg class="d" viewBox="0 0 500 235" role="img" aria-label="parent order แตกเป็น child orders ตามเวลา">
+<text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">Parent $50,000 → ทยอยเป็น child orders</text>
+<!-- parent box -->
+<rect x="190" y="32" width="120" height="34" rx="6" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+<text x="250" y="53" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">Parent $50,000</text>
+<!-- arrows down -->
+<line x1="250" y1="66" x2="250" y2="84" stroke="var(--g7)" stroke-width="1.2"/>
+<line x1="90" y1="84" x2="410" y2="84" stroke="var(--g7)" stroke-width="1.2"/>
+<!-- child bars heights front-loaded (AC) -->
+<g font-size="9" text-anchor="middle">
+<line x1="90" y1="84" x2="90" y2="95" stroke="var(--g7)"/><rect x="72" y="95" width="36" height="70" rx="3" fill="var(--red)" opacity="0.8"/><text x="90" y="180" fill="var(--g7)">c1</text><text x="90" y="193" fill="var(--g7)">$14k</text>
+<line x1="170" y1="84" x2="170" y2="95" stroke="var(--g7)"/><rect x="152" y="110" width="36" height="55" rx="3" fill="var(--red)" opacity="0.65"/><text x="170" y="180" fill="var(--g7)">c2</text><text x="170" y="193" fill="var(--g7)">$12k</text>
+<line x1="250" y1="84" x2="250" y2="95" stroke="var(--g7)"/><rect x="232" y="125" width="36" height="40" rx="3" fill="var(--amber)" opacity="0.75"/><text x="250" y="180" fill="var(--g7)">c3</text><text x="250" y="193" fill="var(--g7)">$10k</text>
+<line x1="330" y1="84" x2="330" y2="95" stroke="var(--g7)"/><rect x="312" y="137" width="36" height="28" rx="3" fill="var(--amber)" opacity="0.6"/><text x="330" y="180" fill="var(--g7)">c4</text><text x="330" y="193" fill="var(--g7)">$8k</text>
+<line x1="410" y1="84" x2="410" y2="95" stroke="var(--g7)"/><rect x="392" y="146" width="36" height="19" rx="3" fill="var(--green)" opacity="0.7"/><text x="410" y="180" fill="var(--g7)">c5</text><text x="410" y="193" fill="var(--g7)">$6k</text>
+</g>
+<text x="250" y="220" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →  (front-load: ไม้ต้นใหญ่ ไม้ท้ายเล็ก ตามรูป AC ใน EX-2)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.1 · ขนาด child ลดหลั่นแบบ front-loaded — ตัวเลขเป็นภาพประกอบเชิงสาธิต</p>
+
+<p>3 วิธีกำหนด "ขนาด/จังหวะ" child ที่รายย่อยใช้ได้จริง:</p>
+<table>
+<tr><th>วิธี</th><th>กฎการส่ง child</th><th>เหมาะกับ</th></tr>
+<tr><td><strong>TWAP</strong></td><td>child เท่า ๆ กันทุก N นาที (เช่น $5k ทุก 10 นาที)</td><td>ง่ายสุด · ทำมือได้ · flow สม่ำเสมอ</td></tr>
+<tr><td><strong>VWAP</strong></td><td>child ใหญ่ตอนชั่วโมงที่ตลาด volume เยอะ (ดู volume profile ย้อนหลัง)</td><td>อยากกลมกลืนฝูง · เหรียญที่มีจังหวะ volume ชัด</td></tr>
+<tr><td><strong>POV</strong><br>(percentage of volume)</td><td>ส่ง child = X% ของ volume ที่กำลังเทรดจริง (เช่น 10% ของ volume 1 นาที)</td><td>ปรับตามสภาพคล่อง real-time · ไม่ฝืนตลาดเงียบ</td></tr>
+</table>
+<p>POV คือตัวที่ "ปลอดภัย" ที่สุดเชิงสัญชาตญาณสำหรับเหรียญบาง: ตลาดคึก → ส่งเยอะตาม · ตลาดเงียบ → ส่งน้อยลงเอง ไม่ไปดันราคาในช่วงสภาพคล่องหด</p>
+
+<h3 id="ex3-limit">child เป็น limit หรือ market?</h3>
+<p>นี่คือจุดที่เล่มหลักทั้งเล่มมาบรรจบ — maker/taker (Part 3), คิว (Part 3), spread (Part 1):</p>
+<ul>
+<li><strong>Limit child (post-only):</strong> วางในคิว รอคนมาชน → ได้ราคาดี/อาจได้ rebate แต่ <strong>เสี่ยงไม่ได้คิว</strong> ถ้าราคาวิ่งหนี (กลายเป็น opportunity cost ที่ EX-1 เตือน)</li>
+<li><strong>Market child (taker):</strong> กินทันที จ่าย spread + walk the book → <strong>ได้ของแน่นอน</strong> แต่จ่าย temporary impact เต็ม ๆ</li>
+</ul>
+<p>กฎหยาบ: ช่วงที่ไม่รีบและ OBI หนุนฝั่งเรา → ใช้ limit รอคิว · ช่วงที่ราคากำลังจะหนีหรือใกล้หมดเวลา → ยอมจ่ายเป็น market สรุปคือ <strong>front ของ trajectory (รีบ) มักใช้ market มากกว่า, ปลาย (เหลือน้อย/มีเวลา) เอนไป limit</strong></p>
+
+<h3 id="ex3-signal">ใช้สัญญาณกระดานจับจังหวะ child</h3>
+<p>ตรงนี้คือที่เล่มหลักจ่ายคืน: AC ให้ "ตารางฐาน" แต่เราเอาสัญญาณ real-time มา <strong>ปรับจังหวะรอบ ๆ ตาราง</strong> (ไม่ใช่ทิ้งตาราง — แค่เร่ง/ชะลอ child ถัดไป):</p>
+<table>
+<tr><th>สัญญาณ (เล่มหลัก)</th><th>อ่านได้ว่า</th><th>ทำกับ child ถัดไป</th></tr>
+<tr><td><strong>OBI</strong> หนุนฝั่งซื้อ (Part 5)</td><td>แรงซื้อรออยู่เยอะ ราคามีแนวโน้มขยับขึ้น</td><td>เร่ง child / เอนไป market ก่อนราคาหนี</td></tr>
+<tr><td><strong>OFI</strong> เป็นบวกแรง (Part 6–7)</td><td>flow ผลักราคาขึ้นกำลังมา</td><td>เร่ง — อย่ารอช้าจนแพง</td></tr>
+<tr><td><strong>VPIN/toxicity</strong> พุ่ง (Part 8)</td><td>flow toxic — มี informed trader ราคาอาจ gap</td><td><strong>ชะลอ</strong> / ถอน limit / รอให้สงบ อย่าเป็นเหยื่อ adverse selection</td></tr>
+<tr><td>spread กว้างผิดปกติ (Part 1)</td><td>สภาพคล่องหด ต้นทุน taker แพง</td><td>หลีกเลี่ยง market · ใช้ limit หรือรอ</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 215" role="img" aria-label="ใช้สัญญาณ OFI และ VPIN ปรับจังหวะ child orders">
+<text x="250" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ตาราง AC = เส้นฐาน · สัญญาณ = เร่ง/ชะลอรอบ ๆ</text>
+<line x1="55" y1="150" x2="460" y2="150" stroke="var(--g7)" stroke-width="1.3"/>
+<text x="257" y="172" text-anchor="middle" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- baseline schedule ticks -->
+<g fill="var(--g2)"><rect x="90" y="120" width="20" height="30"/><rect x="170" y="120" width="20" height="30"/><rect x="250" y="120" width="20" height="30"/><rect x="330" y="120" width="20" height="30"/><rect x="410" y="120" width="20" height="30"/></g>
+<text x="250" y="190" text-anchor="middle" font-size="9" fill="var(--g7)">เทา = child ตามตารางฐาน</text>
+<!-- accel arrow green -->
+<path d="M100,112 L100,70" stroke="var(--green)" stroke-width="2" marker-end="url(#ag)"/>
+<text x="100" y="60" text-anchor="middle" font-size="9" fill="var(--green)">OFI+ → เร่ง</text>
+<!-- slow arrow red -->
+<path d="M340,118 L340,70" stroke="var(--red)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="340" y="60" text-anchor="middle" font-size="9" fill="var(--red)">VPIN↑ → ชะลอ</text>
+<defs>
+<marker id="ag" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto"><path d="M0,6 L4,0 L8,6" fill="none" stroke="var(--green)" stroke-width="1.5"/></marker>
+<marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="2" orient="auto"><path d="M0,0 L4,6 L8,0" fill="none" stroke="var(--red)" stroke-width="1.5"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.2 · สัญญาณกระดานไม่ล้มตาราง — แค่ขยับ child ถัดไปให้เร็วขึ้น (flow หนุน) หรือช้าลง (toxic)</p>
+
+<h3 id="ex3-truth">ตารางความจริงรายย่อย: ต้อง slice เมื่อไหร่</h3>
+<p>ส่วนที่ซื่อสัตย์ที่สุดขององก์นี้ — <strong>รายย่อยส่วนใหญ่ไม่ต้องทำ execution algo เลย</strong> มันสำคัญเฉพาะเมื่อไม้ใหญ่เทียบสภาพคล่อง:</p>
+<table>
+<tr><th>สถานการณ์</th><th>ไม้เทียบ depth ฝั่งตรงข้าม</th><th>ทำยังไง</th></tr>
+<tr><td>ไม้เล็ก เหรียญสภาพคล่องลึก (BTC/ETH)</td><td>&lt; ~10% ของ best levels</td><td><strong>market ทีเดียวพอ</strong> — impact น้อยกว่าความยุ่งยาก</td></tr>
+<tr><td>ไม้กลาง หรือเหรียญสภาพคล่องปานกลาง</td><td>กิน 2–5 ระดับราคา</td><td>slice ง่าย ๆ แบบ TWAP/POV 3–5 ไม้ก็ช่วยได้มาก</td></tr>
+<tr><td>ไม้ใหญ่เทียบ depth / เหรียญ alt บาง</td><td>walk the book หลายระดับ</td><td><strong>ต้อง slice จริงจัง</strong> + ใช้สัญญาณ + POV ตาม volume</td></tr>
+<tr><td>HFT smart order routing ข้าม venue ระดับ ms</td><td>—</td><td><strong>เกินสนามรายย่อย</strong> — ไม่ต้องไปแข่ง</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 240" role="img" aria-label="flowchart เลือกกลยุทธ์ตามขนาดไม้และสภาพคล่อง">
+<text x="250" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">เลือกกลยุทธ์: ไม้ของฉันเทียบ depth เท่าไหร่?</text>
+<rect x="180" y="28" width="140" height="32" rx="6" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.4"/>
+<text x="250" y="48" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--blue)">ไม้ ÷ depth ฝั่งตรงข้าม</text>
+<!-- branch small -->
+<path d="M250,60 L100,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="30" y="90" width="140" height="46" rx="6" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.4"/>
+<text x="100" y="108" text-anchor="middle" font-size="9.5" fill="var(--green)" font-weight="700">เล็ก (&lt;10%)</text>
+<text x="100" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">market ทีเดียว</text>
+<!-- branch mid -->
+<path d="M250,60 L250,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="180" y="90" width="140" height="46" rx="6" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="1.4"/>
+<text x="250" y="108" text-anchor="middle" font-size="9.5" fill="var(--amber)" font-weight="700">กลาง</text>
+<text x="250" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">TWAP/POV 3–5 ไม้</text>
+<!-- branch big -->
+<path d="M250,60 L400,90" stroke="var(--g7)" stroke-width="1.2"/>
+<rect x="330" y="90" width="150" height="46" rx="6" fill="var(--red-bg)" stroke="var(--red)" stroke-width="1.4"/>
+<text x="405" y="108" text-anchor="middle" font-size="9.5" fill="var(--red)" font-weight="700">ใหญ่/เหรียญบาง</text>
+<text x="405" y="124" text-anchor="middle" font-size="9.5" fill="var(--g7)">AC front-load + สัญญาณ</text>
+<!-- bottom note -->
+<rect x="120" y="170" width="260" height="40" rx="6" fill="var(--g0)" stroke="var(--g2)"/>
+<text x="250" y="188" text-anchor="middle" font-size="9.5" fill="var(--g7)">ทุกกรณี: เช็ก VPIN/spread ก่อนยิง market —</text>
+<text x="250" y="202" text-anchor="middle" font-size="9.5" fill="var(--g7)">toxic/spread กว้าง = รอหรือใช้ limit</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX3.3 · flowchart เลือกกลยุทธ์ตามขนาดไม้เทียบสภาพคล่อง</p>
+
+<div class="bx bg"><div class="bt">🎯 กับเคสของเรา — ปิดวง</div>
+<p>ไม้ <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong>: depth ฝั่ง ask รวม 3 ระดับแรกมีแค่ ~$15k → ไม้เราใหญ่กว่า depth = ช่องขวาสุดของ flowchart · แผน: แตกเป็น ~5 child แบบ front-loaded (EX-2), ส่งแบบ POV ~10–15% ของ volume, child ต้น ๆ เอนไป market (รีบลดความเสี่ยง) child ท้าย ๆ ใช้ limit รอคิว, และ <strong>ถ้า VPIN พุ่ง → หยุดชั่วคราว</strong> รอ flow สงบ · นี่คือคำตอบเต็มของคำถามที่เปิดใน EX-1 ว่า "ส่งไม้ใหญ่ยังไงไม่ให้ดันราคาตัวเอง"</p></div>
+
+<div class="bx ba"><div class="bt">📑 งานวิจัยรองรับ</div>
+<p>การ slice + ใช้ benchmark TWAP/VWAP/POV เป็นมาตรฐานอุตสาหกรรมที่ต่อยอดจาก <strong>Almgren &amp; Chriss (2000)</strong> · <strong>Obizhaeva &amp; Wang (2013)</strong> อธิบายว่าทำไม POV ฉลาด — สภาพคล่องฟื้นเป็นเวลา (resiliency) จึงควรเทรดตามจังหวะที่ตลาด "พร้อมรับ" · การใช้ toxicity จับจังหวะหลบอิงงานสาย <strong>VPIN (Easley, López de Prado &amp; O'Hara 2012)</strong> และงาน detecting toxic flow ที่เล่มหลัก Part 8 อ้างถึง</p></div>
+
+<div class="bx bb"><div class="bt">🔗 เชื่อมโยงเล่มหลัก — องก์นี้ทำให้ทั้งเล่มมาบรรจบ</div>
+<p><strong>Part 1</strong> (spread) · <strong>Part 2</strong> (walk the book/slippage) · <strong>Part 3</strong> (maker/taker, คิว → limit vs market child) · <strong>Part 5–7</strong> (OBI/OFI จับจังหวะเร่ง) · <strong>Part 8</strong> (VPIN จับ toxic เพื่อชะลอ) · <strong>Part 11</strong> (กับดัก latency/backtest) · <strong>Capstone</strong> (ขั้น 5 "ไม้ใหญ่ทยอยส่ง" ที่องก์นี้กางออกเต็ม)</p></div>
+
+<div class="bx br"><div class="bt">⚠️ กับดักที่ต้องระวัง (รายย่อยคริปโต)</div>
+<ul>
+<li><strong>front-run เงาตัวเอง:</strong> ส่ง child แบบคาดเดาได้ (เป๊ะทุก 10 นาที ขนาดเท่ากัน) บนเหรียญบาง บอตอาจจับทางได้ — สุ่ม jitter เวลา/ขนาดเล็กน้อย</li>
+<li><strong>fee สะสม:</strong> แตก child เยอะเกิน = จ่าย taker fee หลายรอบ อาจกินกำไรที่ประหยัด impact ได้ — ใช้ post-only/limit ช่วยลด และอย่า slice ละเอียดเกินจำเป็น</li>
+<li><strong>เหรียญยิ่งบาง impact ยิ่งสูง:</strong> alt เล็ก ๆ บางตัว ไม้ $5k ก็ walk the book แล้ว — เช็ก depth จริงก่อนเสมอ อย่าเชื่อกราฟราคาอย่างเดียว</li>
+<li><strong>latency รายย่อย:</strong> เราช้ากว่า HFT เสมอ — อย่าออกแบบกลยุทธ์ที่ต้องชนะเรื่องความเร็ว (Part 11) ใช้สัญญาณเชิงทิศทาง/จังหวะ ไม่ใช่ race</li>
+<li><strong>POV ต้องมีข้อมูล volume real-time:</strong> ถ้าดูไม่ทันจริง ใช้ TWAP + เช็ก spread/VPIN ก่อนยิงก็ปลอดภัยกว่าฝืนทำ POV มั่ว ๆ</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✍️ แบบฝึก (ข้อมูลคริปโตฟรี)</div>
+<p>เลือกเหรียญ alt สภาพคล่องปานกลางบน Binance/Bybit · จด L2 snapshot: รวม depth ฝั่ง ask 5 ระดับแรก · ถ้าจะซื้อ $20,000 ลองคำนวณว่าถ้า market ทีเดียวจะ walk the book ไปกี่ระดับ (= IS จาก EX-1) · แล้วออกแบบแผน slice: กี่ child, TWAP หรือ POV, child ไหน limit/market · สุดท้ายเขียนกฎ "ถ้า VPIN/спред เป็นแบบนี้ จะชะลอ" — นี่คือ execution plan ฉบับรายย่อยของคุณเอง</p></div>
+
+<p style="text-align:center;font-size:.9em;color:var(--g7);border-top:1px solid var(--g2);padding-top:14px;margin-top:24px">จบองก์ VI · Execution — คุณครบวงจรแล้ว: <strong>อ่านกระดาน → รู้ flow → ตัดสินใจ → วาง quote → คุมเสี่ยง → execute ไม้ใหญ่อย่างมีวิชา</strong> 🎯</p>
 
 </body></html>
