@@ -65,3 +65,11 @@ HTML มาตรฐาน (ตัวที่ active = ครอบด้วย
 - **Part 0:** นิยาม microstructure + **master concept map (you-are-here ภาพใหญ่)** + breadcrumb/recap (เป็นต้นแบบ)
 - **ภาคสถิติ:** breadcrumb + recap
 - **บท Capstone** + master map
+
+---
+
+## 8. นโยบายศัพท์ (Terminology) — ทับศัพท์ก่อน แปลทีหลัง
+- **คงศัพท์อังกฤษ** สำหรับ term-of-art ที่ผู้อ่านควรรู้จักจริง (เจอในทุกแหล่งวิชาการ): `toxic flow`, `toxicity`, `order flow`, `OFI`, `OBI`, `spread`, `inventory`, `microstructure`, `maker/taker`, `adverse selection`, `slippage`, `spoofing`, `queue`, `VPIN`, `microprice` ฯลฯ
+- **กำกับคำแปลไทยในวงเล็บครั้งแรกที่แนะนำเท่านั้น** (เช่น Part 8: "Order Flow Toxicity (ความเป็นพิษของ flow)") แล้วใช้ศัพท์อังกฤษล้วนหลังจากนั้น
+- **ใช้ไทย** เฉพาะคำที่แปลแล้วเข้าใจชัดและเป็นมาตรฐานไทยอยู่แล้ว (สภาพคล่อง, คิว, ค่าธรรมเนียม, ความผันผวน)
+- **ห้าม** แปล term-of-art แบบที่ทำให้งง (เช่น อย่าใช้ "flow เป็นพิษ" → ใช้ "toxic flow")
