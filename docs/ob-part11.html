@@ -32,8 +32,13 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ IV Market Making<br>MM loop, microprice, post-only, inventory limit + kill switch และกับดัก backtest 3 ข้อ</div>
 </div>
 
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
 <!-- ========== PART 11 ========== -->
 <h2 id="p11">Part 11 — MM-3 ลงมือจริง + กับดัก backtest</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 10 ให้สูตร Avellaneda-Stoikov คำนวณ reservation price + optimal spread ที่ optimal บนกระดาษ · <strong>ตอนนี้จะเติม:</strong> เอาสูตรนั้นมาประกอบเป็น MM loop ที่รันได้จริง (microprice, post-only, kill switch) แล้วเปิดโปง 3 กับดัก backtest — fill assumption, latency, market impact — ที่ทำให้กลยุทธ์ "optimal" บนกระดาษเจ๊งจริง</p></div>
 
 <div class="bx bb">
 <div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
@@ -171,6 +176,11 @@ else:<br>
 <p>Backtest รันบนข้อมูลในอดีต <strong>ที่ไม่มีตัวเราอยู่ในนั้น</strong> มันสมมติว่า order ของเราไม่กระทบกระดานเลย — แต่ของจริง quote ของเราเปลี่ยน OBI, เบียดคิวคนอื่น, และถ้าเราต้องยิง market ปิด inventory เราจะ walk the book ดันราคาสวนตัวเอง (Part 2) <strong>ยิ่งไม้ใหญ่ ยิ่ง impact มาก กำไรในกระดาษหายไปกับ impact ที่ backtest มองไม่เห็น</strong></p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📑 cross-ref — ไม้ใหญ่ต้องทยอยส่ง ไม่ใช่ทีเดียว (optimal execution)</div>
+<p>กับดัก market impact ข้างบนโยงตรงกับงาน <strong>Almgren &amp; Chriss (2000) — optimal execution</strong>: ถ้าต้องเข้า/ออกไม้ใหญ่ (เช่นตอน kill switch ปิด inventory ก้อนโต) การยิงทีเดียวจะ walk the book ดันราคาสวนตัวเองหนัก — ทางที่ดีกว่าคือ <strong>ซอยไม้ทยอยส่ง</strong> ชั่งน้ำหนักระหว่าง market impact (ยิ่งเร็วยิ่งกระแทกราคา) กับ timing risk (ยิ่งช้ายิ่งเสี่ยงราคาวิ่งหนี) · <strong>Guéant (2017)</strong> ต่อยอดเส้นนี้เข้ากับ A-S โดยตรง — รวม optimal market making กับ optimal execution เป็นกรอบเดียว (MM ที่คุม inventory limit จริง ๆ ต้องคิดทั้งการ <em>วาง quote</em> และการ <em>ทยอยปิดสถานะ</em> พร้อมกัน) เป็นสะพานไปองก์ "ต่อยอด/คุมเสี่ยง"</p>
+</div>
+
 <svg class="d" viewBox="0 0 500 290" role="img" aria-label="backtest สวยกับเส้นจริงที่ต่ำลงหลังหัก fill latency impact">
 <line x1="55" y1="30" x2="55" y2="230" stroke="var(--g2)" stroke-width="1.5"/>
 <line x1="55" y1="200" x2="470" y2="200" stroke="var(--g7)" stroke-width="1"/>
@@ -221,6 +231,11 @@ AFR        = adverse_fills / total_fills   (ยิ่งสูง = โดน ad
 </div>
 
 <div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>ถ้าจะรันบอต MM จริงกับเคส $5,000 long BTC — กราฟ backtest ที่เก็บ rebate ได้สวยอาจโกหก เพราะมันสมมติว่าได้ fill ทุก quote ที่ราคาแตะ (กับดัก 1) ของจริงเราอยู่ท้ายคิวและมักโดน fill ในจังหวะ adverse · ก่อนเอา $5,000 ลงจริง ต้องไต่บันได backtest → paper → live ไม้เล็กสุด แล้ววัด AFR กับ PnL_net หลังหัก fee จริง · และถ้าต้องปิด inventory ก้อนโต อย่ายิงทีเดียว — ทยอยส่งตามแนว Almgren-Chriss ด้านบน</p>
+</div>
+
+<div class="bx bg">
 <div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
 <p>เป้าหมาย: "จับโกหก" ตัวเองให้ได้ก่อนเสียเงินจริง</p>
 <ol>
@@ -242,7 +257,7 @@ for tick in backtest_data:<br>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
-<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 12: Grid Trading กับกระดาน — ยกระดับ grid ด้วย OBI/OFI และ VPIN กันกริดแตก →</p>
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> ถ้าวาง quote สองฝั่งทีละคู่มันคุมยากในตลาดจริง — จะกระจาย quote เป็นชั้น ๆ อัตโนมัติแล้วเอียงตามกระดานได้ไหม? Part 12 ยกระดับ grid trading ด้วย OBI/OFI และใช้ VPIN กันกริดแตก</p>
 
 </body>
 </html>

@@ -33,7 +33,14 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 </div>
 
 <!-- ========== PART 4 ========== -->
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
 <h2 id="p4">Part 4 — กระดานเชื่อถือได้แค่ไหน / นานแค่ไหน</h2>
+
+<div class="bx bb">
+<div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> spread กว้าง/แคบสะท้อนว่า MM ระแวง adverse selection แค่ไหน · <strong>ตอนนี้จะเติม:</strong> ของที่"เห็น"บนกระดานเชื่อได้แค่ไหน/นานแค่ไหน — สัญญาณอายุสั้น, ของจริง (at-touch) vs ของลวง (spoof/deep) และอ่านพฤติกรรม MM ตอน <strong>ถอน quote</strong></p>
+</div>
 
 <div class="bx bb">
 <div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
@@ -185,6 +192,71 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 </svg>
 <p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 4.3 · Resiliency timeline</p>
 
+<h3 id="p4-interpret">อ่านกระดาน: "เห็นแบบนี้ = อาจหมายถึง" (คิวหาย / เติมกลับ)</h3>
+
+<p>4 มิติข้างบนใช้จริงได้เมื่อเอามาแปลพฤติกรรม "คิวหาย" และ "เติมกลับ" ตรงหน้าจอ:</p>
+
+<table>
+<tr><th>เห็นบนกระดาน</th><th>อาจหมายถึง</th><th>เราควรทำ</th></tr>
+<tr><td><strong>กำแพงลึกหายทันทีที่ราคาเข้าใกล้</strong> (ไม่เคยถูกแตะ)</td><td>spoof / fleeting — ตั้งหลอกแล้วถอน ไม่ตั้งใจให้ fill</td><td>อย่าใช้เป็นแนวรับ/ต้าน ดูที่ depth-at-touch แทน</td></tr>
+<tr><td><strong>คิวที่ best หายแล้วเติมกลับเร็ว</strong> (เสี้ยววินาที)</td><td>resilient สูง — MM ยังอยู่ มั่นใจ สภาพคล่องจริง</td><td>เชื่อถือได้กว่า เข้าไม้ได้ราคานิ่งกว่า</td></tr>
+<tr><td><strong>ถูกกินแล้วช่องว่างค้างนาน</strong> ไม่มีใครเติม</td><td>resilient ต่ำ — MM ถอนตัว เสี่ยงราคากระชาก</td><td>ระวัง slippage หนัก เลี่ยงไม้ใหญ่จนกว่า depth กลับ</td></tr>
+<tr><td><strong>quote สองฝั่งบางลง/หายพร้อมกัน</strong></td><td>MM กำลังหลบความเสี่ยง (ก่อนข่าว/flow เป็นพิษ)</td><td>ชะลอเข้า รอจน MM กลับมาตั้ง quote</td></tr>
+</table>
+
+<h3 id="p4-mm">อ่านพฤติกรรม Market Maker ถอน quote</h3>
+
+<p>"คิวหาย" ไม่ได้แปลว่า spoof เสมอไป — บ่อยครั้งคือ MM <strong>ถอน quote จริงด้วยเหตุผลบริหารความเสี่ยง</strong> การแยกให้ออกว่า MM ถอนแบบไหนช่วยให้เราอ่านเจตนาได้ถูก แทนที่จะตื่นตูมว่าโดนหลอกทุกครั้ง:</p>
+
+<div class="bx bb">
+<div class="bt">🧠 MM ถอน quote — แยก 3 กรณี (ต่างจาก spoof)</div>
+<ul>
+<li><strong>ถอน 2 ฝั่งพร้อมกัน (bid+ask):</strong> MM <strong>หลบความเสี่ยง</strong> — มักก่อนข่าวสำคัญ หรือเมื่อ "flow เป็นพิษ" (โดน informed ไล่กินจนเริ่มขาดทุน) เขาถอนเพื่อหยุดเลือดไหล spread พองทั้งสองฝั่ง</li>
+<li><strong>ถอนฝั่งเดียว (เช่น ถอน ask เหลือ bid):</strong> MM <strong>เอียงมุมมอง / สะสม inventory</strong> — ไม่อยากขายเพิ่ม (คิดว่าราคาจะขึ้น) หรือถือ position ฝั่งหนึ่งมากจนปรับ quote ให้เอียง</li>
+<li><strong>ต่างจาก spoof:</strong> spoof คือ <strong>ตั้งก้อนใหญ่ไว้หลอก</strong> (มักลึก ห่าง best) <strong>แล้วถอนเมื่อราคาจะแตะ</strong> โดยไม่เคยตั้งใจให้ fill — เป็นการ <em>สร้าง</em>สภาพคล่องลวง ไม่ใช่การ <em>ถอน</em>ของจริงเพื่อบริหารความเสี่ยง</li>
+</ul>
+</div>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="schematic เทียบ 3 กรณี MM ถอน 2 ฝั่ง ถอนฝั่งเดียว และ spoof">
+<text x="250" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">เทียบ 3 กรณี: MM ถอน quote vs spoof</text>
+<!-- frame A: ถอน 2 ฝั่ง -->
+<text x="85" y="40" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--g8)">① ถอน 2 ฝั่ง</text>
+<text x="85" y="54" text-anchor="middle" font-size="8" fill="var(--g7)">หลบเสี่ยง/ก่อนข่าว</text>
+<line x1="20" y1="170" x2="155" y2="170" stroke="var(--g2)"/>
+<line x1="87" y1="70" x2="87" y2="172" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<rect x="55" y="120" width="20" height="50" fill="none" stroke="var(--green)" stroke-dasharray="3 2"/>
+<rect x="100" y="115" width="20" height="55" fill="none" stroke="var(--red)" stroke-dasharray="3 2"/>
+<text x="65" y="112" text-anchor="middle" font-size="7.5" fill="var(--green)">cancel</text>
+<text x="110" y="107" text-anchor="middle" font-size="7.5" fill="var(--red)">cancel</text>
+<text x="87" y="190" text-anchor="middle" font-size="8" fill="var(--g7)">spread พองทั้งคู่</text>
+<!-- frame B: ถอนฝั่งเดียว -->
+<text x="250" y="40" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--g8)">② ถอนฝั่งเดียว</text>
+<text x="250" y="54" text-anchor="middle" font-size="8" fill="var(--g7)">เอียงมุมมอง/สะสม inv.</text>
+<line x1="185" y1="170" x2="320" y2="170" stroke="var(--g2)"/>
+<line x1="252" y1="70" x2="252" y2="172" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<rect x="220" y="120" width="20" height="50" fill="var(--green)"/>
+<rect x="265" y="115" width="20" height="55" fill="none" stroke="var(--red)" stroke-dasharray="3 2"/>
+<text x="230" y="112" text-anchor="middle" font-size="7.5" fill="var(--green)">เหลือ bid</text>
+<text x="275" y="107" text-anchor="middle" font-size="7.5" fill="var(--red)">cancel ask</text>
+<text x="250" y="190" text-anchor="middle" font-size="8" fill="var(--g7)">quote เอียงขึ้น</text>
+<!-- frame C: spoof -->
+<text x="415" y="40" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--g8)">③ spoof</text>
+<text x="415" y="54" text-anchor="middle" font-size="8" fill="var(--g7)">ตั้งหลอกแล้วถอน</text>
+<line x1="350" y1="170" x2="485" y2="170" stroke="var(--g2)"/>
+<line x1="380" y1="70" x2="380" y2="172" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<rect x="388" y="135" width="16" height="35" fill="var(--green)"/>
+<rect x="440" y="95" width="22" height="75" fill="none" stroke="var(--red)" stroke-dasharray="3 2"/>
+<text x="451" y="89" text-anchor="middle" font-size="7.5" fill="var(--red)">ก้อนใหญ่ลวง</text>
+<text x="396" y="128" text-anchor="middle" font-size="7" fill="var(--g7)">best</text>
+<path d="M408 150 L438 130" stroke="var(--red)" stroke-width="1.8" marker-end="url(#mmx)"/>
+<text x="415" y="190" text-anchor="middle" font-size="8" fill="var(--g7)">หายเมื่อราคาเข้าใกล้</text>
+<text x="250" y="225" text-anchor="middle" font-size="9.5" fill="var(--g8)">①② = ถอน "ของจริง" บริหารเสี่ยง · ③ = ตั้ง "ของลวง" ไม่เคยตั้งใจ fill</text>
+<defs>
+<marker id="mmx" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--red)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 4.4 · MM ถอน quote 2 ฝั่ง / ฝั่งเดียว เทียบกับ spoof</p>
+
 <div class="fm">
 OBI = (BidVol − AskVol) / (BidVol + AskVol)   ← สเกล −1..+1, กลาง = 0   <strong>(พรีวิว — รายละเอียดเต็มใน Part 5)</strong><br>
 &nbsp;<br>
@@ -208,12 +280,17 @@ OBI = (BidVol − AskVol) / (BidVol + AskVol)   ← สเกล −1..+1, ก�
 </div>
 
 <div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>ก่อนเข้า long BTC $5,000 เราเห็น <strong>"กำแพง bid" ก้อนใหญ่ใต้ราคา</strong> — เชื่อเป็นแนวรับแล้วเข้าซื้อตามได้ไหม? เช็กก่อน: มันอยู่ลึกห่าง best และหายทุกครั้งที่ราคาเข้าใกล้หรือเปล่า (= spoof, อย่าเชื่อ) หรือเป็น depth-at-touch ที่ resilient เติมกลับจริง (= เชื่อได้กว่า) — อย่าวางแผนเข้าโดยอิงกำแพงที่อาจหายวับ</p>
+</div>
+
+<div class="bx bg">
 <div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
 <p>เปิด WebSocket <code>btcusdt@depth</code> หรือเหรียญสภาพคล่องปานกลาง บันทึก order book ต่อเนื่อง แล้วลอง <strong>จับออเดอร์ก้อนใหญ่ที่หายไปก่อนที่ราคาจะแตะ</strong> — จดเวลาที่มันปรากฏ ระยะห่างจาก best และเวลาที่มันถูก cancel ถ้าก้อนนั้นหายทุกครั้งที่ราคาเข้าใกล้ คุณเพิ่งจับ spoof ได้ด้วยตาตัวเอง ลองนับดูว่าใน 1 ชั่วโมงเจอกี่ครั้ง</p>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
-<p style="text-align:center;color:var(--g7);font-size:.9em">จบองก์ I · ต่อ Part 5: Order Book Imbalance (OBI) — ฝั่งไหนหนัก (ภาพนิ่ง) →</p>
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> จบองก์ I (อ่านกระดานเป็น) แล้ว — กรองของจริง/ของลวงได้แล้ว ทีนี้ "ฝั่งไหนหนักกว่ากัน" วัดเป็นตัวเลขยังไง? Part 5 เปิดด้วย Order Book Imbalance (OBI) — ภาพนิ่งที่ spoof หลอกได้ ต้องอ่านคู่ Part นี้</p>
 
 </body>
 </html>

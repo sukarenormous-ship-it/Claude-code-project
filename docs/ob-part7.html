@@ -32,8 +32,13 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · เลนส์ execution ของซีรีส์<br>จากภาพนิ่ง (OBI) → วิดีโอการเปลี่ยน (OFI) → วัดแรงดันราคาด้วย Kyle's λ</div>
 </div>
 
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
 <!-- ========== PART 7 ========== -->
 <h2 id="p7">Part 7 — OFI &amp; Price Impact</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 6 วัด "ของที่ลงมือจริง" ด้วย Δ/CVD แต่จับเฉพาะ market order ที่เทรดไปแล้ว · <strong>ตอนนี้จะเติม:</strong> ยกระดับเป็น OFI ที่รวมทุกแรง (limit+cancel+market) เป็น "วิดีโอการเปลี่ยน" แล้ววัดด้วย regression ว่า flow หนึ่งหน่วยดันราคาเท่าไร = Kyle's λ</p></div>
 
 <div class="bx bb">
 <div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
@@ -172,6 +177,11 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 <p><strong>Cont, Kukanov &amp; Stoikov (2014)</strong> วาง OFI event-based และความสัมพันธ์เชิงเส้น ΔP=λ·OFI · <strong>Cont, Cucuringu &amp; Zhang (2023)</strong> ขยายเป็น multi-level + cross-impact ด้วย PCA ตัวเลขที่มักอ้างว่า OFI อธิบาย ΔP ได้ <strong>R²~65%</strong> (สูงกว่า OBI/trade imbalance) นั้น <strong>ขึ้นกับสินทรัพย์ / timeframe / จำนวนชั้น / วิธี stationarize</strong> อย่ายึดเป็นค่าตายตัว — ให้ผู้อ่าน calibrate กับ market ตัวเองเสมอ</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📑 Cross-ref — square-root impact law (เสริม Kyle's λ)</div>
+<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(volume)</strong> — ดันไม้ใหญ่ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
+</div>
+
 <div class="bx br">
 <div class="bt">⚠️ กับดักมือใหม่</div>
 <ul>
@@ -187,12 +197,17 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 </div>
 
 <div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคส <strong>long BTC/USDT $5,000</strong>: ไม้ของเราจะดันราคา (impact) แค่ไหน? ประเมิน λ จาก regression — ถ้า λ สูง (ตลาดบาง/ช่วงข่าว) ไม้ $5,000 จะขยับ mid มากและเสีย slippage; ถ้า λ ต่ำ (ตลาดลึก) กระแทกได้ถูกกว่า และจาก square-root law การ <strong>หั่นไม้ทยอยเข้า</strong> ช่วยลด impact รวมเทียบกับยิงทีเดียว</p>
+</div>
+
+<div class="bx bg">
 <div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
 <p>ดึง Binance <code>@depth</code> ของ BTC/USDT มาทำ snapshot ต่อเนื่อง คำนวณ OFI ที่ best level ต่อช่วง 1 วินาที และ ΔP (การเปลี่ยน mid) แล้ว <strong>รัน regression สองชุด</strong>: (1) ΔP ~ OFI, (2) ΔP ~ OBI เทียบ <strong>R²</strong> ของทั้งสอง — คุณจะเห็นด้วยมือว่าทำไม "การเปลี่ยน (OFI)" อธิบายราคาได้ดีกว่า "ภาพนิ่ง (OBI)" ลองเพิ่มการ stationarize (หาร DepthBar) แล้วดูว่า R² เปลี่ยนไหม</p>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
-<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 8: VPIN — เมื่อ flow ไม่ใช่แค่ดันราคา แต่ "เป็นพิษ" จนตลาดพัง →</p>
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> λ บอกว่า flow ดันราคาแค่ไหน — แต่ถ้า flow ลำเอียงฝั่งเดียวหนักจน MM ถอนตัวล่ะ? เมื่อ flow ไม่ใช่แค่ดันราคา แต่ "เป็นพิษ" (toxic) จนตลาดพัง วัดยังไง?</p>
 
 </body>
 </html>

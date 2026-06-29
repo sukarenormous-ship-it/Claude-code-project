@@ -32,8 +32,13 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · เลนส์ execution ของซีรีส์<br>จาก "ของที่ยืนรอ" (OBI) สู่ "ของที่ลงมือจริง" (market order / Delta / CVD)</div>
 </div>
 
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
 <!-- ========== PART 6 ========== -->
 <h2 id="p6">Part 6 — ทำไม Market Order สำคัญ</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 5 สอน OBI = ภาพนิ่งของ "ของที่ยืนรอ" (limit/depth) ซึ่งถอนได้และถูก spoof หลอกได้ · <strong>ตอนนี้จะเติม:</strong> หันไปดู "ของที่ลงมือจริง" — market order ที่ยอมจ่าย spread เพื่อได้ทันที จึง informative กว่า limit แล้ววัดมันด้วย Delta/CVD</p></div>
 
 <div class="bx bb">
 <div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
@@ -117,6 +122,11 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <p><strong>Lu &amp; Abergel (2018)</strong> และตระกูล queue-reactive models พบว่าเมื่อคิวที่ best หมดด้วย market order ราคามักเคลื่อนต่อทิศเดิม (continuation) ในสัดส่วนสูง — ตัวเลขที่มักอ้างราว <strong>~84% continuation</strong> นั้น <strong>ขึ้นกับสินทรัพย์ / large-tick vs small-tick / นิยามและ calibration</strong> ควรตรวจกับ paper ต้นฉบับและ market ของคุณเอง อย่ายึดเป็นค่าตายตัว</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📐 Stylized fact — sign autocorrelation: order flow มาเป็นชุด</div>
+<p>ข้อเท็จจริงเชิงสถิติที่พบซ้ำ ๆ ทุกตลาด: <strong>เครื่องหมาย (sign) ของ market order มี autocorrelation เป็นบวกและจางช้ามาก (long-range)</strong> — พูดง่าย ๆ คือ buy มักตามด้วย buy, sell ตามด้วย sell <strong>order flow จึงมาเป็น "ชุด" ไม่ใช่สุ่มสลับ</strong> สาเหตุหลักคือรายใหญ่ทยอยหั่นไม้ใหญ่เป็นไม้เล็ก ๆ (order splitting) ปรากฏการณ์ "เหตุการณ์กระตุ้นเหตุการณ์ถัดไป" นี้เป็นรากของโมเดล <strong>Hawkes process</strong> (self-exciting) ที่ใช้จำลอง order flow — และเป็นอีกเหตุผลที่ market order ก้อนแรกเป็นเบาะแสว่ายังมีของตามมาอีก ไม่ใช่จบในตัว</p>
+</div>
+
 <h3 id="p6-delta">Delta (Δ) และ CVD — วัด "แรง market order" ได้จริง</h3>
 
 <p>เราวัด market order flow ได้ตรง ๆ ด้วย <strong>Delta</strong> = ปริมาณที่ taker ซื้อชน ลบด้วยปริมาณที่ taker ขายชน และสะสมเป็น <strong>CVD (Cumulative Volume Delta)</strong> เพื่อดูเทรนด์แรงซื้อ/ขาย:</p>
@@ -184,12 +194,17 @@ CVD_t      = Σ Δ  (running sum)    ← เทรนด์แรงซื้อ
 </div>
 
 <div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคส <strong>long BTC/USDT $5,000</strong>: เพิ่งเห็น market buy ก้อนใหญ่กระแทกเข้ามา (Δ พุ่ง, CVD ไต่) — ควร <strong>ไล่ตาม</strong> หรือ <strong>รอ revert</strong>? ดูสาเหตุ: ถ้าคิวหมดเพราะ market (M) และ flow มาเป็นชุด (sign autocorrelation) มักลากต่อ → ไล่ได้; ถ้า CVD ขึ้นแต่ราคาไม่ไป (absorption) หรือคิวหมดเพราะ cancel (C) → รอ revert อย่าไล่ยอด</p>
+</div>
+
+<div class="bx bg">
 <div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
 <p>เชื่อม Binance <code>@aggTrade</code> ของ BTC/USDT เก็บ 200 เทรด ติดป้าย buy/sell ด้วย flag <code>m</code> คำนวณ Δ ต่อช่วงเวลา (เช่นทุก 5 วินาที) แล้ว <strong>plot CVD</strong> เทียบกับเส้น mid — สังเกตช่วงที่ CVD ไต่ขึ้นแต่ราคาไม่ขึ้นตาม (= candidate absorption) นั่นคือจุดที่ "เดา CVD ตรง ๆ" จะพลาด</p>
 </div>
 
 <hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
-<p style="text-align:center;color:var(--g7);font-size:.9em">ต่อ Part 7: OFI &amp; Price Impact — จากภาพนิ่งสู่วิดีโอ และวัด λ ด้วย regression →</p>
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> Δ/CVD จับแค่ market ที่เทรดไปแล้ว — ถ้ารวมทุกแรง (limit+cancel+market) เป็น "วิดีโอการเปลี่ยน" แล้ววัดว่ามันดันราคาเท่าไรต่อหน่วย (Kyle's λ) ด้วย regression ได้ไหม?</p>
 
 </body>
 </html>
