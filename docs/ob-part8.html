@@ -87,6 +87,11 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <p>อีกข้อเท็จจริงเชิงสถิติที่พบทุกตลาด: <strong>"ความผันผวนเกาะกลุ่ม" (volatility clustering)</strong> — ช่วงที่ผันผวนสูงมักตามด้วยผันผวนสูง ช่วงสงบตามด้วยสงบ พายุไม่ได้กระจายสม่ำเสมอตามเวลานาฬิกา (เป็นที่มาของโมเดลตระกูล GARCH) นี่คือเหตุผลตรง ๆ ที่ VPIN เลือกใช้ <strong>volume clock</strong>: ช่วงพายุปริมาณเทรดพุ่ง buckets เต็มเร็ว นาฬิกาปริมาณจึง "ซูม" เข้าช่วงอันตรายโดยอัตโนมัติ แทนที่จะเฉลี่ยมันจมไปกับช่วงสงบเหมือนนาฬิกาเวลา</p>
 </div>
 
+<div class="bx bb">
+<div class="bt">🧬 "PIN" ใน VPIN มาจากไหน — บรรพบุรุษปี 1996</div>
+<p>ก่อนจะมี VPIN มี <strong>PIN (Probability of Informed Trading)</strong> จาก <strong>Easley, Kiefer, O'Hara &amp; Paperman (1996)</strong> ก่อน — โมเดลโครงสร้างที่มองว่าแต่ละวันสุ่มว่าจะมี "ข่าว" ไหม (prob α) ข่าวดีหรือร้าย แล้ว order มาแบบ Poisson: noise traders ทั้งสองฝั่งอัตรา ε, ส่วน informed เพิ่มอัตรา μ ฝั่งที่ได้เปรียบ ประมาณค่าพารามิเตอร์ด้วย <strong>MLE</strong> แล้วได้ <code>PIN = αμ / (αμ + 2ε)</code> = สัดส่วน flow ที่มาจากคนรู้ข่าว · จุดอ่อนของ PIN คือต้องนับ buy/sell รายวันแล้ว fit MLE — ช้าและหยาบเกินใช้ real-time · <strong>VPIN (2012)</strong> จึงเกิดมาแก้ตรงนี้: เปลี่ยนจากนาฬิกาเวลาเป็น <strong>volume clock</strong> และเลิกใช้ MLE หันมาใช้ bulk classification แทน — ได้ตัววัด toxicity ที่อัปเดตได้ทันเหตุการณ์ (นี่คือเหตุผลที่ชื่อมันคือ "<strong>V</strong>olume-synchronized <strong>PIN</strong>")</p>
+</div>
+
 <h3 id="p8-bucket">Volume buckets และ bulk classification</h3>
 
 <p>เราหั่นกระแสเทรดเป็น buckets ปริมาณเท่ากัน (เช่น V = ปริมาณเฉลี่ยต่อวัน/50) ในแต่ละ bucket เราประมาณว่า <strong>ปริมาณนั้นเป็นฝั่งซื้อกี่ส่วน ขายกี่ส่วน</strong> ด้วย <em>bulk volume classification</em> (ใช้การเปลี่ยนราคาในช่วง bucket ผ่านฟังก์ชัน Φ = CDF ของ normal):</p>

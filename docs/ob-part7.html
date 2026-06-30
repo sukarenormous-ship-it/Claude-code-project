@@ -61,7 +61,7 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <tr><td>วัดอะไร</td><td><strong>state</strong> — ปริมาณที่ตั้งรอ ณ จุดเวลาหนึ่ง</td><td><strong>flow</strong> — การเปลี่ยนสุทธิระหว่างสองช่วงเวลา</td></tr>
 <tr><td>คำอุปมา</td><td>ภาพถ่ายนิ่ง</td><td>วิดีโอการเปลี่ยน</td></tr>
 <tr><td>รวมเหตุการณ์</td><td>แค่ snapshot (ไม่รู้สาเหตุ)</td><td>limit + cancel + market รวมกัน</td></tr>
-<tr><td>ความสัมพันธ์กับราคา</td><td>correlation (เดาทิศ)</td><td><strong>regression เชิงสาเหตุ</strong> ΔP=λ·OFI</td></tr>
+<tr><td>ความสัมพันธ์กับราคา</td><td>correlation (เดาทิศ)</td><td><strong>regression แรงดัน→ราคา</strong> ΔP=λ·OFI</td></tr>
 <tr><td>จับ "การเปลี่ยน" ไหม</td><td>ไม่ — เป็นภาพนิ่ง</td><td>ใช่ — เป็นแกนกลาง</td></tr>
 </table>
 
@@ -108,6 +108,9 @@ OFI_n = e^b_n − e^a_n      (บวก = แรงดันขึ้น, ลบ
 <h3 id="p7-kyle">Kyle's λ — price impact (แรงดันราคา) ต่อหนึ่งหน่วย flow</h3>
 
 <p>คำถามสำคัญ: OFI หนึ่งหน่วยดันราคาเท่าไร? ตอบด้วย <strong>regression เชิงเส้น</strong> ของการเปลี่ยน mid (ΔP) บน OFI ความชัน (slope) ที่ได้คือ <strong>Kyle's λ</strong> — "ค่าความลึก/แพงของตลาด" (price impact coefficient)</p>
+
+<div class="bx bb"><div class="bt">⚖️ ความเป๊ะ: "Kyle's λ" ตัวจริง vs slope ที่เราวัด</div>
+<p>ในเปเปอร์ต้นฉบับ <strong>Kyle (1985)</strong> λ เป็น <strong>ค่าดุลยภาพเชิงทฤษฎี</strong> ที่ MM ตั้งราคาป้องกัน insider — มีสูตรปิด λ = ½·σ_v/σ_u (ความผันผวนของข่าวลับ ÷ ของ noise) และวัด flow เป็น "net signed market order" · ส่วนสิ่งที่เราคำนวณจริงในเล่มนี้คือ <strong>slope ของ regression ΔP บน OFI</strong> ตาม <strong>Cont-Kukanov-Stoikov (2014)</strong> ซึ่ง OFI รวม limit+cancel+market ไม่ใช่แค่ market order · นักปฏิบัติเรียกมันว่า "Kyle's λ" เพราะมัน <em>เล่นบทเดียวกัน</em> (price impact ต่อหน่วย flow) แต่จำไว้ว่ามันเป็น <strong>การประมาณเชิงสถิติ (contemporaneous, ไม่ใช่ causal)</strong> ไม่ใช่ λ ดุลยภาพของ Kyle เป๊ะ ๆ</p></div>
 
 <div class="fm">
 ΔP = λ · OFI + ε        ← สมการ price impact (linear)<br>
@@ -179,7 +182,7 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 
 <div class="bx ba">
 <div class="bt">📑 Cross-ref — square-root impact law (เสริม Kyle's λ)</div>
-<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(volume)</strong> — ดันไม้ใหญ่ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
+<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(Q/V)</strong> — โดย Q = ขนาดไม้ใหญ่ที่ทยอยส่ง วัด <strong>เทียบกับ volume เฉลี่ยของตลาด (V)</strong> ไม่ใช่มูลค่าดิบ — ดันขนาด (เทียบ volume) ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
 </div>
 
 <div class="bx br">

@@ -1610,7 +1610,7 @@ OBI_N = ( Σ w_k·V_bid,k − Σ w_k·V_ask,k ) / ( Σ w_k·V_bid,k + Σ w_k·V_
 
 <div class="bx ba">
 <div class="bt">📑 งานวิจัยรองรับ — และข้อควรระวังเรื่องตัวเลข</div>
-<p><strong>Lu &amp; Abergel (2018)</strong> และตระกูล queue-reactive models พบว่าเมื่อคิวที่ best หมดด้วย market order ราคามักเคลื่อนต่อทิศเดิม (continuation) ในสัดส่วนสูง — ตัวเลขที่มักอ้างราว <strong>~84% continuation</strong> นั้น <strong>ขึ้นกับสินทรัพย์ / large-tick vs small-tick / นิยามและ calibration</strong> ควรตรวจกับ paper ต้นฉบับและ market ของคุณเอง อย่ายึดเป็นค่าตายตัว</p>
+<p><strong>Lu &amp; Abergel (2018)</strong> สร้างโมเดล LOB หลายชั้นแบบ queue-reactive (Markovian) บนข้อมูลจริงเพื่อออกแบบและ backtest กลยุทธ์ market making · stylized fact ที่ตระกูลโมเดลนี้ชี้ให้เห็นและเรายืมมาใช้คือ: เมื่อคิวที่ best หมดด้วย <strong>market order</strong> ราคามักเคลื่อน <strong>ต่อ</strong>ทิศเดิม (continuation) ส่วนถ้าหมดด้วย <strong>cancel</strong> มักเด้งกลับ · <em>หมายเหตุตัวเลข:</em> เลข continuation สูง ๆ (เช่นที่บางแหล่งอ้างราว ~80%+) <strong>ไม่ใช่ค่าคงที่</strong> — ขึ้นกับสินทรัพย์ / large-tick vs small-tick / นิยามและ calibration และไม่ใช่ headline result ที่ pin ได้กับเปเปอร์เดียว ควรตรวจกับ market ของคุณเอง</p>
 </div>
 
 <div class="bx ba">
@@ -1768,7 +1768,7 @@ CVD_t      = Σ Δ  (running sum)    ← เทรนด์แรงซื้อ
 <tr><td>วัดอะไร</td><td><strong>state</strong> — ปริมาณที่ตั้งรอ ณ จุดเวลาหนึ่ง</td><td><strong>flow</strong> — การเปลี่ยนสุทธิระหว่างสองช่วงเวลา</td></tr>
 <tr><td>คำอุปมา</td><td>ภาพถ่ายนิ่ง</td><td>วิดีโอการเปลี่ยน</td></tr>
 <tr><td>รวมเหตุการณ์</td><td>แค่ snapshot (ไม่รู้สาเหตุ)</td><td>limit + cancel + market รวมกัน</td></tr>
-<tr><td>ความสัมพันธ์กับราคา</td><td>correlation (เดาทิศ)</td><td><strong>regression เชิงสาเหตุ</strong> ΔP=λ·OFI</td></tr>
+<tr><td>ความสัมพันธ์กับราคา</td><td>correlation (เดาทิศ)</td><td><strong>regression แรงดัน→ราคา</strong> ΔP=λ·OFI</td></tr>
 <tr><td>จับ "การเปลี่ยน" ไหม</td><td>ไม่ — เป็นภาพนิ่ง</td><td>ใช่ — เป็นแกนกลาง</td></tr>
 </table>
 
@@ -1815,6 +1815,9 @@ OFI_n = e^b_n − e^a_n      (บวก = แรงดันขึ้น, ลบ
 <h3 id="p7-kyle">Kyle's λ — price impact (แรงดันราคา) ต่อหนึ่งหน่วย flow</h3>
 
 <p>คำถามสำคัญ: OFI หนึ่งหน่วยดันราคาเท่าไร? ตอบด้วย <strong>regression เชิงเส้น</strong> ของการเปลี่ยน mid (ΔP) บน OFI ความชัน (slope) ที่ได้คือ <strong>Kyle's λ</strong> — "ค่าความลึก/แพงของตลาด" (price impact coefficient)</p>
+
+<div class="bx bb"><div class="bt">⚖️ ความเป๊ะ: "Kyle's λ" ตัวจริง vs slope ที่เราวัด</div>
+<p>ในเปเปอร์ต้นฉบับ <strong>Kyle (1985)</strong> λ เป็น <strong>ค่าดุลยภาพเชิงทฤษฎี</strong> ที่ MM ตั้งราคาป้องกัน insider — มีสูตรปิด λ = ½·σ_v/σ_u (ความผันผวนของข่าวลับ ÷ ของ noise) และวัด flow เป็น "net signed market order" · ส่วนสิ่งที่เราคำนวณจริงในเล่มนี้คือ <strong>slope ของ regression ΔP บน OFI</strong> ตาม <strong>Cont-Kukanov-Stoikov (2014)</strong> ซึ่ง OFI รวม limit+cancel+market ไม่ใช่แค่ market order · นักปฏิบัติเรียกมันว่า "Kyle's λ" เพราะมัน <em>เล่นบทเดียวกัน</em> (price impact ต่อหน่วย flow) แต่จำไว้ว่ามันเป็น <strong>การประมาณเชิงสถิติ (contemporaneous, ไม่ใช่ causal)</strong> ไม่ใช่ λ ดุลยภาพของ Kyle เป๊ะ ๆ</p></div>
 
 <div class="fm">
 ΔP = λ · OFI + ε        ← สมการ price impact (linear)<br>
@@ -1886,7 +1889,7 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 
 <div class="bx ba">
 <div class="bt">📑 Cross-ref — square-root impact law (เสริม Kyle's λ)</div>
-<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(volume)</strong> — ดันไม้ใหญ่ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
+<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(Q/V)</strong> — โดย Q = ขนาดไม้ใหญ่ที่ทยอยส่ง วัด <strong>เทียบกับ volume เฉลี่ยของตลาด (V)</strong> ไม่ใช่มูลค่าดิบ — ดันขนาด (เทียบ volume) ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
 </div>
 
 <div class="bx br">
@@ -1977,6 +1980,11 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 <div class="bx ba">
 <div class="bt">📐 Stylized fact — volatility clustering: ทำไมต้องนาฬิกาปริมาณ</div>
 <p>อีกข้อเท็จจริงเชิงสถิติที่พบทุกตลาด: <strong>"ความผันผวนเกาะกลุ่ม" (volatility clustering)</strong> — ช่วงที่ผันผวนสูงมักตามด้วยผันผวนสูง ช่วงสงบตามด้วยสงบ พายุไม่ได้กระจายสม่ำเสมอตามเวลานาฬิกา (เป็นที่มาของโมเดลตระกูล GARCH) นี่คือเหตุผลตรง ๆ ที่ VPIN เลือกใช้ <strong>volume clock</strong>: ช่วงพายุปริมาณเทรดพุ่ง buckets เต็มเร็ว นาฬิกาปริมาณจึง "ซูม" เข้าช่วงอันตรายโดยอัตโนมัติ แทนที่จะเฉลี่ยมันจมไปกับช่วงสงบเหมือนนาฬิกาเวลา</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🧬 "PIN" ใน VPIN มาจากไหน — บรรพบุรุษปี 1996</div>
+<p>ก่อนจะมี VPIN มี <strong>PIN (Probability of Informed Trading)</strong> จาก <strong>Easley, Kiefer, O'Hara &amp; Paperman (1996)</strong> ก่อน — โมเดลโครงสร้างที่มองว่าแต่ละวันสุ่มว่าจะมี "ข่าว" ไหม (prob α) ข่าวดีหรือร้าย แล้ว order มาแบบ Poisson: noise traders ทั้งสองฝั่งอัตรา ε, ส่วน informed เพิ่มอัตรา μ ฝั่งที่ได้เปรียบ ประมาณค่าพารามิเตอร์ด้วย <strong>MLE</strong> แล้วได้ <code>PIN = αμ / (αμ + 2ε)</code> = สัดส่วน flow ที่มาจากคนรู้ข่าว · จุดอ่อนของ PIN คือต้องนับ buy/sell รายวันแล้ว fit MLE — ช้าและหยาบเกินใช้ real-time · <strong>VPIN (2012)</strong> จึงเกิดมาแก้ตรงนี้: เปลี่ยนจากนาฬิกาเวลาเป็น <strong>volume clock</strong> และเลิกใช้ MLE หันมาใช้ bulk classification แทน — ได้ตัววัด toxicity ที่อัปเดตได้ทันเหตุการณ์ (นี่คือเหตุผลที่ชื่อมันคือ "<strong>V</strong>olume-synchronized <strong>PIN</strong>")</p>
 </div>
 
 <h3 id="p8-bucket">Volume buckets และ bulk classification</h3>
@@ -3460,7 +3468,7 @@ min  CrossEntropy( softmax(f(X)) , y )<br>
 
 <div class="bx ba">
 <div class="bt">📑 งานวิจัยรองรับ</div>
-<p><strong>DeepLOB (Zhang et al. 2018, arXiv 1808.03668)</strong> เป็นงานวางมาตรฐาน CNN+LSTM อ่าน LOB ทำนายทิศ mid ส่วน <strong>TLOB (arXiv 2502.15757)</strong> และ <strong>LiT</strong> นำ Transformer/attention มาใช้ และมีงานสำรวจ microstructure ในคริปโต LOB โดยเฉพาะ (<strong>arXiv 2506.05764</strong>) <em>ข้อควรระวัง:</em> ผลความแม่นในเปเปอร์มัก backtest บนข้อมูลเฉพาะตลาด/ช่วงเวลา — อย่าคาดหวังตัวเลขเดียวกันกับคริปโตที่ regime เปลี่ยนเร็ว และต้อง validate ด้วยข้อมูลของคุณเอง</p>
+<p><strong>DeepLOB (Zhang et al. 2018, arXiv 1808.03668)</strong> เป็นงานวางมาตรฐาน CNN+LSTM อ่าน LOB ทำนายทิศ mid ส่วน <strong>TLOB (arXiv 2502.15757)</strong> และ <strong>LiT</strong> นำ Transformer/attention มาใช้ ส่วนงานคริปโตโดยตรง <strong>Wang (2025, arXiv 2506.05764)</strong> "Exploring Microstructural Dynamics in Cryptocurrency Limit Order Books" benchmark โมเดลตั้งแต่ logistic regression/XGBoost จนถึง DeepLOB/Conv1D-LSTM บนข้อมูล BTC/USDT ของ Bybit แล้วได้ข้อสรุปสำคัญ (ตรงชื่อรอง): <strong>"Better Inputs Matter More Than Stacking Another Hidden Layer"</strong> — feature/การเตรียมข้อมูลที่ดีให้ผลมากกว่าการต่อ layer ลึกขึ้น เป็นบทเรียนตรงสำหรับรายย่อยที่อยากเริ่มทำโมเดลเอง · <em>ข้อควรระวัง:</em> ผลความแม่นในเปเปอร์มัก backtest บนข้อมูลเฉพาะตลาด/ช่วงเวลา — อย่าคาดหวังตัวเลขเดียวกันกับคริปโตที่ regime เปลี่ยนเร็ว และต้อง validate ด้วยข้อมูลของคุณเอง</p>
 </div>
 
 <div class="bx ba">
@@ -4015,7 +4023,7 @@ x(t) = X · sinh( κ·(T − t) ) / sinh( κ·T )<br>
 <p>ไม้ <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong>: depth ฝั่ง ask รวม 3 ระดับแรกมีแค่ ~$15k → ไม้เราใหญ่กว่า depth = ช่องขวาสุดของ flowchart · แผน: แตกเป็น ~5 child แบบ front-loaded (EX-2), ส่งแบบ POV ~10–15% ของ volume, child ต้น ๆ เอนไป market (รีบลดความเสี่ยง) child ท้าย ๆ ใช้ limit รอคิว, และ <strong>ถ้า VPIN พุ่ง → หยุดชั่วคราว</strong> รอ flow สงบ · นี่คือคำตอบเต็มของคำถามที่เปิดใน EX-1 ว่า "ส่งไม้ใหญ่ยังไงไม่ให้ดันราคาตัวเอง"</p></div>
 
 <div class="bx ba"><div class="bt">📑 งานวิจัยรองรับ</div>
-<p>การ slice + ใช้ benchmark TWAP/VWAP/POV เป็นมาตรฐานอุตสาหกรรมที่ต่อยอดจาก <strong>Almgren &amp; Chriss (2000)</strong> · <strong>Obizhaeva &amp; Wang (2013)</strong> อธิบายว่าทำไม POV ฉลาด — สภาพคล่องฟื้นเป็นเวลา (resiliency) จึงควรเทรดตามจังหวะที่ตลาด "พร้อมรับ" · การใช้ toxicity จับจังหวะหลบอิงงานสาย <strong>VPIN (Easley, López de Prado &amp; O'Hara 2012)</strong> และงาน detecting toxic flow ที่เล่มหลัก Part 8 อ้างถึง</p></div>
+<p>การ slice + ใช้ benchmark TWAP/VWAP/POV เป็นมาตรฐานอุตสาหกรรมที่ต่อยอดจาก <strong>Almgren &amp; Chriss (2000)</strong> · <strong>Obizhaeva &amp; Wang (2013)</strong> โมเดล execution บน LOB จริงที่สภาพคล่องฟื้นเป็นเวลา (resiliency) — คำตอบ optimal ตามตัวเปเปอร์จริง ๆ เป็นรูป <strong>U: ยิงก้อนใหญ่ตอนเปิด-ปิด + ทยอยเรื่อย ๆ ตรงกลาง</strong> (ไม่ใช่ POV เป๊ะ) แต่แก่นที่เรายืมมาคือ "เพราะ liquidity ฟื้นเป็นเวลา จึงควรเทรดตามจังหวะที่ตลาดพร้อมรับ" ซึ่ง POV เป็นวิธี approximate ที่รายย่อยทำได้จริง · การใช้ toxicity จับจังหวะหลบอิงงานสาย <strong>VPIN (Easley, López de Prado &amp; O'Hara 2012)</strong> และงาน detecting toxic flow ที่เล่มหลัก Part 8 อ้างถึง</p></div>
 
 <div class="bx bb"><div class="bt">🔗 เชื่อมโยงเล่มหลัก — องก์นี้ทำให้ทั้งเล่มมาบรรจบ</div>
 <p><strong>Part 1</strong> (spread) · <strong>Part 2</strong> (walk the book/slippage) · <strong>Part 3</strong> (maker/taker, คิว → limit vs market child) · <strong>Part 5–7</strong> (OBI/OFI จับจังหวะเร่ง) · <strong>Part 8</strong> (VPIN จับ toxic เพื่อชะลอ) · <strong>Part 11</strong> (กับดัก latency/backtest) · <strong>Capstone</strong> (ขั้น 5 "ไม้ใหญ่ทยอยส่ง" ที่องก์นี้กางออกเต็ม)</p></div>
