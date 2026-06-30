@@ -125,6 +125,30 @@ order book dynamics, adverse selection (**Glosten-Milgrom, Kyle**), market makin
 
 แต่ละ Phase: commit แยก + push เข้า branch `claude/quant-theory-book-plan-s0qs7u` (PR #5 อัปเดตอัตโนมัติ)
 
+## 4.5 มาตรฐานเนื้อหา v2 — จากคณะผู้เชี่ยวชาญ 4 คน (บังคับใช้ทุก Part)
+
+หลังให้ผู้เชี่ยวชาญ 4 เลนส์ (pricing/stochastic · asset-pricing academic · buy-side practitioner · บรรณาธิการการสอน) รีวิว Part I ได้มาตรฐานที่ต้องยึดทั้งเล่ม:
+
+**A. การ์ดทฤษฎี = 8 องค์ประกอบ** (เดิม 6):
+Thesis → ใช้ทำอะไร → ใช้ได้เมื่อไร → พังเมื่อไร → **⚖️ ข้อดี/ข้อเสีย** (2 คอลัมน์) → **🧠 มุมที่ quant มองต่าง** (สีม่วง, รูปแบบ "คนทั่วไปเห็น X / quant เห็น Y", 1–2 ประโยค) → ปัจจุบันใช้จริง → Papers
+- ★★ ใช้ **mini-card** ได้: Thesis + พังเมื่อไร + มุม quant + Paper (ย่อแบบ *ตั้งใจ* ไม่ใช่ตกหล่น)
+- "พังเมื่อไร" = failure mode เชิงเทคนิค; "ข้อดี/ข้อเสีย" = trade-off เชิงปฏิบัติ — ห้ามซ้ำกัน
+
+**B. เล่าเรื่องให้คนรัก quant**: วาง hook (เรื่องจริง) ก่อนตารางหนัก ๆ, มี pull-quote, ปิดแต่ละตอนด้วย cliffhanger เชื่อม Part ถัดไป — ใช้ metaphor เดียว ("เลโก้")
+
+**C. ระบบศัพท์**: เก็บอังกฤษ + ไทยในวงเล็บครั้งแรก + `<abbr title>` tooltip + กล่อง "ศัพท์ใหม่ในตอนนี้" ท้าย Part
+
+**D. ความถูกต้องที่ต้องระวัง (บทเรียนจาก Part I)**:
+- √time ใช้กับ σ·dW เท่านั้น (drift โตเชิงเส้น); แยก arithmetic vs **geometric BM** (BS/√252 ใช้ GBM); ใส่ vol drag −σ²/2
+- martingale ⊋ random walk; Grossman-Stiglitz อธิบายว่าทำไม edge มี
+- citation แม่นปี/ผู้แต่ง: "Harrison-Kreps (1979) & Harrison-Pliska (1981)" แยกกัน; CVaR เครดิต Rockafellar-Uriasev (2000) ด้วย; **GARCH = Engle 1982 ไม่ใช่ยุค ML**
+- Part II ต้องมี: mean-variance Lagrangian + estimation error (error-maximizer), CAPM assumptions + Roll's critique + เหตุที่ β พังจริง, joint-hypothesis, FF เป็น "การปะ CAPM"
+- ห้าม hallucinate paper — ไม่แน่ใจให้ตัดออก
+
+**E. ทฤษฎีที่เพิ่มเข้าแผนที่** (จาก practitioner): GARCH, Cointegration/Engle-Granger+OU, SDF (Hansen-Jagannathan), Markov regime-switching (Hamilton 1989), market-impact/√-law/capacity, Avellaneda-Lee stat arb — และกลุ่ม "เครื่องมือเชิงเวลา" เป็นแกนของ Part V
+
+**F. เรตติ้งปรับ**: M-M ★→★★ · ICAPM ★→★★ · Coherent Risk/CVaR ★★→★★★ · GARCH/Cointegration/Grossman-Stiglitz = ★★★
+
 ## 5. Convention ที่ต้องคุมให้ตรงกัน
 - **Notation**: `S, K, r, q, σ, T, Φ(·), w, Σ, β, R_f, R_m` ใช้เหมือนกันทั้ง 2 เล่มและตรงกับแผนเดิม
 - **เลขบท**: ภายในแต่ละเล่มเรียงต่อเนื่อง; ใส่ป้าย gap ที่ปิดทุกบท
