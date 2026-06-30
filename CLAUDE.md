@@ -107,7 +107,12 @@ English technical term (คำแปลไทย)
 | Calendar Spread | สเปรดต่างเดือนหมดอายุ |
 | Diagonal Spread | สเปรดทแยง |
 | Ratio Spread | สเปรดอัตราส่วน |
+| Conversion | คอนเวอร์ชัน (กลยุทธ์ล็อกกำไรจากพุต-คอล) |
+| Reversal | รีเวอร์ซัล (คอนเวอร์ชันแบบกลับด้าน) |
+| Bull Put Spread | สเปรดพุตแบบกระทิง |
+| Bear Call Spread | สเปรดคอลแบบหมี |
 | Synthetic (Position) | สถานะสังเคราะห์ |
+| Synthetic Forward | ฟอร์เวิร์ดสังเคราะห์ |
 | Covered Call | คอฟเวอร์คอล |
 | Protective Put | พุตป้องกันความเสี่ยง |
 | Collar | คอลลาร์ (ปลอกคอ) |
@@ -134,6 +139,8 @@ English technical term (คำแปลไทย)
 | Brownian Motion | การเคลื่อนที่แบบบราวน์ |
 | Geometric Brownian Motion (GBM) | การเคลื่อนที่บราวน์เชิงเรขาคณิต |
 | Cumulative Distribution Function (CDF) | ฟังก์ชันการแจกแจงสะสม |
+| Expected Value (EV) | มูลค่าคาดหวัง |
+| Prediction | การคาดการณ์ราคา |
 
 ### การเก็งกำไร ความเสี่ยง และการเทรด (Arbitrage, risk & trading)
 
@@ -155,6 +162,9 @@ English technical term (คำแปลไทย)
 | Overfitting | การฟิตเกินพอดี |
 | Hedging | การป้องกันความเสี่ยง |
 | Delta Hedging | การป้องกันความเสี่ยงด้วยเดลตา |
+| Delta-neutral | สถานะเป็นกลางต่อทิศทางราคา |
+| Funding Rate | อัตราค่าธรรมเนียมการถือสถานะ (สัญญา Perpetual) |
+| Ex-dividend (ex-div / XD) | วันขึ้นเครื่องหมายไม่ได้รับสิทธิเงินปันผล |
 
 ### ตลาดทำนายผล DeFi และตราสารโครงสร้าง (Prediction markets, DeFi & structured products)
 
