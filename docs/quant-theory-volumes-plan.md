@@ -118,9 +118,10 @@ order book dynamics, adverse selection (**Glosten-Milgrom, Kyle**), market makin
 
 ## 4. ลำดับงาน (Build Order)
 
-**Phase A1** — เล่ม A Part I–II (ปฐมบท+Random Walk, Portfolio/CAPM) → รีวิวสไตล์+ความลึกให้ผ่าน
-**Phase A2** — เล่ม A Part III–VI (EMH, Pricing, Time Series, สังเคราะห์)
-**Phase B**  — เล่ม B Part I–V (Fixed Income/Credit, Microstructure, Risk, สังเคราะห์)
+**Phase A1** — ✅ เสร็จ: เล่ม A Part I–II (Random Walk, Portfolio/CAPM) ผ่านรีวิวทีม
+**Phase A2** — ✅ เสร็จ: เล่ม A Part III–VI (EMH, Pricing, Time Series, สังเคราะห์) ผ่านรีวิวทีม
+→ **เล่ม A "ทฤษฎีตำนานของ Quant" ครบ 6 ตอน** (`theory-part1..6.html`) ทุกตอนผ่านคณะผู้เชี่ยวชาญ 3–4 คน
+**Phase B**  — ⏳ ถัดไป: เล่ม B Part I–V (Fixed Income/Credit, Microstructure, Risk, สังเคราะห์) — `pillars-part1..5.html`
 **Phase F**  — อัปเดต `quant-theory-book-plan.md` ให้ map เล่ม A/B เข้า master spine + (ถ้าต้องการ) ทำหน้า index รวม + generate PDF
 
 แต่ละ Phase: commit แยก + push เข้า branch `claude/quant-theory-book-plan-s0qs7u` (PR #5 อัปเดตอัตโนมัติ)
