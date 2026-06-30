@@ -1,0 +1,132 @@
+# แผน Build เล่มใหม่ — 2 เล่ม เติมเต็มทฤษฎี Quant
+
+> เอกสารนี้คือ **พิมพ์เขียวลงมือ** ต่อยอดจาก `quant-theory-book-plan.md`
+> สรุปสิ่งที่ตกลงกันแล้ว + โครงต่อบทของเล่มใหม่ 2 เล่ม เพื่อให้เริ่มเขียนได้ทันที
+
+---
+
+## 0. สรุปงาน (Decisions ที่เคาะแล้ว)
+
+| หัวข้อ | ข้อสรุป |
+|---|---|
+| **ทำอะไร** | สร้างเนื้อหา *ใหม่* เพื่อปิดช่องว่างทฤษฎี quant ที่เล่มเดิม (math/pm/arb/eye) ขาด |
+| **แรงบันดาลใจ** | "5 Legendary Quant Theories" (Random Walk·Mean-Variance·CAPM·EMH·Options Pricing) + ผู้ใช้ขอเพิ่ม **Time Series** + ปิด gap ที่เหลือทั้งหมด |
+| **แยกหรือรวม?** | **แยกเป็นเล่มใหม่** (ไม่ยัดเข้า 4 ซีรีส์เดิม) เพราะของใหม่ไม่มีบ้านเดิม + เล่มเดิมยังไม่รวมร่าง + เขียนเป็นโมดูลแล้วเสียบเข้า master spine ทีหลังปลอดภัยกว่า |
+| **กี่เล่ม?** | **2 เล่ม** แบ่งตาม "โหมดอ่าน": เล่ม A = narrative (เรื่องเล่าตามไทม์ไลน์), เล่ม B = reference (อ้างอิงแยกสนาม) |
+| **รูปแบบไฟล์** | HTML self-contained สไตล์เดียวกับของเดิม (Sarabun, กล่อง `.bx`, สูตร Unicode ใน `.fm`, SVG วาดมือ, `@media print`→PDF) วางใน `docs/` |
+| **เทมเพลตบท** | Intuition → ทฤษฎี → สูตร → ตัวอย่างคำนวณ → **เชื่อมเล่มเดิม (cross-ref)** → กับดัก → กล่องสรุป |
+| **กฎเหล็ก** | เขียนครั้งเดียวมีบ้านเดียว — เรื่องที่เล่มเดิมมีแล้ว ให้ *อ้างอิง* ไม่เขียนซ้ำ; ใช้ notation sheet กลางตาม `quant-theory-book-plan.md` |
+| **รอบนี้ทำ** | **เล่ม A ก่อน** (ตรงกับรูป + เป็น gap ใหญ่สุดคือ Portfolio Theory), เล่ม B รอบถัดไป |
+
+ความลึก: **สมดุล** เป็นค่าตั้งต้น (intuition หนัก + สูตรหลัก + ตัวอย่างคำนวณ; derivation สำคัญ ๆ เช่น Lagrangian ของ mean-variance / ที่มา BS ใส่ในกล่อง "เจาะลึก" ที่ข้ามได้) — *ยังรอผู้ใช้ยืนยัน*
+
+---
+
+## 1. เล่ม A — "ทฤษฎีตำนานของ Quant"  (`theory-part1..6.html`)
+
+โหมด: เล่าเรื่องตามไทม์ไลน์ 5 ทฤษฎี → แต่ละทฤษฎีเป็น "ประตู" สู่หัวข้อ gap สมัยใหม่ที่มันให้กำเนิด
+
+### Part I — ปฐมบท + Random Walk (1900) — `theory-part1.html`
+- ไทม์ไลน์ 5 ทฤษฎี (1900→1973) + เล่มนี้จะพาไปไหน
+- Bachelier, Brownian motion, random walk hypothesis: "ราคา = ความไม่แน่นอนที่มองเห็นได้"
+- **ประตู → measure-theoretic probability**: σ-algebra, filtration, conditional expectation, **martingale** (กล่องเจาะลึก)
+- เชื่อม: `math-part6` (stochastic+Itô), `eye` (มองโลกเป็นความไม่แน่นอน)
+- ปิด gap: 🟡 measure/martingale
+
+### Part II — Mean-Variance (1952) + CAPM/APT (1964) — `theory-part2.html`  ⭐ gap ใหญ่สุด
+- Mean-variance: E(Rₚ)=Σwᵢe(Rᵢ), σₚ²=w'Σw, efficient frontier, two-fund theorem
+- **เจาะลึก**: Lagrangian หา min σₚ² s.t. Σwᵢ=1, e(Rₚ)=μ*
+- CAPM: SML, β, e[Rᵢ]=R_f+βᵢ(e[Rₘ]−R_f); APT
+- **ขยายเติม gap**: factor models (Fama-French 3/5, Carhart momentum), Black-Litterman, risk parity, shrinkage covariance (Ledoit-Wolf), position sizing (Kelly → fractional)
+- เชื่อม: `math-part4` (linear algebra), `math-part5` (optimization), `pm-part5a` (Kelly)
+- ปิด gap: 🔴 **Portfolio Theory & Asset Pricing**
+
+### Part III — Efficient Markets (1970) — `theory-part3.html`
+- EMH 3 รูปแบบ (weak / semi-strong / strong) + joint hypothesis problem
+- **limits to arbitrage** (Shleifer-Vishny), noise traders, ทำไม arb มีอยู่และทำไมมันหาย
+- anomalies & factor zoo, p-hacking / multiple testing (โยงไป Part V)
+- เชื่อม: `arb-part1` (นิยาม arb), `eye` (information edge)
+- ปิด gap: 🟡 EMH / limits to arbitrage
+
+### Part IV — Options Pricing / Black-Scholes (1973) — `theory-part4.html`  ⭐
+- Risk-neutral pricing: replication + no-arbitrage → measure Q, **Girsanov** (กล่องเจาะลึก), fundamental theorem of asset pricing
+- ที่มา BS: **BS PDE + Feynman-Kac** (เชื่อม PDE ↔ expectation); binomial → BS convergence
+- Greeks (อ้างอิง `pm-part5a`, ไม่เขียนซ้ำ — เติมเฉพาะมุมทฤษฎี)
+- ส่วนขยาย: American/exotics, vol surface, smile/skew, local vol (Dupire), stochastic vol (Heston/SABR), jump-diffusion (Merton)
+- เชื่อม: `pm-part5a`, `math-part7` (BS+MC), `arb-part3` (vol arb)
+- ปิด gap: 🔴 **Pricing theory เชิงลึก**
+
+### Part V — Time Series (ผู้ใช้ขอเพิ่ม) — `theory-part5.html`  ⭐
+- Stationarity, white noise, random walk vs AR(1) (โยงกลับ Part I)
+- ACF/PACF → AR / MA / ARMA / ARIMA (วิธีเลือก order)
+- **GARCH family** (vol clustering) → โยง vol forecasting
+- **Cointegration** (Engle-Granger, Johansen) + VECM → pairs/stat-arb
+- Regime-switching (Markov)
+- **Backtest ที่เชื่อถือได้**: lookahead/survivorship bias, multiple testing, **deflated Sharpe**, purged/embargoed CV (López de Prado)
+- เชื่อม: `math-part6` (time series+vol), `arb-part5` (pairs/mean-reversion/stat-arb/ML)
+- ปิด gap: 🟠 Time series + ML rigor
+
+### Part VI — สังเคราะห์ A + Cheat Sheet — `theory-part6.html`
+- 5 ทฤษฎี + time series ร้อยกันเป็นภาพเดียว (แผนภาพความสัมพันธ์)
+- map เข้า master spine (Part 0–XI) ของ `quant-theory-book-plan.md`
+- Cheat sheet: สูตรหลัก + เมื่อไรใช้อะไร
+
+---
+
+## 2. เล่ม B — "เสาที่เหลือของ Quant (Engineering)"  (`pillars-part1..5.html`)
+
+โหมด: คู่มืออ้างอิงแยกสนาม — 3 เสาที่ 5 รีลไม่พูดถึงแต่ quant ต้องมี *(ทำรอบถัดไป)*
+
+### Part I — Fixed Income & Rates — `pillars-part1.html`
+yield curve, bootstrapping, duration/convexity, DV01; term-structure models (Vasicek, CIR, Hull-White, HJM, LMM เบื้องต้น); bond/swap/FRA/swaption pricing
+→ ปิด gap: 🔴 **Fixed Income / Rates**
+
+### Part II — Credit — `pillars-part2.html`
+hazard rate, **CDS pricing**, structural (Merton) vs reduced-form default models
+→ ปิด gap: 🔴 Credit
+
+### Part III — Market Microstructure — `pillars-part3.html`
+order book dynamics, adverse selection (**Glosten-Milgrom, Kyle**), market making (**Avellaneda-Stoikov**) + inventory risk, optimal execution (**Almgren-Chriss**), market impact / TCA
+→ เชื่อม: `arb-part7`, `pm-part7` (execution reality) · ปิด gap: 🟠 Microstructure
+
+### Part IV — Risk Management Theory — `pillars-part4.html`
+**VaR / CVaR (Expected Shortfall)**, coherent risk measures, factor risk decomposition, stress testing; performance metrics (Sharpe/Sortino/Information Ratio/Calmar), drawdown control; backtest pitfalls (โยง เล่ม A Part V)
+→ เชื่อม: `arb-part7`, `pm-part5/7` · ปิด gap: 🟠 Risk theory
+
+### Part V — สังเคราะห์ B + แผนที่ "เติมเต็มครบแล้ว" — `pillars-part5.html`
+รวม 3 เสา + ตารางยืนยันว่า gap แดง/ส้ม/เหลือง *ทั้งหมด* จาก `quant-theory-book-plan.md` ถูกปิดครบ
+
+---
+
+## 3. ตารางปิด Gap (ยืนยันว่าครบ)
+
+| Gap (จากแผนเดิม) | ปิดที่ |
+|---|---|
+| 🔴 Portfolio Theory & Asset Pricing | เล่ม A · Part II |
+| 🔴 Fixed Income / Rates / Credit | เล่ม B · Part I–II |
+| 🔴 Pricing theory เชิงลึก | เล่ม A · Part IV |
+| 🟠 Microstructure theory | เล่ม B · Part III |
+| 🟠 Econometrics / ML rigor | เล่ม A · Part V |
+| 🟠 Risk theory | เล่ม B · Part IV |
+| 🟡 Measure-theoretic probability | เล่ม A · Part I |
+| 🟡 EMH / limits to arbitrage | เล่ม A · Part III |
+| (เพิ่มตามคำขอ) Time Series | เล่ม A · Part V |
+
+➡️ ครบทุก gap
+
+---
+
+## 4. ลำดับงาน (Build Order)
+
+**Phase A1** — เล่ม A Part I–II (ปฐมบท+Random Walk, Portfolio/CAPM) → รีวิวสไตล์+ความลึกให้ผ่าน
+**Phase A2** — เล่ม A Part III–VI (EMH, Pricing, Time Series, สังเคราะห์)
+**Phase B**  — เล่ม B Part I–V (Fixed Income/Credit, Microstructure, Risk, สังเคราะห์)
+**Phase F**  — อัปเดต `quant-theory-book-plan.md` ให้ map เล่ม A/B เข้า master spine + (ถ้าต้องการ) ทำหน้า index รวม + generate PDF
+
+แต่ละ Phase: commit แยก + push เข้า branch `claude/quant-theory-book-plan-s0qs7u` (PR #5 อัปเดตอัตโนมัติ)
+
+## 5. Convention ที่ต้องคุมให้ตรงกัน
+- **Notation**: `S, K, r, q, σ, T, Φ(·), w, Σ, β, R_f, R_m` ใช้เหมือนกันทั้ง 2 เล่มและตรงกับแผนเดิม
+- **เลขบท**: ภายในแต่ละเล่มเรียงต่อเนื่อง; ใส่ป้าย gap ที่ปิดทุกบท
+- **Cross-ref**: ลิงก์/อ้างอิงไฟล์เดิมแทนการเขียนซ้ำเสมอ
+- **Difficulty tier**: ติด L1/L2/L3 ทุกบท; กล่อง "เจาะลึก (ข้ามได้)" สำหรับ derivation
