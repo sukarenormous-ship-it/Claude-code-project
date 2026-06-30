@@ -220,6 +220,27 @@ q < 0 (short) → ทั้ง bid,ask เลื่อนขึ้น → อย
 <p>แนวคิด "MM ต้องถ่วงดุล inventory ด้วยการเอียงราคา" ถูกวางรากฐานโดย <strong>Ho &amp; Stoll (1981)</strong> ที่มองว่า dealer ปรับ quote ตามระดับสต็อกเพื่อคุมความเสี่ยง และ <strong>Glosten &amp; Milgrom (1985)</strong> ที่อธิบายว่าสปรดส่วนหนึ่งมีไว้ป้องกัน adverse selection — ทั้งสองงานคือฐานที่ <strong>Avellaneda &amp; Stoikov (2008)</strong> นำมาเขียนเป็นสูตร reservation price ใน Part 10 และต่อยอดสู่ยุค reinforcement learning ในเวลาต่อมา</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — limit order ที่วางรอ = "short option"</div>
+<p>ทำไม inventory ถึงสะสมฝั่งผิดเสมอ? คำตอบเชิงทฤษฎีจาก <strong>Copeland &amp; Galai (1983)</strong> และ <strong>Glosten (1994)</strong>: การวาง limit order ที่รอฟิล = <strong>การเขียน free option (เขียน option ฟรี) ให้ตลาด</strong> — คุณยอมให้คนอื่นเลือกได้ว่าจะมาชนหรือไม่ · ปัญหาคือมันจะถูกชน <strong>ตอนที่ราคากำลังจะวิ่งผ่านมันพอดี</strong> นั่นแปลว่า bid ของคุณฟิลตอนราคากำลังจะร่วงต่อ, ask ฟิลตอนราคากำลังจะพุ่งต่อ — เรียกว่า <em>"you get the trades you don't want"</em> (คุณได้ดีลที่ไม่อยากได้) นี่คือ adverse selection ของ resting order</p>
+<p>กำไรสุทธิของ MM จึงเขียนเป็นสามก้อน (Bouchaud et al. 2018):</p>
+<div class="fm">
+EV(MM) = spread capture − adverse-selection cost − inventory cost<br>
+&nbsp;&nbsp;└ เก็บ ½spread ┘   └ โดนเลือกตอนผิด ┘   └ แบกสต็อกค้าง ┘
+</div>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่คือเหตุผลเชิงโครงสร้างว่าทำไม <strong>grid bot (Part 12)</strong> ถึงเจ๊งตอนเทรนด์แรง — grid วาง limit เป็นตาราง ราคาที่ trend จะกวาดฟิลฝั่งที่ผิดทั้งแถบ (โดน adverse-select เต็ม ๆ) ส่วน <strong>A-S (Part 10)</strong> คือการ "คิดค่า option" นี้แล้วถอย quote ออกตามความเสี่ยง</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — limit order มีค่าเท่าไร: fee + queue position</div>
+<p>ก่อนวาง limit ควรรู้ว่ามันมี "มูลค่าคาดหวัง" ที่คำนวณได้ (Harris 2003, <em>Trading and Exchanges</em>):</p>
+<div class="fm">
+EV(limit) = P(fill)·(½·spread + maker rebate) − P(adverse fill)·adverse cost − queue-wait cost
+</div>
+<p>สังเกตว่า <strong>queue position (ตำแหน่งในคิว) คือสินทรัพย์อย่างหนึ่ง</strong> — ยิ่งคุณอยู่ต้นคิว P(fill) ยิ่งสูงและได้ฟิลก่อนข่าวร้ายจะมา (priority มีค่ามากขึ้นเมื่อ tick size บีบให้คิวยาว) · maker rebate บวกเข้า EV โดยตรง ส่วนการรอคิวนานคือต้นทุนค่าเสียโอกาส</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่ทำให้การเลือก <strong>post-only/maker (Part 11)</strong> ไม่ใช่แค่ "ประหยัด fee" แต่เป็นการ optimize EV ทั้งสมการ — และอธิบายว่าทำไม PnL ของ grid/MM (Part 9–12) อ่อนไหวกับ fee tier และ queue มาก</p>
+</div>
+
 <div class="bx bb">
 <div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
 <p>PnL ของ MM = PnL_spread + q·Δp นั้นคือ <strong>payoff ที่มี inventory เป็นตัวคูณความเสี่ยง</strong> — ตรงกับมุมมองใน <strong>Payoff Mastery (pm)</strong> ที่ว่ากำไรขาดทุนต้องคิดบนตำแหน่งจริง ไม่ใช่แค่ราคา ส่วนเครื่องมือคำนวณ k, δ และการ optimize จะใช้ความรู้ regression/optimization จากเล่ม <strong>math</strong> เต็มตัวใน Part 10</p>

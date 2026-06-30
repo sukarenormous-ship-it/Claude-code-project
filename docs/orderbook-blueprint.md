@@ -284,7 +284,17 @@ ob (effective price/depth) ─► arb (ต้นทุนจริงของ a
 3. **Market impact เชิงลึก** (ต่อ Part 7):
    - Bouchaud et al. — propagator model + **square-root law** (impact ∝ √volume) · Gatheral (2010) no-dynamic-arbitrage
 4. **Optimal MM ต่อยอด** (ต่อ Part 10): Guéant (2017) *Optimal market making* · Guilbaud & Pham (2013)
-5. **ภาคผนวก "ตำราต่อยอด":** O'Hara *Market Microstructure Theory* (1995) · Harris *Trading & Exchanges* (2003) · Bouchaud-Bonart-Donier-Gould *Trades, Quotes and Prices* (2018) · Cartea-Jaimungal-Penalva *Algorithmic & HF Trading*
+5. **ภาคผนวก "ตำราต่อยอด":** O'Hara *Market Microstructure Theory* (1995) · Harris *Trading & Exchanges* (2003) · Hasbrouck *Empirical Market Microstructure* (2007) · Foucault-Pagano-Röell *Market Liquidity* (2013) · Bouchaud-Bonart-Donier-Gould *Trades, Quotes and Prices* (2018) · Cartea-Jaimungal-Penalva *Algorithmic & HF Trading* (2015) · Guéant *Financial Mathematics of Market Liquidity* (2016)
+
+### 8.6 ทฤษฎีระดับตำรา — เติม 7 กล่อง inline (ดู docs/textbook-theory-blueprint.md)
+จาก gap analysis 2 ทีมเทียบ TOC ตำรา canon — เติมเป็นกล่อง "📚 ทฤษฎีเบื้องหลัง (จากตำรา)" แทรกในบทที่ทฤษฎีนั้นถูกใช้:
+1. **Part 9** — resting limit order = short option (Copeland-Galai 1983; Glosten 1994) + EV(limit)/queue economics (Harris 2003)
+2. **Part 3** — Roll (1984) model: efficient price + bid-ask bounce, Spread=2√(−Cov)
+3. **ภาคสถิติ** — microstructure noise / volatility signature plot (σ พองเมื่อ sample ถี่)
+4. **Part 7** — propagator + order-flow long memory (Bouchaud) = กลไกใต้ √-law
+5. **Part 7** — Amihud (2002) ILLIQ = λ จากข้อมูลรายวัน (universe selection)
+6. **Part 14** — Hasbrouck (1995) Information Share + Gonzalo-Granger (ใครนำ price discovery)
+7. **EX-1** — TCA triad: effective = realized + price impact (markout = วัด toxicity ราย order)
 
 ### 8.5 Survey/Completeness pass + review literature (ใช้เป็น checklist ความครบ)
 **Survey หลัก (แผนที่หัวข้อ):** Madhavan (2000) *Market Microstructure: A Survey* · Biais-Glosten-Spatt (2005) · **Gould et al. (2013) *Limit Order Books*** (survey เฉพาะ LOB — ตรงแกนเล่ม)

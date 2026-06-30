@@ -730,6 +730,21 @@ Effective Spread = 2 × | P_trade − Mid |   ← ต้นทุนจริง
 
 <p>ย้ำให้ชัด: <strong>quoted spread</strong> คือช่องว่าง best ask − best bid ที่ <em>เห็นบนจอ</em> (ค่าที่ "ป้ายบอก") ส่วน <strong>effective spread</strong> คือต้นทุน <em>ที่จ่ายจริง</em> วัดจากราคา fill เทียบ mid — รวม slippage เมื่อออเดอร์ walk the book ไปกินหลายชั้น จึงมักกว้างกว่า quoted spread โดยเฉพาะออเดอร์ก้อนใหญ่หรือกระดานบาง</p>
 
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — Roll (1984): ราคาที่เห็น = ราคาจริง + "เด้งของ spread"</div>
+<p>ก่อนจะแยก spread เป็น 3 ก้อน มีโมเดลพื้นฐานที่สุดที่อยู่ใต้ทุกอย่าง — <strong>Roll model (1984)</strong> มองว่าราคาที่เราเห็นบนเทป (transaction price) ประกอบจากสองส่วน:</p>
+<div class="fm">
+P_obs(t) = m(t) + (s/2)·d(t)<br>
+&nbsp;&nbsp;m(t) = "efficient price" (ราคายุติธรรมจริง เดินแบบ random walk)<br>
+&nbsp;&nbsp;d(t) = +1 ถ้าเป็น market buy, −1 ถ้า market sell  (ตัว "เด้ง" bid-ask bounce)<br>
+&nbsp;&nbsp;s = spread<br>
+<br>
+ผลลัพธ์เด็ด:  Spread = 2·√( −Cov(ΔP_t , ΔP_{t−1}) )
+</div>
+<p>เพราะการเด้งสลับ buy/ask↔sell/bid ทำให้ผลต่างราคาติด ๆ กันมี <strong>autocorrelation เป็นลบ</strong> Roll เลยประมาณ spread ได้จาก <em>ราคาเทรดอย่างเดียว</em> (ไม่ต้องมี quote!) — สวยตรงที่ครึ่งหนึ่งของสิ่งที่ดูเหมือน "ราคาผันผวน" จริง ๆ คือ <strong>noise ที่เราสร้างเองจากการข้าม spread</strong> ไม่ใช่ข้อมูลใหม่</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่คือ "ราคาจริง vs noise" ที่อยู่ใต้ Lee-Ready/CVD (Part 6) และเป็นคำเตือนตรงไป <strong>ภาคสถิติ</strong>: ถ้าวัด σ บนแท่งถี่ ๆ คุณจะวัด "เด้งของ spread" ปนเข้าไปจน σ พองเกินจริง — แล้ว σ ที่พองนี้ไปป้อน Avellaneda-Stoikov (Part 10) กับระยะ grid (Part 12) ผิดเงียบ ๆ</p>
+</div>
+
 <svg class="d" viewBox="0 0 500 280" role="img" aria-label="stacked bar 3 ก้อนต้นทุนของ spread">
 <line x1="60" y1="240" x2="460" y2="240" stroke="var(--g2)" stroke-width="1.5"/>
 <text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">spread = 3 ก้อนซ้อนกัน (เทียบ 2 สถานการณ์)</text>
@@ -1223,6 +1238,17 @@ Standard Deviation     σ = √(variance)              ← หน่วยเด
 <div class="bx bb">
 <div class="bt">🔗 σ ตัวนี้คือตัวเดียวกับในเล่ม</div>
 <p><strong>σ</strong> (volatility) คือหัวใจของ <strong>Avellaneda-Stoikov</strong> (Part 10): reservation price <code>r = s − q·γ·σ²·(T−t)</code> โดย <strong>q</strong> = inventory ที่ถืออยู่, <strong>γ</strong> = ระดับความกลัวความเสี่ยง — ยิ่งราคา SD สูง (ผันผวน) MM ยิ่งกาง spread กว้าง · σ ยังโผล่เป็นตัวหารใน z-score (หัวข้อถัดไป)</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — กับดัก: ยิ่ง sample ถี่ σ ยิ่ง "พอง" (volatility signature plot)</div>
+<p>มีกับดักสำคัญตอนวัด σ ที่ตำรา empirical (Hasbrouck 2007) เตือนไว้ และต่อยอดจาก Roll model (Part 3): ราคาที่เห็น = efficient price + <strong>microstructure noise (เด้ง bid-ask + ราคาเป็นขั้น tick)</strong> · noise ก้อนนี้ <strong>mean-revert</strong> (เด้งกลับ) ไม่เหมือน efficient price ที่เดินสุ่ม — พอเราวัด σ บนแท่งที่ <strong>ถี่เกินไป</strong> (1 วินาที, tick) noise จะครอบงำจน <strong>realized volatility พองเกินจริง</strong></p>
+<p>ถ้าพล็อต "σ ที่วัดได้" เทียบกับ "ความถี่ของ sample" จะเห็นเส้นพุ่งขึ้นตอนถี่จัด — เรียกว่า <strong>volatility signature plot</strong> · σ จริงของ efficient price คือค่าที่เส้นนิ่งตอน sample หยาบลง (เช่น 5–15 นาที)</p>
+<div class="fm">
+σ²(วัดได้ที่ความถี่ Δ) ≈ σ²(efficient price) + 2·(ความแปรปรวนของ noise)/Δ<br>
+&nbsp;&nbsp;Δ เล็ก (ถี่) → พจน์ noise ใหญ่ → σ พองเกินจริง
+</div>
+<p><strong>ใช้กับเล่มนี้:</strong> σ ที่พองผิดจะป้อนเข้า <strong>Avellaneda-Stoikov (Part 10)</strong> ทำให้กาง spread กว้างเกิน, ตั้งระยะ <strong>grid (Part 12)</strong> ผิด, และทำให้ Sharpe ใน <strong>backtest ความถี่สูง (Part 11)</strong> ดูดีหลอก ๆ — เวลาวัด σ เพื่อใช้จริง อย่าใช้แท่งถี่สุด ให้เลือกความถี่ที่ signature plot เริ่มนิ่ง</p>
 </div>
 
 <!-- ===== 3. z-score ===== -->
@@ -1892,6 +1918,28 @@ stationarize ก่อน regress (กันผลลวง/spurious):<br>
 <p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(Q/V)</strong> — โดย Q = ขนาดไม้ใหญ่ที่ทยอยส่ง วัด <strong>เทียบกับ volume เฉลี่ยของตลาด (V)</strong> ไม่ใช่มูลค่าดิบ — ดันขนาด (เทียบ volume) ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — ทำไม impact ถึงเป็น √: propagator + long memory</div>
+<p>กลไกที่ทำให้เกิด square-root law มาจากสองข้อเท็จจริงที่ตำรา <strong>Bouchaud et al. (2018)</strong> <em>Trades, Quotes and Prices</em> ปูไว้:</p>
+<ul>
+<li><strong>Order flow มี long memory (ความจำยาว):</strong> เครื่องหมาย buy/sell ของเทรดมี autocorrelation เป็นบวกที่สลายตัวช้ามาก (power law) — เพราะไม้ใหญ่ถูกหั่นเป็น child orders ทยอยส่งทางเดียวกันนาน ๆ (order splitting)</li>
+<li><strong>Impact เป็น transient (ชั่วคราว) ไม่ถาวร:</strong> โมเดล <strong>propagator</strong> มองราคาเป็นผลรวมของเทรดในอดีตคูณ kernel ที่สลายตัว <code>P_t ≈ Σ G(t−s)·(เครื่องหมาย·ขนาด)_s</code> — impact ของแต่ละไม้ค่อย ๆ จางลง</li>
+</ul>
+<p>สองอย่างนี้ต้อง <strong>หักล้างกันพอดี</strong> ไม่งั้นราคาจะ predictable เกินไป (มี arbitrage) — ผลคือราคายังเกือบ ๆ random walk (martingale) แม้ flow จะคาดเดาได้ส่วนหนึ่ง</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่เป็นคำเตือนสำคัญต่อ <strong>CVD/OFI (Part 6–7)</strong> — การที่ CVD ไหลทางเดียวยาว ๆ <em>ส่วนหนึ่งเป็นเพราะ order splitting ที่ถูก price ไปแล้ว</em> ไม่ใช่ informed flow ใหม่ทั้งหมด ดังนั้น "เห็น imbalance ไหลแล้วตามทันที" จึงไม่ใช่ edge ฟรี ๆ</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — Amihud ILLIQ: วัด λ ด้วยข้อมูลรายวัน</div>
+<p>Kyle's λ ต้องใช้ข้อมูล L2/tick — แต่ <strong>Amihud (2002)</strong> เสนอญาติราคาถูกที่ใช้แค่ <strong>OHLCV รายวัน</strong>:</p>
+<div class="fm">
+ILLIQ = ค่าเฉลี่ยรายวันของ ( |return ของวัน| / dollar volume ของวัน )<br>
+&nbsp;&nbsp;= "ราคาขยับกี่ % ต่อเงินที่เทรด 1 ดอลลาร์" — ยิ่งสูง = ยิ่งบาง (illiquid)
+</div>
+<p>มันคือ Kyle's λ ในจิตวิญญาณเดียวกัน (price impact ต่อหน่วย flow) แต่ประมาณจากข้อมูลที่ทุกคนมีฟรี</p>
+<p><strong>ใช้กับเล่มนี้:</strong> เป็นเครื่องมือ <strong>universe selection (คัดเหรียญ)</strong> — เรียงเหรียญหลายร้อยตัวด้วย ILLIQ เพื่อหาว่าตัวไหนสภาพคล่องพอจะเทรด/วาง grid ได้ ก่อนจะเปิด L2 มาดูละเอียด (เชื่อม Part 11 การคัดตลาด และ EX-3 ที่ impact ขึ้นกับสภาพคล่อง)</p>
+</div>
+
 <div class="bx br">
 <div class="bt">⚠️ กับดักมือใหม่</div>
 <ul>
@@ -2285,6 +2333,27 @@ q < 0 (short) → ทั้ง bid,ask เลื่อนขึ้น → อย
 <div class="bx ba">
 <div class="bt">📑 งานวิจัยรองรับ</div>
 <p>แนวคิด "MM ต้องถ่วงดุล inventory ด้วยการเอียงราคา" ถูกวางรากฐานโดย <strong>Ho &amp; Stoll (1981)</strong> ที่มองว่า dealer ปรับ quote ตามระดับสต็อกเพื่อคุมความเสี่ยง และ <strong>Glosten &amp; Milgrom (1985)</strong> ที่อธิบายว่าสปรดส่วนหนึ่งมีไว้ป้องกัน adverse selection — ทั้งสองงานคือฐานที่ <strong>Avellaneda &amp; Stoikov (2008)</strong> นำมาเขียนเป็นสูตร reservation price ใน Part 10 และต่อยอดสู่ยุค reinforcement learning ในเวลาต่อมา</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — limit order ที่วางรอ = "short option"</div>
+<p>ทำไม inventory ถึงสะสมฝั่งผิดเสมอ? คำตอบเชิงทฤษฎีจาก <strong>Copeland &amp; Galai (1983)</strong> และ <strong>Glosten (1994)</strong>: การวาง limit order ที่รอฟิล = <strong>การเขียน free option (เขียน option ฟรี) ให้ตลาด</strong> — คุณยอมให้คนอื่นเลือกได้ว่าจะมาชนหรือไม่ · ปัญหาคือมันจะถูกชน <strong>ตอนที่ราคากำลังจะวิ่งผ่านมันพอดี</strong> นั่นแปลว่า bid ของคุณฟิลตอนราคากำลังจะร่วงต่อ, ask ฟิลตอนราคากำลังจะพุ่งต่อ — เรียกว่า <em>"you get the trades you don't want"</em> (คุณได้ดีลที่ไม่อยากได้) นี่คือ adverse selection ของ resting order</p>
+<p>กำไรสุทธิของ MM จึงเขียนเป็นสามก้อน (Bouchaud et al. 2018):</p>
+<div class="fm">
+EV(MM) = spread capture − adverse-selection cost − inventory cost<br>
+&nbsp;&nbsp;└ เก็บ ½spread ┘   └ โดนเลือกตอนผิด ┘   └ แบกสต็อกค้าง ┘
+</div>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่คือเหตุผลเชิงโครงสร้างว่าทำไม <strong>grid bot (Part 12)</strong> ถึงเจ๊งตอนเทรนด์แรง — grid วาง limit เป็นตาราง ราคาที่ trend จะกวาดฟิลฝั่งที่ผิดทั้งแถบ (โดน adverse-select เต็ม ๆ) ส่วน <strong>A-S (Part 10)</strong> คือการ "คิดค่า option" นี้แล้วถอย quote ออกตามความเสี่ยง</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — limit order มีค่าเท่าไร: fee + queue position</div>
+<p>ก่อนวาง limit ควรรู้ว่ามันมี "มูลค่าคาดหวัง" ที่คำนวณได้ (Harris 2003, <em>Trading and Exchanges</em>):</p>
+<div class="fm">
+EV(limit) = P(fill)·(½·spread + maker rebate) − P(adverse fill)·adverse cost − queue-wait cost
+</div>
+<p>สังเกตว่า <strong>queue position (ตำแหน่งในคิว) คือสินทรัพย์อย่างหนึ่ง</strong> — ยิ่งคุณอยู่ต้นคิว P(fill) ยิ่งสูงและได้ฟิลก่อนข่าวร้ายจะมา (priority มีค่ามากขึ้นเมื่อ tick size บีบให้คิวยาว) · maker rebate บวกเข้า EV โดยตรง ส่วนการรอคิวนานคือต้นทุนค่าเสียโอกาส</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่ทำให้การเลือก <strong>post-only/maker (Part 11)</strong> ไม่ใช่แค่ "ประหยัด fee" แต่เป็นการ optimize EV ทั้งสมการ — และอธิบายว่าทำไม PnL ของ grid/MM (Part 9–12) อ่อนไหวกับ fee tier และ queue มาก</p>
 </div>
 
 <div class="bx bb">
@@ -3325,6 +3394,16 @@ R = (1/P&#8321;) &middot; (1/P&#8322;) &middot; P&#8323; &middot; (1−f)&#179; 
 <p>แนวคิด effective price / market impact ของการไต่เล่มมาจากตระกูล market impact models (Kyle 1985 และงานต่อยอด) ส่วนการคิดต้นทุนการเทรดครบวงจร (transaction cost analysis) เป็นมาตรฐานในงาน execution ทุกแขนง สำหรับคริปโต <strong>โครงสร้าง fee/rebate และค่าถอนของ Binance/Bybit เปลี่ยนตามโปรโมชัน</strong> — ก่อนคำนวณจริงให้เช็คหน้า fee schedule ปัจจุบันเสมอ เพราะมันคือตัวแปรที่ตัดสินว่ากำไรเป็นบวกหรือลบ</p>
 </div>
 
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — ใครนำราคา? Hasbrouck Information Share</div>
+<p>ก่อนจะ arb ข้าม venue ต้องตอบคำถามพื้นฐาน: <strong>เมื่อ BTC เทรดทั้งบน Binance/Coinbase/perp ราคา "จริง" เกิดที่ไหนก่อน?</strong> ตำรา empirical (Hasbrouck 2007) มีเครื่องมือวัดตรงนี้:</p>
+<ul>
+<li>หลาย venue เทรดของตัวเดียวกัน ราคาต่างกันได้ชั่วคราวแต่ <strong>ผูกกันระยะยาว (cointegration)</strong> — มี "efficient price" ร่วมตัวเดียวซ่อนอยู่</li>
+<li><strong>Hasbrouck (1995) Information Share (IS):</strong> วัดว่าแต่ละ venue สร้าง <strong>กี่ % ของ variance ของข่าวใหม่ (innovation) ใน efficient price</strong> — venue ที่ IS สูง = ผู้นำ price discovery · <strong>Gonzalo-Granger (1995)</strong> วัดอีกมุม (component share) ด้วยน้ำหนักในดุลยภาพระยะยาว</li>
+</ul>
+<p><strong>ใช้กับเล่มนี้:</strong> สมมติฐาน "perp นำ spot" หรือ "Binance นำตลาด" ที่ stat-arb (Part 13) และ cross-exchange (Part นี้) อิงอยู่ — <strong>IS คือวิธีวัดมันจริง ๆ</strong> ไม่ใช่เดา ถ้า venue A นำ B ด้วย IS สูง สัญญาณจาก A จึงใช้ทำนาย B ได้ (lead-lag) แต่ถ้า IS พอ ๆ กัน lead-lag ก็เป็นภาพลวง</p>
+</div>
+
 <div class="bx bb">
 <div class="bt">🔗 เชื่อมโยงเล่มอื่น — สะพานสู่เล่ม arb</div>
 <p>Part 14 คือ <strong>สะพานเชื่อมตรงสู่เล่ม arb</strong>: เล่ม arb หา "โอกาส" ส่วนตรงไหนที่ effective price/depth บอกว่า <strong>ต้นทุนจริงของ arb เท่าไหร่</strong> คือสิ่งที่เล่มนี้เติมให้ <code>P_eff(Q)</code> และ <code>Π_net</code> คือเครื่องมือที่ทำให้ตัวเลขในเล่ม arb "เป็นจริงในกระดาน" ในเชิง <strong>math</strong> นี่คือผลรวมถ่วงน้ำหนักและเงื่อนไข R&gt;1 ส่วนการคิดกำไรขาดทุนหลัง cost ทั้งหมดก็คือ payoff จริงในเล่ม <strong>pm/payoff</strong></p>
@@ -3717,6 +3796,19 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 </svg>
 <p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ EX1.3 · กวาดซื้อดันราคาขึ้น → หยุดแล้วเด้งกลับบางส่วน (temporary) เหลือส่วนค้าง (permanent)</p>
 
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — TCA triad: ฟิลเรา "toxic" ไหม วัดได้</div>
+<p>ตำรา empirical (Hasbrouck 2007, บท trading costs) ให้ identity ที่เปลี่ยน temporary/permanent ข้างบนเป็นตัวเลขวัดได้ — โดยดู mid <em>หลัง</em>เทรดไปสักพัก (markout):</p>
+<div class="fm">
+effective spread  =  realized spread  +  price impact<br>
+2·d·(P_fill − m_0)   =   2·d·(P_fill − m_τ)   +   2·d·(m_τ − m_0)<br>
+&nbsp;&nbsp;(d = +1 ซื้อ/−1 ขาย · m_0 = mid ตอนเทรด · m_τ = mid หลังผ่านไป τ)<br>
+&nbsp;&nbsp;└ ต้นทุนเราจ่าย ┘   └ กำไร MM (เด้งกลับ=temporary) ┘   └ impact ถาวร (permanent) ┘
+</div>
+<p><strong>price impact (permanent) = ตัวชี้ว่าฟิลเรา toxic ไหม:</strong> ถ้าหลังเราซื้อแล้ว mid <strong>วิ่งต่อขึ้น</strong> (m_τ &gt; m_0) แปลว่าเราเทรดถูกทาง/มีข้อมูล — แต่ถ้าเรา <em>วาง maker</em> แล้วโดนฟิลทำให้ price impact เป็นลบกับเรา (ราคาวิ่งสวน) นั่นคือเรา <strong>โดน adverse-select</strong> (โยง "resting order = short option", Part 9)</p>
+<p><strong>ใช้กับเล่มนี้:</strong> markout นี้คือวิธีวัด toxicity ราย order แบบเดียวกับที่ Cartea (2023) ใช้ (Part 8) — รายย่อยเก็บ m_0 กับ m_τ ของฟิลตัวเองได้ฟรี เพื่อเช็กว่ากลยุทธ์เรากำลังถูก adverse-select อยู่หรือเปล่า</p>
+</div>
+
 <div class="bx bg">
 <div class="bt">🎯 กับเคสของเรา</div>
 <p>เคสเดิม $5,000 บน BTC (สภาพคล่องสูง) — impact แทบไม่มี ส่ง market ก็พอ · แต่ลองนึกว่าไม้โตขึ้นเป็น <strong>$50,000 บนเหรียญ alt สภาพคล่องปานกลาง</strong> ที่ depth ที่ best มีไม่กี่พันดอลลาร์ — ส่งทีเดียวจะ walk the book ดันราคาตัวเองหลาย % ทันที นี่คือจุดที่ execution เริ่มสำคัญ และ IS คือเครื่องวัดว่าเราเสียไปเท่าไร</p>
@@ -3729,7 +3821,7 @@ IS รวม = Σ (fill_i − P_arrival)·q_i   +   (ส่วนที่ซื
 
 <div class="bx bb">
 <div class="bt">🔗 เชื่อมโยงเล่มหลัก</div>
-<p><strong>Part 2</strong> (walk the book/slippage) = ต้นกำเนิดของ market impact · <strong>Part 7</strong> (Kyle's λ) = impact ต่อหน่วย flow · <strong>Part 4</strong> (resiliency) = ทำไม temporary impact ถึงเด้งกลับ · <strong>Part 6</strong> (informativeness) = ทำไม permanent impact ถึงค้าง</p>
+<p><strong>Part 2</strong> (walk the book/slippage) = ต้นกำเนิดของ market impact · <strong>Part 7</strong> (Kyle's λ) = impact ต่อหน่วย flow · <strong>Part 4</strong> (resiliency) = ทำไม temporary impact ถึงเด้งกลับ · <strong>Part 8</strong> (adverse selection/toxicity) = ทำไม permanent impact ถึงค้าง</p>
 </div>
 
 <div class="bx br">
