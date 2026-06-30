@@ -1,0 +1,197 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ทฤษฎีตำนานของ Quant — Part V</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>ทฤษฎีตำนานของ Quant</h1>
+<div class="sub">Part V — Time Series & ศาสตร์แห่งการไม่โกหกตัวเอง</div>
+<div class="desc">Stationarity/ARIMA · GARCH · Cointegration & Ornstein-Uhlenbeck · Regime-Switching · Backtest ที่เชื่อถือได้ (Deflated Sharpe) — เครื่องมือที่เปลี่ยน "ข้อมูลในอดีต" ให้เป็น "ความรู้ที่ใช้ได้จริง" โดยไม่หลอกตัวเอง</div>
+</div>
+
+<h2>เปิดเรื่อง: กับดักที่ฆ่า quant มือใหม่มากที่สุด</h2>
+
+<p>ปี 1974 Granger &amp; Newbold ตีพิมพ์ผลที่น่าตกใจ: เอา <strong>random walk สองเส้นที่ไม่เกี่ยวอะไรกันเลย</strong> มา regress กัน — แล้วได้ R² สูง, t-stat สวยงาม, ดู "มีความสัมพันธ์" อย่างมีนัยสำคัญ ทั้งที่มันสุ่มล้วน ๆ ไม่เกี่ยวกัน เรียกว่า <strong>spurious regression</strong> นี่คือกับดักที่ฆ่า quant มือใหม่มากที่สุด — เห็นรูปแบบในข้อมูลที่ไม่มีอยู่จริง</p>
+
+<p>Part V คือชุดเครื่องมือ 2 ฝั่ง: ฝั่งหนึ่งคือ<strong>วิธีหาโครงสร้างจริงในเวลา</strong> (GARCH, cointegration, regime) อีกฝั่งคือ<strong>วิธีพิสูจน์ว่าโครงสร้างนั้นจริง ไม่ใช่บังเอิญ</strong> (deflated Sharpe) — Engle กับ Granger ได้โนเบลปี 2003 จากการสร้างเครื่องมือเหล่านี้</p>
+
+<div class="pq">ในการเทรด ศัตรูที่อันตรายที่สุดไม่ใช่ตลาด — มันคือตัวคุณเองที่อยากเชื่อว่า backtest สวย ๆ เป็นเรื่องจริง</div>
+
+<p style="color:#64748b;font-size:.9em">📖 Part นี้ต่อจาก Part I (random walk เป็น null), Part III (alpha decay/half-life), Part II (factor zoo) — และเป็นแกนเชื่อมสู่ <code>arb-part5</code> (pairs/stat-arb) กับ <code>math-part6</code> (time series)</p>
+
+<h2>รากฐาน: Stationarity และตระกูล ARIMA</h2>
+
+<div class="card">
+<h3>Stationarity & ARIMA <span class="yr">1970 · Box-Jenkins</span> <span class="lvl">★★ ควรรู้</span> <span style="font-size:.7em;color:#64748b">· concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"จะวิเคราะห์อนุกรมเวลาได้ มันต้อง <strong>stationary</strong> ก่อน (ค่าเฉลี่ย/ความแปรปรวนไม่เปลี่ยนตามเวลา) — ราคาหุ้น<em>ไม่</em> stationary (มันเดินสุ่ม) แต่ <strong>ผลตอบแทน</strong> ใกล้เคียงกว่า; ARIMA จับ pattern เชิงเส้น (autocorrelation) ที่เหลือได้"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>การวิเคราะห์อนุกรม non-stationary = spurious regression</strong> (เห็นความสัมพันธ์ปลอม) ถ้าไม่เข้าใจ stationarity คุณจะ regress ราคา 2 ตัวแล้วคิดว่าเจอ edge ทั้งที่มันสุ่ม — นี่คือบทเรียนแรกก่อนแตะ time series ใด ๆ และเป็นฐานของ GARCH/cointegration ที่ตามมา</p></div>
+
+<div class="fm">AR(1):  X_t = φ·X_{t-1} + ε_t   (ถ้า |φ|&lt;1 → stationary; φ=1 → random walk = unit root)<br>
+ARIMA(p,d,q): AR(p) + ผลต่าง d ครั้ง (ทำให้ stationary) + MA(q)<br>
+เครื่องมือดู: <abbr title="ACF = autocorrelation function: ความสัมพันธ์กับ lag ต่าง ๆ">ACF</abbr>/<abbr title="PACF = partial ACF: ตัดอิทธิพลของ lag กลาง ๆ ออก">PACF</abbr> เลือก p,q · <abbr title="Augmented Dickey-Fuller: ทดสอบ unit root/stationarity">ADF test</abbr> เช็ค unit root</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> เอาราคามา fit โมเดลทำนายราคาตรง ๆ<br>
+<strong>quant เห็น:</strong> งานครึ่งหนึ่งคือ <em>แปลงข้อมูลให้ stationary ก่อน</em> (diff, log, แปลงเป็น spread) — เพราะ pattern จริงซ่อนอยู่หลังการแปลง และ non-stationarity คือเหตุผลที่ correlation ดิบ ๆ โกหก</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 อ้างอิง</div><p>Box &amp; Jenkins (1970) <em>Time Series Analysis</em> · Dickey-Fuller (1979) unit root test · (คณิตที่ <code>math-part6</code>)</p></div>
+</div>
+
+<h2>GARCH — ความผันผวนที่พยากรณ์ได้</h2>
+
+<div class="card">
+<h3>ARCH / GARCH <span class="yr">1982 / 1986 · Engle / Bollerslev</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"<strong>ทิศของผลตอบแทนเดาไม่ได้ แต่ขนาดของมัน (volatility) เดาได้</strong> — เพราะ vol เกาะกลุ่ม (vol clustering): วันผันผวนตามด้วยวันผันผวน วันสงบตามด้วยวันสงบ GARCH โมเดล vol วันนี้จาก vol + shock เมื่อวาน"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะมันคือ <strong>จุดที่ random walk พังแล้วเราหากินได้</strong> (โยง Part I): returns เป็น martingale แต่ vol มี structure → ใช้พยากรณ์ความเสี่ยง, ตั้ง position size, ตั้งราคา option (vol forecast), และทำ risk model (VaR ที่ปรับตาม regime) Engle ได้ <strong>โนเบล 2003</strong> จากอันนี้</p></div>
+
+<div class="fm">GARCH(1,1):  σ²_t = ω + α·ε²_{t-1} + β·σ²_{t-1}<br>
+&nbsp;&nbsp;α = น้ำหนัก shock เมื่อวาน · β = น้ำหนัก vol เมื่อวาน (β สูง = vol "จำ" นาน)<br>
+&nbsp;&nbsp;persistence = α+β (ใกล้ 1 = vol clustering แรง) · long-run vol = ω/(1−α−β)<br><br>
+รุ่นต่อยอด: <strong>EGARCH</strong> (Nelson 1991), <strong>GJR</strong> (Glosten-Jagannathan-Runkle 1993) — จับ "leverage effect": ตลาดลงทำ vol พุ่งกว่าตลาดขึ้น</div>
+
+<div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
+<p>• พยากรณ์ vol ระยะสั้น-กลาง (risk, position sizing, option vol)<br>
+• สร้าง VaR/ES ที่ตอบสนอง regime (ดีกว่า √time คงที่)<br>
+• เป็น benchmark ที่โมเดล vol ซับซ้อนต้องเอาชนะ</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>• พยากรณ์ vol ระยะ<strong>สั้น</strong>ได้ดี แต่ระยะยาวลู่กลับ long-run mean (ทำนาย "พรุ่งนี้" เก่งกว่า "ปีหน้า")<br>
+• จับ <strong>jump</strong> ไม่ได้ (vol พุ่งแบบกระโดด เช่นข่าว) — GARCH ปรับตัวช้าหลังเหตุ<br>
+• คู่แข่งง่าย ๆ อย่าง <strong>EWMA</strong> (RiskMetrics) หรือ <strong>realized/HAR vol</strong> (ใช้ข้อมูล intraday) มักสูสีหรือชนะในทางปฏิบัติ</p></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul>
+<li>จับ vol clustering ซึ่งเป็นข้อเท็จจริงที่ทนทานสุดในตลาด</li>
+<li>มีโครงสร้างตีความได้ (persistence, leverage effect)</li>
+<li>ฐานของ risk model ทั้งวงการ</li></ul></div>
+<div class="con"><div class="bt">⚠️ ข้อเสีย</div><ul>
+<li>ระยะยาว/ตอน jump อ่อน</li>
+<li>EWMA/realized vol มักสูสีด้วยความง่ายกว่า</li>
+<li>สมมติรูปแบบ tail (เช่น normal) ที่อาจผิด</li></ul></div></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ตลาดเดาไม่ได้ทั้งหมด<br>
+<strong>quant เห็น:</strong> <em>first moment (ทิศ) เดาไม่ได้ แต่ second moment (vol) เดาได้</em> — ส่วนที่พยากรณ์ได้ของตลาดคือ "ความเสี่ยง" ไม่ใช่ "ทิศทาง" และนั่นคือเหตุผลที่ธุรกิจ quant ส่วนใหญ่เป็นเรื่อง vol/risk ไม่ใช่การทายว่าหุ้นจะขึ้นหรือลง</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>ใช้ใน risk model/VaR, vol forecast, GARCH option pricing; desk จริงมักผสม realized/HAR vol · Engle (1982) ARCH · Bollerslev (1986) GARCH · Nelson (1991) EGARCH · Glosten-Jagannathan-Runkle (1993) · โนเบล 2003 (Engle, Granger)</p></div>
+</div>
+
+<h2>Cointegration & Ornstein-Uhlenbeck — รากของ Pairs Trading</h2>
+
+<div class="card">
+<h3>Cointegration & OU Process <span class="yr">1987 · Engle-Granger; OU 1930</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"สองอนุกรมที่ต่างก็เดินสุ่ม (non-stationary) อาจ <strong>เดินไปด้วยกัน</strong> จน 'ส่วนต่าง (spread)' ของมัน stationary — เรียกว่า cointegrated สเปรดนั้นจะ <strong>ดึงกลับหาค่าเฉลี่ย</strong> (mean-revert) เหมือนสปริง = รากคณิตของ pairs trading"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>มันคือ<strong>ทางออกจากกับดัก spurious regression</strong> และเป็น<strong>ฐานคณิตของ stat-arb ทั้งหมด</strong> — Part II/I พูดถึง pairs trading แต่ <em>cointegration คือสิ่งที่บอกว่าคู่ไหนเทรดได้จริง</em> (correlation บอกไม่ได้ — correlation สูงไม่ได้แปลว่า mean-revert) และ OU บอกว่าควรเข้า/ออกตรงไหน (z-score) และถือนานแค่ไหน (half-life)</p></div>
+
+<div class="fm"><strong>Cointegration:</strong> X_t, Y_t ต่าง non-stationary แต่ (Y_t − β·X_t) = spread stationary<br>
+ทดสอบ: Engle-Granger (2 ขั้น) · <strong>Johansen</strong> (หลายตัวแปรพร้อมกัน)<br><br>
+<strong>Ornstein-Uhlenbeck</strong> (โมเดลของ spread):  dX = θ(μ − X)·dt + σ·dW<br>
+&nbsp;&nbsp;θ = แรงดึงกลับ · <strong>half-life = ln(2)/θ</strong> (สเปรดกลับครึ่งทางในเวลาเท่าไร)<br>
+&nbsp;&nbsp;สัญญาณ: <strong>z-score</strong> = (spread − μ)/σ → เข้าเมื่อ |z| สูง ออกเมื่อกลับ 0</div>
+
+<div class="bx ba"><div class="bt">⚠️ correlation ≠ cointegration (จุดที่คนพลาดบ่อยสุด)</div>
+<p><strong>correlation</strong> = "ขยับ<em>พร้อมกัน</em>วันต่อวัน" (เรื่องของผลตอบแทน) · <strong>cointegration</strong> = "ลอย<em>ไปด้วยกัน</em>ระยะยาว สเปรดกลับเข้าหากัน" (เรื่องของระดับราคา) สองตัวอาจ correlate สูงแต่ลอยห่างกันเรื่อย ๆ (ไม่ cointegrate → pairs trade เจ๊ง) หรือ correlate ต่ำแต่ cointegrate (เทรดได้)</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>• ความสัมพันธ์ cointegration <strong>พังได้</strong> (structural break) — บริษัทเปลี่ยนธุรกิจ, ควบรวม, regime เปลี่ยน → spread ไม่กลับ (basis risk จาก Part III)<br>
+• half-life ที่ประมาณจากอดีต<strong>ยืดออก</strong>ในอนาคต → ถือนานเกิน เงินทุนหมดก่อน (limits to arbitrage)<br>
+• in-sample cointegration ที่เจอจากการลองหลายคู่ = อาจเป็นเรื่องบังเอิญ (โยงการ์ด deflated Sharpe)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "หาหุ้นที่ correlate กันสูง ๆ แล้วเทรดส่วนต่าง"<br>
+<strong>quant เห็น:</strong> correlation เป็นกับดัก — สิ่งที่เทรดได้คือ <em>cointegration</em> (ระดับราคากลับเข้าหากัน) และที่สำคัญกว่า: quant ไม่ถามแค่ "คู่นี้ cointegrate ไหม" แต่ถาม "<strong>half-life สั้นพอจะถือไหวก่อนความสัมพันธ์พังไหม</strong>" — สถิติบอกว่ามันกลับ แต่ limits-to-arbitrage บอกว่าคุณรอไหวหรือเปล่า</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>ฐานของ pairs/stat-arb, basket/index arb, calendar spread; Avellaneda-Lee (2010) ใช้ residual ของ factor model เป็น OU · Engle &amp; Granger (1987) cointegration · Johansen (1988) · Uhlenbeck-Ornstein (1930)</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อมเล่มเดิม:</strong> pairs/mean-reversion/stat-arb ที่ <code>arb-part5</code>; limits to arbitrage ที่ Part III</p>
+</div>
+
+<div class="card">
+<h3>Markov Regime-Switching <span class="yr">1989 · Hamilton</span> <span class="lvl">★★ ควรรู้</span> <span style="font-size:.7em;color:#64748b">· concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ตลาดไม่ได้มีพฤติกรรมเดียว — มันสลับ <strong>'โหมด' (regime)</strong> เช่น สงบ/วิกฤต, bull/bear โดยแต่ละโหมดมี mean/vol ต่างกัน และการสลับเป็นแบบ Markov (โอกาสสลับขึ้นกับโหมดปัจจุบัน)"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ<strong>โมเดลที่ดีในโหมดหนึ่งพังในอีกโหมด</strong> — correlation, vol, แม้แต่ทิศของ edge เปลี่ยนตาม regime (Part I เตือนเรื่องนี้ซ้ำ ๆ) เข้าใจ regime แล้วจะไม่เอา parameter จากตลาด bull ไปใช้ตอน bear</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> หา parameter ชุดเดียวที่ "ถูกที่สุด"<br>
+<strong>quant เห็น:</strong> ไม่มี parameter ชุดเดียว — มีหลายโหมด และความเสี่ยงจริงคือ <em>การสลับโหมด</em> (มาเร็ว แรง และทำให้ทุกอย่างที่ fit มา invalid พร้อมกัน)</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Paper</div><p>Hamilton (1989) <em>A New Approach to the Economic Analysis of Nonstationary Time Series and the Business Cycle</em>, Econometrica</p></div>
+</div>
+
+<h2>ศาสตร์แห่งการไม่โกหกตัวเอง — Backtest ที่เชื่อถือได้</h2>
+
+<div class="card">
+<h3>Deflated Sharpe & Backtest Overfitting <span class="yr">2014–18 · Bailey-López de Prado; Harvey-Liu-Zhu</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ถ้าคุณลองกลยุทธ์ 1,000 แบบ ย่อมมีบางแบบที่ Sharpe สวยโดย<strong>บังเอิญล้วน ๆ</strong> — Sharpe ที่ไม่บอกว่า 'ลองมากี่ครั้ง' คือตัวเลขที่ไร้ความหมาย <strong>Deflated Sharpe</strong> หักลบจำนวนครั้งที่ลอง เพื่อบอกว่ามัน 'จริง' หรือแค่โชค"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>นี่คือ <strong>การ์ดที่สำคัญที่สุดในเล่ม</strong>สำหรับคนจะลงเงินจริง — เพราะ <em>การหลอกตัวเองด้วย backtest ปลอมคือสาเหตุอันดับหนึ่งที่ quant มือใหม่เจ๊ง</em> ถ้าไม่เข้าใจ multiple testing คุณจะ "ค้นพบ" edge ที่ไม่มีอยู่จริงทุกสัปดาห์ มันคือบทที่เปลี่ยนคุณจาก "คนหา pattern" เป็น "นักวิทยาศาสตร์ที่ระแวงตัวเอง"</p></div>
+
+<div class="bx bb"><div class="bt">🔧 ปัญหา: multiple testing</div>
+<p>Sharpe 2.0 จากการลองครั้งเดียว ≠ Sharpe 2.0 ที่ดีที่สุดจากการลอง 1,000 ครั้ง — อันหลังคาดว่าจะเจอ "ของปลอม" ที่ดูดีได้แม้ข้อมูลเป็น noise ล้วน ยิ่งลองเยอะ เกณฑ์ผ่านยิ่งต้องสูงขึ้น (เหมือนยิงปืนรัว ๆ แล้ววาดเป้ารอบรูที่โดน)</p></div>
+
+<div class="bx bb"><div class="bt">🛡️ เครื่องมือกัน self-deception (López de Prado)</div>
+<div class="tw"><table><tr><th>เครื่องมือ</th><th>แก้อะไร</th></tr>
+<tr><td><strong>Deflated Sharpe Ratio</strong></td><td>ปรับ Sharpe ตามจำนวนกลยุทธ์ที่ลอง + skew/kurtosis ของผลตอบแทน</td></tr>
+<tr><td><strong>PBO</strong> (prob. of backtest overfitting)</td><td>ประมาณโอกาสที่กลยุทธ์ "ดีที่สุด" จะแย่กว่ามัธยฐาน out-of-sample</td></tr>
+<tr><td><strong>Purged & Embargoed CV</strong></td><td>cross-validation ที่กันข้อมูลรั่ว (label ซ้อนเวลา) — CV ปกติรั่วในข้อมูลการเงิน</td></tr>
+<tr><td><strong>Min. backtest length</strong></td><td>ต้องมีข้อมูลยาวพอเทียบจำนวนครั้งที่ลอง</td></tr>
+</table></div></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร / ข้อควรระวัง</div>
+<p>• deflated Sharpe ต้องรู้ "จำนวนครั้งที่ลองจริง" ซึ่ง<em>มักประเมินต่ำกว่าจริง</em> (รวม trial ที่ลองในหัว/ที่ทีมอื่นเคยลอง)<br>
+• ผ่าน deflated Sharpe ไม่ได้แปลว่ากำไรจริง — ยังต้องผ่าน transaction cost, capacity, crowding (Part II/III)<br>
+• เป็นเครื่องมือ<em>กันของปลอม</em> ไม่ใช่<em>สร้างของจริง</em></p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "backtest Sharpe 3 = กลยุทธ์เทพ รีบใช้เลย"<br>
+<strong>quant เห็น:</strong> Sharpe ที่ไม่มี "ลองมากี่ครั้ง" กำกับ = ไร้ความหมาย — quant ปฏิบัติกับ backtest เหมือนนักวิทยาศาสตร์ปฏิบัติกับ p-value ในยุค replication crisis: <em>สมมติว่ามันปลอมจนกว่าจะรอด out-of-sample จริง</em> และรู้ว่า "การมองข้อมูลชุดเดิมหลายรอบ" คือการเผา degrees of freedom ทิ้งทีละนิด</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>มาตรฐานของ quant research จริงจังทุกที่ (เก็บ log จำนวน trial, walk-forward, OOS holdout) · Bailey &amp; López de Prado (2014) Deflated Sharpe · Bailey-Borwein-López de Prado-Zhu (2014) PBO + <em>Pseudo-mathematics and Financial Charlatanism</em> · López de Prado (2018) <em>Advances in Financial Machine Learning</em> · Harvey-Liu-Zhu (2016) factor zoo · Harvey (2017) presidential address</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อมเล่มเดิม:</strong> factor zoo ที่ Part II; EMH/half-life ที่ Part III; ML ใน stat-arb ที่ <code>arb-part5</code></p>
+</div>
+
+<div class="bx br"><div class="bt">📉 เมื่อทฤษฎีพังจริง: "ทำนายไส้กรอก" และวิกฤตการทำซ้ำ</div>
+<p>มีงานวิจัยที่หา "ตัวแปรทำนายตลาดหุ้น" เจอความสัมพันธ์ที่มีนัยสำคัญทางสถิติกับสิ่งไร้สาระ เช่นการผลิตเนยในบังกลาเทศ — เพราะถ้าลองตัวแปรมากพอ ย่อมเจอ "ความสัมพันธ์" บังเอิญเสมอ นี่คือ <strong>วิกฤตการทำซ้ำ (replication crisis)</strong> เวอร์ชันการเงิน: Harvey-Liu-Zhu (2016) พบว่า factor ที่ตีพิมพ์ 300+ ตัว ส่วนใหญ่<em>ทำซ้ำไม่ได้</em>หลังปรับ multiple testing บทเรียน: <strong>"มีนัยสำคัญทางสถิติ" ในข้อมูลการเงินแทบไม่มีความหมาย ถ้าไม่บอกว่าลองมากี่ครั้ง</strong></p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part V</div>
+<p>✓ <strong>Stationarity/ARIMA</strong> = ต้องแปลงให้ stationary ก่อน ไม่งั้น spurious regression<br>
+✓ <strong>GARCH</strong> = ทิศเดาไม่ได้ แต่ vol เดาได้ (vol clustering) — ส่วนที่พยากรณ์ได้คือความเสี่ยง<br>
+✓ <strong>Cointegration & OU</strong> = correlation ≠ cointegration; spread mean-revert (z-score/half-life) = รากของ stat-arb<br>
+✓ <strong>Regime-Switching</strong> = ตลาดมีหลายโหมด; ความเสี่ยงจริงคือการสลับโหมด<br>
+✓ <strong>Deflated Sharpe</strong> = Sharpe ไร้ค่าถ้าไม่บอกว่าลองกี่ครั้ง — ป้องกันการหลอกตัวเอง<br>
+✓ บทเรียนใหญ่: เครื่องมือครึ่งหนึ่งคือ "หาโครงสร้าง" อีกครึ่งคือ "พิสูจน์ว่ามันไม่ใช่บังเอิญ" — และอย่างหลังสำคัญกว่า</p></div>
+
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เราเดินทางจากความสุ่ม (Part I) → พอร์ต (II) → ตลาดมีประสิทธิภาพแค่ไหน (III) → ตั้งราคา (IV) → วัด/พิสูจน์ (V) แล้ว — Part VI จะร้อยทั้ง 5 ทฤษฎีตำนาน + เครื่องมือทั้งหมดเป็นภาพเดียว พร้อม cheat sheet ของ "★★★ ที่ต้องรู้"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>stationary</strong> = ค่าเฉลี่ย/ความแปรปรวนไม่เปลี่ยนตามเวลา · <strong>spurious regression</strong> = ความสัมพันธ์ปลอมจากอนุกรม non-stationary · <strong>unit root</strong> = อนุกรมที่เดินสุ่ม (φ=1) · <strong>ACF/PACF</strong> = ฟังก์ชัน autocorrelation เลือก lag · <strong>ARIMA</strong> = โมเดล AR+diff+MA · <strong>vol clustering</strong> = ความผันผวนเกาะกลุ่ม · <strong>GARCH</strong> = โมเดล vol จาก vol+shock อดีต · <strong>persistence (α+β)</strong> = vol "จำ" นานแค่ไหน · <strong>leverage effect</strong> = ตลาดลงทำ vol พุ่งกว่าตลาดขึ้น · <strong>cointegration</strong> = สเปรดของสอง non-stationary ที่ stationary · <strong>Ornstein-Uhlenbeck</strong> = กระบวนการ mean-reverting · <strong>half-life</strong> = ln2/θ เวลาที่สเปรดกลับครึ่งทาง · <strong>z-score</strong> = (spread−μ)/σ สัญญาณเข้า/ออก · <strong>regime</strong> = โหมดของตลาด · <strong>Deflated Sharpe</strong> = Sharpe ที่หักจำนวน trial · <strong>PBO</strong> = โอกาส backtest overfit · <strong>purged CV</strong> = cross-validation กันข้อมูลรั่ว · <strong>multiple testing</strong> = ปัญหาลองหลายครั้งจนเจอของปลอม</p></div>
+
+</body></html>
