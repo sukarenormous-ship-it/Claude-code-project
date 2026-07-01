@@ -1,0 +1,286 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>เสาที่เหลือของ Quant — Part IV: Risk Management</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>เสาที่เหลือของ Quant</h1>
+<div class="sub">Part IV — Risk Management: ตัวเลขที่หลอกให้กล้าเกินไป</div>
+<div class="desc">VaR · Expected Shortfall (CVaR) · Coherent Risk (Artzner et al) · Extreme Value Theory (หาง) · DCC-GARCH &amp; Copula — เสาที่สี่: วัด "ความเสี่ยงที่ฆ่าคุณ" ไม่ใช่ความเสี่ยงเฉลี่ย</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน 🎯Thesis + "🚶อ่านเป็นภาษาคนก่อน" + 🧮ตัวอย่าง + 🎯3 อย่างที่ต้องจำ (ข้ามกล่องสูตรเต็ม/❌พังเมื่อไรเชิงลึกได้) · <strong>🔵 มีพื้น:</strong> อ่านครบ โดยเฉพาะ ❌พังเมื่อไร + 🧠มุม quant + 📚Papers</p></div>
+
+<h2>เปิดเรื่อง: "25-sigma หลายวันติดกัน"</h2>
+
+<p>สิงหาคม 2007 เมื่อวิกฤตซับไพรม์เริ่มปะทุ David Viniar ซีเอฟโอของ Goldman Sachs พูดประโยคที่กลายเป็นตำนาน: <em>"เราเห็นการเคลื่อนไหวระดับ <strong>25 ส่วนเบี่ยงเบนมาตรฐาน หลายวันติดกัน</strong>"</em> — ฟังดูเท่ แต่จริง ๆ มันคือ<strong>คำสารภาพ</strong> เพราะเหตุการณ์ 25-sigma ตามการแจกแจงปกติ ควรเกิดน้อยกว่า 1 ครั้งใน<strong>อายุของจักรวาลยกกำลังหลายเท่า</strong> — ไม่ใช่ 3 วันติด</p>
+
+<p>แปลว่าอะไร? ไม่ใช่ตลาดบ้า — แต่ <strong>โมเดลความเสี่ยงของเขาผิด</strong> โมเดลบอกว่าหางบางกว่าความจริงมหาศาล VaR ที่ใช้กันทั้งวงการวัด "ความเสี่ยงในวันปกติ" ได้ดี แต่<strong>ตาบอดสนิทต่อวันที่ฆ่าคุณ</strong> — และวันที่ฆ่าคุณ คือวันเดียวที่ risk management มีไว้เพื่อ</p>
+
+<div class="pq">ความเสี่ยงที่วัดง่ายที่สุด มักไม่ใช่ความเสี่ยงที่ฆ่าคุณ — และตัวเลขความเสี่ยงที่ดูปลอดภัย คือสิ่งที่ทำให้คนกล้า leverage จนพัง</div>
+
+<p style="color:#64748b;font-size:.9em">📖 ต่อจาก Part I–III (ตั้งราคา · เครดิต · เทรดจริง) — Part นี้รวมความเสี่ยงทั้งหมด (ดอกเบี้ย/เครดิต/สภาพคล่อง/ตลาด) เป็น "ตัวเลขเดียว" แล้วถามว่าตัวเลขนั้นเชื่อได้แค่ไหน; ต่อยอด time-series (GARCH → correlation แบบไดนามิก) จาก <code>theory-part5</code> และ copula จาก <code>pillars-part2</code></p>
+
+<h2>ตัวเลขความเสี่ยงที่ดังที่สุด — VaR</h2>
+
+<div class="card">
+<h3>Value at Risk (VaR) <span class="yr">RiskMetrics 1994</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"บีบความเสี่ยงทั้งพอร์ตให้เหลือ<strong>ตัวเลขเดียว</strong>: 'ในวันปกติ 99% เราจะไม่ขาดทุนเกิน X บาท' — VaR คือ <strong>ควอนไทล์ของการขาดทุน</strong> ตอบคำถามที่ผู้บริหาร/regulator อยากรู้: แย่แค่ไหนถึงจะเรียกว่า 'แย่พอควร'"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ VaR คือ<strong>ภาษากลางของความเสี่ยงทั้งอุตสาหกรรม</strong> — Basel ใช้กำหนดเงินกองทุนธนาคาร, risk desk รายงานทุกวัน, limit ของเทรดเดอร์ตั้งด้วยมัน ถ้าไม่เข้าใจ VaR คุณอ่านรายงานความเสี่ยงไม่ออก — และถ้าเข้าใจแต่ผิวเผิน คุณจะ<strong>เชื่อมันเกินไปจนพัง</strong> (ซึ่งคือสิ่งที่เกิดปี 2008)</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> VaR เหมือนพยากรณ์อากาศที่บอกว่า "99 วันจาก 100 ฝนไม่เกิน X มม." — มีประโยชน์สำหรับวางแผนวันปกติ แต่<strong>ไม่บอกอะไรเลยเกี่ยวกับวันที่น้ำท่วมใหญ่</strong> (วันที่ 1 ใน 100 นั้นแย่แค่ไหน VaR เงียบสนิท) และนั่นคือช่องโหว่ที่อันตรายที่สุดของมัน</p>
+<div class="fm">99% 1-day VaR = ระดับขาดทุนที่ถูกเกินแค่ 1% ของวัน (ควอนไทล์ที่ 1)<br>
+วิธีหา 3 แบบ: (1) parametric (สมมติ normal) · (2) historical (เรียงอดีตจริง) · (3) Monte Carlo<br>
+&nbsp;&nbsp;parametric normal:  VaR = z · σ · √t · (มูลค่าพอร์ต) &nbsp; [z₉₉ = 2.33]</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน</div>
+<p>พอร์ต $100M, σ รายวัน = 2%, สมมติ normal, ขอ 99% 1-day VaR<br>
+→ VaR = 2.33 × 2% × \$100M = <strong>\$4.66M</strong><br>
+👉 แปลว่า: "99 วันจาก 100 จะไม่ขาดทุนเกิน \$4.66M ใน 1 วัน" — แต่<strong>ไม่ได้บอกว่าวันที่ 100 (วันเลว) จะเสียเท่าไร</strong> อาจ \$5M หรือ \$50M ก็ได้<br>
+<strong>✍️ ลองทำเอง:</strong> ถ้าเปลี่ยนเป็น 95% VaR (z=1.65) ตัวเลขจะ<em>เล็กลง</em>หรือใหญ่ขึ้น? (คำใบ้: มั่นใจน้อยลง = เกณฑ์ต่ำลง)</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li><strong>ไม่บอกความรุนแรงของหาง:</strong> VaR บอกแค่ "เกินเมื่อไร" ไม่บอก "เกินไปเท่าไร" — พอร์ตที่ VaR เท่ากันอาจมีหางต่างกันฟ้ากับเหว</li>
+<li><strong>สมมติ normal = หางบางเกินจริง:</strong> ตลาดจริงหางอ้วน (fat tails) — 25-sigma ของ Viniar คือหลักฐาน</li>
+<li><strong>ไม่ subadditive:</strong> VaR ของพอร์ตรวม อาจ<em>มากกว่า</em>ผลรวม VaR แยก → ลงโทษการกระจายความเสี่ยง (ผิดสัญชาตญาณ ดูการ์ดถัดไป)</li>
+<li><strong>gaming ได้:</strong> ขาย out-of-the-money options → VaR ดูต่ำ แต่ซ่อนระเบิดหาง</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> VaR ต่ำ = ปลอดภัย<br>
+<strong>quant เห็น:</strong> VaR คือ<em>เส้นแบ่ง ไม่ใช่ความลึกของเหว</em> — ตัวเลข VaR ที่สวยมักมาจากการซ่อนความเสี่ยงไว้ "หลังควอนไทล์" ที่ VaR มองไม่เห็น quant ที่เก๋าถาม "แล้วเลยเส้นนั้นไปล่ะ?" เสมอ (นั่นคือ CVaR)</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>VaR = ควอนไทล์ของขาดทุน ("ไม่เกิน X ที่ความมั่นใจ Y%")</li>
+<li>VaR บอก "เกินเมื่อไร" ไม่บอก "เกินไปเท่าไร" (ตาบอดต่อหาง)</li>
+<li>VaR สมมติ normal จะประเมินหางต่ำมหาศาล — และ gaming ได้</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>J.P. Morgan <em>RiskMetrics</em> (1994, technical document) — Dennis Weatherstone "4:15 report" · Jorion, <em>Value at Risk</em> (ตำรามาตรฐาน)</p></div>
+</div>
+
+<h2>เลยเส้น VaR ไปแล้วเจ็บแค่ไหน — CVaR / Expected Shortfall</h2>
+
+<div class="card">
+<h3>Expected Shortfall (CVaR) <span class="yr">Rockafellar-Uryasev 2000</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ถ้าเกิดวันเลว (เกิน VaR) จริง ๆ <strong>โดยเฉลี่ยจะเสียเท่าไร?</strong> — Expected Shortfall (ES) หรือ CVaR = ค่าเฉลี่ยของการขาดทุน<em>ในหางที่แย่กว่า VaR</em> มันตอบคำถามที่ VaR เลี่ยง และเป็น 'coherent risk measure' ที่ให้รางวัลการกระจายความเสี่ยง"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>Basel III/FRTB เปลี่ยนจาก VaR ไปใช้ ES (97.5%) เป็นมาตรฐานทางการแล้ว</strong> — regulator ยอมรับว่า VaR มองหางไม่เห็น ES จึงเป็นภาษาความเสี่ยงยุคใหม่ ถ้ายังคิดแต่ VaR คุณตกยุค และมองข้าม "ความลึกของเหว" ที่ ES เท่านั้นที่วัด</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> VaR บอก "น้ำจะท่วมถึงเข่าที่ระดับความมั่นใจ 99%" · ES ถามต่อว่า "<strong>แล้วถ้าท่วมเกินเข่าจริง โดยเฉลี่ยจะลึกแค่ไหน?</strong>" — คุณอยากรู้ทั้งสองอย่าง แต่ถ้าเลือกได้อันเดียวก่อนสร้างบ้าน คุณอยากรู้อันหลังมากกว่า</p>
+<div class="fm">ES₉₉ = ค่าเฉลี่ยของขาดทุน โดยมีเงื่อนไขว่าขาดทุนเกิน VaR₉₉ แล้ว<br>
+&nbsp;&nbsp;ES ≥ VaR เสมอ (มันคือค่าเฉลี่ยของส่วนที่เลวกว่า)<br>
+normal:  ES_α = σ · φ(z_α)/(1−α) &nbsp; → ES₉₉ ≈ 2.67σ &nbsp;(เทียบ VaR₉₉ = 2.33σ)</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน</div>
+<p>พอร์ตเดียวกัน (\$100M, σ=2%, normal):<br>
+→ VaR₉₉ = 2.33 × 2% × \$100M = \$4.66M<br>
+→ ES₉₉ = 2.67 × 2% × \$100M = <strong>\$5.34M</strong> (เฉลี่ยของวันที่เลวกว่า VaR)<br>
+👉 ส่วนต่าง \$0.68M คือ "ความลึกของหาง" ที่ VaR ซ่อนไว้ — และถ้าการแจกแจงหางอ้วน (ไม่ใช่ normal) ส่วนต่างนี้จะ<strong>ใหญ่กว่านี้มาก</strong></p></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี (เทียบ VaR)</div><ul>
+<li>วัดความลึกของหาง ไม่ใช่แค่เส้นแบ่ง</li>
+<li>subadditive → ให้รางวัลการกระจายความเสี่ยง (coherent)</li>
+<li>gaming ยากกว่า (ขาย OTM options โผล่ใน ES)</li></ul></div>
+<div class="con"><div class="bt">⚠️ ข้อเสีย</div><ul>
+<li>ประเมินยากกว่า (ต้องการข้อมูลหางที่มีน้อย → error สูง)</li>
+<li>backtest ยากกว่า VaR (ยังถกกันเรื่อง "elicitability")</li>
+<li>ยังพึ่งสมมติฐานการแจกแจง — หาง normal ก็ยังต่ำเกินจริง</li></ul></div></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> VaR กับ ES ก็คล้าย ๆ กัน<br>
+<strong>quant เห็น:</strong> ต่างกันที่<em>คำถาม</em> — VaR ถาม "เกินเมื่อไร" (เส้น), ES ถาม "เกินแล้วเจ็บเฉลี่ยเท่าไร" (พื้นที่ใต้หาง) พอร์ตขาย tail-risk มี VaR สวยแต่ ES ระเบิด นั่นคือเหตุผลที่ regulator ย้ายค่าย</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>ES/CVaR = ค่าเฉลี่ยขาดทุน<em>ในหางที่เลวกว่า VaR</em> (ความลึก ไม่ใช่เส้น)</li>
+<li>ES ≥ VaR เสมอ; Basel III/FRTB ใช้ ES 97.5% แทน VaR แล้ว</li>
+<li>ES เป็น coherent (subadditive) — VaR ไม่ใช่</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Rockafellar &amp; Uryasev (2000) <em>Optimization of Conditional Value-at-Risk</em>, J. Risk · Acerbi &amp; Tasche (2002) <em>On the coherence of Expected Shortfall</em> · Basel FRTB (2019)</p></div>
+</div>
+
+<div class="pq">VaR ถามว่า "เส้นตายอยู่ตรงไหน" — ES ถามว่า "เลยเส้นตายไปแล้ว เหวลึกแค่ไหน" ความต่างนี้คือความต่างระหว่างรอดกับพัง</div>
+
+<h2>อะไรทำให้ risk measure "ดี" — Coherent Risk</h2>
+
+<div class="card">
+<h3>Coherent Risk Measures <span class="yr">Artzner et al 1999</span> <span class="lvl">★★ ควรรู้</span> <span class="cc">· concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ก่อนถามว่า 'วัดความเสี่ยงยังไง' ต้องถามก่อนว่า '<strong>risk measure ที่มีเหตุผลควรมีสมบัติอะไร</strong>' — Artzner และคณะวางสัจพจน์ 4 ข้อ ที่ risk measure 'ที่สมเหตุสมผล' ต้องผ่าน และพบว่า <strong>VaR ตกข้อสำคัญ (subadditivity)</strong> ส่วน ES ผ่านครบ"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะนี่คือ<strong>รากฐานทฤษฎีที่บอกว่าทำไม VaR ถึงมีข้อบกพร่องเชิงโครงสร้าง</strong> — ไม่ใช่แค่ "หางบาง" แต่<em>ผิดหลักการ</em> การกระจายความเสี่ยงควรลดความเสี่ยงเสมอ แต่ VaR บางครั้งบอกว่ามันเพิ่ม ซึ่งเป็นไปไม่ได้ในโลกที่มีเหตุผล</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองนึกถึงกฎ "ความยุติธรรม" ของการวัดความเสี่ยง เช่น "ถ้ารวมสองพอร์ตเข้าด้วยกัน ความเสี่ยงรวมต้องไม่มากกว่าผลบวกของแต่ละอัน" (เพราะการกระจายช่วยได้ ไม่ใช่ทำร้าย) — ฟังดูเป็นสามัญสำนึกใช่ไหม? <strong>แต่ VaR ละเมิดกฎนี้ได้</strong> และนั่นคือปัญหา</p>
+<div class="fm">สัจพจน์ 4 ข้อของ coherent risk (Artzner et al 1999):<br>
+&nbsp;1. Monotonicity — พอร์ตแย่กว่า → เสี่ยงกว่า<br>
+&nbsp;2. Translation invariance — เติมเงินสด C → ความเสี่ยงลด C<br>
+&nbsp;3. Positive homogeneity — ขยายพอร์ต λ เท่า → เสี่ยง λ เท่า<br>
+&nbsp;4. <strong>Subadditivity</strong> — ρ(A+B) ≤ ρ(A) + ρ(B)  ← VaR ตกข้อนี้ / ES ผ่าน</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่าง — VaR ละเมิด subadditivity</div>
+<p>พันธบัตร 2 ตัว แต่ละตัวมีโอกาสผิดนัด 4% (เสีย \$100 ถ้าผิดนัด, อิสระต่อกัน), ขอ 95% VaR:<br>
+→ <strong>ตัวเดียว:</strong> โอกาสผิดนัด 4% &lt; 5% → 95% VaR = \$0 (ควอนไทล์ 95 ยังไม่โดน default)<br>
+→ <strong>รวม 2 ตัว:</strong> โอกาสที่<em>อย่างน้อย 1 ตัว</em>ผิดนัด = 1−0.96² ≈ 7.8% &gt; 5% → 95% VaR = \$100<br>
+👉 VaR(A+B) = \$100 &gt; VaR(A) + VaR(B) = \$0 — <strong>การกระจายทำให้ VaR "เพิ่ม"</strong>?! เป็นไปไม่ได้เชิงเศรษฐศาสตร์ นี่คือความล้มเหลวเชิงโครงสร้างของ VaR (ES ไม่มีปัญหานี้)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> risk measure ไหนก็วัดความเสี่ยงเหมือนกัน<br>
+<strong>quant เห็น:</strong> risk measure คือ<em>ฟังก์ชันที่ต้องมี "ตรรกะภายใน" สอดคล้อง</em> — ถ้ามันบอกว่าการกระจายทำให้แย่ลง มันเสียตั้งแต่รากฐาน ไม่ใช่แค่ปรับพารามิเตอร์ได้ การเลือก risk measure จึงเป็นการเลือก<em>สัจพจน์</em> ไม่ใช่แค่สูตร</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>coherent = ผ่าน 4 สัจพจน์ (monotonicity, translation, homogeneity, subadditivity)</li>
+<li>subadditivity = การกระจายต้องไม่เพิ่มความเสี่ยง — VaR ตกข้อนี้</li>
+<li>ES เป็น coherent; นี่คือเหตุผลเชิงทฤษฎีที่ ES ชนะ VaR</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Artzner, Delbaen, Eber &amp; Heath (1999) <em>Coherent Measures of Risk</em>, Mathematical Finance · Föllmer &amp; Schied — convex/spectral risk measures (ต่อยอด)</p></div>
+</div>
+
+<h2>วัดหางโดยตรง — Extreme Value Theory</h2>
+
+<div class="card">
+<h3>Extreme Value Theory (EVT) <span class="yr">Fisher-Tippett · Pickands-Balkema-de Haan</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ถ้าหางคือสิ่งที่ฆ่าคุณ — <strong>ทำไมต้องเดาหางจากการแจกแจงทั้งก้อน (เช่น normal)?</strong> EVT มีทฤษฎีบทที่บอกว่า<em>ค่าสุดขั้ว</em> (extremes) ลู่เข้าสู่การแจกแจงตระกูลเฉพาะ (GEV / Generalized Pareto) ไม่ว่าตัวข้อมูลเดิมจะเป็นอะไร — วัดหางโดยตรง แทนที่จะสมมติมันทิ้ง"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะนี่คือ<strong>เครื่องมือเดียวที่ออกแบบมาเพื่อหางโดยเฉพาะ</strong> — ใช้ในการประเมินความเสี่ยงหายนะ (catastrophe), stress test, การประกันภัย, และ VaR/ES ที่ระดับความมั่นใจสูงมาก (99.9%) ที่ข้อมูลตรง ๆ มีน้อยเกินจะประเมิน ถ้าไม่รู้ EVT คุณจะ extrapolate หางด้วย normal — ซึ่งคือความผิดพลาดของ Viniar</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> วิศวกรออกแบบเขื่อนไม่ได้ดูระดับน้ำ "เฉลี่ย" — เขาดู "น้ำท่วมสูงสุดในรอบ 100 ปี" และมีคณิตศาสตร์เฉพาะสำหรับค่าสุดขั้วนั้น EVT คือคณิตศาสตร์อันเดียวกันสำหรับตลาด: <strong>เอาเฉพาะวันเลวสุด ๆ มาสร้างแบบจำลองหางโดยตรง</strong> ไม่สนวันปกติ</p>
+<div class="fm">2 วิธีหลัก:<br>
+&nbsp;• Block Maxima → ค่าสุดขั้วลู่เข้า GEV (Fisher-Tippett-Gnedenko)<br>
+&nbsp;• Peaks-Over-Threshold (POT) → ส่วนที่เกิน threshold ลู่เข้า Generalized Pareto (GPD)<br>
+พารามิเตอร์หัวใจ: ξ (xi, tail index) — ξ&gt;0 = หางอ้วน (power-law), ยิ่งสูงยิ่งอันตราย<br>
+&nbsp;&nbsp;Hill estimator = วิธีประมาณ ξ จากข้อมูลหาง</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน — POT</div>
+<p>ต้องการ 99.9% VaR ของพอร์ต แต่ข้อมูล 5 ปี = ~1,250 วัน → ควอนไทล์ 99.9% แปลว่า "เลวสุด ~1 วัน" — ประเมินตรง ๆ แทบเป็นไปไม่ได้ (error มหาศาล)<br>
+→ <strong>POT:</strong> เลือก threshold (เช่น ขาดทุนเกิน 3%), fit GPD กับ ~50 วันที่เกิน threshold, แล้ว<em>extrapolate</em> เข้าไปในหางลึกอย่างมีทฤษฎีรองรับ<br>
+👉 ได้ประมาณการหางที่ 99.9% ที่มีหลักการ แทนที่จะสมมติ normal (ซึ่งจะบอกหางบางกว่าจริงหลายเท่า)</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li><strong>เลือก threshold ยาก:</strong> สูงไป = ข้อมูลน้อยเกิน (variance สูง); ต่ำไป = ปน "ตัวกลาง" ที่ไม่ใช่หาง (bias)</li>
+<li>สมมติ i.i.d. — จริง ๆ วิกฤตมาเป็นกระจุก (vol clustering); ต้องกรอง GARCH ก่อน (Conditional EVT)</li>
+<li>extrapolate เกินข้อมูลมาก ๆ = เชื่อทฤษฎีมากกว่าหลักฐาน; ξ ประมาณยากและไวต่อ outlier</li>
+<li>หางในอดีต ≠ หางอนาคต ถ้าโครงสร้างตลาดเปลี่ยน (regime shift)</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> เอาข้อมูลทั้งหมด fit distribution เดียวจบ<br>
+<strong>quant เห็น:</strong> <em>ตรงกลางกับหางเป็นคนละโลก</em> — การแจกแจงที่ fit ตรงกลางสวย มักโกหกที่หาง EVT ยอม "ทิ้งข้อมูล 95%" เพื่อให้ได้หางที่ถูก เพราะรู้ว่า<strong>เงินตายอยู่ที่หาง ไม่ใช่ตรงกลาง</strong></p></div>
+
+<div class="bx ba"><div class="bt">🧭 นิสัยคิด (heuristic ระดับโต๊ะ)</div>
+<p>เมื่อเห็นตัวเลข VaR/ES ที่ระดับสุดขั้ว (99.9%+) ให้ถาม: <strong>"ตัวเลขนี้มาจากข้อมูลหางจริง หรือมาจากการ extrapolate ด้วยสมมติฐาน normal?"</strong> — ถ้าอย่างหลัง หารสองความเชื่อมั่นทิ้งได้เลย หางที่ประเมินด้วย normal คือหางที่ไม่มีใครเคยเห็นตอนมันระเบิด</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>EVT = คณิตของค่าสุดขั้วโดยตรง (GEV จาก block maxima, GPD จาก POT)</li>
+<li>ξ (tail index) &gt; 0 = หางอ้วน (power-law); ยิ่งสูงยิ่งอันตราย</li>
+<li>อย่า extrapolate หางด้วย normal — ใช้ EVT (แต่ต้องกรอง vol clustering ก่อน)</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Embrechts, Klüppelberg &amp; Mikosch (1997) <em>Modelling Extremal Events</em> (ตำราหลัก) · McNeil &amp; Frey (2000) <em>Conditional EVT</em> (GARCH+EVT) · Pickands (1975), Balkema-de Haan (1974) — GPD theorem</p></div>
+</div>
+
+<h2>เมื่อ correlation มีชีวิต — DCC-GARCH &amp; Copula</h2>
+
+<div class="card">
+<h3>Dynamic Correlation &amp; Copula <span class="yr">Engle DCC 2002 · Sklar</span> <span class="lvl">★★ ควรรู้</span> <span class="cc">· time-series ขั้นสูง</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ความเสี่ยงพอร์ตขึ้นกับ <strong>correlation</strong> ระหว่างสินทรัพย์ — แต่ correlation <em>ไม่คงที่</em>: มัน<strong>พุ่งเข้าหา 1 ตอนวิกฤต</strong> (ทุกอย่างตกพร้อมกัน การกระจายความเสี่ยงหายไปตอนที่ต้องการมันที่สุด) · DCC-GARCH ให้ correlation ที่ไดนามิก, copula แยก 'ความสัมพันธ์หาง' ออกจาก correlation เชิงเส้น"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ<strong>สมมติฐานที่อันตรายที่สุดใน risk management คือ correlation คงที่</strong> — พอร์ตที่ "กระจายดี" ในวันปกติกลายเป็นเดิมพันก้อนเดียวตอนวิกฤต (correlation → 1) ถ้าไม่เข้าใจ dynamic correlation และ tail dependence คุณจะประเมิน diversification เกินจริง และ VaR/ES ต่ำเกินตอนที่สำคัญที่สุด</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ในยามปกติสินทรัพย์ต่าง ๆ เต้นคนละจังหวะ (correlation ต่ำ = กระจายได้) แต่พอตลาดตกใจ ทุกคนวิ่งไปทางเดียว — correlation กระโดดเข้าหา 1 <strong>"diversification ทำงานตอนแดดออก และหายไปตอนฝนตก"</strong> · copula คือเครื่องมือที่ถามว่า "สินทรัพย์พวกนี้มีแนวโน้ม<em>เจ๊งพร้อมกัน</em>แค่ไหน" ต่างจาก correlation ที่วัดแค่การเคลื่อนไหวเฉลี่ย</p>
+<div class="fm">DCC-GARCH (Engle 2002): correlation ρ_t เปลี่ยนตามเวลา (ต่อยอด GARCH ที่ทำ σ_t)<br>
+&nbsp;&nbsp;→ จับ "correlation พุ่งตอนวิกฤต" ที่ correlation คงที่มองไม่เห็น<br>
+Copula (Sklar's theorem): แยก marginal (แต่ละตัว) ออกจาก dependence structure (ความสัมพันธ์)<br>
+&nbsp;&nbsp;⚠️ Gaussian copula: tail dependence = 0 → ประเมิน "เจ๊งพร้อมกัน" ต่ำเกิน (บทเรียนปี 2008)</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน</div>
+<p>พอร์ต 2 สินทรัพย์ ในภาวะปกติ correlation = 0.3 (กระจายดี) → VaR รวมต่ำกว่าผลรวมมาก<br>
+→ <strong>วิกฤต:</strong> DCC-GARCH จับ correlation พุ่งเป็น ~0.85 → ความเสี่ยงรวมเพิ่มขึ้นมาก (การกระจายหายไป)<br>
+👉 ถ้าใช้ correlation คงที่ 0.3 ในการคำนวณ VaR คุณจะ<strong>ประเมินความเสี่ยงต่ำเกินพอดีตอนวิกฤต</strong> — ผิดพลาดแบบเดียวกับที่ทำให้พอร์ต "กระจายดี" หลายกองพังพร้อมกันปี 2008</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>Gaussian copula ไม่มี tail dependence → ประเมินการเจ๊งพร้อมกันต่ำ (Li 2000 → CDO ปี 2008 ดู <code>pillars-part2</code>)</li>
+<li>DCC ยังสมมติรูปแบบ dynamics; correlation จริงกระโดดแบบไม่ต่อเนื่อง (regime)</li>
+<li>correlation ในอดีต ≠ อนาคต; estimation error สูงเมื่อสินทรัพย์เยอะ (curse of dimensionality)</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> พอร์ตกระจายแล้ว = ปลอดภัย<br>
+<strong>quant เห็น:</strong> <em>diversification คือ correlation ที่ยืมมา</em> — และมันถูกเรียกคืนตอนวิกฤต quant ที่ผ่านศึกมาไม่เชื่อ correlation ในตารางนิ่ง ๆ เขาถาม "correlation นี้จะเป็นเท่าไรในวันที่แย่ที่สุด?" เพราะนั่นคือวันเดียวที่มันสำคัญ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>correlation ไม่คงที่ — พุ่งเข้าหา 1 ตอนวิกฤต (diversification หายตอนต้องใช้)</li>
+<li>DCC-GARCH = correlation ไดนามิก (ต่อยอด GARCH จาก σ_t → ρ_t)</li>
+<li>copula แยก tail dependence จาก correlation; Gaussian copula ตาบอดต่อหาง</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Engle (2002) <em>Dynamic Conditional Correlation</em>, JBES · Sklar (1959) copula theorem · Embrechts, McNeil &amp; Straumann (2002) <em>Correlation and Dependence in Risk Management</em> (pitfalls)</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อม:</strong> DCC ต่อยอด GARCH (<code>theory-part5</code>); copula/tail dependence เชื่อม CDO &amp; Gaussian-copula ปี 2008 (<code>pillars-part2</code>); correlation → 1 เชื่อม limits-to-arbitrage/crowding (<code>theory-part3</code>)</p>
+</div>
+
+<div class="bx br"><div class="bt">📉 เมื่อทฤษฎีพังจริง: LTCM (1998) &amp; วิกฤต 2008</div>
+<p><strong>LTCM (1998):</strong> กองทุนที่มีโนเบล 2 คน ใช้ VaR + สมมติ correlation ที่ประเมินจากภาวะปกติ leverage ~25 เท่า เมื่อรัสเซียผิดนัดชำระหนี้ ทุก spread trade ที่ "ไม่เกี่ยวกัน" กลับ<strong>ขาดทุนพร้อมกัน</strong> (correlation → 1) — ความเสี่ยงที่โมเดลบอกว่ากระจายแล้ว รวมเป็นก้อนเดียว กองทุนเกือบล้มระบบการเงินโลก · <strong>2008:</strong> ประวัติศาสตร์ซ้ำในสเกลใหญ่กว่า — VaR ต่ำหลอกให้ leverage สูง, Gaussian copula ซ่อน tail dependence ของ CDO, และ correlation พุ่งเข้าหา 1 ทั่วทั้งระบบ · บทเรียนเดียวกัน: <strong>โมเดลความเสี่ยงพังตรงจุดที่คุณต้องการมันที่สุด — ตอนที่ทุกอย่างสัมพันธ์กันหมด</strong></p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part IV</div>
+<ul>
+<li><strong>VaR</strong> = ควอนไทล์ขาดทุน (เส้นแบ่ง); ตาบอดต่อความลึกของหาง + gaming ได้</li>
+<li><strong>ES/CVaR</strong> = ค่าเฉลี่ยในหางที่เลวกว่า VaR (ความลึก); coherent; Basel ใช้แล้ว</li>
+<li><strong>Coherent risk</strong> = 4 สัจพจน์; VaR ตก subadditivity (การกระจายไม่ควรเพิ่มความเสี่ยง)</li>
+<li><strong>EVT</strong> = คณิตของหางโดยตรง (GPD/POT, tail index ξ); อย่าใช้ normal extrapolate หาง</li>
+<li><strong>DCC-GARCH + Copula</strong> = correlation มีชีวิต พุ่งเข้าหา 1 ตอนวิกฤต; tail dependence</li>
+<li>บทเรียนใหญ่: <strong>วัดความเสี่ยงที่ฆ่าคุณ (หาง + correlation ตอนวิกฤต) ไม่ใช่ความเสี่ยงเฉลี่ย</strong></li>
+</ul></div>
+
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เรามีเสาครบแล้ว — ตั้งราคา, เครดิต, เทรดจริง, และวัดความเสี่ยง — แต่เสาแต่ละต้นพูดคนละภาษา Part V จะร้อยทุกอย่างเข้าด้วยกัน: quant คิดยังไงในภาพรวม, ทฤษฎีไหนคุยกับทฤษฎีไหน, และอะไรคือ "วิธีมองโลก" ที่ทำให้คนตกหลุมรัก quant</div>
+
+<div class="bx ba"><div class="bt">📖 อ่านต่อ — review / ตำรามาตรฐาน (Part IV)</div>
+<p><strong>ตำรา:</strong> McNeil, Frey &amp; Embrechts, <em>Quantitative Risk Management</em> (คัมภีร์ QRM) · Jorion, <em>Value at Risk</em> · Embrechts, Klüppelberg &amp; Mikosch, <em>Modelling Extremal Events</em> (EVT)<br>
+<strong>เชิงเล่าเรื่อง:</strong> Roger Lowenstein, <em>When Genius Failed</em> (LTCM) · Nassim Taleb, <em>The Black Swan</em> (ปรัชญาหาง — ระวังมุมสุดโต่ง แต่จุดประกายความคิดเรื่องหางได้ดี)</p></div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p>🔴 <strong>3 คำที่ต้องจำจริง:</strong> VaR (ควอนไทล์ขาดทุน = เส้นแบ่ง) · ES/CVaR (ค่าเฉลี่ยหางที่เลวกว่า VaR = ความลึก) · tail dependence (แนวโน้มเจ๊งพร้อมกัน ที่ correlation มองไม่เห็น)<br>
+⚪ <strong>คำอื่นไว้เปิดอ้างอิง:</strong> quantile · parametric/historical/Monte Carlo VaR · fat tails · subadditivity · coherent risk measure · 4 สัจพจน์ (monotonicity/translation/homogeneity/subadditivity) · Expected Shortfall · elicitability · EVT · block maxima (GEV) · POT (GPD) · tail index ξ · Hill estimator · conditional EVT · DCC-GARCH · copula · Sklar's theorem · Gaussian copula · dynamic correlation · Basel III/FRTB</p></div>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
