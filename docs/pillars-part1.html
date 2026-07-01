@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>เสาที่เหลือของ Quant — Part I: Fixed Income</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>เสาที่เหลือของ Quant</h1>
+<div class="sub">Part I — Fixed Income & Rates: ตลาดที่ใหญ่ที่สุดในโลก</div>
+<div class="desc">Yield Curve · Duration & Convexity · PCA + Kalman Filter ของเส้นอัตราดอกเบี้ย · Term-Structure Models · การตั้งราคา Bond/Swap — เสาแรกของ "เรื่องที่เล่ม A ยังไม่เล่า" ที่ที่กำไรบนกระดาษหายไปกับความเสี่ยงของ <em>อัตราดอกเบี้ย</em></div>
+</div>
+
+<h2>เปิดเรื่อง: "ของน่าเบื่อ" ที่ล้มกองทุนมากกว่าหุ้น</h2>
+
+<p>ตลาดตราสารหนี้ใหญ่กว่าตลาดหุ้นทั้งโลก — พันธบัตรและตราสารหนี้รวมกันมีมูลค่ากว่าร้อยล้านล้านดอลลาร์ และเป็น "บ้านเกิด" ของ quant สายดั้งเดิม หลายคนคิดว่า bond = ปลอดภัย น่าเบื่อ แต่ความจริงตรงข้าม: <strong>duration ล้มกองทุนมามากกว่าการเลือกหุ้นผิด</strong></p>
+
+<p>ปี 2022 พิสูจน์เรื่องนี้ต่อหน้าคนทั้งโลก — เมื่อดอกเบี้ยขึ้นเร็วที่สุดในรอบ 40 ปี พันธบัตรรัฐบาลที่ถือว่า "ไม่มีความเสี่ยง" ขาดทุนหนักที่สุดในประวัติศาสตร์ และกองทุนบำนาญอังกฤษเกือบล่มทั้งระบบภายในไม่กี่วัน (เดี๋ยวเล่าในเคส) สิ่งที่ฆ่าพวกเขาไม่ใช่ "การผิดนัด" แต่คือตัวเลขที่ชื่อ <strong>duration</strong></p>
+
+<div class="pq">ในตลาดหุ้น คุณเสี่ยงกับ "บริษัทนี้จะเป็นยังไง" — ในตลาดบอนด์ คุณเสี่ยงกับ "เวลาและอัตราดอกเบี้ยจะเป็นยังไง" ซึ่งกระทบ <em>ทุกสินทรัพย์</em>พร้อมกัน</div>
+
+<p style="color:#64748b;font-size:.9em">📖 นี่คือ Part I ของ <strong>เล่ม B</strong> ต่อจาก "ประตูสู่เล่ม B" ที่ปิดท้ายเล่ม A — เสริม time-series ขั้นสูง (PCA/Kalman) ที่ต่อยอดจาก <code>theory-part5</code> (Time Series)</p>
+
+<h2>รากฐาน: Yield Curve — ราคาของเวลา</h2>
+
+<div class="card">
+<h3>Yield Curve & Bootstrapping <span class="yr">รากฐาน FI</span> <span class="lvl">★★ ควรรู้</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"เงิน 1 บาทวันนี้ ≠ เงิน 1 บาทปีหน้า — <strong>yield curve</strong> คือราคาของเวลาทุกช่วง (อัตราดอกเบี้ยของเงินกู้ 1 ปี, 2 ปี, ... 30 ปี) มันคือแกนที่ตราสารหนี้ทุกตัวถูกตั้งราคา"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>ทุกอย่างใน fixed income เริ่มจาก curve</strong> — ราคา bond, swap, mortgage, และแม้แต่ discount factor ที่ใช้ตั้งราคา option (r ใน Black-Scholes) ก็มาจากเส้นนี้ ถ้าไม่เข้าใจ curve คุณจะอ่านตลาดตราสารหนี้ไม่ออกเลยแม้แต่บรรทัดเดียว และจะไม่เข้าใจว่า "ตลาดคาดว่า Fed จะขึ้น/ลงดอกเบี้ย" อ่านจากไหน</p></div>
+
+<div class="bx bb"><div class="bt">🔧 ใช้ทำอะไร</div>
+<p>สร้าง <strong>zero curve</strong> (discount factor ทุกช่วงเวลา) จากราคาตราสารในตลาด แล้วเอาไป discount กระแสเงินสดของอะไรก็ได้ กระบวนการถอด curve ออกมาทีละช่วงเรียก <strong>bootstrapping</strong></p></div>
+
+<div class="fm">ราคา bond = Σ [ กระแสเงินสด<sub>t</sub> × DF(t) ]   โดย DF(t) = discount factor ณ เวลา t<br>
+DF(t) = 1 / (1 + z<sub>t</sub>)<sup>t</sup>   (z<sub>t</sub> = zero rate)<br><br>
+forward rate: f(t₁,t₂) = อัตราที่ตลาด "ล็อกไว้แล้ว" สำหรับกู้ในอนาคตช่วง t₁→t₂</div>
+
+<div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
+<ul>
+<li>ตั้งราคา/เทียบมูลค่าตราสารหนี้ทุกชนิด</li>
+<li>อ่าน "ความคาดหวังดอกเบี้ย" ของตลาด (จาก forward rates)</li>
+<li>เป็น discount curve ให้อนุพันธ์ทุกประเภท</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>สมมติว่ามี curve เดียว — จริง ๆ มีหลาย curve (OIS สำหรับ discount, curve อื่นสำหรับ projection) หลังปี 2008 การใช้ curve เดียวผิดชัดเจน</li>
+<li>forward rate <em>ไม่ใช่</em>คำพยากรณ์ที่แม่น — มันคือความคาดหวัง + risk premium ปน กัน (ดูมุม quant)</li>
+<li>ช่วงที่ตลาดผันผวน curve กระโดด/บิดจน bootstrapping ไม่เสถียร</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> forward rate = ตลาดทำนายว่าดอกเบี้ยจะเป็นเท่านี้<br>
+<strong>quant เห็น:</strong> forward rate = ความคาดหวัง <em>บวก</em> term premium (ค่าชดเชยความเสี่ยงของการถือยาว) การเทรดคือการเดิมพันว่า premium นั้นแพงหรือถูกเกินไป ไม่ใช่เชื่อ forward ตรง ๆ</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบันใช้ทำอะไรจริง</div>
+<p>เดสก์ใช้ multi-curve framework (OIS discounting หลัง 2008), สร้าง curve ด้วย instrument จริง (deposits, futures, swaps) และใช้ curve เป็น input ของทุกโมเดล — งานส่วนใหญ่คือ "curve construction" ที่สะอาดและ arbitrage-free</p></div>
+</div>
+
+<h2>Duration & Convexity — หน่วยวัดความเสี่ยงของ FI</h2>
+
+<div class="card">
+<h3>Duration & Convexity (DV01) <span class="yr">Macaulay 1938</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ราคาบอนด์กับอัตราดอกเบี้ยสวนทางกัน — <strong>duration</strong> วัดว่าราคาจะขยับกี่ % เมื่อดอกเบี้ยขยับ 1% (ความไวอันดับหนึ่ง) ส่วน <strong>convexity</strong> คือความโค้งของความสัมพันธ์นั้น (อันดับสอง) เหมือน delta กับ gamma ของโลกดอกเบี้ย"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>Duration คือ <strong>ตัวเลขความเสี่ยงที่สำคัญที่สุดในตลาดตราสารหนี้</strong> — เทียบเท่า beta ของหุ้น ถ้าไม่รู้ duration คุณจะ:</p>
+<ul>
+<li>ไม่รู้ว่าพอร์ตบอนด์จะเจ็บแค่ไหนเมื่อดอกเบี้ยขึ้น (เช่นปี 2022)</li>
+<li>hedge ความเสี่ยงดอกเบี้ยไม่เป็น (duration matching / immunization)</li>
+<li>มองไม่เห็นว่า "บอนด์ยาว = การเดิมพันดอกเบี้ยแบบใส่ leverage" ที่ซ่อนอยู่</li>
+</ul></div>
+
+<div class="fm">Modified Duration:  D = −(1/P)·(dP/dy)   →   ΔP/P ≈ −D·Δy<br>
+DV01 (dollar value of 1 basis point):  ΔP เมื่อ y ขยับ 0.01%<br><br>
+รวม convexity (แม่นขึ้น):  ΔP/P ≈ −D·Δy + ½·C·(Δy)²<br>
+&nbsp;&nbsp;C = convexity → บอนด์มี convexity บวก = ราคาขึ้นแรงกว่าลง (ดีต่อผู้ถือ)</div>
+
+<div class="bx bb"><div class="bt">🔧 ใช้ทำอะไร</div>
+<ul>
+<li>วัด/รวมความเสี่ยงดอกเบี้ยของทั้งพอร์ต (portfolio duration)</li>
+<li>Hedge: ปรับ duration ให้เป็นกลาง หรือ match กับหนี้สิน (immunization)</li>
+<li>เปรียบเทียบความเสี่ยงข้ามบอนด์คนละอายุ/coupon</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
+<ul>
+<li>การขยับดอกเบี้ยเล็ก ๆ และ <strong>ขนานทั้งเส้น</strong> (parallel shift)</li>
+<li>บอนด์ธรรมดาที่กระแสเงินสดแน่นอน</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li><strong>การขยับใหญ่</strong> — duration เชิงเส้น พลาดตอน Δy ใหญ่ ต้องมี convexity ช่วย</li>
+<li><strong>Non-parallel shift</strong> — curve บิด (steepen/flatten) duration ตัวเดียวจับไม่ได้ ต้องใช้ key-rate duration หรือ PCA (การ์ดถัดไป)</li>
+<li><strong>Optionality</strong> — บอนด์ที่ไถ่ถอนก่อนได้ (callable) / mortgage มี "negative convexity" duration เปลี่ยนตามดอกเบี้ย (ประเมินยากขึ้นมาก)</li>
+</ul></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul>
+<li>ตัวเลขเดียวสรุปความเสี่ยงดอกเบี้ยทั้งพอร์ต</li>
+<li>บวกกันได้ (portfolio duration = ถ่วงน้ำหนัก)</li>
+<li>ทำ hedge/immunization ได้จริง</li></ul></div>
+<div class="con"><div class="bt">⚠️ ข้อเสีย</div><ul>
+<li>เชิงเส้น + สมมติ parallel shift</li>
+<li>พังกับ optionality (callable/MBS)</li>
+<li>ซ่อนความจริงว่ามันคือ leverage บนดอกเบี้ย</li></ul></div></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> พันธบัตรระยะยาว = ปลอดภัย เพราะรัฐบาลไม่เบี้ยว<br>
+<strong>quant เห็น:</strong> พันธบัตร 30 ปี = การเดิมพันดอกเบี้ยที่มี duration สูงมาก (เจ็บ ~20% ถ้าดอกเบี้ยขึ้น 1%). "ไม่มีความเสี่ยงผิดนัด" ไม่ได้แปลว่า "ไม่มีความเสี่ยง" — duration คือความเสี่ยงที่ซ่อนอยู่</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>ทุก risk system วัด DV01/key-rate duration; MBS desk วัด effective duration (มี optionality) · Macaulay (1938) duration · Redington (1952) immunization</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อม:</strong> convexity = "gamma ของดอกเบี้ย" (เทียบ <code>theory-part4</code>); optionality ใน callable/MBS ใช้ risk-neutral pricing จาก <code>theory-part4</code></p>
+</div>
+
+<h2>อ่านทั้งเส้นด้วย 3 ตัวเลข — PCA & Kalman Filter</h2>
+
+<div class="card">
+<h3>PCA ของ Yield Curve + Kalman Filter <span class="yr">Litterman-Scheinkman 1991</span> <span class="lvl">★★ ควรรู้ · time-series ขั้นสูง</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"เส้นอัตราดอกเบี้ยมีเป็นสิบ ๆ จุด แต่การเคลื่อนไหวของมันเกือบทั้งหมด (~99%) อธิบายได้ด้วย <strong>3 ปัจจัย</strong> เท่านั้น: <strong>level</strong> (ทั้งเส้นขึ้น-ลง), <strong>slope</strong> (ชัน-แบน), <strong>curvature</strong> (โก่งกลาง) — และ <strong>Kalman filter</strong> ช่วยประมาณ 3 ปัจจัยนี้แบบเรียลไทม์จากข้อมูลที่มี noise"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะมันเปลี่ยนปัญหาที่มี "หลายสิบมิติ" ให้เหลือ 3 มิติที่จับต้องได้ — ถ้าไม่รู้ PCA คุณจะ hedge curve ทั้งเส้นไม่เป็น (duration ตัวเดียวจับ non-parallel shift ไม่ได้ ตามที่การ์ดก่อนเตือน) และจะเทรด curve trade (steepener/flattener/butterfly) ไม่ได้ นี่คือจุดที่ <strong>time-series มาเจอ fixed income</strong></p></div>
+
+<div class="fm">การเคลื่อนของ curve ≈ β₁·(level) + β₂·(slope) + β₃·(curvature)<br>
+&nbsp;&nbsp;3 factor แรกจาก PCA อธิบาย variance ~99% ของการเคลื่อนทั้งเส้น<br><br>
+Kalman filter: ประมาณ "สถานะที่มองไม่เห็น" (เช่น 3 factor) จากราคาที่สังเกตได้ + noise<br>
+&nbsp;&nbsp;วนลูป: ทำนาย → เห็นข้อมูลใหม่ → แก้ค่าประมาณ (เหมาะกับข้อมูลไหลต่อเนื่อง)</div>
+
+<div class="bx bb"><div class="bt">🔧 ใช้ทำอะไร</div>
+<ul>
+<li><strong>Hedge curve ทั้งเส้น</strong> ด้วย 3 ตัวเลข แทนหลายสิบจุด</li>
+<li><strong>Curve trades:</strong> steepener/flattener (เดิมพัน slope), butterfly (เดิมพัน curvature)</li>
+<li><strong>Kalman:</strong> ประมาณ curve/factor แบบ real-time, กรอง noise, ทำ dynamic Nelson-Siegel (Diebold-Li)</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>PCA factor <em>ไม่นิ่ง</em> — โครงสร้างเปลี่ยนตาม regime (โยง regime-switching, <code>theory-part5</code>)</li>
+<li>3 factor อธิบาย "การเคลื่อนปกติ" แต่ตอน crisis อาจมี factor ที่ 4-5 โผล่</li>
+<li>Kalman ต้องสมมติโมเดล/noise ที่อาจผิด; ถ้า mis-specify ค่าประมาณเพี้ยน</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> yield curve = เส้นซับซ้อนหลายสิบจุด ต้องดูทั้งหมด<br>
+<strong>quant เห็น:</strong> curve = "3 ตัวเลข" (level/slope/curvature) ที่เคลื่อนไหวเกือบอิสระ → ลดมิติแล้วเทรด/hedge แต่ละ factor แยกกันได้ นี่คือพลังของ PCA: หา "แกนที่แท้จริง" ที่ซ่อนหลังความซับซ้อน</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>มาตรฐานของ rates desk (PCA hedging, curve trades); Kalman ใช้ใน dynamic curve models · Litterman &amp; Scheinkman (1991) <em>Common Factors Affecting Bond Returns</em> · Nelson-Siegel (1987) · Diebold-Li (2006) dynamic NS · Kalman (1960)</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อม:</strong> PCA = linear algebra (<code>math-part4</code>); Kalman ต่อยอดแนวคิด state-space จาก <code>theory-part5</code>; convexity/key-rate จากการ์ดก่อน</p>
+</div>
+
+<h2>โมเดลอัตราดอกเบี้ย & การตั้งราคา</h2>
+
+<div class="card">
+<h3>Term-Structure Models: Vasicek / CIR / Hull-White <span class="yr">1977–1990</span> <span class="lvl">★★ ควรรู้ · concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"เพื่อตั้งราคาอนุพันธ์ดอกเบี้ย เราต้องโมเดลว่า 'อัตราดอกเบี้ยระยะสั้น (short rate)' เดินยังไง — และมันไม่เดินสุ่มแบบหุ้น แต่ <strong>ดึงกลับหาค่าเฉลี่ย (mean-reverting)</strong> เพราะธนาคารกลางคุมมันอยู่"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะการตั้งราคา bond option, swaption, callable bond, mortgage ต้องใช้โมเดลดอกเบี้ยแบบ risk-neutral — และ <strong>Hull-White</strong> (ที่ fit curve วันนี้ได้พอดี) คือมาตรฐานที่ใช้จริง ถ้าไม่รู้ตระกูลนี้ คุณจะตั้งราคาอนุพันธ์ดอกเบี้ยไม่ได้เลย</p></div>
+
+<div class="fm">Vasicek (1977):  dr = a(b − r)·dt + σ·<abbr title="dW = ก้าวสุ่มจิ๋วของ Brownian motion">dW</abbr>   (a=แรงดึงกลับ, b=ค่าเฉลี่ยระยะยาว)<br>
+&nbsp;&nbsp;→ ยอมให้ r ติดลบได้ (จุดอ่อน แต่ยุคดอกเบี้ยติดลบกลับเป็นข้อดี!)<br>
+CIR (1985):  dr = a(b − r)·dt + σ·√r·dW   → r ≥ 0 เสมอ<br>
+Hull-White (1990):  Vasicek ที่ b เป็นฟังก์ชันเวลา → <strong>fit curve ปัจจุบันได้เป๊ะ</strong> (no-arbitrage)</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ดอกเบี้ยก็เดินสุ่มเหมือนหุ้น<br>
+<strong>quant เห็น:</strong> ดอกเบี้ย <em>mean-revert</em> เพราะมีธนาคารกลางเป็น "สปริง" — โมเดลที่ดีต้องจับพฤติกรรมนี้ และต้อง fit curve วันนี้ให้ได้ก่อน (Hull-White) ไม่งั้นเกิด arbitrage กับตราสารที่มีอยู่</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Vasicek (1977) · Cox-Ingersoll-Ross (1985) · Hull-White (1990) · (ขั้นสูง: HJM 1992, LMM/BGM 1997 — โมเดล forward rate ทั้งเส้น)</p></div>
+</div>
+
+<div class="card">
+<h3>การตั้งราคา: Bond · Swap · FRA · Swaption <span class="lvl">★★ ควรรู้ · concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ตราสารหนี้ทุกชนิดคือ <strong>ชุดของกระแสเงินสดที่ discount ด้วย curve</strong> — swap คือการแลกกระแส fixed กับ floating, FRA คือล็อกดอกเบี้ยอนาคต, swaption คือ option บนอัตรา swap ทุกอย่างต่อยอดจาก curve + โมเดลดอกเบี้ย"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>swap เป็นตลาดอนุพันธ์ที่ใหญ่ที่สุดในโลก (มูลค่า notional หลายร้อยล้านล้าน) และเป็นเครื่องมือ hedge ดอกเบี้ยหลักของทุกสถาบัน เข้าใจ swap/FRA = เข้าใจว่าโลกจริง hedge และเก็ง risk ดอกเบี้ยยังไง</p></div>
+
+<div class="fm">Swap: PV(ขา fixed) = PV(ขา floating) ณ วันเริ่ม → หา "swap rate" ที่ทำให้เท่ากัน<br>
+FRA: ล็อก forward rate f(t₁,t₂) วันนี้ สำหรับกู้/ให้กู้ในอนาคต<br>
+Swaption: option สิทธิ์เข้าทำ swap ที่อัตราที่ตกลง → ตั้งราคาด้วย Black model / Hull-White</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> swap เป็นสัญญาซับซ้อนของสถาบัน<br>
+<strong>quant เห็น:</strong> swap = "เครื่องแปลง" ระหว่างดอกเบี้ยคงที่กับลอยตัว ที่มูลค่าเริ่มต้น = 0 แล้วค่อยกลายเป็นบวก/ลบตาม curve — มันคือ building block ที่ยืดหยุ่นสุดของการจัดการ risk ดอกเบี้ย</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">🔗 เชื่อม</div><p>swaption ใช้ Black model (ตระกูลเดียวกับ Black-Scholes, <code>theory-part4</code>); floating leg = ต่อยอด forward rate จากการ์ด yield curve</p></div>
+</div>
+
+<div class="bx br"><div class="bt">📉 เมื่อทฤษฎีพังจริง: 2 บทเรียนราคาแพงเรื่อง duration</div>
+<p><strong>Orange County (1994):</strong> เหรัญญิกเทศมณฑล Robert Citron ใช้ leverage (กู้ผ่าน repo) ซื้อ "inverse floater" ที่มี duration สูงมหาศาล เดิมพันว่าดอกเบี้ยจะไม่ขึ้น — พอ Fed ขึ้นดอกเบี้ยปี 1994 พอร์ตขาดทุนราว <strong>1.7 พันล้านดอลลาร์</strong> เทศมณฑลล้มละลาย บทเรียน: duration + leverage = ระเบิด</p>
+<p><strong>UK LDI Crisis (ก.ย.–ต.ค. 2022):</strong> กองทุนบำนาญอังกฤษใช้กลยุทธ์ LDI (liability-driven investing) ที่ใส่ leverage เพื่อ match duration ของหนี้สินระยะยาว — พอ "mini-budget" ทำให้ yield พุ่งเร็วผิดปกติ กองทุนถูกเรียกหลักประกัน (margin call) พร้อมกัน ต้องเทขายพันธบัตร ซึ่งดันให้ yield พุ่งอีก เป็น <strong>doom loop</strong> จน <strong>ธนาคารกลางอังกฤษต้องเข้าซื้อพันธบัตรฉุกเฉิน</strong>เพื่อหยุดวิกฤต บทเรียน: การ hedge duration ด้วย leverage สร้างความเสี่ยงเชิงระบบตัวใหม่ (โยง limits to arbitrage + crowding จาก <code>theory-part3</code>)</p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part I</div>
+<ul>
+<li><strong>Yield Curve</strong> = ราคาของเวลา; forward rate = ความคาดหวัง + term premium (ไม่ใช่คำทำนาย)</li>
+<li><strong>Duration & Convexity</strong> = หน่วยวัดความเสี่ยงดอกเบี้ย (delta/gamma ของ FI); "ปลอดภัย" ไม่ได้แปลว่าไม่มี duration risk</li>
+<li><strong>PCA + Kalman</strong> = ลด curve เหลือ 3 ตัวเลข (level/slope/curvature) → hedge/เทรดทั้งเส้นได้</li>
+<li><strong>Vasicek/CIR/Hull-White</strong> = ดอกเบี้ย mean-revert; Hull-White fit curve วันนี้ (no-arb)</li>
+<li><strong>Swap/FRA/Swaption</strong> = building block ของการจัดการ risk ดอกเบี้ย</li>
+<li>บทเรียนใหญ่: ในบอนด์ ศัตรูไม่ใช่การผิดนัด แต่คือ <strong>duration + leverage</strong></li>
+</ul></div>
+
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เราจัดการความเสี่ยง "เวลาและดอกเบี้ย" แล้ว — แต่ถ้า<em>คนที่ต้องจ่ายเงินเรา ไม่จ่าย</em>ล่ะ? Part II: Credit — ราคาของการผิดนัด และสูตรที่ (เกือบ) ทำให้ระบบการเงินโลกล่ม</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>yield curve</strong> = เส้นอัตราดอกเบี้ยทุกช่วงเวลา · <strong>discount factor</strong> = ตัวคูณลดค่าเงินอนาคตเป็นปัจจุบัน · <strong>zero rate</strong> = อัตราของเงินก้อนเดียวไม่มี coupon · <strong>bootstrapping</strong> = ถอด curve จากราคาตลาดทีละช่วง · <strong>forward rate</strong> = อัตราอนาคตที่ล็อกได้วันนี้ · <strong>term premium</strong> = ค่าชดเชยการถือยาว · <strong>duration</strong> = %ราคาที่ขยับต่อดอกเบี้ย 1% · <strong>convexity</strong> = ความโค้ง (อันดับสอง) · <strong>DV01</strong> = ราคาที่ขยับต่อ 1 basis point · <strong>immunization</strong> = จับคู่ duration สินทรัพย์-หนี้สิน · <strong>PCA</strong> = ลดมิติหาแกนหลัก · <strong>level/slope/curvature</strong> = 3 factor ของ curve · <strong>Kalman filter</strong> = ประมาณสถานะที่มองไม่เห็นจากข้อมูล noisy · <strong>short rate</strong> = ดอกเบี้ยระยะสั้นทันที · <strong>mean reversion</strong> = ดึงกลับค่าเฉลี่ย · <strong>swap</strong> = แลกกระแส fixed↔floating · <strong>FRA</strong> = ล็อกดอกเบี้ยอนาคต · <strong>swaption</strong> = option บนอัตรา swap · <strong>LDI</strong> = ลงทุนอิงหนี้สิน (บำนาญ)</p></div>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
