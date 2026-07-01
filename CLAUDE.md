@@ -62,3 +62,14 @@ This repo has two unrelated parts — keep them separate:
 7. **Never commit**: `mineru/.venv/` or `mineru/output/` (already in
    `.gitignore`). Only commit changes to `mineru/setup.sh`, `mineru/run.sh`,
    and `mineru/README.md`.
+
+8. **If `mineru/run.sh` fails with an empty/silent error and the network
+   policy blocks `huggingface.co` / `modelscope.cn` / `hf-mirror.com`** (check
+   `curl -sS http://127.0.0.1:37213/__agentproxy/status` for `403`/`connect_rejected`
+   entries against those hosts): MinerU cannot download its models in this
+   environment. Do not retry or try to route around the block. Instead, use
+   the `pdf-to-markdown` skill (`.claude/skills/pdf-to-markdown/SKILL.md`) —
+   it gets equivalent structured Markdown using only PyPI packages (no model
+   download), falling back to Claude's own vision for pages it flags as
+   scanned/image-heavy. Prefer `mineru/run.sh` again if that network
+   restriction is ever lifted.
