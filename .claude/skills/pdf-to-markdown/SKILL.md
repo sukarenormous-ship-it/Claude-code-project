@@ -19,17 +19,21 @@ the fallback: it gets most of MinerU's practical benefit (structured
 Markdown, tables, and vision-quality reading of hard pages) using only
 PyPI-installable dependencies.
 
+The actual tool (script + venv) lives in its own self-contained top-level
+folder, `pdf-to-markdown/` — same pattern as `mineru/`. This file is only the
+skill definition; it never holds the venv or generated output itself.
+
 ## Steps
 
-1. **Install once per environment** (skip if `.claude/skills/pdf-to-markdown/.venv/` already works):
+1. **Install once per environment** (skip if `pdf-to-markdown/.venv/` already works):
    ```bash
-   bash .claude/skills/pdf-to-markdown/setup.sh
+   bash pdf-to-markdown/setup.sh
    ```
 
 2. **Run the extractor** on the target PDF:
    ```bash
-   source .claude/skills/pdf-to-markdown/.venv/bin/activate
-   python .claude/skills/pdf-to-markdown/convert.py <input.pdf> <output_dir>
+   source pdf-to-markdown/.venv/bin/activate
+   python pdf-to-markdown/convert.py <input.pdf> <output_dir>
    ```
    This writes `<output_dir>/<name>.md`, `<output_dir>/<name>.manifest.json`,
    and (only for flagged pages) rendered PNGs under `<output_dir>/pages/`.

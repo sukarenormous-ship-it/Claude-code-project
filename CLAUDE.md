@@ -4,15 +4,20 @@ Guidance for Claude Code when working in this repository.
 
 ## Project layout
 
-This repo has two unrelated parts — keep them separate:
+This repo has three unrelated parts — keep them separate, never mix files
+between them, and never let one import/reference another:
 
 - **Root / `js/` / `css/` / `docs/`** — a static options-trading education site
   (payoff builder, greeks, arbitrage/PM lessons). `docs/` holds the lesson
   PDFs/HTML themselves; these are content, not tooling.
 - **`mineru/`** — a self-contained MinerU install (PDF/DOCX/PPTX/XLSX/image →
-  Markdown/JSON converter). Never mix files between this folder and the rest
-  of the repo. Nothing under `mineru/` should be imported by or reference the
-  JS site, and vice versa.
+  Markdown/JSON converter). Requires downloading model weights from
+  `huggingface.co`/`modelscope.cn`/`hf-mirror.com`.
+- **`pdf-to-markdown/`** — a self-contained, network-independent fallback for
+  MinerU (PyMuPDF-based, PyPI-only). Its Claude Code skill definition lives at
+  `.claude/skills/pdf-to-markdown/SKILL.md`, but the tool itself (script,
+  venv) stays in this folder — `.claude/skills/` holds skill definitions only,
+  never venvs or generated output.
 
 ## MinerU usage rules
 
@@ -68,8 +73,17 @@ This repo has two unrelated parts — keep them separate:
    `curl -sS http://127.0.0.1:37213/__agentproxy/status` for `403`/`connect_rejected`
    entries against those hosts): MinerU cannot download its models in this
    environment. Do not retry or try to route around the block. Instead, use
-   the `pdf-to-markdown` skill (`.claude/skills/pdf-to-markdown/SKILL.md`) —
-   it gets equivalent structured Markdown using only PyPI packages (no model
-   download), falling back to Claude's own vision for pages it flags as
-   scanned/image-heavy. Prefer `mineru/run.sh` again if that network
-   restriction is ever lifted.
+   the `pdf-to-markdown` skill (`.claude/skills/pdf-to-markdown/SKILL.md`,
+   tool lives in `pdf-to-markdown/`) — it gets equivalent structured Markdown
+   using only PyPI packages (no model download), falling back to Claude's own
+   vision for pages it flags as scanned/image-heavy. Prefer `mineru/run.sh`
+   again if that network restriction is ever lifted.
+
+## pdf-to-markdown usage rules
+
+Same self-contained-folder discipline as MinerU: everything lives under
+`pdf-to-markdown/` — `setup.sh` (install), `convert.py` (the extractor),
+`.venv/` (git-ignored), `README.md`. Never commit `pdf-to-markdown/.venv/` or
+`pdf-to-markdown/output/`. Only commit `setup.sh`, `convert.py`, and
+`README.md` under this folder, plus `SKILL.md` under
+`.claude/skills/pdf-to-markdown/`.
