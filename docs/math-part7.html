@@ -28,7 +28,7 @@ svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
 <!-- ========== CHAPTER 15 ========== -->
 <h2 id="ch15">บทที่ 15: ทุกอย่างรวมกัน — "อ่าน Black-Scholes ออก"</h2>
 
-<p>ถึงเวลาพิสูจน์ว่าคุณเข้าใจจริง — ไล่สูตร BS ทีละตัวแล้วชี้ว่าแต่ละส่วนมาจากบทไหน</p>
+<p>ถึงเวลาพิสูจน์ว่าคุณเข้าใจจริง — ไล่สูตร Black-Scholes (แบบจำลองแบล็ก-โชลส์) หรือ BS ทีละตัวแล้วชี้ว่าแต่ละส่วนมาจากบทไหน</p>
 
 <h3 id="s15-1">15.1 สูตร Black-Scholes ฉบับเต็ม</h3>
 
@@ -45,16 +45,16 @@ d₂ = d₁ - σ√T</div>
 <table>
 <tr><th>ส่วนประกอบ</th><th>ความหมาย</th><th>เรียนในบทที่</th></tr>
 <tr><td><strong>S₀</strong></td><td>ราคาหุ้นปัจจุบัน</td><td>บท 1: ตัวแปรในฟังก์ชัน</td></tr>
-<tr><td><strong>K</strong></td><td>Strike Price</td><td>บท 1: max(0, S-K)</td></tr>
-<tr><td><strong>e<sup>-rT</sup></strong></td><td>Discount factor (PV)</td><td>บท 3: Continuous compounding</td></tr>
+<tr><td><strong>K</strong></td><td>Strike Price (ราคาใช้สิทธิ์)</td><td>บท 1: max(0, S-K)</td></tr>
+<tr><td><strong>e<sup>-rT</sup></strong></td><td>Discount factor (ตัวคิดลด) (PV)</td><td>บท 3: Continuous compounding (การทบต้นแบบต่อเนื่อง)</td></tr>
 <tr><td><strong>K × e<sup>-rT</sup></strong></td><td>PV(K) ใน Put-Call Parity</td><td>บท 3: Present Value</td></tr>
-<tr><td><strong>N(d)</strong></td><td>CDF ของ Normal Distribution</td><td>บท 6: Normal, Z-score, CDF</td></tr>
+<tr><td><strong>N(d)</strong></td><td>CDF (ฟังก์ชันการแจกแจงสะสม) ของ Normal Distribution (การแจกแจงปกติ)</td><td>บท 6: Normal, Z-score, CDF</td></tr>
 <tr><td><strong>N(d₁)</strong></td><td>≈ P(expire ITM) ปรับด้วย delta</td><td>บท 6: CDF + บท 7: Delta</td></tr>
 <tr><td><strong>N(d₂)</strong></td><td>≈ P(exercise) ใน risk-neutral world</td><td>บท 14: Risk-Neutral Pricing</td></tr>
 <tr><td><strong>ln(S₀/K)</strong></td><td>Log moneyness</td><td>บท 3: ln, log return</td></tr>
-<tr><td><strong>σ</strong></td><td>Volatility (Std Dev ของ log returns)</td><td>บท 4: σ + บท 6: Lognormal</td></tr>
+<tr><td><strong>σ</strong></td><td>Volatility (ความผันผวน) (Std Dev — ส่วนเบี่ยงเบนมาตรฐาน ของ log returns)</td><td>บท 4: σ + บท 6: Lognormal</td></tr>
 <tr><td><strong>σ√T</strong></td><td>Volatility scaled ด้วยเวลา</td><td>บท 14: Brownian Motion (variance ∝ T)</td></tr>
-<tr><td><strong>r + σ²/2</strong></td><td>Drift ใน risk-neutral world</td><td>บท 14: GBM + Ito's correction</td></tr>
+<tr><td><strong>r + σ²/2</strong></td><td>Drift (อัตราเลื่อนเฉลี่ย) ใน risk-neutral world</td><td>บท 14: GBM + Ito's correction</td></tr>
 <tr><td><strong>σ²/2</strong></td><td>Ito's correction term</td><td>บท 14: Ito's Lemma</td></tr>
 </table>
 
@@ -76,7 +76,7 @@ d₂ = d₁ - σ√T</div>
 <text x="250" y="180" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#d97706">d₁,d₂ = ln (บท 3) + σ (บท 4) + √T (บท 14) + σ²/2 (Ito, บท 14)</text>
 </svg>
 
-<h3 id="s15-3">15.3 พิสูจน์ Put-Call Parity จาก BS</h3>
+<h3 id="s15-3">15.3 พิสูจน์ Put-Call Parity (ความเท่าเทียมระหว่างพุตและคอล) จาก BS</h3>
 
 <div class="fm">C - P = S₀·N(d₁) - K·e<sup>-rT</sup>·N(d₂) - [K·e<sup>-rT</sup>·N(-d₂) - S₀·N(-d₁)]<br>
 = S₀·[N(d₁) + N(-d₁)] - K·e<sup>-rT</sup>·[N(d₂) + N(-d₂)]<br>
@@ -93,11 +93,11 @@ d₂ = d₁ - σ√T</div>
 
 <table>
 <tr><th>สมมติฐาน BS</th><th>ความเป็นจริง</th><th>ผลกระทบ</th></tr>
-<tr><td>σ คงที่</td><td>σ เปลี่ยนตลอด (บท 12 GARCH)</td><td>Volatility Smile/Skew</td></tr>
-<tr><td>Log returns เป็น Normal</td><td>Fat tails (บท 6.6)</td><td>Underestimate tail risk</td></tr>
-<tr><td>ไม่มี jumps</td><td>ราคากระโดดได้ (เช่น gap opening)</td><td>OTM options ถูกเกินไป</td></tr>
-<tr><td>Trading ต่อเนื่อง</td><td>ตลาดปิด/เปิด</td><td>Overnight risk</td></tr>
-<tr><td>ไม่มี transaction costs</td><td>มี commissions, bid-ask</td><td>Hedging ไม่ perfect</td></tr>
+<tr><td>σ คงที่</td><td>σ เปลี่ยนตลอด (บท 12 GARCH)</td><td>Volatility Smile/Skew (รอยยิ้ม/ความเบ้ของความผันผวน)</td></tr>
+<tr><td>Log returns เป็น Normal</td><td>Fat tails (หางอ้วน) (บท 6.6)</td><td>Underestimate tail risk (ประเมินความเสี่ยงส่วนหางต่ำเกินไป)</td></tr>
+<tr><td>ไม่มี jumps (การกระโดดของราคา)</td><td>ราคากระโดดได้ (เช่น gap opening)</td><td>OTM options ถูกเกินไป</td></tr>
+<tr><td>Trading ต่อเนื่อง</td><td>ตลาดปิด/เปิด</td><td>Overnight risk (ความเสี่ยงข้ามคืน)</td></tr>
+<tr><td>ไม่มี transaction costs (ต้นทุนการซื้อขาย)</td><td>มี commissions, bid-ask</td><td>Hedging ไม่ perfect</td></tr>
 </table>
 
 <!-- ========== CHAPTER 16 ========== -->
