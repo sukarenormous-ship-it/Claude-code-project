@@ -17,6 +17,9 @@ abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
 <div class="desc">Stationarity/ARIMA · GARCH · Cointegration & Ornstein-Uhlenbeck · Regime-Switching · Backtest ที่เชื่อถือได้ (Deflated Sharpe) — เครื่องมือที่เปลี่ยน "ข้อมูลในอดีต" ให้เป็น "ความรู้ที่ใช้ได้จริง" โดยไม่หลอกตัวเอง</div>
 </div>
 
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน 🎯Thesis + "🚶อ่านเป็นภาษาคนก่อน" + 🧮ตัวอย่าง + 🎯3 อย่างที่ต้องจำ · <strong>🔵 มีพื้น:</strong> อ่านครบ โดยเฉพาะ ❌พังเมื่อไร + 🧠มุม quant + 📚Papers · การ์ดหลัก ★★★ = GARCH · Cointegration/OU · Deflated Sharpe (Deflated Sharpe คือการ์ดที่สำคัญสุดถ้าจะลงเงินจริง)</p></div>
+
 <h2>เปิดเรื่อง: กับดักที่ฆ่า quant มือใหม่มากที่สุด</h2>
 
 <p>ปี 1974 Granger &amp; Newbold ตีพิมพ์ผลที่น่าตกใจ: เอา <strong>random walk สองเส้นที่ไม่เกี่ยวอะไรกันเลย</strong> มา regress กัน — แล้วได้ R² สูง, t-stat สวยงาม, ดู "มีความสัมพันธ์" อย่างมีนัยสำคัญ ทั้งที่มันสุ่มล้วน เรียกว่า <strong>spurious regression</strong> ที่ร้ายคือ <em>ยิ่งใส่ข้อมูลมากขึ้น ภาพลวงยิ่งชัดขึ้น</em> (t-stat ลู่ออกแทนที่จะลู่เข้า — Phillips 1986) นี่คือกับดักที่ฆ่า quant มือใหม่มากที่สุด: เห็นรูปแบบที่ไม่มีอยู่จริง</p>
@@ -61,10 +64,18 @@ ARIMA(p,d,q):  <abbr title="autoregressive = พึ่งค่าตัวเ�
 <div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
 <p>มันคือ <strong>จุดที่ random walk พังแล้วเราหากินได้</strong> (โยง Part I): returns เป็น <abbr title="martingale difference sequence: ราคาเป็น martingale, ผลตอบแทนทำนายค่าเฉลี่ยไม่ได้">martingale difference</abbr> แต่ vol มี structure → ใช้พยากรณ์ความเสี่ยง, ตั้ง position size, ตั้งราคา option (vol forecast) Engle ได้ <strong>โนเบล 2003</strong> จากอันนี้</p></div>
 
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองนึกถึงสภาพอากาศ — พายุไม่ได้มาสุ่มกระจาย มันมาเป็น "ฤดู": วันพายุมักตามด้วยวันพายุ วันสงบตามด้วยวันสงบ · ความผันผวนของตลาดก็เหมือนกัน (vol clustering) · GARCH แค่เขียนเป็นสมการว่า "vol พรุ่งนี้ = ส่วนหนึ่งของ vol เมื่อวาน + ส่วนหนึ่งของ shock ที่เพิ่งเกิด" — คุณเดา<em>ทิศ</em>พรุ่งนี้ไม่ได้ แต่เดา<em>ขนาดการแกว่ง</em>ได้ดีทีเดียว</p>
 <div class="fm">GARCH(1,1):  σ²_t = ω + α·ε²_{t-1} + β·σ²_{t-1}<br>
 &nbsp;&nbsp;α = น้ำหนัก shock เมื่อวาน · β = น้ำหนัก vol เมื่อวาน (β สูง = vol "จำ" นาน)<br>
 &nbsp;&nbsp;persistence = α+β (ใกล้ 1 = clustering แรง; =1 คือ IGARCH) · <strong>long-run variance</strong> = ω/(1−α−β)<br><br>
 รุ่นต่อยอด: <strong>EGARCH</strong> (Nelson 1991), <strong>GJR</strong> (Glosten-Jagannathan-Runkle 1993) จับ "leverage effect" (ตลาดลง→vol พุ่งกว่าตลาดขึ้น); innovations แบบ <strong>Student-t/GED</strong> จับ fat tails (Bollerslev 1987)</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน — long-run vol + persistence</div>
+<p>สมมติ fit ได้ ω = 0.000002, α = 0.08, β = 0.90<br>
+→ <strong>persistence</strong> = α+β = 0.98 (ใกล้ 1 มาก = vol "จำ" นาน, shock จางช้า)<br>
+→ <strong>long-run variance</strong> = ω/(1−α−β) = 0.000002/0.02 = 0.0001 → σ = √0.0001 = <strong>1%/วัน</strong> ≈ 1%×√252 ≈ 15.9%/ปี<br>
+👉 แปลว่า: เวลา vol พุ่งสูงตอนวิกฤต GARCH จะทำนายว่ามัน<em>ค่อย ๆ</em>ลู่กลับหา 1%/วัน (ยิ่ง persistence ใกล้ 1 ยิ่งลู่กลับช้า) — นี่คือ mean-reversion ของ vol ที่ใช้ตั้ง position size<br>
+<strong>✍️ ลองทำเอง:</strong> ถ้า α=0.05, β=0.94 persistence เท่าไร และลู่กลับเร็วหรือช้ากว่าตัวอย่างนี้?</p></div>
 
 <div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
 <ul>
@@ -93,6 +104,13 @@ ARIMA(p,d,q):  <abbr title="autoregressive = พึ่งค่าตัวเ�
 <p><strong>คนทั่วไปเห็น:</strong> ตลาดเดาไม่ได้ทั้งหมด<br>
 <strong>quant เห็น:</strong> <em>first moment (ทิศ) เดาไม่ได้ แต่ second moment (vol) เดาได้</em> — ส่วนที่พยากรณ์ได้ของตลาดคือ "ความเสี่ยง" ไม่ใช่ "ทิศทาง" แต่ระวัง: <strong>การพยากรณ์ vol ก็เป็นการพยากรณ์ที่ crowded ที่สุด</strong> (ทุกคนทำเหมือนกัน) edge จริงจึงอยู่ที่ execution/regime-timing และ implied-vs-realized ไม่ใช่ตัว forecast เอง</p></div>
 
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>ทิศ (first moment) เดาไม่ได้ แต่ vol (second moment) เดาได้ เพราะ vol clustering</li>
+<li>persistence = α+β (ใกล้ 1 = shock จำนาน); long-run variance = ω/(1−α−β)</li>
+<li>GARCH ดิบไม่ใช่ production (เดสก์ใช้ EWMA/realized); ของที่เทรดจริงคือ implied-vs-realized</li>
+</ul></div>
+
 <div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>production จริงคือ EWMA/realized-HAR (intraday) + implied vol; GARCH ใช้เชิงวิชาการ/structured/long-horizon scenario · Engle (1982) · Bollerslev (1986/1987) · Nelson (1991) · Glosten-Jagannathan-Runkle (1993) · โนเบล 2003</p></div>
 </div>
 
@@ -107,11 +125,19 @@ ARIMA(p,d,q):  <abbr title="autoregressive = พึ่งค่าตัวเ�
 <div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
 <p>มันคือ<strong>ทางออกจากกับดัก spurious regression</strong> และ<strong>ฐานคณิตของ stat-arb ทั้งหมด</strong> — <em>cointegration คือสิ่งที่บอกว่าคู่ไหนเทรดได้จริง</em> (correlation บอกไม่ได้) OU บอกว่าควรเข้า/ออกตรงไหน (z-score) และถือนานแค่ไหน (half-life)</p></div>
 
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองนึกถึงคนจูงหมาเดินเล่น — ทั้งคนและหมาเดินไปเรื่อย ๆ เดาตำแหน่งไม่ได้ (ต่างก็ random walk) แต่<em>สายจูง</em>ทำให้ระยะห่างระหว่างสองตัวไม่มีวันไกลเกินไป มันดึงกลับเสมอ · "สายจูง" นั้นคือ cointegration และ "ระยะห่าง" คือ spread ที่ mean-revert · pairs trading = เดิมพันว่าสายจูงยังอยู่: เข้าเมื่อระยะห่างมากผิดปกติ ออกเมื่อมันดึงกลับ</p>
 <div class="fm"><strong>Cointegration:</strong> X_t, Y_t ต่าง non-stationary แต่ (Y_t − β·X_t) = spread stationary<br>
 ทดสอบ: <strong>Engle-Granger</strong> (สมการเดียว, เลือกตัวตาม, ทดสอบได้ "อย่างมาก 1 ความสัมพันธ์") · <strong>Johansen</strong> (VAR, หา <em>จำนวน (rank)</em> ความสัมพันธ์ในหลายตัวพร้อมกัน, สมมาตร) · เมื่อเจอ cointegration → เขียนเป็น <abbr title="Vector Error-Correction Model: โมเดลที่มีเทอมดึงสเปรดกลับ (Granger Representation Theorem)">VECM</abbr><br><br>
 <strong>Ornstein-Uhlenbeck</strong> (โมเดลสเปรด):  dX = θ(μ − X)·dt + σ·<abbr title="dW = ก้าวสุ่มจิ๋วของ Brownian motion">dW</abbr><br>
 &nbsp;&nbsp;θ = แรงดึงกลับ · <strong>half-life = ln2/θ</strong> (จากข้อมูล: fit AR(1) ของสเปรด φ=e^{−θΔt} → half-life = −ln2/ln φ)<br>
 &nbsp;&nbsp;สัญญาณ: <strong>z-score</strong> = (spread − μ)/σ → เข้าเมื่อ |z| สูง ออกเมื่อกลับ 0</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน — half-life ของสเปรด</div>
+<p>fit AR(1) กับสเปรดรายวัน ได้ φ = 0.95<br>
+→ <strong>half-life</strong> = −ln2 / ln(φ) = −0.693 / ln(0.95) = 0.693 / 0.0513 ≈ <strong>13.5 วัน</strong><br>
+👉 แปลว่าถ้าสเปรดเบี่ยงไป มันใช้เวลา ~13.5 วันกลับครึ่งทางสู่ค่าเฉลี่ย — <em>ต้องถือไหวอย่างน้อยหลาย half-life</em> ก่อนกำไรจะมา · ถ้า half-life = 100 วัน คู่นั้นอาจ "cointegrate ในกระดาษ" แต่ช้าเกินจะเทรดคุ้ม<br>
+เข้าเมื่อ |z-score| ≥ 2 (สเปรดห่าง 2σ) ออกเมื่อ z กลับ ~0<br>
+<strong>✍️ ลองทำเอง:</strong> ถ้า φ = 0.90 half-life สั้นลงหรือยาวขึ้น? (คำใบ้: φ ต่ำ = ดึงกลับแรง = half-life สั้น)</p></div>
 
 <div class="bx ba"><div class="bt">⚠️ correlation ≠ cointegration (จุดที่คนพลาดบ่อยสุด)</div>
 <p><strong>correlation</strong> = "ขยับ<em>พร้อมกัน</em>วันต่อวัน" (เรื่องผลตอบแทน) · <strong>cointegration</strong> = "ลอย<em>ไปด้วยกัน</em>ระยะยาว สเปรดกลับเข้าหากัน" (เรื่องระดับราคา) สองตัวอาจ correlate สูงแต่ลอยห่างเรื่อย ๆ (ไม่ cointegrate → เจ๊ง) หรือ correlate ต่ำแต่ cointegrate (เทรดได้)</p></div>
@@ -141,6 +167,16 @@ ARIMA(p,d,q):  <abbr title="autoregressive = พึ่งค่าตัวเ�
 <div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
 <p><strong>คนทั่วไปเห็น:</strong> "หาหุ้นที่ correlate กันสูง ๆ แล้วเทรดส่วนต่าง"<br>
 <strong>quant เห็น:</strong> correlation เป็นกับดัก — ที่เทรดได้คือ <em>cointegration</em> และที่ลึกกว่า: pairs trading คือ<strong>การขายประกัน mean-reversion</strong> — คุณถูกจ่าย premium เล็ก ๆ เพื่อแบกความเสี่ยงว่าความสัมพันธ์จะ "พังถาวร" คำถามจริงไม่ใช่ "คู่นี้ cointegrate ไหม" แต่คือ "<strong>half-life สั้นพอจะถือไหวก่อนมันพังไหม</strong>"</p></div>
+
+<div class="bx bp"><div class="bt">💎 ความงาม</div>
+<p>ความงามของ cointegration อยู่ที่ <strong>Granger Representation Theorem</strong>: ถ้าสองอนุกรม cointegrate มัน<em>ต้อง</em>มี "เทอมดึงกลับ" (error-correction) ซ่อนอยู่เสมอ — คณิตศาสตร์รับประกันว่าสายจูงมีจริง ไม่ใช่แค่ภาพลวงตา · จากความสุ่มสองก้อนที่เดาอะไรไม่ได้เลย โผล่ออกมาเป็นสปริงที่คำนวณแรงดึง (θ) และเวลาได้ (half-life) · Granger ได้โนเบลปี 2003 ส่วนหนึ่งเพราะเปลี่ยน "spurious regression ที่ฆ่าคน" ให้กลายเป็น "เครื่องมือหาความสัมพันธ์จริง" — กับดักและทางออกมาจากคนคนเดียวกัน</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>correlation (ขยับพร้อมกัน) ≠ cointegration (ลอยไปด้วยกัน สเปรดกลับหากัน) — ที่เทรดได้คืออย่างหลัง</li>
+<li>OU ให้สัญญาณครบ: z-score (เข้า/ออก) + half-life = ln2/θ (ถือนานแค่ไหน)</li>
+<li>pairs = ขายประกัน mean-reversion (short gamma): กำไรเล็กบ่อย เจ๊งใหญ่ตอนสายจูงขาดถาวร</li>
+</ul></div>
 
 <div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p>ฐานของ pairs/stat-arb, basket/index arb, basis trade; Avellaneda-Lee (2010) residual OU · Engle &amp; Granger (1987) · Johansen (1988) · Uhlenbeck-Ornstein (1930)</p></div>
 
@@ -181,6 +217,13 @@ ARIMA(p,d,q):  <abbr title="autoregressive = พึ่งค่าตัวเ�
 &nbsp;&nbsp;→ ยิ่งลองเยอะ "เกณฑ์ผ่าน" ยิ่งต้องสูงขึ้น (เหมือนยิงปืนรัวแล้ววาดเป้ารอบรูที่โดน)<br>
 Deflated Sharpe = เทียบ Sharpe ที่ได้ กับ Sharpe สูงสุดที่คาดจาก noise (ปรับ N + skew/kurtosis)</div>
 
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน — √(2·ln N)</div>
+<p>ลองกลยุทธ์ N = 1,000 แบบ<em>บน noise ล้วน</em> (ไม่มี edge จริงเลยสักตัว)<br>
+→ "best" Sharpe ที่คาดจากโชคล้วน ≈ √(2·ln 1000) = √(2×6.91) = √13.8 ≈ <strong>3.7</strong> (หน่วย standard error)<br>
+👉 แปลว่า ถ้าลอง 1,000 แบบ แล้วได้ตัวที่ "ดีสุด" Sharpe ดู 3.7σ เหนือศูนย์ — นั่น<strong>คือสิ่งที่ noise ให้ฟรี ๆ</strong> ไม่ใช่ edge! คุณต้องได้เกิน 3.7 มากถึงจะเริ่มน่าเชื่อ<br>
+เทียบ: ลองแค่ N=10 → √(2·ln10) ≈ 2.1 · นี่คือเหตุผลที่ "ลองน้อยครั้ง" มีค่า — เกณฑ์ผ่านต่ำลง<br>
+<strong>✍️ ลองทำเอง:</strong> ถ้าลอง N=100 เกณฑ์ noise ประมาณเท่าไร? (คำใบ้: √(2·ln100), ln100≈4.6)</p></div>
+
 <div class="bx bb"><div class="bt">🛡️ เครื่องมือกัน self-deception (López de Prado)</div>
 <div class="tw"><table><tr><th>เครื่องมือ</th><th>แก้อะไร</th></tr>
 <tr><td><strong>Deflated Sharpe (DSR)</strong></td><td>ปรับ Sharpe ตามจำนวน trial + <abbr title="skew=ความเบ้, kurtosis=ความหนาหาง ของการกระจายผลตอบแทน">skew/kurtosis</abbr></td></tr>
@@ -217,6 +260,16 @@ Deflated Sharpe = เทียบ Sharpe ที่ได้ กับ Sharpe ส
 <p><strong>คนทั่วไปเห็น:</strong> "backtest Sharpe 3 = เทพ รีบใช้!" และรัน backtest ให้เยอะที่สุดเพื่อหาตัวที่ดีสุด<br>
 <strong>quant เห็น:</strong> Sharpe ที่ไม่มี "ลองกี่ครั้ง" = ไร้ความหมาย และวินัยที่แท้จริงคือ <strong>การไม่มอง</strong> — ล็อก holdout ไว้แตะครั้งเดียวตอนจบ, ตั้งสมมติฐาน<em>ก่อน</em>ดูข้อมูล (ไม่ใช่ขุดก่อนแล้วค่อยตั้ง), และยอมรับว่า <em>ทุกการลองเพิ่มหนึ่งครั้ง ทำให้ทุกผลที่เก็บไว้น่าเชื่อถือน้อยลง</em> — เก่งคือประหยัดจำนวนครั้งที่มอง ไม่ใช่ลองให้มากสุด</p></div>
 
+<div class="bx ba"><div class="bt">🧭 นิสัยคิด (heuristic ระดับโต๊ะ)</div>
+<p>ก่อนเชื่อ backtest ใด ๆ ให้ตอบ 3 ข้อ: <strong>(1) ลองมากี่ครั้งจริง ๆ (นับทุก config/param ที่เคยเห็นผล ไม่ใช่แค่ตัวสุดท้าย)? (2) net Sharpe หลังหัก turnover×cost + capacity เหลือเท่าไร? (3) live/paper Sharpe เทียบ backtest เป็นยังไง (คาดว่าเหลือ ~ครึ่ง)?</strong> — ถ้าตอบไม่ครบ อย่าเพิ่งลงเงิน · กฎเหล็ก: ล็อก holdout ไว้แตะ<em>ครั้งเดียว</em>ตอนจบ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>Sharpe ที่ไม่บอก "ลองกี่ครั้ง" = ไร้ความหมาย (noise ให้ best ~√(2·ln N) ฟรี ๆ)</li>
+<li>งานส่วนใหญ่คือ data สะอาด (point-in-time, กัน survivorship/look-ahead) + turnover/cost ไม่ใช่โมเดล</li>
+<li>วินัยที่แท้จริงคือ "การไม่มอง" — ประหยัดจำนวน trial, ล็อก holdout, ตั้งสมมติฐานก่อนดูข้อมูล</li>
+</ul></div>
+
 <div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน + 📚 Papers</div><p><em>mindset</em> (multiple-testing, OOS holdout, trial logging, point-in-time DB, paper-vs-live) เป็นมาตรฐานที่จริงจัง — ส่วน <em>toolkit</em> เฉพาะ (purged CV, meta-labeling) ยัง contested · Bailey &amp; López de Prado (2014) DSR · Bailey-Borwein-López de Prado-Zhu (2014) PBO / <em>Pseudo-mathematics and Financial Charlatanism</em> · López de Prado (2018) AFML · Harvey-Liu-Zhu (2016) · Harvey (2017) · ("factor zoo" ที่จริงบัญญัติโดย Cochrane 2011)</p></div>
 
 <p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อมเล่มเดิม:</strong> factor zoo ที่ Part II; EMH/half-life ที่ Part III; ML ใน stat-arb ที่ <code>arb-part5</code></p>
@@ -236,8 +289,13 @@ Deflated Sharpe = เทียบ Sharpe ที่ได้ กับ Sharpe ส
 
 <div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เรามีเครื่องมือครบแล้ว — ความสุ่ม (I) พอร์ต (II) ประสิทธิภาพตลาด (III) การตั้งราคา (IV) การวัด/พิสูจน์ (V) แต่ถ้าเครื่องมือทั้งหมดนี้ดีจริง <em>ทำไม quant ส่วนใหญ่ยังเจ๊ง?</em> Part VI จะร้อยทั้ง 5 ตำนานเป็นภาพเดียว + cheat sheet "★★★ ที่ต้องรู้" + คำตอบของคำถามนั้น</div>
 
+<div class="bx ba"><div class="bt">📖 อ่านต่อ — review / ตำรามาตรฐาน (Part V)</div>
+<p><strong>เข้าถึงง่าย:</strong> Marcos López de Prado, <em>Advances in Financial Machine Learning</em> (backtest overfitting/purged CV เชิงปฏิบัติ) · Ernie Chan, <em>Algorithmic Trading</em> (cointegration/mean-reversion ลงมือทำ)<br>
+<strong>เชิงเทคนิค:</strong> Tsay, <em>Analysis of Financial Time Series</em> (GARCH/ARIMA มาตรฐาน) · Hamilton, <em>Time Series Analysis</em> (คัมภีร์ regime/cointegration) · Bailey &amp; López de Prado (2014) DSR paper</p></div>
+
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
-<p><strong>stationary</strong> = ค่าเฉลี่ย/ความแปรปรวนคงที่ · <strong>spurious regression</strong> = ความสัมพันธ์ปลอมจาก non-stationary · <strong>unit root</strong> = อนุกรมเดินสุ่ม · <strong>AR/MA</strong> = พึ่งค่าตัวเอง/พึ่ง shock ในอดีต · <strong>ACF/PACF</strong> = ฟังก์ชัน autocorrelation · <strong>Hurst exponent</strong> = บอก mean-revert/trend/สุ่ม · <strong>vol clustering</strong> = ความผันผวนเกาะกลุ่ม · <strong>GARCH</strong> = โมเดล vol จาก vol+shock อดีต · <strong>EWMA/HAR</strong> = ตัวประมาณ vol ที่ใช้จริงบนโต๊ะ · <strong>persistence (α+β)</strong> = vol "จำ" นานแค่ไหน · <strong>leverage effect</strong> = ตลาดลง→vol พุ่งกว่า · <strong>cointegration</strong> = สเปรดของสอง non-stationary ที่ stationary · <strong>VECM</strong> = โมเดลที่มีเทอมดึงสเปรดกลับ · <strong>Ornstein-Uhlenbeck</strong> = กระบวนการ mean-reverting · <strong>half-life</strong> = ln2/θ · <strong>z-score</strong> = สัญญาณเข้า/ออก · <strong>regime / filtered vs smoothed</strong> = โหมดตลาด / ประมาณด้วยข้อมูลถึงปัจจุบัน vs ทั้ง sample · <strong>Deflated Sharpe</strong> = Sharpe หักจำนวน trial · <strong>PBO</strong> = โอกาส backtest overfit · <strong>purged CV</strong> = CV กันข้อมูลรั่ว · <strong>turnover</strong> = อัตราหมุนพอร์ต (กินต้นทุน) · <strong>point-in-time</strong> = ข้อมูลตามที่รู้ ณ เวลานั้นจริง · <strong>survivorship bias</strong> = อคติจากตัดผู้แพ้ออก</p></div>
+<p>🔴 <strong>คำที่ต้องจำจริง:</strong> stationary (ค่าเฉลี่ย/ความแปรปรวนคงที่ — เงื่อนไขก่อนวิเคราะห์) · vol clustering (ความผันผวนเกาะกลุ่ม → GARCH) · cointegration (สเปรดของสอง non-stationary ที่ stationary → pairs) · Deflated Sharpe (Sharpe หักจำนวน trial) · half-life (ln2/θ — ถือนานแค่ไหน)<br>
+⚪ <strong>คำอื่นไว้เปิดอ้างอิง:</strong> <strong>spurious regression</strong> = ความสัมพันธ์ปลอมจาก non-stationary · <strong>spurious regression</strong> = ความสัมพันธ์ปลอมจาก non-stationary · <strong>unit root</strong> = อนุกรมเดินสุ่ม · <strong>AR/MA</strong> = พึ่งค่าตัวเอง/พึ่ง shock ในอดีต · <strong>ACF/PACF</strong> = ฟังก์ชัน autocorrelation · <strong>Hurst exponent</strong> = บอก mean-revert/trend/สุ่ม · <strong>vol clustering</strong> = ความผันผวนเกาะกลุ่ม · <strong>GARCH</strong> = โมเดล vol จาก vol+shock อดีต · <strong>EWMA/HAR</strong> = ตัวประมาณ vol ที่ใช้จริงบนโต๊ะ · <strong>persistence (α+β)</strong> = vol "จำ" นานแค่ไหน · <strong>leverage effect</strong> = ตลาดลง→vol พุ่งกว่า · <strong>cointegration</strong> = สเปรดของสอง non-stationary ที่ stationary · <strong>VECM</strong> = โมเดลที่มีเทอมดึงสเปรดกลับ · <strong>Ornstein-Uhlenbeck</strong> = กระบวนการ mean-reverting · <strong>half-life</strong> = ln2/θ · <strong>z-score</strong> = สัญญาณเข้า/ออก · <strong>regime / filtered vs smoothed</strong> = โหมดตลาด / ประมาณด้วยข้อมูลถึงปัจจุบัน vs ทั้ง sample · <strong>Deflated Sharpe</strong> = Sharpe หักจำนวน trial · <strong>PBO</strong> = โอกาส backtest overfit · <strong>purged CV</strong> = CV กันข้อมูลรั่ว · <strong>turnover</strong> = อัตราหมุนพอร์ต (กินต้นทุน) · <strong>point-in-time</strong> = ข้อมูลตามที่รู้ ณ เวลานั้นจริง · <strong>survivorship bias</strong> = อคติจากตัดผู้แพ้ออก</p></div>
 
 <script>
 (function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
