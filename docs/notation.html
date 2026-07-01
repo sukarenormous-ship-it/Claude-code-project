@@ -19,12 +19,13 @@
 <p>สัญลักษณ์เหล่านี้ถูกใช้ซ้ำในความหมายต่างกันตามธรรมเนียมของแต่ละสาขา — ไม่ใช่ความผิดพลาด แต่ต้องรู้ว่ากำลังอยู่บทไหน:</p>
 <div class="tw"><table>
 <tr><th class="nw">สัญลักษณ์</th><th>ความหมายที่ 1</th><th>ความหมายที่ 2 (คนละบท)</th></tr>
-<tr><td class="sym">λ</td><td><strong>Kyle's lambda</strong> = price impact ต่อ order flow (Microstructure, B-III)</td><td><strong>hazard rate</strong> = อัตราการผิดนัด (Credit, B-II) · และ <strong>risk-aversion</strong> ใน Almgren-Chriss / EWMA decay (=0.94)</td></tr>
-<tr><td class="sym">θ (theta)</td><td><strong>Theta</strong> = ค่าเสื่อมเวลาของ option (Options, A-IV)</td><td><strong>แรงดึงกลับ</strong> ของ Ornstein-Uhlenbeck (half-life=ln2/θ, A-V) · และ MA coefficient</td></tr>
+<tr><td class="sym">λ</td><td><strong>Kyle's lambda</strong> = price impact ต่อ order flow (Microstructure, B-III)</td><td><strong>hazard rate</strong> = อัตราการผิดนัด (Credit, B-II) · <strong>risk-aversion</strong> ใน Almgren-Chriss (ไม่มีค่าตายตัว) · <strong>EWMA decay</strong> ≈ 0.94 (RiskMetrics — คนละตัวกับ risk-aversion)</td></tr>
+<tr><td class="sym">θ (theta)</td><td><strong>Theta</strong> = ค่าเสื่อมเวลาของ option (Options, A-IV)</td><td><strong>แรงดึงกลับ (mean-reversion)</strong> ของ Ornstein-Uhlenbeck, half-life=ln2/θ (A-V) · แต่ใน <strong>Heston</strong> θ = <em>variance ระยะยาว</em> และ κ คือแรงดึงกลับ (สลับบทบาทกับ OU!) — extra</td></tr>
 <tr><td class="sym">Q</td><td><strong>measure Q</strong> = risk-neutral measure (Options, A-IV)</td><td><strong>ขนาดคำสั่ง/ปริมาณ</strong> ใน √-law impact (Microstructure, B-III)</td></tr>
 <tr><td class="sym">σ</td><td><strong>volatility</strong> = ความผันผวน (ทุกที่)</td><td>ใน Merton credit = vol ของมูลค่าสินทรัพย์บริษัท (B-II)</td></tr>
-<tr><td class="sym">α, β</td><td><strong>alpha/beta</strong> ของ CAPM (A-II)</td><td><strong>GARCH coefficients</strong> (α=น้ำหนัก shock, β=น้ำหนัก vol; A-V)</td></tr>
-<tr><td class="sym">ξ (xi)</td><td><strong>tail index</strong> ของ EVT (Risk, B-IV)</td><td>—</td></tr>
+<tr><td class="sym">α, β</td><td><strong>alpha/beta</strong> ของ CAPM (A-II)</td><td><strong>GARCH</strong> (α=น้ำหนัก shock, β=น้ำหนัก vol; A-V) · <strong>SABR</strong> (α=vol-of-vol, β=backbone exponent; extra)</td></tr>
+<tr><td class="sym">γ (gamma)</td><td><strong>risk-aversion</strong> ใน Avellaneda-Stoikov market making (B-III)</td><td>ระวังสับสนกับ <strong>Γ (Gamma)</strong> = Greek ของ option (A-IV) — คนละตัว</td></tr>
+<tr><td class="sym">ξ (xi)</td><td><strong>tail index</strong> ของ EVT (ξ&gt;0 = หางอ้วน; Risk, B-IV)</td><td><strong>vol-of-vol</strong> ใน Heston stochastic vol (extra)</td></tr>
 </table></div></div>
 
 <h2>1. พื้นฐาน / กระบวนการสุ่ม (Random Walk, GBM — A-I)</h2>
@@ -50,6 +51,7 @@
 <tr><td class="sym">R_f</td><td>risk-free rate</td><td>A-II, A-IV</td></tr>
 <tr><td class="sym">Sharpe</td><td>(R_p − R_f)/σ_p = ผลตอบแทนส่วนเกินต่อหน่วยเสี่ยง</td><td>A-II, A-V</td></tr>
 <tr><td class="sym">m</td><td>SDF (stochastic discount factor); E[m·R]=1</td><td>A-II</td></tr>
+<tr><td class="sym">f*</td><td>Kelly fraction = สัดส่วนเดิมพัน/leverage; f*=(μ−r)/σ² (ต่อเนื่อง), f*=p−q/b (เดิมพัน); half-Kelly นิยมใช้จริง</td><td>extra</td></tr>
 </table></div>
 
 <h2>3. ตัวเลือก / อนุพันธ์ (Options — A-IV)</h2>
@@ -57,8 +59,8 @@
 <tr><th class="nw">สัญลักษณ์</th><th>ความหมาย</th><th class="nw">บท</th></tr>
 <tr><td class="sym">C, P</td><td>ราคา call / put</td><td>A-IV</td></tr>
 <tr><td class="sym">K</td><td>strike price</td><td>A-IV</td></tr>
-<tr><td class="sym">N(·)</td><td>cumulative normal distribution</td><td>A-IV</td></tr>
-<tr><td class="sym">d₁, d₂</td><td>เทอมใน Black-Scholes (d₁−d₂=σ√T)</td><td>A-IV</td></tr>
+<tr><td class="sym">N(·)</td><td>standard normal CDF (cumulative distribution function)</td><td>A-IV</td></tr>
+<tr><td class="sym">d₁, d₂</td><td>เทอมใน Black-Scholes (d₁−d₂=σ√T); N(d₂)=prob จบ ITM ใต้ Q, N(d₁)=Delta</td><td>A-IV</td></tr>
 <tr><td class="sym">Δ (Delta)</td><td>ความไวราคา option ต่อราคาหุ้น (=N(d₁))</td><td>A-IV</td></tr>
 <tr><td class="sym">Γ (Gamma)</td><td>ความไวของ Delta</td><td>A-IV</td></tr>
 <tr><td class="sym">Θ (Theta)</td><td>ค่าเสื่อมตามเวลา</td><td>A-IV</td></tr>
@@ -104,7 +106,7 @@
 <tr><th class="nw">สัญลักษณ์</th><th>ความหมาย</th><th class="nw">บท</th></tr>
 <tr><td class="sym">φ (phi)</td><td>AR(1) coefficient (|φ|&lt;1 = stationary; φ=1 = unit root)</td><td>A-V</td></tr>
 <tr><td class="sym">ω, α, β</td><td>GARCH: ω=ค่าคงที่, α=น้ำหนัก shock, β=น้ำหนัก vol เมื่อวาน</td><td>A-V</td></tr>
-<tr><td class="sym">α+β</td><td>persistence (ใกล้ 1 = vol จำนาน); long-run var = ω/(1−α−β)</td><td>A-V</td></tr>
+<tr><td class="sym">α+β</td><td>persistence (ใกล้ 1 = vol "จำ" นาน); long-run var = ω/(1−α−β)</td><td>A-V</td></tr>
 <tr><td class="sym">θ (OU)</td><td>แรงดึงกลับของ Ornstein-Uhlenbeck</td><td>A-V</td></tr>
 <tr><td class="sym">half-life</td><td>= ln2/θ = เวลาที่สเปรดกลับครึ่งทาง</td><td>A-V</td></tr>
 <tr><td class="sym">z-score</td><td>(spread − μ)/σ = สัญญาณเข้า/ออก pairs</td><td>A-V</td></tr>
