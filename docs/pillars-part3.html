@@ -1,0 +1,260 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>เสาที่เหลือของ Quant — Part III: Microstructure</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>เสาที่เหลือของ Quant</h1>
+<div class="sub">Part III — Market Microstructure &amp; Execution: สงครามระดับมิลลิวินาที</div>
+<div class="desc">Order Book · Adverse Selection (Kyle, Glosten-Milgrom) · Market Impact (√-law) · Optimal Execution (Almgren-Chriss) · Market Making (Avellaneda-Stoikov) · Hawkes &amp; Realized Vol — เสาที่สาม: ทำไม "ราคาที่เห็น" ไม่ใช่ "ราคาที่ได้"</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน 🎯Thesis + "🚶อ่านเป็นภาษาคนก่อน" + 🧮ตัวอย่าง + 🎯3 อย่างที่ต้องจำ (ข้ามกล่องสูตรเต็ม/❌พังเมื่อไรเชิงลึกได้) · <strong>🔵 มีพื้น:</strong> อ่านครบ โดยเฉพาะ ❌พังเมื่อไร + 🧠มุม quant + 📚Papers</p></div>
+
+<h2>เปิดเรื่อง: 45 นาทีที่เผาเงิน 440 ล้านดอลลาร์</h2>
+
+<p>เช้าวันที่ 1 สิงหาคม 2012 บริษัท Knight Capital — หนึ่งใน market maker ที่ใหญ่ที่สุดในตลาดหุ้นสหรัฐ — เปิดใช้ซอฟต์แวร์เทรดตัวใหม่ แต่มีโค้ดเก่าหลงเหลืออยู่ในเซิร์ฟเวอร์ตัวหนึ่ง โปรแกรมเริ่มส่งคำสั่งซื้อขายผิดพลาด<strong>หลายล้านคำสั่งใน 45 นาที</strong> ก่อนใครจะหยุดมันได้ทัน Knight ขาดทุนราว <strong>440 ล้านดอลลาร์</strong> — เกือบล้มละลายภายในเช้าวันเดียว</p>
+
+<p>เรื่องนี้ไม่เกี่ยวกับ "ทายทิศถูกหรือผิด" เลย มันเกี่ยวกับ <strong>โครงสร้างจุลภาคของตลาด</strong> (market microstructure) — โลกของ order book, latency, และการที่ <em>คำสั่งของคุณเองขยับราคา</em> เล่ม A สอนให้ตั้งราคาสินทรัพย์ แต่ในโลกจริง คำถามที่แพงที่สุดคือ: <strong>"ราคาที่เห็นบนหน้าจอ คือราคาที่คุณได้จริงไหม?"</strong> คำตอบคือ — ไม่</p>
+
+<div class="pq">ทุกครั้งที่คุณข้าม spread เพื่อเทรดทันที คุณคือ "ผู้จ่ายค่าสภาพคล่อง" — และอีกฝั่งของเทรด มักเป็นคนที่รู้อะไรมากกว่าคุณเสมอ</div>
+
+<p style="color:#64748b;font-size:.9em">📖 ต่อจาก Part I/II (ตั้งราคาสินทรัพย์) — Part นี้ตอบว่าราคานั้น "ซื้อ/ขายจริง" ด้วยต้นทุนเท่าไร; ต่อยอด <code>arb-part7</code>, <code>pm-part7</code> (execution reality) และเสริม time-series ขั้นสูง (Hawkes/realized vol) จาก <code>theory-part5</code></p>
+
+<h2>รากฐาน: Order Book — ราคาไม่ใช่ตัวเลขเดียว</h2>
+
+<div class="card">
+<h3>Order Book &amp; Bid-Ask Spread <span class="yr">รากฐาน microstructure</span> <span class="lvl">★★ ควรรู้</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ไม่มี 'ราคา' เดียว — มี <strong>bid</strong> (ราคาที่คนยอมซื้อ) และ <strong>ask</strong> (ราคาที่คนยอมขาย) ที่ต่างกัน ช่องว่างระหว่างมันคือ <strong>spread</strong> = ต้นทุนที่คุณจ่ายทันทีเมื่ออยากเทรดเดี๋ยวนี้ · 'ราคา' ที่คนอ้างมักเป็นแค่จุดกึ่งกลาง (mid) ที่ไม่มีใครเทรดได้จริง"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>spread + impact คือที่ที่ edge ตาย</strong> — กลยุทธ์ที่ backtest สวยด้วยราคา mid มักติดลบพอเทรดจริง ถ้าไม่เข้าใจ order book คุณจะประเมินต้นทุนต่ำเกินไปเสมอ และไม่เข้าใจว่า "สภาพคล่อง" ที่เห็นในหน้าจอ หายวับตอนที่คุณต้องใช้</p></div>
+
+<div class="bx bb"><div class="bt">🔧 กายวิภาค</div>
+<ul>
+<li><strong>Limit order</strong> = ตั้งราคารอ (ให้สภาพคล่อง, ได้ spread แต่เสี่ยง adverse selection)</li>
+<li><strong>Market order</strong> = ข้าม spread เทรดทันที (จ่าย spread + impact, กิน liquidity)</li>
+<li><strong>Depth</strong> = ปริมาณที่รอในแต่ละระดับราคา — บาง = impact สูง</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ราคา = ตัวเลขบนหน้าจอ<br>
+<strong>quant เห็น:</strong> ราคาคือ <em>การประมูลสองด้านที่มีชีวิต</em> — mid เป็นแค่ค่าเฉลี่ยที่ไม่มีใครเทรดได้ ราคาที่ได้จริงขึ้นกับว่าคุณ "ให้" หรือ "กิน" สภาพคล่อง และคุณเทรดขนาดเท่าไร</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบัน</div><p>ตลาดหุ้น US แตกเป็น ~16 exchanges + dark pools; ราคา "best" = NBBO; HFT แข่งที่ latency ระดับ micro/nanosecond</p></div>
+</div>
+
+<h2>ทำไม spread ถึงมี — Adverse Selection</h2>
+
+<div class="card">
+<h3>Adverse Selection: Glosten-Milgrom &amp; Kyle <span class="yr">1985</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"spread ไม่ได้มาจาก 'ค่าธรรมเนียม' — มันมาจาก <strong>ความกลัวของ market maker ว่ากำลังเทรดกับคนที่รู้มากกว่า</strong> ทุกครั้งที่มีคนมาซื้อ อาจเป็นเพราะเขารู้ข่าวดี MM เลยต้องตั้ง spread กว้างพอชดเชยการขาดทุนให้ 'คนรู้' (informed) ด้วยกำไรจาก 'คนไม่รู้' (noise)"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>นี่คือ <strong>ทฤษฎีที่อธิบายว่าทำไมการเทรดถึงมีต้นทุน</strong> และเป็นแก่นของการเป็น market maker/การหลบ MM ถ้าเข้าใจ adverse selection คุณจะเห็นว่า <em>ทุกครั้งที่คุณได้ราคาดี "ง่ายเกินไป" คือสัญญาณอันตราย</em> — และเข้าใจว่าราคา "ค่อย ๆ leak ข้อมูล" ของคนรู้ออกมายังไง (Kyle)</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองเป็นร้านรับแลกเงินที่ไม่รู้ว่าลูกค้าคนไหน "รู้" ว่าค่าเงินกำลังจะขยับ ถ้าตั้งราคาซื้อ=ขาย คุณจะถูกคนรู้กินเรียบ ทางรอดเดียว: ตั้ง spread — ขาดทุนให้คนรู้นิดหน่อย แต่เก็บกำไรจากคนทั่วไปที่มาแลกด้วยเหตุผลอื่น</p>
+<div class="fm">Glosten-Milgrom: spread = ค่าชดเชยความน่าจะเป็นที่อีกฝั่งคือ informed trader<br>
+Kyle (1985): informed trader ค่อย ๆ เทรดเพื่อซ่อนตัว → ราคาขยับเป็นเชิงเส้นกับ order flow<br>
+&nbsp;&nbsp;<strong>Kyle's λ (lambda)</strong>: ราคาขยับเท่าไรต่อ 1 หน่วย net order flow = "ความลึก/ความอ่อนไหว" ของตลาด</div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>โมเดลสมมติ MM เป็นกลาง — จริง ๆ HFT มี speed advantage และเห็น flow ก่อน (โมเดลไม่ครอบคลุม latency arbitrage)</li>
+<li>ในวิกฤต informed กับ uninformed แยกไม่ออก → MM ถอนตัว spread ระเบิด (Flash Crash)</li>
+<li>λ ไม่คงที่ — เปลี่ยนตาม regime/สภาพคล่อง</li>
+</ul></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul>
+<li>อธิบายที่มาของ spread อย่างลึก (ไม่ใช่แค่ "ค่าธรรมเนียม")</li>
+<li>Kyle's λ = หน่วยวัด price impact ที่ใช้จริง</li>
+<li>เป็นฐานของ market making + การหลบ adverse selection</li></ul></div>
+<div class="con"><div class="bt">⚠️ ข้อเสีย</div><ul>
+<li>ละเลย latency/speed race ของโลกจริง</li>
+<li>สมมติ informed มีข้อมูลชัดเจน (จริงคลุมเครือ)</li>
+<li>λ/spread ไม่เสถียรตอนวิกฤต</li></ul></div></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> spread = ค่าต๋งที่โบรกเกอร์เก็บ<br>
+<strong>quant เห็น:</strong> spread = <em>ราคาของความไม่รู้</em> — MM ตั้งมันเพราะกลัวคุณรู้มากกว่า ดังนั้น<strong>ถ้าคุณได้ fill ง่าย ๆ ที่ราคาดี ให้สงสัยว่าทำไมอีกฝั่งถึงยอม</strong> (เขาอาจรู้อะไรที่คุณไม่รู้ — คุณอาจเป็น "คนไม่รู้" ในสมการนี้)</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>spread เกิดจาก adverse selection (กลัวเทรดกับคนรู้) ไม่ใช่ค่าธรรมเนียม</li>
+<li>Kyle's λ = ราคาขยับเท่าไรต่อ order flow (หน่วยวัด impact)</li>
+<li>fill ที่ง่าย/ดีเกินไป = ธงแดง ไม่ใช่โชค</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Kyle (1985) <em>Continuous Auctions and Insider Trading</em>, Econometrica · Glosten &amp; Milgrom (1985) <em>Bid, Ask and Transaction Prices...</em>, JFE</p></div>
+</div>
+
+<h2>คำสั่งของคุณขยับราคา — Market Impact</h2>
+
+<div class="card">
+<h3>Market Impact &amp; √-Law <span class="yr">Kyle λ → empirical √-law</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"การเทรดขนาดใหญ่<strong>ดันราคาให้แพงขึ้นเรื่อย ๆ ระหว่างที่คุณซื้อ</strong> — และหลักฐานเชิงประจักษ์พบว่า impact โตแบบ <strong>รากที่สองของขนาด</strong> (√-law) ไม่ใช่เชิงเส้น: เทรดใหญ่ขึ้น 4 เท่า impact เพิ่มราว 2 เท่า"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>impact คือเพดานของทุกกลยุทธ์ (capacity)</strong> — สัญญาณที่สวยที่ $1M อาจแบนที่ $100M เพราะ impact กินหมด ถ้าไม่รู้ √-law คุณจะประเมิน capacity ผิด และคิดว่า backtest (ที่รันที่ size=0) เป็นของจริง</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ยิ่งซื้อเยอะ ยิ่งต้องไต่กิน limit order ที่ราคาสูงขึ้นเรื่อย ๆ ในหนังสือ (order book) — แต่ทำไม √? เพราะตลาดมีสภาพคล่อง "ซ่อน" ที่ทยอยโผล่มาเติม ยิ่งคุณเทรดช้าลง มันยิ่งมีเวลาเติม impact เลยโตช้ากว่าเชิงเส้น</p>
+<div class="fm">temporary impact (หายเมื่อหยุดเทรด) + permanent impact (ราคาขยับถาวรเพราะ leak ข้อมูล)<br>
+<strong>√-law:</strong>  impact ≈ Y · σ · √(Q / V)<br>
+&nbsp;&nbsp;Q = ขนาดที่เทรด · V = ปริมาณเฉลี่ยต่อวัน (ADV) · σ = vol · Y = ค่าคงที่ (~0.5–1)</div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างการใช้งาน</div>
+<p>อยากซื้อหุ้น = 10% ของ ADV, σ รายวัน = 2%, Y = 1<br>
+→ impact ≈ 1 × 2% × √0.10 ≈ 2% × 0.316 ≈ <strong>0.63%</strong> ของราคา (ต้นทุนที่ backtest ราคา mid ไม่เห็น)<br>
+👉 ถ้ากลยุทธ์คาดกำไร 0.5% แต่ impact 0.63% → <strong>ติดลบสุทธิ</strong><br>
+<strong>✍️ ลองทำเอง:</strong> ถ้าเทรดแค่ 2.5% ของ ADV (¼ ของเดิม) impact ลดลงกี่เท่า? (คำใบ้: √)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ซื้อที่ราคาตลาด ก็ได้ราคาตลาด<br>
+<strong>quant เห็น:</strong> <em>คุณคือส่วนหนึ่งของราคา</em> — การกระทำของคุณเปลี่ยนผลของคุณเอง (reflexivity) capacity ไม่ใช่ Sharpe คือข้อจำกัดที่แท้จริง และ "สัญญาณดี" ที่เทรดไม่ได้ในขนาดจริง = ไม่มีค่า</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>impact ∝ √(ขนาด/ADV) — ไม่ใช่เชิงเส้น</li>
+<li>impact = เพดาน capacity ของกลยุทธ์ (backtest size=0 โกหก)</li>
+<li>แยก temporary (หาย) กับ permanent (leak ข้อมูล ถาวร)</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Kyle (1985) λ · Almgren et al (2005) empirical impact · Tóth et al (2011) <em>Anomalous Price Impact and the Critical Nature of Liquidity</em> (√-law + latent liquidity)</p></div>
+</div>
+
+<h2>เทรดยังไงให้เจ็บน้อยสุด — Optimal Execution</h2>
+
+<div class="card">
+<h3>Optimal Execution: Almgren-Chriss <span class="yr">2000 · Almgren-Chriss</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"มีการแลกเปลี่ยน (trade-off) พื้นฐาน: เทรด<strong>เร็ว</strong> = กระแทกราคา (impact สูง) แต่เสี่ยงราคาเปลี่ยนน้อย; เทรด<strong>ช้า</strong> = impact ต่ำ แต่เสี่ยงราคาวิ่งหนีระหว่างรอ — Almgren-Chriss หา 'เส้นทางเทรด' ที่ดีที่สุดบน efficient frontier ของ execution"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เพราะ <strong>execution คือ alpha</strong> — สัญญาณเดียวกันเทรดดี/แย่ ต่างกันได้หลาย % ต่อปี ทุกกองทุนใหญ่มี execution desk/algo (VWAP/TWAP/IS) ที่วางบนกรอบนี้ ถ้าไม่รู้ คุณจะเผา alpha ทิ้งที่ขั้นตอนสุดท้ายโดยไม่รู้ตัว</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เหมือนต้องขายบ้าน 100 หลัง — ขายรวดเดียวราคาตก (impact) ขายทีละหลังใช้เวลานานเสี่ยงตลาดเปลี่ยน (timing risk) คำตอบคือ "ตารางขาย" ที่สมดุลสองอย่างตามว่าคุณรับความเสี่ยงได้แค่ไหน</p>
+<div class="fm">minimize:  E[ต้นทุน impact] + λ · Var[timing risk]<br>
+&nbsp;&nbsp;λ = ความกลัวความเสี่ยง (risk aversion) → กำหนดว่าเทรดเร็วหรือช้า<br>
+ผลลัพธ์: trajectory ที่ลด position แบบ exponential (เร็วช่วงแรก ช้าลงท้าย ถ้ากลัวเสี่ยง)</div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>สมมติ impact/vol คงที่ — จริงเปลี่ยนระหว่างวัน (U-shape volume)</li>
+<li>ไม่รู้ว่าคนอื่นเห็น pattern การเทรดคุณ (algo detection / gaming)</li>
+<li>ไม่ครอบคลุม signal ที่มี alpha decay เร็ว (ต้องเทรดเร็วกว่าที่ AC บอก)</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ส่งคำสั่ง = จบ<br>
+<strong>quant เห็น:</strong> การเทรดคือ<em>ปัญหา optimization ในตัวมันเอง</em> — ไม่ใช่ "ซื้อหรือขาย" แต่ "ซื้อยังไง เร็วแค่ไหน แตกกี่ก้อน" execution ที่ดีคือ edge ที่มองไม่เห็นแต่ทบต้นมหาศาล</p></div>
+
+<div class="bx ba"><div class="bt">🧭 นิสัยคิด (heuristic ระดับโต๊ะ)</div>
+<p>ก่อนเชื่อ backtest ให้ตอบ: <strong>"สัญญาณนี้ alpha decay เร็วแค่ไหน เทียบกับเวลาที่ต้องใช้เทรดโดยไม่กระแทกราคา?"</strong> — ถ้า alpha ตายก่อนเทรดเสร็จ กลยุทธ์นั้นไม่มีจริงในขนาดที่คุ้ม (crowded fast signals ตายที่ execution)</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>trade-off: เร็ว=impact / ช้า=timing risk; λ กำหนดจุดสมดุล</li>
+<li>execution คือ alpha ที่มองไม่เห็น (VWAP/TWAP/IS วางบนกรอบนี้)</li>
+<li>สัญญาณ alpha-decay เร็ว + impact สูง = เทรดไม่คุ้มในขนาดจริง</li>
+</ul></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Almgren &amp; Chriss (2000) <em>Optimal Execution of Portfolio Transactions</em>, J. Risk · Obizhaeva &amp; Wang (2013) — LOB dynamics</p></div>
+</div>
+
+<h2>ตั้ง bid/ask ยังไง + เมื่อ order flow มีชีวิต</h2>
+
+<div class="card">
+<h3>Market Making: Avellaneda-Stoikov <span class="yr">2008</span> <span class="lvl">★★ ควรรู้</span> <span class="cc">· concept-card</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"market maker ต้องตั้ง bid/ask ที่สมดุล 2 อย่าง: กว้างพอเก็บ spread แต่แคบพอได้ปริมาณ — และต้อง<strong>เลื่อนราคาตาม inventory</strong> (ถ้าถือเยอะเกิน ให้เอียงราคาเพื่อระบายออก) รอบ 'reservation price' ที่ปรับตามความเสี่ยงคงคลัง"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>เป็นกรอบคณิตของการเป็น market maker/HFT ที่ทำเงินจาก spread — และสอนว่า<strong>ความเสี่ยงที่แท้จริงของ MM ไม่ใช่ทิศทาง แต่คือ inventory</strong> (ถูกถมของตอนตลาดวิ่งหนี = adverse selection กลับมาหลอน)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> MM รวยจากส่วนต่าง bid-ask ง่าย ๆ<br>
+<strong>quant เห็น:</strong> MM คือคน <em>ขายสภาพคล่อง (short liquidity option)</em> — เก็บ spread เล็ก ๆ ตลอด แต่เจ็บหนักเมื่อถือ inventory ผิดข้างตอนข่าวใหญ่ (negative skew อีกแล้ว เหมือน carry/CDS)</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Paper</div><p>Avellaneda &amp; Stoikov (2008) <em>High-frequency trading in a limit order book</em></p></div>
+</div>
+
+<div class="card">
+<h3>Hawkes Process &amp; Realized Volatility <span class="yr">Hawkes 1971 → finance 2000s</span> <span class="lvl">★★ ควรรู้</span> <span class="cc">· time-series ขั้นสูง</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"คำสั่ง/การเทรดไม่ได้มาแบบสุ่มอิสระ — มันมาเป็น<strong>กระจุก (self-exciting)</strong>: เทรดหนึ่งกระตุ้นให้เกิดเทรดต่ออีก (<strong>Hawkes process</strong>) และเมื่อมีข้อมูลความถี่สูง เราวัด <strong>realized volatility</strong> จากมันได้แม่นขึ้น — แต่ต้องระวัง 'microstructure noise' ที่ปนเข้ามา"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>นี่คือจุดที่ <strong>time-series มาเจอ microstructure</strong> — Hawkes จับ order-flow clustering (ต่อยอด vol clustering จาก <code>theory-part5</code> ลงระดับ tick), และ realized vol เป็นตัววัด vol ที่ดีสุดที่ dest ใช้จริง (ต่อยอด GARCH) ถ้าไม่รู้ microstructure noise คุณจะวัด vol เพี้ยนเมื่อใช้ข้อมูลถี่เกินไป</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Hawkes = "ยิ่งเพิ่งเกิดเหตุการณ์ ยิ่งมีโอกาสเกิดอีก" เหมือนแผ่นดินไหว aftershock · realized vol = เอาผลตอบแทนถี่ ๆ ทั้งวันมายกกำลังสองรวมกัน แต่ถ้าถี่เกิน (ทุกวินาที) bid-ask bounce จะทำให้ vol ดู "สูงปลอม" (microstructure noise)</p>
+<div class="fm">Hawkes intensity:  λ(t) = μ + Σ [ excitation จาก event ก่อนหน้า ] → order flow เกาะกลุ่ม<br>
+Realized Variance:  RV = Σ (ผลตอบแทนช่วงสั้น)²  → σ ที่วัดจากข้อมูลจริง<br>
+&nbsp;&nbsp;⚠️ ถี่เกิน → RV โตปลอมจาก bid-ask bounce (signature plot); แก้ด้วย realized kernel / sampling ที่เหมาะ</div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>Hawkes calibration ไม่เสถียร; รูปแบบ excitation ที่สมมติอาจผิด</li>
+<li>RV เพี้ยนจาก microstructure noise (ต้อง sub-sample/kernel) และ jump ปนกับ diffusion</li>
+<li>Epps effect: correlation ระหว่างสินทรัพย์ต่ำปลอมที่ความถี่สูง (async trading)</li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> ข้อมูลถี่ขึ้น = แม่นขึ้นเสมอ<br>
+<strong>quant เห็น:</strong> มี "จุดหวาน" ของความถี่ — ถี่เกินไป noise ท่วมสัญญาณ (RV เพี้ยน) น้อยเกินไปข้อมูลไม่พอ การรู้ว่า <em>เมื่อไรข้อมูลมากขึ้นทำให้แย่ลง</em> คือ judgment ที่แยก quant เก๋าออกจากมือใหม่</p></div>
+
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📚 Papers</div><p>Hawkes (1971) · Bacry-Muzy (order flow) · Andersen-Bollerslev-Diebold-Labys (2003) realized vol · Aït-Sahalia-Mykland-Zhang (2005), Barndorff-Nielsen et al (2008) realized kernels · Epps (1979)</p></div>
+
+<p style="font-size:.9em;color:#64748b">🔗 <strong>เชื่อม:</strong> Hawkes = vol clustering ระดับ tick (<code>theory-part5</code>); realized vol ต่อยอด GARCH; vol ที่วัดได้ป้อนเข้า option pricing (<code>theory-part4</code>)</p>
+</div>
+
+<div class="bx br"><div class="bt">📉 เมื่อทฤษฎีพังจริง: Flash Crash (6 พ.ค. 2010)</div>
+<p>บ่ายวันที่ 6 พ.ค. 2010 ดัชนี Dow ร่วง<strong>เกือบ 1,000 จุด (~9%) ในไม่กี่นาที</strong> แล้วเด้งกลับเกือบหมดในเวลาไม่ถึงครึ่งชั่วโมง — บางหุ้นเทรดที่ราคา 1 เซนต์ บางตัวที่ $100,000 สาเหตุ: คำสั่งขายก้อนใหญ่ (algo) เข้าตลาดที่สภาพคล่องบางลง → market maker/HFT <strong>ถอนตัวพร้อมกัน</strong> (adverse selection เต็มรูป — ไม่มีใครอยากเป็นอีกฝั่งของ flow ที่อาจมีข้อมูล) → order book กลวง → ราคาดิ่ง บทเรียน: <strong>สภาพคล่องที่เห็นในหน้าจอไม่ใช่สภาพคล่องจริง — มันหายวับพอดีตอนที่ทุกคนต้องใช้</strong> (เชื่อม crowding/limits-to-arb จาก <code>theory-part3</code>)</p></div>
+
+<div class="bx bg"><div class="bt">สรุป Part III</div>
+<ul>
+<li><strong>Order Book</strong> = ไม่มีราคาเดียว; spread + impact = ที่ที่ edge ตาย</li>
+<li><strong>Adverse Selection</strong> = spread เกิดเพราะกลัวเทรดกับคนรู้; fill ง่ายเกิน = ธงแดง</li>
+<li><strong>Market Impact (√-law)</strong> = คุณเป็นส่วนหนึ่งของราคา; impact = เพดาน capacity</li>
+<li><strong>Almgren-Chriss</strong> = execution คือ optimization (เร็ว↔ช้า); execution คือ alpha</li>
+<li><strong>Avellaneda-Stoikov</strong> = MM ขายสภาพคล่อง (negative skew); ความเสี่ยงจริงคือ inventory</li>
+<li><strong>Hawkes + Realized Vol</strong> = order flow เกาะกลุ่ม; ข้อมูลถี่เกินมี noise (จุดหวาน)</li>
+<li>บทเรียนใหญ่: ราคาที่เห็น ≠ ราคาที่ได้ — และสภาพคล่องหายพอดีตอนต้องใช้</li>
+</ul></div>
+
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เราตั้งราคา, ประเมินการผิดนัด, และเทรดจริงเป็นแล้ว — แต่เมื่อความเสี่ยงทั้งหมด (ดอกเบี้ย, เครดิต, สภาพคล่อง, ตลาด) มารวมกันในพอร์ตเดียว จะวัด "ความเสี่ยงรวม" และรอดจากหางยังไง? Part IV: Risk Management — VaR ที่หลอกให้ leverage เกิน และวิธีวัด tail ที่ฆ่าคุณจริง</div>
+
+<div class="bx ba"><div class="bt">📖 อ่านต่อ — review / ตำรามาตรฐาน (Part III)</div>
+<p><strong>ตำรา:</strong> O'Hara, <em>Market Microstructure Theory</em> (คลาสสิก) · Hasbrouck, <em>Empirical Market Microstructure</em> · Bouchaud, Bonart, Donier &amp; Gould, <em>Trades, Quotes and Prices</em> (ทันสมัย + √-law) · Cartea, Jaimungal &amp; Penalva, <em>Algorithmic and High-Frequency Trading</em><br>
+<strong>เชิงเล่าเรื่อง:</strong> Michael Lewis, <em>Flash Boys</em> (2014) — ระวังมุมมองด้านเดียว แต่เปิดโลก HFT ได้ดี</p></div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p>🔴 <strong>3 คำที่ต้องจำจริง:</strong> spread (ต้นทุนเทรดทันที) · market impact ∝ √(ขนาด/ADV) (เพดาน capacity) · adverse selection (spread เกิดจากกลัวคนรู้)<br>
+⚪ <strong>คำอื่นไว้เปิดอ้างอิง:</strong> bid/ask/mid · limit vs market order · depth · NBBO · Kyle's λ = ราคาขยับต่อ order flow · informed vs noise trader · temporary/permanent impact · ADV = ปริมาณเฉลี่ยต่อวัน · optimal execution (VWAP/TWAP/IS) · timing risk · reservation price · inventory risk · Hawkes process = self-exciting · realized volatility · microstructure noise · signature plot · Epps effect</p></div>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
