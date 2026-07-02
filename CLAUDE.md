@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## Project layout
 
-This repo has two unrelated parts — keep them separate, never mix files
+This repo has three unrelated parts — keep them separate, never mix files
 between them, and never let one import/reference another:
 
 - **Root / `js/` / `css/` / `docs/`** — a static options-trading education site
@@ -14,6 +14,11 @@ between them, and never let one import/reference another:
   that converts PDFs to structured Markdown. Everything it needs — script,
   venv, docs — lives inside this one folder (standard skill layout: one
   skill = one self-contained folder).
+- **`.claude/skills/the-trading-dev-kit/`** — a self-contained Claude Code
+  skill that scaffolds a personal, rule-based trading system (unrelated to
+  the education site's content). Vendored verbatim from
+  [nutdnuy/the-trading-dev-kit](https://github.com/nutdnuy/the-trading-dev-kit)
+  (MIT). See `.claude/skills/the-trading-dev-kit/README.md`.
 
 ## pdf-to-markdown usage rules
 
@@ -56,3 +61,21 @@ between them, and never let one import/reference another:
 5. **Never commit**: `.claude/skills/pdf-to-markdown/.venv/` or `.../output/`
    (already in `.gitignore`). Only commit changes to `SKILL.md`, `setup.sh`,
    `convert.py`, and `README.md` under that folder.
+
+## the-trading-dev-kit usage rules
+
+1. **Location**: everything lives under `.claude/skills/the-trading-dev-kit/`
+   — `SKILL.md` (router) + `references/layer1-memory.md` through
+   `layer5-plugins.md` (templates, scripts, worked examples). Don't rewrite
+   these from scratch; read the matching reference file in full before
+   responding, per `SKILL.md`'s own routing table.
+
+2. **What it produces lives outside this folder**: using the skill generates
+   real project files — a trading `CLAUDE.md`/`Risk.md`, `.claude/agents/*`
+   subagent definitions, `.claude/hooks/*` scripts, and trade logs. These are
+   this user's personal trading system, unrelated to the options-education
+   site — do not let them reference or get referenced by `js/`/`css/`/`docs/`.
+
+3. **Never commit private trading data**: `Risk.local.md`, `logs/`,
+   `trades.log`, `*.log` (already in `.gitignore`) — these can contain real
+   account/financial data.
