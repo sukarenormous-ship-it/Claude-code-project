@@ -4,8 +4,8 @@ Fast local PDF -> Markdown extraction (text + tables) via PyMuPDF, plus
 page-image rendering for any page that looks scanned/image-heavy/sparse so
 Claude's vision can review it afterwards.
 
-No ML model download required (unlike MinerU) — works fully offline once
-PyMuPDF is installed from PyPI.
+No ML model download required — works fully offline once PyMuPDF is
+installed from PyPI.
 """
 import argparse
 import json

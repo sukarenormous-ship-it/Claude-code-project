@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Install the pdf-to-markdown skill's dependencies (PyMuPDF only — no ML
-# model download, works even when huggingface.co/modelscope.cn are blocked).
+# Install the pdf-to-markdown skill's dependencies (PyMuPDF only, from PyPI
+# — no ML model download required).
 #
 # Usage:
 #   bash .claude/skills/pdf-to-markdown/setup.sh

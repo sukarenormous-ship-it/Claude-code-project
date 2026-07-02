@@ -1,39 +1,32 @@
 ---
 name: pdf-to-markdown
 description: >
-  Convert a PDF into structured Markdown without needing MinerU's blocked
-  model downloads. Uses PyMuPDF (installed from PyPI, no huggingface.co /
-  modelscope.cn access needed) to extract text and tables per page, then
-  flags any page that looks scanned, image-heavy, or formula-dense so Claude
-  can review that page's rendered image directly with vision. Use this when
-  asked to read/summarize/analyze a PDF and MinerU (mineru/run.sh) is
-  unavailable or fails due to network policy blocking model downloads.
+  Convert a PDF into structured Markdown for accurate summarization/analysis.
+  Uses PyMuPDF (installed from PyPI, no model download needed) to extract
+  text and tables per page, then flags any page that looks scanned,
+  image-heavy, or formula-dense so Claude can review that page's rendered
+  image directly with vision. Use this whenever asked to read, summarize, or
+  analyze a PDF that has tables, formulas, multi-column layout, or scanned
+  pages.
 ---
 
-# PDF to Markdown (network-independent fallback for MinerU)
+# PDF to Markdown
 
-This repo's `mineru/` install requires downloading model weights from
-`huggingface.co` / `modelscope.cn` / `hf-mirror.com`. In environments where
-the network policy blocks those hosts, `mineru/run.sh` fails. This skill is
-the fallback: it gets most of MinerU's practical benefit (structured
-Markdown, tables, and vision-quality reading of hard pages) using only
-PyPI-installable dependencies.
-
-The actual tool (script + venv) lives in its own self-contained top-level
-folder, `pdf-to-markdown/` — same pattern as `mineru/`. This file is only the
-skill definition; it never holds the venv or generated output itself.
+A lightweight, fully self-contained PDF → Markdown converter. Everything —
+script, venv, docs — lives in this skill's own folder; nothing here is
+imported by or shared with any other part of the repo.
 
 ## Steps
 
-1. **Install once per environment** (skip if `pdf-to-markdown/.venv/` already works):
+1. **Install once per environment** (skip if `.venv/` in this folder already works):
    ```bash
-   bash pdf-to-markdown/setup.sh
+   bash .claude/skills/pdf-to-markdown/setup.sh
    ```
 
 2. **Run the extractor** on the target PDF:
    ```bash
-   source pdf-to-markdown/.venv/bin/activate
-   python pdf-to-markdown/convert.py <input.pdf> <output_dir>
+   source .claude/skills/pdf-to-markdown/.venv/bin/activate
+   python .claude/skills/pdf-to-markdown/convert.py <input.pdf> <output_dir>
    ```
    This writes `<output_dir>/<name>.md`, `<output_dir>/<name>.manifest.json`,
    and (only for flagged pages) rendered PNGs under `<output_dir>/pages/`.
@@ -45,26 +38,19 @@ skill definition; it never holds the venv or generated output itself.
 
 4. **Merge**: replace each `<!-- NEEDS_VISION_REVIEW: ... -->` marker in the
    `.md` file with what you read from the corresponding page image. The
-   result is the final structured Markdown — use it for summarization
-   instead of the raw PDF, same as MinerU's output would be used.
+   result is the final structured Markdown — read this instead of the raw
+   PDF for summarization/analysis.
 
 ## Why this split (library first, vision only where needed)
 
 - PyMuPDF text/table extraction is fast, free (no tokens), and accurate for
   normal digital-text pages — no need to burn vision tokens on those.
 - Claude's vision review is reserved for pages that are actually hard
-  (scanned images, dense formulas, sparse text next to embedded images) —
-  the same class of page MinerU's OCR/layout models would normally handle.
-- Net effect: similar output quality to MinerU for the pages that matter,
-  without needing the blocked model downloads.
+  (scanned images, dense formulas, sparse text next to embedded images).
 
-## Limitations vs. MinerU
+## Limitations
 
-- Table detection (`page.find_tables()`) is weaker than MinerU's dedicated
-  table-recognition model on very complex/borderless tables — spot-check
-  flagged pages.
+- Table detection (`page.find_tables()`) can be weak on very
+  complex/borderless tables — spot-check flagged pages.
 - Formula-to-LaTeX is not automatic; when reviewing a flagged page, describe
   formulas as LaTeX yourself if the task needs it.
-- If network access to huggingface.co/modelscope.cn/hf-mirror.com is ever
-  unblocked in this environment, prefer `mineru/run.sh` again — it is more
-  thorough end-to-end.
