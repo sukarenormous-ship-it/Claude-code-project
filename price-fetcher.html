@@ -117,6 +117,7 @@
 
     .hidden { display: none; }
     .hint { font-size: 0.85rem; color: var(--text-muted); margin-top: 12px; }
+    .field-hint { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; min-height: 1.2em; }
     footer { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
     footer a { color: var(--primary); }
   </style>
@@ -137,10 +138,14 @@
             <option value="bybit-spot">Bybit (Spot)</option>
             <option value="bybit-linear">Bybit (USDT Perpetual)</option>
           </select>
+          <div class="field-hint" id="exchange-hint"></div>
         </div>
         <div>
           <label for="symbol">เหรียญ / คู่เทรด</label>
-          <input id="symbol" value="BTCUSDT" placeholder="เช่น BTCUSDT" autocapitalize="characters">
+          <input id="symbol" value="BTCUSDT" placeholder="เช่น BTCUSDT" autocapitalize="characters"
+                 list="symbol-list" autocomplete="off">
+          <datalist id="symbol-list"></datalist>
+          <div class="field-hint" id="symbol-status"></div>
         </div>
         <div>
           <label for="interval">Timeframe</label>
@@ -267,15 +272,81 @@
     }
 
     // ---------- fetching ----------
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const PAGE_DELAY = 250; // เว้นระยะระหว่างหน้า กัน rate limit (HTTP 429)
+
     async function getJSON(url) {
-      const resp = await fetch(url);
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok) {
-        const msg = data && (data.msg || data.retMsg) ? ` — ${data.msg || data.retMsg}` : '';
-        throw new Error(`API ตอบกลับ ${resp.status}${msg}`);
+      for (let attempt = 0; ; attempt++) {
+        const resp = await fetch(url);
+        if ((resp.status === 429 || resp.status === 418) && attempt < 3) {
+          // โดน rate limit: รอตาม Retry-After (ถ้ามี) แล้วลองใหม่
+          const wait = Number(resp.headers.get('Retry-After')) * 1000 || 1000 * 2 ** attempt;
+          $('status').textContent = `โดน rate limit รอ ${Math.round(wait / 1000)} วิ แล้วลองใหม่...`;
+          await sleep(wait);
+          continue;
+        }
+        const data = await resp.json().catch(() => null);
+        if (!resp.ok) {
+          const msg = data && (data.msg || data.retMsg) ? ` — ${data.msg || data.retMsg}` : '';
+          throw new Error(`API ตอบกลับ ${resp.status}${msg}`);
+        }
+        return data;
       }
-      return data;
     }
+
+    // ---------- symbol list (autocomplete + validation) ----------
+    const symbolCache = {}; // exchange -> Set of symbols (null = โหลดไม่สำเร็จ)
+
+    async function loadSymbolList(exchange) {
+      if (exchange in symbolCache) return symbolCache[exchange];
+      const hint = $('symbol-status');
+      hint.textContent = 'กำลังโหลดรายชื่อเหรียญ...';
+      try {
+        let symbols;
+        if (exchange === 'binance') {
+          const data = await getJSON('https://api.binance.com/api/v3/exchangeInfo?showPermissionSets=false');
+          symbols = data.symbols.filter(s => s.status === 'TRADING').map(s => s.symbol);
+        } else {
+          const category = exchange === 'bybit-spot' ? 'spot' : 'linear';
+          symbols = [];
+          let cursor = '';
+          do {
+            const data = await getJSON('https://api.bybit.com/v5/market/instruments-info'
+              + `?category=${category}&limit=1000${cursor ? '&cursor=' + encodeURIComponent(cursor) : ''}`);
+            if (data.retCode !== 0) throw new Error(data.retMsg);
+            symbols.push(...data.result.list.filter(s => s.status === 'Trading').map(s => s.symbol));
+            cursor = data.result.nextPageCursor || '';
+          } while (cursor);
+        }
+        symbols.sort();
+        symbolCache[exchange] = new Set(symbols);
+        $('symbol-list').innerHTML = symbols.map(s => `<option value="${s}">`).join('');
+        hint.textContent = `มีให้เลือก ${symbols.length.toLocaleString()} คู่เทรด — พิมพ์เพื่อค้นหา`;
+      } catch (err) {
+        symbolCache[exchange] = null; // โหลดไม่ได้ก็ยังดึงข้อมูลได้ แค่ข้ามการตรวจสอบ
+        $('symbol-list').innerHTML = '';
+        hint.textContent = 'โหลดรายชื่อเหรียญไม่สำเร็จ (ยังดึงข้อมูลได้ตามปกติ)';
+      }
+      return symbolCache[exchange];
+    }
+
+    function validateSymbol(symbol, exchange) {
+      const set = symbolCache[exchange];
+      if (!set) return; // ไม่มีรายชื่อให้เช็ค ปล่อยผ่านให้ API ตัดสิน
+      if (set.has(symbol)) return;
+      const suggestions = [...set].filter(s => s.includes(symbol.replace(/USDT$/, ''))).slice(0, 5);
+      const name = $('exchange').selectedOptions[0].textContent;
+      throw new Error(`ไม่พบ "${symbol}" บน ${name}` +
+        (suggestions.length ? ` — ใกล้เคียง: ${suggestions.join(', ')}` : ''));
+    }
+
+    function updateExchangeHint() {
+      $('exchange-hint').textContent = $('exchange').value === 'bybit-spot'
+        ? 'หมายเหตุ: Bybit Spot เก็บข้อมูลย้อนหลังสั้นกว่าฝั่ง Perpetual' : '';
+    }
+    $('exchange').addEventListener('change', () => { updateExchangeHint(); loadSymbolList($('exchange').value); });
+    updateExchangeHint();
+    loadSymbolList($('exchange').value);
 
     async function fetchBinance(symbol, interval, start, end, onProgress) {
       const out = [];
@@ -294,6 +365,7 @@
         if (next <= cursor) break;
         cursor = next;
         onProgress(out.length);
+        if (cursor < end) await sleep(PAGE_DELAY);
       }
       return out;
     }
@@ -319,6 +391,7 @@
         if (next <= cursor) break;
         cursor = next;
         onProgress(out.length);
+        if (cursor < end) await sleep(PAGE_DELAY);
       }
       return out;
     }
@@ -371,6 +444,9 @@
         const exchange = $('exchange').value;
         const interval = $('interval').value;
         const { start, end } = selectedRange();
+
+        await loadSymbolList(exchange); // no-op ถ้าโหลดไว้แล้ว
+        validateSymbol(symbol, exchange);
 
         btn.disabled = true;
         $('download-btn').disabled = true;
