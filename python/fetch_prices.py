@@ -48,14 +48,30 @@ MAX_CANDLES_PER_REQUEST = 1000  # both exchanges allow up to 1000
 
 
 def http_get_json(url: str, params: dict) -> object:
-    """GET a URL with query params and parse the JSON response."""
+    """GET a URL with query params and parse the JSON response.
+
+    Retries transient failures (network errors, 5xx, 429) with backoff, but
+    fails fast on permanent 4xx errors like an invalid symbol.
+    """
     full_url = url + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(full_url, headers={"User-Agent": "price-fetcher/1.0"})
     for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return json.loads(resp.read().decode("utf-8"))
-        except Exception as exc:  # network hiccup or rate limit: back off and retry
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (418, 429) and exc.code < 500:
+                try:
+                    detail = json.loads(exc.read().decode("utf-8")).get("msg", "")
+                except Exception:
+                    detail = ""
+                raise RuntimeError(f"HTTP {exc.code}: {detail or exc.reason}") from None
+            if attempt == 4:
+                raise
+            wait = 2 ** attempt
+            print(f"  HTTP {exc.code}, retrying in {wait}s...", file=sys.stderr)
+            time.sleep(wait)
+        except Exception as exc:  # network hiccup: back off and retry
             if attempt == 4:
                 raise
             wait = 2 ** attempt
@@ -95,47 +111,51 @@ def fetch_binance(symbol: str, interval: str, start_ms: int, end_ms: int) -> lis
             break
         cursor = next_cursor
         print(f"  fetched {len(candles)} candles so far...", file=sys.stderr)
-        time.sleep(0.15)  # stay well under rate limits
+        if cursor < end_ms:
+            time.sleep(0.15)  # stay well under rate limits
     return candles
 
 
 def fetch_bybit(symbol: str, interval: str, start_ms: int, end_ms: int, category: str) -> list:
-    """Fetch candles from Bybit v5, paginating forward from start to end."""
+    """Fetch candles from Bybit v5, paginating BACKWARD from end to start.
+
+    Bybit anchors a [start, end] window to the END: it returns the newest
+    `limit` candles in the range, newest-first. Forward pagination would
+    silently drop everything before the last 1000 candles, so we walk the
+    end cursor backward instead.
+    """
     candles = []
-    cursor = start_ms
-    while cursor < end_ms:
+    cursor_end = end_ms
+    while cursor_end > start_ms:
         data = http_get_json(BYBIT_URL, {
             "category": category,
             "symbol": symbol,
             "interval": INTERVALS[interval]["bybit"],
-            "start": cursor,
-            "end": end_ms,
+            "start": start_ms,
+            "end": cursor_end,
             "limit": MAX_CANDLES_PER_REQUEST,
         })
         if data.get("retCode") != 0:
             raise RuntimeError(f"Bybit error: {data.get('retMsg')} (retCode={data.get('retCode')})")
-        rows = data["result"]["list"]
+        rows = data["result"]["list"]  # newest-first: [startTime, o, h, l, c, volume, turnover]
         if not rows:
             break
-        # Bybit returns newest-first: [startTime, open, high, low, close, volume, turnover]
         rows.sort(key=lambda r: int(r[0]))
-        for r in rows:
-            ts = int(r[0])
-            if ts < cursor:  # guard against overlap between pages
-                continue
-            candles.append({
-                "timestamp": ts,
-                "open": float(r[1]),
-                "high": float(r[2]),
-                "low": float(r[3]),
-                "close": float(r[4]),
-                "volume": float(r[5]),
-            })
-        last_open = int(rows[-1][0])
-        next_cursor = last_open + INTERVALS[interval]["ms"]
-        if next_cursor <= cursor:
+        page = [{
+            "timestamp": int(r[0]),
+            "open": float(r[1]),
+            "high": float(r[2]),
+            "low": float(r[3]),
+            "close": float(r[4]),
+            "volume": float(r[5]),
+        } for r in rows if start_ms <= int(r[0]) <= cursor_end]
+        if not page:
             break
-        cursor = next_cursor
+        candles = page + candles
+        oldest = page[0]["timestamp"]
+        if oldest <= start_ms:
+            break
+        cursor_end = oldest - 1
         print(f"  fetched {len(candles)} candles so far...", file=sys.stderr)
         time.sleep(0.15)
     return candles
@@ -198,10 +218,13 @@ def main() -> None:
     print(f"Fetching {args.symbol} {args.interval} candles from {args.exchange} "
           f"({start:%Y-%m-%d %H:%M} -> {end:%Y-%m-%d %H:%M} UTC)...", file=sys.stderr)
 
-    if args.exchange == "binance":
-        candles = fetch_binance(args.symbol.upper(), args.interval, start_ms, end_ms)
-    else:
-        candles = fetch_bybit(args.symbol.upper(), args.interval, start_ms, end_ms, args.category)
+    try:
+        if args.exchange == "binance":
+            candles = fetch_binance(args.symbol.upper(), args.interval, start_ms, end_ms)
+        else:
+            candles = fetch_bybit(args.symbol.upper(), args.interval, start_ms, end_ms, args.category)
+    except RuntimeError as exc:
+        sys.exit(f"Error: {exc}")
 
     if not candles:
         print("No data returned. Check the symbol and date range.", file=sys.stderr)

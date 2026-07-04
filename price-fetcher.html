@@ -277,12 +277,23 @@
 
     async function getJSON(url) {
       for (let attempt = 0; ; attempt++) {
-        const resp = await fetch(url);
+        let resp;
+        try {
+          resp = await fetch(url);
+        } catch (err) { // network error: retry with backoff
+          if (attempt >= 3) throw new Error('เชื่อมต่อไม่ได้ — ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+          await sleep(1000 * 2 ** attempt);
+          continue;
+        }
         if ((resp.status === 429 || resp.status === 418) && attempt < 3) {
           // โดน rate limit: รอตาม Retry-After (ถ้ามี) แล้วลองใหม่
           const wait = Number(resp.headers.get('Retry-After')) * 1000 || 1000 * 2 ** attempt;
           $('status').textContent = `โดน rate limit รอ ${Math.round(wait / 1000)} วิ แล้วลองใหม่...`;
           await sleep(wait);
+          continue;
+        }
+        if (resp.status >= 500 && attempt < 3) { // server hiccup: retry
+          await sleep(1000 * 2 ** attempt);
           continue;
         }
         const data = await resp.json().catch(() => null);
@@ -295,13 +306,16 @@
     }
 
     // ---------- symbol list (autocomplete + validation) ----------
-    const symbolCache = {}; // exchange -> Set of symbols (null = โหลดไม่สำเร็จ)
+    // exchange -> Promise<Set|null>: caching the promise (not the result)
+    // prevents duplicate concurrent downloads, and deleting the entry on
+    // failure lets the next attempt retry once the network recovers.
+    const symbolCache = {};
 
-    async function loadSymbolList(exchange) {
-      if (exchange in symbolCache) return symbolCache[exchange];
+    function loadSymbolList(exchange) {
+      if (symbolCache[exchange]) return symbolCache[exchange];
       const hint = $('symbol-status');
       hint.textContent = 'กำลังโหลดรายชื่อเหรียญ...';
-      try {
+      symbolCache[exchange] = (async () => {
         let symbols;
         if (exchange === 'binance') {
           const data = await getJSON('https://api.binance.com/api/v3/exchangeInfo?showPermissionSets=false');
@@ -319,19 +333,19 @@
           } while (cursor);
         }
         symbols.sort();
-        symbolCache[exchange] = new Set(symbols);
         $('symbol-list').innerHTML = symbols.map(s => `<option value="${s}">`).join('');
         hint.textContent = `มีให้เลือก ${symbols.length.toLocaleString()} คู่เทรด — พิมพ์เพื่อค้นหา`;
-      } catch (err) {
-        symbolCache[exchange] = null; // โหลดไม่ได้ก็ยังดึงข้อมูลได้ แค่ข้ามการตรวจสอบ
+        return new Set(symbols);
+      })().catch(() => {
+        delete symbolCache[exchange]; // เปิดทางให้ลองใหม่ครั้งหน้า
         $('symbol-list').innerHTML = '';
         hint.textContent = 'โหลดรายชื่อเหรียญไม่สำเร็จ (ยังดึงข้อมูลได้ตามปกติ)';
-      }
+        return null;
+      });
       return symbolCache[exchange];
     }
 
-    function validateSymbol(symbol, exchange) {
-      const set = symbolCache[exchange];
+    function validateSymbol(symbol, set) {
       if (!set) return; // ไม่มีรายชื่อให้เช็ค ปล่อยผ่านให้ API ตัดสิน
       if (set.has(symbol)) return;
       const suggestions = [...set].filter(s => s.includes(symbol.replace(/USDT$/, ''))).slice(0, 5);
@@ -370,28 +384,31 @@
       return out;
     }
 
+    // Bybit anchors a [start,end] window to the END: it returns the newest
+    // `limit` candles in range. We therefore paginate BACKWARD from end,
+    // otherwise ranges over 1000 candles would silently lose their oldest part.
     async function fetchBybit(symbol, interval, start, end, category, onProgress) {
-      const out = [];
-      let cursor = start;
-      while (cursor < end && out.length < MAX_CANDLES) {
+      let out = [];
+      let cursorEnd = end;
+      while (cursorEnd > start && out.length < MAX_CANDLES) {
         const url = 'https://api.bybit.com/v5/market/kline'
           + `?category=${category}&symbol=${encodeURIComponent(symbol)}`
-          + `&interval=${INTERVALS[interval].bybit}&start=${cursor}&end=${end}&limit=${PAGE_LIMIT}`;
+          + `&interval=${INTERVALS[interval].bybit}&start=${start}&end=${cursorEnd}&limit=${PAGE_LIMIT}`;
         const data = await getJSON(url);
         if (data.retCode !== 0) throw new Error(data.retMsg || `Bybit retCode ${data.retCode}`);
-        const rows = data.result.list;
+        const rows = data.result.list; // newest-first
         if (!rows || rows.length === 0) break;
-        rows.sort((a, b) => Number(a[0]) - Number(b[0])); // bybit returns newest-first
-        for (const r of rows) {
-          const t = Number(r[0]);
-          if (t < cursor) continue; // guard against page overlap
-          out.push({ t, o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] });
-        }
-        const next = Number(rows[rows.length - 1][0]) + INTERVALS[interval].ms;
-        if (next <= cursor) break;
-        cursor = next;
+        rows.sort((a, b) => Number(a[0]) - Number(b[0]));
+        const page = rows
+          .map(r => ({ t: Number(r[0]), o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] }))
+          .filter(c => c.t >= start && c.t <= cursorEnd);
+        if (page.length === 0) break;
+        out = page.concat(out);
+        const oldest = page[0].t;
+        if (oldest <= start) break;
+        cursorEnd = oldest - 1;
         onProgress(out.length);
-        if (cursor < end) await sleep(PAGE_DELAY);
+        await sleep(PAGE_DELAY);
       }
       return out;
     }
@@ -434,7 +451,10 @@
     }
 
     // ---------- main action ----------
+    let fetching = false; // กัน fetch ซ้อน (กดปุ่ม/Enter ระหว่างที่ยังดึงอยู่)
+
     async function onFetch() {
+      if (fetching) return;
       const status = $('status');
       const btn = $('fetch-btn');
       status.classList.remove('error');
@@ -445,11 +465,12 @@
         const interval = $('interval').value;
         const { start, end } = selectedRange();
 
-        await loadSymbolList(exchange); // no-op ถ้าโหลดไว้แล้ว
-        validateSymbol(symbol, exchange);
-
+        fetching = true;
         btn.disabled = true;
         $('download-btn').disabled = true;
+
+        validateSymbol(symbol, await loadSymbolList(exchange));
+
         status.textContent = 'กำลังดึงข้อมูล...';
         const onProgress = n => { status.textContent = `กำลังดึงข้อมูล... ได้แล้ว ${n.toLocaleString()} แท่ง`; };
 
@@ -460,13 +481,16 @@
         if (candles.length === 0) throw new Error('ไม่พบข้อมูล — ตรวจสอบชื่อเหรียญและช่วงเวลาอีกครั้ง');
 
         showResults({ symbol, interval, exchange });
-        status.textContent = `สำเร็จ! ได้ข้อมูล ${candles.length.toLocaleString()} แท่ง`;
+        status.textContent = candles.length >= MAX_CANDLES
+          ? `⚠ ได้ ${candles.length.toLocaleString()} แท่ง (ชนเพดานสูงสุด — ข้อมูลไม่ครบทั้งช่วงที่ขอ ลองใช้ timeframe ที่ใหญ่ขึ้นหรือแบ่งช่วงดึง)`
+          : `สำเร็จ! ได้ข้อมูล ${candles.length.toLocaleString()} แท่ง`;
         $('download-btn').disabled = false;
       } catch (err) {
         status.textContent = err.message || String(err);
         status.classList.add('error');
         $('result-card').classList.add('hidden');
       } finally {
+        fetching = false;
         btn.disabled = false;
       }
     }
