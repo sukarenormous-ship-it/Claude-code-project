@@ -1,0 +1,30 @@
+# Temporary workflow: check which exchange APIs are reachable from
+# GitHub-hosted runners (geo-block test) before building the daily
+# options-data snapshot pipeline.
+name: API geo-block test
+on:
+  push:
+    branches: [claude/python-historical-price-fetch-416mvy]
+    paths: ['.github/workflows/api-geo-test.yml']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe exchange APIs
+        run: |
+          probe () {
+            name="$1"; url="$2"
+            code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 20 "$url" 2>/tmp/err || echo "ERR")
+            echo "=== $name -> HTTP $code"
+            if [ "$code" = "ERR" ]; then cat /tmp/err; else head -c 300 /tmp/body; fi
+            echo; echo
+          }
+          probe "Bybit option tickers"        "https://api.bybit.com/v5/market/tickers?category=option&baseCoin=BTC&limit=1"
+          probe "Bybit spot kline"            "https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=D&limit=1"
+          probe "Binance spot ping"           "https://api.binance.com/api/v3/ping"
+          probe "Binance spot kline"          "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=1"
+          probe "Binance options eapi"        "https://eapi.binance.com/eapi/v1/index?underlying=BTCUSDT"
+          probe "OKX option instruments"      "https://www.okx.com/api/v5/public/instruments?instType=OPTION&instFamily=BTC-USD"
+          probe "Deribit index price"         "https://www.deribit.com/api/v2/public/get_index_price?index_name=btc_usd"
