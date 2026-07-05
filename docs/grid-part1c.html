@@ -244,8 +244,28 @@ Grid Hedge (Perpetual Variation):
 <tr><td>BTC ขึ้น $20k (pump)</td><td>+$1,000</td><td>−$1,000</td><td>+$25</td><td>+$7.5</td><td><strong>+$32.5</strong></td></tr>
 </table>
 
-<p><strong>สังเกต:</strong> ทุกสถานการณ์กำไร — เพราะ hedge ป้องกัน directional risk สมบูรณ์ กำไรมาจาก grid + funding เท่านั้น</p>
-<p><strong>Return:</strong> ~$40–$88/วัน บน $6,000 = 0.66–1.47%/วัน (ขึ้นอยู่กับ volatility)</p>
+<p><strong>สังเกต:</strong> ตารางนี้กำไรทุกแถว <em>ภายใต้สมมติฐาน</em> ว่า hedge สมบูรณ์ 100% ตลอดเวลา, rebalance ทันทุกครั้ง, funding เป็นบวก, ไม่มี slippage และไม่โดน liquidation — เมื่อเงื่อนไขครบ ผลเชิงทิศทาง (Spot vs Perp) หักล้างกันพอดี เหลือกำไรจาก grid cashflow + funding</p>
+<p><strong>Return (mechanical illustration under assumptions — ไม่ใช่ expected return):</strong> ~$40–$88/วัน บน $6,000 = 0.66–1.47%/วัน (ขึ้นอยู่กับ volatility)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">Hedge ไม่ได้ "ลบ" ความเสี่ยง — มัน "ย้าย" ความเสี่ยง</div>
+<p>สิ่งที่ hedge ทำจริงคือแปลง directional risk ให้กลายเป็นความเสี่ยงรูปอื่น 5 ตัวที่ต้องบริหารแทน:</p>
+<ul>
+<li><strong>Hedge execution risk</strong> — spot fill แล้วแต่ perp hedge ไม่ fill / fill ช้า → ช่วงนั้น delta เปิดโล่ง</li>
+<li><strong>Funding risk</strong> — funding พลิกเป็นลบ → จ่ายทุก 8 ชม. กัด grid cashflow (แถว funding ในตารางกลายเป็นลบ)</li>
+<li><strong>Basis risk</strong> — spot price กับ perp mark price ไม่เท่ากัน โดยเฉพาะช่วง volatility spike → hedge หักล้างไม่พอดี</li>
+<li><strong>Margin/liquidation risk</strong> — perp short 10× ถ้า BTC พุ่งแรง margin ไม่พอ → โดน liquidate ทั้งที่ "hedge อยู่"</li>
+<li><strong>Rebalance cost</strong> — ทุกครั้งที่ inventory เปลี่ยนต้องปรับ hedge = fee + slippage สะสม</li>
+</ul>
+<div class="fm">Net P&L (ครบทุกเทอม — ใช้แบบนี้เวลาทำบัญชีจริง):
+
+Net P&L = Realized Grid P&L
+        + Spot Unrealized P&L
+        + Perp Unrealized P&L
+        + Funding P&L
+        − Fees − Slippage − Rebalance Cost − Margin/Borrow Cost</div>
+<p>ตารางด้านบนแสดงเฉพาะกรณีที่ 4 เทอมท้ายเป็นศูนย์ — เวอร์ชัน V2 ของบทนี้จะเพิ่ม hedge drift, funding break-even และ liquidation buffer เป็นเครื่องมือคุมความเสี่ยงเหล่านี้</p>
 </div>
 
 <h2 id="s1c-7">1C.7 แบบฝึกหัด</h2>

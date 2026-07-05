@@ -139,7 +139,11 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 รอบต่อวัน (ประมาณ) = ATR_daily / Step
                    = $3,000/วัน / $2,000 = 1.5 รอบ/วัน (โดยเฉลี่ย)
 
-กำไรต่อวัน (ประมาณ) ≈ 1.5 × $18 = $27/วัน บน capital $4,900 ≈ 0.55%/วัน</div>
+กำไรต่อวัน (ประมาณ) ≈ 1.5 × $18 = $27/วัน บน capital $4,900 ≈ 0.55%/วัน
+
+⚠ ตัวเลขนี้เป็น mechanical illustration ภายใต้สมมติฐาน
+  (ราคาอยู่ใน zone, ATR คงที่, fill ครบทุกรอบ, ไม่มี slippage)
+  ไม่ใช่ expected return — ดู "ทฤษฎีที่ต้องรู้" ใน 0.3</div>
 
 <div class="bx bc">
 <div class="bt">Step เล็กหรือใหญ่ — Tradeoff สำคัญ</div>
@@ -197,12 +201,47 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 <p>"Drawdown น้อย" ในตารางเปรียบเทียบด้านบนวัดจาก equity curve ที่ <strong>realized</strong> (grid ปิดกำไรเป็น step ๆ ตลอด) แต่ไม่ได้รวม unrealized loss ของ inventory ที่ยังค้างอยู่ตอนราคาต่ำ — ถ้าตลาด trend ลงแรง (H &gt; 0.6) drawdown ที่แท้จริงอาจไม่น้อยเลย เพราะ capital ถูกทยอยดึงเข้าไปซื้อของถูกลงเรื่อยๆ (fully deployed) ต่างจาก buy & hold ที่แค่ถือ position เดียวคงที่</p>
 </div>
 
+<h3>ทฤษฎีที่ต้องรู้: ใน Random Walk กำไรคาดหวังของ Grid = 0</h3>
+
+<p>มีผลพิสูจน์ทางคณิตศาสตร์ที่ตรงประเด็นนี้ (Chen, Chen &amp; Jang 2025, arXiv:2506.11921): ถ้าราคาเดินสุ่มแท้ (ขึ้นหรือลงทีละ 1 step ด้วยโอกาส 50:50) grid แบบมีขอบเขตที่หยุดทำงานเมื่อราคาหลุด zone จะมี <strong>expected value = 0 พอดี</strong> — และติดลบทันทีเมื่อรวมค่า fee</p>
+
+<p>เหตุผลมาจากแรงสองแรงที่หักล้างกันเป๊ะ:</p>
+<ul>
+<li><strong>แรงบวก:</strong> ทุกครั้งที่ราคาแกว่งผ่านคู่ level → กำไร 1 step (นี่คือสิ่งที่เรามองเห็นและชอบ)</li>
+<li><strong>แรงลบ:</strong> โครงสร้าง grid ขายของทิ้งเร็วตอนขาขึ้น (จำกัด upside) และทยอยซื้อสะสมตอนขาลง (เพิ่ม exposure ให้ฝั่งขาดทุน) — วันที่ราคาเดินทางเดียวจนหลุดขอบ ความเสียหายก้อนนั้นมีค่าเฉลี่ยเท่ากับกำไร step เล็กๆ ที่เก็บมาได้ทั้งหมดพอดี</li>
+</ul>
+
+<div class="fm">Random walk 50:50, ทุน M, จำนวน grid n ช่อง, ไม่คิด fee:
+
+ความเสียหายคาดหวังจากการเดินทางเดียวจนหลุดขอบ
+  = (M/n) × (n²/8 − n/4)
+
+จำนวนรอบ arbitrage คาดหวังก่อนราคาหลุดขอบ
+  = n²/8 − n/4 รอบ   (กำไรรอบละ M/n)
+
+E(grid) = กำไรรอบแกว่ง − ความเสียหายหลุดขอบ = 0
+เมื่อรวม fee:  E(grid) &lt; 0</div>
+
+<p>ตัวเลข n²/8 − n/4 ใช้เป็น <strong>break-even check</strong> ก่อนตั้ง grid ได้เลย: grid ต้องเก็บรอบให้ได้เกินจำนวนนี้ก่อนราคาหลุด zone จึงจะชนะการถือเงินเฉยๆ</p>
+
+<table>
+<tr><th>n (จำนวนช่อง grid)</th><td>6</td><td>8</td><td>10</td><td>12</td><td>16</td><td>20</td></tr>
+<tr><th>รอบ break-even ที่ต้องเก็บให้ได้</th><td>3</td><td>6</td><td>10</td><td>15</td><td>28</td><td>45</td></tr>
+</table>
+
+<p><strong>วิธีใช้จริง:</strong> ประมาณรอบ/วัน ≈ ATR/Step (สูตรใน 0.2) คูณจำนวนวันที่คาดว่าราคาจะอยู่ใน zone แล้วเทียบกับตาราง — เช่น grid 10 ช่อง เก็บได้ 1.5 รอบ/วัน ต้องอยู่ใน zone เกิน ~7 วันถึงคุ้ม ถ้าประเมินแล้วไม่ถึง แปลว่า grid นั้นตั้งมาเพื่อแพ้ random walk</p>
+
+<div class="key-idea">
+<div class="ki-label">ข้อสรุปที่เปลี่ยนวิธีคิดทั้งเล่ม</div>
+<div class="ki-text">Grid <strong>ไม่ได้สร้างกำไรจากโครงสร้างของมันเอง</strong> — ใน random walk มันแค่แลก "กำไรเล็กๆ หลายครั้ง" กับ "เสียหายก้อนใหญ่ครั้งเดียว" แบบเจ๊ากันพอดี Edge ที่แท้จริงต้องมาจากอย่างใดอย่างหนึ่ง: <strong>(1)</strong> ตลาด mean-revert จริง (H &lt; 0.5 — ทำให้จำนวนรอบจริงมากกว่าที่ random walk ให้ → Part 4 คือเครื่องมือคัดตลาดแบบนี้) หรือ <strong>(2)</strong> ไม่หยุดเมื่อหลุดขอบ แต่ migrate grid ตามราคา (แนวทาง Dynamic Grid — ดู Part 2 เรื่อง migration; ระวังว่าวิธีนี้ย้ายความเสี่ยงไปอยู่ที่ inventory ไม่ได้ลบทิ้ง)</div>
+</div>
+
 <h2 id="s0-4">0.4 ปรัชญา "Grid คือ Grid"</h2>
 
 <div class="philosophy-box">
 <div class="ph-title">หลักการที่ทำให้ Grid คือ Grid</div>
 <div class="ph-statement">"Enhancement เสริมคุณภาพ equity curve — ไม่ได้เพิ่ม total P&L อย่างมีนัย"</div>
-<div class="ph-sub">Grid framework เอง (ไม่มี indicator ใดเลย) ก็มี alpha จากการดักจับ mean-reversion<br>Indicator ช่วยลด DD, เพิ่ม Sharpe — แต่ P&L รวมใกล้เคียงเดิม</div>
+<div class="ph-sub">Grid framework เอง (ไม่มี indicator ใดเลย) ก็มี alpha จากการดักจับ mean-reversion — <em>เฉพาะในตลาดที่ mean-revert จริง (H &lt; 0.5)</em> เพราะใน random walk แท้ EV ของ grid = 0 (ดู 0.3)<br>Indicator ช่วยลด DD, เพิ่ม Sharpe — แต่ P&L รวมใกล้เคียงเดิม</div>
 </div>
 
 <p>นี่ไม่ได้หมายความว่า Enhancement ไม่มีค่า — ตรงกันข้าม:</p>
