@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.5 — Cointegration</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.step-row{display:flex;align-items:flex-start;gap:12px;margin:10px 0;padding:12px 16px;background:#fff;border:1px solid var(--g2);border-radius:8px}
+.step-num{background:var(--teal);color:#fff;border-radius:50%;width:26px;height:26px;min-width:26px;text-align:center;line-height:26px;font-size:.85em;font-weight:700}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt{color:#334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 5</div>
+<h1>Cointegration</h1>
+<div class="sub">Engle-Granger · Johansen · VECM<br>ทดสอบว่า spread ε มีแรงดึงกลับจริงหรือแค่ correlation ชั่วคราว</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — ADF Equation</div>
+<p>Correlation สูงไม่พอสำหรับ stat arb — ต้องการ <strong>cointegration</strong>:<br>
+\(\varepsilon_t = \log A_t - \beta \cdot \log B_t\) ต้องเป็น stationary (กลับหาค่ากลาง) ไม่ใช่แค่เดินไปด้วยกัน</p>
+<p>ADF test ประมาณค่า δ จาก regression นี้:</p>
+$$\Delta\varepsilon_t = \alpha + \delta\varepsilon_{t-1} + \sum_{k=1}^{p}\gamma_k\Delta\varepsilon_{t-k} + \eta_t$$
+<p>\(H_0{:}\ \delta = 0\) (unit root — ε ไม่ stationary) &emsp; \(H_1{:}\ \delta < 0\) (stationary — ε กลับค่ากลาง)<br>
+ถ้า p-value &lt; 0.05 → ปฏิเสธ H₀ → \(\delta < 0\) → <strong>cointegrated</strong></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">นิยามทางการ — Cointegration (Engle &amp; Granger, 1987)</div>
+<p>Series X_t และ Y_t แต่ละตัวเป็น <strong>I(1)</strong> (integrated of order 1 — มี unit root, ไม่ stationary) แต่คู่นี้ <strong>cointegrated</strong> ถ้ามีค่า β ที่ทำให้:</p>
+<p style="text-align:center;font-family:monospace;font-size:1.1em;padding:8px 0"><strong>Z_t = X_t − β·Y_t  เป็น I(0)</strong>  (stationary, กลับหาค่ากลาง)</p>
+<p>กล่าวอีกนัย: แม้ X_t และ Y_t จะ random walk แยกกัน แต่ทั้งคู่ถูก "ดึง" ไว้ด้วย long-run equilibrium relationship เดียวกัน — spread ε = Z_t จึงไม่ drift ออกไปตลอด</p>
+</div>
+
+<h2 id="s5-1">5.1 Correlation ≠ Cointegration — ความแตกต่างที่สำคัญ</h2>
+
+<div class="key-idea">
+<div class="ki-label">อุปมา — คนกับสุนัขและสายจูง (จำได้ง่ายที่สุด)</div>
+<p><strong>Correlation</strong> ตรวจว่า "คนกับสุนัขเดินไปทางเดียวกันไหม" — ไม่ใช่แค่ตอนเดินตรง แต่รวมตอนเลี้ยวซ้าย เลี้ยวขวา ข้ามถนน ด้วย ถ้าทุกทิศทางยังพ้องกัน = <em>น่าจะมีสายจูง</em> — แต่ยังยืนยันไม่ได้ว่ามีสายจูงจริง เพราะสองคนที่เดินไปห้างเดียวกันโดยบังเอิญก็ correlation สูงได้</p>
+<p><strong>Cointegration</strong> ตรวจว่า "มีสายจูงเชื่อมกันจริงไหม" — เมื่อสุนัขวิ่งออกไปห่างจากคน มีแรงดึงให้กลับมาไหม? ถ้ากลับมาเสมอ = spread มีแรง mean-revert = <strong>cointegrated</strong><br>
+จะกลับมาเร็วแค่ไหน ขึ้นกับ <strong>ความยาวสายจูง = Half-life</strong> (สายสั้น = กลับเร็ว = trade ได้ถี่)</p>
+<table style="margin-top:10px;font-size:.91em">
+<tr><th>อุปมา</th><th>สถิติ</th><th>บทบาทใน Pipeline</th></tr>
+<tr><td>เดินไปทิศเดียวกัน (รวมเลี้ยวซ้าย-ขวา)</td><td>Correlation ρ ≥ 0.70</td><td>กรองหยาบ — ตัดคู่ที่ไม่น่าสนใจออกก่อน</td></tr>
+<tr><td>มีสายจูงดึงสุนัขกลับหาคน</td><td>Cointegration (ADF p &lt; 0.05)</td><td><strong>gate ชี้ขาด</strong> — trade ได้/ไม่ได้</td></tr>
+<tr><td>ความยาวสายจูง</td><td>Half-life τ₁/₂ = ln(2)/κ</td><td>กำหนด holding time ที่เหมาะสม</td></tr>
+</table>
+<p style="margin-top:8px;font-size:.92em;color:#64748b"><strong>ลำดับที่ถูก:</strong> ตรวจ Correlation ก่อน (คัดคู่ที่ไม่น่าสนใจออก) → ค่อย Cointegration (พิสูจน์ว่ามีสายจูงจริง) — ข้าม Cointegration ไม่ได้ แม้ ρ จะสูงแค่ไหนก็ตาม</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ρ คือ "pre-filter เพื่อ efficiency" ไม่ใช่ "วัดคุณภาพ"</div>
+<p>จุดประสงค์ของ threshold ρ ≥ 0.70 คือ <strong>ลดจำนวน pair ที่ต้องรัน ADF</strong> ไม่ใช่วัดว่าคู่นั้นดีหรือไม่ดี:</p>
+<ul>
+<li>คู่ที่มี ρ = 0.65 อาจ <strong>cointegrate ได้จริง</strong> — 0.70 เป็นแค่จุดเริ่มต้น ไม่ใช่เส้นแบ่ง</li>
+<li>คู่ที่มี ρ = 0.92 อาจ <strong>ไม่ cointegrate เลย</strong> (spurious correlation ที่เกิดจากทั้งคู่ trend ขึ้นพร้อมกัน)</li>
+<li><strong>สิ่งที่สำคัญกว่า ρ ณ จุดเดียว</strong>: ρ เสถียรข้ามเวลาไหม — ρ = 0.72 ที่คงที่ตลอด 90 วัน มักดีกว่า ρ = 0.88 ที่กระโดดระหว่าง 0.55–0.95</li>
+</ul>
+<p style="margin-top:6px;font-size:.9em;color:#64748b">ปรับ threshold ได้ตาม context: มี pair น้อย (≤ 20 คู่) → รัน ADF ทุกคู่เลย ไม่ต้องกรองด้วย ρ ก่อน · มี 200+ คู่ → ใช้ ρ ≥ 0.75–0.80 เพื่อลด compute cost</p>
+</div>
+
+<!-- Diagram: 3 scenarios -->
+<img class="chart" src="charts/ch5-stationary-vs-nonstat.svg" alt="Stationary vs Non-stationary — ADF Test" style="display:block;margin:20px auto;width:100%;max-width:760px;height:auto">
+<div class="caption">I(1) random walk และ I(1)+drift ไม่ผ่าน ADF (unit root) — I(0) OU process ผ่าน (stationary, mean-reverting)</div>
+
+<h3>Scatter Plot — มองความสัมพันธ์ด้วยตา ก่อนลงมือทดสอบสถิติ</h3>
+
+<p>ก่อนรัน test สถิติใด ๆ ให้ <strong>plot ราคาสองขาเป็น scatter</strong> ก่อนเสมอ — แกนนอนคือ log ราคาขา B แกนตั้งคือ log ราคาขา A · จุดหนึ่งจุดคือราคาคู่กัน ณ ช่วงเวลาหนึ่ง · scatter บอกหลายอย่างที่ตัวเลข ρ ตัวเดียวบอกไม่ได้ และเป็นวิธีที่เร็วที่สุดในการคัดคู่ที่ "แย่ชัด ๆ" ออก</p>
+
+<img class="chart" src="charts/ch5-adf-critical.svg" alt="ADF Critical Values" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">ADF critical values: −3.44 (1%), −2.86 (5%), −2.57 (10%) — test stat ที่ต่ำกว่า critical value → reject H₀ → spread stationary</div>
+
+<div class="bx bb">
+<div class="bt">scatter plot บอกอะไรบ้าง</div>
+<ul>
+<li><strong>ความชันของเส้น best-fit = β</strong> — hedge ratio ที่จะคำนวณเป็นทางการใน<a href="statarb-ch4.html">บทที่ 4</a></li>
+<li><strong>ระยะจากจุดถึงเส้น = ε</strong> — จุดเหนือเส้น = A แพงกว่า fair (ε &gt; 0), จุดใต้เส้น = A ถูกกว่า (ε &lt; 0)</li>
+<li><strong>cloud แน่นรอบเส้น = ρ สูง</strong> — ความสัมพันธ์เชิงเส้นชัด · cloud ฟุ้ง = ρ ต่ำ</li>
+<li><strong>outlier เห็นได้ทันที</strong> — จุดที่หลุดไกลออกไปอาจเป็น bad tick หรือ event ผิดปกติ ต้องตรวจก่อน fit β</li>
+</ul>
+</div>
+
+<p>แต่ scatter ที่ "ดูเป็นเส้น" ไม่ได้แปลว่าใช้ได้เสมอ — รูปทรงของ cloud เตือนปัญหาที่ ρ ตัวเดียวจับไม่ได้:</p>
+
+<img class="chart" src="charts/ch5-scatter-types.svg" alt="4 รูปทรง scatter" style="display:block;margin:20px auto;width:100%;max-width:760px;height:auto">
+<div class="caption">เฉพาะ "เส้นตรงแน่น" เท่านั้นที่พร้อมเข้า pipeline — อีก 3 แบบเตือนปัญหาคนละชนิด</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัด — scatter plot ไม่ได้แทนการทดสอบ</div>
+<p>scatter เป็น "first look" ที่เร็วและทรงพลัง แต่มันมองไม่เห็น <strong>ลำดับเวลา</strong> — คู่ที่ scatter ดูแน่นเป็นเส้นตรง อาจยัง drift ได้ถ้า A กับ B ต่างก็ trending ขึ้นพร้อมกัน (spurious correlation) ดังนั้น scatter ใช้ <strong>คัดออก</strong>คู่ที่แย่ชัด ๆ ได้เร็ว แต่การ <strong>คัดผ่าน</strong> ต้องให้ cointegration test (§5.2) ยืนยันเสมอ</p>
+</div>
+
+<h2 id="s5-2">5.2 Engle-Granger 2-Step Test</h2>
+
+<p>วิธีที่ง่ายที่สุด ทำ 2 ขั้น:</p>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>Regress log(P_A) บน log(P_B):</strong><br>
+log(P_A) = α + β·log(P_B) + ε̂_t<br>
+บันทึก residuals ε̂_t จาก regression นี้</div>
+</div>
+
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>ADF Test บน ε̂_t:</strong><br>
+ถ้า ε̂_t stationary (p &lt; 0.05) → A และ B cointegrated ✓<br>
+ถ้าไม่ผ่าน (p ≥ 0.05) → ไม่ cointegrated → ห้าม trade</div>
+</div>
+
+<p style="font-size:.88em;color:#64748b;margin:6px 0 0">หมายเหตุ: ADF (และ KPSS ที่เป็น test คู่กัน) ใช้ที่นี่เป็นเครื่องมือตัดสิน cointegration — <strong>กลไกภายใน สมมติฐาน H₀ และการตีความเชิงลึก</strong>ของทั้งสอง test อธิบายเต็มใน <a href="statarb-ch6.html">บทที่ 6</a></p>
+
+<div class="bx bk">
+<div class="bt">⚠️ Look-ahead Bias — ข้อผิดพลาดที่พบบ่อยที่สุดในการ backtest cointegration</div>
+<p>ถ้าคุณ (1) รัน ADF บนข้อมูล<strong>ทั้งหมด</strong> เพื่อเลือกคู่ที่ผ่าน แล้ว (2) backtest บนข้อมูลชุดเดิม — นั่นคือ <strong>look-ahead bias</strong>: คุณเลือกคู่ที่ "รู้อยู่แล้ว" ว่าผ่าน ซึ่ง backtest จะดูดีเสมอโดยไม่สะท้อน live performance จริง<br>
+<strong>วิธีป้องกัน:</strong> ใช้ <em>walk-forward validation</em> — แบ่งข้อมูลเป็น in-sample (เลือกคู่ + calibrate) และ out-of-sample (backtest) แยกกันเสมอ สัดส่วนที่ใช้บ่อย: 60% in-sample / 40% out-of-sample หรือ rolling window re-test ทุกเดือน</p>
+</div>
+
+<h3>ADF Test อ่านผลอย่างไร</h3>
+
+<table>
+<tr><th>p-value</th><th>ความหมาย</th><th>ควรทำ</th></tr>
+<tr><td style="color:#16a34a"><strong>&lt; 0.01</strong></td><td>Reject H₀ อย่างมั่นใจมาก</td><td><strong>Cointegrated — trade ได้</strong></td></tr>
+<tr><td style="color:#16a34a"><strong>0.01–0.05</strong></td><td>Reject H₀ ที่ 95% confidence</td><td><strong>Cointegrated — trade ได้ (standard threshold)</strong></td></tr>
+<tr><td style="color:#d97706">0.05–0.10</td><td>Borderline</td><td>ระวัง — ลด position size หรือรอข้อมูลเพิ่ม</td></tr>
+<tr><td style="color:#dc2626"><strong>&gt; 0.10</strong></td><td>ไม่ reject H₀</td><td><strong>ไม่ cointegrated — ห้าม trade spread</strong></td></tr>
+</table>
+
+<div class="bx bd">
+<div class="bt">แนวปฏิบัติ — p-value เท่าไรใช้ได้จริง?</div>
+<p><strong>Cutoff มาตรฐาน: p &lt; 0.05</strong> ใช้ได้ในกรณีทั่วไป แต่นักปฏิบัติมักพิจารณาเพิ่มเติม:</p>
+<ul>
+<li><strong>Window size สำคัญมาก</strong> — ข้อมูล &lt; 100 observations ให้ p-value ที่ไม่น่าเชื่อถือ: test มี power ต่ำ ทำให้ fail to reject H₀ แม้ spread จะ stationary จริง · ใช้ &ge; 250 observations ขึ้นไปสำหรับ hourly bars (ประมาณ 10 วัน)</li>
+<li><strong>p &lt; 0.01</strong> — ควรใช้เป็น threshold สำหรับ position ขนาดใหญ่ (high-conviction)</li>
+<li><strong>p = 0.05–0.10 (borderline)</strong> — ลด position size ลงครึ่งหนึ่ง หรือรอ re-test ด้วยข้อมูลใหม่ &ge; 30 วัน</li>
+<li><strong>Re-test ทุกเดือน</strong> (หรือเมื่อ spread ค้างนอก 3σ &gt; 2 วัน) — cointegration เปลี่ยนตาม regime ของตลาด</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">ปรับ Position Size ตาม p-value — แทนการคิดแบบ pass/fail</div>
+<p>แทนที่จะคิดว่า p &lt; 0.05 = "เทรดได้เต็มที่" และ p ≥ 0.05 = "เทรดไม่ได้เลย" ให้ใช้ <strong>p-value เป็น confidence score</strong> ที่ส่งผลต่อขนาด position โดยตรง:</p>
+<table>
+<tr><th>p-value</th><th>Confidence</th><th>Size multiplier</th><th>หมายเหตุ</th></tr>
+<tr><td style="color:#16a34a"><strong>&lt; 0.01</strong></td><td>สูงมาก</td><td><strong>1.0×</strong> (full size)</td><td>High-conviction — ไม่จำกัด size (ขึ้นกับ risk budget)</td></tr>
+<tr><td style="color:#16a34a">0.01–0.05</td><td>ดี</td><td><strong>0.75×</strong></td><td>Standard — ใช้ได้ทั่วไป</td></tr>
+<tr><td style="color:#d97706">0.05–0.10</td><td>ต่ำ</td><td><strong>0.40×</strong></td><td>Borderline — ลด size, monitor ถี่ขึ้น</td></tr>
+<tr><td style="color:#dc2626"><strong>&gt; 0.10</strong></td><td>ไม่มี</td><td><strong>0×</strong></td><td>ห้ามเทรด — spread อาจเป็น random walk</td></tr>
+</table>
+<p style="margin-top:8px;font-size:.92em"><strong>กับดัก "cliff effect":</strong> p = 0.049 กับ p = 0.051 ไม่ได้ต่างกันทางสถิติอย่างมีนัยสำคัญ — ทั้งสองอยู่ใน zone ความเสี่ยงเดียวกัน การตัดแบบ hard threshold ที่ 0.050 พอดีสร้าง false precision ที่ไม่ควรมี</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — ADF มี Power ต่ำในตัวอย่างขนาดเล็ก</div>
+<p>ADF test มีจุดอ่อนที่สำคัญหลายประการที่ต้องระวัง:</p>
+<ul>
+<li><strong>Low power เมื่อ sample น้อย</strong> — ถ้า n &lt; 100 observations ADF มักจะ fail to reject H₀ แม้ spread จะ stationary จริง ผลลัพธ์คือ "false negative" — ทิ้งคู่ที่ trade ได้จริง</li>
+<li><strong>Structural break</strong> — ถ้า β หรือ equilibrium เปลี่ยนกลางทาง (เช่น event ใหญ่ หรือ delisting) ADF อาจ pass เพราะดู aggregate ที่รวม 2 regime เข้าด้วยกัน</li>
+<li><strong>Borderline cases ต้องระวังเป็นพิเศษ</strong> — p = 0.04–0.06 ไม่มีความต่างทางสถิติที่มีนัยสำคัญ การตัดสินใจจาก threshold ตายตัว (p=0.05) ใน zone นี้มีความเสี่ยงสูง</li>
+<li><strong>วิธีลด model risk</strong>: ใช้ข้อมูลยาวขึ้น + ทดสอบทั้งสองทิศทาง (A~B และ B~A) + ยืนยันด้วย Hurst exponent (บทที่ 6) + re-test ทุกเดือน</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ Engle-Granger</div>
+<ul>
+<li>Test เพียง 1 cointegrating vector (ดีสำหรับ 2 assets)</li>
+<li>ลำดับ regression (A บน B vs B บน A) ให้ผลต่างกัน — ควรทดสอบทั้งสองทาง</li>
+<li>มี power ต่ำเมื่อ sample น้อย (&lt; 100 observations)</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ Engle-Granger Asymmetry — จุดที่ผู้ใช้มักพลาด</div>
+<p><strong>สิ่งที่หลายคนเข้าใจผิด:</strong> ถ้า regress A~B ได้ β_AB = 1.003 หลายคนคิดว่า regress B~A จะได้ β_BA = 1/1.003 ≈ 0.997 — แต่นั่น<strong>ผิด</strong></p>
+<p>การ regress log(A) ~ log(B) ให้ β_AB = Cov(A,B)/Var(B)<br>
+การ regress log(B) ~ log(A) ให้ β_BA = Cov(A,B)/Var(A)</p>
+<p><strong>ความสัมพันธ์ที่ถูก:</strong> β_AB × β_BA = ρ² (ค่า R²) — ไม่ใช่ 1 อย่างที่คาด<br>
+ดังนั้น 1/β_AB ≠ β_BA ทั่วไป (เท่ากันเฉพาะกรณี ρ=1)<br>
+และ residual ε_AB กับ ε_BA <strong>ต่างกันจริงๆ</strong> ไม่ใช่แค่ scale</p>
+<p>ผลที่ตามมา: ADF test บน ε_AB อาจ pass (p=0.03) แต่ ADF บน ε_BA อาจ fail (p=0.12) — หรือกลับกัน<br>
+<strong>วิธีปฏิบัติ:</strong> ทดสอบทั้งสองทิศทาง แล้วเลือก β ที่ให้ ADF p-value ต่ำกว่า (residual stationary กว่า)<br>
+ถ้าทั้งสองทิศทาง fail → pair ไม่ cointegrate จริง</p>
+<div style="font-family:monospace;background:#fef2f2;padding:8px 12px;border-radius:4px;margin-top:8px;font-size:.9em">
+# Python: ทดสอบทั้งสองทิศทาง (β แต่ละทิศไม่ได้สัมพันธ์แบบ 1/x)<br>
+beta_AB, _ = np.polyfit(log_B, log_A, 1)   # A = β_AB · B + α<br>
+beta_BA, _ = np.polyfit(log_A, log_B, 1)   # B = β_BA · A + α<br>
+p_AB = adfuller(log_A - beta_AB * log_B)[1]<br>
+p_BA = adfuller(log_B - beta_BA * log_A)[1]<br>
+best_direction = "A~B" if p_AB &lt; p_BA else "B~A"
+</div>
+</div>
+
+<h2 id="s5-3">5.3 Johansen Test — เมื่อมีมากกว่า 2 Assets</h2>
+
+<p>Johansen test ทดสอบ cointegration ของ n assets พร้อมกัน โดยหาจำนวน cointegrating vectors r:</p>
+
+<div class="fm">H₀: r = 0 (ไม่มี cointegration เลย)
+H₀: r ≤ 1 (มีได้อย่างมาก 1 vector)
+...
+ทดสอบต่อไปจนถึง r = n−1
+
+ถ้า Trace statistic หรือ Max eigenvalue > critical value → reject H₀</div>
+
+<table>
+<tr><th>จำนวน Assets</th><th>ใช้ Test ไหน</th><th>เหตุผล</th></tr>
+<tr><td>2 (pairs)</td><td>Engle-Granger</td><td>ง่ายกว่า ผลเท่ากัน</td></tr>
+<tr><td>3+ (basket)</td><td>Johansen</td><td>หา cointegrating vectors ทุกตัว</td></tr>
+<tr><td>ต้องการรู้ว่าใครปรับตัว</td><td>VECM</td><td>ระบุ adjustment coefficients</td></tr>
+</table>
+
+<h2 id="s5-4">5.4 VECM — ใครเป็นฝ่ายปรับตัวกลับ?</h2>
+
+<p>เมื่อรู้ว่า cointegrated แล้ว VECM (Vector Error Correction Model) บอกว่า <strong>เมื่อ spread ห่างจาก equilibrium ใคร (A หรือ B) เป็นฝ่ายปรับตัวกลับ</strong></p>
+
+<div class="key-idea">
+<div class="ki-label">VECM สำหรับ 2 assets</div>
+<div class="ki-eq">Δlog(P_A)_t = α_A · ε_{t-1} + γ_A · Δlog(P_A)_{t-1} + u_{A,t}</div>
+<div class="ki-eq" style="margin-top:4px">Δlog(P_B)_t = α_B · ε_{t-1} + γ_B · Δlog(P_B)_{t-1} + u_{B,t}</div>
+<p style="margin-top:8px">α_A, α_B = adjustment coefficients — บอกว่าใครปรับตาม error</p>
+</div>
+
+<!-- VECM adjustment diagram -->
+<img class="chart" src="charts/ch5-vecm-adjustment.svg" alt="VECM Adjustment — which asset adjusts" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">VECM ระบุว่าควร trade ฝั่งไหน — ถ้า A ปรับ: trade A | ถ้า B ปรับ: trade B | ถ้าทั้งคู่ปรับ: trade ทั้งคู่</div>
+
+<div class="bx bg">
+<div class="bt">VECM บอกอะไรสำหรับ Bybit↔Lighter?</div>
+<p>ถ้า Bybit เป็น "price leader" (α_Bybit ≈ 0) และ Lighter ปรับตาม (α_Lighter &gt; 0):<br>
+→ เมื่อ Lighter ต่ำกว่า equilibrium: Lighter จะขึ้น → <strong>Long Lighter</strong><br>
+→ เมื่อ Lighter สูงกว่า equilibrium: Lighter จะลง → <strong>Short Lighter</strong><br>
+สรุป: trade Lighter เป็นหลัก ใช้ Bybit เป็น reference</p>
+</div>
+
+<h2 id="s5-5">5.5 Pseudo-code</h2>
+
+<div class="pseudo">
+<span class="c"># Engle-Granger Cointegration Test</span><br>
+<span class="kw">function</span> <span class="fn">test_cointegration_eg</span>(log_P_A, log_P_B):<br>
+&nbsp;&nbsp;<span class="c"># Step 1: OLS regression</span><br>
+&nbsp;&nbsp;beta, alpha = <span class="fn">ols</span>(log_P_B, log_P_A)  <span class="c"># log_P_A = alpha + beta*log_P_B</span><br>
+&nbsp;&nbsp;residuals = log_P_A - (alpha + beta * log_P_B)<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 2: ADF test on residuals</span><br>
+&nbsp;&nbsp;adf_stat, p_value = <span class="fn">adf_test</span>(residuals, lags=<span class="nm">1</span>)<br>
+<br>
+&nbsp;&nbsp;cointegrated = p_value &lt; <span class="nm">0.05</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> {cointegrated, p_value, adf_stat, beta, residuals}<br>
+<br>
+<span class="c"># Check VECM adjustment direction</span><br>
+<span class="kw">function</span> <span class="fn">vecm_adjustment</span>(log_P_A, log_P_B, residuals):<br>
+&nbsp;&nbsp;d_A = <span class="fn">diff</span>(log_P_A)   <span class="c"># Δlog(P_A)</span><br>
+&nbsp;&nbsp;d_B = <span class="fn">diff</span>(log_P_B)   <span class="c"># Δlog(P_B)</span><br>
+&nbsp;&nbsp;err_lag = residuals[:-<span class="nm">1</span>]  <span class="c"># ε_{t-1}</span><br>
+<br>
+&nbsp;&nbsp;alpha_A = <span class="fn">ols_slope</span>(err_lag, d_A[<span class="nm">1</span>:])  <span class="c"># A's adjustment coefficient</span><br>
+&nbsp;&nbsp;alpha_B = <span class="fn">ols_slope</span>(err_lag, d_B[<span class="nm">1</span>:])  <span class="c"># B's adjustment coefficient</span><br>
+<br>
+&nbsp;&nbsp;<span class="c"># Sign logic: ε = log(P_A) - β·log(P_B)</span><br>
+&nbsp;&nbsp;<span class="c"># ε > 0 → A แพงกว่า equilibrium → A ต้องลง (α_A < 0) · B ต้องขึ้น (α_B > 0)</span><br>
+&nbsp;&nbsp;<span class="c"># ε < 0 → A ถูกกว่า equilibrium → A ต้องขึ้น (α_A > 0) · B ต้องลง (α_B < 0)</span><br>
+&nbsp;&nbsp;<span class="c"># A adjusts: α_A < 0 · B adjusts: α_B > 0 (ตรงข้ามกัน เพราะ ε นิยามจาก A−β·B)</span><br>
+&nbsp;&nbsp;A_adjusts = alpha_A &lt; -<span class="nm">0.05</span><br>
+&nbsp;&nbsp;B_adjusts = alpha_B &gt; <span class="nm">0.05</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> {alpha_A, alpha_B, A_adjusts, B_adjusts}
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit↔Lighter ADF Test Result</div>
+<div class="fm">ข้อมูล: 90 วัน, รายชั่วโมง (2,160 observations)
+
+Step 1 — OLS:
+  log(P_Bybit) = 0.003 + 1.0049·log(P_Lighter) + ε̂
+  β = 1.0049, R² = 0.9998
+  → β > 1.0 แปลว่า Bybit เคลื่อนไหว 0.49% มากกว่า Lighter ต่อการขยับ 1% ของ Lighter
+    (อาจจาก liquidity premium หรือ fee structure ที่ต่างกัน)
+
+Step 2 — ADF test บน ε̂:
+  ADF statistic = −4.82
+  p-value = 0.0003 ← ผ่าน! (p ≪ 0.05)
+  Critical values: 1%=−3.44, 5%=−2.86, 10%=−2.57
+
+ผล: ADF stat (−4.82) < Critical (−3.44) → Reject H₀ → Stationary → Cointegrated ✓
+
+VECM:
+  α_Bybit = −0.02  (ปรับนิดหน่อย)
+  α_Lighter = +0.18  (ปรับมากกว่า)
+  → Lighter เป็นฝ่ายปรับตัว → trade Lighter เป็นหลัก</div>
+</div>
+
+<h3>Re-test เมื่อไร?</h3>
+<table>
+<tr><th>สัญญาณ</th><th>ควรทำ</th></tr>
+<tr><td>p-value ขึ้นผ่าน 0.05 ใน monthly re-test</td><td>หยุด trade ทันที re-evaluate คู่นี้</td></tr>
+<tr><td>β เปลี่ยน &gt; 5% จากค่าเดิม</td><td>Re-run test ด้วย data ใหม่</td></tr>
+<tr><td>Spread ค้างนอก 3σ &gt; 2 วัน</td><td>Emergency re-test — อาจ regime change</td></tr>
+</table>
+
+<!-- 5.6 -->
+<h2 id="s5-6">5.6 Shapiro-Wilk Test — ตรวจ Normality ของ ε</h2>
+
+<div class="key-idea">
+<div class="ki-label">ทำไมต้องตรวจ Normality?</div>
+<div class="ki-text">Z-score threshold ±2σ อาศัยสมมติว่า ε ~ Normal distribution — ถ้า ε มี fat tail หรือ skew, threshold นี้จะ underestimate ความเสี่ยง ทำให้เข้า position บ่อยเกินจริง</div>
+</div>
+
+<p>Shapiro-Wilk test ตรวจสอบว่า sample ε มาจาก Normal distribution หรือไม่:</p>
+
+<table>
+<tr><th>Hypothesis</th><th>ความหมาย</th><th>ผลต่อการ trade</th></tr>
+<tr><td><strong>H₀: ε ~ Normal</strong></td><td>ε กระจายแบบปกติ</td><td>ใช้ standard z-score (±2σ) ได้ปลอดภัย</td></tr>
+<tr><td><strong>H₁: ε ไม่ Normal</strong></td><td>ε มี fat tail / skew</td><td>ใช้ Robust Z-score แทน (MAD-based, ดู <a href="statarb-ch10.html">บทที่ 10</a>)</td></tr>
+</table>
+
+<h3>Decision Rule</h3>
+<div class="bx bb">
+<div class="bt">ตัดสินใจจาก p-value</div>
+<ul>
+<li><strong>p ≥ 0.05:</strong> Fail to reject H₀ → normality ไม่ถูก reject → ε likely normal → z-score ±2σ ใช้ได้</li>
+<li><strong>p &lt; 0.05:</strong> Reject H₀ → ε ไม่ normal (fat tail หรือ skew) → ควรใช้ MAD-based robust z-score แทน</li>
+</ul>
+</div>
+
+<div class="fm">from scipy.stats import shapiro
+
+def shapiro_test(residuals, alpha=0.05):
+    """
+    ทดสอบ Normality ของ residuals ε
+    คืนค่า: p_value, is_normal (bool), recommendation
+    """
+    stat, p_value = shapiro(residuals)
+
+    is_normal = p_value >= alpha
+
+    if is_normal:
+        recommendation = "standard_zscore"   # ใช้ σ-based threshold ได้
+    else:
+        recommendation = "robust_zscore"     # ใช้ MAD-based (ch10 §10.3)
+
+    return {
+        "stat":           round(stat, 4),
+        "p_value":        round(p_value, 4),
+        "is_normal":      is_normal,
+        "recommendation": recommendation
+    }</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ Shapiro-Wilk</div>
+<ul>
+<li>ทำงานได้ดีกับ n ≥ 50 ถึง n ≤ 5,000 — ถ้า n &lt; 50 อาจไม่มีกำลังเพียงพอ; ถ้า n &gt; 5,000 จะ reject H₀ ทุกคู่ (sensitive เกิน)</li>
+<li>ถ้า n &gt; 5,000: ใช้ D'Agostino K² test หรือดู QQ-plot แทน</li>
+<li>Fat tail เล็กน้อย (p = 0.03–0.05) ≠ หยุดเทรด — แค่ใช้ robust z-score แทน</li>
+</ul>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH CFD บน MT5</div>
+<div class="fm">ข้อมูล: 180 วัน, hourly bars
+β_OLS = 0.0444 (จาก scatter plot)
+ε = log(P_BTC) − 0.0444 × log(P_ETH)
+
+Shapiro-Wilk result:
+  stat    = 0.9612
+  p_value = 0.031   → p &lt; 0.05 → Reject H₀
+
+สรุป: ε ของ BTC/ETH มี fat tail เล็กน้อย
+→ ใช้ MAD-based robust z-score (<a href="statarb-ch10.html">บทที่ 10 §10.3</a>)
+→ ไม่ได้หมายความว่าคู่นี้ใช้ไม่ได้ แค่ปรับ threshold method</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.4 — Shapiro-Wilk Decision</div>
+<p>ทดสอบ Shapiro-Wilk บน ε ของ EURUSD↔GBPUSD ได้ p-value = 0.003</p>
+<p><strong>ถาม:</strong> (ก) ควรใช้ standard หรือ robust z-score? (ข) ค่า p ต่ำมากบอกอะไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก)</strong> p = 0.003 &lt; 0.05 → Reject H₀ → ε ไม่ Normal → <strong>ใช้ Robust Z-score (MAD-based)</strong></p>
+<p><strong>(ข)</strong> p ต่ำมากบอกว่า ε มี fat tail หรือ skewness ชัดเจน — อาจเกิดจาก jump events ขณะที่ ECB/BoE ประกาศนโยบายการเงิน หรือ flash crash ใน FX market ซึ่ง z-score ±2σ จะ underestimate ความเสี่ยงถ้าใช้ต่อไป</p>
+</div>
+</details>
+</div>
+
+<!-- 5.7 -->
+<h2 id="s5-7">5.7 Crossing Statistics — วัดความถี่ Mean Reversion</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด</div>
+<div class="ki-text">ADF บอกว่า ε กลับมาหา mean <em>ในที่สุด</em> — แต่ไม่บอกว่า <em>บ่อยแค่ไหน</em> Crossing Statistics ตอบคำถามนี้: ε ตัดผ่านเส้นกลางกี่ครั้งต่อหน่วยเวลา</div>
+<div class="ki-eq">E[Crossings] ≈ (1/π) · arccos(φ)</div>
+</div>
+
+<p>โดย <strong>φ</strong> คือ AR(1) coefficient จากการ regress ε_t บน ε_{t-1}:</p>
+
+<div class="fm">ε_t = φ · ε_{t-1} + η_t,   |φ| &lt; 1
+
+ความหมาย:
+  φ ≈ 0  →  E[Crossings] ≈ (1/π)·arccos(0) = 0.50/period  ← ตัดถี่มาก (ดี)
+  φ ≈ 0.65 →  E[Crossings] ≈ (1/π)·arccos(0.65) ≈ 0.28/period
+  φ ≈ 0.92 →  E[Crossings] ≈ (1/π)·arccos(0.92) ≈ 0.13/period
+  φ ≈ 1  →  E[Crossings] → 0                                ← ตัดน้อยมาก (ไม่ดี)</div>
+
+<div class="bx bg">
+<div class="bt">กฎง่ายๆ: φ น้อย = ดี เพราะ ε ตัดถี่</div>
+<p>ยิ่ง φ ต่ำ ยิ่งมี trading opportunity มาก แต่ต้อง balance กับ Half-life:</p>
+<ul>
+<li>φ ต่ำมาก (≈ 0) → ε เดินแบบ white noise → อาจ trade ไม่ทัน (spread กลับเร็วเกินจนจับไม่ได้)</li>
+<li>φ สูง (≈ 0.99) → ε persistent มาก → กินทุน margin นาน → ไม่คุ้มค่า</li>
+<li><strong>Sweet spot:</strong> φ = 0.85–0.97 สำหรับ swing (daily, τ₁/₂ ≤ 24h), φ = 0.70–0.85 สำหรับ intraday</li>
+</ul>
+</div>
+
+<h3>ความสัมพันธ์กับ Half-life</h3>
+<p>Crossing Statistics กับ Half-life บอกข้อมูลเดียวกันในมุมต่าง:</p>
+
+<table>
+<tr><th>Metric</th><th>สูตร</th><th>มุมมอง</th></tr>
+<tr><td><strong>Half-life</strong></td><td>τ₁/₂ = ln(2) / κ ≈ −ln(2) / ln(φ)</td><td>ε ใช้เวลานานแค่ไหนกลับ 50% ของ gap</td></tr>
+<tr><td><strong>E[Crossings]</strong></td><td>(1/π)·arccos(φ)</td><td>ε ตัดผ่านค่าเฉลี่ยกี่ครั้งต่อ bar</td></tr>
+</table>
+
+<img class="chart" src="charts/ch5-crossing-rate.svg" alt="Crossing Rate E[Crossings] = (1/π)·arccos(φ)" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">กราฟ E[Crossings] = (1/π)·arccos(φ) — φ น้อยลง เส้นขึ้น = ตัดถี่ขึ้น | BTC/ETH อยู่ขวาสุด (slow reversion)</div>
+
+<div class="fm">import numpy as np
+
+def crossing_rate(residuals):
+    """
+    คำนวณ AR(1) coefficient φ และ expected crossing rate
+    """
+    # Fit AR(1): ε_t = φ·ε_{t-1} + η
+    y = residuals[1:]
+    x = residuals[:-1]
+    phi = np.dot(x, y) / np.dot(x, x)   # OLS slope
+
+    # Crossing rate formula
+    e_crossings = (1 / np.pi) * np.arccos(phi)
+
+    # Half-life from φ
+    half_life = -np.log(2) / np.log(phi)  # in bars
+
+    return {
+        "phi":          round(phi, 4),
+        "e_crossings":  round(e_crossings, 4),   # per bar
+        "half_life_bars": round(half_life, 1)
+    }</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC/ETH — ผ่านหรือไม่?</div>
+<div class="fm">BTC/ETH (hourly bars, 180 วัน):
+  AR(1) coefficient φ = 0.9602
+  E[Crossings] = (1/π)·arccos(0.9602) = 0.091 crossings/bar
+
+  Half-life = −ln(2)/ln(0.9602) = 17.1 hours  ✓ (ตรงกับ screenshot)
+
+ประเมิน:
+  φ = 0.9602 → อยู่ใน sweet spot (0.85–0.97 สำหรับ swing)
+  → เหมาะกับ overnight swing strategy
+  → ไม่เหมาะกับ intraday scalping (ε กลับช้าเกิน)
+  → ใช้ z_entry = 2.0, hold target = 8–20h</div>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.5 — เปรียบ Crossing Rate</div>
+<p>คู่ A: φ = 0.92 | คู่ B: φ = 0.65 — ทั้งสองผ่าน ADF test</p>
+<p><strong>ถาม:</strong> คู่ไหนเหมาะ intraday (hold ≤ 4h)? คู่ไหนเหมาะ swing (hold 1–3 วัน)?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>คู่ B (φ=0.65) เหมาะ intraday:</strong><br>
+E[Crossings] = (1/π)·arccos(0.65) ≈ 0.28/bar<br>
+Half-life ≈ −ln(2)/ln(0.65) ≈ 1.6 bars (ถ้า bar = 1h → ~1.6h) → กลับเร็ว เหมาะ intraday</p>
+<p><strong>คู่ A (φ=0.92) เหมาะ swing:</strong><br>
+E[Crossings] = (1/π)·arccos(0.92) ≈ 0.13/bar<br>
+Half-life ≈ −ln(2)/ln(0.92) ≈ 8.3 bars (ถ้า bar = 1h → ~8.3h) → กลับช้า เหมาะ swing</p>
+</div>
+</details>
+</div>
+
+<!-- 5.8 -->
+<h2 id="s5-8">5.8 Pair Selection Pipeline — 3-Step Funnel</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — ลำดับขั้นตอน</div>
+<div class="ki-text">ตรวจแบบ funnel: เริ่มจาก test ที่เร็วและถูก (Correlation) กรอง 80% ของคู่ออก → ค่อยทำ test ที่ละเอียดขึ้น (Cointegration) → สุดท้ายตรวจคุณภาพ residual (Normality + Crossing Rate) เพื่อยืนยัน trade-readiness</div>
+</div>
+
+<h3>3 ขั้นตอน</h3>
+
+<table>
+<tr><th>ขั้น</th><th>Test</th><th>แนวทาง (ปรับตาม context)</th><th>ถ้าผ่าน</th><th>ถ้าไม่ผ่าน / ต่ำกว่าเกณฑ์</th></tr>
+<tr><td><strong>1</strong></td><td>Correlation ρ (§5.1)</td><td>ρ ≥ 0.70 <em>เป็นจุดเริ่มต้น</em><br><span style="font-size:.85em;color:#64748b">ปรับตาม: จำนวนคู่ / compute budget</span></td><td>→ ขั้น 2</td><td>ข้ามได้ถ้ามีคู่น้อย (รัน ADF ทุกคู่เลย)</td></tr>
+<tr><td><strong>2</strong></td><td>ADF Cointegration (§5.2)</td><td>p &lt; 0.05 = standard<br>p &lt; 0.01 = high-conviction<br><span style="font-size:.85em;color:#64748b">ปรับ size ตาม p (ดู §5.2)</span></td><td>→ ขั้น 3 (size ตาม p)</td><td>p &gt; 0.10: ห้ามเทรด<br>p 0.05–0.10: ลด size 60%</td></tr>
+<tr><td><strong>3a</strong></td><td>Shapiro-Wilk (§5.6)</td><td>p ≥ 0.05 → standard z<br>p &lt; 0.05 → robust z</td><td>→ กำหนด z-score method</td><td>ไม่ตัด — แค่เปลี่ยน method</td></tr>
+<tr><td><strong>3b</strong></td><td>Crossing Rate φ (§5.7)</td><td>φ &lt; 0.97 (swing, τ₁/₂ ≤ 24h)<br>φ &lt; 0.90 (intraday)</td><td>→ เทรดได้</td><td>Hold time นานเกิน target — เลือก horizon อื่น</td></tr>
+<tr style="background:#f0fdf4"><td><strong>4</strong></td><td>Rolling Re-validation (§5.9)</td><td>ADF rolling ทุกสัปดาห์<br>บน trailing window 90 วัน</td><td>→ คง position size</td><td>p ↑ &gt; 0.05: ลด size<br>p ↑ &gt; 0.10: ปิดทุก position</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ทำไม threshold ใน Pipeline ถึงไม่ควรเป็น "กฎตายตัว"</div>
+<p>ตัวเลข (ρ ≥ 0.70, p &lt; 0.05) คือ <strong>จุดเริ่มต้นที่ผ่านการทดสอบในทางสถิติ</strong> ไม่ใช่กฎสากล ควรปรับตาม:</p>
+<ul>
+<li><strong>Sample size</strong>: N &lt; 100 obs → ใช้ p &lt; 0.01 แทน 0.05 (ADF มี power ต่ำเมื่อข้อมูลน้อย)</li>
+<li><strong>Position size</strong>: ลง position ใหญ่ → ใช้ threshold เข้มกว่า (p &lt; 0.01, ρ &gt; 0.80)</li>
+<li><strong>จำนวน pair</strong>: มีคู่น้อย → รัน ADF ทุกคู่ ข้าม ρ pre-filter ได้</li>
+<li><strong>Volatility regime</strong>: ช่วง volatile → re-test ถี่ขึ้น (ทุกวัน แทนทุกสัปดาห์)</li>
+</ul>
+</div>
+
+<div class="bx bb">
+<div class="bt">Optional: Hurst Exponent (<a href="statarb-ch6.html">บทที่ 6</a>)</div>
+<p>ถ้าต้องการ double-confirmation: H &lt; 0.5 → mean-reverting confirmed → เพิ่ม confidence ก่อนเปิด position ขนาดใหญ่</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ สำคัญ: รัน Funnel นี้บน In-Sample Data เท่านั้น</div>
+<p>การใช้ข้อมูลทั้งหมด (รวม future data ที่ยังไม่เกิด) ในการรันทั้ง 3-step funnel แล้ว backtest บนข้อมูลชุดเดิมคือ <strong>look-ahead bias</strong> ที่จะทำให้ผล backtest ดูดีเกินจริงอย่างมาก<br>
+<strong>กฎ:</strong> Pair selection (steps 1–3) ต้องทำบน <em>in-sample window เท่านั้น</em> → ทดสอบ live หรือ backtest บน out-of-sample window แยกต่างหาก → re-run funnel ทุกครั้งที่ขยาย in-sample window</p>
+</div>
+
+<!-- Funnel chart -->
+<img class="chart" src="charts/ch5-pair-funnel.svg" alt="Pair Selection Funnel" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">Funnel กรองจาก 100 → 3–5 คู่ที่ผ่านทุก criterion — ไม่ต้องรีบข้ามขั้น</div>
+
+<h3>เลือกใช้เครื่องมือไหน — ไม่จำเป็นต้องใช้ทุกอัน</h3>
+
+<p>บทนี้แนะนำเครื่องมือคัดกรองหลายตัว แต่ <strong>ไม่ใช่ทุกคู่ต้องผ่านทุก test</strong> — เครื่องมือแต่ละตัวตอบคนละคำถาม มีต้นทุน (เวลา/ข้อมูล) ต่างกัน และบางตัว <em>ไม่ได้</em>ตัดคู่ทิ้ง แค่บอกว่าเทรดอย่างไร ตารางนี้สรุปข้อดี-ข้อเสียและบทบาทจริงของแต่ละตัว:</p>
+
+<table>
+<tr><th>เครื่องมือ</th><th>ตอบคำถาม</th><th>ข้อดี</th><th>ข้อเสีย / ข้อจำกัด</th></tr>
+<tr><td><strong>Scatter plot</strong></td><td>ความสัมพันธ์เป็นเส้นตรงไหม · มี outlier ไหม</td><td>เร็วมาก เห็นปัญหา (โค้ง/รูปพัด/outlier) ด้วยตา</td><td>subjective · มองไม่เห็นลำดับเวลา → จับ spurious ไม่ได้</td></tr>
+<tr><td><strong>Correlation ρ</strong></td><td>A กับ B เดินไปด้วยกันไหม</td><td>เร็ว ถูก คำนวณทุกคู่พร้อมกันได้</td><td>ρ สูง ≠ cointegrate — บอก trade-readiness ไม่ได้</td></tr>
+<tr><td><strong>Cointegration<br>(ADF / Engle-Granger)</strong></td><td>ε กลับหาค่ากลาง (stationary) ไหม</td><td><strong>gate ตัดสิน</strong> trade ได้/ไม่ได้ — ตัวชี้ขาด</td><td>power ต่ำเมื่อข้อมูลน้อย · ไวต่อช่วง lookback</td></tr>
+<tr><td><strong>Johansen (§5.3)</strong></td><td>basket ≥ 3 ขา cointegrate ไหม + หา weight</td><td>หา cointegrating vector หลายขาพร้อมกัน</td><td>overfit ง่าย ซับซ้อน — เกินจำเป็นสำหรับคู่ 2 ขา</td></tr>
+<tr><td><strong>VECM (§5.4)</strong></td><td>ขาไหนเป็นฝ่ายปรับตัวกลับ</td><td>บอกทิศ trade ของแต่ละขาได้ละเอียด</td><td>ต้อง cointegrate ก่อน — ใช้เป็นข้อมูลเสริม</td></tr>
+<tr><td><strong>Shapiro-Wilk (§5.6)</strong></td><td>ε แจกแจงแบบ Normal ไหม</td><td>บอกว่าควรใช้ standard z หรือ robust z</td><td><strong>ไม่ตัดคู่ออก</strong> — แค่เลือก method · ไวเกินเมื่อ n ใหญ่</td></tr>
+<tr><td><strong>Crossing φ / Half-life (§5.7)</strong></td><td>ε ตัดผ่านค่ากลางถี่แค่ไหน · เร็วแค่ไหน</td><td>บอก horizon ที่เหมาะ (intraday / swing)</td><td>ไม่ตัดคู่ออก — แค่เลือก hold time · ขึ้นกับ AR(1)</td></tr>
+<tr><td><strong>Hurst H (<a href="statarb-ch6.html">บทที่ 6</a>)</strong></td><td>ε มี mean-reversion จริงไหม</td><td>double-confirm ผล ADF อีกทาง</td><td>ต้องข้อมูลยาว · noisy — เป็น optional confirmation</td></tr>
+</table>
+
+<p>จัดกลุ่มเครื่องมือตาม <strong>บทบาท</strong> — จะเห็นว่ามีแค่ 3 ตัวที่ "ต้องมี" จริง ๆ:</p>
+
+<div class="bx bg">
+<div class="bt">ระดับ 1 — บังคับ: ตัวตัดสิน pass / fail (ทำกับทุกคู่)</div>
+<p><strong>Scatter plot → Correlation ρ → Cointegration (ADF)</strong><br>
+3 ตัวนี้คือ pipeline ขั้นต่ำที่ขาดไม่ได้ — Scatter คัดด้วยตา, ρ กรองหยาบเร็ว ๆ, ADF เป็น gate ชี้ขาดว่า spread กลับค่ากลางจริงไหม คู่ที่ไม่ผ่าน ADF = ห้ามเทรด ไม่มีข้อยกเว้น</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ระดับ 2 — ปรับแต่ง: ไม่ตัดคู่ออก แต่บอก "เทรดอย่างไร"</div>
+<p><strong>Shapiro-Wilk</strong> → ε Normal ไหม → เลือก standard z หรือ robust z<br>
+<strong>Crossing φ / Half-life</strong> → ε เร็วแค่ไหน → เลือก intraday หรือ swing<br>
+คู่ที่ผ่านระดับ 1 แล้วเทรดได้เสมอ — ระดับ 2 แค่ปรับ <em>วิธี</em> ให้เข้ากับนิสัยของ residual</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ระดับ 3 — ตามสถานการณ์: ใช้เฉพาะเมื่อจำเป็น</div>
+<p><strong>Johansen</strong> — เฉพาะ basket ≥ 3 ขา (คู่ 2 ขาข้ามได้) · <strong>VECM</strong> — เมื่ออยากรู้ว่าขาไหนปรับตัว · <strong>Hurst</strong> — เมื่อต้องการ confirm ก่อนลง position ใหญ่<br>
+3 ตัวนี้ "ดีถ้ามี" แต่ไม่ใช้ก็ไม่ผิด ถ้าระดับ 1–2 ผ่านครบแล้ว</p>
+</div>
+
+<div class="bx br">
+<div class="bt">กับดักที่พบบ่อย — ข้าม Cointegration ไม่ได้</div>
+<p>ผู้เริ่มต้นมักดู Correlation แล้วกระโดดไป Shapiro/Crossing เลย — <strong>อย่าทำ</strong> Shapiro และ Crossing วัด "คุณภาพ" ของ residual แต่ <em>ไม่ได้</em>ยืนยันว่า residual กลับค่ากลาง ถ้าคู่นั้นไม่ cointegrate residual คือ random walk — การวัด normality หรือ crossing บน random walk ไม่มีความหมายเลย ลำดับที่ถูกคือ <strong>ρ → ADF → (Shapiro, Crossing)</strong> เสมอ</p>
+</div>
+
+<div class="bx bi">
+<div class="bt">ประโยคจำ</div>
+<p>Correlation บอกว่า "น่าสนใจไหม" · Cointegration บอกว่า "เทรดได้ไหม" · Shapiro กับ Crossing บอกว่า "เทรดอย่างไร" — ใช้ให้ถูกหน้าที่ ไม่ต้องใช้ให้ครบทุกตัว</p>
+</div>
+
+<h3>BTC/ETH ผ่าน Pipeline นี้ไหม?</h3>
+
+<div class="fm">BTC/ETH CFD (180 วัน hourly):
+
+ขั้น 1 — Correlation:
+  ρ = 0.9745  ✅ (≥ 0.70)
+
+ขั้น 2 — Cointegration:
+  ADF p = 0.043  ✅ (< 0.05, implied จาก Half-life 17h)
+
+ขั้น 3a — Shapiro-Wilk:
+  p = 0.031 → Reject H₀ → fat tail → ใช้ Robust Z-score  ⚠️ (เปลี่ยน method)
+
+ขั้น 3b — Crossing Rate:
+  φ = 0.9602 → E[Crossings] = 0.091/bar → Half-life = 17h
+  → เหมาะ swing (hold overnight) ❌ ไม่เหมาะ intraday
+
+สรุป: BTC/ETH ✅ ผ่าน Pipeline สำหรับ overnight swing strategy
+       ใช้ Robust Z-score (MAD), z_entry=2.0, target hold = 8–24h</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.6 — Run Pipeline</div>
+<p>คู่หนึ่งให้ผล: ρ=0.82, ADF p=0.12, Shapiro p=0.41, φ=0.88</p>
+<p><strong>ถาม:</strong> คู่นี้ผ่าน Pipeline ไหม? ถ้าไม่ผ่าน หยุดที่ขั้นไหน?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ขั้น 1:</strong> ρ=0.82 ≥ 0.70 ✅ ผ่าน</p>
+<p><strong>ขั้น 2:</strong> ADF p=0.12 &gt; 0.05 ❌ <strong>หยุดที่นี่</strong> — residuals ไม่ stationary → spread ไม่ cointegrated → ไม่ควร trade</p>
+<p><strong>แนวทาง:</strong> ลอง log transformation หรือ adjust lookback window แล้วทดสอบใหม่ ถ้ายังไม่ผ่าน → ตัดคู่นี้ออก</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.1 — อ่านผล ADF</div>
+<p>ทดสอบ ADF บน residuals ของ BTC-ETH spread ได้:<br>
+ADF = −2.31, p-value = 0.18, critical value 5% = −2.86</p>
+<p><strong>ถาม:</strong> (a) interpret ผล (b) ควร trade spread นี้ไหม?</p>
+<details><summary>ดูคำตอบ</summary><div class="ans">
+<p><strong>(a)</strong> ADF = −2.31 > −2.86 (critical) → ไม่ reject H₀ → ε ไม่ stationary<br>
+p-value = 0.18 > 0.05 → ไม่ผ่าน → residuals เป็น random walk</p>
+<p><strong>(b)</strong> ไม่ควร trade — BTC-ETH ไม่ cointegrated ในช่วงนี้<br>
+ทั้งสองอาจมี correlation สูง แต่ spread อาจ drift ออกไปเรื่อยๆ</p>
+</div></details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.2 — ใช้ VECM ตัดสิน</div>
+<p>VECM บน Bybit↔Lighter: α_Bybit = −0.21, α_Lighter = +0.03<br>
+ขณะนี้ ε &gt; 0 (Bybit แพงกว่า equilibrium)</p>
+<p><strong>ถาม:</strong> ใครเป็นฝ่ายปรับ และควร trade อะไร?</p>
+<details><summary>ดูคำตอบ</summary><div class="ans">
+<p>α_Bybit = −0.21 มีค่าลบมาก → Bybit เป็นฝ่ายปรับตัวลง<br>
+α_Lighter = +0.03 ≈ 0 → Lighter แทบไม่ขยับ</p>
+<p>เมื่อ ε &gt; 0 (Bybit เกิน equilibrium) และ Bybit จะปรับลง → <strong>Short Bybit</strong><br>
+Lighter เป็น leg ที่เสถียร — ต้องการ hedge → <strong>Long Lighter</strong> (ตาม β)</p>
+</div></details>
+</div>
+
+<div class="bx bi">
+<div class="bt">อ้างอิงสำคัญ (References)</div>
+<ul>
+<li><strong>Engle, R. F., &amp; Granger, C. W. J. (1987).</strong> Co-integration and error correction: Representation, estimation, and testing. <em>Econometrica</em>, 55(2), 251–276. — บทความต้นฉบับที่นิยาม cointegration และ Engle-Granger 2-step test; ได้ Nobel Prize 2003</li>
+<li><strong>Johansen, S. (1988).</strong> Statistical analysis of cointegration vectors. <em>Journal of Economic Dynamics and Control</em>, 12(2–3), 231–254. — พัฒนา Johansen trace/eigenvalue test และ VECM ที่ Ch.5 นำเสนอ</li>
+<li><strong>Johansen, S. (1991).</strong> Estimation and hypothesis testing of cointegration vectors in Gaussian vector autoregressive models. <em>Econometrica</em>, 59(6), 1551–1580. — ขยาย critical values และ full likelihood approach</li>
+<li><strong>Vidyamurthy, G. (2004).</strong> <em>Pairs Trading: Quantitative Methods and Analysis.</em> Wiley. — ตำราปฏิบัติที่นำ cointegration มาใช้กับ pairs trading อย่างเป็นระบบ</li>
+</ul>
+</div>
+
+<!-- 5.9 Rolling Cointegration Monitor -->
+<h2 id="s5-9">5.9 Rolling Cointegration Monitor — ตรวจสอบอย่างต่อเนื่อง</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — Cointegration ไม่ถาวร</div>
+<p>Cointegration เปลี่ยนไปตาม regime ของตลาด — pair ที่ผ่าน ADF วันนี้อาจ "un-cointegrate" ใน 6 สัปดาห์ถ้า funding structure เปลี่ยน หรือ correlation ทะลาย การ test ครั้งเดียวตอนเลือกคู่ไม่เพียงพอ</p>
+<p><strong>สัญญาณที่สำคัญกว่า level คือ trend:</strong> p-value ที่กำลังเพิ่มขึ้นต่อเนื่อง แม้ยังต่ำกว่า 0.05 อยู่ = cointegration กำลังอ่อนแรง ต้องเริ่มลด size ก่อนที่จะข้าม threshold</p>
+</div>
+
+<h3>Rolling vs Expanding Window สำหรับ Monitoring</h3>
+
+<table>
+<tr><th>ประเภท</th><th>วิธีการ</th><th>ข้อดี</th><th>ข้อเสีย</th><th>เลือกเมื่อ</th></tr>
+<tr><td><strong>Rolling</strong><br>(fixed)</td><td>ADF บน N วันล่าสุดเสมอ<br>ทิ้งข้อมูลเก่า</td><td>ตอบสนอง regime break เร็ว<br>สะท้อนตลาด "ตอนนี้"</td><td>estimate ผันผวนกว่า</td><td>ตลาด volatile<br>ต้องการ early warning</td></tr>
+<tr><td><strong>Expanding</strong><br>(cumulative)</td><td>ADF บนข้อมูลทั้งหมดตั้งแต่เริ่ม<br>N เพิ่มขึ้นทุก check</td><td>estimate เสถียร<br>ADF power สูงขึ้นตาม N</td><td>ปรับตัวช้า<br>ข้อมูลเก่า dilute ค่าปัจจุบัน</td><td>pair เสถียร<br>ต้องการ confidence สูง</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">แนะนำสำหรับ Live Trading: ใช้ Rolling เป็นหลัก</div>
+<p>Rolling window 90–120 วันตอบสนอง regime change ได้ทัน ถ้าต้องการ double-check ให้รัน Expanding ควบคู่ — ถ้าทั้งสองเห็นตรงกัน (p สูง/ต่ำพร้อมกัน) สัญญาณน่าเชื่อถือกว่า</p>
+</div>
+
+<h3>Rolling ADF Alert System</h3>
+
+<table>
+<tr><th>สถานะ</th><th>เงื่อนไข</th><th>Action</th></tr>
+<tr style="background:#f0fdf4"><td>🟢 ปกติ</td><td>p &lt; 0.05 และ trend ลงหรือคงที่</td><td>คง position size ปัจจุบัน</td></tr>
+<tr style="background:#fffbeb"><td>🟡 เฝ้าระวัง</td><td>p = 0.05–0.08 <strong>หรือ</strong> p กำลังเพิ่มขึ้น (แม้ยัง &lt; 0.05)</td><td>ลด size 50%, monitor รายวัน</td></tr>
+<tr style="background:#fef9c3"><td>🟠 อันตราย</td><td>p = 0.08–0.10</td><td>ลด size 80%, ห้ามเปิด position ใหม่</td></tr>
+<tr style="background:#fef2f2"><td>🔴 ปิด</td><td>p &gt; 0.10</td><td>ปิดทุก position — spread อาจเป็น random walk</td></tr>
+</table>
+
+<div class="pseudo">
+<span class="c"># Rolling ADF Monitor — รัน weekly หรือ daily ช่วง volatile</span><br>
+<span class="kw">function</span> <span class="fn">rolling_adf_monitor</span>(prices_A, prices_B, window=<span class="nm">90</span>, step=<span class="nm">7</span>):<br>
+&nbsp;&nbsp;results = []<br>
+&nbsp;&nbsp;i = window<br>
+<br>
+&nbsp;&nbsp;<span class="kw">while</span> i &lt;= <span class="fn">len</span>(prices_A):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="c"># ใช้ข้อมูล window วันล่าสุด (rolling fixed)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;A_win = prices_A[i-window : i]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;B_win = prices_B[i-window : i]<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;beta  = <span class="fn">ols_slope</span>(<span class="fn">log</span>(B_win), <span class="fn">log</span>(A_win))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;eps   = <span class="fn">log</span>(A_win) - beta * <span class="fn">log</span>(B_win)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;p     = <span class="fn">adf_test</span>(eps).p_value<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span>   p &lt; <span class="nm">0.05</span>: status = <span class="nm">"green"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">elif</span> p &lt; <span class="nm">0.08</span>: status = <span class="nm">"yellow"</span>   <span class="c"># ลด size 50%</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">elif</span> p &lt; <span class="nm">0.10</span>: status = <span class="nm">"orange"</span>   <span class="c"># ห้ามเปิดใหม่</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:         status = <span class="nm">"red"</span>       <span class="c"># ปิดทุก position</span><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;results.<span class="fn">append</span>({<span class="nm">"bar"</span>: i, <span class="nm">"p"</span>: p, <span class="nm">"beta"</span>: beta, <span class="nm">"status"</span>: status})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;i += step<br>
+<br>
+&nbsp;&nbsp;<span class="kw">return</span> results<br>
+<br>
+<span class="c"># ตรวจ trend ของ p-value — อันตรายที่ซ่อนอยู่</span><br>
+<span class="kw">function</span> <span class="fn">detect_p_trend</span>(results, lookback=<span class="nm">4</span>):<br>
+&nbsp;&nbsp;p_recent = [r[<span class="nm">"p"</span>] <span class="kw">for</span> r <span class="kw">in</span> results[-lookback:]]<br>
+&nbsp;&nbsp;slope = <span class="fn">ols_slope</span>(<span class="fn">range</span>(lookback), p_recent)<br>
+&nbsp;&nbsp;<span class="kw">if</span> slope &gt; <span class="nm">0.005</span>:  <span class="c"># p เพิ่มขึ้น > 0.005 ต่อ step → deteriorating</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="nm">"DETERIORATING"</span>  <span class="c"># เตือนแม้ p ยังอยู่ใน green zone</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="nm">"STABLE"</span>
+</div>
+
+<div class="bx ba">
+<div class="bt">Monitor Trend ไม่ใช่แค่ Level — จุดที่คนพลาดบ่อยที่สุด</div>
+<ul>
+<li>p = 0.03 และ <strong>เพิ่มขึ้น</strong> (0.01 → 0.02 → 0.03 ใน 3 สัปดาห์) = อันตราย — ต้องเริ่มลด size แม้ยังอยู่ใน green</li>
+<li>p = 0.07 และ <strong>ลดลง</strong> (0.12 → 0.09 → 0.07) = กำลัง recover — รอ confirm ก่อนกลับมาเพิ่ม size</li>
+<li><strong>ห้ามรอจน p ข้าม 0.10 แล้วค่อยปิด</strong> — ถึงตอนนั้น spread ออกไปไกลแล้ว ขาดทุนมาก</li>
+</ul>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: Bybit↔Lighter — Rolling ADF รายสัปดาห์ 12 สัปดาห์</div>
+<div class="fm">สัปดาห์  p-value   β      Status    Action
+  W1     0.0003   1.005   🟢 green   —
+  W2     0.0008   1.006   🟢 green   —
+  W3     0.0012   1.007   🟢 green   —
+  W4     0.0031   1.009   🟢 green   —
+  W5     0.0088   1.012   🟢 green   ⚠️ detect_p_trend = DETERIORATING → ลด size 30%
+  W6     0.0241   1.015   🟢 green   ลด size 50% (trend warning แม้ยัง green)
+  W7     0.0614   1.019   🟡 yellow  ลด size เหลือ 20%
+  W8     0.0892   1.024   🟠 orange  ห้ามเปิดใหม่
+  W9     0.1340   1.031   🔴 red     ปิดทุก position
+  W10    0.0891   1.028   🟠 orange  รอ — ยังไม่กลับมาเทรด
+  W11    0.0412   1.022   🟡 yellow  recovering — ยังไม่เปิดใหม่
+  W12    0.0089   1.016   🟢 green   กลับมาเทรดได้ (เริ่มด้วย size 50% ก่อน)</div>
+<p>W5: p ยังอยู่ที่ 0.009 (ต่ำมาก) แต่ trend บอกสัญญาณก่อนล่วงหน้า 2 สัปดาห์ — ถ้า monitor แค่ level จะไม่เห็นจนถึง W7</p>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.5 Cointegration | ต่อไป → <strong>Ch.6: Hurst Exponent &amp; Stationarity Tests</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

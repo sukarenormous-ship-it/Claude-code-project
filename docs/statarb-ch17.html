@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.17 — Commodity Basis: Calendar Spread ในตลาด Futures</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 17</div>
+<h1>Commodity Basis: Calendar Spread ในตลาด Futures</h1>
+<div class="sub">Front − Back futures basis มาจาก storage cost + convenience yield<br>
+ทำความเข้าใจโครงสร้างราคา Futures ก่อนที่จะ trade calendar spread</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">Calendar spread คือ basis ระหว่าง futures สองตัวต่างวัน expiry ของ asset เดียวกัน ค่านี้ไม่ใช่ random — มันถูกกำหนดโดยต้นทุนการเก็บรักษาและ convenience yield ของ commodity นั้น เมื่อ basis เบี่ยงออกจาก fair value ก็เกิดโอกาส arbitrage</div>
+<div style="margin-top:10px;text-align:center">
+$$F(T) = S \cdot e^{(r + u - y)(T-t)} \qquad \text{Calendar Spread} = F(\text{near}) - F(\text{far})$$
+</div>
+</div>
+
+<!-- 17.1 -->
+<h2 id="s17-1">17.1 Calendar Spread คืออะไร</h2>
+
+<p>Calendar spread คือการ long futures ที่ expiry เร็ว (front month) และ short futures ที่ expiry ช้า (back month) ของ underlying เดียวกัน หรือกลับกัน โดยที่เราไม่ได้ bet ทิศทางของราคา underlying แต่ bet ว่า <strong>ความต่างระหว่างสอง expiry</strong> จะกลับสู่ fair value</p>
+
+<div class="bx bb">
+<div class="bt">ตัวอย่างพื้นฐาน: Crude Oil Calendar Spread</div>
+<p>CL June futures = $80.00 | CL September futures = $82.50<br>
+Calendar spread = Front − Back = $80.00 − $82.50 = <strong>−$2.50</strong><br>
+Market คาดว่า oil ใน Sep จะแพงกว่า Jun $2.50 → ตลาดอยู่ใน <strong>Contango</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">เปรียบเทียบ: Calendar Spread vs. Outright</div>
+<p><strong>Outright long CL:</strong> P&L ขึ้นตรงกับราคา oil — เสี่ยง directional risk เต็มๆ<br>
+<strong>Calendar Spread:</strong> P&L ขึ้นกับ <em>ความต่าง</em> ระหว่าง expiry — delta ต่อ oil เกือบ zero, เสี่ยงน้อยกว่ามาก</p>
+</div>
+
+<table>
+<tr><th>ประเภท Position</th><th>Long Front / Short Back</th><th>Short Front / Long Back</th></tr>
+<tr><td>ชื่อเรียก</td><td>Long Calendar Spread</td><td>Short Calendar Spread</td></tr>
+<tr><td>กำไรเมื่อ</td><td>Contango ลดลง (spread แคบลง)</td><td>Contango เพิ่มขึ้น (spread กว้างขึ้น)</td></tr>
+<tr><td>สถานการณ์ที่ดี</td><td>อุปสงค์ระยะสั้นพุ่งสูง, storage ตึงตัว</td><td>supply ระยะสั้นล้นตลาด</td></tr>
+<tr><td>Risk หลัก</td><td>Contango ขยายมากกว่าที่คาด</td><td>Market พลิกเป็น Backwardation</td></tr>
+</table>
+
+<!-- 17.2 -->
+<h2 id="s17-2">17.2 Contango vs. Backwardation</h2>
+
+<p>โครงสร้าง futures term structure บอกว่า market คาดการณ์ราคาในอนาคตอย่างไร:</p>
+
+<ul>
+<li><strong>Contango:</strong> F(T_back) &gt; F(T_front) — futures ไกลแพงกว่า futures ใกล้ — ปกติสำหรับ commodity ที่มีต้นทุนเก็บรักษาสูง (oil, grain, metals)</li>
+<li><strong>Backwardation:</strong> F(T_back) &lt; F(T_front) — futures ไกลถูกกว่า — เกิดเมื่อ convenience yield สูง หรืออุปสงค์ระยะสั้นตึงตัวมาก</li>
+<li><strong>Flat:</strong> ราคาเท่ากันทุก expiry — หายาก มักเกิดช่วงผ่านระหว่าง Contango ↔ Backwardation</li>
+</ul>
+
+<img class="chart" src="charts/ch17-contango-backwardation.svg" alt="Contango vs Backwardation forward curves">
+<div class="caption">Contango (ซ้าย): term structure ลาดขึ้น | Backwardation (ขวา): term structure ลาดลง</div>
+
+<!-- 17.3 -->
+<h2 id="s17-3">17.3 Fair Basis Formula — Cost of Carry Model</h2>
+
+<p>ราคา futures ที่ "fair" ต้องสะท้อน cost of carry ครบถ้วน มิฉะนั้นจะมี cash-and-carry arbitrage:</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตร Cost of Carry</div>
+<div class="ki-text">
+F(T) = S × e^{(r + u − q) × T}<br><br>
+โดยที่: <strong>S</strong> = ราคา spot, <strong>r</strong> = risk-free rate, <strong>u</strong> = storage cost (% ต่อปี), <strong>q</strong> = convenience yield (% ต่อปี), <strong>T</strong> = เวลาถึง expiry (ปี)
+</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\text{Calendar Spread Fair} = F(T_{\text{back}}) - F(T_{\text{front}}) = F_{\text{front}} \cdot \left(e^{(r+u-q)\Delta T} - 1\right)$$
+$$\text{โดย } \Delta T = T_{\text{back}} - T_{\text{front}}$$
+</div>
+</div>
+</div>
+
+<p>เรานิยาม calendar spread = <strong>Back-month − Front-month</strong> เสมอ ภายใต้ contango (r+u−q &gt; 0) ค่านี้จะ <strong>เป็นบวก</strong> สอดคล้องกับ key-idea ที่ว่า basis ≈ (storage − convenience) × ΔT/365 สูตรนี้คือสูตรเดียวกับที่ใช้ในตัวอย่าง §17.4 และแบบฝึกหัด §17.7</p>
+
+<p>เมื่อ basis เบี่ยงจาก fair value เกิดโอกาส arbitrage:</p>
+
+<div class="fm">ถ้า F(T₂) - F(T₁) > fair_basis  →  contango แพงเกินไป
+  → Long F(T₁), Short F(T₂)  →  wait for convergence
+
+ถ้า F(T₂) - F(T₁) < fair_basis  →  backwardation/contango น้อยเกินไป
+  → Short F(T₁), Long F(T₂)  →  wait for convergence</div>
+
+<table>
+<tr><th>Parameter</th><th>Crude Oil (ตัวอย่าง)</th><th>Gold (ตัวอย่าง)</th><th>BTC Futures</th></tr>
+<tr><td>r (risk-free)</td><td>5.25% / ปี</td><td>5.25% / ปี</td><td>5.25% / ปี</td></tr>
+<tr><td>u (storage)</td><td>0.5–1.5% / ปี</td><td>0.1–0.3% / ปี</td><td>~0% (digital)</td></tr>
+<tr><td>q (convenience)</td><td>2–10% / ปี (volatile)</td><td>0.5–1% / ปี</td><td>0% (ไม่มี utility)</td></tr>
+<tr><td>ลักษณะ</td><td>Contango หรือ Back ได้ทั้งคู่</td><td>มักเป็น Contango เสมอ</td><td>ขึ้นกับ funding rate</td></tr>
+</table>
+
+<!-- 17.4 -->
+<h2 id="s17-4">17.4 ตัวอย่าง: Crude Oil Calendar Spread</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: CL (Crude Oil) Calendar Spread</div>
+<p>ข้อมูล ณ วันที่วิเคราะห์:</p>
+<ul>
+<li>CL Front (July) = <strong>$80.00</strong>/barrel</li>
+<li>CL Back (September) = <strong>$82.00</strong>/barrel</li>
+<li>Observed spread (Back − Front) = +$2.00 (Contango $2)</li>
+</ul>
+<p>คำนวณ fair basis สำหรับ 60 วัน (T = 60/365 ≈ 0.164 ปี):</p>
+<div class="fm">r = 5.25%, u = 1.0%, q = 3.0%  →  (r + u - q) = 3.25%
+
+Fair F(back) / Fair F(front) = e^{(r+u-q) × (T_back - T_front)}
+                              = e^{0.0325 × (60/365)}
+                              = e^{0.00534} ≈ 1.00535
+
+Fair spread = F(front) × 0.00535 = $80 × 0.00535 = $0.428
+
+Observed spread = $2.00  vs  Fair = $0.43
+→ Contango แพงเกินไปมาก ($1.57 excess)
+→ Trade: Long Front (July) + Short Back (Sep)</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยงที่ต้องระวัง</div>
+<ul>
+<li><strong>Convenience yield เปลี่ยนแปลงกะทันหัน:</strong> ข่าว OPEC, supply disruption → Backwardation พุ่งแรง</li>
+<li><strong>Delivery risk:</strong> futures ใกล้ expiry ต้อง physical delivery หรือ roll ออก</li>
+<li><strong>Roll cost:</strong> ถ้า contango กว้าง การ roll position มีต้นทุนสูง</li>
+</ul>
+</div>
+
+<!-- 17.5 SVG -->
+<h2 id="s17-5">17.5 Basis vs. Time-to-Expiry</h2>
+
+<p>เมื่อ expiry ใกล้เข้ามา basis ของ futures จะต้อง converge สู่ 0 (เนื่องจาก F(T→0) = S)</p>
+
+<img class="chart" src="charts/ch17-basis-calendar.svg" alt="Calendar spread basis with z-score">
+<div class="caption">Basis ทุกประเภทต้อง converge สู่ 0 เมื่อถึง expiry — นี่คือ "pull to par" ของ futures</div>
+
+<!-- 17.6 -->
+<h2 id="s17-6">17.6 เทียบกับ Crypto Perpetual — Concept เดียวกัน แต่ต่างกันตรงไหน?</h2>
+
+<p>Crypto perpetual futures ใช้ concept เดียวกับ calendar spread แต่มีความแตกต่างสำคัญ:</p>
+
+<table>
+<tr><th>ลักษณะ</th><th>Commodity Calendar Spread</th><th>Crypto Perpetual Basis</th></tr>
+<tr><td>Expiry</td><td>มี expiry — convergence มีวันกำหนด</td><td>ไม่มี expiry — ไม่มี forced convergence</td></tr>
+<tr><td>Mechanism ดึงกลับ</td><td>Cost of carry + expiry convergence</td><td>Funding rate (ทุก 8h หรือ 1h)</td></tr>
+<tr><td>Basis = ?</td><td>F(T₂) − F(T₁) vs cost of carry</td><td>Perp − Spot vs funding rate integral</td></tr>
+<tr><td>Risk</td><td>Delivery, roll cost, supply shock</td><td>Funding ขาด liquidity, exchange risk</td></tr>
+<tr><td>Calendar spread ใน crypto</td><td>ทำได้กับ quarterly futures</td><td>Perp vs. quarterly = "basis trade"</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">BTC Basis Trade: Perp vs. Quarterly Future</div>
+<p>BTC Perp = $65,000 | BTC Sep Quarterly = $66,200<br>
+Observed basis = +$1,200 (quarterly แพงกว่า 1.85%)<br>
+Annualized funding rate implied = 1.85% × (365/90) ≈ <strong>7.5% / ปี</strong><br>
+ถ้า funding rate จริงต่ำกว่า 7.5% → Quarterly แพงเกินไป → <strong>Long Perp + Short Quarterly</strong></p>
+</div>
+
+<div class="bx bd">
+<div class="bt">Practitioner Notes</div>
+<p>Roll the calendar spread 5 trading days before near-month expiry to avoid delivery squeeze. Track the roll cost (bid-ask spread × 2 legs) against the basis signal — roll only if basis signal &gt; 2× roll cost. Use continuous front-month contract for calibration but trade the actual dated futures pair for execution.</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk</div>
+<p>Cost of carry model assumes known interest rate r, storage cost u, convenience yield y — all of which are unobservable and time-varying in real markets. Calendar spread can persist in Contango for months (crude oil 2020) without reverting. Convergence at expiry is guaranteed only for cash-settled contracts; physical delivery contracts can diverge further near expiry (delivery squeeze).</p>
+</div>
+
+<!-- 17.7 -->
+<h2 id="s17-7">17.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 17.1 — คำนวณ Fair Calendar Spread</div>
+<p>Natural Gas (NG) futures: Front (August) = $2.80/MMBtu, Back (November) = $3.20/MMBtu<br>
+r = 5%, storage cost u = 8% ต่อปี, convenience yield q = 2% ต่อปี, T_back − T_front = 90 วัน</p>
+<p><strong>ถาม:</strong> Fair spread คือเท่าไร? Basis ปัจจุบัน (observed) เป็น Contango มากเกินไปหรือน้อยเกินไป?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>Fair spread = F_front × e^{(r+u−q)×ΔT} − F_front<br>
+= F_front × (e^{(0.05+0.08−0.02)×(90/365)} − 1)<br>
+= $2.80 × (e^{0.11×0.2466} − 1)<br>
+= $2.80 × (e^{0.02712} − 1)<br>
+= $2.80 × 0.02749 = <strong>$0.077</strong></p>
+<p>Observed spread = $3.20 − $2.80 = $0.40<br>
+Fair spread ≈ $0.077</p>
+<p>Observed ($0.40) &gt;&gt; Fair ($0.077) → <strong>Contango แพงเกินไปมาก</strong><br>
+Trade: Long Front (Aug) + Short Back (Nov) รอ convergence</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 17.2 — Crypto Basis Comparison</div>
+<p>BTC Perpetual = $67,500 | BTC December Quarterly Futures = $68,900<br>
+เวลาถึง expiry Dec = 120 วัน | Risk-free rate = 5% ต่อปี</p>
+<p><strong>ถาม:</strong> Implied annualized basis คือเท่าไร? ถ้า funding rate เฉลี่ยที่คาด = 10% ต่อปี ควร trade อย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>Observed basis = ($68,900 − $67,500) / $67,500 = 2.07%<br>
+Annualized = 2.07% × (365/120) = <strong>6.3% ต่อปี</strong></p>
+<p>ถ้า funding rate เฉลี่ยที่คาด = 10% ต่อปี:<br>
+คาดว่า perp จะต้องจ่าย funding 10% ต่อปี → คนถือ long perp จ่ายออก<br>
+Implied basis ที่ fair = 10% × (120/365) = 3.3%<br>
+Observed basis = 2.07% &lt; Fair 3.3% → <strong>Quarterly ถูกเกินไป</strong><br>
+Trade: Long Quarterly + Short Perpetual (รับ funding จาก short perp)</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.17 Commodity Basis | ต่อไป → <strong>Ch.18: Options Overlay — Put-Call Parity Arbitrage</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

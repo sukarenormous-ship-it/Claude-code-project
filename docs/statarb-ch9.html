@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.9 — Regime-Switching OU: ตลาดมีหลาย 'สภาวะ'</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 9</div>
+<h1>Regime-Switching OU: ตลาดมีหลาย 'สภาวะ'</h1>
+<div class="sub">Markov chain 3 สภาวะ — Normal / Stressed / Broken — ปรับ OU parameters ตาม regime<br>
+ตัวอย่างหลัก: Bybit BTC Perp ↔ Lighter BTC Perp</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">ตลาดไม่ได้อยู่ใน "สภาพเดียว" ตลอดเวลา — ช่วง Normal spread กลับเร็ว ช่วง Stressed volatility พุ่ง ช่วง Broken spread ไม่กลับเลย ต้องรู้ว่าอยู่ใน regime ไหน แล้ว <strong>เทรดเฉพาะ Normal regime</strong></div>
+<div style="margin-top:10px;text-align:center">
+$$d\varepsilon = \kappa(\theta - \varepsilon)\,dt + \sigma(s_t)\,dW \qquad s_t \in \{\text{Normal},\,\text{Stressed},\,\text{Broken}\}$$
+</div>
+</div>
+
+<!-- 9.1 -->
+<h2 id="s9-1">9.1 ปัญหาของ Single-OU</h2>
+
+<p>โมเดล OU ที่ใช้ parameter ชุดเดียวตลอดเวลามีปัญหาพื้นฐาน: <strong>สมมติว่าตลาดมีลักษณะเดิมเสมอ</strong> ซึ่งไม่จริง</p>
+
+<div class="bx br">
+<div class="bt">สามอาการที่บอกว่า Single-OU ไม่เพียงพอ</div>
+<ul>
+<li><strong>ช่วง volatile:</strong> σ พุ่งขึ้น 3–5x จากค่าปกติ — signal เดิมมี noise มากเกินไป เข้า position แล้วขาดทุน</li>
+<li><strong>ช่วง broken:</strong> spread ไม่กลับมาหา θ เลยแม้ผ่านไปหลายชั่วโมง — κ ลดลงจนใกล้ศูนย์</li>
+<li><strong>ช่วง calm เกินไป:</strong> spread แทบไม่ขยับ — opportunity หมด แต่ model ยังส่ง signal</li>
+</ul>
+</div>
+
+<div class="bx bb">
+<div class="bt">ผลที่ตามมาเมื่อใช้ Single-OU ในทุก regime</div>
+<p>สมมติ calibrate σ จาก 30-day rolling window ซึ่งรวมทั้ง Normal และ Stressed period:</p>
+<ul>
+<li>σ_estimated จะสูงกว่าความเป็นจริงใน Normal regime → entry threshold สูงเกิน → พลาด opportunity</li>
+<li>σ_estimated จะต่ำกว่าความเป็นจริงใน Stressed regime → stop-loss แคบเกิน → ถูก stop out บ่อย</li>
+<li>ผลลัพธ์: กลยุทธ์ทำงานได้ไม่ดีทั้งสอง regime</li>
+</ul>
+</div>
+
+<!-- 9.2 -->
+<h2 id="s9-2">9.2 3-State Markov Chain</h2>
+
+<p>เราแบ่งสภาวะตลาดออกเป็น 3 states โดยแต่ละ state มี OU parameters ของตัวเอง:</p>
+
+<img class="chart" src="charts/ch9-markov-chain.svg" alt="Markov Chain 3 states">
+<div class="caption">State transition diagram: ลูกศรแสดงความน่าจะเป็น transition ต่อวัน — Broken ออกยากที่สุด</div>
+
+<table>
+<tr><th>Regime</th><th>κ (mean-reversion)</th><th>θ (long-run mean)</th><th>σ (volatility)</th><th>Half-life</th><th>กลยุทธ์</th></tr>
+<tr><td><strong style="color:#16a34a">Normal</strong></td><td>2.0 (เร็ว)</td><td>≈ 0 (spread กลับศูนย์)</td><td>0.002 (ต่ำ)</td><td>~8 ชั่วโมง</td><td>เทรดเต็ม size</td></tr>
+<tr><td><strong style="color:#d97706">Stressed</strong></td><td>0.8 (ช้า)</td><td>≈ 0 (ยังกลับ แต่ช้า)</td><td>0.006 (สูง)</td><td>~21 ชั่วโมง</td><td>ลด size 50%</td></tr>
+<tr><td><strong style="color:#dc2626">Broken</strong></td><td>≈0 (ไม่ revert)</td><td>undefined (drift)</td><td>0.010 (สูงมาก)</td><td>∞ (ไม่กลับ)</td><td>หยุดเทรดทันที</td></tr>
+</table>
+<p style="font-size:.88em;color:#64748b;margin-top:6px">θ ≈ 0 ใน Normal/Stressed หมายความว่า spread ยังกลับสู่ศูนย์ (หรือ baseline); ใน Broken regime κ → 0 ทำให้ θ ไม่มีความหมาย — spread drift ออกไปโดยไม่มีแรงดึงกลับ</p>
+
+<!-- 9.3 -->
+<h2 id="s9-3">9.3 Hamilton Filter</h2>
+
+<p>เราใช้ <strong>Hamilton Filter (1989)</strong> สำหรับ estimate ความน่าจะเป็นที่ตลาดอยู่ใน regime ใดโดยอิงจากข้อมูลที่สังเกตได้ ณ เวลา t</p>
+
+<div class="bx bb">
+<div class="bt">สัญชาตญาณ Hamilton Filter — 2 ขั้นต่อ bar</div>
+<ol>
+<li><strong>Predict:</strong> "ถ้าเมื่อวานอยู่ใน regime j ด้วยความน่าจะเป็น p_j วันนี้น่าจะอยู่ใน regime ใด?" — ตอบโดยคูณ p_j กับ transition matrix Q แต่ละ row → ได้ predicted probability ก่อนเห็นข้อมูลใหม่</li>
+<li><strong>Update:</strong> "spread วันนี้มีค่า y_t — regime ไหนที่ explain ค่านี้ได้ดีที่สุด?" — ตอบโดยคูณ predicted probability × likelihood ที่ y_t จะเกิดขึ้นในแต่ละ regime แล้ว normalize ให้บวกเป็น 1</li>
+</ol>
+<p>ทำซ้ำทุก bar → ได้ P(regime | ข้อมูลถึงวันนี้) แบบ real-time โดยไม่ต้องรู้ regime จริงล่วงหน้า</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Hamilton Filter — สมการหลัก</div>
+<div class="ki-eq">P(S_t=j | Y_t) ∝ f(y_t | S_t=j) · Σ_i P(S_t=j | S_{t-1}=i) · P(S_{t-1}=i | Y_{t-1})</div>
+<div class="ki-text" style="margin-top:10px">
+<strong>S_t</strong> = hidden state (Normal=0, Stressed=1, Broken=2) ณ เวลา t<br>
+<strong>Y_t</strong> = ข้อมูลที่สังเกตได้ถึงเวลา t (residuals ทั้งหมด)<br>
+<strong>f(y_t | S_t=j)</strong> = likelihood ของ observation ถ้าอยู่ใน regime j<br>
+<strong>P(S_t=j | S_{t-1}=i)</strong> = transition probability (จาก matrix Q)<br>
+<strong>∝</strong> = proportional to (normalize ให้ผลรวมเป็น 1)
+</div>
+</div>
+
+<h3>Likelihood Function สำหรับแต่ละ Regime</h3>
+
+<p>ถ้า regime j มี OU parameters (κ_j, θ_j, σ_j) likelihood ของ observation y_t คือ:</p>
+
+<div class="fm">f(y_t | S_t=j, y_{t-1}) = Normal(y_t; mu_j, var_j)
+
+mu_j  = y_{t-1} * exp(-kappa_j * dt)
+        + theta_j * (1 - exp(-kappa_j * dt))
+
+var_j = (sigma_j^2 / (2*kappa_j))
+        * (1 - exp(-2*kappa_j * dt))</div>
+
+<p>นี่คือ exact OU transition density: ถ้า y_{t-1} รู้แล้ว y_t ต่อไป Normal distribution ที่ mean และ variance คำนวณได้จาก OU parameters</p>
+
+<div class="bx ba">
+<div class="bt">Transition Matrix Q — ตัวอย่าง</div>
+<div class="fm">         Normal  Stressed  Broken
+Normal  [ 0.94    0.05     0.01  ]
+Stressed[ 0.40    0.50     0.10  ]
+Broken  [ 0.05    0.20     0.75  ]
+
+แต่ละ row บวกกันได้ 1 (must sum to 1)
+Q[i,j] = P(S_t=j | S_{t-1}=i)</div>
+</div>
+
+<!-- 9.4 -->
+<h2 id="s9-4">9.4 Pseudo-code: regime_filter()</h2>
+
+<div class="fm">def regime_filter(residuals, params, transition_matrix):
+    """
+    Hamilton filter สำหรับ estimate regime probabilities
+
+    Parameters
+    ----------
+    residuals         : array  -- ε_t series
+    params            : list   -- [(kappa, theta, sigma), ...] per regime
+    transition_matrix : 2D array -- Q matrix, shape (n_regimes, n_regimes)
+
+    Returns
+    -------
+    probs : 2D array -- shape (T, n_regimes)
+            probs[t, j] = P(S_t=j | Y_t)
+    """
+    n_regimes = len(params)
+    T = len(residuals)
+
+    # เริ่มด้วย uniform prior
+    probs = initialize_probs(n_regimes)   # [1/3, 1/3, 1/3]
+
+    all_probs = zeros((T, n_regimes))
+    all_probs[0] = probs
+
+    for t in range(1, T):
+        # Step 1: log-likelihood ของ y_t ในแต่ละ regime
+        # ✅ FIX: ทำงานใน log-space เพื่อป้องกัน numerical underflow
+        # เมื่อ T ยาวหรือ likelihood เล็กมาก การคูณซ้ำๆ ทำให้ค่าเป็น 0.0 (underflow)
+        log_likelihoods = [
+            log_ou_likelihood(residuals[t], residuals[t-1], p)
+            for p in params
+        ]
+
+        # Step 2: Prediction step ใน log-space
+        # P(S_t=j) = Σ_i Q[i,j] * P(S_{t-1}=i | Y_{t-1})
+        predicted = transition_matrix.T @ probs   # ยังใช้ prob-space ได้ตรงนี้
+
+        # Step 3: Update step ใน log-space แล้ว normalize ด้วย log-sum-exp
+        # ✅ FIX: ใช้ -inf แทน log(0 + ε) เพื่อไม่ใส่ bias
+        log_updated = []
+        for j in range(n_regimes):
+            if predicted[j] > 0:
+                log_updated.append(log_likelihoods[j] + log(predicted[j]))
+            else:
+                log_updated.append(-inf)   # regime นี้เป็นไปไม่ได้
+        # log-sum-exp trick: log(Σ eˣⁱ) = max_x + log(Σ e^{xᵢ − max_x})
+        # เหตุผล: xᵢ − max_x ≤ 0 เสมอ ดังนั้น e^{xᵢ−max_x} ∈ (0,1] → ไม่ overflow
+        max_log = max(log_updated)
+        if max_log == -inf:
+            # ทุก regime impossible → fallback uniform
+            probs = [1.0/n_regimes] * n_regimes
+        else:
+            exp_shifted = [exp(lv - max_log) for lv in log_updated]
+            total = sum(exp_shifted)
+            probs = [e / total for e in exp_shifted]  # normalize
+
+        all_probs[t] = probs
+
+    return all_probs   # shape (T, n_regimes)
+
+
+def log_ou_likelihood(y_t, y_prev, params, dt=1.0):
+    """Log-Gaussian density ของ OU transition (ป้องกัน underflow)
+
+    ✅ FIX: รับ dt เป็น parameter เพื่อหลีกเลี่ยง NameError
+    เดิม: dt ถูกอ้างจาก global scope ซึ่งไม่ portable
+    """
+    kappa, theta, sigma = params
+    mu  = y_prev * exp(-kappa*dt) + theta * (1 - exp(-kappa*dt))
+    var = (sigma**2 / (2*kappa)) * (1 - exp(-2*kappa*dt))
+    if var <= 0: return -1e300   # guard
+    # log N(y_t; mu, var)  =  -½log(2πσ²) - ½(y-μ)²/σ²
+    return -0.5 * log(2 * pi * var) - 0.5 * ((y_t - mu)**2 / var)
+
+
+# Note: ou_likelihood() แบบเดิม (prob-space) ถูกแทนที่โดย log_ou_likelihood
+# ห้ามใช้ในการ run จริง เพราะ underflow ภายใน T > 200 bars</div>
+
+<div class="bx bg">
+<div class="bt">ข้อสังเกตสำคัญ</div>
+<ul>
+<li>Filter ทำงาน online (real-time) — ทุก tick ใหม่อัปเดต probs ได้ทันที</li>
+<li>ไม่ต้องรู้ true state — แค่ observe residuals แล้ว infer</li>
+<li>Transition matrix Q ต้อง calibrate จาก historical data (EM algorithm)</li>
+<li>เมื่อ probs เปลี่ยนแปลงเร็วมาก → อาจเป็น signal ของ jump (<a href="statarb-ch8.html">บทที่ 8</a>)</li>
+</ul>
+</div>
+
+<!-- 9.5 -->
+<h2 id="s9-5">9.5 Trade Rule: เทรดเฉพาะ Normal Regime</h2>
+
+<p>กฎหลักของกลยุทธ์ regime-switching:</p>
+
+<div class="key-idea">
+<div class="ki-label">Trade Rule</div>
+<div class="ki-text">เปิด position ใหม่ได้เมื่อ <strong>P(Normal) &gt; 0.70</strong> เท่านั้น</div>
+<div class="ki-eq">Trade if P(S_t = Normal | Y_t) &gt; 0.70</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">Regime-dependent sizing</div>
+<div class="fm">p_normal   = probs[t, NORMAL]
+p_stressed = probs[t, STRESSED]
+p_broken   = probs[t, BROKEN]
+
+if p_normal > 0.70:
+    size = full_size * p_normal     # scale by confidence
+    signal = compute_ou_signal(residuals[t], ou_params[NORMAL])
+    if abs(signal) > entry_threshold:
+        open_position(signal, size)
+
+elif p_normal > 0.50:
+    # Borderline — ลด size มาก
+    size = full_size * 0.25
+    # อาจยังเทรดด้วย size เล็กมาก
+
+else:
+    # Stressed หรือ Broken — ไม่เทรด
+    close_all_positions_if_needed()
+    pass</div>
+</div>
+
+<table>
+<tr><th>P(Normal)</th><th>P(Stressed)</th><th>P(Broken)</th><th>Action</th></tr>
+<tr><td>&gt; 0.70</td><td>&lt; 0.25</td><td>&lt; 0.10</td><td>เทรดเต็ม size</td></tr>
+<tr><td>0.50–0.70</td><td>any</td><td>&lt; 0.10</td><td>เทรด 25% size</td></tr>
+<tr><td>&lt; 0.50</td><td>&gt; 0.40</td><td>any</td><td>หยุดเทรด (Stressed)</td></tr>
+<tr><td>any</td><td>any</td><td>&gt; 0.20</td><td>ปิด position ทั้งหมด (Broken)</td></tr>
+</table>
+
+<!-- 9.6 -->
+<h2 id="s9-6">9.6 Timeline Diagram: Spread Colored by Regime</h2>
+
+<!-- Regime-colored timeline chart -->
+<img class="chart" src="charts/ch9-regime-timeline.svg" alt="Spread path colored by regime">
+<div style="display:none"><svg class="d" viewBox="0 0 720 310">
+<defs>
+<marker id="arw4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<rect x="5" y="5" width="710" height="300" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="360" y="25" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">Spread Timeline: สีตาม Regime</text>
+
+<!-- Axes -->
+<line x1="50" y1="190" x2="690" y2="190" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw4)"/>
+<line x1="50" y1="240" x2="50" y2="45" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arw4)"/>
+<text x="695" y="193" font-size="9" fill="#6b7280">t</text>
+<text x="44" y="43" text-anchor="end" font-size="9" fill="#6b7280">ε</text>
+
+<!-- Mean (theta) line -->
+<line x1="50" y1="190" x2="685" y2="190" stroke="#0d9488" stroke-width="0.8" stroke-dasharray="4,4"/>
+<text x="46" y="193" text-anchor="end" font-size="8" fill="#0d9488">θ</text>
+
+<!-- +2sigma and -2sigma bands -->
+<line x1="50" y1="155" x2="685" y2="155" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2,3"/>
+<line x1="50" y1="225" x2="685" y2="225" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2,3"/>
+<text x="46" y="157" text-anchor="end" font-size="7" fill="#94a3b8">+2σ</text>
+<text x="46" y="227" text-anchor="end" font-size="7" fill="#94a3b8">-2σ</text>
+
+<!-- Segment 1: Normal (green) t=50 to 250 -->
+<rect x="50" y="45" width="200" height="240" fill="#16a34a" opacity="0.06" rx="0"/>
+<polyline points="50,190 65,182 80,173 95,183 110,192 125,200 140,191 155,180 170,172 185,182 200,191 215,183 230,175 245,185 250,190"
+          fill="none" stroke="#16a34a" stroke-width="2.2"/>
+
+<!-- Segment 2: Stressed (amber) t=250 to 420 -->
+<rect x="250" y="45" width="170" height="240" fill="#f59e0b" opacity="0.08" rx="0"/>
+<polyline points="250,190 260,178 270,162 280,175 295,155 310,170 325,185 340,165 355,148 370,162 385,178 400,158 415,170 420,180"
+          fill="none" stroke="#d97706" stroke-width="2.2"/>
+
+<!-- Segment 3: Broken (red) t=420 to 520 -->
+<rect x="420" y="45" width="100" height="240" fill="#dc2626" opacity="0.08" rx="0"/>
+<polyline points="420,180 430,195 440,215 450,235 455,248 460,240 470,260 480,245 490,255 505,240 520,230"
+          fill="none" stroke="#dc2626" stroke-width="2.2"/>
+<!-- Spread drifting away from theta -->
+<text x="470" y="280" text-anchor="middle" font-size="8" fill="#dc2626" font-weight="700">ไม่กลับ!</text>
+
+<!-- Segment 4: Stressed recovery (amber) t=520 to 600 -->
+<rect x="520" y="45" width="80" height="240" fill="#f59e0b" opacity="0.08" rx="0"/>
+<polyline points="520,230 535,218 550,205 565,192 580,183 600,185"
+          fill="none" stroke="#d97706" stroke-width="2.2"/>
+
+<!-- Segment 5: Normal again (green) t=600 to 685 -->
+<rect x="600" y="45" width="85" height="240" fill="#16a34a" opacity="0.06" rx="0"/>
+<polyline points="600,185 615,178 630,170 645,180 660,190 675,183 685,177"
+          fill="none" stroke="#16a34a" stroke-width="2.2"/>
+
+<!-- Regime labels at top -->
+<text x="150" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">Normal</text>
+<text x="335" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">Stressed</text>
+<text x="470" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">Broken</text>
+<text x="560" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">Stressed</text>
+<text x="642" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">Normal</text>
+
+<!-- Trade zone marker -->
+<rect x="50" y="68" width="200" height="12" fill="#16a34a" opacity="0.3" rx="2"/>
+<text x="150" y="77" text-anchor="middle" font-size="8" fill="#166534" font-weight="700">เทรดได้</text>
+<rect x="600" y="68" width="85" height="12" fill="#16a34a" opacity="0.3" rx="2"/>
+<text x="642" y="77" text-anchor="middle" font-size="8" fill="#166534" font-weight="700">เทรดได้</text>
+
+<!-- No trade zone -->
+<rect x="250" y="68" width="350" height="12" fill="#dc2626" opacity="0.2" rx="2"/>
+<text x="425" y="77" text-anchor="middle" font-size="8" fill="#991b1b" font-weight="700">หยุดเทรด</text>
+
+<!-- Legend -->
+<rect x="55" y="282" width="10" height="10" fill="#16a34a" opacity="0.5"/>
+<text x="69" y="291" font-size="9" fill="#374151">Normal (เทรดได้)</text>
+<rect x="175" y="282" width="10" height="10" fill="#f59e0b" opacity="0.5"/>
+<text x="189" y="291" font-size="9" fill="#374151">Stressed (ลด size)</text>
+<rect x="305" y="282" width="10" height="10" fill="#dc2626" opacity="0.5"/>
+<text x="319" y="291" font-size="9" fill="#374151">Broken (หยุดเทรด)</text>
+</svg></div>
+<div class="caption">สีพื้นหลัง: เขียว=Normal (เทรดได้), เหลือง=Stressed (ลด size), แดง=Broken (หยุดทันที) — z-score panel แสดงเกณฑ์แต่ละ zone</div>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Regime Filter ใน Production</div>
+<p>Pipeline สำหรับ crypto stat arb:</p>
+<ol>
+<li><strong>Run Hamilton filter ทุก 15 นาที</strong> บน 2-hour rolling window ของ spread residuals — อัปเดต posterior P(regime) ทุก bar</li>
+<li><strong>Threshold สองระดับ:</strong> P(Broken) > 0.4 → halt ทุก new position, tighten stop เป็น ±1.5σ; P(Stressed) > 0.6 → ลด size 50%, ขยาย exit threshold เป็น |z| < 1.0</li>
+<li><strong>No-flicker rule:</strong> อย่า re-enter Normal mode จนกว่า P(Normal) > 0.7 ติดต่อกัน 3 updates — ป้องกัน oscillation ที่ boundary</li>
+<li><strong>Log posterior ทุก bar</strong> เพื่อ post-trade analysis — ช่วยแยกว่า loss มาจาก Stressed regime หรือจาก parameter drift</li>
+<li><strong>Transition matrix review รายเดือน:</strong> ประมาณ P(i→j) จาก empirical regime sequence; ถ้า P(Normal→Broken) เพิ่มขึ้นเกิน 2× → pair นี้เริ่มไม่เสถียร</li>
+</ol>
+</div>
+
+<div class="bx ba">
+<div class="bt">Probability Thresholds เหล่านี้ไม่ใช่กฎตายตัว — ต้อง calibrate ตาม pair</div>
+<p>ค่า P(Broken)&gt;0.4 และ P(Stressed)&gt;0.6 เป็น <em>จุดเริ่มต้น</em> ที่ใช้งานได้ใน typical crypto perp spread แต่ค่าที่เหมาะสมขึ้นกับ:</p>
+<ul>
+<li><strong>Cost of false positive (halt ผิด):</strong> ถ้า pair มี opportunity cost สูง (spread เกิดน้อย) → เพิ่ม threshold เป็น 0.5/0.7 เพื่อลดการ halt ผิดพลาด</li>
+<li><strong>Cost of false negative (ไม่ halt):</strong> ถ้า pair มีประวัติ regime shift รุนแรง → ลด threshold เป็น 0.3/0.5 เพื่อ react เร็วขึ้น</li>
+<li><strong>วิธี calibrate:</strong> ใช้ walk-forward บน historical data → ดู F1 score ระหว่าง predicted Broken regime กับ realized large-loss periods → เลือก threshold ที่ balance precision/recall ดีที่สุดสำหรับ pair นั้น</li>
+</ul>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Regime Model พัง</div>
+<ul>
+<li><strong>Transition matrix ไม่คงที่:</strong> ใน DeFi crisis P(Normal→Broken) พุ่งจาก 0.01 → 0.3/day — static matrix ที่ calibrate ในช่วงสงบจะ miss regime shift เสมอ</li>
+<li><strong>Filter detects หลัง fact:</strong> Hamilton filter ใช้ข้อมูล historical — ณ วันที่ shift เกิดจริง posterior จะ lag 2–5 updates ก่อนจะ converge สู่ Broken; ช่วงนั้น model ยังเทรดด้วย Normal parameters</li>
+<li><strong>3 states อาจไม่พอ:</strong> crypto มี weekday vs weekend regime, pre/post funding settlement micro-regime — 3-state model จะ lump เหล่านี้เข้าด้วยกัน ทำให้ parameter estimate blur</li>
+<li><strong>Observability:</strong> regime filter ตัดสินจาก spread statistics เท่านั้น ไม่รู้เรื่อง on-chain flows, order book depth — whale liquidation สร้าง Broken regime โดยไม่มี leading indicator ใน spread</li>
+</ul>
+</div>
+
+<!-- 9.7 -->
+<h2 id="s9-7">9.7 Running Example: Bybit↔Lighter — Regime ในทางปฏิบัติ</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit BTCUSDT Perp ↔ Lighter BTCUSDT Perp — Regime Detection</div>
+
+<h3>Normal Regime — ช่วง Low Funding Variance</h3>
+<p>เมื่อ funding rate ทั้งสองตลาดมีความผันผวนต่ำ (ต่างกัน &lt;0.005% ต่อชั่วโมง):</p>
+<ul>
+<li>P(Normal) ≈ 0.85 → เทรดได้เต็ม size</li>
+<li>Half-life ≈ 6–10 ชั่วโมง → position เปิดปิดรวดเร็ว</li>
+<li>σ ของ spread ≈ 0.002 → entry ที่ ±2σ ≈ ±$130 บน $65,000 BTC</li>
+</ul>
+
+<h3>Stressed Regime — ช่วงก่อน Listing Events</h3>
+<p>ช่วง 24–48 ชั่วโมงก่อน token listing ใหม่บน Bybit:</p>
+<ul>
+<li>Funding rate เริ่ม volatile → spread ขยับมากขึ้น</li>
+<li>P(Normal) ลดลงจาก 0.85 → 0.45 ภายใน 2 ชั่วโมง</li>
+<li>Filter detect: P(Stressed) = 0.48 → ลด size ลง 50%</li>
+<li>Half-life ยืดออกเป็น 20+ ชั่วโมง → ต้องถือ position นานขึ้น</li>
+</ul>
+
+<div class="fm"># Real-time regime check (ทุก 1 นาที)
+probs = regime_filter(last_200_residuals, ou_params, Q)
+p_normal = probs[-1, NORMAL]
+
+print(f"P(Normal)={p_normal:.2f}, "
+      f"P(Stressed)={probs[-1,STRESSED]:.2f}, "
+      f"P(Broken)={probs[-1,BROKEN]:.2f}")
+
+# Output ช่วง listing event:
+# P(Normal)=0.42, P(Stressed)=0.51, P(Broken)=0.07
+# → ลด size 75% และตั้ง alert</div>
+
+<h3>Broken Regime — หลัง Unexpected Delisting</h3>
+<p>เมื่อ Lighter delists BTC perp โดยไม่แจ้งล่วงหน้า spread ไม่ converge อีกต่อไป — ควร detect ภายใน 15–30 นาที จาก P(Broken) พุ่งขึ้นเกิน 0.3</p>
+</div>
+
+<!-- 9.8 -->
+<h2 id="s9-8">9.8 Dynamic Parameter Adjustment ใน Stressed Regime</h2>
+
+<div class="key-idea">
+<div class="ki-label">แนวคิดหลัก</div>
+<div class="ki-text">หนังสือส่วนใหญ่บอกให้หยุดทันทีเมื่อ Stressed — แต่ในโลกจริง Stressed regime อาจกินเวลาหลายวัน การ hard stop ไว้แล้วกลับมาใหม่ซ้ำๆ ทำให้เสียค่า friction มาก แนวทางที่ดีกว่าคือ <strong>ปรับ parameter แทนที่จะปิดระบบ</strong></div>
+</div>
+
+<p>หัวใจของ section นี้คือ: Stressed regime ≠ หยุดทั้งหมด แต่หมายถึง <strong>เลือกเทรดน้อยลง เล็กลง และออกเร็วขึ้น</strong> ส่วน Broken regime เท่านั้นที่ hard stop จริง</p>
+
+<h3>ตาราง 3-Regime Response</h3>
+
+<table>
+<tr>
+  <th>Regime</th>
+  <th>Hamilton Probability</th>
+  <th>z-score Entry</th>
+  <th>Size</th>
+  <th>Take-profit</th>
+  <th>Action</th>
+</tr>
+<tr>
+  <td><strong style="color:#16a34a">Normal</strong></td>
+  <td>P(S=Normal) &gt; 0.70</td>
+  <td>z ≥ 2.0</td>
+  <td>100%</td>
+  <td>z ≤ 0.5</td>
+  <td>เทรดปกติ</td>
+</tr>
+<tr>
+  <td><strong style="color:#d97706">Stressed</strong></td>
+  <td>0.3 &lt; P(S=Normal) &lt; 0.70</td>
+  <td>z ≥ 3.0 (เพิ่ม threshold)</td>
+  <td>50% (ลดครึ่ง)</td>
+  <td>z ≤ 1.0 (ปิดไวขึ้น)</td>
+  <td>Selective — รอสัญญาณแรง</td>
+</tr>
+<tr>
+  <td><strong style="color:#dc2626">Broken</strong></td>
+  <td>P(S=Broken) &gt; 0.5</td>
+  <td>ห้ามเทรด</td>
+  <td>0%</td>
+  <td>ปิด position ทั้งหมด</td>
+  <td>Hard stop</td>
+</tr>
+</table>
+
+<h3>ทำไมต้องปรับแต่ละ Parameter?</h3>
+
+<ul>
+<li><strong>ทำไม raise threshold (z ≥ 3.0)?</strong> ใน Stressed regime OU parameters ไม่เสถียร → โอกาส false signal สูงขึ้น → ต้องรอสัญญาณแรงขึ้น เพื่อให้มั่นใจว่าเป็น mean-reversion จริง ไม่ใช่ noise</li>
+<li><strong>ทำไม reduce size (50%)?</strong> ความผันผวน σ_t สูงขึ้นใน Stressed regime (ดูจาก GARCH <a href="statarb-ch7.html">บทที่ 7</a>) → Kelly fraction ลดลงตามสัดส่วนของ variance (ดูสูตร Kelly Criterion ใน<a href="statarb-ch12.html">บทที่ 12</a>) → การถือ full size คือการ overbet</li>
+<li><strong>ทำไม take-profit ไวขึ้น (z ≤ 1.0)?</strong> Stressed regime มีโอกาส jump (<a href="statarb-ch8.html">บทที่ 8</a>) สูงขึ้น → การถือ position นานรอ z กลับใกล้ศูนย์เสี่ยงกว่าการล็อก profit เร็ว</li>
+<li><strong>Broken regime — ห้าม dynamic adjust:</strong> cointegration พัง → ε ไม่ mean-revert → ขาดทุนไม่จำกัดถ้าฝืน ไม่มีการ "ลด size เพื่อรอ" ในสภาวะนี้</li>
+</ul>
+
+<h3>Pseudo-code: adjust_params_for_regime()</h3>
+
+<div class="fm">def adjust_params_for_regime(regime_probs, base_params):
+    p_normal   = regime_probs['normal']
+    p_stressed = regime_probs['stressed']
+    p_broken   = regime_probs['broken']
+
+    if p_broken > 0.50:
+        return {"action": "HARD_STOP", "size_scale": 0.0}
+
+    if p_normal > 0.70:
+        return {"action": "TRADE",
+                "entry_z":     base_params['entry_z'],      # e.g. 2.0
+                "exit_z":      base_params['exit_z'],       # e.g. 0.5
+                "size_scale":  1.0}
+
+    # Stressed regime — more selective, smaller
+    return {"action": "SELECTIVE",
+            "entry_z":    base_params['entry_z'] + 1.0,    # raise threshold
+            "exit_z":     base_params['exit_z']  + 0.5,    # exit sooner
+            "size_scale": 0.5}                              # half size</div>
+
+<div class="bx br">
+<div class="bt">คำเตือน: Dynamic Adjustment ≠ Average Down</div>
+<p>'Dynamic Adjustment' หมายถึงการเลือกเทรดน้อยลงและเล็กลงในช่วง Stressed — <strong>ไม่ใช่การเพิ่ม position เพื่อ average down</strong> การ average down ใน Stressed/Broken regime คือหนึ่งในสาเหตุที่ทำให้กองทุน Quant ล้มละลาย</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit↔Lighter — BTC Funding War (ก.ค.–ส.ค. 2024)</div>
+<p>ช่วง BTC funding war ระหว่าง Bybit และ Lighter (ก.ค.–ส.ค. 2024): Hamilton filter ให้ P(Stressed) = 0.71 → ระบบปรับ entry_z จาก 2.0 → 3.0 และ size จาก 100% → 50%</p>
+<p><strong>ผลลัพธ์:</strong> เข้าเทรดน้อยลง 60% แต่ win rate ในช่วงนี้สูงขึ้นจาก 62% → 79% เพราะรอแค่สัญญาณแรงจริงๆ ที่ผ่าน threshold z ≥ 3.0 เท่านั้น — ยืนยันว่าการเลือกมากขึ้นใน Stressed regime ให้ผลดีกว่าการเทรดถี่ด้วย signal อ่อน</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 9.8 — Dynamic Adjustment ในทางปฏิบัติ</div>
+<p>ถ้า Hamilton filter ให้ P(Normal) = 0.45, P(Stressed) = 0.40, P(Broken) = 0.15 และ current z-score = 2.5</p>
+<p><strong>ถาม:</strong> ควรเข้าเทรดไหม? ถ้าเข้า ขนาดเท่าไหร่?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ไม่ควรเข้าเทรด</strong> เพราะ P(Normal) = 0.45 &lt; 0.70 → อยู่ใน <strong>Stressed regime</strong></p>
+<p>ใน Stressed regime entry threshold ถูกปรับขึ้นเป็น z ≥ 3.0 แต่ z-score ปัจจุบัน = 2.5 &lt; 3.0 → สัญญาณยังไม่แรงพอ</p>
+<p><strong>สิ่งที่ต้องทำ:</strong> รอให้ z-score ≥ 3.0 ก่อน ถ้าถึง 3.0 ค่อยเข้าด้วย size 50% และตั้ง take-profit ที่ z ≤ 1.0</p>
+<p>หมายเหตุ: P(Broken) = 0.15 ยังไม่ถึง 0.50 → ยังไม่ hard stop แต่ต้องระวัง ถ้า P(Broken) ขึ้นเกิน 0.50 ให้หยุดทันที</p>
+</div>
+</details>
+</div>
+
+<!-- Exercises -->
+<h2 id="s9-ex">โจทย์ท้ายบท</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 9.1 — ควรเทรดหรือไม่?</div>
+<p>ณ เวลา t regime filter ให้ผล:</p>
+<ul>
+<li>P(Normal) = 0.65</li>
+<li>P(Stressed) = 0.30</li>
+<li>P(Broken) = 0.05</li>
+</ul>
+<p>Threshold ปัจจุบัน: เทรดเมื่อ P(Normal) &gt; 0.70</p>
+<p><strong>ถาม:</strong> ควรเทรดหรือไม่? ถ้าไม่ ให้อธิบายว่า ควรทำอะไรแทน? ถ้าใช่ ควรใช้ size เท่าไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ไม่ควรเทรดเต็ม size</strong> เพราะ P(Normal) = 0.65 &lt; threshold 0.70</p>
+<p><strong>แต่ยังไม่ถึงขั้น Broken:</strong> P(Broken) = 0.05 ต่ำมาก และ P(Normal) = 0.65 &gt; 0.50</p>
+<p><strong>ที่ควรทำ:</strong></p>
+<ol>
+<li>เทรดด้วย size ลดลง — ใช้ 25% ของ full size (เนื่องจากอยู่ในโซน borderline 0.50–0.70)</li>
+<li>ไม่เปิด new position เพิ่ม รอให้ P(Normal) กลับขึ้น &gt; 0.70 ก่อน</li>
+<li>ถ้ามี open position อยู่ — ให้ tighten stop-loss เล็กน้อย</li>
+<li>ตั้ง alert ว่าถ้า P(Stressed) เพิ่มเกิน 0.40 ให้หยุดทันที</li>
+</ol>
+<p>หลักการ: ที่ P(Normal) = 0.65 ยังมีความไม่แน่นอนสูง ลด size เพื่อ manage risk ดีกว่าหยุดทั้งหมดหรือเทรดเต็ม</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 9.2 — Transition Matrix: Row Sum</div>
+<p>Transition matrix Q ของระบบ 3 regimes:</p>
+<div class="fm">Q = [[0.94, 0.05, 0.01],
+     [0.40, 0.50, 0.10],
+     [0.05, 0.20, 0.75]]</div>
+<p><strong>ถาม:</strong> Row sum ของ Q ต้องเท่ากับอะไร? เพราะอะไร? ถ้า Row 2 (Stressed) มีค่า [0.40, 0.55, 0.10] จะเกิดอะไรขึ้นและแก้ไขอย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Row sum ต้องเท่ากับ 1.0 ทุก row</strong></p>
+<p>เหตุผล: Q[i,j] = P(S_t=j | S_{t-1}=i) — ความน่าจะเป็นที่ระบบจะไปอยู่ใน state j เมื่ออยู่ใน state i ณ เวลาก่อน ผลรวมของ probability ที่จะไปในทุก state ต้องเป็น 1 (ระบบต้องอยู่ใน state ใด state หนึ่งเสมอ)</p>
+<p>ตรวจสอบตัวอย่าง: 0.94 + 0.05 + 0.01 = 1.00 ✓, 0.40 + 0.50 + 0.10 = 1.00 ✓</p>
+<p><strong>ถ้า Row 2 = [0.40, 0.55, 0.10]: ผลรวม = 1.05 ≠ 1</strong></p>
+<p>ปัญหา: Hamilton filter จะให้ posterior probabilities ที่ไม่ normalize ถูกต้อง → error สะสมทุก step</p>
+<p><strong>วิธีแก้:</strong> Normalize แต่ละ row ให้บวกได้ 1: [0.40/1.05, 0.55/1.05, 0.10/1.05] = [0.381, 0.524, 0.095] หรือปรับ parameter ให้ถูกต้องก่อน</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 9.3 — Bybit เปลี่ยน Funding Formula</div>
+<p>Bybit ประกาศเปลี่ยน funding rate formula ใหม่: จาก 8-hour settlement เป็น 4-hour settlement (เก็บบ่อยขึ้น 2x)</p>
+<p><strong>ถาม:</strong> การเปลี่ยนแปลงนี้ส่งผลต่อ regime distribution อย่างไร? และต้องทำอะไรกับ transition matrix Q และ OU parameters?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ผลกระทบต่อ regime:</strong></p>
+<ol>
+<li><strong>Stressed regime พบบ่อยขึ้น:</strong> funding settlement บ่อยขึ้น → basis ขยับทุก 4 ชั่วโมง แทน 8 ชั่วโมง → spread มีโอกาส "Stressed" ทุก 4h แทน 8h → P(Normal→Stressed) อาจเพิ่มขึ้น</li>
+<li><strong>Normal period สั้นลง:</strong> ระหว่าง settlement ช่วง calm สั้นลงครึ่งหนึ่ง</li>
+<li><strong>σ ใน Normal regime อาจเพิ่มขึ้นเล็กน้อย:</strong> เพราะ funding adjustment บ่อยกว่า</li>
+</ol>
+<p><strong>สิ่งที่ต้องทำ:</strong></p>
+<ol>
+<li><strong>Re-calibrate transition matrix Q</strong> โดยใช้ data หลังเปลี่ยน formula — อย่าใช้ Q เดิม เพราะ structural change</li>
+<li><strong>Re-estimate OU parameters</strong> สำหรับแต่ละ regime โดยเฉพาะ σ_Normal และ κ_Normal</li>
+<li><strong>ช่วงแรกหลังเปลี่ยน:</strong> ลด threshold จาก P(Normal) &gt; 0.70 → P(Normal) &gt; 0.80 ชั่วคราว เพื่อระวังในช่วงที่ยังไม่มีข้อมูลมากพอ</li>
+<li><strong>Paper trade</strong> อย่างน้อย 2 สัปดาห์หลังการเปลี่ยน ก่อน deploy จริง</li>
+</ol>
+</div>
+</details>
+</div>
+
+<div class="bx bi">
+<div class="bt">อ้างอิงสำคัญ (References)</div>
+<ul>
+<li><strong>Hamilton, J. D. (1989).</strong> A new approach to the economic analysis of nonstationary time series and the business cycle. <em>Econometrica</em>, 57(2), 357–384. — บทความต้นฉบับ Markov-switching model และ Hamilton filter ที่ Ch.9 ใช้โดยตรง</li>
+<li><strong>Hamilton, J. D. (1990).</strong> Analysis of time series subject to changes in regime. <em>Journal of Econometrics</em>, 45(1–2), 39–70. — ขยาย Hamilton (1989) สู่ continuous-state และ multivariate regime models</li>
+<li><strong>Kim, C.-J., &amp; Nelson, C. R. (1999).</strong> <em>State-Space Models with Regime Switching.</em> MIT Press. — ตำราฐาน Markov-switching กับ OU/state-space; ครอบคลุม Kim smoother ที่ปรับปรุง Hamilton filter</li>
+</ul>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.9 Regime-Switching OU | ต่อไป → <strong>Ch.10: Z-score &amp; Robust Statistics</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

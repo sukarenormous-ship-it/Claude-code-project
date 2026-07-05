@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.3 — Ornstein-Uhlenbeck Process</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.step-row{display:flex;align-items:flex-start;gap:12px;margin:10px 0;padding:12px 16px;background:#fff;border:1px solid var(--g2);border-radius:8px}
+.step-num{background:var(--teal);color:#fff;border-radius:50%;width:26px;height:26px;min-width:26px;text-align:center;line-height:26px;font-size:.85em;font-weight:700}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.05em}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.chart{max-width:100%}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 3</div>
+<h1>Ornstein-Uhlenbeck Process</h1>
+<div class="sub">หัวใจของ Stat Arb — โมเดลที่อธิบายว่า spread "วนกลับ" อย่างไร<br>
+κ (speed) · θ (mean) · σ (noise) · Half-life · Calibration</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<p>OU Process คือ "สปริงที่มี noise" — ยิ่งดึง spread ออกจากค่ากลาง สปริงยิ่งดึงกลับแรง<br>
+Half-life บอกว่า spread ใช้เวลากลับครึ่งทางนานแค่ไหน → กำหนดว่าเราจะ trade แบบ intraday หรือ swing</p>
+<div class="ki-eq">$$d\varepsilon = \kappa(\theta - \varepsilon)\,dt + \sigma\,dW$$</div>
+</div>
+
+<!-- 3.1 SDE and Parameters -->
+<h2 id="s3-1">3.1 Parameters ของ OU Process</h2>
+
+<table>
+<tr><th>Parameter</th><th>ชื่อ</th><th>ความหมาย trade</th><th>ค่าปกติ</th></tr>
+<tr><td><strong>κ &gt; 0</strong></td><td>Mean-reversion speed</td><td>ยิ่งมาก spread กลับเร็ว → ต้อง execute เร็ว</td><td>1–5 ต่อวัน</td></tr>
+<tr><td><strong>θ</strong></td><td>Long-run mean</td><td>ค่ากลางที่ entry/exit อิงอยู่ — ถ้าเปลี่ยนบ่อยต้อง re-calibrate</td><td>≈0 หรือ avg funding diff</td></tr>
+<tr><td><strong>σ &gt; 0</strong></td><td>Diffusion (noise)</td><td>ยิ่งมาก spread ผันผวนมาก → threshold ต้องกว้างกว่า fee</td><td>0.01–0.5% ต่อ √วัน</td></tr>
+</table>
+
+<!-- 3.2 Solution -->
+<h2 id="s3-2">3.2 OU Solution — ε เดินไปไหนได้บ้าง</h2>
+
+<p>SDE นี้ solve ได้ closed-form ทำให้เราคำนวณ expected value ได้ทุกเวลา:</p>
+
+<div class="fm">ε_t = θ + (ε₀ − θ)·e^{−κt}  +  σ·∫₀ᵗ e^{−κ(t−s)} dW_s
+        ↑              ↑                    ↑
+     ค่ากลาง   decay จากจุดเริ่ม          noise สะสม</div>
+
+<div class="bx bb">
+<div class="bt">\(E[\varepsilon_t \mid \varepsilon_0] = \theta + (\varepsilon_0 - \theta)\,e^{-\kappa t}\)</div>
+<p>เริ่มที่ ε₀ = θ + gap₀ (ห่างจากค่ากลาง gap₀)<br>
+หลังเวลา t: ε คาดว่าจะอยู่ที่ θ + gap₀·e^{−κt}<br>
+gap ลดลงด้วยอัตรา e^{−κt} → ยิ่งนาน ยิ่งใกล้ θ</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">\(\operatorname{Var}[\varepsilon_t \mid \varepsilon_0] = \frac{\sigma^2}{2\kappa}\!\left(1 - e^{-2\kappa t}\right)\)</div>
+<p>ความไม่แน่นอนของ ε เพิ่มขึ้นตามเวลา แต่ไม่ขยายไปเรื่อยๆ<br>
+เมื่อ t → ∞ : Var → σ²/(2κ) = ความแปรปรวน stationary (steady-state)<br>
+เมื่อ t → 0 : Var → 0 (รู้ตำแหน่ง ε ชัดเจน)<br>
+ยิ่ง κ สูง (mean reversion เร็ว) → Var เพิ่มช้า และเข้าสู่ steady-state เร็วขึ้น</p>
+</div>
+
+<!-- 3.3 Half-life -->
+<h2 id="s3-3">3.3 Half-Life — ตัวเลขที่สำคัญที่สุดสำหรับ Trader</h2>
+
+<div class="key-idea">
+<div class="ki-label">Half-Life</div>
+<div class="ki-eq">$$\tau_{1/2} = \frac{\ln 2}{\kappa} \approx \frac{0.693}{\kappa}$$</div>
+<p style="margin-top:8px">เวลาที่ gap ระหว่าง ε และ θ ลดลงครึ่งหนึ่ง<br>
+ถ้า spread เบี่ยง 1% จาก θ → หลัง τ₁/₂ จะเหลือ 0.5%</p>
+</div>
+
+<!-- Half-life + trade opportunity diagram -->
+<img class="chart" src="charts/ch3-halflife-zones.svg" alt="OU process trade zones and half-life">
+<div class="caption">Half-life = ช่วงเวลาที่ spread เดินทางครึ่งทางกลับ — ใช้วางแผน expected holding time</div>
+
+<h3>Half-life กับประเภท Strategy</h3>
+
+<table>
+<tr><th>κ (ต่อวัน)</th><th>Half-life</th><th>ประเภท Trade</th><th>ข้อกำหนด Execution</th></tr>
+<tr><td>0.1</td><td>~7 วัน</td><td>Position trade / swing</td><td>ไม่เร่ง ต้องมี margin buffer</td></tr>
+<tr><td>0.5</td><td>~33 ชม.</td><td>Swing ข้ามวัน</td><td>Monitor วันละครั้ง</td></tr>
+<tr><td style="background:#f0fdf4"><strong>1–2</strong></td><td style="background:#f0fdf4"><strong>8–17 ชม.</strong></td><td style="background:#f0fdf4"><strong>Intraday (เหมาะสุด)</strong></td><td style="background:#f0fdf4"><strong>Check ทุก 1–2 ชม.</strong></td></tr>
+<tr><td>5</td><td>~3 ชม.</td><td>Fast intraday</td><td>Algo-assisted execution</td></tr>
+<tr><td>10+</td><td>&lt;2 ชม.</td><td>Near HFT</td><td>ต้องการ co-location, API</td></tr>
+</table>
+
+<!-- 3.4 Stationary Distribution and Trade Bands -->
+<h2 id="s3-4">3.4 Stationary Distribution — Band ของ Trade</h2>
+
+<p>เมื่อ t → ∞ OU process เข้าสู่ stationary distribution ซึ่งเป็น Normal:</p>
+
+<div style="text-align:center;margin:14px 0">$$\varepsilon_\infty \sim N\!\left(\theta,\ \frac{\sigma^2}{2\kappa}\right) \qquad\Longrightarrow\qquad \sigma_\varepsilon = \frac{\sigma}{\sqrt{2\kappa}}$$</div>
+<p style="text-align:center;color:#64748b;font-size:.92em;margin-top:-6px">σ_ε = stationary std dev — ใช้ตั้ง entry band</p>
+
+<div class="bx bg">
+<div class="bt">σ_ε ใช้ทำอะไร?</div>
+<ul>
+<li>Entry threshold: ε &gt; θ + 2σ_ε หรือ ε &lt; θ − 2σ_ε (เกิดราว 5% ของเวลา)</li>
+<li>Exit threshold: ε ≈ θ ± 0.5σ_ε</li>
+<li>Stop-loss: |ε − θ| &gt; 3σ_ε (spread "หลุด" ผิดปกติ)</li>
+<li>ตรวจสอบ: ε ควรอยู่ในช่วง θ ± 3σ_ε กว่า 99.7% ของเวลา — ถ้าไม่ใช่ = signal ให้ re-calibrate</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">±2σ คือจุดเริ่มต้น ไม่ใช่กฎตายตัว</div>
+<p>ค่า ±2σ ที่ใช้กันทั่วไปมาจาก Gaussian distribution: P(|ε − θ| > 2σ) ≈ 5% แต่ค่า entry ที่ "ถูก" จริงๆ ขึ้นกับ <strong>อัตราส่วนระหว่าง fee และ σ_stat</strong> ไม่ใช่แค่ตัวเลขทางสถิติ</p>
+<p>Breakeven condition (อธิบายเต็มใน <a href="statarb-ch4.html">บทที่ 4</a>):</p>
+<div class="fm">Expected profit ≈ (z_entry − z_exit) × σ_stat  ≥  2 × fee (round-trip)
+
+→ z_entry ≥ z_exit + 2 × fee / σ_stat    ← minimum entry ที่ profitable
+
+ตัวอย่าง: fee = 0.06%, σ_stat = 0.08%, z_exit = 0.5
+  z_entry ≥ 0.5 + 2 × 0.06 / 0.08 = 0.5 + 1.5 = 2.0   ← ที่มาของ "±2σ"</div>
+<p>±2σ คือ <em>breakeven point สำหรับ fee/σ ratio ทั่วไป</em> ถ้า ratio ของคุณต่างออกไป z_entry ควรต่างตามด้วย:</p>
+<table>
+<tr><th>เงื่อนไข</th><th>z_entry ที่เหมาะ</th><th>เหตุผล</th></tr>
+<tr><td>Fee สูง (&gt; 0.10% rt) หรือ σ_stat เล็กใกล้ breakeven</td><td><strong>2.5–3.0</strong></td><td>ต้องการ gross spread มากขึ้นเพื่อครอบ friction</td></tr>
+<tr><td>Standard (fee ≈ 0.06%, σ_stat &gt;&gt; breakeven)</td><td><strong>2.0</strong></td><td>Classic starting point — ใช้ได้ทั่วไป</td></tr>
+<tr><td>Fee ต่ำ (&lt; 0.03%) หรือ σ_stat ใหญ่มาก</td><td><strong>1.5–1.7</strong></td><td>Edge ยังคุ้ม แม้ entry ถี่กว่า</td></tr>
+<tr><td>Crossing rate ต่ำ / ต้องการ trade บ่อยขึ้น</td><td><strong>1.5</strong></td><td>ยอม edge ต่อ trade น้อยลง แต่ได้ trades มากขึ้น</td></tr>
+</table>
+<p style="margin-top:8px;font-size:.92em;color:#64748b">Stop-loss ±3σ: P(|ε| > 3σ) ≈ 0.3% เป็นเหตุการณ์ผิดปกติ — ถ้า ε ข้าม 3σ แปลว่าโมเดลอาจพัง ไม่ใช่แค่ spread เบี่ยงออกชั่วคราว ค่า 3σ ปรับได้: เข้มขึ้น (2.5σ ถ้าต้องการตัดเร็ว) หรือหลวมขึ้น (4σ ถ้าต้องการ margin buffer มากกว่า) ขึ้นกับ max drawdown ที่รับได้</p>
+</div>
+
+<!-- 3.5 AR(1) Discretization -->
+<h2 id="s3-5">3.5 AR(1): OU Process ในโลกข้อมูล Discrete</h2>
+
+<p>ข้อมูลจริงเป็น discrete (รายนาที รายชั่วโมง) เมื่อแปลง OU เป็น AR(1):</p>
+
+<div class="key-idea">
+<div class="ki-label">OU → AR(1) (time step Δt)</div>
+<div class="ki-eq">$$\varepsilon_t = a + b\,\varepsilon_{t-1} + \eta_t$$</div>
+<p style="margin-top:8px; font-family:monospace">
+b = e^{−κΔt}  ←  mean-reversion coefficient<br>
+a = θ(1−b)    ←  intercept<br>
+η_t ~ N(0, σ²(1−b²)/(2κ))  ←  noise
+</p>
+</div>
+
+<h3>อ่าน b บน Scale — b บอกอะไร?</h3>
+
+<!-- AR(1) b-value visual: 3 panels showing different b values -->
+<img class="chart" src="charts/ch3-ar1-bvalues.svg" alt="AR(1) b-value comparison: slow vs medium vs fast mean-reversion">
+<div class="caption">b ≈ 0.9–0.95 ต่อ time step มักเป็น sweet spot สำหรับ intraday stat arb</div>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — ใช้ half-life ทำอะไร</div>
+<p>เดสก์จริงไม่ได้ trade ทุกคู่ที่ cointegrate — เขา <strong>คัดด้วย half-life ก่อน</strong>: ถ้า τ½ ยาวกว่า holding budget ที่รับได้ (เช่น &gt; 2 วันสำหรับ intraday book) ก็ทิ้งคู่นั้นทันที เพราะ capital ถูกล็อกนานเกินไป → Sharpe ต่อทุนต่ำ. นอกจากนี้ desk จะ <strong>re-estimate half-life แบบ rolling</strong> ทุกวัน ถ้ามันยืดออก &gt; 2× จากค่า baseline ถือเป็นสัญญาณ regime change → ลดขนาดหรือปิด ก่อนที่ spread จะค้างยาว</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">สูตรแปลง AR(1) → OU parameters</div>
+<div class="ki-eq">$$\kappa = \frac{-\ln b}{\Delta t} \qquad \theta = \frac{a}{1-b}$$</div>
+<p style="margin-top:8px">ตัวอย่าง: b = 0.90, Δt = 1 ชม. = 1/24 วัน<br>
+κ = −ln(0.90) / (1/24) &nbsp;→&nbsp; −ln(0.90) = <strong>0.1054</strong> &nbsp;→&nbsp; 0.1054 × 24 = <strong>2.53 ต่อวัน</strong><br>
+Half-life = ln(2) / 2.53 = <strong>0.274 วัน = 6.6 ชม.</strong></p>
+</div>
+
+<!-- 3.6 Calibration -->
+<h2 id="s3-6">3.6 Calibration — หา κ, θ, σ จากข้อมูลจริง</h2>
+
+<p>เราเพิ่งเรียนรู้ว่า AR(1) ที่ fit บน spread ε_t ก็คือ OU process ในรูปแบบ discrete — ดังนั้นวิธีหา κ, θ, σ จากข้อมูลจริงคือ <strong>fit AR(1) แล้วแปลงค่า</strong> ตามขั้นตอนนี้:</p>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>สร้าง spread series:</strong> ε_t = log(P_Bybit_t) − β·log(P_Lighter_t)<br>
+(β ได้จาก OLS บน log returns — <a href="statarb-ch4.html">บทที่ 4</a>)</div>
+</div>
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>Regress AR(1):</strong> ε_t = a + b·ε_{t-1} + η_t<br>
+บันทึก: a, b, และ residuals η<br>
+<span style="font-size:.88em;color:#64748b">หมายเหตุ: ตำรานี้ใช้ b สำหรับ AR(1) coefficient ในขั้นตอนนี้ ส่วน φ ใช้ใน Appendix (เพื่อไม่ชนกับ hedge ratio β) — b และ φ คือค่าเดียวกัน</span></div>
+</div>
+<div class="step-row">
+<div class="step-num">3</div>
+<div><strong>คำนวณ OU parameters:</strong><br>
+θ = a/(1−b), κ = −ln(b)/Δt, σ_stat ≈ std(ε − θ)<br>
+<span style="font-size:.92em">หมายเหตุ: std(ε − θ) เป็นตัวประมาณค่า (sample estimator) ของ σ_stat = σ/√(2κ) ตัวเดียวกันจาก §3.4 — ทั้งสองค่าจะลู่เข้าหากันเมื่อจำนวนข้อมูลมากพอ</span></div>
+</div>
+<div class="step-row">
+<div class="step-num">4</div>
+<div><strong>คำนวณ trade parameters:</strong><br>
+τ₁/₂ = ln(2)/κ → กำหนด holding time<br>
+Entry band = θ ± 2σ_stat → กำหนด entry threshold</div>
+</div>
+
+<div class="pseudo">
+<span class="c"># Pseudo-code: OU Calibration</span><br>
+<span class="kw">function</span> <span class="fn">calibrate_ou</span>(eps_series, delta_t):<br>
+&nbsp;&nbsp;<span class="c"># Step 1: AR(1) regression</span><br>
+&nbsp;&nbsp;y = eps_series[<span class="nm">1</span>:]      <span class="c"># ε_t</span><br>
+&nbsp;&nbsp;x = eps_series[:-<span class="nm">1</span>]    <span class="c"># ε_{t-1}</span><br>
+&nbsp;&nbsp;b, a = <span class="fn">ols_slope_intercept</span>(x, y)<br>
+&nbsp;&nbsp;residuals = y - (a + b * x)<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 2: OU parameters</span><br>
+&nbsp;&nbsp;theta = a / (<span class="nm">1</span> - b)<br>
+&nbsp;&nbsp;kappa = -<span class="fn">log</span>(b) / delta_t<br>
+&nbsp;&nbsp;sigma_stat = <span class="fn">std</span>(eps_series - theta)<br>
+&nbsp;&nbsp;half_life = <span class="fn">log</span>(<span class="nm">2</span>) / kappa<br>
+<br>
+&nbsp;&nbsp;<span class="c"># Step 3: Trade bands</span><br>
+&nbsp;&nbsp;entry_upper = theta + <span class="nm">2</span> * sigma_stat<br>
+&nbsp;&nbsp;entry_lower = theta - <span class="nm">2</span> * sigma_stat<br>
+&nbsp;&nbsp;stop_upper  = theta + <span class="nm">3</span> * sigma_stat<br>
+&nbsp;&nbsp;stop_lower  = theta - <span class="nm">3</span> * sigma_stat<br>
+<br>
+&nbsp;&nbsp;<span class="kw">return</span> {theta, kappa, sigma_stat, half_life,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;entry_upper, entry_lower, stop_upper, stop_lower}
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Bybit↔Lighter BTC — Calibration ผล</div>
+<div class="fm">ข้อมูล: 30 วัน, รายนาที (Δt = 1/1440 วัน)
+ε_t = log(P_Bybit) − 1.003·log(P_Lighter)
+
+OLS AR(1) result:
+  b = 0.9985,  a = 2.0×10⁻⁶
+  Residual std = 0.00012
+
+OU Parameters:
+  θ  = 2.0e-6 / (1−0.9985) = 0.00133  (basis ≈ 0.133%)
+  κ  = −ln(0.9985)/(1/1440) = 2.16 ต่อวัน
+  σ_stat ≈ 0.00080  (≈ 0.08%)
+
+Trade Parameters:
+  τ₁/₂ = 0.693/2.16 = 7.7 ชั่วโมง  ← intraday trade ได้
+  Entry: ε &gt; 0.293% หรือ ε &lt; −0.027%  (θ ± 2×0.08%)
+  Stop:  ε &gt; 0.373% หรือ ε &lt; −0.107%  (θ ± 3×0.08%)</div>
+<p>สรุป: spread กลับใน ~8 ชม. เปิด position ตอนเช้า → ปิดก่อนค่ำ</p>
+</div>
+
+<!-- 3.7 Limitations -->
+<h2 id="s3-7">3.7 เมื่อไร OU เดี่ยวไม่พอ — และบทถัดไปจะแก้อย่างไร</h2>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — OU เดี่ยวสมมติว่าโลกอยู่นิ่ง</div>
+<p>OU พื้นฐานตั้งอยู่บนสมมติฐานว่า <strong>κ, θ, σ, β คงที่ และ noise เป็น Gaussian</strong> — สมมติฐานทั้งสี่นี้พังในตลาดจริง: funding structure เปลี่ยน (θ drift), market crash (σ พุ่ง), liquidation cascade (noise มี fat-tail/jump), correlation เปลี่ยน (β drift). ถ้ายังใช้ค่าเดิม โมเดลจะ <strong>ประเมิน z-score ผิด → เข้า/ออก ผิดจังหวะ</strong>. ตารางข้างล่างจับคู่แต่ละ assumption ที่พังกับโมเดลที่ใช้แก้ในบทถัด ๆ ไป</p>
+</div>
+
+<table>
+<tr><th>สมมติฐาน OU</th><th>เมื่อไรที่ผิด</th><th>สัญญาณที่เห็น</th><th>โมเดลที่ใช้แทน</th></tr>
+<tr><td>κ, θ คงที่</td><td>ตลาด regime change: funding rate เปลี่ยนโครงสร้าง</td><td>θ drift ออก, ε ไม่กลับ</td><td>Kalman (<a href="statarb-ch15.html">Ch.15</a>), Regime-Switch (<a href="statarb-ch9.html">Ch.9</a>)</td></tr>
+<tr><td>σ คงที่</td><td>ช่วง volatile: market crash, news</td><td>residual variance พุ่ง</td><td>GARCH on residuals (<a href="statarb-ch7.html">Ch.7</a>)</td></tr>
+<tr><td>Gaussian noise</td><td>liquidation cascade, news spike</td><td>residual มี fat tail, jump</td><td>Jump-Diffusion OU (<a href="statarb-ch8.html">Ch.8</a>)</td></tr>
+<tr><td>β คงที่</td><td>ตลาดเปลี่ยน correlation</td><td>ε drift กลับมา</td><td>Kalman Filter β (<a href="statarb-ch15.html">Ch.15</a>)</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Rule of thumb: เมื่อไรต้อง re-calibrate?</div>
+<ul>
+<li>θ เคลื่อนออกจากค่าเดิม &gt; 1σ_stat ใน 5 วัน → re-calibrate β และ θ</li>
+<li>Residual variance พุ่ง &gt; 2× baseline → switch ไป GARCH</li>
+<li>Half-life ยาวขึ้น &gt; 2× → regime เปลี่ยน พิจารณา exit ทั้งหมด</li>
+</ul>
+</div>
+
+<!-- 3.8 Notation Reference -->
+<h2 id="s3-8">3.8 ตารางสัญลักษณ์ (Notation Reference) — ใช้ตลอดทั้งเล่ม</h2>
+
+<p>ทั้งเล่มใช้ σ หลายแบบ ต่างกันที่จุดประสงค์และวิธีคำนวณ — ตารางนี้เป็นอ้างอิงกลางที่ควรกลับมาดูทุกครั้งที่สับสน:</p>
+
+<table>
+<tr><th>สัญลักษณ์</th><th>ชื่อเต็ม</th><th>ความหมาย</th><th>คำนวณจาก</th><th>ใช้ใน</th></tr>
+<tr>
+  <td><strong>σ</strong> (SDE)</td>
+  <td>Diffusion coefficient</td>
+  <td>ขนาด noise ใน OU SDE: dε = κ(θ−ε)dt + σ·dW</td>
+  <td>σ = σ_stat · √(2κ)</td>
+  <td><a href="statarb-ch2.html">Ch.2</a>–3 สมการทฤษฎี</td>
+</tr>
+<tr>
+  <td><strong>σ_stat</strong></td>
+  <td>Stationary std</td>
+  <td>Std ของ spread ε ณ steady state — ใช้กำหนด entry/exit band</td>
+  <td>σ_stat = σ/√(2κ) ≈ std(ε − θ)</td>
+  <td>Ch.3–4 entry band θ ± 2σ_stat</td>
+</tr>
+<tr>
+  <td><strong>σ_t</strong> (GARCH)</td>
+  <td>Conditional std</td>
+  <td>Std ของ spread ε ณ เวลา t — ขยายตัวช่วง volatile</td>
+  <td>σ_t² = ω + α·ε²_{t−1} + β_G·σ²_{t−1} &nbsp;<span style="font-size:.85em;color:#64748b">(β_G = GARCH persistence coeff, ไม่ใช่ hedge ratio β)</span></td>
+  <td><a href="statarb-ch7.html">Ch.7</a> GARCH z-score</td>
+</tr>
+<tr>
+  <td><strong>σ_robust</strong></td>
+  <td>Robust std (MAD-based)</td>
+  <td>Estimate σ_stat ที่ทนต่อ outlier — ไม่กระทบจาก jump</td>
+  <td>σ_robust = MAD × 1.4826</td>
+  <td><a href="statarb-ch10.html">Ch.10</a> robust z-score</td>
+</tr>
+<tr>
+  <td><strong>σ_EMA</strong></td>
+  <td>EMA-smoothed std</td>
+  <td>Rolling std ด้วย exponential weighting — Welford-style</td>
+  <td>Welford online update (<a href="statarb-ch15.html">Ch.15</a>)</td>
+  <td><a href="statarb-ch15.html">Ch.15</a> dynamic β tracking</td>
+</tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">กฎง่าย ๆ ในการเลือก σ</div>
+<ul>
+<li><strong>ตลาดปกติ</strong>: ใช้ σ_stat (OLS residual std) — เร็วและง่าย</li>
+<li><strong>ช่วง volatile</strong> (ratio 7d/30d std &gt; 1.5): เปลี่ยนเป็น σ_t จาก GARCH(1,1)</li>
+<li><strong>มี outlier / jump</strong>: ใช้ σ_robust = MAD × 1.4826 แทน std()</li>
+<li><strong>β เปลี่ยนตาม Kalman</strong>: ε เปลี่ยนทุก bar → ใช้ σ_EMA แบบ Welford update</li>
+</ul>
+</div>
+
+<table>
+<tr><th>สัญลักษณ์อื่น ๆ</th><th>ความหมาย</th></tr>
+<tr><td><strong>ε_t</strong></td><td>Spread residual at time t: ε = log(P_A) − β·log(P_B)</td></tr>
+<tr><td><strong>θ</strong></td><td>Long-run mean ของ OU (equilibrium spread level)</td></tr>
+<tr><td><strong>κ</strong></td><td>Mean-reversion speed (ต่อวัน); τ₁/₂ = ln(2)/κ</td></tr>
+<tr><td><strong>β</strong></td><td>Hedge ratio (OLS, TLS, หรือ Kalman)</td></tr>
+<tr><td><strong>H</strong></td><td>Hurst exponent; H &lt; 0.5 = mean-reverting</td></tr>
+<tr><td><strong>z_t</strong></td><td>Z-score ของ spread: (ε_t − θ)/σ_stat หรือ (ε_t − θ)/σ_t</td></tr>
+<tr><td><strong>τ₁/₂</strong></td><td>Half-life ของ mean-reversion: τ₁/₂ = ln(2)/κ</td></tr>
+<tr><td><strong>Δt</strong></td><td>Bar size ในหน่วยวัน (1-hour bar: Δt = 1/24)</td></tr>
+</table>
+
+<!-- 3.9 Walk-Forward Calibration -->
+<h2 id="s3-9">3.9 Walk-Forward Calibration — ป้องกัน Overfitting</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด — อ่านก่อน</div>
+<p>การ backtest แบบ <strong>Static Window คือดู historical data ครั้งเดียว → รู้อนาคตโดยไม่รู้ตัว (lookahead bias)</strong><br>
+Walk-Forward แก้ปัญหานี้โดยแบ่งเวลาแบบ rolling ลำดับเสมอ — เราใช้ข้อมูลอดีตเพื่อ fit แล้วทดสอบบนข้อมูลอนาคตที่โมเดลยังไม่เคยเห็น</p>
+</div>
+
+<h3>Concept Drift — ทำไม Parameters เปลี่ยนตลอดเวลา</h3>
+
+<p>OU parameters (κ, θ, σ) ไม่คงที่ตลอดกาล ตลาดเปลี่ยนแปลงตามสภาวะเศรษฐกิจ ความเชื่อมั่นของนักลงทุน และโครงสร้าง funding rate — สิ่งนี้เรียกว่า <strong>Concept Drift</strong></p>
+
+<ul>
+<li><strong>Static window</strong>: fit OU บนข้อมูลทั้งหมดครั้งเดียว → parameters เป็นค่าเฉลี่ยของทุกช่วงเวลา → overfits กับช่วงอดีตที่ตลาดอาจไม่มีอีกแล้ว</li>
+<li><strong>Walk-Forward</strong>: fit OU บน window อดีต → apply บน window อนาคตที่ยังไม่เคยเห็น → สะท้อน parameters ของตลาด ณ ช่วงนั้นจริง ๆ</li>
+</ul>
+
+<div class="bx ba">
+<div class="bt">อันตรายของ Static Calibration</div>
+<ul>
+<li>θ ที่ fit ได้อาจเป็นค่าเฉลี่ยของ regime หลายช่วงที่ไม่เคยเกิดพร้อมกัน</li>
+<li>κ ที่ได้อาจสูงเกินจริง เพราะ data ในช่วง volatile ดูเหมือน mean-revert เร็ว</li>
+<li>เมื่อ trade จริง parameters เหล่านั้นไม่ตรงกับตลาดปัจจุบัน → signal ผิด → ขาดทุน</li>
+</ul>
+</div>
+
+<h3>Walk-Forward Algorithm — 3 ขั้นตอนหลัก</h3>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>แบ่ง Window:</strong> Train window = 90 วัน, Test window = 30 วัน<br>
+เริ่มที่วันที่ 1–90 เป็น train, วันที่ 91–120 เป็น test — <strong>ห้าม shuffle หรือ random split เด็ดขาด</strong> ต้องเรียงตามเวลาเสมอ</div>
+</div>
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>Fit แล้ว Apply:</strong> Calibrate OU parameters บน train window → นำ parameters ไป generate signals บน test window → บันทึก PnL ของ test window<br>
+ไม่มี lookahead: test window ถูก "เปิดเผย" ทีละ bar ไม่ใช่ทั้งหมด</div>
+</div>
+<div class="step-row">
+<div class="step-num">3</div>
+<div><strong>เลื่อน Window:</strong> ขยับ window ไป 30 วัน (= test_days) → วนซ้ำขั้นตอน 1–2<br>
+แต่ละรอบให้ PnL 1 window — รวมทุก window ได้ equity curve ที่ไม่มี lookahead</div>
+</div>
+
+<!-- Walk-Forward timeline diagram -->
+<img class="chart" src="charts/ch3-walkforward.svg" alt="Walk-forward rolling train/test windows">
+<div class="caption">แต่ละ train block (สีน้ำเงิน) ให้ parameters → apply บน test block (สีเขียว) ที่อยู่ถัดไปในอนาคต — เลื่อนซ้ำตลอดช่วงข้อมูล</div>
+
+<h3>Pseudo-code — Walk-Forward Calibration</h3>
+
+<div class="fm">def walk_forward_calibration(prices_A, prices_B,
+                              train_days=90, test_days=30):
+    results = []
+    i = 0
+    while i + train_days + test_days &lt;= len(prices_A):
+        train_A = prices_A[i : i+train_days]
+        train_B = prices_B[i : i+train_days]
+        test_A  = prices_A[i+train_days : i+train_days+test_days]
+        test_B  = prices_B[i+train_days : i+train_days+test_days]
+
+        # Fit OU parameters on train
+        beta = estimate_beta_ols(train_A, train_B)
+        epsilon_train = log(train_A) - beta * log(train_B)
+        kappa, theta, sigma_stat = calibrate_ou(epsilon_train)
+
+        # Apply on test (no lookahead)
+        epsilon_test = log(test_A) - beta * log(test_B)
+        signals = generate_signals(epsilon_test, kappa, theta, sigma_stat)
+        pnl = simulate_pnl(signals, test_A, test_B)
+
+        results.append({"window_start": i, "beta": beta,
+                        "kappa": kappa, "pnl": pnl})
+        i += test_days  # slide forward
+
+    return results</div>
+
+<div class="bx bb">
+<div class="bt">จุดสำคัญที่ต้องระวัง</div>
+<ul>
+<li><code>i += test_days</code> — เลื่อน window ด้วย test_days ไม่ใช่ 1 วัน เพื่อให้แต่ละ test window ไม่ overlap กัน</li>
+<li>Train window ขนาด 90 วัน ต้องมี data เพียงพอสำหรับ AR(1) regression — น้อยกว่า 30 obs จะไม่ reliable</li>
+<li>ห้าม reuse test data เป็น train ของ window เดิม — window ต้องเลื่อนเป็นลำดับเสมอ</li>
+</ul>
+</div>
+
+<h3>Rolling vs Expanding Window — เลือก Train Window แบบไหน?</h3>
+
+<p>Walk-forward ที่อธิบายข้างต้นใช้ <strong>rolling window</strong> (train window เริ่มต้นเลื่อนไปพร้อมกัน ทิ้งข้อมูลเก่า) แต่มีอีกทางเลือกคือ <strong>expanding window</strong> (เพิ่มข้อมูลใหม่เข้า train โดยไม่ทิ้งข้อมูลเก่า) ทั้งสองแบบเหมาะกับสถานการณ์ต่างกัน:</p>
+
+<table>
+<tr><th>ประเภท</th><th>วิธีการ</th><th>ข้อดี</th><th>ข้อเสีย</th><th>เลือกเมื่อ</th></tr>
+<tr><td><strong>Rolling</strong><br>(fixed)</td><td>ใช้ข้อมูล N วันล่าสุด<br>ทิ้งข้อมูลเก่าสุด<br><code>train = data[i : i+N]</code></td><td>ปรับ regime change ได้เร็ว<br>parameters สะท้อน "ตลาดปัจจุบัน"</td><td>estimate ผันผวนกว่า<br>sample เล็กกว่า<br>เสี่ยง lookback bias (§3.10)</td><td>ตลาด volatile<br>regime เปลี่ยนบ่อย<br>ต้องการ real-time adaptive</td></tr>
+<tr><td><strong>Expanding</strong><br>(cumulative)</td><td>รวมข้อมูลทั้งหมดตั้งแต่เริ่ม<br>N เพิ่มขึ้นทุก iteration<br><code>train = data[0 : i+N]</code></td><td>estimate เสถียรกว่า<br>ADF power สูงขึ้นตาม N<br>ลด variance ของ κ, θ</td><td>ปรับตัวช้าเมื่อ regime เปลี่ยน<br>ข้อมูลเก่า dilute ค่าปัจจุบัน<br>θ อาจ drift ออกโดยไม่รู้</td><td>pair เสถียร<br>ต้องการ estimate น่าเชื่อถือ<br>market structure ไม่เปลี่ยนมาก</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ระวัง: Rolling Window สั้น = Lookback Bias เดิม (§3.10)</div>
+<p>Walk-forward แก้ lookahead bias ได้ แต่ถ้า train window <strong>สั้นเกินไป</strong> (เช่น 20–30 วัน) จะเจอ Kendall bias เดิม: κ สูงเกินจริง, half-life สั้นเกินจริง — walk-forward และ lookback sensitivity เป็นคนละปัญหา ต้องแก้ทั้งสองด้วยกัน</p>
+<p><strong>Rule of thumb:</strong> train window ≥ 30 × expected half-life ไม่ว่าจะใช้ rolling หรือ expanding</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Bybit↔Lighter BTC — Walk-Forward 360 วัน</div>
+<p>ใช้ข้อมูล 360 วัน → walk-forward ได้ <strong>9 windows</strong> (train=90d, test=30d, slide=30d)</p>
+<div class="fm">Window 1:  train day 1–90,   test day 91–120   → half-life = 6.1h
+Window 2:  train day 31–120,  test day 121–150  → half-life = 5.2h
+Window 3:  train day 61–150,  test day 151–180  → half-life = 8.7h
+Window 4:  train day 91–180,  test day 181–210  → half-life = 9.4h
+Window 5:  train day 121–210, test day 211–240  → half-life = 7.1h
+Window 6:  train day 151–240, test day 241–270  → half-life = 11.3h
+Window 7:  train day 181–270, test day 271–300  → half-life = 6.8h
+Window 8:  train day 211–300, test day 301–330  → half-life = 5.9h
+Window 9:  train day 241–330, test day 331–360  → half-life = 6.5h
+
+เฉลี่ย: 7.4h  |  Range: 5.2–11.3h</div>
+<p>Half-life เฉลี่ยจาก 9 windows = <strong>7.4 ชั่วโมง</strong> (range: 5.2–11.3h) — ความผันผวนของ half-life ระหว่าง windows แสดงว่า OU parameters เปลี่ยนตามช่วงเวลาจริง → <strong>justifies การใช้ walk-forward แทน static calibration</strong> ถ้าใช้ static จะได้ค่าเดียวตลอด ซึ่งผิดพลาดในหลายช่วง</p>
+</div>
+
+<!-- Exercises for 3.9 -->
+<div class="ex">
+<div class="et">โจทย์ 3.4 — Walk-Forward Window Count</div>
+<p>มีข้อมูล <strong>180 วัน</strong>, ตั้งค่า train = 90 วัน, test = 30 วัน, slide = 30 วัน</p>
+<p><strong>ถาม:</strong> (a) ได้กี่ windows? (b) first trade เริ่มวันที่เท่าไหร่? (c) ถ้าลด train เหลือ 60 วัน จะได้กี่ windows?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> จำนวน windows = ⌊(180 − 90) / 30⌋ = ⌊90 / 30⌋ = <strong>3 windows</strong></p>
+<p>Window 1: train day 1–90, test day 91–120<br>
+Window 2: train day 31–120, test day 121–150<br>
+Window 3: train day 61–150, test day 151–180</p>
+<p><strong>(b)</strong> First trade เริ่มวันที่ <strong>91</strong> — เพราะต้องรอให้ train window แรก (90 วัน) สมบูรณ์ก่อน min lookback ก่อน trade คือวันที่ 91</p>
+<p><strong>(c)</strong> train=60d: ⌊(180 − 60) / 30⌋ = ⌊120 / 30⌋ = <strong>4 windows</strong> — ได้ windows มากขึ้น แต่ fit quality อาจลดลงเพราะ train data น้อยลง</p>
+</div>
+</details>
+</div>
+
+<!-- Exercises -->
+<div class="ex">
+<div class="et">โจทย์ 3.1 — คำนวณ half-life และ trade parameters</div>
+<p>OLS AR(1) บน spread รายชั่วโมง (Δt = 1/24 วัน): b = 0.94, a = 0.00012<br>
+std(residuals) = 0.00015</p>
+<p><strong>ถาม:</strong> (a) κ ต่อวัน (b) half-life เป็นชั่วโมง (c) entry band (d) spread ปัจจุบัน 0.05% จาก θ — ควร enter ไหม?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> κ = −ln(0.94)/(1/24) = 0.0619×24 = <strong>1.485 ต่อวัน</strong></p>
+<p><strong>(b)</strong> τ₁/₂ = ln(2)/1.485 = <strong>11.2 ชั่วโมง</strong></p>
+<p><strong>(c)</strong> θ = 0.00012/(1−0.94) = 0.002 = 0.2%<br>
+σ_stat ≈ std(ε − θ) ≈ residual_std × √(1/(1−b²))<br>
+= 0.00015 / √(1 − 0.94²) = 0.00015 / √(0.1164) ≈ 0.00015 / 0.341 ≈ 0.00044 ≈ 0.044%<br>
+<small>(สูตร √(1/(1−b²)) แปลง std ของ η_t → std ของ stationary ε; ถ้า b ≈ 0.94 ตัวหารคือ 0.341)</small><br>
+<small>residual_std/√(1−b²) ก็เป็นตัวประมาณค่าของ σ_stat = σ/√(2κ) ตัวเดียวกัน — เป็นเพียงอีกวิธีคำนวณจาก residual ของ AR(1)</small><br>
+Entry band: 0.2% ± 2×0.044% = (0.112%, 0.288%)</p>
+<p><strong>(d)</strong> spread 0.05% จาก θ = ε อยู่ที่ 0.25% (สมมติอยู่เหนือ θ)<br>
+0.25% &lt; entry upper 0.288% → <strong>ยังไม่ถึง threshold → ยังไม่ enter</strong></p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.2 — แปลง b → strategy design</div>
+<p>Spread รายชั่วโมง ให้ผล AR(1): b = 0.97<br>
+ค่า fee รวม (open+close) = 0.06% per round-trip</p>
+<p><strong>ถาม:</strong> (a) half-life (b) ถ้าตั้ง entry ที่ 2σ_stat = 0.10% จะถือ position นานแค่ไหนโดยเฉลี่ย และ expected profit คืออะไร (ก่อน fee)?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> κ = −ln(0.97)/(1/24) = 0.0305×24 = 0.732 ต่อวัน<br>
+τ₁/₂ = ln(2)/0.732 = <strong>0.95 วัน ≈ 22.7 ชั่วโมง</strong></p>
+<p><strong>(b)</strong> Entry ที่ 2σ = 0.10% จาก θ<br>
+Exit ที่ θ (ครบ 2σ) → expected travel = 0.10%<br>
+แต่ถ้า exit ที่ 0.5σ = 0.025% → expected travel = 0.075%<br>
+Gross profit ≈ 0.075%–0.10%, fee = 0.06% → <strong>Net ≈ 0.015%–0.04%</strong> per trade<br>
+Holding time เฉลี่ย ≈ τ₁/₂ = 22.7 ชม. (ถ้า exit ที่ θ) หรือน้อยกว่า</p>
+<p>Trade นี้มี edge บาง — ต้อง calibrate ละเอียดและ monitor σ_stat ไม่ให้ขยาย</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.3 — วินิจฉัย OU breakdown</div>
+<p>ใช้ OU trade Bybit↔Lighter มา 2 สัปดาห์ κ เดิม = 2 ต่อวัน, θ = 0.1%<br>
+สัปดาห์ที่ 3: spread ออกไปถึง 0.4% และค้างอยู่นาน 3 วัน ไม่กลับ</p>
+<p><strong>ถาม:</strong> เกิดอะไรขึ้น และควรทำอะไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>วินิจฉัย:</strong> Regime change — OU parameters เปลี่ยน ที่เป็นไปได้:</p>
+<ul>
+<li>θ เปลี่ยน (เช่น funding rate structure เปลี่ยน) → θ ใหม่อาจอยู่ที่ 0.3-0.4%</li>
+<li>κ ลดลง → half-life ยาวขึ้น spread ใช้เวลานานกว่าจะกลับ</li>
+<li>β เปลี่ยน → ε drift ไม่หาย</li>
+</ul>
+<p><strong>ควรทำ:</strong></p>
+<ol>
+<li>ปิด position ทั้งหมด (stop-loss triggered ที่ 3σ)</li>
+<li>Re-calibrate OU ด้วยข้อมูล 2 สัปดาห์ล่าสุด → ได้ θ และ κ ใหม่</li>
+<li>ตรวจสอบว่า ADF test ยังผ่านไหม — ถ้าไม่ผ่าน = ε ไม่ stationary แล้ว หยุด trade คู่นี้</li>
+</ol>
+</div>
+</details>
+</div>
+
+<!-- 3.10 Lookback Selection Bias -->
+<h2 id="s3-10">3.10 Lookback Selection Bias — กับดัก "Window ที่สวย"</h2>
+
+<div class="key-idea">
+<div class="ki-label">สัญญาณอันตราย — อ่านก่อน</div>
+<p>ถ้า spread ดู mean-revert <strong>สวยมากด้วย lookback สั้น</strong> แต่พอ lookback ยาวขึ้นกลับ <strong>ดูไม่สวย</strong> — นั่นคือสัญญาณอันตราย ไม่ใช่สัญญาณว่าคู่นี้ดี</p>
+<p>เป็นอาการของ <strong>Lookback Selection Bias</strong>: combination ของ bias ทางคณิตศาสตร์ที่ทำให้ κ ดูสูงกว่าจริงและ half-life สั้นกว่าจริงเมื่อใช้ window เล็ก — ถ้าไม่แก้จะ over-trade, size ใหญ่เกินไป และขาดทุนเมื่อ live</p>
+</div>
+
+<h3>3 สาเหตุที่ Lookback สั้นทำให้ Spread "ดูสวย"</h3>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 1 — Small Sample AR(1) Bias (Kendall, 1954)</div>
+<p>OLS estimate ของ AR(1) coefficient <em>b</em> มี <strong>bias เชิงระบบ</strong> เมื่อ N (จำนวน observation) น้อย:</p>
+<div class="fm">E[b̂] ≈ b − (1 + 3b) / N   ← Kendall's formula
+
+ตัวอย่าง: true b = 0.97 (half-life ≈ 23 bars) ← ใกล้ random walk
+  N = 30 bars: E[b̂] ≈ 0.97 − (1 + 2.91)/30 = 0.97 − 0.130 = 0.840
+
+  b̂ = 0.840 → κ̂ สูงขึ้น 6× → half-life ≈ 4 bars  ← "fast mean-reversion!" (ปลอม)
+  true b = 0.97 → half-life ≈ 23 bars                ← ความจริง</div>
+<p>สรุป: random walk ที่มี b=0.97 สามารถ <strong>ดูเหมือน mean-revert เร็วมาก</strong> ด้วย window 30 bars — Kendall bias สร้างภาพลวงตาโดยไม่ต้องมี alpha จริง</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 2 — Selection Bias (เลือก Window ที่ "ดีที่สุด")</div>
+<p>ถ้าลอง lookback หลายค่า (20, 30, 40, 50, 60 วัน) แล้วเลือกค่าที่ spread ดูสวยที่สุด = ทำ <strong>5 tests โดยไม่ปรับ significance level</strong></p>
+<p>ในทางสถิติ: ถ้าทดสอบ 20 window บน random walk ล้วน ๆ คาดว่าจะพบอย่างน้อย 1 window ที่ดู stationary โดยบังเอิญที่ 5% significance — แล้วคุณก็จะเลือก window นั้น</p>
+<p><strong>กฎ:</strong> ห้ามเลือก lookback หลังจากดูผล — ต้องกำหนด lookback ก่อน แล้วค่อย calibrate</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">สาเหตุที่ 3 — Regime Selection (Window สั้นอาจอยู่ใน "Good Regime")</div>
+<p>Window สั้นอาจกำลังอยู่ในช่วงที่คู่นี้ "cointegrate จริงๆ" — regime ที่ดี เมื่อขยาย window รวม regime อื่น ε จึงดูไม่สวยอีกต่อไป ปัญหา: คุณไม่รู้ล่วงหน้าว่า live trade จะเจอ regime ไหน</p>
+</div>
+
+<h3>ผลรวม — ถ้าไม่แบ่ง Train / Out-of-Sample</h3>
+
+<table>
+<tr><th>สิ่งที่ทำ</th><th>Bias ที่เกิด</th><th>ผลที่เห็น (ปลอม)</th></tr>
+<tr><td>เลือก lookback ที่ "สวยที่สุด"</td><td>Selection bias</td><td>κ สูงเกินจริง, half-life สั้นเกินจริง</td></tr>
+<tr><td>ใช้ window เล็ก (N น้อย)</td><td>Kendall AR bias</td><td>b̂ ต่ำกว่าจริง → ดูเป็น mean-reversion</td></tr>
+<tr><td>ไม่แบ่ง train / test</td><td>In-sample overfit + lookahead</td><td>backtest ดูดี — live ขาดทุน</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">Checklist — ตรงกับปัญหานี้ไหม?</div>
+<ul>
+<li>Lookback สั้น (≤ 30 bars) → ε ดูสวย, κ สูง, half-life สั้นมาก</li>
+<li>เมื่อขยาย lookback ยาวขึ้น → ε ดูไม่สวย, half-life ยืดออก</li>
+<li>เลือก lookback ที่ "ดูสวยที่สุด" หลังจาก run แล้ว</li>
+<li>ไม่ได้ทดสอบผลบน out-of-sample data แยกต่างหาก</li>
+</ul>
+<p>ถ้าตรงหลายข้อ → ผล backtest ไม่น่าเชื่อถือ ต้องทำ Sensitivity Test และ Walk-Forward (§3.9) ใหม่</p>
+</div>
+
+<h3>Sensitivity Test — วิธีตรวจ Robustness ของ Lookback</h3>
+
+<p>แทนที่จะเลือก lookback ที่ดูสวย ให้ run calibration <strong>ด้วย lookback หลายค่าพร้อมกัน</strong> แล้วดูว่า half-life เสถียรข้าม window หรือไม่:</p>
+
+<div class="fm">lookbacks = [30, 45, 60, 90]   # วัน
+for lb in lookbacks:
+    eps       = compute_spread(prices[-lb*bars_per_day:])
+    b, a      = ols_slope_intercept(eps[:-1], eps[1:])
+    kappa     = -log(b) / delta_t          # ต่อวัน
+    half_life = log(2) / kappa * 24        # แปลงเป็นชั่วโมง
+    print(f"Lookback {lb}d | b={b:.3f} | half-life={half_life:.1f}h")</div>
+
+<table>
+<tr><th>Lookback</th><th>b̂ (OLS)</th><th>κ (ต่อวัน)</th><th>Half-life</th><th>สถานะ</th></tr>
+<tr><td>30 วัน</td><td>0.856</td><td>11.1</td><td>1.5 ชม.</td><td style="color:#dc2626">⚠️ Kendall bias สูง</td></tr>
+<tr><td>45 วัน</td><td>0.912</td><td>5.9</td><td>2.8 ชม.</td><td style="color:#d97706">bias ยังมีผล</td></tr>
+<tr><td>60 วัน</td><td>0.947</td><td>3.2</td><td>5.2 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ</td></tr>
+<tr><td>90 วัน</td><td>0.968</td><td>1.9</td><td>8.7 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ (reference)</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">วิธีอ่าน Sensitivity Table</div>
+<ul>
+<li><strong>half-life ลดลงมากเมื่อ lookback สั้นลง</strong> (เช่น 8.7h → 1.5h) → Kendall bias มีผลมาก — ห้ามใช้ lookback สั้น</li>
+<li><strong>half-life เสถียรระหว่าง 60–90 วัน</strong> → estimate robust — ใช้ lookback ในช่วงนี้ได้</li>
+<li><strong>half-life ผันผวนมากในทุก lookback</strong> → pair ไม่ robust — พิจารณาตัดออก</li>
+</ul>
+</div>
+
+<h3>Bias Correction — ประมาณค่า b ที่แท้จริง</h3>
+
+<p>ถ้าต้องใช้ window สั้นเป็นพิเศษ สามารถ correct Kendall bias ได้เบื้องต้น:</p>
+
+<div class="fm">b_corrected = b̂ + (1 + 3·b̂) / N     ← invert Kendall formula (first order)
+
+ตัวอย่าง: b̂ = 0.856, N = 30 obs
+  b_corrected = 0.856 + (1 + 3×0.856)/30 = 0.856 + 0.119 = 0.975
+  half-life (corrected) ≈ −ln(2)/ln(0.975) × 24h ≈ 27 ชม.
+                                                   ← ดีกว่า 30-วัน estimate (1.5h) มาก
+                                                      แต่ยังสูงกว่า 90-วัน estimate (8.7h)
+                                                      เพราะ first-order correction มักจะ overshoot
+
+หมายเหตุ: correction นี้เป็น approximation — ใช้เป็น sanity check ไม่ใช่ค่าจริง
+           ถ้า b_corrected ≈ 1.0 → true process ใกล้ random walk → half-life ยาวมาก</div>
+
+<div class="bx bg">
+<div class="bt">สรุป — 4 กฎป้องกัน Lookback Selection Bias</div>
+<ol>
+<li><strong>กำหนด lookback ก่อน calibrate</strong> — อิงจาก expected half-life (train window ≥ 30× half-life) ไม่ใช่จากความสวยของกราฟ</li>
+<li><strong>ทำ Sensitivity Test เสมอ</strong> — ถ้า half-life เปลี่ยน > 3× ระหว่าง lookback สั้นและยาว = estimate ไม่ robust</li>
+<li><strong>ใช้ Walk-Forward (§3.9) แยก Train / Out-of-Sample</strong> — ห้าม calibrate และ evaluate บนข้อมูลชุดเดียวกัน</li>
+<li><strong>เชื่อ long lookback มากกว่า short lookback</strong> — Kendall bias ลดลงตาม N; window ≥ 60 วันให้ estimate น่าเชื่อถือกว่าเสมอ</li>
+</ol>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 3.5 — วินิจฉัย Lookback Bias</div>
+<p>ทดลองใช้ lookback 4 ค่าบน spread คู่หนึ่ง ได้ผล:</p>
+<table style="font-size:.9em">
+<tr><th>Lookback</th><th>b̂</th><th>Half-life</th></tr>
+<tr><td>20 วัน</td><td>0.72</td><td>2.1 ชม.</td></tr>
+<tr><td>40 วัน</td><td>0.89</td><td>6.0 ชม.</td></tr>
+<tr><td>60 วัน</td><td>0.95</td><td>13.4 ชม.</td></tr>
+<tr><td>90 วัน</td><td>0.97</td><td>22.7 ชม.</td></tr>
+</table>
+<p><strong>ถาม:</strong> (a) มี Lookback Selection Bias ไหม? (b) ควรใช้ lookback ไหน และ half-life ที่น่าเชื่อถือคือเท่าไหร่? (c) ถ้าต้องการ intraday strategy (hold ≤ 8h) pair นี้เหมาะไหม?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(a)</strong> ใช่ — half-life เปลี่ยนจาก 2.1h (lookback 20d) เป็น 22.7h (lookback 90d) = <strong>เปลี่ยน > 10×</strong> แสดง Kendall bias ชัดเจน ค่าที่ lookback 20d ไม่น่าเชื่อถือ</p>
+<p><strong>(b)</strong> ควรใช้ lookback <strong>60–90 วัน</strong> ที่ estimate เสถียร — half-life ที่น่าเชื่อถือคือ <strong>13–23 ชม.</strong></p>
+<p><strong>(c)</strong> <strong>ไม่เหมาะ intraday</strong> — half-life จริงอยู่ที่ 13–23h > 8h target holding → spread กลับช้าเกินไปสำหรับ intraday · ควรใช้เป็น overnight swing strategy แทน</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.3 OU Process | ต่อไป → <strong>Part II: Hedge Ratio β (Ch.4–6)</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>
