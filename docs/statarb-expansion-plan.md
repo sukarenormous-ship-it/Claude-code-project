@@ -46,6 +46,12 @@
 
 การกระจายลงบท: กลุ่ม margin/เวลา/สเปก → Phase 4 (17.10–17.13 ใหม่ + ch10b) · กลุ่มสถิติหลอก → ch4b + Phase 5 · กลุ่มบัญชีเล็ก → ch19/ch12 · จิตวิทยา → ch11/ch20 (ดูตารางท้าย catalog)
 
+### 0.3 โจทย์เพิ่มรอบ 3 (ผู้ใช้อนุมัติแผนแล้ว + ขอเพิ่ม)
+
+1. **Kalman churn (ประสบการณ์ตรงผู้ใช้)** — ใช้ Kalman แล้วขาดทุนเพราะปรับ position บ่อย: β วิ่งตาม noise (Q ใหญ่เกิน) → rebalance ถี่ → fee/slippage สะสมกิน edge — วิเคราะห์เต็ม + วิธีป้องกัน (deadband, แยกนาฬิกาความเชื่อ/นาฬิกา position, วัด turnover ของ β ตอน calibrate) อยู่ที่ `statarb-loss-catalog.md` §H1 → ลง ch15 + ตาราง cost ch19 (Phase 5)
+2. **Null Hypothesis 101 (ผู้ใช้ขอ)** — เล่มใช้ ADF/p-value ตั้งแต่ ch5 โดยไม่เคยอธิบายว่า H₀ คืออะไร → เพิ่ม **ch5 §5.0 "Null Hypothesis คืออะไร — ก่อนอ่านค่า p ใดๆ"**: H₀/H₁ คืออะไร (ศาลตัดสิน "จำเลยบริสุทธิ์ไว้ก่อน"), p-value แปลว่าอะไร/ไม่ได้แปลว่าอะไร, H₀ ของ ADF คือ "มี unit root (ไม่ stationary)" ดังนั้น p ต่ำ = ปฏิเสธ H₀ = stationary (จุดที่คนอ่านกลับทางบ่อยที่สุด), Type I/II error ในบริบทเลือกคู่เทรด, power ของ test เมื่อ sample สั้น, โยงเข้า multiple testing (catalog E) — ทำใน **Phase 1** (มาก่อนเพราะทุกบทถัดไปอ้าง p-value)
+3. **QA เนื้อหา + ภาพประกอบ (ผู้ใช้ขอ)** — ผู้ใช้พบ "บางภาพตัวหนังสือทับกราฟ อ่านไม่รู้เรื่อง" → เพิ่ม **Phase QA**: ทีม 11 คน (6 ตรวจความถูกต้องความรู้แบ่งตาม cluster + 5 ตรวจภาพด้วย screenshot จริงทั้ง 27 ไฟล์ ที่ 900px และ 390px) — หมายเหตุ: สาเหตุใหญ่ของ "ตัวหนังสือทับกัน" น่าจะคือบั๊ก `.fm` ใน Phase 0.5 ที่แก้แล้ว (ASCII diagram โดนยุบบรรทัด) — QA รอบนี้ยืนยัน + เก็บที่เหลือ
+
 ---
 
 ## 1. Audit — ตอนนี้แต่ละ F(·) อยู่ตรงไหน ลึกแค่ไหน
@@ -95,7 +101,11 @@
 - **เก็บตก**: 6 กล่องใน 3 ไฟล์ (ch17×2, ch18×2, ch23×2) มี newline หัว/ท้ายกล่องที่จะกลายเป็นบรรทัดว่างส่วนเกิน — ลบมือ; 47 บรรทัดยาว >78 ตัวอักษร ยอม scroll ไว้ก่อน ค่อยหักบรรทัดตอน Phase 5
 - ทำทันทีหลัง Phase 0 แล้ว rebuild PDF หนึ่งรอบ → ผู้ใช้ได้เล่มที่อ่านสูตรออกโดยไม่ต้องรอเนื้อหาใหม่
 
-### Phase 1 — บทกรอบใหม่: "ε Design — เลือก F(·) จากสถานการณ์" (`statarb-ch4b`)
+### Phase QA — ตรวจความถูกต้อง + ภาพประกอบทั้งเล่ม (⏳ กำลังรัน)
+ทีม 11 คน: 6 content clusters (foundations / stats / advanced-model / execution / strategies / appendix — ตรวจสูตร, คำนวณตัวอย่างซ้ำ, ตรวจ claim ประวัติศาสตร์, หา null-hypothesis gaps) + 5 visual reviewers (screenshot ทุกไฟล์ที่ 900px+390px หา ตัวหนังสือทับกัน / KaTeX พัง / ล้นจอ) → ผลรวมเข้า issue list แล้วแก้เป็น commit แยกก่อนเริ่มเขียนเนื้อหาใหม่
+
+### Phase 1 — บทกรอบใหม่: "ε Design — เลือก F(·) จากสถานการณ์" (`statarb-ch4b`) + Null Hypothesis 101
+งานที่ 2 ของ Phase นี้ (ผู้ใช้ขอ): **ch5 §5.0 "Null Hypothesis คืออะไร"** — สเปกอยู่ที่ §0.3 ข้อ 2
 บทแทรกหลัง ch4 (ตาม pattern `pm-part3a` ไม่ต้อง renumber ทั้งเล่ม) — ยกระดับ §1.6 + §4.6.1 เป็นบทเต็ม:
 - **Decision tree 1 หน้า**: สินทรัพย์เดียวกันคนละ venue? → basis/log · เป้าหมายคือ carry ไม่ใช่ราคา? → funding/basis · คนละ asset คนละ scale? → log · หน่วยเดียว scale เท่ากัน? → absolute · มุมมองอยู่บน vol ไม่ใช่ราคา? → IV
 - **ตารางแม่บท "สถานการณ์ → ε ที่ถูก"** (ทุกแถวลิงก์ไปบทของมัน): peg แตก→absolute · perp บวม→basis · funding ต่าง venue→funding spread · IV กระโดดขา front→term structure ฯลฯ
@@ -166,20 +176,20 @@
 
 ## 4. สรุปขนาดงาน
 
-| Phase | ชิ้นงาน | ประมาณหน้า PDF ใหม่ |
-|---|---|---|
-| 0 | ย้ายไฟล์เข้า branch หลัก | — |
-| 0.5 | **Quick win**: CSS `white-space:pre` × 27 ไฟล์ + เก็บตก 6 กล่อง + rebuild PDF | — (แก้ 114 กล่องสูตรทันที) |
-| 1 | ch4b กรอบเลือก F(·) | ~12–15 |
-| 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | ~25–30 |
-| 3 | Options stat arb: ขยาย ch18 + ch22 (4 หัวข้อใหม่) | ~25–30 |
-| 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (17.8–17.13 รวม margin mechanics) + ch10b ใหม่ | ~30–35 |
-| 5 | Generalize ch1–12 + editorial rewrite สูตร ~114 กล่อง + กระจาย loss catalog + Situation Cards + rebuild PDF | ~25–30 |
-| | **รวม** | **~120–140 หน้า** (เล่มโต ~406 → ~530+) |
+| Phase | ชิ้นงาน | สถานะ | ประมาณหน้า PDF ใหม่ |
+|---|---|---|---|
+| 0 | ย้ายไฟล์ 27 ไฟล์ + `docs/vendor` (KaTeX/Sarabun) เข้า branch หลัก | ✅ commit `70911c1` | — |
+| 0.5 | **Quick win**: `white-space:pre` × 27 ไฟล์ + ลบ newline เกิน 6 กล่อง | ✅ commit `70911c1` — ยืนยันด้วย screenshot กล่อง OLS ch4 | — (แก้ 114 กล่องสูตรทันที) |
+| QA | ทีม 11 คน ตรวจความถูกต้องความรู้ + ภาพประกอบทุกไฟล์ → แก้ตาม issue list | ⏳ กำลังรัน | — |
+| 1 | ch4b กรอบเลือก F(·) + **ch5 §5.0 Null Hypothesis 101** | รอ | ~15–20 |
+| 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | รอ | ~25–30 |
+| 3 | Options stat arb: ขยาย ch18 + ch22 (4 หัวข้อใหม่) | รอ | ~25–30 |
+| 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (17.8–17.13 รวม margin mechanics) + ch10b ใหม่ | รอ | ~30–35 |
+| 5 | Generalize ch1–12 + Kalman churn ลง ch15/ch19 + editorial rewrite สูตร ~114 กล่อง + กระจาย loss catalog + Situation Cards + rebuild PDF | รอ | ~25–30 |
+| | **รวม** | | **~125–145 หน้า** (เล่มโต ~406 → ~540+) |
 
-ลำดับแนะนำ: **0 → 0.5 → 1 → 4 → 2 → 3 → 5**
-- Phase 0.5 ก่อนเพื่อน — ผู้ใช้อ่านสูตรออกทันทีโดยไม่ต้องรอเนื้อหาใหม่
-- Phase 1 ก่อนบทใหม่ทุกบท (ทุกบทอ้าง decision tree กลาง)
+ลำดับ: **0 ✅ → 0.5 ✅ → QA ⏳ → (แก้ผล QA) → 1 → 4 → 2 → 3 → 5**
+- Phase 1 ก่อนบทใหม่ทุกบท (ทุกบทอ้าง decision tree กลาง + null hypothesis เป็นรากของทุก test ที่ตามมา)
 - **ดัน Phase 4 ขึ้นก่อน 2–3** เพราะตอบปัญหาที่ผู้ใช้เจ็บจริงอยู่ตอนนี้ (calendar arb ขาดทุน + TF + charting)
 แต่ละ Phase = commit แยก + รีวิวก่อนไปต่อ (ตาม convention เดิมของ repo)
 

@@ -508,3 +508,22 @@
 | E โมเดล/สถิติหลอก | 9 | ch4b + ch5/6/10 + ch10b + ch24 |
 | F เศรษฐศาสตร์บัญชีเล็ก | 6 | ch19 + ch12 + ch21 |
 | G จิตวิทยา | 1 | ch11 + ch20 |
+
+---
+
+## H. รายงานเพิ่มจากผู้ใช้ (รอบ 3)
+
+### H1. 🟠 Kalman filter ปรับ β บ่อย → rebalance บ่อย → ค่าธรรมเนียมกิน edge หมด (churn)
+*เลนส์: ประสบการณ์ตรงของผู้ใช้ — วิเคราะห์เพิ่มโดยทีม*
+
+**กลไกที่เงินหาย:** Kalman filter อัปเดต β ทุก observation ตามสัดส่วน Q/R — ถ้า Q (process noise) ตั้งใหญ่ β จะ "วิ่งตาม noise" ทุกแท่ง และทุกครั้งที่ β เปลี่ยน ระบบต้อง rebalance ขา hedge = ส่งคำสั่งจริงขนาด |Δβ|×notional ซึ่งจ่าย fee+slippage ทุกรอบ; edge ของ stat arb ต่อเทรดบางมาก (หลัก bps) แต่ churn จาก rebalance รายวัน/รายชั่วโมงสะสมเป็น % ต่อเดือน → กลยุทธ์ที่ direction ถูกก็ยังขาดทุนสุทธิ นอกจากนี้ β ที่แกว่งเร็วทำให้ ε นิ่งเกินจริง (residual เล็กลงเพราะโมเดล "ตามใจ" ข้อมูล) → z-score ไม่ค่อยถึง threshold → เทรดน้อยลงแต่ rebalance ไม่หยุด = จ่ายต้นทุนโดยไม่มีรายได้
+
+**ทำไมนึกไม่ถึง:** ตำรา (รวมถึง ch15 เดิม) สอน Kalman ในมุม "ดีกว่า rolling OLS เพราะ adapt เร็ว" โดยไม่พูดต้นทุนของการ adapt; backtest ส่วนใหญ่คิด fee เฉพาะตอน entry/exit ของ spread trade แต่ลืมคิด fee ของ**การ rebalance hedge ระหว่างถือ** ซึ่งใน Kalman เกิดถี่กว่าหลายเท่า
+
+**ป้องกัน/ตรวจจับ:** (1) **Deadband/hysteresis**: rebalance เฉพาะเมื่อ |β_now − β_position| > δ โดยตั้ง δ จากต้นทุน: rebalance คุ้มเมื่อ (ความเสี่ยงจาก hedge เพี้ยน) > (ค่า fee ของการปรับ) (2) **ลด Q หรือตรึง Q/R จาก walk-forward** ไม่ใช่ค่า default — วัด turnover ของ β (Σ|Δβ|) เป็น metric ตอน calibrate ไม่ใช่ดูแค่ fit (3) **แยกนาฬิกา**: อัปเดต *ความเชื่อ* เรื่อง β ได้ทุกแท่ง แต่ *ปรับ position* ตามรอบเวลาที่หยาบกว่า (เช่น วันละครั้ง) หรือเมื่อทะลุ deadband เท่านั้น (4) เพิ่มบรรทัดใน backtest: นับ "จำนวนครั้ง rebalance × ค่าเฉลี่ย cost ต่อครั้ง" แยกจาก entry/exit cost — ถ้าเกิน 30% ของ gross edge ให้ถือว่า config นั้นใช้ไม่ได้ (5) เทียบ baseline: rolling OLS + recalibrate รายสัปดาห์ ชนะ Kalman หลังหักต้นทุนบ่อยกว่าที่คิด
+
+**ตัวเลขให้เห็นภาพ:** notional ขา B = $50,000, β แกว่งวันละ ~0.02 จาก noise → rebalance วันละ $1,000, taker fee 0.055% = $0.55/วัน ≈ $17/เดือน ต่อคู่ — ถ้า expected edge ของคู่ ≈ $40/เดือน churn กินไปเกือบครึ่งโดยยังไม่รวม slippage
+
+**สถานะในเล่ม:** ch15 (Kalman dynamic hedging) สอนกลไกครบแต่ (รอทีม QA ยืนยัน) ไม่มีหัวข้อ rebalancing cost/deadband; ch19 นับ cost ของ entry/exit แต่ไม่มีหมวด rebalance cost
+
+**→ ไปอยู่ที่:** ch15 เพิ่มหัวข้อ "ราคาของการ Adapt: Q, Turnover ของ β และ Deadband" (Phase 5) + แถวใหม่ในตาราง cost ของ ch19 + Situation Card ของ ch15
