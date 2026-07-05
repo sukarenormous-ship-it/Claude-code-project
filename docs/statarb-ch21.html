@@ -110,11 +110,11 @@ $$\varepsilon_t = \log P_{\text{CFD},t} - \log P_{\text{spot},t} - \theta \qquad
 <div class="ki-label">สูตรการคำนวณ Swap Amount</div>
 <div class="ki-eq">
 <div style="margin-top:10px;text-align:center">
-$$\text{Swap} = \text{Lots} \times \text{Contract size} \times \frac{\text{Swap points}}{10}$$
+$$\text{Swap} = \text{Lots} \times \text{Swap points} \times \text{Pip value}$$
 </div>
 </div>
-<div class="ki-text" style="margin-top:8px"><strong>Swap_Points</strong> = ค่าจาก MT5 symbol specification (points ต่อวัน) — ค่า <em>ลบ</em> = จ่าย, ค่า <em>บวก</em> = รับ<br>
-<strong>Contract_Size</strong> = ขนาดสัญญาต่อ lot (เช่น 100 oz สำหรับ XAUUSD)<br>
+<div class="ki-text" style="margin-top:8px"><strong>Swap points</strong> = ค่าจาก MT5 symbol specification (points ต่อวัน) — ค่า <em>ลบ</em> = จ่าย, ค่า <em>บวก</em> = รับ<br>
+<strong>Pip value</strong> = มูลค่า 1 pip ต่อ 1 lot (มาจาก Contract size × point size × ราคา — ดู symbol specification; เช่น XAUUSD: 100 oz × $0.01 = $1.00/pip)<br>
 <strong>หมายเหตุ:</strong> สูตรนี้ใช้สำหรับ FX/Commodity ที่คำนวณเป็น points — บาง broker ระบุ swap เป็น % ต่อวัน (crypto CFD) ซึ่งคำนวณต่างกัน ต้องเช็ค specification<br>
 <strong>ต้อง check specification ใน MT5</strong>: คลิกขวา symbol → Properties → Swap Long / Swap Short</div>
 </div>
@@ -124,7 +124,7 @@ $$\text{Swap} = \text{Lots} \times \text{Contract size} \times \frac{\text{Swap 
 <table>
 <tr><th>Instrument</th><th>ทิศทาง</th><th>เหตุผล</th><th>ตัวอย่าง swap/day/lot</th></tr>
 <tr><td>XAUUSD (Gold CFD)</td><td>Short</td><td>Gold yield &lt; USD yield → short receives rate</td><td>+$0.5–2.0</td></tr>
-<tr><td>USOIL</td><td>Short (backwardation)</td><td>Futures curve downward sloping</td><td>+$1.0–3.0</td></tr>
+<tr><td>USOIL</td><td>Short (contango)</td><td>Futures curve upward sloping — short receives roll yield</td><td>+$1.0–3.0</td></tr>
 <tr><td>USDHUF / USDTRY</td><td>Short USD</td><td>HUF/TRY interest rate สูงกว่า USD มาก</td><td>+$5.0–15.0</td></tr>
 <tr><td>BTC CFD / ETH CFD</td><td>ขึ้นกับ broker</td><td>Varies — ต้องเช็ค specification</td><td>-$1.0–+$1.0</td></tr>
 </table>
@@ -237,7 +237,7 @@ Pip value สำหรับ XAUUSD = $1.00 ต่อ pip ต่อ lot (1 pip =
 <li><strong>Long EURUSD + Short GBPUSD</strong> = Long EUR / Short GBP / USD ≈ cancel (หักล้างกัน)</li>
 <li><strong>ε = log(EURUSD) − β·log(GBPUSD) ≈ log(EURGBP)</strong> สำหรับ β ≈ 1</li>
 <li>ถ้า <strong>β ≠ 1</strong> → มี residual USD exposure → ต้อง normalize notional ใน USD ก่อน sizing</li>
-<li>ตัวอย่าง: β = 1.15 → Long $100k EURUSD + Short $115k GBPUSD → USD ≈ 0</li>
+<li>ตัวอย่าง: β = 1.15 → Long $100k EURUSD + Short $115k GBPUSD → Net USD = −$100k + $115k = +$15k (residual ~13% — ไม่ใช่ 0; ดูตัวอย่างที่ 3)</li>
 </ul>
 <p><strong>ข้อดีของใช้ majors แทน cross rate:</strong> EURUSD และ GBPUSD มี bid-ask แคบกว่า EURGBP โดยตรงมาก (10–20 bps vs 30–50 bps) → friction ต่ำกว่า → edge ดีกว่า</p>
 </div>
@@ -272,7 +272,7 @@ Pip value สำหรับ XAUUSD = $1.00 ต่อ pip ต่อ lot (1 pip =
 
 <div class="running-ex">
 <div class="re-title">ตัวอย่าง: BTC/ETH CFD Walk-Forward</div>
-<p>β = 0.0444, ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h<br>
+<p>β_log = 1.18 (level regression บน log price — ไม่ใช่ β_raw=0.0444 จาก raw price ซึ่ง EA code §21.7 ที่ใช้ log(price) ต้องไม่นำมาใช้), ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h<br>
 → ใช้ Crypto CFD row: Train 45 วัน, Test 15 วัน, Slide ทุก 15 วัน<br>
 → Half-life 17h = overnight swing — เหมาะสำหรับ strategy ที่ถือข้ามคืน<br>
 → Walk-forward re-calibrate β ทุก 15 วัน เพื่อจับ drift ของ crypto market cycle</p>
@@ -410,7 +410,7 @@ double ComputeZScore(double eps) {
 <p><strong>Setup:</strong> Broker A — Gold spot บน exchange | Broker B — Short XAUUSD CFD บน MT5</p>
 <table>
 <tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
-<tr><td>Swap received (short CFD)</td><td>$1.20/day per lot (backwardation)</td></tr>
+<tr><td>Swap received (short CFD)</td><td>$1.20/day per lot (rate carry / contango — Gold yield &lt; USD yield)</td></tr>
 <tr><td>ε Half-life</td><td>5 วัน</td></tr>
 <tr><td>σ_stat</td><td>0.6% (60 bps)</td></tr>
 <tr><td>Total friction</td><td>50 bps</td></tr>
@@ -423,7 +423,7 @@ double ComputeZScore(double eps) {
 
 <div class="running-ex">
 <div class="re-title">ตัวอย่างที่ 2: BTC / ETH CFD (ตาม screenshot คู่หลัก)</div>
-<p><strong>Cointegration stats:</strong> β = 0.0444, ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h</p>
+<p><strong>Cointegration stats:</strong> β_log = 1.18 (ไม่ใช่ β_raw=0.0444 — ดูคำเตือนเรื่อง log-price vs raw-price ใน <a href="statarb-ch4.html#s4-6-1">ch4 §4.6.1</a>), ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h</p>
 <table>
 <tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
 <tr><td>Pair Selection Pipeline (<a href="statarb-ch5.html#s5-8">ch5 §5.8</a>)</td><td>✅ ผ่าน (swing only, robust z-score)</td></tr>
@@ -437,7 +437,7 @@ Walk-forward: calibrate ทุก 15 วัน (Crypto CFD row จากตา�
 
 <div class="running-ex">
 <div class="re-title">ตัวอย่างที่ 3: EURUSD ↔ GBPUSD (Synthetic EURGBP)</div>
-<p><strong>β = 1.15</strong> — ไม่ใช่ 1.0 เพราะ GBPUSD มี pip value ต่างกัน (GBPUSD pip มีค่าสูงกว่า)</p>
+<p><strong>β = 1.15</strong> — ไม่ใช่ 1.0 เพราะมาจาก OLS regression บน log prices ที่สะท้อน relative volatility/co-movement ของสองคู่เงิน (ไม่เกี่ยวกับ pip value — pip value ต่อ lot ของ EURUSD/GBPUSD เท่ากันเพราะ quote currency เป็น USD ทั้งคู่)</p>
 <table>
 <tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
 <tr><td>USD Normalization</td><td>Long $100k EURUSD + Short $115k GBPUSD (β-adjusted)</td></tr>
@@ -448,7 +448,7 @@ Walk-forward: calibrate ทุก 15 วัน (Crypto CFD row จากตา�
 <tr><td>σ_stat typical</td><td>35–45 bps >> 17 bps ✅</td></tr>
 </table>
 <p><strong>ข้อดี:</strong> EURUSD+GBPUSD มี spread แคบกว่า EURGBP โดยตรง → friction ต่ำที่สุดในบรรดา 3 ตัวอย่าง<br>
-<strong>ข้อระวัง:</strong> ต้อง normalize notional ตาม β เสมอ — ถ้าใช้ equal notional จะมี residual USD exposure</p>
+<strong>ข้อระวัง:</strong> normalize notional ตาม β (β-weighted) hedge ตัว risk factor ได้ตรง แต่จะเหลือ residual USD exposure (~13% ในตัวอย่างนี้) — ถ้าต้องการ USD-neutral เต็มรูปให้ใช้ equal USD notional แทน (แต่จะไม่ตรงกับ β เป๊ะ) เลือก trade-off ตามเป้าหมาย</p>
 </div>
 
 <div class="bx bd">

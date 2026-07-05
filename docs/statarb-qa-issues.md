@@ -52,19 +52,19 @@
 
 ## Cluster: stats (ch4–7) — 13 issues
 
-### 🔴 stats-1. statarb-ch5.html — §5.2 Engle-Granger + §5.5 Running Example (ADF critical values) + caption ภาพ ch
+### 🔴 stats-1. statarb-ch5.html ✅ — §5.2 Engle-Granger + §5.5 Running Example (ADF critical values) + caption ภาพ ch
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ขั้นที่ 2 ของ Engle-Granger ทดสอบ ADF บน residual ที่ 'ประมาณ β มาจากข้อมูล' — การใช้ critical values / p-value ของ ADF มาตรฐาน (−3.44/−2.86/−2.57) กับ residual แบบนี้ผิดตามตำรา เพราะการ estimate β ทำให้ distribution ของ test statistic เลื่อน ต้องใช้ Engle-Granger/MacKinnon cointegration critical values ซึ่ง negative กว่า (ประมาณ −3.90/−3.34/−3.04 สำหรับ 2 ตัวแปร + constant) ผลคือ test ที่เล่มสอน anti-conservative → ประกาศว่า cointegrated ทั้งที่จริงไม่ใช่ (false positive) และทั้ง pipeline §5.8 + rolling monitor §5.9 + ch4 (adfuller(epsilon)) ใช้ p-value ที่ optimistic เกินจริงทั้งหมด
 - **หลักฐาน**: `"Critical values: 1%=−3.44, 5%=−2.86, 10%=−2.57" (Running Example §5.5) และ caption "ADF critical values: −3.44 (1%), −2.86 (5%), −2.57 (10%) — test stat ที่ต่ำกว่า critical value → reject H₀" ใช้ในบริบท ADF บน ε̂ จาก OLS`
 - **วิธีแก้**: ระบุว่า step 2 ต้องใช้ cointegration (MacKinnon) critical values ไม่ใช่ค่า ADF มาตรฐาน — ใน Python ใช้ statsmodels.tsa.stattools.coint(log_A, log_B) ซึ่งให้ p-value ที่ถูกต้องแทน adfuller(residuals) และแก้ตัวเลข critical values ในตัวอย่าง/ภาพให้เป็นชุด Engle-Granger (−3.90/−3.34/−3.04)
 
-### 🔴 stats-2. statarb-ch4.html — §4.7 Pseudo-code — beta_tls()
+### 🔴 stats-2. statarb-ch4.html ✅ — §4.7 Pseudo-code — beta_tls()
 - **ประเภท**: สูตรผิด/พิมพ์ผิด
 - **ปัญหา**: pseudo-code TLS คืนค่า 1/β ไม่ใช่ β: เมื่อ covariance matrix เรียง [r_A, r_B] (A ก่อน) eigenvector ของ eigenvalue เล็กสุดคือทิศ (1, −β) ดังนั้น -v[0]/v[1] = 1/β — ยืนยันด้วย simulation (β จริง 1.5, closed-form ได้ 1.505 แต่ pseudo-code ได้ 0.665 ≈ 1/1.5) สำหรับคู่ที่ β ห่างจาก 1 เช่น BTC/ETH (β≈1.18) จะได้ hedge ratio ผิดเป็น 0.85 → position ผิดสัดส่วน
 - **หลักฐาน**: `C = cov_matrix([[r_A], [r_B]])  # 2×2 ... v = eigenvectors[:, argmin(eigenvalues)] ... return -v[0] / v[1]`
 - **วิธีแก้**: return -v[1] / v[0] (เมื่อเรียง A ก่อน B) หรือสลับ order เป็น cov_matrix([[r_B],[r_A]]) แล้วคง -v[0]/v[1]
 
-### 🔴 stats-3. statarb-ch5.html — §5.6 Running Example: BTC/ETH CFD บน MT5
+### 🔴 stats-3. statarb-ch5.html ✅ — §5.6 Running Example: BTC/ETH CFD บน MT5
 - **ประเภท**: ตัวเลขในตัวอย่างผิด
 - **ปัญหา**: สร้าง ε ด้วย β_raw = 0.0444 (slope จาก regression 'ราคาดิบ') คูณกับ 'log price' — ผิดสองชั้น: (1) 0.0444 เป็น raw-price slope ใช้กับ log price ไม่ได้ ch4 §4.6.1 และ Running Example ch4 เตือนเรื่องนี้ตรงๆ ว่า β_log ≈ 1.183 และ 'อย่าใช้ β_raw = 0.0444' (2) ทิศสลับ: raw regression คือ ETH = 0.0444·BTC แต่ตัวอย่างนี้เอา 0.0444 ไปคูณฝั่ง ETH (ε = log BTC − 0.0444·log ETH) — ε ที่ได้แทบเท่ากับ log(BTC) เดี่ยวๆ (non-stationary) ผู้อ่านที่ทำตามจะได้ spread ปลอม
 - **หลักฐาน**: `β_OLS = 0.0444 (จาก scatter plot)\nε = log(P_BTC) − 0.0444 × log(P_ETH)`
@@ -88,7 +88,7 @@
 - **หลักฐาน**: `ช่วง Recovery | 0.10% | 0.08% | 2.5 (borderline) | 0.11% | 2.3 (signal)`
 - **วิธีแก้**: ทำให้ ε แถวเดียวกันสอดคล้อง: ถ้า ε = 0.25% → static z = 3.1, GARCH z = 2.3 (signal) หรือถ้าคง static z = 2.5 → GARCH z = 1.8 (ไม่เข้า) — เลือกชุดเดียวแล้วแก้ทั้งแถว รวมถึงแถววัน 2 (1.9 → 2.0 หรือปรับ ε)
 
-### 🟠 stats-7. statarb-ch4.html — §4.2 หัวข้อ 'สูตร TLS (Total Least Squares)' บรรทัด SVD
+### 🟠 stats-7. statarb-ch4.html ✅ — §4.2 หัวข้อ 'สูตร TLS (Total Least Squares)' บรรทัด SVD
 - **ประเภท**: สูตรผิด/พิมพ์ผิด
 - **ปัญหา**: สูตร SVD/eigenvector เขียน β_TLS = v₁₂/v₂₂ โดยไม่มีเครื่องหมายลบ — ผลลัพธ์มาตรฐาน (Golub–Van Loan) คือ β_TLS = −v₁₂/v₂₂ เมื่อ data matrix เรียง [x, y] = [r_B, r_A]; ตามที่เขียน (ordering [r_A, r_B]) จะได้ −1/β ยิ่งผิด และยังขัดกับ pseudo-code §4.7 ของเล่มเองที่มีเครื่องหมายลบ
 - **หลักฐาน**: `หรือใช้ SVD: β_TLS = v₁₂/v₂₂  (eigenvector ของ covariance matrix [r_A, r_B])`
@@ -100,7 +100,7 @@
 - **หลักฐาน**: `2 (pairs) | Engle-Granger | ง่ายกว่า ผลเท่ากัน`
 - **วิธีแก้**: แก้เป็น 'ง่ายกว่า — ผลมักใกล้เคียงกันสำหรับ 2 ขา แต่ไม่เหมือนกันเสมอ (Johansen อาจพบ cointegration ที่ EG พลาด และไม่ขึ้นกับทิศ regression)'
 
-### 🟠 stats-9. statarb-ch5.html — §5.5 Running Example Step 1 — การตีความ β = 1.0049
+### 🟠 stats-9. statarb-ch5.html ✅ — §5.5 Running Example Step 1 — การตีความ β = 1.0049
 - **ประเภท**: อธิบายชวนเข้าใจผิด
 - **ปัญหา**: เขียนว่า 'Bybit เคลื่อนไหว 0.49% มากกว่า Lighter ต่อการขยับ 1%' — อ่านตามตัวอักษรคือ Bybit ขยับ 1.49% ต่อ Lighter 1% (ผิด 100 เท่า) ค่าจริงคือ Bybit ขยับ 1.0049% คือมากกว่าเพียง 0.0049 percentage point (0.49% เชิงสัมพัทธ์ของขนาด move)
 - **หลักฐาน**: `→ β > 1.0 แปลว่า Bybit เคลื่อนไหว 0.49% มากกว่า Lighter ต่อการขยับ 1% ของ Lighter`
@@ -141,19 +141,19 @@
 
 ## Cluster: advanced-model (ch8–10, 15, 23) — 19 issues
 
-### 🔴 advanced-model-1. statarb-ch23.html — §23.3 running example (บรรทัด ~168) และ pseudo-code §23.9
+### 🔴 advanced-model-1. statarb-ch23.html ✅ — §23.3 running example (บรรทัด ~168) และ pseudo-code §23.9
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: อ้างว่า Ch.4 §4.2b ให้ 'log-price β ≈ 0.04–0.06' และให้เหตุผลว่า 'BTC ≈ 25× ETH → β ≈ 1/25 ≈ 0.04' พร้อมสั่งให้ใช้ค่านี้สร้าง spread ε = log(P_A) − β·log(P_B) — ผิดทั้งคณิตและขัดกับ Ch.4 เอง: การคูณราคาด้วย 25 ใน log-space เป็นการเลื่อน intercept ไม่ใช่ slope; Ch.4 ระบุชัดว่า β_log = 1.183 ส่วน 0.0444 คือ β_raw (slope บน raw price ที่ขึ้นกับ scale และ Ch.4 เตือนว่า 'หลอกตา') ถ้าผู้อ่านใช้ β=0.04 กับ log-price จะได้ ε ≈ log(P_BTC) เกือบล้วนๆ = position แทบไม่ hedge เลย
 - **หลักฐาน**: `ch23: "log-price β ≈ 0.04–0.06 ... (BTC ≈ 25× ETH → β ≈ 1/25 ≈ 0.04) ... สำหรับ spread construction ε = log(P_A) − β·log(P_B) ให้ใช้ log-price β จาก Ch.4 เสมอ" — แต่ ch4 บรรทัด 384: "β_log = 1.183 ≠ β_raw = 0.0444"`
 - **วิธีแก้**: แก้เป็น: log-price β ของ BTC/ETH จาก Ch.4 คือ ≈ 1.18 (ค่า 0.0444 คือ raw-price slope ที่ขึ้นกับ scale ห้ามใช้กับ log-spread) และตัดเหตุผล 1/25 ทิ้ง — อธิบายแทนว่า log-return β กับ log-price β ใกล้กัน (~1.0–1.2) เพราะ log ตัด scale ราคาออกแล้ว
 
-### 🔴 advanced-model-2. statarb-ch10.html — §10.1 ตาราง z-score ranges (บรรทัด 78–90) และ SVG zscore-bands
+### 🔴 advanced-model-2. statarb-ch10.html ✅ — §10.1 ตาราง z-score ranges (บรรทัด 78–90) และ SVG zscore-bands
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ทิศทางสัญญาณกลับข้างจากหลัก mean reversion ของทั้งเล่ม: ตารางบอก z > 2.0 = 'Strong long signal / Enter long ε' และ z ≤ −2.0 = 'Enter short ε (sell cheap leg, buy expensive leg)' — mean reversion ต้อง SHORT ε เมื่อ z > +2 (spread แพงเกิน) และ LONG ε เมื่อ z < −2 (ch23 โจทย์ 23.3 ยืนยัน: ε = +2.4σ → 'SHORT Y (Enter)') วงเล็บของแถว z>2 ('buy cheap leg, sell expensive leg') คือการ short ε ซึ่งขัดกับ label 'long ε' ของตัวเอง และวงเล็บของแถว z≤−2 ('sell cheap leg, buy expensive leg') เป็น trade สวน mean reversion ตรงๆ ถ้าผู้อ่านทำตาม label จะเทรดผิดข้างทุกไม้
 - **หลักฐาน**: `"z > 2.0 | Strong long signal | Enter long ε (buy cheap leg, sell expensive leg)" และ "z ≤ −2.0 | Strong short signal | Enter short ε (sell cheap leg, buy expensive leg)"`
 - **วิธีแก้**: z > +2.0 → Enter SHORT ε (sell expensive leg A, buy cheap leg B); z ≤ −2.0 → Enter LONG ε (buy cheap leg A, sell expensive leg B) และแก้แถว hold ให้สอดคล้อง (z บวก = ถือ short ε)
 
-### 🔴 advanced-model-3. statarb-ch23.html — §23.9 Pipeline รวม และตาราง Cross-Reference §23.10
+### 🔴 advanced-model-3. statarb-ch23.html ✅ — §23.9 Pipeline รวม และตาราง Cross-Reference §23.10
 - **ประเภท**: อื่นๆ
 - **ปัญหา**: Gap สำคัญตรงกับที่ผู้ใช้รายงานขาดทุน: pipeline §23.9 อัปเดต β ทุก bar และใช้ β_t สร้าง ε ทันที แต่ไม่มีคำเตือนเรื่อง rebalancing cost / deadband เลย (ไม่มี |Δβ| threshold ก่อนปรับ position, ไม่มี cost-vs-benefit check) ทั้งที่ ch15 §15.7 + โจทย์ 15.3 มีครบ ('อย่าปรับทุก tick เพราะ transaction cost กินกำไร', threshold |Δβ|>0.01) — และตาราง cross-reference §23.10 ลิสต์ ch3,4,5,10,12,18,22 แต่ไม่อ้างถึง ch15 แม้แต่บรรทัดเดียว ผู้อ่านที่เข้าบท advanced นี้โดยตรงจะปรับ position ตาม β ทุก bar แล้วโดน fee กิน
 - **หลักฐาน**: `§23.9 มีเพียง Entry/Exit/Stop ("Entry: |z_t| ≥ t_{α/2}(ν) AND Kalman gain K_t < 0.3 ... Exit: |z_t| ≤ 0.5 ... Stop: |z_t| ≥ 3 × t_{α/2}(ν)") ไม่มีข้อความใดกล่าวถึง transaction cost/deadband ของการปรับ β; ตาราง §23.10 ไม่มีแถว ch15`
@@ -382,13 +382,13 @@
 - **หลักฐาน**: `แถว A: 'Buy C, Invest (F−K)e^{−rT}' payoff เมื่อ F_T>K = '(F_T − K) + (F−K)' | แถว B: payoff เมื่อ F_T ≤ K = '0 + (K − F_T)' | ตามด้วย 'เนื่องจาก payoff เท่ากัน ราคาต้องเท่ากัน'`
 - **วิธีแก้**: แก้เป็น Portfolio A = Long Call อย่างเดียว, Portfolio B = Long Put + Long Forward struck at K (มูลค่าปัจจุบัน (F−K)e^{−rT}) แล้วแสดง payoff: A = max(F_T−K,0), B = max(K−F_T,0)+(F_T−K) = max(F_T−K,0) เท่ากันทั้งสองกรณี → C = P + (F−K)e^{−rT}
 
-### 🔴 strategies-3. statarb-ch19.html — §19.2 ตาราง Fee Structure + แบบฝึกหัดข้อ 2
+### 🔴 strategies-3. statarb-ch19.html ✅ — §19.2 ตาราง Fee Structure + แบบฝึกหัดข้อ 2
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ระบุ Bybit Perp maker fee = −0.025% (rebate) ซึ่งเป็น fee schedule เก่า (ก่อนปี 2021) — ปัจจุบัน Bybit derivatives non-VIP คิด maker +0.02% / taker 0.055% (ตัว taker 0.055% ในตารางตรงกับ schedule ปัจจุบัน แสดงว่า maker ควรเป็น 0.02%) และ ch21 §21.6 ของเล่มเดียวกันก็เขียนว่า maker Bybit 'ลดเหลือ 0.02%' — ขัดแย้งข้ามบท ผลคือข้อ 2 ที่สรุปว่า round trip 2 makers ได้ rebate −0.07% (จาก +17bps → −7bps) ผิดทั้งหมด กลยุทธ์ที่ดูมี edge เพราะ rebate จะขาดทุนจริง (ต่าง 0.045%/side) ค่า Lighter (−0.010%/+0.030%) ก็ควร verify — Lighter โฆษณา zero fee สำหรับ standard account
 - **หลักฐาน**: `'Bybit Perp | −0.025% (rebate) | +0.055%' และ 'Round trip cost (2 makers) ... rebate: −0.07% (receive)' vs statarb-ch21.html §21.6: 'Maker option ... ✅ ลดเหลือ 0.02%'`
 - **วิธีแก้**: แก้ maker Bybit เป็น +0.02% (ไม่มี rebate สำหรับ non-VIP), คำนวณ round trip 2 makers ใหม่เป็นต้นทุนบวก และแก้คำตอบข้อ 2 (ประหยัดจาก taker→maker = 0.035%/side ต่อขา Bybit ไม่ใช่ 0.08%) พร้อม verify fee ของ Lighter
 
-### 🟠 strategies-4. statarb-ch19.html — §19.2 กล่อง 'Maker vs Taker Strategy'
+### 🟠 strategies-4. statarb-ch19.html ✅ — §19.2 กล่อง 'Maker vs Taker Strategy'
 - **ประเภท**: ตัวเลขในตัวอย่างผิด
 - **ปัญหา**: บอกว่าใช้ maker ทั้งคู่ 'ลด cost จาก −0.17% เป็น −0.03% ต่อ round trip' แต่ตามตารางเดียวกัน maker ทั้งคู่ = (−0.025 + −0.010) × 2 = −0.07% (ตารางเองก็เขียน 'rebate: −0.07% (receive)') ไม่ใช่ −0.03%
 - **หลักฐาน**: `'ลด cost จาก −0.17% เป็น −0.03% ต่อ round trip' vs แถวตาราง 'Round trip cost (2 makers) ... rebate: −0.07% (receive)'`
@@ -406,37 +406,37 @@
 - **หลักฐาน**: `'Gross spread at entry (z=2.0, σ=7.5bps) | 2.0 × 7.5bps | +15.0 bps' vs 'Break-even σ: total cost 19.6bps / (2.0 − 0.5) = 13.1bps'`
 - **วิธีแก้**: ใช้ gross = (z_entry − z_exit) × σ ให้สอดคล้องกับ breakeven ทั้งในตาราง §19.9 และ compute_edge() หรือระบุชัดว่า assume exit ที่ z=0
 
-### 🔴 strategies-7. statarb-ch21.html — §21.2 key-idea 'สูตรการคำนวณ Swap Amount'
+### 🔴 strategies-7. statarb-ch21.html ✅ — §21.2 key-idea 'สูตรการคำนวณ Swap Amount'
 - **ประเภท**: สูตรผิด/พิมพ์ผิด
 - **ปัญหา**: สูตร Swap = Lots × Contract size × Swap points/10 ให้ผลผิด 10 เท่าเมื่อเทียบกับตัวอย่างของบทเอง: XAUUSD 1 lot (100 oz), swap −1.20 points → สูตรนี้ได้ 1×100×(1.20/10) = $12/day แต่ running example และโจทย์ 21.1 คำนวณถูกต้องได้ $1.20/day สูตรมาตรฐานคือ Lots × Contract_size × Swap_points × point_size (point XAUUSD = 0.01 → 1×100×1.20×0.01 = $1.20) ตัวหาร /10 ไม่มีที่มา
 - **หลักฐาน**: `'$$\text{Swap} = \text{Lots} \times \text{Contract size} \times \frac{\text{Swap points}}{10}$$' vs running example: 'Swap per day = 1 lot × 1.20 × $1.00 = $1.20/day'`
 - **วิธีแก้**: แก้สูตรเป็น Swap = Lots × Contract_size × Swap_points × Point_size (หรือ Lots × Swap_points × point_value ตามที่ตัวอย่างใช้จริง)
 
-### 🟠 strategies-8. statarb-ch21.html — §21.2 ตาราง positive swap แถว USOIL
+### 🟠 strategies-8. statarb-ch21.html ✅ — §21.2 ตาราง positive swap แถว USOIL
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ระบุว่า Short USOIL ได้รับ swap บวก 'ใน backwardation' เพราะ 'Futures curve downward sloping' — กลับด้าน: ใน backwardation ราคา futures ต่ำกว่า spot และ roll yield เป็นบวกสำหรับฝั่ง long (นิยามของ positive carry/convenience yield) ฝั่ง short จะได้ swap/roll credit ใน contango ไม่ใช่ backwardation
 - **หลักฐาน**: `'USOIL | Short (backwardation) | Futures curve downward sloping | +$1.0–3.0'`
 - **วิธีแก้**: แก้เป็น Short ได้ swap บวกใน contango (curve ลาดขึ้น) หรือ Long ได้ swap บวกใน backwardation
 
-### 🟠 strategies-9. statarb-ch21.html — ตัวอย่างที่ 1 (XAUUSD Gold Swap Harvest) แถว 'Swap received'
+### 🟠 strategies-9. statarb-ch21.html ✅ — ตัวอย่างที่ 1 (XAUUSD Gold Swap Harvest) แถว 'Swap received'
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ป้ายกำกับ swap income ของ short XAUUSD ว่ามาจาก '(backwardation)' — ทองคำแทบไม่เคยอยู่ใน backwardation (ch17 ของเล่มเดียวกันระบุ Gold 'มักเป็น Contango เสมอ') และ §21.2 ของบทนี้เองอธิบายถูกแล้วว่า short gold ได้ swap เพราะ 'Gold yield < USD yield' (interest rate carry ใน contango)
 - **หลักฐาน**: `'Swap received (short CFD) | $1.20/day per lot (backwardation)' vs §21.2: 'XAUUSD (Gold CFD) | Short | Gold yield < USD yield → short receives rate' และ ch17: 'มักเป็น Contango เสมอ'`
 - **วิธีแก้**: เปลี่ยน '(backwardation)' เป็น '(rate carry / contango)' หรือลบวงเล็บออก
 
-### 🟠 strategies-10. statarb-ch21.html — §21.4 กล่อง 'EURUSD ↔ GBPUSD = Synthetic EURGBP' + ตัวอย่างที่ 3
+### 🟠 strategies-10. statarb-ch21.html ✅ — §21.4 กล่อง 'EURUSD ↔ GBPUSD = Synthetic EURGBP' + ตัวอย่างที่ 3
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: ตรรกะ USD exposure กลับด้านและขัดแย้งกันเอง: (1) §21.4 บอก 'β = 1.15 → Long $100k EURUSD + Short $115k GBPUSD → USD ≈ 0' แต่ USD จริง = −$100k + $115k = +$15k (ตารางในตัวอย่างที่ 3 เองก็เขียนถูกว่า 'Net USD ≈ +$15k (residual ~13%)') (2) ข้อระวังท้ายตัวอย่างที่ 3 บอก 'ถ้าใช้ equal notional จะมี residual USD exposure' — กลับด้าน: equal USD notional ทำให้ USD หักล้างพอดี ส่วน β-weighted notional ต่างหากที่สร้าง residual USD
 - **หลักฐาน**: `'ตัวอย่าง: β = 1.15 → Long $100k EURUSD + Short $115k GBPUSD → USD ≈ 0' vs 'Net exposure | Long ~€74k / Short ~£55k / Net USD ≈ +$15k (residual ~13%)' และ 'ถ้าใช้ equal notional จะมี residual USD exposure'`
 - **วิธีแก้**: แก้เป็น: equal USD notional → USD หักล้างเป็นศูนย์ (synthetic EURGBP เต็มรูป); การถ่วง notional ตาม β=1.15 สร้าง residual USD +$15k ที่ต้องยอมรับหรือ hedge เพิ่ม — เลือกอธิบาย trade-off ระหว่าง β-hedge กับ USD-neutral ให้ถูกทิศ
 
-### 🟠 strategies-11. statarb-ch21.html — ตัวอย่างที่ 3 บรรทัดแรก (เหตุผลที่ β = 1.15)
+### 🟠 strategies-11. statarb-ch21.html ✅ — ตัวอย่างที่ 3 บรรทัดแรก (เหตุผลที่ β = 1.15)
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: อธิบายว่า β ≠ 1 'เพราะ GBPUSD มี pip value ต่างกัน (GBPUSD pip มีค่าสูงกว่า)' — ผิด: pip value ต่อ lot ของ EURUSD และ GBPUSD เท่ากัน ($10/pip/standard lot เพราะ quote currency เป็น USD ทั้งคู่) β มาจาก OLS regression ของ log price (สัดส่วน covariance/variance) ไม่เกี่ยวกับ pip value
 - **หลักฐาน**: `'β = 1.15 — ไม่ใช่ 1.0 เพราะ GBPUSD มี pip value ต่างกัน (GBPUSD pip มีค่าสูงกว่า)'`
 - **วิธีแก้**: แก้เหตุผลเป็น: β มาจาก OLS บน log prices สะท้อน relative volatility/co-movement ของสองคู่เงิน ไม่ใช่ pip value
 
-### 🔴 strategies-12. statarb-ch21.html — ตัวอย่างที่ 2 (BTC/ETH CFD) และ §21.5 running example — ค่า β = 0.0444
+### 🔴 strategies-12. statarb-ch21.html ✅ — ตัวอย่างที่ 2 (BTC/ETH CFD) และ §21.5 running example — ค่า β = 0.0444
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: β = 0.0444 เป็นค่าจาก regression บนราคาดิบ (ETH≈$3,000 / BTC≈$67,500 ≈ 0.044) แต่ framework ของบทและ EA code ใน §21.7 ใช้ log prices (MathLog(price_a) − g_beta × MathLog(price_b)) ซึ่ง β ใน log space ของคู่ BTC/ETH ต้องอยู่แถว ~1 (ρ=0.9745 ที่อ้างไว้ยิ่งยืนยัน) ถ้าผู้อ่านนำ β=0.0444 ไปใช้กับ log prices ตามโค้ด ε จะเหลือแค่ log ของขาเดียวโดยแทบไม่ hedge → กลายเป็น directional position เต็มตัว
 - **หลักฐาน**: `'β = 0.0444, ρ = 0.9745, AR(1) = 0.9602, Half-life = 17h' + โค้ด: 'return MathLog(price_a) - g_beta * MathLog(price_b);'`
@@ -487,13 +487,13 @@
 
 ## Cluster: appendix (formulas + glossary) — 12 issues
 
-### 🔴 appendix-1. statarb-appendix-formulas.html — A.7 สูตรที่ 27 'Net Edge' (บรรทัด ~346)
+### 🔴 appendix-1. statarb-appendix-formulas.html ✅ — A.7 สูตรที่ 27 'Net Edge' (บรรทัด ~346)
 - **ประเภท**: สูตรผิด/พิมพ์ผิด
 - **ปัญหา**: สูตร Net Edge ในภาคผนวก ตัด exchange fee (2×taker fee round-trip) ทิ้งทั้งก้อน แล้วไปคูณ 2 ที่ bid-ask แทน — ขัดกับ ch19 ที่นิยาม Net Edge = gross − (2f_taker + bid-ask + slippage + funding + legging) และในตัวอย่างจริงของ ch19 taker fee คือต้นทุนก้อนใหญ่ที่สุด (17bps จาก total 19.6bps) ผู้อ่านที่ใช้สูตรจากภาคผนวกจะประเมิน net edge สูงเกินจริงราว 0.17% ต่อ round trip และเทรดคู่ที่จริงๆ ขาดทุน (ตัวอย่าง ch19: gross 15bps, net จริง −4.6bps แต่สูตรภาคผนวกให้ค่าบวก)
 - **หลักฐาน**: `ภาคผนวก: Edge_net = Edge_gross − 2·(bid-ask) − funding cost − slippage "(คูณ 2 สำหรับ round-trip bid-ask)" — เทียบกับ ch19 บรรทัด 75: Net Edge = σ_ε(gross) − [2f_taker + bid-ask + slippage + funding] และตาราง §19.2: "Round trip cost (2 takers) = (0.0`
 - **วิธีแก้**: แก้เป็น Edge_net = Edge_gross − 2·f_taker − bid-ask − slippage − funding (− legging buffer) ให้ตรงกับ ch19 และอธิบายว่า ×2 คือ fee ทั้งสองขา/round-trip
 
-### 🔴 appendix-2. statarb-appendix-formulas.html — A.2 สูตรที่ 7 'ADF Test Statistic' (บรรทัด ~146–147) — critical values
+### 🔴 appendix-2. statarb-appendix-formulas.html ✅ — A.2 สูตรที่ 7 'ADF Test Statistic' (บรรทัด ~146–147) — critical values
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: สูตรนี้อยู่ในหมวด Cointegration และอ้าง บท 5 §5.2 (Engle-Granger step 2 = ADF บน residuals จาก regression ที่ประมาณ β̂ มาแล้ว) แต่ให้ critical values ของ Dickey-Fuller ธรรมดา (−2.93/−2.89/−2.87 ที่ 5%) — เมื่อทดสอบ residuals ที่ OLS เลือก β̂ ให้ variance ต่ำสุดแล้ว distribution จะเลื่อน ต้องใช้ Engle-Granger/Phillips-Ouliaris critical values (≈ −3.34 ที่ 5% สำหรับ 2 ตัวแปรมี constant; MacKinnon 1991) การใช้ −2.89 เป็นเกณฑ์ทำให้ reject H₀ ง่ายเกินไป → รับคู่ปลอมว่า cointegrated → เข้าเทรด spread ที่ไม่ mean-revert จริง
 - **หลักฐาน**: `"Critical values (5%): n=50 → −2.93, n=100 → −2.89, n=500 → −2.87" ใต้หัวข้อ A.2 Cointegration & Hedge Ratio พร้อม ref "→ บท 5 §5.2" (ซึ่งคือ Engle-Granger 2-Step Test)`
@@ -673,3 +673,27 @@
 - 🟡 **statarb-ch24.html** [ภาพ:ตัวหนังสือทับกัน]: เส้นประแดงแนวตั้ง (Amaranth Sep 2006) ลากทะลุกลางข้อความ label แดง '−$6.6B / in 1 week / ≈ −68% AUM' ทุกบรรทัด ทำให้ตัวเลขสำคัญอ่านยาก → *แก้: ขยับ label ไปด้านขวาของเส้นประ หรือใส่กล่องพื้นขาวรอบข้อความ*
 
 รวม visual 81 issues — ยอดรวมทั้งเล่ม (เนื้อหา 85 + ภาพ 81) = 166 issues
+---
+
+## สรุปสถานะ 🔴 (ทั้งหมด 14 ข้อ)
+
+**แก้แล้วครบทั้ง 14 ข้อ** — 3 ข้อแรก (ch2/ch3) รอบก่อนหน้า + 11 ข้อนี้ (ch4, ch5×2, ch10, ch19, ch21×2, ch23×2, appendix×2):
+
+| ไฟล์ | ปัญหา | ผลกระทบถ้าไม่แก้ |
+|---|---|---|
+| ch4 | TLS pseudo-code คืน 1/β แทน β | hedge ratio ผิดสัดส่วนทุกคู่ที่ β≠1 |
+| ch4 | SVD formula ไม่มีเครื่องหมายลบ | ยิ่งผิดกว่าเดิม (−1/β) |
+| ch5 | Engle-Granger ใช้ critical values ผิดชุด (ADF มาตรฐานแทน MacKinnon) | ประกาศ cointegrated ทั้งที่จริงไม่ใช่ — ทั้ง pipeline §5.8/rolling monitor optimistic เกินจริง |
+| ch5 | §5.6 ใช้ β_raw=0.0444 คูณ log price | สร้าง spread ปลอม (≈log(BTC) เดี่ยวๆ) |
+| ch10 | ตาราง z-score ทิศสัญญาณกลับด้าน | เทรดผิดข้างทุกไม้ถ้าทำตามตาราง |
+| ch19 | Bybit maker fee เก่า (rebate −0.025% ที่เลิกใช้ตั้งแต่ก่อน 2021) | คิด edge เป็นบวกทั้งที่จริงขาดทุน |
+| ch21 | สูตร Swap ผิด 10 เท่า (หาร 10 ไม่มีที่มา) | คำนวณ carry ผิด 10x |
+| ch21 | β=0.0444 (raw price) ใช้กับ EA code ที่เป็น log price | position แทบไม่ hedge (เหมือน ch5 §5.6) |
+| ch23 | อ้างว่า log-price β ของ BTC/ETH ≈ 0.04 (จริง ≈1.18) | เช่นเดียวกับข้างบน |
+| ch23 | Pipeline ไม่เตือนเรื่อง rebalancing cost/deadband | **สาเหตุตรงที่ผู้ใช้รายงานขาดทุนจาก Kalman churn** — เพิ่มขั้นที่ 6 อ้าง ch15 §15.7 แล้ว |
+| appendix | Net Edge formula ตัด exchange fee ทิ้ง | ประเมิน edge สูงเกินจริง ~0.17% |
+| appendix | ADF critical values ผิดชุดเหมือน ch5 | เช่นเดียวกับ ch5 |
+
+พร้อม bonus fix 7 จุด 🟠 ที่อยู่ไฟล์เดียวกัน (β interpretation, USOIL contango/backwardation, USD exposure direction, pip value reasoning ฯลฯ)
+
+**เหลือ**: 🟠/🟡 อีก ~130 ข้อ (ส่วนใหญ่เป็น label ภาพ/caption ไม่ตรงรูป — ต้องแก้เป็นรายภาพ, ไม่กระทบเงินโดยตรงเท่า 🔴)

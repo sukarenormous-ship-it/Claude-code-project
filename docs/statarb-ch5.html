@@ -118,7 +118,7 @@ $$\Delta\varepsilon_t = \alpha + \delta\varepsilon_{t-1} + \sum_{k=1}^{p}\gamma_
 <p>ก่อนรัน test สถิติใด ๆ ให้ <strong>plot ราคาสองขาเป็น scatter</strong> ก่อนเสมอ — แกนนอนคือ log ราคาขา B แกนตั้งคือ log ราคาขา A · จุดหนึ่งจุดคือราคาคู่กัน ณ ช่วงเวลาหนึ่ง · scatter บอกหลายอย่างที่ตัวเลข ρ ตัวเดียวบอกไม่ได้ และเป็นวิธีที่เร็วที่สุดในการคัดคู่ที่ "แย่ชัด ๆ" ออก</p>
 
 <img class="chart" src="charts/ch5-adf-critical.svg" alt="ADF Critical Values" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
-<div class="caption">ADF critical values: −3.44 (1%), −2.86 (5%), −2.57 (10%) — test stat ที่ต่ำกว่า critical value → reject H₀ → spread stationary</div>
+<div class="caption">Engle-Granger critical values (MacKinnon, 2 ตัวแปร + constant): −3.90 (1%), −3.34 (5%), −3.04 (10%) — ค่านี้ negative กว่า ADF มาตรฐานเพราะ residual มาจาก regression ที่ประมาณ β̂ มาแล้ว; test stat ที่ต่ำกว่า critical value → reject H₀ → spread stationary</div>
 
 <div class="bx bb">
 <div class="bt">scatter plot บอกอะไรบ้าง</div>
@@ -322,15 +322,15 @@ H₀: r ≤ 1 (มีได้อย่างมาก 1 vector)
 Step 1 — OLS:
   log(P_Bybit) = 0.003 + 1.0049·log(P_Lighter) + ε̂
   β = 1.0049, R² = 0.9998
-  → β > 1.0 แปลว่า Bybit เคลื่อนไหว 0.49% มากกว่า Lighter ต่อการขยับ 1% ของ Lighter
+  → β > 1.0 แปลว่า Lighter ขยับ 1% แล้ว Bybit ขยับ 1.0049% (มากกว่า 0.0049 จุดเปอร์เซ็นต์ หรือ ~0.5% เชิงสัมพัทธ์)
     (อาจจาก liquidity premium หรือ fee structure ที่ต่างกัน)
 
 Step 2 — ADF test บน ε̂:
   ADF statistic = −4.82
   p-value = 0.0003 ← ผ่าน! (p ≪ 0.05)
-  Critical values: 1%=−3.44, 5%=−2.86, 10%=−2.57
+  Critical values (Engle-Granger/MacKinnon, ไม่ใช่ ADF มาตรฐาน): 1%=−3.90, 5%=−3.34, 10%=−3.04
 
-ผล: ADF stat (−4.82) < Critical (−3.44) → Reject H₀ → Stationary → Cointegrated ✓
+ผล: ADF stat (−4.82) < Critical (−3.34 ที่ 5%) → Reject H₀ → Stationary → Cointegrated ✓
 
 VECM:
   α_Bybit = −0.02  (ปรับนิดหน่อย)
@@ -406,8 +406,8 @@ def shapiro_test(residuals, alpha=0.05):
 <div class="running-ex">
 <div class="re-title">Running Example: BTC/ETH CFD บน MT5</div>
 <div class="fm">ข้อมูล: 180 วัน, hourly bars
-β_OLS = 0.0444 (จาก scatter plot)
-ε = log(P_BTC) − 0.0444 × log(P_ETH)
+β_log = 1.183 (level regression บน log price — ดู <a href="statarb-ch4.html">บทที่ 4 §4.6.1</a>; ⚠️ ไม่ใช่ β_raw=0.0444 จาก scatter ราคาดิบ ซึ่งใช้กับ log-spread ไม่ได้)
+ε = log(P_ETH) − 1.183 × log(P_BTC)
 
 Shapiro-Wilk result:
   stat    = 0.9612
@@ -656,10 +656,10 @@ Half-life ≈ −ln(2)/ln(0.92) ≈ 8.3 bars (ถ้า bar = 1h → ~8.3h) → 
 <div class="ex">
 <div class="et">โจทย์ 5.1 — อ่านผล ADF</div>
 <p>ทดสอบ ADF บน residuals ของ BTC-ETH spread ได้:<br>
-ADF = −2.31, p-value = 0.18, critical value 5% = −2.86</p>
+ADF = −2.31, p-value = 0.18, critical value 5% (Engle-Granger) = −3.34</p>
 <p><strong>ถาม:</strong> (a) interpret ผล (b) ควร trade spread นี้ไหม?</p>
 <details><summary>ดูคำตอบ</summary><div class="ans">
-<p><strong>(a)</strong> ADF = −2.31 > −2.86 (critical) → ไม่ reject H₀ → ε ไม่ stationary<br>
+<p><strong>(a)</strong> ADF = −2.31 > −3.34 (critical, Engle-Granger) → ไม่ reject H₀ → ε ไม่ stationary<br>
 p-value = 0.18 > 0.05 → ไม่ผ่าน → residuals เป็น random walk</p>
 <p><strong>(b)</strong> ไม่ควร trade — BTC-ETH ไม่ cointegrated ในช่วงนี้<br>
 ทั้งสองอาจมี correlation สูง แต่ spread อาจ drift ออกไปเรื่อยๆ</p>

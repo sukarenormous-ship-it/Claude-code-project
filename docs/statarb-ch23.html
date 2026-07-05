@@ -165,7 +165,7 @@ y_t = β_t · x_t + v_t,  v_t ~ N(0, R)   <span class="c">// R = observation noi
 <div class="re-title">ตัวอย่างหลัก — BTC/ETH Dynamic β_t (log-returns)</div>
 <p><strong>Pair:</strong> BTC/ETH จาก <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> | ρ = 0.9745 | AR(1) φ = 0.9602 | Half-life = 17h</p>
 <p><strong>Input scale:</strong> ใช้ <em>log-returns</em> (r_t = Δlog P_t) ไม่ใช่ log-prices — ทำให้ innovation มี mean ≈ 0 โดยไม่ต้อง fit intercept และ K_t อยู่ใน range ที่ guard condition ทำงานได้</p>
-<p><strong>Log-return OLS β:</strong> β̂₀ ≈ 1.10 (BTC return ≈ 1.10 × ETH return) — ค่านี้ต่างจาก β ใน <a href="statarb-ch4.html#s4-2b">Ch.4 §4.2b</a> (log-price β ≈ 0.04–0.06) อย่างมาก เพราะเป็นคนละ quantity: <em>log-price β</em> วัด hedge ratio ของ price level (BTC ≈ 25× ETH → β ≈ 1/25 ≈ 0.04) ขณะที่ <em>log-return β</em> วัดว่า BTC return เป็นกี่เท่าของ ETH return (≈ 1.0–1.2 เพราะทั้งคู่ขึ้นลงคล้ายกัน) ใช้ log-return β เฉพาะใน Kalman filter แบบ Ch.23 เท่านั้น — สำหรับ spread construction ε = log(P_A) − β·log(P_B) ให้ใช้ log-price β จาก Ch.4 เสมอ</p>
+<p><strong>Log-return OLS β:</strong> β̂₀ ≈ 1.10 (BTC return ≈ 1.10 × ETH return) — ใกล้เคียงกับ <em>log-price β</em> จาก <a href="statarb-ch4.html#s4-2b">Ch.4 §4.2b</a> ซึ่งคือ ≈ 1.18 (ไม่ใช่ 0.04 — ค่านั้นคือ β_raw จาก raw-price regression ที่ Ch.4 เตือนว่าห้ามใช้กับ log-spread) เพราะทั้งคู่วัด elasticity ที่ scale-invariant คล้ายกัน: <em>log-price β</em> คือความชันของ log(A) เทียบ log(B) ระดับราคา ส่วน <em>log-return β</em> คือความชันของ log-return ต่อ log-return — ทั้งสองใกล้ 1.0–1.2 สำหรับ BTC/ETH ใช้ log-return β เฉพาะใน Kalman filter แบบ Ch.23 เท่านั้น — สำหรับ spread construction ε = log(P_A) − β·log(P_B) ให้ใช้ log-price β ≈ 1.18 จาก Ch.4 เสมอ (ไม่ใช่ β_raw=0.0444)</p>
 <p><strong>Kalman parameters:</strong> Q = 1×10⁻⁵ (β เปลี่ยนช้า), R = 0.001 (noise ปานกลาง)</p>
 <p><strong>Initial conditions:</strong> β̂₀ = 1.10 (ค่าจาก OLS log-returns), P₀ = 0.01</p>
 </div>
@@ -416,6 +416,7 @@ print(f<span class="nm">"Use threshold ±{threshold:.3f} instead of ±1.960"</sp
     <li>Stop: |z_t| ≥ 3 × t_{α/2}(ν) (ε วิ่งไกลเกิน — ไม่ใช่ reversion)</li>
   </ul>
 </li>
+<li><strong>⚠️ Rebalance hedge เฉพาะเมื่อคุ้มค่า (deadband) — ไม่ใช่ทุก bar:</strong> Kalman update ที่ step ② คำนวณ β_t ใหม่ทุก bar แต่ <strong>อย่าปรับ position</strong> ตามทุกครั้ง — ปรับเฉพาะเมื่อ |β_t − β_last_traded| เกิน threshold ที่ cost-of-rebalance คุ้มกับ hedge error ที่ลดได้ (สูตร + ตัวอย่างตัวเลขเต็มใน <a href="statarb-ch15.html#s15-7">บทที่ 15 §15.7</a> และโจทย์ 15.3) หาก Q ตั้งใหญ่เกินไป β_t จะ "วิ่งตาม noise" ทุก bar → rebalance ถี่ → ค่า fee/slippage สะสมกินกำไรทั้งหมด (แม้ direction ถูก) — นี่คือสาเหตุขาดทุนที่พบบ่อยที่สุดของ Kalman pairs ในทางปฏิบัติ</li>
 </ol>
 </div>
 
@@ -469,6 +470,7 @@ epsilon_buf  = []                           <span class="c"># rolling buffer ส
 <tr><td><a href="statarb-ch5.html">บทที่ 5</a> §5.7</td><td>Crossing rate φ: AR(1) coefficient เดียวกับที่ใช้ประมาณ Half-life</td></tr>
 <tr><td><a href="statarb-ch10.html">บทที่ 10</a> §10.3</td><td>Robust Z-score (MAD): ทางเลือกแทน σ-based z เมื่อ outlier มาก</td></tr>
 <tr><td><a href="statarb-ch12.html">บทที่ 12</a></td><td>Kelly criterion: ปรับ position size ตาม win rate จาก t-distribution threshold</td></tr>
+<tr><td><a href="statarb-ch15.html">บทที่ 15</a> §15.7</td><td><strong>Deadband/rebalancing cost</strong> — เมื่อไรควรปรับ position ตาม β_t ที่ Kalman อัปเดต (อย่าปรับทุก bar — ดู step 6 ด้านบน)</td></tr>
 <tr><td><a href="statarb-ch18.html">บทที่ 18</a> §18.8</td><td>ε_PCP: ตัวอย่าง fat-tailed options residual ที่ใช้ t-distribution</td></tr>
 <tr><td><a href="statarb-ch22.html">บทที่ 22</a> §22.3</td><td>ε_RR: Risk Reversal residual — ตัวอย่างหลักสำหรับ MLE ν ใน §23.7</td></tr>
 <tr><td><a href="statarb-ch22.html">บทที่ 22</a> §22.5</td><td>ε_VRP: Vol Risk Premium — ประโยชน์จาก Kalman เพราะ β_IV เปลี่ยนตาม term structure</td></tr>
