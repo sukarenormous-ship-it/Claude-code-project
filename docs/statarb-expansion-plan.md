@@ -12,8 +12,23 @@
 |---|---|
 | **ปัญหา** | เล่มปัจจุบันเจาะลึก **log price** เป็นหลัก (pipeline ch1–12 ทั้งสายใช้ log pairs) ส่วน F(·) แบบอื่นมีแบบกระจัดกระจาย/ผิว หรือไม่มีเลย |
 | **เป้าหมาย** | อธิบาย **ทุก F(·) ให้ลึกเท่ากัน** — absolute price, basis, funding/yield, options/IV และเติมตัวที่ยังไม่มี |
+| **Options** | หมายถึง **เอา options มาเป็นเครื่องมือทำ stat arb** (สร้าง ε บน IV/PCP/skew แล้วเทรด mean reversion ของมัน) — แกนคือ ch22 เดิม ขยายให้เต็ม ไม่ใช่แค่ overlay |
+| **บทเดิมทั้งสาย** | pipeline ch1–12 ต้อง **generalize พ้น log price**: ตัวอย่าง/สูตร/โจทย์ให้สลับ F(·) หลายแบบ ไม่ใช่ log pairs อย่างเดียว |
 | **กฎเหล็ก** | ทุก ε ต้องมี **"สถานการณ์ที่ได้ใช้"** — trigger เกิดเมื่อไร ตลาดแบบไหน เจอบ่อยแค่ไหน ใครอยู่อีกฝั่ง ไม่ใช่แค่สูตร |
 | **สไตล์** | คงรูปแบบเดิมของเล่ม: แก่นของบทนี้ → กลไก → สูตร → Running Example ตัวเลขจริง → กับดัก → แบบฝึกหัด |
+
+### 0.1 บทเรียนจากการเทรดจริงของผู้ใช้ (calendar arb ทองคำ — ขาดทุน) → ต้องตอบในเล่ม
+
+ผู้ใช้เทรด calendar arb ทองคำ (ตลาด contango) + cross-exchange CME↔APEX แล้วขาดทุน/ไม่มี order ทั้งที่คนอื่นได้กำไร — วิเคราะห์แล้วเจอ pitfall 6 จุดที่เล่มปัจจุบัน**ยังไม่ได้สอน**:
+
+1. **Full-carry market ไม่มี signal edge** — contango ของทอง = fair carry (rate + storage − convenience) ไม่ใช่ mispricing; คนที่กำไรคือคนต้นทุน carry ต่ำกว่า (funding ถูก, มี vault, เป็น MM) → เกมนี้คือ**เกมต้นทุน ไม่ใช่เกมสัญญาณ** — ระบบที่บอกว่า "ไม่คุ้ม" อาจถูกแล้ว
+2. **ε ต้องเป็น deviation จาก fair carry ไม่ใช่ spread ดิบ** — ε_t = spread_t − fair_carry_t โดย r ใช้ rate curve จริง (spread ทองที่วิ่ง ส่วนใหญ่คือ rate expectation เปลี่ยน — ไม่ hedge ขา rate = เทรดดอกเบี้ยโดยไม่รู้ตัว)
+3. **Cross-exchange metal เดียวกัน ≠ instrument เดียวกัน** — delivery คนละที่/สเปกต่าง → θ ≠ 0, no-arb band กว้างเท่าต้นทุนขนจริง, ในแบนด์**ไม่มีแรงดึงกลับ** (เคส EFP มี.ค. 2020)
+4. **Legging kill edge** — เข้า/ออกทีละขา = จ่าย bid-ask 4 ครั้งบน spread ที่ σ ไม่กี่ tick; ต้องใช้ listed calendar spread instrument
+5. **ถือใกล้ expiry = โดน delivery dynamics** ไม่ใช่เก็บ convergence
+6. **Spread chart จาก last-trade สองขาที่ print คนละเวลา = spike ปลอม** — ต้องใช้ synchronized mid + เส้น executable spread; คำถาม line vs candlestick เป็นคำถามผิด — ปัญหาอยู่ที่ data ข้างใต้
+
+→ กลายเป็น **Phase 4 ใหม่** (ch17 ยกเครื่อง + ch10b บทใหม่เรื่อง spread data/TF/charting) ด้านล่าง
 
 ---
 
@@ -81,7 +96,7 @@
 - Situation Card: funding spread บาน ตอน sentiment สุดขั้วข้างเดียว + venue เล็ก lag venue ใหญ่
 - โยง ch13 (basis คือ integral ของ funding โดยประมาณ) — สองบทนี้เป็นพี่น้องกัน
 
-### Phase 3 — ขยาย Options ให้เต็มตัว
+### Phase 3 — Options เป็นเครื่องมือ Stat Arb เต็มตัว (ยืนยัน scope แล้ว: เทรด ε บน vol ไม่ใช่แค่ overlay)
 **ขยาย `ch18` (PCP):**
 - American vs European — เมื่อไร PCP เป็น inequality ไม่ใช่ equality, early exercise (crypto options ส่วนใหญ่ European แต่ dated futures + coin-settled มี quirk)
 - **PCP band ในโลกจริง**: fee + spread ทำให้ violation ต้องเกิน band ก่อนเทรดได้ — คำนวณ band จริงของ Deribit
@@ -94,9 +109,28 @@
 4. **PnL Decomposition ของ ε trade บน options**: vega (ที่ตั้งใจกิน) vs gamma/theta (ที่ติดมา) vs delta residual — ต่อยอดกล่อง delta hedge 18.6 + vega-equivalent sizing 22.7 ให้เป็นระบบบัญชีเต็ม
 - Situation Cards ทุกตัว: IV เบี่ยงตาม event cycle ชัดกว่า price pairs → ความถี่คาดการณ์ได้มากกว่า แต่ friction สูงกว่ามาก (โยง 22.6)
 
-### Phase 4 — Retrofit + ปิดเล่ม
+### Phase 4 — Calendar Arb ภาคปฏิบัติ: ทำไมขาดทุนทั้งที่ "ทำถูกสูตร" (ยกเครื่อง ch17 + บทใหม่ ch10b)
+
+> Phase นี้เกิดจากบทเรียนจริงของผู้ใช้ (§0.1) — สำคัญสุดในเชิงปฏิบัติ เพราะตอบคำถาม "ทำตามหนังสือแล้วทำไมยังเจ็บ"
+
+**ยกเครื่อง `ch17` (Commodity Basis/Calendar) — เพิ่ม 5 หัวข้อ:**
+1. **17.8 Full-Carry Markets: เกมต้นทุน ไม่ใช่เกมสัญญาณ** — ทำไม calendar ทองคำแทบไม่มี signal edge; ตาราง "ต้นทุน carry ของคุณ vs ของ bank/MM"; วิธีเช็คก่อนเข้าตลาดว่า market นี้ full-carry หรือมี structural deviation (เทียบ: ทอง=full carry · น้ำมัน=seasonal+storage constraint · ก๊าซ=พีคจัด → มี ε ให้เล่นจริง); บทสรุปที่ต้องกล้าพูด: **"ไม่มี order = ระบบทำงานถูก"**
+2. **17.9 Carry-Adjusted ε** — ε_t = spread_t − fair_carry_t(r_curve) ทีละขั้น พร้อมตัวอย่างทองคำจริง; แยก component: rate move vs storage vs แท้จริง mispricing; เตือน: ไม่ hedge rate = เทรดดอกเบี้ยแฝง
+3. **17.10 Cross-Exchange Same-Commodity (CME↔APEX/SHFE)** — location basis, delivery spec, θ ≠ 0, no-arb band = ต้นทุนขนจริง; ในแบนด์ไม่มี mean reversion บังคับ → ต้อง estimate θ, band จากข้อมูล ห้าม assume 0; เคส EFP gold blowout มี.ค. 2020
+4. **17.11 Roll & Expiry Mechanics** — ทำไมห้ามถือใกล้ expiry (delivery dynamics, position limits, liquidity migration); โซนเวลาที่ spread "สะอาด" vs "สกปรก"
+5. **17.12 Execution: Listed Spread Order เท่านั้น** — legging = จ่าย bid-ask 4 ครั้ง; คำนวณให้ดูว่า friction ของ legging กิน edge หมดยังไง; spread instrument บน CME (GC calendar) ใช้ยังไง
+
+**บทใหม่ `ch10b` — Spread Data Engineering: TF, Executable Spread และ Chart ที่ไม่โกหก** (แทรกหลัง ch10 Z-score):
+- **เลือก Timeframe จาก half-life ไม่ใช่จากความรู้สึก** — fit κ (OU, ch3) → TF สัญญาณ ≈ half-life/10–20; ตาราง: half-life ชั่วโมง→TF 5m · วัน→H4 · สัปดาห์→Daily
+- **สถาปัตยกรรม 2 ชั้น**: ชั้นสัญญาณ (TF จาก half-life, gate ด้วย deviation > friction band + k·σ) + ชั้น execution (TF เล็ก หา timing หลัง gate เปิดเท่านั้น) → แก้ dilemma "TF เล็ก false เยอะ / TF ใหญ่พลาด spike" เชิงโครงสร้าง: TF เล็กไม่มีสิทธิ์สั่งเทรด
+- **Spike ปลอมจาก data ไม่ sync** — spread จาก last-trade สองขาที่ print คนละเวลา (ขา illiquid ราคาค้าง) = spike ที่เทรดไม่ได้; ต้องสร้างจาก synchronized mid quotes
+- **Executable Spread สองเส้น** — enter_long_spread = ask_A − bid_B, enter_short = bid_A − ask_B; สัญญาณจริง = เส้น executable ทะลุ band ไม่ใช่ mid ทะลุ
+- **Line vs Candlestick: คำถามที่ใช่กว่า** — candle ของ spread ต้อง aggregate จาก spread series ที่ sync แล้วเท่านั้น (ห้าม high_A − low_B — คนละ timestamp); ถ้า data ยัง async candle จะโกหกสวยกว่า line; สิ่งที่ต้องมีจริงบน chart: mid spread + executable both sides + friction band + fair-carry line
+- Situation Card + แบบฝึกหัด: ให้ dataset ที่มี spike ปลอม 3 จุด จริง 1 จุด → หาให้เจอว่าอันไหนเทรดได้
+
+### Phase 5 — Generalize Pipeline + Retrofit + ปิดเล่ม
+- **Generalize pipeline ch1–12 พ้น log price**: ทุกบทแกน (OU ch3, β ch4, cointegration ch5, stationarity ch6, GARCH ch7, z-score ch10, entry/exit ch11, sizing ch12) เพิ่มตัวอย่าง/โจทย์ที่ใช้ F(·) อื่นอย่างน้อย 1 จุดต่อบท (basis, absolute, funding, IV) + หมายเหตุ "สูตรนี้เปลี่ยนยังไงเมื่อ F เปลี่ยน" (เช่น z-score บน basis ใช้ σ เป็น $ ไม่ใช่ % · half-life ของ funding spread สั้นกว่า log pairs มาก)
 - ใส่ **Situation Card ย้อนหลัง** ให้กลยุทธ์เดิมทุกบท: ch13 (basis), ch14 (cross-venue), ch17 (calendar), ch21 (CFD) — ให้ทั้งเล่มพูดภาษาเดียวกัน
-- **ch17 เพิ่ม**: roll dynamics + delivery convergence (ช่องว่างเดียวของบทนั้น)
 - **ch0 (เริ่มต้นที่นี่)**: อัปเดต reading map ให้มีแถว "คุณสนใจ ε แบบไหน → อ่านบทไหน"
 - **Appendix A (Formula Playbook)**: เพิ่มสูตรทุก ε ใหม่ + ตาราง decision tree ย่อ
 - **Appendix B (Glossary)**: ศัพท์ใหม่ (dispersion, sticky strike/delta, funding spread, peg, term structure)
@@ -112,18 +146,27 @@
 | 0 | ย้ายไฟล์เข้า branch หลัก | — |
 | 1 | ch4b กรอบเลือก F(·) | ~12–15 |
 | 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | ~25–30 |
-| 3 | ขยาย ch18 + ch22 (4 หัวข้อใหม่) | ~25–30 |
-| 4 | Situation Cards retrofit + ch17/ch0/appendix/ch24 + rebuild PDF | ~15–20 |
-| | **รวม** | **~80–95 หน้า** (เล่มโต ~406 → ~490) |
+| 3 | Options stat arb: ขยาย ch18 + ch22 (4 หัวข้อใหม่) | ~25–30 |
+| 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (5 หัวข้อ) + ch10b ใหม่ | ~25–30 |
+| 5 | Generalize ch1–12 + Situation Cards retrofit + ch0/appendix/ch24 + rebuild PDF | ~20–25 |
+| | **รวม** | **~110–130 หน้า** (เล่มโต ~406 → ~520+) |
 
-ลำดับแนะนำ: **0 → 1 → 2 → 3 → 4** (Phase 1 ต้องมาก่อน 2–3 เพราะบทใหม่ทุกบทจะอ้าง decision tree กลาง)
+ลำดับแนะนำ: **0 → 1 → 4 → 2 → 3 → 5**
+- Phase 1 ก่อนเสมอ (ทุกบทใหม่อ้าง decision tree กลาง)
+- **ดัน Phase 4 ขึ้นก่อน 2–3** เพราะตอบปัญหาที่ผู้ใช้เจ็บจริงอยู่ตอนนี้ (calendar arb ขาดทุน + TF + charting) — ใช้งานได้ทันทีไม่ต้องรอเนื้อหาใหม่ทั้งชุด
 แต่ละ Phase = commit แยก + รีวิวก่อนไปต่อ (ตาม convention เดิมของ repo)
 
 ---
 
-## 5. คำถามเปิด (รอเคาะก่อนเริ่มเขียน)
+## 5. สถานะคำถามเปิด
 
+**เคาะแล้ว (จากผู้ใช้ รอบ 2):**
+- ✅ Options = เอา options มาทำ stat arb (เทรด ε บน vol/PCP/skew) — ch22 เป็นแกน ขยายเต็ม
+- ✅ บทเดิม pipeline ต้อง generalize พ้น log price → Phase 5
+- ✅ เพิ่มโจทย์ calendar arb ภาคปฏิบัติ (ทองคำ contango, CME↔APEX, TF, spread charting) → Phase 4 ใหม่ + ดันลำดับขึ้นก่อน
+
+**ยังรอเคาะ:**
 1. **Dispersion เอาลึกแค่ไหน?** — ต้องใช้ข้อมูล IV ของ alt ซึ่งบางตลาดไม่มี ถ้าข้อมูลไม่ถึงแนะนำสอนเป็น framework + ตัวอย่างจำลอง (ไม่ใช่ strategy พร้อมใช้)
 2. **Stablecoin peg** — โฟกัส USDT/USDC บน spot exchange หรือรวม on-chain (Curve pool) ด้วย? แนะนำ: spot exchange ก่อน (สอดคล้อง scope Bybit/Lighter ของเล่ม)
-3. **หมายเลขบท** — ใช้ ch4b/ch13b/ch13c (แทรก ไม่ renumber) ตาม pattern `pm-part3a` เดิม — โอเคไหม?
-4. **Equity index dispersion / bond futures** — อยู่นอก scope crypto+MT5 ของเล่ม เสนอ *ไม่รวม* รอบนี้ (กันเล่มบวม)
+3. **หมายเลขบท** — ใช้ ch4b/ch10b/ch13b/ch13c (แทรก ไม่ renumber) ตาม pattern `pm-part3a` เดิม — โอเคไหม?
+4. **Equity index dispersion / bond futures** — อยู่นอก scope crypto+MT5 ของเล่ม เสนอ *ไม่รวม* รอบนี้ (กันเล่มบวม) — แต่ commodity futures (ทองคำ CME/APEX) เข้า scope แล้วผ่าน Phase 4
