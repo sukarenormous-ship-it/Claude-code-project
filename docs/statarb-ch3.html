@@ -271,12 +271,12 @@ Entry band = θ ± 2σ_stat → กำหนด entry threshold</div>
 
 OLS AR(1) result:
   b = 0.9985,  a = 2.0×10⁻⁶
-  Residual std = 0.00012
+  Residual std = 0.000044
 
 OU Parameters:
   θ  = 2.0e-6 / (1−0.9985) = 0.00133  (basis ≈ 0.133%)
   κ  = −ln(0.9985)/(1/1440) = 2.16 ต่อวัน
-  σ_stat ≈ 0.00080  (≈ 0.08%)
+  σ_stat = 0.000044/√(1−0.9985²) ≈ 0.00080  (≈ 0.08%)
 
 Trade Parameters:
   τ₁/₂ = 0.693/2.16 = 7.7 ชั่วโมง  ← intraday trade ได้
@@ -640,7 +640,7 @@ Holding time เฉลี่ย ≈ τ₁/₂ = 22.7 ชม. (ถ้า exit ท
 
 <p>แทนที่จะเลือก lookback ที่ดูสวย ให้ run calibration <strong>ด้วย lookback หลายค่าพร้อมกัน</strong> แล้วดูว่า half-life เสถียรข้าม window หรือไม่:</p>
 
-<div class="fm">lookbacks = [30, 45, 60, 90]   # วัน
+<div class="fm">lookbacks = [30, 45, 60, 90]   # วัน (ตัวอย่างนี้ใช้ hourly bars → b̂ = AR(1) ต่อชั่วโมง)
 for lb in lookbacks:
     eps       = compute_spread(prices[-lb*bars_per_day:])
     b, a      = ols_slope_intercept(eps[:-1], eps[1:])
@@ -650,16 +650,16 @@ for lb in lookbacks:
 
 <table>
 <tr><th>Lookback</th><th>b̂ (OLS)</th><th>κ (ต่อวัน)</th><th>Half-life</th><th>สถานะ</th></tr>
-<tr><td>30 วัน</td><td>0.856</td><td>11.1</td><td>1.5 ชม.</td><td style="color:#dc2626">⚠️ Kendall bias สูง</td></tr>
-<tr><td>45 วัน</td><td>0.912</td><td>5.9</td><td>2.8 ชม.</td><td style="color:#d97706">bias ยังมีผล</td></tr>
-<tr><td>60 วัน</td><td>0.947</td><td>3.2</td><td>5.2 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ</td></tr>
-<tr><td>90 วัน</td><td>0.968</td><td>1.9</td><td>8.7 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ (reference)</td></tr>
+<tr><td>30 วัน</td><td>0.856</td><td>3.7</td><td>4.5 ชม.</td><td style="color:#dc2626">⚠️ ไวต่อ regime ของ window</td></tr>
+<tr><td>45 วัน</td><td>0.912</td><td>2.2</td><td>7.5 ชม.</td><td style="color:#d97706">ยังแกว่งตาม regime</td></tr>
+<tr><td>60 วัน</td><td>0.947</td><td>1.3</td><td>12.7 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ</td></tr>
+<tr><td>90 วัน</td><td>0.968</td><td>0.78</td><td>21.3 ชม.</td><td style="color:#16a34a">น่าเชื่อถือ (reference)</td></tr>
 </table>
 
 <div class="bx bb">
 <div class="bt">วิธีอ่าน Sensitivity Table</div>
 <ul>
-<li><strong>half-life ลดลงมากเมื่อ lookback สั้นลง</strong> (เช่น 8.7h → 1.5h) → Kendall bias มีผลมาก — ห้ามใช้ lookback สั้น</li>
+<li><strong>half-life ลดลงมากเมื่อ lookback สั้นลง</strong> (เช่น 21.3h → 4.5h) → estimate ไม่เสถียร: window สั้นจับ regime เดียว + selection bias — ห้ามใช้ lookback สั้น (ส่วน Kendall bias จะใหญ่จริงเมื่อ N เล็ก เช่น daily bars — ดูกล่องถัดไป)</li>
 <li><strong>half-life เสถียรระหว่าง 60–90 วัน</strong> → estimate robust — ใช้ lookback ในช่วงนี้ได้</li>
 <li><strong>half-life ผันผวนมากในทุก lookback</strong> → pair ไม่ robust — พิจารณาตัดออก</li>
 </ul>
@@ -671,12 +671,18 @@ for lb in lookbacks:
 
 <div class="fm">b_corrected = b̂ + (1 + 3·b̂) / N     ← invert Kendall formula (first order)
 
-ตัวอย่าง: b̂ = 0.856, N = 30 obs
+⚠️ N = จำนวน observation (bar) ไม่ใช่จำนวนวัน!
+
+ตัวอย่าง (daily bars): b̂ = 0.856 จากข้อมูล 30 วัน → N = 30 bars
   b_corrected = 0.856 + (1 + 3×0.856)/30 = 0.856 + 0.119 = 0.975
-  half-life (corrected) ≈ −ln(2)/ln(0.975) × 24h ≈ 27 ชม.
-                                                   ← ดีกว่า 30-วัน estimate (1.5h) มาก
-                                                      แต่ยังสูงกว่า 90-วัน estimate (8.7h)
-                                                      เพราะ first-order correction มักจะ overshoot
+  half-life (corrected) ≈ −ln(2)/ln(0.975) ≈ 27.4 bars ≈ 27 วัน (daily bars)
+                                     ← Kendall bias แรงมากเมื่อ N เล็ก
+                                        first-order correction มักจะ overshoot
+
+เทียบ (hourly bars): lookback 30 วัน → N = 720 bars
+  bias = (1 + 3×0.856)/720 ≈ 0.005 เท่านั้น → b_corrected ≈ 0.861
+  → ความต่างของ half-life ข้าม lookback ในตารางข้างบน
+    ไม่ได้มาจาก Kendall bias — มาจาก regime/selection (สาเหตุ 2–3)
 
 หมายเหตุ: correction นี้เป็น approximation — ใช้เป็น sanity check ไม่ใช่ค่าจริง
            ถ้า b_corrected ≈ 1.0 → true process ใกล้ random walk → half-life ยาวมาก</div>
