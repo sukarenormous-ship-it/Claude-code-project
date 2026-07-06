@@ -39,6 +39,36 @@
 
 ---
 
+## 1.5 ปรัชญาเล่ม + แผนที่ Edge  → เป็น **Part 0** ของเล่ม
+
+### §0 — "Kalman ไม่ใช่ edge" (บทเปิด, ตั้งความคาดหวังผู้อ่าน)
+- estimator (OLS/TLS/Kalman) = **ท่อประปา ไม่ใช่ alpha**; ถ้าใครก็รันได้ = *table stakes* ไม่ใช่ edge (by definition)
+- หลักฐาน: **Do & Faff (2010)** — กำไร pairs แบบคลาสสิก (Gatev 2006) เสื่อมลงเรื่อย ๆ โดน cost + crowding กิน; ใน US large-cap ที่ liquid สุด กลยุทธ์เบสิกแทบตาย
+- ประโยคทอง (.pq): *"Kalman คือของฟรีที่ทุกคนมี — ความอยู่รอดของคุณอยู่ที่ 4 ชั้นที่เหลือ"*
+- นี่คือสิ่งที่ทำให้เล่ม 2 ต่างจากคอร์สที่สอนแค่ "โค้ด Kalman"
+
+### แผนที่ Edge — edge ย้ายไปไหน (สอนผู้อ่านให้รู้ว่าจะขุดที่ไหน)
+> **กฎ meta:** อะไรตีพิมพ์แล้ว edge เฉพาะตัวมักหมด → อ่าน literature เพื่อเอา *ทิศทาง + วิธีการ* มาผลิต edge เอง ไม่ใช่ก๊อป alpha สำเร็จรูป · อ่านเพื่อรู้ว่า "อะไร crowded แล้ว (เลี่ยง)" กับ "อะไร arbitrage ยากเชิงโครงสร้าง (ทน)"
+
+| ชั้น | edge อยู่ตรงไหน | crowded? | รายย่อยเล่นได้ | literature |
+|---|---|---|---|---|
+| **A. Selection / relationship** | สแกน universe ใหญ่หา relationship ที่คนอื่นมองไม่เห็น (edge อยู่ที่ *การค้นหา* ไม่ใช่การเทรด); copula / partial-cointegration / eigenportfolio จับ dependence ที่ linear-cointegration พลาด | กำลังร้อน | ✅ จุดแข็งรายย่อย (บ่อเล็ก) | graph clustering (2024), Clegg-Krauss partial coint (2018), Avellaneda-Lee (2010) |
+| **B. Signal / feature** | residual เป็นแค่ feature เดียว; ดึง residual จาก factor model แล้วให้โมเดล non-linear หา pattern | **แออัดสุด + overfit ง่ายสุด** | ⚠️ ระวัง (ต้องวินัย backtest) | **Guijarro-Ordóñez, Pelger, Zanotti — "Deep Learning Statistical Arbitrage", Management Science (2024/25)**; Fischer-Krauss LSTM (2018); Krauss et al. GBT/RF (2017) |
+| **C. Regime / risk / when-NOT-to-trade** | edge ที่เสื่อมช้าสุด เพราะเป็น *วินัย* ไม่ใช่สัญญาณให้ arbitrage; ตัดทันตอนคู่บ้านแตก | ต่ำ (คนมองข้ามเพราะ "น่าเบื่อ") | ✅✅ ทนสุด | §3C + López de Prado (2018) |
+| **D. Structural / niche** | เล่นบ่อที่คู่แข่งบาง: illiquid, small-cap, non-US, crypto; capacity เล็กเกินกองใหญ่จะลง; กระจายหลายคู่แทนคู่เดียวลึก | ต่ำ–กลาง | ✅✅ edge เฉพาะรายย่อย | crypto pairs (2024–26), multi-pair portfolio |
+
+**ข้อสรุปเชิงกลยุทธ์ที่เล่มต้องสื่อ:** edge ที่ *ทน* สำหรับรายย่อย = **C + D** (วินัย + niche) ไม่ใช่ A/B (โมเดลที่ทุกคนแข่งกันอยู่) — DL/RL มี backtest สวยแต่ live อ่อนกว่ามากและ overfit หนัก → สอนเป็น "รู้ว่ามันมี + กับดักของมัน" ไม่ใช่ชวนไปแข่ง
+
+### ไอเดียเสริม (นอก literature — flag ชัดว่าเป็นสมมติฐาน ต้อง backtest)
+1. **Estimator-disagreement เป็น risk gate:** เมื่อ β จาก OLS/TLS/Kalman *ไม่ตรงกัน* = สัญญาณความสัมพันธ์กำลังสั่น → ใช้ divergence เป็น kill-switch (ถูก · ใหม่ · ทำง่าย)
+2. **Fade the crowd:** ทุกคนเข้า z=2 → forced-unwind ที่ threshold มาตรฐานคาดเดาได้ → จับจังหวะต่างเล็กน้อย (second-order)
+3. **Access เป็น alpha จริงในไทย/SEA:** broker ไหน · ยืมช็อตได้ไหม · ภาษี — บางที edge คือ *สิทธิ์เข้าถึง* ไม่ใช่โมเดล
+4. **Horizon diversification:** คู่เดียวรันหลาย timeframe แล้วรวมสัญญาณ (คนละ horizon decorrelate กัน)
+
+> ทั้ง 4 เป็น **สมมติฐาน** — ในเล่มต้องมาพร้อม backtest จริงในโฟลเดอร์โค้ด ไม่ใช่เคลมลอย ๆ
+
+---
+
 ## 2. แกนกระดูกสันหลัง — "บันได β" (Hedge-Ratio Estimation Ladder)
 
 ทั้งเล่มร้อยด้วยคำถามเดียว: *จะหา β ยังไง แล้วทำให้มัน "มีชีวิต" ยังไง*
@@ -123,6 +153,7 @@
 
 | Part | ชื่อ | แกน |
 |---|---|---|
+| 0 | **Kalman ไม่ใช่ edge + แผนที่ Edge** | ตั้งความคาดหวัง: estimator = ท่อประปา; edge จริงอยู่ชั้น A–D (เน้น C+D สำหรับรายย่อย) |
 | I | **บันได β (1)** | ทำไม OLS พัง → EIV → TLS/PCA |
 | II | **Cointegration ใช้จริง** | Engle-Granger, Johansen/VECM, OU half-life, re-testing |
 | III | **Kalman ลงมือ** | state-space, จูน Q/R, worked example + โค้ด |
@@ -158,6 +189,13 @@
 - **Primbs, J.A. & Yamada, Y. (2018)** "Pairs trading under transaction costs using model predictive control", *Quantitative Finance* 18(6):885–895 — MPC + proportional cost + gross-exposure constraint บน OU spread (ใช้ใน Part V/VII)
 - **Mudchanatongsuk, S., Primbs, J.A. & Wong, W. (2008)** "Optimal pairs trading: a stochastic control approach", *Proc. American Control Conf. 2008* — log-spread เป็น OU, แก้ผ่าน HJB (รากฐานของสาย stochastic-control cost)
 - **Tenyakov, A. & Mamon, R. (2017)** "A computing platform for pairs-trading online implementation via a blended Kalman–HMM filtering approach", *Journal of Big Data* 4:46 — Kalman + HMM regime, พารามิเตอร์ self-updating แบบ online (อ้างใน Part IV adaptive/regime-switching Kalman)
+
+**★ "Edge ย้ายไปไหน" — ML/DL + selection (สำหรับ Part 0 · ยืนยันแล้ว ก.ค. 2026):**
+- **Sun, Y. (2025)** "A survey of statistical arbitrage pair trading with machine learning, deep learning, and reinforcement learning methods", *Univ. of Warsaw WP 2025-22* — **survey ที่ user ขอ** สำหรับ "edge ย้ายไปไหน"
+- **Guijarro-Ordóñez, J., Pelger, M. & Zanotti, G.** "Deep Learning Statistical Arbitrage", *Management Science* (accepted 2024) — CNN/transformer บน residual ของ factor model = งาน top-journal ตัวแทน "ชั้น B"
+- **Fischer, T. & Krauss, C. (2018)** LSTM stat arb S&P 500, *EJOR*; **Krauss, Do & Huck (2017)** DNN/GBT/RF stat arb S&P 500, *EJOR* — คลาสสิก ML stat arb
+- **Clegg, M. & Krauss, C. (2018)** "Pairs trading with partial cointegration", *Quantitative Finance* — แยกส่วน mean-revert ออกจาก random-walk (ชั้น A selection)
+- multi-pair graph clustering (arXiv 2024) · crypto pairs DL/DRL (2024–26) — ตัวแทนชั้น A/D (อ้างเป็นทิศทาง ไม่ใช่ alpha สำเร็จรูป)
 
 **สอน "ลงมือทำ" ระดับรายย่อย (tutorial/code — ไม่ใช่ paper แต่ reproduce ได้):**
 - QuantStart — "Dynamic Hedge Ratio Between ETF Pairs Using the Kalman Filter" + "Kalman Filter-Based Pairs Trading in QSTrader"
