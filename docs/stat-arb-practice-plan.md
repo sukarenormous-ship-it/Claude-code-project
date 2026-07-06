@@ -153,6 +153,27 @@
 - ธีม: diagnostic ทั้งหมด (plateau/whiteness/MLE/deflated Sharpe) = **process edge ชั้น C** ไม่ใช่ตัว Kalman
 - Lit เพิ่ม: Bar-Shalom (innovation consistency/NIS) · pykalman EM
 
+### Part VII (Regime & kill-switch) — decisions ที่เคาะแล้ว (จากการถกกับ user)
+
+**R1 · เปรียบเทียบทุกวิธีจับ regime (มีตารางเต็มในเล่ม)**
+- ชั้นเร็ว (early-warning, false alarm สูง แต่ถูก/ไว): z-divergence · estimator-disagreement · Kalman NIS · ADX/RSI
+- ชั้นช้า (ground truth, ช้าแต่แม่น): half-life (OU κ) · Hurst · rolling coint re-test (ADF/Johansen) · CUSUM
+- retrospective/post-mortem: Chow (break รู้ตำแหน่ง) · Bai-Perron (หลาย break ไม่รู้ตำแหน่ง) · Bayesian changepoint
+- ★ **สถาปัตยกรรม = 2 ชั้นลำดับ ไม่ใช่ vote เท่ากัน:** ชั้นเร็วยกธง → *ลดขนาดก่อน* → ชั้นช้ายืนยัน → *kill* · ไวจากชั้นเร็ว แม่นจากชั้นช้า
+
+**R2 · kill-switch + re-entry (evidence-backed)**
+- ★ **stop-loss paradox ของ mean reversion:** stop แบบ "spread ห่าง = ตัด" ขัดในตัว (ห่าง = จุดเข้าดีขึ้น) → **stop ต้องผูกกับ "ความสัมพันธ์พัง" (R1) ไม่ใช่ "spread ห่าง"**
+- แยก exit 2 ชนิด: convergence-exit → re-enter ได้ทันที (Gatev หลาย round-trip) · structural-break-exit → **ห้าม re-enter บน β/spread เดิม**
+- re-entry rule: คู่ break → **quarantine** → รับกลับเมื่อ (1) coint re-test ผ่าน window ใหม่ + (2) half-life ปกติ + (3) disagreement คลี่คลาย = *รอ re-qualify ไม่ใช่รอเวลา*
+- ตั้ง stop ร่วมกับ entry/exit (ไม่มั่ว): **Leung-Li (2015)** — entry region อยู่เหนือ stop เสมอ, stop สูง → take-profit ต่ำ
+- Evidence/Lit: Leung-Li (2015, stop-loss exit) · Gatev et al (2006, re-form/multi-roundtrip) · Zhu/Yale (wait-one-day cooldown) · Lin-McCrae-Gulati (2006, minimum-profit bound) · Brown-Durbin-Evans (1975, CUSUM) · Bai-Perron (1998/2003) · Adams-MacKay (2007, BOCPD)
+
+**R3 · estimator-disagreement gate (ไอเดีย user — วางเป็น early-warning ชั้นเร็ว)**
+- คำนวณ β_OLS/TLS/Kalman บน rolling → dispersion (max−min)/mean เกิน baseline = ยกธง (ลดขนาด/รอยืนยัน)
+- caveat: บางส่วนมาจาก Kalman lag → calibrate baseline regime ปกติก่อน · **สมมติฐาน ต้อง backtest** (โยง Part I+IV+VII)
+
+**หมายเหตุ Part VI (Bands):** เคาะไปมากตอนถก §3 แล้ว (z/s-score vs cost-aware/ATR vs optimal OU threshold; band คงที่ vs adaptive) → สรุป decision ตอนเขียนได้เลย
+
 ---
 
 ## 2.5 Part II ลงรายละเอียด — Correlation & Cointegration ที่ใช้จริง + Copula รายย่อย
