@@ -335,9 +335,19 @@ Thresholds สำหรับ Grid:
         """
         Determine grid state from 3 indicators.
         Requires 2-of-3 indicators to agree before state change (noise filter).
+        Hurst ใช้ hysteresis (dead band) กันการ flap ตอนแกว่งใกล้ 0.50: ถ้าตอนนี้
+        ยังเป็น GRID_ON ต้อง H ≥ 0.52 ถึงจะขยับเป็น CAUTION (ไม่ใช่ 0.50 พอดี) |
+        ถ้าตอนนี้เป็น CAUTION/GRID_OFF อยู่แล้ว ต้อง H < 0.47 ถึงจะกลับมา ON
         """
+        if hurst > 0.58:
+            hurst_sig = "OFF"
+        elif self.state == "GRID_ON":
+            hurst_sig = "CAUTION" if hurst >= 0.52 else "ON"
+        else:
+            hurst_sig = "ON" if hurst < 0.47 else "CAUTION"
+
         signals = {
-            "hurst": "OFF" if hurst > 0.58 else ("CAUTION" if hurst > 0.50 else "ON"),
+            "hurst": hurst_sig,
             "adx":   "OFF" if adx > 50 else ("CAUTION" if adx > 40 else "ON"),  # BTC-calibrated: CAUTION=40, OFF=50 (textbook Forex threshold=25/35 ไม่ถูกสำหรับ BTC)
             "bb":    "OFF" if bb_width > 0.08 else ("CAUTION" if bb_width > 0.04 else "ON"),
         }
@@ -346,10 +356,12 @@ Thresholds สำหรับ Grid:
         for sig in signals.values():
             counts[sig] += 1
 
-        # Majority vote (2 of 3)
+        # Majority vote (2 of 3) — สัญญาณ OFF แม้แค่ 1 ตัวก็ยกระดับเป็นอย่างน้อย
+        # CAUTION เสมอ (เดิมถ้า ON=2/OFF=1/CAUTION=0 จะตกไป GRID_ON เฉยๆ ทั้งที่
+        # มีสัญญาณหนึ่งกำลังเตือนอันตราย — เช่น BB width ซึ่งไวสุดในสาม ตัว)
         if counts["OFF"] >= 2:
             new_state = "GRID_OFF"
-        elif counts["CAUTION"] >= 2 or (counts["OFF"] == 1 and counts["CAUTION"] == 1):
+        elif counts["OFF"] >= 1 or counts["CAUTION"] >= 2:
             new_state = "CAUTION"
         else:
             new_state = "GRID_ON"
@@ -368,10 +380,11 @@ Thresholds สำหรับ Grid:
 <p>ปัญหา: ถ้า Hurst แกว่งรอบ 0.50 (บางครั้ง 0.49 บางครั้ง 0.51) → state เปลี่ยนทุกชั่วโมง = สั่ง cancel/open orders บ่อยเกิน = fee เสียเยอะ</p>
 <p><strong>Solution: Hysteresis (Dead Band)</strong></p>
 <ul>
-<li>เปลี่ยนจาก GRID_ON → CAUTION ต้องมี H &gt; 0.52 (ไม่ใช่ 0.50)</li>
+<li>เปลี่ยนจาก GRID_ON → CAUTION ต้องมี H ≥ 0.52 (ไม่ใช่ 0.50)</li>
 <li>เปลี่ยนกลับจาก CAUTION → GRID_ON ต้องมี H &lt; 0.47 (ต่ำกว่า threshold)</li>
 <li>Dead band = 0.05 รอบ threshold ทำให้ state stable กว่า</li>
 </ul>
+<p>สังเกต: dead band นี้ implement อยู่ใน <code>evaluate()</code> ด้านบนแล้ว (เช็ก <code>self.state</code> ก่อนเลือก threshold) ไม่ใช่แค่แนวคิดลอยๆ</p>
 </div>
 
 <h2 id="s4-5">4.5 Grid Reset — ย้าย Zone เมื่อ Regime กลับมา</h2>
@@ -502,7 +515,7 @@ Watchdog Alert Types:
 <tr><td>Day 10</td><td>$112k</td><td>0.52</td><td>27</td><td>5.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>Reduce to 50%</td></tr>
 <tr><td>Day 12</td><td>$118k</td><td>0.59</td><td>44</td><td>8.2%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>Cancel all orders</td></tr>
 <tr><td>Day 15</td><td>$125k</td><td>0.61</td><td>38</td><td>9.2%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>รอ regime กลับ</td></tr>
-<tr><td>Day 18</td><td>$121k</td><td>0.55</td><td>29</td><td>6.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>รอ H &lt; 0.50</td></tr>
+<tr><td>Day 18</td><td>$121k</td><td>0.55</td><td>29</td><td>6.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>รอ H &lt; 0.47 (hysteresis exit)</td></tr>
 <tr><td>Day 21</td><td>$118k</td><td>0.47</td><td>22</td><td>4.0%</td><td style="color:#16a34a"><strong>GRID ON</strong></td><td>Zone Migration → $105k–$135k</td></tr>
 </table>
 
@@ -513,7 +526,8 @@ Watchdog Alert Types:
   Zone Migration (Day 21): เปิด grid ใหม่ที่ $105k–$135k
 
   Inventory ที่ถือ: BUY ที่ $98k, $100k, $102k, $104k (ตอน grid เปิด)
-  ราคาปัจจุบัน $118k → inventory กำไร unrealized = 4 × 0.01 BTC × $16k avg = $640
+  ราคาปัจจุบัน $118k → avg buy price = ($98k+$100k+$102k+$104k)/4 = $101k
+  inventory กำไร unrealized = 4 × 0.01 BTC × ($118k−$101k) = 4 × 0.01 × $17k = $680
 
   ถ้าไม่มี state machine:
   → grid ยังเปิด order ที่ $120k, $122k, $124k ระหว่าง uptrend
@@ -575,13 +589,14 @@ Watchdog Alert Types:
 </details>
 
 <details>
-<summary>ข้อ 4 (Challenge): ออกแบบ Hysteresis rules สำหรับ Hurst transitions เพื่อลด false state changes</summary>
+<summary>ข้อ 4 (Challenge): ต่อยอด Hysteresis rules — §4.4 ทำ ON↔CAUTION แล้ว ขอบ CAUTION↔OFF ควรเป็นแบบไหน?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p><strong>Hysteresis Design:</strong></p>
+<p>ขอบ ON↔CAUTION: <code>evaluate()</code> ใน §4.4 ทำแล้ว (entry H&gt;0.52, exit H&lt;0.47) ไม่ต้องออกแบบใหม่</p>
+<p><strong>ขอบ CAUTION↔OFF (ส่วนที่ยังไม่มี):</strong></p>
 <table>
 <tr><th>Transition</th><th>Standard Threshold</th><th>Hysteresis (Entry)</th><th>Hysteresis (Exit)</th></tr>
-<tr><td>ON → CAUTION</td><td>H &gt; 0.50</td><td>H &gt; <strong>0.52</strong></td><td>H &lt; <strong>0.48</strong> กลับ ON</td></tr>
+<tr><td>ON → CAUTION</td><td>H &gt; 0.50</td><td>H &gt; <strong>0.52</strong></td><td>H &lt; <strong>0.47</strong> กลับ ON</td></tr>
 <tr><td>CAUTION → OFF</td><td>H &gt; 0.58</td><td>H &gt; <strong>0.60</strong></td><td>H &lt; <strong>0.55</strong> กลับ CAUTION</td></tr>
 </table>
 <p><strong>Time filter เพิ่มเติม:</strong> ต้องอยู่ใน new regime ≥ 3 ชั่วโมงก่อนเปลี่ยน state</p>
