@@ -84,16 +84,16 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <h2 id="s1d-2">1D.2 สามชั้นของทุน</h2>
 
-<p>เทรดเดอร์คนเดิม ตอนนี้มีทุนรวม $20,000 ที่จะแบ่งเข้าสามชั้น — สัดส่วน default ที่ใช้ได้เลยถ้ายังไม่มีเหตุผลเฉพาะเจาะจงให้ปรับ:</p>
+<p>เทรดเดอร์คนเดิมจาก Part 0 — เริ่ม Close System ที่ $8,460 ใน Part 1A แล้วเก็บกำไรสะสมจนขยับ allocation ขึ้นเป็นทุนรวม $20,000 (≈19% ของ net worth $100k ตามเพดาน Kelly ที่จะเห็นเหตุผลเต็มใน Part 5) ตอนนี้จะแบ่งเข้าสามชั้น — สัดส่วน default ที่ใช้ได้เลยถ้ายังไม่มีเหตุผลเฉพาะเจาะจงให้ปรับ:</p>
 
 <table>
 <tr><th>ชั้น</th><th>สัดส่วน</th><th>จำนวนเงิน</th><th>หน้าที่</th></tr>
 <tr><td><strong>Buy-only core</strong></td><td>75%</td><td>$15,000</td><td>Close System ถึง floor (Part 1A) — วิ่งตลอดเวลา ไม่ปิดเว้นแต่หลุดขอบ</td></tr>
-<tr><td><strong>Hedge reserve</strong></td><td>20%</td><td>$4,000</td><td>Margin + buffer สำหรับ short perp ที่ hedge เฉพาะ inventory ที่ core ถืออยู่จริง (Part 1C)</td></tr>
-<tr><td><strong>Capped short layer</strong></td><td>5%</td><td>$1,000</td><td>Short เพิ่มเพื่อเก็บเกี่ยว sideway — เปิดเฉพาะตอน state อนุญาต (1D.4) และมี loss budget ตายตัว (Part 1B §1B.10)</td></tr>
+<tr><td><strong>Hedge reserve</strong></td><td>20%</td><td>$4,000</td><td>Margin + buffer สำหรับ short perp ที่ hedge เฉพาะ inventory ที่ core ถืออยู่จริง (Part 1C §1C.4)</td></tr>
+<tr><td><strong>Capped short layer</strong></td><td>5%</td><td>$1,000</td><td>Short เพิ่มเพื่อเก็บเกี่ยว sideway — เปิดเฉพาะตอน state อนุญาต (1D.4) และมี SL + capital cap ตายตัว (Part 1B §1B.6: SL ที่ zone_top+5%, short capital ≤ 20% ของ long capital)</td></tr>
 </table>
 
-<p>สังเกตว่าตัวเลขในตารางไม่ใช่สูตรใหม่ — core มาจาก Close System ของ Part 1A ตรงๆ, hedge reserve มาจาก Margin+Buffer ของ Part 1C, capped short มาจาก Short Loss Budget ของ Part 1B บทนี้แค่บอกว่า<strong>สามอย่างนี้ควรอยู่ด้วยกันในสัดส่วนไหน</strong> ไม่ได้สอนวิธีคำนวณแต่ละชั้นซ้ำ — ถ้าลืมสูตรให้กลับไปอ่าน Part ที่เกี่ยวข้อง</p>
+<p>สังเกตว่าตัวเลขในตารางไม่ใช่สูตรใหม่ — core มาจาก Close System ของ Part 1A ตรงๆ, hedge reserve มาจาก Margin+Buffer ของ Part 1C, capped short มาจาก SL + capital cap ของ Part 1B §1B.6 บทนี้แค่บอกว่า<strong>สามอย่างนี้ควรอยู่ด้วยกันในสัดส่วนไหน</strong> ไม่ได้สอนวิธีคำนวณแต่ละชั้นซ้ำ — ถ้าลืมสูตรให้กลับไปอ่าน Part ที่เกี่ยวข้อง</p>
 
 <div class="bx ba">
 <div class="bt">กฎที่มักถูกทำผิด</div>
@@ -142,16 +142,16 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <h2 id="s1d-5">1D.5 Decision Tree</h2>
 
 <div class="fm">มี spot inventory อยู่แล้ว?
-  → ใช้ hedge ratio 50–80% ตาม funding และ liquidation buffer (Part 1C)
+  → ใช้ hedge ratio ตามตาราง Part 1C §1C.4 (0/50/100/150%) ปรับตาม funding และ Hurst
 
 ยังไม่มี inventory และอยากเริ่มปลอดภัย?
   → เปิดแค่ BUY_ONLY_CORE ก่อน (Part 1A) รอ signal sideway ชัดค่อยเพิ่มชั้น
 
 ตลาด sideway/choppy ชัด (H &lt; 0.50, ADX ต่ำ)?
-  → HYBRID_SIDEWAY: short layer 25–40% ของ Q_long (Part 1B §1B.10) + hedge 50–80%
+  → HYBRID_SIDEWAY: เปิด short layer ภายใต้ capital cap ≤ 20% ของ long capital (Part 1B §1B.6) + hedge ratio 50–100%
 
 ราคา breakout ขึ้น (หลุดขอบบน)?
-  → TREND_UP_MIGRATION: หยุด short ใหม่ → ปิด short ตาม stop map (Part 1B §1B.12)
+  → TREND_UP_MIGRATION: หยุด short ใหม่ → ปิด short ตาม SL ที่ zone_top+5% (Part 1B §1B.6)
     → เลือกทางที่ 2 (reset) หรือ 3 (infinity) จาก 1D.3
 
 ตลาด crash/downtrend?
