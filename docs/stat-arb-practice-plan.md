@@ -106,6 +106,26 @@
 - **Markov-regime-switching Kalman** / particle filter / GP-regression β / online learning
 - Lit: Johansen (1988/91); Montana-Triantafyllopoulos (flexible least squares)
 
+### Part I — decisions ที่เคาะแล้ว (จากการถกกับ user)
+
+**D1 · TLS = "รู้ / ใช้เป็น / รู้ว่าพังตอนไหน"** (ไม่ใช่เชียร์ให้ใช้เสมอ)
+- ใช้เป็น: OLS ลด error แนวตั้ง · TLS/Deming ลดตั้งฉาก (δ=1 = orthogonal = noise 2 ขาเท่ากัน)
+- พังตอนไหน: (1) δ ผิด → TLS แลก bias ด้วยสมมติฐานที่อาจผิด = แย่กว่า OLS · (2) ไวต่อ outlier
+- ★ **aha:** EIV bias เกิดกับ **return regression** เท่านั้น — OLS บน cointegration (price I(1)) เป็น **super-consistent** (Stock 1987) EIV หายเชิง asymptotic
+- กฎที่สอน: OLS บน price/coint = ดีอยู่แล้ว (refine ด้วย **FM-OLS/DOLS** เรื่อง finite-sample) · OLS บน return/hedge = EIV จริง → TLS/PCA/Kalman ช่วย
+
+**D2 · price (level) vs return — แยกให้ขาด พร้อมเหตุผล (มีกล่องเน้น)**
+- price/cointegration → β ทำ combo stationary → ตอบ *"spread จะกลับไหม"* · ใช้ผิด = **spurious regression** (Granger-Newbold 1974)
+- return/factor → β = exposure ณ ขณะนั้น → ตอบ *"neutral ต่อ factor ไหม"* · return co-move แต่ level ลอยห่างได้ (hedge return ≠ spread กลับ)
+- stat arb ใช้ทั้งคู่คนละหน้าที่ → เหตุผลลึกว่าทำไม Part II (price) แยกจาก Part III (return/factor)
+
+**D3 · Hedge unit — ลงลึก (3 ความ neutral ที่สับสน)**
+- share-ratio (จาก coint, ทำให้ spread กลับ) vs dollar-neutral (คุม gross แต่ไม่การันตี residual) vs beta-neutral (Part III)
+- ★ กับดัก: coint share-ratio มัก **ไม่** dollar-neutral และ **ไม่** market-beta-neutral → แบก hidden exposure (โยง "factor bet ปลอมตัว" Part III); บังคับ dollar-neutral = ทำลาย cointegration
+- หลัก: เลือกก่อนว่าจะ neutral ต่ออะไร แล้วหน่วยตามมา (ปกติได้ไม่ครบ 3) → stat arb เลือก reversion ก่อน คุม factor แยก
+- ลงลึกหน้าจอไทย: ปัด β·shares เป็นจำนวนเต็ม (rounding, ทุนน้อยเจ็บ) · **board lot 100 หุ้น** (β·100 อาจไม่ลงตัว) · Kalman อัปเดต β → rebalance → ค่าคอมฯ (โยง VI/VIII)
+- Lit เพิ่ม: Stock (1987, super-consistency) · Phillips-Hansen (1990, FM-OLS) · Stock-Watson (1993, DOLS) · Granger-Newbold (1974, spurious regression)
+
 ---
 
 ## 2.5 Part II ลงรายละเอียด — Correlation & Cointegration ที่ใช้จริง + Copula รายย่อย
