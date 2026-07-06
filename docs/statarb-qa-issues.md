@@ -505,7 +505,7 @@
 - **หลักฐาน**: `ภาคผนวก: t_ADF = φ̂/se(φ̂), reject H₀ if t_ADF < critical value — เทียบ ch5 (บรรทัด 73–74): Δε_t = α + δε_{t-1} + Σγ_kΔε_{t-k} + η_t, H₀: δ = 0`
 - **วิธีแก้**: แก้เป็น t_ADF = δ̂/se(δ̂) โดย δ คือสัมประสิทธิ์ของ ε_{t-1} ใน regression ของ Δε_t (δ = φ − 1) ให้ตรง notation ch5
 
-### 🟠 appendix-4. statarb-appendix-formulas.html — A.2 สูตรที่ 5 'OLS Hedge Ratio' (บรรทัด ~130–131)
+### 🟠 appendix-4. statarb-appendix-formulas.html ✅ — A.2 สูตรที่ 5 'OLS Hedge Ratio' (บรรทัด ~130–131)
 - **ประเภท**: อธิบายชวนเข้าใจผิด
 - **ปัญหา**: ให้ β = Cov(P_A, P_B)/Var(P_B) โดยนิยาม P_A, P_B เป็น 'ราคา' (ราคาดิบ) — ขัดกับหลักของเล่มที่ ch4 ประกาศชัดว่า canonical β สำหรับ ε = log P_A − β log P_B คือ slope ของ log-price regression และ ch4 ยังลิสต์ 'ใช้ราคาดิบแทน log price' เป็นข้อผิดพลาดที่พบบ่อย (β ขึ้นกับ scale ราคา) ทั้งยังขัดกับสูตรที่ 6 ในการ์ดถัดไปที่กำชับ 'ใช้ log prices ตลอด (ไม่ใช่ raw prices)'
 - **หลักฐาน**: `ภาคผนวก: β = Cov(P_A, P_B)/Var(P_B) "P_A, P_B = ราคา asset A และ B" — เทียบ ch4 บรรทัด 215/452: "β = Cov(log P_A, log P_B) / Var(log P_B)" และบรรทัด 945: "ใช้ราคาดิบแทน log price / basis — β กลายเป็นตัวเลขที่ขึ้นกับ scale"`
@@ -535,7 +535,7 @@
 - **หลักฐาน**: `"15. Notional from Half-life — N = Risk budget/(σ_ε · z_entry)" เทียบ ch12 §12.4: size_DD = max_loss/(z_entry·σ_ε)`
 - **วิธีแก้**: เปลี่ยนชื่อเป็น 'Position Size จาก Risk Budget / Max-Drawdown Constraint'
 
-### 🟠 appendix-9. statarb-appendix-glossary.html — หมวด B–C รายการ 'Beta (β)' (บรรทัด ~150)
+### 🟠 appendix-9. statarb-appendix-glossary.html ✅ — หมวด B–C รายการ 'Beta (β)' (บรรทัด ~150)
 - **ประเภท**: ความรู้ผิด
 - **ปัญหา**: คำนิยามกลับทิศ: บอกว่า β แสดงว่า 'asset B เคลื่อนไหวกี่หน่วยเมื่อ asset A เคลื่อนหนึ่งหน่วย' — แต่ β = Cov(P_A,P_B)/Var(P_B) คือ slope ของ regression A บน B ความหมายที่ถูกคือ A เคลื่อนกี่หน่วยเมื่อ B เคลื่อนหนึ่งหน่วย (= จำนวนหน่วย B ที่ต้องถือ hedge ต่อ A หนึ่งหน่วย ตามที่รายการ 'Hedge Ratio' ในไฟล์เดียวกันเขียนถูกแล้ว) ผู้อ่านที่ตีความตามนี้จะกลับด้าน hedge
 - **หลักฐาน**: `"สัมประสิทธิ์ hedge ratio ที่แสดงว่า asset B เคลื่อนไหวกี่หน่วยเมื่อ asset A เคลื่อนหนึ่งหน่วย" ทั้งที่สูตรคือ β = Cov(P_A,P_B)/Var(P_B)`
@@ -547,7 +547,7 @@
 - **หลักฐาน**: `glossary: "ชำระระหว่าง long และ short ใน perpetual futures contract ทุก 8 ชั่วโมง ... Annualized funding ≈ r × 3 × 365" — เทียบ ch13 บรรทัด 86: "ทุก 8 ชั่วโมง (Bybit) หรือทุก 1 ชั่วโมง (Lighter)"`
 - **วิธีแก้**: แก้เป็น 'ตามรอบเวลาที่ exchange กำหนด (Bybit ทุก 8 ชม., Lighter ทุก 1 ชม.)' และเขียนสูตร annualize ทั่วไป ≈ r × (จำนวนรอบต่อวัน) × 365
 
-### 🟡 appendix-11. statarb-appendix-glossary.html — รายการ Cointegration (บรรทัด ~177), Spread (~495), Beta (~151), Hedge Ratio (~27
+### 🟡 appendix-11. statarb-appendix-glossary.html ✅ — รายการ Cointegration (บรรทัด ~177), Spread (~495), Beta (~151), Hedge Ratio (~27
 - **ประเภท**: อธิบายชวนเข้าใจผิด
 - **ปัญหา**: สมการในสี่รายการนี้ใช้ราคาดิบ (ε = P_A,t − βP_B,t; β = Cov(P_A,P_B)/Var(P_B)) ขณะที่ทั้งเล่ม (ch3–ch5) และ Formula Playbook ยึด log price เป็นมาตรฐาน (ε = log P_A − β log P_B) และ ch4 เตือนว่าราคาดิบให้ β ที่ขึ้นกับ scale — ท้าย glossary ยังอ้างว่า 'ใช้ notation เดียวกับ Formula Playbook' ซึ่งไม่จริงในจุดนี้
 - **หลักฐาน**: `"ε_t = P_{A,t} − β P_{B,t} ∼ I(0)" และ "ε_t = P_{A,t} − β P_{B,t} − α" เทียบ ch3 notation table: "ε = log(P_A) − β·log(P_B)" และ Playbook สูตร 6: "ใช้ log prices ตลอด (ไม่ใช่ raw prices)"`
