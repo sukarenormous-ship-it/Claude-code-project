@@ -205,7 +205,7 @@ $$\%B = \frac{P - \text{BB}_\text{lower}}{\text{BB}_\text{upper} - \text{BB}_\te
 # ตัวอย่าง:
 # Daily volume ปกติ = 50,000 BTC
 # วันนี้ volume = 75,000 BTC (vol_ratio = 1.5)
-# → score = 70 (ระวังเล็กน้อย แต่ยังเปิด grid ได้)</div>
+# → vol_ratio=1.5 ไม่ < 1.5 (เงื่อนไข strict) → ตกไปเงื่อนไขถัดไป → score = 45 (ระวัง)</div>
 
 <h2 id="s3b-5">3B.5 Hurst Score — Mean-Reversion Regime Check</h2>
 
@@ -239,20 +239,20 @@ $$\%B = \frac{P - \text{BB}_\text{lower}}{\text{BB}_\text{upper} - \text{BB}_\te
 <p>รวม 4 indicators เป็น Composite Score เพื่อตัดสินใจ:</p>
 
 <canvas id="chartComposite" class="chart" style="height:360px"></canvas>
-<p class="caption">Running Example: RSI=25 (oversold), BB=%B=0.04 (lower band), Vol=0.4× (quiet), Hurst=0.43 → Composite Score = 85 → FULL DEPLOY</p>
+<p class="caption">Running Example: RSI=25 (oversold), BB=%B=0.04 + width 1.5% (squeeze), Vol ratio=0.85× (ปกติต่ำ), Hurst=0.43 → Composite Score = 82.2 → FULL DEPLOY</p>
 <script>
 (function(){
   MiniChart.bar(document.getElementById('chartComposite'), {
-    title: 'Composite Score Breakdown — RSI=25 / BB=%B=0.04 / Vol=0.4× / H=0.43 (oversold scenario)',
+    title: 'Composite Score Breakdown — RSI=25 / BB=%B=0.04 (squeeze) / Vol=0.85× / H=0.43 (oversold scenario)',
     groups: ['RSI Score\n(น้ำหนัก 30%)', 'BB Score\n(น้ำหนัก 30%)', 'Vol Score\n(น้ำหนัก 20%)', 'Hurst Score\n(น้ำหนัก 20%)'],
     datasets: [
       { label: 'Raw Score (0–100)', color: '#06b6d4',
-        data: [85, 88, 82, 85] },
+        data: [86.7, 74.1, 85, 85] },
       { label: 'Contribution to Total', color: '#0891b2',
-        data: [25.5, 26.4, 16.4, 17.0] }
+        data: [26.0, 22.2, 17.0, 17.0] }
     ],
     yLabel: 'Score',
-    caption: 'Raw Score × น้ำหนัก = Contribution → รวม 4 contributions = Composite Score 85.3 → FULL DEPLOY (≥ 75)'
+    caption: 'Raw Score × น้ำหนัก = Contribution → รวม 4 contributions = Composite Score 82.2 → FULL DEPLOY (≥ 75)'
   });
 })();
 </script>
@@ -290,15 +290,16 @@ def resolve_composite_action(score):
     return "WAIT", "รอ score ดีขึ้น ไม่เปิด grid"
 
 ตัวอย่างผล:
-  RSI=32 (oversold)    → rsi_score   = 68
-  %B=0.1 (near lower)  → bb_score    = 72
-  Vol ratio=0.9         → vol_score   = 85
-  Hurst=0.46            → hurst_score = 85
+  RSI=32 (oversold)             → rsi_score   = 68
+  %B=0.1 (near lower) + width 1.5% (squeeze) → bb_score = 71.2
+  Vol ratio=0.9                  → vol_score   = 85
+  Hurst=0.46                     → hurst_score = 65   # 0.46 ไม่ < 0.45 → ตกไปช่วง <0.50
 
-  Composite = 0.30×68 + 0.30×72 + 0.20×85 + 0.20×85
-            = 20.4 + 21.6 + 17 + 17 = 76.0
+  Composite = 0.30×68 + 0.30×71.2 + 0.20×85 + 0.20×65
+            = 20.4 + 21.36 + 17 + 13 = 71.8
 
-  Action: FULL_DEPLOY (deploy 100%)</div>
+  Action: PARTIAL_DEPLOY (deploy 60%, hold 40% standby) — Hurst อยู่ borderline
+  เลยไม่ถึง FULL_DEPLOY (≥75) ทั้งที่ RSI/BB/Vol ดีทั้งหมด</div>
 
 <h2 id="s3b-7">3B.7 Order Accumulation — เปิด Grid แบบ TWAP</h2>
 
@@ -408,35 +409,36 @@ def order_accumulation_plan(total_capital, composite_score, current_deployed):
 
 <table>
 <tr><th>Indicator</th><th>ค่า</th><th>Score (0–100)</th><th>น้ำหนัก</th><th>Contribution</th></tr>
-<tr><td>RSI(14)</td><td>31 (oversold)</td><td>70</td><td>30%</td><td>21.0</td></tr>
-<tr><td>BB Position + Width</td><td>%B=0.08, Width=3.2%</td><td>78</td><td>30%</td><td>23.4</td></tr>
+<tr><td>RSI(14)</td><td>31 (oversold)</td><td>69</td><td>30%</td><td>20.7</td></tr>
+<tr><td>BB Position + Width</td><td>%B=0.08, Width=3.2%</td><td>62.2</td><td>30%</td><td>18.6</td></tr>
 <tr><td>Volume Ratio</td><td>0.85× (ต่ำกว่าปกติ)</td><td>85</td><td>20%</td><td>17.0</td></tr>
-<tr><td>Hurst(30)</td><td>0.44 (mean-reverting)</td><td>90</td><td>20%</td><td>18.0</td></tr>
-<tr><td colspan="3"><strong>Composite Score</strong></td><td colspan="2"><strong>79.4 → FULL DEPLOY</strong></td></tr>
+<tr><td>Hurst(30)</td><td>0.44 (mean-reverting)</td><td>85</td><td>20%</td><td>17.0</td></tr>
+<tr><td colspan="3"><strong>Composite Score</strong></td><td colspan="2"><strong>73.3 → PARTIAL DEPLOY</strong></td></tr>
 </table>
 
-<div class="fm">Action: FULL_DEPLOY (score 79.4 > 75)
+<div class="fm">Action: PARTIAL_DEPLOY (score 73.3, อยู่ในช่วง 55–75 — ไม่ถึง 75 เพราะ BB score
+โดนลดจาก width 3.2% ที่เป็นแค่ "narrow" ไม่ใช่ "squeeze")
 
-Order Accumulation Plan (ยังไม่ได้ deploy อะไรเลย):
-  ชั่วโมงที่ 0: deploy 20% = $4,000
-  ชั่วโมงที่ 1: re-evaluate score → ยังสูง → deploy อีก 20% = $4,000
-  ชั่วโมงที่ 2–4: ทำซ้ำ → full deploy ภายใน 5 ชั่วโมง
-
-หรือถ้าใช้ One-shot (score > 75):
-  Deploy 100% ทันที = $20,000
+Order Accumulation Plan (deploy 60% ตาม PARTIAL_DEPLOY):
+  ชั่วโมงที่ 0: deploy 60% ทันที = $12,000
+  Standby ที่เหลือ $8,000: รอ re-evaluate score ทุกชั่วโมง
+  ถ้า BB width หดลงต่ำกว่า squeeze (&lt;2%) หรือ Hurst ลดลง → composite ขยับเข้า
+  FULL_DEPLOY (≥75) ค่อย deploy standby ที่เหลือเพิ่ม
 
 Entry Zone Analysis:
   ราคาปัจจุบัน $98,500 (ใกล้ lower half ของ zone)
-  BUY orders: $97k, $95.5k, $94k, ..., $85k (9 levels)
-  Capital ที่ต้องใช้ (worst case all fill): 9 × 0.009 × $91k avg = $7,371
-  Capital remaining ใน Standby: $20,000 − $7,371 = $12,629 (63%)
+  BUY orders เต็ม grid (reference sizing): $97k, $95.5k, $94k, ..., $85k (9 levels)
+  Capital เต็มถ้า deploy 100% ทุก level (worst case all fill): 9 × 0.009 × $91k avg = $7,371
+  แต่ composite บอก PARTIAL_DEPLOY (60%) → deploy จริงแค่ 60% × $7,371 ≈ $4,423
+  (เปิดเฉพาะ level บนๆ ก่อน ที่เหลือรอ standby)
+  Capital remaining ใน Standby: $20,000 − $4,423 = $15,577 (78%)
 
 Score Report:
   ✓ RSI oversold → BTC น่าจะ rebound → lower zone เปิดก่อน
-  ✓ BB near lower band → mean-reversion signal ชัด
+  ✓ BB near lower band → mean-reversion signal ชัด แต่ width แค่ "narrow" ไม่ใช่ squeeze
   ✓ Volume ต่ำ → ไม่มี breakout risk
-  ✓ Hurst 0.44 → strongly mean-reverting
-  → เหมาะมากสำหรับ grid entry</div>
+  ✓ Hurst 0.44 → mean-reverting (ยังไม่ถึงระดับ "strongly", ต้อง &lt;0.40)
+  → เหมาะสำหรับ grid entry แต่ deploy บางส่วนก่อน ไม่ใช่เต็ม 100%</div>
 </div>
 
 <h2 id="s3b-10">3B.10 แบบฝึกหัด</h2>
