@@ -439,7 +439,7 @@ def calculate_capital_requirement(prices, base_q, r):
 
 <div class="trick-box">
 <div class="trick-label">Idea ใหม่ — Step Pyramid (ต่างจาก Size Pyramid)</div>
-<p>ในช่วง uptrend ชั่วคราว (H ขึ้นแต่ยังไม่ถึง 0.6): แทนที่จะเพิ่ม size ของ order (martingale) → <strong>เพิ่ม step size</strong> แทน</p>
+<p>ในช่วง uptrend ชั่วคราว (H ขึ้นแต่ยังไม่ถึง 0.58 ที่ Part 4 บอกให้ปิด grid): แทนที่จะเพิ่ม size ของ order (martingale) → <strong>เพิ่ม step size</strong> แทน</p>
 <ul>
 <li><strong>Size Pyramid:</strong> step คงที่, size เพิ่ม → inventory risk เพิ่ม</li>
 <li><strong>Step Pyramid:</strong> size คงที่, step เพิ่ม → inventory risk เท่าเดิม แต่ fill น้อยลง</li>
@@ -447,26 +447,7 @@ def calculate_capital_requirement(prices, base_q, r):
 <p><strong>ผล:</strong> cashflow คล้ายกัน (step ใหญ่ × fill น้อย ≈ step เล็ก × fill เยอะ) แต่ inventory accumulation ช้าลงในช่วง trend</p>
 </div>
 
-<div class="fm">def step_pyramid(base_step, current_h, h_normal=0.45, h_max=0.60):
-    """
-    ปรับ step size ตาม Hurst Exponent:
-    - H ต่ำ (mean-reverting): step = base_step (หรือเล็กกว่า)
-    - H สูง (trending): step เพิ่มขึ้น เพื่อหยุดการ accumulate inventory เร็วเกินไป
-    """
-    if current_h <= h_normal:
-        return base_step
-    elif current_h >= h_max:
-        return base_step * 2.0  # ช่วง trending — double step (fill น้อยลง 50%)
-    else:
-        # interpolate
-        ratio = (current_h - h_normal) / (h_max - h_normal)
-        return base_step * (1.0 + ratio * 1.0)
-
-# ตัวอย่าง: base_step = $2,000
-# H=0.45 → step = $2,000  (ปกติ)
-# H=0.52 → step = $2,933  (เริ่ม trend: ratio = (0.52−0.45)/0.15 ≈ 0.467)
-# H=0.60 → step = $4,000  (trending ชัด → ไม่ค่อย fill)
-# H>0.60 → พิจารณา pause grid (ดู Part 4)</div>
+<p>ตอนนี้จำแค่หลักการพอ: H ยิ่งขึ้น (เข้าใกล้ 0.58 ที่ Part 4 บอกให้ปิด grid) → step ยิ่งต้องห่างขึ้นเรื่อยๆ ไม่ใช่กระโดดทันที สูตรเต็ม (รวมกับถังเต็ม% ด้วย) อยู่ใน <a href="grid-part2.html#s2-6">Part 2 §2.6</a> — ตอนอ่านถึงตรงนั้นจะมี ถังเต็ม% ให้ใช้ประกอบแล้ว</p>
 
 <h2 id="s1a-9">1A.9 Running Example รวม — Close System + Soft Martingale</h2>
 

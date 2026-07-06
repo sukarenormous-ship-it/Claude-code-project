@@ -216,9 +216,11 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
     H ต่ำ = step เล็ก Q เต็ม | H สูง = step ใหญ่ Q ลด
     """
     def get_adaptive_step(self, base_step, hurst, adx):
-        # Step Pyramid (Part 2)
-        hurst_mult = 1 + max(0, (hurst - 0.45) / 0.15) * 0.5
-        adx_mult   = 1 + max(0, (adx - 20) / 30) * 0.3
+        # Hurst multiplier: สูตรเดียวกับ Step Pyramid ใน Part 2 §2.6 (ไม่รวมถังเต็ม% ตรงนี้
+        # เพราะ style นี้ไม่ track cumulative cost ต่อ level)
+        hurst_mult = 1 + min(1.0, max(0, (hurst - 0.50) / 0.08)) * 0.5
+        # ADX multiplier: threshold BTC-calibrated เดียวกับ get_adaptive_size_mult ด้านล่าง (40/50)
+        adx_mult = 1 + min(1.0, max(0, (adx - 40) / 10)) * 0.3
         return base_step * hurst_mult * adx_mult
 
     def get_adaptive_size_mult(self, hurst, adx):

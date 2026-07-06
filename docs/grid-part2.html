@@ -132,7 +132,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <tr><td>เกิน 70%</td><td>หยุดรับของเพิ่ม แล้วปกป้องของที่มี</td><td>Option C: hedge (Part 1C)</td></tr>
 </table>
 
-<p>สังเกตว่า <strong>Step Pyramid</strong> ที่จะเจอในหัวข้อ 2.6 ก็คือกฎข้อนี้ในเวอร์ชันหยาบ (เพิ่ม step เมื่อ Hurst สูงขึ้น = เมื่อตลาดเริ่ม trend และถังกำลังจะเต็มเร็ว) — ตอนนั้นเราทำตามสัญชาตญาณ ตอนนี้เห็นแล้วว่าทำไมมันถูก: มันคือคำตอบเดียวกับที่งานวิจัยด้าน market making มืออาชีพคำนวณออกมาได้ (ดูอ่านต่อท้ายหัวข้อ) — จะเรียกมันว่า inventory skew หรือ "วิธีของแม่ค้าผลไม้" ก็ความหมายเดียวกัน</p>
+<p>สังเกตว่า <strong>Step Pyramid</strong> ในหัวข้อ 2.6 ใช้กฎข้อนี้ตรงๆ — รวม Hurst regime (ตลาดเริ่ม trend) กับถังเต็ม% (จากสูตรด้านบน) เป็นสูตรเดียว มันคือคำตอบเดียวกับที่งานวิจัยด้าน market making มืออาชีพคำนวณออกมาได้ (ดูอ่านต่อท้ายหัวข้อ) — จะเรียกมันว่า inventory skew หรือ "วิธีของแม่ค้าผลไม้" ก็ความหมายเดียวกัน</p>
 
 <details>
 <summary>สูตรสำหรับคนอยากตั้งเป็นตัวเลข (กดเปิด)</summary>
@@ -243,23 +243,27 @@ def allocate_grid_capital(total_capital, n_levels, style="bell"):
 <tr><td><strong>Equal Weight</strong></td><td>ไม่เปลี่ยนอะไร (baseline)</td><td>ลดลงตาม trend</td><td>สะสมเร็ว</td></tr>
 </table>
 
-<div class="fm">Step Pyramid Implementation:
+<div class="fm">Step Pyramid Implementation (สูตรรวม — canonical, ที่อื่นในเล่มอ้างมาที่นี่):
 
-def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
+def compute_step(base_step, hurst, tank_fullness,
+                  h_normal=0.50, h_max=0.58, trend_factor=0.5):
     """
-    เพิ่ม step ตามความลึกของ level (ห่างจาก current price)
-    และ Hurst exponent
+    รวม 2 สัญญาณที่ทำให้ step ต้องห่างขึ้น:
+    - Hurst สูง (trending, ดู Part 4) → เพิ่ม step
+    - ถังเต็ม% สูง (inventory skew, สูตรจาก §2.2) → เพิ่ม step อีกชั้น
+    แทนที่ depth_multiplier แบบเดา (เวอร์ชันก่อนหน้า) ด้วยถังเต็ม% จริง
     """
-    # ถ้า Hurst สูง (trending) → เพิ่ม step มากขึ้น
-    hurst_multiplier = 1 + max(0, (hurst - 0.45) / 0.15) * trend_factor
-    # ถ้า level ลึก (ห่างจาก mean มาก) → เพิ่ม step
-    depth_multiplier = 1 + level_depth * 0.1  # 10% ต่อ 1 level ลึก
-    return base_step * hurst_multiplier * depth_multiplier
+    hurst_ratio = min(1.0, max(0, (hurst - h_normal) / (h_max - h_normal)))
+    hurst_multiplier = 1 + hurst_ratio * trend_factor
+    tank_multiplier = 1 + tank_fullness   # ตรงกับสูตรใน §2.2: step × (1 + ถังเต็ม%)
+    return base_step * hurst_multiplier * tank_multiplier
 
-# ตัวอย่าง: base_step = $2,000 · Hurst = 0.55 · level depth = 3
-# hurst_multiplier = 1 + (0.55-0.45)/0.15 * 0.5 = 1 + 0.333 = 1.333
-# depth_multiplier = 1 + 3 × 0.10 = 1.30
-# step = $2,000 × 1.333 × 1.30 = $3,467 (ใหญ่ขึ้น → fill น้อยลง)</div>
+# ตัวอย่าง (ต่อจากตาราง 1A.9): base_step = $2,000 · Hurst = 0.55
+# ถังเต็มที่ level 3 = cumulative $3,826 / C_floor $8,460 = 0.452 (45.2%)
+# hurst_ratio = (0.55−0.50)/(0.58−0.50) = 0.625
+# hurst_multiplier = 1 + 0.625×0.5 = 1.3125
+# tank_multiplier = 1 + 0.452 = 1.452
+# step = $2,000 × 1.3125 × 1.452 ≈ $3,812 (ใหญ่ขึ้น → fill น้อยลง)</div>
 
 <div class="bx bg">
 <div class="bt">Step Pyramid: กำไรเท่าเดิม สบายใจกว่า</div>
