@@ -65,6 +65,84 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="sub">Engle-Granger · Johansen · VECM<br>ทดสอบว่า spread ε มีแรงดึงกลับจริงหรือแค่ correlation ชั่วคราว</div>
 </div>
 
+<h2 id="s5-0">5.0 Null Hypothesis คืออะไร — ก่อนอ่านค่า p ใดๆ</h2>
+
+<p>ตั้งแต่บทที่ 4 เล่มนี้เริ่มพูดถึง p-value และ ADF โดยยังไม่เคยหยุดอธิบายว่ามันวัดอะไรกันแน่ — ก่อนไปต่อกับ cointegration ต้องหยุดตรงนี้ก่อน เพราะทุกการทดสอบสถิติที่เหลือทั้งเล่ม (ADF, KPSS, Shapiro-Wilk, Johansen) วางอยู่บนตรรกะเดียวกันหมด</p>
+
+<div class="key-idea">
+<div class="ki-label">อุปมา — ศาลตัดสินคดี: "จำเลยบริสุทธิ์ไว้ก่อน"</div>
+<p>สมมติฐานหลัก (<strong>H₀ — null hypothesis</strong>) คือจุดตั้งต้นที่เรา <em>สมมติว่าเป็นจริงไว้ก่อน</em> จนกว่าจะมีหลักฐานหนักแน่นพอจะ "ปฏิเสธ" มัน — เหมือนศาลที่ต้องสมมติว่าจำเลยบริสุทธิ์ (H₀) จนกว่าอัยการจะมีหลักฐานเพียงพอ (data) มาหักล้าง ถ้าหลักฐานไม่พอ ศาล<strong>ไม่ตัดสินว่าบริสุทธิ์จริง</strong> — แค่บอกว่า "หลักฐานไม่พอจะเอาผิด" เท่านั้น การทดสอบสถิติก็เช่นกัน: <strong>ไม่ reject H₀ ≠ พิสูจน์ว่า H₀ จริง</strong> แค่แปลว่าข้อมูลที่มีไม่พอจะปฏิเสธมัน</p>
+</div>
+
+<div class="step-row">
+<div class="step-num">1</div>
+<div><strong>ตั้ง H₀ (null) และ H₁ (alternative):</strong><br>
+H₀ = สมมติฐาน "ไม่มีอะไรพิเศษเกิดขึ้น" (สถานะเริ่มต้นที่อนุรักษ์นิยม) — H₁ = สิ่งที่เราสงสัยว่าอาจเป็นจริง</div>
+</div>
+<div class="step-row">
+<div class="step-num">2</div>
+<div><strong>คำนวณ test statistic จากข้อมูลจริง</strong> แล้วถามว่า "ถ้า H₀ เป็นจริง โอกาสที่จะเห็นข้อมูลสุดขั้วเท่านี้ (หรือมากกว่า) คือเท่าไร"</div>
+</div>
+<div class="step-row">
+<div class="step-num">3</div>
+<div><strong>ค่านั้นคือ p-value</strong> — ถ้าเล็กมาก (ต่ำกว่า threshold เช่น 0.05) แปลว่าข้อมูลที่เห็น "ไม่น่าจะเกิดขึ้นได้" ถ้า H₀ เป็นจริง → เรา <strong>reject H₀</strong></div>
+</div>
+
+<div class="bx bg">
+<div class="bt">p-value แปลว่าอะไร</div>
+<p>p-value = P(เห็นข้อมูลสุดขั้วเท่านี้หรือมากกว่า | <strong>สมมติว่า H₀ เป็นจริง</strong>) — เป็นข้อความเกี่ยวกับ<strong>ข้อมูล</strong>ภายใต้สมมติฐาน ไม่ใช่ข้อความเกี่ยวกับความน่าจะเป็นที่ H₀ จะจริง</p>
+</div>
+
+<div class="bx br">
+<div class="bt">p-value ไม่ได้แปลว่าอะไร (ความเข้าใจผิดที่พบบ่อยสุด)</div>
+<ul>
+<li><strong>ไม่ใช่</strong> "โอกาสที่ H₀ เป็นจริง" — p = 0.03 <em>ไม่ได้</em> แปลว่า "มีโอกาส 3% ที่คู่นี้ไม่ cointegrated" (นี่คือ P(H₀|data) ซึ่งเป็นคนละปริมาณกับ p-value = P(data|H₀))</li>
+<li><strong>ไม่ใช่</strong> "ความน่าจะเป็นที่ผลลัพธ์เกิดจากบังเอิญ" ในความหมายกลับด้าน</li>
+<li><strong>ไม่ใช่</strong> ตัววัดขนาดของ effect — p ต่ำมากไม่ได้แปลว่า edge ใหญ่ (sample ใหญ่พอ p จะต่ำได้แม้ effect เล็กจิ๋ว)</li>
+<li>p ≥ 0.05 <strong>ไม่ใช่</strong> หลักฐานว่า H₀ จริง — อาจเป็นเพราะ sample เล็กเกินไปจน test ไม่มีกำลังมองเห็นความแตกต่าง (ดู "Power" ด้านล่าง)</li>
+</ul>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ กับดักเฉพาะของ ADF — ทิศทางที่คนอ่านกลับกันบ่อยที่สุด</div>
+<p>สัญชาตญาณทั่วไปมักคิดว่า "p ต่ำ = แย่, p สูง = ดี" (เช่น p-value ของยาที่ไม่ได้ผล) แต่ ADF <strong>สลับทิศ</strong>:</p>
+<p style="text-align:center;font-family:monospace;padding:8px 0"><strong>H₀ ของ ADF = "มี unit root" (ε <u>ไม่</u> stationary — เดินสุ่มไม่กลับค่ากลาง)</strong></p>
+<p>ดังนั้น <strong>p ต่ำ = reject H₀ = ε stationary = ข่าวดี (cointegrated, เทรดได้)</strong> — สลับกับสัญชาตญาณทั่วไปโดยสิ้นเชิง ผู้อ่านที่เจอ "p = 0.02" แล้วคิดว่า "แย่จัง มีแค่ 2%" จะตีความกลับด้านทันที กฎจำง่าย: <strong>สำหรับ ADF ให้คิดว่า p ต่ำ = ผ่าน เหมือนสอบ</strong> (ตรงข้ามกับ KPSS ที่ H₀ = stationary — p สูงถึงจะผ่าน ดู <a href="statarb-ch6.html">บทที่ 6 §6.3</a>)</p>
+</div>
+
+<h3>Type I / Type II Error — ในบริบทเลือกคู่เทรด</h3>
+
+<table>
+<tr><th></th><th>H₀ จริง (ไม่ cointegrated จริง)</th><th>H₀ เท็จ (cointegrated จริง)</th></tr>
+<tr><td><strong>Reject H₀ (เทรด)</strong></td><td style="background:var(--red-bg)">Type I Error — เทรดคู่ที่ไม่มี edge จริง (false positive) → ขาดทุนเพราะ ε ไม่กลับค่ากลางจริง</td><td style="background:var(--green-bg)">ถูกต้อง — เจอคู่ดีจริง</td></tr>
+<tr><td><strong>ไม่ Reject H₀ (ไม่เทรด)</strong></td><td style="background:var(--green-bg)">ถูกต้อง — หลีกเลี่ยงคู่แย่ได้ถูก</td><td style="background:var(--red-bg)">Type II Error — พลาดคู่ที่มี edge จริง (false negative) → เสียโอกาส</td></tr>
+</table>
+
+<p>ในการ scan หาคู่เทรดหลายร้อยคู่ <strong>Type I Error คือตัวที่อันตรายกว่า</strong> — เทรดคู่ปลอมด้วยเงินจริงเสียหายทันที ขณะที่พลาดคู่ดี (Type II) แค่เสียโอกาส ไม่เสียเงิน ธนาคาร/บทนี้จึงเน้น significance level (α) ต่ำ (0.05 หรือต่ำกว่า) เพื่อควบคุม Type I Error ก่อน</p>
+
+<div class="bx ba">
+<div class="bt">Power ของ Test — ทำไม Sample สั้นถึงอันตราย</div>
+<p><strong>Power</strong> = โอกาสที่ test จะ reject H₀ <em>ถูกต้อง</em> เมื่อ H₁ เป็นจริง (1 − P(Type II Error)) — power ต่ำเมื่อ sample เล็ก แปลว่า: ถ้าใช้ lookback สั้น (เช่น 20-30 bar) แล้ว ADF ไม่ reject H₀ อาจ<strong>ไม่ใช่เพราะคู่นี้ไม่ cointegrated จริง</strong> แต่เพราะ test ยังไม่มีกำลังพอจะตรวจจับมัน (power ต่ำ) — นี่คือเหตุผลที่ <a href="statarb-ch3.html#s3-10">§3.10</a> และ <a href="statarb-ch4.html">บทที่ 4 §4.4</a> เตือนเรื่อง lookback สั้นซ้ำแล้วซ้ำเล่า: window สั้นไม่ใช่แค่ estimate ไม่แม่น แต่ทำให้ test เชื่อถือไม่ได้ทั้งสองทิศ (ทั้ง false positive จาก overfit และ false negative จาก power ต่ำ)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">โยงเข้า Multiple Testing — ทำไม scan หลายคู่ต้องระวังเป็นพิเศษ</div>
+<p>ทุกครั้งที่ทดสอบ H₀ หนึ่งครั้งที่ α=0.05 มีโอกาส 5% ที่จะ reject ผิด (Type I) แม้ H₀ จะจริง — ถ้า scan 100 คู่พร้อมกัน (100 tests อิสระ) <strong>คาดว่าจะมีคู่ปลอมที่ "ดูเหมือน" cointegrated โดยบังเอิญประมาณ 5 คู่</strong> แม้ไม่มีคู่ไหนมี edge จริงเลยสักคู่ — นี่คือเหตุผลที่ <a href="statarb-ch4.html">บทที่ 4 §4.4</a> เตือนว่า "ลอง 5 window แล้วเลือกที่ดีที่สุด" เพิ่ม false positive rate ขึ้นตาม family-wise error rate ไม่ใช่คงที่ 5% เหมือนทดสอบครั้งเดียว — วิธีแก้เบื้องต้น: ลด α ตามจำนวน test (Bonferroni correction: α/n) หรือดีกว่านั้นคือ out-of-sample validation เสมอ (walk-forward, <a href="statarb-ch3.html#s3-9">§3.9</a>)</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 5.0 — ตีความ p-value ให้ถูกทิศ</div>
+<p>เพื่อนบอกว่า "ADF test ของคู่ BTC/ETH ได้ p-value = 0.08 ดังนั้นมีโอกาส 92% ที่คู่นี้ cointegrated จริง เทรดได้"</p>
+<p><strong>ถาม:</strong> คำพูดนี้ผิดตรงไหน อธิบาย 2 จุด</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ผิดจุดที่ 1 — ตีความ p-value เป็นความน่าจะเป็นของ H₀:</strong> p-value ไม่ใช่ P(cointegrated | data) แต่คือ P(เห็นข้อมูลแบบนี้ | ไม่ cointegrated) การพูดว่า "92% cointegrated" คือเอา 1−p ไปตีความผิดประเภทของความน่าจะเป็นทั้งหมด</p>
+<p><strong>ผิดจุดที่ 2 — p ≥ 0.05 ไม่ reject H₀ ไม่ได้แปลว่าเทรดได้:</strong> p=0.08 คือ "ไม่มีหลักฐานพอจะปฏิเสธว่าไม่ cointegrated" — เท่ากับศาลบอกว่าหลักฐานไม่พอเอาผิด ไม่ใช่ "บริสุทธิ์แน่นอน" ที่ถูกต้องคือ<strong>ไม่ควรเทรดคู่นี้</strong> (หรืออย่างน้อยต้องหาหลักฐานเพิ่ม เช่น เพิ่ม sample size แล้วทดสอบใหม่)</p>
+</div>
+</details>
+</div>
+
 <div class="key-idea">
 <div class="ki-label">แก่นของบทนี้ — ADF Equation</div>
 <p>Correlation สูงไม่พอสำหรับ stat arb — ต้องการ <strong>cointegration</strong>:<br>

@@ -176,7 +176,7 @@ Dynamic β<br>
 <tr><td><strong>Gauss-Markov</strong></td><td>4 เงื่อนไขที่ทำให้ OLS เหมาะสมที่สุด</td><td>ε zero-mean, uncorrelated กับ x, homoskedastic, no autocorrelation</td></tr>
 <tr><td><strong>Homoskedastic</strong></td><td>Var(ε_t) คงที่ทุก t</td><td>ในราคาจริง Var(ε) เปลี่ยนตาม vol — heteroskedastic</td></tr>
 </table>
-<p style="margin-top:8px">หมายเหตุ: ทำไมใช้ log price ไม่ใช่ raw price → ดู <a href="#s4-6b-1">§4.6.1</a> (สรุปสั้น: log → β เป็น elasticity ไม่ขึ้นกับ scale ราคา)</p>
+<p style="margin-top:8px">หมายเหตุ: ทำไมใช้ log price ไม่ใช่ raw price → ดู <a href="#s4-6-1">§4.6.1</a> (สรุปสั้น: log → β เป็น elasticity ไม่ขึ้นกับ scale ราคา)</p>
 </div>
 
 <h3 id="s4-2b-1">OLS จากหลักการแรก — ทำไมต้อง minimize Σε²</h3>
@@ -430,7 +430,7 @@ Return regression:  r_A = α + β_return · r_B + ε    (r = log return)
 
 β_level ≠ β_return  ในกรณีทั่วไป!
 ตัวอย่าง BTC/ETH:  β_level ≈ 1.18  vs  β_return ≈ 0.85–0.95 (แล้วแต่ period)</div>
-<p><strong>กฎ:</strong> สำหรับ ε = log P_A − β·log P_B → ใช้ <strong>level regression บน log price</strong> ดูเหตุผลเพิ่มเติม: <a href="#s4-6b-1">§4.6.1</a></p>
+<p><strong>กฎ:</strong> สำหรับ ε = log P_A − β·log P_B → ใช้ <strong>level regression บน log price</strong> ดูเหตุผลเพิ่มเติม: <a href="#s4-6-1">§4.6.1</a></p>
 </div>
 
 <div class="bx br">
@@ -541,8 +541,9 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 <div class="bt">กับดัก Lookback Selection Bias ใน β — ปัญหาเดียวกับ §3.10</div>
 <p>การ "ลองหลาย window size แล้วเลือกที่ได้ ε สวยที่สุด" คือ lookback selection bias เดียวกับที่เตือนไว้ใน <a href="statarb-ch3.html#s3-10">§3.10</a> เพียงแต่เกิดกับ β แทน AR(1)</p>
 <ul>
-<li><strong>Kendall-style bias:</strong> OLS บน window สั้น (7 วัน) underestimate β → ε ดูเรียบและ mean-reverting กว่าความเป็นจริง → backtest ดีเกินจริง</li>
-<li><strong>Selection bias:</strong> ลอง 5 window แล้วเลือกที่ดีที่สุด = ทำ 5 tests โดยไม่ปรับ p-value → โอกาส false positive เพิ่ม 5×</li>
+<li><strong>Noisy β + in-sample overfit:</strong> window สั้น (7 วัน) ทำให้ β̂ noisy และ fit เข้ากับ spread ในช่วงนั้นพอดี → ε ใน-sample ดู stationary เกินจริง (ไม่ใช่ "β ถูก underestimate" — เป็นเรื่อง noise/overfit)</li>
+<li><strong>Kendall bias บน φ̂ ของ ε (คนละตัวกับ β):</strong> window สั้นกด φ̂ (AR(1) ของ ε) ต่ำ → half-life ประเมินสั้นเกินจริง — ดู <a href="statarb-ch3.html#s3-10">§3.10</a></li>
+<li><strong>Selection bias / multiple testing:</strong> ลอง 5 window แล้วเลือกที่ดีที่สุด = ทำ 5 tests โดยไม่ปรับ p-value → โอกาส false positive เพิ่มขึ้นตาม family-wise error rate (ดูว่า H₀/p-value คืออะไรใน <a href="statarb-ch5.html#s5-0">ch5 §5.0</a> ก่อนถ้ายังไม่แน่ใจ)</li>
 <li><strong>Regime bias:</strong> window 7 วันอาจตกใน "quiet period" ที่ไม่ represent ทุก market condition</li>
 </ul>
 <p><strong>วิธีป้องกัน:</strong> เลือก window จาก half-life ของ pair (ควรครอบคลุมอย่างน้อย 3× half-life) → ทดสอบด้วย walk-forward (§3.9) → ไม่เปลี่ยน window หลัง deploy โดยไม่มีเหตุผลใหม่</p>
@@ -716,7 +717,7 @@ v_t ~ N(0, R) — observation noise (noise จากราคา)</p>
 
 <p>ที่เหลือของ §4.6 เจาะเรื่องที่ทำให้ β <em>ใช้ได้จริง</em> ไม่ใช่แค่ตัวเลขสวยบน backtest: เลือกข้อมูลที่ถูก (§4.6.1) · เข้าใจว่า β หักล้างอะไร (§4.6.2) · เลือก method ตามสถานการณ์ (§4.6.3–4.6.4) · ประเมินคุณภาพและเลี่ยงกับดัก (§4.6.5–4.6.6)</p>
 
-<h3>4.6.1 regress ข้อมูลแบบไหน — Raw Price, Log Price หรือ Basis</h3>
+<h3 id="s4-6-1">4.6.1 regress ข้อมูลแบบไหน — Raw Price, Log Price หรือ Basis</h3>
 
 <div class="key-idea">
 <div class="ki-label">แก่นความคิด</div>
@@ -1138,7 +1139,7 @@ Tune โดย backtest: ดู β ว่า responsive พอแต่ไม่
 </div>
 
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
-Ch.4 Hedge Ratio β | ต่อไป → <strong>Ch.5: Cointegration Tests</strong>
+Ch.4 Hedge Ratio β | ต่อไป → <strong><a href="statarb-ch4b.html">Ch.4B: ε Design — เลือก F(·) จากสถานการณ์</a></strong>
 </p>
 
 <nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
