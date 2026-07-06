@@ -275,6 +275,28 @@ def compute_step(base_step, hurst, tank_fullness,
 </ul>
 </div>
 
+<h2 id="s2-6-1">2.6.1 TP ไม่ได้มีแบบเดียว — เข็มหมุนฝั่งขาย</h2>
+
+<p>หัวข้อที่แล้วสอนขยับ step ฝั่งซื้อเมื่อตลาดเริ่ม trend — คำถามที่ควรถามต่อทันทีคือ: แล้วฝั่งขายล่ะ? ทำไม TP ต้องอยู่ที่ level ถัดไปเสมอ? ตลอดเล่มนี้ TP = "ขายที่ level ถัดไป" (1 step) เป็นค่าที่ตั้งตายตัวมาโดยตลอด — มันคือ default ที่ดี แต่ไม่ใช่ทางเลือกเดียว:</p>
+
+<table>
+<tr><th>TP Policy</th><th>กลไก</th><th>เหมาะกับ Regime</th><th>Trade-off</th></tr>
+<tr><td><strong>1-Step (default)</strong></td><td>ขายที่ level ถัดไปเสมอ (entry + step)</td><td>H ต่ำ (&lt;0.50, mean-reverting) — ราคาแกว่งกลับบ่อย</td><td>รอบถี่ cashflow สม่ำเสมอ กำไรต่อรอบเล็ก</td></tr>
+<tr><td><strong>TP กว้าง (Sell-Side Pyramid)</strong></td><td>ขยาย TP distance ตาม H — สมมาตรกับ Step Pyramid ฝั่งซื้อใน §2.6</td><td>H เริ่มขึ้น (0.50–0.58, CAUTION)</td><td>รอบน้อยลง กำไรต่อรอบใหญ่ขึ้น แต่ inventory ค้างรอนานกว่า</td></tr>
+<tr><td><strong>Partial TP</strong></td><td>ขายบางส่วนที่ level ถัดไป ปล่อยที่เหลือรอ level ถัดไปอีก</td><td>ไม่ผูก regime — เป็นทางเลือกลดความเสี่ยง all-or-nothing ล้วนๆ</td><td>ลดความเสี่ยงขายหมดเร็วเกินไป แต่ต้อง track quantity ที่เหลือต่อ level (ดูกล่องเตือน)</td></tr>
+<tr><td><strong>Trailing / Infinity</strong></td><td>ไม่ตั้ง TP ตายตัว เลื่อนตามราคา — ดู Infinity Grid ใน <a href="grid-part1d.html#s1d-3">Part 1D §1D.3</a></td><td>H สูงมาก เทรนด์ชัดเจน</td><td>เก็บ upside เทรนด์ได้เต็มที่ แต่เสีย cashflow สม่ำเสมอที่ 1-step ให้</td></tr>
+</table>
+
+<div class="key-idea">
+<div class="ki-label">ข้อควรจำ</div>
+<div class="ki-text">ไม่มี TP policy ไหน "กำไรรวมมากกว่า" — ทุกแบบปรับแค่ <strong>รูปทรง</strong>ของ P&L (ความถี่รอบ, ขนาดกำไรต่อรอบ, drawdown, ความเสี่ยง inventory ค้าง) ไม่ใช่เพิ่ม expected value สุทธิ ยังเป็นไปตาม zero-EV theorem ใน Part 0 §0.3 เหมือนเดิม</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">คำเตือน: Partial TP ต้องมี accounting เพิ่ม</div>
+<p>Framework ใน Part 9 §9.2 (<code>GridLevel</code>) เก็บ <code>qty</code> เป็นค่าเดียวต่อ level และ <code>filled</code> เป็น boolean — ออกแบบมาสำหรับ all-or-nothing เท่านั้น ถ้าจะใช้ Partial TP จริง ต้องขยาย <code>GridLevel</code> ให้ track "qty ที่ขายไปแล้ว" กับ "qty ที่เหลือ" แยกกันต่อ level ก่อน — เล่มนี้ยังไม่ implement ส่วนนั้น เป็นงานต่อยอดสำหรับใครอยากทำจริง</p>
+</div>
+
 <h2 id="s2-7">2.7 Running Example — Comparing 3 Bloating Patterns</h2>
 
 <div class="running-ex">
