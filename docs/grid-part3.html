@@ -342,10 +342,14 @@ $$\sigma_t^2 = \omega + \alpha \cdot \epsilon_{t-1}^2 + \beta \cdot \sigma_{t-1}
 
 <div class="fm">GARCH Step Sizing:
 
-# สมมติ GARCH fitted: ω=1e-6, α=0.08, β=0.91
-# σ_today = 0.025 (2.5% daily vol)
+from vol_series_tools import fit_garch, forecast_vol
 
-sigma_daily = 0.025   # จาก GARCH forecast
+# Fit GARCH(1,1) บน 90 วันย้อนหลัง: ω=1e-6, α=0.08, β=0.91
+garch_params = fit_garch(daily_returns[-90:])
+
+# Forecast vol สำหรับ 7 วันข้างหน้า, ใช้ day-1 forecast เป็น ATR
+vol_forecast_7d = forecast_vol(garch_params, horizon=7)
+sigma_daily = vol_forecast_7d[0]   # = 0.025 (2.5% daily vol) ในสภาวะปกติ
 price = 100000
 
 # 1-day VaR = σ × price
@@ -358,6 +362,12 @@ step = 0.5 * atr_garch  # = $1,250
 # ATR: backward-looking (เฉลี่ย 14 วันที่แล้ว)
 # GARCH: forward-looking (forecast vol วันพรุ่งนี้จาก cluster ปัจจุบัน)
 # ช่วง volatility เพิ่ง spike → GARCH ตอบสนองเร็วกว่า ATR(14)
+
+GARCH ตอบสนองเร็วแค่ไหน — ดูตามเวลาจริง:
+  วันปกติ (σ=2.5%):        step_garch = 0.5 × 2.5% × $100k = $1,250
+  หลัง flash crash (σ=6%): step_garch = 0.5 × 6%   × $100k = $3,000
+  สัปดาห์ต่อมา (σ ลดเหลือ 3.5%): step_garch = $1,750
+  → GARCH ปรับ step เร็วกว่า ATR(14) ที่ยังติด MA ของ 14 วันก่อน
 
 # Practical: ถ้าไม่ fit GARCH เอง → ใช้ implied vol จาก options
 # IV ของ BTC 7-day ATM option = 65% annualized

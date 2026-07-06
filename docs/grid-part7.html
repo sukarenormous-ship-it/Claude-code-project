@@ -293,34 +293,7 @@ def grid_strangle_income(zone_low, zone_high, put_premium, call_premium,
 
 <h2 id="s7-5">7.5 GARCH-Based Volatility Forecasting สำหรับ Step</h2>
 
-<p>GARCH (Generalized Autoregressive Conditional Heteroskedasticity) คือโมเดลทำนาย volatility ที่คำนึงถึง volatility clustering — ช่วง vol สูงมักตามด้วย vol สูงต่อเนื่อง (อ้างอิงเต็มใน <a href="vol-part2.html">Vol Series Part 2</a>) GARCH(1,1) ให้ vol forecast ที่ดีกว่า ATR ธรรมดา ในช่วง volatility cluster:</p>
-
-<div class="fm">GARCH Grid Integration:
-
-from vol_series_tools import fit_garch, forecast_vol
-
-# Fit GARCH(1,1) บน 90 วันย้อนหลัง
-garch_params = fit_garch(daily_returns[-90:])
-
-# Forecast vol สำหรับ 7 วันข้างหน้า
-vol_forecast_7d = forecast_vol(garch_params, horizon=7)
-
-# ใช้ 1-day vol forecast เป็น ATR
-sigma_1d = vol_forecast_7d[0]  # day 1 forecast
-atr_garch = sigma_1d * current_price
-
-# Step based on GARCH
-step_garch = 0.5 * atr_garch
-
-# เปรียบ ATR vs GARCH:
-# ATR(14) = เฉลี่ย 14 วันที่แล้ว → lag
-# GARCH   = มองไปข้างหน้า + ตอบสนองต่อ vol cluster ปัจจุบัน
-
-GARCH เปลี่ยน Step อย่างไร:
-  วันปกติ (σ=2.5%): step_garch = 0.5 × 2.5% × $100k = $1,250
-  หลัง flash crash (σ=6%): step_garch = 0.5 × 6% × $100k = $3,000
-  สัปดาห์ต่อมา (σ ลดเหลือ 3.5%): step_garch = $1,750
-  → GARCH ปรับ step เร็วกว่า ATR(14) ที่ยังติด MA ของ 14 วันก่อน</div>
+<p>GARCH (Generalized Autoregressive Conditional Heteroskedasticity) คือโมเดลทำนาย volatility ที่คำนึงถึง volatility clustering — ช่วง vol สูงมักตามด้วย vol สูงต่อเนื่อง (อ้างอิงเต็มใน <a href="vol-part2.html">Vol Series Part 2</a>) สอนวิธี fit + ใช้ GARCH(1,1) ตั้ง step เต็มรูปแบบไว้แล้วใน <a href="grid-part3.html#s3-6">Part 3 §3.6</a> (รวม fit window 90 วัน, forecast horizon 7 วัน, และตัวอย่างว่า step ปรับตัวเร็วแค่ไหนหลัง flash crash) — ในบทนี้แค่เชื่อมว่า GARCH ที่ตั้ง step มาแล้ว เอาไปผสมกับ funding-adaptive sizing (§7.2) และ IV-adaptive step (§7.1) ได้อย่างไรเมื่อเปิด grid จริง</p>
 
 <h2 id="s7-6">7.6 Running Example — IV + Funding + Grid</h2>
 
