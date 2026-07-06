@@ -299,6 +299,29 @@ Kelly ไม่ได้รู้จัก "ทุนกี่บาท" — Dra
 <p>ตัวหาร <code>entry_z * sigma</code> ใน dd_limit มาจากสมมติว่า worst-case adverse move คือ spread เคลื่อนจาก z ณ จุดเข้า (<code>entry_z</code>) กลับไปที่ค่ากลาง — ระยะที่ spread วิ่งสวน position ได้จึง scale ตาม <code>entry_z</code> โดยตรง ยิ่ง entry ที่ z สูง position ยิ่งต้องเล็กลง ถ้าต้องการ conservative มากขึ้นให้บวก buffer เข้ากับ entry_z ตาม risk appetite</p>
 </div>
 
+<div class="bx bk">
+<div class="bt">⚠️ ข้อจำกัดของสูตรนี้: มันไม่ได้จำลอง Spread ที่วิ่ง "ออก" ไกลกว่า Entry</div>
+<p>dd_limit ด้านบนประเมิน worst case แค่ระยะจาก entry_z กลับ θ — แต่ในความจริง spread สามารถวิ่ง<strong>ออกไปไกลกว่าจุดเข้าอีก</strong>ก่อนจะกลับตัว (LTCM ใน <a href="statarb-ch24.html">ch24</a> คือตัวอย่างระดับ fund ของเคสนี้) และถ้าเทรด cross-exchange/cross-venue ที่ต้องวาง margin เต็มสองฝั่งแยกบัญชี (<a href="statarb-ch17.html#s17-13">ch17 §17.13</a>) การประเมิน worst case ต้องใช้ <strong>path-maximum divergence</strong> ไม่ใช่แค่ระยะ entry→mean:</p>
+<div class="fm">size_from_divergence = เงินสดที่มีต่อบัญชี / (k × expected_max_divergence_จาก_OU_bridge)
+
+<span class="c"># expected_max_divergence ประเมินจาก first-passage/bridge distribution ของ OU</span>
+<span class="c"># ไม่ใช่แค่ระยะ entry_z (ซึ่งเป็นแค่จุดเริ่มต้น ไม่ใช่จุดไกลสุดที่เป็นไปได้)</span></div>
+<p style="margin-top:6px"><strong>กติกา:</strong> ถ้าเทรดข้าม clearing/venue ที่ไม่มี margin offset ให้ size จากทุนรับ divergence ในแต่ละบัญชีแยกกัน ≥ margin เริ่มต้น + (k × historical max divergence) × notional ไม่ใช่จาก capital รวมทั้งพอร์ต — ตั้ง alert ที่ 50% ของ buffer เงินสด</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ β Granularity — จาก $ เป็น Lot จริง คือ Directional Exposure ที่ซ่อนอยู่</div>
+<p>สูตรทั้งหมดในบทนี้ปฏิบัติกับ size เป็น continuous ($ ต่อเนื่อง) — แต่ตลาดจริงให้ถือได้เป็น step เท่านั้น: futures = จำนวนเต็มสัญญา, MT5 = 0.01 lot, exchange มี min qty/min notional ที่ทุนเล็กเปิดได้ 1-3 หน่วยต่อขา β จริงที่ implement ได้จึงอาจห่างจาก β ที่ประมาณไว้ 10-40% — ส่วนต่างนี้คือ position ทิศทางเปล่าๆ ที่ฝังอยู่ใน "arb": variance ของ residual exposure = (β_real − β_est)² × σ²_B ซึ่งบนคู่ volatile กลืน σ_ε ได้ทั้งตัว</p>
+<div class="fm"><span class="c"># β Granularity Check — ทำก่อนเทรดทุกคู่ที่ทุนไม่ใหญ่มาก</span>
+β_real = <span class="fn">round_to_lot_step</span>(β_est, lot_step_ของ_venue)
+residual_vol = abs(β_real - β_est) × σ_B
+
+<span class="kw">if</span> residual_vol &gt; <span class="nm">0.3</span> × σ_epsilon:
+    <span class="c"># คู่นี้เล่นไม่ได้ที่ทุนนี้ — ไม่ใช่ปรับสูตร แต่ต้องเพิ่มทุนหรือเปลี่ยนคู่</span>
+    <span class="fn">reject_pair</span>(<span class="nm">"β granularity เกิน 30% ของ σ_ε ที่ทุนนี้"</span>)</div>
+<p style="margin-top:6px">คู่ที่ β ใกล้ 1 และ contract size ใกล้เคียงกันคือมิตรแท้ของบัญชีเล็ก — ตรวจสอบ checklist การเลือก F(·)/instrument เต็มใน <a href="statarb-ch4b.html">ch4B</a> ก่อนตัดสินใจว่าคู่ไหนเทรดได้ที่ทุนจริงของคุณ</p>
+</div>
+
 <!-- 12.6 -->
 <h2 id="s12-6">12.6 Running Example: Bybit↔Lighter BTC Perp</h2>
 

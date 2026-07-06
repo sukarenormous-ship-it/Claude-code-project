@@ -286,6 +286,7 @@ $$\text{Net P\&L} = (\varepsilon_{\text{entry}} - \varepsilon_{\text{exit}}) \cd
 <li><strong>ข้อเสีย:</strong> อาจไม่ fill ถ้าราคาวิ่งออกไป → partial fill risk</li>
 <li><strong>แก้ไข:</strong> ใช้ limit ที่ aggressive (1 tick ใน spread) เพื่อ fill เร็ว</li>
 </ul>
+<p style="margin-top:6px;font-size:.92em">⚠️ "Maker fee ถูกกว่า" ไม่ใช่ประหยัดฟรี — fill ที่ maker ได้จริงมี <strong>adverse selection cost</strong> ติดมาด้วยเสมอ (คนที่ cross เข้ามากิน quote มักรู้ทิศทางที่ ε จะไปต่อ) วัด markout จริงก่อนสรุปว่า maker คุ้มกว่า taker — สูตรเต็ม: <a href="statarb-ch19.html#s19-10">ch19 §19.10</a></p>
 </div>
 
 <div class="bx br">
@@ -395,7 +396,46 @@ t=120ms  : BOTH FILLED — spread locked = $25.3
 </ul>
 </div>
 
-<h2 id="s14-8">14.8 แบบฝึกหัด</h2>
+<!-- 14.8 -->
+<h2 id="s14-8">14.8 Partial Fill กับ Hedge Granularity — เศษ Delta ที่เสียงดังกว่า Spread</h2>
+
+<p>"Position reconciliation ทุก 30 วินาที" ใน §14.7 ตรวจแค่ว่า<em>มี</em> position ครบสองขา — แต่ไม่ได้ตรวจว่า<strong>สัดส่วน</strong>ของสองขายังตรงกับ β หรือไม่ นี่คือช่องว่างที่ partial fill ทำให้ hedge เพี้ยนโดยไม่มีใครสังเกต</p>
+
+<div class="bx bk">
+<div class="bt">⚠️ Fill ที่ "ครบสองขา" อาจไม่ใช่ Hedge ที่ถูกต้อง</div>
+<p>Limit order จริงคืน partial fill เสมอ: ขา A ได้ 60%, ขา B ได้ 100% → hedge ratio จริงเพี้ยนจาก β ทันที variance ของ residual exposure ที่เกิดขึ้น = (β_real − β_est)² × σ²_B ซึ่งบนคู่ volatile กลืน σ_ε ได้ทั้งตัว — PnL รายวันจะแกว่งตามตลาด ไม่ใช่ตาม ε อีกต่อไป ทั้งที่ dashboard บอกว่า "มี position ครบสองขา" (ผ่าน reconciliation check ของ §14.7 เพราะมันเช็คแค่ existence ไม่ได้เช็ค ratio)</p>
+</div>
+
+<div class="fm"><span class="c"># Reconciliation ต้องเช็ค RATIO ไม่ใช่แค่ EXISTENCE</span>
+actual_ratio = abs(position_A / position_B)
+target_ratio = β_current
+
+<span class="kw">if</span> abs(actual_ratio - target_ratio) / target_ratio &gt; <span class="nm">0.05</span>:  <span class="c"># เกิน 5% off-hedge</span>
+    <span class="fn">alert</span>(<span class="nm">"HEDGE_RATIO_DRIFT — top-up หรือ unwind ส่วนเกินทันที"</span>)</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: เศษ Delta ที่ดังกว่า Edge ของ Spread เอง</div>
+<div class="fm">ต้องการ hedge ratio 2.83:3 (เช่น จาก futures spec ที่ปัดเป็นจำนวนเต็มสัญญาไม่ได้)
+เศษที่เหลือ = <span class="nm">0.17</span> สัญญา ≈ <span class="nm">$40,000+</span> notional (ขึ้นกับขนาดสัญญา)
+
+Underlying σ รายวัน ~1% → noise จากเศษ delta ≈ <span class="nm">$400</span>/วัน
+Edge ของ spread ที่ไล่จับ (เช่น calendar spread 1-2 tick) ≈ <span class="nm">$10-20</span>/สัญญา
+
+→ noise จากเศษ delta ใหญ่กว่า edge ที่ตั้งใจเก็บ ~<span class="nm">20 เท่า</span>
+→ equity curve ถูกขับด้วยทิศทางตลาด ไม่ใช่ด้วย ε ทั้งที่หน้าจอบอกว่า "market neutral"</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน</div>
+<ol>
+<li>ก่อนเลือกคู่ คำนวณ residual delta ต่ำสุดที่เป็นไปได้จาก granularity ของสัญญา/lot step แล้วเทียบ: ถ้า σ(residual delta P&amp;L) &gt; 0.5×σ(spread P&amp;L) คู่นั้นเทรดไม่ได้ที่ size ตั้งใจ — ต้องเพิ่มจำนวนสัญญาให้เศษเล็กลงโดยสัดส่วน หรือเปลี่ยนเครื่องมือ (ดู granularity ของ futures เต็มใน <a href="statarb-ch17.html#s17-10">ch17 §17.10</a>)</li>
+<li>Handle partial fill เป็น state จริงในระบบ ไม่ใช่แค่ SUCCESS/FAIL: fill เกิน x% → top-up ขาสั้น, ต่ำกว่า → unwind ส่วนเกิน</li>
+<li>Reconciliation ทุก 30 วินาทีต้องเทียบ <strong>ratio</strong> ไม่ใช่แค่ existence — ใช้ threshold ด้านบน</li>
+<li>ถ้าไม่มี reconciliation แบบนี้ เศษจาก partial fill จะสะสมข้ามหลาย trade (position drift) จนวันหนึ่งพบว่าถือ outright ก้อนโตโดยไม่มีสัญญาณอะไรรองรับ</li>
+</ol>
+</div>
+
+<h2 id="s14-9">14.9 แบบฝึกหัด</h2>
 
 <div class="ex">
 <div class="et">โจทย์ 14.1 — คำนวณ Leg Risk Window</div>
