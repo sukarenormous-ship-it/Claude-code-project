@@ -121,14 +121,16 @@
 
 ## ลำดับงานเขียน
 
-| # | งาน | สถานะร่าง |
+| # | งาน | สถานะ |
 |---|---|---|
-| 1 | ปรับ section zero-EV เดิมใน Part 0 (intuition ขึ้นก่อนสูตร) + ต่อร่างที่ 1 (Shannon) | ร่างพร้อมแล้ว — เกลา + ลงไฟล์ |
-| 2 | ร่างที่ 2 ลง Part 2 + โยงกลับ Step Pyramid ใน 1A | ร่างพร้อมแล้ว |
-| 3 | ร่างที่ 3 ลง Part 5 + แก้เลข SE ผิด (B5) ในย่อหน้าเดียวกัน | ร่างพร้อมแล้ว |
-| 4 | D1+D2 ลง Part 1C (ครึ่งหน้า "ค่าเช่าสมดุล" + แก้ hardcode) | ตาม template |
+| 1 | ปรับ section zero-EV เดิมใน Part 0 (intuition ขึ้นก่อนสูตร) + ต่อร่างที่ 1 (Shannon) | ✅ ลงไฟล์แล้ว (`grid-part0.html`) |
+| 2 | ร่างที่ 2 ลง Part 2 (เกณฑ์เลือก Option A/B/C จาก inventory skew) + โยงไป Step Pyramid ใน 2.6 | ✅ ลงไฟล์แล้ว (`grid-part2.html`) |
+| 3 | ร่างที่ 3 ลง Part 5 + แก้เลข SE ผิด (B5) ในย่อหน้าเดียวกัน | ✅ ลงไฟล์แล้ว (`grid-part5.html`) |
+| 4 | D1+D2 ลง Part 1C (ครึ่งหน้า "ค่าเช่าสมดุล" + แก้ hardcode) | ตาม template — ถัดไป |
 | 5 | B1+C1 ลง Part 3/4/6 (ต้องทำตาราง lookup ก่อน — งาน notebook) | ตาม template |
 | 6 | Part 1D ทั้งบท (รวม F2–F5 + spectrum terminate/reset/infinity) | เขียนใหม่ทั้งบท ใช้ voice guide |
 | 7 | A2 GLFT เป็น optional section ท้าย Part 3 | ตาม template |
+
+**หมายเหตุ:** งาน #1–3 ผ่านการตรวจ render จริง (headless Chromium) แล้วว่าจัดหน้าถูกต้อง และยึดกติกาเสียงของเล่มครบ (ไม่มีชื่อ paper ในเนื้อความ, ตัวเลขมาจาก running example เดิม, สูตรพับใน `<details>`) — B6/B7 (ตัวเลข Q rounding และ Σ Q×P ใน 5.3) เป็นบั๊กคนละชุดจาก errata batch เดิม ยังไม่ได้แก้ในรอบนี้
 
 ทุกชิ้นผ่านเกณฑ์เดียวกันก่อน commit: (1) อ่านออกเสียงแล้วเสียงเดียวกับเล่ม (2) มือใหม่ตอบได้ว่า "ต้องทำอะไรต่าง" (3) ไม่มีชื่อ paper ในเนื้อความ (4) สูตร ≤ 1 ต่อ section (5) ตัวเลขทุกตัวมาจาก running example
