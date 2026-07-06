@@ -410,7 +410,8 @@
 - **Phase 1** — ✅ **เสร็จสมบูรณ์**: narrative + notebook ครบทั้งคู่
   - ✅ Part 0 (edge framing) · ✅ Part I (บันได β) · ✅ Part II (coint/copula) · ✅ Part III (residual/factor)
   - ✅ notebook 01–03 เขียน + execute จริงแล้ว (ดู §7 — pivot ไปใช้ simulated data เพราะ network policy บล็อก data provider)
-- **Phase 2** — Part IV–VII (Kalman + Adaptive + Bands + Regime) + notebook 04–06
+- **Phase 2** — 🟡 narrative ✅ เสร็จ (`practice-part4..7.html`) · เหลือ notebook 04–06
+  - ✅ Part IV (Kalman ลงมือ) · ✅ Part V (Adaptive & Robust Kalman) · ✅ Part VI (Signals & Bands) · ✅ Part VII (Regime & kill-switch)
 - **Phase 3** — Part VIII–IX (Cost/Execution + Backtest/Risk/Case) + notebook 07
 - **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม)
 
