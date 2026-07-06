@@ -395,7 +395,8 @@
 ## 8. ลำดับงาน (Build Order)
 
 - **Phase 0** — ✅ แผนนี้ (commit + draft PR)
-- **Phase 1** — Part 0–III (edge framing + บันได β + Cointegration/copula + **Residual/Factor**) = แกนความคิดหลัก + notebook 01–03
+- **Phase 1** — 🟡 กำลังทำ: narrative ✅ เสร็จ (`practice-part0..3.html`) · เหลือ notebook 01–03 (รอเคาะ toy dataset/แหล่งข้อมูล)
+  - ✅ Part 0 (edge framing) · ✅ Part I (บันได β) · ✅ Part II (coint/copula) · ✅ Part III (residual/factor)
 - **Phase 2** — Part IV–VII (Kalman + Adaptive + Bands + Regime) + notebook 04–06
 - **Phase 3** — Part VIII–IX (Cost/Execution + Backtest/Risk/Case) + notebook 07
 - **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม)
