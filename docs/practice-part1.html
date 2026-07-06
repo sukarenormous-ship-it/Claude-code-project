@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part I</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part I — บันได β: หา hedge ratio ยังไง (โลกทีละคู่)</div>
+<div class="desc">β (hedge ratio) คือหัวใจของทุก spread — Part นี้ไต่บันได 4 ขั้นจาก OLS → TLS/PCA → Rolling → Kalman พร้อมตอบคำถามที่คนพลาดบ่อยสุด: <strong>ทำไม OLS ที่ทุกคนใช้ ถึงใช้ได้แค่บางสถานการณ์</strong> · แยก price vs return ให้ขาด · และแปลง β เป็นออร์เดอร์จริงบนกระดานไทย</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน "บันได β" + §1.1 OLS + 🚶 ทุกกล่อง + §1.3 price vs return + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §1.2 EIV + §1.3 ★ super-consistency + §1.4 hedge unit + §1.5 TLS พังเมื่อไร · <strong>เริ่มด่วน:</strong> ข้ามไป §1.3 (จุดพลิกความเข้าใจ) แล้วย้อนกลับ</p></div>
+
+<h2>บันได β — เพราะ hedge ratio ไม่ใช่ตัวเลขตายตัว</h2>
+
+<p>ก่อนจะเทรด spread ได้ ต้องตอบคำถามเดียวให้ได้ก่อน: <strong>ถือขา 2 ข้างในอัตราส่วนเท่าไร?</strong> ถ้าซื้อหุ้น A 1 หุ้น ต้อง short หุ้น B กี่หุ้น จึงจะได้ "ส่วนต่าง" (spread) ที่นิ่งพอจะเทรด — ตัวเลขนั้นคือ β</p>
+
+<p>คนส่วนใหญ่หยิบ OLS มาแล้วจบ แต่ β ที่ดีในโลกจริง<strong>เปลี่ยนตามเวลา</strong> และวิธีประมาณมันมีหลายขั้น เหมือนบันได — แต่ละขั้นแก้จุดอ่อนของขั้นก่อน</p>
+
+<div class="fm">ขั้น 0:  OLS            β คงที่ ประมาณครั้งเดียว        (ง่ายสุด)<br>
+ขั้น 1:  TLS / PCA      แก้ปัญหา "ทั้งสองขามี noise"<br>
+ขั้น 2:  Rolling OLS    β เดินตามเวลาแบบหน้าต่างเลื่อน<br>
+ขั้น 3:  Kalman         β เดินแบบจำอดีต + optimal      (→ Part IV)</div>
+
+<p>เป้าหมายของ Part นี้ไม่ใช่ให้คุณ "ใช้ Kalman เป็น" (ใครก็ใช้เป็น — Part 0 บอกแล้วว่านั่นไม่ใช่ edge) แต่ให้คุณ<strong>รู้ว่าแต่ละขั้นเชื่ออะไร พังเมื่อไร และเลือกใช้ตัวไหนเมื่อไร</strong></p>
+
+<h2>1.1 OLS — จุดตั้งต้นที่ทุกคนเริ่ม</h2>
+
+<p>OLS (Ordinary Least Squares) หา β ที่ทำให้ผลรวมของ error ยกกำลังสองน้อยที่สุด</p>
+
+<div class="fm">y = α + β·x + ε<br>
+β = Cov(y, x) / Var(x)<br><br>
+spread = y − β·x   ← สิ่งที่เราจะเทรด (residual ε นั่นเอง)</div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>OLS ลากเส้นตรงผ่านกลุ่มจุด (x, y) โดยพยายามให้เส้น "ใกล้จุดทุกจุดในแนวตั้งที่สุด" — β คือความชันของเส้นนั้น · spread คือระยะที่จุดจริงห่างจากเส้น (ส่วนที่เส้นอธิบายไม่ได้)</p></div>
+
+<p>มันเร็ว · เข้าใจง่าย · มีในทุกไลบรารี และในหลายกรณีก็ <em>พอใช้</em> — ปัญหาคือ "หลายกรณี" ไม่ใช่ "ทุกกรณี" และตรงนี้แหละที่คนพลาด</p>
+
+<h2>1.2 ทำไม OLS "ใช้ได้แค่บางสถานการณ์" — 2 จุดพัง</h2>
+
+<div class="card">
+<h3>จุดพัง 1 — ไม่สมมาตร (asymmetric)</h3>
+<p>regress A บน B ได้ β ตัวหนึ่ง · regress B บน A แล้วกลับหน่วย ได้ <strong>อีกค่า</strong> ที่ไม่เท่ากัน — ทั้งที่ควรเป็นความสัมพันธ์เดียวกัน! OLS "เลือกข้าง" ว่าตัวไหนเป็นตัวแปรตาม แล้วผลก็ขึ้นกับการเลือกนั้น</p>
+
+<h3>จุดพัง 2 — Errors-in-Variables (EIV / attenuation bias)</h3>
+<p>OLS สมมติว่า <strong>x ไม่มี noise</strong> (แม่นเป๊ะ) — แต่ในตลาดจริง ราคาขาขวาก็มี noise เท่า ๆ ขาซ้าย พอ x มี noise, OLS จะประมาณ |β| <strong>ต่ำกว่าจริงอย่างเป็นระบบ</strong> (เอนเข้าหา 0) เรียกว่า attenuation bias</p>
+
+<div class="fm">β̂_OLS ≈ β_จริง × Var(x*) / [Var(x*) + Var(noise_x)]<br>
+                     └──── ตัวคูณ < 1 เสมอเมื่อ x มี noise ────┘</div>
+
+<div class="bx bb"><div class="bt">🧮 ตัวอย่างเชิงตัวเลข (สมมติ เพื่อให้เห็นภาพ)</div>
+<p>ถ้าความสัมพันธ์จริง β = 1.00 และราคาขา x มี noise variance = 20% ของ signal:<br>
+β̂_OLS ≈ 1.00 × 1 / (1 + 0.20) ≈ <strong>0.83</strong><br>
+→ คุณจะ hedge <strong>น้อยไป 17%</strong> โดยไม่รู้ตัว → spread ที่ได้ยัง<strong>แบก directional risk</strong> ค้างอยู่</p></div>
+</div>
+
+<p style="color:#64748b;font-size:.9em">📖 เชิงประวัติ: attenuation bias นี้ Frisch ชี้ไว้ตั้งแต่ยุค 1930s — ไม่ใช่ของใหม่ แต่คนเทรดสมัยใหม่ลืมมันบ่อยมาก</p>
+
+<h2>1.3 ★ จุดพลิกความเข้าใจ — price (level) vs return</h2>
+
+<p>ตรงนี้คือ <strong>เพชรของ Part I</strong> — สิ่งที่คอร์สทั่วไปไม่บอก และเป็นคำตอบจริงว่าทำไม "OLS แย่" ถึงเป็นความเชื่อที่ถูกครึ่งเดียว</p>
+
+<div class="bx br"><div class="bt">★ ประเด็นหลัก</div>
+<p>EIV/attenuation ที่เพิ่งเล่า <strong>เกิดกับ return regression</strong> (regress ผลตอบแทน on ผลตอบแทน) — แต่ <strong>ไม่เกิด</strong>กับ cointegration ที่ regress <em>ราคา on ราคา</em> เพราะมีปรากฏการณ์ชื่อ <strong>super-consistency</strong></p></div>
+
+<div class="bx ba"><div class="bt">🚶 super-consistency คืออะไร (ภาษาคน)</div>
+<p>เมื่อหุ้น 2 ตัว cointegrate กันจริง (ราคาเป็น <abbr title="integrated order 1 — อนุกรมที่ต้อง diff 1 ครั้งจึงจะ stationary เช่นราคาหุ้น">I(1)</abbr>) OLS บนราคาจะลู่เข้าหา β จริง<strong>เร็วมาก</strong> — เร็วระดับ T (จำนวนข้อมูล) แทนที่จะเป็น √T ตามปกติ · ผลคือ EIV bias <strong>หายไปเอง</strong>เมื่อข้อมูลมากพอ (Stock 1987) · OLS บนราคาจึง "ดีเกินคาด" ในบริบท cointegration</p></div>
+
+<div class="tw"><table>
+<tr><th></th><th>Price / Level (Cointegration)</th><th>Return (Correlation / Factor)</th></tr>
+<tr><td class="nw"><strong>regress อะไร</strong></td><td>ราคา on ราคา</td><td>ผลตอบแทน on ผลตอบแทน</td></tr>
+<tr><td class="nw"><strong>β หมายถึง</strong></td><td>อัตราส่วนที่ทำให้ combo <strong>stationary</strong></td><td>exposure/ความไว ณ ขณะนั้น</td></tr>
+<tr><td class="nw"><strong>ตอบคำถาม</strong></td><td>"spread จะ<strong>กลับ</strong>ไหม"</td><td>"ตอนนี้ <strong>neutral</strong> ต่อ factor ไหม"</td></tr>
+<tr><td class="nw"><strong>OLS ใช้ได้ไหม</strong></td><td>✅ ดี (super-consistent) — refine ด้วย FM-OLS/DOLS เรื่อง finite-sample</td><td>⚠️ EIV จริง → TLS/PCA/Kalman ช่วย</td></tr>
+<tr><td class="nw"><strong>ใช้ผิดแล้วพังยังไง</strong></td><td>ถ้าไม่ cointegrate = <span class="must">spurious regression</span></td><td>level ลอยห่างได้ แม้ return co-move</td></tr>
+</table></div>
+
+<div class="bx br"><div class="bt">📉 spurious regression — กับดักที่ฆ่ามือใหม่</div>
+<p>ถ้าคุณ regress ราคา 2 ตัวที่<em>ไม่</em> cointegrate กัน — R² จะสูง t-stat จะเด่น ดูเหมือนเจอความสัมพันธ์ทอง — <strong>แต่มันปลอมทั้งหมด</strong> residual ไม่ stationary "spread" ไม่มีวันกลับ มันจะลากออกไปเรื่อย ๆ จนพอร์ตพัง (Granger &amp; Newbold 1974) · <strong>บทเรียน:</strong> R² สูงบนราคา ≠ tradable — ต้องทดสอบ stationarity ของ residual เสมอ (Part II)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "OLS มี bias → OLS แย่ → ทิ้ง"<br>
+<strong>quant เห็น:</strong> bias มีจริง<em>เฉพาะบริบท</em> — OLS บน return แย่ แต่ OLS บนราคาที่ cointegrate กลับ<em>ดีเยี่ยม</em> คำถามที่ถูกไม่ใช่ "OLS ดีหรือแย่" แต่คือ "ฉันกำลัง regress อะไร on อะไร"</p></div>
+
+<h2>1.4 แปลง β เป็นออร์เดอร์จริง — 3 ความ "neutral" ที่คนสับสน</h2>
+
+<p>β เป็นแค่<em>อัตราส่วน</em> พอถึงเวลาส่งคำสั่งจริงต้องแปลงเป็นจำนวนหุ้น/มูลค่า และตรงนี้มี 3 อย่างที่คนปนกันจนพัง</p>
+
+<div class="tw"><table>
+<tr><th>ความ neutral</th><th>หมายความว่า</th><th>ได้อะไร / ไม่ได้อะไร</th></tr>
+<tr><td class="nw"><strong>Share-ratio</strong></td><td>ถือ B จำนวน β หุ้น ต่อ A 1 หุ้น (มาจาก cointegration)</td><td>✅ ทำให้ spread กลับ · ❌ มักไม่ dollar-neutral</td></tr>
+<tr><td class="nw"><strong>Dollar-neutral</strong></td><td>long/short มูลค่าเท่ากัน</td><td>✅ คุม gross exposure · ❌ ไม่การันตี residual ที่ cointegrate</td></tr>
+<tr><td class="nw"><strong>Beta-neutral</strong></td><td>net exposure ต่อ market/factor = 0</td><td>= อาณาเขต Part III (factor)</td></tr>
+</table></div>
+
+<div class="bx br"><div class="bt">📉 กับดัก: spread ที่แอบมีความเสี่ยงซ่อน</div>
+<p>Share-ratio จาก cointegration โดยทั่วไป <strong>ไม่</strong> dollar-neutral และ <strong>ไม่</strong> market-beta-neutral → "spread" ของคุณอาจแบก net dollar + net market beta อยู่โดยไม่รู้ · แต่ถ้าคุณ<em>ฝืน</em>บังคับให้ dollar-neutral = <strong>ทำลาย</strong>ความสัมพันธ์ cointegration ที่ทำให้มันกลับ · นี่คือรากของ "factor bet ปลอมตัว" ที่จะเจาะใน Part III</p></div>
+
+<div class="bx bp"><div class="bt">หลักที่ต้องปัก</div>
+<p>เลือกก่อนว่าจะให้ neutral ต่อ<em>อะไร</em> (spread reversion? dollar? market beta?) — <strong>แล้วหน่วยจะตามมา</strong> · ปกติได้ไม่ครบทั้งสาม · stat arb เลือก <strong>reversion ก่อน</strong> แล้วคุม factor แยกต่างหาก (Part III)</p></div>
+
+<div class="bx ba"><div class="bt">🖥️ ลงลึกหน้าจอเทรดจริง — โดยเฉพาะกระดานไทย</div>
+<ul>
+<li><strong>ปัดเป็นจำนวนเต็ม:</strong> β·(จำนวนหุ้น) มักไม่ลงตัว → ปัดเศษ = hedge เพี้ยน โดยเฉพาะขาราคาสูง + ทุนน้อย (ไม่มี fractional share)</li>
+<li><strong>board lot ไทย = 100 หุ้น:</strong> ต้องสั่งเป็นล็อต → β·100 อาจไม่ลงตัวเป็นล็อต = จุดที่ทฤษฎีชนหน้าจอจริง</li>
+<li><strong>rebalance = ต้นทุน:</strong> พอ β อัปเดต (rolling/Kalman) ต้องปรับจำนวนหุ้น → เสียค่าคอมฯ ทุกครั้ง (โยง Part VI/VIII)</li>
+</ul></div>
+
+<h2>1.5 ขั้น 1 — TLS / Deming / PCA <span class="lvl">รู้ · ใช้เป็น · รู้ว่าพังตอนไหน</span></h2>
+
+<p>ถ้า EIV เกิดเพราะ OLS สมมติว่า x ไม่มี noise — ทางแก้คือใช้วิธีที่ยอมรับว่า <strong>ทั้งสองขามี noise</strong> นั่นคือ TLS (Total Least Squares) / Deming regression</p>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>OLS วัดระยะห่างจากเส้น<strong>ในแนวตั้ง</strong> (สมมติ error อยู่ที่ y เท่านั้น) · TLS วัดระยะ<strong>ตั้งฉากกับเส้น</strong> (ยอมรับ error ทั้ง x และ y) → สมมาตร + แก้ EIV</p></div>
+
+<svg class="d" viewBox="0 0 520 200" style="display:block;margin:20px auto;max-width:520px;width:100%">
+<line x1="40" y1="170" x2="500" y2="170" stroke="#374151" stroke-width="1"/>
+<line x1="40" y1="180" x2="40" y2="15" stroke="#374151" stroke-width="1"/>
+<text x="495" y="188" font-family="Sarabun" font-size="10" fill="#374151">x (ราคา B)</text>
+<text x="8" y="20" font-family="Sarabun" font-size="10" fill="#374151">y (ราคา A)</text>
+<line x1="60" y1="150" x2="470" y2="40" stroke="#2563eb" stroke-width="2.5"/>
+<text x="360" y="55" font-family="Sarabun" font-size="10" fill="#2563eb" font-weight="600">เส้น fit (β)</text>
+<circle cx="150" cy="80" r="4" fill="#111827"/>
+<circle cx="250" cy="130" r="4" fill="#111827"/>
+<circle cx="340" cy="70" r="4" fill="#111827"/>
+<line x1="150" y1="80" x2="150" y2="118" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3"/>
+<text x="120" y="105" font-family="Sarabun" font-size="9" fill="#dc2626">OLS:แนวตั้ง</text>
+<line x1="340" y1="70" x2="368" y2="53" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3"/>
+<text x="372" y="58" font-family="Sarabun" font-size="9" fill="#16a34a">TLS:ตั้งฉาก</text>
+<text x="150" y="195" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">OLS วัดระยะแนวตั้ง · TLS วัดระยะตั้งฉาก</text>
+</svg>
+
+<div class="bx bb"><div class="bt">เชื่อมกับ PCA</div>
+<p>TLS ของ 2 สินทรัพย์ = <strong>eigenvector ตัวแรก</strong>ของ covariance matrix พอดี (ทิศที่ข้อมูลแกว่งมากสุด) → นี่คือสะพานสู่ <strong>eigenportfolio / PCA hedge</strong> ที่ Avellaneda-Lee (2010) ใช้จริง และเป็นแกนของ Part III</p></div>
+
+<div class="bx br"><div class="bt">❌ TLS พังเมื่อไร (ส่วนที่คนไม่สอน)</div>
+<ul>
+<li><strong>δ ผิด → แย่กว่า OLS:</strong> TLS ไม่ได้<em>ลบ</em> bias มันแค่<em>แลก</em> bias หนึ่งด้วย <strong>สมมติฐาน</strong>หนึ่ง — คืออัตราส่วน noise variance 2 ขา (δ) · Deming ปกติสมมติ δ=1 (noise เท่ากัน) ถ้าจริง ๆ ขาหนึ่ง noisy กว่ามาก → TLS เพี้ยนกว่า OLS อีก</li>
+<li><strong>ไวต่อ outlier:</strong> ระยะตั้งฉากทำให้จุดหลุดโด่งดึงเส้นแรงกว่าเดิมในบางเคส</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✅ สรุปกฎเลือก OLS vs TLS</div>
+<ul>
+<li>regress <strong>ราคา (cointegration)</strong> → OLS ดีอยู่แล้ว (super-consistent) · จะเนียนขึ้นใช้ FM-OLS/DOLS</li>
+<li>regress <strong>return (hedge/factor)</strong> → EIV จริง → TLS/PCA ช่วย <em>ถ้า</em>ประเมิน δ ได้ · ไม่งั้น Kalman (ขั้น 3) จัดการให้ดีกว่า</li>
+</ul></div>
+
+<h2>1.6 ขั้น 2 — Rolling / Expanding OLS</h2>
+
+<p>β จริงเปลี่ยนตามเวลา — วิธีง่ายสุดคือคำนวณ OLS ใหม่บน "หน้าต่างเลื่อน" (rolling window) แต่มันมี tradeoff ที่ต้องเข้าใจ</p>
+
+<div class="ad">
+<div class="pro"><div class="bt">หน้าต่างสั้น</div>
+<ul><li>✅ ไว ตาม β ที่เปลี่ยนทัน</li><li>❌ jitter — β กระตุกตาม noise</li><li>❌ rebalance บ่อย = ค่าคอมฯ พุ่ง</li></ul></div>
+<div class="con"><div class="bt">หน้าต่างยาว</div>
+<ul><li>✅ นิ่ง β ไม่กระตุก</li><li>❌ ช้า ตาม β ที่เปลี่ยนไม่ทัน</li><li>❌ edge effect: จุดหลุดออกจากหน้าต่างทำให้ β กระโดด</li></ul></div>
+</div>
+
+<div class="why"><div class="bt">⚠️ กับดัก look-ahead ตอน refit</div>
+<p>ถ้า refit β โดยเผลอใช้ข้อมูล<em>อนาคต</em> (เช่นคำนวณ mean/std ของ spread จากทั้ง sample) = โกงตัวเอง backtest สวยแต่ live พัง · rolling ต้องใช้เฉพาะข้อมูลถึง ณ จุดนั้นเท่านั้น</p></div>
+
+<p>Rolling OLS คือสะพานสู่ขั้นสุดท้าย — เพราะจริง ๆ แล้ว <strong>Kalman filter = rolling regression ที่ "จำ" อดีตอย่างเหมาะสมและถ่วงน้ำหนักแบบ optimal</strong> แทนที่จะตัดข้อมูลเก่าทิ้งดื้อ ๆ ที่ขอบหน้าต่าง</p>
+
+<h2>1.7 ขั้น 3 — Kalman (ยอดบันได) <span class="lvl">→ เจาะลึก Part IV</span></h2>
+
+<div class="fm">state:        β_t = β_{t−1} + w_t     (β เดินแบบ random walk)<br>
+observation:  y_t = β_t · x_t + v_t   (ราคาที่เห็น = β×x + noise)<br><br>
+Q = variance ของ w  → "β เปลี่ยนเร็วแค่ไหน"<br>
+R = variance ของ v  → "เชื่อราคาล่าสุดแค่ไหน"</div>
+
+<p>Kalman อัปเดต β ทุกวันแบบ real-time โดยใช้<strong>เฉพาะข้อมูลอดีต</strong> (causal — ไม่ look-ahead) และคุม drawdown ได้นิ่งกว่า rolling-OLS ที่กระตุก · <strong>อัตราส่วน Q/R คือปุ่มเดียวที่สำคัญสุด</strong></p>
+
+<div class="bx ba"><div class="bt">⏭️ ทำไมยังไม่ลงลึกตรงนี้</div>
+<p>Kalman มีเรื่องต้องระวังเยอะ — จูน Q/R ยังไงไม่ให้ overfit · จะรู้ได้ยังไงว่า overfit · β ควรเป็น random walk จริงไหม — ทั้งหมดนี้เป็น<strong>หัวใจของ Part IV</strong> เต็ม ๆ ที่นี่แค่ให้เห็นว่ามันคือปลายทางของบันได β</p></div>
+
+<h2>สรุป Part I + สะพานสู่ Part II</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part I</div>
+<ol>
+<li><strong>"OLS แย่" ถูกครึ่งเดียว</strong> — แย่กับ return regression (EIV) แต่<em>ดีเยี่ยม</em>กับ cointegration บนราคา (super-consistent)</li>
+<li><strong>แยก price vs return ให้ขาด</strong> — ราคา→"spread กลับไหม" · return→"neutral ไหม" · ปนกัน = spurious regression หรือ hedge หลอก</li>
+<li><strong>β เป็นแค่อัตราส่วน</strong> — เลือกก่อนว่าจะ neutral ต่ออะไร แล้วหน่วยตามมา; ระวัง hidden exposure + board lot</li>
+</ol></div>
+
+<p>ตอนนี้เรามี β แล้ว และรู้ว่าจะเชื่อมันแค่ไหน — คำถามถัดไปคือ <strong>คู่ไหนถึงคู่ควรเทรดตั้งแต่แรก?</strong> ทุกคนใช้ correlation + cointegration test ชุดเดียวกัน สแกนหุ้นชุดเดียวกัน...</p>
+
+<div class="pq">"ทุกคนมีเครื่องมือคัดคู่เหมือนกันเป๊ะ — แล้วเราจะต่างตรงไหน?"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Hedge ratio (β)</strong> — อัตราส่วนถือ 2 ขาเพื่อสร้าง spread</li>
+<li><strong>EIV / attenuation bias</strong> — OLS ประมาณ |β| ต่ำไปเมื่อ x มี noise</li>
+<li><strong>Super-consistency</strong> — OLS บนราคาที่ cointegrate ลู่เข้าเร็วระดับ T → EIV หายเชิง asymptotic</li>
+<li><strong>Spurious regression</strong> — regress ราคาที่ไม่ cointegrate ได้ผลดูดีแต่ปลอม</li>
+<li><strong>TLS / Deming</strong> — regression ที่ยอมรับ noise ทั้ง 2 ขา (วัดระยะตั้งฉาก)</li>
+<li><strong>Share/Dollar/Beta-neutral</strong> — 3 ความหมายของ "ปรับสมดุลขา" ที่ห้ามสับสน</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Stock, J.H. (1987) "Asymptotic Properties of Least Squares Estimators of Cointegrating Vectors", <em>Econometrica</em> — super-consistency</li>
+<li>Phillips, P.C.B. &amp; Hansen, B.E. (1990) FM-OLS · Stock, J.H. &amp; Watson, M.W. (1993) DOLS — refine finite-sample</li>
+<li>Granger, C.W.J. &amp; Newbold, P. (1974) "Spurious Regressions in Econometrics", <em>Journal of Econometrics</em></li>
+<li>Deming, W.E. (1943) errors-in-variables regression · Golub &amp; Van Loan — total least squares</li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/01_beta_ladder.ipynb</code> — OLS vs TLS vs Rolling vs Kalman บนคู่เดียวกัน เทียบ β path ให้เห็นกับตา</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part5</code> §18.1 (correlation vs cointegration — แนวคิด) · เล่ม A <code>theory-part5</code> (cointegration, stationarity)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
