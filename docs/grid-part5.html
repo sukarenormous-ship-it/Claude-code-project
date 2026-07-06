@@ -220,14 +220,14 @@ Rule 1: Max Notional ต่อ Level ≤ 5% ของ total capital
 
 Rule 2: ในช่วงที่ Hurst สูง (trending) → ลด limit ลงอีก
   ถ้า H > 0.55: max_q × 0.7  (ลด 30%)
-  ถ้า H > 0.60: max_q × 0.4  (ลด 60%)
+  ถ้า H > 0.58: max_q × 0.4  (ลด 60% — เข้าเขต GRID OFF ของ Part 4 พอดี)
 
 Rule 3: Concentration cap — ไม่ให้ 3 levels ติดกันมี Q รวม > 10% ของ capital
   (ป้องกัน bottom-heavy bloating ที่เกินไป)
 
 def check_position_limits(grid_levels, total_capital, hurst):
     max_per_level = total_capital * 0.05
-    if hurst > 0.60:
+    if hurst > 0.58:
         max_per_level *= 0.4
     elif hurst > 0.55:
         max_per_level *= 0.7
@@ -362,13 +362,13 @@ Summary:
 <summary>ข้อ 4 (Challenge): Hurst = 0.62 · กำลังจะเปิด grid ด้วย Q = 0.03 BTC — ควรปรับ Q อย่างไร?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>H = 0.62 > 0.60 → ใช้ Q multiplier 0.4 (ลด 60%)</p>
-<p>Q adjusted = 0.03 × 0.40 = <strong>0.012 BTC</strong></p>
-<p>เหตุผล: H > 0.60 = trending regime = grid fill น้อย + inventory accumulate ไม่หยุด → ลด size ก่อน</p>
-<p><strong>กฎแยกแยะสองทางเลือก:</strong></p>
+<p>H = 0.62 > 0.58 → Part 4 state machine สั่ง GRID OFF ไปแล้ว (ดู <a href="grid-part4.html">Part 4</a> §4.4) — ที่ระดับนี้ไม่ใช่แค่ลด Q แต่ไม่ควรเปิด position ใหม่เลย</p>
+<p>Q adjusted = <strong>0 BTC</strong> (ไม่เปิดใหม่ — ปิด grid ตาม state machine)</p>
+<p>เหตุผล: H > 0.58 = trending regime ที่ state machine ยืนยันแล้วว่า off = grid fill น้อย + inventory accumulate ไม่หยุด → หยุดเปิดใหม่ ไม่ใช่แค่ลดขนาด</p>
+<p><strong>กฎแยกแยะสองชั้นป้องกัน (defense in depth):</strong></p>
 <ul>
-<li><strong>H ∈ [0.60, 0.65]</strong> → ลด Q ด้วย multiplier 0.4 เพื่อ limit exposure ขณะรอ regime กลับ — ยังได้ cashflow บ้าง</li>
-<li><strong>H &gt; 0.65</strong> (trending แรงมาก) → <strong>pause grid ทั้งหมด</strong> จนกว่า H &lt; 0.55 (ดู <a href="grid-part4.html">Part 4</a> section 4.4) — ลด Q แต่ไม่ stop ไม่คุ้มค่า fee</li>
+<li><strong>H ∈ [0.55, 0.58]</strong> → position-limit rule ลด Q ด้วย multiplier 0.4 ล่วงหน้า เพื่อ limit exposure ก่อนถึง threshold OFF — ยังได้ cashflow บ้างระหว่างรอ</li>
+<li><strong>H &gt; 0.58</strong> → Part 4 state machine สั่ง <strong>GRID OFF ทั้งหมด</strong> จนกว่า H &lt; 0.55 (resume condition, ดู Part 4 §4.4 และ §5.5) — ชั้นนี้คือตัวปิดจริง ไม่ใช่แค่ลด Q</li>
 </ul>
 </div>
 </details>
