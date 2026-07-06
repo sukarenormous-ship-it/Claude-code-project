@@ -182,3 +182,45 @@
 | R2-B | เข็มหมุนฝั่งขาย (Part 2) | รอเริ่ม |
 | R2-C | Consistency sweep | รอเริ่ม |
 | R2-D | แบบฝึกหัด | รอเริ่ม |
+
+---
+
+# งานรอบที่ 3 — Unification Pass: ทำให้ทั้งเล่มพูดไปทางเดียวกัน
+
+> ที่มา: คำสั่ง "แบ่งทีม ตรวจสอบและรวบรวมเนื้อหา ให้ไปในทางเดียวกันทั้งหมด" — ส่ง 4 ทีมตรวจขนาน (เลขมาตรฐาน, cross-reference, เสียง/ศัพท์, แผนควบรวม) แล้วลงมือแก้ชุด mechanical ทันที ส่วนชุดที่ต้อง redesign ใหญ่แยกไว้ท้ายเอกสารนี้ให้ตัดสินใจก่อน
+
+## สรุปสิ่งที่แก้แล้ว (12 commits, ~50 จุดใน 15 ไฟล์)
+
+| # | เรื่อง | ไฟล์หลัก |
+|---|---|---|
+| 1 | DD sign-flip bug (เงื่อนไขไม่มีวัน trigger) + r-multiplier off-by-one | appendix, part1a |
+| 2 | Part 1D อ้าง §1B.10/§1B.12 ที่ไม่มีจริง → retarget + reconcile ตัวเลข | part1d |
+| 3 | Part 0: $4,900 arithmetic, "Part 2 migration" ผิดบท, roadmap 3B/8 ผิด, การ์ด 1D หาย | part0, index |
+| 4 | Part 4: ตาราง ADX ขัดกันเอง + exercise vote ผิด | part4 |
+| 5 | Part 1B: ตัวอย่าง leverage 20× ขัดกฎ ≤10× ของตัวเอง | part1b |
+| 6 | Hurst state-machine display ทั้งหมด (diagram/caption/position-limit/score-band/hedge-bullet) → 0.50/0.58 | part4, part5, part3b, part1c |
+| 7 | ADX 28/35 (Forex) หลงเหลือใน Part 7B → 40/50 | part7b |
+| 8 | Donchian(20) 2 จุดขัดกับ Donchian(30) ที่เหลือทั้งไฟล์ | part3, part7b |
+| 9 | กฎ fee 2×→3× | part0 |
+| 10 | ประโยคขัด zero-EV (index, part0, part6b, part1b, part1c) + ตัวเลข 1B.7 ที่ไม่ reconcile กับ §1B.3 | part0, index, part6b, part1b, part1c |
+| 11 | โยงอ้างอิง funding↔ค่าเช่า, ถังเต็ม↔hedge/exercise, typo 2 จุด | part1b, part7, part1c, part2, part3 |
+| 12 | ประโยคเชื่อม running example $8,460→$20,000 | part1d |
+
+ทุกจุดผ่าน render check (headless Chromium) ก่อน commit
+
+## ตั้งใจไม่แตะ — ส่งต่อเป็น Tier-2
+
+การรวมทีมยืนยันสิ่งเดียวกัน: **Step Pyramid สอน 3 เรื่องคนละที่ด้วยสูตรที่ไม่ตรงกัน** (1A.8 hurst-based, 2.6 hurst+depth-based, 7B.3 copy ของ 2.6, บวก inventory-skew dial ใหม่ใน 2.2) — เป็นจุดเดียวที่ทั้ง 4 ทีมเห็นตรงกันว่า **ต้องแก้พร้อมกันทีเดียว ไม่ใช่ปะทีละจุด** เพราะเปลี่ยน anchor (0.45/0.60) ที่ไหนที่หนึ่งจะทำให้ตัวเลขตัวอย่างที่ verify แล้ว (เช่น $2,933 จาก Phase 1) เพี้ยนทันที และ 3 ไฟล์ต้อง unify พร้อมกันไม่งั้นจะเกิดความไม่ตรงกันแบบใหม่
+
+### ตารางควบรวมที่รอตัดสินใจ
+
+| Concept | อยู่ที่ไหนบ้าง | บ้านที่ควรอยู่ | งานที่ต้องทำ | เสี่ยง |
+|---|---|---|---|---|
+| **Step Pyramid** (3 สูตรไม่ตรงกัน) | 1A.8, 2.6, 2.2(dial ใหม่), 7B.3 | Part 2 §2.6 | เขียนสูตรเดียว `step = base × hurst_mult × (1+ถังเต็ม%)` แทน depth_multiplier เดิม, ยุบ 1A.8 เหลือสรุป+ลิงก์, sync 7B.3 | **สูงสุด** — ต้องไล่ผลกระทบตัวเลขตัวอย่างทุกจุดพร้อมกัน |
+| Composite Score | 3B.6 (เต็ม) vs 7B.5 (hardcode ซ้ำ) | Part 3B §3B.6 | 7B.5 เรียก ACTION_TABLE แทน hardcode + แก้ caption ≥70 vs table ≥75 ที่ขัดกันเองใน 3B.6 | ต่ำ |
+| GARCH step sizing | 3.6 (เต็ม) vs 7.5 (ซ้ำ) | Part 3 §3.6 | ย้าย fit-window/flash-crash-response ที่ 7.5 มีเพิ่มเข้า 3.6 แล้วยุบ 7.5 เหลือสรุป+ลิงก์ + แก้ปก Part 7 | ต่ำ |
+| Laddered CSP | 7.3 (concept) vs Part 8 (ladder packaging) | ทั้งคู่ถูกที่แล้ว | ตัด bullet ที่ Part 8 สอนซ้ำ 7.3 (effective price, ข้อจำกัด) เหลือเฉพาะมุม ladder | ต่ำ |
+
+**ลำดับที่แนะนำ:** GARCH และ Laddered CSP ก่อน (ง่าย ไม่พึ่งกัน) → Composite Score (ต้องแก้ตัวขัดแย้งภายใน 3B.6 ก่อน) → Step Pyramid ท้ายสุด (ใหญ่สุด เสี่ยงสุด ควรทำเป็น session แยกพร้อม verify ตัวเลขใหม่ทุกจุดด้วย notebook)
+
+**คำถามก่อนเริ่ม Tier-2:** อยากให้ทำทั้ง 4 concept ในรอบเดียว หรือเริ่มจาก 3 concept ที่เสี่ยงต่ำก่อน (GARCH/CSP/Composite Score) แล้วแยก Step Pyramid เป็นงานของตัวเองทีหลัง?
