@@ -185,8 +185,10 @@
 | 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~25–30 |
 | 3 | Options stat arb: ขยาย ch18 (§18.9–18.11 American/European + PCP band + Situation Card) + ch22 (§22.9–22.12: IV term structure, dispersion, sticky strike/delta, PnL decomposition) | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~15 |
 | 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (17.8–17.13 รวม margin mechanics) + ch10b ใหม่ | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~30–35 |
-| 5 | Generalize ch1–12 + Kalman churn ลง ch15/ch19 + editorial rewrite สูตร ~114 กล่อง + กระจาย loss catalog + Situation Cards + rebuild PDF | รอ | ~25–30 |
-| | **รวม** | | **~125–145 หน้า** (เล่มโต ~406 → ~540+) |
+| 5 | Generalize ch1–12 (หมายเหตุ F(·) ปิดท้ายทุกบทแกน) + Situation Cards ย้อนหลัง (ch13/14/17/21) + ch0 reading-map table + Appendix A/B เพิ่มสูตร/ศัพท์ใหม่ + ch24 +2 case studies (depeg, FTX vol event) | ✅ ส่วนที่ทำแล้ว (ดูหมายเหตุ) | ~11 |
+| | **รวม** | | **~136 หน้า** (เล่มโต 406 → 467) |
+
+**หมายเหตุ Phase 5:** ทำเสร็จ 6/8 รายการ — **ยังไม่ทำ**: (1) editorial rewrite ของกล่องสูตร ~114 กล่องตาม Formula Style Guide §6 (ของแต่งเติมความสวยงาม ความเสี่ยงต่ำ ประโยชน์ต่ำกว่ารายการอื่น — เสนอข้ามถ้าไม่ร้องขอ) (2) กระจายจุดขาดทุนจาก `statarb-loss-catalog.md` ครบทั้ง 30+ ข้อ (กลุ่ม A–G) — ตรวจแล้วพบว่าเป็นงานที่ใหญ่กว่าที่ประเมินไว้มาก (แต่ละข้อในกลุ่ม B/D/E/F ต้องการเนื้อหาระดับเดียวกับที่ทำใน Phase 4 ให้ ch17 คือหลายหน้าต่อข้อ ไม่ใช่ 1–2 ย่อหน้า) — เขียนครบทุกข้อจะทำให้เล่มโตขึ้นอีก ~80–150 หน้า เกินขอบเขต Phase 5 เดิมที่ประเมิน (~25–30 หน้า) ไปมาก ต้องตัดสินใจร่วมกับผู้ใช้ว่าจะทำระดับไหน (ดู §7 ด้านล่าง)
 
 ลำดับ: **0 ✅ → 0.5 ✅ → QA ⏳ → (แก้ผล QA) → 1 → 4 → 2 → 3 → 5**
 - Phase 1 ก่อนบทใหม่ทุกบท (ทุกบทอ้าง decision tree กลาง + null hypothesis เป็นรากของทุก test ที่ตามมา)
@@ -207,6 +209,7 @@
 2. **Stablecoin peg** — โฟกัส USDT/USDC บน spot exchange หรือรวม on-chain (Curve pool) ด้วย? แนะนำ: spot exchange ก่อน (สอดคล้อง scope Bybit/Lighter ของเล่ม)
 3. **หมายเลขบท** — ใช้ ch4b/ch10b/ch13b/ch13c (แทรก ไม่ renumber) ตาม pattern `pm-part3a` เดิม — โอเคไหม?
 4. **Equity index dispersion / bond futures** — อยู่นอก scope crypto+MT5 ของเล่ม เสนอ *ไม่รวม* รอบนี้ (กันเล่มบวม) — แต่ commodity futures (ทองคำ CME/APEX) เข้า scope แล้วผ่าน Phase 4
+5. **ขอบเขตการกระจาย `statarb-loss-catalog.md` (30+ ข้อ, กลุ่ม A–G)** — ตรวจแล้วพบว่าใหญ่กว่าที่ประเมินไว้ตอนวางแผน Phase 5 มาก แต่ละข้อในกลุ่ม B (margin mechanics), D (execution), E (โมเดล/สถิติหลอก), F (บัญชีเล็ก) ต้องการเนื้อหาระดับเดียวกับที่ ch17 §17.8–17.13 ได้รับใน Phase 4 (หลายหน้าต่อข้อ พร้อม worked example) ไม่ใช่ 1–2 ย่อหน้า — เขียนครบทุกข้อจะเพิ่มหน้าอีก ~80–150 หน้า ตัวเลือก: (ก) เขียนครบทั้ง 30+ ข้อ (เล่มจะโตถึง ~550–600 หน้า) (ข) เลือกเฉพาะข้อ 🔴 วิกฤต (ประมาณ 8 ข้อ: A1, B1-B4, C2, E1, E3, G1) (ค) หยุดที่ Phase 5 ปัจจุบัน ถือว่าเล่มครบสมบูรณ์แล้วในขอบเขตที่วางแผนไว้เดิม — รอผู้ใช้ตัดสินใจ
 
 ---
 
