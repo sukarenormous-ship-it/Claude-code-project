@@ -311,6 +311,48 @@
 - **Risk & kill-switch**: DD ต่อ pair, pairs สัมพันธ์กันเอง (ไม่ diversify จริง), leg/gap/halt risk, size ตาม "ทน SD ได้กี่ตัว" ไม่ใช่ความมั่นใจ
 - **Data reality**: corporate action, split/dividend adjust, stale print, bid-ask, timezone
 
+### Part VIII (Cost·Execution·Capacity·Borrow) — decisions (drafted direct, no interactive debate per user's "วางแผนเลย")
+
+**V1 · Full cost model** — ต่อยอดตัวอย่าง 3 บรรทัดใน Part VI ให้ครบ: commission (2 ขา) + bid-ask spread (2 ขา) + market impact (√-law) + borrow/short fee (ต่อปี ปรับตามระยะถือ) + financing/margin interest · รายย่อยมักนับแค่ commission แล้วประเมิน cost ต่ำกว่าจริงเป็นระบบ
+
+**V2 · Market impact — √-law เป็น heuristic ปฏิบัติ (ไม่ใช่กฎเป๊ะ)**
+- Tóth et al. (2011) ยืนยันเชิงประจักษ์ว่า impact ขยับแบบ sub-linear คล้าย √(ขนาด/ADV) ข้ามหลายตลาด
+- Almgren, Thum, Hauptmann, Li (2005) พบว่า temporary impact จริงใกล้ 3/5-power มากกว่า √ เป๊ะ ๆ — **ต้องบอกตรงว่าเลขชี้กำลังไม่ตรงกันเป๊ะ แต่รูปร่างเชิงคุณภาพเหมือนกัน** (ยิ่งไซส์ใหญ่ ยิ่งแพงต่อหน่วย แต่ไม่เชิงเส้น)
+- Almgren & Chriss (2001): กรอบ optimal execution แลก impact (เทรดเร็ว=แพง) กับ timing risk (เทรดช้า=เสี่ยงราคาขยับ) — อ้างเป็นกรอบมาตรฐาน ไม่ derive เต็ม
+- ที่ไซส์รายย่อยทั่วไป impact มักเล็กจนละเลยได้ (commission+spread ครองสัดส่วน) — impact เริ่มมีนัยเมื่อพยายาม "scale up" กลยุทธ์ที่ได้ผลดี
+
+**V3 · ★ Capacity เป็น "edge กลับด้าน" ของรายย่อย (ผูกกับ Part 0 ชั้น D)**
+- √-law เดียวกันที่ทำร้ายรายย่อยตอนจะ scale ก็ทำร้ายกองใหญ่ตอนจะเข้าคู่เล็ก — ทุนสิบล้าน USD ไม่มีทางเข้าคู่ ADV 2 ล้านบาทได้โดยไม่กระทุ้งราคาตัวเอง
+- ทุนรายย่อยเล็กพอที่จะเข้าคู่เหล่านี้ได้แบบ impact แทบเป็นศูนย์ — **ความเล็กคือ edge** (กลับด้านจาก assumption ทั่วไปว่า "เงินเยอะกว่าชนะ")
+
+**V4 · Borrow/short — friction จริงที่ทำให้ cointegration สวยไร้ประโยชน์**
+- หุ้น hard-to-borrow: ค่าธรรมเนียมยืมสูงหรือยืมไม่ได้เลย
+- ตลาดไทย/SEA: ตลาด SBL (Securities Borrowing and Lending) บางกว่า US มาก — หุ้นเล็ก/กลางจำนวนมากอาจไม่มี supply ให้ยืมช็อตเลย
+- **ต้องกรอง "ยืมช็อตได้จริงไหม" ก่อนเชื่อสัญญาณ cointegration** — คู่ที่สวยทางคณิตศาสตร์ไร้ประโยชน์ถ้าทำขาช็อตไม่ได้
+- แตะเบา ๆ (ไม่ฟันธงตัวเลข): short หุ้นปันผลมีภาระ "manufactured dividend" ที่กลไกภาษี/บัญชีต่างจาก dividend ปกติ — ให้ผู้อ่านเช็คกับ broker ตัวเอง ไม่ระบุอัตราเฉพาะที่ไม่มั่นใจ
+
+**V5 · Worked example เต็มรูป** — ต่อยอด cost breakdown Part VI ให้ครบ (+ impact + borrow) แสดงให้เห็นว่าสัญญาณที่ "ดูกำไรดี" ตอน z=2 อาจพลิกติดลบเมื่อคิด cost เต็มรูป
+
+Lit: Kyle (1985) รากฐานทฤษฎี market impact · Almgren & Chriss (2001) optimal execution · Almgren-Thum-Hauptmann-Li (2005) empirical impact · Tóth et al. (2011) square-root law · Do & Faff (2010/2012, เชื่อม Part 0)
+
+### Part IX (Backtest ไม่โกหก + Risk + Case + Cheat Sheet) — decisions (ปิดเล่ม)
+
+**B1 · Multiple testing → Deflated Sharpe** — ต่อยอด "500×0.05=25 ผี" ของ Part II เข้าสู่บริบทเลือกกลยุทธ์: Sharpe ที่ดีสุดจากการลองหลายค่า/หลายคู่ ถูกเป่าให้สูงเกินจริงจาก selection bias — Bailey & López de Prado (2014) ให้สูตรแก้ (deflated Sharpe) จากจำนวนครั้งที่ลอง + ความไม่ปกติของ distribution
+
+**B2 · PBO (Probability of Backtest Overfitting)** — Bailey, Borwein, López de Prado & Zhu (2014/15) วิธี combinatorially symmetric cross-validation วัด "โอกาสที่ backtest นี้ overfit" ออกมาเป็นตัวเลขเดียว
+
+**B3 · Purged/Embargoed CV** — CV แบบมาตรฐานรั่วข้อมูลข้ามเวลาได้ (label/feature คาบเกี่ยวขอบ train-test) → purge (ตัดตัวอย่าง train ที่ใกล้ test เกินไป) + embargo (เว้นช่วงกันชนหลัง test ก่อนกลับมาใช้เป็น train) — ผูกตรงกับ walk-forward ที่ใช้ทดสอบ Q/R (Part IV) และคัดคู่ (Part II)
+
+**B4 · Look-ahead catalog** — รวมกับดัก look-ahead ที่กระจายอยู่ทั้งเล่ม (rolling window Part I, pair selection Part II, Q/R tuning Part IV) เป็น checklist เดียวจบ
+
+**B5 · Risk** — size ตาม "ทนได้กี่ SD" ไม่ใช่ความมั่นใจ; pairs สัมพันธ์กันเอง (พังพร้อมกันตอนวิกฤต ไม่ diversify จริงอย่างที่คิด); leg/gap/halt risk (ขาหนึ่ง fill อีกขาไม่ fill); drawdown control ระดับพอร์ต
+
+**B6 · Case study เต็มรูป** — เดินคู่จำลอง (simulated, ระบุชัด) ผ่านทั้งไปป์ไลน์: screen (II) → estimate β (I/IV) → band (VI) → regime monitor (VII) → cost check (VIII) → backtest ที่ไม่โกหก (IX) — จุดที่ "ประกอบร่าง" ทั้งเล่มเข้าด้วยกัน
+
+**B7 · Cheat sheet ปิดเล่ม** — ตาราง/decision-tree สังเคราะห์ "เลือก estimator/แนวทางไหนเมื่อไร" ข้าม Part I, III, IV–V
+
+Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey & López de Prado (2014) Deflated Sharpe, *J. Portfolio Management* 40(5) · Bailey, Borwein, López de Prado & Zhu (2014/15) PBO, *J. Computational Finance* · Harvey, Liu & Zhu (2016) "...and the Cross-Section of Expected Returns", *Review of Financial Studies* 29(1) — multiple-testing ในงานวิจัย factor (เชื่อมธีม Part II)
+
 ---
 
 ## 5. โครงบท (เสนอ ~10 Part) — `practice-part0..9.html`
@@ -412,8 +454,10 @@
   - ✅ notebook 01–03 เขียน + execute จริงแล้ว (ดู §7 — pivot ไปใช้ simulated data เพราะ network policy บล็อก data provider)
 - **Phase 2** — 🟡 narrative ✅ เสร็จ (`practice-part4..7.html`) · เหลือ notebook 04–06
   - ✅ Part IV (Kalman ลงมือ) · ✅ Part V (Adaptive & Robust Kalman) · ✅ Part VI (Signals & Bands) · ✅ Part VII (Regime & kill-switch)
-- **Phase 3** — Part VIII–IX (Cost/Execution + Backtest/Risk/Case) + notebook 07
-- **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม)
+- **Phase 3** — 🟡 narrative ✅ เสร็จ (`practice-part8..9.html`) · เหลือ notebook 07
+  - ✅ Part VIII (Cost/Execution/Capacity/Borrow) · ✅ Part IX (Backtest ไม่โกหก + Risk + Case + Cheat Sheet)
+  - **→ narrative ทั้งเล่มเสร็จสมบูรณ์ 10/10 Part (0–IX)** — ตรวจ HTML-parser ผ่านทุกไฟล์
+- **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม) + notebook 04–07 ที่ยังค้าง (01-03 เสร็จแล้ว)
 
 แต่ละ Phase: commit แยก + ผ่านรีวิวทีมผู้เชี่ยวชาญ (เหมือนเล่ม 1) ก่อนไป Phase ถัดไป
 

@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part VIII</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px solid #a5f3fc;border-left:5px solid #0891b2;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.try .bt{color:#0e7490}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part VIII — Cost · Execution · Capacity · Borrow: โลกจริงของรายย่อย</div>
+<div class="desc">Part VI แตะ cost แบบง่าย ๆ ไปแล้ว — Part นี้ทำให้ครบ: market impact, ต้นทุนยืมช็อต, และประเด็นที่พลิกมุมมองอีกครั้ง — <strong>ความเล็กของทุนรายย่อยที่เคยดูเป็นข้อเสีย กลับเป็น edge ที่กองทุนใหญ่มีไม่ได้</strong></div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §8.1 cost model เต็มรูป + §8.3 ★ capacity edge + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §8.2 √-law + §8.4 borrow/short (ตลาดไทย) · <strong>เริ่มด่วน:</strong> §8.3 คือการพลิกมุมมองที่สำคัญสุด</p></div>
+
+<h2>8.1 Cost Model เต็มรูป — สิ่งที่รายย่อยมักนับไม่ครบ</h2>
+
+<p>Part VI ใช้ตัวอย่างง่าย ๆ (commission + spread + edge) เพื่อโชว์แนวคิด cost-aware band — ของจริงมีส่วนประกอบมากกว่านั้น</p>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ลองนึกถึงการซื้อบ้านต่างประเทศ — ราคาป้ายไม่ใช่ต้นทุนจริงทั้งหมด มีค่าธรรมเนียมโอน ค่าทนาย ค่าแปลงสกุลเงิน ภาษี ฯลฯ ซ่อนอยู่ คนที่คำนวณแค่ "ราคาป้าย" จะตกใจตอนเห็นบิลจริง — cost ของ stat arb ก็เหมือนกัน: commission เป็นแค่ "ราคาป้าย" ส่วนที่เหลือซ่อนอยู่</p></div>
+
+<div class="fm">Round-trip cost ที่แท้จริง =<br>
+  Commission (เข้า + ออก, 2 ขา)<br>
++ Bid-ask spread (2 ขา × 2 รอบ)<br>
++ Market impact (§8.2 — ยิ่งไซส์ใหญ่ ยิ่งมี แม้จะไม่เชิงเส้น)<br>
++ Borrow/short fee (ต่อปี × สัดส่วนวันที่ถือสถานะ, §8.4)<br>
++ Financing/margin interest (ถ้าใช้เลเวอเรจ)</div>
+
+<div class="bx br"><div class="bt">📉 กับดัก: รายย่อยมักนับแค่บรรทัดแรก</div>
+<p>คำนวณแค่ commission แล้วสรุปว่า "cost ต่ำ เทรดถี่ได้" — ทั้งที่ borrow fee ของขาช็อตอาจกินมากกว่า commission หลายเท่าถ้าถือสถานะนาน (fee คิดเป็น % ต่อปี ไม่ใช่ต่อครั้ง) นี่คือเหตุผลที่ half-life (Part II) สำคัญ: half-life ยาว = ถือนาน = borrow fee สะสมเยอะ แม้ commission จะจ่ายแค่ครั้งเดียว</p></div>
+
+<h2>8.2 Market Impact — √-law ที่ใช้เป็น heuristic ไม่ใช่กฎเป๊ะ</h2>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ลองนึกถึงการเทลูกบอลลงสระ vs เทหินก้อนใหญ่ — ยิ่งของที่เททิ้งใหญ่ (เทียบกับขนาดสระ) ยิ่งกระเพื่อมแรง แต่ไม่ใช่ในอัตราเชิงเส้น (โยนหินหนักเป็น 2 เท่า ไม่ได้แปลว่ากระเพื่อมแรงเป็น 2 เท่าเป๊ะ) — การซื้อขายหุ้นก็เหมือนกัน: ไซส์คำสั่งเทียบกับสภาพคล่องเฉลี่ยต่อวัน (ADV) ยิ่งใหญ่ ยิ่งดันราคาแรง แต่ผลกระทบโตช้ากว่าขนาดคำสั่งที่โตขึน</p></div>
+
+<div class="bx bp"><div class="bt">สิ่งที่งานวิจัยยืนยัน (ต้องพูดให้แม่นตรง)</div>
+<p><strong>Tóth และคณะ (2011)</strong> ยืนยันเชิงประจักษ์ข้ามหลายตลาดว่า market impact ขยับแบบ <strong>sub-linear</strong> ใกล้เคียงรูปทรง "square-root" (√ ของสัดส่วนไซส์ต่อ ADV) — เรียกกันทั่วไปว่า <em>square-root law</em></p>
+<p>แต่ <strong>Almgren, Thum, Hauptmann &amp; Li (2005)</strong> วัดจากข้อมูลจริงของ Citigroup แล้วพบว่า temporary impact ใกล้เคียง <strong>3/5-power</strong> มากกว่า √ เป๊ะ ๆ — <strong>ตัวเลขชี้กำลังไม่ตรงกันเป๊ะระหว่าง 2 งาน</strong> แต่รูปร่างเชิงคุณภาพเหมือนกัน: ยิ่งไซส์ใหญ่ ยิ่งแพงต่อหน่วย แต่โตช้ากว่าเชิงเส้นเสมอ</p></div>
+
+<div class="fm">แนวคิด (ไม่ใช่สูตรสำเร็จ):  impact ≈ σ × f(ไซส์คำสั่ง / ADV)<br>
+                          f = ฟังก์ชัน sub-linear (≈ √ หรือ ≈ 3/5-power แล้วแต่ตลาด/ช่วงเวลา)</div>
+
+<div class="bx bb"><div class="bt">กรอบมาตรฐานที่อ้างถึง</div>
+<p><strong>Almgren &amp; Chriss (2001)</strong> วางกรอบ "optimal execution": เทรดเร็ว = impact สูงแต่ timing risk ต่ำ (ราคาไม่มีเวลาขยับหนี) · เทรดช้า = impact ต่ำแต่ timing risk สูง (เสี่ยงราคาขยับระหว่างทยอยเก็บ) — จุดสมดุลขึ้นกับความเสี่ยงที่ยอมรับได้</p></div>
+
+<div class="try"><div class="bt">✍️ เช็คความเข้าใจ</div>
+<p>ทำไม market impact ถึงมักไม่สำคัญสำหรับรายย่อยที่ไซส์เล็ก แต่กลับสำคัญมากตอนกลยุทธ์ "เริ่มได้ผลดีแล้วอยากเพิ่มทุน"? <span style="color:#64748b">(เพราะ impact ไม่เชิงเส้นกับไซส์ — ตอนไซส์เล็ก f(ไซส์/ADV) เกือบ 0 แทบไม่มีผล แต่พอไซส์โตขึ้นเรื่อย ๆ สัดส่วนต่อ ADV เพิ่ม f() เริ่มมีนัย และเพิ่มเร็วขึ้นเมื่อไซส์ใกล้ชนสภาพคล่องของตลาด)</span></p></div>
+
+<h2>8.3 ★ Capacity คือ "Edge กลับด้าน" ของรายย่อย</h2>
+
+<p>นี่คือจุดที่เชื่อมกับ Part 0 (แผนที่ Edge ชั้น D) และเป็นการพลิกมุมมองที่สำคัญที่สุดใน Part นี้</p>
+
+<div class="bx bp"><div class="bt">ปมสำคัญ</div>
+<p>√-law เดียวกันที่เพิ่งอธิบาย <strong>ทำร้ายกองทุนใหญ่มากกว่ารายย่อยมาก</strong> — กองทุนที่มีทุนหลายร้อยล้านบาทต้องการซื้อ/ขายไซส์ใหญ่ ถ้าคู่หุ้นมี ADV แค่ 2 ล้านบาท กองทุนนั้น<strong>ใส่เงินเข้าไปเพียงเล็กน้อยก็กระทุ้งราคาตัวเองจนกำไรหาย</strong> — สำหรับกองทุน คู่เล็กแบบนี้ <em>ไม่คุ้มจะดูด้วยซ้ำ</em></p></div>
+
+<div class="pq">"ทุนที่เล็กพอจะเข้าคู่ที่กองใหญ่เข้าไม่ได้ — นั่นคือ edge ที่ซื้อด้วยเงินไม่ได้"</div>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ รายย่อยได้เปรียบตรงนี้</div>
+<ul><li>ทุนหลักหมื่น-หลักล้านบาท เข้าคู่ ADV น้อยได้โดย impact แทบเป็นศูนย์</li><li>กองทุนไม่มีแรงจูงใจแม้จะรู้จักคู่นี้ดีพอกัน — ไม่คุ้มค่าใช้ทรัพยากรวิเคราะห์</li></ul></div>
+<div class="con"><div class="bt">⚠️ แต่ก็มีข้อจำกัดของตัวเอง</div>
+<ul><li>คู่เล็กมักมี bid-ask spread กว้างกว่า (ต้นทุนสูงกว่าต่อหน่วย)</li><li>สภาพคล่องต่ำ = execution risk สูงกว่า (อาจ fill ไม่ครบ/ไม่ตรงราคา)</li><li>ข้อมูล/ข่าวสารบางกว่า — ความเสี่ยงจาก event ที่ไม่รู้ล่วงหน้าสูงกว่า</li></ul></div>
+</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "ทุนน้อยเสียเปรียบทุนเยอะเสมอ"<br>
+<strong>quant เห็น:</strong> ทุนน้อยเสียเปรียบเฉพาะในสนามที่แข่งกันตรง ๆ (บ่อใหญ่ liquid) — แต่ในบ่อเล็กที่ capacity จำกัด ทุนน้อยกลับเป็น<em>คุณสมบัติที่ต้องมี</em>ไม่ใช่ข้อเสีย — คำถามที่ถูกไม่ใช่ "ฉันมีทุนพอจะแข่งไหม" แต่คือ "ฉันกำลังเลือกสนามที่ทุนของฉันได้เปรียบหรือเปล่า"</p></div>
+
+<h2>8.4 Borrow / Short — friction ที่ทำให้คณิตศาสตร์สวยไร้ประโยชน์</h2>
+
+<div class="bx br"><div class="bt">📉 กับดักอันดับ 1 ของ Part นี้</div>
+<p>คู่ที่ cointegrate สวยแค่ไหน (Part II) — ถ้า<strong>ยืมช็อตขาใดขาหนึ่งไม่ได้ สัญญาณนั้นใช้ไม่ได้เลย</strong> ต้องเช็ค "ยืมช็อตได้จริงไหม" เป็นด่านแรก ๆ ของ funnel ไม่ใช่ด่านสุดท้ายที่พึ่งนึกถึงตอนจะส่งออร์เดอร์</p></div>
+
+<ul>
+<li><strong>หุ้น hard-to-borrow:</strong> ค่าธรรมเนียมยืมพุ่งสูง หรือไม่มี supply ให้ยืมเลย</li>
+<li><strong>ตลาดไทย/SEA:</strong> ตลาด SBL (Securities Borrowing and Lending) บางกว่าตลาด US มาก — หุ้นขนาดเล็ก-กลางจำนวนไม่น้อยอาจไม่มีใครปล่อยยืมช็อตให้เลย</li>
+<li><strong>ภาระที่มาพร้อมการช็อตหุ้นปันผล:</strong> ผู้ช็อตมักต้องรับผิดชอบ "manufactured dividend" (จ่ายเงินเทียบเท่าปันผลคืนให้เจ้าของหุ้นที่ให้ยืม) ซึ่งมีรายละเอียดภาษี/บัญชีต่างจากปันผลปกติ — รายละเอียดกลไกนี้เปลี่ยนแปลงได้ตามกฎเกณฑ์และ broker แต่ละราย <strong>ควรตรวจสอบกับ broker ของตัวเองโดยตรง</strong> แทนที่จะเชื่อตัวเลขทั่วไป</li>
+</ul>
+
+<div class="bx bg"><div class="bt">✅ Checklist สั้น ๆ ก่อนเชื่อสัญญาณ cointegration</div>
+<ol>
+<li>ยืมช็อตขาที่ต้องช็อตได้จริงไหม (เช็คกับ broker ก่อน ไม่ใช่หลัง)</li>
+<li>ต้นทุนยืม (bps/ปี) คูณ half-life ที่คาดไว้ — ยังคุ้มไหม</li>
+<li>สภาพคล่อง (ADV) พอสำหรับไซส์ที่จะเข้าไหม โดยไม่กระทุ้งราคา</li>
+</ol></div>
+
+<h2>สรุป Part VIII + สะพานสู่ Part IX</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part VIII</div>
+<ol>
+<li><strong>Cost เต็มรูป</strong> = commission + spread + impact + borrow fee + financing — รายย่อยมักนับแค่บรรทัดแรก</li>
+<li><strong>Capacity คือ edge กลับด้าน</strong> — √-law ทำร้ายกองใหญ่มากกว่ารายย่อยในบ่อเล็ก ทุนน้อยจึงเป็นคุณสมบัติ ไม่ใช่ข้อเสีย</li>
+<li><strong>ยืมช็อตได้จริงไหม</strong> ต้องเช็คก่อนเชื่อสัญญาณ ไม่ใช่หลัง — คณิตศาสตร์สวยแค่ไหนก็ไร้ประโยชน์ถ้าทำขาช็อตไม่ได้</li>
+</ol></div>
+
+<p>ตลอด 8 Part ที่ผ่านมา เราสร้างทุกอย่างที่จำเป็น — β ที่ดี คู่ที่ควรเทรด จุดเข้า-ออกที่คุ้มต้นทุน การรู้จักหยุด และตอนนี้คือต้นทุนที่แท้จริง เหลือคำถามสุดท้ายที่อันตรายที่สุด: <strong>backtest ที่ดูดีทั้งหมดนี้ กำลังหลอกคุณอยู่หรือเปล่า?</strong></p>
+
+<div class="pq">"ทุกสิ่งที่เล่มนี้สอนมา มีค่าเท่ากับศูนย์ ถ้า backtest ที่ใช้ตัดสินใจมันโกหก"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Market impact</strong> — ราคาที่ขยับเพราะคำสั่งซื้อ/ขายของคุณเอง (ไม่ใช่จาก noise ภายนอก)</li>
+<li><strong>√-law / sub-linear impact</strong> — impact โตช้ากว่าขนาดคำสั่งที่โตขึ้น แต่ยังคงโตอยู่เสมอ</li>
+<li><strong>ADV (Average Daily Volume)</strong> — ปริมาณซื้อขายเฉลี่ยต่อวัน ใช้เทียบสัดส่วนไซส์คำสั่ง</li>
+<li><strong>Capacity</strong> — ปริมาณเงินสูงสุดที่กลยุทธ์รับได้ก่อนกำไรต่อหน่วยเริ่มหด (ทวนจาก Part 0)</li>
+<li><strong>Hard-to-borrow / SBL</strong> — หุ้นที่ยืมช็อตยากหรือแพง / ตลาดยืม-ให้ยืมหลักทรัพย์</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Kyle, A.S. (1985) "Continuous Auctions and Insider Trading", <em>Econometrica</em> 53(6) — รากฐานทฤษฎี market impact</li>
+<li>Almgren, R. &amp; Chriss, N. (2001) "Optimal Execution of Portfolio Transactions", <em>Journal of Risk</em> 3:5-40</li>
+<li>Almgren, R., Thum, C., Hauptmann, E. &amp; Li, H. (2005) "Direct Estimation of Equity Market Impact", <em>Risk</em> 18:58-62</li>
+<li>Tóth, B., Lempérière, Y., Deremble, C., de Lataillade, J., Kockelkoren, J. &amp; Bouchaud, J.-P. (2011) "Anomalous Price Impact and the Critical Nature of Liquidity in Financial Markets", <em>Physical Review X</em></li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/05_bands_and_costs.ipynb</code> (Phase 2, ต่อยอดจาก Part VI) มีส่วนคำนวณ cost เต็มรูปรวม impact/borrow</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part7</code> §25-27 (Execution/Risk/Infrastructure) · Part 0 (แผนที่ Edge ชั้น D) · Part VI (cost-aware band)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
