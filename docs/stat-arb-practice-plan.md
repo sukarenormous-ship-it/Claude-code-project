@@ -378,25 +378,38 @@
 
 ## 7. โฟลเดอร์โค้ด `docs/vol2-code/`
 
-- `data/` — toy dataset (คู่หุ้น/ETF + universe เล็ก, ปรับ corporate action แล้ว) commit ได้
-- `01_beta_ladder.ipynb` — OLS vs TLS vs Rolling vs Kalman บนคู่เดียวกัน เทียบ β path (Part I)
-- `02_cointegration_copula.ipynb` — Engle-Granger + Johansen + half-life + copula/MI (Part II)
-- `03_factor_residual.ipynb` — **PCA/ETF-hedge residual + s-score + cross-sectional backtest (Part III)**
-- `04_kalman_tuning.ipynb` — grid Q/R + adaptive/robust variant (Part IV–V)
-- `05_bands_and_costs.ipynb` — z/s-score vs ATR vs optimal band + net PnL หลัง cost (Part VI)
-- `06_regime_killswitch.ipynb` — half-life/Hurst/coint-retest/ADX + kill switch (Part VII)
-- `07_full_backtest.ipynb` — ประกอบร่าง + purged CV + deflated Sharpe (Part IX)
-- `requirements.txt` — numpy, pandas, statsmodels, pykalman, arbitragelab, matplotlib (ไลบรารีมาตรฐาน ไม่ต้อง infra แพง)
+**⚠️ Pivot ที่เคาะแล้ว (สำคัญ):** แผนเดิมตั้งใจใช้ราคาจริง (US ETF ผ่าน yfinance/stooq) — แต่สภาพแวดล้อมที่ build จริงบล็อกการเชื่อมต่อ data provider การเงินทุกเจ้า (ทดสอบแล้ว: Yahoo Finance + Stooq ถูกนโยบาย network ปฏิเสธทั้งคู่) จึงเปลี่ยนมาใช้ **ข้อมูลจำลอง (simulated) ที่มี DGP รู้ค่าและเปิดเผยชัดเจน** (`simdata.py`) แทน — ข้อดีที่ไม่คาดคิด: รู้ β/spread/factor loading จริง จึงวัด bias ของแต่ละ estimator ได้ตรง ๆ (ราคาจริงไม่ให้ ground truth แบบนี้) รายละเอียดเหตุผล + วิธีสลับกลับไปใช้ราคาจริงอยู่ใน `vol2-code/README.md`
 
-> ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้
+**สถานะจริง ณ ตอนนี้ (Phase 1 — เสร็จและ execute แล้วทุกไฟล์):**
+- `simdata.py` — ตัวสร้างข้อมูลจำลอง (seed คงที่, reproduce ได้ 100%)
+- `01_beta_ladder.ipynb` ✅ — OLS(price) vs OLS(return) vs TLS vs Rolling vs Kalman; วัด bias/RMSE จริง (Part I)
+- `02_cointegration_copula.ipynb` ✅ — Engle-Granger (`coint()` ที่ถูก vs `adfuller`-on-residual ที่ผิด), half-life, Hurst, multiple-testing simulation, Gaussian-copula MI (Part II)
+- `03_factor_residual.ipynb` ✅ — PCA หัก factor + s-score cross-sectional + เช็ค residual สะอาด (Part III)
+- `build_nb0{1,2,3}.py` — สคริปต์ source-of-truth ที่ generate แต่ละ .ipynb (แก้ตรงนี้ ไม่แก้ .ipynb JSON ตรง ๆ)
+- `*.png` — กราฟที่ execute ออกมาจริง (embed อยู่ใน notebook ด้วย, แยกไฟล์ไว้เผื่อใช้ประกอบเนื้อหา HTML ทีหลัง)
+- `requirements.txt` — numpy, pandas, scipy, statsmodels, matplotlib, scikit-learn (PCA), pykalman + nbformat/nbclient/ipykernel (สำหรับรัน). **ไม่ใช้ arbitragelab** (หนักเกินความจำเป็นสำหรับสาธิต — เขียน Gaussian copula เองแทน; `arbitragelab` แนะนำไว้เป็น optional สำหรับคนอยากไปต่อ Clayton/Gumbel/Student-t)
+- `README.md` — เหตุผล data pivot + วิธีรัน/แก้ไขซ้ำ + ข้อจำกัดที่ต้องรู้ก่อนใช้ตัวเลข
+
+**บั๊กจริงที่เจอระหว่างสร้าง + วิธีแก้ (คุ้มบันทึกไว้ กันคนอื่นเจอซ้ำ):**
+1. สูตร Hurst exponent เดิมคูณ slope ด้วย 2 ผิดที่ (fit บน `std` ไม่ใช่ `variance` — ไม่ต้องคูณ 2) ทำให้ random walk ได้ H≈0.95–1.0 แทนที่จะเป็น ~0.5
+2. ใช้ `adfuller()` ตรง ๆ บน OLS residual (วิธีที่ tutorial ทั่วไปสอน) แทนที่จะใช้ `statsmodels.tsa.stattools.coint()` — ทำให้ false-positive rate ในซิมูเลชัน multiple-testing (n=300, α=0.05) พุ่งจาก ~12 (ถูกต้อง ใกล้ค่าคาดหวัง 15) เป็น ~44 (เกือบ 3 เท่า) เพราะ residual ที่ fit แล้วดูนิ่งเกินจริงเสมอ (ต้องใช้ critical value ของ Engle-Granger/MacKinnon ไม่ใช่ ADF ทั่วไป) — ทั้งสองเรื่องนี้ถูกเก็บไว้เป็นบทเรียนในตัวโน้ตบุ๊กเอง ไม่ใช่แค่แก้เงียบ ๆ
+
+**ยังไม่ทำ (รอ Phase 2–3):**
+- `04_kalman_tuning.ipynb` — grid Q/R + MLE/EM + adaptive/robust variant (Part IV–V)
+- `05_bands_and_costs.ipynb` — z/s-score vs ATR vs optimal band + net PnL หลัง cost (Part VI)
+- `06_regime_killswitch.ipynb` — half-life/Hurst/coint-retest/ADX + kill switch + estimator-disagreement gate (Part VII)
+- `07_full_backtest.ipynb` — ประกอบร่าง + purged CV + deflated Sharpe (Part IX)
+
+> ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้ — Part I–III ยังไม่ได้ฝัง 🧪 box อ้างตัวเลขเฉพาะจาก 01–03 ลง HTML (เนื้อหาปัจจุบันอ้างอิง literature stats เป็นหลัก) เป็นงานเสริมที่ทำได้ใน Phase 4 ถ้าต้องการ
 
 ---
 
 ## 8. ลำดับงาน (Build Order)
 
 - **Phase 0** — ✅ แผนนี้ (commit + draft PR)
-- **Phase 1** — 🟡 กำลังทำ: narrative ✅ เสร็จ (`practice-part0..3.html`) · เหลือ notebook 01–03 (รอเคาะ toy dataset/แหล่งข้อมูล)
+- **Phase 1** — ✅ **เสร็จสมบูรณ์**: narrative + notebook ครบทั้งคู่
   - ✅ Part 0 (edge framing) · ✅ Part I (บันได β) · ✅ Part II (coint/copula) · ✅ Part III (residual/factor)
+  - ✅ notebook 01–03 เขียน + execute จริงแล้ว (ดู §7 — pivot ไปใช้ simulated data เพราะ network policy บล็อก data provider)
 - **Phase 2** — Part IV–VII (Kalman + Adaptive + Bands + Regime) + notebook 04–06
 - **Phase 3** — Part VIII–IX (Cost/Execution + Backtest/Risk/Case) + notebook 07
 - **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม)
