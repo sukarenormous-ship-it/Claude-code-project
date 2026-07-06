@@ -367,12 +367,12 @@ Capital ที่ประหยัด: Grid levels $110k-$120k ไม่ต้�
       { label: 'Hard (r=2.0)', color: '#dc2626',
         data: [1, 2, 4, 8] },
       { label: 'Soft (r=1.4)', color: '#06b6d4',
-        data: [1, 1.4, 2.0, 2.8] },
+        data: [1, 1.4, 2.0, 2.7] },
       { label: 'Equal (r=1.0)', color: '#16a34a',
         data: [1, 1, 1, 1] }
     ],
     yLabel: 'Multiplier (×base)',
-    caption: 'Hard: 1×→2×→4×→8× (bust risk สูง) / Soft: 1×→1.4×→2×→2.8× (ควบคุมได้) / Equal: คงที่ 1×'
+    caption: 'Hard: 1×→2×→4×→8× (bust risk สูง) / Soft: 1×→1.4×→2×→2.7× (ควบคุมได้) / Equal: คงที่ 1×'
   });
 })();
 </script>
@@ -467,7 +467,7 @@ def calculate_capital_requirement(prices, base_q, r):
 
 <p><strong>Capital ที่ต้องมี (Close System):</strong> $8,460</p>
 <p><strong>Zone Waterfall:</strong> Active $4,230 (ใช้งาน) · Standby $2,538 (lending ~5% APY → $0.35/วัน) · Floor $1,692 (สำรอง)</p>
-<p><strong>Max Drawdown (worst case):</strong> ถ้า BTC ลงถึง $90k ตรงๆ = unrealized ~$1,500 (เพราะถือ BTC ที่ซื้อมาทั้งหมด)</p>
+<p><strong>Unrealized loss ที่จุดแตะ floor:</strong> ถ้า BTC ลงถึง $90k พอดี — BTC สะสมทั้งหมด = 0.091 (0.010+0.013+0.017+0.022+0.029) × $90,000 = $8,190 เทียบกับทุนที่ใช้ไป $8,460 → unrealized loss = $270 (ไม่ใช่ "worst case" จริง เพราะ Close System ไม่มี stop-loss — ถ้าราคาลงต่ำกว่า $90k ต่อไป ขาดทุนยังเพิ่มได้อีกไม่มีเพดาน)</p>
 <p><strong>Daily cashflow (ประมาณ, 1.5 รอบ/วัน, เฉลี่ย):</strong> ≈ 1.5 × ($30 avg profit) = $45/วัน = 0.53%/วัน บน $8,460</p>
 </div>
 
@@ -483,7 +483,7 @@ def calculate_capital_requirement(prices, base_q, r):
 <p>ที่ step $2k จาก entry $100k ถึง floor $85k: $98k, $96k, $94k, $92k, $90k, $88k, $86k → 7 levels</p>
 <p>C = 0.01 × ($98k + $96k + $94k + $92k + $90k + $88k + $86k)</p>
 <p>= 0.01 × $644k = <strong>$6,440</strong></p>
-<p>(ถ้า floor = $84k เพิ่ม level $86k: C = 0.01 × ($98k+...+$84k) = 0.01 × $742k = $7,420)</p>
+<p>(ถ้า floor = $84k เพิ่ม level $84k อีก 1 ระดับ (รวม 8 levels): C = 0.01 × ($98k+$96k+$94k+$92k+$90k+$88k+$86k+$84k) = 0.01 × $728k = $7,280)</p>
 </div>
 </details>
 
@@ -526,11 +526,11 @@ def calculate_capital_requirement(prices, base_q, r):
 <p><strong>คำตอบ:</strong></p>
 <p>Floor range: $98k → $80k ที่ step $2k = <strong>10 levels</strong> ($98k, $96k, ..., $82k, $80k)</p>
 <p>ทดลอง r=1.2, base_q=0.005 BTC:</p>
-<p>sizes: 0.005 × [1, 1.2, 1.44, 1.73, 2.07, 2.49, 2.99, 3.58, 4.30, 5.16] = [0.005, 0.006, 0.007, 0.009, 0.010, 0.012, 0.015, 0.018, 0.022, 0.026]</p>
+<p>sizes: 0.005 × [1, 1.2, 1.44, 1.73, 2.07, 2.49, 2.99, 3.58, 4.30, 5.16] = [0.005, 0.006, 0.007, 0.009, 0.010, 0.012, 0.015, 0.018, 0.021, 0.026]</p>
 <p>prices: [$98k, $96k, $94k, $92k, $90k, $88k, $86k, $84k, $82k, $80k]</p>
-<p>ทดสอบ capital: 0.005×$98k + 0.006×$96k + 0.007×$94k + 0.009×$92k + 0.010×$90k + 0.012×$88k + 0.015×$86k + 0.018×$84k + 0.022×$82k + 0.026×$80k</p>
-<p>= $490 + $576 + $658 + $828 + $900 + $1,056 + $1,290 + $1,512 + $1,804 + $2,080 = รวม ~$11,194</p>
-<p>Zone Waterfall: Active $5,597 · Standby $3,358 · Floor $2,239 — รวม $11,194 (เหลือ capital $8,806 สำรอง)</p>
+<p>ทดสอบ capital: 0.005×$98k + 0.006×$96k + 0.007×$94k + 0.009×$92k + 0.010×$90k + 0.012×$88k + 0.015×$86k + 0.018×$84k + 0.021×$82k + 0.026×$80k</p>
+<p>= $490 + $576 + $658 + $828 + $900 + $1,056 + $1,290 + $1,512 + $1,722 + $2,080 = รวม ~$11,112</p>
+<p>Zone Waterfall: Active $5,556 · Standby $3,334 · Floor $2,222 — รวม $11,112 (เหลือ capital $8,888 สำรอง)</p>
 <p><strong>แนะนำ:</strong> $20k เพียงพอสำหรับ setup นี้ — ยังเหลือ buffer ดี (~44%)</p>
 </div>
 </details>
