@@ -126,6 +126,33 @@
 - ลงลึกหน้าจอไทย: ปัด β·shares เป็นจำนวนเต็ม (rounding, ทุนน้อยเจ็บ) · **board lot 100 หุ้น** (β·100 อาจไม่ลงตัว) · Kalman อัปเดต β → rebalance → ค่าคอมฯ (โยง VI/VIII)
 - Lit เพิ่ม: Stock (1987, super-consistency) · Phillips-Hansen (1990, FM-OLS) · Stock-Watson (1993, DOLS) · Granger-Newbold (1974, spurious regression)
 
+### Part IV–V (Kalman) — decisions ที่เคาะแล้ว (จากการถกกับ user)
+
+**K1 · จุดยืน Kalman (ซื่อสัตย์ ไม่เชียร์เกิน ไม่ปัดทิ้ง)**
+- แยก: filter เอง **causal/ไม่ lookahead** (fix Q/R = ไม่มี bias) · overfit ทั้งหมดอยู่ที่ *การเลือก Q/R* ไม่ใช่กลไก
+- คุณค่าจริง (Palomar): คุม drawdown, ไม่กระตุกเหมือน rolling-OLS · **แต่ edge ไม่ได้อยู่ที่ "ใช้ Kalman" (commodity) — อยู่ที่วินัยการจูน + รู้ว่าสมมติฐานพังตอนไหน**
+
+**K2 · จะรู้ว่า overfit ยังไง — 4 diagnostic**
+1. ★ **Q/R plateau vs peak** — sweep Q/R plot OOS: ที่ราบกว้าง = จริง · ยอดแหลม = ฟลุค (diagnostic ดี+ถูกสุด)
+2. **Innovation whiteness (ไม่ใช้ PnL)** — innovation ต้อง white + variance = S_t; ถ้า autocorrelated/variance เพี้ยน = โมเดลผิด (NIS/whiteness, Bar-Shalom) → *ตัดสิน filter จาก innovation ไม่ใช่ PnL*
+3. **IS vs OOS gap** + deflated Sharpe + walk-forward
+4. **Q/R stability ข้าม sub-period**
+
+**K3 · จูน Q/R ไม่หลอกตัวเอง — ลำดับวินัย (ดีสุด → fallback)**
+1. ★ **ประมาณเชิงสถิติ ไม่ใช่ตาม PnL** — MLE/EM (`pykalman.em()`) จูนให้ *อธิบายข้อมูล* ไม่ใช่แม็กซ์ PnL · caveat: EM degenerate (R→0) ต้องใส่ bound
+2. **ผูกเศรษฐกิจ** — R ≈ microstructure/bid-ask variance ของ spread · Q ↔ "β half-life ~X เดือน" · λ=Q/R ↔ effective window (เลือก lookback ด้วยความเชื่อ ไม่ใช่ backtest)
+3. **train/lock/test** — fit→lock→OOS ไม่แตะ test · purged/embargoed CV · deflated Sharpe หักจำนวน config ที่ลอง
+4. **เลือกที่ราบ ไม่เลือกยอด** + **ปุ่มเดียว** (fix R จูนแค่ Q หรือ λ ตัวเดียว)
+- tutorial ทั่วไปทำกลับด้าน (grid-search PnL) = เหตุที่ผล live หด
+
+**K4 · β random-walk vs mean-reverting**
+- default = random walk (ง่าย = adaptive EWMA) แต่ฝัง assumption "β ไม่มีบ้าน" ซึ่งมักผิดกับคู่ cointegrate จริง
+- ★ **"filter กิน alpha ตัวเอง":** β adapt เร็วไป → ดูดซับ mispricing เข้า β → spread ดู mean-zero ตลอด สัญญาณหาย (tension: adapt hedge vs อย่ากลืน deviation)
+- variant (กล่องเจาะลึก): **AR(1) mean-reverting β** `β_t=μ+φ(β_{t-1}−μ)+w` — ยัง linear-Gaussian, เปลี่ยน transition matrix บรรทัดเดียว · limit Q→0 = β คงที่ = OLS
+- จุดยืน (เหมือน TLS ใน Part I): สอน random-walk เป็น default → AR(1) = "รู้ไว้ ใช้เมื่อเชื่อว่า β นิ่งเชิงโครงสร้าง" · เลือกแบบไหน = ขึ้นกับเชื่อว่าความสัมพันธ์เป็นโครงสร้างหรือบังเอิญ (โยง Part 0/VII)
+- ธีม: diagnostic ทั้งหมด (plateau/whiteness/MLE/deflated Sharpe) = **process edge ชั้น C** ไม่ใช่ตัว Kalman
+- Lit เพิ่ม: Bar-Shalom (innovation consistency/NIS) · pykalman EM
+
 ---
 
 ## 2.5 Part II ลงรายละเอียด — Correlation & Cointegration ที่ใช้จริง + Copula รายย่อย
