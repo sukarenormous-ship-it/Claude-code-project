@@ -323,7 +323,7 @@ Trade: Long Quarterly + Short Perpetual (รับ funding จาก short perp)
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ ไม่ hedge rate = เทรดดอกเบี้ยแฝงโดยไม่รู้ตัว</div>
+<div class="bt">ไม่ hedge rate = เทรดดอกเบี้ยแฝงโดยไม่รู้ตัว</div>
 <p>ถ้าใช้ r คงที่ (หรือไม่สนใจว่า r เปลี่ยน) ε ที่คำนวณได้จะปนกันระหว่าง "ทองคำ mispriced จริง" กับ "ตลาดคาดการณ์ดอกเบี้ยเปลี่ยน" — สอง component นี้มีพฤติกรรมต่างกันโดยสิ้นเชิง (ตัวแรก mean-revert เร็ว ตัวหลัง trend ตาม Fed policy) ผสมกันจะทำให้สัญญาณสับสน</p>
 </div>
 
@@ -347,7 +347,7 @@ Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ Point-in-Time Rates — กับดัก Lookahead ใหม่ที่มากับ Carry-Adjusted ε</div>
+<div class="bt">Point-in-Time Rates — กับดัก Lookahead ใหม่ที่มากับ Carry-Adjusted ε</div>
 <p>พอยกระดับเป็น ε = spread − fair_carry ต้องมี rate series เข้าสูตร — จุดนี้คือประตู lookahead ใหม่ที่ backtest ส่วนใหญ่พลาด: ใช้ rate ที่ประกาศย้อนหลัง (รู้จริงอีก 1 วันถัดมา) มาคำนวณ fair carry ของวันเดียวกัน หรือใช้ rate curve วันนี้ตีราคา fair carry ย้อนหลังทั้งประวัติ (ทำให้ fair line เรียบผิดจริง → ε ดู mean-revert สวยเกิน) — ผลคือ ε ใน backtest แกว่งแคบและกลับตัวไวกว่าของจริง ณ เวลาเทรด threshold/half-life/Sharpe จึงเว่อร์กว่าความจริง</p>
 <p style="margin-top:6px"><strong>กฎ point-in-time:</strong> ทุก input ใน fair_carry_t ต้องเป็นค่าที่ตลาดรู้แล้ว ณ เวลา t จริง (ไม่ใช่ค่าที่แก้ไข/ประกาศทีหลัง) — เก็บ snapshot rate curve เป็นรายวัน (as-of database) แทน series เดียวที่ align ย้อนหลังให้สวย <strong>Sanity test:</strong> รัน backtest สองรอบ — rate แบบ point-in-time vs แบบ ex-post — ถ้า Sharpe ต่างกันมาก แปลว่า edge ส่วนใหญ่มาจาก lookahead ไม่ใช่ mispricing จริง หลักการเดียวกันนี้ใช้กับ funding rate ของ perp (<a href="statarb-ch13c.html">ch13C</a>): ต้องใช้ predicted rate ณ ต้นรอบ ไม่ใช่ realized rate ที่รู้หลังรอบจบแล้ว</p>
 </div>
@@ -379,7 +379,7 @@ Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate
   เปลือย = 311.035 − 300 = 11.035 g  (≈ 3.55% ของ notional — ใหญ่กว่ามาก!)</div>
 
 <div class="bx bk">
-<div class="bt">⚠️ ทำไมเปลือย 0.3–3.5% ถึงฆ่า edge ได้</div>
+<div class="bt">ทำไมเปลือย 0.3–3.5% ถึงฆ่า edge ได้</div>
 <p>Vol รายวันของทองคำ ~1% — ที่ size เล็ก (MGC) delta เปลือย 3.55% ของ notional มีขนาด noise รายวัน<strong>ใหญ่กว่า edge ต่อเทรดทั้งหมด</strong> PnL จะแกว่งตามทิศทองไปเลย ทั้งที่ตั้งใจ market-neutral <strong>กฎ:</strong> ถ้า residual delta × σ_gold รายวัน &gt; 20% ของ expected edge ต่อเทรด → size นี้เล็กเกินกว่าจะเทรดคู่นี้ (หรือใช้ MGC เศษเพิ่มเพื่อลด residual)</p>
 </div>
 
@@ -400,7 +400,7 @@ Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ Currency Decomposition — เมื่อคู่ข้ามพรมแดนคือเทรด FX แฝง</div>
+<div class="bt">Currency Decomposition — เมื่อคู่ข้ามพรมแดนคือเทรด FX แฝง</div>
 <p>ทุนเป็น THB แต่ margin/variation margin/PnL ของทั้ง CME และ exchange เอเชียส่วนใหญ่เป็น USD — ทุกครั้งที่โดน cash call ต้องแปลง THB→USD ที่ retail FX spread + ค่าโอนระหว่างประเทศ และ equity ของพอร์ตแกว่งตาม USDTHB (~4-6%/ปี vol) ซึ่งอาจใหญ่กว่า edge สะสมทั้งปีของ spread ทองได้สบายๆ ที่ซับซ้อนกว่านั้น: ถ้าขยายไปคู่ที่ quote คนละสกุล (เช่น SHFE gold = CNY/กรัม, TFEX Gold = อิง THB) spread ดิบ = ทอง + FX + import premium ปนกัน — ส่วนที่ "ดู mean-revert สวยๆ" อาจเป็น USDCNH/USDTHB ล้วนๆ ไม่ใช่ทองคำเลย</p>
 <div class="fm">แยก ε เป็นสามส่วนเสมอเมื่อสองขา quote คนละสกุล:
 ε_total = ε_gold + ε_FX + premium_structural
@@ -431,7 +431,7 @@ Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ ปฏิทินคู่ — ทำไม "สัญญาเดือนเดียวกัน" ไม่ได้แปลว่ามีเส้นชัยเดียวกัน</div>
+<div class="bt">ปฏิทินคู่ — ทำไม "สัญญาเดือนเดียวกัน" ไม่ได้แปลว่ามีเส้นชัยเดียวกัน</div>
 <p>GC เป็น physical delivery: FND อยู่ปลายเดือนก่อน delivery month และโบรก retail ส่วนใหญ่บังคับปิด position "ทีละขา ตามปฏิทินของขานั้น" ก่อน FND หลายวัน — ส่วนสัญญาฝั่งเอเชียมักเป็น cash-settled หมดอายุคนละวัน settle กับ benchmark คนละตัว ผลคือ: ไม่มีวันที่สัญญาทั้งสองถูกบังคับให้เท่ากัน — ขาหนึ่งหยุดเทรด/ถูกโบรกปิดก่อนอีกขาหลายวัน terminal spread จึงเป็นผลต่างของ fix สองตัวคนละวันคนละนิยาม (ตัวเลขสุ่ม ไม่ใช่ศูนย์) และถ้าเดือนที่ liquid ของสองตลาดไม่ตรงกัน คู่ที่เทรดได้จริงอาจมี maturity ห่างกัน 1 เดือน = มี calendar leg ฝังอยู่ที่มี carry drift โดยไม่ตั้งใจ</p>
 <div class="fm"><span class="c"># ทำ timeline เดียวก่อนเข้าเทรดทุกคู่</span>
 วันนี้ → [วันโบรกเริ่มบังคับปิดขา A] → [FND ขา A] → [LTD ขา A] → [expiry ขา B] → benchmark ที่ B settle
@@ -443,7 +443,7 @@ Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ นาฬิกาสัญญา vs นาฬิกา OU — Half-life ต้องสั้นกว่าอายุที่เหลือจริง</div>
+<div class="bt">นาฬิกาสัญญา vs นาฬิกา OU — Half-life ต้องสั้นกว่าอายุที่เหลือจริง</div>
 <p>Fit OU บน spread จาก continuous series ย้อนหลัง 2 ปีได้ half-life สวยงาม (เช่น 25 วัน) — แต่ front contract ที่ถืออยู่จริงอาจเหลืออายุแค่ 18 วันก่อนต้องออก (นับถึงวันที่โบรกบังคับปิด ไม่ใช่วัน expiry) โอกาสเห็น convergence ก่อนถูกบังคับออกจึงต่ำกว่าที่ half-life บอกไว้มาก — trade นี้ "ถูกสูตร" แต่เป็นไปไม่ได้เชิงเวลาตั้งแต่ก่อนเข้า ยิ่งกว่านั้น continuous series ที่ back-adjust/ต่อเชื่อมมักสร้าง jump ปลอมตรงรอยต่อ (roll) — mean reversion ที่ ADF เห็นบน series ต่อเชื่อมส่วนหนึ่งจึงเป็น artifact ของการ splice ไม่ใช่แรงดึงที่เทรดได้บนสัญญาจริงตัวใดตัวหนึ่ง (รายละเอียด data engineering เพิ่มเติม: <a href="statarb-ch10b.html#s10b-10">ch10B §10B.10</a>)</p>
 <div class="fm"><span class="c"># กติกาบังคับก่อนเทรด calendar/futures spread ทุกครั้ง</span>
 time_to_forced_exit ≥ 3 × half-life   <span class="c"># นับถึงวันบังคับปิด ไม่ใช่วัน expiry</span>
@@ -479,7 +479,7 @@ Listed Calendar Spread (order เดียว):
 <p>แก้ปัญหา legging ด้วย listed spread order แล้วยังไม่จบ — บน instrument ที่เทรดกันในกรอบไม่กี่ tick "ตำแหน่งคิว" คือ edge ทั้งหมด</p>
 
 <div class="bx bk">
-<div class="bt">⚠️ วางถูกเครื่องมือแล้ว แต่ยังไม่ได้ของ</div>
+<div class="bt">วางถูกเครื่องมือแล้ว แต่ยังไม่ได้ของ</div>
 <p>วาง limit ที่ best bid ของ spread book — order ที่มาก่อนต่อคิวยาว และ CME ยังมี <strong>implied orders</strong> ที่ engine สร้างจาก outright book มาแทรกสภาพคล่องด้วย ระดับราคาที่ต่อคิวจะ fill ถึงตัวเราก็ต่อเมื่อ flow กดทะลุทั้งคิว (= spread กำลังจะเคลื่อนต่อในทิศนั้น — adverse selection ซ้อนอีกชั้นบน instrument ที่ σ เล็กมาก) ส่วนรอบที่ spread เด้งกลับจากระดับนั้น คนหัวคิวได้ของ เราไม่ได้ — backtest แบบ "touch-fill" (ราคาแตะ = fill) จะโชว์ trade count และกำไรสูงกว่าความจริงหลายเท่า</p>
 </div>
 
@@ -541,7 +541,7 @@ MGC calendar (micro, 4 fills ถ้า legging):
 </div>
 
 <div class="bx bk">
-<div class="bt">⚠️ Daily Settlement คนละเวลา = Variation Margin ผี</div>
+<div class="bt">Daily Settlement คนละเวลา = Variation Margin ผี</div>
 <p>Futures mark-to-market ทุกวันด้วย settlement price ของแต่ละ exchange — CME GC settle ~13:30 ET (ตี 1 ครึ่งเวลาไทย) ส่วน exchange เอเชีย settle ช่วงบ่ายเอเชีย ห่างกัน ~10+ ชั่วโมง ถ้าทองขยับ 1% ระหว่างสอง mark: ขาหนึ่งถูก mark ขาดทุนคืนนี้ → โดนเรียก variation margin เป็นเงินสดทันที ส่วนขากำไรจะถูก mark ชดเชยที่อีกตลาด "คนละรอบเวลา" — เศรษฐศาสตร์ยัง hedge อยู่ครบ แต่<strong>กระแสเงินสดรายวันไม่ hedge เลย</strong> บัญชีที่เงินสดบางจะโดน margin call จากการเคลื่อนไหวที่ไม่ใช่ความเสี่ยงจริง แล้วถูกบังคับลด position ในจังหวะแย่สุด (รายละเอียด mechanism เต็ม: <a href="statarb-ch10b.html#s10b-7">ch10B §10B.7</a>)</p>
 <p style="margin-top:6px">ตัวอย่าง: ทองขยับ 1% ระหว่างสอง mark → cash call ~$3,300 ต่อ 1 GC ภายในคืนเดียว ทั้งที่ synchronized spread ขยับ 0<br>
 <strong>ป้องกัน:</strong> จำลอง "worst-case overnight cash call" ก่อนเข้า = notional ต่อขา × (σ ทองช่วงเวลาระหว่างสอง mark) × 2-3σ = เงินสดขั้นต่ำที่ต้องมีค้างในแต่ละบัญชี — นี่คือเหตุผลที่ buffer ในข้อ 1 ด้านบนต้องคิด<strong>ต่อบัญชี ไม่ใช่ต่อพอร์ต</strong></p>
