@@ -181,7 +181,7 @@
 | 0 | ย้ายไฟล์ 27 ไฟล์ + `docs/vendor` (KaTeX/Sarabun) เข้า branch หลัก | ✅ commit `70911c1` | — |
 | 0.5 | **Quick win**: `white-space:pre` × 27 ไฟล์ + ลบ newline เกิน 6 กล่อง | ✅ commit `70911c1` — ยืนยันด้วย screenshot กล่อง OLS ch4 | — (แก้ 114 กล่องสูตรทันที) |
 | QA | ทีม 11 คน ตรวจความถูกต้องความรู้ + ภาพประกอบทุกไฟล์ → แก้ตาม issue list | ⏳ กำลังรัน | — |
-| 1 | ch4b กรอบเลือก F(·) + **ch5 §5.0 Null Hypothesis 101** | รอ | ~15–20 |
+| 1 | ch4b กรอบเลือก F(·) + **ch5 §5.0 Null Hypothesis 101** | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~15–20 |
 | 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | รอ | ~25–30 |
 | 3 | Options stat arb: ขยาย ch18 + ch22 (4 หัวข้อใหม่) | รอ | ~25–30 |
 | 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (17.8–17.13 รวม margin mechanics) + ch10b ใหม่ | รอ | ~30–35 |
