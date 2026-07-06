@@ -33,6 +33,7 @@ description: >-
    - Thesis → ❓ทำไมต้องรู้ → 🔧ใช้ทำอะไร → ✅ใช้ได้เมื่อไร → ❌พังเมื่อไร → ⚖️ข้อดี/ข้อเสีย → 🧠มุมที่มองต่าง → 📍ปัจจุบัน → 📚Papers
    - การ์ด ★★★ เพิ่ม: 🚶อ่านเป็นภาษาคนก่อน (เหนือสูตร) + 🧮worked example + 🎯3 อย่างที่ต้องจำ
 4. **ยึด Style Guide** (`references/style-guide.md`) — โดยเฉพาะ: รายการใช้ `<ul>` จริงห้าม `<br>` ปลอม, `.fm` เก็บเฉพาะสูตร, เว้นวรรครอบคำอังกฤษ
+   - **กราฟ/ภาพประกอบ:** ทำเป็น inline SVG เสมอ (ห้าม chart library/canvas/รูป raster) ตาม `references/visual-guide.md` — area gradient, เส้นหลักมีเงา+ปลายมน, grid ถอยหลัง, callout ชี้จุดสำคัญ, สีตามความหมาย (เขียว=กำไร แดง=ขาดทุน ม่วง=จุดสำคัญ)
 5. **ปิดตอน** — สรุป ✓ + `.pq` cliffhanger เชื่อม Part ถัดไป + 📖อ่านต่อ + 📖ศัพท์ใหม่ในตอนนี้
 6. **รีวิว** ตาม `references/craft-standard.md` แล้วแก้ให้ครบ
 7. **commit แยกต่อ Part** (`docs: <เล่ม> Part N — ร่างก่อนรีวิว` → `... ผ่านรีวิว N คน — แก้ครบ`) แล้ว push
@@ -57,7 +58,9 @@ node .claude/skills/knowledge-book/scripts/render-pdf.mjs docs pillars-part1 the
 ## ไฟล์ในสกิลนี้
 
 - `assets/template.html` — โครง HTML + CSS + การ์ดตัวอย่าง + line-break script (จุดเริ่มของทุกบท)
+- `assets/chart-demo.html` — เดโม before/after ของกราฟ (payoff long call) ให้ดูก่อนทำภาพ
 - `references/card-anatomy.md` — การ์ด 9 องค์ประกอบ + mini-card + ป้ายกำกับ + density
 - `references/style-guide.md` — typography ไทย + โครงสร้าง HTML + การเขียน + palette
+- `references/visual-guide.md` — กราฟ/ภาพประกอบ inline SVG ให้สวย (gradient/เงา/callout/grid) + snippet พร้อมใช้
 - `references/craft-standard.md` — มาตรฐาน v4 + กระบวนการรีวิวคณะผู้เชี่ยวชาญ + consistency rules
 - `scripts/render-pdf.mjs` — export HTML → PDF ด้วย Playwright
