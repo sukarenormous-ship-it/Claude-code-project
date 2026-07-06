@@ -255,7 +255,7 @@ def cross_exchange_spread_grid(price_a, price_b, q, fee_a, fee_b):
 <div class="sc-num">Strategy 5</div>
 <h3>Laddered CSP Grid — ขาย Put เป็น Grid</h3>
 
-<p>แทนที่จะวาง BUY limit order ทั้งหมดพร้อมกัน — ขาย Put options เป็น "ladder" เพื่อรับ premium + ซื้อ BTC ในราคาที่ต้องการ (จาก Part 7):</p>
+<p>กลไก CSP พื้นฐาน (ขาย put รับ premium แทนวาง BUY limit) สอนเต็มแล้วใน <a href="grid-part7.html#s7-3">Part 7 §7.3</a> — กลยุทธ์นี้ต่อยอดด้วยการขายเป็น "ladder" ข้าม expiry หลายช่วงพร้อมกัน แทนที่จะใช้ expiry เดียวทุก level:</p>
 
 <div class="fm">Laddered CSP Grid:
 
@@ -277,15 +277,13 @@ Total premium = $3,100 (รับทันที)
   Level 2: assign → ซื้อ BTC $95k (กำหนดไว้ล่วงหน้า)
   Level 3–5: ยังคง pending
 
-ข้อดีเทียบ Limit Order Grid:
-  + รับ premium แม้ไม่มี fill
-  + Effective buy price ต่ำกว่า (strike − premium)
-  + Capital ไม่ lock ทั้งหมด (แค่ reserved สำหรับ worst-case)
+ข้อดีที่ต่างจาก CSP เดี่ยว (Part 7 §7.3):
+  + Expiry กระจาย (2W/4W/8W) → assignment ไม่มาพร้อมกันทั้งหมดในวันเดียว
+  + Strike ไกลออกไป + expiry ยาวขึ้น (Level 5) → premium ต่อสัญญาสูงกว่า
 
-ข้อจำกัด:
-  − ต้องการ Options liquidity (Deribit/OKX)
-  − Expiry management ซับซ้อน
-  − ถ้า BTC crash ลงเร็ว → ทุก level assign พร้อมกัน
+ข้อจำกัดเพิ่มจากการ ladder ข้าม expiry:
+  − ต้องบริหารหลาย expiry date พร้อมกัน (roll/ปิดแต่ละ level ไม่พร้อมกัน)
+  − ข้อจำกัดพื้นฐานของ CSP (liquidity, capital lock, downtrend assign ทุก level) ยังอยู่ — ดู Part 7 §7.3
 
 def laddered_csp_grid(grid_levels, btc_price, put_premiums):
     """
