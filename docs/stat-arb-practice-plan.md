@@ -160,29 +160,47 @@
 
 **Lit:** Rad, Low & Faff (2016, เปรียบเทียบ distance/cointegration/copula) · Xie, Wu et al. (2016, MI method ต้นฉบับ) · Stübinger, Mangold & Krauss (2018, vine copula หลายตัว)
 
-### 2.5.5 ★ Reframe สำคัญ — "การจับคู่ตายแล้ว" + Common Factor (แกนความคิดของทั้ง Part)
+### 2.5.5 ขีดจำกัดของโลก pairwise → สะพานสู่ Part III
+- correlation/cointegration/copula ทั้งหมด = มอง *ทีละคู่* แต่สินทรัพย์ co-move เพราะแชร์ **common factor** ไม่ใช่ "ความสัมพันธ์วิเศษเฉพาะคู่"
+- นั่งสแกนหาคู่สวย ๆ ไม่ใช่ edge (AI เขียน scan ให้ใครก็ได้ บน asset ชุดเดียวกัน)
+- → ปิด Part II ด้วยคำถามที่พาไป Part III: *"ถ้า co-movement มาจาก factor ร่วม ทำไมต้องเลือกคู่ทีละคู่ — ทำไมไม่หัก factor แล้วเทรดสิ่งที่เหลือทั้งกระดาน?"*
 
-> **จุดยืนของเล่ม (ตอบ user ตรง ๆ):** การนั่ง *สแกนหาคู่สวย ๆ* ไม่ใช่ edge อีกต่อไป — AI เขียน scan ให้ใครก็ได้ บนสินทรัพย์ชุดเดียวกัน และเหตุผลลึกกว่านั้นคือ **สินทรัพย์ co-move เพราะมันแชร์ common factor** (market/sector/style) ไม่ใช่เพราะมี "ความสัมพันธ์วิเศษ" เฉพาะคู่
+---
 
-**สิ่งที่ตามมา 3 ข้อ (ต้องเป็นแกนสอน):**
+## 2.6 Part III ลงรายละเอียด — ★ Residual / Factor Stat Arb (Part เอกใหม่)
 
-1. **Pair = กรณีพิเศษ rank-1 ของ factor-neutral portfolio** — spread จริง ๆ คือ *residual หลังหัก common factor* การเลือกคู่มือ = สร้าง factor-neutral portfolio 2 ตัวแบบหยาบ ๆ · **PCA/eigenportfolio (Avellaneda-Lee 2010)** ทำสิ่งเดียวกันแต่เป็นระบบทั้ง universe → เลิกเลือกคู่ ไปเทรด **mean-reversion ของ idiosyncratic residual** ข้ามทั้งกระดาน
+> **จุดยืน:** pairwise คือ *จุดเริ่ม* · factor/residual คือ *ที่ที่โตขึ้นไป* — Part นี้คือหัวใจใหม่ของเล่มตามที่ user ต้องการ
 
-2. **Common factor คือความเสี่ยง ไม่ใช่แค่คำอธิบาย** — ★ ประเด็นทอง: ถ้าไม่ neutralize factor ให้ดี "pair" ของคุณคือ **factor bet ปลอมตัว** (แอบ long/short sector/market อยู่) → นี่คือเหตุผลจริงที่ pairs ไร้เดียงสาระเบิดตอนวิกฤต · **การเข้าใจ common factor ไม่ได้ให้ edge — แต่กัน "edge ปลอม" (factor bet ที่นึกว่าเป็น spread)**
+### 2.6.1 Thesis — pair = กรณีพิเศษ rank-1
+- assets co-move เพราะ **shared factor loading** (market/sector/style); "spread" จริง ๆ = **idiosyncratic residual** หลังหัก common factor
+- การเลือกคู่มือ = สร้าง factor-neutral portfolio 2 ตัวแบบหยาบ; **PCA/eigenportfolio (Avellaneda-Lee 2010)** ทำเป็นระบบทั้ง universe → เลิกเลือกคู่ ไปเทรด mean-reversion ของ residual ข้ามทั้งกระดาน
 
-3. **Cut-off อาจไม่จำเป็น** (user ถูก) — แทน hard threshold เลือก/ไม่เลือก:
-   - **soft ranking ทั้ง universe** — ให้คะแนนต่อเนื่อง (residual z-score/half-life) แล้ว size ตามคะแนน ไม่ใช่ตัดทิ้งแบบ binary
-   - **residual s-score** (Avellaneda-Lee) — position = f(s-score) ข้ามทุกชื่อ ไม่มีการ "เลือกคู่" เลย
-   - cut-off ที่ 2.5.1 เลยกลายเป็น *baseline ที่ทุกคนรู้* (สอนไว้ให้เข้าใจ + รู้ว่าทำไมมันเปราะ) ไม่ใช่พระเอก
+### 2.6.2 หัก common factor 3 วิธี (ง่าย → ซับซ้อน; รายย่อยเริ่มข้อ 1 ได้ทันที)
+1. **Sector/market ETF hedge** — regress asset บน sector ETF แล้วเทรด residual (ง่ายสุด ทำได้วันนี้)
+2. **Statistical factors via PCA / eigenportfolio** (Avellaneda-Lee) — ไม่ต้องตั้งชื่อ factor ปล่อยให้ข้อมูลหาเอง
+3. **Fundamental factors** (Fama-French/sector dummies) — โยง `theory-part2` (factor models) เล่ม A แทนเขียนซ้ำทฤษฎี
 
-**แล้ว edge รายย่อยอยู่ไหน (ต้องซื่อสัตย์):** factor-residual stat arb ก็ crowded ในตลาด liquid (Avellaneda-Lee เองโชว์ Sharpe เสื่อมหลัง ~2002) → edge จริงไม่ได้อยู่ที่ *วิธี selection* (ตายหมดแล้ว: pairs/coint/PCA/ML) แต่อยู่ที่:
-- **บ่อที่ common factor ยัง under-modeled** — Thai/SEA/crypto (คนยังไม่ได้ map factor structure ดี ๆ; แค่หัก sector ETF ก็อาจพอ)
-- **cost/capacity/access** (ชั้น D)
-- **วินัย + regime** (ชั้น C)
+### 2.6.3 The s-score (Avellaneda-Lee) — แทน "เลือกคู่ + z-score"
+- โมเดล idiosyncratic residual เป็น OU → standardize เป็น **s-score** → เข้า/ออกตาม s-score
+- position = f(s-score) ข้ามทุกชื่อ → **ไม่มีการ "เลือกคู่" เลย** (ตอบ user: cut-off ไม่จำเป็น — ใช้ soft ranking ทั้ง universe แทน binary select)
 
-> ประโยคทอง (.pq): *"เลิกถามว่าคู่ไหนสวย — ถามว่า residual อะไรที่เหลือหลังหักสิ่งที่ทุกคนถืออยู่แล้ว และใครยังไม่ได้หักมัน"*
+### 2.6.4 Cross-sectional mean reversion
+- rank residual ทั้ง universe → long ก้นตาราง / short หัวตาราง · factor-neutral by construction · **หลาย bet เล็ก ๆ** แทนคู่เดียวลึก (โยง edge map ชั้น A/D)
 
-**Lit:** Avellaneda & Lee (2010, PCA residual s-score) · Guijarro-Ordóñez, Pelger, Zanotti (factor + DL residual) · โยง theory-part2 (factor models/PCA) ในเล่ม A
+### 2.6.5 ★ ประเด็นทอง — common factor = "ความเสี่ยง" ไม่ใช่แค่คำอธิบาย
+- ไม่ neutralize factor ให้ดี → "pair/residual" ของคุณคือ **factor bet ปลอมตัว** (แอบ long/short sector/market) = เหตุผลจริงที่ pairs ไร้เดียงสาระเบิดตอนวิกฤต
+- **เข้าใจ common factor ไม่ได้ให้ edge — แต่กัน "edge ปลอม"**; วิธีเช็ค: regress residual กลับบน factor → loading ควร ≈ 0
+- ประโยคทอง (.pq): *"เลิกถามว่าคู่ไหนสวย — ถามว่า residual อะไรที่เหลือหลังหักสิ่งที่ทุกคนถืออยู่แล้ว และใครยังไม่ได้หักมัน"*
+
+### 2.6.6 ชั้น DL/ML residual (สอนให้รู้ + กับดัก ไม่ใช่ชวนแข่ง)
+- **Guijarro-Ordóñez, Pelger, Zanotti** "Deep Learning Statistical Arbitrage": factor (PCA/IPCA) → arbitrage residual → CNN/transformer signal
+- ซื่อสัตย์: crowded + overfit หนัก + retail สู้ compute ไม่ได้ → สอนเป็น "รู้ว่ามี + กับดัก" ไม่ใช่พระเอก
+
+### 2.6.7 retail edge ในโลก factor (ต้องซื่อสัตย์)
+- factor-residual ก็ crowded ในตลาด liquid (Avellaneda-Lee เองโชว์ Sharpe เสื่อมหลัง ~2002) → **ไม่มี edge ใน *วิธี selection* ใด ๆ เหลือแล้ว** (pairs/coint/copula/PCA/DL)
+- edge จริงย้ายไป: **บ่อที่ factor ยัง under-modeled** (Thai/SEA/crypto — แค่หัก sector ETF ก็อาจพอ) · **cost/capacity/access** (ชั้น D) · **วินัย+regime** (ชั้น C)
+
+**Lit:** Avellaneda & Lee (2010, PCA residual s-score) · Guijarro-Ordóñez, Pelger, Zanotti (factor + DL residual) · โยง `theory-part2` (factor models/PCA) เล่ม A
 
 ---
 
@@ -227,19 +245,22 @@
 
 ---
 
-## 5. โครงบท (เสนอ ~8 Part) — `practice-part1..8.html`
+## 5. โครงบท (เสนอ ~10 Part) — `practice-part0..9.html`
+
+**Arc ของเล่ม:** framing → *pairwise* (จุดเริ่ม) → *factor/residual* (ที่โตขึ้นไป) → adaptive → trading → proving
 
 | Part | ชื่อ | แกน |
 |---|---|---|
 | 0 | **Kalman ไม่ใช่ edge + แผนที่ Edge** | ตั้งความคาดหวัง: estimator = ท่อประปา; edge จริงอยู่ชั้น A–D (เน้น C+D สำหรับรายย่อย) |
-| I | **บันได β (1)** | ทำไม OLS พัง → EIV → TLS/PCA |
-| II | **Correlation & Cointegration ที่ใช้จริง** | funnel + cut-off จริง, differentiation 5 จุด, กับดัก multiple-testing, **copula/MI**, **reframe: pair ตาย → common factor / residual stat arb (Avellaneda-Lee)** |
-| III | **Kalman ลงมือ** | state-space, จูน Q/R, worked example + โค้ด |
-| IV | **Adaptive & Robust Kalman** | vol-adaptive R ที่ถูกหลัก, innovation gating, regime-switching |
-| V | **Signals & Bands** | z-score vs cost-aware/ATR band, optimal threshold (OU) |
-| VI | **Regime & Structural Break** | half-life monitor, Hurst, coint re-test, ADX proxy, kill switch |
-| VII | **Cost · Execution · Capacity · Borrow** | โลกจริงของรายย่อย |
-| VIII | **Backtest ไม่โกหก + Risk + Case study เต็ม** | paper → live + Cheat sheet "เลือก estimator ยังไง" |
+| I | **บันได β — hedge ratio (pairwise)** | ทำไม OLS พัง → EIV → TLS/PCA → rolling |
+| II | **Correlation & Cointegration ที่ใช้จริง** | funnel + cut-off จริง, differentiation 5 จุด, multiple-testing, **copula/MI** + *ขีดจำกัดของโลก pairwise* → สะพานสู่ Part III |
+| **III** | **★ Residual / Factor Stat Arb** *(เอกใหม่)* | **pair = rank-1 special case; หัก common factor → เทรด residual; s-score (Avellaneda-Lee); cross-sectional; factor = ความเสี่ยง; DL residual (Pelger) + กับดัก; retail edge = บ่อที่ factor under-modeled** |
+| IV | **Kalman ลงมือ** | state-space, จูน Q/R — dynamic **hedge ratio และ factor loadings**; worked example + โค้ด |
+| V | **Adaptive & Robust Kalman** | vol-adaptive R ที่ถูกหลัก, innovation gating, regime-switching |
+| VI | **Signals & Bands** | z-score / s-score vs cost-aware/ATR band, optimal threshold (OU) |
+| VII | **Regime & Structural Break** | half-life monitor, Hurst, coint re-test, ADX proxy, kill switch |
+| VIII | **Cost · Execution · Capacity · Borrow** | โลกจริงของรายย่อย |
+| IX | **Backtest ไม่โกหก + Risk + Case study เต็ม** | paper → live + Cheat sheet "เลือก estimator/แนวทางยังไง" |
 
 ทุกบท: การ์ด v4 เดิม + 🐍 โค้ดจริง + 🧪 ผล backtest จริง + 📖 review/ตำรา + cross-ref เล่ม 1
 
@@ -263,7 +284,7 @@
 - Deming (1943) / total least squares · Bai & Perron (1998, 2003) structural breaks
 
 **★ สมัยใหม่ + Kalman ที่ "รายย่อยทำตามได้จริง" (ยืนยันแล้ว ก.ค. 2026):**
-- **Palomar, D.P. (2025)** *Portfolio Optimization: Theory and Application*, Cambridge Univ. Press — §15.6 "Kalman Filtering for Pairs Trading" (อ่านฟรีที่ bookdown.org). ⭐ อ้างอิงหลักของ Part III–IV: state-space หา time-varying hedge ratio + mean, แสดงว่า Kalman คุม drawdown ได้จริง (rolling-LS ไม่คุม), วลีในเล่ม: *"Kalman filtering is a must in pairs trading"*
+- **Palomar, D.P. (2025)** *Portfolio Optimization: Theory and Application*, Cambridge Univ. Press — §15.6 "Kalman Filtering for Pairs Trading" (อ่านฟรีที่ bookdown.org). ⭐ อ้างอิงหลักของ Part IV–V: state-space หา time-varying hedge ratio + mean, แสดงว่า Kalman คุม drawdown ได้จริง (rolling-LS ไม่คุม), วลีในเล่ม: *"Kalman filtering is a must in pairs trading"*
 - **Primbs, J.A. & Yamada, Y. (2018)** "Pairs trading under transaction costs using model predictive control", *Quantitative Finance* 18(6):885–895 — MPC + proportional cost + gross-exposure constraint บน OU spread (ใช้ใน Part V/VII)
 - **Mudchanatongsuk, S., Primbs, J.A. & Wong, W. (2008)** "Optimal pairs trading: a stochastic control approach", *Proc. American Control Conf. 2008* — log-spread เป็น OU, แก้ผ่าน HJB (รากฐานของสาย stochastic-control cost)
 - **Tenyakov, A. & Mamon, R. (2017)** "A computing platform for pairs-trading online implementation via a blended Kalman–HMM filtering approach", *Journal of Big Data* 4:46 — Kalman + HMM regime, พารามิเตอร์ self-updating แบบ online (อ้างใน Part IV adaptive/regime-switching Kalman)
@@ -289,14 +310,15 @@
 
 ## 7. โฟลเดอร์โค้ด `docs/vol2-code/`
 
-- `data/` — toy dataset (คู่หุ้น/ETF ตัวอย่าง, ปรับ corporate action แล้ว) เล็กพอ commit ได้
-- `01_beta_ladder.ipynb` — OLS vs TLS vs Rolling vs Kalman บนคู่เดียวกัน เทียบ β path
-- `02_cointegration.ipynb` — Engle-Granger + Johansen + half-life
-- `03_kalman_tuning.ipynb` — grid Q/R + adaptive/robust variant
-- `04_bands_and_costs.ipynb` — z vs ATR vs optimal band + net PnL หลัง cost
-- `05_regime_killswitch.ipynb` — half-life/Hurst/coint-retest/ADX + kill switch
-- `06_full_backtest.ipynb` — ประกอบร่าง + purged CV + deflated Sharpe
-- `requirements.txt` — numpy, pandas, statsmodels, pykalman, matplotlib (ไลบรารีมาตรฐาน ไม่ต้อง infra แพง)
+- `data/` — toy dataset (คู่หุ้น/ETF + universe เล็ก, ปรับ corporate action แล้ว) commit ได้
+- `01_beta_ladder.ipynb` — OLS vs TLS vs Rolling vs Kalman บนคู่เดียวกัน เทียบ β path (Part I)
+- `02_cointegration_copula.ipynb` — Engle-Granger + Johansen + half-life + copula/MI (Part II)
+- `03_factor_residual.ipynb` — **PCA/ETF-hedge residual + s-score + cross-sectional backtest (Part III)**
+- `04_kalman_tuning.ipynb` — grid Q/R + adaptive/robust variant (Part IV–V)
+- `05_bands_and_costs.ipynb` — z/s-score vs ATR vs optimal band + net PnL หลัง cost (Part VI)
+- `06_regime_killswitch.ipynb` — half-life/Hurst/coint-retest/ADX + kill switch (Part VII)
+- `07_full_backtest.ipynb` — ประกอบร่าง + purged CV + deflated Sharpe (Part IX)
+- `requirements.txt` — numpy, pandas, statsmodels, pykalman, arbitragelab, matplotlib (ไลบรารีมาตรฐาน ไม่ต้อง infra แพง)
 
 > ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้
 
@@ -305,9 +327,9 @@
 ## 8. ลำดับงาน (Build Order)
 
 - **Phase 0** — ✅ แผนนี้ (commit + draft PR)
-- **Phase 1** — Part I–III (บันได β + Cointegration + Kalman) = 3 บทแกนหลัก + notebook 01–03
-- **Phase 2** — Part IV–VI (Adaptive Kalman + Bands + Regime) + notebook 04–05
-- **Phase 3** — Part VII–VIII (Cost/Execution + Backtest/Risk/Case) + notebook 06
+- **Phase 1** — Part 0–III (edge framing + บันได β + Cointegration/copula + **Residual/Factor**) = แกนความคิดหลัก + notebook 01–03
+- **Phase 2** — Part IV–VII (Kalman + Adaptive + Bands + Regime) + notebook 04–06
+- **Phase 3** — Part VIII–IX (Cost/Execution + Backtest/Risk/Case) + notebook 07
 - **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม)
 
 แต่ละ Phase: commit แยก + ผ่านรีวิวทีมผู้เชี่ยวชาญ (เหมือนเล่ม 1) ก่อนไป Phase ถัดไป
