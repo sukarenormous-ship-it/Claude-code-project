@@ -269,6 +269,195 @@ Trade: Long Quarterly + Short Perpetual (รับ funding จาก short perp)
 </details>
 </div>
 
+<!-- 17.8 -->
+<h2 id="s17-8">17.8 Full-Carry Markets: เกมต้นทุน ไม่ใช่เกมสัญญาณ</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นความคิด</div>
+<p class="ki-text">ทองคำเป็น <strong>full-carry market</strong>: ไม่มี seasonal demand, ไม่มี storage constraint จริง (เก็บได้ไม่เสื่อม ไม่มีวันหมดอายุ) ไม่มี convenience yield ที่ผันผวนแบบน้ำมัน/ก๊าซ → spread ระหว่างสองเดือนเกือบเท่ากับ cost-of-carry แบบเป๊ะๆ เกือบตลอดเวลา contango ที่คุณเห็น <strong>คือราคาที่ถูกต้องแล้ว</strong> ไม่ใช่ mispricing ที่รอให้คุณมาเก็บ</p>
+</div>
+
+<p>เทียบกับตารางใน <a href="#s17-3">§17.3</a>: น้ำมันมี convenience yield ที่ผันผวนมาก (2–10%/ปี) เพราะมี <strong>seasonal demand + storage capacity จำกัดจริง</strong> (พอ storage เต็มจริงๆ อย่างที่เกิดขึ้นกับ WTI เมษายน 2020 ราคาติดลบได้) — นั่นคือ <strong>structural deviation ที่มี ε ให้เล่นจริง</strong> ก๊าซธรรมชาติยิ่งชัดกว่า: demand พีคหน้าหนาวเทียบหน้าร้อนต่างกันมหาศาล ทำให้ calendar spread มี seasonal pattern ที่ statistically คาดเดาได้ ส่วนทองคำไม่มีกลไกไหนที่ทำให้ cost-of-carry เบี่ยงออกจาก fair value ได้นานๆ เลย</p>
+
+<table>
+<tr><th>สินค้า</th><th>Full-carry?</th><th>เหตุผล</th><th>มี ε ให้เทรดจริงไหม</th></tr>
+<tr><td>ทองคำ</td><td style="background:var(--red-bg)">ใช่ — full carry</td><td>ไม่เสื่อม ไม่มี seasonal demand ไม่มี storage constraint จริง</td><td>แทบไม่มี — เกมต้นทุน</td></tr>
+<tr><td>น้ำมันดิบ</td><td style="background:var(--green-bg)">ไม่เต็มรูป</td><td>convenience yield ผันผวนตาม supply shock, storage capacity จำกัดจริง (WTI เม.ย. 2020)</td><td>มี — structural deviation จริง</td></tr>
+<tr><td>ก๊าซธรรมชาติ</td><td style="background:var(--green-bg)">ไม่เต็มรูป</td><td>seasonal demand พีคจัด (หน้าหนาว vs หน้าร้อน) คาดเดาได้ทางสถิติ</td><td>มี — seasonal pattern ชัด</td></tr>
+</table>
+
+<div class="bx bk">
+<div class="bt">ทำไม "คนอื่นมี order แล้วได้กำไร" ไม่ได้แปลว่าคุณพลาดสัญญาณ</div>
+<p>ในตลาด full-carry เกมไม่ใช่ "ใครเห็นสัญญาณ" แต่คือ <strong>"ใครมีต้นทุน carry ต่ำกว่า"</strong> — market maker/bank ที่ยืมเงินถูกกว่า (institutional funding rate ต่ำกว่า retail มาก), มี vault เก็บทองเองไม่ต้องเช่า, หรือเป็นผู้ทำตลาดที่กิน bid-ask แทนที่จะจ่าย — คนกลุ่มนี้ "กำไร" จาก cost structure ที่ดีกว่า ไม่ใช่จากการเห็น mispricing ที่คุณมองไม่เห็น ถ้าระบบของคุณคำนวณแล้วบอกว่า "ไม่คุ้ม cost of carry" — <strong>ระบบทำงานถูกแล้ว</strong> การไม่มี order ไม่ใช่ความล้มเหลว</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">เช็คก่อนเข้าตลาดไหน — full-carry หรือมี structural deviation จริง</div>
+<ol>
+<li>convenience yield ของสินค้านี้ผันผวนแค่ไหน (ดูข้อมูลย้อนหลัง — ถ้านิ่งมากตลอดหลายปีคือสัญญาณ full-carry)</li>
+<li>มี physical constraint จริงไหม (storage เต็มได้ไหม, demand seasonal จริงไหม, delivery ยากไหม)</li>
+<li>เทียบต้นทุน carry ของคุณเองกับ institutional rate — ถ้าห่างกันมาก (retail funding แพงกว่า bank 5-10x) อย่าแข่งในตลาด full-carry</li>
+</ol>
+</div>
+
+<!-- 17.9 -->
+<h2 id="s17-9">17.9 Carry-Adjusted ε — เทรดส่วนเบี่ยง ไม่ใช่ spread ดิบ</h2>
+
+<p>สิ่งที่เทรดได้จริงไม่ใช่ observed spread ดิบ แต่คือ <strong>ส่วนเบี่ยงจาก fair carry</strong> — ใช้สูตร cost-of-carry เดียวกับ <a href="#s17-3">§17.3</a> แต่แทนที่จะดูแค่ "observed vs fair ณ จุดเดียว" เราต้อง track ε นี้ตามเวลา:</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตร Carry-Adjusted ε</div>
+<div class="ki-eq">ε_t = spread_t(observed) − fair_carry_t(r_t, u, q)</div>
+<p class="ki-text" style="margin-top:8px">โดย <strong>r_t</strong> ต้องเป็นอัตราดอกเบี้ย ณ เวลานั้นจริง (จาก rate curve ปัจจุบัน) <strong>ไม่ใช่ค่าคงที่</strong> — spread ของทองคำที่ "วิ่ง" ส่วนใหญ่คือ rate expectation เปลี่ยน ไม่ใช่ทองคำ mispriced</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ ไม่ hedge rate = เทรดดอกเบี้ยแฝงโดยไม่รู้ตัว</div>
+<p>ถ้าใช้ r คงที่ (หรือไม่สนใจว่า r เปลี่ยน) ε ที่คำนวณได้จะปนกันระหว่าง "ทองคำ mispriced จริง" กับ "ตลาดคาดการณ์ดอกเบี้ยเปลี่ยน" — สอง component นี้มีพฤติกรรมต่างกันโดยสิ้นเชิง (ตัวแรก mean-revert เร็ว ตัวหลัง trend ตาม Fed policy) ผสมกันจะทำให้สัญญาณสับสน</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Gold Calendar Spread — Rate Move ปลอมตัวเป็น Mispricing</div>
+<p>Front (June) = $2,380/oz คงที่ทั้งสองช่วงเวลา (แยกผล rate ออกจากผล price) · u = 0.2%/ปี, q = 0.7%/ปี · ΔT = 60 วัน = 0.1644 ปี</p>
+<div class="fm">เวลา t1 — r (SOFR) = 5.25%
+  (r+u−q) = 4.75%
+  fair_spread = 2380 × (e^(0.0475×0.1644) − 1) = $18.66
+  observed = $20.00  →  ε_t1 = 20.00 − 18.66 = $1.34
+
+เวลา t2 — Fed ขึ้นดอกเบี้ยเกินคาด, r (SOFR) = 7.25%  (+200bps)
+  (r+u−q) = 6.75%
+  fair_spread = 2380 × (e^(0.0675×0.1644) − 1) = $26.56
+  observed = $28.00  →  ε_t2 = 28.00 − 26.56 = $1.44
+
+Raw spread เปลี่ยน: $20.00 → $28.00  (+$8.00, +40%)
+Fair carry เปลี่ยน:  $18.66 → $26.56  (+$7.90 — จาก rate move ล้วนๆ)
+ε (ของจริงที่เทรดได้): $1.34 → $1.44  (+$0.10 เท่านั้น)</div>
+<p><strong>บทเรียน:</strong> raw spread บวมขึ้น $8 (40%) แต่ 98.75% ของมัน ($7.90) มาจาก rate curve เปลี่ยน ไม่ใช่ทองคำ mispriced — เทรดเดอร์ที่ดู raw spread อย่างเดียวจะคิดว่า "mispricing กำลังโตแรง เพิ่ม position" ทั้งที่ ε จริงแทบไม่ขยับ (จาก $1.34 เป็น $1.44) — นี่คือกับดักที่อธิบายว่าทำไมการเทรด raw spread โดยไม่ปรับ carry จึงเท่ากับเดิมพันทิศทางดอกเบี้ยโดยไม่ตั้งใจ</p>
+</div>
+
+<!-- 17.10 -->
+<h2 id="s17-10">17.10 Cross-Exchange Same-Commodity — เมื่อ "ทองเหมือนกัน" ไม่ใช่ instrument เดียวกัน</h2>
+
+<p>Calendar spread ข้าม exchange (เช่น CME COMEX ↔ exchange เอเชียที่เทรดทองคำหน่วยกรัม) เพิ่มมิติใหม่ที่ single-exchange calendar ไม่มี: <strong>สอง exchange อาจไม่ได้ trade "สิ่งเดียวกัน" เป๊ะ</strong> แม้ underlying คือทองคำเหมือนกัน</p>
+
+<h3>Spec Sheet & Hedge Ratio Arithmetic — ทำก่อนจับคู่เสมอ</h3>
+
+<p>ต้องเทียบ spec สองฝั่งเป็นตารางก่อนคำนวณอะไรทั้งสิ้น:</p>
+
+<table>
+<tr><th>รายการ</th><th>CME GC (ตัวอย่าง)</th><th>Exchange เอเชีย (ตัวอย่าง หน่วยกรัม)</th></tr>
+<tr><td>Contract size</td><td>100 troy oz</td><td>100 กรัม</td></tr>
+<tr><td>แปลงเป็นกรัม</td><td>100 × 31.1035 = 3,110.35 g</td><td>100 g</td></tr>
+<tr><td>Quote unit</td><td>USD/oz</td><td>ตามสกุลท้องถิ่น/กรัม</td></tr>
+<tr><td>Settlement</td><td>Physical delivery (โซนนิวยอร์ก)</td><td>ขึ้นกับ exchange (อาจ physical/cash)</td></tr>
+</table>
+
+<div class="fm">Hedge ratio ที่ถูกต้อง (กรัมต่อกรัม):
+  1 สัญญา GC = 3,110.35 g  →  ต้องใช้ 31.1035 สัญญา (100g) มาหักล้างพอดี
+
+ถ้าปัดเป็นจำนวนเต็ม 31 สัญญา:
+  เปลือย = 3,110.35 − 31×100 = 10.35 g  (≈ 0.33% ของ notional)
+
+ถ้าใช้ Micro Gold (MGC = 10 oz = 311.035 g) เทียบ 3 สัญญา (100g × 3 = 300g):
+  เปลือย = 311.035 − 300 = 11.035 g  (≈ 3.55% ของ notional — ใหญ่กว่ามาก!)</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ ทำไมเปลือย 0.3–3.5% ถึงฆ่า edge ได้</div>
+<p>Vol รายวันของทองคำ ~1% — ที่ size เล็ก (MGC) delta เปลือย 3.55% ของ notional มีขนาด noise รายวัน<strong>ใหญ่กว่า edge ต่อเทรดทั้งหมด</strong> PnL จะแกว่งตามทิศทองไปเลย ทั้งที่ตั้งใจ market-neutral <strong>กฎ:</strong> ถ้า residual delta × σ_gold รายวัน &gt; 20% ของ expected edge ต่อเทรด → size นี้เล็กเกินกว่าจะเทรดคู่นี้ (หรือใช้ MGC เศษเพิ่มเพื่อลด residual)</p>
+</div>
+
+<h3>No-Arb Band ที่ไม่ใช่ศูนย์ — Location Basis</h3>
+
+<p>Delivery คนละที่ (vault นิวยอร์กเทียบวอลต์เอเชีย) มีต้นทุนขนทองจริงข้ามทวีป (insurance, freight, security) — นี่ทำให้ θ (ค่ากลางของ location basis) <strong>ไม่เท่ากับ 0</strong> และมี band กว้างเท่าต้นทุนขนจริงที่ <strong>ไม่มีแรงดึงกลับภายในแบนด์นั้นเลย</strong>:</p>
+
+<div class="fm">location_basis_t = P_CME − P_exchange_เอเชีย (แปลงหน่วย+สกุลเงินแล้ว)
+
+ถ้า |location_basis_t − θ̂| < transport_cost_band  →  ไม่มี arb, ไม่มี mean reversion บังคับ
+ถ้า |location_basis_t − θ̂| > transport_cost_band  →  arbitrageur เริ่มขนทองจริง → ดึงกลับ
+
+θ̂ และ band ต้อง estimate จากข้อมูลจริง — ห้าม assume θ=0</div>
+
+<div class="bx br">
+<div class="bt">เคสจริง — EFP Gold Blowout มีนาคม 2020</div>
+<p>เดือนมีนาคม 2020 การล็อกดาวน์ COVID-19 ปิด flight เชิงพาณิชย์และโรงกลั่นทองหลายแห่ง ทำให้การขนทองจาก vault ลอนดอนไปยัง COMEX นิวยอร์กเพื่อ deliver ตาม futures ทำได้ยากขึ้นมาก — spread ระหว่าง COMEX futures กับราคาทองคำ loco London ที่ปกติต่างกันแค่ไม่กี่ดอลลาร์ต่อออนซ์ <strong>บวมขึ้นเป็นหลักหลายสิบดอลลาร์ต่อออนซ์</strong> ในบางช่วง — ใครที่ short calendar/location spread โดย assume ว่า band แคบเหมือนเดิม (θ=0 หรือ band ปกติ) เจอ mark-to-market ขาดทุนหนักก่อนที่ spread จะกลับมา (บาง position ไม่กลับมาเลยจนกว่า logistics จะคลี่คลาย)</p>
+</div>
+
+<!-- 17.11 -->
+<h2 id="s17-11">17.11 Roll &amp; Expiry Mechanics — ทำไมห้ามถือใกล้หมดสัญญา</h2>
+
+<p>ช่วงใกล้ expiry ไม่ใช่ช่วงที่ "เก็บ convergence สวยๆ" อย่างที่สัญชาตญาณอาจคิด — มันคือช่วงที่ noise ที่ไม่เกี่ยวกับ mean reversion เข้าครอบงำ:</p>
+
+<table>
+<tr><th>กลไก</th><th>ผลต่อ spread</th></tr>
+<tr><td>First Notice Day (FND) / Last Trading Day (LTD)</td><td>สองสัญญาอาจมี FND/LTD คนละวัน — เทรด "convergence" ที่ไม่มีวันนัดมาบรรจบกันจริง</td></tr>
+<tr><td>Position limits ใกล้ expiry</td><td>Exchange บังคับลด position → forced liquidation ดันราคาโดยไม่เกี่ยวกับ fair value</td></tr>
+<tr><td>Liquidity migration</td><td>สภาพคล่องไหลไปสัญญาถัดไปก่อน expiry หลายวัน → สัญญาใกล้หมดอายุ liquidity บางลง spread กว้างขึ้น</td></tr>
+<tr><td>Delivery dynamics (physical settlement)</td><td>ผู้ที่ไม่ต้องการรับ/ส่งมอบจริงต้อง roll ออกก่อน — แรงขายเชิงกลไกไม่ใช่เชิงราคา</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">โซนเวลาที่ spread "สะอาด" vs "สกปรก"</div>
+<p><strong>สะอาด:</strong> ตั้งแต่หลัง roll ของรอบก่อนจนถึง ~1-2 สัปดาห์ก่อน FND ของสัญญา front — ช่วงนี้ spread สะท้อน cost-of-carry ล้วนๆ <strong>สกปรก:</strong> ภายใน 1-2 สัปดาห์ก่อน FND/LTD — position limit, forced roll, liquidity migration เริ่มครอบงำ กฎปฏิบัติ: <strong>ปิด/roll position อย่างน้อย 5 วันทำการก่อน FND เสมอ</strong> (ตาม practitioner note ใน <a href="#s17-6">§17.6</a>)</p>
+</div>
+
+<!-- 17.12 -->
+<h2 id="s17-12">17.12 Execution: Listed Spread Order เท่านั้น — ห้าม Leg เอง</h2>
+
+<p>เข้า/ออกทีละขา (legging) จ่าย bid-ask 4 ครั้งบน spread ที่ σ มีขนาดแค่ไม่กี่ tick — friction กินกำไรจนหมดก่อนที่ mean reversion จะทันได้เก็บ:</p>
+
+<div class="fm">Legging (เข้า/ออกแยกขา):
+  เข้า: จ่าย bid-ask ขา front + จ่าย bid-ask ขา back  = 2 ครั้ง
+  ออก:  จ่าย bid-ask ขา front + จ่าย bid-ask ขา back  = 2 ครั้ง
+  รวม = 4 ครั้ง บน spread ที่ σ อาจแค่ 2-3 tick
+
+Listed Calendar Spread (order เดียว):
+  เข้า: จ่าย bid-ask ของ "spread" โดยตรง = 1 ครั้ง
+  ออก:  1 ครั้ง
+  รวม = 2 ครั้ง — friction ลดลงครึ่งหนึ่งขึ้นไป และไม่มี leg risk (เข้าขาหนึ่งแล้วอีกขาราคาวิ่งหนีก่อน fill)</div>
+
+<div class="bx bg">
+<div class="bt">ใช้ Listed Spread Instrument บน CME</div>
+<p>CME มี calendar spread เป็น instrument โดยตรง (เช่น GC calendar spread) ที่เทรดเป็น order เดียว ราคาคือส่วนต่างสุทธิ ไม่ต้องส่งสอง order แยกกัน — ต้นทุน (bid-ask ของ spread) มักแคบกว่าผลรวม bid-ask ของสองขาแยกกันมาก เพราะ market maker ของ spread instrument กำหนดราคาจากความเสี่ยงสุทธิ ไม่ใช่ความเสี่ยงแต่ละขา</p>
+</div>
+
+<!-- 17.13 -->
+<h2 id="s17-13">17.13 Margin Mechanics: SPAN Credit vs สองไซโล</h2>
+
+<p>ต้นทุนที่มองไม่เห็นในสูตร P&amp;L แต่ฆ่า position ได้จริงคือ <strong>โครงสร้าง margin</strong> — และนี่ต่างกันมหาศาลระหว่างเทรดใน exchange เดียวกับข้าม exchange:</p>
+
+<table>
+<tr><th></th><th>Calendar spread ใน exchange เดียว</th><th>Cross-exchange (สองโบรก/สอง clearinghouse)</th></tr>
+<tr><td>Margin</td><td>SPAN spread credit — ลดจาก outright ~80-95%</td><td>วาง margin เต็มแบบ outright <strong>ทั้งสองขา</strong> แยกบัญชี</td></tr>
+<tr><td>เงินทุนที่จม</td><td>น้อย (credit ช่วยไว้)</td><td>มากกว่า 5-20 เท่า → return on margin ต่ำกว่ามาก</td></tr>
+<tr><td>Variation margin เมื่อ spread ถ่าง</td><td>Net กันในบัญชีเดียว</td><td>ขาขาดทุนโดนเรียกเงินสดที่โบรก A ทันที ขากำไรเป็นเครดิตที่โบรก B คนละก้อน</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">⚠️ กระแสเงินสดที่ฆ่า position ทั้งที่ thesis ยังถูก</div>
+<p>เมื่อ spread ถ่างออกชั่วคราว (เรื่องปกติของ mean reversion) ขาขาดทุนถูกหัก variation margin เป็นเงินสดทุกวันที่โบรก A ส่วนกำไรของอีกขาเป็นเครดิตที่โบรก B — โอนเงินข้ามโบรก/ข้ามประเทศใช้เวลา 1-3 วันทำการขึ้นไป ถ้าเงินสดที่โบรก A หมดก่อน spread converge โบรกจะ<strong>บังคับปิดขา A ที่จุดถ่างสุด</strong> เหลือขา B เปลือย — เปลี่ยน "divergence ชั่วคราวที่ thesis ยังถูก" ให้กลายเป็นขาดทุนจริงถาวร (รูปแบบเดียวกับที่ทำลาย LTCM ในสเกลใหญ่ — ดู <a href="statarb-ch24.html">บทที่ 24</a>)</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน</div>
+<ol>
+<li><strong>Size จากทุนรับ divergence ไม่ใช่จาก margin ขั้นต่ำ:</strong> เงินสดสำรองต่อบัญชี ≥ margin เริ่มต้น + (k × historical max divergence) × notional</li>
+<li>ตั้ง alert ที่ 50% ของ buffer เงินสด</li>
+<li>ถ้าเทรดได้ใน exchange เดียว (listed calendar) ให้ทำแบบนั้นก่อนเสมอ — SPAN credit คือเหตุผลเชิงโครงสร้างที่ MM ต้นทุนต่ำกว่าเรา</li>
+<li>Cross-exchange ต้องคิด <strong>cost of capital ของ margin สองก้อน</strong> เข้าไปใน fair value/breakeven ด้วย ไม่ใช่แค่ fee+slippage</li>
+</ol>
+</div>
+
+<div class="bx bg">
+<div class="bt">✓ สรุป §17.8–17.13 — 5 อย่างที่ต้องจำก่อนเทรด Calendar Arb จริง</div>
+<ol>
+<li><strong>เช็คก่อนว่าตลาด full-carry หรือไม่</strong> — ทองคำแทบไม่มี signal edge จริง เป็นเกมต้นทุน ไม่ใช่เกมสัญญาณ</li>
+<li><strong>เทรด ε ที่ carry-adjusted เสมอ</strong> ไม่ใช่ raw spread — ไม่งั้นเดิมพันดอกเบี้ยโดยไม่รู้ตัว</li>
+<li><strong>ทำ spec sheet ก่อนจับคู่ข้าม exchange ทุกครั้ง</strong> — หน่วย/scale ที่ไม่ตรงกันสร้าง delta เปลือยที่ noise ใหญ่กว่า edge</li>
+<li><strong>ห้ามถือใกล้ expiry และห้าม leg เอง</strong> — ใช้ listed spread instrument เสมอที่ทำได้</li>
+<li><strong>คิดต้นทุน margin/cash flow เข้าไปในแผนก่อนเข้า</strong> โดยเฉพาะ cross-exchange — เงินสดหมดก่อน spread converge คือสาเหตุขาดทุนที่พบบ่อยไม่แพ้สัญญาณผิด</li>
+</ol>
+</div>
+
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
   Ch.17 Commodity Basis | ต่อไป → <strong>Ch.18: Options Overlay — Put-Call Parity Arbitrage</strong>
 </p>
