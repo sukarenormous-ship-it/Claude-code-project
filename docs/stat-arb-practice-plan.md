@@ -108,6 +108,84 @@
 
 ---
 
+## 2.5 Part II ลงรายละเอียด — Correlation & Cointegration ที่ใช้จริง + Copula รายย่อย
+
+> ธีมหลักของ Part นี้ (ตอบโจทย์ user ตรง ๆ): **"ทุกคนมีเครื่องมือ · library · AI เหมือนกัน บนสินทรัพย์ชุดเดียวกัน — แล้วเราต่างตรงไหน"**
+> เล่ม 1 §18.1 พูด correlation vs cointegration เชิงมโนทัศน์แล้ว → ที่นี่ *ไม่เขียนซ้ำ* แต่ลง **funnel จริง + ค่า cut-off + วิธี differentiate**
+
+### 2.5.1 The Screening Funnel — ค่า cut-off ที่ใช้กันจริง (จาก paper)
+
+| ขั้นกรอง | ค่าที่ใช้กันจริง | ทำไม / กับดัก |
+|---|---|---|
+| 1. Correlation prescreen | ρ(log-returns) **> 0.8** | S&P500: มีแค่ ~872 คู่ที่ > 0.8 · เป็นแค่ตัวกรองหยาบ **ไม่ใช่ข้อพิสูจน์ tradability** |
+| 2. Engle-Granger ADF | **p < 0.05** (เข้ม: < 0.01) | ทดสอบว่า residual stationary · แต่ single test บน 500 คู่ = false positive เพียบ (ดู 2.5.3) |
+| 3. Hurst exponent | **H < 0.5** (ยิ่งต่ำยิ่ง mean-revert) | ยืนยันซ้ำว่า revert จริง ไม่ใช่ ADF บังเอิญผ่าน |
+| 4. Half-life (OU) | ใช้ได้ราว **~1–30 วัน** | สั้นไป = churn ค่าคอมฯ · ยาวไป = ทุนถูกล็อก + คู่มีเวลาพัง (empirical เห็น 0.33–70 วัน) |
+| 5. Johansen (≥2 ขา) | trace / max-eigen > critical | สำหรับ basket >2 ตัว (เล่ม 1 ไม่มี) |
+
+> สอนเป็น **decision funnel** ไม่ใช่ท่องค่า: ทุกคู่ต้องผ่าน *หลายด่านพร้อมกัน* (ADF **และ** Hurst **และ** half-life สมเหตุผล) — ผ่านด่านเดียวไม่พอ
+
+### 2.5.2 "ทุกคนใช้เหมือนกัน แล้วต่างตรงไหน" — 5 จุด differentiation (แกนของ Part)
+1. **Universe** — สแกนที่คนอื่นไม่สแกน (small-cap/ไทย/SEA/crypto) → funnel เดิม แต่บ่อใหม่
+2. **Validation เข้มกว่า** — out-of-sample re-test cointegration (ไม่ใช่ fit ครั้งเดียวจบ); รวมหลาย test กัน false positive
+3. **Parameter regime** — จูน half-life band / cut-off ให้เข้ากับ *cost ของตัวเอง* ไม่ใช่ลอกค่า paper
+4. **When-NOT-to-trade** — coint p-value ลอย/half-life พุ่ง = ถอย (โยง §3C kill-switch)
+5. **วิธี dependence ที่ต่างจากฝูง** — ใช้ **copula** จับความสัมพันธ์/จังหวะที่ linear-cointegration ของฝูงพลาด (2.5.4)
+
+### 2.5.3 กับดักตัวจริง (ต้องมีกล่อง 📉 ทุกอัน)
+- **In-sample cointegrate → out-sample พัง** (กับดักอันดับ 1)
+- **Multiple testing**: สแกน 500 คู่ที่ α=0.05 = คาดหวัง ~เจอ false ~25 คู่ "ผ่าน" ทั้งที่มั่ว → ต้อง Bonferroni/FDR หรือ deflated Sharpe
+- **Look-ahead ใน selection**: เลือกคู่จากทั้ง sample แล้ว backtest บน sample เดิม = โกงตัวเอง
+- **Regime dependence**: คู่ที่ coint ในตลาดขาขึ้น อาจพังในวิกฤต
+
+### 2.5.4 Copula สำหรับรายย่อย — ชั้น A ที่ฝูงยังไม่แน่น
+**ทำไมรายย่อยควรสน:** copula แยก *marginal* (พฤติกรรมแต่ละตัว) ออกจาก *dependence* (โครงสร้างความเชื่อมโยง) → จับ **non-linear + tail dependence** ที่ correlation/cointegration เชิงเส้นพลาด; ใช้ได้แม้ hedge ratio เชิงเส้นพัง; ไม่ต้องบังคับให้ spread เป็น linear-stationary
+
+**เลือก family ตาม "คู่นี้เชื่อมกันตอนไหน" (tail dependence):**
+| Copula | Tail | ใช้เมื่อ |
+|---|---|---|
+| Gaussian / Frank | ไม่มี | เชื่อมกันปกติ ไม่มี tail พิเศษ |
+| Student-t | 2 หาง สมมาตร | เชื่อมแรงทั้งตอนขึ้น/ลง (คู่ในเซกเตอร์เดียว) |
+| Clayton | หางล่าง | เชื่อมแรงตอน **ตลาดตก** (crash together) |
+| Gumbel / Joe | หางบน | เชื่อมแรงตอน **ตลาดขึ้น** |
+
+**Signal = Mispricing Index (MI):** fit copula → conditional probability `P(U≤u|V=v)` → **MI = P(cond) − 0.5** → สะสม MI ข้าม threshold = เข้า/ออก (ต่างจาก z-score ของ spread ที่ใช้ในสาย cointegration)
+
+**เครื่องมือรายย่อย (ฟรี/มาตรฐาน — ทำได้จริงไม่ต้อง infra แพง):**
+- `arbitragelab` (Hudson & Thames) — มี **Mispricing Index Copula Strategy** สำเร็จรูป
+- `copulas` / `copulae` / `statsmodels` — fit copula เอง
+- QuantConnect tutorial "Pairs Trading: Copula vs Cointegration" — โค้ดรันได้ฟรี
+
+**กับดัก copula (ต้องเตือน):** ต้อง fit *marginal* ให้ดีก่อน (empirical CDF/ECDF); เลือก family มั่ว = overfit; tail-dependence estimate ไม่นิ่งบนข้อมูลน้อย; **ต้อง out-of-sample เสมอ**
+
+**Lit:** Rad, Low & Faff (2016, เปรียบเทียบ distance/cointegration/copula) · Xie, Wu et al. (2016, MI method ต้นฉบับ) · Stübinger, Mangold & Krauss (2018, vine copula หลายตัว)
+
+### 2.5.5 ★ Reframe สำคัญ — "การจับคู่ตายแล้ว" + Common Factor (แกนความคิดของทั้ง Part)
+
+> **จุดยืนของเล่ม (ตอบ user ตรง ๆ):** การนั่ง *สแกนหาคู่สวย ๆ* ไม่ใช่ edge อีกต่อไป — AI เขียน scan ให้ใครก็ได้ บนสินทรัพย์ชุดเดียวกัน และเหตุผลลึกกว่านั้นคือ **สินทรัพย์ co-move เพราะมันแชร์ common factor** (market/sector/style) ไม่ใช่เพราะมี "ความสัมพันธ์วิเศษ" เฉพาะคู่
+
+**สิ่งที่ตามมา 3 ข้อ (ต้องเป็นแกนสอน):**
+
+1. **Pair = กรณีพิเศษ rank-1 ของ factor-neutral portfolio** — spread จริง ๆ คือ *residual หลังหัก common factor* การเลือกคู่มือ = สร้าง factor-neutral portfolio 2 ตัวแบบหยาบ ๆ · **PCA/eigenportfolio (Avellaneda-Lee 2010)** ทำสิ่งเดียวกันแต่เป็นระบบทั้ง universe → เลิกเลือกคู่ ไปเทรด **mean-reversion ของ idiosyncratic residual** ข้ามทั้งกระดาน
+
+2. **Common factor คือความเสี่ยง ไม่ใช่แค่คำอธิบาย** — ★ ประเด็นทอง: ถ้าไม่ neutralize factor ให้ดี "pair" ของคุณคือ **factor bet ปลอมตัว** (แอบ long/short sector/market อยู่) → นี่คือเหตุผลจริงที่ pairs ไร้เดียงสาระเบิดตอนวิกฤต · **การเข้าใจ common factor ไม่ได้ให้ edge — แต่กัน "edge ปลอม" (factor bet ที่นึกว่าเป็น spread)**
+
+3. **Cut-off อาจไม่จำเป็น** (user ถูก) — แทน hard threshold เลือก/ไม่เลือก:
+   - **soft ranking ทั้ง universe** — ให้คะแนนต่อเนื่อง (residual z-score/half-life) แล้ว size ตามคะแนน ไม่ใช่ตัดทิ้งแบบ binary
+   - **residual s-score** (Avellaneda-Lee) — position = f(s-score) ข้ามทุกชื่อ ไม่มีการ "เลือกคู่" เลย
+   - cut-off ที่ 2.5.1 เลยกลายเป็น *baseline ที่ทุกคนรู้* (สอนไว้ให้เข้าใจ + รู้ว่าทำไมมันเปราะ) ไม่ใช่พระเอก
+
+**แล้ว edge รายย่อยอยู่ไหน (ต้องซื่อสัตย์):** factor-residual stat arb ก็ crowded ในตลาด liquid (Avellaneda-Lee เองโชว์ Sharpe เสื่อมหลัง ~2002) → edge จริงไม่ได้อยู่ที่ *วิธี selection* (ตายหมดแล้ว: pairs/coint/PCA/ML) แต่อยู่ที่:
+- **บ่อที่ common factor ยัง under-modeled** — Thai/SEA/crypto (คนยังไม่ได้ map factor structure ดี ๆ; แค่หัก sector ETF ก็อาจพอ)
+- **cost/capacity/access** (ชั้น D)
+- **วินัย + regime** (ชั้น C)
+
+> ประโยคทอง (.pq): *"เลิกถามว่าคู่ไหนสวย — ถามว่า residual อะไรที่เหลือหลังหักสิ่งที่ทุกคนถืออยู่แล้ว และใครยังไม่ได้หักมัน"*
+
+**Lit:** Avellaneda & Lee (2010, PCA residual s-score) · Guijarro-Ordóñez, Pelger, Zanotti (factor + DL residual) · โยง theory-part2 (factor models/PCA) ในเล่ม A
+
+---
+
 ## 3. 3 เทคนิค practitioner (จาก user) — ทีมรีวิว + ปรับให้ตรงตำรา
 
 > พูดตรง: ทั้ง 3 ไอเดียมี "core ที่ถูก" แต่ต้องรีเฟรมให้ตรงกับสิ่งที่ literature เรียกจริง เพื่อไม่ให้ตกหลุมที่มองไม่เห็น
@@ -155,7 +233,7 @@
 |---|---|---|
 | 0 | **Kalman ไม่ใช่ edge + แผนที่ Edge** | ตั้งความคาดหวัง: estimator = ท่อประปา; edge จริงอยู่ชั้น A–D (เน้น C+D สำหรับรายย่อย) |
 | I | **บันได β (1)** | ทำไม OLS พัง → EIV → TLS/PCA |
-| II | **Cointegration ใช้จริง** | Engle-Granger, Johansen/VECM, OU half-life, re-testing |
+| II | **Correlation & Cointegration ที่ใช้จริง** | funnel + cut-off จริง, differentiation 5 จุด, กับดัก multiple-testing, **copula/MI**, **reframe: pair ตาย → common factor / residual stat arb (Avellaneda-Lee)** |
 | III | **Kalman ลงมือ** | state-space, จูน Q/R, worked example + โค้ด |
 | IV | **Adaptive & Robust Kalman** | vol-adaptive R ที่ถูกหลัก, innovation gating, regime-switching |
 | V | **Signals & Bands** | z-score vs cost-aware/ATR band, optimal threshold (OU) |
