@@ -650,6 +650,12 @@ Half-life ≈ −ln(2)/ln(0.92) ≈ 8.3 bars (ถ้า bar = 1h → ~8.3h) → 
 <strong>กฎ:</strong> Pair selection (steps 1–3) ต้องทำบน <em>in-sample window เท่านั้น</em> → ทดสอบ live หรือ backtest บน out-of-sample window แยกต่างหาก → re-run funnel ทุกครั้งที่ขยาย in-sample window</p>
 </div>
 
+<div class="bx bk">
+<div class="bt">⚠️ Survivorship Bias — จักรวาลที่สแกนมีแต่ผู้รอด</div>
+<p>Pipeline นี้ (และ funnel ใน §5.8 ทั้งหมด) เริ่มจาก "รายชื่อ symbol ที่ active วันนี้" — เหรียญที่ delist, สัญญาที่หยุดเทรด, คู่ที่ spread ระเบิดจน liquidity หาย <strong>หายไปจากจักรวาลก่อนถึงมือคุณ</strong> และเคสเหล่านั้นมักเป็นกรณี "cointegration แตก" ที่แรงที่สุดพอดี — ผลคือ อัตราการรอดของความสัมพันธ์และ tail loss ของกลยุทธ์ pairs ถูกประเมินต่ำอย่างเป็นระบบ<br>
+<strong>แก้:</strong> เก็บ snapshot รายชื่อ symbol เป็นระยะ (point-in-time universe) แทนที่จะดึงรายชื่อปัจจุบันมา backtest ย้อนหลัง ถ้าไม่มีข้อมูลผู้ตาย ให้บวก haircut กับผล backtest ของคู่ที่มีขา alt/เหรียญเล็ก (ดูตัวอย่างผลกระทบระดับ fund ใน <a href="statarb-ch24.html">ch24</a>)</p>
+</div>
+
 <!-- Funnel chart -->
 <img class="chart" src="charts/ch5-pair-funnel.svg" alt="Pair Selection Funnel" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
 <div class="caption">Funnel กรองจาก 100 → 3–5 คู่ที่ผ่านทุก criterion — ไม่ต้องรีบข้ามขั้น</div>
@@ -863,6 +869,82 @@ Lighter เป็น leg ที่เสถียร — ต้องการ h
   W12    0.0089   1.016   🟢 green   กลับมาเทรดได้ (เริ่มด้วย size 50% ก่อน)</div>
 <p>W5: p ยังอยู่ที่ 0.009 (ต่ำมาก) แต่ trend บอกสัญญาณก่อนล่วงหน้า 2 สัปดาห์ — ถ้า monitor แค่ level จะไม่เห็นจนถึง W7</p>
 </div>
+
+<!-- 5.10 -->
+<h2 id="s5-10">5.10 Multiple Testing &amp; Winner's Curse ใน Pair Scan</h2>
+
+<p>Funnel ใน <a href="#s5-8">§5.8</a> กรอง "100 → 3-5 คู่" — ตัวเลขนี้ฟังดูน่าเชื่อถือ แต่ซ่อนกับดักทางสถิติที่ร้ายแรง: <strong>การสแกนหลายคู่แล้วเลือกที่ดีที่สุด คือการทำ hypothesis test ซ้ำหลายครั้ง</strong> ซึ่งเปลี่ยนความหมายของ p-value ที่เห็นไปอย่างสิ้นเชิง</p>
+
+<div class="bx bk">
+<div class="bt">⚠️ ADF p&lt;0.05 ของคู่ที่ "ผ่าน" อาจเป็นแค่ผู้ชนะโดยบังเอิญ</div>
+<p>รัน ADF ที่ α=0.05 กับคู่ที่เป็น random walk ล้วน (ไม่มี cointegration จริง) 100 คู่ → คาดว่าจะ "ผ่าน" ~5 คู่<strong>โดยบังเอิญ</strong> — ตรงกับ funnel ที่บอกว่า "กรอง 100 → 3-5 คู่" พอดี นั่นคือผลลัพธ์ที่ noise ล้วนก็สร้างได้ ถ้าเทรดคู่ปลอมเหล่านี้ spread คือ random walk → เดินหนีไม่กลับ → ขาดทุนแบบ divergence</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Winner's Curse — คู่ที่ถูกเลือกดูดีเกินจริงเสมอ</div>
+<div class="ki-text">
+แม้คู่ที่ cointegrate จริง คู่ที่ "ถูกเลือก" จาก scan คือคู่ที่ sample ช่วงนั้นดูดีเกินความจริงของมันเอง (post-selection bias) — κ, σ, ความถี่สัญญาณใน backtest จึงสูงกว่าที่จะเจอ live เสมอ (regression to the mean ของ performance)
+</div>
+</div>
+
+<div class="fm"><span class="c"># 1) รายงาน expected false positives ทุกครั้งที่สแกน</span>
+expected_false_positives = N_pairs × α
+
+<span class="c"># 2) ใช้ Bonferroni หรือ Benjamini-Hochberg FDR เป็น gate แทน α เดี่ยวๆ</span>
+Bonferroni:  α_adjusted = α / N_pairs
+BH-FDR:      เรียง p-value จากน้อยไปมาก แล้วหา threshold ที่ p_(i) ≤ (i/N) × q
+
+<span class="c"># 3) confirm คู่ที่ผ่านบน fresh holdout — ไม่ใช่ walk-forward ภายในคู่เดียวกัน</span>
+<span class="c"># 4) บังคับ economic prior: ทำไมสองตัวนี้ควรผูกกันเชิงโครงสร้าง?</span>
+<span class="c"># 5) หลังเลือกคู่แล้ว shrink คาดการณ์: ใช้ half-life/σ จากช่วง confirm ไม่ใช่ช่วง scan</span></div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: 200 คู่ Random Walk ล้วนๆ</div>
+<div class="fm">สแกน 200 คู่ (สมมติว่าเป็น random walk ล้วน ไม่มี cointegration จริงสักคู่) ที่ α=<span class="nm">0.05</span>:
+คาดว่าจะ "ผ่าน ADF" ประมาณ <span class="nm">10</span> คู่ โดยบังเอิญล้วนๆ
+
+BH-FDR ที่ q=<span class="nm">10%</span> บน 200 คู่:
+ตัดเหลือเฉพาะ p ที่เล็กจริง — เช่น ตัวอันดับ 5 ต้องมี p &lt; <span class="nm">0.0025</span> ถึงจะผ่าน (ไม่ใช่ p&lt;0.05 แบบเดี่ยวๆ)
+
+→ ถ้า pipeline ของคุณกรอง "100→3-5 คู่" โดยไม่ปรับ α ตามจำนวนคู่ที่สแกน
+   ต้องสงสัยว่าคู่ที่ผ่านเป็น winner จริงหรือ winner โดยบังเอิญ</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">Economic Prior — เกราะป้องกันที่ดีที่สุด</div>
+<p>คู่ที่มีแต่สถิติ (p-value สวย) แต่ไม่มีเหตุผลเชิงกลไกว่าทำไมควรผูกกันเชิงโครงสร้าง (venue เดียวกัน / underlying เดียวกัน / flow เดียวกัน) ให้ discount หนัก — สถิติอย่างเดียวไม่เคยพอ ต้องมีเรื่องเล่าเชิงเศรษฐศาสตร์รองรับเสมอก่อนเชื่อ p-value</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§5.10 คือ multiple testing ตอนเลือกคู่ → §5.11 คือ multiple testing ตอนจูน parameter ▶</p>
+
+<!-- 5.11 -->
+<h2 id="s5-11">5.11 Grid-Search Parameter Tuning = Multiple Testing บน Parameter</h2>
+
+<p>ปัญหาเดียวกับ §5.10 เกิดซ้ำอีกชั้นตอนจูน entry z / exit z / lookback window — การลอง config หลายสิบแบบแล้วเลือกตัวที่ Sharpe สูงสุด คือการทดสอบสมมติฐานซ้ำบน<em>พารามิเตอร์</em> ไม่ใช่แค่บน<em>คู่</em></p>
+
+<div class="bx bk">
+<div class="bt">⚠️ Sharpe สูงสุดจาก Noise ล้วนๆ ก็สูงได้ตามสัดส่วนจำนวน Config</div>
+<p>ลอง entry z ∈ {1.5, 2, 2.5} × exit z ∈ {0, 0.5, 1} × window ∈ {30, 60, 90} × TF 2 แบบ = 54 configs — ต่อให้กลยุทธ์ไม่มี edge เลย ค่า max ของ Sharpe จาก 54 การจับฉลากจะสูงตาม √(2·ln N) โดยประมาณ บนข้อมูล 1 ปี best-of-54 โชว์ Sharpe 1.5-2 ได้จาก noise ล้วน — เกณฑ์ "Sharpe &gt; 2" ที่คนใช้คัดกลยุทธ์ ผ่านได้สบายด้วยความว่างเปล่า</p>
+</div>
+
+<div class="fm">E[max Sharpe จาก N configs สุ่มล้วน] ≈ √(2 · ln N / years)
+
+<span class="c"># ตัวอย่าง: 54 configs, ข้อมูล 1 ปี</span>
+E[max Sharpe] ≈ √(2 × ln(54) / 1) ≈ <span class="nm">2.8</span>
+
+<span class="c"># กับดักซ้อน: ทดสอบ config ที่เลือกบน OOS หนึ่งช่วง ผลไม่ดี → "ปรับนิดหน่อย" → ทดสอบ OOS เดิมซ้ำ</span>
+<span class="c"># ทำไม่กี่รอบ OOS ช่วงนั้นก็กลายเป็น in-sample ของกระบวนการเลือก — หมดความศักดิ์สิทธิ์</span></div>
+
+<div class="bx bg">
+<div class="bt">ป้องกัน: Nested Walk-Forward + Final Holdout</div>
+<ol>
+<li>นับ N_configs ที่เคยลองทั้งหมด (รวมที่ลองแล้วทิ้ง) — ใช้ Deflated Sharpe Ratio เทียบ max-of-N ของ noise เป็น benchmark ขั้นต่ำ</li>
+<li>เลือกพารามิเตอร์ด้วย nested walk-forward: จูนใน train, ประเมินใน validation, รายงานผลจาก test ที่แตะครั้งเดียว</li>
+<li>กัน final holdout ไว้แตะได้ครั้งเดียวในชีวิตของกลยุทธ์</li>
+<li>ชอบพารามิเตอร์ที่มาจากทฤษฎี (เช่น entry จาก breakeven formula ใน <a href="statarb-ch3.html#s3-4">ch3 §3.4</a> + friction ใน <a href="statarb-ch19.html">ch19</a>) มากกว่าจาก search — ยิ่ง search space เล็ก ยิ่งเชื่อผลได้</li>
+</ol>
+</div>
+
 
 <div class="bx bb">
 <div class="bt">หมายเหตุ: ADF/Engle-Granger นี้ใช้ได้กับ F(·) อื่นเช่นกัน</div>
