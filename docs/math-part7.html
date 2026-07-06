@@ -3,226 +3,266 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>คณิตศาสตร์สำหรับ Options — Part VII</title>
+<title>คณิตศาสตร์สำหรับ Options — Part V: ประกอบร่าง Black-Scholes + Monte Carlo</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
-p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
-.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
-.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bt{font-weight:700;margin-bottom:5px}
-.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
-svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
-</style>
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;white-space:pre-wrap}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:480px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px dashed #0891b2;border-radius:8px;padding:12px 18px;margin:14px 0}.try .bt{color:#0e7490}.try details{margin-top:6px}.try summary{cursor:pointer;color:#0e7490;font-weight:600}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style>
 </head>
 <body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
 <div class="cover">
-<h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
-<div class="sub">Part VII: ประมวลรวม — อ่าน Black-Scholes ออก + Monte Carlo</div>
-<div class="desc">บทที่ 15-16: ไล่สูตร BS ทีละตัว, พิสูจน์ Put-Call Parity,<br>Monte Carlo Simulation, Exotic Options</div>
+<h1>คณิตศาสตร์สำหรับ<br>Options Trading</h1>
+<div class="sub">Part V — ประกอบร่าง Black-Scholes + Monte Carlo</div>
+<div class="desc">ไล่สูตร BS ทีละตัว · พิสูจน์ Put-Call Parity ร่วงจาก BS · Monte Carlo · Exotic Options · แผนที่ความรู้ทั้งเล่ม — บท finale ที่คุณจะ "อ่าน Black-Scholes ออกทุกตัวอักษร"</div>
 </div>
 
-<!-- ========== CHAPTER 15 ========== -->
-<h2 id="ch15">บทที่ 15: ทุกอย่างรวมกัน — "อ่าน Black-Scholes ออก"</h2>
+<!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน — บทปิดเล่ม</div>
+<p><strong>🟢 มือใหม่:</strong> อ่านตาราง "ไล่ทีละตัว" + กล่อง 💎 + แผนที่ความรู้ ก็เห็นภาพรวมทั้งเล่ม · <strong>🔵 มีพื้น:</strong> ตามการพิสูจน์ Put-Call Parity ร่วงจาก BS และ Monte Carlo ให้ครบ · Part นี้ไม่มีของใหม่มาก — มันคือ "การประกอบร่าง" ทุกอย่างที่เรียนมา</p></div>
 
-<p>ถึงเวลาพิสูจน์ว่าคุณเข้าใจจริง — ไล่สูตร BS ทีละตัวแล้วชี้ว่าแต่ละส่วนมาจากบทไหน</p>
+<div class="bx bp"><div class="bt">📖 ต่อจาก Part IV — และศัพท์ที่จะเจอ</div>
+<p>Part IV ให้เครื่องยนต์ (Ito → BS PDE) · Part V เอาผลลัพธ์ — สูตร Black-Scholes สำเร็จรูป — มากางให้อ่านออกทุกตัว แล้วปิดด้วย Monte Carlo วิธีตั้งราคาแบบ "จำลองอนาคต" · ศัพท์: <strong>Monte Carlo</strong> = จำลองสุ่มหลายครั้งแล้วเฉลี่ย · <strong>Exotic option</strong> = option ที่ payoff ซับซ้อนกว่าปกติ · <strong>Law of Large Numbers</strong> = ยิ่งสุ่มเยอะ ค่าเฉลี่ยยิ่งนิ่ง</p></div>
 
-<h3 id="s15-1">15.1 สูตร Black-Scholes ฉบับเต็ม</h3>
+<!-- ═══════════════ เปิดเรื่อง (HOOK) ═══════════════ -->
+<h2>เปิดเรื่อง: ประโยคที่เมื่อ 4 Part ก่อนอ่านไม่ออก</h2>
 
-<div class="fm" style="text-align:center;font-size:1.2em;padding:20px">
-<strong>C = S₀ × N(d₁) - K × e<sup>-rT</sup> × N(d₂)</strong><br><br>
-<strong>P = K × e<sup>-rT</sup> × N(-d₂) - S₀ × N(-d₁)</strong>
+<p>ตอนเปิดเล่ม สูตรนี้คงดูเหมือนอักษรอียิปต์โบราณ:</p>
+
+<div class="fm" style="text-align:center;font-size:1.05em">C = S₀·N(d₁) − K·e^(−rT)·N(d₂)</div>
+
+<p>วันนี้คุณอ่านมันออก<strong>ทุกตัวอักษร</strong> และรู้ด้วยว่าแต่ละตัวมาจากบทไหน · S₀ กับ K คือฟังก์ชันกับ Strike (Part I) · e<sup>−rT</sup> คือ PV (Part I) · N(d) คือพื้นที่ใต้ระฆัง (Part II) · d มี σ, ln, √T, และเทอม Ito ซ่อนอยู่ (Part II–IV) · Part นี้คือรอบพิสูจน์ว่าเดินทางมาครบวง</p>
+
+<div class="pq">สูตรที่เคยขู่ให้เรากลัว กลายเป็นประโยคที่เราแต่งเองได้ — เพราะเราสร้างมันขึ้นมาทีละคำ</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 11 (เดิม 15) ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch11">บทที่ 11: อ่าน Black-Scholes ออกทุกตัว</h2>
+
+<h3 id="s11-1">11.1 สูตรฉบับเต็ม</h3>
+
+<div class="fm" style="text-align:center;font-size:1.05em">C = S₀·N(d₁) − K·e^(−rT)·N(d₂)
+P = K·e^(−rT)·N(−d₂) − S₀·N(−d₁)
+
+d₁ = [ ln(S₀/K) + (r + σ²/2)·T ] / (σ√T)
+d₂ = d₁ − σ√T</div>
+
+<h3 id="s11-2">11.2 ไล่ทีละตัว — มาจากบทไหน</h3>
+
+<div class="card">
+<h3>กายวิภาคของสูตร Black-Scholes <span class="yr">BSM 1973</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สูตรทั้งก้อนอ่านได้เป็นประโยคเดียว "<strong>สิ่งที่คาดว่าจะได้ (หุ้น) ลบ สิ่งที่คาดว่าจะจ่าย (เงิน K คิดลด) เฉพาะในกรณีที่คุ้มจะใช้สิทธิ์</strong>"</p>
+
+<div class="tw"><table>
+<tr><th>ส่วนประกอบ</th><th>คืออะไร</th><th>มาจาก</th></tr>
+<tr><td><strong>S₀</strong></td><td>ราคาหุ้นวันนี้</td><td>Part I — ตัวแปรในฟังก์ชัน</td></tr>
+<tr><td><strong>K</strong></td><td>Strike</td><td>Part I — max(0, S−K)</td></tr>
+<tr><td><strong>e<sup>−rT</sup></strong></td><td>ตัวคิดลด (PV)</td><td>Part I — continuous compounding</td></tr>
+<tr><td><strong>N(d)</strong></td><td>พื้นที่สะสมใต้ระฆัง (CDF)</td><td>Part II — Normal, Z-score</td></tr>
+<tr><td><strong>N(d₂)</strong></td><td>โอกาส (risk-neutral) ที่จบแบบ ITM = ถูกใช้สิทธิ์</td><td>Part II + Part IV — risk-neutral</td></tr>
+<tr><td><strong>N(d₁)</strong></td><td><strong>= Delta ของ Call</strong> (ไม่ใช่โอกาส ITM)</td><td>Part II + Part III — Delta</td></tr>
+<tr><td><strong>ln(S₀/K)</strong></td><td>log moneyness</td><td>Part I — ln, log return</td></tr>
+<tr><td><strong>σ</strong></td><td>Volatility</td><td>Part II — σ, Lognormal</td></tr>
+<tr><td><strong>σ√T</strong></td><td>σ ปรับตามเวลา (variance ∝ T)</td><td>Part II/IV — σ√T, Brownian</td></tr>
+<tr><td><strong>σ²/2</strong></td><td>เทอมแก้ของ Ito</td><td>Part IV — Ito's Lemma</td></tr>
+</table></div>
+
+<div class="bx br"><div class="bt">❌ อย่าอ่านผิด 2 จุดนี้ (กับดักคลาสสิก)</div>
+<ul>
+<li><strong>N(d₁) ไม่ใช่ "โอกาสจบ ITM"</strong> — มันคือ Delta · ตัวที่เป็นโอกาส ITM (risk-neutral) คือ N(d₂) (ย้ำจาก Part II)</li>
+<li><strong>(r + σ²/2) ไม่ใช่ "drift ของ risk-neutral"</strong> — drift ของ log-price ใน risk-neutral คือ <strong>(r − σ²/2)</strong> (ซึ่งโผล่ใน d₂ และในสูตร Monte Carlo ข้างล่าง) · ตัว (r + σ²/2) เป็นแค่เทอมในตัวเศษของ d₁ ที่ต่างจาก d₂ อยู่ σ² พอดี (เทอม Ito)</li>
+</ul></div>
+
+<svg class="d" viewBox="0 0 520 210" role="img" aria-label="แผนภาพ BS: ได้ (หุ้น) ลบ จ่าย (เงิน K คิดลด)">
+<rect x="20" y="30" width="220" height="56" rx="9" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="130" y="55" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#2563eb" font-weight="700">S₀ · N(d₁)</text>
+<text x="130" y="74" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">สิ่งที่ได้ (หุ้น ถ่วงด้วย Delta)</text>
+<text x="255" y="64" text-anchor="middle" font-family="Sarabun" font-size="24" fill="#374151" font-weight="700">−</text>
+<rect x="272" y="30" width="228" height="56" rx="9" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+<text x="386" y="55" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#dc2626" font-weight="700">K·e^(−rT) · N(d₂)</text>
+<text x="386" y="74" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">สิ่งที่จ่าย (เงิน K คิดลด)</text>
+<text x="260" y="120" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">= C (ราคา Call)</text>
+<text x="260" y="142" text-anchor="middle" font-family="Sarabun" font-size="10.5" fill="#6b7280">"คาดว่าจะได้" − "คาดว่าจะจ่าย" = มูลค่าสุทธิ</text>
+<text x="130" y="176" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#2563eb">S₀=Part I · N(d₁)=Part II+III</text>
+<text x="386" y="176" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#dc2626">K·e^(−rT)=Part I · N(d₂)=Part II+IV</text>
+</svg>
 </div>
 
-<div class="fm">d₁ = [ln(S₀/K) + (r + σ²/2)T] / (σ√T)<br>
-d₂ = d₁ - σ√T</div>
+<h3 id="s11-3">11.3 Put-Call Parity ร่วงออกมาจาก BS เอง</h3>
 
-<h3 id="s15-2">15.2 ไล่ทีละตัว — มาจากบทไหน?</h3>
+<div class="bx bp"><div class="bt">💎 โมเมนต์ที่ควรหยุดดู — ทุกอย่างบรรจบ</div>
+<p>เอาสูตร C ลบ P ตรง ๆ แล้วใช้สมบัติเดียว N(x) + N(−x) = 1 (พื้นที่ระฆังซ้าย+ขวา = 1) Put-Call Parity ที่เราเรียนตั้งแต่ Part I จะ<strong>ร่วงออกมาเอง</strong>:</p></div>
 
-<table>
-<tr><th>ส่วนประกอบ</th><th>ความหมาย</th><th>เรียนในบทที่</th></tr>
-<tr><td><strong>S₀</strong></td><td>ราคาหุ้นปัจจุบัน</td><td>บท 1: ตัวแปรในฟังก์ชัน</td></tr>
-<tr><td><strong>K</strong></td><td>Strike Price</td><td>บท 1: max(0, S-K)</td></tr>
-<tr><td><strong>e<sup>-rT</sup></strong></td><td>Discount factor (PV)</td><td>บท 3: Continuous compounding</td></tr>
-<tr><td><strong>K × e<sup>-rT</sup></strong></td><td>PV(K) ใน Put-Call Parity</td><td>บท 3: Present Value</td></tr>
-<tr><td><strong>N(d)</strong></td><td>CDF ของ Normal Distribution</td><td>บท 6: Normal, Z-score, CDF</td></tr>
-<tr><td><strong>N(d₁)</strong></td><td>≈ P(expire ITM) ปรับด้วย delta</td><td>บท 6: CDF + บท 7: Delta</td></tr>
-<tr><td><strong>N(d₂)</strong></td><td>≈ P(exercise) ใน risk-neutral world</td><td>บท 14: Risk-Neutral Pricing</td></tr>
-<tr><td><strong>ln(S₀/K)</strong></td><td>Log moneyness</td><td>บท 3: ln, log return</td></tr>
-<tr><td><strong>σ</strong></td><td>Volatility (Std Dev ของ log returns)</td><td>บท 4: σ + บท 6: Lognormal</td></tr>
-<tr><td><strong>σ√T</strong></td><td>Volatility scaled ด้วยเวลา</td><td>บท 14: Brownian Motion (variance ∝ T)</td></tr>
-<tr><td><strong>r + σ²/2</strong></td><td>Drift ใน risk-neutral world</td><td>บท 14: GBM + Ito's correction</td></tr>
-<tr><td><strong>σ²/2</strong></td><td>Ito's correction term</td><td>บท 14: Ito's Lemma</td></tr>
-</table>
+<div class="fm">C − P = S₀·N(d₁) − K·e^(−rT)·N(d₂) − [ K·e^(−rT)·N(−d₂) − S₀·N(−d₁) ]
+      = S₀·[N(d₁)+N(−d₁)] − K·e^(−rT)·[N(d₂)+N(−d₂)]
+      = S₀·(1) − K·e^(−rT)·(1)        ← N(x)+N(−x) = 1
+      = S₀ − K·e^(−rT)
 
-<svg class="d" viewBox="0 0 500 200">
-<!-- BS formula visual breakdown -->
-<rect x="10" y="30" width="230" height="50" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
-<text x="125" y="55" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#2563eb" font-weight="700">S₀ × N(d₁)</text>
-<text x="125" y="72" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">มูลค่าที่ได้รับ (delta-weighted)</text>
-<text x="250" y="60" text-anchor="middle" font-family="Sarabun" font-size="24" fill="#374151" font-weight="700">−</text>
-<rect x="260" y="30" width="230" height="50" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
-<text x="375" y="55" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#dc2626" font-weight="700">K·e<tspan baseline-shift="super" font-size="10">-rT</tspan> × N(d₂)</text>
-<text x="375" y="72" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">ต้นทุนที่คาดว่าจะจ่าย (PV)</text>
-<!-- Arrow down -->
-<text x="250" y="105" text-anchor="middle" font-family="Sarabun" font-size="14" fill="#16a34a" font-weight="700">= C (ราคา Call)</text>
-<text x="250" y="125" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#64748b">"สิ่งที่คาดว่าจะได้" − "สิ่งที่คาดว่าจะจ่าย" = มูลค่าสุทธิ</text>
-<!-- Mapping lines -->
-<text x="60" y="155" font-family="Sarabun" font-size="10" fill="#2563eb">S₀ = บท 1 | N(d₁) = บท 6+7</text>
-<text x="280" y="155" font-family="Sarabun" font-size="10" fill="#dc2626">K·e⁻ʳᵀ = บท 3 | N(d₂) = บท 6+14</text>
-<text x="250" y="180" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#d97706">d₁,d₂ = ln (บท 3) + σ (บท 4) + √T (บท 14) + σ²/2 (Ito, บท 14)</text>
+→  C + K·e^(−rT) = P + S₀     ✓ Put-Call Parity!</div>
+
+<div class="bx bg"><div class="bt">🔗 ทุกอย่างเชื่อมกัน</div>
+<p>Put-Call Parity (Part I) ← ร่วงจาก BS formula ← มาจาก Ito's Lemma (Part IV) ← มาจาก Chain Rule (Part III) + Brownian Motion (Part IV) ← มาจาก Normal Distribution (Part II) ← มาจาก e, ln (Part I) · หนังสือทั้งเล่มคือวงกลมวงเดียวที่ปิดสนิทตรงนี้</p></div>
+
+<h3 id="s11-4">11.4 ข้อจำกัดของ BS — "ผิดอย่างมีประโยชน์"</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Black-Scholes ตั้งอยู่บนสมมติฐานที่โลกจริงไม่เป็นตาม แต่มันยังเป็น "ภาษากลาง" ของทั้งตลาด เพราะมันผิดแบบ<strong>คาดเดาได้</strong> — เรารู้ว่ามันเพี้ยนตรงไหน แล้วปรับเอา</p>
+
+<div class="tw"><table>
+<tr><th>BS สมมติว่า</th><th>โลกจริง</th><th>ผลที่ตามมา</th></tr>
+<tr><td>σ คงที่</td><td>σ เปลี่ยนตลอด (GARCH, Part IV)</td><td>Volatility Smile / Skew</td></tr>
+<tr><td>log return เป็น Normal</td><td>Fat tails (Part II)</td><td>ประเมินความเสี่ยงหางต่ำไป</td></tr>
+<tr><td>ราคาไม่กระโดด</td><td>มี jump/gap</td><td>OTM option ถูกเกินจริง</td></tr>
+<tr><td>เทรดต่อเนื่อง ไม่มีต้นทุน</td><td>ตลาดปิด-เปิด มีค่าธรรมเนียม</td><td>hedge ไม่สมบูรณ์</td></tr>
+</table></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง — โมเดลที่ผิด ทำไมยังครองตลาด</div>
+<p><strong>มือใหม่เห็น:</strong> "BS ผิด ก็ทิ้งไปสิ ใช้ทำไม"<br>
+<strong>คนในตลาดเห็น:</strong> BS ไม่ได้ใช้เพื่อ "ทำนายราคาให้ถูก" แต่ใช้เป็น <strong>ภาษากลาง</strong> — ทุกคน quote กันด้วย "IV" ซึ่งก็คือ "ต้องใส่ σ เท่าไรใน BS ถึงได้ราคาตลาด" · โมเดลที่ผิดแต่ทุกคนผิดเหมือนกัน กลายเป็นหน่วยวัดร่วม · นี่คือ "all models are wrong, some useful" ในทางปฏิบัติ</p></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 12 (เดิม 16) ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch12">บทที่ 12: Monte Carlo — จำลองอนาคต 10,000 ครั้ง</h2>
+
+<p>เมื่อ option ซับซ้อนจน BS ไม่มีสูตรปิด (exotic) เราตั้งราคาด้วยการ<strong>จำลองเส้นทางราคาหุ้นหลายครั้ง แล้วเฉลี่ย payoff</strong></p>
+
+<h3 id="s12-1">12.1 แนวคิด Monte Carlo</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าคำนวณตรง ๆ ไม่ได้ ก็ "ลองสุ่มดูเยอะ ๆ แล้วเฉลี่ย" · <strong>Law of Large Numbers</strong> รับรองว่ายิ่งสุ่มมาก ค่าเฉลี่ยยิ่งเข้าใกล้คำตอบจริง</p>
+
+<div class="fm">1. สุ่ม Z ~ N(0,1) จำนวน N ครั้ง (เช่น N = 100,000)
+2. S(T) = S₀ · exp( (r − σ²/2)·T + σ√T·Z )   ← drift risk-neutral = r − σ²/2
+3. Payoff แต่ละเส้นทาง: max(0, S(T) − K)
+4. ราคา Call = e^(−rT) · ค่าเฉลี่ยของ Payoff ทั้งหมด</div>
+
+<svg class="d" viewBox="0 0 520 230" role="img" aria-label="เส้นทางราคาหุ้นสุ่มหลายเส้นจาก S0 บางเส้นจบเหนือ K (ITM) บางเส้นต่ำกว่า (OTM)">
+<defs>
+<linearGradient id="p7up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16a34a" stop-opacity="0.18"/><stop offset="1" stop-color="#16a34a" stop-opacity="0.02"/></linearGradient>
+</defs>
+<line x1="55" y1="205" x2="470" y2="205" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="205" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="474" y="209" font-family="Sarabun" font-size="10" fill="#6b7280">เวลา</text>
+<text x="34" y="24" font-family="Sarabun" font-size="10" fill="#6b7280">S</text>
+<!-- strike line -->
+<line x1="55" y1="95" x2="470" y2="95" stroke="#7c3aed" stroke-width="1.3" stroke-dasharray="5,3"/>
+<text x="60" y="90" font-family="Sarabun" font-size="10" fill="#7c3aed" font-weight="600">K</text>
+<!-- ITM zone shade above K on the right -->
+<rect x="380" y="30" width="90" height="65" fill="url(#p7up)"/>
+<!-- paths -->
+<polyline points="70,150 120,132 170,140 220,110 270,90 320,66 370,52 440,40" fill="none" stroke="#16a34a" stroke-width="1.8" opacity="0.75" stroke-linecap="round"/>
+<polyline points="70,150 120,158 170,150 220,168 270,175 320,182 370,190 440,196" fill="none" stroke="#dc2626" stroke-width="1.8" opacity="0.7" stroke-dasharray="5,3" stroke-linecap="round"/>
+<polyline points="70,150 120,140 170,120 220,128 270,105 320,110 370,88 440,70" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.6" stroke-linecap="round"/>
+<polyline points="70,150 120,155 170,145 220,150 270,140 320,150 370,145 440,150" fill="none" stroke="#94a3b8" stroke-width="1.2" opacity="0.5" stroke-linecap="round"/>
+<polyline points="70,150 120,135 170,150 220,132 270,120 320,128 370,118 440,108" fill="none" stroke="#94a3b8" stroke-width="1.2" opacity="0.4" stroke-linecap="round"/>
+<circle cx="70" cy="150" r="4.5" fill="#374151"/><text x="44" y="154" font-family="Sarabun" font-size="10" fill="#374151">S₀</text>
+<text x="392" y="45" font-family="Sarabun" font-size="9.5" fill="#16a34a" font-weight="600">จบเหนือ K → ITM</text>
+<text x="392" y="192" font-family="Sarabun" font-size="9.5" fill="#dc2626">จบต่ำกว่า → 0</text>
+<text x="255" y="224" text-anchor="middle" font-family="Sarabun" font-size="10.5" fill="#6b7280">จำลองหมื่นเส้นทาง → เฉลี่ย payoff → คิดลด = ราคา Option</text>
 </svg>
 
-<h3 id="s15-3">15.3 พิสูจน์ Put-Call Parity จาก BS</h3>
+<h3 id="s12-2">12.2 Monte Carlo ลู่เข้า Black-Scholes</h3>
 
-<div class="fm">C - P = S₀·N(d₁) - K·e<sup>-rT</sup>·N(d₂) - [K·e<sup>-rT</sup>·N(-d₂) - S₀·N(-d₁)]<br>
-= S₀·[N(d₁) + N(-d₁)] - K·e<sup>-rT</sup>·[N(d₂) + N(-d₂)]<br>
-= S₀·(1) - K·e<sup>-rT</sup>·(1) &nbsp;&nbsp; ← เพราะ N(x) + N(-x) = 1<br>
-= <strong>S₀ - K·e<sup>-rT</sup></strong><br><br>
-→ C + K·e<sup>-rT</sup> = P + S₀ &nbsp;&nbsp; <strong>✓ Put-Call Parity!</strong></div>
+<p>ทดสอบกับ Call ที่มีสูตรปิด (S₀=100, K=100, r=5%, σ=25%, T=1) เทียบว่า MC เข้าใกล้ค่าจริงแค่ไหน:</p>
 
-<div class="bx bg">
-<div class="bt">ทุกอย่างเชื่อมกัน!</div>
-<p>Put-Call Parity (บท 2) ← มาจาก BS formula ← มาจาก Ito's Lemma (บท 14) ← มาจาก Chain Rule (บท 7) + Brownian Motion (บท 14) ← มาจาก Normal Distribution (บท 6) ← มาจาก e, ln (บท 3)</p>
-</div>
+<div class="tw"><table>
+<tr><th>วิธี</th><th>ราคา Call</th></tr>
+<tr><td><strong>BS Formula (ค่าจริง)</strong></td><td class="nw"><strong>12.336</strong></td></tr>
+<tr><td>MC 1,000 เส้นทาง</td><td class="nw">≈ 12.5 ± 0.8</td></tr>
+<tr><td>MC 10,000 เส้นทาง</td><td class="nw">≈ 12.38 ± 0.25</td></tr>
+<tr><td>MC 100,000 เส้นทาง</td><td class="nw">≈ 12.34 ± 0.08</td></tr>
+<tr><td>MC 1,000,000 เส้นทาง</td><td class="nw">≈ 12.336 ± 0.025</td></tr>
+</table></div>
 
-<h3 id="s15-4">15.4 ข้อจำกัดของ BS — สิ่งที่ต้องรู้</h3>
+<div class="bx ba"><div class="bt">🧮 สังเกต — error หดตาม 1/√N</div>
+<p>เพิ่มเส้นทาง 100 เท่า error ลดแค่ 10 เท่า (√100) · นี่คือทั้งจุดแข็งและจุดอ่อน: MC ตั้งราคาอะไรก็ได้ แต่จะเอาแม่นมาก ๆ ต้องสุ่มเยอะจริง — คนจึงคิด "variance reduction" (หัวข้อ 12.4) เพื่อลด error โดยไม่เพิ่มเส้นทาง</p></div>
 
-<table>
-<tr><th>สมมติฐาน BS</th><th>ความเป็นจริง</th><th>ผลกระทบ</th></tr>
-<tr><td>σ คงที่</td><td>σ เปลี่ยนตลอด (บท 12 GARCH)</td><td>Volatility Smile/Skew</td></tr>
-<tr><td>Log returns เป็น Normal</td><td>Fat tails (บท 6.6)</td><td>Underestimate tail risk</td></tr>
-<tr><td>ไม่มี jumps</td><td>ราคากระโดดได้ (เช่น gap opening)</td><td>OTM options ถูกเกินไป</td></tr>
-<tr><td>Trading ต่อเนื่อง</td><td>ตลาดปิด/เปิด</td><td>Overnight risk</td></tr>
-<tr><td>ไม่มี transaction costs</td><td>มี commissions, bid-ask</td><td>Hedging ไม่ perfect</td></tr>
-</table>
+<h3 id="s12-3">12.3 Exotic Options — ที่ BS แก้ไม่ได้</h3>
 
-<!-- ========== CHAPTER 16 ========== -->
-<h2 id="ch16">บทที่ 16: Monte Carlo Simulation — "จำลองอนาคต 10,000 ครั้ง"</h2>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> option พื้นฐานสนใจแค่ราคา<strong>วันหมดอายุ</strong> แต่ exotic บางตัวสนใจ<strong>ทั้งเส้นทาง</strong> (เฉลี่ย, สูงสุด, เคยแตะเส้นไหม) ซึ่ง BS สูตรเดียวจับไม่ได้ — แต่ MC จำลองทั้งเส้นทางอยู่แล้ว จึงตั้งราคาได้สบาย</p>
 
-<p>เมื่อไม่มีสูตร closed-form (exotic options, complex strategies) → จำลองราคาหุ้นหลายๆ ครั้ง แล้วเฉลี่ย</p>
+<div class="tw"><table>
+<tr><th>Exotic</th><th>Payoff ขึ้นกับ</th><th>ทำไมต้อง MC</th></tr>
+<tr><td><strong>Asian</strong></td><td>ราคา<strong>เฉลี่ย</strong>ตลอดทาง</td><td>สูตรปิดไม่มี (ค่าเฉลี่ยของ lognormal)</td></tr>
+<tr><td><strong>Barrier</strong></td><td>เคย<strong>แตะเส้น</strong> barrier ไหม</td><td>ขึ้นกับทั้งเส้นทาง</td></tr>
+<tr><td><strong>Lookback</strong></td><td>ราคา<strong>สูงสุด</strong>ตลอดทาง</td><td>ขึ้นกับทั้งเส้นทาง</td></tr>
+<tr><td><strong>Basket</strong></td><td><strong>หลายสินทรัพย์</strong>พร้อมกัน</td><td>ต้องจำลอง correlation หลายตัว</td></tr>
+</table></div>
 
-<h3 id="s16-1">16.1 แนวคิด Monte Carlo</h3>
-<p>สุ่มหลายๆ ครั้ง แล้วเฉลี่ย = คำตอบ — <strong>Law of Large Numbers</strong> รับรองว่า converge</p>
+<h3 id="s12-4">12.4 Variance Reduction (ทำให้แม่นขึ้นโดยไม่เพิ่มเส้นทาง)</h3>
 
-<div class="fm">1. สุ่ม Z ~ N(0,1) จำนวน N ครั้ง (เช่น N = 100,000)<br>
-2. คำนวณ S(T) = S₀ × exp((r - σ²/2)T + σ√T × Z)<br>
-3. คำนวณ Payoff แต่ละ path: max(0, S(T) - K)<br>
-4. ราคา Call = e<sup>-rT</sup> × mean(Payoffs)</div>
+<div class="tw"><table>
+<tr><th>เทคนิค</th><th>วิธี</th><th>ผล</th></tr>
+<tr><td><strong>Antithetic</strong></td><td>สุ่ม Z แล้วใช้ −Z ด้วย (คู่สมมาตร)</td><td>ลด variance ~ครึ่ง</td></tr>
+<tr><td><strong>Control Variate</strong></td><td>ใช้ option ที่มีสูตรปิดเป็น "ตัวคุม"</td><td>ลด variance มาก</td></tr>
+</table></div>
 
-<svg class="d" viewBox="0 0 500 220">
-<!-- Multiple price paths -->
-<polyline points="50,110 100,95 150,80 200,70 250,85 300,60 350,45 400,30" stroke="#2563eb" stroke-width="1.5" fill="none" opacity="0.4"/>
-<polyline points="50,110 100,120 150,135 200,140 250,130 300,145 350,155 400,170" stroke="#dc2626" stroke-width="1.5" fill="none" opacity="0.4"/>
-<polyline points="50,110 100,100 150,115 200,105 250,110 300,100 350,95 400,85" stroke="#16a34a" stroke-width="1.5" fill="none" opacity="0.4"/>
-<polyline points="50,110 100,105 150,90 200,95 250,75 300,85 350,70 400,55" stroke="#7c3aed" stroke-width="1.5" fill="none" opacity="0.4"/>
-<polyline points="50,110 100,115 150,125 200,110 250,120 300,130 350,120 400,125" stroke="#d97706" stroke-width="1.5" fill="none" opacity="0.4"/>
-<!-- More faint paths -->
-<polyline points="50,110 100,90 150,70 200,85 250,65 300,50 350,55 400,40" stroke="#94a3b8" stroke-width="0.8" fill="none" opacity="0.2"/>
-<polyline points="50,110 100,125 150,140 200,155 250,150 300,160 350,170 400,180" stroke="#94a3b8" stroke-width="0.8" fill="none" opacity="0.2"/>
-<polyline points="50,110 100,108 150,105 200,100 250,108 300,105 350,100 400,105" stroke="#94a3b8" stroke-width="0.8" fill="none" opacity="0.2"/>
-<!-- Start point -->
-<circle cx="50" cy="110" r="5" fill="#374151"/>
-<text x="20" y="115" font-family="Sarabun" font-size="10" fill="#374151">S₀</text>
-<!-- Strike line -->
-<line x1="400" y1="90" x2="470" y2="90" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3"/>
-<text x="440" y="85" font-family="Sarabun" font-size="9" fill="#374151">K</text>
-<!-- Labels -->
-<text x="420" y="30" font-family="Sarabun" font-size="9" fill="#2563eb">ITM → กำไร!</text>
-<text x="420" y="180" font-family="Sarabun" font-size="9" fill="#dc2626">OTM → 0</text>
-<text x="250" y="210" text-anchor="middle" font-family="Sarabun" font-size="11" fill="#64748b">จำลอง 10,000 paths → เฉลี่ย payoff = ราคา Option</text>
-</svg>
+<!-- ═══════════════ CAPSTONE / GRAND MAP ═══════════════ -->
+<h2 id="map">🎓 รวมร่างทั้งเล่ม — แผนที่ความรู้</h2>
 
-<h3 id="s16-2">16.2 เปรียบเทียบ MC กับ BS</h3>
+<p>ทุกอย่างที่เดินมา 5 Part ประกอบกันเป็นเครื่องมืออ่าน (และเข้าใจที่มาของ) Black-Scholes:</p>
 
-<table>
-<tr><th>พารามิเตอร์</th><th>ค่า</th></tr>
-<tr><td>S₀ = 100, K = 100, r = 5%, σ = 25%, T = 1 ปี</td><td></td></tr>
-<tr><td><strong>BS Formula (exact)</strong></td><td><strong>C = 12.336</strong></td></tr>
-<tr><td>MC 1,000 paths</td><td>C ≈ 12.5 ± 0.8</td></tr>
-<tr><td>MC 10,000 paths</td><td>C ≈ 12.38 ± 0.25</td></tr>
-<tr><td>MC 100,000 paths</td><td>C ≈ 12.34 ± 0.08</td></tr>
-<tr><td>MC 1,000,000 paths</td><td>C ≈ 12.336 ± 0.025</td></tr>
-</table>
-
-<div class="bx ba">
-<div class="bt">สังเกต: ยิ่ง paths มาก ยิ่งแม่น (error ∝ 1/√N)</div>
-<p>100,000 paths → error ≈ 0.08 — ดีพอสำหรับการเทรดจริง<br>
-ข้อดีของ MC: <strong>ใช้ได้กับทุก option ไม่ว่าจะซับซ้อนแค่ไหน</strong></p>
-</div>
-
-<h3 id="s16-3">16.3 Exotic Options — ที่ BS แก้ไม่ได้</h3>
-
-<table>
-<tr><th>Exotic Option</th><th>Payoff</th><th>ทำไมต้อง MC?</th></tr>
-<tr><td><strong>Asian Option</strong></td><td>max(0, avg(S) - K)</td><td>Payoff ขึ้นกับราคา<strong>เฉลี่ย</strong>ตลอดทาง</td></tr>
-<tr><td><strong>Barrier Option</strong></td><td>หมดค่าถ้าราคาแตะ barrier</td><td>ขึ้นกับ<strong>เส้นทาง</strong>ทั้งหมด</td></tr>
-<tr><td><strong>Lookback Option</strong></td><td>max(0, max(S) - K)</td><td>Payoff ขึ้นกับราคา<strong>สูงสุด</strong>ตลอดทาง</td></tr>
-<tr><td><strong>Basket Option</strong></td><td>max(0, avg(S₁,S₂,...) - K)</td><td>ขึ้นกับ<strong>หลายสินทรัพย์</strong>พร้อมกัน</td></tr>
-</table>
-
-<div class="bx bg">
-<div class="bt">ทุก option price ได้ด้วย MC เพียงแค่:</div>
-<p>1. จำลอง price paths (อาจต้องหลายสินทรัพย์, หลายช่วงเวลา)<br>
-2. คำนวณ payoff ตาม definition ของ exotic option นั้นๆ<br>
-3. เฉลี่ย แล้ว discount กลับ<br>
-<strong>ไม่ต้องมีสูตร closed-form — นี่คือพลังของ Monte Carlo!</strong></p>
-</div>
-
-<h3 id="s16-4">16.4 Variance Reduction</h3>
-
-<p>ทำให้ MC แม่นขึ้นโดยไม่ต้องเพิ่ม paths:</p>
-
-<table>
-<tr><th>เทคนิค</th><th>วิธีการ</th><th>ผลลัพธ์</th></tr>
-<tr><td><strong>Antithetic Variates</strong></td><td>ถ้าสุ่ม Z → ใช้ -Z ด้วย (คู่สมมาตร)</td><td>ลด variance ~50%</td></tr>
-<tr><td><strong>Control Variates</strong></td><td>ใช้ option ที่มี closed-form เป็น "ตัวควบคุม"</td><td>ลด variance มาก</td></tr>
-</table>
-
-<hr style="margin:40px 0;border:none;border-top:3px solid var(--amber)">
-
-<!-- ========== GRAND SUMMARY ========== -->
-<h2 id="summary" style="border-bottom-color:var(--amber)">ภาคผนวก: แผนที่ความรู้ทั้งหมด</h2>
-
-<table>
+<div class="tw"><table>
 <tr><th>Part</th><th>บท</th><th>เรียนอะไร</th><th>ใช้ทำอะไรใน Options</th></tr>
-<tr><td rowspan="3"><strong>I</strong></td><td>1</td><td>ฟังก์ชัน, max, slope, piecewise</td><td>อ่าน Payoff Chart ออก</td></tr>
-<tr><td>2</td><td>พีชคณิต, จัดรูปสมการ</td><td>Put-Call Parity, Synthetic</td></tr>
-<tr><td>3</td><td>e, ln, ดอกเบี้ยทบต้น</td><td>PV(K), log return</td></tr>
-<tr><td rowspan="3"><strong>II</strong></td><td>4</td><td>Mean, σ, correlation</td><td>Volatility, VaR, Portfolio Risk</td></tr>
-<tr><td>5</td><td>ความน่าจะเป็น, E[X]</td><td>Expected Payoff, Bayes</td></tr>
-<tr><td>6</td><td>Normal, Lognormal, CLT</td><td>N(d) ใน BS, Vol Smile</td></tr>
-<tr><td><strong>III</strong></td><td>7</td><td>Derivatives, ∂, ∫, Taylor</td><td>Greeks ทุกตัว, Δ-Γ approx</td></tr>
-<tr><td rowspan="2"><strong>IV</strong></td><td>8</td><td>Vectors, Matrices, Eigen</td><td>Portfolio Var = w<sup>T</sup>Σw, PCA</td></tr>
-<tr><td>9</td><td>Regression, R², Fitting</td><td>Beta, Hedge Ratio, Vol Surface</td></tr>
-<tr><td rowspan="2"><strong>V</strong></td><td>10</td><td>LP, Simplex, Dual, ILP</td><td>Optimal strategy selection</td></tr>
-<tr><td>11</td><td>Gradient, Lagrange, QP</td><td>Markowitz, Calibration</td></tr>
-<tr><td rowspan="3"><strong>VI</strong></td><td>12</td><td>Time Series, GARCH</td><td>Forecast σ, Mean Reversion</td></tr>
-<tr><td>13</td><td>Bisection, Newton</td><td>IV Solver, Numerical Greeks</td></tr>
-<tr><td>14</td><td>BM, GBM, Ito, BS PDE</td><td>ที่มาของ BS, Θ+½σ²S²Γ+rSΔ=rV</td></tr>
-<tr><td rowspan="2"><strong>VII</strong></td><td>15</td><td>BS formula breakdown</td><td>อ่านทุกตัวออก!</td></tr>
-<tr><td>16</td><td>Monte Carlo</td><td>Price ทุก option ได้</td></tr>
-</table>
+<tr><td rowspan="3"><strong>I</strong></td><td>1</td><td>ฟังก์ชัน · max · slope · piecewise</td><td>อ่าน Payoff Chart</td></tr>
+<tr><td>2</td><td>พีชคณิต · จัดรูปสมการ</td><td>Put-Call Parity · Synthetic</td></tr>
+<tr><td>3</td><td>e · ln · ดอกเบี้ยทบต้น</td><td>PV(K) · log return</td></tr>
+<tr><td rowspan="3"><strong>II</strong></td><td>4</td><td>Mean · σ · correlation</td><td>Volatility · VaR</td></tr>
+<tr><td>5</td><td>ความน่าจะเป็น · E[X]</td><td>Expected Payoff · Bayes</td></tr>
+<tr><td>6</td><td>Normal · Lognormal · CLT</td><td>N(d) · Vol Smile</td></tr>
+<tr><td><strong>III</strong></td><td>7</td><td>อนุพันธ์ · ∂ · ∫ · Taylor</td><td>Greeks · Δ-Γ approx</td></tr>
+<tr><td rowspan="3"><strong>IV</strong></td><td>8</td><td>Time Series · GARCH</td><td>พยากรณ์ σ · VRP</td></tr>
+<tr><td>9</td><td>Bisection · Newton-Raphson</td><td>IV Solver</td></tr>
+<tr><td>10</td><td>BM · GBM · Ito · BS PDE</td><td>ที่มาของ BS · Θ+½σ²S²Γ+rSΔ=rV</td></tr>
+<tr><td rowspan="2"><strong>V</strong></td><td>11</td><td>ประกอบสูตร BS</td><td>อ่าน BS ออกทุกตัว</td></tr>
+<tr><td>12</td><td>Monte Carlo</td><td>ตั้งราคา exotic ได้</td></tr>
+</table></div>
 
-<div class="bx bg">
-<div class="bt">จบเล่ม! ตอนนี้คุณมีพื้นฐานคณิตศาสตร์ครบสำหรับ:</div>
-<p>✓ อ่านบทเรียน Payoff Chart ทั้งหมด (ตั้งแต่พื้นฐาน → Greeks → Advanced Strategies)<br>
-✓ เข้าใจ Black-Scholes ทุกตัว — ไม่ใช่แค่ใช้เป็น แต่รู้ว่า <strong>มาจากไหน</strong><br>
-✓ Forecast Volatility ด้วย GARCH<br>
-✓ จัดการ Portfolio ด้วย Linear Algebra + Optimization<br>
-✓ Price Exotic Options ด้วย Monte Carlo<br>
-✓ <strong>พร้อมเรียนต่อในระดับ Advanced Quant</strong></p>
-</div>
+<div class="try"><div class="bt">✍️ ลองทำเอง — บททดสอบสุดท้าย</div>
+<p>ปิดหนังสือแล้วลองตอบด้วยคำพูดตัวเอง: ในสูตร <strong>C = S₀·N(d₁) − K·e<sup>−rT</sup>·N(d₂)</strong> · (1) e<sup>−rT</sup> ทำหน้าที่อะไร (2) N(d₂) คือโอกาสอะไร (3) N(d₁) คืออะไร (ระวังกับดัก!)</p>
+<details><summary>ดูเฉลย</summary><p>(1) คิดลดเงิน K จากวันหมดอายุกลับมาเป็นค่าวันนี้ (PV) · (2) โอกาส (risk-neutral) ที่ option จบแบบ ITM = ถูกใช้สิทธิ์ · (3) <strong>Delta ของ Call</strong> ไม่ใช่โอกาส ITM — ถ้าตอบ "โอกาส ITM" คือตกกับดัก</p></details></div>
+
+<!-- ═══════════════ ปิดเล่ม ═══════════════ -->
+<div class="bx bg"><div class="bt">จบเล่ม — ตอนนี้คุณ</div>
+<ul>
+<li>อ่าน Payoff Chart ของทุกกลยุทธ์ออก (Part I)</li>
+<li>รู้ว่า σ = Volatility กำหนดราคา และอ่าน N(d) ออก (Part II)</li>
+<li>อ่าน Greeks และใช้คิดหน้างานเป็น (Part III)</li>
+<li>เข้าใจที่มาของ Black-Scholes จาก Ito และไม่ตกกับดัก VRP (Part IV)</li>
+<li>อ่านสูตร BS ออกทุกตัว และตั้งราคา exotic ด้วย Monte Carlo (Part V)</li>
+</ul></div>
+
+<div class="bx bb"><div class="bt">📖 อ่านต่อ — เล่ม 2 (Portfolio Quant)</div>
+<p>เนื้อหา Linear Algebra (Portfolio Variance wᵀΣw, PCA), Regression (Beta, hedge ratio) และ Optimization (Markowitz, LP, Gradient Descent) ยกไปไว้ใน <strong>เล่ม 2</strong> เพราะเป็นสาย "จัดพอร์ต" ที่แยกจากเป้าหมาย "อ่าน payoff + เข้าใจ pricing" ของเล่มนี้ — เริ่มเล่ม 2 ได้เมื่อพร้อม</p></div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>Monte Carlo</strong> = จำลองสุ่มหลายครั้งแล้วเฉลี่ย · <strong>Law of Large Numbers</strong> = ยิ่งสุ่มมากยิ่งนิ่ง · <strong>Exotic option</strong> = option payoff ซับซ้อน (Asian/Barrier/Lookback/Basket) · <strong>Variance reduction</strong> = ลด error ของ MC โดยไม่เพิ่มเส้นทาง · <strong>Antithetic / Control variate</strong> = 2 เทคนิคลด variance</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
-<div style="text-align:center;padding:30px;color:#64748b">
-<p style="font-size:1.4em;font-weight:800;color:var(--blue)">จบ Part VII — จบทั้งเล่ม!</p>
-<p style="font-size:1em">คณิตศาสตร์พื้นฐานสำหรับ Options Trading &amp; Quantitative Finance<br>
-16 บท | 7 Parts | จากศูนย์สู่ Black-Scholes</p>
+<div style="text-align:center;padding:24px;color:#64748b">
+<p style="font-size:1.4em;font-weight:800;color:var(--blue)">จบทั้งเล่ม 🎓</p>
+<p>คณิตศาสตร์สำหรับ Options Trading — จากกับดัก "−50% แล้ว +50%" ในหน้าแรก สู่การอ่าน Black-Scholes ออกทุกตัวอักษร<br>5 Parts · 12 บท · จากศูนย์สู่ Black-Scholes</p>
 </div>
 
+<!-- ═══════════════ Thai line-break script — ห้ามแก้ ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
 </body>
 </html>
