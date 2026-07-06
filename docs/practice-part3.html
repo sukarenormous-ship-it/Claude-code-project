@@ -1,0 +1,160 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part III</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part III — ★ Residual / Factor Stat Arb</div>
+<div class="desc">บทที่พลิกจาก "เลือกคู่" เป็น "หัก common factor แล้วเทรดสิ่งที่เหลือ" — pair กลายเป็นแค่กรณีพิเศษ · เรียนรู้ s-score (Avellaneda-Lee) · cross-sectional mean reversion · และประเด็นทองที่สุดของเล่ม: <strong>common factor คือความเสี่ยง ไม่ใช่แค่คำอธิบาย</strong></div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §3.1 thesis + §3.2 หัก factor 3 วิธี (เริ่มข้อ 1 ได้ทันที) + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §3.3 s-score + §3.5 ★ factor = ความเสี่ยง + §3.7 retail edge · <strong>เริ่มด่วน:</strong> §3.5 คือประเด็นทอง อ่านก่อนได้เลย</p></div>
+
+<h2>3.1 Thesis — pair คือกรณีพิเศษ rank-1</h2>
+
+<p>Part I–II สอนโลก "ทีละคู่" — แต่ Part 0 ตั้งคำถามค้างไว้: ทำไมหุ้น 2 ตัวถึงเดินด้วยกัน? คำตอบไม่ใช่เวทมนตร์เฉพาะคู่ แต่คือ <strong>มันโหลด factor เดียวกัน</strong></p>
+
+<div class="bx bp"><div class="bt">แนวคิดแกน</div>
+<p>ผลตอบแทนหุ้นแต่ละตัว = <strong>ส่วนที่มาจาก common factor</strong> (market/sector/style ที่ทุกตัวในกลุ่มแชร์) + <strong>ส่วน idiosyncratic</strong> (เฉพาะตัวมันเอง)</p>
+<div class="fm">r_i = β_i1·F_1 + β_i2·F_2 + ... + ε_i<br>
+         └──── common factor ────┘   └─ residual ─┘<br><br>
+"spread" ที่เทรดได้จริง = ε_i (residual) — ส่วนที่ factor อธิบายไม่ได้</div></div>
+
+<p>เมื่อคุณจับคู่หุ้น A กับ B แล้ว long-short — จริง ๆ คุณกำลังสร้าง <strong>factor-neutral portfolio 2 ตัวแบบหยาบ ๆ</strong> (หัก factor ร่วมของ 2 ตัวออกด้วยมือ) · <strong>PCA / eigenportfolio (Avellaneda-Lee 2010)</strong> ทำสิ่งเดียวกันแต่เป็นระบบ<em>ทั้ง universe</em></p>
+
+<div class="pq">"Pair trading คือ factor-neutral portfolio ที่มีแค่ 2 ตัว — ทำไมต้องหยุดที่ 2?"</div>
+
+<h2>3.2 หัก common factor — 3 วิธี (ง่าย → ซับซ้อน)</h2>
+
+<div class="card">
+<h3>วิธี 1 — Sector/Market ETF hedge <span class="lvl">รายย่อยทำได้วันนี้</span></h3>
+<p>regress หุ้นบน sector ETF (หรือ SET50/ตลาด) → เทรด residual ที่เหลือ · ง่ายสุด ต้องการแค่ 1 regression</p>
+<div class="fm">r_stock = α + β·r_ETF + ε   →   เทรด mean-reversion ของ ε</div>
+<p>ในตลาดที่ factor structure ยัง under-modeled (ไทย/SEA) แค่หัก sector ETF ก็อาจพอ ← จุดที่รายย่อยได้เปรียบ</p>
+
+<h3>วิธี 2 — Statistical factors via PCA / eigenportfolio</h3>
+<p>ให้ข้อมูลหา factor เอง — PCA บน return ทั้ง universe → eigenvector ตัวแรก ๆ = "ตลาด" + "sector" โดยไม่ต้องตั้งชื่อ · residual = สิ่งที่เหลือหลังหัก PC หลัก ๆ (Avellaneda-Lee)</p>
+
+<h3>วิธี 3 — Fundamental factors</h3>
+<p>Fama-French / sector dummies / style factors — โยง <code>theory-part2</code> เล่ม A (factor models) แทนเขียนซ้ำทฤษฎี</p>
+</div>
+
+<h2>3.3 The s-score — แทน "เลือกคู่ + z-score"</h2>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>แทนที่จะถามว่า "คู่นี้ spread ห่างกี่ SD" (z-score) — เราถามทีละหุ้นว่า "<strong>residual ของหุ้นนี้ห่างจากค่าปกติกี่ SD</strong>" แล้วให้คะแนน (s-score) ทุกตัวในกระดาน · หุ้นที่ residual ต่ำผิดปกติ = ถูกไป → long · residual สูงผิดปกติ = แพงไป → short</p></div>
+
+<div class="fm">idiosyncratic residual → โมเดลเป็น OU (mean-reverting)<br>
+s-score = (residual − mean) / std   ← มาตรฐานเดียวเทียบได้ทุกตัว<br><br>
+s &lt; −s_open  → long  · s &gt; +s_open  → short · |s| &lt; s_close → ปิด</div>
+
+<div class="bx bg"><div class="bt">✅ ประเด็นสำคัญ (ตอบคำถามที่ค้างไว้: "cut-off จำเป็นไหม")</div>
+<p>position = f(s-score) ข้าม<strong>ทุกชื่อ</strong> → <strong>ไม่มีการ "เลือกคู่" เลย</strong> · แทน hard cut-off เลือก/ทิ้งแบบ binary → ใช้ <strong>soft ranking ทั้ง universe</strong> · cut-off ใน Part II จึงเป็น "baseline ที่ทุกคนรู้" ไม่ใช่หัวใจ</p></div>
+
+<h2>3.4 Cross-sectional mean reversion</h2>
+
+<p>พอมี s-score ทุกตัว → rank ทั้ง universe → <strong>long ก้นตาราง (residual ต่ำสุด) / short หัวตาราง (สูงสุด)</strong> · portfolio นี้ <strong>factor-neutral by construction</strong> เพราะเราหัก factor ไปแล้ว · และเป็น <strong>หลาย bet เล็ก ๆ</strong> แทนคู่เดียวลึก → กระจายความเสี่ยงดีกว่า (โยง edge map ชั้น A/D)</p>
+
+<h2>3.5 ★ ประเด็นทอง — common factor คือ "ความเสี่ยง"</h2>
+
+<div class="bx br"><div class="bt">📉 ทำไม pairs ไร้เดียงสาระเบิดตอนวิกฤต</div>
+<p>ถ้าคุณ<strong>ไม่</strong> neutralize factor ให้ดี — "pair/residual" ของคุณคือ <strong>factor bet ที่ปลอมตัวมา</strong> · คุณคิดว่าคุณ market-neutral แต่จริง ๆ แอบ long/short sector หรือ market อยู่ · ตลาดปกติมองไม่เห็น แต่พอวิกฤตมา factor เคลื่อนแรง — "spread" ที่ควรกลับ กลับพุ่งหนีเพราะมันคือ directional bet มาตลอด</p></div>
+
+<div class="pq">"เข้าใจ common factor ไม่ได้ให้ edge — แต่มันกัน 'edge ปลอม': factor bet ที่คุณนึกว่าเป็น spread"</div>
+
+<div class="bx bb"><div class="bt">🔍 วิธีเช็คว่า residual "สะอาด" จริง</div>
+<p>regress residual ของคุณ<strong>กลับ</strong>บน factor → loading ควร <strong>≈ 0</strong> · ถ้ายังมี loading เหลือ = ยังแบก factor exposure ซ่อนอยู่ = ยังไม่ neutral จริง</p>
+<div class="fm">ε_ที่เราจะเทรด  →  regress บน [market, sector]  →  β ควร ≈ 0<br>
+ถ้า β ≠ 0  →  ยังมี hidden factor bet  →  ยังไม่สะอาด</div></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "spread พุ่งหนี = ซวย เจอ structural break"<br>
+<strong>quant เห็น:</strong> บ่อยครั้ง spread ไม่ได้ break — มันแค่เผยว่าคุณถือ factor bet มาตลอด และ factor เพิ่งเคลื่อน · ปัญหาไม่ได้อยู่ที่ตลาด อยู่ที่การ hedge ที่ไม่สะอาดตั้งแต่แรก</p></div>
+
+<h2>3.6 ชั้น DL/ML residual — รู้ไว้ + กับดัก (ไม่ใช่ชวนแข่ง)</h2>
+
+<p>frontier ของงานวิจัยคือเอา residual จาก factor model ไปป้อนโมเดล non-linear</p>
+
+<div class="bx bb"><div class="bt">Deep Learning Statistical Arbitrage (Guijarro-Ordóñez, Pelger, Zanotti)</div>
+<p>ขั้นตอน: factor (PCA/IPCA) → arbitrage residual → CNN/transformer หา pattern ใน residual · เป็นงาน top-journal (<em>Management Science</em>) ที่เป็นตัวแทน "ชั้น B" ของแผนที่ Edge</p></div>
+
+<div class="bx br"><div class="bt">❌ ซื่อสัตย์: ทำไมรายย่อยไม่ควรไล่แข่งชั้นนี้</div>
+<ul>
+<li>แออัดสุด — กองใหญ่ทุ่มทรัพยากรตรงนี้</li>
+<li>overfit หนัก — feature เยอะ พารามิเตอร์เยอะ backtest สวยแต่ live หด</li>
+<li>สู้ compute/data ไม่ได้ · <strong>สอนเป็น "รู้ว่ามี + กับดัก" ไม่ใช่พระเอก</strong></li>
+</ul></div>
+
+<h2>3.7 แล้ว retail edge อยู่ไหน (ต้องซื่อสัตย์)</h2>
+
+<div class="bx ba"><div class="bt">⚠️ ความจริงที่ต้องยอมรับ</div>
+<p>factor-residual stat arb ก็ <strong>crowded</strong> ในตลาด liquid — Avellaneda-Lee เองโชว์ว่า Sharpe <strong>เสื่อมลงหลังราว 2002</strong> · แปลว่า <strong>ไม่มี edge เหลือใน <em>วิธี selection</em> ใด ๆ แล้ว</strong> — pairs · cointegration · copula · PCA · DL ตายเท่ากันหมดในบ่อใหญ่</p></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ edge จริงย้ายไป (รายย่อยเล่นได้)</div>
+<ul>
+<li><strong>บ่อที่ factor ยัง under-modeled</strong> — Thai/SEA/crypto: คนยังไม่ได้ map factor structure ดี ๆ แค่หัก sector ETF ก็อาจพอ</li>
+<li><strong>cost/capacity/access</strong> (ชั้น D)</li>
+<li><strong>วินัย + regime</strong> (ชั้น C)</li>
+</ul></div>
+<div class="con"><div class="bt">⚠️ ที่ไม่ควรไปแย่ง</div>
+<ul>
+<li>PCA-residual บน US large-cap — กองใหญ่ครอง</li>
+<li>DL signal — สู้ compute ไม่ได้</li>
+<li>ไล่หา "วิธี selection ที่ดีกว่า" — มันตายหมดแล้ว</li>
+</ul></div>
+</div>
+
+<div class="pq">"เลิกถามว่าคู่ไหนสวย — ถามว่า residual อะไรที่เหลือหลังหักสิ่งที่ทุกคนถืออยู่แล้ว และใครยังไม่ได้หักมัน"</div>
+
+<h2>สรุป Part III + สะพานสู่ Part IV</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part III</div>
+<ol>
+<li><strong>pair = กรณีพิเศษ rank-1</strong> — spread จริงคือ residual หลังหัก common factor; PCA ทำเป็นระบบทั้ง universe</li>
+<li><strong>common factor = ความเสี่ยง</strong> — ไม่หักให้สะอาด = factor bet ปลอมตัว → เช็คด้วย regress residual กลับบน factor</li>
+<li><strong>ไม่มี edge ในวิธี selection แล้ว</strong> — edge อยู่ที่บ่อ (factor under-modeled) + cost + วินัย ไม่ใช่โมเดล</li>
+</ol></div>
+
+<p>ทั้ง β ของ pair (Part I) และ factor loading ของ residual (Part III) มีปัญหาเดียวกัน: <strong>มันเปลี่ยนตามเวลา</strong> · เราต้องการเครื่องมือที่อัปเดตมันแบบ real-time โดยไม่ look-ahead และไม่กระตุกตาม noise — นั่นคือ Kalman filter ที่ Part IV จะลงลึกจริง (จูน Q/R · รู้ว่า overfit ยังไง · β ควร random-walk ไหม)</p>
+
+<div class="pq">"β เปลี่ยน · factor loading ก็เปลี่ยน — ใครจะอัปเดตมันให้ทันโดยไม่หลอกตัวเอง?"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Common factor</strong> — ปัจจัยร่วม (market/sector/style) ที่ทำให้หุ้นหลายตัวเดินด้วยกัน</li>
+<li><strong>Idiosyncratic residual</strong> — ส่วนของผลตอบแทนที่ factor อธิบายไม่ได้ (ส่วนที่เทรด)</li>
+<li><strong>Eigenportfolio (PCA)</strong> — portfolio ตาม eigenvector ของ covariance = statistical factor</li>
+<li><strong>s-score</strong> — residual ที่ standardize แล้ว ใช้เป็นสัญญาณข้ามทั้ง universe</li>
+<li><strong>Factor-neutral</strong> — portfolio ที่ net exposure ต่อ common factor = 0</li>
+<li><strong>Factor bet ปลอมตัว</strong> — spread ที่แอบมี factor exposure เหลือ (ยังไม่ neutral จริง)</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Avellaneda, M. &amp; Lee, J.-H. (2010) "Statistical Arbitrage in the US Equities Market", <em>Quantitative Finance</em> — PCA residual + s-score</li>
+<li>Guijarro-Ordóñez, J., Pelger, M. &amp; Zanotti, G. "Deep Learning Statistical Arbitrage", <em>Management Science</em> (accepted 2024) — factor + DL residual</li>
+<li>Clegg, M. &amp; Krauss, C. (2018) "Pairs trading with partial cointegration", <em>Quantitative Finance</em></li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/03_factor_residual.ipynb</code> — PCA/ETF-hedge residual + s-score + cross-sectional backtest · <strong>อ่านต่อ:</strong> Sun (2025) survey</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม A: <code>theory-part2</code> (factor models, PCA, Fama-French) · เล่ม 1 <code>arb-part5</code> §20 (factor stat arb — แนวคิด)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
