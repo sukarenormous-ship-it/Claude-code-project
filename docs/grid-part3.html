@@ -84,7 +84,7 @@ Block Bootstrap Monte Carlo · GARCH Volatility Forecast<br>
 <li><strong>เรือนปฏิบัติ (execution clock):</strong> ตอนที่ order จริงๆ ทำงาน — real-time เสมอ ไม่มี timeframe เพราะ level คือสิ่งที่ trigger ไม่ใช่แท่งเทียน</li>
 </ul>
 
-<p>เรือนที่อันตรายที่สุดถ้าตั้งผิดคือเรือนแรก ลองดูว่าทำไม: ATR(14) บนแท่งรายวัน หมายถึง "ราคาเดินเฉลี่ยเท่าไหร่ต่อวัน ในช่วง 14 วันที่ผ่านมา" แต่ถ้าเปิดกราฟค้างที่ 1H แล้วกด ATR(14) ตัวเลขที่ได้คือ "ราคาเดินเฉลี่ยเท่าไหร่ต่อ 14 ชั่วโมง" — เล็กกว่ากันหลายสิบเท่า เอาไปตั้ง Step ตรงๆ (§3.1) จะได้ step เล็กผิดขนาด → grid fill ถี่เกินจริง → fee กินกำไรทั้งหมดโดยไม่รู้ตัวว่าพลาดตรงไหน เรื่องเดียวกันเกิดกับ Donchian (§3.2) และ Hurst (Part 4 §4.1) — สูตรถูก แต่ input ผิด timeframe</p>
+<p>เรือนที่อันตรายที่สุดถ้าตั้งผิดคือเรือนแรก ลองดูว่าทำไม: ATR(14) บนแท่งรายวัน หมายถึง "ราคาเดินเฉลี่ยเท่าไหร่ต่อวัน ในช่วง 14 วันที่ผ่านมา" แต่ถ้าเปิดกราฟค้างที่ 1H แล้วกด ATR(14) ตัวเลขที่ได้คือ "ราคาเดินเฉลี่ยเท่าไหร่ต่อ 14 ชั่วโมง" — เล็กกว่ากันประมาณ √24 ≈ 5 เท่า (ดูเลขจริงในแบบฝึกหัดข้อ 5 ท้ายบทนี้) เอาไปตั้ง Step ตรงๆ (§3.1) จะได้ step เล็กผิดขนาด → grid fill ถี่เกินจริง → fee กินกำไรทั้งหมดโดยไม่รู้ตัวว่าพลาดตรงไหน เรื่องเดียวกันเกิดกับ Donchian (§3.2) และ Hurst (Part 4 §4.1) — สูตรถูก แต่ input ผิด timeframe</p>
 
 <p>ปัญหาไม่ได้จบแค่ fee: ต่อให้ไม่สนใจต้นทุนเลย ตัวเลข indicator เองก็ "เพี้ยน" ขึ้นถ้าสุ่มตัวอย่างถี่เกินไป เพราะ noise จากกลไกตลาด (bid-ask bounce, latency) เข้าไปปนกับสัญญาณจริงมากขึ้นเรื่อยๆ ยิ่งช่วงเวลาสั้น — นี่คือเหตุผลที่ "แท่งรายวัน" ไม่ใช่ default ที่เลือกมาลอยๆ แต่มีงานวิจัยด้าน volatility estimation รองรับตรงๆ (ดูอ่านต่อท้ายหัวข้อ)</p>
 
@@ -224,7 +224,8 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 # step_base = $1,250
 # fee_per_cycle = $100k × 0.001 × 2 = $200
 # min_step = $600
-# step = max($1,250, $600) = $1,250 → round → $1,300</div>
+# step = max($1,250, $600) = $1,250 → round(12.5)*100 = $1,200
+# (Python round() ใช้ banker's rounding: round(12.5)=12 เพราะ 12 เป็นเลขคู่ ไม่ใช่ปัด 13)</div>
 
 <h2 id="s3-4">3.4 Combining Donchian + Keltner — Dual Channel Method</h2>
 
@@ -235,8 +236,8 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 <tr><td>Zone High</td><td>Donchian(30) high × 1.05</td><td>$108k × 1.05 = $113,400</td></tr>
 <tr><td>Zone Low</td><td>Donchian(30) low × 0.95</td><td>$91k × 0.95 = $86,450</td></tr>
 <tr><td>Step</td><td>ATR(14) × 0.5 (Keltner-based)</td><td>$2,500 × 0.5 = $1,250</td></tr>
-<tr><td>N (levels)</td><td>(Zone_high − Zone_low) / Step</td><td>($113,400 − $86,450) / $1,250 ≈ 22 levels</td></tr>
-<tr><td>Q (per level)</td><td>grid_capital / (N × avg_price)</td><td>$20k / (22 × $100k) = 0.0091 BTC ≈ 0.009</td></tr>
+<tr><td>N (levels)</td><td>int((Zone_high − Zone_low) / Step)</td><td>($113,400 − $86,450) / $1,250 = 21.56 → int() ปัดลง = 21 levels</td></tr>
+<tr><td>Q (per level)</td><td>grid_capital / (N × avg_price)</td><td>$20k / (21 × $100k) = 0.0095 BTC ≈ 0.010</td></tr>
 </table>
 
 <div class="fm">def dual_channel_sizing(prices, highs, lows, current_price,
@@ -419,11 +420,11 @@ GARCH ตอบสนองเร็วแค่ไหน — ดูตามเ
 <p>Zone และ Step ไม่ใช่ fixed — ควรปรับตาม volatility regime ปัจจุบัน:</p>
 
 <table>
-<tr><th>Regime</th><th>ATR (BTC ตัวอย่าง)</th><th>Step แนะนำ</th><th>Zone Width</th><th>N Levels</th></tr>
-<tr><td>Low Vol (Consolidation)</td><td>$1,000–$1,500</td><td>$500–$700</td><td>$8k–$12k</td><td>16–24</td></tr>
+<tr><th>Regime</th><th>ATR (BTC ตัวอย่าง)</th><th>Step แนะนำ (= step_factor × ATR ด้านล่าง)</th><th>Zone Width</th><th>N Levels</th></tr>
+<tr><td>Low Vol (Consolidation)</td><td>$1,000–$1,500</td><td>$350–$525</td><td>$8k–$12k</td><td>16–24</td></tr>
 <tr><td>Normal Vol</td><td>$1,500–$3,000</td><td>$750–$1,500</td><td>$15k–$25k</td><td>16–22</td></tr>
-<tr><td>High Vol</td><td>$3,000–$5,000</td><td>$1,500–$2,500</td><td>$25k–$40k</td><td>16–22</td></tr>
-<tr><td>Extreme Vol (Crash/Pump)</td><td>>$5,000</td><td>$2,500+</td><td>$40k+</td><td>≤ 16</td></tr>
+<tr><td>High Vol</td><td>$3,000–$5,000</td><td>$1,800–$3,000</td><td>$25k–$40k</td><td>16–22</td></tr>
+<tr><td>Extreme Vol (Crash/Pump)</td><td>>$5,000</td><td>$3,500+</td><td>$40k+</td><td>≤ 16</td></tr>
 </table>
 
 <div class="fm">def vol_regime_step(atr14, current_price):
@@ -499,13 +500,13 @@ GARCH ตอบสนองเร็วแค่ไหน — ดูตามเ
 <p><strong>ข้อมูล:</strong> BTC = $102,000 · ATR(14) = $2,800 · Donchian(30): high=$112,000 low=$89,000</p>
 
 <div class="fm">Step 1: Zone จาก Donchian(30) + Buffer
-  zone_high = $112,000 × 1.05 = $117,600 → ปัดเป็น $117,000 (round)
+  zone_high = $112,000 × 1.05 = $117,600 → ปัดเป็น $118,000 (round to nearest $1,000)
   zone_low  = $89,000  × 0.95 = $84,550  → ปัดเป็น $85,000
-  zone_width = $117,000 − $85,000 = $32,000
+  zone_width = $118,000 − $85,000 = $33,000
 
 Step 2: ตรวจสอบ minimum zone width
   min_width = 6 × ATR(14) = 6 × $2,800 = $16,800
-  $32,000 > $16,800 ✓
+  $33,000 > $16,800 ✓
 
 Step 3: Step จาก ATR
   step_base = 0.5 × $2,800 = $1,400
@@ -513,20 +514,20 @@ Step 3: Step จาก ATR
   step = max($1,400, $612) = $1,400 → round to nearest $500 = $1,500
 
 Step 4: N และ Q
-  N = $32,000 / $1,500 ≈ 21 levels
+  N = $33,000 / $1,500 = 22 levels
   grid_capital = $20,000 (สมมติ)
-  avg_price = ($117k + $85k) / 2 = $101,000
-  Q = $20,000 / (21 × $101,000) = 0.00943 BTC ≈ 0.009 BTC
+  avg_price = ($118k + $85k) / 2 = $101,500
+  Q = $20,000 / (22 × $101,500) = 0.00896 BTC ≈ 0.009 BTC
 
 Step 5: Validation
-  ✓ Price in zone: $102k ∈ [$85k, $117k]
-  ✓ Zone width: $32k > $16.8k
+  ✓ Price in zone: $102k ∈ [$85k, $118k]
+  ✓ Zone width: $33k > $16.8k
   ✓ Profitability: 0.009 × $1,500 = $13.5 vs fee $1.84/cycle → 7.3× ✓
-  ✓ N levels: 21 ≤ 30 ✓
+  ✓ N levels: 22 ≤ 30 ✓
 
 Step 6: Distribution ของ BUY orders (Asymmetric Zone Part 1A)
   ราคาปัจจุบัน $102k → ใกล้กลาง zone
-  Upper zone ($102k → $117k): ใส่ SELL รอ หรือไม่วาง order
+  Upper zone ($102k → $118k): ใส่ SELL รอ หรือไม่วาง order
   Lower zone ($102k → $85k): วาง BUY orders 11 levels × 0.009 BTC
   Capital ที่ต้องใช้ worst-case: 11 × 0.009 × $93k (avg) = $9,207</div>
 </div>
@@ -542,8 +543,8 @@ Step 6: Distribution ของ BUY orders (Asymmetric Zone Part 1A)
 <p><strong>คำตอบ:</strong></p>
 <p>step_base = 0.5 × $3,200 = $1,600</p>
 <p>fee_min = 3 × ($95,000 × 0.001 × 2) = 3 × $190 = $570</p>
-<p>Step = max($1,600, $570) = $1,600 → ปัดเป็น <strong>$1,500 หรือ $2,000</strong> (nearest $500)</p>
-<p>แนะนำ: $1,500 (conservative, fill บ่อยกว่า) หรือ $2,000 (ถ้า transaction cost สูง)</p>
+<p>Step = max($1,600, $570) = $1,600 → nearest $500 คือ <strong>$1,500</strong> (ห่าง $100 เทียบกับ $2,000 ที่ห่าง $400)</p>
+<p>แนะนำ: $1,500 (ตาม nearest-$500) หรือขยับขึ้น $2,000 เองถ้า transaction cost สูงกว่าปกติ (เป็นทางเลือกเสริม ไม่ใช่ nearest)</p>
 </div>
 </details>
 
@@ -575,11 +576,11 @@ Step 6: Distribution ของ BUY orders (Asymmetric Zone Part 1A)
 <summary>ข้อ 4 (Challenge): ATR ของ BTC ขึ้นจาก $2,000 → $5,000 ใน 1 สัปดาห์ (volatility spike) — ควรปรับ grid อย่างไร?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>ATR เพิ่ม 2.5× → vol regime เปลี่ยนจาก Normal → High/Extreme</p>
+<p>ATR เพิ่ม 2.5× → vol regime เปลี่ยนจาก Normal → Extreme (ที่ BTC~$100k, ATR=$5,000 → atr_pct=5% พอดี เงื่อนไข code เป็น <code>atr_pct &lt; 0.050</code> แบบ strict — 0.05 ไม่ &lt; 0.050 จึงตกไปโซน Extreme ไม่ใช่ High)</p>
 <p><strong>การปรับที่ควรทำ:</strong></p>
 <ul>
-<li>Step เก่า $1,000 (0.5 × $2,000) → Step ใหม่ = 0.6 × $5,000 = $3,000</li>
-<li>Step ใหญ่ขึ้น 3× → N ลดลง (ถ้า zone เดิม $20k: N จาก 20 → 7 levels)</li>
+<li>Step เก่า $1,000 (0.5 × $2,000) → Step ใหม่ = 0.7 × $5,000 = $3,500</li>
+<li>Step ใหญ่ขึ้น 3.5× → N ลดลง (ถ้า zone เดิม $20k: N จาก 20 → 6 levels)</li>
 <li>ควร expand zone ด้วย Donchian ใหม่ → zone กว้างขึ้น</li>
 <li>ลด Q ลง 30–50% เพื่อลด capital at risk ในช่วง high vol</li>
 </ul>
