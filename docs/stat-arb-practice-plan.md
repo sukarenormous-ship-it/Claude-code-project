@@ -153,6 +153,20 @@
 - Do & Faff (2010, 2012) pairs profitability + costs
 - Deming (1943) / total least squares · Bai & Perron (1998, 2003) structural breaks
 
+**★ สมัยใหม่ + Kalman ที่ "รายย่อยทำตามได้จริง" (ยืนยันแล้ว ก.ค. 2026):**
+- **Palomar, D.P. (2025)** *Portfolio Optimization: Theory and Application*, Cambridge Univ. Press — §15.6 "Kalman Filtering for Pairs Trading" (อ่านฟรีที่ bookdown.org). ⭐ อ้างอิงหลักของ Part III–IV: state-space หา time-varying hedge ratio + mean, แสดงว่า Kalman คุม drawdown ได้จริง (rolling-LS ไม่คุม), วลีในเล่ม: *"Kalman filtering is a must in pairs trading"*
+- **Primbs, J.A. & Yamada, Y. (2018)** "Pairs trading under transaction costs using model predictive control", *Quantitative Finance* 18(6):885–895 — MPC + proportional cost + gross-exposure constraint บน OU spread (ใช้ใน Part V/VII)
+- **Mudchanatongsuk, S., Primbs, J.A. & Wong, W. (2008)** "Optimal pairs trading: a stochastic control approach", *Proc. American Control Conf. 2008* — log-spread เป็น OU, แก้ผ่าน HJB (รากฐานของสาย stochastic-control cost)
+- **Tenyakov, A. & Mamon, R. (2017)** "A computing platform for pairs-trading online implementation via a blended Kalman–HMM filtering approach", *Journal of Big Data* 4:46 — Kalman + HMM regime, พารามิเตอร์ self-updating แบบ online (อ้างใน Part IV adaptive/regime-switching Kalman)
+
+**สอน "ลงมือทำ" ระดับรายย่อย (tutorial/code — ไม่ใช่ paper แต่ reproduce ได้):**
+- QuantStart — "Dynamic Hedge Ratio Between ETF Pairs Using the Kalman Filter" + "Kalman Filter-Based Pairs Trading in QSTrader"
+- QuantInsti blog — "Kalman Filter in Python: Tutorial and Strategies" (อัปเดต 2024, ข้อมูลตัวอย่างจริง)
+- Palomar MAFS5310 lecture slides (HKUST) — pairs trading + Kalman
+- GitHub repos: robust-Kalman + HMM pairs (เช่น EwanKW, git-kevinxuhuili) — โครงโค้ดตั้งต้นที่ปรับใช้ได้
+
+> **⚠️ หมายเหตุการยืนยัน (สำคัญ):** เปเปอร์ชื่อ *"Pairs Trading Under Transaction Costs" โดย Mudchanivuth, S. & Sharp, J. A.* — **ยืนยันการมีอยู่ไม่ได้** จากการค้น (ก.ค. 2026) สันนิษฐานว่าเป็นการจำสลับของ 2 งานจริง: ชื่อเรื่องตรงกับ **Primbs & Yamada (2018)** ส่วนนามสกุล "Mudchana-" ตรงกับ **Mudchanatongsuk et al. (2008)** — ทั้งคู่ยืนยันแล้วและใส่ไว้ด้านบน หากผู้ใช้มี DOI/ลิงก์ของฉบับ Mudchanivuth-Sharp จริง ค่อยเพิ่มภายหลัง (ตามกฎ: ไม่แน่ใจ = ไม่ใส่)
+
 > กฎ: อ้างเฉพาะที่มีจริง; ตอนเขียนแต่ละ Part ให้ยืนยันปี/ผู้แต่งอีกครั้ง ไม่มั่นใจให้ตัด
 
 ---
