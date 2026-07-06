@@ -99,6 +99,7 @@ $$\text{Net Edge} = \underbrace{\sigma_{\varepsilon}}_{\text{gross}} - \underbra
 <div class="bx bg">
 <div class="bt">Maker vs Taker Strategy</div>
 <p>ถ้า latency ไม่ critical → ใช้ limit order (maker) ทั้งคู่ — ลด cost จาก 0.17% เป็น 0.02% ต่อ round trip แต่ risk partial fill และ leg mismatch เพิ่มขึ้น</p>
+<p style="margin-top:6px;font-size:.92em">⚠️ ตัวเลขนี้ยังไม่หัก <strong>adverse selection cost</strong> ของการเป็น maker — fill ที่ได้จริงไม่ใช่ sample สุ่ม แต่ bias ไปทาง fill ที่แย่กว่า (ดู <a href="#s19-10">§19.10</a>) ก่อนเชื่อว่า maker "ประหยัดฟรี" ต้องวัด markout หลัง fill ก่อนเสมอ</p>
 </div>
 
 <h2 id="s19-3">19.3 Bid-Ask Spread Cost</h2>
@@ -269,7 +270,142 @@ def compute_edge(spread_at_entry_pct, sigma_spread_pct,
 <p>การคำนวณ edge ตั้งสมมติฐานว่าต้นทุนคงที่ — แต่ในความเป็นจริง taker fee อาจเปลี่ยนแปลงได้ภายใน 24 ชั่วโมง, bid-ask spread อาจกว้างขึ้น 5–10 เท่าในช่วง volatility สูง, และ funding rate อาจกลับเครื่องหมาย กลยุทธ์ที่มี net edge 0.11% กับต้นทุน 0.10% มี margin เหลือน้อยมาก — ถ้าค่าธรรมเนียมเพิ่ม 20% กลยุทธ์นั้นจะขาดทุนทันที ควรคำนวณ "edge under stress" เสมอ: net edge จะเป็นเท่าไหร่ถ้า slippage เพิ่มสองเท่าและ funding rate กลับเครื่องหมาย?</p>
 </div>
 
-<h2 id="s19-10">19.10 แบบฝึกหัด</h2>
+<!-- 19.10 -->
+<h2 id="s19-10">19.10 Adverse Selection ของ Maker Order — Rebate คือค่าจ้างให้โดน Pick Off</h2>
+
+<p>§19.2 คำนวณว่าเปลี่ยนจาก taker เป็น maker ประหยัด 15bps ต่อ round trip — ตัวเลขนี้ถูกต้องในแง่ fee schedule แต่ข้ามข้อเท็จจริงสำคัญ: <strong>fill ของ maker order ไม่ใช่ sample สุ่มจากราคาที่แตะ quote เรา</strong></p>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม Fill ของ Maker ถึง Bias</div>
+<div class="ki-text">
+Limit order ของเราจะถูก fill ก็ต่อเมื่อมีคนยอม cross เข้ามากิน quote — คนที่ทำแบบนั้นมักเป็น informed flow ที่รู้ว่าราคาจะไปต่อทิศทางนั้น (ไม่ใช่คนสุ่มเทรด)<br><br>
+ผล: เทรดที่ ε <strong>revert กลับเอง</strong>โดยไม่แตะราคาเรา = พลาด (ไม่ได้ fill สัญญาณที่ดี) — เทรดที่ ε <strong>ทะลุ</strong>ราคาเราไปต่อ = ได้ fill (แต่ได้ของตอนแพงที่สุด/ถูกที่สุดในทิศที่ผิด)
+</div>
+</div>
+
+<div class="fm"><span class="c"># วัด Adverse Selection จริง — Markout Analysis</span>
+สำหรับทุก maker fill: log ε ที่ t+5s, t+30s, t+5min หลัง fill
+
+<span class="c"># ถ้า ε เฉลี่ยวิ่งสวนทิศที่เราต้องการ (ต่อ) หลัง fill → นั่นคือ adverse selection cost</span>
+markout_cost = E[ε_{t+Δ} − ε_{t, fill}]  ในทิศที่ไม่เป็นผลดีต่อ position</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: Markout ของ Maker Fill (ต่อจาก §19.2)</div>
+<div class="fm">Fee saved จากเปลี่ยน taker → maker = 15bps ต่อ round trip (§19.2)
+
+<span class="c"># สมมติ markout เฉลี่ยหลัง fill = −0.5 tick/ขา (~4bps)</span>
+Adverse markout = 4bps × 2 ขา × (entry+exit) ≈ <span class="nm">16bps</span>
+
+<span class="c"># กิน fee ที่ประหยัดได้เกือบหมด</span>
+Net saving จริง = 15 − 16 ≈ <strong>−1bps (แย่กว่าเดิม!)</strong>
+
+<span class="c"># ซ้ำร้าย: เทรดกำไรจำนวนหนึ่งไม่เคยถูก fill เลย</span>
+สัดส่วนสัญญาณที่ ε revert ก่อนแตะ quote ≈ 30–50% (ขึ้นกับความชัน κ ของคู่)
+→ กำไรที่ backtest คิดว่าได้ (fill ทุกครั้งที่ราคาแตะ) ไม่มีอยู่จริงเกือบครึ่ง</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">บทเรียน: Rebate ไม่ใช่เงินฟรี</div>
+<ul>
+<li>Backtest ที่ใช้ "touch-fill" (ราคาแตะ limit = fill ทันที) จะประเมินกำไรของ maker strategy สูงเกินจริงเสมอ — ต้องใช้ "trade-through" (ราคาต้องเทรดทะลุไปอีก ≥1 tick) ถึงจะนับว่า fill</li>
+<li>ก่อนสรุปว่า maker คุ้มกว่า taker ต้องวัด markout จริงจาก order log อย่างน้อย 20-50 fills</li>
+<li>ใน regime ที่ ε มี κ สูง (กลับตัวเร็ว) adverse selection รุนแรงกว่า — เพราะ "คนที่ cross เข้ามากิน quote เรา" มักรู้ข้อมูลที่ทำให้ ε เคลื่อนไหวเร็วพอดี</li>
+</ul>
+</div>
+
+<!-- 19.11 -->
+<h2 id="s19-11">19.11 Cost of Time: Edge Rate vs Carry Rate</h2>
+
+<p>Cointegration ที่ทดสอบผ่านทุกอย่าง (ADF, half-life, z-score) ยังเทรด<strong>ไม่คุ้ม</strong>ได้ ถ้าไม่เทียบ "edge ต่อหน่วยเวลา" กับ "carry ต่อหน่วยเวลา" — สองตัวเลขที่หนังสือส่วนใหญ่ไม่เคยหารกัน</p>
+
+<div class="key-idea">
+<div class="ki-label">Edge Rate ต้องชนะ Carry Rate</div>
+<div class="ki-eq">edge_rate = expected_gross / E[holding_time]  ต้อง ≥ 2× carry_rate = 2×(funding+swap+margin_cost)/วัน</div>
+<div class="ki-text" style="margin-top:8px">
+Half-life <strong>ไม่ใช่</strong> เวลาถือเฉลี่ย — มันคือเวลาที่ระยะทางหด 50% เวลาที่กลับถึง θ จริง (first-passage time) มี mean สูงกว่าและหางขวาอ้วนกว่ามาก — trade จำนวนไม่น้อยถือเกิน 2-3× half-life
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: Cointegration ถูกต้องแต่ Carry กินหมด</div>
+<div class="fm">Half-life = <span class="nm">14</span> วัน, entry ที่ 2σ คาด gross ≈ <span class="nm">0.9%</span>
+Carry: funding perp 2 ขา + swap ≈ <span class="nm">0.05%</span>/วัน
+
+<span class="c"># เวลาถือจริง (ไม่ใช่ half-life!) — ใช้ P75 ของ first-passage time distribution</span>
+P75 ของเวลากลับตัว ≈ <span class="nm">30</span> วัน (ยาวกว่า half-life 14 วันมาก — หางขวาของ first-passage)
+
+Carry สะสมถึง P75 = <span class="nm">30</span> × <span class="nm">0.05%</span> = <span class="nm">1.5%</span>
+
+Net = gross − carry = <span class="nm">0.9%</span> − <span class="nm">1.5%</span> = <strong>−0.6%</strong>
+→ spread กลับ θ จริงตามที่โมเดลทำนาย แต่ net PnL ติดลบเพราะ carry กินหมดก่อน</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">กติกาก่อนเข้าเทรดทุกครั้ง</div>
+<ul>
+<li>คำนวณ edge_rate เทียบ carry_rate ก่อนเสมอ — ถ้า edge_rate &lt; 2× carry_rate ห้ามเทรด</li>
+<li>ตั้ง time-stop จาก P75 ของ first-passage time distribution (ไม่ใช่ half-life) — ออกที่ P75 แทนที่จะถือรอ convergence ไม่จำกัดเวลา</li>
+<li><strong>ต้นทุนที่มองข้ามอีกตัว:</strong> ถ้าใช้ Kalman filter ปรับ β แบบ dynamic (<a href="statarb-ch15.html">ch15</a>) rebalance cost จากการปรับ hedge บ่อยเกินไปก็เป็น "carry" อีกชนิดที่ต้องรวมเข้าสูตรนี้ด้วย — ดู <a href="statarb-ch15.html#s15-8">ch15 §15.8</a></li>
+</ul>
+</div>
+
+<!-- 19.12 -->
+<h2 id="s19-12">19.12 Stop-Loss Tax บน Mean-Reversion</h2>
+
+<p>State machine ใน <a href="statarb-ch11.html#s11-4">ch11 §11.4</a> ใช้ STOP ที่ |z|≥3 เป็นกฎตายตัว — แต่สำหรับ OU process การตั้ง stop แบบระยะราคามีต้นทุนแฝงที่ต้องนับเข้า edge waterfall</p>
+
+<div class="key-idea">
+<div class="ki-label">Stop-Loss Tax — ต้นทุนที่ซ่อนอยู่ในกฎ "ต้องมี Stop"</div>
+<div class="ki-eq">stop_loss_tax = P(แตะ stop ก่อนกลับ θ) × avg_loss_at_stop</div>
+<div class="ki-text" style="margin-top:8px">
+เข้าที่ 2σ, stop ที่ 3σ: P(แตะ 3σ ก่อนกลับ θ) ปกติอยู่ที่ <strong>15-25%</strong> — ไม่ใช่เหตุการณ์หายาก และจุด 3σ คือจุดที่ expected reversion แรงที่สุดพอดี (ตัด position ตรงจุดที่ควรถือมากที่สุด)
+</div>
+</div>
+
+<div class="fm"><span class="c"># ตัวอย่าง</span>
+P(แตะ 3σ ก่อนกลับ θ | เข้า 2σ) = <span class="nm">20%</span>
+ค่าเสียเฉลี่ยต่อครั้งที่โดน stop = <span class="nm">1.2</span>σ
+
+stop_loss_tax = <span class="nm">0.20</span> × <span class="nm">1.2</span>σ = <span class="nm">0.24</span>σ ต่อไม้
+
+เทียบ expected gross = <span class="nm">0.8</span>σ ต่อไม้
+→ stop_loss_tax กิน <span class="nm">0.24</span>/<span class="nm">0.8</span> = <strong>30% ของ edge ก่อนคิด fee ด้วยซ้ำ</strong></div>
+
+<div class="bx bk">
+<div class="bt">แยก Stop สองชนิด — อย่าใช้ตัวเดียวทำหน้าที่ทั้งคู่</div>
+<ul>
+<li><strong>Structural stop</strong> (ออกทันที): ADF fail ใน rolling window, θ shift ตรวจด้วย regime filter (<a href="statarb-ch9.html">ch9</a>), funding structure เปลี่ยนถาวร</li>
+<li><strong>Price stop</strong> (ตั้งไกลพอ ≥4σ): ให้ trigger จาก break จริง ไม่ใช่ excursion ปกติของ OU</li>
+<li>ใช้ time-stop ควบ (จาก first-passage quantile, §19.11) เพราะ "ช้าเกิน" เป็นหลักฐานของ break ที่ดีกว่า "ไกลเกิน"</li>
+<li>รายงาน % ของ trade ที่จบด้วย price stop — ถ้าเกิน ~10% ระบบกำลังจ่าย stop-loss tax หนักเกินไป ให้ทบทวน threshold</li>
+</ul>
+</div>
+
+<!-- 19.13 -->
+<h2 id="s19-13">19.13 ROC จริงเมื่อไม่มี Margin Offset ข้าม Venue</h2>
+
+<p>Backtest ส่วนใหญ่วัด return บน notional หรือ margin แบบ netted — แต่ cross-venue/cross-exchange spread (<a href="statarb-ch17.html#s17-13">ch17 §17.13</a>) ต้องวาง margin เต็มทั้งสองขาแยกบัญชี ทำให้ ROC จริงต่ำกว่าที่ backtest คิดมาก</p>
+
+<div class="key-idea">
+<div class="ki-label">ROC จริง — หารด้วยทุนที่จมจริง ไม่ใช่ Notional</div>
+<div class="ki-eq">ROC_real = (net_edge_ต่อรอบ × รอบ/ปี × notional) / (IM_A + IM_B + buffer_A + buffer_B)</div>
+</div>
+
+<div class="fm"><span class="c"># GC listed calendar (same-clearing, SPAN credit)</span>
+Margin ≈ <span class="nm">$1,500</span>/spread
+
+<span class="c"># Cross-exchange (CME↔APEX แยก clearing) — เต็มสองฝั่ง + buffer</span>
+Margin ≈ <span class="nm">$25,000–35,000</span> สำหรับ exposure เท่ากัน
+
+<span class="c"># ทุนจมต่างกัน ~20 เท่า → ROC ที่ backtest คิดบน notional เดียวกัน ต่างกันมหาศาล</span>
+กลยุทธ์ที่โชว์ 20%/ปี บนกระดาษ (คิดจาก notional) อาจเหลือแค่ 1% บนทุนที่จมจริง</div>
+
+<div class="bx bg">
+<div class="bt">กติกาเลือกตลาด</div>
+<p>ถ้า ε อยู่ข้าม clearing (ไม่มี margin offset) ต้องการ edge ต่อรอบอย่างน้อย <strong>3-5 เท่า</strong>ของ same-clearing listed spread ถึงจะคุ้มทุนที่จมเพิ่ม — คำนวณ ROC_real ก่อนเปรียบเทียบกลยุทธ์ข้าม venue เสมอ อย่าเทียบแค่ % edge ต่อ trade</p>
+</div>
+
+<h2 id="s19-14">19.14 แบบฝึกหัด</h2>
 
 <div class="ex">
 <div class="et">แบบฝึกหัดบทที่ 19</div>
@@ -293,6 +429,7 @@ def compute_edge(spread_at_entry_pct, sigma_spread_pct,
 <li>Net saving: 7 + 8 = 15bps round-trip (จาก 17bps cost → 2bps cost — ยังเป็นต้นทุน ไม่ใช่ rebate)</li>
 </ul>
 <p>Trade-off: limit order อาจไม่ถูก fill ถ้า spread เคลื่อนที่ออกไปก่อน → ต้องออกแบบ order management ให้ดี</p>
+<p style="margin-top:6px"><strong>⚠️ คำเตือนเพิ่ม:</strong> "ประหยัด 15bps" นี้คือตัวเลขก่อนหัก adverse selection — fill ที่ maker ได้จริงไม่ใช่ fill แบบสุ่ม มันคือ fill ที่คนอื่น "เลือก" จะ cross เข้ามากิน quote ของเรา ซึ่งมักเกิดตอน ε กำลังวิ่งทะลุไปต่อ ไม่ใช่ตอนกำลังจะกลับตัว — ต้องวัด markout จริงก่อนสรุปว่า maker คุ้มกว่า taker (ดู <a href="#s19-10">§19.10</a>)</p>
 </div>
 </details>
 

@@ -479,7 +479,74 @@ Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
 </ul>
 </div>
 
-<h2 id="s11-7">11.7 แบบฝึกหัด</h2>
+<!-- 11.7 -->
+<h2 id="s11-7">11.7 เศรษฐศาสตร์ของ Stop บน Mean Reversion</h2>
+
+<p>Transition table ใน <a href="#s11-3">§11.3</a> ใช้ <code>stop_loss_hit()</code> เป็น condition ทั่วไป — ในทางปฏิบัติ trader ส่วนใหญ่ implement เป็นระยะราคา (เช่น |z|≥3) ตามตัวอย่างใน <a href="statarb-ch3.html#s3-4">ch3 §3.4</a> แต่การตั้ง stop แบบระยะราคาบน OU process มีต้นทุนแฝงที่มักถูกมองข้าม</p>
+
+<div class="bx bk">
+<div class="bt">⚠️ Stop แบบระยะราคา ตัด Position ตรงจุดที่ควรถือมากที่สุด</div>
+<p>สำหรับ OU process แรงดึงกลับ (mean-reversion force) แปรผันตามระยะห่างจาก θ — ยิ่งไกล ยิ่งดึงแรง จุด 3σ จึงเป็นจุดที่ expected return สูงสุดพอดี การตั้ง stop ที่ระยะนี้จึงมักขายทิ้งตรงจุดที่ทฤษฎีบอกว่าควรถือ ไม่ใช่จุดที่ควรหนี</p>
+<p style="margin-top:6px">เข้าที่ 2σ: P(แตะ 3σ ก่อนกลับ θ) โดยทั่วไปอยู่ที่ <strong>15-25%</strong> (ไม่ใช่ ~0.3% ที่เป็น unconditional probability ตาม <a href="statarb-ch3.html#s3-4">ch3 §3.4</a>) — นี่คือเหตุการณ์ที่เกิดบ่อยพอจะกิน edge ต่อไม้อย่างมีนัยสำคัญ เรียกต้นทุนนี้ว่า <strong>stop-loss tax</strong> ต้องรวมเข้า edge calculation เสมอ (สูตรเต็ม: <a href="statarb-ch19.html#s19-12">ch19 §19.12</a>)</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แยก Stop สองชนิดที่ทำหน้าที่ต่างกัน</div>
+<div class="ki-text">
+<strong>Structural stop</strong> (ต้องออกทันที ไม่มีข้อยกเว้น): ADF test fail ใน rolling window (<a href="statarb-ch5.html">ch5</a>), θ shift ที่ regime filter ตรวจพบ (<a href="statarb-ch9.html">ch9</a>), funding/carry structure เปลี่ยนถาวร<br><br>
+<strong>Price stop</strong> (ตั้งไกลพอ ≥4σ): ให้ trigger จาก break จริงเท่านั้น ไม่ใช่ excursion ปกติของ OU ที่ยังอยู่ในกรอบทฤษฎี
+</div>
+</div>
+
+<div class="fm"><span class="c"># เพิ่ม time-stop ควบ — "ช้าเกิน" คือหลักฐานของ break ที่ดีกว่า "ไกลเกิน"</span>
+time_stop = P75 ของ first-passage time distribution (ดู ch19 §19.11)
+
+<span class="kw">if</span> excursion_z &gt;= <span class="nm">4.0</span>:
+    action = <span class="nm">"STRUCTURAL_STOP — ออกทันที"</span>
+<span class="kw">elif</span> holding_time &gt; time_stop <span class="kw">and</span> <span class="kw">not</span> reverting:
+    action = <span class="nm">"TIME_STOP — น่าสงสัยว่า break แล้ว"</span>
+<span class="kw">else</span>:
+    action = <span class="nm">"HOLD — ยังอยู่ในกรอบ OU ปกติ"</span></div>
+
+<div class="bx ba">
+<div class="bt">เช็คด่วน</div>
+<p>Backtest ควรรายงาน % ของ trade ที่จบด้วย price stop แยกจาก structural stop และ normal exit — ถ้า price stop เกิน ~10% ของ trade ทั้งหมด แปลว่ากำลังจ่าย stop-loss tax หนักเกินไป ให้ทบทวน threshold (ขยับจาก 3σ เป็น 3.5-4σ) แทนที่จะยอมรับว่า "เป็นแบบนี้ปกติ"</p>
+</div>
+
+<!-- 11.8 -->
+<h2 id="s11-8">11.8 Leg-Cut Temptation — จิตวิทยาที่ทำลายสิ่งที่โมเดลสร้าง</h2>
+
+<p>State machine ทั้งบทนี้ออกแบบให้ position เป็นคู่เสมอ (เปิดพร้อมกัน ปิดพร้อมกัน) — แต่ dashboard ของแต่ละ venue มักโชว์ PnL แยกขา ("ขา A +$650 / ขา B −$800") ซึ่งกระตุ้นพฤติกรรมที่ไม่มีอยู่ใน state diagram ของ <a href="#s11-2">§11.2</a> เลย</p>
+
+<div class="bx bk">
+<div class="bt">⚠️ "เก็บกำไรขาที่บวกก่อน" = เปลี่ยน Arb เป็น Directional Bet ตรงจุดที่แย่ที่สุด</div>
+<p>ตอน spread วิ่งสวนนานกว่า half-life ที่คำนวณไว้ (ซึ่งเป็นเรื่องปกติ — half-life คือค่ากลาง ไม่ใช่เพดาน) แรงกระตุ้นทางจิตวิทยาคือ "ล็อกกำไรขาบวกก่อน เดี๋ยวขาลบเด้งค่อยปิด" — ผลคือเหลือขาเดียว = position ทิศทางเปล่าๆ ที่ไม่เคยผ่านการอนุมัติจาก state machine เลย และมักเกิด ณ จุดที่ spread ยืดไกลที่สุด (2.5-3σ) ซึ่งคือจุดที่ expected reversion แรงที่สุดพอดี (เหมือนปัญหาเดียวกับ <a href="#s11-7">§11.7</a>) — พอ spread revert กลับจริงตามที่โมเดลทำนาย ขาที่เหลือ (ปิดไม่ครบ) จะขาดทุนซ้ำอีกรอบ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: ต้นทุนของการตัดขาเดียว</div>
+<div class="fm">ถือ spread ที่ −2.8σ มา 12 วัน (τ½ = 4 วัน — เกิน 3×τ½ แล้ว แต่ยังไม่ break ตาม §11.7)
+
+ถ้าปิดขากำไรตอนนี้ (leg-cut):
+  → คืนถัดมา spread revert 1.5σ ตามที่ OU ทำนาย
+  → ขาที่เหลือ (ทิศทางเปล่า) ขาดทุนเพิ่ม −$1,900
+
+ถ้าถือครบสองขาตาม state machine (หรือ time-stop ปิดพร้อมกันตาม §11.7):
+  → ทั้ง position ได้ +$400 (ตามที่โมเดลออกแบบไว้)</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน — สร้างระบบที่กันมือมนุษย์ออกจากจุดอ่อนไหวที่สุด</div>
+<ol>
+<li><strong>กติกาเหล็ก:</strong> spread เข้าเป็นคู่ ออกเป็นคู่เสมอ — ปิดขาเดียวทำได้กรณีเดียวคือ emergency hedge ตาม playbook <a href="statarb-ch20.html">ch20</a> (venue ล่ม/technical failure) ไม่ใช่เพราะ "รู้สึกว่าควร"</li>
+<li><strong>ซ่อน PnL รายขา:</strong> dashboard ควรโชว์เฉพาะ ε, z, และ spread PnL รวม — การเห็น PnL แยกขาคือสิ่งที่กระตุ้น loss aversion แบบรายขาซึ่งไม่มีเหตุผลเชิงกลยุทธ์รองรับ</li>
+<li><strong>มี "ทางออกตอนทรมาน" อยู่แล้วในระบบ:</strong> time-stop จาก §11.7 (P75 ของ first-passage time) ทำให้มีจุดจบที่กำหนดไว้ล่วงหน้า ไม่ต้องด้นสดตอนกดดันที่สุด</li>
+</ol>
+</div>
+
+<!-- 11.9 -->
+<h2 id="s11-9">11.9 แบบฝึกหัด</h2>
+
 
 <div class="ex">
 <div class="et">โจทย์ 11.1 — Transition ที่ถูกต้อง</div>
