@@ -178,10 +178,12 @@
 
 | # | งาน | สถานะ |
 |---|---|---|
-| R2-A | นาฬิกา 3 เรือน (Part 3) | รอเริ่ม |
-| R2-B | เข็มหมุนฝั่งขาย (Part 2) | รอเริ่ม |
-| R2-C | Consistency sweep | รอเริ่ม |
-| R2-D | แบบฝึกหัด | รอเริ่ม |
+| R2-A | นาฬิกา 3 เรือน (Part 3 §3.0) | ✅ เสร็จ — เพิ่มเหตุผลจากงานวิจัย microstructure noise (Zhang, Mykland & Aït-Sahalia 2005) ว่าทำไมสุ่มตัวอย่างถี่เกินไปถึงอันตรายกว่าที่คิด (ไม่ใช่แค่ fee) |
+| R2-B | เข็มหมุนฝั่งขาย (Part 2 §2.6.1) | ✅ เสร็จ — 4 policy ผูก regime H + กล่องเตือน partial-fill accounting (เช็กกับ Part 9 GridLevel จริงแล้วว่ายังไม่รองรับ) |
+| R2-C | Consistency sweep | ✅ เสร็จ — Part 0 §0.2 (จุดแรกที่สมมติฐานทั้งสองปรากฏ), config.yaml (candle_interval, tp_policy), cheat sheet Part 9 |
+| R2-D | แบบฝึกหัด | ✅ เสร็จ — Part 3 ข้อ 5 (ความเสียหายจริงจาก ATR ผิด timeframe), Part 2 ข้อ 5 (เลือก TP policy จาก H) |
+
+ที่มางานวิจัยของ R2-A: Zhang, Mykland & Aït-Sahalia, "A Tale of Two Time Scales: Determining Integrated Volatility with Noisy High-Frequency Data," *Journal of the American Statistical Association* (2005) — ใช้เป็นเหตุผลประกอบเท่านั้น ไม่ได้ยืมตัวเลขจากเปเปอร์มาใช้ตรงๆ (ตัวเลขในตารางยังมาจากตัวอย่างของเล่มเอง)
 
 ---
 
