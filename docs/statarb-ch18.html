@@ -374,6 +374,106 @@ PCP fair value:  S − K·e^{−rT} = 95,000 − 95,000·e^{−0.05×30/365}
 </details>
 </div>
 
+<!-- 18.9 -->
+<h2 id="s18-9">18.9 American vs European Exercise — เมื่อ PCP กลายเป็น Inequality</h2>
+
+<p>ทุกสูตรใน §18.1–§18.8 สมมติว่า options เป็น <strong>European</strong> (exercise ได้เฉพาะวัน expiry) — Deribit BTC/ETH options เป็นแบบนี้จริง ทำให้ ε_PCP มี fair value เป้าหมายเดียวคือ 0 แต่ options บางตลาดเป็น <strong>American</strong> (exercise ได้ทุกวันก่อน expiry) ซึ่งเปลี่ยนสมการทั้งชุด</p>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม American ถึงทำให้ Equality พังเป็น Inequality</div>
+<div class="ki-text">
+Early-exercise คือ <strong>สิทธิ์เพิ่ม</strong> ที่ European ไม่มี → American option ราคา ≥ European เสมอ<br><br>
+บน underlying ที่ไม่มี dividend/yield: <strong>Call ไม่เคย</strong>คุ้มที่จะ exercise ก่อนกำหนด (เสีย time value ฟรี) → C_American = C_European<br>
+แต่ <strong>Put อาจคุ้ม</strong>ที่จะ exercise ก่อนกำหนด (ยิ่ง deep ITM + r สูง ยิ่งคุ้ม เพราะรับเงินสดเร็วไปลงทุนต่อ) → P_American ≥ P_European
+</div>
+</div>
+
+<div class="fm"><span class="c"># American PCP: equality กลายเป็น bounds สองด้าน</span>
+European (Deribit):   C - P  =  (F - K)·e^{-rT}              <span class="c"># จุดเดียว</span>
+American (equity-style options): S - K  ≤  C - P  ≤  S - K·e^{-rT}   <span class="c"># แถบ ไม่ใช่จุด</span>
+
+<span class="c"># เหตุผล: C_Am = C_Eu (call ไม่ early-exercise) แต่ P_Am ≥ P_Eu</span>
+<span class="c">→ C_Am - P_Am = C_Eu - P_Am ≤ C_Eu - P_Eu = S - K·e^{-rT}   (ขอบบน)</span>
+<span class="c">→ ขอบล่างมาจาก P_Am - P_Eu ≤ K(1 - e^{-rT})  →  C_Am - P_Am ≥ S - K</span></div>
+
+<div class="bx bk">
+<div class="bt">ผลต่อการเทรด: ไม่มี "fair value จุดเดียว" ให้ mean-revert เข้าหา</div>
+<p>สูตร ε_PCP = (C−P) − (F−K)e^{−rT} ใน §18.2/§18.8 ใช้ได้เฉพาะเมื่อ options เป็น European เท่านั้น — ถ้านำสูตรนี้ไปใช้กับ American options โดยไม่ปรับ จะเห็น "ε" ที่ดูเหมือนเบี่ยงออกจาก 0 ตลอดเวลา ทั้งที่จริงมันอยู่ในแถบ [S−K, S−Ke^{−rT}] ที่ถูกต้องอยู่แล้ว — ไม่ใช่ arbitrage opportunity</p>
+</div>
+
+<table>
+<tr><th>ตลาด</th><th>Exercise Style</th><th>ใช้สูตรไหน</th></tr>
+<tr><td>Deribit BTC/ETH Options</td><td>European</td><td>ε_PCP = 0 point-target (§18.2, §18.8) ✅</td></tr>
+<tr><td>CME BTC/ETH Options (on futures)</td><td>European</td><td>ε_PCP = 0 point-target ✅</td></tr>
+<tr><td>CBOE Options บน Spot-ETF (IBIT, FBTC)</td><td><strong>American</strong> (equity-style)</td><td>ต้องใช้ inequality bounds — จุด 0 ใช้ไม่ได้</td></tr>
+</table>
+
+<div class="bx bd">
+<div class="bt">Quirk เพิ่มเติม: Coin-Margined (Inverse) Options</div>
+<p>Options บางตัวบน Deribit/OKX/Bybit เป็น <strong>coin-margined</strong> — จ่าย premium และ settle เป็น BTC/ETH เอง ไม่ใช่ USD สิ่งนี้สร้าง quanto-like effect เพราะ "หน่วยที่ใช้จ่าย premium" เองก็เป็นตัวแปรสุ่มเทียบ USD → สูตร PCP มาตรฐาน (ที่สมมติ premium กับ strike เป็นหน่วยเดียวกัน) จะมี bias เล็กๆ ที่คงอยู่ต่อเนื่อง ซึ่ง<strong>ไม่ใช่ arbitrage</strong> แต่เป็นต้นทุนเชิงโครงสร้างของ instrument เอง — เหมือนหลักการ "θ ≠ 0 ต้อง estimate จริง ห้าม assume 0" ใน <a href="statarb-ch17.html#s17-10">ch17 §17.10</a> ต้องวัด bias นี้เชิงประจักษ์ก่อน แล้วหักออกจาก ε_PCP ที่สังเกตได้ ก่อนตัดสินใจว่าเหลือ ε แท้เท่าไหร่</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.9 ตรวจ exercise style ก่อนใช้สูตร → §18.10 คำนวณ band จริงจาก fee+spread ก่อนเทรด ▶</p>
+
+<!-- 18.10 -->
+<h2 id="s18-10">18.10 PCP Band ในโลกจริง — คำนวณจาก Fee + Bid-Ask จริง</h2>
+
+<p>§18.3 คำนวณ net profit โดยหักแค่ <strong>taker fee</strong> ($58.50) แต่นั่นคือครึ่งเดียวของ friction จริง — ยังไม่รวม bid-ask spread ที่ต้อง cross ทั้ง 3 ขา ของ Conversion (Sell Call + Buy Put + Long Forward) มาคำนวณ <strong>band ที่แท้จริง</strong> จากตัวอย่างเดิม:</p>
+
+<div class="fm"><span class="c"># จากตัวอย่าง §18.3: BTC K=65,000, T=30d</span>
+<span class="c"># Call=$2,850, Put=$1,520, Futures=$66,200</span>
+
+<span class="c"># 1) Taker fee (3 legs, 0.03% ต่อ leg ของ notional) — จาก §18.3</span>
+fee_total     = <span class="nm">0.03%</span> × <span class="nm">3</span> × <span class="nm">65,000</span> ≈ <span class="nm">$58.50</span>
+
+<span class="c"># 2) Bid-ask ของ options (ATM ~0.5–3% ของราคา option, ดู ch22 §22.6)</span>
+bidask_call   = <span class="nm">1%</span> × <span class="nm">2,850</span> ≈ <span class="nm">$28.50</span>
+bidask_put    = <span class="nm">1%</span> × <span class="nm">1,520</span> ≈ <span class="nm">$15.20</span>
+
+<span class="c"># 3) Bid-ask ของขา futures (deep liquid, แคบมาก)</span>
+bidask_fwd    = <span class="nm">0.003%</span> × <span class="nm">65,000</span> ≈ <span class="nm">$2.00</span>
+
+<span class="c"># รวม total friction</span>
+total_friction = <span class="nm">58.50</span> + <span class="nm">28.50</span> + <span class="nm">15.20</span> + <span class="nm">2.00</span> = <strong>$104.20</strong></div>
+
+<div class="key-idea">
+<div class="ki-label">PCP Band ที่แท้จริง (ไม่ใช่ ±0)</div>
+<div class="ki-eq">|ε_PCP| ต้อง &gt; total_friction ถึงเทรดได้</div>
+<div class="ki-text" style="margin-top:8px">
+ตัวอย่างนี้: band ≈ ±$104 (ปัดเป็น ±$100–110)<br>
+เทียบกับ ε ที่สังเกตได้ใน §18.3 = +$135 → ยังอยู่นอก band → เทรดได้ แต่ net edge หลังหัก friction ทั้งหมด = 135 − 104.20 = <strong>$30.80</strong> ไม่ใช่ $76.50 ที่คิดแบบหักแค่ fee (§18.3 มองข้าม bid-ask ไปครึ่งหนึ่งของต้นทุนจริง)
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">บทเรียน: อย่าคิด Friction แค่ Fee Schedule</div>
+<ul>
+<li>Fee schedule (0.03% taker) เป็นต้นทุนที่ <strong>เห็นชัด</strong> แต่มักเป็นแค่ 40–60% ของ friction จริง</li>
+<li>Bid-ask ของ options (โดยเฉพาะ far-OTM) กว้างกว่า fee หลายเท่า — ต้องใช้ตัวเลข bid-ask จริงจาก order book ไม่ใช่ mid price</li>
+<li>Band ต้องคำนวณใหม่ทุกครั้งที่ liquidity เปลี่ยน (เช่น ช่วง low-volume หรือช่วง event) — band ที่คำนวณตอนตลาดสงบ ใช้ไม่ได้ตอนตลาดผันผวน (ดู §18.11)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.10 ได้ band ตอนตลาดปกติ → §18.11 ดูว่า PCP หลุดจริงตอนไหน และ band นั้นเปลี่ยนไปยังไง ▶</p>
+
+<!-- 18.11 -->
+<h2 id="s18-11">18.11 Situation Card — PCP หลุดตอนไหนในโลกจริง</h2>
+
+<p>ε_PCP ที่ใหญ่พอจะเทรดได้ (เกิน band ใน §18.10) ไม่ได้เกิดขึ้นสุ่มๆ ตลอดเวลา — มันมี pattern ชัดเจนว่าเกิด<em>ตอนไหน</em> และมาพร้อมกับดักที่ต้องระวัง:</p>
+
+<div class="bx bg">
+<div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card) — PCP Violation</div>
+<ul>
+<li><strong>Trigger:</strong> ใกล้ expiry (1–3 วันสุดท้าย) พร้อมกับ panic/crash — put ฝั่ง order book ถูกซื้อกวาดแรง (demand ป้องกัน downside พุ่ง) ขณะที่ market maker ถอนสภาพคล่องฝั่งนั้นเป็นการเฉพาะ</li>
+<li><strong>Regime:</strong> เกิดถี่ขึ้นรอบ event calendar ที่รู้ล่วงหน้าได้ (FOMC, ETF flow decision, options expiry รายไตรมาส) — ไม่ใช่สุ่มตลอดปี</li>
+<li><strong>Edge vs Friction:</strong> ช่วง stress เดียวกันที่ ε_PCP กว้างขึ้น bid-ask ก็กว้างขึ้นพร้อมกัน (มักเป็น 2–5 เท่าของ §18.10) → ต้องคำนวณ band ใหม่แบบ real-time ไม่ใช่ใช้ band ที่วัดตอนตลาดสงบ — edge ที่ดูใหญ่อาจถูกกิน friction เกือบหมด</li>
+<li><strong>ใครอยู่อีกฝั่ง:</strong> retail ที่ panic-buy put เพื่อประกันความเสี่ยง (ยอมจ่ายแพง), ตำแหน่งที่ถูก force-liquidate (ขาย call ทิ้งแบบไม่สนราคา), market maker ที่ถอนตัวจาก two-sided quote ฝั่ง put พอดีตอน volume พุ่งสูงสุด</li>
+<li><strong>สัญญาณ setup พัง:</strong> ε_PCP กว้างค้างนานหลายชั่วโมง/วันโดยไม่ revert หลัง event ผ่านไปแล้ว — ให้สงสัย index/settlement basis จริง (ดู bx model-risk ใน §18.6) ไม่ใช่แค่ liquidity ชั่วคราว</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.9–§18.11 คือ mechanics ของ PCP ให้ครบ real-world edge cases → ต่อยอดเต็มรูปแบบใน <a href="statarb-ch22.html">บทที่ 22</a> ▶</p>
+
 <p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
   Ch.18 Options Overlay | ต่อไป → <strong>Ch.19: Cost Analysis &amp; Edge — คำนวณ Net Edge ก่อนเทรด</strong> | §18.8 ดู <a href="statarb-ch22.html">ch22</a> สำหรับ Options Stat Arb เต็มรูปแบบ
 </p>

@@ -183,7 +183,7 @@
 | QA | ทีม 11 คน ตรวจความถูกต้องความรู้ + ภาพประกอบทุกไฟล์ → แก้ตาม issue list | ⏳ กำลังรัน | — |
 | 1 | ch4b กรอบเลือก F(·) + **ch5 §5.0 Null Hypothesis 101** | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~15–20 |
 | 2 | ch13b (absolute/ratio) + ch13c (funding/yield) | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~25–30 |
-| 3 | Options stat arb: ขยาย ch18 + ch22 (4 หัวข้อใหม่) | รอ | ~25–30 |
+| 3 | Options stat arb: ขยาย ch18 (§18.9–18.11 American/European + PCP band + Situation Card) + ch22 (§22.9–22.12: IV term structure, dispersion, sticky strike/delta, PnL decomposition) | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~15 |
 | 4 | Calendar arb ภาคปฏิบัติ: ch17 ยกเครื่อง (17.8–17.13 รวม margin mechanics) + ch10b ใหม่ | ✅ เขียนแล้ว + ตรวจ render แล้ว | ~30–35 |
 | 5 | Generalize ch1–12 + Kalman churn ลง ch15/ch19 + editorial rewrite สูตร ~114 กล่อง + กระจาย loss catalog + Situation Cards + rebuild PDF | รอ | ~25–30 |
 | | **รวม** | | **~125–145 หน้า** (เล่มโต ~406 → ~540+) |

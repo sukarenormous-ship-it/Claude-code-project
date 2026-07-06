@@ -610,6 +610,189 @@ z_iv    = (epsilon_iv[<span class="nm">-1</span>] - mean_iv) / std_iv
 <p>IV is not directly tradeable — you must trade options, which have bid-ask spreads of 0.5–1.5 IV points. A "signal" of ε_IV = 2σ may be entirely consumed by transaction costs. Also: IV mean-reversion speed is highly non-stationary; during vol-of-vol regime, IV can trend for days without reverting. Options gamma and theta bleed creates P&amp;L even with perfect IV hedge.</p>
 </div>
 
+
+<!-- 22.9 -->
+<h2 id="s22-9">22.9 IV Term Structure ε — Front vs Back เต็มรูปแบบ</h2>
+
+<p><a href="statarb-ch18.html#s18-4">ch18 §18.4</a> แตะเรื่อง Calendar Spread IV Arb ไว้แค่ในฐานะ no-arbitrage constraint (variance ต้องเพิ่มตาม T) — ที่นี่เราขยายให้เป็น <strong>stat arb strategy เต็มรูปแบบ</strong> บน term structure ที่ยังไม่ผิด no-arb bound แต่เบี่ยงจาก "รูปทรงปกติ" ของมันเอง</p>
+
+<div class="key-idea">
+<div class="ki-label">ε Term Structure — Constant-Maturity Front vs Back</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon_{\text{term}} = \text{IV}_{\text{front}}(t) - \beta \cdot \text{IV}_{\text{back}}(t)$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+front/back = constant-maturity (เช่น 7d vs 30d) ไม่ใช่ fixed-calendar expiry ที่ T หดทุกวัน (เหมือน §22.1)<br>
+θ_term ปกติติดลบเล็กน้อย (front ถูกกว่า back เล็กน้อยในสภาวะปกติ — contango ของ vol) <br>
+ต่างจาก §22.1 (cross-asset) และ §22.4 (cross-venue): ที่นี่ทั้งสองขาคือ <strong>underlying เดียวกัน คนละ maturity</strong>
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม Term Structure ถึง Invert ได้แบบคาดการณ์ล่วงหน้า</div>
+<p>ก่อนเหตุการณ์ที่รู้กำหนดการล่วงหน้า (FOMC, ETF flow decision, network upgrade, options expiry รายไตรมาส) — <strong>front IV ถูกบวก event-risk premium</strong> เพราะตลาดรู้ว่าจะมีความผันผวนกระจุกในช่วงสั้นๆ นั้น ขณะที่ back IV แทบไม่ขยับ (event นั้นเป็นสัดส่วนน้อยของ 30 วันข้างหน้า) → term structure invert ชั่วคราว (front &gt; back) หลัง event ผ่านไป front IV จะ "vol crush" กลับลงเร็ว (event risk หายไปทันที) ขณะ back แทบไม่เปลี่ยน → term structure normalize กลับ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC IV Term Structure รอบ FOMC</div>
+<p><strong>สภาวะปกติ (ไม่มี event ใกล้):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">55%</span>,  IV_30d = <span class="nm">58%</span>,  β ≈ <span class="nm">1.0</span>
+ε_term = <span class="nm">55%</span> − <span class="nm">58%</span> = <span class="nm">−3%</span>   ← θ_term ปกติ, σ_term = <span class="nm">1.5%</span>
+z = 0 → ไม่มีสัญญาณ</div>
+<p><strong>T−3 วันก่อน FOMC (event premium สะสมใน front):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">68%</span>   <span class="c"># FOMC ตกอยู่ในช่วง 7 วันนี้พอดี</span>
+IV_30d = <span class="nm">59%</span>   <span class="c"># แทบไม่ขยับ</span>
+ε_term = <span class="nm">68%</span> − <span class="nm">59%</span> = <span class="nm">+9%</span>
+z = (<span class="nm">9%</span> − (<span class="nm">−3%</span>)) / <span class="nm">1.5%</span> = <strong>+8.0</strong>  ← สุดขั้ว → Signal!
+
+Action: <strong>Calendar Spread</strong> — Sell 7d straddle (front, vega แพง) + Buy 30d straddle (back, vega ถูกกว่า)
+         + delta-hedge สุทธิทั้งสองขา (§18.6)</div>
+<p><strong>หลัง FOMC ผ่านไป (vol crush):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">50%</span>   <span class="c"># event risk หายไปทันที — crush แรงกว่าที่คาด</span>
+IV_30d = <span class="nm">57%</span>
+ε_term = <span class="nm">50%</span> − <span class="nm">57%</span> = <span class="nm">−7%</span>  ← ใกล้ θ_term ปกติ (−3%) → close position รับกำไรจาก crush</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card) — IV Term Structure ทั้งบทที่ 22</div>
+<ul>
+<li><strong>Trigger:</strong> event calendar ที่รู้ล่วงหน้า (FOMC, ETF decision, expiry รายไตรมาส) อยู่ใน front window</li>
+<li><strong>ข้อดีเทียบ ε ราคา:</strong> IV เบี่ยงตาม event ที่ <strong>กำหนดการชัดเจนล่วงหน้า</strong> — ความถี่และจังหวะคาดการณ์ได้แม่นยำกว่า ε ราคาปกติมาก (ที่ mean-revert แบบสุ่มตาม noise ตลาด)</li>
+<li><strong>แต่ Friction สูงกว่ามาก:</strong> total friction ของ options (~100–300 bps ตาม <a href="statarb-ch22.html#s22-6">§22.6</a>) สูงกว่า perp 5–20 เท่า — "คาดเดาได้ง่ายกว่า" ไม่ได้แปลว่า "กำไรง่ายกว่า" ต้องผ่าน breakeven check ทุกครั้ง</li>
+<li><strong>สัญญาณ setup พัง:</strong> event ถูกเลื่อน/ยกเลิก (front premium ค้างนานผิดคาด), หรือ crush ไม่เกิดตามที่คาด (event surprise ใหญ่กว่าที่ priced ไว้ → IV ไม่ลง อาจขึ้นต่อ)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.9 เทียบ IV underlying เดียวกันข้าม maturity → §22.10 ดู topic ขั้นสูง: เทียบ IV ของ index กับ basket ▶</p>
+
+<!-- 22.10 -->
+<h2 id="s22-10">22.10 Dispersion เบื้องต้น (L2 — Advanced Topic)</h2>
+
+<div class="bx ba">
+<div class="bt">⚠️ หัวข้อนี้คือ L2/Advanced — อ่านเพื่อความเข้าใจ ไม่ใช่ setup ที่พร้อมเทรดทันที</div>
+<p>Dispersion trading ในตลาดหุ้นดั้งเดิม (SPX vs single-name options) เป็นกลยุทธ์ที่ established มานาน แต่ในตลาด crypto ยังมีข้อจำกัดข้อมูลสำคัญ: options ที่ liquid พอจะเชื่อ IV ได้จริงมีแค่ BTC และ ETH เป็นหลัก — altcoin options (SOL, และอื่นๆ) volume บางมาก ทำให้ "basket IV" ที่แม่นยำยังสร้างยาก หัวข้อนี้จึงนำเสนอเป็น <strong>โครงสร้างแนวคิด</strong> ให้เข้าใจ ไม่ใช่ pipeline พร้อมใช้เหมือนหัวข้ออื่นในบทนี้</p>
+</div>
+
+<p>โครงสร้างเดียวกับ multi-leg spread ใน <a href="statarb-ch16.html">บทที่ 16</a> — เพียงแต่แทนที่ "ราคา" ด้วย "IV":</p>
+
+<div class="key-idea">
+<div class="ki-label">ε Dispersion — Index Vol vs Basket Vol</div>
+<div class="ki-eq">ε_disp = IV_index − f(IV_1, IV_2, ..., IV_n, ρ_implied)</div>
+<div class="ki-text" style="margin-top:8px">
+Variance ของ basket (ตามทฤษฎี portfolio variance):<br>
+σ²_index ≈ Σᵢ Σⱼ wᵢ wⱼ σᵢ σⱼ ρᵢⱼ<br><br>
+Dispersion trade แท้จริงคือการเทรด <strong>implied correlation (ρ_implied)</strong> ที่ฝังอยู่ใน IV_index เทียบกับ IV ของ component แต่ละตัว — ถ้า ρ_implied สูงกว่า ρ_realized ที่คาด (correlation risk premium) → ตลาดจ่ายแพงเกินไปสำหรับ index vol
+</div>
+</div>
+
+<table>
+<tr><th>ทิศทาง</th><th>ความหมาย</th><th>Trade (แนวคิด)</th></tr>
+<tr><td>ρ_implied แพงไป</td><td>IV_index สูงเกินไปเทียบ basket</td><td>Short index vol (BTC-index straddle) + Long basket vol (BTC+ETH straddles)</td></tr>
+<tr><td>ρ_implied ถูกไป</td><td>IV_index ต่ำเกินไปเทียบ basket</td><td>Long index vol + Short basket vol</td></tr>
+</table>
+
+<div class="bx bk">
+<div class="bt">ข้อจำกัดในทางปฏิบัติของ Crypto Dispersion วันนี้</div>
+<ul>
+<li>"Index" ที่มี options ลึกพอมีแค่ BTC (และ ETH บางส่วน) — ยังไม่มี broad crypto-index options ที่ liquid เทียบเท่า SPX</li>
+<li>Basket ที่ใช้จริงมักเหลือแค่ BTC+ETH สองตัว ซึ่งไม่ใช่ "basket" ที่มีความหลากหลายพอจะให้ dispersion premium ชัดเจนแบบตลาดหุ้น</li>
+<li>Correlation matrix ของ altcoin ที่ IV ไม่ liquid ต้องประมาณจาก historical realized correlation แทน — เพิ่ม model risk อีกชั้น</li>
+<li>เหมาะสำหรับติดตามเป็นแนวคิดสำรองเมื่อตลาด options altcoin พัฒนาขึ้นในอนาคต มากกว่าจะเป็น setup หลักวันนี้</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.10 คือกับดักข้อมูล → §22.11 คือกับดักเชิงโครงสร้างที่ร้ายแรงกว่า: สิ่งที่ทำให้ §22.3 อาจเป็นภาพลวงตา ▶</p>
+
+<!-- 22.11 -->
+<h2 id="s22-11">22.11 Sticky Strike vs Sticky Delta — กับดักเชิงโครงสร้างของ RR_25Δ</h2>
+
+<p><a href="statarb-ch22.html#s22-3">§22.3</a> เทรด RR_25Δ โดยสมมติว่าการเบี่ยงจาก θ_RR สะท้อน skew ที่ผิดปกติจริง — แต่มี effect เชิงกลไกที่ทำให้ RR_25Δ ขยับได้ <strong>โดยไม่มี skew อะไรเปลี่ยนเลย</strong> เพียงเพราะ spot เคลื่อนที่ ถ้าไม่แยกสอง effect นี้ออกจากกัน อาจคิดว่ามี alpha ทั้งที่กำลังจับ noise เชิงกลไก</p>
+
+<div class="bx bb">
+<div class="bt">Sticky Strike vs Sticky Delta — สอง Convention ของการเคลื่อนที่ของ Smile</div>
+<ul>
+<li><strong>Sticky Strike:</strong> IV ที่ strike K <em>คงที่</em>ตัวเลข (เช่น IV ที่ K=$90,000 ยังคงเดิม) แม้ spot จะเปลี่ยน — smile curve "ติดอยู่กับ" แกน strike</li>
+<li><strong>Sticky Delta (Sticky Moneyness):</strong> IV ที่ delta/moneyness <em>คงที่</em> (เช่น IV ที่ 25Δ put ยังคงเดิม) — เมื่อ spot เปลี่ยน strike ที่ตรงกับ 25Δ ก็เปลี่ยนตาม แต่ IV ที่จุดนั้นเท่าเดิม — smile curve "เลื่อนตาม" spot</li>
+<li>ตลาดจริงมักอยู่ระหว่างสองแบบนี้ ไม่ใช่ pure convention ใดแบบหนึ่ง — และ regime อาจสลับไปมาตามช่วงเวลา</li>
+</ul>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม RR_25Δ ขยับได้โดยไม่มี Skew เปลี่ยน (ถ้าตลาด Sticky Strike)</div>
+<div class="ki-text">
+ถ้า smile เป็นฟังก์ชันคงที่ของ strike (sticky strike) แล้ว spot รีบาวด์ขึ้น: strike ที่เคยเป็น "25Δ put" (OTM ต่ำกว่า spot มาก) จะมี delta หดลง (OTM มากขึ้นสัมพัทธ์) จุด 25Δ ใหม่จะขยับไปที่ strike ที่<em>สูงกว่าเดิม</em>บนแกน strike เดียวกัน — ถ้า smile ไม่เปลี่ยนรูปเลย IV ที่จุด 25Δ ใหม่ (ใกล้ ATM มากกว่าเดิม) จะ<strong>ต่างจาก</strong> IV ที่จุด 25Δ เดิม โดยอัตโนมัติ<br><br>
+→ RR_25Δ ขยับ "ดูเหมือน" mean-revert ทั้งที่ risk sentiment (รูปร่างจริงของ smile เทียบ strike) <strong>ไม่ได้เปลี่ยนเลย</strong> — เป็นแค่ผลของ spot ที่เลื่อน delta ไปคนละจุดบน smile เดิม
+</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">วิธีป้องกัน: แยก "Smile-Roll Effect" ออกจาก Skew ที่แท้จริง</div>
+<ol>
+<li>เก็บ smile แบบ strike-indexed ของเมื่อวาน (IV เป็นฟังก์ชันของ strike จริง ไม่ใช่ delta)</li>
+<li>คำนวณว่า RR_25Δ<em>ควรจะเป็นเท่าไหร่วันนี้</em> ถ้าสมมติ sticky-strike ล้วนๆ (ประเมิน smile เดิมที่ strike ใหม่ที่ตรงกับ 25Δ วันนี้)</li>
+<li>Roll effect = ค่าที่คำนวณได้ในข้อ 2 ลบด้วย RR_25Δ ของเมื่อวาน</li>
+<li>Genuine skew move = RR_25Δ ที่สังเกตได้จริงวันนี้ ลบด้วย roll effect</li>
+<li>เทรดเฉพาะ <strong>genuine skew move</strong> เท่านั้น — ไม่ใช่ raw ΔRR_25Δ ที่ปนกันทั้งสอง effect</li>
+</ol>
+</div>
+
+<div class="bx bd">
+<div class="bt">Practitioner Note</div>
+<p>ถ้า spot ไม่ได้เคลื่อนที่มากระหว่างการวัด RR สองจุด effect นี้เล็กน้อยจนละเลยได้ — ปัญหาจะรุนแรงเฉพาะตอนที่ RR เปลี่ยนพร้อมกับ spot เคลื่อนแรง (เช่น ตัวอย่าง panic ใน §22.3 ที่ spot ร่วง 15% ด้วย) ซึ่งเป็นกรณีที่ signal ดูแรงที่สุดพอดี — เป็นเหตุผลว่าทำไมต้องเช็ค roll effect ทุกครั้งที่ spot เคลื่อนที่มากในช่วงเดียวกับ RR spike ไม่ใช่แค่ตอน spot นิ่ง</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.11 คือกับดักก่อนเข้าเทรด → §22.12 ปิดท้ายด้วยระบบบัญชีหลังเทรด: กำไรที่ได้จริงมาจากไหนบ้าง ▶</p>
+
+<!-- 22.12 -->
+<h2 id="s22-12">22.12 PnL Decomposition ของ ε Trade บน Options</h2>
+
+<p>ต่อยอดจาก Delta Hedge (<a href="statarb-ch18.html#s18-6">ch18 §18.6</a>) และ Vega-equivalent sizing (<a href="statarb-ch22.html#s22-7">§22.7</a>) — เมื่อปิด position แล้ว ต้องแยกให้ออกว่ากำไร/ขาดทุนที่เกิดขึ้นจริงมาจากส่วนไหนบ้าง เพราะมีแค่ส่วนเดียวที่เป็น "edge ที่ตั้งใจเทรด" ส่วนที่เหลือคือของแถมหรือต้นทุนที่ติดมาโดยไม่ได้ตั้งใจ</p>
+
+<div class="key-idea">
+<div class="ki-label">4 องค์ประกอบของ P&L บน Options ε Trade</div>
+<div class="ki-eq">Total P&amp;L = Vega P&amp;L + Gamma P&amp;L + Theta P&amp;L + Delta Residual</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>Vega P&L</strong> = Vega_position × ΔIV — ส่วนที่ <em>ตั้งใจเก็บ</em> (ε revert) คือแก่นของทั้งบทที่ 22<br>
+<strong>Gamma P&L</strong> = กำไร/ขาดทุนจากการ re-hedge delta ตาม realized vol ที่เกิดขึ้นจริง — ติดมาโดยอัตโนมัติจากการถือ options<br>
+<strong>Theta P&L</strong> = time decay ต่อวัน — "ค่าเช่า" ของการเป็น short/long gamma<br>
+<strong>Delta Residual</strong> = ความคลาดเคลื่อนจากการ re-hedge แบบ discrete-time (ไม่ต่อเนื่อง)
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: แกะ P&L ของ VRP Short-Straddle Trade (ต่อจาก §22.5)</div>
+<p>ใช้ position จาก §22.5 (Short ATM Straddle BTC, notional $100,000, Vega = −$500/%, delta-hedged) ถือ 5 วันจนกว่า ε_VRP revert:</p>
+<div class="fm"><span class="c"># 1) Vega P&L — ส่วนที่ตั้งใจเก็บ (VRP mean-revert: IV ลง)</span>
+IV เปลี่ยน: <span class="nm">90%</span> → <span class="nm">70%</span>  (ΔIV = <span class="nm">−20</span> จุด)
+Vega P&amp;L = Vega_position × ΔIV = (−<span class="nm">$500</span>/%) × (−<span class="nm">20</span>%) = <strong>+$10,000</strong>
+
+<span class="c"># 2) Gamma P&L — ต้นทุนที่ติดมาจาก short gamma (สมมติ realized vol สูงระหว่างถือ)</span>
+Gamma P&amp;L (สมมติจาก re-hedging cost 5 วัน) = <strong>−$3,000</strong>
+
+<span class="c"># 3) Theta P&L — "ค่าเช่า" จากการ short options (ชดเชย short gamma)</span>
+Theta ≈ <span class="nm">$400</span>/วัน × <span class="nm">5</span> วัน = <strong>+$2,000</strong>
+
+<span class="c"># 4) Delta Residual — hedge slippage จาก re-hedge แบบ discrete</span>
+Residual (จาก rehedge ไม่ต่อเนื่อง) = <strong>−$300</strong>
+
+<span class="c"># รวม</span>
+Total realized P&amp;L = <span class="nm">10,000</span> − <span class="nm">3,000</span> + <span class="nm">2,000</span> − <span class="nm">300</span> = <strong>+$8,700</strong></div>
+</div>
+
+<div class="bx bk">
+<div class="bt">บทเรียนจากการแกะ P&L นี้</div>
+<ul>
+<li>กำไร <strong>$10,000 จาก Vega</strong> คือ edge แท้จริงที่เทรด VRP นี้ตั้งใจเก็บ — ตัวเลขนี้ต่างหากที่ควรใช้ประเมินว่า strategy "ทำงาน" หรือไม่</li>
+<li>Theta (+$2,000) เป็นของแถม <strong>ไม่ใช่ thesis หลัก</strong> — ห้ามเข้าใจผิดว่ากำไรจาก theta คือหลักฐานว่า VRP-timing แม่นยำ</li>
+<li>Gamma (−$3,000) คือต้นทุนที่หลีกเลี่ยงไม่ได้ของการ short options ระหว่าง realized vol สูง — ต้องถูกงบประมาณไว้ล่วงหน้าใน friction estimate (<a href="statarb-ch22.html#s22-6">§22.6</a>) ไม่ใช่ค้นพบทีหลังตอนขาดทุน</li>
+<li><strong>ถ้า realized vol สูงกว่านี้อีก</strong> gamma cost อาจกิน vega gain จนหมด — ทำให้ VRP call ที่ "ถูกต้องตามทฤษฎี" (IV จริงลงตามคาด) กลายเป็นขาดทุนสุทธิได้ นี่คือเหตุผลที่ §22.5 เตือนเรื่อง Kelly sizing แบบอนุรักษ์นิยม (f* × 0.3)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.9–§22.12 ปิดชุดหัวข้อขั้นสูงของ Options Stat Arb — กลับไป §22.8 เพื่อดูภาพรวมทั้งบท หรือไปต่อบทที่ 23 ▶</p>
+
 <!-- Exercises -->
 <h2 id="s22-ex">แบบฝึกหัด</h2>
 
