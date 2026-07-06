@@ -12,9 +12,9 @@
 |---|---|
 | **ทำอะไร** | เล่ม 2 ของสาย stat arb — *คู่มือลงมือ* ที่เล่ม 1 ไม่ได้ลงลึก (เล่ม 1 = ทฤษฎี/taxonomy/วิธีคิด) |
 | **ทำไมแยกเล่ม** | เล่ม 1 ยาวเกิน + โหมดอ่านต่างกัน (เล่ม 1 = เข้าใจ · เล่ม 2 = รันได้จริง มีตัวเลข มีโค้ด) |
-| **แกนเล่ม** | "บันได β" (Hedge-Ratio Estimation Ladder): OLS → TLS/PCA → Rolling → **Kalman** → Adaptive/VECM |
+| **แกนเล่ม** | 2 แกน: (1) "บันได β" OLS → TLS/PCA → Rolling → **Kalman** → Adaptive/VECM · (2) **pairwise → factor/residual** (pair = rank-1, เทรด residual) |
 | **กฎเหล็ก** | เขียนครั้งเดียวมีบ้านเดียว — เรื่องที่เล่ม 1 มีแล้วให้ *อ้างอิง* ไม่เขียนซ้ำ |
-| **รูปแบบไฟล์** | HTML self-contained สไตล์เดิม (`practice-part1..8.html`) **+** โฟลเดอร์ `docs/vol2-code/` (Jupyter/.py + toy dataset ที่รันได้จริง) |
+| **รูปแบบไฟล์** | HTML self-contained สไตล์เดิม (`practice-part0..9.html`, ~10 Part) **+** โฟลเดอร์ `docs/vol2-code/` (Jupyter/.py + toy dataset ที่รันได้จริง) |
 | **การ์ดบท** | มาตรฐาน v4 เดิม **+ 2 กล่องใหม่**: 🐍 โค้ดจริง · 🧪 ผล backtest จริง |
 | **กันพลาด** | ห้าม hallucinate paper/ตัวเลข; ตัวเลขผลลัพธ์ทุกตัวต้องมาจาก backtest ในโฟลเดอร์โค้ด ไม่ใช่ตัวเลขลอย |
 
@@ -353,7 +353,7 @@
 
 **★ สมัยใหม่ + Kalman ที่ "รายย่อยทำตามได้จริง" (ยืนยันแล้ว ก.ค. 2026):**
 - **Palomar, D.P. (2025)** *Portfolio Optimization: Theory and Application*, Cambridge Univ. Press — §15.6 "Kalman Filtering for Pairs Trading" (อ่านฟรีที่ bookdown.org). ⭐ อ้างอิงหลักของ Part IV–V: state-space หา time-varying hedge ratio + mean, แสดงว่า Kalman คุม drawdown ได้จริง (rolling-LS ไม่คุม), วลีในเล่ม: *"Kalman filtering is a must in pairs trading"*
-- **Primbs, J.A. & Yamada, Y. (2018)** "Pairs trading under transaction costs using model predictive control", *Quantitative Finance* 18(6):885–895 — MPC + proportional cost + gross-exposure constraint บน OU spread (ใช้ใน Part V/VII)
+- **Primbs, J.A. & Yamada, Y. (2018)** "Pairs trading under transaction costs using model predictive control", *Quantitative Finance* 18(6):885–895 — MPC + proportional cost + gross-exposure constraint บน OU spread (ใช้ใน Part VI/VIII)
 - **Mudchanatongsuk, S., Primbs, J.A. & Wong, W. (2008)** "Optimal pairs trading: a stochastic control approach", *Proc. American Control Conf. 2008* — log-spread เป็น OU, แก้ผ่าน HJB (รากฐานของสาย stochastic-control cost)
 - **Tenyakov, A. & Mamon, R. (2017)** "A computing platform for pairs-trading online implementation via a blended Kalman–HMM filtering approach", *Journal of Big Data* 4:46 — Kalman + HMM regime, พารามิเตอร์ self-updating แบบ online (อ้างใน Part IV adaptive/regime-switching Kalman)
 
