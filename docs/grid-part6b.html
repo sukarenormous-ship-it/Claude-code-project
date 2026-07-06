@@ -227,8 +227,8 @@ $$Q(t) = Q_0 \times \left(1 + r_\text{daily}\right)^t$$
     return log
 
 # ตัวอย่าง: Q₀=0.01 BTC · rate=0.27%/วัน · 365 วัน
-# Q(365) = 0.01 × (1.0027)^365 = 0.01 × 2.66 = 0.0266 BTC
-# Capital: $1,000 → $2,660 (+166% ใน 1 ปี)
+# Q(365) = 0.01 × (1.0027)^365 = 0.01 × 2.6756 = 0.0268 BTC
+# Capital: $1,000 → $2,676 (+168% ใน 1 ปี)
 
 ข้อดี: เรียบง่าย ไม่ต้องตัดสินใจ
 ข้อเสีย: ถ้ากำไรไม่ realized (inventory ค้าง) → Q ไม่เพิ่ม</div>
@@ -261,8 +261,9 @@ $$Q(t) = Q_0 \times \left(1 + r_\text{daily}\right)^t$$
 
             print(f"Layer {layers_added} added at ${new_level_price:,}")
 
-# ตัวอย่าง:
-# Grid capital $10,000, กำไร $100/วัน
+# ตัวอย่าง (ใช้ rate สมมติที่เร็วกว่า baseline 0.27%/วันของเล่ม — เพื่อให้เห็น
+# กลไก layer-adding ชัดภายในกรอบเวลา 1 เดือน ไม่ใช่ตัวเลขมาตรฐาน):
+# Grid capital $10,000, กำไร $100/วัน (~1%/วัน)
 # Trigger every $500 profit ≈ ทุก 5 วัน
 # ใน 1 เดือน: เพิ่มประมาณ 6 layers ใหม่
 
@@ -290,7 +291,7 @@ Zone Upgrade Process:
 
   Upgrade Options:
     A) เพิ่ม Q: ใช้ $15,000 กับ zone เดิม → Q = 0.0015 BTC (+50%)
-    B) ขยาย Zone: ใช้ $15,000 กับ zone ใหม่ $80k–$120k (+33% wider)
+    B) ขยาย Zone: ใช้ $15,000 กับ zone ใหม่ $80k–$120k (width $20k→$40k = +100% wider)
     C) เพิ่ม N: zone เดิม แต่ step เล็กลง (fill บ่อยขึ้น)
 
 ตัวอย่าง:
@@ -371,13 +372,14 @@ class GridDCAStack:
         print(f"     Wealth BTC รวม: {self.wealth_btc:.4f} BTC")
         print(f"     Trading capital: ${self.trading_capital:,.0f}")
 
-ตัวอย่าง 1 ปี:
-  Grid profit: $100/วัน × 365 = $36,500
-  DCA (30%): $36,500 × 30% = $10,950 → ซื้อ BTC ทุกอาทิตย์
-  Compound (70%): $36,500 × 70% = $25,550 → กลับเข้า grid
+ตัวอย่าง 1 ปี (rate มาตรฐานของเล่ม 0.27%/วัน บน capital เริ่มต้น $20,000 —
+ตัวเลขเดียวกับปีที่ 1 ในตาราง §6B.7):
+  กำไรรวมทั้งปี ≈ $26,429 (จาก capital ที่โตขึ้นทุกวันด้วย 70% reinvest — กลไกเต็มดู §6B.7)
+  DCA (30%): $26,429 × 30% = $7,929 → ซื้อ BTC ทุกอาทิตย์
+  Compound (70%): $26,429 × 70% = $18,500 → กลับเข้า grid
 
-  BTC ที่ซื้อ (avg $100k/BTC): $10,950 / $100k = 0.1095 BTC
-  + grid capital เพิ่มจาก $20,000 → $45,550 (+127%)</div>
+  BTC ที่ซื้อ (avg $100k/BTC): $7,929 / $100k = 0.079 BTC
+  + grid capital เพิ่มจาก $20,000 → $38,500 (+92.5%)</div>
 
 <h2 id="s6b-7">6B.7 Long-term Projection — Grid Snowball + DCA Stack</h2>
 
@@ -396,12 +398,13 @@ class GridDCAStack:
 <table>
 <tr><th>ปีที่</th><th>Grid Capital</th><th>Daily Cashflow</th><th>BTC สะสม</th><th>Wealth Value (@ $100k/BTC)</th></tr>
 <tr><td>เริ่มต้น</td><td>$20,000</td><td>$54/วัน (0.27%)</td><td>0 BTC</td><td>$0</td></tr>
-<tr><td>ปีที่ 1</td><td>$38,500</td><td>$104/วัน</td><td>0.11 BTC</td><td>$11,000</td></tr>
-<tr><td>ปีที่ 2</td><td>$74,100</td><td>$200/วัน</td><td>0.32 BTC</td><td>$32,000</td></tr>
-<tr><td>ปีที่ 3</td><td>$142,700</td><td>$385/วัน</td><td>0.73 BTC</td><td>$73,000</td></tr>
-<tr><td>ปีที่ 4*</td><td>$275,000</td><td>$743/วัน</td><td>1.50 BTC</td><td>$150,000</td></tr>
-<tr><td>ปีที่ 5</td><td>$528,000</td><td>$1,426/วัน</td><td>2.80 BTC</td><td>$280,000</td></tr>
+<tr><td>ปีที่ 1</td><td>$38,500</td><td>$104/วัน</td><td>0.08 BTC</td><td>$8,000</td></tr>
+<tr><td>ปีที่ 2</td><td>$74,100</td><td>$200/วัน</td><td>0.23 BTC</td><td>$23,000</td></tr>
+<tr><td>ปีที่ 3</td><td>$142,700</td><td>$385/วัน</td><td>0.53 BTC</td><td>$53,000</td></tr>
+<tr><td>ปีที่ 4*</td><td>$275,000</td><td>$743/วัน</td><td>1.09 BTC</td><td>$109,000</td></tr>
+<tr><td>ปีที่ 5</td><td>$528,000</td><td>$1,426/วัน</td><td>2.18 BTC</td><td>$218,000</td></tr>
 </table>
+<p class="caption">BTC สะสม = 30% ของกำไรสะสมแต่ละปี (อีก 70% คือส่วนที่ทำให้ Grid Capital โตตามคอลัมน์ซ้าย) หารด้วย $100k/BTC — เช่น ปีที่ 1 กำไรรวม = $18,500/0.7 = $26,429 → 30% = $7,929 → 0.079 BTC</p>
 
 <p><em>หมายเหตุ: สมมติ BTC price คงที่ที่ $100k (ไม่รวม BTC appreciation), daily return คงที่ที่ 0.27%/วัน, DCA 30% ทุกสัปดาห์ *ปีที่ 4 ประมาณการ (interpolated) Projection ใช้เพื่อ illustrate compound effect เท่านั้น — ผลจริงขึ้นอยู่กับ market regime</em></p>
 
