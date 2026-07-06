@@ -17,7 +17,11 @@
 | D1 | He, Manela, Ross, von Wachter (2024) — Fundamentals of Perpetual Futures (arXiv:2212.06888) | funding table ของ 1B/1C ที่ลอยอยู่ไม่มีทฤษฎีรองรับ | Part 1C + 7 |
 | D2 | Designing Funding Rates (arXiv:2506.08573) + Ackerer et al., Math Finance 2025 | สมมติฐาน "funding ×3/วัน" ที่ hardcode ทั้งเล่ม | Part 1C + appendix |
 | E1 | Busseti, Ryu & Boyd (2016) — Risk-Constrained Kelly | "25% fractional Kelly โดยศรัทธา" + DD ladder ที่แยกกันอยู่ | Part 5 |
-| F | DGT (arXiv:2506.11921) | ✅ อยู่ใน grid-v2-plan.md แล้ว (zero-EV + migration) | Part 0 (ทำแล้ว) + 1D |
+| F1 | DGT (arXiv:2506.11921) | ✅ อยู่ใน grid-v2-plan.md แล้ว (zero-EV + migration) | Part 0 (ทำแล้ว) + 1D |
+| F2 | Volatility-Induced Growth (Dempster, Evstigneev & Schenk-Hoppé 2007) + Volatility Harvesting (arXiv:1508.05241) | **ทฤษฎีว่าทำไม DGT ถึงชนะ** — ต่อจาก zero-EV ของ Part 0 | Part 0 + 1D |
+| F3 | GTSbot (Rundo et al. 2019, Applied Sciences) — FX HFT grid + trend filter | หลักฐาน peer-reviewed ว่า grid+filter ลด DD ได้จริง (สนับสนุนปรัชญา "Grid คือ Grid") | Part 1D + 3B/7B |
+| F4 | Jia (2022, ICEMME) — Feasibility of BTC grid via backtesting | sensitivity ของ yield ต่อ (upper, lower, N_up, N_down, initial position) — เติมตารางที่ Part 3 ไม่มี | Part 3 |
+| F5 | Infinity Grid mechanism (KuCoin/Pionex spec + kraken-infinity-grid OSS) | รูปธรรมของ TREND_UP_MIGRATION ที่มีใช้จริงบน exchange | Part 1D + Exchange Reality |
 | ✗ | RL-based grid optimization (หลายฉบับ 2024–25) | **จงใจไม่เอา** — ดูเหตุผลท้ายเอกสาร | — |
 | ✗ | ML price prediction / GNN regime | **จงใจไม่เอา** | — |
 
@@ -82,6 +86,20 @@ r(s,q,t) = s − q·γ·σ²·(T−t)        ← ราคา "กลาง" ท
 - Part 5 เพิ่ม section "5.x ทำไม 0.25 — และเมื่อไหร่ไม่ใช่ 0.25": (1) แก้ B5 ให้ SE ถูกต้อง (2) แสดงว่า estimation error ขนาดนั้น + DD constraint −8% → fraction ที่ derive ได้ตกราว 0.2–0.3× สำหรับพารามิเตอร์ทั่วไปของ grid — **ยืนยันกฎเดิมของเล่มด้วยเหตุผล** แทนที่จะเปลี่ยนกฎ (3) ตาราง fraction ตาม (SE ของ p, DD budget) ให้ปรับเองได้
 - นี่คือตัวอย่างที่ดีที่สุดของ "ขยายของเดิม": ตัวเลข 25% ไม่เปลี่ยน แต่เปลี่ยนสถานะจาก dogma เป็น derivation
 
+## Cluster F — Dynamic Grid: จาก reset ที่ "ได้ผลใน backtest" สู่ทฤษฎีว่าทำไมมันควรได้ผล
+
+**สิ่งที่เล่มมี/แผนมีอยู่:** Part 0 มี zero-EV theorem แล้ว (bounded grid + random walk → EV=0), v2-plan Phase 4 มี Part 1D ที่จะใส่ DGT migration (หลุดขอบบน → เก็บทุน+ตั้ง grid ใหม่; หลุดขอบล่าง → ถือ inventory + ใช้กำไรเป็น principal ใหม่), และ Part 4 มี zone migration พูดถึงบางส่วน — แต่ทั้งหมดยังยืนอยู่บนหลักฐาน backtest ของ paper เดียว (DGT, ช่วง bull 2021–24)
+
+**สิ่งที่ paper ชุดนี้เพิ่ม (แต่ละตัวอุดคนละรู):**
+
+- **F2 — Volatility-Induced Financial Growth / Volatility Harvesting:** นี่คือ "อีกครึ่งหนึ่ง" ของทฤษฎีที่ Part 0 เล่าไปแล้วครึ่งเดียว: bounded grid ที่ terminate มี EV=0 ก็จริง แต่วรรณกรรมสาย rebalancing (Shannon's demon, constant-mix) พิสูจน์ว่า **กลยุทธ์ที่ rebalance ไม่หยุดและไม่ terminate สกัด growth เชิงบวกจาก volatility ล้วนๆ ได้** (rebalancing premium ∝ σ²) แม้ราคาไม่มี drift — ภายใต้เงื่อนไข: ราคา stationary/ไม่ดิ่งทางเดียว, ต้อง rebalance ได้เรื่อยๆ, fee ไม่กิน premium หมด
+  **นี่คือคำอธิบายที่สง่างามว่าทำไม DGT ชนะ**: การ "ไม่ terminate + ถือ inventory + ตั้ง grid ใหม่" ทำให้ grid เลิกเป็น bounded bet แล้วกลายเป็น volatility harvester ประเภทเดียวกับ constant-mix — และเงื่อนไขที่ premium หาย (ตลาดดิ่งทางเดียว, σ ต่ำ, fee สูง) ก็คือ failure modes ของ DGT พอดี → ลง Part 0 เป็นครึ่งหลังของ section ทฤษฎี ("EV ของ grid = 0, แต่ EV ของ *การไม่เลิกเล่น* > 0 เพราะอะไร") และลง Part 1D เป็นกรอบวิเคราะห์ว่าเมื่อไหร่ migration ควรทำ/ไม่ควรทำ
+- **F3 — GTSbot (peer-reviewed, FX):** grid + trend filter + adaptive sizing บน FX HFT ที่รายงานผล "กำไรพร้อม drawdown ลดลง" — เป็นหลักฐานอิสระ (คนละตลาด คนละทีม) ว่าแนวทาง "grid เป็น framework + indicator เป็น executor" ของ Part 7B ยืนอยู่บนขาที่มีคนตรวจสอบแล้ว ไม่ใช่ความเชื่อของเล่มเอง → อ้างใน Part 1D + 7B เป็น evidence box ไม่ต้องเล่าเนื้อใน
+- **F4 — Jia 2022 (BTC feasibility):** วิเคราะห์ sensitivity ของ yield ต่อพารามิเตอร์ grid ทีละตัว (ขอบบน, ขอบล่าง, จำนวนช่องบน, จำนวนช่องล่าง, ราคาเริ่ม) — คือข้อมูลที่ Part 3 ควรมีเป็นตาราง "พารามิเตอร์ไหนกระทบกำไรแรงสุด" แต่ไม่มี → แปลงเป็นตาราง sensitivity 1 ตาราง + ผูกกับ Day-0 Runbook (พารามิเตอร์ไหนต้องเป๊ะ พารามิเตอร์ไหนหยาบได้)
+- **F5 — Infinity Grid (กลไกที่ exchange ใช้จริง):** geometric grid ไร้ขอบบน + รักษามูลค่า position คงที่ขณะราคาขึ้น = **implementation จริงของ TREND_UP_MIGRATION** ที่ Part 1D จะสอน — มีทั้ง spec บน KuCoin/Pionex และ open-source (kraken-infinity-grid) ให้เทียบ logic → ลง Part 1D (เทียบ DGT reset แบบ discrete vs infinity grid แบบ continuous — สองวิธีแก้ปัญหาเดียวกัน) + บท Exchange Reality ที่ทีมรีวิวสั่งเพิ่ม
+
+**ผลรวมของ Cluster F ต่อ Part 1D:** บทนี้จะเปลี่ยนจาก "วิธีของ paper เดียว" เป็นสเปกตรัม: Terminate (EV=0) → DGT discrete reset (backtest ชนะ, ทฤษฎี = volatility harvesting) → Infinity continuous (ใช้บน exchange ได้เลย) → พร้อม trend filter จาก GTSbot เป็นเบรก — ทุกตัวถูก stress ด้วยเงื่อนไขจาก F2 ว่า premium หายเมื่อไหร่
+
 ---
 
 ## สิ่งที่จงใจไม่เอา (และทำไม)
@@ -99,6 +117,9 @@ r(s,q,t) = s − q·γ·σ²·(T−t)        ← ราคา "กลาง" ท
 | 4 | **B1** OU optimal bands ลง Part 3/6 + give-up point | review "positions ไร้ exit" + Phase 5 | กลาง (ต้องทำตาราง precomputed) |
 | 5 | **C1+C2** Hurst-as-signal + DFA procedure ลง Part 4/6 | Phase 5 | เล็ก |
 | 6 | **A2** GLFT step calibration ลง Part 3 (advanced, optional path) | Phase 6 (ใช้ backtest ยืนยัน) | กลาง |
+| 7 | **F2** Volatility harvesting ลง Part 0 (ครึ่งหลังของทฤษฎี) | ต่อจาก zero-EV ที่ทำแล้ว | เล็ก |
+| 8 | **F2–F5** ชุด Dynamic Grid ลง Part 1D | v2-plan Phase 4 (เขียน 1D รอบเดียวจบ) | กลาง-ใหญ่ |
+| 9 | **F4** Sensitivity table ลง Part 3 + Day-0 Runbook | review P0 (Day-0) | เล็ก |
 
 **กติกาสำหรับทุกชิ้น (กัน "ตัดแปะ"):**
 - ทุก section ใหม่ต้องเริ่มจากย่อหน้า "สิ่งที่เราสอนไปแล้วใน §X.Y" แล้วแสดงว่า paper *ต่อ* จากตรงนั้นอย่างไร
@@ -118,3 +139,7 @@ r(s,q,t) = s − q·γ·σ²·(T−t)        ← ราคา "กลาง" ท
 - Kim & Park (2025). Designing Funding Rates for Perpetual Futures. arXiv:2506.08573
 - Busseti, Ryu, Boyd (2016). Risk-Constrained Kelly Gambling. *J. Investing*
 - Chen, Chen, Jang (2025). Dynamic Grid Trading. arXiv:2506.11921 ✅ (อยู่ในแผนแล้ว)
+- Dempster, Evstigneev, Schenk-Hoppé (2007). Volatility-Induced Financial Growth. *Quantitative Finance* 7(2) + Volatility Harvesting: Extracting Return from Randomness. arXiv:1508.05241
+- Rundo, Trenta, di Stallo, Battiato (2019). Grid Trading System Robot (GTSbot). *Applied Sciences* 9(9):1796
+- Jia, R. (2022). The Feasibility of Grid Trading Approach for Bitcoin Based on Backtesting. *ICEMME 2022* (EAI)
+- Infinity Grid: KuCoin/Pionex product specs + btschwertfeger/kraken-infinity-grid (open source)
