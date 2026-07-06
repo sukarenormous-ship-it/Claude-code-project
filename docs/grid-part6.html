@@ -396,12 +396,13 @@ def relative_value_score(hurst, spread_zscore, momentum_reversal):
 <p>เมื่อมี capital มากพอ — เปิดหลาย grid พร้อมกัน แต่ต้องจัดการ correlation ระหว่าง assets:</p>
 
 <table>
-<tr><th>Grid</th><th>Asset</th><th>Correlation กับ BTC Grid</th><th>Max Allocation</th></tr>
-<tr><td>Grid 1</td><td>BTC/USDT Spot</td><td>1.0 (ตัวเอง)</td><td>40% ของ grid portfolio</td></tr>
-<tr><td>Grid 2</td><td>ETH/USDT Spot</td><td>0.75 (สูง)</td><td>20%</td></tr>
-<tr><td>Grid 3</td><td>BTC/ETH Pair</td><td>0.10 (ต่ำ — market neutral)</td><td>30%</td></tr>
-<tr><td>Grid 4</td><td>SOL/USDT</td><td>0.55 (ปานกลาง)</td><td>10%</td></tr>
+<tr><th>Grid</th><th>Asset</th><th>Correlation กับ BTC Grid</th><th>Max Allocation (ตามสูตรด้านล่าง)</th></tr>
+<tr><td>Grid 1</td><td>BTC/USDT Spot</td><td>1.0 (ตัวเอง)</td><td>20% (corr สูงสุด → cap ต่ำสุด)</td></tr>
+<tr><td>Grid 2</td><td>ETH/USDT Spot</td><td>0.75 (สูง)</td><td>25%</td></tr>
+<tr><td>Grid 3</td><td>BTC/ETH Pair</td><td>0.10 (ต่ำ — market neutral)</td><td>50% (corr ต่ำสุด → cap สูงสุด)</td></tr>
+<tr><td>Grid 4</td><td>SOL/USDT</td><td>0.55 (ปานกลาง)</td><td>35%</td></tr>
 </table>
+<p class="caption">แต่ละแถวคือ ceiling อิสระต่อ grid เดียว (มาจาก max_allocation_by_correlation ด้านล่าง) ไม่ใช่สัดส่วนที่ต้องรวมกันได้ 100% พอดี — portfolio จริงต้องเลือก allocation ของแต่ละ grid ให้อยู่ใต้ cap ของตัวเอง <em>และ</em> รวมกันไม่เกิน 100% ของทุนทั้งหมด</p>
 
 <div class="fm">Portfolio Correlation Management:
 
@@ -454,10 +455,11 @@ Action: BUY spread ที่ −2σ
   SHORT 0.1813 ETH @ $3,800 = $689 notional (margin 10× = $69)
   TP: spread กลับมา −1σ level
 
-Day 8: BTC $103k, ETH $3,700 → spread กลับมา −0.5σ
-  ไม่ถึง TP (−1σ) ยังถือ position
+Day 8: BTC $100k, ETH $3,740 → spread = log(100k) − 0.80×log(3,740) = 11.513 − 6.581 = 4.932
+  normalized: (4.932−4.983)/0.040 = −1.3σ → ยังไม่ถึง TP (−1σ) ยังถือ position
 
-Day 10: BTC $106k, ETH $3,650 → spread = +0.3σ (กลับมา near mean)
+Day 10: BTC $106k, ETH $3,650 → spread = log(106k) − 0.80×log(3,650) = 11.571 − 6.562 = 5.009
+  normalized: (5.009−4.983)/0.040 = +0.66σ → ผ่าน TP (−1σ) ไปแล้ว
   TP hit!
   BTC gain: 0.008 × ($106k − $98k) = $64
   ETH short gain: 0.1813 × ($3,800 − $3,650) = $27.2
