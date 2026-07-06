@@ -252,7 +252,7 @@ $$\%B = \frac{P - \text{BB}_\text{lower}}{\text{BB}_\text{upper} - \text{BB}_\te
         data: [25.5, 26.4, 16.4, 17.0] }
     ],
     yLabel: 'Score',
-    caption: 'Raw Score × น้ำหนัก = Contribution → รวม 4 contributions = Composite Score 85.3 → FULL DEPLOY (≥ 70)'
+    caption: 'Raw Score × น้ำหนัก = Contribution → รวม 4 contributions = Composite Score 85.3 → FULL DEPLOY (≥ 75)'
   });
 })();
 </script>
@@ -281,6 +281,13 @@ ACTION_TABLE = {
     (35, 55):  ("MINIMAL_DEPLOY","deploy 30% grid capital, observe"),
     (0,  35):  ("WAIT",         "รอ score ดีขึ้น ไม่เปิด grid"),
 }
+
+def resolve_composite_action(score):
+    """single source of truth สำหรับ tier 75/55/35 — ที่อื่นในเล่ม (เช่น Part 7B §7B.5) เรียกฟังก์ชันนี้แทนที่จะ hardcode tier ซ้ำ"""
+    for (lo, hi), (name, desc) in ACTION_TABLE.items():
+        if lo <= score < hi or (hi == 100 and score == 100):
+            return name, desc
+    return "WAIT", "รอ score ดีขึ้น ไม่เปิด grid"
 
 ตัวอย่างผล:
   RSI=32 (oversold)    → rsi_score   = 68

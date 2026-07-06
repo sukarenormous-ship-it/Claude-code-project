@@ -308,15 +308,11 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
     def get_execution_params(self, indicators):
         score, sub_scores = composite_grid_score(**indicators)
 
-        # Deploy percentage
-        if score >= 75:
-            deploy_pct = 1.00
-        elif score >= 55:
-            deploy_pct = 0.60
-        elif score >= 35:
-            deploy_pct = 0.30
-        else:
-            deploy_pct = 0.00
+        # Deploy percentage — ใช้ tier เดียวกับ ACTION_TABLE ใน Part 3B §3B.6
+        # (resolve_composite_action คือ single source of truth ของ tier 75/55/35)
+        action_name, _ = resolve_composite_action(score)
+        deploy_pct = {"FULL_DEPLOY": 1.00, "PARTIAL_DEPLOY": 0.60,
+                      "MINIMAL_DEPLOY": 0.30, "WAIT": 0.00}[action_name]
 
         # Size multiplier (สูงกว่าก็ deploy per level มากขึ้น)
         size_mult = 0.5 + (score / 100) * 0.5  # 0.5× ถึง 1.0×
