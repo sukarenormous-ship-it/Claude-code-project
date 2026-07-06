@@ -293,7 +293,66 @@ $$\Delta N_B = (\hat\beta_{\text{new}} - \hat\beta_{\text{old}}) \times N_A$$
 </div>
 
 <!-- 15.8 -->
-<h2 id="s15-8">15.8 Running Example — Bybit↔Lighter β Drift</h2>
+<!-- 15.8 -->
+<h2 id="s15-8">15.8 ราคาของการ Adapt: Q, Turnover ของ β, และ Deadband</h2>
+
+<p>§15.7 แนะนำ threshold คร่าวๆ (|Δβ|&gt;0.01) เพื่อลด transaction cost — แต่ไม่ได้อธิบายว่า <strong>ทำไม Kalman ถึงมีต้นทุนสูงกว่า static OLS โดยธรรมชาติ</strong> และควรคำนวณ threshold นั้นจากอะไรบ้าง นี่คือปัญหาที่ผู้ใช้เล่มนี้เจอจริง: ใช้ Kalman "ดีกว่า rolling OLS เพราะ adapt เร็ว" แล้วขาดทุนจาก churn โดยไม่รู้ตัว</p>
+
+<div class="bx bk">
+<div class="bt">⚠️ ยิ่ง Adapt เร็ว ยิ่งจ่าย Fee บ่อย — และ ε ที่ดู "นิ่งเกินไป" อาจเป็นสัญญาณเตือน</div>
+<p>Kalman filter อัปเดต β ทุก observation ตามสัดส่วน Q/R — ถ้า Q (process noise) ตั้งใหญ่ β จะ "วิ่งตาม noise" ทุกแท่ง และทุกครั้งที่ β เปลี่ยน ระบบต้อง rebalance ขา hedge = ส่งคำสั่งจริงขนาด |Δβ|×notional ซึ่งจ่าย fee+slippage ทุกรอบ — edge ของ stat arb ต่อเทรดบางมาก (หลัก bps) แต่ churn จากการ rebalance รายวัน/รายชั่วโมงสะสมเป็น % ต่อเดือนได้ง่ายๆ กลยุทธ์ที่ direction ถูกก็ยังขาดทุนสุทธิ</p>
+<p style="margin-top:6px">ซ้ำร้าย: β ที่แกว่งเร็วทำให้ ε นิ่งเกินจริง (residual เล็กลงเพราะโมเดล "ตามใจ" ข้อมูลมากเกินไป) → z-score ไม่ค่อยถึง threshold → เทรดน้อยลง แต่ rebalance cost ไม่หยุด = จ่ายต้นทุนโดยไม่มีรายได้มาชดเชย</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Turnover ของ β — Metric ที่ต้องวัดตอน Calibrate ไม่ใช่แค่ดูตอน Fit</div>
+<div class="ki-eq">turnover = Σ|β_t − β_{t-1}|  (สะสมตลอดช่วงที่ backtest)</div>
+<div class="ki-text" style="margin-top:8px">
+rebalance_cost_total ≈ turnover × notional_B × fee_rate<br>
+เทียบกับ gross_edge_total ที่กลยุทธ์คาดว่าจะเก็บได้ในช่วงเดียวกัน — ถ้า rebalance_cost_total &gt; ~30% ของ gross_edge_total ให้ถือว่า config นั้น (Q สูงเกินไป หรือไม่มี deadband) ใช้ไม่ได้
+</div>
+</div>
+
+<div class="fm"><span class="c"># แยกนาฬิกาสองอัน — อัปเดต "ความเชื่อ" กับ "position" ไม่ต้องรอบเดียวกัน</span>
+<span class="kw">def</span> <span class="fn">kalman_update_with_deadband</span>(beta_belief, beta_position, observation, Q, R, deadband):
+    <span class="c"># 1) อัปเดตความเชื่อเรื่อง β ได้ทุกแท่ง (ไม่มีต้นทุน — แค่คำนวณ)</span>
+    beta_belief_new = <span class="fn">kalman_step</span>(beta_belief, observation, Q, R)
+
+    <span class="c"># 2) ปรับ position จริงเฉพาะเมื่อทะลุ deadband เท่านั้น (นี่คือขั้นที่มีต้นทุน)</span>
+    <span class="kw">if</span> abs(beta_belief_new - beta_position) &gt; deadband:
+        <span class="fn">rebalance_position</span>(delta=beta_belief_new - beta_position)
+        beta_position = beta_belief_new
+        <span class="c"># else: ความเชื่อเปลี่ยนแล้ว แต่ position ยังไม่ขยับ — ประหยัด fee</span>
+
+    <span class="kw">return</span> beta_belief_new, beta_position
+
+<span class="c"># deadband ที่ถูกต้อง: rebalance คุ้มก็ต่อเมื่อ</span>
+<span class="c"># (ความเสี่ยงจาก hedge เพี้ยน ณ ขนาด Δβ นี้) > (fee ของการปรับ)</span></div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: Churn กิน Edge เกือบครึ่ง</div>
+<div class="fm">notional ขา B = <span class="nm">$50,000</span>
+β แกว่งวันละ ~<span class="nm">0.02</span> จาก noise (Q ตั้งสูงเกินไป ไม่มี deadband)
+
+rebalance ต่อวัน = <span class="nm">0.02</span> × <span class="nm">$50,000</span> = <span class="nm">$1,000</span> notional ที่ต้องปรับ
+taker fee <span class="nm">0.055%</span> × <span class="nm">$1,000</span> = <span class="nm">$0.55</span>/วัน ≈ <span class="nm">$17</span>/เดือน ต่อคู่
+
+<span class="c"># ถ้า expected edge ของคู่นี้ ≈ $40/เดือน</span>
+churn กินไปเกือบครึ่ง (<span class="nm">$17</span>/<span class="nm">$40</span> ≈ <span class="nm">43%</span>) โดยยังไม่รวม slippage</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน — 5 ข้อ</div>
+<ol>
+<li><strong>Deadband/hysteresis:</strong> rebalance เฉพาะเมื่อ |β_now − β_position| &gt; δ โดยตั้ง δ จากต้นทุนจริง ไม่ใช่ตัวเลขลอยๆ แบบ 0.01 ใน §15.7</li>
+<li><strong>ลด Q หรือตรึง Q/R จาก walk-forward</strong> ไม่ใช่ค่า default — วัด turnover เป็น metric ตอน calibrate ไม่ใช่แค่ดูว่า fit สวย</li>
+<li><strong>แยกนาฬิกา:</strong> อัปเดต<em>ความเชื่อ</em>เรื่อง β ได้ทุกแท่ง แต่<em>ปรับ position</em>ตามรอบเวลาที่หยาบกว่า (เช่น วันละครั้ง) หรือเมื่อทะลุ deadband เท่านั้น</li>
+<li>เพิ่มบรรทัดใน backtest: นับ "จำนวนครั้ง rebalance × ค่าเฉลี่ย cost ต่อครั้ง" แยกจาก entry/exit cost (ดู <a href="statarb-ch19.html#s19-11">ch19 §19.11</a>) — ถ้าเกิน 30% ของ gross edge ให้ถือว่า config นั้นใช้ไม่ได้</li>
+<li>เทียบ baseline เสมอ: rolling OLS + recalibrate รายสัปดาห์ มักชนะ Kalman หลังหักต้นทุนบ่อยกว่าที่คิด — Kalman "adapt เร็วกว่า" ไม่ได้แปลว่า "กำไรมากกว่า" เสมอไป</li>
+</ol>
+</div>
+
+<h2 id="s15-9">15.9 Running Example — Bybit↔Lighter β Drift</h2>
 
 <div class="running-ex">
 <div class="re-title">Running Example: β เปลี่ยนจาก 0.98 → 1.05 ใน 2 ชั่วโมง</div>
@@ -326,7 +385,7 @@ t=2.0h:  r_A=+0.22%, r_B=+0.21%  → beta ≈ 1.05  ✓</div>
 </div>
 
 <!-- 15.9 -->
-<h2 id="s15-9">15.9 แบบฝึกหัด</h2>
+<h2 id="s15-10">15.10 แบบฝึกหัด</h2>
 
 <div class="ex">
 <div class="et">โจทย์ 15.1 — คำนวณ Kalman Update ด้วยมือ</div>

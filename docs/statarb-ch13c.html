@@ -131,6 +131,34 @@ Annualize ให้ถูกต้อง (× จำนวนรอบ/วัน 
 <p><strong>หมายเหตุขั้นสูง:</strong> ตัวเลขนี้เปลี่ยนไปถ้า exchange/protocol ยอมรับ liquid staking token (เช่น stETH) เป็น margin ได้โดยตรง — กรณีนั้นอาจทำได้ทั้งสองอย่างพร้อมกัน (stake + short perp โดยใช้ stETH เป็น collateral) ทำให้ ε ที่แท้จริงกลายเป็นแค่ "funding earned" เต็มจำนวนบวกกับ staking yield ไม่ต้องเลือกอย่างใดอย่างหนึ่ง — ต้อง verify กับ exchange ที่ใช้จริงว่ารองรับ LST เป็น margin หรือไม่ก่อนสมมติแบบนี้</p>
 </div>
 
+<!-- 13C.4 -->
+<h2 id="s13c-4">13C.4 Funding-Clock Artifact — สัญญาณที่แท้จริงคือนาฬิกา ไม่ใช่ Mispricing</h2>
+
+<p>ε ของ funding-spread ระหว่างสอง venue (§13C.1) มีธรรมชาติที่ §13C.2 (normalize interval) ยังไม่ครอบคลุม: <strong>นาฬิกา snapshot ของแต่ละ venue เดินไม่ตรงกัน และสร้างคลื่นสัญญาณปลอมรอบเวลานั้นเอง</strong></p>
+
+<div class="bx bk">
+<div class="bt">⚠️ Snapshot แบบ All-or-Nothing ไม่ใช่ "ค่าเช่ารายวันเฉลี่ยๆ"</div>
+<p>Bybit เก็บ funding เป็น snapshot ทุก 8 ชม. (00/08/16 UTC) ขณะที่ venue อื่นใช้รอบถี่กว่า/กลไกต่างกัน — รอบๆ เวลา snapshot ราคา perp ของแต่ละ venue จะถูกดึงเข้า/ออกจาก position อย่างเป็นระบบ (คนพยายามรับ/หนี funding แล้ว unwind หลัง snapshot) ε ของ perp-perp จึงมีคลื่น intraday ที่ <strong>ผูกกับนาฬิกา funding ไม่ใช่กับ mispricing จริง</strong> — z-score ที่ fit โดยไม่รู้เรื่องนี้จะ trigger entry ตรงคลื่นพวกนี้ซ้ำๆ และการเข้าก่อน snapshot ฝั่งผิดหมายถึง "เก็บ spike แต่จ่าย funding ก้อนที่เป็นต้นเหตุของ spike นั้นเอง" ภายในไม่กี่นาที</p>
+<p style="margin-top:6px">ซ้ำด้วยบัญชี: สูตร funding cost แบบเส้นตรง (rate × periods) ที่ <a href="statarb-ch19.html">ch19</a> ใช้ assume rate คงที่และ pro-rata — ของจริงคือ snapshot all-or-nothing ณ วินาทีเดียว: ถือ 7ชม.59นาทีแล้วปิดก่อน snapshot = ฟรี ถือเกิน 1 นาที = จ่ายเต็มก้อน → ต้นทุนจริงต่อ trade กระโดดเป็นขั้นบันได ไม่ใช่เส้นเรียบแบบใน backtest</p>
+</div>
+
+<div class="fm"><span class="c"># ตัวอย่าง</span>
+funding = <span class="nm">0.01%</span>/8h บน $100k = <span class="nm">$10</span>/ก้อน
+ε spike รอบ snapshot ≈ <span class="nm">5-8</span>bps แล้ว revert ใน <span class="nm">20-40</span> นาที
+
+ระบบที่เข้าก่อน snapshot: เก็บ ε 6bps แต่จ่าย funding 10bps + fee
+→ ขาดทุนสุทธิทุกครั้งที่ "สัญญาณสวยที่สุดของวัน" โผล่</div>
+
+<div class="bx bg">
+<div class="bt">วิธีตรวจจับและป้องกัน</div>
+<ul>
+<li>ทาบ funding timestamps ของทั้งสอง venue ลงบน ε chart แล้วดู histogram ของ entry signals ตามเวลาในวัน — ถ้ากระจุกรอบ snapshot = กำลังเทรดนาฬิกา ไม่ใช่ mispricing</li>
+<li>Deseasonalize ε ด้วย time-of-day mean ก่อน fit OU หรืออย่างน้อย blackout entry ±15 นาทีรอบ snapshot</li>
+<li>Entry gate ต้องคำนวณ "expected funding ถึง snapshot ถัดไป" เป็นตัวเลขจริง ณ ขณะนั้น (predicted rate × เวลาที่เหลือ) ไม่ใช่ค่าเฉลี่ยประวัติศาสตร์ — เทคนิคเดียวกับ point-in-time rate ที่ <a href="statarb-ch17.html#s17-9">ch17 §17.9</a> สอนสำหรับ carry-adjusted ε</li>
+<li>ปัญหาเดียวกันนี้ยังกระทบ price-spread ε ทางอ้อม ไม่ใช่แค่ funding-spread ε โดยตรง — เช็ค seasonality รอบ funding timestamps แม้เทรด ε ราคาปกติ (ดูสถาปัตยกรรม deseasonalize เต็มใน <a href="statarb-ch10b.html">ch10B</a>)</li>
+</ul>
+</div>
+
 <div class="bx bg">
 <div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card)</div>
 <ul>
