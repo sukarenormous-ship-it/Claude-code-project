@@ -126,11 +126,13 @@
 | 1 | ปรับ section zero-EV เดิมใน Part 0 (intuition ขึ้นก่อนสูตร) + ต่อร่างที่ 1 (Shannon) | ✅ ลงไฟล์แล้ว (`grid-part0.html`) |
 | 2 | ร่างที่ 2 ลง Part 2 (เกณฑ์เลือก Option A/B/C จาก inventory skew) + โยงไป Step Pyramid ใน 2.6 | ✅ ลงไฟล์แล้ว (`grid-part2.html`) |
 | 3 | ร่างที่ 3 ลง Part 5 + แก้เลข SE ผิด (B5) ในย่อหน้าเดียวกัน | ✅ ลงไฟล์แล้ว (`grid-part5.html`) |
-| 4 | D1+D2 ลง Part 1C (ครึ่งหน้า "ค่าเช่าสมดุล" + แก้ hardcode) | ตาม template — ถัดไป |
-| 5 | B1+C1 ลง Part 3/4/6 (ต้องทำตาราง lookup ก่อน — งาน notebook) | ตาม template |
-| 6 | Part 1D ทั้งบท (รวม F2–F5 + spectrum terminate/reset/infinity) | เขียนใหม่ทั้งบท ใช้ voice guide |
-| 7 | A2 GLFT เป็น optional section ท้าย Part 3 | ตาม template |
+| 4 | D1+D2 ลง Part 1C (ครึ่งหน้า "ค่าเช่าสมดุล" + แก้ hardcode) | ✅ ลงไฟล์แล้ว (`grid-part1c.html`) |
+| 5 | C1+C2 ลง Part 6/4 (Hurst เป็น speed dial + DFA defaults) และ B1 ลง Part 6 (give-up point สำหรับ spread grid) | ✅ ลงไฟล์แล้ว (`grid-part6.html`, `grid-part4.html`) — ใช้ heuristic ตรงไปตรงมาแทนสูตร free-boundary เต็มรูป (ดูหมายเหตุ) |
+| 6 | Part 1D ทั้งบท (รวม F2–F5 + spectrum terminate/reset/infinity) | ยังไม่เริ่ม — เป็นบทใหม่ทั้งบท ขนาดงานต่างจากข้ออื่น ขอ confirm โครงก่อนเขียนเต็ม |
+| 7 | A2 GLFT เป็น optional section ท้าย Part 3 | ✅ ลงไฟล์แล้ว (`grid-part3.html`) |
 
-**หมายเหตุ:** งาน #1–3 ผ่านการตรวจ render จริง (headless Chromium) แล้วว่าจัดหน้าถูกต้อง และยึดกติกาเสียงของเล่มครบ (ไม่มีชื่อ paper ในเนื้อความ, ตัวเลขมาจาก running example เดิม, สูตรพับใน `<details>`) — B6/B7 (ตัวเลข Q rounding และ Σ Q×P ใน 5.3) เป็นบั๊กคนละชุดจาก errata batch เดิม ยังไม่ได้แก้ในรอบนี้
+**หมายเหตุ:** งาน #1–5, #7 ผ่านการตรวจ render จริง (headless Chromium) แล้วว่าจัดหน้าถูกต้อง และยึดกติกาเสียงของเล่มครบ (ไม่มีชื่อ paper ในเนื้อความ, ตัวเลขมาจาก running example เดิม, สูตรพับใน `<details>`) — B6/B7 (ตัวเลข Q rounding และ Σ Q×P ใน 5.3) เป็นบั๊กคนละชุดจาก errata batch เดิม ยังไม่ได้แก้ในรอบนี้
+
+**ข้อ 5 (B1) หมายเหตุความซื่อสัตย์ทางวิชาการ:** แทนที่จะคำนวณ optimal free-boundary ของ Leung-Li แบบเต็มรูป (ต้องแก้สมการ transcendental ด้วย confluent hypergeometric function — เสี่ยงผิดพลาดถ้าไม่ได้ verify ด้วย notebook จริง) เลือกใช้ heuristic ที่ตรงไปตรงมาและ verify ได้ง่าย: give-up point ตามราคา (±4σ, อิงจากธรรมเนียม stat-arb เดิมของเล่ม) + ตามเวลา (~3× half-life ที่เล่ม fit อยู่แล้ว) — งานคำนวณ free-boundary แม่นยำเต็มรูปเก็บไว้เป็นงานอนาคตถ้าต้องการ (ต้องทำเป็น notebook แยกต่างหาก ไม่ควรฝังในเนื้อหาหลักโดยไม่ verify)
 
 ทุกชิ้นผ่านเกณฑ์เดียวกันก่อน commit: (1) อ่านออกเสียงแล้วเสียงเดียวกับเล่ม (2) มือใหม่ตอบได้ว่า "ต้องทำอะไรต่าง" (3) ไม่มีชื่อ paper ในเนื้อความ (4) สูตร ≤ 1 ต่อ section (5) ตัวเลขทุกตัวมาจาก running example
