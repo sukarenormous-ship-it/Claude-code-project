@@ -74,6 +74,34 @@ Block Bootstrap Monte Carlo · GARCH Volatility Forecast<br>
 <div class="ki-eq">Step ≈ 0.5 × ATR(14) · Zone = Donchian(30) · Keltner = EMA ± ATR × k</div>
 </div>
 
+<h2 id="s3-0">3.0 ก่อนวัดอะไร — นาฬิกา 3 เรือนของ Grid</h2>
+
+<p>คำถามที่มือใหม่ทุกคนถามก่อนเปิด grid แรก: "ควรดูกราฟ timeframe ไหน?" คำตอบตรงที่สุดอาจฟังแปลก — grid ไม่ได้ดูกราฟเลย มันตื่นเมื่อราคาแตะ level ไม่ว่าจะแตะตอนไหน ไม่มีแท่งเทียนเกี่ยวข้องกับตอนที่ order จะ fill แต่รอบตัว grid มีนาฬิกาอยู่สามเรือนที่ต้องตั้งให้ถูก และเรือนแรกตั้งผิดแล้วอันตรายกว่าที่คิด:</p>
+
+<ul>
+<li><strong>เรือนวัด (measurement clock):</strong> แท่งเทียนที่ใช้คำนวณ ATR/Donchian/Hurst — เล่มนี้ใช้ <strong>แท่งรายวัน (1D) เป็น default ทุกจุด เว้นแต่ระบุไว้เป็นอย่างอื่น</strong></li>
+<li><strong>เรือนตัดสินใจ (decision clock):</strong> ความถี่ที่เช็ก regime ซ้ำ — Part 4 §4.7 สอนไว้แล้วว่าตรวจทุก 1 ชั่วโมง (แค่ไม่เคยเรียกมันว่า "นาฬิกา" มาก่อน)</li>
+<li><strong>เรือนปฏิบัติ (execution clock):</strong> ตอนที่ order จริงๆ ทำงาน — real-time เสมอ ไม่มี timeframe เพราะ level คือสิ่งที่ trigger ไม่ใช่แท่งเทียน</li>
+</ul>
+
+<p>เรือนที่อันตรายที่สุดถ้าตั้งผิดคือเรือนแรก ลองดูว่าทำไม: ATR(14) บนแท่งรายวัน หมายถึง "ราคาเดินเฉลี่ยเท่าไหร่ต่อวัน ในช่วง 14 วันที่ผ่านมา" แต่ถ้าเปิดกราฟค้างที่ 1H แล้วกด ATR(14) ตัวเลขที่ได้คือ "ราคาเดินเฉลี่ยเท่าไหร่ต่อ 14 ชั่วโมง" — เล็กกว่ากันหลายสิบเท่า เอาไปตั้ง Step ตรงๆ (§3.1) จะได้ step เล็กผิดขนาด → grid fill ถี่เกินจริง → fee กินกำไรทั้งหมดโดยไม่รู้ตัวว่าพลาดตรงไหน เรื่องเดียวกันเกิดกับ Donchian (§3.2) และ Hurst (Part 4 §4.1) — สูตรถูก แต่ input ผิด timeframe</p>
+
+<p>ปัญหาไม่ได้จบแค่ fee: ต่อให้ไม่สนใจต้นทุนเลย ตัวเลข indicator เองก็ "เพี้ยน" ขึ้นถ้าสุ่มตัวอย่างถี่เกินไป เพราะ noise จากกลไกตลาด (bid-ask bounce, latency) เข้าไปปนกับสัญญาณจริงมากขึ้นเรื่อยๆ ยิ่งช่วงเวลาสั้น — นี่คือเหตุผลที่ "แท่งรายวัน" ไม่ใช่ default ที่เลือกมาลอยๆ แต่มีงานวิจัยด้าน volatility estimation รองรับตรงๆ (ดูอ่านต่อท้ายหัวข้อ)</p>
+
+<table>
+<tr><th>Zone Horizon</th><th>Candle Interval แนะนำ</th><th>ข้อควรระวัง</th></tr>
+<tr><td>Zone หลัก (~30 วัน, Donchian(30))</td><td>1D (รายวัน)</td><td>default ของเล่มนี้ทั้งเล่ม</td></tr>
+<tr><td>Micro-grid รายวัน (scalp ภายในวัน)</td><td>1H</td><td>ต้อง derive สูตร ATR/Step ใหม่เอง — ห้ามเอาตัวเลขจาก daily มาใช้ตรงๆ, เช็ก fee ให้ดีเพราะ fill ถี่กว่ามาก</td></tr>
+<tr><td>Swing grid (สัปดาห์–เดือน)</td><td>4H หรือ 1D</td><td>Zone กว้างขึ้น step ต้องกว้างตาม</td></tr>
+</table>
+
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Zhang, Mykland &amp; Aït-Sahalia, "A Tale of Two Time Scales: Determining Integrated Volatility with Noisy High-Frequency Data," <em>Journal of the American Statistical Association</em> (2005) — พิสูจน์ว่าทำไมการวัด volatility จากข้อมูลที่สุ่มถี่เกินไปถึงเพี้ยน</p>
+
+<div class="bx bc">
+<div class="bt">สิ่งที่นาฬิกา 3 เรือนนี้ไม่ได้สอน</div>
+<p>นี่ไม่ใช่ multi-timeframe entry timing (ดูกราฟใหญ่ยืนยันกราฟเล็กก่อนเข้าไม้) — grid ไม่ time entries อยู่แล้ว level ทำหน้าที่นั้นแทน สิ่งที่นาฬิกา 3 เรือนตอบคือ "ตัวเลขที่ป้อนเข้าสูตรมาจากช่วงเวลาไหน" เท่านั้น</p>
+</div>
+
 <h2 id="s3-1">3.1 ATR — ตัววัด Volatility สำหรับ Step</h2>
 
 <p>ATR (Average True Range) วัด "ขนาดเฉลี่ยของการเคลื่อนไหวต่อวัน" — เหมาะมากสำหรับกำหนด Step ของ grid:</p>
@@ -102,7 +130,7 @@ Rule of Thumb: ตั้ง Step ≈ 0.5 × ATR(14)
 <div class="bx ba">
 <div class="bt">ทำไม ATR(14) ไม่ใช่ ATR(7) หรือ ATR(30)?</div>
 <p>ATR(7) = ตอบสนองเร็วเกินไป — volatility spike 2 วันทำให้ Step พุ่งแล้วหด grid ปรับถี่เกิน</p>
-<p>ATR(14) = 2 สัปดาห์ = ค่ากลางที่ดี: ตาม regime ปัจจุบัน แต่ไม่ noisy</p>
+<p>ATR(14) = 2 สัปดาห์ (บนแท่งรายวัน — ดู §3.0) = ค่ากลางที่ดี: ตาม regime ปัจจุบัน แต่ไม่ noisy</p>
 <p>ATR(30) = ตามช้าเกินไป — ใน volatility cluster ที่ ATR พุ่งแล้ว ATR(30) ยังต่ำ = step เล็กเกิน</p>
 </div>
 
