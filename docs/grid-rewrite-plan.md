@@ -212,15 +212,13 @@
 
 การรวมทีมยืนยันสิ่งเดียวกัน: **Step Pyramid สอน 3 เรื่องคนละที่ด้วยสูตรที่ไม่ตรงกัน** (1A.8 hurst-based, 2.6 hurst+depth-based, 7B.3 copy ของ 2.6, บวก inventory-skew dial ใหม่ใน 2.2) — เป็นจุดเดียวที่ทั้ง 4 ทีมเห็นตรงกันว่า **ต้องแก้พร้อมกันทีเดียว ไม่ใช่ปะทีละจุด** เพราะเปลี่ยน anchor (0.45/0.60) ที่ไหนที่หนึ่งจะทำให้ตัวเลขตัวอย่างที่ verify แล้ว (เช่น $2,933 จาก Phase 1) เพี้ยนทันที และ 3 ไฟล์ต้อง unify พร้อมกันไม่งั้นจะเกิดความไม่ตรงกันแบบใหม่
 
-### ตารางควบรวมที่รอตัดสินใจ
+### ตารางควบรวม — เสร็จครบทั้ง 4 แล้ว
 
-| Concept | อยู่ที่ไหนบ้าง | บ้านที่ควรอยู่ | งานที่ต้องทำ | เสี่ยง |
+| Concept | อยู่ที่ไหนบ้าง | บ้านที่ควรอยู่ | งานที่ทำจริง | สถานะ |
 |---|---|---|---|---|
-| **Step Pyramid** (3 สูตรไม่ตรงกัน) | 1A.8, 2.6, 2.2(dial ใหม่), 7B.3 | Part 2 §2.6 | เขียนสูตรเดียว `step = base × hurst_mult × (1+ถังเต็ม%)` แทน depth_multiplier เดิม, ยุบ 1A.8 เหลือสรุป+ลิงก์, sync 7B.3 | **สูงสุด** — ต้องไล่ผลกระทบตัวเลขตัวอย่างทุกจุดพร้อมกัน |
-| Composite Score | 3B.6 (เต็ม) vs 7B.5 (hardcode ซ้ำ) | Part 3B §3B.6 | 7B.5 เรียก ACTION_TABLE แทน hardcode + แก้ caption ≥70 vs table ≥75 ที่ขัดกันเองใน 3B.6 | ต่ำ |
-| GARCH step sizing | 3.6 (เต็ม) vs 7.5 (ซ้ำ) | Part 3 §3.6 | ย้าย fit-window/flash-crash-response ที่ 7.5 มีเพิ่มเข้า 3.6 แล้วยุบ 7.5 เหลือสรุป+ลิงก์ + แก้ปก Part 7 | ต่ำ |
-| Laddered CSP | 7.3 (concept) vs Part 8 (ladder packaging) | ทั้งคู่ถูกที่แล้ว | ตัด bullet ที่ Part 8 สอนซ้ำ 7.3 (effective price, ข้อจำกัด) เหลือเฉพาะมุม ladder | ต่ำ |
+| GARCH step sizing | 3.6 (เต็ม) vs 7.5 (ซ้ำ) | Part 3 §3.6 | ย้าย fit-window/flash-crash-response ที่ 7.5 มีเพิ่มเข้า 3.6 แล้วยุบ 7.5 เหลือสรุป+ลิงก์ | ✅ เสร็จ |
+| Laddered CSP | 7.3 (concept) vs Part 8 (ladder packaging) | ทั้งคู่ถูกที่แล้ว | ตัด bullet ที่ Part 8 สอนซ้ำ 7.3 (effective price, ข้อจำกัด) เหลือเฉพาะมุม ladder (expiry กระจาย, premium สูงกว่า) | ✅ เสร็จ |
+| Composite Score | 3B.6 (เต็ม) vs 7B.5 (hardcode ซ้ำ) | Part 3B §3B.6 | เพิ่ม `resolve_composite_action()` เป็น single source of truth, แก้ caption ≥70→≥75 ให้ตรงกับ ACTION_TABLE, 7B.5 เรียกฟังก์ชันนี้แทน hardcode | ✅ เสร็จ |
+| **Step Pyramid** (3 สูตรไม่ตรงกัน) | 1A.8, 2.6, 2.2(dial ใหม่), 7B.3 | Part 2 §2.6 | เขียนสูตรเดียว `step = base × hurst_mult × (1+ถังเต็ม%)` แทน depth_multiplier เดิม (anchor 0.50/0.58 ตรงกับ Hurst unification), recompute ตัวอย่างจากตาราง 1A.9 จริง (≈$3,812), ยุบ 1A.8 เหลือสรุป+ลิงก์, sync 7B.3 (พบบั๊กเสริม: ADX anchor เดิมใน get_adaptive_step เป็นแบบ Forex 20/30 ขัดกับ get_adaptive_size_mult ในคลาสเดียวกันที่ใช้ BTC 40/50 — แก้ให้ตรงกันด้วย) | ✅ เสร็จ |
 
-**ลำดับที่แนะนำ:** GARCH และ Laddered CSP ก่อน (ง่าย ไม่พึ่งกัน) → Composite Score (ต้องแก้ตัวขัดแย้งภายใน 3B.6 ก่อน) → Step Pyramid ท้ายสุด (ใหญ่สุด เสี่ยงสุด ควรทำเป็น session แยกพร้อม verify ตัวเลขใหม่ทุกจุดด้วย notebook)
-
-**คำถามก่อนเริ่ม Tier-2:** อยากให้ทำทั้ง 4 concept ในรอบเดียว หรือเริ่มจาก 3 concept ที่เสี่ยงต่ำก่อน (GARCH/CSP/Composite Score) แล้วแยก Step Pyramid เป็นงานของตัวเองทีหลัง?
+ลำดับที่ทำจริง: GARCH → Laddered CSP → Composite Score → Step Pyramid (ตามที่วางแผนไว้ ง่าย→ยากสุด) ทุกจุดผ่าน render check ก่อน commit
