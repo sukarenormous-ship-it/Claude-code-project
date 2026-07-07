@@ -16,6 +16,7 @@
 .try{background:#ecfeff;border:1px dashed #0891b2;border-radius:8px;padding:12px 18px;margin:14px 0}.try .bt{color:#0e7490}.try details{margin-top:6px}.try summary{cursor:pointer;color:#0e7490;font-weight:600}
 abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
 svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
+.code{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.code .hdr{background:var(--g8);color:#fff;padding:5px 14px;font-size:.8em;font-weight:700;letter-spacing:.4px}.code pre{background:var(--g1);color:var(--g8);font-family:'Courier New',monospace;font-size:.85em;padding:12px 16px;overflow-x:auto;white-space:pre;margin:0;line-height:1.65}.code .c{color:#94a3b8}.code .o{color:#16a34a;font-weight:700}
 @media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style>
 </head>
@@ -101,7 +102,114 @@ d₂ = d₁ − σ√T</div>
 </svg>
 </div>
 
-<h3 id="s11-3">11.3 Put-Call Parity ร่วงออกมาจาก BS เอง</h3>
+<h3 id="s11-3">11.3 วิธีทำด้วยมือ — คิดราคา BS ทีละขั้น</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สูตรดูน่ากลัว แต่การ "แทนเลข" จริง ๆ มีแค่ 4 ขั้น: (1) คิด d₁ (2) คิด d₂ (3) เปิดตาราง N(d) จาก Part II (4) แทนลงสูตร C เราจะทำให้ครบทุกปุ่มกด ด้วยเลขชุดเดียวที่จะใช้ตลอดบทนี้</p>
+
+<div class="bx bg"><div class="bt">📋 โจทย์ตัวอย่าง (จำเลขชุดนี้ไว้)</div>
+<ul>
+<li>ราคาหุ้นวันนี้ <strong>S₀ = 100</strong> บาท</li>
+<li>ราคาใช้สิทธิ์ <strong>K = 100</strong> บาท (ATM — at the money)</li>
+<li>ดอกเบี้ย <strong>r = 5%</strong> ต่อปี = 0.05</li>
+<li>ความผันผวน <strong>σ = 25%</strong> ต่อปี = 0.25</li>
+<li>เวลาถึงหมดอายุ <strong>T = 1</strong> ปี</li>
+</ul>
+<p>อยากรู้: Call ตัวนี้ควรราคาเท่าไร?</p></div>
+
+<div class="card">
+<h3>🧮 คิดทีละขั้น</h3>
+
+<p><strong>ขั้น 1 — คิด d₁</strong> เริ่มจากตัวเศษก่อน แล้วค่อยหารด้วย σ√T</p>
+<div class="fm">ln(S₀/K) = ln(100/100) = ln(1) = 0        ← ATM ทำให้เทอมนี้เป็น 0 พอดี
+(r + σ²/2)·T = (0.05 + 0.25²/2)·1
+             = (0.05 + 0.0625/2)
+             = (0.05 + 0.03125) = 0.08125
+σ√T = 0.25 × √1 = 0.25
+
+d₁ = (0 + 0.08125) / 0.25 = <b>0.325</b></div>
+
+<p><strong>ขั้น 2 — คิด d₂</strong> ง่ายมาก แค่ลบ σ√T ออกจาก d₁</p>
+<div class="fm">d₂ = d₁ − σ√T = 0.325 − 0.25 = <b>0.075</b></div>
+
+<p><strong>ขั้น 3 — เปิดตาราง N(d)</strong> (พื้นที่สะสมใต้ระฆัง จาก Part II) เอา d₁, d₂ ไปเปิด</p>
+<div class="fm">N(d₁) = N(0.325) ≈ <b>0.6274</b>    ← โอกาสสะสมถึง Z=0.325 (มากกว่าครึ่งนิดหน่อย เพราะ d₁ > 0)
+N(d₂) = N(0.075) ≈ <b>0.5299</b>    ← โอกาสสะสมถึง Z=0.075 (เกินครึ่งมานิดเดียว)</div>
+<p class="pq" style="font-size:.9em;color:var(--g6)">อ่านความหมาย: N(d₂)=0.53 คือ "โอกาส (risk-neutral) ที่ตอนหมดอายุหุ้นจะจบเหนือ K" — ประมาณ 53% · N(d₁)=0.63 คือ Delta ไม่ใช่โอกาส (ย้ำกับดักจาก 11.2)</p>
+
+<p><strong>ขั้น 4 — แทนลงสูตร C</strong></p>
+<div class="fm">C = S₀·N(d₁) − K·e^(−rT)·N(d₂)
+  = 100 × 0.6274 − 100 × e^(−0.05) × 0.5299
+  = 62.74 − 100 × 0.9512 × 0.5299
+  = 62.74 − 50.41
+  = <b>12.34 บาท</b>   (ค่าละเอียด = 12.336)</div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์เป็นภาษาคน</div>
+<p>Call ATM อายุ 1 ปี บนหุ้น 100 บาท ที่ผันผวน 25% ควรมีราคา ≈ <strong>12.3 บาท</strong> หรือ <strong>≈ 12.3% ของราคาหุ้น</strong> · มีกฎนิ้วโป้งที่ตรงกันเป๊ะ: ราคา Call ATM ≈ <strong>0.4 × σ × √T × S₀</strong> = 0.4 × 0.25 × 1 × 100 = 10 บาท (ใกล้ 12.3 — ประมาณเร็ว ๆ ในหัวได้)</p></div>
+</div>
+
+<h3 id="s11-4">11.4 🐍 Python — ราคา + Greeks ครบในไฟล์เดียว</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ที่คิดด้วยมือข้างบน แปลงเป็นโค้ดได้ตรง ๆ ทีละบรรทัด · โค้ดนี้ไม่ต้องลงไลบรารีอะไรเลย (ใช้แค่ <code>math</code> ที่ติดมากับ Python) คัดลอกไปรันได้ทันที</p>
+
+<div class="code"><div class="hdr">🐍 Python — ราคา Black-Scholes (ใช้แค่ math ในตัว)</div><pre><span class="c"># ไม่ต้อง pip install อะไรเลย — math.erf ให้ N(d) ได้</span>
+from math import log, sqrt, exp, erf, pi
+
+def N(x):                       <span class="c"># CDF ของ Normal = พื้นที่สะสมใต้ระฆัง</span>
+    return 0.5 * (1 + erf(x / sqrt(2)))
+
+def bs_call(S, K, r, sig, T):
+    d1 = (log(S/K) + (r + sig**2/2)*T) / (sig*sqrt(T))
+    d2 = d1 - sig*sqrt(T)
+    C  = S*N(d1) - K*exp(-r*T)*N(d2)
+    return C, d1, d2
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1     <span class="c"># โจทย์เดียวกับที่คิดด้วยมือ</span>
+C, d1, d2 = bs_call(S, K, r, sig, T)
+print(f"d1 = {d1:.4f}")                        <span class="o"># d1 = 0.3250</span>
+print(f"d2 = {d2:.4f}")                        <span class="o"># d2 = 0.0750</span>
+print(f"N(d1) = {N(d1):.4f}")                  <span class="o"># N(d1) = 0.6274</span>
+print(f"N(d2) = {N(d2):.4f}")                  <span class="o"># N(d2) = 0.5299</span>
+print(f"ราคา Call = {C:.4f}")                  <span class="o"># ราคา Call = 12.3360</span></pre></div>
+
+<p>ตรงเป๊ะกับที่คิดด้วยมือ (12.34) · ทีนี้เติม <strong>Greeks ทั้ง 5 ตัว</strong> จาก Part III ในฟังก์ชันเดียว — แต่ละบรรทัดคือสูตร Greek หนึ่งตัว:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Greeks ครบ 5 ตัว (Delta·Gamma·Vega·Theta·Rho)</div><pre>from math import log, sqrt, exp, erf, pi
+
+def N(x):  return 0.5*(1 + erf(x/sqrt(2)))     <span class="c"># CDF (พื้นที่สะสม)</span>
+def phi(x): return exp(-x*x/2) / sqrt(2*pi)    <span class="c"># PDF (ความสูงระฆัง)</span>
+
+def bs_greeks(S, K, r, sig, T):
+    d1 = (log(S/K) + (r + sig**2/2)*T) / (sig*sqrt(T))
+    d2 = d1 - sig*sqrt(T)
+    delta = N(d1)                              <span class="c"># Part III: ∂C/∂S</span>
+    gamma = phi(d1) / (S*sig*sqrt(T))          <span class="c"># ∂²C/∂S²</span>
+    vega  = S*phi(d1)*sqrt(T) / 100            <span class="c"># ต่อ σ +1% (จึง /100)</span>
+    theta = (-(S*phi(d1)*sig)/(2*sqrt(T))
+             - r*K*exp(-r*T)*N(d2)) / 365      <span class="c"># ต่อวัน (จึง /365)</span>
+    rho   = K*T*exp(-r*T)*N(d2) / 100          <span class="c"># ต่อ r +1%</span>
+    return delta, gamma, vega, theta, rho
+
+delta, gamma, vega, theta, rho = bs_greeks(100, 100, 0.05, 0.25, 1)
+print(f"Delta = {delta:+.4f}")                 <span class="o"># Delta = +0.6274</span>
+print(f"Gamma = {gamma:+.4f}")                 <span class="o"># Gamma = +0.0151</span>
+print(f"Vega  = {vega:+.4f}")                  <span class="o"># Vega  = +0.3784  (ต่อ σ +1%)</span>
+print(f"Theta = {theta:+.4f}")                 <span class="o"># Theta = -0.0199  (ต่อวัน)</span>
+print(f"Rho   = {rho:+.4f}")                   <span class="o"># Rho   = +0.5040  (ต่อ r +1%)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่าน Greeks เป็นภาษาคน (โยงกลับ Part III)</div>
+<ul>
+<li><strong>Delta +0.63</strong> — หุ้นขึ้น 1 บาท option ขึ้น ~0.63 บาท (และ = N(d₁) พอดี)</li>
+<li><strong>Gamma +0.015</strong> — หุ้นขึ้น 1 บาท Delta เพิ่มอีก ~0.015 (สูงสุดตอน ATM แบบนี้)</li>
+<li><strong>Vega +0.38</strong> — σ ขยับขึ้น 1% option แพงขึ้น ~0.38 บาท</li>
+<li><strong>Theta −0.02</strong> — ผ่านไป 1 วันโดยหุ้นอยู่นิ่ง option เสียค่า ~2 สตางค์ (time decay)</li>
+<li><strong>Rho +0.50</strong> — ดอกเบี้ยขึ้น 1% Call แพงขึ้น ~0.50 บาท</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
+<p>เปลี่ยนโจทย์เป็น <strong>OTM Call: K = 110</strong> (ตัวอื่นเท่าเดิม) แล้วลองทั้งมือและโค้ด · คาดเดาก่อนรัน: ราคาควร<strong>ถูกลง</strong> และ Delta ควร<strong>ต่ำกว่า 0.5</strong> (เพราะโอกาส ITM น้อยลง)</p>
+<p style="font-size:.88em;color:var(--g6)">เฉลย: d₁≈−0.056, d₂≈−0.306, C≈8.03 บาท, Delta≈0.478 — ถูกลง (จาก 12.34 → 8.03) และ Delta หลุดใต้ 0.5 ตามคาด ✓</p></div>
+
+<h3 id="s11-5">11.5 Put-Call Parity ร่วงออกมาจาก BS เอง</h3>
 
 <div class="bx bp"><div class="bt">💎 โมเมนต์ที่ควรหยุดดู — ทุกอย่างบรรจบ</div>
 <p>เอาสูตร C ลบ P ตรง ๆ แล้วใช้สมบัติเดียว N(x) + N(−x) = 1 (พื้นที่ระฆังซ้าย+ขวา = 1) Put-Call Parity ที่เราเรียนตั้งแต่ Part I จะ<strong>ร่วงออกมาเอง</strong>:</p></div>
@@ -116,7 +224,7 @@ d₂ = d₁ − σ√T</div>
 <div class="bx bg"><div class="bt">🔗 ทุกอย่างเชื่อมกัน</div>
 <p>Put-Call Parity (Part I) ← ร่วงจาก BS formula ← มาจาก Ito's Lemma (Part IV) ← มาจาก Chain Rule (Part III) + Brownian Motion (Part IV) ← มาจาก Normal Distribution (Part II) ← มาจาก e, ln (Part I) · หนังสือทั้งเล่มคือวงกลมวงเดียวที่ปิดสนิทตรงนี้</p></div>
 
-<h3 id="s11-4">11.4 ข้อจำกัดของ BS — "ผิดอย่างมีประโยชน์"</h3>
+<h3 id="s11-6">11.6 ข้อจำกัดของ BS — "ผิดอย่างมีประโยชน์"</h3>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Black-Scholes ตั้งอยู่บนสมมติฐานที่โลกจริงไม่เป็นตาม แต่มันยังเป็น "ภาษากลาง" ของทั้งตลาด เพราะมันผิดแบบ<strong>คาดเดาได้</strong> — เรารู้ว่ามันเพี้ยนตรงไหน แล้วปรับเอา</p>
 
@@ -173,17 +281,40 @@ d₂ = d₁ − σ√T</div>
 <text x="255" y="224" text-anchor="middle" font-family="Sarabun" font-size="10.5" fill="#6b7280">จำลองหมื่นเส้นทาง → เฉลี่ย payoff → คิดลด = ราคา Option</text>
 </svg>
 
-<h3 id="s12-2">12.2 Monte Carlo ลู่เข้า Black-Scholes</h3>
+<h3 id="s12-2">12.2 🐍 Python — เขียน Monte Carlo จริง (ทั้ง 4 ขั้น = 5 บรรทัด)</h3>
 
-<p>ทดสอบกับ Call ที่มีสูตรปิด (S₀=100, K=100, r=5%, σ=25%, T=1) เทียบว่า MC เข้าใกล้ค่าจริงแค่ไหน:</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> 4 ขั้นข้างบนแปลงเป็นโค้ดได้เกือบ 1:1 · ใช้ <code>numpy</code> เพราะต้องสุ่มเป็นแสน ๆ ครั้ง (numpy ทำทั้งก้อนพร้อมกัน เร็วกว่า loop ธรรมดาเป็นร้อยเท่า) · ติดตั้งด้วย <code>pip install numpy</code></p>
+
+<div class="code"><div class="hdr">🐍 Python — Monte Carlo pricer + ทดสอบการลู่เข้า</div><pre>import numpy as np
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1
+rng = np.random.default_rng(42)      <span class="c"># ตั้ง seed → ผลซ้ำได้ทุกครั้ง</span>
+
+def mc_call(N):
+    Z  = rng.standard_normal(N)                              <span class="c"># ขั้น 1: สุ่ม Z~N(0,1) N ตัว</span>
+    ST = S * np.exp((r - sig**2/2)*T + sig*np.sqrt(T)*Z)     <span class="c"># ขั้น 2: ราคาหุ้นวันหมดอายุ</span>
+    payoff = np.maximum(ST - K, 0)                           <span class="c"># ขั้น 3: payoff ราย path</span>
+    price  = np.exp(-r*T) * payoff.mean()                    <span class="c"># ขั้น 4: เฉลี่ยแล้วคิดลด</span>
+    se     = np.exp(-r*T) * payoff.std(ddof=1) / np.sqrt(N)  <span class="c"># ค่าคลาดเคลื่อนมาตรฐาน</span>
+    return price, se
+
+for N in [1_000, 10_000, 100_000, 1_000_000]:
+    price, se = mc_call(N)
+    print(f"N={N:>9,}  ราคา={price:6.3f}  ± {se:.3f}")
+<span class="o"># N=    1,000  ราคา=11.643  ± 0.562</span>
+<span class="o"># N=   10,000  ราคา=12.269  ± 0.186</span>
+<span class="o"># N=  100,000  ราคา=12.313  ± 0.059</span>
+<span class="o"># N=1,000,000  ราคา=12.345  ± 0.019   ← ใกล้ BS จริง (12.336) มาก</span></pre></div>
+
+<p>เอา output มาวางเทียบกับค่าจริงจาก BS (บทที่ 11) เห็นการลู่เข้าชัด ๆ:</p>
 
 <div class="tw"><table>
-<tr><th>วิธี</th><th>ราคา Call</th></tr>
-<tr><td><strong>BS Formula (ค่าจริง)</strong></td><td class="nw"><strong>12.336</strong></td></tr>
-<tr><td>MC 1,000 เส้นทาง</td><td class="nw">≈ 12.5 ± 0.8</td></tr>
-<tr><td>MC 10,000 เส้นทาง</td><td class="nw">≈ 12.38 ± 0.25</td></tr>
-<tr><td>MC 100,000 เส้นทาง</td><td class="nw">≈ 12.34 ± 0.08</td></tr>
-<tr><td>MC 1,000,000 เส้นทาง</td><td class="nw">≈ 12.336 ± 0.025</td></tr>
+<tr><th>วิธี</th><th>ราคา Call</th><th>± (1 s.e.)</th></tr>
+<tr><td><strong>BS Formula (ค่าจริง)</strong></td><td class="nw"><strong>12.336</strong></td><td class="nw">0 (สูตรปิด)</td></tr>
+<tr><td>MC 1,000 เส้นทาง</td><td class="nw">11.643</td><td class="nw">± 0.562</td></tr>
+<tr><td>MC 10,000 เส้นทาง</td><td class="nw">12.269</td><td class="nw">± 0.186</td></tr>
+<tr><td>MC 100,000 เส้นทาง</td><td class="nw">12.313</td><td class="nw">± 0.059</td></tr>
+<tr><td>MC 1,000,000 เส้นทาง</td><td class="nw">12.345</td><td class="nw">± 0.019</td></tr>
 </table></div>
 
 <div class="bx ba"><div class="bt">🧮 สังเกต — error หดตาม 1/√N</div>
@@ -201,6 +332,26 @@ d₂ = d₁ − σ√T</div>
 <tr><td><strong>Basket</strong></td><td><strong>หลายสินทรัพย์</strong>พร้อมกัน</td><td>ต้องจำลอง correlation หลายตัว</td></tr>
 </table></div>
 
+<p><strong>ลองตั้งราคา Asian Call จริง</strong> (payoff = max(0, ราคา<em>เฉลี่ย</em>ตลอดปี − K)) — โจทย์ที่ BS สูตรเดียวทำไม่ได้ แต่ MC แค่เพิ่มมิติเวลาเข้าไป แล้วเฉลี่ยตามแถว:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Asian Option (BS ทำไม่ได้ · MC ทำได้)</div><pre>import numpy as np
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1
+steps, paths = 252, 100_000          <span class="c"># 252 วันทำการ, จำลองแสนเส้นทาง</span>
+dt = T / steps
+rng = np.random.default_rng(7)
+
+Z = rng.standard_normal((paths, steps))                     <span class="c"># สุ่มทั้งกริด (path × วัน)</span>
+logpath = np.cumsum((r - sig**2/2)*dt + sig*np.sqrt(dt)*Z, axis=1)  <span class="c"># เดินทีละวัน</span>
+price_path = S * np.exp(logpath)                            <span class="c"># ราคาหุ้นทุกวันตลอดปี</span>
+
+avg = price_path.mean(axis=1)                               <span class="c"># ★ เฉลี่ยตลอดทาง = หัวใจ Asian</span>
+asian = np.exp(-r*T) * np.maximum(avg - K, 0).mean()
+print(f"Asian call = {asian:.4f}")   <span class="o"># Asian call = 6.8065</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<p>Asian ≈ <strong>6.81 บาท</strong> — <strong>ถูกกว่า</strong> vanilla Call (12.34) เกือบครึ่ง · เพราะ "ค่าเฉลี่ย" ผันผวนน้อยกว่า "ราคาวันสุดท้าย" (ค่าเฉลี่ยกลบ spike ทิ้ง) → σ ที่มีผลต่ำลง → option ถูกลง · จุดสำคัญ: เราแค่<strong>เปลี่ยนบรรทัดเดียว</strong> (max(0, ราคาสุดท้าย−K) → max(0, ค่าเฉลี่ย−K)) ก็ตั้งราคา exotic ได้ ทั้งที่ไม่มีสูตรปิดเลย — นี่คือพลังของ MC</p></div>
+
 <h3 id="s12-4">12.4 Variance Reduction (ทำให้แม่นขึ้นโดยไม่เพิ่มเส้นทาง)</h3>
 
 <div class="tw"><table>
@@ -208,6 +359,32 @@ d₂ = d₁ − σ√T</div>
 <tr><td><strong>Antithetic</strong></td><td>สุ่ม Z แล้วใช้ −Z ด้วย (คู่สมมาตร)</td><td>ลด variance ~ครึ่ง</td></tr>
 <tr><td><strong>Control Variate</strong></td><td>ใช้ option ที่มีสูตรปิดเป็น "ตัวคุม"</td><td>ลด variance มาก</td></tr>
 </table></div>
+
+<p><strong>พิสูจน์ว่า Antithetic แม่นขึ้นจริง</strong> — สุ่มเท่ากัน (100,000 ตัว) แต่ครึ่งหนึ่งใช้ +Z อีกครึ่งใช้ −Z คู่กัน:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Antithetic ลด se โดยไม่เพิ่มการสุ่ม</div><pre>import numpy as np
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1
+disc, N = np.exp(-r*T), 100_000
+
+<span class="c"># --- วิธีธรรมดา: สุ่ม 100,000 ตัวรวด ---</span>
+rng = np.random.default_rng(0)
+Z   = rng.standard_normal(N)
+pay = disc * np.maximum(S*np.exp((r-sig**2/2)*T + sig*np.sqrt(T)*Z) - K, 0)
+print(f"ธรรมดา     : {pay.mean():.4f}   se={pay.std(ddof=1)/np.sqrt(N):.4f}")
+<span class="o"># ธรรมดา     : 12.3189   se=0.0585</span>
+
+<span class="c"># --- Antithetic: สุ่มแค่ 50,000 แล้วจับคู่ +Z กับ −Z ---</span>
+rng = np.random.default_rng(0)
+Zh  = rng.standard_normal(N//2)
+up  = disc * np.maximum(S*np.exp((r-sig**2/2)*T + sig*np.sqrt(T)*Zh)    - K, 0)
+dn  = disc * np.maximum(S*np.exp((r-sig**2/2)*T + sig*np.sqrt(T)*(-Zh)) - K, 0)
+pair = (up + dn) / 2                          <span class="c"># เฉลี่ยรายคู่</span>
+print(f"antithetic : {pair.mean():.4f}   se={pair.std(ddof=1)/np.sqrt(N//2):.4f}")
+<span class="o"># antithetic : 12.3662   se=0.0437   ← se ลดจาก 0.0585 (แม่นขึ้น ~25% ฟรี)</span></pre></div>
+
+<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
+<p>เอาโค้ด Monte Carlo พื้นฐาน (12.2) มาเปลี่ยน payoff เป็น <strong>Put</strong>: <code>np.maximum(K - ST, 0)</code> แล้วรัน N=100,000 · คาดเดาก่อน: ควรได้ราคาใกล้ <strong>7.46</strong> (ค่า Put จาก Put-Call Parity ในบท 11) — ถ้าใกล้ แปลว่าโค้ดคุณถูก ✓</p>
 
 <!-- ═══════════════ CAPSTONE / GRAND MAP ═══════════════ -->
 <h2 id="map">🎓 รวมร่างทั้งเล่ม — แผนที่ความรู้</h2>
