@@ -72,6 +72,7 @@ Grid Reset + Zone Migration · Practical Watchdog System<br>
 <div class="ki-label">แก่นของ Part นี้</div>
 <div class="ki-text">Grid ทำงานได้ดีใน <strong>mean-reverting regime</strong> (H &lt; 0.5) เท่านั้น — การรู้ว่า regime เปลี่ยนแปลงและตอบสนองทันทีคือความแตกต่างระหว่าง "grid ที่กำไรต่อเนื่อง" กับ "grid ที่ติดหล่ม" State Machine ช่วยเปลี่ยน grid behavior อัตโนมัติตาม regime</div>
 <div class="ki-eq">GRID ON (H &lt; 0.50, ADX &lt; 40 สำหรับ BTC) → CAUTION (H 0.50–0.58, ADX 40–50) → GRID OFF (H &gt; 0.58, ADX &gt; 50) — BTC-calibrated (Forex threshold 25/35 สูงเกินไปสำหรับ BTC)</div>
+<p class="caption" style="margin-top:6px">ตัวเลขข้างบนคือค่าตัดสินใจแบบง่าย — ค่าที่ใช้จริงใน state machine (§4.4) มี hysteresis (จุดเข้า/ออกไม่เท่ากัน) เพื่อกันการสลับสถานะถี่เกินไป</p>
 </div>
 
 <h2 id="s4-1">4.1 Hurst Exponent — ตัววัด Mean-Reversion</h2>
@@ -125,16 +126,10 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
 # H = 0.63 → trending → GRID OFF</div>
 
 <div class="bx ba">
-<div class="bt">⚠️ R/S Method มี Bias — แนะนำ DFA แทน</div>
-<p>ฟังก์ชัน hurst_exponent ด้านบนใช้ R/S (Rescaled Range) ซึ่งมีปัญหา:</p>
-<ul>
-<li><strong>Upward bias ใน short series:</strong> N=90 วัน → ค่า H มักสูงเกิน 5–10%</li>
-<li><strong>Standard Error สูง:</strong> SE ≈ 0.05–0.10 สำหรับ N=90 — threshold H=0.50/0.58 ใน Part 4 อาจคลาดเคลื่อน</li>
-<li><strong>วิธีที่ดีกว่า: DFA (Detrended Fluctuation Analysis)</strong> — bias ต่ำกว่าและ SE ต่ำกว่าสำหรับ financial data</li>
-</ul>
-<p>ใช้ library <code>nolds</code>: <code>pip install nolds</code> แล้ว <code>import nolds; H = nolds.dfa(log_returns)</code></p>
-<p><strong>ค่า default ที่ใช้ได้เลย:</strong> rolling window 90 วัน, คำนวณใหม่ทุกวัน, scale range 10–45 วัน (ครอบคลุมทั้ง short-term noise และ regime กลาง — ไม่ต้องปรับถ้ายังไม่มีเหตุผลเฉพาะเจาะจง)</p>
-<p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 (mean-reverting ชัด) หรือ H &gt; 0.60 (trending ชัด) เชื่อถือได้เต็มที่ — ช่วง 0.45–0.60 นี้ครอบเขต CAUTION จริง (0.50–0.58) ไปทั้งสองข้างเพื่อกัน SE ของ R/S ควรรอสัญญาณเพิ่มจาก ADX/BB ก่อนตัดสินใจ</p>
+<div class="bt">⚠️ ค่า H ที่คำนวณได้มีความคลาดเคลื่อน — อย่าเชื่อตัวเลขนิ้วเดียวแบบเป๊ะๆ</div>
+<p>ฟังก์ชัน <code>hurst_exponent</code> ด้านบนใช้วิธี R/S (Rescaled Range) ซึ่งเมื่อข้อมูลมีแค่ 90 วัน (สั้น) ค่า H ที่ได้มักสูงเกินจริงไปประมาณ 5–10% และมีความคลาดเคลื่อนสุ่ม (Standard Error) ประมาณ ±0.05–0.10 — เท่ากับว่าตัวเลข H ที่แสดง เช่น 0.52 จริงๆ อาจอยู่ที่ไหนก็ได้ตั้งแต่ ~0.42 ถึง ~0.62 นี่คือสาเหตุที่ threshold H=0.50/0.58 ใน Part นี้ต้องมี hysteresis (§4.4) กันไว้ ไม่ใช่ตัดสินจากตัวเลขเดียวแบบทันที</p>
+<p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 หรือ H &gt; 0.60 ถือว่าชัดเจนพอเชื่อถือได้ — ช่วง 0.45–0.60 (ครอบ CAUTION จริง 0.50–0.58 กันความคลาดเคลื่อนไว้ทั้งสองข้าง) ควรรอสัญญาณเพิ่มจาก ADX/BB ก่อนตัดสินใจ ไม่ใช่เชื่อ H ตัวเดียว</p>
+<p class="caption">สำหรับคนที่อยากได้ค่า H แม่นกว่า R/S: มีวิธี DFA (Detrended Fluctuation Analysis) ที่ bias ต่ำกว่า ใช้ library <code>nolds</code> (<code>pip install nolds</code> แล้ว <code>import nolds; H = nolds.dfa(log_returns)</code>) — ไม่จำเป็นสำหรับการเริ่มต้น แต่ถ้าจะทำจริงจังแนะนำให้เปลี่ยนมาใช้</p>
 </div>
 
 <div style="margin:20px 0;font-family:'Sarabun',sans-serif">
@@ -249,6 +244,8 @@ $$\text{ADX} = \text{Smoothed MA of DX} \qquad \text{DX} = \frac{|+DI - -DI|}{+D
 <tr><td>40–50</td><td>trend เริ่มชัด</td><td>CAUTION — ลด size 50%</td></tr>
 <tr><td>&gt; 50</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
 </table>
+
+<p class="caption">แนวคิดเบื้องหลังโค้ดด้านล่าง: <strong>+DI</strong> วัดว่าราคาขยับขึ้นมากแค่ไหนเทียบกับการขยับทั้งหมด (สัดส่วนของ "แรงขาขึ้น") ส่วน <strong>−DI</strong> วัดแรงขาลงในทำนองเดียวกัน — ถ้า +DI สูงกว่า −DI มากแปลว่าแรงขึ้นเหนือแรงลง (แนวโน้มขาขึ้น) ADX คือค่าเฉลี่ยของ "ส่วนต่างระหว่าง +DI กับ −DI" ที่ทำให้เรียบขึ้น จึงบอกแค่ <em>ความแรงของ trend</em> (ไม่ว่าขึ้นหรือลง) ไม่บอกทิศทาง — ต้องดู +DI vs −DI แยกต่างหากถ้าอยากรู้ทิศทาง</p>
 
 <div class="fm">def compute_adx(highs, lows, closes, period=14):
     """
@@ -389,7 +386,7 @@ Thresholds สำหรับ Grid:
 <p>สังเกต: dead band นี้ implement อยู่ใน <code>evaluate()</code> ด้านบนแล้ว (เช็ก <code>self.state</code> ก่อนเลือก threshold) ไม่ใช่แค่แนวคิดลอยๆ</p>
 </div>
 
-<h2 id="s4-5">4.5 Grid Reset — ย้าย Zone เมื่อ Regime กลับมา</h2>
+<h2 id="s4-5">4.5 Grid Reset — เริ่ม Zone ใหม่ทั้งหมดเมื่อจำเป็น</h2>
 
 <p>เมื่อ Grid OFF แล้ว regime กลับมาเป็น mean-reverting: ราคาอาจเปลี่ยนไปมากจนต้อง reset zone ใหม่</p>
 
@@ -421,9 +418,9 @@ Grid Reset Steps:
   4. คำนวณ Q ใหม่ตาม capital ที่เหลือ
   5. วาง orders ใหม่ในชั่วโมงที่ score > 55</div>
 
-<h2 id="s4-6">4.6 Zone Migration — Shift Zone ตาม Trend</h2>
+<h2 id="s4-6">4.6 Zone Migration — เลื่อน Zone ตาม Trend แบบนุ่มนวล (ไม่ใช่ Reset)</h2>
 
-<p>แทนที่จะ reset ทั้งหมด บางครั้งแค่ "เลื่อน zone" ขึ้นหรือลงตาม EMA ก็เพียงพอ:</p>
+<p>แทนที่จะ reset ทั้งหมด บางครั้งแค่ "เลื่อน zone" ขึ้นหรือลงตาม EMA (Exponential Moving Average — ค่าเฉลี่ยเคลื่อนที่ที่ให้น้ำหนักราคาล่าสุดมากกว่าราคาเก่า จึงตอบสนองไวกว่าค่าเฉลี่ยธรรมดา) ก็เพียงพอ วิธีนี้ต่างจาก 4.5 ตรงที่ <strong>ไม่ปิด order เดิม ไม่ขาย inventory ทิ้ง</strong> — แค่ค่อยๆ ปรับขอบ zone ตามราคาที่เคลื่อนไป inventory เก่ายังรอ TP ตามปกติ:</p>
 
 <div class="fm">Zone Migration (Trailing Zone):
 

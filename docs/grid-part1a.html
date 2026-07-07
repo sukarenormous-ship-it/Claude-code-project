@@ -138,7 +138,7 @@ C_floor_martingale = Σ(i=1 to N) Q_i × P_i
 
 <h2 id="s1a-3">1A.3 Zone Waterfall — Active / Standby / Floor</h2>
 
-<p>ปัญหาใหญ่ของ Close System: ต้องวาง capital ทั้งหมดไว้เฉยๆ (idle) รอราคาลงถึง — <strong>Zone Waterfall แก้ปัญหานี้</strong></p>
+<p>ปัญหาใหญ่ของ Close System: ต้องวาง capital ทั้งหมดไว้เฉยๆ (idle) รอราคาลงถึงจุดที่ตั้ง order ไว้ — <strong>Zone Waterfall แก้ปัญหานี้</strong></p>
 
 <div style="margin:20px 0;font-family:'Sarabun',sans-serif">
   <p style="text-align:center;font-size:12px;color:#64748b;margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Zone Waterfall — Active / Standby / Floor</p>
@@ -239,16 +239,22 @@ C_floor_martingale = Σ(i=1 to N) Q_i × P_i
 
 <div class="bx ba">
 <div class="bt">⚠️ Counterparty Risk ของ Lending Protocol</div>
-<p>Yield 4–8% APY จาก Aave/Compound/lending platforms <strong>ไม่ใช่ risk-free</strong>:</p>
+<p>Yield 4–8% APY จาก Aave/Compound (lending protocol บน DeFi ที่ผู้ใช้ฝากเหรียญเข้า pool กลางให้คนอื่นกู้ยืม แล้วรับดอกเบี้ยจากผู้กู้) <strong>ไม่ใช่ risk-free</strong>:</p>
 <ul>
 <li><strong>Smart contract risk:</strong> bug หรือ exploit → เงินอาจหายทั้งหมด (เกิดกับ Euler Finance $197M ปี 2023)</li>
-<li><strong>Liquidity risk:</strong> ในช่วง market crash → ถอน USDT ออกไม่ได้ทันที (utilization rate สูง)</li>
+<li><strong>Liquidity risk:</strong> ในช่วง market crash → ถอน USDT ออกไม่ได้ทันที (utilization rate สูง — คือสัดส่วนเงินใน pool ที่ถูกกู้ไปแล้ว ยิ่งสูงยิ่งเหลือเงินให้ถอนน้อย)</li>
 <li><strong>เหมาะสำหรับ:</strong> Standby capital ที่รอ &gt; 30 วัน และยอมรับ smart contract risk ได้</li>
 <li><strong>ทางเลือกที่ safer กว่า:</strong> CEX savings product (Binance Earn, OKX Earn) — counterparty risk ต่ำกว่าแต่ yield ต่ำกว่า</li>
 </ul>
 </div>
 
 <h2 id="s1a-4">1A.4 Buy-Only Zone Asymmetry — Trick ที่ทรงพลัง</h2>
+
+<div class="bx bc">
+<div class="bt">σ (sigma) คืออะไร — ก่อนเข้าเรื่อง</div>
+<p>σ (sigma / standard deviation) คือตัวเลขมาตรฐานที่บอกว่า "ราคากระจายตัวห่างจากค่าเฉลี่ยแค่ไหน" ถ้า BTC เฉลี่ยอยู่ที่ $100k และ σ = $10k แปลว่าราคามักแกว่งอยู่แถวๆ $90k–$110k (±1σ) เป็นส่วนใหญ่ นี่คือกฎทางสถิติทั่วไปสำหรับข้อมูลที่กระจายตัวแบบ "ระฆังคว่ำ" (bell curve/normal distribution): <strong>ประมาณ 68% ของเวลาราคาจะอยู่ใน ±1σ และ 95% ของเวลาจะอยู่ใน ±2σ</strong> จากค่าเฉลี่ย — ยิ่งไกลจากค่าเฉลี่ยกี่ σ ยิ่งเกิดขึ้นน้อยลงเรื่อยๆ</p>
+<p>ทำไมเรื่องนี้สำคัญกับ grid: การรู้ว่าราคา "น่าจะ" อยู่ในช่วงไหนบ่อยแค่ไหน ช่วยตัดสินใจว่าควรวาง zone กว้างแค่ไหน — วางกว้างเกิน ±2σ เสียทุนไปกับโซนที่ราคาแทบไม่เคยไปถึง</p>
+</div>
 
 <div class="trick-box">
 <div class="trick-label">Zone Trick #1 — Asymmetric Zone</div>
@@ -338,11 +344,11 @@ Capital ที่ประหยัด: Grid levels $110k-$120k ไม่ต้�
 
   Front-Loading:
     - เปิด BUY orders เพิ่มจาก $100k ลงมา (aggressive, เต็ม zone)
-    - รวม BUY จาก $100k ลงถึง $90k = 5 + 1 orders เพิ่มขึ้น
+    - จำนวน order เพิ่มขึ้นอีก 1 order (จาก 5 เป็น 6 orders ระหว่าง $100k–$90k)
     - ใช้ capital จาก "upper zone allocation" มา deploy เพิ่ม
     - เมื่อ SELL orders fill ที่ upper zone → คืน capital
 
-  ข้อดี: deploy capital productive มากขึ้น | ข้อเสีย: ถ้าราคาลงก่อน = inventory เยอะกว่าปกติ</div>
+  ข้อดี: ใช้ทุนได้อย่างมีประสิทธิภาพมากขึ้น (deploy capital productive มากขึ้น) | ข้อเสีย: ถ้าราคาลงก่อน = inventory เยอะกว่าปกติ</div>
 
 <div class="bx ba">
 <div class="bt">ความเสี่ยงของ Front-Loading</div>

@@ -86,6 +86,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>เทรดเดอร์คนเดิมจาก Part 0 — เริ่ม Close System ที่ $8,460 ใน Part 1A แล้วเก็บกำไรสะสมจนขยับ allocation ขึ้นเป็นทุนรวม $20,000 (= 20% ของ net worth $100k ใกล้เพดาน Kelly ~19% ที่จะเห็นเหตุผลเต็มใน Part 5) ตอนนี้จะแบ่งเข้าสามชั้น — สัดส่วน default ที่ใช้ได้เลยถ้ายังไม่มีเหตุผลเฉพาะเจาะจงให้ปรับ:</p>
 
+<p class="caption">ทบทวน Close System (Part 1A): ตั้ง BUY orders ล่วงหน้าจนถึงราคา "floor" ที่คำนวณไว้ก่อนเปิด grid ไม่มี stop-loss ระหว่างทาง (ไม่ขาย inventory ทิ้งขาดทุนเด็ดขาด) — ขายได้ก็ต่อเมื่อราคาฟื้นกลับมาเหนือจุดที่ซื้อเท่านั้น</p>
+
 <table>
 <tr><th>ชั้น</th><th>สัดส่วน</th><th>จำนวนเงิน</th><th>หน้าที่</th></tr>
 <tr><td><strong>Buy-only core</strong></td><td>75%</td><td>$15,000</td><td>Close System ถึง floor (Part 1A) — วิ่งตลอดเวลา ไม่ปิดเว้นแต่หลุดขอบ</td></tr>
@@ -128,6 +130,35 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <p>แทนที่จะตัดสินใจสดหน้างานทุกครั้ง ให้ระบบอยู่ในหนึ่งใน 5 สถานะเสมอ แล้วสลับสถานะตามกฎที่ตั้งไว้ล่วงหน้า (ผูกกับ Regime State Machine ของ Part 4):</p>
 
+<div style="margin:20px 0;font-family:'Sarabun',sans-serif">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch">
+    <div style="flex:1;min-width:140px;background:#f1f5f9;border:2px solid #64748b;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#334155">BUY_ONLY_CORE</div>
+      <div style="font-size:.68em;color:#64748b;margin-top:4px">ค่าเริ่มต้น</div>
+    </div>
+    <div style="display:flex;align-items:center;color:#94a3b8">→</div>
+    <div style="flex:1;min-width:140px;background:#ecfdf5;border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#166534">HYBRID_SIDEWAY</div>
+      <div style="font-size:.68em;color:#15803d;margin-top:4px">H&lt;0.50, sideway ชัด</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch;margin-top:10px">
+    <div style="flex:1;min-width:140px;background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#991b1b">HEDGE_DEFENSIVE</div>
+      <div style="font-size:.68em;color:#b91c1c;margin-top:4px">↑ ราคาลงแรง จาก SIDEWAY</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:#fff7ed;border:2px solid #ea580c;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#9a3412">TREND_UP_MIGRATION</div>
+      <div style="font-size:.68em;color:#c2410c;margin-top:4px">↑ ราคาหลุดขอบบน จาก SIDEWAY</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:#faf5ff;border:2px solid #7c3aed;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#5b21b6">FULL_PAUSE</div>
+      <div style="font-size:.68em;color:#6d28d9;margin-top:4px">↑ DD halt / API ผิดปกติ จากสถานะไหนก็ได้</div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:.75em;color:#94a3b8;margin-top:8px">ทั้ง 3 สถานะแถวล่างกลับสู่ HYBRID_SIDEWAY หรือ BUY_ONLY_CORE ได้เมื่อสัญญาณที่ทำให้เข้าสถานะนั้นหายไป (รายละเอียดเงื่อนไขแต่ละลูกศรอยู่ในตารางด้านล่าง)</p>
+</div>
+
 <table>
 <tr><th>State</th><th>คำอธิบาย</th><th>อนุญาตให้ทำอะไร</th></tr>
 <tr><td><strong>BUY_ONLY_CORE</strong></td><td>ค่าเริ่มต้น — ยังไม่มีสัญญาณ sideway ชัด</td><td>BUY grid + TP sell เท่านั้น ไม่มี naked short</td></tr>
@@ -140,6 +171,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <p>เงื่อนไขเปลี่ยน state ทั้งหมดมาจาก signal ที่มีอยู่แล้ว ไม่มีตัวใหม่: Hurst/ADX/BB width จาก Part 4, DD threshold จาก Part 5, breakout detection จาก Donchian zone ของ Part 3</p>
 
 <h2 id="s1d-5">1D.5 Decision Tree</h2>
+
+<p>ตารางนี้เป็น <em>lookup tool</em> สรุปกฎจาก 1D.4 ให้หาคำตอบเร็วๆ ตามสถานการณ์ปัจจุบัน — ไม่ใช่เนื้อหาใหม่ ถ้าเพิ่งอ่านครั้งแรกอาจต้องย้อนกลับไปดู 1D.4 ประกอบ:</p>
 
 <div class="fm">มี spot inventory อยู่แล้ว?
   → ใช้ hedge ratio ตามตาราง Part 1C §1C.4 (0/50/100/150%) ปรับตาม funding และ Hurst
@@ -168,7 +201,7 @@ funding ติดลบแรง หรือ DD ถึง halt threshold?
 <table>
 <tr><th>Day</th><th>เหตุการณ์</th><th>State</th><th>Action</th></tr>
 <tr><td>0</td><td>BTC $100k, H=0.43, ADX=18 — sideway ชัด</td><td>HYBRID_SIDEWAY</td><td>Core $15,000 เปิดเต็ม zone $90k–$110k · Short layer $1,000 เปิด 30% ของ Q_long · Hedge 60% ของ inventory core</td></tr>
-<tr><td>12</td><td>BTC วิ่งขึ้นทะลุ $110k ต่อเนื่อง H=0.58</td><td>TREND_UP_MIGRATION</td><td>ปิด short layer ทั้งหมด (กำไรสะสม $340) · เลือกทางที่ 2: เก็บทุน core คืน + กำไร → ตั้ง grid ใหม่ zone $108k–$128k</td></tr>
+<tr><td>12</td><td>BTC วิ่งขึ้นทะลุ $110k ต่อเนื่อง H=0.58</td><td>TREND_UP_MIGRATION</td><td>ปิด short layer ทั้งหมด (กำไรสะสม $340 = grid cashflow + funding income สะสมตลอด 12 วัน ตัวเลขสมมติเพื่อ illustration — วิธีคำนวณจริงดู Part 1C §1C.6) · เลือกทางที่ 2: เก็บทุน core คืน + กำไร → ตั้ง grid ใหม่ zone $108k–$128k</td></tr>
 <tr><td>18</td><td>BTC แกว่งที่โซนใหม่ H กลับมา 0.46</td><td>HYBRID_SIDEWAY</td><td>เปิด short layer ใหม่ด้วย loss budget เดิม (5% ของทุนรวม) · hedge ปรับตาม inventory ก้อนใหม่</td></tr>
 <tr><td>25</td><td>Funding พลิกลบแรง (−0.12%/8h)</td><td>FULL_PAUSE (short/hedge เท่านั้น)</td><td>ปิด short layer ชั่วคราว core ยังวิ่งต่อปกติ (Part 1C §1C.3 funding action rule)</td></tr>
 </table>

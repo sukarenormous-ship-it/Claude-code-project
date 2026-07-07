@@ -72,6 +72,8 @@ CSP ป้องกัน Inventory · Grid + Short Strangle<br>
 
 <p>แทนที่จะใช้ ATR (backward-looking) — ใช้ Implied Volatility จาก Options market ซึ่งเป็น forward-looking:</p>
 
+<p class="caption"><strong>Implied Volatility (IV) คืออะไร:</strong> ตัวเลขที่ "สกัด" ออกมาจากราคา options ในตลาด สะท้อนว่าตลาดคาดว่าราคาสินทรัพย์จะแกว่งแรงแค่ไหนในอนาคต (ยิ่งคนคาดว่าจะแกว่งแรง ยิ่งยอมจ่าย premium สูงเพื่อซื้อ options ป้องกันความเสี่ยง → IV ยิ่งสูง) ต่างจาก ATR ที่มองย้อนหลัง (ราคาแกว่งแค่ไหนที่ผ่านมา) IV คือ "การคาดการณ์" ของตลาดไปข้างหน้า — สูตรด้านล่างหาร IV รายปีด้วย √365 เพื่อแปลงเป็นค่าแกว่งต่อ 1 วัน (ค่า volatility สเกลตามรากที่สองของเวลา เป็นหลักสถิติทั่วไป)</p>
+
 $$\text{Step}_\text{IV} = 0.5 \times \frac{\text{IV}_\text{annual}}{\sqrt{365}} \times P \qquad \text{(1-day vol × price)}$$
 
 <div class="fm">IV-Adaptive Step Implementation:
@@ -140,7 +142,9 @@ def iv_adaptive_step(iv_annual_pct, current_price, fee_rate=0.001,
 </script>
 <h2 id="s7-2">7.2 Funding Rate Adaptive Grid</h2>
 
-<p>Funding Rate ของ BTC Perpetual เปลี่ยนตาม market sentiment — grid สามารถ adapt ตาม Funding Rate ได้ (กลไกว่าทำไม funding มีอยู่และทำไมพลิกทิศได้ ดู Part 1C §1C.3 "ค่าเช่าความห่าง" — เลข ×3/วัน ที่ใช้ทั้ง section นี้คือรอบเก็บของ exchange ที่เก็บทุก 8 ชม. ไม่ใช่กฎธรรมชาติ เช็คคู่มือ exchange จริงก่อนตั้งในบอท):</p>
+<p>Funding Rate ของ BTC Perpetual เปลี่ยนตาม market sentiment — grid สามารถ adapt ตาม Funding Rate ได้ (กลไกว่าทำไม funding มีอยู่และทำไมพลิกทิศได้ ดู Part 1C §1C.3 "ค่าเช่าความห่าง")</p>
+
+<p class="caption">เลข ×3/วัน ที่ใช้ทั้ง section นี้คือรอบเก็บ funding ของ exchange ที่เก็บทุก 8 ชั่วโมง ไม่ใช่กฎธรรมชาติตายตัว — ควรเช็คคู่มือ exchange จริงก่อนตั้งค่านี้ในบอท:</p>
 
 <div class="fm">Funding Rate Grid Rules:
 
@@ -181,6 +185,15 @@ Funding Income Calculation (สำหรับ Hedge Grid):
   Daily funding = (0.05 × $100k) × 0.05% × 3 = $5,000 × 0.15% = $7.50/วัน
   Monthly = $7.50 × 30 = $225/เดือน (ได้เพิ่มจาก hedge)</div>
 
+<div class="bx bc">
+<div class="bt">Options 101 — พื้นฐานที่ต้องรู้ก่อนเข้าเรื่อง CSP/Strangle/Iron Condor</div>
+<p><strong>PUT</strong> คือสัญญาที่ให้สิทธิ์ (ไม่ใช่ข้อผูกมัด) แก่ผู้ซื้อในการ "ขาย" สินทรัพย์ที่ราคาที่กำหนดไว้ล่วงหน้า (strike price) ภายในเวลาที่กำหนด (expiry) — <strong>CALL</strong> คือสิทธิ์ "ซื้อ" ในทำนองเดียวกัน</p>
+<p><strong>Premium</strong> คือราคาที่ผู้ซื้อ options จ่ายให้ผู้ขาย เพื่อแลกกับสิทธิ์นั้น — เล่มนี้เน้น <strong>"ขาย" (SELL) options</strong> เป็นหลัก: เมื่อคุณ SELL PUT คุณรับ premium ทันที แต่แลกกับการมีข้อผูกมัด (ไม่ใช่สิทธิ์) ว่าถ้าผู้ซื้อใช้สิทธิ์ คุณต้องซื้อสินทรัพย์ที่ strike price นั้น — นี่คือกลไกที่ทำให้ "SELL PUT" เทียบเท่ากับการตั้ง BUY limit order ที่ strike price พร้อมได้ premium แถม</p>
+<p><strong>Assignment</strong> คือเหตุการณ์ที่ผู้ซื้อ options ใช้สิทธิ์จริง บังคับให้ผู้ขาย (คุณ) ต้องทำตามข้อผูกมัด — สำหรับ SELL PUT คือถูกบังคับซื้อสินทรัพย์ที่ strike</p>
+<p><strong>ITM (In-The-Money) / OTM (Out-of-The-Money):</strong> PUT เป็น ITM เมื่อราคาตลาดปัจจุบัน <em>ต่ำกว่า</em> strike (มีโอกาสถูก assign สูง) และเป็น OTM เมื่อราคาตลาด <em>สูงกว่า</em> strike (โอกาส assign ต่ำ, มักหมดอายุไร้ค่า) — CALL กลับกัน: ITM เมื่อราคาตลาดสูงกว่า strike</p>
+<p><strong>"Wings"</strong> (ใช้ใน Iron Condor ด้านล่าง) หมายถึง options เพิ่มเติมที่ซื้อ (ไม่ใช่ขาย) ไว้ไกลออกไปจาก short strike เพื่อจำกัด max loss — เหมือน "ปีก" ที่กันความเสี่ยงไม่ให้ลามไม่มีที่สิ้นสุด</p>
+</div>
+
 <h2 id="s7-3">7.3 Cash-Secured Put (CSP) + Grid — Inventory Entry</h2>
 
 <p>แทนที่จะซื้อ BTC ตรงๆ ผ่าน BUY limit order — ใช้ CSP (Cash-Secured Put) เพื่อซื้อ BTC ในราคาที่ต้องการ พร้อมรับ premium:</p>
@@ -203,7 +216,7 @@ Net effect:
 def csp_vs_limit_order(target_price, option_premium):
     """
     เปรียบ CSP กับ limit order — คืนทั้ง 2 scenario ที่เป็นไปได้ ณ expiry
-    (ไม่ต้องรู้ expiry_price ล่วงหน้าเพื่อเปรียบเทียบ เพราะอยากเห็นทั้งคู่พร้อมกัน)
+    (ไม่ต้องรู้ expiry_price ล่วงหน้าเพื่อเปรียบเทียบ เพราะต้องการเปรียบเทียบทั้ง 2 กรณีพร้อมกัน)
     """
     # Limit Order: รอ fill ที่ target_price
     limit_effective_cost = target_price
@@ -263,8 +276,8 @@ Scenarios:
 Iron Condor ตัวอย่าง (Grid zone $90k–$110k):
   Short Strangle เดิม: SELL PUT $90k + SELL CALL $110k → premium $1,400 (unlimited risk)
 
-  Iron Condor (เพิ่ม long wings + ขยับ short strike ออกไปอีกหน่อย — ไกลจาก
-spot มากขึ้น premium ฝั่ง short ต้องต่ำกว่าเดิม ไม่ใช่ premium เท่าเดิม):
+  Iron Condor (เพิ่ม long wings + ขยับ short strike ออกไปอีกหน่อย (ไกลจาก
+spot มากขึ้น) ทำให้ premium ฝั่ง short ต้องต่ำกว่าเดิม ไม่ใช่ premium เท่าเดิม):
     SELL PUT $88k  + BUY PUT  $82k  → net premium: +$550 − $100 = +$450
     SELL CALL $113k + BUY CALL $120k → net premium: +$400 − $120 = +$280
     Total net premium = +$730 (ลดลงจาก $1,400 ทั้งจาก long wings และจาก short strike ที่ไกลขึ้น แต่ risk ถูก cap)
@@ -295,7 +308,9 @@ def grid_strangle_income(zone_low, zone_high, put_premium, call_premium,
 
 <h2 id="s7-5">7.5 GARCH-Based Volatility Forecasting สำหรับ Step</h2>
 
-<p>GARCH (Generalized Autoregressive Conditional Heteroskedasticity) คือโมเดลทำนาย volatility ที่คำนึงถึง volatility clustering — ช่วง vol สูงมักตามด้วย vol สูงต่อเนื่อง (อ้างอิงเต็มใน <a href="vol-part2.html">Vol Series Part 2</a>) สอนวิธี fit + ใช้ GARCH(1,1) ตั้ง step เต็มรูปแบบไว้แล้วใน <a href="grid-part3.html#s3-6">Part 3 §3.6</a> (รวม fit window 90 วัน, forecast horizon 7 วัน, และตัวอย่างว่า step ปรับตัวเร็วแค่ไหนหลัง flash crash) — ในบทนี้แค่เชื่อมว่า GARCH ที่ตั้ง step มาแล้ว เอาไปผสมกับ funding-adaptive sizing (§7.2) และ IV-adaptive step (§7.1) ได้อย่างไรเมื่อเปิด grid จริง</p>
+<p>GARCH (Generalized Autoregressive Conditional Heteroskedasticity) คือโมเดลทำนาย volatility ที่คำนึงถึง volatility clustering — ช่วง vol สูงมักตามด้วย vol สูงต่อเนื่อง (อ้างอิงพื้นฐานเต็มใน <a href="vol-part2.html">Vol Series Part 2</a>) ส่วนวิธี fit และใช้ GARCH(1,1) ตั้ง step แบบเต็มรูปแบบนั้น สอนไว้แล้วใน <a href="grid-part3.html#s3-6">Part 3 §3.6</a> (รวม fit window 90 วัน, forecast horizon 7 วัน, และตัวอย่างว่า step ปรับตัวเร็วแค่ไหนหลัง flash crash)</p>
+
+<p class="caption">GARCH เป็น<em>ทางเลือกหนึ่ง</em>สำหรับกำหนด step (แทนที่ ATR หรือ IV-adaptive step ใน §7.1) — ตัวอย่าง Running Example ใน §7.6 ด้านล่างใช้ IV-adaptive step เพื่อความง่าย ถ้าต้องการใช้ GARCH แทน ให้แทนที่ Step 1 ด้วยผลลัพธ์จาก Part 3 §3.6 แล้วขั้นตอนที่เหลือ (funding assessment, hedge, strangle) ทำงานเหมือนเดิมทุกประการ</p>
 
 <h2 id="s7-6">7.6 Running Example — IV + Funding + Grid</h2>
 

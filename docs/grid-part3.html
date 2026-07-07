@@ -70,7 +70,7 @@ Block Bootstrap Monte Carlo · GARCH Volatility Forecast<br>
 
 <div class="key-idea">
 <div class="ki-label">แก่นของ Part นี้</div>
-<div class="ki-text">Zone และ Step ไม่ควรตั้งแบบ "ลองดู" — ควรมาจากข้อมูล volatility ของตลาดจริง ATR บอก "ราคาเดินกี่ USD/วัน" → ใช้ตั้ง Step | Donchian Channel บอก "range ของตลาดในช่วงนี้" → ใช้ตั้ง Zone</div>
+<div class="ki-text">Zone และ Step ไม่ควรตั้งแบบ "ลองดู" — ควรมาจากข้อมูล volatility ของตลาดจริง ATR บอก "ราคาเดินกี่ USD/วัน" → ใช้ตั้ง Step | Donchian Channel บอก "range ของตลาดในช่วงนี้" → ใช้ตั้ง Zone | Keltner ให้ตัวเลข step แบบเดียวกับ ATR แต่มองเป็น "แถบ" รอบราคา | Block Bootstrap (§3.5) และ GARCH (§3.6) เป็นทางเลือกขั้นสูงกว่า ใช้เมื่ออยากได้ zone/step ที่ปรับตาม volatility clustering จริง ไม่ใช่แค่ range/ค่าเฉลี่ยย้อนหลัง — ถ้ายังใหม่กับเรื่องนี้ ใช้ ATR+Donchian (§3.1–3.4) พอเพียงแล้ว</div>
 <div class="ki-eq">Step ≈ 0.5 × ATR(14) · Zone = Donchian(30) · Keltner = EMA ± ATR × k</div>
 </div>
 
@@ -229,7 +229,7 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 
 <h2 id="s3-4">3.4 Combining Donchian + Keltner — Dual Channel Method</h2>
 
-<p>วิธีที่ดีที่สุด: ใช้ทั้งสองร่วมกัน — Donchian กำหนด Zone (wide), Keltner กำหนด Step (inner)</p>
+<p>วิธีที่ดีที่สุดในกลุ่ม ATR/Donchian/Keltner (ไม่นับ Bootstrap/GARCH ที่เป็นแนวทางขั้นสูงกว่าคนละแบบ — ดู §3.5–3.6): ใช้ทั้งสองร่วมกัน — Donchian กำหนด Zone (wide), Keltner กำหนด Step (inner) นี่คือวิธีที่ตัวอย่าง §3.9 และ validation checklist §3.8 ใช้จริงตลอดเล่ม เพราะคำนวณง่ายและเพียงพอสำหรับส่วนใหญ่ — Bootstrap/GARCH ให้ผลแม่นกว่าในตลาดที่ volatility เปลี่ยนเร็ว แต่ต้องแลกกับความซับซ้อนที่เพิ่มขึ้น</p>
 
 <table>
 <tr><th>Parameter</th><th>วิธีคำนวณ</th><th>ตัวอย่าง BTC</th></tr>
@@ -285,7 +285,7 @@ step = ATR(14) / desired_levels_per_atr = $2,500 / 2 = $1,250
 <div class="fm">แนวคิด Block Bootstrap Monte Carlo:
 
 1. เก็บ daily return ของ BTC ย้อนหลัง 90 วัน
-2. สุ่ม "blocks" ของ return (ขนาด block = 5 วัน) → เพื่อรักษา autocorrelation
+2. สุ่ม "blocks" ของ return (ขนาด block = 5 วัน) → เพื่อรักษา autocorrelation (ความสัมพันธ์ระหว่างวัน — วันผันผวนแรงมักตามด้วยวันผันผวนแรงต่อ ไม่ใช่สุ่มอิสระแยกวันต่อวัน สุ่มเป็นก้อนๆ จึงรักษาลักษณะนี้ไว้ได้ ต่างจากสุ่มทีละวันที่จะทำลายมันไป)
 3. ประกอบ synthetic price path จาก blocks ที่สุ่มได้
 4. ทำซ้ำ 1,000 ครั้ง → ได้ distribution ของ "ราคาจะไปถึงไหนใน 30 วัน"
 5. ใช้ percentile 5 และ 95 เป็น zone boundaries
@@ -367,6 +367,8 @@ def block_bootstrap_zone(daily_returns, n_sim=1000, horizon=30,
 
 <p>GARCH(1,1) จาก <a href="vol-part2.html">Vol Series</a> ให้ค่า volatility forecast ที่ดีกว่า ATR ธรรมดาในช่วง volatility cluster:</p>
 
+<p class="caption">ความหมายของตัวแปรในสูตร (ไม่ต้องจำได้ แค่รู้ว่าแต่ละตัวทำหน้าที่อะไร): <strong>ω (omega)</strong> = ระดับความผันผวนพื้นฐานระยะยาว (baseline) · <strong>α (alpha)</strong> = น้ำหนักที่ให้กับ "ช็อก" ของเมื่อวาน (ยิ่งราคาผันผวนแรงเมื่อวาน ยิ่งดันค่าพยากรณ์วันนี้ขึ้นมาก) · <strong>β (beta)</strong> = น้ำหนักที่ให้กับค่าพยากรณ์ของเมื่อวานเอง (ความ "จำ" ของโมเดล) — ผลรวม α+β ใกล้ 1 ยิ่งมาก แปลว่า volatility ที่พุ่งขึ้นจะค่อยๆ ลดลงช้า (persistent)</p>
+
 $$\sigma_t^2 = \omega + \alpha \cdot \epsilon_{t-1}^2 + \beta \cdot \sigma_{t-1}^2$$
 
 <div class="fm">GARCH Step Sizing:
@@ -381,7 +383,7 @@ vol_forecast_7d = forecast_vol(garch_params, horizon=7)
 sigma_daily = vol_forecast_7d[0]   # = 0.025 (2.5% daily vol) ในสภาวะปกติ
 price = 100000
 
-# 1-day VaR = σ × price
+# ประมาณ 1-day price move จาก σ (แบบง่าย ไม่ใช่ VaR ทางการที่มี confidence level กำหนดชัด)
 atr_garch = sigma_daily * price  # = $2,500
 
 # Step = 0.5 × GARCH-ATR (เหมือน ATR method แต่ forward-looking)
@@ -404,7 +406,7 @@ GARCH ตอบสนองเร็วแค่ไหน — ดูตามเ
 
 <h3>3.6.1 ทางเลือกขั้นสูง: ตั้ง step จากคิวจริงในตลาด (ข้ามได้ถ้ายังไม่มีข้อมูล fill)</h3>
 
-<p>ทุกวิธีข้างบน (ATR, Donchian, Keltner, GARCH) ตอบคำถามเดียวกัน: "ตลาดกว้างแค่ไหน" แล้วตั้ง step ตามความกว้างนั้น — เหมือนวัดความกว้างถนนแล้วตั้งราคาตามนั้น ถ้ามีข้อมูล order fill จริงในมือ (ไม่ใช่แค่ราคา OHLC) มีวิธีที่ตรงจุดกว่า: ตั้ง step จาก "คิวลูกค้าจริง" — ดูว่าคนตั้งราคาซื้อขายห่างจาก mid price เท่าไหร่ และโอกาสถูก fill ลดลงเร็วแค่ไหนเมื่อตั้งราคาไกลขึ้น</p>
+<p>ทุกวิธีข้างบน (ATR, Donchian, Keltner, GARCH) ตอบคำถามเดียวกัน: "ตลาดกว้างแค่ไหน" แล้วตั้ง step ตามความกว้างนั้น — เหมือนวัดความกว้างถนนแล้วตั้งระยะห่างจุดจอดรถตามนั้น ถ้ามีข้อมูล order fill จริงในมือ (ไม่ใช่แค่ราคา OHLC) มีวิธีที่ตรงจุดกว่า: ตั้ง step จาก "คิวลูกค้าจริง" — ดูว่าคนตั้งราคาซื้อขายห่างจาก mid price เท่าไหร่ และโอกาสถูก fill ลดลงเร็วแค่ไหนเมื่อตั้งราคาไกลขึ้น</p>
 
 <div class="bx bc">
 <div class="bt">แนวคิดสั้นๆ</div>
@@ -580,7 +582,7 @@ Step 6: Distribution ของ BUY orders (Asymmetric Zone Part 1A)
 <p><strong>การปรับที่ควรทำ:</strong></p>
 <ul>
 <li>Step เก่า $1,000 (0.5 × $2,000) → Step ใหม่ = 0.7 × $5,000 = $3,500</li>
-<li>Step ใหญ่ขึ้น 3.5× → N ลดลง (ถ้า zone เดิม $20k: N = int(20,000/3,500) = int(5.71) → 20 → 5 levels ตาม floor convention เดียวกับ §3.4)</li>
+<li>Step ใหญ่ขึ้น 3.5× → N ลดลง (ถ้า zone เดิม $20k: N เดิม 20 levels → N ใหม่ = int(20,000/3,500) = int(5.71) = 5 levels ตาม floor convention เดียวกับ §3.4)</li>
 <li>ควร expand zone ด้วย Donchian ใหม่ → zone กว้างขึ้น</li>
 <li>ลด Q ลง 30–50% เพื่อลด capital at risk ในช่วง high vol</li>
 </ul>

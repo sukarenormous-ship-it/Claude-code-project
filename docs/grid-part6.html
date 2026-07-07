@@ -103,9 +103,19 @@ Short ETH ถ้า spread ต่ำกว่า mean<br>
 <h2 id="s6-2">6.2 Cointegration — พื้นฐาน Pair Grid</h2>
 
 <div class="bx bc"><div class="bt">Correlation ≠ Cointegration</div><p>BTC และ ETH อาจมี correlation สูง (ขึ้นลงพร้อมกัน) แต่นั่นไม่รับประกันว่า spread จะ mean-revert — ต้องผ่าน Cointegration Test จึงจะ trade ได้อย่างมั่นใจ</p></div>
+
+<div class="bx bg">
+<div class="bt">สถิติพื้นฐานที่ต้องรู้ก่อนอ่านต่อ (ใช้ตลอดหัวข้อนี้)</div>
+<p><strong>Null Hypothesis (H₀):</strong> ข้อสมมติฐาน "ค่าเริ่มต้น" ที่เราพยายามหาหลักฐานมาหักล้าง — ในที่นี้ H₀ คือ "spread <em>ไม่</em> mean-revert" (มี unit root แปลว่าเดินสุ่มไม่มีจุดดึงกลับ) เราอยาก <strong>reject H₀</strong> (ปฏิเสธมันได้) เพื่อสรุปว่า spread mean-revert จริง</p>
+<p><strong>ADF Test statistic กับ Critical Value:</strong> ADF test คำนวณตัวเลขหนึ่งตัว (test statistic) แล้วเทียบกับ "เกณฑ์ตัดสิน" (critical value) ที่กำหนดไว้ล่วงหน้า — ถ้า test statistic <em>ต่ำกว่า</em> (ติดลบมากกว่า) critical value ถือว่ามีหลักฐานพอจะ reject H₀</p>
+<p><strong>p-value:</strong> ความน่าจะเป็นที่จะเห็นผลลัพธ์แบบนี้ (หรือรุนแรงกว่า) ถ้า H₀ เป็นจริง — p-value ยิ่งต่ำ ยิ่งมีหลักฐานค้าน H₀ มาก ธรรมเนียมทั่วไปคือ p &lt; 0.05 ถือว่า reject H₀ ได้ (นี่คือที่มาของ "ระดับนัยสำคัญ 5%" ที่จะเห็นซ้ำๆ ด้านล่าง)</p>
+</div>
+
 <p>Cointegration (จาก <a href="statarb-ch0.html">Statarb Ch.5</a>) หมายความว่า: แม้ราคาสองตัวจะ random walk แต่ linear combination ของมันเป็น stationary:</p>
 
 $$\text{Spread}_t = \log(P_{BTC,t}) - \beta \cdot \log(P_{ETH,t}) - \alpha \sim \text{Stationary}$$
+
+<p class="caption">β (beta) คือความชันจาก linear regression ระหว่าง log(BTC) กับ log(ETH) — บอกว่าถ้า log(ETH) เปลี่ยน 1% แล้ว log(BTC) มักเปลี่ยนตามกี่% โดยเฉลี่ยในอดีต เช่น β=0.80 หมายความว่า log(ETH) เปลี่ยน 1% → log(BTC) เปลี่ยนตามเฉลี่ย 0.80% ใช้ค่านี้ถ่วงน้ำหนัก ETH ในสมการ spread เพื่อให้ spread นิ่งที่สุดเท่าที่จะทำได้ (ไม่ใช่แค่ลบราคาตรงๆ)</p>
 
 <canvas id="chartSpread" class="chart" style="height:360px"></canvas>
 <p class="caption">BTC/ETH Spread (log ratio) — mean-revert กลับสู่ค่าเฉลี่ยอยู่เสมอ → Grid บน spread ทำกำไรได้ต่อเนื่อง</p>
@@ -168,7 +178,7 @@ def test_cointegration(btc_prices, eth_prices, significance=0.05):
 
 <div class="bx bc">
 <div class="bt">Johansen Test — ดีกว่า Engle-Granger สำหรับ Pair Grid</div>
-<p>Engle-Granger มี low statistical power (พลาด cointegration จริงบ่อย) — ใช้ Johansen เป็น confirmation:</p>
+<p>Engle-Granger มี low statistical power ("power" ในที่นี้คือความสามารถของ test ในการจับ cointegration ที่มีอยู่จริงให้เจอ — power ต่ำ = พลาด cointegration จริงบ่อย แม้มันมีอยู่จริง) — ใช้ Johansen เป็น confirmation:</p>
 </div>
 
 <div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
@@ -282,13 +292,15 @@ def pair_grid_signal(current_spread, spread_levels, prev_spread, beta,
 
 <p>grid ข้างบนวางถึง ±3σ ทุก level ถือว่า "น่าเข้า" พอๆ กันหมด แต่ยิ่งไกลจาก mean ยิ่งน่าเข้าจริงเหรอ หรือมีจุดที่ควรเลิกคิดว่ามันจะกลับ?</p>
 
-<p>ลองนึกภาพรอเพื่อนที่นัดไว้ — สาย 10 นาทีปกติ สาย 30 นาทีเริ่มกังวล สาย 2 ชั่วโมง ไม่ใช่ "ยิ่งสายนานยิ่งใกล้จะมาถึง" แต่กลับเป็นสัญญาณว่ามีอะไรผิดปกติ spread ก็เหมือนกัน: ยิ่งเบี่ยงจาก mean ไกลเกินระดับหนึ่ง ความเป็นไปได้ที่ <strong>cointegration พังไปแล้ว</strong> (ไม่ใช่แค่รอ mean-reversion ตามปกติ) ก็ยิ่งสูงขึ้น เพราะเหตุนี้ "โซนที่ควรเข้า" จึงมีขอบเขตจำกัดเสมอ อยู่เหนือจุดยอมแพ้เสมอ — ไม่ใช่ยิ่งไกลยิ่งซื้อเพิ่มไม่มีที่สิ้นสุด</p>
+<p>ลองนึกภาพรอเพื่อนที่นัดไว้ — สาย 10 นาทีปกติ สาย 30 นาทีเริ่มกังวล สาย 2 ชั่วโมง ไม่ใช่ "ยิ่งสายนานยิ่งใกล้จะมาถึง" แต่กลับเป็นสัญญาณว่ามีอะไรผิดปกติ</p>
+
+<p>spread ก็เหมือนกัน: ยิ่งเบี่ยงจาก mean ไกลเกินระดับหนึ่ง ความเป็นไปได้ที่ <strong>cointegration พังไปแล้ว</strong> (ไม่ใช่แค่รอ mean-reversion ตามปกติ) ก็ยิ่งสูงขึ้น เพราะเหตุนี้ "โซนที่ควรเข้า" จึงมีขอบเขตจำกัดเสมอ อยู่<strong>ก่อนถึง</strong>จุดยอมแพ้เสมอ (ไม่ใช่ยิ่งไกลยิ่งซื้อเพิ่มไม่มีที่สิ้นสุด — เลยจุดยอมแพ้ไปแล้วคือเลิกเข้าเพิ่ม ไม่ใช่ยิ่งเข้าหนักขึ้น)</p>
 
 <p>เพราะฉะนั้น grid ของ spread ควรมี <strong>จุดยอมแพ้ (give-up point)</strong> กำกับไว้ 2 แบบ:</p>
 
 <ul>
 <li><strong>ตามราคา:</strong> ±4σ (นอกช่วง 7 levels ข้างบน) = ปิด position ฉุกเฉินทันที ไม่ว่ากำไรหรือขาดทุน — ระดับนี้ไม่ใช่ level ให้ "เข้าเพิ่ม" แต่เป็นสัญญาณให้ออก</li>
-<li><strong>ตามเวลา:</strong> ถ้าถือ position เกิน ~3 เท่าของ half-life (จาก 6.2 half-life ≈ 8 วัน → ยอมแพ้ที่ ~24 วัน) โดยยังไม่ถึง TP ให้ re-run cointegration test ทันที — ไม่ต้องรอรอบเช็ค 30 วันตามปกติ (ดูกล่อง Cointegration Break Risk ด้านบน)</li>
+<li><strong>ตามเวลา:</strong> ถ้าถือ position เกิน ~3 เท่าของ half-life (half-life = เวลาเฉลี่ยที่ spread ใช้ "กลับมาครึ่งทาง" สู่ค่าเฉลี่ยหลังเบี่ยงออกไป — จาก §6.2 half-life ≈ 8 วัน → ยอมแพ้ที่ ~24 วัน) โดยยังไม่ถึง TP ให้ re-run cointegration test ทันที — ไม่ต้องรอรอบเช็ค 30 วันตามปกติ (ดูกล่อง Cointegration Break Risk ด้านบน)</li>
 </ul>
 
 <p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Leung &amp; Li, "Optimal Mean Reversion Trading with Transaction Costs and Stop-Loss Exit" (2015) — พิสูจน์ว่าโซนเข้าซื้อของ mean-reversion ที่ optimal มีขอบเขตจำกัดเสมอ ไม่ใช่ยิ่งไกลยิ่งเข้า</p>
@@ -464,7 +476,10 @@ Day 8: BTC $100k, ETH $3,740 → spread = log(100k) − 0.80×log(3,740) = 11.51
   normalized: (4.932−4.983)/0.040 = −1.3σ → ยังไม่ถึง TP (−1σ) ยังถือ position
 
 Day 10: BTC $106k, ETH $3,650 → spread = log(106k) − 0.80×log(3,650) = 11.571 − 6.562 = 5.009
-  normalized: (5.009−4.983)/0.040 = +0.66σ → ผ่าน TP (−1σ) ไปแล้ว
+  normalized: (5.009−4.983)/0.040 = +0.66σ → ผ่าน TP (−1σ) ไปแล้ว (spread น่าจะข้าม −1σ
+  จริงระหว่าง Day 8–10 แต่ตัวอย่างนี้ snapshot แค่วันเว้นวัน ไม่ได้ track ทุกวัน
+  เพื่อความง่าย จึงคำนวณ P&L จากราคา ณ Day 10 ไม่ใช่ราคา ณ จุดที่ TP ถูกแตะจริง —
+  P&L จริงถ้า execute ทันทีที่ −1σ อาจน้อยกว่านี้)
   TP hit!
   BTC gain: 0.008 × ($106k − $98k) = $64
   ETH short gain: 0.1813 × ($3,800 − $3,650) = $27.2
