@@ -313,6 +313,40 @@ p* = (e^(rΔt) − d) / (u − d)   ← risk-neutral probability</div>
 <li>ค่าที่ node แรก = ราคา Option · เมื่อ n → ∞ → ลู่เข้า Black-Scholes</li>
 </ol></div>
 
+<h3 id="s10-1b">🐍 Python — tree หลายก้าว ลู่เข้า Black-Scholes จริง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ที่พูดว่า "เพิ่มก้าวแล้วลู่เข้า BS" — พิสูจน์ได้ในโค้ดไม่กี่บรรทัด · ใช้ค่า u, d, p* แบบ CRR (Cox-Ross-Rubinstein) แล้วสร้าง tree ย้อนราคากลับมา · ลองกับ Call ATM ชุดเดิม (S=K=100, r=5%, σ=25%, T=1) ที่ BS ให้ 12.336:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Binomial tree (CRR) → เทียบ Black-Scholes</div><pre>import numpy as np
+from math import exp, sqrt
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1
+
+def binomial_call(n):
+    dt = T/n
+    u  = exp(sig*sqrt(dt)); d = 1/u          <span class="c"># ขึ้น/ลง ต่อก้าว</span>
+    p  = (exp(r*dt) - d)/(u - d)             <span class="c"># โอกาส risk-neutral</span>
+    disc = exp(-r*dt)
+    <span class="c"># ราคาหุ้นที่ปลาย tree (n ก้าว) แล้วคิด payoff</span>
+    ST = np.array([S * u**j * d**(n-j) for j in range(n+1)])
+    V  = np.maximum(ST - K, 0)
+    <span class="c"># ย้อนกลับทีละก้าว: มูลค่า = คิดลด(ค่าเฉลี่ย risk-neutral)</span>
+    for step in range(n, 0, -1):
+        V = disc * (p*V[1:step+1] + (1-p)*V[0:step])
+    return V[0]
+
+for n in [1, 2, 5, 10, 50, 100, 500]:
+    print(f"n={n:>4} ก้าว: Call = {binomial_call(n):.4f}")
+<span class="o"># n=   1 ก้าว: Call = 14.5706   ← หยาบมาก</span>
+<span class="o"># n=   2 ก้าว: Call = 11.2110</span>
+<span class="o"># n=  10 ก้าว: Call = 12.0923</span>
+<span class="o"># n=  50 ก้าว: Call = 12.2867</span>
+<span class="o"># n= 100 ก้าว: Call = 12.3113</span>
+<span class="o"># n= 500 ก้าว: Call = 12.3311   ← เข้าใกล้ BS = 12.336 แล้ว</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — tree คือ BS ฉบับ "หยาบ ๆ"</div>
+<p>ก้าวน้อย ราคาแกว่ง (14.6 → 11.2 → 12.1) เพราะ tree หยาบเกินจับรูป lognormal ได้ · เพิ่มก้าว ราคา<strong>ค่อย ๆ นิ่งเข้าหา 12.336</strong> · นี่พิสูจน์ว่า Black-Scholes = ลิมิตของ binomial tree เมื่อก้าวถี่จนต่อเนื่อง — สองโมเดลนี้คือสิ่งเดียวกันคนละความละเอียด · และข้อดีของ tree: ตั้งราคา <strong>American option</strong> (ใช้สิทธิ์ก่อนกำหนดได้) ได้ ซึ่ง BS สูตรปิดทำไม่ได้</p></div>
+
 <h3 id="s10-2">10.2 Risk-Neutral Pricing — ตั้งราคาโดยไม่ต้องรู้ทิศหุ้น</h3>
 
 <div class="card">

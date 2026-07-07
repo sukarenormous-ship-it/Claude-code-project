@@ -17,6 +17,7 @@
 .deep{background:#f8fafc;border:1px solid var(--g2);border-left:4px solid #64748b;border-radius:0 8px 8px 0;padding:12px 18px;margin:14px 0}.deep .bt{color:#475569}
 abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
 svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
+.code{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.code .hdr{background:var(--g8);color:#fff;padding:5px 14px;font-size:.8em;font-weight:700;letter-spacing:.4px}.code pre{background:var(--g1);color:var(--g8);font-family:'Courier New',monospace;font-size:.85em;padding:12px 16px;overflow-x:auto;white-space:pre;margin:0;line-height:1.65}.code .c{color:#94a3b8}.code .o{color:#16a34a;font-weight:700}
 @media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style>
 </head>
@@ -129,6 +130,26 @@ w = vector น้ำหนัก · Σ = covariance matrix</div>
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>ถ้า Cov ระหว่างสองหุ้นเป็น <strong>0</strong> (ไม่สัมพันธ์กันเลย) แทน 0.01 · σ²ₚ และ σₚ จะเป็นเท่าไร? (w = [0.6, 0.4] เท่าเดิม)</p>
 <details><summary>ดูเฉลย</summary><p>σ²ₚ = 0.0144 + 0 + 0.0144 = 0.0288 · σₚ = √0.0288 = <strong>16.97% ≈ 17%</strong> — ยิ่งต่ำลงอีกเมื่อ Cov = 0 (ไม่มีความเสี่ยงร่วมเลย)</p></details></div>
+
+<p><strong>🐍 พอมีหลายหุ้น มือเริ่มไม่ไหว — ให้ matrix ทำแทน</strong> · 3 หุ้นมี 9 คู่, 10 หุ้นมี 100 คู่ · แต่ <code>w @ Σ @ w</code> ใน numpy คือบรรทัดเดียวไม่ว่ากี่ตัว · นี่คือเหตุผลที่ต้องรู้จัก matrix จริง ๆ:</p>
+
+<div class="code"><div class="hdr">🐍 Python — wᵀΣw พอร์ต 3 หุ้น (สร้าง Σ จาก σ + correlation)</div><pre>import numpy as np
+
+w  = np.array([0.5, 0.3, 0.2])           <span class="c"># น้ำหนัก 3 หุ้น (รวม = 1)</span>
+sd = np.array([0.20, 0.15, 0.30])        <span class="c"># σ ของแต่ละหุ้น</span>
+Corr = np.array([[1.0, 0.3, 0.2],        <span class="c"># เมทริกซ์ correlation</span>
+                 [0.3, 1.0, 0.5],
+                 [0.2, 0.5, 1.0]])
+
+Sig = np.outer(sd, sd) * Corr            <span class="c"># Σ = σᵢσⱼρᵢⱼ (covariance matrix)</span>
+var = w @ Sig @ w                        <span class="c"># ★ wᵀΣw — บรรทัดเดียว!</span>
+print(f"ความเสี่ยงพอร์ต = {np.sqrt(var)*100:.2f}%")   <span class="o"># ความเสี่ยงพอร์ต = 15.31%</span>
+
+<span class="c"># เทียบกับ "ถ้าไม่มี diversification" (เฉลี่ยถ่วงน้ำหนัก σ ตรง ๆ)</span>
+print(f"เฉลี่ยถ่วง σ    = {(w @ sd)*100:.2f}%")        <span class="o"># เฉลี่ยถ่วง σ    = 20.50%</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<p>พอร์ตเสี่ยงจริง <strong>15.31%</strong> — ต่ำกว่า "เฉลี่ยถ่วง σ" (20.50%) ถึง <strong>5 จุด</strong> · ส่วนต่างนี้คือ diversification ที่ covariance มอบให้ · ถ้าหุ้นทุกตัว correlation = 1 (ไปด้วยกันเป๊ะ) เลขสองอันจะเท่ากันเป๊ะ (ไม่มีของฟรี) · <code>w @ Sig @ w</code> ทำงานเหมือนกันหมดไม่ว่า 3 หรือ 300 หุ้น — นี่คือพลังของการเขียนเป็น matrix</p></div>
 
 <div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
 <ul>
