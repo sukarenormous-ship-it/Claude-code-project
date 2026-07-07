@@ -191,6 +191,39 @@ Chain Rule: y = f(g(x)) → dy/dx = f'(g(x)) · g'(x)
 <li>รวม Gamma: ΔV ≈ 0.5×10 + ½×0.04×10² = 5.0 + 2.0 = <strong>+7.0</strong></li>
 </ul>
 <p>Gamma เพิ่มอีก +2.0 — ยิ่งหุ้นขยับแรง (ΔS ใหญ่) เทอม Gamma ยิ่งสำคัญ เพราะมันโตตาม (ΔS)² · นี่คือเหตุผลที่ Long Gamma กำไรเมื่อตลาดเหวี่ยงแรง</p></div>
+
+<p><strong>🐍 พิสูจน์ด้วย Python ว่า Taylor แม่นแค่ไหน</strong> — เทียบ 3 อย่าง: (1) Delta อย่างเดียว (2) Delta+Gamma (3) ราคาจริงจาก BS reprice (บทที่ 11) · ใช้ Call ATM จริง (V=12.336, Δ=0.627, Γ=0.0151):</p>
+
+<div class="code"><div class="hdr">🐍 Python — Delta-Gamma approx เทียบราคาจริง</div><pre>from math import log, sqrt, exp, erf
+def N(x): return 0.5*(1 + erf(x/sqrt(2)))
+def bs(S, K, r, s, T):
+    d1 = (log(S/K)+(r+s*s/2)*T)/(s*sqrt(T)); d2 = d1 - s*sqrt(T)
+    return S*N(d1) - K*exp(-r*T)*N(d2)
+
+K, r, sig, T = 100, 0.05, 0.25, 1
+S0 = 100
+V, Delta, Gamma = 12.336, 0.6274, 0.0151     <span class="c"># Greeks ที่จุดเริ่ม (บท 11)</span>
+
+print(" dS | จริง(reprice) | Delta อย่างเดียว | Delta+Gamma")
+for dS in [1, 5, 10, 20, -10, -20]:
+    true   = bs(S0+dS, K, r, sig, T) - V     <span class="c"># ราคาจริงเปลี่ยนไปเท่าไร</span>
+    d_only = Delta*dS                        <span class="c"># ประมาณเชิงเส้น</span>
+    d_gam  = Delta*dS + 0.5*Gamma*dS**2      <span class="c"># + เทอมความโค้ง</span>
+    print(f"{dS:+4d} | {true:+8.3f}     | {d_only:+8.3f}       | {d_gam:+8.3f}")
+<span class="o"># dS | จริง(reprice) | Delta อย่างเดียว | Delta+Gamma</span>
+<span class="o">  +1 |   +0.635     |   +0.627       |   +0.635   ← ขยับนิด: เท่ากันหมด</span>
+<span class="o">  +5 |   +3.319     |   +3.137       |   +3.326</span>
+<span class="o"> +10 |   +6.969     |   +6.274       |   +7.031   ← Delta เดี่ยวเริ่มพลาด</span>
+<span class="o"> +20 |  +15.070     |  +12.548       |  +15.576   ← Delta พลาด 2.5! Gamma กู้กลับมาเกือบตรง</span>
+<span class="o"> -10 |   -5.466     |   -6.274       |   -5.517   ← Delta คิดว่าขาดทุน 6.27</span>
+<span class="o"> -20 |   -9.194     |  -12.548       |   -9.521   ← จริง ๆ ขาดแค่ 9.2 (Gamma พยุง)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — 3 บทเรียนจากตาราง</div>
+<ul>
+<li><strong>ขยับนิดเดียว Delta ก็พอ</strong> — ที่ ΔS=+1 ทั้ง 3 ค่าเท่ากันหมด (ความโค้งยังไม่ทันสำคัญ)</li>
+<li><strong>ขยับแรง ต้องมี Gamma</strong> — ที่ ΔS=+20 Delta เดี่ยวพลาดถึง 2.5 บาท แต่ Delta+Gamma เกือบตรง · เทอม Gamma โตตาม (ΔS)² จึงเด่นขึ้นเมื่อขยับใหญ่</li>
+<li><strong>Gamma พยุงขาลง (convexity)</strong> — ตอนหุ้นตก −20 Delta คิดว่าขาดทุน 12.5 แต่จริง ๆ ขาดแค่ 9.2 · การถือ Long Gamma ทำให้ "ขึ้นได้มากกว่า ลงเจ็บน้อยกว่า" ที่ Delta ทำนาย — นี่คือมูลค่าของ convexity ที่จ่ายผ่าน Theta</li>
+</ul></div>
 </div>
 
 <!-- ═══════════════ CAPSTONE ═══════════════ -->
