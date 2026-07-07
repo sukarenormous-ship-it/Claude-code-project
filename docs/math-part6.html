@@ -176,7 +176,7 @@ for k in range(1, 8):
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้ารู้ว่าคำตอบอยู่ระหว่าง a กับ b ก็ลองจุดกึ่งกลาง แล้วถามว่าคำตอบอยู่ครึ่งซ้ายหรือขวา ตัดทิ้งครึ่งหนึ่งทุกรอบ — ช้าแต่ชัวร์</p>
 
-<div class="fm">1. เลือก a, b ที่ f(a)·f(b) < 0 (คนละเครื่องหมาย → คำตอบคั่นกลาง)
+<div class="fm">1. เลือก a, b ที่ f(a)·f(b) &lt; 0 (คนละเครื่องหมาย → คำตอบคั่นกลาง)
 2. m = (a+b)/2 ; ดูว่า f(m) เครื่องหมายเดียวกับฝั่งไหน แล้วหุบเข้าหาอีกฝั่ง
 3. ทำซ้ำจน |b−a| เล็กพอ</div>
 
@@ -223,7 +223,7 @@ for k in range(1, 8):
 </table></div>
 <p>ช่วงหุบครึ่งทุกรอบ ค่อย ๆ บีบเข้าหา 0.25 — ช้าแต่ชัวร์</p></div>
 
-<div class="code"><div class="hdr">🐍 Python — IV ด้วย 2 วิธี (ใช้ฟังก์ชัน BS จากบท 11)</div><pre>from math import log, sqrt, exp, erf, pi
+<div class="code"><div class="hdr">🐍 Python — IV ด้วย 2 วิธี (นิยาม BS ซ้ำในตัว รันได้เลย)</div><pre>from math import log, sqrt, exp, erf, pi
 
 def N(x):   return 0.5*(1 + erf(x/sqrt(2)))
 def phi(x): return exp(-x*x/2)/sqrt(2*pi)
@@ -247,7 +247,7 @@ print(f"bisection IV = {(a+b)/2*100:.2f}%")          <span class="o"># bisection
 
 <span class="c"># --- วิธี 2: Newton-Raphson (ใช้ Vega — เร็วมาก) ---</span>
 sig = 0.50                                    <span class="c"># เดามั่ว ๆ เริ่มที่ 50%</span>
-for i in range(5):
+for i in range(3):
     diff = bs_call(S,K,r,sig,T) - mkt
     print(f"  รอบ {i}: sig={sig*100:5.2f}%  ราคา={bs_call(S,K,r,sig,T):.3f}")
     sig = sig - diff/vega(S,K,r,sig,T)        <span class="c"># σ ← σ − (ราคาเกิน)/Vega</span>
@@ -258,7 +258,7 @@ print(f"newton IV = {sig*100:.2f}%")
 <span class="o"># newton IV = 25.00%</span></pre></div>
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — ทำไม Newton ชนะขาด</div>
-<p>Bisection ต้องวน ~50 รอบกว่าจะแม่น 4 ตำแหน่ง · Newton ใช้ <strong>2 รอบ</strong> เพราะมันรู้ "ความชัน" (Vega) จึงกระโดดถูกทิศถูกระยะ — จาก 50% พุ่งลงมา 24.8% แล้วเก็บรายละเอียดอีกรอบเดียว · นี่คือเหตุผลที่ทุกแพลตฟอร์มใช้ Newton (หรือญาติของมัน) คำนวณ IV แบบ real-time</p></div>
+<p>Bisection ต้องวน ~14 รอบกว่าจะแม่น 4 ตำแหน่ง (และหลายสิบรอบถ้าเอาระดับ machine precision) · Newton ใช้ <strong>2 รอบ</strong> เพราะมันรู้ "ความชัน" (Vega) จึงกระโดดถูกทิศถูกระยะ — จาก 50% พุ่งลงมา 24.8% แล้วเก็บรายละเอียดอีกรอบเดียว · นี่คือเหตุผลที่ทุกแพลตฟอร์มใช้ Newton (หรือญาติของมัน) คำนวณ IV แบบ real-time</p></div>
 
 <div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
 <p>เปลี่ยนราคาตลาดเป็น <code>mkt = 15.0</code> (option แพงขึ้น) แล้วรัน · คาดเดาก่อน: IV ควร<strong>สูงกว่า 25%</strong> (แพงขึ้น = ตลาดคิดว่าผันผวนมากขึ้น)</p>
@@ -339,6 +339,7 @@ for n in [1, 2, 5, 10, 50, 100, 500]:
     print(f"n={n:>4} ก้าว: Call = {binomial_call(n):.4f}")
 <span class="o"># n=   1 ก้าว: Call = 14.5706   ← หยาบมาก</span>
 <span class="o"># n=   2 ก้าว: Call = 11.2110</span>
+<span class="o"># n=   5 ก้าว: Call = 12.7946</span>
 <span class="o"># n=  10 ก้าว: Call = 12.0923</span>
 <span class="o"># n=  50 ก้าว: Call = 12.2867</span>
 <span class="o"># n= 100 ก้าว: Call = 12.3113</span>
@@ -422,7 +423,7 @@ E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* �
 
 <div class="bx bg"><div class="bt">💎 สมดุล Greeks — หัวใจที่สวยที่สุด</div>
 <p>จัดรูปใหม่ได้เป็น: <strong>Θ + ½σ²S²Γ + rSΔ = rV</strong></p>
-<p>อ่านเป็นภาษาคน: สำหรับ Long Option, Theta เป็นลบ (เสียค่าเวลา) แต่พจน์ Gamma เป็นบวก (ได้จากความโค้ง) — <strong>ทั้งสองหักล้างกันพอดี</strong> ตลาดไม่ยอมให้มี "ของฟรี": อยากได้ Gamma ต้องจ่าย Theta · ประโยคเดสก์จาก Part III กลายเป็นสมการจริงตรงนี้</p></div>
+<p>อ่านเป็นภาษาคน: สำหรับ Long Option, Theta เป็นลบ (เสียค่าเวลา) แต่พจน์ Gamma เป็นบวก (ได้จากความโค้ง) — <strong>ทั้งสองถ่วงกันเป็นส่วนใหญ่</strong> (ส่วนที่เหลือคือเทอม carry rSΔ กับ discount −rV ในสมการเต็มข้างบน) · ใจความคือตลาดไม่ยอมให้มี "ของฟรี": อยากได้ Gamma ต้องจ่าย Theta · ประโยคเดสก์จาก Part III กลายเป็นสมการจริงตรงนี้</p></div>
 </div>
 
 <!-- ═══════════════ CAPSTONE ═══════════════ -->

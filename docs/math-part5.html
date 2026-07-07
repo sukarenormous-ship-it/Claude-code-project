@@ -119,7 +119,7 @@ Subject to a₁₁x₁ + a₁₂x₂ ≤ b₁       ← constraint 1
 
 <h3 id="s3-3">3.3 วิธีทำด้วย Python — ให้คอมพิวเตอร์แก้</h3>
 
-<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> พอตัวแปรเยอะ ทำมือไม่ไหว เราป้อนโจทย์ให้ library แก้ · 2 ตัวที่นิยม: <strong>scipy</strong> (ติดมากับชุด Python วิทยาศาสตร์) กับ <strong>PuLP</strong> (เขียนอ่านง่ายเหมือนคณิต)</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> พอตัวแปรเยอะ ทำมือไม่ไหว เราป้อนโจทย์ให้ library แก้ · 2 ตัวที่นิยม: <strong>scipy</strong> (ติดมากับชุด Python วิทยาศาสตร์ เช่น Anaconda) กับ <strong>PuLP</strong> (เขียนอ่านง่ายเหมือนคณิต · ลงด้วย <code>pip install pulp</code>)</p>
 
 <div class="code"><div class="hdr">🐍 Python — scipy.optimize.linprog</div><pre>from scipy.optimize import linprog
 
@@ -145,7 +145,7 @@ m += 8*x1 + 5*x2                        <span class="c"># objective</span>
 m += 5*x1 + 2*x2 &lt;= 20, "budget"        <span class="c"># งบ ฿20</span>
 m += x1 + x2 &lt;= 5,      "contracts"     <span class="c"># ไม่เกิน 5 สัญญา</span>
 
-m.solve()
+m.solve(pulp.PULP_CBC_CMD(msg=0))      <span class="c"># msg=0 = ปิด log ของ solver</span>
 print(x1.value(), x2.value())          <span class="o"># 3.333... 1.666...</span>
 print(pulp.value(m.objective))         <span class="o"># 35.0</span>
 print(m.constraints["budget"].pi)      <span class="o"># shadow price งบ = 1.0</span></pre></div>
@@ -164,6 +164,7 @@ print(m.constraints["budget"].pi)      <span class="o"># shadow price งบ = 1
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ทุกปัญหา LP มี "คู่แฝด" (dual) ที่มองจากอีกด้าน · ผลพลอยได้ที่มีค่าที่สุดคือ <strong>shadow price</strong> = "ถ้าผ่อนข้อจำกัดออกอีก 1 หน่วย (เช่นเพิ่มงบ ฿1) objective จะดีขึ้นเท่าไร"</p>
 
+<p style="color:#16a34a;font-size:.93em">🟢 <strong>ข้ามได้</strong> — สมการรูปเมทริกซ์ข้างล่างเป็นทางการ ใจความอยู่ที่ตัวเลข shadow price ที่คิดจริงด้านล่าง (cᵀ, Aᵀ คือ "สลับแนวตั้ง/นอน" ของ matrix)</p>
 <div class="fm">Primal: Max cᵀx  s.t. Ax ≤ b, x ≥ 0
 Dual:   Min bᵀy  s.t. Aᵀy ≥ c, y ≥ 0
 Strong Duality: ที่ optimal ค่าทั้งสองเท่ากันพอดี</div>
@@ -205,7 +206,7 @@ x2 = pulp.LpVariable("x2", lowBound=0, cat="Integer")
 m += 8*x1 + 5*x2
 m += 5*x1 + 2*x2 &lt;= 20
 m += x1 + x2 &lt;= 5
-m.solve()
+m.solve(pulp.PULP_CBC_CMD(msg=0))      <span class="c"># msg=0 = ปิด log ของ solver</span>
 print(int(x1.value()), int(x2.value()), pulp.value(m.objective))
                                         <span class="o"># 3 2 34.0</span></pre></div>
 <p style="font-size:.9em;color:#6b7280">📌 PuLP รัน Branch and Bound ให้อัตโนมัติ · (scipy ใช้ <code>scipy.optimize.milp</code> สำหรับจำนวนเต็ม)</p>
@@ -313,7 +314,7 @@ print(f"หาจุดต่ำสุดได้ x = {x:.4f}")     <span class
 
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
 <p><strong>มือใหม่เห็น:</strong> "หาพอร์ตที่ให้ผลตอบแทนสูงสุด"<br>
-<strong>คนจัดพอร์ตเห็น:</strong> ไม่มี "พอร์ตดีที่สุด" ตัวเดียว — มีเส้น (frontier) ของพอร์ตที่ดีที่สุด<em>ในแต่ละระดับความเสี่ยง</em> · เลือกจุดบนเส้นตามความกล้ารับเสี่ยงของแต่ละคน ไม่ใช่หาจุดเดียว</p></div>
+<strong>คนจัดพอร์ตเห็น:</strong> ไม่มี "พอร์ตดีที่สุด" ตัวเดียว — มีเส้น (frontier) ของพอร์ตที่ดีที่สุด<em>ในแต่ละระดับความเสี่ยง</em> · เลือกจุดบนเส้นตามความกล้ารับเสี่ยงของแต่ละคน ไม่ใช่หาจุดเดียว · <em>(ข้อยกเว้น: ถ้ามีสินทรัพย์ปลอดความเสี่ยง เช่นเงินสด/พันธบัตร เข้ามาด้วย จะมีพอร์ตเสี่ยง "ดีที่สุด" จุดเดียว = พอร์ต Sharpe สูงสุด แล้วปรับเสี่ยงด้วยการผสมเงินสด — อยู่นอกขอบเขตเล่มนี้)</em></p></div>
 </div>
 
 <h3 id="s4-mw">4.2½ วิธีทำด้วยมือ + Python — จัดพอร์ต 2 สินทรัพย์จริง</h3>
@@ -351,6 +352,9 @@ print(f"หาจุดต่ำสุดได้ x = {x:.4f}")     <span class
 
 <div class="bx bp"><div class="bt">💎 โมเมนต์ที่ควรหยุดดู — 1 + 1 เสี่ยงน้อยกว่า 1</div>
 <p>พอร์ตนี้เสี่ยง <strong>9.56%</strong> · แต่หุ้น B ตัวที่ "นิ่งที่สุด" ยังเสี่ยงตั้ง <strong>10%</strong> เดี่ยว ๆ · <strong>การผสมหุ้นเสี่ยงกว่า (A, 20%) เข้าไป กลับทำให้พอร์ตเสี่ยงน้อยลงกว่าถือ B ล้วน ๆ</strong> เพราะ A กับ B ไม่ได้ขึ้นลงพร้อมกัน (ρ=0.2) — เวลาตัวหนึ่งตก อีกตัวช่วยพยุง · นี่คือ "free lunch" เดียวในไฟแนนซ์ที่ Markowitz พิสูจน์ด้วยเลข ไม่ใช่คำคม</p></div>
+
+<div class="bx br"><div class="bt">⚠️ ของจริงไม่ฟรีขนาดนั้น — ระวัง estimation error</div>
+<p>ตัวเลข μ, σ, ρ ทั้งหมดเป็น <strong>ค่าประมาณจากอดีต</strong> ไม่ใช่ความจริงของอนาคต · optimizer มักได้น้ำหนักที่ "ขยายความผิดพลาด" ของ input · ที่แย่สุด: ตอนตลาด crash correlation มักพุ่งเข้าหา 1 (ทุกอย่างร่วงพร้อมกัน) — diversification จางหายตอนที่ต้องการมันที่สุด · ในทางปฏิบัติ risk ที่ลดได้จริงมัก<strong>น้อยกว่า</strong>ที่สูตรสัญญา</p></div>
 </div>
 
 <p>ทำด้วยมือได้แค่ 2 สินทรัพย์ · พอมี 3 ตัวขึ้นไป หรืออยากได้<strong>ทั้งเส้น</strong> Efficient Frontier ต้องให้คอมช่วย — ใช้ <code>scipy.optimize.minimize</code> แก้ QP ตรง ๆ:</p>
@@ -393,7 +397,7 @@ for r_star in [0.0657, 0.07, 0.08, 0.09, 0.10]:
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ปัญหา <strong>convex</strong> (รูปชามใบเดียว) มีก้นหลุมจุดเดียว — gradient descent เดินลงยังไงก็เจอ · ปัญหา non-convex มีหลายหลุม อาจติดหลุมผิด</p>
 
 <div class="ad">
-<div class="pro"><div class="bt">✅ Markowitz = convex (QP)</div><ul><li>wᵀΣw เป็น quadratic + Σ เป็น PSD → convex</li><li>มีคำตอบเดียวที่ดีที่สุด แก้ได้เสี้ยววินาที (cvxpy/scipy)</li></ul></div>
+<div class="pro"><div class="bt">✅ Markowitz = convex (QP)</div><ul><li>wᵀΣw เป็น quadratic + Σ เป็น PSD (positive semi-definite — "ชามที่ไม่มีทิศไหนติดลบ" ดู เล่ม 2·A §1.5) → convex</li><li>มีคำตอบเดียวที่ดีที่สุด แก้ได้เสี้ยววินาที (cvxpy/scipy)</li></ul></div>
 <div class="con"><div class="bt">⚠️ Calibration บางโมเดล = non-convex</div><ul><li>เช่น Stochastic Vol → หลาย local minimum</li><li>ต้องใช้เทคนิคพิเศษ (multi-start, global solver)</li></ul></div>
 </div>
 
