@@ -28,8 +28,10 @@ import pandas as pd
 def simulate_cointegrated_pair(
     n=750,
     beta_true=1.3,
-    beta_drift="const",       # "const" | "sine" | "randomwalk"
+    beta_drift="const",       # "const" | "sine" | "randomwalk" | "meanrevert"
     beta_drift_scale=0.15,    # amplitude / step-scale of the drift
+    beta_mr_theta=0.02,       # (meanrevert only) speed beta is pulled back to beta_true
+    beta_mr_sigma=0.03,       # (meanrevert only) daily shock size to beta
     ou_theta=0.05,            # OU mean-reversion speed of the true spread
     ou_sigma=0.8,             # OU volatility of the true spread
     price_b_vol=0.9,          # daily vol of the random-walk driver (asset B), in price units
@@ -67,6 +69,12 @@ def simulate_cointegrated_pair(
     elif beta_drift == "randomwalk":
         steps = rng.normal(0, beta_drift_scale / np.sqrt(n), n)
         beta_t = beta_true + np.cumsum(steps)
+    elif beta_drift == "meanrevert":
+        # AR(1)/OU-style: beta has a "home" (beta_true) it is pulled back to
+        beta_t = np.empty(n)
+        beta_t[0] = beta_true
+        for t in range(1, n):
+            beta_t[t] = beta_t[t - 1] + beta_mr_theta * (beta_true - beta_t[t - 1]) + beta_mr_sigma * rng.normal()
     else:
         raise ValueError("unknown beta_drift")
 

@@ -436,11 +436,12 @@ Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey &
 1. สูตร Hurst exponent เดิมคูณ slope ด้วย 2 ผิดที่ (fit บน `std` ไม่ใช่ `variance` — ไม่ต้องคูณ 2) ทำให้ random walk ได้ H≈0.95–1.0 แทนที่จะเป็น ~0.5
 2. ใช้ `adfuller()` ตรง ๆ บน OLS residual (วิธีที่ tutorial ทั่วไปสอน) แทนที่จะใช้ `statsmodels.tsa.stattools.coint()` — ทำให้ false-positive rate ในซิมูเลชัน multiple-testing (n=300, α=0.05) พุ่งจาก ~12 (ถูกต้อง ใกล้ค่าคาดหวัง 15) เป็น ~44 (เกือบ 3 เท่า) เพราะ residual ที่ fit แล้วดูนิ่งเกินจริงเสมอ (ต้องใช้ critical value ของ Engle-Granger/MacKinnon ไม่ใช่ ADF ทั่วไป) — ทั้งสองเรื่องนี้ถูกเก็บไว้เป็นบทเรียนในตัวโน้ตบุ๊กเอง ไม่ใช่แค่แก้เงียบ ๆ
 
-**ยังไม่ทำ (รอ Phase 2–3):**
-- `04_kalman_tuning.ipynb` — grid Q/R + MLE/EM + adaptive/robust variant (Part IV–V)
-- `05_bands_and_costs.ipynb` — z/s-score vs ATR vs optimal band + net PnL หลัง cost (Part VI)
-- `06_regime_killswitch.ipynb` — half-life/Hurst/coint-retest/ADX + kill switch + estimator-disagreement gate (Part VII)
-- `07_full_backtest.ipynb` — ประกอบร่าง + purged CV + deflated Sharpe (Part IX)
+**✅ เสร็จครบแล้ว (notebook 04–07, execute จริงทุกไฟล์):**
+- ✅ `04_kalman_tuning.ipynb` — Q/R plateau-vs-peak, innovation whiteness (Ljung-Box+std), MLE/EM, AR(1) vs random-walk β (Part IV–V)
+- ✅ `05_bands_and_costs.ipynb` — full cost model (√-law impact), z vs cost-aware vs numerical-optimal band + net PnL (Part VI/VIII)
+- ✅ `06_regime_killswitch.ipynb` — structural break จำลอง, ชั้นเร็ว (disagreement) vs ชั้นช้า (coint re-test), stop-loss paradox (Part VII)
+- ✅ `07_full_backtest.ipynb` — selection inflation (Monte Carlo), PBO (CSCV-lite), purged CV leakage demo (KNN+overlapping labels) (Part IX)
+- บั๊ก/ผลไม่ตรงตำราที่เจอเพิ่ม (nb04-07): ดูรายละเอียดใน `vol2-code/README.md` — ทุกจุดเก็บเป็นบทเรียนในโน้ตบุ๊ก
 
 > ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้ — Part I–III ยังไม่ได้ฝัง 🧪 box อ้างตัวเลขเฉพาะจาก 01–03 ลง HTML (เนื้อหาปัจจุบันอ้างอิง literature stats เป็นหลัก) เป็นงานเสริมที่ทำได้ใน Phase 4 ถ้าต้องการ
 
@@ -452,12 +453,12 @@ Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey &
 - **Phase 1** — ✅ **เสร็จสมบูรณ์**: narrative + notebook ครบทั้งคู่
   - ✅ Part 0 (edge framing) · ✅ Part I (บันได β) · ✅ Part II (coint/copula) · ✅ Part III (residual/factor)
   - ✅ notebook 01–03 เขียน + execute จริงแล้ว (ดู §7 — pivot ไปใช้ simulated data เพราะ network policy บล็อก data provider)
-- **Phase 2** — 🟡 narrative ✅ เสร็จ (`practice-part4..7.html`) · เหลือ notebook 04–06
+- **Phase 2** — ✅ **เสร็จสมบูรณ์**: narrative (`practice-part4..7.html`) + notebook 04-06
   - ✅ Part IV (Kalman ลงมือ) · ✅ Part V (Adaptive & Robust Kalman) · ✅ Part VI (Signals & Bands) · ✅ Part VII (Regime & kill-switch)
-- **Phase 3** — 🟡 narrative ✅ เสร็จ (`practice-part8..9.html`) · เหลือ notebook 07
+- **Phase 3** — ✅ **เสร็จสมบูรณ์**: narrative (`practice-part8..9.html`) + notebook 07
   - ✅ Part VIII (Cost/Execution/Capacity/Borrow) · ✅ Part IX (Backtest ไม่โกหก + Risk + Case + Cheat Sheet)
-  - **→ narrative ทั้งเล่มเสร็จสมบูรณ์ 10/10 Part (0–IX)** — ตรวจ HTML-parser ผ่านทุกไฟล์
-- **Phase 4** — index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม) + notebook 04–07 ที่ยังค้าง (01-03 เสร็จแล้ว)
+  - **→ narrative ทั้งเล่มเสร็จสมบูรณ์ 10/10 Part (0–IX) + notebook 01–07 execute จริงครบ** — ตรวจ HTML-parser ผ่านทุกไฟล์
+- **Phase 4** — ⏳ ถัดไป: index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม) + (ถ้าต้องการ) ฝัง 🧪 box ที่อ้างตัวเลขจาก notebook ลง HTML
 
 แต่ละ Phase: commit แยก + ผ่านรีวิวทีมผู้เชี่ยวชาญ (เหมือนเล่ม 1) ก่อนไป Phase ถัดไป
 

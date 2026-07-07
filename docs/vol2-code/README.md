@@ -23,7 +23,11 @@ ground truth แบบนี้
 | `01_beta_ladder.ipynb` | Part I | OLS(price) vs OLS(return) vs TLS vs Rolling vs Kalman — วัด bias/RMSE จริง |
 | `02_cointegration_copula.ipynb` | Part II | Engle-Granger ที่ถูก vs ผิด, half-life, Hurst, multiple-testing simulation, Gaussian-copula MI |
 | `03_factor_residual.ipynb` | Part III | PCA หัก factor, s-score cross-sectional, เช็ค residual สะอาด |
-| `build_nb0{1,2,3}.py` | — | สคริปต์ที่ "เขียน" ตัวโน้ตบุ๊ก (source of truth — แก้ตรงนี้ ไม่แก้ .ipynb JSON ตรง ๆ) |
+| `04_kalman_tuning.ipynb` | Part IV–V | Q/R plateau-vs-peak, innovation whiteness, MLE/EM, AR(1) vs random-walk β |
+| `05_bands_and_costs.ipynb` | Part VI, VIII | full cost model (√-law impact), z vs cost-aware vs numerical-optimal band |
+| `06_regime_killswitch.ipynb` | Part VII | structural break จำลอง, ชั้นเร็ว (disagreement) vs ชั้นช้า (coint re-test), stop-loss paradox |
+| `07_full_backtest.ipynb` | Part IX | selection inflation (Monte Carlo), PBO (CSCV-lite), purged CV leakage demo |
+| `build_nb0{1..7}.py` | — | สคริปต์ที่ "เขียน" ตัวโน้ตบุ๊ก (source of truth — แก้ตรงนี้ ไม่แก้ .ipynb JSON ตรง ๆ) |
 
 ## รัน / แก้ไขซ้ำ
 
@@ -50,7 +54,14 @@ nbformat.write(nb, '01_beta_ladder.ipynb')
   ล้วน ๆ ไม่ใช่ backtest กลยุทธ์พร้อมเทรดจริง (ส่วนนั้นอยู่ Part VI–IX)
 - ตัวเลขที่ printed ในแต่ละ cell **ผูกกับ seed ที่ระบุไว้** — เปลี่ยน seed แล้วตัวเลขจะขยับ
   (แต่ข้อสรุปเชิงคุณภาพควรเสถียร — ถ้าไม่เสถียรคือสัญญาณว่ามีอะไรผิดปกติ ให้สงสัยไว้ก่อน)
-- ระหว่างสร้างชุดนี้ เจอบั๊กจริง 2 จุดที่แก้แล้วและได้กลายเป็นบทเรียนในตัวโน้ตบุ๊กเอง:
-  (1) สูตร Hurst exponent ที่คูณ 2 ผิดที่ (2) ใช้ `adfuller()` ตรง ๆ บน residual แทนที่จะใช้
-  `coint()` ทำให้ false-positive rate เพี้ยนไปเกือบ 3 เท่า — ทั้งสองเรื่องนี้คือกับดักที่คนเขียนโค้ด
-  Engle-Granger/Hurst มือใหม่เจอได้จริง ไม่ใช่แค่ในทฤษฎี
+- ระหว่างสร้างชุดนี้ เจอ **บั๊กจริง + ผลที่ไม่ตรงกับ "ตำรา"** หลายจุด ทุกจุดแก้แล้วและเก็บไว้เป็นบทเรียน
+  ในตัวโน้ตบุ๊กเอง (ไม่ใช่แก้เงียบ ๆ) — เพราะการเห็นว่า "ทำไมผลไม่เป็นตามคาด" มีค่ากว่าตัวเลขที่สวยตามคาด:
+  - **nb02**: (a) สูตร Hurst คูณ 2 ผิดที่ (random walk ได้ H≈0.95 แทน ~0.5) · (b) ใช้ `adfuller()` บน
+    residual แทน `coint()` → false-positive พุ่งจาก ~12 เป็น ~44 (เกือบ 3 เท่า)
+  - **nb04**: (a) innovation Ljung-Box reject ทั้ง Q ดี/แย่ (เพราะ sine ground truth ไม่ใช่ random walk)
+    แต่ std(innovation) ยังแยกดี/แย่ได้ 17 เท่า · (b) AR(1) β แทบไม่ชนะ random-walk เลยแม้ ground truth
+    มี "บ้าน" จริง — random-walk ที่จูน Q ดีก็เลียนแบบ mean-reversion ได้ในตัว
+  - **nb06**: ชั้นเร็ว (disagreement) ยกธง 24 วัน *ก่อน* break จริง = false alarm จาก noise ไม่ใช่การจับล่วงหน้า
+  - **nb07**: OLS purged-CV ไม่โชว์ leakage เลย (naive≈purged) เพราะ AR(1) มี coefficient เดียวทั่วอนุกรม —
+    ต้องเปลี่ยนเป็น KNN + overlapping labels ถึงเห็น leakage ชัด (random R²=+0.22 vs purged R²=−0.13)
+  - **nb04–07 build scripts**: escaping/quote bugs ในตัว generator script ที่จับได้ก่อน execute
