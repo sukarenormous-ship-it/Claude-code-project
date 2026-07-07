@@ -458,7 +458,12 @@ Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey &
 - **Phase 3** — ✅ **เสร็จสมบูรณ์**: narrative (`practice-part8..9.html`) + notebook 07
   - ✅ Part VIII (Cost/Execution/Capacity/Borrow) · ✅ Part IX (Backtest ไม่โกหก + Risk + Case + Cheat Sheet)
   - **→ narrative ทั้งเล่มเสร็จสมบูรณ์ 10/10 Part (0–IX) + notebook 01–07 execute จริงครบ** — ตรวจ HTML-parser ผ่านทุกไฟล์
-- **Phase 4** — ⏳ ถัดไป: index/cross-ref เชื่อมเล่ม 1 + generate PDF (ใช้ `generate-pdf.js` เดิม) + (ถ้าต้องการ) ฝัง 🧪 box ที่อ้างตัวเลขจาก notebook ลง HTML
+- **Phase 4** — ✅ **เสร็จสมบูรณ์**: index/cross-ref เชื่อมเล่ม 1 + generate PDF
+  - ✅ `docs/practice-index.html` — สารบัญ/หน้าปกเล่ม 2 เต็มรูป (10 การ์ด Part 0-IX + รายการ notebook + data disclaimer + กล่องเชื่อมเล่ม 1↔2)
+  - ✅ cross-ref จากเล่ม 1: `arb-part5.html` (หลัง §19.2 Kalman) → `practice-part0.html`, `arb-part7.html` (หลัง §25.3) → `practice-part8.html`
+  - ✅ PDF ครบ 11 ไฟล์ (`practice-part0..9.pdf` + `practice-index.pdf`) ด้วย `generate-pdf.js` เดิม
+  - ⏳ เสริมได้ถ้าต้องการ (ไม่บังคับ): ฝัง 🧪 box ที่อ้างตัวเลขจาก notebook 01-03 ลง Part I-III โดยตรง (ตอนนี้ Part I-III อ้างอิง literature stats เป็นหลัก ยังไม่ดึงตัวเลขจาก notebook มาโชว์ในเนื้อหา)
+  - **→ เล่ม 2 เสร็จสมบูรณ์ทั้งเล่ม: narrative 10/10 + notebook 7/7 execute จริง + index + PDF ครบ**
 
 แต่ละ Phase: commit แยก + ผ่านรีวิวทีมผู้เชี่ยวชาญ (เหมือนเล่ม 1) ก่อนไป Phase ถัดไป
 
