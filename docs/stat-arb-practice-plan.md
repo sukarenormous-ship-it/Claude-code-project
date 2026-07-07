@@ -443,7 +443,7 @@ Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey &
 - ✅ `07_full_backtest.ipynb` — selection inflation (Monte Carlo), PBO (CSCV-lite), purged CV leakage demo (KNN+overlapping labels) (Part IX)
 - บั๊ก/ผลไม่ตรงตำราที่เจอเพิ่ม (nb04-07): ดูรายละเอียดใน `vol2-code/README.md` — ทุกจุดเก็บเป็นบทเรียนในโน้ตบุ๊ก
 
-> ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้ — Part I–III ยังไม่ได้ฝัง 🧪 box อ้างตัวเลขเฉพาะจาก 01–03 ลง HTML (เนื้อหาปัจจุบันอ้างอิง literature stats เป็นหลัก) เป็นงานเสริมที่ทำได้ใน Phase 4 ถ้าต้องการ
+> ตัวเลขในกล่อง 🧪 ทุกตัวต้อง reproduce ได้จาก notebook เหล่านี้ — ฝังครบแล้วทุก Part I–IX
 
 ---
 
@@ -462,8 +462,8 @@ Lit: López de Prado (2018) *Advances in Financial Machine Learning* · Bailey &
   - ✅ `docs/practice-index.html` — สารบัญ/หน้าปกเล่ม 2 เต็มรูป (10 การ์ด Part 0-IX + รายการ notebook + data disclaimer + กล่องเชื่อมเล่ม 1↔2)
   - ✅ cross-ref จากเล่ม 1: `arb-part5.html` (หลัง §19.2 Kalman) → `practice-part0.html`, `arb-part7.html` (หลัง §25.3) → `practice-part8.html`
   - ✅ PDF ครบ 11 ไฟล์ (`practice-part0..9.pdf` + `practice-index.pdf`) ด้วย `generate-pdf.js` เดิม
-  - ⏳ เสริมได้ถ้าต้องการ (ไม่บังคับ): ฝัง 🧪 box ที่อ้างตัวเลขจาก notebook 01-03 ลง Part I-III โดยตรง (ตอนนี้ Part I-III อ้างอิง literature stats เป็นหลัก ยังไม่ดึงตัวเลขจาก notebook มาโชว์ในเนื้อหา)
-  - **→ เล่ม 2 เสร็จสมบูรณ์ทั้งเล่ม: narrative 10/10 + notebook 7/7 execute จริง + index + PDF ครบ**
+  - ✅ ฝัง 🧪 box ที่อ้างตัวเลขจริงจาก notebook 01-03 ลง Part I-III แล้ว (bias ratio 6.7x, false-positive 12 vs 44, residual orthogonality ~1e-17 ฯลฯ) — ตัวเลขทั้งหมดดึงจาก output จริงที่ execute แล้ว ไม่ใช่ค่าประมาณ
+  - **→ เล่ม 2 เสร็จสมบูรณ์ทั้งเล่ม: narrative 10/10 + notebook 7/7 execute จริง + index + PDF ครบ + 🧪 box อ้างตัวเลขจริงครบทุก Part**
 
 แต่ละ Phase: commit แยก + ผ่านรีวิวทีมผู้เชี่ยวชาญ (เหมือนเล่ม 1) ก่อนไป Phase ถัดไป
 
