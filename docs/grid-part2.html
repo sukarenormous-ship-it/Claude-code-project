@@ -209,11 +209,11 @@ def allocate_grid_capital(total_capital, n_levels, style="bell"):
     if style == "equal":
         weights = [1.0 / n_levels] * n_levels
 
-    elif style == "top_heavy":      # บวมบน: น้ำหนักมากที่บน
-        weights = [1.0 / (n_levels - i) for i in range(n_levels)]
-
-    elif style == "bottom_heavy":   # บวมล่าง: น้ำหนักมากที่ล่าง
+    elif style == "top_heavy":      # บวมบน: น้ำหนักมากที่บน (i=0 = level ใกล้ราคาปัจจุบันที่สุด)
         weights = [1.0 / (i + 1) for i in range(n_levels)]
+
+    elif style == "bottom_heavy":   # บวมล่าง: น้ำหนักมากที่ล่าง (i มากขึ้น = ลึกลงไปถึง zone_low)
+        weights = [1.0 / (n_levels - i) for i in range(n_levels)]
 
     elif style == "bell":           # บวมกลาง: Gaussian weights
         center = n_levels // 2
@@ -327,7 +327,7 @@ def compute_step(base_step, hurst, tank_fullness,
 <p><strong>คำตอบ:</strong></p>
 <p>Top-Heavy เกิดเมื่อ grid เปิดที่ราคาสูง แล้วตลาดหัน <strong>downtrend</strong></p>
 <p>ตัวอย่าง: เปิด grid ที่ $110k (ATH) → BTC ลงมา $90k โดยไม่กลับ → inventory ที่ $108k, $106k, $104k, $102k, $100k ยังค้างอยู่</p>
-<p>Signal: H เพิ่มจาก 0.45 → 0.60 (trending down) + ADX &gt; 40 (BTC threshold)</p>
+<p>Signal: H เพิ่มจาก 0.45 → 0.60 (trending — Hurst บอกแค่ว่า "กำลัง trend" ไม่บอกทิศทาง) + ADX &gt; 40 (BTC threshold) ยืนยัน strength ของ trend + ราคาที่ลงจริงเป็นตัวบอกว่าเป็น downtrend</p>
 <p>Prevention: เปิด grid เมื่อ H &lt; 0.50 เท่านั้น ไม่เปิดตอนราคา ATH</p>
 </div>
 </details>
@@ -360,7 +360,7 @@ def compute_step(base_step, hurst, tank_fullness,
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
 <p><strong>รอ (Close System):</strong> ถ้ายังเชื่อว่าราคาจะกลับ → รอ inventory ขายออกเองเมื่อราคาฟื้น | ไม่มี loss realized</p>
-<p><strong>Reset Grid:</strong> ถ้า Hurst เพิ่ม (trending down), ATR เพิ่ม, fundamentals เปลี่ยน → ขาย inventory บางส่วน (ยอม realize loss) แล้วเปิด grid ใหม่ที่ lower zone</p>
+<p><strong>Reset Grid:</strong> ถ้า Hurst เพิ่ม (trending — ต้องดูราคาจริง/ADX ประกอบเพื่อยืนยันว่าเป็น downtrend), ATR เพิ่ม, fundamentals เปลี่ยน → ขาย inventory บางส่วน (ยอม realize loss) แล้วเปิด grid ใหม่ที่ lower zone</p>
 <p><strong>Rule of Thumb:</strong> ใช้เกณฑ์เดียวกับ §2.2 — ถังเต็ม (cumulative cost / C_floor) ต่ำกว่า 70% ยังรอได้ (Close System ยังมีที่เหลือ) | เกิน 70% และ regime ชัดว่า trending (H สูงขึ้น, ATR เพิ่ม) → พิจารณา Reset Grid</p>
 </div>
 </details>

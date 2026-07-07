@@ -162,7 +162,9 @@ def test_cointegration(btc_prices, eth_prices, significance=0.05):
 # ตัวอย่าง BTC/ETH (180 วัน):
 # OLS: log(BTC) = 2.14 + 0.82 × log(ETH)  → beta = 0.82
 # ADF stat = −3.47 (critical at 5% = −2.89) → p < 0.05 → cointegrated ✓
-# Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days</div>
+# Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days
+# (สูตรเต็มคือ −ln(2)/ln(φ) โดย φ=AR(1) coefficient — ln(2)/|AR coeff|
+#  ด้านบนคือ approximation เมื่อ κ=1−φ มีค่าน้อย ซึ่ง ln(φ)≈−κ)</div>
 
 <div class="bx bc">
 <div class="bt">Johansen Test — ดีกว่า Engle-Granger สำหรับ Pair Grid</div>
@@ -385,9 +387,12 @@ def relative_value_score(hurst, spread_zscore, momentum_reversal):
     return 0.40 * h_score + 0.30 * z_score_score + 0.30 * mom_score
 
 # ตัวอย่าง:
-# A (BTC Spot): Hurst=0.48, z=0.5, RSI=45 → score=62
-# B (BTC/ETH): Hurst=0.43, z=2.1, RSI=32 → score=79 ← WINNER
-# C (ETH Spot): Hurst=0.53, z=0.8, RSI=50 → score=45
+# A (BTC Spot): Hurst=0.48→h_score=65, z=0.5→z_score=16.67, RSI=45→mom=55
+#   score = 0.40×65 + 0.30×16.67 + 0.30×55 = 26.0+5.0+16.5 = 47.5
+# B (BTC/ETH): Hurst=0.43→h_score=85, z=2.1→z_score=70.0, RSI=32→mom=68
+#   score = 0.40×85 + 0.30×70.0 + 0.30×68 = 34.0+21.0+20.4 = 75.4 ← WINNER
+# C (ETH Spot): Hurst=0.53→h_score=40, z=0.8→z_score=26.67, RSI=50→mom=50
+#   score = 0.40×40 + 0.30×26.67 + 0.30×50 = 16.0+8.0+15.0 = 39.0
 
 # → Allocate 70% capital ไปที่ Pair Grid (B) + 30% ไปที่ BTC Spot (A)</div>
 

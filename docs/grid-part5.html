@@ -107,12 +107,12 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 (function(){
   MiniChart.line(document.getElementById('chartKelly'), {
     title: 'Kelly Curve — Expected Growth Rate vs Fraction of Capital Risked',
-    labels: ['0%','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'],
+    labels: ['0%','10%','15%','20%','30%','40%','50%','60%','70%','80%','90%','100%'],
     datasets: [
       { label: 'Expected Growth Rate', color: '#06b6d4', fill: true,
-        data: [0, 3.0, 5.5, 7.5, 9.0, 9.8, 10.1, 9.5, 7.2, 3.5, -2.5] },
+        data: [0, 3.0, 4.25, 5.5, 7.5, 9.0, 9.8, 10.1, 9.5, 7.2, 3.5, -2.5] },
       { label: 'Fractional Kelly (25%×f* = 15%)', color: '#16a34a', fill: false,
-        data: [null, null, 9.5, null, null, null, null, null, null, null, null] }
+        data: [null, null, 4.25, null, null, null, null, null, null, null, null, null] }
     ],
     yMin: -5, yMax: 12,
     yLabel: 'Expected Growth (%/period)',
@@ -200,9 +200,10 @@ Avg price        = ($90k + $110k) / 2 = $100k
 Q per level = grid_capital / (N × avg_price)
             = $19,000 / (10 × $100,000)
             = $19,000 / $1,000,000
-            ≈ 0.019 BTC ≈ 0.02 BTC (round ขึ้น ไม่ใช่ลง — 0.019 ปัดขึ้นเป็น 0.02)
+            = 0.019 BTC (ใช้ precision 3 ตำแหน่งเหมือน Exercise 2 ด้านล่าง — ไม่ต้องปัดขึ้นเป็น 0.02
+              เพราะ 0.019 ก็อยู่ในงบ $19,000 พอดีอยู่แล้ว การปัดขึ้นเป็น 0.02 จะทำให้เกินงบ)
 
-ตรวจสอบ: 10 levels × 0.02 BTC × avg_price $100k = $20,000 ≈ $19,000 ✓
+ตรวจสอบ: 10 levels × 0.019 BTC × avg_price $100k = $19,000 ✓ ตรงงบพอดี
 (ใช้ avg_price เดียวกับที่คำนวณไว้ข้างบน — ไม่ใช่ผลรวม price แยกที่ได้ avg ต่างไป)</div>
 
 <h2 id="s5-4">5.4 Max Notional ต่อ Level — Position Limit</h2>
@@ -359,9 +360,9 @@ Summary:
 <summary>ข้อ 4 (Challenge): Hurst = 0.62 · กำลังจะเปิด grid ด้วย Q = 0.03 BTC — ควรปรับ Q อย่างไร?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>H = 0.62 > 0.58 → Part 4 state machine สั่ง GRID OFF ไปแล้ว (ดู <a href="grid-part4.html">Part 4</a> §4.4) — ที่ระดับนี้ไม่ใช่แค่ลด Q แต่ไม่ควรเปิด position ใหม่เลย</p>
-<p>Q adjusted = <strong>0 BTC</strong> (ไม่เปิดใหม่ — ปิด grid ตาม state machine)</p>
-<p>เหตุผล: H > 0.58 = trending regime ที่ state machine ยืนยันแล้วว่า off = grid fill น้อย + inventory accumulate ไม่หยุด → หยุดเปิดใหม่ ไม่ใช่แค่ลดขนาด</p>
+<p>H = 0.62 > 0.58 → สัญญาณ Hurst เดี่ยวใน Part 4's 2-of-3 vote (ดู <a href="grid-part4.html">Part 4</a> §4.4) จะเป็น "OFF" ทันที แต่ state รวมของทั้งระบบเป็น GRID_OFF จริงหรือไม่ยังขึ้นกับ ADX/BB ด้วย (H เดี่ยวไม่ครบ 2-of-3 อาจได้แค่ CAUTION ถ้าอีก 2 สัญญาณยังไม่ยืนยัน) — <strong>แต่ไม่ต้องรอผลโหวตนั้น</strong> เพราะ position-limit rule ของ §5.4 เองก็ล็อก H&gt;0.58 ไว้ที่ multiplier 0.4× อยู่แล้วโดยตรง ไม่ขึ้นกับ state machine เลย และในทางปฏิบัติควรระมัดระวังเป็นพิเศษ (ไม่เปิดใหม่) เมื่อ Hurst สูงขนาดนี้แม้ state รวมจะยังไม่ใช่ GRID_OFF เต็มที่</p>
+<p>Q adjusted = <strong>0 BTC</strong> (ระมัดระวังไว้ก่อน — ไม่เปิดใหม่จนกว่าจะเช็ค ADX/BB ยืนยันทิศทางและ state รวม)</p>
+<p>เหตุผล: H > 0.58 = สัญญาณ trending ที่ควรระมัดระวังสูงสุดไม่ว่า vote รวมจะออกมาเป็น CAUTION หรือ GRID_OFF เพราะ grid fill น้อย + inventory accumulate ไม่หยุดได้ทั้งสองกรณี → หยุดเปิดใหม่ไว้ก่อนปลอดภัยกว่า</p>
 <p><strong>กฎแยกแยะสองชั้นป้องกัน (defense in depth):</strong></p>
 <ul>
 <li><strong>H ∈ [0.55, 0.58]</strong> → position-limit rule ลด Q ด้วย multiplier 0.7 ล่วงหน้า (multiplier 0.4 สงวนไว้สำหรับ H &gt; 0.58 ตาม §5.4) เพื่อ limit exposure ก่อนถึง threshold OFF — ยังได้ cashflow บ้างระหว่างรอ</li>

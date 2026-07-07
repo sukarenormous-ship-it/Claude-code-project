@@ -129,7 +129,7 @@ def iv_adaptive_step(iv_annual_pct, current_price, fee_rate=0.001,
       { label: 'Step Size (% of price)', color: '#06b6d4',
         data: [1.5, 2.5, 4.5] },
       { label: 'Zone Width (% of price)', color: '#7c3aed',
-        data: [6, 10, 18] },
+        data: [6, 10, 20] },
       { label: 'Expected Fill/day (ครั้ง)', color: '#16a34a',
         data: [8, 5, 2] }
     ],
@@ -200,23 +200,22 @@ Net effect:
   ซื้อ BTC ที่ effective price = $90,000 − $500 = $89,500 (ถูกกว่า limit order)
   หรือเก็บ premium $500 ถ้าไม่ถูก assign
 
-def csp_vs_limit_order(target_price, option_premium, expiry_price):
+def csp_vs_limit_order(target_price, option_premium):
     """
-    เปรียบ CSP กับ limit order (expiry_price = ราคา ณ วันหมดอายุ ไม่ใช่ปัจจุบัน)
+    เปรียบ CSP กับ limit order — คืนทั้ง 2 scenario ที่เป็นไปได้ ณ expiry
+    (ไม่ต้องรู้ expiry_price ล่วงหน้าเพื่อเปรียบเทียบ เพราะอยากเห็นทั้งคู่พร้อมกัน)
     """
     # Limit Order: รอ fill ที่ target_price
     limit_effective_cost = target_price
 
-    # CSP: ได้ premium แน่ๆ
-    if expiry_price < target_price:  # ถูก assign (ราคา ณ expiry < strike)
-        csp_effective_cost = target_price - option_premium
-    else:  # ไม่ถูก assign (ราคา ณ expiry >= strike)
-        csp_income = option_premium  # รับฟรี
+    # CSP: 2 scenario ที่เป็นไปได้เมื่อถึง expiry
+    csp_cost_if_assigned = target_price - option_premium       # BTC < strike → assign
+    csp_income_if_not_assigned = option_premium                # BTC >= strike → หมดอายุ เก็บ premium
 
     return {
         "limit_cost": limit_effective_cost,
-        "csp_cost_if_assigned": target_price - option_premium,
-        "csp_income_if_not_assigned": option_premium
+        "csp_cost_if_assigned": csp_cost_if_assigned,
+        "csp_income_if_not_assigned": csp_income_if_not_assigned
     }
 
 สำหรับ Grid: แทน BUY order แต่ละ level ด้วย CSP
@@ -270,12 +269,14 @@ spot มากขึ้น premium ฝั่ง short ต้องต่ำก�
     SELL CALL $113k + BUY CALL $120k → net premium: +$400 − $120 = +$280
     Total net premium = +$730 (ลดลงจาก $1,400 ทั้งจาก long wings และจาก short strike ที่ไกลขึ้น แต่ risk ถูก cap)
 
-    Max loss (PUT spread):  ($88k − $82k) − $450 = $5,550 per lot
-    Max loss (CALL spread): ($120k − $113k) − $280 = $6,720 per lot
+    Max loss ถ้าทดสอบฝั่ง PUT เท่านั้น:  ($88k − $82k) − $730 (net premium รวมทั้งคู่) = $5,270
+    Max loss ถ้าทดสอบฝั่ง CALL เท่านั้น: ($120k − $113k) − $730 (net premium รวมทั้งคู่) = $6,270
+    (มีแค่ฝั่งเดียวที่ถูกทดสอบตอน expiry เสมอ — อีกฝั่งหมดอายุไร้ค่า เก็บ premium เต็ม
+     ดังนั้น max loss รวม = max(PUT width $6k, CALL width $7k) − net premium รวม $730)
 
   เปรียบเทียบ:
     Short Strangle: premium $1,400 · CALL loss ไม่จำกัด
-    Iron Condor:    premium $730 · max loss ~$6,720 (defined risk)
+    Iron Condor:    premium $730 · max loss ~$6,270 (defined risk — ไม่ใช่ผลรวม max loss ของแต่ละฝั่งแยกกัน)
 
 def grid_strangle_income(zone_low, zone_high, put_premium, call_premium,
                           grid_daily_cashflow, days_to_expiry):

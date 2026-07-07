@@ -127,7 +127,7 @@ def rsi_score_for_grid(rsi_value):
 
 <div class="bx bc">
 <div class="bt">RSI สำหรับ Entry Timing</div>
-<p>นอกจาก filter แล้ว RSI ยังใช้กำหนด "เปิด grid ที่ชั้นไหนก่อน":</p>
+<p>นอกจาก filter แล้ว RSI ยังใช้กำหนด "เปิด grid ที่ชั้นไหนก่อน" — ใช้ threshold 35/65 ที่นี่ (ต่างจาก 30/70 ใน <code>rsi_score_for_grid()</code> ด้านบน เพราะเป็นคนละงาน: 30/70 คือจุดที่ถือว่า "extreme" สำหรับให้คะแนน filter ส่วน 35/65 คือจุดตัดสินใจสำหรับ level-weighting ซึ่งควรไวกว่า/กว้างกว่าเพื่อเริ่มเอียง allocation ก่อนที่ RSI จะถึงขั้น extreme):</p>
 <ul>
 <li>RSI &lt; 35 (oversold): เปิด lower zone ก่อน (ราคาน่าจะฟื้น) → deploy 70% ของ capital ที่ lower levels</li>
 <li>RSI 35–65 (neutral): deploy equal weight ตามปกติ</li>
@@ -243,7 +243,7 @@ $$\%B = \frac{P - \text{BB}_\text{lower}}{\text{BB}_\text{upper} - \text{BB}_\te
 <script>
 (function(){
   MiniChart.bar(document.getElementById('chartComposite'), {
-    title: 'Composite Score Breakdown — RSI=25 / BB=%B=0.04 (squeeze) / Vol=0.85× / H=0.43 (oversold scenario)',
+    title: 'Composite Score Breakdown (Oversold Scenario)',
     groups: ['RSI Score\n(น้ำหนัก 30%)', 'BB Score\n(น้ำหนัก 30%)', 'Vol Score\n(น้ำหนัก 20%)', 'Hurst Score\n(น้ำหนัก 20%)'],
     datasets: [
       { label: 'Raw Score (0–100)', color: '#06b6d4',
@@ -325,16 +325,12 @@ def resolve_composite_action(score):
 
 def order_accumulation_plan(total_capital, composite_score, current_deployed):
     """
-    คำนวณว่าควร deploy เพิ่มเท่าไหร่
+    คำนวณว่าควร deploy เพิ่มเท่าไหร่ — เรียก resolve_composite_action()
+    เพื่อไม่ให้ boundary (75/55/35) เพี้ยนจาก single source of truth
     """
-    if composite_score > 75:
-        target_deploy = 1.00   # 100%
-    elif composite_score > 55:
-        target_deploy = 0.60   # 60%
-    elif composite_score > 35:
-        target_deploy = 0.30   # 30%
-    else:
-        target_deploy = 0.0    # หยุด
+    action_name, _ = resolve_composite_action(composite_score)
+    target_deploy = {"FULL_DEPLOY": 1.00, "PARTIAL_DEPLOY": 0.60,
+                      "MINIMAL_DEPLOY": 0.30, "WAIT": 0.0}[action_name]
 
     additional = max(0, target_deploy - current_deployed)
     return additional * total_capital  # จำนวน capital ที่ deploy เพิ่ม</div>

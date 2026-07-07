@@ -1,6 +1,6 @@
 # Grid Trading Mastery — Round 5 Audit Findings
 
-**Status:** สแกนแล้ว รอการอนุมัติแก้ไข
+**Status:** แก้ครบทั้ง 38/38 findings แล้ว (หมายเหตุ: N11 ระบุไฟล์ผิดตอนสรุปครั้งแรก ที่ถูกคือ grid-part9.html §9.5 ไม่ใช่ grid-part7.html — แก้ที่ไฟล์ถูกต้องแล้ว)
 **ทีมตรวจสอบ:** 4 ทีมอิสระ (formula/numeric — แยก 5 sub-batch ครอบคลุม 18 ไฟล์, cross-reference/navigation, visual/diagram rendering, trading-logic domain coherence — แยก 5 sub-batch เช่นกัน) ตรวจซ้ำทั้งเล่มหลัง Round 4 แก้ไป 52 findings แล้ว
 
 **สรุปเร็ว:** cross-reference/navigation team ไม่พบปัญหาเลย (0 findings) — โครงสร้าง nav/TOC/cross-ref ยังสะอาดจาก Round 4 formula/domain-logic และ visual teams พบรวม **38 findings** (6 Critical, 16 Moderate, 3 Visual-Moderate, 13 Minor) หลายรายการถูกยืนยันซ้ำโดยทีมอิสระ 2-3 ทีมพร้อมกัน (ความมั่นใจสูง)

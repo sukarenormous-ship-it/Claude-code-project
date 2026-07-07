@@ -202,7 +202,7 @@ class GridFramework:
             center = n // 2
             weights = [math.exp(-0.5 * ((i-center)/(n/4))**2) for i in range(n)]
         elif style == "bottom_heavy":
-            weights = [1.0/(i+1) for i in range(n)]
+            weights = [1.0/(n-i) for i in range(n)]
         else:
             weights = [1.0] * n
         total = sum(weights)
@@ -330,7 +330,8 @@ class GridBacktester:
             high_price = row["high"]
             close      = row["close"]
 
-            # หมายเหตุ: logic นี้เป็น optimistic assumption — ราคา candle แตะ level ไม่ได้หมายความว่า fill ทุกครั้ง
+            # หมายเหตุ: logic นี้เป็น optimistic assumption
+            # ราคา candle แตะ level ไม่ได้หมายความว่า fill ทุกครั้ง
             # ใน production ให้ใช้ WebSocket order events แทน
             # Check BUY fills (price ลงถึง BUY level)
             for level in buy_levels:
@@ -591,7 +592,7 @@ REGIME (Part 4, BTC-calibrated):
   H > 0.58 + ADX > 50 + BB_width > 8%   → GRID OFF (pause)
 
 RISK (Part 5):
-  DD ≥ −8%  → HALT (cancel all, wait for recovery)
+  DD ≤ −8%  → HALT (cancel all, wait for recovery)
   DD ≥ −4%  + H < 0.55 + 24h cooloff → RESUME
 
 SNOWBALL (Part 6B):

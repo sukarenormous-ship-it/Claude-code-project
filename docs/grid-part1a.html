@@ -407,7 +407,7 @@ def calculate_capital_requirement(prices, base_q, r):
 <tr><td>1.0</td><td>Equal Weight</td><td>1×</td><td>Conservative, baseline</td></tr>
 <tr><td>1.2</td><td>Gentle Soft</td><td>2.1×</td><td>มั่นใจ mean-reversion เล็กน้อย</td></tr>
 <tr><td>1.4</td><td>Moderate Soft</td><td>3.8×</td><td>สมดุล (แนะนำ)</td></tr>
-<tr><td>1.6</td><td>Aggressive Soft</td><td>6.6×</td><td>มั่นใจ mean-reversion มาก</td></tr>
+<tr><td>1.6</td><td>Aggressive Soft ⚠️</td><td>6.6×</td><td>นอกช่วง [1.1,1.5] ที่แนะนำ — ใช้เฉพาะถ้าทำ stress test แล้วผ่านเท่านั้น (ดู §1A.7 กฎ r&gt;1.5 เสี่ยงมากใน bear market)</td></tr>
 <tr><td>2.0</td><td>Hard Martingale</td><td>16×</td><td>ไม่แนะนำ — bust risk สูง</td></tr>
 </table>
 
@@ -423,7 +423,7 @@ def calculate_capital_requirement(prices, base_q, r):
 <tr><td>5 ($90k)</td><td>0.00384</td><td>$346</td><td>0.01094</td></tr>
 <tr><td><strong>รวม</strong></td><td>—</td><td><strong>$1,014</strong></td><td><strong>0.01094 BTC</strong></td></tr>
 </table>
-<p>ถ้า BTC ลงต่อถึง $60k (−40% จาก $100k): Inventory loss = 0.01094 × ($100k − $60k) = <strong>−$437.6</strong></p>
+<p>ถ้า BTC ลงต่อถึง $60k (−40% จาก $100k): Inventory loss = Capital ที่จ่ายจริง − Market value ปัจจุบัน = $1,014 − (0.01094 × $60,000 = $656.4) = <strong>−$357.6</strong> (ใช้ cost basis จริง ไม่ใช่ราคาอ้างอิง $100k เพราะ avg cost ที่แท้จริงคือ ~$92,687/BTC — เทียบวิธีเดียวกับ §1A.2/§1A.9)</p>
 <p><strong>กฎ:</strong> ก่อนเลือก r ให้ทำ stress test: Close System capital ต้อง ≥ (cumulative Q ทุก level × worst-case price drop)</p>
 <p>r &gt; 1.5 เสี่ยงมากใน bear market — Close System อาจหมดก่อนถึง floor</p>
 </div>
@@ -468,7 +468,7 @@ def calculate_capital_requirement(prices, base_q, r):
 <p><strong>Capital ที่ต้องมี (Close System):</strong> $8,460</p>
 <p><strong>Zone Waterfall:</strong> Active $4,230 (ใช้งาน) · Standby $2,538 (lending ~5% APY → $0.35/วัน) · Floor $1,692 (สำรอง)</p>
 <p><strong>Unrealized loss ที่จุดแตะ floor:</strong> ถ้า BTC ลงถึง $90k พอดี — BTC สะสมทั้งหมด = 0.091 (0.010+0.013+0.017+0.022+0.029) × $90,000 = $8,190 เทียบกับทุนที่ใช้ไป $8,460 → unrealized loss = $270 (ไม่ใช่ "worst case" จริง เพราะ Close System ไม่มี stop-loss — ถ้าราคาลงต่ำกว่า $90k ต่อไป ขาดทุนยังเพิ่มได้อีกไม่มีเพดาน)</p>
-<p><strong>Daily cashflow (ประมาณ, 1.5 รอบ/วัน, เฉลี่ย):</strong> ≈ 1.5 × ($30 avg profit) = $45/วัน = 0.53%/วัน บน $8,460</p>
+<p><strong>Daily cashflow (ประมาณ, 1.5 รอบ/วัน, เฉลี่ย):</strong> เฉลี่ยกำไรต่อ level จากตาราง = ($20+$26+$34+$44+$58)/5 = $36.4 → ≈ 1.5 × $36.4 = $54.6/วัน = 0.65%/วัน บน $8,460</p>
 </div>
 
 <h2 id="s1a-10">1A.10 แบบฝึกหัด</h2>
@@ -480,10 +480,10 @@ def calculate_capital_requirement(prices, base_q, r):
 <summary>ข้อ 1: Close System BTC entry $100k, floor $85k, step $2k, Q = 0.01 BTC — ต้องการ capital เท่าไหร่?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>ที่ step $2k จาก entry $100k ถึง floor $85k: $98k, $96k, $94k, $92k, $90k, $88k, $86k → 7 levels</p>
+<p>ที่ step $2k จาก entry $100k: levels ที่ $2k คูณลงมาคือ $98k, $96k, $94k, $92k, $90k, $88k, $86k → 7 levels (floor $85k เข้าไม่ถึงพอดีเพราะ step $2k ให้แค่เลขคู่พัน — floor จริงที่ป้องกันได้คือ $86k ไม่ใช่ $85k เป๊ะ ต่างกัน $1k)</p>
 <p>C = 0.01 × ($98k + $96k + $94k + $92k + $90k + $88k + $86k)</p>
 <p>= 0.01 × $644k = <strong>$6,440</strong></p>
-<p>(ถ้า floor = $84k เพิ่ม level $84k อีก 1 ระดับ (รวม 8 levels): C = 0.01 × ($98k+$96k+$94k+$92k+$90k+$88k+$86k+$84k) = 0.01 × $728k = $7,280)</p>
+<p>(ถ้าต้องการ floor ที่ครอบคลุมถึง $84k เพิ่ม level $84k อีก 1 ระดับ (รวม 8 levels): C = 0.01 × ($98k+$96k+$94k+$92k+$90k+$88k+$86k+$84k) = 0.01 × $728k = $7,280)</p>
 </div>
 </details>
 
