@@ -253,6 +253,24 @@ print(int(x1.value()), int(x2.value()), pulp.value(m.objective))
 <text x="250" y="235" text-anchor="middle" font-family="Sarabun" font-size="10.5" fill="#6b7280">แต่ละก้าวเดินสวนทาง gradient (ทิศชันลงสุด)</text>
 </svg>
 
+<div class="bx bg"><div class="bt">🧮 คิดด้วยมือ — เดินลงเขาหา min ของ f(x) = (x−3)² + 2</div>
+<p>ก้นหลุมอยู่ที่ x=3 (เรารู้คำตอบอยู่แล้ว เพื่อเช็กว่า gradient descent เดินไปถูก) · ความชัน f′(x) = 2(x−3) · เริ่มที่ x=0 ก้าว α=0.1 · สูตรเดียว: <strong>x ใหม่ = x − α·f′(x)</strong></p>
+<div class="tw"><table>
+<tr><th>ก้าว</th><th>x</th><th>f′(x)=2(x−3)</th><th>x − 0.1·f′(x)</th></tr>
+<tr><td>0</td><td>0.000</td><td class="nw">−6.00</td><td class="nw">0 − 0.1(−6) = 0.600</td></tr>
+<tr><td>1</td><td>0.600</td><td class="nw">−4.80</td><td class="nw">0.6 − 0.1(−4.8) = 1.080</td></tr>
+<tr><td>2</td><td>1.080</td><td class="nw">−3.84</td><td class="nw">1.08 − 0.1(−3.84) = 1.464</td></tr>
+<tr><td>3</td><td>1.464</td><td class="nw">−3.07</td><td class="nw">→ 1.771 …</td></tr>
+</table></div>
+<p>เห็นไหมว่ามัน<strong>คลานเข้าหา x=3</strong> ทีละก้าว — ตอนไกลก้าวใหญ่ (ชันมาก) พอใกล้ก้นหลุมก้าวเล็กลงเอง (ชันน้อยลง) นี่คือพฤติกรรมสวยงามของ gradient descent</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — gradient descent 5 บรรทัด</div><pre>def f_grad(x):  return 2*(x - 3)        <span class="c"># f'(x) ของ (x-3)^2 + 2</span>
+
+x, alpha = 0.0, 0.1
+for step in range(60):
+    x = x - alpha * f_grad(x)           <span class="c"># เดินสวนทาง gradient</span>
+print(f"หาจุดต่ำสุดได้ x = {x:.4f}")     <span class="o"># หาจุดต่ำสุดได้ x = 3.0000</span></pre></div>
+
 <div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
 <p>Gradient descent ใช้ <strong>calibrate โมเดล</strong> — หา parameter ที่ทำให้ราคาจากโมเดล ≈ ราคาตลาด (เช่น fit vol surface, calibrate Stochastic Vol)</p></div>
 
@@ -297,6 +315,78 @@ print(int(x1.value()), int(x2.value()), pulp.value(m.objective))
 <p><strong>มือใหม่เห็น:</strong> "หาพอร์ตที่ให้ผลตอบแทนสูงสุด"<br>
 <strong>คนจัดพอร์ตเห็น:</strong> ไม่มี "พอร์ตดีที่สุด" ตัวเดียว — มีเส้น (frontier) ของพอร์ตที่ดีที่สุด<em>ในแต่ละระดับความเสี่ยง</em> · เลือกจุดบนเส้นตามความกล้ารับเสี่ยงของแต่ละคน ไม่ใช่หาจุดเดียว</p></div>
 </div>
+
+<h3 id="s4-mw">4.2½ วิธีทำด้วยมือ + Python — จัดพอร์ต 2 สินทรัพย์จริง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สูตร Lagrange ข้างบนดูโหด แต่ถ้ามีแค่ <strong>2 สินทรัพย์</strong> จุด "เสี่ยงต่ำสุด" (min-variance) มีสูตรปิดสั้น ๆ คำนวณด้วยมือได้ · เราจะเห็นกับตาว่า <strong>ผสมสองตัวแล้วเสี่ยงน้อยกว่าถือตัวปลอดภัยตัวเดียวซะอีก</strong> — หัวใจของ "อย่าใส่ไข่ตะกร้าเดียว"</p>
+
+<div class="bx bg"><div class="bt">📋 โจทย์ (จำเลขชุดนี้)</div>
+<div class="tw"><table>
+<tr><th>สินทรัพย์</th><th>ผลตอบแทนคาดหวัง μ</th><th>ความเสี่ยง σ</th></tr>
+<tr><td><strong>A</strong> (หุ้นโต)</td><td>10%</td><td>20%</td></tr>
+<tr><td><strong>B</strong> (หุ้นนิ่ง)</td><td>6%</td><td>10%</td></tr>
+</table></div>
+<p>ความสัมพันธ์ ρ = 0.2 (ไปด้วยกันน้อย — ยิ่งดีต่อการกระจายเสี่ยง) · อยากรู้: ผสม A กับ B สัดส่วนไหน<strong>เสี่ยงต่ำสุด</strong>?</p></div>
+
+<div class="card">
+<h3>🧮 คิดทีละขั้น — หา Min-Variance Portfolio</h3>
+
+<p><strong>ขั้น 1 — หา covariance</strong> จาก ρ (เชื่อมกลับ เล่ม 2·A: Cov = ρ·σ_A·σ_B)</p>
+<div class="fm">Cov(A,B) = ρ·σ_A·σ_B = 0.2 × 0.20 × 0.10 = 0.004
+Σ = [ σ_A²   Cov ]   =  [ 0.04   0.004 ]
+    [ Cov   σ_B² ]      [ 0.004  0.01  ]</div>
+
+<p><strong>ขั้น 2 — แทนสูตรปิด min-variance</strong> (สำหรับ 2 สินทรัพย์)</p>
+<div class="fm">w_A = (σ_B² − Cov) / (σ_A² + σ_B² − 2·Cov)
+    = (0.01 − 0.004) / (0.04 + 0.01 − 2×0.004)
+    = 0.006 / 0.042
+    = <b>0.1429</b>   →  w_B = 1 − 0.1429 = <b>0.8571</b></div>
+
+<p><strong>ขั้น 3 — คิดผลตอบแทนและความเสี่ยงของพอร์ตนี้</strong></p>
+<div class="fm">ผลตอบแทน = w_A·μ_A + w_B·μ_B = 0.1429×10% + 0.8571×6% = <b>6.57%</b>
+ความเสี่ยง² = w_A²σ_A² + w_B²σ_B² + 2·w_A·w_B·Cov
+          = 0.1429²(0.04) + 0.8571²(0.01) + 2(0.1429)(0.8571)(0.004)
+          = 0.000818 + 0.007344 + 0.000980 = 0.009143
+ความเสี่ยง σ = √0.009143 = <b>9.56%</b></div>
+
+<div class="bx bp"><div class="bt">💎 โมเมนต์ที่ควรหยุดดู — 1 + 1 เสี่ยงน้อยกว่า 1</div>
+<p>พอร์ตนี้เสี่ยง <strong>9.56%</strong> · แต่หุ้น B ตัวที่ "นิ่งที่สุด" ยังเสี่ยงตั้ง <strong>10%</strong> เดี่ยว ๆ · <strong>การผสมหุ้นเสี่ยงกว่า (A, 20%) เข้าไป กลับทำให้พอร์ตเสี่ยงน้อยลงกว่าถือ B ล้วน ๆ</strong> เพราะ A กับ B ไม่ได้ขึ้นลงพร้อมกัน (ρ=0.2) — เวลาตัวหนึ่งตก อีกตัวช่วยพยุง · นี่คือ "free lunch" เดียวในไฟแนนซ์ที่ Markowitz พิสูจน์ด้วยเลข ไม่ใช่คำคม</p></div>
+</div>
+
+<p>ทำด้วยมือได้แค่ 2 สินทรัพย์ · พอมี 3 ตัวขึ้นไป หรืออยากได้<strong>ทั้งเส้น</strong> Efficient Frontier ต้องให้คอมช่วย — ใช้ <code>scipy.optimize.minimize</code> แก้ QP ตรง ๆ:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Min-Variance + Efficient Frontier ทั้งเส้น</div><pre>import numpy as np
+from scipy.optimize import minimize
+
+mu  = np.array([0.10, 0.06])                 <span class="c"># ผลตอบแทนคาดหวัง A, B</span>
+Sig = np.array([[0.04, 0.004],               <span class="c"># เมทริกซ์ความแปรปรวนร่วม Σ</span>
+                [0.004, 0.01]])
+
+def port_var(w): return w @ Sig @ w          <span class="c"># ความเสี่ยง² = wᵀΣw (เล่ม 2·A)</span>
+budget = {'type':'eq', 'fun': lambda w: w.sum() - 1}   <span class="c"># น้ำหนักรวม = 100%</span>
+
+<span class="c"># --- 1) จุดเสี่ยงต่ำสุด (min-variance) ---</span>
+r = minimize(port_var, [.5,.5], constraints=[budget], bounds=[(0,1)]*2)
+print("min-var: w =", r.x.round(4), " sigma =", round(port_var(r.x)**.5, 4))
+<span class="o"># min-var: w = [0.1429 0.8571]  sigma = 0.0956   ← ตรงกับที่คิดมือ!</span>
+
+<span class="c"># --- 2) ทั้งเส้น Efficient Frontier: ล็อกผลตอบแทนเป้าหมายทีละค่า ---</span>
+for r_star in [0.0657, 0.07, 0.08, 0.09, 0.10]:
+    target = {'type':'eq', 'fun': lambda w, t=r_star: w @ mu - t}
+    r = minimize(port_var, [.5,.5], constraints=[budget, target], bounds=[(0,1)]*2)
+    print(f"ret={r_star:.4f}  w={r.x.round(3)}  sigma={port_var(r.x)**.5:.4f}")
+<span class="o"># ret=0.0657  w=[0.143 0.857]  sigma=0.0956   ← จุด min-var</span>
+<span class="o"># ret=0.0700  w=[0.25  0.75 ]  sigma=0.0981</span>
+<span class="o"># ret=0.0800  w=[0.5   0.5  ]  sigma=0.1204</span>
+<span class="o"># ret=0.0900  w=[0.75  0.25 ]  sigma=0.1569</span>
+<span class="o"># ret=0.1000  w=[1.    0.   ]  sigma=0.2000   ← A ล้วน = เสี่ยงสุด</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — นี่คือ "เส้น" ที่เห็นในภาพ Efficient Frontier</div>
+<p>แต่ละบรรทัดคือ <strong>1 จุดบนเส้น</strong> ด้านบน · อยากได้ผลตอบแทนสูงขึ้น (6.57% → 10%) ก็ต้องรับความเสี่ยงสูงขึ้น (9.56% → 20%) และน้ำหนักเงินย้ายจาก B ไป A เรื่อย ๆ · <strong>ไม่มีจุดเดียวที่ "ดีที่สุด"</strong> — คุณเลือกจุดบนเส้นตามความกล้ารับเสี่ยงของตัวเอง</p></div>
+
+<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
+<p>เปลี่ยน ρ เป็น <strong>−0.5</strong> (A กับ B สวนทางกัน) แก้ <code>Sig[0,1]=Sig[1,0]= −0.5·0.2·0.1 = −0.01</code> แล้วรันใหม่ · คาดเดาก่อน: min-var จะเสี่ยง<strong>ต่ำลงกว่า 9.56% อีก</strong> (สวนทางกัน = พยุงกันดีกว่าเดิม)</p>
+<p style="font-size:.88em;color:var(--g6)">เฉลย: w≈[0.286, 0.714], σ≈6.55% — ต่ำลงชัดเจน (จาก 9.56% → 6.55%) · ยิ่ง ρ ติดลบ ยิ่งกระจายเสี่ยงได้ดี ✓</p></div>
 
 <h3 id="s4-3">4.3 Convex &amp; QP — ทำไม Markowitz แก้ได้เสมอ</h3>
 
