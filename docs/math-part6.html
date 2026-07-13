@@ -3,323 +3,478 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>คณิตศาสตร์สำหรับ Options — Part VI</title>
+<title>คณิตศาสตร์สำหรับ Options — Part IV: กระบวนการสุ่ม สู่ Black-Scholes</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
-p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
-.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
-.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bt{font-weight:700;margin-bottom:5px}
-.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
-svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
-</style>
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;white-space:pre-wrap}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:480px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px dashed #0891b2;border-radius:8px;padding:12px 18px;margin:14px 0}.try .bt{color:#0e7490}.try details{margin-top:6px}.try summary{cursor:pointer;color:#0e7490;font-weight:600}
+.deep{background:#f8fafc;border:1px solid var(--g2);border-left:4px solid #64748b;border-radius:0 8px 8px 0;padding:12px 18px;margin:14px 0}.deep .bt{color:#475569}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
+.code{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.code .hdr{background:var(--g8);color:#fff;padding:5px 14px;font-size:.8em;font-weight:700;letter-spacing:.4px}.code pre{background:var(--g1);color:var(--g8);font-family:'Courier New',monospace;font-size:.85em;padding:12px 16px;overflow-x:auto;white-space:pre;margin:0;line-height:1.65}.code .c{color:#94a3b8}.code .o{color:#16a34a;font-weight:700}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style>
 </head>
 <body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
 <div class="cover">
-<h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
-<div class="sub">Part VI: Time Series, Numerical Methods &amp; Stochastic Calculus</div>
-<div class="desc">บทที่ 12-14: GARCH, IV Solver, Brownian Motion, Ito's Lemma, BS PDE<br>อ่านจบ → forecast volatility + เข้าใจที่มาของ Black-Scholes</div>
+<h1>คณิตศาสตร์สำหรับ<br>Options Trading</h1>
+<div class="sub">Part IV — กระบวนการสุ่ม สู่ Black-Scholes</div>
+<div class="desc">พยากรณ์ Volatility (GARCH) · หา IV (Newton-Raphson) · Random Walk · Ito's Lemma · Black-Scholes PDE — อ่านจบแล้วเข้าใจ "เครื่องยนต์" ที่กลั่นความสุ่มออกมาเป็นสูตรตั้งราคา Option</div>
 </div>
 
-<!-- ========== CHAPTER 12 ========== -->
-<h2 id="ch12">บทที่ 12: Time Series &amp; Volatility Forecasting</h2>
+<!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน — Part ที่หินที่สุดของเล่ม</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน 🚶 + 🧮 + 🎯 และกล่องสรุปก็เข้าใจภาพรวมได้ · กล่อง <span class="deep" style="display:inline;padding:1px 6px">🔬 เจาะลึก (ข้ามได้)</span> คือ derivation ที่ข้ามได้โดยไม่เสียเนื้อ · <strong>🔵 มีพื้น:</strong> อ่าน Ito's Lemma และ BS PDE ให้ครบ — มันคือหัวใจที่ผูกทุก Part เข้าด้วยกัน</p></div>
 
-<p>Volatility ไม่คงที่ — มันเปลี่ยนตลอดเวลา ถ้า forecast ได้ = ได้เปรียบในการเทรด Options</p>
+<div class="bx bp"><div class="bt">📖 ต่อจาก Part III — และศัพท์ที่จะเจอ</div>
+<p>Part III ให้ "หน้าปัดวัด" (Greeks) · Part IV เปิดฝากระโปรงดู "เครื่องยนต์" ที่ทำให้ราคาเหวี่ยง แล้วกลั่นเป็นสูตร · ศัพท์: <strong>Realized vol</strong> = σ ที่เกิดขึ้นจริง · <strong>Implied vol (IV)</strong> = σ ที่ตลาดฝังในราคา option · <strong>GARCH</strong> = โมเดลพยากรณ์ σ · <strong>Random walk / Brownian motion</strong> = การเดินสุ่มของราคา · <strong>Ito's Lemma</strong> = chain rule ของโลกสุ่ม · <strong>risk-neutral</strong> = โลกจำลองที่ทุกอย่างโตด้วย r</p></div>
 
-<h3 id="s12-1">12.1 แนวคิด Time Series</h3>
-<p>ข้อมูลที่เรียงตามเวลา: ราคาหุ้นรายวัน, daily returns, implied volatility</p>
+<!-- ═══════════════ เปิดเรื่อง (HOOK) ═══════════════ -->
+<h2>เปิดเรื่อง: ทำไม "คนขายประกัน" ถึงรวย ทั้งที่ราคาดูแพงเกินจริง</h2>
+
+<p>ถ้าคุณคำนวณว่า "หุ้นตัวนี้น่าจะผันผวนจริง ๆ ราว 18% ต่อปี" แต่ในตลาด option ราคาบอกเป็นนัยว่า σ = 22% · ดูเผิน ๆ เหมือน option "แพงเกินจริง" — แล้วทำไมคนที่ขาย option (ขาย σ) ถึงมักได้กำไรในระยะยาว?</p>
+
+<p>เพราะช่องว่างนั้น<strong>ไม่ใช่ความผิดพลาดของตลาด</strong> มันคือ "ค่าประกัน" ที่คนกลัวความเสี่ยงยอมจ่ายเกินไว้เผื่อวันหายนะ ช่องว่างนี้มีชื่อว่า <strong>Variance Risk Premium (VRP)</strong> และมันคือกุญแจที่ทำให้ Part นี้ "ไม่พาคุณไปตายในกับดักคลาสสิก" ของการเห็นเลขแล้วรีบขาย</p>
+
+<div class="pq">IV ที่สูงกว่า realized vol ไม่ใช่ "ป้ายลดราคา" — มันคือค่าจ้างที่ตลาดจ่ายให้คนกล้าถือความเสี่ยงหางยาว</div>
+
+<div class="bx bb"><div class="bt">🔧 Part นี้ให้เครื่องมือ 3 ชั้น</div>
 <ul>
-<li><strong>Trend:</strong> ทิศทางระยะยาว (ขึ้น/ลง/นิ่ง)</li>
-<li><strong>Stationarity:</strong> สมบัติไม่เปลี่ยนตามเวลา (mean, variance คงที่)</li>
-</ul>
-<div class="bx ba">
-<div class="bt">สำคัญ</div>
-<p>ราคาหุ้น = <strong>non-stationary</strong> (มี trend) แต่ <strong>returns</strong> = stationary (เฉลี่ย ≈ 0, variance ≈ คงที่)<br>
-ดังนั้นเราวิเคราะห์ <strong>returns</strong> ไม่ใช่ราคา!</p>
-</div>
+<li><strong>พยากรณ์ σ</strong> (GARCH) — คาดว่าอนาคตจะเหวี่ยงแค่ไหน</li>
+<li><strong>อ่าน σ ที่ตลาดฝังไว้</strong> (IV solver) — ตลาดคิดเท่าไร</li>
+<li><strong>เข้าใจเครื่องยนต์</strong> (Ito → Black-Scholes) — สูตรมาจากไหน</li>
+</ul></div>
 
-<h3 id="s12-2">12.2 Autocorrelation — Volatility Clustering</h3>
-<p><strong>Autocorrelation</strong> = correlation ของข้อมูลกับตัวเองที่ lag ก่อนหน้า</p>
-<div class="fm">ρ(k) = Corr(rₜ, rₜ₋ₖ) = "return วันนี้สัมพันธ์กับ return k วันก่อนไหม?"</div>
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 8 ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch8">บทที่ 8: พยากรณ์ Volatility</h2>
 
-<table>
-<tr><th>ข้อมูล</th><th>Autocorrelation</th><th>ความหมาย</th></tr>
-<tr><td>returns (rₜ)</td><td>≈ 0</td><td>ทำนายทิศทางไม่ได้ (Efficient Market)</td></tr>
-<tr><td>|returns| หรือ r²ₜ</td><td><strong>สูง!</strong></td><td>วันที่ผันผวนมากมักตามด้วยวันผันผวนมาก</td></tr>
-</table>
+<p>σ ไม่คงที่ — มันเปลี่ยนทุกวัน และมักมาเป็น "กลุ่ม" ถ้าพยากรณ์ได้ดีขึ้นนิดเดียว ก็ได้เปรียบในการตีราคา option</p>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p><strong>Volatility Clustering:</strong> ความผันผวนมักมาเป็น "กลุ่ม" — ช่วงที่ตลาดกลัว σ สูงนาน<br>
-นี่คือเหตุผลที่ GARCH model ทำงานได้ดี เพราะจำลอง clustering นี้</p>
-</div>
+<h3 id="s8-1">8.1 วิเคราะห์ "ผลตอบแทน" ไม่ใช่ "ราคา"</h3>
 
-<h3 id="s12-3">12.3 Moving Average &amp; EWMA</h3>
-<p><strong>Simple MA Volatility:</strong> σ = std(returns ใน window n วัน)</p>
-<div class="fm">σ²_SMA = (1/n) Σ r²ₜ₋ᵢ &nbsp;&nbsp; (สมมติ μ ≈ 0)</div>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ราคาหุ้นมี trend (ลอยขึ้นเรื่อย ๆ) จึงวิเคราะห์ยาก เรียกว่า <strong>non-stationary</strong> · แต่ "ผลตอบแทน" (returns) วนอยู่รอบ ๆ 0 ด้วยความกว้างคงที่ เรียกว่า <strong>stationary</strong> — วิเคราะห์ได้ เราจึงทำงานกับ returns เสมอ</p>
 
-<p><strong>EWMA (Exponentially Weighted):</strong> ให้น้ำหนักข้อมูลล่าสุดมากกว่า</p>
-<div class="fm">σ²ₜ = λ × σ²ₜ₋₁ + (1-λ) × r²ₜ₋₁<br>
+<h3 id="s8-2">8.2 Volatility Clustering — "วันแย่มาเป็นพวง"</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Autocorrelation ถามว่า "ค่าวันนี้เกี่ยวกับค่าเมื่อวานไหม" · จุดสำคัญคือ <strong>ทิศทาง</strong>ของ return แทบทำนายไม่ได้ (autocorrelation ≈ 0) แต่ <strong>ขนาด</strong>ของ return (r²) เกี่ยวข้องกันสูง — วันเหวี่ยงแรงมักตามด้วยวันเหวี่ยงแรง</p>
+
+<div class="tw"><table>
+<tr><th>ข้อมูล</th><th>Autocorrelation</th><th>แปลว่า</th></tr>
+<tr><td>ทิศทาง return (rₜ)</td><td>≈ 0</td><td>ทำนายขึ้น/ลงไม่ได้ (ตลาดมีประสิทธิภาพ)</td></tr>
+<tr><td>ขนาด return (r²ₜ, |rₜ|)</td><td><strong>สูง</strong></td><td>ความผันผวนจับกลุ่ม (clustering)</td></tr>
+</table></div>
+
+<div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
+<p><strong>Volatility Clustering</strong> คือเหตุผลที่พยากรณ์ σ ได้จริง (ไม่งั้นก็เดามั่ว) — ช่วงตลาดกลัว σ สูงลากยาว โมเดล GARCH เกิดมาเพื่อจับพฤติกรรมนี้</p></div>
+
+<h3 id="s8-3">8.3 EWMA — ให้น้ำหนักของใหม่มากกว่า</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Simple MA เฉลี่ยทุกวันในหน้าต่างเท่ากันหมด → ตอบสนองช้าและกระตุก (วันเก่าหลุดหน้าต่างทีเดียวค่ากระโดด) · EWMA ให้น้ำหนักวันล่าสุดมากกว่า จึง<strong>เกาะการเปลี่ยนแปลงได้ไวและเนียนกว่า</strong></p>
+
+<div class="fm">σ²ₜ = λ·σ²ₜ₋₁ + (1−λ)·r²ₜ₋₁
 λ = decay factor (RiskMetrics ใช้ λ = 0.94)</div>
 
-<svg class="d" viewBox="0 0 500 200">
-<!-- Volatility time series -->
-<defs><marker id="t1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
-<line x1="50" y1="170" x2="470" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#t1)"/>
-<line x1="50" y1="170" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#t1)"/>
-<text x="475" y="174" font-family="Sarabun" font-size="10" fill="#374151">เวลา</text>
-<text x="20" y="15" font-family="Sarabun" font-size="10" fill="#374151">σ</text>
-<!-- SMA (gray, choppy) -->
-<polyline points="80,120 110,115 140,110 170,100 200,130 230,140 260,100 290,60 320,50 350,70 380,90 410,100 440,110" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
-<text x="445" y="115" font-family="Sarabun" font-size="9" fill="#94a3b8">SMA</text>
-<!-- EWMA (blue, smoother) -->
-<polyline points="80,125 110,120 140,115 170,108 200,120 230,130 260,110 290,70 320,55 350,65 380,80 410,90 440,100" stroke="#2563eb" stroke-width="2.5" fill="none"/>
-<text x="445" y="95" font-family="Sarabun" font-size="9" fill="#2563eb" font-weight="600">EWMA</text>
-<!-- Spike region -->
-<rect x="270" y="10" width="80" height="160" fill="#dc2626" opacity="0.05" rx="4"/>
-<text x="310" y="25" text-anchor="middle" font-family="Sarabun" font-size="9" fill="#dc2626">Volatility Spike!</text>
+<svg class="d" viewBox="0 0 520 210" role="img" aria-label="เทียบ SMA กระตุกและช้า กับ EWMA ที่เกาะ spike ได้ไวและเนียนกว่า">
+<line x1="55" y1="175" x2="480" y2="175" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="175" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="484" y="179" font-family="Sarabun" font-size="10" fill="#6b7280">เวลา</text>
+<text x="34" y="24" font-family="Sarabun" font-size="10" fill="#6b7280">σ</text>
+<!-- true realized spike region -->
+<rect x="250" y="25" width="70" height="150" fill="#dc2626" opacity="0.06"/>
+<text x="285" y="38" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#dc2626" font-weight="600">σ พุ่ง</text>
+<!-- SMA: blocky, laggy, jagged; reacts late and steps -->
+<polyline points="80,135 110,135 140,132 170,132 200,128 230,128 265,120 265,120 290,95 290,95 320,90 350,92 380,110 410,110 440,122" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,3"/>
+<text x="360" y="128" font-family="Sarabun" font-size="10" fill="#6b7280">SMA (ช้า + กระตุก)</text>
+<!-- EWMA: smooth, reacts fast to spike -->
+<path d="M80,133 C130,130 200,126 250,118 C270,110 285,70 300,60 C330,55 360,72 390,95 C415,112 435,120 445,124" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linecap="round"/>
+<text x="150" y="95" font-family="Sarabun" font-size="10.5" fill="#2563eb" font-weight="700">EWMA (ไว + เนียน)</text>
 </svg>
 
-<h3 id="s12-4">12.4 GARCH Model</h3>
-<p><strong>GARCH(1,1)</strong> = model ที่ใช้มากที่สุดสำหรับ volatility forecasting:</p>
+<h3 id="s8-4">8.4 GARCH — โมเดลพยากรณ์ σ ที่ใช้จริงที่สุด</h3>
 
-<div class="fm">σ²ₜ = ω + α × r²ₜ₋₁ + β × σ²ₜ₋₁<br><br>
-ω = baseline variance (ค่าคงที่)<br>
-α = "ข่าวเมื่อวานส่งผลแค่ไหน" (news impact)<br>
-β = "volatility เมื่อวานส่งต่อแค่ไหน" (persistence)<br>
-α + β < 1 → volatility mean-reverts!</div>
+<div class="card">
+<h3>GARCH(1,1) <span class="yr">Engle 1982 · Bollerslev 1986</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p>• <strong>Forecast σ</strong> → เทียบกับ Implied Volatility (IV) ของตลาด<br>
-• ถ้า GARCH forecast < IV → options "แพงเกินไป" → อาจ <strong>sell options</strong><br>
-• ถ้า GARCH forecast > IV → options "ถูกเกินไป" → อาจ <strong>buy options</strong><br>
-• <strong>BS สมมติ σ คงที่ ← ผิด!</strong> GARCH บอกว่า σ เปลี่ยนตลอดเวลา</p>
-</div>
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"σ² วันนี้ = ส่วนพื้นฐาน + สะเทือนจากข่าวเมื่อวาน + ความผันผวนเมื่อวานที่ส่งต่อมา — โมเดลนี้จับ volatility clustering ได้ในสามพจน์"</p></div>
 
-<h3 id="s12-5">12.5 Mean Reversion</h3>
-<p>Volatility มักจะ "กลับสู่ค่าเฉลี่ย" — ถ้าสูงมากจะค่อยๆ ลง ถ้าต่ำมากจะค่อยๆ ขึ้น</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> GARCH เดา σ² ของพรุ่งนี้จาก 3 อย่าง: ค่าพื้นฐานระยะยาว (ω), ข่าวช็อกเมื่อวาน (r²ₜ₋₁), และ σ² เมื่อวานที่ส่งต่อ (persistence)</p>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p>• ถ้า IV สูงมาก (เช่น หลัง market crash) → มักจะลดลง → <strong>sell high IV</strong><br>
-• Long-term σ ≈ ω/(1 - α - β) จาก GARCH → ใช้เป็น "anchor"</p>
-</div>
+<div class="fm">σ²ₜ = ω + α·r²ₜ₋₁ + β·σ²ₜ₋₁
+ω = ส่วนพื้นฐาน · α = ข่าวเมื่อวานสะเทือนแค่ไหน · β = σ เมื่อวานส่งต่อแค่ไหน
+α + β < 1  →  σ กลับสู่ค่าเฉลี่ย (mean-revert)</div>
 
-<!-- ========== CHAPTER 13 ========== -->
-<h2 id="ch13">บทที่ 13: วิธีเชิงตัวเลข — IV Solver</h2>
+<div class="deep"><div class="bt">🔬 เจาะลึก (ข้ามได้) — ค่าเฉลี่ยระยะยาวของ σ</div>
+<p>เมื่อ α + β &lt; 1 ระดับ <strong>variance</strong> ระยะยาวคือ σ²∞ = ω / (1 − α − β) · ระวังหน่วย: นี่คือ <strong>σ² (variance)</strong> ไม่ใช่ σ — ถ้าอยากได้ σ ระยะยาวต้องถอดราก: σ∞ = √[ ω/(1−α−β) ]</p></div>
 
-<p>บางสมการแก้แบบ closed-form ไม่ได้ — ต้องใช้คอมพิวเตอร์หาคำตอบ ตัวอย่างสำคัญที่สุด: <strong>หา Implied Volatility</strong></p>
-
-<h3 id="s13-1">13.1 Bisection Method — "แบ่งครึ่ง"</h3>
-
-<p>ถ้ารู้ว่าคำตอบอยู่ระหว่าง a กับ b → ลอง midpoint → ดูว่าคำตอบอยู่ครึ่งซ้ายหรือขวา → แบ่งครึ่งอีก</p>
-
-<div class="fm">1. เลือก a, b ที่ f(a) × f(b) < 0 (คนละเครื่องหมาย = คำตอบอยู่ระหว่าง)<br>
-2. m = (a+b)/2<br>
-3. ถ้า f(m) × f(a) < 0 → b = m, มิฉะนั้น a = m<br>
-4. ทำซ้ำจนกว่า |b-a| < tolerance</div>
-
-<table>
-<tr><th>รอบ</th><th>a</th><th>b</th><th>m = (a+b)/2</th><th>f(m)</th><th>ช่วงใหม่</th></tr>
-<tr><td>1</td><td>0.05</td><td>1.00</td><td>0.525</td><td>+3.2</td><td>[0.05, 0.525]</td></tr>
-<tr><td>2</td><td>0.05</td><td>0.525</td><td>0.288</td><td>+0.8</td><td>[0.05, 0.288]</td></tr>
-<tr><td>3</td><td>0.05</td><td>0.288</td><td>0.169</td><td>-0.5</td><td>[0.169, 0.288]</td></tr>
-<tr><td>4</td><td>0.169</td><td>0.288</td><td>0.228</td><td>+0.1</td><td>[0.169, 0.228]</td></tr>
-<tr><td>...</td><td colspan="5" style="color:#16a34a;font-weight:700">→ converge ไปที่ σ ≈ 0.20 (IV = 20%)</td></tr>
-</table>
-
-<h3 id="s13-2">13.2 Newton-Raphson Method — เร็วกว่า!</h3>
-
-<p>ใช้ <strong>derivative</strong> ช่วยเดาได้แม่นกว่า Bisection:</p>
-
-<div class="fm">x(n+1) = x(n) - f(x(n)) / f'(x(n))<br><br>
-สำหรับ IV Solver:<br>
-f(σ) = BS_Price(σ) - Market_Price &nbsp;&nbsp; (ต้องการให้ = 0)<br>
-f'(σ) = Vega &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (derivative ของราคาเทียบกับ σ)<br><br>
-σ(n+1) = σ(n) - (BS_Price(σ(n)) - Market_Price) / Vega(σ(n))</div>
-
-<svg class="d" viewBox="0 0 500 250">
-<defs><marker id="n1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
-<line x1="50" y1="170" x2="470" y2="170" stroke="#374151" stroke-width="1" marker-end="url(#n1)"/>
-<line x1="50" y1="230" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#n1)"/>
-<text x="475" y="174" font-family="Sarabun" font-size="11" fill="#374151">σ</text>
-<text x="20" y="15" font-family="Sarabun" font-size="11" fill="#374151">f(σ)</text>
-<text x="55" y="183" font-family="Sarabun" font-size="9" fill="#94a3b8">0</text>
-<!-- Curve f(σ) = BS(σ) - Market -->
-<path d="M80,40 Q150,80 220,130 Q280,155 340,165 Q400,168 460,169" stroke="#2563eb" stroke-width="2.5" fill="none"/>
-<text x="420" y="155" font-family="Sarabun" font-size="10" fill="#2563eb">f(σ) = BS(σ) - Mkt</text>
-<!-- Newton step 1 -->
-<circle cx="120" cy="60" r="5" fill="#dc2626"/>
-<line x1="120" y1="60" x2="260" y2="170" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
-<line x1="120" y1="60" x2="120" y2="170" stroke="#dc2626" stroke-width="0.5" stroke-dasharray="2"/>
-<text x="100" y="55" font-family="Sarabun" font-size="10" fill="#dc2626">σ₁</text>
-<!-- Newton step 2 -->
-<circle cx="260" cy="148" r="4" fill="#d97706"/>
-<line x1="260" y1="148" x2="310" y2="170" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
-<text x="258" y="140" font-family="Sarabun" font-size="10" fill="#d97706">σ₂</text>
-<!-- Root -->
-<circle cx="330" cy="170" r="6" fill="#16a34a"/>
-<text x="340" y="165" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="700">σ* = IV!</text>
-</svg>
-
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options — IV Solver</div>
-<p>Newton-Raphson ใช้ <strong>Vega</strong> เป็น derivative → converge ใน 3-5 รอบ!<br>
-ทุกครั้งที่คุณเห็น "IV = 25%" บนหน้าจอ Bloomberg — เบื้องหลังคือ Newton-Raphson กำลังทำงาน</p>
-</div>
-
-<h3 id="s13-3">13.3 Numerical Differentiation</h3>
-
-<div class="fm">f'(x) ≈ [f(x+h) - f(x-h)] / (2h) &nbsp;&nbsp; (central difference)</div>
-
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p>คำนวณ Greeks จาก pricing model ที่ไม่มีสูตร closed-form:<br>
-<strong>Delta ≈ [V(S+h) - V(S-h)] / (2h)</strong><br>
-<strong>Gamma ≈ [V(S+h) - 2V(S) + V(S-h)] / h²</strong></p>
-</div>
-
-<!-- ========== CHAPTER 14 ========== -->
-<h2 id="ch14">บทที่ 14: Stochastic Processes &amp; Ito's Lemma</h2>
-
-<p>บทนี้คือ "ยอดเขา" ของเล่ม — เข้าใจบทนี้ = เข้าใจที่มาของ Black-Scholes</p>
-
-<h3 id="s14-1">14.1 Random Walk &amp; Binomial Tree</h3>
-
-<p><strong>Random Walk:</strong> ทุก step ราคาขึ้น (+1) หรือลง (-1) ด้วยโอกาส 50/50</p>
-
-<svg class="d" viewBox="0 0 500 200">
-<!-- Random walk paths -->
-<polyline points="50,100 100,80 150,100 200,80 250,60 300,80 350,60 400,40 450,60" stroke="#2563eb" stroke-width="2" fill="none"/>
-<polyline points="50,100 100,120 150,100 200,120 250,140 300,120 350,140 400,160 450,140" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="5,3"/>
-<polyline points="50,100 100,80 150,60 200,80 250,100 300,80 350,100 400,80 450,100" stroke="#16a34a" stroke-width="1.5" fill="none" opacity="0.6"/>
-<line x1="50" y1="100" x2="460" y2="100" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3"/>
-<text x="465" y="65" font-family="Sarabun" font-size="10" fill="#2563eb">path 1</text>
-<text x="465" y="145" font-family="Sarabun" font-size="10" fill="#dc2626">path 2</text>
-<circle cx="50" cy="100" r="4" fill="#374151"/>
-<text x="20" y="105" font-family="Sarabun" font-size="10" fill="#374151">S₀</text>
-</svg>
-
-<p><strong>Binomial Tree:</strong> ราคาขึ้น u หรือลง d ในแต่ละ step</p>
-<div class="fm">u = e<sup>σ√Δt</sup> (up factor)<br>
-d = e<sup>-σ√Δt</sup> = 1/u (down factor)<br>
-p* = (e<sup>rΔt</sup> - d) / (u - d) &nbsp;&nbsp; ← <strong>risk-neutral probability</strong></div>
-
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options — Binomial Option Pricing</div>
-<p>1. สร้าง tree ราคาหุ้น n steps<br>
-2. คำนวณ payoff ที่ปลาย tree (วันหมดอายุ)<br>
-3. ย้อนกลับทีละ step: V = e<sup>-rΔt</sup> × [p*×V(up) + (1-p*)×V(down)]<br>
-4. ค่าที่ node แรก = <strong>ราคา Option!</strong><br>
-เมื่อ n → ∞ → converge สู่ <strong>Black-Scholes price</strong></p>
-</div>
-
-<h3 id="s14-2">14.2 Risk-Neutral Pricing</h3>
-
-<div class="bx bb">
-<div class="bt">หลักการสำคัญที่สุดใน Derivatives Pricing</div>
-<p>เราสามารถ price option ได้โดย <strong>ไม่ต้องรู้ว่าหุ้นจะขึ้นหรือลง!</strong><br><br>
-ทำได้โดยใช้ <strong>"โลก risk-neutral"</strong> ที่สมมติว่า:<br>
-• ทุกสินทรัพย์มี expected return = risk-free rate (r)<br>
-• ใช้ probability p* (ไม่ใช่ real probability p)<br>
-• <strong>Option Price = e<sup>-rT</sup> × E*[Payoff]</strong></p>
-</div>
-
-<div class="bx ba">
-<div class="bt">ทำไมใช้ได้?</div>
-<p>เพราะเราสามารถ <strong>replicate</strong> payoff ของ option ได้ด้วย stock + bond (hedging)<br>
-ดังนั้นราคาของ option ต้อง = ต้นทุนของ replicating portfolio<br>
-ต้นทุนนี้ <strong>ไม่ขึ้นกับว่าหุ้นจะขึ้นหรือลง</strong> → ไม่ต้องรู้ real probability!</p>
-</div>
-
-<h3 id="s14-3">14.3 Brownian Motion</h3>
-
-<p><strong>Brownian Motion W(t)</strong> = continuous limit ของ random walk สมบัติ:</p>
+<div class="bx ba"><div class="bt">🧮 เดินเลขจริง — GARCH ทำงานยังไง</div>
+<p>สมมติ ω = 0.00002, α = 0.1, β = 0.85 (α+β = 0.95 &lt; 1 → mean-revert)</p>
 <ul>
-<li>W(0) = 0</li>
-<li>Independent increments: W(t₂)-W(t₁) ไม่ขึ้นกับ W(t₁)-W(t₀)</li>
-<li>W(t₂)-W(t₁) ~ Normal(0, t₂-t₁) → ยิ่งเวลานาน variance ยิ่งมาก</li>
-<li>Continuous paths (ไม่กระโดด)</li>
+<li><strong>ค่าเฉลี่ยระยะยาว:</strong> σ²∞ = 0.00002/(1−0.95) = 0.0004 → σ∞ = √0.0004 = <strong>2%/วัน</strong></li>
+<li><strong>ถ้าเมื่อวานหุ้นเหวี่ยงแรง r = −3%</strong> (r² = 0.0009) และ σ²เมื่อวาน = 0.0004: σ²วันนี้ = 0.00002 + 0.1(0.0009) + 0.85(0.0004) = 0.00045 → σ = <strong>2.12%/วัน</strong> (สูงขึ้นเพราะเมื่อวานเหวี่ยง = volatility clustering)</li>
+</ul></div>
+
+<p><strong>พยากรณ์ต่อไปหลายวัน</strong> — หลังเกิดช็อก σ พุ่งขึ้นแล้ว<strong>ค่อย ๆ เด้งกลับ</strong>หา σ∞=2% · GARCH บอกได้ว่าเด้งกลับเร็วแค่ไหน (สูตรพยากรณ์ k วันข้างหน้าใช้ตัวคูณ persistence α+β ต่อวัน):</p>
+
+<div class="code"><div class="hdr">🐍 Python — พยากรณ์เส้นทาง σ หลังเกิดช็อก</div><pre>from math import sqrt
+
+w, alpha, beta = 0.00002, 0.10, 0.85       <span class="c"># α+β = 0.95 → mean-revert</span>
+var_inf = w / (1 - alpha - beta)           <span class="c"># variance ระยะยาว</span>
+print(f"sigma_inf = {sqrt(var_inf)*100:.2f}%/วัน")   <span class="o"># sigma_inf = 2.00%/วัน</span>
+
+var = 0.0009                               <span class="c"># วันนี้เพิ่งโดนช็อก (~3%/วัน)</span>
+for k in range(1, 8):
+    var = w + (alpha + beta) * var         <span class="c"># พยากรณ์ E[σ²] วันถัดไป</span>
+    print(f"  วัน +{k}: sigma = {sqrt(var)*100:.2f}%/วัน")
+<span class="o"># วัน +1: sigma = 2.96%/วัน</span>
+<span class="o"># วัน +2: sigma = 2.92%/วัน</span>
+<span class="o"># วัน +3: sigma = 2.88%/วัน</span>
+<span class="o"># วัน +4: sigma = 2.84%/วัน   ...ค่อย ๆ ไต่ลงหา 2.00%</span>
+<span class="o"># วัน +7: sigma = 2.74%/วัน</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<p>σ ไม่ได้ดิ่งกลับ 2% ทันที — มัน<strong>ลากยาว</strong> เพราะ persistence สูง (α+β=0.95) · นี่คือ "volatility clustering" ในรูปตัวเลข: วันแย่มาเป็นพวง แล้วจางช้า ๆ · ยิ่ง α+β ใกล้ 1 ยิ่งจางช้า (σ ติดค้างที่ระดับสูงนานขึ้น)</p></div>
+
+<div class="bx br"><div class="bt">❌ กับดักใหญ่ที่สุดของ Part นี้ — "GARCH &lt; IV แปลว่าแพง ขายเลย"</div>
+<p>อย่าเพิ่ง! นี่คือกับดักที่ทำให้คนขาย vol เจ๊งมานักต่อนัก:</p>
+<ul>
+<li><strong>IV มักสูงกว่า realized/GARCH เป็นปกติ</strong> — ช่องว่างนี้คือ <strong>Variance Risk Premium (VRP)</strong> ค่าจ้างที่คนขายประกันได้รับ ไม่ใช่ "ราคาผิด" ฉะนั้น "GARCH &lt; IV" คือ<strong>สภาพปกติ</strong> ไม่ใช่สัญญาณ</li>
+<li>ขาย option ดิบ ๆ = <strong>short gamma/vega + หางความเสี่ยงมหาศาล</strong> (short call = ไม่จำกัด · short put = ใหญ่มากแต่มีเพดานที่หุ้นถึง 0) — เก็บเบี้ยเล็ก ๆ ได้เรื่อย ๆ แล้ววันหายนะกลืนทุกอย่าง (เจ๊งแบบ "เก็บเหรียญหน้ารถบดถนน")</li>
+<li>edge จริงเกิดเมื่อช่องว่าง VRP <strong>กว้างหรือแคบผิดปกติเทียบกับอดีตของมันเอง</strong> — และต่อให้จะเล่น ก็ต้อง <strong>delta-hedge เพื่อแยกเอาเฉพาะ vol</strong> + คุมขนาดเผื่อหาง</li>
+</ul></div>
+
+<div class="bx bg"><div class="bt">✅ ใช้ให้ถูก — GARCH เทียบ IV ยังไง</div>
+<p>ใช้ GARCH เป็น "จุดอ้างอิง" ว่า realized น่าจะราว ๆ เท่าไร แล้วดูว่า IV ตอนนี้ <strong>ห่างจากค่าปกติของช่องว่าง</strong> ไปทางไหน — ไม่ใช่แค่ "IV &gt; GARCH ก็ขาย" · และตัดสินใจโดยรู้ตัวเสมอว่ากำลังรับความเสี่ยงหางแบบไหน</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ใช้ ω=0.00002, α=0.1, β=0.85 เท่าเดิม · ถ้าเมื่อวานหุ้น "นิ่ง" (r = 0) และ σ²เมื่อวาน = 0.0004 · σ²วันนี้ และ σ วันนี้เป็นเท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>σ²วันนี้ = 0.00002 + 0.1(0) + 0.85(0.0004) = 0.00036 → σ = √0.00036 = <strong>1.9%/วัน</strong> (ต่ำกว่าค่าเฉลี่ย 2% เพราะเมื่อวานนิ่ง — σ ค่อย ๆ เด้งกลับหา 2%)</p></details></div>
+</div>
+
+<h3 id="s8-5">8.5 Mean Reversion ของ σ</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> σ มักเด้งกลับหาค่าเฉลี่ย — สูงมาก (เช่นหลัง crash) มักค่อย ๆ ลง; ต่ำมากมักค่อย ๆ ขึ้น · ระดับที่มันเด้งกลับหาคือ σ∞ จาก GARCH ใช้เป็น "สมอ" ได้ แต่ยังต้องระวัง VRP เหมือนเดิม</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 9 ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch9">บทที่ 9: วิธีเชิงตัวเลข — หา Implied Volatility</h2>
+
+<p>บางสมการแก้ตรง ๆ ไม่ได้ ต้องให้คอมพิวเตอร์ค่อย ๆ ลองเข้าหาคำตอบ · ตัวอย่างสำคัญสุดคือ "หา IV" — กลับสูตร Black-Scholes เพื่อถามว่า "σ เท่าไรถึงให้ราคานี้"</p>
+
+<h3 id="s9-1">9.1 Bisection — แบ่งครึ่งไปเรื่อย ๆ</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้ารู้ว่าคำตอบอยู่ระหว่าง a กับ b ก็ลองจุดกึ่งกลาง แล้วถามว่าคำตอบอยู่ครึ่งซ้ายหรือขวา ตัดทิ้งครึ่งหนึ่งทุกรอบ — ช้าแต่ชัวร์</p>
+
+<div class="fm">1. เลือก a, b ที่ f(a)·f(b) &lt; 0 (คนละเครื่องหมาย → คำตอบคั่นกลาง)
+2. m = (a+b)/2 ; ดูว่า f(m) เครื่องหมายเดียวกับฝั่งไหน แล้วหุบเข้าหาอีกฝั่ง
+3. ทำซ้ำจน |b−a| เล็กพอ</div>
+
+<h3 id="s9-2">9.2 Newton-Raphson — ใช้ความชัน (Vega) พาเข้าเป้าเร็วกว่า</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> แทนที่จะแบ่งครึ่งมั่ว ๆ ใช้ "ความชันของฟังก์ชัน ณ จุดปัจจุบัน" ลากเส้นตรงลงไปหาแกน แล้วกระโดดไปจุดนั้น — เข้าเป้าไวมาก · สำหรับ IV ความชันที่ว่าคือ <strong>Vega</strong></p>
+
+<div class="fm">σₙ₊₁ = σₙ − ( BS_Price(σₙ) − ราคาตลาด ) / Vega(σₙ)</div>
+
+<svg class="d" viewBox="0 0 520 250" role="img" aria-label="Newton-Raphson ลากเส้นสัมผัสจาก sigma1 ไป sigma2 เข้าหาราก sigma* = IV">
+<line x1="55" y1="175" x2="480" y2="175" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="230" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="484" y="179" font-family="Sarabun" font-size="11" fill="#6b7280">σ</text>
+<text x="30" y="24" font-family="Sarabun" font-size="11" fill="#6b7280">f(σ)</text>
+<text x="58" y="189" font-family="Sarabun" font-size="9" fill="#94a3b8">0</text>
+<path d="M85,45 Q160,90 235,135 Q300,160 360,170 Q410,173 465,174" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+<text x="360" y="150" font-family="Sarabun" font-size="10" fill="#2563eb">f(σ) = BS(σ) − ราคาตลาด</text>
+<circle cx="120" cy="66" r="5" fill="#dc2626"/>
+<line x1="120" y1="66" x2="255" y2="175" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="5,3" stroke-linecap="round"/>
+<line x1="120" y1="66" x2="120" y2="175" stroke="#dc2626" stroke-width="0.6" stroke-dasharray="2"/>
+<text x="112" y="58" font-family="Sarabun" font-size="10" fill="#dc2626">σ₁</text>
+<circle cx="255" cy="150" r="4.5" fill="#d97706"/>
+<line x1="255" y1="150" x2="315" y2="175" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,3" stroke-linecap="round"/>
+<text x="248" y="142" font-family="Sarabun" font-size="10" fill="#d97706">σ₂</text>
+<circle cx="330" cy="175" r="6" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>
+<text x="340" y="168" font-family="Sarabun" font-size="11" fill="#16a34a" font-weight="700">σ* = IV</text>
+</svg>
+
+<div class="bx bg"><div class="bt">เชื่อมกับ Options — เบื้องหลังเลข IV บนจอ</div>
+<p>Newton-Raphson ใช้ <strong>Vega</strong> เป็นความชัน → เข้าเป้าใน 3–5 รอบ · ทุกครั้งที่เห็น "IV = 25%" บนหน้าจอ เบื้องหลังคืออัลกอริทึมนี้กำลังกลับสูตร BS อยู่</p></div>
+
+<h3 id="s9-3">9.3 🐍 Python — หา IV จริง ๆ (bisection vs Newton)</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เรารู้ราคาตลาด (เช่น 12.336) แต่ไม่รู้ σ · ทั้งสองวิธี "เดา σ แล้วเอาไปเข้าสูตร BS (บทที่ 11) ดูว่าได้ราคาตรงไหม" ต่างกันแค่<strong>วิธีปรับค่าเดา</strong> · เราจะยืนยันว่าทั้งคู่ได้ IV = 25% กลับมา (เพราะราคา 12.336 มาจาก σ=25%)</p>
+
+<div class="bx ba"><div class="bt">🧮 คิดด้วยมือ — bisection 3 รอบแรก</div>
+<p>คำตอบอยู่ในช่วง σ ∈ [1%, 100%] แน่ ๆ · ลองจุดกึ่งกลางแล้วหุบเข้า:</p>
+<div class="tw"><table>
+<tr><th>รอบ</th><th>ช่วง [a, b]</th><th>กึ่งกลาง m</th><th>BS(m)</th><th>เทียบ 12.34</th></tr>
+<tr><td>0</td><td class="nw">[0.01, 1.00]</td><td>0.505</td><td class="nw">21.98</td><td>สูงไป → b=m</td></tr>
+<tr><td>1</td><td class="nw">[0.01, 0.505]</td><td>0.258</td><td class="nw">12.62</td><td>สูงไป → b=m</td></tr>
+<tr><td>2</td><td class="nw">[0.01, 0.258]</td><td>0.134</td><td class="nw">8.00</td><td>ต่ำไป → a=m</td></tr>
+<tr><td>3</td><td class="nw">[0.134, 0.258]</td><td>0.196</td><td class="nw">10.29</td><td>ต่ำไป → a=m …</td></tr>
+</table></div>
+<p>ช่วงหุบครึ่งทุกรอบ ค่อย ๆ บีบเข้าหา 0.25 — ช้าแต่ชัวร์</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — IV ด้วย 2 วิธี (นิยาม BS ซ้ำในตัว รันได้เลย)</div><pre>from math import log, sqrt, exp, erf, pi
+
+def N(x):   return 0.5*(1 + erf(x/sqrt(2)))
+def phi(x): return exp(-x*x/2)/sqrt(2*pi)
+
+def bs_call(S, K, r, sig, T):
+    d1 = (log(S/K) + (r + sig**2/2)*T)/(sig*sqrt(T)); d2 = d1 - sig*sqrt(T)
+    return S*N(d1) - K*exp(-r*T)*N(d2)
+def vega(S, K, r, sig, T):
+    d1 = (log(S/K) + (r + sig**2/2)*T)/(sig*sqrt(T))
+    return S*phi(d1)*sqrt(T)
+
+S, K, r, T, mkt = 100, 100, 0.05, 1, 12.336   <span class="c"># ราคาตลาดที่เห็น</span>
+
+<span class="c"># --- วิธี 1: Bisection (แบ่งครึ่ง — ช้าแต่ชัวร์) ---</span>
+a, b = 0.01, 1.0
+for _ in range(50):
+    m = (a + b)/2
+    if bs_call(S,K,r,m,T) > mkt: b = m
+    else:                        a = m
+print(f"bisection IV = {(a+b)/2*100:.2f}%")          <span class="o"># bisection IV = 25.00%</span>
+
+<span class="c"># --- วิธี 2: Newton-Raphson (ใช้ Vega — เร็วมาก) ---</span>
+sig = 0.50                                    <span class="c"># เดามั่ว ๆ เริ่มที่ 50%</span>
+for i in range(3):
+    diff = bs_call(S,K,r,sig,T) - mkt
+    print(f"  รอบ {i}: sig={sig*100:5.2f}%  ราคา={bs_call(S,K,r,sig,T):.3f}")
+    sig = sig - diff/vega(S,K,r,sig,T)        <span class="c"># σ ← σ − (ราคาเกิน)/Vega</span>
+print(f"newton IV = {sig*100:.2f}%")
+<span class="o">#   รอบ 0: sig=50.00%  ราคา=21.793</span>
+<span class="o">#   รอบ 1: sig=24.80%  ราคา=12.260   ← กระโดดเข้าเป้าเกือบสุดใน 1 ก้าว!</span>
+<span class="o">#   รอบ 2: sig=25.00%  ราคา=12.336</span>
+<span class="o"># newton IV = 25.00%</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — ทำไม Newton ชนะขาด</div>
+<p>Bisection ต้องวน ~14 รอบกว่าจะแม่น 4 ตำแหน่ง (และหลายสิบรอบถ้าเอาระดับ machine precision) · Newton ใช้ <strong>2 รอบ</strong> เพราะมันรู้ "ความชัน" (Vega) จึงกระโดดถูกทิศถูกระยะ — จาก 50% พุ่งลงมา 24.8% แล้วเก็บรายละเอียดอีกรอบเดียว · นี่คือเหตุผลที่ทุกแพลตฟอร์มใช้ Newton (หรือญาติของมัน) คำนวณ IV แบบ real-time</p></div>
+
+<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
+<p>เปลี่ยนราคาตลาดเป็น <code>mkt = 15.0</code> (option แพงขึ้น) แล้วรัน · คาดเดาก่อน: IV ควร<strong>สูงกว่า 25%</strong> (แพงขึ้น = ตลาดคิดว่าผันผวนมากขึ้น)</p>
+<p style="font-size:.88em;color:var(--g6)">เฉลย: IV ≈ 32.0% — สูงขึ้นตามคาด · ราคา option กับ IV วิ่งไปทางเดียวกันเสมอ (Vega > 0) ✓</p></div>
+
+<div class="deep"><div class="bt">🔬 เจาะลึก (ข้ามได้) — Numerical Greeks</div>
+<p>ถ้าโมเดลไม่มีสูตรปิด คำนวณ Greeks ด้วยผลต่าง: Delta ≈ [V(S+h) − V(S−h)] / (2h) · Gamma ≈ [V(S+h) − 2V(S) + V(S−h)] / h²</p></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 10 — ยอดเขา ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch10">บทที่ 10: กระบวนการสุ่ม และ Ito's Lemma — ยอดเขาของเล่ม</h2>
+
+<p>บทนี้คือที่ที่ทุกอย่างมาบรรจบ: การเดินสุ่มของราคา → กฎลูกโซ่ของโลกสุ่ม → สมการ Black-Scholes เข้าใจบทนี้ = เข้าใจว่าสูตรตั้งราคา option มาจากไหนจริง ๆ</p>
+
+<h3 id="s10-1">10.1 Random Walk → Binomial Tree</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> จินตนาการราคาหุ้นเดินทีละก้าว ก้าวละ "ขึ้นหรือลง" แบบสุ่ม · ต่อก้าวเยอะ ๆ เข้า เส้นทางรวมกลายเป็นการเดินสุ่มที่ทำนายทิศไม่ได้ แต่ทำนาย "ความกว้างของการกระจาย" ได้</p>
+
+<svg class="d" viewBox="0 0 520 210" role="img" aria-label="เส้นทางเดินสุ่มสามเส้นจากจุดเริ่มเดียวกัน กระจายออกตามเวลา">
+<line x1="55" y1="105" x2="480" y2="105" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4"/>
+<line x1="55" y1="195" x2="480" y2="195" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="195" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="484" y="199" font-family="Sarabun" font-size="10" fill="#6b7280">เวลา</text>
+<text x="34" y="24" font-family="Sarabun" font-size="10" fill="#6b7280">S</text>
+<polyline points="70,105 115,88 160,100 205,78 250,60 295,74 340,55 385,38 440,52" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="70,105 115,120 160,104 205,122 250,140 295,124 340,140 385,158 440,140" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="6,3" stroke-linecap="round"/>
+<polyline points="70,105 115,92 160,110 205,98 250,112 295,100 340,116 385,104 440,120" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" opacity="0.75"/>
+<circle cx="70" cy="105" r="4" fill="#374151"/><text x="44" y="109" font-family="Sarabun" font-size="10" fill="#374151">S₀</text>
+<text x="446" y="48" font-family="Sarabun" font-size="9.5" fill="#2563eb">เส้นทาง 1</text>
+<text x="446" y="136" font-family="Sarabun" font-size="9.5" fill="#dc2626">เส้นทาง 2</text>
+<text x="446" y="116" font-family="Sarabun" font-size="9.5" fill="#16a34a">เส้นทาง 3</text>
+</svg>
+
+<div class="fm">Binomial: u = e^(σ√Δt) (ขึ้น) · d = 1/u (ลง)
+p* = (e^(rΔt) − d) / (u − d)   ← risk-neutral probability</div>
+
+<div class="bx ba"><div class="bt">🧮 เดินเลขจริง — ตั้งราคา Call ด้วย tree 1 ก้าว</div>
+<p>S₀ = 100, r = 0, หนึ่งก้าว: ขึ้นไป 120 (u=1.2) หรือลงไป 80 (d=0.8)</p>
+<ul>
+<li><strong>p* = (1 − 0.8)/(1.2 − 0.8) = 0.2/0.4 = 0.5</strong> (โอกาส risk-neutral ที่หุ้นขึ้น)</li>
+<li>Call K=100: ถ้าขึ้น payoff = 120−100 = 20 · ถ้าลง payoff = 0</li>
+<li><strong>ราคา Call = 0.5×20 + 0.5×0 = 10</strong> (r=0 จึงไม่ต้องคิดลด)</li>
+</ul>
+<p>เพิ่มจำนวนก้าวให้ถี่ขึ้นเรื่อย ๆ ราคานี้จะลู่เข้าหาราคา Black-Scholes พอดี</p></div>
+
+<div class="bx bg"><div class="bt">เชื่อมกับ Options — ตั้งราคาด้วย tree</div>
+<ol>
+<li>สร้าง tree ราคาหุ้น n ก้าว</li>
+<li>คำนวณ payoff ที่ปลาย (วันหมดอายุ)</li>
+<li>ย้อนกลับทีละก้าว: V = e<sup>−rΔt</sup>·[ p*·V(ขึ้น) + (1−p*)·V(ลง) ]</li>
+<li>ค่าที่ node แรก = ราคา Option · เมื่อ n → ∞ → ลู่เข้า Black-Scholes</li>
+</ol></div>
+
+<h3 id="s10-1b">🐍 Python — tree หลายก้าว ลู่เข้า Black-Scholes จริง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ที่พูดว่า "เพิ่มก้าวแล้วลู่เข้า BS" — พิสูจน์ได้ในโค้ดไม่กี่บรรทัด · ใช้ค่า u, d, p* แบบ CRR (Cox-Ross-Rubinstein) แล้วสร้าง tree ย้อนราคากลับมา · ลองกับ Call ATM ชุดเดิม (S=K=100, r=5%, σ=25%, T=1) ที่ BS ให้ 12.336:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Binomial tree (CRR) → เทียบ Black-Scholes</div><pre>import numpy as np
+from math import exp, sqrt
+
+S, K, r, sig, T = 100, 100, 0.05, 0.25, 1
+
+def binomial_call(n):
+    dt = T/n
+    u  = exp(sig*sqrt(dt)); d = 1/u          <span class="c"># ขึ้น/ลง ต่อก้าว</span>
+    p  = (exp(r*dt) - d)/(u - d)             <span class="c"># โอกาส risk-neutral</span>
+    disc = exp(-r*dt)
+    <span class="c"># ราคาหุ้นที่ปลาย tree (n ก้าว) แล้วคิด payoff</span>
+    ST = np.array([S * u**j * d**(n-j) for j in range(n+1)])
+    V  = np.maximum(ST - K, 0)
+    <span class="c"># ย้อนกลับทีละก้าว: มูลค่า = คิดลด(ค่าเฉลี่ย risk-neutral)</span>
+    for step in range(n, 0, -1):
+        V = disc * (p*V[1:step+1] + (1-p)*V[0:step])
+    return V[0]
+
+for n in [1, 2, 5, 10, 50, 100, 500]:
+    print(f"n={n:>4} ก้าว: Call = {binomial_call(n):.4f}")
+<span class="o"># n=   1 ก้าว: Call = 14.5706   ← หยาบมาก</span>
+<span class="o"># n=   2 ก้าว: Call = 11.2110</span>
+<span class="o"># n=   5 ก้าว: Call = 12.7946</span>
+<span class="o"># n=  10 ก้าว: Call = 12.0923</span>
+<span class="o"># n=  50 ก้าว: Call = 12.2867</span>
+<span class="o"># n= 100 ก้าว: Call = 12.3113</span>
+<span class="o"># n= 500 ก้าว: Call = 12.3311   ← เข้าใกล้ BS = 12.336 แล้ว</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — tree คือ BS ฉบับ "หยาบ ๆ"</div>
+<p>ก้าวน้อย ราคาแกว่ง (14.6 → 11.2 → 12.1) เพราะ tree หยาบเกินจับรูป lognormal ได้ · เพิ่มก้าว ราคา<strong>ค่อย ๆ นิ่งเข้าหา 12.336</strong> · นี่พิสูจน์ว่า Black-Scholes = ลิมิตของ binomial tree เมื่อก้าวถี่จนต่อเนื่อง — สองโมเดลนี้คือสิ่งเดียวกันคนละความละเอียด · และข้อดีของ tree: ตั้งราคา <strong>American option</strong> (ใช้สิทธิ์ก่อนกำหนดได้) ได้ ซึ่ง BS สูตรปิดทำไม่ได้</p></div>
+
+<h3 id="s10-2">10.2 Risk-Neutral Pricing — ตั้งราคาโดยไม่ต้องรู้ทิศหุ้น</h3>
+
+<div class="card">
+<h3>Risk-Neutral Pricing <span class="yr">Harrison-Kreps 1979 · Harrison-Pliska 1981</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"เราตั้งราคา option ได้โดย<strong>ไม่ต้องเดาว่าหุ้นจะขึ้นหรือลง</strong> — เพราะ payoff ของ option สร้างเลียนแบบได้ด้วยหุ้น + พันธบัตร ราคาจึงต้องเท่ากับต้นทุนของพอร์ตเลียนแบบนั้น"</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าคุณผสมหุ้นกับเงินกู้ให้ได้ผลตอบแทน "เหมือน option เป๊ะทุกกรณี" แล้ว option ก็ต้องราคาเท่ากับต้นทุนของส่วนผสมนั้น — ไม่งั้นมีอาร์บิทราจ · และต้นทุนนั้น<strong>ไม่ขึ้นกับความน่าจะเป็นจริง</strong>ที่หุ้นจะขึ้น เราเลยคำนวณในโลกจำลอง "risk-neutral" ที่ทุกอย่างโตด้วย r ได้เลย</p>
+
+<div class="fm">Option Price = e^(−rT) × E*[ Payoff ]
+E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* ไม่ใช่ p จริง)</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>มือใหม่เห็น:</strong> "ต้องเดาให้แม่นว่าหุ้นจะขึ้นแค่ไหน ถึงตั้งราคา option ได้"<br>
+<strong>คนตั้งราคาเห็น:</strong> "ทิศทางหุ้นไม่เกี่ยวเลย — สิ่งที่สำคัญคือ <em>ต้นทุนการเลียนแบบ (hedge)</em>" นี่คือการพลิกมุมที่ทำให้ทั้งอุตสาหกรรม derivatives เกิดขึ้นได้</p></div>
+</div>
+
+<h3 id="s10-3">10.3 Brownian Motion และ GBM</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Brownian motion W(t) คือ random walk เวอร์ชันต่อเนื่อง (ก้าวเล็กจิ๋วถี่ยิบ) · ก่อนดูสมการ จำแค่ 2 ตัว: <strong>dt</strong> = "ก้าวเวลาสั้นจิ๋วหนึ่งก้าว" · <strong>dW</strong> = "ก้าวสุ่มสั้นจิ๋วหนึ่งก้าว (ช็อกแบบ Brownian)" · สมการราคาหุ้นของ Black-Scholes เขียนว่า:</p>
+
+<div class="fm" style="text-align:center;font-size:1.1em">dS/S = μ dt + σ dW</div>
+
+<p>อ่านเป็นภาษาคน: "% การเปลี่ยนราคา = แนวโน้ม + ช็อกสุ่ม"</p>
+<ul>
+<li><strong>μ dt</strong> = drift = แนวโน้มเฉลี่ย × เวลา (ส่วนที่คาดเดาได้)</li>
+<li><strong>σ dW</strong> = ความผันผวน × ช็อกสุ่มแบบ Brownian (ส่วนที่สุ่ม)</li>
 </ul>
 
-<h3 id="s14-4">14.4 Geometric Brownian Motion (GBM)</h3>
+<div class="bx bg"><div class="bt">ทำไมเป็น dS/S (ไม่ใช่ dS)</div>
+<p>เพราะ "% การเปลี่ยน" (dS/S) เป็น Normal ไม่ใช่ "การเปลี่ยนสัมบูรณ์" (dS) → ราคาจึงเป็น <strong>Lognormal</strong> (เชื่อมกับ Part II 6.4) → ราคา &gt; 0 เสมอ</p></div>
 
-<p>สมการการเคลื่อนที่ของราคาหุ้นใน Black-Scholes model:</p>
+<h3 id="s10-4">10.4 Ito's Lemma — Chain Rule ของโลกสุ่ม</h3>
 
-<div class="fm" style="text-align:center;font-size:1.15em">dS/S = μ dt + σ dW</div>
+<div class="card">
+<h3>Ito's Lemma <span class="yr">Itō 1951</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
-<p>อ่านว่า: "% การเปลี่ยนแปลงราคา = drift + สุ่ม"</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> จำ Chain Rule จาก Part III ได้ไหม? Ito's Lemma คือ Chain Rule เวอร์ชันโลกสุ่ม และมันมี "พจน์พิเศษ" โผล่เพิ่มมาหนึ่งตัว — พจน์ที่เกี่ยวกับ <strong>ความโค้ง (Gamma)</strong></p>
+
+<p style="color:#16a34a;font-size:.93em">🟢 <strong>มือใหม่ข้ามสมการเต็มบรรทัดล่างได้</strong> — อ่านกล่อง "ทำไมพจน์…ไม่หาย" กับ 🧠 ด้านล่าง ก็เก็บใจความครบแล้ว</p>
+
+<div class="fm" style="font-size:1.02em">dV = (∂V/∂t)dt + (∂V/∂S)dS + ½(∂²V/∂S²)(dS)²
+                                        └─ พจน์พิเศษของโลกสุ่ม ─┘</div>
+
+<div class="bx br"><div class="bt">🚶 ทำไมพจน์ ½(∂²V/∂S²)(dS)² ไม่หายไป</div>
+<p>ในแคลคูลัสปกติ ระยะยกกำลังสอง (dt)² เล็กจนตัดทิ้งได้ · แต่ในโลกสุ่มมีกฎแปลกข้อหนึ่ง: <strong>(dW)² = dt</strong> (ไม่ใช่ 0!) — ช็อกสุ่มยกกำลังสองแล้วไม่หาย มันกลายเป็นเวลา · ผลคือ (dS)² = σ²S²dt ยังอยู่ → พจน์ Gamma จึงไม่หายไป</p>
+<p><strong>นี่คือเหตุผลเชิงลึกว่าทำไม Gamma ถึงสำคัญ</strong> — มันคือ "ค่าแก้" ที่โลกสุ่มบังคับให้ใส่ ไม่ใช่ของแถม</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>มือใหม่เห็น:</strong> Ito เป็นสมการน่ากลัวสำหรับนักคณิตศาสตร์<br>
+<strong>คนเทรดเห็น:</strong> Ito แค่บอกว่า "ความเหวี่ยงของหุ้นสร้างมูลค่าให้ของที่โค้ง (Gamma)" — มันคือคณิตของประโยค "ได้ Gamma จ่าย Theta" ที่เราเจอใน Part III</p></div>
+</div>
+
+<h3 id="s10-5">10.5 Black-Scholes PDE — ปลายทางที่ทุกอย่างมาบรรจบ</h3>
+
+<div class="card">
+<h3>Black-Scholes PDE <span class="yr">Black-Scholes-Merton 1973</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เอา Ito's Lemma มาผสมกับ "การ hedge จนไม่เหลือความเสี่ยงทิศทาง" แล้วจัดรูป จะได้สมการเดียวที่ผูก Greeks ทุกตัวเข้าด้วยกัน:</p>
+
+<p style="color:#16a34a;font-size:.93em">🟢 <strong>มือใหม่ไม่ต้องอ่านสมการเต็มก็ได้</strong> — ตารางแปลแต่ละพจน์เป็น Greek ด้านล่าง คือใจความจริง (ข้ามสมการดิบไปได้เลย)</p>
+
+<div class="fm" style="text-align:center;font-size:1.05em">∂V/∂t + ½σ²S²(∂²V/∂S²) + rS(∂V/∂S) − rV = 0</div>
+
+<div class="tw"><table>
+<tr><th>พจน์</th><th>คือ Greek</th><th>แปลว่า</th></tr>
+<tr><td>∂V/∂t</td><td><strong>Theta</strong></td><td>ค่าเวลาที่ไหลออก</td></tr>
+<tr><td>½σ²S²(∂²V/∂S²)</td><td><strong>½σ²S²·Gamma</strong></td><td>กำไรจากความโค้ง</td></tr>
+<tr><td>rS(∂V/∂S)</td><td><strong>rS·Delta</strong></td><td>ต้นทุนถือครอง (carry)</td></tr>
+<tr><td>−rV</td><td>—</td><td>การคิดลด</td></tr>
+</table></div>
+
+<div class="bx bg"><div class="bt">💎 สมดุล Greeks — หัวใจที่สวยที่สุด</div>
+<p>จัดรูปใหม่ได้เป็น: <strong>Θ + ½σ²S²Γ + rSΔ = rV</strong></p>
+<p>อ่านเป็นภาษาคน: สำหรับ Long Option, Theta เป็นลบ (เสียค่าเวลา) แต่พจน์ Gamma เป็นบวก (ได้จากความโค้ง) — <strong>ทั้งสองถ่วงกันเป็นส่วนใหญ่</strong> (ส่วนที่เหลือคือเทอม carry rSΔ กับ discount −rV ในสมการเต็มข้างบน) · ใจความคือตลาดไม่ยอมให้มี "ของฟรี": อยากได้ Gamma ต้องจ่าย Theta · ประโยคเดสก์จาก Part III กลายเป็นสมการจริงตรงนี้</p></div>
+</div>
+
+<!-- ═══════════════ CAPSTONE ═══════════════ -->
+<h2 id="capstone">🎓 รวมร่าง: GARCH เจอ IV — อ่านให้เป็น ไม่ตกกับดัก</h2>
+
+<p>เอาเครื่องมือทั้ง Part มาตัดสินใจจริง โดยไม่ตกกับดัก "เห็นเลขแล้วขาย"</p>
+
+<div class="bx ba"><div class="bt">🧮 สถานการณ์</div>
+<p>GARCH พยากรณ์ realized σ ≈ 18%/ปี · IV ของ option ตอนนี้ = 22% · ช่องว่าง = 4 จุด · เพื่อนชวน "ขาย option เก็บส่วนต่าง"</p></div>
+
+<div class="bx bb"><div class="bt">🧭 นิสัยคิด — 4 คำถามก่อนตัดสินใจ</div>
+<ol>
+<li><strong>4 จุดนี้ ปกติหรือผิดปกติ?</strong> VRP เฉลี่ยในอดีตของสินทรัพย์นี้กี่จุด? ถ้าปกติ ~4 จุดอยู่แล้ว → นี่ไม่ใช่ signal มันคือ "ราคาตลาดปกติ"</li>
+<li><strong>ถ้าขาย ฉัน short อะไร?</strong> short vega + short gamma → ขาดทุนหนักถ้าตลาดเหวี่ยงแรง/กระโดด</li>
+<li><strong>หางเป็นยังไง?</strong> ขายดิบ = เก็บเบี้ยเล็ก เสี่ยงหายนะใหญ่ · ต้อง delta-hedge เพื่อแยกเอาเฉพาะ vol และคุมขนาด</li>
+<li><strong>GARCH เชื่อได้แค่ไหนตอนนี้?</strong> ช่วงตลาดสงบ σ mean-revert; ช่วงใกล้เหตุการณ์ (งบ/เลือกตั้ง) แบบจำลองพลาดง่าย</li>
+</ol>
+<p>ข้อสรุป: "IV &gt; GARCH" ลำพัง <strong>ไม่ใช่</strong> เหตุผลพอที่จะขาย — เหตุผลคือ "ช่องว่างกว้างผิดปกติ + เราจัดการหางได้"</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ถ้า GARCH ให้ σ ≈ 30% แต่ IV = 24% (IV <em>ต่ำกว่า</em> realized ที่คาด) แปลว่าอะไร และควรคิดยังไงต่อ?</p>
+<details><summary>ดูเฉลย</summary><p>IV ต่ำกว่าที่ realized น่าจะเป็น = ผิดปกติ (เพราะ VRP มักทำให้ IV สูงกว่า) → อาจเป็นจังหวะ "ซื้อ vol" (long option/long gamma) มากกว่าขาย · แต่ยังต้องเช็ก: GARCH กำลังมองข้ามอะไรไหม (เช่นข่าวที่จะทำให้จริง ๆ เหวี่ยงน้อยลง) และถ้าซื้อก็ต้องยอมจ่าย Theta ทุกวัน</p></details></div>
+
+<!-- ═══════════════ ปิด PART IV ═══════════════ -->
+<div class="bx ba"><div class="bt">สรุป Part IV — คุณทำอะไรได้แล้วบ้าง</div>
 <ul>
-<li><strong>μ dt</strong> = drift (ทิศทางเฉลี่ย × เวลา) → deterministic</li>
-<li><strong>σ dW</strong> = volatility × Brownian shock → stochastic (สุ่ม)</li>
-</ul>
+<li>พยากรณ์ σ ด้วย <strong>GARCH</strong> — และรู้ว่า "IV &gt; GARCH" คือ VRP ปกติ ไม่ใช่ป้ายลดราคา</li>
+<li>หา IV ด้วย <strong>Newton-Raphson</strong> (ใช้ Vega เป็นความชัน)</li>
+<li>เข้าใจ <strong>Risk-Neutral Pricing</strong> — ตั้งราคาโดยไม่ต้องเดาทิศหุ้น</li>
+<li>อ่าน <strong>Ito's Lemma</strong> ออก — ทำไม (dW)²=dt ทำให้ Gamma ไม่หาย</li>
+<li>อ่าน <strong>BS PDE</strong> เป็นสมดุล Greeks: Θ + ½σ²S²Γ + rSΔ = rV</li>
+</ul></div>
 
-<div class="bx bg">
-<div class="bt">ทำไม Geometric?</div>
-<p>เพราะ dS/<strong>S</strong> (% change) เป็น normal ไม่ใช่ dS (absolute change)<br>
-→ ราคาเป็น <strong>Lognormal</strong> (เชื่อมกับบท 6.4!) → ราคา > 0 เสมอ</p>
-</div>
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เรามีชิ้นส่วนครบทุกชิ้นแล้ว — ฟังก์ชัน, σ, N(d), Greeks, Ito · Part สุดท้ายจะประกอบมันเข้าด้วยกันเป็นสูตร Black-Scholes ที่อ่านออกทุกตัวอักษร แล้วปิดท้ายด้วย Monte Carlo</div>
 
-<h3 id="s14-5">14.5 Ito's Lemma — "Chain Rule ของโลกสุ่ม"</h3>
-
-<p>ถ้า S เป็น stochastic process และ V(S,t) เป็นฟังก์ชันของ S:</p>
-
-<div class="fm" style="font-size:1.05em">dV = (∂V/∂t)dt + (∂V/∂S)dS + <strong>½(∂²V/∂S²)(dS)²</strong></div>
-
-<div class="bx br">
-<div class="bt">ทำไมมี term ½(∂²V/∂S²)(dS)² พิเศษ?</div>
-<p>ในโลกปกติ (dt)² ≈ 0 ตัดทิ้งได้ แต่ในโลกสุ่ม <strong>(dW)² = dt ≠ 0!</strong><br>
-ดังนั้น (dS)² = σ²S²dt → term Gamma ไม่หายไป!<br>
-<strong>นี่คือเหตุผลว่าทำไม Gamma สำคัญ</strong> — มันเป็น "ค่าแก้" ที่โลกสุ่มบังคับให้ใส่</p>
-</div>
-
-<h3 id="s14-6">14.6 Black-Scholes PDE</h3>
-
-<p>ใช้ Ito's Lemma + hedging argument → ได้สมการ:</p>
-
-<div class="fm" style="text-align:center;font-size:1.1em">∂V/∂t + ½σ²S²(∂²V/∂S²) + rS(∂V/∂S) - rV = 0</div>
-
-<p>แต่ละ term คือ Greek:</p>
-<table>
-<tr><th>Term</th><th>Greek</th><th>ความหมาย</th></tr>
-<tr><td>∂V/∂t</td><td><strong>Theta (Θ)</strong></td><td>Time decay</td></tr>
-<tr><td>½σ²S²(∂²V/∂S²)</td><td><strong>½σ²S² × Gamma (Γ)</strong></td><td>Convexity benefit</td></tr>
-<tr><td>rS(∂V/∂S)</td><td><strong>rS × Delta (Δ)</strong></td><td>Cost of carry</td></tr>
-<tr><td>-rV</td><td></td><td>Discounting</td></tr>
-</table>
-
-<div class="bx bg">
-<div class="bt">Greeks Balance!</div>
-<p><strong>Θ + ½σ²S²Γ + rSΔ = rV</strong><br><br>
-หมายความว่า: Time decay (Theta) <strong>ถูก offset</strong> ด้วย Convexity gain (Gamma term)<br>
-สำหรับ Long Option: Theta เป็นลบ แต่ Gamma term เป็นบวก → สมดุลกัน!<br>
-<strong>ไม่มี "free lunch" — ได้ Gamma ต้องจ่าย Theta</strong></p>
-</div>
-
-<div class="bx ba">
-<div class="bt">สรุป Part VI</div>
-<p>✓ Autocorrelation → Volatility Clustering<br>
-✓ EWMA, <strong>GARCH</strong> → Forecast Volatility → เทียบกับ IV<br>
-✓ Mean Reversion → จังหวะเข้า/ออก<br>
-✓ Bisection, <strong>Newton-Raphson → IV Solver</strong> (ใช้ Vega!)<br>
-✓ Numerical Greeks → Delta, Gamma จาก model ใดก็ได้<br>
-✓ Random Walk → Binomial Tree → Option Pricing<br>
-✓ <strong>Risk-Neutral Pricing</strong> → ไม่ต้องรู้ทิศทางหุ้น!<br>
-✓ GBM → สมการราคาหุ้นใน BS<br>
-✓ <strong>Ito's Lemma → ที่มาของ Gamma term</strong><br>
-✓ <strong>BS PDE: Θ + ½σ²S²Γ + rSΔ = rV</strong></p>
-</div>
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>Realized vol</strong> = σ ที่เกิดจริง · <strong>Implied vol (IV)</strong> = σ ที่ฝังในราคา option · <strong>Variance Risk Premium (VRP)</strong> = ช่องว่าง IV−realized = ค่าประกัน · <strong>GARCH</strong> = โมเดลพยากรณ์ σ · <strong>EWMA</strong> = ค่าเฉลี่ยถ่วงน้ำหนักของใหม่ · <strong>Newton-Raphson</strong> = หา root ด้วยความชัน · <strong>Brownian motion</strong> = การเดินสุ่มต่อเนื่อง · <strong>GBM</strong> = dS/S = μdt + σdW · <strong>Ito's Lemma</strong> = chain rule โลกสุ่ม · <strong>Risk-neutral</strong> = โลกจำลองที่โตด้วย r · <strong>BS PDE</strong> = สมการสมดุล Greeks</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
-<div style="text-align:center;padding:20px;color:#64748b">
-<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part VI</p>
-<p>Part VII: ประมวลรวม → อ่าน Black-Scholes ออกทุกตัว + Monte Carlo</p>
+<div style="text-align:center;padding:16px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part IV</p>
+<p>ถัดไป — <a href="math-part7.html"><strong>Part V: ประกอบร่าง Black-Scholes + Monte Carlo</strong></a> → อ่านสูตร BS ออกทุกตัว และวิธีตั้งราคาด้วยการจำลอง</p>
 </div>
 
+<!-- ═══════════════ Thai line-break script — ห้ามแก้ ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
 </body>
 </html>

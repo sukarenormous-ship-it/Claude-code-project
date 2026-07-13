@@ -3,223 +3,278 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>คณิตศาสตร์สำหรับ Options — Part III</title>
+<title>คณิตศาสตร์สำหรับ Options — Part III: แคลคูลัส ภาษาของ Greeks</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
-h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
-h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}
-h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
-p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
-.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}
-.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}
-.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
-.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
-.bt{font-weight:700;margin-bottom:5px}
-.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
-svg.d{display:block;margin:20px auto;max-width:500px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
-</style>
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;white-space:pre-wrap}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:480px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px dashed #0891b2;border-radius:8px;padding:12px 18px;margin:14px 0}.try .bt{color:#0e7490}.try details{margin-top:6px}.try summary{cursor:pointer;color:#0e7490;font-weight:600}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style>
 </head>
 <body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
 <div class="cover">
-<h1>คณิตศาสตร์พื้นฐาน<br>สำหรับ Options Trading</h1>
-<div class="sub">Part III: แคลคูลัส — ภาษาของ Greeks</div>
-<div class="desc">บทที่ 7: Derivative, Partial Derivative, Chain Rule, Integration, Taylor Series<br>อ่านจบ Part นี้ → เข้าใจ Greeks ทุกตัวอย่างลึกซึ้ง</div>
+<h1>คณิตศาสตร์สำหรับ<br>Options Trading</h1>
+<div class="sub">Part III — แคลคูลัส: ภาษาของ Greeks</div>
+<div class="desc">อนุพันธ์ · อนุพันธ์ย่อย · Chain Rule · อนุพันธ์อันดับ 2 · Taylor — อ่านจบแล้วเข้าใจ Delta · Gamma · Theta · Vega ว่าคืออะไรและ "ใช้มันคิดหน้างานยังไง"</div>
 </div>
 
-<!-- ========== CHAPTER 7 ========== -->
-<h2 id="ch7">บทที่ 7: แคลคูลัส — "ภาษาของ Greeks"</h2>
+<!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน 🚶 + 🧮 + 🎯 · แก่นของ Part นี้คือ <strong>Greek ทุกตัว = "ถ้าเปลี่ยน ___ นิดเดียว ราคา option เปลี่ยนเท่าไร"</strong> — แคลคูลัสแค่ให้ภาษาไว้ตอบคำถามนั้น · <strong>🔵 มีพื้น:</strong> อ่านการ์ด Gamma และ Delta-Gamma approximation ให้ครบ</p></div>
 
-<p>Greeks ทุกตัวคือ <strong>อนุพันธ์ (derivatives)</strong> ของราคา Option — ถ้าไม่รู้จักแคลคูลัส ก็ไม่เข้าใจ Greeks อย่างลึกซึ้ง</p>
+<div class="bx bp"><div class="bt">📖 ต่อจาก Part II — และศัพท์ที่จะเจอ</div>
+<p>Part II บอกว่า "อะไร" กำหนดราคา option (σ, ความน่าจะเป็น) · Part III ตอบว่า "พอตัวแปรขยับ ราคาขยับเท่าไร" คำตอบคือ <strong>Greeks</strong> ซึ่งเป็นแค่ชื่อเล่นของ "อนุพันธ์" · ศัพท์: <strong>Derivative/อนุพันธ์</strong> = ความชัน = อัตราเปลี่ยน · <strong>Delta</strong> = ต่อราคาหุ้น · <strong>Gamma</strong> = ความโค้ง · <strong>Theta</strong> = ต่อเวลา · <strong>Vega</strong> = ต่อ σ · <strong>hedge</strong> = ป้องกันความเสี่ยงด้วยการถือหุ้นสวนไว้</p></div>
 
-<h3 id="s7-1">7.1 Limit — แนวคิด "เข้าใกล้"</h3>
+<!-- ═══════════════ เปิดเรื่อง (HOOK) ═══════════════ -->
+<h2>เปิดเรื่อง: "เดาถูกทาง แต่ยังขาดทุน"</h2>
 
-<p><strong>lim(x→a) f(x)</strong> = "เมื่อ x เข้าใกล้ a ค่า f(x) เข้าใกล้เท่าไหร่?"</p>
+<p>เทรดเดอร์คนหนึ่งซื้อ Call เพราะเชื่อว่าหุ้นจะขึ้น · วันรุ่งขึ้นหุ้นขึ้นจริง ฿1 — แต่ Call ในมือ<strong>กลับมีค่าน้อยลง</strong> เขาเดาถูกทาง แล้วทำไมยังเสียเงิน?</p>
 
-<div class="fm">ตัวอย่าง: lim(x→0) sin(x)/x = 1<br>
-x = 0.1 → sin(0.1)/0.1 = 0.9983<br>
-x = 0.01 → sin(0.01)/0.01 = 0.99998<br>
-x = 0.001 → 0.9999998 → เข้าใกล้ 1!</div>
+<p>เพราะราคา Option ไม่ได้ขึ้นกับทิศทางหุ้นอย่างเดียว มันขึ้นกับ<strong>หลายแรงพร้อมกัน</strong>: ราคาหุ้น (S), เวลาที่เหลือ (t), ความผันผวน (σ), ดอกเบี้ย (r) · วันนั้นหุ้นขึ้น (+) แต่ "เวลาที่หายไป 1 วัน" กับ "σ ที่ตกลง" ดูดค่าออกไปมากกว่า — สุทธิแล้วติดลบ</p>
 
-<div class="bx ba">
-<div class="bt">ทำไมต้องรู้?</div>
-<p>Derivative (อนุพันธ์) นิยามจาก limit — "ถ้าเปลี่ยน x นิดเดียว y เปลี่ยนเท่าไหร่?"<br>
-นี่คือแนวคิดเดียวกับ Delta: "ถ้าราคาหุ้นเปลี่ยน ฿1 ราคา Option เปลี่ยนเท่าไหร่?"</p>
-</div>
+<div class="bx bb"><div class="bt">🔧 นี่คือเหตุผลที่ต้องมี Greeks</div>
+<p>เราต้องแยกให้ออกว่า "แต่ละแรงดันราคา option ไปคนละเท่าไร" ถึงจะจัดการมันได้ · เครื่องมือที่แยก "ผลของตัวแปรเดียว โดยตรึงตัวอื่นไว้" มีชื่อว่า <strong>อนุพันธ์ย่อย (partial derivative)</strong> และผลลัพธ์ของมันแต่ละตัวก็คือ Greek หนึ่งตัว</p></div>
 
-<h3 id="s7-2">7.2 Derivative (อนุพันธ์) — อัตราการเปลี่ยนแปลง</h3>
+<div class="pq">Greek ทุกตัวคือประโยคเดียวกัน: "ถ้าขยับ ___ นิดเดียว ราคา option ขยับเท่าไร" — แคลคูลัสแค่ให้ปากกาเขียนประโยคนั้น</div>
 
-<p><strong>f'(x)</strong> = อัตราการเปลี่ยนแปลงของ f(x) ณ จุด x = <strong>slope ของเส้นสัมผัส</strong></p>
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch7">บทที่ 7: แคลคูลัส — ภาษาของ Greeks</h2>
 
-<div class="fm">f'(x) = lim(h→0) [f(x+h) - f(x)] / h</div>
+<h3 id="s7-1">7.1 อนุพันธ์ = ความชัน (กลับมาเจอเพื่อนเก่าจาก Part I)</h3>
 
-<p><strong>กฎพื้นฐาน:</strong></p>
-<table>
-<tr><th>f(x)</th><th>f'(x)</th><th>ชื่อกฎ</th></tr>
-<tr><td>x<sup>n</sup></td><td>n × x<sup>n-1</sup></td><td>Power Rule</td></tr>
-<tr><td>c (ค่าคงที่)</td><td>0</td><td>Constant Rule</td></tr>
-<tr><td>c × f(x)</td><td>c × f'(x)</td><td>Constant Multiple</td></tr>
-<tr><td>f(x) + g(x)</td><td>f'(x) + g'(x)</td><td>Sum Rule</td></tr>
-<tr><td>e<sup>x</sup></td><td>e<sup>x</sup></td><td>← <strong>อนุพันธ์ของตัวเอง!</strong></td></tr>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> อนุพันธ์ f'(x) ตอบคำถามเดียว: "ณ จุดนี้ ถ้าขยับ x ไปนิดเดียว f ขยับเท่าไร" มันคือ <strong>ความชันของเส้นสัมผัส</strong> ณ จุดนั้น — ซึ่งเราเจอแล้วใน Part I (slope) แค่ตอนนี้ใช้กับเส้นโค้งได้</p>
+
+<div class="fm">f'(x) = lim(h→0) [ f(x+h) − f(x) ] / h   ← "ขยับนิดเดียว แล้วดูอัตราส่วน"</div>
+
+<div class="tw"><table>
+<tr><th>f(x)</th><th>f'(x)</th><th>กฎ</th></tr>
+<tr><td>xⁿ</td><td>n·xⁿ⁻¹</td><td>Power Rule</td></tr>
+<tr><td>ค่าคงที่ c</td><td>0</td><td>ของนิ่งไม่มีความชัน</td></tr>
+<tr><td>eˣ</td><td>eˣ</td><td>อนุพันธ์ของตัวเอง!</td></tr>
 <tr><td>ln(x)</td><td>1/x</td><td></td></tr>
-</table>
+</table></div>
 
-<svg class="d" viewBox="0 0 500 260">
-<defs><marker id="c1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
-<line x1="50" y1="220" x2="470" y2="220" stroke="#374151" stroke-width="1" marker-end="url(#c1)"/>
-<line x1="50" y1="220" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#c1)"/>
-<text x="475" y="224" font-family="Sarabun" font-size="11" fill="#374151">x</text>
-<text x="30" y="15" font-family="Sarabun" font-size="11" fill="#374151">f(x)</text>
-<!-- Curve f(x) = x² (scaled) -->
-<path d="M80,200 Q150,195 200,170 Q250,130 300,80 Q340,40 380,10" stroke="#2563eb" stroke-width="2.5" fill="none"/>
-<text x="390" y="20" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">f(x) = x²</text>
-<!-- Tangent line at x=200 (slope) -->
-<line x1="120" y1="210" x2="320" y2="110" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,3"/>
-<circle cx="200" cy="170" r="5" fill="#dc2626"/>
-<text x="210" y="166" font-family="Sarabun" font-size="11" fill="#dc2626" font-weight="600">slope = f'(x) ณ จุดนี้</text>
-<!-- Arrow showing slope -->
-<text x="300" y="135" font-family="Sarabun" font-size="10" fill="#dc2626">← เส้นสัมผัส (tangent)</text>
+<svg class="d" viewBox="0 0 520 250" role="img" aria-label="เส้นโค้ง f(x)=x² กับเส้นสัมผัสที่ความชัน f'(x)">
+<defs><filter id="p3soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#2563eb" flood-opacity="0.25"/></filter></defs>
+<line x1="55" y1="215" x2="475" y2="215" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="230" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="479" y="219" font-family="Sarabun" font-size="11" fill="#6b7280">x</text>
+<text x="34" y="24" font-family="Sarabun" font-size="11" fill="#6b7280">f(x)</text>
+<path d="M75,205 Q150,200 200,180 Q260,150 310,95 Q350,52 385,22" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linecap="round" filter="url(#p3soft)"/>
+<text x="392" y="30" font-family="Sarabun" font-size="11.5" fill="#2563eb" font-weight="700">f(x) = x²</text>
+<line x1="150" y1="212" x2="330" y2="108" stroke="#dc2626" stroke-width="2" stroke-dasharray="6,3" stroke-linecap="round"/>
+<circle cx="240" cy="160" r="5" fill="#fff" stroke="#dc2626" stroke-width="2.5"/>
+<text x="250" y="150" font-family="Sarabun" font-size="10.5" fill="#dc2626" font-weight="700">ความชัน = f'(x) ณ จุดนี้</text>
+<text x="300" y="185" font-family="Sarabun" font-size="10" fill="#dc2626">เส้นสัมผัส (tangent)</text>
 </svg>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options — Delta!</div>
-<p><strong>Delta (Δ) = ∂V/∂S</strong> = derivative ของราคา Option (V) เทียบกับราคาหุ้น (S)<br>
-= "ถ้าราคาหุ้นขึ้น ฿1 ราคา Option เปลี่ยนเท่าไหร่?"<br>
-= <strong>slope ของ payoff curve ณ จุดนั้น</strong></p>
+<div class="bx bg"><div class="bt">เชื่อมกับ Options — Delta คือความชันนี้</div>
+<p><strong>Delta (Δ) = ∂V/∂S</strong> = "หุ้นขึ้น ฿1 → ราคา Option ขยับเท่าไร" = ความชันของ payoff curve ณ จุดนั้น (เพื่อนเก่าจาก Part I 1.3 กลับมาในชุดใหม่)</p></div>
+
+<h3 id="s7-2">7.2 อนุพันธ์ของ eˣ และ Chain Rule</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> eˣ พิเศษตรงที่ "ความชันของมัน = ตัวมันเอง" (ยิ่งสูงยิ่งชันเร็ว = การเติบโตแบบทบต้น) · Chain Rule คือกฎ "ลอกเปลือกทีละชั้น" เมื่อฟังก์ชันซ้อนกัน</p>
+
+<div class="fm">d/dx(eˣ) = eˣ            ← อนุพันธ์ของตัวเอง
+Chain Rule: y = f(g(x)) → dy/dx = f'(g(x)) · g'(x)
+ตัวอย่าง: d/dT(e^(−rT)) = e^(−rT) · (−r) = −r·e^(−rT)</div>
+
+<div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
+<p>Chain Rule คือพื้นฐานของ <strong>Ito's Lemma</strong> — "Chain Rule ของโลกสุ่ม" ที่ใช้ derive สูตร Black-Scholes (เจอกันใน Part IV)</p></div>
+
+<h3 id="s7-3">7.3 อนุพันธ์ย่อย = Greeks ทุกตัว</h3>
+
+<div class="card">
+<h3>Greeks = อนุพันธ์ย่อยของราคา Option <span class="yr">Black-Scholes greeks</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"ราคา Option ขึ้นกับหลายตัวแปร V(S, t, σ, r) · Greek แต่ละตัวคือ 'อนุพันธ์ย่อย' = ผลของตัวแปรเดียว โดยตรึงตัวอื่นไว้ — มันคือ 'หน้าปัดวัด' ที่บอกว่าพอร์ตคุณไวต่ออะไรบ้าง"</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ∂V/∂S อ่านว่า "เปลี่ยน S ค้าง t, σ, r ไว้" เหมือนหมุนปุ่มทีละปุ่มดูว่าเสียงเปลี่ยนยังไง โดยไม่แตะปุ่มอื่น</p>
+
+<div class="tw"><table>
+<tr><th>Greek</th><th>สูตร</th><th>ตอบคำถาม</th><th>ที่โต๊ะเทรดใช้คิดว่า</th></tr>
+<tr><td class="nw"><strong>Δ Delta</strong></td><td>∂V/∂S</td><td>หุ้นขยับ ฿1 ราคาขยับเท่าไร</td><td>"ตอนนี้ฉันเท่ากับถือหุ้นกี่หุ้น" → ใช้ตั้ง hedge</td></tr>
+<tr><td class="nw"><strong>Γ Gamma</strong></td><td>∂²V/∂S²</td><td>Delta เปลี่ยนเร็วแค่ไหน</td><td>"ต้อง rehedge บ่อยแค่ไหน"</td></tr>
+<tr><td class="nw"><strong>Θ Theta</strong></td><td>∂V/∂t</td><td>เวลาผ่านไป 1 วัน เสียเท่าไร</td><td>"ค่าเช่า" ที่จ่ายทุกวันเพื่อถือ optionality</td></tr>
+<tr><td class="nw"><strong>ν Vega</strong></td><td>∂V/∂σ</td><td>σ ขยับ ราคาขยับเท่าไร</td><td>"ฉันเดิมพัน σ ไปทางไหน"</td></tr>
+<tr><td class="nw"><strong>ρ Rho</strong></td><td>∂V/∂r</td><td>ดอกเบี้ยขยับ ราคาขยับเท่าไร</td><td>ปกติเล็กสุด — สนใจเมื่อ option อายุยาว</td></tr>
+</table></div>
+
+<div class="bx ba"><div class="bt">💡 เรื่องหน่วยของ Vega ที่พลาดกันบ่อย</div>
+<p>∂V/∂σ ตามนิยามคือ "ราคาเปลี่ยนต่อ σ ที่ขยับ <strong>1 หน่วยเต็ม</strong> (= 100 จุด vol เช่นจาก 20% เป็น 120%)" · แต่เทรดเดอร์ quote Vega เป็น "<strong>ต่อ 1 จุด vol</strong> (1%)" ซึ่ง = ∂V/∂σ × 0.01 · อย่าสับสนสองหน่วยนี้ เวลาอ่านตัวเลข Vega ให้เช็คก่อนว่าเป็น "ต่อ 1 หน่วย" หรือ "ต่อ 1%"</p></div>
+
+<div class="bx bg"><div class="bt">🎬 ฉากหน้าจอ — เฉลย hook หน้าแรก</div>
+<p>Call ที่เทรดเดอร์ถือมี Δ=+0.5, Θ=−0.08/วัน, ν=+0.12 <span style="color:var(--g6);font-size:.9em">(ตัวเลขกลม ๆ เพื่อสาธิต — ค่าจริงจาก BS ของ Call ATM ตัวนี้คือ Δ≈0.627, Γ≈0.015 ดูที่ §7.6)</span> · วันนั้น: หุ้น +฿1 → ได้จาก Delta ≈ +0.5 · แต่เวลาผ่าน 1 วัน → Theta ≈ −0.08 · และ σ ตก 4 จุด → Vega ≈ 0.12×(−4) = −0.48 · สุทธิ ≈ 0.5 − 0.08 − 0.48 = <strong>−0.06 (ขาดทุน)</strong> ทั้งที่เดาทิศถูก — เพราะ Vega กับ Theta รวมกันชนะ Delta</p></div>
 </div>
 
-<h3 id="s7-3">7.3 อนุพันธ์ของ e<sup>x</sup> — ทำไม e สำคัญมาก</h3>
+<h3 id="s7-4">7.4 อนุพันธ์อันดับ 2 = Gamma (ความโค้ง)</h3>
 
-<div class="fm">d/dx (e<sup>x</sup>) = e<sup>x</sup> ← อนุพันธ์ของตัวเอง!<br>
-d/dx (e<sup>ax</sup>) = a × e<sup>ax</sup> (Chain Rule)</div>
+<div class="card">
+<h3>Gamma — ความโค้งของ payoff <span class="yr">อนุพันธ์อันดับ 2</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
-<div class="bx ba">
-<div class="bt">ทำไมจึงสำคัญใน Finance?</div>
-<p>e<sup>rT</sup> คือ compound interest → d/dT(e<sup>rT</sup>) = r × e<sup>rT</sup><br>
-หมายความว่า: "อัตราการเติบโตของเงินที่ทบต้น = r × เงินปัจจุบัน"<br>
-ยิ่งเงินมาก ยิ่งโตเร็ว — นี่คือ exponential growth!</p>
-</div>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้า Delta คือ "ความชัน" แล้ว Gamma คือ "ความชันของความชัน" = <strong>ความโค้ง</strong> · มันบอกว่า Delta เปลี่ยนเร็วแค่ไหนเมื่อหุ้นขยับ · Gamma สูง = Delta วิ่งไว = ต้องปรับ hedge บ่อย</p>
 
-<h3 id="s7-4">7.4 Chain Rule — กฎลูกโซ่</h3>
+<div class="fm">Gamma (Γ) = ∂²V/∂S² = ∂(Delta)/∂S</div>
 
-<div class="fm">ถ้า y = f(g(x)) แล้ว dy/dx = f'(g(x)) × g'(x)</div>
-
-<p>ตัวอย่าง: y = e<sup>-rT</sup> หา dy/dT</p>
-<div class="fm">ให้ u = -rT → y = e<sup>u</sup><br>
-dy/dT = dy/du × du/dT = e<sup>u</sup> × (-r) = <strong>-r × e<sup>-rT</sup></strong></div>
-
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p>Chain Rule คือพื้นฐานของ <strong>Ito's Lemma</strong> (บท 14) — "chain rule ของโลกสุ่ม" ที่ใช้ derive สูตร Black-Scholes</p>
-</div>
-
-<h3 id="s7-5">7.5 Partial Derivatives — อนุพันธ์ย่อย</h3>
-
-<p>เมื่อฟังก์ชันมีหลายตัวแปร: <strong>∂f/∂x</strong> = "เปลี่ยน x ค้าง y" (treat y as constant)</p>
-
-<p>ตัวอย่าง: f(x, y) = x²y + 3xy</p>
-<div class="fm">∂f/∂x = 2xy + 3y &nbsp;&nbsp; (treat y เป็นค่าคงที่)<br>
-∂f/∂y = x² + 3x &nbsp;&nbsp;&nbsp; (treat x เป็นค่าคงที่)</div>
-
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options — Greeks ทุกตัว!</div>
-<p>ราคา Option V ขึ้นกับหลายตัวแปร: V(S, t, σ, r) ดังนั้น:</p>
-</div>
-
-<table>
-<tr><th>Greek</th><th>สูตร</th><th>ความหมาย</th><th>เปลี่ยนอะไร ค้างอะไร</th></tr>
-<tr><td style="font-size:1.2em"><strong>Δ Delta</strong></td><td>∂V/∂S</td><td>ราคาเปลี่ยนเท่าไหร่ต่อหุ้นขยับ ฿1</td><td>เปลี่ยน S, ค้าง t,σ,r</td></tr>
-<tr><td style="font-size:1.2em"><strong>Θ Theta</strong></td><td>∂V/∂t</td><td>ราคาเปลี่ยนเท่าไหร่ต่อวัน</td><td>เปลี่ยน t, ค้าง S,σ,r</td></tr>
-<tr><td style="font-size:1.2em"><strong>ν Vega</strong></td><td>∂V/∂σ</td><td>ราคาเปลี่ยนเท่าไหร่ต่อ σ เปลี่ยน 1%</td><td>เปลี่ยน σ, ค้าง S,t,r</td></tr>
-<tr><td style="font-size:1.2em"><strong>ρ Rho</strong></td><td>∂V/∂r</td><td>ราคาเปลี่ยนเท่าไหร่ต่อดอกเบี้ยเปลี่ยน</td><td>เปลี่ยน r, ค้าง S,t,σ</td></tr>
-</table>
-
-<h3 id="s7-6">7.6 อนุพันธ์อันดับ 2 — Gamma</h3>
-
-<p><strong>f''(x)</strong> = อนุพันธ์ของอนุพันธ์ = <strong>อัตราการเปลี่ยนแปลงของ slope</strong></p>
-
-<div class="fm">Gamma (Γ) = ∂²V/∂S² = ∂(Delta)/∂S<br>
-= "Delta เปลี่ยนเท่าไหร่ เมื่อราคาหุ้นเปลี่ยน ฿1"</div>
-
-<svg class="d" viewBox="0 0 500 250">
-<defs><marker id="c2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
-<line x1="50" y1="200" x2="470" y2="200" stroke="#374151" stroke-width="1" marker-end="url(#c2)"/>
-<line x1="50" y1="240" x2="50" y2="15" stroke="#374151" stroke-width="1" marker-end="url(#c2)"/>
-<text x="475" y="204" font-family="Sarabun" font-size="11" fill="#374151">S</text>
-<!-- Option value curve (S-shaped, convex) -->
-<path d="M60,195 Q100,193 150,185 Q200,165 250,130 Q300,85 350,50 Q400,25 450,15" stroke="#2563eb" stroke-width="2.5" fill="none"/>
-<text x="420" y="45" font-family="Sarabun" font-size="11" fill="#2563eb" font-weight="600">V(S) ราคา Option</text>
-<!-- Tangent at ATM showing Delta -->
-<line x1="160" y1="195" x2="340" y2="75" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
-<circle cx="250" cy="130" r="4" fill="#16a34a"/>
-<text x="260" y="125" font-family="Sarabun" font-size="10" fill="#16a34a">slope = Delta</text>
-<!-- Curvature annotation -->
-<path d="M150,185 Q200,170 250,135" stroke="#dc2626" stroke-width="1" fill="none" stroke-dasharray="2"/>
-<text x="130" y="160" font-family="Sarabun" font-size="10" fill="#dc2626">ความโค้ง = Gamma</text>
-<text x="130" y="175" font-family="Sarabun" font-size="9" fill="#dc2626">(Gamma สูงสุดที่ ATM)</text>
-<!-- Strike line -->
-<line x1="250" y1="205" x2="250" y2="125" stroke="#94a3b8" stroke-width="0.5" stroke-dasharray="3"/>
-<text x="250" y="218" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K (ATM)</text>
+<svg class="d" viewBox="0 0 520 260" role="img" aria-label="เส้นราคา Call โค้งมากสุดที่ ATM แบนทางซ้าย (OTM) และตรงเป็นเส้นทางขวา (ITM)">
+<defs><filter id="p3soft2" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#2563eb" flood-opacity="0.25"/></filter></defs>
+<line x1="55" y1="205" x2="480" y2="205" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="55" y1="220" x2="55" y2="20" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="452" y="223" font-family="Sarabun" font-size="11" fill="#6b7280">S (ราคาหุ้น)</text>
+<text x="20" y="24" font-family="Sarabun" font-size="11" fill="#6b7280">ราคา Call</text>
+<!-- strike / ATM -->
+<line x1="250" y1="205" x2="250" y2="60" stroke="#94a3b8" stroke-width="1.1" stroke-dasharray="4,3"/>
+<text x="250" y="223" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#374151">K (ATM)</text>
+<!-- call value curve: flat-left(OTM) → max bend at K → straightens(ITM) -->
+<path d="M70,200 Q160,198 210,188 Q245,178 250,160 Q258,132 300,95 Q360,45 470,25" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linecap="round" filter="url(#p3soft2)"/>
+<!-- tangent at ATM (Delta ~0.5) -->
+<line x1="185" y1="192" x2="315" y2="128" stroke="#16a34a" stroke-width="1.8" stroke-dasharray="6,3" stroke-linecap="round"/>
+<circle cx="250" cy="160" r="5" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>
+<text x="150" y="120" font-family="Sarabun" font-size="10.5" fill="#16a34a" font-weight="700">ความชัน = Delta ≈ 0.5</text>
+<!-- curvature callout at ATM -->
+<path d="M250,160 C285,168 300,180 305,196" fill="none" stroke="#dc2626" stroke-width="1"/>
+<text x="290" y="200" font-family="Sarabun" font-size="10.5" fill="#dc2626" font-weight="700">โค้งมากสุด = Gamma สูงสุดที่ ATM</text>
+<text x="80" y="188" font-family="Sarabun" font-size="9.5" fill="#6b7280">OTM: เกือบแบน (Γ ต่ำ)</text>
+<text x="372" y="60" font-family="Sarabun" font-size="9.5" fill="#6b7280">ITM: เกือบตรง (Γ ต่ำ)</text>
 </svg>
 
-<div class="bx bg">
-<div class="bt">ทำไม Gamma สำคัญ?</div>
-<p>• Gamma สูง = Delta เปลี่ยนเร็ว = <strong>ต้อง rehedge บ่อย</strong><br>
-• Gamma สูงสุดที่ ATM → Options ที่ ATM ต้องการ hedging มากที่สุด<br>
-• Long Gamma = กำไรจาก volatility, Short Gamma = เสียจาก volatility</p>
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง — "ได้ Gamma จ่าย Theta"</div>
+<p><strong>มือใหม่เห็น:</strong> Gamma เป็นแค่สัญลักษณ์กรีกอีกตัว<br>
+<strong>คนเทรดเห็น:</strong> Gamma กับ Theta คือ "ดีลแลกเปลี่ยน" ที่ตลาดบังคับ — <strong>ถ้าคุณ Long Gamma (ได้กำไรเวลาหุ้นเหวี่ยงแรง) คุณต้องจ่าย Theta (ค่าเวลาที่ไหลออกทุกวัน)</strong> · ไม่มีใครได้ทั้งความโค้งฟรี ๆ นี่คือ "ไม่มีของฟรี" ที่จับต้องได้จริงบนโต๊ะ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำเรื่อง Gamma</div>
+<ul>
+<li>Gamma = ความโค้ง = Delta เปลี่ยนเร็วแค่ไหน</li>
+<li><strong>Gamma สูงสุดที่ ATM</strong> (โค้งมากสุด) → ต้อง rehedge บ่อยสุดตรงนั้น</li>
+<li>Long Gamma มาคู่กับ Short Theta เสมอ — ได้ความโค้ง แลกกับค่าเวลา</li>
+</ul></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง (ก่อนไปต่อ)</div>
+<p>Option มี Δ=0.5, Γ=0.05 · ถ้าหุ้นพุ่ง <strong>+฿6</strong> ราคา option เปลี่ยนประมาณเท่าไร (ใช้ Delta+Gamma) และถ้าใช้ Delta อย่างเดียวจะได้เท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>Delta+Gamma: 0.5×6 + ½×0.05×6² = 3.0 + 0.9 = <strong>+3.9</strong> · Delta อย่างเดียว: 0.5×6 = +3.0 · Gamma เพิ่มให้อีก 0.9 (เพราะโตตาม ΔS² = 36) — ยิ่งหุ้นวิ่งแรง Gamma ยิ่งสำคัญ · สูตรเต็มและ Python เทียบราคาจริงอยู่ที่ §7.6</p></details></div>
 </div>
 
-<h3 id="s7-7">7.7 อินทิกรัล (Integration) เบื้องต้น</h3>
+<h3 id="s7-5">7.5 อินทิกรัล — "พื้นที่ใต้กราฟ" กลับมาเป็น N(d)</h3>
 
-<p><strong>∫f(x)dx</strong> = "พื้นที่ใต้กราฟ" = กระบวนการย้อนกลับของ derivative</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> อินทิกรัล ∫ คือกระบวนการย้อนกลับของอนุพันธ์ และตีความได้เป็น "<strong>พื้นที่ใต้กราฟ</strong>" · จำ N(d) จาก Part II ได้ไหม? มันคือพื้นที่ใต้ระฆัง = อินทิกรัลของ bell curve นั่นเอง</p>
 
-<div class="fm">∫x<sup>n</sup> dx = x<sup>n+1</sup>/(n+1) + C<br>
-∫e<sup>x</sup> dx = e<sup>x</sup> + C<br>
-∫(1/x) dx = ln|x| + C</div>
+<div class="fm">∫ xⁿ dx = xⁿ⁺¹/(n+1) + C     ∫ eˣ dx = eˣ + C     ∫ (1/x) dx = ln|x| + C</div>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options</div>
-<p>• <strong>CDF ของ Normal = ∫ PDF</strong> → N(d) = ∫ ของ bell curve = "พื้นที่ใต้กราฟทางซ้าย"<br>
-• <strong>Expected Value ของ continuous dist = ∫ x × f(x) dx</strong><br>
-• ราคา Option = ∫ payoff × probability density = Expected Payoff</p>
+<div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
+<ul>
+<li><strong>N(d) = ∫ ของ bell curve</strong> = พื้นที่ใต้กราฟทางซ้าย (CDF) — วงกลับมาบรรจบ Part II</li>
+<li>ราคา Option = ∫ payoff × ความหนาแน่นความน่าจะเป็น = Expected Payoff คิดลด</li>
+</ul></div>
+
+<h3 id="s7-6">7.6 Taylor Series → Delta-Gamma Approximation</h3>
+
+<div class="card">
+<h3>Delta-Gamma Approximation <span class="yr">Taylor 2 เทอม</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Taylor Series คือการประมาณ "ถ้าขยับไปนิดหนึ่ง ค่าใหม่ ≈ ค่าเดิม + ความชัน×ระยะ + ครึ่งหนึ่งของความโค้ง×ระยะ² " · เอามาใช้กับ option ตรง ๆ จะได้สูตรที่ risk desk ใช้ทุกวัน</p>
+
+<div class="fm">f(x+h) ≈ f(x) + f'(x)·h + ½·f''(x)·h²
+ΔV ≈ Delta·ΔS + ½·Gamma·(ΔS)²
+      └ เชิงเส้น ┘   └ แก้ความโค้ง ┘</div>
+
+<div class="bx ba"><div class="bt">🧮 ตัวอย่าง — ทำไม Delta อย่างเดียวไม่พอ</div>
+<p>Option มี Δ=0.5, Γ=0.04 · หุ้นพุ่ง ΔS = +฿10</p>
+<ul>
+<li>ถ้าใช้ Delta อย่างเดียว: ΔV ≈ 0.5×10 = <strong>+5.0</strong></li>
+<li>รวม Gamma: ΔV ≈ 0.5×10 + ½×0.04×10² = 5.0 + 2.0 = <strong>+7.0</strong></li>
+</ul>
+<p>Gamma เพิ่มอีก +2.0 — ยิ่งหุ้นขยับแรง (ΔS ใหญ่) เทอม Gamma ยิ่งสำคัญ เพราะมันโตตาม (ΔS)² · นี่คือเหตุผลที่ Long Gamma กำไรเมื่อตลาดเหวี่ยงแรง</p></div>
+
+<p><strong>🐍 พิสูจน์ด้วย Python ว่า Taylor แม่นแค่ไหน</strong> — เทียบ 3 อย่าง: (1) Delta อย่างเดียว (2) Delta+Gamma (3) ราคาจริงจาก BS reprice (บทที่ 11) · ใช้ Call ATM จริง (V=12.336, Δ=0.627, Γ=0.0151):</p>
+
+<div class="code"><div class="hdr">🐍 Python — Delta-Gamma approx เทียบราคาจริง</div><pre>from math import log, sqrt, exp, erf
+def N(x): return 0.5*(1 + erf(x/sqrt(2)))
+def bs(S, K, r, s, T):
+    d1 = (log(S/K)+(r+s*s/2)*T)/(s*sqrt(T)); d2 = d1 - s*sqrt(T)
+    return S*N(d1) - K*exp(-r*T)*N(d2)
+
+K, r, sig, T = 100, 0.05, 0.25, 1
+S0 = 100
+V, Delta, Gamma = 12.336, 0.6274, 0.0151     <span class="c"># Greeks ที่จุดเริ่ม (บท 11)</span>
+
+print(" dS | จริง(reprice) | Delta อย่างเดียว | Delta+Gamma")
+for dS in [1, 5, 10, 20, -10, -20]:
+    true   = bs(S0+dS, K, r, sig, T) - V     <span class="c"># ราคาจริงเปลี่ยนไปเท่าไร</span>
+    d_only = Delta*dS                        <span class="c"># ประมาณเชิงเส้น</span>
+    d_gam  = Delta*dS + 0.5*Gamma*dS**2      <span class="c"># + เทอมความโค้ง</span>
+    print(f"{dS:+4d} | {true:+8.3f}     | {d_only:+8.3f}       | {d_gam:+8.3f}")
+<span class="o"># dS | จริง(reprice) | Delta อย่างเดียว | Delta+Gamma</span>
+<span class="o">  +1 |   +0.635     |   +0.627       |   +0.635   ← ขยับนิด: เท่ากันหมด</span>
+<span class="o">  +5 |   +3.319     |   +3.137       |   +3.326</span>
+<span class="o"> +10 |   +6.969     |   +6.274       |   +7.029   ← Delta เดี่ยวเริ่มพลาด</span>
+<span class="o"> +20 |  +15.070     |  +12.548       |  +15.568   ← Delta พลาด 2.5! Gamma กู้กลับมาเกือบตรง</span>
+<span class="o"> -10 |   -5.466     |   -6.274       |   -5.519   ← Delta คิดว่าขาดทุน 6.27</span>
+<span class="o"> -20 |   -9.194     |  -12.548       |   -9.528   ← จริง ๆ ขาดแค่ 9.2 (Gamma พยุง)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — 3 บทเรียนจากตาราง</div>
+<ul>
+<li><strong>ขยับนิดเดียว Delta ก็พอ</strong> — ที่ ΔS=+1 ทั้ง 3 ค่าเท่ากันหมด (ความโค้งยังไม่ทันสำคัญ)</li>
+<li><strong>ขยับแรง ต้องมี Gamma</strong> — ที่ ΔS=+20 Delta เดี่ยวพลาดถึง 2.5 บาท แต่ Delta+Gamma เกือบตรง · เทอม Gamma โตตาม (ΔS)² จึงเด่นขึ้นเมื่อขยับใหญ่</li>
+<li><strong>Gamma พยุงขาลง (convexity)</strong> — ตอนหุ้นตก −20 Delta คิดว่าขาดทุน 12.5 แต่จริง ๆ ขาดแค่ 9.2 · การถือ Long Gamma ทำให้ "ขึ้นได้มากกว่า ลงเจ็บน้อยกว่า" ที่ Delta ทำนาย — นี่คือมูลค่าของ convexity ที่จ่ายผ่าน Theta</li>
+</ul></div>
 </div>
 
-<h3 id="s7-8">7.8 Taylor Series — ประมาณค่า</h3>
+<!-- ═══════════════ CAPSTONE ═══════════════ -->
+<h2 id="capstone">🎓 รวมร่าง: อ่าน Greeks ของไม้จริง 1 ไม้</h2>
 
-<div class="fm">f(x+h) ≈ f(x) + f'(x)×h + ½f''(x)×h² + ...</div>
+<p>เอา Greeks ทั้งชุดมาใช้กับไม้เดียว · คุณถือ <strong>Long Call ATM</strong> (Δ=+0.50, Γ=+0.05, Θ=−0.10/วัน, ν=+0.15) มาไล่ทีละสถานการณ์:</p>
 
-<div class="bx bg">
-<div class="bt">เชื่อมกับ Options — Delta-Gamma Approximation!</div>
-<p>เปลี่ยน S เป็น S+ΔS:<br>
-<strong>ΔV ≈ Delta × ΔS + ½ × Gamma × (ΔS)²</strong><br><br>
-term แรก (Delta×ΔS) = ประมาณเชิงเส้น<br>
-term ที่สอง (½Gamma×ΔS²) = <strong>correction สำหรับความโค้ง</strong><br>
-นี่คือ Taylor expansion 2 term ใช้ใน risk management ทุกวัน!</p>
+<div class="bx bg"><div class="bt">🧭 นิสัยคิด — เจอเหตุการณ์ ให้ถามว่า "Greek ตัวไหนทำงาน"</div>
+<ol>
+<li><strong>หุ้นพุ่ง +฿4 ทันที:</strong> ΔV ≈ Δ·ΔS + ½Γ·ΔS² = 0.50×4 + ½×0.05×16 = 2.0 + 0.4 = <strong>+2.4</strong> (Gamma ช่วยเพิ่ม 0.4)</li>
+<li><strong>ผ่านไป 1 วัน หุ้นนิ่ง:</strong> ΔV ≈ Θ = <strong>−0.10</strong> (ค่าเวลาไหลออก — คุณ "จ่ายค่าเช่า")</li>
+<li><strong>ตลาดตกใจ σ พุ่ง +3 จุด:</strong> ΔV ≈ ν×3 = 0.15×3 = <strong>+0.45</strong> (Long Call ได้ประโยชน์จาก σ ที่สูงขึ้น)</li>
+</ol>
+<p>อ่าน Greeks เป็น = คุณรู้ล่วงหน้าว่าไม้นี้ "ชอบ" อะไร (หุ้นวิ่ง, σ ขึ้น) และ "กลัว" อะไร (เวลาผ่าน) — นั่นคือ "เอาไปคิดต่อได้" จริง ๆ</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ไม้เดียวกัน (Δ=0.50, Γ=0.05, Θ=−0.10, ν=0.15) · วันหนึ่งเกิดพร้อมกัน: หุ้น −฿2, เวลาผ่าน 1 วัน, σ ตก 2 จุด · ประเมินว่ากำไรหรือขาดทุนรวมประมาณเท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>หุ้น: 0.50×(−2) + ½×0.05×(−2)² = −1.0 + 0.1 = −0.9 · เวลา: −0.10 · σ: 0.15×(−2) = −0.30 · <strong>รวม ≈ −1.30 (ขาดทุน)</strong> — ทั้งสามแรงกดลงพร้อมกัน วันแย่ของ Long Call</p></details></div>
+
+<!-- ═══════════════ ปิด PART III ═══════════════ -->
+<div class="bx ba"><div class="bt">สรุป Part III — คุณทำอะไรได้แล้วบ้าง</div>
+<ul>
+<li>อนุพันธ์ = ความชัน = อัตราเปลี่ยน → <strong>Delta</strong></li>
+<li>อนุพันธ์ย่อย = แยกผลของตัวแปรเดียว → <strong>Greeks ทุกตัว</strong> (และรู้กับดักหน่วย Vega)</li>
+<li>อนุพันธ์อันดับ 2 = ความโค้ง → <strong>Gamma</strong> (สูงสุด ATM, มาคู่ Theta)</li>
+<li>Taylor 2 เทอม → <strong>Delta-Gamma Approximation</strong> ที่ risk desk ใช้จริง</li>
+<li>อ่าน Greeks ของไม้จริงเป็น — รู้ว่าไม้ "ชอบ/กลัว" อะไร</li>
+</ul></div>
+
+<div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เรามีหน้าปัดวัด (Greeks) ครบแล้ว — แต่ตัว "เครื่องยนต์" ที่ทำให้ราคาหุ้นเหวี่ยงไปมาแบบสุ่ม แล้วกลั่นออกมาเป็นสูตร Black-Scholes ล่ะ หน้าตาเป็นยังไง? Part ถัดไปจะเปิดฝากระโปรงให้ดู</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>Derivative/อนุพันธ์</strong> = ความชัน = อัตราเปลี่ยน · <strong>Partial derivative (∂)</strong> = เปลี่ยนตัวแปรเดียว ตรึงตัวอื่น · <strong>Delta</strong> = ∂V/∂S · <strong>Gamma</strong> = ∂²V/∂S² = ความโค้ง · <strong>Theta</strong> = ∂V/∂t = ค่าเวลา · <strong>Vega</strong> = ∂V/∂σ · <strong>Rho</strong> = ∂V/∂r · <strong>Chain Rule</strong> = อนุพันธ์ของฟังก์ชันซ้อน · <strong>Taylor Series</strong> = ประมาณค่าด้วยความชัน+ความโค้ง · <strong>Delta-Gamma approximation</strong> = ΔV ≈ Δ·ΔS + ½Γ·ΔS²</p></div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:16px;color:#64748b">
+<p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part III</p>
+<p>ถัดไป — <a href="math-part6.html"><strong>Part IV: กระบวนการสุ่ม สู่ Black-Scholes</strong></a> → random walk, Ito's Lemma และที่มาของสูตรตั้งราคา Option</p>
 </div>
 
-<div class="bx ba">
-<div class="bt">สรุปบทที่ 7</div>
-<p>✓ Derivative = slope = อัตราการเปลี่ยนแปลง<br>
-✓ d/dx(e<sup>x</sup>) = e<sup>x</sup> — ทำไม e สำคัญ<br>
-✓ Chain Rule → พื้นฐานของ Ito's Lemma<br>
-✓ <strong>Partial Derivatives = Greeks ทุกตัว!</strong> (Delta, Theta, Vega, Rho)<br>
-✓ <strong>f'' = Gamma</strong> — ความโค้ง, ต้อง rehedge<br>
-✓ Integration = พื้นที่ใต้กราฟ → CDF, Expected Value<br>
-✓ <strong>Taylor Series → Delta-Gamma Approximation</strong></p>
-</div>
-
-<hr style="margin:40px 0;border:none;border-top:3px solid #2563eb">
-<div style="text-align:center;padding:20px;color:#64748b">
-<p style="font-size:1.2em;font-weight:700;color:#2563eb">จบ Part III</p>
-<p>ตอนนี้คุณเข้าใจ <strong>Greeks ทุกตัว</strong> ในเชิงคณิตศาสตร์:<br>
-Delta=∂V/∂S, Gamma=∂²V/∂S², Theta=∂V/∂t, Vega=∂V/∂σ<br>
-→ พร้อมอ่านบทเรียน Greeks ของ Payoff Chart ได้อย่างลึกซึ้งแล้ว!<br><br>
-Part IV: Linear Algebra &amp; Regression → จัดการ Portfolio หลายตัวแปร</p>
-</div>
-
+<!-- ═══════════════ Thai line-break script — ห้ามแก้ ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
 </body>
 </html>
