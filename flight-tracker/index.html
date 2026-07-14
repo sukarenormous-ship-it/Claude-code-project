@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>เครื่องบินลงดอนเมือง ✈️</title>
+<meta name="description" content="ตัวเช็คเครื่องบินที่กำลังจะบินลงสนามบินดอนเมือง พร้อมนับถอยหลังก่อนบินผ่านบ้าน">
+<meta name="theme-color" content="#0b1120">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b1120;
+    --surface: #111a2e;
+    --surface-2: #18233c;
+    --line: #24304d;
+    --ink: #e7edf7;
+    --ink-2: #9aa8bf;
+    --ink-3: #647089;
+    --accent: #6db5ff;      /* informational / inbound */
+    --warn: #ffb02e;        /* imminent: about to pass the house */
+    --good: #52d98b;        /* on final */
+    --bad: #ff7a7a;         /* errors */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Sarabun', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 12px 14px; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 2px 6px;
+  }
+  header h1 { font-size: 1.25rem; font-weight: 700; }
+  header h1 small { display: block; font-size: .78rem; font-weight: 500; color: var(--ink-2); }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: .78rem; color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 5px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex: none; }
+  .dot.ok { background: var(--good); }
+  .dot.err { background: var(--bad); }
+
+  /* ---------- counter ---------- */
+  .counter {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 10px 14px; margin-top: 8px;
+    font-size: .9rem; color: var(--ink-2);
+  }
+  .counter b { color: var(--ink); font-size: 1.1rem; }
+
+  /* ---------- hero card ---------- */
+  .hero {
+    margin-top: 10px;
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--line);
+    border-radius: 18px; padding: 16px;
+    text-align: center;
+  }
+  .hero.imminent { border-color: var(--warn); box-shadow: 0 0 24px rgba(255,176,46,.18); }
+  .hero .label { font-size: .82rem; color: var(--ink-2); }
+  .hero .countdown {
+    font-size: 3.2rem; font-weight: 700; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero.imminent .countdown { color: var(--warn); }
+  .hero .flightline { font-size: 1rem; font-weight: 600; margin-top: 2px; }
+  .hero .sub { font-size: .84rem; color: var(--ink-2); margin-top: 4px; }
+  .hero .none { font-size: 1.05rem; color: var(--ink-2); padding: 18px 0; }
+
+  /* ---------- section titles ---------- */
+  h2 { font-size: .95rem; font-weight: 600; color: var(--ink-2); margin: 18px 2px 8px; }
+
+  /* ---------- plane list ---------- */
+  .plane {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; margin-bottom: 8px;
+  }
+  .plane.near { border-color: var(--warn); }
+  .plane .row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .plane .cs { font-weight: 700; font-size: 1.02rem; }
+  .plane .airline { font-weight: 500; color: var(--ink-2); font-size: .85rem; }
+  .plane .eta { font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .plane.near .eta { color: var(--warn); }
+  .plane .row2 { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; font-size: .8rem; color: var(--ink-2); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .75rem; font-weight: 600;
+    border-radius: 999px; padding: 2px 9px;
+    background: rgba(109,181,255,.12); color: var(--accent);
+  }
+  .chip.final { background: rgba(82,217,139,.12); color: var(--good); }
+  .chip.dep   { background: rgba(154,168,191,.12); color: var(--ink-2); }
+  .empty {
+    color: var(--ink-3); text-align: center; font-size: .9rem;
+    padding: 18px; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px;
+  }
+
+  /* ---------- radar ---------- */
+  .radar-box {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 18px; padding: 8px; position: relative;
+  }
+  canvas { display: block; width: 100%; border-radius: 12px; }
+
+  /* ---------- settings ---------- */
+  details.settings {
+    margin-top: 18px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px;
+  }
+  details.settings summary {
+    padding: 12px 14px; font-weight: 600; cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  details.settings summary::after { content: "▾"; color: var(--ink-3); }
+  details[open].settings summary::after { content: "▴"; }
+  .settings-body { padding: 4px 14px 14px; display: grid; gap: 14px; }
+  .set-row label { display: block; font-size: .85rem; color: var(--ink-2); margin-bottom: 6px; }
+  .set-row output { color: var(--ink); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .btn {
+    font-family: inherit; font-size: .9rem; font-weight: 600;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; cursor: pointer; width: 100%;
+  }
+  .btn.primary { background: #1c3a63; border-color: #2a4d80; }
+  .btn:active { transform: scale(.98); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .home-status { font-size: .8rem; color: var(--ink-2); margin-top: 6px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: .9rem; }
+  .toggle-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .manual-home { display: flex; gap: 8px; }
+  .manual-home input {
+    flex: 1; font-family: inherit; font-size: .9rem;
+    background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px;
+    min-width: 0;
+  }
+  .manual-home .btn { width: auto; }
+
+  footer { margin-top: 22px; font-size: .74rem; color: var(--ink-3); line-height: 1.6; text-align: center; }
+  footer a { color: var(--ink-3); }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+  .pulse { animation: pulse 1.2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>✈️ เครื่องบินลงดอนเมือง<small>ตัวเช็คไฟเครื่องบินสำหรับหนูน้อย</small></h1>
+    <div class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText">กำลังเริ่ม…</span></div>
+  </header>
+
+  <div class="counter">
+    <span>🌙 คืนนี้บินผ่านบ้านแล้ว</span>
+    <span><b id="nightCount">0</b> ลำ</span>
+  </div>
+
+  <div class="hero" id="hero">
+    <div class="none">กำลังค้นหาเครื่องบิน…</div>
+  </div>
+
+  <h2>🛬 เครื่องที่กำลังเข้าดอนเมือง</h2>
+  <div id="planeList"><div class="empty">ยังไม่พบเครื่องขาเข้าในรัศมี 75 กม.</div></div>
+
+  <h2>📡 จอเรดาร์</h2>
+  <div class="radar-box"><canvas id="radar"></canvas></div>
+
+  <details class="settings" id="settingsBox">
+    <summary>⚙️ ตั้งค่า</summary>
+    <div class="settings-body">
+
+      <div class="set-row">
+        <div class="btn-row">
+          <button class="btn primary" id="btnHomeGps">📍 ตั้งบ้าน = ตำแหน่งปัจจุบัน</button>
+          <button class="btn" id="btnEnableAlert">🔔 เปิดเสียง + แจ้งเตือน</button>
+        </div>
+        <div class="home-status" id="homeStatus">ยังไม่ได้ตั้งตำแหน่งบ้าน — กดปุ่ม 📍 ตอนอยู่ที่บ้าน (เก็บไว้ในเครื่องนี้เท่านั้น ไม่ส่งไปไหน)</div>
+      </div>
+
+      <div class="set-row">
+        <label>หรือพิมพ์พิกัดเอง (ละติจูด, ลองจิจูด — คัดลอกจาก Google Maps ได้)</label>
+        <div class="manual-home">
+          <input id="manualCoords" inputmode="decimal" placeholder="13.95, 100.61">
+          <button class="btn" id="btnManualHome">บันทึก</button>
+        </div>
+      </div>
+
+      <div class="set-row">
+        <label>⏰ เตือนล่วงหน้า: <output id="leadOut">5</output> นาที ก่อนบินผ่านบ้าน</label>
+        <input type="range" id="leadMin" min="2" max="10" step="1" value="5">
+      </div>
+
+      <div class="set-row">
+        <label>📏 นับว่า "ผ่านบ้าน" เมื่อเข้าใกล้ไม่เกิน: <output id="distOut">3</output> กม.</label>
+        <input type="range" id="alertKm" min="1" max="8" step="0.5" value="3">
+      </div>
+
+      <div class="toggle-row">
+        <span>🛫 แสดงเครื่องขาออกด้วย (บินขึ้นก็ผ่านบ้านเหมือนกัน)</span>
+        <input type="checkbox" id="includeDep">
+      </div>
+
+      <div class="toggle-row">
+        <span>💡 กันหน้าจอดับตอนเปิดรอ</span>
+        <input type="checkbox" id="wakeLock" checked>
+      </div>
+
+      <button class="btn" id="btnTestAlert">🔊 ทดสอบเสียงเตือน</button>
+    </div>
+  </details>
+
+  <footer>
+    ข้อมูลตำแหน่งเครื่องบินสดจากเครือข่ายอาสาสมัคร ADS-B
+    (<a href="https://adsb.lol" target="_blank" rel="noopener">adsb.lol</a> /
+    <a href="https://adsb.fi" target="_blank" rel="noopener">adsb.fi</a> /
+    <a href="https://airplanes.live" target="_blank" rel="noopener">airplanes.live</a>)
+    อัปเดตทุก ~15 วินาที · เวลาโดยประมาณ อาจคลาดเคลื่อน 1–2 นาที<br>
+    ตำแหน่งบ้านถูกเก็บใน localStorage ของเครื่องนี้เท่านั้น
+  </footer>
+
+</div>
+
+<script>
+'use strict';
+
+/* ================= ค่าคงที่ ================= */
+const DMK = { lat: 13.9126, lon: 100.6067 };          // สนามบินดอนเมือง VTBD
+const BKK = { lat: 13.6900, lon: 100.7501 };          // สุวรรณภูมิ VTBS (กันสับสน — อยู่ใกล้กัน)
+const RWY_HDG = 209;                                  // แนวรันเวย์ 21 (ลงจากทิศเหนือ) / 03 = 29°
+const FETCH_NM = 45;                                  // รัศมีดึงข้อมูล (ไมล์ทะเล ≈ 83 กม.)
+const POLL_MS = 15000;
+const MAX_INBOUND_KM = 80;
+const KT_TO_KMH = 1.852;
+
+const API_SOURCES = [
+  { name: 'adsb.lol',       url: () => `https://api.adsb.lol/v2/point/${DMK.lat}/${DMK.lon}/${FETCH_NM}` },
+  { name: 'adsb.fi',        url: () => `https://opendata.adsb.fi/api/v2/lat/${DMK.lat}/lon/${DMK.lon}/dist/${FETCH_NM}` },
+  { name: 'airplanes.live', url: () => `https://api.airplanes.live/v2/point/${DMK.lat}/${DMK.lon}/${FETCH_NM}` },
+];
+
+const AIRLINES = {
+  AIQ: 'ไทยแอร์เอเชีย', TAX: 'ไทยแอร์เอเชีย เอกซ์', TLM: 'ไทยไลอ้อนแอร์', NOK: 'นกแอร์',
+  TVJ: 'ไทยเวียตเจ็ท', THA: 'การบินไทย', AXM: 'แอร์เอเชีย (มาเลเซีย)', XAX: 'แอร์เอเชีย เอกซ์',
+  APG: 'บางกอกแอร์เวย์ส?', BKP: 'บางกอกแอร์เวย์ส', MXD: 'บาติกแอร์ มาเลเซีย', LNI: 'ไลอ้อนแอร์',
+  IGO: 'อินดิโก', SEJ: 'สไปซ์เจ็ต', CQH: 'สปริงแอร์ไลน์ส', CSZ: 'เสิ่นเจิ้นแอร์ไลน์ส',
+  CXA: 'เซียเหมินแอร์', GDC: 'แกรนด์ไชน่าแอร์', HVN: 'เวียดนามแอร์ไลน์ส', VJC: 'เวียตเจ็ท',
+  AAR: 'เอเชียน่าแอร์ไลน์ส', JJA: 'เชจูแอร์', TWB: 'ทีเวย์แอร์', ESR: 'อีสตาร์เจ็ท',
+  KAL: 'โคเรียนแอร์', CPA: 'คาเธ่ย์แปซิฟิก', EVA: 'อีวีเอแอร์', TTW: 'ไทเกอร์แอร์ไต้หวัน',
+  CAL: 'ไชน่าแอร์ไลน์ส', SJX: 'สตาร์ลักซ์',
+};
+
+const AC_TYPES = {
+  A320: 'แอร์บัส A320', A20N: 'แอร์บัส A320neo', A321: 'แอร์บัส A321', A21N: 'แอร์บัส A321neo',
+  A319: 'แอร์บัส A319', A333: 'แอร์บัส A330-300', A339: 'แอร์บัส A330-900',
+  B737: 'โบอิง 737-700', B738: 'โบอิง 737-800', B38M: 'โบอิง 737 MAX 8', B39M: 'โบอิง 737 MAX 9',
+  B77W: 'โบอิง 777-300ER', B788: 'โบอิง 787-8', B789: 'โบอิง 787-9',
+  AT75: 'ATR 72-500 (ใบพัด)', AT76: 'ATR 72-600 (ใบพัด)', DH8D: 'แดช 8 Q400 (ใบพัด)',
+};
+
+const PLACES = {
+  CNX: 'เชียงใหม่', CEI: 'เชียงราย', HKT: 'ภูเก็ต', HDY: 'หาดใหญ่', KBV: 'กระบี่',
+  URT: 'สุราษฎร์ธานี', NST: 'นครศรีธรรมราช', UTH: 'อุดรธานี', KKC: 'ขอนแก่น', UBP: 'อุบลราชธานี',
+  SKZ: 'สกลนคร?', SNO: 'สกลนคร', LOE: 'เลย', NNT: 'น่าน', PRH: 'แพร่', ROI: 'ร้อยเอ็ด',
+  NAW: 'นราธิวาส', TST: 'ตรัง', USM: 'เกาะสมุย', BFV: 'บุรีรัมย์', NAK: 'นครราชสีมา',
+  DMK: 'ดอนเมือง', BKK: 'สุวรรณภูมิ',
+  SIN: 'สิงคโปร์', KUL: 'กัวลาลัมเปอร์', PEN: 'ปีนัง', JHB: 'ยะโฮร์บาห์รู', BKI: 'โกตากินะบาลู',
+  SGN: 'โฮจิมินห์', HAN: 'ฮานอย', DAD: 'ดานัง', PNH: 'พนมเปญ', REP: 'เสียมราฐ', VTE: 'เวียงจันทน์',
+  RGN: 'ย่างกุ้ง', MDL: 'มัณฑะเลย์', HKG: 'ฮ่องกง', MFM: 'มาเก๊า', TPE: 'ไทเป', KHH: 'เกาสง',
+  ICN: 'โซล (อินชอน)', GMP: 'โซล (กิมโป)', PUS: 'ปูซาน', NRT: 'โตเกียว (นาริตะ)', HND: 'โตเกียว (ฮาเนดะ)',
+  KIX: 'โอซาก้า', CTS: 'ซัปโปโร', FUK: 'ฟุกุโอกะ', CAN: 'กว่างโจว', SZX: 'เสิ่นเจิ้น',
+  PVG: 'เซี่ยงไฮ้', SHA: 'เซี่ยงไฮ้', PEK: 'ปักกิ่ง', CTU: 'เฉิงตู', KMG: 'คุนหมิง',
+  HGH: 'หางโจว', XMN: 'เซียเหมิน', WUH: 'อู่ฮั่น', CKG: 'ฉงชิ่ง', NKG: 'หนานจิง',
+  DEL: 'เดลี', BOM: 'มุมไบ', CCU: 'โกลกาตา', MAA: 'เชนไน', BLR: 'บังคาลอร์',
+  DAC: 'ธากา', CMB: 'โคลัมโบ', KTM: 'กาฐมาณฑุ', CGK: 'จาการ์ตา', DPS: 'บาหลี', MNL: 'มะนิลา',
+};
+
+/* ================= state ================= */
+const S = {
+  home: null,                 // {lat, lon}
+  leadMin: 5,
+  alertKm: 3,
+  includeDep: false,
+  audioOn: false,
+  planes: new Map(),          // hex -> ข้อมูลลำล่าสุด + สถานะ
+  routes: new Map(),          // callsign -> {origin, dest, originName}
+  routePending: new Set(),
+  lastFetch: 0,
+  srcName: '-',
+  online: false,
+  audioCtx: null,
+  wakeLockObj: null,
+};
+
+/* ================= เรขาคณิต (ระนาบแบนพอสำหรับ <100 กม.) ================= */
+const KM_LAT = 110.574;
+const KM_LON = 111.320 * Math.cos(DMK.lat * Math.PI / 180);
+function toXY(p) { return { x: (p.lon - DMK.lon) * KM_LON, y: (p.lat - DMK.lat) * KM_LAT }; }
+function distKm(a, b) { const A = toXY(a), B = toXY(b); return Math.hypot(A.x - B.x, A.y - B.y); }
+function bearing(a, b) {
+  const A = toXY(a), B = toXY(b);
+  return (Math.atan2(B.x - A.x, B.y - A.y) * 180 / Math.PI + 360) % 360;
+}
+function angDiff(a, b) { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+
+/* จุดเข้าใกล้บ้านที่สุดตามแนวบินปัจจุบัน:
+   along = ระยะ (กม.) ที่ต้องบินต่อไปจนถึงจุดใกล้บ้านสุด (ติดลบ = ผ่านไปแล้ว)
+   cpa   = ระยะเฉียดบ้าน (กม.) */
+function houseCPA(plane) {
+  if (!S.home) return null;
+  const P = toXY(plane), H = toXY(S.home);
+  const th = plane.track * Math.PI / 180;
+  const dir = { x: Math.sin(th), y: Math.cos(th) };
+  const rel = { x: H.x - P.x, y: H.y - P.y };
+  const along = rel.x * dir.x + rel.y * dir.y;
+  const cpa = Math.abs(rel.x * dir.y - rel.y * dir.x);
+  return { along, cpa };
+}
+
+/* ระยะห้วงข้าง (cross-track) จากแนวรันเวย์ที่ลากผ่านสนามบิน */
+function crossTrackToRunway(plane, apt, hdg) {
+  const P = toXY(plane), A = toXY(apt);
+  const th = hdg * Math.PI / 180;
+  const dir = { x: Math.sin(th), y: Math.cos(th) };
+  const rel = { x: P.x - A.x, y: P.y - A.y };
+  return Math.abs(rel.x * dir.y - rel.y * dir.x);
+}
+
+/* ================= จัดประเภทเครื่องบิน ================= */
+function classify(ac) {
+  if (ac.alt_baro === 'ground' || ac.lat == null || ac.lon == null) return null;
+  const alt = typeof ac.alt_baro === 'number' ? ac.alt_baro : (typeof ac.alt_geom === 'number' ? ac.alt_geom : null);
+  const gs = ac.gs, track = ac.track;
+  if (alt == null || gs == null || track == null || gs < 50) return null;
+  const vr = ac.baro_rate ?? ac.geom_rate ?? null;
+
+  const p = { lat: ac.lat, lon: ac.lon, track };
+  const dDMK = distKm(p, DMK);
+  const dBKK = distKm(p, BKK);
+  const brgDMK = bearing(p, DMK);
+  const towardDMK = angDiff(track, brgDMK) < 45;
+  const towardBKK = angDiff(track, bearing(p, BKK)) < 35;
+  const aligned = angDiff(track, RWY_HDG) < 28 || angDiff(track, (RWY_HDG + 180) % 360) < 28;
+  const xtDMK = crossTrackToRunway(p, DMK, RWY_HDG);
+  const xtBKK = crossTrackToRunway(p, BKK, 199); // แนวรันเวย์สุวรรณภูมิ 01/19
+
+  const route = S.routes.get(csOf(ac));
+  const destIsDMK = route?.dest === 'DMK';
+  const destIsOther = route?.dest && route.dest !== 'DMK';
+
+  // ขาเข้าดอนเมือง: ต่ำ + มุ่งเข้าหาสนามบิน + ไม่ได้ไต่ระดับ และไม่ใช่ของสุวรรณภูมิ
+  const onFinal = aligned && xtDMK < 5 && dDMK < 30 && alt < 7000 && (vr == null || vr < 100);
+  let inbound = alt < 12000 && dDMK < MAX_INBOUND_KM && (vr == null || vr < 300)
+    && (towardDMK || onFinal);
+  if (destIsOther) inbound = false;
+  // ถ้าดูเหมือนกำลังเข้าสุวรรณภูมิมากกว่า (ใกล้แนวรันเวย์ BKK กว่า และเส้นทางไม่ยืนยัน DMK)
+  if (inbound && !destIsDMK && dBKK < dDMK && towardBKK && xtBKK < xtDMK) inbound = false;
+
+  // ขาออกจากดอนเมือง: ต่ำ + ไต่ระดับ + บินออกจากสนามบิน
+  const outbound = !inbound && alt < 10000 && dDMK < 50 && vr != null && vr > 300 && !towardDMK
+    && dDMK < dBKK;
+
+  if (!inbound && !outbound) return null;
+
+  const speedKmMin = gs * KT_TO_KMH / 60;
+  const etaLandMin = inbound ? (dDMK / speedKmMin) * 1.12 : null; // เผื่อลดความเร็วช่วงร่อนลง
+  const cpaInfo = houseCPA(p);
+
+  return {
+    hex: ac.hex, cs: csOf(ac), type: ac.t || '', reg: ac.r || '',
+    lat: ac.lat, lon: ac.lon, alt, gs, track, vr,
+    dDMK, inbound, outbound, onFinal,
+    etaLandMin,
+    etaHouseMin: cpaInfo && cpaInfo.along > 0 ? cpaInfo.along / speedKmMin : null,
+    cpaKm: cpaInfo ? cpaInfo.cpa : null,
+    along: cpaInfo ? cpaInfo.along : null,
+    ts: Date.now(),
+  };
+}
+
+function csOf(ac) { return (ac.flight || '').trim() || ac.hex; }
+function airlineOf(cs) {
+  const m = /^[A-Z]{3}/.exec(cs);
+  return (m && AIRLINES[m[0]]) || '';
+}
+
+/* ================= ดึงข้อมูล ================= */
+let srcIdx = 0;
+async function fetchPlanes() {
+  for (let i = 0; i < API_SOURCES.length; i++) {
+    const src = API_SOURCES[(srcIdx + i) % API_SOURCES.length];
+    try {
+      const res = await fetch(src.url(), { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      if (!Array.isArray(data.ac)) throw new Error('bad payload');
+      srcIdx = (srcIdx + i) % API_SOURCES.length;
+      S.srcName = src.name;
+      S.online = true;
+      S.lastFetch = Date.now();
+      ingest(data.ac);
+      return;
+    } catch (e) { /* ลองแหล่งถัดไป */ }
+  }
+  S.online = false;
+  render();
+}
+
+function ingest(list) {
+  const seen = new Set();
+  for (const ac of list) {
+    const c = classify(ac);
+    if (!c) continue;
+    seen.add(c.hex);
+    const prev = S.planes.get(c.hex);
+    c.alerted = prev?.alerted || false;
+    c.counted = prev?.counted || false;
+    c.prevAlong = prev?.along ?? null;
+    c.trail = prev?.trail || [];
+    c.trail.push({ lat: c.lat, lon: c.lon });
+    if (c.trail.length > 30) c.trail.shift();
+    S.planes.set(c.hex, c);
+    maybeLookupRoute(c);
+  }
+  // ลบลำที่หายไปนานเกิน 90 วิ
+  for (const [hex, p] of S.planes) {
+    if (!seen.has(hex) && Date.now() - p.ts > 90000) S.planes.delete(hex);
+  }
+  checkAlerts();
+  render();
+}
+
+/* ================= เส้นทางบิน (ต้นทาง–ปลายทาง) ================= */
+async function maybeLookupRoute(p) {
+  const cs = p.cs;
+  if (!cs || cs === p.hex || S.routes.has(cs) || S.routePending.has(cs)) return;
+  S.routePending.add(cs);
+  try {
+    const res = await fetch('https://api.adsb.lol/api/0/routeset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planes: [{ callsign: cs, lat: p.lat, lng: p.lon }] }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    const r = Array.isArray(data) ? data.find(x => (x.callsign || '').trim() === cs) : null;
+    const codes = r?._airport_codes_iata || r?.airport_codes || '';
+    if (codes && codes !== 'unknown') {
+      const parts = codes.split('-');
+      const origin = parts[0], dest = parts[parts.length - 1];
+      S.routes.set(cs, {
+        origin, dest,
+        originName: PLACES[origin] || r?.airports?.[0]?.location || origin,
+        destName: PLACES[dest] || r?.airports?.[r.airports.length - 1]?.location || dest,
+      });
+    } else {
+      S.routes.set(cs, {});
+    }
+  } catch (e) {
+    S.routePending.delete(cs); // ให้ลองใหม่รอบหน้า
+    return;
+  }
+  S.routePending.delete(cs);
+}
+
+/* ================= แจ้งเตือน + ตัวนับ ================= */
+function nightKey() {
+  const d = new Date(Date.now() - 6 * 3600 * 1000); // คืนหนึ่งนับข้ามเที่ยงคืนถึง 6 โมงเช้า
+  return 'dmk_count_' + d.toISOString().slice(0, 10);
+}
+function getNightCount() { return parseInt(localStorage.getItem(nightKey()) || '0', 10); }
+function bumpNightCount() {
+  localStorage.setItem(nightKey(), String(getNightCount() + 1));
+  document.getElementById('nightCount').textContent = getNightCount();
+}
+
+function checkAlerts() {
+  if (!S.home) return;
+  for (const p of S.planes.values()) {
+    if (p.outbound && !S.includeDep) continue;
+    const near = p.cpaKm != null && p.cpaKm <= S.alertKm;
+    // แจ้งเตือนล่วงหน้า
+    if (near && !p.alerted && p.etaHouseMin != null && p.etaHouseMin <= S.leadMin && p.etaHouseMin > 0) {
+      p.alerted = true;
+      fireAlert(p);
+    }
+    // นับเมื่อบินผ่านจุดใกล้บ้านสุดไปแล้ว
+    if (near && !p.counted && p.prevAlong != null && p.prevAlong > 0 && p.along != null && p.along <= 0) {
+      p.counted = true;
+      bumpNightCount();
+    }
+  }
+}
+
+function fireAlert(p) {
+  const mins = Math.max(1, Math.round(p.etaHouseMin));
+  const airline = airlineOf(p.cs);
+  const from = S.routes.get(p.cs)?.originName;
+  const msg = `${p.cs}${airline ? ' (' + airline + ')' : ''}${from ? ' จาก' + from : ''} — อีกประมาณ ${mins} นาที บินผ่านบ้าน! 🏃`;
+  playChime();
+  if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]);
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('✈️ เครื่องบินกำลังมา!', { body: msg, tag: p.hex }); } catch (e) {}
+  }
+}
+
+function playChime() {
+  if (!S.audioOn || !S.audioCtx) return;
+  const ctx = S.audioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  [[880, 0], [1174.7, .18], [1568, .36]].forEach(([f, dt]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0 + dt);
+    g.gain.linearRampToValueAtTime(.4, t0 + dt + .03);
+    g.gain.exponentialRampToValueAtTime(.001, t0 + dt + .5);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t0 + dt); o.stop(t0 + dt + .55);
+  });
+}
+
+/* ================= แสดงผล ================= */
+function fmtMinSec(min) {
+  if (min == null) return '–';
+  const s = Math.max(0, Math.round(min * 60));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/* คาดการณ์ตำแหน่งระหว่างรอบ (dead reckoning) เพื่อให้ตัวเลขเดินลื่น */
+function extrapolate(p) {
+  const dtMin = (Date.now() - p.ts) / 60000;
+  const moved = p.gs * KT_TO_KMH / 60 * dtMin;
+  return {
+    ...p,
+    dDMK: Math.max(0, p.dDMK - (p.inbound ? moved : -moved)),
+    etaLandMin: p.etaLandMin != null ? Math.max(0, p.etaLandMin - dtMin) : null,
+    etaHouseMin: p.etaHouseMin != null ? p.etaHouseMin - dtMin : null,
+    along: p.along != null ? p.along - moved : null,
+  };
+}
+
+function activePlanes() {
+  const arr = [];
+  for (const p of S.planes.values()) {
+    if (p.outbound && !S.includeDep) continue;
+    arr.push(extrapolate(p));
+  }
+  arr.sort((a, b) => {
+    const ka = a.etaHouseMin != null && a.cpaKm <= S.alertKm ? a.etaHouseMin : (a.etaLandMin ?? 999);
+    const kb = b.etaHouseMin != null && b.cpaKm <= S.alertKm ? b.etaHouseMin : (b.etaLandMin ?? 999);
+    return ka - kb;
+  });
+  return arr;
+}
+
+function render() {
+  // สถานะการเชื่อมต่อ
+  const dot = document.getElementById('statusDot');
+  const st = document.getElementById('statusText');
+  if (S.online) {
+    dot.className = 'dot ok';
+    st.textContent = `สด · ${S.srcName}`;
+  } else {
+    dot.className = 'dot err';
+    st.textContent = 'เชื่อมต่อไม่ได้ กำลังลองใหม่…';
+  }
+  document.getElementById('nightCount').textContent = getNightCount();
+
+  const planes = activePlanes();
+
+  // การ์ดหลัก: ลำที่จะผ่านบ้านเร็วสุด (ถ้าตั้งบ้านแล้ว) ไม่งั้นลำที่จะลงเร็วสุด
+  const hero = document.getElementById('hero');
+  const nearHouse = planes.filter(p => !p.outbound && p.etaHouseMin != null && p.etaHouseMin > -0.5 && p.cpaKm <= S.alertKm);
+  const target = nearHouse[0] || planes.find(p => p.inbound);
+  if (!target) {
+    hero.className = 'hero';
+    hero.innerHTML = `<div class="none">${S.online ? 'ตอนนี้ยังไม่มีเครื่องขาเข้าในรัศมี — เดี๋ยวลำต่อไปก็มา ✨' : 'กำลังเชื่อมต่อ…'}</div>`;
+  } else {
+    const isHouse = nearHouse[0] === target;
+    const eta = isHouse ? target.etaHouseMin : target.etaLandMin;
+    const imminent = isHouse && eta != null && eta <= S.leadMin;
+    hero.className = 'hero' + (imminent ? ' imminent' : '');
+    const airline = airlineOf(target.cs);
+    const from = S.routes.get(target.cs)?.originName;
+    const typ = AC_TYPES[target.type] || target.type;
+    hero.innerHTML = `
+      <div class="label">${isHouse ? '🏠 ลำถัดไปที่จะบินผ่านบ้าน' : '🛬 ลำถัดไปที่จะแตะพื้นดอนเมือง'}${imminent ? ' — ออกไปดูได้เลย! 🏃' : ''}</div>
+      <div class="countdown ${imminent ? 'pulse' : ''}">${fmtMinSec(eta)}</div>
+      <div class="flightline">${target.cs}${airline ? ' · ' + airline : ''}</div>
+      <div class="sub">${from ? 'มาจาก ' + from + ' · ' : ''}${typ ? typ + ' · ' : ''}สูง ${Math.round(target.alt).toLocaleString()} ฟุต · ${Math.round(target.gs * KT_TO_KMH)} กม./ชม.${isHouse && target.etaLandMin != null ? ' · แตะพื้นอีก ' + fmtMinSec(target.etaLandMin) : ''}</div>`;
+  }
+
+  // รายการ
+  const list = document.getElementById('planeList');
+  const inboundList = planes.filter(p => p.inbound || p.outbound);
+  if (!inboundList.length) {
+    list.innerHTML = '<div class="empty">ยังไม่พบเครื่องขาเข้าในรัศมี 75 กม.</div>';
+  } else {
+    list.innerHTML = inboundList.map(p => {
+      const airline = airlineOf(p.cs);
+      const route = S.routes.get(p.cs);
+      const place = p.outbound
+        ? (route?.destName ? 'ไป ' + route.destName : '')
+        : (route?.originName ? 'จาก ' + route.originName : '');
+      const typ = AC_TYPES[p.type] || p.type;
+      const near = !p.outbound && p.cpaKm != null && p.cpaKm <= S.alertKm && p.etaHouseMin != null && p.etaHouseMin > 0;
+      const chip = p.outbound
+        ? '<span class="chip dep">🛫 ขาออก</span>'
+        : p.onFinal
+          ? '<span class="chip final">🛬 ไฟนอล</span>'
+          : '<span class="chip">➡️ กำลังเข้า</span>';
+      const etaTxt = p.outbound
+        ? (p.etaHouseMin != null && p.etaHouseMin > 0 && p.cpaKm <= S.alertKm ? `ผ่านบ้าน ${fmtMinSec(p.etaHouseMin)}` : '–')
+        : near
+          ? `🏠 ${fmtMinSec(p.etaHouseMin)}`
+          : `🛬 ${fmtMinSec(p.etaLandMin)}`;
+      return `<div class="plane${near ? ' near' : ''}">
+        <div class="row1">
+          <span><span class="cs">${p.cs}</span> <span class="airline">${airline}</span></span>
+          <span class="eta">${etaTxt}</span>
+        </div>
+        <div class="row2">
+          ${chip}
+          ${place ? `<span>${place}</span>` : ''}
+          ${typ ? `<span>${typ}</span>` : ''}
+          <span>สูง ${Math.round(p.alt).toLocaleString()} ฟุต</span>
+          <span>ห่างสนามบิน ${p.dDMK.toFixed(0)} กม.</span>
+          ${S.home && p.cpaKm != null && p.along > 0 ? `<span>เฉียดบ้าน ~${p.cpaKm.toFixed(1)} กม.</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  drawRadar(planes);
+}
+
+/* ================= เรดาร์ ================= */
+const RADAR_KM = 55;
+function drawRadar(planes) {
+  const cv = document.getElementById('radar');
+  const w = cv.clientWidth;
+  if (!w) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = w * dpr; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const C = w / 2, scale = C / RADAR_KM;
+
+  ctx.fillStyle = '#0a0f1d';
+  ctx.fillRect(0, 0, w, w);
+
+  // วงระยะ
+  ctx.strokeStyle = '#1b2540';
+  ctx.fillStyle = '#3a486b';
+  ctx.font = '10px Sarabun';
+  ctx.lineWidth = 1;
+  for (const r of [10, 25, 40, 55]) {
+    ctx.beginPath();
+    ctx.arc(C, C, r * scale, 0, Math.PI * 2);
+    ctx.stroke();
+    if (r < RADAR_KM) ctx.fillText(r + ' กม.', C + 3, C - r * scale + 11);
+  }
+
+  const px = p => ({ x: C + toXY(p).x * scale, y: C - toXY(p).y * scale });
+
+  // รันเวย์ดอนเมือง (เส้นตามแนว 209°)
+  const th = RWY_HDG * Math.PI / 180;
+  const rw = 5; // วาดยาว 10 กม. ให้เห็นแนวชัด
+  ctx.strokeStyle = '#52d98b';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(C - Math.sin(th) * rw * scale, C + Math.cos(th) * rw * scale);
+  ctx.lineTo(C + Math.sin(th) * rw * scale, C - Math.cos(th) * rw * scale);
+  ctx.stroke();
+  ctx.fillStyle = '#52d98b';
+  ctx.font = '11px Sarabun';
+  ctx.fillText('ดอนเมือง', C + 8, C + 4);
+
+  // สุวรรณภูมิ (จุดอ้างอิงจางๆ)
+  const bkkP = px(BKK);
+  if (bkkP.x < w && bkkP.y < w) {
+    ctx.fillStyle = '#3a486b';
+    ctx.beginPath(); ctx.arc(bkkP.x, bkkP.y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillText('สุวรรณภูมิ', bkkP.x + 6, bkkP.y + 4);
+  }
+
+  // บ้าน
+  if (S.home) {
+    const h = px(S.home);
+    ctx.font = '16px Sarabun';
+    ctx.fillText('🏠', h.x - 8, h.y + 6);
+  }
+
+  // เครื่องบิน
+  for (const p of planes) {
+    const pos = px(p);
+    const near = !p.outbound && p.cpaKm != null && p.cpaKm <= S.alertKm;
+    // เส้นทางที่บินผ่านมา
+    if (p.trail && p.trail.length > 1) {
+      ctx.strokeStyle = 'rgba(109,181,255,.25)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      p.trail.forEach((t, i) => {
+        const q = px(t);
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      });
+      ctx.stroke();
+    }
+    // ตัวเครื่อง (สามเหลี่ยมหันตามทิศบิน)
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.rotate(p.track * Math.PI / 180);
+    ctx.fillStyle = near ? '#ffb02e' : (p.outbound ? '#647089' : '#6db5ff');
+    ctx.beginPath();
+    ctx.moveTo(0, -8); ctx.lineTo(5.5, 7); ctx.lineTo(0, 3.5); ctx.lineTo(-5.5, 7);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = near ? '#ffb02e' : '#9aa8bf';
+    ctx.font = '10px Sarabun';
+    ctx.fillText(p.cs, pos.x + 8, pos.y - 6);
+  }
+}
+
+/* ================= ตั้งค่า + ปุ่ม ================= */
+function loadSettings() {
+  try { S.home = JSON.parse(localStorage.getItem('dmk_home')) || null; } catch (e) {}
+  try {
+    const s = JSON.parse(localStorage.getItem('dmk_settings')) || {};
+    if (s.leadMin) S.leadMin = s.leadMin;
+    if (s.alertKm) S.alertKm = s.alertKm;
+    if (s.includeDep != null) S.includeDep = s.includeDep;
+  } catch (e) {}
+  document.getElementById('leadMin').value = S.leadMin;
+  document.getElementById('leadOut').textContent = S.leadMin;
+  document.getElementById('alertKm').value = S.alertKm;
+  document.getElementById('distOut').textContent = S.alertKm;
+  document.getElementById('includeDep').checked = S.includeDep;
+  updateHomeStatus();
+}
+function saveSettings() {
+  localStorage.setItem('dmk_settings', JSON.stringify({
+    leadMin: S.leadMin, alertKm: S.alertKm, includeDep: S.includeDep,
+  }));
+}
+function setHome(lat, lon, how) {
+  S.home = { lat, lon };
+  localStorage.setItem('dmk_home', JSON.stringify(S.home));
+  updateHomeStatus(how);
+  // คำนวณข้อมูลบ้านของทุกลำใหม่ทันที
+  for (const p of S.planes.values()) {
+    const c = houseCPA(p);
+    if (c) {
+      p.cpaKm = c.cpa; p.along = c.along;
+      p.etaHouseMin = c.along > 0 ? c.along / (p.gs * KT_TO_KMH / 60) : null;
+    }
+  }
+  render();
+}
+function updateHomeStatus(how) {
+  const el = document.getElementById('homeStatus');
+  if (S.home) {
+    const d = distKm(S.home, DMK).toFixed(1);
+    el.innerHTML = `✅ ตั้งบ้านแล้ว${how ? ' (' + how + ')' : ''} — ห่างสนามบิน ${d} กม. · เก็บไว้ในเครื่องนี้เท่านั้น`;
+  }
+}
+
+document.getElementById('btnHomeGps').addEventListener('click', () => {
+  if (!navigator.geolocation) { alert('เบราว์เซอร์นี้ไม่รองรับ GPS — พิมพ์พิกัดเองด้านล่างได้ครับ'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => setHome(pos.coords.latitude, pos.coords.longitude, 'จาก GPS'),
+    err => alert('อ่านตำแหน่งไม่ได้: ' + err.message + '\nลองพิมพ์พิกัดเองด้านล่างแทนครับ'),
+    { enableHighAccuracy: true, timeout: 15000 },
+  );
+});
+
+document.getElementById('btnManualHome').addEventListener('click', () => {
+  const m = /(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/.exec(document.getElementById('manualCoords').value);
+  if (!m) { alert('รูปแบบพิกัดไม่ถูกต้อง เช่น 13.95, 100.61'); return; }
+  const lat = parseFloat(m[1]), lon = parseFloat(m[2]);
+  if (lat < 5 || lat > 21 || lon < 97 || lon > 106) { alert('พิกัดนี้ไม่อยู่ในประเทศไทย ลองตรวจอีกครั้งครับ'); return; }
+  setHome(lat, lon, 'พิมพ์เอง');
+});
+
+document.getElementById('btnEnableAlert').addEventListener('click', async () => {
+  S.audioCtx = S.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  await S.audioCtx.resume();
+  S.audioOn = true;
+  if ('Notification' in window && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (e) {}
+  }
+  playChime();
+});
+
+document.getElementById('btnTestAlert').addEventListener('click', () => {
+  if (!S.audioOn) {
+    S.audioCtx = S.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    S.audioCtx.resume();
+    S.audioOn = true;
+  }
+  playChime();
+  if (navigator.vibrate) navigator.vibrate([250, 120, 250]);
+});
+
+document.getElementById('leadMin').addEventListener('input', e => {
+  S.leadMin = +e.target.value;
+  document.getElementById('leadOut').textContent = S.leadMin;
+  saveSettings();
+});
+document.getElementById('alertKm').addEventListener('input', e => {
+  S.alertKm = +e.target.value;
+  document.getElementById('distOut').textContent = S.alertKm;
+  saveSettings(); render();
+});
+document.getElementById('includeDep').addEventListener('change', e => {
+  S.includeDep = e.target.checked;
+  saveSettings(); render();
+});
+
+/* กันจอดับ */
+async function applyWakeLock(on) {
+  try {
+    if (on && 'wakeLock' in navigator) {
+      S.wakeLockObj = await navigator.wakeLock.request('screen');
+    } else if (S.wakeLockObj) {
+      await S.wakeLockObj.release();
+      S.wakeLockObj = null;
+    }
+  } catch (e) {}
+}
+document.getElementById('wakeLock').addEventListener('change', e => applyWakeLock(e.target.checked));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (document.getElementById('wakeLock').checked) applyWakeLock(true);
+    fetchPlanes();
+  }
+});
+
+/* ================= เริ่มทำงาน ================= */
+loadSettings();
+if (!S.home) document.getElementById('settingsBox').open = true;
+fetchPlanes();
+setInterval(fetchPlanes, POLL_MS);
+setInterval(render, 1000);           // นับถอยหลังเดินทุกวินาที
+window.addEventListener('resize', () => render());
+applyWakeLock(true);
+</script>
+</body>
+</html>
