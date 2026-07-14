@@ -176,7 +176,7 @@
     <div class="none">กำลังค้นหาเครื่องบิน…</div>
   </div>
 
-  <h2>🛬 เครื่องที่กำลังเข้าดอนเมือง</h2>
+  <h2>🛬 เครื่องขาเข้า (ดอนเมือง + สุวรรณภูมิ)</h2>
   <div id="planeList"><div class="empty">ยังไม่พบเครื่องขาเข้าในรัศมี 75 กม.</div></div>
 
   <h2>📡 จอเรดาร์</h2>
@@ -242,8 +242,9 @@
 
 /* ================= ค่าคงที่ ================= */
 const DMK = { lat: 13.9126, lon: 100.6067 };          // สนามบินดอนเมือง VTBD
-const BKK = { lat: 13.6900, lon: 100.7501 };          // สุวรรณภูมิ VTBS (กันสับสน — อยู่ใกล้กัน)
-const RWY_HDG = 209;                                  // แนวรันเวย์ 21 (ลงจากทิศเหนือ) / 03 = 29°
+const BKK = { lat: 13.6900, lon: 100.7501 };          // สุวรรณภูมิ VTBS (ห่างดอนเมืองแค่ ~28 กม.)
+const RWY_HDG = 209;                                  // แนวรันเวย์ดอนเมือง 21 (ลงจากทิศเหนือ) / 03 = 29°
+const BKK_RWY_HDG = 199;                              // แนวรันเวย์สุวรรณภูมิ 19 (ลงจากทิศเหนือ) / 01 = 19°
 const FETCH_NM = 45;                                  // รัศมีดึงข้อมูล (ไมล์ทะเล ≈ 83 กม.)
 const POLL_MS = 15000;
 const MAX_INBOUND_KM = 80;
@@ -353,39 +354,49 @@ function classify(ac) {
   const p = { lat: ac.lat, lon: ac.lon, track };
   const dDMK = distKm(p, DMK);
   const dBKK = distKm(p, BKK);
-  const brgDMK = bearing(p, DMK);
-  const towardDMK = angDiff(track, brgDMK) < 45;
+  const towardDMK = angDiff(track, bearing(p, DMK)) < 45;
   const towardBKK = angDiff(track, bearing(p, BKK)) < 35;
-  const aligned = angDiff(track, RWY_HDG) < 28 || angDiff(track, (RWY_HDG + 180) % 360) < 28;
+  const alignedDMK = angDiff(track, RWY_HDG) < 28 || angDiff(track, (RWY_HDG + 180) % 360) < 28;
+  const alignedBKK = angDiff(track, BKK_RWY_HDG) < 28 || angDiff(track, (BKK_RWY_HDG + 180) % 360) < 28;
   const xtDMK = crossTrackToRunway(p, DMK, RWY_HDG);
-  const xtBKK = crossTrackToRunway(p, BKK, 199); // แนวรันเวย์สุวรรณภูมิ 01/19
+  const xtBKK = crossTrackToRunway(p, BKK, BKK_RWY_HDG);
 
   const route = S.routes.get(csOf(ac));
   const destIsDMK = route?.dest === 'DMK';
-  const destIsOther = route?.dest && route.dest !== 'DMK';
+  const destIsBKK = route?.dest === 'BKK';
+  const destIsOther = route?.dest && !destIsDMK && !destIsBKK;
 
-  // ขาเข้าดอนเมือง: ต่ำ + มุ่งเข้าหาสนามบิน + ไม่ได้ไต่ระดับ และไม่ใช่ของสุวรรณภูมิ
-  const onFinal = aligned && xtDMK < 5 && dDMK < 30 && alt < 7000 && (vr == null || vr < 100);
-  let inbound = alt < 12000 && dDMK < MAX_INBOUND_KM && (vr == null || vr < 300)
-    && (towardDMK || onFinal);
-  if (destIsOther) inbound = false;
-  // ถ้าดูเหมือนกำลังเข้าสุวรรณภูมิมากกว่า (ใกล้แนวรันเวย์ BKK กว่า และเส้นทางไม่ยืนยัน DMK)
-  if (inbound && !destIsDMK && dBKK < dDMK && towardBKK && xtBKK < xtDMK) inbound = false;
+  const onFinalDMK = alignedDMK && xtDMK < 5 && dDMK < 30 && alt < 7000 && (vr == null || vr < 100);
+  const onFinalBKK = alignedBKK && xtBKK < 5 && dBKK < 30 && alt < 7000 && (vr == null || vr < 100);
+
+  // ขาเข้า: ต่ำ + มุ่งเข้าหาสนามบิน + ไม่ได้ไต่ระดับ
+  let inboundDMK = alt < 12000 && dDMK < MAX_INBOUND_KM && (vr == null || vr < 300) && (towardDMK || onFinalDMK);
+  let inboundBKK = alt < 12000 && dBKK < MAX_INBOUND_KM && (vr == null || vr < 300) && (towardBKK || onFinalBKK);
+  if (destIsBKK) inboundDMK = false;
+  if (destIsDMK) inboundBKK = false;
+  if (destIsOther) { inboundDMK = false; inboundBKK = false; }
+  // เข้าเงื่อนไขทั้งคู่และเส้นทางไม่ยืนยัน → เลือกสนามบินที่แนวรันเวย์ตรงกว่า
+  if (inboundDMK && inboundBKK) {
+    if (xtBKK < xtDMK) inboundDMK = false; else inboundBKK = false;
+  }
 
   // ขาออกจากดอนเมือง: ต่ำ + ไต่ระดับ + บินออกจากสนามบิน
-  const outbound = !inbound && alt < 10000 && dDMK < 50 && vr != null && vr > 300 && !towardDMK
-    && dDMK < dBKK;
+  const outbound = !inboundDMK && !inboundBKK && alt < 10000 && dDMK < 50 && vr != null && vr > 300
+    && !towardDMK && dDMK < dBKK;
 
-  if (!inbound && !outbound) return null;
+  if (!inboundDMK && !inboundBKK && !outbound) return null;
 
+  const airport = inboundBKK ? 'BKK' : 'DMK'; // ขาเข้าดอนเมือง หรือขาออก ถือว่าอ้างอิงดอนเมือง
+  const dAirport = inboundBKK ? dBKK : dDMK;
+  const onFinal = inboundBKK ? onFinalBKK : onFinalDMK;
   const speedKmMin = gs * KT_TO_KMH / 60;
-  const etaLandMin = inbound ? (dDMK / speedKmMin) * 1.12 : null; // เผื่อลดความเร็วช่วงร่อนลง
+  const etaLandMin = (inboundDMK || inboundBKK) ? (dAirport / speedKmMin) * 1.12 : null; // เผื่อลดความเร็วช่วงร่อนลง
   const cpaInfo = houseCPA(p);
 
   return {
     hex: ac.hex, cs: csOf(ac), type: ac.t || '', reg: ac.r || '',
     lat: ac.lat, lon: ac.lon, alt, gs, track, vr,
-    dDMK, inbound, outbound, onFinal,
+    inbound: inboundDMK || inboundBKK, outbound, airport, dAirport, onFinal,
     etaLandMin,
     etaHouseMin: cpaInfo && cpaInfo.along > 0 ? cpaInfo.along / speedKmMin : null,
     cpaKm: cpaInfo ? cpaInfo.cpa : null,
@@ -549,7 +560,7 @@ function extrapolate(p) {
   const moved = p.gs * KT_TO_KMH / 60 * dtMin;
   return {
     ...p,
-    dDMK: Math.max(0, p.dDMK - (p.inbound ? moved : -moved)),
+    dAirport: Math.max(0, p.dAirport - (p.inbound ? moved : -moved)),
     etaLandMin: p.etaLandMin != null ? Math.max(0, p.etaLandMin - dtMin) : null,
     etaHouseMin: p.etaHouseMin != null ? p.etaHouseMin - dtMin : null,
     along: p.along != null ? p.along - moved : null,
@@ -600,8 +611,9 @@ function render() {
     const airline = airlineOf(target.cs);
     const from = S.routes.get(target.cs)?.originName;
     const typ = AC_TYPES[target.type] || target.type;
+    const airportLabel = PLACES[target.airport] || target.airport || '';
     hero.innerHTML = `
-      <div class="label">${isHouse ? '🏠 ลำถัดไปที่จะบินผ่านบ้าน' : '🛬 ลำถัดไปที่จะแตะพื้นดอนเมือง'}${imminent ? ' — ออกไปดูได้เลย! 🏃' : ''}</div>
+      <div class="label">${isHouse ? '🏠 ลำถัดไปที่จะบินผ่านบ้าน' : `🛬 ลำถัดไปที่จะแตะพื้น${airportLabel}`}${imminent ? ' — ออกไปดูได้เลย! 🏃' : ''}</div>
       <div class="countdown ${imminent ? 'pulse' : ''}">${fmtMinSec(eta)}</div>
       <div class="flightline">${target.cs}${airline ? ' · ' + airline : ''}</div>
       <div class="sub">${from ? 'มาจาก ' + from + ' · ' : ''}${typ ? typ + ' · ' : ''}สูง ${Math.round(target.alt).toLocaleString()} ฟุต · ${Math.round(target.gs * KT_TO_KMH)} กม./ชม.${isHouse && target.etaLandMin != null ? ' · แตะพื้นอีก ' + fmtMinSec(target.etaLandMin) : ''}</div>`;
@@ -621,11 +633,12 @@ function render() {
         : (route?.originName ? 'จาก ' + route.originName : '');
       const typ = AC_TYPES[p.type] || p.type;
       const near = !p.outbound && p.cpaKm != null && p.cpaKm <= S.alertKm && p.etaHouseMin != null && p.etaHouseMin > 0;
+      const airportLabel = PLACES[p.airport] || p.airport || '';
       const chip = p.outbound
         ? '<span class="chip dep">🛫 ขาออก</span>'
         : p.onFinal
-          ? '<span class="chip final">🛬 ไฟนอล</span>'
-          : '<span class="chip">➡️ กำลังเข้า</span>';
+          ? `<span class="chip final">🛬 ไฟนอล${airportLabel}</span>`
+          : `<span class="chip">➡️ เข้า${airportLabel}</span>`;
       const etaTxt = p.outbound
         ? (p.etaHouseMin != null && p.etaHouseMin > 0 && p.cpaKm <= S.alertKm ? `ผ่านบ้าน ${fmtMinSec(p.etaHouseMin)}` : '–')
         : near
@@ -641,7 +654,7 @@ function render() {
           ${place ? `<span>${place}</span>` : ''}
           ${typ ? `<span>${typ}</span>` : ''}
           <span>สูง ${Math.round(p.alt).toLocaleString()} ฟุต</span>
-          <span>ห่างสนามบิน ${p.dDMK.toFixed(0)} กม.</span>
+          <span>ห่าง${airportLabel} ${p.dAirport.toFixed(0)} กม.</span>
           ${S.home && p.cpaKm != null && p.along > 0 ? `<span>เฉียดบ้าน ~${p.cpaKm.toFixed(1)} กม.</span>` : ''}
         </div>
       </div>`;
@@ -693,9 +706,19 @@ function drawRadar(planes) {
   ctx.font = '11px Sarabun';
   ctx.fillText('ดอนเมือง', C + 8, C + 4);
 
-  // สุวรรณภูมิ (จุดอ้างอิงจางๆ)
+  // สุวรรณภูมิ (จุดอ้างอิง + แนวรันเวย์จางๆ)
   const bkkP = px(BKK);
   if (bkkP.x < w && bkkP.y < w) {
+    const thB = BKK_RWY_HDG * Math.PI / 180;
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#3a486b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bkkP.x - Math.sin(thB) * rw * scale, bkkP.y + Math.cos(thB) * rw * scale);
+    ctx.lineTo(bkkP.x + Math.sin(thB) * rw * scale, bkkP.y - Math.cos(thB) * rw * scale);
+    ctx.stroke();
+    ctx.restore();
     ctx.fillStyle = '#3a486b';
     ctx.beginPath(); ctx.arc(bkkP.x, bkkP.y, 3, 0, Math.PI * 2); ctx.fill();
     ctx.fillText('สุวรรณภูมิ', bkkP.x + 6, bkkP.y + 4);
