@@ -61,6 +61,22 @@
     font-size: .9rem; color: var(--ink-2);
   }
   .counter b { color: var(--ink); font-size: 1.1rem; }
+  .counter.window { margin-top: 6px; font-size: .82rem; }
+  .counter.window b { font-size: 1rem; }
+  .counter .avg { color: var(--ink-3); font-size: .76rem; }
+
+  /* ---------- rush banner ---------- */
+  .rush {
+    display: none;
+    margin-top: 10px;
+    background: linear-gradient(160deg, #3a2a10, #241a0c);
+    border: 1px solid var(--warn);
+    border-radius: 18px; padding: 14px 16px;
+    box-shadow: 0 0 24px rgba(255,176,46,.18);
+  }
+  .rush.show { display: block; }
+  .rush .title { font-size: 1.05rem; font-weight: 700; color: var(--warn); }
+  .rush .detail { font-size: .84rem; color: var(--ink-2); margin-top: 4px; line-height: 1.5; }
 
   /* ---------- hero card ---------- */
   .hero {
@@ -172,6 +188,16 @@
     <span><b id="nightCount">0</b> ลำ</span>
   </div>
 
+  <div class="counter window" id="windowCounter" style="display:none">
+    <span>🕖 ช่วง <span id="winRangeLabel">19:00–21:00</span></span>
+    <span><b id="windowCount">0</b> ลำ <span class="avg" id="windowAvg"></span></span>
+  </div>
+
+  <div class="rush" id="rushBanner">
+    <div class="title" id="rushTitle"></div>
+    <div class="detail" id="rushDetail"></div>
+  </div>
+
   <div class="hero" id="hero">
     <div class="none">กำลังค้นหาเครื่องบิน…</div>
   </div>
@@ -210,6 +236,21 @@
       <div class="set-row">
         <label>📏 นับว่า "ผ่านบ้าน" เมื่อเข้าใกล้ไม่เกิน: <output id="distOut">3</output> กม.</label>
         <input type="range" id="alertKm" min="1" max="8" step="0.5" value="3">
+      </div>
+
+      <div class="set-row">
+        <label>🌊 แจ้งเตือน "ช่วงเครื่องเยอะ" เมื่อมี <output id="rushCountOut">3</output> ลำ ภายใน <output id="rushWinOut">20</output> นาที</label>
+        <input type="range" id="rushCount" min="2" max="6" step="1" value="3">
+        <input type="range" id="rushWindowMin" min="10" max="40" step="5" value="20" style="margin-top:6px">
+      </div>
+
+      <div class="set-row">
+        <label>🕖 ช่วงเวลาที่สนใจ (นับจำนวนเครื่องที่ผ่านบ้านในช่วงนี้ต่างหาก)</label>
+        <div class="manual-home">
+          <input type="time" id="winStart" value="19:00">
+          <span style="align-self:center;color:var(--ink-2)">–</span>
+          <input type="time" id="winEnd" value="21:00">
+        </div>
       </div>
 
       <div class="toggle-row">
@@ -298,6 +339,10 @@ const S = {
   leadMin: 5,
   alertKm: 3,
   includeDep: false,
+  rushCount: 3,                // กี่ลำ...
+  rushWindowMin: 20,           // ...ภายในกี่นาที ถึงจะถือว่า "เครื่องเยอะ"
+  winStart: '19:00',           // ช่วงเวลาที่สนใจ (สำหรับนับสถิติแยก)
+  winEnd: '21:00',
   audioOn: false,
   planes: new Map(),          // hex -> ข้อมูลลำล่าสุด + สถานะ
   routes: new Map(),          // callsign -> {origin, dest, originName}
@@ -307,6 +352,7 @@ const S = {
   online: false,
   audioCtx: null,
   wakeLockObj: null,
+  rushActive: false,          // กันแจ้งเตือนซ้ำจนกว่าจำนวนจะลดต่ำกว่าเกณฑ์แล้วขึ้นใหม่
 };
 
 /* ================= เรขาคณิต (ระนาบแบนพอสำหรับ <100 กม.) ================= */
@@ -501,8 +547,49 @@ function bumpNightCount() {
   document.getElementById('nightCount').textContent = getNightCount();
 }
 
+/* ----- ช่วงเวลาที่สนใจ (เช่น 19:00–21:00): นับแยกต่างหาก + สถิติย้อนหลัง ----- */
+function parseHM(str) {
+  const [h, m] = (str || '0:0').split(':').map(Number);
+  return h * 60 + m;
+}
+function nowMinutes() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+function inTimeWindow(nowMin, startMin, endMin) {
+  return startMin <= endMin ? (nowMin >= startMin && nowMin < endMin) : (nowMin >= startMin || nowMin < endMin);
+}
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function windowKey() { return 'dmk_win_' + localDateStr(new Date()); }
+function getWindowCount() { return parseInt(localStorage.getItem(windowKey()) || '0', 10); }
+function bumpWindowCount() {
+  const n = getWindowCount() + 1;
+  localStorage.setItem(windowKey(), String(n));
+  saveWindowHistory(localDateStr(new Date()), n);
+}
+function saveWindowHistory(dateStr, count) {
+  let hist = {};
+  try { hist = JSON.parse(localStorage.getItem('dmk_win_history')) || {}; } catch (e) {}
+  hist[dateStr] = count;
+  const dates = Object.keys(hist).sort();
+  while (dates.length > 21) delete hist[dates.shift()]; // เก็บย้อนหลังไม่เกิน ~3 สัปดาห์
+  localStorage.setItem('dmk_win_history', JSON.stringify(hist));
+}
+function windowHistoryAverage() {
+  let hist = {};
+  try { hist = JSON.parse(localStorage.getItem('dmk_win_history')) || {}; } catch (e) {}
+  const today = localDateStr(new Date());
+  const past = Object.entries(hist).filter(([d]) => d !== today).map(([, c]) => c);
+  if (past.length < 2) return null;
+  return { avg: past.reduce((a, b) => a + b, 0) / past.length, nights: past.length };
+}
+
 function checkAlerts() {
   if (!S.home) return;
+  const winStartMin = parseHM(S.winStart), winEndMin = parseHM(S.winEnd);
+  const inWin = inTimeWindow(nowMinutes(), winStartMin, winEndMin);
   for (const p of S.planes.values()) {
     if (p.outbound && !S.includeDep) continue;
     const near = p.cpaKm != null && p.cpaKm <= S.alertKm;
@@ -515,7 +602,34 @@ function checkAlerts() {
     if (near && !p.counted && p.prevAlong != null && p.prevAlong > 0 && p.along != null && p.along <= 0) {
       p.counted = true;
       bumpNightCount();
+      if (inWin) bumpWindowCount();
     }
+  }
+  checkRush();
+}
+
+/* ----- แจ้งเตือน "ช่วงเครื่องเยอะ": N ลำขึ้นไป จะผ่านบ้านภายใน M นาทีข้างหน้า ----- */
+function checkRush() {
+  if (!S.home) return;
+  const upcoming = [...S.planes.values()].filter(p =>
+    (!p.outbound || S.includeDep) && p.cpaKm != null && p.cpaKm <= S.alertKm &&
+    p.etaHouseMin != null && p.etaHouseMin > 0 && p.etaHouseMin <= S.rushWindowMin);
+  S.rushPlanes = upcoming.sort((a, b) => a.etaHouseMin - b.etaHouseMin);
+  const isRush = upcoming.length >= S.rushCount;
+  if (isRush && !S.rushActive) {
+    S.rushActive = true;
+    fireRushAlert(upcoming);
+  } else if (!isRush && S.rushActive) {
+    S.rushActive = false; // เกณฑ์ตกลงแล้ว พร้อมแจ้งเตือนรอบใหม่ถ้าเกิดกลุ่มใหม่อีก
+  }
+}
+
+function fireRushAlert(planes) {
+  const msg = `มี ${planes.length} ลำ จะผ่านบ้านภายใน ${S.rushWindowMin} นาทีข้างหน้า — ออกไปรอรวดเดียวได้เลย! 🏃`;
+  playChime();
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('🌊 ช่วงนี้เครื่องเยอะ!', { body: msg, tag: 'rush' }); } catch (e) {}
   }
 }
 
@@ -593,6 +707,29 @@ function render() {
     st.textContent = 'เชื่อมต่อไม่ได้ กำลังลองใหม่…';
   }
   document.getElementById('nightCount').textContent = getNightCount();
+
+  // ตัวนับช่วงเวลาที่สนใจ
+  const winBox = document.getElementById('windowCounter');
+  if (S.home) {
+    winBox.style.display = 'flex';
+    document.getElementById('winRangeLabel').textContent = `${S.winStart}–${S.winEnd}`;
+    document.getElementById('windowCount').textContent = getWindowCount();
+    const hist = windowHistoryAverage();
+    document.getElementById('windowAvg').textContent = hist ? `(เฉลี่ย ${hist.avg.toFixed(1)} ลำ/คืน จาก ${hist.nights} คืน)` : '';
+  } else {
+    winBox.style.display = 'none';
+  }
+
+  // แบนเนอร์ช่วงเครื่องเยอะ
+  const rushBox = document.getElementById('rushBanner');
+  if (S.rushActive && S.rushPlanes && S.rushPlanes.length) {
+    rushBox.classList.add('show');
+    document.getElementById('rushTitle').textContent = `🌊 ช่วงนี้เครื่องเยอะ! ${S.rushPlanes.length} ลำ ภายใน ${S.rushWindowMin} นาที`;
+    document.getElementById('rushDetail').textContent = S.rushPlanes
+      .map(p => `${p.cs} (${fmtMinSec(p.etaHouseMin)})`).join(' · ') + ' — ออกไปรอรวดเดียวได้เลย! 🏃';
+  } else {
+    rushBox.classList.remove('show');
+  }
 
   const planes = activePlanes();
 
@@ -769,17 +906,29 @@ function loadSettings() {
     if (s.leadMin) S.leadMin = s.leadMin;
     if (s.alertKm) S.alertKm = s.alertKm;
     if (s.includeDep != null) S.includeDep = s.includeDep;
+    if (s.rushCount) S.rushCount = s.rushCount;
+    if (s.rushWindowMin) S.rushWindowMin = s.rushWindowMin;
+    if (s.winStart) S.winStart = s.winStart;
+    if (s.winEnd) S.winEnd = s.winEnd;
   } catch (e) {}
   document.getElementById('leadMin').value = S.leadMin;
   document.getElementById('leadOut').textContent = S.leadMin;
   document.getElementById('alertKm').value = S.alertKm;
   document.getElementById('distOut').textContent = S.alertKm;
   document.getElementById('includeDep').checked = S.includeDep;
+  document.getElementById('rushCount').value = S.rushCount;
+  document.getElementById('rushCountOut').textContent = S.rushCount;
+  document.getElementById('rushWindowMin').value = S.rushWindowMin;
+  document.getElementById('rushWinOut').textContent = S.rushWindowMin;
+  document.getElementById('winStart').value = S.winStart;
+  document.getElementById('winEnd').value = S.winEnd;
   updateHomeStatus();
 }
 function saveSettings() {
   localStorage.setItem('dmk_settings', JSON.stringify({
     leadMin: S.leadMin, alertKm: S.alertKm, includeDep: S.includeDep,
+    rushCount: S.rushCount, rushWindowMin: S.rushWindowMin,
+    winStart: S.winStart, winEnd: S.winEnd,
   }));
 }
 function setHome(lat, lon, how) {
@@ -853,6 +1002,26 @@ document.getElementById('alertKm').addEventListener('input', e => {
 });
 document.getElementById('includeDep').addEventListener('change', e => {
   S.includeDep = e.target.checked;
+  saveSettings(); render();
+});
+document.getElementById('rushCount').addEventListener('input', e => {
+  S.rushCount = +e.target.value;
+  document.getElementById('rushCountOut').textContent = S.rushCount;
+  S.rushActive = false; // เกณฑ์เปลี่ยน ให้ประเมินใหม่ทันที
+  saveSettings(); checkRush(); render();
+});
+document.getElementById('rushWindowMin').addEventListener('input', e => {
+  S.rushWindowMin = +e.target.value;
+  document.getElementById('rushWinOut').textContent = S.rushWindowMin;
+  S.rushActive = false;
+  saveSettings(); checkRush(); render();
+});
+document.getElementById('winStart').addEventListener('change', e => {
+  S.winStart = e.target.value || S.winStart;
+  saveSettings(); render();
+});
+document.getElementById('winEnd').addEventListener('change', e => {
+  S.winEnd = e.target.value || S.winEnd;
   saveSettings(); render();
 });
 
