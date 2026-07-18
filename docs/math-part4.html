@@ -172,6 +172,36 @@ print(f"เฉลี่ยถ่วง σ    = {(w @ sd)*100:.2f}%")        <spa
 </ul>
 <p>จากหลายสิบมิติ เหลือแค่ 3 ตัวเลขที่มีความหมาย → hedge ง่ายขึ้นมหาศาล</p></div>
 
+<p><strong>🐍 หา eigenvalue เองด้วย numpy</strong> — ตัวเลข "90% / 8% / 1%" ข้างบนมาจากไหน? มาจาก eigenvalue ของ correlation matrix หารด้วยผลรวม · <code>np.linalg.eigh</code> ทำให้ในบรรทัดเดียว:</p>
+
+<div class="code"><div class="hdr">🐍 Python — PCA: eigenvalue → % ที่แต่ละทิศอธิบายได้</div><pre>import numpy as np
+
+<span class="c"># correlation matrix ของการเปลี่ยนแปลงดอกเบี้ย 5 ช่วงอายุ (สั้น→ยาว)</span>
+C = np.array([[1.00, 0.95, 0.88, 0.80, 0.72],
+              [0.95, 1.00, 0.96, 0.90, 0.83],
+              [0.88, 0.96, 1.00, 0.97, 0.92],
+              [0.80, 0.90, 0.97, 1.00, 0.97],
+              [0.72, 0.83, 0.92, 0.97, 1.00]])
+
+vals, vecs = np.linalg.eigh(C)      <span class="c"># eigh = สำหรับเมทริกซ์สมมาตร</span>
+vals = vals[::-1]                   <span class="c"># เรียงจากใหญ่ไปเล็ก</span>
+pct  = vals / vals.sum() * 100      <span class="c"># แต่ละทิศอธิบาย variance กี่ %</span>
+
+for i, p in enumerate(pct, 1):
+    print(f"PC{i}: {p:5.2f}%   (สะสม {np.cumsum(pct)[i-1]:5.2f}%)")
+<span class="o"># PC1: 91.29%   (สะสม 91.29%)   ← Level: ทุกช่วงขยับพร้อมกัน</span>
+<span class="o"># PC2:  7.25%   (สะสม 98.54%)   ← Slope: สั้น vs ยาว</span>
+<span class="o"># PC3:  0.87%   (สะสม 99.41%)   ← Curvature</span>
+<span class="o"># PC4:  0.38%   (สะสม 99.78%)   ← noise ตัดทิ้งได้</span>
+<span class="o"># PC5:  0.22%   (สะสม 100.0%)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<p>ดอกเบี้ย 5 ช่วงอายุ (จริง ๆ มีเป็นสิบ) ถูกย่อเหลือ <strong>3 ทิศ</strong> ที่อธิบายได้ 99.4% · PC1 อย่างเดียวกิน 91% — นั่นคือเหตุผลที่เทรดเดอร์พันธบัตร hedge "duration" (= exposure ต่อ Level) เป็นอย่างแรก · ที่เหลือ (0.38%, 0.22%) คือ noise ทิ้งได้ · <strong>เปลี่ยนแค่ correlation matrix</strong> ก็ใช้วิธีเดียวกันย่อ volatility surface, พอร์ตหุ้น, หรือ factor อะไรก็ได้</p></div>
+
+<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
+<p>รันโค้ดข้างบน แล้วดู <code>vecs[:, -1]</code> (eigenvector ของ PC1) · คาดเดาก่อน: ค่าทั้ง 5 ตัวควรมีเครื่องหมาย<strong>เดียวกัน</strong> (บวกหมดหรือลบหมด) — เพราะ Level = "ทุกช่วงขยับไปทางเดียวกัน"</p>
+<p style="font-size:.88em;color:var(--g6)">เฉลย: ได้ประมาณ [0.43, 0.45, 0.46, 0.46, 0.44] — บวกใกล้เคียงกันหมด = ทุกช่วงอายุขยับพร้อมกัน ✓ (นี่คือ "Level factor")</p></div>
+
 <div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
 <p>PCA ใช้ย่อ <strong>volatility surface</strong> (σ ของทุก strike × ทุกอายุ) ให้เหลือ factor ไม่กี่ตัว · eigenvalue ใหญ่ = ทิศสำคัญ · eigenvalue เล็ก = noise ตัดทิ้งได้</p></div>
 
@@ -227,6 +257,40 @@ Least Squares: minimize Σ(yᵢ − α − βxᵢ)²</div>
 <li><strong>β (Beta) ของหุ้น</strong> = ความชัน regression ของ return หุ้น vs ตลาด · β = 1.5 → หุ้นเหวี่ยงกว่าตลาด 1.5 เท่า</li>
 <li><strong>Hedge Ratio</strong> = ความชัน regression ของราคา option vs หุ้นอ้างอิง ≈ Delta (เพื่อนเก่าจากเล่ม 1 Part III)</li>
 </ul></div>
+
+<div class="bx ba"><div class="bt">🧮 คิดด้วยมือ — หา Beta จากผลตอบแทน 6 เดือน</div>
+<p>ผลตอบแทนรายเดือน · ตลาด X = [+3, −2, +5, −1, +2, −4]% · หุ้น Y = [+5, −4, +7, 0, +2, −7]% · β = Cov(X,Y)/Var(X)</p>
+<div class="fm">x̄ = (3−2+5−1+2−4)/6 % = 0.5%   ,   ȳ = (5−4+7+0+2−7)/6 % = 0.5%
+Cov(X,Y) = Σ(xᵢ−x̄)(yᵢ−ȳ)/(n−1) = 0.001770
+Var(X)   = Σ(xᵢ−x̄)²/(n−1)       = 0.001150
+
+β = Cov/Var = 0.001770 / 0.001150 = <b>1.54</b>
+α = ȳ − β·x̄ = 0.005 − 1.54×0.005 = <b>−0.0027</b></div>
+<p>β = 1.54 → หุ้นตัวนี้เหวี่ยงกว่าตลาด ~1.5 เท่า (high-beta)</p></div>
+
+<p>ทำมือได้ 6 จุด · ข้อมูลจริงเป็นพัน ๆ วัน ให้ <code>numpy</code> ทำ — และแถม R² มาด้วยว่าเส้นนี้อธิบายหุ้นได้ดีแค่ไหน:</p>
+
+<div class="code"><div class="hdr">🐍 Python — หา Beta + Alpha + R² จากข้อมูลจริง</div><pre>import numpy as np
+
+mkt = np.array([0.03, -0.02, 0.05, -0.01, 0.02, -0.04])   <span class="c"># ผลตอบแทนตลาด (X)</span>
+stk = np.array([0.05, -0.04, 0.07,  0.00, 0.02, -0.07])   <span class="c"># ผลตอบแทนหุ้น (Y)</span>
+
+<span class="c"># วิธีตรงตามสูตร: β = Cov/Var</span>
+beta  = np.cov(mkt, stk, ddof=1)[0,1] / np.var(mkt, ddof=1)
+alpha = stk.mean() - beta*mkt.mean()
+print(f"Beta = {beta:.4f}   Alpha = {alpha:.5f}")   <span class="o"># Beta = 1.5391   Alpha = -0.00270</span>
+
+<span class="c"># วิธีลัด: polyfit ดีกรี 1 (ได้ [ความชัน, จุดตัด] = [β, α])</span>
+beta2, alpha2 = np.polyfit(mkt, stk, 1)
+print(f"polyfit → β={beta2:.4f}, α={alpha2:.5f}")    <span class="o"># polyfit → β=1.5391, α=-0.00270</span>
+
+<span class="c"># R² = เส้นนี้อธิบาย variance ของหุ้นได้กี่ %</span>
+pred = alpha + beta*mkt
+r2 = 1 - ((stk-pred)**2).sum() / ((stk-stk.mean())**2).sum()
+print(f"R-squared = {r2:.4f}")                       <span class="o"># R-squared = 0.9626  (เส้นฟิตดีมาก)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<p>β = <strong>1.54</strong> ตรงกับที่คิดมือ · α ≈ 0 (หุ้นไม่ได้ให้ผลตอบแทนเกินตลาดอย่างมีนัย) · R² = <strong>0.96</strong> แปลว่าการขยับของหุ้น ~96% อธิบายได้ด้วยตลาด เหลือ 4% เป็นเรื่องเฉพาะตัว · β นี้เอาไป <strong>hedge</strong> ได้ทันที: ถือหุ้นนี้ ฿1M อยากตัดความเสี่ยงตลาด → short ดัชนี ฿1.54M (β×มูลค่า)</p></div>
 
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>หุ้นมี β = 1.5 · วันหนึ่งตลาดขึ้น +2% · ประมาณว่าหุ้นน่าจะขยับกี่ %? (ใช้ y ≈ βx)</p>
