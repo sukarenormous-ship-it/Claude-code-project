@@ -58,7 +58,15 @@ sup.c{color:var(--blue);font-weight:700;font-size:.72em}
 <p>1. Regress A vs B: A = α + β×B + ε<br>
 2. ทดสอบ residuals (ε) ว่า stationary ไหม (ADF test)<br>
 3. ถ้า ε stationary → A กับ B cointegrated → <strong>Spread = ε = A − α − β×B จะ mean-revert!</strong></p>
-<p class="src">ข้อควรระวัง: ผล regress ไม่สมมาตร — regress A กับ B vs B กับ A ได้ β และผล ADF ต่างกัน ควรลองทั้งสองทิศ (หรือใช้ Johansen test)</p>
+<p class="src">ข้อควรระวัง: ผล regress ไม่สมมาตร — regress A กับ B vs B กับ A ได้ β และผล ADF ต่างกัน ควรลองทั้งสองทิศ (หรือใช้ Johansen test<sup class="c">[17]</sup> ซึ่งไม่ขึ้นกับทิศทางและรองรับมากกว่า 2 ขา)</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 เข้าใจ p-value ให้ถูก: "ระดับของหลักฐาน" ไม่ใช่สวิตช์ผ่าน/ตก</div>
+<p><strong>เข้าใจผิดที่พบบ่อย:</strong> "ราคาหุ้นไม่เป็น normal → p-value ของ ADF/cointegration ใช้ไม่ได้" — <strong>ไม่จริง</strong> ADF ไม่ได้ต้องการให้ข้อมูลเป็น normal เลย: test statistic ของมันมี <strong>distribution เฉพาะตัว</strong> (ไม่ใช่ normal หรือ t) ที่สร้างจาก limit theory + simulation โดยตรง<sup class="c">[14][18]</sup> ดังนั้นการทดสอบ normality (เช่น Shapiro–Wilk) <strong>ไม่ใช่ด่านก่อนใช้ ADF</strong> — สองอย่างตอบคนละคำถาม</p>
+<p><strong>กับดักที่คน DIY พลาดบ่อยสุด:</strong> ADF บน residual ที่<em>ประมาณ β มาแล้ว</em> ห้ามใช้ critical values ปกติ — OLS จะ "ดูด" ให้ residual ดู stationary เกินจริง ต้องใช้ critical values เฉพาะของ Engle–Granger/MacKinnon ที่ติดลบมากกว่า<sup class="c">[18]</sup> → ในทางปฏิบัติ: <strong>ใช้ <code>coint()</code> ของ statsmodels ซึ่งจัดการให้แล้ว อย่ารัน <code>adfuller()</code> บน residual เอง</strong></p>
+<p><strong>ถ้า p-value สูง แปลว่าอะไร:</strong> ADF มีปัญหา <strong>power ต่ำ</strong>เมื่อ spread กลับช้าหรือ sample สั้น (แยก φ=0.98 จาก φ=1 ไม่ออก) — p สูงจึงแปลว่า <em>"ยังสรุปไม่ได้"</em> ไม่ใช่ <em>"ไม่ mean-revert แน่นอน"</em> ทางแก้ที่ดีกว่าการลดเกณฑ์: <strong>cross-check ด้วย KPSS</strong><sup class="c">[16]</sup> ซึ่งมี null กลับด้าน (null = stationary) — ถ้า ADF reject <em>และ</em> KPSS ไม่ reject = หลักฐานแข็งสองทาง; ขัดกัน = ก้ำกึ่ง เก็บไว้ดูต่อ</p>
+<p><strong>สรุป:</strong> significance เป็น "ระดับของหลักฐาน" — จะ<em>อ้าง</em>ว่าคู่ cointegrated ต้องมีผล reject จาก test ที่ถูก spec แต่การไม่ reject = ยังอ้างไม่ได้ (เข้า Watchlist) ไม่ใช่หลักฐานว่าความสัมพันธ์ไม่มีอยู่ — <em>ใช้ p-value เป็นหลักฐาน อย่าใช้เป็น strategy</em></p>
 </div>
 
 <h3>18.2 Trading the Spread</h3>
@@ -266,6 +274,7 @@ Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้อง�
 <div class="bx bg">
 <div class="bt">สรุป Part V (บท 18–21) — Part 6/9 ✓</div>
 <p>✓ <strong>Pairs Trading</strong>: Cointegration > Correlation, Z-score entry/exit<br>
+✓ <strong>p-value</strong>: เป็น "ระดับของหลักฐาน" ไม่ใช่สวิตช์ — จัดคู่ลง Evidence Tiers (Reject→Trade)<br>
 ✓ <strong>OU Process</strong>: θ = speed, Half-life กำหนดว่าคุ้มไหม<br>
 ✓ <strong>Kalman Filter</strong>: Dynamic hedge ratio<br>
 ✓ <strong>Factor Models</strong>: alpha = edge, beta = hedge ออกได้<br>
@@ -287,16 +296,16 @@ Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้อง�
 
 <h3>Workflow 6 ขั้น (จากศูนย์ → คู่แรก)</h3>
 <div class="fm">1) เลือก universe       → หุ้นใหญ่/ETF กลุ่มเดียวกัน สภาพคล่องสูง (เช่น KO–PEP)
-2) ทดสอบ cointegration  → Engle-Granger p &lt; 0.05 (ไม่ผ่าน = ทิ้งคู่นี้)
+2) ทดสอบ cointegration  → EG p &lt; 0.05 + KPSS ไม่ขัด (ไม่ reject = Watchlist ไม่ใช่เทรด)
 3) กรอง half-life       → 5–30 วัน (สั้นไป = noise, ยาวไป = ทุนจม)
 4) ตั้งกฎ Z-score       → entry ±2, exit |Z|&lt;0.5, stop ±4
 5) Backtest (train→OOS) → ประเมินบน train วัดผลบน out-of-sample; ดู Sharpe "หลังหักต้นทุน"
 6) Paper trade 2-3 เดือน → แล้วค่อย size ≤ 1-2%/คู่ ด้วยเงินที่เสียได้</div>
 
-<h3>Go / No-Go Checklist — เข้าได้ไหม?</h3>
+<h3>Evidence Checklist — หลักฐานแน่นแค่ไหน?</h3>
 <table>
-<tr><th>เกณฑ์</th><th>ผ่าน ✓</th><th>ห้ามแตะ ✗</th></tr>
-<tr><td>Cointegration (p-value)</td><td>&lt; 0.05 บน train</td><td>≥ 0.05 (correlation เฉยๆ ไม่พอ)</td></tr>
+<tr><th>เกณฑ์</th><th>หลักฐานแข็ง ✓</th><th>สัญญาณเตือน ✗</th></tr>
+<tr><td>Cointegration (p-value)</td><td>&lt; 0.05 บน train (+ KPSS ไม่ขัด)</td><td>≥ 0.05 → ยัง<em>อ้าง</em> cointegration ไม่ได้ (Watchlist ไม่ใช่เทรด)</td></tr>
 <tr><td>Half-life</td><td>~5–30 วัน</td><td>&lt; 5 วัน (noise) หรือ &gt; 30 วัน (ทุนจม)</td></tr>
 <tr><td>Short ได้ทั้งสองขา</td><td>หุ้นใหญ่ borrow ถูก/ง่าย</td><td>หุ้นเล็ก หา borrow ไม่ได้/แพง</td></tr>
 <tr><td>สภาพคล่อง</td><td>bid-ask แคบ, วอลุ่มพอ</td><td>spread กว้าง → ต้นทุนกินกำไร</td></tr>
@@ -304,6 +313,29 @@ Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้อง�
 <tr><td>ขนาด (sizing)</td><td>≤ 1–2% ของพอร์ต/คู่</td><td>ไม่มี stop / size ใหญ่</td></tr>
 </table>
 <p class="src">⚠️ <strong>กับดัก multiple testing:</strong> ถ้าไล่สกรีนหลายสิบคู่ จะมีบางคู่ "ผ่าน p&lt;0.05" ด้วยความบังเอิญ (เหตุผลเดียวกับ √(2·ln N) ในบท 21) — อย่าเชื่อคู่เดียวที่ผ่าน ให้ดูว่ามันยังผ่านในช่วง OOS/หลาย regime ด้วย</p>
+
+<div class="bx ba">
+<div class="bt">🗂️ ตัดสินเป็น "ระดับ" ไม่ใช่ ผ่าน/ตก — Evidence Tiers</div>
+<p>อย่าใช้ p-value ตัวเดียวเป็นสวิตช์ ให้จัดคู่ที่สกรีนได้ลง 5 ระดับตามหลักฐานที่สะสม:</p>
+<p>🔴 <strong>Reject</strong> — ไม่มีเหตุผลเศรษฐกิจว่าทำไมต้องวิ่งด้วยกัน / EG ไม่ reject <em>และ</em> KPSS ชี้ไม่ stationary / short ไม่ได้ → ทิ้ง<br>
+🟡 <strong>Watchlist</strong> — เหตุผลเศรษฐกิจแน่น แต่หลักฐานสถิติก้ำกึ่ง (p ≈ 0.05–0.15, sample สั้น) → เก็บข้อมูลเพิ่ม/ดู rolling ห้ามเทรด<br>
+🔵 <strong>Research candidate</strong> — EG reject + half-life ดี แต่ OOS Sharpe &lt; 1 → paper trade / ปรับโมเดล<br>
+🟢 <strong>Trade candidate</strong> — หลักฐานครบทุกชั้น + OOS Sharpe &gt; 1 → paper trade 2–3 เดือน<br>
+🟢 <strong>Trade (size เล็ก)</strong> — paper ตรงกับคาด ≥20–30 สัญญาณ → เงินจริง ≤1–2%/คู่</p>
+<p class="src">กฎเหล็ก: ถ้า test ไม่ผ่านเพราะสงสัยว่า spec ผิด (lag ไม่พอ, structural break, β เปลี่ยนตามเวลา) → <strong>แก้โมเดล ไม่ใช่ลด threshold จนคู่ผ่าน</strong></p>
+</div>
+
+<h3>เครื่องมือสถิติแต่ละตัว — ต้อง "significant" ไหม?</h3>
+<table>
+<tr><th>เครื่องมือ</th><th>ใช้ significance อย่างไร</th></tr>
+<tr><td>Correlation</td><td>อย่าใช้ p เป็นด่าน — ดู<strong>ขนาด + ความเสถียร</strong> (r=0.08 ที่ p&lt;0.001 ก็ไร้ประโยชน์เชิงเทรด)</td></tr>
+<tr><td>ADF / PP<sup class="c">[14][15]</sup></td><td><strong>ต้อง reject</strong> ถ้าจะ<em>อ้าง</em>ว่า spread stationary; ไม่ reject = ยังสรุปไม่ได้ (power ต่ำ)</td></tr>
+<tr><td>KPSS<sup class="c">[16]</sup></td><td>null กลับด้าน (null = stationary) — ใช้ <strong>cross-check</strong> กับ ADF ให้หลักฐานสองทาง</td></tr>
+<tr><td>Engle–Granger<sup class="c">[13][18]</sup></td><td><strong>ต้อง reject</strong> ด้วย critical values เฉพาะ (ห้ามใช้ ADF ปกติบน residual)</td></tr>
+<tr><td>Johansen<sup class="c">[17]</sup></td><td>หลักฐานสำคัญเมื่อขา &gt; 2 หรือกังวลเรื่องทิศทาง regression</td></tr>
+<tr><td>Shapiro–Wilk (normality)</td><td><strong>ไม่ใช่ด่านก่อน ADF/cointegration</strong> — ตอบคนละคำถาม</td></tr>
+<tr><td>Backtest P&amp;L</td><td>ดู OOS + ต้นทุน + selection bias — ไม่ใช่ p-value ตัวเดียว</td></tr>
+</table>
 
 <h3>โค้ด: ทดสอบคู่หุ้นใน ~10 บรรทัด</h3>
 <div class="fm">import yfinance as yf, statsmodels.api as sm
@@ -313,8 +345,8 @@ px = yf.download(["KO","PEP"], start="2018-01-01",
        auto_adjust=True, progress=False)["Close"][["KO","PEP"]].dropna()
 a, b = px["KO"], px["PEP"]
 
-t, pval, _ = coint(a, b)              # 1) cointegration
-print("p-value:", round(pval, 4))     # ผ่านถ้า &lt; 0.05
+t, pval, _ = coint(a, b)              # 1) cointegration (ใช้ coint() เท่านั้น —
+print("p-value:", round(pval, 4))     #    critical values ถูกชุด, อย่า adfuller residual เอง)
 
 beta   = sm.OLS(a, sm.add_constant(b)).fit().params.iloc[1]
 spread = a - beta * b                 # 2) spread = A - beta*B</div>
@@ -327,7 +359,7 @@ spread = a - beta * b                 # 2) spread = A - beta*B</div>
 • half-life = <strong>12 วัน</strong> → อยู่ในช่วง 5–30 ✓<br>
 • Sharpe: in-sample 2.1 → <strong>out-of-sample 0.8</strong> (หลังต้นทุน 20bps + borrow) → <em>ก้ำกึ่ง</em> ⚠️<br>
 • ทั้งสองตัวเป็นหุ้นใหญ่ borrow ง่าย ✓</p>
-<p><strong>คำตัดสิน:</strong> โครงสร้างดี แต่ OOS Sharpe เพียง 0.8 — <strong>ถือว่ายังไม่ผ่าน (No-Go สำหรับเงินจริง)</strong> ให้ paper trade ≥ 2–3 เดือน (≥20–30 สัญญาณ) ก่อน ถ้าผลยังตรงค่อย size เล็กมาก; ถ้า OOS Sharpe ติดลบ → ทิ้งทันที</p>
+<p><strong>คำตัดสิน:</strong> โครงสร้างดี แต่ OOS Sharpe เพียง 0.8 — จัดเป็น <strong>🔵 Research candidate</strong> (ไม่ใช่ Trade candidate) → paper trade ≥ 2–3 เดือน (≥20–30 สัญญาณ) ถ้าผลยังตรงค่อยเลื่อนระดับเป็น Trade size เล็กมาก; ถ้า OOS Sharpe ติดลบ → ลดเป็น Reject ทันที</p>
 </div>
 
 <h3>Action Plan — 3 เดือนแรก (ไม่เสี่ยงเงินก่อน)</h3>
@@ -355,6 +387,7 @@ spread = a - beta * b                 # 2) spread = A - beta*B</div>
 <tr><td>paper trade ก่อน, size เล็ก</td><td>ลงเงินก้อนใหญ่ตั้งแต่คู่แรก</td></tr>
 <tr><td>เริ่มหุ้นใหญ่ borrow ง่าย</td><td>ไล่หุ้นเล็กที่ "ส่วนต่างเยอะ" แต่ short ไม่ได้</td></tr>
 <tr><td>re-test cointegration เป็นรอบ + ถอดคู่ที่พัง</td><td>พึ่ง stop ที่ |Z|>4 อย่างเดียวกัน structural break</td></tr>
+<tr><td>มอง p-value เป็น "ระดับหลักฐาน" (Evidence Tiers)</td><td>ลด threshold จนคู่ผ่าน — แก้เกณฑ์แทนที่จะแก้โมเดล</td></tr>
 <tr><td>กระจายหลายคู่ที่ไม่ซ้ำ sector/factor</td><td>ถือ 5 คู่ที่จริงๆ เป็น bet เดียวกัน</td></tr>
 </table>
 
@@ -383,6 +416,11 @@ spread = a - beta * b                 # 2) spread = A - beta*B</div>
 <li>Krauss, C., Do, X. A., &amp; Huck, N. (2017). "Deep neural networks, gradient-boosted trees, random forests: Statistical arbitrage on the S&amp;P 500." <em>European Journal of Operational Research</em>, 259(2), 689–702. <a href="https://www.sciencedirect.com/science/article/abs/pii/S0377221716308657">link</a></li>
 <li>Avramov, D., Cheng, S., &amp; Metzker, L. (2023). "Machine Learning vs. Economic Restrictions: Evidence from Stock Return Predictability." <em>Management Science</em>, 69(5), 2587–2619. <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3450322">link</a></li>
 <li>Engle, R. F., &amp; Granger, C. W. J. (1987). "Co-integration and Error Correction: Representation, Estimation, and Testing." <em>Econometrica</em>, 55(2), 251–276. <a href="https://www.jstor.org/stable/1913236">link</a></li>
+<li>Dickey, D. A., &amp; Fuller, W. A. (1979). "Distribution of the Estimators for Autoregressive Time Series with a Unit Root." <em>Journal of the American Statistical Association</em>, 74(366), 427–431. <a href="https://www.jstor.org/stable/2286348">link</a></li>
+<li>Phillips, P. C. B., &amp; Perron, P. (1988). "Testing for a Unit Root in Time Series Regression." <em>Biometrika</em>, 75(2), 335–346. <a href="https://www.jstor.org/stable/2336182">link</a></li>
+<li>Kwiatkowski, D., Phillips, P. C. B., Schmidt, P., &amp; Shin, Y. (1992). "Testing the Null Hypothesis of Stationarity Against the Alternative of a Unit Root." <em>Journal of Econometrics</em>, 54(1–3), 159–178. <a href="https://doi.org/10.1016/0304-4076(92)90104-Y">link</a></li>
+<li>Johansen, S. (1991). "Estimation and Hypothesis Testing of Cointegration Vectors in Gaussian Vector Autoregressive Models." <em>Econometrica</em>, 59(6), 1551–1580. <a href="https://www.jstor.org/stable/2938278">link</a></li>
+<li>MacKinnon, J. G. (2010). "Critical Values for Cointegration Tests." <em>Queen's Economics Department Working Paper</em> No. 1227. <a href="https://www.econ.queensu.ca/research/working-papers/1227">link</a></li>
 </ol>
 <p class="src"><strong>วิธีอ่านตัวเลขในงานวิจัยเหล่านี้:</strong> ผลตอบแทน ~11%/ปี ของ [1] และ Sharpe จาก [5], [10] เป็นค่า <em>ก่อนหักต้นทุน (gross)</em> และมักเป็น out-of-sample บนทั้ง universe — <strong>ผลจริงหลังต้นทุนของรายย่อยจะต่ำกว่านี้มาก</strong> ให้ใช้เป็น "เพดานบน" ไม่ใช่ค่าที่คาดหวังได้จริง; ส่วนเกณฑ์ "Sharpe 5 vs 1.5" เป็น rule of thumb ไม่ใช่ผลพิสูจน์ใน [7]–[8]</p>
 </div>

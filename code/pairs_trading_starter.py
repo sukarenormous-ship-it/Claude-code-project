@@ -14,13 +14,14 @@ Pairs Trading Starter — โค้ดคู่มือประกอบ Arbit
 
 from __future__ import annotations
 import sys
+import warnings
 import numpy as np
 import pandas as pd
 
 try:
     import yfinance as yf
     import statsmodels.api as sm
-    from statsmodels.tsa.stattools import coint
+    from statsmodels.tsa.stattools import coint, kpss
 except ImportError as exc:  # pragma: no cover
     sys.exit(f"ขาดไลบรารี: {exc}\nรัน: pip install -r requirements.txt")
 
@@ -57,6 +58,37 @@ def split_train_test(close: pd.DataFrame, train_frac: float = 0.7):
 def hedge_ratio(y: pd.Series, x: pd.Series) -> float:
     """beta จาก OLS:  y = alpha + beta*x"""
     return float(sm.OLS(y, sm.add_constant(x)).fit().params.iloc[1])
+
+
+def kpss_pvalue(spread: pd.Series) -> float:
+    """KPSS: null กลับด้านกับ ADF (null = stationary)
+    p < 0.05 = reject stationarity (ขัดกับสมมติฐาน mean-revert)
+    ใช้ cross-check กับ coint(): EG reject + KPSS ไม่ reject = หลักฐานแข็งสองทาง"""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # kpss เตือนเมื่อ p ชนขอบตาราง [0.01, 0.1]
+        _stat, p, _lags, _crit = kpss(spread.dropna(), regression="c", nlags="auto")
+    return float(p)
+
+
+def evidence_tier(eg_pval: float, kpss_p: float, hl: float, sh_oos: float) -> tuple[str, str]:
+    """จัดระดับหลักฐานตาม Evidence Tiers ในหนังสือ — ไม่ใช้ p-value เป็นสวิตช์ตัวเดียว
+    คืน (tier, เหตุผล)"""
+    if eg_pval >= 0.05 and kpss_p < 0.05:
+        return ("🔴 Reject", "EG ไม่ reject และ KPSS ชี้ไม่ stationary — หลักฐานลบสองทาง")
+    if eg_pval >= 0.05:
+        return ("🟡 Watchlist", "ยังอ้าง cointegration ไม่ได้ (EG ไม่ reject) — "
+                "อาจเป็น power ต่ำ/sample สั้น เก็บข้อมูลดูต่อ ห้ามเทรด")
+    if kpss_p < 0.05:
+        return ("🟡 Watchlist", "EG reject แต่ KPSS ขัด — หลักฐานขัดกัน รอความชัดเจน")
+    if not (5 <= hl <= 30):
+        return ("🟡 Watchlist", f"half-life {hl:.0f} วัน นอกช่วง 5-30 — โครงสร้างยังไม่เหมาะเทรด")
+    if sh_oos <= 0:
+        return ("🔴 Reject", "OOS Sharpe ติดลบ — edge ไม่รอดต้นทุนนอกตัวอย่าง")
+    if sh_oos > 3:
+        return ("🔵 Research candidate", "OOS Sharpe สูงผิดปกติ (>3) — ตรวจ overfit/data ก่อนเชื่อ")
+    if sh_oos < 1:
+        return ("🔵 Research candidate", "หลักฐานสถิติครบแต่ OOS Sharpe < 1 — paper trade/ปรับโมเดลต่อ")
+    return ("🟢 Trade candidate", "หลักฐานครบทุกชั้น — เริ่ม paper trade 2-3 เดือนก่อนเงินจริง")
 
 
 # ---------- ขั้นที่ 3: half-life ของ mean reversion ----------
@@ -143,22 +175,26 @@ def main() -> None:
     a_tr, b_tr = train.iloc[:, 0], train.iloc[:, 1]
 
     # 1) cointegration (train เท่านั้น)
+    # ใช้ coint() เท่านั้น — มันใช้ Engle-Granger/MacKinnon critical values ให้ถูกชุด
+    # ห้ามรัน adfuller() บน residual เองด้วย critical values ปกติ (จะ reject ง่ายเกินจริง)
     _t, pval, _crit = coint(a_tr, b_tr)
-    ok_coint = pval < 0.05
     print(f"[1] Cointegration p-value (train) = {pval:.4f}  "
-          f"({'ผ่าน ✓' if ok_coint else 'ไม่ผ่าน ✗ — อย่าเทรดคู่นี้'})")
+          f"({'reject ✓ หลักฐานแข็ง' if pval < 0.05 else 'ยัง reject ไม่ได้ — ยังอ้าง cointegration ไม่ได้'})")
 
     # 2) hedge ratio (train)
     beta = hedge_ratio(a_tr, b_tr)
     print(f"[2] Hedge ratio beta (train) = {beta:.3f}")
 
-    # 3) half-life (train)
-    hl = half_life(a_tr - beta * b_tr)
-    ok_hl = 5 <= hl <= 30
+    # 3) half-life + KPSS cross-check (train)
+    spread_tr = a_tr - beta * b_tr
+    hl = half_life(spread_tr)
     print(f"[3] Half-life (train) = {hl:.1f} วัน  "
-          f"({'ดี ✓' if ok_hl else 'ระวัง — นอกช่วง 5-30 วัน'})")
+          f"({'ดี ✓' if 5 <= hl <= 30 else 'ระวัง — นอกช่วง 5-30 วัน'})")
+    kp = kpss_pvalue(spread_tr)
+    print(f"[4] KPSS cross-check (null=stationary): p = {kp:.3f}  "
+          f"({'ไม่ขัด ✓' if kp >= 0.05 else 'ขัด! — KPSS ชี้ไม่ stationary'})")
 
-    # 4-5) สัญญาณบนทั้งชุด, วัด Sharpe in-sample เทียบ out-of-sample
+    # 5) สัญญาณบนทั้งชุด, วัด Sharpe in-sample เทียบ out-of-sample
     spread = close.iloc[:, 0] - beta * close.iloc[:, 1]
     z = zscore(spread)
     pos = positions_from_z(z)
@@ -175,9 +211,12 @@ def main() -> None:
     # 6) สัญญาณวันนี้ (เอาไปจดใน paper trade log)
     print(f"[6] สัญญาณวันนี้: {todays_signal(z, ta, tb, beta)}")
 
-    if not (ok_coint and ok_hl and sh_oos > 1):
-        print("\n→ คู่นี้ยังไม่ผ่าน Checklist ครบ — ใช้เพื่อ 'เรียนรู้' ได้ แต่ยังไม่ควรเทรดเงินจริง")
-    print("→ ขั้นต่อไป: paper trade ≥ 2-3 เดือน (จดสัญญาณ [6] ทุกวัน) ก่อน size เล็ก ≤ 1-2%/คู่")
+    # 7) verdict แบบ Evidence Tier — ไม่ใช่ ผ่าน/ตก ด้วย p-value ตัวเดียว
+    tier, reason = evidence_tier(pval, kp, hl, sh_oos)
+    print(f"\n[7] Evidence Tier: {tier}")
+    print(f"    เหตุผล: {reason}")
+    print("→ ทุก tier ที่ไม่ใช่ Reject: paper trade ≥ 2-3 เดือน (จดสัญญาณ [6] ทุกวัน) "
+          "ก่อนคิดเรื่องเงินจริง ≤ 1-2%/คู่")
 
 
 if __name__ == "__main__":

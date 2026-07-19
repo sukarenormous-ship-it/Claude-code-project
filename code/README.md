@@ -23,16 +23,20 @@ python pairs_trading_starter.py XLE XOP     # ETF พลังงาน 2 ตั
 
 ประเมินพารามิเตอร์บนช่วง **train** แล้ววัดผลบน **out-of-sample (OOS)** เพื่อกัน look-ahead:
 
-| ขั้น | สิ่งที่ได้ | เกณฑ์ผ่าน |
+| ขั้น | สิ่งที่ได้ | การตีความ |
 |---|---|---|
-| 1. Cointegration | p-value (train) | < 0.05 |
+| 1. Cointegration | p-value (train) จาก `coint()` | reject (<0.05) = หลักฐานแข็ง; ไม่ reject = ยัง**อ้าง**ไม่ได้ (ไม่ใช่ "ไม่มีแน่นอน") |
 | 2. Hedge ratio β | จาก OLS (train) | — |
 | 3. Half-life | (train) | **5–30 วัน** |
-| 4. สัญญาณ Z-score | rolling | entry ±2, exit \|Z\|<0.5, stop ±4 |
+| 4. KPSS cross-check | null กลับด้าน (null=stationary) | p ≥ 0.05 = ไม่ขัด ✓; ADF/EG reject + KPSS ไม่ขัด = หลักฐานสองทาง |
 | 5. Sharpe | in-sample เทียบ **OOS** | OOS > 1 (อย่าเชื่อ > 3); ถ้า IS ≫ OOS = overfit |
 | 6. **สัญญาณวันนี้** | Long/Short/Exit/รอ | เอาไปจดใน paper-trade log ทุกวัน |
+| 7. **Evidence Tier** | 🔴 Reject / 🟡 Watchlist / 🔵 Research / 🟢 Trade candidate | verdict รวมทุกชั้น — ไม่ใช้ p-value เป็นสวิตช์ตัวเดียว |
 
 บรรทัด `[6] สัญญาณวันนี้` คือสิ่งที่ใช้ paper trade: รันทุกเย็นหลังตลาดปิด → จดสัญญาณลงชีต
+
+> เชิงเทคนิค: ใช้ `coint()` เท่านั้นสำหรับ cointegration — ห้ามรัน `adfuller()` บน residual เอง
+> เพราะ residual จาก OLS ต้องใช้ Engle–Granger/MacKinnon critical values (ติดลบมากกว่าปกติ)
 
 ## ⚠️ ข้อจำกัด (อ่านก่อนใช้)
 
