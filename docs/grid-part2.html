@@ -111,6 +111,38 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
              (ใช้ทุนน้อยลงในส่วนที่ "ดอย")
   Option C: เพิ่ม hedge (short perp ส่วนที่ upper inventory)</div>
 
+<h3>แม่ค้าผลไม้กับ grid ที่บวม</h3>
+
+<p>สามตัวเลือกข้างบนใช้ได้จริงทั้งสามทาง แต่ยังติดคำถามหนึ่งข้อ: <strong>เมื่อไหร่ควรใช้ตัวไหน?</strong></p>
+
+<p>ลองดูวิธีของคนที่เจอปัญหานี้มาก่อน grid trader หลายพันปี: แม่ค้าผลไม้ เวลาส้มในแผงค้างสต็อกเยอะ แม่ค้าไม่เคยปิดร้านหนี และไม่เคยรับซื้อส้มเพิ่มในราคาเดิมด้วย — เธอทำสองอย่างพร้อมกัน: <strong>กดราคารับซื้อลงอีกหน่อย</strong> (อยากได้ของเพิ่มก็ต้องถูกจริงๆ) และ<strong>ยอมขายออกไวขึ้นอีกหน่อย</strong> ยิ่งสต็อกหนัก ยิ่งกด-ยิ่งยอม พอสต็อกกลับมาปกติ ราคารับซื้อ-ขายก็เลื่อนกลับที่เดิม</p>
+
+<p>นั่นแหละคือคำตอบทั้งหมด และมันบีบเหลือกฎข้อเดียว:</p>
+
+<div class="key-idea">
+<div class="ki-text"><strong>ยิ่งถือของเต็มมือ จุดซื้อไม้ถัดไปยิ่งต้องไกลขึ้น</strong></div>
+</div>
+
+<p>วัดความ "เต็มมือ" ด้วยสัดส่วนที่มีอยู่แล้วจาก Part 1A: ทุนที่ใช้ซื้อสะสมไปแล้ว (cumulative cost ในตาราง 1A.9) เทียบกับ C_floor (ทุนเต็มถ้าซื้อครบทุก level ถึง floor) — เรียกสั้นๆ ว่า "ถังเต็มกี่ %" แล้วสามตัวเลือกข้างบนก็เลิกเป็นทางแยก กลายเป็นสเกลเดียว:</p>
+
+<table>
+<tr><th>ถังเต็ม (cumulative cost / C_floor)</th><th>ทำอะไร</th><th>ตรงกับ</th></tr>
+<tr><td>ต่ำกว่า 30%</td><td>เล่นตามปกติ — ยังมีพื้นที่รับของ</td><td>Option A: รอ</td></tr>
+<tr><td>30–70%</td><td>ขยับ step ฝั่งซื้อให้ห่างขึ้นตามสัดส่วนถัง (สูตรในกล่องด้านล่าง)</td><td>Option B: ลด Q / ขยาย step</td></tr>
+<tr><td>เกิน 70%</td><td>หยุดรับของเพิ่ม แล้วปกป้องของที่มี</td><td>Option C: hedge (Part 1C)</td></tr>
+</table>
+
+<p>สังเกตว่า <strong>Step Pyramid</strong> ในหัวข้อ 2.6 ใช้กฎข้อนี้ตรงๆ — รวม Hurst regime (ตลาดเริ่ม trend) กับถังเต็ม% (จากสูตรด้านบน) เป็นสูตรเดียว มันคือคำตอบเดียวกับที่งานวิจัยด้าน market making มืออาชีพคำนวณออกมาได้ (ดูอ่านต่อท้ายหัวข้อ) — จะเรียกมันว่า inventory skew หรือ "วิธีของแม่ค้าผลไม้" ก็ความหมายเดียวกัน</p>
+
+<details>
+<summary>สูตรสำหรับคนอยากตั้งเป็นตัวเลข (กดเปิด)</summary>
+<div class="ans">
+<p>step ฝั่งซื้อไม้ถัดไป = step ปกติ × (1 + ถังเต็ม%) — ถังเต็ม 50% → step ห่างขึ้นครึ่งเท่า ถ้าอยากเข้มกว่านี้คูณด้วย λ เพิ่ม (default λ=1)</p>
+</div>
+</details>
+
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Avellaneda &amp; Stoikov, "High-Frequency Trading in a Limit Order Book" (2008) — ต้นตำรับ inventory skew ของ market maker มืออาชีพ</p>
+
 <h2 id="s2-3">2.3 บวมล่าง (Bottom-Heavy) — Inventory สะสมต่ำ</h2>
 
 <div class="bloat-card bc-bot">
@@ -177,11 +209,11 @@ def allocate_grid_capital(total_capital, n_levels, style="bell"):
     if style == "equal":
         weights = [1.0 / n_levels] * n_levels
 
-    elif style == "top_heavy":      # บวมบน: น้ำหนักมากที่บน
-        weights = [1.0 / (n_levels - i) for i in range(n_levels)]
-
-    elif style == "bottom_heavy":   # บวมล่าง: น้ำหนักมากที่ล่าง
+    elif style == "top_heavy":      # บวมบน: น้ำหนักมากที่บน (i=0 = level ใกล้ราคาปัจจุบันที่สุด)
         weights = [1.0 / (i + 1) for i in range(n_levels)]
+
+    elif style == "bottom_heavy":   # บวมล่าง: น้ำหนักมากที่ล่าง (i มากขึ้น = ลึกลงไปถึง zone_low)
+        weights = [1.0 / (n_levels - i) for i in range(n_levels)]
 
     elif style == "bell":           # บวมกลาง: Gaussian weights
         center = n_levels // 2
@@ -196,9 +228,31 @@ def allocate_grid_capital(total_capital, n_levels, style="bell"):
     capital_per_level = [total_capital * w for w in weights]
     return capital_per_level
 
-# ตัวอย่าง: $10,000 · 5 levels · bell style
-# → [$1,500, $2,500, $3,000, $2,500, $1,500]  ← หนาแน่นกลาง (weights ก่อน normalize)
-# หลัง normalize: ทั้งหมด = $10,000 ✓ (normalize step บรรทัด 192–193 ด้านบน)</div>
+# ตัวอย่าง: $10,000 · 5 levels · bell style (center=2, n_levels/4=1.25)
+# raw weights ก่อน normalize: [0.278, 0.726, 1.000, 0.726, 0.278] ← หนาแน่นกลาง, รวม = 3.008
+# หลัง normalize (หารด้วย 3.008 แล้วคูณ $10,000):
+#   → [$924, $2,414, $3,324, $2,414, $924] ✓ รวม = $10,000</div>
+
+<h2 id="s2-5-1">2.5.1 Overlap Guard — ระยะห่างขั้นต่ำกันไม้กระจุก</h2>
+
+<p>Dynamic Sizing ในหัวข้อที่แล้วคุมว่าแต่ละ level ได้ทุน<em>เท่าไหร่</em> — แต่ยังมีอีกแกนหนึ่งที่คุมได้: ไม้แต่ละไม้อยู่<em>ห่างกันพอไหม</em> ปกติเรื่องนี้ไม่ต้องคิดเลย เพราะ step ที่ผูกกับ ATR (Part 3) การันตีระยะห่างให้อยู่แล้ว — แต่มีสถานการณ์หนึ่งที่การันตีนั้นพังเงียบๆ: <strong>ตอนย้าย zone ทั้งกริดโดยมี inventory ค้าง</strong> (Grid Reset / Zone Migration — Part 4 §4.5–4.6) กริดชุดใหม่ไม่รู้จักไม้เก่า มันอาจวาง level ใหม่ทับโซนราคาที่เรามีไม้ค้างอยู่แล้วพอดี ผลคือ exposure สองก้อนมากองที่ราคาเดียวกันโดยไม่ตั้งใจ</p>
+
+<p>ทำไมเรื่องนี้สำคัญ: โมเดลความเสี่ยงของกริดตั้งอยู่บนการกระจายไม้ทั่ว zone — แต่ละ level คือเดิมพันย่อยที่<em>อิสระ</em>ว่าราคาจะแวะมาแถวนั้นแล้วเด้ง ไม้ที่กองกันที่ราคาเดียวคือเดิมพันก้อนใหญ่จุดเดียว ซึ่งขัดกับสมมติฐานตั้งต้นของระบบเราเอง (เหตุผลเดียวกับกฎ 5% max notional ต่อ level ใน Part 5 — กฎนั้นคุม<em>ขนาด</em>ต่อไม้ กฎนี้คุม<em>ความหนาแน่นเชิงพื้นที่</em>ของไม้)</p>
+
+<div class="fm">Overlap Guard: ก่อนวาง order ใหม่ทุกครั้ง
+
+ถ้า |P_new − P_nearest_open| &lt; m × ATR  →  ข้าม (skip) level นั้น ไม่วาง
+
+P_new          = ราคาของ level ใหม่ที่กำลังจะวาง
+P_nearest_open = ราคาของไม้ค้าง (open position) ที่อยู่ใกล้ P_new ที่สุด
+m              = สัดส่วนระยะห่างขั้นต่ำ แนะนำ 0.5–1.0
+                 (ใช้หน่วย ATR ไม่ใช่ดอลลาร์ตายตัว เพราะ "ใกล้เกินไป"
+                  เป็นแนวคิดสัมพัทธ์กับความผันผวน — ตรรกะเดียวกับ step)
+
+ทุนที่ไม่ได้วางเพราะโดน skip → คงเป็น cash ใน Active Zone รอวางที่ level ถัดไป
+ที่พ้นระยะ — ไม่ใช่เอาไปเพิ่มขนาดไม้อื่น (จะกลายเป็นย้ายปัญหากระจุกไปอีกจุด)</div>
+
+<p>ต้นทุนของ guard นี้คือรอบเทรดที่หายไปเล็กน้อยตรงรอยต่อของ zone เก่า-ใหม่ ผลตอบแทนคือ margin ที่ถูกเก็บไว้รอ level ที่ได้เปรียบจริง — ใน asset ที่ mean-revert การได้ซื้อกระจายตัวดีกว่าการได้ซื้อถี่ที่จุดเดียวเสมอ</p>
 
 <h2 id="s2-6">2.6 Step Pyramid vs Size Pyramid</h2>
 
@@ -211,23 +265,27 @@ def allocate_grid_capital(total_capital, n_levels, style="bell"):
 <tr><td><strong>Equal Weight</strong></td><td>ไม่เปลี่ยนอะไร (baseline)</td><td>ลดลงตาม trend</td><td>สะสมเร็ว</td></tr>
 </table>
 
-<div class="fm">Step Pyramid Implementation:
+<div class="fm">Step Pyramid Implementation (สูตรรวม — canonical, ที่อื่นในเล่มอ้างมาที่นี่):
 
-def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
+def compute_step(base_step, hurst, tank_fullness,
+                  h_normal=0.50, h_max=0.58, trend_factor=0.5):
     """
-    เพิ่ม step ตามความลึกของ level (ห่างจาก current price)
-    และ Hurst exponent
+    รวม 2 สัญญาณที่ทำให้ step ต้องห่างขึ้น:
+    - Hurst สูง (trending, ดู Part 4) → เพิ่ม step
+    - ถังเต็ม% สูง (inventory skew, สูตรจาก §2.2) → เพิ่ม step อีกชั้น
+    แทนที่ depth_multiplier แบบเดา (เวอร์ชันก่อนหน้า) ด้วยถังเต็ม% จริง
     """
-    # ถ้า Hurst สูง (trending) → เพิ่ม step มากขึ้น
-    hurst_multiplier = 1 + max(0, (hurst - 0.45) / 0.15) * trend_factor
-    # ถ้า level ลึก (ห่างจาก mean มาก) → เพิ่ม step
-    depth_multiplier = 1 + level_depth * 0.1  # 10% ต่อ 1 level ลึก
-    return base_step * hurst_multiplier * depth_multiplier
+    hurst_ratio = min(1.0, max(0, (hurst - h_normal) / (h_max - h_normal)))
+    hurst_multiplier = 1 + hurst_ratio * trend_factor
+    tank_multiplier = 1 + tank_fullness   # ตรงกับสูตรใน §2.2: step × (1 + ถังเต็ม%)
+    return base_step * hurst_multiplier * tank_multiplier
 
-# ตัวอย่าง: base_step = $2,000 · Hurst = 0.55 · level depth = 3
-# hurst_multiplier = 1 + (0.55-0.45)/0.15 * 0.5 = 1 + 0.333 = 1.333
-# depth_multiplier = 1 + 3 × 0.10 = 1.30
-# step = $2,000 × 1.333 × 1.30 = $3,467 (ใหญ่ขึ้น → fill น้อยลง)</div>
+# ตัวอย่าง (ต่อจากตาราง 1A.9): base_step = $2,000 · Hurst = 0.55
+# ถังเต็มที่ level 3 = cumulative $3,826 / C_floor $8,460 = 0.452 (45.2%)
+# hurst_ratio = (0.55−0.50)/(0.58−0.50) = 0.625
+# hurst_multiplier = 1 + 0.625×0.5 = 1.3125
+# tank_multiplier = 1 + 0.452 = 1.452
+# step = $2,000 × 1.3125 × 1.452 ≈ $3,812 (ใหญ่ขึ้น → fill น้อยลง)</div>
 
 <div class="bx bg">
 <div class="bt">Step Pyramid: กำไรเท่าเดิม สบายใจกว่า</div>
@@ -239,6 +297,71 @@ def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
 </ul>
 </div>
 
+<h2 id="s2-6-1">2.6.1 TP ไม่ได้มีแบบเดียว — เข็มหมุนฝั่งขาย (ปรับระยะ TP ได้เหมือนปรับ step ฝั่งซื้อ)</h2>
+
+<p>หัวข้อที่แล้วสอนขยับ step ฝั่งซื้อเมื่อตลาดเริ่ม trend — คำถามที่ควรถามต่อทันทีคือ: แล้วฝั่งขายล่ะ? ทำไม TP ต้องอยู่ที่ level ถัดไปเสมอ? ตลอดเล่มนี้ TP = "ขายที่ level ถัดไป" (1 step) เป็นค่าที่ตั้งตายตัวมาโดยตลอด — มันคือ default ที่ดี แต่ไม่ใช่ทางเลือกเดียว:</p>
+
+<table>
+<tr><th>TP Policy</th><th>กลไก</th><th>เหมาะกับ Regime</th><th>Trade-off</th></tr>
+<tr><td><strong>1-Step (default)</strong></td><td>ขายที่ level ถัดไปเสมอ (entry + step)</td><td>H ต่ำ (&lt;0.50, mean-reverting) — ราคาแกว่งกลับบ่อย</td><td>รอบถี่ cashflow สม่ำเสมอ กำไรต่อรอบเล็ก</td></tr>
+<tr><td><strong>TP กว้าง (Sell-Side Pyramid)</strong></td><td>ขยาย TP distance ตาม H — สมมาตรกับ Step Pyramid ฝั่งซื้อใน §2.6</td><td>H เริ่มขึ้น (0.50–0.58, CAUTION)</td><td>รอบน้อยลง กำไรต่อรอบใหญ่ขึ้น แต่ inventory ค้างรอนานกว่า</td></tr>
+<tr><td><strong>Partial TP</strong></td><td>ขายบางส่วนที่ level ถัดไป ปล่อยที่เหลือรอ level ถัดไปอีก</td><td>ไม่ผูก regime — เป็นทางเลือกลดความเสี่ยง all-or-nothing ล้วนๆ</td><td>ลดความเสี่ยงขายหมดเร็วเกินไป แต่ต้อง track quantity ที่เหลือต่อ level (ดูกล่องเตือน)</td></tr>
+<tr><td><strong>Trailing / Infinity</strong></td><td>ไม่ตั้ง TP ตายตัว เลื่อนตามราคา — ดู Infinity Grid ใน <a href="grid-part1d.html#s1d-3">Part 1D §1D.3</a></td><td>H สูงมาก เทรนด์ชัดเจน</td><td>เก็บ upside เทรนด์ได้เต็มที่ แต่เสีย cashflow สม่ำเสมอที่ 1-step ให้</td></tr>
+<tr><td><strong>Basket TP (รวบทุกไม้)</strong></td><td>TP เดียวคำนวณจากต้นทุนเฉลี่ยถ่วงน้ำหนักของทุกไม้ที่ถือ + k×ATR แล้วปิดทุกไม้พร้อมกัน (รายละเอียดด้านล่าง)</td><td>โหมดกู้สถานการณ์หลังสะสมไม้ลึก — เฉพาะ asset ที่ mean-revert จริง (H &lt; 0.50) และไม่ใช่ default</td><td>ออกจากไม้ค้างได้โดยไม่ต้องรอราคากลับถึงไม้แรก แลกกับ cashflow รายรอบที่หายไประหว่างถือ และ risk ที่ย้ายไปกองใน floating drawdown</td></tr>
+</table>
+
+<div class="key-idea">
+<div class="ki-label">ข้อควรจำ</div>
+<div class="ki-text">ไม่มี TP policy ไหน "กำไรรวมมากกว่า" — ทุกแบบปรับแค่ <strong>รูปทรง</strong>ของ P&L (ความถี่รอบ, ขนาดกำไรต่อรอบ, drawdown, ความเสี่ยง inventory ค้าง) ไม่ใช่เพิ่ม expected value สุทธิ ยังเป็นไปตาม zero-EV theorem ใน Part 0 §0.4 เหมือนเดิม</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">คำเตือน: Partial TP ต้องมี accounting เพิ่ม</div>
+<p>Framework ใน Part 9 §9.2 (<code>GridLevel</code>) เก็บ <code>qty</code> เป็นค่าเดียวต่อ level และ <code>filled</code> เป็น boolean — ออกแบบมาสำหรับ all-or-nothing เท่านั้น ถ้าจะใช้ Partial TP จริง ต้องขยาย <code>GridLevel</code> ให้ track "qty ที่ขายไปแล้ว" กับ "qty ที่เหลือ" แยกกันต่อ level ก่อน — เล่มนี้ยังไม่ implement ส่วนนั้น เป็นงานต่อยอดสำหรับใครอยากทำจริง</p>
+</div>
+
+<h3>Basket TP — ย้ายจุดอ้างอิงจาก "ไม้แรก" มาที่ "ต้นทุนเฉลี่ยของสิ่งที่ถืออยู่จริง"</h3>
+
+<p>เมื่อราคาลงลึกจนสะสมไม้หลาย level TP รายไม้แบบ default มีสมมติฐานซ่อนอยู่โดยที่เราไม่ทันสังเกต: ไม้บนสุดจะปิดได้ก็ต่อเมื่อราคากลับขึ้นไปถึง entry + step ของ<em>มัน</em> — แต่ mean reversion สัญญาแค่ว่าราคาจะกลับหาค่าเฉลี่ย ไม่เคยสัญญาว่าจะกลับไปถึงไม้แรกที่เราซื้อไว้สูงสุด ยิ่งลงลึก ไม้แรกยิ่งไกลจากค่าเฉลี่ยปัจจุบัน และความน่าจะเป็นที่จะได้ปิดมันยิ่งต่ำลงเรื่อยๆ</p>
+
+<p>Basket TP แก้ที่จุดอ้างอิง: สิ่งที่พอร์ตถือจริงไม่ใช่ไม้หลายไม้แยกกัน แต่คือ position เดียวที่มีต้นทุนเฉลี่ยถ่วงน้ำหนัก (VWAP — Volume-Weighted Average Price) ซึ่งอยู่<em>ต่ำกว่า</em>ไม้แรกเสมอเพราะถัวลงมา — ตั้ง TP เดียวจากต้นทุนนั้นแล้วปิดทุกไม้พร้อมกัน:</p>
+
+<div class="fm">P_basket_TP = Σ(Qᵢ × Pᵢ) / Σ Qᵢ  +  k × ATR
+
+Pᵢ, Qᵢ = ราคาและขนาดของไม้ที่ i ที่ถืออยู่ (นับเฉพาะไม้ที่ fill แล้ว)
+เทอมแรก = ต้นทุนเฉลี่ยถ่วงน้ำหนัก (VWAP) — คำนวณใหม่ทุกครั้งที่มีไม้ fill เพิ่ม
+k       = ระยะกำไรเป้าหมายเป็นสัดส่วนของ ATR (ค่าเริ่มต้น 0.5 — ตรรกะเดียวกับ step ฝั่งซื้อใน Part 3)
+
+เหตุผลที่เรียกร้องแค่ k×ATR จากจุดปัจจุบัน: ATR คือนิยามของระยะที่ราคาขยับ "เป็นปกติ"
+ต่อแท่งอยู่แล้ว — การเด้ง 0.5×ATR จึงเป็นเหตุการณ์ความน่าจะเป็นสูง ต่างจากการรอราคา
+กลับไปถึงไม้แรกซึ่งเป็นเหตุการณ์ความน่าจะเป็นต่ำลงเรื่อยๆ ตามความลึกที่ลงมา</div>
+
+<div class="fm">ตัวอย่าง (ตัวเลขจาก Running Example Part 3 §3.9: ATR = $2,800 · step = $1,500 · Q = 0.009 BTC/ไม้):
+
+ราคาลงจาก $101k → $96.5k เกี่ยวไม้ BUY 3 ไม้:
+  ไม้ 1: $100,000 · ไม้ 2: $98,500 · ไม้ 3: $97,000  (Q เท่ากันทุกไม้)
+
+VWAP        = (100,000 + 98,500 + 97,000) / 3 = $98,500
+P_basket_TP = $98,500 + 0.5 × $2,800 = $99,900
+
+เทียบ: TP รายไม้ของไม้ 1 อยู่ที่ $100,000 + $1,500 = $101,500
+       Basket TP ปิดทุกไม้ได้ที่ $99,900 — ต่ำกว่านั้น $1,600
+
+P&amp;L ถ้าราคาเด้งถึง $99,900:
+  ไม้ 1: ($99,900 − $100,000) × 0.009 = −$0.90   ← ยอมขาดทุนเล็กน้อยที่ไม้บนสุด
+  ไม้ 2: ($99,900 − $98,500)  × 0.009 = +$12.60
+  ไม้ 3: ($99,900 − $97,000)  × 0.009 = +$26.10
+  รวม                                  = +$37.80  ✓ (= 3 × 0.009 × $1,400)</div>
+
+<p>สังเกตจากตัวอย่าง: ไม้บนสุดปิดขาดทุนนิดหน่อย — นี่ไม่ใช่ข้อบกพร่องแต่คือ trade-off ที่ตั้งใจ: แลกกำไรเต็มเม็ดของไม้บน (ที่ต้องรอราคาวิ่งอีก $1,600 และอาจไม่มาเลย) กับการปลด inventory ทั้งหมดออกจากความเสี่ยงทันทีที่ราคาเด้งในระยะ "ปกติ" ของมัน แล้วเริ่มกริดรอบใหม่จากสภาพพอร์ตสะอาด</p>
+
+<div class="bx ba">
+<div class="bt">คำเตือน: Basket TP คือลูกผสม Down-Averaging — อ่าน metric ให้เป็น</div>
+<p>กริดที่ใช้ Basket TP โดยเนื้อแท้คือการถัวต้นทุนขาลง (down averaging) รูปแบบหนึ่ง มันใช้สมมติฐาน mean-revert <em>ซ้ำสองชั้น</em> — ชั้นแรกตอนกางกริด ชั้นสองตอนออก — จึงห้ามใช้กับ asset ที่ H &gt; 0.50 เด็ดขาด และต้องอยู่ใต้ Close System (Part 1A) + Drawdown Ladder (Part 5) เสมอ เพราะถ้า mean ไม่กลับมา (regime เปลี่ยนถาวร) Basket TP ไม่มีคำตอบให้ — kill switch เท่านั้นที่มี</p>
+<p>ผลข้างเคียงเชิงสถิติที่ต้องรู้: ระบบแบบนี้ realize กำไรเล็กบ่อยครั้ง ส่วนขาดทุนซ่อนอยู่ใน floating drawdown จนกว่า kill switch จะทำงาน — <strong>Profit Factor ใน backtest จึงสูงเวอร์โดยโครงสร้าง ไม่ใช่โดยฝีมือ</strong> (ดูหมายเหตุ PF ใน Appendix และเช็คลิสต์อ่าน backtest ใน Part 9 §9.4) เวลาประเมินระบบแบบนี้ให้ดู Sharpe/Calmar และ Max Drawdown แทน</p>
+<p>ในกรอบ zero-EV (Part 0 §0.4): Basket TP ไม่ได้เพิ่ม expected value — มันแลก "โอกาสกำไรเต็มถ้ารอถึงไม้แรก" กับ "กำไรเล็กที่ความน่าจะเป็นสูงและออกจากความเสี่ยงเร็วกว่า" คือปรับ<em>รูปทรงและจังหวะเวลา</em>ของ P&amp;L เท่านั้น เหมือน TP policy อื่นทุกแบบในตารางข้างบน</p>
+</div>
+
 <h2 id="s2-7">2.7 Running Example — Comparing 3 Bloating Patterns</h2>
 
 <div class="running-ex">
@@ -248,7 +371,7 @@ def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
 <table>
 <tr><th>Strategy</th><th>Inventory ที่ $85k</th><th>Capital ที่ใช้</th><th>Cashflow/วัน (ที่ $83k–$88k)</th><th>Profit ถ้า BTC กลับ $100k</th></tr>
 <tr><td>Equal Weight</td><td>0.08 BTC</td><td>$7,200</td><td>$36</td><td>+$1,200</td></tr>
-<tr><td>Bottom-Heavy (บวมล่าง)</td><td>0.14 BTC</td><td>$9,800</td><td>$54</td><td>+$2,100</td></tr>
+<tr><td>Bottom-Heavy (บวมล่าง)</td><td>0.14 BTC</td><td>$12,320</td><td>$54</td><td>+$2,100</td></tr>
 <tr><td>Bell Curve</td><td>0.06 BTC</td><td>$5,400</td><td>$28</td><td>+$900</td></tr>
 </table>
 
@@ -268,7 +391,7 @@ def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
 <p><strong>คำตอบ:</strong></p>
 <p>Top-Heavy เกิดเมื่อ grid เปิดที่ราคาสูง แล้วตลาดหัน <strong>downtrend</strong></p>
 <p>ตัวอย่าง: เปิด grid ที่ $110k (ATH) → BTC ลงมา $90k โดยไม่กลับ → inventory ที่ $108k, $106k, $104k, $102k, $100k ยังค้างอยู่</p>
-<p>Signal: H เพิ่มจาก 0.45 → 0.60 (trending down) + ADX &gt; 40 (BTC threshold)</p>
+<p>Signal: H เพิ่มจาก 0.45 → 0.60 (trending — Hurst บอกแค่ว่า "กำลัง trend" ไม่บอกทิศทาง) + ADX &gt; 40 (BTC threshold) ยืนยัน strength ของ trend + ราคาที่ลงจริงเป็นตัวบอกว่าเป็น downtrend</p>
 <p>Prevention: เปิด grid เมื่อ H &lt; 0.50 เท่านั้น ไม่เปิดตอนราคา ATH</p>
 </div>
 </details>
@@ -287,12 +410,12 @@ def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
 <summary>ข้อ 3: Bell Curve Grid density ให้ Q_center = 0.02 BTC · Q_extreme = 0.005 BTC · Step เท่ากัน $2k — เปรียบ cashflow vs Equal Weight Q=0.01 BTC ทุก level</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>ราคาอยู่ที่ center (±1σ) 68% ของเวลา:</p>
+<p>ราคาอยู่ที่ center (±1σ) 68% ของเวลา (สมมติ 2 รอบ/วันที่ center และ 0.5 รอบ/วันที่ extreme — อัตราสมมติสำหรับแบบฝึกหัดนี้ ใกล้เคียงตัวอย่าง ATR ในหัวข้อก่อนหน้า ไม่ใช่ค่าที่คำนวณจาก Q/Step ที่ให้มา):</p>
 <p><strong>Bell Curve cashflow:</strong> 68% ของเวลา × 2 รอบ/วัน × (0.02 × $2k − fee) ≈ 68% × 2 × $38 = $51.7/วัน (center zone)</p>
 <p>+ 32% ของเวลา × 0.5 รอบ/วัน × $8 (extreme, Q เล็ก) = $1.3/วัน</p>
 <p>= <strong>$53/วัน Bell Curve</strong></p>
-<p><strong>Equal Weight:</strong> 2 รอบ/วัน × 0.01 × $2k = $40/วัน (ทุก zone เท่ากัน)</p>
-<p>Bell Curve ดีกว่า 33% เพราะ concentrate Q ในโซนที่ราคาอยู่นานที่สุด</p>
+<p><strong>Equal Weight:</strong> 2 รอบ/วัน × (0.01 × $2k − fee $2) = 2 × $18 = $36/วัน (ทุก zone เท่ากัน, หัก fee เดียวกับ Bell Curve เพื่อเทียบให้ยุติธรรม)</p>
+<p>Bell Curve ดีกว่า (53−36)/36 ≈ 47% เพราะ concentrate Q ในโซนที่ราคาอยู่นานที่สุด</p>
 </div>
 </details>
 
@@ -301,12 +424,22 @@ def compute_step(base_step, level_depth, hurst, trend_factor=0.5):
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
 <p><strong>รอ (Close System):</strong> ถ้ายังเชื่อว่าราคาจะกลับ → รอ inventory ขายออกเองเมื่อราคาฟื้น | ไม่มี loss realized</p>
-<p><strong>Reset Grid:</strong> ถ้า Hurst เพิ่ม (trending down), ATR เพิ่ม, fundamentals เปลี่ยน → ขาย inventory บางส่วน (ยอม realize loss) แล้วเปิด grid ใหม่ที่ lower zone</p>
-<p><strong>Rule of Thumb:</strong> รอถ้า unrealized loss &lt; 15% ของ capital | Reset ถ้า &gt; 25% และ regime ชัดว่า trending</p>
+<p><strong>Reset Grid:</strong> ถ้า Hurst เพิ่ม (trending — ต้องดูราคาจริง/ADX ประกอบเพื่อยืนยันว่าเป็น downtrend), ATR เพิ่ม, fundamentals เปลี่ยน → ขาย inventory บางส่วน (ยอม realize loss) แล้วเปิด grid ใหม่ที่ lower zone</p>
+<p><strong>Rule of Thumb:</strong> ใช้เกณฑ์เดียวกับ §2.2 — ถังเต็ม (cumulative cost / C_floor) ต่ำกว่า 70% ยังรอได้ (Close System ยังมีที่เหลือ) | เกิน 70% และ regime ชัดว่า trending (H สูงขึ้น, ATR เพิ่ม) → พิจารณา Reset Grid</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 5: Hurst ปัจจุบัน H = 0.53 — ควรเลือก TP policy แบบไหนจาก §2.6.1 และทำไม?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>H = 0.53 อยู่ในช่วง 0.50–0.58 (CAUTION ตาม Part 4 state machine) — ตรงกับ TP กว้าง (Sell-Side Pyramid) ในตาราง §2.6.1</p>
+<p>เหตุผล: ที่ H นี้ Step Pyramid (§2.6) กำลังขยาย step ฝั่งซื้ออยู่แล้วเพราะเริ่มเข้า trend — ถ้าฝั่งขายยังตั้ง TP ที่ 1 step เท่าเดิม จะเท่ากับซื้อช้าลงแต่ขายไวเท่าเดิม ไม่สมมาตร ควรขยาย TP ฝั่งขายตามไปด้วยในสัดส่วนเดียวกัน</p>
+<p><strong>ข้อควรระวัง:</strong> การเลือกนี้ไม่ได้แปลว่ากำไรรวมจะมากขึ้น — แค่ปรับรูปทรง P&L ให้ inventory ไม่ถูกขายทิ้งเร็วเกินไประหว่างที่ trend กำลังก่อตัว ถ้า H กลับลงต่ำกว่า 0.50 อีกครั้ง ค่อยกลับไปใช้ 1-step default</p>
 </div>
 </details>
 </div>
 
-<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1c.html" style="color:#64748b">Part 1C</a></span><a href="grid-part3.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 3: Zone Sizing →</a></nav>
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1d.html" style="color:#64748b">Part 1D</a></span><a href="grid-part3.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 3: Zone Sizing →</a></nav>
 </body>
 </html>

@@ -88,7 +88,7 @@ BTC ลง 20%<br>
 <strong style="color:#0891b2">Perp Short Hedge</strong><br>
 BTC ลง 20%<br>
 → Short profit: +20% × Notional<br>
-→ Funding received: +$XX<br>
+→ Funding received: +$7.5/วัน (ดูตัวอย่างเต็มใน §1C.3)<br>
 <strong style="color:#16a34a">Net: กำไร</strong>
 </div>
 <div style="display:flex;align-items:center;font-size:1.5em;color:#94a3b8">=</div>
@@ -97,7 +97,7 @@ BTC ลง 20%<br>
 BTC ลง 20%<br>
 → Spot + Short = ~0<br>
 → Grid cashflow: +$450<br>
-<strong style="color:#16a34a">Net: +$450 + Funding</strong>
+<strong style="color:#16a34a">Net: +$450 + Funding $7.5/วัน</strong>
 </div>
 </div>
 
@@ -134,10 +134,16 @@ Perp Leg (Short Hedge):
 
 <h2 id="s1c-3">1C.3 Funding Rate Income จาก Perp Short</h2>
 
-<p>เมื่อ funding rate เป็นบวก (ซึ่งเป็นกรณีปกติใน bull market): ฝั่ง short ได้รับ funding จากฝั่ง long</p>
+<p>เคยสงสัยไหมว่าทำไม perp ถึงมี "funding" ในขณะที่ futures แบบมีวันหมดอายุไม่มี — และทำไมบางทีเราเป็นฝ่ายได้เงิน บางทีต้องเป็นฝ่ายจ่าย?</p>
+
+<p>Futures ปกติบังคับให้ราคาบรรจบกับ spot เองโดยธรรมชาติ เพราะถึงวันส่งมอบราคาต้องเท่ากันเป๊ะ แต่ perp ไม่มีวันหมดอายุ — exchange เลยต้องประดิษฐ์กลไกทดแทน: ทุกๆ ช่วงเวลาหนึ่ง <strong>ฝั่งที่ผลักราคา perp ให้ห่างจาก spot ต้องจ่าย "ค่าเช่าความห่าง" ให้ฝั่งตรงข้าม</strong> เหมือนเจ้าของบ้านเก็บค่าเช่าเพิ่มจากผู้เช่าที่แย่งกันอยู่ทำเลเดียว</p>
+
+<p>ถ้าตลาดกระตือรือร้นอยากซื้อ perp จนราคาสูงกว่า spot ฝั่ง long คือฝ่ายที่ "อยากอยู่ทำเลนั้น" มากกว่า จึงต้องจ่ายให้ฝั่ง short — นี่คือเหตุผลที่ funding มักเป็นบวกในตลาดกระทิง (และทำไม hedge ของเราถึงมักได้ funding แถมมาฟรีๆ)</p>
+
+<p>แต่ถ้าตลาดกลัวจนแห่ไปฝั่ง short แรงจะกลับทิศ: short กลายเป็นฝ่ายต้องจ่าย long แทน hedge ของเราก็จะเริ่มเสียค่าเช่าแทนที่จะได้</p>
 
 <div class="fm">Funding Rate Income:
-  funding_income = short_notional × funding_rate_per_8h × 3/วัน
+  funding_income = short_notional × funding_rate_per_settlement × รอบเก็บ/วัน
                 = (0.05 BTC × $100k) × 0.05% × 3
                 = $5,000 × 0.05% × 3
                 = $7.50/วัน
@@ -148,28 +154,26 @@ Grid cashflow:
 Total daily income:
   $27 (grid) + $7.50 (funding) = $34.50/วัน
   = 34.50 / (4,700 + 500) × 100% = 0.66%/วัน บน total capital $5,200
+  ⚠ mechanical illustration ภายใต้สมมติฐาน funding บวกคงที่ + fill ครบทุกรอบ — ไม่ใช่ expected return
 
 เทียบกับ Buy-Only (ไม่ hedge): $27/วัน = 0.57%/วัน บน $4,700
 Grid Hedge เพิ่ม income 28% โดยใช้ capital เพิ่มแค่ 11% (margin)</div>
 
+<p>"3 รอบ/วัน" ในสูตรข้างบนมาจาก Bybit/Binance เก็บ funding ทุก 8 ชั่วโมง — นี่คือตารางเก็บค่าเช่าของ <em>exchange นั้น</em> ไม่ใช่กฎธรรมชาติ บาง exchange เก็บทุก 1 หรือ 4 ชั่วโมง (รอบเก็บ/วัน = 24 ÷ ชั่วโมงต่อรอบ) เช็คคู่มือ exchange ที่ใช้จริงก่อนตั้งเลขนี้ในบอท อย่า hardcode 3 ไว้เฉยๆ</p>
+
+<p>สิ่งหนึ่งที่ควรจำ: ถ้า basis (ส่วนต่างราคา perp กับ spot) เริ่มกว้างผิดปกติ — ไม่ใช่สัญญาณว่ามีเงินฟรีรออยู่ แต่คือสัญญาณว่ากลไก "ค่าเช่า" กำลังไล่ราคาไม่ทัน (มักเกิดตอน volatility พุ่งแรง) ช่วงนั้นควรลด hedge ratio หรือเตรียม de-risk มากกว่าจะรีบเข้าไปเก็บ funding เพิ่ม</p>
+
 <h2 id="s1c-4">1C.4 Hedge Ratio — ไม่ต้อง 1:1 เสมอ</h2>
 
-<p>Hedge ratio ≠ 1 เสมอ — ขึ้นอยู่กับ view และ risk tolerance:</p>
-
-<table>
-<tr><th>Hedge Ratio (Short/Spot)</th><th>Net Delta</th><th>เหมาะกับ</th></tr>
-<tr><td>0% (ไม่ hedge)</td><td>+1.0 (full long)</td><td>Bull view แรง — รับ inventory risk ทั้งหมด</td></tr>
-<tr><td>50%</td><td>+0.5 (half long)</td><td>Mild bull view — ลด risk ครึ่งหนึ่ง</td></tr>
-<tr><td>100% (full hedge)</td><td>0 (delta-neutral)</td><td>ไม่มี view — grid + funding เท่านั้น</td></tr>
-<tr><td>150%</td><td>−0.5 (net short)</td><td>Bear view — ได้ทั้ง grid + directional short gain</td></tr>
-</table>
+<p>Hedge ratio ≠ 1 เสมอ — ขึ้นอยู่กับ view และ risk tolerance (ดูตัวเลข Net Delta ของแต่ละระดับได้จาก Hedge Ratio Spectrum ด้านล่าง):</p>
 
 <div class="bx bc">
 <div class="bt">Adaptive Hedge Ratio</div>
 <p>ปรับ hedge ratio ตาม signal:</p>
 <ul>
 <li>Funding rate &gt; 0.1%/8h → เพิ่ม hedge ratio (short มากขึ้น → เก็บ funding มากขึ้น)</li>
-<li>H &gt; 0.55 (trending up) → ลด hedge ratio (ถือ long มากขึ้น เพื่อ capture trend)</li>
+<li>H &gt; 0.50 (เข้าเขต CAUTION ของ Part 4) <strong>และ</strong> ADX ยืนยัน uptrend → ลด hedge ratio (ถือ long มากขึ้น เพื่อ capture trend) — H สูงอย่างเดียวบอกแค่ "กำลัง trend" ไม่บอกทิศทาง ถ้า ADX ชี้ downtrend แทนให้ทำตรงข้าม (เพิ่ม hedge ratio ดูข้อ 4 ด้านล่าง)</li>
+<li>ถังเต็ม% (สัดส่วน capital ที่ deploy ไปซื้อ inventory แล้วเทียบกับงบสูงสุด — อธิบายเต็มใน Part 2 §2.2) เกิน 70% → เพิ่ม hedge ratio (inventory ค้างมาก ต้องปกป้องมากขึ้น)</li>
 <li>Crash signal → เพิ่ม hedge ratio เป็น 100% หรือมากกว่า</li>
 </ul>
 </div>
@@ -208,6 +212,8 @@ Grid Hedge เพิ่ม income 28% โดยใช้ capital เพิ่ม
 <p style="text-align:center;font-size:.82em;color:#64748b;margin-top:8px">ปรับ Hedge Ratio แบบ adaptive ตาม Funding Rate, Hurst, และ Market Signal</p>
 </div>
 
+<p>การเลือก hedge ratio ข้างต้นแท้จริงคือการทำ arbitrage รูปแบบหนึ่งที่มีชื่อเรียกอยู่แล้ว — มาดูว่าทำไม</p>
+
 <h2 id="s1c-5">1C.5 Cash & Carry + Grid — Combination</h2>
 
 <p>Cash & Carry Arbitrage (จาก <a href="arb-part1.html">Arbitrage Series</a>): ซื้อ Spot + Short Futures Delivery ต่างเดือน → lock in basis spread</p>
@@ -234,7 +240,7 @@ Grid Hedge (Perpetual Variation):
 
 <div class="running-ex">
 <div class="re-title">🔁 Running Example: BTC Spot Grid + Perp Short Hedge</div>
-<p><strong>Setup:</strong> Capital $5,700 · Spot grid $4,700 (5 levels $98k–$90k, Q=0.01 BTC) · Perp margin $1,000 (10× = $10k notional)</p>
+<p><strong>Setup:</strong> Capital $5,200 · Spot grid $4,700 (5 levels $98k–$90k, Q=0.01 BTC → 0.05 BTC inventory) · Perp margin $500 (10× = $5k notional, short 0.05 BTC ตรงกับ §1C.2/§1C.3)</p>
 
 <table>
 <tr><th>สถานการณ์</th><th>Spot P&L</th><th>Perp P&L</th><th>Grid Cashflow</th><th>Funding</th><th>Net</th></tr>
@@ -244,8 +250,28 @@ Grid Hedge (Perpetual Variation):
 <tr><td>BTC ขึ้น $20k (pump)</td><td>+$1,000</td><td>−$1,000</td><td>+$25</td><td>+$7.5</td><td><strong>+$32.5</strong></td></tr>
 </table>
 
-<p><strong>สังเกต:</strong> ทุกสถานการณ์กำไร — เพราะ hedge ป้องกัน directional risk สมบูรณ์ กำไรมาจาก grid + funding เท่านั้น</p>
-<p><strong>Return:</strong> ~$40–$88/วัน บน $6,000 = 0.66–1.47%/วัน (ขึ้นอยู่กับ volatility)</p>
+<p><strong>สังเกต:</strong> ตารางนี้กำไรทุกแถว <em>ภายใต้สมมติฐาน</em> ว่า hedge สมบูรณ์ 100% ตลอดเวลา, rebalance ทันทุกครั้ง, funding เป็นบวก, ไม่มี slippage และไม่โดน liquidation — เมื่อเงื่อนไขครบ ผลเชิงทิศทาง (Spot vs Perp) หักล้างกันพอดี เหลือกำไรจาก grid cashflow + funding (Grid Cashflow แต่ละแถวเป็นตัวเลขสมมติแสดงจำนวนรอบที่ต่างกันตามความผันผวนของแต่ละสถานการณ์ ไม่ได้คำนวณจากสูตรรอบ/วันแบบตรงๆ — ดูวิธีคำนวณจริงใน Part 0 §0.2)</p>
+<p><strong>Return (mechanical illustration under assumptions — ไม่ใช่ expected return):</strong> ~$32.5–$87.5/วัน (ช่วง Net ในตารางข้างบน) บน capital $5,200 = 0.63–1.68%/วัน (ขึ้นอยู่กับ volatility)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">Hedge ไม่ได้ "ลบ" ความเสี่ยง — มัน "ย้าย" ความเสี่ยง</div>
+<p>สิ่งที่ hedge ทำจริงคือแปลง directional risk ให้กลายเป็นความเสี่ยงรูปอื่น 5 ตัวที่ต้องบริหารแทน:</p>
+<ul>
+<li><strong>Hedge execution risk</strong> — spot fill แล้วแต่ perp hedge ไม่ fill / fill ช้า → ช่วงนั้น delta เปิดโล่ง</li>
+<li><strong>Funding risk</strong> — funding พลิกเป็นลบ → จ่ายทุก 8 ชม. กัด grid cashflow (แถว funding ในตารางกลายเป็นลบ)</li>
+<li><strong>Basis risk</strong> — spot price กับ perp mark price ไม่เท่ากัน โดยเฉพาะช่วง volatility spike → hedge หักล้างไม่พอดี</li>
+<li><strong>Margin/liquidation risk</strong> — perp short 10× ถ้า BTC พุ่งแรง margin ไม่พอ → โดน liquidate ทั้งที่ "hedge อยู่"</li>
+<li><strong>Rebalance cost</strong> — ทุกครั้งที่ inventory เปลี่ยนต้องปรับ hedge = fee + slippage สะสม</li>
+</ul>
+<div class="fm">Net P&L (ครบทุกเทอม — ใช้แบบนี้เวลาทำบัญชีจริง):
+
+Net P&L = Realized Grid P&L
+        + Spot Unrealized P&L
+        + Perp Unrealized P&L
+        + Funding P&L
+        − Fees − Slippage − Rebalance Cost − Margin/Borrow Cost</div>
+<p>ตารางด้านบนแสดงเฉพาะกรณีที่ 4 เทอมท้ายเป็นศูนย์ — เวอร์ชัน V2 ของบทนี้จะเพิ่ม hedge drift, funding break-even และ liquidation buffer เป็นเครื่องมือคุมความเสี่ยงเหล่านี้</p>
 </div>
 
 <h2 id="s1c-7">1C.7 แบบฝึกหัด</h2>
@@ -291,7 +317,7 @@ Grid Hedge (Perpetual Variation):
 <p><strong>คำตอบ:</strong></p>
 <p>เพิ่ม hedge ratio &gt; 100% เมื่อมี <strong>Bear view ชัดเจน</strong>:</p>
 <ul>
-<li>H &gt; 0.60 และ ADX ชี้ downtrend</li>
+<li>H &gt; 0.58 (Part 4 GRID OFF) และ ADX ชี้ downtrend</li>
 <li>Funding rate ลบมาก (market sentiment bearish)</li>
 <li>On-chain signal: large outflow จาก exchange</li>
 </ul>
@@ -301,6 +327,6 @@ Grid Hedge (Perpetual Variation):
 </details>
 </div>
 
-<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1b.html" style="color:#64748b">Part 1B</a></span><a href="grid-part2.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 2: Bloating Patterns →</a></nav>
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1b.html" style="color:#64748b">Part 1B</a></span><a href="grid-part1d.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 1D: Asymmetric Hybrid Grid →</a></nav>
 </body>
 </html>

@@ -247,7 +247,7 @@
 
     // Datasets — fills first, then lines on top
     datasets.forEach(d => {
-      if (!d.fill || !d.data.length) return;
+      if (d.pointOnly || !d.fill || !d.data.length) return;
       const color = d.color || STYLE.primary;
       ctx.beginPath();
       d.data.forEach((v, i) => {
@@ -263,6 +263,22 @@
     datasets.forEach(d => {
       if (!d.data.length) return;
       const color = d.color || STYLE.primary;
+      // pointOnly: draw isolated markers, no connecting line — for single
+      // reference points (e.g. "Fractional Kelly") where a line would
+      // misleadingly interpolate through null gaps as if it were a curve.
+      if (d.pointOnly) {
+        d.data.forEach((v, i) => {
+          if (v == null) return;
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.arc(xPos(i), yPos(v), 5, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.lineWidth   = 2;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        });
+        return;
+      }
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth   = 2.5;

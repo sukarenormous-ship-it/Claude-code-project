@@ -103,9 +103,19 @@ Short ETH ถ้า spread ต่ำกว่า mean<br>
 <h2 id="s6-2">6.2 Cointegration — พื้นฐาน Pair Grid</h2>
 
 <div class="bx bc"><div class="bt">Correlation ≠ Cointegration</div><p>BTC และ ETH อาจมี correlation สูง (ขึ้นลงพร้อมกัน) แต่นั่นไม่รับประกันว่า spread จะ mean-revert — ต้องผ่าน Cointegration Test จึงจะ trade ได้อย่างมั่นใจ</p></div>
+
+<div class="bx bg">
+<div class="bt">สถิติพื้นฐานที่ต้องรู้ก่อนอ่านต่อ (ใช้ตลอดหัวข้อนี้)</div>
+<p><strong>Null Hypothesis (H₀):</strong> ข้อสมมติฐาน "ค่าเริ่มต้น" ที่เราพยายามหาหลักฐานมาหักล้าง — ในที่นี้ H₀ คือ "spread <em>ไม่</em> mean-revert" (มี unit root แปลว่าเดินสุ่มไม่มีจุดดึงกลับ) เราอยาก <strong>reject H₀</strong> (ปฏิเสธมันได้) เพื่อสรุปว่า spread mean-revert จริง</p>
+<p><strong>ADF Test statistic กับ Critical Value:</strong> ADF test คำนวณตัวเลขหนึ่งตัว (test statistic) แล้วเทียบกับ "เกณฑ์ตัดสิน" (critical value) ที่กำหนดไว้ล่วงหน้า — ถ้า test statistic <em>ต่ำกว่า</em> (ติดลบมากกว่า) critical value ถือว่ามีหลักฐานพอจะ reject H₀</p>
+<p><strong>p-value:</strong> ความน่าจะเป็นที่จะเห็นผลลัพธ์แบบนี้ (หรือรุนแรงกว่า) ถ้า H₀ เป็นจริง — p-value ยิ่งต่ำ ยิ่งมีหลักฐานค้าน H₀ มาก ธรรมเนียมทั่วไปคือ p &lt; 0.05 ถือว่า reject H₀ ได้ (นี่คือที่มาของ "ระดับนัยสำคัญ 5%" ที่จะเห็นซ้ำๆ ด้านล่าง)</p>
+</div>
+
 <p>Cointegration (จาก <a href="statarb-ch0.html">Statarb Ch.5</a>) หมายความว่า: แม้ราคาสองตัวจะ random walk แต่ linear combination ของมันเป็น stationary:</p>
 
 $$\text{Spread}_t = \log(P_{BTC,t}) - \beta \cdot \log(P_{ETH,t}) - \alpha \sim \text{Stationary}$$
+
+<p class="caption">β (beta) คือความชันจาก linear regression ระหว่าง log(BTC) กับ log(ETH) — บอกว่าถ้า log(ETH) เปลี่ยน 1% แล้ว log(BTC) มักเปลี่ยนตามกี่% โดยเฉลี่ยในอดีต เช่น β=0.80 หมายความว่า log(ETH) เปลี่ยน 1% → log(BTC) เปลี่ยนตามเฉลี่ย 0.80% ใช้ค่านี้ถ่วงน้ำหนัก ETH ในสมการ spread เพื่อให้ spread นิ่งที่สุดเท่าที่จะทำได้ (ไม่ใช่แค่ลบราคาตรงๆ)</p>
 
 <canvas id="chartSpread" class="chart" style="height:360px"></canvas>
 <p class="caption">BTC/ETH Spread (log ratio) — mean-revert กลับสู่ค่าเฉลี่ยอยู่เสมอ → Grid บน spread ทำกำไรได้ต่อเนื่อง</p>
@@ -162,11 +172,13 @@ def test_cointegration(btc_prices, eth_prices, significance=0.05):
 # ตัวอย่าง BTC/ETH (180 วัน):
 # OLS: log(BTC) = 2.14 + 0.82 × log(ETH)  → beta = 0.82
 # ADF stat = −3.47 (critical at 5% = −2.89) → p < 0.05 → cointegrated ✓
-# Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days</div>
+# Half-life of spread reversion = ln(2) / |AR coeff| ≈ 8 days
+# (สูตรเต็มคือ −ln(2)/ln(φ) โดย φ=AR(1) coefficient — ln(2)/|AR coeff|
+#  ด้านบนคือ approximation เมื่อ κ=1−φ มีค่าน้อย ซึ่ง ln(φ)≈−κ)</div>
 
 <div class="bx bc">
 <div class="bt">Johansen Test — ดีกว่า Engle-Granger สำหรับ Pair Grid</div>
-<p>Engle-Granger มี low statistical power (พลาด cointegration จริงบ่อย) — ใช้ Johansen เป็น confirmation:</p>
+<p>Engle-Granger มี low statistical power ("power" ในที่นี้คือความสามารถของ test ในการจับ cointegration ที่มีอยู่จริงให้เจอ — power ต่ำ = พลาด cointegration จริงบ่อย แม้มันมีอยู่จริง) — ใช้ Johansen เป็น confirmation:</p>
 </div>
 
 <div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
@@ -276,6 +288,23 @@ def pair_grid_signal(current_spread, spread_levels, prev_spread, beta,
 
     return orders</div>
 
+<h3>ยิ่งไกลยิ่งน่าเข้า? — จุดที่ควรเลิกรอ</h3>
+
+<p>grid ข้างบนวางถึง ±3σ ทุก level ถือว่า "น่าเข้า" พอๆ กันหมด แต่ยิ่งไกลจาก mean ยิ่งน่าเข้าจริงเหรอ หรือมีจุดที่ควรเลิกคิดว่ามันจะกลับ?</p>
+
+<p>ลองนึกภาพรอเพื่อนที่นัดไว้ — สาย 10 นาทีปกติ สาย 30 นาทีเริ่มกังวล สาย 2 ชั่วโมง ไม่ใช่ "ยิ่งสายนานยิ่งใกล้จะมาถึง" แต่กลับเป็นสัญญาณว่ามีอะไรผิดปกติ</p>
+
+<p>spread ก็เหมือนกัน: ยิ่งเบี่ยงจาก mean ไกลเกินระดับหนึ่ง ความเป็นไปได้ที่ <strong>cointegration พังไปแล้ว</strong> (ไม่ใช่แค่รอ mean-reversion ตามปกติ) ก็ยิ่งสูงขึ้น เพราะเหตุนี้ "โซนที่ควรเข้า" จึงมีขอบเขตจำกัดเสมอ อยู่<strong>ก่อนถึง</strong>จุดยอมแพ้เสมอ (ไม่ใช่ยิ่งไกลยิ่งซื้อเพิ่มไม่มีที่สิ้นสุด — เลยจุดยอมแพ้ไปแล้วคือเลิกเข้าเพิ่ม ไม่ใช่ยิ่งเข้าหนักขึ้น)</p>
+
+<p>เพราะฉะนั้น grid ของ spread ควรมี <strong>จุดยอมแพ้ (give-up point)</strong> กำกับไว้ 2 แบบ:</p>
+
+<ul>
+<li><strong>ตามราคา:</strong> ±4σ (นอกช่วง 7 levels ข้างบน) = ปิด position ฉุกเฉินทันที ไม่ว่ากำไรหรือขาดทุน — ระดับนี้ไม่ใช่ level ให้ "เข้าเพิ่ม" แต่เป็นสัญญาณให้ออก</li>
+<li><strong>ตามเวลา:</strong> ถ้าถือ position เกิน ~3 เท่าของ half-life (half-life = เวลาเฉลี่ยที่ spread ใช้ "กลับมาครึ่งทาง" สู่ค่าเฉลี่ยหลังเบี่ยงออกไป — จาก §6.2 half-life ≈ 8 วัน → ยอมแพ้ที่ ~24 วัน) โดยยังไม่ถึง TP ให้ re-run cointegration test ทันที — ไม่ต้องรอรอบเช็ค 30 วันตามปกติ (ดูกล่อง Cointegration Break Risk ด้านบน)</li>
+</ul>
+
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Leung &amp; Li, "Optimal Mean Reversion Trading with Transaction Costs and Stop-Loss Exit" (2015) — พิสูจน์ว่าโซนเข้าซื้อของ mean-reversion ที่ optimal มีขอบเขตจำกัดเสมอ ไม่ใช่ยิ่งไกลยิ่งเข้า</p>
+
 <h2 id="s6-4">6.4 Capital Allocation สำหรับ Pair Grid</h2>
 
 <div class="fm">Capital Allocation — Pair Grid:
@@ -340,7 +369,9 @@ Total pair grid capital: 7 × $1,082 ≈ $7,574
 
 <h2 id="s6-5">6.5 Relative Value Switching — เลือก Asset ที่ดีที่สุด</h2>
 
-<p>เมื่อมีหลาย pair หรือหลาย asset — Relative Value Switching เลือก grid บน pair/asset ที่มี mean-reversion signal แรงที่สุด ณ เวลานั้น:</p>
+<p>เมื่อมีหลาย pair หรือหลาย asset — Relative Value Switching เลือก grid บน pair/asset ที่มี mean-reversion signal แรงที่สุด ณ เวลานั้น</p>
+
+<p>สังเกตในสูตรด้านล่างว่า Hurst ได้น้ำหนักตั้ง 40% — มากกว่า spread z-score เสียอีก ทำไม? ลองนึกภาพสปริงสองเส้น: เส้นหนึ่งแข็ง ดึงออกนิดเดียวก็ดีดกลับเร็ว อีกเส้นอ่อน ดึงออกเท่ากันแต่คืนตัวช้ากว่ามาก <strong>z-score บอกแค่ "ตอนนี้ยืดออกไปเท่าไหร่" ส่วน Hurst บอกว่า "สปริงเส้นนี้แข็งหรืออ่อน" — คือจะดีดกลับเร็วแค่ไหน</strong> คู่ที่ z สูงมากแต่ H ก็สูงด้วย (สปริงอ่อน) อาจยืดต่อไปอีกนานกว่าจะกลับ ในขณะที่คู่ที่ z ปานกลางแต่ H ต่ำมาก (สปริงแข็ง) มีโอกาสกลับไวกว่าเยอะ — และยิ่งกลับไว ยิ่งเก็บรอบต่อวันได้มากกว่า break-even ที่ Part 0 พูดถึงได้ง่ายขึ้น นี่คือเหตุผลที่ H ควรมีน้ำหนักมากกว่า z-score ในการจัดอันดับว่าคู่ไหนน่าเล่นที่สุด</p>
 
 <div class="fm">Relative Value Score — เปรียบ 3 grids:
 
@@ -368,9 +399,12 @@ def relative_value_score(hurst, spread_zscore, momentum_reversal):
     return 0.40 * h_score + 0.30 * z_score_score + 0.30 * mom_score
 
 # ตัวอย่าง:
-# A (BTC Spot): Hurst=0.48, z=0.5, RSI=45 → score=62
-# B (BTC/ETH): Hurst=0.43, z=2.1, RSI=32 → score=79 ← WINNER
-# C (ETH Spot): Hurst=0.53, z=0.8, RSI=50 → score=45
+# A (BTC Spot): Hurst=0.48→h_score=65, z=0.5→z_score=16.67, RSI=45→mom=55
+#   score = 0.40×65 + 0.30×16.67 + 0.30×55 = 26.0+5.0+16.5 = 47.5
+# B (BTC/ETH): Hurst=0.43→h_score=85, z=2.1→z_score=70.0, RSI=32→mom=68
+#   score = 0.40×85 + 0.30×70.0 + 0.30×68 = 34.0+21.0+20.4 = 75.4 ← WINNER
+# C (ETH Spot): Hurst=0.53→h_score=40, z=0.8→z_score=26.67, RSI=50→mom=50
+#   score = 0.40×40 + 0.30×26.67 + 0.30×50 = 16.0+8.0+15.0 = 39.0
 
 # → Allocate 70% capital ไปที่ Pair Grid (B) + 30% ไปที่ BTC Spot (A)</div>
 
@@ -379,12 +413,13 @@ def relative_value_score(hurst, spread_zscore, momentum_reversal):
 <p>เมื่อมี capital มากพอ — เปิดหลาย grid พร้อมกัน แต่ต้องจัดการ correlation ระหว่าง assets:</p>
 
 <table>
-<tr><th>Grid</th><th>Asset</th><th>Correlation กับ BTC Grid</th><th>Max Allocation</th></tr>
-<tr><td>Grid 1</td><td>BTC/USDT Spot</td><td>1.0 (ตัวเอง)</td><td>40% ของ grid portfolio</td></tr>
-<tr><td>Grid 2</td><td>ETH/USDT Spot</td><td>0.75 (สูง)</td><td>20%</td></tr>
-<tr><td>Grid 3</td><td>BTC/ETH Pair</td><td>0.10 (ต่ำ — market neutral)</td><td>30%</td></tr>
-<tr><td>Grid 4</td><td>SOL/USDT</td><td>0.55 (ปานกลาง)</td><td>10%</td></tr>
+<tr><th>Grid</th><th>Asset</th><th>Correlation กับ BTC Grid</th><th>Max Allocation (ตามสูตรด้านล่าง)</th></tr>
+<tr><td>Grid 1</td><td>BTC/USDT Spot</td><td>1.0 (ตัวเอง)</td><td>20% (corr สูงสุด → cap ต่ำสุด)</td></tr>
+<tr><td>Grid 2</td><td>ETH/USDT Spot</td><td>0.75 (สูง)</td><td>25%</td></tr>
+<tr><td>Grid 3</td><td>BTC/ETH Pair</td><td>0.10 (ต่ำ — market neutral)</td><td>50% (corr ต่ำสุด → cap สูงสุด)</td></tr>
+<tr><td>Grid 4</td><td>SOL/USDT</td><td>0.55 (ปานกลาง)</td><td>35%</td></tr>
 </table>
+<p class="caption">แต่ละแถวคือ ceiling อิสระต่อ grid เดียว (มาจาก max_allocation_by_correlation ด้านล่าง) ไม่ใช่สัดส่วนที่ต้องรวมกันได้ 100% พอดี — portfolio จริงต้องเลือก allocation ของแต่ละ grid ให้อยู่ใต้ cap ของตัวเอง <em>และ</em> รวมกันไม่เกิน 100% ของทุนทั้งหมด</p>
 
 <div class="fm">Portfolio Correlation Management:
 
@@ -437,10 +472,14 @@ Action: BUY spread ที่ −2σ
   SHORT 0.1813 ETH @ $3,800 = $689 notional (margin 10× = $69)
   TP: spread กลับมา −1σ level
 
-Day 8: BTC $103k, ETH $3,700 → spread กลับมา −0.5σ
-  ไม่ถึง TP (−1σ) ยังถือ position
+Day 8: BTC $100k, ETH $3,740 → spread = log(100k) − 0.80×log(3,740) = 11.513 − 6.581 = 4.932
+  normalized: (4.932−4.983)/0.040 = −1.3σ → ยังไม่ถึง TP (−1σ) ยังถือ position
 
-Day 10: BTC $106k, ETH $3,650 → spread = +0.3σ (กลับมา near mean)
+Day 10: BTC $106k, ETH $3,650 → spread = log(106k) − 0.80×log(3,650) = 11.571 − 6.562 = 5.009
+  normalized: (5.009−4.983)/0.040 = +0.66σ → ผ่าน TP (−1σ) ไปแล้ว (spread น่าจะข้าม −1σ
+  จริงระหว่าง Day 8–10 แต่ตัวอย่างนี้ snapshot แค่วันเว้นวัน ไม่ได้ track ทุกวัน
+  เพื่อความง่าย จึงคำนวณ P&L จากราคา ณ Day 10 ไม่ใช่ราคา ณ จุดที่ TP ถูกแตะจริง —
+  P&L จริงถ้า execute ทันทีที่ −1σ อาจน้อยกว่านี้)
   TP hit!
   BTC gain: 0.008 × ($106k − $98k) = $64
   ETH short gain: 0.1813 × ($3,800 − $3,650) = $27.2

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Trading Mastery · Part 1D — Asymmetric Hybrid Grid</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--cyan:#06b6d4;--cyan-bg:#ecfeff;--cyan-dark:#0e7490;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g9:#111827;--g8:#1f2937;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9)}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--cyan)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--cyan);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bc{background:var(--cyan-bg);border-left:4px solid var(--cyan)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--cyan);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.key-idea{background:linear-gradient(135deg,var(--cyan-bg),var(--blue-bg));border:2px solid var(--cyan);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--cyan-dark);padding:8px 12px;background:var(--cyan-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Grid Trading Mastery · Part 1D</div>
+<h1>Asymmetric Hybrid Grid</h1>
+<div class="sub">เมื่อ Buy-Only ปลอดภัยเกินไป แต่ Bidirectional เสี่ยงเกินไป<br>
+ทางสายกลางที่คำนวณได้ — ตัวอย่าง: BTC/USDT บน Bybit (บัญชีเดียวกับที่ใช้มาตั้งแต่ Part 0)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของ Part นี้</div>
+<div class="ki-text">ไม่ใช่ pure bidirectional และไม่ใช่ full hedge ตลอดเวลา — Asymmetric Hybrid ใช้ <strong>buy-only เป็นแกนหลักเสมอ</strong>, <strong>hedge เฉพาะ inventory ที่มีอยู่จริง</strong>, และเปิด <strong>short เป็นชั้นเล็กๆ ที่จำกัดขาดทุนไว้ล่วงหน้า</strong> เฉพาะตอนตลาด sideway ชัด</div>
+</div>
+
+<h2 id="s1d-1">1D.1 ทำไมต้องมี Part นี้</h2>
+
+<p>อ่านมาถึงตรงนี้ คุณน่าจะรู้สึกอึดอัดอยู่อย่างหนึ่ง</p>
+
+<p>Buy-Only (Part 1A) ปลอดภัยก็จริง แต่ตอนราคาขึ้นไม่หยุด grid ขายของทิ้งไปทีละไม้จนหมดมือ — ได้กำไรก็จริง แต่ "ตกรถ" ไปพร้อมกับกำไรก้อนนั้น ราคาพุ่งต่อไปอีกเท่าไหร่ ไม่ใช่ของคุณแล้ว</p>
+
+<p>Bidirectional และ Grid Hedge (Part 1B/1C) แก้ปัญหานั้นได้ด้วยการเปิด short เก็บฝั่งขาขึ้นด้วย แต่ short ไม่มีเพดานขาดทุนทางทฤษฎี — ยิ่งป้องกัน "ตกรถ" มากเท่าไหร่ ยิ่งเปิดความเสี่ยงใหม่ที่ไม่มีขอบเขตมากเท่านั้น</p>
+
+<p>คำถามที่ Part นี้ตอบคือ: <strong>มีทางกลางไหมที่ไม่ต้องเลือกสุดขั้ว?</strong></p>
+
+<p>จำ Zone Waterfall จาก Part 1A ได้ไหม — แบ่งทุนเป็น Active/Standby/Floor เพื่อไม่ให้เงินทั้งก้อนเสี่ยงพร้อมกัน แนวคิดเดียวกันนั้นใช้ได้กับการแบ่งชั้น "กลยุทธ์" ไม่ใช่แค่ "โซนราคา": เงินส่วนใหญ่อยู่ในสิ่งที่ปลอดภัยที่สุด (buy-only core) เงินส่วนหนึ่งกันไว้ป้องกันของที่มีอยู่จริงเท่านั้น (hedge ตาม inventory) และมีแค่เศษเสี้ยวเล็กๆ ที่ยอมเสี่ยงเพิ่มโดยรู้ล่วงหน้าแล้วว่าเสียได้สูงสุดเท่าไหร่ (short layer ที่มี budget ตายตัว)</p>
+
+<div class="key-idea">
+<div class="ki-text"><strong>หลักการเดียวที่ต้องจำ:</strong> short layer ใน Part นี้ไม่ได้มีไว้ "เดาทิศทาง" แต่มีไว้เก็บเกี่ยวตลาด sideway เพิ่ม โดยรู้คำตอบของคำถามนี้ <em>ก่อน</em> เปิดสักออเดอร์เดียว — "ถ้าผิดทางเต็มที่ จะเสียสูงสุดเท่าไหร่"</div>
+</div>
+
+<p>สามชั้นนี้ประกอบกันเป็น Asymmetric Hybrid Grid — 1D.2 แบ่งสัดส่วนให้ชัด, 1D.3 ต่อจากเกมเหรียญของ Shannon ใน Part 0 ว่าเมื่อราคาหลุดขอบควรเล่นเกมนั้นต่ออย่างไรให้ปลอดภัย, และ 1D.4 ให้ระบบสลับสถานะเองตามกฎที่ตั้งไว้ล่วงหน้า ไม่ต้องตัดสินใจสดหน้างาน</p>
+
+<h2 id="s1d-2">1D.2 สามชั้นของทุน</h2>
+
+<p>เทรดเดอร์คนเดิมจาก Part 0 — เริ่ม Close System ที่ $8,460 ใน Part 1A แล้วเก็บกำไรสะสมจนขยับ allocation ขึ้นเป็นทุนรวม $20,000 (= 20% ของ net worth $100k ใกล้เพดาน Kelly ~19% ที่จะเห็นเหตุผลเต็มใน Part 5) ตอนนี้จะแบ่งเข้าสามชั้น — สัดส่วน default ที่ใช้ได้เลยถ้ายังไม่มีเหตุผลเฉพาะเจาะจงให้ปรับ:</p>
+
+<p class="caption">ทบทวน Close System (Part 1A): ตั้ง BUY orders ล่วงหน้าจนถึงราคา "floor" ที่คำนวณไว้ก่อนเปิด grid ไม่มี stop-loss ระหว่างทาง (ไม่ขาย inventory ทิ้งขาดทุนเด็ดขาด) — ขายได้ก็ต่อเมื่อราคาฟื้นกลับมาเหนือจุดที่ซื้อเท่านั้น</p>
+
+<table>
+<tr><th>ชั้น</th><th>สัดส่วน</th><th>จำนวนเงิน</th><th>หน้าที่</th></tr>
+<tr><td><strong>Buy-only core</strong></td><td>75%</td><td>$15,000</td><td>Close System ถึง floor (Part 1A) — วิ่งตลอดเวลา ไม่ปิดเว้นแต่หลุดขอบ</td></tr>
+<tr><td><strong>Hedge reserve</strong></td><td>20%</td><td>$4,000</td><td>Margin + buffer สำหรับ short perp ที่ hedge เฉพาะ inventory ที่ core ถืออยู่จริง (Part 1C §1C.4)</td></tr>
+<tr><td><strong>Capped short layer</strong></td><td>5%</td><td>$1,000</td><td>Short เพิ่มเพื่อเก็บเกี่ยว sideway — เปิดเฉพาะตอน state อนุญาต (1D.4) และมี SL + capital cap ตายตัว (Part 1B §1B.6: SL ที่ zone_top+5%, short capital ≤ 20% ของ long capital)</td></tr>
+</table>
+
+<p>สังเกตว่าตัวเลขในตารางไม่ใช่สูตรใหม่ — core มาจาก Close System ของ Part 1A ตรงๆ, hedge reserve มาจาก Margin+Buffer ของ Part 1C, capped short มาจาก SL + capital cap ของ Part 1B §1B.6 บทนี้แค่บอกว่า<strong>สามอย่างนี้ควรอยู่ด้วยกันในสัดส่วนไหน</strong> ไม่ได้สอนวิธีคำนวณแต่ละชั้นซ้ำ — ถ้าลืมสูตรให้กลับไปอ่าน Part ที่เกี่ยวข้อง</p>
+
+<div class="bx ba">
+<div class="bt">กฎที่มักถูกทำผิด</div>
+<p>ห้ามให้ hedge reserve หรือ capped short "กินเข้าไป" ใน core — ถ้า core ยังไม่ครบ $15,000 ตาม Close System ห้ามเอาเงินจากส่วนนั้นไปเปิด short เพิ่ม เพราะ core คือสิ่งที่ทำให้ระบบไม่มีวัน bust ไม่ว่าราคาจะลงแค่ไหน (ถ้าทุนพอ) — ชั้นอื่นเป็นแค่ส่วนเสริม ไม่ใช่สลับที่กับ core ได้</p>
+</div>
+
+<h2 id="s1d-3">1D.3 เมื่อราคาหลุดขอบ — เล่นเกม Shannon ต่ออย่างไรให้ปลอดภัย</h2>
+
+<p>Part 0 เล่าเกมเหรียญของ Shannon ไว้แล้ว: กำไรของ grid มาจากการ "ไม่หยุด" ปรับสมดุล — ปัญหาคือ grid ธรรมดาหยุดเล่นทันทีที่ราคาหลุดขอบ คำถามของหัวข้อนี้คือ ถ้าไม่อยากหยุด จะเล่นต่ออย่างไรให้ปลอดภัย มีสามคำตอบ เรียงจากอนุรักษ์นิยมไปเสี่ยงมากขึ้น:</p>
+
+<div class="fm">ทางที่ 1 — Terminate (baseline ไม่ใช่คำแนะนำ)
+  ปิดทุกอย่างเมื่อหลุดขอบ ปลอดภัยสุดแต่ EV = 0 (พิสูจน์ไว้ใน Part 0)
+
+ทางที่ 2 — Reset ทั้งกระดาน
+  หลุดขอบบน → เก็บทุน+กำไรคืน ตั้ง grid ใหม่ที่ราคาปัจจุบันเป็นศูนย์กลาง
+  หลุดขอบล่าง → ไม่ขายทิ้ง ถือ inventory ต่อ ใช้กำไรสะสมเป็นทุนของ grid ใหม่
+
+ทางที่ 3 — เลื่อนกระดานทีละนิด (Infinity)
+  ขายของออกทีละนิดตลอดทางขาขึ้น รักษามูลค่า position ให้คงที่
+  ไม่ต้องรอถึงขอบแล้วรีเซ็ตทีเดียว — เหมือนบันไดเลื่อนที่ขยับตามราคาเอง</div>
+
+<p>ทางที่ 2 คือสิ่งที่ทำให้เกม Shannon เล่นต่อได้ไม่มีที่สิ้นสุด (ตราบใดที่ยังมีเงินอยู่ในเกม) ส่วนทางที่ 3 คือกลไกที่ grid bot บางเจ้าใช้จริงบน exchange อยู่แล้ว (ดูอ่านต่อท้ายหัวข้อ) — ทั้งสองทางมีคนทดสอบอิสระมาแล้วทั้งบน BTC/ETH และ FX</p>
+
+<div class="bx br">
+<div class="bt">แต่จำไว้ก่อนดีใจ</div>
+<p>ทางที่ 2 และ 3 ไม่ได้ลบความเสี่ยง — มันแค่แปลงเป็น <strong>inventory risk</strong> ที่ Part 1C สอนวิธี hedge ไว้แล้ว การเลือกทางที่ 2/3 แทน Terminate จึงต้องมี hedge reserve (1D.2) พร้อมใช้งานเสมอ ไม่ใช่แค่หวังว่าราคาจะกลับ</p>
+</div>
+
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Dempster, Evstigneev &amp; Schenk-Hoppé, "Volatility-Induced Financial Growth" (2007) · Chen, Chen &amp; Jang, arXiv:2506.11921 (2025) — ทางที่ 2 · KuCoin/Pionex Infinity Grid spec — ทางที่ 3 · Rundo et al., "GTSbot" (2019, <em>Applied Sciences</em>) และ Jia, "Feasibility of Grid Trading for Bitcoin" (2022) — หลักฐานอิสระว่า grid+filter แบบนี้ใช้ได้จริงทั้งใน FX และ BTC</p>
+
+<h2 id="s1d-4">1D.4 ห้าสถานะของระบบ</h2>
+
+<p>แทนที่จะตัดสินใจสดหน้างานทุกครั้ง ให้ระบบอยู่ในหนึ่งใน 5 สถานะเสมอ แล้วสลับสถานะตามกฎที่ตั้งไว้ล่วงหน้า (ผูกกับ Regime State Machine ของ Part 4):</p>
+
+<div style="margin:20px 0;font-family:'Sarabun',sans-serif">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch">
+    <div style="flex:1;min-width:140px;background:#f1f5f9;border:2px solid #64748b;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#334155">BUY_ONLY_CORE</div>
+      <div style="font-size:.68em;color:#64748b;margin-top:4px">ค่าเริ่มต้น</div>
+    </div>
+    <div style="display:flex;align-items:center;color:#94a3b8">→</div>
+    <div style="flex:1;min-width:140px;background:#ecfdf5;border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#166534">HYBRID_SIDEWAY</div>
+      <div style="font-size:.68em;color:#15803d;margin-top:4px">H&lt;0.50, sideway ชัด</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:stretch;margin-top:10px">
+    <div style="flex:1;min-width:140px;background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#991b1b">HEDGE_DEFENSIVE</div>
+      <div style="font-size:.68em;color:#b91c1c;margin-top:4px">↑ ราคาลงแรง จาก SIDEWAY</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:#fff7ed;border:2px solid #ea580c;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#9a3412">TREND_UP_MIGRATION</div>
+      <div style="font-size:.68em;color:#c2410c;margin-top:4px">↑ ราคาหลุดขอบบน จาก SIDEWAY</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:#faf5ff;border:2px solid #7c3aed;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:.75em;font-weight:800;color:#5b21b6">FULL_PAUSE</div>
+      <div style="font-size:.68em;color:#6d28d9;margin-top:4px">↑ DD halt / API ผิดปกติ จากสถานะไหนก็ได้</div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:.75em;color:#94a3b8;margin-top:8px">ทั้ง 3 สถานะแถวล่างกลับสู่ HYBRID_SIDEWAY หรือ BUY_ONLY_CORE ได้เมื่อสัญญาณที่ทำให้เข้าสถานะนั้นหายไป (รายละเอียดเงื่อนไขแต่ละลูกศรอยู่ในตารางด้านล่าง)</p>
+</div>
+
+<table>
+<tr><th>State</th><th>คำอธิบาย</th><th>อนุญาตให้ทำอะไร</th></tr>
+<tr><td><strong>BUY_ONLY_CORE</strong></td><td>ค่าเริ่มต้น — ยังไม่มีสัญญาณ sideway ชัด</td><td>BUY grid + TP sell เท่านั้น ไม่มี naked short</td></tr>
+<tr><td><strong>HYBRID_SIDEWAY</strong></td><td>H &lt; 0.50, ADX ต่ำ (Part 4 GRID ON)</td><td>Core + hedge ตาม inventory + capped short layer</td></tr>
+<tr><td><strong>HEDGE_DEFENSIVE</strong></td><td>ราคาลงแรง inventory เริ่มหนัก</td><td>Hedge 80–100% ของ inventory, ห้ามเปิด short ใหม่</td></tr>
+<tr><td><strong>TREND_UP_MIGRATION</strong></td><td>ราคาหลุดขอบบน (breakout)</td><td>ปิด short ทั้งหมด → เลือกทางที่ 2 หรือ 3 จาก 1D.3 → คำนวณ zone ใหม่</td></tr>
+<tr><td><strong>FULL_PAUSE</strong></td><td>DD halt (Part 5) หรือ API/data ผิดปกติ</td><td>ยกเลิก order ใหม่ทั้งหมด, reconcile, รอสัญญาณ resume</td></tr>
+</table>
+
+<p>เงื่อนไขเปลี่ยน state ทั้งหมดมาจาก signal ที่มีอยู่แล้ว ไม่มีตัวใหม่: Hurst/ADX/BB width จาก Part 4, DD threshold จาก Part 5, breakout detection จาก Donchian zone ของ Part 3</p>
+
+<h2 id="s1d-5">1D.5 Decision Tree</h2>
+
+<p>ตารางนี้เป็น <em>lookup tool</em> สรุปกฎจาก 1D.4 ให้หาคำตอบเร็วๆ ตามสถานการณ์ปัจจุบัน — ไม่ใช่เนื้อหาใหม่ ถ้าเพิ่งอ่านครั้งแรกอาจต้องย้อนกลับไปดู 1D.4 ประกอบ:</p>
+
+<div class="fm">มี spot inventory อยู่แล้ว?
+  → ใช้ hedge ratio ตามตาราง Part 1C §1C.4 (0/50/100/150%) ปรับตาม funding และ Hurst
+
+ยังไม่มี inventory และอยากเริ่มปลอดภัย?
+  → เปิดแค่ BUY_ONLY_CORE ก่อน (Part 1A) รอ signal sideway ชัดค่อยเพิ่มชั้น
+
+ตลาด sideway/choppy ชัด (H &lt; 0.50, ADX ต่ำ)?
+  → HYBRID_SIDEWAY: เปิด short layer ภายใต้ capital cap ≤ 20% ของ long capital (Part 1B §1B.6) + hedge ratio 50–100%
+
+ราคา breakout ขึ้น (หลุดขอบบน)?
+  → TREND_UP_MIGRATION: หยุด short ใหม่ → ปิด short ตาม SL ที่ zone_top+5% (Part 1B §1B.6)
+    → เลือกทางที่ 2 (reset) หรือ 3 (infinity) จาก 1D.3
+
+ตลาด crash/downtrend?
+  → HEDGE_DEFENSIVE: hedge inventory 80–100% → ห้ามเพิ่ม naked short โดยไม่มี risk budget
+
+funding ติดลบแรง หรือ DD ถึง halt threshold?
+  → FULL_PAUSE: ลด/ปิด short และ hedge ที่ไม่จำเป็น → รอ resume signal (Part 5 §5.5)</div>
+
+<h2 id="s1d-6">1D.6 Running Example — บัญชีเดียวกับตั้งแต่ Part 0</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: BTC/USDT $20,000 ผ่านหนึ่งรอบตลาด</div>
+
+<table>
+<tr><th>Day</th><th>เหตุการณ์</th><th>State</th><th>Action</th></tr>
+<tr><td>0</td><td>BTC $100k, H=0.43, ADX=18 — sideway ชัด</td><td>HYBRID_SIDEWAY</td><td>Core $15,000 เปิดเต็ม zone $90k–$110k · Short layer $1,000 เปิด 30% ของ Q_long · Hedge 60% ของ inventory core</td></tr>
+<tr><td>12</td><td>BTC วิ่งขึ้นทะลุ $110k ต่อเนื่อง H=0.58</td><td>TREND_UP_MIGRATION</td><td>ปิด short layer ทั้งหมด (กำไรสะสม $340 = grid cashflow + funding income สะสมตลอด 12 วัน ตัวเลขสมมติเพื่อ illustration — วิธีคำนวณจริงดู Part 1C §1C.6) · เลือกทางที่ 2: เก็บทุน core คืน + กำไร → ตั้ง grid ใหม่ zone $108k–$128k</td></tr>
+<tr><td>18</td><td>BTC แกว่งที่โซนใหม่ H กลับมา 0.46</td><td>HYBRID_SIDEWAY</td><td>เปิด short layer ใหม่ด้วย loss budget เดิม (5% ของทุนรวม) · hedge ปรับตาม inventory ก้อนใหม่</td></tr>
+<tr><td>25</td><td>Funding พลิกลบแรง (−0.12%/8h)</td><td>FULL_PAUSE (short/hedge เท่านั้น)</td><td>ปิด short layer ชั่วคราว core ยังวิ่งต่อปกติ (Part 1C §1C.3 funding action rule)</td></tr>
+</table>
+
+<p><strong>สังเกต:</strong> ตลอด 25 วันนี้ core (Part 1A) <em>ไม่เคยหยุด</em> เลย — สิ่งที่สลับไปมาคือชั้น hedge กับ short เท่านั้น นี่คือความหมายของ "asymmetric": core ไม่สมมาตรกับอีกสองชั้น มันสำคัญกว่าและมั่นคงกว่าเสมอ</p>
+</div>
+
+<h2 id="s1d-7">1D.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัด Part 1D</div>
+
+<details>
+<summary>ข้อ 1: ทุนรวม $30,000 — แบ่งตามสัดส่วน default ของ 1D.2 ได้เท่าไหร่ต่อชั้น?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>Core (75%) = $22,500 · Hedge reserve (20%) = $6,000 · Capped short (5%) = $1,500</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ราคาหลุดขอบบนแรงมาก แต่ hedge reserve ยังไม่พร้อม (เพิ่งใช้ไปกับเหตุการณ์ก่อนหน้า) — ควรเลือกทางที่ 2 หรือ 3 จาก 1D.3?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ไม่ควรเลือกทั้งคู่ทันที — กฎใน 1D.3 บอกว่าทางที่ 2/3 ต้องมี hedge reserve พร้อมใช้งานเสมอ ถ้ายังไม่พร้อม ให้กลับไปทางที่ 1 (Terminate) ชั่วคราว หรือรอเติม hedge reserve ก่อน — เลือกความปลอดภัยของ core เหนือกำไรที่อาจเสียไปจากการรอ</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: ระบบอยู่ใน HEDGE_DEFENSIVE — เปิด short layer ใหม่ได้ไหมถ้าเห็นโอกาส sideway สั้นๆ ระหว่างทาง?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>ไม่ได้ — ตามตาราง 1D.4, HEDGE_DEFENSIVE อนุญาตแค่ hedge inventory ห้ามเปิด short ใหม่โดยเด็ดขาด แม้จะเห็น sideway สั้นๆ เพราะ state นี้ถูกออกแบบมาให้ระบบอนุรักษ์นิยมที่สุดระหว่างที่ตลาดยังไม่นิ่งพอ ต้องรอสัญญาณเปลี่ยนกลับเป็น HYBRID_SIDEWAY อย่างเป็นทางการก่อน</p>
+</div>
+</details>
+</div>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid var(--cyan);display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em"><a href="grid-index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ สารบัญ Grid Trading Mastery</a><span style="color:#94a3b8">← <a href="grid-part1c.html" style="color:#64748b">Part 1C</a></span><a href="grid-part2.html" style="color:var(--cyan-dark);text-decoration:none;font-weight:700">Part 2: Bloating Patterns →</a></nav>
+</body>
+</html>

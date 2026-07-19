@@ -65,6 +65,16 @@ Backtesting Framework · Paper Trading → Live Migration<br>
 
 <h2 id="s9-1">9.1 Project Structure</h2>
 
+<div class="bx bb">
+<div class="bt">อ่านยังไงถ้าไม่เขียนโค้ด</div>
+Part นี้เต็มไปด้วยโค้ด Python — ถ้าไม่ได้ตั้งใจจะ implement เองก็ไม่จำเป็นต้องอ่านทุกบรรทัด
+ให้เน้นอ่าน 3 อย่าง: (1) โครงสร้างไฟล์ด้านล่าง เพื่อเห็นภาพว่าแนวคิดจาก Part 1–8 แต่ละเรื่อง
+ถูกแบ่งเป็นไฟล์ไหน (2) comment ในโค้ด (บรรทัดที่ขึ้นต้นด้วย <code>#</code>) ซึ่งอธิบายเหตุผล
+เป็นภาษาคนอ่านง่าย และ (3) กล่อง "ตัวอย่าง"/"สรุป" ท้ายแต่ละหัวข้อ ส่วน syntax เฉพาะของ Python
+(เช่น <code>@dataclass</code>, <code>class</code>, <code>self</code>) ข้ามได้ถ้าไม่คุ้น — comment
+ข้างๆ จะบอกว่าโค้ดส่วนนั้นทำอะไรอยู่แล้ว
+</div>
+
 <div class="fm">grid-trading-bot/
 ├── core/
 │   ├── __init__.py
@@ -140,12 +150,16 @@ class GridFramework:
 
     @classmethod
     def from_market_data(cls, symbol, prices, highs, lows,
-                          grid_capital, kelly_fraction=0.19):
+                          net_worth, kelly_fraction=0.19):
         """
-        สร้าง GridFramework จากข้อมูลตลาด (Part 3 + Part 5)
+        สร้าง GridFramework จากข้อมูลตลาด (Part 3) + คำนวณ grid_capital จาก
+        Kelly sizing (Part 5) ในฟังก์ชันนี้เอง — รับ net_worth ดิบเข้ามา
+        (ไม่ใช่ grid_capital ที่คูณมาแล้ว) เพื่อบังคับให้ kelly_fraction
+        ถูกใช้จริงทุกครั้งที่เรียกฟังก์ชันนี้ ไม่ใช่แค่ parameter ประดับ
         """
         from indicators.atr_donchian import compute_atr, compute_donchian
 
+        grid_capital = net_worth * kelly_fraction
         current_price = prices[-1]
 
         # Zone from Donchian (Part 3)
@@ -153,13 +167,13 @@ class GridFramework:
         zone_high = dc_high * 1.05
         zone_low  = dc_low  * 0.95
 
-        # Step from ATR (Part 3)
+        # Step from ATR (Part 3) — ปัดทั้งสองขา (ATR-based กับ fee-floor) เป็น
+        # หลักร้อยก่อนเทียบ max กัน เพื่อให้ step สุดท้ายเป็นจำนวนเต็มร้อยเสมอ
         atr = compute_atr(highs, lows, prices, period=14)
-        step = max(round(0.5 * atr / 100) * 100,
-                   3 * current_price * 0.001 * 2)
+        atr_step  = round(0.5 * atr / 100) * 100
+        fee_floor = round(3 * current_price * 0.001 * 2 / 100) * 100
+        step = max(atr_step, fee_floor)
 
-        # Q from Kelly-sized capital (kelly_fraction already applied to net_worth before call)
-        # grid_capital = net_worth × kelly_fraction → Q reflects Kelly sizing implicitly
         n = int((zone_high - zone_low) / step)
         avg_p = (zone_high + zone_low) / 2
         base_q = grid_capital / (n * avg_p)
@@ -168,10 +182,12 @@ class GridFramework:
                    step=step, grid_capital=grid_capital,
                    base_q=round(base_q, 4))
 
-    def create_buy_levels(self, current_price, sizes=None) -> List[GridLevel]:
-        """วาง BUY orders ต่ำกว่า current_price"""
+    def create_buy_levels(self, current_price, sizes=None, step=None) -> List[GridLevel]:
+        """วาง BUY orders ต่ำกว่า current_price (step=None ใช้ self.step ปกติ,
+        หรือรับ step ที่ปรับแล้วจาก execution style เช่น Step Pyramid)"""
+        step = step if step is not None else self.step
         levels = []
-        price = current_price - self.step
+        price = current_price - step
         i = 0
         while price >= self.zone_low:
             q = sizes[i] if sizes else self.base_q
@@ -179,9 +195,9 @@ class GridFramework:
                 price=round(price, 0),
                 qty=q,
                 side="BUY",
-                tp_price=round(price + self.step, 0)
+                tp_price=round(price + step, 0)
             ))
-            price -= self.step
+            price -= step
             i += 1
         return levels
 
@@ -195,13 +211,36 @@ class GridFramework:
             center = n // 2
             weights = [math.exp(-0.5 * ((i-center)/(n/4))**2) for i in range(n)]
         elif style == "bottom_heavy":
-            weights = [1.0/(i+1) for i in range(n)]
+            weights = [1.0/(n-i) for i in range(n)]
         else:
             weights = [1.0] * n
         total = sum(weights)
-        return [self.base_q * (w/total) * n * size_mult for w in weights]</div>
+        return [self.base_q * (w/total) * n * size_mult for w in weights]
+
+    def create_orders(self, exec_params, current_price) -> List[GridLevel]:
+        """
+        แปลง exec_params จาก execution style (Part 7B) เป็น order list จริง
+        step/sizes มาจาก exec_params ถ้ามี ไม่งั้นใช้ default ของ framework เอง
+        """
+        if not exec_params.get("deploy", True):
+            return []
+        return self.create_buy_levels(
+            current_price,
+            sizes=exec_params.get("sizes"),
+            step=exec_params.get("step")
+        )</div>
 
 <h2 id="s9-3">9.3 Bybit API Integration</h2>
+
+<div class="bx bc">
+<div class="bt">ทำไมต้องมี "signature"</div>
+Bybit (และ exchange อื่นแทบทุกที่) ต้องพิสูจน์ว่า request ที่ส่งเข้ามาจริงๆ มาจากเจ้าของ
+API key — ไม่ใช่ใครก็ได้ที่ดักฟัง network แล้วปลอมคำสั่งซื้อขาย วิธีที่ใช้กันคือ HMAC
+(Hash-based Message Authentication Code): เอา secret key มา "เซ็นชื่อ" ข้อความ (params +
+timestamp) ให้กลายเป็น hash หนึ่งก้อน แล้วแนบ hash นั้นไปกับ request แทนที่จะส่ง secret
+key ตรงๆ ฝั่ง server คำนวณ hash แบบเดียวกันด้วย secret key ที่เก็บไว้ แล้วเทียบว่าตรงกันไหม
+ถ้าตรง = request นี้มาจากเจ้าของ key จริง โค้ดด้านล่าง (<code>_sign()</code>) ทำขั้นตอนนี้
+</div>
 
 <div class="fm"># exchange/bybit_client.py
 
@@ -310,7 +349,8 @@ class GridBacktester:
             high_price = row["high"]
             close      = row["close"]
 
-            # หมายเหตุ: logic นี้เป็น optimistic assumption — ราคา candle แตะ level ไม่ได้หมายความว่า fill ทุกครั้ง
+            # หมายเหตุ: logic นี้เป็น optimistic assumption
+            # ราคา candle แตะ level ไม่ได้หมายความว่า fill ทุกครั้ง
             # ใน production ให้ใช้ WebSocket order events แทน
             # Check BUY fills (price ลงถึง BUY level)
             for level in buy_levels:
@@ -359,14 +399,28 @@ class GridBacktester:
             "portfolio_values": pv,
         }</div>
 
+<div class="bx ba">
+<div class="bt">เช็คลิสต์อ่านผล backtest ที่คนแชร์กัน — ก่อนเชื่อตัวเลขใคร (รวมของตัวเอง)</div>
+<p>Backtester ข้างบนสอนให้เรา<em>สร้าง</em>ผลทดสอบ — ทักษะคู่กันที่สำคัญไม่แพ้กันคือการ<em>อ่าน</em>ผลทดสอบของคนอื่นให้ออก โดยเฉพาะระบบกริด/ถัวเฉลี่ยที่แชร์กันตามโซเชียล ตัวเลขสวยๆ ผ่าน 5 ข้อนี้ก่อนค่อยเชื่อ:</p>
+<ol>
+<li><strong>Sanity check ขนาด position เทียบทุน</strong> — คำนวณเองเสมอว่าราคาขยับ 1 หน่วยแล้วพอร์ตขยับกี่ % ตัวอย่างที่เจอบ่อย: น้ำมัน WTI 0.3 lot (300 barrels) บนทุน $2,000 → ราคาขยับ $1 = ±$300 = <strong>15% ของพอร์ต</strong> ถ้าระบบเคลม Max DD −16% แปลว่าระบบแทบไม่เคยถือไม้สวนเกิน $1 เลยตลอดหลายปี — เป็นไปได้แต่ต้องการหลักฐานระดับเดียวกับความมหัศจรรย์ของเคลม</li>
+<li><strong>Profit Factor สูงผิดปกติ + Sharpe ธรรมดา = ลายเซ็นของระบบ basket/close</strong> — ระบบที่ realize กำไรเล็กบ่อยครั้งแต่ซ่อนขาดทุนไว้ใน floating drawdown จะมี PF สูงเวอร์โดยโครงสร้าง (PF นับเฉพาะเทรดที่ปิดแล้ว — ดู Basket TP ใน Part 2 §2.6.1) ให้น้ำหนักกับ Sharpe, Calmar และ Max DD มากกว่า PF เสมอสำหรับระบบตระกูลนี้</li>
+<li><strong>ตรวจหน่วยของ metric</strong> — เช่น "Expected Payoff 2.8 เท่า" เป็นการใช้หน่วยผิด (Expected Payoff มีหน่วยเป็นเงินต่อเทรด ไม่ใช่เท่า) ใครใช้หน่วย metric ผิด มีแนวโน้มอ่านรายงาน backtest ของตัวเองไม่แตกด้วย</li>
+<li><strong>หาต้นทุนที่หายไป</strong> — swap/rollover สำหรับ CFD ที่ถือข้ามคืน (หนักมากใน commodity), contango/backwardation, spread ที่ถ่างช่วงข่าว, funding rate สำหรับ perpetual — ระบบถัวเฉลี่ยถือไม้นานโดยนิยาม ต้นทุนพวกนี้จึงไม่ใช่เศษเงิน</li>
+<li><strong>สงสัยคุณภาพข้อมูลช่วง event</strong> — เหตุการณ์สุดขั้วอย่างน้ำมันติดลบ เม.ย. 2020 มัก<em>ไม่มีอยู่จริง</em>ในข้อมูลย้อนหลังของ broker (โดน clip/filter ทิ้ง) — คำเคลมว่า "backtest ผ่านวิกฤต X มาแล้ว" จึงต้องถามต่อว่าข้อมูลช่วงนั้นสมบูรณ์แค่ไหน</li>
+</ol>
+<p class="caption">หลักคิดรวบยอด: metric ทุกตัวมีเงื่อนไขเชิงโครงสร้างของระบบกำกับอยู่ — ตัวเลขเดียวกันจากระบบคนละโครงสร้างมีความหมายคนละอย่าง อ่านตัวเลขโดยไม่รู้โครงสร้าง = อ่านไม่ออก</p>
+</div>
+
 <h2 id="s9-5">9.5 Main Entry Point + Config</h2>
 
 <div class="fm"># config/config.yaml
 
 grid:
   symbol: "BTCUSDT"
-  grid_capital: 20000
-  kelly_fraction: 0.19   # f_safe = 25% × f* ≈ 19% (ตาม Part 5 ตัวอย่าง f*=0.755)
+  net_worth: 100000      # ใช้ baseline เดียวกับตัวอย่างทั้งเล่ม (Part 1–8) เพื่อให้เทียบตัวเลขกันได้
+  kelly_fraction: 0.19   # f_safe = 25% × f* ≈ 19% (ตาม Part 5 ตัวอย่าง f*=0.754) → grid_capital ≈ $19,000
+  candle_interval: "1d" # เรือนวัด — ทุก indicator ด้านล่างคำนวณจากแท่งนี้ (Part 3 §3.0)
   donchian_period: 30
   atr_period: 14
   step_factor: 0.5       # Step = step_factor × ATR
@@ -379,14 +433,15 @@ risk:
 regime:
   hurst_on: 0.50         # Grid ON ถ้า H < 0.50
   hurst_caution: 0.58    # CAUTION ถ้า H 0.50–0.58
-  adx_caution: 25
-  adx_off: 35
+  adx_caution: 40        # BTC-calibrated (Part 4): ADX 40–50 → CAUTION
+  adx_off: 50            # ADX > 50 → GRID OFF
   bb_width_caution: 0.04
   bb_width_off: 0.08
 
 execution:
   style: "composite"     # mean_reversion / trend_adaptive / volume_adaptive / composite
-  recheck_hours: 1       # ตรวจ regime ทุก 1 ชั่วโมง
+  recheck_hours: 1       # ตรวจ regime ทุก 1 ชั่วโมง — เรือนตัดสินใจ (Part 3 §3.0)
+  tp_policy: "one_step"  # ค่าเดียวที่ GridFramework รองรับตอนนี้ (§9.2) — ทางเลือกอื่นดู Part 2 §2.6.1
 
 snowball:
   enabled: true
@@ -396,13 +451,11 @@ snowball:
 # === ไฟล์แยก: main.py ===
 
 import yaml
+import json
 from core.grid_framework import GridFramework
-from core.state_machine import GridStateMachine
-from core.dd_monitor import DrawdownMonitor
 from core.execution_styles import UnifiedGridController
 from exchange.bybit_client import BybitClient
 from exchange.data_feed import DataFeed
-from monitoring.watchdog import GridWatchdog
 import time, logging
 
 logging.basicConfig(level=logging.INFO,
@@ -424,56 +477,72 @@ def main():
 
     # Get market data
     prices, highs, lows, volumes = data.get_ohlcv(days=60)
-    current_price = prices[-1]
 
     # Build framework
     framework = GridFramework.from_market_data(
         symbol=cfg["grid"]["symbol"],
         prices=prices, highs=highs, lows=lows,
-        grid_capital=cfg["grid"]["grid_capital"],
+        net_worth=cfg["grid"]["net_worth"],
         kelly_fraction=cfg["grid"].get("kelly_fraction", 0.19)
     )
     logging.info(f"Grid: zone=[{framework.zone_low:.0f},{framework.zone_high:.0f}] "
                  f"step={framework.step:.0f} Q={framework.base_q:.4f} N={framework.n_levels}")
 
-    # Controller
+    # Controller — run_cycle() ทำครบในเรียกเดียว: DD Halt (Part 5) → regime
+    # (Part 4) → execution style (Part 7B) → order placement. ไม่ต้องมี
+    # watchdog แยกมาห่อทับอีกชั้น เพราะ watchdog ที่แยกออกไปมักลืมเช็ค DD Halt
+    # และ execution style ครบทั้งคู่ — รวมไว้ในฟังก์ชันเดียวปลอดภัยกว่า
     controller = UnifiedGridController(framework, style=cfg["execution"]["style"])
-    watchdog = GridWatchdog(controller, check_interval_hours=cfg["execution"]["recheck_hours"])
 
     # Main loop
-    portfolio_history = [cfg["grid"]["grid_capital"]]
+    portfolio_history = [framework.grid_capital]
 
     while True:
+        # ต้อง refresh ข้อมูลตลาดทุกรอบ ไม่ใช้ prices ก้อนเดิมจากตอน start
+        prices, highs, lows, volumes = data.get_ohlcv(days=60)
         market_data = data.get_indicators(prices, highs, lows, volumes)
+        market_data["current_price"] = prices[-1]
         market_data["portfolio_history"] = portfolio_history
 
-        result = watchdog.run_checks(market_data)
-        logging.info(f"State: {result['state']} | Actions: {result['actions']}")
+        result = controller.run_cycle(market_data)
+        logging.info(f"Action: {result['action']}")
 
-        for action in result["actions"]:
-            if action["action"] == "CANCEL_ALL_ORDERS":
-                client.cancel_all_orders(cfg["grid"]["symbol"])
-                logging.warning(f"Cancelled all orders: {action['reason']}")
+        if result["action"] == "HALT":
+            client.cancel_all_orders(cfg["grid"]["symbol"])
+            logging.warning(f"HALTED: {result['reason']}")
 
-            elif action["action"] == "PLACE_ORDERS":
-                for order in action.get("orders", []):
-                    resp = client.place_order(
-                        symbol=cfg["grid"]["symbol"],
-                        side=order["side"],
-                        qty=order["qty"],
-                        price=order["price"]
-                    )
-                    logging.info(f"Order placed: {resp}")
+        elif result["action"] == "PAUSE":
+            logging.info(f"Paused (state={result['state']}) — ไม่เปิด order ใหม่รอบนี้")
+
+        elif result["action"] == "EXECUTE":
+            for order in result["orders"]:
+                resp = client.place_order(
+                    symbol=cfg["grid"]["symbol"],
+                    side=order.side,
+                    qty=order.qty,
+                    price=order.price
+                )
+                logging.info(f"Order placed: {resp}")
 
         # Update portfolio value
         balance = client.get_wallet_balance("USDT")
         portfolio_history.append(balance)
 
+        # เขียน state ล่าสุดให้ dashboard (§9.8) อ่านได้
+        with open("state.json", "w") as f:
+            json.dump({"action": result["action"], "portfolio_value": balance,
+                       "n_levels": framework.n_levels}, f)
+
         # ⚠️ Production Note: sleep(3600) จะพลาด order fills ระหว่างรอ
         # ใช้ WebSocket private channel (wss://stream.bybit.com/v5/private) แทน polling
         # ดู Bybit API docs: subscribe to "order" channel เพื่อรับ fill events real-time
         # ⚠️ Production: implement exponential back-off reconnect — connection drop = missed fills
-        # while True: try: ws.run_forever() except: time.sleep(min(2**attempt, 60)); attempt += 1
+        # while True:
+        #     try:
+        #         ws.run_forever()
+        #     except ConnectionError:
+        #         time.sleep(min(2 ** attempt, 60))   # รอเพิ่มขึ้นเรื่อยๆ สูงสุด 60s
+        #         attempt += 1
         time.sleep(cfg["execution"]["recheck_hours"] * 3600)
 
 if __name__ == "__main__":
@@ -485,7 +554,7 @@ if __name__ == "__main__":
 <tr><th>Phase</th><th>ระยะเวลา</th><th>ทำอะไร</th><th>Success Criteria</th></tr>
 <tr><td>Phase 0: Backtest</td><td>1 สัปดาห์</td><td>Run backtester บน 1–2 ปีย้อนหลัง</td><td>Sharpe &gt; 1.5, Max DD &lt; 15%</td></tr>
 <tr><td>Phase 1: Paper Trade</td><td>2–4 สัปดาห์</td><td>Run bot บน Testnet (สภาพแวดล้อมทดสอบของ Bybit — API จริง แต่เงินจำลอง ตั้ง testnet=True)</td><td>ไม่มี bug, state machine ทำงาน</td></tr>
-<tr><td>Phase 2: Small Live</td><td>1 เดือน</td><td>$1,000 จริง บน Bybit</td><td>P&L ≈ backtest, DD ≤ −8%</td></tr>
+<tr><td>Phase 2: Small Live</td><td>1 เดือน</td><td>$1,000 จริง บน Bybit</td><td>P&L ≈ backtest, DD ≥ −8% (ไม่ชน HALT)</td></tr>
 <tr><td>Phase 3: Scale Up</td><td>ต่อเนื่อง</td><td>เพิ่ม capital หลังผ่าน Phase 2</td><td>Compound + DCA Stack</td></tr>
 </table>
 
@@ -498,11 +567,20 @@ if __name__ == "__main__":
 <li>Minimum Order Size: BTC บน Bybit ขั้นต่ำ 0.001 BTC → Q ต้องมากกว่านี้</li>
 <li>Price Precision: BTC round ถึง $0.01 → step ต้องเป็น multiple ของ $0.01</li>
 <li>Network Redundancy: รัน bot บน VPS (Virtual Private Server — เซิร์ฟเวอร์เช่าที่ online ตลอด 24/7) พร้อม reconnect logic ไม่ควรรัน bot บน local machine ที่อาจปิดหรือ internet หลุด</li>
-<li>Secret Management: API key ใน environment variable ไม่ใช่ hardcode</li>
+<li>Secret Management: API key เก็บใน environment variable (ค่าที่ตั้งไว้นอกโค้ด อ่านตอนรันโปรแกรม) ไม่ใช่ hardcode (พิมพ์ค่าจริงติดอยู่ในซอร์สโค้ดตรงๆ) เพราะไฟล์โค้ดอาจหลุดเข้า git repo หรือถูกแชร์โดยไม่ตั้งใจ</li>
 </ul>
 </div>
 
 <h2 id="s9-8">9.8 Monitoring Dashboard</h2>
+
+<div class="bx bc">
+<div class="bt">Flask คืออะไร</div>
+Flask เป็น web framework เล็กๆ ของ Python — ใช้เปิดหน้าเว็บง่ายๆ ที่รับ request แล้วตอบกลับ
+เป็น HTML หรือ JSON ในที่นี้ใช้ทำ dashboard ดู status ของ bot ผ่านเบราว์เซอร์: โค้ดด้านล่างอ่าน
+<code>state.json</code> (ไฟล์ที่ main loop ใน §9.5 เขียนสถานะล่าสุดไว้ทุกรอบ หลังจากอัปเดต
+portfolio value) แล้วส่งกลับเป็น JSON ให้หน้าเว็บแสดงผล ส่วน HTML/JS ที่ฝังไว้ใน string เป็นแค่หน้าแสดงผล
+ง่ายๆ ฝั่ง browser ไม่เกี่ยวกับ logic การเทรดใดๆ
+</div>
 
 <div class="fm"># monitoring/dashboard.py (Flask simple dashboard)
 
@@ -512,19 +590,19 @@ import json
 app = Flask(__name__)
 
 HTML = """
-<!DOCTYPE html><html><head><title>Grid Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
-<body style="font-family:monospace;padding:20px;background:#0f172a;color:#e2e8f0">
-<h2>Grid Bot Dashboard</h2>
-<div id="status">Loading...</div>
-<canvas id="chart" width="800" height="300"></canvas>
-<script>
-fetch('/api/status').then(r=>r.json()).then(data=>{
+&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Grid Dashboard&lt;/title&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/chart.js"&gt;&lt;/script&gt;&lt;/head&gt;
+&lt;body style="font-family:monospace;padding:20px;background:#0f172a;color:#e2e8f0"&gt;
+&lt;h2&gt;Grid Bot Dashboard&lt;/h2&gt;
+&lt;div id="status"&gt;Loading...&lt;/div&gt;
+&lt;canvas id="chart" width="800" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+fetch('/api/status').then(r=&gt;r.json()).then(data=&gt;{
   document.getElementById('status').innerHTML =
-    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    '&lt;pre&gt;' + JSON.stringify(data, null, 2) + '&lt;/pre&gt;';
 });
-</script>
-</body></html>
+&lt;/script&gt;
+&lt;/body&gt;&lt;/html&gt;
 """
 
 @app.route("/")
@@ -548,6 +626,10 @@ if __name__ == "__main__":
 <div class="et">สรุปเนื้อหาทั้งเล่ม — Cheat Sheet</div>
 <div class="fm">GRID TRADING MASTERY — Quick Reference
 
+TIMEFRAME: แท่งรายวัน (1D) เป็น default ทุก indicator ด้านล่าง (Part 3 §3.0)
+           เปลี่ยนแท่งต้อง derive สูตรใหม่เอง — ห้ามเอาตัวเลขจาก daily ไปใช้ตรงๆ
+TP:        1-step (default, ตายตัวทุกสูตรในเล่มนี้) | ทางเลือกอื่นดู Part 2 §2.6.1
+
 ZONE:  Donchian(30) ± 5% buffer | min_width ≥ 6×ATR
 STEP:  max(0.5×ATR(14), 3×fee_per_cycle) → round to $100
 Q:     grid_capital / (N × avg_price) → ตรวจ 5% max notional
@@ -558,11 +640,11 @@ KELLY: f* = (p×b − q)/b | f_safe = 0.25 × f*
 
 REGIME (Part 4, BTC-calibrated):
   H < 0.50 + ADX < 40 + BB_width < 4%   → GRID ON  (full deploy)
-  H 0.50–0.58 + ADX 40–50 + ...         → CAUTION  (50% size)
+  H 0.50–0.58 + ADX 40–50 + BB_width 4–8% → CAUTION  (50% size)
   H > 0.58 + ADX > 50 + BB_width > 8%   → GRID OFF (pause)
 
 RISK (Part 5):
-  DD ≥ −8%  → HALT (cancel all, wait for recovery)
+  DD ≤ −8%  → HALT (cancel all, wait for recovery)
   DD ≥ −4%  + H < 0.55 + 24h cooloff → RESUME
 
 SNOWBALL (Part 6B):
@@ -578,12 +660,12 @@ COMPOSITE SCORE (Part 3B):
 <div class="et">แบบฝึกหัด Part 9</div>
 
 <details>
-<summary>ข้อ 1: อ่าน config.yaml แล้วอธิบายว่า kelly_fraction=0.19 หมายความว่าอย่างไร และ grid_capital=$20,000 มาจากการคำนวณอย่างไร?</summary>
+<summary>ข้อ 1: อ่าน config.yaml แล้วอธิบายว่า kelly_fraction=0.19 หมายความว่าอย่างไร และ net_worth=$100,000 ใน config ทำให้ GridFramework.from_market_data() คำนวณ grid_capital ได้เท่าไหร่?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>kelly_fraction=0.19 คือ f_safe = Fractional Kelly = 25% × f* ≈ 19% (จาก Part 5: f*=75.5%, 25%×75.5%≈18.9%)</p>
+<p>kelly_fraction=0.19 คือ f_safe = Fractional Kelly = 25% × f* ≈ 19% (จาก Part 5: f*=75.4%, 25%×75.4%≈18.9%)</p>
 <p>หมายความว่า: deploy เพียง 19% ของ net worth ทั้งหมดเป็น grid capital เพื่อ buffer uncertainty ใน win rate estimate</p>
-<p>ถ้า net worth = $105,000 → grid_capital = $105,000 × 0.19 ≈ $20,000 (ตัวเลขในตัวอย่าง)</p>
+<p>net_worth = $100,000 → grid_capital = net_worth × kelly_fraction = $100,000 × 0.19 = <strong>$19,000</strong> (§9.2 คำนวณให้อัตโนมัติ ไม่ต้องคูณเองก่อนใส่ config)</p>
 </div>
 </details>
 

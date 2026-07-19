@@ -43,65 +43,81 @@
 <text x="385" y="398" text-anchor="middle" font-size="10" fill="#64748b">เวลา (Time)</text>
 
 <!--
-  Zigzag price path:
-  Start at $95k (y=283) at x=110, then rise to $105k (y=150) at x=190,
-  drop to $90k (y=350) at x=290, rise to $100k (y=217) at x=380,
-  drop to $95k (y=283) at x=450, rise to $110k (y=83) at x=550,
-  drop to $100k (y=217) at x=640.
+  Zigzag price path — every leg is exactly ONE step ($5k). No leg skips a level.
+  P1 BUY $95k (100,283) -> P2 SELL $100k (180,217): closes P1, +$5k
+  P3 BUY $95k (260,283) -> P4 BUY $90k (340,350): price drops 2 steps in a row,
+    so it opens TWO separate buys (P3 then P4) — it does NOT jump straight to $90k
+    with only one order. This is the fix: multi-level moves open one order per level.
+  P4's buy is closed first (its target is one step up, $95k) at P5 (420,283): +$5k
+  P3's buy is closed next (its target is $100k) at P6 (500,217): +$5k
+  P7 BUY $95k (580,283) -> P8 SELL $100k (660,217): closes P7, +$5k
 -->
 <polyline
-  points="110,283 190,150 290,350 380,217 450,283 550,83 640,217"
+  points="100,283 180,217 260,283 340,350 420,283 500,217 580,283 660,217"
   fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
 
+<!-- BUY point 1: (100, 283) = $95k -->
+<circle cx="100" cy="283" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
+<text x="100" y="297" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
+
+<!-- SELL point 1: (180, 217) = $100k -->
+<circle cx="180" cy="217" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+<text x="180" y="208" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
+
+<!-- BUY point 2: (260, 283) = $95k -->
+<circle cx="260" cy="283" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
+<text x="260" y="297" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
+
+<!-- BUY point 3: (340, 350) = $90k — second buy in a row, price kept falling -->
+<circle cx="340" cy="350" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
+<text x="340" y="364" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
+
+<!-- SELL point 2: (420, 283) = $95k — closes the $90k buy -->
+<circle cx="420" cy="283" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+<text x="420" y="274" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
+
+<!-- SELL point 3: (500, 217) = $100k — closes the $95k buy -->
+<circle cx="500" cy="217" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+<text x="500" y="208" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
+
+<!-- BUY point 4: (580, 283) = $95k -->
+<circle cx="580" cy="283" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
+<text x="580" y="297" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
+
+<!-- SELL point 4: (660, 217) = $100k -->
+<circle cx="660" cy="217" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+<text x="660" y="208" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
+
 <!--
-  BUY circles (green, r=7) at local lows:
-  x=110,y=283 ($95k), x=290,y=350 ($90k), x=450,y=283 ($95k)
-  SELL circles (red, r=7) at local highs:
-  x=190,y=150 ($105k), x=380,y=217 ($100k) [relative sell], x=550,y=83 ($110k)
+  Profit arrows (amber dashed curved paths) — every arrow now spans exactly ONE step ($5k),
+  connecting each BUY to the specific SELL that closes it. Arcs B and C nest (B spans
+  over C) instead of crossing, showing the $95k-buy and $90k-buy are two independent,
+  overlapping positions — each closed by its own one-step target, not skipped over.
 -->
 
-<!-- BUY point 1: (110, 283) = $95k -->
-<circle cx="110" cy="283" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
-<text x="110" y="297" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
-
-<!-- SELL point 1: (190, 150) = $105k -->
-<circle cx="190" cy="150" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
-<text x="190" y="141" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
-
-<!-- BUY point 2: (290, 350) = $90k -->
-<circle cx="290" cy="350" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
-<text x="290" y="364" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
-
-<!-- SELL point 2: (380, 217) = $100k -->
-<circle cx="380" cy="217" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
-<text x="380" y="208" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
-
-<!-- BUY point 3: (450, 283) = $95k -->
-<circle cx="450" cy="283" r="7" fill="#22c55e" stroke="#ffffff" stroke-width="1.5"/>
-<text x="450" y="297" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">BUY</text>
-
-<!-- SELL point 3: (550, 83) = $110k -->
-<circle cx="550" cy="83" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
-<text x="550" y="74" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">SELL</text>
-
-<!--
-  Profit arrows (amber dashed curved paths):
-  Arrow 1: BUY1(110,283) -> SELL1(190,150), step=$10k => "+$10k"
-  Arrow 2: BUY2(290,350) -> SELL2(380,217), step=$10k => "+$10k"
-  Use a quadratic bezier curving to the left to avoid overlapping the price line.
--->
-
-<!-- Profit arrow 1: BUY1 -> SELL1 -->
-<path d="M 110,276 Q 70,210 190,157"
+<!-- Arrow A: P1(100,283) -> P2(180,217), +$5k -->
+<path d="M 100,276 Q 140,240 180,224"
   fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3"
   marker-end="url(#arrowAmber)"/>
-<text x="72" y="215" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$10k</text>
+<text x="140" y="238" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$5k</text>
 
-<!-- Profit arrow 2: BUY3 -> SELL3 -->
-<path d="M 450,276 Q 410,175 550,90"
+<!-- Arrow B (outer): P3(260,283) -> P6(500,217), +$5k — the $95k buy's own 1-step target -->
+<path d="M 260,276 Q 380,120 500,224"
   fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3"
   marker-end="url(#arrowAmber)"/>
-<text x="412" y="172" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$15k</text>
+<text x="380" y="130" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$5k</text>
+
+<!-- Arrow C (inner): P4(340,350) -> P5(420,283), +$5k — the $90k buy's own 1-step target -->
+<path d="M 340,343 Q 380,308 420,291"
+  fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3"
+  marker-end="url(#arrowAmber)"/>
+<text x="380" y="322" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$5k</text>
+
+<!-- Arrow D: P7(580,283) -> P8(660,217), +$5k -->
+<path d="M 580,276 Q 620,240 660,224"
+  fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3"
+  marker-end="url(#arrowAmber)"/>
+<text x="620" y="238" text-anchor="middle" font-size="9" fill="#b45309" font-weight="700">+$5k</text>
 
 <!-- Arrow marker definition -->
 <defs>
@@ -139,6 +155,6 @@
 <text x="722" y="199" text-anchor="start" font-size="9" fill="#475569">=$5k</text>
 
 <!-- Caption -->
-<text x="380" y="430" text-anchor="middle" font-size="10" fill="#94a3b8">แต่ละรอบ: ซื้อที่ level ล่าง -&gt; ขายที่ level บน = กำไร 1 step</text>
+<text x="380" y="430" text-anchor="middle" font-size="10" fill="#94a3b8">แต่ละคู่ level ปิดกำไร 1 step อิสระ — ข้าม 2 levels รวดเดียว = เปิด BUY 2 ครั้งแยกกัน ไม่ใช่กำไรก้อนเดียว</text>
 
 </svg>

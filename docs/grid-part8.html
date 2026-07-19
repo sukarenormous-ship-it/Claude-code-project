@@ -64,6 +64,8 @@ Cross-Exchange Arbitrage Grid · Laddered CSP Grid<br>
 แต่ละ strategy ใช้ core grid mechanics แต่ context ต่างกัน</div>
 </div>
 
+<p>เหมือนที่ Part 7B แยก Framework (grid math คงที่) ออกจาก Execution Style (ปรับตาม regime) — 5 กลยุทธ์นี้คือตัวอย่างว่า framework เดิม (zone/step/Q/Close System) ถูกนำไป apply ในบริบทที่ต่างจาก standard grid อย่างไร</p>
+
 <div class="key-idea">
 <div class="ki-label">แก่นของ Part นี้</div>
 <div class="ki-text">5 strategies นี้ไม่ใช่ "แบบอื่น" ของ grid — ทั้งหมดใช้ core mechanics เดิม (zone, step, Q, Close System) แต่ apply ใน context พิเศษ เพื่อ capture โอกาสที่ standard grid ทำไม่ได้</div>
@@ -89,7 +91,7 @@ Cross-Exchange Arbitrage Grid · Laddered CSP Grid<br>
 </script>
 <div class="strategy-card">
 <div class="sc-num">Strategy 1</div>
-<h3>Rebalancing Grid — ทำกำไรจาก Portfolio Drift</h3>
+<h2 id="s8-1">8.1 Rebalancing Grid — ทำกำไรจาก Portfolio Drift</h2>
 
 <p>ใช้ grid mechanics เพื่อ rebalance portfolio โดยอัตโนมัติ — แทนที่จะ rebalance ทุกเดือนแบบ fixed, grid ทำ continuous rebalancing ตาม price movement:</p>
 
@@ -129,22 +131,29 @@ def rebalancing_grid(total_value, target_btc_pct, btc_price, step_pct=0.02):
             levels.append({"type": "SELL", "price": level_price,
                            "qty": target_btc_qty * i * 0.01})
     return levels</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ ความเสี่ยง</div>
+<p>Whipsaw cost: ถ้าราคาแกว่งกลับไปกลับมารอบ level เดียวกันบ่อยๆ จะเสีย fee ซ้ำๆ โดยไม่ได้ประโยชน์จาก rebalancing จริง (คล้าย whipsaw ใน trend-following ทั่วไป)</p>
+<p>Underperform buy-and-hold ใน trend แรง: ถ้า BTC ขึ้นต่อเนื่องยาวๆ กลยุทธ์นี้ขาย BTC ออกเรื่อยๆ ตาม rebalance ทำให้ได้ upside น้อยกว่าแค่ถือเฉยๆ — นี่คือ trade-off ปกติของการ rebalance เพื่อคุม risk ไม่ใช่ bug</p>
+</div>
 </div>
 
 <div class="strategy-card">
 <div class="sc-num">Strategy 2</div>
-<h3>Stablecoin Grid — ทำกำไรใน Bear Market</h3>
+<h2 id="s8-2">8.2 Stablecoin Grid — ทำกำไรใน Bear Market</h2>
 
 <p>เมื่อ BTC ขาลงและ Hurst สูง (trending down) — grid BTC หยุด แต่ยังทำ Stablecoin Grid ได้ (ไม่ต้องถือ BTC):</p>
 
 <div class="fm">Stablecoin Grid Options:
 
-1. USDT/USDC Grid: ซื้อ USDT ถูก ขาย USDT แพง (มี depeg event)
+1. USDT/USDC Grid: ซื้อ USDT ตอนราคาต่ำกว่า USDC ขายตอนราคาสูงกว่า USDC (ช่วงเกิด depeg event)
    Zone: $0.995–$1.005 · Step: $0.0005
    กำไรต่อรอบ: Q × $0.0005 − fee (ต่ำมาก แต่ปลอดภัย)
 
 2. Stablecoin Yield + Grid:
-   USDT ใน Standby Zone (Part 1A) → ฝากใน lending protocol (Aave/Compound)
+   USDT ใน Standby Zone (Part 1A) → ฝากใน lending protocol (Aave/Compound —
+   ดู "Counterparty Risk" box ใน Part 1A §1A.3 เรื่อง smart contract risk/liquidity risk)
    ได้ yield 4–8% APY บน idle capital
    + เมื่อ BTC กลับมา → นำ USDT ออก deploy grid ใหม่
 
@@ -161,14 +170,20 @@ def stablecoin_grid_yield(standby_capital, lending_apy=0.05, grid_days=90):
     return total_yield
 
 # ตัวอย่าง: Standby $6,000 · APY 5% · 90 วัน
-# Yield = $6,000 × ((1.000133)^90 − 1) = $6,000 × 1.2% = $73.5</div>
+# Yield = $6,000 × ((1.000133)^90 − 1) = $6,000 × 1.21% ≈ $72.6</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ ความเสี่ยง</div>
+<p>Depeg risk ไม่ได้มีแค่โอกาสทำกำไร — ถ้า stablecoin ที่ถืออยู่ depeg ถาวร (ไม่กลับ $1) เงินต้นเสียหายจริง ไม่ใช่แค่โอกาส ไม่ใช่แค่ upside</p>
+<p>Option 2 (lending yield) มี counterparty/smart-contract risk เหมือนที่เตือนไว้ใน Part 1A §1A.3 — yield ไม่ใช่ risk-free</p>
+</div>
 </div>
 
 <div class="strategy-card">
 <div class="sc-num">Strategy 3</div>
-<h3>Flash Crash Grid — Capture Extreme Dips</h3>
+<h2 id="s8-3">8.3 Flash Crash Grid — Capture Extreme Dips</h2>
 
-<p>Flash Crash Grid วางล่วงหน้าในช่วง "ต่ำผิดปกติ" ที่ตลาดน่าจะ recover ได้ภายใน 24–72 ชั่วโมง:</p>
+<p>Flash Crash Grid วาง<strong>เกณฑ์และแผนไว้ล่วงหน้า</strong> เพื่อจับช่วง "ต่ำผิดปกติ" ที่ตลาดน่าจะ recover ได้ภายใน 24–72 ชั่วโมง — แต่ order จริงจะถูกวาง<strong>ทันทีหลัง crash เกิดขึ้น</strong> ไม่ใช่วางรอไว้ก่อน (รายละเอียดดู Setup ด้านล่าง):</p>
 
 <div class="fm">Flash Crash Grid:
 
@@ -198,9 +213,9 @@ class FlashCrashGrid:
         """
         ตรวจว่านี่คือ flash crash หรือ trend reversal
         """
-        is_large_drop   = drop_pct > 0.15         # ลง > 15%
-        is_fast          = time_elapsed_hours < 2  # เร็ว < 2 ชั่วโมง
-        is_vol_spike     = volume_ratio > 3.0      # volume 3× ปกติ
+        is_large_drop   = drop_pct > 0.15         # ลง > 15% (ตรงกับเกณฑ์ด้านบน)
+        is_fast          = time_elapsed_hours < 1  # เร็ว < 1 ชั่วโมง
+        is_vol_spike     = volume_ratio > 5.0      # volume > 5× ปกติ
         return is_large_drop and is_fast and is_vol_spike
 
 Risk: Flash Crash กลายเป็น Trend Reversal → Close System รักษา inventory
@@ -210,7 +225,7 @@ TP: ปิด grid เมื่อ recover 50% ของ crash depth หรื�
 
 <div class="strategy-card">
 <div class="sc-num">Strategy 4</div>
-<h3>Cross-Exchange Arbitrage Grid</h3>
+<h2 id="s8-4">8.4 Cross-Exchange Arbitrage Grid</h2>
 
 <p>เมื่อ BTC price บน 2 exchanges ต่างกัน — ใช้ grid ทั้งสองฝั่งพร้อมกัน capture spread:</p>
 
@@ -242,7 +257,7 @@ def cross_exchange_spread_grid(price_a, price_b, q, fee_a, fee_b):
     }
 
 ความท้าทาย:
-  1. Transfer BTC ระหว่าง exchange ใช้เวลา (10–30 นาที) → spread อาจหายไปแล้ว
+  1. Transfer BTC ระหว่าง exchange ใช้เวลา (10–60 นาที) → spread อาจหายไปแล้ว
   2. ต้องมี capital บน ทั้งสอง exchange ตลอด
   3. ค่า withdrawal fee + network fee กินกำไร
   4. Slippage เมื่อ Q ใหญ่
@@ -253,9 +268,9 @@ def cross_exchange_spread_grid(price_a, price_b, q, fee_a, fee_b):
 
 <div class="strategy-card">
 <div class="sc-num">Strategy 5</div>
-<h3>Laddered CSP Grid — ขาย Put เป็น Grid</h3>
+<h2 id="s8-5">8.5 Laddered CSP Grid — ขาย Put เป็น Grid</h2>
 
-<p>แทนที่จะวาง BUY limit order ทั้งหมดพร้อมกัน — ขาย Put options เป็น "ladder" เพื่อรับ premium + ซื้อ BTC ในราคาที่ต้องการ (จาก Part 7):</p>
+<p>กลไก CSP พื้นฐาน (ขาย put รับ premium แทนวาง BUY limit) สอนเต็มแล้วใน <a href="grid-part7.html#s7-3">Part 7 §7.3</a> — กลยุทธ์นี้ต่อยอดด้วยการขายเป็น "ladder" ข้าม expiry หลายช่วงพร้อมกัน แทนที่จะใช้ expiry เดียวทุก level:</p>
 
 <div class="fm">Laddered CSP Grid:
 
@@ -272,20 +287,18 @@ Total premium = $3,100 (รับทันที)
 ถ้าไม่มี level ถูก assign ตลอด 8 สัปดาห์:
   Income = $3,100 premium = 10.3% บน $30,000 capital ใน 8 สัปดาห์
 
-ถ้า BTC ลงมา $95k (ถึง Level 2):
-  Level 1: expire worthless (+$600 เก็บ)
-  Level 2: assign → ซื้อ BTC $95k (กำหนดไว้ล่วงหน้า)
-  Level 3–5: ยังคง pending
+ถ้า BTC ลงมา $94k ตอน Level 1–2 หมดอายุ (ทั้งคู่ expiry 2W เท่ากัน):
+  Level 1 (strike $98k): $94k &lt; $98k → ITM (In-The-Money — ราคาตลาดต่ำกว่า strike ของ PUT ที่ขายไว้) → assign → ซื้อ BTC ที่ $98k (ต้นทุนสุทธิหลังหัก premium = $97,400)
+  Level 2 (strike $95k): $94k &lt; $95k → ITM → assign → ซื้อ BTC ที่ $95k (ต้นทุนสุทธิ = $94,550)
+  Level 3–5 (strike $92k/$88k/$84k, expiry 4W/8W ยังไม่ถึง): ยังคง pending
 
-ข้อดีเทียบ Limit Order Grid:
-  + รับ premium แม้ไม่มี fill
-  + Effective buy price ต่ำกว่า (strike − premium)
-  + Capital ไม่ lock ทั้งหมด (แค่ reserved สำหรับ worst-case)
+ข้อดีที่ต่างจาก CSP เดี่ยว (Part 7 §7.3):
+  + Expiry กระจาย (2W/4W/8W) → assignment ไม่มาพร้อมกันทั้งหมดในวันเดียว
+  + Strike ไกลออกไป + expiry ยาวขึ้น (Level 5) → premium ต่อสัญญาสูงกว่า
 
-ข้อจำกัด:
-  − ต้องการ Options liquidity (Deribit/OKX)
-  − Expiry management ซับซ้อน
-  − ถ้า BTC crash ลงเร็ว → ทุก level assign พร้อมกัน
+ข้อจำกัดเพิ่มจากการ ladder ข้าม expiry:
+  − ต้องบริหารหลาย expiry date พร้อมกัน (roll/ปิดแต่ละ level ไม่พร้อมกัน)
+  − ข้อจำกัดพื้นฐานของ CSP (liquidity, capital lock, downtrend assign ทุก level) ยังอยู่ — ดู Part 7 §7.3
 
 def laddered_csp_grid(grid_levels, btc_price, put_premiums):
     """
@@ -302,6 +315,8 @@ def laddered_csp_grid(grid_levels, btc_price, put_premiums):
         })
     return results</div>
 </div>
+
+<h2 id="s8-6">8.6 แบบฝึกหัด</h2>
 
 <div class="ex">
 <div class="et">แบบฝึกหัด Part 8 — Quick Review</div>
@@ -342,7 +357,7 @@ def laddered_csp_grid(grid_levels, btc_price, put_premiums):
 <p>ตัวอย่าง: BUY Limit Order $95k vs SELL PUT $95k (premium $450)</p>
 <p>Limit Order: ซื้อ BTC @ $95,000 (ถ้า fill)</p>
 <p>CSP: ถ้าถูก assign → ซื้อ BTC @ $95,000 แต่ได้ premium $450 ล่วงหน้า → effective cost = $95,000 − $450 = <strong>$94,550</strong></p>
-<p>ประหยัด $450 ต่อ 0.01 BTC ≈ 0.47% ต่ำกว่า — สำหรับ capital $10k ในระยะ 1 ปี = หลายพัน USD</p>
+<p>ประหยัด $450 ต่อ 1 BTC ≈ 0.47% ต่ำกว่า ($450/$95,000) — ถ้าทำซ้ำทุก 2 สัปดาห์ (ตาม expiry cycle นี้) จะได้ประมาณ 26 รอบ/ปี → 0.47%×26 ≈ 12.2%/ปี บน capital $10k ≈ <strong>$1,220/ปี</strong> (ตัวเลขนี้เป็น simple ไม่ compound และไม่รวมกรณีที่ไม่ถูก assign ซึ่งได้ premium ล้วนๆ แทน)</p>
 </div>
 </details>
 
@@ -353,14 +368,26 @@ def laddered_csp_grid(grid_levels, btc_price, put_premiums):
 <p><strong>ความแตกต่าง:</strong></p>
 <ul>
 <li>Standard Buy-Only Grid: ทำงาน <em>ตลอดเวลา</em> ในช่วง sideway ปกติ — วาง BUY orders หลายชั้นอย่างต่อเนื่อง</li>
-<li>Flash Crash Grid: ทำงาน <em>เฉพาะช่วง flash crash</em> (ราคาหลุด zone ปกติลงไปอย่างรวดเร็ว > 10% ใน &lt;1 ชั่วโมง) — ไม่มี order วางไว้ล่วงหน้าในช่วงปกติ</li>
+<li>Flash Crash Grid: ทำงาน <em>เฉพาะช่วง flash crash</em> (ราคาหลุด zone ปกติลงไปอย่างรวดเร็ว > 15% ใน &lt;1 ชั่วโมง พร้อม volume spike > 5× — ดูเกณฑ์เต็มด้านบน) — ไม่มี order วางไว้ล่วงหน้าในช่วงปกติ</li>
 </ul>
 <p><strong>ทำไมต้องแยก capital (Flash Crash Reserve):</strong></p>
 <ul>
 <li>Standard grid ใช้ capital หมดในช่วงปกติ → ไม่มีเงินเหลือซื้อตอน flash crash</li>
 <li>Flash Crash Reserve เก็บ capital แยกไว้ "นอก grid ปกติ" — deploy เฉพาะเมื่อเกิด crash เท่านั้น</li>
-<li>โอกาสซื้อ BTC ราคาต่ำมาก (&gt;10% below market) มีไม่บ่อย → reserve capital ต้อง idle รอ แต่ผลตอบแทนเมื่อ deploy สูงมาก</li>
+<li>โอกาสซื้อ BTC ราคาต่ำมาก (&gt;15% below market) มีไม่บ่อย → reserve capital ต้อง idle รอ แต่ผลตอบแทนเมื่อ deploy สูงมาก</li>
 </ul>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 5: Rebalancing Grid — Portfolio $20,000 (target 50% BTC ที่ BTC=$100k), step_pct=2% — ที่ level i=+2 (ราคาขึ้นเป็น $104k) ต้องขาย BTC เท่าไหร่ตามสูตร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>target_btc_value = $20,000 × 50% = $10,000</p>
+<p>target_btc_qty = $10,000 / $100,000 = 0.10 BTC</p>
+<p>level_price ที่ i=+2: $100,000 × (1 + 2×0.02) = $104,000 ✓ ตรงกับที่โจทย์ให้</p>
+<p>qty (SELL, i&gt;0): target_btc_qty × i × 0.01 = 0.10 × 2 × 0.01 = <strong>0.002 BTC</strong></p>
+<p>เมื่อ BTC ขึ้นถึง $104k → grid SELL 0.002 BTC อัตโนมัติ ดึง allocation กลับเข้าใกล้ 50/50</p>
 </div>
 </details>
 </div>

@@ -70,6 +70,8 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 การเลือก Style ตาม Market Condition</div>
 </div>
 
+<p>Part 7 รวม IV, funding rate, และ options เข้ากับ grid ในบริบทเฉพาะ — Part นี้ถอยกลับมามองภาพรวม: ทุกอย่างที่เพิ่งทำใน Part 7 ล้วนเป็นตัวอย่างของหลักการเดียวกัน คือแยก "grid math คงที่" ออกจาก "วิธี execute ที่ปรับได้"</p>
+
 <div class="key-idea">
 <div class="ki-label">แก่นของ Part นี้</div>
 <div class="ki-text">"Grid" ไม่ใช่ strategy เดียว — มันคือ <strong>framework</strong> ที่กำหนด zone, step, capital และ risk — Indicator เป็น "execution engine" ที่ตัดสินใจว่าจะใช้ grid framework นั้น <em>อย่างไร</em> ในแต่ละช่วงเวลา ทั้ง 4 styles ใช้ grid math เหมือนกัน แต่ execution logic ต่างกัน</div>
@@ -91,7 +93,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
       <div style="display:flex;flex-direction:column;gap:10px">
         <div style="background:rgba(255,255,255,.6);border-radius:8px;padding:8px 12px">
           <div style="font-size:11px;font-weight:700;color:#111827">[Z]  Zone [Low, High]</div>
-          <div style="font-size:10px;color:#475569">Donchian(20d) + Hurst filter</div>
+          <div style="font-size:10px;color:#475569">Donchian(30d) + Hurst filter</div>
         </div>
         <div style="background:rgba(255,255,255,.6);border-radius:8px;padding:8px 12px">
           <div style="font-size:11px;font-weight:700;color:#111827">[S]  Step Size</div>
@@ -145,11 +147,12 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
   </div>
   <!-- Result box -->
   <div style="margin-top:14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #16a34a;border-radius:10px;padding:14px 20px">
-    <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:6px">ผลลัพธ์ที่ได้</div>
+    <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:6px">ผลลัพธ์ที่ได้ (สมมติ/illustrative — ไม่ใช่ backtest จริง)</div>
     <div style="display:flex;gap:24px;font-size:10px">
       <div style="color:#374151"><span style="color:#94a3b8">Framework-only:</span> Sharpe 0.65 · DD −4.2%</div>
       <div style="color:#15803d;font-weight:600"><span style="color:#374151">+ ADX filter:</span> Sharpe 0.72 · DD −2.8% <span style="background:#dcfce7;padding:1px 6px;border-radius:10px">improved</span></div>
     </div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:4px">ตัวอย่าง Style 2 (Trend-Adaptive) เท่านั้น — Style 1/3/4 มี trade-off ต่างกัน ดู §7B.2–7B.5</div>
     <div style="font-size:10px;color:#64748b;margin-top:4px">P&L รวมใกล้เคียงกัน แต่ risk-adjusted return ดีขึ้น — Framework คือ alpha หลัก, Indicator ปรับ Sharpe</div>
   </div>
   <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">ซ้าย: Framework กำหนดโครงสร้าง (zone/step/capital/risk) · ขวา: 4 Execution Styles ใช้ framework เดียวกัน ได้ผลต่างกัน</p>
@@ -215,17 +218,23 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
     Style 2: ปรับ step + size ตาม trend strength
     H ต่ำ = step เล็ก Q เต็ม | H สูง = step ใหญ่ Q ลด
     """
+    def __init__(self, grid_framework):
+        self.grid = grid_framework
+
     def get_adaptive_step(self, base_step, hurst, adx):
-        # Step Pyramid (Part 2)
-        hurst_mult = 1 + max(0, (hurst - 0.45) / 0.15) * 0.5
-        adx_mult   = 1 + max(0, (adx - 20) / 30) * 0.3
+        # Hurst multiplier: สูตรเดียวกับ Step Pyramid ใน Part 2 §2.6 (ไม่รวม
+        # ถังเต็ม% — สัดส่วน capital ที่ deploy ไปแล้วเทียบกับงบสูงสุด ดู Part 2 §2.2 —
+        # ตรงนี้ เพราะ style นี้ไม่ track cumulative cost ต่อ level)
+        hurst_mult = 1 + min(1.0, max(0, (hurst - 0.50) / 0.08)) * 0.5
+        # ADX multiplier: threshold BTC-calibrated เดียวกับ get_adaptive_size_mult ด้านล่าง (40/50)
+        adx_mult = 1 + min(1.0, max(0, (adx - 40) / 10)) * 0.3
         return base_step * hurst_mult * adx_mult
 
     def get_adaptive_size_mult(self, hurst, adx):
-        # ลด Q เมื่อ trending มากขึ้น
-        if hurst > 0.60 or adx > 35:
+        # ลด Q เมื่อ trending มากขึ้น (threshold BTC-calibrated ตาม Part 4: ADX 40/50 ไม่ใช่ Forex 25/35)
+        if hurst > 0.58 or adx > 50:
             return 0.4
-        elif hurst > 0.55 or adx > 28:
+        elif hurst > 0.55 or adx > 40:
             return 0.7
         return 1.0
 
@@ -264,7 +273,8 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
     def __init__(self, grid_framework, volume_history=None):
         self.grid = grid_framework
         volume_history = volume_history or []
-        self.avg_volume = sum(volume_history[-20:]) / 20 if volume_history else 0
+        recent_vols = [vol for vol, _ in volume_history[-20:]]
+        self.avg_volume = sum(recent_vols) / len(recent_vols) if recent_vols else 0
         self.volume_by_hour = self._compute_hourly_profile(volume_history) if volume_history else {}
 
     def _compute_hourly_profile(self, volume_history):
@@ -292,7 +302,7 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
 # ช่วงเวลา High Volume สำหรับ BTC:
 # 13:00–15:00 UTC (Europe afternoon + US morning overlap)
 # 20:00–22:00 UTC (US afternoon peak)
-# หลีกเลี่ยง: 03:00–06:00 UTC (Asia night, US sleep)</div>
+# หลีกเลี่ยง: 03:00–06:00 UTC (US night/sleep — ตรงกับ Asia กลางวันแต่ volume รวมยังต่ำสุดของวัน)</div>
 
 <h2 id="s7b-5">7B.5 Style 4 — Composite Score Execution</h2>
 
@@ -305,18 +315,17 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
     """
     Style 4: Composite Score จาก Part 3B กำหนดทุกอย่าง
     """
+    def __init__(self, grid_framework):
+        self.grid = grid_framework
+
     def get_execution_params(self, indicators):
         score, sub_scores = composite_grid_score(**indicators)
 
-        # Deploy percentage
-        if score >= 75:
-            deploy_pct = 1.00
-        elif score >= 55:
-            deploy_pct = 0.60
-        elif score >= 35:
-            deploy_pct = 0.30
-        else:
-            deploy_pct = 0.00
+        # Deploy percentage — ใช้ tier เดียวกับ ACTION_TABLE ใน Part 3B §3B.6
+        # (resolve_composite_action คือ single source of truth ของ tier 75/55/35)
+        action_name, _ = resolve_composite_action(score)
+        deploy_pct = {"FULL_DEPLOY": 1.00, "PARTIAL_DEPLOY": 0.60,
+                      "MINIMAL_DEPLOY": 0.30, "WAIT": 0.00}[action_name]
 
         # Size multiplier (สูงกว่าก็ deploy per level มากขึ้น)
         size_mult = 0.5 + (score / 100) * 0.5  # 0.5× ถึง 1.0×
@@ -413,8 +422,37 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
         exec_params["sizes"] = [q * size_mult for q in exec_params["sizes"]]
 
         # Step 4: Place orders
-        orders = self.grid.create_orders(exec_params)
+        orders = self.grid.create_orders(exec_params, market_data["current_price"])
         return {"action": "EXECUTE", "orders": orders, "params": exec_params}</div>
+
+<h2 id="s7b-7b">7B.7b Running Example — Style 2 (Trend-Adaptive) หนึ่งรอบ</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: run_cycle() ผ่าน TrendAdaptiveExecution</div>
+<p><strong>Setup:</strong> base_step=$2,000, base_q=0.01 BTC, n_levels=5 · Market data: Hurst=0.54, ADX=42, DD=−3% (ไม่ชน HALT), state machine ประเมินแล้วได้ GRID_ON (regime size_mult=1.0)</p>
+
+<div class="fm">Step 1: DD Check → DD=−3% ไม่ถึง −8% → ผ่าน ไม่ HALT
+
+Step 2: Regime Check → state=GRID_ON (ไม่ใช่ GRID_OFF) → ผ่าน ไม่ PAUSE
+
+Step 3: Execution Style (Trend-Adaptive, §7B.3)
+  hurst_mult = 1 + min(1, max(0, (0.54−0.50)/0.08)) × 0.5 = 1 + 0.5×0.5 = 1.25
+  adx_mult   = 1 + min(1, max(0, (42−40)/10)) × 0.3 = 1 + 0.2×0.3 = 1.06
+  step = $2,000 × 1.25 × 1.06 = $2,650
+
+  size_mult (get_adaptive_size_mult): Hurst=0.54 ไม่>0.58, ADX=42 ไม่>50
+    → เช็คเงื่อนไขถัดไป: Hurst=0.54 ไม่>0.55 แต่ ADX=42>40 → เข้าเงื่อนไข → 0.7
+  sizes = [0.01×0.7] × 5 = [0.007, 0.007, 0.007, 0.007, 0.007] BTC
+
+  คูณด้วย regime size_mult (จาก state machine, Step 2) = 1.0 → sizes ไม่เปลี่ยน
+
+Step 4: Place Orders
+  step ใหญ่ขึ้นจาก $2,000 → $2,650 (ตาม trend strength ที่เพิ่มขึ้น)
+  Q ต่อ level ลดลงจาก 0.01 → 0.007 BTC (ลด exposure เพราะ ADX เริ่มสูง)
+  action = EXECUTE, orders = 5 levels ที่ step $2,650, Q 0.007 BTC/level</div>
+
+<p class="caption">ลองเปลี่ยน Hurst เป็น 0.60 หรือ ADX เป็น 55 ดูว่า size_mult ตกไปที่ 0.4 (เงื่อนไขแรก) แทน — นี่คือวิธีที่ execution style "ตอบสนอง" ต่อ regime โดยไม่ต้องเปลี่ยน grid framework (zone/capital) เลย</p>
+</div>
 
 <h2 id="s7b-8">7B.8 แบบฝึกหัด</h2>
 
@@ -426,7 +464,7 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
 <p><strong>Framework คงที่:</strong> Zone, Step, Capital, Risk rule เป็น "structure" ที่กำหนดล่วงหน้า — เปลี่ยนบ่อยทำให้ capital deployment ไม่ consistent, risk ไม่ predictable</p>
-<p><strong>Execution เปลี่ยนได้:</strong> ตลาดเปลี่ยน regime บ่อย → execution style ต้องตาม แต่ใช้ zone/step เดิมได้ (ถ้าไม่ drift เกิน 30 วัน)</p>
+<p><strong>Execution เปลี่ยนได้:</strong> ตลาดเปลี่ยน regime บ่อย → execution style ต้องตาม แต่ใช้ zone/step เดิมได้ (ถ้ายังไม่ถึงกำหนด re-calibrate zone ทุก 30 วัน — ดู Part 4 §4.7 Reset Required)</p>
 <p>เปรียบ: Framework = ถนน | Execution = วิธีขับรถ — ถนนเดิม แต่ขับเร็วหรือช้าตาม traffic</p>
 </div>
 </details>
@@ -463,7 +501,7 @@ Indicator Execution Engine (เปลี่ยนตาม style/regime):
 <p><strong>คำตอบ:</strong></p>
 <p><strong>DD Halt ก่อน:</strong> ถ้า portfolio ขาดทุน > 8% → ต้องหยุดทันที ไม่ว่า regime จะดีแค่ไหน</p>
 <p>เหตุผล: DD Halt คือ "emergency brake" — ถ้า regime check ก่อนแล้วส่ง deploy orders แต่ค่อยตรวจ DD → อาจ deploy orders ใหม่ขณะที่ portfolio กำลัง bleed</p>
-<p><strong>ถ้า Regime ก่อน:</strong> state = GRID_ON → ส่ง exec params → สร้าง orders → แล้วค่อยเจอ DD Halt → orders อาจถูก place ไปแล้ว (race condition)</p>
+<p><strong>ถ้า Regime ก่อน:</strong> state = GRID_ON → ส่ง exec params → สร้าง orders → แล้วค่อยเจอ DD Halt → orders อาจถูก place ไปแล้วก่อนที่จะรู้ตัวว่าควรหยุด (ลำดับการเช็คสลับกันแล้วเกิดผลลัพธ์ที่ไม่ควรเกิด)</p>
 <p>การ check DD ก่อนเป็น "fail-fast" pattern: หยุดสายการทำงานทันทีถ้าเงื่อนไขวิกฤตเกิด</p>
 </div>
 </details>

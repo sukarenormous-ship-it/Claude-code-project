@@ -72,6 +72,7 @@ Grid Reset + Zone Migration · Practical Watchdog System<br>
 <div class="ki-label">แก่นของ Part นี้</div>
 <div class="ki-text">Grid ทำงานได้ดีใน <strong>mean-reverting regime</strong> (H &lt; 0.5) เท่านั้น — การรู้ว่า regime เปลี่ยนแปลงและตอบสนองทันทีคือความแตกต่างระหว่าง "grid ที่กำไรต่อเนื่อง" กับ "grid ที่ติดหล่ม" State Machine ช่วยเปลี่ยน grid behavior อัตโนมัติตาม regime</div>
 <div class="ki-eq">GRID ON (H &lt; 0.50, ADX &lt; 40 สำหรับ BTC) → CAUTION (H 0.50–0.58, ADX 40–50) → GRID OFF (H &gt; 0.58, ADX &gt; 50) — BTC-calibrated (Forex threshold 25/35 สูงเกินไปสำหรับ BTC)</div>
+<p class="caption" style="margin-top:6px">ตัวเลขข้างบนคือค่าตัดสินใจแบบง่าย — ค่าที่ใช้จริงใน state machine (§4.4) มี hysteresis (จุดเข้า/ออกไม่เท่ากัน) เพื่อกันการสลับสถานะถี่เกินไป</p>
 </div>
 
 <h2 id="s4-1">4.1 Hurst Exponent — ตัววัด Mean-Reversion</h2>
@@ -125,15 +126,10 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
 # H = 0.63 → trending → GRID OFF</div>
 
 <div class="bx ba">
-<div class="bt">⚠️ R/S Method มี Bias — แนะนำ DFA แทน</div>
-<p>ฟังก์ชัน hurst_exponent ด้านบนใช้ R/S (Rescaled Range) ซึ่งมีปัญหา:</p>
-<ul>
-<li><strong>Upward bias ใน short series:</strong> N=90 วัน → ค่า H มักสูงเกิน 5–10%</li>
-<li><strong>Standard Error สูง:</strong> SE ≈ 0.05–0.10 สำหรับ N=90 — threshold H=0.45/0.55 ใน Part 4 อาจคลาดเคลื่อน</li>
-<li><strong>วิธีที่ดีกว่า: DFA (Detrended Fluctuation Analysis)</strong> — bias ต่ำกว่าและ SE ต่ำกว่าสำหรับ financial data</li>
-</ul>
-<p>ใช้ library <code>nolds</code>: <code>pip install nolds</code> แล้ว <code>import nolds; H = nolds.dfa(log_returns)</code></p>
-<p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 (mean-reverting ชัด) หรือ H &gt; 0.60 (trending ชัด) เชื่อถือได้ — zone 0.45–0.60 ควรรอสัญญาณเพิ่มจาก ADX/BB</p>
+<div class="bt">⚠️ ค่า H ที่คำนวณได้มีความคลาดเคลื่อน — อย่าเชื่อตัวเลขนิ้วเดียวแบบเป๊ะๆ</div>
+<p>ฟังก์ชัน <code>hurst_exponent</code> ด้านบนใช้วิธี R/S (Rescaled Range) ซึ่งเมื่อข้อมูลมีแค่ 90 วัน (สั้น) ค่า H ที่ได้มักสูงเกินจริงไปประมาณ 5–10% และมีความคลาดเคลื่อนสุ่ม (Standard Error) ประมาณ ±0.05–0.10 — เท่ากับว่าตัวเลข H ที่แสดง เช่น 0.52 จริงๆ อาจอยู่ที่ไหนก็ได้ตั้งแต่ ~0.42 ถึง ~0.62 นี่คือสาเหตุที่ threshold H=0.50/0.58 ใน Part นี้ต้องมี hysteresis (§4.4) กันไว้ ไม่ใช่ตัดสินจากตัวเลขเดียวแบบทันที</p>
+<p><strong>กฎปฏิบัติ:</strong> H &lt; 0.45 หรือ H &gt; 0.60 ถือว่าชัดเจนพอเชื่อถือได้ — ช่วง 0.45–0.60 (ครอบ CAUTION จริง 0.50–0.58 กันความคลาดเคลื่อนไว้ทั้งสองข้าง) ควรรอสัญญาณเพิ่มจาก ADX/BB ก่อนตัดสินใจ ไม่ใช่เชื่อ H ตัวเดียว</p>
+<p class="caption">สำหรับคนที่อยากได้ค่า H แม่นกว่า R/S: มีวิธี DFA (Detrended Fluctuation Analysis) ที่ bias ต่ำกว่า ใช้ library <code>nolds</code> (<code>pip install nolds</code> แล้ว <code>import nolds; H = nolds.dfa(log_returns)</code>) — ไม่จำเป็นสำหรับการเริ่มต้น แต่ถ้าจะทำจริงจังแนะนำให้เปลี่ยนมาใช้</p>
 </div>
 
 <div style="margin:20px 0;font-family:'Sarabun',sans-serif">
@@ -167,7 +163,7 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
       <div style="font-size:14px;font-weight:800;color:#b45309;margin-bottom:3px">CAUTION</div>
       <div style="font-size:10px;color:#92400e;margin-bottom:10px">borderline regime</div>
       <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#92400e">
-        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H = 0.50–0.60</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H = 0.50–0.58</div>
         <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ADX = 40–50</div>
         <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">Vol spike เริ่มขึ้น</div>
       </div>
@@ -187,7 +183,7 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
       <div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:3px">GRID OFF</div>
       <div style="font-size:10px;color:#b91c1c;margin-bottom:10px">trending / breakout</div>
       <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#b91c1c">
-        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H &gt; 0.60</div>
+        <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">H &gt; 0.58</div>
         <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ADX &gt; 50</div>
         <div style="background:rgba(255,255,255,.5);border-radius:5px;padding:4px 8px">ราคาออกนอก Donchian</div>
       </div>
@@ -218,7 +214,7 @@ def hurst_exponent(prices, min_lag=10, max_lag=100):
       <span style="font-size:9px;color:#94a3b8">เดือน 6</span>
     </div>
   </div>
-  <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">H &lt; 0.50 = grid เต็ม · 0.50–0.60 = ลด size · H &gt; 0.60 = หยุด grid (ADX threshold ปรับสำหรับ BTC)</p>
+  <p style="text-align:center;font-size:10px;color:#94a3b8;margin-top:8px">H &lt; 0.50 = grid เต็ม · 0.50–0.58 = ลด size · H &gt; 0.58 = หยุด grid (ADX threshold ปรับสำหรับ BTC)</p>
 </div>
 
 <h2 id="s4-2">4.2 ADX — ยืนยัน Trend Strength</h2>
@@ -238,16 +234,18 @@ $$\text{ADX} = \text{Smoothed MA of DX} \qquad \text{DX} = \frac{|+DI - -DI|}{+D
 <tr><td>40–50</td><td>Strong trend</td><td>Trend emerging (CAUTION)</td></tr>
 <tr><td>&gt;50</td><td>Very strong</td><td>Strong trend (GRID_OFF candidate)</td></tr>
 </table>
-<p>Backtest บน BTC data จริง (2020–2024) แนะนำ threshold ≈ 40–45 สำหรับ GRID_OFF trigger</p>
+<p>Backtest บน BTC data จริง (2020–2024) สนับสนุน threshold BTC-calibrated: CAUTION เริ่มที่ 40, GRID OFF ที่ 50</p>
 </div>
 
 <table>
 <tr><th>ADX Value</th><th>ความหมาย</th><th>Grid Action</th></tr>
 <tr><td>&lt; 15</td><td>ไม่มี trend (choppy)</td><td>GRID ON — ideal condition</td></tr>
-<tr><td>15–25</td><td>trend อ่อน</td><td>GRID ON (ระวัง upper zone)</td></tr>
-<tr><td>25–40</td><td>trend ปานกลาง (BTC: ยัง sideways)</td><td>CAUTION — ลด size 50%</td></tr>
-<tr><td>&gt; 40 (BTC: &gt; 45)</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
+<tr><td>15–40</td><td>trend อ่อน-ปานกลาง (BTC: ยัง sideways)</td><td>GRID ON (ระวัง upper zone)</td></tr>
+<tr><td>40–50</td><td>trend เริ่มชัด</td><td>CAUTION — ลด size 50%</td></tr>
+<tr><td>&gt; 50</td><td>trend แรง</td><td>GRID OFF — pause ทั้งหมด</td></tr>
 </table>
+
+<p class="caption">แนวคิดเบื้องหลังโค้ดด้านล่าง: <strong>+DI</strong> วัดว่าราคาขยับขึ้นมากแค่ไหนเทียบกับการขยับทั้งหมด (สัดส่วนของ "แรงขาขึ้น") ส่วน <strong>−DI</strong> วัดแรงขาลงในทำนองเดียวกัน — ถ้า +DI สูงกว่า −DI มากแปลว่าแรงขึ้นเหนือแรงลง (แนวโน้มขาขึ้น) ADX คือค่าเฉลี่ยของ "ส่วนต่างระหว่าง +DI กับ −DI" ที่ทำให้เรียบขึ้น จึงบอกแค่ <em>ความแรงของ trend</em> (ไม่ว่าขึ้นหรือลง) ไม่บอกทิศทาง — ต้องดู +DI vs −DI แยกต่างหากถ้าอยากรู้ทิศทาง</p>
 
 <div class="fm">def compute_adx(highs, lows, closes, period=14):
     """
@@ -284,21 +282,77 @@ $$\text{ADX} = \text{Smoothed MA of DX} \qquad \text{DX} = \frac{|+DI - -DI|}{+D
 
     return adx[-1]</div>
 
+<h2 id="s4-2-1">4.2.1 Normalized Slope — ทิศทางที่ Hurst กับ ADX ไม่บอก (Optional Overlay)</h2>
+
+<p>สัญญาณสองตัวที่ผ่านมามีจุดบอดร่วมกันหนึ่งจุด: <strong>ไม่มีตัวไหนบอกทิศทาง</strong> Hurst บอก<em>นิสัย</em>ของราคา (mean-revert หรือ trend) ADX บอก<em>ความแรง</em>ของ trend แบบไร้ทิศ — สถานการณ์ที่อันตรายที่สุดสำหรับกริดฝั่ง Long คือ "ราคากำลังดิ่งแรงต่อเนื่อง" ซึ่งทั้งคู่จับได้ช้า: Hurst ต้องรอข้อมูลสะสมพอจะเปลี่ยนนิสัย ADX ขึ้นแล้วก็ยังต้องไปเปิด +DI/−DI ดูอีกชั้นว่าแรงนั้นขึ้นหรือลง ระหว่างรอ กริดยังคงรับไม้สวนขาลงไปเรื่อยๆ</p>
+
+<p>ทำไมขาลงถึงต้องมีสัญญาณเฉพาะ: ช่วงที่ราคาลงแรง ผลตอบแทนรายแท่งมักมี autocorrelation ชั่วคราว — ลงแล้วมีแนวโน้มลงต่อ (panic ไม่มีลิมิต ต่างจาก euphoria ที่ทยอยซื้อ) ช่วงนั้นราคาไม่ใช่ random walk แต่เป็น walk ที่มี <em>drift ติดลบ</em> และไม้ Long ทุกไม้ที่รับระหว่างนั้นมี expected value ติดลบทันที ไม่ใช่ศูนย์ — สัญญาณนี้จึงออกแบบเป็น <strong>veto ฝั่งซื้อฝั่งเดียว</strong> ไม่ใช่ filter สมมาตร</p>
+
+<div class="fm">slope_norm = slope(LinReg(EMA, lookback)) / ATR
+
+slope(LinReg(...)) = ความชันของเส้นตรงที่ fit ค่า EMA ย้อนหลัง lookback แท่ง
+                     ด้วย Ordinary Least Squares — เครื่องมือเดียวกับที่ Part 6
+                     ใช้หา hedge ratio แค่เปลี่ยนจากถาม spread มาถามราคา
+                     หน่วยของ slope: $/แท่ง = ค่าประมาณของ drift เฉพาะหน้า
+ATR                = ความผันผวนปกติต่อแท่ง ($/แท่ง — Part 3)
+
+หารกันแล้วได้ค่าไร้หน่วย: "drift แรงแค่ไหนเทียบกับ noise ปกติ"
+— ตรรกะเดียวกับ z-score ใน Part 6 (สัญญาณ ÷ ความผันผวนของมันเอง)
+— ใช้ EMA แทนราคาดิบเพราะ EMA กรอง noise ชั้นแรกให้แล้ว LinReg เป็นชั้นที่สอง
+— เกณฑ์เดียวใช้ได้ทุก asset ทุก timeframe เพราะ normalize แล้ว
+  (slope ดิบ −$500/แท่ง คือหายนะของเหรียญ $100 แต่คือเรื่องจิ๋วของ BTC)</div>
+
+<table>
+<tr><th>slope_norm</th><th>ความหมาย</th><th>Action</th></tr>
+<tr><td>&lt; −0.15</td><td>drift ลงแรงเกิน noise ชัดเจน — "มีดกำลังร่วง"</td><td><strong>Veto ฝั่งซื้อ</strong>: หยุดกางกริด Long ใหม่ชั่วคราว (ไม้เดิม + TP เดิมคงไว้ ไม่แตะ)</td></tr>
+<tr><td>−0.15 … +0.15</td><td>drift เล็กเทียบ noise — ยังถือว่าแกว่งปกติ</td><td>Grid ทำงานตาม State Machine ปกติ</td></tr>
+<tr><td>&gt; +0.15</td><td>drift ขึ้นแรง</td><td>ไม่ต้อง veto — แต่พิจารณา Zone Migration (§4.6) เพราะราคาอาจกำลังหนีขึ้นจาก zone</td></tr>
+</table>
+
+<p class="caption">threshold ±0.15 เป็นจุดตั้งต้นที่ calibrate กับ BTC รายวัน (สอดคล้องกับ threshold BTC ใน §4.2) — asset อื่น/timeframe อื่นควร backtest หาเกณฑ์ของตัวเอง หลักคือเลือกค่าที่ veto เฉพาะช่วง crash จริง ไม่ veto ถี่จน grid ไม่ได้ทำงาน</p>
+
+<div class="fm">def slope_veto(ema_values, atr, lookback=5, threshold=-0.15):
+    """
+    Veto ฝั่งซื้อเมื่อ drift ลงแรงเกิน noise — ใช้เป็น overlay เสริม
+    state machine (§4.4) ไม่ใช่ vote ที่ 4
+    """
+    import numpy as np
+    y = np.array(ema_values[-lookback:], dtype=float)
+    x = np.arange(lookback, dtype=float)
+    slope = np.polyfit(x, y, 1)[0]     # $/แท่ง
+    slope_norm = slope / atr           # ไร้หน่วย
+    return slope_norm &lt; threshold, slope_norm
+
+# ตัวอย่าง (ATR = $2,800 จาก Running Example Part 3 §3.9):
+# EMA(20) 5 วันล่าสุด: [104,000, 103,200, 102,100, 100,800, 99,400] — ดิ่งต่อเนื่อง
+#   slope = −$1,160/แท่ง → slope_norm = −1160/2800 = −0.41 < −0.15 → VETO ✓
+# เทียบกับ: [100,000, 99,800, 99,700, 99,500, 99,400] — ลงเหมือนกันแต่ช้า
+#   slope = −$150/แท่ง → slope_norm = −150/2800 = −0.05 → ไม่ veto
+#   (ราคาลงจริง แต่ drift เล็กเทียบ noise — นี่คือสภาพที่กริดเก็บเกี่ยวได้ปกติ)</div>
+
+<div class="bx bc">
+<div class="bt">ตำแหน่งของ overlay นี้ในระบบ — และสิ่งที่มันไม่ได้ทำ</div>
+<p><strong>ลำดับการใช้:</strong> คำนวณหลัง State Machine (§4.4) ตัดสิน state แล้ว — ถ้า state = GRID_ON แต่ slope_norm veto → ปฏิบัติเหมือน CAUTION เฉพาะฝั่งซื้อใหม่ (ไม่กางไม้ Long เพิ่ม) จนกว่า slope_norm จะกลับเข้าโซน neutral เราจงใจ<em>ไม่</em>รวมมันเป็น vote ที่ 4 ใน majority vote เพราะสัญญาณ 3 ตัวเดิมสมมาตร (วัดสภาพตลาด) แต่ตัวนี้ทำงานฝั่งเดียว (คุ้มครองฝั่งซื้อ) — ผสมกันจะทำให้ logic การ vote ตีความยากขึ้นโดยไม่จำเป็น ใครจะต่อเข้า framework ใน Part 9 ให้แทรกใน <code>run_cycle()</code> หลังขั้น regime detection ก่อนขั้น order placement</p>
+<p><strong>สิ่งที่มันไม่ได้ทำ:</strong> filter นี้ไม่ได้สร้างกำไร — ในกรอบ zero-EV (Part 0 §0.4) มันแค่หยุดเล่นในหน้าต่างเวลาที่ EV ของไม้ใหม่ติดลบชัด แล้วกลับมาเล่นเมื่อ EV กลับมา ≈ 0 และเหลือ volatility ให้เก็บเกี่ยว — เหมือนกรรมการที่เป่านกหวีดพักเกม ไม่ใช่กองหน้าที่ทำประตูเพิ่ม</p>
+</div>
+
 <h2 id="s4-3">4.3 Bollinger Band Width — Squeeze Detection</h2>
 
-<p>BB Width ต่ำ (squeeze) = ราคากำลัง consolidate → mean-reversion regime → grid ทำงานดี BB Width พุ่งสูง = volatility expansion = breakout → grid อาจติดหล่ม</p>
+<p>BB Width ต่ำ (squeeze) = ราคากำลัง consolidate ณ ปัจจุบัน → เหมาะ deploy grid ตอนนี้ BB Width พุ่งสูง = volatility expansion = breakout → grid อาจติดหล่ม</p>
+
+<p><strong>ข้อควรระวัง:</strong> squeeze เป็นภาพ ณ จุดเวลาเดียว ไม่ใช่การรับประกันว่าจะไม่ breakout — ในทางเทคนิคอล squeeze มักถูกมองเป็นสัญญาณเตือนก่อน volatility expansion (ราคาสะสมพลังงานก่อนวิ่งแรง) ดังนั้นคะแนน "ideal" ด้านล่างใช้ได้เฉพาะ ณ รอบที่ประเมิน — ต้องอาศัย State Machine (§4.4) ตรวจซ้ำทุกชั่วโมงเพื่อจับจังหวะที่ BB Width เริ่มขยายและปรับ state ทันที ไม่ใช่ deploy แล้ววางใจว่า squeeze จะอยู่แบบนั้นตลอด</p>
 
 <div class="fm">BB Width = (BB_upper − BB_lower) / SMA(20)
 
 Thresholds สำหรับ Grid:
-  BB_width < 0.02 (2%)   → Squeeze — GRID ON (ideal)
+  BB_width < 0.02 (2%)   → Squeeze — GRID ON (ideal ณ จุดนี้)
   BB_width 0.02–0.04     → Normal — GRID ON
   BB_width 0.04–0.08     → Expanding — CAUTION
   BB_width > 0.08 (8%)   → Wide — GRID OFF (high vol)
 
 ตัวอย่าง BTC ที่ $100k:
-  BB_upper = $104,000, BB_lower = $96,000
-  BB_width = ($104k − $96k) / $100k = 8% → GRID OFF threshold
+  BB_upper = $105,000, BB_lower = $95,000
+  BB_width = ($105k − $95k) / $100k = 10% → GRID OFF (เกิน 8% threshold)
 
   BB_upper = $101,500, BB_lower = $98,500
   BB_width = $3k / $100k = 3% → Normal → GRID ON</div>
@@ -334,9 +388,19 @@ Thresholds สำหรับ Grid:
         """
         Determine grid state from 3 indicators.
         Requires 2-of-3 indicators to agree before state change (noise filter).
+        Hurst ใช้ hysteresis (dead band) กันการ flap ตอนแกว่งใกล้ 0.50: ถ้าตอนนี้
+        ยังเป็น GRID_ON ต้อง H ≥ 0.52 ถึงจะขยับเป็น CAUTION (ไม่ใช่ 0.50 พอดี) |
+        ถ้าตอนนี้เป็น CAUTION/GRID_OFF อยู่แล้ว ต้อง H < 0.47 ถึงจะกลับมา ON
         """
+        if hurst > 0.58:
+            hurst_sig = "OFF"
+        elif self.state == "GRID_ON":
+            hurst_sig = "CAUTION" if hurst >= 0.52 else "ON"
+        else:
+            hurst_sig = "ON" if hurst < 0.47 else "CAUTION"
+
         signals = {
-            "hurst": "OFF" if hurst > 0.58 else ("CAUTION" if hurst > 0.50 else "ON"),
+            "hurst": hurst_sig,
             "adx":   "OFF" if adx > 50 else ("CAUTION" if adx > 40 else "ON"),  # BTC-calibrated: CAUTION=40, OFF=50 (textbook Forex threshold=25/35 ไม่ถูกสำหรับ BTC)
             "bb":    "OFF" if bb_width > 0.08 else ("CAUTION" if bb_width > 0.04 else "ON"),
         }
@@ -345,10 +409,12 @@ Thresholds สำหรับ Grid:
         for sig in signals.values():
             counts[sig] += 1
 
-        # Majority vote (2 of 3)
+        # Majority vote (2 of 3) — สัญญาณ OFF แม้แค่ 1 ตัวก็ยกระดับเป็นอย่างน้อย
+        # CAUTION เสมอ (เดิมถ้า ON=2/OFF=1/CAUTION=0 จะตกไป GRID_ON เฉยๆ ทั้งที่
+        # มีสัญญาณหนึ่งกำลังเตือนอันตราย — เช่น BB width ซึ่งไวสุดในสาม ตัว)
         if counts["OFF"] >= 2:
             new_state = "GRID_OFF"
-        elif counts["CAUTION"] >= 2 or (counts["OFF"] == 1 and counts["CAUTION"] == 1):
+        elif counts["OFF"] >= 1 or counts["CAUTION"] >= 2:
             new_state = "CAUTION"
         else:
             new_state = "GRID_ON"
@@ -367,13 +433,14 @@ Thresholds สำหรับ Grid:
 <p>ปัญหา: ถ้า Hurst แกว่งรอบ 0.50 (บางครั้ง 0.49 บางครั้ง 0.51) → state เปลี่ยนทุกชั่วโมง = สั่ง cancel/open orders บ่อยเกิน = fee เสียเยอะ</p>
 <p><strong>Solution: Hysteresis (Dead Band)</strong></p>
 <ul>
-<li>เปลี่ยนจาก GRID_ON → CAUTION ต้องมี H &gt; 0.52 (ไม่ใช่ 0.50)</li>
+<li>เปลี่ยนจาก GRID_ON → CAUTION ต้องมี H ≥ 0.52 (ไม่ใช่ 0.50)</li>
 <li>เปลี่ยนกลับจาก CAUTION → GRID_ON ต้องมี H &lt; 0.47 (ต่ำกว่า threshold)</li>
 <li>Dead band = 0.05 รอบ threshold ทำให้ state stable กว่า</li>
 </ul>
+<p>สังเกต: dead band นี้ implement อยู่ใน <code>evaluate()</code> ด้านบนแล้ว (เช็ก <code>self.state</code> ก่อนเลือก threshold) ไม่ใช่แค่แนวคิดลอยๆ</p>
 </div>
 
-<h2 id="s4-5">4.5 Grid Reset — ย้าย Zone เมื่อ Regime กลับมา</h2>
+<h2 id="s4-5">4.5 Grid Reset — เริ่ม Zone ใหม่ทั้งหมดเมื่อจำเป็น</h2>
 
 <p>เมื่อ Grid OFF แล้ว regime กลับมาเป็น mean-reverting: ราคาอาจเปลี่ยนไปมากจนต้อง reset zone ใหม่</p>
 
@@ -405,9 +472,9 @@ Grid Reset Steps:
   4. คำนวณ Q ใหม่ตาม capital ที่เหลือ
   5. วาง orders ใหม่ในชั่วโมงที่ score > 55</div>
 
-<h2 id="s4-6">4.6 Zone Migration — Shift Zone ตาม Trend</h2>
+<h2 id="s4-6">4.6 Zone Migration — เลื่อน Zone ตาม Trend แบบนุ่มนวล (ไม่ใช่ Reset)</h2>
 
-<p>แทนที่จะ reset ทั้งหมด บางครั้งแค่ "เลื่อน zone" ขึ้นหรือลงตาม EMA ก็เพียงพอ:</p>
+<p>แทนที่จะ reset ทั้งหมด บางครั้งแค่ "เลื่อน zone" ขึ้นหรือลงตาม EMA (Exponential Moving Average — ค่าเฉลี่ยเคลื่อนที่ที่ให้น้ำหนักราคาล่าสุดมากกว่าราคาเก่า จึงตอบสนองไวกว่าค่าเฉลี่ยธรรมดา) ก็เพียงพอ วิธีนี้ต่างจาก 4.5 ตรงที่ <strong>ไม่ปิด order เดิม ไม่ขาย inventory ทิ้ง</strong> — แค่ค่อยๆ ปรับขอบ zone ตามราคาที่เคลื่อนไป inventory เก่ายังรอ TP ตามปกติ:</p>
 
 <div class="fm">Zone Migration (Trailing Zone):
 
@@ -432,6 +499,8 @@ Zone Migration ดีกว่า Grid Reset เมื่อ:
   - Inventory ยังไม่ได้ขาดทุนมาก
   - ไม่อยากเสีย inventory ที่ BUY ไปแล้ว</div>
 
+<p class="caption">ข้อควรระวังตอน migrate: กริดชุดใหม่ไม่รู้จักไม้เก่าที่ค้างอยู่ — level ใหม่อาจวางทับโซนที่มี inventory เดิมพอดี ทำให้ exposure กระจุกที่ราคาเดียวโดยไม่ตั้งใจ ก่อนวาง order ชุดใหม่ให้รัน Overlap Guard (<a href="grid-part2.html#s2-5-1">Part 2 §2.5.1</a>: skip level ที่ห่างไม้ค้างไม่ถึง m×ATR)</p>
+
 <h2 id="s4-7">4.7 Practical Watchdog System</h2>
 
 <p>ระบบ watchdog ทำงาน background ตรวจ regime ทุก 1 ชั่วโมงและส่ง alert เมื่อต้องปรับ:</p>
@@ -447,7 +516,7 @@ Zone Migration ดีกว่า Grid Reset เมื่อ:
         """
         ทำงานทุก 1 ชั่วโมง (หรือตาม interval)
         """
-        hurst    = compute_hurst(market_data["prices_30d"])
+        hurst    = hurst_exponent(market_data["prices_30d"])
         adx      = compute_adx(market_data["highs"], market_data["lows"], market_data["closes"])
         bb_width = compute_bb_width(market_data["prices_20d"])
 
@@ -501,7 +570,7 @@ Watchdog Alert Types:
 <tr><td>Day 10</td><td>$112k</td><td>0.52</td><td>27</td><td>5.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>Reduce to 50%</td></tr>
 <tr><td>Day 12</td><td>$118k</td><td>0.59</td><td>44</td><td>8.2%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>Cancel all orders</td></tr>
 <tr><td>Day 15</td><td>$125k</td><td>0.61</td><td>38</td><td>9.2%</td><td style="color:#dc2626"><strong>GRID OFF</strong></td><td>รอ regime กลับ</td></tr>
-<tr><td>Day 18</td><td>$121k</td><td>0.55</td><td>29</td><td>6.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>รอ H &lt; 0.50</td></tr>
+<tr><td>Day 18</td><td>$121k</td><td>0.55</td><td>29</td><td>6.1%</td><td style="color:#d97706"><strong>CAUTION</strong></td><td>รอสัญญาณส่วนใหญ่ (ADX/BB) กลับ ON</td></tr>
 <tr><td>Day 21</td><td>$118k</td><td>0.47</td><td>22</td><td>4.0%</td><td style="color:#16a34a"><strong>GRID ON</strong></td><td>Zone Migration → $105k–$135k</td></tr>
 </table>
 
@@ -512,7 +581,8 @@ Watchdog Alert Types:
   Zone Migration (Day 21): เปิด grid ใหม่ที่ $105k–$135k
 
   Inventory ที่ถือ: BUY ที่ $98k, $100k, $102k, $104k (ตอน grid เปิด)
-  ราคาปัจจุบัน $118k → inventory กำไร unrealized = 4 × 0.01 BTC × $16k avg = $640
+  ราคาปัจจุบัน $118k → avg buy price = ($98k+$100k+$102k+$104k)/4 = $101k
+  inventory กำไร unrealized = 4 × 0.01 BTC × ($118k−$101k) = 4 × 0.01 × $17k = $680
 
   ถ้าไม่มี state machine:
   → grid ยังเปิด order ที่ $120k, $122k, $124k ระหว่าง uptrend
@@ -521,7 +591,13 @@ Watchdog Alert Types:
 
 2-of-3 Vote Breakdown (Day 12):
   H=0.59 &gt; 0.58 → OFF · ADX=44 ∈ [40,50] → CAUTION · BB=8.2% &gt; 8% → OFF
-  counts: OFF=2, CAUTION=1 → majority OFF → GRID OFF ✓</div>
+  counts: OFF=2, CAUTION=1 → majority OFF → GRID OFF ✓
+
+2-of-3 Vote Breakdown (Day 21) — state ก่อนหน้าคือ CAUTION:
+  H=0.47 ไม่ &lt; 0.47 (hysteresis exit ต้อง &lt; 0.47 เป๊ะ ไม่ใช่ ≤) → ยังนับเป็น CAUTION
+  ADX=22 &lt; 40 → ON · BB=4.0% ไม่ &gt; 4% → ON
+  counts: OFF=0, CAUTION=1 → ไม่ถึงเกณฑ์ CAUTION (ต้อง ≥2) → GRID ON ✓
+  หมายเหตุ: รอบนี้ ADX/BB โหวตชนะเป็น ON แม้ Hurst เองยังไม่ผ่าน hysteresis exit พอดี — Hurst ต้องรอรอบถัดไปที่ H&lt;0.47 จริงๆ ถึงจะ "ON" ในตัวเอง แต่ระบบ 2-of-3 vote ไม่ต้องรอให้ทุกสัญญาณ ON พร้อมกัน</div>
 </div>
 
 <h2 id="s4-9">4.9 แบบฝึกหัด</h2>
@@ -549,7 +625,7 @@ Watchdog Alert Types:
 <p>ตัวอย่าง: BTC pump +15% ใน 1 ชั่วโมง (leverage liquidation cascade)</p>
 <ul>
 <li>Hurst พุ่งจาก 0.46 → 0.64 ทันที (extreme momentum)</li>
-<li>ADX พุ่งจาก 18 → 38 (trend แรงมาก)</li>
+<li>ADX พุ่งจาก 18 → 58 (trend แรงมาก)</li>
 <li>BB_width พุ่งจาก 3% → 12% (volatility explosion)</li>
 </ul>
 <p>Vote: OFF=3 → State = GRID_OFF โดยตรง</p>
@@ -574,17 +650,32 @@ Watchdog Alert Types:
 </details>
 
 <details>
-<summary>ข้อ 4 (Challenge): ออกแบบ Hysteresis rules สำหรับ Hurst transitions เพื่อลด false state changes</summary>
+<summary>ข้อ 4 (Challenge): ต่อยอด Hysteresis rules — §4.4 ทำ ON↔CAUTION แล้ว ขอบ CAUTION↔OFF ควรเป็นแบบไหน?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p><strong>Hysteresis Design:</strong></p>
+<p>ขอบ ON↔CAUTION: <code>evaluate()</code> ใน §4.4 ทำแล้ว (entry H&gt;0.52, exit H&lt;0.47) ไม่ต้องออกแบบใหม่</p>
+<p><strong>ขอบ CAUTION↔OFF (ส่วนที่ยังไม่มี):</strong></p>
 <table>
 <tr><th>Transition</th><th>Standard Threshold</th><th>Hysteresis (Entry)</th><th>Hysteresis (Exit)</th></tr>
-<tr><td>ON → CAUTION</td><td>H &gt; 0.50</td><td>H &gt; <strong>0.52</strong></td><td>H &lt; <strong>0.48</strong> กลับ ON</td></tr>
+<tr><td>ON → CAUTION</td><td>H &gt; 0.50</td><td>H &gt; <strong>0.52</strong></td><td>H &lt; <strong>0.47</strong> กลับ ON</td></tr>
 <tr><td>CAUTION → OFF</td><td>H &gt; 0.58</td><td>H &gt; <strong>0.60</strong></td><td>H &lt; <strong>0.55</strong> กลับ CAUTION</td></tr>
 </table>
 <p><strong>Time filter เพิ่มเติม:</strong> ต้องอยู่ใน new regime ≥ 3 ชั่วโมงก่อนเปลี่ยน state</p>
 <p>ผล: ถ้า Hurst แกว่ง 0.49–0.51 → state ไม่เปลี่ยน (อยู่ใน dead band) → ลด cancel/reopen orders ที่ไม่จำเป็น</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 5: EMA(20) 5 วันล่าสุด = [98,000, 97,600, 97,000, 96,200, 95,200] · ATR = $2,800 · threshold = −0.15 — slope_norm เท่าไหร่? veto ฝั่งซื้อไหม? แล้วไม้ Long ที่ถืออยู่กับ TP ของมันต้องทำอะไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong></p>
+<p>คำนวณ slope ด้วยมือ (OLS บน x = 0,1,2,3,4 → x̄ = 2, Σ(x−x̄)² = 10):</p>
+<p>ȳ = (98,000+97,600+97,000+96,200+95,200)/5 = <strong>$96,800</strong></p>
+<p>ส่วนเบี่ยงเบนของ y: +1,200, +800, +200, −600, −1,600</p>
+<p>Σ(x−x̄)(y−ȳ) = (−2)(1,200) + (−1)(800) + 0 + (1)(−600) + (2)(−1,600) = <strong>−7,000</strong></p>
+<p>slope = −7,000 / 10 = <strong>−$700/แท่ง</strong></p>
+<p>slope_norm = −700 / 2,800 = <strong>−0.25</strong> &lt; −0.15 → <strong>VETO ฝั่งซื้อ ✓</strong></p>
+<p><strong>ไม้เดิม + TP:</strong> ไม่แตะอะไรทั้งสิ้น — veto หยุดเฉพาะการกางไม้ Long <em>ใหม่</em> ไม้ที่ถืออยู่และ SELL/TP ที่ตั้งไว้ทำงานต่อตามปกติ (ถ้าราคาเด้งระหว่าง veto TP ก็ปิดทำกำไรได้) — คนตัดสินใจปิดไม้เดิมคือ Drawdown Ladder (Part 5) ไม่ใช่ overlay ตัวนี้</p>
 </div>
 </details>
 </div>

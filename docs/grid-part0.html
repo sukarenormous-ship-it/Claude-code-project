@@ -75,7 +75,7 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 
 <div class="key-idea">
 <div class="ki-label">แก่นของ Part นี้ — อ่านก่อน</div>
-<div class="ki-text">Grid Trading ไม่ใช่เวทมนตร์ — มันคือ <strong>กรอบวินัย</strong> ที่บังคับให้ซื้อต่ำขายสูงซ้ำๆ อย่างเป็นระบบ Alpha ที่แท้จริงมาจาก <strong>โครงสร้าง Grid เอง</strong> (ดักจับ mean-reversion) — ไม่ใช่จาก indicator หรือ trick ที่ใส่เพิ่ม</div>
+<div class="ki-text">Grid Trading ไม่ใช่เวทมนตร์ — มันคือ <strong>กรอบวินัย</strong> ที่บังคับให้ซื้อต่ำขายสูงซ้ำๆ อย่างเป็นระบบ Alpha ที่แท้จริงมาจากการดักจับ <strong>mean-reversion ของตลาดจริง</strong> — ไม่ใช่จากโครงสร้าง grid ลอยๆ (ในตลาดสุ่มแท้ grid เปล่าไม่มี alpha เลย ดูเหตุผลเต็มใน 0.3) และไม่ใช่จาก indicator หรือ trick ที่ใส่เพิ่ม</div>
 <div class="ki-eq">กำไรต่อรอบ = Q × (P_sell − P_buy) − Fees &nbsp;&nbsp;[ทุกรอบที่ราคาแกว่งผ่าน step หนึ่งครั้ง]</div>
 </div>
 
@@ -93,17 +93,24 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <img class="chart" src="charts/grid-part0-basics.svg" alt="Grid Trading กลไกพื้นฐาน">
 <p class="caption">กลไก Grid: BUY ที่ระดับล่าง → SELL ที่ระดับบน = กำไรต่อรอบ ทุกครั้งที่ราคาแกว่งผ่าน</p>
 
+<div class="bx ba">
+<div class="bt">ระวัง: ราคาข้ามหลาย level ในการเคลื่อนไหวครั้งเดียว</div>
+<p>แต่ละคู่ level ปิดกำไรของ<strong>ตัวมันเองเท่านั้น</strong> — ถ้าราคาตกจาก $105,000 ลงไป $95,000 รวดเดียว (ข้าม 2 levels) grid จะ <strong>BUY ที่ทุก level ที่ผ่าน</strong> (สมมติมี order/capital พอ) คือ BUY ที่ $100,000 และ BUY ที่ $95,000 แยกกัน 2 order — ไม่ใช่ BUY แค่ level ปลายทางเดียว</p>
+<p>ตอนราคาขึ้นกลับ กำไรที่ได้ก็เป็นผลรวมของ 2 รอบอิสระ ($5k + $5k) ไม่ใช่กำไรก้อนเดียวข้าม step ($10k ในเทรดเดียว)</p>
+</div>
+
 <div class="running-ex">
 <div class="re-title">🔁 Running Example: BTC/USDT บน Bybit ตลอดเล่ม</div>
 <p><strong>Setup พื้นฐาน:</strong> BTC/USDT อยู่ที่ $100,000 · Grid 5 ระดับ · Step = $2,000 · ขนาด order = 0.01 BTC/ระดับ (≈ $1,000/level ที่ BTC=$100k — ประมาณ 1% ของ capital $100k ต่อ level)</p>
 <table>
 <tr><th>ระดับ</th><th>ราคา</th><th>Action</th><th>กำไรถ้า Fill ทั้งคู่</th></tr>
-<tr><td>+2</td><td>$104,000</td><td>SELL</td><td rowspan="2">+$20 (0.01 BTC × $2k)</td></tr>
-<tr><td>+1</td><td>$102,000</td><td>SELL / BUY</td></tr>
+<tr><td>+2</td><td>$104,000</td><td>SELL (TP ของคู่ +1/+2)</td><td rowspan="2">+$20 (0.01 BTC × $2k)</td></tr>
+<tr><td>+1</td><td>$102,000</td><td>SELL (TP ของคู่ 0/+1) / BUY (จุดเข้าเริ่มของคู่ +1/+2)</td></tr>
 <tr><td>0</td><td>$100,000</td><td>ราคาปัจจุบัน</td><td>—</td></tr>
-<tr><td>-1</td><td>$98,000</td><td>BUY / SELL</td><td rowspan="2">+$20 (0.01 BTC × $2k)</td></tr>
-<tr><td>-2</td><td>$96,000</td><td>BUY</td></tr>
+<tr><td>-1</td><td>$98,000</td><td>BUY (จุดเข้าของคู่ 0/-1) / SELL (TP ของคู่ -1/-2)</td><td rowspan="2">+$20 (0.01 BTC × $2k)</td></tr>
+<tr><td>-2</td><td>$96,000</td><td>BUY (จุดเข้าเริ่มของคู่ -1/-2)</td></tr>
 </table>
+<p class="caption">แต่ละ level "กลาง" (±1) ทำหน้าที่คู่: เป็น TP (SELL) ของคู่ level ที่อยู่ใกล้ราคาปัจจุบันกว่า และเป็นจุดเข้า (BUY) ของคู่ level ถัดไปที่ไกลออกไป — คนละหน้าที่กันคนละคู่ ไม่ใช่ทำสองอย่างพร้อมกันในคู่เดียว</p>
 <p><strong>Capital ที่ต้องใช้:</strong> ซื้อครบทุก level ล่าง = 0.01 × ($98k + $96k) = $1,940 (ไม่นับ margin)</p>
 </div>
 
@@ -128,26 +135,40 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 Capital ทั้งหมด (Close System ถึง zone_bottom):
 C_total = Q × (P_1 + P_2 + ... + P_N_below)
         = 0.01 × ($98k + $96k + $94k + ... + $90k)   ← ทุก BUY level
-        = 0.01 × Σ P_i  [ถ้า N=5 levels ด้านล่าง = 0.01 × $490k = $4,900]
+        = 0.01 × Σ P_i  [ถ้า N=5 levels ด้านล่าง = 0.01 × $470k = $4,700]
 
 รอบต่อวัน (ประมาณ) = ATR_daily / Step
                    = $3,000/วัน / $2,000 = 1.5 รอบ/วัน (โดยเฉลี่ย)
 
-กำไรต่อวัน (ประมาณ) ≈ 1.5 × $18 = $27/วัน บน capital $4,900 ≈ 0.55%/วัน</div>
+กำไรต่อวัน (ประมาณ) ≈ 1.5 × $18 = $27/วัน บน capital $4,700 ≈ 0.57%/วัน</div>
+
+<p><strong>ATR (Average True Range) คืออะไร:</strong> ตัวเลขมาตรฐานที่บอกว่า "โดยเฉลี่ยแล้วราคาขยับไปเท่าไหร่ต่อวัน" — ATR=$3,000 แปลว่าราคามักแกว่งประมาณ $3,000/วัน (ไม่ใช่ราคาขึ้นหรือลง $3,000 เป๊ะทุกวัน แต่เป็นค่าเฉลี่ยของช่วงราคาสูง-ต่ำในแต่ละวัน) เอา ATR หารด้วย Step จึงประมาณได้ว่าราคาจะ "ข้าม" กี่ step ต่อวัน = กี่รอบ BUY-SELL ต่อวันโดยประมาณ</p>
+
+<div class="fm">⚠ ตัวเลขนี้เป็น mechanical illustration ภายใต้สมมติฐาน
+  (ราคาอยู่ใน zone, ATR คงที่, fill ครบทุกรอบ, ไม่มี slippage)
+  ไม่ใช่ expected return — ดู "ทฤษฎีที่ต้องรู้" ใน 0.4
+
+  หมายเหตุ: ATR_daily มาจากแท่งรายวัน — เล่มนี้ใช้แท่งรายวันเป็น
+  default สำหรับทุก indicator เว้นแต่ระบุไว้เป็นอย่างอื่น
+  (รายละเอียดดู Part 3 §3.0)
+
+  หมายเหตุอีกข้อ: "กำไรต่อรอบ = Q × Step" ตั้งอยู่บนสมมติฐานว่าขาย
+  (TP) ที่ level ถัดไปเสมอ (1 step) — นี่คือ default ของเล่มนี้ทั้งเล่ม
+  ไม่ใช่ทางเลือกเดียว (ทางเลือกอื่นดู Part 2 §2.6.1)</div>
 
 <div class="bx bc">
 <div class="bt">Step เล็กหรือใหญ่ — Tradeoff สำคัญ</div>
 <ul>
 <li><strong>Step เล็ก:</strong> รอบเยอะ → cashflow สูง — แต่ inventory ค้างมาก ถ้าราคาดิ่งลงแรง</li>
 <li><strong>Step ใหญ่:</strong> รอบน้อย → cashflow ต่ำ — แต่ fill เร็ว ไม่ค้าง inventory นาน</li>
-<li><strong>Rule of thumb:</strong> Step ≥ 2× fee เพื่อให้กำไรสุทธิเป็นบวกทุกรอบ</li>
+<li><strong>Rule of thumb:</strong> กำไรต่อรอบ ≥ 3× fee เพื่อให้กำไรสุทธิเป็นบวกทุกรอบพร้อมมี margin กันความคลาดเคลื่อน (ดูรายละเอียดใน Part 3)</li>
 </ul>
 </div>
 
-<h2 id="s0-3">0.3 Grid เทียบกับ Buy-Hold และ DCA</h2>
+<h2 id="s0-3">0.3 Grid เทียบกับ Buy-Hold และ DCA (Dollar-Cost Averaging — ซื้อสม่ำเสมอทีละน้อยไม่สนราคา)</h2>
 
 <canvas id="chartComparison" class="chart" style="height:360px"></canvas>
-<p class="caption">Grid ให้ equity curve ราบเรียบที่สุด — total return ใกล้เคียงกัน แต่คุณภาพการเดินทางต่างกันมาก</p>
+<p class="caption">Grid ให้ equity curve ราบเรียบที่สุดและ drawdown ต่ำสุด — แต่ในปีสมมตินี้ที่ตลาดเป็นขาขึ้นแรง Buy-Hold กลับทำ total return ได้สูงกว่า (+35% vs Grid +18%) เพราะจับ trend ได้เต็มที่ ขณะที่ Grid เก็บกำไรได้แค่จากการแกว่ง (oscillation) เท่านั้น — นี่คือ trade-off ของ Grid: แลก upside ตอนตลาด trend แรง กับความราบเรียบ/DD ต่ำตอนตลาด sideway</p>
 <script>
 (function(){
   var labels = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -173,7 +194,7 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 <tr><th>มิติ</th><th>Grid Trading</th><th>Buy &amp; Hold</th><th>DCA</th></tr>
 <tr><td>กำไรหลัก</td><td>Cashflow จากการแกว่ง</td><td>Capital gain (ราคาขึ้น)</td><td>ซื้อถัวเฉลี่ย ขายเมื่อพร้อม</td></tr>
 <tr><td>ต้องการ trend?</td><td>ไม่ต้อง (ต้องการ sideway)</td><td>ต้องการ (uptrend)</td><td>ได้ประโยชน์ถ้า uptrend</td></tr>
-<tr><td>Drawdown</td><td>น้อย (ถ้า zone ออกแบบดี)</td><td>สูงมาก (−30% ถึง −70%)</td><td>ปานกลาง</td></tr>
+<tr><td>Drawdown</td><td>น้อย (ถ้า zone ออกแบบดี)‡</td><td>สูงมาก (−30% ถึง −70%)</td><td>ปานกลาง</td></tr>
 <tr><td>ความซับซ้อน</td><td>กลาง (ต้องออกแบบ zone+step)</td><td>ต่ำ (ซื้อและรอ)</td><td>ต่ำ-กลาง</td></tr>
 <tr><td>ดีที่สุดเมื่อ</td><td>ตลาด sideway-choppy (H &lt; 0.5)†</td><td>Bull market ยาว</td><td>ตลาดผันผวน ระยะยาว</td></tr>
 <tr><td>แย่ที่สุดเมื่อ</td><td>ตลาด trending แรง (H &gt; 0.6)†</td><td>Bear market ยาว</td><td>Sideways แบบไม่ขึ้น</td></tr>
@@ -185,17 +206,86 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 </div>
 
 <div class="bx ba">
-<div class="bt">เมื่อไหร่ Grid ล้มเหลว</div>
+<div class="bt">‡ เมื่อไหร่ Grid ล้มเหลว — ทำไม "Drawdown น้อย" ในตารางข้างบนไม่ใช่ทั้งหมด</div>
 <p>Grid สมมติว่าตลาดแกว่ง (mean-reverting) — ถ้าราคา <strong>ดิ่งลงไม่กลับ</strong> หรือ <strong>ทะยานขึ้นไม่หยุด</strong> grid จะขาดทุนจาก inventory ที่ค้างอยู่</p>
 <p>ตัวอย่าง: BTC $100k → $60k โดยไม่กลับ → grid ซื้อตลอดทาง → inventory ค้าง → unrealized loss สูง แต่ถ้า <strong>Close System</strong> ออกแบบดี capital ไม่หมดจนกว่าจะถึง floor (ดู Part 1A)</p>
+<p>"Drawdown น้อย" ในตารางเปรียบเทียบด้านบนวัดจาก equity curve ที่ <strong>realized</strong> (grid ปิดกำไรเป็น step ๆ ตลอด) แต่ไม่ได้รวม unrealized loss ของ inventory ที่ยังค้างอยู่ตอนราคาต่ำ — ถ้าตลาด trend ลงแรง (H &gt; 0.6) drawdown ที่แท้จริงอาจไม่น้อยเลย เพราะ capital ถูกทยอยดึงเข้าไปซื้อของถูกลงเรื่อยๆ (fully deployed) ต่างจาก buy & hold ที่แค่ถือ position เดียวคงที่</p>
 </div>
 
-<h2 id="s0-4">0.4 ปรัชญา "Grid คือ Grid"</h2>
+<h2 id="s0-4">0.4 ทฤษฎีเบื้องหลัง — ทำไม Grid ถึงมีค่าจริง (Random Walk vs เกมของ Shannon)</h2>
+
+<p>ส่วนนี้คือข้อสรุปที่สำคัญที่สุดของทั้งเล่ม อธิบายว่ากำไรของ grid มาจากไหนจริงๆ — ควรอ่านให้จบก่อนไปต่อ</p>
+
+<h3>ทฤษฎีที่ต้องรู้: ใน Random Walk กำไรคาดหวังของ Grid = 0</h3>
+
+<p>ลองตัดเรื่อง mean-reversion ออกไปก่อน สมมติราคา "เดินสุ่ม" แท้ๆ — ขึ้นหรือลงทีละ 1 step ด้วยโอกาสเท่ากันเป๊ะ 50:50 ไม่มีแนวโน้ม ไม่มีความจำ คำถามตรงๆ คือ: grid ที่ตั้งไว้แล้วปล่อยให้ทำงานไปเรื่อยๆ จนกว่าราคาจะหลุดขอบ zone จะมีกำไรคาดหวังเท่าไหร่?</p>
+
+<p>คำตอบที่พิสูจน์ได้ทางคณิตศาสตร์คือ <strong>ศูนย์พอดี</strong> — และติดลบทันทีที่รวมค่า fee เหตุผลมาจากแรงสองแรงที่หักล้างกันเป๊ะ:</p>
+<ul>
+<li><strong>แรงบวก:</strong> ทุกครั้งที่ราคาแกว่งผ่านคู่ level → กำไร 1 step (นี่คือสิ่งที่เรามองเห็นและชอบ)</li>
+<li><strong>แรงลบ:</strong> โครงสร้าง grid ขายของทิ้งเร็วตอนขาขึ้น (จำกัด upside) และทยอยซื้อสะสมตอนขาลง (เพิ่ม exposure ให้ฝั่งขาดทุน) — วันที่ราคาเดินทางเดียวจนหลุดขอบ ความเสียหายก้อนนั้นมีค่าเฉลี่ยเท่ากับกำไร step เล็กๆ ที่เก็บมาได้ทั้งหมดพอดี</li>
+</ul>
+
+<div class="fm">Random walk 50:50, ทุน M, จำนวน grid n ช่อง, ไม่คิด fee:
+
+ความเสียหายคาดหวังจากการเดินทางเดียวจนหลุดขอบ
+  = (M/n) × (n²/8 − n/4)
+
+จำนวนรอบ arbitrage คาดหวังก่อนราคาหลุดขอบ
+  = n²/8 − n/4 รอบ   (กำไรรอบละ M/n)
+
+E(grid) = กำไรรอบแกว่ง − ความเสียหายหลุดขอบ = 0
+เมื่อรวม fee:  E(grid) &lt; 0</div>
+
+<p>ตัวเลข n²/8 − n/4 ใช้เป็น <strong>break-even check</strong> ก่อนตั้ง grid ได้เลย: grid ต้องเก็บรอบให้ได้เกินจำนวนนี้ก่อนราคาหลุด zone จึงจะชนะการถือเงินเฉยๆ</p>
+
+<table>
+<tr><th>n (จำนวนช่อง grid)</th><td>6</td><td>8</td><td>10</td><td>12</td><td>16</td><td>20</td></tr>
+<tr><th>รอบ break-even ที่ต้องเก็บให้ได้</th><td>3</td><td>6</td><td>10</td><td>15</td><td>28</td><td>45</td></tr>
+</table>
+
+<p><strong>วิธีใช้จริง:</strong> ประมาณรอบ/วัน ≈ ATR/Step (สูตรใน 0.2) คูณจำนวนวันที่คาดว่าราคาจะอยู่ใน zone แล้วเทียบกับตาราง — เช่น grid 10 ช่อง เก็บได้ 1.5 รอบ/วัน ต้องอยู่ใน zone เกิน ~7 วันถึงคุ้ม ถ้าประเมินแล้วไม่ถึง แปลว่า grid นั้นตั้งมาเพื่อแพ้ random walk</p>
+
+<div class="key-idea">
+<div class="ki-label">ข้อสรุปที่เปลี่ยนวิธีคิดทั้งเล่ม</div>
+<div class="ki-text">Grid <strong>ไม่ได้สร้างกำไรจากโครงสร้างของมันเอง</strong> — ใน random walk มันแค่แลก "กำไรเล็กๆ หลายครั้ง" กับ "เสียหายก้อนใหญ่ครั้งเดียว" แบบเจ๊ากันพอดี Edge ที่แท้จริงต้องมาจากอย่างใดอย่างหนึ่ง: <strong>(1)</strong> ตลาด mean-revert จริง (H &lt; 0.5 — ทำให้จำนวนรอบจริงมากกว่าที่ random walk ให้ → Part 4 คือเครื่องมือคัดตลาดแบบนี้) หรือ <strong>(2)</strong> ไม่หยุดเมื่อหลุดขอบ แต่ migrate grid ตามราคา (ดู Part 4 §4.5–4.6 เรื่อง Reset/Migration และ Part 1D) — เหตุผลที่ทางที่สองนี้ใช้ได้จริง มาจากเกมง่ายๆ อีกเกมหนึ่ง</div>
+</div>
+
+<h3>แล้วเงินจริงๆ มาจากไหน — เกมเหรียญของ Shannon</h3>
+
+<p>ถ้า grid ที่หยุดเมื่อหลุดขอบมีค่าคาดหวังเป็นศูนย์ แล้วคนที่ได้กำไรจาก grid จริงๆ เขาได้มาจากไหน? คำตอบซ่อนอยู่ในเกมง่ายๆ ที่นักคณิตศาสตร์ชื่อ Claude Shannon เคยเล่นให้ลูกศิษย์ดู</p>
+
+<p>คุณมีเงิน $100 แบ่งเป็นสองกอง: เงินสด $50 กับเหรียญ $50 กติกามีข้อเดียว — <strong>ทุกคืน ปรับพอร์ตกลับมาครึ่ง-ครึ่งเสมอ</strong> เหรียญขึ้นก็ขายส่วนเกินออก เหรียญลงก็ซื้อเพิ่มให้กลับมาครึ่งหนึ่ง</p>
+
+<p>สมมติเหรียญนี้บ้าพลัง: วันแรกราคาลดลงครึ่งหนึ่ง วันที่สองเด้งกลับเท่าตัว — จบสองวันราคากลับมาที่เดิมเป๊ะ คนถือเหรียญเฉยๆ ได้กำไร 0%</p>
+
+<table>
+<tr><th></th><th>เงินสด</th><th>เหรียญ</th><th>รวม</th></tr>
+<tr><td>เริ่ม</td><td>$50</td><td>$50</td><td>$100</td></tr>
+<tr><td>เหรียญ ÷2 → ปรับสมดุล</td><td>$37.5</td><td>$37.5</td><td>$75</td></tr>
+<tr><td>เหรียญ ×2 → ปรับสมดุล</td><td>$56.25</td><td>$56.25</td><td>$112.5</td></tr>
+</table>
+
+<p>ราคาจบที่เดิม แต่พอร์ตโต 12.5% — และจะโตแบบนี้ไปเรื่อยๆ ทุกรอบแกว่ง กำไรนี้ไม่ได้มาจากการรู้ทิศทาง (เกมนี้ไม่ต้องเดาอะไรเลย) มันมาจาก<strong>วินัยการปรับสมดุล</strong>ล้วนๆ: กติกาบังคับให้คุณซื้อตอนถูกและขายตอนแพงโดยอัตโนมัติ เสียงคุ้นๆ ไหม — นี่คือสิ่งเดียวกับที่ grid ทำ แค่คนละหน้ากาก</p>
+
+<p>แล้วอะไรคือความต่างระหว่างเกมของ Shannon (กำไร) กับ grid มีขอบในหัวข้อที่แล้ว (เจ๊า)? <strong>คำเดียว: "หยุด"</strong> เกมของ Shannon ไม่มีวันเลิกเล่น — ราคาลงเท่าไหร่ก็ปรับสมดุลต่อ ส่วน grid มีขอบยอมแพ้ที่ก้นเหว ขายทุกอย่างในวันที่แย่ที่สุดพอดี การ "ขายที่ก้นเหว" ครั้งเดียวนั้นแหละที่กินกำไรจากการแกว่งทั้งหมดคืนไปเป๊ะๆ ตามที่พิสูจน์ไว้ข้างบน</p>
+
+<p>เพราะฉะนั้น เส้นทางสู่กำไรของ grid จึงมีสองทาง ไม่มีทางที่สาม:</p>
+<ul>
+<li><strong>เล่นเฉพาะสนามที่แกว่งจริง</strong> (H &lt; 0.5 — Part 4 จะสอนวิธีดู) เพื่อให้เก็บรอบได้มากกว่าที่ตลาดสุ่มให้</li>
+<li><strong>เลิก "หยุด"</strong> — เมื่อราคาหลุดขอบ อย่าล้างพอร์ต แต่ย้ายสนามแล้วเล่นต่อ (Part 4 §4.5–4.6 และ Part 1D จะสอนวิธีทำอย่างปลอดภัย)</li>
+</ul>
+
+<p>แต่จำไว้ก่อนดีใจ: การเล่นต่อไม่ใช่ของฟรี เงินของคุณต้องอยู่ในเกมตลอดเวลา — inventory ที่ถือระหว่างทางลงคือค่าตั๋วของกำไรแบบ Shannon ความเสี่ยงไม่ได้หายไปไหน มันแค่เปลี่ยนชื่อ และหน้าที่ของทั้งเล่มนี้คือสอนวิธีจ่ายค่าตั๋วนั้นให้ถูกที่สุด</p>
+
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Dempster, Evstigneev &amp; Schenk-Hoppé, "Volatility-Induced Financial Growth" (2007) · Chen, Chen &amp; Jang, arXiv:2506.11921 (2025)</p>
+
+<h2 id="s0-5">0.5 ปรัชญา "Grid คือ Grid"</h2>
 
 <div class="philosophy-box">
 <div class="ph-title">หลักการที่ทำให้ Grid คือ Grid</div>
 <div class="ph-statement">"Enhancement เสริมคุณภาพ equity curve — ไม่ได้เพิ่ม total P&L อย่างมีนัย"</div>
-<div class="ph-sub">Grid framework เอง (ไม่มี indicator ใดเลย) ก็มี alpha จากการดักจับ mean-reversion<br>Indicator ช่วยลด DD, เพิ่ม Sharpe — แต่ P&L รวมใกล้เคียงเดิม</div>
+<div class="ph-sub">Grid framework เอง (ไม่มี indicator ใดเลย) ก็มี alpha จากการดักจับ mean-reversion — <em>เฉพาะในตลาดที่ mean-revert จริง (H &lt; 0.5)</em> เพราะใน random walk แท้ EV ของ grid = 0 (ดู 0.4)<br>Indicator ช่วยลด DD, เพิ่ม Sharpe — แต่ P&L รวมใกล้เคียงเดิม</div>
 </div>
 
 <p>นี่ไม่ได้หมายความว่า Enhancement ไม่มีค่า — ตรงกันข้าม:</p>
@@ -214,10 +304,10 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 <div class="bt">หลักฐาน: Coin Flip เป็น Indicator ก็ยังมีกำไร</div>
 <p>ลองสมมติ: ทุก 8 ชั่วโมง โยนเหรียญ → หัว = เปิด grid, ก้อย = หยุด grid</p>
 <p>ผลที่ได้: กำไร ≈ 50% ของ grid ที่รันตลอด 24 ชั่วโมง (เพราะเปิดแค่ครึ่งเวลา) — แต่ DD ลดลงด้วย</p>
-<p>ถ้า ADX filter ทำได้ดีกว่าโยนเหรียญ → มีค่า | ถ้าเท่ากัน → ใช้ random filter ประหยัดเวลา backtest</p>
+<p>ถ้า ADX filter (ADX = Average Directional Index — ตัววัด "ความแรงของ trend" สเกล 0–100 ยิ่งสูงยิ่ง trend ชัด รายละเอียดเต็มดู Part 4) ทำได้ดีกว่าโยนเหรียญ → มีค่า | ถ้าเท่ากัน → ใช้ random filter ประหยัดเวลา backtest</p>
 </div>
 
-<h2 id="s0-5">0.5 ประเภทของ Grid ที่เราจะเรียน</h2>
+<h2 id="s0-6">0.6 ประเภทของ Grid ที่เราจะเรียน</h2>
 
 <div style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0">
 
@@ -242,9 +332,16 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 <p>→ <a href="grid-part1c.html">Part 1C</a></p>
 </div>
 
+<div class="grid-type-card">
+<div class="gt-name">Asymmetric Hybrid Grid</div>
+<p>Buy-only เป็นแกนหลัก + hedge เฉพาะ inventory จริง + short เป็นชั้นเล็กที่จำกัดขาดทุนไว้ล่วงหน้า</p>
+<p><strong>เหมาะกับ:</strong> ไม่อยากเลือกสุดขั้วระหว่าง Buy-Only กับ Bidirectional</p>
+<p>→ <a href="grid-part1d.html">Part 1D</a></p>
 </div>
 
-<h2 id="s0-6">0.6 สามเสาหลักของ Grid ทุกแบบ</h2>
+</div>
+
+<h2 id="s0-7">0.7 สามเสาหลักของ Grid ทุกแบบ</h2>
 
 <p>ไม่ว่าจะเป็น Grid แบบไหน ต้องตัดสินใจ 3 อย่าง:</p>
 
@@ -269,26 +366,27 @@ C_total = Q × (P_1 + P_2 + ... + P_N_below)
 <p>→ ดูรายละเอียดใน <a href="grid-part1a.html">Part 1A</a> และ <a href="grid-part5.html">Part 5</a></p>
 </div>
 
-<h2 id="s0-7">0.7 ลำดับการเรียนและสิ่งที่รอคุณอยู่</h2>
+<h2 id="s0-8">0.8 ลำดับการเรียนและสิ่งที่รอคุณอยู่</h2>
 
 <table>
 <tr><th>Part</th><th>เนื้อหา</th><th>สิ่งที่จะทำได้หลังอ่าน</th></tr>
 <tr><td>1A</td><td>Close System + Zone Tricks + Soft Martingale</td><td>ออกแบบ grid ที่ไม่ bust ไม่ว่าราคาจะลงแค่ไหน (ถ้า capital พอ)</td></tr>
 <tr><td>1B</td><td>Buy-and-Sell (Bidirectional)</td><td>ทำกำไรทั้งขาขึ้นและขาลง บน perpetual futures</td></tr>
 <tr><td>1C</td><td>Grid Hedge</td><td>ป้องกัน inventory risk ด้วย perp short, เก็บ funding rate ไปด้วย</td></tr>
+<tr><td>1D</td><td>Asymmetric Hybrid Grid</td><td>ผสม buy-only core + hedge + capped short layer เป็นทางสายกลาง แทนการเลือกสุดขั้ว</td></tr>
 <tr><td>2</td><td>Bloating + Step Pyramid</td><td>จัดการ "grid บวม" และเพิ่ม step แทน size ในช่วง trend</td></tr>
 <tr><td>3</td><td>Volatility-Adaptive Zone+Step</td><td>ปรับ zone และ step ตาม ATR, IV, Donchian, Keltner อัตโนมัติ</td></tr>
-<tr><td>3B</td><td>Indicator Filter + Order Accumulation</td><td>ใช้ MA/EMA/ADX กรอง entry, รวบ order ที่พลาดด้วย signal</td></tr>
+<tr><td>3B</td><td>Indicator Filter + Order Accumulation</td><td>ใช้ RSI/Bollinger/Volume/Hurst กรอง entry ผ่าน Composite Score, รวบ order ที่พลาดด้วย signal</td></tr>
 <tr><td>4</td><td>Regime Detection</td><td>รู้ว่าตอนนี้ตลาด mean-revert หรือ trend → ตัดสินใจ grid on/off</td></tr>
 <tr><td>5</td><td>Kelly + Risk Management</td><td>คำนวณขนาด position ที่ optimal, ป้องกัน ruin</td></tr>
 <tr><td>6</td><td>Pair Grid</td><td>เทรด spread BTC↔ETH หรือ inverse correlation</td></tr>
 <tr><td>6B</td><td>Grid Snowball + DCA</td><td>ทบกำไร 3 แบบ, โอน cashflow ไปสร้าง wealth portfolio</td></tr>
 <tr><td>7+7B</td><td>Advanced + Framework+Indicator</td><td>IV-adaptive, funding-adaptive, Grid เป็น framework + indicator เป็น executor</td></tr>
-<tr><td>8</td><td>5 Supplementary Strategies</td><td>Trend follow, Funding Arb, CSP, Strangle, Stat Arb เสริม Grid</td></tr>
+<tr><td>8</td><td>5 Supplementary Strategies</td><td>Rebalancing, Stablecoin Grid, Flash Crash, Cross-Exchange Arb, Laddered CSP เสริม Grid</td></tr>
 <tr><td>9</td><td>Python Implementation</td><td>เขียน live bot บน Bybit ตั้งแต่ WebSocket ถึง state machine</td></tr>
 </table>
 
-<h2 id="s0-8">0.8 แบบฝึกหัด</h2>
+<h2 id="s0-9">0.9 แบบฝึกหัด</h2>
 
 <div class="ex">
 <div class="et">แบบฝึกหัด Part 0</div>

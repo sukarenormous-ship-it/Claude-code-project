@@ -97,7 +97,7 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 <div class="bx ba">
 <div class="bt">⚠️ p=0.55–0.65 เป็นสมมติฐาน ไม่ใช่ความจริงที่รับประกัน</div>
 <p>ค่า p ที่ถูกต้องขึ้นอยู่กับ: asset ที่เทรด, ช่วงเวลา, regime ปัจจุบัน — ค่าที่ backtest ได้จาก 90 วันมี Standard Error สูง</p>
-<p>ตัวอย่าง error propagation: p จริง = 0.60 แต่ estimate error ±0.05 → f* error ±30–40%</p>
+<p>ตัวอย่าง error propagation (ที่ b=1.0 ตามตาราง sensitivity ด้านล่าง): p จริง = 0.60 แต่ estimate error ±0.05 → f* คลาดเคลื่อนได้ถึง ±50% (p=0.55→f*=10%, p=0.65→f*=30%, เทียบกับ p=0.60→f*=20%)</p>
 <p><strong>แนะนำ: ใช้ Fractional Kelly (25% × f*) เสมอ</strong> เพื่อ buffer uncertainty ใน p</p>
 </div>
 
@@ -107,12 +107,12 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 (function(){
   MiniChart.line(document.getElementById('chartKelly'), {
     title: 'Kelly Curve — Expected Growth Rate vs Fraction of Capital Risked',
-    labels: ['0%','10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'],
+    labels: ['0%','10%','15%','20%','30%','40%','50%','60%','70%','80%','90%','100%'],
     datasets: [
       { label: 'Expected Growth Rate', color: '#06b6d4', fill: true,
-        data: [0, 3.0, 5.5, 7.5, 9.0, 9.8, 10.1, 9.5, 7.2, 3.5, -2.5] },
-      { label: 'Fractional Kelly (25%×f* = 15%)', color: '#16a34a', fill: false,
-        data: [null, null, 9.5, null, null, null, null, null, null, null, null] }
+        data: [0, 3.0, 4.25, 5.5, 7.5, 9.0, 9.8, 10.1, 9.5, 7.2, 3.5, -2.5] },
+      { label: 'Fractional Kelly (25%×f* = 15%)', color: '#16a34a', pointOnly: true,
+        data: [null, null, 4.25, null, null, null, null, null, null, null, null, null] }
     ],
     yMin: -5, yMax: 12,
     yLabel: 'Expected Growth (%/period)',
@@ -134,9 +134,9 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 
   Kelly f* = (0.83 × 2.25 − 0.17) / 2.25
            = (1.8675 − 0.17) / 2.25
-           = 1.6975 / 2.25 ≈ 0.755 (75.5%)
+           = 1.6975 / 2.25 ≈ 0.754 (75.4%)
 
-  Fractional Kelly (25%): f_safe = 0.755 × 0.25 = 0.189 ≈ 19%
+  Fractional Kelly (25%): f_safe = 0.754 × 0.25 = 0.189 ≈ 19%
 
   → ควรใส่เงินในกลยุทธ์ grid นี้ไม่เกิน 19% ของ net worth
 
@@ -144,10 +144,10 @@ $$f^* = \frac{p \cdot b - q}{b}$$
     Grid capital = $100,000 × 19% = $19,000</div>
 
 <div class="bx ba">
-<div class="bt">Sample Size Warning</div>
-<p>90 วัน × ~3 fills/วัน = ~270 trades — ยังน้อยเกินสำหรับ p estimate ที่แม่นยำ</p>
-<p>Standard Error of proportion: SE = √(p(1−p)/n) <em>(ตัวอย่างทั่วไป p=0.60: SE = √(0.6×0.4/270) ≈ <strong>±3%</strong>)</em> — ค่า p=0.83 ในตัวอย่าง backtest ข้างต้นให้ SE ≈ ±2.3%</p>
-<p>ใช้ 6–12 เดือนข้อมูล (500+ trades) เพื่อ SE &lt; 2% — หรือใช้ Fractional Kelly ตลอด</p>
+<div class="bt">Sample Size Warning — ทำไม 83% ไม่แม่นอย่างที่ตัวเลขดูดี</div>
+<p>ตัวเลข p=83% ข้างบนมาจากการนับ "เดือนที่กำไร" แค่ 3 เดือน (n=3) — ไม่ใช่ 270 fills ที่เกิดขึ้นในช่วงเดียวกัน สถิติของสัดส่วนต้องนับที่หน่วยซึ่งเป็นการทดลองอิสระจริงๆ และที่นี่หน่วยนั้นคือ "เดือน" ไม่ใช่ "fill ย่อยในเดือน"</p>
+<p>Standard Error ของสัดส่วน: SE = √(p(1−p)/n) — ที่ n=3: SE = √(0.83×0.17/3) ≈ <strong>±22%</strong> (ไม่ใช่ ±2–3% ที่จะได้ถ้าเผลอนับ n=270) แปลว่าค่า p จริงอาจอยู่ที่ไหนก็ได้ตั้งแต่ 60% ถึง 100% แล้วก็ยังไม่ขัดกับข้อมูล 3 เดือนที่มี</p>
+<p>ถ้าอยากได้ SE แคบกว่านี้ ต้องนับ win/loss เป็นรายรอบ grid จริง (270 รอบใน 90 วัน ที่ p=83% เดียวกัน ให้ SE = √(0.83×0.17/270) ≈ ±2.3% ตามตัวอย่างด้านล่าง) — ถ้ายังไม่มีข้อมูลระดับนั้น ให้สมมติว่า SE กว้างแบบนี้ไว้ก่อน แล้วดูหัวข้อถัดไปว่าทำไมมันสำคัญกว่าที่คิด</p>
 </div>
 
 <div class="bx bc">
@@ -163,16 +163,31 @@ $$f^* = \frac{p \cdot b - q}{b}$$
 <p><em>หาก p จริงต่ำกว่าที่ estimate 5% → f* ลดลงครึ่งหนึ่ง — ใช้ Fractional Kelly ป้องกัน overbet</em></p>
 </div>
 
-<div class="bx ba">
-<div class="bt">ทำไมต้อง Fractional Kelly (25% ของ f*)?</div>
-<p>Kelly เต็มๆ (f* ≈ 75% จากตัวอย่าง 5.2) ให้ growth สูงสุดทางทฤษฎี แต่ในทางปฏิบัติ:</p>
-<ul>
-<li>p และ b ที่ estimate มีความผิดพลาด — Kelly sensitive มากต่อ error</li>
-<li>Kelly เต็มทำให้ variance สูงมาก — drawdown ลึก</li>
-<li>Fractional Kelly 25% ให้ ~80% ของ growth แต่ variance ลดลง 75%</li>
-</ul>
-<p>ดูรายละเอียดใน <a href="statarb-ch0.html">Statarb Ch.12</a></p>
+<h3>ทำไมถึงใช้แค่ 1 ใน 4 ของ Kelly — คำตอบที่ดีกว่า "เผื่อไว้ก่อน"</h3>
+
+<p>ถึงตรงนี้คุณคำนวณ f* ได้แล้ว (75.4% จากตัวอย่าง 5.2) และเราสั่งให้หารสี่ก่อนใช้เสมอ ถ้าคุณเคยแอบคิดว่า "โอเวอร์ไปไหม กำไรหายไปตั้งสามในสี่" — คำถามนี้สมควรได้คำตอบจริงๆ ไม่ใช่แค่ "เผื่อไว้ก่อน"</p>
+
+<p><strong>ชั้นแรก:</strong> ตัวเลขที่ป้อน Kelly นั้นแม่นน้อยกว่าที่คิดมาก — กล่อง Sample Size Warning ข้างบนเพิ่งแสดงว่า p=83% มี SE กว้างถึง ±22% และ Kelly มีนิสัยร้ายอยู่ข้อหนึ่ง: <strong>แพ้ทางการมองโลกแง่ดี</strong> ถ้า p จริงต่ำกว่าที่คิด full Kelly ไม่ใช่แค่กำไรน้อยลง แต่พาทั้งพอร์ตดิ่งได้ (ตาราง sensitivity ข้างบนแสดงแล้วว่า p ประเมินพลาดแค่ 5% ทำให้ f* หายไปครึ่งหนึ่ง) การเดิมพันด้วยเศษเสี้ยวของ Kelly คือการซื้อประกันความไม่รู้ของตัวเอง</p>
+
+<p><strong>ชั้นที่สอง — คำถามที่เปลี่ยนวิธีคิด:</strong> แทนที่จะถามว่า "โตเร็วสุดต้องเดิมพันเท่าไหร่" ให้ถามกลับด้านว่า <strong>"ถ้ายอมให้โอกาสเจอ drawdown ทะลุ −8% (เส้น HALT ของเราเองใน 5.5) มีได้ไม่เกิน 1 ใน 20 ครั้ง — เดิมพันได้มากสุดเท่าไหร่?"</strong> คำถามนี้มีคำตอบทางคณิตศาสตร์ และสำหรับพารามิเตอร์แบบ grid ทั่วไป (win rate สูง กำไรต่อรอบเล็ก ความไม่แน่นอนของ p กว้างแบบที่เพิ่งเห็น) คำตอบจะตกอยู่แถว <strong>0.2–0.3 เท่าของ f*</strong> แทบทุกครั้ง</p>
+
+<p>มองเห็นไหมว่าเกิดอะไรขึ้น: กฎ "หารสี่" ที่ใช้มาตลอดเล่มไม่ได้เปลี่ยนสักนิด แต่สถานะของมันเปลี่ยน — จากกฎที่ขอให้เชื่อ กลายเป็นผลลัพธ์ที่คำนวณย้อนได้จากเส้น drawdown ที่คุณเป็นคนเลือกเองใน 5.5 ระบบ sizing กับระบบเบรกของเล่มนี้เป็นเรื่องเดียวกันมาตั้งแต่ต้น เราเพิ่งต่อสายให้เห็น</p>
+
+<details>
+<summary>ตารางปรับ fraction เอง ถ้าไม่อยากใช้ 25% ตายตัว (กดเปิด)</summary>
+<div class="ans">
+<table>
+<tr><th>DD budget ที่ยอมรับ (เส้น HALT)</th><th>ความมั่นใจใน p</th><th>Fraction ที่แนะนำ</th></tr>
+<tr><td>−8% (default เล่มนี้)</td><td>กว้าง (SE &gt; 10% — ข้อมูล &lt;3 เดือน หรือนับเป็นเดือน)</td><td>0.15–0.20 × f*</td></tr>
+<tr><td>−8%</td><td>ปานกลาง (SE 3–10% — ข้อมูล 3–6 เดือน)</td><td>0.25 × f* (ค่า default)</td></tr>
+<tr><td>−8%</td><td>แคบ (SE &lt; 3% — นับรายรอบ 500+ รอบ)</td><td>0.30–0.35 × f*</td></tr>
+<tr><td>−12% (ยอมเสี่ยงมากขึ้น)</td><td>ปานกลาง</td><td>0.30–0.40 × f*</td></tr>
+</table>
 </div>
+</details>
+
+<p>ดูรายละเอียดเพิ่มเติมใน <a href="statarb-ch0.html">Statarb Ch.12</a></p>
+<p class="caption">อ่านต่อ (ไม่จำเป็นต้องอ่านเพื่อใช้เล่มนี้): Busseti, Ryu &amp; Boyd, "Risk-Constrained Kelly Gambling" (2016)</p>
 
 <h2 id="s5-3">5.3 Q (Quantity) ต่อ Level — จาก Kelly</h2>
 
@@ -185,17 +200,15 @@ Avg price        = ($90k + $110k) / 2 = $100k
 Q per level = grid_capital / (N × avg_price)
             = $19,000 / (10 × $100,000)
             = $19,000 / $1,000,000
-            ≈ 0.019 BTC ≈ 0.02 BTC (round down)
+            = 0.019 BTC (ใช้ precision 3 ตำแหน่งเหมือน Exercise 2 ด้านล่าง — ไม่ต้องปัดขึ้นเป็น 0.02
+              เพราะ 0.019 ก็อยู่ในงบ $19,000 พอดีอยู่แล้ว การปัดขึ้นเป็น 0.02 จะทำให้เกินงบ)
 
-ตรวจสอบ: 10 levels × 0.02 BTC × $100k = $20,000 ≈ $19,000 ✓
-
-Capital ที่ใช้จริง (ถ้าซื้อครบ floor):
-  Σ Q × P_i = 0.02 × ($100k + $98k + ... + $90k) + sell side
-  = 0.02 × $940k (10 levels avg) = $18,800 ≈ $19,000 ✓</div>
+ตรวจสอบ: 10 levels × 0.019 BTC × avg_price $100k = $19,000 ✓ ตรงงบพอดี
+(ใช้ avg_price เดียวกับที่คำนวณไว้ข้างบน — ไม่ใช่ผลรวม price แยกที่ได้ avg ต่างไป)</div>
 
 <h2 id="s5-4">5.4 Max Notional ต่อ Level — Position Limit</h2>
 
-<p>นอกจาก Kelly ที่กำหนด grid size รวม ควรมี position limit ต่อ level เพื่อป้องกันความเสี่ยงกระจุก:</p>
+<p>นอกจาก Kelly ที่กำหนด grid size รวม ควรมี position limit ต่อ level เพื่อป้องกันความเสี่ยงกระจุก — "Notional" คือมูลค่าเต็มของ position ต่อ level (Q × ราคา) ไม่ใช่แค่ทุนที่วางค้ำ:</p>
 
 <div class="fm">Position Limit Rules:
 
@@ -205,14 +218,14 @@ Rule 1: Max Notional ต่อ Level ≤ 5% ของ total capital
 
 Rule 2: ในช่วงที่ Hurst สูง (trending) → ลด limit ลงอีก
   ถ้า H > 0.55: max_q × 0.7  (ลด 30%)
-  ถ้า H > 0.60: max_q × 0.4  (ลด 60%)
+  ถ้า H > 0.58: max_q × 0.4  (ลด 60% — เข้าเขต GRID OFF ของ Part 4 พอดี)
 
 Rule 3: Concentration cap — ไม่ให้ 3 levels ติดกันมี Q รวม > 10% ของ capital
   (ป้องกัน bottom-heavy bloating ที่เกินไป)
 
 def check_position_limits(grid_levels, total_capital, hurst):
     max_per_level = total_capital * 0.05
-    if hurst > 0.60:
+    if hurst > 0.58:
         max_per_level *= 0.4
     elif hurst > 0.55:
         max_per_level *= 0.7
@@ -347,13 +360,13 @@ Summary:
 <summary>ข้อ 4 (Challenge): Hurst = 0.62 · กำลังจะเปิด grid ด้วย Q = 0.03 BTC — ควรปรับ Q อย่างไร?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>H = 0.62 > 0.60 → ใช้ Q multiplier 0.4 (ลด 60%)</p>
-<p>Q adjusted = 0.03 × 0.40 = <strong>0.012 BTC</strong></p>
-<p>เหตุผล: H > 0.60 = trending regime = grid fill น้อย + inventory accumulate ไม่หยุด → ลด size ก่อน</p>
-<p><strong>กฎแยกแยะสองทางเลือก:</strong></p>
+<p>H = 0.62 > 0.58 → สัญญาณ Hurst เดี่ยวใน Part 4's 2-of-3 vote (ดู <a href="grid-part4.html">Part 4</a> §4.4) จะเป็น "OFF" ทันที แต่ state รวมของทั้งระบบเป็น GRID_OFF จริงหรือไม่ยังขึ้นกับ ADX/BB ด้วย (H เดี่ยวไม่ครบ 2-of-3 อาจได้แค่ CAUTION ถ้าอีก 2 สัญญาณยังไม่ยืนยัน) — <strong>แต่ไม่ต้องรอผลโหวตนั้น</strong> เพราะ position-limit rule ของ §5.4 เองก็ล็อก H&gt;0.58 ไว้ที่ multiplier 0.4× อยู่แล้วโดยตรง ไม่ขึ้นกับ state machine เลย และในทางปฏิบัติควรระมัดระวังเป็นพิเศษ (ไม่เปิดใหม่) เมื่อ Hurst สูงขนาดนี้แม้ state รวมจะยังไม่ใช่ GRID_OFF เต็มที่</p>
+<p>Q adjusted = <strong>0 BTC</strong> (ระมัดระวังไว้ก่อน — ไม่เปิดใหม่จนกว่าจะเช็ค ADX/BB ยืนยันทิศทางและ state รวม)</p>
+<p>เหตุผล: H > 0.58 = สัญญาณ trending ที่ควรระมัดระวังสูงสุดไม่ว่า vote รวมจะออกมาเป็น CAUTION หรือ GRID_OFF เพราะ grid fill น้อย + inventory accumulate ไม่หยุดได้ทั้งสองกรณี → หยุดเปิดใหม่ไว้ก่อนปลอดภัยกว่า</p>
+<p><strong>กฎแยกแยะสองชั้นป้องกัน (defense in depth):</strong></p>
 <ul>
-<li><strong>H ∈ [0.60, 0.65]</strong> → ลด Q ด้วย multiplier 0.4 เพื่อ limit exposure ขณะรอ regime กลับ — ยังได้ cashflow บ้าง</li>
-<li><strong>H &gt; 0.65</strong> (trending แรงมาก) → <strong>pause grid ทั้งหมด</strong> จนกว่า H &lt; 0.55 (ดู <a href="grid-part4.html">Part 4</a> section 4.4) — ลด Q แต่ไม่ stop ไม่คุ้มค่า fee</li>
+<li><strong>H ∈ [0.55, 0.58]</strong> → position-limit rule ลด Q ด้วย multiplier 0.7 ล่วงหน้า (multiplier 0.4 สงวนไว้สำหรับ H &gt; 0.58 ตาม §5.4) เพื่อ limit exposure ก่อนถึง threshold OFF — ยังได้ cashflow บ้างระหว่างรอ</li>
+<li><strong>H &gt; 0.58</strong> → Part 4 state machine สั่ง <strong>GRID OFF ทั้งหมด</strong> จนกว่า H &lt; 0.55 (resume condition, ดู Part 4 §4.4 และ §5.5) — ชั้นนี้คือตัวปิดจริง ไม่ใช่แค่ลด Q</li>
 </ul>
 </div>
 </details>

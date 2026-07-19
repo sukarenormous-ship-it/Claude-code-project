@@ -72,6 +72,14 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <div class="ki-eq">กำไรรวม = กำไร Long Layer + กำไร Short Layer − Funding Rate ที่จ่าย (net)</div>
 </div>
 
+<div class="bx bc">
+<div class="bt">Futures 101 — พื้นฐานที่ต้องรู้ก่อนเข้าเรื่อง Short Layer</div>
+<p><strong>Perpetual Futures (Perp)</strong> คือสัญญาซื้อขายล่วงหน้าแบบไม่มีวันหมดอายุ ต่างจากการซื้อ BTC จริง (spot) ตรงที่คุณไม่ได้ถือเหรียญจริง แต่ถือ "สัญญา" ที่ราคาผูกกับ BTC</p>
+<p><strong>Short = "ขายก่อน ซื้อคืนทีหลัง"</strong> — ยืม BTC มาขายที่ราคาปัจจุบัน แล้วหวังซื้อคืนที่ราคาต่ำกว่าเพื่อทำกำไร (ตรงข้ามกับ Long ที่ซื้อก่อนขายทีหลัง) นี่คือสิ่งที่ทำให้ grid ทำกำไรได้แม้ราคาขาลง</p>
+<p><strong>Margin กับ Leverage:</strong> เวลาเปิด position บน Perp ไม่ต้องวางเงินเต็มมูลค่า (notional) — วางแค่ "เงินค้ำ" (margin) ส่วนหนึ่ง ตามอัตราทด (leverage) ที่เลือก สูตรคือ <code>margin = notional / leverage</code> เช่น notional $5,000 ที่ leverage 10× → margin แค่ $500 ยิ่ง leverage สูง margin ยิ่งน้อย <strong>แต่ความเสี่ยงไม่ได้หายไป</strong> — แค่ใช้เงินน้อยลงในการเปิด position ขนาดเท่าเดิม</p>
+<p><strong>Liquidation (การถูกบังคับปิด position):</strong> ถ้าราคาขยับสวนทางจนขาดทุนเกิน margin ที่วางไว้ exchange จะบังคับปิด position ทันทีเพื่อป้องกันขาดทุนเกินเงินที่มี — ยิ่ง leverage สูง ยิ่งใช้ราคาขยับน้อยก็ liquidate ได้ นี่คือเหตุผลที่เล่มนี้จำกัด leverage ไว้ที่ ≤10× และมี Short Loss Buffer (ดู §1B.3) เผื่อไว้เสมอ</p>
+</div>
+
 <h2 id="s1b-1">1B.1 Buy-Only vs Buy-and-Sell — เปรียบเทียบ</h2>
 
 <div class="grid-compare">
@@ -138,16 +146,29 @@ Long Layer (ซื้อ BTC ด้วยเงิน):
               = 0.01 × $470k = $4,700
 
 Short Layer (ต้องการ margin สำหรับ short position):
-  Capital_short = Q × Σ(P_i) × margin_rate  (เช่น 5% = 20× leverage)
-               = 0.01 × ($102k + $104k + $106k + $108k + $110k) × 5%
-               = 0.01 × $530k × 5% = $265  (ถ้าใช้ 20× leverage)
-               = $530  (ถ้าใช้ 10× leverage)
+  Capital_short = Q × Σ(P_i) × margin_rate  (ใช้ 10× leverage ตามกฎ leverage cap ด้านล่าง)
+               = 0.01 × ($102k + $104k + $106k + $108k + $110k) × 10%
+               = 0.01 × $530k × 10% = $530
+               (ถ้าเสี่ยงกว่านี้ใช้ 20× leverage → margin เหลือแค่ $265 — แต่ขัดกฎ ≤10× จึงไม่ใช้เป็นเลขหลัก)
 
-Capital รวม (20× leverage บน short):
-  Total = $4,700 (long) + $265 (short) = $4,965
+Capital รวม (margin-only — ตัวเลขนี้ยังไม่ใช่ทุนที่ปลอดภัย):
+  Total_margin = $4,700 (long) + $530 (short) = $5,230
 
-เปรียบกับ Buy-Only: $4,700 + 6% เท่านั้น
-แต่ได้รอบเพิ่มอีก 2× ในช่วง sideway</div>
+⚠ margin คือ "เงินค้ำ" ไม่ใช่ "เพดานขาดทุน" — ทุนจริงต้องเผื่อ
+ขาดทุนกรณี short โดน SL ทุก order ด้วย:
+
+Short Loss Buffer = Σ Q × (SL − Entry_j)
+  SL = zone_top + 5% = $110k × 1.05 = $115.5k
+  Σ(SL − Entry) = $13.5k + $11.5k + $9.5k + $7.5k + $5.5k = $47.5k
+  Buffer = 0.01 × $47.5k = $475
+
+Total (conservative) = C_long + M_short + Short Loss Buffer
+                     + Fee/Funding/Slippage Reserve
+                     ≈ $4,700 + $530 + $475 + ~$60 ≈ $5,765
+
+เปรียบกับ Buy-Only: $4,700 → Bidirectional ต้องการเพิ่ม ~23% (conservative total)
+(ไม่ใช่ +11.3% แบบที่เห็นจาก margin-only $5,230 อย่างเดียว — ต้องรวม Short Loss Buffer + reserve ด้วย)
+แลกกับรอบเพิ่มอีก 2× ในช่วง sideway</div>
 
 <div class="bx ba">
 <div class="bt">Leverage Warning — Short Layer</div>
@@ -157,7 +178,7 @@ Capital รวม (20× leverage บน short):
 </div>
 
 <canvas id="chartBidirectional" class="chart" style="height:360px"></canvas>
-<p class="caption">Bidirectional Grid ทำกำไรได้ทั้ง 3 สถานการณ์ — Long-only ขาดทุนเมื่อราคาลง แต่ Bidirectional ยังได้กำไรจาก Short Layer</p>
+<p class="caption">Bidirectional Grid ทำกำไรได้ทั้ง 3 สถานการณ์<em>ที่ราคายังอยู่ใน zone</em> — Long-only ขาดทุนเมื่อราคาลง แต่ Bidirectional ยังได้กำไรจาก Short Layer (ถ้า trend แรงจนหลุดขอบ ดูตาราง 1B.5 — ทั้งคู่แย่)</p>
 <script>
 (function(){
   MiniChart.bar(document.getElementById('chartBidirectional'), {
@@ -177,7 +198,7 @@ Capital รวม (20× leverage บน short):
 
 <h2 id="s1b-4">1B.4 Funding Rate — ต้นทุนซ่อนของ Short Layer</h2>
 
-<p>Perpetual futures มี funding rate ที่จ่ายทุก 8 ชั่วโมง — ถ้า funding rate เป็นบวก ฝั่ง short ได้รับเงิน ถ้าเป็นลบ ฝั่ง short จ่ายเงิน</p>
+<p>Perpetual futures มี funding rate ที่จ่ายทุก 8 ชั่วโมง — ถ้า funding rate เป็นบวก ฝั่ง short ได้รับเงิน ถ้าเป็นลบ ฝั่ง short จ่ายเงิน (ทำไม funding ถึงมีและทำไมพลิกลบได้ — ดูกลไก "ค่าเช่าความห่าง" ใน Part 1C §1C.3; เลข ×3/วัน ด้านล่างเป็นค่าของ exchange ที่เก็บทุก 8 ชม. ไม่ใช่กฎธรรมชาติ)</p>
 
 <div class="fm">Funding Cost/Income (Short Layer):
   funding_pnl = short_notional × funding_rate × (24/8) per day
@@ -249,11 +270,13 @@ Short side: ใช้ different approach — short layer มี SL
 <tr><td>S4</td><td>$106k–$108k</td><td>SELL $108k / BUY $106k</td><td>$108</td></tr>
 </table>
 
-<p><strong>Capital รวม:</strong> Long $3,800 + Short $420 = <strong>$4,220</strong></p>
+<p><strong>Capital margin-only:</strong> Long $3,800 + Short margin $420 = <strong>$4,220</strong> (ตัวเลขนี้ยังไม่ใช่ทุนปลอดภัย — ดู §1B.3)</p>
 <p><strong>SL ของ Short Layer:</strong> $108k × 1.05 = $113,400 (ถ้า BTC พุ่งเกินนี้ → ปิด short ทั้งหมด)</p>
-<p><strong>Daily estimate:</strong> 3 รอบ (2 long + 1 short) × $18 avg = $54/วัน = 1.28%/วัน บน $4,220</p>
-<p><strong>เปรียบ Buy-Only เดิม (4 levels):</strong> 1.5 รอบ × $18 = $27/วัน = 0.72%/วัน บน $3,800</p>
-<p>Bidirectional: +78% cashflow ด้วย capital +11% เพิ่ม — แต่ขึ้นกับ market regime</p>
+<p><strong>Short Loss Buffer:</strong> Σ Q×(SL−Entry) = 0.01×($11.4k+$9.4k+$7.4k+$5.4k) = 0.01×$33.6k = $336</p>
+<p><strong>Capital รวม (conservative):</strong> $4,220 + $336 ≈ <strong>$4,560</strong> + fee/funding reserve เล็กน้อย</p>
+<p><strong>Daily estimate (mechanical illustration — ไม่ใช่ expected return):</strong> 3 รอบ (2 long + 1 short) × $18 avg = $54/วัน ≈ 1.18%/วัน บน $4,560</p>
+<p><strong>เปรียบ Buy-Only เดิม (4 levels):</strong> 1.5 รอบ × $18 = $27/วัน = 0.71%/วัน บน $3,800</p>
+<p>Bidirectional: cashflow +100% (2 เท่า จากรอบที่เพิ่มขึ้นเป็น 3 รอบ) ด้วย capital เพิ่มขึ้น +20% (conservative) — แต่ขึ้นกับ market regime</p>
 </div>
 
 <h2 id="s1b-8">1B.8 Pseudocode — Bidirectional Grid Manager</h2>
@@ -266,6 +289,7 @@ Short side: ใช้ different approach — short layer มี SL
         self.step = step
         self.q_long = q_long     # BTC per long level
         self.q_short = q_short   # BTC per short level
+        self.leverage_short = leverage_short  # ต้อง ≤10× ตามกฎ (ดู §1B.3) — ใช้ตอนคำนวณ margin จริง
         self.short_sl = zone_high * (1 + short_sl_buffer)
 
     def setup_orders(self, current_price):
@@ -334,7 +358,7 @@ Short side: ใช้ different approach — short layer มี SL
 <summary>ข้อ 4: ตลาด Bull Run ชัด (H=0.65, ADX=40) — ควรทำ Bidirectional หรือ Buy-Only?</summary>
 <div class="ans">
 <p><strong>คำตอบ:</strong></p>
-<p>H=0.65 &gt; 0.58 → trending regime → <strong>ทั้งคู่ไม่เหมาะ</strong></p>
+<p>H=0.65 &gt; 0.58 → trending regime และ ADX=40 (ตัววัดความแรงของ trend สเกล 0–100 ยิ่งสูงยิ่ง trend ชัด — รายละเอียดเต็มดู Part 4) ยืนยันว่า trend นี้แรงจริง ไม่ใช่สัญญาณหลอก → <strong>ทั้งคู่ไม่เหมาะ</strong></p>
 <p>Buy-Only: inventory มีมูลค่าขึ้นตาม trend แต่ grid fill น้อย (ราคาไม่กลับมา) → cashflow น้อย</p>
 <p>Bidirectional: Short layer ขาดทุนต่อเนื่องเพราะ BTC ขึ้นไม่หยุด → เสี่ยง loss มาก</p>
 <p><strong>คำแนะนำ:</strong> Pause grid ทั้งหมด | รอ H &lt; 0.55 → เปิด grid ใหม่ | ดู <a href="grid-part4.html">Part 4: Regime Detection</a></p>
