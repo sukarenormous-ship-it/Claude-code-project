@@ -1,6 +1,6 @@
 # แผนขัดเกลา + เพิ่มแนวคิด "Adaptive Grid น้ำมัน" เข้าหนังสือ Grid Trading Mastery
 
-> สถานะ: **รอ user อนุมัติ** — ยังไม่มีการแก้ไฟล์หนังสือใดๆ
+> สถานะ: **อนุมัติแล้ว + ดำเนินการครบทั้ง 5 จุด (A–E) เรียบร้อย** — ดู commit "Add Adaptive Grid concepts"
 > ที่มา: โพสต์แชร์ไอเดียระบบ Adaptive Grid บน WTI (Linear Regression trend filter,
 > ATR-adaptive step, delay refresh, overlap prevention, rolling basket TP, kill switch)
 > ผลทดสอบที่เคลม: 2019–2026, fixed 0.3 lot, ทุน $2,000, PF 5, Sharpe 1.2, MaxDD −16%
