@@ -8,7 +8,7 @@
 <style>
 :root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}
 h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
 h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
 h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
@@ -54,6 +54,15 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 .nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
 .nav a{color:var(--teal);text-decoration:none;font-weight:600}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+.read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
+.ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
+.ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
+.ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
+.ai-decode .ad-code .c{color:#64748b}
+.ai-decode .ad-steps{background:var(--violet-bg);padding:14px 20px;font-size:.95em}
+.ai-decode .ad-steps ol{margin-bottom:.5em}
+.ai-decode .ad-steps p:last-child{margin-bottom:0}
 </style>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <script src="vendor/katex/katex.min.js"></script>
@@ -67,6 +76,12 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <h1>Async &amp; Live Trading — เทรดจริงแบบอัตโนมัติ</h1>
 <div class="sub">บทที่ 31–35: Async Fundamentals · asyncio Patterns · WebSocket &amp; Live Data · Order Execution · Live System Integration<br>
 จบ Part นี้ → ระบบ live trading อัตโนมัติที่รับ feed จริง ส่งออเดอร์จริง พร้อม kill switch และ monitoring</div>
+</div>
+
+<div class="bx bd">
+<div class="bt">🧭 อ่าน Part นี้ยังไง</div>
+<p><strong>🟢 เพิ่งเคยเจอ async ครั้งแรก</strong> — อ่านบทที่ 31 ให้ช้าที่สุดในเล่ม โดยเฉพาะกล่อง 🤖 ที่แกะ <code>async def</code> / <code>await</code> / <code>gather</code> · 4 คำนี้คือรากของทั้ง Part ถ้าข้ามไป บทที่ 32–35 จะกลายเป็นการลอกโค้ด · <strong>เจอบล็อกโค้ดยาว ๆ ให้หากล่อง 🧱 "โครงก่อนดูโค้ด" ที่อยู่เหนือมันก่อนเสมอ</strong> แล้วค่อยลงอ่านรายละเอียด</p>
+<p><strong>🔵 เขียน async เป็นแล้ว</strong> — กวาดบทที่ 31–32 ผ่านได้ · ของจริงสำหรับคุณอยู่ในกล่อง <strong>🔵 [รอบสอง]</strong> และ ⚠️ กับดัก: thundering herd และ jitter, เหตุผลที่ไม่ดัก <code>Exception</code> เปล่า, <code>gather</code> กับ exception ที่ทิ้ง task ค้าง, backpressure ของ <code>asyncio.Queue</code>, และเส้นแบ่ง I/O-bound vs CPU-bound ที่ async ช่วยไม่ได้</p>
 </div>
 
 <div class="key-idea">
@@ -184,6 +199,45 @@ prices = asyncio.run(get_all_prices_async())
 print(prices)</div>
 <div class="output">Async: ใช้เวลา 1.0s
 {'binance': 65000.0, 'bybit': 65010.0, 'okx': 64990.0, 'bitget': 65005.0}</div>
+
+<div class="read-aloud">4.0s → 1.0s ทั้งที่<strong>ยังรอ 1 วินาทีเท่าเดิมทุกตลาด</strong> — เพราะเปลี่ยนจาก "รอทีละตัวต่อกัน" เป็น "เริ่มรอทั้ง 4 ตัวพร้อมกันแล้วรอครั้งเดียว" · เวลารวมจึงเท่ากับตัวที่<em>ช้าที่สุด</em> ไม่ใช่<em>ผลรวม</em></div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 3 คำใหม่ที่เพิ่งโผล่พร้อมกัน — แกะทีละตัว</div>
+<div class="ad-code">async def fetch_price_async(exchange):   # ① async def
+    await asyncio.sleep(1)               # ② await
+    ...
+
+results = await asyncio.gather(          # ③ gather
+    fetch_price_async("binance"),
+    fetch_price_async("bybit"),
+)
+
+prices = asyncio.run(get_all_prices_async())   # ④ run</div>
+<div class="ad-steps">
+<p>ทั้ง 4 ตัวนี้ทำงานร่วมกันเป็นชุดเดียว อ่านตามลำดับนี้:</p>
+<ol>
+<li><code>async def</code> — "ฟังก์ชันนี้<strong>หยุดกลางคันได้</strong>" · เรียกแล้ว <strong>ยังไม่ทำงานทันที</strong> แต่คืน "ใบสั่งงาน" (coroutine) กลับมา — ต่างจาก <code>def</code> ปกติที่เรียกแล้วทำเลยจนจบ</li>
+<li><code>await</code> — "ตรงนี้ต้องรอ · <strong>ระหว่างรอ ปล่อยให้คนอื่นทำงานไปก่อน</strong>" · จุดที่มี <code>await</code> คือจุดเดียวที่งานอื่นแทรกได้ ถ้าไม่มี <code>await</code> เลย async ก็ไม่ต่างจากโค้ดปกติ</li>
+<li><code>asyncio.gather(a, b, c)</code> — "เอาใบสั่งงานทั้งหมดนี้ไป<strong>เริ่มพร้อมกัน</strong> แล้วรอจนครบทุกใบ" · คืนผลลัพธ์เป็น list <strong>เรียงตามลำดับที่ใส่เข้าไป</strong> ไม่ใช่ตามลำดับที่เสร็จ</li>
+<li><code>asyncio.run(...)</code> — "เปิดสวิตช์ event loop แล้ววิ่งใบสั่งงานนี้จนจบ" · เป็น<strong>สะพานจากโลกปกติเข้าโลก async</strong> เรียกได้จากโค้ดธรรมดาเท่านั้น (ห้ามเรียกซ้อนใน <code>async def</code>)</li>
+</ol>
+<p>จำง่าย: <em><code>async def</code> = เขียนใบสั่งงาน · <code>await</code> = จุดพัก · <code>gather</code> = เริ่มพร้อมกัน · <code>run</code> = เปิดสวิตช์</em></p>
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ กับดักที่ทำให้ async ไม่เร็วขึ้นเลย — <code>time.sleep</code> ปนใน <code>async def</code></div>
+<p>ถ้าเผลอเขียน <code>time.sleep(1)</code> แทน <code>await asyncio.sleep(1)</code> ข้างใน <code>async def</code> โค้ดจะ<strong>ยังรันได้ ไม่ error</strong> แต่กลับไปช้า 4 วินาทีเหมือนเดิม เพราะ <code>time.sleep</code> <strong>แช่แข็ง event loop ทั้งวง</strong> — งานอื่นแทรกไม่ได้เลย</p>
+<p>🧭 <strong>กฎ:</strong> ข้างใน <code>async def</code> ทุกการรอต้องมี <code>await</code> นำหน้า ถ้าเจอฟังก์ชันรอที่ไม่มี <code>await</code> ได้ (เช่น <code>requests.get</code>, <code>time.sleep</code>, การอ่านไฟล์ใหญ่) แปลว่ามันจะบล็อกทั้งระบบ</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] async ไม่ได้ทำให้ทุกอย่างเร็วขึ้น</div>
+<p>async เร่งได้เฉพาะงานที่ <strong>"รออย่างอื่นอยู่"</strong> (I/O-bound: network, disk) เพราะมันแค่เอาเวลาว่างระหว่างรอไปทำงานอื่น · งานที่ <strong>CPU ทำงานเต็มที่</strong> (I/O ไม่มี — เช่น คำนวณ backtest ล้านรอบ, optimize portfolio) async <strong>ไม่ช่วยเลยแม้แต่นิดเดียว</strong> เพราะไม่มีช่วง "ว่างระหว่างรอ" ให้แทรก — กรณีนั้นต้องใช้ <code>multiprocessing</code></p>
+<p>ในสาย quant เส้นแบ่งนี้ชัดมาก: <strong>ดึงราคาจาก 10 ตลาด</strong> = async ช่วยเต็ม ๆ · <strong>รัน Monte Carlo 100k paths</strong> = async เปล่าประโยชน์</p>
+<p>อีกจุดที่มือโปรพลาดบ่อย: <code>gather</code> ถ้ามีตัวใดตัวหนึ่ง raise exception ตัวที่เหลือ<strong>ยังวิ่งต่อในเบื้องหลัง</strong> และ exception แรกจะเด้งออกมาทันที — ถ้าอยากได้ผลทุกตัวรวม error ต้องใส่ <code>return_exceptions=True</code> ไม่งั้น production จะเจอ task ค้างแบบเงียบ ๆ</p>
+</div>
 
 <div class="bx bb">
 <div class="bt">สรุปความแตกต่าง: Blocking vs Async</div>
@@ -737,6 +791,26 @@ BYBIT_KLINE_MSG = {
 
 <h3 id="s33-3">33.3 WebSocket Client ที่ Reconnect อัตโนมัติ</h3>
 
+<div class="bx bb">
+<div class="bt">🧱 โครงก่อนดูโค้ด — บล็อกถัดไปยาว 220 บรรทัด อ่านเป็น 3 ก้อน</div>
+<p>อย่าเพิ่งอ่านทีละบรรทัด · ก้อนใหญ่นี้คือของ 3 อย่างที่วางต่อกัน:</p>
+<ol>
+<li><strong><code>Candle</code></strong> (~10 บรรทัด) — กล่องเก็บข้อมูลแท่งเทียน 1 แท่ง ให้ทุกตลาดพูดภาษาเดียวกัน</li>
+<li><strong><code>BinanceWebSocketClient</code></strong> (~95 บรรทัด) — ตัวหลักที่ต้องเข้าใจจริง ๆ · ข้างในมี 5 เมธอด ทำหน้าที่ต่างกันชัดเจน (ดูตารางล่าง)</li>
+<li><strong><code>BybitWebSocketClient</code></strong> (~95 บรรทัด) — <strong>โครงเหมือนข้อ 2 เกือบทั้งหมด</strong> ต่างแค่ URL, รูปแบบข้อความ และวิธี subscribe · อ่านข้อ 2 ให้เข้าใจแล้วข้อ 3 จะกวาดตาผ่านได้</li>
+</ol>
+<p>5 เมธอดใน client แต่ละตัว แบ่งหน้าที่แบบนี้:</p>
+<table>
+<tr><th>เมธอด</th><th>หน้าที่</th><th>ระดับ</th></tr>
+<tr><td><code>__init__</code></td><td>เก็บค่าตั้งต้น (symbol, interval, callback)</td><td>🟢</td></tr>
+<tr><td><code>stream_url</code></td><td>ประกอบ URL ของ stream</td><td>🟢</td></tr>
+<tr><td><code>_parse_kline</code></td><td>แปลง JSON ดิบของตลาด → <code>Candle</code> · <strong>จุดที่แต่ละตลาดต่างกันมากสุด</strong></td><td>🟢</td></tr>
+<tr><td><code>_connect_and_listen</code></td><td>ต่อ WebSocket แล้ววนรับข้อความ — <strong>หัวใจของ async</strong></td><td>🔵</td></tr>
+<tr><td><code>run</code></td><td>วนต่อใหม่เมื่อหลุด (reconnect + backoff) — <strong>หัวใจของความทนทาน</strong></td><td>🔵</td></tr>
+</table>
+<p>🧭 <strong>ถ้าเวลาน้อย:</strong> อ่าน <code>_parse_kline</code> กับ <code>run</code> ให้เข้าใจก่อน — สองตัวนี้คือที่ที่ระบบจริงพังบ่อยสุด</p>
+</div>
+
 <div class="fm">import asyncio
 import json
 import logging
@@ -960,6 +1034,29 @@ class BybitWebSocketClient:
 
     def stop(self):
         self._stop_event.set()</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 2 คำใหม่ใน <code>_connect_and_listen</code> — <code>async with</code> และ <code>async for</code></div>
+<div class="ad-code">async with websockets.connect(...) as ws:   # ①
+    async for raw_msg in ws:                # ②
+        ...</div>
+<div class="ad-steps">
+<ol>
+<li><code>async with ... as ws</code> — "เปิดการเชื่อมต่อ ใช้งาน แล้ว<strong>ปิดให้อัตโนมัติเสมอ</strong>ไม่ว่าจะจบแบบปกติหรือ error" · คำว่า <code>async</code> ข้างหน้าบอกว่าทั้ง<em>ขั้นเปิด</em>และ<em>ขั้นปิด</em>ต้องรอได้ (เพราะการต่อ/ตัด network ใช้เวลา) · ถ้าไม่มี <code>with</code> แล้วเกิด error กลางทาง connection จะค้างเปิดทิ้งไว้</li>
+<li><code>async for raw_msg in ws</code> — "วนรับข้อความ<strong>ทีละอันเมื่อมันมาถึง</strong>" · ต่างจาก <code>for</code> ปกติที่วนของที่มีครบอยู่แล้ว — ตัวนี้<strong>ไม่รู้ว่ามีกี่อัน และไม่รู้ว่าอันถัดไปจะมาเมื่อไหร่</strong> ระหว่างที่รอ มันปล่อยให้ coroutine อื่นทำงาน · ลูปนี้จะวนไปเรื่อย ๆ จนกว่าฝั่งตลาดจะปิดการเชื่อมต่อ</li>
+</ol>
+<p>จำง่าย: <em><code>async with</code> = ยืมของแล้วคืนอัตโนมัติ · <code>async for</code> = รับของที่ทยอยมา</em></p>
+</div>
+</div>
+
+<div class="read-aloud">บรรทัดที่ดูแปลกที่สุดใน <code>run()</code>: <code>min(delay * 2, MAX) + random.uniform(0, 1.0)</code> — อ่านว่า "รอนานขึ้น<strong>เท่าตัว</strong>ทุกครั้งที่ต่อไม่ติด แต่ไม่เกินเพดาน แล้ว<strong>บวกเศษสุ่ม</strong>อีกนิด" · ส่วน <code>* 2</code> คือ exponential backoff (อย่ากระหน่ำ server ที่กำลังมีปัญหา) ส่วน <code>random</code> คือ jitter — เหตุผลอยู่ในกล่องถัดไป</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ทำไมต้องบวกเลขสุ่ม — thundering herd</div>
+<p>ถ้า exchange ล่มแล้วมี bot 5,000 ตัวต่อไม่ติดพร้อมกัน ทุกตัวจะรอ 1s → 2s → 4s <strong>เป็นจังหวะเดียวกันเป๊ะ</strong> พอครบเวลา ทั้ง 5,000 ตัวก็กระโดดเข้าไปพร้อมกันอีกรอบ — server ที่เพิ่งจะฟื้นก็ล้มซ้ำทันที เรียกว่า <strong>thundering herd</strong> · การบวก <code>random.uniform(0, 1)</code> ทำให้แต่ละตัวตื่นไม่พร้อมกัน โหลดจึงกระจาย</p>
+<p>อีกจุดที่ตั้งใจออกแบบ: <code>run()</code> ดักเฉพาะ <code>ConnectionClosed</code>, <code>WebSocketException</code>, <code>OSError</code> — <strong>ไม่ดัก <code>Exception</code> เปล่า ๆ</strong> เพราะถ้าดักหมด บั๊กในโค้ดคุณเอง (เช่น <code>_parse_kline</code> พัง) จะถูกกลืนแล้ววน reconnect ไปเรื่อย ๆ โดยไม่มีใครรู้ว่าระบบตายไปแล้ว · <strong>ดักเฉพาะ error ที่คุณรู้วิธีจัดการ ที่เหลือปล่อยให้ดัง</strong> — นี่คือกฎที่แยกโค้ด production ออกจากโค้ด tutorial</p>
+<p>สังเกต <code>self._reconnect_delay = INITIAL</code> ที่ถูก reset <em>หลังต่อติดแล้ว</em> — ถ้าลืมบรรทัดนี้ ระบบที่หลุดบ่อย ๆ จะค่อย ๆ ถ่างเป็นรอ 60 วินาทีถาวร ทั้งที่ต่อติดได้ทันทีมานานแล้ว</p>
+</div>
 
 <h3 id="s33-4">33.4 Dual-Feed WebSocket — รับ Binance + Bybit พร้อมกัน</h3>
 
@@ -2277,5 +2374,12 @@ async def notify_fill(order: Order):
 <span style="color:#94a3b8;font-size:.9em">Part VI — จบหนังสือ</span>
 </div>
 
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
 </body>
 </html>
