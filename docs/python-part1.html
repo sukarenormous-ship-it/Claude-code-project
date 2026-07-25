@@ -1017,15 +1017,39 @@ both_up = df[(btc_returns &gt; 0) & (df["ETH"].pct_change() &gt; 0)]</div>
 
 <div class="bx bd">
 <div class="bt">ไฟล์ btc_daily.csv มาจากไหน?</div>
-<p>ดาวน์โหลดข้อมูลราคา BTC จาก <strong>CoinGecko</strong> (ฟรี) หรือ <strong>Binance API</strong>:<br>
-วิธีง่ายที่สุด: เปิด <code>https://www.coingecko.com/en/coins/bitcoin/historical_data</code> → Export CSV → เปลี่ยนชื่อไฟล์เป็น <code>btc_daily.csv</code><br>
-หรือใช้ Python: <code>pip install yfinance</code> แล้วรัน <code>yf.download("BTC-USD", start="2023-01-01").to_csv("btc_daily.csv")</code><br><br>
-ตัวอย่างด้านล่างใช้โค้ดจำลอง (สร้างข้อมูลด้วย numpy) เพื่อรันได้ทันทีโดยไม่ต้องดาวน์โหลด</p>
+<p>มีสองทาง — <strong>ทางที่ 1 (แนะนำสำหรับตอนนี้): ไม่ต้องดาวน์โหลดอะไรเลย</strong> รันบล็อกด้านล่างเพื่อสร้างไฟล์จำลองขึ้นมาเอง แล้วโค้ดทั้งหัวข้อนี้จะรันได้ทันที</p>
+<p><strong>ทางที่ 2: ใช้ข้อมูลจริง</strong> — <code>pip install yfinance</code> แล้ว</p>
+<div class="fm">import yfinance as yf
+raw = yf.download("BTC-USD", start="2023-01-01", auto_adjust=True)
+raw.to_csv("btc_daily.csv")</div>
+<p>⚠️ <strong>แต่ไฟล์ที่ได้จะยังใช้กับโค้ดด้านล่างไม่ได้ทันที</strong> เพราะแหล่งข้อมูลจริงตั้งชื่อคอลัมน์เป็นตัวใหญ่ (<code>Close</code> ไม่ใช่ <code>close</code>) และตั้งชื่อ index ว่า <code>Date</code> — ถ้าเจอ <code>KeyError: 'close'</code> คือเรื่องนี้ <strong>ไม่ใช่คุณพิมพ์ผิด</strong> · นี่คือหน้าตาของงานข้อมูลจริง จึงต้องมีขั้น "จัดบ้าน" ก่อนใช้เสมอ:</p>
+<div class="fm">df = pd.read_csv("btc_daily.csv", index_col=0, parse_dates=True)
+
+<span class="c"># บางเวอร์ชันของ yfinance ให้หัวตารางสองชั้น (MultiIndex) — ยุบให้เหลือชั้นเดียว</span>
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(0)
+
+df.columns    = df.columns.str.lower()   <span class="c"># Close -> close</span>
+df.index.name = "date"                   <span class="c"># Date  -> date</span>
+print(df.columns.tolist())               <span class="c"># เช็คก่อนใช้เสมอ</span></div>
+<p>🧭 <strong>นิสัยที่ควรติดตัว:</strong> เปิดไฟล์ข้อมูลใหม่ทุกครั้ง ให้ <code>print(df.columns.tolist())</code> และ <code>df.head()</code> ก่อนเขียนโค้ดต่อ — ประหยัดเวลาดีบักได้มหาศาล</p>
 </div>
 
 <div class="running-ex">
 <div class="re-title">Running Example: โหลดข้อมูลจาก CSV และคำนวณ Metrics</div>
-<div class="fm"><span class="c"># สมมติไฟล์ btc_daily.csv มีคอลัมน์ date, open, high, low, close, volume</span>
+<div class="fm"><span class="c"># ── สร้างไฟล์จำลองก่อน เพื่อให้รันได้ทันทีโดยไม่ต้องดาวน์โหลด ──</span>
+<span class="c"># (ถ้ามี btc_daily.csv จริงแล้ว ข้าม 8 บรรทัดนี้ไปได้เลย)</span>
+np.random.seed(42)
+dates_sim = pd.date_range("2023-01-01", periods=300, freq="D")
+close_sim = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.02, 300)))
+pd.DataFrame({
+    "date": dates_sim, "open": close_sim * 0.999, "high": close_sim * 1.01,
+    "low":  close_sim * 0.99, "close": close_sim,
+    "volume": np.random.uniform(1e4, 5e4, 300),
+}).to_csv("btc_daily.csv", index=False)
+
+<span class="c"># ── ตั้งแต่บรรทัดนี้คือโค้ดที่ใช้กับไฟล์จริงได้เหมือนกัน ──</span>
+<span class="c"># ไฟล์ btc_daily.csv มีคอลัมน์ date, open, high, low, close, volume</span>
 df = pd.read_csv("btc_daily.csv", index_col="date", parse_dates=True)
 df = df.sort_index()               <span class="c"># เรียงวันที่จากเก่าไปใหม่</span>
 
@@ -1080,10 +1104,11 @@ data = {
     "ETH": [3100, 3250, 3200, 3300, 3280, 3350, 3320],
     "GOLD":[1900, 1895, 1905, 1910, 1900, 1915, 1908],
 }
-df = pd.DataFrame(data)
+<span class="c"># ตั้งชื่อ prices ไม่ใช่ df — กัน df ของ running example (close/return/zscore) ถูกทับ</span>
+prices = pd.DataFrame(data)
 
 <span class="c"># Correlation matrix ของ returns</span>
-returns = df.pct_change().dropna()
+returns = prices.pct_change().dropna()
 corr = returns.corr()
 print(corr.round(3))</div>
 <p style="margin-top:8px">ผลลัพธ์จะแสดง matrix 3×3 — BTC/ETH มักมี correlation สูง, GOLD มัก correlation ต่ำกับ crypto</p>

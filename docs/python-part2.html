@@ -359,17 +359,29 @@ print("✓ Stationary" if result[1] &lt; 0.05 else "✗ Non-stationary")
 import pandas as pd
 import statsmodels.api as sm
 
-<span class="c"># จำลองราคา BTC สองตลาด</span>
+<span class="c"># จำลองราคา BTC สองตลาด — เหรียญเดียวกัน คนละตลาด</span>
 np.random.seed(42)
 n = 252
-btc_bybit   = 65000 + np.cumsum(np.random.normal(0, 100, n))
-btc_binance = 65000 + np.cumsum(np.random.normal(0, 100, n)) + 0.003 * btc_bybit
+btc_bybit = 65000 + np.cumsum(np.random.normal(0, 100, n))
+
+<span class="c"># ส่วนต่างราคาสองตลาด (spread) ไม่ได้สุ่มลอย ๆ — มันดึงกลับเข้าค่ากลาง</span>
+<span class="c"># ใช้ OU process ตัวเดียวกับบทที่ 12: กำไรของ pair trade มาจากแรงดึงนี้</span>
+kappa, sigma_ou = 0.15, 25.0        <span class="c"># kappa สูง = ดึงกลับเร็ว</span>
+spread_ou = np.zeros(n)
+for t in range(1, n):
+    spread_ou[t] = (spread_ou[t-1]
+                    + kappa * (0 - spread_ou[t-1])
+                    + np.random.normal(0, sigma_ou))
+
+<span class="c"># Binance = ราคา Bybit + basis 0.03% + spread ที่ดึงกลับได้</span>
+btc_binance = btc_bybit * 1.0003 + spread_ou
 
 <span class="c"># OLS: log(P_binance) = alpha + beta * log(P_bybit) + epsilon</span>
 log_bybit   = np.log(btc_bybit)
 log_binance = np.log(btc_binance)
 
-X = sm.add_constant(log_bybit)   <span class="c"># เพิ่ม intercept column</span>
+<span class="c"># ใส่ชื่อคอลัมน์ด้วย DataFrame — เพื่อเรียก params ด้วย "ชื่อ" ได้ทีหลัง</span>
+X = sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))
 y = log_binance
 
 model  = sm.OLS(y, X).fit()
@@ -387,6 +399,22 @@ print(f"p-value (beta): {p_beta:.6f}")
 print(f"\nSpread (residuals) stats:")
 print(f"  Mean: {resid.mean():.6f}")
 print(f"  Std:  {resid.std():.6f}")</div>
+<div class="output">alpha (intercept): 0.207854
+beta  (hedge ratio): 0.981260
+R²:   0.9903
+p-value (beta): 0.000000
+
+Spread (residuals) stats:
+  Mean: 0.000000
+  Std:  0.000695</div>
+
+<div class="read-aloud">บรรทัดที่ต้องสังเกต: <code>sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))</code> — ทำไมต้องห่อด้วย DataFrame? เพราะถ้าส่ง <strong>numpy array</strong> เข้าไปตรง ๆ ผลลัพธ์ <code>model.params</code> จะเป็น array ที่<strong>ไม่มีชื่อ</strong> เรียกได้แค่ตำแหน่ง (<code>params[0]</code>, <code>params[1]</code>) → บรรทัด <code>params['const']</code> จะพังทันที (<code>IndexError</code>) · พอห่อเป็น DataFrame ที่มีชื่อคอลัมน์ statsmodels จะคืน <strong>Series ที่มี label</strong> ให้ → เรียกด้วยชื่อได้ อ่านโค้ดรู้เรื่องกว่า และไม่พลาดสลับตำแหน่ง α กับ β</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ กับดักที่เจอบ่อย — "ชื่อ" มาจาก pandas ไม่ใช่ statsmodels</div>
+<p>นี่คือความสับสน numpy ↔ pandas ที่คลาสสิกที่สุดในงาน quant: <strong>statsmodels ไม่ได้ตั้งชื่อคอลัมน์ให้คุณ</strong> — มันแค่<em>ส่งต่อ</em>ชื่อที่มาจาก pandas ถ้าต้นทางไม่มีชื่อ ปลายทางก็ไม่มี</p>
+<p>วิธีเช็คเร็ว ๆ ก่อนเรียกด้วยชื่อ: <code>print(type(model.params))</code> — ถ้าได้ <code>ndarray</code> ให้ใช้ตำแหน่ง ถ้าได้ <code>Series</code> ใช้ชื่อได้</p>
+</div>
 
 <h3 id="s13-2">13.2 ตีความผล OLS</h3>
 
@@ -407,7 +435,8 @@ print(f"  Std:  {resid.std():.6f}")</div>
 
 <span class="c"># Rolling OLS window 60 วัน</span>
 window = 60
-X = sm.add_constant(log_bybit)
+<span class="c"># X ตัวเดิมจาก 13.1 — เป็น DataFrame ที่มีชื่อคอลัมน์อยู่แล้ว</span>
+X = sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))
 
 rolling_model = RollingOLS(log_binance, X, window=window).fit()
 rolling_beta  = rolling_model.params['log_bybit']
@@ -418,6 +447,10 @@ spread = log_binance - (rolling_alpha + rolling_beta * log_bybit)
 
 print(f"Beta range: {rolling_beta.dropna().min():.4f} to {rolling_beta.dropna().max():.4f}")
 print(f"Spread Std: {spread.std():.6f}")</div>
+<div class="output">Beta range: 0.9071 to 1.1820
+Spread Std: 0.000718</div>
+
+<div class="read-aloud">อ่าน <code>rolling_model.params['log_bybit']</code> ว่า: "หยิบค่า β <strong>ของทุกวัน</strong> ออกมา" — ต่างจาก 13.1 ที่ได้ β ตัวเดียว ตรงนี้ได้เป็น <strong>Series ยาวเท่าจำนวนวัน</strong> (60 วันแรกเป็น <code>NaN</code> เพราะยังนับไม่ครบหน้าต่าง) · ดูช่วง 0.907–1.182 = β ขยับได้ถึง ±18% รอบ 1.0 <strong>นี่แหละความหมายของ "β ไม่คงที่"</strong> ที่หัวข้อนี้จะบอก — ถ้า hedge ด้วย β ตัวเดียวค้างไว้ตลอดปี คุณจะ hedge ผิดสัดส่วนเป็นระยะ ๆ</div>
 
 <div class="bx ba">
 <div class="bt">window เลือกอย่างไร?</div>
@@ -574,6 +607,10 @@ $$\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat
 hl = calc_halflife(resid)
 print(f"Half-life: {hl:.1f} วัน")
 print(f"แนะนำ: rolling window ≈ {hl*3:.0f} วัน, hold ไม่เกิน {hl*2:.0f} วัน")</div>
+<div class="output">Half-life: 3.8 วัน
+แนะนำ: rolling window ≈ 11 วัน, hold ไม่เกิน 8 วัน</div>
+
+<div class="read-aloud">อ่านผลนี้ว่า: "spread ใช้เวลา <strong>3.8 วัน</strong> เพื่อเดินกลับมาครึ่งทางจากจุดที่เหวี่ยงออกไป" — ตัวเลขนี้ตั้งค่าให้คุณสองอย่างทันที: <strong>window</strong> ต้องยาวพอเห็นรอบการดึงกลับ (≈3 เท่าของ half-life) และ <strong>holding period</strong> ต้องไม่ยาวเกินจนถือค้างหลังกำไรวิ่งมาแล้ว (≈2 เท่า) · ⚠️ ถ้าได้ half-life สั้นมาก (&lt;1 วัน) แปลว่า spread เป็น noise ไม่ใช่ mean-reversion จริง — ค่าคำแนะนำจะกลายเป็น 0 วันซึ่งเทรดไม่ได้ นั่นคือสัญญาณว่า pair นี้ไม่ควรเทรด ไม่ใช่ว่าโค้ดพัง</div>
 
 <div class="ex">
 <div class="et">ตัวอย่าง: Signal Generation Pipeline ครบวงจร</div>
