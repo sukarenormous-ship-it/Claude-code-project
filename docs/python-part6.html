@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python for Quant Traders — Part VI: Async &amp; Live Trading</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;border-radius:3px;font-size:.9em}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7}
+.fm .c{color:#64748b}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+td code{background:var(--g1)}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155;white-space:pre}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
+.diagram{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:16px;margin:16px 0;font-family:'Courier New',monospace;font-size:.85em;line-height:1.6;overflow-x:auto}
+.nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
+.nav a{color:var(--teal);text-decoration:none;font-weight:600}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Python for Quant Traders · Part VI</div>
+<h1>Async &amp; Live Trading — เทรดจริงแบบอัตโนมัติ</h1>
+<div class="sub">บทที่ 31–35: Async Fundamentals · asyncio Patterns · WebSocket &amp; Live Data · Order Execution · Live System Integration<br>
+จบ Part นี้ → ระบบ live trading อัตโนมัติที่รับ feed จริง ส่งออเดอร์จริง พร้อม kill switch และ monitoring</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม Part นี้ถึงสำคัญที่สุด?</div>
+<div class="ki-text">
+Backtest บอกว่า strategy ทำกำไรได้ — แต่นั่นคือบน <em>ข้อมูลอดีต</em> ที่นิ่งอยู่ใน DataFrame<br>
+ในโลกจริง ราคาเปลี่ยนทุกมิลลิวินาที มีหลาย feed พร้อมกัน ต้องส่ง order ตรงเวลา ต้องจัดการ error ที่ไม่คาดคิด<br><br>
+• <strong>Async</strong> ให้ Python จัดการงานหลายอย่างพร้อมกันโดยไม่ต้องใช้ thread จำนวนมาก<br>
+• <strong>WebSocket</strong> รับ market data แบบ real-time แทน polling ทุก 1 วินาที<br>
+• <strong>Order Execution</strong> ส่ง order อย่างปลอดภัย มี rate limit และ retry<br>
+• <strong>Kill Switch</strong> หยุดระบบทันทีเมื่อเกิดเหตุฉุกเฉิน
+</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">🚨 STOP — อ่านก่อนเริ่ม Part VI: Production Safety Checklist</div>
+<p>Part VI สอน async และ live trading กับเงินจริง ก่อนเดินหน้าให้ตอบ YES ทุกข้อ:</p>
+<ol>
+<li>✅ <strong>API Keys อยู่ใน .env file</strong> — ห้าม hardcode ใน code เด็ดขาด</li>
+<li>✅ <strong>ทดสอบบน Testnet ครบ 48+ ชั่วโมง</strong> — Bybit Testnet / Binance Testnet</li>
+<li>✅ <strong>Kill switch พร้อม</strong> — มีปุ่มหรือ Telegram command หยุดระบบทันที</li>
+<li>✅ <strong>Drawdown limit ตั้งไว้แล้ว</strong> — เช่น หยุดอัตโนมัติเมื่อขาดทุน 5%</li>
+<li>✅ <strong>Position size ไม่เกิน 5% ของทุน</strong> ต่อ 1 trade สำหรับ system ใหม่</li>
+<li>✅ <strong>Log ทุก order</strong> — timestamp, price, size, status เก็บไว้อย่างน้อย 30 วัน</li>
+<li>✅ <strong>Monitor ตลอด 24 ชั่วโมงแรก</strong> — อย่าปล่อยให้ระบบทำงานโดยไม่มีคนดู</li>
+</ol>
+<p>ถ้ายังไม่ครบ — ทำ Part VI ต่อเพื่อเรียนรู้ได้ แต่อย่าเชื่อมกับ real account จนกว่าจะผ่านทุกข้อ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example ตลอด Part VI — BTC Pair Strategy แบบ Live</div>
+<p>เราจะนำ <code>PairStrategy</code> จาก Part II/III มาเปลี่ยนให้รันแบบ real-time:<br>
+บท 31 → เข้าใจ async · บท 32 → asyncio patterns · บท 33 → WebSocket feed<br>
+บท 34 → ส่ง order ผ่าน REST API · บท 35 → ระบบครบวงจรพร้อม deploy</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">คำเตือนสำคัญก่อนเริ่ม Part VI</div>
+<ul>
+<li><strong>ทดสอบบน Testnet เสมอ</strong> — อย่านำ code จาก tutorial ไปรันบน real account โดยตรง</li>
+<li><strong>ห้าม hardcode API Key</strong> — ใช้ environment variable หรือ secrets manager เท่านั้น</li>
+<li><strong>ต้องมี Kill Switch</strong> — ทุกระบบ live ต้องหยุดได้ทันทีเมื่อกด Ctrl+C หรือรับ signal</li>
+<li><strong>Log ทุก order</strong> — ถ้าไม่มี log จะตามสอบไม่ได้ว่าเกิดอะไรขึ้น</li>
+<li><strong>Monitor drawdown</strong> — ตั้ง max drawdown threshold ให้ระบบหยุดอัตโนมัติ</li>
+</ul>
+</div>
+
+
+<!-- ===================== CHAPTER 31 ===================== -->
+<h2 id="ch31">บทที่ 31: Async Fundamentals</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Async คือวิธีให้ Python "รอ" อะไรบางอย่าง (เช่น network) โดยไม่บล็อก thread — ทำให้ทำงานหลายอย่างพร้อมกันใน thread เดียว เหมือนพนักงานร้านอาหาร 1 คนที่รับออเดอร์หลายโต๊ะพร้อมกัน แทนที่จะยืนรอโต๊ะแรกก่อนแล้วค่อยไปโต๊ะถัดไป</div>
+</div>
+
+<h3 id="s31-1">31.1 ปัญหาของ Blocking Code</h3>
+
+<p>ใน live trading เราต้องรับราคาจากหลาย exchange พร้อมกัน หาก code ทำงานแบบ blocking จะช้ามาก</p>
+
+<div class="fm"><span class="c"># ============================================================</span>
+<span class="c"># แบบ BLOCKING — รอทีละตัว (ช้า)</span>
+<span class="c"># ============================================================</span>
+import time
+import requests
+
+def fetch_price_blocking(exchange: str) -> float:
+    <span class="c"># จำลองการเรียก API (ใช้เวลา 1 วินาที)</span>
+    time.sleep(1)
+    prices = {"binance": 65000.0, "bybit": 65010.0,
+               "okx": 64990.0, "bitget": 65005.0}
+    return prices[exchange]
+
+def get_all_prices_blocking():
+    start = time.time()
+    results = {}
+    for ex in ["binance", "bybit", "okx", "bitget"]:
+        results[ex] = fetch_price_blocking(ex)   <span class="c"># รอทีละตัว!</span>
+    elapsed = time.time() - start
+    print(f"Blocking: ใช้เวลา {elapsed:.1f}s")
+    return results
+
+get_all_prices_blocking()</div>
+<div class="output">Blocking: ใช้เวลา 4.0s</div>
+
+<div class="fm"><span class="c"># ============================================================</span>
+<span class="c"># แบบ ASYNC — รอพร้อมกัน (เร็ว)</span>
+<span class="c"># ============================================================</span>
+import asyncio
+import time
+
+async def fetch_price_async(exchange: str) -> float:
+    <span class="c"># asyncio.sleep ไม่บล็อก event loop</span>
+    await asyncio.sleep(1)
+    prices = {"binance": 65000.0, "bybit": 65010.0,
+               "okx": 64990.0, "bitget": 65005.0}
+    return prices[exchange]
+
+async def get_all_prices_async():
+    start = time.time()
+    <span class="c"># gather รัน coroutine ทั้งหมดพร้อมกัน</span>
+    results = await asyncio.gather(
+        fetch_price_async("binance"),
+        fetch_price_async("bybit"),
+        fetch_price_async("okx"),
+        fetch_price_async("bitget"),
+    )
+    elapsed = time.time() - start
+    print(f"Async: ใช้เวลา {elapsed:.1f}s")
+    exchanges = ["binance", "bybit", "okx", "bitget"]
+    return dict(zip(exchanges, results))
+
+<span class="c"># รัน event loop</span>
+prices = asyncio.run(get_all_prices_async())
+print(prices)</div>
+<div class="output">Async: ใช้เวลา 1.0s
+{'binance': 65000.0, 'bybit': 65010.0, 'okx': 64990.0, 'bitget': 65005.0}</div>
+
+<div class="bx bb">
+<div class="bt">สรุปความแตกต่าง: Blocking vs Async</div>
+<table>
+<tr><th>ด้าน</th><th>Blocking</th><th>Async</th></tr>
+<tr><td>เวลา 4 API calls (1s each)</td><td>4 วินาที</td><td>~1 วินาที</td></tr>
+<tr><td>CPU ขณะรอ network</td><td>นอนรออยู่เฉยๆ</td><td>ทำงานอื่นระหว่างรอ</td></tr>
+<tr><td>Concurrency model</td><td>ต้องใช้ thread/process</td><td>1 thread พอ</td></tr>
+<tr><td>Memory overhead</td><td>สูง (thread ละ ~8MB)</td><td>ต่ำ (coroutine ละ ~KB)</td></tr>
+<tr><td>เหมาะกับ</td><td>งาน CPU-heavy</td><td>งาน I/O-heavy (network, disk)</td></tr>
+</table>
+</div>
+
+<h3 id="s31-2">31.2 async def และ await — หัวใจของ Async</h3>
+
+<div class="fm"><span class="c"># ============================================================</span>
+<span class="c"># กฎพื้นฐาน 3 ข้อ</span>
+<span class="c"># ============================================================</span>
+
+<span class="c"># 1. function ที่มี "await" ข้างใน ต้องเป็น "async def"</span>
+async def fetch_ticker(symbol: str) -> dict:
+    await asyncio.sleep(0.1)          <span class="c"># await บอกว่า "รอตรงนี้ได้ ไปทำอื่นก่อน"</span>
+    return {"symbol": symbol, "price": 65000.0, "volume": 1234.5}
+
+<span class="c"># 2. "await" ใช้ได้แค่ภายใน "async def" เท่านั้น</span>
+async def main():
+    ticker = await fetch_ticker("BTCUSDT")   <span class="c"># ถูกต้อง</span>
+    print(ticker)
+
+<span class="c"># 3. เรียก async function จาก synchronous code ด้วย asyncio.run()</span>
+asyncio.run(main())
+
+<span class="c"># ============================================================</span>
+<span class="c"># coroutine คือ object ที่ยังไม่รัน — ต้อง await หรือ schedule</span>
+<span class="c"># ============================================================</span>
+coro = fetch_ticker("BTCUSDT")      <span class="c"># สร้าง coroutine object</span>
+print(type(coro))                   <span class="c"># &lt;class 'coroutine'&gt; — ยังไม่รัน!</span>
+result = asyncio.run(coro)          <span class="c"># รัน coroutine</span>
+print(result)</div>
+<div class="output">&lt;class 'coroutine'&gt;
+{'symbol': 'BTCUSDT', 'price': 65000.0, 'volume': 1234.5}</div>
+
+<h3 id="s31-3">31.3 Event Loop — หัวใจของ asyncio</h3>
+
+<p>Event loop คือ "ผู้จัดการ" ที่วิ่งอยู่เบื้องหลัง คอยตรวจว่า coroutine ไหนพร้อมรันแล้ว และสลับการทำงานระหว่าง coroutines</p>
+
+<div class="diagram">
+Event Loop Lifecycle:
+─────────────────────────────────────────────────────────────────
+  ┌─────────────────────────────────────────────────────────┐
+  │                     Event Loop                          │
+  │                                                         │
+  │  [Task A: fetch Binance]──await──►[รอ network]          │
+  │         │                               │               │
+  │         │  ← สลับมา Task B             │ network มา     │
+  │         ↓                               ↓               │
+  │  [Task B: fetch Bybit]──await──►[รอ network]            │
+  │         │                                               │
+  │         │  ← สลับมา Task C                              │
+  │         ↓                                               │
+  │  [Task C: process signal] ← ไม่รอ network → รันได้ทันที │
+  └─────────────────────────────────────────────────────────┘
+
+  ทั้งหมดรันใน thread เดียว — สลับกันที่จุด "await"
+</div>
+
+<div class="fm">import asyncio
+
+async def demonstrate_event_loop():
+    """แสดงการสลับ context ระหว่าง coroutines"""
+
+    async def task_a():
+        print("Task A: เริ่มต้น")
+        await asyncio.sleep(0.2)    <span class="c"># ยกมือบอก event loop: "ไปทำอื่นก่อน"</span>
+        print("Task A: กลับมาแล้ว")
+        return "A done"
+
+    async def task_b():
+        print("Task B: เริ่มต้น")
+        await asyncio.sleep(0.1)    <span class="c"># รอน้อยกว่า A → จบก่อน</span>
+        print("Task B: กลับมาแล้ว")
+        return "B done"
+
+    async def task_c():
+        print("Task C: ไม่รอ network เลย")
+        <span class="c"># await asyncio.sleep(0) บอก event loop ให้สลับสักครั้ง</span>
+        await asyncio.sleep(0)
+        print("Task C: จบแล้ว")
+        return "C done"
+
+    results = await asyncio.gather(task_a(), task_b(), task_c())
+    print(f"Results: {results}")
+
+asyncio.run(demonstrate_event_loop())</div>
+<div class="output">Task A: เริ่มต้น
+Task B: เริ่มต้น
+Task C: ไม่รอ network เลย
+Task C: จบแล้ว
+Task B: กลับมาแล้ว
+Task A: กลับมาแล้ว
+Results: ['A done', 'B done', 'C done']</div>
+
+<h3 id="s31-4">31.4 ทำไม Blocking Code ถึงอันตรายใน Async</h3>
+
+<div class="bx bk">
+<div class="bt">อันตราย: ห้ามใช้ Blocking call ภายใน async function</div>
+<div class="fm"><span class="c"># ❌ ผิด — time.sleep() บล็อก event loop ทั้งหมด!</span>
+async def bad_fetch(exchange: str) -> float:
+    time.sleep(1)          <span class="c"># บล็อก! coroutine อื่นหยุดรอด้วย</span>
+    return 65000.0
+
+<span class="c"># ❌ ผิด — requests.get() บล็อก event loop!</span>
+async def bad_rest_call(url: str):
+    resp = requests.get(url)   <span class="c"># บล็อก! ใช้ aiohttp แทน</span>
+    return resp.json()
+
+<span class="c"># ✓ ถูกต้อง — asyncio.sleep ไม่บล็อก</span>
+async def good_fetch(exchange: str) -> float:
+    await asyncio.sleep(1)     <span class="c"># yield control กลับ event loop</span>
+    return 65000.0
+
+<span class="c"># ✓ ถูกต้อง — ใช้ aiohttp สำหรับ HTTP</span>
+import aiohttp
+async def good_rest_call(url: str):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            return await resp.json()</div>
+</div>
+
+<table>
+<tr><th>Blocking (อย่าใช้ใน async)</th><th>Async alternative</th></tr>
+<tr><td><code>time.sleep(n)</code></td><td><code>await asyncio.sleep(n)</code></td></tr>
+<tr><td><code>requests.get(url)</code></td><td><code>await session.get(url)</code> (aiohttp)</td></tr>
+<tr><td><code>open(file).read()</code></td><td><code>await aiofiles.open(file).read()</code></td></tr>
+<tr><td><code>socket.recv()</code></td><td>WebSocket library async</td></tr>
+<tr><td>CPU-heavy loop</td><td><code>await loop.run_in_executor(None, fn)</code></td></tr>
+</table>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Async price aggregator สำหรับ BTC pair</div>
+<div class="fm">import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+
+@dataclass
+class Ticker:
+    exchange: str
+    symbol: str
+    price: float
+    timestamp: datetime
+
+async def fetch_ticker_mock(exchange: str, symbol: str,
+                             base_price: float, delay: float) -> Ticker:
+    """จำลอง REST API call"""
+    await asyncio.sleep(delay)
+    import random
+    price = base_price + random.uniform(-50, 50)
+    return Ticker(exchange, symbol, price, datetime.utcnow())
+
+async def aggregate_btc_prices() -> dict[str, Ticker]:
+    """ดึงราคา BTC จากหลาย exchange พร้อมกัน"""
+    tickers = await asyncio.gather(
+        fetch_ticker_mock("binance", "BTCUSDT", 65000.0, 0.08),
+        fetch_ticker_mock("bybit",   "BTCUSDT", 65005.0, 0.12),
+        fetch_ticker_mock("okx",     "BTCUSDT", 64995.0, 0.10),
+    )
+    result = {t.exchange: t for t in tickers}
+
+    prices = [t.price for t in tickers]
+    spread = max(prices) - min(prices)
+    mid    = sum(prices) / len(prices)
+    print(f"Mid: ${mid:,.1f}  Spread: ${spread:.1f}")
+    return result
+
+asyncio.run(aggregate_btc_prices())</div>
+<div class="output">Mid: $65,002.3  Spread: $47.2</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เพิ่ม timeout ให้ fetch — ถ้า exchange ไม่ตอบใน 0.5s ให้ข้ามไป</summary>
+<div class="ans">
+<div class="fm">async def fetch_with_timeout(exchange: str, symbol: str,
+                             base_price: float, delay: float,
+                             timeout: float = 0.5) -> Ticker | None:
+    """ดึงราคาพร้อม timeout"""
+    try:
+        return await asyncio.wait_for(
+            fetch_ticker_mock(exchange, symbol, base_price, delay),
+            timeout=timeout
+        )
+    except asyncio.TimeoutError:
+        print(f"[WARN] {exchange} timeout หลัง {timeout}s — ข้าม")
+        return None
+
+async def aggregate_with_timeout():
+    tasks = [
+        fetch_with_timeout("binance", "BTCUSDT", 65000.0, 0.08),
+        fetch_with_timeout("bybit",   "BTCUSDT", 65005.0, 0.60),  <span class="c"># จะ timeout</span>
+        fetch_with_timeout("okx",     "BTCUSDT", 64995.0, 0.10),
+    ]
+    results = await asyncio.gather(*tasks)
+    valid = {r.exchange: r for r in results if r is not None}
+    print(f"ได้ข้อมูล {len(valid)}/3 exchange")
+    return valid
+
+asyncio.run(aggregate_with_timeout())</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 32 ===================== -->
+<h2 id="ch32">บทที่ 32: asyncio Patterns</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">asyncio มี building blocks สำคัญ 4 อย่างสำหรับระบบ trading จริง: <strong>gather()</strong> สำหรับ concurrent fetch, <strong>Queue</strong> สำหรับ decouple producer/consumer, <strong>wait_for()</strong> สำหรับ timeout, และ <strong>Task</strong> สำหรับ background jobs ที่ cancel ได้</div>
+</div>
+
+<h3 id="s32-1">32.1 asyncio.gather() — รันพร้อมกัน</h3>
+
+<div class="fm">import asyncio
+
+async def fetch_ohlcv(exchange: str, symbol: str,
+                      timeframe: str = "1m") -> list:
+    """จำลองดึง OHLCV candle ล่าสุด"""
+    await asyncio.sleep(0.1)
+    import random
+    p = 65000 + random.uniform(-200, 200)
+    return [exchange, symbol, timeframe,
+            {"open": p-10, "high": p+20, "low": p-30, "close": p,
+             "volume": random.uniform(100, 500)}]
+
+async def fetch_all_ohlcv():
+    """ดึง OHLCV จากหลาย exchange/timeframe พร้อมกัน"""
+    pairs = [
+        ("binance", "BTCUSDT", "1m"),
+        ("bybit",   "BTCUSDT", "1m"),
+        ("binance", "BTCUSDT", "5m"),   <span class="c"># timeframe อื่นด้วย</span>
+        ("bybit",   "BTCUSDT", "5m"),
+    ]
+
+    <span class="c"># gather ทุก coroutine พร้อมกัน</span>
+    results = await asyncio.gather(
+        *[fetch_ohlcv(ex, sym, tf) for ex, sym, tf in pairs],
+        return_exceptions=True   <span class="c"># แทนที่จะ raise ทันที ให้เก็บ exception ใน result</span>
+    )
+
+    for r in results:
+        if isinstance(r, Exception):
+            print(f"[ERROR] {r}")
+        else:
+            ex, sym, tf, candle = r
+            print(f"{ex:8s} {sym} {tf:3s}: close={candle['close']:,.1f}")
+
+asyncio.run(fetch_all_ohlcv())</div>
+<div class="output">binance  BTCUSDT 1m : close=65,187.3
+bybit     BTCUSDT 1m : close=64,823.6
+binance  BTCUSDT 5m : close=65,041.2
+bybit     BTCUSDT 5m : close=65,112.8</div>
+
+<h3 id="s32-2">32.2 asyncio.Queue — Decouple Producer และ Consumer</h3>
+
+<p>ใน live trading มี 2 ส่วนที่ทำงานเร็วต่างกัน: <strong>feed</strong> รับข้อมูลเร็ว และ <strong>signal engine</strong> คำนวณช้ากว่า Queue เป็นตัวกลางที่ buffer ข้อมูลไว้</p>
+
+<div class="diagram">
+  Producer (WebSocket feed)          Consumer (Signal Engine)
+  ─────────────────────────          ────────────────────────
+  tick มาทุก 10ms          ──put──►  asyncio.Queue  ──get──► คำนวณ signal
+  ไม่ต้องรอ consumer                  (buffer ≤ 1000 items)   ส่ง order
+</div>
+
+<div class="fm">import asyncio
+import random
+from dataclasses import dataclass, field
+from datetime import datetime
+
+@dataclass
+class PriceTick:
+    exchange: str
+    symbol: str
+    price: float
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+
+async def price_producer(queue: asyncio.Queue, exchange: str,
+                          symbol: str, n_ticks: int = 20):
+    """จำลอง WebSocket feed ส่ง tick เข้า queue"""
+    price = 65000.0
+    for i in range(n_ticks):
+        price += random.uniform(-50, 50)
+        tick = PriceTick(exchange, symbol, round(price, 2))
+        await queue.put(tick)
+        print(f"[PROD] {exchange:8s} put  tick #{i+1:2d}: {price:,.1f}")
+        await asyncio.sleep(0.05)   <span class="c"># จำลอง tick interval</span>
+
+    <span class="c"># ส่ง sentinel เพื่อบอก consumer ว่าจบแล้ว</span>
+    await queue.put(None)
+
+async def signal_consumer(queue: asyncio.Queue, window: int = 5):
+    """คำนวณ signal จาก tick ที่รับจาก queue"""
+    prices = []
+    processed = 0
+
+    while True:
+        tick = await queue.get()       <span class="c"># รอจนกว่าจะมี item ใน queue</span>
+        if tick is None:               <span class="c"># sentinel — จบ</span>
+            queue.task_done()
+            break
+
+        prices.append(tick.price)
+        queue.task_done()
+        processed += 1
+
+        if len(prices) &gt;= window:
+            ma = sum(prices[-window:]) / window
+            latest = prices[-1]
+            signal = "LONG" if latest &gt; ma else ("SHORT" if latest &lt; ma else "HOLD")
+            print(f"[CONS] tick #{processed:2d}: price={latest:,.1f} "
+                  f"MA{window}={ma:,.1f} → {signal}")
+
+async def producer_consumer_demo():
+    queue = asyncio.Queue(maxsize=100)   <span class="c"># buffer สูงสุด 100 items</span>
+
+    <span class="c"># รัน producer และ consumer พร้อมกัน</span>
+    await asyncio.gather(
+        price_producer(queue, "binance", "BTCUSDT", n_ticks=10),
+        signal_consumer(queue, window=5),
+    )
+    print("จบ demo")
+
+asyncio.run(producer_consumer_demo())</div>
+
+<h3 id="s32-3">32.3 asyncio.wait_for() — Timeout</h3>
+
+<div class="fm">import asyncio
+
+async def place_order_mock(order_id: str, delay: float = 0.3) -> dict:
+    """จำลอง REST API order placement"""
+    await asyncio.sleep(delay)
+    return {"order_id": order_id, "status": "FILLED", "avg_price": 65000.0}
+
+async def place_order_with_timeout(order_id: str,
+                                    timeout: float = 1.0) -> dict | None:
+    """ส่ง order พร้อม timeout — ถ้าช้าเกินไปถือว่า fail"""
+    try:
+        result = await asyncio.wait_for(
+            place_order_mock(order_id, delay=0.5),
+            timeout=timeout
+        )
+        print(f"[OK] Order {order_id}: {result['status']}")
+        return result
+
+    except asyncio.TimeoutError:
+        print(f"[WARN] Order {order_id}: timeout หลัง {timeout}s")
+        <span class="c"># ต้อง query status ภายหลัง — order อาจ filled หรือ rejected</span>
+        return None
+
+asyncio.run(place_order_with_timeout("ORD-001", timeout=1.0))</div>
+<div class="output">[OK] Order ORD-001: FILLED</div>
+
+<h3 id="s32-4">32.4 asyncio.Task — Background Jobs และ Cancellation</h3>
+
+<div class="fm">import asyncio
+
+async def heartbeat(interval: float = 1.0):
+    """ส่ง heartbeat ทุก interval วินาที — background task"""
+    count = 0
+    while True:
+        count += 1
+        print(f"[HB] Heartbeat #{count}")
+        await asyncio.sleep(interval)
+
+async def main_trading_loop(duration: float = 3.5):
+    """Main loop — รัน heartbeat เป็น background task"""
+
+    <span class="c"># สร้าง Task — รันใน background ทันที</span>
+    hb_task = asyncio.create_task(heartbeat(1.0), name="heartbeat")
+
+    print(f"[MAIN] เริ่ม trading loop ({duration}s)")
+    await asyncio.sleep(duration)     <span class="c"># จำลองการเทรด</span>
+
+    <span class="c"># Cancel background task เมื่อจบ</span>
+    hb_task.cancel()
+    try:
+        await hb_task
+    except asyncio.CancelledError:
+        print("[MAIN] Heartbeat task ถูก cancel แล้ว")
+
+    print("[MAIN] จบ")
+
+asyncio.run(main_trading_loop())</div>
+<div class="output">[MAIN] เริ่ม trading loop (3.5s)
+[HB] Heartbeat #1
+[HB] Heartbeat #2
+[HB] Heartbeat #3
+[MAIN] Heartbeat task ถูก cancel แล้ว
+[MAIN] จบ</div>
+
+<h3 id="s32-5">32.5 asyncio.Semaphore — จำกัดจำนวน Concurrent Requests</h3>
+
+<p>Exchange มักจำกัด rate ไว้ เช่น "ส่ง request ได้ไม่เกิน 10 req/s" — Semaphore ช่วยควบคุม</p>
+
+<div class="fm">import asyncio
+
+async def fetch_historical(symbol: str, date: str,
+                            sem: asyncio.Semaphore) -> dict:
+    """ดึงข้อมูล historical พร้อม rate limiting"""
+    async with sem:          <span class="c"># เข้า critical section — ไม่เกิน N พร้อมกัน</span>
+        await asyncio.sleep(0.1)   <span class="c"># จำลอง API call</span>
+        return {"symbol": symbol, "date": date, "close": 65000.0}
+
+async def bulk_fetch_historical(symbols: list[str],
+                                 dates: list[str]) -> list[dict]:
+    """ดึงข้อมูลหลายวันพร้อมกัน แต่จำกัดไม่เกิน 5 request พร้อมกัน"""
+    sem = asyncio.Semaphore(5)   <span class="c"># อนุญาต 5 concurrent requests</span>
+
+    tasks = [
+        fetch_historical(sym, date, sem)
+        for sym in symbols
+        for date in dates
+    ]
+
+    print(f"ดึงข้อมูล {len(tasks)} records ด้วย semaphore=5")
+    results = await asyncio.gather(*tasks)
+    return list(results)
+
+asyncio.run(bulk_fetch_historical(
+    symbols=["BTCUSDT", "ETHUSDT"],
+    dates=["2024-01-01", "2024-01-02", "2024-01-03",
+           "2024-01-04", "2024-01-05"]
+))</div>
+
+<details>
+<summary>แบบฝึกหัด: สร้าง MultiQueue สำหรับรับข้อมูลจากหลาย exchange แล้วรวมเข้า Queue เดียว</summary>
+<div class="ans">
+<div class="fm">async def multi_exchange_fan_in(exchanges: list[str],
+                                symbol: str,
+                                n_ticks: int = 5) -> None:
+    """รับ tick จากหลาย exchange → รวมเข้า 1 output queue"""
+    output_q: asyncio.Queue[PriceTick] = asyncio.Queue()
+
+    async def single_feed(exchange: str):
+        base = 65000.0 + {"binance": 0, "bybit": 10, "okx": -5}[exchange]
+        for _ in range(n_ticks):
+            price = base + random.uniform(-30, 30)
+            await output_q.put(PriceTick(exchange, symbol, round(price, 2)))
+            await asyncio.sleep(random.uniform(0.05, 0.15))
+        await output_q.put(None)   <span class="c"># sentinel ต่อ exchange</span>
+
+    async def consumer(n_producers: int):
+        finished = 0
+        while finished &lt; n_producers:
+            tick = await output_q.get()
+            if tick is None:
+                finished += 1
+            else:
+                print(f"[FAN-IN] {tick.exchange:8s}: {tick.price:,.1f}")
+            output_q.task_done()
+
+    await asyncio.gather(
+        *[single_feed(ex) for ex in exchanges],
+        consumer(len(exchanges))
+    )
+
+asyncio.run(multi_exchange_fan_in(
+    ["binance", "bybit", "okx"], "BTCUSDT"
+))</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 33 ===================== -->
+<h2 id="ch33">บทที่ 33: WebSocket &amp; Live Data</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">WebSocket คือ connection แบบ "เปิดค้างไว้" ระหว่าง client และ server — ต่างจาก HTTP ที่ต้อง request ทุกครั้ง Exchange ส่ง tick/candle ให้เราทันทีที่มีการเปลี่ยนแปลง ทำให้ latency ต่ำกว่า polling มาก แต่ต้องจัดการ disconnect, reconnect, และ parse message เองทั้งหมด</div>
+</div>
+
+<h3 id="s33-1">33.1 Binance Futures WebSocket — รูปแบบ Message จริง</h3>
+
+<p>Binance Futures ส่ง kline (candle) stream ในรูปแบบ JSON นี้ เมื่อ subscribe ที่ <code>wss://fstream.binance.com/ws/btcusdt@kline_1m</code></p>
+
+<div class="fm"><span class="c"># ตัวอย่าง kline message จาก Binance Futures WebSocket (format จริง)</span>
+BINANCE_KLINE_MSG = {
+    "e": "kline",             <span class="c"># event type</span>
+    "E": 1705123456789,       <span class="c"># event time (ms)</span>
+    "s": "BTCUSDT",           <span class="c"># symbol</span>
+    "k": {
+        "t": 1705123440000,   <span class="c"># kline start time (ms)</span>
+        "T": 1705123499999,   <span class="c"># kline close time (ms)</span>
+        "s": "BTCUSDT",       <span class="c"># symbol</span>
+        "i": "1m",            <span class="c"># interval</span>
+        "f": 100,             <span class="c"># first trade ID</span>
+        "L": 200,             <span class="c"># last trade ID</span>
+        "o": "65000.10",      <span class="c"># open</span>
+        "c": "65123.45",      <span class="c"># close (current price)</span>
+        "h": "65200.00",      <span class="c"># high</span>
+        "l": "64950.00",      <span class="c"># low</span>
+        "v": "123.456",       <span class="c"># base asset volume (BTC)</span>
+        "n": 1250,            <span class="c"># number of trades</span>
+        "x": False,           <span class="c"># is this kline closed? False = ยังไม่ปิด candle</span>
+        "q": "8023456.78",    <span class="c"># quote asset volume (USDT)</span>
+        "V": "61.234",        <span class="c"># taker buy base volume</span>
+        "Q": "3987654.32",    <span class="c"># taker buy quote volume</span>
+    }
+}
+
+<span class="c"># ตัวอย่าง bookTicker message จาก Binance (best bid/ask)</span>
+BINANCE_BOOKTICKER_MSG = {
+    "e": "bookTicker",
+    "u": 400900217,           <span class="c"># order book updateId</span>
+    "s": "BTCUSDT",
+    "b": "65000.00",          <span class="c"># best bid price</span>
+    "B": "5.000",             <span class="c"># best bid qty</span>
+    "a": "65001.00",          <span class="c"># best ask price</span>
+    "A": "3.500",             <span class="c"># best ask qty</span>
+    "T": 1705123456789,       <span class="c"># transaction time</span>
+    "E": 1705123456790,       <span class="c"># event time</span>
+}</div>
+
+<h3 id="s33-2">33.2 Bybit WebSocket — รูปแบบ Message</h3>
+
+<div class="fm"><span class="c"># Bybit V5 WebSocket — wss://stream.bybit.com/v5/public/linear</span>
+<span class="c"># Subscribe message:</span>
+BYBIT_SUBSCRIBE = {
+    "op": "subscribe",
+    "args": ["kline.1.BTCUSDT"]   <span class="c"># kline.{interval}.{symbol}</span>
+}
+
+<span class="c"># Kline message จาก Bybit V5:</span>
+BYBIT_KLINE_MSG = {
+    "topic": "kline.1.BTCUSDT",
+    "data": [
+        {
+            "start": 1705123440000,   <span class="c"># start time ms</span>
+            "end":   1705123499999,   <span class="c"># end time ms</span>
+            "interval": "1",          <span class="c"># interval in minutes</span>
+            "open":  "65000.10",
+            "close": "65123.45",
+            "high":  "65200.00",
+            "low":   "64950.00",
+            "volume": "123.456",      <span class="c"># base volume (BTC)</span>
+            "turnover": "8023456.78", <span class="c"># quote volume (USDT)</span>
+            "confirm": False,         <span class="c"># False = candle ยังไม่ปิด</span>
+            "timestamp": 1705123456789
+        }
+    ],
+    "ts": 1705123456789,
+    "type": "snapshot"   <span class="c"># หรือ "delta"</span>
+}</div>
+
+<h3 id="s33-3">33.3 WebSocket Client ที่ Reconnect อัตโนมัติ</h3>
+
+<div class="fm">import asyncio
+import json
+import logging
+import random
+import websockets
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Callable, Optional
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class Candle:
+    exchange: str
+    symbol: str
+    interval: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+    is_closed: bool
+    timestamp: datetime
+
+class BinanceWebSocketClient:
+    """
+    Binance Futures WebSocket client
+    - reconnect อัตโนมัติด้วย exponential backoff
+    - parse kline messages
+    - ส่ง Candle object เข้า callback
+    """
+
+    WS_URL = "wss://fstream.binance.com/ws"
+    MAX_RECONNECT_DELAY = 60.0   <span class="c"># วินาที</span>
+    INITIAL_RECONNECT_DELAY = 1.0
+
+    def __init__(self,
+                 symbol: str,
+                 interval: str,
+                 on_candle: Callable[[Candle], None],
+                 queue: Optional[asyncio.Queue] = None):
+        self.symbol   = symbol.lower()
+        self.interval = interval
+        self.on_candle = on_candle
+        self.queue    = queue
+        self._stop_event = asyncio.Event()
+        self._reconnect_delay = self.INITIAL_RECONNECT_DELAY
+
+    @property
+    def stream_url(self) -> str:
+        return f"{self.WS_URL}/{self.symbol}@kline_{self.interval}"
+
+    def _parse_kline(self, raw: dict) -> Optional[Candle]:
+        """แปลง Binance kline message เป็น Candle object"""
+        try:
+            k = raw["k"]
+            return Candle(
+                exchange  = "binance",
+                symbol    = raw["s"],
+                interval  = k["i"],
+                open      = float(k["o"]),
+                high      = float(k["h"]),
+                low       = float(k["l"]),
+                close     = float(k["c"]),
+                volume    = float(k["v"]),
+                is_closed = bool(k["x"]),
+                timestamp = datetime.utcfromtimestamp(raw["E"] / 1000)
+            )
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error(f"Binance parse error: {e} | raw={str(raw)[:200]}")
+            return None
+
+    async def _connect_and_listen(self):
+        """เชื่อมต่อและฟัง messages — 1 connection attempt"""
+        logger.info(f"Connecting to {self.stream_url}")
+        async with websockets.connect(
+            self.stream_url,
+            ping_interval=20,   <span class="c"># ส่ง ping ทุก 20s</span>
+            ping_timeout=10,
+            close_timeout=5,
+        ) as ws:
+            logger.info(f"Connected: {self.symbol}@kline_{self.interval}")
+            self._reconnect_delay = self.INITIAL_RECONNECT_DELAY  <span class="c"># reset</span>
+
+            async for raw_msg in ws:
+                if self._stop_event.is_set():
+                    break
+
+                try:
+                    msg = json.loads(raw_msg)
+                    if msg.get("e") == "kline":
+                        candle = self._parse_kline(msg)
+                        if candle is not None:            <span class="c"># ข้ามถ้า parse ไม่ได้</span>
+                            self.on_candle(candle)
+
+                            <span class="c"># ถ้ามี queue ให้ put ด้วย</span>
+                            if self.queue is not None:
+                                await self.queue.put(candle)
+
+                except json.JSONDecodeError as e:
+                    logger.error(f"JSON decode error: {e}")
+                except KeyError as e:
+                    logger.error(f"Unexpected message format: {e} | msg={raw_msg[:200]}")
+
+    async def run(self):
+        """รัน WebSocket พร้อม exponential backoff reconnect"""
+        while not self._stop_event.is_set():
+            try:
+                await self._connect_and_listen()
+
+            except websockets.exceptions.ConnectionClosed as e:
+                logger.warning(f"Connection closed: {e.code} {e.reason}")
+            except websockets.exceptions.WebSocketException as e:
+                logger.error(f"WebSocket error: {e}")
+            except OSError as e:
+                logger.error(f"Network error: {e}")
+
+            if self._stop_event.is_set():
+                break
+
+            <span class="c"># Exponential backoff + jitter ป้องกัน thundering herd</span>
+            logger.info(f"Reconnecting in {self._reconnect_delay:.1f}s...")
+            await asyncio.sleep(self._reconnect_delay)
+            self._reconnect_delay = min(
+                self._reconnect_delay * 2,
+                self.MAX_RECONNECT_DELAY
+            ) + random.uniform(0, 1.0)
+
+        logger.info("WebSocket client stopped")
+
+    def stop(self):
+        """หยุด client อย่างสะอาด"""
+        self._stop_event.set()
+
+
+class BybitWebSocketClient:
+    """
+    Bybit V5 WebSocket client
+    endpoint: wss://stream.bybit.com/v5/public/linear
+    """
+
+    WS_URL = "wss://stream.bybit.com/v5/public/linear"
+    MAX_RECONNECT_DELAY = 60.0
+    INITIAL_RECONNECT_DELAY = 1.0
+
+    def __init__(self,
+                 symbol: str,
+                 interval: str,
+                 on_candle: Callable[[Candle], None],
+                 queue: Optional[asyncio.Queue] = None):
+        self.symbol   = symbol.upper()
+        self.interval = interval
+        self.on_candle = on_candle
+        self.queue    = queue
+        self._stop_event = asyncio.Event()
+        self._reconnect_delay = self.INITIAL_RECONNECT_DELAY
+
+    def _parse_kline(self, msg: dict) -> list[Candle]:
+        """แปลง Bybit kline message — อาจมีหลาย candle ใน 1 message"""
+        candles = []
+        for k in msg.get("data", []):
+            try:
+                candles.append(Candle(
+                    exchange  = "bybit",
+                    symbol    = self.symbol,
+                    interval  = self.interval,
+                    open      = float(k["open"]),
+                    high      = float(k["high"]),
+                    low       = float(k["low"]),
+                    close     = float(k["close"]),
+                    volume    = float(k["volume"]),
+                    is_closed = bool(k.get("confirm", False)),
+                    timestamp = datetime.utcfromtimestamp(k["start"] / 1000)
+                ))
+            except (KeyError, ValueError, TypeError) as e:
+                logger.error(f"Bybit parse error: {e} | k={str(k)[:200]}")
+        return candles
+
+    async def _connect_and_listen(self):
+        logger.info(f"Connecting to Bybit: {self.symbol} kline.{self.interval}")
+        async with websockets.connect(
+            self.WS_URL,
+            ping_interval=20,
+            ping_timeout=10,
+        ) as ws:
+            <span class="c"># ส่ง subscribe message</span>
+            sub_msg = json.dumps({
+                "op": "subscribe",
+                "args": [f"kline.{self.interval}.{self.symbol}"]
+            })
+            await ws.send(sub_msg)
+            self._reconnect_delay = self.INITIAL_RECONNECT_DELAY
+
+            async for raw_msg in ws:
+                if self._stop_event.is_set():
+                    break
+                try:
+                    msg = json.loads(raw_msg)
+                    if msg.get("op") == "subscribe":
+                        logger.info(f"Bybit subscribe: {msg.get('ret_msg')}")
+                        continue
+                    if "topic" in msg and "kline" in msg["topic"]:
+                        for candle in self._parse_kline(msg):
+                            self.on_candle(candle)
+                            if self.queue is not None:
+                                await self.queue.put(candle)
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.error(f"Parse error: {e}")
+
+    async def run(self):
+        while not self._stop_event.is_set():
+            try:
+                await self._connect_and_listen()
+            except (websockets.exceptions.WebSocketException, OSError) as e:
+                logger.warning(f"Connection error: {e}")
+            if not self._stop_event.is_set():
+                await asyncio.sleep(self._reconnect_delay)
+                self._reconnect_delay = min(
+                    self._reconnect_delay * 2, self.MAX_RECONNECT_DELAY
+                ) + random.uniform(0, 1.0)
+
+    def stop(self):
+        self._stop_event.set()</div>
+
+<h3 id="s33-4">33.4 Dual-Feed WebSocket — รับ Binance + Bybit พร้อมกัน</h3>
+
+<div class="running-ex">
+<div class="re-title">Running Example: รับ kline จาก Binance และ Bybit พร้อมกัน → ส่งเข้า Queue เดียว</div>
+<p>นี่คือ core ของ live pair strategy — เราต้องการราคาจากทั้ง 2 exchange ในเวลาเดียวกันเพื่อคำนวณ spread</p>
+</div>
+
+<div class="fm">import asyncio
+import json
+import logging
+from collections import deque
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+async def run_dual_feed(symbol: str = "BTCUSDT",
+                         interval: str = "1",
+                         max_candles: int = 100,
+                         run_seconds: float = 30.0):
+    """
+    รัน Binance + Bybit WebSocket พร้อมกัน
+    ส่ง candle ทั้งสองเข้า shared queue
+    หยุดเองหลัง run_seconds วินาที (สำหรับ demo)
+    """
+    shared_queue: asyncio.Queue[Candle] = asyncio.Queue(maxsize=500)
+    stop_event = asyncio.Event()
+
+    <span class="c"># Buffer สำหรับคำนวณ spread</span>
+    candle_buf: dict[str, deque] = {
+        "binance": deque(maxlen=max_candles),
+        "bybit":   deque(maxlen=max_candles),
+    }
+
+    def on_candle(candle: Candle):
+        <span class="c"># Callback รัน synchronously — ใช้แค่ log</span>
+        if candle.is_closed:
+            logger.debug(f"[{candle.exchange}] Closed candle "
+                         f"{candle.symbol} close={candle.close}")
+
+    <span class="c"># สร้าง clients</span>
+    binance_client = BinanceWebSocketClient(
+        symbol=symbol, interval=f"{interval}m",
+        on_candle=on_candle, queue=shared_queue
+    )
+    bybit_client = BybitWebSocketClient(
+        symbol=symbol, interval=interval,
+        on_candle=on_candle, queue=shared_queue
+    )
+
+    async def process_candles():
+        """Consumer: คำนวณ spread เมื่อได้ candle ปิดจากทั้งสอง"""
+        while not stop_event.is_set():
+            try:
+                candle = await asyncio.wait_for(
+                    shared_queue.get(), timeout=1.0
+                )
+            except asyncio.TimeoutError:
+                continue
+
+            if candle.is_closed:
+                candle_buf[candle.exchange].append(candle.close)
+
+                <span class="c"># คำนวณ spread เมื่อมีข้อมูลทั้งสอง exchange</span>
+                if (len(candle_buf["binance"]) &gt; 0 and
+                        len(candle_buf["bybit"]) &gt; 0):
+                    b_price = candle_buf["binance"][-1]
+                    y_price = candle_buf["bybit"][-1]
+                    spread  = y_price - b_price
+                    logger.info(f"Spread: {spread:+.2f} "
+                                f"(Binance={b_price:.1f}, Bybit={y_price:.1f})")
+
+            shared_queue.task_done()
+
+    async def stopper():
+        await asyncio.sleep(run_seconds)
+        stop_event.set()
+        binance_client.stop()
+        bybit_client.stop()
+        logger.info("Stop event set")
+
+    <span class="c"># รันทุก task พร้อมกัน</span>
+    await asyncio.gather(
+        binance_client.run(),
+        bybit_client.run(),
+        process_candles(),
+        stopper(),
+        return_exceptions=True
+    )
+
+<span class="c"># ใช้งาน:</span>
+<span class="c"># asyncio.run(run_dual_feed("BTCUSDT", "1", run_seconds=300))</span></div>
+
+<div class="bx bk">
+<div class="bt">ข้อควรระวัง: WebSocket ใน Production</div>
+<ul>
+<li><strong>ตรวจ timestamp</strong> — ถ้า message เก่ากว่า 5 วินาที อาจเป็น stale data → อย่าเทรด</li>
+<li><strong>Bybit ต้องการ re-subscribe</strong> หลัง reconnect — ต้องส่ง subscribe message ใหม่ทุกครั้ง</li>
+<li><strong>Binance จำกัด 10 connections</strong> ต่อ IP — ระวังถ้ารัน multiple instances</li>
+<li><strong>ใช้ testnet ก่อน</strong>: Binance testnet: <code>wss://stream.binancefuture.com/ws</code>, Bybit testnet: <code>wss://stream-testnet.bybit.com/v5/public/linear</code></li>
+</ul>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เพิ่ม staleness check — ถ้า candle เก่ากว่า 30 วินาที ให้ log warning</summary>
+<div class="ans">
+<div class="fm">from datetime import datetime, timezone
+
+def check_staleness(candle: Candle, max_age_seconds: float = 30.0) -> bool:
+    """คืน True ถ้า candle ยังสด (ไม่เก่าเกิน max_age_seconds)"""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    age = (now - candle.timestamp).total_seconds()
+    if age &gt; max_age_seconds:
+        logger.warning(
+            f"[STALE] {candle.exchange} {candle.symbol} "
+            f"candle age={age:.1f}s &gt; {max_age_seconds}s — ข้าม"
+        )
+        return False
+    return True
+
+<span class="c"># ใช้ใน process_candles():</span>
+<span class="c"># if candle.is_closed and check_staleness(candle, max_age_seconds=30):</span>
+<span class="c">#     candle_buf[candle.exchange].append(candle.close)</span></div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 34 ===================== -->
+<h2 id="ch34">บทที่ 34: Order Execution</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">การส่ง order จริงซับซ้อนกว่า backtest มาก: ต้องมี HMAC signature, จัดการ rate limit, retry เมื่อ network error (แต่ไม่ retry ถ้า order ถูก reject), และติดตาม state ของ order ตั้งแต่ PENDING จนถึง FILLED หรือ CANCELLED</div>
+</div>
+
+<h3 id="s34-1">34.1 Order State Machine</h3>
+
+<div class="diagram">
+  Order State Machine:
+  ─────────────────────────────────────────────────────────────
+                        ┌─────────┐
+                        │ PENDING │  (สร้าง order object ใน code)
+                        └────┬────┘
+                             │ ส่ง REST request สำเร็จ
+                             ▼
+                         ┌──────┐
+                    ┌───►│ OPEN │  (exchange รับ order แล้ว)
+                    │    └──┬───┘
+                 partial    │
+                  fill      ├──────────────► CANCELLED
+                    │       │ fully filled
+                    └───────▼
+                        ┌────────┐
+                        │ FILLED │  (ซื้อ/ขายครบแล้ว)
+                        └────────┘
+
+  Error path: PENDING ──► REJECTED (invalid params, insufficient balance)
+              OPEN    ──► ERROR    (network lost, exchange down)
+</div>
+
+<div class="fm">from enum import Enum, auto
+from dataclasses import dataclass, field
+from typing import Optional
+import time
+
+class OrderStatus(Enum):
+    PENDING   = auto()   <span class="c"># สร้างใน code แต่ยังไม่ส่ง</span>
+    OPEN      = auto()   <span class="c"># ส่งไป exchange แล้ว รอ fill</span>
+    PARTIALLY_FILLED = auto()
+    FILLED    = auto()   <span class="c"># fill ครบแล้ว</span>
+    CANCELLED = auto()
+    REJECTED  = auto()   <span class="c"># exchange ปฏิเสธ</span>
+    ERROR     = auto()   <span class="c"># network/unknown error</span>
+
+class OrderSide(Enum):
+    BUY  = "Buy"
+    SELL = "Sell"
+
+class OrderType(Enum):
+    MARKET = "MARKET"
+    LIMIT  = "LIMIT"
+
+@dataclass
+class Order:
+    client_order_id: str        <span class="c"># ID ที่เราสร้างเอง (UUID หรือ timestamp)</span>
+    symbol: str
+    side: OrderSide
+    order_type: OrderType
+    qty: float
+    price: Optional[float] = None   <span class="c"># None สำหรับ market order</span>
+
+    <span class="c"># Fields ที่ exchange จะส่งกลับมา</span>
+    exchange_order_id: Optional[str] = None
+    status: OrderStatus = OrderStatus.PENDING
+    filled_qty: float = 0.0
+    avg_price: float = 0.0
+    created_at: float = field(default_factory=time.time)
+    updated_at: Optional[float] = None
+    reject_reason: Optional[str] = None
+
+    @property
+    def is_terminal(self) -> bool:
+        """คืน True ถ้า order จบแล้ว (ไม่สามารถเปลี่ยนได้อีก)"""
+        return self.status in (
+            OrderStatus.FILLED,
+            OrderStatus.CANCELLED,
+            OrderStatus.REJECTED,
+            OrderStatus.ERROR,
+        )
+
+    @property
+    def remaining_qty(self) -> float:
+        return self.qty - self.filled_qty
+
+    def __repr__(self):
+        return (f"Order({self.client_order_id} "
+                f"{self.side.value} {self.qty} {self.symbol} "
+                f"@ {'MKT' if self.price is None else self.price} "
+                f"[{self.status.name}])")</div>
+
+<h3 id="s34-2">34.2 REST API Wrapper พร้อม Rate Limiting และ Retry</h3>
+
+<div class="fm">import asyncio
+import hashlib
+import hmac
+import json
+import os
+import time
+import logging
+from urllib.parse import urlencode
+from typing import Optional
+
+import aiohttp
+
+logger = logging.getLogger(__name__)
+
+class BybitOrderClient:
+    """
+    Bybit V5 REST API wrapper
+    - Rate limiting ด้วย asyncio.Semaphore
+    - HMAC-SHA256 signature
+    - Retry with exponential backoff สำหรับ network error
+    - ไม่ retry ถ้า exchange reject (4xx)
+    """
+
+    <span class="c"># Testnet: https://api-testnet.bybit.com</span>
+    BASE_URL = "https://api.bybit.com"
+    RECV_WINDOW = 5000   <span class="c"># ms</span>
+
+    def __init__(self,
+                 api_key: Optional[str] = None,
+                 api_secret: Optional[str] = None,
+                 testnet: bool = True,
+                 max_concurrent: int = 5):
+        <span class="c"># ✓ โหลดจาก env var — ห้าม hardcode!</span>
+        self.api_key    = api_key    or os.environ.get("BYBIT_API_KEY", "")
+        self.api_secret = api_secret or os.environ.get("BYBIT_API_SECRET", "")
+
+        if testnet:
+            self.BASE_URL = "https://api-testnet.bybit.com"
+            logger.warning("ใช้ TESTNET — ไม่ใช่ real money")
+
+        self._sem     = asyncio.Semaphore(max_concurrent)
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def __aenter__(self):
+        self._session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, *args):
+        if self._session:
+            await self._session.close()
+
+    def _sign(self, params: dict) -> str:
+        """สร้าง HMAC-SHA256 signature"""
+        timestamp = str(int(time.time() * 1000))
+        params_str = urlencode(sorted(params.items()))
+        payload = f"{timestamp}{self.api_key}{self.RECV_WINDOW}{params_str}"
+        signature = hmac.new(
+            self.api_secret.encode("utf-8"),
+            payload.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        return signature, timestamp
+
+    async def _request(self, method: str, path: str,
+                        params: dict = None,
+                        max_retries: int = 3) -> dict:
+        """ส่ง signed request พร้อม retry"""
+        params = params or {}
+        signature, timestamp = self._sign(params)
+        headers = {
+            "X-BAPI-API-KEY":     self.api_key,
+            "X-BAPI-SIGN":        signature,
+            "X-BAPI-TIMESTAMP":   timestamp,
+            "X-BAPI-RECV-WINDOW": str(self.RECV_WINDOW),
+            "Content-Type":       "application/json",
+        }
+        url = f"{self.BASE_URL}{path}"
+
+        for attempt in range(max_retries):
+            async with self._sem:   <span class="c"># rate limiting</span>
+                try:
+                    if method == "GET":
+                        async with self._session.get(
+                            url, params=params, headers=headers,
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as resp:
+                            data = await resp.json()
+                    else:
+                        async with self._session.post(
+                            url, json=params, headers=headers,
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as resp:
+                            data = await resp.json()
+
+                    <span class="c"># Bybit ret_code: 0 = OK, อื่นๆ = error</span>
+                    if data.get("retCode") != 0:
+                        ret_msg = data.get("retMsg", "unknown")
+                        ret_code = data.get("retCode")
+
+                        <span class="c"># Error ที่ไม่ควร retry</span>
+                        NO_RETRY_CODES = {
+                            10001,  <span class="c"># Parameter error</span>
+                            10004,  <span class="c"># Sign check failed</span>
+                            110007, <span class="c"># Insufficient balance</span>
+                            110013, <span class="c"># Position is in liquidation</span>
+                            110025, <span class="c"># Position not exist</span>
+                        }
+                        if ret_code in NO_RETRY_CODES:
+                            raise ValueError(
+                                f"Exchange rejected [{ret_code}]: {ret_msg}"
+                            )
+
+                        logger.warning(f"API error [{ret_code}]: {ret_msg}, "
+                                       f"attempt {attempt+1}/{max_retries}")
+
+                    return data
+
+                except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                    if attempt == max_retries - 1:
+                        raise
+                    delay = 2 ** attempt
+                    logger.warning(f"Network error: {e}, retry in {delay}s")
+                    await asyncio.sleep(delay)
+
+        raise RuntimeError(f"Failed after {max_retries} attempts")
+
+    async def place_market_order(self,
+                                  symbol: str,
+                                  side: OrderSide,
+                                  qty: float,
+                                  client_order_id: str) -> Order:
+        """ส่ง market order"""
+        order = Order(
+            client_order_id=client_order_id,
+            symbol=symbol,
+            side=side,
+            order_type=OrderType.MARKET,
+            qty=qty,
+        )
+
+        try:
+            resp = await self._request("POST", "/v5/order/create", {
+                "category":    "linear",
+                "symbol":      symbol,
+                "side":        side.value,
+                "orderType":   "Market",
+                "qty":         str(qty),
+                "orderLinkId": client_order_id,
+            })
+
+            if resp.get("retCode") == 0:
+                result = resp["result"]
+                order.exchange_order_id = result.get("orderId")
+                order.status = OrderStatus.OPEN
+                logger.info(f"Order placed: {order}")
+            else:
+                order.status = OrderStatus.REJECTED
+                order.reject_reason = resp.get("retMsg")
+                logger.error(f"Order rejected: {order.reject_reason}")
+
+        except ValueError as e:
+            order.status = OrderStatus.REJECTED
+            order.reject_reason = str(e)
+            logger.error(f"Order rejected by exchange: {e}")
+
+        except Exception as e:
+            order.status = OrderStatus.ERROR
+            order.reject_reason = str(e)
+            logger.error(f"Order error: {e}")
+
+        order.updated_at = time.time()
+        return order
+
+    async def place_limit_order(self,
+                                 symbol: str,
+                                 side: OrderSide,
+                                 qty: float,
+                                 price: float,
+                                 client_order_id: str) -> Order:
+        """ส่ง limit order"""
+        order = Order(
+            client_order_id=client_order_id,
+            symbol=symbol,
+            side=side,
+            order_type=OrderType.LIMIT,
+            qty=qty,
+            price=price,
+        )
+
+        try:
+            resp = await self._request("POST", "/v5/order/create", {
+                "category":    "linear",
+                "symbol":      symbol,
+                "side":        side.value,
+                "orderType":   "Limit",
+                "qty":         str(qty),
+                "price":       str(price),
+                "timeInForce": "PostOnly",   <span class="c"># maker order เท่านั้น</span>
+                "orderLinkId": client_order_id,
+            })
+
+            if resp.get("retCode") == 0:
+                result = resp["result"]
+                order.exchange_order_id = result.get("orderId")
+                order.status = OrderStatus.OPEN
+                logger.info(f"Limit order placed: {order}")
+            else:
+                order.status = OrderStatus.REJECTED
+                order.reject_reason = resp.get("retMsg")
+
+        except ValueError as e:
+            order.status = OrderStatus.REJECTED
+            order.reject_reason = str(e)
+
+        except Exception as e:
+            order.status = OrderStatus.ERROR
+            order.reject_reason = str(e)
+
+        order.updated_at = time.time()
+        return order
+
+    async def cancel_order(self,
+                            symbol: str,
+                            client_order_id: str) -> bool:
+        """ยกเลิก order"""
+        resp = await self._request("POST", "/v5/order/cancel", {
+            "category":    "linear",
+            "symbol":      symbol,
+            "orderLinkId": client_order_id,
+        })
+        success = resp.get("retCode") == 0
+        if success:
+            logger.info(f"Cancelled order {client_order_id}")
+        else:
+            logger.warning(f"Cancel failed: {resp.get('retMsg')}")
+        return success
+
+    async def get_order_status(self, symbol: str,
+                                client_order_id: str) -> Optional[Order]:
+        """ดึง order status จาก exchange"""
+        resp = await self._request("GET", "/v5/order/realtime", {
+            "category":    "linear",
+            "symbol":      symbol,
+            "orderLinkId": client_order_id,
+        })
+        if resp.get("retCode") != 0:
+            return None
+
+        items = resp["result"].get("list", [])
+        if not items:
+            return None
+
+        item = items[0]
+        STATUS_MAP = {
+            "New":            OrderStatus.OPEN,
+            "PartiallyFilled": OrderStatus.PARTIALLY_FILLED,
+            "Filled":         OrderStatus.FILLED,
+            "Cancelled":      OrderStatus.CANCELLED,
+            "Rejected":       OrderStatus.REJECTED,
+        }
+
+        order = Order(
+            client_order_id   = client_order_id,
+            symbol            = symbol,
+            side              = OrderSide.BUY if item["side"] == "Buy" else OrderSide.SELL,
+            order_type        = OrderType.MARKET if item["orderType"] == "Market" else OrderType.LIMIT,
+            qty               = float(item["qty"]),
+            price             = float(item["price"]) if item.get("price") else None,
+            exchange_order_id = item["orderId"],
+            status            = STATUS_MAP.get(item["orderStatus"], OrderStatus.ERROR),
+            filled_qty        = float(item.get("cumExecQty", 0)),
+            avg_price         = float(item.get("avgPrice", 0)),
+        )
+        return order</div>
+
+<h3 id="s34-3">34.3 ทดสอบบน Testnet</h3>
+
+<div class="fm">import asyncio
+import uuid
+
+async def demo_order_flow():
+    """
+    ทดสอบ order flow บน Bybit Testnet
+    ต้องตั้ง env var:
+      export BYBIT_API_KEY=your_testnet_key
+      export BYBIT_API_SECRET=your_testnet_secret
+    """
+    async with BybitOrderClient(testnet=True) as client:
+
+        <span class="c"># สร้าง unique client order ID</span>
+        coid = f"PAIR-{uuid.uuid4().hex[:8].upper()}"
+
+        print(f"Placing market BUY 0.001 BTCUSDT (coid={coid})")
+        order = await client.place_market_order(
+            symbol           = "BTCUSDT",
+            side             = OrderSide.BUY,
+            qty              = 0.001,
+            client_order_id  = coid,
+        )
+        print(f"Result: {order}")
+
+        <span class="c"># รอให้ order settle</span>
+        await asyncio.sleep(1.0)
+
+        <span class="c"># ดึง status</span>
+        updated = await client.get_order_status("BTCUSDT", coid)
+        if updated:
+            print(f"Updated status: {updated.status.name}, "
+                  f"filled={updated.filled_qty}, avg={updated.avg_price}")
+
+<span class="c"># asyncio.run(demo_order_flow())</span></div>
+
+<div class="bx bk">
+<div class="bt">ข้อควรระวัง: Order Execution ในโลกจริง</div>
+<ul>
+<li><strong>ห้าม retry ทุก error</strong> — ถ้า network timeout แล้ว retry → order อาจถูกส่ง 2 ครั้ง ใช้ client_order_id เพื่อ idempotency</li>
+<li><strong>Market order slip ได้</strong> — ราคา fill อาจต่างจากราคาตลาดมาก โดยเฉพาะ pair ที่ volume น้อย</li>
+<li><strong>ตรวจ balance ก่อนส่ง order</strong> — error 110007 (insufficient balance) ไม่ควรเกิดถ้าระบบออกแบบดี</li>
+<li><strong>Log ทุก order response</strong> รวมถึง timestamp, exchange_order_id, และ status</li>
+</ul>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เขียน OrderTracker class ที่เก็บ history ของทุก order และ query ได้</summary>
+<div class="ans">
+<div class="fm">from collections import defaultdict
+from typing import Dict, List
+
+class OrderTracker:
+    """เก็บ history ของทุก order — query ได้ด้วย symbol หรือ status"""
+
+    def __init__(self):
+        self._orders: Dict[str, Order] = {}   <span class="c"># coid -> Order</span>
+        self._by_symbol: Dict[str, List[str]] = defaultdict(list)
+
+    def track(self, order: Order) -> None:
+        self._orders[order.client_order_id] = order
+        if order.client_order_id not in self._by_symbol[order.symbol]:
+            self._by_symbol[order.symbol].append(order.client_order_id)
+
+    def update(self, order: Order) -> None:
+        """อัปเดต order ที่มีอยู่แล้ว"""
+        if order.client_order_id in self._orders:
+            self._orders[order.client_order_id] = order
+
+    def get(self, coid: str) -> Optional[Order]:
+        return self._orders.get(coid)
+
+    def open_orders(self, symbol: str = None) -> List[Order]:
+        all_orders = list(self._orders.values())
+        open_list = [o for o in all_orders
+                     if o.status in (OrderStatus.PENDING, OrderStatus.OPEN,
+                                     OrderStatus.PARTIALLY_FILLED)]
+        if symbol:
+            open_list = [o for o in open_list if o.symbol == symbol]
+        return open_list
+
+    def filled_pnl_summary(self, symbol: str = None) -> dict:
+        orders = [o for o in self._orders.values()
+                  if o.status == OrderStatus.FILLED]
+        if symbol:
+            orders = [o for o in orders if o.symbol == symbol]
+        buys  = [o for o in orders if o.side == OrderSide.BUY]
+        sells = [o for o in orders if o.side == OrderSide.SELL]
+        return {
+            "total_filled": len(orders),
+            "buy_count":    len(buys),
+            "sell_count":   len(sells),
+        }
+
+    def __repr__(self):
+        return (f"OrderTracker(total={len(self._orders)}, "
+                f"open={len(self.open_orders())})")</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 35 ===================== -->
+<h2 id="ch35">บทที่ 35: Live System Integration</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">ประกอบทุกอย่างเข้าด้วยกันเป็น live trading system ที่ production-ready: logging ที่ structured, health check loop, kill switch ที่ทำงานได้จริง, graceful shutdown, และ pre-flight checklist ก่อน go-live</div>
+</div>
+
+<h3 id="s35-1">35.1 Structured Logging</h3>
+
+<p>ใน live system logging ต้องเป็น structured (JSON) เพื่อ search และ filter ง่าย — ไม่ใช่แค่ print string</p>
+
+<div class="fm">import logging
+import json
+import sys
+from datetime import datetime, timezone
+
+class StructuredFormatter(logging.Formatter):
+    """
+    Formatter ที่ output JSON — ง่ายต่อการ search ด้วย jq หรือ ELK stack
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_obj = {
+            "ts":      datetime.now(timezone.utc).isoformat(),
+            "level":   record.levelname,
+            "logger":  record.name,
+            "msg":     record.getMessage(),
+        }
+        <span class="c"># เพิ่ม extra fields ถ้ามี</span>
+        for key in ("symbol", "order_id", "price", "side", "pnl", "error"):
+            if hasattr(record, key):
+                log_obj[key] = getattr(record, key)
+
+        if record.exc_info:
+            log_obj["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_obj, ensure_ascii=False)
+
+
+def setup_logging(level: str = "INFO",
+                   log_file: str = None) -> logging.Logger:
+    """ตั้งค่า logging สำหรับ live system"""
+    logger = logging.getLogger("live_trading")
+    logger.setLevel(getattr(logging, level.upper()))
+
+    <span class="c"># Console handler</span>
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(StructuredFormatter())
+    logger.addHandler(console)
+
+    <span class="c"># File handler (ถ้าระบุ)</span>
+    if log_file:
+        fh = logging.FileHandler(log_file, encoding="utf-8")
+        fh.setFormatter(StructuredFormatter())
+        logger.addHandler(fh)
+
+    return logger
+
+<span class="c"># ใช้งาน</span>
+logger = setup_logging(level="INFO", log_file="live_trading.log")
+
+<span class="c"># Log พร้อม extra context</span>
+logger.info("Order placed", extra={
+    "symbol":   "BTCUSDT",
+    "order_id": "ORD-001",
+    "side":     "BUY",
+    "price":    65000.0
+})</div>
+<div class="output">{"ts": "2024-01-15T10:30:00.123Z", "level": "INFO", "logger": "live_trading", "msg": "Order placed", "symbol": "BTCUSDT", "order_id": "ORD-001", "side": "BUY", "price": 65000.0}</div>
+
+<h3 id="s35-2">35.2 Kill Switch ด้วย asyncio.Event</h3>
+
+<div class="fm">import asyncio
+import signal
+import logging
+
+logger = logging.getLogger("live_trading")
+
+class KillSwitch:
+    """
+    Kill switch สำหรับหยุดระบบ live trading
+    รองรับ: Ctrl+C, SIGTERM (Docker stop), programmatic (drawdown exceeded)
+    """
+
+    def __init__(self):
+        self._event = asyncio.Event()
+        self._reason: str = ""
+
+    def trigger(self, reason: str = "manual"):
+        """ทริกเกอร์ kill switch"""
+        self._reason = reason
+        self._event.set()
+        logger.critical(f"KILL SWITCH TRIGGERED: {reason}")
+
+    async def wait(self):
+        """รอจนกว่า kill switch จะทำงาน"""
+        await self._event.wait()
+
+    @property
+    def is_set(self) -> bool:
+        return self._event.is_set()
+
+    @property
+    def reason(self) -> str:
+        return self._reason
+
+    def setup_signal_handlers(self, loop: asyncio.AbstractEventLoop):
+        """ตั้งค่า OS signal handlers"""
+        def _handle_signal(sig_name: str):
+            logger.warning(f"Received {sig_name}")
+            self.trigger(f"OS signal: {sig_name}")
+
+        <span class="c"># add_signal_handler รองรับเฉพาะ Unix/Linux/macOS (ไม่ทำงานบน Windows)</span>
+        if sys.platform != "win32":
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(
+                    sig,
+                    lambda s=sig: _handle_signal(s.name)
+                )
+        else:
+            <span class="c"># Windows: ใช้ signal.signal() แทน (synchronous)</span>
+            import signal as _signal
+            _signal.signal(_signal.SIGINT,
+                           lambda s, f: _handle_signal("SIGINT"))</div>
+
+<h3 id="s35-3">35.3 Health Check Loop</h3>
+
+<div class="fm">import asyncio
+import time
+from dataclasses import dataclass, field
+
+@dataclass
+class SystemHealth:
+    last_binance_tick:  float = 0.0   <span class="c"># timestamp ของ tick ล่าสุดจาก Binance</span>
+    last_bybit_tick:    float = 0.0
+    last_order_time:    float = 0.0
+    total_pnl:          float = 0.0
+    drawdown_pct:       float = 0.0
+    peak_equity:        float = 0.0
+    current_equity:     float = 0.0
+    order_errors:       int   = 0
+    feed_disconnects:   int   = 0
+
+    def update_equity(self, equity: float):
+        if equity &gt; self.peak_equity:
+            self.peak_equity = equity
+        self.current_equity = equity
+        if self.peak_equity &gt; 0:
+            self.drawdown_pct = (equity - self.peak_equity) / self.peak_equity
+
+
+async def health_check_loop(health: SystemHealth,
+                             kill_switch: KillSwitch,
+                             check_interval: float = 5.0,
+                             max_drawdown: float = -0.05,
+                             max_feed_silence: float = 30.0):
+    """
+    ตรวจสุขภาพระบบทุก check_interval วินาที
+    หยุดอัตโนมัติถ้า:
+    - drawdown เกิน max_drawdown
+    - ไม่ได้รับ feed นานกว่า max_feed_silence วินาที
+    """
+    logger = logging.getLogger("live_trading.health")
+
+    while not kill_switch.is_set:
+        await asyncio.sleep(check_interval)
+        now = time.time()
+
+        <span class="c"># ตรวจ drawdown</span>
+        if health.drawdown_pct &lt; max_drawdown:
+            kill_switch.trigger(
+                f"Max drawdown exceeded: {health.drawdown_pct:.2%} &lt; {max_drawdown:.2%}"
+            )
+            break
+
+        <span class="c"># ตรวจ feed silence</span>
+        binance_silence = now - health.last_binance_tick
+        bybit_silence   = now - health.last_bybit_tick
+
+        if health.last_binance_tick &gt; 0 and binance_silence &gt; max_feed_silence:
+            logger.error(f"Binance feed silent for {binance_silence:.0f}s")
+            kill_switch.trigger(f"Binance feed silent {binance_silence:.0f}s")
+            break
+
+        if health.last_bybit_tick &gt; 0 and bybit_silence &gt; max_feed_silence:
+            logger.error(f"Bybit feed silent for {bybit_silence:.0f}s")
+            kill_switch.trigger(f"Bybit feed silent {bybit_silence:.0f}s")
+            break
+
+        <span class="c"># ตรวจ order errors</span>
+        if health.order_errors &gt;= 5:
+            kill_switch.trigger(
+                f"Too many order errors: {health.order_errors}"
+            )
+            break
+
+        logger.info(
+            f"Health OK | equity={health.current_equity:,.0f} "
+            f"drawdown={health.drawdown_pct:.2%} "
+            f"order_errors={health.order_errors}"
+        )</div>
+
+<h3 id="s35-4">35.4 ระบบ Live Trading ครบวงจร</h3>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC Pair Live Trading System</div>
+<p>ประกอบทุก component จาก บท 31–34 เป็น production-ready system สมบูรณ์</p>
+</div>
+
+<div class="fm">import asyncio
+import logging
+import os
+import time
+import uuid
+from collections import deque
+from typing import Optional
+
+<span class="c"># ============================================================</span>
+<span class="c"># Configuration — โหลดจาก env var เสมอ</span>
+<span class="c"># ============================================================</span>
+CONFIG = {
+    "symbol":          "BTCUSDT",
+    "interval":        "1",           <span class="c"># 1 minute candles</span>
+    "pair_window":     60,            <span class="c"># lookback candles</span>
+    "entry_zscore":    2.0,
+    "exit_zscore":     0.5,
+    "order_qty":       0.001,         <span class="c"># BTC per trade</span>
+    "max_drawdown":    -0.05,         <span class="c"># หยุดถ้า drawdown เกิน 5%</span>
+    "max_feed_silence": 30.0,         <span class="c"># หยุดถ้าไม่มี feed 30s</span>
+    "initial_capital": 10_000.0,      <span class="c"># USDT</span>
+    "testnet":         True,          <span class="c"># เปลี่ยนเป็น False เมื่อพร้อม live</span>
+    "log_level":       "INFO",
+    "log_file":        "btc_pair_live.log",
+}
+
+class BTCPairLiveSystem:
+    """
+    Live trading system สำหรับ BTC pair strategy
+    Binance/Bybit spread → Z-score → market order
+    """
+
+    def __init__(self, config: dict):
+        self.config      = config
+        self.logger      = setup_logging(
+            config["log_level"], config.get("log_file")
+        )
+        self.kill_switch = KillSwitch()
+        self.health      = SystemHealth(
+            peak_equity    = config["initial_capital"],
+            current_equity = config["initial_capital"],
+        )
+        self.order_tracker = OrderTracker()
+
+        <span class="c"># Price buffers</span>
+        w = config["pair_window"]
+        self._binance_closes: deque[float] = deque(maxlen=w)
+        self._bybit_closes:   deque[float] = deque(maxlen=w)
+
+        <span class="c"># Position state</span>
+        self._position: Optional[str] = None   <span class="c"># "LONG", "SHORT", หรือ None</span>
+        self._shared_queue: asyncio.Queue[Candle] = asyncio.Queue(maxsize=1000)
+
+    <span class="c"># ─── Callbacks ───────────────────────────────────────────</span>
+
+    def _on_binance_candle(self, candle: Candle):
+        self.health.last_binance_tick = time.time()
+
+    def _on_bybit_candle(self, candle: Candle):
+        self.health.last_bybit_tick = time.time()
+
+    <span class="c"># ─── Signal Logic ────────────────────────────────────────</span>
+
+    def _compute_zscore(self) -> Optional[float]:
+        """คำนวณ z-score ของ spread Binance-Bybit"""
+        w = self.config["pair_window"]
+        if (len(self._binance_closes) &lt; w or
+                len(self._bybit_closes) &lt; w):
+            return None
+
+        import statistics
+        spreads = [
+            b - y for b, y in zip(
+                list(self._binance_closes),
+                list(self._bybit_closes)
+            )
+        ]
+        mean   = statistics.mean(spreads)
+        stdev  = statistics.stdev(spreads)
+        if stdev == 0:
+            return None
+        return (spreads[-1] - mean) / stdev
+
+    def _get_signal(self, zscore: float) -> str:
+        entry = self.config["entry_zscore"]
+        exit_ = self.config["exit_zscore"]
+
+        if zscore &gt;  entry: return "SHORT"
+        if zscore &lt; -entry: return "LONG"
+        if abs(zscore) &lt; exit_: return "EXIT"
+        return "HOLD"
+
+    <span class="c"># ─── Order Execution ─────────────────────────────────────</span>
+
+    async def _execute_signal(self, signal: str,
+                               client: BybitOrderClient):
+        """แปลง signal เป็น order"""
+        if signal == "HOLD":
+            return
+        if signal == self._position:
+            return   <span class="c"># อยู่ใน position นี้อยู่แล้ว</span>
+
+        qty  = self.config["order_qty"]
+        sym  = self.config["symbol"]
+        coid = f"PAIR-{uuid.uuid4().hex[:8].upper()}"
+
+        if signal in ("LONG", "SHORT"):
+            <span class="c"># ปิด position เดิมก่อน (ถ้ามี)</span>
+            if self._position is not None:
+                close_side = (OrderSide.SELL
+                              if self._position == "LONG" else OrderSide.BUY)
+                close_coid = f"CLOSE-{uuid.uuid4().hex[:8].upper()}"
+                close_order = await client.place_market_order(
+                    sym, close_side, qty, close_coid
+                )
+                self.order_tracker.track(close_order)
+                if close_order.status == OrderStatus.ERROR:
+                    self.health.order_errors += 1
+
+            <span class="c"># เปิด position ใหม่</span>
+            side = OrderSide.BUY if signal == "LONG" else OrderSide.SELL
+            order = await client.place_market_order(sym, side, qty, coid)
+            self.order_tracker.track(order)
+
+            if order.status in (OrderStatus.OPEN, OrderStatus.FILLED):
+                self._position = signal
+                self.logger.info(
+                    f"Position opened: {signal}",
+                    extra={"symbol": sym, "order_id": coid, "side": side.value}
+                )
+            else:
+                self.health.order_errors += 1
+                self.logger.error(
+                    f"Order failed: {order.reject_reason}",
+                    extra={"order_id": coid}
+                )
+
+        elif signal == "EXIT" and self._position is not None:
+            side = (OrderSide.SELL
+                    if self._position == "LONG" else OrderSide.BUY)
+            order = await client.place_market_order(sym, side, qty, coid)
+            self.order_tracker.track(order)
+
+            if order.status in (OrderStatus.OPEN, OrderStatus.FILLED):
+                self._position = None
+                self.logger.info(
+                    "Position closed",
+                    extra={"symbol": sym, "order_id": coid}
+                )
+            else:
+                self.health.order_errors += 1
+
+    <span class="c"># ─── Main Consumer Loop ──────────────────────────────────</span>
+
+    async def _signal_loop(self, client: BybitOrderClient):
+        """ประมวลผล candle จาก queue และส่ง order"""
+        while not self.kill_switch.is_set:
+            try:
+                candle = await asyncio.wait_for(
+                    self._shared_queue.get(), timeout=1.0
+                )
+            except asyncio.TimeoutError:
+                continue
+
+            <span class="c"># เพิ่มเฉพาะ closed candle</span>
+            if candle.is_closed:
+                if candle.exchange == "binance":
+                    self._binance_closes.append(candle.close)
+                elif candle.exchange == "bybit":
+                    self._bybit_closes.append(candle.close)
+
+                zscore = self._compute_zscore()
+                if zscore is not None:
+                    signal = self._get_signal(zscore)
+                    self.logger.debug(
+                        f"zscore={zscore:.3f} signal={signal}"
+                    )
+                    if not self.kill_switch.is_set:
+                        await self._execute_signal(signal, client)
+
+            self._shared_queue.task_done()
+
+    <span class="c"># ─── Graceful Shutdown ───────────────────────────────────</span>
+
+    async def _shutdown(self, client: BybitOrderClient):
+        """ปิด position ทั้งหมดก่อน shutdown"""
+        self.logger.warning("Graceful shutdown: ปิด open positions...")
+
+        if self._position is not None:
+            side = (OrderSide.SELL
+                    if self._position == "LONG" else OrderSide.BUY)
+            coid = f"SHUTDOWN-{uuid.uuid4().hex[:8].upper()}"
+            order = await client.place_market_order(
+                self.config["symbol"], side,
+                self.config["order_qty"], coid
+            )
+            self.order_tracker.track(order)
+            self.logger.info(
+                f"Shutdown order: {order.status.name}",
+                extra={"order_id": coid}
+            )
+            self._position = None
+
+        self.logger.info(
+            f"Shutdown complete | "
+            f"total_orders={len(self.order_tracker._orders)} | "
+            f"drawdown={self.health.drawdown_pct:.2%}"
+        )
+
+    <span class="c"># ─── Run ─────────────────────────────────────────────────</span>
+
+    async def run(self):
+        """เข้าสู่การทำงาน live"""
+        loop = asyncio.get_event_loop()
+        self.kill_switch.setup_signal_handlers(loop)
+
+        self.logger.info("Starting BTC Pair Live System")
+        self.logger.info(f"Config: {self.config}")
+
+        <span class="c"># WebSocket clients</span>
+        binance_client = BinanceWebSocketClient(
+            symbol   = self.config["symbol"],
+            interval = f"{self.config['interval']}m",
+            on_candle = self._on_binance_candle,
+            queue    = self._shared_queue,
+        )
+        bybit_client = BybitWebSocketClient(
+            symbol   = self.config["symbol"],
+            interval = self.config["interval"],
+            on_candle = self._on_bybit_candle,
+            queue    = self._shared_queue,
+        )
+
+        async with BybitOrderClient(testnet=self.config["testnet"]) as order_client:
+            try:
+                await asyncio.gather(
+                    binance_client.run(),
+                    bybit_client.run(),
+                    self._signal_loop(order_client),
+                    health_check_loop(
+                        self.health,
+                        self.kill_switch,
+                        max_drawdown    = self.config["max_drawdown"],
+                        max_feed_silence = self.config["max_feed_silence"],
+                    ),
+                    self.kill_switch.wait(),   <span class="c"># รอจนกว่า kill switch</span>
+                    return_exceptions=True,
+                )
+            finally:
+                binance_client.stop()
+                bybit_client.stop()
+                await self._shutdown(order_client)
+
+
+<span class="c"># ─── Entry point ─────────────────────────────────────────────</span>
+if __name__ == "__main__":
+    system = BTCPairLiveSystem(CONFIG)
+    asyncio.run(system.run())</div>
+
+<h3 id="s35-5">35.5 Pre-Flight Checklist ก่อน Go Live</h3>
+
+<div class="fm">import asyncio
+import os
+import aiohttp
+
+async def preflight_check(config: dict) -> bool:
+    """
+    ตรวจสอบความพร้อมก่อนเริ่ม live trading
+    คืน True เฉพาะเมื่อผ่านทุก check
+    """
+    results = {}
+    logger = logging.getLogger("live_trading.preflight")
+
+    <span class="c"># 1. ตรวจ API Keys</span>
+    api_key    = os.environ.get("BYBIT_API_KEY", "")
+    api_secret = os.environ.get("BYBIT_API_SECRET", "")
+    results["api_keys"] = bool(api_key and api_secret and
+                                len(api_key) &gt; 10 and
+                                len(api_secret) &gt; 10)
+    if not results["api_keys"]:
+        logger.error("FAIL: BYBIT_API_KEY หรือ BYBIT_API_SECRET ไม่ได้ตั้งค่า")
+
+    <span class="c"># 2. ตรวจการเชื่อมต่อ exchange</span>
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = ("https://api-testnet.bybit.com/v5/market/time"
+                   if config.get("testnet")
+                   else "https://api.bybit.com/v5/market/time")
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                data = await r.json()
+                results["connectivity"] = data.get("retCode") == 0
+    except Exception as e:
+        results["connectivity"] = False
+        logger.error(f"FAIL: ไม่สามารถเชื่อมต่อ exchange: {e}")
+
+    <span class="c"># 3. ตรวจ balance</span>
+    if results.get("api_keys") and results.get("connectivity"):
+        try:
+            async with BybitOrderClient(testnet=config.get("testnet", True)) as client:
+                resp = await client._request("GET", "/v5/account/wallet-balance",
+                                              {"accountType": "UNIFIED"})
+                if resp.get("retCode") == 0:
+                    coins = resp["result"]["list"][0]["coin"]
+                    usdt  = next(
+                        (float(c["availableToWithdraw"])
+                         for c in coins if c["coin"] == "USDT"),
+                        0.0
+                    )
+                    min_balance = config.get("initial_capital", 1000) * 0.5
+                    results["balance"] = usdt &gt;= min_balance
+                    if not results["balance"]:
+                        logger.error(
+                            f"FAIL: USDT balance {usdt:.2f} &lt; required {min_balance:.2f}"
+                        )
+                    else:
+                        logger.info(f"OK: USDT balance = {usdt:,.2f}")
+                else:
+                    results["balance"] = False
+        except Exception as e:
+            results["balance"] = False
+            logger.error(f"FAIL: ดึง balance ไม่ได้: {e}")
+
+    <span class="c"># 4. ตรวจ config</span>
+    cfg_ok = (
+        config.get("order_qty", 0) &gt; 0 and
+        config.get("max_drawdown", 0) &lt; 0 and
+        config.get("entry_zscore", 0) &gt; config.get("exit_zscore", 0) &gt; 0
+    )
+    results["config"] = cfg_ok
+    if not cfg_ok:
+        logger.error("FAIL: Config ไม่ถูกต้อง")
+
+    <span class="c"># 5. สรุป</span>
+    all_pass = all(results.values())
+    print("\n=== Pre-Flight Check ===")
+    for name, ok in results.items():
+        status = "✓ PASS" if ok else "✗ FAIL"
+        print(f"  {name:20s}: {status}")
+    print(f"\n{'→ READY TO LAUNCH' if all_pass else '→ FIX ISSUES FIRST'}\n")
+    return all_pass
+
+<span class="c"># asyncio.run(preflight_check(CONFIG))</span></div>
+
+<div class="bx bg">
+<div class="bt">Deployment Checklist — ก่อน Go Live จริง</div>
+<ul>
+<li><strong>ทดสอบบน Testnet ≥ 1 สัปดาห์</strong> — ให้ระบบวิ่งตลอดเวลา ดู drawdown และ error logs</li>
+<li><strong>Paper trading บน real feed</strong> — รับ feed จริงแต่ไม่ส่ง order จริง เพื่อตรวจ latency</li>
+<li><strong>ตั้ง max position size เล็กๆ</strong> ตอนเริ่มต้น เช่น 0.001 BTC ก่อน scale ขึ้น</li>
+<li><strong>มี monitoring ภายนอก</strong> — อย่าเชื่อแค่ log ของตัวเอง ใช้ Telegram bot หรือ Grafana alert</li>
+<li><strong>Deploy บน VPS ใกล้ exchange</strong> — Singapore หรือ Tokyo เพื่อ latency ต่ำ</li>
+<li><strong>ตั้ง systemd หรือ Docker</strong> ให้ restart อัตโนมัติถ้า process crash</li>
+<li><strong>Log rotation</strong> — log file โตได้มาก ตั้ง logrotate หรือ size limit</li>
+</ul>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เพิ่ม Telegram alert เมื่อ kill switch ทำงาน หรือเมื่อ fill order ใหญ่</summary>
+<div class="ans">
+<div class="fm">import aiohttp
+import os
+
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+async def send_telegram(message: str) -> bool:
+    """ส่ง alert ผ่าน Telegram Bot"""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json={
+                "chat_id": TELEGRAM_CHAT_ID,
+                "text": message,
+                "parse_mode": "HTML"
+            }, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                return resp.status == 200
+    except Exception:
+        return False
+
+<span class="c"># ใน KillSwitch.trigger():</span>
+async def trigger_with_alert(self, reason: str = "manual"):
+    self._reason = reason
+    self._event.set()
+    logger.critical(f"KILL SWITCH TRIGGERED: {reason}")
+    await send_telegram(
+        f"🚨 <b>KILL SWITCH</b>\n"
+        f"Reason: {reason}\n"
+        f"Time: {datetime.utcnow().isoformat()}Z"
+    )
+
+<span class="c"># ใน _execute_signal() หลัง order filled:</span>
+async def notify_fill(order: Order):
+    msg = (f"✅ <b>Order Filled</b>\n"
+           f"Symbol: {order.symbol}\n"
+           f"Side: {order.side.value}\n"
+           f"Qty: {order.filled_qty}\n"
+           f"AvgPrice: {order.avg_price:,.2f}")
+    await send_telegram(msg)</div>
+</div>
+</details>
+
+
+<!-- ===================== CLOSING SECTION ===================== -->
+<h2 id="epilogue">จบหนังสือ — เส้นทางต่อไป</h2>
+
+<div class="key-idea">
+<div class="ki-label">การเดินทางจาก Part 0 ถึง Part VI</div>
+<div class="ki-text">
+คุณผ่านการเรียนรู้มาไกลมาก — ตั้งแต่ Python พื้นฐานจนถึงระบบ live trading อัตโนมัติ<br>
+สรุปทุกอย่างที่ได้เรียนในหนังสือเล่มนี้:
+</div>
+</div>
+
+<table>
+<tr><th>Part</th><th>เนื้อหา</th><th>สิ่งที่ได้</th></tr>
+<tr><td><strong>Part 0</strong></td><td>Python Foundations</td><td>Syntax, data types, functions, comprehensions</td></tr>
+<tr><td><strong>Part I</strong></td><td>Data Wrangling</td><td>pandas, numpy, matplotlib — ดึง/ทำความสะอาด/visualize ข้อมูลตลาด</td></tr>
+<tr><td><strong>Part II</strong></td><td>Math Tools</td><td>Rolling stats, z-score, cointegration, pair trading signal</td></tr>
+<tr><td><strong>Part III</strong></td><td>OOP</td><td>Classes, ABC, Strategy/Observer/Factory patterns — system ที่ขยายได้</td></tr>
+<tr><td><strong>Part IV</strong></td><td>Backtesting</td><td>Walk-forward, slippage, commission, overfitting, Sharpe/drawdown</td></tr>
+<tr><td><strong>Part V</strong></td><td>AI-Assisted Coding</td><td>Prompt engineering, code generation, audit checklist, quant libraries, full strategy with AI</td></tr>
+<tr><td><strong>Part VI</strong></td><td>Async &amp; Live Trading</td><td>asyncio, WebSocket, order execution, kill switch, monitoring</td></tr>
+</table>
+
+<div class="diagram">
+  เส้นทางการพัฒนาในฐานะ Quant Developer:
+  ─────────────────────────────────────────────────────────────────
+  [หนังสือนี้]
+  Part 0-I ──► Part II-III ──► Part IV-V ──► Part VI
+  Python basics  Math + OOP    Backtest     Live System
+       │              │             │             │
+       ▼              ▼             ▼             ▼
+  [ขั้นต่อไป]
+  NumPy/Pandas  statsmodels   vectorbt/     production
+  เชี่ยวชาญ      PyMC (Bayes)  zipline      deployment
+                              Nautilus      cloud infra
+</div>
+
+<h3>แนะนำขั้นต่อไปหลังจบหนังสือ</h3>
+
+<div class="bx bb">
+<div class="bt">1. Backtesting เชิงลึก</div>
+<ul>
+<li><strong>vectorbt</strong> — vectorized backtesting เร็วกว่า pandas loop 100x</li>
+<li><strong>Nautilus Trader</strong> — professional backtester + live trading framework ที่ใช้ใน production</li>
+<li><strong>Zipline-reloaded</strong> — backtester ของ Quantopian ที่ยังมี community ดูแล</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">2. Statistical Methods เพิ่มเติม</div>
+<ul>
+<li><strong>Bayesian Inference</strong> ด้วย PyMC — ประเมิน parameter uncertainty แทน point estimate</li>
+<li><strong>Kalman Filter</strong> — dynamic hedge ratio ที่ปรับตามเวลา (statsmodels มี DLM)</li>
+<li><strong>Regime Detection</strong> ด้วย Hidden Markov Model — ตรวจว่าตลาดอยู่ใน trend/mean-revert/volatile</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">3. Machine Learning for Finance</div>
+<ul>
+<li><strong>Feature Engineering</strong> — microstructure features, order book imbalance, funding rate</li>
+<li><strong>Gradient Boosting</strong> (XGBoost/LightGBM) สำหรับ signal classification</li>
+<li><strong>LSTM / Transformer</strong> สำหรับ time series — แต่ระวัง overfitting</li>
+<li><strong>Reinforcement Learning</strong> (Stable-Baselines3) — ให้ model เรียนรู้ position sizing</li>
+</ul>
+</div>
+
+<div class="bx bi">
+<div class="bt">4. Infrastructure &amp; Operations</div>
+<ul>
+<li><strong>Docker + docker-compose</strong> — containerize trading system</li>
+<li><strong>TimescaleDB</strong> — PostgreSQL extension สำหรับ time series data ใน production</li>
+<li><strong>Grafana + Prometheus</strong> — monitoring dashboard สำหรับ live system</li>
+<li><strong>Redis Streams</strong> — message queue สำหรับ high-throughput tick data</li>
+</ul>
+</div>
+
+<div class="bx bd">
+<div class="bt">5. หนังสือและแหล่งเรียนรู้แนะนำ</div>
+<ul>
+<li><em>Advances in Financial Machine Learning</em> — Marcos Lopez de Prado (อ่านหลังจากมีพื้นฐาน ML)</li>
+<li><em>Algorithmic Trading</em> — Ernest Chan (practical, Python examples)</li>
+<li><em>Active Portfolio Management</em> — Grinold &amp; Kahn (classic quant text)</li>
+<li>QuantLib Python — pricing library สำหรับ options และ derivatives</li>
+<li>Quantopian Lectures (archive) — beginner-friendly quant tutorials</li>
+</ul>
+</div>
+
+<div class="bx bk">
+<div class="bt">คำเตือนสุดท้าย — จากนักพัฒนาถึงนักพัฒนา</div>
+<p>
+หนังสือนี้สอนวิธี <em>สร้าง</em> trading system — ไม่ใช่วิธีรวยจากตลาด<br><br>
+• Strategy ที่ backtest ได้ดีส่วนมากไม่ได้ผลใน live — นั่นคือความจริงของ quant<br>
+• Market เปลี่ยนไปตลอด — strategy ที่ดีวันนี้อาจไม่ดีพรุ่งนี้<br>
+• การ risk management และ position sizing สำคัญกว่า entry signal มาก<br>
+• <strong>ไม่มี strategy ไหนที่ไม่มีความเสี่ยง</strong> — จัดการความเสี่ยงด้วยระบบ ไม่ใช่ด้วยความหวัง<br><br>
+จงสร้างระบบที่ <em>fail safely</em>, <em>log everything</em>, และ <em>never risk what you can't afford to lose</em>
+</p>
+</div>
+
+<div class="nav">
+<a href="python-part5.html">← Part V: AI-Assisted Coding</a>
+<span style="color:#94a3b8;font-size:.9em">Part VI — จบหนังสือ</span>
+</div>
+
+</body>
+</html>
