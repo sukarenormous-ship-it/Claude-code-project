@@ -31,12 +31,12 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="cover">
 <h1>คณิตศาสตร์สำหรับ Options<br><span style="font-size:.6em;color:#64748b">เล่ม 2 · Portfolio Quant</span></h1>
 <div class="sub">C — อ่านข้อมูลให้เป็น: กราฟ &amp; OLS ที่เชื่อถือได้</div>
-<div class="desc">Scatter · Correlation · Regression plot · Residual plot · Correlation Heatmap — อ่านจบแล้วดูกราฟออกว่า "ตัวเลขที่ได้เชื่อได้แค่ไหน" ก่อนเอาไปตัดสินใจ</div>
+<div class="desc">Scatter · Correlation · Residual plot · Heatmap · สมมติฐาน OLS · SE/t/p-value · summary() · Robust SE · VIF · Overfitting — อ่านจบแล้วบอกได้ว่า "ตัวเลขที่ได้เชื่อได้แค่ไหน" ก่อนเอาไปตัดสินใจ</div>
 </div>
 
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
 <div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
-<p><strong>🟢 มือใหม่:</strong> อ่าน 🚶 + ดูภาพทุกใบ + 🎯 · แก่นคือ <strong>"ดูกราฟก่อนเชื่อตัวเลข"</strong> ข้ามโค้ดได้หมด · <strong>🔵 มีพื้น:</strong> อ่าน 🐍 ให้ครบ แล้วเอา residual plot กับ heatmap ไปใช้กับข้อมูลตัวเอง</p></div>
+<p><strong>🟢 มือใหม่:</strong> อ่าน <strong>บทที่ 5</strong> ให้ครบ (🚶 + ดูภาพทุกใบ + 🎯) ข้ามโค้ดได้หมด · แก่นคือ <strong>"ดูกราฟก่อนเชื่อตัวเลข"</strong> · <strong>🔵 มีพื้น:</strong> อ่านต่อ <strong>บทที่ 6</strong> ให้ครบ โดยเฉพาะ §6.3 (อ่าน <code>summary()</code>) และ §6.4 (ช่วงความเชื่อมั่นของ β) ซึ่งใช้งานได้ทันที</p></div>
 
 <div class="bx bp"><div class="bt">📖 ต่อจาก เล่ม 2 · A/B — และศัพท์ที่จะเจอ</div>
 <p>A สอนวัดความเสี่ยงพอร์ต (wᵀΣw) · B สอนหาน้ำหนักที่ดีที่สุด · <strong>C ถอยมาหนึ่งก้าว</strong> ถามว่า "ตัวเลขที่ป้อนเข้าไปในสองบทนั้น เชื่อได้แค่ไหน" — คำตอบเริ่มที่การ<strong>ดูกราฟ</strong></p>
@@ -431,6 +431,282 @@ print(f"\ncorrelation เฉลี่ยทั้งพอร์ต = {C[iu].mea
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
 <p><strong>Anscombe's Quartet</strong> = ชุดข้อมูล 4 ชุดที่สถิติเหมือนกันแต่กราฟต่างกัน · <strong>Scatter plot</strong> = กราฟจุดสองแกน · <strong>Outlier</strong> = จุดที่ y หลุดจากแนว · <strong>Leverage point</strong> = จุดที่ x ไกลจากกลุ่มจนคุมเส้นได้ · <strong>Residual</strong> = ค่าจริง − ค่าที่โมเดลทำนาย · <strong>Heteroskedasticity</strong> = ความผันผวนของ error ไม่คงที่ (residual เป็นกรวย) · <strong>Homoskedastic</strong> = ตรงข้าม (ความกว้างสม่ำเสมอ) · <strong>Autocorrelation</strong> = error เกี่ยวพันข้ามเวลา (residual เป็นคลื่น) · <strong>Diverging colormap</strong> = ชุดสีที่มีจุดกลางมีความหมาย · <strong>Rolling correlation</strong> = correlation จากหน้าต่างเลื่อน</p></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- ========== CHAPTER 6 ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="ch6">บทที่ 6: OLS ที่เชื่อถือได้ — จาก "β เท่าไร" สู่ "เชื่อ β ได้แค่ไหน"</h2>
+
+<p>เล่ม 2 · A สอนหา <strong>β</strong> ด้วย regression แล้วเอาไปใช้เป็น hedge ratio · แต่ตัวเลขตัวเดียวไม่เคยบอกความจริงทั้งหมด — <strong>β = 1.54 ที่คำนวณจากข้อมูล 6 เดือน กับ β = 1.54 ที่คำนวณจากข้อมูล 6 ปี ไม่ได้น่าเชื่อถือเท่ากัน</strong> ทั้งที่เลขหน้าจอเหมือนกันเป๊ะ</p>
+
+<p>บทนี้คือเครื่องมือวัดว่า "เชื่อได้แค่ไหน" — และวิธีอ่านตารางที่คนทำงานจริงเปิดดูทุกวัน</p>
+
+<h3 id="s6-1">6.1 สมมติฐานของ OLS — และกราฟที่ใช้ตรวจแต่ละข้อ</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สูตร β = Cov/Var ใช้ได้เสมอ (มันเป็นแค่เลขคณิต) · แต่ <strong>"ความมั่นใจ" ที่โปรแกรมรายงาน</strong> (SE, p-value, ช่วงความเชื่อมั่น) ตั้งอยู่บนสมมติฐานหลายข้อ · ถ้าสมมติฐานพัง ตัว β ยังพอใช้ได้ แต่<strong>ความมั่นใจนั้นจะหลอกคุณ</strong></p>
+
+<div class="tw"><table>
+<tr><th>สมมติฐาน</th><th>แปลว่า</th><th>พังแล้วเกิดอะไร</th><th>ตรวจด้วย</th></tr>
+<tr><td><strong>เชิงเส้น</strong></td><td>ความสัมพันธ์จริงเป็นเส้นตรง</td><td>β ผิดความหมายไปเลย</td><td class="nw">residual โค้ง (§5.3)</td></tr>
+<tr><td><strong>error กว้างคงที่</strong><br>(homoskedastic)</td><td>ความไม่แน่นอนเท่ากันทุกช่วง</td><td class="nw">β โอเค แต่ <strong>SE/p-value ผิด</strong></td><td class="nw">residual เป็นกรวย (§5.3)</td></tr>
+<tr><td><strong>error อิสระต่อกัน</strong></td><td>วันนี้ไม่เกี่ยวกับเมื่อวาน</td><td class="nw">SE เล็กเกินจริงมาก</td><td class="nw">residual เป็นคลื่น (§5.3)</td></tr>
+<tr><td><strong>x ไม่ซ้ำกันเอง</strong></td><td>ตัวแปรต้นไม่ทับซ้อน</td><td>β แต่ละตัวเหวี่ยงมั่ว</td><td>VIF (§6.6)</td></tr>
+<tr><td><strong>ไม่มีจุดครอบงำ</strong></td><td>ไม่มีจุดเดียวคุมผลลัพธ์</td><td>β มาจากจุดเดียว</td><td class="nw">scatter + ตัดออกลอง (§5.2)</td></tr>
+</table></div>
+
+<div class="bx bg"><div class="bt">✅ ข่าวดี — คุณตรวจ 3 ข้อแรกเป็นแล้ว</div>
+<p>สามข้อแรกในตารางคือ <strong>residual plot 3 หน้าตา</strong> ที่เรียนไปในบทที่ 5 พอดี · บทที่ 5 สอน "เห็นอาการ" · บทที่ 6 สอน "วัดความเสียหายเป็นตัวเลข แล้วแก้"</p></div>
+
+<!-- ═══════════════ CARD: SE / t / p ═══════════════ -->
+<h3 id="s6-2">6.2 Standard Error · t-stat · p-value — "บังเอิญหรือของจริง"</h3>
+
+<div class="card">
+<h3>อ่านความมั่นใจใน β <span class="yr">Inference</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"β คือค่าที่ดีที่สุด<em>ที่ประมาณได้จากข้อมูลชุดนี้</em> — ถ้าเก็บข้อมูลชุดใหม่ จะได้ β อีกค่าหนึ่ง · <strong>standard error คือการวัดว่ามันจะเหวี่ยงแค่ไหน</strong>"</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> จินตนาการว่าคุณเก็บข้อมูล 6 เดือนแล้วได้ β = 1.54 · ถ้าย้อนเวลาไปเก็บอีก 6 เดือนที่ต่างออกไป จะได้ 1.61 · อีกรอบได้ 1.42 — <strong>β เหวี่ยงไปมาเพราะข้อมูลเป็นตัวอย่างจากความจริง ไม่ใช่ความจริงเอง</strong></p>
+
+<ul>
+<li><strong>Standard Error (SE)</strong> = "β เหวี่ยงประมาณเท่าไร" · SE เล็ก = ประมาณได้แม่น</li>
+<li><strong>t-stat</strong> = β ÷ SE = "β ใหญ่กว่าความเหวี่ยงของตัวเองกี่เท่า" · ยิ่งเยอะยิ่งมั่นใจว่าไม่ใช่ศูนย์</li>
+<li><strong>p-value</strong> = "ถ้าความจริงคือ β = 0 (ไม่เกี่ยวกันเลย) โอกาสที่จะบังเอิญเห็นเลขแรงขนาดนี้มีเท่าไร" · น้อย = ไม่น่าใช่เรื่องบังเอิญ</li>
+</ul>
+
+<div class="fm">t = β̂ / SE(β̂)
+กฎนิ้วโป้ง: |t| &gt; 2  ≈  p &lt; 0.05  ≈  "มีนัยสำคัญ"</div>
+
+<div class="bx br"><div class="bt">❌ p-value ไม่ได้แปลว่าสิ่งที่คนส่วนใหญ่คิด</div>
+<ul>
+<li><strong>p ไม่ใช่</strong> "โอกาสที่ผลลัพธ์จะถูก" และ<strong>ไม่ใช่</strong> "โอกาสที่ β = 0"</li>
+<li><strong>p เล็ก ≠ สำคัญมาก</strong> — ข้อมูลเยอะพอ อะไรก็ "มีนัยสำคัญ" ได้ทั้งนั้น แม้ผลจริงจะเล็กจนไร้ประโยชน์ทางการเงิน · ให้ดู<strong>ขนาดของ β</strong> ควบคู่เสมอ</li>
+<li><strong>p &gt; 0.05 ≠ ไม่มีความสัมพันธ์</strong> — อาจแปลแค่ว่าข้อมูลน้อยเกินจะสรุปได้</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">🧮 เดินเลขจริง — จากตัวอย่าง 250 วัน</div>
+<p>Regression ผลตอบแทนหุ้น กับ ผลตอบแทนตลาด 250 วันทำการ (≈ 1 ปี) ได้:</p>
+<div class="fm">β̂ = 1.2226      SE = 0.0481
+
+t  = 1.2226 / 0.0481 = <b>25.43</b>      → ใหญ่กว่าความเหวี่ยงของตัวเอง 25 เท่า
+p  ≈ 0.0000                            → แทบเป็นไปไม่ได้ที่จะบังเอิญ</div>
+<p>อ่านเป็นภาษาคน: "หุ้นตัวนี้เหวี่ยงกว่าตลาด ~1.22 เท่า และเรามั่นใจมากว่าตัวเลขนี้ไม่ใช่เรื่องบังเอิญ"</p></div>
+</div>
+
+<h3 id="s6-3">6.3 อ่านตาราง <code>summary()</code> ทีละช่อง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> <code>statsmodels</code> พิมพ์ตารางใหญ่ออกมาชุดหนึ่งที่หน้าตาน่ากลัว แต่จริง ๆ มีแค่ <strong>5 ช่องที่ต้องดูก่อน</strong> · นี่คือตารางเดียวกับที่นักวิเคราะห์เปิดดูทุกวัน</p>
+
+<div class="code"><div class="hdr">📄 ผลลัพธ์จริงที่ statsmodels พิมพ์ออกมา (ตัดบรรทัด Date/Time ออก)</div><pre>                            OLS Regression Results
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.723
+Model:                            OLS   Adj. R-squared:                  0.722
+Method:                 Least Squares   F-statistic:                     646.9
+No. Observations:                 250   Prob (F-statistic):           4.66e-71
+Df Residuals:                     248   Log-Likelihood:                 847.46
+Covariance Type:            nonrobust
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const          0.0003      0.001      0.671      0.503      -0.001       0.001
+x1             1.2226      0.048     25.433      0.000       1.128       1.317
+==============================================================================
+Omnibus:                        3.984   Durbin-Watson:                   1.934
+Prob(Omnibus):                  0.136   Jarque-Bera (JB):                4.479</pre></div>
+
+<div class="tw"><table>
+<tr><th>ช่อง</th><th>ค่าที่ได้</th><th>อ่านว่า</th><th>ดูเมื่อไร</th></tr>
+<tr><td><strong>coef</strong> (แถว x1)</td><td class="nw">1.2226</td><td><strong>β</strong> — ตลาดขยับ 1% หุ้นขยับ 1.22%</td><td class="nw">⭐ ดูก่อนเสมอ</td></tr>
+<tr><td><strong>std err</strong></td><td class="nw">0.048</td><td>β เหวี่ยงประมาณ ±0.05</td><td class="nw">⭐ คู่กับ coef</td></tr>
+<tr><td><strong>t</strong></td><td class="nw">25.433</td><td>ใหญ่กว่าความเหวี่ยง 25 เท่า</td><td>|t| &gt; 2 = ผ่าน</td></tr>
+<tr><td><strong>P&gt;|t|</strong></td><td class="nw">0.000</td><td><strong>p-value</strong> — ไม่ใช่เรื่องบังเอิญ</td><td class="nw">⭐ &lt; 0.05 = มีนัยสำคัญ</td></tr>
+<tr><td><strong>[0.025 0.975]</strong></td><td class="nw">1.128 – 1.317</td><td><strong>ช่วงความเชื่อมั่น 95%</strong> ของ β</td><td class="nw">⭐ สำคัญกว่า p-value</td></tr>
+<tr><td><strong>R-squared</strong></td><td class="nw">0.723</td><td>ตลาดอธิบายหุ้นตัวนี้ได้ 72%</td><td>ดูภาพรวม</td></tr>
+<tr><td><strong>Covariance Type</strong></td><td class="nw">nonrobust</td><td class="nw"><strong>⚠️ ยังไม่ได้แก้ heteroskedasticity</strong></td><td>ดูทุกครั้ง (§6.5)</td></tr>
+<tr><td><strong>Durbin-Watson</strong></td><td class="nw">1.934</td><td>ใกล้ 2 = error ไม่มี autocorrelation ✓</td><td>ข้อมูลอนุกรมเวลา</td></tr>
+</table></div>
+
+<div class="bx bg"><div class="bt">✅ แถว const บอกอะไร</div>
+<p>แถว <code>const</code> คือ <strong>α (alpha)</strong> — ผลตอบแทนส่วนที่<strong>ไม่ได้</strong>มาจากตลาด · ที่นี่ได้ 0.0003 แต่ <strong>p = 0.503</strong> (สูงมาก) แปลว่า <strong>แยกจากศูนย์ไม่ได้</strong> · อ่านเป็นภาษาคน: "หุ้นตัวนี้ไม่ได้เก่งหรือแย่กว่าตลาดอย่างมีนัยสำคัญ มันแค่เหวี่ยงกว่า" — ซึ่งเป็นผลลัพธ์ปกติที่สุดในโลกจริง (การหา α ที่มีนัยสำคัญคืองานยากที่สุดของวงการ)</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — รัน OLS แล้วดึงเฉพาะช่องที่ต้องดู</div><pre><span class="c"># pip install statsmodels numpy</span>
+import numpy as np, statsmodels.api as sm
+
+rng = np.random.default_rng(2024)
+n   = 250
+mkt = rng.normal(0.0004, 0.011, n)                      <span class="c"># ผลตอบแทนตลาด</span>
+stk = 0.0002 + 1.20*mkt + rng.normal(0, 0.008, n)       <span class="c"># หุ้น (beta จริง = 1.20)</span>
+
+X = sm.add_constant(mkt)          <span class="c"># ★ ต้องเติมคอลัมน์ 1 เพื่อให้มี alpha</span>
+m = sm.OLS(stk, X).fit()
+<span class="c"># print(m.summary())   ← ตารางเต็มข้างบน</span>
+
+lo, hi = m.conf_int()[1]
+print(f"beta   = {m.params[1]:.4f}")        <span class="o"># beta   = 1.2226</span>
+print(f"SE     = {m.bse[1]:.4f}")           <span class="o"># SE     = 0.0481</span>
+print(f"t-stat = {m.tvalues[1]:.2f}")       <span class="o"># t-stat = 25.43</span>
+print(f"p      = {m.pvalues[1]:.2e}")       <span class="o"># p      = 4.66e-71</span>
+print(f"95% CI = [{lo:.4f}, {hi:.4f}]")     <span class="o"># 95% CI = [1.1279, 1.3173]</span>
+print(f"R2     = {m.rsquared:.4f}")         <span class="o"># R2     = 0.7229</span></pre></div>
+
+<h3 id="s6-4">6.4 ช่วงความเชื่อมั่น — ทำไม hedge ratio ต้องเป็น "ช่วง"</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าให้เลือกอ่านค่าเดียวจากตาราง <strong>อย่าเลือก p-value — เลือกช่วงความเชื่อมั่น</strong> เพราะมันตอบคำถามที่คุณอยากรู้จริง ๆ ว่า "β ที่แท้จริงน่าจะอยู่ระหว่างเท่าไรถึงเท่าไร"</p>
+
+<div class="bx bp"><div class="bt">💎 กลับไปดู β = 1.54 จาก เล่ม 2 · A อีกครั้ง</div>
+<p>ใน <a href="math-part4.html">เล่ม 2 · A §2.1</a> เราคำนวณ β จากผลตอบแทน <strong>6 เดือน</strong> ได้ 1.5391 และเอาไปใช้เป็น hedge ratio ทันที · คราวนี้ลองคำนวณช่วงความเชื่อมั่นของมันดู:</p>
+<div class="fm">n = 6 เดือน:    β̂ = 1.5391   SE = 0.1516   p = 0.0005
+                95% CI = [ <b>1.118</b> , <b>1.960</b> ]   ← กว้าง 0.84
+
+n = 250 วัน:    β̂ = 1.2226   SE = 0.0481   p ≈ 0
+                95% CI = [ 1.128 , 1.317 ]   ← กว้าง 0.19</div>
+<p>ทั้งสองกรณี <strong>p-value เล็กทั้งคู่</strong> ("มีนัยสำคัญ" เหมือนกัน) แต่ความหมายต่างกันลิบ:</p>
+<ul>
+<li>ถ้าถือหุ้น ฿1,000,000 แล้ว hedge ตาม β = 1.54 → short ดัชนี ฿1,540,000</li>
+<li>แต่ความจริงอาจเป็น β = 1.12 (ควร short ฿1,120,000) หรือ β = 1.96 (ควร short ฿1,960,000)</li>
+<li><strong>ช่วงห่างกันถึง ฿840,000</strong> — นั่นคือความไม่แน่นอนที่ตัวเลข "1.54" ตัวเดียวซ่อนไว้จากคุณ</li>
+</ul>
+<p>บทเรียน: <strong>ข้อมูล 6 จุดให้ β ที่ "มีนัยสำคัญ" ได้ แต่ยังไม่แม่นพอจะเอาไปกำหนดขนาด hedge จริง</strong> · ยิ่งข้อมูลมาก ช่วงยิ่งแคบ (SE หดตาม 1/√n — เพื่อนเก่าจาก Monte Carlo ในเล่ม 1)</p></div>
+
+<h3 id="s6-5">6.5 Heteroskedasticity → Robust Standard Error</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> จำ "กราฟกรวย" จาก §5.3 ได้ไหม · เมื่อเจอมัน β ยังใช้ได้ แต่ SE ที่โปรแกรมรายงานจะ<strong>เล็กเกินจริง</strong> = คุณจะมั่นใจเกินเหตุ · ทางแก้ง่ายมาก: เปลี่ยนวิธีคำนวณ SE เป็นแบบ <strong>robust</strong> โดยเติมพารามิเตอร์เดียว</p>
+
+<div class="code"><div class="hdr">🐍 Python — SE ปกติ vs robust บนข้อมูลที่เป็นกรวย</div><pre>import numpy as np, statsmodels.api as sm
+
+rng = np.random.default_rng(7)
+n = 300
+x = rng.normal(0, 1, n)
+y = 1 + 2*x + rng.normal(0, 0.3 + 1.6*np.abs(x))   <span class="c"># error บานตาม |x| = กรวย</span>
+X = sm.add_constant(x)
+
+ols = sm.OLS(y, X).fit()                      <span class="c"># แบบปกติ</span>
+rob = sm.OLS(y, X).fit(cov_type="HC3")        <span class="c"># ★ robust — เติมแค่นี้</span>
+
+print(f"beta (เท่ากันทั้งคู่) = {ols.params[1]:.4f}")   <span class="o"># beta (เท่ากันทั้งคู่) = 1.9690</span>
+print(f"SE ปกติ    = {ols.bse[1]:.4f}   t = {ols.tvalues[1]:.2f}")
+<span class="o"># SE ปกติ    = 0.1022   t = 19.26</span>
+print(f"SE robust  = {rob.bse[1]:.4f}   t = {rob.tvalues[1]:.2f}")
+<span class="o"># SE robust  = 0.1555   t = 12.66</span>
+print(f"robust ใหญ่กว่า {(rob.bse[1]/ols.bse[1]-1)*100:.0f}%")
+<span class="o"># robust ใหญ่กว่า 52%</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — ความมั่นใจปลอมหายไป 52%</div>
+<ul>
+<li><strong>β ไม่เปลี่ยนเลย</strong> (1.9690 ทั้งคู่) — ยืนยันว่า heteroskedasticity ไม่ได้ทำให้ β ผิด</li>
+<li><strong>SE โตขึ้น 52%</strong> → t ร่วงจาก 19.26 เหลือ 12.66 · ช่วงความเชื่อมั่นกว้างขึ้นจาก 0.402 เป็น 0.610</li>
+<li>ถ้าใช้ SE ปกติ คุณจะ<strong>มั่นใจเกินจริงไปครึ่งหนึ่ง</strong> — ในการเงินที่ข้อมูลเป็นกรวยแทบตลอด (volatility clustering!) นี่เป็นเรื่องปกติที่ต้องระวังทุกครั้ง</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">💡 เลือกชนิด robust ให้ถูกงาน</div>
+<ul>
+<li><code>cov_type="HC3"</code> — แก้ <strong>heteroskedasticity</strong> (กรวย) · ใช้เป็นค่าเริ่มต้นที่ดีกับข้อมูลตัดขวาง</li>
+<li><code>cov_type="HAC", cov_kwds={"maxlags":5}</code> — <strong>Newey-West</strong> แก้ทั้งกรวย<em>และ</em>คลื่น (autocorrelation) · ใช้กับ<strong>ข้อมูลอนุกรมเวลา</strong> ซึ่งคือกรณีของผลตอบแทนรายวันเกือบทั้งหมด</li>
+</ul>
+<p>กฎง่าย ๆ: ทำ regression กับข้อมูลตลาดเมื่อไร <strong>ให้ใช้ robust ไว้ก่อนเสมอ</strong> — ถ้าไม่จำเป็นก็แค่ได้ SE ที่ระมัดระวังขึ้นนิดหน่อย ไม่เสียหาย</p></div>
+
+<h3 id="s6-6">6.6 Multicollinearity — เมื่อตัวแปรต้นซ้ำกันเอง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ใน factor model (<a href="math-part4.html">เล่ม 2 · A §2.2</a>) เราใส่หลายปัจจัยพร้อมกัน · ถ้าสองปัจจัยนั้น<strong>เกือบเป็นตัวเดียวกัน</strong> โมเดลจะแยกไม่ออกว่าผลมาจากใคร — เหมือนถามว่า "ในทีมนี้ใครทำงาน" แต่สองคนนั้นทำงานเหมือนกันเป๊ะทุกอย่าง</p>
+
+<p>ผลคือ β ของทั้งคู่จะ<strong>เหวี่ยงมั่ว</strong> (SE พุ่ง) และอาจได้เครื่องหมายกลับด้านจากที่ควรเป็น · เครื่องมือตรวจชื่อ <strong>VIF (Variance Inflation Factor)</strong></p>
+
+<div class="code"><div class="hdr">🐍 Python — ตรวจ VIF ของ factor model</div><pre>import numpy as np, statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor as vif
+
+rng = np.random.default_rng(3)
+N = 400
+market = rng.normal(0, 1, N)
+size   = rng.normal(0, 1, N)
+value  = 0.95*market + 0.1*rng.normal(0, 1, N)   <span class="c"># จงใจให้เกือบซ้ำกับ market</span>
+
+F = np.column_stack([np.ones(N), market, size, value])
+for i, name in [(1,"market"), (2,"size"), (3,"value")]:
+    print(f"VIF {name:7s} = {vif(F, i):.2f}")
+<span class="o"># VIF market  = 95.64   ← สูงมาก</span>
+<span class="o"># VIF size    = 1.01    ← สะอาด</span>
+<span class="o"># VIF value   = 95.74   ← สูงมาก (คู่กับ market)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านค่า VIF</div>
+<div class="tw"><table>
+<tr><th>VIF</th><th>แปลว่า</th><th>ทำยังไง</th></tr>
+<tr><td class="nw">≈ 1</td><td>ตัวแปรนี้เป็นอิสระ ดี</td><td>ใช้ได้เลย</td></tr>
+<tr><td class="nw">5 – 10</td><td>เริ่มทับซ้อน</td><td>ระวังตอนตีความ β</td></tr>
+<tr><td class="nw">&gt; 10</td><td><strong>ทับซ้อนรุนแรง</strong></td><td class="nw">ตัดตัวใดตัวหนึ่งทิ้ง · หรือรวมเป็นตัวเดียว</td></tr>
+</table></div>
+<p>ในตัวอย่างนี้ VIF ≈ <strong>96</strong> ทั้งคู่ = <code>market</code> กับ <code>value</code> เล่าเรื่องเดียวกัน · ควรเก็บไว้ตัวเดียว · สังเกตว่า <code>size</code> ที่เป็นอิสระจริงได้ VIF = 1.01 พอดี</p>
+<p>💡 <strong>โยงกลับบทที่ 5:</strong> multicollinearity มองเห็นได้ใน <strong>heatmap</strong> — มันคือ "กลุ่มสีแดงเข้มติดกัน" นั่นเอง · ตรวจด้วยตาก่อนด้วย heatmap แล้วยืนยันด้วย VIF</p></div>
+
+<h3 id="s6-7">6.7 R² ที่หลอกลวง — Adjusted R² และ Train/Test</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> R² มีนิสัยเสียอย่างหนึ่ง — <strong>มันเพิ่มขึ้นเสมอเมื่อใส่ตัวแปรเพิ่ม</strong> แม้ตัวแปรนั้นจะเป็นเลขสุ่มล้วน ๆ · ดังนั้น "R² สูง" จึงไม่ใช่หลักฐานว่าโมเดลดี · <strong>Adjusted R²</strong> แก้โดยหักค่าปรับตามจำนวนตัวแปร แต่วิธีที่ซื่อสัตย์ที่สุดคือ <strong>ทดสอบกับข้อมูลที่โมเดลไม่เคยเห็น</strong></p>
+
+<div class="code"><div class="hdr">🐍 Python — ใส่ตัวแปรขยะ 15 ตัว แล้วดูว่าเกิดอะไร</div><pre>import numpy as np, statsmodels.api as sm
+
+rng = np.random.default_rng(5)
+N = 200
+x_real = rng.normal(0, 1, (N, 1))
+y      = 1 + 1.5*x_real[:,0] + rng.normal(0, 1, N)
+junk   = rng.normal(0, 1, (N, 15))          <span class="c"># ตัวแปรขยะล้วน ๆ ไม่เกี่ยวกับ y</span>
+X_all  = np.column_stack([x_real, junk])
+
+tr, te = slice(0,150), slice(150,N)         <span class="c"># แบ่ง 150 ฝึก / 50 ทดสอบ</span>
+for k, label in [(1,"ตัวแปรจริง 1 ตัว"), (16,"+ ขยะอีก 15 ตัว")]:
+    Xk = sm.add_constant(X_all[:, :k])
+    m  = sm.OLS(y[tr], Xk[tr]).fit()
+    pred = m.predict(Xk[te])                <span class="c"># ทำนายข้อมูลที่ไม่เคยเห็น</span>
+    r2_out = 1 - ((y[te]-pred)**2).sum() / ((y[te]-y[te].mean())**2).sum()
+    print(f"{label:18s}: R2(in)={m.rsquared:.3f}  adjR2={m.rsquared_adj:.3f}  R2(out)={r2_out:.3f}")
+<span class="o"># ตัวแปรจริง 1 ตัว  : R2(in)=0.662  adjR2=0.660  R2(out)=0.805</span>
+<span class="o"># + ขยะอีก 15 ตัว   : R2(in)=0.709  adjR2=0.674  R2(out)=0.770</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ ดูให้ดี — นี่คือหน้าตาของ overfitting</div>
+<ul>
+<li><strong>R²(in) เพิ่มขึ้น</strong> 0.662 → <strong>0.709</strong> · ตัวแปรขยะ 15 ตัวทำให้โมเดล "ดูดีขึ้น" กับข้อมูลที่มันเห็น</li>
+<li><strong>Adjusted R² เพิ่มน้อยกว่ามาก</strong> 0.660 → 0.674 · มันหักค่าปรับให้ แต่<strong>ยังโดนหลอกอยู่ดี</strong></li>
+<li><strong>R²(out) ลดลง</strong> 0.805 → <strong>0.770</strong> ← <strong>ตัวนี้พูดความจริง</strong> · กับข้อมูลใหม่ โมเดลที่ใส่ขยะ<em>แย่ลงจริง</em></li>
+</ul>
+<p>ถ้าดูแค่ R²(in) คุณจะเลือกโมเดลที่ผิด · <strong>ตัวเลขเดียวที่เชื่อได้คือผลกับข้อมูลที่โมเดลไม่เคยเห็น</strong></p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง — ทำไมนักเทรดถึงกลัว R² สูง</div>
+<p><strong>มือใหม่เห็น:</strong> "backtest ได้ R² = 0.95 กลยุทธ์นี้เทพมาก"<br>
+<strong>คนในตลาดเห็น:</strong> R² สูงผิดปกติกับข้อมูลอดีต = สัญญาณ<strong>อันตราย</strong> ไม่ใช่สัญญาณดี · เพราะตลาดจริงมี noise เยอะมาก โมเดลที่อธิบายอดีตได้เกือบสมบูรณ์มักแปลว่ามันจำ noise ไปแล้ว และจะพังทันทีกับข้อมูลใหม่</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>เปลี่ยน <code>junk</code> เป็น 60 ตัว (<code>rng.normal(0, 1, (N, 60))</code>) แล้วรันกรณีที่สอง (<code>k=61</code>) · คาดเดาก่อน: R²(in) จะเป็นเท่าไร และ R²(out) จะไปทางไหน?</p>
+<details><summary>ดูเฉลย</summary><p>R²(in) จะพุ่งสูงมาก (เข้าใกล้ 0.9+) เพราะตัวแปร 61 ตัวกับข้อมูลฝึก 150 จุด มีอิสระพอจะ "ดัด" เส้นให้ทาบข้อมูลได้เกือบหมด · แต่ R²(out) จะ<strong>ร่วงหนัก</strong> (อาจติดลบ ซึ่งแปลว่าทำนายแย่กว่าการเดาค่าเฉลี่ยเสียอีก) · นี่คือ overfitting เต็มรูปแบบ — และเป็นเหตุผลที่กฎนิ้วโป้งบอกว่าควรมีข้อมูลอย่างน้อย ~10–20 จุดต่อตัวแปร 1 ตัว</p></details></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 6</div>
+<ul>
+<li><strong>ดู "ช่วงความเชื่อมั่น" ก่อน p-value</strong> — มันบอกว่า β ที่แท้จริงน่าจะอยู่ตรงไหน ซึ่งคือสิ่งที่คุณต้องใช้กำหนดขนาด hedge</li>
+<li><strong>ข้อมูลการเงินเป็นกรวยเสมอ → ใช้ robust SE ไว้ก่อน</strong> (ไม่งั้นมั่นใจเกินจริงได้ถึง 50%)</li>
+<li><strong>R² สูงไม่ใช่ข่าวดี</strong> — ตัดสินโมเดลด้วยผลกับข้อมูลที่ไม่เคยเห็นเท่านั้น</li>
+</ul></div>
+
+<!-- ═══════════════ ปิดเล่ม 2 · C ═══════════════ -->
+<div class="bx bg"><div class="bt">สรุป เล่ม 2 · C — ตอนนี้คุณ</div>
+<ul>
+<li>ดู<strong>กราฟก่อนเชื่อตัวเลข</strong> เสมอ (Anscombe) และอ่าน scatter · residual · heatmap ออก</li>
+<li>รู้ว่าสมมติฐาน OLS ข้อไหนพัง ดูจาก residual รูปอะไร และแก้ด้วยอะไร</li>
+<li>อ่านตาราง <code>summary()</code> ได้ทุกช่องที่สำคัญ</li>
+<li>รายงาน β เป็น<strong>ช่วง</strong> ไม่ใช่จุดเดียว — และรู้ว่าข้อมูลน้อยทำให้ช่วงกว้างแค่ไหน</li>
+<li>ใช้ <strong>robust SE</strong> กับข้อมูลตลาด และตรวจ <strong>VIF</strong> ใน factor model</li>
+<li>ไม่ตกหลุม <strong>R² สูงหลอก</strong> — วัดด้วย out-of-sample</li>
+</ul></div>
+
+<div class="pq">บทนี้ทำให้ regression เชื่อถือได้ — แต่ยังตั้งอยู่บนสมมติฐานว่าข้อมูล "นิ่ง" · พอเป็นราคาหุ้นที่ไหลไปตามเวลา สมมติฐานนั้นพังทันที</div>
+
+<div class="bx bb"><div class="bt">📖 อ่านต่อ — เล่ม 2 · D: Time Series</div>
+<p>ราคาหุ้นไม่ <strong>stationary</strong> — เอาสองอนุกรมที่ไหลไปเรื่อย ๆ มา regress กันตรง ๆ จะได้ R² สูงลิ่วและ p-value สวยงาม<strong>ทั้งที่ไม่มีความสัมพันธ์จริงเลย</strong> (spurious regression) · เล่ม 2 · D จะสอนวิธีตรวจ (ADF test) · โมเดลอนุกรมเวลา (AR · ARIMA) · และจบที่ <strong>Cointegration → Pairs Trading</strong> ซึ่งเป็นการใช้ regression กับอนุกรมเวลาอย่างถูกวิธี</p></div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้ (บทที่ 6)</div>
+<p><strong>Standard Error (SE)</strong> = ค่าประมาณเหวี่ยงแค่ไหน · <strong>t-stat</strong> = β ÷ SE · <strong>p-value</strong> = โอกาสเห็นผลแรงขนาดนี้ถ้าจริง ๆ ไม่มีความสัมพันธ์ · <strong>Confidence Interval</strong> = ช่วงที่ค่าจริงน่าจะอยู่ · <strong>Robust SE (HC3 / Newey-West)</strong> = SE ที่ทนต่อกรวยและคลื่น · <strong>Multicollinearity</strong> = ตัวแปรต้นซ้ำกันเอง · <strong>VIF</strong> = ตัววัด multicollinearity · <strong>Adjusted R²</strong> = R² ที่หักค่าปรับตามจำนวนตัวแปร · <strong>Out-of-sample</strong> = ทดสอบกับข้อมูลที่โมเดลไม่เคยเห็น · <strong>Overfitting</strong> = จำ noise แทนเรียน pattern</p></div>
+
+<hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
+<div style="text-align:center;padding:24px;color:#64748b">
+<p style="font-size:1.3em;font-weight:800;color:var(--blue)">จบ เล่ม 2 · C 🎓</p>
+<p>อ่านกราฟให้เป็น → เชื่อตัวเลขอย่างมีเงื่อนไข · จาก "β เท่าไร" สู่ "เชื่อ β ได้แค่ไหน"</p>
+</div>
 
 <!-- ═══════════════ Thai line-break script — ห้ามแก้ ═══════════════ -->
 <script>
