@@ -500,6 +500,22 @@ df_pair = build_spread(
 )
 print(df_pair.tail())
 print(f"\nCurrent Z-score: {df_pair['zscore'].iloc[-1]:.2f}")</div>
+<div class="output">       spread      beta    zscore
+247 -0.000126  0.933411 -0.497962
+248  0.000514  0.933770  0.348072
+249  0.000118  0.932216 -0.160151
+250 -0.000725  0.929067 -1.226366
+251 -0.000047  0.929990 -0.320480
+
+Current Z-score: -0.32</div>
+
+<div class="read-aloud">แก่นของฟังก์ชันนี้อยู่ที่สองบรรทัด: <code>predicted = alpha + beta * log_b</code> แล้ว <code>spread = log_a - predicted</code> — อ่านว่า <strong>"ราคา A ที่<em>ควรจะเป็น</em>ตามราคา B" แล้วเอา "ของจริง ลบ ที่ควรเป็น"</strong> · ส่วนที่เหลือคือความเพี้ยน และความเพี้ยนนี่แหละคือสิ่งที่เราเทรด ไม่ใช่ตัวราคา</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ สังเกตสองบรรทัดที่หยิบค่าคนละแบบ — ไม่ใช่ความมักง่าย</div>
+<p>ในฟังก์ชันเดียวกันมีทั้ง <code>roll.params['const']</code> (ใช้<strong>ชื่อ</strong>) และ <code>roll.params.iloc[:, 1]</code> (ใช้<strong>ตำแหน่ง</strong>) — เพราะ <code>sm.add_constant()</code> ตั้งชื่อให้เฉพาะคอลัมน์ที่มันเติมเข้าไปเอง คือ <code>const</code> · ส่วนคอลัมน์ข้อมูลเดิมจะได้ชื่อก็ต่อเมื่อ Series ที่ส่งเข้ามา<strong>มีชื่ออยู่แล้ว</strong> — ที่นี่ส่ง <code>pd.Series(btc_binance)</code> ซึ่งไม่มีชื่อ จึงต้องอ้างด้วยตำแหน่ง</p>
+<p>🧭 อยากให้เรียกด้วยชื่อได้ทั้งคู่ ให้ตั้งชื่อ Series ตั้งแต่ต้น: <code>pd.Series(btc_binance, name="log_b")</code> — หลักการเดียวกับที่เจอในบทที่ 13</p>
+</div>
 </div>
 
 <details>
@@ -560,6 +576,21 @@ X = sm.add_constant(log_b)
 residuals = sm.OLS(log_a, X).fit().resid
 adf_resid = adfuller(residuals)
 print(f"\nADF on residuals p-value: {adf_resid[1]:.4f}")</div>
+<div class="output">Cointegration test:
+  Test statistic: -4.7762
+  p-value:        0.0004
+  Critical (5%):  -3.3606
+✓ COINTEGRATED — spread มีแรงดึงกลับจริง
+
+ADF on residuals p-value: 0.0001</div>
+
+<div class="read-aloud">p-value = 0.0004 แล้วสรุปว่า "cointegrated" — <strong>ทิศทางนี้กลับหัวจากที่คนส่วนใหญ่คุ้น</strong> · เพราะสมมติฐานตั้งต้น (null) ของ <code>coint()</code> คือ <em>"คู่นี้<strong>ไม่</strong> cointegrate"</em> · p-value เล็ก = หลักฐานแรงพอจะ<strong>ล้ม</strong>สมมติฐานนั้น = คู่นี้ cointegrate จริง · จำสั้น ๆ: <strong>p เล็ก = ข่าวดี</strong></div>
+
+<div class="bx bk">
+<div class="bt">❌ ข้อผิดพลาดที่พบบ่อยที่สุดในเรื่องนี้ — อ่าน p-value กลับด้าน</div>
+<p>ถ้าเผลออ่านแบบ "p &gt; 0.05 = ผ่าน" เหมือนการทดสอบทั่วไป คุณจะ<strong>เลือกคู่ที่ไม่ cointegrate มาเทรดทั้งหมด</strong> และทิ้งคู่ที่ดีไปหมด — ผลคือพอร์ตที่ spread ไม่มีแรงดึงกลับ ซึ่งคือ<em>การเดาทิศทางล้วน ๆ</em> โดยที่คุณคิดว่ากำลังทำ market-neutral อยู่</p>
+<p>สาเหตุที่พลาด: การทดสอบตระกูลนี้ (ADF, coint, KPSS บางตัว) ตั้ง null เป็น "สิ่งที่<em>ไม่</em>อยากได้" — ต่างจาก t-test ที่ null คือ "ไม่มีผล" · <strong>เปิดคู่มือดู null ทุกครั้งก่อนตีความ</strong> อย่าเดาจากความเคยชิน</p>
+</div>
 
 <h3 id="s14-3">14.3 Johansen Test — สำหรับ 3+ Pairs</h3>
 
@@ -580,6 +611,32 @@ for i in range(3):
 
 <span class="c"># r=0: ทดสอบว่ามีอย่างน้อย 1 cointegrating vector</span>
 <span class="c"># r≤1: ทดสอบว่ามีอย่างน้อย 2</span></div>
+<div class="output">Johansen Trace Statistics:
+  r≤0: trace=35.43, crit(5%)=29.80 ✓
+  r≤1: trace=10.34, crit(5%)=15.49 ✗
+  r≤2: trace=0.79, crit(5%)=3.84 ✗</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 อ่านผล Johansen — มันคือ "บันได" ไม่ใช่คำตอบเดียว</div>
+<div class="ad-code">r≤0: trace=35.43, crit=29.80 ✓   ← ล้มได้
+r≤1: trace=10.34, crit=15.49 ✗   ← ล้มไม่ได้ → หยุดตรงนี้
+r≤2: trace= 0.79, crit= 3.84 ✗</div>
+<div class="ad-steps">
+<p>วิธีอ่าน: ไล่<strong>จากบนลงล่าง</strong> หยุดที่แถวแรกที่ล้มไม่ได้ แล้วเลขแถวนั้นคือคำตอบ</p>
+<ol>
+<li><code>r≤0</code> ถามว่า "มี cointegrating vector <strong>0 อัน</strong> ใช่ไหม" · trace 35.43 &gt; 29.80 → <strong>ล้มข้อนี้ได้</strong> แปลว่ามีอย่างน้อย 1 อัน → ไต่ขึ้นแถวถัดไป</li>
+<li><code>r≤1</code> ถามว่า "มี<strong>ไม่เกิน 1 อัน</strong> ใช่ไหม" · trace 10.34 &lt; 15.49 → <strong>ล้มไม่ได้</strong> → ยอมรับว่าจริง</li>
+<li>สรุป: <strong>มี cointegrating vector 1 อันพอดี</strong> — คือ 3 ตลาดนี้มีความสัมพันธ์ระยะยาวชุดเดียว (ตามที่ควรเป็น เพราะเราสร้าง Bybit กับ Binance ให้เกาะกัน ส่วน OKX เป็นเส้นอิสระ)</li>
+</ol>
+<p>⚠️ <code>✓</code> ในผลลัพธ์แปลว่า "<strong>ล้ม null ได้</strong>" ไม่ได้แปลว่า "ดี" — ✓ ที่แถวสุดท้ายทุกแถวจะแปลว่าไม่มีความสัมพันธ์ระยะยาวเลย</p>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ทำไมต้อง Johansen ทั้งที่มี Engle-Granger แล้ว</div>
+<p>Engle-Granger ต้อง<strong>เลือกก่อนว่าใครเป็นตัวแปรตาม</strong> (<code>coint(a, b)</code> กับ <code>coint(b, a)</code> ให้ p-value ไม่เท่ากัน!) — พอมี 3 สินทรัพย์ขึ้นไป การเลือกนี้กลายเป็นการตัดสินใจตามอำเภอใจที่กระทบผลลัพธ์ · Johansen ทดสอบ<strong>ทุกทิศพร้อมกันโดยไม่ต้องเลือก</strong> และบอกได้ด้วยว่ามีความสัมพันธ์<em>กี่ชุด</em> ไม่ใช่แค่ "มี/ไม่มี"</p>
+<p>ในทางปฏิบัติ: 2 ขา → Engle-Granger พอ (อ่านง่ายกว่า) · 3 ขาขึ้นไป (เช่น basket ข้ามตลาด, curve trade) → Johansen เท่านั้น · และ <code>k_ar_diff</code> ที่ตั้งเป็น 1 นั้นควรเลือกด้วย information criterion จริง ๆ ไม่ใช่ค่าคงที่ — ตั้งผิดทำให้ผลพลิกได้</p>
+</div>
 
 <h3 id="s14-4">14.4 Half-Life — Spread กลับเร็วแค่ไหน?</h3>
 
@@ -664,6 +721,16 @@ result = minimize(f, x0=[0], method="SLSQP")
 print(f"Optimal x: {result.x[0]:.4f}  (คาดหวัง: 3.0)")
 print(f"Min f(x):  {result.fun:.6f}")
 print(f"Success:   {result.success}")</div>
+<div class="output">Optimal x: 3.0000  (คาดหวัง: 3.0)
+Min f(x):  0.000000
+Success:   True</div>
+
+<div class="read-aloud">อ่าน <code>minimize(f, x0=[0])</code> ว่า: "หาค่า x ที่ทำให้ <code>f</code> <strong>น้อยที่สุด</strong> โดยเริ่มเดาที่ x=0" — สิ่งที่ต้องเข้าใจคือ optimizer <strong>ไม่รู้จักสูตรของคุณ</strong> มันแค่ลองค่า ดูว่าผลออกมาเท่าไร แล้วขยับไปทางที่ผลลดลง ทำซ้ำจนขยับแล้วไม่ดีขึ้น · <code>x0</code> จึงสำคัญ — จุดเริ่มต่างกันอาจได้คำตอบต่างกันถ้าฟังก์ชันมีหลุมหลายหลุม</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ <code>result.success</code> ต้องเช็คทุกครั้ง — optimizer โกหกแบบเงียบ ๆ ได้</div>
+<p><code>minimize()</code> <strong>คืนค่ากลับมาเสมอ ไม่ว่าจะหาเจอหรือไม่</strong> · ถ้ามันไม่ converge ค่าใน <code>result.x</code> จะเป็นตำแหน่งที่มันยอมแพ้ ไม่ใช่คำตอบ — และถ้าคุณไม่เช็ค <code>result.success</code> คุณจะเอา "น้ำหนักพอร์ตที่ไม่ใช่คำตอบ" ไปลงเงินจริง โดยไม่มี error ใด ๆ เตือน</p>
+</div>
 
 <h3 id="s15-2">15.2 Sharpe Ratio Maximization</h3>
 
@@ -863,6 +930,13 @@ plt.show()</div>
     return w
 
 min_variance_portfolio(rets)</div>
+<div class="output">Min Variance Portfolio:
+  BTC: 23.0%
+  ETH: 44.2%
+  SOL: 32.8%
+  Annual Vol: 24.3%</div>
+
+<div class="read-aloud">หัวใจอยู่บรรทัดเดียว: <code>lambda w: w @ sigma @ w</code> — อ่านว่า "ให้ค่าความแปรปรวนของพอร์ตที่น้ำหนัก w" · เทียบกับ <code>sharpe_maximize</code> ข้างบนที่ต้องใส่เครื่องหมายลบ (<code>-Sharpe</code>) เพราะอยากได้ค่า<em>มาก</em>สุด — ตรงนี้<strong>ไม่ต้องใส่ลบ</strong> เพราะเราอยากได้ความเสี่ยง<em>น้อย</em>สุดอยู่แล้ว ตรงกับที่ <code>minimize</code> ทำพอดี</div>
 </div>
 </details>
 

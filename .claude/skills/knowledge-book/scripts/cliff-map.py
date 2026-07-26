@@ -42,7 +42,10 @@ HARD = {
 HARD_C = [(re.compile(p), n, w) for p, (n, w) in HARD.items()]
 
 # กล่องอธิบายที่นับว่า "มี scaffolding"
-SCAFF = re.compile(r'class="(read-aloud|ai-decode|ad-steps)"')
+# ⚠️ ต้องนับ .bx bk/ba/bp/bb ด้วย — หนังสือใช้กล่องเตือน/กับดักเป็น scaffolding
+# เหมือนกัน ถ้านับแค่ read-aloud/ai-decode จะรายงานว่า "ว่าง" ทั้งที่มีคำอธิบาย
+# ดีอยู่แล้ว แล้วเราจะไปเติมกล่องซ้ำ
+SCAFF = re.compile(r'class="(read-aloud|ai-decode|ad-steps|bx b[kabp])"')
 
 rows = []
 GLOB = sys.argv[2] if len(sys.argv) > 2 else "python-part*.html"
@@ -64,8 +67,12 @@ for path in sorted(DOCS.glob(GLOB)):
                 found[name] += c
                 score += w * min(c, 3)
         end = start + raw.count("\n")
-        # มี scaffolding ภายใน 6 บรรทัดหลังบล็อก?
-        after = "\n".join(lines[end : end + 6])
+        # มี scaffolding ก่อนถึง "บล็อกโค้ดถัดไป" หรือ "หัวข้อถัดไป" ไหม
+        # (หน้าต่างตายตัวใช้ไม่ได้ เพราะ .output มักคั่นอยู่ระหว่างโค้ดกับคำอธิบาย)
+        after = "\n".join(lines[end : end + 40])
+        stop = re.search(r'<div class="fm">|<h[23][ >]', after)
+        if stop:
+            after = after[: stop.start()]
         has = bool(SCAFF.search(after))
         rows.append(
             dict(file=path.name, line=start, nlines=nlines, score=score,
