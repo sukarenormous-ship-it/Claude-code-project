@@ -883,7 +883,7 @@ Num fills                           139            28</div>
 <div class="ki-text">Walk-forward validation แบ่งข้อมูลตามเวลา — เทรน (in-sample) บน window แรก ทดสอบ (out-of-sample) บน window ถัดไป เลื่อนไปเรื่อยๆ วิธีนี้ป้องกัน overfitting และให้ผลที่ตรงกับ live trading มากที่สุด เพราะใช้ข้อมูลอนาคตในการ validate แทนที่จะ validate บนข้อมูลที่ train มาแล้ว</div>
 </div>
 
-<h3 id="s24-1">24.1 Overfitting Trap — Sharpe 2.0 กลายเป็น 0.3</h3>
+<h3 id="s24-1">24.1 Overfitting Trap — Sharpe 2.0 กลายเป็นติดลบ</h3>
 
 <p>Overfitting เกิดเมื่อเรา optimize parameter บนข้อมูล <em>เดียวกัน</em> ที่ใช้ evaluate — parameter ที่ดีที่สุดใน "อดีต" ไม่ใช่ parameter ที่ดีที่สุดในอนาคต</p>
 
@@ -897,21 +897,26 @@ dates_long = pd.date_range("2021-01-01", periods=n_total, freq="D")
 <span class="c"># สร้างข้อมูลที่ pair trading edge อ่อนมาก (จงใจ)</span>
 btc_base  = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.03, n_total)))
 
-<span class="c"># spread ระหว่างสองตลาดต้อง mean-revert เหมือนเดิม (ดูเหตุผลในบทที่ 22)</span>
-<span class="c"># ถ้าใช้ noise เฉย ๆ walk-forward จะวัด "ความว่างเปล่า" ไม่ใช่ความทนทานของ edge</span>
-kappa_l, sigma_l = 0.15, 160.0
-ou_l = np.zeros(n_total)
-for t in range(1, n_total):
-    ou_l[t] = ou_l[t-1] + kappa_l * (0 - ou_l[t-1]) + np.random.normal(0, sigma_l)
-
-bybit_l   = btc_base
-binance_l = btc_base + ou_l
+<span class="c"># ⚠️ ตรงนี้ "จงใจ" ให้ spread เป็น noise ล้วน — ไม่มี mean-reversion จริง</span>
+<span class="c">#    ต่างจากบทที่ 22 ที่ใช้ OU เพราะที่นั่นต้องการ edge จริงเพื่อโชว์ backtest</span>
+<span class="c">#    แต่บทนี้ต้องการ edge "ปลอม" เพื่อให้เห็นว่า overfitting หน้าตาเป็นอย่างไร</span>
+<span class="c">#    → ถ้าข้อมูลมี edge จริง พารามิเตอร์ที่ดีในอดีตก็จะดีในอนาคตด้วย = ไม่ decay</span>
+noise_scale = 120.0
+bybit_l   = btc_base + np.random.normal(0, noise_scale, n_total)
+binance_l = btc_base + np.random.normal(0, noise_scale, n_total)
 
 pa = pd.Series(bybit_l,   index=dates_long)
 pb = pd.Series(binance_l, index=dates_long)
 
-<span class="c"># In-sample: optimize ทั้ง 1000 วัน</span>
-in_sample_sweep = parameter_sweep(pa, pb,
+<span class="c"># ── แบ่งข้อมูลก่อนทำอะไรทั้งสิ้น ──</span>
+<span class="c"># ⚠️ จุดตายของการทดสอบแบบนี้: ถ้า optimize บนข้อมูล "ทั้งหมด" แล้วเอา</span>
+<span class="c">#    ท่อนท้ายมาเรียกว่า out-of-sample มันไม่ใช่ out-of-sample เลย</span>
+<span class="c">#    เพราะท่อนนั้นถูกใช้เลือก parameter ไปแล้ว → decay ที่วัดได้ไร้ความหมาย</span>
+train_a, train_b = pa.iloc[:800], pb.iloc[:800]
+test_a,  test_b  = pa.iloc[800:], pb.iloc[800:]
+
+<span class="c"># In-sample: optimize บน 800 วันแรกเท่านั้น</span>
+in_sample_sweep = parameter_sweep(train_a, train_b,
     windows  = [30, 60, 90, 120],
     entry_zs = [1.5, 2.0, 2.5, 3.0])
 
@@ -921,10 +926,7 @@ print(f"  window={best_params['window']:.0f}, "
       f"entry_z={best_params['entry_z']:.1f}")
 print(f"  In-sample Sharpe: {best_params['sharpe']:.2f}")
 
-<span class="c"># Out-of-sample: ใช้ parameter เดียวกัน แต่ test บน 200 วันสุดท้าย</span>
-<span class="c"># (ซึ่งไม่ได้รวมใน in-sample sweep)</span>
-test_a   = pa.iloc[800:]
-test_b   = pb.iloc[800:]
+<span class="c"># Out-of-sample: parameter เดิม แต่ test บน 200 วันสุดท้ายที่ยังไม่เคยเห็น</span>
 oos_res  = vectorized_backtest(
     test_a, test_b,
     window  = int(best_params["window"]),
@@ -932,22 +934,27 @@ oos_res  = vectorized_backtest(
 )
 oos_m    = compute_metrics(oos_res)
 print(f"  Out-of-sample Sharpe: {oos_m['Sharpe Ratio']:.2f}")
-print(f"  Performance decay:    {oos_m['Sharpe Ratio'] / best_params['sharpe']:.1%}")</div>
+kept = oos_m["Sharpe Ratio"] / best_params["sharpe"]
+print(f"  เหลือจาก in-sample:   {kept:.1%}"
+      f"{'  ← ติดลบ = พลิกเป็นขาดทุน' if kept &lt; 0 else ''}")</div>
 <div class="output">Best parameters (in-sample):
-  window=60, entry_z=1.5
-  In-sample Sharpe: 1.02
-  Out-of-sample Sharpe: 5.31
-  Performance decay:    518.9%</div>
+  window=120, entry_z=1.5
+  In-sample Sharpe: 1.99
+  Out-of-sample Sharpe: -0.28
+  เหลือจาก in-sample:   -13.9%  ← ติดลบ = พลิกเป็นขาดทุน</div>
 
 <div class="bx bk">
 <div class="bt">Overfitting เกิดจากอะไร?</div>
-<p>เราทดสอบ 16 parameter combinations — บางชุดดีโดยบังเอิญบน data ชุดนี้ ไม่ใช่เพราะมี real edge · พอ data เปลี่ยน (อนาคต) ความบังเอิญนั้นหายไป · ในสนามจริงตัวเลขที่เจอบ่อยคือ in-sample Sharpe 2.0 เหลือ out-of-sample 0.3 — หายไปราว 85%</p>
+<p>เราทดสอบ 16 parameter combinations บนข้อมูลที่<strong>ไม่มี edge จริงเลย</strong> — แต่ในบรรดา 16 ชุดนั้นย่อมมีชุดที่ "ดูดี" โดยบังเอิญ · การหยิบชุดที่ดีที่สุดมาใช้ = การหยิบ<strong>ความบังเอิญที่แรงที่สุด</strong> ไม่ใช่ edge · พอ data เปลี่ยน ความบังเอิญนั้นก็หายไป เหลือแค่ต้นทุนการเทรด จึงติดลบ</p>
+<p>ยิ่งลองพารามิเตอร์มาก โอกาสเจอ "ความบังเอิญที่ดูดี" ยิ่งสูง — นี่คือเหตุผลที่จำนวนชุดที่ทดสอบต้องถูกนับเป็นต้นทุน (multiple testing) ไม่ใช่ของฟรี</p>
 </div>
 
+<div class="read-aloud">Sharpe <strong>1.99</strong> ในอดีต → <strong>−0.28</strong> ในอนาคต · ไม่ได้แค่ "แย่ลง" แต่ <strong>พลิกจากกำไรเป็นขาดทุน</strong> ทั้งที่ใช้พารามิเตอร์ชุดเดียวกันเป๊ะ · และข้อมูลชุดนี้<strong>ไม่มี edge จริงเลยตั้งแต่ต้น</strong> — Sharpe 1.99 ที่เห็นคือเสียงรบกวนที่เราไปคัดเลือกมาเองจากการลอง 16 ชุด</div>
+
 <div class="bx ba">
-<div class="bt">⚠️ อ่านผลรันข้างบนให้ดี — มันไม่ได้แสดง overfitting</div>
-<p>ผลจริงจากโค้ดชุดนี้กลับกัน: <strong>out-of-sample Sharpe ดีกว่า in-sample</strong> ("decay" ติดลบ/เกิน 100%) · อย่าเพิ่งสรุปว่าเข้าใจผิด — <strong>นี่คือของจริงที่เจอได้บ่อย</strong> เมื่อชุดทดสอบสั้นและมีจำนวนเทรดน้อย ค่า Sharpe จะเหวี่ยงแรงมากจน "decay" วัดอะไรไม่ได้เลย</p>
-<p>🧭 <strong>บทเรียนที่ใช้ได้จริงกว่า:</strong> ก่อนจะเชื่อตัวเลข decay ให้ดู <strong>จำนวนเทรดใน out-of-sample ก่อนเสมอ</strong> — ถ้าน้อยกว่า ~30 ครั้ง ค่า Sharpe นั้นเป็นสัญญาณรบกวนมากกว่าสัญญาณ · สังเกตในตาราง walk-forward ข้างล่างว่าหลาย fold ได้ <code>oos_sharpe = 0.000</code> ซึ่งแปลว่า <em>ไม่มีเทรดเลยในช่วงนั้น</em> ไม่ใช่ "ผลเป็นกลาง"</p>
+<div class="bt">⚠️ อีกกับดักในตาราง walk-forward ข้างล่าง — <code>oos_sharpe = 0.000</code> ไม่ได้แปลว่า "เท่าทุน"</div>
+<p>หลาย fold จะได้ <code>oos_sharpe = 0.000</code> พร้อม <code>oos_return = 0.00</code> — นั่นแปลว่า <strong>ไม่มีเทรดเลยในช่วงนั้น</strong> ไม่ใช่ "เทรดแล้วเสมอตัว" · ถ้าเอาค่า 0 พวกนี้ไปหาค่าเฉลี่ยรวมกับ fold อื่น คุณจะได้ตัวเลขที่ดูนิ่งสวยงามโดยไม่มีความหมาย</p>
+<p>🧭 <strong>นิสัยที่ต้องติดตัว:</strong> ดู<strong>จำนวนเทรด</strong>คู่กับ Sharpe เสมอ — Sharpe จาก 5 เทรดกับจาก 200 เทรดไม่ควรถูกอ่านด้วยสายตาเดียวกัน · ถ้า out-of-sample มีเทรดน้อยกว่า ~30 ครั้ง ให้ถือว่าตัวเลขนั้นเป็นสัญญาณรบกวนจนกว่าจะพิสูจน์เป็นอย่างอื่น</p>
 </div>
 
 <h3 id="s24-2">24.2 Walk-Forward ด้วย Expanding Window</h3>
@@ -1075,13 +1082,13 @@ wf_result = walk_forward_validation(
 
 print(wf_result.to_string(index=False))</div>
 <div class="output">fold train_start  train_end test_start   test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd
-    1  2021-01-01 2021-07-19 2021-07-20 2021-10-27           30           3.0      0.000      -2.678       -3.53       -4.28
-    2  2021-01-01 2021-10-27 2021-10-28 2022-02-04           90           3.0      0.114       0.000        0.00        0.00
-    3  2021-01-01 2022-02-04 2022-02-05 2022-05-15          120           2.5     -0.270       0.000        0.00        0.00
-    4  2021-01-01 2022-05-15 2022-05-16 2022-08-23          120           2.5     -0.477       0.000        0.00        0.00
-    5  2021-01-01 2022-08-23 2022-08-24 2022-12-01           60           1.5     -0.380       1.612        3.39       -4.05
-    6  2021-01-01 2022-12-01 2022-12-02 2023-03-11          120           1.5      0.287       0.000        0.00        0.00
-    7  2021-01-01 2023-03-11 2023-03-12 2023-06-19           30           1.5      0.475       1.690        6.16       -4.33</div>
+    1  2021-01-01 2021-07-19 2021-07-20 2021-10-27           30           3.0      0.000      -1.132        -2.6       -4.11
+    2  2021-01-01 2021-10-27 2021-10-28 2022-02-04          120           2.0      0.530       0.000         0.0        0.00
+    3  2021-01-01 2022-02-04 2022-02-05 2022-05-15          120           2.0      0.409       0.000         0.0        0.00
+    4  2021-01-01 2022-05-15 2022-05-16 2022-08-23          120           1.5      0.728       0.000         0.0        0.00
+    5  2021-01-01 2022-08-23 2022-08-24 2022-12-01          120           1.5      0.845       0.000         0.0        0.00
+    6  2021-01-01 2022-12-01 2022-12-02 2023-03-11          120           1.5      2.239       0.000         0.0        0.00
+    7  2021-01-01 2023-03-11 2023-03-12 2023-06-19          120           1.5      1.985       0.000         0.0        0.00</div>
 
 <h3 id="s24-3">24.3 วิเคราะห์ผล Walk-Forward</h3>
 
@@ -1120,16 +1127,16 @@ analyze_walk_forward(wf_result)</div>
 Walk-Forward Summary
 ========================================================
 Folds tested:         7
-IS  Sharpe (avg):     -0.036 ± 0.355
-OOS Sharpe (avg):     0.089 ± 1.447
-OOS/IS Ratio:         -248.6%  (likely overfit)
-OOS Sharpe &gt; 0:       2/7 folds
-OOS Sharpe &gt; 1:       2/7 folds
-OOS Return (avg):     0.86%
-OOS Max DD (avg):     -1.81%
+IS  Sharpe (avg):     0.962 ± 0.833
+OOS Sharpe (avg):     -0.162 ± 0.428
+OOS/IS Ratio:         -16.8%  (likely overfit)
+OOS Sharpe &gt; 0:       0/7 folds
+OOS Sharpe &gt; 1:       0/7 folds
+OOS Return (avg):     -0.37%
+OOS Max DD (avg):     -0.59%
 Parameter Stability:
-  best_window: most common = 120 (43% of folds)
-  best_entry_z: most common = 1.5 (43% of folds)</div>
+  best_window: most common = 120 (86% of folds)
+  best_entry_z: most common = 1.5 (57% of folds)</div>
 
 <div class="key-idea">
 <div class="ki-label">ตีความ OOS/IS Ratio</div>

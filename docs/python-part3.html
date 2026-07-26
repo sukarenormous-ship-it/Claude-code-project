@@ -593,28 +593,44 @@ class PairStrategy(Strategy):
         self.symbol_b = symbol_b
         self.window   = window
         self.entry_z  = entry_z
+        self._alpha   = None
         self._beta    = None
-        self._zscore  = None
+        self._mu      = None
+        self._sd      = None
 
     def fit(self, data: pd.DataFrame):
-        """data: DataFrame ที่มี column symbol_a และ symbol_b"""
+        """เรียนความสัมพันธ์จากข้อมูลอดีต — ทำครั้งเดียว (หรือนาน ๆ ครั้ง)
+
+        เก็บ 4 ค่า: alpha, beta (ความสัมพันธ์) + mu, sd (ระดับปกติของ spread)
+        """
         log_a = np.log(data[self.symbol_a])
         log_b = np.log(data[self.symbol_b])
-        X     = sm.add_constant(log_b)
-        roll  = RollingOLS(log_a, X, window=self.window).fit()
 
-        self._beta   = roll.params.iloc[:, 1]
-        alpha        = roll.params['const']
-        spread       = log_a - (alpha + self._beta * log_b)
-        roll_m       = spread.rolling(self.window).mean()
-        roll_s       = spread.rolling(self.window).std()
-        self._zscore = (spread - roll_m) / roll_s
+        X   = sm.add_constant(pd.DataFrame({"log_b": log_b}))
+        res = sm.OLS(log_a, X).fit()
+        self._alpha = float(res.params["const"])
+        self._beta  = float(res.params["log_b"])
+
+        resid    = log_a - (self._alpha + self._beta * log_b)
+        self._mu = float(resid.mean())
+        self._sd = float(resid.std())
+        if self._sd == 0 or np.isnan(self._sd):
+            raise ValueError("spread ไม่มีความผันผวน — ข้อมูล train ผิดปกติ")
         return self
 
     def signal(self, data=None) -> str:
-        if self._zscore is None:
+        """ให้คะแนนแท่งล่าสุด — เรียกได้ทุก timestep โดยไม่ต้อง fit ใหม่"""
+        if self._beta is None:
             raise RuntimeError("ต้องเรียก fit() ก่อน signal()")
-        z = self._zscore.iloc[-1]
+        if data is None or len(data) == 0:
+            return "HOLD"
+
+        <span class="c"># ใช้เฉพาะราคา "แท่งล่าสุด" ที่ส่งเข้ามา — ไม่แตะข้อมูลอนาคต</span>
+        log_a = np.log(data[self.symbol_a].iloc[-1])
+        log_b = np.log(data[self.symbol_b].iloc[-1])
+        spread = log_a - (self._alpha + self._beta * log_b)
+        z = (spread - self._mu) / self._sd
+
         if z &gt;  self.entry_z: return "SHORT"
         if z &lt; -self.entry_z: return "LONG"
         if abs(z) &lt; 0.5:      return "EXIT"
@@ -1026,23 +1042,62 @@ import statsmodels.api as sm          <span class="c"># PairStrategy ข้า�
 from statsmodels.regression.rolling import RollingOLS
 
 np.random.seed(0)
-n = 120
+n = 300                       <span class="c"># train 60 วัน + live 240 วัน</span>
 dates    = pd.date_range("2024-01-01", periods=n)
 bybit    = 65000 + np.cumsum(np.random.normal(0, 80, n))
-binance  = bybit + np.random.normal(0, 20, n)   <span class="c"># ติดกับ bybit</span>
+
+<span class="c"># spread ต้องดึงกลับเข้าค่ากลาง (OU) ไม่ใช่ noise ลอย ๆ</span>
+<span class="c"># ถ้าเป็น noise กลยุทธ์จะไม่มีอะไรให้จับ = แทบไม่เกิดเทรดเลย</span>
+kappa, sigma_ou = 0.15, 45.0
+ou = np.zeros(n)
+for t in range(1, n):
+    ou[t] = ou[t-1] + kappa * (0 - ou[t-1]) + np.random.normal(0, sigma_ou)
+
+binance  = bybit + ou                            <span class="c"># ติดกับ bybit + spread ที่ mean-revert</span>
 df       = pd.DataFrame({"Bybit": bybit, "Binance": binance}, index=dates)
 
-<span class="c"># Train</span>
+<span class="c"># Train ครั้งแรก</span>
 system.strategy.fit(df.iloc[:60])
 
-<span class="c"># Live simulation (60 steps)</span>
-print("=== Simulating 60 days ===")
+<span class="c"># Live simulation (240 steps)</span>
+REFIT_EVERY = 20              <span class="c"># refit ทุก 20 วัน</span>
+
+print(f"=== Simulating {n-60} days ===")
 for i in range(60, n):
-    window  = df.iloc[max(0,i-60):i]
-    price   = df["Bybit"].iloc[i]
+    window = df.iloc[max(0, i-60):i]
+
+    <span class="c"># ความสัมพันธ์ระหว่างสองตลาดเปลี่ยนไปเรื่อย ๆ — ต้อง refit เป็นรอบ</span>
+    if i &gt; 60 and (i - 60) % REFIT_EVERY == 0:
+        system.strategy.fit(window)
+
+    price = df["Bybit"].iloc[i]
     system.step("Bybit", price, window)
 
 system.report()</div>
+<div class="output">=== Simulating 240 days ===
+[OPEN] LONG Bybit size=1.5391 @ 64,971
+[CLOSE] Bybit PnL=-200
+[OPEN] LONG Bybit size=1.5429 @ 64,800
+[CLOSE] Bybit PnL=-337
+...
+[CLOSE] Bybit PnL=-3
+
+=== Final Report: BTC Pair Production ===
+  trades      : 6
+  win_rate    : 0.00%
+  total_pnl   : -860
+  avg_win     : 0
+  avg_loss    : -143</div>
+
+<div class="read-aloud">สังเกตบรรทัด <code>if i &gt; 60 and (i - 60) % REFIT_EVERY == 0: system.strategy.fit(window)</code> — เราเรียก <code>fit()</code> ซ้ำ<strong>กลางทาง</strong>ได้เลย เพราะออกแบบให้ <code>fit()</code> (เรียนความสัมพันธ์) แยกจาก <code>signal()</code> (ให้คะแนนแท่งล่าสุด) · ถ้าเขียนแบบเอา z-score ทั้งชุดไป cache ไว้ใน <code>fit()</code> การ refit กลางทางจะยุ่งกว่านี้มาก — <strong>นี่คือผลตอบแทนของการแยกหน้าที่ให้ชัด</strong> ที่ Part นี้พยายามสอน</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ อ่านตัวเลข PnL ของ mini-project นี้อย่างไร — <strong>อย่าตีความว่ากลยุทธ์ดีหรือแย่</strong></div>
+<p>ดู log จะเห็นว่าทุกเทรดเป็น <code>LONG Bybit</code> — <strong>ขาเดียว</strong> · เพราะ <code>system.step("Bybit", price, window)</code> ส่งเข้าไปแค่ symbol เดียวกับราคาเดียว ดังนั้น <code>Portfolio</code> จึงเปิดสถานะใน Bybit เท่านั้น ไม่ได้ short Binance คู่กัน</p>
+<p>ผลคือ <strong>กำไร/ขาดทุนที่เห็นมาจากทิศทางราคา Bybit ไม่ใช่จากการบีบตัวของ spread</strong> — signal มาจาก spread แต่การ execute เป็น directional bet · ตัวเลข <code>total_pnl</code> จึงเป็นสัญญาณรบกวนล้วน ๆ <strong>ไม่ว่าจะออกมาบวกหรือลบก็ไม่ได้บอกอะไรเกี่ยวกับคุณภาพของกลยุทธ์</strong></p>
+<p>🎯 <strong>สิ่งที่ mini-project นี้พิสูจน์สำเร็จคือ "โครงสร้าง" ไม่ใช่ "ผลตอบแทน"</strong>: config → Factory สร้าง strategy ได้ · EventBus ส่งต่อ signal ถึง risk manager และ executor ครบวงจร · Portfolio บันทึกทุกเทรดและสรุป metrics ได้ · เพิ่ม strategy ใหม่ไม่ต้องแก้ระบบ</p>
+<p>✍️ <strong>โจทย์ต่อยอด (ตรงนี้คือก้าวถัดไปของจริง):</strong> ทำให้ <code>Portfolio</code> รับสถานะ <strong>สองขา</strong> ได้ — <code>step()</code> ต้องรับราคาทั้งคู่, การเปิดสถานะต้อง long ขาหนึ่ง short อีกขาด้วยอัตราส่วน <code>beta</code> ที่ <code>fit()</code> คำนวณไว้ และ PnL ต้องรวมสองขา · ทำได้แล้วตัวเลขในรายงานจะเริ่มมีความหมาย</p>
+</div>
 
 <div class="bx bg" style="margin-top:28px">
 <div class="bt">จบ Part III — สิ่งที่ได้จาก OOP</div>
