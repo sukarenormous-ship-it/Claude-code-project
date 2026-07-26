@@ -128,7 +128,15 @@ np.random.seed(42)
 n       = 500
 dates   = pd.date_range("2023-01-01", periods=n, freq="D")
 bybit   = 25000 + np.cumsum(np.random.normal(20, 300, n))
-binance = bybit + np.random.normal(0, 15, n)   <span class="c"># ราคาใกล้เคียง Bybit</span>
+
+<span class="c"># ส่วนต่างสองตลาดต้อง "ดึงกลับ" ได้ ไม่ใช่สุ่มลอย ๆ — ใช้ OU เหมือนบทที่ 12</span>
+<span class="c"># ถ้าใช้ noise เฉย ๆ spread จะไม่มีแรงดึงกลับ = กลยุทธ์นี้ไม่มี edge ตั้งแต่ต้น</span>
+kappa, sigma_ou = 0.15, 140.0
+ou = np.zeros(n)
+for t in range(1, n):
+    ou[t] = ou[t-1] + kappa * (0 - ou[t-1]) + np.random.normal(0, sigma_ou)
+
+binance = bybit + ou   <span class="c"># ราคาใกล้เคียง Bybit + spread ที่ mean-revert</span>
 
 df = pd.DataFrame({"bybit": bybit, "binance": binance}, index=dates)
 
@@ -160,18 +168,52 @@ bad_pnl    = (raw_signal * spread_return).dropna()
 good_signal = raw_signal.shift(1).fillna(0)
 good_pnl    = (good_signal * spread_return).dropna()
 
-print(f"Bad  (lookahead) cumulative return: {(1+bad_pnl ).prod()-1:+.2%}")
-print(f"Good (correct)   cumulative return: {(1+good_pnl).prod()-1:+.2%}")
-print(f"Lookahead advantage (ghost profit): "
-      f"{(1+bad_pnl).prod()-(1+good_pnl).prod():+.2%}")</div>
-<div class="output">Bad  (lookahead) cumulative return: +31.42%
-Good (correct)   cumulative return: +18.76%
-Lookahead advantage (ghost profit): +12.66%</div>
+print(f"Same-bar (ไม่ shift) cumulative return: {(1+bad_pnl ).prod()-1:+.2%}")
+print(f"Shift(1) (ถูกต้อง)   cumulative return: {(1+good_pnl).prod()-1:+.2%}")
+print(f"ส่วนต่าง: {(1+bad_pnl).prod()-(1+good_pnl).prod():+.2%}")</div>
+<div class="output">Same-bar (ไม่ shift) cumulative return: +7.11%
+Shift(1) (ถูกต้อง)   cumulative return: +17.65%
+ส่วนต่าง: -10.55%</div>
+
+<div class="bx ba">
+<div class="bt">🤔 เอ๊ะ — ทำไมเวอร์ชัน "ผิด" กลับได้น้อยกว่า?</div>
+<p>ผลออกมาสวนความคาดหมาย และ<strong>นี่คือบทเรียนที่สำคัญกว่าตัวเลข</strong> · เหตุผล: signal ของเราเป็น <strong>mean-reversion</strong> — <code>raw_signal[t]</code> ถูกจุดชนวนโดยการเคลื่อนไหว<em>ที่เพิ่งเกิดขึ้นในวัน t เอง</em> · พอเอาไปคูณ <code>spread_return[t]</code> ซึ่งคือการเคลื่อนไหวอันเดียวกันนั้น เราจึงกำลัง "เดิมพันสวนทาง<em>หลังจาก</em>มันวิ่งไปแล้ว" = ขาดทุนที่แท่ง entry ทุกครั้ง</p>
+<p>🧭 <strong>สิ่งที่ต้องจำ:</strong> <em>ไม่ใช่ทุก lookahead ที่ทำให้ผลดูดีขึ้น — แต่ทุก lookahead ทำให้ผล<strong>ไม่จริง</strong></em> · อย่าใช้ "ผลดูดีเกินไป" เป็นเครื่องตรวจจับ lookahead เพราะบางแบบทำให้ผลดู<em>แย่</em>ลง แล้วคุณจะทิ้งกลยุทธ์ที่ดีไปโดยไม่รู้ตัว · เครื่องตรวจจับที่เชื่อถือได้มีอย่างเดียว: <strong>ไล่ดูทุกบรรทัดว่าข้อมูลที่ใช้ ณ เวลา t มีอยู่จริงตอน t หรือยัง</strong></p>
+</div>
+
+<h3 id="s22-1b">22.1b Lookahead ตัวจริงที่หลอกคนได้ — full-sample statistics</h3>
+
+<p>แบบที่อันตรายกว่ามาก เพราะมัน<strong>ทำให้ผลดูดีขึ้นจริง</strong>และมองด้วยตาแทบไม่เห็น: คำนวณ mean/std ของ z-score จาก<strong>ข้อมูลทั้งชุด</strong> แทนที่จะเป็น rolling window</p>
+
+<div class="fm"><span class="c"># ❌ ผิด — ใช้ mean/std ของทั้งชุด: วันแรกของ backtest "รู้" ค่าเฉลี่ยของทั้งปีแล้ว</span>
+z_full = (spread - spread.mean()) / spread.std()
+
+<span class="c"># ✅ ถูก — rolling: ใช้เฉพาะข้อมูลที่มีจริง ณ เวลานั้น</span>
+z_roll = (spread - spread.rolling(WINDOW).mean()) / spread.rolling(WINDOW).std()
+
+def make_signal(z):
+    s = pd.Series(0.0, index=df.index)
+    s[z &gt;  ENTRY_Z] = -1.0
+    s[z &lt; -ENTRY_Z] =  1.0
+    s[z.abs() &lt; EXIT_Z] = 0.0
+    return s.replace(0, np.nan).ffill().fillna(0).shift(1).fillna(0)
+
+pnl_full = (make_signal(z_full) * spread_return).dropna()
+pnl_roll = (make_signal(z_roll) * spread_return).dropna()
+
+print(f"❌ full-sample z: {(1+pnl_full).prod()-1:+.2%}")
+print(f"✅ rolling z:     {(1+pnl_roll).prod()-1:+.2%}")
+print(f"   ghost profit:  {(1+pnl_full).prod()-(1+pnl_roll).prod():+.2%}")</div>
+<div class="output">❌ full-sample z: +21.02%
+✅ rolling z:     +17.65%
+   ghost profit:  +3.36%</div>
+
+<div class="read-aloud"><code>spread.mean()</code> ดูไร้พิษภัยมาก — แต่มันคือค่าเฉลี่ยของ<strong>ทั้ง 500 วัน</strong> · การใช้มันตัดสินใจในวันที่ 61 เท่ากับบอกว่า "ตอนนั้นฉันรู้แล้วว่าอีก 439 วันข้างหน้าราคาเฉลี่ยจะเป็นเท่าไร" · ต่างจาก <code>.rolling(60).mean()</code> ที่มองย้อนหลังแค่ 60 วันที่<em>ผ่านมาแล้วจริง ๆ</em></div>
 
 <div class="bx bk">
-<div class="bt">กฎเหล็ก: shift(1) ทุกครั้งใน Vectorized Backtest</div>
-<p>Signal สร้างจากราคา close วันที่ \(t\) → Execute ได้เร็วสุดที่ open วันที่ \(t+1\)<br>
-ถ้าไม่ shift: backtest อาจดีขึ้น 10–40% โดยไม่มีเหตุผลจริง นั่นคือ "ghost profit" ที่ไม่มีอยู่จริง</p>
+<div class="bt">กฎเหล็ก 2 ข้อของ Vectorized Backtest</div>
+<p><strong>① shift(1) เสมอ</strong> — signal สร้างจากราคา close วันที่ \(t\) → execute ได้เร็วสุดที่ open วันที่ \(t+1\)</p>
+<p><strong>② ทุกสถิติต้องเป็น rolling หรือ expanding เท่านั้น</strong> — เจอ <code>.mean()</code>, <code>.std()</code>, <code>.min()</code>, <code>.max()</code>, <code>.quantile()</code> ที่ไม่มี <code>.rolling()</code> หรือ <code>.expanding()</code> นำหน้า ให้สงสัยไว้ก่อนทุกครั้ง · รวมถึงการ normalize/scale ข้อมูลก่อนแบ่ง train-test ด้วย (เรื่องนี้ลงลึกใน Part V)</p>
 </div>
 
 <h3 id="s22-2">22.2 Vectorized Backtest ฉบับสมบูรณ์</h3>
@@ -236,13 +278,13 @@ result = vectorized_backtest(
 )
 
 print(result[["zscore", "signal", "net_return", "equity", "drawdown"]].tail(6).round(5))</div>
-<div class="output">            zscore  signal  net_return  equity  drawdown
-2024-04-21   -0.91     0.0    0.000000  1.1892   -0.0324
-2024-04-22   -1.43     0.0    0.000000  1.1892   -0.0324
-2024-04-23   -2.18    -0.0    0.000412  1.1897   -0.0320
-2024-04-24   -2.41    -1.0   -0.001103  1.1884   -0.0331
-2024-04-25   -2.09    -1.0    0.001987  1.1908   -0.0312
-2024-04-26   -1.84    -1.0    0.000874  1.1918   -0.0303</div>
+<div class="output">zscore  signal  net_return   equity  drawdown
+2024-05-09  0.95021    -1.0    -0.00150  0.90728  -0.10844
+2024-05-10  1.24011    -1.0    -0.00252  0.90499  -0.11069
+2024-05-11  1.15657    -1.0     0.00049  0.90544  -0.11025
+2024-05-12  0.11836    -1.0     0.00850  0.91313  -0.10269
+2024-05-13 -0.21545     0.0    -0.00200  0.91131  -0.10448
+2024-05-14  0.07878     0.0     0.00000  0.91131  -0.10448</div>
 
 <h3 id="s22-3">22.3 Performance Metrics: Sharpe, Calmar, Max Drawdown</h3>
 
@@ -306,23 +348,30 @@ print("=" * 44)
 for k, v in m.items():
     print(f"  {k:24s}: {v}")</div>
 <div class="output">============================================
-  Total Return (%)        : 18.76
-  Ann. Return (%)         : 9.84
-  Ann. Volatility (%)     : 4.51
-  Sharpe Ratio            : 2.183
-  Max Drawdown (%)        : -6.12
-  Calmar Ratio            : 1.607
-  Win Rate (%)            : 54.2
-  Profit Factor           : 1.394
-  Avg Trade Duration      : 8.3</div>
+  Total Return (%)        : -8.87
+  Ann. Return (%)         : -5.17
+  Ann. Volatility (%)     : 6.61
+  Sharpe Ratio            : -0.782
+  Max Drawdown (%)        : -11.86
+  Calmar Ratio            : -0.436
+  Win Rate (%)            : 40.1
+  Profit Factor           : 0.868
+  Avg Trade Duration      : 4.1</div>
 
 <div class="key-idea">
 <div class="ki-label">ตีความตัวเลข</div>
 <div class="ki-text">
-Sharpe 2.18 ดูดีมาก — แต่จำไว้ว่านี่คือ <em>in-sample</em> บนข้อมูลจำลองเพียง 500 วัน ใน Part 24 เราจะเห็นว่า out-of-sample Sharpe อาจเหลือแค่ 0.3 สูตรที่ใช้:<br><br>
+Sharpe <strong>−0.78</strong> · Profit Factor <strong>0.868</strong> · Win Rate <strong>40.1%</strong> — <strong>กลยุทธ์นี้ขาดทุน</strong> และนั่นคือผลลัพธ์ที่ถูกต้องแล้ว ไม่ใช่โค้ดพัง<br><br>
+ก่อนหักค่าธรรมเนียม signal ชุดนี้ให้ <strong>+17.65%</strong> (เห็นในหัวข้อ 22.1) แต่พอใส่ fee เข้าไปกลับติดลบ — เพราะมันเทรดบ่อยเกินไปเมื่อเทียบกับขนาด edge ที่มี · <strong>นี่คือชะตากรรมของกลยุทธ์ส่วนใหญ่ที่ดูดีบนกระดาษ</strong> และเป็นเหตุผลว่าทำไมบทที่ 25 (Slippage, Fees &amp; Reality) ถึงมีอยู่<br><br>
 \[\text{Sharpe} = \frac{R_{\text{ann}} - R_f}{\sigma_{\text{ann}}} \qquad \text{Calmar} = \frac{R_{\text{ann}}}{|\text{MaxDD}|}\]<br>
-เป้าหมายสำหรับ live trading: <strong>Sharpe &gt; 1.0</strong> และ <strong>Calmar &gt; 1.0</strong> บน out-of-sample data
+เป้าหมายสำหรับ live trading: <strong>Sharpe &gt; 1.0</strong> และ <strong>Calmar &gt; 1.0</strong> บน out-of-sample data — ตัวเลขข้างบนยังห่างไกลมาก
 </div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ตัวเลขติดลบชุดนี้มีค่ามากกว่าที่คิด</div>
+<p>ถ้าตัวอย่างในหนังสือให้ Sharpe 2.18 สวย ๆ คุณจะไม่มีวันได้เห็นว่า <strong>metrics ของกลยุทธ์ที่ไม่เวิร์ค หน้าตาเป็นยังไง</strong> — และนั่นคือสิ่งที่คุณจะเจอบ่อยที่สุดในชีวิตจริง · จำ 3 สัญญาณนี้ไว้: <strong>Profit Factor &lt; 1.0</strong> (กำไรรวมน้อยกว่าขาดทุนรวม) · <strong>Calmar ติดลบ</strong> (ขาดทุนพร้อมกับ drawdown ลึก) · <strong>Win Rate 40% ที่ไม่ได้มาพร้อม payoff ratio สูง</strong></p>
+<p>⚠️ กับดักที่ตามมา: พอเห็นตัวเลขแบบนี้ สัญชาตญาณคือ "ลองปรับ window กับ entry_z ดู" — ระวังให้ดี เพราะการไล่จูนพารามิเตอร์บนชุดข้อมูลเดียวกันจนกว่าจะเป็นบวก <strong>คือการ overfit ที่แนบเนียนที่สุด</strong> · บทที่ 24 (Walk-Forward) มีไว้เพื่อบอกว่าค่าที่จูนมานั้นจริงหรือแค่ฟลุค</p>
 </div>
 
 <h3 id="s22-4">22.4 Equity Curve และ Drawdown</h3>
@@ -353,11 +402,10 @@ Sharpe 2.18 ดูดีมาก — แต่จำไว้ว่านี่
 
 summarize_equity(result)</div>
 <div class="output">Monthly Returns (%):
-  Mar23: +0.8%  Apr23: +1.2%  May23: +0.3%  Jun23: +2.1%  Jul23:-0.4%  Aug23:+1.7%
-
-Equity: start=1.0009  peak=1.2284  end=1.1876
-Drawdown: worst=-6.12%  avg_when_down=-2.84%
-Time in drawdown (>1%): 38.4% of trading days</div>
+  Mar23: -0.4%  Apr23: -2.3%  May23: +0.8%  Jun23: +1.2%  Jul23: -4.3%  Aug23: +0.6%  Sep23: -0.8%  Oct23: +0.6%  Nov23: -
+Equity: start=1.0000  peak=1.0176  end=0.9113
+Drawdown: worst=-11.86%  avg_when_down=-7.04%
+Time in drawdown (&gt;1%): 96.8% of trading days</div>
 
 <div class="ex">
 <div class="et">ตัวอย่าง: Parameter Sweep แบบ Vectorized</div>
@@ -394,15 +442,15 @@ sweep = parameter_sweep(
     entry_zs = [1.5, 2.0, 2.5, 3.0],
 )
 print(sweep.head(8).to_string(index=False))</div>
-<div class="output"> window  entry_z  sharpe  calmar  max_dd  n_active
-     60      2.0   2.183   1.607   -6.12       231
-     45      2.0   2.051   1.543   -6.74       257
-     60      1.5   1.987   1.421   -7.31       289
-     90      2.0   1.874   1.618   -5.98       198
-     60      2.5   1.821   1.504   -6.43       185
-     45      1.5   1.745   1.312   -8.02       314
-     30      2.5   1.688   1.299   -7.88       201
-    120      2.0   1.623   1.401   -6.55       173</div>
+<div class="output">window  entry_z  sharpe  calmar  max_dd  n_active
+    120      3.0   0.862   0.941   -1.18        16
+     60      3.0   0.000   0.000    0.00         0
+     90      3.0   0.000   0.000    0.00         0
+    120      1.5  -0.430  -0.283   -9.40       222
+     90      2.0  -0.624  -0.276  -14.06       238
+     30      1.5  -0.662  -0.374  -12.28       302
+    120      2.0  -0.749  -0.407  -11.29       217
+     60      2.0  -0.782  -0.436  -11.86       268</div>
 </div>
 
 <details>
@@ -709,14 +757,13 @@ for f in bt_ed.fills[-3:]:
     print(f"  {f.timestamp.date()} {f.side:5s} "
           f"qty={f.quantity:.4f} @ {f.fill_price:,.0f} "
           f"comm={f.commission:.2f} slip={f.slippage:.2f}")</div>
-<div class="output">Fills executed: 52
-Final equity:   1,091,840
-Return:         +9.18%
-
+<div class="output">Fills executed: 28
+Final equity:   1,014,251
+Return:         +1.43%
 Last 3 fills:
-  2024-04-15 exit  qty=1.5412 @ 64,823 comm=199.83 slip=32.41
-  2024-04-21 long  qty=1.5689 @ 64,912 comm=203.65 slip=32.46
-  2024-04-26 exit  qty=1.5689 @ 65,340 comm=204.99 slip=33.17</div>
+  2024-03-22 exit  qty=2.7597 @ 36,687 comm=202.49 slip=101.25
+  2024-04-24 short qty=2.7385 @ 36,975 comm=202.52 slip=101.26
+  2024-05-03 exit  qty=2.8300 @ 35,780 comm=202.52 slip=101.26</div>
 
 <h3 id="s23-4">23.4 ทำไม Event-Driven ให้ผลต่างจาก Vectorized</h3>
 
@@ -744,9 +791,9 @@ print(f"{'Num fills':<28} {int((vec_result['signal'].diff().abs()>0).sum()):>10}
 <div class="output">==================================================
 Metric                       Vectorized  Event-Driven
 --------------------------------------------------
-Total Return (%)                  18.76          9.18
-Sharpe Ratio                       2.183  (see below)
-Num fills                            89            52</div>
+Total Return (%)                  -8.87          1.43
+Sharpe Ratio                     -0.782   (see below)
+Num fills                           139            28</div>
 
 <div class="bx bb">
 <div class="bt">ทำไม Event-Driven ให้ผลต่ำกว่า?</div>
@@ -849,10 +896,16 @@ dates_long = pd.date_range("2021-01-01", periods=n_total, freq="D")
 
 <span class="c"># สร้างข้อมูลที่ pair trading edge อ่อนมาก (จงใจ)</span>
 btc_base  = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.03, n_total)))
-noise_byb = np.random.normal(0, 20, n_total)
-noise_bin = np.random.normal(0, 20, n_total)
-bybit_l   = btc_base + noise_byb
-binance_l = btc_base + noise_bin
+
+<span class="c"># spread ระหว่างสองตลาดต้อง mean-revert เหมือนเดิม (ดูเหตุผลในบทที่ 22)</span>
+<span class="c"># ถ้าใช้ noise เฉย ๆ walk-forward จะวัด "ความว่างเปล่า" ไม่ใช่ความทนทานของ edge</span>
+kappa_l, sigma_l = 0.15, 160.0
+ou_l = np.zeros(n_total)
+for t in range(1, n_total):
+    ou_l[t] = ou_l[t-1] + kappa_l * (0 - ou_l[t-1]) + np.random.normal(0, sigma_l)
+
+bybit_l   = btc_base
+binance_l = btc_base + ou_l
 
 pa = pd.Series(bybit_l,   index=dates_long)
 pb = pd.Series(binance_l, index=dates_long)
@@ -882,13 +935,19 @@ print(f"  Out-of-sample Sharpe: {oos_m['Sharpe Ratio']:.2f}")
 print(f"  Performance decay:    {oos_m['Sharpe Ratio'] / best_params['sharpe']:.1%}")</div>
 <div class="output">Best parameters (in-sample):
   window=60, entry_z=1.5
-  In-sample Sharpe: 2.04
-  Out-of-sample Sharpe: 0.31
-  Performance decay:    15.2%</div>
+  In-sample Sharpe: 1.02
+  Out-of-sample Sharpe: 5.31
+  Performance decay:    518.9%</div>
 
 <div class="bx bk">
 <div class="bt">Overfitting เกิดจากอะไร?</div>
-<p>เราทดสอบ 16 parameter combinations — บางชุดดีโดยบังเอิญบน data นี้ ไม่ใช่เพราะมี real edge เมื่อ data เปลี่ยน (อนาคต) ความบังเอิญนั้นหายไป Sharpe 2.0 → 0.3 คือ 85% ของผลตอบแทน "หายไป" — นี่คือ simulation ที่ใกล้เคียงความเป็นจริงมาก</p>
+<p>เราทดสอบ 16 parameter combinations — บางชุดดีโดยบังเอิญบน data ชุดนี้ ไม่ใช่เพราะมี real edge · พอ data เปลี่ยน (อนาคต) ความบังเอิญนั้นหายไป · ในสนามจริงตัวเลขที่เจอบ่อยคือ in-sample Sharpe 2.0 เหลือ out-of-sample 0.3 — หายไปราว 85%</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ อ่านผลรันข้างบนให้ดี — มันไม่ได้แสดง overfitting</div>
+<p>ผลจริงจากโค้ดชุดนี้กลับกัน: <strong>out-of-sample Sharpe ดีกว่า in-sample</strong> ("decay" ติดลบ/เกิน 100%) · อย่าเพิ่งสรุปว่าเข้าใจผิด — <strong>นี่คือของจริงที่เจอได้บ่อย</strong> เมื่อชุดทดสอบสั้นและมีจำนวนเทรดน้อย ค่า Sharpe จะเหวี่ยงแรงมากจน "decay" วัดอะไรไม่ได้เลย</p>
+<p>🧭 <strong>บทเรียนที่ใช้ได้จริงกว่า:</strong> ก่อนจะเชื่อตัวเลข decay ให้ดู <strong>จำนวนเทรดใน out-of-sample ก่อนเสมอ</strong> — ถ้าน้อยกว่า ~30 ครั้ง ค่า Sharpe นั้นเป็นสัญญาณรบกวนมากกว่าสัญญาณ · สังเกตในตาราง walk-forward ข้างล่างว่าหลาย fold ได้ <code>oos_sharpe = 0.000</code> ซึ่งแปลว่า <em>ไม่มีเทรดเลยในช่วงนั้น</em> ไม่ใช่ "ผลเป็นกลาง"</p>
 </div>
 
 <h3 id="s24-2">24.2 Walk-Forward ด้วย Expanding Window</h3>
@@ -1015,12 +1074,14 @@ wf_result = walk_forward_validation(
 )
 
 print(wf_result.to_string(index=False))</div>
-<div class="output"> fold  train_start    train_end   test_start     test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd
-    1   2021-01-01   2021-07-20  2021-07-21   2021-10-28           60           1.5      2.041       0.312        3.12       -5.43
-    2   2021-01-01   2021-10-28  2021-10-29   2022-02-05           90           2.0      1.987       0.541        5.34       -4.87
-    3   2021-01-01   2022-02-05  2022-02-06   2022-05-16           60           2.0      2.134       0.289        2.89       -6.12
-    4   2021-01-01   2022-05-16  2022-05-17   2022-08-24           60           1.5      1.923       0.487        4.87       -5.21
-    5   2021-01-01   2022-08-24  2022-08-25   2022-12-02           90           1.5      2.076       0.358        3.58       -4.98</div>
+<div class="output">fold train_start  train_end test_start   test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd
+    1  2021-01-01 2021-07-19 2021-07-20 2021-10-27           30           3.0      0.000      -2.678       -3.53       -4.28
+    2  2021-01-01 2021-10-27 2021-10-28 2022-02-04           90           3.0      0.114       0.000        0.00        0.00
+    3  2021-01-01 2022-02-04 2022-02-05 2022-05-15          120           2.5     -0.270       0.000        0.00        0.00
+    4  2021-01-01 2022-05-15 2022-05-16 2022-08-23          120           2.5     -0.477       0.000        0.00        0.00
+    5  2021-01-01 2022-08-23 2022-08-24 2022-12-01           60           1.5     -0.380       1.612        3.39       -4.05
+    6  2021-01-01 2022-12-01 2022-12-02 2023-03-11          120           1.5      0.287       0.000        0.00        0.00
+    7  2021-01-01 2023-03-11 2023-03-12 2023-06-19           30           1.5      0.475       1.690        6.16       -4.33</div>
 
 <h3 id="s24-3">24.3 วิเคราะห์ผล Walk-Forward</h3>
 
@@ -1058,18 +1119,17 @@ analyze_walk_forward(wf_result)</div>
 <div class="output">========================================================
 Walk-Forward Summary
 ========================================================
-Folds tested:         5
-IS  Sharpe (avg):     2.032 ± 0.078
-OOS Sharpe (avg):     0.397 ± 0.108
-OOS/IS Ratio:         19.5%  (likely overfit)
-OOS Sharpe > 0:       5/5 folds
-OOS Sharpe > 1:       0/5 folds
-OOS Return (avg):     3.96%
-OOS Max DD (avg):     -5.32%
-
+Folds tested:         7
+IS  Sharpe (avg):     -0.036 ± 0.355
+OOS Sharpe (avg):     0.089 ± 1.447
+OOS/IS Ratio:         -248.6%  (likely overfit)
+OOS Sharpe &gt; 0:       2/7 folds
+OOS Sharpe &gt; 1:       2/7 folds
+OOS Return (avg):     0.86%
+OOS Max DD (avg):     -1.81%
 Parameter Stability:
-  best_window:  most common = 60 (60% of folds)
-  best_entry_z: most common = 1.5 (60% of folds)</div>
+  best_window: most common = 120 (43% of folds)
+  best_entry_z: most common = 1.5 (43% of folds)</div>
 
 <div class="key-idea">
 <div class="ki-label">ตีความ OOS/IS Ratio</div>
@@ -1177,7 +1237,7 @@ print("ถ้า expanding &gt; rolling  → มีข้อมูลเก่�
 <div class="ki-label">แก่นของบทนี้</div>
 <div class="ki-text">Strategy ที่ดูดีใน backtest บ่อยครั้ง "หาย" ไปเมื่อใส่ต้นทุนจริง: bid-ask spread, commission, market impact สูตรครบ:<br>
 \[\text{cost per trade} = \frac{\text{spread}}{2} + \text{commission} + \text{market\_impact}\]<br>
-บทนี้จะแสดงให้เห็นว่า strategy ที่ "ยอดเยี่ยม" (Sharpe 2.0 ไม่มี cost) กลายเป็น "ธรรมดา" (Sharpe 0.6) เมื่อใส่ cost จริง</div>
+บทนี้จะแสดงให้เห็นว่า strategy ที่ดูดี (Sharpe <strong>1.90</strong> เมื่อไม่คิด cost) เหลือ Sharpe <strong>0.57</strong> ที่ cost ต่ำ · <strong>0.00</strong> ที่ cost ระดับกลาง และ <strong>−1.06</strong> ที่ cost สูง — กลยุทธ์เดียวกันเป๊ะ ต่างแค่ต้นทุน</div>
 </div>
 
 <h3 id="s25-1">25.1 ประเภทของ Transaction Costs</h3>
@@ -1291,11 +1351,12 @@ for k, v in costs.items():
         print(f"  {k:<20}: ${v:>8.2f}")</div>
 <div class="output">Transaction Costs for $100,000 BTC trade:
 --------------------------------------------
-  spread              :    $20.00
-  commission          :   $140.00
-  market_impact       :     $6.29
-  funding             :    $10.00
-  TOTAL (bps)         :     17.63 bps</div>
+  spread              : $   20.00
+  commission          : $  140.00
+  market_impact       : $    3.54
+  funding             : $   30.00
+  total               : $  193.54
+  TOTAL (bps)         :    19.35 bps</div>
 
 <h3 id="s25-3">25.3 Realistic P&amp;L — "Strategy ดี" หลังหักต้นทุน</h3>
 
@@ -1407,17 +1468,17 @@ for name, tcm in scenarios.items():
           f"{m['Total Return (%)']:>9.2f} "
           f"{m['Max Drawdown (%)']:>8.2f} "
           f"{m['Profit Factor']:>7.3f}")</div>
-<div class="output">Scenario       Sharpe   Return%   MaxDD%      PF
+<div class="output">Scenario         Sharpe   Return%   MaxDD%      PF
 ----------------------------------------------------
-No Costs        2.401    22.84    -4.32    1.521
-Low Costs       1.843    17.91    -5.14    1.389
-Mid Costs       1.124    11.23    -6.87    1.218
-High Costs      0.612     5.84    -9.43    1.098</div>
+No Costs          1.903     22.07    -3.62   1.453
+Low Costs         0.569      7.94    -5.43   1.101
+Mid Costs        -0.006     -0.08    -6.31   1.005
+High Costs       -1.057    -14.25   -16.68   0.842</div>
 
 <div class="key-idea">
 <div class="ki-label">ผลกระทบของ Transaction Costs</div>
 <div class="ki-text">
-จาก Sharpe 2.40 (ไม่มี cost) → 0.61 (high cost) — ลดลง 75% การเพิ่ม cost ทำให้:<br>
+จาก Sharpe <strong>1.90</strong> (ไม่มี cost) → <strong>−1.06</strong> (high cost) — กลยุทธ์พลิกจากกำไรเป็นขาดทุน การเพิ่ม cost ทำให้:<br>
 1. <strong>Return ลดลง</strong> — โดยตรงจากค่าใช้จ่าย<br>
 2. <strong>Sharpe ลดลงมากกว่า Return</strong> — เพราะ cost เพิ่ม variance<br>
 3. <strong>Max Drawdown แย่ลง</strong> — cost ทำให้ drawdown นานขึ้นและลึกขึ้น<br><br>
@@ -1472,13 +1533,13 @@ tbl = cost_sensitivity_table(pa_s, pb_s, window=60, entry_z=2.0)
 print("Sharpe Ratio Sensitivity (rows=spread, cols=commission):")
 print(tbl.to_string())</div>
 <div class="output">Sharpe Ratio Sensitivity (rows=spread, cols=commission):
-           comm_0bps  comm_2bps  comm_5bps  comm_7bps  comm_10bps
+            comm_0bps  comm_2bps  comm_5bps  comm_7bps  comm_10bps
 spread_bps
-0.5            2.28       2.11       1.87       1.71        1.43
-1.0            2.14       1.96       1.71       1.55        1.26
-2.0            1.87       1.68       1.42       1.24        0.93
-3.0            1.63       1.42       1.14       0.94        0.61
-5.0            1.21       0.98       0.67       0.43        0.06</div>
+0.5              0.16       0.12       0.06       0.01       -0.06
+1.0              0.16       0.12       0.05       0.00       -0.06
+2.0              0.15       0.10       0.04      -0.01       -0.07
+3.0              0.14       0.09       0.03      -0.02       -0.08
+5.0              0.12       0.07       0.00      -0.04       -0.10</div>
 
 <div class="bx bk">
 <div class="bt">อ่าน Sensitivity Table อย่างไร</div>
@@ -1516,15 +1577,15 @@ spread_bps
 
 market_impact_analysis(adv_usd=500_000_000, vol=0.025)</div>
 <div class="output">Market Impact (ADV=$500M, vol=2.5%)
-  Order Size   Impact(bps)    Impact($)    % of Order
+  Order Size   Impact(bps)     Impact($)    % of Order
 --------------------------------------------------------
-$     10,000         0.22          $2.24        0.022%
-$     50,000         0.50         $24.97        0.050%
-$    100,000         0.71         $70.71        0.071%
-$    500,000         1.58        $790.57        0.158%
-$  1,000,000         2.24      $2,236.07        0.224%
-$  5,000,000         5.00     $25,000.00        0.500%
-$ 10,000,000         7.07     $70,710.68        0.707%</div>
+$     10,000          0.11  $       0.11        0.001%
+$     50,000          0.25  $       1.25        0.003%
+$    100,000          0.35  $       3.54        0.004%
+$    500,000          0.79  $      39.53        0.008%
+$  1,000,000          1.12  $     111.80        0.011%
+$  5,000,000          2.50  $   1,250.00        0.025%
+$ 10,000,000          3.54  $   3,535.53        0.035%</div>
 
 <div class="bx bb">
 <div class="bt">Square-Root Market Impact Law</div>
@@ -1579,7 +1640,7 @@ max_aum = max_scalable_aum(
 )
 print(f"Max scalable AUM: ${max_aum:,.0f} ({max_aum/1e6:.1f}M USD)")
 print("ใส่ capital เกินนี้ → Sharpe ต่ำกว่า 1.0 เพราะ market impact")</div>
-<div class="output">Max scalable AUM: $18,432,000 (18.4M USD)
+<div class="output">Max scalable AUM: $804,891,199 (804.9M USD)
 ใส่ capital เกินนี้ → Sharpe ต่ำกว่า 1.0 เพราะ market impact</div>
 </div>
 
@@ -1680,34 +1741,28 @@ for category, items in CHECKLIST.items():
         print(f"  □  {item}")
 
 print("\n\nถ้าผ่านทุกข้อ → เริ่ม paper trading 1–3 เดือนก่อน live")</div>
-<div class="output">
-1. No Lookahead Bias
-  □  signal ทุกตัวถูก shift(1) ก่อน calculate P&L
+<div class="output">1. No Lookahead Bias
+  □  signal ทุกตัวถูก shift(1) ก่อน calculate P&amp;L
   □  ไม่ใช้ข้อมูลอนาคตในทุก feature
   □  ตรวจสอบด้วย event-driven backtest ด้วย
-
 2. Walk-Forward Passed
-  □  OOS/IS ratio > 50%
-  □  OOS Sharpe > 0 ทุก fold
+  □  OOS/IS ratio &gt; 50%
+  □  OOS Sharpe &gt; 0 ทุก fold
   □  Parameter stable ข้ามหลาย fold
-
 3. Realistic Costs
   □  ใส่ bid-ask spread ตามที่ตลาดจริงเป็น
-  □  ใส่ commission ที่ exchange เรียกเก็บ
+  □  ใส่ commission ที่ exchange เรียกเก็บ (taker สำหรับ market order)
   □  ใส่ market impact โดยเฉพาะถ้า order ใหญ่
   □  ใส่ funding rate สำหรับ perpetual futures
-
 4. Metrics ผ่านเกณฑ์ (OOS + Realistic Costs)
-  □  Sharpe > 1.0
-  □  Calmar > 1.0
-  □  Max Drawdown < 15%
-  □  Profit Factor > 1.2
-
+  □  Sharpe &gt; 1.0
+  □  Calmar &gt; 1.0
+  □  Max Drawdown &lt; 15%
+  □  Profit Factor &gt; 1.2
 5. Sanity Checks
-  □  จำนวน trades มากพอ (> 30)
+  □  จำนวน trades มากพอ (&gt; 30) เพื่อ statistical significance
   □  ทดสอบกับข้อมูลหลาย time periods
-  □  ไม่ overfitted ต่อ regime เดียว
-
+  □  ไม่ overfitted ต่อ regime เดียว (เช่น bull market 2021)
 ถ้าผ่านทุกข้อ → เริ่ม paper trading 1–3 เดือนก่อน live</div>
 
 <details>

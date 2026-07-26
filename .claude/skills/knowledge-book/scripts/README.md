@@ -37,3 +37,17 @@ python3 .claude/skills/knowledge-book/scripts/run-code-blocks.py part2      # �
 3. **false positive ที่ต้องคัดออกด้วยมือ** — ตัวอย่างที่ตั้งใจให้ผิด (มีป้าย ❌),
    บล็อกพรีวิวต้นบทที่อ้างของที่นิยามทีหลัง, `inspect.getsource` บนโค้ดที่ exec
 4. **อ่าน HTML ต้นฉบับยืนยันทุก finding ก่อนแก้เสมอ** — ห้ามเชื่อ output ของสคริปต์
+
+## check-output.py + sync-output.py — เทียบ/ซิงก์ผลลัพธ์ที่หนังสือเขียนไว้
+ข้อบกพร่อง**คนละชั้น**กับ "รันได้ไหม": โค้ดรันผ่านแต่ตัวเลขในหนังสือไม่ตรง
+= ผู้อ่านรันตามแล้วได้ผลต่าง จะคิดว่าตัวเองทำพลาด
+
+```bash
+python3 .../check-output.py part4          # ดูว่าตรงไหมบ้าง
+python3 .../sync-output.py part4           # dry-run
+python3 .../sync-output.py part4 --apply   # เขียนผลจริงลง .output
+```
+ต้องรัน `run-code-blocks.py <part>` ก่อน แล้ว copy `run_results.json` เป็น `rr_<part>.json`
+
+⚠️ regex จับคู่ `.fm` กับ `.output` ต้องกันไม่ให้ข้าม `</div>` — ถ้าใช้ `(.*?)`
+เฉย ๆ มันจะไล่ข้ามบล็อกไปหา `.output` ที่อยู่ไกล แล้วจับคู่โค้ดกับผลลัพธ์คนละก้อน
