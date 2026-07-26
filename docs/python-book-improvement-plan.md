@@ -85,9 +85,9 @@
 | Scatter plot + correlation | ✅ มี — บทที่ 10.3 (`ax.scatter` + `.corr()` โชว์บนกราฟ) |
 | Correlation matrix | ✅ มี — `df.pct_change().corr()` |
 | Cointegration | ✅ มี — บทที่ 14 เต็มบท |
-| **Histogram** | ❌ **ไม่มีเลย** — ไม่พบ `plt.hist()` ทั้งเล่ม |
-| **Box plot** | ❌ **ไม่มีเลย** |
-| **Bell curve พล็อตด้วยโค้ด** | ❌ **ไม่มี** — Part 0 (2.2) มีแค่ภาพ SVG วาดมืออธิบาย N(μ,σ) · `np.random.normal()` ใช้เยอะแต่เพื่อ*สร้างข้อมูลจำลอง* ไม่ใช่พล็อตการกระจาย · ไม่มี `scipy.stats.norm.pdf()` คู่กับการพล็อตเลย |
+| **Histogram** | ✅ **เพิ่มแล้ว** — บทที่ 10.4 (`plt.hist(density=True)`) |
+| **Box plot** | ✅ **เพิ่มแล้ว** — บทที่ 10.5 เทียบ BTC/ETH + ai-decode อธิบาย 5 ตัวเลขในกล่อง |
+| **Bell curve พล็อตด้วยโค้ด** | ✅ **เพิ่มแล้ว** — บทที่ 10.4 overlay `stats.norm.pdf()` ทับ histogram + ตารางนับวันที่เกิน kσ จริง vs ที่ Normal ทำนาย (4σ เกิน 100 เท่า) + QQ-plot ในชั้นมือโปร |
 
 → ทั้ง 3 ข้อเป็นกลุ่มเดียวกัน = **"มองรูปร่างการกระจายของ returns"** ควรเป็นหัวข้อใหม่ก้อนเดียว
 

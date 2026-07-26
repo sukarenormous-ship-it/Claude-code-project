@@ -1282,7 +1282,187 @@ plt.tight_layout()
 plt.show()</div>
 </div>
 
-<h3 id="s10-4">10.4 plotly — Interactive Charts (แนะนำ)</h3>
+<div class="bx bd">
+<div class="bt">📝 ทำไมชื่อกราฟในเล่มนี้เป็นภาษาอังกฤษทั้งหมด</div>
+<p>ถ้าใส่ข้อความไทยใน <code>set_title()</code> / <code>set_xlabel()</code> / <code>label=</code> ตรง ๆ matplotlib จะพิมพ์ออกมาเป็น <strong>สี่เหลี่ยมเปล่า □□□</strong> พร้อมคำเตือน <code>Glyph missing from font(s) DejaVu Sans</code> — เพราะฟอนต์ตั้งต้นของ matplotlib ไม่มีตัวอักษรไทย</p>
+<p>แก้ได้ถ้าต้องการไทยจริง ๆ (ต้องมีไฟล์ฟอนต์ในเครื่อง):</p>
+<div class="fm">import matplotlib
+matplotlib.rcParams["font.family"] = "Sarabun"   <span class="c"># หรือ "TH Sarabun New", "Noto Sans Thai"</span>
+matplotlib.rcParams["axes.unicode_minus"] = False  <span class="c"># กันเครื่องหมายลบกลายเป็นสี่เหลี่ยม</span></div>
+<p>เล่มนี้เลือกใช้<strong>อังกฤษในกราฟ ไทยในคำอธิบาย</strong> เพื่อให้โค้ดทุกบล็อกรันได้เหมือนกันทุกเครื่องโดยไม่ต้องติดตั้งฟอนต์ก่อน</p>
+</div>
+
+<h3 id="s10-4">10.4 Histogram + Bell Curve — รูปร่างของการกระจาย</h3>
+
+<p>สามหัวข้อที่ผ่านมาดู <strong>"ราคาเดินไปทางไหน"</strong> (เวลาอยู่แกน x) · หัวข้อนี้เปลี่ยนคำถามเป็น <strong>"ผลตอบแทนกระจายตัวยังไง"</strong> — ทิ้งเวลาไปเลย เอาแต่ค่ามากองรวมกันแล้วดูรูปร่าง</p>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของหัวข้อนี้</div>
+<div class="ki-text">Histogram ตอบคำถามที่กราฟเส้นตอบไม่ได้: <strong>"วันที่เหวี่ยงแรง ๆ เกิดบ่อยแค่ไหน?"</strong> · และเมื่อวาดเส้นระฆัง (Normal) ทับลงไป คุณจะ<strong>เห็นด้วยตา</strong>ว่าผลตอบแทนจริงไม่ใช่ระฆัง — หางหนากว่ามาก · นี่คือสาเหตุที่โมเดลความเสี่ยงซึ่งสมมติ Normal ประเมินความเสี่ยงต่ำเกินไปเสมอ</div>
+</div>
+
+<div class="fm">import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import stats
+
+<span class="c"># จำลอง return รายวัน 3 ปี แบบที่คล้ายของจริง:</span>
+<span class="c">#   ส่วนใหญ่เป็นวันธรรมดา + 3% ของวันเป็นวันข่าวแรง (jump)</span>
+np.random.seed(3)
+n = 750
+btc_ret = pd.Series(
+    np.random.normal(0.0005, 0.018, n)
+    + np.random.choice([0, 1], n, p=[0.97, 0.03]) * np.random.normal(0, 0.07, n),
+    name="BTC")
+eth_ret = pd.Series(
+    np.random.normal(0.0004, 0.026, n)
+    + np.random.choice([0, 1], n, p=[0.96, 0.04]) * np.random.normal(0, 0.09, n),
+    name="ETH")
+
+mu, sd = btc_ret.mean(), btc_ret.std()
+
+fig, ax = plt.subplots(figsize=(10, 5))
+
+<span class="c"># ① Histogram — density=True เพื่อให้สเกลเทียบกับเส้นโค้งได้</span>
+ax.hist(btc_ret, bins=60, density=True, alpha=0.55,
+        color="#0d9488", edgecolor="white", label="BTC returns (actual)")
+
+<span class="c"># ② เส้นระฆัง Normal ที่มี mean/std เดียวกันเป๊ะ</span>
+x = np.linspace(btc_ret.min(), btc_ret.max(), 400)
+ax.plot(x, stats.norm.pdf(x, mu, sd), color="#dc2626", lw=2.5,
+        label=f"Normal(μ={mu:.4f}, σ={sd:.4f})")
+
+<span class="c"># ③ ขีดเส้น ±3σ ให้เห็นว่า "ขอบของโลก Normal" อยู่ไหน</span>
+for k in (-3, 3):
+    ax.axvline(mu + k*sd, color="#7c3aed", ls="--", lw=1.2)
+ax.text(mu + 3*sd, ax.get_ylim()[1]*0.7, " +3σ", color="#7c3aed", fontsize=9)
+
+ax.set_title("BTC Daily Returns vs Normal (look at both tails)")
+ax.set_xlabel("Daily Return")
+ax.set_ylabel("Density")
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+<span class="c"># ④ ตัวเลขที่ยืนยันสิ่งที่ตาเห็น</span>
+print(f"Skewness: {stats.skew(btc_ret):+.2f}   "
+      f"Excess kurtosis: {stats.kurtosis(btc_ret):+.2f}   (Normal = 0.00, 0.00)")
+print("\nวันที่เหวี่ยงเกิน k เท่าของ σ — จริง vs ที่ Normal ทำนาย")
+for k in (1, 2, 3, 4, 5):
+    actual   = int((btc_ret.abs() &gt; k*sd).sum())
+    expected = 2 * stats.norm.sf(k) * n
+    ratio    = f"{actual/expected:>7.1f}x" if expected &gt;= 0.05 else "    &gt;100x"
+    print(f"  |r| &gt; {k}σ : {actual:4d} วัน · Normal {expected:7.1f} วัน ·{ratio}")
+
+plt.tight_layout()
+plt.show()</div>
+<div class="output">Skewness: +0.55   Excess kurtosis: +10.89   (Normal = 0.00, 0.00)
+วันที่เหวี่ยงเกิน k เท่าของ σ — จริง vs ที่ Normal ทำนาย
+  |r| &gt; 1σ :  158 วัน · Normal   238.0 วัน ·    0.7x
+  |r| &gt; 2σ :   24 วัน · Normal    34.1 วัน ·    0.7x
+  |r| &gt; 3σ :   10 วัน · Normal     2.0 วัน ·    4.9x
+  |r| &gt; 4σ :    7 วัน · Normal     0.0 วัน ·    &gt;100x
+  |r| &gt; 5σ :    4 วัน · Normal     0.0 วัน ·    &gt;100x</div>
+
+<div class="read-aloud"><code>density=True</code> คือกุญแจของบล็อกนี้ — ปกติ <code>hist</code> นับ "จำนวนวัน" ในแต่ละแท่ง แต่ <code>density=True</code> เปลี่ยนเป็นสัดส่วนที่ทำให้<strong>พื้นที่รวมทั้งกราฟ = 1</strong> · จำเป็นเพราะ <code>norm.pdf</code> ก็มีพื้นที่รวม 1 เหมือนกัน — ถ้าไม่ใส่ เส้นแดงจะแบนติดพื้นจนมองไม่เห็นอะไรเลย · <strong>สองสิ่งจะเทียบกันได้ ต้องอยู่สเกลเดียวกันก่อน</strong></div>
+
+<div class="bx bk">
+<div class="bt">อ่านตารางนี้ให้ออก — นี่คือ "fat tail" ที่ทุกคนพูดถึง</div>
+<p>สังเกตว่ามันแปลกสองทางพร้อมกัน:</p>
+<ul>
+<li><strong>ช่วง 1σ–2σ เกิด<em>น้อยกว่า</em> Normal</strong> (0.7 เท่า) — วันที่ "เหวี่ยงพอประมาณ" มีน้อยกว่าที่ทฤษฎีบอก</li>
+<li><strong>ช่วงเกิน 3σ เกิด<em>มากกว่า</em>มหาศาล</strong> — 3σ เกิด 4.9 เท่า · 4σ กับ 5σ เกินร้อยเท่า (Normal ทำนายว่าแทบไม่ควรเกิดเลยใน 750 วัน)</li>
+</ul>
+<p>แปลว่าผลตอบแทนจริง <strong>ไม่ได้กระจายกว้างกว่า Normal ทั้งกระดาน</strong> — มันเอามวลจากช่วงกลาง ๆ ไปกองไว้ที่ <em>ตรงกลางสุด</em> (วันเงียบ) และ <em>ปลายหาง</em> (วันหายนะ) · ตลาดจึงดู "นิ่งกว่าที่คิด" เป็นเดือน ๆ แล้วขยับทีเดียวจนพอร์ตพัง</p>
+<p>🎯 <strong>ผลทางปฏิบัติ:</strong> โมเดลที่สมมติ Normal จะบอกว่าการเหวี่ยง −4σ "เกิดทุก 40 ปี" แต่ตารางข้างบนบอกว่ามันเกิด <strong>7 ครั้งใน 3 ปี</strong> · ทุกครั้งที่เห็นคำว่า "เหตุการณ์ 1 ในล้านปี" ในรายงานความเสี่ยง ให้ถามก่อนว่าเขาสมมติการกระจายแบบไหน</p>
+</div>
+
+<h3 id="s10-5">10.5 Box Plot — เทียบการกระจายหลายสินทรัพย์</h3>
+
+<p>Histogram ดูได้ทีละตัว · เทียบหลายตัวพร้อมกันใช้ <strong>box plot</strong> ซึ่งบีบการกระจายทั้งก้อนให้เหลือกล่องเดียว</p>
+
+<div class="fm">fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
+
+<span class="c"># ── ซ้าย: box plot เทียบ BTC กับ ETH ──</span>
+<span class="c"># หมายเหตุ: ไม่ใส่ labels= ใน boxplot() เพราะ matplotlib รุ่นใหม่</span>
+<span class="c"># เปลี่ยนชื่อเป็น tick_labels — ตั้งชื่อแกนแยกจึงเข้ากันได้ทุกเวอร์ชัน</span>
+bp = ax1.boxplot([btc_ret, eth_ret],
+                 patch_artist=True, showfliers=True,
+                 medianprops=dict(color="#111827", lw=2))
+for patch, color in zip(bp["boxes"], ["#0d9488", "#7c3aed"]):
+    patch.set_facecolor(color)
+    patch.set_alpha(0.45)
+
+ax1.set_xticks([1, 2])
+ax1.set_xticklabels(["BTC", "ETH"])
+ax1.axhline(0, color="#9ca3af", lw=1)
+ax1.set_title("Daily Return Distribution")
+ax1.set_ylabel("Daily Return")
+ax1.grid(True, alpha=0.3, axis="y")
+
+<span class="c"># ── ขวา: histogram ซ้อนกัน เพื่อเทียบกับ box plot ──</span>
+ax2.hist(btc_ret, bins=50, alpha=0.5, density=True,
+         color="#0d9488", label="BTC")
+ax2.hist(eth_ret, bins=50, alpha=0.5, density=True,
+         color="#7c3aed", label="ETH")
+ax2.set_title("Same data as histogram")
+ax2.set_xlabel("Daily Return")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+<span class="c"># ตัวเลขที่ box plot กำลังวาด</span>
+for s in (btc_ret, eth_ret):
+    q1, med, q3 = s.quantile([0.25, 0.5, 0.75])
+    iqr = q3 - q1
+    n_out = int(((s &lt; q1 - 1.5*iqr) | (s &gt; q3 + 1.5*iqr)).sum())
+    print(f"{s.name}: median={med:+.4f}  IQR={iqr:.4f}  "
+          f"outlier={n_out} วัน ({n_out/len(s):.1%})")
+
+plt.tight_layout()
+plt.show()</div>
+<div class="output">BTC: median=+0.0008  IQR=0.0255  outlier=17 วัน (2.3%)
+ETH: median=+0.0009  IQR=0.0321  outlier=20 วัน (2.7%)</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 box plot บอกอะไร — 5 ตัวเลขในกล่องเดียว</div>
+<div class="ad-code">     ┬     ← หนวดบน: จุดไกลสุดที่ยังไม่ถือว่าผิดปกติ (Q3 + 1.5×IQR)
+     │
+  ┌──┴──┐  ← ขอบบนกล่อง = Q3 (75%)
+  │─────│  ← เส้นกลาง = median (50%)
+  └──┬──┘  ← ขอบล่างกล่อง = Q1 (25%)
+     │
+     ┴     ← หนวดล่าง
+     °  °  ← จุดที่พ้นหนวด = outlier</div>
+<div class="ad-steps">
+<ol>
+<li><strong>กล่อง</strong> = ช่วงที่ข้อมูล <strong>50% กลาง</strong> อยู่ · ความสูงของกล่องคือ <code>IQR</code> = Q3 − Q1 · BTC IQR 0.0255 vs ETH 0.0321 → <strong>ETH เหวี่ยงกว่าในวันธรรมดา ~26%</strong></li>
+<li><strong>เส้นกลาง</strong> = median ไม่ใช่ mean — <strong>outlier ดึงไม่ได้</strong> จึงบอก "วันปกติ" ได้ตรงกว่าค่าเฉลี่ย</li>
+<li><strong>หนวด</strong> ยาวถึง 1.5×IQR จากขอบกล่อง (เกณฑ์มาตรฐาน ไม่ใช่กฎธรรมชาติ)</li>
+<li><strong>จุดที่พ้นหนวด</strong> = สิ่งที่ box plot เรียกว่า outlier — BTC มี 44 วัน (5.9%) · ⚠️ ในโลกการเงิน<strong>อย่าเรียกมันว่า "ข้อมูลผิดพลาด"</strong> เพราะวันเหล่านั้นคือวันที่กำไรและขาดทุนจริงเกิดขึ้น</li>
+</ol>
+<p>เทียบสองภาพซ้าย-ขวา: box plot บอก <em>"ตรงกลางอยู่ไหน กว้างแค่ไหน"</em> ได้เร็วและเทียบหลายตัวได้ · histogram บอก <em>"รูปร่างเป็นอย่างไร มีสองยอดไหม เบ้ทางไหน"</em> ซึ่ง box plot มองไม่เห็น — <strong>ใช้คู่กัน ไม่ใช่เลือกอย่างเดียว</strong></p>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] histogram หลอกตาได้ และเครื่องมือที่แม่นกว่าสำหรับดูหาง</div>
+<p><strong>จำนวน bins เปลี่ยนข้อสรุปได้</strong> — ข้อมูลชุดเดิมเป๊ะ ๆ ถ้าใช้ <code>bins=10</code> จะดูเป็นระฆังสวย ๆ แต่ <code>bins=200</code> จะดูขาดวิ่นเป็นหนาม · ไม่มีค่าที่ "ถูก" · ลองสองสามค่าเสมอก่อนสรุปอะไรจากรูปร่าง (หรือใช้ <code>bins="fd"</code> ให้ matplotlib เลือกด้วยกฎ Freedman-Diaconis)</p>
+<div class="fm"><span class="c"># ดูผลของ bins ต่อข้อสรุป — ข้อมูลชุดเดียวกันทั้งสามภาพ</span>
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.2))
+for ax, b in zip(axes, [10, 60, 200]):
+    ax.hist(btc_ret, bins=b, density=True, color="#0d9488", alpha=0.6)
+    ax.set_title(f"bins={b}")
+    ax.set_xlim(-0.15, 0.15)
+plt.tight_layout(); plt.show()</div>
+<p><strong>สำหรับดูหางโดยเฉพาะ histogram เป็นเครื่องมือที่แย่</strong> เพราะหางมีข้อมูลน้อย แท่งจึงเตี้ยจนมองไม่ออกว่าต่างจาก Normal แค่ไหน · เครื่องมือที่ตรงงานคือ <strong>QQ-plot</strong> ซึ่งเอา quantile ของข้อมูลจริงไปพล็อตกับ quantile ของ Normal — ถ้าตรงกันจะได้เส้นตรง 45° ส่วนที่<em>โก่งขึ้นปลายทั้งสองข้าง</em> คือหางที่หนากว่า Normal:</p>
+<div class="fm">fig, ax = plt.subplots(figsize=(5.5, 5))
+stats.probplot(btc_ret, dist="norm", plot=ax)
+ax.set_title("QQ-plot: bends at both ends = fat tail")
+ax.grid(True, alpha=0.3)
+plt.tight_layout(); plt.show()</div>
+<p>📖 <strong>โยงไปข้างหน้า:</strong> ตัวเลข excess kurtosis +10.89 ที่เห็นในหัวข้อนี้จะกลับมาเป็นตัวละครหลักใน <strong>บทที่ 11</strong> ตอนคำนวณ VaR — ที่นั่นเราจะเห็นว่าใช้ Normal คำนวณ VaR ทำให้<strong>ประเมินความเสี่ยงต่ำไปประมาณ 1.4 เท่า</strong> และทำไมต้องเปลี่ยนไปใช้ Student-t</p>
+</div>
+
+<h3 id="s10-6">10.6 plotly — Interactive Charts (แนะนำ)</h3>
 
 <div class="fm"><span class="c"># pip install plotly</span>
 import plotly.graph_objects as go
