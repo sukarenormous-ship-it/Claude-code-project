@@ -95,9 +95,9 @@
 
 | หัวข้อ | สถานะ | ความสำคัญ |
 |---|---|---|
-| `venv` / virtualenv / `requirements.txt` | ❌ ไม่มี — Part I สอนแค่ `pip install ...` ลอย ๆ | 🔴 มือใหม่พังตั้งแต่ setup |
+| `venv` / virtualenv / `requirements.txt` | ✅ **เพิ่มแล้ว** — บทที่ 6.1 ขยายเป็น 5 ขั้น + กล่อง ❌ อาการที่เกิดถ้าข้าม + ชั้นมือโปร (`.gitignore`, VS Code interpreter, `sys.prefix`) | — |
 | `pytest` + โครงไฟล์ test | 🟡 มีเมล็ด — Part V ใช้ `assert` (7 จุด) แต่ไม่มีบทสอน framework/โครงโปรเจกต์ | 🔴 เล่มสอน "audit AI code" แต่ไม่สอนวิธี test เป็นระบบ |
-| context manager (`with`) | 🟡 มีแต่ `async with` ใน Part VI (15 จุด) — ไม่เคยสอน `with` ปกติมาก่อน | 🟠 Part VI ใช้ก่อนสอน |
+| context manager (`with`) | ✅ **เพิ่มแล้ว** — หัวข้อใหม่ 8.5 วางไว้ก่อนบทที่ 9 ที่เริ่มอ่านไฟล์ และโยงล่วงหน้าไป `async with` ของ Part VI | — |
 | decorator | 🟡 พบ 1 ครั้ง | 🟠 จำเป็นตอนอ่าน lib จริง |
 | generator / `yield` | 🟡 พบ 1 ครั้ง | 🟡 |
 | `logging` | ✅ มี 26 จุด (Part VI) | — |

@@ -110,13 +110,62 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 <h3 id="s6-1">6.1 ติดตั้ง Environment</h3>
 
 <div class="bx bb">
-<div class="bt">ขั้นตอน 4 ขั้น (ทำครั้งเดียว)</div>
+<div class="bt">ขั้นตอน 5 ขั้น (ทำครั้งเดียวต่อโปรเจกต์)</div>
 <ol>
 <li><strong>Python 3.10+</strong> — ดาวน์โหลดจาก <code>python.org</code> เลือก "Add to PATH" ตอนติดตั้ง</li>
 <li><strong>VS Code</strong> — ดาวน์โหลดจาก <code>code.visualstudio.com</code> → ติดตั้ง Extension "Python" ของ Microsoft</li>
-<li><strong>Terminal</strong> — เปิด Terminal ใน VS Code (Ctrl+`) แล้วรัน: <code>pip install numpy pandas matplotlib</code></li>
+<li><strong>สร้างโฟลเดอร์โปรเจกต์ + virtual environment</strong> — สำคัญมาก อธิบายด้านล่าง</li>
+<li><strong>ติดตั้งไลบรารี</strong> ลงใน environment นั้น</li>
 <li><strong>ทดสอบ</strong> — สร้างไฟล์ <code>test.py</code> พิมพ์ <code>print("Hello Quant")</code> แล้วรัน (F5 หรือ <code>python test.py</code>)</li>
 </ol>
+</div>
+
+<h4 style="font-size:1.1em;font-weight:700;margin-top:1.2em">ขั้นที่ 3–4: virtual environment — ขั้นที่คนข้ามแล้วเสียเวลาทีหลังมากที่สุด</h4>
+
+<p>คำสั่ง <code>pip install pandas</code> เฉย ๆ จะติดตั้งลง <strong>Python กลางของเครื่อง</strong> ซึ่งใช้ร่วมกันทุกโปรเจกต์ · ตอนมีโปรเจกต์เดียวก็ดูไม่มีปัญหา แต่พอมีโปรเจกต์ที่สองที่ต้องการ pandas คนละเวอร์ชัน คุณจะติดกับดักที่แก้ยากมาก</p>
+
+<div class="fm"><span class="c"># ── macOS / Linux ──</span>
+mkdir quant-project &amp;&amp; cd quant-project
+python3 -m venv .venv              <span class="c"># สร้างกล่องแยกชื่อ .venv</span>
+source .venv/bin/activate          <span class="c"># เข้าไปอยู่ในกล่อง</span>
+
+<span class="c"># ── Windows (PowerShell) ──</span>
+mkdir quant-project; cd quant-project
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+<span class="c"># หลัง activate: หน้า prompt จะมี (.venv) นำหน้า</span>
+(.venv) $ pip install numpy pandas matplotlib scipy statsmodels
+
+<span class="c"># จดรายการไลบรารีลงไฟล์ เพื่อให้เครื่องอื่น (หรือตัวเราในอนาคต) ทำตามได้</span>
+(.venv) $ pip freeze &gt; requirements.txt
+
+<span class="c"># เครื่องใหม่ / เพื่อนร่วมทีม ใช้แค่บรรทัดเดียว</span>
+(.venv) $ pip install -r requirements.txt
+
+<span class="c"># ออกจากกล่องเมื่อเลิกทำงาน</span>
+(.venv) $ deactivate</div>
+
+<div class="read-aloud">อ่าน <code>python3 -m venv .venv</code> ว่า: "ใช้ Python สร้าง<strong>กล่องเปล่า</strong>ชื่อ <code>.venv</code> ไว้ในโฟลเดอร์นี้" — กล่องนี้มี Python กับที่เก็บไลบรารีเป็นของตัวเอง แยกขาดจากเครื่อง · <code>activate</code> คือ "เดินเข้าไปอยู่ในกล่อง" ตั้งแต่นั้น <code>pip install</code> ทุกครั้งจะลงในกล่องนี้เท่านั้น ไม่ไปยุ่งกับโปรเจกต์อื่น</div>
+
+<div class="bx bk">
+<div class="bt">❌ อาการที่เกิดถ้าข้ามขั้นนี้ — และทำไมมันเจ็บ</div>
+<ul>
+<li><strong>โปรเจกต์เก่าพังเพราะติดตั้งของใหม่</strong> — โปรเจกต์ A ใช้ <code>pandas 1.5</code> ได้ดี วันหนึ่งคุณ <code>pip install</code> ไลบรารีใหม่ให้โปรเจกต์ B แล้วมันอัปเกรด pandas เป็น 3.0 → <strong>โค้ดโปรเจกต์ A พังทันทีโดยที่คุณไม่ได้แตะมันเลย</strong></li>
+<li><strong>"เครื่องผมรันได้ แต่เครื่องคุณไม่ได้"</strong> — ไม่มีรายการว่าต้องใช้อะไรบ้าง เวอร์ชันไหน</li>
+<li><strong>ลบของไม่ได้</strong> — เมื่อทุกอย่างกองรวมกัน คุณจะไม่กล้าถอนอะไรเลยเพราะไม่รู้ว่าใครใช้อยู่</li>
+</ul>
+<p>🧭 <strong>กฎ:</strong> <em>หนึ่งโปรเจกต์ = หนึ่ง <code>.venv</code></em> · ถ้าเห็น prompt ไม่มี <code>(.venv)</code> นำหน้า แปลว่าคุณกำลังติดตั้งลงเครื่องกลางอยู่ — <strong>ให้หยุดแล้ว activate ก่อน</strong></p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] เกร็ดที่ทำให้เจ็บน้อยลงอีก</div>
+<ul>
+<li><strong><code>pip freeze</code> จดทุกอย่างรวมของที่ติดมาเอง</strong> — ได้ไฟล์ยาวเหยียดที่อ่านไม่รู้เรื่อง · ทีมส่วนใหญ่จึงเขียน <code>requirements.txt</code> เองเฉพาะที่ใช้ตรง ๆ แล้วปล่อยให้ pip จัดการ dependency ที่เหลือ (หรือย้ายไปใช้ <code>uv</code> / <code>poetry</code> ที่แยก "ที่ฉันขอ" กับ "ที่ตามมา" ให้อัตโนมัติ)</li>
+<li><strong>อย่า commit โฟลเดอร์ <code>.venv</code> ขึ้น git</strong> — มันใหญ่หลายร้อย MB และผูกกับ OS ของคุณ · ใส่ <code>.venv/</code> ใน <code>.gitignore</code> · สิ่งที่ commit คือ <code>requirements.txt</code> เท่านั้น</li>
+<li><strong>VS Code ต้องรู้ว่าใช้ตัวไหน</strong> — กด <code>Ctrl+Shift+P</code> → "Python: Select Interpreter" → เลือกตัวที่อยู่ใน <code>.venv</code> · ถ้าลืมขั้นนี้ คุณจะเจออาการงงที่สุด: รันใน terminal ได้ แต่กด F5 แล้ว <code>ModuleNotFoundError</code></li>
+<li><strong>ตรวจว่าอยู่ในกล่องจริงไหม</strong> — <code>python -c "import sys; print(sys.prefix)"</code> ต้องขึ้น path ที่มี <code>.venv</code></li>
+</ul>
 </div>
 
 <div class="running-ex">
@@ -810,6 +859,72 @@ for sym, pos in positions.items():
 ETH: P&L=$400 (6.7%)</div>
 </div>
 </details>
+
+<h3 id="s8-5">8.5 <code>with</code> — เปิดแล้วปิดให้เอง ไม่ต้องจำ</h3>
+
+<p>บทหน้าจะเริ่มอ่านไฟล์จริง · ก่อนไปถึงตรงนั้นมีไวยากรณ์หนึ่งตัวที่ต้องรู้ก่อน เพราะจะเจอไปตลอดทั้งเล่ม — และจะกลับมาในรูป <code>async with</code> ที่ Part VI</p>
+
+<div class="fm"><span class="c"># ❌ แบบที่ลืมง่าย — ต้องปิดเอง</span>
+f = open("trades.csv", "w")
+f.write("symbol,pnl\n")
+f.write("BTC,1250\n")
+f.close()              <span class="c"># ถ้าลืมบรรทัดนี้ ข้อมูลอาจไม่ถูกเขียนลงดิสก์จริง</span>
+
+<span class="c"># ❌ แย่กว่านั้น — ถ้าเกิด error ก่อนถึง close() ไฟล์จะค้างเปิดไว้</span>
+<span class="c"># (คอมเมนต์ไว้เพราะรันแล้วพังจริง — ลองเอา # ออกดูได้)</span>
+<span class="c"># f = open("trades.csv", "w")</span>
+<span class="c"># f.write(str(1 / 0))    # ZeroDivisionError -> ไม่มีใครไปถึง f.close()</span>
+<span class="c"># f.close()</span>
+
+<span class="c"># ✅ แบบที่ควรใช้ — with ปิดให้เสมอ ไม่ว่าจะจบแบบไหน</span>
+with open("trades.csv", "w") as f:
+    f.write("symbol,pnl\n")
+    f.write("BTC,1250\n")
+<span class="c"># พ้นย่อหน้านี้เมื่อไหร่ = ไฟล์ถูกปิดแล้วเรียบร้อย แม้ข้างในจะ error ก็ตาม</span>
+
+with open("trades.csv") as f:
+    print(f.read())</div>
+<div class="output">symbol,pnl
+BTC,1250
+</div>
+
+<div class="read-aloud">อ่าน <code>with open("trades.csv", "w") as f:</code> ว่า: <strong>"ยืมไฟล์นี้มาใช้ เรียกมันว่า <code>f</code> — พอออกจากย่อหน้านี้ให้คืนของอัตโนมัติ"</strong> · จุดสำคัญคือคำว่า <em>อัตโนมัติ</em>: จบปกติก็ปิด, เกิด error กลางทางก็ปิด, <code>return</code> ออกไปกลางคันก็ปิด — <strong>ไม่มีเส้นทางไหนที่ไฟล์จะค้างเปิด</strong></div>
+
+<div class="bx bd">
+<div class="bt">ทำไมเรื่อง "ลืมปิด" ถึงสำคัญกว่าที่คิด</div>
+<ul>
+<li><strong>ไฟล์:</strong> ข้อมูลที่ <code>write()</code> ไปอาจยังค้างใน buffer ไม่ลงดิสก์จริงจนกว่าจะปิด — โปรแกรมจบแล้วไฟล์ว่างเปล่า</li>
+<li><strong>จำนวนไฟล์ที่เปิดพร้อมกันมีเพดาน:</strong> ลูปที่เปิดไฟล์ทีละอันโดยไม่ปิด พอวนหลายพันรอบจะได้ <code>OSError: Too many open files</code></li>
+<li><strong>ของอย่างอื่นก็ใช้ <code>with</code> ได้:</strong> การเชื่อมต่อฐานข้อมูล, network socket, lock — <strong>อะไรก็ตามที่ "เปิดแล้วต้องปิด"</strong> · ใน Part VI เราจะใช้ <code>async with</code> กับการเชื่อมต่อ WebSocket ด้วยเหตุผลเดียวกันเป๊ะ</li>
+</ul>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ในงาน quant จริงคุณจะเห็น <code>with</code> ที่ไหนบ้าง</div>
+<p>ส่วนใหญ่ pandas จัดการไฟล์ให้แล้ว (<code>pd.read_csv("x.csv")</code> เปิดและปิดให้เอง) — ที่ยังต้องเขียน <code>with</code> เองคือ ① การเชื่อมต่อฐานข้อมูล ② การตั้งค่าชั่วคราว ③ การเขียน Excel หลาย sheet (<code>pd.ExcelWriter</code>) · สองข้อแรกลองได้เลย:</p>
+<div class="fm">import sqlite3
+import pandas as pd
+
+<span class="c"># ① เปิด/ปิด connection ฐานข้อมูล — ":memory:" คือ DB ชั่วคราวในแรม</span>
+with sqlite3.connect(":memory:") as conn:
+    pd.DataFrame({"symbol": ["BTC", "ETH"],
+                  "close":  [65000, 3200]}).to_sql("ohlcv", conn, index=False)
+    df = pd.read_sql("SELECT * FROM ohlcv WHERE close &gt; 10000", conn)
+print(df)
+
+<span class="c"># ② ตั้งค่าชั่วคราวแล้วคืนค่าเดิมอัตโนมัติ</span>
+big_df = pd.DataFrame({"x": range(100)})
+print("นอก with :", pd.get_option("display.max_rows"))
+with pd.option_context("display.max_rows", 5):
+    print("ใน  with :", pd.get_option("display.max_rows"))
+print("พ้น with :", pd.get_option("display.max_rows"), "&lt;- คืนค่าเดิมให้เอง")</div>
+<div class="output">  symbol  close
+0    BTC  65000
+นอก with : 60
+ใน  with : 5
+พ้น with : 60 &lt;- คืนค่าเดิมให้เอง</div>
+<p>💡 สร้างของแบบนี้เองก็ได้ด้วย <code>contextlib.contextmanager</code> — ใช้บ่อยตอนทำตัวจับเวลา หรือตอนต้องเปิด/ปิดการเชื่อมต่อ exchange ในโค้ด live · <strong>หลักคิดเดียวกันทั้งหมด: จับคู่ "เปิด" กับ "ปิด" ให้อยู่ในโครงสร้างเดียว แทนที่จะพึ่งความจำของคนเขียน</strong></p>
+</div>
 
 
 <!-- ===================== CHAPTER 9 ===================== -->
