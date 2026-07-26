@@ -463,14 +463,22 @@ def embargo_test(compute_func, prices: pd.Series,
 
     overlap_idx = result_full.index[result_full.index &lt;= embargo_date]
 
-    # เปรียบเทียบ signal ก่อน embargo_date
     col = "vol_zscore"
-    full_slice = result_full.loc[overlap_idx, col].dropna()
-    cut_slice  = result_cut.loc[overlap_idx, col].dropna()
+    full_slice = result_full.loc[overlap_idx, col]
+    cut_slice  = result_cut.reindex(overlap_idx)[col]
 
-    common = full_slice.index.intersection(cut_slice.index)
-    diff = (full_slice[common] - cut_slice[common]).abs().max()
+    <span class="c"># ⚠️ ห้าม .dropna() ก่อนเทียบ! ค่าที่ "หายไปเป็น NaN" เมื่อตัดอนาคตออก</span>
+    <span class="c">#    คือหลักฐานชิ้นสำคัญที่สุด — มันหายเพราะมันต้องพึ่งข้อมูลอนาคต</span>
+    nan_mismatch = int((full_slice.notna() != cut_slice.notna()).sum())
 
+    both = full_slice.notna() &amp; cut_slice.notna()
+    diff = ((full_slice[both] - cut_slice[both]).abs().max()
+            if both.any() else 0.0)
+
+    if nan_mismatch &gt; 0:
+        print(f"FAIL: {nan_mismatch} ค่าหายไปเมื่อตัดอนาคตออก "
+              f"— มี lookahead bias!")
+        return False
     if diff &gt; 1e-10:
         print(f"FAIL: max diff = {diff:.6f} — มี lookahead bias!")
         return False
@@ -492,9 +500,8 @@ print("\n=== ฟังก์ชัน BUGGY ===")
 embargo_test(compute_vol_zscore_BUGGY, prices_test, "2023-09-01")</div>
 <div class="output">=== ฟังก์ชันที่ถูกต้อง ===
 PASS: ไม่พบ lookahead bias (embargo test)
-
 === ฟังก์ชัน BUGGY ===
-FAIL: max diff = 0.384721 — มี lookahead bias!</div>
+FAIL: 31 ค่าหายไปเมื่อตัดอนาคตออก — มี lookahead bias!</div>
 
 <div class="bx bg">
 <div class="bt">Embargo Test เป็น unit test ที่ต้องรันกับทุกฟังก์ชัน signal</div>
@@ -571,7 +578,10 @@ prices  = pd.Series(
     100 * np.exp(np.cumsum(np.random.normal(0.0002, 0.01, n))),
     index=pd.date_range("2023-01-01", periods=n)
 )
-signal  = pd.Series(np.random.choice([-1, 1], n), index=prices.index)
+
+<span class="c"># สำคัญ: signal ต้อง "มาจากราคา" ไม่ใช่สุ่มลอย ๆ ไม่งั้นไม่มีข้อมูลอนาคตให้รั่ว</span>
+<span class="c"># กฎง่ายสุด: วันนี้ราคาขึ้น → long (momentum)</span>
+signal = np.sign(prices.pct_change()).fillna(0)
 
 pnl_w = backtest_wrong(prices, signal)
 pnl_c = backtest_correct(prices, signal)
@@ -581,12 +591,14 @@ annual_ret_correct = pnl_c.mean() * 252
 
 print(f"Wrong  annual return: {annual_ret_wrong:.1%}")
 print(f"Correct annual return: {annual_ret_correct:.1%}")</div>
-<div class="output">Wrong  annual return: 15.8%
-Correct annual return:  0.3%</div>
+<div class="output">Wrong  annual return: 193.2%
+Correct annual return: -14.7%</div>
 
 <div class="bx bk">
-<div class="bt">ทำไม Wrong ให้ผลดีกว่า?</div>
-<p>ใน "wrong" version signal และ return เป็น <em>วันเดียวกัน</em> — ถ้า AI สร้าง random signal แล้วยังได้ return 15.8% แสดงว่า bug ทำให้ระบบ "รู้อนาคต" — backtest นี้ไม่มีความหมายเลย</p>
+<div class="bt">ทำไม Wrong ให้ 193% — และทำไมมันคือศูนย์เปอร์เซ็นต์ในชีวิตจริง</div>
+<p>ลองแทนค่าดู: <code>signal[t] = sign(r[t])</code> แล้ว pnl คือ <code>sign(r[t]) × r[t]</code> ซึ่งเท่ากับ <strong><code>|r[t]|</code> — ค่าสัมบูรณ์ ที่เป็นบวกทุกวันไม่มีข้อยกเว้น</strong> · backtest จึงกลายเป็น "กำไรทุกวัน" แบบอัตโนมัติ ไม่ใช่เพราะกลยุทธ์เก่ง แต่เพราะเราบอกมันว่าวันนี้ราคาจะขึ้นหรือลงก่อนให้มันเลือกข้าง</p>
+<p>เวอร์ชันถูกต้อง <code>sign(r[t-1]) × r[t]</code> = กลยุทธ์ momentum จริง ๆ ซึ่งได้ <strong>−14.7%</strong> · <strong>ช่องว่าง 208 จุดเปอร์เซ็นต์นี้คือ ghost profit ทั้งหมด</strong></p>
+<p>⚠️ <strong>ข้อควรระวังในการทดสอบเอง:</strong> ถ้าใช้ signal <em>สุ่ม</em> ที่ไม่เกี่ยวกับราคาเพื่อทดสอบบั๊กนี้ คุณจะ<strong>ไม่เห็นความต่าง</strong>เลย เพราะไม่มีข้อมูลอนาคตให้รั่วตั้งแต่ต้น — bug นี้เผยตัวเฉพาะเมื่อ signal คำนวณจากข้อมูลชุดเดียวกับที่ใช้วัดผล</p>
 </div>
 
 <h3 id="s28-2">28.2 Red Flag #2 — Using Future Data in Rolling</h3>
@@ -612,7 +624,7 @@ def normalize_rolling(series: pd.Series, window: int = 63) -> pd.Series:
 ts = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0])
 print("Wrong normalize (global mean=3.0):", normalize_wrong(ts).tolist())
 <span class="c"># ณ t=0, result คำนวณโดยใช้ค่า t=0..4 ทั้งหมด — รู้อนาคต!</span></div>
-<div class="output">Wrong normalize (global mean=3.0): [-1.414, -0.707, 0.0, 0.707, 1.414]</div>
+<div class="output">Wrong normalize (global mean=3.0): [-1.2649110640673518, -0.6324555320336759, 0.0, 0.6324555320336759, 1.2649110640673518]</div>
 
 <h3 id="s28-3">28.3 Red Flag #3 — Fitting Scaler บน Full Dataset</h3>
 
@@ -643,8 +655,8 @@ X_test_correct  = scaler_correct.transform(X_test)           # transform test �
 
 print(f"Wrong  - test mean (should ≈ 0): {X_test_wrong.mean():.6f}")
 print(f"Correct- test mean (≠ 0 expected): {X_test_correct.mean():.6f}")</div>
-<div class="output">Wrong  - test mean (should ≈ 0): 0.000000
-Correct- test mean (≠ 0 expected): 0.034821</div>
+<div class="output">Wrong  - test mean (should ≈ 0): 0.018954
+Correct- test mean (≠ 0 expected): 0.031516</div>
 
 <div class="bx br">
 <div class="bt">ทำไม "wrong" mean = 0.000000 แสดงถึง bug?</div>
@@ -699,8 +711,8 @@ print(f"No costs:   Sharpe={r_no_cost['sharpe']:.2f}  "
 print(f"With costs: Sharpe={r_with_cost['sharpe']:.2f}  "
       f"Return={r_with_cost['annual_return']:.1%}  "
       f"Cost={r_with_cost['annual_cost']:.1%}/yr")</div>
-<div class="output">No costs:   Sharpe=0.87  Return= 7.6%
-With costs: Sharpe=0.31  Return= 2.1%  Cost=5.5%/yr</div>
+<div class="output">No costs:   Sharpe=0.31  Return=5.7%
+With costs: Sharpe=-0.47  Return=-9.2%  Cost=14.8%/yr</div>
 
 <h3 id="s28-5">28.5 Red Flag #5 — P-Hacking และ Multiple Testing</h3>
 
@@ -736,16 +748,14 @@ print(f"Best Sharpe on NOISE: {best['sharpe'].iloc[0]:.2f}")
 print(f"\nBonferroni-corrected p-value threshold: {0.05 / len(results):.5f}")
 print("→ ต้องการ t-stat &gt; 4.2 เพื่อให้มีนัยสำคัญจริง")</div>
 <div class="output">Top 3 parameter combinations (pure noise data!):
- window  entry_z  sharpe
-     12      1.0    1.34
-      8      1.5    1.21
-     19      1.0    1.19
-
+ window  entry_z   sharpe
+     11      2.0 1.814608
+     14      2.0 1.680849
+     12      2.0 1.525942
 Total combinations tested: 180
-Best Sharpe on NOISE: 1.34
-
+Best Sharpe on NOISE: 1.81
 Bonferroni-corrected p-value threshold: 0.00028
-→ ต้องการ t-stat > 4.2 เพื่อให้มีนัยสำคัญจริง</div>
+→ ต้องการ t-stat &gt; 4.2 เพื่อให้มีนัยสำคัญจริง</div>
 
 <div class="bx bk">
 <div class="bt">นัยสำคัญของตัวเลข</div>
@@ -910,17 +920,19 @@ x_prices = pd.Series(
     np.log(100 + np.cumsum(np.random.normal(0, 1, n))),
     index=pd.date_range("2023-01-01", periods=n)
 )
+<span class="c"># noise ต้องเล็กกว่าช่วงที่ x แกว่ง (log ของ random walk แกว่งแค่ ~0.13)</span>
+<span class="c"># ไม่งั้น OLS ประมาณ beta เพี้ยนจาก 0.80 อย่างเห็นได้ชัด</span>
 y_prices = 0.8 * x_prices + pd.Series(
-    np.random.normal(0, 0.05, n), index=x_prices.index
+    np.random.normal(0, 0.002, n), index=x_prices.index
 )
 
 result = ols_hedge_ratio(y_prices, x_prices)
 print(f"Beta:      {result['beta']:.4f}  (expect ≈ 0.80)")
 print(f"R²:        {result['r_squared']:.4f}")
 print(f"p-value:   {result['p_value_beta']:.2e}")</div>
-<div class="output">Beta:      0.8021  (expect ≈ 0.80)
-R²:        0.9978
-p-value:   2.31e-258</div>
+<div class="output">Beta:      0.8048  (expect ≈ 0.80)
+R²:        0.9968
+p-value:   1.58e-248</div>
 
 <h3 id="s29-2">29.2 Prompt Template สำหรับ ADF Test</h3>
 
@@ -990,9 +1002,9 @@ print(f"ADF stat:     {coint_result['adf_stat']:.4f}")
 print(f"p-value:      {coint_result['p_value']:.4f}")
 print(f"Critical (5%): {coint_result['critical_values']['5%']:.4f}")</div>
 <div class="output">Cointegrated: True
-ADF stat:     -14.2831
+ADF stat:     -14.8787
 p-value:      0.0000
-Critical (5%): -2.8738</div>
+Critical (5%): -2.8762</div>
 
 <h3 id="s29-3">29.3 Prompt Template สำหรับ Rolling Z-Score (pandas)</h3>
 
@@ -1055,12 +1067,13 @@ print(z.round(3))</div>
 2024-01-02      NaN
 2024-01-03      NaN
 2024-01-04      NaN
-2024-01-05   -0.632
-2024-01-06    0.158
-2024-01-07    1.428
-2024-01-08   -0.378
-2024-01-09   -1.428
-2024-01-10    0.158</div>
+2024-01-05   -0.671
+2024-01-06    0.239
+2024-01-07    1.381
+2024-01-08   -0.920
+2024-01-09   -1.055
+2024-01-10    0.135
+Freq: D, dtype: float64</div>
 
 <h3 id="s29-4">29.4 Prompt Template สำหรับ scipy.optimize</h3>
 
@@ -1172,10 +1185,10 @@ for asset, w in weights.items():
     print(f"  {asset}: {w:.1%}")
 print(f"Expected Sharpe: {sharpe:.2f}")</div>
 <div class="output">Optimal weights:
-  BTC: 31.2%
-  ETH: 46.8%
-  SOL: 22.0%
-Expected Sharpe: 1.84</div>
+  BTC: 0.0%
+  ETH: 0.0%
+  SOL: 100.0%
+Expected Sharpe: 1.01</div>
 
 <details>
 <summary>แบบฝึกหัด: เขียน prompt สำหรับ linear programming หา minimum variance portfolio พร้อม sector constraints</summary>
@@ -1367,14 +1380,13 @@ print("PASS" if diff_at_200 &lt; 1e-10 else "FAIL: lookahead bias detected!")</d
 <div class="output">=== Round 1 Audit ===
 1. NaN ใน vol_zscore (ช่วงต้น): 83 rows
 2. Signal distribution:
-HOLD    392
-LONG     81
-EXIT     27
-dtype: int64
-3. Position 0/1 only: {0, 1}
-4. First non-NaN equity row: 2022-01-01
-5. Final equity: 107.34
-
+HOLD    322
+EXIT    111
+LONG     67
+Name: count, dtype: int64
+3. Position 0/1 only: {np.int64(0), np.int64(1)}
+4. First non-NaN equity row: 2022-01-01 00:00:00
+5. Final equity: 84.03
 === Embargo Test ===
 Vol zscore diff at day 200 (full vs cut): 0.00000000
 PASS</div>
@@ -1508,13 +1520,13 @@ for k, v in metrics.items():
     else:
         print(f"  {k:20s}: {v}")</div>
 <div class="output">=== Round 2 Metrics ===
-  sharpe              : 0.742
-  annual_return       : 8.4%
-  max_drawdown        : -11.3%
-  win_rate            : 58.3%
-  profit_factor       : 1.342
-  n_trades            : 12
-  avg_holding_days    : 6.8</div>
+  sharpe              : -1.681
+  annual_return       : -8.4%
+  max_drawdown        : -23.4%
+  win_rate            : 16.7%
+  profit_factor       : 0.150
+  n_trades            : 6
+  avg_holding_days    : 19.800</div>
 
 <h3 id="s30-5">30.5 Round 3 — Walk-Forward Validation</h3>
 
@@ -1651,17 +1663,18 @@ print(f"Std  test Sharpe:  {wf_results['sharpe_test'].std():.3f}")
 print(f"% folds &gt; 0:       "
       f"{(wf_results['sharpe_test'] &gt; 0).mean():.0%}")</div>
 <div class="output">=== Walk-Forward Results ===
- fold  train_start   test_start  sharpe_train  sharpe_test  n_trades_test
-    0   2021-01-01   2021-12-31         0.812        0.621              3
-    1   2021-04-05   2022-03-31         0.751        0.489              2
-    2   2021-07-05   2022-07-01         0.834        0.712              4
-    3   2021-10-01   2022-09-27         0.698        0.531              3
-    4   2022-01-03   2022-12-23         0.779        0.438              2
-    5   2022-04-06   2023-03-24         0.821        0.603              3
-
-Mean test Sharpe:  0.566
-Std  test Sharpe:  0.092
-% folds > 0:       100%</div>
+ fold train_start test_start  sharpe_train  sharpe_test  n_trades_test
+    0  2021-01-01 2021-09-10        -1.330          NaN              0
+    1  2021-03-05 2021-11-12         0.496          NaN              0
+    2  2021-05-07 2022-01-14         0.496          NaN              0
+    3  2021-07-09 2022-03-18        -0.589          NaN              0
+    4  2021-09-10 2022-05-20        -1.488          NaN              0
+    5  2021-11-12 2022-07-22        -2.759          NaN              0
+    6  2022-01-14 2022-09-23         0.367          NaN              0
+    7  2022-03-18 2022-11-25         0.877          NaN              0
+Mean test Sharpe:  nan
+Std  test Sharpe:  nan
+% folds &gt; 0:       0%</div>
 
 <div class="bx bg">
 <div class="bt">การตีความผล Walk-Forward</div>
@@ -1771,15 +1784,14 @@ for k, v in result["metrics"].items():
 <span class="c"># Live signal ปัจจุบัน</span>
 print(f"\nCurrent signal: {strategy.live_signal(prices_wf)}")</div>
 <div class="output">=== Final Strategy Metrics (In-Sample) ===
-  sharpe                : 0.821
-  annual_return         : 9.2%
-  max_drawdown          : -10.7%
-  win_rate              : 62.5%
-  profit_factor         : 1.521
-  n_trades              : 31
-  avg_holding_days      : 7.3
-
-Current signal: HOLD</div>
+  sharpe                : -0.947
+  annual_return         : -3.6%
+  max_drawdown          : -15.4%
+  win_rate              : 40.0%
+  profit_factor         : 0.275
+  n_trades              : 10
+  avg_holding_days      : 17.100
+Current signal: LONG</div>
 
 <div class="bx bg" style="margin-top:24px">
 <div class="bt">สรุป 3 รอบ iterate — อะไรเปลี่ยนในแต่ละรอบ</div>

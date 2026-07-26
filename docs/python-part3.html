@@ -267,8 +267,8 @@ rets = np.random.normal(0.0005, 0.012, 252)
 m = TradingMetrics(rets, "BTC Pair")
 print(m)
 print(f"Annual Vol: {m.annual_vol:.1%}")</div>
-<div class="output">TradingMetrics(BTC Pair: Sharpe=0.66, Return=12.6%, DD=-12.8%)
-Annual Vol: 19.1%</div>
+<div class="output">TradingMetrics(BTC Pair: Sharpe=0.62, Return=11.5%, DD=-16.4%)
+Annual Vol: 18.4%</div>
 
 <h3 id="s18-4">18.4 @property — Attribute ที่คำนวณแบบ Lazy</h3>
 
@@ -491,6 +491,10 @@ class Strategy(ABC):
         total = sum(pnls) if pnls else 0
         print(f"{self.name}: {len(pnls)} trades, PnL={total:+,.0f}")
 
+    def __repr__(self):  <span class="c"># concrete เหมือนกัน — ลูกทุกตัวได้ไปใช้ฟรี</span>
+        return (f"{type(self).__name__}"
+                f"({self.name}, capital={self.capital:,.0f})")
+
 <span class="c"># ถ้าลืม implement abstractmethod จะ error ทันที</span>
 class BadStrategy(Strategy):
     pass  <span class="c"># ไม่ implement fit, signal, position_size</span>
@@ -498,6 +502,8 @@ class BadStrategy(Strategy):
 <span class="c"># s = BadStrategy("test")  ← TypeError: Can't instantiate abstract class</span></div>
 
 <p><strong>concrete method</strong> คือเมธอดที่ไม่มี <code>@abstractmethod</code> — class แม่เขียน implementation ไว้ครบแล้ว class ลูกใช้ได้เลยโดยไม่ต้องเขียนซ้ำ (ตรงข้ามกับ abstract method ที่ลูกต้องเขียนเอง)</p>
+
+<div class="read-aloud">ดู <code>__repr__</code> ในคลาสแม่ให้ดี — มันใช้ <code>type(self).__name__</code> ไม่ใช่เขียน <code>"Strategy"</code> ตรง ๆ · <code>self</code> ตอนรันคือ<strong>ลูก</strong> ไม่ใช่แม่ ดังนั้น <code>PairStrategy</code> จะพิมพ์ว่า <code>PairStrategy(...)</code> และ <code>MomentumStrategy</code> จะพิมพ์ว่า <code>MomentumStrategy(...)</code> <strong>โดยที่เขียนโค้ดแค่ครั้งเดียวในแม่</strong> — นี่คือประโยชน์ของ inheritance ที่เห็นชัดที่สุดในไฟล์นี้</div>
 
 <div class="ai-decode">
 <div class="ad-title">🤖 ฝึกอ่าน: <code>@abstractmethod</code> และ <code>ABC</code></div>

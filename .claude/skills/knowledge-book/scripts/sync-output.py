@@ -62,6 +62,11 @@ for m in PAIR.finditer(text):
 out_parts.append(text[pos:])
 new_text = "".join(out_parts)
 
+# เขียนไฟล์ก่อนพิมพ์รายงาน — ถ้าพิมพ์ก่อน แล้ว output ถูก pipe เข้า head
+# สคริปต์จะตายด้วย BrokenPipeError ก่อนถึงบรรทัดเขียนไฟล์
+if apply_ and changed:
+    path.write_text(new_text, encoding="utf-8")
+
 print(f"── {path.name} ──")
 print(f"อัปเดต {len(changed)} บล็อก · ข้าม {len(skipped)}")
 for line, reason in skipped:
@@ -72,7 +77,6 @@ for line, doc, act in changed:
     print("    ใหม่: " + act.splitlines()[0][:90])
 
 if apply_ and changed:
-    path.write_text(new_text, encoding="utf-8")
     print("\n✓ เขียนไฟล์แล้ว")
 elif changed:
     print("\n(dry-run — ใส่ --apply เพื่อเขียนจริง)")
