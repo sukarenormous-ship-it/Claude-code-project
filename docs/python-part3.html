@@ -270,6 +270,49 @@ print(f"Annual Vol: {m.annual_vol:.1%}")</div>
 <div class="output">TradingMetrics(BTC Pair: Sharpe=0.62, Return=11.5%, DD=-16.4%)
 Annual Vol: 18.4%</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 3 เครื่องหมาย <code>@</code> ที่โผล่พร้อมกัน — ต่างกันที่ "ใครถูกส่งเข้าไปเป็นตัวแรก"</div>
+<div class="ad-code">@property                          # ① ได้ self
+def sharpe(self): ...
+
+@classmethod                       # ② ได้ cls (ตัวคลาสเอง)
+def from_prices(cls, prices): ...
+
+@staticmethod                      # ③ ไม่ได้อะไรเลย
+def annualize(daily_val): ...</div>
+<div class="ad-steps">
+<p>ทั้งสามตัวคือ <strong>decorator</strong> — ป้ายที่แปะบนฟังก์ชันเพื่อเปลี่ยนวิธีเรียกใช้ · จำง่ายที่สุดโดยดูว่า <strong>parameter ตัวแรก</strong> คืออะไร:</p>
+<ol>
+<li><code>@property</code> + <code>self</code> — "อ่านได้เหมือน<strong>ข้อมูล</strong> แต่จริง ๆ <strong>คำนวณสด</strong>" · เรียก <code>m.sharpe</code> <strong>ไม่ใส่วงเล็บ</strong> · ใช้เมื่อค่านั้น "เป็นคุณสมบัติของชิ้นงานนี้" เช่น Sharpe ของพอร์ตนี้</li>
+<li><code>@classmethod</code> + <code>cls</code> — "ผลิต<strong>ชิ้นงานใหม่</strong>ด้วยวิธีอื่น" · <code>cls</code> คือตัวคลาส จึงเขียน <code>return cls(...)</code> เพื่อสร้าง object ได้ · ที่นี่ <code>from_prices()</code> รับ<em>ราคา</em>แล้วแปลงเป็น<em>return</em> ให้ก่อน — เรียกว่า <strong>alternative constructor</strong>: <code>TradingMetrics.from_prices(p)</code> ใช้ได้โดย<strong>ไม่ต้องมี object ก่อน</strong></li>
+<li><code>@staticmethod</code> — "ฟังก์ชันช่วยที่<strong>บังเอิญเก็บไว้ในคลาสนี้</strong>" · ไม่แตะ <code>self</code> ไม่แตะ <code>cls</code> เลย · <code>annualize()</code> แปลงค่ารายวันเป็นรายปี — ใครส่งเลขอะไรมาก็คำนวณให้ ไม่เกี่ยวกับพอร์ตไหน · เก็บไว้ในคลาสเพราะ<em>อยู่เป็นหมวดเดียวกัน</em> เท่านั้น</li>
+</ol>
+<p>เทียบให้เห็นภาพ: <em><code>@property</code> = "คุณสมบัติของชิ้นงานนี้" · <code>@classmethod</code> = "โรงงานผลิตชิ้นงาน" · <code>@staticmethod</code> = "เครื่องมือที่วางไว้ในลิ้นชักเดียวกัน"</em></p>
+</div>
+</div>
+
+<div class="read-aloud">อีกจุดที่ต้องสังเกตใน <code>sharpe</code>: <code>if "sharpe" not in self._cache:</code> — คำนวณ<strong>ครั้งแรกครั้งเดียว</strong> แล้วเก็บคำตอบไว้ เรียกซ้ำก็หยิบของเก่ามาให้ · เรียกว่า <strong>caching</strong> ช่วยเมื่อการคำนวณหนักและถูกเรียกหลายรอบ · ⚠️ แต่มันมีราคา — ดูกล่องถัดไป</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ cache กับ <code>@property</code> = คู่ที่ขัดกันเอง ถ้าข้อมูลเปลี่ยนได้</div>
+<p>คอมเมนต์ใต้โค้ดบอกว่า <em>"ถ้า returns เปลี่ยน → ผลลัพธ์เปลี่ยนอัตโนมัติ"</em> — จริงสำหรับ <code>annual_vol</code> (ไม่ cache) แต่ <strong>ไม่จริงสำหรับ <code>sharpe</code></strong> เพราะมัน cache ไว้แล้ว</p>
+<div class="fm">m = TradingMetrics(rets)
+print(f"sharpe รอบแรก : {m.sharpe:.4f}")        <span class="c"># คำนวณ แล้วเก็บลง cache</span>
+print(f"vol    รอบแรก : {m.annual_vol:.4f}")
+
+<span class="c"># เปลี่ยนข้อมูลเป็นชุดที่ผันผวนกว่าเดิมมาก</span>
+np.random.seed(7)
+m.returns = np.random.normal(0.002, 0.030, 252)
+
+print(f"sharpe รอบสอง : {m.sharpe:.4f}   &lt;-- ❌ ค่าเดิม! หยิบจาก cache")
+print(f"vol    รอบสอง : {m.annual_vol:.4f}   &lt;-- ✓ ค่าใหม่ เพราะไม่ได้ cache")</div>
+<div class="output">sharpe รอบแรก : 0.6233
+vol    รอบแรก : 0.1839
+sharpe รอบสอง : 0.6233   &lt;-- ❌ ค่าเดิม! หยิบจาก cache
+vol    รอบสอง : 0.4552   &lt;-- ✓ ค่าใหม่ เพราะไม่ได้ cache</div>
+<p>🧭 <strong>กฎ:</strong> cache ได้เมื่อข้อมูลต้นทาง<strong>ไม่เปลี่ยนหลังสร้าง object</strong> (immutable) · ถ้าเปลี่ยนได้ ต้องล้าง cache ตอนเปลี่ยน — วิธีมาตรฐานคือใช้ <code>@property</code> คู่กับ <code>setter</code> ที่สั่ง <code>self._cache.clear()</code> · <strong>บั๊กจากการลืมล้าง cache หายากมากเพราะโค้ดไม่ error แค่ให้คำตอบเก่า</strong></p>
+</div>
+
 <h3 id="s18-4">18.4 @property — Attribute ที่คำนวณแบบ Lazy</h3>
 
 <p><code>@property</code> ทำให้ method เรียกใช้ได้เหมือน attribute — ไม่ต้องใส่วงเล็บ และคำนวณเมื่อถูกเรียกเท่านั้น</p>
@@ -658,26 +701,60 @@ print(strat)</div>
         self.symbol = symbol
         self.fast   = fast
         self.slow   = slow
-        self._ma_fast = None
-        self._ma_slow = None
+        self._fitted = False
 
     def fit(self, data: pd.DataFrame):
-        prices         = data[self.symbol]
-        self._ma_fast  = prices.rolling(self.fast).mean()
-        self._ma_slow  = prices.rolling(self.slow).mean()
+        <span class="c"># กลยุทธ์นี้ไม่มีพารามิเตอร์ให้เรียน — แค่ตรวจว่าข้อมูลใช้ได้</span>
+        if self.symbol not in data.columns:
+            raise KeyError(f"ไม่พบคอลัมน์ {self.symbol}")
+        if len(data) &lt; self.slow:
+            raise ValueError(f"ต้องมีข้อมูลอย่างน้อย {self.slow} แถว")
+        self._fitted = True
         return self
 
     def signal(self, data=None) -> str:
-        if self._ma_fast is None:
+        <span class="c"># คิด MA จาก "ข้อมูลที่ส่งเข้ามา" ทุกครั้ง — แพตเทิร์นเดียวกับ PairStrategy</span>
+        if not self._fitted:
             raise RuntimeError("ต้องเรียก fit() ก่อน signal()")
-        if self._ma_fast.iloc[-1] &gt; self._ma_slow.iloc[-1]:
-            return "LONG"
-        elif self._ma_fast.iloc[-1] &lt; self._ma_slow.iloc[-1]:
-            return "SHORT"
+        if data is None or len(data) &lt; self.slow:
+            return "HOLD"
+
+        prices = data[self.symbol]
+        ma_fast = prices.rolling(self.fast).mean().iloc[-1]
+        ma_slow = prices.rolling(self.slow).mean().iloc[-1]
+
+        if ma_fast &gt; ma_slow:   return "LONG"
+        if ma_fast &lt; ma_slow:   return "SHORT"
         return "HOLD"
 
     def position_size(self, signal: str) -> float:
         return 0.20 if signal != "HOLD" else 0.0</div>
+
+<div class="read-aloud">เทียบกับ <code>PairStrategy</code> จะเห็นว่า <strong>ทั้งสองคลาสแบ่งงานเหมือนกันเป๊ะ</strong> — <code>fit()</code> เรียนจากอดีต (ตัวนี้ไม่มีอะไรให้เรียน จึงแค่ตรวจข้อมูล) · <code>signal(data)</code> คิดจาก<strong>ข้อมูลที่ส่งเข้ามาทุกครั้ง</strong> ไม่ใช่ค่าที่ค้างไว้จาก <code>fit()</code> · นี่คือประโยชน์จริงของ ABC — มันบังคับให้ทุกกลยุทธ์<strong>แบ่งงานเหมือนกัน</strong> ไม่ใช่แค่ "มีชื่อเมธอดเหมือนกัน"</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] กับดักที่ ABC จับไม่ได้ — และเป็นเหตุที่โค้ดนี้เคยพัง</div>
+<p><code>@abstractmethod</code> บังคับได้แค่ว่า <strong>"ต้องมีเมธอดชื่อนี้"</strong> — มันไม่รู้เลยว่าข้างในทำอะไร · ถ้าเขียน <code>signal(self, data=None)</code> แล้ว<strong>ไม่ใช้ <code>data</code></strong> โดยไปอ่านค่าที่ <code>fit()</code> คำนวณค้างไว้ Python จะไม่บ่นแม้แต่คำเดียว แต่ผลคือ <strong>signal ไม่เคยเปลี่ยนตามเวลา</strong> — backtest จะเดินไป 240 วันโดยใช้คำตอบของวันแรกทั้งหมด</p>
+<p>ตรวจหาบั๊กชนิดนี้ได้เร็วที่สุดด้วย <strong>คำถามเดียว</strong>: <em>"ถ้าฉันส่ง <code>data</code> คนละชุดเข้าไป ผลลัพธ์เปลี่ยนไหม?"</em> ถ้าไม่เปลี่ยน แปลว่า argument นั้นเป็นของประดับ</p>
+<div class="fm"><span class="c"># การทดสอบสั้น ๆ ที่จับบั๊กนี้ได้: ป้อนข้อมูลคนละช่วง ผลต้องต่างกัน</span>
+np.random.seed(1)
+prices_up   = pd.Series(100 * np.exp(np.cumsum(
+    np.random.normal(0.004, 0.01, 120))), name="BTC").to_frame()
+prices_down = pd.Series(100 * np.exp(np.cumsum(
+    np.random.normal(-0.004, 0.01, 120))), name="BTC").to_frame()
+
+mom = MomentumStrategy("test", "BTC").fit(prices_up)
+print("ขาขึ้น :", mom.signal(prices_up))
+print("ขาลง   :", mom.signal(prices_down))
+
+assert mom.signal(prices_up) != mom.signal(prices_down), \
+    "signal() ไม่ตอบสนองต่อ data ที่ส่งเข้ามา — น่าจะอ่านค่าที่ค้างจาก fit()"
+print("✓ signal() ใช้ data ที่ส่งเข้ามาจริง")</div>
+<div class="output">ขาขึ้น : LONG
+ขาลง   : SHORT
+✓ signal() ใช้ data ที่ส่งเข้ามาจริง</div>
+<p>💡 ทางออกเชิงออกแบบที่แข็งกว่านี้: ทำให้ <code>signal()</code> เป็น <strong>pure function ของ <code>data</code></strong> — รับข้อมูลเข้า คืนคำตอบออก ไม่แตะ state ที่เปลี่ยนได้ · state ที่จำเป็น (เช่น <code>beta</code>) ให้เป็นค่าที่ <code>fit()</code> ตั้งไว้แล้ว<em>ไม่แก้อีก</em> จนกว่าจะ refit</p>
+</div>
 </div>
 </details>
 

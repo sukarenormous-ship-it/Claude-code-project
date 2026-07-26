@@ -15,7 +15,7 @@ SNIP = HERE / "snippets"
 DOCS = pathlib.Path("/home/user/Claude-code-project/docs")
 TAG = re.compile(r"</?(?:span|br|div|a|strong|em|code|b|i|u|sub|sup)(?:\s[^>]*)?/?>", re.I)
 
-results = {(r["file"], r["line"]): r for r in json.loads((HERE / "run_results.json").read_text())}
+
 
 
 def norm(s: str) -> str:
@@ -28,6 +28,11 @@ def nums(s: str):
 
 
 target = sys.argv[1] if len(sys.argv) > 1 else ""
+
+# อ่านผลรันของ part ที่ระบุ (rr_<part>.json) — ถ้าไม่ระบุ ใช้ run_results.json
+_rf = HERE / (f"rr_{target}.json" if target and (HERE / f"rr_{target}.json").exists()
+              else "run_results.json")
+results = {(r["file"], r["line"]): r for r in json.loads(_rf.read_text())}
 rows = []
 for path in sorted(DOCS.glob("python-part*.html")):
     if target and target not in path.name:
@@ -50,6 +55,8 @@ for path in sorted(DOCS.glob("python-part*.html")):
             rows.append((path.name, line, f"บล็อกพัง ({r['status']})", doc, ""))
             continue
         act = norm(r["stdout"])
+        if "..." in doc or "…" in doc:
+            continue          # หนังสือย่อด้วย ... โดยตั้งใจ (เกณฑ์เดียวกับ sync-output)
         if not act:
             rows.append((path.name, line, "ไม่พิมพ์อะไรเลย", doc, ""))
         elif act != doc:
