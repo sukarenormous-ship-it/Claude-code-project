@@ -78,6 +78,13 @@ details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;marg
 จบ Part นี้ → ระบบ live trading อัตโนมัติที่รับ feed จริง ส่งออเดอร์จริง พร้อม kill switch และ monitoring</div>
 </div>
 
+<div class="bx ba">
+<div class="bt">📡 ตัวเลขใน <code>► OUTPUT</code> ของ Part นี้อ่านอย่างไร</div>
+<p>ต่างจาก Part อื่นตรงที่โค้ดใน Part นี้<strong>คุยกับโลกภายนอก</strong> — ราคาจากตลาด เวลาที่ข้อความมาถึง ความเร็วเน็ต · ผลลัพธ์จึง<strong>ไม่มีทางเหมือนกันสองครั้ง</strong> แม้รันบนเครื่องเดียวกัน</p>
+<p>ดังนั้นตัวเลขราคา · timestamp · จำนวนข้อความที่ได้รับ ในกล่อง OUTPUT ของ Part นี้เป็น <strong>ตัวอย่างรูปแบบ</strong> ให้ดูว่า "หน้าตาผลลัพธ์ควรเป็นแบบไหน" ไม่ใช่ค่าที่คุณต้องได้ตรงกัน · <strong>สิ่งที่ต้องตรงคือโครงสร้าง</strong> — มีฟิลด์ครบไหม ลำดับเหตุการณ์ถูกไหม error ถูกจัดการไหม</p>
+<p>🧭 ถ้าอยากทดสอบโค้ด Part นี้โดยไม่ต่อเน็ตจริง: เขียน mock ที่คืนข้อความรูปแบบเดียวกับ exchange แล้วป้อนเข้าฟังก์ชัน parse — เป็นวิธีเดียวกับที่บทที่ 28 สอนเรื่องแยก "โค้ดดึงข้อมูล" ออกจาก "โค้ดคำนวณ"</p>
+</div>
+
 <div class="bx bd">
 <div class="bt">🧭 อ่าน Part นี้ยังไง</div>
 <p><strong>🟢 เพิ่งเคยเจอ async ครั้งแรก</strong> — อ่านบทที่ 31 ให้ช้าที่สุดในเล่ม โดยเฉพาะกล่อง 🤖 ที่แกะ <code>async def</code> / <code>await</code> / <code>gather</code> · 4 คำนี้คือรากของทั้ง Part ถ้าข้ามไป บทที่ 32–35 จะกลายเป็นการลอกโค้ด · <strong>เจอบล็อกโค้ดยาว ๆ ให้หากล่อง 🧱 "โครงก่อนดูโค้ด" ที่อยู่เหนือมันก่อนเสมอ</strong> แล้วค่อยลงอ่านรายละเอียด</p>
@@ -277,7 +284,8 @@ coro = fetch_ticker("BTCUSDT")      <span class="c"># สร้าง coroutine 
 print(type(coro))                   <span class="c"># &lt;class 'coroutine'&gt; — ยังไม่รัน!</span>
 result = asyncio.run(coro)          <span class="c"># รัน coroutine</span>
 print(result)</div>
-<div class="output">&lt;class 'coroutine'&gt;
+<div class="output">{'symbol': 'BTCUSDT', 'price': 65000.0, 'volume': 1234.5}
+&lt;class 'coroutine'&gt;
 {'symbol': 'BTCUSDT', 'price': 65000.0, 'volume': 1234.5}</div>
 
 <h3 id="s31-3">31.3 Event Loop — หัวใจของ asyncio</h3>
@@ -632,8 +640,11 @@ asyncio.run(main_trading_loop())</div>
 [HB] Heartbeat #1
 [HB] Heartbeat #2
 [HB] Heartbeat #3
+[HB] Heartbeat #4
 [MAIN] Heartbeat task ถูก cancel แล้ว
 [MAIN] จบ</div>
+
+<div class="read-aloud">นับ heartbeat ให้ดี — ได้ <strong>4 ครั้ง</strong> ไม่ใช่ 3 ทั้งที่รันแค่ 3.5 วินาที · เพราะใน <code>heartbeat()</code> คำสั่ง <code>print</code> อยู่<strong>ก่อน</strong> <code>await asyncio.sleep()</code> ครั้งแรกจึงยิงทันทีที่ t=0 แล้วตามด้วย t=1, 2, 3 · ถ้าสลับให้ <code>sleep</code> มาก่อน จะได้ 3 ครั้ง (t=1,2,3) · <strong>ลำดับของ print กับ await เปลี่ยนจำนวนรอบที่ได้จริง</strong> — จุดที่พลาดกันบ่อยตอนนับ interval</div>
 
 <h3 id="s32-5">32.5 asyncio.Semaphore — จำกัดจำนวน Concurrent Requests</h3>
 

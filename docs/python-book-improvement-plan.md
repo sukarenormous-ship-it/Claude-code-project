@@ -286,7 +286,7 @@
 
 | ที่ | อาการ | ทำไมยังไม่แก้ |
 |---|---|---|
-| **part6** | ยังไม่ได้รันทั้ง Part (บล็อก WebSocket/aiohttp ค้างรอ network) | ต้องทำ mock/offline harness ก่อน |
+| **part6** | ✅ **รันได้แล้ว 27/28** — ทำ mock ของ `websockets`/`aiohttp`/`requests` (`scripts/mocks/sitecustomize.py`) + timeout 20 วิ/บล็อก · บล็อกที่ 28 คือ entry point ของระบบ live ที่รอ kill switch จึงรันไม่จบ**โดยตั้งใจ** ไม่ใช่บั๊ก · ⚠️ **ห้าม sync output ของ Part นี้** เพราะขึ้นกับ network/timing — ใส่หมายเหตุในเล่มแล้วว่าตัวเลขเป็นตัวอย่างรูปแบบ ไม่ใช่ค่าที่ต้องได้ตรงกัน |
 
 | **part2:719, part0:329, part1:393/605** | fragment ที่อ้างตัวแปรจากเนื้อความ | ต้องตัดสินใจว่าจะทำให้ทุกบล็อก standalone หรือติดป้าย "ต่อจากบล็อกก่อน" |
 

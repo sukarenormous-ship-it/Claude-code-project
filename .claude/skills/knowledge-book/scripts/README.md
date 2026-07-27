@@ -97,3 +97,25 @@ KaTeX CSS + auto-render แล้วเรียก `katex.renderToString(..., {
 2. ต้องลบ `<wbr>` (จากสคริปต์ตัดคำไทย) **เฉพาะ element ที่มีสูตร** ก่อน
    ไม่งั้นสูตรที่มีภาษาไทยข้างใน เช่น `\text{น้ำหนัก}` จะจับไม่ติด ·
    **อย่าลบทั้งหน้า** เพราะการตัดคำไทยจะหายไปทั้งเล่ม
+
+## mocks/ — รันโค้ด Part VI (async/network) แบบ offline
+Part VI เรียก `websockets` / `aiohttp` / `requests` จึงรันในสภาพแวดล้อมนี้ไม่ได้
+`mocks/sitecustomize.py` ติดตั้ง mock ของทั้งสามตัวเข้า `sys.modules` โดยคืน
+ข้อความรูปแบบเดียวกับ Binance/Bybit จริง แล้ว**ปิด stream หลังส่ง 3 ข้อความ**
+เพื่อไม่ให้ลูป `while True` ค้าง
+
+```bash
+export SNIPPET_DIR=/tmp/book-snippets
+PYTHONPATH=.claude/skills/knowledge-book/scripts/mocks \
+  python3 .claude/skills/knowledge-book/scripts/run-code-blocks.py part6
+```
+
+`run-code-blocks.py` มี timeout 20 วินาทีต่อบล็อก (SIGALRM) กันลูปไม่รู้จบ
+
+⚠️ **บล็อก entry point ที่รันค้างคือพฤติกรรมที่ถูกต้อง** — บล็อกสุดท้ายของ
+Part VI จบด้วย `if __name__ == "__main__": asyncio.run(system.run())` ซึ่งเป็น
+ระบบ live ที่รอ kill switch จึงรันไม่จบโดยตั้งใจ · TimeoutError ตรงนั้นไม่ใช่บั๊ก
+
+⚠️ **อย่า sync output ของ Part VI** — ตัวเลขขึ้นกับ network/timing/mock
+ถ้า sync จะเท่ากับเอาเลขของ mock ไปฝังในหนังสือ แล้วสื่อว่าผู้อ่านต้องได้เท่ากัน
+ใช้ mock เพื่อตรวจว่า **โค้ดรันได้** เท่านั้น ไม่ใช่ตรวจว่าผลตรง

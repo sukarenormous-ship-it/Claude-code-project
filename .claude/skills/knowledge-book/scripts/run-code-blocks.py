@@ -9,6 +9,7 @@ import pathlib
 import re
 import sys
 import traceback
+import signal as _sig
 import warnings
 
 import matplotlib
@@ -47,7 +48,10 @@ for fn in files:
         buf = io.StringIO()
         old = sys.stdout
         rec = dict(file=fn, line=r["line"], stem=r["stem"])
+        def _timeout(sig, frm):
+            raise TimeoutError("บล็อกนี้รันเกิน 20 วินาที (น่าจะเป็นลูปไม่รู้จบ)")
         try:
+            _sig.signal(_sig.SIGALRM, _timeout); _sig.alarm(20)
             with warnings.catch_warnings(record=True) as wlist:
                 warnings.simplefilter("always")
                 sys.stdout = buf
@@ -65,6 +69,7 @@ for fn in files:
             rec["err"] = str(e)[:300]
             rec["tb"] = traceback.format_exc(limit=3)[-600:]
         finally:
+            _sig.alarm(0)
             sys.stdout = old
             rec["stdout"] = buf.getvalue()[:1500]
             plt.close("all")
