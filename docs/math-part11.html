@@ -36,7 +36,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
 <div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
 <p><strong>🟢 มือใหม่:</strong> อ่าน 🚶 + ตาราง + 🎯 · แก่นคือ <strong>"วิธีตรวจสอบที่ผิด แย่กว่าไม่ตรวจเลย"</strong> เพราะมันให้ความมั่นใจปลอม · โดยเฉพาะ <strong>§12.3</strong> ซึ่งเป็นข้อผิดพลาดที่พบบ่อยที่สุดในงานควอนต์ทั้งหมด</p>
-<p><strong>🔵 มีพื้น:</strong> อ่าน 🐍 ให้ครบ · <strong>§12.4</strong> (leakage) กับ <strong>§14.5</strong> (กับดักของ regularization) คือส่วนที่แยกคนทำเป็นออกจากคนทำตาม</p></div>
+<p><strong>🔵 มีพื้น:</strong> อ่าน 🐍 ให้ครบ · <strong>§12.4</strong> (leakage) และ <strong>§12.5</strong> (multiple testing) คือส่วนที่แยกคนทำเป็นออกจากคนทำตาม — โดยเฉพาะ §12.5 ซึ่งทำให้ทุกอย่างก่อนหน้ายังหลอกคุณได้</p></div>
 
 <div class="bx bp"><div class="bt">📖 ต่อจาก เล่ม 2 · A–E — และศัพท์ที่จะเจอ</div>
 <p>ตลอด 5 ตอนที่ผ่านมาเรา<strong>สร้างตัวเลข</strong>ขึ้นมามากมาย — β, Σ, Sharpe, hedge ratio, ขนาดสถานะ · <a href="math-part8.html">C</a> เริ่มถามว่า "เชื่อได้แค่ไหน" และตอบด้วย SE กับช่วงความเชื่อมั่น · <strong>F ถามคำถามเดียวกันแต่ลึกกว่า: "แล้วถ้าไม่อยากพึ่งสูตรเลยล่ะ" และ "จะรู้ได้ยังไงว่าวิธีตรวจสอบของเราเองไม่ได้โกง"</strong></p>
@@ -207,7 +207,8 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>เปลี่ยน <code>KFold(5, shuffle=True, ...)</code> เป็น <code>KFold(5, shuffle=False)</code> แล้วรันใหม่ · <strong>(1)</strong> คิดว่าผลจะเป็นยังไง · <strong>(2)</strong> มันเทียบเท่า <code>TimeSeriesSplit</code> หรือยัง?</p>
 <details><summary>ดูเฉลย</summary>
-<p><strong>(1)</strong> จะดีขึ้นกว่า shuffle=True มาก เพราะแต่ละ fold เป็นช่วงเวลาต่อเนื่องกัน ไม่ได้สลับปนกันแล้ว</p>
+<p><strong>(1) R² จะร่วงลงไปที่ −7.96</strong> (ต่อ fold: −10.5, −7.8, −0.1, −18.5, −2.8) · <strong>ไม่ใช่ "ดีขึ้น" แต่คือ "ซื่อสัตย์ขึ้น"</strong> — และซื่อสัตย์จนแย่กว่า walk-forward (−3.50) เสียอีก</p>
+<p>ทำไมถึงแย่กว่า: fold แรกฝึกด้วยข้อมูลที่อยู่<strong>ไกลไปในอนาคต</strong>ของ random walk ซึ่งเดินไปคนละระดับราคาแล้ว · โมเดลจึงต้องทำนายย้อนกลับมาในช่วงที่ไม่เคยเห็น = extrapolate ออกนอกกรอบ</p>
 <p><strong>(2) แต่ยัง<u>ไม่</u>เทียบเท่า</strong> และนี่คือประเด็น · <code>KFold(shuffle=False)</code> ยังใช้ fold ที่ <strong>อยู่หลัง</strong> fold ทดสอบมาเป็นชุดฝึกอยู่ดี — เช่นตอนทดสอบ fold 2 มันฝึกด้วย fold 3, 4, 5 ซึ่งเป็น<strong>อนาคต</strong></p>
 <p><code>TimeSeriesSplit</code> ต่างตรงที่ <strong>ไม่เคยใช้อนาคตเลยแม้แต่ครั้งเดียว</strong> · ชุดฝึกโตขึ้นเรื่อย ๆ จากซ้ายไปขวาเท่านั้น ตามภาพข้างบน</p>
 <p>💡 บทเรียนที่ลึกกว่านั้น: <strong>"ไม่สลับ" ยังไม่พอ ต้อง "ไม่มองไปข้างหน้า" ด้วย</strong> — สองอย่างนี้ไม่เหมือนกัน และคนมักหยุดที่อย่างแรก</p>
@@ -252,14 +253,99 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 3. ผลที่ได้ <b>ต้อง</b> ออกมาราว ๆ ศูนย์
 
 ถ้ายังได้ผลดีอยู่  →  มี leakage แน่นอน  (โมเดลกำลังลอกจากที่อื่น)</div>
-<p>เหตุผลที่มันได้ผล: <strong>คุณเพิ่งทำลายสัญญาณจริงทิ้งไปหมดแล้ว</strong> · อะไรก็ตามที่โมเดลยังหาเจอ ต้องมาจากช่องทางที่ไม่ควรมี</p>
-<p>ทดสอบนี้ราคาถูกมากและจับ leakage ได้เกือบทุกชนิดในข้อ 1–3 ข้างบน · <strong>ทำก่อนเสมอ ก่อนจะดีใจกับผลลัพธ์</strong></p></div>
+<p>เหตุผลที่มันได้ผล: <strong>คุณเพิ่งทำลายสัญญาณจริงทิ้งไปหมดแล้ว</strong> · อะไรก็ตามที่โมเดลยังหาเจอ ต้องมาจากช่องทางที่ไม่ควรมี</p></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 12</div>
+<div class="bx br"><div class="bt">❌ แต่การทดสอบนี้มีจุดบอดใหญ่ — และมันคือ leakage ตัวเอกของบทนี้เอง</div>
+<p>ผมเอาการทดสอบนี้ไปใช้กับตัวอย่าง §12.3 (เส้นสุ่มสองเส้น + k-fold สลับ) ซึ่งเรารู้แน่ ๆ ว่ามี leakage หนัก · ทดสอบ 100 ชุดข้อมูล:</p>
+<div class="tw"><table>
+<tr><th></th><th class="nw">k-fold บอก</th><th class="nw">ความจริง</th><th>คำตัดสินของการทดสอบ</th></tr>
+<tr><td class="nw">y จริง</td><td class="nw">+0.228</td><td class="nw">−3.50</td><td class="nw">— </td></tr>
+<tr><td class="nw">y ที่สลับแล้ว</td><td class="nw"><strong>−0.018</strong></td><td class="nw">≈ 0</td><td class="nw"><strong>"สะอาด ✓" — จับไม่ได้เลย</strong> ❌</td></tr>
+</table></div>
+<p><strong>เหตุผลเชิงกลไก:</strong> leakage แบบ §12.3 เกิดจาก<strong>โครงสร้างเวลาที่อยู่ใน y เอง</strong> · พอคุณสลับ y คุณก็<strong>ทำลายช่องทางรั่วไปพร้อมกับสัญญาณ</strong> → การทดสอบจึงผ่านเสมอ</p>
+<div class="tw"><table>
+<tr><th>การทดสอบ</th><th>จับได้</th><th>จับไม่ได้</th></tr>
+<tr><td class="nw"><strong>สลับ y</strong></td><td class="nw">leakage <strong>ข้ามแถว</strong> (ข้อ 1 เลือกฟีเจอร์ · ข้อ 2 สเกล)</td><td class="nw"><strong>leakage ข้ามเวลาทุกชนิด</strong> (ข้อ 3 และ §12.3)</td></tr>
+<tr><td class="nw"><strong>ช่องว่าง k-fold ↔ walk-forward</strong></td><td class="nw">leakage <strong>ข้ามเวลา</strong> — และวัดขนาดได้ด้วย</td><td class="nw">leakage ข้ามแถว</td></tr>
+</table></div>
+<p>💎 <strong>ต้องใช้ทั้งสองอย่าง ไม่ใช่อย่างใดอย่างหนึ่ง</strong> · และถ้า k-fold กับ walk-forward ให้คำตอบต่างกันมาก — <strong>ช่องว่างนั้นคือขนาดของ leakage ข้ามเวลาที่คุณมี</strong> (ในตัวอย่าง §12.3 คือ 0.271 − (−3.496) = <strong>3.77</strong>)</p></div>
+
+<h3 id="s12-5">12.5 💎 Multiple Testing — ช่องโหว่ที่ทำให้ทุกอย่างข้างบนยังหลอกคุณได้</h3>
+
+<div class="bx bp"><div class="bt">💎 ถ้าอ่านบทที่ 12 ได้หัวข้อเดียว ให้อ่านหัวข้อนี้</div>
+<p>จนถึงตอนนี้เราสอนวิธี<strong>ตรวจสอบหนึ่งกลยุทธ์</strong>ให้ถูกต้อง · แต่ไม่มีใครตรวจกลยุทธ์เดียว</p>
+<p><strong>ถึงคุณจะใช้ walk-forward ถูกต้อง 100% ไม่มี leakage เลยสักจุด — มันก็ยังหลอกคุณได้เต็ม ๆ ถ้าคุณลองหลายแบบ</strong> · และนี่คือสิ่งที่คุณจะทำจริงในสัปดาห์หน้า</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าให้คน 1 คนทายผลเหรียญ 10 ครั้งแล้วถูกหมด นั่นน่าทึ่ง · แต่ถ้าให้<strong>คน 1,000 คน</strong>ทายแล้วมี 1 คนถูกหมด — <strong>นั่นคือคณิตศาสตร์ ไม่ใช่ความสามารถ</strong></p>
+<p>ตอน tune พารามิเตอร์คุณกำลังเป็นคนจัดการแข่งขันนั้น · lookback 10/20/50/100 (4 แบบ) × threshold 5 ค่า × อินดิเคเตอร์ 4 ตัว × หุ้น 10 ตัว = <strong>2,000 การทดลอง</strong> · คุณไม่ได้เรียกมันว่า "การทดลอง" คุณเรียกมันว่า "การหาพารามิเตอร์ที่เหมาะสม" — <strong>แต่คณิตศาสตร์ไม่สนใจว่าคุณเรียกมันว่าอะไร</strong></p>
+
+<div class="code"><div class="hdr">🐍 Python — ลอง 200 กลยุทธ์ที่ไม่มี edge เลยสักตัว แล้วเก็บตัวที่ดีที่สุด</div><pre><span class="c"># pip install numpy scipy</span>
+import numpy as np
+from scipy.stats import norm
+
+rng = np.random.default_rng(2024)
+T, N_TRY = 756, 200                             <span class="c"># OOS 3 ปี · ลอง 200 แบบ</span>
+
+sr = []
+for _ in range(300):                            <span class="c"># ทำซ้ำ 300 รอบเพื่อดูค่าเฉลี่ย</span>
+    pnl = rng.normal(0, 0.01, (N_TRY, T))       <span class="c"># ★ edge จริง = 0 เป๊ะ ทุกตัว</span>
+    s = pnl.mean(1)/pnl.std(1)*np.sqrt(252)
+    sr.append(s.max())                          <span class="c"># เก็บ "ตัวที่ดีที่สุด" เหมือนที่คุณทำ</span>
+
+sr = np.array(sr)
+print(f"Sharpe ของตัวที่ดีที่สุด: เฉลี่ย {sr.mean():.2f} | ช่วง 5-95% [{np.percentile(sr,5):.2f}, {np.percentile(sr,95):.2f}]")
+<span class="o"># Sharpe ของตัวที่ดีที่สุด: เฉลี่ย 1.60 | ช่วง 5-95% [1.25, 2.01]</span>
+print(f"โอกาสที่มันจะได้ Sharpe &gt; 1.5 = {(sr &gt; 1.5).mean():.1%}")
+<span class="o"># โอกาสที่มันจะได้ Sharpe > 1.5 = 62.3%</span>
+
+<span class="c"># ★ สูตรปิด (Bailey &amp; Lopez de Prado) — ไม่ต้องจำลองก็หาได้</span>
+g = 0.5772                                      <span class="c"># ค่าคงที่ Euler-Mascheroni</span>
+def expected_max(N, years):
+    return np.sqrt(1/years)*((1-g)*norm.ppf(1-1/N) + g*norm.ppf(1-1/(N*np.e)))
+
+print("\nเกณฑ์ขั้นต่ำที่ต้องผ่าน (Sharpe ที่ 'ไม่มี edge' ทำได้เอง):")
+<span class="o"># เกณฑ์ขั้นต่ำที่ต้องผ่าน (Sharpe ที่ 'ไม่มี edge' ทำได้เอง):</span>
+for years in [3, 5, 10]:
+    row = "  ".join(f"{expected_max(N, years):.2f}" for N in [10, 50, 200, 1000])
+    print(f"  OOS {years:2d} ปี | {row}")
+<span class="o">#   OOS  3 ปี | 0.91  1.31  1.60  1.88</span>
+<span class="o">#   OOS  5 ปี | 0.70  1.02  1.24  1.46</span>
+<span class="o">#   OOS 10 ปี | 0.50  0.72  0.87  1.03</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ อ่านตารางนี้ให้ดี — ทุกตัวเลขในนั้นคือ Sharpe ที่ได้จาก edge = ศูนย์</div>
+<div class="tw"><table>
+<tr><th>ข้อมูล OOS</th><th class="nw">ลอง 10 แบบ</th><th class="nw">ลอง 50 แบบ</th><th class="nw">ลอง 200 แบบ</th><th class="nw">ลอง 1,000 แบบ</th></tr>
+<tr><td class="nw"><strong>3 ปี</strong></td><td class="nw">0.91</td><td class="nw">1.31</td><td class="nw"><strong>1.60</strong></td><td class="nw"><strong>1.88</strong></td></tr>
+<tr><td class="nw">5 ปี</td><td class="nw">0.70</td><td class="nw">1.02</td><td class="nw">1.24</td><td class="nw">1.46</td></tr>
+<tr><td class="nw">10 ปี</td><td class="nw">0.50</td><td class="nw">0.72</td><td class="nw">0.87</td><td class="nw">1.03</td></tr>
+</table></div>
+<p><strong>ย้อนกลับไปดู <a href="math-part10.html#s10-1">เล่ม 2 · E §10.1</a> ที่บอกว่า "Sharpe 1.0–2.0 = ดีมาก"</strong> · ถ้าคุณลอง 200 แบบบนข้อมูล 3 ปี <strong>คุณจะได้ 1.60 มาโดยไม่มีฝีมือเลยแม้แต่นิดเดียว</strong> — และมันจะผ่าน walk-forward ของคุณสบาย ๆ เพราะไม่มี leakage จริง ๆ</p>
+<p>สังเกตทิศทางของตาราง: <strong>เพิ่มข้อมูลช่วยได้มากกว่าเพิ่มความระมัดระวัง</strong> · ที่ 10 ปีกับ 200 แบบ เกณฑ์เหลือ 0.87 · แต่ที่ 3 ปีกับ 1,000 แบบ ต้องเกิน 1.88 ถึงจะเริ่มน่าสนใจ</p></div>
+
+<div class="bx ba"><div class="bt">🧮 ทำยังไง — 3 ข้อที่ทำได้จริงคนเดียว</div>
+<ol>
+<li><strong>นับ N ให้ได้ก่อน</strong> · เปิดไฟล์ไว้ไฟล์หนึ่ง แล้วจดทุกครั้งที่รัน backtest <strong>รวมถึงครั้งที่ "แค่ลองดูเฉย ๆ"</strong> · ถ้าจำไม่ได้ว่าลองมากี่แบบ ให้ประมาณจากจำนวนพารามิเตอร์คูณกัน · <strong>ตัวเลขนี้คือ N ในตารางข้างบน</strong></li>
+<li><strong>เทียบกับเกณฑ์ ไม่ใช่เทียบกับศูนย์</strong> · คำถามที่ถูกไม่ใช่ "Sharpe เป็นบวกไหม" แต่คือ <strong>"Sharpe สูงกว่าที่ความบังเอิญทำได้ที่ N ของผมไหม"</strong></li>
+<li><strong>แบ่ง lockbox ตั้งแต่วันแรก</strong> · แยกข้อมูลก้อนสุดท้ายออกไปก่อนเริ่มทำอะไรทั้งสิ้น แล้ว<strong>ห้ามแตะจนกว่าจะเลือกกลยุทธ์เสร็จ</strong> · เปิดได้ 1–2 ครั้งต่อกลยุทธ์หนึ่งตัวเท่านั้น · ถ้าเปิดครั้งที่ 3 แล้วปรับต่อ ชุดนั้นก็กลายเป็นชุดฝึกไปแล้ว</li>
+</ol>
+<p>💎 <strong>ประโยคที่ควรจำ:</strong> <strong>"ถ้าคุณจำไม่ได้ว่าลองมากี่แบบ คุณไม่มีสิทธิ์รายงานตัวเลขนั้น"</strong></p>
+<p>และวิธีที่ซื่อสัตย์ที่สุดสำหรับคนที่ไม่มีทีม — <strong>paper trade ไปข้างหน้า 3–6 เดือน</strong> · นั่นคือชุดทดสอบเดียวที่คุณโกงไม่ได้ เพราะมันยังไม่เกิดตอนที่คุณเลือกกลยุทธ์</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>คุณลอง lookback 4 ค่า × threshold 5 ค่า × หุ้น 10 ตัว บนข้อมูล 5 ปี แล้วตัวที่ดีที่สุดได้ <strong>Sharpe 1.15</strong> · ควรลงเงินไหม?</p>
+<details><summary>ดูเฉลย</summary>
+<p><strong>N = 4 × 5 × 10 = 200 การทดลอง</strong> · เปิดตาราง แถว 5 ปี คอลัมน์ 200 แบบ → เกณฑ์คือ <strong>1.24</strong></p>
+<p><strong>Sharpe 1.15 ของคุณ <u>ต่ำกว่า</u>สิ่งที่ความบังเอิญทำได้</strong> · แปลว่าผลนี้<strong>อธิบายได้หมดด้วยการที่คุณลองเยอะ</strong> โดยไม่ต้องสมมติว่ามี edge อยู่เลย → <strong>ไม่ควรลงเงิน</strong></p>
+<p>⚠️ และระวังกับดักที่ตามมาทันที: <strong>อย่าเพิ่งไปลองเพิ่มอีก 50 แบบเพื่อหาตัวที่ผ่าน 1.24</strong> — นั่นทำให้ N กลายเป็น 250 และเกณฑ์ขยับสูงขึ้นตาม · <strong>คุณวิ่งไล่เส้นที่ขยับหนีคุณเสมอ</strong></p>
+<p>สิ่งที่ควรทำแทนคือ<strong>ลด N</strong>: ตัดสินใจจาก<strong>เหตุผลเชิงเศรษฐกิจ</strong>ว่าทำไม lookback ควรเป็นค่านี้ และทำไมหุ้นกลุ่มนี้ถึงควรมีพฤติกรรมแบบนั้น <strong>ก่อน</strong>รัน backtest · การทดลอง 3 แบบที่มีเหตุผลรองรับ มีค่ามากกว่า 200 แบบที่กราดหา</p>
+</details></div>
+
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 12</div>
 <ul>
 <li><strong>การแบ่งครั้งเดียวคือการโยนเหรียญ</strong> — R² เหวี่ยงได้ 0.23–0.71 บนข้อมูลและโมเดลเดียวกัน · ใช้ CV แล้ว<strong>รายงานส่วนเบี่ยงเบนคู่กับค่าเฉลี่ยเสมอ</strong></li>
 <li><strong>ข้อมูลมีเวลา = ชุดฝึกต้องอยู่ก่อนชุดทดสอบ</strong> — <code>KFold(shuffle=True)</code> ให้ +0.271 กับข้อมูลที่ความจริงคือ −3.496</li>
-<li><strong>สลับ y แล้วรันซ้ำ</strong> — ถ้ายังได้ผลดี แปลว่ามี leakage · ทดสอบที่ถูกที่สุดและจับได้มากที่สุด</li>
+<li><strong>สลับ y แล้วรันซ้ำ</strong> — จับ leakage <u>ข้ามแถว</u>ได้ · แต่<strong>จับ leakage ข้ามเวลาไม่ได้เลย</strong> ต้องดูช่องว่างระหว่าง k-fold กับ walk-forward ควบคู่</li>
+<li><strong>นับว่าลองมากี่แบบ แล้วเทียบกับเกณฑ์</strong> — ลอง 200 แบบบนข้อมูล 3 ปี ได้ Sharpe <strong>1.60 จาก edge = 0</strong> · walk-forward ที่ถูกต้อง 100% ก็ยังหลอกคุณได้ถ้า N ใหญ่</li>
 </ul></div>
 
 <div class="pq">ตอนนี้เราวัดผลได้ซื่อสัตย์แล้ว — เหลือคำถามว่า "ตัวเลขที่วัดได้นั้น มันเหวี่ยงแค่ไหน" โดยไม่ต้องเชื่อสูตรของใครเลย</div>
@@ -275,7 +361,7 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <div class="bx bp"><div class="bt">🎯 Thesis</div>
 <p>"ความไม่แน่นอนเกิดจากการที่เรามีข้อมูลแค่ตัวอย่างเดียวจากความจริง · ถ้าเก็บข้อมูลใหม่ไม่ได้ ก็<strong>สุ่มหยิบซ้ำจากตัวอย่างที่มี</strong> แล้วดูว่าคำตอบเหวี่ยงแค่ไหน — ง่ายจนน่าตกใจ และใช้ได้กับสถิติแทบทุกตัว"</p></div>
 
-<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ใน <a href="math-part8.html#s6-2">§6.2</a> เราได้ช่วงความเชื่อมั่นของ β มาจากสูตร — และสูตรนั้นตั้งอยู่บนสมมติฐานหลายข้อ (residual เป็น Normal · ความแปรปรวนคงที่ · ฯลฯ) ที่ <a href="math-part8.html#s7-5">บทที่ 7</a> เพิ่งพิสูจน์ว่าข้อมูลการเงิน<strong>ละเมิดแทบทุกข้อ</strong></p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ใน <a href="math-part8.html#s6-4">เล่ม 2 · C §6.4</a> เราได้ช่วงความเชื่อมั่นของ β มาจากสูตร — และสูตรนั้นตั้งอยู่บนสมมติฐานหลายข้อ (residual เป็น Normal · ความแปรปรวนคงที่ · ฯลฯ) ที่ <a href="math-part8.html#s7-5">บทที่ 7</a> เพิ่งพิสูจน์ว่าข้อมูลการเงิน<strong>ละเมิดแทบทุกข้อ</strong></p>
 
 <p><strong>bootstrap ตอบคำถามเดียวกันโดยไม่ใช้สูตรเลย</strong> · แนวคิดคือ: ถ้าเราเก็บข้อมูลใหม่ได้ 1,000 ครั้ง เราจะเห็นเลยว่าคำตอบเหวี่ยงแค่ไหน · <strong>เราเก็บใหม่ไม่ได้ — แต่เราสุ่มหยิบจากที่มีอยู่แบบใส่คืนได้</strong></p>
 
@@ -318,8 +404,8 @@ lo, hi = np.percentile(boot, [2.5, 97.5])
 print(f"bootstrap 95% CI = [{lo:.2f}, {hi:.2f}]")
 <span class="o"># bootstrap 95% CI = [0.42, 2.73]</span>
 
-<span class="c"># เทียบกับสูตรจาก เล่ม 2 E §10.1</span>
-se = np.sqrt((1 + obs**2/252/2)/(n/252))
+<span class="c"># เทียบกับสูตรจาก เล่ม 2 E §10.1  ·  SE = sqrt((1 + SR^2/504) / T)</span>
+se = np.sqrt((1 + obs**2/504)/(n/252))          <span class="c"># 504 = 2 x 252</span>
 print(f"สูตรวิเคราะห์  95% CI = [{obs-1.96*se:.2f}, {obs+1.96*se:.2f}]")
 <span class="o"># สูตรวิเคราะห์  95% CI = [0.45, 2.71]</span></pre></div>
 
@@ -354,25 +440,27 @@ print(f"ACF lag1 = {np.corrcoef(r[:-1], r[1:])[0,1]:.3f} | Sharpe = {sharpe(r):.
 B = 8000
 iid = np.array([sharpe(r[rng.integers(0, n, n)]) for _ in range(B)])
 
-def block(x, L):                                 <span class="c"># ★ หยิบทีละก้อน L วัน</span>
+def block(x, L, seed=0):                         <span class="c"># ★ หยิบทีละก้อน L วัน</span>
+    g  = np.random.default_rng(seed)             <span class="c"># ★ seed ของตัวเอง — เรียกกี่ครั้งก็ได้ผลเดิม</span>
     nb = int(np.ceil(len(x)/L))
     return np.array([sharpe(np.concatenate(
-        [x[s:s+L] for s in rng.integers(0, len(x)-L, nb)])[:len(x)]) for _ in range(B)])
+        [x[s:s+L] for s in g.integers(0, len(x)-L+1, nb)])[:len(x)]) for _ in range(B)])
 
 for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
     lo, hi = np.percentile(a, [2.5, 97.5])
     print(f"{name:22s} CI [{lo:+.2f}, {hi:+.2f}]  กว้าง {hi-lo:.2f}")
 <span class="o"># iid bootstrap          CI [+0.06, +2.36]  กว้าง 2.30</span>
-<span class="o"># block bootstrap L=21   CI [-0.08, +2.51]  กว้าง 2.59</span></pre></div>
+<span class="o"># block bootstrap L=21   CI [-0.09, +2.51]  กว้าง 2.60</span></pre></div>
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — และคำตอบที่ซื่อสัตย์กว่าที่คาด</div>
 <p>ผมจำลองกระบวนการเดิมใหม่ <strong>4,000 เส้นทาง</strong> เพื่อหา "ความจริง" มาเทียบ:</p>
 <div class="tw"><table>
 <tr><th>วิธี</th><th class="nw">ช่วง 95%</th><th class="nw">ความกว้าง</th><th>ประเมิน</th></tr>
 <tr><td class="nw">iid bootstrap</td><td class="nw">[+0.06, +2.36]</td><td class="nw">2.30</td><td class="nw"><strong>ต่ำไป 30%</strong> ❌</td></tr>
-<tr><td class="nw">block bootstrap (L=21)</td><td class="nw">[−0.08, +2.51]</td><td class="nw">2.59</td><td class="nw">ต่ำไป 21% ⚠️</td></tr>
+<tr><td class="nw">block bootstrap (L=21)</td><td class="nw">[−0.09, +2.51]</td><td class="nw">2.60</td><td class="nw">ต่ำไป 21% ⚠️</td></tr>
 <tr><td class="nw"><strong>ความจริง</strong> (จำลองใหม่ 4,000 รอบ)</td><td class="nw"><strong>[−1.07, +2.21]</strong></td><td class="nw"><strong>3.28</strong></td><td class="nw">—</td></tr>
 </table></div>
+<p>📌 <strong>ค่า Sharpe จริงของกระบวนการนี้คือ 0.59</strong> ส่วนตัวอย่างชุดนี้บังเอิญวัดได้ 1.206 (ดวงดี — เหมือนกรณี 1.0 → 1.581 ใน §13.2) · <strong>ดังนั้นให้เทียบที่ "ความกว้าง" เป็นหลัก</strong> เพราะช่วงของ bootstrap อยู่รอบ 1.21 ส่วนช่วงความจริงอยู่รอบ 0.59 — คนละจุดศูนย์กลาง</p>
 <p><strong>block bootstrap ดีขึ้นจริง แต่ยังไม่พอ</strong> — และผมจะไม่บอกว่ามันแก้ปัญหาได้ เพราะมันไม่ได้แก้</p>
 <p>สังเกตจุดที่สำคัญที่สุด: <strong>ปลายล่างของช่วงความจริงคือ −1.07 แต่ iid bootstrap บอก +0.06</strong> · แปลว่า iid bootstrap จะทำให้คุณสรุปว่า <em>"Sharpe เป็นบวกแน่นอน"</em> ทั้งที่ความจริง<strong>ติดลบได้สบาย ๆ</strong></p>
 <p>💎 <strong>สิ่งที่ต้องเอากลับไป:</strong> ทุกวิธี resampling <strong>ประเมินความไม่แน่นอนต่ำกว่าความจริงเมื่อข้อมูลมีความจำ</strong> · ถือว่าช่วงที่ได้เป็น<strong>ขอบล่างของความไม่แน่นอน ไม่ใช่ค่าจริง</strong> · และ <strong>ยิ่งข้อมูลมี autocorrelation สูง ยิ่งต้องเผื่อมากขึ้น</strong></p></div>
@@ -380,10 +468,10 @@ for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>เปลี่ยนความยาวก้อนจาก <code>L=21</code> เป็น <code>L=1</code> และ <code>L=63</code> · <strong>(1)</strong> ที่ L=1 จะเกิดอะไร · <strong>(2)</strong> งั้น L ยิ่งยาวยิ่งดีหรือเปล่า?</p>
 <details><summary>ดูเฉลย</summary>
-<p><strong>(1) L=1 คือการหยิบทีละจุด — เกือบเป็น iid bootstrap</strong> · ได้ CI [+0.10, +2.36] เทียบกับ iid [+0.07, +2.36] · <strong>ใกล้มากแต่ไม่เท่ากันเป๊ะ</strong></p>
+<p><strong>(1) L=1 คือการหยิบทีละจุด — เกือบเป็น iid bootstrap</strong> · ได้ CI [+0.05, +2.35] เทียบกับ iid [+0.06, +2.36] · <strong>ใกล้มากแต่ไม่เท่ากันเป๊ะ</strong></p>
 <p>ที่ไม่เท่ากันเป๊ะเป็นเพราะรายละเอียดในโค้ด ซึ่งเป็นบทเรียนในตัวมันเอง: <code>rng.integers(0, len(x)-L, nb)</code> สุ่มจุดเริ่มต้นจากช่วง <code>[0, n−L)</code> · <strong>ที่ L=1 แปลว่าจุดสุดท้ายของข้อมูลไม่มีทางถูกหยิบเลย</strong></p>
 <p>ผลกระทบเล็กมากที่ n=756 แต่ถ้าข้อมูลคุณสั้น (เช่น 50 จุด) การทิ้งจุดสุดท้ายไปเงียบ ๆ เริ่มมีผล · <strong>นี่คือประเภทของบั๊กที่ไม่มีวันทำให้โปรแกรม error แต่ทำให้ตัวเลขเพี้ยนไปเรื่อย ๆ</strong> — อ่านขอบเขตของ index ทุกครั้งที่เขียน resampling เอง</p>
-<p><strong>(2) ไม่ใช่ — มีจุดที่ดีที่สุดอยู่ตรงกลาง</strong> และนี่คือการแลกเปลี่ยนคลาสสิก:</p>
+<p><strong>(2) ไม่ใช่ — มีจุดที่ดีที่สุดอยู่ตรงกลาง</strong> · <strong>L=63 ให้ CI [+0.34, +2.24] กว้างแค่ 1.90</strong> ซึ่ง<u>แคบลง</u>จาก L=21 (2.60) อย่างชัดเจน — แย่ลง ไม่ใช่ดีขึ้น · นี่คือการแลกเปลี่ยนคลาสสิก:
 <ul>
 <li><strong>L สั้นไป</strong> → ทำลายความจำของข้อมูล → ประเมินความไม่แน่นอนต่ำไป</li>
 <li><strong>L ยาวไป</strong> → จำนวนก้อนที่หยิบได้เหลือน้อยมาก (ที่ n=756, L=252 เหลือแค่ 3 ก้อน) → <strong>ตัวอย่างที่สร้างขึ้นแทบเหมือนของเดิมทุกครั้ง</strong> ความหลากหลายหายไป ประเมินผิดอีกทาง</li>
@@ -420,7 +508,7 @@ n    = 250
 mkt  = rng.normal(0, 1, n)
 val  = mkt + rng.normal(0, 0.10, n)      <span class="c"># ★ เกือบเป็นตัวเดียวกับ market</span>
 size = rng.normal(0, 1, n)
-X    = np.column_stack([mkt, val, size])
+X    = np.column_stack([mkt, val, size])     <span class="c"># X ชุดนี้เป็น N(0,1) อยู่แล้วจึงข้าม scaler ได้ — ข้อมูลจริงห้ามข้าม ดู §14.5</span>
 
 beta_true = np.array([0.8, 0.4, 0.3])    <span class="c"># ★ คำตอบจริงที่เรารู้</span>
 y = X @ beta_true + rng.normal(0, 1.0, n)
@@ -567,7 +655,7 @@ y = X @ bt + rng.normal(0, 1.0, n)
 
 print(f"RidgeCV เลือก alpha = {RidgeCV(alphas=np.logspace(-2,3,60)).fit(X,y).alpha_:.2f}")
 <span class="o"># RidgeCV เลือก alpha = 4.24</span>
-lc = LassoCV(cv=5, random_state=0).fit(X, y)
+lc = LassoCV(cv=5).fit(X, y)                     <span class="c"># ข้อมูลชุดนี้ตัดขวางจึงใช้ k-fold ได้ · มีแกนเวลาต้องใช้ TimeSeriesSplit</span>
 print(f"LassoCV เลือก alpha = {lc.alpha_:.4f} -> coef {np.round(lc.coef_,3)}")
 <span class="o"># LassoCV เลือก alpha = 0.0138 -> coef [0.    1.226 0.254]</span>
 
@@ -621,7 +709,13 @@ Ridge บน X สเกลใหม่    →  β_size = 0.0027  →  แปล
 <p><code>RidgeCV</code> เลือก α = <strong>4.24</strong> เพราะนั่นคือค่าที่<strong>ทำนายได้ดีที่สุด</strong> · แต่เราเพิ่งพิสูจน์ไปว่าการทำนายแทบไม่ต่างกันเลยในช่วง α กว้าง ๆ</p>
 <p>ถ้าเป้าหมายคือ β ที่<strong>เสถียรพอจะเอาไปใช้เป็น hedge ratio</strong> คุณอาจต้องการ α สูงกว่านั้นมาก — และนั่น<strong>ไม่ผิด</strong> ตราบใดที่คุณรู้ว่ากำลังแลกอะไรกับอะไร</p>
 <p><strong>วิธีตัดสินใจที่ตรงไปตรงมา:</strong> พล็อตกราฟเส้นทางแบบใน §14.2 แล้วเลือก α ที่<strong>เส้นเริ่มนิ่ง</strong> · จากกราฟนั้น α ราว 10–30 คือจุดที่เส้นน้ำเงินกับส้มหยุดเคลื่อนที่แรง ๆ แล้ว</p>
-<p>⚠️ <strong>และอย่าลืมว่า CV ที่ใช้เลือก α ต้องเป็น walk-forward ถ้าข้อมูลมีเวลา</strong> — <code>RidgeCV</code> กับ <code>LassoCV</code> ใช้ k-fold ธรรมดาเป็นค่าปริยาย · ต้องส่ง <code>cv=TimeSeriesSplit(5)</code> เข้าไปเอง มิฉะนั้นคุณเพิ่งทำผิดตาม §12.3 อีกรอบ</p></div>
+<p>⚠️ <strong>และอย่าลืมว่า CV ที่ใช้เลือก α ต้องเป็น walk-forward ถ้าข้อมูลมีเวลา</strong> · ค่าปริยายของทั้งคู่ใช้ไม่ได้ — และ <code>RidgeCV</code> แย่กว่าที่คิด:</p>
+<div class="tw"><table>
+<tr><th>ตัว</th><th>ค่าปริยาย</th><th>ปัญหา</th></tr>
+<tr><td class="nw"><code>LassoCV</code></td><td class="nw">k-fold 5 ส่วน</td><td class="nw">สลับลำดับเวลา ตาม §12.3</td></tr>
+<tr><td class="nw"><code>RidgeCV</code></td><td class="nw"><strong>Leave-One-Out</strong></td><td class="nw"><strong>แย่ที่สุดเท่าที่เป็นไปได้</strong> — เอาข้อมูลออกทีละ<u>จุด</u> แล้วฝึกด้วยจุดที่เหลือ<strong>ทั้งหมด รวมอนาคตทุกจุด</strong></td></tr>
+</table></div>
+<p><strong>ต้องส่ง <code>cv=TimeSeriesSplit(5)</code> เข้าไปเองทั้งคู่</strong> มิฉะนั้นคุณเพิ่งทำผิดตาม §12.3 อีกรอบ — และในกรณีของ <code>RidgeCV</code> คือผิดหนักกว่า k-fold เสียอีก</p></div>
 
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง — regularization ไม่ใช่เทคนิค แต่เป็นการยอมรับความจริง</div>
 <p><strong>มือใหม่เห็น:</strong> "Ridge/Lasso คือเทคนิคขั้นสูงที่ทำให้โมเดลเก่งขึ้น"<br>
