@@ -72,3 +72,28 @@ python3 .../sync-output.py part4 --apply   # เขียนผลจริง�
 ### ⚠️ rr_<part>.json ค้างได้ง่ายมาก
 ถ้าแก้ไฟล์ HTML แล้ว **เลขบรรทัดของทุกบล็อกจะขยับ** — ต้อง `extract` + `run`
 ใหม่ก่อน `check` เสมอ ไม่งั้นจะรายงานว่า "ไม่ได้รัน" เป็นสิบจุดโดยไม่มีอะไรผิดจริง
+
+### ⚠️ KaTeX ทำ Chromium crash บางหน้า (มี workaround ในสคริปต์แล้ว)
+`python-part0` และ `python-part5` ทำให้ Chromium ในสภาพแวดล้อมนี้ crash
+("Target crashed") ตอน layout ของ KaTeX HTML output
+
+สิ่งที่พิสูจน์แล้ว (อย่าเสียเวลาไล่ซ้ำ):
+- บล็อก **KaTeX CSS** อย่างเดียว → หาย · บล็อก **KaTeX JS** อย่างเดียว → หาย
+  ⇒ ต้องมีทั้ง DOM และ CSS ถึงจะพัง
+- **ทุกสูตรในหน้านั้นพังหมด** แม้สูตรง่ายที่สุด (`$$t = \text{Sharpe}\times\sqrt{T}$$`)
+  เมื่อใช้ `<head>` จริงของหนังสือ ⇒ ไม่ใช่สูตรใดสูตรหนึ่งผิด
+- ฟอนต์ `.woff2` ทุกไฟล์สมบูรณ์ (magic bytes `wOF2` ครบ 20 ไฟล์)
+- ลองแล้วไม่ช่วย: `--no-sandbox`, `--disable-dev-shm-usage`,
+  `--disable-features=FontationsFontBackend`, `--disable-gpu`,
+  `--use-gl=swiftshader`, ทั้ง `chromium` และ `chromium_headless_shell`
+- ไม่ใช่สคริปต์ตัดคำไทย (ลบออกแล้วยังพัง)
+
+**workaround ที่ใช้อยู่:** ถ้าหน้าไหน crash สคริปต์จะลองใหม่โดยบล็อก
+KaTeX CSS + auto-render แล้วเรียก `katex.renderToString(..., {output:'mathml'})`
+เอง — Chromium เรนเดอร์ MathML ได้เองโดยไม่ต้องใช้ CSS ของ KaTeX
+
+จุดที่ต้องระวังในทาง MathML:
+1. ต้องแปลง **ทั้ง `$$...$$` และ `\(...\)`** — ถ้าทำแค่ `$$` inline จะโผล่เป็น LaTeX ดิบ
+2. ต้องลบ `<wbr>` (จากสคริปต์ตัดคำไทย) **เฉพาะ element ที่มีสูตร** ก่อน
+   ไม่งั้นสูตรที่มีภาษาไทยข้างใน เช่น `\text{น้ำหนัก}` จะจับไม่ติด ·
+   **อย่าลบทั้งหน้า** เพราะการตัดคำไทยจะหายไปทั้งเล่ม
