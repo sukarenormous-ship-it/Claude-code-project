@@ -46,6 +46,12 @@ for path in sorted(DOCS.glob("python-part*.html")):
         r'<div class="output">((?:(?!</div>).)*)</div>', text, re.S
     ):
         line = text[: m.start()].count("\n") + 1
+        # บล็อกที่เป็นเนื้อไฟล์ (# ── ชื่อไฟล์.py ──) ไม่ได้ถูกรัน จึงไม่ต้องเทียบ
+        if re.match(r"\s*<span[^>]*>?\s*#\s*──\s*\S+\.py",
+                    html.unescape(m.group(1))[:120]) or \
+           re.match(r"\s*#\s*──\s*\S+\.py",
+                    html.unescape(TAG.sub("", m.group(1)))[:120]):
+            continue
         doc = norm(html.unescape(TAG.sub("", m.group(2))))
         r = results.get((path.name, line))
         if r is None:

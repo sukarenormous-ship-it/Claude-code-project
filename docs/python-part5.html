@@ -831,6 +831,159 @@ for severity, msg in issues:
 </details>
 
 
+<h3 id="s28-6">28.6 จาก <code>assert</code> ลอย ๆ สู่ชุดทดสอบที่รันเองได้ — <code>pytest</code></h3>
+
+<p>ตลอดบทนี้เราเขียน <code>assert</code> ตรวจโค้ดเป็นจุด ๆ · ปัญหาคือมันกระจัดกระจาย ต้องจำเองว่าเคยเขียนไว้ที่ไหน และ<strong>ไม่มีใครรันมันซ้ำ</strong>หลังแก้โค้ด · <code>pytest</code> แก้ทั้งสามข้อพร้อมกัน</p>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของหัวข้อนี้</div>
+<div class="ki-text">การตรวจโค้ดครั้งเดียวไม่มีค่าเท่ากับ<strong>การตรวจที่รันซ้ำได้ทุกครั้งที่แก้โค้ด</strong> · โดยเฉพาะกับโค้ดที่ AI เขียน ซึ่งคุณจะสั่งให้มันแก้ซ้ำหลายรอบ — ทุกรอบมีโอกาสพังของเดิม</div>
+</div>
+
+<h4 style="font-size:1.05em;font-weight:700;margin-top:1.1em">โครงไฟล์ที่ pytest คาดหวัง</h4>
+
+<div class="fm"><span class="c"># pip install pytest</span>
+
+quant-project/
+├── .venv/
+├── strategy.py            <span class="c"># โค้ดจริง</span>
+└── test_strategy.py       <span class="c"># ทดสอบ — ต้องขึ้นต้นด้วย test_</span>
+
+<span class="c"># รันทั้งหมดด้วยคำสั่งเดียว จากโฟลเดอร์โปรเจกต์</span>
+$ pytest -q</div>
+
+<div class="read-aloud">กฎการตั้งชื่อของ pytest มีแค่ 2 ข้อ: <strong>ไฟล์</strong>ต้องขึ้นต้นด้วย <code>test_</code> และ <strong>ฟังก์ชัน</strong>ต้องขึ้นต้นด้วย <code>test_</code> · แค่นั้น — ไม่ต้องเขียน class ไม่ต้อง import framework ไม่ต้องลงทะเบียนอะไร · <code>pytest</code> จะเดินหาไฟล์ที่เข้าเกณฑ์เองแล้วรันให้ทุกฟังก์ชัน</div>
+
+<div class="fm"><span class="c"># ── test_strategy.py ──</span>
+import numpy as np
+import pandas as pd
+import pytest
+from strategy import compute_vol_zscore, backtest
+
+
+@pytest.fixture
+def prices():
+    """ข้อมูลชุดเดียวกันสำหรับทุก test — เขียนครั้งเดียวใช้ได้ทุกที่"""
+    np.random.seed(0)
+    return pd.Series(
+        100 * np.exp(np.cumsum(np.random.normal(0, 0.01, 300))),
+        index=pd.date_range("2023-01-01", periods=300))
+
+
+def test_no_lookahead(prices):
+    """ตัดข้อมูลอนาคตออกแล้ว ค่าในอดีตต้องไม่เปลี่ยน (embargo test จาก 28.2)"""
+    full = compute_vol_zscore(prices)
+    cut  = compute_vol_zscore(prices[:"2023-09-01"])
+    idx  = cut.index
+    assert full.loc[idx, "vol_zscore"].notna().equals(cut["vol_zscore"].notna())
+
+
+def test_nan_count(prices):
+    """จำนวน NaN ช่วงต้นต้องตรงกับขนาด window เป๊ะ"""
+    r = compute_vol_zscore(prices, vol_window=21, zscore_window=63)
+    assert r["log_ret"].isna().sum() == 1
+    assert r["ann_vol"].isna().sum() == 21
+
+
+@pytest.mark.parametrize("fee", [0.0, 0.001, 0.01])
+def test_fee_reduces_pnl(prices, fee):
+    """ค่าธรรมเนียมสูงขึ้น กำไรต้องไม่เพิ่ม — รัน 3 รอบด้วย fee 3 ค่า"""
+    sig = pd.Series(np.sign(prices.pct_change()).fillna(0), index=prices.index)
+    assert backtest(prices, sig, fee).sum() &lt;= backtest(prices, sig, 0.0).sum() + 1e-12
+
+
+def test_flat_signal_is_zero(prices):
+    """ไม่มี position = ต้องไม่มีทั้งกำไรและค่าธรรมเนียม"""
+    flat = pd.Series(0.0, index=prices.index)
+    assert backtest(prices, flat, fee=0.001).abs().sum() == 0</div>
+<div class="output">$ pytest -q
+......                                                                   [100%]
+6 passed in 5.34s</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 2 เครื่องมือของ pytest ที่ทำให้ test ไม่ซ้ำซาก</div>
+<div class="ad-code">@pytest.fixture                    # ① ของใช้ร่วม
+def prices(): ...
+
+def test_xxx(prices): ...          # ← ขอ "prices" มาใช้แค่ใส่ชื่อใน ()
+
+@pytest.mark.parametrize("fee", [0.0, 0.001, 0.01])   # ② รันซ้ำหลายค่า
+def test_fee_reduces_pnl(prices, fee): ...</div>
+<div class="ad-steps">
+<ol>
+<li><code>@pytest.fixture</code> — "ของที่ test หลายตัวต้องใช้ร่วมกัน สร้างไว้ตรงนี้ที่เดียว" · test ตัวไหนอยากได้ <strong>แค่ใส่ชื่อ <code>prices</code> เป็น parameter</strong> pytest จะเรียกฟังก์ชัน fixture แล้วส่งผลมาให้เอง · และ<strong>สร้างใหม่ทุกครั้งต่อ 1 test</strong> — test ตัวหนึ่งไปแก้ข้อมูลจะไม่กระทบตัวอื่น</li>
+<li><code>@pytest.mark.parametrize</code> — "รัน test ตัวนี้ซ้ำ โดยเปลี่ยนค่าไปเรื่อย ๆ" · เขียนครั้งเดียวได้ 3 การทดสอบ · ในผลลัพธ์นับเป็น 3 อัน (จึงได้ <code>6 passed</code> จากฟังก์ชันแค่ 4 ตัว) และถ้าพังจะบอกด้วยว่า<strong>พังที่ค่าไหน</strong></li>
+</ol>
+<p>สังเกตชื่อ test ทั้งสี่: <em>ไม่มีอันไหนตรวจว่า "ผลลัพธ์เท่ากับเลขนี้"</em> — แต่ตรวจ<strong>คุณสมบัติที่ต้องเป็นจริงเสมอ</strong> (ตัดอนาคตแล้วอดีตต้องไม่เปลี่ยน · fee สูงขึ้นกำไรต้องไม่เพิ่ม · ไม่มี position ต้องไม่มีเงินไหล) · <strong>test แบบนี้ไม่ต้องแก้ทุกครั้งที่ปรับพารามิเตอร์</strong> ต่างจากการ hard-code ตัวเลขคำตอบไว้</p>
+</div>
+</div>
+
+<h4 style="font-size:1.05em;font-weight:700;margin-top:1.1em">ตอนพัง pytest บอกอะไรบ้าง</h4>
+
+<p>นี่คือเหตุผลหลักที่ควรใช้ pytest แทน <code>assert</code> ลอย ๆ ในสคริปต์ — ลองให้ฟังก์ชันที่ลืม <code>.shift(1)</code> เข้าทดสอบ:</p>
+
+<div class="fm">def backtest_BUGGY(prices, signal, fee=0.0):
+    returns = prices.pct_change()
+    return (signal * returns).fillna(0)     <span class="c"># ❌ ลืม .shift(1)</span>
+
+
+def test_shift_is_applied():
+    np.random.seed(0)
+    prices = pd.Series(100 * np.exp(np.cumsum(np.random.normal(0, 0.01, 200))))
+    signal = np.sign(prices.pct_change()).fillna(0)
+    pnl = backtest_BUGGY(prices, signal).sum()
+    assert pnl &lt; 0.5, "PnL สูงผิดปกติ — น่าจะลืม shift(1)"</div>
+<div class="output">$ pytest test_fail_demo.py -q
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________________ test_shift_is_applied _____________________________
+
+    def test_shift_is_applied():
+        np.random.seed(0)
+        prices = pd.Series(100 * np.exp(np.cumsum(np.random.normal(0, 0.01, 200))))
+        signal = np.sign(prices.pct_change()).fillna(0)
+        pnl = backtest_BUGGY(prices, signal).sum()
+&gt;       assert pnl &lt; 0.5, "PnL สูงผิดปกติ — น่าจะลืม shift(1)"
+E       AssertionError: PnL สูงผิดปกติ — น่าจะลืม shift(1)
+E       assert np.float64(1.6727861895822635) &lt; 0.5
+
+test_fail_demo.py:12: AssertionError
+=========================== short test summary info ============================
+FAILED test_fail_demo.py::test_shift_is_applied - AssertionError: PnL สูงผิดปกติ...
+1 failed in 0.29s</div>
+
+<div class="read-aloud">บรรทัดที่มีค่าที่สุดคือ <code>assert np.float64(1.6727861895822635) &lt; 0.5</code> — <strong>pytest แกะค่าจริงของทั้งสองฝั่งมาให้ดู</strong> โดยที่เราไม่ได้สั่ง · ถ้าใช้ <code>assert</code> ใน Python ธรรมดาจะได้แค่ <code>AssertionError</code> เปล่า ๆ แล้วต้องกลับไปใส่ <code>print()</code> เอง · เรียกว่า <strong>assertion introspection</strong> และเป็นเหตุผลที่ควรใช้ pytest ตั้งแต่ test ตัวแรก</div>
+
+<div class="bx bk">
+<div class="bt">🎯 test 4 ตัวที่ควรมีเสมอสำหรับโค้ดกลยุทธ์ทุกชิ้น</div>
+<p>ไม่ต้องเขียนเยอะ — สี่ตัวนี้จับบั๊กที่แพงที่สุดในสายนี้ได้เกือบหมด:</p>
+<ol>
+<li><strong>Embargo / lookahead</strong> — ตัดข้อมูลท้ายออก ค่าในอดีตต้องไม่เปลี่ยน <em>(จับ Red Flag #1, #2)</em></li>
+<li><strong>Signal ว่าง = ผลลัพธ์ศูนย์</strong> — ไม่มี position ต้องไม่มีทั้งกำไรและค่าธรรมเนียม · จับบั๊กที่คำนวณ cost ทั้งที่ไม่ได้เทรด</li>
+<li><strong>ทิศทางของต้นทุน</strong> — fee สูงขึ้น กำไรต้องไม่เพิ่ม · จับเครื่องหมายกลับด้าน <em>(Red Flag #4)</em></li>
+<li><strong>จำนวน NaN ตรงกับ window</strong> — <code>rolling(21)</code> ต้องได้ NaN 20 แถวแรกพอดี · จับ off-by-one และการ <code>fillna</code> ผิดที่</li>
+</ol>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ทำไม test แบบ "คุณสมบัติ" ชนะ test แบบ "ค่าคงที่"</div>
+<p>สัญชาตญาณแรกของคนส่วนใหญ่คือเขียน <code>assert sharpe == 1.234</code> · <strong>อย่าทำ</strong> — พอปรับ window จาก 60 เป็น 63 test พังหมดทั้งที่โค้ดไม่ได้ผิด คุณจะเลิกรัน test ภายในสัปดาห์เดียว</p>
+<p>เขียนเป็น<strong>ความสัมพันธ์ที่ต้องจริงเสมอ</strong>แทน: <em>fee เพิ่ม → กำไรไม่เพิ่ม</em> · <em>ตัดอนาคต → อดีตไม่เปลี่ยน</em> · <em>position ศูนย์ → เงินไม่ไหล</em> · ความสัมพันธ์พวกนี้จริงไม่ว่าพารามิเตอร์จะเป็นเท่าไร — เป็นแนวคิดเดียวกับ <strong>property-based testing</strong> (ไลบรารี <code>hypothesis</code> ทำให้อัตโนมัติได้ ถ้าอยากไปต่อ)</p>
+<p>เครื่องมือที่ใช้บ่อยเพิ่มเติม:</p>
+<div class="fm"><span class="c"># ── test_more.py ──</span>
+<span class="c"># เทียบตัวเลขทศนิยม อย่าใช้ == เด็ดขาด</span>
+assert result == pytest.approx(expected, rel=1e-6)
+
+<span class="c"># ยืนยันว่าฟังก์ชัน "ต้อง error" เมื่อได้ข้อมูลแย่</span>
+with pytest.raises(ValueError, match="อย่างน้อย 30"):
+    ols_hedge_ratio(y[:10], x[:10])
+
+<span class="c"># เทียบ Series/DataFrame ทั้งก้อน</span>
+pd.testing.assert_series_equal(got, want, check_exact=False)</div>
+<p>⚠️ <strong>ข้อควรระวังเฉพาะสาย quant:</strong> อย่าเขียน test ที่ต้องต่ออินเทอร์เน็ตหรือเรียก API จริง — มันจะพังตอน exchange ล่มหรือ rate limit แล้วคุณจะเลิกเชื่อ test · แยก "โค้ดดึงข้อมูล" ออกจาก "โค้ดคำนวณ" แล้วทดสอบส่วนคำนวณด้วยข้อมูลจำลองที่ fix seed ไว้</p>
+</div>
+
+
 <!-- ===================== CHAPTER 29 ===================== -->
 <h2 id="ch29">บทที่ 29: AI + Quant Libraries</h2>
 

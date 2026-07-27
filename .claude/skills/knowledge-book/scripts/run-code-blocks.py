@@ -6,6 +6,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import sys
 import traceback
 import warnings
@@ -39,6 +40,10 @@ for fn in files:
     ns = {"__name__": "__main__"}
     for r in blocks:
         code = (SNIP / f"{r['stem']}.txt").read_text(encoding="utf-8")
+        # บล็อกที่เป็น "เนื้อไฟล์" (เช่น test_strategy.py ที่ให้ pytest รัน)
+        # ไม่ใช่โค้ดที่รันต่อกันในสคริปต์เดียว — ติดป้ายด้วยหัว  # ── ชื่อไฟล์.py ──
+        if re.match(r"\s*#\s*──\s*\S+\.py\s*──", code):
+            continue
         buf = io.StringIO()
         old = sys.stdout
         rec = dict(file=fn, line=r["line"], stem=r["stem"])
