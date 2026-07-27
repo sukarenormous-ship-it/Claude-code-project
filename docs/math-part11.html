@@ -72,6 +72,13 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ใน <a href="math-part8.html#s6-7">เล่ม 2 · C §6.7</a> เราแบ่งข้อมูลเป็นชุดฝึกกับชุดทดสอบ แล้วดู R² ของชุดทดสอบ · ฟังดูซื่อสัตย์ดี · <strong>แต่ผลที่ได้ขึ้นกับว่าคุณบังเอิญแบ่งตรงไหน</strong> — และมันขึ้นกับเยอะกว่าที่ใครคิด</p>
 
+<p>ก่อนอื่น — <strong>R²(out)</strong> ที่จะเห็นตลอดตอนนี้คืออะไร:</p>
+<div class="fm">R²(out) = 1 − Σ(y จริง − y ทำนาย)² / Σ(y จริง − ȳ)²
+                    ↑ error ของโมเดล      ↑ error ของการ<b>เดาค่าเฉลี่ย</b>เฉย ๆ
+
+= 1  →  ทำนายเป๊ะ      = 0  →  ดีเท่าเดาค่าเฉลี่ย      <b>ติดลบ  →  แย่กว่าเดาค่าเฉลี่ย</b></div>
+<p>"(out)" คือ <strong>out-of-sample</strong> — วัดกับข้อมูลที่โมเดล<strong>ไม่เคยเห็น</strong> ต่างจาก R² ธรรมดา (in-sample) ที่วัดกับข้อมูลที่มันฝึกมา · <strong>จำบรรทัดสุดท้ายไว้ให้ดี</strong> เพราะ §12.3 จะได้ค่าติดลบ และนั่นคือประเด็นทั้งหมด</p>
+
 <p>ลองแบ่งชุดข้อมูลเดิม (200 จุด · ฝึก 150 ทดสอบ 50) แบบสุ่ม <strong>200 ครั้ง</strong> ด้วยโมเดลเดิมเป๊ะ:</p>
 
 <div class="code"><div class="hdr">🐍 Python — แบ่งชุดเดิม 200 ครั้ง ดูว่า R² เหวี่ยงแค่ไหน</div><pre><span class="c"># pip install numpy statsmodels</span>
@@ -132,6 +139,9 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 </div>
 
 <h3 id="s12-3">12.3 💎 ทำไม k-fold ถึงใช้กับข้อมูลการเงินไม่ได้</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองนึกว่าคุณติวหนังสือสอบ แล้ว "ข้อสอบ" ที่เอามาวัดผล คือข้อที่<strong>อยู่ในชีทที่คุณเพิ่งอ่านไป</strong> · คะแนนที่ได้ไม่ได้วัดว่าคุณเก่ง มันวัดว่าคุณจำได้</p>
+<p>การสลับลำดับข้อมูลก่อนแบ่ง ทำแบบนั้นพอดี — <strong>วันที่อยู่ในชุดทดสอบ มีวันข้างเคียงอยู่ในชุดฝึก</strong> · และในข้อมูลราคา วันข้างเคียงแทบเป็นคำตอบอยู่แล้ว</p>
 
 <div class="bx bp"><div class="bt">💎 นี่คือข้อผิดพลาดที่พบบ่อยที่สุดในงานควอนต์ทั้งหมด</div>
 <p><code>KFold(shuffle=True)</code> <strong>สลับลำดับข้อมูลก่อนแบ่ง</strong> · ผลคือชุดฝึกมีข้อมูลของวันพุธ ส่วนชุดทดสอบมีข้อมูลของวันอังคารที่อยู่ติดกัน</p>
@@ -269,6 +279,16 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <tr><td class="nw"><strong>ช่องว่าง k-fold ↔ walk-forward</strong></td><td class="nw">leakage <strong>ข้ามเวลา</strong> — และวัดขนาดได้ด้วย</td><td class="nw">leakage ข้ามแถว</td></tr>
 </table></div>
 <p>💎 <strong>ต้องใช้ทั้งสองอย่าง ไม่ใช่อย่างใดอย่างหนึ่ง</strong> · และถ้า k-fold กับ walk-forward ให้คำตอบต่างกันมาก — <strong>ช่องว่างนั้นคือขนาดของ leakage ข้ามเวลาที่คุณมี</strong> (ในตัวอย่าง §12.3 คือ 0.271 − (−3.496) = <strong>3.77</strong>)</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>กลับไปที่โค้ด §12.3 (เส้นสุ่มสองเส้น) แล้วทำ <strong>label shuffling test</strong> ด้วยตัวเอง — เปลี่ยน <code>B</code> เป็น <code>rng.permutation(B)</code> แล้วรัน <code>score(KFold(5, shuffle=True, random_state=0))</code> ใหม่</p>
+<p><strong>(1)</strong> k-fold จะยังให้ +0.27 อยู่ไหม · <strong>(2)</strong> แล้วผลนั้นแปลว่าอะไร</p>
+<details><summary>ดูเฉลย</summary>
+<p><strong>(1) ไม่ — จะได้ราว −0.02</strong> คือใกล้ศูนย์ · ตามตำราแปลว่า "สะอาด ไม่มี leakage ✓"</p>
+<p><strong>(2) แต่เรารู้อยู่แล้วว่ามี leakage เต็ม ๆ</strong> (ความจริงคือ −3.50 ไม่ใช่ +0.27) · <strong>การทดสอบนี้เพิ่งพลาดมันไปทั้งดุ้น</strong></p>
+<p>นี่ไม่ใช่ความบังเอิญของ seed — ผมรัน 100 ชุดข้อมูล มัน "ผ่าน" ทั้ง 100 ครั้ง · เหตุผลคือสิ่งที่กล่องข้างบนอธิบายไว้: <strong>คุณเพิ่งทำลายช่องทางรั่วไปพร้อมกับสัญญาณ</strong> เพราะ leakage ตัวนี้อยู่ในโครงสร้างเวลาของ y เอง</p>
+<p>💎 <strong>บทเรียนที่แพงที่สุดของ §12.4:</strong> <strong>การทดสอบที่ "ผ่าน" ไม่ได้แปลว่าสะอาด — มันแปลว่าการทดสอบนั้นมองไม่เห็นปัญหาที่คุณมี</strong> · ต้องรู้เสมอว่าเครื่องมือตรวจของคุณ<strong>ตาบอดตรงไหน</strong> ซึ่งเป็นคำถามเดียวกับที่ทั้งเล่ม 2 · F ถามมาตลอด</p>
+</details></div>
 
 <h3 id="s12-5">12.5 💎 Multiple Testing — ช่องโหว่ที่ทำให้ทุกอย่างข้างบนยังหลอกคุณได้</h3>
 
@@ -414,6 +434,8 @@ print(f"จุดคุ้มทุน: หมุนได้ {ret/rt:.0f} ค�
 
 <h3 id="s13-2">13.2 ทดสอบกับของจริง — CI ของ Sharpe</h3>
 
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ก่อนจะเชื่อเครื่องมือใหม่ ต้องเอาไป<strong>แข่งกับเครื่องมือที่เรารู้อยู่แล้วว่าถูก</strong> ในสนามที่เครื่องมือเก่าใช้ได้ · ถ้ามันให้คำตอบตรงกัน เราถึงจะกล้าใช้มันในสนามที่ไม่มีสูตรให้เทียบ</p>
+
 <p>ใน <a href="math-part10.html#s10-1">เล่ม 2 · E §10.1</a> เราใช้<strong>สูตร</strong>หา CI ของ Sharpe · ลองให้ bootstrap ตอบคำถามเดียวกัน แล้วดูว่าตรงกันไหม — ถ้าตรง แปลว่าเราเชื่อ bootstrap ในกรณีที่ไม่มีสูตรได้</p>
 
 <div class="code"><div class="hdr">🐍 Python — bootstrap หา CI ของ Sharpe แล้วเทียบกับสูตร</div><pre><span class="c"># pip install numpy</span>
@@ -450,6 +472,8 @@ print(f"สูตรวิเคราะห์  95% CI = [{obs-1.96*se:.2f}, {o
 
 <h3 id="s13-3">13.3 ❌ กับดักใหญ่ — bootstrap ธรรมดาทำลายลำดับเวลา</h3>
 
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> <strong>"ก้อน" (block) คือการหยิบผลตอบแทน 21 วันที่<u>ติดกัน</u>มาทั้งแผง</strong> แทนที่จะหยิบทีละวันแล้วเอามาปะติดปะต่อ · เหตุผลคือวันที่อยู่ติดกันมันเกี่ยวข้องกัน — ถ้าหยิบทีละวันแบบสุ่ม คุณกำลังทำลายความเกี่ยวข้องนั้นทิ้ง แล้วสร้างประวัติปลอมที่ "สงบ" กว่าของจริง</p>
+
 <div class="bx br"><div class="bt">❌ การหยิบแบบสุ่มทีละจุด = สมมติว่าข้อมูลเป็นอิสระต่อกัน</div>
 <p>ทุกครั้งที่คุณสุ่มหยิบทีละจุด คุณกำลังบอกว่า "ลำดับไม่สำคัญ" · <strong>แต่ผลตอบแทนสินทรัพย์ไม่เป็นอิสระ</strong> — มี momentum · mean reversion · volatility clustering (<a href="math-part6.html">Part IV</a>)</p>
 <p>ผลคือ <strong>bootstrap ธรรมดาจะประเมินความไม่แน่นอน<u>ต่ำเกินไป</u></strong> ซึ่งเป็นทิศทางที่อันตราย เพราะมันทำให้คุณมั่นใจเกินจริง</p>
@@ -463,7 +487,7 @@ n, phi = 756, 0.35
 e = rng.normal(0, 0.01, n)
 r = np.zeros(n)
 for t in range(1, n):
-    r[t] = phi*r[t-1] + e[t]                    <span class="c"># ★ ผลตอบแทนมี momentum</span>
+    r[t] = phi*r[t-1] + e[t]                    <span class="c"># ★ นี่คือ AR(1) จาก เล่ม 2 D §8.4 — ผลตอบแทนมี momentum</span>
 r = r + 0.0004
 
 def sharpe(x): return x.mean()/x.std()*np.sqrt(252)
@@ -514,6 +538,9 @@ for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
 </details></div>
 
 <h3 id="s13-4">13.4 ❌ ข้อจำกัดที่ใหญ่ที่สุดของ bootstrap — และมันตรงกับผู้อ่านหนังสือเล่มนี้พอดี</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าคุณสำรวจความเห็นคนใน<strong>ห้องเดียว</strong> แล้วสุ่มหยิบชื่อจากห้องนั้นซ้ำไปมาหมื่นรอบ — คุณจะได้ช่วงความเชื่อมั่นที่แม่นมาก<strong>สำหรับห้องนั้น</strong> · แต่ถ้าคนที่คิดต่างอยู่<strong>นอกห้อง</strong> คุณจะไม่มีวันเจอเขาเลยสักรอบ</p>
+<p>bootstrap ทำงานแบบนั้นเป๊ะ — และ "คนนอกห้อง" ในตลาดการเงินคือ<strong>วันที่ตลาดพัง ซึ่งอาจยังไม่เกิดในข้อมูลของคุณ</strong></p>
 
 <div class="bx br"><div class="bt">❌ "ไม่ต้องสมมติการแจกแจง" ไม่ได้แปลว่า "รู้ทุกอย่างเกี่ยวกับการแจกแจง"</div>
 <p>ใน §13.1 ผมเขียนว่า bootstrap ใช้ได้กับข้อมูลหางหนา <strong>"เพราะมันสุ่มจากรูปร่างจริงของข้อมูล"</strong> · ประโยคนั้นถูก แต่ต้องอ่านให้ครบ:</p>
@@ -584,7 +611,7 @@ print(f"ความจริงระยะยาว 60 ปี: Sharpe = {sharp
 
 <h3 id="s14-1">14.1 ปัญหาที่ค้างมาจาก §6.6 — เมื่อ OLS ให้คำตอบที่ผิดเครื่องหมาย</h3>
 
-<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> <a href="math-part8.html#s6-6">เล่ม 2 · C §6.6</a> แสดงให้เห็นว่าเมื่อตัวแปรสองตัวเกือบเป็นตัวเดียวกัน (VIF สูง) β ของทั้งคู่จะ<strong>เหวี่ยงมั่ว</strong> · ตอนนั้นเราบอกว่า "อย่าเพิ่งตัดทิ้ง" แต่ยังไม่ได้บอกว่า<strong>แล้วทำอะไรแทน</strong> · หัวข้อนี้คือคำตอบนั้น</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> <a href="math-part8.html#s6-6">เล่ม 2 · C §6.6</a> แสดงให้เห็นว่าเมื่อตัวแปรสองตัวเกือบเป็นตัวเดียวกัน (<strong>VIF</strong> สูง — VIF คือตัวเลขบอกว่า "ตัวแปรนี้ถูกตัวแปรอื่นอธิบายไปแล้วแค่ไหน" · <strong>1 = อิสระสนิท · เกิน 10 = เริ่มมีปัญหา</strong>) β ของทั้งคู่จะ<strong>เหวี่ยงมั่ว</strong> · ตอนนั้นเราบอกว่า "อย่าเพิ่งตัดทิ้ง" แต่ยังไม่ได้บอกว่า<strong>แล้วทำอะไรแทน</strong> · หัวข้อนี้คือคำตอบนั้น</p>
 
 <p>สร้างสถานการณ์เดียวกันขึ้นมาโดยที่ <strong>เรารู้คำตอบจริง</strong> — ตั้งค่าสัมประสิทธิ์จริงเป็น market = 0.8, value = 0.4, size = 0.3 แล้วให้ <code>value</code> เกือบเป็นตัวเดียวกับ <code>market</code></p>
 
@@ -653,6 +680,7 @@ Ridge:  หา β ที่ทำให้  Σ(y − Xβ)²  +  <b>α · Σβⱼ
 α = 0      →  เป็น OLS พอดี
 α ใหญ่ขึ้น →  β ทุกตัวถูกดึงเข้าหาศูนย์ แต่<b>ไม่มีตัวไหนเป็นศูนย์เป๊ะ</b></div>
 
+<p>⚠️ <strong>α ตัวนี้ไม่เกี่ยวอะไรกับ alpha ของ CAPM ใน <a href="math-part10.html#s10-4">เล่ม 2 · E §10.4</a> เลย</strong> — บังเอิญใช้ตัวอักษรเดียวกัน · บางตำราเรียกตัวนี้ว่า <strong>λ</strong> เพื่อเลี่ยงความสับสน</p>
 <p>ดูว่าเกิดอะไรขึ้นเมื่อค่อย ๆ เพิ่ม α:</p>
 
 <svg class="d" viewBox="0 0 520 240" role="img" aria-label="กราฟเส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: beta ของ market เริ่มติดลบแล้วไต่ขึ้น beta ของ value เริ่มสูงมากแล้วลดลง ทั้งสองมาบรรจบกันที่ราวศูนย์จุดหก ส่วน size คงที่">
@@ -685,13 +713,37 @@ Ridge:  หา β ที่ทำให้  Σ(y − Xβ)²  +  <b>α · Σβⱼ
 </ul></div>
 
 <div class="bx ba"><div class="bt">🧮 ประโยชน์ที่แท้จริงของ Ridge วัดได้เป็นตัวเลข — ความเสถียร</div>
-<p>สุ่มข้อมูลใหม่แบบ bootstrap 200 รอบ (ใช้บทที่ 13 ที่เพิ่งเรียน!) แล้วดูว่า β ของ <code>market</code> เหวี่ยงแค่ไหน:</p>
+<p>สุ่มข้อมูลใหม่แบบ bootstrap 500 รอบ (ใช้บทที่ 13 ที่เพิ่งเรียน!) แล้วดูว่า β ของ <code>market</code> เหวี่ยงแค่ไหน:</p>
+
+<div class="code"><div class="hdr">🐍 Python — วัดความเสถียรของ β ด้วย bootstrap</div><pre><span class="c"># pip install numpy scikit-learn</span>
+import numpy as np
+from sklearn.linear_model import LinearRegression, Ridge
+
+rng = np.random.default_rng(5)
+n = 250
+mkt = rng.normal(0, 1, n); val = mkt + rng.normal(0, 0.10, n); size = rng.normal(0, 1, n)
+X = np.column_stack([mkt, val, size])
+y = X @ np.array([0.8, 0.4, 0.3]) + rng.normal(0, 1.0, n)
+
+g = np.random.default_rng(0)                    <span class="c"># ★ generator แยก ผลจึงทำซ้ำได้</span>
+ols, rdg = [], []
+for _ in range(500):
+    i = g.integers(0, n, n)                     <span class="c"># สุ่มหยิบแบบใส่คืน</span>
+    ols.append(LinearRegression().fit(X[i], y[i]).coef_[0])
+    rdg.append(Ridge(alpha=10).fit(X[i], y[i]).coef_[0])
+
+for name, a in [("OLS", np.array(ols)), ("Ridge(10)", np.array(rdg))]:
+    lo, hi = np.percentile(a, [5, 95])          <span class="c"># ★ ใช้เปอร์เซ็นไทล์ ไม่ใช่ min/max ซึ่งไม่เสถียร</span>
+    print(f"{name:10s} beta_market: SD {a.std():.3f} | ช่วง 5-95% [{lo:+.2f}, {hi:+.2f}]")
+<span class="o"># OLS        beta_market: SD 0.735 | ช่วง 5-95% [-1.59, +0.98]</span>
+<span class="o"># Ridge(10)  beta_market: SD 0.077 | ช่วง 5-95% [+0.39, +0.65]</span></pre></div>
+
 <div class="tw"><table>
-<tr><th>วิธี</th><th class="nw">SD ของ β market</th><th class="nw">ช่วงที่เจอ</th></tr>
-<tr><td class="nw">OLS</td><td class="nw"><strong>0.739</strong></td><td class="nw"><strong>[−1.70, +2.34]</strong> ❌</td></tr>
-<tr><td class="nw">Ridge (α=10)</td><td class="nw"><strong>0.081</strong></td><td class="nw"><strong>[+0.36, +0.81]</strong> ✓</td></tr>
+<tr><th>วิธี</th><th class="nw">SD ของ β market</th><th class="nw">ช่วง 5–95%</th></tr>
+<tr><td class="nw">OLS</td><td class="nw"><strong>0.735</strong></td><td class="nw"><strong>[−1.59, +0.98]</strong> ❌</td></tr>
+<tr><td class="nw">Ridge (α=10)</td><td class="nw"><strong>0.077</strong></td><td class="nw"><strong>[+0.39, +0.65]</strong> ✓</td></tr>
 </table></div>
-<p><strong>OLS ให้คำตอบตั้งแต่ −1.70 ถึง +2.34</strong> เพียงเพราะเปลี่ยนตัวอย่างข้อมูลเล็กน้อย · <strong>Ridge เหวี่ยงน้อยกว่า 9 เท่า</strong> และอยู่ในย่านบวกเสมอ</p>
+<p><strong>OLS ให้คำตอบตั้งแต่ −1.59 ถึง +0.98</strong> เพียงเพราะเปลี่ยนตัวอย่างข้อมูลเล็กน้อย — <strong>ช่วงนี้คร่อมศูนย์ แปลว่ามันบอกไม่ได้ด้วยซ้ำว่าตลาดมีผลทางบวกหรือลบ</strong> · <strong>Ridge เหวี่ยงน้อยกว่า 9.5 เท่า</strong> และอยู่ในย่านบวกเสมอ</p>
 <p>ถ้าคุณใช้ β นี้เป็น hedge ratio จริง — <strong>OLS จะสั่งให้คุณสลับข้างระหว่าง long กับ short</strong> เพียงเพราะข้อมูลขยับนิดเดียว ซึ่งเป็นหายนะทั้งเรื่องต้นทุนและความเสี่ยง</p></div>
 </div>
 
@@ -735,6 +787,8 @@ Lasso:  Σ(y − Xβ)²  +  α · Σ<b>|βⱼ|</b>     →  β บางตั�
 <div class="code"><div class="hdr">🐍 Python — ให้ CV เลือก α ให้ + วัดว่ามันช่วยพยากรณ์จริงไหม</div><pre><span class="c"># pip install numpy scikit-learn</span>
 import numpy as np
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, RidgeCV, LassoCV
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 rng = np.random.default_rng(5)
 n = 250
@@ -754,14 +808,21 @@ rg = np.random.default_rng(77)
 m2 = rg.normal(0, 1, 5000); v2 = m2 + rg.normal(0, 0.10, 5000); s2 = rg.normal(0, 1, 5000)
 X2 = np.column_stack([m2, v2, s2]); y2 = X2 @ bt + rg.normal(0, 1.0, 5000)
 
-for name, m in [("OLS", LinearRegression()), ("Ridge(10)", Ridge(alpha=10)),
-                ("Lasso(.05)", Lasso(alpha=0.05))]:
+<span class="c"># ★ Pipeline: scaler ถูก fit เฉพาะชุดฝึกเสมอ — ตาม §12.4 ข้อ 2 และ §14.5 ข้อ 1</span>
+for name, m in [("OLS",        LinearRegression()),
+                ("Ridge(10)",  make_pipeline(StandardScaler(), Ridge(alpha=10))),
+                ("Lasso(.05)", make_pipeline(StandardScaler(), Lasso(alpha=0.05)))]:
     p = m.fit(X, y).predict(X2)
     r2 = 1 - ((y2-p)**2).sum()/((y2-y2.mean())**2).sum()
     print(f"{name:11s} R2(out) {r2:.4f}")
 <span class="o"># OLS         R2(out) 0.6152</span>
 <span class="o"># Ridge(10)   R2(out) 0.6186</span>
-<span class="o"># Lasso(.05)  R2(out) 0.6144</span></pre></div>
+<span class="o"># Lasso(.05)  R2(out) 0.6143</span></pre></div>
+
+<div class="bx bb"><div class="bt">🔧 สังเกต <code>make_pipeline</code> — นี่คือวิธีที่ถูกต้อง ไม่ใช่ของประดับ</div>
+<p><code>Pipeline</code> ผูก scaler เข้ากับโมเดลเป็นก้อนเดียว · เวลาเรียก <code>.fit()</code> มัน<strong>คำนวณค่าเฉลี่ยกับ SD จากชุดฝึกเท่านั้น</strong> แล้วใช้ค่าเดียวกันนั้นแปลงชุดทดสอบ</p>
+<p>ถ้าคุณทำเองด้วยมือ (<code>scaler.fit(X)</code> ก่อนแบ่ง) คุณจะทำผิดตาม <strong>§12.4 ข้อ 2</strong> ทันทีโดยไม่รู้ตัว · และถ้าเอา Pipeline นี้ไปใส่ <code>cross_val_score</code> มันจะ fit scaler ใหม่<strong>ทุก fold</strong>ให้เอง ซึ่งเป็นสิ่งที่ถูกต้องและทำเองยาก</p>
+<p>💡 <strong>กฎง่าย ๆ: ทุกอย่างที่ "เรียนรู้อะไรบางอย่างจากข้อมูล" ต้องอยู่ใน Pipeline</strong> — scaler · การเลือกฟีเจอร์ · การเติมค่าที่หายไป · ไม่ใช่แค่ตัวโมเดล</p></div>
 
 <div class="bx bp"><div class="bt">💎 ผลลัพธ์ที่ตำราส่วนใหญ่ไม่บอกคุณ — regularization แทบไม่ช่วยการพยากรณ์เลย</div>
 <p>ดู R²(out) ทั้งสามบรรทัด: <strong>0.6152 · 0.6186 · 0.6144</strong> — <strong>ต่างกันในหลักทศนิยมที่สาม</strong></p>
@@ -776,6 +837,8 @@ for name, m in [("OLS", LinearRegression()), ("Ridge(10)", Ridge(alpha=10)),
 <p>💡 <strong>อย่าขาย Ridge/Lasso ว่า "ทำให้โมเดลแม่นขึ้น"</strong> · ขายว่า <strong>"ทำให้คำตอบเชื่อถือได้และใช้ซ้ำได้"</strong> ซึ่งเป็นคนละเรื่องและมีค่ามากกว่าในงานจริง</p></div>
 
 <h3 id="s14-5">14.5 ❌ สามกับดักที่ต้องรู้ก่อนใช้จริง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สามข้อข้างล่างคือจุดที่ Ridge/Lasso <strong>ทำงานถูกต้องตามที่ถูกสั่ง แต่ให้คำตอบที่คุณตีความผิด</strong> · ไม่ใช่บั๊กของไลบรารี — เป็นช่องว่างระหว่าง "สิ่งที่สูตรทำ" กับ "สิ่งที่คุณคิดว่ามันทำ"</p>
 
 <div class="bx br"><div class="bt">❌ 1. ต้องปรับสเกลก่อนเสมอ — ไม่งั้นค่าปรับจะลงโทษไม่เท่ากัน</div>
 <p>ค่าปรับคือ α·Σβⱼ² ซึ่ง<strong>ไม่รู้จักหน่วยของตัวแปร</strong> · ตัวแปรที่มีสเกลใหญ่จะมี β เล็กโดยธรรมชาติ จึง<strong>โดนปรับน้อยกว่า</strong>โดยไม่มีเหตุผลทางเนื้อหาเลย</p>
