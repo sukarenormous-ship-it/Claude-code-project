@@ -340,12 +340,45 @@ for years in [3, 5, 10]:
 <p>สิ่งที่ควรทำแทนคือ<strong>ลด N</strong>: ตัดสินใจจาก<strong>เหตุผลเชิงเศรษฐกิจ</strong>ว่าทำไม lookback ควรเป็นค่านี้ และทำไมหุ้นกลุ่มนี้ถึงควรมีพฤติกรรมแบบนั้น <strong>ก่อน</strong>รัน backtest · การทดลอง 3 แบบที่มีเหตุผลรองรับ มีค่ามากกว่า 200 แบบที่กราดหา</p>
 </details></div>
 
-<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 12</div>
+<h3 id="s12-6">12.6 ต้นทุนซื้อขายต้องอยู่<u>ใน</u> CV ไม่ใช่หักทีหลัง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ตลอดบทนี้เราวัดคุณภาพด้วย <strong>R²</strong> ซึ่งไม่รู้จักค่าคอมมิชชันเลย · คนส่วนใหญ่คิดว่า "เดี๋ยวค่อยหักต้นทุนตอนท้าย" · <strong>แต่ต้นทุนไม่ได้แค่ลดกำไร มันเปลี่ยน<u>อันดับ</u>ของกลยุทธ์</strong></p>
+
+<p>เพราะกลยุทธ์ที่ R² สูงสุดมักเป็นกลยุทธ์ที่<strong>ซื้อขายถี่ที่สุด</strong> · ถ้าคุณใช้ CV เลือกกลยุทธ์โดยดู R² อย่างเดียว <strong>คุณกำลังคัดเลือกตัวที่แย่ที่สุดในเงินจริงอย่างเป็นระบบ</strong></p>
+
+<div class="code"><div class="hdr">🐍 Python — ต้นทุนจริงของรายย่อยไทย กินกลยุทธ์ Sharpe 1.5 ได้แค่ไหน</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+
+comm   = 0.00157*1.07                           <span class="c"># ค่าคอมฯ 0.157% + VAT 7%</span>
+spread = 0.0010                                 <span class="c"># bid-ask ของหุ้น SET50</span>
+rt     = 2*comm + spread                        <span class="c"># ต้นทุนไป-กลับหนึ่งรอบ</span>
+print(f"ต้นทุนต่อรอบ = {rt:.3%}")
+<span class="o"># ต้นทุนต่อรอบ = 0.436%</span>
+
+sr_gross, vol = 1.5, 0.15                       <span class="c"># กลยุทธ์ที่ backtest บอกว่า Sharpe 1.5</span>
+ret = sr_gross*vol
+for name, turns in [("รายวัน",252), ("รายสัปดาห์",52), ("รายเดือน",12)]:
+    net = ret - turns*rt
+    print(f"  {name:10s} หมุน {turns:3d} ครั้ง/ปี | ต้นทุน {turns*rt:6.1%} | net {net:+7.1%} | Sharpe {net/vol:+.2f}")
+<span class="o">#   รายวัน     หมุน 252 ครั้ง/ปี | ต้นทุน 109.9% | net  -87.4% | Sharpe -5.82</span>
+<span class="o">#   รายสัปดาห์ หมุน  52 ครั้ง/ปี | ต้นทุน  22.7% | net   -0.2% | Sharpe -0.01</span>
+<span class="o">#   รายเดือน   หมุน  12 ครั้ง/ปี | ต้นทุน   5.2% | net  +17.3% | Sharpe +1.15</span>
+print(f"จุดคุ้มทุน: หมุนได้ {ret/rt:.0f} ครั้ง/ปี ก่อน edge หมดเกลี้ยง")
+<span class="o"># จุดคุ้มทุน: หมุนได้ 52 ครั้ง/ปี ก่อน edge หมดเกลี้ยง</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ กลยุทธ์เดียวกันเป๊ะ — เปลี่ยนแค่ความถี่ ผลต่างกันคนละโลก</div>
+<p><strong>Sharpe 1.5 ที่รีบาลานซ์รายวัน กลายเป็น −5.82</strong> · รายสัปดาห์เหลือ <strong>−0.01</strong> คือแทบไม่เหลืออะไร · ต้องถอยมาถึง<strong>รายเดือน</strong>ถึงจะเหลือ +1.15</p>
+<p>ตัวเลขที่ควรจำ: <strong>งบต้นทุนของคุณคือประมาณ 0.44% ต่อรอบ → หมุนพอร์ตได้ราว 50 ครั้ง/ปี ก่อนที่ edge ระดับ Sharpe 1.5 จะหมดเกลี้ยง</strong> · ถ้าเป็นหุ้นนอก SET50 ที่ spread กว้าง 0.25% เพดานเหลือ <strong>38 ครั้ง/ปี</strong></p>
+<p><strong>ทำยังไง:</strong> ให้ทุก fold ของ walk-forward คืนค่าเป็น <strong>Sharpe หลังหักต้นทุน</strong> ไม่ใช่ R² · ถ้าทำแบบนั้นตั้งแต่แรก CV จะเลือกกลยุทธ์ที่หมุนช้าลงให้คุณเอง โดยที่คุณไม่ต้องตัดสินใจเรื่องนี้ด้วยมือ</p>
+<p>💡 และถ้าเป็นไปได้ ให้ใส่<strong>ค่าปรับ turnover</strong> เข้าไปในโมเดลตั้งแต่ตอนฝึก (เช่นจำกัด <span class="fm" style="display:inline">Σ|wₜ − wₜ₋₁|</span> หรือใช้แถบไม่เทรดรอบสัญญาณ) — <strong>ถูกกว่าการไปแก้ทีหลังมาก</strong></p></div>
+
+<div class="bx bg"><div class="bt">🎯 5 อย่างที่ต้องจำจากบทที่ 12</div>
 <ul>
 <li><strong>การแบ่งครั้งเดียวคือการโยนเหรียญ</strong> — R² เหวี่ยงได้ 0.23–0.71 บนข้อมูลและโมเดลเดียวกัน · ใช้ CV แล้ว<strong>รายงานส่วนเบี่ยงเบนคู่กับค่าเฉลี่ยเสมอ</strong></li>
 <li><strong>ข้อมูลมีเวลา = ชุดฝึกต้องอยู่ก่อนชุดทดสอบ</strong> — <code>KFold(shuffle=True)</code> ให้ +0.271 กับข้อมูลที่ความจริงคือ −3.496</li>
 <li><strong>สลับ y แล้วรันซ้ำ</strong> — จับ leakage <u>ข้ามแถว</u>ได้ · แต่<strong>จับ leakage ข้ามเวลาไม่ได้เลย</strong> ต้องดูช่องว่างระหว่าง k-fold กับ walk-forward ควบคู่</li>
 <li><strong>นับว่าลองมากี่แบบ แล้วเทียบกับเกณฑ์</strong> — ลอง 200 แบบบนข้อมูล 3 ปี ได้ Sharpe <strong>1.60 จาก edge = 0</strong> · walk-forward ที่ถูกต้อง 100% ก็ยังหลอกคุณได้ถ้า N ใหญ่</li>
+<li><strong>ต้นทุนต้องอยู่ใน CV ไม่ใช่หักทีหลัง</strong> — มันเปลี่ยน<u>อันดับ</u>ของกลยุทธ์ · ที่ 0.44%/รอบ คุณหมุนพอร์ตได้ราว <strong>50 ครั้ง/ปี</strong> ก่อน edge ระดับ Sharpe 1.5 จะหมด</li>
 </ul></div>
 
 <div class="pq">ตอนนี้เราวัดผลได้ซื่อสัตย์แล้ว — เหลือคำถามว่า "ตัวเลขที่วัดได้นั้น มันเหวี่ยงแค่ไหน" โดยไม่ต้องเชื่อสูตรของใครเลย</div>
@@ -480,11 +513,68 @@ for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
 <p>💡 ในทางปฏิบัติ: <strong>ลองหลาย L แล้วดูว่าคำตอบเปลี่ยนไหม</strong> · ถ้าเปลี่ยนมาก แปลว่าข้อมูลคุณมีความจำแรงและคุณควรระวังเป็นพิเศษ ไม่ใช่ไปหา L ที่ให้คำตอบสวยที่สุด</p>
 </details></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 13</div>
+<h3 id="s13-4">13.4 ❌ ข้อจำกัดที่ใหญ่ที่สุดของ bootstrap — และมันตรงกับผู้อ่านหนังสือเล่มนี้พอดี</h3>
+
+<div class="bx br"><div class="bt">❌ "ไม่ต้องสมมติการแจกแจง" ไม่ได้แปลว่า "รู้ทุกอย่างเกี่ยวกับการแจกแจง"</div>
+<p>ใน §13.1 ผมเขียนว่า bootstrap ใช้ได้กับข้อมูลหางหนา <strong>"เพราะมันสุ่มจากรูปร่างจริงของข้อมูล"</strong> · ประโยคนั้นถูก แต่ต้องอ่านให้ครบ:</p>
+<p><strong>bootstrap สุ่มจากรูปร่างของ<u>ตัวอย่าง</u> ไม่ใช่รูปร่างของ<u>ความจริง</u></strong> · ถ้าเหตุการณ์หายนะยังไม่เคยเกิดในข้อมูล 3 ปีของคุณ <strong>มันจะไม่โผล่ใน bootstrap แม้แต่รอบเดียวจาก 10,000 รอบ</strong> — เพราะไม่มีอะไรให้หยิบ</p>
+<p>และนี่คือ<strong>โปรไฟล์ของการขายออปชัน</strong> ซึ่งเป็นสิ่งที่หนังสือเล่มนี้ทั้งเล่มพูดถึง: ได้เบี้ยเล็ก ๆ เกือบทุกวัน แล้วเจ็บหนักนาน ๆ ครั้ง</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — กลยุทธ์ขายออปชันที่ bootstrap บอกว่า "กำไรแน่นอน"</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+
+rng = np.random.default_rng(7)
+T, p_jump = 756, 1/504                          <span class="c"># 3 ปี · jump เฉลี่ย 1 ครั้งทุก 2 ปี</span>
+def sharpe(x): return x.mean()/x.std()*np.sqrt(252)
+def path(g):
+    r = np.full(T, 0.0006) + g.normal(0, 0.0015, T)   <span class="c"># เก็บเบี้ยเล็ก ๆ ทุกวัน</span>
+    j = g.random(T) &lt; p_jump
+    r[j] -= g.uniform(0.12, 0.30, j.sum())            <span class="c"># ★ วันที่ระเบิด</span>
+    return r
+
+clean = sum(not (path(rng) &lt; -0.05).any() for _ in range(500))
+print(f"P(ข้อมูล 3 ปี ไม่เจอ jump เลย) = {clean/500:.0%}")
+<span class="o"># P(ข้อมูล 3 ปี ไม่เจอ jump เลย) = 23%</span>
+
+<span class="c"># ★ หยิบตัวอย่างที่ 'โชคดี' มาหนึ่งชุด แล้วให้ bootstrap ตัดสิน</span>
+g = np.random.default_rng(11)
+while True:
+    r = path(g)
+    if not (r &lt; -0.05).any(): break
+print(f"ตัวอย่างที่ 'สะอาด': Sharpe = {sharpe(r):+.2f}")
+<span class="o"># ตัวอย่างที่ 'สะอาด': Sharpe = +6.93</span>
+b = np.array([sharpe(r[g.integers(0, T, T)]) for _ in range(4000)])
+print(f"  bootstrap CI = [{np.percentile(b,2.5):+.2f}, {np.percentile(b,97.5):+.2f}]")
+<span class="o">#   bootstrap CI = [+5.72, +8.17]</span>
+long = np.concatenate([path(np.random.default_rng(3+i)) for i in range(20)])
+print(f"ความจริงระยะยาว 60 ปี: Sharpe = {sharpe(long):+.2f}")
+<span class="o"># ความจริงระยะยาว 60 ปี: Sharpe = +0.42</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ อ่านตัวเลขสามบรรทัดสุดท้ายเรียงกัน</div>
+<div class="tw"><table>
+<tr><th></th><th class="nw">Sharpe</th></tr>
+<tr><td class="nw">ตัวอย่าง 3 ปีที่บังเอิญไม่เจอ jump (เกิดขึ้น <strong>23%</strong> ของเวลา)</td><td class="nw"><strong>+6.93</strong></td></tr>
+<tr><td class="nw">ช่วงความเชื่อมั่น 95% ที่ bootstrap ให้</td><td class="nw"><strong>[+5.72, +8.17]</strong></td></tr>
+<tr><td class="nw"><strong>ความจริงระยะยาว</strong></td><td class="nw"><strong>+0.42</strong></td></tr>
+</table></div>
+<p><strong>ช่วงความเชื่อมั่นไม่ได้แค่ผิด — มันไม่ครอบคลุมค่าจริงเลยแม้แต่นิดเดียว</strong> · ปลายล่างสุดของช่วง (+5.72) ยังสูงกว่าความจริงถึง <strong>13 เท่า</strong> · และ bootstrap รายงานมันด้วยความมั่นใจเต็มร้อย เพราะจากมุมของมัน ข้อมูลไม่มีวันแย่เลยสักวัน</p>
+<p><strong>และ block bootstrap จาก §13.3 ไม่ช่วยอะไรเลยในกรณีนี้</strong> — ผมลองแล้วได้ [+5.66, +8.21] ซึ่งแทบเหมือนเดิม · เพราะปัญหาไม่ใช่ "ความจำของข้อมูล" แต่คือ<strong>เหตุการณ์ที่ยังไม่เกิด</strong> ซึ่ง<strong>ไม่มีวิธี resampling ใดแก้ได้ตามนิยาม</strong></p>
+<p>สังเกตว่านี่เป็นคนละเรื่องกับ §13.3 โดยสิ้นเชิง และ<strong>ใหญ่กว่ามาก</strong>: §13.3 ทำให้ผิดไป 21–30% · ข้อนี้ทำให้ผิดไป <strong>16 เท่า</strong></p></div>
+
+<div class="bx ba"><div class="bt">🧮 ทำยังไงแทน — 3 ข้อ</div>
+<ol>
+<li><strong>นับก่อนว่าคุณมีข้อมูลหางกี่จุด</strong> · รัน <code>(r &lt; -3*r.std()).sum()</code> · <strong>ถ้าได้ 0 หรือ 1 แปลว่าคุณกำลังประมาณความเสี่ยงหางจากจุดข้อมูล 0–1 จุด</strong> — ตัวเลขความเสี่ยงใดก็ตามที่คุณคำนวณได้ ไม่มีความหมาย</li>
+<li><strong>ยัดเหตุการณ์ที่ยังไม่เคยเกิดเข้าไปเอง</strong> — นี่คือ <strong>stress test</strong> จาก <a href="math-part10.html#s11-5">เล่ม 2 · E §11.5</a> · เติมวัน −20% ลงในซีรีส์ด้วยมือ แล้วดูว่ากลยุทธ์เหลืออะไร · <strong>สำหรับกลยุทธ์ short vol นี่คือการวิเคราะห์เดียวที่มีความหมายจริง</strong></li>
+<li><strong>ดูความเบ้ก่อนเชื่อ CI</strong> · ถ้าผลตอบแทนเบ้ลบ (<a href="math-part8.html#s7-5">เล่ม 2 · C §7.5</a>) ให้ถือว่า <strong>bootstrap CI ไร้ค่าจนกว่าจะพิสูจน์เป็นอย่างอื่น</strong></li>
+</ol>
+<p>💎 <strong>ประโยคปิด:</strong> <strong>bootstrap รู้จักเฉพาะสิ่งที่เกิดขึ้นแล้ว · มันไม่รู้จักสิ่งที่ยังไม่เกิด</strong> — และในการเงิน สิ่งที่ยังไม่เกิดคือสิ่งที่ฆ่าคุณ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 13</div>
 <ul>
 <li><strong>bootstrap ให้ CI กับสถิติที่ไม่มีสูตร</strong> — max drawdown · Sortino · อัตราชนะ · อะไรที่คำนวณได้ก็ bootstrap ได้</li>
 <li><strong>ตรงกับสูตรเมื่อสมมติฐานของสูตรเป็นจริง</strong> ([0.42, 2.73] vs [0.45, 2.71]) — ซึ่งเป็นเหตุผลที่เชื่อมันได้ในกรณีที่ไม่มีสูตร</li>
 <li><strong>ข้อมูลมีความจำ = ต้องใช้ block bootstrap</strong> — และถึงอย่างนั้นก็ยัง<strong>ประเมินต่ำกว่าความจริงอยู่ดี</strong> ให้ถือเป็นขอบล่าง</li>
+<li><strong>bootstrap รู้จักเฉพาะสิ่งที่เกิดขึ้นแล้ว</strong> — กลยุทธ์เบ้ลบที่ยังไม่เจอวันระเบิด จะได้ CI [+5.72, +8.17] ทั้งที่ความจริงคือ +0.42 · <strong>ไม่มีวิธี resampling ใดแก้ข้อนี้ได้ ต้องใช้ stress test</strong></li>
 </ul></div>
 
 <div class="pq">เหลือปัญหาสุดท้ายที่ค้างมาตั้งแต่บทที่ 6 — ตัวแปรที่ทับซ้อนกันจน β เหวี่ยงจนอ่านไม่ได้ · คราวนี้มีทางแก้จริง ๆ แล้ว</div>
@@ -752,7 +842,7 @@ Ridge บน X สเกลใหม่    →  β_size = 0.0027  →  แปล
 <div class="pq">เล่ม 2 สอนสร้างตัวเลข แล้วสอนตรวจสอบตัวเลข · บทสุดท้ายนี้สอนสิ่งที่ยากที่สุด — <strong>ตรวจสอบวิธีตรวจสอบของตัวเอง</strong></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
-<p><strong>Cross-validation (CV)</strong> = แบ่งข้อมูลตรวจสอบหลายรอบแล้วเฉลี่ย · <strong>k-fold</strong> = แบ่งเป็น k ส่วนผลัดกันเป็นชุดทดสอบ · <strong>Walk-forward / TimeSeriesSplit</strong> = CV ที่ชุดฝึกอยู่ก่อนชุดทดสอบเสมอ · <strong>Data leakage</strong> = ข้อมูลที่ตอนนั้นยังไม่มี รั่วเข้าไปในการฝึก · <strong>Purging</strong> = ตัดแถวที่ป้ายกำกับทับซ้อนกับชุดทดสอบ · <strong>Embargo</strong> = เว้นช่องว่างเพิ่มหลังชุดทดสอบ · <strong>Survivorship bias</strong> = ใช้รายชื่อปัจจุบันย้อนดูอดีต ทำให้เห็นแต่ผู้รอด · <strong>Point-in-time data</strong> = ข้อมูลที่เก็บว่า ณ วันนั้นหน้าตาเป็นยังไง · <strong>Bootstrap</strong> = สุ่มหยิบซ้ำแบบใส่คืนเพื่อหาความไม่แน่นอน · <strong>Block bootstrap</strong> = หยิบทีละก้อนต่อเนื่องเพื่อรักษาความจำของข้อมูล · <strong>Regularization</strong> = เพิ่มค่าปรับให้สัมประสิทธิ์ที่ใหญ่ · <strong>Ridge (L2)</strong> = ปรับด้วยกำลังสอง ดึงเข้าหาศูนย์แต่ไม่เป็นศูนย์ · <strong>Lasso (L1)</strong> = ปรับด้วยค่าสัมบูรณ์ ทำให้บางตัวเป็นศูนย์เป๊ะ · <strong>Elastic Net</strong> = ผสม L1 กับ L2 · <strong>Stability selection</strong> = เลือกเฉพาะตัวแปรที่ถูกเลือกซ้ำ ๆ ในหลายตัวอย่าง</p></div>
+<p><strong>Cross-validation (CV)</strong> = แบ่งข้อมูลตรวจสอบหลายรอบแล้วเฉลี่ย · <strong>k-fold</strong> = แบ่งเป็น k ส่วนผลัดกันเป็นชุดทดสอบ · <strong>Walk-forward / TimeSeriesSplit</strong> = CV ที่ชุดฝึกอยู่ก่อนชุดทดสอบเสมอ · <strong>Data leakage</strong> = ข้อมูลที่ตอนนั้นยังไม่มี รั่วเข้าไปในการฝึก · <strong>Purging</strong> = ตัดแถวที่ป้ายกำกับทับซ้อนกับชุดทดสอบ · <strong>Embargo</strong> = เว้นช่องว่างเพิ่มหลังชุดทดสอบ · <strong>Survivorship bias</strong> = ใช้รายชื่อปัจจุบันย้อนดูอดีต ทำให้เห็นแต่ผู้รอด · <strong>Point-in-time data</strong> = ข้อมูลที่เก็บว่า ณ วันนั้นหน้าตาเป็นยังไง · <strong>Bootstrap</strong> = สุ่มหยิบซ้ำแบบใส่คืนเพื่อหาความไม่แน่นอน · <strong>Block bootstrap</strong> = หยิบทีละก้อนต่อเนื่องเพื่อรักษาความจำของข้อมูล · <strong>Turnover</strong> = พอร์ตถูกหมุนเปลี่ยนตัวบ่อยแค่ไหน ซึ่งกำหนดต้นทุนรวม · <strong>Regularization</strong> = เพิ่มค่าปรับให้สัมประสิทธิ์ที่ใหญ่ · <strong>Ridge (L2)</strong> = ปรับด้วยกำลังสอง ดึงเข้าหาศูนย์แต่ไม่เป็นศูนย์ · <strong>Lasso (L1)</strong> = ปรับด้วยค่าสัมบูรณ์ ทำให้บางตัวเป็นศูนย์เป๊ะ · <strong>Elastic Net</strong> = ผสม L1 กับ L2 · <strong>Stability selection</strong> = เลือกเฉพาะตัวแปรที่ถูกเลือกซ้ำ ๆ ในหลายตัวอย่าง</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
 <div style="text-align:center;padding:24px;color:#64748b">
