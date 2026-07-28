@@ -1290,6 +1290,27 @@ class Order:
 
 <h3 id="s34-2">34.2 REST API Wrapper พร้อม Rate Limiting และ Retry</h3>
 
+<div class="bx bb">
+<div class="bt">🧱 โครงก่อนดูโค้ด — บล็อกถัดไปยาว ~240 บรรทัด อ่านเป็น 3 ชั้น</div>
+<p>อย่าอ่านไล่บรรทัด · คลาสนี้มีชั้นชัดเจน แต่ละชั้นเรียกชั้นล่างลงไป:</p>
+<table>
+<tr><th>ชั้น</th><th>เมธอด</th><th>หน้าที่</th><th>ระดับ</th></tr>
+<tr><td rowspan="2"><strong>① เปลือกนอก</strong><br>สิ่งที่โค้ดเราเรียกใช้</td>
+    <td><code>place_market_order</code><br><code>place_limit_order</code></td>
+    <td>ส่งคำสั่งซื้อขาย — แปลง argument เป็น payload ของตลาด</td><td>🟢</td></tr>
+<tr><td><code>cancel_order</code><br><code>get_order_status</code></td>
+    <td>ยกเลิก / เช็คสถานะ</td><td>🟢</td></tr>
+<tr><td><strong>② แกนกลาง</strong><br>ทุกคำสั่งวิ่งผ่านตรงนี้</td>
+    <td><code>_request</code></td>
+    <td><strong>หัวใจของทั้งคลาส</strong> — rate limit · retry · timeout · แปล error<br>~60 บรรทัด และเป็นที่ที่ระบบจริงพังบ่อยที่สุด</td><td>🔵</td></tr>
+<tr><td><strong>③ งานประกอบ</strong></td>
+    <td><code>_sign</code></td><td>เซ็นลายเซ็น HMAC ให้ตลาดยืนยันตัวตน</td><td>🔵</td></tr>
+<tr><td></td><td><code>__aenter__</code><br><code>__aexit__</code></td>
+    <td>เปิด/ปิด session อัตโนมัติ — ทำให้ใช้กับ <code>async with</code> ได้<br>(หลักการเดียวกับ <code>with</code> ในบทที่ 8.5)</td><td>🟢</td></tr>
+</table>
+<p>🧭 <strong>ถ้าเวลาน้อย:</strong> อ่าน <code>_request</code> อย่างเดียวก็คุ้มแล้ว — เมธอดข้างบนทั้งหมดเป็นแค่เปลือกที่เรียกมัน · และ <strong>ขีดเส้นใต้ลำดับใน <code>_request</code>: จำกัดอัตรา → เซ็น → ยิง → ถ้าพลาดค่อยลองใหม่</strong> ลำดับนี้สำคัญกว่ารายละเอียดของแต่ละขั้น</p>
+</div>
+
 <div class="fm">import asyncio
 import hashlib
 import hmac
@@ -1404,7 +1425,17 @@ class BybitOrderClient:
 
                         logger.warning(f"API error [{ret_code}]: {ret_msg}, "
                                        f"attempt {attempt+1}/{max_retries}")
+                        if attempt == max_retries - 1:
+                            raise RuntimeError(
+                                f"Exchange error หลังลอง {max_retries} ครั้ง "
+                                f"[{ret_code}]: {ret_msg}"
+                            )
+                        <span class="c"># ⚠️ ต้อง continue — ถ้าปล่อยให้ไหลลงไป return</span>
+                        <span class="c">#    error ที่ควรลองใหม่จะถูกคืนออกไปเลย ไม่เคย retry</span>
+                        await asyncio.sleep(2 ** attempt)
+                        continue
 
+                    <span class="c"># มาถึงตรงนี้ = retCode == 0 = สำเร็จจริง</span>
                     return data
 
                 except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -1564,6 +1595,46 @@ class BybitOrderClient:
             avg_price         = float(item.get("avgPrice", 0)),
         )
         return order</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 แกะ <code>_request</code> — ลำดับ 4 ขั้นที่ทุกคำสั่งต้องผ่าน</div>
+<div class="ad-code">for attempt in range(max_retries):        # ④ วนลองใหม่
+    async with self._sem:                 # ① จำกัดอัตรา
+        try:
+            async with self._session.post(...) as resp:   # ③ ยิง
+                data = await resp.json()
+            if data.get("retCode") != 0:  # ตลาดตอบว่าไม่สำเร็จ
+                ...
+                continue                  # ← ลองใหม่
+            return data                   # สำเร็จจริงเท่านั้น
+        except (ClientError, TimeoutError):
+            await asyncio.sleep(2 ** attempt)   # ④ ถอยแบบทวีคูณ</div>
+<div class="ad-steps">
+<ol>
+<li><strong><code>async with self._sem</code></strong> — <code>_sem</code> คือ <code>asyncio.Semaphore</code> = "บัตรคิว" · มีบัตรจำกัด ใครไม่ได้บัตรต้องรอ · <strong>นี่คือสิ่งที่กันเราจากการยิงเกิน rate limit แล้วโดนแบน</strong> — ไม่ใช่การ <code>sleep</code> เดาสุ่ม</li>
+<li><strong><code>self._sign(params)</code></strong> — ตลาดต้องรู้ว่าเป็นเราจริง จึงต้องแนบลายเซ็น HMAC ที่คำนวณจาก secret key + timestamp · timestamp ทำให้ request เก่าใช้ซ้ำไม่ได้</li>
+<li><strong>ยิงแล้วอ่านคำตอบ</strong> — สังเกตว่ามีการตรวจ <strong>สองชั้น</strong>: ชั้นแรกคือ network สำเร็จไหม (จับด้วย <code>except</code>) ชั้นที่สองคือ<strong>ตลาดตอบว่าสำเร็จไหม</strong> (<code>retCode != 0</code>) · <strong>HTTP 200 ไม่ได้แปลว่าออเดอร์ผ่าน</strong> — นี่คือจุดที่คนพลาดมากที่สุด</li>
+<li><strong><code>2 ** attempt</code></strong> — รอ 1 → 2 → 4 วินาที (exponential backoff เหมือนบทที่ 33) เพราะถ้าตลาดกำลังมีปัญหา การยิงถี่ ๆ ยิ่งทำให้แย่ลง</li>
+</ol>
+<p>จำโครง: <em>เข้าคิว → เซ็นชื่อ → ยิง → ถ้าพลาดถอยแล้วลองใหม่</em> · ส่วน <code>place_market_order</code> / <code>cancel_order</code> ทั้งหมดเป็นแค่เปลือกที่เตรียม <code>params</code> แล้วเรียกเมธอดนี้</p>
+</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">❌ กับดักที่เคยอยู่ในโค้ดนี้จริง — retry ที่ไม่เคย retry</div>
+<p>เดิมบรรทัด <code>return data</code> ถูกวางไว้<strong>ระดับเดียวกับ <code>if data.get("retCode") != 0:</code></strong> ผลคือเมื่อเจอ error ที่ควรลองใหม่ โค้ดจะ <code>logger.warning("... attempt 1/3")</code> แล้ว<strong>คืนค่าที่ล้มเหลวออกไปทันที</strong> — ลูป <code>for attempt in range(3)</code> ไม่เคยวนรอบที่สองเลย</p>
+<p>อันตรายเป็นพิเศษเพราะ <strong>log จะบอกว่า "attempt 1/3" ทำให้ดูเหมือนระบบกำลัง retry อยู่</strong> และฟังก์ชันคืนค่าปกติไม่มี exception · ผู้เรียกได้ <code>data</code> ที่มี <code>retCode != 0</code> ไปใช้ต่อโดยไม่รู้ตัว</p>
+<p>🧭 <strong>วิธีจับบั๊กประเภทนี้:</strong> ในลูป retry ให้ไล่ดูว่า<strong>ทุกเส้นทางที่ไม่สำเร็จ จบด้วย <code>continue</code> หรือ <code>raise</code></strong> · ถ้ามีเส้นทางไหน "ไหลลง" ไปถึง <code>return</code> ได้ทั้งที่ยังไม่สำเร็จ นั่นคือ retry ที่ตายแล้ว</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] จุดที่โค้ดนี้ยังไม่สมบูรณ์ (ตั้งใจให้เห็น)</div>
+<ul>
+<li><strong>ถือ semaphore ระหว่าง sleep</strong> — <code>await asyncio.sleep(delay)</code> อยู่ข้างใน <code>async with self._sem</code> แปลว่าระหว่างรอ backoff เรายัง<strong>กินบัตรคิวอยู่</strong> ทำให้ request อื่นที่พร้อมยิงต้องรอไปด้วย · ในระบบจริงควรออกจาก semaphore ก่อนแล้วค่อย sleep</li>
+<li><strong>ไม่มี idempotency ตอน timeout</strong> — ถ้า network timeout ระหว่างส่งออเดอร์ เราไม่รู้ว่าตลาดได้รับหรือยัง · การ retry อาจทำให้<strong>เปิดสองไม้</strong> · ทางแก้จริงคือส่ง <code>orderLinkId</code> (client order id) ที่ไม่ซ้ำ แล้วให้ตลาดปฏิเสธของซ้ำเอง — โค้ดนี้มี <code>client_order_id</code> อยู่แล้วแต่ยังไม่ได้ใช้เพื่อการนี้</li>
+<li><strong><code>NO_RETRY_CODES</code> เป็นรายการที่ต้องดูแล</strong> — โค้ดที่ไม่อยู่ในลิสต์จะถูก retry หมด · ถ้าตลาดเพิ่ม error code ใหม่ที่ retry ไม่ได้ (เช่นบัญชีถูกระงับ) ระบบจะยิงซ้ำไปเรื่อย ๆ · ระบบ production ควร <strong>default เป็นไม่ retry</strong> แล้วระบุเฉพาะโค้ดที่ retry ได้แทน — ปลอดภัยกว่าเมื่อเจอของที่ไม่รู้จัก</li>
+</ul>
+</div>
 
 <h3 id="s34-3">34.3 ทดสอบบน Testnet</h3>
 
