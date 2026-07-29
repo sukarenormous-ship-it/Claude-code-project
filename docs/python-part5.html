@@ -1257,6 +1257,8 @@ Constraints:
 
 Libraries: scipy.optimize, numpy, pandas</div>
 
+<div class="read-aloud">การเรียก optimizer ทุกตัวในโลก ไม่ว่าไลบรารีไหน ประกอบด้วย<strong>ของ 4 อย่างเสมอ</strong> — พอจำได้แล้วโค้ด 72 บรรทัดข้างล่างจะเหลือแค่ "หาให้เจอว่าของ 4 อย่างนี้อยู่ตรงไหน": ① <strong>สิ่งที่อยากให้น้อยที่สุด</strong> (objective) · ② <strong>จุดเริ่มเดา</strong> (<code>w0</code>) · ③ <strong>กรอบที่ห้ามออกนอก</strong> (bounds — รายตัว) · ④ <strong>เงื่อนไขที่ต้องเป็นจริง</strong> (constraints — ข้ามตัว) · ที่เหลือคือ docstring กับการจัด DataFrame ให้สวย</div>
+
 <div class="fm">from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
@@ -1349,6 +1351,88 @@ print(f"Expected Sharpe: {sharpe:.2f}")</div>
   SOL: 100.0%
 Expected Sharpe: 1.01</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 ของ 4 อย่างในโค้ดนี้อยู่ตรงไหน</div>
+<div class="ad-code">def neg_sharpe(w):                          <span class="c"># ① สิ่งที่อยากให้น้อยที่สุด</span>
+    port_ret = w @ mu                       <span class="c">#    ผลตอบแทนพอร์ต</span>
+    port_vol = np.sqrt(w @ cov @ w)         <span class="c">#    ความผันผวนพอร์ต</span>
+    return -(port_ret / port_vol)           <span class="c">#    ติดลบ = พลิก max เป็น min</span>
+
+w0 = np.ones(n) / n                         <span class="c"># ② จุดเริ่มเดา = ถือเท่ากันทุกตัว</span>
+bounds = [(0.0, 1.0)] * n                   <span class="c"># ③ กรอบรายตัว: 0–100%</span>
+opt_constraints = [{"type": "eq",           <span class="c"># ④ เงื่อนไขข้ามตัว:</span>
+                    "fun": lambda w: w.sum() - 1.0}]   <span class="c">#    น้ำหนักรวม = 1</span></div>
+<div class="ad-steps">
+<ol>
+<li><code>w @ mu</code> — <code>@</code> คือ <strong>dot product</strong> เขียนสั้น ๆ ของ <code>(w[0]*mu[0] + w[1]*mu[1] + ...)</code> · อ่านเป็นภาษาคนว่า "ถ่วงน้ำหนักผลตอบแทนของแต่ละตัวตามสัดส่วนที่ถือ"</li>
+<li><code>np.sqrt(w @ cov @ w)</code> — สูตรความผันผวนของพอร์ต · เหตุที่<em>ไม่ใช่</em>การถ่วงน้ำหนัก sd ธรรมดา เพราะสินทรัพย์ไม่ได้ขึ้นลงพร้อมกันเป๊ะ ๆ · ตัวนอกแนวทแยงของ <code>cov</code> คือส่วนที่บอกว่ามันไปด้วยกันแค่ไหน — และเป็นที่มาของคำว่า "กระจายความเสี่ยง" ทั้งหมด</li>
+<li><code>return -(...)</code> — <strong>scipy มีแต่ <code>minimize</code> ไม่มี <code>maximize</code></strong> · อยากได้ Sharpe สูงสุดจึงใส่ลบแล้วหาต่ำสุดแทน · ตอนคืนค่าจึงต้องกลับเครื่องหมายอีกรอบ (<code>optimal_sharpe = -result.fun</code>) ไม่งั้นจะรายงาน Sharpe ติดลบทั้งที่พอร์ตดี</li>
+<li><strong>bounds กับ constraints ต่างกันตรงไหน</strong> — bounds คุมทีละตัวแยกกัน ("BTC ต้องอยู่ระหว่าง 0–100%") · constraints คุมความสัมพันธ์ข้ามตัว ("รวมกันต้องได้ 1") · optimizer จัดการคนละวิธี bounds ถูกบังคับตลอดทาง ส่วน constraints ถูกไล่เข้าหาทีละรอบ · เขียนสลับที่กันจะช้าลงมากหรือไม่ converge เลย</li>
+<li><code>{"type": "eq", "fun": lambda w: w.sum() - 1.0}</code> — รูปแบบที่ scipy กำหนด: เขียนเงื่อนไขให้อยู่ในรูป <strong>"ฟังก์ชันนี้ต้องเท่ากับศูนย์"</strong> เสมอ · อยากได้ <code>sum(w) = 1</code> จึงต้องเขียนเป็น <code>sum(w) - 1</code> · ถ้าเป็น <code>"ineq"</code> ความหมายคือ "ต้อง ≥ 0"</li>
+</ol>
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">อ่านผลลัพธ์ให้ออก — optimizer ตอบว่า "ทุ่มหมดหน้าตัก SOL"</div>
+<p>ผลที่ได้คือ <strong>BTC 0% · ETH 0% · SOL 100%</strong> ทั้งที่โจทย์ให้สินทรัพย์มาสามตัวเพื่อกระจายความเสี่ยง · นี่คือสิ่งที่เรียกว่า <strong>corner solution</strong> และเป็นพฤติกรรมปกติของ mean-variance optimizer ไม่ใช่ bug ของโค้ด</p>
+<p>โค้ดทำถูกทุกบรรทัด · optimizer ก็หาคำตอบเจอจริง · ปัญหาอยู่ที่<strong>ของที่ป้อนเข้าไป</strong> — และนี่คือกับดักที่ทำให้ backtest จำนวนมากในโลกไร้ค่า</p>
+</div>
+
+<p>ลองเปิดดูตัวเลขที่ optimizer ใช้ตัดสินใจ เทียบกับค่าจริงที่เราใช้สร้างข้อมูล (เรารู้เพราะเราเขียนเอง — ในตลาดจริงไม่มีใครรู้):</p>
+
+<div class="fm"><span class="c"># optimizer เห็นอะไร vs ความจริงเป็นอย่างไร</span>
+true_mu_annual = np.array([0.0005, 0.0007, 0.0010]) * 252   <span class="c"># ค่าที่เราใส่ตอนสร้าง</span>
+est_mu_annual  = ret_data.mean().values * 252               <span class="c"># ค่าที่วัดได้จาก 252 วัน</span>
+true_sd_annual = np.sqrt(np.array([0.0002, 0.0003, 0.0005]) * 252)
+est_sd_annual  = ret_data.std().values * np.sqrt(252)
+
+<span class="c"># ค่าเฉลี่ยจาก n ปี มีค่าคลาดเคลื่อนมาตรฐาน = sd / sqrt(n)  → 1 ปี ก็คือ sd เต็ม ๆ</span>
+print(f"{'':5}{'ผลตอบแทนจริง':>14}{'ที่วัดได้':>12}{'±คลาดเคลื่อน':>14}")
+for i, a in enumerate(assets):
+    print(f"{a:5}{true_mu_annual[i]:>+13.1%}{est_mu_annual[i]:>+12.1%}"
+          f"{true_sd_annual[i]:>+14.1%}")
+
+print(f"\n{'':5}{'ความผันผวนจริง':>15}{'ที่วัดได้':>12}")
+for i, a in enumerate(assets):
+    print(f"{a:5}{true_sd_annual[i]:>14.1%}{est_sd_annual[i]:>12.1%}")
+
+<span class="c"># ต้องใช้ข้อมูลกี่ปี ค่าเฉลี่ยจึงแม่นระดับ 1/3 ของตัวมันเอง</span>
+years_needed = (3 * true_sd_annual / true_mu_annual) ** 2
+print("\nต้องใช้ข้อมูลกี่ปี ค่าเฉลี่ยจึงจะพอเชื่อได้:")
+for i, a in enumerate(assets):
+    print(f"  {a}: {years_needed[i]:.0f} ปี")</div>
+<div class="output">ผลตอบแทนจริง   ที่วัดได้  ±คลาดเคลื่อน
+BTC         +12.6%      -22.5%        +22.4%
+ETH         +17.6%      -47.5%        +27.5%
+SOL         +25.2%      +33.4%        +35.5%
+      ความผันผวนจริง   ที่วัดได้
+BTC           22.4%       21.3%
+ETH           27.5%       26.2%
+SOL           35.5%       33.2%
+ต้องใช้ข้อมูลกี่ปี ค่าเฉลี่ยจึงจะพอเชื่อได้:
+  BTC: 29 ปี
+  ETH: 22 ปี
+  SOL: 18 ปี</div>
+
+<div class="bx bd">
+<div class="bt">ตัวเลขที่ควรจำไปทั้งชีวิต</div>
+<p>ความจริงคือ<strong>ทั้งสามตัวกำไรหมด</strong> (+12.6% / +17.6% / +25.2%) · แต่ข้อมูล 252 วันที่สุ่มออกมาบอกว่า BTC ขาดทุน 22.5% และ ETH ขาดทุน 47.5% — <strong>ผิดกระทั่งเครื่องหมาย</strong> · optimizer เห็นแบบนั้นก็ทำงานของมันอย่างซื่อสัตย์: ตัดสองตัวที่ "ขาดทุน" ทิ้ง เหลือตัวเดียว</p>
+<p>ดูคอลัมน์ ±คลาดเคลื่อนให้ดี · ค่าคลาดเคลื่อนของค่าเฉลี่ยรายปีจากข้อมูล 1 ปี = ความผันผวนรายปีเต็ม ๆ · ของ BTC คือ ±22.4% ในขณะที่ค่าจริงคือ +12.6% — <strong>ความคลาดเคลื่อนใหญ่กว่าสิ่งที่จะวัด</strong> · จึงต้องรอถึง 29 ปีกว่าจะแม่นพอ</p>
+<p>ตรงข้ามกับตารางที่สอง: <strong>ความผันผวนวัดได้แม่นมาก</strong> (22.4 vs 21.3) จากข้อมูลชุดเดียวกัน · สาเหตุคือ sd ประมาณจาก "ขนาดของการแกว่ง" ซึ่งมีให้เก็บทุกแท่ง ส่วนค่าเฉลี่ยประมาณจาก "ระยะทางสุทธิจากต้นถึงปลาย" ซึ่งมีแค่ค่าเดียวไม่ว่าจะเก็บถี่แค่ไหน — <strong>เก็บข้อมูลรายนาทีก็ไม่ช่วยให้รู้ค่าเฉลี่ยแม่นขึ้น มีแต่ต้องรอนานขึ้นเท่านั้น</strong></p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 แล้วมืออาชีพทำยังไง</div>
+<p>ข้อสรุปไม่ใช่ "อย่าใช้ optimizer" แต่คือ <strong>อย่าป้อนค่าเฉลี่ยที่ประมาณจากอดีตเข้าไปตรง ๆ</strong> · ทางออกที่ใช้กันจริงมีสามแนว:</p>
+<ol>
+<li><strong>เอาค่าเฉลี่ยออกจากสมการ</strong> — ใช้ minimum-variance หรือ risk-parity แทน maximum-Sharpe · ทั้งคู่ใช้แค่ <code>cov</code> ซึ่งเป็นตัวเลขที่เชื่อได้จริงตามตารางที่สอง (แบบฝึกหัดข้างล่างคือข้อนี้พอดี)</li>
+<li><strong>บีบกรอบให้แคบลง</strong> — เปลี่ยน <code>max_weight</code> จาก 1.0 เป็นราว 0.4 · เป็นการยอมรับตรง ๆ ว่า "ฉันไม่เชื่อค่าเฉลี่ยของตัวเองพอที่จะทุ่มหมดหน้าตัก" · หยาบแต่ได้ผลดีอย่างน่าประหลาด</li>
+<li><strong>ดึงค่าประมาณเข้าหาค่ากลาง</strong> (shrinkage / Black-Litterman) — แทนที่จะเชื่อ <code>−47.5%</code> ของ ETH ก็ผสมกับค่าเฉลี่ยรวมของทั้งกลุ่ม · เป็นวิธีที่กองทุนใช้จริง</li>
+</ol>
+<p>มีผลการศึกษาคลาสสิกที่ยืนยันไปในทางเดียวกันว่า พอร์ตถือเท่ากันทุกตัว (<code>1/N</code> — ซึ่งก็คือ <code>w0</code> ที่โค้ดนี้ใช้เป็นแค่จุดเริ่มเดา) เอาชนะ mean-variance optimizer นอกกลุ่มตัวอย่างได้บ่อยครั้ง · ไม่ใช่เพราะ <code>1/N</code> ฉลาด แต่เพราะมัน<strong>ไม่ต้องประมาณค่าเฉลี่ยเลย</strong></p>
+</div>
+
 <details>
 <summary>แบบฝึกหัด: เขียน prompt สำหรับ linear programming หา minimum variance portfolio พร้อม sector constraints</summary>
 <div class="ans">
@@ -1427,6 +1511,8 @@ Constraints:
 Libraries: pandas, numpy</div>
 </div>
 
+<div class="read-aloud">โค้ดที่จะได้ยาว 59 บรรทัด — <strong>อย่าอ่านไล่ทีละบรรทัดจากบนลงล่าง</strong> นั่นคือวิธีอ่านที่ทำให้หลง · วิธีที่เร็วกว่ามากคืออ่าน <strong>3 signature</strong> ก่อน (<code>compute_vol_zscore</code> → <code>generate_signal</code> → <code>run_backtest</code>) ให้เห็นว่า<em>ของออกจากตัวหนึ่งไปเข้าตัวไหน</em> เป็นสายพานเส้นเดียว: ราคา → z-score ของความผันผวน → สัญญาณข้อความ → equity curve · แล้วค่อยเจาะเข้าไปในตัวที่มีตรรกะเงินจริง คือ <code>run_backtest</code> เท่านั้น · อีกสองตัวเป็นการคำนวณตรงไปตรงมาที่ตาไล่ทันอยู่แล้ว</div>
+
 <div class="fm"><span class="c"># Round 1: โค้ดที่ AI สร้าง (อาจมี bug บางข้อ)</span>
 import numpy as np
 import pandas as pd
@@ -1498,6 +1584,26 @@ def run_backtest(
     df["equity"] = 100 * np.exp(df["daily_pnl"].fillna(0).cumsum())
     return df</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 หัวใจของ backtest ทั้งตัวอยู่ที่ 4 บรรทัดนี้</div>
+<div class="ad-code">log_ret = np.log(df["price"] / df["price"].shift(1))      <span class="c"># ① ผลตอบแทนของ "ตลาด"</span>
+df["daily_pnl"] = df["position"].shift(1) * log_ret       <span class="c"># ② ของ "เรา"</span>
+
+turnover = df["position"].diff().abs().fillna(0)          <span class="c"># ③ วันที่มีการซื้อขาย</span>
+df["daily_pnl"] -= turnover * fee_per_trade
+
+df["equity"] = 100 * np.exp(df["daily_pnl"].fillna(0).cumsum())   <span class="c"># ④ ทบต้น</span></div>
+<div class="ad-steps">
+<ol>
+<li><code>np.log(p / p.shift(1))</code> — ผลตอบแทนแบบ log ของวันนั้น · ที่ใช้ log ไม่ใช่ <code>pct_change()</code> เพราะบรรทัด ④ ต้องการ<strong>บวกกันได้</strong>: ผลตอบแทน log ของหลายวันเอามาบวกกันตรง ๆ แล้วได้ผลตอบแทนรวม ส่วนเปอร์เซ็นต์ธรรมดาต้องคูณกัน</li>
+<li><code>position.shift(1) * log_ret</code> — <strong>บรรทัดที่กันโกงทั้งเล่มอยู่ตรงนี้</strong> · <code>log_ret</code> ของวันนี้คือระยะทางจากปิดเมื่อวานถึงปิดวันนี้ ดังนั้นคนที่จะได้เงินก้อนนี้ต้อง<em>ถือของอยู่แล้วตั้งแต่เมื่อวาน</em> — ซึ่งคือ <code>position.shift(1)</code> · ถ้าลืม <code>.shift(1)</code> จะกลายเป็น "รู้ราคาปิดวันนี้ก่อนแล้วค่อยตัดสินใจ" = lookahead แบบคลาสสิก</li>
+<li><code>position.diff().abs()</code> — <code>diff()</code> คือ "วันนี้ต่างจากเมื่อวานเท่าไร" · 0→1 ได้ <code>+1</code>, 1→0 ได้ <code>-1</code>, ไม่เปลี่ยนได้ <code>0</code> · ใส่ <code>.abs()</code> เพราะ<strong>ทั้งเข้าและออกเสียค่าธรรมเนียมเท่ากัน</strong> ไม่มีขาไหนได้เงินคืน · ผลคือ Series ที่เป็น 1 เฉพาะวันที่มีการซื้อขายจริง คูณค่าธรรมเนียมแล้วหักออกได้เลย</li>
+<li><code>100 * np.exp(pnl.cumsum())</code> — <code>cumsum()</code> สะสมผลตอบแทน log ทั้งหมดตั้งแต่วันแรก แล้ว <code>exp()</code> แปลงกลับเป็นตัวคูณ · เริ่มที่ 100 หมายความว่าตัวเลขบน equity curve อ่านเป็น<strong>เปอร์เซ็นต์ของทุนตั้งต้น</strong>ได้ทันที (120 = กำไร 20%)</li>
+</ol>
+<p>สังเกตว่าทั้งสี่บรรทัด<strong>ไม่มีลูป</strong> — คิดทั้งคอลัมน์พร้อมกัน · ลูป <code>for</code> ตัวเดียวในฟังก์ชันนี้อยู่ที่การแปลงสัญญาณข้อความเป็น position เพราะ position วันนี้ขึ้นกับ position เมื่อวาน (สถานะที่ "ค้าง" ต่อกันไปเรื่อย ๆ) ซึ่งเป็นงานประเภทที่ vectorize ตรง ๆ ไม่ได้</p>
+</div>
+</div>
+
 <h3 id="s30-3">30.3 Round 1 Audit — หา Bug ก่อน Round 2</h3>
 
 <div class="fm"><span class="c"># Audit Round 1: ตรวจทุก checkpoint</span>
@@ -1553,6 +1659,50 @@ PASS</div>
 <div class="bx ba">
 <div class="bt">Bug ที่พบใน Round 1</div>
 <p>Equity เริ่มต้นนับแม้ช่วงที่มี NaN — <code>first_valid_index</code> คืน 2022-01-01 ทั้งที่ position ยังเป็น 0 อยู่ 83 วัน ไม่ใช่ bug ร้ายแรง แต่ต้องระวังเมื่อคำนวณ Sharpe ratio (อย่านับ NaN period เข้าไป)</p>
+</div>
+
+<h4 style="font-size:1.05em;font-weight:700;margin-top:1.3em">ข้อที่ audit ข้างบนยังจับไม่ได้ — และวิธีจับมัน</h4>
+
+<p>audit ชุดแรกตรวจครบทุกอย่างที่ prompt เขียนไว้เป็นข้อ ๆ ยกเว้นข้อเดียว: <em>"position เข้าที่ราคา open วันถัดไป"</em> · ข้อนี้ไม่มี checkpoint ไหนตรวจเลย เพราะมันไม่ใช่คำถามว่า "ผลลัพธ์หน้าตาถูกไหม" แต่เป็นคำถามว่า <strong>"หน่วงกี่แท่ง"</strong> — ซึ่งดูจากตัวเลขสรุปไม่ออก ต้องไล่ทีละแถว · เครื่องมือที่ตอบคำถามแบบนี้ได้ใน 5 บรรทัดคือ <strong>ข้อมูลของเล่นที่คำตอบรู้ล่วงหน้า</strong>: ให้ราคาขึ้นวันละ 1% เป๊ะ ๆ แล้วยิงสัญญาณครั้งเดียว วันไหนที่เงินเริ่มไหลคือคำตอบ</p>
+
+<div class="fm"><span class="c"># ข้อมูลของเล่น: ขึ้นวันละ 1% คงที่ + สัญญาณครั้งเดียว → นับหน่วงได้ด้วยตา</span>
+idx_toy    = pd.date_range("2022-01-01", periods=6)
+prices_toy = pd.Series(100 * 1.01 ** np.arange(6), index=idx_toy)
+sig_toy    = pd.Series("HOLD", index=idx_toy)
+sig_toy.iloc[1] = "LONG"
+
+r_toy = run_backtest(prices_toy, sig_toy, fee_per_trade=0.0)
+print(r_toy[["price", "signal", "position", "daily_pnl"]].round(5).to_string())
+
+sig_day = idx_toy.get_loc(sig_toy[sig_toy == "LONG"].index[0])
+pnl_day = idx_toy.get_loc(r_toy.index[r_toy["daily_pnl"].fillna(0) != 0][0])
+print(f"\nสัญญาณแท่งที่ {sig_day} · เริ่มได้กำไรแท่งที่ {pnl_day} "
+      f"· หน่วง {pnl_day - sig_day} แท่ง")</div>
+<div class="output">                price signal  position  daily_pnl
+2022-01-01  100.00000   HOLD         0        NaN
+2022-01-02  101.00000   LONG         0    0.00000
+2022-01-03  102.01000   HOLD         1    0.00000
+2022-01-04  103.03010   HOLD         1    0.00995
+2022-01-05  104.06040   HOLD         1    0.00995
+2022-01-06  105.10101   HOLD         1    0.00995
+
+สัญญาณแท่งที่ 1 · เริ่มได้กำไรแท่งที่ 3 · หน่วง 2 แท่ง</div>
+
+<div class="bx ba">
+<div class="bt">Bug ที่ 2 — หน่วงเกินไป 1 แท่ง</div>
+<p>prompt สั่งไว้ว่าหน่วง <strong>1 แท่ง</strong> (สัญญาณวัน t → เข้าที่ open วัน t+1 → ได้ผลตอบแทนของวัน t+1) แต่โค้ดจริงหน่วง <strong>2 แท่ง</strong> · สาเหตุคือมันหน่วงสองรอบซ้อนโดยไม่ได้ตั้งใจ:</p>
+<ol>
+<li>ลูป <code>for</code> อ่าน <code>signal.iloc[i-1]</code> มาตั้ง <code>position.iloc[i]</code> — หน่วงรอบที่ ①</li>
+<li><code>df["position"].shift(1) * log_ret</code> — หน่วงรอบที่ ②</li>
+</ol>
+<p>แต่ละรอบ<em>แยกกันดูถูกต้องทั้งคู่</em> — นี่คือสาเหตุที่มันรอดสายตา · ทั้งสองบรรทัดอยู่ห่างกัน 15 บรรทัด และต่างก็ตอบโจทย์ "กันมองอนาคต" คนละข้อ</p>
+<p><strong>bug นี้ไม่อันตราย</strong> — หน่วงเกินคือ<em>อนุรักษ์นิยมเกิน</em> ผลลัพธ์จะแย่กว่าความจริง ตรงข้ามกับ lookahead ที่ทำให้ดูดีเกินจริง · แต่ก็ยัง<strong>ผิดจากที่สั่ง</strong> และในกลยุทธ์ที่สัญญาณหมดอายุเร็ว (เช่น mean reversion รายชั่วโมง) การช้าไป 1 แท่งกินกำไรหายทั้งกลยุทธ์ได้</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 ทำไม embargo test ที่หนังสือเขียนไว้จับข้อนี้ไม่ได้</div>
+<p>เพราะ embargo test ตรวจคนละอย่าง · มันถามว่า <em>"ตัดข้อมูลอนาคตทิ้งแล้ว ค่าที่คำนวณไว้เปลี่ยนไหม"</em> — ตอบว่าไม่เปลี่ยน (PASS) และก็ควรจะเป็นแบบนั้น เพราะการหน่วง<strong>เกิน</strong>ยิ่งทำให้ไม่มีทางแตะข้อมูลอนาคตอยู่แล้ว</p>
+<p>บทเรียนที่ใช้ต่อได้: <strong>test แต่ละตัวมีขอบเขตที่มันมองเห็นของมัน</strong> · embargo test เห็นเฉพาะ "แตะอนาคตหรือเปล่า" · การจะเห็น "หน่วงกี่แท่ง" ต้องใช้ test อีกชนิดคือ <strong>impulse response</strong> — ยิงสัญญาณเดียวบนข้อมูลที่นิ่งสนิท แล้วดูว่าระบบตอบสนองเมื่อไหร่ · เป็นเทคนิคเดียวกับที่วิศวกรใช้วัด latency ของระบบควบคุม และใช้ได้กับทุก pipeline ที่มี <code>shift</code> ซ้อนกันหลายชั้น</p>
 </div>
 
 <h3 id="s30-4">30.4 Round 2 — เพิ่ม Performance Metrics และแก้ Sharpe Calculation</h3>
