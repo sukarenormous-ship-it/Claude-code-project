@@ -1948,6 +1948,27 @@ async def health_check_loop(health: SystemHealth,
 <p>ประกอบทุก component จาก บท 31–34 เป็น production-ready system สมบูรณ์</p>
 </div>
 
+<div class="bx bb">
+<div class="bt">🧱 โครงก่อนดูโค้ด — บล็อกปิดเล่ม ~220 บรรทัด</div>
+<p>นี่คือที่ที่ทุกอย่างมาบรรจบ · <strong>ไม่มีแนวคิดใหม่เลย</strong> — ทุกชิ้นมาจากบทก่อนหน้า งานของบล็อกนี้คือ "ต่อสายให้ถูก"</p>
+<div class="flow" style="font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.85em;white-space:pre;overflow-x:auto">Binance WS ─┐
+            ├─► asyncio.Queue ─► _signal_loop ─► _execute_signal ─► Bybit REST
+Bybit WS ───┘      (บท 33)         (บท 32)          (บท 34)
+                                        ▲
+                    health_check_loop ───┘  kill switch (บท 35)</div>
+<table>
+<tr><th>เมธอด</th><th>หน้าที่</th><th>มาจากบท</th><th>ระดับ</th></tr>
+<tr><td><code>_on_binance_candle</code><br><code>_on_bybit_candle</code></td><td>callback ที่ WS client เรียกเมื่อมีแท่งใหม่ — แค่โยนเข้า queue</td><td>33</td><td>🟢</td></tr>
+<tr><td><code>_compute_zscore</code></td><td>คำนวณ z-score ของ spread จากราคาสองตลาด</td><td>13–14</td><td>🟢</td></tr>
+<tr><td><code>_get_signal</code></td><td>แปลง z-score เป็น LONG / SHORT / EXIT / HOLD</td><td>14</td><td>🟢</td></tr>
+<tr><td><code>_execute_signal</code></td><td>ส่งออเดอร์จริงผ่าน REST client</td><td>34</td><td>🔵</td></tr>
+<tr><td><code>_signal_loop</code></td><td><strong>หัวใจ</strong> — ดึงจาก queue → คำนวณ → สั่ง วนไปจนกว่า kill switch ทำงาน</td><td>32</td><td>🔵</td></tr>
+<tr><td><code>_shutdown</code></td><td>ปิดสถานะที่ค้าง ยกเลิกออเดอร์ ปิด connection</td><td>35</td><td>🔵</td></tr>
+<tr><td><code>run</code></td><td>สตาร์ททุก task พร้อมกันด้วย <code>gather</code> แล้วรอ kill switch</td><td>32</td><td>🔵</td></tr>
+</table>
+<p>🧭 <strong>อ่านตามลำดับข้อมูลไหล ไม่ใช่ตามลำดับบรรทัด:</strong> เริ่มที่ <code>run()</code> (ล่างสุด) เพื่อเห็นภาพรวมว่าใครถูกสตาร์ทบ้าง → แล้วค่อยตาม <code>_signal_loop</code> ขึ้นไปหา <code>_execute_signal</code></p>
+</div>
+
 <div class="fm">import asyncio
 import logging
 import os
@@ -2206,6 +2227,34 @@ class BTCPairLiveSystem:
 if __name__ == "__main__":
     system = BTCPairLiveSystem(CONFIG)
     asyncio.run(system.run())</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 <code>run()</code> — 5 task ที่วิ่งพร้อมกัน และเงื่อนไขจบของแต่ละตัว</div>
+<div class="ad-code">await asyncio.gather(
+    binance_client.run(),      # ① รับ feed — วนตลอด reconnect เอง
+    bybit_client.run(),        # ②
+    self._signal_loop(...),    # ③ ประมวลผล — วนจนกว่า kill switch
+    health_check_loop(...),    # ④ เฝ้าดูสุขภาพ — ทริกเกอร์ kill switch ได้
+    self.kill_switch.wait(),   # ⑤ นั่งรอเฉย ๆ  ← ตัวที่จบก่อนเพื่อน
+    return_exceptions=True,
+)</div>
+<div class="ad-steps">
+<ol>
+<li><strong>4 ตัวแรกไม่มีตัวไหนจบเอง</strong> — ①② วน reconnect ตลอด, ③④ วนจนกว่า <code>kill_switch</code> ถูกตั้ง · ถ้ามีแค่ 4 ตัวนี้ โปรแกรมจะไม่มีทางออกอย่างสง่างาม</li>
+<li><strong>⑤ <code>kill_switch.wait()</code> คือ "สวิตช์ออก"</strong> — มันแค่นอนรอ พอมีใครสั่ง <code>trigger()</code> (จาก Ctrl+C, จาก drawdown เกิน, จาก feed เงียบนานเกิน) มันจะตื่นและจบ</li>
+<li><strong><code>return_exceptions=True</code> สำคัญมากตรงนี้</strong> — ถ้าไม่ใส่ พอ task ใดพัง exception จะเด้งออกจาก <code>gather</code> ทันที <strong>แต่ task ที่เหลือยังวิ่งอยู่เบื้องหลัง</strong> (ตามที่เตือนไว้ในบทที่ 31) · ผลคือ <code>finally</code> จะทำงานทั้งที่ feed ยังไหลอยู่ → ปิดระบบครึ่ง ๆ กลาง ๆ · ใส่ <code>True</code> แล้ว gather จะเก็บ exception เป็นค่าคืนแทน ทำให้เราคุมลำดับปิดได้เอง</li>
+<li><strong><code>finally</code> ทำงานเสมอ</strong> — สั่ง <code>stop()</code> ทั้งสอง feed แล้วเรียก <code>_shutdown()</code> เพื่อปิดสถานะที่ค้าง · <strong>นี่คือส่วนที่แยกระบบเล่นกับระบบที่กล้าใส่เงินจริง</strong></li>
+</ol>
+<p>อ่านทั้งบล็อกเป็นประโยคเดียว: <em>"เปิดทุกอย่างพร้อมกัน แล้วนั่งรอสวิตช์ปิด — พอสวิตช์ถูกกด ไม่ว่าด้วยเหตุใด ให้เก็บกวาดให้เรียบร้อยเสมอ"</em></p>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ทำไม <code>if __name__ == "__main__":</code> ถึงสำคัญกว่าที่คิดในไฟล์นี้</div>
+<p>ถ้าไม่มีบรรทัดนี้ <strong>การ <code>import</code> ไฟล์นี้เข้าไปในไฟล์อื่นจะเริ่มเทรดจริงทันที</strong> — รวมถึงตอนที่ <code>pytest</code> เก็บไฟล์ไปรัน หรือตอนที่ IDE ทำ auto-import เพื่อดู autocomplete</p>
+<p>เป็นอุบัติเหตุที่เกิดขึ้นจริงกับคนที่เขียน bot: เขียน test แล้ว pytest import โมดูล → ระบบ live เริ่มทำงานจากในเครื่อง dev · <strong>กฎ: ไฟล์ใดที่ทำอะไรมีผลจริง (ส่งออเดอร์ · เขียน DB · จ่ายเงิน) การกระทำนั้นต้องอยู่ใต้ <code>if __name__ == "__main__":</code> เสมอ</strong></p>
+<p>💡 สังเกตด้วยว่าโค้ดนี้<strong>ไม่มีวันจบเอง</strong> — ถ้ารันจริงมันจะค้างรอ kill switch ตลอด นั่นคือพฤติกรรมที่ถูกต้องของระบบ live · ตอนทดสอบ ให้ตั้ง timeout ครอบไว้ (เช่น <code>asyncio.wait_for(system.run(), timeout=60)</code>) ไม่งั้นเทสต์จะไม่มีวันจบ</p>
+</div>
 
 <h3 id="s35-5">35.5 Pre-Flight Checklist ก่อน Go Live</h3>
 
