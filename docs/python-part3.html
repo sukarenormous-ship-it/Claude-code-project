@@ -323,14 +323,26 @@ vol    รอบสอง : 0.4552   &lt;-- ✓ ค่าใหม่ เพร�
 
 <p><code>@property</code> ทำให้ method เรียกใช้ได้เหมือน attribute — ไม่ต้องใส่วงเล็บ และคำนวณเมื่อถูกเรียกเท่านั้น</p>
 
-<div class="fm"><span class="c"># โดยไม่มี @property</span>
-print(m.annual_vol())  <span class="c"># ต้องใส่ () — ดูแปลก</span>
+<div class="fm"><span class="c"># ── เทียบให้ดู (สองแบบนี้อยู่ด้วยกันไม่ได้ — เลือกได้แบบเดียว) ──</span>
+<span class="c">#</span>
+<span class="c">#   ถ้า annual_vol เป็น method ธรรมดา:</span>
+<span class="c">#       print(m.annual_vol())    ← ต้องใส่ () ทั้งที่มันคือ "ค่า" ไม่ใช่ "คำสั่ง"</span>
+<span class="c">#</span>
+<span class="c">#   ถ้าใส่ @property ทับไว้:</span>
+print(f"{m.annual_vol:.4f}")  <span class="c"># ← อ่านเหมือน attribute · ชัดกว่า</span>
 
-<span class="c"># มี @property</span>
-print(m.annual_vol)    <span class="c"># อ่านเหมือน attribute — ชัดเจนกว่า</span>
+<span class="c"># ที่คลาสนี้เลือกแบบหลัง (ดูบรรทัด @property ในโค้ดข้างบน)</span>
+<span class="c"># ลองเติม () ดูจะได้ TypeError: 'numpy.float64' object is not callable</span>
+<span class="c"># — เพราะ m.annual_vol กลายเป็น "ตัวเลข" ไปแล้ว ไม่ใช่ฟังก์ชัน</span></div>
+<div class="output">0.4552</div>
 
-<span class="c"># ประโยชน์: lazy evaluation — คำนวณเมื่อถูกเรียกเท่านั้น</span>
-<span class="c"># ถ้า returns เปลี่ยน → ผลลัพธ์เปลี่ยนอัตโนมัติ</span></div>
+<div class="bx bb">
+<div class="bt">อ่าน error นั้นให้ออก — มันบอกความจริงของ <code>@property</code> ทั้งหมด</div>
+<p><code>TypeError: 'numpy.float64' object is not callable</code> แปลตรงตัวว่า <em>"ของชิ้นนี้เป็นเลขทศนิยม เอาไปเรียกแบบฟังก์ชันไม่ได้"</em> · นั่นคือหลักฐานว่า <code>@property</code> ทำอะไร: <strong>พอแปะเข้าไป <code>m.annual_vol</code> ก็ไม่ใช่ฟังก์ชันอีกต่อไป มันคือผลลัพธ์ที่คำนวณเสร็จแล้ว</strong></p>
+<p>เก็บวิธีอ่านนี้ไว้ใช้ต่อ — เวลาเจอ <code>'X' object is not callable</code> ให้แปลว่า "คุณใส่ <code>()</code> ต่อท้ายของที่ไม่ใช่ฟังก์ชัน" · สาเหตุที่พบบ่อยที่สุดสองข้อคือ <strong>เผลอใส่ <code>()</code> ให้ property</strong> กับ <strong>ตั้งชื่อตัวแปรทับชื่อฟังก์ชันไปแล้ว</strong> (เช่น <code>sum = 0</code> แล้วเรียก <code>sum(...)</code> ทีหลัง)</p>
+</div>
+
+<div class="read-aloud">คลาสข้างล่างมี 3 <code>@property</code> · วิธีอ่านที่ตรงที่สุดคือ <strong>"ช่องข้อมูลที่คิดสดใหม่ทุกครั้งที่มีคนถาม"</strong> — เก็บไว้เฉพาะของที่<em>บอกกันมา</em> (<code>entry_price</code>, <code>size</code>, <code>exit_price</code>) ส่วนของที่<em>คำนวณต่อได้</em> (<code>pnl</code>, <code>return_pct</code>, <code>is_open</code>) ไม่เก็บ แต่คิดตอนถูกเรียก · ข้อดีที่ได้ฟรีคือ<strong>ไม่มีวันไม่ตรงกัน</strong> — ถ้าเก็บ <code>self.pnl</code> ไว้เป็นตัวแปรแล้วมีคนแก้ <code>exit_price</code> ทีหลัง ตัวเลขเก่าจะค้างอยู่โดยไม่มีใครรู้</div>
 
 <div class="ex">
 <div class="et">ตัวอย่าง: Position class พร้อม computed properties</div>
@@ -378,6 +390,49 @@ print(f"Return: {pos.return_pct:.2%}")</div>
 <div class="output">Position(long 0.5 BTCUSDT @ 63,000 [OPEN])
 Position(long 0.5 BTCUSDT @ 63,000 [CLOSED PnL=+1,250])
 Return: 3.97%</div>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 4 ท่าที่คลาสนี้ใช้ และจะเจอซ้ำในทุกคลาสหลังจากนี้</div>
+<div class="ad-code">@property
+def pnl(self):
+    if self.exit_price is None:
+        raise ValueError("Position ยังไม่ปิด")     <span class="c">① property ที่ปฏิเสธได้</span>
+    raw = (self.exit_price - self.entry_price) * self.size
+    return raw if self.side == "long" else -raw    <span class="c">② พลิกเครื่องหมายให้ short</span>
+
+def close(self, exit_price):
+    self.exit_price = exit_price
+    return self                                    <span class="c">③ คืนตัวเอง = ต่อจุดได้</span>
+
+def __repr__(self):                                <span class="c">④ หน้าตาตอนถูก print</span>
+    ...</div>
+<div class="ad-steps">
+<ol>
+<li><strong>property ที่ <code>raise</code> ได้</strong> — ถาม <code>pnl</code> ของ position ที่ยังไม่ปิด แล้วโปรแกรมหยุดทันทีพร้อมบอกเหตุผล · ดีกว่าคืน <code>0</code> หรือ <code>None</code> มาก เพราะ <code>0</code> จะไหลเข้าไปรวมใน P&amp;L ของพอร์ตเงียบ ๆ แล้วคุณจะเห็นกำไรรวมที่ผิดโดยไม่มีอะไรเตือน</li>
+<li><code>raw if self.side == "long" else -raw</code> — <strong>conditional expression</strong> อ่านเรียงตามที่เขียน: "เอา <code>raw</code> ถ้าเป็น long ไม่งั้นเอา <code>-raw</code>" · เหตุผลทางการเงินคือ short กำไรตอนราคาลง ซึ่ง <code>exit − entry</code> จะติดลบพอดี จึงพลิกเครื่องหมายทีเดียวจบ แทนที่จะเขียนสูตรแยกสองชุด</li>
+<li><code>return self</code> ท้าย <code>close()</code> — ทำให้เขียนต่อกันเป็นสายได้ เช่น <code>Position(...).close(65500).pnl</code> · เรียกว่า <strong>method chaining</strong> · ต้นทุนคือ <code>close()</code> ทำสองหน้าที่ (แก้ของ + คืนของ) ซึ่งบางทีมถือว่าไม่ควรทำ — รู้ไว้ว่ามีสองสำนัก</li>
+<li><code>__repr__</code> — กำหนดว่า <code>print(pos)</code> จะแสดงอะไร · ถ้าไม่เขียนจะได้ <code>&lt;__main__.Position object at 0x7f3c...&gt;</code> ซึ่งไร้ประโยชน์ตอนไล่ปัญหา · <strong>กฎที่ใช้ได้เสมอ: <code>__repr__</code> ควรใส่ค่าที่ทำให้คุณระบุตัวมันได้ ไม่ใช่คำบรรยายสวย ๆ</strong></li>
+</ol>
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ <code>fee_rate</code> ในคลาสนี้ถูกเก็บไว้เฉย ๆ — ไม่มีใครใช้</div>
+<p><code>__init__</code> รับ <code>fee_rate</code> เข้ามาและเก็บใส่ <code>self.fee_rate</code> แต่ทั้ง <code>pnl</code> และ <code>return_pct</code> <strong>ไม่ได้แตะมันเลย</strong> · ตัวเลข <code>PnL=+1,250</code> กับ <code>Return: 3.97%</code> ที่เห็นจึงเป็นผลแบบ<strong>ไม่มีค่าธรรมเนียม</strong> ทั้งที่หน้าตาของคลาสบอกว่าคิดให้แล้ว (แบบฝึกหัดข้างล่างคือการเติมส่วนที่ขาดนี้)</p>
+<p>ยกมาให้ดูเพราะนี่คือ<strong>รูปแบบของบั๊กที่หาเจอยากที่สุดใน OOP</strong> — พารามิเตอร์ที่ถูกรับและถูกเก็บ แต่ไม่เคยถูกใช้ · โค้ดรันผ่าน ไม่มี warning ไม่มี error และ<em>ชื่อตัวแปรทำหน้าที่โกหกแทน</em> · คนอ่านเห็น <code>fee_rate</code> ในลายเซ็นก็เชื่อไปแล้วว่าหักให้</p>
+<p>🧭 <strong>วิธีจับ:</strong> ทุกครั้งที่เขียน <code>self.x = x</code> ใน <code>__init__</code> ให้ค้นหา <code>self.x</code> ในคลาสทันที · ถ้าเจอที่เดียวคือบรรทัดที่เพิ่งเขียน แปลว่ามันยังไม่ได้ทำงาน — ไม่ก็ยังเขียนไม่เสร็จ ไม่ก็ควรลบทิ้ง</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ราคาที่ต้องจ่ายของ property ที่ raise ได้</div>
+<p><code>pnl</code> โยน <code>ValueError</code> ตอน position ยังเปิดอยู่ ซึ่งถูกต้องในแง่ตรรกะ แต่มีผลข้างเคียงที่ควรรู้ล่วงหน้า: <strong>การ "แค่ดูค่า" กลายเป็นการกระทำที่ล้มเหลวได้</strong></p>
+<ul>
+<li>ใน debugger หรือ notebook ที่ไล่แสดง attribute ทุกตัวของ object ให้อัตโนมัติ การ<em>มอง</em>ก็ทำให้เกิด exception ได้</li>
+<li>เครื่องมือที่แปลง object เป็น dict/JSON แบบวนทุก property จะพังทันทีที่เจอ position ที่ยังเปิดอยู่</li>
+<li><code>__repr__</code> ในคลาสนี้รอดมาได้เพราะ<strong>เช็ก <code>is_open</code> ก่อนแตะ <code>pnl</code></strong> — ถ้าเขียน <code>__repr__</code> ให้พิมพ์ <code>pnl</code> ตรง ๆ การ <code>print</code> object ที่ยังไม่ปิดจะระเบิด และการ print ที่ระเบิดคือฝันร้ายตอนไล่บั๊ก เพราะเครื่องมือที่ใช้หาปัญหากลายเป็นตัวสร้างปัญหาเสียเอง</li>
+</ul>
+<p>ทางเลือกที่ทีมใหญ่มักใช้: ให้ property คืน <code>None</code> เมื่อยังไม่มีคำตอบ แล้วบังคับให้คนเรียก<strong>ตัดสินใจอย่างชัดเจน</strong>ว่าจะทำอย่างไรกับ <code>None</code> · หรือแยกเป็นสองชื่อ — <code>pnl</code> (raise) กับ <code>pnl_or_none</code> · ไม่มีคำตอบถูกข้อเดียว แต่ต้อง<strong>เลือกให้เหมือนกันทั้งโปรเจกต์</strong> ไม่งั้นคนใช้จะเดาไม่ถูกว่าต้องกัน exception ตรงไหนบ้าง</p>
 </div>
 
 <details>
