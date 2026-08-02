@@ -517,6 +517,8 @@ bybit     BTCUSDT 5m : close=65,112.8</div>
   ไม่ต้องรอ consumer                  (buffer ≤ 1000 items)   ส่ง order
 </div>
 
+<div class="read-aloud">โค้ดข้างล่างมี 3 ฟังก์ชัน แต่<strong>สัญญาระหว่างกันมีแค่ 4 บรรทัด</strong> — จับ 4 บรรทัดนี้ได้แล้วที่เหลืออ่านผ่านได้เลย: ฝั่งผลิตใช้ <code>await queue.put(x)</code> · ฝั่งบริโภคใช้ <code>tick = await queue.get()</code> · ฝั่งผลิตปิดท้ายด้วย <code>await queue.put(None)</code> เป็น<strong>สัญญาณว่าหมดแล้ว</strong> · ฝั่งบริโภคเจอ <code>None</code> เมื่อไรก็ <code>break</code> · ที่เหลือคือการคำนวณ moving average ธรรมดาที่ไม่เกี่ยวกับ async เลย</div>
+
 <div class="fm">import asyncio
 import random
 from dataclasses import dataclass, field
@@ -576,6 +578,45 @@ async def producer_consumer_demo():
     print("จบ demo")
 
 asyncio.run(producer_consumer_demo())</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 ทำไมต้องมี Queue — ทั้งที่เรียกฟังก์ชันตรง ๆ ก็ได้</div>
+<div class="ad-code"><span class="c"># ถ้าไม่มี queue จะต้องเขียนแบบนี้ — ผลิตกับบริโภคมัดติดกัน</span>
+async def feed():
+    while True:
+        tick = await get_tick()
+        compute_signal(tick)      <span class="c"># ← ถ้าตัวนี้ช้า tick ถัดไปก็ต้องรอ</span>
+
+<span class="c"># มี queue แล้ว: สองฝั่งวิ่งด้วยความเร็วของตัวเอง</span>
+await queue.put(tick)             <span class="c"># ฝั่งผลิต — วางแล้วไปต่อทันที</span>
+tick = await queue.get()          <span class="c"># ฝั่งบริโภค — ไม่มีของก็นอนรอ ไม่กิน CPU</span></div>
+<div class="ad-steps">
+<ol>
+<li><code>await queue.get()</code> — <strong><code>await</code> ตรงนี้แปลว่า "ถ้ายังไม่มีของ ก็นอนรอ แล้วปล่อยให้ตัวอื่นทำงานไปก่อน"</strong> · ต่างจาก <code>while queue.empty(): pass</code> ซึ่งจะเผา CPU 100% และแย่กว่านั้นคือ<em>ไม่ยอมปล่อยคิว</em> ทำให้ producer ไม่มีโอกาสวางของลงเลย → ค้างถาวร</li>
+<li><code>await queue.put(None)</code> — <strong>sentinel</strong> · เหตุที่ต้องมี เพราะ consumer เดาไม่ได้ว่า "queue ว่าง" แปลว่าจบแล้ว หรือแค่ producer ยังผลิตไม่ทัน · ทั้งสองสถานะหน้าตาเหมือนกันเป๊ะ · จึงต้องให้ producer <strong>บอกออกมาตรง ๆ</strong> ว่าหมดแล้ว · <code>None</code> ใช้ได้เพราะ tick จริงเป็น <code>PriceTick</code> ไม่มีทางเป็น <code>None</code></li>
+<li><code>asyncio.Queue(maxsize=100)</code> — ถ้าของเต็ม 100 ชิ้น <code>await queue.put(...)</code> จะ<strong>หยุดรอ</strong>จนกว่าจะมีที่ว่าง · เรียกว่า <strong>backpressure</strong> — เป็นการบอก producer ว่า "ช้าลงหน่อย ตามไม่ทันแล้ว" · ถ้าใส่ <code>maxsize=0</code> (ไม่จำกัด) แล้ว consumer ตามไม่ทัน queue จะโตจนกินแรมหมดเครื่อง</li>
+<li><code>asyncio.gather(producer, consumer)</code> — เริ่มทั้งคู่พร้อมกันในลูปเดียว · ไม่ใช่ thread ไม่มี lock ไม่มี race condition ให้กังวล เพราะทั้งคู่<strong>สลับกันที่จุด <code>await</code> เท่านั้น</strong> ไม่มีทางถูกขัดจังหวะกลางคัน</li>
+</ol>
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ <code>task_done()</code> ในโค้ดนี้ไม่ได้ทำอะไรเลย — และควรรู้ว่าทำไม</div>
+<p><code>queue.task_done()</code> มีไว้คู่กับ <code>await queue.join()</code> เท่านั้น · <code>join()</code> แปลว่า "รอจนกว่าของทุกชิ้นที่เคย <code>put</code> จะถูกรายงานว่าทำเสร็จแล้ว" และมันนับจากจำนวนครั้งที่เรียก <code>task_done()</code></p>
+<p>ในบทนี้<strong>ไม่มีการเรียก <code>join()</code> เลยสักที่</strong> — เราใช้ sentinel <code>None</code> บอกจุดจบแทน · ดังนั้น <code>task_done()</code> ทุกบรรทัดในหนังสือเล่มนี้เป็น<strong>พิธีกรรมล้วน ๆ</strong> ลบออกก็ได้ผลเหมือนเดิม · ที่ยังเขียนไว้เพราะเป็นนิสัยที่ดีเวลาโค้ดโตขึ้นแล้วมีคนเติม <code>join()</code> เข้ามาทีหลัง</p>
+<p>🧭 <strong>กฎ:</strong> เห็น <code>task_done()</code> ที่ไหน ให้มองหา <code>join()</code> ทันที · ถ้าไม่มี แปลว่าโค้ดนั้นใช้วิธีอื่นบอกจุดจบ (sentinel / cancel / event) — และถ้าไม่มีทั้งคู่ แปลว่าโปรแกรมนั้นไม่รู้ว่าตัวเองจบเมื่อไร</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ในระบบเทรดจริง buffer ที่ใหญ่คือ<em>ปัญหา</em> ไม่ใช่ทางแก้</div>
+<p>Queue เป็น <strong>FIFO</strong> — เข้าก่อนออกก่อน · นั่นถูกสำหรับงานทั่วไป แต่<strong>ผิดสำหรับราคา</strong> · ถ้า signal engine ตามไม่ทันแล้วมี tick ค้างอยู่ 100 ชิ้น สิ่งที่มันหยิบมาคำนวณคือ tick ที่<em>เก่าที่สุด</em> · คุณจะส่งคำสั่งซื้อโดยอ้างอิงราคาเมื่อ 5 วินาทีที่แล้ว ทั้งที่ราคาล่าสุดวางอยู่ท้ายคิวแล้ว — และยิ่งตามไม่ทันนานเท่าไร ก็ยิ่งเทรดจากอดีตที่ไกลขึ้นเรื่อย ๆ</p>
+<p>ทางเลือกที่ระบบจริงใช้ ขึ้นกับว่าข้อมูลนั้น<strong>ทดแทนกันได้หรือไม่</strong>:</p>
+<ul>
+<li><strong>ราคา / order book snapshot</strong> — ของใหม่<em>แทนที่</em>ของเก่าได้สนิท · เก็บแค่ค่าล่าสุดพอ (ตัวแปรเดียว หรือ <code>deque(maxlen=1)</code>) · ตกหล่นระหว่างทางไม่เป็นไร</li>
+<li><strong>fill / order update / trade execution</strong> — <strong>ห้ามทิ้งเด็ดขาด</strong> ทุกเหตุการณ์มีความหมายทางบัญชี · ต้องใช้ queue ที่ไม่จำกัดขนาด และถ้ามันโตขึ้นเรื่อย ๆ นั่นคือ<strong>สัญญาณเตือนให้หยุดระบบ</strong> ไม่ใช่ให้ขยาย buffer</li>
+</ul>
+<p>ดังนั้นคำถามที่ต้องตอบก่อนเลือก <code>maxsize</code> ไม่ใช่ "ควรตั้งเท่าไร" แต่คือ <strong>"ถ้าตามไม่ทัน ควรทิ้งของเก่าหรือควรหยุดทั้งระบบ"</strong> · ระบบจริงมักมีทั้งสองแบบวิ่งคู่กัน คนละ queue</p>
+</div>
 
 <h3 id="s32-3">32.3 asyncio.wait_for() — Timeout</h3>
 
@@ -648,7 +689,9 @@ asyncio.run(main_trading_loop())</div>
 
 <h3 id="s32-5">32.5 asyncio.Semaphore — จำกัดจำนวน Concurrent Requests</h3>
 
-<p>Exchange มักจำกัด rate ไว้ เช่น "ส่ง request ได้ไม่เกิน 10 req/s" — Semaphore ช่วยควบคุม</p>
+<p>ดึงข้อมูลย้อนหลังทีเดียว 500 วัน ถ้ายิงพร้อมกันหมด exchange จะแบนทันที — <strong>Semaphore</strong> คือตัวคุมว่า "ให้มีงานวิ่งอยู่พร้อมกันได้ไม่เกิน N ชิ้น"</p>
+
+<div class="read-aloud">คิดว่า Semaphore คือ<strong>ตะกร้าที่มีบัตรผ่านอยู่ N ใบ</strong> · ใครจะยิง request ต้องหยิบบัตรไปหนึ่งใบก่อน · บัตรหมดเมื่อไร คนที่มาทีหลังต้อง<em>ยืนรอ</em>จนกว่าจะมีคนคืนบัตร · <code>async with sem:</code> คือการหยิบบัตรตอนเข้าและคืนบัตรตอนออก<strong>โดยอัตโนมัติ</strong> — คืนให้แม้โค้ดข้างในจะ error กลางคัน ซึ่งเป็นเหตุผลทั้งหมดที่ใช้ <code>async with</code> แทนการเขียน acquire/release เอง (ลืมคืนบัตรครั้งเดียว = โปรแกรมค้างถาวร)</div>
 
 <div class="fm">import asyncio
 
@@ -679,6 +722,72 @@ asyncio.run(bulk_fetch_historical(
     dates=["2024-01-01", "2024-01-02", "2024-01-03",
            "2024-01-04", "2024-01-05"]
 ))</div>
+<div class="output">ดึงข้อมูล 10 records ด้วย semaphore=5</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 2 บรรทัดที่ต้องอ่านให้ขาด</div>
+<div class="ad-code">async with sem:                     <span class="c"># ① หยิบบัตร · คืนอัตโนมัติตอนออก</span>
+    await asyncio.sleep(0.1)
+
+tasks = [                           <span class="c"># ② ลูปซ้อน — อ่านจากซ้ายไปขวา</span>
+    fetch_historical(sym, date, sem)
+    for sym in symbols              <span class="c">#    วงนอก: 2 เหรียญ</span>
+    for date in dates               <span class="c">#    วงใน:  5 วัน  → 2×5 = 10 งาน</span>
+]</div>
+<div class="ad-steps">
+<ol>
+<li><code>async with sem:</code> — เทียบเท่ากับ <code>await sem.acquire()</code> ตอนเข้า และ <code>sem.release()</code> ตอนออก · จุดสำคัญคือ <strong><code>release()</code> ถูกเรียกแม้โค้ดข้างในจะโยน exception</strong> · ถ้าเขียนเองแล้ว API พังกลางทาง บัตรจะหายไปหนึ่งใบทุกครั้งที่ error — พอหายครบ N ใบ ระบบจะค้างแบบเงียบสนิท หาสาเหตุยากมาก</li>
+<li><strong>list comprehension ที่มี <code>for</code> สองชั้น</strong> — อ่านเรียงจากบนลงล่างเหมือน <code>for</code> ธรรมดาซ้อนกัน: <code>for sym</code> เป็นวงนอก <code>for date</code> เป็นวงใน · ได้ทุกคู่ที่จับกันได้ = 2 × 5 = 10 · <strong>อย่าอ่านสลับ</strong> — ลำดับนี้กำหนดลำดับผลลัพธ์ที่ <code>gather</code> คืนกลับมา ซึ่งเรียงตามลำดับ task ที่ใส่เข้าไปเสมอ (ไม่ใช่ตามลำดับที่ทำเสร็จ)</li>
+<li>สังเกตว่า <code>fetch_historical(...)</code> ในลิสต์<strong>ยังไม่ได้รัน</strong> — มันสร้าง coroutine object ทิ้งไว้เฉย ๆ 10 ตัว · ทุกอย่างเริ่มพร้อมกันตอน <code>await asyncio.gather(*tasks)</code> บรรทัดเดียว · <code>*</code> คือการแกะลิสต์ออกเป็น argument ทีละตัว เพราะ <code>gather</code> รับเป็น argument แยก ไม่ใช่ลิสต์</li>
+</ol>
+</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">Semaphore ไม่ใช่ rate limiter — และความเข้าใจผิดนี้ทำให้โดนแบน</div>
+<p>Semaphore คุม <strong>"จำนวนงานที่วิ่งอยู่พร้อมกัน"</strong> ไม่ใช่ <strong>"จำนวน request ต่อวินาที"</strong> · สองอย่างนี้ไม่เท่ากัน และตัวแปลงระหว่างมันคือ <em>latency ของ exchange</em> ซึ่ง<strong>เราควบคุมไม่ได้</strong>:</p>
+<p style="text-align:center;margin:10px 0"><code>req/s ≈ จำนวนที่วิ่งพร้อมกัน ÷ latency</code></p>
+<p>ลองวัดจริงด้วยการจำลอง latency 0.1 วินาที:</p>
+</div>
+
+<div class="fm">import asyncio
+import time
+
+
+async def timed_bulk(n_requests: int, limit: int,
+                     latency: float = 0.1) -> float:
+    """ยิง n_requests โดยให้วิ่งพร้อมกันได้ไม่เกิน limit — คืนเวลาที่ใช้"""
+    sem = asyncio.Semaphore(limit)
+
+    async def one_call():
+        async with sem:
+            await asyncio.sleep(latency)     <span class="c"># จำลองเวลารอ exchange</span>
+
+    t0 = time.perf_counter()
+    await asyncio.gather(*[one_call() for _ in range(n_requests)])
+    return time.perf_counter() - t0
+
+
+async def compare_limits():
+    print("latency ของ exchange = 0.1s · ส่ง 30 requests")
+    for limit in (5, 1):
+        elapsed = await timed_bulk(30, limit)
+        rate = 30 / elapsed
+        <span class="c"># ปัดเป็นช่วงละ 5 เพราะเวลาจริงแกว่งเล็กน้อยทุกครั้งที่รัน</span>
+        print(f"  Semaphore({limit}) → {round(rate / 5) * 5:>3d} req/s")
+
+asyncio.run(compare_limits())</div>
+<div class="output">latency ของ exchange = 0.1s · ส่ง 30 requests
+  Semaphore(5) →  50 req/s
+  Semaphore(1) →  10 req/s</div>
+
+<div class="bx bp">
+<div class="bt">🔵 อ่านตัวเลขนี้ให้ออก แล้วจะเห็นกับดักที่แท้จริง</div>
+<p><code>Semaphore(5)</code> ได้ <strong>50 req/s</strong> ไม่ใช่ 5 · แม้แต่ <code>Semaphore(1)</code> — ยิงทีละตัวเรียงกัน — ก็ยังได้ 10 req/s · ถ้า exchange จำกัดไว้ 10 req/s แปลว่า<strong>โค้ดข้างบนละเมิดขีดจำกัดตั้งแต่ <code>Semaphore(2)</code></strong></p>
+<p>ที่อันตรายกว่านั้นคือ<strong>ทิศทางของความผิดพลาด</strong> · เมื่อ exchange ตอบเร็วขึ้น (latency ลด) จำนวน req/s ของเรา<strong>เพิ่มขึ้นเอง</strong>โดยที่เราไม่ได้แก้อะไรเลย · แปลว่าโค้ดจะผ่านตอนทดสอบบนเน็ตช้า ๆ แล้วไปโดนแบนตอน deploy ขึ้น server ที่อยู่ใกล้ exchange — ซึ่งคือตอนที่แย่ที่สุดที่จะพัง</p>
+<p><strong>ของที่ต้องใช้จริงคือตัวคุมที่นับตามเวลา</strong> ไม่ใช่ตามจำนวนที่วิ่งพร้อมกัน — เช่น token bucket: เติมโควตา N ใบทุก 1 วินาที ใครจะยิงต้องมีโควตา · สังเกตว่ามันคุม<em>อัตรา</em>โดยตรง จึงไม่ขึ้นกับ latency เลย</p>
+<p>ในระบบจริงมักใช้<strong>ทั้งคู่พร้อมกัน</strong> คนละหน้าที่: token bucket กันโดนแบน · Semaphore กันไม่ให้เปิด connection พร้อมกันจนหน่วยความจำหรือ file descriptor หมด</p>
+</div>
 
 <details>
 <summary>แบบฝึกหัด: สร้าง MultiQueue สำหรับรับข้อมูลจากหลาย exchange แล้วรวมเข้า Queue เดียว</summary>
