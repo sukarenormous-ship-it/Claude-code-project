@@ -1,7 +1,20 @@
 <!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Arbitrage — Part VII</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:600px;margin:12px auto}.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+.bx .src{display:block;font-size:.8em;color:#64748b;margin-top:8px;line-height:1.55}
+sup.c{color:var(--blue);font-weight:700;font-size:.72em}
+.ev{background:var(--purple-bg);border-left:4px solid var(--purple)}
+.tag{display:inline-block;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:4px;vertical-align:middle}.tag-ok{background:var(--green-bg);color:var(--green)}.tag-no{background:var(--red-bg);color:var(--red)}.tag-warn{background:var(--amber-bg);color:var(--amber)}
 @media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}</style></head><body>
-<div class="cover"><h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1><div class="sub">Part VII: Execution & Risk Management (บท 25-27)</div><div class="desc">Speed, Order Types, Risk Types, Position Sizing, Infrastructure</div></div>
+<div class="cover"><h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1><div class="sub">Part VII: Execution &amp; Risk Management (บท 25–27)</div><div class="desc">Speed, Order Types, Risk Types, Position Sizing, Infrastructure</div></div>
+
+<div class="bx ba">
+<div class="bt">⚖️ อ่านก่อน: Part นี้คือเหตุผลที่ Part III–VI จบลงแบบนั้น</div>
+<p>ทุก Part ก่อนหน้าลงเอยด้วยประโยคเดียวกัน — <em>"หลักการถูก แต่ต้นทุน/ความเสี่ยงกินหมด"</em> Part นี้คือที่ที่เราลงรายละเอียดว่า <strong>ต้นทุนนั้นคิดยังไง</strong> และ <strong>จะรอดได้ยังไง</strong></p>
+<p><span class="tag tag-ok">ทำได้</span> คิดต้นทุนให้ครบก่อนเทรด, ตั้งกฎขนาดตำแหน่ง, รู้ว่าตัวเองแข่งอะไรได้/ไม่ได้<br>
+<span class="tag tag-warn">ระวัง</span> ความเสี่ยงที่ฆ่าจริงไม่ใช่ความเสี่ยงของแต่ละดีล แต่คือความเสี่ยง<strong>ร่วม</strong>ที่ทำให้หลายตำแหน่งพังพร้อมกัน<br>
+<span class="tag tag-no">เกินกำลัง</span> แข่งความเร็วกับ HFT, ใช้ leverage สูงกับกลยุทธ์ที่มีหางยาว</p>
+<p class="src"><strong>ประโยคที่ควรจำจากทั้ง Part:</strong> รอดก่อน แล้วค่อยกำไร — เพราะกลยุทธ์ที่ EV เป็นบวกแต่ทำให้พอร์ตศูนย์ระหว่างทาง มีค่าเท่ากับกลยุทธ์ที่ EV ติดลบ</p>
+</div>
 
 <h2 id="ch25">บทที่ 25: Execution</h2>
 <h3>25.1 Speed Matters</h3>
@@ -20,11 +33,36 @@
 <tr><td><strong>IOC</strong> (Immediate or Cancel)</td><td>Fill เท่าที่ได้ ยกเลิกส่วนที่เหลือ</td><td>Partial fill</td></tr>
 <tr><td><strong>FOK</strong> (Fill or Kill)</td><td>ต้อง fill ทั้งหมด หรือไม่ fill เลย</td><td>อาจไม่ fill</td></tr></table>
 
-<h3>25.3 เมื่อไร Arb ไม่คุ้ม?</h3>
-<div class="fm">ไม่คุ้มเมื่อ:<br>
-Net Profit < 0 (หลังหักทุก cost)<br>
-OR Profit / Capital < risk-free rate (ทำน้อยกว่าฝากธนาคาร)<br>
-OR Profit / Effort < minimum wage (เสียเวลาเกินไป)</div>
+<h3>25.3 คิดต้นทุนให้ครบ — สูตรที่ Part III–VI อ้างถึงตลอด</h3>
+<p>เหตุผลที่กลยุทธ์ส่วนใหญ่ในเล่มนี้ "ดูดีบนกระดาษแต่ไม่รอดจริง" อยู่ในบรรทัดเดียวนี้ — <strong>คนส่วนใหญ่นับไม่ครบ</strong></p>
+<div class="fm">ต้นทุนรวมต่อรอบเทรด (ไป-กลับ) =
+    ค่าคอมมิชชัน            × จำนวนขา × 2 (เข้า+ออก)
+  + ครึ่งหนึ่งของ bid-ask   × จำนวนขา × 2   ← มักใหญ่ที่สุด
+  + slippage                                ← ยิ่งรีบ ยิ่งแพง
+  + ค่ายืมหุ้น (ถ้ามีขา short) × จำนวนวันที่ถือ
+  + ดอกเบี้ย margin (ถ้ากู้)  × จำนวนวันที่ถือ
+  + ภาษี (ตามเขตที่อยู่)
+
+เกณฑ์ตัดสิน 3 ชั้น — ต้องผ่านทั้งสามข้อ:
+  ① กำไรสุทธิ > 0                       (ไม่งั้นคือทำฟรี)
+  ② กำไร/ทุน > อัตราไร้ความเสี่ยง        (ไม่งั้นซื้อพันธบัตรดีกว่า)
+  ③ ส่วนต่างจาก ② คุ้มกับความเสี่ยง+เวลา  (ไม่งั้นก็ซื้อพันธบัตรอยู่ดี)</div>
+<div class="bx br">
+<div class="bt">⚠️ กับดักที่พบบ่อยที่สุด: นับ bid-ask แค่ครั้งเดียว</div>
+<p>กลยุทธ์ 4 ขาอย่าง conversion หรือ box <strong>จ่ายส่วนต่าง bid-ask 4 ครั้งตอนเข้า และอีก 4 ครั้งตอนออก</strong> — ถ้าออปชันมี spread 5% ของราคา ต้นทุนรวมอาจเกิน 20% ของ premium ก่อนที่กลยุทธ์จะเริ่มทำงานด้วยซ้ำ (ดูบท 11–12)</p>
+<p class="src">กฎง่ายๆ ที่ใช้ได้จริง: <strong>ถ้าต้นทุนคาดการณ์เกิน ~20% ของกำไรที่คาดหวัง ให้ข้ามไป</strong> เพราะประมาณการกำไรมักผิดพลาดได้ง่ายกว่าประมาณการต้นทุนมาก</p>
+</div>
+
+<h3>25.4 รายย่อยแข่งอะไรได้ / แข่งอะไรไม่ได้</h3>
+<p>เมื่อรู้แล้วว่าแข่งความเร็วไม่ได้ คำถามที่มีประโยชน์กว่าคือ <em>"แล้วเราเหลืออะไร?"</em></p>
+<table>
+<tr><th>สนามที่แพ้แน่นอน ✗</th><th>สนามที่รายย่อยได้เปรียบจริง ✓</th></tr>
+<tr><td>ความเร็ว (มิลลิวินาที)</td><td><strong>ความอดทน</strong> — ไม่มีลูกค้าไถ่ถอน ไม่ต้องรายงานผลรายไตรมาส ถือข้ามปีได้</td></tr>
+<tr><td>ต้นทุนการยืมหุ้น / เงินทุน</td><td><strong>ขนาดเล็ก</strong> — เข้าโอกาสที่เล็กเกินกว่ากองทุนจะสนใจได้</td></tr>
+<tr><td>ข้อมูลคุณภาพสถาบัน</td><td><strong>สิทธิ์ที่จะไม่เทรด</strong> — ไม่มีใครบังคับให้ลงเงิน รอได้ไม่จำกัด</td></tr>
+<tr><td>ทีมวิเคราะห์กฎหมาย/antitrust</td><td><strong>ไม่ต้องจ่ายแพง</strong> — ใช้ limit order, เลี่ยงช่วงตลาดป่วน</td></tr>
+</table>
+<p class="src"><span class="tag tag-ok">ข้อได้เปรียบที่ใหญ่ที่สุดของรายย่อยคือข้อที่คนมองข้าม</span> — <strong>คุณไม่มีพันธะต้องเทรด</strong> ผู้จัดการกองทุนที่ถือเงินสด 100% หนึ่งปีจะถูกไล่ออก แต่คุณทำได้โดยไม่มีใครว่า นี่คือเหตุผลที่ "รอจังหวะที่ส่วนต่างผิดปกติจริงๆ" (เช่นกล่อง funding harvest ในบท 17) เป็นกลยุทธ์ที่รายย่อยทำได้ดีกว่าสถาบัน</p>
 
 <h2 id="ch26">บทที่ 26: Risk Management</h2>
 <h3>26.1 "Riskless" ที่ไม่ Riskless</h3>
@@ -51,7 +89,35 @@ Russian default → spread กว้างขึ้นอีก → forced liqui
 เสีย <strong>$440 million ใน 45 นาที</strong> → บริษัทล้มละลาย<br>
 บทเรียน: <strong>Automated execution ต้องมี kill switch + position limits</strong></p></div>
 
-<h2 id="ch27">บทที่ 27: Infrastructure & Tools</h2>
+<h3>26.4 ความเสี่ยงที่ฆ่าจริง: มันมาพร้อมกัน</h3>
+<div class="bx ev">
+<div class="bt">📊 ธีมที่วิ่งผ่านทั้งเล่ม: การกระจายไม่ช่วยตรงที่สำคัญที่สุด</div>
+<p>ถ้าอ่าน Part III–VI มาแล้วจะเห็นว่า<strong>ข้อค้นพบเดียวกันโผล่ซ้ำสามครั้ง</strong> ในกลยุทธ์ที่ดูไม่เกี่ยวกันเลย:</p>
+<ul>
+<li><strong>Merger arb</strong> (บท 22) — ผลตอบแทนเหมือน "ขาย put ดัชนี": ไม่สัมพันธ์กับตลาดตอนปกติ แต่เจ็บพร้อมตลาดตอนพัง; ดีลล่มพร้อมกันเมื่อสินเชื่อตึงหรือนโยบายกำกับเปลี่ยน</li>
+<li><strong>ขาย volatility</strong> (บท 13, 24) — เก็บเบี้ยได้เกือบทุกเดือน แล้วคืนทั้งหมดในวันเดียว (5 ก.พ. 2018)</li>
+<li><strong>Pairs / stat arb</strong> (บท 18–21) — คู่ที่ "ไม่เกี่ยวกัน" แยกออกจากกันพร้อมกันเมื่อทุกคนถูกบังคับปิดสถานะ</li>
+</ul>
+<p><strong>โครงสร้างเดียวกันทั้งหมด:</strong> เก็บเล็กๆ บ่อยๆ แล้วจ่ายก้อนใหญ่ครั้งเดียว — และวันที่จ่ายคือวันที่<em>ทุกตำแหน่งจ่ายพร้อมกัน</em></p>
+<p><span class="tag tag-warn">ระวัง</span> การถือ 20 ตำแหน่งลดได้เฉพาะ<strong>ความเสี่ยงเฉพาะตัว</strong> — แต่ความเสี่ยงที่ทำให้พอร์ตศูนย์คือความเสี่ยง<strong>ร่วม</strong> ซึ่งการกระจายไม่ช่วยเลย<br>
+คำถามที่ถูกต้องจึงไม่ใช่ <em>"ฉันถือกี่ตำแหน่ง"</em> แต่คือ <em>"ถ้าทุกตำแหน่งพังพร้อมกัน ฉันเหลือเท่าไร"</em></p>
+</div>
+
+<h3>26.5 ขนาดตำแหน่ง: กฎที่ทำให้รอด</h3>
+<div class="fm">กฎขั้นต่ำ:  ขาดทุนกรณีเลวร้ายสุด ต่อ 1 ตำแหน่ง ≤ 1–2% ของพอร์ต
+กฎรวมพอร์ต: ถ้าทุกตำแหน่ง "ประเภทเดียวกัน" พังพร้อมกัน → ต้องยังเหลือทุนเทรดต่อได้
+
+คำนวณย้อนกลับ (ไม่ใช่คำนวณไปข้างหน้า):
+  ① ถามก่อน: กรณีเลวร้ายสุดของตำแหน่งนี้คือเท่าไร?  (ไม่ใช่ "น่าจะ" แต่ "ถ้าซวยสุด")
+  ② ตั้งขนาดจากคำตอบข้อ ① ไม่ใช่จากกำไรที่คาดหวัง</div>
+<div class="bx br">
+<div class="bt">⚠️ ทำไม "กรณีเลวร้ายสุดในอดีต" ยังไม่พอ</div>
+<p>กองทุน LJM ที่ล้มในปี 2018 เปิดเผยว่าประเมิน "ขาดทุนวันเดียวกรณีเลวร้ายสุด ~20%" โดยเอา<strong>ขาดทุนวันที่แย่ที่สุดในอดีต (~9%) มาคูณสอง แล้วปัดขึ้น</strong> — ฟังดูอนุรักษ์นิยม แต่ของจริงคือ <strong>−80% ใน 2 วัน</strong></p>
+<p><strong>บทเรียน:</strong> สำหรับกลยุทธ์ที่มีหางยาว (ขาย vol, merger arb, carry) <em>อดีตมีวิกฤตน้อยเกินกว่าจะบอกได้ว่าหางยาวแค่ไหน</em> — ตรงกับที่งานวิจัยในบท 13 สรุปว่าประมาณค่าเฉลี่ยที่แท้จริงไม่ได้ ดังนั้นให้เผื่อไว้<strong>มากกว่า</strong>ที่ข้อมูลบอก ไม่ใช่เท่ากับ</p>
+<p class="src">และกฎเหล็กของ leverage: กลยุทธ์ที่ขาดทุนกระจุกตัวตอนตลาดพัง <strong>ห้ามกู้</strong> เพราะ margin call จะมาถึงในวันเดียวกับที่กลยุทธ์ขาดทุนพอดี (LTCM, บท 26.2)</p>
+</div>
+
+<h2 id="ch27">บทที่ 27: Infrastructure &amp; Tools</h2>
 
 <svg class="d" viewBox="0 0 520 160">
 <!-- System Architecture Flowchart -->
@@ -84,22 +150,93 @@ Russian default → spread กว้างขึ้นอีก → forced liqui
 <text x="260" y="150" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#64748b">Kill Switch + Position Limits ที่ทุกจุด!</text>
 </svg>
 
-<h3>27.1 Daily Arb Scan Checklist</h3>
-<div class="fm">□ PCP Violations    → ทุก strike ทุก expiry<br>
-□ Box Spread Value  → ทุก K₁,K₂ pairs vs PV(K₂-K₁)<br>
-□ Butterfly ≥ 0     → ทุก 3 strikes ติดกัน<br>
-□ Monotonicity      → C(K₁) ≥ C(K₂) for K₁ < K₂<br>
-□ Futures Basis     → Fair vs Actual<br>
-□ IV Surface        → smooth? anomaly?<br>
-□ Pairs Z-score     → watchlist คู่ที่ cointegrated<br>
-□ Merger Spreads    → annualized return ของ active deals<br>
-□ PM Cross-Platform → price differences<br>
-□ Earn/Promo Rates  → new subsidy opportunities</div>
+<h3>27.1 Daily Scan Checklist — ฉบับสถาบัน vs ฉบับรายย่อย</h3>
+<p>รายการสแกนแบบดั้งเดิมเขียนขึ้นสำหรับ<strong>โต๊ะเทรดสถาบัน</strong> ที่มีความเร็ว ต้นทุนต่ำ และเงินทุนพร้อม — ถ้ารายย่อยไล่ตามทุกข้อ จะเสียเวลากับสิ่งที่เก็บไม่ได้ ควรแยกให้ชัด:</p>
+<table>
+<tr><th>สแกนอะไร</th><th>สถาบัน</th><th>รายย่อย</th></tr>
+<tr><td>PCP violations ทุก strike/expiry</td><td>✓ อัตโนมัติ</td><td><span class="tag tag-no">ข้าม</span> เก็บไม่ได้หลังต้นทุน (บท 11)</td></tr>
+<tr><td>Box spread เทียบ PV(K₂−K₁)</td><td>✓</td><td><span class="tag tag-no">ข้าม</span> เว้นแต่ใช้เป็นเครื่องมือกู้เงิน</td></tr>
+<tr><td>Butterfly ≥ 0 / monotonicity</td><td>✓</td><td><span class="tag tag-ok">ใช้ตรวจราคา</span> ไม่ใช่หา arb — เช็กว่าออปชันที่จะซื้อไม่ผิดปกติ</td></tr>
+<tr><td>Futures basis / funding</td><td>✓</td><td><span class="tag tag-ok">สแกนได้</span> โดยเฉพาะ crypto — รอจังหวะที่ผิดปกติจริง (บท 17)</td></tr>
+<tr><td>Pairs z-score ของ watchlist</td><td>✓</td><td><span class="tag tag-ok">สแกนได้</span> โค้ดใน <code>code/pairs_trading_starter.py</code> รันวันละครั้งพอ</td></tr>
+<tr><td>Merger spreads</td><td>✓</td><td><span class="tag tag-warn">ดูเพื่อเรียนรู้</span> ทำเองต้องกระจาย 20+ ดีล (บท 22)</td></tr>
+<tr><td>IV เทียบ realized ของหุ้นที่ถืออยู่</td><td>✓</td><td><span class="tag tag-ok">มีประโยชน์</span> ใช้ตัดสินว่าจะซื้อ/ขายออปชันตอนไหน</td></tr>
+</table>
+<div class="bx bg">
+<div class="bt">✅ Checklist รายวันที่รายย่อยทำแล้วได้ผลจริง (5 นาที)</div>
+<div class="fm">□ ตำแหน่งที่ถืออยู่ยังผ่านเกณฑ์เดิมไหม   (cointegration ยังผ่าน? funding ยังบวก?)
+□ มีตำแหน่งไหนเกินขนาดที่ตั้งไว้หรือยัง    (ราคาขยับทำให้สัดส่วนเพี้ยน)
+□ ข่าวที่กระทบสมมติฐานหลักของตำแหน่ง      (ดีลโดนฟ้อง? โบรกมีปัญหา?)
+□ ถ้าวันนี้ตลาดพัง −10% พอร์ตฉันเป็นยังไง   (ตอบให้ได้ก่อนมันเกิดขึ้น)
+□ มีอะไรที่ควร "ไม่ทำ" วันนี้ไหม            (ใช้สิทธิ์ที่จะไม่เทรด)</div>
+<p class="src">สังเกตว่าไม่มีข้อไหนเป็นการ "หาโอกาสใหม่" เลย — <strong>สำหรับรายย่อย การดูแลของที่ถืออยู่และไม่ทำพลาด สร้างผลตอบแทนมากกว่าการไล่หาโอกาสใหม่ทุกวัน</strong></p>
+</div>
 
-<h3>27.2 System Architecture</h3>
-<div class="fm">Data Feed → Scanner → Signal Generator → Risk Check → Order Router → Exchange<br>
-                                                    ↓<br>
-                                            Position Monitor → Alert System → Human Review</div>
+<h3>27.2 Execution Pipeline — จากสัญญาณสถิติสู่คำสั่งจริง</h3>
+<p>ตาราง 26.1 บอกว่า <strong>Execution risk (ขา 1 ได้ ขา 2 ไม่ได้)</strong> มีความรุนแรง "สูง" — แต่การรู้ว่ามันเสี่ยงไม่ได้ช่วยอะไร สิ่งที่ช่วยคือ <strong>ลำดับขั้นที่ออกแบบมาให้แต่ละขั้นปิดความเสี่ยงหนึ่งอย่าง</strong></p>
+<div class="fm">Futures 15m closed bars
+        ↓
+คำนวณ beta และ residual จาก train data
+        ↓
+เกิด statistical signal
+        ↓
+ตรวจ live bid/ask พร้อมกันทั้งสองขา
+        ↓
+ตรวจ freshness · liquidity · fee · slippage
+        ↓
+ส่ง order พร้อม two-leg failure recovery
+        ↓
+คำนวณ P&amp;L จาก quantity และ fill price จริง</div>
+
+<div class="bx ev">
+<div class="bt">📊 ทำไมต้องมีทุกขั้น — แต่ละขั้นปิดความพังคนละแบบ</div>
+<table>
+<tr><th>ขั้น</th><th>ปิดความเสี่ยงอะไร</th></tr>
+<tr><td><strong>ใช้แท่งที่ปิดแล้ว (closed bars)</strong></td><td>แท่งที่ยังไม่ปิด <em>เปลี่ยนค่าได้</em> — สัญญาณที่เห็นสดๆ อาจหายไปเมื่อแท่งปิดจริง ทำให้ backtest กับของจริงไม่ตรงกัน</td></tr>
+<tr><td><strong>beta/residual จาก train เท่านั้น</strong></td><td>Look-ahead bias — ถ้าประเมิน β จากข้อมูลทั้งชุดแล้วย้อนไปเทรด คือใช้อนาคตทำนายอดีต (บท 21)</td></tr>
+<tr><td><strong>ตรวจ live bid/ask ทั้งสองขาพร้อมกัน</strong></td><td>สัญญาณคำนวณจาก<em>ราคากลาง</em> แต่เทรดจริง<strong>ซื้อที่ ask ขายที่ bid</strong> — spread จริง ณ วินาทีนั้นอาจกินกำไรหมดแล้ว ต้องเช็กสองขา<em>พร้อมกัน</em> เพราะเช็กทีละขาคือได้ภาพคนละเวลา</td></tr>
+<tr><td><strong>freshness</strong></td><td>Stale quote (ตาราง 26.1) — ราคาที่เห็นอาจค้างมาหลายวินาที ถ้า quote เก่าเกินเกณฑ์ให้ยกเลิกรอบนั้นทิ้ง</td></tr>
+<tr><td><strong>liquidity</strong></td><td>ขนาดที่จะส่งต้องเล็กพอเทียบกับ depth ที่ระดับราคานั้น ไม่งั้นเรากลายเป็นคนดันราคาเอง (บทเรียน Amaranth)</td></tr>
+<tr><td><strong>fee + slippage</strong></td><td>เกณฑ์ 3 ชั้นในบท 25.3 — <strong>ตัดสินใจก่อนส่ง ไม่ใช่มารู้ทีหลัง</strong></td></tr>
+<tr><td><strong>two-leg failure recovery</strong></td><td>สถานะ "ขาเดียว" คือความเสี่ยงเปล่าที่ไม่ได้ตั้งใจถือ — ต้องมีแผนไว้ล่วงหน้า</td></tr>
+<tr><td><strong>P&amp;L จาก fill จริง</strong></td><td>คำนวณจากราคาปิด/ราคากลางจะได้ผลดีเกินจริงเสมอ — และไม่จับ partial fill</td></tr>
+</table>
+<p class="src"><strong>หลักการที่ซ่อนอยู่:</strong> flow นี้แยก <em>ชั้นสัญญาณ</em> (ช้า, ใช้ข้อมูลปิดแล้ว, ใช้พารามิเตอร์จากอดีต) ออกจาก <em>ชั้นปฏิบัติ</em> (เร็ว, ใช้ราคาสด, ตรวจสภาพจริง) อย่างเด็ดขาด — การปนสองชั้นนี้คือสาเหตุอันดับหนึ่งที่ระบบ "backtest ดีแต่เทรดจริงขาดทุน"</p>
+</div>
+
+<h3>27.3 Two-Leg Failure Recovery — ส่วนที่คนข้ามแล้วเจ็บ</h3>
+<p>ในกลยุทธ์สองขา สิ่งที่แย่ที่สุดไม่ใช่ขาดทุน แต่คือ <strong>ได้ขาเดียว</strong> — เพราะคุณกลายเป็นคนถือความเสี่ยงทิศทางโดยไม่ได้ตั้งใจ ทั้งที่ทั้งกลยุทธ์ออกแบบมาเพื่อไม่ถือมัน</p>
+<div class="fm">สถานะที่ระบบต้องรู้จัก:
+  IDLE → SENDING → LEG1_FILLED → COMPLETE
+                        ↓ (ขา 2 ไม่ fill ใน T วินาที)
+                    RECOVERING
+
+นโยบายกู้คืน — ต้อง<strong>เลือกไว้ก่อน</strong> ไม่ใช่ตัดสินใจตอนเกิด:
+  A. ปิดขา 1 ทันทีที่ราคาตลาด   → ยอมขาดทุนเล็ก จบเร็ว (ปลอดภัยสุด)
+  B. ไล่ราคาขา 2 ในขอบเขตที่ตั้งไว้ → ได้ครบคู่ แต่จ่ายแพงขึ้น
+  C. ถือขาเดียวชั่วคราว + stop เข้ม → เสี่ยงสุด ใช้เมื่อมั่นใจว่าสภาพคล่องจะกลับมา</div>
+<div class="bx ba">
+<div class="bt">กฎปฏิบัติ 3 ข้อที่ลดโอกาสเข้าสู่ RECOVERING</div>
+<ul>
+<li><strong>ส่งขาที่ยากกว่าก่อนเสมอ</strong> — ขาที่สภาพคล่องน้อย/spread กว้างกว่า ถ้าขายากไม่ได้ ก็ไม่ต้องส่งขาง่ายเลย (ถ้าส่งขาง่ายก่อนแล้วขายากพลาด = ติดขาเดียวแน่นอน)</li>
+<li><strong>ตั้ง timeout เป็นวินาที ไม่ใช่นาที</strong> — ยิ่งค้างนาน ความเสี่ยงทิศทางยิ่งสะสม</li>
+<li><strong>บันทึกทุกครั้งที่เข้า RECOVERING</strong> — ถ้าเกิดบ่อย แปลว่าขนาดใหญ่เกินสภาพคล่อง หรือเกณฑ์ freshness หลวมเกินไป ไม่ใช่ "โชคร้าย"</li>
+</ul>
+<p class="src">สำหรับรายย่อยที่เทรดมือ: หลักการเดียวกันใช้ได้ — <strong>เตรียมคำสั่งทั้งสองขาไว้ก่อน ส่งขายากก่อน และตั้งใจไว้ล่วงหน้าว่าถ้าอีกขาไม่ได้จะทำอะไร</strong> ความผิดพลาดที่พบบ่อยคือ "ได้ขาแรกแล้วค่อยคิด" ซึ่งเป็นเวลาที่แย่ที่สุดในการตัดสินใจ</p>
+</div>
+
+<h3>27.4 P&amp;L ต้องมาจาก fill จริง</h3>
+<div class="fm">❌ ผิด:  P&amp;L = (ราคาปิดวันนี้ − ราคาปิดเมื่อวาน) × ขนาดที่ตั้งใจ
+✅ ถูก:  P&amp;L = Σ (fill price จริง × quantity ที่ได้จริง) − ค่าธรรมเนียมจริง
+
+ต้องบันทึกทุกครั้ง:  timestamp · side · ราคาที่ตั้งใจ · fill price · quantity
+                    · ค่าธรรมเนียม · slippage (= fill − ราคาที่ตั้งใจ)</div>
+<div class="bx br">
+<div class="bt">⚠️ นี่คือจุดอ่อนของโค้ดตัวอย่างในบท 21 เอง</div>
+<p>โค้ด <code>code/pairs_trading_starter.py</code> คำนวณผลตอบแทนจาก<strong>ราคาปิด</strong> และสมมติว่าได้ตามขนาดที่ต้องการเสมอ — ซึ่ง<em>มองโลกในแง่ดีเกินจริงอย่างเป็นระบบ</em> เพราะจริงๆ ต้องซื้อที่ ask ขายที่ bid และอาจได้ไม่ครบจำนวน</p>
+<p>เราจึงใส่พารามิเตอร์ <code>cost_bps</code> ไว้ชดเชยแบบหยาบๆ — แต่<strong>วิธีที่ถูกต้องคือเก็บ slippage จริงจากการ paper trade แล้วเอาค่าที่วัดได้มาแทน</strong> ไม่ใช่เดาเอา<br>
+นี่คือเหตุผลที่ Action Plan ในบท 21 ให้ paper trade 2–3 เดือนก่อน: <strong>ไม่ใช่แค่ดูว่าสัญญาณถูกไหม แต่เพื่อวัดว่าต้นทุนจริงของคุณเท่าไร</strong></p>
+</div>
 
 <div class="bx ba"><div class="bt">เรื่องจริง: Amaranth Advisors (2006)</div>
 <p>Hedge fund ฿9 billion เทรด natural gas futures spread (Calendar Arb) → ถูกต้องในหลักการ แต่ position ใหญ่เกินไป → ตลาดรู้ว่าต้อง roll → front-run → <strong>เสีย $6.6 billion ใน 1 สัปดาห์</strong><br>
@@ -108,8 +245,8 @@ Russian default → spread กว้างขึ้นอีก → forced liqui
 <div class="bx bb"><div class="bt">ลองคิดดู (บท 25-27)</div>
 <p>1. คุณมี arb opportunity net ฿2,000/วัน แต่ต้อง monitor ทุก 15 นาที 14 ชั่วโมง/วัน → คุ้มไหม? (คิด opportunity cost ของเวลา)<br>
 2. ระบบ auto-trade ทำกำไร ฿50,000/เดือน แต่ไม่มี kill switch → ควรรันไหม?<br>
-<em>เฉลย: 1. ฿2,000/(14×4)=฿35.7/ครั้งที่เช็ค — ถ้าเงินเดือนปกติ > ฿35/15นาที อาจไม่คุ้ม 2. ไม่ควร! Knight Capital เสีย $440M ใน 45 นาที — kill switch = mandatory</em></p></div>
+3. ระบบส่งขาที่ 1 ได้ แต่ขาที่ 2 ไม่ fill ใน 5 วินาที → ควรทำอะไร และทำไมต้องตัดสินใจเรื่องนี้<em>ก่อน</em>เทรด?<br><em>เฉลย: 1. ฿2,000/(14×4)=฿35.7/ครั้งที่เช็ค — ถ้าเงินเดือนปกติ &gt; ฿35/15นาที อาจไม่คุ้ม 2. ไม่ควร! Knight Capital เสีย $440M ใน 45 นาที — kill switch = mandatory 3. เข้าสถานะ RECOVERING แล้วทำตามนโยบายที่เลือกไว้ (ปลอดภัยสุด = ปิดขา 1 ทันที) — ต้องตัดสินใจก่อนเพราะตอนติดขาเดียวคือตอนที่กดดันที่สุดและตัดสินใจแย่ที่สุด</em></p></div>
 
-<div class="bx ba"><div class="bt">สรุป Part VII (บท 25-27) — Part 8/9 ✓</div><p>✓ Speed ≠ everything — merger arb ไม่ต้องเร็ว แต่ FX arb ต้อง microsecond<br>✓ 8 risk types — Funding risk อันตรายที่สุด (LTCM)<br>✓ Knight Capital lesson → automated ต้องมี safeguards<br>✓ Daily scan checklist → ทำเป็น routine<br>✓ <strong>Survive first, profit second</strong></p></div>
+<div class="bx bg"><div class="bt">สรุป Part VII (บท 25–27) — Part 8/9 ✓</div><p>✓ Speed ≠ everything — merger arb ไม่ต้องเร็ว แต่ FX arb ต้อง microsecond<br>✓ <strong>นับต้นทุนให้ครบ</strong>: bid-ask × จำนวนขา × 2 มักใหญ่กว่าค่าคอมมาก; ต้นทุน &gt; 20% ของกำไรคาดหวัง = ข้าม<br>✓ <strong>รายย่อยแข่งเวลาไม่ได้ แต่แข่งความอดทนได้</strong> — สิทธิ์ที่จะไม่เทรดคือข้อได้เปรียบที่สถาบันไม่มี<br>✓ 8 risk types — Funding risk อันตรายที่สุด (LTCM)<br>✓ <strong>ความเสี่ยงร่วม &gt; ความเสี่ยงเฉพาะตัว</strong>: กระจาย 20 ตำแหน่งไม่ช่วยถ้าทุกตัวพังวันเดียวกัน<br>✓ <strong>ตั้งขนาดจากกรณีเลวร้ายสุด ไม่ใช่จากกำไรคาดหวัง</strong> — และเผื่อมากกว่าที่อดีตบอก (บทเรียน LJM)<br>✓ <strong>แยกชั้นสัญญาณออกจากชั้นปฏิบัติ</strong>: closed bars + พารามิเตอร์จาก train → แล้วค่อยตรวจ live bid/ask ทั้งสองขา<br>✓ <strong>Two-leg failure recovery</strong>: ส่งขายากก่อน, timeout เป็นวินาที, เลือกนโยบายกู้คืนไว้<em>ก่อน</em>เกิด<br>✓ <strong>P&amp;L ต้องมาจาก fill จริง</strong> ไม่ใช่ราคาปิด — และ paper trade คือการ<em>วัดต้นทุนจริงของตัวเอง</em><br>✓ Knight Capital lesson → automated ต้องมี kill switch<br>✓ <strong>รอดก่อน แล้วค่อยกำไร</strong></p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)"><div style="text-align:center;padding:20px;color:#64748b"><p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part VII</p></div></body></html>
