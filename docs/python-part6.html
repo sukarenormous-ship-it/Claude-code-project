@@ -387,8 +387,11 @@ async def good_rest_call(url: str):
 <div class="ex">
 <div class="et">ตัวอย่าง: Async price aggregator สำหรับ BTC pair</div>
 <div class="fm">import asyncio
+import random
 from dataclasses import dataclass
 from datetime import datetime
+
+random.seed(7)          <span class="c"># ให้ตัวเลขในหนังสือตรงกับที่คุณรันได้</span>
 
 @dataclass
 class Ticker:
@@ -401,7 +404,6 @@ async def fetch_ticker_mock(exchange: str, symbol: str,
                              base_price: float, delay: float) -> Ticker:
     """จำลอง REST API call"""
     await asyncio.sleep(delay)
-    import random
     price = base_price + random.uniform(-50, 50)
     return Ticker(exchange, symbol, price, datetime.utcnow())
 
@@ -421,7 +423,39 @@ async def aggregate_btc_prices() -> dict[str, Ticker]:
     return result
 
 asyncio.run(aggregate_btc_prices())</div>
-<div class="output">Mid: $65,002.3  Spread: $47.2</div>
+<div class="output">Mid: $64,987.5  Spread: $60.0</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 gather คืนของมาเรียงตามลำดับไหน</div>
+<div class="ad-code">tickers = await asyncio.gather(
+    fetch_ticker_mock("binance", ..., 0.08),   <span class="c"># เสร็จที่ 0.08s ← เร็วสุด</span>
+    fetch_ticker_mock("bybit",   ..., 0.12),   <span class="c"># เสร็จที่ 0.12s ← ช้าสุด</span>
+    fetch_ticker_mock("okx",     ..., 0.10),   <span class="c"># เสร็จที่ 0.10s</span>
+)
+<span class="c"># tickers = [binance, bybit, okx] — เรียงตามที่เขียน ไม่ใช่ตามที่เสร็จ</span>
+
+result = {t.exchange: t for t in tickers}      <span class="c"># dict comprehension</span></div>
+<div class="ad-steps">
+<ol>
+<li><strong><code>gather</code> คืนผลเรียงตามลำดับที่ใส่เข้าไปเสมอ</strong> ไม่ใช่ตามลำดับที่ทำเสร็จ · okx เสร็จก่อน bybit แต่ยังอยู่หลังใน list · ข้อนี้ทำให้เขียนโค้ดง่ายขึ้นมาก เพราะ<strong>จับคู่ผลลัพธ์กับ input ด้วยตำแหน่งได้เลย</strong> ไม่ต้องแปะ id · (ถ้าอยากได้ผลตามลำดับที่เสร็จจริง ต้องใช้ <code>asyncio.as_completed</code> แทน)</li>
+<li><strong>เวลารวม = ตัวที่ช้าที่สุด ไม่ใช่ผลบวก</strong> — 0.12 วินาที ไม่ใช่ 0.08+0.12+0.10 = 0.30 · นี่คือทั้งหมดที่ async ให้ · ถ้าเพิ่ม exchange ที่ตอบใน 0.09s เข้าไปอีก 20 เจ้า เวลารวมก็ยัง 0.12 วินาทีเท่าเดิม</li>
+<li><code>{t.exchange: t for t in tickers}</code> — <strong>dict comprehension</strong> · อ่านว่า "สำหรับทุก <code>t</code> ใน tickers สร้างคู่ <code>key: value</code>" · ก่อนโคลอนคือ key หลังโคลอนคือ value · ที่นี่คือแปลง list เป็น dict ที่ค้นด้วยชื่อ exchange ได้ (<code>result["bybit"]</code>) แทนที่จะต้องจำว่าอยู่ตำแหน่งที่เท่าไร</li>
+</ol>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] "spread" ที่คำนวณได้ตรงนี้ ส่วนหนึ่งเป็นของปลอม</div>
+<p>สามราคานี้<strong>ไม่ได้ถ่ายจากเวลาเดียวกัน</strong> — binance เป็นราคา ณ 0.08 วินาที · okx ณ 0.10 · bybit ณ 0.12 · การเอามาลบกันคือการเทียบราคาที่ห่างกันถึง <strong>40 มิลลิวินาที</strong></p>
+<p>ในตลาดที่ขยับเร็ว ส่วนต่างที่เห็นจึงปนกันสองอย่างแยกไม่ออก: <strong>ส่วนต่างจริงระหว่างตลาด</strong> (ของที่เทรดได้) กับ <strong>ส่วนต่างที่เกิดจากถ่ายรูปคนละวินาที</strong> (ของปลอม ที่หายไปพอส่งคำสั่งจริง) · นี่คือสาเหตุอันดับหนึ่งที่ scanner หา arbitrage มือใหม่รายงานโอกาสเต็มจอ แต่พอกดจริงไม่มีสักอัน</p>
+<p>ทางแก้ที่ระบบจริงใช้ — เรียงตามที่ควรทำก่อนหลัง:</p>
+<ul>
+<li><strong>ติด timestamp ของ exchange มากับราคาทุกครั้ง</strong> (ไม่ใช่เวลาที่เราได้รับ) แล้ว<strong>ทิ้งคู่ที่ห่างกันเกินเกณฑ์</strong> เช่น 50ms — สังเกตว่าโค้ดข้างบนเก็บ <code>timestamp</code> ไว้ใน <code>Ticker</code> แล้ว แต่<em>ไม่เคยเอามาใช้เลย</em> · นั่นคือช่องที่ต้องเติม</li>
+<li><strong>ใช้ WebSocket แทน REST</strong> — ได้ราคาไหลเข้ามาต่อเนื่อง จับคู่ตาม timestamp ได้แม่นกว่าการยิงถามเป็นครั้ง ๆ มาก (เป็นเหตุผลที่บทที่ 33 ทั้งบทว่าด้วย WebSocket)</li>
+<li><strong>เทียบกับ latency ที่ต้องใช้จริง</strong> — ถ้าส่วนต่างที่เจอเล็กกว่าที่ราคาขยับได้ในเวลาที่เราส่งคำสั่งไปถึง มันไม่ใช่โอกาส ไม่ว่าตัวเลขจะสวยแค่ไหน</li>
+</ul>
+<p>อีกจุดที่ควรรู้: <code>datetime.utcnow()</code> คืนเวลาแบบ <strong>naive</strong> (ไม่มี timezone ติดมา) · ตั้งแต่ Python 3.12 ถูกประกาศเลิกใช้แล้ว และควรเปลี่ยนเป็น <code>datetime.now(timezone.utc)</code> · ในระบบเทรดเรื่องนี้ไม่ใช่แค่ความสวยงาม — เวลาแบบไม่มี timezone เอาไปลบกับเวลาที่มี timezone จะ <strong><code>TypeError</code> ทันที</strong> และมักไปพังตอนต่อกับข้อมูลจาก exchange ที่ส่ง timezone มาด้วย</p>
+</div>
 </div>
 
 <details>
@@ -467,12 +501,14 @@ asyncio.run(aggregate_with_timeout())</div>
 <h3 id="s32-1">32.1 asyncio.gather() — รันพร้อมกัน</h3>
 
 <div class="fm">import asyncio
+import random
+
+random.seed(11)
 
 async def fetch_ohlcv(exchange: str, symbol: str,
                       timeframe: str = "1m") -> list:
     """จำลองดึง OHLCV candle ล่าสุด"""
     await asyncio.sleep(0.1)
-    import random
     p = 65000 + random.uniform(-200, 200)
     return [exchange, symbol, timeframe,
             {"open": p-10, "high": p+20, "low": p-30, "close": p,
@@ -501,10 +537,10 @@ async def fetch_all_ohlcv():
             print(f"{ex:8s} {sym} {tf:3s}: close={candle['close']:,.1f}")
 
 asyncio.run(fetch_all_ohlcv())</div>
-<div class="output">binance  BTCUSDT 1m : close=65,187.3
-bybit     BTCUSDT 1m : close=64,823.6
-binance  BTCUSDT 5m : close=65,041.2
-bybit     BTCUSDT 5m : close=65,112.8</div>
+<div class="output">binance  BTCUSDT 1m : close=64,981.0
+bybit    BTCUSDT 1m : close=65,169.7
+binance  BTCUSDT 5m : close=65,003.1
+bybit    BTCUSDT 5m : close=64,873.9</div>
 
 <h3 id="s32-2">32.2 asyncio.Queue — Decouple Producer และ Consumer</h3>
 
@@ -1916,7 +1952,8 @@ logger.info("Order placed", extra={
     "side":     "BUY",
     "price":    65000.0
 })</div>
-<div class="output">{"ts": "2024-01-15T10:30:00.123Z", "level": "INFO", "logger": "live_trading", "msg": "Order placed", "symbol": "BTCUSDT", "order_id": "ORD-001", "side": "BUY", "price": 65000.0}</div>
+<div class="output">{"ts": "2024-01-15T10:30:00.123456+00:00", "level": "INFO", "logger": "live_trading", "msg": "Order placed", "symbol": "BTCUSDT", "order_id": "ORD-001", "price": 65000.0, "side": "BUY"}
+<span class="c"># ↑ ts จะเป็นเวลาที่คุณรันจริง — ที่เหลือตรงกันทุกตัว</span></div>
 
 <h3 id="s35-2">35.2 Kill Switch ด้วย asyncio.Event</h3>
 
