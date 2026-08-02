@@ -101,22 +101,59 @@ def half_life(spread: pd.Series) -> float:
     return float("inf") if b >= 0 else -np.log(2) / b
 
 
-# ---------- ขั้นที่ 4: สัญญาณ Z-score ----------
-def zscore(spread: pd.Series, window: int = 30) -> pd.Series:
-    """Z-score แบบ rolling (กัน look-ahead bias)"""
-    return (spread - spread.rolling(window).mean()) / spread.rolling(window).std()
+# ---------- ขั้นที่ 4: ต้นทุน, สัญญาณ Z-score, และด่าน "หน่วยเงิน" ----------
+def round_trip_cost(close: pd.DataFrame, beta: float,
+                    cost_bps: float = 20.0) -> pd.Series:
+    """ต้นทุนไป-กลับโดยประมาณ ในหน่วยเดียวกับ spread (เข้า 1 ครั้ง + ออก 1 ครั้ง)
+    ฐานคือ gross notional ทั้งสองขา = |A| + |beta|*|B|"""
+    a, b = close.iloc[:, 0], close.iloc[:, 1]
+    notional = a.abs() + abs(beta) * b.abs()
+    return notional * (cost_bps / 1e4) * 2.0
+
+
+def zscore(spread: pd.Series, window: int = 30,
+           sigma_floor: pd.Series | float | None = None) -> pd.Series:
+    """Z-score แบบ rolling (กัน look-ahead bias)
+
+    sigma_floor : พื้นขั้นต่ำของ sigma — กัน z "พองเอง" ตอนตลาดนิ่ง
+        ช่วง Bollinger squeeze ค่า sigma ยุบ ทำให้ราคาขยับนิดเดียวก็แตะ 2-3 sigma
+        ทั้งที่ระยะทางจริงสั้นเกินกว่าจะคุ้มค่าธรรมเนียม (ดูบท 18.2)
+        ค่าที่แนะนำ = 2 x ต้นทุนไป-กลับ (อนุมานจาก (z_in - z_out) * sigma >= k * cost)
+    """
+    mean = spread.rolling(window).mean()
+    sd = spread.rolling(window).std()
+    if sigma_floor is not None:
+        sd = sd.clip(lower=sigma_floor)
+    return (spread - mean) / sd
+
+
+def edge_ok(spread: pd.Series, window: int, cost: pd.Series,
+            edge_k: float = 3.0) -> pd.Series:
+    """ด่านนัยสำคัญ 'ทางเศรษฐกิจ': ระยะห่างในหน่วยเงินต้องคุ้มต้นทุนกี่เท่า
+    |spread - mean| >= edge_k * ต้นทุนไป-กลับ"""
+    mean = spread.rolling(window).mean()
+    return (spread - mean).abs() >= (edge_k * cost)
 
 
 def positions_from_z(z: pd.Series, entry: float = 2.0,
-                     exit_: float = 0.5, stop: float = 4.0) -> pd.Series:
-    """สร้างสถานะ: +1 = long spread, -1 = short spread, 0 = ว่าง"""
+                     exit_: float = 0.5, stop: float = 4.0,
+                     ok: pd.Series | None = None) -> pd.Series:
+    """สร้างสถานะ: +1 = long spread, -1 = short spread, 0 = ว่าง
+
+    ok : ด่านหน่วยเงิน (จาก edge_ok) — ถ้า False จะ "ไม่เปิด" สถานะใหม่
+         แต่ยัง "ปิด" สถานะเดิมได้ตามปกติ (ไม่ขังเงินไว้)
+    """
     pos = np.zeros(len(z))
     for i in range(1, len(z)):
         prev, zi = pos[i - 1], z.iloc[i]
         if np.isnan(zi):
             pos[i] = prev
         elif prev == 0:
-            pos[i] = -1.0 if zi > entry else (1.0 if zi < -entry else 0.0)
+            allowed = True if ok is None else bool(ok.iloc[i])
+            if not allowed:
+                pos[i] = 0.0
+            else:
+                pos[i] = -1.0 if zi > entry else (1.0 if zi < -entry else 0.0)
         else:
             pos[i] = 0.0 if (abs(zi) < exit_ or abs(zi) > stop) else prev
     return pd.Series(pos, index=z.index)
@@ -147,13 +184,18 @@ def sharpe(returns: pd.Series, ann: float = 252.0) -> float:
 
 # ---------- ขั้นที่ 6: สัญญาณวันนี้ (สำหรับ paper trade) ----------
 def todays_signal(z: pd.Series, ta: str, tb: str, beta: float,
-                  entry: float = 2.0, exit_: float = 0.5, stop: float = 4.0) -> str:
+                  entry: float = 2.0, exit_: float = 0.5, stop: float = 4.0,
+                  ok: pd.Series | None = None) -> str:
     zc = z.dropna()
     if zc.empty:
         return "ข้อมูลไม่พอสำหรับสัญญาณ"
     last_z, last_date = zc.iloc[-1], zc.index[-1].date()
+    passes_edge = True if ok is None else bool(ok.loc[zc.index[-1]])
     if abs(last_z) > stop:
         act = "อย่าเข้า / ถ้าถืออยู่ให้ STOP ปิดสถานะ (อาจ structural break)"
+    elif abs(last_z) >= entry and not passes_edge:
+        act = ("มีสัญญาณสถิติ แต่ไม่ผ่านด่านหน่วยเงิน → ไม่เข้า "
+               "(ระยะห่างสั้นเกินกว่าจะคุ้มค่าธรรมเนียม — ช่วงแบนด์บีบตัว)")
     elif last_z > entry:
         act = f"SHORT spread: ขาย(short) {ta}, ซื้อ {beta:.2f}×{tb}"
     elif last_z < -entry:
@@ -196,8 +238,14 @@ def main() -> None:
 
     # 5) สัญญาณบนทั้งชุด, วัด Sharpe in-sample เทียบ out-of-sample
     spread = close.iloc[:, 0] - beta * close.iloc[:, 1]
-    z = zscore(spread)
-    pos = positions_from_z(z)
+    cost = round_trip_cost(close, beta)          # ต้นทุนไป-กลับ (หน่วยเดียวกับ spread)
+    # sigma floor = 2 x cost  -> กัน z พองเองตอนตลาดนิ่ง (Bollinger squeeze, บท 18.2)
+    z = zscore(spread, sigma_floor=2.0 * cost)
+    ok = edge_ok(spread, 30, cost)               # ด่านหน่วยเงิน: ระยะห่าง >= 3 x cost
+    pos = positions_from_z(z, ok=ok)
+    blocked = int(((z.abs() >= 2.0) & ~ok).sum())
+    print(f"[4b] ด่านหน่วยเงิน: บล็อกสัญญาณสถิติที่ไม่คุ้มต้นทุนไป {blocked} วัน "
+          f"(z ถึงเกณฑ์ แต่ระยะห่าง < 3x ต้นทุน)")
     net = strategy_returns(close, beta, pos)
     sh_is = sharpe(net.loc[train.index])
     sh_oos = sharpe(net.loc[test.index])
@@ -209,7 +257,7 @@ def main() -> None:
         print("    ⚠️ OOS Sharpe สูงผิดปกติ (>3) สงสัยไว้ก่อนว่ายัง overfit")
 
     # 6) สัญญาณวันนี้ (เอาไปจดใน paper trade log)
-    print(f"[6] สัญญาณวันนี้: {todays_signal(z, ta, tb, beta)}")
+    print(f"[6] สัญญาณวันนี้: {todays_signal(z, ta, tb, beta, ok=ok)}")
 
     # 7) verdict แบบ Evidence Tier — ไม่ใช่ ผ่าน/ตก ด้วย p-value ตัวเดียว
     tier, reason = evidence_tier(pval, kp, hl, sh_oos)

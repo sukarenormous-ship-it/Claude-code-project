@@ -29,11 +29,22 @@ python pairs_trading_starter.py XLE XOP     # ETF พลังงาน 2 ตั
 | 2. Hedge ratio β | จาก OLS (train) | — |
 | 3. Half-life | (train) | **5–30 วัน** |
 | 4. KPSS cross-check | null กลับด้าน (null=stationary) | p ≥ 0.05 = ไม่ขัด ✓; ADF/EG reject + KPSS ไม่ขัด = หลักฐานสองทาง |
+| 4b. **ด่านหน่วยเงิน** | σ floor + edge filter | กันสัญญาณปลอมช่วงตลาดนิ่ง — z ถึงเกณฑ์แต่ระยะห่างสั้นเกินคุ้มค่าธรรมเนียม |
 | 5. Sharpe | in-sample เทียบ **OOS** | OOS > 1 (อย่าเชื่อ > 3); ถ้า IS ≫ OOS = overfit |
 | 6. **สัญญาณวันนี้** | Long/Short/Exit/รอ | เอาไปจดใน paper-trade log ทุกวัน |
 | 7. **Evidence Tier** | 🔴 Reject / 🟡 Watchlist / 🔵 Research / 🟢 Trade candidate | verdict รวมทุกชั้น — ไม่ใช้ p-value เป็นสวิตช์ตัวเดียว |
 
 บรรทัด `[6] สัญญาณวันนี้` คือสิ่งที่ใช้ paper trade: รันทุกเย็นหลังตลาดปิด → จดสัญญาณลงชีต
+
+### ด่านหน่วยเงิน (`cost_bps`, `edge_k`) — แก้ปัญหา "3σ ที่ไม่มี headroom"
+
+ช่วงที่ตลาดนิ่ง spread แคบ ค่า σ จะยุบตาม ทำให้ราคาขยับนิดเดียวก็แตะ 2–3σ — z-score เป็นค่า**ไม่มีหน่วย**
+จึงมองไม่เห็นว่าระยะทางจริงสั้นเกินกว่าจะคุ้มค่าธรรมเนียม (Bollinger squeeze) โค้ดกันไว้ 2 ชั้น:
+
+1. **σ floor** = 2 × ต้นทุนไป-กลับ → z ไม่พองเองตอน σ ยุบ
+2. **edge filter** = `|spread − mean| ≥ 3 × ต้นทุนไป-กลับ` → ไม่เปิดสถานะใหม่ถ้าไม่คุ้ม (แต่ยังปิดสถานะเดิมได้)
+
+บรรทัด `[4b]` จะรายงานว่าบล็อกสัญญาณที่ไม่คุ้มไปกี่วัน — ถ้าตัวเลขนี้สูงมาก แปลว่าคู่นี้ผันผวนน้อยเกินกว่าจะเทรดคุ้มต้นทุนของคุณ
 
 > เชิงเทคนิค: ใช้ `coint()` เท่านั้นสำหรับ cointegration — ห้ามรัน `adfuller()` บน residual เอง
 > เพราะ residual จาก OLS ต้องใช้ Engle–Granger/MacKinnon critical values (ติดลบมากกว่าปกติ)
