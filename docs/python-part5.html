@@ -1733,6 +1733,8 @@ Constraints:
 Libraries: numpy, pandas</div>
 </div>
 
+<div class="read-aloud">83 บรรทัดข้างล่างคำนวณตัวเลข 7 ตัว แต่แบ่งเป็น <strong>2 กลุ่มที่คิดคนละวิธีสิ้นเชิง</strong> — จับให้ได้ตั้งแต่แรกแล้วที่เหลือง่าย · <strong>กลุ่ม "รายวัน"</strong> (sharpe · annual_return · max_drawdown) คิดจากคอลัมน์ทั้งคอลัมน์รวดเดียว ไม่สนว่าเทรดไหนเป็นเทรดไหน · <strong>กลุ่ม "รายเทรด"</strong> (win_rate · profit_factor · n_trades · avg_holding_days) ต้องรู้ก่อนว่า "เทรดหนึ่งครั้ง" เริ่มตรงไหนจบตรงไหน จึงต้องมีลูปจับคู่วันเข้ากับวันออก · ลูป <code>for</code> ตัวเดียวในฟังก์ชันนี้มีไว้เพื่อเรื่องนี้เท่านั้น</div>
+
 <div class="fm">def compute_metrics(
     result_df: pd.DataFrame,
     start_equity: float = 100.0,
@@ -1837,13 +1839,36 @@ for k, v in metrics.items():
   n_trades            : 6
   avg_holding_days    : 19.800</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 3 ท่าที่ใช้ซ้ำได้ทุกครั้งที่ต้องวัดผลกลยุทธ์</div>
+<div class="ad-code">active_pnl = df["daily_pnl"][df["position"] != 0].dropna()   <span class="c"># ① กรองด้วย boolean</span>
+
+peak     = np.maximum.accumulate(equity)                      <span class="c"># ② ยอดสูงสุดที่เคยไปถึง</span>
+drawdown = (equity - peak) / peak
+
+pos_diff    = df["position"].diff().fillna(0)                 <span class="c"># ③ หาจุดเปลี่ยนสถานะ</span>
+entry_dates = df.index[pos_diff ==  1].tolist()
+exit_dates  = df.index[pos_diff == -1].tolist()</div>
+<div class="ad-steps">
+<ol>
+<li><code>df["daily_pnl"][df["position"] != 0]</code> — ข้างในวงเล็บเหลี่ยมไม่ใช่เลขลำดับ แต่เป็น <strong>Series ของ True/False</strong> ยาวเท่ากัน · pandas จะคืนเฉพาะแถวที่เป็น True · อ่านออกเสียงว่า "เอา daily_pnl เฉพาะวันที่ position ไม่ใช่ศูนย์" · <strong>ทำไมต้องกรอง</strong> — วันที่ไม่ได้ถืออะไร กำไรเป็น 0 เป๊ะ ถ้านับรวมเข้าไป ส่วนเบี่ยงเบนมาตรฐานจะถูกเจือจางจนดูนิ่งผิดปกติ แล้ว Sharpe จะสูงเกินจริง</li>
+<li><code>np.maximum.accumulate</code> — "ยอดสูงสุดที่เคยไปถึง ณ แต่ละจุด" เช่น <code>[100, 105, 103, 108]</code> ได้ <code>[100, 105, 105, 108]</code> · ต่างจาก <code>.max()</code> ที่ให้เลขเดียว · พอเอา equity ปัจจุบันลบ peak แล้วหารด้วย peak ก็ได้ <strong>drawdown ณ ทุกวินาที</strong> · <code>.min()</code> ของมันคือจุดที่เจ็บที่สุดที่เคยผ่านมา</li>
+<li><code>position.diff()</code> คู่กับ <code>df.index[...]</code> — <code>diff()</code> ได้ <code>+1</code> ตอนเข้า <code>-1</code> ตอนออก · <code>df.index[เงื่อนไข]</code> คืน<strong>วันที่</strong>ของแถวที่ตรงเงื่อนไข ไม่ใช่ค่าในแถว · เป็นท่ามาตรฐานสำหรับคำถาม "มันเกิดขึ้นเมื่อไหร่บ้าง"</li>
+</ol>
+<p>ส่วนลูปจับคู่ข้างล่าง (<code>exits_after = [e for e in exit_dates if e &gt; entry]</code>) มี<strong>สมมติฐานซ่อนอยู่</strong>ที่ควรเห็น: มันเลือกวันออก<em>ตัวแรกที่มาหลังวันเข้า</em> ซึ่งถูกต้องเฉพาะกับกลยุทธ์ที่ถือได้ทีละหนึ่งไม้เท่านั้น · ถ้าเปลี่ยนไปทำกลยุทธ์ที่เข้าซ้อนหลายไม้ ฟังก์ชันนี้จะนับผิดโดยไม่ error</p>
+</div>
+</div>
+
 <h3 id="s30-5">30.5 Round 3 — Walk-Forward Validation</h3>
+
+<div class="read-aloud">walk-forward คือการเลียนแบบสิ่งที่<em>เกิดขึ้นจริงตามเวลา</em>: ใช้อดีตตัดสินใจ แล้วดูว่าอนาคตที่ยังไม่เคยเห็นให้ผลอย่างไร · แล้วเลื่อนหน้าต่างไปข้างหน้า ทำซ้ำ · โค้ดข้างล่างยาวก็จริงแต่โครงมีแค่ <code>while</code> วงเดียวที่เลื่อน <code>start</code> ทีละ <code>step_size</code> · ในแต่ละรอบมีของ 3 อย่าง: ตัดช่วงข้อมูล → รัน backtest → เก็บตัวเลขลง <code>results</code> · ตอนจบแปลง <code>results</code> เป็น DataFrame ทีเดียว — <strong>เป็นแพตเทิร์นที่จะเจอซ้ำไปตลอด: สะสมลง list ก่อน แล้วค่อยสร้าง DataFrame ครั้งเดียวตอนท้าย</strong> เพราะการต่อ DataFrame ทีละแถวช้ากว่ามาก</div>
 
 <div class="round-box">
 <div class="round-label">ROUND 3 PROMPT</div>
 <div class="prompt-good">Task: เพิ่ม walk-forward validation บน volatility mean-reversion strategy
 
-ปัญหา Round 2: Sharpe 0.74 มาจาก in-sample เท่านั้น — ต้องตรวจ out-of-sample
+ปัญหา Round 2: Sharpe -1.681 วัดจาก in-sample ชุดเดียว — ต้องตรวจ out-of-sample
+            ว่าผลนี้คงที่ข้ามช่วงเวลาไหม หรือแค่บังเอิญของ sample นี้
 
 Input:
   - prices: pd.Series
@@ -1908,34 +1933,40 @@ Libraries: pandas, numpy</div>
         train_prices = prices.iloc[start:train_end]
         test_prices  = prices.iloc[train_end:test_end]
 
-        # ---- Train fold ----
-        vdf_train  = compute_vol_zscore(
-            train_prices,
-            vol_window=params["vol_window"],
-            zscore_window=params["zscore_window"],
-        )
-        sig_train  = generate_signal(
-            vdf_train["vol_zscore"],
-            entry_z=params["entry_z"],
-            exit_z=params["exit_z"],
-        )
-        res_train  = run_backtest(train_prices, sig_train)
-        m_train    = compute_metrics(res_train)
+        # ---- คำนวณ feature ครั้งเดียวบน "ประวัติต่อเนื่อง" train+test ----
+        # ⚠️ ห้ามคำนวณ vol_zscore บน test window ล้วน ๆ · เหตุผล 2 ข้อ:
+        #   1) ผิดหลัก — วันแรกของ test ในชีวิตจริงเรามีข้อมูล train
+        #      อยู่ในมือแล้ว การทิ้งไม่ใช่การกันมองอนาคต แต่คือการโยน
+        #      ข้อมูลที่มีสิทธิ์ใช้ทิ้งเปล่า ๆ
+        #   2) พังเงียบ — test_size (63) ไม่พอเลี้ยง zscore_window (63)
+        #      เพราะ ann_vol กิน 20 แถวแรกไปเป็น NaN แล้ว
+        #      → vol_zscore เป็น NaN ทั้งชุด → ไม่มีสัญญาณ → 0 เทรด
+        #      โค้ดไม่ error เลย แต่ผลลัพธ์เป็น NaN ทุก fold
+        # ยังไม่มองอนาคตอยู่ดี เพราะ rolling ทุกตัวเป็น center=False
+        hist_prices = prices.iloc[start:test_end]
 
-        # ---- Test fold ----
-        # คำนวณ vol_zscore บน test window (fresh, no future data)
-        vdf_test   = compute_vol_zscore(
-            test_prices,
+        vdf_hist = compute_vol_zscore(
+            hist_prices,
             vol_window=params["vol_window"],
             zscore_window=params["zscore_window"],
         )
-        sig_test   = generate_signal(
-            vdf_test["vol_zscore"],
+        sig_hist = generate_signal(
+            vdf_hist["vol_zscore"],
             entry_z=params["entry_z"],
             exit_z=params["exit_z"],
         )
-        res_test   = run_backtest(test_prices, sig_test)
-        m_test     = compute_metrics(res_test)
+        res_hist = run_backtest(hist_prices, sig_hist)
+
+        # ---- ตัดผลออกเป็นช่วง train / test แล้วค่อยวัดแยกกัน ----
+        res_train = res_hist.iloc[:train_size]
+        res_test  = res_hist.iloc[train_size:]
+
+        m_train = compute_metrics(res_train)
+        # equity ของช่วง test ไม่ได้เริ่มที่ 100 (มันต่อมาจาก train)
+        # ต้องบอก start_equity ให้ตรง ไม่งั้น annual_return จะเพี้ยน
+        m_test  = compute_metrics(
+            res_test, start_equity=res_test["equity"].iloc[0]
+        )
 
         results.append({
             "fold":          fold,
@@ -1973,29 +2004,56 @@ print(f"% folds &gt; 0:       "
       f"{(wf_results['sharpe_test'] &gt; 0).mean():.0%}")</div>
 <div class="output">=== Walk-Forward Results ===
  fold train_start test_start  sharpe_train  sharpe_test  n_trades_test
-    0  2021-01-01 2021-09-10        -1.330          NaN              0
+    0  2021-01-01 2021-09-10        -1.330        0.843              1
     1  2021-03-05 2021-11-12         0.496          NaN              0
-    2  2021-05-07 2022-01-14         0.496          NaN              0
-    3  2021-07-09 2022-03-18        -0.589          NaN              0
+    2  2021-05-07 2022-01-14         0.496       -0.400              1
+    3  2021-07-09 2022-03-18        -0.589       -3.872              1
     4  2021-09-10 2022-05-20        -1.488          NaN              0
-    5  2021-11-12 2022-07-22        -2.759          NaN              0
-    6  2022-01-14 2022-09-23         0.367          NaN              0
-    7  2022-03-18 2022-11-25         0.877          NaN              0
-Mean test Sharpe:  nan
-Std  test Sharpe:  nan
-% folds &gt; 0:       0%</div>
+    5  2021-11-12 2022-07-22        -2.759        1.084              1
+    6  2022-01-14 2022-09-23         0.367        0.626              1
+    7  2022-03-18 2022-11-25         0.877       -2.791              0
+Mean test Sharpe:  -0.752
+Std  test Sharpe:  2.089
+% folds &gt; 0:       38%</div>
 
-<div class="bx bg">
-<div class="bt">การตีความผล Walk-Forward</div>
+<div class="bx br">
+<div class="bt">การตีความผล Walk-Forward — คำตอบคือ "อย่าเอาไปใช้"</div>
 <ul>
-<li><strong>Mean test Sharpe 0.57</strong> — ต่ำกว่า in-sample (0.74) แต่ยังเป็นบวก — strategy มีความคงทนในระดับหนึ่ง</li>
-<li><strong>% folds &gt; 0 = 100%</strong> — ทุก test window มี Sharpe เป็นบวก — ดีมาก</li>
-<li><strong>Std 0.09</strong> — ค่อนข้างสม่ำเสมอข้าม folds — ไม่ได้ work เฉพาะ regime ใด regime หนึ่ง</li>
-<li><strong>n_trades ต่ำ</strong> (2-4 trades/quarter) — ต้องระวัง statistical significance ต่ำ</li>
+<li><strong>Mean test Sharpe −0.752</strong> — ติดลบ · ไม่มีอะไรให้ deploy</li>
+<li><strong>Std ข้าม fold = 2.089</strong> — ค่าเหวี่ยงตั้งแต่ <code>+1.084</code> ถึง <code>−3.872</code> · ส่วนเบี่ยงเบนใหญ่กว่าค่าเฉลี่ยเกือบ 3 เท่า แปลว่า<strong>ตัวเลขเฉลี่ยไม่มีความหมาย</strong> ต่อให้มันบังเอิญเป็นบวกก็ตาม</li>
+<li><strong>n_trades_test = 0 หรือ 1 ในทุก fold · รวมทั้งหมด 5 เทรดใน 2 ปี</strong> — นี่คือข้อที่สำคัญที่สุด · Sharpe ที่คำนวณจากเทรดเดียวไม่ใช่ Sharpe มันคือ<strong>ผลของเทรดนั้นเทรดเดียว</strong> · <code>fold 3</code> ได้ <code>−3.872</code> เพราะเทรดเดียวนั้นขาดทุน ไม่ได้แปลว่ากลยุทธ์แย่กว่า fold อื่น 4 เท่า</li>
+<li><strong>2 fold ได้ NaN</strong> — ไม่มีวันไหนถือ position เลย · Sharpe จึงคำนวณไม่ได้ · <code>NaN</code> ตรงนี้<strong>ไม่ใช่ bug</strong> แต่เป็นข้อมูลจริงว่า "ไตรมาสนั้นไม่มีสัญญาณเลย"</li>
 </ul>
+<p><strong>ข้อสรุปที่ถูกต้องคือหยุด</strong> — ไม่ใช่ไปปรับ <code>entry_z</code> จนกว่าตัวเลขจะสวย · การกลับไปหมุนพารามิเตอร์หลังเห็นผล test แล้วคือ <strong>overfitting ที่ใช้ test set เป็นเชื้อเพลิง</strong> ซึ่งเป็นบาปข้อที่บทที่ 28 เตือนไว้ทั้งบท</p>
 </div>
 
-<h3 id="s30-6">30.6 สรุป: Final Strategy Code (Deploy-Ready)</h3>
+<div class="bx bd">
+<div class="bt">ทำไมบทนี้จบด้วยกลยุทธ์ที่ใช้ไม่ได้ — และทำไมนั่นคือของจริง</div>
+<p>ราคาที่ใช้ทดสอบทั้งบทสร้างจาก <code>np.random.normal</code> — เป็น <strong>random walk บริสุทธิ์</strong> ที่ไม่มีรูปแบบให้จับตั้งแต่แรก · ดังนั้นผลที่ถูกต้องเพียงผลเดียวคือ "ไม่มี edge" · ถ้าตัวเลขออกมาสวย<strong>นั่นต่างหากที่ควรทำให้ตกใจ</strong> เพราะแปลว่าเครื่องมือวัดของเราเสีย</p>
+<p>สังเกตลำดับที่เกิดขึ้นในบทนี้ ซึ่งเหมือนกับที่เกิดในงานจริงทุกประการ:</p>
+<ol>
+<li><strong>Round 1</strong> — โค้ดรันได้ equity curve ออกมาเป็นเส้นสวย ๆ · ดูเหมือนมีอะไร</li>
+<li><strong>Round 2</strong> — พอวัดด้วย metric ที่ถูกต้อง Sharpe ออกมา <code>−1.681</code> · เริ่มเห็นความจริง</li>
+<li><strong>Round 3</strong> — walk-forward ยืนยันว่าไม่มีอะไรเลย และบอกเพิ่มด้วยว่า<strong>ข้อมูลน้อยเกินกว่าจะสรุปอะไรได้ตั้งแต่ต้น</strong> (5 เทรดใน 2 ปี)</li>
+</ol>
+<p>คุณค่าของ walk-forward ไม่ใช่การ<em>รับรอง</em>กลยุทธ์ แต่คือการ<strong>ห้ามไม่ให้ deploy ของที่ยังไม่ได้พิสูจน์</strong> · ในอาชีพนี้ ไอเดียส่วนใหญ่ตายตรงนี้ และนั่นคือการทำงานที่ถูกต้องของเครื่องมือ</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 สิ่งที่ต้องแก้ก่อน ถ้าจะทำ walk-forward นี้ให้ตัดสินอะไรได้จริง</div>
+<p>ปัญหาที่แท้จริงไม่ใช่ "Sharpe ติดลบ" แต่คือ <strong>การออกแบบ fold ไม่มีกำลังทางสถิติพอจะตอบคำถามอะไรได้เลย</strong> · กลยุทธ์เทรดราว 2–3 ครั้งต่อปี แต่หน้าต่าง test ยาวแค่ 63 วัน — โดยเฉลี่ยจึงได้ไม่ถึง 1 เทรดต่อ fold · ไม่ว่าผลจะออกมาบวกหรือลบก็ตีความไม่ได้ทั้งคู่</p>
+<p>ทางแก้เรียงตามลำดับที่ควรลอง:</p>
+<ol>
+<li><strong>ขยาย <code>test_size</code> ให้กินอย่างน้อย ~30 เทรด</strong> — สำหรับกลยุทธ์ความถี่นี้แปลว่าหน้าต่างระดับหลายปี ซึ่งแปลว่า<em>ข้อมูล 3 ปีไม่พอทำ walk-forward ตั้งแต่ต้น</em> · รู้ข้อนี้ก่อนเขียนโค้ดประหยัดเวลาไปทั้งสัปดาห์</li>
+<li><strong>เปลี่ยนไปวัดสิ่งที่มีตัวอย่างเยอะกว่า</strong> — เช่นวัดที่ระดับ "วันที่ถือ position" แทน "เทรด" หรือใช้ bootstrap บนผลตอบแทนรายวันเพื่อหาช่วงความเชื่อมั่นของ Sharpe แทนที่จะดูค่าเดียว</li>
+<li><strong>ลดความถี่ของคำถาม</strong> — ถ้าข้อมูลตอบได้แค่ "กลยุทธ์นี้แย่ชัด ๆ ไหม" ก็อย่าไปถามมันว่า "Sharpe เท่าไร"</li>
+</ol>
+<p>กฎที่ใช้ได้ตลอดชีวิต: <strong>ก่อนรัน walk-forward ให้ประมาณจำนวนเทรดต่อ fold ก่อน</strong> · ถ้าได้ตัวเลขหลักหน่วย ผลลัพธ์จะเป็นเสียงรบกวนล้วน ๆ ไม่ว่าโค้ดจะถูกแค่ไหน</p>
+</div>
+
+<h3 id="s30-6">30.6 สรุป: Final Strategy Code (โครงที่พร้อม — ยังไม่ใช่กลยุทธ์ที่พร้อม)</h3>
+
+<p>โค้ดข้างล่างคือการรวบทุกอย่างในบทนี้เป็นคลาสเดียว · สิ่งที่ "พร้อม" คือ<strong>โครงสร้าง</strong> — แยก feature / signal / backtest ออกจากกัน มี parameter เป็น <code>dataclass</code> เปลี่ยนค่าได้โดยไม่ต้องแก้โค้ด · ส่วน<strong>ตัวกลยุทธ์เองยังสอบไม่ผ่าน</strong> ตามผล walk-forward ข้างบน · อ่านโค้ดนี้ในฐานะ<em>แม่แบบที่จะเอาไอเดียตัวถัดไปมาใส่</em> ไม่ใช่ของที่เอาไปเปิดเทรดได้</p>
 
 <div class="fm"><span class="c"># Final integrated strategy — หลัง 3 รอบ iterate</span>
 import numpy as np
@@ -2023,9 +2081,11 @@ class VolMeanReversionStrategy:
         - Long underlying เมื่อ realized vol spike สูงผิดปกติ
         - Exit เมื่อ vol กลับสู่ระดับปกติ
 
-    Validated:
-        - Embargo test: PASS (no lookahead bias)
-        - Walk-forward: mean Sharpe 0.57, 100% positive folds
+    สถานะการตรวจ (อย่าลบบรรทัดพวกนี้ — มันคือเหตุผลที่ยังไม่ deploy):
+        - Embargo test:  PASS  ไม่มี lookahead bias
+        - Walk-forward:  FAIL  mean test Sharpe -0.752, ผ่านแค่ 38% ของ fold
+                               และมีแค่ 5 เทรดใน 2 ปี = สรุปอะไรไม่ได้
+        - ข้อสรุป:       โครงใช้ได้ · กลยุทธ์ยังไม่ผ่าน · ห้ามต่อเข้าเงินจริง
         - Transaction costs included
     """
 
@@ -2102,14 +2162,15 @@ print(f"\nCurrent signal: {strategy.live_signal(prices_wf)}")</div>
   avg_holding_days      : 17.100
 Current signal: LONG</div>
 
-<div class="bx bg" style="margin-top:24px">
+<div class="bx bd" style="margin-top:24px">
 <div class="bt">สรุป 3 รอบ iterate — อะไรเปลี่ยนในแต่ละรอบ</div>
 <table>
 <tr><th>Round</th><th>สิ่งที่เพิ่ม/แก้</th><th>ผลลัพธ์</th></tr>
-<tr><td>Round 1</td><td>Core algorithm + embargo test</td><td>Confirmed: no lookahead bias</td></tr>
-<tr><td>Round 2</td><td>Active-days Sharpe, trade-level win rate, profit factor</td><td>Metrics ถูกต้องกว่า</td></tr>
-<tr><td>Round 3</td><td>Walk-forward validation (6 folds)</td><td>Confirmed: out-of-sample positive</td></tr>
+<tr><td>Round 1</td><td>Core algorithm + embargo test</td><td>ไม่มี lookahead — แต่หน่วงเกินไป 1 แท่ง (เจอตอน audit)</td></tr>
+<tr><td>Round 2</td><td>Active-days Sharpe, trade-level win rate, profit factor</td><td>วัดถูกขึ้น แล้วเห็นว่า Sharpe ติดลบ</td></tr>
+<tr><td>Round 3</td><td>Walk-forward validation (8 folds)</td><td><strong>ตกรอบ</strong> — mean test Sharpe −0.752 · 5 เทรดใน 2 ปี</td></tr>
 </table>
+<p style="margin-top:10px">อ่านตารางนี้ตามลำดับจะเห็นสิ่งที่บทนี้อยากสอนจริง ๆ: <strong>ทุกรอบทำให้เห็นความจริงชัดขึ้น และความจริงก็แย่ลงเรื่อย ๆ</strong> · นั่นคือรูปร่างปกติของงานวิจัยกลยุทธ์ที่ทำถูกวิธี · รอบที่ทำให้ตัวเลขดูดีขึ้นเรื่อย ๆ ต่างหากที่ควรสงสัยตัวเอง</p>
 </div>
 
 <details>
@@ -2155,7 +2216,7 @@ print(sig_filtered.value_counts())</div>
 <strong>บท 27</strong>: Review checklist 8 ข้อ + embargo test ตรวจ lookahead ทุกครั้ง ✓<br>
 <strong>บท 28</strong>: Red flags 5 ข้อ — shift(1), scaler leakage, transaction costs, p-hacking ✓<br>
 <strong>บท 29</strong>: Prompt templates เฉพาะสำหรับ OLS, ADF, z-score, scipy.optimize ✓<br>
-<strong>บท 30</strong>: 3 รอบ iterate: generate → audit → improve → walk-forward ✓<br><br>
+<strong>บท 30</strong>: 3 รอบ iterate: generate → audit → improve → walk-forward ✓ (และจบด้วยการ<strong>ปฏิเสธ</strong>กลยุทธ์ — ผลลัพธ์ที่พบบ่อยที่สุดในงานจริง)<br><br>
 AI เป็นผู้ช่วยที่ทรงพลัง แต่ <strong>ความรับผิดชอบต่อความถูกต้องทางคณิตศาสตร์</strong> ยังอยู่ที่เรา — ตรวจทุกบรรทัดที่ AI สร้าง ใช้ embargo test และ walk-forward validation เสมอ<br><br>
 ใน <strong>Part VI</strong> เราจะนำทุกอย่างที่เรียนมาสร้างระบบ production-grade: live data ingestion, order management, risk monitoring แบบ real-time
 </p>

@@ -42,10 +42,15 @@ HARD = {
 HARD_C = [(re.compile(p), n, w) for p, (n, w) in HARD.items()]
 
 # กล่องอธิบายที่นับว่า "มี scaffolding"
-# ⚠️ ต้องนับ .bx bk/ba/bp/bb ด้วย — หนังสือใช้กล่องเตือน/กับดักเป็น scaffolding
-# เหมือนกัน ถ้านับแค่ read-aloud/ai-decode จะรายงานว่า "ว่าง" ทั้งที่มีคำอธิบาย
-# ดีอยู่แล้ว แล้วเราจะไปเติมกล่องซ้ำ
-SCAFF = re.compile(r'class="(read-aloud|ai-decode|ad-steps|bx b[kabp])"')
+# ⚠️ ต้องนับกล่อง .bx ทุกสีด้วย — หนังสือใช้กล่องเตือน/กับดัก/สรุปเป็น
+# scaffolding เหมือนกัน ถ้านับแค่ read-aloud/ai-decode จะรายงานว่า "ว่าง"
+# ทั้งที่มีคำอธิบายดีอยู่แล้ว แล้วเราจะไปเติมกล่องซ้ำ
+#
+# ⚠️ เคยพลาดมาแล้ว: เขียน b[kabp] แบบระบุสี ทำให้กล่อง br (แดง = "bug ที่
+# ซ่อนอยู่") · bg (เขียว = "แบบที่ถูก") · bd (เทา = สรุป) ไม่ถูกนับ
+# → รายงานว่าบล็อกนั้นไม่มี scaffolding ทั้งที่อธิบายไว้ครบแล้ว
+# ใช้ b\w+ ครอบทุกสีแทน แล้วไปตัดสินคุณภาพด้วยตาอีกที
+SCAFF = re.compile(r'class="(read-aloud|ai-decode|ad-steps|bx b\w+)"')
 
 rows = []
 GLOB = sys.argv[2] if len(sys.argv) > 2 else "python-part*.html"
@@ -73,7 +78,25 @@ for path in sorted(DOCS.glob(GLOB)):
         stop = re.search(r'<div class="fm">|<h[23][ >]', after)
         if stop:
             after = after[: stop.start()]
-        has = bool(SCAFF.search(after))
+
+        # ⚠️ ต้องดู "ก่อนบล็อก" ด้วย — หนังสือใช้ทั้งสองแบบ:
+        #   read-aloud วางไว้ก่อน (เตรียมสายตาก่อนเจอโค้ด)
+        #   ai-decode วางไว้หลัง (แกะทีละบรรทัดหลังเห็นภาพรวม)
+        # ถ้านับแค่ข้างหลัง บล็อกที่มี read-aloud นำหน้าจะถูกรายงานว่าว่าง
+        #
+        # ขอบเขตหน้าต่าง = นับถอยหลังจนชนของที่แปลว่า "คนละเรื่องแล้ว":
+        # ท้ายบล็อกโค้ด/ผลลัพธ์ก่อนหน้า หรือหัวข้อก่อนหน้า — เอาอันที่ใกล้ที่สุด
+        prefix = text[: m.start()]
+        cut = 0
+        for rx in (r'<div class="(?:fm|output)">', r"<h[23][ >]"):
+            for mm in re.finditer(rx, prefix):
+                if mm.start() > cut:
+                    cut = mm.start()
+        # ...แล้วตัดให้เหลือแค่ช่วงที่ "ติดกันจริง" (15 บรรทัดสุดท้าย) เพื่อไม่ให้
+        # กล่องที่อธิบายบล็อกก่อนหน้าถูกนับมาเป็นของบล็อกนี้
+        before = "\n".join(prefix[cut:].splitlines()[-15:])
+
+        has = bool(SCAFF.search(after) or SCAFF.search(before))
         rows.append(
             dict(file=path.name, line=start, nlines=nlines, score=score,
                  has=has, why=", ".join(f"{k}×{v}" for k, v in
