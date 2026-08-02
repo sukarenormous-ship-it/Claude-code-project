@@ -542,6 +542,27 @@ bybit    BTCUSDT 1m : close=65,169.7
 binance  BTCUSDT 5m : close=65,003.1
 bybit    BTCUSDT 5m : close=64,873.9</div>
 
+<div class="ai-decode">
+<div class="ad-title">🤖 <code>return_exceptions=True</code> — สวิตช์ที่เปลี่ยนพฤติกรรมทั้งระบบ</div>
+<div class="ad-code"><span class="c"># ไม่ใส่ (ค่าเริ่มต้น): เจอ error ตัวแรก → เด้งออกทันที</span>
+results = await asyncio.gather(*tasks)
+<span class="c"># → ถ้า bybit ล่ม เราไม่ได้ราคาของ binance กับ okx เลย ทั้งที่มันสำเร็จแล้ว</span>
+
+<span class="c"># ใส่: error กลายเป็น "ผลลัพธ์" ชนิดหนึ่ง วางเรียงในลิสต์ตามตำแหน่งเดิม</span>
+results = await asyncio.gather(*tasks, return_exceptions=True)
+for r in results:
+    if isinstance(r, Exception):      <span class="c"># ← จึงต้องเช็กชนิดก่อนใช้เสมอ</span>
+        print(f"[ERROR] {r}")</div>
+<div class="ad-steps">
+<ol>
+<li><strong>ค่าเริ่มต้นเหมาะกับ "ทั้งหมดหรือไม่เอาเลย"</strong> — เช่นดึงขาสองข้างของ pair trade ถ้าขาดข้างหนึ่งก็คำนวณ spread ไม่ได้อยู่ดี · <strong><code>return_exceptions=True</code> เหมาะกับ "ได้เท่าไหนเอาเท่านั้น"</strong> — เช่นสำรวจราคาจาก 10 ตลาด ล่มไป 2 ก็ยังทำงานต่อได้</li>
+<li><strong>ราคาที่ต้องจ่ายคือ <code>isinstance</code> ทุกครั้ง</strong> — เพราะสมาชิกในลิสต์ไม่ได้เป็นชนิดเดียวกันอีกต่อไป · <em>ลืมเช็ก = โปรแกรมจะพังที่บรรทัดถัดไปแทน</em> ด้วย error ที่ดูไม่ออกว่ามาจากไหน (เช่น <code>TypeError: cannot unpack non-sequence</code>)</li>
+<li><strong>สิ่งที่มันไม่ทำ</strong> — มันไม่ได้ทำให้ error หายไป และไม่ได้ retry ให้ · มันแค่<em>เลื่อนการตัดสินใจ</em>มาให้เราจัดการเอง · ถ้าเขียน <code>for</code> วนแล้วไม่แตะกรณี Exception เลย เท่ากับ<strong>กลืน error เงียบ ๆ</strong> ซึ่งอันตรายกว่าไม่ใส่ตั้งแต่แรก</li>
+</ol>
+<p>สังเกตว่าโค้ดข้างบนพิมพ์ <code>[ERROR]</code> ออกมาเฉย ๆ แล้วไปต่อ · ในระบบจริงตรงนี้ต้อง<strong>ตัดสินใจต่อ</strong>ว่าราคาที่ขาดไปทำให้สัญญาณใช้ไม่ได้หรือไม่ — การพิมพ์แล้วเดินหน้าต่อเหมือนไม่มีอะไรเกิดขึ้น คือวิธีที่ระบบเทรดขาดทุนแบบเงียบที่สุด</p>
+</div>
+</div>
+
 <h3 id="s32-2">32.2 asyncio.Queue — Decouple Producer และ Consumer</h3>
 
 <p>ใน live trading มี 2 ส่วนที่ทำงานเร็วต่างกัน: <strong>feed</strong> รับข้อมูลเร็ว และ <strong>signal engine</strong> คำนวณช้ากว่า Queue เป็นตัวกลางที่ buffer ข้อมูลไว้</p>
@@ -805,21 +826,28 @@ async def timed_bulk(n_requests: int, limit: int,
 
 
 async def compare_limits():
-    print("latency ของ exchange = 0.1s · ส่ง 30 requests")
-    for limit in (5, 1):
-        elapsed = await timed_bulk(30, limit)
-        rate = 30 / elapsed
-        <span class="c"># ปัดเป็นช่วงละ 5 เพราะเวลาจริงแกว่งเล็กน้อยทุกครั้งที่รัน</span>
-        print(f"  Semaphore({limit}) → {round(rate / 5) * 5:>3d} req/s")
+    n, latency = 30, 0.1
+    print(f"latency = {latency}s · ส่ง {n} requests")
+
+    elapsed = {}
+    for limit in (1, 5):
+        elapsed[limit] = await timed_bulk(n, limit, latency)
+        <span class="c"># วัดเป็น "กี่รอบของ latency" แทนวินาที — ไม่แกว่งตามภาระเครื่อง</span>
+        rounds = round(elapsed[limit] / latency)
+        print(f"  Semaphore({limit}) → {rounds:>2d} รอบของ latency")
+
+    print(f"  Semaphore(5) เร็วกว่า Semaphore(1) "
+          f"{elapsed[1] / elapsed[5]:.0f} เท่า")
 
 asyncio.run(compare_limits())</div>
-<div class="output">latency ของ exchange = 0.1s · ส่ง 30 requests
-  Semaphore(5) →  50 req/s
-  Semaphore(1) →  10 req/s</div>
+<div class="output">latency = 0.1s · ส่ง 30 requests
+  Semaphore(1) → 30 รอบของ latency
+  Semaphore(5) →  6 รอบของ latency
+  Semaphore(5) เร็วกว่า Semaphore(1) 5 เท่า</div>
 
 <div class="bx bp">
 <div class="bt">🔵 อ่านตัวเลขนี้ให้ออก แล้วจะเห็นกับดักที่แท้จริง</div>
-<p><code>Semaphore(5)</code> ได้ <strong>50 req/s</strong> ไม่ใช่ 5 · แม้แต่ <code>Semaphore(1)</code> — ยิงทีละตัวเรียงกัน — ก็ยังได้ 10 req/s · ถ้า exchange จำกัดไว้ 10 req/s แปลว่า<strong>โค้ดข้างบนละเมิดขีดจำกัดตั้งแต่ <code>Semaphore(2)</code></strong></p>
+<p>คิดเป็น req/s เอง: <code>Semaphore(5)</code> ยิง 30 requests จบใน 6 รอบ × 0.1s = 0.6 วินาที → <strong>50 req/s</strong> ไม่ใช่ 5 · แม้แต่ <code>Semaphore(1)</code> ที่ยิงทีละตัวเรียงกันก็ยังได้ 30 ÷ 3.0 = <strong>10 req/s</strong> · ถ้า exchange จำกัดไว้ 10 req/s แปลว่า<strong>โค้ดข้างบนละเมิดขีดจำกัดตั้งแต่ <code>Semaphore(2)</code></strong></p>
 <p>ที่อันตรายกว่านั้นคือ<strong>ทิศทางของความผิดพลาด</strong> · เมื่อ exchange ตอบเร็วขึ้น (latency ลด) จำนวน req/s ของเรา<strong>เพิ่มขึ้นเอง</strong>โดยที่เราไม่ได้แก้อะไรเลย · แปลว่าโค้ดจะผ่านตอนทดสอบบนเน็ตช้า ๆ แล้วไปโดนแบนตอน deploy ขึ้น server ที่อยู่ใกล้ exchange — ซึ่งคือตอนที่แย่ที่สุดที่จะพัง</p>
 <p><strong>ของที่ต้องใช้จริงคือตัวคุมที่นับตามเวลา</strong> ไม่ใช่ตามจำนวนที่วิ่งพร้อมกัน — เช่น token bucket: เติมโควตา N ใบทุก 1 วินาที ใครจะยิงต้องมีโควตา · สังเกตว่ามันคุม<em>อัตรา</em>โดยตรง จึงไม่ขึ้นกับ latency เลย</p>
 <p>ในระบบจริงมักใช้<strong>ทั้งคู่พร้อมกัน</strong> คนละหน้าที่: token bucket กันโดนแบน · Semaphore กันไม่ให้เปิด connection พร้อมกันจนหน่วยความจำหรือ file descriptor หมด</p>
@@ -2543,6 +2571,18 @@ async def notify_fill(order: Order):
            f"Qty: {order.filled_qty}\n"
            f"AvgPrice: {order.avg_price:,.2f}")
     await send_telegram(msg)</div>
+
+<div class="bx bk">
+<div class="bt">กับดักในเฉลยนี้เอง — alert ที่เงียบได้ คือ alert ที่ไว้ใจไม่ได้</div>
+<p><code>send_telegram</code> จบด้วย <code>except Exception: return False</code> และ <code>trigger_with_alert</code> ก็<strong>ไม่เคยดูค่าที่มันคืนมา</strong> · แปลว่าถ้า Telegram ล่ม เน็ตหลุด หรือ token หมดอายุ — <strong>kill switch ทำงาน แต่ไม่มีใครรู้</strong> และ log บรรทัดเดียวที่มีก็อยู่บนเครื่องที่กำลังมีปัญหาอยู่พอดี</p>
+<p>ที่แย่กว่านั้นคือมันเงียบแบบ<em>ผ่านการทดสอบ</em>: ถ้าไม่ได้ตั้ง <code>TELEGRAM_BOT_TOKEN</code> ฟังก์ชันจะ <code>return False</code> ตั้งแต่บรรทัดที่สองโดยไม่บ่นอะไรเลย · คุณจะรันระบบไปหลายเดือนโดยคิดว่ามี alert อยู่</p>
+<p>🧭 <strong>กฎของช่องทางแจ้งเตือน:</strong></p>
+<ul>
+<li><strong>ต้องดูค่าที่คืนมา</strong> — ส่งไม่สำเร็จให้ <code>logger.error</code> ทันที และถ้าเป็นเหตุการณ์ระดับ kill switch ให้ลองซ้ำหรือใช้ช่องทางสำรอง</li>
+<li><strong>ต้องมี heartbeat</strong> — ส่งข้อความ "ระบบยังอยู่" วันละครั้ง · <em>ความเงียบต้องแปลว่าพัง ไม่ใช่แปลว่าปกติ</em> ไม่งั้นคุณแยกไม่ออกระหว่าง "ไม่มีอะไรเกิดขึ้น" กับ "ช่องทางแจ้งเตือนตายไปแล้ว"</li>
+<li><strong>ตอนเริ่มระบบให้ส่งทดสอบหนึ่งครั้ง</strong> แล้วถ้าไม่ผ่าน <strong>ห้ามเริ่มเทรด</strong> — ถือว่า alert เป็นอุปกรณ์ความปลอดภัยเทียบเท่าเบรก ไม่ใช่ของประดับ</li>
+</ul>
+</div>
 </div>
 </details>
 
