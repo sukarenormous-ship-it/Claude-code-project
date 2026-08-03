@@ -469,6 +469,21 @@ def __repr__(self):                                <span class="c">④ หน้
 </div>
 </details>
 
+<div class="bx bk">
+<div class="bt">อย่าเพิ่งข้ามแบบฝึกหัดข้างบน — โค้ดที่เหลือทั้ง Part ใช้เวอร์ชันนั้น</div>
+<p>เฉลยข้างบน<strong>ไม่ใช่ของเสริม</strong> · มันคือ <code>Position</code> ตัวที่หนังสือใช้ต่อไปจนจบ Part III เพราะเป็นตัวที่มี <code>net_pnl</code> (กำไรหลังหักค่าธรรมเนียมทั้งขาเข้าและขาออก) · ตั้งแต่บทที่ 19 เป็นต้นไปจะเห็น <code>position.net_pnl</code> โผล่ตลอด — ทั้งใน <code>BaseStrategy.log_trade</code> และ <code>Portfolio.metrics</code></p>
+<p><strong>ถ้ารันตามในไฟล์เดียวแล้วข้ามบล็อกนั้นไป</strong> จะเจอ:</p>
+<div class="fm">AttributeError: 'Position' object has no attribute 'net_pnl'</div>
+<p>ซึ่งอ่านยากมากถ้าไม่รู้ที่มา เพราะ error จะโผล่ที่บทที่ 19 หรือ 21 — ห่างจากต้นเหตุจริงหลายสิบบรรทัด · <strong>กางเฉลยแล้วรันบล็อกนั้นก่อน</strong> แล้วค่อยอ่านต่อ</p>
+<p>สรุปสัญญาของสองเวอร์ชันไว้เทียบ:</p>
+<table>
+<tr><th></th><th><code>Position</code> ในเนื้อหาหลัก (18.4)</th><th><code>Position</code> ในเฉลย (ใช้ต่อจากนี้)</th></tr>
+<tr><td>เก็บ <code>fee_rate</code></td><td>เก็บ แต่<strong>ไม่ได้ใช้</strong></td><td>เก็บ และใช้จริง</td></tr>
+<tr><td><code>pnl</code></td><td>กำไรก่อนหักค่าธรรมเนียม</td><td>—</td></tr>
+<tr><td><code>gross_pnl</code> / <code>net_pnl</code></td><td>ไม่มี</td><td>มีทั้งคู่ · <code>net</code> หัก fee สองขา</td></tr>
+</table>
+</div>
+
 
 <!-- ===================== CHAPTER 19 ===================== -->
 <h2 id="ch19">บทที่ 19: Inheritance &amp; Abstract Base Class</h2>
@@ -682,11 +697,12 @@ rm = RiskManager(max_position_pct=0.15, max_drawdown_pct=0.10)
 print(f"Max position: {rm.max_position:.0%}")
 print(f"Approved: {rm.check('LONG', 500000, 490000)}")</div>
 
+<div class="read-aloud">คลาสข้างล่างยาว 55 บรรทัด แต่<strong>โครงมีแค่ 2 ช่วงเวลา</strong> — จับให้ได้แล้วอ่านไหลรวดเดียว: <code>fit()</code> คือ <strong>"เรียนจากอดีต ทำครั้งเดียว"</strong> · <code>signal()</code> คือ <strong>"ตัดสินใจกับแท่งล่าสุด ทำทุกแท่ง"</strong> · ทุกบรรทัดใน 55 บรรทัดนั้นอยู่ในช่วงใดช่วงหนึ่งเสมอ · และ<strong>เส้นแบ่งนี้เองคือสิ่งที่กันการมองอนาคต</strong> — ถ้าเผลอเอาการคำนวณที่ต้องใช้ข้อมูลทั้งชุดไปไว้ใน <code>signal()</code> เมื่อไร กลยุทธ์จะเริ่มโกงทันทีโดยไม่มี error ใด ๆ</div>
+
 <div class="ex">
 <div class="et">ตัวอย่าง: PairStrategy ที่ implement ABC ครบ</div>
 <div class="fm"><span class="c"># ต้อง import เพิ่ม: import numpy as np · import pandas as pd</span>
 <span class="c">#                  import statsmodels.api as sm</span>
-<span class="c">#                  from statsmodels.regression.rolling import RollingOLS</span>
 class PairStrategy(Strategy):
     """Concrete pair trading strategy — implement ครบ 3 abstract methods"""
 
@@ -749,6 +765,50 @@ class PairStrategy(Strategy):
 strat = PairStrategy("BTC Pair", "Bybit", "Binance")
 print(isinstance(strat, Strategy))   <span class="c"># True</span>
 print(strat)</div>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 แพตเทิร์น "วัตถุสองเฟส" — ยังไม่พร้อม แล้วค่อยพร้อม</div>
+<div class="ad-code">def __init__(self, ...):
+    super().__init__(name, capital)    <span class="c">① ให้คลาสแม่ตั้งของของมันก่อน</span>
+    self._alpha = None                 <span class="c">② จองที่ไว้ — ยังไม่มีค่า</span>
+    self._beta  = None
+    self._mu    = None
+    self._sd    = None
+
+def fit(self, data):                   <span class="c">③ เฟสเรียน: เติมค่าทั้ง 4</span>
+    ...
+    return self
+
+def signal(self, data=None):
+    if self._beta is None:             <span class="c">④ ยาม: กันใช้ก่อนพร้อม</span>
+        raise RuntimeError("ต้องเรียก fit() ก่อน signal()")</div>
+<div class="ad-steps">
+<ol>
+<li><code>super().__init__(name, capital)</code> — เรียก <code>__init__</code> ของ <strong>คลาสแม่</strong> ให้ตั้งค่าส่วนที่เป็นของกลาง (ชื่อ · เงินทุน) ก่อน แล้วเราค่อยตั้งของเฉพาะตัว · <strong>ลืมบรรทัดนี้ = ของที่คลาสแม่ต้องตั้งจะไม่มีเลย</strong> แล้วจะไปพังทีหลังเป็น <code>AttributeError</code> ที่ดูไม่ออกว่าเกี่ยวอะไรกับ <code>__init__</code></li>
+<li><strong>ตั้งเป็น <code>None</code> ไว้ก่อน</strong> ทั้งที่ยังไม่มีค่า — ไม่ใช่ความสิ้นเปลือง แต่เป็นการ<strong>ประกาศว่าวัตถุนี้มีช่องอะไรบ้าง</strong> · คนอ่าน <code>__init__</code> อย่างเดียวก็เห็นครบว่าคลาสนี้จำอะไรไว้ · ถ้าไม่ประกาศแล้วไปสร้างเอาใน <code>fit()</code> คนอ่านต้องไล่ทั้งคลาสถึงจะรู้</li>
+<li><code>_</code> นำหน้าชื่อ (<code>_alpha</code>, <code>_beta</code>) — เป็น<strong>ข้อตกลงระหว่างคน</strong> ว่า "ของภายใน อย่าแตะจากข้างนอก" · Python ไม่ได้บังคับอะไรเลย แตะได้จริง · แต่พอเห็น <code>_</code> ก็รู้ทันทีว่าถ้าไปแก้เอง อาจพังโดยที่คนเขียนไม่ได้รับประกันอะไรให้</li>
+<li><strong>ยามที่บรรทัดแรกของ <code>signal()</code></strong> — <code>if self._beta is None: raise</code> · นี่คือสิ่งที่ทำให้แพตเทิร์นสองเฟส<em>ปลอดภัย</em> · ถ้าไม่มียามตัวนี้ การเรียก <code>signal()</code> ก่อน <code>fit()</code> จะไม่ error แต่จะไปคำนวณด้วย <code>None</code> แล้วได้ <code>TypeError</code> ลึก ๆ กลางสูตร ซึ่งอ่านไม่ออกว่าต้นเหตุคือลืม <code>fit()</code></li>
+</ol>
+<p><code>fit()</code> จบด้วย <code>return self</code> เหมือน <code>Position.close()</code> — เขียน <code>PairStrategy(...).fit(train).signal(latest)</code> ต่อกันได้ในบรรทัดเดียว</p>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] <code>mu</code> กับ <code>sd</code> ถูกแช่แข็งไว้ตั้งแต่วันที่ fit — และนั่นคือจุดที่กลยุทธ์คู่ตายจริง</div>
+<p>ดูให้ดีว่า <code>signal()</code> เอา spread ของแท่งล่าสุดไปเทียบกับ <code>self._mu</code> และ <code>self._sd</code> ที่คำนวณไว้<strong>ตั้งแต่ตอน <code>fit()</code></strong> · ตราบใดที่ยังไม่เรียก <code>fit()</code> ใหม่ ตัวเลขสองตัวนี้จะไม่ขยับอีกเลย</p>
+<p>ผลที่ตามมาเมื่อความสัมพันธ์ของคู่เหรียญเปลี่ยนไปจริง ๆ (ซึ่งเกิดเสมอ — เปลี่ยนค่าธรรมเนียม เปลี่ยนสภาพคล่อง มีคนถอนสภาพคล่องออก):</p>
+<ul>
+<li>spread จริงเลื่อนไปอยู่ระดับใหม่ แต่ <code>mu</code> ยังชี้ไปที่ระดับเก่า</li>
+<li>z จึงค้างอยู่ฝั่งเดียวถาวร → กลยุทธ์<strong>เปิดไม้เดิมซ้ำ ๆ แล้วไม่เคยได้สัญญาณ EXIT</strong> เพราะ <code>abs(z) &lt; 0.5</code> ไม่มีวันเป็นจริงอีก</li>
+<li>อาการที่เห็นจากภายนอกคือ "กลยุทธ์เคยดีแล้วจู่ ๆ ก็ค้างสถานะยาว" — <strong>ไม่มี error ไม่มี log ผิดปกติ</strong></li>
+</ul>
+<p>ทางแก้มี 2 แนว และเลือกได้ตามว่าคุณเชื่ออะไร:</p>
+<ol>
+<li><strong>fit ใหม่เป็นระยะ</strong> (เช่นทุกสัปดาห์ ด้วยข้อมูลย้อนหลังหน้าต่างคงที่) — ง่ายสุด และยังคุมได้ว่า "เรียนจากอดีตเท่านั้น" อยู่</li>
+<li><strong>ใช้ค่าที่ขยับตามเวลา</strong> — <code>rolling</code> mean/std หรือ <code>RollingOLS</code> สำหรับ <code>beta</code> · แม่นกว่าแต่<strong>ต้องระวังมองอนาคตมากขึ้นมาก</strong> เพราะการคำนวณย้ายเข้าไปอยู่ในเส้นทางของ <code>signal()</code> แล้ว</li>
+</ol>
+<p>และไม่ว่าจะเลือกทางไหน สิ่งที่ต้องมีคู่กันเสมอคือ <strong>ตัวเฝ้าดูว่า spread ยังอยู่ในระดับที่เคยเรียนมาไหม</strong> — ถ้าหลุดกรอบไปนานผิดปกติ ให้หยุดเทรดคู่นั้น ไม่ใช่ปล่อยให้มันถือไม้ต่อไปเรื่อย ๆ</p>
 </div>
 
 <details>
@@ -1040,10 +1100,21 @@ PairStrategy</div>
         """เปิด position ใหม่"""
         if symbol in self.open_positions:
             raise ValueError(f"มี position {symbol} อยู่แล้ว")
-        cost = size * price * (1 + fee_rate)
-        if cost &gt; self.cash:
-            raise ValueError(f"เงินไม่พอ: ต้องการ {cost:,.0f}, มี {self.cash:,.0f}")
-        self.cash -= cost
+
+        <span class="c"># long = +1 · short = -1 · ตัวเดียวนี้คุมทิศทางของเงินทั้งคลาส</span>
+        <span class="c"># long  ควักเงินไปซื้อของ      → cash ลด</span>
+        <span class="c"># short ขายของที่ยืมมา ได้เงิน → cash เพิ่ม (แต่ติดหนี้เป็นของ)</span>
+        sign     = 1 if side == "long" else -1
+        notional = size * price
+        fee      = notional * fee_rate
+
+        <span class="c"># ใช้ notional เป็นเกณฑ์ทั้งสองฝั่ง — short ก็ต้องมีเงินวางประกัน</span>
+        if notional + fee &gt; self.cash:
+            raise ValueError(
+                f"เงินไม่พอ: ต้องการ {notional + fee:,.0f}, มี {self.cash:,.0f}"
+            )
+
+        self.cash -= sign * notional + fee
         self.open_positions[symbol] = Position(symbol, side, size, price, fee_rate)
         return self
 
@@ -1053,15 +1124,21 @@ PairStrategy</div>
             raise ValueError(f"ไม่มี position {symbol}")
         pos = self.open_positions.pop(symbol)
         pos.close(price)
-        self.cash += pos.size * price * (1 - pos.fee_rate)  <span class="c"># หมายเหตุ: คิด fee ขาออกขาเดียว — ฉบับสมบูรณ์ดู Position.net_pnl ในแบบฝึกหัดบท 18 ที่คิด fee ทั้งสองขา</span>
+
+        <span class="c"># ปิดคือทำกลับด้านของตอนเปิด — เครื่องหมายจึงกลับ แต่ fee ยังจ่ายเสมอ</span>
+        sign     = 1 if pos.side == "long" else -1
+        notional = pos.size * price
+        self.cash += sign * notional - notional * pos.fee_rate
+
         self.closed_positions.append(pos)
         self._equity_history.append(self.total_equity({symbol: price}))
         return pos
 
     def total_equity(self, current_prices: dict) -> float:
-        """มูลค่ารวม = cash + unrealized positions"""
+        """มูลค่ารวม = cash + มูลค่าของที่ถืออยู่ (short นับเป็นลบ)"""
         unrealized = sum(
-            pos.size * current_prices.get(sym, pos.entry_price)
+            (1 if pos.side == "long" else -1)
+            * pos.size * current_prices.get(sym, pos.entry_price)
             for sym, pos in self.open_positions.items()
         )
         return self.cash + unrealized
@@ -1084,6 +1161,55 @@ PairStrategy</div>
         return (f"Portfolio(cash={self.cash:,.0f}, "
                 f"positions={list(self.open_positions.keys())}, "
                 f"trades={len(self.closed_positions)})")</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 <code>sign</code> ตัวเดียวคุมทิศทางของเงินทั้งคลาส</div>
+<div class="ad-code">sign = 1 if side == "long" else -1
+
+self.cash -= sign * notional + fee      <span class="c"># เปิด</span>
+self.cash += sign * notional - notional * fee_rate    <span class="c"># ปิด</span>
+
+unrealized = sum(sign(pos) * pos.size * ราคาปัจจุบัน ...)   <span class="c"># ตีมูลค่า</span></div>
+<div class="ad-steps">
+<ol>
+<li><strong>ทำไมต้องมี <code>sign</code></strong> — long กับ short เป็น<em>สิ่งตรงข้ามกันในทุกมิติ</em>: long ควักเงินไปซื้อของ (cash ลด แล้วได้ของมาถือ) · short ขายของที่ยืมมา (cash เพิ่ม แต่<strong>ติดหนี้เป็นของ</strong>ที่ต้องซื้อคืน) · แทนที่จะเขียนสูตรแยกสองชุดแล้วเสี่ยงแก้ไม่ครบ ใช้ตัวคูณ <code>±1</code> ตัวเดียวคุมทั้งหมด</li>
+<li><strong><code>fee</code> ไม่คูณ <code>sign</code></strong> — สังเกตให้ดี · ทิศทางของ<em>เงินต้น</em>กลับได้ แต่<strong>ค่าธรรมเนียมจ่ายออกเสมอ</strong>ทั้งขาเข้าและขาออก ทั้ง long และ short · ถ้าเผลอคูณ <code>sign</code> ไปด้วย จะกลายเป็น "short แล้วได้ค่าธรรมเนียมคืน" ซึ่งไม่มีในโลกจริง</li>
+<li><strong><code>total_equity</code> ต้องคูณ <code>sign</code> ด้วย</strong> — เพราะของที่ถือ short มีมูลค่า<em>ติดลบ</em>ต่อพอร์ต · ราคาขึ้น = หนี้เพิ่ม = equity ลด · ถ้าลืมจุดนี้ พอร์ตจะรายงานว่ากำไรตอนที่ขาดทุนจริง</li>
+<li><strong>ด่านตรวจเงินใช้ <code>notional</code> ไม่ใช่กระแสเงินสด</strong> — สำหรับ short กระแสเงินสดเป็นบวก (ได้เงินเข้า) ถ้าเช็กจากตัวนั้นจะเปิด short ขนาดเท่าไรก็ได้แม้เงินในบัญชีจะไม่พอปิดสถานะ · ในโลกจริงต้องวางเงินประกัน จึงเช็กจาก <strong>ขนาดสถานะ</strong> เป็นเกณฑ์ทั้งสองฝั่ง</li>
+</ol>
+</div>
+</div>
+
+<p>วิธีตรวจว่าบัญชีถูกจริง คือดูว่า <strong>ตัวเลขจากสองที่ต้องตรงกัน</strong>: กำไรที่ <code>Position</code> รายงาน กับเงินสดที่ขยับจริงในพอร์ต · ถ้าไม่ตรงเมื่อไร แปลว่ามีเงินหายหรืองอกอยู่ที่ไหนสักแห่ง</p>
+
+<div class="fm"><span class="c"># ตรวจ short: เปิดที่ 100 แล้วราคาลงไป 90 → short ต้องกำไร</span>
+pf = Portfolio(initial_capital=1_000_000)
+pf.open("TEST", "short", size=100, price=100.0)
+
+print(f"cash หลังเปิด short : {pf.cash:,.2f}")
+print(f"equity ตอนราคา 90   : {pf.total_equity({'TEST':  90.0}):,.2f}  ← ต้องกำไร")
+print(f"equity ตอนราคา 110  : {pf.total_equity({'TEST': 110.0}):,.2f}  ← ต้องขาดทุน")
+
+pos = pf.close("TEST", 90.0)
+cash_moved = pf.cash - 1_000_000
+
+print(f"\nPosition.net_pnl บอก : {pos.net_pnl:+,.2f}")
+print(f"cash ขยับจริง        : {cash_moved:+,.2f}")
+print("ตรงกัน ✓" if abs(pos.net_pnl - cash_moved) &lt; 1e-9 else "❌ ไม่ตรง — บัญชีรั่ว")</div>
+<div class="output">cash หลังเปิด short : 1,009,990.00
+equity ตอนราคา 90   : 1,000,990.00  ← ต้องกำไร
+equity ตอนราคา 110  : 998,990.00  ← ต้องขาดทุน
+
+Position.net_pnl บอก : +981.00
+cash ขยับจริง        : +981.00
+ตรงกัน ✓</div>
+
+<div class="bx bd">
+<div class="bt">เทคนิคที่ใช้ได้กับทุกระบบบัญชี — "ตรวจจากสองทาง"</div>
+<p>บล็อกข้างบนไม่ได้ตรวจว่า <em>"ตัวเลขเท่ากับ 981 ไหม"</em> — ถ้าตรวจแบบนั้นต้องมานั่งแก้ทุกครั้งที่เปลี่ยนค่าธรรมเนียมหรือขนาดไม้ · มันตรวจว่า <strong>สองเส้นทางที่คำนวณคนละวิธีให้คำตอบตรงกันไหม</strong>: ทางหนึ่งคิดจากราคาเข้า-ออกของ <code>Position</code> อีกทางคิดจากเงินสดที่ไหลเข้าออกพอร์ตจริง</p>
+<p>เงื่อนไขแบบนี้<strong>เป็นจริงเสมอไม่ว่าตัวเลขจะเปลี่ยนไปแค่ไหน</strong> — เป็นการทดสอบชนิดเดียวกับที่บทที่ 28 เรียกว่า "ตรวจคุณสมบัติ ไม่ใช่ตรวจคำตอบ" · และในระบบเทรดจริงมันคือด่านสุดท้ายที่จับได้ว่า fee คิดขาดไปข้างหนึ่ง หรือ short คิดกลับทิศ</p>
+<p>🧭 ทุกครั้งที่เขียนโค้ดที่ขยับเงิน ให้หา<strong>ตัวเลขเดียวกันที่คำนวณได้จากอีกทาง</strong>เสมอ แล้วเทียบกัน · ถ้าหาไม่เจอ แปลว่าระบบนั้นยังไม่มีทางรู้เลยว่าตัวเองผิดหรือถูก</p>
+</div>
 
 <h3 id="s21-3">21.3 ประกอบทุก Component เป็น TradingSystem</h3>
 
