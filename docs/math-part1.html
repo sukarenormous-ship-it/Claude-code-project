@@ -26,7 +26,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="cover">
 <h1>คณิตศาสตร์สำหรับ<br>Options Trading</h1>
 <div class="sub">Part I — เครื่องมือพื้นฐาน: อ่านจบแล้ว "อ่าน Payoff Chart ออก"</div>
-<div class="desc">ฟังก์ชัน · ความชัน · max() · พีชคณิต · Put-Call Parity · ดอกเบี้ยทบต้น · PV(K) — สำหรับทุกคนที่จบ ป.ตรี สาขาใดก็ได้ ไม่ต้องมีพื้นคณิต</div>
+<div class="desc">ฟังก์ชัน · ความชัน · max() · พีชคณิต · Put-Call Parity · ดอกเบี้ยทบต้น · PV(K) · Forward Price — สำหรับทุกคนที่จบ ป.ตรี สาขาใดก็ได้ ไม่ต้องมีพื้นคณิต</div>
 </div>
 
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
@@ -770,11 +770,85 @@ print("ln(75/100) =", f"{math.log(75/100):+.4f}")
 <li><strong>S</strong> = ราคาหุ้น · การย้ายข้าง → Synthetic Positions (บท 2)</li>
 </ul></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 3</div>
+<h3 id="s3-8">3.8 หมุนสมการเดียวกันกลับด้าน — ราคาล่วงหน้า (Forward Price)</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> PV(K) คือการเอาเงินในอนาคต <u>มองย้อนกลับ</u> มาเป็นค่าวันนี้ · ถ้าหมุนเครื่องมือตัวเดียวกันกลับด้าน — เอาของที่มีอยู่วันนี้ <u>มองไปข้างหน้า</u> — สิ่งที่ได้คือ <strong>ราคาล่วงหน้า</strong> คือราคาที่คุณตกลงกันวันนี้ว่าจะซื้อขายกันในอนาคต</p>
+
+<div class="fm" style="text-align:center;font-size:1.1em">PV(K) = K · e<sup>−rT</sup>          ← มองย้อนกลับ (3.7)
+F = S₀ · e<sup>(r−q)T</sup>       ← มองไปข้างหน้า (บทนี้)</div>
+
+<p>โดย <strong>q = อัตราเงินปันผลต่อปี</strong> ของหุ้นตัวนั้น · ถ้าหุ้นไม่จ่ายปันผลเลย q = 0 และเหลือแค่ <strong>F = S₀·e<sup>rT</sup></strong> ซึ่งคือ FV จาก 3.7 เป๊ะ ๆ</p>
+
+<div class="bx bb"><div class="bt">💎 ทำไมมันต้องเป็นค่านี้ — และห้ามเป็นค่าอื่น</div>
+<p>สมมติ F แพงเกินไป · คุณทำแบบนี้ได้ทันที:</p>
+<ol>
+<li><strong>กู้เงิน S₀ บาท</strong> แล้วซื้อหุ้นวันนี้</li>
+<li><strong>ขายสัญญาล่วงหน้า</strong> ล็อกราคาขายไว้ที่ F</li>
+<li>วันหมดอายุ ส่งมอบหุ้นที่ถืออยู่ รับเงิน F · คืนเงินกู้พร้อมดอกเบี้ย S₀·e<sup>rT</sup></li>
+</ol>
+<p>เหลือ <strong>F − S₀·e<sup>rT</sup> เข้ากระเป๋า โดยไม่ต้องเดาทิศทางราคาเลยแม้แต่นิดเดียว</strong> · ไม่มีความเสี่ยง ไม่ต้องใช้เงินตัวเอง</p>
+<p>เมื่อมีคนทำแบบนี้ได้ ก็จะมีคนทำจนกำไรหมด · ราคาจึงถูกบีบกลับมาที่ <strong>F = S₀·e<sup>rT</sup></strong> เสมอ · กระบวนการนี้เรียกว่า <strong>cash and carry</strong> และเป็นเหตุผลเดียวกับที่ทำให้ <a href="#s2-2">Put-Call Parity</a> ในบทที่ 2 ต้องเป็นจริง</p></div>
+
+<div class="bx ba"><div class="bt">⚠️ ทำไมต้อง<u>ลบ</u> q ออก</div>
+<p>คนถือ<strong>หุ้น</strong>ได้เงินปันผล · คนถือ<strong>สัญญาล่วงหน้า</strong>ไม่ได้ · ดังนั้นสัญญาล่วงหน้าต้องมีราคา<strong>ถูกลง</strong>เท่ากับปันผลที่พลาดไป ไม่งั้นไม่มีใครยอมถือ</p>
+<p>ผลที่ตามมาซึ่งคนไทยเห็นบ่อย: <strong>ถ้า q &gt; r ราคา futures จะต่ำกว่าราคาปัจจุบัน</strong> · SET50 ที่ปันผลราว 3% ในยุคที่ดอกเบี้ย 2% จึงมัก<strong>ซื้อขายต่ำกว่า index</strong> — ไม่ใช่เพราะตลาดมองลบ แต่เพราะเลขคณิตบังคับ</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — ราคาล่วงหน้าที่ยุติธรรม</div><pre>import math
+
+def forward(S0, r, q, T):
+    """ราคาล่วงหน้าที่ยุติธรรม — q คืออัตราปันผลต่อปี"""
+    return S0 * math.exp((r - q) * T)
+
+print("หุ้นไม่จ่ายปันผล  S=100 r=2% q=0%  T=6 เดือน -&gt;", round(forward(100, 0.02, 0.00, 0.5), 4))
+print("SET50           S=1000 r=2% q=3% T=3 เดือน -&gt;", round(forward(1000, 0.02, 0.03, 0.25), 4))
+<span class="o"># หุ้นไม่จ่ายปันผล  S=100 r=2% q=0%  T=6 เดือน -&gt; 101.005</span>
+<span class="o"># SET50           S=1000 r=2% q=3% T=3 เดือน -&gt; 997.5031</span>
+
+S0, K, r, T = 100, 100, 0.02, 0.5
+F = forward(S0, r, 0.0, T)
+print(f"\nstrike ที่ทำให้ C = P พอดี คือ K = F = {F:.4f} ไม่ใช่ S = {S0}")
+print(f"ที่ K = S = {K}: C - P = {math.exp(-r*T)*(F - K):+.4f}   &lt;- Call แพงกว่า Put")
+print(f"ที่ K = F        : C - P = {math.exp(-r*T)*(F - F):+.4f}   &lt;- เท่ากันเป๊ะ")
+<span class="o"># strike ที่ทำให้ C = P พอดี คือ K = F = 101.0050 ไม่ใช่ S = 100</span>
+<span class="o"># ที่ K = S = 100: C - P = +0.9950   &lt;- Call แพงกว่า Put</span>
+<span class="o"># ที่ K = F        : C - P = +0.0000   &lt;- เท่ากันเป๊ะ</span></pre></div>
+
+<div class="bx bp"><div class="bt">💎 จุดที่สำคัญที่สุดสำหรับคนเทรด Options — "ATM" ที่แท้จริงไม่ได้อยู่ที่ราคาหุ้น</div>
+<p>เอา Put-Call Parity จากบทที่ 2 มาเขียนใหม่โดยใช้ F แทน S:</p>
+<div class="fm" style="text-align:center">C + K·e<sup>−rT</sup> = P + S₀      และ  S₀ = F·e<sup>−rT</sup>
+──────────────────────────────────────
+C − P = (F − K) · e<sup>−rT</sup></div>
+<p>อ่านบรรทัดสุดท้ายให้ดี: <strong>ส่วนต่างระหว่าง Call กับ Put ขึ้นกับ (F − K) ไม่ใช่ (S₀ − K)</strong></p>
+<ul>
+<li><strong>K = F → C = P เป๊ะ</strong> · <u>นี่คือ ATM ที่แท้จริง</u> และมันไม่ได้อยู่ที่ราคาหุ้นปัจจุบัน</li>
+<li>ที่ K = S₀ = 100 (ที่คนส่วนใหญ่เรียกว่า "ATM") <strong>Call ยังแพงกว่า Put อยู่ 0.9950</strong> — ไม่ใช่เพราะตลาดมองบวก แต่เพราะ K ตัวนั้นอยู่<strong>ต่ำกว่า</strong> forward</li>
+</ul>
+<p>ถ้าคุณเคยสงสัยว่า "ทำไม call กับ put ที่ strike เดียวกันราคาไม่เท่ากันทั้งที่ strike = ราคาหุ้นพอดี" — <strong>คำตอบทั้งหมดอยู่ในบรรทัดนี้</strong> · และเป็นเหตุผลที่โต๊ะเทรดมืออาชีพวัด moneyness เทียบกับ F เสมอ ไม่เคยเทียบกับ S</p></div>
+
+<div class="bx br"><div class="bt">❌ กับดักที่ใหญ่ที่สุด — F ไม่ใช่การพยากรณ์ราคา</div>
+<p><strong>F = 101.005 ไม่ได้แปลว่าตลาดคิดว่าหุ้นจะขึ้นไป 101.005</strong></p>
+<p>สังเกตว่าในสูตรมี <strong>r</strong> (ดอกเบี้ยไร้ความเสี่ยง) ไม่มี <strong>μ</strong> (ผลตอบแทนที่คาดหวังจากหุ้น) อยู่เลย · ต่อให้คุณเชื่อว่าหุ้นตัวนี้จะให้ผลตอบแทน 20% ต่อปี F ก็ยังเป็นค่าเดิม เพราะ <strong>F ถูกกำหนดโดยการอาร์บิทราจ ไม่ใช่โดยความคาดหวัง</strong></p>
+<p>มันคือ<strong>ราคาที่ห้ามผิด</strong> ไม่ใช่<strong>ราคาที่คาดว่าจะเป็น</strong> — สองอย่างนี้คนละเรื่องกันโดยสิ้นเชิง และการสับสนสองอย่างนี้คือความเข้าใจผิดที่พบบ่อยที่สุดเรื่องหนึ่งในตลาดอนุพันธ์</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>หุ้น A ราคา 50 บาท ไม่จ่ายปันผล · r = 3% · สัญญาล่วงหน้าอายุ 1 ปี ซื้อขายกันอยู่ที่ <strong>53 บาท</strong></p>
+<ol>
+<li>ราคาที่ยุติธรรมควรเป็นเท่าไร</li>
+<li>ออกแบบชุดคำสั่งที่ทำกำไรโดยไม่มีความเสี่ยง แล้วบอกว่าได้กี่บาทต่อหุ้น</li>
+<li>ถ้าหุ้น A จ่ายปันผล 4% ต่อปี คำตอบข้อ 1 เปลี่ยนไปทางไหน</li>
+</ol>
+<details><summary>ดูเฉลย</summary>
+<p><strong>1)</strong> F = 50·e<sup>0.03×1</sup> = <strong>51.523</strong> · ราคาตลาด 53 จึง<strong>แพงเกินไป 1.477 บาท</strong></p>
+<p><strong>2)</strong> กู้เงิน 50 บาทซื้อหุ้น + ขายสัญญาล่วงหน้าที่ 53 · ครบปีส่งมอบหุ้นรับ 53 คืนเงินกู้ 50·e<sup>0.03</sup> = 51.523 · <strong>เหลือ 1.477 บาทต่อหุ้น โดยไม่ต้องเดาทิศทางราคาเลย</strong> (ในโลกจริงต้องหักค่าคอมฯ สองขา ค่ายืมหุ้น และเงินวางประกัน — 1.477 บาทบนหุ้น 50 บาทคือ 2.96% ซึ่งกว้างพอจะเหลือกำไรจริง แต่ส่วนต่างขนาดนี้แทบไม่เกิดในตลาดที่มีสภาพคล่อง)</p>
+<p><strong>3)</strong> q = 4% &gt; r = 3% ทำให้ (r − q) ติดลบ · F = 50·e<sup>−0.01</sup> = <strong>49.50</strong> คือ<strong>ต่ำกว่า</strong>ราคาหุ้น · ส่วนต่างจากราคาตลาด 53 ยิ่งกว้างขึ้นไปอีก</p>
+</details></div>
+
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 3</div>
 <ul>
 <li><strong>e โผล่เองจากการทบต้นถี่ที่สุด</strong> — ไม่ใช่ตัวเลขลอย ๆ</li>
 <li><strong>PV(K) = K·e<sup>−rT</sup></strong> = "เงิน K มองย้อนกลับมาเป็นค่าวันนี้"</li>
 <li><strong>log return สมมาตรและบวกข้ามเวลาได้</strong> จึงเป็นหน่วยของ Black-Scholes</li>
+<li><strong>F = S₀·e<sup>(r−q)T</sup></strong> = สมการเดียวกันหมุนกลับด้าน · <strong>C − P = (F − K)·e<sup>−rT</sup></strong> จึงบอกว่า <strong>ATM ที่แท้จริงอยู่ที่ F ไม่ใช่ที่ราคาหุ้น</strong> · และ F <u>ไม่ใช่</u>การพยากรณ์ราคา</li>
 </ul></div>
 
 <!-- ═══════════════ CAPSTONE: อ่าน payoff จริงแบบครบวง ═══════════════ -->
@@ -840,12 +914,13 @@ print("ln(75/100) =", f"{math.log(75/100):+.4f}")
 <li>รู้ว่า Short = พลิก Long กลับหัว และนับช่วง payoff จากจำนวน Strike</li>
 <li>เข้าใจ Put-Call Parity จาก "สองทางได้ผลเท่ากัน" และย้ายข้างสร้าง synthetic ได้</li>
 <li>ถอด PV(K) = K·e<sup>−rT</sup> ออก และรู้ว่าทำไม Options ใช้ log return</li>
+<li>คิดราคาล่วงหน้า F = S₀·e<sup>(r−q)T</sup> เองได้ และอธิบายได้ว่าทำไมมันห้ามเป็นค่าอื่น (cash and carry)</li>
 </ul></div>
 
 <div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">คุณอ่าน "ราคาวันหมดอายุ" ออกแล้ว — แต่ราคา Option วันนี้ ก่อนหมดอายุ มาจากไหน? คำตอบซ่อนอยู่ในคำว่า "ความน่าจะเป็น" และ "ความผันผวน" ที่ Part II จะเปิดออก</div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
-<p><strong>Intrinsic Value</strong> = มูลค่าที่แท้จริงถ้าใช้สิทธิ์ตอนนี้ = max(0, S−K) · <strong>Break-even</strong> = ราคาที่กำไร = 0 · <strong>Slope/ความชัน</strong> = อัตราที่กราฟขึ้น · <strong>Piecewise</strong> = ฟังก์ชันที่เปลี่ยนสูตรตามช่วง · <strong>Synthetic position</strong> = สถานะที่ประกอบจากตัวอื่นให้ได้ผลเท่ากัน · <strong>PV(K)</strong> = มูลค่าปัจจุบันของ Strike = K·e<sup>−rT</sup> · <strong>Log return</strong> = ln(S₁/S₀) หน่วยผลตอบแทนแบบสมมาตร</p></div>
+<p><strong>Intrinsic Value</strong> = มูลค่าที่แท้จริงถ้าใช้สิทธิ์ตอนนี้ = max(0, S−K) · <strong>Break-even</strong> = ราคาที่กำไร = 0 · <strong>Slope/ความชัน</strong> = อัตราที่กราฟขึ้น · <strong>Piecewise</strong> = ฟังก์ชันที่เปลี่ยนสูตรตามช่วง · <strong>Synthetic position</strong> = สถานะที่ประกอบจากตัวอื่นให้ได้ผลเท่ากัน · <strong>PV(K)</strong> = มูลค่าปัจจุบันของ Strike = K·e<sup>−rT</sup> · <strong>Log return</strong> = ln(S₁/S₀) หน่วยผลตอบแทนแบบสมมาตร · <strong>Forward price (F)</strong> = ราคาที่ตกลงวันนี้เพื่อซื้อขายในอนาคต = S₀·e<sup>(r−q)T</sup> · <strong>Cash and carry</strong> = การกู้เงินซื้อของจริงพร้อมขายสัญญาล่วงหน้า เพื่อล็อกกำไรที่ไม่มีความเสี่ยง</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
 <div style="text-align:center;padding:16px;color:#64748b">
