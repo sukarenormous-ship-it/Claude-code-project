@@ -36,7 +36,8 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
 <div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
 <p><strong>🟢 มือใหม่:</strong> อ่าน 🚶 + ตาราง + 🎯 · แก่นคือ <strong>"วิธีตรวจสอบที่ผิด แย่กว่าไม่ตรวจเลย"</strong> เพราะมันให้ความมั่นใจปลอม · โดยเฉพาะ <strong>§12.3</strong> ซึ่งเป็นข้อผิดพลาดที่พบบ่อยที่สุดในงานควอนต์ทั้งหมด</p>
-<p><strong>🔵 มีพื้น:</strong> อ่าน 🐍 ให้ครบ · <strong>§12.4</strong> (leakage) และ <strong>§12.5</strong> (multiple testing) คือส่วนที่แยกคนทำเป็นออกจากคนทำตาม — โดยเฉพาะ §12.5 ซึ่งทำให้ทุกอย่างก่อนหน้ายังหลอกคุณได้</p></div>
+<p><strong>🔵 มีพื้น:</strong> อ่าน 🐍 ให้ครบ · <strong>§12.4</strong> (leakage) และ <strong>§12.5</strong> (multiple testing) คือส่วนที่แยกคนทำเป็นออกจากคนทำตาม — โดยเฉพาะ §12.5 ซึ่งทำให้ทุกอย่างก่อนหน้ายังหลอกคุณได้</p>
+<p><strong>🎯 เทรดจริงอยู่แล้ว:</strong> ข้ามไปอ่าน <strong>§12.7</strong> ก่อนได้เลย — มันตอบคำถามว่า "ทำไมสัญญาณที่ backtest ผ่าน ถึงขาดทุนทุกไม้ตอนตลาดนิ่ง" ซึ่งเป็นปัญหาที่เจอกันมากที่สุดเวลาเอากฎสถิติไปใช้จริง</p></div>
 
 <div class="bx bp"><div class="bt">📖 ต่อจาก เล่ม 2 · A–E — และศัพท์ที่จะเจอ</div>
 <p>ตลอด 5 ตอนที่ผ่านมาเรา<strong>สร้างตัวเลข</strong>ขึ้นมามากมาย — β, Σ, Sharpe, hedge ratio, ขนาดสถานะ · <a href="math-part8.html">C</a> เริ่มถามว่า "เชื่อได้แค่ไหน" และตอบด้วย SE กับช่วงความเชื่อมั่น · <strong>F ถามคำถามเดียวกันแต่ลึกกว่า: "แล้วถ้าไม่อยากพึ่งสูตรเลยล่ะ" และ "จะรู้ได้ยังไงว่าวิธีตรวจสอบของเราเองไม่ได้โกง"</strong></p>
@@ -403,13 +404,307 @@ print(f"จุดคุ้มทุน: หมุนได้ {ret/rt:.0f} ค�
 <p><strong>ทำยังไง:</strong> ให้ทุก fold ของ walk-forward คืนค่าเป็น <strong>Sharpe หลังหักต้นทุน</strong> ไม่ใช่ R² · ถ้าทำแบบนั้นตั้งแต่แรก CV จะเลือกกลยุทธ์ที่หมุนช้าลงให้คุณเอง โดยที่คุณไม่ต้องตัดสินใจเรื่องนี้ด้วยมือ</p>
 <p>💡 และถ้าเป็นไปได้ ให้ใส่<strong>ค่าปรับ turnover</strong> เข้าไปในโมเดลตั้งแต่ตอนฝึก (เช่นจำกัด <span class="fm" style="display:inline">Σ|wₜ − wₜ₋₁|</span> หรือใช้แถบไม่เทรดรอบสัญญาณ) — <strong>ถูกกว่าการไปแก้ทีหลังมาก</strong></p></div>
 
-<div class="bx bg"><div class="bt">🎯 5 อย่างที่ต้องจำจากบทที่ 12</div>
+<h3 id="s12-7">12.7 💎 สัญญาณไร้หน่วย ปะทะ ต้นทุนที่มีหน่วย</h3>
+
+<p>ปัญหาที่จะเล่าต่อไปนี้ เป็นปัญหาที่คนเทรดจริงเจอบ่อยมากแต่แทบไม่มีตำราไหนตั้งชื่อให้:</p>
+
+<div class="bx bp"><div class="bt">🎬 อาการ</div>
+<p>คุณตั้งกฎว่า <em>"ราคาหลุดกรอบล่าง 2SD ของ Bollinger เมื่อไร ให้เข้า"</em> · กฎนี้ทำงานได้ดีในช่วงที่ตลาดเหวี่ยง · <strong>แต่พอตลาดเข้าสู่ช่วงนิ่ง สัญญาณยังยิงถี่เท่าเดิม แล้วทุกไม้ขาดทุนทีละนิด จนพอร์ตเลือดไหลไม่หยุด</strong></p>
+<p>ที่แปลกคือ ถ้าคุณมองกราฟด้วยตาเปล่า คุณจะ<u>ไม่</u>เข้าไม้พวกนั้นเลย เพราะเห็นชัดว่ากรอบมันแคบจนไม่มีอะไรให้กิน · <strong>แปลว่าตาคุณเห็นบางอย่างที่สูตรมองไม่เห็น — คำถามคือมันคืออะไร</strong></p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> <strong>z-score บอกว่า "ผิดปกติแค่ไหน" ไม่เคยบอกว่า "ผิดปกติกี่บาท"</strong> · เพราะมันถูก<u>หารด้วย</u> σ ไปแล้ว · ส่วนค่าคอมมิชชันกับ spread เป็น <strong>% ของราคาเสมอ ไม่เคยถูกหารด้วยอะไรเลย</strong> · พอ σ หดตัว ระยะทาง 2SD ที่คิดเป็นเงินก็หดตามไปด้วย แต่ต้นทุนไม่หด — <strong>สัญญาณยังบอกว่า "ผิดปกติ" เหมือนเดิม ทั้งที่มันไม่เหลืออะไรให้กินแล้ว</strong></p>
+
+<p>นี่คือกรณีเฉพาะของหลักการที่ใหญ่กว่านั้น: <strong>นัยสำคัญทางสถิติ ≠ นัยสำคัญทางเศรษฐกิจ</strong> · และมัน<u>ไม่ใช่</u>ปัญหาของ Bollinger ตัวเดียว</p>
+
+<h4 style="font-size:1.1em;font-weight:700;margin-top:1.4em;margin-bottom:.5em">ทำไมมันเกิดกับเครื่องมือแทบทุกตัว</h4>
+
+<p>เครื่องมือสถิติส่วนใหญ่ถูกออกแบบมาให้ <strong>"เทียบข้ามสินทรัพย์ได้"</strong> — เอาไปใช้กับ PTT ก็ได้ กับ Bitcoin ก็ได้ · แต่การจะทำแบบนั้นได้ มันต้อง<strong>ตัดหน่วยทิ้ง</strong> และการตัดหน่วยทิ้งนั่นแหละคือการทิ้งข้อมูลชิ้นเดียวที่ตัดสินว่าเทรดแล้วได้เงินหรือเสียเงิน</p>
+
+<p>วิธีทดสอบง่าย ๆ ว่าเครื่องมือของคุณมีปัญหานี้ไหม: <strong>ลองคูณการแกว่งของราคาทั้งชุดด้วย 10 แล้วดูว่าค่าที่ได้เปลี่ยนไหม — ถ้าไม่เปลี่ยน แปลว่ามันมองไม่เห็นความผันผวน</strong></p>
+
+<div class="tw"><table>
+<tr><th>ตระกูล</th><th>ตัวอย่าง</th><th class="nw">หารด้วยอะไร</th><th class="nw">คูณการแกว่ง ×10 แล้ว…</th></tr>
+<tr><td class="nw">z-score</td><td>Bollinger · %B · z ของ spread (<a href="math-part9.html#s9-2">D §9.2</a>) · Mahalanobis</td><td class="nw">σ</td><td class="nw"><strong>ไม่เปลี่ยน</strong> ❌</td></tr>
+<tr><td class="nw">ออสซิลเลเตอร์อัตราส่วน</td><td>RSI · Stochastic %K · Williams %R · CCI</td><td class="nw">พิสัย/ผลรวมของตัวเอง</td><td class="nw"><strong>ไม่เปลี่ยน</strong> ❌</td></tr>
+<tr><td class="nw">ตัววัดปรับความเสี่ยง</td><td>Sharpe · Sortino · t-stat · Information Ratio</td><td class="nw">σ</td><td class="nw"><strong>ไม่เปลี่ยน</strong> ❌</td></tr>
+<tr><td class="nw">อันดับ / เปอร์เซ็นไทล์</td><td>percentile rank · quantile signal</td><td class="nw">อันดับ</td><td class="nw"><strong>ไม่เปลี่ยน</strong> ❌</td></tr>
+<tr><td class="nw"><strong>มีหน่วย</strong></td><td><strong>ATR เป็นบาท · spread เป็น bps · BBW เป็น % · ระยะทางคาดหวังเป็น %</strong></td><td class="nw">ไม่หาร</td><td class="nw"><strong>เปลี่ยนเป็น 10 เท่า</strong> ✓</td></tr>
+</table></div>
+
+<p>แถวสุดท้ายคือ<strong>ยาแก้</strong> · ทุกอย่างที่เหลือคือคนไข้</p>
+
+<h4 style="font-size:1.1em;font-weight:700;margin-top:1.4em;margin-bottom:.5em">พิสูจน์ด้วยตัวเลข</h4>
+
+<p>สร้างตลาด sideways ที่<strong>คุณสมบัติทุกอย่างเหมือนกันหมด ยกเว้นความผันผวน</strong> แล้วปล่อยกฎ Bollinger ตัวเดิมลงไป · ถ้าสัญญาณ "มองเห็น" ความผันผวนจริง จำนวนไม้ต้องลดลงเมื่อตลาดนิ่ง:</p>
+
+<div class="code"><div class="hdr">🐍 Python — กฎเดิม ตลาดเดิม เปลี่ยนแค่ σ</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+
+def ou_price(sigma, n=120_000, theta=0.05, seed=7):
+    """ราคาที่ถูกดึงกลับเข้าหาค่ากลางเสมอ = ตลาด sideways ในอุดมคติ"""
+    rng = np.random.default_rng(seed)
+    e = rng.standard_normal(n)
+    x = np.empty(n); x[0] = 0.0
+    for t in range(1, n):
+        x[t] = (1 - theta)*x[t-1] + sigma*e[t]      <span class="c"># sigma คุมความกว้างของการแกว่ง</span>
+    return 100.0*np.exp(x)
+
+def bollinger(p, N=20, k=2.0):
+    c1 = np.cumsum(np.insert(p, 0, 0.0)); c2 = np.cumsum(np.insert(p*p, 0, 0.0))
+    m  = (c1[N:] - c1[:-N])/N                       <span class="c"># เส้นกลาง</span>
+    sd = np.sqrt(np.maximum((c2[N:] - c2[:-N])/N - m*m, 0.0))
+    inpos, entry, g = False, 0.0, []
+    for i in range(len(m)):
+        t = i + N - 1
+        if not inpos and p[t] &lt; m[i] - k*sd[i]:
+            inpos, entry = True, p[t]               <span class="c"># หลุดกรอบล่าง -2SD -&gt; เข้า</span>
+        elif inpos and p[t] &gt; m[i]:
+            g.append(p[t]/entry - 1.0); inpos = False   <span class="c"># กลับถึงเส้นกลาง -&gt; ออก</span>
+    return np.array(g), float(np.mean(2*k*sd/m))    <span class="c"># กำไรก่อนต้นทุน, BBW เฉลี่ย</span>
+
+COST = 0.00436                                      <span class="c"># ต้นทุนไป-กลับ จาก 12.6</span>
+print("sigma/day   BBW    trades   gross/tr    net/tr   gross/BBW")
+for sigma in [0.001, 0.002, 0.003, 0.006, 0.012]:
+    g, bbw = bollinger(ou_price(sigma))
+    print(f"{sigma:8.1%} {bbw:7.2%} {len(g):8d} {g.mean():10.4%} "
+          f"{g.mean()-COST:+9.4%} {g.mean()/bbw:10.3f}")
+<span class="o"># sigma/day   BBW    trades   gross/tr    net/tr   gross/BBW</span>
+<span class="o">#     0.1%   0.62%     2475    0.1307%  -0.3053%      0.209</span>
+<span class="o">#     0.2%   1.25%     2466    0.2617%  -0.1743%      0.210</span>
+<span class="o">#     0.3%   1.87%     2463    0.3948%  -0.0412%      0.211</span>
+<span class="o">#     0.6%   3.74%     2448    0.7994%  +0.3634%      0.214</span>
+<span class="o">#     1.2%   7.49%     2412    1.6265%  +1.1905%      0.217</span>
+
+print("\nแล้ว 0.21 นี้เป็นค่าคงที่ของจักรวาลหรือเปล่า? ลองเปลี่ยนความเร็วการดึงกลับ:")
+for theta in [0.02, 0.05, 0.10]:
+    caps = [bollinger(ou_price(s, theta=theta))[0].mean() /
+            bollinger(ou_price(s, theta=theta))[1] for s in [0.001, 0.003, 0.012]]
+    cap = float(np.mean(caps))
+    print(f"  theta={theta:.2f} -&gt; capture {cap:.3f} -&gt; BBW ขั้นต่ำ {COST/cap:.2%}")
+<span class="o"># แล้ว 0.21 นี้เป็นค่าคงที่ของจักรวาลหรือเปล่า? ลองเปลี่ยนความเร็วการดึงกลับ:</span>
+<span class="o">#   theta=0.02 -&gt; capture 0.102 -&gt; BBW ขั้นต่ำ 4.29%</span>
+<span class="o">#   theta=0.05 -&gt; capture 0.213 -&gt; BBW ขั้นต่ำ 2.05%</span>
+<span class="o">#   theta=0.10 -&gt; capture 0.335 -&gt; BBW ขั้นต่ำ 1.30%</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์ — ตัวเลขคอลัมน์ "trades" คือหัวใจ</div>
+<ul>
+<li><strong>σ ต่างกัน 12 เท่า แต่จำนวนไม้แทบไม่ขยับ</strong> — 2,475 → 2,412 คือลดลงแค่ 2.5% · <strong>สัญญาณไม่รู้เลยว่าตลาดกำลังนิ่ง</strong> มันยิงถี่เท่าเดิมทุกสภาวะ นี่คือความหมายของคำว่า "ไร้หน่วย" ในเชิงปฏิบัติ</li>
+<li><strong>ส่วน gross ต่อไม้โตเป็นเส้นตรงตาม σ</strong> — 0.1307% → 1.6265% (12.4 เท่า เทียบกับ σ ที่ 12 เท่า)</li>
+<li><strong>เอาสองอย่างมาชนกัน = ขาดทุน 3 แถวแรก</strong> · จุดพลิกอยู่ระหว่าง σ = 0.3% กับ 0.6% · แก้สมการได้ <strong>σ ขั้นต่ำ ≈ 0.33% ต่อวัน</strong></li>
+<li><strong>คอลัมน์สุดท้ายคือของขวัญ</strong> — <code>gross/BBW</code> นิ่งอยู่ที่ <strong>0.209–0.217</strong> ตลอดช่วง 12 เท่าของ σ · แปลว่ากลยุทธ์นี้<strong>เก็บกำไรได้ราว 21% ของความกว้างกรอบ</strong> เสมอ ไม่ว่ากรอบจะกว้างหรือแคบ · <strong>ตัวเลขนี้แหละที่แปลงสัญญาณไร้หน่วยกลับเป็นเงินได้</strong></li>
+</ul></div>
+
+<div class="bx bb"><div class="bt">💎 ด่านที่สอง — เกณฑ์ที่มีหน่วย</div>
+<p>ถ้าเก็บได้ 21% ของ BBW เงื่อนไขที่จะไม่ขาดทุนคือ:</p>
+<div class="fm">0.21 × BBW  ≥  ต้นทุนไป-กลับ
+      BBW  ≥  ต้นทุนไป-กลับ ÷ 0.21   ≈   4.8 × ต้นทุนไป-กลับ</div>
+<div class="tw"><table>
+<tr><th>สถานการณ์ต้นทุน</th><th class="nw">ต้นทุนไป-กลับ</th><th class="nw">ห้ามเข้าถ้า BBW ต่ำกว่า</th></tr>
+<tr><td>หุ้น SET50 (คอมฯ 0.157% + VAT, spread 0.10%)</td><td class="nw">0.436%</td><td class="nw"><strong>2.05%</strong></td></tr>
+<tr><td>หุ้นนอก SET50 (spread กว้าง 0.25%)</td><td class="nw">0.586%</td><td class="nw"><strong>2.76%</strong></td></tr>
+<tr><td>โบรกต่างประเทศค่าธรรมเนียมต่ำ</td><td class="nw">0.200%</td><td class="nw"><strong>0.94%</strong></td></tr>
+</table></div>
+<p><strong>BBW (Bollinger Band Width) = (แถบบน − แถบล่าง) ÷ เส้นกลาง</strong> — เป็น % ของราคา จึง<strong>มีหน่วยเทียบกับต้นทุนได้ตรง ๆ</strong> · นี่คือตัวเลขที่ตาคุณมองเห็นอยู่แล้วตอนที่คุณตัดสินใจ "ไม่เข้าเพราะกรอบมันแคบ" — เราแค่เขียนมันเป็นสมการ</p></div>
+
+<svg class="d" viewBox="0 0 520 245" role="img" aria-label="กราฟเส้นตรงสามเส้นแสดงกำไรต่อเทรดก่อนหักต้นทุนที่โตตามความผันผวนรายวัน โดย RSI ชันที่สุด Bollinger รองลงมา และ Stochastic %K ชันน้อยที่สุด มีเส้นแนวนอนสีแดงคือต้นทุนไป-กลับ 0.436% และแถบสีแดงใต้เส้นนั้นคือโซนที่ขาดทุนแน่นอน จุดตัดของแต่ละเส้นกับเส้นต้นทุนอยู่ที่ความผันผวน 0.15% 0.33% และ 0.74% ตามลำดับ">
+<text x="62" y="16" font-family="Sarabun" font-size="10" fill="#6b7280">กำไรต่อเทรด ก่อนหักต้นทุน (%)</text>
+<rect x="62" y="162.1" width="433" height="37.9" fill="#dc2626" opacity="0.09"/>
+<g stroke="#9ca3af" stroke-width="1" stroke-dasharray="3 3">
+<line x1="62" y1="156.5" x2="495" y2="156.5"/><line x1="62" y1="113" x2="495" y2="113"/>
+<line x1="62" y1="69.5" x2="495" y2="69.5"/><line x1="62" y1="26" x2="495" y2="26"/></g>
+<line x1="62" y1="20" x2="62" y2="200" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="62" y1="200" x2="497" y2="200" stroke="#9ca3af" stroke-width="1.2"/>
+<g font-family="Sarabun" font-size="9.5" fill="#4b5563" text-anchor="end">
+<text x="57" y="204">0</text><text x="57" y="160.5">0.5</text><text x="57" y="117">1.0</text><text x="57" y="73.5">1.5</text><text x="57" y="30">2.0</text></g>
+<g font-family="Sarabun" font-size="9.5" fill="#4b5563" text-anchor="middle">
+<text x="62" y="216">0</text><text x="170" y="216">0.2%</text><text x="278" y="216">0.4%</text><text x="387" y="216">0.6%</text><text x="495" y="216">0.8%</text></g>
+<text x="280" y="233" text-anchor="middle" font-family="Sarabun" font-size="10.5" fill="#6b7280">σ ต่อวัน (ความผันผวนของตลาด) →</text>
+<line x1="62" y1="200" x2="435" y2="26" stroke="#2563eb" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="62" y1="200" x2="495" y2="108" stroke="#b45309" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="6 3"/>
+<line x1="62" y1="200" x2="495" y2="159" stroke="#15803d" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 3"/>
+<line x1="62" y1="162.1" x2="497" y2="162.1" stroke="#dc2626" stroke-width="2.2"/>
+<text x="68" y="151" font-family="Sarabun" font-size="9.5" fill="#b91c1c" font-weight="700">ต้นทุน 0.436%</text>
+<text x="490" y="194" text-anchor="end" font-family="Sarabun" font-size="10" fill="#b91c1c" font-weight="700">โซนที่เทรดแล้วขาดทุนแน่นอน</text>
+<g fill="#7c3aed"><circle cx="143" cy="162.1" r="4"/><circle cx="241" cy="162.1" r="4"/><circle cx="462" cy="162.1" r="4"/></g>
+<g font-family="Sarabun" font-size="9.5" fill="#7c3aed" font-weight="700" text-anchor="middle">
+<text x="143" y="176">0.15%</text><text x="241" y="176">0.33%</text><text x="462" y="176">0.74%</text></g>
+<g font-family="Sarabun" font-size="10" font-weight="700">
+<text x="378" y="48" text-anchor="end" fill="#2563eb">RSI(14) 30→50</text>
+<text x="490" y="102" text-anchor="end" fill="#b45309">Bollinger −2SD (เส้นประ)</text>
+<text x="490" y="140" text-anchor="end" fill="#15803d">Stochastic %K (จุดไข่ปลา)</text></g>
+</svg>
+
+<div class="bx bg"><div class="bt">✅ อ่านกราฟ</div>
+<ul>
+<li><strong>ทุกเส้นลากผ่านจุดกำเนิด</strong> — เพราะกำไรต่อไม้เป็นสัดส่วนตรงกับ σ · <strong>ตลาดนิ่งสนิท = กำไรต่อไม้เป็นศูนย์ แต่จำนวนไม้ไม่เป็นศูนย์</strong> นั่นคือสูตรของการเสียเงินสม่ำเสมอ</li>
+<li><strong>เส้นแดงคือต้นทุน — มันแบนราบ</strong> · มันไม่สนใจว่าตลาดจะเหวี่ยงหรือนิ่ง · <strong>ความขัดแย้งทั้งหมดของตอนนี้อยู่ตรงที่เส้นเอียงชนเส้นแบน</strong></li>
+<li><strong>แต่ละเครื่องมือมีจุดตัดของตัวเอง</strong> — RSI ที่ σ = 0.15% · Bollinger ที่ 0.33% · %K ที่ 0.74% · <strong>ไม่มีเกณฑ์เดียวที่ใช้ได้กับทุกอินดิเคเตอร์ ต้องวัดของตัวเอง</strong></li>
+<li><strong>%K ต้องการตลาดที่เหวี่ยงกว่า RSI เกือบ 5 เท่า</strong> — ไม่ใช่เพราะมันแย่กว่า แต่เพราะมันเทรดถี่กว่า 10 เท่าโดยเก็บได้น้อยกว่าต่อไม้ · <strong>ยิ่งสัญญาณถี่ ยิ่งไวต่อค่าธรรมเนียม</strong> (ต่อยอดจาก <a href="#s12-6">§12.6</a> โดยตรง)</li>
+</ul></div>
+
+<h4 style="font-size:1.1em;font-weight:700;margin-top:1.4em;margin-bottom:.5em">แล้วเครื่องมืออื่นล่ะ — เหมือนกันจริงไหม</h4>
+
+<p>เอา RSI กับ Stochastic %K มารันบนตลาดเดียวกันเป๊ะ · ทั้งสองตัวไม่ได้หารด้วย σ แบบ Bollinger — RSI หารกำไรด้วยขาดทุน · %K หารด้วยพิสัยของตัวเอง · <strong>คนละสูตร แต่ผลเหมือนกันทุกประการ</strong>:</p>
+
+<div class="code"><div class="hdr">🐍 Python — RSI และ Stochastic ก็มองไม่เห็นความผันผวนเหมือนกัน</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+
+def ou_price(sigma, n=120_000, theta=0.05, seed=7):     <span class="c"># เหมือนกล่องก่อนหน้า</span>
+    rng = np.random.default_rng(seed); e = rng.standard_normal(n)
+    x = np.empty(n); x[0] = 0.0
+    for t in range(1, n):
+        x[t] = (1 - theta)*x[t-1] + sigma*e[t]
+    return 100.0*np.exp(x)
+
+def rsi(p, n=14):
+    d  = np.diff(p, prepend=p[0])
+    up = np.where(d &gt; 0, d, 0.0); dn = np.where(d &lt; 0, -d, 0.0)
+    au = np.zeros_like(p); ad = np.zeros_like(p)
+    au[n] = up[1:n+1].mean(); ad[n] = dn[1:n+1].mean()
+    for t in range(n+1, len(p)):                        <span class="c"># Wilder smoothing</span>
+        au[t] = (au[t-1]*(n-1) + up[t])/n
+        ad[t] = (ad[t-1]*(n-1) + dn[t])/n
+    r = np.full_like(p, 50.0); ok = ad &gt; 0
+    r[ok] = 100 - 100/(1 + au[ok]/ad[ok]); r[:n+1] = 50.0
+    return r                                            <span class="c"># หารกำไรด้วยขาดทุน -&gt; ไร้หน่วย</span>
+
+def stoch(p, n=14):
+    w = np.lib.stride_tricks.sliding_window_view(p, n)
+    lo, hi = w.min(1), w.max(1)
+    k = np.full_like(p, 50.0)
+    k[n-1:] = np.where(hi &gt; lo, 100*(p[n-1:] - lo)/np.maximum(hi - lo, 1e-12), 50.0)
+    return k                                            <span class="c"># หารด้วยพิสัยตัวเอง -&gt; ไร้หน่วย</span>
+
+def run(p, sig, lo, mid, warm=20):
+    inpos, entry, g = False, 0.0, []
+    for t in range(warm, len(p)):
+        if not inpos and sig[t] &lt; lo:  inpos, entry = True, p[t]
+        elif inpos and sig[t] &gt; mid:   g.append(p[t]/entry - 1.0); inpos = False
+    return np.array(g)
+
+COST = 0.00436
+print("sigma/day |  RSI(14) 30-&gt;50            |  Stochastic %K 20-&gt;50")
+print("          |  trades  gross/tr   net/tr |  trades  gross/tr   net/tr")
+for sigma in [0.001, 0.003, 0.012]:
+    p = ou_price(sigma)
+    a = run(p, rsi(p), 30, 50); b = run(p, stoch(p), 20, 50)
+    print(f"{sigma:8.1%}  | {len(a):7d} {a.mean():9.4%} {a.mean()-COST:+8.4%} "
+          f"| {len(b):7d} {b.mean():9.4%} {b.mean()-COST:+8.4%}")
+<span class="o"># sigma/day |  RSI(14) 30-&gt;50            |  Stochastic %K 20-&gt;50</span>
+<span class="o">#           |  trades  gross/tr   net/tr |  trades  gross/tr   net/tr</span>
+<span class="o">#     0.1%  |     591   0.2864% -0.1496% |    5928   0.0583% -0.3777%</span>
+<span class="o">#     0.3%  |     578   0.8673% +0.4313% |    5930   0.1769% -0.2591%</span>
+<span class="o">#     1.2%  |     543   3.6056% +3.1696% |    5919   0.7321% +0.2961%</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ อาการเดียวกันเป๊ะ — คนละสูตร คนละตระกูล</div>
+<ul>
+<li><strong>RSI: 591 → 543 ไม้</strong> เมื่อ σ เพิ่ม 12 เท่า (−8%) · <strong>%K: 5,928 → 5,919 ไม้</strong> (−0.15%) · <strong>ทั้งคู่มองไม่เห็นความผันผวนพอ ๆ กับ Bollinger</strong></li>
+<li><strong>%K ขาดทุนถึงสองแถว</strong> — ที่ σ = 0.3% ซึ่ง Bollinger เกือบเสมอและ RSI กำไรแล้ว %K ยังติดลบ −0.2591% เพราะมันเข้า-ออก 5,930 ครั้ง</li>
+<li><strong>สรุป: การมองไม่เห็นความผันผวน ไม่ใช่จุดอ่อนของสูตรใดสูตรหนึ่ง แต่เป็นผลพลอยได้ของการทำให้ "เทียบข้ามสินทรัพย์ได้"</strong> · ทุกครั้งที่คุณหารอะไรสักอย่างทิ้งเพื่อให้ตัวเลขอยู่ในช่วง 0–100 หรือ −3 ถึง +3 คุณกำลังจ่ายราคานี้</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">⚠️ อย่าจำตัวเลข 0.21 — จำวิธีวัด</div>
+<p>ท่อนล่างของโค้ดกล่องแรกเปลี่ยนแค่ <code>theta</code> ซึ่งคือ<strong>ความเร็วที่ราคาถูกดึงกลับเข้าหาค่ากลาง</strong> แล้วดูว่า capture ratio ขยับแค่ไหน:</p>
+<div class="tw"><table>
+<tr><th class="nw">θ (ความเร็วดึงกลับ)</th><th class="nw">capture ratio</th><th class="nw">BBW ขั้นต่ำ (ต้นทุน 0.436%)</th></tr>
+<tr><td class="nw">0.02 — ดึงกลับช้า</td><td class="nw">0.102</td><td class="nw"><strong>4.29%</strong></td></tr>
+<tr><td class="nw">0.05 — ปานกลาง</td><td class="nw">0.213</td><td class="nw"><strong>2.05%</strong></td></tr>
+<tr><td class="nw">0.10 — ดึงกลับเร็ว</td><td class="nw">0.335</td><td class="nw"><strong>1.30%</strong></td></tr>
+</table></div>
+<p><strong>เกณฑ์ต่างกันได้ถึง 3.3 เท่า</strong> จากการเปลี่ยนคุณสมบัติเดียวของตลาด · ตัวเลข <strong>2.05% ไม่ใช่ค่าคงที่ของจักรวาล มันเป็นค่าคงที่ของ<u>ตลาดสมมติตัวนี้</u></strong></p>
+<p><strong>สิ่งที่ต้องเอาไปใช้จริงคือ 3 ขั้นตอน ไม่ใช่ตัวเลข:</strong></p>
+<ol>
+<li>รันกฎของคุณย้อนหลังบนสินทรัพย์ของคุณเอง <strong>โดยไม่หักต้นทุน</strong> แล้วเก็บคู่ (BBW ตอนเข้า, กำไรของไม้นั้น)</li>
+<li>หา <strong>capture ratio = กำไรเฉลี่ย ÷ BBW เฉลี่ย</strong> — ใช้ <a href="#s13-1">bootstrap ในบทที่ 13</a> หาช่วงความเชื่อมั่นของมันด้วย แล้วใช้<strong>ขอบล่าง</strong>ไม่ใช่ค่ากลาง</li>
+<li>ตั้งตัวกรอง <strong>BBW ≥ ต้นทุนไป-กลับ ÷ capture</strong> แล้วเอาตัวกรองนี้เข้าไปอยู่<u>ใน</u> walk-forward ตาม <a href="#s12-6">§12.6</a> ไม่ใช่มาใส่ทีหลัง</li>
+</ol></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง — สัญญาณตอนกรอบแคบไม่ได้ "แม่นน้อยลง" ด้วยซ้ำ</div>
+<p>คำอธิบายที่ฟังดูเข้าท่าคือ <em>"ช่วงบีบแคบมักเป็นช่วงก่อนราคาจะทะลุ ดังนั้นการแตะ 2SD ตอนนั้นจึงเชื่อถือไม่ได้"</em> · <strong>เราทดสอบสมมติฐานนี้แล้ว และมันไม่จริง</strong></p>
+<p>ลองในโมเดลที่<strong>ความผันผวนเองก็แกว่ง</strong> (มีทั้งช่วงบีบและช่วงเหวี่ยง ไม่ใช่ σ คงที่แบบข้างบน) แล้วจัดไม้เป็น 5 ควินไทล์ตาม BBW ณ ตอนเข้า:</p>
+
+<div class="code"><div class="hdr">🐍 Python — แยกไม้ตามความกว้างกรอบ ในตลาดที่ความผันผวนไม่คงที่</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+
+def sv_price(n=400_000, theta=0.05, s0=0.004, phi=0.97, eta=0.15, seed=11):
+    """ราคาที่ความผันผวนเองก็แกว่ง — มีทั้งช่วงบีบแคบและช่วงเหวี่ยงแรง"""
+    rng = np.random.default_rng(seed)
+    e, w = rng.standard_normal(n), rng.standard_normal(n)
+    v = np.empty(n); x = np.empty(n); v[0] = x[0] = 0.0
+    for t in range(1, n):
+        v[t] = phi*v[t-1] + eta*w[t]                    <span class="c"># log-vol เดินแบบ AR(1)</span>
+        x[t] = (1 - theta)*x[t-1] + s0*np.exp(v[t])*e[t]
+    return 100.0*np.exp(x)
+
+def bb_trades(p, N=20, k=2.0):
+    c1 = np.cumsum(np.insert(p, 0, 0.0)); c2 = np.cumsum(np.insert(p*p, 0, 0.0))
+    m  = (c1[N:] - c1[:-N])/N
+    sd = np.sqrt(np.maximum((c2[N:] - c2[:-N])/N - m*m, 0.0))
+    bbw = 2*k*sd/m
+    inpos, entry, w0, out = False, 0.0, 0.0, []
+    for i in range(len(m)):
+        t = i + N - 1
+        if not inpos and p[t] &lt; m[i] - k*sd[i]:
+            inpos, entry, w0 = True, p[t], bbw[i]       <span class="c"># จำ BBW "ตอนเข้า" ไว้ด้วย</span>
+        elif inpos and p[t] &gt; m[i]:
+            out.append((w0, p[t]/entry - 1.0)); inpos = False
+    return np.array(out)
+
+COST = 0.00436
+tr = bb_trades(sv_price())
+q  = np.quantile(tr[:, 0], [0, .2, .4, .6, .8, 1.0])
+print("ควินไทล์ตาม BBW ตอนเข้า | BBW เฉลี่ย | gross/เทรด |  net/เทรด | capture | จำนวน")
+for i in range(5):
+    hi = (tr[:, 0] &lt;= q[i+1]) if i == 4 else (tr[:, 0] &lt; q[i+1])
+    s  = tr[(tr[:, 0] &gt;= q[i]) &amp; hi]
+    print(f"        Q{i+1}              |  {s[:,0].mean():8.2%} |  {s[:,1].mean():8.4%} | "
+          f"{s[:,1].mean()-COST:+8.4%} |  {s[:,1].mean()/s[:,0].mean():.3f}  | {len(s)}")
+<span class="o"># ควินไทล์ตาม BBW ตอนเข้า | BBW เฉลี่ย | gross/เทรด |  net/เทรด | capture | จำนวน</span>
+<span class="o">#         Q1              |     0.87% |   0.2906% | -0.1454% |  0.334  | 1645</span>
+<span class="o">#         Q2              |     1.42% |   0.4533% | +0.0173% |  0.320  | 1644</span>
+<span class="o">#         Q3              |     1.96% |   0.5855% | +0.1495% |  0.299  | 1645</span>
+<span class="o">#         Q4              |     2.72% |   0.7594% | +0.3234% |  0.279  | 1644</span>
+<span class="o">#         Q5              |     4.75% |   1.3018% | +0.8658% |  0.274  | 1645</span></pre></div>
+
+<p><strong>ดูคอลัมน์ capture: Q1 (กรอบแคบสุด) ได้ 0.334 ซึ่ง<u>สูงกว่า</u> Q5 (กรอบกว้างสุด) ที่ 0.274</strong> · ในเชิงสัดส่วน สัญญาณตอนกรอบแคบทำงานได้<strong>ดีกว่า</strong>ด้วยซ้ำ · แต่ Q1 ยังขาดทุน −0.1454% ต่อไม้ ส่วน Q5 กำไร +0.8658%</p>
+
+<p>และนั่นทำให้บทเรียนคมกว่าเดิม:</p>
+
+<div class="bx bp"><div class="bt">💎 คุณไม่ได้แพ้เพราะทำนายผิด</div>
+<p><strong>คุณแพ้เพราะทำนายถูก — ในเรื่องที่เล็กเกินกว่าจะจ่ายค่าธรรมเนียมได้</strong></p>
+<p>นี่คือเหตุผลที่ปัญหานี้แก้ไม่ได้ด้วยการ "ปรับสัญญาณให้แม่นขึ้น" · เพิ่ม k จาก 2 เป็น 3 · เพิ่มตัวกรองเทรนด์ · เปลี่ยน N · <strong>ทั้งหมดนี้แก้เรื่องความแม่น ซึ่งไม่ใช่เรื่องที่พัง</strong> · สิ่งเดียวที่แก้ได้คือ<strong>ไม่เข้าเลย</strong>เมื่อระยะทางที่มีให้กินเล็กกว่าต้นทุน</p></div>
+
+<div class="bx bb"><div class="bt">💎 กฎทั่วไป — และที่อื่นในหนังสือเล่มนี้ที่คุณต้องเอาไปใช้</div>
+<div class="fm">สัญญาณไร้หน่วย  → ใช้ตัดสินว่า "เข้าข่ายหรือไม่"
+เกณฑ์มีหน่วย    → ใช้ตัดสินว่า "คุ้มค่าหรือไม่"
+ต้องผ่านทั้งสองด่าน ไม่ใช่ด่านเดียว</div>
+<ul>
+<li><strong><a href="math-part9.html#s9-2">เล่ม 2 · D §9.2</a> — pairs trading ด้วย z = (spread − mean)/sd</strong> · นี่คือกับดักตัวเดียวกันเป๊ะ · <a href="math-part9.html#s9-3">§9.3</a> วัดจุดพลิกไว้แล้วที่ <strong>28.7 bps ต่อข้าง</strong> — ถ้า sd ของ spread แคบกว่านั้น z = 2 ก็ยังขาดทุน · <strong>ด่านที่สองของคู่นี้คือ "sd ของ spread คิดเป็น bps" ไม่ใช่ค่า z</strong></li>
+<li><strong><a href="math-part10.html#s11-2">เล่ม 2 · E §11.2</a> — Kelly / การกำหนดขนาดสถานะจาก Sharpe</strong> · Sharpe ไร้หน่วย · ในช่วงที่ σ ต่ำมาก Kelly จะสั่งให้คุณใส่ leverage หนักลงไปในสัญญาณที่ค่าธรรมเนียมกินหมดตั้งแต่แรก · <strong>ด่านที่สองคือผลตอบแทนคาดหวังหลังหักต้นทุน ต้องเป็นบวกก่อน ถึงค่อยไปคิดขนาด</strong></li>
+<li><strong><a href="#s12-5">§12.5</a> — deflated Sharpe</strong> ตอบว่า "เก่งจริงหรือฟลุก" · <strong><a href="#s12-6">§12.6</a></strong> ตอบว่า "ถี่เกินไปไหม" · <strong>§12.7 นี้ตอบว่า "ใหญ่พอไหม"</strong> — สามคำถามคนละคำถาม ต้องผ่านให้ครบทั้งสาม</li>
+</ul></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ในกลยุทธ์ของกล่องแรก เราเข้าที่ −2SD และออกที่<strong>เส้นกลาง</strong></p>
+<ol>
+<li>ถ้าเข้าออกได้ตรงเป๊ะทุกครั้ง capture ratio ในอุดมคติควรเป็นเท่าไร (คิดจาก BBW = 4SD)</li>
+<li>ของจริงวัดได้ 0.21 — ยกเหตุผลมา 2 ข้อว่าทำไมถึงต่ำกว่าอุดมคติขนาดนั้น</li>
+<li>ถ้าเปลี่ยน<strong>จุดออก</strong>เป็นแถบบน (+2SD) แทนเส้นกลาง capture จะขึ้นหรือลง แล้ว BBW ขั้นต่ำจะเปลี่ยนไปทางไหน · ลองแก้บรรทัด <code>elif inpos and p[t] &gt; m[i]:</code> เป็น <code>elif inpos and p[t] &gt; m[i] + k*sd[i]:</code> แล้วรันดู</li>
+</ol>
+<details><summary>เฉลย</summary>
+<p><strong>1)</strong> เข้าที่ −2SD ออกที่เส้นกลาง = เดินทาง 2SD · BBW = 4SD · <strong>capture ในอุดมคติ = 2SD ÷ 4SD = 0.50</strong> · ที่วัดได้ 0.21 จึงเป็นเพียง <strong>42% ของอุดมคติ</strong></p>
+<p><strong>2)</strong> เหตุผลหลักสองข้อ: <strong>(ก) คุณไม่ได้เข้าที่ −2SD พอดี</strong> — คุณเข้าที่แท่งแรกที่<u>เลย</u>แถบไปแล้ว ซึ่งอาจอยู่ที่ −2.1SD หรือ −2.6SD และราคาที่ได้จริงคือราคาปิดของแท่งนั้น · <strong>(ข) เส้นกลางเคลื่อนที่</strong> — ระหว่างที่คุณถือ ค่าเฉลี่ย 20 วันจะถูกดึงลงมาหาราคาที่เพิ่งร่วง ทำให้เป้าหมายวิ่งหนีลงมาหาคุณ คุณจึงออกที่ระดับต่ำกว่าเส้นกลางเดิม (เหตุผลอื่นที่รับได้: บางไม้ต้องถือยาวจนกรอบเปลี่ยนรูป)</p>
+<p><strong>3)</strong> <strong>capture ขึ้นเป็น ~0.40</strong> (อุดมคติของสูตรนี้คือ 4SD ÷ 4SD = 1.00 ซึ่งก็ยังได้จริงราว 40% เท่าเดิม) และ <strong>BBW ขั้นต่ำลดลงเหลือราว 1.09%</strong> จาก 2.05% · แต่<strong>จำนวนไม้หายไป 36%</strong> (2,475 → 1,585) เพราะบางไม้ไม่เคยไปถึงแถบบน · ที่ σ = 0.3% ผลพลิกจาก −0.0412% เป็น <strong>+0.3167%</strong> ต่อไม้ · <strong>บทเรียน: ถือให้ไกลขึ้น = จ่ายค่าธรรมเนียมน้อยครั้งลงต่อระยะทางที่ได้ — เป็นอีกทางหนึ่งในการชนะเกมต้นทุน นอกจากการกรอง BBW</strong></p>
+</details></div>
+
+<div class="bx bg"><div class="bt">🎯 6 อย่างที่ต้องจำจากบทที่ 12</div>
 <ul>
 <li><strong>การแบ่งครั้งเดียวคือการโยนเหรียญ</strong> — R² เหวี่ยงได้ 0.23–0.71 บนข้อมูลและโมเดลเดียวกัน · ใช้ CV แล้ว<strong>รายงานส่วนเบี่ยงเบนคู่กับค่าเฉลี่ยเสมอ</strong></li>
 <li><strong>ข้อมูลมีเวลา = ชุดฝึกต้องอยู่ก่อนชุดทดสอบ</strong> — <code>KFold(shuffle=True)</code> ให้ +0.271 กับข้อมูลที่ความจริงคือ −3.496</li>
 <li><strong>สลับ y แล้วรันซ้ำ</strong> — จับ leakage <u>ข้ามแถว</u>ได้ · แต่<strong>จับ leakage ข้ามเวลาไม่ได้เลย</strong> ต้องดูช่องว่างระหว่าง k-fold กับ walk-forward ควบคู่</li>
 <li><strong>นับว่าลองมากี่แบบ แล้วเทียบกับเกณฑ์</strong> — ลอง 200 แบบบนข้อมูล 3 ปี ได้ Sharpe <strong>1.60 จาก edge = 0</strong> · walk-forward ที่ถูกต้อง 100% ก็ยังหลอกคุณได้ถ้า N ใหญ่</li>
 <li><strong>ต้นทุนต้องอยู่ใน CV ไม่ใช่หักทีหลัง</strong> — มันเปลี่ยน<u>อันดับ</u>ของกลยุทธ์ · ที่ 0.44%/รอบ คุณหมุนพอร์ตได้ราว <strong>50 ครั้ง/ปี</strong> ก่อน edge ระดับ Sharpe 1.5 จะหมด</li>
+<li><strong>สัญญาณไร้หน่วยมองไม่เห็นความผันผวน</strong> — σ ต่างกัน 12 เท่า Bollinger ยังยิง 2,475 → 2,412 ไม้เท่าเดิม · ต้องมีด่านที่สองที่<u>มีหน่วย</u>เสมอ: <strong>BBW ≥ ต้นทุนไป-กลับ ÷ capture ratio</strong> · และ capture ต้องวัดจากตลาดของตัวเอง ไม่ใช่จำตัวเลขมา</li>
 </ul></div>
 
 <div class="pq">ตอนนี้เราวัดผลได้ซื่อสัตย์แล้ว — เหลือคำถามว่า "ตัวเลขที่วัดได้นั้น มันเหวี่ยงแค่ไหน" โดยไม่ต้องเชื่อสูตรของใครเลย</div>
