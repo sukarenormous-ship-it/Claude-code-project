@@ -1054,19 +1054,29 @@ np.random.seed(0)
 n_total = 1000
 dates_long = pd.date_range("2021-01-01", periods=n_total, freq="D")
 
-<span class="c"># สร้างข้อมูลที่ pair trading edge อ่อนมาก (จงใจ)</span>
-btc_base  = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.03, n_total)))
+<span class="c"># สร้างข้อมูลที่ edge "มีจริงช่วงแรก แล้วหายไป" — สาเหตุที่พบบ่อยที่สุด</span>
+<span class="c"># ของการเสื่อมในโลกจริง: arb ถูกแย่งกันเทรดจน spread แคบลงจนไม่คุ้ม</span>
+btc_base = 30000 * np.exp(np.cumsum(np.random.normal(0.001, 0.03, n_total)))
 
-<span class="c"># ⚠️ ตรงนี้ "จงใจ" ให้ spread เป็น noise ล้วน — ไม่มี mean-reversion จริง</span>
-<span class="c">#    ต่างจากบทที่ 22 ที่ใช้ OU เพราะที่นั่นต้องการ edge จริงเพื่อโชว์ backtest</span>
-<span class="c">#    แต่บทนี้ต้องการ edge "ปลอม" เพื่อให้เห็นว่า overfitting หน้าตาเป็นอย่างไร</span>
-<span class="c">#    → ถ้าข้อมูลมี edge จริง พารามิเตอร์ที่ดีในอดีตก็จะดีในอนาคตด้วย = ไม่ decay</span>
-noise_scale = 120.0
-bybit_l   = btc_base + np.random.normal(0, noise_scale, n_total)
-binance_l = btc_base + np.random.normal(0, noise_scale, n_total)
+<span class="c"># ⚠️ ห้ามใช้ noise แบบ i.i.d. เป็น "ข้อมูลไม่มี edge" — มันตรงกันข้ามเลย</span>
+<span class="c">#    spread ที่เป็น noise อิสระทุกแท่ง จะ "เด้งกลับค่ากลางทุกแท่ง"</span>
+<span class="c">#    = mean-reversion ที่แรงที่สุดเท่าที่จะเป็นไปได้ → กลยุทธ์นี้จะทำกำไร</span>
+<span class="c">#    มหาศาลและไม่ decay เลย ซึ่งพิสูจน์เรื่อง overfitting ไม่ได้</span>
+SWITCH = 500        <span class="c"># วันที่ regime เปลี่ยน</span>
+KAPPA  = 0.15       <span class="c"># แรงดึงกลับช่วงแรก</span>
 
-pa = pd.Series(bybit_l,   index=dates_long)
-pb = pd.Series(binance_l, index=dates_long)
+spread_l = np.zeros(n_total)
+for t in range(1, n_total):
+    if t &lt; SWITCH:
+        <span class="c"># ยุคที่มี edge: spread ถูกดึงกลับหาศูนย์</span>
+        spread_l[t] = (spread_l[t-1] + KAPPA * (0 - spread_l[t-1])
+                       + np.random.normal(0, 120.0))
+    else:
+        <span class="c"># ยุคที่ edge ตาย: ไม่มีแรงดึงกลับแล้ว และ spread แคบลงด้วย</span>
+        spread_l[t] = spread_l[t-1] + np.random.normal(0, 120.0 * 0.35)
+
+pa = pd.Series(btc_base,            index=dates_long)   <span class="c"># Bybit</span>
+pb = pd.Series(btc_base + spread_l, index=dates_long)   <span class="c"># Binance</span>
 
 <span class="c"># ── แบ่งข้อมูลก่อนทำอะไรทั้งสิ้น ──</span>
 <span class="c"># ⚠️ จุดตายของการทดสอบแบบนี้: ถ้า optimize บนข้อมูล "ทั้งหมด" แล้วเอา</span>
@@ -1098,23 +1108,41 @@ kept = oos_m["Sharpe Ratio"] / best_params["sharpe"]
 print(f"  เหลือจาก in-sample:   {kept:.1%}"
       f"{'  ← ติดลบ = พลิกเป็นขาดทุน' if kept &lt; 0 else ''}")</div>
 <div class="output">Best parameters (in-sample):
-  window=120, entry_z=1.5
-  In-sample Sharpe: 4.77
-  Out-of-sample Sharpe: 2.20
-  เหลือจาก in-sample:   46.2%</div>
+  window=120, entry_z=2.0
+  In-sample Sharpe: 1.74
+  Out-of-sample Sharpe: 0.49
+  เหลือจาก in-sample:   28.1%</div>
 
 <div class="bx bk">
-<div class="bt">Overfitting เกิดจากอะไร?</div>
-<p>เราทดสอบ 16 parameter combinations บนข้อมูลที่<strong>ไม่มี edge จริงเลย</strong> — แต่ในบรรดา 16 ชุดนั้นย่อมมีชุดที่ "ดูดี" โดยบังเอิญ · การหยิบชุดที่ดีที่สุดมาใช้ = การหยิบ<strong>ความบังเอิญที่แรงที่สุด</strong> ไม่ใช่ edge · พอ data เปลี่ยน ความบังเอิญชุดนั้นก็หายไป เหลือแต่ความบังเอิญ<em>ชุดใหม่</em> ซึ่งอาจสูงหรือต่ำก็ได้ — ที่แน่นอนคือมัน<strong>ไม่เกี่ยวกับพารามิเตอร์ที่เราอุตส่าห์เลือกมา</strong></p>
-<p>ยิ่งลองพารามิเตอร์มาก โอกาสเจอ "ความบังเอิญที่ดูดี" ยิ่งสูง — นี่คือเหตุผลที่จำนวนชุดที่ทดสอบต้องถูกนับเป็นต้นทุน (multiple testing) ไม่ใช่ของฟรี</p>
+<div class="bt">Overfitting เกิดจากอะไร — และทำไมข้อมูลชุดนี้ถึงออกแบบมาแบบนี้</div>
+<p>ข้อมูลชุดนี้<strong>มี edge จริงในช่วงแรก แล้ว edge หายไปกลางทาง</strong> (วันที่ 500) · ไม่ใช่ข้อมูลสุ่มไร้รูปแบบ และไม่ใช่ข้อมูลที่มี edge ตลอด · เลือกแบบนี้เพราะมันคือ<strong>สาเหตุที่กลยุทธ์ตายจริงที่สุดในโลกจริง</strong>: arb ที่เคยทำเงินได้ถูกคนอื่นแย่งกันเทรดจน spread แคบลงจนไม่คุ้มค่าธรรมเนียม</p>
+<p>ผลคือความเสื่อมที่วัดได้มาจาก<strong>สองแหล่งที่ต้องแยกให้ออก</strong>:</p>
+<ol>
+<li><strong>ตลาดเปลี่ยนไปจริง ๆ</strong> — ไม่ว่าจะเลือกพารามิเตอร์เก่งแค่ไหนก็ช่วยไม่ได้</li>
+<li><strong>เราหยิบความบังเอิญมาใช้</strong> — ทดสอบ 16 ชุดแล้วเลือกชุดที่ดีที่สุด คือการหยิบ<em>ความบังเอิญที่แรงที่สุด</em> ในบรรดา 16 ชุด ไม่ใช่หยิบ edge · ยิ่งลองมาก โอกาสเจอ "ความบังเอิญที่ดูดี" ยิ่งสูง จึงต้องนับจำนวนชุดที่ทดสอบเป็นต้นทุน (multiple testing) ไม่ใช่ของฟรี</li>
+</ol>
+<p>⚠️ <strong>ข้อควรระวังตอนสร้างข้อมูลจำลองเอง:</strong> อย่าใช้ <code>np.random.normal</code> อิสระทุกแท่งเป็น "ข้อมูลไม่มี edge" · spread แบบนั้น<strong>เด้งกลับค่ากลางทุกแท่ง = mean-reversion ที่แรงที่สุดที่เป็นไปได้</strong> · กลยุทธ์นี้จะทำ Sharpe ระดับ 4 ขึ้นไปและ<em>ไม่ decay เลย</em> ซึ่งพิสูจน์เรื่อง overfitting ไม่ได้เลยสักนิด (ดูคอมเมนต์ในบล็อกสร้างข้อมูล)</p>
 </div>
 
-<div class="read-aloud">Sharpe <strong>4.77</strong> ในอดีต → <strong>2.20</strong> ในอนาคต · เหลือ 46% · ดูเหมือน "เสื่อมลงแต่ยังใช้ได้" — <strong>แต่ตัวเลขทั้งสองตัวไม่มีความหมายเลย</strong> เพราะข้อมูลชุดนี้<em>ถูกสร้างมาให้ไม่มี edge</em> (spread เป็น noise ล้วน ดูคอมเมนต์ในบล็อกสร้างข้อมูล) · Sharpe 4.77 คือความบังเอิญที่แรงที่สุดในบรรดา 16 ชุดที่เราลอง และ 2.20 คือความบังเอิญของช่วง 200 วันสุดท้ายที่มีเทรดอยู่ไม่กี่ครั้ง<br><br><strong>นี่คือหน้าตาที่แท้จริงของ overfitting</strong> — ไม่ได้พังโครมคราม แต่ให้ตัวเลขที่ยัง "พอรับได้" จนคุณกล้าเอาไปใช้จริง</div>
+<div class="read-aloud">Sharpe <strong>1.74</strong> ในอดีต → <strong>0.49</strong> ในอนาคต · <strong>เหลือแค่ 28%</strong> ทั้งที่ใช้พารามิเตอร์ชุดเดียวกันเป๊ะ · ไม่มีอะไรในโค้ดเปลี่ยนเลย สิ่งที่เปลี่ยนคือ<strong>ช่วงเวลา</strong><br><br>สังเกตว่ามันไม่ได้พังโครมคราม — <code>0.49</code> ยังเป็นบวก ยังพอ "เล่าให้ตัวเองฟังได้" ว่าช่วงนี้ตลาดไม่เป็นใจ · <strong>นี่คือหน้าตาที่แท้จริงของกลยุทธ์ที่หมดอายุ</strong> และเป็นเหตุผลที่ต้องมีเกณฑ์ตัดสินใจไว้ล่วงหน้า ไม่ใช่มานั่งตีความตัวเลขทีหลัง</div>
 
 <div class="bx ba">
-<div class="bt">⚠️ อีกกับดักในตาราง walk-forward ข้างล่าง — <code>oos_sharpe = 0.000</code> ไม่ได้แปลว่า "เท่าทุน"</div>
-<p>หลาย fold จะได้ <code>oos_sharpe = 0.000</code> พร้อม <code>oos_return = 0.00</code> — นั่นแปลว่า <strong>ไม่มีเทรดเลยในช่วงนั้น</strong> ไม่ใช่ "เทรดแล้วเสมอตัว" · ถ้าเอาค่า 0 พวกนี้ไปหาค่าเฉลี่ยรวมกับ fold อื่น คุณจะได้ตัวเลขที่ดูนิ่งสวยงามโดยไม่มีความหมาย</p>
-<p>🧭 <strong>นิสัยที่ต้องติดตัว:</strong> ดู<strong>จำนวนเทรด</strong>คู่กับ Sharpe เสมอ — Sharpe จาก 5 เทรดกับจาก 200 เทรดไม่ควรถูกอ่านด้วยสายตาเดียวกัน · ถ้า out-of-sample มีเทรดน้อยกว่า ~30 ครั้ง ให้ถือว่าตัวเลขนั้นเป็นสัญญาณรบกวนจนกว่าจะพิสูจน์เป็นอย่างอื่น</p>
+<div class="bt">⚠️ กับดักที่ฝังอยู่ใน walk-forward เกือบทุกฉบับที่เขียนกันเอง</div>
+<p>โค้ด walk-forward ที่พบบ่อยจะเขียน out-of-sample แบบนี้:</p>
+<div class="fm"><span class="c"># ── ตัวอย่างประกอบ ──</span>
+oos_res = vectorized_backtest(test_a, test_b, window=best_window, ...)
+oos_m   = compute_metrics(oos_res) if len(oos_res) &gt; 0 else {}
+...
+"oos_sharpe": round(oos_m.get("Sharpe Ratio", 0), 3)   <span class="c"># ← ระเบิดอยู่ตรงนี้</span></div>
+<p>ดูไม่มีอะไรผิด · แต่ถ้า <code>best_window</code> ที่เลือกได้<strong>ยาวกว่าหรือใกล้เคียง <code>test_size</code></strong> — เช่นเลือกได้ <code>window=120</code> ขณะที่ <code>test_size=100</code> — <code>rolling(120)</code> บนข้อมูล 100 แถวจะเป็น <code>NaN</code> ทั้งชุด · ไม่มี z-score → ไม่มีสัญญาณ → ไม่มีเทรด → <code>oos_m</code> เป็น <code>{}</code></p>
+<p>แล้ว <code>.get("Sharpe Ratio", <strong>0</strong>)</code> ก็เปลี่ยน <em>"คำนวณไม่ได้"</em> ให้กลายเป็น <strong><code>0.000</code></strong> ซึ่งอ่านเหมือน <em>"เทรดแล้วเสมอตัว"</em> · <strong>fold ที่ตายสนิทจะแอบเข้าไปนั่งในตารางโดยหน้าตาปกติ</strong> แล้วถ่วงค่าเฉลี่ยให้ดู "นิ่ง" อย่างสวยงาม · ไม่มี error ไม่มี warning</p>
+<p>โค้ดในหัวข้อถัดไปแก้ไว้ 3 จุด — ทั้งสามอย่างควรติดตัวไปใช้ทุกครั้ง:</p>
+<ol>
+<li><strong>คำนวณ feature บนประวัติต่อเนื่อง train+test</strong> แล้วค่อยตัดช่วง test มาวัด · ตรงกับชีวิตจริงด้วย เพราะวันแรกของ test เราก็มีข้อมูล train อยู่ในมือแล้ว · ยังไม่ lookahead เพราะ <code>rolling</code> ทุกตัวเป็น <code>center=False</code></li>
+<li><strong>ค่า default ต้องเป็น <code>np.nan</code> ไม่ใช่ <code>0</code></strong> — "คำนวณไม่ได้" ต้องหน้าตาต่างจาก "เท่าทุน" และ <code>nan</code> จะถูกตัดออกจาก <code>.mean()</code> เองโดยอัตโนมัติ</li>
+<li><strong>รายงาน <code>oos_days_in_pos</code> ทุก fold</strong> — Sharpe ที่ไม่มีตัวหารบอกขนาดตัวอย่าง อ่านไม่ได้</li>
+</ol>
+<p>🧭 <strong>นิสัยที่ต้องติดตัว:</strong> ดู<strong>ขนาดตัวอย่าง</strong>คู่กับ Sharpe เสมอ — Sharpe จาก 5 เทรดกับจาก 200 เทรดไม่ควรถูกอ่านด้วยสายตาเดียวกัน · และทุกครั้งที่เขียน <code>.get(key, 0)</code> ให้หยุดถามตัวเองว่า <em>"0 ตรงนี้แปลว่าอะไร และมันแยกจาก 'ไม่มีข้อมูล' ได้ไหม"</em></p>
 </div>
 
 <h3 id="s24-2">24.2 Walk-Forward ด้วย Expanding Window</h3>
@@ -1198,16 +1226,34 @@ def walk_forward_validation(
             continue
 
         <span class="c"># ── Out-of-sample: test ด้วย best parameters ─────────────────</span>
-        try:
-            oos_res = vectorized_backtest(
-                test_a, test_b,
-                window  = best_params["window"],
-                entry_z = best_params["entry_z"],
-                fee_rate = 0.001,
-            )
-            oos_m = compute_metrics(oos_res) if len(oos_res) &gt; 0 else {}
-        except Exception:
-            oos_m = {}
+        <span class="c"># ⚠️ ห้ามรัน backtest บน test window ล้วน ๆ · ถ้า window ที่เลือกได้</span>
+        <span class="c">#    ยาวกว่าหรือใกล้เคียง test_size → rolling() จะเป็น NaN ทั้งชุด</span>
+        <span class="c">#    → ไม่มีสัญญาณ → ไม่มีเทรด → metric เป็น {} แบบเงียบ ๆ</span>
+        <span class="c">#    (เคสจริง: window=120 แต่ test_size=100 → fold นั้นตายทันที)</span>
+        <span class="c"># วิธีที่ถูก: คำนวณบนประวัติต่อเนื่อง train+test แล้วค่อยตัดช่วง test</span>
+        <span class="c">#    มาวัด — ยังไม่มองอนาคตเพราะ rolling ทุกตัวเป็น center=False</span>
+        hist_a = price_a.iloc[train_start:test_end]
+        hist_b = price_b.iloc[train_start:test_end]
+
+        res_hist = vectorized_backtest(
+            hist_a, hist_b,
+            window   = best_params["window"],
+            entry_z  = best_params["entry_z"],
+            fee_rate = 0.001,
+        )
+
+        oos_res = res_hist.loc[res_hist.index &gt;= price_a.index[test_start]].copy()
+
+        if len(oos_res) &lt; 2:
+            oos_m, days_in_pos = {}, 0
+        else:
+            <span class="c"># equity ของช่วง test ต้องเริ่มนับใหม่ที่ 1.0 ไม่งั้น</span>
+            <span class="c"># total_return จะกลายเป็นผลสะสมตั้งแต่วันแรกของ train</span>
+            oos_res["equity"] = (1 + oos_res["net_return"]).cumprod()
+            peak = oos_res["equity"].cummax()
+            oos_res["drawdown"] = (oos_res["equity"] - peak) / peak
+            oos_m = compute_metrics(oos_res)
+            days_in_pos = int((oos_res["signal"] != 0).sum())
 
         folds.append({
             "fold":             fold_idx + 1,
@@ -1218,9 +1264,13 @@ def walk_forward_validation(
             "best_window":      best_params["window"],
             "best_entry_z":     best_params["entry_z"],
             "is_sharpe":        round(best_sharpe, 3),
-            "oos_sharpe":       round(oos_m.get("Sharpe Ratio", 0), 3),
-            "oos_return":       round(oos_m.get("Total Return (%)", 0), 2),
-            "oos_max_dd":       round(oos_m.get("Max Drawdown (%)", 0), 2),
+            <span class="c"># ⚠️ ค่า default ต้องเป็น nan ไม่ใช่ 0 · "คำนวณไม่ได้" กับ</span>
+            <span class="c">#    "เท่าทุน" ต้องแยกออกจากกันให้เห็น ไม่งั้น fold ที่ตาย</span>
+            <span class="c">#    จะแอบเข้าไปถ่วงค่าเฉลี่ยโดยหน้าตาดูปกติ</span>
+            "oos_sharpe":       round(oos_m.get("Sharpe Ratio", np.nan), 3),
+            "oos_return":       round(oos_m.get("Total Return (%)", np.nan), 2),
+            "oos_max_dd":       round(oos_m.get("Max Drawdown (%)", np.nan), 2),
+            "oos_days_in_pos":  days_in_pos,   <span class="c"># ดูคู่กับ Sharpe เสมอ</span>
         })
 
     return pd.DataFrame(folds)
@@ -1241,14 +1291,14 @@ wf_result = walk_forward_validation(
 )
 
 print(wf_result.to_string(index=False))</div>
-<div class="output">fold train_start  train_end test_start   test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd
-    1  2021-01-01 2021-07-19 2021-07-20 2021-10-27           30           1.5      3.288       1.854        3.19       -1.05
-    2  2021-01-01 2021-10-27 2021-10-28 2022-02-04          120           1.5      3.401       0.000        0.00        0.00
-    3  2021-01-01 2022-02-04 2022-02-05 2022-05-15          120           1.5      2.965       0.000        0.00        0.00
-    4  2021-01-01 2022-05-15 2022-05-16 2022-08-23          120           1.5      3.047       0.000        0.00        0.00
-    5  2021-01-01 2022-08-23 2022-08-24 2022-12-01          120           1.5      3.133       0.000        0.00        0.00
-    6  2021-01-01 2022-12-01 2022-12-02 2023-03-11          120           1.5      4.092       0.000        0.00        0.00
-    7  2021-01-01 2023-03-11 2023-03-12 2023-06-19          120           1.5      4.767       0.000        0.00        0.00</div>
+<div class="output">fold train_start  train_end test_start   test_end  best_window  best_entry_z  is_sharpe  oos_sharpe  oos_return  oos_max_dd  oos_days_in_pos
+    1  2021-01-01 2021-07-19 2021-07-20 2021-10-27          120           1.5      1.902       1.850        1.42       -0.33               22
+    2  2021-01-01 2021-10-27 2021-10-28 2022-02-04          120           1.5      1.857       0.895        1.11       -1.38               48
+    3  2021-01-01 2022-02-04 2022-02-05 2022-05-15          120           1.5      1.324       3.865        4.62       -0.74               23
+    4  2021-01-01 2022-05-15 2022-05-16 2022-08-23          120           1.5      2.090      -0.637       -0.24       -0.52                4
+    5  2021-01-01 2022-08-23 2022-08-24 2022-12-01          120           1.5      1.757       0.112        0.15       -2.01               51
+    6  2021-01-01 2022-12-01 2022-12-02 2023-03-11          120           2.0      1.558       2.566        3.13       -0.70               37
+    7  2021-01-01 2023-03-11 2023-03-12 2023-06-19          120           2.0      1.735      -1.829       -3.10       -4.78               83</div>
 
 <h3 id="s24-3">24.3 วิเคราะห์ผล Walk-Forward</h3>
 
@@ -1287,27 +1337,35 @@ analyze_walk_forward(wf_result)</div>
 Walk-Forward Summary
 ========================================================
 Folds tested:         7
-IS  Sharpe (avg):     3.528 ± 0.662
-OOS Sharpe (avg):     0.265 ± 0.701
-OOS/IS Ratio:         7.5%  (likely overfit)
-OOS Sharpe &gt; 0:       1/7 folds
-OOS Sharpe &gt; 1:       1/7 folds
-OOS Return (avg):     0.46%
-OOS Max DD (avg):     -0.15%
+IS  Sharpe (avg):     1.746 ± 0.248
+OOS Sharpe (avg):     0.975 ± 1.952
+OOS/IS Ratio:         55.8%  (acceptable)
+OOS Sharpe &gt; 0:       5/7 folds
+OOS Sharpe &gt; 1:       3/7 folds
+OOS Return (avg):     1.01%
+OOS Max DD (avg):     -1.49%
 Parameter Stability:
-  best_window: most common = 120 (86% of folds)
-  best_entry_z: most common = 1.5 (100% of folds)</div>
+  best_window: most common = 120 (100% of folds)
+  best_entry_z: most common = 1.5 (71% of folds)</div>
 
 <div class="key-idea">
 <div class="ki-label">ตีความ OOS/IS Ratio</div>
 <div class="ki-text">
-OOS/IS Ratio = 19.5% หมายความว่า strategy "รักษา" ได้เพียง 20% ของ in-sample performance ในอนาคต — นี่เป็นสัญญาณ overfit ที่ชัดเจน<br><br>
 \[\text{OOS/IS Ratio} = \frac{\text{OOS Sharpe (avg)}}{\text{IS Sharpe (avg)}}\]<br>
-• &gt; 70% = ดีมาก — strategy มี real edge<br>
+• &gt; 70% = ดีมาก — strategy น่าจะมี real edge<br>
 • 50–70% = ยอมรับได้ — ลอง live กับ small size<br>
 • &lt; 50% = overfit สูง — ต้องลด complexity หรือเพิ่มข้อมูล<br>
-• &lt; 0% = strategy เสีย money ใน OOS — อย่า live เด็ดขาด
+• &lt; 0% = strategy เสียเงินใน OOS — อย่า live เด็ดขาด
 </div>
+</div>
+
+<div class="bx bk">
+<div class="bt">โค้ดตัดสินว่า <code>acceptable</code> — แต่ตัวเลขข้าง ๆ บอกว่าอย่าเชื่อ</div>
+<p>บรรทัดสรุปเขียนว่า <strong>OOS/IS Ratio 55.8% (acceptable)</strong> เพราะเกิน 50% ตามตารางข้างบน · แต่ดูบรรทัดก่อนหน้าให้ดี:</p>
+<div class="fm">OOS Sharpe (avg):     0.975 ± <strong>1.952</strong>    <span class="c">← ส่วนเบี่ยงเบนใหญ่กว่าค่าเฉลี่ย 2 เท่า</span></div>
+<p>ค่าเฉลี่ย <code>0.975</code> ที่มีส่วนเบี่ยงเบน <code>1.952</code> แปลว่า <strong>fold ต่าง ๆ ให้ผลตั้งแต่ราว −1.8 ถึง +3.9</strong> · การเอาค่าเฉลี่ยของอะไรที่กระจายขนาดนี้ไปหารกันแล้วสรุปว่า "acceptable" คือ<strong>การซ่อนความไม่รู้ไว้ใต้ตัวเลขตัวเดียว</strong></p>
+<p>และถ้าไล่ดูตาราง fold ทีละแถวจะเห็นสิ่งที่ค่าเฉลี่ยกลบไว้ทั้งหมด — <strong>fold 1–3 เป็นบวกสวย ๆ · fold 4 เป็นต้นไปเริ่มพัง</strong> · ซึ่งตรงกับวันที่ <code>SWITCH = 500</code> ในบล็อกสร้างข้อมูลพอดี (ราว ๆ 2022-05-16 = วันเริ่ม test ของ fold 4)</p>
+<p>🧭 <strong>กฎที่ใช้ได้ตลอด:</strong> <em>ก่อนดูค่าเฉลี่ยข้าม fold ให้ไล่ดูทีละ fold ตามลำดับเวลาก่อนเสมอ</em> · ถ้าผลเสื่อมลง<strong>เรียงตามเวลา</strong> นั่นไม่ใช่เสียงรบกวน แต่คือ<strong>ตลาดเปลี่ยนไปแล้ว</strong> — และไม่มีการปรับพารามิเตอร์ใด ๆ แก้ได้ · ต่างจากผลที่กระจายมั่วไม่มีทิศทาง ซึ่งแปลว่ากลยุทธ์ไม่เคยมี edge ตั้งแต่แรก · <strong>สองอย่างนี้ต้องรับมือคนละแบบ และค่าเฉลี่ยตัวเดียวแยกให้ไม่ได้</strong></p>
 </div>
 
 <div class="ex">
