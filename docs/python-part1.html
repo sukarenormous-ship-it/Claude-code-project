@@ -711,6 +711,83 @@ print(f"Sharpe: {s:.2f}")</div>
 </details>
 
 
+<h3 id="s7-6">7.7 <code>yield</code> — ฟังก์ชันที่ส่งของทีละชิ้น</h3>
+
+<p><code>return</code> ที่เพิ่งเรียนไปมีลักษณะเด็ดขาด: <strong>ส่งของออกไปแล้วฟังก์ชันจบทันที</strong> · มีคำสั่งอีกตัวที่ทำเกือบเหมือนกันแต่ต่างกันตรงจุดนี้จุดเดียว</p>
+
+<div class="key-idea">
+<div class="ki-label">ต่างกันแค่ประโยคเดียว</div>
+<div class="ki-text">
+<code>return</code> = <strong>"นี่ของ แล้วฉันจบแล้ว"</strong><br>
+<code>yield</code> = <strong>"นี่ของชิ้นหนึ่ง ฉันหยุดรอตรงนี้ ถ้าอยากได้อีกค่อยเรียก"</strong><br><br>
+ฟังก์ชันที่มี <code>yield</code> อยู่ข้างในเรียกว่า <strong>generator</strong> — มัน<em>จำได้ว่าค้างอยู่บรรทัดไหน</em> แล้ววิ่งต่อจากตรงนั้นเมื่อถูกขอชิ้นถัดไป
+</div>
+</div>
+
+<div class="read-aloud">เทียบกับการสั่งอาหาร: <code>return</code> คือ<strong>ยกมาทั้งหม้อวางบนโต๊ะ</strong> — ได้ครบแน่นอน แต่ต้องมีที่วางทั้งหม้อ · <code>yield</code> คือ<strong>ตักให้ทีละจาน</strong> — โต๊ะเล็กก็กินได้ และถ้าอิ่มก่อนก็ไม่ต้องตักที่เหลือ · ในงานข้อมูลราคาที่มีเป็นล้านแถว ความต่างนี้คือความต่างระหว่าง "รันได้" กับ "แรมเต็ม"</div>
+
+<div class="fm">import sys
+
+
+def prices_list(n):
+    """แบบ return — สร้างลิสต์ทั้งก้อนแล้วค่อยส่งกลับ"""
+    out = []
+    for i in range(n):
+        out.append(65000 + i * 0.5)
+    return out
+
+
+def prices_gen(n):
+    """แบบ yield — ส่งทีละตัว ไม่เก็บอะไรไว้เลย"""
+    for i in range(n):
+        yield 65000 + i * 0.5
+
+
+N   = 1_000_000
+lst = prices_list(N)
+gen = prices_gen(N)
+
+print(f"list      : กินหน่วยความจำ {sys.getsizeof(lst) / 1024**2:>7.1f} MB")
+print(f"generator : กินหน่วยความจำ {sys.getsizeof(gen) / 1024**2:>7.4f} MB")
+
+<span class="c"># ใช้งานเหมือนกันทุกอย่าง — วนด้วย for ก็ได้ ส่งเข้า sum() ก็ได้</span>
+print(f"sum 5 ตัวแรก · list={sum(prices_list(5)):,.1f} "
+      f"· gen={sum(prices_gen(5)):,.1f}")</div>
+<div class="output">list      : กินหน่วยความจำ     8.1 MB
+generator : กินหน่วยความจำ  0.0002 MB
+sum 5 ตัวแรก · list=325,005.0 · gen=325,005.0</div>
+
+<div class="read-aloud">ตัวเลข <strong>8.1 MB เทียบกับ 0.0002 MB</strong> ไม่ได้แปลว่า generator "บีบอัดข้อมูล" — มัน<strong>ไม่ได้เก็บข้อมูลไว้เลยสักตัว</strong> · สิ่งที่มันเก็บคือ "สูตรว่าจะสร้างตัวถัดไปยังไง" กับ "ตอนนี้ค้างอยู่ตรงไหน" เท่านั้น · ราคาที่จ่ายคือถ้าอยากได้ตัวที่ 500,000 ต้องเดินผ่าน 499,999 ตัวแรกก่อน — เข้าถึงแบบสุ่ม (<code>gen[500000]</code>) ทำไม่ได้</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ generator ใช้ได้ครั้งเดียว — กับดักที่ไม่มี error เตือน</div>
+<div class="fm">g = prices_gen(5)
+print(f"รอบแรก  sum(g) = {sum(g):,.1f}")
+print(f"รอบสอง  sum(g) = {sum(g):,.1f}")   <span class="c"># ← generator หมดแล้ว</span></div>
+<div class="output">รอบแรก  sum(g) = 325,005.0
+รอบสอง  sum(g) = 0.0</div>
+<p>รอบสองได้ <strong><code>0.0</code></strong> ไม่ใช่ error · เพราะ generator เดินไปจนสุดแล้ว การขอต่อจึงได้ "ไม่มีอะไรเลย" ซึ่ง <code>sum()</code> ของความว่างเปล่าคือ 0</p>
+<p><strong>ในงานจริงกับดักนี้หน้าตาแบบนี้:</strong></p>
+<div class="fm"><span class="c"># ── ตัวอย่างประกอบ ──</span>
+returns = (r for r in load_prices() if r &gt; 0)   <span class="c"># generator expression</span>
+n    = sum(1 for _ in returns)                  <span class="c"># นับ → กินหมดแล้ว</span>
+mean = sum(returns) / n                         <span class="c"># ❌ ได้ 0 · แล้วหารต่อได้ 0.0</span></div>
+<p>ไม่มี exception · ไม่มี warning · ได้ค่าเฉลี่ยเป็น <code>0.0</code> แล้วไหลเข้าไปในรายงานอย่างสงบ</p>
+<p>🧭 <strong>วิธีกัน:</strong> ถ้าต้องใช้ข้อมูลชุดเดิม<strong>มากกว่าหนึ่งรอบ</strong> ให้แปลงเป็น list ก่อนด้วย <code>list(gen)</code> แล้วยอมเสียหน่วยความจำไป · generator เหมาะกับงานที่<strong>ไหลผ่านครั้งเดียวจบ</strong> เท่านั้น</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ที่ไหนในสาย quant ที่ generator เป็นคำตอบจริง ๆ</div>
+<ul>
+<li><strong>ไฟล์ที่ใหญ่กว่าแรม</strong> — tick data ปีเดียวเป็นสิบ GB · <code>for line in open(f)</code> คือ generator อยู่แล้วโดยธรรมชาติ อ่านทีละบรรทัดไม่เคยโหลดทั้งไฟล์ · เขียน <code>open(f).readlines()</code> เมื่อไรคือโหลดทั้งไฟล์เข้าแรมทันที</li>
+<li><strong>ข้อมูลที่ยังไม่จบ</strong> — ราคาสดจาก WebSocket ไม่มี "ตัวสุดท้าย" ให้ใส่ลิสต์ · generator เป็นรูปแบบที่ตรงกับธรรมชาติของมัน (Part VI จะเจอญาติของมันคือ <code>async for</code>)</li>
+<li><strong>ต่อท่อเป็นทอด ๆ</strong> — <code>อ่านไฟล์ → กรอง → แปลง → รวมยอด</code> ถ้าแต่ละขั้นคืน list จะสร้างสำเนาข้อมูลใหม่ทุกขั้น · ถ้าเป็น generator ทั้งสาย ข้อมูล<strong>1 แถวจะไหลผ่านทุกขั้นแล้วถูกทิ้งไป</strong> ก่อนแถวถัดไปจะเริ่ม</li>
+</ul>
+<p><strong>และที่ไหนที่ไม่ควรใช้:</strong> ถ้าข้อมูลใส่แรมได้สบายและต้องวนหลายรอบ — <code>list</code> หรือ <code>pd.Series</code> ชนะขาดทั้งความง่ายและความเร็ว · <strong>อย่าใช้ generator เพราะมันดูโปร</strong> ใช้เพราะข้อมูลใหญ่เกินหรือไหลไม่จบเท่านั้น</p>
+<p>เกร็ดที่โยงกลับไปหัวข้อที่แล้ว: เขียน <code>[x for x in ...]</code> ได้ list · เปลี่ยนวงเล็บเหลี่ยมเป็นวงเล็บโค้ง <code>(x for x in ...)</code> ได้ <strong>generator expression</strong> — ต่างกันแค่วงเล็บ แต่ตัวหนึ่งกินแรมทั้งก้อน อีกตัวไม่กินเลย</p>
+</div>
+
+
 <!-- ===================== CHAPTER 8 ===================== -->
 <h2 id="ch8">บทที่ 8: Data Structures</h2>
 

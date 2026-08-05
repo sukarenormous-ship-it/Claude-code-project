@@ -322,9 +322,136 @@ vol    รอบสอง : 0.4552   &lt;-- ✓ ค่าใหม่ เพร�
 <p>🧭 <strong>กฎ:</strong> cache ได้เมื่อข้อมูลต้นทาง<strong>ไม่เปลี่ยนหลังสร้าง object</strong> (immutable) · ถ้าเปลี่ยนได้ ต้องล้าง cache ตอนเปลี่ยน — วิธีมาตรฐานคือใช้ <code>@property</code> คู่กับ <code>setter</code> ที่สั่ง <code>self._cache.clear()</code> · <strong>บั๊กจากการลืมล้าง cache หายากมากเพราะโค้ดไม่ error แค่ให้คำตอบเก่า</strong></p>
 </div>
 
+<h3 id="s18-3b">18.3b <code>@</code> คืออะไร — decorator ใน 1 บรรทัด</h3>
+
+<p>หัวข้อถัดไปจะใช้ <code>@property</code> และหลังจากนั้นทั้งเล่มจะเจอ <code>@abstractmethod</code> · <code>@dataclass</code> · <code>@pytest.fixture</code> · ก่อนจะไปต่อ ขอปักหมุดว่าเครื่องหมาย <code>@</code> ทำอะไร เพราะมันมี<strong>กฎข้อเดียว</strong>จริง ๆ</p>
+
+<div class="key-idea">
+<div class="ki-label">กฎข้อเดียวของ decorator</div>
+<div class="ki-text">
+<code>@something</code> ที่วางไว้เหนือ <code>def f</code> แปลว่า:<br><br>
+<strong><code>f = something(f)</code></strong><br><br>
+แค่นั้น · ไม่มีเวทมนตร์อะไรเพิ่ม · <code>@</code> เป็นแค่<strong>ทางลัดในการเขียน</strong>ประโยคข้างบนให้อ่านง่ายขึ้น
+</div>
+</div>
+
+<div class="read-aloud">อ่านย้อนกลับจะเข้าใจเร็วกว่า: <em>"เอาฟังก์ชันที่เพิ่งเขียนเสร็จ ส่งเข้าไปในฟังก์ชันอีกตัว แล้วเอาผลลัพธ์มาแทนที่ชื่อเดิม"</em> · ดังนั้น <strong>decorator คือฟังก์ชันที่รับฟังก์ชันเข้าไป แล้วคืนฟังก์ชันออกมา</strong> · เหตุผลที่มันมีประโยชน์คือ ฟังก์ชันที่คืนออกมามักเป็นตัวที่ "ห่อ" ของเดิมไว้ แล้วแอบทำอะไรเพิ่มก่อน/หลัง โดยที่โค้ดที่เรียกใช้ไม่ต้องรู้เลย</div>
+
+<p>ลองเขียนเองสักตัว — <code>@timed</code> ที่จับเวลาให้ทุกฟังก์ชันที่แปะมัน · เป็นของที่ใช้จริงตอนหา bottleneck ใน backtest:</p>
+
+<div class="fm">import functools
+import time
+
+TIMINGS = {}          <span class="c"># เก็บเวลาที่วัดได้ไว้ดูทีหลัง</span>
+
+
+def timed(func):
+    """รับฟังก์ชัน → คืนฟังก์ชันตัวใหม่ที่ห่อของเดิมไว้พร้อมจับเวลา"""
+
+    @functools.wraps(func)                    <span class="c"># ← อธิบายข้างล่าง</span>
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        result = func(*args, **kwargs)        <span class="c"># เรียกของเดิมตามปกติ</span>
+        TIMINGS[func.__name__] = time.perf_counter() - t0
+        return result                          <span class="c"># คืนผลเดิมไม่แตะต้อง</span>
+
+    return wrapper                             <span class="c"># ← คืน "ฟังก์ชัน" ไม่ใช่ผลลัพธ์</span>
+
+
+@timed
+def sum_squares_loop(prices):
+    """บวกกำลังสองด้วยลูป Python"""
+    total = 0.0
+    for p in prices:
+        total += p * p
+    return total
+
+
+@timed
+def sum_squares_numpy(prices):
+    """บวกกำลังสองด้วย NumPy"""
+    return float((prices ** 2).sum())
+
+
+prices_big = np.random.default_rng(0).normal(65000, 500, 2_000_000)
+a = sum_squares_loop(prices_big)
+b = sum_squares_numpy(prices_big)
+
+print(f"ผลลัพธ์ตรงกันไหม: {abs(a - b) / a &lt; 1e-9}")
+
+<span class="c"># decorator เก็บเวลาให้ทั้งสองตัวโดยที่ตัวฟังก์ชันไม่รู้เรื่องเลย</span>
+print(f"decorator เก็บเวลาไว้ให้: {sorted(TIMINGS)}")
+print(f"NumPy เร็วกว่าลูป Python: "
+      f"{TIMINGS['sum_squares_numpy'] &lt; TIMINGS['sum_squares_loop']}")
+
+<span class="c"># ⚠️ ไม่พิมพ์ "เร็วกว่ากี่เท่า" เพราะเวลาของ NumPy เล็กมากจนสัญญาณรบกวน</span>
+<span class="c">#    กลบ — วัดจริงได้ตั้งแต่ 15 ถึง 50 เท่าในเครื่องเดียวกัน</span>
+
+print(f"ชื่อฟังก์ชันยังเป็น: {sum_squares_loop.__name__}")
+print(f"docstring ยังอยู่:  {sum_squares_loop.__doc__}")</div>
+<div class="output">ผลลัพธ์ตรงกันไหม: True
+decorator เก็บเวลาไว้ให้: ['sum_squares_loop', 'sum_squares_numpy']
+NumPy เร็วกว่าลูป Python: True
+ชื่อฟังก์ชันยังเป็น: sum_squares_loop
+docstring ยังอยู่:  บวกกำลังสองด้วยลูป Python</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ ทำไมบล็อกนี้ไม่พิมพ์ว่า "เร็วกว่ากี่เท่า"</div>
+<p>ตอนแรกเขียนให้พิมพ์อัตราส่วนออกมาตรง ๆ · วัดซ้ำในเครื่องเดียวกัน 3 รอบติดได้ <strong>19 · 22 · 49 เท่า</strong> — ตัวเลขเดียวกันไม่เคยออกมาซ้ำ</p>
+<p>สาเหตุคือ<strong>ตัวหารเล็กเกินไป</strong>: NumPy ใช้เวลาราว 0.005–0.012 วินาที ซึ่งอยู่ในระดับเดียวกับความแปรปรวนของตัวจับเวลาและภาระเครื่อง · หารด้วยตัวเลขที่แกว่ง 2 เท่า ผลหารก็แกว่ง 2 เท่าตาม</p>
+<p>🧭 <strong>บทเรียนที่ใช้ได้กับทุกการวัด:</strong> ก่อนรายงานอัตราส่วน ให้ดูก่อนว่า<strong>ตัวหารใหญ่พอเทียบกับความแปรปรวนของมันเองหรือยัง</strong> · ถ้าไม่ ให้รายงานสิ่งที่ทนต่อสัญญาณรบกวนแทน — ที่นี่คือ "อันไหนเร็วกว่า" (<code>True</code> ทุกครั้ง) · หลักการเดียวกับที่บทที่ 25 บอกว่า Sharpe จากไม่กี่เทรดอ่านไม่ได้</p>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 ทำไมต้องมีฟังก์ชันซ้อนฟังก์ชัน</div>
+<div class="ad-code">def timed(func):          <span class="c">① รับ "ฟังก์ชันเดิม" เข้ามา</span>
+    def wrapper(*args, **kwargs):   <span class="c">② สร้างฟังก์ชันตัวใหม่</span>
+        ...จับเวลา...
+        result = func(*args, **kwargs)   <span class="c">③ ข้างในเรียกของเดิม</span>
+        return result
+    return wrapper        <span class="c">④ คืน "ฟังก์ชันตัวใหม่" ออกไป</span>
+
+<span class="c"># @timed แปลงเป็นภาษาคน:</span>
+<span class="c">#   sum_squares_loop = timed(sum_squares_loop)</span>
+<span class="c">#   → ชื่อเดิมชี้ไปที่ wrapper แล้ว · ของเดิมถูกเก็บไว้ในตัวแปร func</span></div>
+<div class="ad-steps">
+<ol>
+<li><strong>ต้องมี 2 ชั้นเพราะมี 2 จังหวะที่ต่างกัน</strong> · ชั้นนอก (<code>timed</code>) ทำงาน<em>ครั้งเดียว</em>ตอน Python อ่านเจอ <code>@timed</code> · ชั้นใน (<code>wrapper</code>) ทำงาน<em>ทุกครั้ง</em>ที่มีคนเรียกฟังก์ชัน · เขียนชั้นเดียวจะแยกสองจังหวะนี้ไม่ได้</li>
+<li><code>*args, **kwargs</code> — แปลว่า "รับอะไรมาก็ได้ แล้วส่งต่อทั้งหมด" · จำเป็นเพราะ <code>timed</code> ต้องใช้ได้กับฟังก์ชัน<strong>ทุกแบบ</strong> โดยไม่รู้ล่วงหน้าว่ามันรับพารามิเตอร์อะไร · ถ้าเขียน <code>def wrapper(prices)</code> ตายตัว มันจะห่อได้แค่ฟังก์ชันที่รับ <code>prices</code> ตัวเดียว</li>
+<li><code>return wrapper</code> <strong>ไม่มีวงเล็บ</strong> — คืน<em>ตัวฟังก์ชัน</em> ไม่ใช่ผลลัพธ์ของการเรียกมัน · ใส่วงเล็บเป็น <code>return wrapper()</code> เมื่อไร decorator จะพังทันทีเพราะชื่อฟังก์ชันจะไปชี้ที่ค่าที่คำนวณเสร็จแล้ว แทนที่จะชี้ที่ฟังก์ชัน</li>
+<li><code>@functools.wraps(func)</code> — <strong>ถ้าไม่ใส่</strong> <code>sum_squares_loop.__name__</code> จะกลายเป็น <code>"wrapper"</code> และ docstring จะหายไป เพราะชื่อเดิมชี้ไปที่ <code>wrapper</code> แล้วจริง ๆ · <code>wraps</code> คือการก๊อปชื่อ/docstring/signature ของเดิมมาแปะไว้บน wrapper · <strong>ผลเสียของการลืมใส่ไม่ใช่แค่ความสวยงาม</strong> — debugger, traceback, และ <code>help()</code> จะรายงานว่าทุกฟังก์ชันในโปรเจกต์ชื่อ <code>wrapper</code> เหมือนกันหมด</li>
+</ol>
+</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">✅ ทีนี้ <code>@property</code> ก็ไม่ใช่เรื่องลึกลับอีกต่อไป</div>
+<p><code>property</code> เป็นฟังก์ชันที่ Python มีให้อยู่แล้ว · เขียน</p>
+<div class="fm"><span class="c"># ── ตัวอย่างประกอบ ──</span>
+@property
+def pnl(self): ...</div>
+<p>ก็คือการเขียน <code>pnl = property(pnl)</code> เป๊ะ ๆ ตามกฎข้อเดียวข้างบน · สิ่งที่ <code>property()</code> คืนออกมาไม่ใช่ฟังก์ชันธรรมดา แต่เป็นวัตถุชนิดพิเศษที่ Python รู้จัก แล้วเรียกให้เองตอนมีคนอ่าน <code>obj.pnl</code> — จึงไม่ต้องใส่วงเล็บ</p>
+<p>ตัวอื่นที่จะเจอต่อไปก็กฎเดียวกันหมด: <code>@abstractmethod</code> แปะป้ายไว้ให้ ABC ตรวจ · <code>@staticmethod</code> บอกว่าไม่ต้องส่ง <code>self</code> · <code>@dataclass</code> รับ<em>คลาส</em>เข้าไปแล้วคืนคลาสที่มี <code>__init__</code>/<code>__repr__</code> เติมให้ (ใช้กับคลาสได้ด้วย ไม่ใช่แค่ฟังก์ชัน)</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] decorator ที่รับพารามิเตอร์ — และกับดักเรื่องจังหวะเวลา</div>
+<p>อยากเขียน <code>@retry(3)</code> ให้ลองใหม่ 3 ครั้ง? สังเกตว่ามันมีวงเล็บ ซึ่งแปลว่า <code>retry(3)</code> ถูก<strong>เรียกก่อน</strong> แล้วผลลัพธ์ของมันต่างหากที่ทำหน้าที่เป็น decorator · ดังนั้นต้องมี <strong>3 ชั้น</strong>: ชั้นนอกรับพารามิเตอร์ → คืน decorator → คืน wrapper</p>
+<div class="fm"><span class="c"># ── ตัวอย่างประกอบ ──</span>
+def retry(n_times):              <span class="c"># ① รับพารามิเตอร์</span>
+    def decorator(func):         <span class="c"># ② นี่คือ decorator ตัวจริง</span>
+        @functools.wraps(func)
+        def wrapper(*a, **kw):   <span class="c"># ③ ตัวที่ทำงานจริงทุกครั้ง</span>
+            ...
+        return wrapper
+    return decorator</div>
+<p><strong>กับดักที่ทำคนตกบ่อยที่สุด:</strong> โค้ดในชั้นนอกทำงาน<strong>ตอน import ไฟล์</strong> ไม่ใช่ตอนเรียกฟังก์ชัน · ถ้าเผลอเขียนอะไรที่มีผลข้างเคียงไว้ตรงนั้น (อ่าน config · เปิด connection · อ่านเวลาปัจจุบัน) มันจะทำงานทันทีที่ไฟล์ถูก import และ<strong>ทำครั้งเดียวตลอดอายุโปรแกรม</strong></p>
+<p>ในระบบเทรดนี่เป็นเรื่องใหญ่: decorator ที่อ่าน <code>datetime.now()</code> ไว้ในชั้นนอก จะค้างอยู่ที่เวลา import ตลอดไป — bot ที่รันข้ามวันจะยังคิดว่าเป็นวันที่เริ่มรัน · <strong>กฎ: ชั้นนอกให้มีแค่การรับค่าและ <code>return</code> เท่านั้น อะไรที่ต้องสดต้องอยู่ในชั้นในสุด</strong></p>
+</div>
+
 <h3 id="s18-4">18.4 @property — Attribute ที่คำนวณแบบ Lazy</h3>
 
-<p><code>@property</code> ทำให้ method เรียกใช้ได้เหมือน attribute — ไม่ต้องใส่วงเล็บ และคำนวณเมื่อถูกเรียกเท่านั้น</p>
+<p><code>@property</code> ทำให้ method เรียกใช้ได้เหมือน attribute — ไม่ต้องใส่วงเล็บ และคำนวณเมื่อถูกเรียกเท่านั้น · ตามกฎในหัวข้อที่แล้ว มันคือ <code>pnl = property(pnl)</code> ไม่มีอะไรมากกว่านั้น</p>
 
 <div class="fm"><span class="c"># ── เทียบให้ดู (สองแบบนี้อยู่ด้วยกันไม่ได้ — เลือกได้แบบเดียว) ──</span>
 <span class="c">#</span>
