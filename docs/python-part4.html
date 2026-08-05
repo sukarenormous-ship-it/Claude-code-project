@@ -25,7 +25,7 @@ code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;bo
 .ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
 .bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
 .bt{font-weight:700;margin-bottom:5px}
-.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7;white-space:pre}
 .fm .c{color:#64748b}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
 th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
@@ -1743,6 +1743,110 @@ spread_bps
 สำหรับ BTC pair ที่ Bybit/Binance: spread ปกติ 1–2 bps, taker fee 7 bps → Sharpe ประมาณ 1.2–1.5 ซึ่งยังดี แต่ถ้าใช้ market order บ่อย (spread 5 bps + comm 10 bps) → Sharpe เหลือ 0.06 ≈ flat</p>
 </div>
 
+<h3 id="s25-4b">25.4b นัยสำคัญทางสถิติ ≠ นัยสำคัญทางเศรษฐกิจ</h3>
+
+<p>หนังสือเล่มนี้สอน <code>p-value</code> กับ <code>t-statistic</code> มาตั้งแต่ Part 0 และจะสอน Harvey–Liu–Zhu (<code>t ≥ 3</code>) อีกใน Part V · ก่อนจะไปต่อ ต้องปักหมุดเรื่องหนึ่งให้แน่นก่อน เพราะมันคือจุดที่ทำให้คนฉลาดเสียเงิน:</p>
+
+<div class="bx bd">
+<div class="bt">สองคำถามที่หน้าตาเหมือนกันแต่ไม่เกี่ยวกันเลย</div>
+<table>
+<tr><th></th><th>นัยสำคัญทางสถิติ</th><th>นัยสำคัญทางเศรษฐกิจ</th></tr>
+<tr><td><strong>ถามว่า</strong></td><td>"มันมีอยู่จริงไหม หรือเป็นแค่ความบังเอิญ"</td><td>"มันใหญ่พอจะเอาไปทำมาหากินได้ไหม"</td></tr>
+<tr><td><strong>วัดด้วย</strong></td><td>p-value · t-stat</td><td>ผลตอบแทนหลังหักต้นทุน · ขนาดที่รับได้ · เทียบกับทางเลือกอื่น</td></tr>
+<tr><td><strong>โตขึ้นเมื่อ</strong></td><td><strong>ข้อมูลเยอะขึ้น</strong></td><td>ไม่เกี่ยวกับจำนวนข้อมูลเลย</td></tr>
+<tr><td><strong>ตอบว่า "ไม่" เมื่อ</strong></td><td>แยกจากศูนย์ไม่ออก</td><td>ชนะต้นทุนไม่ได้</td></tr>
+</table>
+<p style="margin-top:10px">แถวที่สามคือหัวใจ — <strong>p-value เล็กลงเรื่อย ๆ ตามจำนวนข้อมูล</strong> · ถ้าเก็บข้อมูลมากพอ <em>edge เล็กแค่ไหนก็ "มีนัยสำคัญ" ได้ทั้งนั้น</em> แม้จะเล็กกว่าค่าธรรมเนียมหลายเท่า · <strong>สถิติไม่เคยรู้ว่าคุณจ่ายค่าธรรมเนียมเท่าไร</strong> เพราะไม่มีใครบอกมัน</p>
+</div>
+
+<div class="read-aloud">สมมติกลยุทธ์ intraday ตัวหนึ่งมี edge <strong>จริง ๆ</strong> อยู่ <code>+0.5 bps</code> ต่อเทรด (ไม่ได้แต่ง — มีจริง) · ความผันผวนต่อเทรด <code>20 bps</code> · ต้นทุนไป-กลับ <code>1.5 bps</code> · <strong>สังเกตให้ดีว่า edge เล็กกว่าต้นทุน 3 เท่า</strong> — เทรดทุกครั้งคือขาดทุน · ทีนี้มาดูว่าสถิติจะพูดว่าอย่างไรเมื่อเก็บข้อมูลมากขึ้นเรื่อย ๆ</div>
+
+<div class="fm">import numpy as np
+from scipy import stats
+
+edge_bps, noise_bps, cost_bps = 0.5, 20.0, 1.5
+rng = np.random.default_rng(42)
+
+<span class="c"># ── A) ทดสอบแบบที่เกือบทุกคนทำ — H0: edge = 0 ────────────────</span>
+<span class="c">#    ถามว่า "กลยุทธ์นี้ดีกว่าการสุ่มไหม"</span>
+print("A)  H0: edge = 0   ← ถามว่า 'มีจริงไหม'")
+print(f"{'เทรด':&gt;9} {'t-stat':&gt;8} {'p-value':&gt;9} {'gross':&gt;7} {'net':&gt;7} {'กำไร/ปี':&gt;11}")
+
+for n in (100, 1_000, 10_000, 100_000):
+    r  = rng.normal(edge_bps, noise_bps, n)
+    se = r.std(ddof=1) / np.sqrt(n)          <span class="c"># ← se เล็กลงตาม sqrt(n)</span>
+    t  = r.mean() / se
+    p  = 2 * (1 - stats.norm.cdf(abs(t)))
+
+    net    = r.mean() - cost_bps
+    annual = net / 10_000 * 1_000_000 * 250  <span class="c"># ทุน 1 ล้าน · 250 เทรด/ปี</span>
+    print(f"{n:&gt;9,} {t:&gt;8.2f} {p:&gt;9.4f} {r.mean():&gt;7.3f} "
+          f"{net:&gt;7.3f} {annual:&gt;10,.0f}฿")
+
+<span class="c"># ── B) ทดสอบให้ตรงคำถามที่เราสนใจจริง — H0: edge = cost ──────</span>
+<span class="c">#    ถามว่า "กลยุทธ์นี้ชนะต้นทุนไหม" (ทางเดียว)</span>
+print("\nB)  H0: edge = cost   ← ถามว่า 'ชนะต้นทุนไหม'")
+print(f"{'เทรด':&gt;9} {'t-stat':&gt;8} {'p-value':&gt;9}")
+
+rng = np.random.default_rng(42)              <span class="c"># ใช้ข้อมูลชุดเดิมเป๊ะ</span>
+for n in (100, 1_000, 10_000, 100_000):
+    r  = rng.normal(edge_bps, noise_bps, n)
+    se = r.std(ddof=1) / np.sqrt(n)
+    t  = (r.mean() - cost_bps) / se          <span class="c"># ← เทียบกับ cost ไม่ใช่ 0</span>
+    p  = 1 - stats.norm.cdf(t)
+    print(f"{n:&gt;9,} {t:&gt;8.2f} {p:&gt;9.4f}")</div>
+<div class="output">A)  H0: edge = 0   ← ถามว่า 'มีจริงไหม'
+     เทรด   t-stat   p-value   gross     net     กำไร/ปี
+      100    -0.33    0.7449  -0.505  -2.005    -50,135฿
+    1,000     0.20    0.8394   0.128  -1.372    -34,293฿
+   10,000     1.79    0.0733   0.361  -1.139    -28,464฿
+  100,000     6.62    0.0000   0.420  -1.080    -26,993฿
+
+B)  H0: edge = cost   ← ถามว่า 'ชนะต้นทุนไหม'
+     เทรด   t-stat   p-value
+      100    -1.29    0.9016
+    1,000    -2.17    0.9849
+   10,000    -5.64    1.0000
+  100,000   -17.02    1.0000</div>
+
+<div class="bx bk">
+<div class="bt">ดูแถวล่างสุดของทั้งสองตาราง — ข้อมูลชุดเดียวกันเป๊ะ</div>
+<p>ที่ <strong>100,000 เทรด</strong> ข้อมูลชุดเดียวกันให้คำตอบสองอย่างที่แน่นอนพอ ๆ กันแต่ตรงข้ามกัน:</p>
+<ul>
+<li><strong>A: <code>t = +6.62</code> · <code>p &lt; 0.0001</code></strong> — "edge นี้มีจริงแน่นอน แทบไม่มีทางเป็นความบังเอิญ" · ผ่านเกณฑ์ Harvey–Liu–Zhu (<code>t ≥ 3</code>) ขาดลอย</li>
+<li><strong>B: <code>t = −17.02</code> · <code>p = 1.0000</code></strong> — "แพ้ต้นทุนแน่นอน แทบไม่มีทางชนะ"</li>
+</ul>
+<p>ทั้งสองข้อ<strong>ถูกต้องทั้งคู่</strong> · edge มีอยู่จริง (<code>+0.42 bps</code>) และมันแพ้ต้นทุนจริง (<code>1.5 bps</code>) · ที่ต่างกันคือ<strong>คำถาม</strong> ไม่ใช่ข้อมูล</p>
+<p>ผลจริงในบัญชี: <strong>ขาดทุนปีละ 27,000 บาท</strong> จากกลยุทธ์ที่ผ่านการทดสอบทางสถิติอย่างสง่างามที่สุด</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ สังเกตทิศทางของตาราง A ให้ดี — มันหลอกซ้อนอีกชั้น</div>
+<p>ไล่คอลัมน์ <code>p-value</code> จากบนลงล่าง: <code>0.74 → 0.84 → 0.07 → 0.0000</code> · <strong>ยิ่งเก็บข้อมูลนานยิ่ง "ดูดี"</strong></p>
+<p>แต่ไล่คอลัมน์ <code>กำไร/ปี</code> พร้อมกัน: <code>−50,135 → −34,293 → −28,464 → −26,993</code> · <strong>ขาดทุนตลอด</strong> · ที่ตัวเลขดูดีขึ้นไม่ใช่เพราะกลยุทธ์ดีขึ้น แต่เพราะค่าเฉลี่ยที่วัดได้เริ่มลู่เข้าหาค่าจริง (<code>0.5 bps</code>) ซึ่งก็ยังแพ้ต้นทุนอยู่ดี</p>
+<p>นี่คือสาเหตุที่ทีมที่รันกลยุทธ์แบบนี้จริง ๆ มักไม่ยอมปิด: <em>"เก็บข้อมูลอีกหน่อย เดี๋ยวก็พิสูจน์ได้"</em> · และเขาจะพิสูจน์ได้จริง ๆ ด้วย — <strong>พิสูจน์ได้ว่า edge มีจริง ในขณะที่เงินยังไหลออกทุกเดือน</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✅ วิธีแก้ที่ง่ายอย่างน่าตกใจ — เปลี่ยน H0</div>
+<p>ตาราง B ต่างจาก A แค่<strong>บรรทัดเดียว</strong>:</p>
+<div class="fm">t = r.mean() / se                 <span class="c"># A: เทียบกับศูนย์</span>
+t = (r.mean() - cost_bps) / se    <span class="c"># B: เทียบกับต้นทุน</span></div>
+<p>สมมติฐานหลักไม่จำเป็นต้องเป็น "ผลเท่ากับศูนย์" เสมอไป · <strong>ตั้ง H0 ให้เป็นเกณฑ์ที่คุณต้องเอาชนะจริง ๆ</strong> แล้วสถิติจะตอบคำถามที่คุณอยากรู้ทันที · สำหรับกลยุทธ์เทรด เกณฑ์นั้นไม่เคยเป็นศูนย์ อย่างน้อยที่สุดคือ<strong>ต้นทุนทั้งหมด</strong> และถ้าจะให้ตรงกว่านั้นคือ<strong>ผลตอบแทนของทางเลือกที่ง่ายที่สุดที่คุณมี</strong> (ถือ BTC เฉย ๆ · ฝากกินดอกเบี้ย)</p>
+<p>ใช้ทางเดียว (<code>1 - cdf(t)</code>) ไม่ใช่สองทาง เพราะเราไม่ได้สนใจกรณี "แพ้ต้นทุนอย่างมีนัยสำคัญ" — เราสนใจแค่ "ชนะไหม"</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] อีก 3 ด้านของนัยสำคัญทางเศรษฐกิจที่ p-value มองไม่เห็น</div>
+<ol>
+<li><strong>ความจุ (capacity)</strong> — edge ที่ทำเงินได้จริงบนไม้ละ 10,000 บาท อาจหายสนิทที่ไม้ละ 10 ล้าน เพราะ market impact (หัวข้อ 25.5 ถัดไป) · p-value คำนวณจากผลตอบแทน<em>ต่อหน่วย</em> จึงไม่มีทางรู้เรื่องนี้เลย · <strong>คำถามที่ต้องถามคู่กันเสมอ: "กำไรปีละกี่บาท" ไม่ใช่แค่ "Sharpe เท่าไร"</strong> — Sharpe 3.0 บนความจุ 5 ล้านบาทอาจไม่คุ้มค่าไฟ</li>
+<li><strong>ต้นทุนค่าเสียโอกาส</strong> — กลยุทธ์ที่ให้ 4% ต่อปีอย่างมีนัยสำคัญทางสถิติสุด ๆ ยัง "ไม่มีนัยสำคัญทางเศรษฐกิจ" ถ้าพันธบัตรให้ 5% โดยไม่ต้องทำอะไรเลย · <strong>เกณฑ์เปรียบเทียบต้องเป็นทางเลือกที่ดีที่สุดที่คุณมีจริง</strong> ไม่ใช่ศูนย์</li>
+<li><strong>ต้นทุนที่ไม่ได้อยู่ในสมการ</strong> — เวลาที่ใช้ดูแลระบบ · ค่า VPS · ความเสี่ยงที่ exchange ล่ม · ภาษี · <strong>ความเครียด</strong> · ไม่มีอันไหนโผล่ใน backtest แต่ทุกอันหักออกจากผลตอบแทนจริง</li>
+</ol>
+<p>และเรื่องนี้กลับด้านได้ด้วย — <strong>บางอย่างมีนัยสำคัญทางเศรษฐกิจมหาศาลแต่พิสูจน์ทางสถิติไม่ได้</strong> · กลยุทธ์ที่เทรดปีละ 6 ครั้งแต่ได้ครั้งละ 8% จะไม่มีวันได้ <code>t &gt; 3</code> ในช่วงชีวิตคุณ · การทิ้งมันไปเพราะ "p-value ไม่ผ่าน" คือการเอาเครื่องมือผิดชิ้นมาตัดสิน</p>
+<p>🧭 <strong>สรุปเป็นประโยคเดียว:</strong> <em>p-value บอกว่า "ตัวเลขนี้เชื่อได้แค่ไหน" · มันไม่เคยบอก และไม่มีวันบอก ว่า "ตัวเลขนี้ใหญ่พอหรือยัง"</em> — คำถามหลังต้องตอบด้วยค่าธรรมเนียม ความจุ และทางเลือกอื่นที่คุณมี ไม่ใช่ด้วยสถิติ</p>
+</div>
+
 <h3 id="s25-5">25.5 Market Impact Model — เมื่อ Order ใหญ่กระทบราคา</h3>
 
 <div class="fm">def market_impact_analysis(adv_usd: float = 500_000_000,
@@ -1923,6 +2027,8 @@ CHECKLIST = {
     ],
     "5. Sanity Checks": [
         "จำนวน trades มากพอ (&gt; 30) เพื่อ statistical significance",
+        "ทดสอบ H0 = ต้นทุน ไม่ใช่ H0 = 0  (ดู 25.4b)",
+        "กำไรต่อปีเป็นเงินบาท คุ้มกับเวลาและความเสี่ยงจริงไหม",
         "ทดสอบกับข้อมูลหลาย time periods",
         "ไม่ overfitted ต่อ regime เดียว (เช่น bull market 2021)",
     ],
@@ -1954,6 +2060,8 @@ print("\n\nถ้าผ่านทุกข้อ → เริ่ม paper tra
   □  Profit Factor &gt; 1.2
 5. Sanity Checks
   □  จำนวน trades มากพอ (&gt; 30) เพื่อ statistical significance
+  □  ทดสอบ H0 = ต้นทุน ไม่ใช่ H0 = 0  (ดู 25.4b)
+  □  กำไรต่อปีเป็นเงินบาท คุ้มกับเวลาและความเสี่ยงจริงไหม
   □  ทดสอบกับข้อมูลหลาย time periods
   □  ไม่ overfitted ต่อ regime เดียว (เช่น bull market 2021)
 ถ้าผ่านทุกข้อ → เริ่ม paper trading 1–3 เดือนก่อน live</div>
@@ -2017,7 +2125,7 @@ min_edge_to_breakeven(
 • <strong>บท 22</strong> — Vectorized backtest เร็วสำหรับ parameter sweep พร้อม <code>shift(1)</code> หยุด lookahead bias ✓<br>
 • <strong>บท 23</strong> — Event-driven backtest สมจริง จำลอง fill และ slippage ทีละ bar ✓<br>
 • <strong>บท 24</strong> — Walk-forward validation เผย OOS/IS ratio และ parameter stability ✓<br>
-• <strong>บท 25</strong> — Realistic cost model (spread + commission + impact + funding) พร้อม sensitivity table ✓<br><br>
+• <strong>บท 25</strong> — Realistic cost model (spread + commission + impact + funding) พร้อม sensitivity table ✓<br>• <strong>25.4b</strong> — แยก <em>นัยสำคัญทางสถิติ</em> ออกจาก <em>นัยสำคัญทางเศรษฐกิจ</em> — และตั้ง H0 ให้เป็นต้นทุน ไม่ใช่ศูนย์ ✓<br><br>
 ใน <strong>Part V</strong> เราจะนำ system ที่ผ่าน backtest แล้วไปต่อยอด: live data pipeline, order management, monitoring และ risk control แบบ production-grade
 </p>
 </div>
