@@ -1365,21 +1365,46 @@ cash ขยับจริง        : +981.00
         self.bus.subscribe("error",  self._on_error)
 
     def _on_signal(self, data):
-        sig   = data["signal"]
-        price = data["price"]
-        sym   = data["symbol"]
+        sig      = data["signal"]
+        pa_, pb_ = data["price_a"], data["price_b"]
+        sa, sb   = data["symbol_a"], data["symbol_b"]
+        beta     = data["beta"]
 
-        if sig == "LONG" and sym not in self.portfolio.open_positions:
+        is_open = sa in self.portfolio.open_positions
+
+        if sig in ("LONG", "SHORT") and not is_open:
             capital = self.portfolio.total_equity({})
-            if self.rm.check(sig, capital, capital):
-                frac = self.strategy.position_size(sig)
-                size = (capital * frac) / price
-                self.portfolio.open(sym, "long", size, price)
-                print(f"[OPEN] LONG {sym} size={size:.4f} @ {price:,.0f}")
+            if not self.rm.check(sig, capital, capital):
+                return
 
-        elif sig in ("EXIT", "SHORT") and sym in self.portfolio.open_positions:
-            pos = self.portfolio.close(sym, price)
-            print(f"[CLOSE] {sym} PnL={pos.net_pnl:+,.0f}")
+            notional = capital * self.strategy.position_size(sig)
+
+            <span class="c"># ── หัวใจของ pair trade: ขนาดสองขาไม่เท่ากัน ──</span>
+            <span class="c"># fit() บอกว่า log_a = alpha + beta * log_b</span>
+            <span class="c"># แปลว่า b ขยับ 1% → a ขยับ beta%</span>
+            <span class="c"># ถ้าอยากให้ทิศทางตลาดหักล้างกันหมด มูลค่าขา b ต้องเป็น</span>
+            <span class="c"># beta เท่าของขา a — ไม่ใช่เท่ากัน</span>
+            size_a = notional / pa_
+            size_b = (beta * notional) / pb_
+
+            <span class="c"># LONG spread = spread แคบเกิน → a ถูกกว่าที่ควร → ซื้อ a ขาย b</span>
+            side_a = "long"  if sig == "LONG" else "short"
+            side_b = "short" if sig == "LONG" else "long"
+
+            self.portfolio.open(sa, side_a, size_a, pa_)
+            self.portfolio.open(sb, side_b, size_b, pb_)
+            print(f"[OPEN ] {side_a.upper():5s} {sa:8s} {size_a:6.3f} @ {pa_:,.0f}"
+                  f"  |  {side_b.upper():5s} {sb:8s} {size_b:6.3f} @ {pb_:,.0f}")
+
+        elif sig == "EXIT" and is_open:
+            leg_a = self.portfolio.close(sa, pa_)
+            leg_b = self.portfolio.close(sb, pb_)
+            <span class="c"># พิมพ์ทั้ง gross และ net — ส่วนต่างคือค่าธรรมเนียมล้วน ๆ</span>
+            <span class="c"># ถ้าไม่แยกให้เห็น จะแยกไม่ออกว่า "hedge ผิด" หรือ "โดนค่าธรรมเนียม"</span>
+            gross = leg_a.gross_pnl + leg_b.gross_pnl
+            net   = leg_a.net_pnl   + leg_b.net_pnl
+            print(f"[CLOSE] gross {gross:+8,.0f}  →  net {net:+8,.0f}"
+                  f"   (ค่าธรรมเนียม {net - gross:,.0f})")
 
     def _on_error(self, data):
         print(f"[ERROR] {data}")
@@ -1395,10 +1420,17 @@ cash ขยับจริง        : +981.00
         )
         return cls(strategy, portfolio, risk_mgr)
 
-    def step(self, symbol, price, data):
-        """ประมวลผล 1 timestep"""
+    def step(self, price_a, price_b, data):
+        """ประมวลผล 1 timestep — ต้องรับราคา "ทั้งคู่" เพราะเทรดสองขา"""
         sig = self.strategy.signal(data)
-        self.bus.publish("signal", {"signal": sig, "price": price, "symbol": symbol})
+        self.bus.publish("signal", {
+            "signal":   sig,
+            "price_a":  price_a,
+            "price_b":  price_b,
+            "symbol_a": self.strategy.symbol_a,
+            "symbol_b": self.strategy.symbol_b,
+            "beta":     self.strategy._beta,   <span class="c"># hedge ratio จาก fit()</span>
+        })
 
     def report(self):
         m = self.portfolio.metrics
@@ -1464,33 +1496,55 @@ for i in range(60, n):
     if i &gt; 60 and (i - 60) % REFIT_EVERY == 0:
         system.strategy.fit(window)
 
-    price = df["Bybit"].iloc[i]
-    system.step("Bybit", price, window)
+    system.step(df["Bybit"].iloc[i], df["Binance"].iloc[i], window)
 
 system.report()</div>
 <div class="output">=== Simulating 240 days ===
-[OPEN] LONG Bybit size=1.5391 @ 64,971
-[CLOSE] Bybit PnL=-200
-[OPEN] LONG Bybit size=1.5429 @ 64,800
-[CLOSE] Bybit PnL=-337
+[OPEN ] LONG  Bybit     1.539 @ 64,971  |  SHORT Binance   1.482 @ 64,978
+[CLOSE] gross      +80  →  net     -313   (ค่าธรรมเนียม -393)
+[OPEN ] LONG  Bybit     1.543 @ 64,800  |  SHORT Binance   1.487 @ 64,751
+[CLOSE] gross      -72  →  net     -465   (ค่าธรรมเนียม -392)
+[OPEN ] SHORT Bybit     1.542 @ 64,817  |  LONG  Binance   1.579 @ 64,648
+[CLOSE] gross     +175  →  net     -230   (ค่าธรรมเนียม -405)
 ...
-[CLOSE] Bybit PnL=-3
+[OPEN ] SHORT Bybit     1.524 @ 65,429  |  LONG  Binance   1.504 @ 65,284
+[CLOSE] gross      +99  →  net     -298   (ค่าธรรมเนียม -397)
 
 === Final Report: BTC Pair Production ===
-  trades      : 6
-  win_rate    : 0.00%
-  total_pnl   : -860
-  avg_win     : 0
-  avg_loss    : -143</div>
+  trades      : 24
+  win_rate    : 20.83%
+  total_pnl   : -3,179
+  avg_win     : +256
+  avg_loss    : -235</div>
 
 <div class="read-aloud">สังเกตบรรทัด <code>if i &gt; 60 and (i - 60) % REFIT_EVERY == 0: system.strategy.fit(window)</code> — เราเรียก <code>fit()</code> ซ้ำ<strong>กลางทาง</strong>ได้เลย เพราะออกแบบให้ <code>fit()</code> (เรียนความสัมพันธ์) แยกจาก <code>signal()</code> (ให้คะแนนแท่งล่าสุด) · ถ้าเขียนแบบเอา z-score ทั้งชุดไป cache ไว้ใน <code>fit()</code> การ refit กลางทางจะยุ่งกว่านี้มาก — <strong>นี่คือผลตอบแทนของการแยกหน้าที่ให้ชัด</strong> ที่ Part นี้พยายามสอน</div>
 
+<div class="bx bd">
+<div class="bt">อ่าน log ให้ออก — ทุกบรรทัดพิสูจน์อะไรบางอย่าง</div>
+<p><strong>บรรทัด <code>[OPEN ]</code> พิสูจน์ว่าการ hedge ทำงาน</strong> · สังเกตขนาดสองขาที่<em>ไม่เท่ากัน</em> เช่น <code>LONG Bybit 1.539</code> คู่กับ <code>SHORT Binance 1.482</code> · อัตราส่วนนั้นไม่ได้มั่ว มันคือ <code>beta</code> ที่ <code>fit()</code> คำนวณไว้ · ถ้าเปิดเท่ากันทั้งสองขา พอร์ตจะยังเหลือความเสี่ยงทิศทางตลาดค้างอยู่</p>
+<p><strong>บรรทัด <code>[CLOSE]</code> แยกสองอย่างที่เคยปนกันออกจากกัน</strong> — <code>gross</code> คือผลจากการบีบตัวของ spread ล้วน ๆ · <code>net</code> คือหลังหักค่าธรรมเนียม · <strong>ส่วนต่างคงที่ราว −390 ทุกครั้ง</strong> เพราะเปิด 2 ขาและปิด 2 ขา = จ่ายค่าธรรมเนียม 4 ครั้งต่อ 1 รอบเทรด</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">ผลลัพธ์: กลยุทธ์<strong>จับ spread ได้จริง</strong> แต่<strong>ค่าธรรมเนียมกินหมด</strong></div>
+<p>ไล่คอลัมน์ <code>gross</code> ทั้ง 12 รอบ: <strong>11 ใน 12 รอบเป็นบวก</strong> · แปลว่า signal ถูก การ hedge ถูก และ spread บีบตัวกลับจริงอย่างที่คาด · <strong>ตรรกะของกลยุทธ์ใช้ได้</strong></p>
+<p>แต่ไล่คอลัมน์ <code>net</code>: <strong>ติดลบทุกรอบโดยไม่มีข้อยกเว้น</strong> · เพราะกำไรเฉลี่ยต่อรอบราว <code>+140</code> ขณะที่ค่าธรรมเนียมราว <code>−390</code></p>
+<p>ตัวเลขนี้ตรวจซ้ำได้ด้วยการตั้ง <code>fee_rate=0.0</code> แล้วรันใหม่ — จะได้ <strong>ชนะ 11/12 รอบ · รวม +1,500</strong> เทียบกับของจริงที่ <strong>ชนะ 0/12 · รวม −3,179</strong> · ส่วนต่าง 4,679 บาทคือค่าธรรมเนียมทั้งหมดที่จ่ายไป</p>
+<p>🎯 <strong>บทสรุปที่ตรงไปตรงมา: edge มีอยู่จริงแต่เล็กเกินกว่าจะจ่ายค่าผ่านทางไหว</strong> · spread ของคู่นี้แกว่งราว 0.26% ที่ระดับ 2 sigma ขณะที่ค่าธรรมเนียมไป-กลับสองขาคือ 0.4% · <strong>ต่อให้ทำนายถูกทุกครั้งก็ยังขาดทุน</strong> — และไม่มีการปรับ <code>entry_z</code> หรือ <code>window</code> ใด ๆ แก้ได้ เพราะปัญหาไม่ได้อยู่ที่การทำนาย</p>
+<p>เรื่องนี้ต่อตรงเข้า <strong>Part IV บทที่ 25</strong> ที่จะแสดงว่าต้นทุนกิน Sharpe ไปเท่าไร และ <strong>หัวข้อ 25.4b</strong> ที่บอกว่าทำไมต้องทดสอบสมมติฐานกับ<em>ต้นทุน</em> ไม่ใช่กับศูนย์ · <em>กลยุทธ์นี้คือตัวอย่างที่จับต้องได้ของประโยคนั้นทั้งประโยค</em></p>
+</div>
+
 <div class="bx ba">
-<div class="bt">⚠️ อ่านตัวเลข PnL ของ mini-project นี้อย่างไร — <strong>อย่าตีความว่ากลยุทธ์ดีหรือแย่</strong></div>
-<p>ดู log จะเห็นว่าทุกเทรดเป็น <code>LONG Bybit</code> — <strong>ขาเดียว</strong> · เพราะ <code>system.step("Bybit", price, window)</code> ส่งเข้าไปแค่ symbol เดียวกับราคาเดียว ดังนั้น <code>Portfolio</code> จึงเปิดสถานะใน Bybit เท่านั้น ไม่ได้ short Binance คู่กัน</p>
-<p>ผลคือ <strong>กำไร/ขาดทุนที่เห็นมาจากทิศทางราคา Bybit ไม่ใช่จากการบีบตัวของ spread</strong> — signal มาจาก spread แต่การ execute เป็น directional bet · ตัวเลข <code>total_pnl</code> จึงเป็นสัญญาณรบกวนล้วน ๆ <strong>ไม่ว่าจะออกมาบวกหรือลบก็ไม่ได้บอกอะไรเกี่ยวกับคุณภาพของกลยุทธ์</strong></p>
-<p>🎯 <strong>สิ่งที่ mini-project นี้พิสูจน์สำเร็จคือ "โครงสร้าง" ไม่ใช่ "ผลตอบแทน"</strong>: config → Factory สร้าง strategy ได้ · EventBus ส่งต่อ signal ถึง risk manager และ executor ครบวงจร · Portfolio บันทึกทุกเทรดและสรุป metrics ได้ · เพิ่ม strategy ใหม่ไม่ต้องแก้ระบบ</p>
-<p>✍️ <strong>โจทย์ต่อยอด (ตรงนี้คือก้าวถัดไปของจริง):</strong> ทำให้ <code>Portfolio</code> รับสถานะ <strong>สองขา</strong> ได้ — <code>step()</code> ต้องรับราคาทั้งคู่, การเปิดสถานะต้อง long ขาหนึ่ง short อีกขาด้วยอัตราส่วน <code>beta</code> ที่ <code>fit()</code> คำนวณไว้ และ PnL ต้องรวมสองขา · ทำได้แล้วตัวเลขในรายงานจะเริ่มมีความหมาย</p>
+<div class="bt">⚠️ ตัวเลขใน Final Report ยังอ่านผิดได้อยู่ 2 จุด</div>
+<p><code>trades: 24</code> — ไม่ใช่ 24 รอบเทรด แต่คือ <strong>12 รอบ × 2 ขา</strong> · <code>Portfolio.metrics</code> นับที่ระดับ <em>position</em> ซึ่งถูกต้องสำหรับกลยุทธ์ขาเดียว แต่นับซ้ำสำหรับ pair trade</p>
+<p><code>win_rate: 20.83%</code> — วัดที่ระดับ<strong>ขา</strong> ไม่ใช่ระดับ<strong>รอบ</strong> · สำหรับ pair trade ตัวเลขนี้แทบไม่มีความหมายเลย เพราะโดยธรรมชาติของการ hedge <em>ขาหนึ่งมักกำไรและอีกขามักขาดทุนเสมอ</em> · win rate ที่ควรดูคือ "กี่รอบที่ <code>gross</code> เป็นบวก" ซึ่งคือ <strong>11/12 = 92%</strong> — คนละเรื่องกันคนละขั้ว</p>
+<p>✍️ <strong>โจทย์ต่อยอด:</strong> เพิ่มแนวคิด <code>Trade</code> ที่ผูกสองขาเข้าด้วยกัน (เก็บ <code>leg_a</code>, <code>leg_b</code>, มี property <code>gross_pnl</code>/<code>net_pnl</code> ที่รวมสองขา) แล้วให้ <code>Portfolio.metrics</code> นับจาก <code>Trade</code> แทน <code>Position</code> · <strong>นี่คือกับดักเดียวกับที่บทที่ 30 เจอ</strong> — เครื่องมือวัดที่ออกแบบไว้สำหรับของแบบหนึ่ง พอเอาไปใช้กับของอีกแบบก็รายงานตัวเลขที่ดูปกติแต่ตอบคนละคำถาม</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 สิ่งที่ mini-project นี้พิสูจน์สำเร็จ</div>
+<p><strong>ด้านโครงสร้าง</strong> — config → Factory สร้าง strategy ได้ · EventBus ส่ง signal ถึง risk manager และ executor ครบวงจร · <code>Portfolio</code> คิดบัญชีสองขารวมทั้ง short ได้ถูกต้อง · <code>fit()</code> แยกจาก <code>signal()</code> จึง refit กลางทางได้ · เพิ่ม strategy ใหม่ไม่ต้องแก้ระบบ</p>
+<p><strong>ด้านผลตอบแทน</strong> — ระบบวัดได้ตรงไปตรงมาว่ากลยุทธ์นี้<em>ยังไม่คุ้มค่าธรรมเนียม</em> · <strong>และการที่มันบอกเราได้ตรง ๆ แบบนี้ คือสิ่งที่ระบบที่ดีควรทำ</strong> — ระบบที่ออกแบบไม่ดีจะรายงาน <code>total_pnl</code> ที่ดูปนกันจนแยกไม่ออกว่ามาจาก spread หรือจากทิศทางตลาด แล้วเราจะเถียงกับตัวเองได้อีกหลายเดือน</p>
 </div>
 
 <div class="bx bg" style="margin-top:28px">
@@ -1502,7 +1556,10 @@ system.report()</div>
 • <code>Portfolio</code> เก็บ state ครบ ✓<br>
 • <code>EventBus</code> แยก concerns ✓<br>
 • <code>StrategyFactory</code> + config สร้างระบบจาก JSON ✓<br>
-• <code>TradingSystem</code> ประกอบทุกอย่างผ่านจุดเดียว ✓<br><br>
+• <code>TradingSystem</code> ประกอบทุกอย่างผ่านจุดเดียว ✓<br>
+• เทรด <strong>สองขา</strong> ด้วย hedge ratio จาก <code>fit()</code> · <code>Portfolio</code> คิดบัญชี short ถูกทิศ ✓<br>
+• แยก <code>gross</code> ออกจาก <code>net</code> จึงบอกได้ว่ากลยุทธ์ผิดหรือแค่โดนค่าธรรมเนียม ✓<br><br>
+<strong>ผลจริงของ mini-project:</strong> spread บีบตัวกลับอย่างที่คาด (<code>gross</code> บวก 11 ใน 12 รอบ) แต่ค่าธรรมเนียม 4 ครั้งต่อรอบทำให้ <code>net</code> ติดลบทุกรอบ — <em>edge มีจริงแต่เล็กเกินกว่าจะจ่ายค่าผ่านทางไหว</em> · นี่คือคำตอบที่ถูกต้อง ไม่ใช่ความล้มเหลวของโค้ด<br><br>
 <strong>หมายเหตุเรื่องประสิทธิภาพ:</strong> <code>Backtester</code> ใน Part III ใช้ Python for-loop ซึ่งช้ากว่า vectorized ใน Part IV ประมาณ <strong>50–100×</strong> ใช้เพื่อเรียนรู้ logic ได้ แต่สำหรับ parameter search ให้ใช้ vectorized ใน Part IV เท่านั้น<br><br>
 ใน <strong>Part IV</strong> เราจะนำ system นี้ไป backtest อย่างจริงจัง: walk-forward, slippage, commission, overfitting
 </p>
