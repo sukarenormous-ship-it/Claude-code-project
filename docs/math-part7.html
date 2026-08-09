@@ -387,6 +387,116 @@ print(f"antithetic : {pair.mean():.4f}   se={pair.std(ddof=1)/np.sqrt(N//2):.4f}
 <p>เอาโค้ด Monte Carlo พื้นฐาน (12.2) มาเปลี่ยน payoff เป็น <strong>Put</strong>: <code>np.maximum(K - ST, 0)</code> แล้วรัน N=100,000 · คาดเดาก่อน: ควรได้ราคาใกล้ <strong>7.46</strong> (ค่า Put จาก Put-Call Parity ในบท 11) — ถ้าใกล้ แปลว่าโค้ดคุณถูก ✓</p>
 
 <!-- ═══════════════ CAPSTONE / GRAND MAP ═══════════════ -->
+<h3 id="s12-5">12.5 Euler-Maruyama — เมื่อไม่มีทางลัดให้เดิน</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> โค้ดทุกกล่องในบทนี้เดินราคาด้วยบรรทัดหน้าตาแบบนี้ — <code>(r − σ²/2)·dt + σ·√dt·Z</code> · <strong>สิ่งที่ยังไม่ได้บอกคือบรรทัดนั้น<u>ไม่ใช่</u>ค่าประมาณ มันเป๊ะ</strong> · และมันเป๊ะได้เพราะโชคดีอย่างหนึ่งที่จะหมดไปทันทีที่คุณขยับออกจาก GBM</p>
+
+<div class="bx bb"><div class="bt">💎 ทำไม GBM ถึงเดินแบบเป๊ะได้</div>
+<p>ย้อนกลับไป <a href="math-part6.html">Part IV</a> · Itô's Lemma บอกว่าถ้า <span class="fm" style="display:inline">dS/S = μ dt + σ dW</span> แล้ว <span class="fm" style="display:inline">d(ln S) = (μ − σ²/2)dt + σ dW</span></p>
+<p>ฝั่งขวาของสมการหลัง <strong>ไม่มี ln S อยู่เลย</strong> — สัมประสิทธิ์เป็นค่าคงที่ทั้งคู่ · แปลว่าเราอินทิเกรตมันตรง ๆ ได้ และได้คำตอบปิด:</p>
+<div class="fm" style="text-align:center">ln S(t+Δt) = ln S(t) + (μ − σ²/2)·Δt + σ·√Δt·Z</div>
+<p><strong>ไม่ว่า Δt จะใหญ่แค่ไหน บรรทัดนี้ก็ถูกต้อง 100%</strong> · จะเดินทีละวัน ทีละเดือน หรือกระโดดข้ามไปทั้งปีในก้าวเดียว ก็ให้การแจกแจงที่ถูกต้องเหมือนกันหมด · <strong>นี่คือเหตุผลที่ <a href="#s12-2">§12.2</a> กระโดดจาก t=0 ไป T ในก้าวเดียวได้อย่างสบายใจ</strong></p></div>
+
+<div class="bx ba"><div class="bt">⚠️ แต่ความโชคดีนี้เป็นของ GBM เท่านั้น</div>
+<p>ทันทีที่ σ หรือ μ <strong>ขึ้นกับสถานะปัจจุบัน</strong> ในแบบที่ตัดออกด้วย log ไม่ได้ คำตอบปิดก็หายไป:</p>
+<div class="tw"><table>
+<tr><th>โมเดล</th><th>สมการ</th><th class="nw">มีทางลัดไหม</th></tr>
+<tr><td class="nw">GBM</td><td>dS/S = μ dt + σ dW</td><td class="nw"><strong>มี</strong> ✓</td></tr>
+<tr><td class="nw">Ornstein-Uhlenbeck</td><td>dx = θ(μ − x)dt + σ dW</td><td class="nw"><strong>มี</strong> ✓ (<a href="math-part9.html#s8-4b">เล่ม 2 · D §8.4½</a>)</td></tr>
+<tr><td class="nw">Heston (stochastic vol)</td><td>dv = κ(v̄ − v)dt + ξ√v dW</td><td class="nw"><strong>ไม่มี</strong> ❌</td></tr>
+<tr><td class="nw">Local volatility</td><td>dS/S = μ dt + σ(S,t) dW</td><td class="nw"><strong>ไม่มี</strong> ❌</td></tr>
+<tr><td class="nw">SABR</td><td>dF = σF<sup>β</sup> dW₁ · dσ = ασ dW₂</td><td class="nw"><strong>ไม่มี</strong> ❌</td></tr>
+</table></div>
+<p>สามแถวล่างคือโมเดลที่โต๊ะเทรดออปชันใช้จริงเมื่อ BS ไม่พอ (<a href="#s11-6">§11.6</a>) · <strong>ทั้งสามตัวไม่มีทางลัด — ต้องเดินทีละก้าวเล็ก ๆ แล้วยอมรับความคลาดเคลื่อน</strong></p></div>
+
+<div class="card">
+<h3>Euler-Maruyama <span class="yr">Maruyama 1955</span> <span class="lvl">★★☆ ควรรู้</span></h3>
+
+<p><strong>🎯 Thesis:</strong> "เอานิยามของ SDE มาใช้ตรง ๆ — แทน <em>dt</em> ด้วย <em>Δt</em> เล็ก ๆ และแทน <em>dW</em> ด้วย <em>√Δt·Z</em> แล้วเดินทีละก้าว · ง่ายจนน่าตกใจ และผิดในแบบที่คาดเดาได้"</p>
+
+<div class="fm">SDE ทั่วไป:  dX = a(X,t)·dt + b(X,t)·dW
+
+Euler-Maruyama:  X(t+Δt) = X(t) + a(X,t)·Δt + b(X,t)·√Δt·Z      Z ~ N(0,1)
+                                        ↑                ↑
+                                    ส่วนที่คาดเดาได้   ช็อกสุ่ม (√Δt ไม่ใช่ Δt!)</div>
+
+<p><strong>ทำไมเป็น √Δt ไม่ใช่ Δt:</strong> เพราะ <span class="fm" style="display:inline">(dW)² = dt</span> จาก <a href="math-part6.html">Part IV</a> · ช็อกสุ่มโตตามรากที่สองของเวลา ไม่ใช่ตามเวลา — เป็นกฎ σ√T เดิมจาก <a href="math-part2.html">Part II</a> ที่กลับมาอีกครั้ง</p>
+
+<p>ลองใช้กับ GBM ทั้งที่ไม่จำเป็น เพื่อจะได้<strong>วัดความคลาดเคลื่อน</strong>เทียบกับคำตอบที่รู้อยู่แล้ว:</p>
+
+<div class="code"><div class="hdr">🐍 Python — Euler-Maruyama ผิดไปเท่าไร เมื่อเทียบกับการเดินแบบเป๊ะ</div><pre><span class="c"># pip install numpy</span>
+import numpy as np, math
+
+S0, K, r, sig, T = 100, 100, 0.05, 0.25, 1.0
+paths = 200_000
+
+def price(steps, seed=11):
+    rng = np.random.default_rng(seed)
+    Z  = rng.standard_normal((paths, steps)); dt = T/steps
+    S = np.full(paths, float(S0))                     <span class="c"># (ก) Euler-Maruyama บน S ตรง ๆ</span>
+    for k in range(steps):
+        S = S + r*S*dt + sig*S*math.sqrt(dt)*Z[:, k]
+    em = math.exp(-r*T)*np.maximum(S - K, 0)
+    logS = math.log(S0) + np.cumsum((r - sig**2/2)*dt   <span class="c"># (ข) แบบเป๊ะ ใช้ Z ชุดเดียวกัน</span>
+                                    + sig*math.sqrt(dt)*Z, axis=1)[:, -1]
+    ex = math.exp(-r*T)*np.maximum(np.exp(logS) - K, 0)
+    return em, ex, int((S &lt; 0).sum())
+
+print("steps |  EM ราคา | เป๊ะ ราคา |  EM - เป๊ะ | S_T ติดลบ")
+for steps in [1, 4, 12, 52, 252]:
+    em, ex, neg = price(steps)
+    d = em - ex                                        <span class="c"># ★ จับคู่ทีละเส้นทาง -&gt; noise ตัดกัน</span>
+    print(f"{steps:5d} | {em.mean():8.4f} | {ex.mean():9.4f} | "
+          f"{d.mean():+9.4f} | {neg:7d}")
+print(f"\n(MC standard error ของราคาเดี่ยว ~ {ex.std()/math.sqrt(paths):.4f} "
+      f"— ใหญ่กว่า bias ที่ steps สูง จึงต้องจับคู่ถึงจะเห็น)")
+<span class="o"># steps |  EM ราคา | เป๊ะ ราคา |  EM - เป๊ะ | S_T ติดลบ</span>
+<span class="o">#     1 |  11.9992 |   12.2741 |   -0.2749 |       2</span>
+<span class="o">#     4 |  12.2784 |   12.2990 |   -0.0206 |       0</span>
+<span class="o">#    12 |  12.3495 |   12.3530 |   -0.0035 |       0</span>
+<span class="o">#    52 |  12.3926 |   12.3937 |   -0.0011 |       0</span>
+<span class="o">#   252 |  12.2541 |   12.2546 |   -0.0005 |       0</span>
+<span class="o"># </span>
+<span class="o"># (MC standard error ของราคาเดี่ยว ~ 0.0411 — ใหญ่กว่า bias ที่ steps สูง จึงต้องจับคู่ถึงจะเห็น)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<ul>
+<li><strong>ที่ 1 ก้าว EM ผิดไป −0.27 บาท</strong> จากราคา 12.34 คือ <strong>−2.2%</strong> · และมี <strong>2 เส้นทางที่ราคาหุ้นติดลบ</strong> ซึ่งเป็นไปไม่ได้ในความจริง — EM เดินบน S ตรง ๆ จึงเป็นการแจกแจงปกติ ที่ลากไปติดลบได้ ต่างจากการเดินบน ln S ที่ยกกำลัง e จึงเป็นบวกเสมอ</li>
+<li><strong>ยิ่งซอยก้าวยิ่งหด</strong> — 0.2749 → 0.0206 → 0.0035 → 0.0011 → 0.0005 · ความคลาดเคลื่อนหดตาม Δt</li>
+<li><strong>ตรงคอลัมน์ "EM − เป๊ะ" คือหัวใจของโค้ดนี้</strong> · ทั้งสองวิธีใช้ <code>Z</code> ชุดเดียวกันเป๊ะ ความสุ่มจึงตัดกันหมด เหลือแต่ความคลาดเคลื่อนจากการแบ่งเวลาล้วน ๆ · <strong>ถ้าไม่จับคู่ คุณจะมองไม่เห็นอะไรเลย</strong> เพราะ MC standard error = 0.0411 ใหญ่กว่า bias ตั้งแต่ 12 ก้าวขึ้นไป</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ กับดักที่ใหญ่ที่สุด — ความคลาดเคลื่อนสองชนิดที่คนละเรื่องกัน</div>
+<div class="tw"><table>
+<tr><th></th><th class="nw">Monte Carlo error</th><th class="nw">Discretization bias</th></tr>
+<tr><td class="nw"><strong>มาจาก</strong></td><td>สุ่มเส้นทางจำกัด</td><td>แบ่งเวลาเป็นก้อน</td></tr>
+<tr><td class="nw"><strong>แก้ด้วย</strong></td><td>เพิ่ม <u>จำนวนเส้นทาง</u></td><td>เพิ่ม <u>จำนวนก้าว</u></td></tr>
+<tr><td class="nw"><strong>หดตาม</strong></td><td>1/√N</td><td>Δt</td></tr>
+<tr><td class="nw"><strong>ทิศทาง</strong></td><td>สุ่ม — เฉลี่ยแล้วเป็นศูนย์</td><td><strong>เอนไปทางเดียวเสมอ</strong></td></tr>
+<tr><td class="nw"><strong>รายงานเป็น</strong></td><td>se ± (เห็นได้)</td><td><strong>ไม่มีใครรายงานให้</strong> ❌</td></tr>
+</table></div>
+<p><strong>ตัวแรกซื่อสัตย์ ตัวหลังไม่ซื่อสัตย์</strong> · เพิ่มเส้นทางจาก 1 แสนเป็น 10 ล้าน จะได้ se ที่แคบลง 10 เท่า และคุณจะ<strong>มั่นใจในคำตอบที่เอนอยู่เท่าเดิม</strong> · <a href="#s12-4">§12.4</a> ทั้งหัวข้อพูดถึงการลดตัวแรกอย่างเดียว — <strong>ไม่มีเทคนิค variance reduction ตัวไหนแก้ตัวหลังได้เลย</strong></p>
+<p>ที่แย่กว่า: <strong>ถ้าคุณลืมเปลี่ยนจำนวนก้าว การเพิ่มเส้นทางจะทำให้คุณ "แน่ใจขึ้น" ในตัวเลขที่ผิด</strong> — ซึ่งเป็นอาการเดียวกับที่ <a href="math-part11.html#s12-5">เล่ม 2 · F §12.5</a> เตือนเรื่อง multiple testing แต่คนละสาเหตุ</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง — ซอยก้าวถี่ที่สุดไม่ใช่คำตอบเสมอไป</div>
+<p>มือใหม่เห็นตารางข้างบนแล้วสรุปว่า "งั้นก็ใช้ 252 ก้าวหรือมากกว่าไปเลยสิ"</p>
+<p>คนที่ทำจริงคิดต่างออกไป — <strong>ต้นทุนคำนวณโตเป็นเส้นตรงตามจำนวนก้าว แต่ bias หดตาม Δt เท่านั้น</strong> · ถ้าคุณมีงบเวลาจำกัด การเลือกระหว่าง "100,000 เส้นทาง × 252 ก้าว" กับ "1,000,000 เส้นทาง × 25 ก้าว" คือการแลกกันตรง ๆ ระหว่างความคลาดเคลื่อนสองชนิด</p>
+<p><strong>วิธีตัดสิน: รันสองครั้งด้วยจำนวนก้าวต่างกันเท่าตัว</strong> · ถ้าคำตอบขยับน้อยกว่า se แปลว่าก้าวถี่พอแล้ว เอางบที่เหลือไปเพิ่มเส้นทางดีกว่า · นี่คือการทดสอบที่ควรทำทุกครั้งก่อนเชื่อตัวเลขจาก MC ที่มีหลายก้าว</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<ol>
+<li>ในตาราง ที่ <code>steps = 1</code> มี 2 เส้นทางที่ <code>S_T</code> ติดลบ · อธิบายว่าทำไมการเดินบน <code>ln S</code> ถึงเป็นไปไม่ได้ที่จะติดลบ ไม่ว่าจะซอยก้าวหยาบแค่ไหน</li>
+<li>ถ้าเปลี่ยน payoff จาก Call เป็น <strong>Barrier option</strong> (ตาย ถ้าราคาเคยแตะ 80) คุณคิดว่าการซอยก้าวจะสำคัญมากขึ้นหรือน้อยลง เพราะอะไร</li>
+<li>ทำไมโค้ดถึงต้องใช้ <code>Z</code> ชุดเดียวกันทั้งสองวิธี ถ้าใช้คนละชุดจะเกิดอะไรขึ้น</li>
+</ol>
+<details><summary>เฉลย</summary>
+<p><strong>1)</strong> เพราะเราเดิน <code>ln S</code> ซึ่งเป็นจำนวนจริงใด ๆ ก็ได้ (ติดลบได้) แล้ว<strong>ยกกำลัง e ตอนท้าย</strong> · <code>exp(ค่าอะไรก็ตาม) &gt; 0</code> เสมอ ราคาจึงเป็นบวกโดยโครงสร้าง · ส่วน EM เดินบน <code>S</code> ตรง ๆ จึงเป็นการบวกเลขปกติเข้าไปเรื่อย ๆ ถ้าก้าวใหญ่พอและ <code>Z</code> ติดลบมากพอ ก็ลากข้ามศูนย์ไปได้ · <strong>บทเรียน: เลือกตัวแปรที่จะเดินให้ดี บางครั้งเปลี่ยนตัวแปรแก้ปัญหาได้มากกว่าซอยก้าว</strong></p>
+<p><strong>2)</strong> <strong>สำคัญมากขึ้นมาก</strong> · Call สนใจแค่ <code>S_T</code> จุดเดียว ความคลาดเคลื่อนระหว่างทางเฉลี่ยแล้วหักล้างกันได้บ้าง · แต่ barrier สนใจว่า<strong>เคยแตะ 80 ระหว่างทางหรือไม่</strong> · การเดินทีละก้าวจะ<strong>มองข้ามการแตะที่เกิดขึ้นระหว่างสองก้าว</strong>เสมอ → ประเมินโอกาสตายต่ำเกินไป → ตั้งราคาแพงเกินไปอย่างเป็นระบบ และเพิ่มเส้นทางก็ไม่ช่วย (มีเทคนิคชื่อ Brownian bridge ไว้แก้เรื่องนี้โดยเฉพาะ)</p>
+<p><strong>3)</strong> ถ้าใช้คนละชุด ผลต่างที่วัดได้จะเป็น <strong>discretization bias + ความต่างจากการสุ่มสองครั้ง</strong> ปนกัน · จากตาราง se ของราคาเดี่ยว = 0.0411 ส่วน bias ที่ 12 ก้าวมีแค่ 0.0035 — <strong>สัญญาณจะจมอยู่ใต้ noise ที่ใหญ่กว่า 10 เท่า</strong> · การใช้ตัวเลขสุ่มชุดเดียวกันเทียบสองวิธีเรียกว่า <strong>common random numbers</strong> เป็นเทคนิคมาตรฐานเวลาเปรียบเทียบอะไรก็ตามด้วย Monte Carlo</p>
+</details></div>
+</div>
+
+<!-- ═══════════════ -->
 <h2 id="map">🎓 รวมร่างทั้งเล่ม — แผนที่ความรู้</h2>
 
 <p>ทุกอย่างที่เดินมา 5 Part ประกอบกันเป็นเครื่องมืออ่าน (และเข้าใจที่มาของ) Black-Scholes:</p>
@@ -425,7 +535,7 @@ print(f"antithetic : {pair.mean():.4f}   se={pair.std(ddof=1)/np.sqrt(N//2):.4f}
 <p>เนื้อหา Linear Algebra (Portfolio Variance wᵀΣw, PCA), Regression (Beta, hedge ratio) และ Optimization (Markowitz, LP, Gradient Descent) ยกไปไว้ใน <strong>เล่ม 2</strong> เพราะเป็นสาย "จัดพอร์ต" ที่แยกจากเป้าหมาย "อ่าน payoff + เข้าใจ pricing" ของเล่มนี้ — เริ่มเล่ม 2 ได้เมื่อพร้อม</p></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
-<p><strong>Monte Carlo</strong> = จำลองสุ่มหลายครั้งแล้วเฉลี่ย · <strong>Law of Large Numbers</strong> = ยิ่งสุ่มมากยิ่งนิ่ง · <strong>Exotic option</strong> = option payoff ซับซ้อน (Asian/Barrier/Lookback/Basket) · <strong>Variance reduction</strong> = ลด error ของ MC โดยไม่เพิ่มเส้นทาง · <strong>Antithetic / Control variate</strong> = 2 เทคนิคลด variance</p></div>
+<p><strong>Monte Carlo</strong> = จำลองสุ่มหลายครั้งแล้วเฉลี่ย · <strong>Law of Large Numbers</strong> = ยิ่งสุ่มมากยิ่งนิ่ง · <strong>Exotic option</strong> = option payoff ซับซ้อน (Asian/Barrier/Lookback/Basket) · <strong>Variance reduction</strong> = ลด error ของ MC โดยไม่เพิ่มเส้นทาง · <strong>Euler-Maruyama</strong> = วิธีเดิน SDE ทีละก้าว <span class="fm" style="display:inline">X ← X + a·Δt + b·√Δt·Z</span> ใช้เมื่อไม่มีคำตอบปิด · <strong>Discretization bias</strong> = ความคลาดเคลื่อนจากการแบ่งเวลาเป็นก้อน — เพิ่มเส้นทางไม่ช่วย ต้องซอยก้าว · <strong>Antithetic / Control variate</strong> = 2 เทคนิคลด variance</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
 <div style="text-align:center;padding:24px;color:#64748b">
