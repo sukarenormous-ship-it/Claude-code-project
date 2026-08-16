@@ -31,7 +31,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="cover">
 <h1>คณิตศาสตร์สำหรับ Options<br><span style="font-size:.6em;color:#64748b">เล่ม 2 · Portfolio Quant</span></h1>
 <div class="sub">D — Time Series: เมื่อข้อมูลไหลไปตามเวลา</div>
-<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Spurious Regression · Cointegration → Pairs Trading</div>
+<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Ornstein-Uhlenbeck · Spurious Regression · Cointegration → Pairs Trading</div>
 </div>
 
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
@@ -263,6 +263,100 @@ print("วัดจากค่าเฉลี่ย:", [round(float((fc[i+1]-mu
 <p>💎 <strong>ทำไมเรื่องนี้สำคัญกับบทที่ 9:</strong> ถ้าคุณฟิต AR(1) บน spread ของคู่หุ้นแล้วได้ φ̂ = 0.95 · <strong>ของจริงน่าจะสูงกว่านั้น</strong> · แปลว่าคุณกำลัง<strong>ประเมินความเร็วในการกลับตัวสูงเกินไป</strong> และ<strong>ประเมินระยะเวลาที่ต้องถือสั้นเกินไป</strong> — ทั้งสองอย่างผิดในทิศที่ทำให้คุณเข้าไม้ใหญ่เกินตัว</p></details></div>
 </div>
 
+<h3 id="s8-4b">8.4½ Ornstein-Uhlenbeck — AR(1) ตัวเดิม แต่ปล่อยให้เวลาไหลต่อเนื่อง</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> AR(1) ข้างบนเดินทีละ "วัน" · แต่ราคาจริงไม่ได้กระโดดเป็นก้าว มันขยับตลอดเวลา · ถ้าเราหด Δt ลงจนเล็กจิ๋ว AR(1) จะกลายเป็นสมการเชิงอนุพันธ์สุ่มที่มีชื่อว่า <strong>Ornstein-Uhlenbeck (OU)</strong> · <strong>มันไม่ใช่โมเดลใหม่ — มันคือตัวเดิมในหน่วยเวลาต่อเนื่อง</strong></p>
+
+<div class="fm" style="text-align:center;font-size:1.05em">AR(1) เวลาไม่ต่อเนื่อง:   xₜ = φ·xₜ₋₁ + εₜ
+
+OU เวลาต่อเนื่อง:       dx = θ·(μ − x)·dt + σ·dW</div>
+
+<p>อ่านสมการ OU เป็นภาษาคน: <strong>"ยิ่งอยู่ห่างจากค่ากลาง μ มาก ยิ่งถูกดึงกลับแรง"</strong> — เพราะพจน์แรกเป็นสัดส่วนกับระยะห่าง <span class="fm" style="display:inline">(μ − x)</span> ตรง ๆ · <strong>θ คือความแรงของหนังยาง</strong> · ส่วน σdW คือช็อกสุ่มที่คอยดึงมันออกไป (Brownian motion จาก <a href="math-part6.html">เล่ม 1 Part IV</a>)</p>
+
+<div class="bx bb"><div class="bt">💎 ตารางแปลงระหว่างสองภาษา — ทุกอย่างที่เรียนมาแล้วใช้ต่อได้ทันที</div>
+<div class="tw"><table>
+<tr><th>สิ่งที่อยากรู้</th><th class="nw">ภาษา AR(1)</th><th class="nw">ภาษา OU</th></tr>
+<tr><td>แรงดึงกลับต่อก้าว</td><td class="nw">φ</td><td class="nw"><strong>φ = e<sup>−θΔt</sup></strong></td></tr>
+<tr><td>ครึ่งชีวิต (<a href="#s9-1">§9.1</a>)</td><td class="nw">−ln2 / ln φ</td><td class="nw"><strong>ln2 / θ</strong></td></tr>
+<tr><td>ส่วนเบี่ยงเบนตอนอยู่ตัว</td><td class="nw">σ<sub>ε</sub> / √(1−φ²)</td><td class="nw"><strong>σ / √(2θ)</strong></td></tr>
+<tr><td>เส้นแบ่งเทรดได้/ไม่ได้</td><td class="nw">φ = 1</td><td class="nw"><strong>θ = 0</strong> (หนังยางขาด)</td></tr>
+</table></div>
+<p><strong>สังเกตแถวที่สอง — ครึ่งชีวิตที่ <a href="#s9-1">§9.1</a> ใช้ตัดสินคู่หุ้น คือตัวเดียวกับ ln2/θ ของ OU เป๊ะ ๆ</strong> · คุณใช้ OU มาตั้งแต่ต้นแล้วโดยไม่รู้ตัว</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — เดิน OU แล้วถอด θ กลับมาด้วย AR(1)</div><pre><span class="c"># pip install numpy</span>
+import numpy as np, math
+
+def ou_exact(theta, sigma, mu, dt, n, seed):
+    """เดิน OU แบบเป๊ะ — ทำได้เพราะ OU มีคำตอบปิด"""
+    phi = math.exp(-theta*dt)                              <span class="c"># ★ นี่คือ phi ของ AR(1) พอดี</span>
+    s   = sigma*math.sqrt((1 - math.exp(-2*theta*dt))/(2*theta))
+    rng = np.random.default_rng(seed); z = rng.standard_normal(n)
+    x = np.empty(n); x[0] = mu
+    for t in range(1, n):
+        x[t] = mu + (x[t-1] - mu)*phi + s*z[t]
+    return x
+
+def fit_phi(x):                                            <span class="c"># ฟิต AR(1) ด้วย OLS ธรรมดา</span>
+    a, b = x[:-1], x[1:]
+    return float(((a-a.mean())*(b-b.mean())).sum() / ((a-a.mean())**2).sum())
+
+theta, sigma, dt = 0.10, 0.02, 1.0                         <span class="c"># theta ต่อวัน</span>
+x = ou_exact(theta, sigma, 0.0, dt, 200_000, seed=5)
+phi_hat = fit_phi(x)
+print("ข้อมูลยาวมาก (200,000 วัน) — ยืนยันว่าการจับคู่เป็นจริง")
+print(f"  phi        exp(-theta*dt)     = {math.exp(-theta*dt):.4f}   ฟิตได้ = {phi_hat:.4f}")
+print(f"  ครึ่งชีวิต  ln2/theta          = {math.log(2)/theta:.2f} วัน   -ln2/ln(phi) = {-math.log(2)/math.log(phi_hat):.2f} วัน")
+print(f"  SD คงตัว   sigma/sqrt(2theta) = {sigma/math.sqrt(2*theta):.4f}   วัดได้ = {x.std():.4f}")
+
+hl = np.array([-math.log(2)/math.log(fit_phi(ou_exact(theta, sigma, 0.0, dt, 250, seed=s)))
+               for s in range(200)])
+print("\nข้อมูลจริง 1 ปี (250 วัน) — ครึ่งชีวิตที่วัดได้เหวี่ยงแค่ไหน")
+print(f"  ความจริง {math.log(2)/theta:.2f} วัน | ค่ากลางที่วัดได้ {np.median(hl):.2f} | "
+      f"ช่วง 5-95% [{np.percentile(hl,5):.2f}, {np.percentile(hl,95):.2f}] วัน")
+
+rng = np.random.default_rng(1); n = 500_000               <span class="c"># ถ้าเดินด้วย Euler แทนที่จะเป๊ะ</span>
+z = rng.standard_normal(n); e = np.empty(n); e[0] = 0.0
+for t in range(1, n):
+    e[t] = (1 - theta*dt)*e[t-1] + sigma*math.sqrt(dt)*z[t]
+print(f"\nเดินด้วย Euler-Maruyama แทน: SD คงตัว = {e.std():.4f} "
+      f"(สูงกว่าค่าจริง {e.std()/(sigma/math.sqrt(2*theta))-1:+.2%})")
+<span class="o"># ข้อมูลยาวมาก (200,000 วัน) — ยืนยันว่าการจับคู่เป็นจริง</span>
+<span class="o">#   phi        exp(-theta*dt)     = 0.9048   ฟิตได้ = 0.9038</span>
+<span class="o">#   ครึ่งชีวิต  ln2/theta          = 6.93 วัน   -ln2/ln(phi) = 6.85 วัน</span>
+<span class="o">#   SD คงตัว   sigma/sqrt(2theta) = 0.0447   วัดได้ = 0.0446</span>
+<span class="o"># </span>
+<span class="o"># ข้อมูลจริง 1 ปี (250 วัน) — ครึ่งชีวิตที่วัดได้เหวี่ยงแค่ไหน</span>
+<span class="o">#   ความจริง 6.93 วัน | ค่ากลางที่วัดได้ 5.94 | ช่วง 5-95% [3.62, 8.97] วัน</span>
+<span class="o"># </span>
+<span class="o"># เดินด้วย Euler-Maruyama แทน: SD คงตัว = 0.0459 (สูงกว่าค่าจริง +2.55%)</span></pre></div>
+
+<div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
+<ul>
+<li><strong>บล็อกแรกยืนยันว่าสองภาษาแปลกันได้จริง</strong> — เดินด้วย OU แล้วฟิตด้วย AR(1) ธรรมดา ได้ φ = 0.9038 เทียบกับทฤษฎี 0.9048 · ครึ่งชีวิต 6.85 vs 6.93 วัน · SD 0.0446 vs 0.0447 · <strong>ตรงกันทั้งสามตัวโดยไม่ต้องแก้อะไรเลย</strong></li>
+<li><strong>บล็อกที่สองคือของจริงที่เจ็บ</strong> — ที่ข้อมูล 1 ปี (250 วัน) ซึ่งเป็นความยาวที่คนใช้กันจริง <strong>ครึ่งชีวิตที่วัดได้มีค่ากลาง 5.94 วัน ทั้งที่ความจริงคือ 6.93</strong> คือ<strong>ต่ำไป 14% อย่างเป็นระบบ</strong> · และช่วง 5–95% กว้างถึง <strong>3.62–8.97 วัน</strong></li>
+<li><strong>บล็อกที่สาม</strong> — ถ้าเดินด้วย Euler-Maruyama แทนวิธีเป๊ะ ความผันผวนที่ได้จะสูงเกินไป 2.55% · <strong>OU มีคำตอบปิดจึงไม่จำเป็นต้องใช้ Euler</strong> (ดู <a href="math-part7.html#s12-5">เล่ม 1 Part V §12.5</a>)</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ ครึ่งชีวิตที่คุณวัดได้ สั้นกว่าความจริงเสมอ</div>
+<p>ตัวเลข 14% ไม่ใช่ความบังเอิญของ seed — <strong>มันคือ Kendall bias ตัวเดียวกับที่ <a href="#s8-4">§8.4</a> เจอในแบบฝึกหัด</strong> (φ จริง 0.98 แต่ฟิตได้ 0.9572) · φ̂ เอนต่ำ → ln φ̂ ติดลบมากกว่าจริง → ครึ่งชีวิตสั้นกว่าจริง</p>
+<p><strong>ผลกระทบต่อเงินจริง เป็นทิศที่แย่ทั้งสองทาง:</strong></p>
+<ul>
+<li>คุณคิดว่าจะถือ 6 วัน ของจริง 7 วัน → <strong>ประเมินต้นทุนเงินทุนและค่าประกันต่ำไป</strong></li>
+<li>คุณคิดว่ามันหุบเร็ว → <strong>กล้าเข้าไม้ใหญ่กว่าที่ควร</strong></li>
+<li>ช่วง 3.6–9.0 วันแปลว่า <strong>คุณแยกคู่ที่หุบใน 4 วันกับคู่ที่หุบใน 9 วันไม่ออกเลย</strong> ด้วยข้อมูล 1 ปี</li>
+</ul>
+<p><strong>ทำยังไง:</strong> ใช้ <a href="math-part11.html#s13-1">bootstrap (เล่ม 2 · F บทที่ 13)</a> หาช่วงของครึ่งชีวิต แล้ววางแผนด้วย<strong>ขอบบน</strong>ไม่ใช่ค่ากลาง · และอย่าตั้งกฎที่ไวต่อครึ่งชีวิตระดับวันเดียว เพราะคุณวัดมันไม่ได้แม่นขนาดนั้น</p></div>
+
+<div class="bx bp"><div class="bt">💎 OU โผล่ที่ไหนในการเงินบ้าง — และที่ไหนที่<u>ไม่</u>ควรใช้</div>
+<div class="tw"><table>
+<tr><th>ใช้ได้</th><th>เพราะ</th></tr>
+<tr><td class="nw">spread ของคู่หุ้น cointegrated</td><td>มีจุดยึดจริง — ทั้ง<a href="#ch9">บทที่ 9</a> ตั้งอยู่บนข้อนี้</td></tr>
+<tr><td class="nw">ความผันผวน (log σ)</td><td>สูงแล้วลง ต่ำแล้วขึ้น ไม่ลอยหนีไปตลอด</td></tr>
+<tr><td class="nw">อัตราดอกเบี้ยระยะสั้น</td><td>โมเดล <strong>Vasicek</strong> คือ OU ตรง ๆ</td></tr>
+<tr><td class="nw">basis ของ futures</td><td>ถูกบังคับให้ลู่เข้าศูนย์ที่วันหมดอายุ</td></tr>
+</table></div>
+<p><strong>❌ ที่ไม่ควรใช้: ราคาหุ้นเดี่ยว ๆ</strong> · การใช้ OU กับราคาหุ้นเท่ากับสมมติว่ามัน "มีราคาที่ถูกต้อง" ที่คอยดึงกลับ ซึ่ง<strong>ขัดกับ <a href="#s8-6">§8.6</a> ทั้งหัวข้อ</strong> · ราคาหุ้นคือ GBM (ไม่มีจุดยึด) ไม่ใช่ OU · <strong>ความผิดพลาดนี้จะทำให้คุณ "ซื้อถัวลงมาเรื่อย ๆ" ในหุ้นที่กำลังจะลงต่อ</strong> เพราะโมเดลบอกว่าเดี๋ยวมันก็เด้ง</p></div>
+
 <h3 id="s8-5">8.5 MA · ARIMA — ต่อจิ๊กซอว์ให้ครบ</h3>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> AR ใช้ "ค่าในอดีต" ทำนาย · <strong>MA (Moving Average)</strong> ใช้ "ความผิดพลาดในอดีต" ทำนาย · เอามารวมกันได้ <strong>ARMA</strong> · เติมขั้นตอน differencing เข้าไปได้ <strong>ARIMA</strong> ซึ่งเป็นชื่อที่เจอบ่อยที่สุด</p>
@@ -316,11 +410,12 @@ ARIMA(1,1,1) = difference แล้วใส่ AR+MA  ← ที่ใช้ก
 <p><strong>มือใหม่เห็น:</strong> "ถ้าทำนายราคาไม่ได้ ก็เทรดไม่ได้สิ"<br>
 <strong>คนในตลาดเห็น:</strong> เงินส่วนใหญ่ไม่ได้มาจากการทายทิศ แต่มาจาก <strong>ความสัมพันธ์ที่ mean-revert</strong> (pairs, basis, spread), <strong>การขายความผันผวน</strong> (เล่ม 1 Part IV) และ <strong>การจัดพอร์ต</strong> (เล่ม 2 · A/B) · ทั้งสามอย่างไม่ต้องรู้ว่าพรุ่งนี้ตลาดขึ้นหรือลงเลย</p></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 8</div>
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 8</div>
 <ul>
 <li><strong>เช็ค stationary ก่อนเสมอ</strong> — ADF p &lt; 0.05 = นิ่ง = ทำงานต่อได้ · ไม่นิ่งให้ difference</li>
 <li><strong>ACF ที่ลดช้ามาก = สัญญาณอนุกรมไม่นิ่ง</strong> (random walk ที่ lag 8 ยังสูง 0.72)</li>
 <li><strong>φ = 1 คือเส้นแบ่ง</strong> — φ &lt; 1 ดึงกลับหาค่าเฉลี่ย (เทรดได้) · φ = 1 คือราคาหุ้น (ทายทิศไม่ได้)</li>
+<li><strong>AR(1) กับ Ornstein-Uhlenbeck คือตัวเดียวกัน</strong> — φ = e<sup>−θΔt</sup> · ครึ่งชีวิต ln2/θ · <strong>แต่ที่ข้อมูล 1 ปี ครึ่งชีวิตที่วัดได้ต่ำกว่าความจริง 14% และเหวี่ยงได้ตั้งแต่ 3.6 ถึง 9.0 วัน</strong> — อย่าตั้งกฎที่ไวต่อครึ่งชีวิตระดับวันเดียว</li>
 </ul></div>
 
 <div class="pq">ราคาหุ้นสองตัวต่างก็เดินสุ่มทำนายไม่ได้ — แต่ถ้า "ระยะห่าง" ระหว่างมันดึงกลับหาค่าเฉลี่ยเสมอล่ะ?</div>
@@ -329,7 +424,7 @@ ARIMA(1,1,1) = difference แล้วใส่ AR+MA  ← ที่ใช้ก
 <p>บทที่ 9 จะตอบว่า regression บนอนุกรมที่ไม่นิ่ง<strong>ใช้ได้เมื่อไร</strong> — เมื่อ residual ของมันนิ่ง · กรณีพิเศษนั้นเรียกว่า <strong>cointegration</strong> และเป็นฐานของกลยุทธ์ pairs trading ที่จะสร้างกันตั้งแต่ต้นจนจบ พร้อม backtest</p></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้ (บทที่ 8)</div>
-<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง</p></div>
+<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง · <strong>Ornstein-Uhlenbeck (OU)</strong> = AR(1) ในเวลาต่อเนื่อง <span class="fm" style="display:inline">dx = θ(μ−x)dt + σdW</span> · <strong>θ</strong> = ความแรงของแรงดึงกลับ (φ = e<sup>−θΔt</sup> · ครึ่งชีวิต = ln2/θ)</p></div>
 
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <!-- ========== CHAPTER 8 ========== -->
