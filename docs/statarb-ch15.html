@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.15 — Dynamic Hedging ด้วย Kalman Filter</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 15</div>
+<h1>Dynamic Hedging ด้วย Kalman Filter: β ที่เปลี่ยนตามเวลา</h1>
+<div class="sub">β_t ไม่คงที่ — Kalman Filter track β แบบ real-time โดยไม่ต้อง refit<br>
+ตัวอย่างหลัก: Bybit BTC Perp ↔ Lighter BTC Perp</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">β ระหว่าง Bybit และ Lighter ไม่คงที่ตลอด — เปลี่ยนตามสภาพตลาด Kalman Filter ให้ estimate β_t แบบ online โดยไม่ต้อง refit ทั้งหมด ทำให้ hedge ratio ตามทัน regime เปลี่ยน นี่คือ method หลักของ <strong>Funding Rate Harvest strategy</strong> (ดู <a href="statarb-ch4.html#s4-5">บทที่ 4 §4.5</a>) ที่ต้องการ ε_t ≈ 0 ตลอดเวลา</div>
+<div style="margin-top:10px;text-align:center">
+$$\beta_t = \beta_{t-1} + w_t \qquad \text{(state equation)} \qquad r_{A,t} = \alpha + \beta_t\, r_{B,t} + v_t \qquad \text{(observation)}$$
+</div>
+</div>
+
+<!-- 15.1 -->
+<h2 id="s15-1">15.1 ปัญหาของ Static β</h2>
+
+<p>บทก่อนๆ ใช้ β ที่ estimate จาก OLS บน window คงที่ เช่น 30 วัน แนวทางนี้มีปัญหาหลายประการ</p>
+
+<div class="bx br">
+<div class="bt">ปัญหาของ Rolling OLS</div>
+<ul>
+<li><strong>Lag problem:</strong> β วันนี้คือค่าเฉลี่ยของ 30 วันที่ผ่านมา ไม่ใช่ค่า "ตอนนี้"</li>
+<li><strong>Window selection:</strong> window 7 วัน responsive แต่ noisy; window 60 วัน stable แต่ช้า ไม่มี window ที่ถูกเสมอ</li>
+<li><strong>Regime change:</strong> เมื่อ volatility หรือ liquidity เปลี่ยนกะทันหัน β OLS ปรับไม่ทัน</li>
+<li><strong>Computational cost:</strong> Refit OLS ทุก tick = matrix inversion ซ้ำๆ</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">Kalman Filter แก้ปัญหาอย่างไร?</div>
+<ul>
+<li><strong>Online update:</strong> ปรับ β_t ทุก timestep ด้วยสูตรเดียว — ไม่ต้อง refit ทั้งหมด</li>
+<li><strong>ไม่มี window:</strong> ใช้ Q และ R แทน window — ทั้งคู่มีความหมายทางสถิติชัดเจน</li>
+<li><strong>Uncertainty tracking:</strong> P_t บอก confidence ใน estimate ปัจจุบัน</li>
+<li><strong>Fast computation:</strong> O(1) per update — เหมาะกับ real-time มาก</li>
+</ul>
+</div>
+
+<!-- 15.2 -->
+<h2 id="s15-2">15.2 State Space Model — สองสมการหลัก</h2>
+
+<p>Kalman Filter ทำงานบน State Space Model ซึ่งแบ่งเป็นสองส่วน</p>
+
+<div class="key-idea">
+<div class="ki-label">สมการ State Space</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\beta_t = \beta_{t-1} + w_t, \quad w_t \sim \mathcal{N}(0, Q) \qquad \text{(Process equation)}$$
+</div>
+</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$r_{A,t} = \beta_t \cdot r_{B,t} + v_t, \quad v_t \sim \mathcal{N}(0, R) \qquad \text{(Observation equation)}$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:10px">
+<strong>β_t</strong> = state ที่ซ่อนอยู่ (true hedge ratio ณ เวลา t) — ไม่สังเกตโดยตรง<br>
+<strong>r_{A,t}, r_{B,t}</strong> = return ของ Bybit และ Lighter — สังเกตได้<br>
+<strong>w_t</strong> = process noise — β เปลี่ยนแค่ไหนต่อ step (Q ใหญ่ = เปลี่ยนเร็ว)<br>
+<strong>v_t</strong> = measurement error — ความไม่แน่นอนในการสังเกต return (R = measurement error variance; R ใหญ่ = สัญญาณจาก data noisy → Kalman เชื่อ data น้อยลง)
+</div>
+</div>
+
+<table>
+<tr><th>พารามิเตอร์</th><th>ความหมาย</th><th>ค่าที่ใช้ทั่วไป</th><th>ตัวอย่างตัวเลข</th><th>ผลเมื่อเพิ่ม</th></tr>
+<tr><td>Q (process noise)</td><td>β เปลี่ยนเร็วแค่ไหนต่อ step</td><td>1e-5 ถึง 1e-3</td><td>Q=1e-3 → β drift ≈ √(1e-3) ≈ 0.032 ต่อ bar<br>Q=1e-5 → β drift ≈ 0.003 ต่อ bar (10× ช้ากว่า)</td><td>β ตอบสนองเร็วขึ้น แต่ noisy</td></tr>
+<tr><td>R (measurement error variance)</td><td>ความไม่แน่นอนของ observation — variance ของ noise ใน return ที่สังเกตได้</td><td>1e-4 ถึง 1e-1</td><td>R=0.01 → return std ≈ 1%; R=0.001 → ≈ 0.3%<br>สำหรับ BTC perp hourly: R ≈ 0.0001–0.001 (1e-4 ถึง 1e-3)</td><td>Kalman gain ลด → ปรับช้าลง</td></tr>
+<tr><td>P_0 (initial uncertainty)</td><td>ความไม่แน่ใจใน β ตอนเริ่ม</td><td>1.0</td><td>P_0=1.0 → warm-up ~50 bars; P_0=0.01 → เริ่มเชื่อค่า β เดิมมาก</td><td>warm-up period สั้นลง</td></tr>
+</table>
+
+<!-- 15.3 -->
+<h2 id="s15-3">15.3 Kalman Filter Steps — Predict และ Update</h2>
+
+<p>ทุก timestep มีสองขั้นตอน: <strong>Predict</strong> (คาดการณ์ล่วงหน้า) และ <strong>Update</strong> (ปรับด้วยข้อมูลใหม่)</p>
+
+<div class="bx bb">
+<div class="bt">ขั้นตอน Predict</div>
+<div class="fm">β̂_{t|t-1} = β̂_{t-1|t-1}          (คาด β จาก prior)
+P_{t|t-1} = P_{t-1|t-1} + Q         (uncertainty เพิ่มขึ้น เพราะเวลาผ่าน)</div>
+<p>เพราะ process equation บอกว่า β drift ด้วย w_t ~ N(0,Q) → uncertainty เพิ่มทุก step</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">ขั้นตอน Update (เมื่อเห็น r_A,t และ r_B,t)</div>
+<div class="fm">innovation  = r_{A,t} - β̂_{t|t-1} · r_{B,t}   (ความต่างจากที่คาด)
+S           = r_{B,t}² · P_{t|t-1} + R             (variance ของ innovation)
+K_t         = P_{t|t-1} · r_{B,t} / S              (Kalman Gain)
+β̂_{t|t}    = β̂_{t|t-1} + K_t · innovation         (update β)
+P_{t|t}     = (1 - K_t · r_{B,t}) · P_{t|t-1}     (update uncertainty)</div>
+</div>
+
+<h3>ความหมายของ Kalman Gain K_t</h3>
+<p>K_t อยู่ระหว่าง 0 ถึง 1 และบอกว่า "เชื่อข้อมูลใหม่มากแค่ไหน"</p>
+<ul>
+<li><strong>K_t ใกล้ 1:</strong> เชื่อข้อมูลใหม่มาก (Q ใหญ่หรือ R เล็ก) — β ปรับเร็ว</li>
+<li><strong>K_t ใกล้ 0:</strong> เชื่อ prior มาก (Q เล็กหรือ R ใหญ่) — β ปรับช้า</li>
+<li>ระยะแรก (P สูง): K สูง — warm up เร็ว; เมื่อ P ลด: K ลด — stable estimate</li>
+</ul>
+
+<!-- 15.4 -->
+<h2 id="s15-4">15.4 SVG Diagram — β_t Kalman vs Static OLS</h2>
+
+<img class="chart" src="charts/ch15-kalman-beta.svg" alt="Kalman filter β vs static OLS">
+<div class="caption">เมื่อ regime เปลี่ยน Kalman ปรับ β_t เร็วกว่า OLS มาก ลด hedge error ใน zone สีชมพู</div>
+
+<!-- 15.5 -->
+<h2 id="s15-5">15.5 Pseudo-code: kalman_beta_update()</h2>
+
+<div class="fm">def kalman_beta_update(beta, P, r_A, r_B, Q=1e-5, R=1e-3):
+    # --- Predict step ---
+    beta_pred = beta          # β ไม่เปลี่ยน (random walk assumption)
+    P_pred    = P + Q         # uncertainty เพิ่มขึ้น
+
+    # --- Update step ---
+    innovation = r_A - beta_pred * r_B    # ความต่างจากที่คาด
+    S          = r_B**2 * P_pred + R      # variance ของ innovation
+    K          = P_pred * r_B / S         # Kalman Gain
+
+    beta_new   = beta_pred + K * innovation              # update β
+    P_new      = max((1 - K * r_B) * P_pred, 1e-10)    # guard: P ต้อง > 0 เสมอ
+
+    return beta_new, P_new</div>
+
+<h3>วิธีใช้ใน loop จริง</h3>
+<div class="fm"># Initialization
+beta = 1.0   # เริ่มจาก 1:1 (prior)
+P    = 1.0   # high uncertainty ช่วงแรก
+
+# Real-time update
+for each new price tick:
+    r_A = log(price_A_now / price_A_prev)
+    r_B = log(price_B_now / price_B_prev)
+    beta, P = kalman_beta_update(beta, P, r_A, r_B, Q=1e-5, R=1e-3)
+
+    # Recompute spread with new beta
+    epsilon = log(price_A) - beta * log(price_B)
+    z_score = (epsilon - epsilon_mean) / epsilon_std</div>
+
+<div class="bx bi">
+<div class="bt">⚠️ Implementation Trap: epsilon_mean และ epsilon_std ต้องอัปเดตตาม β</div>
+<p><strong>ทำไม θ และ σ_stat เดิมใช้ไม่ได้?</strong> เพราะ ε = log(P_A) − <em>β</em>·log(P_B) — ถ้า β เปลี่ยน ค่า ε <strong>ทุกจุดในอดีตก็เปลี่ยนด้วย</strong> ราวกับว่าเรา recompute ε series ทั้งหมดใหม่ด้วย β ใหม่ ดังนั้น mean และ std ที่ calibrate ไว้บน ε เดิมจะ mismatch กับ ε ชุดใหม่ทันที</p>
+<p>ตัวอย่าง: β เปลี่ยนจาก 1.000 → 1.005 เมื่อ log(P_B) ≈ 10 → ε เปลี่ยนทุกจุดไป −0.05 → θ เดิมที่ 0.001 กลายเป็น −0.049 ทันที ถ้า z-score ยังใช้ θ เก่า จะ off ไปถาวร</p>
+<p>วิธีแก้ที่แนะนำ: ใช้ <strong>EMA ที่อัปเดต real-time ทุก bar</strong> แทนค่าคงที่จาก calibration:</p>
+</div>
+
+<div class="fm"># ✅ Concrete solution: Welford-style EMA mean+variance
+# Initialization จาก historical calibration
+alpha_ema = 0.02   # EMA decay (effective window ≈ 1/α = 50 bars)
+epsilon_mean = epsilon_0      # ค่าเริ่มต้นจาก historical mean ของ ε
+epsilon_var  = epsilon_var0   # variance เริ่มต้นจาก historical var
+
+# Real-time update loop
+for each new price tick:
+    r_A = log(price_A_now / price_A_prev)
+    r_B = log(price_B_now / price_B_prev)
+
+    # 1. Update β via Kalman
+    beta, P = kalman_beta_update(beta, P, r_A, r_B, Q=1e-5, R=1e-3)
+
+    # 2. Recompute epsilon ด้วย beta ใหม่
+    epsilon = log(price_A) - beta * log(price_B)
+
+    # 3. ✅ FIX: คำนวณ diff ก่อน update mean (Welford-style)
+    # ป้องกัน variance bias จากการใช้ updated mean ใน variance update
+    diff = epsilon - epsilon_mean              # ใช้ OLD mean
+
+    # 4. Update mean
+    epsilon_mean = epsilon_mean + alpha_ema * diff
+
+    # 5. Update variance ด้วย OLD diff (EMA variance: w_new*diff² + w_old*var_old)
+    epsilon_var  = (1 - alpha_ema) * epsilon_var + alpha_ema * diff**2
+    epsilon_std  = sqrt(epsilon_var + 1e-10)   # guard zero division
+
+    # 6. z-score ที่ unbiased
+    z_score = (epsilon - epsilon_mean) / epsilon_std</div>
+
+<!-- 15.6 -->
+<h2 id="s15-6">15.6 Choosing Q and R — Tuning พารามิเตอร์</h2>
+
+<p>การเลือก Q และ R เป็น trade-off ระหว่าง responsiveness กับ stability</p>
+
+<table>
+<tr><th>สถานการณ์</th><th>Q ที่แนะนำ</th><th>R ที่แนะนำ</th><th>ผลที่ได้</th></tr>
+<tr><td>β เปลี่ยนเร็ว (volatile market)</td><td>ใหญ่ (1e-4)</td><td>ปกติ (1e-3)</td><td>β ตอบสนองเร็ว แต่ noisy</td></tr>
+<tr><td>β เปลี่ยนช้า (stable pair)</td><td>เล็ก (1e-6)</td><td>ปกติ (1e-3)</td><td>β smooth แต่ lag เมื่อ regime เปลี่ยน</td></tr>
+<tr><td>Data noisy มาก (thin market)</td><td>ปกติ (1e-5)</td><td>ใหญ่ (1e-2)</td><td>ไม่ over-react ต่อ noise</td></tr>
+<tr><td>Data สะอาด (deep market)</td><td>ปกติ (1e-5)</td><td>เล็ก (1e-4)</td><td>update เร็วขึ้นจาก each observation</td></tr>
+</table>
+
+<h3>วิธีหา Q และ R จากข้อมูล</h3>
+<div class="bx ba">
+<div class="bt">Empirical Calibration</div>
+<ul>
+<li><strong>R:</strong> ประมาณจาก variance ของ residual ε บน historical data<br>
+<code>R ≈ Var(r_A − β_static · r_B)</code></li>
+<li><strong>Q:</strong> ประมาณจาก variance ของการเปลี่ยนแปลง β ระหว่าง rolling windows<br>
+<code>Q ≈ Var(β_{t} − β_{t-1})</code> จาก rolling OLS ที่ window เล็ก</li>
+<li><strong>Cross-validate:</strong> test บน out-of-sample เพื่อหา (Q,R) ที่ให้ spread mean-revert ที่สุด</li>
+</ul>
+</div>
+
+<!-- 15.7 -->
+<h2 id="s15-7">15.7 Position Adjustment เมื่อ β เปลี่ยน</h2>
+
+<p>เมื่อ Kalman ให้ β_new ≠ β_old คุณต้องปรับ position เพื่อรักษา hedge ratio ที่ถูกต้อง</p>
+
+<div class="key-idea">
+<div class="ki-label">สูตรปรับ Position</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\Delta N_B = (\hat\beta_{\text{new}} - \hat\beta_{\text{old}}) \times N_A$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>delta_position_B > 0:</strong> β เพิ่ม → ต้อง short B เพิ่มขึ้น (หรือ long B น้อยลง)<br>
+<strong>delta_position_B &lt; 0:</strong> β ลด → ต้อง short B น้อยลง (หรือ long B เพิ่ม)<br>
+ทำ adjustment เฉพาะถ้า |delta| > threshold เพื่อลด transaction cost
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">Threshold สำหรับ Rebalancing</div>
+<p>อย่าปรับทุก tick เพราะ transaction cost กินกำไร ตั้ง threshold เช่น:</p>
+<div class="fm">if abs(beta_new - beta_old) > 0.01:  # β เปลี่ยน > 1%
+    delta = (beta_new - beta_old) * size_A
+    adjust_position(venue="Lighter", delta=delta)
+    beta_old = beta_new</div>
+<p>0.01 เป็น rule of thumb — calibrate จาก fee structure จริง</p>
+</div>
+
+<!-- 15.8 -->
+<!-- 15.8 -->
+<h2 id="s15-8">15.8 ราคาของการ Adapt: Q, Turnover ของ β, และ Deadband</h2>
+
+<p>§15.7 แนะนำ threshold คร่าวๆ (|Δβ|&gt;0.01) เพื่อลด transaction cost — แต่ไม่ได้อธิบายว่า <strong>ทำไม Kalman ถึงมีต้นทุนสูงกว่า static OLS โดยธรรมชาติ</strong> และควรคำนวณ threshold นั้นจากอะไรบ้าง นี่คือปัญหาที่ผู้ใช้เล่มนี้เจอจริง: ใช้ Kalman "ดีกว่า rolling OLS เพราะ adapt เร็ว" แล้วขาดทุนจาก churn โดยไม่รู้ตัว</p>
+
+<div class="bx bk">
+<div class="bt">ยิ่ง Adapt เร็ว ยิ่งจ่าย Fee บ่อย — และ ε ที่ดู "นิ่งเกินไป" อาจเป็นสัญญาณเตือน</div>
+<p>Kalman filter อัปเดต β ทุก observation ตามสัดส่วน Q/R — ถ้า Q (process noise) ตั้งใหญ่ β จะ "วิ่งตาม noise" ทุกแท่ง และทุกครั้งที่ β เปลี่ยน ระบบต้อง rebalance ขา hedge = ส่งคำสั่งจริงขนาด |Δβ|×notional ซึ่งจ่าย fee+slippage ทุกรอบ — edge ของ stat arb ต่อเทรดบางมาก (หลัก bps) แต่ churn จากการ rebalance รายวัน/รายชั่วโมงสะสมเป็น % ต่อเดือนได้ง่ายๆ กลยุทธ์ที่ direction ถูกก็ยังขาดทุนสุทธิ</p>
+<p style="margin-top:6px">ซ้ำร้าย: β ที่แกว่งเร็วทำให้ ε นิ่งเกินจริง (residual เล็กลงเพราะโมเดล "ตามใจ" ข้อมูลมากเกินไป) → z-score ไม่ค่อยถึง threshold → เทรดน้อยลง แต่ rebalance cost ไม่หยุด = จ่ายต้นทุนโดยไม่มีรายได้มาชดเชย</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Turnover ของ β — Metric ที่ต้องวัดตอน Calibrate ไม่ใช่แค่ดูตอน Fit</div>
+<div class="ki-eq">turnover = Σ|β_t − β_{t-1}|  (สะสมตลอดช่วงที่ backtest)</div>
+<div class="ki-text" style="margin-top:8px">
+rebalance_cost_total ≈ turnover × notional_B × fee_rate<br>
+เทียบกับ gross_edge_total ที่กลยุทธ์คาดว่าจะเก็บได้ในช่วงเดียวกัน — ถ้า rebalance_cost_total &gt; ~30% ของ gross_edge_total ให้ถือว่า config นั้น (Q สูงเกินไป หรือไม่มี deadband) ใช้ไม่ได้
+</div>
+</div>
+
+<div class="fm"><span class="c"># แยกนาฬิกาสองอัน — อัปเดต "ความเชื่อ" กับ "position" ไม่ต้องรอบเดียวกัน</span>
+<span class="kw">def</span> <span class="fn">kalman_update_with_deadband</span>(
+        beta_belief, beta_position, observation, Q, R, deadband):
+    <span class="c"># 1) อัปเดตความเชื่อเรื่อง β ได้ทุกแท่ง (ไม่มีต้นทุน — แค่คำนวณ)</span>
+    beta_belief_new = <span class="fn">kalman_step</span>(beta_belief, observation, Q, R)
+
+    <span class="c"># 2) ปรับ position จริงเฉพาะเมื่อทะลุ deadband เท่านั้น (นี่คือขั้นที่มีต้นทุน)</span>
+    <span class="kw">if</span> abs(beta_belief_new - beta_position) &gt; deadband:
+        <span class="fn">rebalance_position</span>(delta=beta_belief_new - beta_position)
+        beta_position = beta_belief_new
+        <span class="c"># else: ความเชื่อเปลี่ยนแล้ว แต่ position ยังไม่ขยับ — ประหยัด fee</span>
+
+    <span class="kw">return</span> beta_belief_new, beta_position
+
+<span class="c"># deadband ที่ถูกต้อง: rebalance คุ้มก็ต่อเมื่อ</span>
+<span class="c"># (ความเสี่ยงจาก hedge เพี้ยน ณ ขนาด Δβ นี้) > (fee ของการปรับ)</span></div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: Churn กิน Edge เกือบครึ่ง</div>
+<div class="fm">notional ขา B = <span class="nm">$50,000</span>
+β แกว่งวันละ ~<span class="nm">0.02</span> จาก noise (Q ตั้งสูงเกินไป ไม่มี deadband)
+
+rebalance ต่อวัน = <span class="nm">0.02</span> × <span class="nm">$50,000</span> = <span class="nm">$1,000</span> notional ที่ต้องปรับ
+taker fee <span class="nm">0.055%</span> × <span class="nm">$1,000</span> = <span class="nm">$0.55</span>/วัน ≈ <span class="nm">$17</span>/เดือน ต่อคู่
+
+<span class="c"># ถ้า expected edge ของคู่นี้ ≈ $40/เดือน</span>
+churn กินไปเกือบครึ่ง (<span class="nm">$17</span>/<span class="nm">$40</span> ≈ <span class="nm">43%</span>) โดยยังไม่รวม slippage</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน — 5 ข้อ</div>
+<ol>
+<li><strong>Deadband/hysteresis:</strong> rebalance เฉพาะเมื่อ |β_now − β_position| &gt; δ โดยตั้ง δ จากต้นทุนจริง ไม่ใช่ตัวเลขลอยๆ แบบ 0.01 ใน §15.7</li>
+<li><strong>ลด Q หรือตรึง Q/R จาก walk-forward</strong> ไม่ใช่ค่า default — วัด turnover เป็น metric ตอน calibrate ไม่ใช่แค่ดูว่า fit สวย</li>
+<li><strong>แยกนาฬิกา:</strong> อัปเดต<em>ความเชื่อ</em>เรื่อง β ได้ทุกแท่ง แต่<em>ปรับ position</em>ตามรอบเวลาที่หยาบกว่า (เช่น วันละครั้ง) หรือเมื่อทะลุ deadband เท่านั้น</li>
+<li>เพิ่มบรรทัดใน backtest: นับ "จำนวนครั้ง rebalance × ค่าเฉลี่ย cost ต่อครั้ง" แยกจาก entry/exit cost (ดู <a href="statarb-ch19.html#s19-11">ch19 §19.11</a>) — ถ้าเกิน 30% ของ gross edge ให้ถือว่า config นั้นใช้ไม่ได้</li>
+<li>เทียบ baseline เสมอ: rolling OLS + recalibrate รายสัปดาห์ มักชนะ Kalman หลังหักต้นทุนบ่อยกว่าที่คิด — Kalman "adapt เร็วกว่า" ไม่ได้แปลว่า "กำไรมากกว่า" เสมอไป</li>
+</ol>
+</div>
+
+<h2 id="s15-9">15.9 Running Example — Bybit↔Lighter β Drift</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: β เปลี่ยนจาก 0.98 → 1.05 ใน 2 ชั่วโมง</div>
+<p>สถานการณ์: BTC มี funding rate surge บน Lighter ทำให้ราคา Lighter ขึ้นเร็วกว่า Bybit ชั่วคราว</p>
+<div class="fm">เริ่มต้น:  beta = 0.98, P = 0.001
+t=0h:    r_A=+0.12%, r_B=+0.10%  → innovation ≠ 0 → beta เริ่มปรับขึ้น
+t=0.5h:  r_A=+0.15%, r_B=+0.14%  → beta ≈ 0.995
+t=1.0h:  r_A=+0.18%, r_B=+0.17%  → beta ≈ 1.015
+t=1.5h:  r_A=+0.20%, r_B=+0.19%  → beta ≈ 1.035
+t=2.0h:  r_A=+0.22%, r_B=+0.21%  → beta ≈ 1.05  ✓</div>
+
+<p><strong>การปรับ position:</strong></p>
+<ul>
+<li>size_A = 1.0 BTC (Long Bybit)</li>
+<li>เริ่มต้น short Lighter = 0.98 BTC (β=0.98)</li>
+<li>หลัง 2 ชั่วโมง β=1.05 → delta = (1.05−0.98)×1.0 = <strong>0.07 BTC</strong></li>
+<li>ต้อง short Lighter เพิ่มอีก 0.07 BTC เพื่อ hedge ถูกต้อง</li>
+</ul>
+<p><strong>ค่า ε ถ้าไม่ปรับ:</strong> ε = log(P_A) − 0.98×log(P_B) แต่ β จริงเป็น 1.05 → ε drift ขึ้นจาก basis error ไม่ใช่ alpha จริง → อาจ trigger entry ปลอม</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">ข้อปฏิบัติจริง</div>
+<p>Run Kalman filter ที่ความถี่ 1 นาที โดยใช้ Q=1e-4 (process noise) และ R=σ²_residual ที่ re-estimate ทุกวัน แจ้งเตือนถ้า |β_t − β_{t-1}| &gt; 0.1 ใน step เดียว (น่าจะเป็น data error หรือ regime jump) ใช้ Kalman β สำหรับ intraday sizing และใช้ OLS β 30 วันเป็นการตรวจสอบ — ถ้าทั้งสองต่างกัน &gt; 0.15 ให้ขยาย stop เป็น ±3σ จนกว่าจะ converge</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — ข้อจำกัดของ Kalman Filter</div>
+<p>Kalman filter สมมติ linear Gaussian state space — เมื่อ β กระโดด discontinuously (exchange glitch, hard fork news) filter จะ "ตาม" หลายรอบจึงจะ converge ช่วงนั้น model ใช้ β ที่ผิด ปัญหาที่สอง: อัตราส่วน Q/R ควบคุมความเร็ว tracking vs noise — ถ้า ratio ผิด filter จะช้าเกินไป (miss β drift จริง) หรือเร็วเกินไป (ตาม noise) ต้อง tune empirically ต่อ pair</p>
+</div>
+
+<!-- 15.9 -->
+<h2 id="s15-10">15.10 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 15.1 — คำนวณ Kalman Update ด้วยมือ</div>
+<p>ให้: beta = 1.00, P = 0.001, Q = 1e-5, R = 1e-3<br>
+Observation ใหม่: r_A = +0.15%, r_B = +0.12%</p>
+<p><strong>ถาม:</strong> คำนวณ beta_new และ P_new ทีละขั้น</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Predict:</strong><br>
+beta_pred = 1.00<br>
+P_pred = 0.001 + 1e-5 = 0.00101</p>
+<p><strong>Update:</strong><br>
+innovation = 0.0015 − 1.00 × 0.0012 = 0.0003<br>
+S = (0.0012)² × 0.00101 + 0.001 = 1.454e-9 + 0.001 ≈ 0.001001<br>
+K = 0.00101 × 0.0012 / 0.001001 = 1.212e-6 / 0.001001 ≈ 0.001210<br>
+beta_new = 1.00 + 0.001210 × 0.0003 ≈ <strong>1.000000363</strong><br>
+P_new = (1 − 0.001210 × 0.0012) × 0.00101 ≈ <strong>0.001009</strong></p>
+<p>β ปรับขึ้นเล็กมากเพราะ K เล็ก (P เล็ก = confident ใน prior) — หลัง warmup K จะเพิ่มขึ้นตามข้อมูลสะสม</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 15.2 — ผลของ Q ต่าง</div>
+<p>ทดสอบ Kalman กับ Q = 1e-6 และ Q = 1e-3 บน series เดียวกันที่ β จริงเปลี่ยนจาก 1.0 → 1.1 ใน 100 steps</p>
+<p><strong>ถาม:</strong> describe ว่า Q แต่ละค่าจะ track β_true ได้อย่างไร มีผลดีผลเสียอะไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Q = 1e-6 (เล็กมาก):</strong> Kalman คิดว่า β เปลี่ยนช้ามาก → P_pred เพิ่มช้า → K เล็ก → β estimate ค่อยๆ ตาม β จริงแต่ช้า ณ t=100 อาจยังอยู่ที่ ~1.03 แทน 1.1 → hedge error ใหญ่</p>
+<p><strong>Q = 1e-3 (ใหญ่):</strong> Kalman คิดว่า β เปลี่ยนเร็ว → P_pred เพิ่มเร็ว → K ใหญ่ → ตาม β จริงเร็ว แต่ก็ reactive ต่อ noise ด้วย → β estimate noisy ในช่วงที่ β จริงคงที่</p>
+<p><strong>สรุป:</strong> Q = 1e-5 มักเป็น starting point ที่ดี แล้วปรับจาก cross-validation</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 15.3 — Rebalancing Threshold</div>
+<p>β เปลี่ยนจาก 1.00 → 1.03 (delta = 0.03), size_A = 5 BTC, Lighter taker fee = 0.07%<br>
+ราคา BTC = $65,000</p>
+<p><strong>ถาม:</strong> ค่า transaction cost ของการ rebalance คือเท่าไร? ควร rebalance หรือไม่ ถ้า expected P&amp;L จากการแก้ hedge error = $35?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>delta position:</strong> 0.03 × 5 BTC = 0.15 BTC<br>
+<strong>Value ที่ rebalance:</strong> 0.15 × $65,000 = $9,750<br>
+<strong>Fee:</strong> $9,750 × 0.07% = <strong>$6.83</strong></p>
+<p><strong>Decision:</strong> expected P&amp;L = $35 > cost = $6.83 → <strong>ควร rebalance</strong><br>
+Net benefit = $35 − $6.83 = $28.17</p>
+<p>ถ้า expected P&amp;L น้อยกว่า $6.83 → อย่า rebalance ปล่อยให้ drift เล็กน้อยดีกว่าเสีย fee</p>
+</div>
+</details>
+</div>
+
+<div class="bx bi">
+<div class="bt">อ้างอิงสำคัญ (References)</div>
+<ul>
+<li><strong>Kalman, R. E. (1960).</strong> A new approach to linear filtering and prediction problems. <em>Journal of Basic Engineering</em>, 82(1), 35–45. — บทความต้นฉบับ Kalman filter; state-space recursion สำหรับ dynamic β_t ใน Ch.15</li>
+<li><strong>Welch, G., &amp; Bishop, G. (2006).</strong> <em>An Introduction to the Kalman Filter.</em> UNC Chapel Hill TR 95-041. — tutorial ที่อ่านง่ายที่สุดสำหรับ practical Kalman implementation; ครอบคลุม process noise Q และ measurement noise R</li>
+<li><strong>Elliott, R. J., van der Hoek, J., &amp; Malcolm, W. P. (2005).</strong> Pairs trading. <em>Quantitative Finance</em>, 5(3), 271–276. — ประยุกต์ Kalman filter กับ pairs trading spread ที่คล้าย Ch.15 โดยตรง</li>
+<li><strong>Vidyamurthy, G. (2004).</strong> <em>Pairs Trading: Quantitative Methods and Analysis.</em> Wiley. — Ch.8 ของหนังสือนี้กล่าวถึง dynamic hedge ratio ด้วย Kalman</li>
+</ul>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.15 Dynamic Hedging ด้วย Kalman Filter | ต่อไป → <strong>Ch.16: Multi-leg Portfolios</strong>
+</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.16 — Multi-leg Portfolios</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 16</div>
+<h1>Multi-leg Portfolios: บริหาร Portfolio ของ Spreads</h1>
+<div class="sub">หลาย spread พร้อมกัน — จัดการ correlation และ allocate capital อย่างมีประสิทธิภาพ<br>
+ตัวอย่าง: BTC Bybit↔Lighter + ETH Bybit↔Lighter + BTC Basis</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">การรัน spread เดียวมีความเสี่ยงจาก idiosyncratic event ของ pair นั้น — portfolio ของหลาย spread ลด risk แต่ต้องระวัง <strong>hidden correlation</strong> ที่เพิ่มขึ้นในช่วงวิกฤต</div>
+<div style="margin-top:10px;text-align:center">
+$$w^* = \arg\min_w\; w^\top \Sigma w \quad \text{s.t.}\;\; w^\top \mu \geq \mu_{\min},\; \mathbf{1}^\top w = 1,\; w \geq 0$$
+</div>
+</div>
+
+<h2 id="s16-1">16.1 ทำไมต้องหลาย Spread</h2>
+
+<p>การ diversify ข้าม spread ให้ประโยชน์หลัก:</p>
+
+<div class="bx bg">
+<div class="bt">ประโยชน์</div>
+<ul>
+<li>ลด variance ของ P&amp;L รวม — spread แต่ละคู่ไม่ correlated 100%</li>
+<li>Deploy capital ต่อเนื่อง — ถ้า spread หนึ่ง "ไม่มีสัญญาณ" spread อื่นอาจมี</li>
+<li>ลด dependency บน pair เดียว — ถ้า exchange หนึ่ง maintenance อีก strategy ยังรัน</li>
+</ul>
+</div>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยง</div>
+<ul>
+<li>Hidden correlation — BTC dump → ทุก crypto spread volatile พร้อมกัน</li>
+<li>Capital lock-up — ต้องการ margin สำหรับแต่ละ spread แยกกัน</li>
+<li>Operational complexity — monitor หลาย pair พร้อมกัน</li>
+</ul>
+</div>
+
+<h2 id="s16-2">16.2 Covariance Matrix ของ Spreads</h2>
+
+<p>นิยาม Σ = covariance matrix ขนาด n×n (n = จำนวน spread) โดย Σ_ij = Cov(ε_i, ε_j) = E[(ε_i − μ_i)(ε_j − μ_j)]</p>
+<p>ในทางปฏิบัติมักแสดงในรูป <strong>correlation matrix</strong> (normalize ด้วย std ของแต่ละ spread) เพื่อให้อ่านค่าได้ง่ายกว่า — diagonal = 1.0 เสมอ ค่า off-diagonal = Pearson correlation ρ_ij ∈ [−1, 1]:</p>
+<div class="fm">Correlation matrix ρ_ij = Σ_ij / (σ_i × σ_j)
+  ← normalized covariance (ใช้แสดง/อ่านค่า)
+Covariance matrix Σ_ij   = ρ_ij × σ_i × σ_j
+  ← ที่ใส่ใน MVO formula จริง
+
+ตัวอย่าง 3 spreads (correlation form):
+         BTC_B↔L  ETH_B↔L  BTC_Basis
+BTC_B↔L [  1.00     0.42     0.15   ]
+ETH_B↔L [  0.42     1.00     0.08   ]
+BTC_Basis[  0.15     0.08     1.00   ]
+
+หมายเหตุ: diagonal = 1.00 เพราะ normalize แล้ว — เมื่อใส่ใน MVO ต้อง de-normalize
+กลับเป็น Σ ก่อนโดย: Σ_ij = ρ_ij × σ_i × σ_j</div>
+
+<img class="chart" src="charts/ch16-cov-matrix.svg" alt="Spread correlation matrix">
+<p class="caption">Correlation heatmap — สี่เหลี่ยมเข้มหมายถึง correlation สูง (ไม่ดีสำหรับ diversification)</p>
+
+<h2 id="s16-3">16.3 Mean-Variance Allocation</h2>
+
+<p>เป้าหมาย: หา weight vector <strong>w</strong> ที่ maximize risk-adjusted return:</p>
+
+<div class="fm">max  w'μ − λ × w'Σw
+ w
+
+subject to:  Σ w_i = 1,  w_i ≥ 0,  w_i ≤ w_max
+
+สูตร closed-form (ก่อนใส่ constraints):  w* = (1/2λ) × Σ⁻¹ × μ
+หมายเหตุ: สูตรนี้ใช้เมื่อ ignore constraints
+— ในทางปฏิบัติ clip ด้วย [0, w_max] แล้ว normalize ตาม §16.6
+
+โดย:
+  μ   = vector ของ expected return แต่ละ spread
+  Σ   = covariance matrix
+  λ   = risk aversion parameter (ยิ่งสูง = conservative มากขึ้น)
+  w*  = optimal weights</div>
+
+<div class="bx ba">
+<div class="bt">ข้อควรระวัง</div>
+<p>Mean-variance optimization <strong>sensitive มากต่อ estimate ของ μ</strong> — error เล็กน้อยใน μ ทำให้ w* เปลี่ยนแปลงมาก วิธีแก้: ใช้ shrinkage (เช่น Ledoit-Wolf) หรือ equal-weight เป็น baseline แล้วปรับ deviation ตาม conviction เท่านั้น</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">Walk-Forward Test สำหรับ Portfolio Weights — น้ำหนักที่ได้ stable ใน out-of-sample ไหม?</div>
+<p>MVO weights ที่ optimal ใน in-sample อาจไม่ stable เลยใน out-of-sample — นี่คือ "error maximization" problem (Michaud 1989): MVO ขยาย estimation error ของ μ และ Σ ทำให้ weight swing รุนแรงระหว่างรอบ reoptimization</p>
+<ol>
+<li>แบ่งข้อมูล: 6 เดือนแรก = training → compute w*; เดือน 7–9 = out-of-sample → วัด realized Sharpe</li>
+<li>เลื่อน window ทีละเดือน (rolling) → ดูว่า w* เปลี่ยนแปลงแค่ไหนแต่ละรอบ</li>
+<li><strong>สัญญาณไม่ดี:</strong> weight ของ spread เดิมกระโดด &gt;30% ระหว่างรอบ → μ estimate ไม่ stable → ใช้ equal-weight แทน</li>
+</ol>
+<div class="fm">def portfolio_walk_forward(returns_df, train_months=6, test_months=3):
+    results = []
+    prev_w = None
+    n_spreads = returns_df.shape[1]   # จำนวน spread columns
+    # rolling_windows() yields month-start integer indices (0, 1, 2, ...)
+    for start in rolling_windows(returns_df, train_months, step=1):
+        train_end = start + train_months
+        test_end  = train_end + test_months
+        train_df  = returns_df.iloc[start:train_end]
+        test_df   = returns_df.iloc[train_end:test_end]
+
+        w_mvo   = portfolio_allocate(estimate_mu(train_df),
+                                     estimate_cov(train_df))
+        w_equal = [1/n_spreads] * n_spreads
+
+        sharpe_mvo   = compute_sharpe(test_df @ w_mvo)
+        sharpe_equal = compute_sharpe(test_df @ w_equal)
+        weight_jump  = max(abs(w_mvo[i] - prev_w[i])
+                           for i in range(n_spreads)) if prev_w else 0
+        results.append({
+            "sharpe_mvo": sharpe_mvo, "sharpe_equal": sharpe_equal,
+            "max_weight_change": weight_jump})
+        prev_w = w_mvo
+    return results
+# Rule: ถ้า sharpe_equal >= 0.9 × sharpe_mvo โดยเฉลี่ย
+#       → ใช้ equal-weight ใน production</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">Concentration Risk — 3 BTC Spread ไม่ใช่ Diversification จริง</div>
+<p>Portfolio ที่ประกอบด้วย BTC Bybit↔Lighter + ETH Bybit↔Lighter + BTC Perp Basis ทั้งสามตัวมี <strong>common factor ร่วมกัน: crypto market sentiment</strong> ในช่วง BTC crash ทุก spread ถูก shock พร้อมกัน diversification benefit ที่วัดได้ในช่วงปกติจะหายไปทันที</p>
+<table>
+<tr><th>Spread</th><th>Common Factor</th><th>Risk ที่แท้จริงที่ต่างกัน</th></tr>
+<tr><td>BTC Bybit↔Lighter</td><td>BTC price + venue liquidity</td><td>Lighter-specific liquidity event</td></tr>
+<tr><td>ETH Bybit↔Lighter</td><td>BTC price (ETH corr ≈ 0.8) + venue</td><td>ETH protocol/upgrade event</td></tr>
+<tr><td>BTC Perp Basis</td><td>BTC price + market leverage sentiment</td><td>Funding rate cycle timing</td></tr>
+</table>
+<p><strong>วิธีลด concentration:</strong> เพิ่ม spread จาก asset class ที่ต่างออกไป (เช่น Gold futures basis, FX cross, Equity stat arb) — ไม่ใช่แค่เพิ่มจำนวน spread ใน crypto เพราะ diversification นั้นเป็น "ภาพลวงตา" ในช่วงวิกฤต</p>
+</div>
+
+<h2 id="s16-4">16.4 Portfolio Weight — Pie Chart</h2>
+
+<img class="chart" src="charts/ch16-portfolio-weights.svg" alt="Portfolio weight allocation">
+<p class="caption">ตัวอย่าง capital allocation — BTC spread ได้ weight มากสุดเพราะ Sharpe สูงสุดและ risk ต่ำสุด</p>
+
+<h2 id="s16-5">16.5 Drawdown Comparison</h2>
+
+<img class="chart" src="charts/ch16-drawdown-comparison.svg" alt="Drawdown: individual vs portfolio">
+<p class="caption">Portfolio ผสม (เขียว) มี drawdown น้อยกว่าและ P&amp;L smoother กว่า individual spread</p>
+
+<h2 id="s16-6">16.6 Pseudo-code portfolio_allocate()</h2>
+
+<div class="fm">def portfolio_allocate(expected_returns, cov_matrix, 
+                        risk_aversion=1.0, max_weight=0.6,
+                        min_weight=0.05):
+    """
+    expected_returns: vector of μ_i (annualized expected return)
+    cov_matrix:       Σ matrix (n×n)
+    risk_aversion:    λ parameter (higher = more conservative)
+    max_weight:       cap ต่อ strategy เดียว
+    min_weight:       minimum allocation ถ้า include strategy นั้น
+    """
+    n = len(expected_returns)
+
+    # Inverse covariance — ใช้ sklearn LedoitWolf หรือ np.linalg.inv ใน production
+    inv_cov = ledoit_wolf_inverse(cov_matrix)
+
+    # Raw MV optimal weights
+    raw_weights = inv_cov @ expected_returns / (2 * risk_aversion)
+
+    # Clip to [0, max_weight]
+    weights = np.clip(raw_weights, 0, max_weight)
+
+    # Zero out strategies below min_weight threshold
+    weights = [w if w >= min_weight else 0.0 for w in weights]
+
+    # Normalize to sum = 1
+    total = sum(weights)
+    if total > 0:
+        weights = [w / total for w in weights]
+
+    return weights  # list of n weights summing to 1.0</div>
+
+<h2 id="s16-7">16.7 Correlation Risk ในช่วงวิกฤต</h2>
+
+<div class="bx br">
+<div class="bt">Hidden Correlation Problem</div>
+<p>ในช่วงตลาดปกติ BTC spread กับ ETH spread correlate 0.42 — แต่ในช่วง BTC dump correlation อาจพุ่งเป็น 0.85+ เพราะทั้งสองตลาดถูก panic ขายพร้อมกัน</p>
+<p>นี่คือ "correlation breakdown" — assumption ของ portfolio optimization ล้มเหลวตอนที่ต้องการ protection มากที่สุด</p>
+</div>
+
+<div class="fm">def detect_correlation_spike(spread_returns, window=30, threshold=0.70):
+    """ตรวจว่า rolling correlation ระหว่าง spreads สูงขึ้นผิดปกติ"""
+    rolling_corr = compute_rolling_correlation(spread_returns, window)
+    max_off_diagonal = max_corr_excluding_diagonal(rolling_corr)
+    
+    if max_off_diagonal > threshold:
+        return True, f"Correlation spike: {max_off_diagonal:.2f}"
+    return False, None</div>
+
+<div class="bx ba">
+<div class="bt">Regime Covariance — Σ ใน Stressed Regime ต่างจาก Normal อย่างมาก</div>
+<p>MVO ใช้ Σ ตัวเดียวตลอด แต่ตาม Regime-Switching model (บทที่ 9) covariance matrix เปลี่ยนตาม regime:</p>
+<table>
+<tr><th>Regime</th><th>ลักษณะของ Σ</th><th>ผลต่อ Portfolio</th></tr>
+<tr><td>Normal</td><td>Correlation ต่ำ (0.3–0.5), variance ต่ำ</td><td>MVO weights ทำงานตามที่คาด</td></tr>
+<tr><td>Stressed</td><td>Correlation สูงขึ้น (0.6–0.8), variance เพิ่ม</td><td>Diversification ลดลง, ควรลด total size</td></tr>
+<tr><td>Broken</td><td>Correlation → 1.0, variance พุ่ง</td><td>Portfolio กลายเป็น undiversified — halt ทุก new entry</td></tr>
+</table>
+<p><strong>แนวทาง:</strong> estimate Σ แยกตาม regime (ใช้ข้อมูลเฉพาะช่วง Normal สำหรับ MVO ปกติ) และใช้ Σ_stressed ในการ stress-test portfolio — ถ้า stressed-Sharpe &lt; 0.5 ของ normal-Sharpe → ลด max_weight ต่อ spread ลง</p>
+</div>
+
+<h2 id="s16-8">16.8 Running Example — 3 Spread Portfolio</h2>
+
+<div class="running-ex">
+<div class="re-title">🔁 Running Example: Portfolio ของ 3 Spreads</div>
+
+<table>
+<thead>
+<tr><th>Strategy</th><th>Weight</th><th>Capital</th><th>Expected Sharpe</th><th>σ ต่อปี</th></tr>
+</thead>
+<tbody>
+<tr><td>BTC Bybit↔Lighter</td><td>50%</td><td>$150,000</td><td>2.1</td><td>12%</td></tr>
+<tr><td>ETH Bybit↔Lighter</td><td>30%</td><td>$90,000</td><td>1.7</td><td>15%</td></tr>
+<tr><td>BTC Perp Basis</td><td>20%</td><td>$60,000</td><td>1.4</td><td>8%</td></tr>
+<tr><td><strong>Portfolio</strong></td><td><strong>100%</strong></td><td><strong>$300,000</strong></td><td><strong>2.3</strong></td><td><strong>10%</strong></td></tr>
+</tbody>
+</table>
+
+<p><strong>สังเกต:</strong> Portfolio Sharpe (2.3) สูงกว่า Sharpe ของแต่ละ strategy เดี่ยว — เป็นผลจาก diversification benefit เมื่อ correlation ไม่เท่ากับ 1</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">ข้อปฏิบัติจริง</div>
+<p>Re-optimize portfolio weights ทุกสัปดาห์ (ไม่ใช่ทุกวัน — transaction cost ของการ rebalance 3 spreads ทุกวันสูงกว่า diversification benefit ที่ได้) ตั้ง minimum weight 10% ต่อ spread (ไม่ให้ weight เป็น 0 เพราะจะทำให้ portfolio ไม่ diversified) ถ้า correlation ระหว่าง spread ใดก็ตามเกิน 0.70 ใน rolling 7 วัน → นับเป็น position เดียวในการคำนวณขนาด</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — ข้อจำกัดของ MVO</div>
+<p>MVO sensitive มากต่อ estimation error ของ μ — error เล็กน้อยทำให้ weight swing รุนแรง ในทางปฏิบัติ equal-weight (1/N) ให้ผล out-of-sample ดีกว่า MVO ในหลายงานวิจัย Correlation spike → 1.0 ในช่วงวิกฤตทำให้ diversification benefit หายไปพอดีตอนที่ต้องการมากที่สุด — ดู Walk-Forward Test ใน §16.3 เพื่อตรวจว่า weights stable หรือเปล่า</p>
+</div>
+
+<h2 id="s16-9">16.9 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">แบบฝึกหัดบทที่ 16</div>
+
+<details>
+<summary>ข้อ 1: ถ้า BTC dump ทำให้ correlation ระหว่าง BTC และ ETH spread เพิ่มเป็น 0.90 — ควรทำอย่างไร?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ลด size ทั้ง portfolio ลง เพราะ diversification benefit หายไป</p>
+<p>เมื่อ correlation สูงขึ้น effective portfolio variance เพิ่มขึ้น — portfolio ที่เคย safe ตอนนี้มี risk สูงกว่าที่ model สมมติ</p>
+<p>วิธีปฏิบัติ: ถ้า max pairwise correlation &gt; 0.70 → ลด total exposure เป็น 50% จนกว่า correlation กลับสู่ปกติ</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 2: ทำไม equal-weight portfolio มักดีกว่า MV optimal ในทางปฏิบัติ?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> เพราะ MV optimization sensitive มากต่อ estimation error ของ μ</p>
+<p>μ ที่ estimate ผิด 1% อาจทำให้ weight เปลี่ยนแปลง 20-30% — in-sample optimal แต่ out-of-sample แย่<br>
+Equal-weight ไม่ต้องการ estimate μ เลย — robust ต่อ model error มากกว่า<br>
+วิธีผสมที่ดี: ใช้ equal-weight เป็น prior แล้วเพิ่ม/ลด weight ตาม conviction ที่มีหลักฐานชัดเจน</p>
+</div>
+</details>
+
+<details>
+<summary>ข้อ 3: เพิ่ม spread ที่ 4 เข้า portfolio — ควรตรวจสิ่งใดก่อน?</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> ตรวจ 3 สิ่งหลัก:</p>
+<ol>
+<li><strong>Correlation กับ existing spreads:</strong> ถ้า &gt; 0.60 → อาจไม่คุ้มค่า หรือต้องลด weight ของ existing spreads ลง</li>
+<li><strong>Net Sharpe ของ portfolio หลัง add:</strong> Portfolio Sharpe ต้องเพิ่มขึ้น ไม่ใช่ลง</li>
+<li><strong>Capital sufficiency:</strong> แต่ละ leg ต้องการ margin — ตรวจว่า total margin requirement ไม่เกิน available capital</li>
+</ol>
+</div>
+</details>
+</div>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

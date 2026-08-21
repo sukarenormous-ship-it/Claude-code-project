@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.10 — Z-score &amp; Robust Statistics</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}details summary::before{content:"▶ "}details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;white-space:pre;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+  <div class="ch-num">Statistical Arbitrage · บทที่ 10</div>
+  <h1>Z-score &amp; Robust Statistics</h1>
+  <div class="sub">วัดว่า spread ห่างจากค่ากลางแค่ไหน — Standard vs Robust</div>
+</div>
+
+<div class="key-idea">
+  <div class="ki-label">Key Idea</div>
+  <p>Z-score converts the spread residual <strong>ε</strong> into units of standard deviations from the mean, producing a dimensionless signal that drives entry and exit decisions.</p>
+  <div style="margin-top:10px;text-align:center">
+  $$z_t = \frac{\varepsilon_t - \theta}{\sigma_{\varepsilon}} \qquad \text{Robust:}\quad z_t = \frac{\varepsilon_t - \mathrm{median}(\varepsilon)}{1.4826 \cdot \mathrm{MAD}}$$
+  </div>
+  <p style="margin-top:10px;margin-bottom:0">The robust version protects against single outliers distorting the signal — critical when exchange glitches or thin-liquidity spikes contaminate the feed.</p>
+</div>
+
+<!-- ==================== SECTION 10.1 ==================== -->
+<h2>10.1 Standard Z-Score</h2>
+
+<p>Given a rolling window of <strong>W</strong> observations of the spread residual <strong>ε</strong>, the standard z-score is:</p>
+
+<div class="fm">z_t = (ε_t − θ_W) / σ_W
+
+where:
+  θ_W  = (1/W) Σ ε_{t-i}    for i = 0 … W-1   (rolling mean)
+  σ_W  = sqrt( (1/W) Σ (ε_{t-i} − θ_W)² )      (rolling std dev)</div>
+
+<p>A common parameterisation uses <strong>W = 24 hours</strong> of data (e.g. 288 five-minute bars). Entry and exit thresholds map z-score values to actions:</p>
+
+<table>
+  <thead><tr><th>Z-score range</th><th>Signal zone</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td>z &gt; 2.0</td><td>Strong short signal</td><td>Enter short ε (sell expensive leg, buy cheap leg) — ε แพงเกิน, mean-revert ลง</td></tr>
+    <tr><td>1.5 &lt; z ≤ 2.0</td><td>Watch zone</td><td>Monitor short signal; wait for confirmation</td></tr>
+    <tr><td>0.5 &lt; z ≤ 1.5</td><td>Neutral-high</td><td>Hold existing short position (if any)</td></tr>
+    <tr><td>−0.5 ≤ z ≤ 0.5</td><td>Neutral / exit</td><td>Close position (|z| &lt; 0.5)</td></tr>
+    <tr><td>−1.5 &lt; z &lt; −0.5</td><td>Neutral-low</td><td>Hold existing long position (if any)</td></tr>
+    <tr><td>−2.0 &lt; z ≤ −1.5</td><td>Watch zone</td><td>Monitor long signal</td></tr>
+    <tr><td>z ≤ −2.0</td><td>Strong long signal</td><td>Enter long ε (buy cheap leg, sell expensive leg) — ε ถูกเกิน, mean-revert ขึ้น</td></tr>
+    <tr><td>|z| &gt; 3.5</td><td>Stop-loss zone</td><td>Emergency exit — outlier or regime break</td></tr>
+  </tbody>
+</table>
+
+<img class="chart" src="charts/ch10-zscore-bands.svg" alt="Z-score bands with entry/exit zones">
+<div style="display:none"><svg class="d" viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" aria-label="Z-score band diagram">
+  <defs>
+    <clipPath id="cp1"><rect x="60" y="10" width="740" height="270"/></clipPath>
+  </defs>
+  <!-- background bands -->
+  <rect x="60" y="10"  width="740" height="45"  fill="#fef2f2" opacity="0.8"/>
+  <rect x="60" y="55"  width="740" height="45"  fill="#fff7ed" opacity="0.8"/>
+  <rect x="60" y="100" width="740" height="90"  fill="#f0fdf4" opacity="0.8"/>
+  <rect x="60" y="190" width="740" height="45"  fill="#fff7ed" opacity="0.8"/>
+  <rect x="60" y="235" width="740" height="45"  fill="#fef2f2" opacity="0.8"/>
+  <!-- band labels right axis -->
+  <text x="808" y="36"  font-size="11" fill="#dc2626" font-family="Courier New">z &gt; 2</text>
+  <text x="808" y="81"  font-size="11" fill="#d97706" font-family="Courier New">1&lt;z≤2</text>
+  <text x="808" y="148" font-size="11" fill="#16a34a" font-family="Courier New">|z|≤1</text>
+  <text x="808" y="216" font-size="11" fill="#d97706" font-family="Courier New">-2≤z&lt;-1</text>
+  <text x="808" y="261" font-size="11" fill="#dc2626" font-family="Courier New">z &lt; -2</text>
+  <!-- horizontal dashed reference lines -->
+  <line x1="60" y1="55"  x2="800" y2="55"  stroke="#dc2626" stroke-width="1" stroke-dasharray="5,4"/>
+  <line x1="60" y1="100" x2="800" y2="100" stroke="#d97706" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="60" y1="145" x2="800" y2="145" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="60" y1="190" x2="800" y2="190" stroke="#d97706" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="60" y1="235" x2="800" y2="235" stroke="#dc2626" stroke-width="1" stroke-dasharray="5,4"/>
+  <!-- y-axis labels -->
+  <text x="45" y="59"  font-size="12" fill="#dc2626" text-anchor="middle" font-family="Courier New">+2σ</text>
+  <text x="45" y="104" font-size="12" fill="#d97706" text-anchor="middle" font-family="Courier New">+1σ</text>
+  <text x="45" y="149" font-size="12" fill="#16a34a" text-anchor="middle" font-family="Courier New"> 0</text>
+  <text x="45" y="194" font-size="12" fill="#d97706" text-anchor="middle" font-family="Courier New">−1σ</text>
+  <text x="45" y="239" font-size="12" fill="#dc2626" text-anchor="middle" font-family="Courier New">−2σ</text>
+  <!-- simulated ε path -->
+  <polyline clip-path="url(#cp1)"
+    points="60,145 120,130 180,110 230,72 260,58 290,40 320,68 370,110 420,140 460,148 500,160 540,180 570,210 600,240 630,260 660,230 700,190 740,155 780,145 800,143"
+    fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <!-- entry marker -->
+  <circle cx="290" cy="40" r="7" fill="#dc2626" opacity="0.9"/>
+  <text x="290" y="32" text-anchor="middle" font-size="11" fill="#dc2626" font-weight="bold">ENTRY</text>
+  <!-- exit marker -->
+  <circle cx="460" cy="148" r="7" fill="#16a34a" opacity="0.9"/>
+  <text x="460" y="140" text-anchor="middle" font-size="11" fill="#16a34a" font-weight="bold">EXIT</text>
+  <!-- short entry marker -->
+  <circle cx="630" cy="260" r="7" fill="#dc2626" opacity="0.9"/>
+  <text x="630" y="278" text-anchor="middle" font-size="11" fill="#dc2626" font-weight="bold">SHORT</text>
+  <!-- axes -->
+  <line x1="60" y1="280" x2="800" y2="280" stroke="#374151" stroke-width="1.5"/>
+  <line x1="60" y1="10"  x2="60"  y2="280" stroke="#374151" stroke-width="1.5"/>
+  <!-- x-axis label -->
+  <text x="430" y="298" text-anchor="middle" font-size="13" fill="#374151">Time →</text>
+  <text x="18" y="155" text-anchor="middle" font-size="13" fill="#374151" transform="rotate(-90,18,155)">Z-score</text>
+</svg></div>
+<div class="caption">Rolling z-score with colored signal bands: RED zone = |z|>3 (stop-loss), AMBER zone = 2<|z|<3 (entry), GREEN zone = |z|<2 (hold/exit). Red dots = entry, green triangles = exit.</div>
+
+<!-- ==================== SECTION 10.2 ==================== -->
+<h2>10.2 The Outlier Problem</h2>
+
+<p>A single extreme observation — a flash crash, exchange glitch, or thin-book spike — can silently corrupt the rolling mean and standard deviation, making the z-score unreliable for all subsequent bars in the window.</p>
+
+<h3>Numerical Example</h3>
+<p>Suppose W = 10 bars with ε values (in %) before the outlier:</p>
+<div class="fm">ε = [0.10, 0.12, 0.09, 0.11, 0.10, 0.13, 0.08, 0.11, 0.10, 0.12]
+θ_clean = 0.106%    σ_clean = 0.015%
+z for next point ε=0.22%: z = (0.22 - 0.106)/0.015 = 7.6  ← strong signal</div>
+
+<p>Now inject one outlier: replace bar 5 with ε = 0.80% (5σ spike):</p>
+<div class="fm">ε = [0.10, 0.12, 0.09, 0.11, 0.80, 0.13, 0.08, 0.11, 0.10, 0.12]
+θ_dirty = 0.176%    σ_dirty = 0.212%   ← mean shifted +0.07%, std blown up 14×
+z for same ε=0.22%: z = (0.22 - 0.176)/0.212 = 0.21  ← noise, signal gone!</div>
+
+<div class="bx br"><div class="bt">Warning: Outlier Contamination Effect</div>
+The outlier moved the mean by +0.07% (+0.47σ of the clean distribution) and inflated σ by roughly 14×. Every subsequent observation now has a z-score compressed toward zero — real signals are suppressed, and the bands become meaningless until the outlier leaves the window.</div>
+
+<img class="chart" src="charts/ch10-outlier-effect.svg" alt="Outlier inflates sigma, compressing z-score bands">
+<div style="display:none"><svg class="d" viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg" aria-label="Outlier effect on z-score bands">
+  <!-- LEFT panel: clean -->
+  <rect x="10" y="10" width="400" height="240" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="210" y="35" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">Without Outlier</text>
+  <!-- left bands -->
+  <rect x="30" y="45"  width="360" height="30" fill="#fef2f2" opacity="0.7"/>
+  <rect x="30" y="75"  width="360" height="30" fill="#fff7ed" opacity="0.7"/>
+  <rect x="30" y="105" width="360" height="40" fill="#f0fdf4" opacity="0.9"/>
+  <rect x="30" y="145" width="360" height="30" fill="#fff7ed" opacity="0.7"/>
+  <rect x="30" y="175" width="360" height="30" fill="#fef2f2" opacity="0.7"/>
+  <!-- left ref lines -->
+  <line x1="30" y1="75"  x2="390" y2="75"  stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="30" y1="105" x2="390" y2="105" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="30" y1="125" x2="390" y2="125" stroke="#16a34a" stroke-width="2"/>
+  <line x1="30" y1="145" x2="390" y2="145" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="30" y1="175" x2="390" y2="175" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <!-- left signal path -->
+  <polyline points="30,125 80,118 130,110 180,120 230,115 280,108 330,116 380,121" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+  <!-- left labels -->
+  <text x="395" y="78"  font-size="10" fill="#dc2626" font-family="Courier New">+2σ</text>
+  <text x="395" y="108" font-size="10" fill="#d97706" font-family="Courier New">+1σ</text>
+  <text x="395" y="128" font-size="10" fill="#16a34a" font-family="Courier New"> 0</text>
+  <text x="395" y="148" font-size="10" fill="#d97706" font-family="Courier New">−1σ</text>
+  <text x="395" y="178" font-size="10" fill="#dc2626" font-family="Courier New">−2σ</text>
+  <text x="210" y="258" text-anchor="middle" font-size="11" fill="#374151">Bands correctly placed. Signals reliable.</text>
+
+  <!-- RIGHT panel: with outlier -->
+  <rect x="450" y="10" width="400" height="240" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="650" y="35" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">With Outlier (σ inflated 14×)</text>
+  <!-- right bands compressed -->
+  <rect x="470" y="45"  width="360" height="12" fill="#fef2f2" opacity="0.7"/>
+  <rect x="470" y="57"  width="360" height="12" fill="#fff7ed" opacity="0.7"/>
+  <rect x="470" y="69"  width="360" height="100" fill="#f0fdf4" opacity="0.9"/>
+  <rect x="470" y="169" width="360" height="12" fill="#fff7ed" opacity="0.7"/>
+  <rect x="470" y="181" width="360" height="12" fill="#fef2f2" opacity="0.7"/>
+  <!-- right ref lines (compressed bands) -->
+  <line x1="470" y1="57"  x2="830" y2="57"  stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="470" y1="69"  x2="830" y2="69"  stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="470" y1="119" x2="830" y2="119" stroke="#16a34a" stroke-width="2"/>
+  <line x1="470" y1="169" x2="830" y2="169" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="470" y1="181" x2="830" y2="181" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <!-- outlier spike -->
+  <line x1="570" y1="119" x2="570" y2="10" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,3"/>
+  <circle cx="570" cy="10" r="5" fill="#dc2626"/>
+  <text x="575" y="20" font-size="10" fill="#dc2626" font-weight="bold">OUTLIER 5σ</text>
+  <!-- right signal path — all compressed near mean -->
+  <polyline points="470,122 520,120 620,118 670,121 720,119 770,120 820,122" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+  <text x="650" y="258" text-anchor="middle" font-size="11" fill="#dc2626">All points compressed → signals suppressed</text>
+</svg></div>
+<div class="caption">Left: clean z-score bands — signals visible. Right: one outlier inflates σ by ~14×, compressing all subsequent z-scores toward zero — real signals disappear until the outlier exits the rolling window.</div>
+
+<!-- ==================== SECTION 10.3 ==================== -->
+<h2>10.3 Robust Z-Score via MAD</h2>
+
+<p>The <strong>Median Absolute Deviation (MAD)</strong> replaces mean and standard deviation with outlier-resistant alternatives:</p>
+
+<div class="fm">Step 1: median_ε = median(ε₁, ε₂, …, ε_W)
+Step 2: MAD = median( |ε_t − median_ε| )
+Step 3: σ_robust = MAD × 1.4826
+Step 4: robust_z = (ε_t − median_ε) / σ_robust</div>
+
+<div class="bx bb"><div class="bt">Why 1.4826?</div>
+For a perfectly Normal distribution, MAD × 1.4826 = σ. The constant 1.4826 = 1 / Φ⁻¹(0.75) ≈ 1 / 0.6745 makes MAD a consistent estimator of σ under normality, while remaining robust under contamination. A single outlier cannot materially change the median or MAD — it would need to corrupt more than 50% of the data.</div>
+
+<p>Revisiting the same example with the 5σ outlier injected:</p>
+<div class="fm">ε = [0.10, 0.12, 0.09, 0.11, 0.80, 0.13, 0.08, 0.11, 0.10, 0.12]
+
+median_ε = 0.11%
+deviations from median =
+  [0.01, 0.01, 0.02, 0.00, 0.69, 0.02, 0.03, 0.00, 0.01, 0.01]
+MAD = median(deviations) = 0.01%
+σ_robust = 0.01 × 1.4826 = 0.01483%
+
+robust_z for ε=0.22%:  (0.22 − 0.11) / 0.01483 = 7.42  ← signal preserved!
+(vs standard z = 0.21 after outlier contamination)</div>
+
+<div class="bx bg"><div class="bt">Result</div>
+The outlier moves the median by exactly 0 in this example (median is the middle value of a sorted list). Robust z correctly identifies ε=0.22% as a strong signal (z=7.4), while standard z falsely showed no signal (z=0.21).</div>
+
+<!-- ==================== SECTION 10.4 ==================== -->
+<h2>10.4 Rolling Window Z-Score</h2>
+
+<p>Both standard and robust z-scores must be computed over a rolling window to adapt to changing market regimes. The window length <strong>W</strong> is a key hyperparameter:</p>
+
+<table>
+  <thead><tr><th>Window W</th><th>Adapts to</th><th>Lag</th><th>Recommended use</th></tr></thead>
+  <tbody>
+    <tr><td>4h (48 bars × 5min)</td><td>Intraday volatility shifts</td><td>Low</td><td>High-freq scalping; may over-fit noise</td></tr>
+    <tr><td>24h (288 bars)</td><td>Daily regime, overnight gaps</td><td>Medium</td><td>Standard for crypto perpetual arb</td></tr>
+    <tr><td>72h (864 bars)</td><td>Multi-day trend cycles</td><td>High</td><td>Slower strategies; stable but sluggish</td></tr>
+    <tr><td>168h / 1 week</td><td>Weekly seasonality</td><td>Very high</td><td>Equity stat arb with weekly patterns</td></tr>
+  </tbody>
+</table>
+
+<div class="bx ba"><div class="bt">Lag Warning During Trend</div>
+If the spread drifts monotonically for several hours (e.g. during a BTC rally), the rolling mean θ_W chases the price upward with a lag equal to W/2. This artificially suppresses z-score readings — the strategy may fail to trigger exit on a position that is actually losing value. Consider adding a trend filter or using exponentially-weighted moving averages (EWMA) with λ = 0.94.</div>
+
+<!-- ==================== SECTION 10.5 ==================== -->
+<h2>10.5 Comparison: Standard vs Robust Z-Score</h2>
+
+<table>
+  <thead><tr><th>Property</th><th>Standard Z</th><th>Robust Z (MAD)</th></tr></thead>
+  <tbody>
+    <tr><td>Formula</td><td>(ε − mean) / std</td><td>(ε − median) / (MAD × 1.4826)</td></tr>
+    <tr><td>Outlier sensitivity</td><td>High — one outlier shifts mean and std</td><td>Low — outlier must exceed 50% of data</td></tr>
+    <tr><td>Computational cost</td><td>O(W) — fast rolling sum/var</td><td>O(W log W) — requires sort for median</td></tr>
+    <tr><td>Efficiency (clean data)</td><td>100% efficient under Normality</td><td>~64% efficient under Normality</td></tr>
+    <tr><td>Best when</td><td>Data is clean, Gaussian, no spikes</td><td>Exchange feeds with occasional glitches</td></tr>
+    <tr><td>Use during</td><td>Stable, low-vol regimes</td><td>High-vol, crash periods, thin markets</td></tr>
+    <tr><td>Threshold calibration</td><td>Entry at |z| &gt; 2.0</td><td>Entry at |z| &gt; 2.0 (same scale by design)</td></tr>
+    <tr><td>Regime-switching</td><td>Bands blow up in crashes</td><td>Bands remain stable during crashes</td></tr>
+  </tbody>
+</table>
+
+<div class="bx bg"><div class="bt">Recommendation</div>
+Use <strong>Robust Z as default</strong> for crypto stat arb on Bybit/Lighter. Fall back to standard z only when your data pipeline has confirmed outlier filtering (e.g. price validated against two independent feeds). Hybrid: use robust z for entry, standard z for exit (since exit thresholds are softer and less sensitive to contamination).</div>
+
+<!-- ==================== PSEUDO-CODE ==================== -->
+<h2>Pseudo-Code</h2>
+
+<div class="pseudo">
+<span class="kw">function</span> <span class="fn">compute_zscore</span>(eps, theta, sigma):
+    <span class="c"># Standard z-score (single-point, pre-computed θ and σ)</span>
+    <span class="kw">if</span> sigma == 0:
+        <span class="kw">return</span> <span class="nm">0.0</span>
+    <span class="kw">return</span> (eps - theta) / sigma
+
+<span class="kw">function</span> <span class="fn">rolling_zscore</span>(eps_series, W):
+    <span class="c"># Compute standard rolling z-score for full series</span>
+    z_series = []
+    <span class="kw">for</span> t <span class="kw">in</span> range(W, len(eps_series)):
+        window = eps_series[t-W : t]
+        theta  = mean(window)
+        sigma  = std(window)
+        z_series.append(<span class="fn">compute_zscore</span>(eps_series[t], theta, sigma))
+    <span class="kw">return</span> z_series
+
+<span class="kw">function</span> <span class="fn">robust_zscore</span>(eps_window):
+    <span class="c"># Compute robust z for the last point in eps_window</span>
+    med    = <span class="fn">median</span>(eps_window)
+    devs   = [<span class="fn">abs</span>(x - med) <span class="kw">for</span> x <span class="kw">in</span> eps_window]
+    mad    = <span class="fn">median</span>(devs)
+    sigma_r = mad * <span class="nm">1.4826</span>
+    <span class="kw">if</span> sigma_r == 0:
+        <span class="kw">return</span> <span class="nm">0.0</span>
+    <span class="kw">return</span> (eps_window[-<span class="nm">1</span>] - med) / sigma_r
+
+<span class="kw">function</span> <span class="fn">choose_signal</span>(eps_window, W):
+    <span class="c"># Use both; flag discrepancy</span>
+    std_z    = <span class="fn">rolling_zscore</span>(eps_window, W)[-<span class="nm">1</span>]
+    rob_z    = <span class="fn">robust_zscore</span>(eps_window)
+    discrepancy = <span class="fn">abs</span>(std_z - rob_z)
+    <span class="kw">if</span> discrepancy > <span class="nm">1.5</span>:
+        log(<span class="nm">"OUTLIER SUSPECTED — using robust z"</span>)
+        <span class="kw">return</span> rob_z, <span class="nm">"robust"</span>
+    <span class="kw">return</span> std_z, <span class="nm">"standard"</span>
+</div>
+
+<!-- ==================== RUNNING EXAMPLE ==================== -->
+<div class="running-ex">
+  <div class="re-title">Running Example — Bybit BTC-PERP ↔ Lighter BTC-PERP (W = 24h)</div>
+  <p><strong>Scenario:</strong> BTC crashes 12% over 2 hours at 03:00 UTC. Bybit order book thins out. One 5-minute bar records ε = 0.45% (a feed glitch as a single large market order clears thin asks).</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Standard Z</th><th>Robust Z</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>Window mean / median</td><td>θ = 0.126%</td><td>median = 0.10%</td><td>Robust unaffected by spike</td></tr>
+      <tr><td>σ estimate</td><td>σ = 0.060% (inflated 4×)</td><td>σ_r = 0.015%</td><td>Standard σ blown up</td></tr>
+      <tr><td>Z-score for next bar ε = 0.32%</td><td>z = (0.32−0.126)/0.060 = <strong>3.2</strong></td><td>z = (0.32−0.10)/0.015 = <strong>14.7</strong></td><td>—</td></tr>
+      <tr><td>Z-score for real signal ε = 0.22%</td><td>z = <strong>1.6</strong> (below entry threshold 2.0)</td><td>z = <strong>8.0</strong> (strong signal)</td><td>Standard misses entry</td></tr>
+      <tr><td>After outlier leaves window (24h later)</td><td>z recalibrates correctly</td><td>z unchanged (already correct)</td><td>Robust reacts immediately</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px"><strong>Decision:</strong> During the BTC crash window, use <strong>robust z for entry decisions</strong>. The standard z produced a false alarm at ε=0.32% (z=3.2 suggesting strong signal, but driven by inflated σ from the spike) and missed the real signal at ε=0.22%. The robust z correctly ranked signals by true deviation from median spread.</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — Z-Score Calibration ใน Production</div>
+<ol>
+<li><strong>30-day rolling window:</strong> อย่าใช้ full history — คำนวณ μ และ σ จาก 30 วันย้อนหลังเพื่อให้ responsive ต่อ regime change; re-fit ทุกวันเปิดตลาด</li>
+<li><strong>MAD-based robust z-score</strong> สำหรับ crypto: ถ้า kurtosis ของ recent residuals > 5 → switch ไป robust z-score อัตโนมัติ</li>
+<li><strong>Flag และ exclude outlier bars:</strong> bars ที่ |z_raw| > 10 ออกจากการคำนวณ σ — outlier เดียวสามารถ inflate σ ได้ 14× ทำให้ signal หายไปตลอด window</li>
+<li><strong>Stale z-score alert:</strong> ถ้า |z| ไม่เปลี่ยนเกิน 5 minute → exchange feed อาจหยุดส่งข้อมูล; หยุด trading ทันที</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ Z-Score พัง</div>
+<ul>
+<li><strong>Outlier inflation:</strong> outlier เดียว (เช่น flash crash tick ที่ผิดปกติ) inflates σ ขึ้น 10–15×; z-score ทุก bar ใน window จะถูก compress ให้ < 0.5 → signal หายไปโดยสมบูรณ์ แม้ spread จะ extreme</li>
+<li><strong>MAD ไม่ทน > 25% outliers:</strong> ถ้า market breakdown ทำให้ > 25% ของ observations เป็น outlier (เช่น flash crash ยาว 30 นาที) แม้แต่ MAD จะ shift — z-score กลายเป็น meaningless</li>
+<li><strong>Structural break:</strong> ไม่มี z-score formulation ใดรับมือกับ equilibrium ใหม่ (เช่น cointegration แตก) — z-score จะยังคง "signal" ทุก bar เพราะ spread ห่างจาก old mean แต่ไม่มีทางกลับ</li>
+</ul>
+</div>
+
+<!-- ==================== EXERCISES ==================== -->
+<h2>Exercises</h2>
+
+<div class="ex">
+  <div class="et">Exercise 10.1 — Compute Robust Z</div>
+  <p>Given the following window of 7 ε values (all in %):</p>
+  <div class="fm">ε = [0.10, 0.12, 0.08, 0.11, 0.80, 0.09, 0.11]</div>
+  <p>Compute: (a) median, (b) MAD, (c) σ_robust, (d) robust_z for the <em>last point</em> ε = 0.11%.</p>
+  <details>
+    <summary>Show Answer</summary>
+    <div class="ans">
+      <p><strong>(a) Median:</strong> Sort ε: [0.08, 0.09, 0.10, <strong>0.11</strong>, 0.11, 0.12, 0.80] → median = <strong>0.11%</strong></p>
+      <p><strong>(b) MAD:</strong> Absolute deviations from 0.11%: [0.01, 0.01, 0.03, 0.00, 0.69, 0.02, 0.00]<br>
+         Sort: [0.00, 0.00, 0.01, <strong>0.01</strong>, 0.02, 0.03, 0.69] → MAD = <strong>0.01%</strong></p>
+      <p><strong>(c) σ_robust:</strong> 0.02 × 1.4826 = <strong>0.02965%</strong></p>
+      <p><strong>(d) robust_z:</strong> (0.11 − 0.11) / 0.02965 = <strong>0.00</strong></p>
+      <p>Interpretation: ε=0.11% is exactly at the median — no signal. The outlier at 0.80% had zero effect on this result.</p>
+    </div>
+  </details>
+</div>
+
+<div class="ex">
+  <div class="et">Exercise 10.2 — Discrepancy Between Standard Z and Robust Z</div>
+  <p>You observe: <strong>robust_z = 2.3</strong>, <strong>standard_z = 4.1</strong>. Your entry threshold is |z| &gt; 2.0.</p>
+  <p>(a) What does the discrepancy of 1.8 σ-units suggest? (b) Should you enter the trade? (c) What additional check would you perform?</p>
+  <details>
+    <summary>Show Answer</summary>
+    <div class="ans">
+      <p><strong>(a) Discrepancy interpretation:</strong> Standard z is 1.8 units higher than robust z. This is a red flag indicating the rolling standard deviation (σ_stat) is likely inflated by one or more outliers in the window. The mean (θ) may also be shifted upward, causing standard z to overstate the true signal strength.</p>
+      <p><strong>(b) Should you enter?</strong> Yes, but with <em>reduced size</em>. Robust z = 2.3 &gt; 2.0 confirms a genuine signal exists. However, the outlier contamination means the spread's true σ may be smaller than σ_stat suggests, so the edge is more uncertain. Enter at 50% of normal position size.</p>
+      <p><strong>(c) Additional checks:</strong>
+        <ul>
+          <li>Inspect the raw ε window: identify which bar caused the outlier. If it was a known event (funding reset, exchange maintenance), you can safely discard it.</li>
+          <li>Check the second-level order book depth on Bybit and Lighter — thin books confirm the spike was illusory.</li>
+          <li>Verify regime state: if regime = Stressed, further reduce size regardless of z-score.</li>
+        </ul>
+      </p>
+    </div>
+  </details>
+</div>
+
+<div class="bx bb">
+<div class="bt">หมายเหตุ: z-score นี้ใช้ได้กับ F(·) อื่นเช่นกัน</div>
+<p>z = (ε−θ)/σ_stat เป็นสูตรเดียวกันไม่ว่า F(·) จะเป็นอะไร — แต่ σ_stat ต้องมีหน่วยตรงกับ ε เสมอ: z-score บน basis ($) ใช้ σ_stat เป็น $ ไม่ใช่ % ระวังอย่ายืม threshold ที่ tune จาก log-price pair (มัก tune เป็น % terms) ไปใช้กับ basis/funding pair ($ terms หรือ %/ปี) โดยไม่แปลงหน่วยก่อนเสมอ</p>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.10 Z-score &amp; Robust Statistics | ต่อไป → <strong><a href="statarb-ch10b.html">Ch.10B: Spread Data Engineering</a></strong>
+</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>
