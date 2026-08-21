@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 5</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 5: Order Book Imbalance (OBI) — ฝั่งไหนหนัก (ภาพนิ่ง)</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ III · อ่าน Flow<br>เริ่มต้นองก์ "อ่าน Flow": static(OBI) → flow(OFI) → toxicity(VPIN)</div>
+</div>
+
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
+<!-- ========== PART 5 ========== -->
+<h2 id="p5">Part 5 — Order Book Imbalance</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 4 สอนอ่าน "กำแพง" depth ฝั่ง bid/ask และระวัง spoof — ของที่ตั้งรออาจถูกถอนได้ · <strong>ตอนนี้จะเติม:</strong> ย่อทั้งกระดานให้เป็นตัวเลขเดียว (OBI) ที่บอกว่า "ฝั่งไหนหนัก" ณ วินาทีนี้ แต่ยังเป็นภาพนิ่งที่ถูกหลอกได้เหมือนกำแพงใน Part 4</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>คำนวณ <strong>OBI (Order Book Imbalance)</strong> เป็น และเข้าใจว่ามันบอก "ฝั่งไหนหนัก" ในกระดาน ณ วินาทีนี้</li>
+<li>แยกสเกล 2 แบบ: <strong>−1..+1</strong> (กลาง=0) กับ <strong>0..1</strong> (กลาง=0.5) และแปลงไปมาได้</li>
+<li>เข้าใจคำเตือนหัวใจ: <strong>OBI คือภาพนิ่ง (state) ไม่ใช่ flow</strong> — บอกของที่ "ตั้งรออยู่" ไม่ใช่ของที่ "กำลังลงมือ"</li>
+<li>รู้ว่ามันทำนายทิศ mid ถัดไปได้ (R²~65% ในบางตลาด) แต่ horizon สั้นมากและถูก spoof หลอกได้</li>
+</ul>
+</div>
+
+<h3 id="p5-hook">นับหัวคนชักเย่อ — ยืนอยู่ ≠ ลงมือ</h3>
+
+<p>นึกถึงเกม <strong>ชักเย่อ</strong>: เชือกเส้นเดียว สองทีมยืนคนละข้าง คุณนับหัวคนได้ว่าฝั่งซ้าย 8 คน ฝั่งขวา 3 คน — ฝั่งซ้าย "หนัก" กว่า เชือก <em>น่าจะ</em> ถูกดึงไปทางซ้าย</p>
+
+<p><strong>OBI ก็คือการนับหัวคนชักเย่อบนกระดาน</strong> — ฝั่ง bid มีปริมาณรออยู่เท่าไร เทียบกับฝั่ง ask แต่ระวัง! <strong>"ยืนถือเชือก" ไม่เท่ากับ "ออกแรงดึงจริง"</strong> คนยืนเฉย ๆ อาจปล่อยมือ (cancel) เมื่อไรก็ได้ นี่คือเหตุผลว่าทำไม OBI เป็นแค่ภาพนิ่ง</p>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="เชือกชักเย่อ ฝั่งซ้ายคนเยอะกว่าฝั่งขวา">
+<line x1="40" y1="100" x2="460" y2="100" stroke="var(--g7)" stroke-width="3"/>
+<rect x="240" y="92" width="16" height="16" rx="3" fill="var(--blue)"/>
+<text x="248" y="84" text-anchor="middle" font-size="10" fill="var(--blue)">ปม (mid)</text>
+<circle cx="60" cy="100" r="11" fill="var(--green)" opacity="0.9"/>
+<circle cx="90" cy="100" r="11" fill="var(--green)" opacity="0.9"/>
+<circle cx="120" cy="100" r="11" fill="var(--green)" opacity="0.9"/>
+<circle cx="150" cy="100" r="11" fill="var(--green)" opacity="0.9"/>
+<circle cx="75" cy="78" r="11" fill="var(--green)" opacity="0.8"/>
+<circle cx="105" cy="78" r="11" fill="var(--green)" opacity="0.8"/>
+<circle cx="135" cy="78" r="11" fill="var(--green)" opacity="0.8"/>
+<circle cx="90" cy="122" r="11" fill="var(--green)" opacity="0.8"/>
+<circle cx="400" cy="100" r="11" fill="var(--red)" opacity="0.9"/>
+<circle cx="430" cy="100" r="11" fill="var(--red)" opacity="0.9"/>
+<circle cx="415" cy="78" r="11" fill="var(--red)" opacity="0.8"/>
+<text x="105" y="160" text-anchor="middle" font-size="13" font-weight="700" fill="var(--green)">BID = 8 (หนักกว่า)</text>
+<text x="415" y="160" text-anchor="middle" font-size="13" font-weight="700" fill="var(--red)">ASK = 3</text>
+<text x="250" y="188" text-anchor="middle" font-size="11" fill="var(--g7)">OBI = (8−3)/(8+3) = +0.45 → เอียงฝั่งซื้อ</text>
+</svg>
+
+<h3 id="p5-formula">นิยาม OBI — สองสเกลที่ต้องไม่สับสน</h3>
+
+<p>OBI วัด <strong>ความไม่สมดุลของปริมาณ</strong> ระหว่างฝั่งซื้อกับฝั่งขาย ในศัพท์เทรดเดอร์เรียกว่า <strong>"Volume Imbalance"</strong> ส่วนในงานวิชาการเรียก <strong>queue imbalance</strong> — เป็นตัวเดียวกัน</p>
+
+<div class="fm">
+สเกล −1..+1 (กลาง = 0) ← ใช้ตัวนี้เป็นมาตรฐานทั้งเล่ม<br>
+&nbsp;&nbsp;OBI = (V_bid − V_ask) / (V_bid + V_ask)<br>
+&nbsp;&nbsp;ตัวอย่าง: V_bid=8, V_ask=3 → OBI = (8−3)/(8+3) = +0.45<br>
+<br>
+สเกล 0..1 (กลาง = 0.5) ← บาง paper/เครื่องมือใช้แบบนี้<br>
+&nbsp;&nbsp;Imbalance = V_bid / (V_bid + V_ask) = 8/11 = 0.73<br>
+<br>
+แปลงกันได้:  OBI = 2 × Imbalance − 1   (Imbalance = 8/11 = 0.727 → 2×0.727−1 ≈ +0.45)
+</div>
+
+<table>
+<tr><th>ค่า OBI (−1..+1)</th><th>ความหมาย</th><th>ทิศที่ "น่าจะ" ไป</th></tr>
+<tr><td>+1.0</td><td>มีแต่ฝั่ง bid (ask ว่าง)</td><td>กดดันขึ้นแรง</td></tr>
+<tr><td>+0.4 ถึง +0.9</td><td>ฝั่งซื้อหนักกว่า</td><td>เอียงขึ้น</td></tr>
+<tr><td>~0</td><td>สมดุล</td><td>ไม่ชัด</td></tr>
+<tr><td>−0.4 ถึง −0.9</td><td>ฝั่งขายหนักกว่า</td><td>เอียงลง</td></tr>
+<tr><td>−1.0</td><td>มีแต่ฝั่ง ask (bid ว่าง)</td><td>กดดันลงแรง</td></tr>
+</table>
+
+<h3 id="p5-multi">OBI หลายชั้น (multi-level)</h3>
+
+<p>OBI ที่ใช้แค่ <strong>best bid/ask</strong> (ชั้นบนสุด) ไวที่สุดแต่ก็ผันผวนที่สุด เราถ่วงน้ำหนักหลายชั้นเพื่อให้ภาพนิ่งขึ้น:</p>
+
+<div class="fm">
+OBI_N = ( Σ w_k·V_bid,k − Σ w_k·V_ask,k ) / ( Σ w_k·V_bid,k + Σ w_k·V_ask,k )<br>
+&nbsp;&nbsp;k = 1..N (ชั้นที่ k จาก best เข้าไป), w_k = น้ำหนัก (มักให้ชั้นลึกน้อยลง)<br>
+&nbsp;&nbsp;เช่น w_k = 1/k หรือ exp(−k) → ชั้น best มีน้ำหนักมากสุด
+</div>
+
+<svg class="d" viewBox="0 0 500 300" role="img" aria-label="กระดาน LOB แสดงปริมาณ bid เขียวซ้ายมากกว่า ask แดงขวา">
+<line x1="20" y1="250" x2="480" y2="250" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="20" y="19" font-size="10" fill="var(--g7)">↑ ปริมาณ</text>
+<rect x="40"  y="170" width="30" height="80"  fill="var(--green)" opacity="0.85"/>
+<rect x="80"  y="150" width="30" height="100" fill="var(--green)" opacity="0.88"/>
+<rect x="120" y="120" width="30" height="130" fill="var(--green)" opacity="0.9"/>
+<rect x="160" y="100" width="30" height="150" fill="var(--green)" opacity="0.92"/>
+<rect x="200" y="70"  width="30" height="180" fill="var(--green)"/>
+<rect x="270" y="155" width="30" height="95" fill="var(--red)"/>
+<rect x="310" y="175" width="30" height="75" fill="var(--red)" opacity="0.92"/>
+<rect x="350" y="195" width="30" height="55" fill="var(--red)" opacity="0.9"/>
+<rect x="390" y="208" width="30" height="42" fill="var(--red)" opacity="0.88"/>
+<rect x="430" y="218" width="30" height="32" fill="var(--red)" opacity="0.85"/>
+<line x1="250" y1="50" x2="250" y2="272" stroke="var(--g7)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="250" y="290" text-anchor="middle" font-size="11" fill="var(--g7)">Mid</text>
+<text x="140" y="19" font-size="13" font-weight="700" fill="var(--green)">BID หนัก</text>
+<text x="380" y="19" font-size="13" font-weight="700" fill="var(--red)">ASK เบา</text>
+<text x="250" y="44" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">OBI &gt; 0 → เอียงขึ้น</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 5.1 · มวลฝั่ง bid (เขียว) มากกว่า ask (แดง) → OBI เป็นบวก</p>
+
+<h3 id="p5-static">OBI = ภาพนิ่ง (state) ไม่ใช่ flow</h3>
+
+<p>นี่คือใจความที่ต้องฝังไว้ก่อนข้าม Part 7: OBI ถ่าย "<strong>snapshot</strong>" ของกระดาน ณ วินาทีนี้ มันบอกว่า <em>ใครยืนถือเชือกอยู่บ้าง</em> ไม่ได้บอกว่า <em>เชือกกำลังขยับไปทางไหน</em> เมื่อมีคน cancel หรือยิง market order เข้ามา ภาพนิ่งก็เปลี่ยนทันที — แต่ OBI ตัวเดิมไม่ได้จับ "การเปลี่ยน" นั้น มันแค่ถ่ายรูปใหม่</p>
+
+<svg class="d" viewBox="0 0 500 320" role="img" aria-label="สองแผง แผงบน mid ที่เกิดจริง แผงล่าง OBI ที่นำ mid มีจุด cancel ที่ OBI พุ่งสวนทาง mid">
+<!-- ===== แผงบน: mid ที่เกิดจริง ===== -->
+<text x="20" y="22" font-size="11" font-weight="700" fill="var(--blue)">แผงบน · mid ที่เกิดจริง</text>
+<!-- กรอบ + แกน -->
+<line x1="55" y1="30" x2="55" y2="120" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="55" y1="120" x2="470" y2="120" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="50" y="34" text-anchor="end" font-size="9" fill="var(--g7)">สูง</text>
+<text x="50" y="118" text-anchor="end" font-size="9" fill="var(--g7)">ต่ำ</text>
+<text x="14" y="78" font-size="10" fill="var(--blue)" transform="rotate(-90 14 78)" text-anchor="middle">ราคา mid</text>
+<polyline points="55,95 100,90 145,80 190,72 235,76 280,58 325,48 370,70 415,40 460,34" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="430" y="28" font-size="10" fill="var(--blue)">mid ขึ้น</text>
+<!-- จุดที่ mid "ลง/ไม่ขึ้น" จริง (สวนกับ OBI) -->
+<circle cx="235" cy="76" r="4" fill="var(--blue)"/>
+<circle cx="370" cy="70" r="4" fill="var(--blue)"/>
+<!-- ===== แผงล่าง: OBI ===== -->
+<text x="20" y="160" font-size="11" font-weight="700" fill="var(--green)">แผงล่าง · OBI (ภาพนิ่งของ depth)</text>
+<!-- แกน OBI มีเส้นศูนย์ -->
+<line x1="55" y1="175" x2="55" y2="295" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="55" y1="235" x2="470" y2="235" stroke="var(--g2)" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="50" y="179" text-anchor="end" font-size="9" fill="var(--green)">+1</text>
+<text x="50" y="239" text-anchor="end" font-size="9" fill="var(--g7)">0</text>
+<text x="50" y="293" text-anchor="end" font-size="9" fill="var(--red)">−1</text>
+<text x="14" y="235" font-size="10" fill="var(--green)" transform="rotate(-90 14 235)" text-anchor="middle">ค่า OBI</text>
+<text x="470" y="248" text-anchor="end" font-size="9" fill="var(--g7)">เวลา →</text>
+<!-- OBI นำ mid: ขึ้นก่อน mid (ดูแผงบน) ในช่วงต้น แต่จุด cancel พุ่งสวน -->
+<polyline points="55,225 100,210 145,195 190,205 235,180 280,200 325,190 370,178 415,205 460,212" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="95" y="248" font-size="10" fill="var(--green)">OBI นำ mid (lead)</text>
+<!-- จุด cancel #1: OBI พุ่งบวกแรง (235,180) แต่ mid กลับไม่ขึ้น/ย่อ -->
+<circle cx="235" cy="180" r="5" fill="var(--red)"/>
+<line x1="235" y1="120" x2="235" y2="180" stroke="var(--red)" stroke-width="1" stroke-dasharray="2 2"/>
+<!-- จุด cancel #2: OBI พุ่งบวก (370,178) แต่ mid ย่อ -->
+<circle cx="370" cy="178" r="5" fill="var(--red)"/>
+<line x1="370" y1="70" x2="370" y2="178" stroke="var(--red)" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="235" y="312" text-anchor="middle" font-size="9" fill="var(--red)">cancel: OBI พุ่ง+ แต่ mid สวน = สัญญาณผิด</text>
+<text x="392" y="170" font-size="9" fill="var(--red)">cancel อีกจุด</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 5.2 · แยกสองแผง — OBI (ล่าง) มัก<strong>นำ</strong> mid (บน) แต่ที่จุด cancel (จุดแดง) OBI พุ่งบวกสวนทางกับ mid ที่เกิดจริง = สัญญาณลวง</p>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่ — "OBI บวก = ขึ้นแน่นาทีหน้า"</div>
+<p>OBI ทำนายได้แค่ระดับ <strong>วินาที</strong> ไม่ใช่นาทีหรือชั่วโมง! horizon ของมันสั้นมาก เพราะกระดานเปลี่ยนตลอด ยิ่งกว่านั้น <strong>spoofer</strong> วางกำแพง bid ปลอม ๆ ให้ OBI ดูบวก หลอกให้คุณซื้อ แล้วยกเลิกก่อนราคาแตะ (ดู Part 4) — <strong>เห็น OBI บวกแล้วเปิด long ค้างข้ามคืนคือเข้าใจผิดเรื่อง horizon</strong></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ — และข้อควรระวังเรื่องตัวเลข</div>
+<p><strong>Gould &amp; Bonart (2015, arXiv:1512.03492)</strong> แสดงว่า queue imbalance (= OBI) ทำนายทิศ mid-price <strong>หนึ่งก้าวถัดไป (one-tick-ahead)</strong> ได้ดี โดยเฉพาะหุ้น <em>large-tick</em> (tick ใหญ่เทียบราคา คิวยาว) ตัวเลขที่มักอ้างกันว่า OBI อธิบายการขยับ mid ได้ <strong>R²~65%</strong> นั้น <strong>ขึ้นกับตลาด/timeframe/วิธี calibration อย่างมาก</strong> — large-tick crypto อาจสูง แต่ small-tick หรือ timeframe ยาวจะต่ำลงมาก อย่ายึดเลขนี้เป็นค่าคงที่</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>OBI เป็น "ภาพนิ่ง" — <strong>Part 7 (OFI)</strong> จะยกระดับเป็น "วิดีโอการเปลี่ยน" และเปลี่ยนจากการ <em>เดาความสัมพันธ์</em> เป็นการ <strong>วัดด้วยสมการถดถอย (regression)</strong> ที่ความชัน (slope) = Kyle's λ ตรงนี้คือจุดที่เล่ม <strong>math</strong> (regression / PCA) เข้ามาเชื่อมเต็มตัว ส่วน <strong>Part 6</strong> จะอธิบายว่าทำไม market order (ของที่ "ลงมือจริง") ถึงมีข้อมูลมากกว่า depth ที่ "แค่ยืนรอ"</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>กลับมาที่เคส <strong>long BTC/USDT $5,000</strong>: ดู OBI ตอนนี้ว่าหนุนการเข้า long ไหม — ถ้า OBI เป็นบวกชัด (bid หนัก) ก็เป็นลมหนุนระยะสั้น <strong>แต่ระวังว่ามันคือภาพนิ่ง</strong> ที่ revert ได้ในไม่กี่วินาทีและถูก spoof หลอกได้ ใช้เป็นตัวจับจังหวะ ไม่ใช่เหตุผลเปิดไม้ค้างยาว</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>ดึง order book ของ BTC/USDT จาก Binance REST <code>GET /api/v3/depth?symbol=BTCUSDT&amp;limit=5</code> แล้วคำนวณ <strong>OBI สองแบบ</strong>: (1) ใช้แค่ best bid/ask, (2) ใช้ 5 ชั้นรวม (sum ปริมาณทั้ง 5) เทียบค่าทั้งสอง — คุณจะเห็นว่า best-level เด้งแรงกว่า ส่วน 5-level นิ่งกว่า ทำซ้ำทุก 1 วินาที 30 ครั้ง แล้วสังเกตว่า OBI เด้งไปมาเร็วแค่ไหน (= horizon สั้น)</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> OBI นับแค่ "ของที่ยืนรอ" แล้วของที่ "ลงมือจริง" (market order) ล่ะ — ทำไมมันถึงมีข้อมูลมากกว่า และใครยอมจ่ายแพงเพื่อได้เดี๋ยวนี้?</p>
+
+</body>
+</html>

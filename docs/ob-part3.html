@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 3: Bid-Ask Spread แยกส่วน — ช่องว่างสองฝั่งมาจากต้นทุนอะไร</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ II · Spread &amp; ความน่าเชื่อถือ<br>3 ก้อนต้นทุนของ spread (processing + inventory + adverse selection) และปัจจัยที่ทำให้กว้าง/แคบ</div>
+</div>
+
+<!-- ========== PART 3 ========== -->
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
+<h2 id="p3">Part 3 — Bid-Ask Spread แยกส่วน</h2>
+
+<div class="bx bb">
+<div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> taker เป็นฝ่ายจ่าย spread และไม้ใหญ่ walk the book เสีย slippage · <strong>ตอนนี้จะเติม:</strong> เปิดดูว่า spread ที่จ่ายนั้นมาจาก 3 ก้อนต้นทุน (processing + inventory + adverse selection) และเริ่ม"อ่านใจ MM" ว่ากว้าง/แคบช่วงไหนแปลว่าอะไร — ก้าวแรกของด่าน "รู้ใครกดดัน"</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เห็นว่า spread ไม่ใช่ "ค่าธรรมเนียมลอย ๆ" แต่ประกอบจาก <strong>3 ก้อนต้นทุน</strong>ที่อธิบายได้</li>
+<li>แยก order-processing cost / inventory cost / <strong>adverse-selection cost</strong> ออกจากกัน</li>
+<li>รู้ปัจจัยที่ทำให้ spread <strong>กว้างหรือแคบ</strong>: tick, volatility, volume, การแข่งขัน MM, เวลา/ข่าว</li>
+<li>คำนวณ <strong>effective spread</strong> เพื่อวัดต้นทุนจริงที่เทรดเดอร์จ่าย ไม่ใช่แค่ spread ที่เห็นบนจอ</li>
+</ul>
+</div>
+
+<h3 id="p3-hook">เริ่มจากร้านแลกเงินสนามบิน</h3>
+
+<p>ร้านแลกเงินในสนามบินตั้ง spread กว้างมาก — รับซื้อ USD ถูก ขายแพง ส่วนต่างเยอะกว่าร้านในเมืองหลายเท่า ทำไม? เพราะร้านมี <strong>ต้นทุน 3 อย่าง</strong>ซ่อนอยู่: ค่าดำเนินงาน (เช่าที่แพง พนักงาน) + ความเสี่ยงถือเงินสกุลที่ค่าผันผวน + ความเสี่ยงที่ "ลูกค้าบางคนรู้ว่าค่าเงินกำลังจะวิ่ง" แล้วมาแลกก่อน</p>
+
+<p><strong>Market maker ในกระดานคริปโตก็คือร้านแลกเงินนี้</strong> — spread ที่เขาตั้งคือผลรวมของต้นทุน 3 ก้อนเดียวกัน ยิ่งสถานการณ์เสี่ยง spread ยิ่งกว้างเพื่อชดเชย</p>
+
+<svg class="d" viewBox="0 0 500 170" role="img" aria-label="ร้านแลกเงินสนามบิน spread กว้าง">
+<rect x="160" y="30" width="180" height="80" rx="8" fill="#fff" stroke="var(--g2)" stroke-width="2"/>
+<text x="250" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="var(--g8)">ร้านแลกเงิน / MM</text>
+<rect x="20" y="50" width="120" height="44" rx="6" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="80" y="69" text-anchor="middle" font-size="11" fill="var(--g8)">รับซื้อ (BID)</text>
+<text x="80" y="86" text-anchor="middle" font-size="13" font-weight="700" fill="var(--green)">34.50</text>
+<rect x="360" y="50" width="120" height="44" rx="6" fill="var(--red-bg)" stroke="var(--red)" stroke-width="2"/>
+<text x="420" y="69" text-anchor="middle" font-size="11" fill="var(--g8)">ขายให้ (ASK)</text>
+<text x="420" y="86" text-anchor="middle" font-size="13" font-weight="700" fill="var(--red)">35.50</text>
+<text x="250" y="135" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">spread กว้าง = ชดเชยต้นทุน 3 ก้อน</text>
+<text x="250" y="158" text-anchor="middle" font-size="10" fill="var(--g7)">ดำเนินงาน + ถือสต็อก + เสี่ยงโดนคนรู้ข้อมูล</text>
+</svg>
+
+<h3 id="p3-three">3 ก้อนต้นทุนของ Spread</h3>
+
+<p>ทฤษฎี microstructure แยก spread ออกเป็น 3 องค์ประกอบ:</p>
+<ol>
+<li><strong>Order-processing cost (ค่าดำเนินงาน):</strong> ต้นทุนพื้นฐานของการทำธุรกิจ MM — โครงสร้างพื้นฐาน, ค่าธรรมเนียม, เทคโนโลยี เป็นก้อนคงที่ที่สุด</li>
+<li><strong>Inventory cost (ความเสี่ยงสต็อก):</strong> เมื่อ MM ถูก fill สะสม position ค้างไว้ เขาแบกความเสี่ยงราคา ถ้าผันผวนสูง (volatility) เขาต้องกาง spread กว้างขึ้นเพื่อชดเชย</li>
+<li><strong>Adverse-selection cost (ความเสี่ยงโดนคนรู้ข้อมูลกิน):</strong> ก้อนสำคัญที่สุดในเชิงทฤษฎี — MM ไม่รู้ว่าคนที่มากินคำสั่งมีข้อมูลลับหรือไม่ ถ้าโดน "informed trader" กินบ่อย ๆ MM ขาดทุนเป็นระบบ จึงต้องกาง spread เผื่อ (รากจาก Glosten-Milgrom 1985)</li>
+</ol>
+
+<div class="fm">
+Spread = Processing + Inventory + AdverseSelection<br>
+&nbsp;<br>
+Effective Spread = 2 × | P_trade − Mid |   ← ต้นทุนจริงต่อการเทรด 1 ครั้ง<br>
+&nbsp;<br>
+ตัวอย่าง: market buy ได้ราคา 60,003 ขณะ mid = 60,000<br>
+&nbsp;&nbsp;EffSpread = 2 × |60,003 − 60,000| = 6 USDT
+</div>
+
+<p>ย้ำให้ชัด: <strong>quoted spread</strong> คือช่องว่าง best ask − best bid ที่ <em>เห็นบนจอ</em> (ค่าที่ "ป้ายบอก") ส่วน <strong>effective spread</strong> คือต้นทุน <em>ที่จ่ายจริง</em> วัดจากราคา fill เทียบ mid — รวม slippage เมื่อออเดอร์ walk the book ไปกินหลายชั้น จึงมักกว้างกว่า quoted spread โดยเฉพาะออเดอร์ก้อนใหญ่หรือกระดานบาง</p>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — Roll (1984): ราคาที่เห็น = ราคาจริง + "เด้งของ spread"</div>
+<p>ก่อนจะแยก spread เป็น 3 ก้อน มีโมเดลพื้นฐานที่สุดที่อยู่ใต้ทุกอย่าง — <strong>Roll model (1984)</strong> มองว่าราคาที่เราเห็นบนเทป (transaction price) ประกอบจากสองส่วน:</p>
+<div class="fm">
+P_obs(t) = m(t) + (s/2)·d(t)<br>
+&nbsp;&nbsp;m(t) = "efficient price" (ราคายุติธรรมจริง เดินแบบ random walk)<br>
+&nbsp;&nbsp;d(t) = +1 ถ้าเป็น market buy, −1 ถ้า market sell  (ตัว "เด้ง" bid-ask bounce)<br>
+&nbsp;&nbsp;s = spread<br>
+<br>
+ผลลัพธ์เด็ด:  Spread = 2·√( −Cov(ΔP_t , ΔP_{t−1}) )
+</div>
+<p>เพราะ market buy ตกที่ฝั่ง ask (สูงกว่า m) ส่วน market sell ตกที่ฝั่ง bid (ต่ำกว่า m) ราคาจึงเด้งสลับสองฝั่ง ทำให้ผลต่างราคาติด ๆ กันมี <strong>autocorrelation เป็นลบ</strong> Roll เลยประมาณ spread ได้จาก <em>ราคาเทรดอย่างเดียว</em> (ไม่ต้องมี quote!) — สวยตรงที่ครึ่งหนึ่งของสิ่งที่ดูเหมือน "ราคาผันผวน" จริง ๆ คือ <strong>noise ที่เราสร้างเองจากการข้าม spread</strong> ไม่ใช่ข้อมูลใหม่</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่คือ "ราคาจริง vs noise" ที่อยู่ใต้ Lee-Ready/CVD (Part 6) และเป็นคำเตือนตรงไป <strong>ภาคสถิติ</strong>: ถ้าวัด σ บนแท่งถี่ ๆ คุณจะวัด "เด้งของ spread" ปนเข้าไปจน σ พองเกินจริง — แล้ว σ ที่พองนี้ไปป้อน Avellaneda-Stoikov (Part 10) กับระยะ grid (Part 12) ผิดเงียบ ๆ</p>
+</div>
+
+<svg class="d" viewBox="0 0 500 280" role="img" aria-label="stacked bar 3 ก้อนต้นทุนของ spread">
+<line x1="60" y1="240" x2="460" y2="240" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">spread = 3 ก้อนซ้อนกัน (เทียบ 2 สถานการณ์)</text>
+<!-- bar A: เหรียญใหญ่/ตลาดปกติ -->
+<rect x="120" y="180" width="80" height="60" fill="var(--g7)" opacity="0.55"/>
+<text x="160" y="215" text-anchor="middle" font-size="9" fill="#fff">processing</text>
+<rect x="120" y="150" width="80" height="30" fill="var(--amber)" opacity="0.8"/>
+<text x="160" y="170" text-anchor="middle" font-size="8" fill="#fff">inventory</text>
+<rect x="120" y="125" width="80" height="25" fill="var(--red)" opacity="0.8"/>
+<text x="160" y="142" text-anchor="middle" font-size="8" fill="#fff">adv-sel</text>
+<text x="160" y="258" text-anchor="middle" font-size="10" fill="var(--g8)">BTC / ตลาดปกติ</text>
+<text x="160" y="118" text-anchor="middle" font-size="9" font-weight="700" fill="var(--blue)">spread แคบ</text>
+<!-- bar B: เหรียญเล็ก/ผันผวน -->
+<rect x="300" y="180" width="80" height="60"  fill="var(--g7)" opacity="0.55"/>
+<text x="340" y="215" text-anchor="middle" font-size="9" fill="#fff">processing</text>
+<rect x="300" y="120" width="80" height="60"  fill="var(--amber)" opacity="0.8"/>
+<text x="340" y="155" text-anchor="middle" font-size="8" fill="#fff">inventory ↑</text>
+<rect x="300" y="55"  width="80" height="65" fill="var(--red)" opacity="0.8"/>
+<text x="340" y="92" text-anchor="middle" font-size="8" fill="#fff">adv-sel ↑↑</text>
+<text x="340" y="258" text-anchor="middle" font-size="10" fill="var(--g8)">เหรียญเล็ก / ผันผวน</text>
+<text x="340" y="48" text-anchor="middle" font-size="9" font-weight="700" fill="var(--blue)">spread กว้าง</text>
+<text x="60" y="40" font-size="10" fill="var(--g7)">ความกว้าง spread</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 3.1 · Stacked bar — 3 ก้อนต้นทุนของ spread</p>
+
+<h3 id="p3-factors">ปัจจัยที่ทำให้ spread กว้างหรือแคบ</h3>
+
+<table>
+<tr><th>ปัจจัย</th><th>spread กว้างขึ้นเมื่อ</th><th>spread แคบลงเมื่อ</th></tr>
+<tr><td><strong>Tick size</strong></td><td>tick ใหญ่ (ราคาขยับหยาบ spread ต่ำสุด = 1 tick)</td><td>tick เล็ก (ราคาละเอียด แข่งกันได้)</td></tr>
+<tr><td><strong>Volatility</strong></td><td>ผันผวนสูง (inventory risk พุ่ง)</td><td>ตลาดนิ่ง</td></tr>
+<tr><td><strong>Volume / สภาพคล่อง</strong></td><td>ปริมาณซื้อขายน้อย (เหรียญเล็ก)</td><td>ปริมาณมาก (BTC/ETH)</td></tr>
+<tr><td><strong>การแข่งขัน MM</strong></td><td>มี MM น้อยราย ผูกขาด</td><td>MM แข่งกันบีบ spread</td></tr>
+<tr><td><strong>เวลา / ข่าว</strong></td><td>ใกล้ข่าว, ตลาดเงียบนอกเวลา, ความไม่แน่นอนสูง</td><td>ช่วงสภาพคล่องสูง ไม่มีข่าวค้าง</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="spread กว้าง vs แคบ 2 สถานการณ์บนกระดาน">
+<text x="125" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">ตลาดลึก/นิ่ง → spread แคบ</text>
+<line x1="20" y1="170" x2="230" y2="170" stroke="var(--g2)"/>
+<rect x="80"  y="110" width="22" height="60" fill="var(--green)"/>
+<rect x="148" y="110" width="22" height="60" fill="var(--red)"/>
+<line x1="125" y1="95" x2="125" y2="175" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="102" y1="100" x2="148" y2="100" stroke="var(--blue)" stroke-width="1.5" marker-start="url(#s3L)" marker-end="url(#s3R)"/>
+<text x="125" y="92" text-anchor="middle" font-size="9" font-weight="700" fill="var(--blue)">1 bps</text>
+<text x="125" y="190" text-anchor="middle" font-size="9" fill="var(--g7)">BTC ตลาดปกติ</text>
+<line x1="250" y1="25" x2="250" y2="200" stroke="var(--g2)" stroke-dasharray="3 3"/>
+<text x="375" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">บาง/ผันผวน → spread กว้าง</text>
+<line x1="270" y1="170" x2="480" y2="170" stroke="var(--g2)"/>
+<rect x="300" y="120" width="20" height="50" fill="var(--green)" opacity="0.85"/>
+<rect x="430" y="120" width="20" height="50" fill="var(--red)" opacity="0.85"/>
+<line x1="375" y1="90" x2="375" y2="175" stroke="var(--g7)" stroke-dasharray="4 3"/>
+<line x1="320" y1="100" x2="430" y2="100" stroke="var(--blue)" stroke-width="1.5" marker-start="url(#s3L)" marker-end="url(#s3R)"/>
+<text x="375" y="92" text-anchor="middle" font-size="9" font-weight="700" fill="var(--blue)">25 bps</text>
+<text x="375" y="190" text-anchor="middle" font-size="9" fill="var(--g7)">เหรียญเล็ก/ช่วงข่าว</text>
+<defs>
+<marker id="s3R" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--blue)"/></marker>
+<marker id="s3L" markerWidth="8" markerHeight="8" refX="0" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="var(--blue)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 3.2 · Spread กว้าง vs แคบ 2 สถานการณ์ (ต่อยอดเทมเพลตแม่)</p>
+
+<h3 id="p3-interpret">อ่านกระดาน: "เห็นแบบนี้ = อาจหมายถึง"</h3>
+
+<p>การแยก 3 ก้อนต้นทุนมีค่าเมื่อเอามาแปลผลตรงหน้าจอได้จริง — เห็น spread ขยับแล้วเดาได้ว่า MM กำลัง"คิดอะไร" และเราควรทำอะไร:</p>
+
+<table>
+<tr><th>เห็นบนกระดาน</th><th>อาจหมายถึง</th><th>เราควรทำ</th></tr>
+<tr><td><strong>spread กว้างขึ้นกะทันหัน</strong> (ก้อน adv-sel/inventory พอง)</td><td>MM ระแวงข้อมูลลับ/ความผันผวน — กางเผื่อโดน informed กิน มักก่อน/ระหว่างข่าว</td><td>เลี่ยงเข้าไม้ taker ตอนนี้ ต้นทุนเข้า-ออกแพง รอ spread หุบ</td></tr>
+<tr><td><strong>spread กว้างเรื้อรัง</strong> (ทุกชั้นบาง)</td><td>สภาพคล่องต่ำ/MM น้อยราย (เหรียญเล็ก, นอกเวลา)</td><td>ลดขนาดไม้ หรือใช้ limit ทยอยเข้า อย่ากด market ก้อนใหญ่</td></tr>
+<tr><td><strong>spread แคบมากและนิ่ง</strong></td><td>MM แข่งกันบีบ ตลาดลึก ความไม่แน่นอนต่ำ</td><td>ต้นทุนเข้า-ออกถูก เป็นจังหวะที่ taker เสีย spread น้อยสุด</td></tr>
+<tr><td><strong>effective spread &gt; quoted มาก</strong></td><td>ไม้เรากำลัง walk the book (กระดานบาง/ไม้ใหญ่เกินชั้น best)</td><td>แตกไม้ให้เล็กลง หรือยอมรอ depth เติมก่อน</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">⏰ หมายเหตุ — Intraday U-shape (spread/vol รูปตัว U ตลอดวัน)</div>
+<p>ในตลาดดั้งเดิม spread และ volatility มัก <strong>โค้งเป็นตัว U ภายในวัน</strong> — กว้าง/ผันผวนสูงตอนเปิดตลาด (ข้อมูลค้างคืนถูกย่อย) แคบลงช่วงกลางวัน แล้วกว้างอีกตอนใกล้ปิด คริปโตเทรด 24/7 ไม่มีระฆังเปิด-ปิด แต่ยัง <strong>เหลือร่องรอย U</strong> ตามคาบสภาพคล่องของศูนย์กลางการเงินใหญ่ (เอเชีย/ยุโรป/สหรัฐทับซ้อน) และพองชัดรอบ <strong>เวลาข่าวสหรัฐ</strong> (CPI/FOMC) — เป็นเหตุผลเชิงโครงสร้างว่าทำไม "ช่วงเวลา" จึงเป็นปัจจัยหนึ่งของ spread (โยง stylized facts ใน §8.5)</p>
+</div>
+
+<h3 id="p3-informed">Informed vs Noise Trader — ที่มาของ adverse selection</h3>
+
+<p>ทำไมก้อน adverse selection ถึงสำคัญที่สุด? เพราะ MM ต้องตั้งราคาทั้งที่ <strong>ไม่รู้ว่าคนที่จะมากินเป็นใคร</strong>:</p>
+<ul>
+<li><strong>Noise trader:</strong> เทรดด้วยเหตุผลสุ่ม (ปรับพอร์ต, sentiment) — MM กิน spread จากคนกลุ่มนี้ได้กำไร</li>
+<li><strong>Informed trader:</strong> รู้ว่าราคากำลังจะวิ่ง มากินฝั่งเดียว — MM ที่ขายให้เขาจะ "ขาดทุนทันที" เพราะราคาวิ่งตามหลัง</li>
+</ul>
+<p>MM กาง spread เพื่อให้ "กำไรจาก noise" ชดเชย "ขาดทุนจาก informed" ได้พอดี — นี่คือหัวใจของ Glosten-Milgrom</p>
+
+<svg class="d" viewBox="0 0 500 180" role="img" aria-label="informed vs noise trader มากินกระดาน">
+<rect x="190" y="65" width="120" height="50" rx="8" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>
+<text x="250" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">MM ตั้ง quote</text>
+<text x="250" y="104" text-anchor="middle" font-size="9" fill="var(--g7)">ไม่รู้ว่าใครจะมา</text>
+<circle cx="70" cy="50" r="22" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="70" y="48" text-anchor="middle" font-size="9" fill="var(--green)">noise</text>
+<text x="70" y="60" text-anchor="middle" font-size="8" fill="var(--g7)">สุ่ม</text>
+<path d="M95 58 L188 78" stroke="var(--green)" stroke-width="1.5" marker-end="url(#it)"/>
+<text x="130" y="58" text-anchor="middle" font-size="8" fill="var(--green)">MM ได้กำไร</text>
+<circle cx="70" cy="135" r="22" fill="var(--red-bg)" stroke="var(--red)" stroke-width="2"/>
+<text x="70" y="133" text-anchor="middle" font-size="8" fill="var(--red)">informed</text>
+<text x="70" y="145" text-anchor="middle" font-size="8" fill="var(--g7)">รู้ข้อมูล</text>
+<path d="M95 128 L188 102" stroke="var(--red)" stroke-width="1.5" marker-end="url(#it)"/>
+<text x="130" y="128" text-anchor="middle" font-size="8" fill="var(--red)">MM ขาดทุน</text>
+<text x="400" y="78" text-anchor="middle" font-size="10" fill="var(--g8)">spread ต้องกว้างพอ</text>
+<text x="400" y="95" text-anchor="middle" font-size="10" fill="var(--g8)">ให้กำไร noise</text>
+<text x="400" y="112" text-anchor="middle" font-size="10" fill="var(--g8)">หักลบขาดทุน informed</text>
+<defs>
+<marker id="it" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--g7)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 3.3 · Informed vs noise trader</p>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่ — เทรดเหรียญเล็กช่วงตลาดเงียบ</div>
+<p>มือใหม่เห็นเหรียญเล็กราคาวิ่งแรงตอนดึก (ตลาด US ปิด) แล้วกระโดดเข้า — <strong>ช่วงเงียบ MM ถอนตัว spread พองเป็น 10–50 bps</strong> คุณจ่ายค่า spread มหาศาลแค่ "เข้า-ออก" ก่อนจะคิดเรื่องทิศทางด้วยซ้ำ ยิ่งถ้าเทรดบ่อย ต้นทุน spread สะสมกินกำไรหมด — <strong>spread บนจอคือ "ภาษีเข้า-ออก" ที่ต้องคิดก่อนทุกไม้</strong> ไม่ใช่ดูแค่ราคาเป้าหมาย</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p><strong>Glosten &amp; Milgrom (1985)</strong> พิสูจน์ว่า spread เกิดจาก adverse selection แม้ MM ไม่มีต้นทุนดำเนินงานเลยก็ตาม ส่วน <strong>Stoll</strong> และงานสาย spread decomposition ต่อมาแยกวัด 3 องค์ประกอบเชิงประจักษ์ได้ — ในคริปโต โครงสร้าง fee/rebate ของ Binance/Bybit ก็มีผลโดยตรงต่อ spread ที่ MM ยอมตั้ง</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">🔎 ต้องเช็คก่อนใช้จริง</div>
+<p>โครงสร้าง <strong>fee/rebate</strong> ของ Binance/Bybit เปลี่ยนตามโปรโมชันและ VIP tier เสมอ ตัวเลขในเล่มนี้เป็นตัวอย่างเชิงแนวคิด — ก่อนคิด spread/ต้นทุนจริง ให้เปิดหน้า fee schedule ปัจจุบันของ exchange ที่ใช้</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>ก้อน <strong>adverse selection</strong> คือสะพานตรงสู่ Part 6 (market order = informative) และ Part 9–11 (market making — MM ต้องบริหารก้อนนี้ไม่ให้ขาดทุน) ส่วน effective spread คือ "ต้นทุนเข้า-ออกจริง" ที่เล่ม <strong>pm</strong> และ <strong>arb</strong> ต้องหักก่อนสรุปกำไรทุกครั้ง</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>ก่อนเข้า long BTC $5,000 ให้ดูก่อนว่า spread กำลัง"พอง"อยู่ไหม — ถ้าอยู่ช่วง <strong>ข่าว (CPI/FOMC) หรือดึก/นอกเวลา</strong> spread กว้าง = จ่าย"ภาษีเข้า-ออก"แพงเกินจำเป็น ควร <strong>เลี่ยงเข้าไม้ตอนนั้น</strong> แล้วรอช่วงสภาพคล่องสูงที่ spread หุบ</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>เก็บ best bid/ask ของ BTC/USDT ทุก ๆ นาทีเป็นเวลา 24 ชั่วโมง (ผ่าน REST <code>/api/v3/ticker/bookTicker</code>) แล้ว plot <strong>spread (bps) ราย 24 ชม.</strong> เทียบกับเวลาข่าวเศรษฐกิจสหรัฐ (เช่น CPI, FOMC) คุณจะเห็น spread "พอง" ขึ้นชัดในช่วงก่อน/หลังข่าว และช่วงตลาดเงียบ — ลองทำซ้ำกับเหรียญเล็กเทียบกัน</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> รู้ต้นทุนของ spread แล้ว — แต่ของที่"เห็น"บนกระดานเชื่อได้แค่ไหน และนานแค่ไหน? Part 4 แยกคลื่นจริงออกจากฟองลวง (spoof) และอ่านพฤติกรรม MM ตอนถอน quote</p>
+
+</body>
+</html>

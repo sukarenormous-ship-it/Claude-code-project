@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 1: กายวิภาคของคิว — ทำไม "อยู่ต้นคิว" ถึงมีค่าเป็นเงิน</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ I · อ่านกระดาน (พื้นฐาน)<br>เจาะลึกราคาเดียวว่ามีคิวซ่อนอยู่ — price-time priority, tick, depth และมูลค่าของการได้ยืนต้นคิว</div>
+</div>
+
+<!-- ========== PART 1 ========== -->
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 <b style="color:var(--blue)">อ่านกระดาน</b> › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
+<h2 id="p1">Part 1 — กายวิภาคของคิว</h2>
+
+<div class="bx bb">
+<div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 0 วางนิยาม microstructure — กระดาน (order book) คือสนามที่คำสั่งซื้อขายมาเจอกัน · <strong>ตอนนี้จะเติม:</strong> ซูมเข้าไปใน"ราคาเดียว" บนกระดาน ว่าจริง ๆ เป็นคิวของหลายคนเรียงกัน และทำไม "อยู่ต้นคิว" จึงมีมูลค่าเป็นเงิน</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เห็นว่า "ราคาหนึ่งราคา" บนกระดานจริง ๆ เป็น <strong>คิวของคำสั่งหลายคน</strong> ไม่ใช่ตัวเลขก้อนเดียว</li>
+<li>เข้าใจกฎจัดลำดับ <strong>price-time priority (FIFO)</strong> — ราคาดีกว่าได้ก่อน ราคาเท่ากันใครมาก่อนได้ก่อน</li>
+<li>อ่าน <strong>tick size</strong> และ <strong>depth</strong> (ความลึกหลายชั้น) ออกจากกระดานได้</li>
+<li>เข้าใจ <strong>queue value</strong> — ทำไมการ "อยู่ต้นคิว" จึงแปลว่าได้ fill ก่อนและมีมูลค่าเป็นเงิน</li>
+</ul>
+</div>
+
+<h3 id="p1-hook">เริ่มจากคิวซื้อ iPhone รุ่นใหม่</h3>
+
+<p>ตอน iPhone รุ่นใหม่เปิดขาย คนไปต่อแถวหน้าร้านตั้งแต่ตี 4 — <strong>ทุกคนยอมจ่ายราคาป้ายเท่ากัน</strong> แต่ "ใครได้เครื่องก่อน" ขึ้นกับตำแหน่งในแถว คนที่มาก่อนยืนต้นแถว ได้ของชัวร์ คนท้ายแถวอาจอดถ้าของหมด</p>
+
+<p><strong>กระดานเทรดก็มีแถวแบบนี้ในทุกราคา</strong> — ที่ราคา 59,997 อาจมีคนตั้งซื้อรออยู่ 50 คน เรียงตามเวลาที่ส่งคำสั่งเข้ามา เมื่อมีคนขายทันที (market sell) เข้ามา "ตัดของ" คนต้นแถวได้ขายของก่อนเสมอ</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="คิวซื้อ iPhone เทียบกับคิวคำสั่งในกระดาน">
+<text x="250" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="var(--g8)">ราคาเดียว = หนึ่งแถวคอย</text>
+<rect x="30" y="40" width="60" height="40" rx="6" fill="var(--green)" opacity="0.9"/>
+<text x="60" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">#1</text>
+<rect x="100" y="40" width="60" height="40" rx="6" fill="var(--green)" opacity="0.78"/>
+<text x="130" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">#2</text>
+<rect x="170" y="40" width="60" height="40" rx="6" fill="var(--green)" opacity="0.66"/>
+<text x="200" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">#3</text>
+<rect x="240" y="40" width="60" height="40" rx="6" fill="var(--green)" opacity="0.54"/>
+<text x="270" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">#4</text>
+<rect x="310" y="40" width="60" height="40" rx="6" fill="var(--green)" opacity="0.42"/>
+<text x="340" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">#5</text>
+<text x="60" y="100" text-anchor="middle" font-size="10" fill="var(--g7)">มาก่อน</text>
+<text x="340" y="100" text-anchor="middle" font-size="10" fill="var(--g7)">มาทีหลัง</text>
+<line x1="30" y1="115" x2="470" y2="115" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="250" y="138" text-anchor="middle" font-size="12" fill="var(--g7)">คำสั่งขายทันที (market sell) เข้ามา →</text>
+<path d="M390 60 L440 60" stroke="var(--red)" stroke-width="2.5" marker-end="url(#qarr)"/>
+<text x="250" y="165" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">#1 ได้ fill ก่อน · #5 ต้องรอจนคิวหน้าหมด</text>
+<text x="250" y="190" text-anchor="middle" font-size="11" fill="var(--g7)">ทุกคนราคาเท่ากัน (59,997) แต่ "ลำดับ" ต่างกัน</text>
+<defs>
+<marker id="qarr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--red)"/></marker>
+</defs>
+</svg>
+
+<h3 id="p1-queue">ในหนึ่งราคา มี "คิว" ซ่อนอยู่</h3>
+
+<p>กระดานที่เราเห็นแบบสรุปจะบอกแค่ "ที่ราคา 59,997 มี 12 BTC รออยู่" — แต่ 12 BTC นั้นจริง ๆ คือคำสั่งของหลายคนเรียงต่อกัน เช่น 3 + 5 + 1 + 2 + 1 ตามลำดับเวลา ระบบจับคู่จะ "กิน" จากหัวคิวเสมอ</p>
+
+<div class="fm">
+ราคา 59,997 (best bid):  [3 BTC][5 BTC][1 BTC][2 BTC][1 BTC]  รวม = 12 BTC<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;หัวคิว ─────────────────────────► ท้ายคิว<br>
+market sell 4 BTC เข้ามา → กิน [3] หมด + กิน 1 จาก [5] → เหลือ [4][1][2][1] = 8 BTC
+</div>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="zoom-in คิวในหนึ่งราคา ก่อนและหลังถูก market order กิน">
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">Zoom-in: คิวที่ราคา 59,997</text>
+<text x="40" y="48" font-size="11" fill="var(--g7)">ก่อน:</text>
+<rect x="90"  y="35" width="48" height="26" fill="var(--green)" opacity="0.95"/><text x="114" y="53" text-anchor="middle" font-size="11" fill="#fff">3</text>
+<rect x="142" y="35" width="78" height="26" fill="var(--green)" opacity="0.85"/><text x="181" y="53" text-anchor="middle" font-size="11" fill="#fff">5</text>
+<rect x="224" y="35" width="22" height="26" fill="var(--green)" opacity="0.75"/><text x="235" y="53" text-anchor="middle" font-size="10" fill="#fff">1</text>
+<rect x="250" y="35" width="40" height="26" fill="var(--green)" opacity="0.65"/><text x="270" y="53" text-anchor="middle" font-size="11" fill="#fff">2</text>
+<rect x="294" y="35" width="22" height="26" fill="var(--green)" opacity="0.55"/><text x="305" y="53" text-anchor="middle" font-size="10" fill="#fff">1</text>
+<text x="90" y="78" font-size="9" fill="var(--g7)">หัวคิว</text>
+<line x1="100" y1="100" x2="400" y2="100" stroke="var(--g2)"/>
+<text x="250" y="120" text-anchor="middle" font-size="11" fill="var(--red)">market sell 4 BTC กินจากหัวคิว ▼</text>
+<text x="40" y="158" font-size="11" fill="var(--g7)">หลัง:</text>
+<rect x="90"  y="145" width="64" height="26" fill="var(--green)" opacity="0.85"/><text x="122" y="163" text-anchor="middle" font-size="11" fill="#fff">4</text>
+<rect x="158" y="145" width="22" height="26" fill="var(--green)" opacity="0.75"/><text x="169" y="163" text-anchor="middle" font-size="10" fill="#fff">1</text>
+<rect x="184" y="145" width="40" height="26" fill="var(--green)" opacity="0.65"/><text x="204" y="163" text-anchor="middle" font-size="11" fill="#fff">2</text>
+<rect x="228" y="145" width="22" height="26" fill="var(--green)" opacity="0.55"/><text x="239" y="163" text-anchor="middle" font-size="10" fill="#fff">1</text>
+<text x="380" y="163" font-size="11" font-weight="700" fill="var(--g7)">เหลือ 8 BTC</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 1.1 · คิวภายในหนึ่งราคา (zoom-in)</p>
+
+<h3 id="p1-priority">กฎจัดลำดับ: Price-Time Priority (FIFO)</h3>
+
+<p>ระบบจับคู่ของกระดาน (matching engine) ใช้กฎ 2 ชั้นในการเลือกว่าจะให้ใครได้ fill ก่อน:</p>
+<ol>
+<li><strong>Price priority (ราคาก่อน):</strong> ฝั่งซื้อ ราคาแพงกว่าได้ก่อน · ฝั่งขาย ราคาถูกกว่าได้ก่อน — เพราะเป็นราคาที่ "ดึงดูด" คู่ค้ามากที่สุด</li>
+<li><strong>Time priority (เวลาเป็นตัวตัดสินเมื่อราคาเท่ากัน):</strong> ที่ราคาเดียวกัน ใครส่งคำสั่งมาก่อนอยู่ต้นคิวก่อน = FIFO (First In, First Out)</li>
+</ol>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="ผังตัดสินใจ price-time priority">
+<rect x="160" y="20" width="180" height="38" rx="8" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>
+<text x="250" y="44" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">มีคำสั่ง 2 ใบ ใครได้ก่อน?</text>
+<line x1="250" y1="58" x2="250" y2="78" stroke="var(--g7)" stroke-width="1.5" marker-end="url(#pd)"/>
+<rect x="150" y="80" width="200" height="38" rx="8" fill="#fff" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="250" y="104" text-anchor="middle" font-size="12" fill="var(--g8)">ราคาดีกว่าไหม?</text>
+<line x1="150" y1="99" x2="80" y2="135" stroke="var(--g7)" stroke-width="1.5" marker-end="url(#pd)"/>
+<text x="60" y="120" text-anchor="end" font-size="10" fill="var(--green)">ใช่</text>
+<line x1="350" y1="99" x2="420" y2="135" stroke="var(--g7)" stroke-width="1.5" marker-end="url(#pd)"/>
+<text x="440" y="120" text-anchor="start" font-size="10" fill="var(--amber)">ราคาเท่ากัน</text>
+<rect x="20" y="138" width="130" height="42" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="85" y="156" text-anchor="middle" font-size="11" font-weight="700" fill="var(--green)">ราคาดีกว่าชนะ</text>
+<text x="85" y="172" text-anchor="middle" font-size="9" fill="var(--g7)">(Price priority)</text>
+<rect x="350" y="138" width="135" height="42" rx="8" fill="#fff" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="417" y="162" text-anchor="middle" font-size="11" fill="var(--g8)">ใครมาก่อน?</text>
+<line x1="417" y1="180" x2="417" y2="200" stroke="var(--g7)" stroke-width="1.5" marker-end="url(#pd)"/>
+<rect x="350" y="202" width="135" height="40" rx="8" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>
+<text x="417" y="220" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blue)">มาก่อนชนะ</text>
+<text x="417" y="235" text-anchor="middle" font-size="9" fill="var(--g7)">(Time priority / FIFO)</text>
+<defs>
+<marker id="pd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--g7)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 1.2 · ผังตัดสินใจ price-time priority</p>
+
+<div class="bx ba">
+<div class="bt">📌 ข้อสังเกต — ไม่ใช่ทุกตลาดใช้ FIFO ล้วน</div>
+<p>คริปโตสปอตส่วนใหญ่ (Binance/Bybit) ใช้ <strong>price-time priority (FIFO)</strong> ตรง ๆ แต่ตลาดอนุพันธ์บางแห่งใช้ <strong>pro-rata</strong> (แบ่ง fill ตามสัดส่วนขนาด ไม่ใช่ตามเวลา) ในเล่มนี้เรายึด FIFO เป็นหลักเพราะเป็นกติกาของกระดานคริปโตที่รายย่อยเจอจริง</p>
+</div>
+
+<h3 id="p1-tickdepth">Tick size และ Depth</h3>
+
+<p><strong>Tick size</strong> คือ "ขั้นต่ำสุด" ที่ราคาขยับได้ — เช่น BTC/USDT อาจมี tick = 0.1 USDT แปลว่าราคาไปได้ทีละ 60,000.0 → 60,000.1 → 60,000.2 ไม่มีราคาแทรกกลาง tick เล็ก = ราคาละเอียด คิวกระจายหลายชั้น · tick ใหญ่ = ราคาหยาบ คิวอัดแน่นในไม่กี่ชั้น (สำคัญมากใน Part 5 เรื่อง large-tick)</p>
+
+<p><strong>Depth</strong> คือปริมาณที่รออยู่ "ลึกลงไป" จาก best หลายชั้นราคา ไม่ใช่แค่ชั้นบนสุด — กระดานที่ลึกหมายถึงรับแรงซื้อขายก้อนใหญ่ได้โดยราคาไม่กระเด็น</p>
+
+<div class="fm">
+Queue(P)   = Σ ปริมาณของทุกคำสั่งที่ตั้งอยู่ที่ราคา P<br>
+Depth(N)   = Σ ปริมาณรวมของ N ชั้นราคาแรกนับจาก best (ทั้งฝั่ง)<br>
+&nbsp;<br>
+ตัวอย่าง bid 5 ชั้น (ตามภาพ 1.3): 7 + 11 + 15 + 9 + 12 → Depth(5) ฝั่งซื้อ = 54 BTC
+</div>
+
+<svg class="d" viewBox="0 0 500 300" role="img" aria-label="depth profile กระดาน 5 ชั้น bid เขียวซ้าย ask แดงขวา">
+<line x1="20" y1="250" x2="480" y2="250" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="20" y="19" font-size="10" fill="var(--g7)">↑ ปริมาณ (depth ที่รออยู่)</text>
+<!-- BID bars (green, left) ascending toward mid -->
+<rect x="40"  y="205" width="30" height="45"  fill="var(--green)" opacity="0.85"/><text x="55" y="245" text-anchor="middle" font-size="9" fill="#fff">7</text>
+<rect x="80"  y="180" width="30" height="70"  fill="var(--green)" opacity="0.88"/><text x="95" y="245" text-anchor="middle" font-size="9" fill="#fff">11</text>
+<rect x="120" y="155" width="30" height="95"  fill="var(--green)" opacity="0.9"/><text x="135" y="245" text-anchor="middle" font-size="9" fill="#fff">15</text>
+<rect x="160" y="130" width="30" height="120" fill="var(--green)" opacity="0.92"/><text x="175" y="245" text-anchor="middle" font-size="9" fill="#fff">9</text>
+<rect x="200" y="100" width="30" height="150" fill="var(--green)"/><text x="215" y="245" text-anchor="middle" font-size="9" fill="#fff">12</text>
+<!-- ASK bars (red, right) -->
+<rect x="270" y="110" width="30" height="140" fill="var(--red)"/><text x="285" y="245" text-anchor="middle" font-size="9" fill="#fff">10</text>
+<rect x="310" y="135" width="30" height="115" fill="var(--red)" opacity="0.92"/><text x="325" y="245" text-anchor="middle" font-size="9" fill="#fff">8</text>
+<rect x="350" y="158" width="30" height="92"  fill="var(--red)" opacity="0.9"/><text x="365" y="245" text-anchor="middle" font-size="9" fill="#fff">14</text>
+<rect x="390" y="180" width="30" height="70"  fill="var(--red)" opacity="0.88"/><text x="405" y="245" text-anchor="middle" font-size="9" fill="#fff">6</text>
+<rect x="430" y="202" width="30" height="48"  fill="var(--red)" opacity="0.85"/><text x="445" y="245" text-anchor="middle" font-size="9" fill="#fff">5</text>
+<!-- mid dashed -->
+<line x1="250" y1="60" x2="250" y2="272" stroke="var(--g7)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="250" y="290" text-anchor="middle" font-size="11" fill="var(--g7)">Mid 60,000</text>
+<!-- tick annotation -->
+<line x1="230" y1="262" x2="270" y2="262" stroke="var(--g7)" stroke-width="1"/>
+<text x="40"  y="266" font-size="8" fill="var(--g7)">ลึก ◄</text>
+<text x="445" y="266" font-size="8" fill="var(--g7)">► ลึก</text>
+<text x="215" y="94" text-anchor="middle" font-size="9" font-weight="700" fill="var(--green)">Best Bid</text>
+<text x="285" y="104" text-anchor="middle" font-size="9" font-weight="700" fill="var(--red)">Best Ask</text>
+<text x="120" y="44" font-size="13" font-weight="700" fill="var(--green)">BID (depth ฝั่งซื้อ)</text>
+<text x="350" y="44" font-size="13" font-weight="700" fill="var(--red)">ASK (depth ฝั่งขาย)</text>
+<text x="20" y="285" text-anchor="start" font-size="9" fill="var(--g7)">แต่ละแท่ง = 1 ชั้นราคา (1 tick+)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 1.3 · Depth profile 5 ชั้น (ต่อยอดเทมเพลตแม่กระดาน LOB)</p>
+
+<h3 id="p1-value">Queue Value — ทำไมต้นคิวจึงมีค่าเป็นเงิน</h3>
+
+<p>คำสั่ง limit ที่อยู่ต้นคิวได้เปรียบ 2 อย่าง: (1) <strong>ได้ fill ก่อน</strong> เมื่อมี taker เข้ามา และ (2) <strong>โอกาสถูก fill สูงกว่า</strong> เพราะ taker อาจไม่ลึกพอจะถึงคิวหลัง ความน่าจะเป็นที่ "เราจะได้ fill" ขึ้นกับว่ามี volume ฝั่งตรงข้ามมากกว่าปริมาณที่อยู่ <em>หน้าเรา</em> หรือไม่</p>
+
+<div class="fm">
+Q_ahead   = ปริมาณทั้งหมดที่อยู่ "หน้าเรา" ในคิวเดียวกัน<br>
+เราได้ fill ก็ต่อเมื่อ:  ปริมาณ taker ที่เข้ามากินคิวนี้  >  Q_ahead<br>
+&nbsp;<br>
+ยิ่ง Q_ahead น้อย (อยู่ต้นคิว) → P(fill) สูง · ต้องรอ adverse move น้อยลง
+</div>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="คิว limit ที่ราคา best bid เดียว แสดง Q_ahead ของเราและ market sell ที่เข้ามากินจากต้นคิว">
+<text x="250" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">คิวที่ราคาเดียว (best bid 59,997) — ใครมาก่อนได้ก่อน</text>
+<text x="250" y="35" text-anchor="middle" font-size="10" fill="var(--g7)">market sell เข้ามากินจาก "ต้นคิว" (ซ้าย → ขวา)</text>
+<!-- incoming taker arrow -->
+<line x1="30" y1="95" x2="100" y2="95" stroke="var(--red)" stroke-width="2.5" marker-end="url(#qa)"/>
+<text x="30" y="84" font-size="11" font-weight="700" fill="var(--red)">market sell</text>
+<!-- queue slots: ahead (green), you (blue), behind (green faded) -->
+<rect x="108" y="70" width="40" height="50" rx="4" fill="var(--green)" opacity="0.9"/>
+<text x="128" y="100" text-anchor="middle" font-size="11" fill="#fff">3</text>
+<rect x="152" y="70" width="40" height="50" rx="4" fill="var(--green)" opacity="0.75"/>
+<text x="172" y="100" text-anchor="middle" font-size="11" fill="#fff">5</text>
+<rect x="196" y="70" width="40" height="50" rx="4" fill="var(--green)" opacity="0.6"/>
+<text x="216" y="100" text-anchor="middle" font-size="11" fill="#fff">4</text>
+<rect x="244" y="66" width="44" height="58" rx="4" fill="var(--blue)"/>
+<text x="266" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">YOU</text>
+<rect x="296" y="70" width="40" height="50" rx="4" fill="var(--green)" opacity="0.45"/>
+<text x="316" y="100" text-anchor="middle" font-size="11" fill="#fff">6</text>
+<rect x="340" y="70" width="40" height="50" rx="4" fill="var(--green)" opacity="0.35"/>
+<text x="360" y="100" text-anchor="middle" font-size="11" fill="#fff">8</text>
+<!-- Q_ahead bracket over the three green slots before YOU -->
+<path d="M108 60 L108 52 L236 52 L236 60" fill="none" stroke="var(--amber)" stroke-width="1.5"/>
+<text x="172" y="46" text-anchor="middle" font-size="11" font-weight="700" fill="var(--amber)">Q_ahead = 12 BTC</text>
+<!-- behind label -->
+<text x="360" y="142" text-anchor="middle" font-size="10" fill="var(--g7)">หลังเรา (รอ)</text>
+<!-- bottom note -->
+<text x="250" y="178" text-anchor="middle" font-size="11" fill="var(--g8)">ต้อง market sell &gt; 12 BTC คิวถึงจะถึง "YOU" แล้วได้ fill</text>
+<text x="250" y="198" text-anchor="middle" font-size="10" fill="var(--red)">ถ้าราคาวิ่งหนีก่อน 12 BTC ถูกกินหมด → คำสั่งค้าง (queue risk)</text>
+<defs>
+<marker id="qa" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--red)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 1.4 · Queue value &amp; queue risk — Q_ahead หน้าเราต้องถูกกินก่อนเราถึงได้ fill</p>
+
+<p>นี่คือ "ราคาที่จ่ายไม่เห็น" ของการเป็น maker: ถ้ามาช้า Q_ahead เยอะ คุณอาจต้องรอนาน และระหว่างรอ ราคาอาจวิ่งหนี ทำให้คำสั่งไม่ได้ fill เลย — เรื่องนี้คือหัวใจของ market making ใน Part 9–11</p>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่ — "ตั้ง limit แล้วชัวร์"</div>
+<p>มือใหม่ชอบคิดว่า "ตั้ง limit ที่ราคานี้ เดี๋ยวก็โดน fill แน่ ๆ" — <strong>ผิด!</strong> limit order ไม่การันตี fill มันการันตีแค่ "ราคา" ที่จะได้ <em>ถ้า</em> ได้ fill คุณยังต้องรอจน Q_ahead หน้าคุณถูกกินหมดก่อน ถ้าราคาวิ่งหนีไปก่อน คำสั่งคุณค้างเติ่ง นี่คือ <strong>queue risk</strong> — ความเสี่ยงที่มือใหม่มองข้ามตลอด แล้วงงว่าทำไม "ตั้งราคาดีแล้วไม่ติด"</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>งานสาย queue dynamics เช่น <strong>Lu &amp; Abergel (2018)</strong> และ <strong>Queue-Reactive Hawkes (arXiv 1901.08938)</strong> ชี้ว่าพฤติกรรมของคิวไม่ได้สุ่มแบบไร้ความจำ — อัตราการเติม/ถอน/กินคิวขึ้นกับ "สภาพคิวปัจจุบัน" เอง (queue-reactive) และ <strong>Importance of Order Sizes (arXiv 2405.18594)</strong> เน้นว่า "ขนาด" ของแต่ละคำสั่งในคิวมีผลต่อการพยากรณ์ ไม่ใช่แค่ปริมาณรวม — ตอกย้ำว่า Q_ahead เป็นตัวแปรจริงที่วัดได้</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>Queue value และ Q_ahead ที่เรียนตรงนี้คือรากฐานของ <strong>market making (Part 9–11)</strong> — รายได้ของ MM คือ "ครึ่ง spread" ที่ได้จากการอยู่ในคิวแล้วถูก fill ส่วน queue risk เชื่อมตรงไปยังการคิด P&amp;L และ inventory ในเล่ม <strong>Payoff Mastery (pm)</strong> เพราะคำสั่งที่ไม่ได้ fill = position ที่ไม่เกิด = แผนเทรดพัง</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เราอยากเข้า long BTC/USDT $5,000 ให้ได้ราคาดีโดยวาง limit — แต่ limit ที่เราวางจะไปต่อ <strong>"ท้ายคิว"</strong> ของราคานั้น ถ้าราคาวิ่งหนีก่อนที่ taker จะกินมาถึงเรา เราก็ <strong>ไม่ได้ fill เลย</strong> นี่คือ queue risk ที่ต้องชั่งก่อนตัดสินใจวางคิวลึกแค่ไหน</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>สมัคร WebSocket stream ของ Binance ช่องทาง <strong><code>btcusdt@depth</code></strong> (diff depth) แล้วบันทึกปริมาณที่ best bid เป็นเวลา 10 วินาที สังเกตว่าตัวเลขขยับขึ้นลงตลอดจาก limit เข้า/cancel/market กิน ลองเดาว่าถ้าคุณวาง limit เพิ่ม 0.01 BTC ตอนนี้ Q_ahead ของคุณจะเป็นเท่าไร และต้องมี market sell เข้ามากี่ BTC คุณถึงจะได้ fill</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> รู้แล้วว่าในหนึ่งราคามีคิว แล้ว <em>อะไร</em> ที่ทำให้คิวและกระดานขยับได้บ้าง? Part 2 ตอบด้วย 3 เหตุการณ์เดียว — Limit / Cancel / Market — และทำไมไม้ใหญ่ถึง walk the book</p>
+
+</body>
+</html>

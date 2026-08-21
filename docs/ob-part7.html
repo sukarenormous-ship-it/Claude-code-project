@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 7</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 7: Order Flow Imbalance &amp; Price Impact — flow ดันราคายังไง</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ III · อ่าน Flow<br>จากภาพนิ่ง (OBI) → วิดีโอการเปลี่ยน (OFI) → วัด price impact ด้วย Kyle's λ</div>
+</div>
+
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
+<!-- ========== PART 7 ========== -->
+<h2 id="p7">Part 7 — OFI &amp; Price Impact</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 6 วัด "ของที่ลงมือจริง" ด้วย Δ/CVD แต่จับเฉพาะ market order ที่เทรดไปแล้ว · <strong>ตอนนี้จะเติม:</strong> ยกระดับเป็น OFI ที่รวมทุกแรง (limit+cancel+market) เป็น "วิดีโอการเปลี่ยน" แล้ววัดด้วย regression ว่า flow หนึ่งหน่วยดันราคาเท่าไร = Kyle's λ</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>แยก <strong>OBI (state/ภาพนิ่ง)</strong> ออกจาก <strong>OFI (flow/การเปลี่ยน)</strong> ได้ชัด (มีตารางเทียบ)</li>
+<li>คำนวณ OFI แบบ event-based ที่ best level ครบ 3 กรณี (ราคาขึ้น/เท่า/ลง)</li>
+<li>เข้าใจว่า <strong>Kyle's λ = ความชันของเส้น regression</strong> ΔP บน OFI — price impact ต่อหนึ่งหน่วย flow</li>
+<li>รู้จัก <strong>multi-level OFI</strong> (Cont 2023, รวมหลายชั้นด้วย PCA) และทำไมต้อง stationarize ก่อน regress</li>
+</ul>
+</div>
+
+<h3 id="p7-hook">OBI = ภาพถ่าย / OFI = วิดีโอ</h3>
+
+<p>Part 5 สอน OBI ซึ่งเป็น "<strong>ภาพถ่ายนิ่ง</strong>" ของกระดาน ณ วินาทีหนึ่ง — บอกว่าตอนนี้ฝั่งไหนหนัก แต่ภาพนิ่งบอกไม่ได้ว่ามันกำลัง <em>เปลี่ยนไปทางไหน</em></p>
+
+<p><strong>OFI (Order Flow Imbalance)</strong> คือ "<strong>วิดีโอการเปลี่ยน</strong>" — มันวัด <em>การเปลี่ยนแปลงสุทธิ</em> ของ depth ระหว่างสอง snapshot โดยรวมทั้ง 3 เหตุการณ์: limit เพิ่มเข้า, cancel ถอนออก, market กินออก ต่างจาก Δ/CVD (Part 6) ที่จับเฉพาะ market — OFI จับ <strong>ทุกแรงที่ขยับกระดาน</strong></p>
+
+<table>
+<tr><th>มิติ</th><th>OBI (Part 5)</th><th>OFI (Part 7)</th></tr>
+<tr><td>วัดอะไร</td><td><strong>state</strong> — ปริมาณที่ตั้งรอ ณ จุดเวลาหนึ่ง</td><td><strong>flow</strong> — การเปลี่ยนสุทธิระหว่างสองช่วงเวลา</td></tr>
+<tr><td>คำอุปมา</td><td>ภาพถ่ายนิ่ง</td><td>วิดีโอการเปลี่ยน</td></tr>
+<tr><td>รวมเหตุการณ์</td><td>แค่ snapshot (ไม่รู้สาเหตุ)</td><td>limit + cancel + market รวมกัน</td></tr>
+<tr><td>ความสัมพันธ์กับราคา</td><td>correlation (เดาทิศ)</td><td><strong>regression แรงดัน→ราคา</strong> ΔP=λ·OFI</td></tr>
+<tr><td>จับ "การเปลี่ยน" ไหม</td><td>ไม่ — เป็นภาพนิ่ง</td><td>ใช่ — เป็นแกนกลาง</td></tr>
+</table>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="เทียบ OBI ภาพถ่ายนิ่งกับ OFI วิดีโอการเปลี่ยน">
+<rect x="20" y="35" width="200" height="130" rx="8" fill="var(--g0)" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="120" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="var(--g7)">OBI = ภาพถ่าย 📷</text>
+<rect x="55" y="95" width="20" height="55" fill="var(--green)"/>
+<rect x="80" y="110" width="20" height="40" fill="var(--green)" opacity="0.85"/>
+<rect x="140" y="105" width="20" height="45" fill="var(--red)"/>
+<rect x="165" y="120" width="20" height="30" fill="var(--red)" opacity="0.85"/>
+<line x1="120" y1="80" x2="120" y2="155" stroke="var(--g7)" stroke-dasharray="3 3"/>
+<text x="120" y="180" text-anchor="middle" font-size="10" fill="var(--g7)">นิ่ง 1 เฟรม</text>
+<rect x="280" y="35" width="200" height="130" rx="8" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="1.5"/>
+<text x="380" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="var(--blue)">OFI = วิดีโอ 🎞️</text>
+<rect x="305" y="110" width="14" height="40" fill="var(--green)" opacity="0.5"/>
+<rect x="323" y="95" width="14" height="55" fill="var(--green)" opacity="0.75"/>
+<rect x="341" y="80" width="14" height="70" fill="var(--green)"/>
+<path d="M360,120 L380,120" stroke="var(--blue)" stroke-width="2" marker-end="url(#ar7)"/>
+<rect x="395" y="120" width="14" height="30" fill="var(--red)" opacity="0.75"/>
+<rect x="413" y="130" width="14" height="20" fill="var(--red)" opacity="0.5"/>
+<text x="380" y="180" text-anchor="middle" font-size="10" fill="var(--blue)">การเปลี่ยนระหว่างเฟรม</text>
+<defs><marker id="ar7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--blue)"/></marker></defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 7.1 · OBI (state) เทียบ OFI (flow)</p>
+
+<h3 id="p7-ofi">นิยาม OFI ที่ best level — 3 กรณี</h3>
+
+<p>OFI event-based (Cont-Kukanov-Stoikov) วัดการเปลี่ยน depth ที่ best bid/ask ระหว่าง snapshot ก่อน (n−1) กับตอนนี้ (n) โดยขึ้นกับว่า <strong>ราคา best ขยับหรือไม่</strong>:</p>
+
+<div class="fm">
+ฝั่ง bid (e^b_n) — เทียบ P^b กับ P^b ก่อนหน้า:<br>
+&nbsp;&nbsp;ถ้า P^b_n &gt; P^b_{n−1}  →  e^b =  V^b_n            (ราคา bid ขึ้น = แรงซื้อเข้า)<br>
+&nbsp;&nbsp;ถ้า P^b_n = P^b_{n−1}  →  e^b =  V^b_n − V^b_{n−1}  (ราคาเท่า = ดูปริมาณเปลี่ยน)<br>
+&nbsp;&nbsp;ถ้า P^b_n &lt; P^b_{n−1}  →  e^b = −V^b_{n−1}        (ราคา bid ลง = แรงขายกิน)<br>
+<br>
+ฝั่ง ask (e^a_n) — สมมาตรกลับด้าน:<br>
+&nbsp;&nbsp;ถ้า P^a_n &lt; P^a_{n−1}  →  e^a =  V^a_n<br>
+&nbsp;&nbsp;ถ้า P^a_n = P^a_{n−1}  →  e^a =  V^a_n − V^a_{n−1}<br>
+&nbsp;&nbsp;ถ้า P^a_n &gt; P^a_{n−1}  →  e^a = −V^a_{n−1}<br>
+<br>
+OFI_n = e^b_n − e^a_n      (บวก = แรงดันขึ้น, ลบ = แรงดันลง)
+</div>
+
+<h3 id="p7-kyle">Kyle's λ — price impact (แรงดันราคา) ต่อหนึ่งหน่วย flow</h3>
+
+<p>คำถามสำคัญ: OFI หนึ่งหน่วยดันราคาเท่าไร? ตอบด้วย <strong>regression เชิงเส้น</strong> ของการเปลี่ยน mid (ΔP) บน OFI ความชัน (slope) ที่ได้คือ <strong>Kyle's λ</strong> — "ค่าความลึก/แพงของตลาด" (price impact coefficient)</p>
+
+<div class="bx bb"><div class="bt">⚖️ ความเป๊ะ: "Kyle's λ" ตัวจริง vs slope ที่เราวัด</div>
+<p>ในเปเปอร์ต้นฉบับ <strong>Kyle (1985)</strong> λ เป็น <strong>ค่าดุลยภาพเชิงทฤษฎี</strong> ที่ MM ตั้งราคาป้องกัน insider — มีสูตรปิด λ = ½·σ_v/σ_u (ความผันผวนของข่าวลับ ÷ ของ noise) และวัด flow เป็น "net signed market order" · ส่วนสิ่งที่เราคำนวณจริงในเล่มนี้คือ <strong>slope ของ regression ΔP บน OFI</strong> ตาม <strong>Cont-Kukanov-Stoikov (2014)</strong> ซึ่ง OFI รวม limit+cancel+market ไม่ใช่แค่ market order · นักปฏิบัติเรียกมันว่า "Kyle's λ" เพราะมัน <em>เล่นบทเดียวกัน</em> (price impact ต่อหน่วย flow) แต่จำไว้ว่ามันเป็น <strong>การประมาณเชิงสถิติ (contemporaneous, ไม่ใช่ causal)</strong> ไม่ใช่ λ ดุลยภาพของ Kyle เป๊ะ ๆ</p></div>
+
+<div class="fm">
+ΔP = λ · OFI + ε        ← สมการ price impact (linear)<br>
+<br>
+λ = ความชันเส้น regression (OLS slope):<br>
+&nbsp;&nbsp;λ = Cov(ΔP, OFI) / Var(OFI)     ← สูตร OLS ที่เล่ม math สอน<br>
+<br>
+λ สูง = ตลาดบาง (flow นิดเดียวดันราคาแรง)<br>
+λ ต่ำ = ตลาดลึก   (flow มากแต่ราคาขยับน้อย — liquid)
+</div>
+
+<svg class="d" viewBox="0 0 500 330" role="img" aria-label="scatter ΔP กับ OFI สองฝั่งรอบจุดกำเนิด พร้อมเส้น regression ที่ความชันคือ lambda">
+<line x1="60" y1="240" x2="470" y2="240" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="265" y1="30" x2="265" y2="305" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="455" y="258" font-size="11" fill="var(--g7)">OFI</text>
+<text x="275" y="40" font-size="11" fill="var(--g7)">ΔP</text>
+<!-- ควอดรันต์ลบ (OFI<0, ΔP<0) — ทำให้เส้นผ่านจุดกำเนิดดูสมจริง (two-sided) -->
+<circle cx="95" cy="295" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="130" cy="280" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="160" cy="288" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="190" cy="270" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="225" cy="262" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<!-- ควอดรันต์บวก (OFI>0, ΔP>0) -->
+<circle cx="265" cy="225" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="285" cy="218" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="305" cy="128" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="330" cy="135" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="350" cy="110" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="375" cy="118" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="400" cy="92" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<circle cx="430" cy="100" r="3.5" fill="var(--g7)" opacity="0.7"/>
+<line x1="85" y1="293" x2="445" y2="92" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="360" y="86" font-size="13" font-weight="700" fill="var(--blue)">slope = λ</text>
+<path d="M300,173 L345,173" stroke="var(--red)" stroke-width="1.5"/>
+<path d="M345,173 L345,148" stroke="var(--red)" stroke-width="1.5"/>
+<text x="350" y="164" font-size="10" fill="var(--red)">ΔP</text>
+<text x="312" y="189" font-size="10" fill="var(--red)">ΔOFI</text>
+<text x="250" y="320" text-anchor="middle" font-size="10" fill="var(--g7)">แต่ละจุด = หนึ่งช่วงเวลา · เส้นผ่านจุดกำเนิด (two-sided) · ความชัน = price impact</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 7.2 · (ภาพสำคัญ) scatter ΔP บน OFI — เส้น regression ที่ความชัน = Kyle's λ</p>
+
+<h3 id="p7-multi">Multi-level OFI + การ stationarize</h3>
+
+<p>OFI ที่ best level เดียวอาจไม่พอ <strong>Cont, Cucuringu &amp; Zhang (2023)</strong> รวม OFI หลายชั้น (multi-level) ซึ่งมักมี correlation สูงระหว่างกัน จึงใช้ <strong>PCA</strong> ยุบเหลือองค์ประกอบหลัก (integrated/PC1 OFI) ก่อนใส่ regression — เพิ่มพลังอธิบายได้</p>
+
+<div class="fm">
+multi-level: OFI^(k) สำหรับชั้น k = 1..L → integrated OFI = PCA(OFI^(1)..OFI^(L)) เอา PC1<br>
+<br>
+stationarize ก่อน regress (กันผลลวง/spurious):<br>
+&nbsp;&nbsp;OFI_norm = OFI / DepthBar     (หารด้วย depth เฉลี่ยช่วงนั้น → สเกลคงที่)
+</div>
+
+<svg class="d" viewBox="0 0 500 170" role="img" aria-label="แท่ง R2 ของ best-level OFI เทียบ multi-level OFI">
+<line x1="60" y1="135" x2="460" y2="135" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="20" y="40" font-size="10" fill="var(--g7)">พลังอธิบาย ΔP (R²)</text>
+<rect x="110" y="80" width="80" height="55" fill="var(--g7)" opacity="0.6"/>
+<text x="150" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g7)">ต่ำกว่า</text>
+<text x="150" y="155" text-anchor="middle" font-size="11" fill="var(--g7)">best-level OFI</text>
+<rect x="300" y="50" width="80" height="85" fill="var(--blue)"/>
+<text x="340" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">สูงกว่า</text>
+<text x="340" y="155" text-anchor="middle" font-size="11" fill="var(--blue)">multi-level (PCA)</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 7.3 · multi-level OFI มัก explain ΔP ได้ดีกว่า best-level (เชิงสัมพัทธ์ — ค่าจริงขึ้นกับตลาด)</p>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ — และข้อควรระวังเรื่องตัวเลข</div>
+<p><strong>Cont, Kukanov &amp; Stoikov (2014)</strong> วาง OFI event-based และความสัมพันธ์เชิงเส้น ΔP=λ·OFI · <strong>Cont, Cucuringu &amp; Zhang (2023)</strong> ขยายเป็น multi-level + cross-impact ด้วย PCA ตัวเลขที่มักอ้างว่า OFI อธิบาย ΔP ได้ <strong>R²~65%</strong> (สูงกว่า OBI/trade imbalance) นั้น <strong>ขึ้นกับสินทรัพย์ / timeframe / จำนวนชั้น / วิธี stationarize</strong> อย่ายึดเป็นค่าตายตัว — ให้ผู้อ่าน calibrate กับ market ตัวเองเสมอ</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 Cross-ref — square-root impact law (เสริม Kyle's λ)</div>
+<p>สมการ ΔP = λ·OFI เป็นภาพ <strong>เชิงเส้นต่อช่วงสั้น ๆ</strong> แต่เมื่อมองผลกระทบของ "ไม้ใหญ่ทั้งไม้" (metaorder) งานเชิงประจักษ์ (Almgren et al.; สาย Bouchaud/CFM) พบกฎที่ทนทานข้ามตลาด: <strong>impact ∝ √(Q/V)</strong> — โดย Q = ขนาดไม้ใหญ่ที่ทยอยส่ง วัด <strong>เทียบกับ volume เฉลี่ยของตลาด (V)</strong> ไม่ใช่มูลค่าดิบ — ดันขนาด (เทียบ volume) ขึ้น 4 เท่า ราคาขยับเพิ่มแค่ ~2 เท่า ไม่ใช่ 4 เท่า (impact เว้าลง concave) นี่ <strong>เสริม</strong> Kyle's λ ไม่ขัดกัน: λ คือความชันท้องถิ่นต่อหน่วย flow ส่วน square-root law อธิบายว่าผลรวมของไม้ใหญ่ "อิ่มตัว" เพราะ flow มาเป็นชุด (โยง sign autocorrelation จาก Part 6) และสภาพคล่องไหลกลับมาเติมระหว่างที่เราทยอยเข้า — บทเรียน execution: หั่นไม้ทยอยเข้าถูกกว่ากระแทกทีเดียว</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — ทำไม impact ถึงเป็น √: propagator + long memory</div>
+<p>กลไกที่ทำให้เกิด square-root law มาจากสองข้อเท็จจริงที่ตำรา <strong>Bouchaud et al. (2018)</strong> <em>Trades, Quotes and Prices</em> ปูไว้:</p>
+<ul>
+<li><strong>Order flow มี long memory (ความจำยาว):</strong> เครื่องหมาย buy/sell ของเทรดมี autocorrelation เป็นบวกที่สลายตัวช้ามาก (power law) — เพราะไม้ใหญ่ถูกหั่นเป็น child orders ทยอยส่งทางเดียวกันนาน ๆ (order splitting)</li>
+<li><strong>Impact เป็น transient (ชั่วคราว) ไม่ถาวร:</strong> โมเดล <strong>propagator</strong> มองราคาเป็นผลรวมของเทรดในอดีตคูณ kernel ที่สลายตัว <code>P_t ≈ Σ G(t−s)·(เครื่องหมาย·ขนาด)_s</code> — impact ของแต่ละไม้ค่อย ๆ จางลง</li>
+</ul>
+<p>สองอย่างนี้ต้อง <strong>หักล้างกันพอดี</strong> ไม่งั้นราคาจะ predictable เกินไป (มี arbitrage) — ผลคือราคายังเกือบ ๆ random walk (martingale) แม้ flow จะคาดเดาได้ส่วนหนึ่ง</p>
+<p><strong>ใช้กับเล่มนี้:</strong> นี่เป็นคำเตือนสำคัญต่อ <strong>CVD/OFI (Part 6–7)</strong> — การที่ CVD ไหลทางเดียวยาว ๆ <em>ส่วนหนึ่งเป็นเพราะ order splitting ที่ถูก price ไปแล้ว</em> ไม่ใช่ informed flow ใหม่ทั้งหมด ดังนั้น "เห็น imbalance ไหลแล้วตามทันที" จึงไม่ใช่ edge ฟรี ๆ</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — Amihud ILLIQ: วัด λ ด้วยข้อมูลรายวัน</div>
+<p>Kyle's λ ต้องใช้ข้อมูล L2/tick — แต่ <strong>Amihud (2002)</strong> เสนอญาติราคาถูกที่ใช้แค่ <strong>OHLCV รายวัน</strong>:</p>
+<div class="fm">
+ILLIQ = ค่าเฉลี่ยรายวันของ ( |return ของวัน| / dollar volume ของวัน )<br>
+&nbsp;&nbsp;= "ราคาขยับกี่ % ต่อเงินที่เทรด 1 ดอลลาร์" — ยิ่งสูง = ยิ่งบาง (illiquid)
+</div>
+<p>มันคือ Kyle's λ ในจิตวิญญาณเดียวกัน (price impact ต่อหน่วย flow) แต่ประมาณจากข้อมูลที่ทุกคนมีฟรี</p>
+<p><strong>ใช้กับเล่มนี้:</strong> เป็นเครื่องมือ <strong>universe selection (คัดเหรียญ)</strong> — เรียงเหรียญหลายร้อยตัวด้วย ILLIQ เพื่อหาว่าตัวไหนสภาพคล่องพอจะเทรด/วาง grid ได้ ก่อนจะเปิด L2 มาดูละเอียด (เชื่อม Part 11 การคัดตลาด และ EX-3 ที่ impact ขึ้นกับสภาพคล่อง)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่</div>
+<ul>
+<li><strong>regress OFI ดิบโดยไม่ stationarize</strong> → ได้ R² หลอก (spurious) เพราะ depth สเกลเปลี่ยนตามเวลา ต้อง normalize ด้วย DepthBar ก่อน</li>
+<li>สับสน OBI กับ OFI — <strong>OBI=ภาพนิ่ง, OFI=การเปลี่ยน</strong> ใส่ OBI ลงสมการ price impact ผิดที่</li>
+<li>เชื่อว่า λ คงที่ — λ เปลี่ยนตามสภาพ liquidity (เวลาข่าว/ตลาดบางก็พุ่ง)</li>
+</ul>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น (เน้น math)</div>
+<p>Part นี้คือจุดที่เล่ม <strong>math</strong> เชื่อมเต็มตัว: <strong>Kyle's λ = OLS slope</strong> = Cov(ΔP,OFI)/Var(OFI) ตรงกับบทถดถอยเชิงเส้น · <strong>R²</strong> = สัดส่วนความแปรปรวนที่อธิบายได้ · <strong>multi-level OFI = PCA</strong> ยุบตัวแปร correlated ตรงกับบท PCA ทั้งหมดนี้นำไปต่อ <strong>Part 13 (stat-arb ด้วย log-OFI)</strong> และเป็นรากของ <strong>Part 8 (VPIN)</strong> ที่เปลี่ยนจาก "price impact" เป็น "toxic flow"</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคส <strong>long BTC/USDT $5,000</strong>: ไม้ของเราจะดันราคา (impact) แค่ไหน? ประเมิน λ จาก regression — ถ้า λ สูง (ตลาดบาง/ช่วงข่าว) ไม้ $5,000 จะขยับ mid มากและเสีย slippage; ถ้า λ ต่ำ (ตลาดลึก) กระแทกได้ถูกกว่า และจาก square-root law การ <strong>หั่นไม้ทยอยเข้า</strong> ช่วยลด impact รวมเทียบกับยิงทีเดียว</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>ดึง Binance <code>@depth</code> ของ BTC/USDT มาทำ snapshot ต่อเนื่อง คำนวณ OFI ที่ best level ต่อช่วง 1 วินาที และ ΔP (การเปลี่ยน mid) แล้ว <strong>รัน regression สองชุด</strong>: (1) ΔP ~ OFI, (2) ΔP ~ OBI เทียบ <strong>R²</strong> ของทั้งสอง — คุณจะเห็นด้วยมือว่าทำไม "การเปลี่ยน (OFI)" อธิบายราคาได้ดีกว่า "ภาพนิ่ง (OBI)" ลองเพิ่มการ stationarize (หาร DepthBar) แล้วดูว่า R² เปลี่ยนไหม</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> λ บอกว่า flow ดันราคาแค่ไหน — แต่ถ้า flow ลำเอียงฝั่งเดียวหนักจน MM ถอนตัวล่ะ? เมื่อ flow ไม่ใช่แค่ดันราคา แต่กลายเป็น toxic จนตลาดพัง วัดยังไง?</p>
+
+</body>
+</html>
