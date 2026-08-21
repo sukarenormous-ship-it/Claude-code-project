@@ -336,6 +336,218 @@ print("คู่ที่รอด:", ", ".join(f"{x.a}/{x.b}" for _, x in final
 แบ่ง in-sample/out-of-sample ก่อนทำอะไรทั้งสิ้น · β เสถียรไหม (rolling OLS เทียบ Kalman) · spread ยังอยู่ในกรอบเดิมไหม · <strong>และเราจะทิ้งคู่ที่ไม่ผ่านจริง ๆ พร้อมเขียนเหตุผลลง log</strong></p>
 </div>
 
+
+<!-- ===================== CHAPTER 38 ===================== -->
+<h2 id="ch38">บทที่ 38: ตรวจคู่ที่รอด — และค้นพบว่าบทที่แล้วทำผิด</h2>
+
+<div class="key-idea">
+<div class="ki-label">🎯 เป้าของเซสชันนี้</div>
+<div class="ki-text">
+เอาคู่ที่รอดจากบทที่ 37 มาตรวจบนข้อมูลที่<strong>ยังไม่เคยเห็น</strong> — และถ้าไม่ผ่าน ก็ทิ้ง<br><br>
+แต่ก่อนจะทำแบบนั้นได้ ต้องยอมรับก่อนว่า <strong>วิธีในบทที่ 37 มีข้อบกพร่องอยู่หนึ่งข้อ</strong> ที่ต้องแก้ก่อนทำอะไรต่อ · บทนี้จะหาให้เจอ แก้ แล้วดูว่าเหลืออะไร
+</div>
+</div>
+
+<h3 id="s38-1">🛑 จุดตัดสินใจที่ 1 — บทที่แล้วโกงโดยไม่รู้ตัว</h3>
+
+<p>ย้อนกลับไปดูบรรทัดแรกของบทที่ 37:</p>
+
+<div class="fm"><span class="c"># ── ตัวอย่างประกอบ ──</span>
+prices = make_universe(seed=7)        <span class="c"># ข้อมูล "ทั้งชุด" 730 วัน</span>
+pairs  = list(itertools.combinations(prices.columns, 2))
+<span class="c"># ...แล้วทดสอบ cointegration ทุกคู่บนข้อมูลทั้ง 730 วัน</span></div>
+
+<p>ไม่มี <code>shift(-1)</code> สักตัว · ไม่มี <code>center=True</code> · ทุก rolling เป็น causal หมด · <strong>แล้วมันผิดตรงไหน?</strong></p>
+
+<div class="bx bk">
+<div class="bt">การ "คัดเลือก" ก็เป็นการมองอนาคตได้เหมือนกัน</div>
+<p>เราไม่ได้เอาข้อมูลอนาคตมาคำนวณ signal · แต่เราเอาข้อมูลอนาคตมา<strong>เลือกว่าจะเทรดคู่ไหน</strong></p>
+<p>ลองคิดตามในโลกจริง: วันนี้คือ 24 พ.ค. 2024 · คุณกำลังจะเลือกคู่มาเทรด · คุณ<em>ไม่มี</em>ข้อมูลของ 25 พ.ค. ถึงสิ้นปีอยู่ในมือ · แต่โค้ดในบทที่ 37 ใช้ข้อมูลถึงสิ้นปีในการตัดสินใจ</p>
+<p>ผลคือ <strong>คู่ที่ "ผ่าน" อาจผ่านเพราะช่วงเวลาที่เราจะเอาไปทดสอบมันช่วยดันขึ้นมา</strong> · แล้วพอเอาไปทดสอบบนช่วงนั้นก็ได้ผลดีเป็นธรรมดา — เพราะมันถูกเลือกมาเพื่อสิ่งนั้นตั้งแต่แรก</p>
+<p>🧭 <strong>นี่คือ lookahead ตระกูลเดียวกับหัวข้อ 22.1b (full-sample statistics)</strong> — ไม่ได้อยู่ในบรรทัดที่เกี่ยวกับเวลา จึงมองด้วยตาแทบไม่เห็น · ต่างกันตรงที่ 22.1b รั่วผ่าน <em>ค่าสถิติ</em> ส่วนบทนี้รั่วผ่าน <em>การคัดเลือก</em></p>
+</div>
+
+<h3 id="s38-2">🖐️ ขั้นที่ 1 — แบ่งข้อมูลก่อน แล้วสแกนใหม่ทั้งหมด</h3>
+
+<div class="fm"><span class="c"># ⚠️ แบ่งก่อนทำอะไรทั้งสิ้น — บรรทัดนี้ต้องมาก่อนบรรทัดอื่นเสมอ</span>
+SPLIT = int(len(prices) * 0.7)
+train, test = prices.iloc[:SPLIT], prices.iloc[SPLIT:]
+print(f"train {len(train)} วัน · test {len(test)} วัน")
+
+<span class="c"># สแกนใหม่ทั้งหมด โดยใช้ "แค่ train" เท่านั้น</span>
+full_all, _        = scan_fdr(prices)     <span class="c"># วิธีเดิม (ผิด) — ไว้เทียบ</span>
+tr_all,  tr_fdr    = scan_fdr(train)      <span class="c"># วิธีถูก</span>
+
+print(f"\n{'คู่':16s}{'สแกนทั้งชุด':&gt;16}{'สแกน train':&gt;16}")
+for a, b in sorted(REAL):
+    pf = full_all[(full_all.a == a) &amp; (full_all.b == b)].pvalue.iloc[0]
+    pt = tr_all[(tr_all.a == a) &amp; (tr_all.b == b)].pvalue.iloc[0]
+    print(f"{a+'/'+b:16s}{pf:&gt;16.2e}{pt:&gt;16.2e}")
+
+print(f"\nFDR บน train เหลือ {len(tr_fdr)} คู่: "
+      + ", ".join(f"{x.a}/{x.b}" for _, x in tr_fdr.iterrows()))</div>
+<div class="output">train 510 วัน · test 220 วัน
+
+คู่                  สแกนทั้งชุด      สแกน train
+COIN00/COIN01           1.24e-05        1.32e-03
+COIN05/COIN06           1.23e-08        1.50e-08
+COIN10/COIN11           2.58e-03        7.11e-03
+
+FDR บน train เหลือ 1 คู่: COIN05/COIN06</div>
+
+<div class="bx br">
+<div class="bt">คู่ที่บทที่ 37 เลือกมา จะไม่ถูกเลือกเลยถ้าทำถูกวิธี</div>
+<p>ดู <code>COIN00/COIN01</code> ให้ดี — คู่ที่<strong>ชนะทั้งกรวยในบทที่ 37</strong>:</p>
+<p style="text-align:center;margin:10px 0"><code>p = 1.24e-05</code> (สแกนทั้งชุด) &nbsp;→&nbsp; <code>p = 1.32e-03</code> (สแกน train)</p>
+<p>ห่างกัน <strong>100 เท่า</strong> · และที่ <code>1.32e-03</code> มันไม่ผ่าน FDR อีกต่อไป</p>
+<p>แปลว่า <strong>ความแข็งแรงของคู่นี้ราวหนึ่งในร้อยส่วนมาจากช่วงเวลาที่เราตั้งใจจะเก็บไว้ทดสอบ</strong> · ถ้าเดินหน้าตามบทที่ 37 เราจะใช้เวลาทั้งบทที่ 39–42 สร้างระบบให้กับคู่ที่เลือกมาผิดตั้งแต่ต้น</p>
+</div>
+
+<h3 id="s38-3">🖐️ ขั้นที่ 2 — ด่านเศรษฐกิจบน train</h3>
+
+<p>เหลือคู่เดียว · เอาผ่านด่านเศรษฐกิจแบบเดียวกับบทที่ 37 แต่คำนวณจาก <strong>train เท่านั้น</strong>:</p>
+
+<div class="fm">for _, x in tr_fdr.iterrows():
+    hl, sd = hl_sd(train, x.a, x.b)
+    ok = 5 &lt;= hl &lt;= 60 and 2*sd &gt; 0.008
+    print(f"{x.a}/{x.b}  half-life {hl:.1f} วัน · edge@2σ {2*sd:.2%}"
+          f"  → {'ผ่าน' if ok else 'ตก (half-life สั้นเกิน)'}")</div>
+<div class="output">COIN05/COIN06  half-life 4.0 วัน · edge@2σ 2.51%  → ตก (half-life สั้นเกิน)
+เหลือ 0 คู่</div>
+
+<div class="bx bk">
+<div class="bt">🛑 จุดตัดสินใจที่ 2 — เหลือศูนย์คู่ แล้วยังไงต่อ</div>
+<p>นี่คือช่วงเวลาที่<strong>ตัดสินว่าคุณจะเป็น quant แบบไหน</strong> · มีสองทางให้เลือก และทั้งสองทางดูสมเหตุสมผลพอกันตอนนั่งอยู่หน้าจอ:</p>
+<table>
+<tr><th></th><th>❌ ทางที่คนส่วนใหญ่เลือก</th><th>✅ ทางที่ถูก</th></tr>
+<tr><td><strong>ทำอะไร</strong></td><td>ผ่อนเกณฑ์ — กลับไปใช้ <code>p&lt;0.05</code> · ลด half-life ขั้นต่ำเป็น 3 วัน · เปลี่ยน split เป็น 80/20</td><td>ยอมรับว่า<strong>ข้อมูลไม่พอ</strong> แล้วไปหาข้อมูลเพิ่ม</td></tr>
+<tr><td><strong>เหตุผลที่บอกตัวเอง</strong></td><td>"เกณฑ์เข้มไปหน่อย ลองผ่อนดู"</td><td>"เกณฑ์ตั้งไว้ก่อนเห็นผลแล้ว จะไม่ขยับ"</td></tr>
+<tr><td><strong>สิ่งที่เกิดขึ้นจริง</strong></td><td>ขยับเกณฑ์<em>หลัง</em>เห็นตัวเลข = เลือกเกณฑ์ให้ได้คำตอบที่อยากได้</td><td>เพิ่มกำลังทางสถิติ โดยไม่แตะเกณฑ์</td></tr>
+</table>
+<p>🧭 <strong>กฎที่หัวข้อ 25.4b วางไว้: ตั้งเกณฑ์ก่อนเห็นตัวเลข ไม่ใช่หลัง</strong> · ตอนนี้คือตอนที่กฎนั้นมีราคาต้องจ่ายจริง — และการยอมจ่ายคือสิ่งเดียวที่ทำให้เกณฑ์มีความหมาย</p>
+</div>
+
+<h3 id="s38-4">🖐️ ขั้นที่ 3 — ขยายข้อมูล ไม่ใช่ผ่อนเกณฑ์</h3>
+
+<div class="fm"><span class="c"># เกณฑ์ทุกตัวคงเดิมเป๊ะ — เปลี่ยนแค่ความยาวของข้อมูล</span>
+print(f"{'ข้อมูล':&gt;10}{'train':&gt;8}{'FDR':&gt;6}{'เศรษฐกิจ':&gt;11}   คู่ที่รอด")
+for nd in (730, 1095, 1460):
+    px = make_universe(seed=7, n_days=nd)
+    tr = px.iloc[:int(nd * 0.7)]
+    _, f = scan_fdr(tr)
+
+    keep = []                       <span class="c"># เก็บเป็น tuple ไว้ใช้ต่อในขั้นถัดไป</span>
+    for _, x in f.iterrows():
+        hl, sd = hl_sd(tr, x.a, x.b)
+        if 5 &lt;= hl &lt;= 60 and 2*sd &gt; 0.008:
+            keep.append((x.a, x.b))
+
+    shown = ", ".join(f"{a}/{b}" for a, b in keep) or "—"
+    print(f"{nd:&gt;8}วัน{len(tr):&gt;8}{len(f):&gt;6}{len(keep):&gt;11}   {shown}")
+
+<span class="c"># หลังลูปจบ keep = คู่ที่รอดจากรอบ 1,460 วัน — ใช้ต่อในขั้นที่ 4 และ 5</span>
+info = {}</div>
+<div class="output">    ข้อมูล   train   FDR   เศรษฐกิจ   คู่ที่รอด
+     730วัน     510     1          0   —
+    1095วัน     766     1          1   COIN05/COIN06
+    1460วัน    1021     2          2   COIN05/COIN06, COIN00/COIN01</div>
+
+<div class="bx bd">
+<div class="bt">อ่านตารางนี้ให้ขาด — นี่คือรางวัลของการไม่ผ่อนเกณฑ์</div>
+<p>ที่ <strong>1,460 วัน</strong> กรวยเดิมทุกประการให้ <strong>2 คู่ · และทั้งสองเป็นคู่จริง · ผี 0 ตัว</strong></p>
+<p>เทียบกับบทที่ 37 ที่สแกนบนข้อมูลทั้งชุด 730 วันแล้วได้ 1 คู่ซึ่งเลือกมาผิด — <strong>ข้อมูลยาวขึ้น 2 เท่า เปลี่ยนผลจาก "ผิด 1 คู่" เป็น "ถูก 2 คู่"</strong> โดยไม่ต้องฉลาดขึ้นเลยสักนิด</p>
+<p>เหตุผลตรงไปตรงมา: <code>p-value</code> ของ cointegration ขึ้นกับ<strong>จำนวนครั้งที่ spread เด้งกลับให้เห็น</strong> · ข้อมูลสั้น = เห็นน้อยครั้ง = แยกของจริงจากความบังเอิญไม่ออก · <strong>ไม่ใช่เพราะความสัมพันธ์อ่อน แต่เพราะหลักฐานยังไม่พอ</strong></p>
+<p>🧭 เจอ <code>0 คู่</code> เมื่อไร ให้ถามตามลำดับนี้เสมอ: <strong>① ข้อมูลยาวพอหรือยัง → ② universe กว้างพอหรือยัง → ③ ความถี่ของแท่งเหมาะกับ half-life ที่มองหาไหม</strong> · <em>"ผ่อนเกณฑ์" ไม่อยู่ในลิสต์</em></p>
+</div>
+
+<h3 id="s38-5">🖐️ ขั้นที่ 4 — β เสถียรพอจะเทรดไหม</h3>
+
+<p>ผ่านสองด่านแล้วยังเหลืออีกคำถาม: <code>β</code> ที่คำนวณจาก train <strong>จะยังใช้ได้ในอนาคตไหม</strong> · ถ้าความสัมพันธ์ดริฟต์ไปเรื่อย ๆ hedge ที่วางไว้จะค่อย ๆ ผิดโดยไม่มีอะไรเตือน</p>
+
+<div class="fm">from statsmodels.regression.rolling import RollingOLS
+
+print(f"{'คู่':16s}{'β':&gt;9}{'β ผันผวน':&gt;11}{'σ ของ spread':&gt;15}")
+for a, b in keep:
+    r  = sm.OLS(np.log(train[a]), sm.add_constant(np.log(train[b]))).fit()
+    al, be = r.params.iloc[0], r.params.iloc[1]
+    sp = np.log(train[a]) - (al + be*np.log(train[b]))
+
+    <span class="c"># β แบบเลื่อนหน้าต่าง — ถ้าแกว่งมาก แปลว่าใช้ค่าเดียวทั้งช่วงไม่ได้</span>
+    rb = RollingOLS(np.log(train[a]), sm.add_constant(np.log(train[b])),
+                    window=120).fit().params.iloc[:, 1].dropna()
+
+    info[(a, b)] = (al, be, sp.mean(), sp.std())
+    print(f"{a+'/'+b:16s}{be:&gt;9.4f}{rb.std()/abs(rb.mean()):&gt;10.1%}{sp.std():&gt;15.4f}")</div>
+<div class="output">คู่                     β   β ผันผวน   σ ของ spread
+COIN05/COIN06      0.9992      4.9%         0.0143
+COIN00/COIN01      0.9970     10.2%         0.0260</div>
+
+<div class="bx bp">
+<div class="bt">🔵 ตัวเลข "β ผันผวน" บอกอะไร และควรตัดที่เท่าไร</div>
+<p>คือส่วนเบี่ยงเบนของ <code>β</code> แบบเลื่อนหน้าต่าง หารด้วยค่าเฉลี่ยของมันเอง · <strong>4.9%</strong> แปลว่า β แกว่งอยู่ราว ±5% รอบค่ากลาง — เสถียรดี · <strong>10.2%</strong> ยังรับได้แต่ต้องจับตา</p>
+<p>เกณฑ์คร่าว ๆ ที่ใช้กันคือ <strong>เกิน ~20% ให้ถือว่าความสัมพันธ์ไม่นิ่งพอจะใช้ β ตัวเดียว</strong> · ทางเลือกมี 2 ทาง และเลือกได้ตามว่าคุณเชื่ออะไร:</p>
+<ul>
+<li><strong>ยอมรับว่า β เปลี่ยน</strong> → ใช้ <strong>Kalman Filter (หัวข้อ 17.2)</strong> ให้ β ขยับตามเวลา · แม่นกว่า แต่เพิ่มพารามิเตอร์ที่ต้องจูน ซึ่งแปลว่าเพิ่มโอกาส overfit</li>
+<li><strong>ยอมรับว่าคู่นี้ไม่เหมาะ</strong> → ทิ้ง แล้วไปหาคู่ที่ความสัมพันธ์นิ่งกว่า</li>
+</ul>
+<p>⚠️ <strong>อย่าเพิ่งกระโดดไป Kalman เพราะมันดูโปร</strong> — β ที่นิ่งอยู่แล้วใส่ Kalman เข้าไปจะได้ผลเท่าเดิมแต่มีของให้พังเพิ่มอีกชิ้น · ที่นี่ทั้งสองคู่ยังนิ่งพอ จึงใช้ OLS ธรรมดาต่อ</p>
+</div>
+
+<h3 id="s38-6">🖐️ ขั้นที่ 5 — ทดสอบบนช่วงที่ยังไม่เคยเห็น</h3>
+
+<p>ตอนนี้ค่อยแตะ <code>test</code> ได้ · <strong>ใช้ <code>α</code>, <code>β</code>, <code>μ</code>, <code>σ</code> จาก train ทั้งหมด</strong> ห้ามคำนวณใหม่จาก test เด็ดขาด — ไม่งั้นก็กลับไปทำผิดแบบเดิม</p>
+
+<div class="fm">print(f"{'คู่':16s}{'z ต่ำสุด':&gt;10}{'z สูงสุด':&gt;10}{'|z|&gt;3':&gt;9}")
+for a, b in keep:
+    al, be, mu, sd = info[(a, b)]        <span class="c"># ← ทุกค่ามาจาก train</span>
+    z = (np.log(test[a]) - (al + be*np.log(test[b])) - mu) / sd
+    print(f"{a+'/'+b:16s}{z.min():&gt;10.2f}{z.max():&gt;10.2f}{(z.abs()&gt;3).mean():&gt;9.1%}")</div>
+<div class="output">คู่               z ต่ำสุด  z สูงสุด    |z|&gt;3
+COIN05/COIN06        -2.57      2.93     0.0%
+COIN00/COIN01        -3.23      2.44     0.2%</div>
+
+<div class="bx bg">
+<div class="bt">✅ เช็คว่ามาถูกทาง — และทำไมถึงดูที่ <code>|z| &gt; 3</code></div>
+<p>เราไม่ได้ดูว่า "กำไรไหม" — <strong>ยังไม่ backtest แม้แต่ครั้งเดียว</strong> · เราถามแค่คำถามเดียว: <em>spread ยังอยู่ในกรอบที่เรียนมาจาก train หรือเปล่า</em></p>
+<p>ถ้า <code>μ</code> กับ <code>σ</code> จาก train ยังใช้บรรยาย test ได้ z ควรอยู่ในช่วงราว ±3 เป็นส่วนใหญ่ · ทั้งสองคู่ผ่าน — <code>COIN00/01</code> หลุดไป <code>−3.23</code> อยู่ 0.2% ของวัน ซึ่งปกติมาก</p>
+<p><strong>ถ้าเห็น <code>|z| &gt; 5</code> หรือ z ค้างอยู่ฝั่งเดียวทั้งช่วง</strong> นั่นคือสัญญาณว่า<strong>ความสัมพันธ์เปลี่ยนไปแล้ว</strong> — เครื่องมือเดียวกับที่บทที่ 24 ใช้จับ regime change · เจอแบบนั้นให้ทิ้งคู่นั้นทันที ไม่ต้องเสียเวลา backtest</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">📋 สรุปการตัดสินใจของบทนี้</div>
+<table>
+<tr><th>คู่</th><th>สแกน train</th><th>เศรษฐกิจ</th><th>β นิ่ง</th><th>test</th><th>ตัดสิน</th></tr>
+<tr><td><code>COIN05/06</code></td><td>✅ 1.5e-08</td><td>✅ hl 5.4 วัน</td><td>✅ 4.9%</td><td>✅ |z|≤2.93</td><td><strong>ไปต่อ</strong></td></tr>
+<tr><td><code>COIN00/01</code></td><td>✅ ผ่านที่ 1460 วัน</td><td>✅ hl 11.9 วัน</td><td>✅ 10.2%</td><td>✅ |z|≤3.23</td><td><strong>ไปต่อ</strong></td></tr>
+<tr><td><code>COIN10/11</code></td><td>❌ ไม่ผ่าน FDR</td><td>—</td><td>—</td><td>—</td><td>ทิ้ง</td></tr>
+<tr><td>อีก 432 คู่</td><td>❌</td><td>—</td><td>—</td><td>—</td><td>ทิ้ง</td></tr>
+</table>
+<p>สังเกตว่า <code>COIN10/11</code> <strong>เป็นคู่จริงที่เราปลูกไว้เองแท้ ๆ แต่ก็ยังถูกทิ้ง</strong> — เพราะหลักฐานไม่พอ · ในงานจริงคุณจะไม่มีวันรู้ว่าทิ้งของดีไปหรือเปล่า และนั่นคือราคาที่ต้องจ่ายเพื่อไม่รับผีเข้ามา</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">📁 สถานะโปรเจกต์ ณ จบบทที่ 38</div>
+<div class="fm">statarb/
+├── data/
+│   └── prices_30coins_2021_2024.parquet   <span class="c"># ← ขยายเป็น 1,460 วันแล้ว</span>
+├── research/
+│   ├── 01_scan_pairs.py
+│   ├── 02_validate_pairs.py               <span class="c"># ← บทนี้</span>
+│   ├── shortlist.csv                      <span class="c"># ทุกคู่ + เหตุผลที่ตก</span>
+│   ├── validated.json                     <span class="c"># ← α β μ σ ของคู่ที่ผ่าน (จาก train)</span>
+│   └── log.md
+├── strategy/
+├── backtest/
+└── requirements.txt</div>
+<p><code>validated.json</code> สำคัญกว่าที่เห็น — มันคือ<strong>สัญญาว่าพารามิเตอร์ทุกตัวมาจาก train เท่านั้น</strong> · บทที่ 39 จะโหลดไฟล์นี้ไปใช้ตรง ๆ โดยไม่คำนวณอะไรใหม่ · <strong>ถ้าบทไหนหลังจากนี้เผลอ fit ใหม่บนข้อมูลทั้งชุด ไฟล์นี้จะเป็นหลักฐานว่าเราหลุด</strong></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">➡️ บทถัดไป</div>
+<p><strong>บทที่ 39 · backtest ที่เชื่อได้ (คู่เดียวก่อน)</strong><br>
+โหลด <code>validated.json</code> → <code>vectorized_backtest</code> จากบทที่ 22 → ใส่ต้นทุนตั้งแต่วันแรก → ทดสอบ <code>H0 = ต้นทุน</code> (25.4b) → walk-forward (24) · <strong>ได้คำตอบเดียวจากสองคำตอบ: ไปต่อ หรือ ทิ้ง — ไม่มี "เกือบผ่าน"</strong></p>
+</div>
+
 <script>
 (function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
 function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
