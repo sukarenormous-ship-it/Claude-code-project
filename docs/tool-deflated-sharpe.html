@@ -35,6 +35,10 @@ a{color:var(--purple)}
 .rulebox .lbl{font-size:.74em;text-transform:uppercase;letter-spacing:.09em;color:var(--purple);font-weight:700;margin-bottom:8px}
 .rulebox .eq{font-family:'Courier New',monospace;font-size:1.02em;color:var(--g9);margin-bottom:8px}
 .rulebox .note-txt{font-size:.9em;color:#4b5563;line-height:1.7}
+.assume{border:1px solid #fcd34d;background:#fffbeb;border-radius:10px;padding:16px 20px;margin:26px 0;font-size:.9em;line-height:1.72;color:#4b5563}
+.assume b{display:block;color:#92400e;font-weight:700;margin-bottom:8px;font-size:1.02em}
+.assume ul{margin:0;padding-left:20px}
+.assume li{margin-bottom:5px}
 .try{border:1.5px dashed var(--g9);border-radius:12px;padding:20px 22px;margin:30px 0;background:var(--g0)}
 .try h3{font-size:1em;margin-bottom:8px}
 .try button{font-family:inherit;font-size:.9em;font-weight:700;color:#fff;background:var(--g9);border:none;border-radius:8px;padding:9px 18px;cursor:pointer;margin-top:10px}
@@ -79,10 +83,10 @@ a{color:var(--purple)}
 <div class="stat"><span class="k">Sharpe ที่เห็น</span><span class="v" id="oObs">2.00</span></div>
 <div class="bar"><span id="barObs" style="background:var(--g5)"></span></div>
 
-<div class="stat"><span class="k">Sharpe ที่ "โชคล้วน ๆ" สร้างได้จากการลองเยอะ</span><span class="v" id="oNoise">2.17</span></div>
+<div class="stat"><span class="k">Sharpe ที่ "โชคล้วน ๆ" สร้างได้จากการลองเยอะ</span><span class="v" id="oNoise">1.76</span></div>
 <div class="bar"><span id="barNoise" style="background:var(--red)"></span></div>
 
-<div class="stat"><span class="k">edge จริงที่เหลือ (deflated)</span><span class="v" id="oReal">−0.17</span></div>
+<div class="stat"><span class="k">edge จริงที่เหลือ (deflated)</span><span class="v" id="oReal">+0.24</span></div>
 </div>
 
 <div class="verdict" id="verdict">—</div>
@@ -96,17 +100,27 @@ a{color:var(--purple)}
 
 <div class="rulebox">
 <div class="lbl">หักโชคก่อนเชื่อ backtest เสมอ</div>
-<div class="eq">Sharpe ที่โชคให้ ≈ SE × √(2·ln N) · · · SE ≈ √((1 + SR²/2) / ปี)</div>
-<div class="note-txt">N คือจำนวนครั้งที่คุณลอง (นับให้ครบ — ทุกการปรับจูนคือหนึ่งครั้ง) ยิ่ง N สูง แท่งที่ต้องเอาชนะยิ่งสูง ก่อนอวดกลยุทธ์ไหนว่า "เจอ edge" ให้ถามตัวเองว่า <strong>ลองไปกี่แบบกว่าจะเจอตัวนี้</strong> แล้วเทียบ Sharpe กับ √(2·ln N) — ถ้าไม่ชนะชัด ๆ แปลว่ายังพิสูจน์ไม่ได้ว่าไม่ใช่โชค</div>
+<div class="eq">Sharpe ที่โชคให้ ≈ SE × E[max<sub>N</sub>] · · · SE ≈ √((1 + SR²/2) / ปี)</div>
+<div class="note-txt">N คือจำนวนครั้งที่คุณลอง (นับให้ครบ — ทุกการปรับจูนคือหนึ่งครั้ง) ยิ่ง N สูง แท่งที่ต้องเอาชนะยิ่งสูง ก่อนอวดกลยุทธ์ไหนว่า "เจอ edge" ให้ถามตัวเองว่า <strong>ลองไปกี่แบบกว่าจะเจอตัวนี้</strong> — ถ้าไม่ชนะแท่งนั้นชัด ๆ แปลว่ายังพิสูจน์ไม่ได้ว่าไม่ใช่โชค<br><br>ตัวคูณ E[max<sub>N</sub>] คือค่าคาดหวังของ Sharpe ที่ <em>สูงที่สุด</em> จากการสุ่ม N ครั้ง ใช้สูตรของ Bailey &amp; López de Prado (2014): <span style="font-family:'Courier New',monospace">(1−γ)·Z⁻¹(1−1/N) + γ·Z⁻¹(1−1/(N·e))</span> โดย γ ≈ 0.5772</div>
 </div>
 
 <p>นี่คือสิ่งที่แยกคนที่รอดในตลาดจริงออกจากคนที่หลงกับ backtest สวย ๆ: ไม่ใช่รู้จักคำว่า overfitting แต่คือมี<strong>ตัวเลขแท่งที่ต้องเอาชนะ</strong>กดใส่กลยุทธ์ตัวเองได้ทันที และรู้ว่ายิ่งจูนเยอะ ยิ่งต้องขี้ระแวงผลลัพธ์มากขึ้น ไม่ใช่น้อยลง</p>
+
+<div class="assume">
+<b>⚠️ เครื่องมือนี้ตั้งอยู่บนสมมติฐานอะไรบ้าง</b>
+<ul>
+<li><strong>ผลตอบแทนเป็น iid และแจกแจงปกติ</strong> — สูตร SE = √((1+SR²/2)/ปี) ใช้ได้กับกรณีนี้เท่านั้น ถ้ากลยุทธ์ของคุณมี <em>negative skew</em> (carry, ขายออปชัน, market making) SE จริงจะ<strong>สูงกว่านี้</strong> แปลว่า edge จริงเหลือน้อยกว่าที่หน้านี้บอก — ซึ่งเป็นบทเรียนหลักของทั้งเล่มพอดี</li>
+<li><strong>การลอง N ครั้งเป็นอิสระต่อกัน</strong> — ในความจริงการจูนพารามิเตอร์ใกล้ ๆ กันให้ผลสหสัมพันธ์สูง ทำให้ N ที่ "มีผลจริง" น้อยกว่าที่นับ ตัวเลขนี้จึงเป็นการประเมินแบบระมัดระวัง</li>
+<li><strong>ไม่รวมต้นทุนธุรกรรม</strong> — Sharpe ที่ใส่เข้ามาควรเป็นตัวเลข<em>หลัง</em>หักค่าคอมมิชชัน สเปรด และ market impact แล้ว ไม่ใช่ตัวเลขดิบจาก backtest</li>
+<li><strong>ไม่ใช่ p-value</strong> — ผ่านแท่งนี้ไม่ได้แปลว่ากลยุทธ์ดี แค่แปลว่า "ยังไม่ถูกอธิบายทิ้งด้วยโชคจากการลองเยอะ" การยืนยัน out-of-sample ยังจำเป็นอยู่เสมอ</li>
+</ul>
+</div>
 
 <div class="try">
 <h3>✍️ ลองเอง (เฉลยได้)</h3>
 <p style="margin-bottom:0">เพื่อนอวดกลยุทธ์ crypto ที่ Sharpe 3 จาก backtest 2 ปี บอกว่า "ลองปรับพารามิเตอร์อยู่เป็นร้อยแบบกว่าจะเจอตัวเทพนี้" — น่าเชื่อไหม?</p>
 <button id="revealBtn">ดูเฉลย</button>
-<div class="ans" id="ans"><strong>ไม่น่าเชื่อ.</strong> SE ≈ √((1+3²/2)/2) = √(5.5/2) = √2.75 ≈ 1.66 · Sharpe ที่โชคให้ ≈ 1.66 × √(2·ln 100) = 1.66 × √9.2 ≈ 1.66 × 3.03 ≈ <strong>5.0</strong> ซึ่ง<em>สูงกว่า</em> Sharpe 3 ที่เขาอวดเสียอีก แปลว่าผลงานทั้งหมดอธิบายได้ด้วยโชคจากการลองร้อยแบบบนข้อมูลแค่ 2 ปี — edge จริงติดลบ ยิ่ง "ลองเยอะกว่าจะเจอ" ยิ่งเป็นสัญญาณอันตราย ไม่ใช่จุดขาย</div>
+<div class="ans" id="ans"><strong>ไม่น่าเชื่อ.</strong> SE ≈ √((1+3²/2)/2) = √(5.5/2) = √2.75 ≈ 1.66 · ตัวคูณ E[max] ที่ N=100 ≈ 2.53 · Sharpe ที่โชคให้ ≈ 1.66 × 2.53 ≈ <strong>4.2</strong> ซึ่ง<em>สูงกว่า</em> Sharpe 3 ที่เขาอวดเสียอีก แปลว่าผลงานทั้งหมดอธิบายได้ด้วยโชคจากการลองร้อยแบบบนข้อมูลแค่ 2 ปี — edge จริงติดลบ ยิ่ง "ลองเยอะกว่าจะเจอ" ยิ่งเป็นสัญญาณอันตราย ไม่ใช่จุดขาย</div>
 </div>
 
 <div class="closing">
@@ -118,13 +132,33 @@ a{color:var(--purple)}
 (function(){
 function num(id){return parseFloat(document.getElementById(id).value)}
 function clampPct(x){return Math.max(0,Math.min(100,x))}
+// inverse normal CDF (Acklam) — needed for the expected-maximum term below
+function invnorm(p){
+  var a=[-3.969683028665376e1,2.209460984245205e2,-2.759285104469687e2,1.383577518672690e2,-3.066479806614716e1,2.506628277459239e0],
+      b=[-5.447609879822406e1,1.615858368580409e2,-1.556989798598866e2,6.680131188771972e1,-1.328068155288572e1],
+      c=[-7.784894002430293e-3,-3.223964580411365e-1,-2.400758277161838e0,-2.549732539343734e0,4.374664141464968e0,2.938163982698783e0],
+      d=[7.784695709041462e-3,3.224671290700398e-1,2.445134137142996e0,3.754408661907416e0],pl=0.02425,q,r;
+  if(p<=0)return -Infinity; if(p>=1)return Infinity;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  if(p<=1-pl){q=p-0.5;r=q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)}
+  q=Math.sqrt(-2*Math.log(1-p));
+  return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+}
+// expected maximum of N independent Sharpe estimates, in units of SE (Bailey & Lopez de Prado 2014)
+var EULER=0.5772156649015329;
+function expectedMax(n){
+  if(!(n>1))return 0;
+  return (1-EULER)*invnorm(1-1/n)+EULER*invnorm(1-1/(n*Math.E));
+}
 function update(){
   var sr=num('sr'),years=num('years'),n=num('n');
   document.getElementById('vSr').textContent=sr.toFixed(1);
   document.getElementById('vYears').textContent=years;
   document.getElementById('vN').textContent=n;
-  var se=Math.sqrt((1+sr*sr/2)/years);          // std error of an annualized Sharpe estimate
-  var noise=se*Math.sqrt(2*Math.log(Math.max(n,1.0001))); // expected best Sharpe from N lucky tries
+  var se=Math.sqrt((1+sr*sr/2)/years);          // std error of an annualized Sharpe estimate (assumes iid normal returns)
+  var noise=se*expectedMax(n);                   // expected best Sharpe from N lucky tries
   var real=sr-noise;                             // deflated / real edge
   document.getElementById('oObs').textContent=sr.toFixed(2);
   document.getElementById('oNoise').textContent=noise.toFixed(2);
