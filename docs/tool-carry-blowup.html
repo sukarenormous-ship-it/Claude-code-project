@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ลองเอง: carry trade ระเบิดเมื่อไร — เครื่องมือที่คุณใช้ได้จริง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=Sarabun:ital@1&display=swap" rel="stylesheet">
+<style>:root{--g9:#111827;--g8:#1f2937;--g7:#374151;--g5:#6b7280;--g2:#e5e7eb;--g1:#f3f4f6;--g0:#f9fafb;--purple:#7c3aed;--purple-bg:#f5f3ff;--green:#15803d;--green-bg:#f0fdf4;--red:#b91c1c;--red-bg:#fef2f2;--amber:#b45309;--amber-bg:#fffbeb}*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17.5px;line-height:1.9;color:var(--g8);background:#fffdf9;max-width:680px;margin:0 auto;padding:50px 28px 90px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}
+h1{font-size:1.8em;font-weight:800;color:var(--g9);line-height:1.3}
+h2{font-size:1.2em;font-weight:700;color:var(--g9);margin:2.4em 0 .8em}
+p{margin-bottom:1.1em}
+strong{color:var(--g9);font-weight:700}
+em{font-style:italic}
+a{color:var(--purple)}
+.nav{font-size:.85em;color:#9ca3af;margin-bottom:18px}
+.cover{padding:10px 0 20px;border-bottom:2px solid var(--g9);margin-bottom:36px}
+.cover .kicker{font-size:.85em;letter-spacing:.15em;text-transform:uppercase;color:#9ca3af;margin-bottom:10px}
+.tag{display:inline-block;font-size:.7em;letter-spacing:.05em;background:var(--purple-bg);color:var(--purple);border:1px solid #ddd6fe;border-radius:20px;padding:2px 12px;margin-bottom:14px;font-weight:700}
+.pq{font-size:1.2em;font-weight:700;color:var(--g9);font-style:italic;padding:8px 0 8px 24px;margin:30px 0;border-left:4px solid var(--purple);line-height:1.6}
+/* ---- interactive panel ---- */
+.lab{border:1.5px solid var(--g9);border-radius:12px;padding:22px 22px 26px;margin:30px 0;background:#fff}
+.lab h3{font-size:1.05em;color:var(--g9);margin-bottom:4px}
+.lab .sub{font-size:.85em;color:var(--g5);margin-bottom:18px}
+.ctrl{margin:16px 0}
+.ctrl .row1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.ctrl label{font-size:.92em;font-weight:600;color:var(--g8)}
+.ctrl .val{font-family:'Courier New',monospace;font-weight:700;color:var(--purple);font-size:1.02em}
+.ctrl input[type=range]{width:100%;accent-color:var(--purple);height:6px}
+.ctrl .hint{font-size:.78em;color:var(--g5);margin-top:2px}
+.out{margin-top:22px;border-top:1px dashed var(--g2);padding-top:18px}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--g1)}
+.stat .k{font-size:.9em;color:var(--g7)}
+.stat .v{font-family:'Courier New',monospace;font-weight:700;font-size:1.05em;color:var(--g9)}
+.bar{height:14px;border-radius:7px;background:var(--g1);margin:5px 0 2px;overflow:hidden;position:relative}
+.bar > span{display:block;height:100%;border-radius:7px}
+.verdict{margin-top:20px;padding:16px 18px;border-radius:8px;font-weight:600;line-height:1.6;font-size:.98em}
+.verdict.ok{background:var(--green-bg);color:var(--green);border:1px solid #bbf7d0}
+.verdict.warn{background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a}
+.verdict.dead{background:var(--red-bg);color:var(--red);border:1px solid #fecaca}
+.rulebox{border-left:3px solid var(--purple);background:var(--purple-bg);padding:16px 20px;margin:26px 0;border-radius:0 6px 6px 0}
+.rulebox .lbl{font-size:.74em;text-transform:uppercase;letter-spacing:.09em;color:var(--purple);font-weight:700;margin-bottom:8px}
+.rulebox .eq{font-family:'Courier New',monospace;font-size:1.02em;color:var(--g9);margin-bottom:8px}
+.rulebox .note-txt{font-size:.9em;color:#4b5563;line-height:1.7}
+.try{border:1.5px dashed var(--g9);border-radius:12px;padding:20px 22px;margin:30px 0;background:var(--g0)}
+.try h3{font-size:1em;margin-bottom:8px}
+.try button{font-family:inherit;font-size:.9em;font-weight:700;color:#fff;background:var(--g9);border:none;border-radius:8px;padding:9px 18px;cursor:pointer;margin-top:10px}
+.try .ans{margin-top:14px;font-size:.95em;line-height:1.7;display:none}
+.closing{margin-top:46px;padding-top:28px;border-top:2px solid var(--g9)}
+@media(max-width:640px){body{padding:36px 20px 70px;font-size:16.5px}}
+</style></head><body>
+
+<div class="nav"><a href="index.html">← สารบัญ</a> · เครื่องมือที่ใช้ได้จริง · ต่อจากบท <a href="case-2540-narrative.html">ต้มยำกุ้ง 2540</a></div>
+
+<div class="cover">
+<div class="kicker">ไม่ใช่บทให้อ่าน — บทให้ลงมือใช้</div>
+<h1>ลองเอง: carry trade ของคุณจะระเบิดเมื่อไร</h1>
+</div>
+
+<p class="tag">อ่านจบ = ใช้เป็น ไม่ใช่แค่รู้จัก</p>
+
+<p>บท 2540 เล่าว่าทั้งประเทศเจ๊งเพราะ carry trade ที่ซ่อน negative skew ไว้ — แต่รู้ว่ามันคืออะไรกับ<em>ใช้มันเป็น</em> คือคนละเรื่อง หน้านี้ไม่ได้ให้คุณอ่านเรื่องคนอื่น แต่ให้คุณ<strong>ใส่ตัวเลขของตัวเอง</strong>แล้วดูว่าเดิมพันแบบนี้จะพาคุณไปตรงไหน ลองเลื่อนดูก่อน แล้วค่อยอ่านต่อ</p>
+
+<div class="lab">
+<h3>🧪 เครื่องจำลอง carry trade</h3>
+<div class="sub">คุณกู้สกุลดอกเบี้ยต่ำไปถือสกุลดอกเบี้ยสูง เก็บส่วนต่าง — เลื่อนดูว่าอะไรฆ่าคุณ</div>
+
+<div class="ctrl">
+<div class="row1"><label>ส่วนต่างดอกเบี้ย (carry) ต่อปี</label><span class="val" id="vCarry">7%</span></div>
+<input type="range" id="carry" min="1" max="15" value="7" step="0.5">
+<div class="hint">2540: บาท ~13% − ดอลลาร์ ~6% ≈ 7%</div>
+</div>
+
+<div class="ctrl">
+<div class="row1"><label>เลเวอเรจ (กู้มาเทรดกี่เท่าของทุน)</label><span class="val" id="vLev">5×</span></div>
+<input type="range" id="lev" min="1" max="20" value="5" step="1">
+<div class="hint">ยิ่งกู้มาก ยิ่งได้ carry มาก — และยิ่งตายเร็ว</div>
+</div>
+
+<div class="ctrl">
+<div class="row1"><label>ถ้าค่าเงินพัง จะอ่อนลงกี่ %</label><span class="val" id="vDeval">40%</span></div>
+<input type="range" id="deval" min="5" max="60" value="40" step="5">
+<div class="hint">2540: บาทอ่อนจาก 25 → ~50 ≈ ลดค่า ~50%</div>
+</div>
+
+<div class="ctrl">
+<div class="row1"><label>โอกาสค่าเงินพัง ในแต่ละปี</label><span class="val" id="vProb">5%</span></div>
+<input type="range" id="prob" min="1" max="30" value="5" step="1">
+<div class="hint">peg ดูนิ่งได้เป็นสิบปี... จนถึงปีที่ไม่นิ่ง</div>
+</div>
+
+<div class="out">
+<div class="stat"><span class="k">กำไรปีที่ค่าเงินนิ่ง (ปกติ)</span><span class="v" id="oGood">+35%</span></div>
+<div class="bar"><span id="barGood" style="background:var(--green)"></span></div>
+
+<div class="stat"><span class="k">ขาดทุนปีที่ค่าเงินพัง</span><span class="v" id="oBad">−200%</span></div>
+<div class="bar"><span id="barBad" style="background:var(--red)"></span></div>
+
+<div class="stat"><span class="k">กำไรคาดหวังเฉลี่ย (ที่หนังสือทั่วไปโชว์)</span><span class="v" id="oEv">+23%</span></div>
+<div class="stat"><span class="k">โดยเฉลี่ยอยู่รอดได้กี่ปีก่อนเจอปีพัง</span><span class="v" id="oSurv">~20 ปี</span></div>
+</div>
+
+<div class="verdict" id="verdict">—</div>
+</div>
+
+<p>ลองดันเลเวอเรจขึ้นไปเรื่อย ๆ สิ่งที่คุณจะเห็นคือ "กำไรคาดหวังเฉลี่ย" เป็นบวกและโตขึ้นตลอด — มันหลอกให้กู้เยอะ ๆ ดูคุ้ม แต่พอถึงจุดที่ <strong>ขาดทุนวันพัง × เลเวอเรจ ทะลุ 100%</strong> คุณไม่ได้แค่ขาดทุน คุณ<strong>ล้างพอร์ต</strong> และไม่มีทุนเหลือรอเก็บ carry ในปีต่อ ๆ ไปอีกเลย ค่าเฉลี่ยที่สวยงามไม่มีความหมาย ถ้าคุณไม่รอดถึงตอนที่มันเฉลี่ย</p>
+
+<p class="pq">"กำไรคาดหวังเป็นบวก" ไม่เคยแปลว่า "ควรลงมือ" — สิ่งที่ฆ่าคุณคือหางข้างเดียว ไม่ใช่ค่าเฉลี่ย</p>
+
+<h2>กฎที่คุณเพิ่งค้นเจอด้วยมือตัวเอง</h2>
+
+<p>สิ่งที่คุณเพิ่งเล่นอยู่ ถ้าเขียนเป็นกฎที่พกไปใช้ได้จริง มันคือคำถามเดียวก่อนลงเงินกับ carry (หรือกลยุทธ์ negative-skew ใด ๆ):</p>
+
+<div class="rulebox">
+<div class="lbl">เพดานเลเวอเรจที่ไม่ทำให้คุณตาย</div>
+<div class="eq">เลเวอเรจสูงสุด &lt; 1 / (ขนาดการพังที่เป็นไปได้)</div>
+<div class="note-txt">ถ้าเชื่อว่าค่าเงิน/สินทรัพย์อาจพังได้ 40% ในกรณีเลวร้าย เพดานเลเวอเรจของคุณคือ 1/0.40 = <strong>2.5 เท่า</strong> เท่านั้น — เกินกว่านั้นแปลว่าเหตุการณ์ที่ "เป็นไปได้จริง" หนึ่งครั้งล้างคุณออกจากเกมถาวร ตัวเลขนี้ไม่เกี่ยวกับกำไรคาดหวังเลย มันเกี่ยวกับ "รอดหรือไม่รอด" ซึ่งต้องมาก่อนเสมอ</div>
+</div>
+
+<p>นี่คือหัวใจที่ต่างจากการอ่านประวัติ: คุณไม่ได้แค่รู้ว่า "LTCM เจ๊งเพราะเลเวอเรจสูง" — คุณมี<strong>ตัวเลขเพดาน</strong>ที่เอาไปกดใส่สถานการณ์ของตัวเองได้ทันที ครั้งหน้าที่มีใครเสนอผลตอบแทน "นิ่ง ๆ สม่ำเสมอ" ให้ คุณจะถามกลับเป็นอัตโนมัติว่า <em>ถ้ามันพัง มันพังแรงแค่ไหน แล้วเลเวอเรจฉันเกินเพดานนั้นหรือยัง</em></p>
+
+<div class="try">
+<h3>✍️ ลองเอง (เฉลยได้)</h3>
+<p style="margin-bottom:0">เพื่อนชวนลงกองที่ให้ผลตอบแทนนิ่ง ๆ ปีละ 8% มา 6 ปีติด ไม่เคยติดลบเลย เขาใช้เลเวอเรจ 6 เท่า และสินทรัพย์ที่ถืออาจร่วงได้ราว 25% ในกรณีเลวร้าย — คุณควรลงไหม?</p>
+<button id="revealBtn">ดูเฉลย</button>
+<div class="ans" id="ans"><strong>ไม่ควร.</strong> เพดานเลเวอเรจ = 1/0.25 = 4 เท่า แต่เขาใช้ 6 เท่า → เกินเพดาน แปลว่ากรณีเลวร้ายที่ "เป็นไปได้จริง" (ร่วง 25% × 6 = ขาดทุน 150%) ล้างพอร์ตจนหมดและติดหนี้ ผลตอบแทน 8% นิ่ง ๆ 6 ปีไม่ได้บอกว่าปลอดภัย — มันคือหน้าตาแบบเดียวกับ carry trade ก่อน 2540 เป๊ะ: negative skew ที่ยังไม่ถึงคิวปีพัง</div>
+</div>
+
+<div class="closing">
+<p>สังเกตว่าหน้านี้ไม่ได้เล่าว่าใครคิดสูตร Kelly ขึ้นมาเมื่อไร หรือประวัติของ position sizing มาจากไหน — เพราะนั่นคือสิ่งที่คุณ<em>ลืมทันทีที่ปิดหน้า</em> สิ่งที่คุณจะไม่ลืมคือความรู้สึกตอนดันสไลเดอร์แล้วเห็นพอร์ตตัวเองระเบิด และตัวเลขเพดานที่คำนวณเองได้ นี่คือความต่างระหว่าง "รู้จักทฤษฎี" กับ "ใช้ทฤษฎีเป็น"</p>
+<p>ถ้าทั้งเล่มเปลี่ยนมาเป็นแบบนี้ — ทุกทฤษฎีมีเครื่องมือให้ลงมือ มีกฎที่พกไปใช้ได้ มีโจทย์ให้ลองเอง — มันจะไม่ใช่หนังสือที่อ่านจบแล้ววางอีกต่อไป แต่เป็นเครื่องมือที่เปิดกลับมาใช้ทุกครั้งที่ต้องตัดสินใจจริง</p>
+<p style="margin-top:22px"><a href="index.html">← กลับหน้าสารบัญ</a> · prototype รูปแบบ "ใช้เป็น"</p>
+</div>
+
+<script>
+(function(){
+function num(id){return parseFloat(document.getElementById(id).value)}
+function clampPct(x){return Math.max(0,Math.min(100,x))}
+function fmt(x){return (x>=0?'+':'−')+Math.abs(x).toFixed(0)+'%'}
+function update(){
+  var carry=num('carry'),lev=num('lev'),deval=num('deval'),prob=num('prob')/100;
+  document.getElementById('vCarry').textContent=carry+'%';
+  document.getElementById('vLev').textContent=lev+'×';
+  document.getElementById('vDeval').textContent=deval+'%';
+  document.getElementById('vProb').textContent=(prob*100).toFixed(0)+'%';
+  var good=carry*lev;                       // % return in a calm year
+  var bad=carry*lev - deval*lev;            // % return in a devaluation year (carry minus fx blow)
+  var ev=(1-prob)*good + prob*bad;          // naive expected value
+  var surv=1/prob;                          // avg years before a blow year
+  document.getElementById('oGood').textContent=fmt(good);
+  document.getElementById('oBad').textContent=fmt(bad);
+  document.getElementById('oEv').textContent=fmt(ev);
+  document.getElementById('oSurv').textContent='~'+surv.toFixed(0)+' ปี';
+  document.getElementById('barGood').style.width=clampPct(good/1.0)+'%';
+  document.getElementById('barBad').style.width=clampPct(Math.abs(bad)/2.0)+'%';
+  var loss=deval*lev;                       // magnitude of loss on a blow, as % of capital
+  var v=document.getElementById('verdict');
+  if(loss>=100){
+    v.className='verdict dead';
+    v.textContent='💀 ล้างพอร์ต: วันค่าเงินพัง ขาดทุน '+loss.toFixed(0)+'% ของทุน (เกิน 100%) — คุณไม่เหลือทุนรอเก็บ carry ปีต่อไปอีกเลย กำไรเฉลี่ย '+fmt(ev)+' ไม่มีความหมาย เพราะคุณออกจากเกมไปแล้ว เพดานปลอดภัยของคุณคือเลเวอเรจ < '+(100/deval).toFixed(1)+' เท่า';
+  } else if(loss>=60){
+    v.className='verdict warn';
+    v.textContent='⚠️ เฉียดตาย: วันพังขาดทุน '+loss.toFixed(0)+'% ของทุน — ยังไม่ล้างพอร์ต แต่บาดเจ็บหนักจนแทบกลับตัวไม่ทัน เพดานที่สบายใจคือเลเวอเรจ < '+(100/deval).toFixed(1)+' เท่า';
+  } else {
+    v.className='verdict ok';
+    v.textContent='✓ อยู่รอดได้: วันพังขาดทุน '+loss.toFixed(0)+'% ของทุน — เจ็บ แต่ยังมีทุนเหลือกลับมาเล่นต่อ นี่คือโซนที่เลเวอเรจไม่เกินเพดาน 1/'+(deval/100).toFixed(2)+' = '+(100/deval).toFixed(1)+' เท่า';
+  }
+}
+['carry','lev','deval','prob'].forEach(function(id){document.getElementById(id).addEventListener('input',update)});
+update();
+document.getElementById('revealBtn').addEventListener('click',function(){var a=document.getElementById('ans');a.style.display='block';this.style.display='none'});
+})();
+</script>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&(el.classList.contains('eq')||el.classList.contains('v')||el.classList.contains('val')))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
