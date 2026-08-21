@@ -57,11 +57,34 @@ p  = <b>8.55 × 10⁻⁹⁴</b>   ← เล็กกว่า 0.05 อยู่
 
 <div class="bx br"><div class="bt">❌ ผลการทดลอง 200 คู่ที่ "ไม่เกี่ยวกันเลย"</div>
 <ul>
-<li>R² เฉลี่ย = <strong>0.242</strong> (ควรใกล้ 0) · สูงสุดถึง <strong>0.899</strong></li>
+<li>R² เฉลี่ย = <strong>0.233</strong> (ควรใกล้ 0) · สูงสุดถึง <strong>0.848</strong></li>
 <li>คู่ที่ได้ p &lt; 0.05 = <strong>169 จาก 200 คู่ = 84%</strong></li>
 <li><strong>ถ้าเครื่องมือทำงานถูกต้อง ตัวเลขนี้ควรเป็น ~5%</strong></li>
 </ul>
 <p>แปลว่า: เอาข้อมูลที่ไหลไปตามเวลามา regress กันตรง ๆ คุณจะเจอ "ความสัมพันธ์ที่มีนัยสำคัญ" <strong>สี่ในห้าครั้ง ทั้งที่ไม่มีอะไรจริงเลย</strong></p></div>
+
+<div class="code"><div class="hdr">🐍 Python — สร้าง spurious regression ด้วยตัวเอง</div><pre><span class="c"># pip install numpy statsmodels</span>
+import numpy as np, statsmodels.api as sm
+
+def random_walk(n, rng):
+    return np.cumsum(rng.standard_normal(n))       <span class="c"># เดินสุ่ม แบบเดียวกับที่ราคาหุ้นเดิน</span>
+
+rng, n = np.random.default_rng(159), 250           <span class="c"># n = 250 วันทำการ ราว 1 ปี</span>
+a, b = random_walk(n, rng), random_walk(n, rng)    <span class="c"># สองเส้นที่ไม่เกี่ยวกันเลย</span>
+m = sm.OLS(b, sm.add_constant(a)).fit()
+print(f"คู่เดียว: R2 = {m.rsquared:.3f} | beta = {m.params[1]:+.3f} | p = {m.pvalues[1]:.2e}")
+
+r2, sig = [], 0
+for _ in range(200):                               <span class="c"># แล้วทำซ้ำอีก 200 คู่</span>
+    x, y = random_walk(n, rng), random_walk(n, rng)
+    f = sm.OLS(y, sm.add_constant(x)).fit()
+    r2.append(f.rsquared); sig += f.pvalues[1] &lt; 0.05
+print(f"200 คู่ : R2 เฉลี่ย = {np.mean(r2):.3f} | สูงสุด = {max(r2):.3f} | "
+      f"p &lt; 0.05 = {sig} คู่ = {sig/2:.0f}%")
+<span class="o"># คู่เดียว: R2 = 0.818 | beta = -1.119 | p = 8.55e-94</span>
+<span class="o"># 200 คู่ : R2 เฉลี่ย = 0.233 | สูงสุด = 0.848 | p &lt; 0.05 = 169 คู่ = 84%</span></pre></div>
+
+<p>💡 <strong>ตัวเลขทุกตัวข้างบนมาจากโค้ดกล่องนี้</strong> — ลอกไปรันได้เลย · ที่ปักหมุด <code>seed</code> ไว้ก็เพื่อให้คุณเห็น<u>เลขเดียวกันเป๊ะ</u> ไม่ใช่เพราะต้องเลือก seed พิเศษ · <strong>เปลี่ยนเป็นเลขอะไรก็ได้ อัตรา "เจอความสัมพันธ์ปลอม" จะยังอยู่แถว 80% เหมือนเดิม</strong></p>
 
 <p>ปรากฏการณ์นี้มีชื่อว่า <strong>spurious regression</strong> (regression ลวง) · Granger กับ Newbold ตีพิมพ์เรื่องนี้ในปี 1974 และมันเปลี่ยนวิธีที่วงการทำงานกับข้อมูลเศรษฐกิจไปตลอดกาล</p>
 
