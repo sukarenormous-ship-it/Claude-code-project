@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตัวอย่าง Part VII — บทที่ 37: สแกนหาคู่</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;border-radius:3px;font-size:.9em}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7;white-space:pre}
+.fm .c{color:#64748b}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+td code{background:var(--g1)}
+/* code ในหัวตารางต้องอ่านออก — พื้นหัวตารางเป็นสีเข้ม ถ้าไม่ตั้ง
+   จะได้ตัวอักษรเข้มบนพื้นเข้มจนมองไม่เห็น */
+th code{background:rgba(255,255,255,.22);color:#fff}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+.xref{background:var(--teal-bg);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;padding:8px 14px;margin:10px 0;font-size:.93em}
+.xref a{color:var(--teal);font-weight:600}
+.toc{background:var(--g1);border-radius:8px;padding:4px 0;margin:16px 0}
+.toc ol{margin:0;padding:0;list-style:none}
+.toc>ol>li{padding:6px 16px}
+.toc>ol>li+li{border-top:1px solid rgba(0,0,0,.06)}
+.toc a{color:var(--ink);text-decoration:none}
+.toc a:hover{color:var(--teal);text-decoration:underline}
+.toc .ch{font-weight:700}
+.toc .secs{margin-top:4px;font-size:.9em;line-height:1.9;color:#475569}
+.toc .secs a{margin-right:2px}
+.toc .secs .sep{color:#cbd5e1;margin:0 4px}
+@media print{details.toc-wrap>summary::before{content:""}}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155;white-space:pre}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
+.diagram{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:16px;margin:16px 0;font-family:'Courier New',monospace;font-size:.85em;line-height:1.6;overflow-x:auto}
+.nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
+.nav a{color:var(--teal);text-decoration:none;font-weight:600}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+.read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
+.ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
+.ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
+.ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
+.ai-decode .ad-code .c{color:#64748b}
+.ai-decode .ad-steps{background:var(--violet-bg);padding:14px 20px;font-size:.95em}
+.ai-decode .ad-steps ol{margin-bottom:.5em}
+.ai-decode .ad-steps p:last-child{margin-bottom:0}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Python for Quant Traders · Part VII (ตัวอย่าง)</div>
+<h1>Stat Arb — จับมือทำตั้งแต่ต้นจนจบ</h1>
+<div class="sub">บทที่ 37: สแกนหาคู่ — แล้วเจอผี 12 ตัว<br>
+ตัวอย่างรูปแบบของ Part VII · ยังไม่ใช่ฉบับสมบูรณ์</div>
+</div>
+
+<div class="bx bd">
+<div class="bt">📄 นี่คือตัวอย่างเพื่อดูรูปแบบ</div>
+<p>Part 0–VI เป็น<strong>บทเรียน</strong> — สอนทีละเครื่องมือ · Part VII เป็น <strong>สมุดบันทึกการทำงานจริง</strong> — ทำตามได้ทีละขั้นจนได้ระบบที่รันจริง</p>
+<p>ทุกบทใน Part VII มีโครงเดียวกัน 5 ส่วน: <strong>🎯 เป้าของเซสชัน → 🖐️ ลงมือ → 🛑 จุดตัดสินใจ → ✅ เช็คว่ามาถูกทาง → 📁 สถานะโปรเจกต์</strong> · บทที่ยกมาให้ดูนี้คือแกนของทั้ง Part</p>
+<p><strong>กฎเหล็กของ Part นี้: ไม่สอนทฤษฎีซ้ำสักบรรทัด</strong> — cointegration อยู่บทที่ 14 · multiple testing อยู่ 28.5 · ต้นทุนอยู่บทที่ 25 · ตรงไหนต้องใช้ก็ลิงก์กลับ ไม่เขียนใหม่</p>
+</div>
+
+<h2 id="ch37">บทที่ 37: สแกนหาคู่ — แล้วเจอผี 12 ตัว</h2>
+
+<div class="key-idea">
+<div class="ki-label">🎯 เป้าของเซสชันนี้</div>
+<div class="ki-text">
+จบบทนี้คุณจะมี <strong>shortlist ของคู่ที่ผ่านเกณฑ์จริง</strong> อยู่ในไฟล์ พร้อมเหตุผลกำกับทุกคู่ที่ถูกตัดออก<br><br>
+และจะเข้าใจสิ่งที่สำคัญกว่านั้น: <strong>ทำไม shortlist ที่ดีถึงต้องสั้น</strong> — ถ้าสแกนแล้วเจอคู่น่าสนใจเป็นสิบ นั่นไม่ใช่โชคดี นั่นคือเกณฑ์ยังหลวมอยู่
+</div>
+</div>
+
+<div class="read-aloud">บทที่ 14 สอนไปแล้วว่าทดสอบ cointegration <em>ของคู่หนึ่ง</em> ยังไง · บทนี้ต่างกันตรงที่เราจะทดสอบ <strong>ทุกคู่ที่เป็นไปได้พร้อมกัน</strong> — และการทำแบบนั้นเปลี่ยนความหมายของ p-value ไปทั้งหมด · <strong>นี่คือช่องว่างระหว่าง "ทำ cointegration test เป็น" กับ "หาคู่เองเป็น"</strong></div>
+
+<h3 id="s37-1">🖐️ ขั้นที่ 1 — สร้างคู่ทั้งหมดที่เป็นไปได้</h3>
+
+<p>จบบทที่ 36 คุณจะมี <code>prices</code> เป็น DataFrame เดียว index เป็นเวลา คอลัมน์เป็นเหรียญ · บทนี้เริ่มจากตรงนั้น</p>
+
+<div class="fm">import itertools
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.stattools import coint
+
+<span class="c"># prices มาจากบทที่ 36 — ที่นี่ใช้ข้อมูลจำลองที่ "ปลูก" คู่จริงไว้ 3 คู่</span>
+<span class="c"># เพื่อให้เราวัดได้ว่าเครื่องกรองจับได้กี่คู่ และปล่อยผีผ่านมากี่ตัว</span>
+prices = make_universe(seed=7)          <span class="c"># 30 เหรียญ · 730 วัน</span>
+
+pairs = list(itertools.combinations(prices.columns, 2))
+print(f"เหรียญ {prices.shape[1]} ตัว → {len(pairs)} คู่")
+print(f"ถ้าเพิ่มเป็น 100 เหรียญ → {100*99//2:,} คู่")</div>
+<div class="output">เหรียญ 30 ตัว → 435 คู่
+ถ้าเพิ่มเป็น 100 เหรียญ → 4,950 คู่</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 <code>itertools.combinations</code> — และตัวเลขที่โตเร็วกว่าที่คิด</div>
+<div class="ad-code">list(itertools.combinations(["A","B","C"], 2))
+<span class="c"># → [("A","B"), ("A","C"), ("B","C")]   ไม่มี ("B","A") ซ้ำ</span>
+
+<span class="c"># จำนวนคู่ = n(n-1)/2  → โตแบบกำลังสอง</span>
+<span class="c">#   30 เหรียญ →   435 คู่</span>
+<span class="c">#  100 เหรียญ → 4,950 คู่</span>
+<span class="c">#  500 เหรียญ → 124,750 คู่</span></div>
+<div class="ad-steps">
+<ol>
+<li><code>combinations</code> ให้ <strong>คู่ที่ไม่สนลำดับและไม่ซ้ำ</strong> — ต่างจาก <code>permutations</code> ที่จะได้ทั้ง <code>(A,B)</code> และ <code>(B,A)</code> · สำหรับ pair trading คู่ A-B กับ B-A คือคู่เดียวกัน (ต่างแค่ว่าใครเป็นขา long)</li>
+<li><strong>ตัวเลขโตแบบกำลังสอง</strong> — เพิ่มเหรียญ 3 เท่า คู่เพิ่ม ~10 เท่า · เรื่องนี้ไม่ใช่แค่ปัญหาความเร็ว มันคือ<strong>ปัญหาทางสถิติ</strong> ที่จะเห็นในขั้นถัดไป</li>
+<li>ที่ต้องครอบด้วย <code>list()</code> เพราะ <code>combinations</code> คืน <strong>generator</strong> (หัวข้อ 7.7) — เดินได้รอบเดียว · เราต้องวนหลายรอบจึงแปลงเป็น list ก่อน</li>
+</ol>
+</div>
+</div>
+
+<h3 id="s37-2">🖐️ ขั้นที่ 2 — ทดสอบทุกคู่</h3>
+
+<div class="fm"><span class="c"># ใช้ coint() ตัวเดียวกับบทที่ 14 — แค่วนทุกคู่</span>
+rows = []
+for a, b in pairs:
+    _, pvalue, _ = coint(np.log(prices[a]), np.log(prices[b]))
+    rows.append((a, b, pvalue))
+
+res = (pd.DataFrame(rows, columns=["a", "b", "pvalue"])
+         .sort_values("pvalue")
+         .reset_index(drop=True))
+
+print(f"ผ่านเกณฑ์ปกติ p &lt; 0.05 : {(res.pvalue &lt; 0.05).sum()} คู่")
+print(res.head(6).to_string(index=False,
+                            formatters={"pvalue": "{:.2e}".format}))</div>
+<div class="output">ผ่านเกณฑ์ปกติ p &lt; 0.05 : 15 คู่
+     a      b   pvalue
+COIN05 COIN06 1.23e-08
+COIN00 COIN01 1.24e-05
+COIN10 COIN11 2.58e-03
+COIN03 COIN06 8.85e-03
+COIN03 COIN05 9.09e-03
+COIN13 COIN29 1.71e-02</div>
+
+<div class="bx bg">
+<div class="bt">✅ เช็คว่ามาถูกทาง</div>
+<p>สามอันดับแรกคือ <code>COIN05/06</code> · <code>COIN00/01</code> · <code>COIN10/11</code> — <strong>ตรงกับคู่ที่เราปลูกไว้ทั้ง 3 คู่พอดี</strong> · เครื่องมือทำงานถูก</p>
+<p>ถ้าของคุณไม่ตรง ให้ย้อนไปเช็คว่าใช้ <code>np.log()</code> ครบทั้งสองขาไหม — cointegration ของราคาดิบกับของ log price ให้คำตอบคนละอย่าง</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">🛑 หยุดตรงนี้ก่อน — "15 คู่" เป็นข่าวดีหรือข่าวร้าย</div>
+<p>สัญชาตญาณบอกว่าข่าวดี: หาไป 435 คู่ เจอ 15 คู่ที่ผ่านเกณฑ์ทางสถิติที่ยอมรับกันทั้งวงการ</p>
+<p><strong>แต่เรารู้ความจริง</strong> — เราปลูกคู่จริงไว้แค่ <strong>3 คู่</strong> · อีก <strong>12 คู่ที่เหลือคือผี</strong> · <strong>80% ของ shortlist เป็นเสียงรบกวน</strong></p>
+<p>และในงานจริงคุณ<em>ไม่รู้</em>ว่าอันไหนจริงอันไหนผี — คุณจะเห็นแค่ตาราง 15 แถวที่หน้าตาน่าเชื่อถือเท่ากันหมด</p>
+</div>
+
+<h3 id="s37-3">🛑 จุดตัดสินใจที่ 1 — ทำไมถึงมีผี 12 ตัว</h3>
+
+<p>คำตอบอยู่ในนิยามของ <code>p &lt; 0.05</code> เอง: <em>"โอกาสที่จะเห็นผลแบบนี้โดยบังเอิญ ทั้งที่ไม่มีความสัมพันธ์จริง = 5%"</em></p>
+
+<p>ทดสอบ 1 คู่ → พลาด 5% · <strong>ทดสอบ 435 คู่ → คาดว่าจะพลาดราว 435 × 5% ≈ 22 คู่</strong> · ไม่ใช่ความผิดพลาด แต่คือสิ่งที่เกณฑ์นี้สัญญาไว้ตั้งแต่แรก</p>
+
+<p>พิสูจน์แบบไม่มีทางเถียง — รันบนข้อมูลที่ <strong>ไม่มีคู่ไหนสัมพันธ์กันเลยแม้แต่คู่เดียว</strong>:</p>
+
+<div class="fm"><span class="c"># random walk อิสระล้วน ๆ 40 ตัว — ไม่มีความสัมพันธ์ใด ๆ ทั้งสิ้น</span>
+rng = np.random.default_rng(0)
+noise = np.cumsum(rng.normal(0, 1, (40, 500)), axis=1) + 100
+
+noise_pairs = list(itertools.combinations(range(40), 2))
+hits = sum(1 for i, j in noise_pairs
+           if coint(noise[i], noise[j])[1] &lt; 0.05)
+
+print(f"สินทรัพย์ 40 ตัว = {len(noise_pairs)} คู่ · ไม่มีคู่ไหนสัมพันธ์กันจริงเลย")
+print(f"แต่ผ่าน cointegration ที่ p&lt;0.05: {hits} คู่ ({hits/len(noise_pairs):.1%})")
+print(f"Bonferroni: ต้องใช้ p &lt; {0.05/len(noise_pairs):.2e} แทน")</div>
+<div class="output">สินทรัพย์ 40 ตัว = 780 คู่ · ไม่มีคู่ไหนสัมพันธ์กันจริงเลย
+แต่ผ่าน cointegration ที่ p&lt;0.05: 41 คู่ (5.3%)
+Bonferroni: ต้องใช้ p &lt; 6.41e-05 แทน</div>
+
+<div class="bx bd">
+<div class="bt">ตัวเลขที่ควรจำไปทั้งชีวิต</div>
+<p><strong>41 คู่ที่ "cointegrate" จากข้อมูลที่ไม่มีอะไรเลย</strong> · ถ้าคุณสแกน 100 เหรียญ (4,950 คู่) บนข้อมูลไร้รูปแบบ คุณจะได้คู่น่าสนใจราว <strong>250 คู่</strong> ให้เลือกเทรด</p>
+<p>นี่คือคำตอบว่าทำไมคนที่เขียน scanner เองครั้งแรก<strong>เจอโอกาสเต็มจอ แต่เทรดจริงไม่ได้สักคู่</strong> · scanner ไม่ได้พัง มันทำงานตามที่สั่งเป๊ะ — เราต่างหากที่สั่งผิด</p>
+<p>🧭 <strong>กฎ:</strong> <em>ทันทีที่คุณทดสอบมากกว่า 1 ครั้ง เกณฑ์ <code>p &lt; 0.05</code> ก็ใช้ไม่ได้อีกต่อไป</em> — และการสแกนหาคู่คือการทดสอบหลายร้อยครั้งพร้อมกันโดยนิยาม</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 เรื่องนี้เล่มนี้สอนไปแล้ว — แค่ยังไม่ได้เอามาใช้ตรงนี้</div>
+<p><strong>หัวข้อ 28.5 (Red Flag #5 — P-Hacking และ Multiple Testing)</strong> อธิบายกลไกนี้ไว้ครบแล้ว และ <strong>Part V</strong> ยกเกณฑ์ Harvey-Liu-Zhu (<code>t ≥ 3</code>) มาให้ด้วย</p>
+<p>สิ่งที่บทนี้เพิ่มคือ<strong>การเอามันมาใช้ ณ จุดที่มันสำคัญที่สุด</strong> — ตอนคัดคู่ · เพราะถ้าปล่อยผีผ่านด่านนี้ไป ทุกอย่างหลังจากนี้ (backtest · walk-forward · ระบบสด) ก็คือการลงแรงประณีตกับของที่ไม่มีอยู่จริง</p>
+</div>
+
+<h3 id="s37-4">🖐️ ขั้นที่ 3 — คุมผีด้วย 2 วิธี แล้วเทียบกัน</h3>
+
+<div class="fm">m = len(pairs)          <span class="c"># 435</span>
+
+<span class="c"># ① Bonferroni — เข้มที่สุด: หารเกณฑ์ด้วยจำนวนครั้งที่ทดสอบ</span>
+bonf = res[res.pvalue &lt; 0.05 / m]
+
+<span class="c"># ② Benjamini-Hochberg (FDR) — ยอมให้มีผีปนได้บ้างในสัดส่วนที่คุมไว้</span>
+r = res.copy()
+r["rank"] = np.arange(1, m + 1)
+r["bh"]   = 0.05 * r["rank"] / m
+passed    = r[r.pvalue &lt;= r.bh]
+cut       = passed["rank"].max() if len(passed) else 0
+fdr       = r[r["rank"] &lt;= cut]
+
+for name, df in [("ไม่ปรับอะไร", res[res.pvalue &lt; 0.05]),
+                 ("Bonferroni", bonf), ("FDR/BH", fdr)]:
+    real = sum(1 for _, x in df.iterrows() if (x.a, x.b) in REAL)
+    print(f"{name:14s} เหลือ {len(df):>2} คู่ · จริง {real}/3 · ผี {len(df)-real}")</div>
+<div class="output">ไม่ปรับอะไร    เหลือ 15 คู่ · จริง 3/3 · ผี 12
+Bonferroni     เหลือ  2 คู่ · จริง 2/3 · ผี 0
+FDR/BH         เหลือ  2 คู่ · จริง 2/3 · ผี 0</div>
+
+<div class="bx ba">
+<div class="bt">🛑 จุดตัดสินใจที่ 2 — ไม่มีทางเลือกที่ได้ทุกอย่าง</div>
+<p>ดูคอลัมน์ "จริง" ให้ดี · การคุมผีได้หมด <strong>แลกมาด้วยการทิ้งคู่จริงไป 1 ใน 3 คู่</strong> — <code>COIN10/COIN11</code> ที่ <code>p = 2.6e-03</code> เป็นคู่จริงแท้ ๆ แต่ไม่แข็งพอจะผ่านด่านที่เข้มขึ้น</p>
+<p>นี่ไม่ใช่ข้อบกพร่องของวิธี แต่เป็น<strong>กฎแลกเปลี่ยนที่หนีไม่พ้น</strong>: เข้มขึ้น = ผีน้อยลง + ของจริงหลุดมากขึ้น · หลวมขึ้น = ได้ของจริงครบ + ผีเต็มมือ</p>
+<p><strong>แล้วเลือกอะไร?</strong> ในสาย stat arb คำตอบค่อนข้างชัด: <strong>ยอมทิ้งของจริงดีกว่ายอมรับผี</strong> · เพราะคู่จริงที่หลุดไปแค่ทำให้เสียโอกาส แต่ผีที่หลุดเข้ามาจะ<em>กินเงินจริง</em>ทุกวันจนกว่าจะรู้ตัว · และคู่จริงที่แข็งพอจะกลับมาผ่านด่านเองในการสแกนรอบหน้าเมื่อข้อมูลยาวขึ้น</p>
+</div>
+
+<h3 id="s37-5">🖐️ ขั้นที่ 4 — ด่านสุดท้าย: เทรดได้จริงไหม</h3>
+
+<p>ผ่านด่านสถิติแล้วแปลว่า <em>"ความสัมพันธ์น่าจะมีจริง"</em> · ยังไม่ได้แปลว่า <em>"เทรดแล้วได้เงิน"</em> — เป็นคนละคำถามกันคนละขั้ว ตามที่ <strong>หัวข้อ 25.4b</strong> ว่าไว้</p>
+
+<div class="fm"><span class="c"># สองตัวเลขที่ตัดสินว่าคู่นี้เทรดได้จริงไหม</span>
+def profile(a, b):
+    la, lb = np.log(prices[a]), np.log(prices[b])
+    beta   = sm.OLS(la, sm.add_constant(lb)).fit().params.iloc[1]
+    spread = la - beta * lb
+
+    <span class="c"># half-life: spread กลับเข้าค่ากลางครึ่งทางใช้เวลากี่วัน (บทที่ 14.4)</span>
+    d    = spread.diff().dropna()
+    lag  = spread.shift(1).dropna().loc[d.index]
+    k    = -sm.OLS(d, sm.add_constant(lag)).fit().params.iloc[1]
+    half_life = np.log(2) / k if k &gt; 0 else np.inf
+
+    return half_life, spread.std()
+
+COST = 0.004        <span class="c"># ไป-กลับ สองขา ≈ 0.4% (บทที่ 25)</span>
+
+fdr[["half_life", "sd"]] = [profile(x.a, x.b) for _, x in fdr.iterrows()]
+fdr["edge_2sd"] = 2 * fdr.sd                       <span class="c"># กำไรคาดหวังถ้าเข้าที่ 2σ</span>
+fdr["ผ่าน hl"]   = fdr.half_life.between(5, 60)     <span class="c"># ไม่เร็วไป ไม่ช้าไป</span>
+fdr["ผ่าน edge"] = fdr.edge_2sd &gt; COST * 2          <span class="c"># ต้องกว้างกว่าต้นทุน 2 เท่า</span>
+
+print(fdr[["a","b","pvalue","half_life","edge_2sd","ผ่าน hl","ผ่าน edge"]]
+      .to_string(index=False, formatters={"pvalue":"{:.2e}".format,
+                 "half_life":"{:.1f}".format, "edge_2sd":"{:.2%}".format}))</div>
+<div class="output">     a      b   pvalue half_life edge_2sd  ผ่าน hl  ผ่าน edge
+COIN05 COIN06 1.23e-08       4.1    2.50%    False       True
+COIN00 COIN01 1.24e-05       8.5    4.46%     True       True</div>
+
+<div class="bx bk">
+<div class="bt">คู่ที่ "แข็งที่สุดทางสถิติ" กลับตกรอบ</div>
+<p><code>COIN05/COIN06</code> มี <code>p = 1.23e-08</code> — <strong>แข็งที่สุดในทั้ง 435 คู่</strong> · แต่ตกด่านสุดท้ายเพราะ <strong>half-life 4.1 วัน</strong></p>
+<p>แปลว่า spread เด้งกลับเร็วมาก — ซึ่ง<em>ฟังดูดี</em> แต่บนแท่งรายวันแปลว่าเราจะได้สัญญาณถี่และเทรดบ่อย · เทรดบ่อย = <strong>จ่ายค่าธรรมเนียม 0.4% บ่อย</strong> ในขณะที่ spread กว้างแค่ 2.5% ที่ 2σ</p>
+<p>🧭 <strong>half-life ต้องเข้ากับความถี่ของข้อมูลที่คุณมี</strong> · half-life 4 วันบนแท่งรายวันคือ "เร็วเกินกว่าที่จะตามทัน" · ถ้าอยากเทรดคู่นี้จริงต้องย้ายไปแท่งรายชั่วโมงและคิดต้นทุนใหม่ทั้งหมด — <em>คนละโปรเจกต์กัน</em></p>
+</div>
+
+<h3 id="s37-6">✅ ผลของทั้งบท</h3>
+
+<div class="fm">print(f"กรวยคัดกรอง: {m} คู่ → 15 (p&lt;0.05) → {len(fdr)} (FDR) → {len(final)} (เศรษฐกิจ)")
+print("คู่ที่รอด:", ", ".join(f"{x.a}/{x.b}" for _, x in final.iterrows()))</div>
+<div class="output">กรวยคัดกรอง: 435 คู่ → 15 (p&lt;0.05) → 2 (FDR) → 1 (เศรษฐกิจ)
+คู่ที่รอด: COIN00/COIN01</div>
+
+<div class="bx bg">
+<div class="bt">✅ เช็คว่ามาถูกทาง — และเหลือคู่เดียวคือเรื่องปกติ</div>
+<p><strong>435 → 1</strong> · คู่ที่รอดเป็นคู่จริง และรอดเพราะผ่านทั้งด่านสถิติและด่านเศรษฐกิจ ไม่ใช่เพราะโชค</p>
+<p>ถ้าคุณรันแล้วเหลือ <strong>10–20 คู่</strong> อย่าดีใจ — ให้กลับไปดูว่าลืมคุม multiple testing หรือเปล่า · ถ้าเหลือ <strong>0 คู่</strong> ก็ไม่ใช่ความล้มเหลว มันคือคำตอบว่า <em>universe นี้ ช่วงเวลานี้ ไม่มีอะไรให้เทรด</em> — ซึ่งเกิดขึ้นบ่อยกว่าที่ใครอยากยอมรับ</p>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] สิ่งที่ยังไม่ได้ทำในบทนี้ และทำไมถึงยังไม่ทำ</div>
+<ul>
+<li><strong>ยังไม่ได้แบ่ง train/test</strong> — ทั้งบทนี้ใช้ข้อมูลทั้งชุด · จงใจ เพราะการ<em>คัดคู่</em>กับการ<em>ตรวจคู่</em>เป็นคนละงาน · <strong>บทที่ 38 จะแบ่งข้อมูลก่อนแตะอะไรทั้งสิ้น</strong> แล้วเอาคู่ที่รอดมาตรวจซ้ำบนช่วงที่ยังไม่เคยเห็น</li>
+<li><strong>ยังไม่มี backtest สักครั้ง</strong> — จงใจเช่นกัน · การ backtest คู่ที่ยังไม่ผ่านด่านพวกนี้คือการเสียเวลาไปกับของที่รู้อยู่แล้วว่าไม่รอด</li>
+<li><strong>ยังไม่ได้ดูว่า β เสถียรไหม</strong> — <code>profile()</code> ใช้ β ตัวเดียวจากทั้งช่วง ซึ่งซ่อนสมมติฐานว่าความสัมพันธ์ไม่เปลี่ยน · บทที่ 38 จะเอา Kalman (17.2) มาตรวจข้อนี้</li>
+</ul>
+<p><strong>ลำดับสำคัญกว่าเครื่องมือ</strong> — คนส่วนใหญ่กระโดดไป backtest ตั้งแต่เจอคู่แรกที่ p สวย ๆ แล้วใช้เวลาสองสัปดาห์จูนกลยุทธ์ให้กับคู่ที่เป็นผีมาตั้งแต่ต้น</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">📁 สถานะโปรเจกต์ ณ จบบทที่ 37</div>
+<div class="fm">statarb/
+├── data/
+│   └── prices_30coins_2023.parquet      <span class="c"># จากบทที่ 36</span>
+├── research/
+│   ├── 01_scan_pairs.py                 <span class="c"># ← บทนี้</span>
+│   ├── shortlist.csv                    <span class="c"># ← ผลลัพธ์ของบทนี้</span>
+│   └── log.md                           <span class="c"># ← บันทึกว่าตัดคู่ไหนออกเพราะอะไร</span>
+├── strategy/
+├── backtest/
+└── requirements.txt</div>
+<p><code>shortlist.csv</code> ต้องเก็บ<strong>ทุกคู่ที่ทดสอบ</strong> ไม่ใช่เฉพาะคู่ที่ผ่าน · พร้อมคอลัมน์ว่าตกด่านไหน — เพราะบทที่ 43 จะต้องนับว่าเราทดสอบไปทั้งหมดกี่ครั้ง (multiple testing ไม่ได้จบที่บทนี้ มันสะสมไปตลอดทั้งโปรเจกต์)</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">➡️ บทถัดไป</div>
+<p><strong>บทที่ 38 · ตรวจคู่ที่รอด — ก่อนแตะ backtest แม้แต่นิดเดียว</strong><br>
+แบ่ง in-sample/out-of-sample ก่อนทำอะไรทั้งสิ้น · β เสถียรไหม (rolling OLS เทียบ Kalman) · spread ยังอยู่ในกรอบเดิมไหม · <strong>และเราจะทิ้งคู่ที่ไม่ผ่านจริง ๆ พร้อมเขียนเหตุผลลง log</strong></p>
+</div>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body>
+</html>
