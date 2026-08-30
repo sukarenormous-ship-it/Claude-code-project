@@ -31,7 +31,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="cover">
 <h1>คณิตศาสตร์สำหรับ Options<br><span style="font-size:.6em;color:#64748b">เล่ม 2 · Portfolio Quant</span></h1>
 <div class="sub">D — Time Series: เมื่อข้อมูลไหลไปตามเวลา</div>
-<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Ornstein-Uhlenbeck · Spurious Regression · Cointegration → Pairs Trading</div>
+<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Ornstein-Uhlenbeck · Spurious Regression · Cointegration → Pairs Trading · Statistical Arbitrage</div>
 </div>
 
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
@@ -448,7 +448,7 @@ ARIMA(1,1,1) = difference แล้วใส่ AR+MA  ← ที่ใช้ก
 <p>บทที่ 9 จะตอบว่า regression บนอนุกรมที่ไม่นิ่ง<strong>ใช้ได้เมื่อไร</strong> — เมื่อ residual ของมันนิ่ง · กรณีพิเศษนั้นเรียกว่า <strong>cointegration</strong> และเป็นฐานของกลยุทธ์ pairs trading ที่จะสร้างกันตั้งแต่ต้นจนจบ พร้อม backtest</p></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้ (บทที่ 8)</div>
-<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง · <strong>Ornstein-Uhlenbeck (OU)</strong> = AR(1) ในเวลาต่อเนื่อง <span class="fm" style="display:inline">dx = θ(μ−x)dt + σdW</span> · <strong>θ</strong> = ความแรงของแรงดึงกลับ (φ = e<sup>−θΔt</sup> · ครึ่งชีวิต = ln2/θ)</p></div>
+<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง · <strong>Statistical arbitrage</strong> = กลยุทธ์ที่กำไรแน่นอนเฉพาะในลิมิต ไม่ใช่ตั้งแต่วันแรก (ต่างจากอาร์บิทราจจริง) · <strong>Ornstein-Uhlenbeck (OU)</strong> = AR(1) ในเวลาต่อเนื่อง <span class="fm" style="display:inline">dx = θ(μ−x)dt + σdW</span> · <strong>θ</strong> = ความแรงของแรงดึงกลับ (φ = e<sup>−θΔt</sup> · ครึ่งชีวิต = ln2/θ)</p></div>
 
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <!-- ========== CHAPTER 8 ========== -->
@@ -691,6 +691,73 @@ print(f"ค้างสถานะตอนจบ: {'มี' if pos else 'ไ�
 <li><strong>β ไม่นิ่ง</strong> — hedge ratio ที่คำนวณจากอดีตอาจเปลี่ยนไปแล้ว · และมันเป็นค่าประมาณที่มีช่วงความเชื่อมั่น (เล่ม 2 · C §6.4) ไม่ใช่ตัวเลขศักดิ์สิทธิ์</li>
 </ul></div>
 
+<div class="bx bp"><div class="bt">💎 สิ่งที่คุณทำอยู่ไม่ใช่อาร์บิทราจ — มันคือ <u>statistical arbitrage</u> และความต่างนี้แพงมาก</div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ทั้งเล่ม 1 คำว่า "อาร์บิทราจ" หมายถึงกำไรที่<strong>ล็อกได้ตั้งแต่วันนี้ ไม่มีทางขาดทุน</strong> — <a href="math-part1.html#s2-2">Put-Call Parity</a> และ <a href="math-part1.html#s3-8">cash and carry</a> เป็นแบบนั้น · <strong>แต่ pairs trading ไม่ใช่แบบนั้นเลย</strong> · มันคือการเดิมพันว่า "ในระยะยาว spread จะหุบ" ซึ่งเป็นคำสัญญาที่มีเงื่อนไขว่า <em>ระยะยาว</em> — และคุณอาจตายก่อนถึงตรงนั้น</p>
+
+<div class="tw"><table>
+<tr><th></th><th class="nw">อาร์บิทราจจริง</th><th class="nw">Statistical arbitrage</th></tr>
+<tr><td class="nw"><strong>ตัวอย่างในเล่มนี้</strong></td><td class="nw">Put-Call Parity · cash and carry</td><td class="nw"><strong>บทที่ 9 ทั้งบท</strong></td></tr>
+<tr><td class="nw"><strong>กำไรแน่นอนเมื่อไร</strong></td><td class="nw">ตั้งแต่วันที่เปิดสถานะ</td><td class="nw"><strong>ในลิมิต เมื่อเวลา → ∞</strong></td></tr>
+<tr><td class="nw"><strong>โอกาสขาดทุน</strong></td><td class="nw">ศูนย์</td><td class="nw"><strong>บวกเสมอในทุกเวลาจำกัด</strong></td></tr>
+<tr><td class="nw"><strong>ต้องเดาอะไรไหม</strong></td><td class="nw">ไม่ต้องเลย</td><td class="nw">ต้องเดาว่าความสัมพันธ์จะไม่ขาด</td></tr>
+<tr><td class="nw"><strong>สิ่งที่ฆ่ามันได้</strong></td><td class="nw">แทบไม่มี</td><td class="nw">ความสัมพันธ์ขาด · เงินหมดก่อน</td></tr>
+</table></div>
+
+<p>คำนี้มีนิยามที่เข้มงวดจริง ๆ (<strong>Hogan, Jarrow, Teo &amp; Warachka 2004</strong>) — กลยุทธ์จะเรียกว่า statistical arbitrage ได้ต้องครบ 4 ข้อ:</p>
+<ol>
+<li><strong>เริ่มด้วยเงินศูนย์</strong> และเลี้ยงตัวเองได้ (ขาหนึ่งจ่ายอีกขาหนึ่ง)</li>
+<li><strong>กำไรสะสมคาดหวังเป็นบวก</strong> ในลิมิต</li>
+<li><strong>ความน่าจะเป็นที่จะขาดทุน → 0</strong> เมื่อเวลา → ∞</li>
+<li><strong>ความแปรปรวนของกำไรที่เพิ่มต่อหน่วยเวลา → 0</strong> (ถ้ายังมีโอกาสขาดทุนอยู่)</li>
+</ol>
+
+<p>สังเกตว่า<strong>ข้อ 3 กับ 4 พูดถึง "เมื่อเวลา → ∞" ทั้งคู่</strong> · คำถามที่ต้องถามต่อคือ <strong>∞ ในที่นี้แปลว่ากี่ไม้</strong> — และมันคำนวณได้ตรง ๆ</p>
+
+<div class="code"><div class="hdr">🐍 Python — "โอกาสขาดทุน → 0" ต้องเทรดกี่ไม้ถึงจะเป็นจริง</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+from math import sqrt, ceil
+from statistics import NormalDist
+Phi, z = NormalDist().cdf, NormalDist().inv_cdf
+
+def trades_needed(edge, target_p):
+    """ต้องเทรดกี่ครั้ง P(กำไรสะสม &lt; 0) ถึงจะลงต่ำกว่า target_p
+       edge = กำไรเฉลี่ยต่อไม้ / ส่วนเบี่ยงเบนต่อไม้"""
+    return ceil((z(1 - target_p)/edge)**2)            <span class="c"># sqrt(n)*edge &gt;= z</span>
+
+print("edge ต่อไม้ |  P(ขาดทุน) หลัง 21 ไม้ | ต้องกี่ไม้ให้เหลือ 5% | ...เหลือ 1%")
+for edge in [0.05, 0.10, 0.15, 0.25, 0.50]:
+    p21 = 1 - Phi(sqrt(21)*edge)
+    print(f"{edge:10.2f} | {p21:21.1%} | {trades_needed(edge,0.05):20,d} | {trades_needed(edge,0.01):10,d}")
+
+print("\nแปลงเป็นเวลาจริง (ถือไม้ละ 10 วันทำการ · เทรดทีละ 1 คู่ · ปีละ 252 วัน)")
+for edge in [0.10, 0.15, 0.25]:
+    n = trades_needed(edge, 0.05)
+    print(f"  edge {edge:.2f} -&gt; {n:,} ไม้ = {n*10/252:,.1f} ปี")
+<span class="o"># edge ต่อไม้ |  P(ขาดทุน) หลัง 21 ไม้ | ต้องกี่ไม้ให้เหลือ 5% | ...เหลือ 1%</span>
+<span class="o">#       0.05 |                 40.9% |                1,083 |      2,165</span>
+<span class="o">#       0.10 |                 32.3% |                  271 |        542</span>
+<span class="o">#       0.15 |                 24.6% |                  121 |        241</span>
+<span class="o">#       0.25 |                 12.6% |                   44 |         87</span>
+<span class="o">#       0.50 |                  1.1% |                   11 |         22</span>
+<span class="o"># </span>
+<span class="o"># แปลงเป็นเวลาจริง (ถือไม้ละ 10 วันทำการ · เทรดทีละ 1 คู่ · ปีละ 252 วัน)</span>
+<span class="o">#   edge 0.10 -&gt; 271 ไม้ = 10.8 ปี</span>
+<span class="o">#   edge 0.15 -&gt; 121 ไม้ = 4.8 ปี</span>
+<span class="o">#   edge 0.25 -&gt; 44 ไม้ = 1.7 ปี</span></pre></div>
+
+<div class="bx bg" style="margin-left:0"><div class="bt">✅ อ่านผลลัพธ์ — แล้วย้อนกลับไปดู backtest ของเราเอง</div>
+<ul>
+<li><strong>คอลัมน์ที่สองคือคำพิพากษา</strong> · <a href="#s9-2">§9.2</a> โชว์ backtest ที่มี <strong>21 ไม้</strong> แล้วชนะ 21/21 · แต่ถ้า edge ต่อไม้อยู่ในย่านปกติ (0.10–0.15) <strong>โอกาสที่กลยุทธ์แบบนี้จะขาดทุนสะสมหลัง 21 ไม้ยังสูงถึง 25–32%</strong> — <strong>ผลชนะรวดจึงบอกอะไรเกี่ยวกับอนาคตน้อยกว่าที่ตาเห็นมาก</strong></li>
+<li><strong>"เวลา → ∞" แปลเป็นปีแล้วน่าตกใจ</strong> — ที่ edge = 0.10 ต้องเทรด <strong>271 ไม้ = เกือบ 11 ปี</strong> กว่าโอกาสขาดทุนจะลงมาต่ำกว่า 5% · ที่ edge = 0.15 ก็ยัง <strong>4.8 ปี</strong></li>
+<li><strong>จำนวนไม้โตแบบกำลังสองของ edge ที่หายไป</strong> — edge ลดครึ่ง (0.25 → 0.125) จำนวนไม้ที่ต้องใช้<strong>เพิ่มสี่เท่า</strong> · นี่คือเหตุผลที่ต้นทุนซื้อขายอันตรายกว่าที่คิด: มันไม่ได้แค่กินกำไร <strong>มันยืดเวลาที่คุณต้องรอดให้ได้ออกไปเป็นกำลังสอง</strong></li>
+</ul></div>
+
+<p>💎 <strong>บทเรียนที่ต้องเอาไปใช้:</strong> ทฤษฎีรับประกันว่าคุณจะชนะ — <u>ถ้าคุณอยู่ได้นานพอ</u> · แต่สิ่งที่กำหนดว่าคุณอยู่ได้นานแค่ไหนไม่ใช่ทฤษฎี มันคือ<strong>ขนาดสถานะ ต้นทุน และเงินที่เหลือในบัญชี</strong> · เงื่อนไขข้อ 3 กับ 4 ไม่เคยรับประกันอะไรกับคนที่มีเงินจำกัดและอายุจำกัด</p>
+
+<p>นี่คือเหตุผลที่ <a href="math-part10.html#s11-2">การกำหนดขนาดสถานะ (เล่ม 2 · E บทที่ 11)</a> ไม่ใช่หัวข้อเสริม — <strong>สำหรับ statistical arbitrage มันคือส่วนหนึ่งของกลยุทธ์เอง</strong> · กลยุทธ์ที่ถูกทางแต่ใส่หนักเกินไป จะตายก่อนถึงลิมิตที่ทฤษฎีพูดถึงเสมอ</p>
+</div>
+
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง — กลยุทธ์นี้ยังใช้ได้อยู่ไหม</div>
 <p><strong>มือใหม่เห็น:</strong> "backtest กำไร แปลว่าใช้ได้"<br>
 <strong>คนในตลาดเห็น:</strong> pairs trading แบบง่าย ๆ นี้<strong>ถูกเก็บกินไปหมดแล้ว</strong>ตั้งแต่ยุค 2000 · สิ่งที่ยังเหลือคือเวอร์ชันที่ซับซ้อนกว่ามาก (หลายสินทรัพย์พร้อมกัน · คุมความเสี่ยงเชิง factor · ความเร็วระดับมิลลิวินาที) · <strong>คุณค่าของบทนี้ไม่ใช่กลยุทธ์สำเร็จรูป แต่คือกรอบคิด</strong> — หาความสัมพันธ์ที่ mean-revert แล้วเทรดค่าเบี่ยงเบนของมัน ซึ่งใช้ได้กับ basis ของ futures, ส่วนต่างดอกเบี้ย, และ vol spread ที่เล่ม 1 สอนไปแล้ว</p></div>
@@ -712,10 +779,11 @@ print(f"ค้างสถานะตอนจบ: {'มี' if pos else 'ไ�
 <p>💎 <strong>นี่คือบทเรียนทั้งหมดในตัวเลขเดียว:</strong> เกณฑ์เข้าที่ดีที่สุด<strong>ไม่มีคำตอบตายตัว มันขึ้นกับต้นทุนของคุณ</strong> · ก่อนจะปรับพารามิเตอร์ใด ๆ ให้หา<strong>ต้นทุนจริงต่อข้างของคุณเองก่อน</strong> แล้วค่อยหาว่าเกณฑ์ไหนชนะที่ต้นทุนนั้น · การปรับพารามิเตอร์บน backtest ที่ต้นทุน = 0 คือการหาคำตอบของคำถามที่ไม่มีใครถาม</p>
 </details></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 9</div>
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 9</div>
 <ul>
 <li><strong>Cointegration = ราคาไม่นิ่งทั้งคู่ แต่ spread นิ่ง</strong> — ทดสอบด้วย <code>coint()</code> <strong>ไม่ใช่</strong> <code>adfuller()</code> บน residual (ซึ่งเจอของปลอมมากกว่าที่ควร 3 เท่า)</li>
 <li><strong>regression ให้ hedge ratio</strong> — β จาก เล่ม 2 · A กลับมาเป็นอัตราส่วนถือ/ขายจริง · <strong>และดู<u>ครึ่งชีวิต</u>ทุกครั้ง</strong> — ถ้าเกิน 60 วัน อย่าเทรด ไม่ว่าสถิติจะสวยแค่ไหน</li>
+<li><strong>สิ่งที่บทนี้สอนคือ statistical arbitrage ไม่ใช่อาร์บิทราจ</strong> — กำไรแน่นอนเฉพาะ "เมื่อเวลา → ∞" · ที่ edge ต่อไม้ 0.10 นั่นแปลว่า <strong>271 ไม้ หรือเกือบ 11 ปี</strong> กว่าโอกาสขาดทุนจะลงต่ำกว่า 5% · <strong>ขนาดสถานะจึงเป็นส่วนหนึ่งของกลยุทธ์ ไม่ใช่หัวข้อเสริม</strong></li>
 <li><strong>z-score เปลี่ยน spread เป็นสัญญาณ</strong> — และต้องมี stop เสมอ เพราะความสัมพันธ์ขาดได้ · <strong>backtest ที่ชนะ 100% และ drawdown = 0 คือหลักฐานว่าข้อมูลผิด ไม่ใช่ว่ากลยุทธ์ดี</strong></li>
 </ul></div>
 
