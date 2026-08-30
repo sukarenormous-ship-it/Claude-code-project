@@ -726,25 +726,33 @@ for i, name in [(1,"market"), (2,"size"), (3,"value")]:
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> R² มีนิสัยเสียอย่างหนึ่ง — <strong>มันเพิ่มขึ้นเสมอเมื่อใส่ตัวแปรเพิ่ม</strong> แม้ตัวแปรนั้นจะเป็นเลขสุ่มล้วน ๆ · ดังนั้น "R² สูง" จึงไม่ใช่หลักฐานว่าโมเดลดี · <strong>Adjusted R²</strong> แก้โดยหักค่าปรับตามจำนวนตัวแปร แต่วิธีที่ซื่อสัตย์ที่สุดคือ <strong>ทดสอบกับข้อมูลที่โมเดลไม่เคยเห็น</strong></p>
 
-<div class="code"><div class="hdr">🐍 Python — ใส่ตัวแปรขยะ 15 ตัว แล้วดูว่าเกิดอะไร</div><pre><span class="c"># pip install numpy statsmodels</span>
+<div class="code"><div class="hdr">🐍 Python — โยนตัวแปรขยะเข้าไปเรื่อย ๆ แล้วดูว่าเกิดอะไร</div><pre><span class="c"># pip install numpy statsmodels</span>
 import numpy as np, statsmodels.api as sm
 
-rng = np.random.default_rng(5)
-N = 200
-x_real = rng.normal(0, 1, (N, 1))
-y      = 1 + 1.5*x_real[:,0] + rng.normal(0, 1, N)
-junk   = rng.normal(0, 1, (N, 15))          <span class="c"># ตัวแปรขยะล้วน ๆ ไม่เกี่ยวกับ y</span>
-X_all  = np.column_stack([x_real, junk])
-
-tr, te = slice(0,150), slice(150,N)         <span class="c"># แบ่ง 150 ฝึก / 50 ทดสอบ</span>
-for k, label in [(1,"ตัวแปรจริง 1 ตัว"), (16,"+ ขยะอีก 15 ตัว")]:
-    Xk = sm.add_constant(X_all[:, :k])
-    m  = sm.OLS(y[tr], Xk[tr]).fit()
-    pred = m.predict(Xk[te])                <span class="c"># ทำนายข้อมูลที่ไม่เคยเห็น</span>
+def fit(n_junk):
+    """สร้างข้อมูลชุดเดิมเป๊ะ แล้วต่อ 'ตัวแปรขยะ' เข้าไป n_junk ตัว"""
+    rng    = np.random.default_rng(5)
+    N      = 200
+    x_real = rng.normal(0, 1, (N, 1))
+    y      = 1 + 1.5*x_real[:,0] + rng.normal(0, 1, N)
+    junk   = rng.normal(0, 1, (N, n_junk))      <span class="c"># ขยะล้วน ๆ ไม่เกี่ยวกับ y</span>
+    X      = sm.add_constant(np.column_stack([x_real, junk]))
+    tr, te = slice(0,150), slice(150,N)         <span class="c"># แบ่ง 150 ฝึก / 50 ทดสอบ</span>
+    m      = sm.OLS(y[tr], X[tr]).fit()
+    pred   = m.predict(X[te])                   <span class="c"># ทำนายข้อมูลที่ไม่เคยเห็น</span>
     r2_out = 1 - ((y[te]-pred)**2).sum() / ((y[te]-y[te].mean())**2).sum()
-    print(f"{label:18s}: R2(in)={m.rsquared:.3f}  adjR2={m.rsquared_adj:.3f}  R2(out)={r2_out:.3f}")
-<span class="o"># ตัวแปรจริง 1 ตัว  : R2(in)=0.662  adjR2=0.660  R2(out)=0.805</span>
-<span class="o"># + ขยะอีก 15 ตัว   : R2(in)=0.709  adjR2=0.674  R2(out)=0.770</span></pre></div>
+    return m.rsquared, m.rsquared_adj, r2_out
+
+print("ตัวแปรขยะ | ตัวแปรทั้งหมด | R2(in)  adjR2   R2(out)")
+for j in [0, 15, 60, 100, 130]:
+    a, b, c = fit(j)
+    print(f"{j:9d} | {j+2:13d} | {a:6.3f}  {b:6.3f}  {c:8.3f}")
+<span class="o"># ตัวแปรขยะ | ตัวแปรทั้งหมด | R2(in)  adjR2   R2(out)</span>
+<span class="o">#         0 |             2 |  0.662   0.660     0.805</span>
+<span class="o">#        15 |            17 |  0.709   0.674     0.770</span>
+<span class="o">#        60 |            62 |  0.833   0.717     0.519</span>
+<span class="o">#       100 |           102 |  0.904   0.701    -0.064</span>
+<span class="o">#       130 |           132 |  0.950   0.586    -1.844</span></pre></div>
 
 <div class="bx br"><div class="bt">❌ ดูให้ดี — นี่คือหน้าตาของ overfitting</div>
 <ul>
@@ -768,18 +776,16 @@ X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25)   ← <b>shuffle
 <strong>คนในตลาดเห็น:</strong> R² สูงผิดปกติกับข้อมูลอดีต = สัญญาณ<strong>อันตราย</strong> ไม่ใช่สัญญาณดี · เพราะตลาดจริงมี noise เยอะมาก โมเดลที่อธิบายอดีตได้เกือบสมบูรณ์มักแปลว่ามันจำ noise ไปแล้ว และจะพังทันทีกับข้อมูลใหม่</p></div>
 
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
-<p>เปลี่ยน <code>junk</code> เป็น 60 ตัว (<code>rng.normal(0, 1, (N, 60))</code>) แล้วรันกรณีที่สอง (<code>k=61</code>) · คาดเดาก่อน: R²(in) จะเป็นเท่าไร และ R²(out) จะไปทางไหน?</p>
+<p>ดูตารางผลลัพธ์ข้างบนอีกครั้ง แล้วตอบโดย<u>ยังไม่ต้องรันอะไรเพิ่ม</u>:</p>
+<ol>
+<li><strong>adjusted R² ขึ้นถึงจุดสูงสุดที่ขยะ 60 ตัว (0.717) แล้วค่อยร่วง</strong> ทั้งที่โมเดลแย่ลงตลอดทาง — ทำไมมันถึงไม่ร่วงตั้งแต่ต้น</li>
+<li>R²(out) ข้ามศูนย์ระหว่างขยะ 60 กับ 100 ตัว · <strong>ทำไมจุดข้ามถึงมาอยู่แถวนั้น</strong> ไม่ใช่ที่ 20 หรือ 200</li>
+<li>ถ้าคุณมีข้อมูลฝึก 1,500 จุดแทนที่จะเป็น 150 · <strong>จุดข้ามศูนย์จะขยับไปทางไหน</strong></li>
+</ol>
 <details><summary>ดูเฉลย</summary>
-<div class="tw"><table>
-<tr><th>โมเดล</th><th class="nw">R²(in)</th><th class="nw">adj R²</th><th class="nw">R²(out)</th></tr>
-<tr><td class="nw">ตัวแปรจริง 1 ตัว</td><td class="nw">0.662</td><td class="nw">0.660</td><td class="nw"><strong>0.805</strong></td></tr>
-<tr><td class="nw">+ ขยะ 15 ตัว</td><td class="nw">0.709</td><td class="nw">0.674</td><td class="nw">0.770</td></tr>
-<tr><td class="nw"><strong>+ ขยะ 60 ตัว</strong></td><td class="nw"><strong>0.833</strong></td><td class="nw">0.717</td><td class="nw"><strong>0.519</strong> ← ร่วงหนัก</td></tr>
-</table></div>
-<p><strong>R²(in) พุ่งจาก 0.662 เป็น 0.833</strong> เพราะตัวแปร 61 ตัวกับข้อมูลฝึก 150 จุด มีอิสระพอจะ "ดัด" เส้นให้ทาบข้อมูลได้เยอะ · แต่ <strong>R²(out) ร่วงจาก 0.805 เหลือ 0.519</strong> — <strong>หายไปกว่าหนึ่งในสาม</strong></p>
-<p>สังเกตว่า <strong>adjusted R² ก็ยังเพิ่มขึ้น</strong> (0.660 → 0.717) ทั้งที่โมเดลแย่ลงจริง · <strong>adjusted R² ไม่ใช่เกราะป้องกัน overfitting</strong> มันแค่ชะลอเท่านั้น</p>
-<p><strong>ต้องขยะเท่าไรถึงติดลบจริง?</strong> ที่ขยะ <strong>100 ตัว</strong> (k=101) R²(in) = 0.896 แต่ <strong>R²(out) = −0.04</strong> · ที่ขยะ <strong>130 ตัว</strong> R²(in) = 0.950 แต่ <strong>R²(out) = −0.95</strong> — <strong>ทำนายแย่กว่าการเดาค่าเฉลี่ยเฉย ๆ เกือบเท่าตัว</strong> · นี่คือ overfitting เต็มรูปแบบ และเป็นเหตุผลที่กฎนิ้วโป้งบอกว่าควรมีข้อมูลอย่างน้อย ~10–20 จุดต่อตัวแปร 1 ตัว</p>
-<p>💎 <strong>สังเกตแนวโน้ม R²(in) 0.662 → 0.833 → 0.896 → 0.950</strong> · ถ้าใครโชว์ backtest ที่ R² = 0.95 ให้คุณดู — <strong>ตัวเลขนั้นสร้างได้ด้วยการโยนตัวแปรสุ่มเข้าไปเฉย ๆ</strong> โดยไม่มีความรู้ใด ๆ เกี่ยวกับตลาดเลย</p>
+<p><strong>1)</strong> adjusted R² หักค่าปรับด้วยตัวคูณ <span class="fm" style="display:inline">(n−1)/(n−k−1)</span> · ที่ n = 150 การเพิ่มตัวแปรจาก 2 เป็น 62 ทำให้ตัวหารลดจาก 148 เหลือ 88 — ค่าปรับโตขึ้นแค่ราว 1.7 เท่า ขณะที่ R²(in) พุ่งจาก 0.662 เป็น 0.833 · <strong>ค่าปรับโตช้ากว่าที่ R²(in) พองขึ้น มันจึงตามไม่ทัน</strong> · พอถึง 130 ตัว ตัวหารเหลือ 18 ค่าปรับจึงระเบิดและกดมันร่วงในที่สุด — <strong>บทเรียน: adjusted R² ไม่ได้ป้องกัน overfitting มันแค่ชะลอ</strong></p>
+<p><strong>2)</strong> เพราะจุดที่สำคัญคือ <u>อัตราส่วนตัวแปรต่อจำนวนข้อมูลฝึก</u> ไม่ใช่จำนวนตัวแปรเปล่า ๆ · ข้อมูลฝึกมี 150 จุด · ที่ขยะ 100 ตัวคือใช้ไปแล้ว 102/150 ≈ <strong>สองในสาม</strong>ของอิสระที่มี · ตรงนั้นเองที่โมเดลเริ่มจำ noise ได้มากกว่าจับสัญญาณ</p>
+<p><strong>3)</strong> <strong>ขยับไปทางขวามาก</strong> — ถ้าอัตราส่วนคือสิ่งที่กำหนด จุดข้ามจะไปอยู่แถว 1,000 ตัวแทนที่จะเป็น 100 · นี่คือเหตุผลที่ <strong>"ตัวแปรกี่ตัวถึงจะเยอะเกินไป" ตอบไม่ได้ถ้าไม่บอกมาว่ามีข้อมูลกี่แถว</strong> — และเป็นเหตุผลที่ <a href="math-part11.html#s14-1">Ridge/Lasso ในเล่ม 2 · F</a> มีค่าเมื่อตัวแปรเยอะเทียบกับข้อมูล</p>
 </details></div>
 
 <div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 6</div>
