@@ -1,0 +1,215 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>live กับ backtest ไม่ตรงกัน — จะรู้ได้ยังไงว่าระบบกำลังพัง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body><div class="cover">
+<h1>live กับ backtest ไม่ตรงกัน</h1>
+<div class="sub">จะรู้ได้ยังไงว่าระบบที่รันอยู่กำลังพัง ก่อนที่จะเสียเงินไปมาก</div>
+<div class="desc">บทเสริมสาย Statistical Arbitrage · ตัวเลขจากข้อมูล option chain จริงในคลังนี้ (Deribit/OKX)</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🔵 บทนี้เขียนสำหรับคนที่มีกลยุทธ์ผ่าน backtest มาแล้ว</strong> และกำลังจะรันจริงหรือรันอยู่ ·
+ใช้ตัวเลขต้นทุนจาก <a href="nq-part5.html">คิดแบบ Quant Part 5</a> ต่อ (ส่วนต่าง bid-ask ตามอายุคงเหลือ)
+และเครื่องมือวัดค่าปรับจากการค้นหาจาก <a href="statarb-signal-blending.html">การรวมสัญญาณโดยไม่ overfit</a></p></div>
+
+<h2>สามชั้นที่ทำให้ live ต่างจาก backtest</h2>
+
+<p>เวลาผลตอบแทน live ไม่ตรงกับที่ backtest ทำนายไว้ สาเหตุมักไม่ใช่ "โชคไม่ดี" แต่มาจากสามชั้น
+ที่ backtest ส่วนใหญ่ไม่ได้จำลองไว้ตั้งแต่แรก</p>
+
+<div class="tw"><table>
+<tr><th class="nw">ชั้น</th><th>คำถาม</th><th>ตัวอย่าง</th></tr>
+<tr><td class="nw"><strong>1. ราคาที่ได้จริง</strong></td><td>คุณจ่าย/ได้ราคาเท่าไรจริง ๆ ไม่ใช่ราคาที่โมเดลบอกว่า "ควรจะเป็น"</td><td>backtest ใช้ราคากลาง (mid) แต่ order จริงต้องข้าม spread</td></tr>
+<tr><td class="nw"><strong>2. สิ่งที่วัด</strong></td><td>ตัวเลขที่ระบบรายงาน วัดสิ่งเดียวกับที่ backtest วัดจริงไหม</td><td>วัด drawdown จากยอดเงินสกุลเดียว ขณะที่พอร์ตถือหลายสกุล</td></tr>
+<tr><td class="nw"><strong>3. สิ่งที่เกิดขึ้นแต่ backtest ไม่รู้</strong></td><td>มีเหตุการณ์อะไรใน live ที่ backtest ไม่มีทางเห็น</td><td>order ไม่ถูก fill เพราะไม่มีคู่ค้า สัญญาที่คิดว่าเทรดได้ไม่มีสภาพคล่องจริง</td></tr>
+</table></div>
+
+<h2>ชั้นที่ 1: ราคาที่ได้จริง — กระทบยอดทีละไม้</h2>
+
+<p>วิธีตรวจชั้นนี้ที่ตรงที่สุดคือเทียบราคาที่ backtest <em>สมมติ</em> กับราคาที่ต้องจ่ายจริง
+ทีละไม้ ไม่ใช่ดูแค่ผลรวมปลายเดือน — ตัวอย่างจากข้อมูลจริงวันเดียว</p>
+
+<div class="tw"><table>
+<tr><th>รายการ</th><th class="nw">ราคา</th></tr>
+<tr><td>สัญญา</td><td class="nw"><strong>BTC-18SEP26-76000-C</strong> (เหลืออายุ 20 วัน)</td></tr>
+<tr><td>backtest สมมติจ่าย (ราคากลาง)</td><td class="nw">3,494 ดอลลาร์</td></tr>
+<tr><td>ซื้อจริงต้องจ่าย (ask)</td><td class="nw"><strong>3,572 ดอลลาร์</strong></td></tr>
+<tr><td>ถ้าขายคืนทันที ได้ (bid)</td><td class="nw">3,417 ดอลลาร์</td></tr>
+<tr><td>ซื้อแล้วขายคืนทันที ขาดทุนเท่าไร</td><td class="nw"><strong>155 ดอลลาร์ (4.4%)</strong></td></tr>
+</table></div>
+
+<div class="bx br"><div class="bt">แค่ "เปิดแล้วปิดทันที" ก็เสียไปแล้ว 4.4%</div>
+<p>นี่ยังไม่นับว่าราคาขยับระหว่างทาง — เป็นต้นทุนล้วน ๆ จากการข้าม spread สองรอบ (เข้าหนึ่ง ออกหนึ่ง)
+ถ้า backtest ใช้ราคากลางในการคำนวณผลตอบแทน ตัวเลขที่ได้จะ<strong>สวยกว่าความเป็นจริงเสมอ</strong>
+ไม่ใช่บางครั้ง — เพราะราคากลางไม่มีอยู่จริงสำหรับใครที่ต้อง <em>take</em> สภาพคล่อง</p></div>
+
+<p>ขยายจากไม้เดียวเป็นภาพรวม: "ต้นทุนซ่อน" ถ้าใช้ราคากลางแทนราคาจริง (ครึ่งหนึ่งของส่วนต่าง bid-ask
+จาก <a href="nq-part5.html">Part 5</a>) แยกตามอายุคงเหลือ</p>
+
+<div class="tw"><table>
+<tr><th class="nw">อายุคงเหลือ</th><th class="nw">Deribit</th><th class="nw">OKX</th></tr>
+<tr><td class="nw">0-2 วัน</td><td class="nw"><strong>11.2%</strong></td><td class="nw">3.9%</td></tr>
+<tr><td class="nw">3-7 วัน</td><td class="nw">7.0%</td><td class="nw">2.6%</td></tr>
+<tr><td class="nw">8-30 วัน</td><td class="nw">2.3%</td><td class="nw">1.2%</td></tr>
+<tr><td class="nw">31-120 วัน</td><td class="nw">1.1%</td><td class="nw">0.7%</td></tr>
+<tr><td class="nw">เกิน 120 วัน</td><td class="nw">1.2%</td><td class="nw">2.1%</td></tr>
+</table></div>
+
+<p>สัญญาใกล้หมดอายุ (0-2 วัน) มีต้นทุนซ่อนสูงกว่าสัญญาไกลถึง <strong>10 เท่า</strong> — กลยุทธ์ที่เทรด
+option ใกล้หมดอายุบ่อย ๆ จึงเจ็บจาก spread มากกว่าที่ backtest แบบ mid-price จะบอกได้มาก</p>
+
+<h2>ชั้นที่ 2: สิ่งที่วัด — ตัวเลขเดียวกัน คนละความหมาย</h2>
+
+<p>กับดักที่พบบ่อยคือระบบวัด "ผลตอบแทน" หรือ "drawdown" ด้วยวิธีที่ backtest กับ live
+<strong>ไม่ได้วัดสิ่งเดียวกัน</strong> แม้ชื่อตัวเลขจะเหมือนกัน</p>
+
+<div class="qv"><div class="bt">🧠 ตัวอย่างที่พบบ่อย</div>
+<p>บอทที่ถือทั้ง BTC และ USDT วัด "ยอดพอร์ต" ด้วยการรวมมูลค่าทุกอย่างเป็น USDT ที่ราคาปัจจุบัน —
+backtest ที่ออกแบบด้วยสมมติฐานว่า "ทุนเริ่มต้น" คงที่เป็นหน่วยเดียว จะเห็น drawdown
+<strong>ปนกันระหว่างผลจากกลยุทธ์กับผลจากราคา BTC เอง</strong> — วันที่ BTC ร่วง 5% พอร์ตจะดู
+"ขาดทุน" แม้กลยุทธ์จะทำงานถูกต้องทุกอย่าง</p></div>
+
+<p>วิธีแก้ไม่ใช่เรื่องซับซ้อน แต่ต้องตั้งใจทำตั้งแต่ต้น: <strong>แยกผลตอบแทนจากกลยุทธ์ ออกจากผลตอบแทน
+จากการถือสินทรัพย์เฉย ๆ (buy-and-hold) เสมอ</strong> — วัด alpha ไม่ใช่วัด P&L รวม</p>
+
+<h2>ชั้นที่ 3: สิ่งที่เกิดขึ้นแต่ backtest ไม่รู้ — สภาพคล่องที่ไม่มีอยู่จริง</h2>
+
+<p>backtest ทั่วไปสมมติว่า "ถ้าราคาผ่านเกณฑ์ ก็เทรดได้" — แต่การมีราคาในไฟล์ข้อมูล
+ไม่ได้แปลว่าเทรดได้จริง ตรวจกระดานทั้งหมดในวันเดียว (ไม่ใช่แค่ใกล้ ATM แบบตารางก่อนหน้า)</p>
+
+<!--CHART:live-liquidity-->
+<svg class="fig" viewBox="0 0 780 258" role="img" aria-label="กราฟแท่งเทียบสัดส่วนสัญญาที่ไม่มีปริมาณซื้อขายใน 24 ชั่วโมงและไม่มีราคาเสนอซื้อ ระหว่าง Deribit และ OKX Deribit ไม่มีปริมาณซื้อขาย 45.9% และไม่มีราคาเสนอซื้อ 9.8% ส่วน OKX ไม่มีปริมาณซื้อขาย 43.1% และไม่มีราคาเสนอซื้อ 10.4%">
+<line x1="260" y1="36" x2="260" y2="222" stroke="#cbd5e1" stroke-width="1.5"/>
+<rect x="260" y="46.0" width="373.9" height="24" rx="4" fill="#dc2626"/>
+<text x="248" y="58.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ไม่มีปริมาณซื้อขายเลยใน 24 ชม.</text>
+<text x="248" y="73.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">Deribit</text>
+<text x="641.9" y="63.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#dc2626" font-family="Sarabun,sans-serif">45.9%</text>
+<rect x="260" y="92.0" width="351.1" height="24" rx="4" fill="#f87171"/>
+<text x="248" y="104.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ไม่มีปริมาณซื้อขายเลยใน 24 ชม.</text>
+<text x="248" y="119.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">OKX</text>
+<text x="619.1" y="109.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#f87171" font-family="Sarabun,sans-serif">43.1%</text>
+<rect x="260" y="138.0" width="79.8" height="24" rx="4" fill="#2563eb"/>
+<text x="248" y="150.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ไม่มีราคาเสนอซื้อเลย</text>
+<text x="248" y="165.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">Deribit</text>
+<text x="347.8" y="155.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#2563eb" font-family="Sarabun,sans-serif">9.8%</text>
+<rect x="260" y="184.0" width="84.7" height="24" rx="4" fill="#60a5fa"/>
+<text x="248" y="196.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ไม่มีราคาเสนอซื้อเลย</text>
+<text x="248" y="211.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">OKX</text>
+<text x="352.7" y="201.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#60a5fa" font-family="Sarabun,sans-serif">10.4%</text>
+<text x="248" y="26" text-anchor="end" font-size="13" font-weight="700" fill="#374151" font-family="Sarabun,sans-serif">สัดส่วนของสัญญาทั้งกระดาน (2026-08-29)</text>
+</svg>
+<div class="cap">ทั้งกระดาน ไม่ใช่แค่ใกล้ ATM · Deribit 1,910 สัญญา · OKX 1,546 สัญญา · mark price อยู่นอกช่วง bid-ask: Deribit 13 สัญญา · OKX 237 สัญญา</div>
+<!--/CHART:live-liquidity-->
+
+<div class="bx br"><div class="bt">เกือบครึ่งกระดานไม่ได้ "เทรดได้" จริง</div>
+<ul>
+<li><strong>46% ของสัญญา (Deribit)</strong> ไม่มีปริมาณซื้อขายเลยใน 24 ชั่วโมงที่ผ่านมา —
+backtest ที่สมมติว่าเทรดได้ทุกสัญญาที่มีราคาในไฟล์ กำลังนับสัญญาเหล่านี้ผิด</li>
+<li><strong>~10% ไม่มีราคาเสนอซื้อเลย</strong> — ถือแล้วขายไม่ได้ในราคาที่ระบุ ไม่ใช่แค่ "ขายได้ถูกกว่า"</li>
+<li><strong>mark price อยู่นอกช่วง bid-ask</strong> เกิดขึ้นทั้งสองตลาด (13 สัญญาที่ Deribit,
+237 ที่ OKX) — ถ้า backtest ใช้ mark price เป็นราคาอ้างอิง ราคานั้นอาจไม่มีอยู่จริงในกระดาน ณ ขณะนั้น</li>
+</ul></div>
+
+<div class="why"><div class="bt">🧭 ทำไมช่องว่างของ OKX (mark นอกช่วง) สูงกว่า Deribit มาก</div>
+<p>237 เทียบกับ 13 สัญญา เป็นความต่างระดับสิบเท่า — บทนี้<strong>ไม่สรุปสาเหตุ</strong>เพราะต้องรู้
+วิธีคำนวณ mark price ของแต่ละตลาดในรายละเอียดก่อนถึงจะฟันธงได้ (อาจเป็นความถี่อัปเดต mark
+ต่างกัน หรือนิยาม mark ต่างกัน) — สิ่งที่สรุปได้จากตัวเลขเพียวๆ คือ <strong>"เชื่อ mark price
+เท่ากันทุกตลาด" เป็นสมมติฐานที่อันตราย</strong> ต้องตรวจแยกตลาดเสมอ</p></div>
+
+<h2>งบ tracking error — ตั้งเพดานไว้ก่อนเจอ ไม่ใช่ตอนกำลังเจ็บ</h2>
+
+<p>วิธีที่ใช้ได้จริง: ก่อนรันจริง ให้ดูการกระจายของช่องว่างราคา (ask เทียบราคากลาง)
+บนสัญญาที่กลยุทธ์จะเทรด แล้วตั้งเพดานไว้ล่วงหน้าว่าจะทนได้แค่ไหน</p>
+
+<div class="tw"><table>
+<tr><th class="nw">ควอนไทล์</th><th class="nw">ช่องว่างจากราคากลาง</th><th>ความหมาย</th></tr>
+<tr><td class="nw">p25</td><td class="nw">1.4%</td><td>สัญญาที่สภาพคล่องดีที่สุดในกลุ่ม</td></tr>
+<tr><td class="nw">p50 (กลาง)</td><td class="nw">4.3%</td><td>สัญญาทั่วไปในกลุ่มใกล้ ATM</td></tr>
+<tr><td class="nw">p75</td><td class="nw">9.1%</td><td>เริ่มเจ็บถ้าเทรดบ่อย</td></tr>
+<tr><td class="nw">p90</td><td class="nw">15.4%</td><td>สัญญาที่ backtest ไม่ควรสมมติว่าเทรดได้ถูก</td></tr>
+<tr><td class="nw">p99</td><td class="nw">60.0%</td><td>สภาพคล่องหายเกือบหมด — เป็น outlier ที่ต้องกรองทิ้งจาก backtest ด้วย</td></tr>
+</table></div>
+
+<div class="dft"><div class="bt">⚠️ ค่าเริ่มต้นที่แนะนำ</div>
+<ol>
+<li><strong>ตั้งงบ tracking error ก่อนรันจริง</strong> เช่น "ถ้า live กับ backtest ต่างกันเกิน p75
+ของช่องว่างราคาปกติ (~9%) ติดต่อกัน 3 วัน ให้หยุดและตรวจสอบ"</li>
+<li><strong>ตัดสัญญาที่ p90 ขึ้นไปออกจาก backtest ตั้งแต่แรก</strong> — ถ้า backtest เทรดสัญญาที่สภาพคล่องแบบนี้ได้ ผลลัพธ์ไม่สะท้อนความจริง</li>
+<li><strong>กระทบยอดทีละ fill รายวัน</strong> ไม่ใช่ดูผลรวมรายเดือน — ปัญหาสภาพคล่องสะสมเงียบ ๆ ถ้าไม่เช็คถี่</li>
+</ol></div>
+
+<h2>Shadow trading — รันคู่ขนานโดยไม่ลงเงินจริง</h2>
+
+<p>ก่อนให้กลยุทธ์ใหม่ถือเงินจริง วิธีที่ตรวจทั้งสามชั้นพร้อมกันได้คือ <strong>shadow trading</strong>:
+รันระบบเหมือนเทรดจริงทุกอย่าง (อ่านราคาสด สร้างคำสั่ง) แต่ไม่ส่งคำสั่งจริง แล้วบันทึกว่า
+"ถ้าจะส่งจริง จะได้ราคาเท่าไร" เทียบกับที่ backtest ทำนาย</p>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ เมื่อไรคุ้ม</div>
+<ul>
+<li>กลยุทธ์ใหม่ที่ backtest ดูดีแต่ยังไม่เคยรันจริง</li>
+<li>เปลี่ยนตลาด/สัญญาที่เทรดจากที่ backtest ไว้</li>
+<li>สงสัยว่า live กับ backtest เริ่มห่างกัน อยากแยกว่าห่างเพราะราคาจริงหรือเพราะ edge หาย</li>
+</ul></div>
+<div class="con"><div class="bt">⚠️ ข้อจำกัด</div>
+<ul>
+<li>ไม่จำลอง market impact ของคำสั่งตัวเอง (เพราะไม่ได้ส่งจริง)</li>
+<li>ไม่จำลองความเสี่ยงด้านปฏิบัติการ (API ล่ม กระเป๋าเงินมีปัญหา) ที่เกิดเฉพาะตอนมีเงินจริงอยู่</li>
+<li>กินเวลา — ต้องรันนานพอจะเจอสภาพตลาดหลายแบบ ไม่ใช่แค่ไม่กี่วัน</li>
+</ul></div>
+</div>
+
+<h2>เช็กลิสต์รายวัน / รายสัปดาห์</h2>
+
+<div class="tw"><table>
+<tr><th class="nw">ความถี่</th><th>เช็กอะไร</th></tr>
+<tr><td class="nw"><strong>รายวัน</strong></td><td>กระทบยอดทีละ fill (ราคาที่ backtest สมมติ vs ราคาจริง) · เช็คว่ามีสัญญาไหนที่ order ไม่ถูก fill</td></tr>
+<tr><td class="nw"><strong>รายสัปดาห์</strong></td><td>เทียบ turnover จริงกับที่ backtest ทำนาย · เช็คสัดส่วนสัญญาที่เทรดจริง vs ที่ backtest สมมติว่าเทรดได้ · ตรวจว่า tracking error ยังอยู่ในงบที่ตั้งไว้</td></tr>
+</table></div>
+
+<div class="bx ba"><div class="bt">⚠️ ข้อจำกัดของบทนี้เอง</div>
+<p>ตัวเลขสภาพคล่องและต้นทุนทั้งหมดมาจาก<strong>วันเดียว</strong> (2026-08-29) เพื่อความชัดเจนของตัวอย่าง —
+สภาพคล่องเปลี่ยนไปตามช่วงตลาด วันที่ตลาดผันผวนสูงอาจมีสภาพคล่องแย่กว่านี้มาก
+หรือดีกว่านี้ในวันเงียบ ๆ ถ้าจะใช้จริง ให้รัน <code>tools/live_backtest_figures.py</code>
+ข้ามหลายวันแล้วดูการกระจาย ไม่ใช่เชื่อวันเดียว</p>
+<p>ตัวอย่างกระทบยอดหนึ่งไม้ในบทนี้เป็น<strong>ตัวอย่างประกอบที่สร้างจากราคาจริง</strong> ไม่ใช่ไม้ที่มีคนเทรดจริง —
+ใช้แสดงกลไก ไม่ใช่หลักฐานผลตอบแทนของกลยุทธ์ใด ๆ</p></div>
+
+<div class="bx bb"><div class="bt">📚 อ่านต่อ</div>
+<ul>
+<li><a href="statarb-alpha-decay.html"><strong>edge เสื่อม — แยกจาก drawdown ปกติยังไง</strong></a> — บทถัดไป: ระบบที่กระทบยอดแล้วยังตรงกับ backtest แต่ผลตอบแทนแย่ลงต่อเนื่อง จะรู้ได้ยังไงว่า edge หายไปแล้ว</li>
+<li>ในคลังนี้: <a href="nq-part5.html">คิดแบบ Quant Part 5</a> (ต้นทุนตามอายุคงเหลือ ต้นฉบับของตัวเลข spread) ·
+<a href="statarb-signal-blending.html">การรวมสัญญาณโดยไม่ overfit</a> (วิธีวัดว่าตัวกรองคุ้มจริงไหม ใช้หลักการเดียวกับ tracking-error budget)</li>
+<li>Kissell, R. (2013) <em>The Science of Algorithmic Trading and Portfolio Management</em> — กรอบวัดต้นทุนการทำธุรกรรมอย่างเป็นระบบ</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">📖 สรุปบทนี้เป็นสามบรรทัด</div>
+<ol>
+<li><strong>ราคากลางไม่มีอยู่จริงสำหรับคนที่ต้องข้ามสภาพคล่อง</strong> — backtest ที่ใช้ mid price จะสวยกว่าความจริงเสมอ ไม่ใช่บางครั้ง</li>
+<li><strong>เกือบครึ่งของสัญญาที่ "มีราคาในไฟล์" ไม่ได้เทรดได้จริง</strong> (46% ไม่มีปริมาณซื้อขายใน 24 ชม.) — ต้องกรองสภาพคล่องก่อนเชื่อผล backtest</li>
+<li><strong>ตั้งงบ tracking error ล่วงหน้า แล้วกระทบยอดทีละ fill รายวัน</strong> — อย่ารอให้ผลตอบแทนรวมปลายเดือนบอกว่ามีปัญหา เพราะจะรู้ช้าเกินไป</li>
+</ol></div>
+
+<p style="text-align:center;margin-top:26px"><a href="statarb-signal-blending.html">← การรวมสัญญาณโดยไม่ overfit</a> ·
+<a href="nq-index.html">หน้ารวม "คิดแบบ Quant"</a> ·
+<a href="nq-appendix-map.html">แผนที่เข้าคลัง</a></p>
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>

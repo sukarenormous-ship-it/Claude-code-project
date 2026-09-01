@@ -1,0 +1,226 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>การรวมสัญญาณโดยไม่ overfit — voting, weighting, gating</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body><div class="cover">
+<h1>การรวมสัญญาณโดยไม่ overfit</h1>
+<div class="sub">voting · weighting · gating — และวิธีวัดว่าตัวกรองที่เพิ่มเข้าไปคุ้มจริงไหม</div>
+<div class="desc">บทเสริมสาย Statistical Arbitrage · ต่อจากบท copula · ใช้เครื่องจักรเดียวกับ Part 8 ของ "คิดแบบ Quant"</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🔵 บทนี้เขียนต่อจาก <a href="statarb-copula-practice.html">Copula ในทางปฏิบัติ</a></strong> —
+ที่นั่นเราสร้างสัญญาณสองตัว (z-score จาก cointegration กับ Mispricing Index จาก copula)
+บทนี้เพิ่มอีกสองตัว (regime กับ cost) แล้วถามคำถามที่ยังไม่ได้ตอบ:
+<strong>รวมยังไงโดยไม่ทำลาย edge ของตัวเอง</strong> · ถ้ายังไม่เคยอ่าน
+<a href="nq-part8.html">Part 8 ของ "คิดแบบ Quant"</a> (ค่าปรับจากการค้นหา) แนะนำให้อ่านก่อน
+เพราะบทนี้ใช้เครื่องจักรเดียวกันเป๊ะ ๆ</p></div>
+
+<h2>ทำไมตัวกรองที่เพิ่มเข้าไป ถึงดูดีขึ้นเสมอใน in-sample</h2>
+
+<div class="scene"><div class="bt">🎬 ฉากของมิน</div>
+<p>มินมี z-score กับ Mispricing Index อยู่แล้ว วันหนึ่งเธอคิด <em>"ถ้าเทรดเฉพาะตอนตลาดนิ่ง
+กับตอนที่ค่าธรรมเนียมถูก น่าจะดีขึ้น"</em> เธอเพิ่มตัวกรองสองตัวนั้นเข้าไป แล้ว backtest
+ก็ดูดีขึ้นจริง ๆ — คำถามที่เธอยังไม่ได้ถามคือ <strong>ดีขึ้นเพราะตัวกรองมันดี
+หรือดีขึ้นเพราะเธอ<em>คัด</em>เอาแต่วันที่ผลออกมาดี</strong></p></div>
+
+<p>กลไกที่ทำให้ backtest ดูดีขึ้นแทบทุกครั้งที่เพิ่มตัวกรอง <strong>ไม่ได้เกี่ยวกับว่าตัวกรองนั้น
+มีเนื้อหาจริงหรือเปล่า</strong> — มันเป็นผลทางคณิตศาสตร์ล้วน ๆ: ตัวกรองคือการคัดวันออกจากกลุ่มตัวอย่าง
+ยิ่งคัดวันน้อยลง ค่าเฉลี่ยของกลุ่มที่เหลือก็ยิ่งเลื่อนได้ง่าย (ทั้งดีขึ้นและแย่ลง)
+แต่คนมักหยุดค้นหาตอนที่มันดีขึ้น แล้วรายงานแค่อันนั้น — นี่คือ <strong>ค่าปรับจากการค้นหา</strong>
+ที่ Part 8 วัดไว้ได้ 4.77 จุด บนปัญหาคนละแบบ (ค้นหาพารามิเตอร์ EMA)</p>
+
+<p>บทนี้ทำการทดลองแบบเดียวกัน แต่กับ<strong>การรวมตัวกรอง</strong>โดยเฉพาะ ใช้ตัวกรองสี่ตัวบน BTC/ETH</p>
+
+<div class="tw"><table>
+<tr><th class="nw">ตัวกรอง</th><th>นิยาม</th><th class="nw">จำนวนวันกระตุ้น</th></tr>
+<tr><td class="nw"><strong>z</strong></td><td>สเปรด cointegration ยืดออกมาก — |z| &gt; 1.5</td><td class="nw">4 จาก 50 วัน</td></tr>
+<tr><td class="nw"><strong>mi</strong></td><td>Mispricing Index จาก copula ยืดออกมาก — |MI| &gt; 0.35</td><td class="nw">17 จาก 50 วัน</td></tr>
+<tr><td class="nw"><strong>regime</strong></td><td>ตลาดนิ่ง — ผันผวน 5 วันย้อนหลัง ≤ มัธยฐาน (1.42%)</td><td class="nw">26 จาก 50 วัน</td></tr>
+<tr><td class="nw"><strong>cost</strong></td><td>เทรดถูก — ส่วนต่าง bid-ask ของ option ใกล้ ATM ≤ มัธยฐาน (9.5%)</td><td class="nw">24 จาก 50 วัน</td></tr>
+</table></div>
+
+<p>แล้วตั้งป้ายกำกับ (สิ่งที่อยากให้ตัวกรองช่วยทำนาย): <strong>สเปรดวันถัดไปลู่เข้าจริงไหม</strong>
+(|z วันถัดไป| &lt; |z วันนี้|) — วัดได้จาก 50 วันที่มีข้อมูลครบทุกตัวกรอง (7-05-2569 ถึง 29-08-2569)
+<strong>อัตราฐาน</strong> (สุ่มเดา ไม่ใช้ตัวกรองเลย) อยู่ที่ <strong>50.0%</strong></p>
+
+<h2>สามวิธีรวม — และดีกรีอิสระที่แต่ละแบบกิน</h2>
+
+<p>เมื่อมีตัวกรองหลายตัว มีสามแบบหลักที่ใช้รวมกัน แต่ละแบบกิน <strong>degrees of freedom</strong>
+(จำนวนพารามิเตอร์อิสระที่ข้อมูลต้องรองรับ) ไม่เท่ากัน</p>
+
+<div class="tw"><table>
+<tr><th class="nw">วิธี</th><th>ทำงานยังไง</th><th class="nw">พารามิเตอร์</th></tr>
+<tr><td class="nw"><strong>Voting</strong><br>นับเสียง</td><td>เข้าเมื่อมีตัวกรองอย่างน้อย k ตัวจาก n ตัวกระตุ้นพร้อมกัน</td><td class="nw">1 (แค่ k)</td></tr>
+<tr><td class="nw"><strong>Weighting</strong><br>ถ่วงน้ำหนัก</td><td>ให้คะแนน w<sub>i</sub> แต่ละตัวกรอง รวมคะแนน แล้วเข้าเมื่อรวมเกิน threshold</td><td class="nw">n น้ำหนัก + 1 threshold</td></tr>
+<tr><td class="nw"><strong>Gating</strong><br>เปิดประตู</td><td>ตัวหนึ่งเป็นเงื่อนไขจำเป็นก่อน อีกตัวถึงมีสิทธิ์ทำงาน (จริง ๆ คือ AND ที่มีลำดับ)</td><td class="nw">1 ถ้ากำหนดลำดับด้วยเหตุผล — เท่ากับจำนวนลำดับที่ลอง ถ้าค้นหาลำดับด้วย</td></tr>
+</table></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ ข้อดี-ข้อเสียของแต่ละแบบ</div>
+<ul>
+<li><strong>Voting</strong> — ตีความง่าย ทนต่อ noise ของตัวกรองตัวใดตัวหนึ่ง แต่ให้น้ำหนักเท่ากันหมด แม้บางตัวจะไม่มีเนื้อหาจริงเลย</li>
+<li><strong>Gating</strong> (กำหนดลำดับล่วงหน้าด้วยเหตุผล) — กิน DoF น้อยสุด เพราะไม่ได้ค้นหาอะไรใหม่ แค่ใส่ AND ตามตรรกะที่มีอยู่แล้ว</li>
+</ul></div>
+<div class="con"><div class="bt">⚠️ จุดที่พลาดกันบ่อย</div>
+<ul>
+<li><strong>Weighting</strong> กิน DoF มากสุด — 4 ตัวกรองในบทนี้ = อย่างน้อย 4 พารามิเตอร์ ซึ่งเกินงบที่กฎอนุรักษ์นิยมแนะนำไว้พอดี (ดูตารางถัดไป)</li>
+<li><strong>Gating ที่ค้นหาลำดับ</strong> ("ลองทุกลำดับ เอาที่ดีที่สุด") มี DoF เท่ากับ Voting/Weighting แบบเต็มรูป — การตั้งชื่อว่า "gating" ไม่ได้ทำให้มันฟรีจากการค้นหา</li>
+</ul></div>
+</div>
+
+<h2>งบ degrees of freedom</h2>
+
+<p>กฎนิ้วโป้งที่ใช้กันทั่วไป (ไม่ใช่กฎทางสถิติตายตัว): ต้องมีตัวอย่างประมาณ 10–20 จุด
+ต่อพารามิเตอร์อิสระหนึ่งตัว ถึงจะประมาณค่าได้นิ่งพอจะเชื่อถือ</p>
+
+<div class="tw"><table>
+<tr><th class="nw">กฎนิ้วโป้ง</th><th class="nw">จำนวนตัวอย่าง (n)</th><th class="nw">พารามิเตอร์ที่รองรับได้</th></tr>
+<tr><td class="nw">10 ตัวอย่าง/พารามิเตอร์</td><td class="nw">50</td><td class="nw"><strong>5</strong></td></tr>
+<tr><td class="nw">20 ตัวอย่าง/พารามิเตอร์ (อนุรักษ์นิยม)</td><td class="nw">50</td><td class="nw"><strong>2</strong></td></tr>
+</table></div>
+
+<div class="bx ba"><div class="bt">⚠️ ตัวเลขนี้เป็นเพดานเชิงทฤษฎี ไม่ใช่ใบรับประกัน</div>
+<p>n = 50 วันในบทนี้ <strong>เล็กมาก</strong> ตารางข้างบนบอกว่า "อย่าเกินกี่พารามิเตอร์"
+แต่ไม่ได้บอกว่าถ้าอยู่ในงบแล้วจะปลอดภัยจาก overfitting — วิธี weighting ที่ใช้ 4 น้ำหนัก
+ในบทนี้ ก็ยัง<strong>เกินงบอนุรักษ์นิยม (2 พารามิเตอร์)</strong> ไปแล้วสองเท่า</p></div>
+
+<h2>Meta-labelling — วิธีรวมที่กิน DoF น้อยที่สุด</h2>
+
+<p>López de Prado (Advances in Financial Machine Learning, 2018) เสนอวิธีที่แยกคำถามสองข้อออกจากกัน
+แทนที่จะให้ตัวกรองทุกตัวช่วยกัน "ตัดสินใจ" ทั้งทิศทางและขนาดพร้อมกัน (ซึ่งกิน DoF เยอะ)</p>
+
+<div class="qv"><div class="bt">🧠 หลักการสั้น ๆ</div>
+<p><strong>โมเดลหลัก</strong> (ในที่นี้คือ z) ยังคงตัดสิน "จะเข้าไหมและเข้าทางไหน" เหมือนเดิม ไม่แตะ ·
+<strong>โมเดลรอง</strong> (meta-model) เรียนรู้แค่คำถามเดียว: <em>"ถ้า z บอกให้เข้า จะเข้าจริงไหม"</em>
+โดยดูจากตัวกรองอื่น (mi, regime, cost) — เป็นปัญหา binary classification ล้วน ๆ ไม่ใช่การเทรนสัญญาณใหม่ทั้งหมด</p></div>
+
+<p>ข้อดีคือ meta-model ไม่แตะทิศทางของกลยุทธ์เดิมเลย ความเสี่ยงที่จะพังคือแค่ "เข้าน้อยเกินไป"
+ไม่ใช่ "เข้าผิดทาง" — และในทางปฏิบัติ สิ่งที่เราเพิ่งทำในหัวข้อก่อนหน้า (ลองรวม 114 วิธี)
+ก็คือการทำ meta-labelling แบบหยาบ ๆ โดยใช้กฎ AND/OR/vote/weight แทนโมเดลจริง</p>
+
+<div class="why"><div class="bt">🧭 ทำไมหัวข้อนี้สั้น</div>
+<p>ในคลังหนังสือนี้ meta-labeling ถูกกล่าวถึงแค่ <strong>1 ครั้ง</strong> (<a href="theory-part5.html">theory-part5</a>
+ในฐานะหัวข้อ contested) และ <strong>triple-barrier labelling</strong> (เทคนิคคู่กันที่ López de Prado
+ใช้สร้างป้ายกำกับ) ยังไม่มีเลย — เขียนละเอียดกว่านี้ต้องมีบทของตัวเอง บทนี้ขอแค่ชี้ว่ามันมีอยู่
+และทำไมมันประหยัด DoF กว่าวิธีรวมแบบตรง ๆ</p></div>
+
+<h2>วิธีวัดว่าตัวกรองที่เพิ่มให้มูลค่าจริง</h2>
+
+<p>กลับมาที่ข้อมูลจริง — ลองรวมตัวกรองทั้งสี่ตัว<strong>ทุกวิธีที่เป็นไปได้</strong>: AND ทุกเซตย่อย (15 แบบ)
+OR ทุกเซตย่อย (15 แบบ) vote-k (4 แบบ) และถ่วงน้ำหนักแบบกริด 3 ระดับต่อตัวกรอง (80 แบบ)
+รวม <strong>114 วิธี</strong> — แล้ววัดว่าวิธีที่ดีที่สุด "ยกระดับ" อัตราสำเร็จจากอัตราฐาน (50%) ได้กี่จุด</p>
+
+<!--CHART:blending-search-->
+<svg class="fig" viewBox="0 0 780 258" role="img" aria-label="กราฟแท่งเทียบสี่ค่า: ตัวกรองเดี่ยวที่ไม่จำกัดวันกระตุ้นให้ค่ายกสูงถึง 50 จุดแต่เป็นกับดักตัวอย่างเล็ก ตัวกรองเดี่ยวที่กระตุ้นพอและชุดรวมที่ดีที่สุดจาก 114 วิธีให้ค่ายกเท่ากันที่ 8.3 จุด และการค้นหาบนป้ายกำกับสุ่มก็ให้ค่ายกกลาง 4.2 จุดโดยไม่มีความสัมพันธ์จริงเลย">
+<line x1="260" y1="36" x2="260" y2="222" stroke="#cbd5e1" stroke-width="1.5"/>
+<rect x="260" y="46.0" width="425.9" height="24" rx="4" fill="#dc2626"/>
+<text x="248" y="58.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ตัวกรองเดี่ยว ไม่จำกัดวันกระตุ้น</text>
+<text x="248" y="73.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">z · กระตุ้น 4 วัน (กับดัก)</text>
+<text x="693.9" y="63.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#dc2626" font-family="Sarabun,sans-serif">+50.0 จุด</text>
+<rect x="260" y="92.0" width="70.7" height="24" rx="4" fill="#2563eb"/>
+<text x="248" y="104.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ตัวกรองเดี่ยว กระตุ้น ≥5 วัน</text>
+<text x="248" y="119.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">cost · กระตุ้น 24 วัน</text>
+<text x="338.7" y="109.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#2563eb" font-family="Sarabun,sans-serif">+8.3 จุด</text>
+<rect x="260" y="138.0" width="70.7" height="24" rx="4" fill="#16a34a"/>
+<text x="248" y="150.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ชุดรวมที่ดีที่สุดจาก 114 วิธี</text>
+<text x="248" y="165.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">= AND(cost) เท่านั้น</text>
+<text x="338.7" y="155.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#16a34a" font-family="Sarabun,sans-serif">+8.3 จุด</text>
+<rect x="260" y="184.0" width="35.8" height="24" rx="4" fill="#d97706"/>
+<text x="248" y="196.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">ค่ายกจากการค้นหาบนป้ายกำกับสุ่ม</text>
+<text x="248" y="211.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">ค่ากลางจาก 300 รอบ</text>
+<text x="303.8" y="201.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#d97706" font-family="Sarabun,sans-serif">+4.2 จุด</text>
+<text x="248" y="26" text-anchor="end" font-size="13" font-weight="700" fill="#374151" font-family="Sarabun,sans-serif">ค่ายกจากอัตราฐาน (จุดเปอร์เซ็นต์)</text>
+</svg>
+<div class="cap">ป้ายกำกับ: สเปรดวันถัดไปลู่เข้าจริงไหม · อัตราฐาน 50.0% · ค้นหาทั้งหมด 114 วิธี เหลือ 99 วิธีที่มีวันกระตุ้นพอจะอ่านค่าได้</div>
+<!--/CHART:blending-search-->
+
+<div class="bx br"><div class="bt">กับดักแรก: อย่าเชื่อตัวกรองที่กระตุ้นน้อยครั้ง</div>
+<p>ถ้าไม่บังคับขั้นต่ำวันกระตุ้น ตัวกรอง <strong>z เดี่ยว ๆ</strong> ดูเทพที่สุด — กระตุ้นแค่ 4 วัน
+แต่ <strong>ทายถูกทั้ง 4 วัน (100%)</strong> ให้ค่ายก +50 จุด ตัวเลขนี้สวยเกินจริง เพราะตั้งอยู่บนตัวอย่าง
+แค่ 4 จุด พลิกผลแค่วันเดียวก็ร่วงจาก 100% เหลือ 75% ทันที — <strong>นี่คือกับดักเดียวกับที่บท copula
+เจอตอนนับจุดในหาง</strong> (3 จุดที่ควอนไทล์ 5%)</p></div>
+
+<p>บังคับขั้นต่ำ 5 วันกระตุ้น (เท่ากับที่ใช้กรองชุดรวมด้วย) เพื่อเทียบอย่างเป็นธรรม —
+ตัวกรองเดี่ยวที่ดีที่สุดกลายเป็น <strong>cost</strong> (24 วัน อัตราสำเร็จ 58.3% ยก +8.3 จุด)</p>
+
+<div class="bx bg"><div class="bt">ผลลัพธ์หลักของบทนี้: ค้นหา 114 วิธี ได้เท่ากับไม่ค้นหาเลย</div>
+<p>ชุดรวมที่ดีที่สุดจากการลองครบทุกวิธี (AND/OR ทุกเซตย่อย + vote + weight) คือ
+<strong>AND(cost) เพียงตัวเดียว</strong> — เท่ากับตัวกรองเดี่ยวที่ดีที่สุดพอดี ทั้ง z, mi และ regime
+ไม่ได้เพิ่มมูลค่าอะไรเลยในข้อมูลชุดนี้ ไม่ว่าจะรวมด้วยวิธีไหน</p></div>
+
+<p>แล้วค่ายก +8.3 จุดนี้ "มีจริง" แค่ไหน — ทดสอบด้วยวิธีเดียวกับ Part 8: สลับป้ายกำกับแบบสุ่ม
+(ตัดความสัมพันธ์จริงทิ้งหมด) แล้วรันการค้นหาเดิมซ้ำ 300 รอบ</p>
+
+<div class="tw"><table>
+<tr><th>วัดอะไร</th><th class="nw">ผล</th></tr>
+<tr><td>ค่ายกที่ดีที่สุดจากข้อมูลจริง (114 วิธี)</td><td class="nw"><strong>+8.3 จุด</strong></td></tr>
+<tr><td>ค่ายกที่ดีที่สุดกลาง จากข้อมูลสุ่ม 300 รอบ</td><td class="nw">+4.2 จุด</td></tr>
+<tr><td>ค่ายกที่ดีที่สุด ช่วง 90% จากข้อมูลสุ่ม</td><td class="nw">+1.3 ถึง +20.6 จุด</td></tr>
+<tr><td>ผลจริงอยู่ที่เปอร์เซ็นไทล์เท่าไรของการสุ่ม</td><td class="nw"><strong>62</strong></td></tr>
+</table></div>
+
+<div class="bx br"><div class="bt">ผลจริงแยกไม่ออกจากสุ่ม</div>
+<p>ค่ายก +8.3 จุดที่ได้จากข้อมูลจริง อยู่แค่เปอร์เซ็นไทล์ 62 ของสิ่งที่การค้นหาแบบเดียวกัน
+สร้างขึ้นได้เอง<strong>แม้ไม่มีความสัมพันธ์จริงเลย</strong> — พูดตรง ๆ คือ ด้วยข้อมูล 50 วันนี้
+เรา<strong>แยกไม่ออก</strong>ว่า cost filter มีเนื้อหาจริง หรือแค่เป็นวิธีสุ่มหนึ่งจาก 114 วิธีที่บังเอิญออกมาดี</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่คนใช้จริงมองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> เพิ่มตัวกรองแล้ว backtest ดีขึ้น = ตัวกรองใช้ได้<br>
+<strong>คนใช้จริงเห็น:</strong> สร้าง baseline สุ่มด้วยวิธีค้นหาเดียวกัน แล้วถามว่าผลจริงอยู่เปอร์เซ็นไทล์ไหน —
+ถ้าอยู่แถวกลาง (40–70) เหมือนบทนี้ แปลว่ายังพิสูจน์อะไรไม่ได้ ต้องมีข้อมูลมากกว่านี้หรือเหตุผลเชิงกลไกมาช่วย</p></div>
+
+<div class="dft"><div class="bt">⚠️ ค่าเริ่มต้นที่แนะนำ ถ้าจะทำแบบนี้กับกลยุทธ์ตัวเอง</div>
+<ol>
+<li>กำหนด<strong>ขั้นต่ำวันกระตุ้น</strong>ไว้ก่อนเห็นผล (บทนี้ใช้ ≥5) — ห้ามปรับตามหลังเห็นตัวเลข</li>
+<li>รัน baseline สุ่มด้วย<strong>วิธีค้นหาเดียวกันเป๊ะ</strong> (จำนวนวิธี จำนวนรอบ) ไม่ใช่แค่เทียบกับ 0</li>
+<li>ถ้าผลจริงอยู่ต่ำกว่าเปอร์เซ็นไทล์ 90 ของ baseline สุ่ม — ยังถือว่า<strong>พิสูจน์ไม่ได้</strong></li>
+<li>ถ้าจะใช้ weighting ให้เช็ค DoF budget ก่อนเสมอ (ตารางด้านบน)</li>
+</ol></div>
+
+<div class="bx ba"><div class="bt">⚠️ ข้อจำกัดของบทนี้เอง</div>
+<p>ตัวเลขทั้งหมดมาจาก <strong>50 วันที่ใช้วิเคราะห์ได้</strong> (จาก 56 วันผลตอบแทน BTC/ETH) — น้อยมาก
+สำหรับงานเลือกโมเดล และ p-value/เปอร์เซ็นไทล์แบบ 300 รอบก็ยังมีความคลาดเคลื่อนของตัวมันเอง</p>
+<p>สิ่งที่บทนี้แสดงได้คือ <strong>วิธีตั้งคำถาม</strong> — จะรู้ได้ยังไงว่าตัวกรองที่เพิ่มเข้าไปคุ้มกับ DoF ที่มันกิน ·
+สิ่งที่บทนี้ <em>แสดงไม่ได้</em> คือ mi/regime/cost มีเนื้อหาจริงหรือไม่ในตลาดนี้ระยะยาว
+เพราะข้อมูลไม่พอจะตอบ ถ้าจะใช้จริง ให้รัน <code>tools/blending_figures.py</code> ใหม่กับข้อมูลที่ยาวกว่านี้มาก</p></div>
+
+<div class="bx bb"><div class="bt">📚 อ่านต่อ</div>
+<ul>
+<li><a href="statarb-live-vs-backtest.html"><strong>live กับ backtest ไม่ตรงกัน</strong></a> — บทถัดไป: สัญญาณที่รวมมาดีแล้ว จะรู้ได้ยังไงว่ารันจริงแล้วยังทำงานตามที่ backtest บอก</li>
+<li>López de Prado, M. (2018) <em>Advances in Financial Machine Learning</em> — ต้นฉบับของ meta-labelling และ triple-barrier method</li>
+<li>Bailey, D.H. &amp; López de Prado, M. (2014) "The Deflated Sharpe Ratio" — วิธีปรับ Sharpe ตามจำนวนการทดลอง แนวคิดเดียวกับค่ายกในบทนี้</li>
+<li>ในคลังนี้: <a href="statarb-copula-practice.html">Copula ในทางปฏิบัติ</a> (ที่มาของสัญญาณ z และ MI) ·
+<a href="nq-part8.html">คิดแบบ Quant Part 8</a> (เครื่องจักรวัดค่าปรับจากการค้นหาต้นแบบ) ·
+<a href="theory-part5.html">theory-part5</a> (บริบท multiple-testing และ DSR/PBO)</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">📖 สรุปบทนี้เป็นสามบรรทัด</div>
+<ol>
+<li><strong>ยิ่งเพิ่มตัวกรอง in-sample ยิ่งดูดีขึ้นเสมอ</strong> เป็นผลทางคณิตศาสตร์จากการคัดตัวอย่าง ไม่ใช่หลักฐานว่าตัวกรองมีเนื้อหาจริง</li>
+<li><strong>ค้นหา 114 วิธีรวม ได้ผลเท่ากับตัวกรองเดี่ยวที่ดีที่สุด</strong> — การรวมไม่ได้ให้อะไรเพิ่มในข้อมูลชุดนี้</li>
+<li><strong>ผลลัพธ์ที่ดีที่สุด (+8.3 จุด) แยกไม่ออกจากสิ่งที่การค้นหาแบบเดียวกันสร้างได้เองบนข้อมูลสุ่ม</strong> (เปอร์เซ็นไทล์ 62) — วิธีวัดนี้เอาไปใช้กับกลยุทธ์ตัวเองได้ทันที</li>
+</ol></div>
+
+<p style="text-align:center;margin-top:26px"><a href="statarb-copula-practice.html">← Copula ในทางปฏิบัติ</a> ·
+<a href="nq-index.html">หน้ารวม "คิดแบบ Quant"</a> ·
+<a href="nq-appendix-map.html">แผนที่เข้าคลัง</a></p>
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
