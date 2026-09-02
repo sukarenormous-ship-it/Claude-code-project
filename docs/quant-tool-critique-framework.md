@@ -444,3 +444,23 @@ Mapping to the book ("คิดแบบ Quant"): WHY/WHAT/HOW/LOSE/ASSUME/NULL 
 (Gate 1); Gate 2 = Part 1 & 4 and the autocorrelation card; Gate 3 = Part 2 & 8,
 `statarb-signal-blending`, `theory-part5`; Gate 4 = Part 5 & 7,
 `statarb-live-vs-backtest`, `nq-tool-breakeven`.
+
+### Where each section already lives in the library (Write Once — reference, don't duplicate)
+
+| Framework section | Canonical home in `docs/` |
+|---|---|
+| §1 pipeline & four distinctions | `nq-index` (8 stations), `nq-part3` (measurement), `nq-part5` (cost), `nq-part7` (position) |
+| §2 WHY/HOW/LOSE/ASSUME + NULL | `nq-appendix-indicators` (9 cards, every number reproducible from `indicator-figures.json`) |
+| §2 WHAT (information set, sensor) | `nq-part3` station ③, `statarb-data-quality` |
+| §2 PREDICT (target, horizon, competing hypotheses, mechanism) | `nq-part2`, `theory-part3` (Grossman–Stiglitz), `statarb-signal-blending` (incremental information) |
+| §2 SURVIVE (OOS, walk-forward, multiple testing) | `nq-part8`, `theory-part5` (deflated Sharpe), `math-part11` (purged CV, block bootstrap), `statarb-alpha-decay` |
+| §2 PAY | `nq-part5`, `nq-part7`, `pillars-part3` (impact, Almgren–Chriss), `statarb-live-vs-backtest`, `nq-tool-breakeven` |
+| §3 effective information / stationarity | `nq-part1` (sample size), `math-part9` ch.8, autocorrelation card in appendix E (SE = 1/√n, 400 days) |
+| §4 simple & multiple regression | `math-part8` ch.6 (SE, p-value, robust, VIF, overfitting), `math-part4` (β, PCA worked) |
+| §4 spurious regression & cointegration | `math-part9` ch.8–9 (Engle–Granger, OU half-life), appendix E card 5 (71.7 % spurious |t|>2; Nelson–Kang 1984) |
+| §5 factor structure / residualization | `math-part4` (PCA), `arb-part5` (pairs, factor stat-arb), `statarb-copula-practice` (tail dependence) |
+| §5 execution & cost model | `pillars-part3`, `arb-part7`, `statarb-live-vs-backtest` |
+| §5 monitoring after go-live | `statarb-alpha-decay`, `statarb-live-vs-backtest` |
+| §6 template A–D | appendix E card anatomy (📜 🔧 🔍 👁 🗑 ✂️ ❌) |
+| §6 template E–H | outside the "คิดแบบ Quant" book by design — see the rows above |
+| §7 gates, §8 rules, §9 review card | Thai rendering: `quant-tool-critique-framework.html` |
