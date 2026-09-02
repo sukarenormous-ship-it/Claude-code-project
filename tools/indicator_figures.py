@@ -157,6 +157,25 @@ def r(x, nd=2):
     return None if x is None else round(x, nd)
 
 
+def _rsi_counterexample(target_rsi):
+    """สร้างทาง 14 วันที่ 'ขึ้นทีละนิดสม่ำเสมอ' แล้วให้ RSI (ค่าเฉลี่ยธรรมดา 14 วัน) เท่ากับค่าจริงของวันโฟกัส
+    — เพื่อแสดงว่า output เดียวกันเกิดจากสภาพตลาดต่างกันได้ (same output ≠ same state)"""
+    share = target_rsi / 100                 # avg_gain / (avg_gain + avg_loss)
+    up_days, down_days = 11, 3
+    up_size = 300.0                          # ดอลลาร์ต่อวัน
+    # 11 × up = share × (11 × up + 3 × down)  →  down = 11 × up × (1 − share) / (3 × share)
+    down_size = up_days * up_size * (1 - share) / (down_days * share)
+    ag, al = up_days * up_size / 14, down_days * down_size / 14
+    return {
+        "คำอธิบาย": "สมมติ 14 วัน: ขึ้นวันละ 300 ดอลลาร์ 11 วัน ลงวันละ down_size 3 วัน → RSI (ค่าเฉลี่ยธรรมดา) เท่ากับวันโฟกัสพอดี ทั้งที่ไม่มีวันไหนขยับเกิน 400",
+        "วันขึ้น": up_days, "ขนาดวันขึ้น": up_size,
+        "วันลง": down_days, "ขนาดวันลง": r(down_size),
+        "ราคาเปลี่ยนรวม 14 วัน": r(up_days * up_size - down_days * down_size),
+        "RSI": r(100 * ag / (ag + al), 1),
+        "การเคลื่อนไหวใหญ่สุดในทางนี้": r(max(up_size, down_size)),
+    }
+
+
 # ── สร้างตัวเลข ────────────────────────────────────────────────────────────────
 def build():
     with open(SRC) as fh:
@@ -341,11 +360,14 @@ def build():
             "ราคาวันนี้": p[f], "EMA12 เมื่อวาน": r(e12[f - 1]),
         },
         "σ20 ของ Bollinger วันสุดท้ายมาจากเทรนด์แค่ไหน": {
-            "คำอธิบาย": "SD ของระดับราคา 20 จุดบนเส้นตรงชัน m = |m| × √((n²−1)/12) — ส่วนที่เหลือคือการแกว่งรอบเส้น",
+            "คำอธิบาย": "SD ของระดับราคา 20 จุดบนเส้นตรงชัน m = |m| × √((n²−1)/12) · SD บวกกันแบบกำลังสอง: ส่วนที่เหลือ = √(SD20² − ส่วนเทรนด์²) = SD ของ residual",
             "SD20 จริง": r(B[len(p) - 1]["sd"]),
             "ส่วนที่มาจากความชันเส้นตรง": r(abs(ols_time(p[-LR_N:])["slope"]) * math.sqrt((LR_N ** 2 - 1) / 12)),
-            "การแกว่งรายวันเป็นดอลลาร์ (RV20 × ราคา)": r(statistics.pstdev([p[i] / p[i - 1] - 1 for i in range(len(p) - RV_N, len(p))]) * p[-1]),
+            "ส่วนที่เหลือ (SD ของ residual)": r(math.sqrt(B[len(p) - 1]["sd"] ** 2 - (abs(ols_time(p[-LR_N:])["slope"]) * math.sqrt((LR_N ** 2 - 1) / 12)) ** 2)),
+            "สัดส่วนความแปรปรวนที่มาจากเทรนด์เปอร์เซ็นต์": r(100 * (abs(ols_time(p[-LR_N:])["slope"]) * math.sqrt((LR_N ** 2 - 1) / 12)) ** 2 / B[len(p) - 1]["sd"] ** 2, 0),
+            "SD20 หารส่วนที่เหลือ เท่า": r(B[len(p) - 1]["sd"] / math.sqrt(B[len(p) - 1]["sd"] ** 2 - (abs(ols_time(p[-LR_N:])["slope"]) * math.sqrt((LR_N ** 2 - 1) / 12)) ** 2), 1),
         },
+        "RSI เท่ากันจากสภาพต่างกัน (ตัวอย่างสังเคราะห์)": _rsi_counterexample(rf["rsi"]),
         "ความช้าบนเทรนด์เส้นตรง (วัน)": {
             "คำอธิบาย": "ถ้าราคาเป็นเส้นตรงสมบูรณ์ ค่าเฉลี่ยจะตามหลังเส้นนั้นกี่วัน — (n−1)/2 สำหรับ SMA และ EMA(k=2/(n+1)); ปลาย regression = 0",
             "SMA20 / EMA20": (LR_N - 1) / 2, "EMA12": (MACD_FAST - 1) / 2, "EMA26": (MACD_SLOW - 1) / 2, "LSMA20": 0,
@@ -463,6 +485,12 @@ def build():
 
     jump_i = f - 1                       # index ของผลตอบแทนวันโฟกัสใน rets
     rets_wo = rets[:jump_i] + rets[jump_i + 1:]
+    rets_wo_next = rets[:jump_i + 1] + rets[jump_i + 2:]          # ตัดวันถัดไป (21 ส.ค.) แทน
+    m_r = statistics.mean(rets)
+    den_r = sum((v - m_r) ** 2 for v in rets)
+    terms = [((rets[i] - m_r) * (rets[i - 1] - m_r)) / den_r for i in range(1, len(rets))]
+    pair_focus = terms[jump_i]            # terms[j] = คู่ (rets[j], rets[j+1]) → คู่ (20 ส.ค., 21 ส.ค.)
+    pair_next = terms[jump_i + 1]         # คู่ (21 ส.ค., 22 ส.ค.)
     acf_block = {
         "คำอธิบาย": "lag-1 autocorrelation ของผลตอบแทนรายวัน และ variance ratio VR(5) — ตัววัดว่าตลาด trend (ρ>0, VR>1) หรือ mean-revert (ρ<0, VR<1) ที่มี null distribution ให้เทียบ",
         "จำนวนผลตอบแทน": len(rets),
@@ -472,6 +500,10 @@ def build():
         "SE โดยประมาณ 1/√n": r(1 / math.sqrt(len(rets)), 3),
         "rho1 ถ้าตัดวันโฟกัสออกวันเดียว": r(acf1(rets_wo), 3),
         "VR5 ถ้าตัดวันโฟกัสออกวันเดียว": r(vratio(rets_wo, 5), 3),
+        "rho1 ถ้าตัดวันถัดไป (21 ส.ค.) ออกแทน": r(acf1(rets_wo_next), 3),
+        "ผลตอบแทน 21 ส.ค. เปอร์เซ็นต์": r(100 * rets[jump_i + 1], 2),
+        "พจน์คู่ 20-21 ส.ค. ใน rho1": r(pair_focus, 3),
+        "พจน์คู่ 21-22 ส.ค. ใน rho1": r(pair_next, 3),
         "จำนวนวันที่ต้องมีเพื่อ SE 0.05": int(round(1 / 0.05 ** 2)),
         "จำนวนปีสำหรับจำนวนวันนั้น": r(1 / 0.05 ** 2 / 365, 1),
     }
@@ -483,7 +515,7 @@ def build():
     rsi_hits = rsi_tot = bb_hits = bb_tot = 0
     lr_t_hits = lr_tot = lr_out = 0
     r2_price, r2_ema = [], []
-    dc_hits = dc_tot = fib_hit = fib_tot = stop_hit = stop_tot = 0
+    dc_hits = dc_tot = fib_hit = fib_tot = stop_hit = stop_tot = stop2sd_hit = stop2sd_tot = 0
     rho_sim, vr_sim = [], []
     for _ in range(PATHS):
         q = [p[0]]
@@ -502,9 +534,19 @@ def build():
                 rr = (q[hj] - min(q[hj + 1:])) / (q[hj] - q[li])
                 fib_tot += 1
                 fib_hit += any(abs(rr - lv) <= FIB_TOL for lv in FIB_LEVELS)
+        # stop = 2 × ATR(14) แบบ close-only ณ วันเข้า (ตรงกับที่บทเขียน) — ไม่ใช่ 2σ ของผลตอบแทน
+        q_tr = [abs(q[i] - q[i - 1]) for i in range(1, n_days)]
+        q_atr = [None] * n_days
+        s_q = sum(q_tr[:ADX_N]) / ADX_N
+        q_atr[ADX_N] = s_q
+        for i in range(ADX_N + 1, n_days):
+            s_q = (s_q * (ADX_N - 1) + q_tr[i - 1]) / ADX_N
+            q_atr[i] = s_q
         for st in range(DC_N, n_days - 10):
             stop_tot += 1
-            stop_hit += any(q[k] <= q[st] * (1 - stop_mult * sd) for k in range(st + 1, st + 11))
+            stop_hit += any(q[k] <= q[st] - stop_mult * q_atr[st] for k in range(st + 1, st + 11))
+            stop2sd_tot += 1
+            stop2sd_hit += any(q[k] <= q[st] * (1 - stop_mult * sd) for k in range(st + 1, st + 11))
         for x in rsi_wilder(q):
             if x is not None:
                 rsi_tot += 1
@@ -522,6 +564,14 @@ def build():
         for i in range(MACD_FAST - 1 + LR_EMA_N - 1, n_days):
             r2_price.append(ols_time(q[i - LR_EMA_N + 1:i + 1])["r2"])
             r2_ema.append(ols_time(qe[i - LR_EMA_N + 1:i + 1])["r2"])
+    # ทฤษฎี iid ปกติสำหรับ regression channel 20 จุด (รันหลังลูปหลัก ด้วย RNG แยก เพื่อไม่เปลี่ยนฐานเดิม)
+    rng_iid = random.Random(SEED + 1)
+    iid_out = iid_t = 0
+    for _ in range(PATHS * 5):
+        z = [rng_iid.gauss(0, 1) for _ in range(LR_N)]
+        o = ols_time(z)
+        iid_out += abs(o["resid"]) > 2 * o["sd"]
+        iid_t += abs(o["t"]) > 2
     base_block = {
         "คำอธิบาย": f"จำลองราคาสุ่มล้วน (ไม่มี drift, ความผันผวนรายวันเท่า BTC ชุดนี้) {PATHS} เส้น × {n_days} วัน เมล็ดสุ่ม {SEED}",
         "ความผันผวนรายวันที่ใช้เปอร์เซ็นต์": r(daily_sd_pct, 2),
@@ -533,7 +583,25 @@ def build():
         "R2 มัธยฐาน regression 10 วัน": {"บนราคา": r(statistics.median(r2_price), 3), "บน EMA12": r(statistics.median(r2_ema), 3)},
         "วันที่เป็นจุดสูงสุด20วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * dc_hits / dc_tot, 1),
         "การย่อตกใกล้ระดับ Fibonacci ใดระดับหนึ่งภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * fib_hit / fib_tot, 1),
-        "stop 2σ ถูกชนภายใน 10 วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * stop_hit / stop_tot, 1),
+        "stop 2×ATR ถูกชนภายใน 10 วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * stop_hit / stop_tot, 1),
+        "stop 2σ ของผลตอบแทน ถูกชนภายใน 10 วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * stop2sd_hit / stop2sd_tot, 1),
+        "ATR เทียบ σ ภายใต้ความสุ่มปกติ": r(math.sqrt(2 / math.pi), 3),
+        "regression channel 20 จุด ทฤษฎี iid ปกติ": {
+            "คำอธิบาย": "จุด iid ปกติ 20 จุด (ไม่ใช่ทางเดิน) — ปลายหน้าต่างมี leverage h = 1/20 + 9.5²/665 residual จึงแคบกว่า s",
+            "leverage ปลายหน้าต่าง": r(1 / LR_N + ((LR_N - 1) / 2) ** 2 / sum((t - (LR_N + 1) / 2) ** 2 for t in range(1, LR_N + 1)), 3),
+            "ราคานอกช่อง ±2SD เปอร์เซ็นต์": r(100 * iid_out / (PATHS * 5), 1),
+            "|t| เกิน 2 เปอร์เซ็นต์": r(100 * iid_t / (PATHS * 5), 1),
+        },
+        "Bollinger บนทางเดินสุ่ม ทฤษฎี": {
+            "คำอธิบาย": "Var(P_t − SMA_n) = σ²(n−1)(2n−1)/(6n) แต่ E[σ̂²_n] = σ²(n²−1)/(6n) — ค่ากลางที่ตามไม่ทันทำให้ 2σ̂ เป็น σ จริงน้อยกว่า 2",
+            "Var(P−SMA)/σ²": r((BB_N - 1) * (2 * BB_N - 1) / (6 * BB_N), 2),
+            "E[σ̂²]/σ²": r((BB_N ** 2 - 1) / (6 * BB_N), 2),
+            "2σ̂ เท่ากับกี่ σ จริง": r(2 * math.sqrt((BB_N ** 2 - 1) / (6 * BB_N)) / math.sqrt((BB_N - 1) * (2 * BB_N - 1) / (6 * BB_N)), 2),
+        },
+        "R2 บน EMA12 เกิน 0.98 เปอร์เซ็นต์": r(100 * sum(v > 0.98 for v in r2_ema) / len(r2_ema), 1),
+        "R2 บน EMA12 เกิน 0.95 เปอร์เซ็นต์": r(100 * sum(v > 0.95 for v in r2_ema) / len(r2_ema), 1),
+        "จำนวนเส้นที่มีสวิงเข้าเกณฑ์ Fibonacci": fib_tot,
+        "Wilder smoothing ช้าบนเทรนด์เส้นตรง (วัน)": ADX_N - 1,
         "rho1 ช่วง 95% ภายใต้ความสุ่ม": {"ล่าง": r(sorted(rho_sim)[int(0.025 * PATHS)], 3), "บน": r(sorted(rho_sim)[int(0.975 * PATHS) - 1], 3)},
         "VR5 ช่วง 95% ภายใต้ความสุ่ม": {"ล่าง": r(sorted(vr_sim)[int(0.025 * PATHS)], 3), "บน": r(sorted(vr_sim)[int(0.975 * PATHS) - 1], 3)},
         "หมายเหตุ": "RSI เป็นอัตราส่วน จึงไม่ขึ้นกับระดับความผันผวน — ฐานนี้ใช้ได้กับสินทรัพย์ไหนก็ได้ที่เดินสุ่มแบบสมมาตร แต่จะเปลี่ยนทันทีเมื่อมี drift หรือ autocorrelation · t-stat ของ regression บนราคาที่เดินสุ่มไม่มีความหมายทางสถิติ (spurious regression) ตัวเลขนี้แสดงว่ามันโดนบ่อยแค่ไหน",
