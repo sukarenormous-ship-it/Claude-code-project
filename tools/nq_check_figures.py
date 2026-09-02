@@ -16,6 +16,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIG = os.path.join(ROOT, "docs", "nq-figures.json")
+# ไฟล์ตัวเลขเสริมของภาคผนวกที่มีเครื่องสร้างของตัวเอง — ตัวเลขในไฟล์เหล่านี้ถือว่า "มีที่มา" เช่นกัน
+EXTRA_FIGS = [os.path.join(ROOT, "docs", "indicator-figures.json")]
 
 # ตัวเลขที่ต้องปรากฏในเล่ม พร้อมวิธีอ่านค่าจาก figures.json
 REQUIRED = {
@@ -80,6 +82,10 @@ def main():
             known.add(str(o))
             known.add(str(abs(o)))   # ในบทอาจเขียน "−1.85%" ขณะที่แหล่งเก็บเป็น -1.85
     walk(fig)
+    for path in EXTRA_FIGS:
+        if os.path.exists(path):
+            with open(path) as fh:
+                walk(json.load(fh))
     # ตัวเลขที่อธิบายได้เองในบท (คณิตพื้นฐาน/ค่าคงที่ที่ไม่ใช่สถิติจากข้อมูล)
     allowed = {"50", "100", "2", "3", "1", "0", "8", "12", "26", "62", "5", "1.8", "0.5"}
     for name, html in docs.items():
