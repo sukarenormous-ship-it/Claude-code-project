@@ -28,6 +28,9 @@ RSI_N, BB_N, BB_K = 14, 20, 2
 MACD_FAST, MACD_SLOW, MACD_SIG = 12, 26, 9
 ADX_N = 14
 LR_N, LR_EMA_N = 20, 10          # หน้าต่าง regression บนราคา / บน EMA12
+DC_N, RV_N = 20, 20              # หน้าต่าง Donchian / realized vol
+PHI = (1 + 5 ** 0.5) / 2
+FIB_LEVELS, FIB_TOL = [0.236, 0.382, 0.5, 0.618, 0.786], 0.03
 SEED, PATHS = 20260820, 2000
 
 
@@ -337,6 +340,124 @@ def build():
         },
     }
 
+    # ── Donchian / จุดสูงสุด N วัน ────────────────────────────────────────────
+    def sparre_andersen(steps):
+        """P(จุดสุดท้ายเป็นจุดสูงสุดของทางเดินสุ่มสมมาตร n ก้าว) = C(2n,n)/4ⁿ (Sparre Andersen 1953)"""
+        return math.comb(2 * steps, steps) / 4 ** steps
+
+    dc_hi = [days[i] for i in range(DC_N - 1, len(p)) if p[i] >= max(p[i - DC_N + 1:i + 1])]
+    dc_lo = [days[i] for i in range(DC_N - 1, len(p)) if p[i] <= min(p[i - DC_N + 1:i + 1])]
+    dc_comp = len(p) - DC_N + 1
+    prev_hi = max(p[f - DC_N + 1:f])
+    donchian_block = {
+        "คำอธิบาย": f"Donchian channel {DC_N} วัน (ราคาปิดสูงสุด/ต่ำสุดในหน้าต่าง) — breakout = ปิดเหนือจุดสูงสุด {DC_N} วันก่อนหน้า",
+        "แทนค่าวันโฟกัส": {
+            "วันที่": FOCUS, "ราคา": p[f],
+            "จุดสูงสุด 19 วันก่อนหน้า": prev_hi, "วันที่ของจุดสูงสุดนั้น": days[f - DC_N + 1 + p[f - DC_N + 1:f].index(prev_hi)],
+            "หน้าต่างก่อนหน้า": {"ตั้งแต่": days[f - DC_N + 1], "ถึง": days[f - 1]},
+            "ทะลุ": p[f] > prev_hi, "ทะลุเท่าไร": r(p[f] - prev_hi),
+            "ทะลุเป็นเปอร์เซ็นต์": r(100 * (p[f] / prev_hi - 1), 2),
+        },
+        "วันที่คำนวณได้": dc_comp,
+        "วันที่เป็นจุดสูงสุด20วัน": dc_hi, "จำนวน": len(dc_hi),
+        "สัดส่วนวันที่เป็นจุดสูงสุดเปอร์เซ็นต์": r(100 * len(dc_hi) / dc_comp, 1),
+        "วันที่เป็นจุดต่ำสุด20วัน": dc_lo,
+        "ฐานทางทฤษฎี": {
+            "คำอธิบาย": "ความน่าจะเป็นที่วันนี้เป็นจุดสูงสุดของหน้าต่าง N วัน ถ้าราคาเดินสุ่มสมมาตร (ทฤษฎีบท Sparre Andersen) เทียบกับสัญชาตญาณ 1/N ที่ใช้ได้เฉพาะจุดที่สุ่มอิสระกัน",
+            "N=10": {"ทางเดินสุ่มเปอร์เซ็นต์": r(100 * sparre_andersen(9), 1), "สัญชาตญาณ 1/N เปอร์เซ็นต์": 10.0},
+            "N=20": {"ทางเดินสุ่มเปอร์เซ็นต์": r(100 * sparre_andersen(19), 1), "สัญชาตญาณ 1/N เปอร์เซ็นต์": 5.0},
+            "N=55": {"ทางเดินสุ่มเปอร์เซ็นต์": r(100 * sparre_andersen(54), 1), "สัญชาตญาณ 1/N เปอร์เซ็นต์": r(100 / 55, 1)},
+        },
+    }
+
+    # ── Fibonacci retracement ────────────────────────────────────────────────
+    hi_i = max(range(len(p)), key=lambda i: p[i])
+    sw_lo_i = min(range(idx["2026-08-01"], hi_i), key=lambda i: p[i])   # จุดต่ำสุดก่อนขาขึ้นรอบนี้
+    swing = p[hi_i] - p[sw_lo_i]
+    after = [(days[i], p[i]) for i in range(hi_i + 1, len(p))]
+    pb = min(after, key=lambda t: t[1])
+    fib_block = {
+        "คำอธิบาย": "ระดับ retracement จาก swing low → swing high ของขาขึ้นรอบเดียวในชุดข้อมูล · ระดับมาจากอัตราส่วนทอง φ ไม่ใช่จากตลาด",
+        "ระดับ": FIB_LEVELS,
+        "ระดับเป็นเปอร์เซ็นต์": [r(100 * lv, 1) for lv in FIB_LEVELS],
+        "ที่มาของระดับ": {"1/φ": r(1 / PHI, 3), "1/φ²": r(1 / PHI ** 2, 3), "1/φ³": r(1 / PHI ** 3, 3), "√(1/φ)": r(math.sqrt(1 / PHI), 3), "0.5": "ไม่ใช่ตัวเลข Fibonacci — เติมเข้ามาตามธรรมเนียม"},
+        "swing": {
+            "ต่ำ": {"วันที่": days[sw_lo_i], "ราคา": p[sw_lo_i]},
+            "สูง": {"วันที่": days[hi_i], "ราคา": p[hi_i]},
+            "ช่วง": r(swing),
+        },
+        "ระดับเป็นราคา": {str(lv): r(p[hi_i] - lv * swing) for lv in FIB_LEVELS},
+        "การย่อจริงหลังจุดสูง": {"วันที่": pb[0], "ราคา": pb[1], "ย่อเป็นสัดส่วนของช่วง": r((p[hi_i] - pb[1]) / swing, 3)},
+        "ความกว้างที่ระดับครอบคลุม": {
+            "ค่าเผื่อต่อระดับ": FIB_TOL, "จำนวนระดับ": len(FIB_LEVELS),
+            "สัดส่วนของช่วงที่ถูกครอบคลุมเปอร์เซ็นต์": r(100 * 2 * FIB_TOL * len(FIB_LEVELS), 1),
+        },
+    }
+
+    # ── ความผันผวน: realized vol และ ATR (ประมาณ) ────────────────────────────
+    rets = [p[i] / p[i - 1] - 1 for i in range(1, len(p))]
+
+    def rv(i, n=RV_N):       # SD ของผลตอบแทน n วันที่จบที่วัน i (เปอร์เซ็นต์)
+        return 100 * statistics.pstdev(rets[i - n:i])
+
+    tr = [abs(p[i] - p[i - 1]) for i in range(1, len(p))]
+    atr = [None] * len(p)
+    s_atr = sum(tr[:ADX_N]) / ADX_N
+    atr[ADX_N] = s_atr
+    for i in range(ADX_N + 1, len(p)):
+        s_atr = (s_atr * (ADX_N - 1) + tr[i - 1]) / ADX_N
+        atr[i] = s_atr
+    stop_mult = 2
+    stop_pct = 100 * stop_mult * atr[f - 1] / p[f - 1]
+    vol_block = {
+        "คำอธิบาย": f"realized volatility = SD ของผลตอบแทนรายวัน {RV_N} วัน · ATR({ADX_N}) ประมาณจากราคาปิดอย่างเดียว (TR = |ΔP| — ไม่มี high/low) ค่าจะต่ำกว่า ATR จริงเพราะไม่รวมช่วงแกว่งระหว่างวัน",
+        "ATR เป็นค่าประมาณ": True,
+        "realized vol 20 วัน": {D: r(rv(idx[D]), 2) for D in ["2026-08-13", "2026-08-15", "2026-08-19", FOCUS, days[-1]]},
+        "แทนค่าวันโฟกัส": {
+            "วันที่": FOCUS,
+            "ATR เมื่อวาน": r(atr[f - 1]), "ATR เมื่อวานเป็นเปอร์เซ็นต์ของราคา": r(100 * atr[f - 1] / p[f - 1], 2),
+            "การเคลื่อนไหววันนี้": r(abs(p[f] - p[f - 1])),
+            "การเคลื่อนไหววันนี้เป็นกี่ ATR": r(abs(p[f] - p[f - 1]) / atr[f - 1], 1),
+            "ATR วันนี้": r(atr[f]), "ATR วันนี้เป็นเปอร์เซ็นต์ของราคา": r(100 * atr[f] / p[f], 2),
+            "น้ำหนักของวันนี้ใน ATR": r(1 / ADX_N, 3),
+        },
+        "ATR วันสุดท้าย": {"วันที่": days[-1], "ATR": r(atr[-1]), "เปอร์เซ็นต์ของราคา": r(100 * atr[-1] / p[-1], 2)},
+        "ตัวอย่างขนาดไม้": {
+            "คำอธิบาย": "เสี่ยง 1% ของทุนต่อไม้ · stop = 2 × ATR เมื่อวาน (ตามธรรมเนียม) · ขนาดไม้ = 1% / (stop เป็น % ของราคา)",
+            "ทุนบาท": fig["มิน"]["ทุนเริ่มต้นบาท"] if "ทุนเริ่มต้นบาท" in fig.get("มิน", {}) else 50000,
+            "เสี่ยงต่อไม้เปอร์เซ็นต์": 1,
+            "stop เป็นเปอร์เซ็นต์ของราคา": r(stop_pct, 2),
+            "ขนาดไม้เป็นเปอร์เซ็นต์ของทุน": r(100 * 1 / stop_pct, 1),
+            "stop จะถูกชนถ้าราคาลง": r(stop_mult * atr[f - 1]),
+        },
+    }
+
+    # ── autocorrelation / variance ratio ─────────────────────────────────────
+    def acf1(x):
+        m = statistics.mean(x)
+        return sum((x[i] - m) * (x[i - 1] - m) for i in range(1, len(x))) / sum((v - m) ** 2 for v in x)
+
+    def vratio(x, q):
+        m = statistics.mean(x)
+        v1 = sum((v - m) ** 2 for v in x) / (len(x) - 1)
+        xq = [sum(x[i:i + q]) for i in range(0, len(x) - q + 1)]
+        return statistics.variance(xq) / (q * v1)
+
+    jump_i = f - 1                       # index ของผลตอบแทนวันโฟกัสใน rets
+    rets_wo = rets[:jump_i] + rets[jump_i + 1:]
+    acf_block = {
+        "คำอธิบาย": "lag-1 autocorrelation ของผลตอบแทนรายวัน และ variance ratio VR(5) — ตัววัดว่าตลาด trend (ρ>0, VR>1) หรือ mean-revert (ρ<0, VR<1) ที่มี null distribution ให้เทียบ",
+        "จำนวนผลตอบแทน": len(rets),
+        "rho1 ของผลตอบแทน": r(acf1(rets), 3),
+        "rho1 ของระดับราคา (ผิดวัตถุ)": r(acf1(p), 3),
+        "VR5": r(vratio(rets, 5), 3),
+        "SE โดยประมาณ 1/√n": r(1 / math.sqrt(len(rets)), 3),
+        "rho1 ถ้าตัดวันโฟกัสออกวันเดียว": r(acf1(rets_wo), 3),
+        "VR5 ถ้าตัดวันโฟกัสออกวันเดียว": r(vratio(rets_wo, 5), 3),
+        "จำนวนวันที่ต้องมีเพื่อ SE 0.05": int(round(1 / 0.05 ** 2)),
+        "จำนวนปีสำหรับจำนวนวันนั้น": r(1 / 0.05 ** 2 / 365, 1),
+    }
+
     # ── ฐานภายใต้ความสุ่ม (สถานี ②) ───────────────────────────────────────────
     rng = random.Random(SEED)
     sd = daily_sd_pct / 100
@@ -344,10 +465,28 @@ def build():
     rsi_hits = rsi_tot = bb_hits = bb_tot = 0
     lr_t_hits = lr_tot = lr_out = 0
     r2_price, r2_ema = [], []
+    dc_hits = dc_tot = fib_hit = fib_tot = stop_hit = stop_tot = 0
+    rho_sim, vr_sim = [], []
     for _ in range(PATHS):
         q = [p[0]]
         for _ in range(n_days - 1):
             q.append(q[-1] * (1 + rng.gauss(0, sd)))
+        for i in range(DC_N - 1, n_days):
+            dc_tot += 1
+            dc_hits += q[i] >= max(q[i - DC_N + 1:i + 1])
+        qr = [q[i] / q[i - 1] - 1 for i in range(1, n_days)]
+        rho_sim.append(acf1(qr))
+        vr_sim.append(vratio(qr, 5))
+        li = min(range(n_days), key=lambda i: q[i])
+        if li < n_days - 3:
+            hj = max(range(li, n_days), key=lambda i: q[i])
+            if hj > li + 2 and hj < n_days - 1:
+                rr = (q[hj] - min(q[hj + 1:])) / (q[hj] - q[li])
+                fib_tot += 1
+                fib_hit += any(abs(rr - lv) <= FIB_TOL for lv in FIB_LEVELS)
+        for st in range(DC_N, n_days - 10):
+            stop_tot += 1
+            stop_hit += any(q[k] <= q[st] * (1 - stop_mult * sd) for k in range(st + 1, st + 11))
         for x in rsi_wilder(q):
             if x is not None:
                 rsi_tot += 1
@@ -374,6 +513,11 @@ def build():
         "ราคานอกช่อง regression ±2SD ภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * lr_out / lr_tot, 1),
         "R2 เฉลี่ย regression 10 วัน": {"บนราคา": r(statistics.mean(r2_price), 3), "บน EMA12": r(statistics.mean(r2_ema), 3)},
         "R2 มัธยฐาน regression 10 วัน": {"บนราคา": r(statistics.median(r2_price), 3), "บน EMA12": r(statistics.median(r2_ema), 3)},
+        "วันที่เป็นจุดสูงสุด20วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * dc_hits / dc_tot, 1),
+        "การย่อตกใกล้ระดับ Fibonacci ใดระดับหนึ่งภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * fib_hit / fib_tot, 1),
+        "stop 2σ ถูกชนภายใน 10 วันภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * stop_hit / stop_tot, 1),
+        "rho1 ช่วง 95% ภายใต้ความสุ่ม": {"ล่าง": r(sorted(rho_sim)[int(0.025 * PATHS)], 3), "บน": r(sorted(rho_sim)[int(0.975 * PATHS) - 1], 3)},
+        "VR5 ช่วง 95% ภายใต้ความสุ่ม": {"ล่าง": r(sorted(vr_sim)[int(0.025 * PATHS)], 3), "บน": r(sorted(vr_sim)[int(0.975 * PATHS) - 1], 3)},
         "หมายเหตุ": "RSI เป็นอัตราส่วน จึงไม่ขึ้นกับระดับความผันผวน — ฐานนี้ใช้ได้กับสินทรัพย์ไหนก็ได้ที่เดินสุ่มแบบสมมาตร แต่จะเปลี่ยนทันทีเมื่อมี drift หรือ autocorrelation · t-stat ของ regression บนราคาที่เดินสุ่มไม่มีความหมายทางสถิติ (spurious regression) ตัวเลขนี้แสดงว่ามันโดนบ่อยแค่ไหน",
     }
 
@@ -399,6 +543,10 @@ def build():
         "Bollinger": bb_block,
         "ADX": adx_block,
         "LinearRegression": lr_block,
+        "Donchian": donchian_block,
+        "Fibonacci": fib_block,
+        "Volatility": vol_block,
+        "Autocorrelation": acf_block,
         "ฐานภายใต้ความสุ่ม": base_block,
     }
 
