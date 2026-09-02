@@ -14,6 +14,7 @@
 """
 
 import json
+import math
 import os
 import random
 import statistics
@@ -26,6 +27,7 @@ FOCUS = "2026-08-20"          # วันที่ระบบ EMA ของม�
 RSI_N, BB_N, BB_K = 14, 20, 2
 MACD_FAST, MACD_SLOW, MACD_SIG = 12, 26, 9
 ADX_N = 14
+LR_N, LR_EMA_N = 20, 10          # หน้าต่าง regression บนราคา / บน EMA12
 SEED, PATHS = 20260820, 2000
 
 
@@ -126,6 +128,26 @@ def adx_close_only(prices, n=ADX_N):
             adx = (adx * (n - 1) + dx) / n
         out[i + 1] = {"di_plus": di_p, "di_minus": di_n, "dx": dx, "adx": adx}
     return out
+
+
+def ols_time(y):
+    """Linear regression ของค่า y บนเวลา t = 1..n (OLS ธรรมดา)
+    คืน slope, intercept, ค่าฟิตปลายหน้าต่าง, R², SD ของ residual (n−2), residual วันสุดท้าย, t-stat ของ slope"""
+    n = len(y)
+    t = list(range(1, n + 1))
+    tb, yb = sum(t) / n, sum(y) / n
+    sxx = sum((a - tb) ** 2 for a in t)
+    sxy = sum((a - tb) * (b - yb) for a, b in zip(t, y))
+    m = sxy / sxx
+    c = yb - m * tb
+    fit = [c + m * a for a in t]
+    res = [b - f for b, f in zip(y, fit)]
+    sse = sum(x * x for x in res)
+    sst = sum((b - yb) ** 2 for b in y)
+    s = math.sqrt(sse / (n - 2)) if n > 2 else 0.0
+    se = s / math.sqrt(sxx) if sxx else 0.0
+    return {"slope": m, "intercept": c, "end": fit[-1], "r2": (1 - sse / sst) if sst else 0.0,
+            "sd": s, "resid": res[-1], "t": (m / se) if se else 0.0}
 
 
 def r(x, nd=2):
@@ -262,11 +284,66 @@ def build():
         "เกณฑ์ที่นิยม": 25,
     }
 
+    # ── Linear Regression (บนราคา และบน EMA) ─────────────────────────────────
+    e12 = ema(p, MACD_FAST)
+    e20 = ema(p, LR_N)
+
+    def lr_snapshot(date):
+        i = idx[date]
+        o = ols_time(p[i - LR_N + 1:i + 1])
+        return {
+            "วันที่": date, "ราคา": p[i],
+            "slope ต่อวัน": r(o["slope"]), "intercept": r(o["intercept"]),
+            "ค่าฟิตปลายหน้าต่าง (LSMA)": r(o["end"]),
+            "R2": r(o["r2"], 3), "SD residual": r(o["sd"]),
+            "residual วันนี้": r(o["resid"]), "residual เป็นกี่ SD": r(o["resid"] / o["sd"]),
+            "t-stat ของ slope": r(o["t"]),
+            "ช่องบน +2SD": r(o["end"] + 2 * o["sd"]), "ช่องล่าง −2SD": r(o["end"] - 2 * o["sd"]),
+            "SMA20": r(statistics.mean(p[i - LR_N + 1:i + 1])), "EMA20": r(e20[i]),
+        }
+
+    def lr_on_ema_snapshot(date):
+        i = idx[date]
+        oe = ols_time(e12[i - LR_EMA_N + 1:i + 1])
+        op = ols_time(p[i - LR_EMA_N + 1:i + 1])
+        return {
+            "วันที่": date,
+            "regression บน EMA12": {"slope ต่อวัน": r(oe["slope"]), "R2": r(oe["r2"], 3)},
+            "regression บนราคา": {"slope ต่อวัน": r(op["slope"]), "R2": r(op["r2"], 3)},
+        }
+
+    k12 = 2 / (MACD_FAST + 1)
+    lr_block = {
+        "คำอธิบาย": f"OLS ของราคาบนเวลา หน้าต่าง {LR_N} วัน (Linear Regression Indicator / LSMA / channel) และ OLS ของ EMA12 บนเวลา หน้าต่าง {LR_EMA_N} วัน",
+        "หน้าต่างราคา": LR_N, "หน้าต่างบนEMA": LR_EMA_N,
+        "แทนค่าวันโฟกัส": lr_snapshot(FOCUS),
+        "ก่อนวิ่ง": lr_snapshot("2026-08-15"),
+        "วันสุดท้าย": lr_snapshot(days[-1]),
+        "regression บน EMA เทียบบนราคา": {
+            "วันโฟกัส": lr_on_ema_snapshot(FOCUS),
+            "ก่อนวิ่ง": lr_on_ema_snapshot("2026-08-15"),
+            "วันสุดท้าย": lr_on_ema_snapshot(days[-1]),
+        },
+        "ความชัน EMA หนึ่งวันคืออะไร": {
+            "วันที่": FOCUS,
+            "EMA12 วันนี้ − เมื่อวาน": r(e12[f] - e12[f - 1]),
+            "k × (ราคาวันนี้ − EMA12 เมื่อวาน)": r(k12 * (p[f] - e12[f - 1])),
+            "k": r(k12, 4),
+            "ราคาวันนี้": p[f], "EMA12 เมื่อวาน": r(e12[f - 1]),
+        },
+        "ความช้าบนเทรนด์เส้นตรง (วัน)": {
+            "คำอธิบาย": "ถ้าราคาเป็นเส้นตรงสมบูรณ์ ค่าเฉลี่ยจะตามหลังเส้นนั้นกี่วัน — (n−1)/2 สำหรับ SMA และ EMA(k=2/(n+1)); ปลาย regression = 0",
+            "SMA20 / EMA20": (LR_N - 1) / 2, "EMA12": (MACD_FAST - 1) / 2, "EMA26": (MACD_SLOW - 1) / 2, "LSMA20": 0,
+        },
+    }
+
     # ── ฐานภายใต้ความสุ่ม (สถานี ②) ───────────────────────────────────────────
     rng = random.Random(SEED)
     sd = daily_sd_pct / 100
     n_days = len(p)
     rsi_hits = rsi_tot = bb_hits = bb_tot = 0
+    lr_t_hits = lr_tot = lr_out = 0
+    r2_price, r2_ema = [], []
     for _ in range(PATHS):
         q = [p[0]]
         for _ in range(n_days - 1):
@@ -279,12 +356,25 @@ def build():
             if b is not None:
                 bb_tot += 1
                 bb_hits += (q[i] > b["upper"] or q[i] < b["lower"])
+        qe = ema(q, MACD_FAST)
+        for i in range(LR_N - 1, n_days):
+            o = ols_time(q[i - LR_N + 1:i + 1])
+            lr_tot += 1
+            lr_t_hits += abs(o["t"]) > 2
+            lr_out += abs(o["resid"]) > 2 * o["sd"]
+        for i in range(MACD_FAST - 1 + LR_EMA_N - 1, n_days):
+            r2_price.append(ols_time(q[i - LR_EMA_N + 1:i + 1])["r2"])
+            r2_ema.append(ols_time(qe[i - LR_EMA_N + 1:i + 1])["r2"])
     base_block = {
         "คำอธิบาย": f"จำลองราคาสุ่มล้วน (ไม่มี drift, ความผันผวนรายวันเท่า BTC ชุดนี้) {PATHS} เส้น × {n_days} วัน เมล็ดสุ่ม {SEED}",
         "ความผันผวนรายวันที่ใช้เปอร์เซ็นต์": r(daily_sd_pct, 2),
         "RSI นอก 30/70 ภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * rsi_hits / rsi_tot, 1),
         "ราคานอกแบนด์ ±2σ ภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * bb_hits / bb_tot, 1),
-        "หมายเหตุ": "RSI เป็นอัตราส่วน จึงไม่ขึ้นกับระดับความผันผวน — ฐานนี้ใช้ได้กับสินทรัพย์ไหนก็ได้ที่เดินสุ่มแบบสมมาตร แต่จะเปลี่ยนทันทีเมื่อมี drift หรือ autocorrelation",
+        "regression 20 วัน |t| เกิน 2 ภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * lr_t_hits / lr_tot, 1),
+        "ราคานอกช่อง regression ±2SD ภายใต้ความสุ่มเปอร์เซ็นต์": r(100 * lr_out / lr_tot, 1),
+        "R2 เฉลี่ย regression 10 วัน": {"บนราคา": r(statistics.mean(r2_price), 3), "บน EMA12": r(statistics.mean(r2_ema), 3)},
+        "R2 มัธยฐาน regression 10 วัน": {"บนราคา": r(statistics.median(r2_price), 3), "บน EMA12": r(statistics.median(r2_ema), 3)},
+        "หมายเหตุ": "RSI เป็นอัตราส่วน จึงไม่ขึ้นกับระดับความผันผวน — ฐานนี้ใช้ได้กับสินทรัพย์ไหนก็ได้ที่เดินสุ่มแบบสมมาตร แต่จะเปลี่ยนทันทีเมื่อมี drift หรือ autocorrelation · t-stat ของ regression บนราคาที่เดินสุ่มไม่มีความหมายทางสถิติ (spurious regression) ตัวเลขนี้แสดงว่ามันโดนบ่อยแค่ไหน",
     }
 
     # ── สามเสียงในวันเดียว ────────────────────────────────────────────────────
@@ -308,6 +398,7 @@ def build():
         "MACD": macd_block,
         "Bollinger": bb_block,
         "ADX": adx_block,
+        "LinearRegression": lr_block,
         "ฐานภายใต้ความสุ่ม": base_block,
     }
 
