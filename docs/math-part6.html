@@ -6,7 +6,7 @@
 <title>คณิตศาสตร์สำหรับ Options — Part IV: กระบวนการสุ่ม สู่ Black-Scholes</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
-.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;white-space:pre-wrap}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;white-space:pre-wrap}.read{font-size:.93em;color:var(--g7);margin:-4px 0 14px;padding:6px 14px;border-left:3px dotted #a78bfa;background:#faf5ff;border-radius:0 6px 6px 0}.read strong{color:var(--purple)}
 .tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:480px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
 .card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
 .pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
@@ -83,6 +83,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 
 <div class="fm">σ²ₜ = λ·σ²ₜ₋₁ + (1−λ)·r²ₜ₋₁
 λ = decay factor (RiskMetrics ใช้ λ = 0.94)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ซิกมากำลังสอง ณ เวลาที เท่ากับ แลมบ์ดา คูณ ซิกมากำลังสองเมื่อวาน บวก วงเล็บ หนึ่งลบแลมบ์ดา คูณ ผลตอบแทนเมื่อวานกำลังสอง" · <strong>โครงที่ต้องเห็น:</strong> สูตรอ้างตัวเองเมื่อวาน (recursive) — น้ำหนัก λ กับ 1−λ รวมกันได้ 1 จึงเป็นค่าเฉลี่ยถ่วงน้ำหนักของ "ที่เคยเชื่อ" กับ "ที่เพิ่งเห็น" และเมื่อวานก็ซ่อนวันก่อนไว้ด้วยน้ำหนัก λ² จางลงเรื่อย ๆ · ลอง λ = 1: σ² ไม่เปลี่ยนเลย ไม่ฟังข่าวใหม่ · λ = 0: σ² = r² เมื่อวานล้วน ไม่มีความจำ · <strong>กับดักการอ่าน:</strong> ตัวห้อย t, t−1 คือ<em>เวลา</em> (วันนี้, เมื่อวาน) ไม่ใช่ลบหนึ่ง · สูตรทำงานบน σ² (variance) ต้องถอดรากจึงได้ σ · λ ตัวนี้คืออัตราจาง 0.94 คนละตัวกับ λ ในบทอื่นของคลัง (Kyle's lambda, hazard rate) ดู <a href="notation.html">Notation</a></p>
 
 <svg class="d" viewBox="0 0 520 210" role="img" aria-label="เทียบ SMA กระตุกและช้า กับ EWMA ที่เกาะ spike ได้ไวและเนียนกว่า">
 <line x1="55" y1="175" x2="480" y2="175" stroke="#9ca3af" stroke-width="1.2"/>
@@ -113,6 +114,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="fm">σ²ₜ = ω + α·r²ₜ₋₁ + β·σ²ₜ₋₁
 ω = ส่วนพื้นฐาน · α = ข่าวเมื่อวานสะเทือนแค่ไหน · β = σ เมื่อวานส่งต่อแค่ไหน
 α + β < 1  →  σ กลับสู่ค่าเฉลี่ย (mean-revert)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ซิกมากำลังสองวันนี้ เท่ากับ โอเมกา บวก แอลฟา คูณ ผลตอบแทนเมื่อวานกำลังสอง บวก เบต้า คูณ ซิกมากำลังสองเมื่อวาน" · <strong>โครงที่ต้องเห็น:</strong> EWMA ที่เติมพื้น ω และปล่อยให้ α + β ไม่ต้องเท่ากับ 1 — ส่วนต่าง 1 − α − β คือแรงดึงกลับหาค่าเฉลี่ย · ลองสถานะนิ่ง (σ² วันนี้ = σ² เมื่อวาน = r² = σ²∞): σ²∞(1 − α − β) = ω → σ²∞ = ω/(1−α−β) ตรงกับกล่องเจาะลึกข้างล่าง (0.00002/0.05 = 0.0004) · <strong>กับดักการอ่าน:</strong> α, β ตรงนี้คือ<em>น้ำหนัก</em>ของ GARCH ไม่ใช่ alpha/beta ของ CAPM ในบทพอร์ต — อักษรเดียวกัน คนละความหมาย · r²ₜ₋₁ คือ<em>ผลตอบแทน</em>เมื่อวานยกกำลังสอง ไม่ใช่อัตราดอกเบี้ย r · สมการนี้เป็นโมเดลของ<em>ความกว้าง</em> (Var) ไม่มีอะไรบอกทิศเลย</p>
 
 <div class="deep"><div class="bt">🔬 เจาะลึก (ข้ามได้) — ค่าเฉลี่ยระยะยาวของ σ</div>
 <p>เมื่อ α + β &lt; 1 ระดับ <strong>variance</strong> ระยะยาวคือ σ²∞ = ω / (1 − α − β) · ระวังหน่วย: นี่คือ <strong>σ² (variance)</strong> ไม่ใช่ σ — ถ้าอยากได้ σ ระยะยาวต้องถอดราก: σ∞ = √[ ω/(1−α−β) ]</p></div>
@@ -181,12 +183,14 @@ for k in range(1, 8):
 <div class="fm">1. เลือก a, b ที่ f(a)·f(b) &lt; 0 (คนละเครื่องหมาย → คำตอบคั่นกลาง)
 2. m = (a+b)/2 ; ดูว่า f(m) เครื่องหมายเดียวกับฝั่งไหน แล้วหุบเข้าหาอีกฝั่ง
 3. ทำซ้ำจน |b−a| เล็กพอ</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เลือก เอ กับ บี ที่ เอฟของเอ คูณ เอฟของบี น้อยกว่าศูนย์" · <strong>โครงที่ต้องเห็น:</strong> ผลคูณติดลบ = สองค่าคนละเครื่องหมาย จึงมีจุดที่ f = 0 คั่นอยู่ระหว่างกลางแน่ · สำหรับ IV ฟังก์ชัน f คือ BS_Price(σ) − ราคาตลาด (ตามสูตร Newton ถัดไป) และคำตอบคือ σ ที่ทำให้ f = 0 · <strong>กับดักการอ่าน:</strong> |b − a| คือ<em>ความกว้าง</em>ของช่วง (ทิ้งเครื่องหมาย ไม่สนว่าใครใหญ่กว่า) · m = (a+b)/2 คือจุดกึ่งกลาง ไม่ใช่ความชัน m ของ Part I — ตัวอักษรเดียวกัน คนละบท</p>
 
 <h3 id="s9-2">9.2 Newton-Raphson — ใช้ความชัน (Vega) พาเข้าเป้าเร็วกว่า</h3>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> แทนที่จะแบ่งครึ่งมั่ว ๆ ใช้ "ความชันของฟังก์ชัน ณ จุดปัจจุบัน" ลากเส้นตรงลงไปหาแกน แล้วกระโดดไปจุดนั้น — เข้าเป้าไวมาก · สำหรับ IV ความชันที่ว่าคือ <strong>Vega</strong></p>
 
 <div class="fm">σₙ₊₁ = σₙ − ( BS_Price(σₙ) − ราคาตลาด ) / Vega(σₙ)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ซิกมาตัวถัดไป เท่ากับ ซิกมาตัวปัจจุบัน ลบ วงเล็บ ราคาบีเอสที่ซิกมานี้ ลบ ราคาตลาด หารด้วย เวก้าที่ซิกมานี้" · <strong>โครงที่ต้องเห็น:</strong> สูตรอ้างตัวเอง (recursive) แต่ "ตัวก่อน" คือ<em>การเดาครั้งก่อน</em> ไม่ใช่เมื่อวาน · ตัวแก้คืออัตราส่วน "ราคาที่พลาดไป (บาท)" ÷ "Vega (บาทต่อ 1 หน่วย σ)" → หน่วยบาทหาย เหลือ σ ที่ต้องขยับพอดี · ลองเดาถูกแล้ว: BS_Price = ราคาตลาด → ตัวเศษ 0 → σₙ₊₁ = σₙ หยุดนิ่ง ✓ · <strong>กับดักการอ่าน:</strong> ตัวห้อย n, n+1 คือ<em>รอบที่เท่าไร</em>ของการวนซ้ำ ไม่ใช่เวลา · Vega(σₙ) คือเรียกฟังก์ชัน ณ ค่าเดานั้น ต้องคิดใหม่ทุกรอบ · Vega ต้องเป็นหน่วย "ต่อ 1 หน่วย σ" (ไม่ใช่ต่อ 1%) ตามข้อควรระวังใน <a href="math-part3.html#s7-3">Part III 7.3</a></p>
 
 <svg class="d" viewBox="0 0 520 250" role="img" aria-label="Newton-Raphson ลากเส้นสัมผัสจาก sigma1 ไป sigma2 เข้าหาราก sigma* = IV">
 <line x1="55" y1="175" x2="480" y2="175" stroke="#9ca3af" stroke-width="1.2"/>
@@ -297,9 +301,10 @@ print(f"newton IV = {sig*100:.2f}%")
 
 <div class="fm">Binomial: u = e^(σ√Δt) (ขึ้น) · d = 1/u (ลง)
 p* = (e^(rΔt) − d) / (u − d)   ← risk-neutral probability</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ยู เท่ากับ อี ยกกำลัง ซิกมารูทเดลตาที · ดี เท่ากับ หนึ่งส่วนยู · พีสตาร์ เท่ากับ อี ยกกำลัง อาร์เดลตาที ลบ ดี หารด้วย ยู ลบ ดี" · <strong>โครงที่ต้องเห็น:</strong> p* คือ<em>ตำแหน่งในช่วง</em> (ค่า − ต่ำ)/(สูง − ต่ำ) — ถามว่า "การโตแบบปลอดเสี่ยง e<sup>rΔt</sup> อยู่ตรงไหนระหว่างขา d กับขา u" จึงอยู่ใน 0–1 ตราบที่ d &lt; e<sup>rΔt</sup> &lt; u · ตัวอย่างข้างล่าง r = 0: e⁰ = 1 → (1 − 0.8)/(1.2 − 0.8) = 0.5 · <strong>กับดักการอ่าน:</strong> ดอกจันบน p* แปลว่า "ความน่าจะเป็นในโลก risk-neutral" ไม่ใช่การคูณ และไม่ใช่โอกาสจริงที่หุ้นจะขึ้น · Δt คือ<em>ความยาวก้าว</em> (Δ = การเปลี่ยนแปลง) ไม่ใช่ Delta Greek · u, d เป็น<em>ตัวคูณ</em>ราคา (1.2 = ขึ้น 20%) ไม่ใช่ % และ d ตัวนี้ไม่ใช่ d₁, d₂ ของ Black-Scholes</p>
 
 <div class="bx ba"><div class="bt">🧮 เดินเลขจริง — ตั้งราคา Call ด้วย tree 1 ก้าว</div>
-<p>S₀ = 100, r = 0, หนึ่งก้าว: ขึ้นไป 120 (u=1.2) หรือลงไป 80 (d=0.8)</p>
+<p>S₀ = 100, r = 0, หนึ่งก้าว: ขึ้นไป 120 (u=1.2) หรือลงไป 80 (d=0.8) · ตัวอย่างนี้เลือก u, d เป็นเลขกลมเพื่อให้เดินเลขง่าย จึงไม่ได้ผูก d = 1/u ตามแบบ CRR ในกล่องข้างบน — สูตร p* ใช้ได้กับ u, d คู่ใดก็ได้ที่ d &lt; e^(rΔt) &lt; u</p>
 <ul>
 <li><strong>p* = (1 − 0.8)/(1.2 − 0.8) = 0.2/0.4 = 0.5</strong> (โอกาส risk-neutral ที่หุ้นขึ้น)</li>
 <li>Call K=100: ถ้าขึ้น payoff = 120−100 = 20 · ถ้าลง payoff = 0</li>
@@ -362,6 +367,7 @@ for n in [1, 2, 5, 10, 50, 100, 500]:
 
 <div class="fm">Option Price = e^(−rT) × E*[ Payoff ]
 E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* ไม่ใช่ p จริง)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ราคาออปชัน เท่ากับ อี ยกกำลัง ลบอาร์ที คูณ ค่าคาดหวัง<em>ในโลกริสก์นิวทรัล</em>ของเพย์ออฟ" · <strong>โครงที่ต้องเห็น:</strong> ตัวลดค่า × ค่าคาดหวัง — ต้นไม้หนึ่งก้าวข้างบนคือกรณีย่อย: E* = p*×(payoff ขาขึ้น) + (1−p*)×(payoff ขาลง) คือค่าเฉลี่ยถ่วงน้ำหนักด้วย p* · ลอง r = 0: e⁰ = 1 → ราคาคือค่าเฉลี่ยของ payoff ตรง ๆ (ตัวอย่าง = 10) · <strong>กับดักการอ่าน:</strong> ดอกจันบน E* คือ<em>ป้ายบอกว่าใช้ความน่าจะเป็นชุดไหน</em> (p*) ไม่ใช่การคูณ — E*[·] กับ E[·] ใต้ p จริงให้เลขคนละค่า และตัวหลังคือ "การพยากรณ์" ที่สูตรนี้<em>ไม่ได้</em>ใช้ · ไม่มี μ (ทิศจริงของหุ้น) ในสูตรเลย · เล่ม <a href="theory-part4.html">ทฤษฎีของ Quant Part IV</a> เขียนตัวเดียวกันว่า E<sup>Q</sup></p>
 
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
 <p><strong>มือใหม่เห็น:</strong> "ต้องเดาให้แม่นว่าหุ้นจะขึ้นแค่ไหน ถึงตั้งราคา option ได้"<br>
@@ -373,6 +379,7 @@ E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* �
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Brownian motion W(t) คือ random walk เวอร์ชันต่อเนื่อง (ก้าวเล็กจิ๋วถี่ยิบ) · ก่อนดูสมการ จำแค่ 2 ตัว: <strong>dt</strong> = "ก้าวเวลาสั้นจิ๋วหนึ่งก้าว" · <strong>dW</strong> = "ก้าวสุ่มสั้นจิ๋วหนึ่งก้าว (ช็อกแบบ Brownian)" · สมการราคาหุ้นของ Black-Scholes เขียนว่า:</p>
 
 <div class="fm" style="text-align:center;font-size:1.1em">dS/S = μ dt + σ dW</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ดีเอส ส่วน เอส เท่ากับ มิว ดีที บวก ซิกมา ดีดับเบิลยู" · dS/S คือ "% ที่ราคาขยับในช่วงเวลาจิ๋ว dt" · <strong>โครงที่ต้องเห็น:</strong> ทุกสมการรูป dx = (…)dt + (…)dW มีสองส่วนเสมอ — หน้า dt คือ<em>แรงที่คาดเดาได้</em> (drift) หน้า dW คือ<em>ความสุ่ม</em> ที่มีขนาดราว √dt · ลอง σ = 0: เหลือ dS/S = μ dt คือหุ้นโตเรียบ ๆ แบบทบต้นต่อเนื่อง S₀·e<sup>μt</sup> จาก Part I ไม่มีความเสี่ยงเลย · <strong>กับดักการอ่าน:</strong> d นำหน้าตัวแปรอ่านว่า "การเปลี่ยนแปลงจิ๋วของ…" ไม่ใช่ตัวคูณ และไม่ใช่ d ขาลงของ binomial ข้างบน · μ คือทิศจริงของหุ้น — จะหายไปตอนตั้งราคา (10.2) เหลือแต่ σ · dW สุ่มใหม่ทุกก้าว ค่าเฉลี่ย 0 ไม่ใช่ตัวเลขคงที่</p>
 
 <p>อ่านเป็นภาษาคน: "% การเปลี่ยนราคา = แนวโน้ม + ช็อกสุ่ม"</p>
 <ul>
@@ -394,6 +401,7 @@ E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* �
 
 <div class="fm" style="font-size:1.02em">dV = (∂V/∂t)dt + (∂V/∂S)dS + ½(∂²V/∂S²)(dS)²
                                         └─ พจน์พิเศษของโลกสุ่ม ─┘</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ดีวี เท่ากับ อนุพันธ์ย่อยของวีเทียบที คูณ ดีที บวก อนุพันธ์ย่อยของวีเทียบเอส คูณ ดีเอส บวก ครึ่งของอนุพันธ์ย่อยอันดับสองของวีเทียบเอส คูณ ดีเอสกำลังสอง" · <strong>โครงที่ต้องเห็น:</strong> Taylor ของ <a href="math-part3.html#s7-6">Part III 7.6</a> ที่เพิ่มตัวแปรเวลา — อ่านเป็น Greeks: Θ·dt + Δ·dS + ½Γ·(dS)² · ถ้า V เป็นเส้นตรงใน S (Γ = 0) พจน์ที่สามหาย เหลือ Chain Rule ธรรมดา · <strong>กับดักการอ่าน:</strong> ∂ (ย่อย) คือขยับตัวแปรเดียวตรึงที่เหลือ ส่วน dV, dS ตัว d ธรรมดาคือการเปลี่ยนแปลงจิ๋วรวมทุกสาเหตุ — คนละตัว · (dS)² ไม่ใช่ศูนย์อย่างในแคลคูลัสปกติ เพราะ (dW)² = dt ทำให้ (dS)² = σ²S²dt (กล่องถัดไป) · ∂²V/∂S² อ่านเป็นสัญลักษณ์เดียว "อันดับสอง" ไม่ใช่ ∂ กำลังสอง</p>
 
 <div class="bx br"><div class="bt">🚶 ทำไมพจน์ ½(∂²V/∂S²)(dS)² ไม่หายไป</div>
 <p>ในแคลคูลัสปกติ ระยะยกกำลังสอง (dt)² เล็กจนตัดทิ้งได้ · แต่ในโลกสุ่มมีกฎแปลกข้อหนึ่ง: <strong>(dW)² = dt</strong> (ไม่ใช่ 0!) — ช็อกสุ่มยกกำลังสองแล้วไม่หาย มันกลายเป็นเวลา · ผลคือ (dS)² = σ²S²dt ยังอยู่ → พจน์ Gamma จึงไม่หายไป</p>
@@ -414,6 +422,7 @@ E* = ค่าคาดหวังในโลก risk-neutral (ใช้ p* �
 <p style="color:#16a34a;font-size:.93em">🟢 <strong>มือใหม่ไม่ต้องอ่านสมการเต็มก็ได้</strong> — ตารางแปลแต่ละพจน์เป็น Greek ด้านล่าง คือใจความจริง (ข้ามสมการดิบไปได้เลย)</p>
 
 <div class="fm" style="text-align:center;font-size:1.05em">∂V/∂t + ½σ²S²(∂²V/∂S²) + rS(∂V/∂S) − rV = 0</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "อนุพันธ์ย่อยของวีเทียบที บวก ครึ่งซิกมากำลังสอง เอสกำลังสอง คูณ อนุพันธ์ย่อยอันดับสองของวีเทียบเอส บวก อาร์เอส คูณ อนุพันธ์ย่อยของวีเทียบเอส ลบ อาร์วี เท่ากับ ศูนย์" · <strong>โครงที่ต้องเห็น:</strong> Greeks ต่อกันเป็นประโยคเดียว "Θ + ½σ²S²Γ + rSΔ − rV = 0" (ตารางข้างล่าง) — ผลรวมเป็นศูนย์ แปลว่าไม่มีพจน์ไหนได้ฟรี · ลอง V = S (ถือหุ้นเปล่า): ∂V/∂t = 0, Γ = 0, Δ = 1 → 0 + 0 + rS − rS = 0 ✓ หุ้นเองก็เป็นคำตอบหนึ่งของสมการ · <strong>กับดักการอ่าน:</strong> ∂ คืออนุพันธ์<em>ย่อย</em> — ∂V/∂t ขยับเวลาโดยตรึง S · ½σ²S² คูณ<em>เฉพาะ</em>พจน์ Gamma ไม่ใช่ทั้งบรรทัด · ไม่มี μ ในสมการ — ทิศจริงของหุ้นถูก hedge ทิ้งไปแล้ว เหลือ σ กับ r · สมการเดียวกันอ่านละเอียดใน <a href="theory-part4.html">ทฤษฎีของ Quant Part IV</a></p>
 
 <div class="tw"><table>
 <tr><th>พจน์</th><th>คือ Greek</th><th>แปลว่า</th></tr>
