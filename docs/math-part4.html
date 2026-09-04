@@ -364,7 +364,7 @@ b1, a1 = np.polyfit(mkt, stk, 1)
 print(f"β ตลาดอย่างเดียว = {b1:.4f}")                  <span class="o"># β ตลาดอย่างเดียว = 1.2692</span></pre></div>
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
-<p>β ตลาด 1.23 กับ β ขนาด 0.67 คือ hedge ratio สองตัว: ถือหุ้นนี้ ฿1M → short ดัชนีตลาด ฿1.23M <em>และ</em> short ตะกร้าหุ้นเล็ก ฿0.67M จึงจะนิ่งต่อทั้งสองปัจจัย · ถ้า hedge แค่ตลาด ฿1.27M ตามสูตร 2.1 พอร์ตจะยังเหวี่ยงตามขนาดบริษัทอยู่ราว 8% ของการเหวี่ยงเดิม (R² 0.915 → เหลือ 1 − 0.915) · <code>np.linalg.solve</code> คือวิธีที่ควรใช้จริง — การกลับเมทริกซ์ตรง ๆ ด้วย <code>inv</code> ขยายความคลาดเคลื่อนเมื่อคอลัมน์เกือบซ้ำกัน ซึ่งคือสถานการณ์ในกล่อง ❌ พอดี</p></div>
+<p>β ตลาด 1.23 กับ β ขนาด 0.67 คือ hedge ratio สองตัว: ถือหุ้นนี้ ฿1M → short ดัชนีตลาด ฿1.23M <em>และ</em> short ตะกร้าหุ้นเล็ก ฿0.67M จึงจะนิ่งต่อทั้งสองปัจจัย · ถ้า hedge แค่ตลาด ฿1.27M ตามสูตร 2.1 พอร์ตจะยังเหลือความแปรปรวนที่อธิบายไม่ได้ราว 8.5% ของเดิม (1 − R² = 1 − 0.915) ซึ่งส่วนใหญ่คือปัจจัยขนาดบริษัท · <code>np.linalg.solve</code> คือวิธีที่ควรใช้จริง — การกลับเมทริกซ์ตรง ๆ ด้วย <code>inv</code> ขยายความคลาดเคลื่อนเมื่อคอลัมน์เกือบซ้ำกัน ซึ่งคือสถานการณ์ในกล่อง ❌ พอดี</p></div>
 
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
 <p><strong>มือใหม่เห็น:</strong> "ใส่ปัจจัยเพิ่มยิ่งดี R² ยิ่งสูง"<br>
@@ -439,6 +439,16 @@ print(f"β ตลาดอย่างเดียว = {b1:.4f}")              
 </ul></div>
 
 <div class="pq" style="border-left-color:var(--blue);background:var(--blue-bg)">เราวัดความเสี่ยงพอร์ตได้แล้ว — แต่จะ "เลือกน้ำหนัก w ที่ดีที่สุด" ได้ยังไง? เสี่ยงน้อยสุดสำหรับผลตอบแทนที่ต้องการ? คำตอบคือ Optimization ที่ เล่ม 2 · B จะเปิด</div>
+
+<div class="bx bp"><div class="bt">🔎 โมเดลในเล่มนี้คือ E[อะไร | อะไร]</div>
+<p>ก่อนปิดเล่ม ถอดทุกเครื่องมือเป็นประโยคเดียว: หน้าขีดคือคำถาม หลังขีดคือข้อมูลที่โมเดลได้เห็น สิ่งที่ไม่อยู่หลังขีดคือสิ่งที่มันไม่รู้ · ตารางเต็มทั้งคลังอยู่ที่ <a href="notation.html#etable">notation หมวด 0</a></p>
+<div class="tw"><table>
+<tr><th class="nw">เครื่องมือ</th><th>อ่านเป็น E[ · | · ]</th><th>สิ่งที่ไม่อยู่หลังขีด</th></tr>
+<tr><td class="nw"><strong>wᵀΣw</strong></td><td>Var[r<sub>p</sub>] — ความแปรปรวนของพอร์ต <em>ไม่ใช่</em> E[·]</td><td>ผลตอบแทนคาดหวัง — ต้องมี wᵀμ แยกอีกสูตร</td></tr>
+<tr><td class="nw"><strong>OLS y = α + βx</strong></td><td>E[y | x] = α + βx</td><td>ตัวแปรอื่นทุกตัว — และความกว้างรอบเส้นถูกสมมติว่าคงที่</td></tr>
+<tr><td class="nw"><strong>Multiple regression</strong></td><td>E[y | x₁, …, x<sub>n</sub>] — β แต่ละตัว "เมื่อตรึงตัวอื่น"</td><td>ปฏิสัมพันธ์ระหว่างปัจจัย · ปัจจัยที่เกือบซ้ำกันทำให้ β พอง</td></tr>
+<tr><td class="nw"><strong>PCA</strong></td><td>ทิศที่ Var[wᵀr] สูงสุด — เรื่องของ Var ไม่ใช่ E</td><td>ความหมายทางเศรษฐกิจของทิศ (ต้องตีความเอง)</td></tr>
+</table></div></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
 <p><strong>Vector</strong> = รายการตัวเลข · <strong>Dot product</strong> = จับคู่คูณแล้วบวก · <strong>Matrix</strong> = ตารางตัวเลข · <strong>Covariance Matrix (Σ)</strong> = ตารางความเสี่ยงทุกคู่ · <strong>wᵀΣw</strong> = Portfolio Variance · <strong>Eigenvalue/Eigenvector</strong> = ทิศทางหลัก + ความสำคัญ · <strong>PCA</strong> = ย่อมิติด้วย eigenvalue · <strong>Regression/OLS</strong> = หาเส้น fit · <strong>Beta (β)</strong> = หุ้นขยับกี่เท่าตลาด · <strong>R²</strong> = โมเดลอธิบายได้กี่ % · <strong>Overfitting</strong> = จำ noise แทน pattern</p></div>
