@@ -93,6 +93,23 @@ def check(path):
         if anc and anc not in ids_of(target):
             errs.append(f"บรรทัด {ln}: anchor ไม่มีในปลายทาง {h}")
 
+    # ความหนาแน่น: กล่องสี/กล่องพิเศษติดกันเกิน 4 (style-guide E) — เตือน
+    run, run_start = 0, 0
+    for ln, line in enumerate(src.split("\n"), 1):
+        st = line.lstrip()
+        if not st:
+            continue
+        if re.match(r'<div class="(bx|qv|why|try|deep|dft|scene)\b', st):
+            if run == 0:
+                run_start = ln
+            run += 1
+        elif st.startswith(("<p", "<h2", "<h3", "<ul", "<ol", "<svg", "<table", "<div class=\"tw", "<div class=\"code", "<div class=\"fm", "<div class=\"card", "<div class=\"ad")):
+            if run > 4:
+                warns.append(f"บรรทัด {run_start}: กล่องสีติดกัน {run} กล่อง (เกิน 4)")
+            run = 0
+    if run > 4:
+        warns.append(f"บรรทัด {run_start}: กล่องสีติดกัน {run} กล่อง (เกิน 4)")
+
     if name not in SKIP_BANNER and "🧭" not in src and 'class="fm"' in src:
         warns.append("ไม่มี banner 🧭 เส้นทางอ่าน")
     if 'class="fm"' in src and "Intl.Segmenter" not in src:

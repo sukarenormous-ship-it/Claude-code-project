@@ -36,7 +36,7 @@ description: >-
    - **กราฟ/ภาพประกอบ:** ทำเป็น inline SVG เสมอ (ห้าม chart library/canvas/รูป raster) ตาม `references/visual-guide.md` — area gradient, เส้นหลักมีเงา+ปลายมน, grid ถอยหลัง, callout ชี้จุดสำคัญ, สีตามความหมาย (เขียว=กำไร แดง=ขาดทุน ม่วง=จุดสำคัญ)
 5. **ปิดตอน** — สรุป ✓ + `.pq` cliffhanger เชื่อม Part ถัดไป + 📖อ่านต่อ + 📖ศัพท์ใหม่ในตอนนี้
 6. **รีวิว** ตาม `references/craft-standard.md` แล้วแก้ให้ครบ
-6½. **รัน QA ก่อน commit ทุกครั้ง** — `python3 tools/lib_qa.py` (ทั้งคลัง) หรือ `python3 tools/lib_qa.py <ชื่อบท>` · ตรวจ tag balance, บล็อก "📖 อ่านสูตรว่า", ลิงก์/anchor ภายในทุกตัว, banner 🧭, script ตัดคำ · ต้องได้ "ข้อผิดพลาด 0" · หนังสือ "คิดแบบ Quant" รันเพิ่ม `python3 tools/nq_qa.py` และ `python3 tools/nq_check_figures.py`
+6½. **รัน QA ก่อน commit ทุกครั้ง** — `python3 tools/lib_qa.py` (ทั้งคลัง) หรือ `python3 tools/lib_qa.py <ชื่อบท>` · ตรวจ tag balance, บล็อก "📖 อ่านสูตรว่า", ลิงก์/anchor ภายในทุกตัว, banner 🧭, script ตัดคำ · ต้องได้ "ข้อผิดพลาด 0" · หนังสือ "คิดแบบ Quant" รันเพิ่ม `python3 tools/nq_qa.py` และ `python3 tools/nq_check_figures.py` · ชุดคณิตศาสตร์เล่ม 2 รัน `python3 tools/math_figures.py` (คำนวณตัวเลขทุกตัวอย่างใหม่แล้วเทียบกับข้อความ — ต้อง "ไม่ตรง 0") · หลังเพิ่ม/แก้บล็อก 📖 รัน `python3 tools/symbol_index.py` เพื่ออัปเดตดัชนีสัญลักษณ์ใน notation หมวด 0
 7. **commit แยกต่อ Part** (`docs: <เล่ม> Part N — ร่างก่อนรีวิว` → `... ผ่านรีวิว N คน — แก้ครบ`) แล้ว push
 
 ## กฎที่พลาดไม่ได้ (สรุปจากบทเรียนจริง)
