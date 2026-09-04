@@ -620,6 +620,67 @@ def build():
         "จำนวนวันหลังโฟกัส": len(days) - 1 - f,
     }
 
+
+    # ── จูนพารามิเตอร์ 50 แบบ (multiple testing) — RNG แยก ไม่กระทบฐานข้างบน ─────
+    SWEEP_N = (7, 14)
+    SWEEP_LO = (20, 25, 30, 35, 40)
+    SWEEP_HI = (60, 65, 70, 75, 80)
+    SWEEP_START = 15          # เริ่มถือได้ตั้งแต่ index นี้ (RSI ทั้ง 7 และ 14 นิยามแล้ว)
+    grid = [(n_, lo, hi) for n_ in SWEEP_N for lo in SWEEP_LO for hi in SWEEP_HI]
+
+    def rule_excess(prices, n_, lo, hi):
+        """long เมื่อ RSI < lo จนกว่า RSI > hi · ผลตอบแทนรวม (log) ของกฎ เป็น % · ภายใต้ random walk ไม่มี drift ค่าคาดหวัง = 0 พอดี"""
+        rs_ = rsi_wilder(prices, n_)
+        lr = [math_log(prices[i] / prices[i - 1]) for i in range(1, len(prices))]
+        held = False
+        tot = 0.0
+        for i in range(SWEEP_START, len(prices) - 1):
+            v = rs_[i]["rsi"] if rs_[i] else None
+            if v is None:
+                continue
+            if not held and v < lo:
+                held = True
+            elif held and v > hi:
+                held = False
+            if held:
+                tot += lr[i]                  # ถือข้ามคืน i → i+1
+        return 100 * tot
+
+    real_sweep = [(rule_excess(p, *g), g) for g in grid]
+    real_best_val, real_best_g = max(real_sweep)
+    real_default = [v for v, g in real_sweep if g == (RSI_N, 30, 70)][0]
+    real_vals = sorted(v for v, _ in real_sweep)
+    rng_sw = random.Random(SEED + 2)
+    best_of_50, single_default, best_beats_real = [], [], 0
+    for _ in range(PATHS):
+        q = [p[0]]
+        for _ in range(n_days - 1):
+            q.append(q[-1] * (1 + rng_sw.gauss(0, sd)))
+        vals = [rule_excess(q, *g) for g in grid]
+        m = max(vals)
+        best_of_50.append(m)
+        single_default.append(vals[grid.index((RSI_N, 30, 70))])
+        best_beats_real += m >= real_best_val
+    best_sorted = sorted(best_of_50)
+    dflt_sorted = sorted(single_default)
+    sweep_block = {
+        "คำอธิบาย": f"กฎ RSI แบบ long-only: เข้าเมื่อ RSI < lo ออกเมื่อ RSI > hi · ตาราง n∈{list(SWEEP_N)} lo∈{list(SWEEP_LO)} hi∈{list(SWEEP_HI)} = {len(grid)} กฎ · วัดผลตอบแทนรวมของกฎ (log, %) ตั้งแต่วันที่ {SWEEP_START + 1} ของชุดข้อมูล · ฐานสุ่ม {PATHS} เส้น เมล็ด {SEED + 2}",
+        "จำนวนกฎ": len(grid),
+        "ข้อมูลจริง": {
+            "กฎที่ดีที่สุด": {"n": real_best_g[0], "lo": real_best_g[1], "hi": real_best_g[2], "ผลตอบแทนเปอร์เซ็นต์": r(real_best_val, 1)},
+            "กฎค่าปริยาย 14/30/70 เปอร์เซ็นต์": r(real_default, 1),
+            "ถือเฉย ๆ ช่วงเดียวกัน เปอร์เซ็นต์": r(100 * math_log(p[-1] / p[SWEEP_START]), 1),
+            "มัธยฐานของ 50 กฎ เปอร์เซ็นต์": r(real_vals[len(real_vals) // 2], 1),
+            "จำนวนกฎที่ผลตอบแทนเป็นบวก": sum(v > 0 for v in real_vals),
+            "จำนวนกฎที่ไม่เคยเข้าเลย": sum(abs(v) < 1e-12 for v in real_vals),
+        },
+        "ฐานภายใต้ความสุ่ม": {
+            "กฎเดียว 14/30/70": {"ค่าเฉลี่ยเปอร์เซ็นต์": r(sum(single_default) / PATHS, 1), "เปอร์เซ็นไทล์ 95 เปอร์เซ็นต์": r(dflt_sorted[int(0.95 * PATHS) - 1], 1)},
+            "ดีที่สุดใน 50 กฎ": {"ค่าเฉลี่ยเปอร์เซ็นต์": r(sum(best_of_50) / PATHS, 1), "มัธยฐานเปอร์เซ็นต์": r(best_sorted[PATHS // 2], 1), "เปอร์เซ็นไทล์ 95 เปอร์เซ็นต์": r(best_sorted[int(0.95 * PATHS) - 1], 1)},
+            "สัดส่วนเส้นสุ่มที่ดีที่สุดใน 50 ≥ ดีที่สุดของข้อมูลจริง เปอร์เซ็นต์": r(100 * best_beats_real / PATHS, 1),
+        },
+    }
+
     return {
         "_อ่านก่อน": "สร้างด้วย tools/indicator_figures.py จาก docs/nq-figures.json (ราคารายวัน BTC ชุดเดียวกับทั้งเล่ม) — ห้ามแก้ด้วยมือ",
         "ช่วงข้อมูล": {"ตั้งแต่": days[0], "ถึง": days[-1], "จำนวนวัน": len(days)},
@@ -634,6 +695,7 @@ def build():
         "Volatility": vol_block,
         "Autocorrelation": acf_block,
         "ฐานภายใต้ความสุ่ม": base_block,
+        "ParameterSweep": sweep_block,
     }
 
 
