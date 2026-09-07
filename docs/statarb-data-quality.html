@@ -1,0 +1,158 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ข้อมูลที่ใช้ทดสอบเชื่อได้แค่ไหน — หกโรคของข้อมูล backtest</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body><div class="cover">
+<h1>ข้อมูลที่ใช้ทดสอบเชื่อได้แค่ไหน</h1>
+<div class="sub">หกโรคของข้อมูล backtest — และปัญหาเฉพาะฝั่งคริปโตที่มักถูกมองข้าม</div>
+<div class="desc">บทเสริมสาย Statistical Arbitrage · ตรวจข้อมูลของคลังนี้เองเป็นตัวอย่าง (Deribit/OKX)</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🔵 บทนี้เป็นบทสุดท้ายในสายเสริม stat arb</strong> ต่อจาก
+<a href="statarb-alpha-decay.html">edge เสื่อม</a> — ทุกบทก่อนหน้าสมมติว่าข้อมูลที่ใช้ backtest
+เชื่อถือได้ บทนี้ตั้งคำถามย้อนกลับไปที่รากฐาน: <strong>ข้อมูลเองมีปัญหาอะไรที่มองไม่เห็น</strong></p></div>
+
+<h2>หกโรคของข้อมูลที่ใช้ backtest</h2>
+
+<div class="tw"><table>
+<tr><th class="nw">โรค</th><th>คืออะไร</th><th>ผลถ้าไม่รู้ตัว</th></tr>
+<tr><td class="nw"><strong>Survivorship bias</strong><br>ผู้รอดชีวิต</td><td>ข้อมูลเหลือแต่สินทรัพย์/สัญญาที่ "รอด" มาถึงวันนี้ ตัวที่หายไปกลางทางไม่ถูกนับ</td><td>backtest ดูดีเกินจริง เพราะไม่เห็นตัวที่ล้มเหลว</td></tr>
+<tr><td class="nw"><strong>Look-ahead bias</strong><br>มองอนาคต</td><td>ใช้ข้อมูลที่ ณ เวลานั้นจริง ๆ ยังไม่มี (เช่น ราคาปิดที่ถูกแก้ย้อนหลัง)</td><td>ผลตอบแทนสูงเกินจริงเพราะโมเดล "รู้อนาคต" โดยไม่ตั้งใจ</td></tr>
+<tr><td class="nw"><strong>Data revision</strong><br>ข้อมูลถูกแก้ย้อนหลัง</td><td>ผู้ให้บริการข้อมูลแก้ตัวเลขเก่าทีหลัง (เช่น ปรับ split, แก้ error)</td><td>backtest ที่ดึงข้อมูลวันนี้ กับที่รันจริงเมื่อวันนั้น เห็นคนละค่า</td></tr>
+<tr><td class="nw"><strong>Phantom quotes</strong><br>quote ที่ไม่มีจริง</td><td>ราคาที่ปรากฏในไฟล์แต่ไม่เคยเทรดได้จริง (stale quote, ราคาที่ไม่มีคนรับ)</td><td>backtest สมมติว่า fill ได้ในราคาที่ไม่มีอยู่จริง</td></tr>
+<tr><td class="nw"><strong>สภาพคล่องปลอม</strong></td><td>มีราคาเสนอในไฟล์ แต่ปริมาณที่แท้จริงรองรับไม่ได้เท่าที่กลยุทธ์ต้องการ</td><td>กลยุทธ์ที่ใช้เงินก้อนใหญ่ขึ้น backtest ดีแต่ live เข้าไม่ได้ราคาเดิม</td></tr>
+<tr><td class="nw"><strong>Corporate actions</strong><br>เหตุการณ์บริษัท</td><td>split, dividend, ควบรวมกิจการ ที่ทำให้ราคาย้อนหลังไม่ต่อเนื่องถ้าไม่ปรับ</td><td>สัญญาณเทคนิคที่คำนวณจากราคาที่ไม่ได้ปรับ จะเห็น "การเปลี่ยนแปลง" ที่ไม่มีอยู่จริง</td></tr>
+</table></div>
+
+<div class="why"><div class="bt">🧭 หกโรคนี้ในคลังหนังสือเล่มนี้</div>
+<p>Survivorship bias พูดถึงใน 5 ไฟล์ (รวม <a href="nq-part1.html">nq-part1</a> ที่ใช้ตัวเลขจริงแสดงไว้แล้ว) ·
+corporate actions พูดถึงแค่ 1 ไฟล์ (<code>arb-part2a</code>) — น้อยมากเทียบกับความสำคัญ เพราะตลาดคริปโต
+ที่เล่มนี้ใช้ข้อมูลจริงด้วย ไม่มี corporate action แบบหุ้นเลย (ไม่มี split/dividend) —
+แต่มีปัญหาคู่ขนานที่คล้ายกันเฉพาะของคริปโต ซึ่งเป็นหัวข้อถัดไป</p></div>
+
+<h2>ฝั่งคริปโตโดยเฉพาะ</h2>
+
+<div class="ad">
+<div class="pro"><div class="bt">🪙 สี่ปัญหาที่พบเฉพาะคริปโต</div>
+<ul>
+<li><strong>เหรียญที่ถูก delist</strong> — เทียบเท่า survivorship bias ของหุ้น แต่เกิดเร็วกว่ามาก</li>
+<li><strong>Wick จาก liquidation cascade</strong> — ราคาพุ่ง/ร่วงชั่ววูบจากการบังคับปิดสถานะต่อเนื่อง ไม่ใช่ราคาที่ใครตั้งใจเทรด</li>
+<li><strong>ประวัติ funding rate ที่ถูกแก้</strong> — คล้าย data revision แต่เกิดถี่กว่าราคาหุ้น</li>
+<li><strong>ราคาต่างกันข้ามตลาด</strong> — ไม่มีตลาดกลางแบบหุ้น ราคาเดียวกันต่างกันได้ในแต่ละ exchange</li>
+</ul></div>
+<div class="con"><div class="bt">📏 วัดได้จากข้อมูลในคลังนี้</div>
+<p>ราคา BTC underlying ที่ Deribit กับ OKX ในวันเดียวกัน <strong>ต่างกันกลาง 0.448%</strong>
+(มากสุด 0.8% ตลอด 57 วัน) — backtest ที่ดึงราคาจากตลาดเดียวแล้วสมมติว่าใช้ได้กับอีกตลาด
+กำลังพลาดจุดนี้ ยิ่งถ้ากลยุทธ์เป็น cross-venue arbitrage ความต่างนี้คือ<strong>สัญญาณ</strong>
+ไม่ใช่ noise ที่ตัดทิ้งได้</p></div>
+</div>
+
+<h2>ตรวจคลังของเราเอง — ตัวอย่างที่เดินตามได้</h2>
+
+<p>รันตัวตรวจสี่เรื่องกับข้อมูล option chain จริงในคลังนี้ (Deribit + OKX, 57 วัน)</p>
+
+<!--CHART:data-quality-survivorship-->
+<svg class="fig" viewBox="0 0 780 158" role="img" aria-label="กราฟแท่งเทียบอัตราการรอดของสัญญา BTC จากวันแรกถึงวันสุดท้ายของข้อมูล 57 วัน Deribit รอด 44.2% ส่วน OKX รอดเพียง 31.8%">
+<line x1="260" y1="36" x2="260" y2="134" stroke="#cbd5e1" stroke-width="1.5"/>
+<rect x="260" y="46.0" width="316.8" height="26" rx="4" fill="#2563eb"/>
+<text x="248" y="59.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">อยู่รอดถึงวันสุดท้าย</text>
+<text x="248" y="75.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">Deribit</text>
+<text x="584.8" y="65.0" text-anchor="start" font-size="13" font-weight="700" fill="#2563eb" font-family="Sarabun,sans-serif">44.2%</text>
+<rect x="260" y="96.0" width="227.9" height="26" rx="4" fill="#f97316"/>
+<text x="248" y="109.0" text-anchor="end" font-size="12.5" fill="#374151" font-family="Sarabun,sans-serif">อยู่รอดถึงวันสุดท้าย</text>
+<text x="248" y="125.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">OKX</text>
+<text x="495.9" y="115.0" text-anchor="start" font-size="13" font-weight="700" fill="#f97316" font-family="Sarabun,sans-serif">31.8%</text>
+<text x="248" y="26" text-anchor="end" font-size="13" font-weight="700" fill="#374151" font-family="Sarabun,sans-serif">สัญญา BTC ที่มีอยู่วันแรก (57 วัน)</text>
+</svg>
+<div class="cap">Deribit: 404/914 สัญญา · OKX: 230/724 สัญญา · ทั้งสองตลาดข้อมูลครบ 57/57 วัน ไม่มีวันขาดหาย</div>
+<!--/CHART:data-quality-survivorship-->
+
+<div class="bx bg"><div class="bt">✅ ข่าวดีที่ต้องรายงานด้วย</div>
+<p>ทั้ง Deribit และ OKX มีข้อมูล<strong>ครบ 57/57 วันตรงกันทั้งคู่ ไม่มีวันไหนขาดหายเลย</strong> —
+เป็นจุดที่ต้องพูดถึง เพราะบทที่พูดแต่ปัญหาโดยไม่บอกว่าอะไรใช้ได้ดี จะทำให้ผู้อ่านระแวงเกินเหตุ
+ข้อมูลชุดนี้<strong>เชื่อถือได้เรื่องความต่อเนื่องของเวลา</strong> — ปัญหาที่มีจริงอยู่ที่ความครบของสัญญาและสภาพคล่อง ไม่ใช่ช่องว่างของเวลา</p></div>
+
+<div class="bx br"><div class="bt">แต่ผู้รอดชีวิตต่างกันมากระหว่างตลาด</div>
+<p>สัญญา BTC ที่มีอยู่วันแรกของ Deribit รอดถึงวันสุดท้าย 44.2% ขณะที่ของ OKX รอดแค่ <strong>31.8%</strong> —
+backtest ที่ใช้ข้อมูล OKX แล้วไม่ระวังเรื่องนี้ จะเห็นผลตอบแทนที่ปนเปื้อนจาก survivorship bias
+มากกว่าที่ใช้ข้อมูล Deribit ในสัดส่วนพอสมควร บทนี้<strong>ไม่สรุปสาเหตุ</strong> (อาจเป็นสไตล์การออกสัญญาที่ต่างกัน
+ของแต่ละ exchange) แต่ตัวเลขบอกชัดว่า<strong>เชื่อค่าเดียวกันทั้งสองตลาดไม่ได้</strong></p></div>
+
+<p>ผลตรวจสภาพคล่องและ mark price (วันล่าสุดในข้อมูล) — ตัวเลขเดียวกับที่ใช้ใน
+<a href="statarb-live-vs-backtest.html">live-vs-backtest</a> แต่มองในมุม "คุณภาพข้อมูล" แทน "ต้นทุนการเทรด"</p>
+
+<div class="tw"><table>
+<tr><th class="nw">ตลาด</th><th class="nw">ไม่มีปริมาณซื้อขาย 24 ชม.</th><th class="nw">ไม่มีราคาเสนอซื้อ</th><th class="nw">mark นอกช่วง bid-ask</th></tr>
+<tr><td class="nw">Deribit</td><td class="nw">45.9%</td><td class="nw">9.8%</td><td class="nw">13 สัญญา</td></tr>
+<tr><td class="nw">OKX</td><td class="nw">43.1%</td><td class="nw">10.4%</td><td class="nw"><strong>237 สัญญา</strong></td></tr>
+</table></div>
+
+<h2>ขาช็อต — ยืมของได้จริงไหม</h2>
+
+<p>สมมติฐานที่ backtest มักมองข้ามคือ <strong>ฝั่งขาย (short) ต้องยืมของมาขายก่อน</strong> — ถ้ายืมไม่ได้
+หรือยืมได้แต่ค่าธรรมเนียมแพง กลยุทธ์ที่ backtest ดูดีฝั่งขาย อาจทำไม่ได้จริงเลย
+ในคลังหนังสือนี้ หัวข้อการยืมชอร์ต/ความพร้อมของขาช็อตถูกพูดถึงใน <strong>4 ไฟล์</strong>
+(<code>arb-part1</code>, <code>arb-part3</code>, <code>pm-part7</code>, <code>theory-part3</code>) —
+น้อยกว่าที่ควรเมื่อเทียบกับผลกระทบ เพราะ option ที่เล่มนี้ใช้เป็นข้อมูลหลักไม่ต้องยืมของแบบหุ้น/futures
+(structure ของ option เองให้ผลเทียบเท่าขาช็อตได้โดยไม่ต้องยืม) แต่กลยุทธ์ stat arb ที่ทำผ่านสปอตหรือ
+futures โดยตรง <strong>ต้องตรวจเรื่องนี้เสมอ</strong> — ไม่ใช่สมมติว่ายืมได้เสมอเพราะ backtest ไม่ error</p>
+
+<h2>วิธีตรวจข้อมูลของตัวเองก่อนใช้</h2>
+
+<p>ทุกตัวเลขในหัวข้อก่อนหน้ามาจากสคริปต์เดียว ที่ออกแบบให้<strong>รันกับข้อมูลของใครก็ได้</strong>
+ไม่ใช่แค่ของคลังนี้ — ตรวจสี่เรื่อง: ความครบของวันที่ ผู้รอดชีวิต สภาพคล่อง และราคาข้ามตลาด (ถ้ามีมากกว่าหนึ่งตลาด)</p>
+
+<div class="fm">python3 tools/data_health.py --data-dir /path/to/your/data</div>
+
+<div class="dft"><div class="bt">⚠️ ค่าเริ่มต้นที่แนะนำก่อนเชื่อ backtest ไหนก็ตาม</div>
+<ol>
+<li><strong>รัน data_health.py ก่อนเสมอ</strong> ก่อนเริ่มออกแบบกลยุทธ์ — ไม่ใช่หลังจาก backtest ออกมาดีแล้วค่อยสงสัย</li>
+<li><strong>ถ้าใช้หลายตลาด ให้เทียบราคาข้ามตลาดก่อน</strong> — ความต่างที่เจอ (เช่น 0.448% กลางในบทนี้) ต้องเทียบกับกำไรที่กลยุทธ์คาดว่าจะได้ ถ้าเล็กกว่าความต่างนี้ ระวังว่ากำลังจับ noise ของข้อมูล ไม่ใช่สัญญาณจริง</li>
+<li><strong>ถ้าผู้รอดชีวิตต่างกันมากระหว่างแหล่งข้อมูล</strong> (เหมือน Deribit vs OKX ในบทนี้) อย่าสลับใช้ข้อมูลข้ามแหล่งกลางทางโดยไม่ตรวจสอบ</li>
+<li><strong>ตรวจว่ากลยุทธ์ต้องช็อตไหม</strong> ถ้าต้อง ให้ยืนยันว่ายืมของได้จริงในขนาดที่ต้องการ ก่อนเชื่อผล backtest ฝั่งขาย</li>
+</ol></div>
+
+<div class="bx ba"><div class="bt">⚠️ ข้อจำกัดของบทนี้เอง</div>
+<p>ตัวเลขสภาพคล่องและ mark price มาจาก<strong>วันเดียว</strong> (วันล่าสุดในข้อมูล) เพื่อความชัดเจน —
+เหมือนกับข้อจำกัดที่ระบุไว้แล้วในบท <a href="statarb-live-vs-backtest.html">live-vs-backtest</a>
+ผู้รอดชีวิตและความครบของวันที่เป็นค่าที่แม่นตลอดทั้งช่วง 57 วัน แต่ 57 วันเองก็ยังสั้นเกินกว่าจะเจอ
+ปัญหาบางประเภท (เช่น corporate action ของคริปโตอย่าง chain fork หรือการเปลี่ยน tick size)
+ที่เกิดไม่บ่อย — เครื่องมือ <code>data_health.py</code> ตรวจสิ่งที่ตรวจได้จากข้อมูลที่มี ไม่ใช่การรับประกันว่าไม่มีปัญหาอื่น</p></div>
+
+<div class="bx bb"><div class="bt">📚 อ่านต่อ</div>
+<ul>
+<li>ในคลังนี้: <a href="nq-part1.html">คิดแบบ Quant Part 1</a> (ต้นฉบับตัวเลขผู้รอดชีวิต 44%) ·
+<a href="statarb-live-vs-backtest.html">live กับ backtest ไม่ตรงกัน</a> (ตัวเลขสภาพคล่องชุดเดียวกัน มุมมองต้นทุนการเทรด)</li>
+<li>Kenneth French Data Library — ตัวอย่างมาตรฐานทองคำของการจัดการ survivorship bias ในข้อมูลหุ้น</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">📖 สรุปบทนี้เป็นสามบรรทัด</div>
+<ol>
+<li><strong>ข้อมูลที่ "ครบ" เรื่องเวลา ไม่ได้แปลว่า "ครบ" ทุกเรื่อง</strong> — คลังนี้ไม่มีวันขาดหายเลย แต่ผู้รอดชีวิตต่างกันเกือบสองเท่าระหว่างตลาด (44.2% vs 31.8%)</li>
+<li><strong>ราคาข้ามตลาดต่างกันจริง</strong> (กลาง 0.448%) — ถ้ากำไรที่กลยุทธ์คาดว่าจะได้เล็กกว่านี้ ให้สงสัยว่ากำลังจับ noise ของข้อมูล</li>
+<li><strong>รันตัวตรวจสุขภาพข้อมูลก่อนออกแบบกลยุทธ์เสมอ</strong> ไม่ใช่หลัง backtest ออกมาดีแล้วค่อยสงสัย — <code>tools/data_health.py</code> ใช้กับข้อมูลของตัวเองได้ทันที</li>
+</ol></div>
+
+<p style="text-align:center;margin-top:26px"><a href="statarb-alpha-decay.html">← edge เสื่อม — แยกจาก drawdown ปกติยังไง</a> ·
+<a href="nq-index.html">หน้ารวม "คิดแบบ Quant"</a> ·
+<a href="nq-appendix-map.html">แผนที่เข้าคลัง</a></p>
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
