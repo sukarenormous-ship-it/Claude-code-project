@@ -247,6 +247,31 @@ expect("math-part9.html", "VECM half-life", f"{hl:.2f} วัน")
 expect("math-part9.html", "ECM γ_B", um(b2[1], '.4f'))
 expect("math-part9.html", "ECM t", um(t2[1], '.2f'))
 expect("math-part9.html", "ECM identity", um(b2[1] - bta * a2[1], '.4f'))
+# SE ของ φ̂ สองตัว (ใช้ในกล่อง ✅ อ่านผลลัพธ์ — "0.15 กับ 0.20 วัน อยู่ในช่วงคลาดเคลื่อนของกันและกัน")
+bS_, tS_ = ols_t(Xv, np.diff(spr)[1:]); se_phi_vecm = bS_[1] / tS_[1]
+b1_, t1_ = ols_t(X2v, np.diff(spr)); se_phi_ar1 = b1_[1] / t1_[1]
+print(f"          SE(φ̂) VECM={se_phi_vecm:.3f} AR(1)={se_phi_ar1:.3f} · Δφ̂={abs(bS_[1]-b1_[1]):.3f}")
+expect("math-part9.html", "SE φ̂ VECM/AR1", f"SE ของมันคือ {se_phi_vecm:.3f} (VECM) กับ {se_phi_ar1:.3f} (AR(1))")
+expect("math-part9.html", "Δφ̂", f"ต่างกัน {abs(bS_[1]-b1_[1]):.3f} ขณะที่")
+# ✍️ 2·D §9.5 — ตัวจำลองที่ A ปรับตัวจริง (สุ่ม u ทั้งชุดก่อน แล้ว e · s[0]=0 · A[0]=100)
+rng = np.random.default_rng(0)
+u_ = rng.normal(0, 2, n); e_ = rng.normal(0, 1, n)
+s_ = np.zeros(n); A_ = np.zeros(n); A_[0] = 100
+for t_ in range(1, n):
+    s_[t_] = 0.7 * s_[t_ - 1] + u_[t_]; A_[t_] = A_[t_ - 1] + 0.1 * s_[t_ - 1] + e_[t_]
+B_ = 5 + 1.5 * A_ + s_
+bt_, al_ = np.polyfit(A_, B_, 1); sp_ = B_ - (al_ + bt_ * A_); dA_, dB_ = np.diff(A_), np.diff(B_)
+Xw = np.column_stack([np.ones(n - 2), sp_[1:-1], dA_[:-1], dB_[:-1]])
+wB, wtB = ols_t(Xw, dB_[1:]); wA, wtA = ols_t(Xw, dA_[1:]); wid = wB[1] - bt_ * wA[1]
+print(f"          ✍️ β̂={bt_:.4f} γ_B={um(wB[1],'.4f')} t={um(wtB[1],'.2f')} γ_A=+{wA[1]:.4f} t=+{wtA[1]:.2f} identity={um(wid,'.4f')} φ̂={1+wid:.3f} HL={-math.log(2)/math.log(1+wid):.2f}")
+expect("math-part9.html", "✍️ β̂", f"β̂ = {bt_:.4f}")
+expect("math-part9.html", "✍️ γ_B", f"<strong>{um(wB[1],'.4f')}</strong> (t = {um(wtB[1],'.2f')})")
+expect("math-part9.html", "✍️ γ_A", f"<strong>+{wA[1]:.4f}</strong> (t = +{wtA[1]:.2f})")
+expect("math-part9.html", "✍️ identity", f"<strong>{um(wid,'.4f')}</strong> = φ − 1")
+expect("math-part9.html", "✍️ φ̂/HL", f"φ̂ = {1+wid:.3f} → ครึ่งชีวิต {-math.log(2)/math.log(1+wid):.2f} วัน")
+# 2·F §13.5 — เอกลักษณ์ Beta ↔ Binomial ที่ยกเป็นตัวอย่างในกล่อง 🧮
+p_id = sum(math.comb(101, j) * 0.55 ** j * 0.45 ** (101 - j) for j in range(0, 59))
+expect("math-part11.html", "Beta↔Binomial ตัวอย่าง", f"P(Binomial(101, 0.55) ≤ 58) = {p_id:.3f}")
 
 
 def main():
