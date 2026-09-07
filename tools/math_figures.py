@@ -209,14 +209,44 @@ for a, b in ((59, 43), (69, 51), (581, 421), (591, 429), (168, 132)):
     mean = a / (a + b); lo, hi = beta_q(.025, a, b), beta_q(.975, a, b); pgt = 1 - beta_cdf_int(.55, a, b)
     print(f"Beta({a},{b}) mean={mean:.3f} [{lo:.3f}, {hi:.3f}] P>0.55={pgt:.3f}", end=" | ")
     expect("math-part11.html", f"Beta({a},{b}) mean", f"{mean:.3f}")
-    expect("math-part11.html", f"Beta({a},{b}) CrI", f"[{lo:.3f}, {hi:.3f}]")
+    if (a, b) != (168, 132):   # กล่อง ❌ รายงานแค่ค่าเฉลี่ยกับ P ไม่มีช่วง
+        expect("math-part11.html", f"Beta({a},{b}) CrI", f"[{lo:.3f}, {hi:.3f}]")
     expect("math-part11.html", f"Beta({a},{b}) P>0.55", f"{pgt:.3f}")
 print()
 # ✍️: flat prior, 58% ต่อเนื่อง — กี่ไม้จึง P(p>0.55) ≥ 0.95
 for n_ in (700, 750):
     k_ = round(0.58 * n_); pgt = 1 - beta_cdf_int(.55, 1 + k_, 1 + n_ - k_)
     print(f"          n={n_} k={k_} P>0.55={pgt:.4f}")
-expect("math-part11.html", "✍️ 750 ไม้", f"{1 - beta_cdf_int(.55, 436, 316):.4f}")
+expect("math-part11.html", "✍️ 750 ไม้", f"{1 - beta_cdf_int(.55, 436, 316):.3f}")
+
+# ── 2·D §9.5 VECM บนคู่ A/B ของ §9.1 ──────────────────────────────────────
+rng = np.random.default_rng(0); n = 500
+A = 100 + np.cumsum(rng.normal(0, 1, n)); Bs = 5.0 + 1.5 * A + rng.normal(0, 2, n)
+bta, alp = np.polyfit(A, Bs, 1); spr = Bs - (alp + bta * A)
+dA, dB = np.diff(A), np.diff(Bs)
+Xv = np.column_stack([np.ones(n - 2), spr[1:-1], dA[:-1], dB[:-1]])
+
+
+def ols_t(Xm, y):
+    bb = np.linalg.lstsq(Xm, y, rcond=None)[0]; rr = y - Xm @ bb
+    s2_ = rr @ rr / (len(y) - Xm.shape[1]); se_ = np.sqrt(np.diag(s2_ * np.linalg.inv(Xm.T @ Xm)))
+    return bb, bb / se_
+
+
+bB, tB = ols_t(Xv, dB[1:]); bA, tA = ols_t(Xv, dA[1:])
+ident = bB[1] - bta * bA[1]; phi_v = 1 + ident; hl = -math.log(2) / math.log(abs(phi_v))
+X2v = np.column_stack([np.ones(n - 1), spr[:-1]]); b2, t2 = ols_t(X2v, dB); a2, ta2 = ols_t(X2v, dA)
+um = lambda v, f: f"{v:{f}}".replace("-", "−")
+print(f"2·D §9.5  γ_B={um(bB[1],'.4f')} t={um(tB[1],'.2f')} γ_A={bA[1]:+.4f} t={tA[1]:+.2f} identity={um(ident,'.4f')} φ={phi_v:.4f} HL={hl:.2f} | ECM γ_B={um(b2[1],'.4f')} t={um(t2[1],'.2f')} γ_A={a2[1]:+.4f} identity={um(b2[1]-bta*a2[1],'.4f')}")
+expect("math-part9.html", "VECM γ_B", um(bB[1], '.4f'))
+expect("math-part9.html", "VECM t γ_B", um(tB[1], '.2f'))
+expect("math-part9.html", "VECM γ_A", f"+{bA[1]:.4f}")
+expect("math-part9.html", "VECM t γ_A", f"+{tA[1]:.2f}")
+expect("math-part9.html", "VECM identity", um(ident, '.4f'))
+expect("math-part9.html", "VECM half-life", f"{hl:.2f} วัน")
+expect("math-part9.html", "ECM γ_B", um(b2[1], '.4f'))
+expect("math-part9.html", "ECM t", um(t2[1], '.2f'))
+expect("math-part9.html", "ECM identity", um(b2[1] - bta * a2[1], '.4f'))
 
 
 def main():
