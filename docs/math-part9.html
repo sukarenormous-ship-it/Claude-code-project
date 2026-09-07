@@ -31,7 +31,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <div class="cover">
 <h1>คณิตศาสตร์สำหรับ Options<br><span style="font-size:.6em;color:#64748b">เล่ม 2 · Portfolio Quant</span></h1>
 <div class="sub">D — Time Series: เมื่อข้อมูลไหลไปตามเวลา</div>
-<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Ornstein-Uhlenbeck · Spurious Regression · Cointegration → Pairs Trading</div>
+<div class="desc">Stationary · ACF/PACF · ADF test · AR · MA · ARIMA · Ornstein-Uhlenbeck · Spurious Regression · Cointegration → Pairs Trading · Statistical Arbitrage</div>
 </div>
 
 <!-- ═══════════════ READING-PATH BANNER ═══════════════ -->
@@ -57,11 +57,34 @@ p  = <b>8.55 × 10⁻⁹⁴</b>   ← เล็กกว่า 0.05 อยู่
 
 <div class="bx br"><div class="bt">❌ ผลการทดลอง 200 คู่ที่ "ไม่เกี่ยวกันเลย"</div>
 <ul>
-<li>R² เฉลี่ย = <strong>0.242</strong> (ควรใกล้ 0) · สูงสุดถึง <strong>0.899</strong></li>
+<li>R² เฉลี่ย = <strong>0.233</strong> (ควรใกล้ 0) · สูงสุดถึง <strong>0.848</strong></li>
 <li>คู่ที่ได้ p &lt; 0.05 = <strong>169 จาก 200 คู่ = 84%</strong></li>
 <li><strong>ถ้าเครื่องมือทำงานถูกต้อง ตัวเลขนี้ควรเป็น ~5%</strong></li>
 </ul>
 <p>แปลว่า: เอาข้อมูลที่ไหลไปตามเวลามา regress กันตรง ๆ คุณจะเจอ "ความสัมพันธ์ที่มีนัยสำคัญ" <strong>สี่ในห้าครั้ง ทั้งที่ไม่มีอะไรจริงเลย</strong></p></div>
+
+<div class="code"><div class="hdr">🐍 Python — สร้าง spurious regression ด้วยตัวเอง</div><pre><span class="c"># pip install numpy statsmodels</span>
+import numpy as np, statsmodels.api as sm
+
+def random_walk(n, rng):
+    return np.cumsum(rng.standard_normal(n))       <span class="c"># เดินสุ่ม แบบเดียวกับที่ราคาหุ้นเดิน</span>
+
+rng, n = np.random.default_rng(159), 250           <span class="c"># n = 250 วันทำการ ราว 1 ปี</span>
+a, b = random_walk(n, rng), random_walk(n, rng)    <span class="c"># สองเส้นที่ไม่เกี่ยวกันเลย</span>
+m = sm.OLS(b, sm.add_constant(a)).fit()
+print(f"คู่เดียว: R2 = {m.rsquared:.3f} | beta = {m.params[1]:+.3f} | p = {m.pvalues[1]:.2e}")
+
+r2, sig = [], 0
+for _ in range(200):                               <span class="c"># แล้วทำซ้ำอีก 200 คู่</span>
+    x, y = random_walk(n, rng), random_walk(n, rng)
+    f = sm.OLS(y, sm.add_constant(x)).fit()
+    r2.append(f.rsquared); sig += f.pvalues[1] &lt; 0.05
+print(f"200 คู่ : R2 เฉลี่ย = {np.mean(r2):.3f} | สูงสุด = {max(r2):.3f} | "
+      f"p &lt; 0.05 = {sig} คู่ = {sig/2:.0f}%")
+<span class="o"># คู่เดียว: R2 = 0.818 | beta = -1.119 | p = 8.55e-94</span>
+<span class="o"># 200 คู่ : R2 เฉลี่ย = 0.233 | สูงสุด = 0.848 | p &lt; 0.05 = 169 คู่ = 84%</span></pre></div>
+
+<p>💡 <strong>ตัวเลขทุกตัวข้างบนมาจากโค้ดกล่องนี้</strong> — ลอกไปรันได้เลย · ที่ปักหมุด <code>seed</code> ไว้ก็เพื่อให้คุณเห็น<u>เลขเดียวกันเป๊ะ</u> ไม่ใช่เพราะต้องเลือก seed พิเศษ · <strong>เปลี่ยนเป็นเลขอะไรก็ได้ อัตรา "เจอความสัมพันธ์ปลอม" จะยังอยู่แถว 80% เหมือนเดิม</strong></p>
 
 <p>ปรากฏการณ์นี้มีชื่อว่า <strong>spurious regression</strong> (regression ลวง) · Granger กับ Newbold ตีพิมพ์เรื่องนี้ในปี 1974 และมันเปลี่ยนวิธีที่วงการทำงานกับข้อมูลเศรษฐกิจไปตลอดกาล</p>
 
@@ -309,7 +332,7 @@ print(f"  ครึ่งชีวิต  ln2/theta          = {math.log(2)/thet
 print(f"  SD คงตัว   sigma/sqrt(2theta) = {sigma/math.sqrt(2*theta):.4f}   วัดได้ = {x.std():.4f}")
 
 hl = np.array([-math.log(2)/math.log(fit_phi(ou_exact(theta, sigma, 0.0, dt, 250, seed=s)))
-               for s in range(200)])
+               for s in range(2000)])
 print("\nข้อมูลจริง 1 ปี (250 วัน) — ครึ่งชีวิตที่วัดได้เหวี่ยงแค่ไหน")
 print(f"  ความจริง {math.log(2)/theta:.2f} วัน | ค่ากลางที่วัดได้ {np.median(hl):.2f} | "
       f"ช่วง 5-95% [{np.percentile(hl,5):.2f}, {np.percentile(hl,95):.2f}] วัน")
@@ -326,19 +349,20 @@ print(f"\nเดินด้วย Euler-Maruyama แทน: SD คงตัว 
 <span class="o">#   SD คงตัว   sigma/sqrt(2theta) = 0.0447   วัดได้ = 0.0446</span>
 <span class="o"># </span>
 <span class="o"># ข้อมูลจริง 1 ปี (250 วัน) — ครึ่งชีวิตที่วัดได้เหวี่ยงแค่ไหน</span>
-<span class="o">#   ความจริง 6.93 วัน | ค่ากลางที่วัดได้ 5.94 | ช่วง 5-95% [3.62, 8.97] วัน</span>
+<span class="o">#   ความจริง 6.93 วัน | ค่ากลางที่วัดได้ 6.17 | ช่วง 5-95% [3.79, 9.91] วัน</span>
 <span class="o"># </span>
 <span class="o"># เดินด้วย Euler-Maruyama แทน: SD คงตัว = 0.0459 (สูงกว่าค่าจริง +2.55%)</span></pre></div>
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
 <ul>
 <li><strong>บล็อกแรกยืนยันว่าสองภาษาแปลกันได้จริง</strong> — เดินด้วย OU แล้วฟิตด้วย AR(1) ธรรมดา ได้ φ = 0.9038 เทียบกับทฤษฎี 0.9048 · ครึ่งชีวิต 6.85 vs 6.93 วัน · SD 0.0446 vs 0.0447 · <strong>ตรงกันทั้งสามตัวโดยไม่ต้องแก้อะไรเลย</strong></li>
-<li><strong>บล็อกที่สองคือของจริงที่เจ็บ</strong> — ที่ข้อมูล 1 ปี (250 วัน) ซึ่งเป็นความยาวที่คนใช้กันจริง <strong>ครึ่งชีวิตที่วัดได้มีค่ากลาง 5.94 วัน ทั้งที่ความจริงคือ 6.93</strong> คือ<strong>ต่ำไป 14% อย่างเป็นระบบ</strong> · และช่วง 5–95% กว้างถึง <strong>3.62–8.97 วัน</strong></li>
+<li><strong>บล็อกที่สองคือของจริงที่เจ็บ</strong> — ที่ข้อมูล 1 ปี (250 วัน) ซึ่งเป็นความยาวที่คนใช้กันจริง <strong>ครึ่งชีวิตที่วัดได้มีค่ากลาง 6.17 วัน ทั้งที่ความจริงคือ 6.93</strong> คือ<strong>ต่ำไปราว 11% อย่างเป็นระบบ</strong> · และช่วง 5–95% กว้างถึง <strong>3.79–9.91 วัน</strong></li>
 <li><strong>บล็อกที่สาม</strong> — ถ้าเดินด้วย Euler-Maruyama แทนวิธีเป๊ะ ความผันผวนที่ได้จะสูงเกินไป 2.55% · <strong>OU มีคำตอบปิดจึงไม่จำเป็นต้องใช้ Euler</strong> (ดู <a href="math-part7.html#s12-5">เล่ม 1 Part V §12.5</a>)</li>
 </ul></div>
 
 <div class="bx br"><div class="bt">❌ ครึ่งชีวิตที่คุณวัดได้ สั้นกว่าความจริงเสมอ</div>
-<p>ตัวเลข 14% ไม่ใช่ความบังเอิญของ seed — <strong>มันคือ Kendall bias ตัวเดียวกับที่ <a href="#s8-4">§8.4</a> เจอในแบบฝึกหัด</strong> (φ จริง 0.98 แต่ฟิตได้ 0.9572) · φ̂ เอนต่ำ → ln φ̂ ติดลบมากกว่าจริง → ครึ่งชีวิตสั้นกว่าจริง</p>
+<p>ตัวเลข 11% ไม่ใช่ความบังเอิญของ seed — <strong>มันคือ Kendall bias ตัวเดียวกับที่ <a href="#s8-4">§8.4</a> เจอในแบบฝึกหัด</strong> (φ จริง 0.98 แต่ฟิตได้ 0.9572) · φ̂ เอนต่ำ → ln φ̂ ติดลบมากกว่าจริง → ครึ่งชีวิตสั้นกว่าจริง</p>
+<p>💡 <strong>ทำไมโค้ดถึงวน 2,000 seed ไม่ใช่ 200</strong> — ตัวเลข "ต่ำไปกี่ %" เป็นค่าที่<u>ประมาณจากการจำลอง</u> มันจึงมีความคลาดเคลื่อนของตัวมันเอง · ที่ 200 seed ค่าที่ได้เหวี่ยงพอจะทำให้อ่านผิดไปหลายจุดเปอร์เซ็นต์ · ที่ 2,000 seed (ใช้เวลา 0.3 วินาที) ค่ากลางนิ่งพอจะพูดได้ว่า "ราว 11%" · <strong>อย่ารายงานตัวเลขที่ได้จากการจำลองโดยไม่ถามก่อนว่ามันนิ่งหรือยัง</strong> — วิธีถามอย่างเป็นระบบอยู่ที่ <a href="math-part11.html#s13-1">เล่ม 2 · F บทที่ 13</a></p>
 <p><strong>ผลกระทบต่อเงินจริง เป็นทิศที่แย่ทั้งสองทาง:</strong></p>
 <ul>
 <li>คุณคิดว่าจะถือ 6 วัน ของจริง 7 วัน → <strong>ประเมินต้นทุนเงินทุนและค่าประกันต่ำไป</strong></li>
@@ -415,7 +439,7 @@ ARIMA(1,1,1) = difference แล้วใส่ AR+MA  ← ที่ใช้ก
 <li><strong>เช็ค stationary ก่อนเสมอ</strong> — ADF p &lt; 0.05 = นิ่ง = ทำงานต่อได้ · ไม่นิ่งให้ difference</li>
 <li><strong>ACF ที่ลดช้ามาก = สัญญาณอนุกรมไม่นิ่ง</strong> (random walk ที่ lag 8 ยังสูง 0.72)</li>
 <li><strong>φ = 1 คือเส้นแบ่ง</strong> — φ &lt; 1 ดึงกลับหาค่าเฉลี่ย (เทรดได้) · φ = 1 คือราคาหุ้น (ทายทิศไม่ได้)</li>
-<li><strong>AR(1) กับ Ornstein-Uhlenbeck คือตัวเดียวกัน</strong> — φ = e<sup>−θΔt</sup> · ครึ่งชีวิต ln2/θ · <strong>แต่ที่ข้อมูล 1 ปี ครึ่งชีวิตที่วัดได้ต่ำกว่าความจริง 14% และเหวี่ยงได้ตั้งแต่ 3.6 ถึง 9.0 วัน</strong> — อย่าตั้งกฎที่ไวต่อครึ่งชีวิตระดับวันเดียว</li>
+<li><strong>AR(1) กับ Ornstein-Uhlenbeck คือตัวเดียวกัน</strong> — φ = e<sup>−θΔt</sup> · ครึ่งชีวิต ln2/θ · <strong>แต่ที่ข้อมูล 1 ปี ครึ่งชีวิตที่วัดได้ต่ำกว่าความจริงราว 11% และเหวี่ยงได้ตั้งแต่ 3.8 ถึง 9.9 วัน</strong> — อย่าตั้งกฎที่ไวต่อครึ่งชีวิตระดับวันเดียว</li>
 </ul></div>
 
 <div class="pq">ราคาหุ้นสองตัวต่างก็เดินสุ่มทำนายไม่ได้ — แต่ถ้า "ระยะห่าง" ระหว่างมันดึงกลับหาค่าเฉลี่ยเสมอล่ะ?</div>
@@ -424,7 +448,7 @@ ARIMA(1,1,1) = difference แล้วใส่ AR+MA  ← ที่ใช้ก
 <p>บทที่ 9 จะตอบว่า regression บนอนุกรมที่ไม่นิ่ง<strong>ใช้ได้เมื่อไร</strong> — เมื่อ residual ของมันนิ่ง · กรณีพิเศษนั้นเรียกว่า <strong>cointegration</strong> และเป็นฐานของกลยุทธ์ pairs trading ที่จะสร้างกันตั้งแต่ต้นจนจบ พร้อม backtest</p></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้ (บทที่ 8)</div>
-<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง · <strong>Ornstein-Uhlenbeck (OU)</strong> = AR(1) ในเวลาต่อเนื่อง <span class="fm" style="display:inline">dx = θ(μ−x)dt + σdW</span> · <strong>θ</strong> = ความแรงของแรงดึงกลับ (φ = e<sup>−θΔt</sup> · ครึ่งชีวิต = ln2/θ)</p></div>
+<p><strong>Stationary</strong> = คุณสมบัติทางสถิติไม่เปลี่ยนตามเวลา · <strong>Random walk</strong> = เดินสุ่มไม่มีจุดยึด · <strong>Differencing</strong> = หาผลต่างเพื่อทำให้นิ่ง · <strong>ACF</strong> = ความสัมพันธ์กับอดีตของตัวเองที่ lag ต่าง ๆ · <strong>ADF test</strong> = ทดสอบความนิ่ง (p &lt; 0.05 = นิ่ง) · <strong>AR(p)</strong> = ใช้ค่าในอดีตทำนาย · <strong>MA(q)</strong> = ใช้ความผิดพลาดในอดีตทำนาย · <strong>ARIMA(p,d,q)</strong> = AR + differencing + MA · <strong>Mean reversion</strong> = แรงดึงกลับหาค่าเฉลี่ย · <strong>Spurious regression</strong> = regression ลวงระหว่างอนุกรมที่ไม่นิ่ง · <strong>Statistical arbitrage</strong> = กลยุทธ์ที่กำไรแน่นอนเฉพาะในลิมิต ไม่ใช่ตั้งแต่วันแรก (ต่างจากอาร์บิทราจจริง) · <strong>Ornstein-Uhlenbeck (OU)</strong> = AR(1) ในเวลาต่อเนื่อง <span class="fm" style="display:inline">dx = θ(μ−x)dt + σdW</span> · <strong>θ</strong> = ความแรงของแรงดึงกลับ (φ = e<sup>−θΔt</sup> · ครึ่งชีวิต = ln2/θ)</p></div>
 
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <!-- ========== CHAPTER 8 ========== -->
@@ -667,6 +691,73 @@ print(f"ค้างสถานะตอนจบ: {'มี' if pos else 'ไ�
 <li><strong>β ไม่นิ่ง</strong> — hedge ratio ที่คำนวณจากอดีตอาจเปลี่ยนไปแล้ว · และมันเป็นค่าประมาณที่มีช่วงความเชื่อมั่น (เล่ม 2 · C §6.4) ไม่ใช่ตัวเลขศักดิ์สิทธิ์</li>
 </ul></div>
 
+<div class="bx bp"><div class="bt">💎 สิ่งที่คุณทำอยู่ไม่ใช่อาร์บิทราจ — มันคือ <u>statistical arbitrage</u> และความต่างนี้แพงมาก</div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ทั้งเล่ม 1 คำว่า "อาร์บิทราจ" หมายถึงกำไรที่<strong>ล็อกได้ตั้งแต่วันนี้ ไม่มีทางขาดทุน</strong> — <a href="math-part1.html#s2-2">Put-Call Parity</a> และ <a href="math-part1.html#s3-8">cash and carry</a> เป็นแบบนั้น · <strong>แต่ pairs trading ไม่ใช่แบบนั้นเลย</strong> · มันคือการเดิมพันว่า "ในระยะยาว spread จะหุบ" ซึ่งเป็นคำสัญญาที่มีเงื่อนไขว่า <em>ระยะยาว</em> — และคุณอาจตายก่อนถึงตรงนั้น</p>
+
+<div class="tw"><table>
+<tr><th></th><th class="nw">อาร์บิทราจจริง</th><th class="nw">Statistical arbitrage</th></tr>
+<tr><td class="nw"><strong>ตัวอย่างในเล่มนี้</strong></td><td class="nw">Put-Call Parity · cash and carry</td><td class="nw"><strong>บทที่ 9 ทั้งบท</strong></td></tr>
+<tr><td class="nw"><strong>กำไรแน่นอนเมื่อไร</strong></td><td class="nw">ตั้งแต่วันที่เปิดสถานะ</td><td class="nw"><strong>ในลิมิต เมื่อเวลา → ∞</strong></td></tr>
+<tr><td class="nw"><strong>โอกาสขาดทุน</strong></td><td class="nw">ศูนย์</td><td class="nw"><strong>บวกเสมอในทุกเวลาจำกัด</strong></td></tr>
+<tr><td class="nw"><strong>ต้องเดาอะไรไหม</strong></td><td class="nw">ไม่ต้องเลย</td><td class="nw">ต้องเดาว่าความสัมพันธ์จะไม่ขาด</td></tr>
+<tr><td class="nw"><strong>สิ่งที่ฆ่ามันได้</strong></td><td class="nw">แทบไม่มี</td><td class="nw">ความสัมพันธ์ขาด · เงินหมดก่อน</td></tr>
+</table></div>
+
+<p>คำนี้มีนิยามที่เข้มงวดจริง ๆ (<strong>Hogan, Jarrow, Teo &amp; Warachka 2004</strong>) — กลยุทธ์จะเรียกว่า statistical arbitrage ได้ต้องครบ 4 ข้อ:</p>
+<ol>
+<li><strong>เริ่มด้วยเงินศูนย์</strong> และเลี้ยงตัวเองได้ (ขาหนึ่งจ่ายอีกขาหนึ่ง)</li>
+<li><strong>กำไรสะสมคาดหวังเป็นบวก</strong> ในลิมิต</li>
+<li><strong>ความน่าจะเป็นที่จะขาดทุน → 0</strong> เมื่อเวลา → ∞</li>
+<li><strong>ความแปรปรวนของกำไรที่เพิ่มต่อหน่วยเวลา → 0</strong> (ถ้ายังมีโอกาสขาดทุนอยู่)</li>
+</ol>
+
+<p>สังเกตว่า<strong>ข้อ 3 กับ 4 พูดถึง "เมื่อเวลา → ∞" ทั้งคู่</strong> · คำถามที่ต้องถามต่อคือ <strong>∞ ในที่นี้แปลว่ากี่ไม้</strong> — และมันคำนวณได้ตรง ๆ</p>
+
+<div class="code"><div class="hdr">🐍 Python — "โอกาสขาดทุน → 0" ต้องเทรดกี่ไม้ถึงจะเป็นจริง</div><pre><span class="c"># pip install numpy</span>
+import numpy as np
+from math import sqrt, ceil
+from statistics import NormalDist
+Phi, z = NormalDist().cdf, NormalDist().inv_cdf
+
+def trades_needed(edge, target_p):
+    """ต้องเทรดกี่ครั้ง P(กำไรสะสม &lt; 0) ถึงจะลงต่ำกว่า target_p
+       edge = กำไรเฉลี่ยต่อไม้ / ส่วนเบี่ยงเบนต่อไม้"""
+    return ceil((z(1 - target_p)/edge)**2)            <span class="c"># sqrt(n)*edge &gt;= z</span>
+
+print("edge ต่อไม้ |  P(ขาดทุน) หลัง 21 ไม้ | ต้องกี่ไม้ให้เหลือ 5% | ...เหลือ 1%")
+for edge in [0.05, 0.10, 0.15, 0.25, 0.50]:
+    p21 = 1 - Phi(sqrt(21)*edge)
+    print(f"{edge:10.2f} | {p21:21.1%} | {trades_needed(edge,0.05):20,d} | {trades_needed(edge,0.01):10,d}")
+
+print("\nแปลงเป็นเวลาจริง (ถือไม้ละ 10 วันทำการ · เทรดทีละ 1 คู่ · ปีละ 252 วัน)")
+for edge in [0.10, 0.15, 0.25]:
+    n = trades_needed(edge, 0.05)
+    print(f"  edge {edge:.2f} -&gt; {n:,} ไม้ = {n*10/252:,.1f} ปี")
+<span class="o"># edge ต่อไม้ |  P(ขาดทุน) หลัง 21 ไม้ | ต้องกี่ไม้ให้เหลือ 5% | ...เหลือ 1%</span>
+<span class="o">#       0.05 |                 40.9% |                1,083 |      2,165</span>
+<span class="o">#       0.10 |                 32.3% |                  271 |        542</span>
+<span class="o">#       0.15 |                 24.6% |                  121 |        241</span>
+<span class="o">#       0.25 |                 12.6% |                   44 |         87</span>
+<span class="o">#       0.50 |                  1.1% |                   11 |         22</span>
+<span class="o"># </span>
+<span class="o"># แปลงเป็นเวลาจริง (ถือไม้ละ 10 วันทำการ · เทรดทีละ 1 คู่ · ปีละ 252 วัน)</span>
+<span class="o">#   edge 0.10 -&gt; 271 ไม้ = 10.8 ปี</span>
+<span class="o">#   edge 0.15 -&gt; 121 ไม้ = 4.8 ปี</span>
+<span class="o">#   edge 0.25 -&gt; 44 ไม้ = 1.7 ปี</span></pre></div>
+
+<div class="bx bg" style="margin-left:0"><div class="bt">✅ อ่านผลลัพธ์ — แล้วย้อนกลับไปดู backtest ของเราเอง</div>
+<ul>
+<li><strong>คอลัมน์ที่สองคือคำพิพากษา</strong> · <a href="#s9-2">§9.2</a> โชว์ backtest ที่มี <strong>21 ไม้</strong> แล้วชนะ 21/21 · แต่ถ้า edge ต่อไม้อยู่ในย่านปกติ (0.10–0.15) <strong>โอกาสที่กลยุทธ์แบบนี้จะขาดทุนสะสมหลัง 21 ไม้ยังสูงถึง 25–32%</strong> — <strong>ผลชนะรวดจึงบอกอะไรเกี่ยวกับอนาคตน้อยกว่าที่ตาเห็นมาก</strong></li>
+<li><strong>"เวลา → ∞" แปลเป็นปีแล้วน่าตกใจ</strong> — ที่ edge = 0.10 ต้องเทรด <strong>271 ไม้ = เกือบ 11 ปี</strong> กว่าโอกาสขาดทุนจะลงมาต่ำกว่า 5% · ที่ edge = 0.15 ก็ยัง <strong>4.8 ปี</strong></li>
+<li><strong>จำนวนไม้โตแบบกำลังสองของ edge ที่หายไป</strong> — edge ลดครึ่ง (0.25 → 0.125) จำนวนไม้ที่ต้องใช้<strong>เพิ่มสี่เท่า</strong> · นี่คือเหตุผลที่ต้นทุนซื้อขายอันตรายกว่าที่คิด: มันไม่ได้แค่กินกำไร <strong>มันยืดเวลาที่คุณต้องรอดให้ได้ออกไปเป็นกำลังสอง</strong></li>
+</ul></div>
+
+<p>💎 <strong>บทเรียนที่ต้องเอาไปใช้:</strong> ทฤษฎีรับประกันว่าคุณจะชนะ — <u>ถ้าคุณอยู่ได้นานพอ</u> · แต่สิ่งที่กำหนดว่าคุณอยู่ได้นานแค่ไหนไม่ใช่ทฤษฎี มันคือ<strong>ขนาดสถานะ ต้นทุน และเงินที่เหลือในบัญชี</strong> · เงื่อนไขข้อ 3 กับ 4 ไม่เคยรับประกันอะไรกับคนที่มีเงินจำกัดและอายุจำกัด</p>
+
+<p>นี่คือเหตุผลที่ <a href="math-part10.html#s11-2">การกำหนดขนาดสถานะ (เล่ม 2 · E บทที่ 11)</a> ไม่ใช่หัวข้อเสริม — <strong>สำหรับ statistical arbitrage มันคือส่วนหนึ่งของกลยุทธ์เอง</strong> · กลยุทธ์ที่ถูกทางแต่ใส่หนักเกินไป จะตายก่อนถึงลิมิตที่ทฤษฎีพูดถึงเสมอ</p>
+</div>
+
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง — กลยุทธ์นี้ยังใช้ได้อยู่ไหม</div>
 <p><strong>มือใหม่เห็น:</strong> "backtest กำไร แปลว่าใช้ได้"<br>
 <strong>คนในตลาดเห็น:</strong> pairs trading แบบง่าย ๆ นี้<strong>ถูกเก็บกินไปหมดแล้ว</strong>ตั้งแต่ยุค 2000 · สิ่งที่ยังเหลือคือเวอร์ชันที่ซับซ้อนกว่ามาก (หลายสินทรัพย์พร้อมกัน · คุมความเสี่ยงเชิง factor · ความเร็วระดับมิลลิวินาที) · <strong>คุณค่าของบทนี้ไม่ใช่กลยุทธ์สำเร็จรูป แต่คือกรอบคิด</strong> — หาความสัมพันธ์ที่ mean-revert แล้วเทรดค่าเบี่ยงเบนของมัน ซึ่งใช้ได้กับ basis ของ futures, ส่วนต่างดอกเบี้ย, และ vol spread ที่เล่ม 1 สอนไปแล้ว</p></div>
@@ -688,10 +779,11 @@ print(f"ค้างสถานะตอนจบ: {'มี' if pos else 'ไ�
 <p>💎 <strong>นี่คือบทเรียนทั้งหมดในตัวเลขเดียว:</strong> เกณฑ์เข้าที่ดีที่สุด<strong>ไม่มีคำตอบตายตัว มันขึ้นกับต้นทุนของคุณ</strong> · ก่อนจะปรับพารามิเตอร์ใด ๆ ให้หา<strong>ต้นทุนจริงต่อข้างของคุณเองก่อน</strong> แล้วค่อยหาว่าเกณฑ์ไหนชนะที่ต้นทุนนั้น · การปรับพารามิเตอร์บน backtest ที่ต้นทุน = 0 คือการหาคำตอบของคำถามที่ไม่มีใครถาม</p>
 </details></div>
 
-<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำจากบทที่ 9</div>
+<div class="bx bg"><div class="bt">🎯 4 อย่างที่ต้องจำจากบทที่ 9</div>
 <ul>
 <li><strong>Cointegration = ราคาไม่นิ่งทั้งคู่ แต่ spread นิ่ง</strong> — ทดสอบด้วย <code>coint()</code> <strong>ไม่ใช่</strong> <code>adfuller()</code> บน residual (ซึ่งเจอของปลอมมากกว่าที่ควร 3 เท่า)</li>
 <li><strong>regression ให้ hedge ratio</strong> — β จาก เล่ม 2 · A กลับมาเป็นอัตราส่วนถือ/ขายจริง · <strong>และดู<u>ครึ่งชีวิต</u>ทุกครั้ง</strong> — ถ้าเกิน 60 วัน อย่าเทรด ไม่ว่าสถิติจะสวยแค่ไหน</li>
+<li><strong>สิ่งที่บทนี้สอนคือ statistical arbitrage ไม่ใช่อาร์บิทราจ</strong> — กำไรแน่นอนเฉพาะ "เมื่อเวลา → ∞" · ที่ edge ต่อไม้ 0.10 นั่นแปลว่า <strong>271 ไม้ หรือเกือบ 11 ปี</strong> กว่าโอกาสขาดทุนจะลงต่ำกว่า 5% · <strong>ขนาดสถานะจึงเป็นส่วนหนึ่งของกลยุทธ์ ไม่ใช่หัวข้อเสริม</strong></li>
 <li><strong>z-score เปลี่ยน spread เป็นสัญญาณ</strong> — และต้องมี stop เสมอ เพราะความสัมพันธ์ขาดได้ · <strong>backtest ที่ชนะ 100% และ drawdown = 0 คือหลักฐานว่าข้อมูลผิด ไม่ใช่ว่ากลยุทธ์ดี</strong></li>
 </ul></div>
 
