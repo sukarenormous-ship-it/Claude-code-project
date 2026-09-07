@@ -185,6 +185,39 @@ for lo, hi in zip(edges[:-1], edges[1:]):
     print(f"          [{lo:.1f},{hi:.1f}) n={m.sum()} ทำนาย {p2[m].mean():.3f} เกิดจริง {y2[m].mean():.3f}")
     expect("math-part11.html", f"calibration [{lo:.1f},{hi:.1f})", f"n={m.sum():4d}  ทำนายเฉลี่ย {p2[m].mean():.3f}  เกิดจริง {y2[m].mean():.3f}")
 
+# ── 2·F §13.5 Bayes: Beta-Binomial (สูตรตรงสำหรับ a, b จำนวนเต็ม) ─────────
+from math import comb
+
+
+def beta_cdf_int(x, a, b):
+    """I_x(a,b) = P(Binomial(a+b−1, x) ≥ a) สำหรับ a, b จำนวนเต็ม"""
+    n_ = a + b - 1
+    return sum(comb(n_, k) * x**k * (1 - x)**(n_ - k) for k in range(a, n_ + 1))
+
+
+def beta_q(pr, a, b):
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        m = (lo + hi) / 2
+        if beta_cdf_int(m, a, b) < pr: lo = m
+        else: hi = m
+    return (lo + hi) / 2
+
+
+print("2·F §13.5 Beta-Binomial:", end=" ")
+for a, b in ((59, 43), (69, 51), (581, 421), (591, 429), (168, 132)):
+    mean = a / (a + b); lo, hi = beta_q(.025, a, b), beta_q(.975, a, b); pgt = 1 - beta_cdf_int(.55, a, b)
+    print(f"Beta({a},{b}) mean={mean:.3f} [{lo:.3f}, {hi:.3f}] P>0.55={pgt:.3f}", end=" | ")
+    expect("math-part11.html", f"Beta({a},{b}) mean", f"{mean:.3f}")
+    expect("math-part11.html", f"Beta({a},{b}) CrI", f"[{lo:.3f}, {hi:.3f}]")
+    expect("math-part11.html", f"Beta({a},{b}) P>0.55", f"{pgt:.3f}")
+print()
+# ✍️: flat prior, 58% ต่อเนื่อง — กี่ไม้จึง P(p>0.55) ≥ 0.95
+for n_ in (700, 750):
+    k_ = round(0.58 * n_); pgt = 1 - beta_cdf_int(.55, 1 + k_, 1 + n_ - k_)
+    print(f"          n={n_} k={k_} P>0.55={pgt:.4f}")
+expect("math-part11.html", "✍️ 750 ไม้", f"{1 - beta_cdf_int(.55, 436, 316):.4f}")
+
 
 def main():
     if "--print" in sys.argv:
