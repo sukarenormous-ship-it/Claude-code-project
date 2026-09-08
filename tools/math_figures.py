@@ -58,6 +58,23 @@ expect("math-part4.html", "§1.3 เฉลี่ยถ่วง", f"{w@sd*100:.2
 s2p = 0.6**2 * 0.04 + 2 * 0.6 * 0.4 * 0.01 + 0.4**2 * 0.09
 expect("math-part4.html", "§1.3 2 หุ้น", f"{math.sqrt(s2p)*100:.1f}%")
 
+# ── 2·A §1.4 PCA — 2×2 ด้วยมือ และ 5 ช่วงอายุ ────────────────────────────
+C2 = np.array([[1, .8], [.8, 1]]); l2, v2 = np.linalg.eigh(C2)
+expect("math-part4.html", "§1.4 λ 2×2", f"λ₁ = {l2[1]:.1f}    λ₂ = {l2[0]:.1f}")
+expect("math-part4.html", "§1.4 % 2×2", f"PC1 อธิบาย {l2[1]:.1f} / 2.0 = {l2[1]/2*100:.0f}%")
+expect("math-part4.html", "§1.4 v₁ 2×2", f"[{abs(v2[0,1]):.2f}, {abs(v2[1,1]):.2f}]")
+w1 = np.array([1, 1]) / np.sqrt(2); w2 = np.array([1, -1]) / np.sqrt(2)
+expect("math-part4.html", "§1.4 wᵀΣw", f"= {w1 @ C2 @ w1:.1f} และ (1 + 1 − 2 × 0.8)/2 = {w2 @ C2 @ w2:.1f}")
+C5p = np.array([[1, .95, .88, .80, .72], [.95, 1, .96, .90, .83], [.88, .96, 1, .97, .92],
+                [.80, .90, .97, 1, .97], [.72, .83, .92, .97, 1]])
+l5, v5 = np.linalg.eigh(C5p); pct5 = l5[::-1] / l5.sum() * 100; cum5 = np.cumsum(pct5)
+print(f"2·A §1.4  2×2 λ={l2[::-1]} · 5×5 %={np.round(pct5,2)} PC1={np.round(v5[:,-1],2)} PC2={np.round(v5[:,-2],2)} PC3={np.round(v5[:,-3],2)}")
+for i_ in range(5):
+    expect("math-part4.html", f"§1.4 PC{i_+1} %", f"PC{i_+1}: {pct5[i_]:5.2f}%   (สะสม {cum5[i_]:5.2f}%)")
+um1 = lambda v: f"{v:.2f}".replace("-", "−")
+for k_, name_ in ((-1, "PC1"), (-2, "PC2"), (-3, "PC3")):
+    expect("math-part4.html", f"§1.4 {name_} vector", f"{name_} = [" + ", ".join(um1(x) for x in v5[:, k_]) + "]")
+
 # ── 2·A §2.2 multiple regression ─────────────────────────────────────────
 mkt = np.array([3, -2, 5, -1, 2, -4, 1, 3]) / 100
 size = np.array([1, 2, -1, 0, 3, -2, 1, -1]) / 100

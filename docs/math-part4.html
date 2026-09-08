@@ -165,49 +165,62 @@ print(f"เฉลี่ยถ่วง σ    = {(w @ sd)*100:.2f}%")        <spa
 
 <h3 id="s1-4">1.4 Eigenvalues และ PCA — "ทิศทางหลักของตลาด"</h3>
 
-<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ข้ามสัญลักษณ์ไปก่อนก็ได้ — ใจความคือ ในข้อมูลยุ่ง ๆ หลายมิติ มักมี "ทิศทางหลัก" ไม่กี่ทิศที่ข้อมูลชอบเคลื่อนไปด้วยกัน · <strong>eigenvector (v)</strong> = ทิศทางหลักนั้น · <strong>eigenvalue (λ)</strong> = ทิศนั้นสำคัญแค่ไหน (อธิบาย variance ได้กี่ %) · <span style="color:#6b7280">(คนอยากเห็นสมการ: Av = λv แปลว่าเมทริกซ์ A แค่ยืด v ให้ยาวขึ้น λ เท่า ไม่บิดทิศ)</span></p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ในข้อมูลยุ่ง ๆ หลายมิติ มักมี "ทิศทางหลัก" ไม่กี่ทิศที่ข้อมูลชอบเคลื่อนไปด้วยกัน · <strong>eigenvector (v)</strong> = ทิศทางหลักนั้น · <strong>eigenvalue (λ)</strong> = ทิศนั้นสำคัญแค่ไหน (อธิบาย variance ได้กี่ %) · <strong>PCA</strong> (Principal Component Analysis — การวิเคราะห์องค์ประกอบหลัก) คือการหา v กับ λ ของ covariance หรือ correlation matrix แล้วเก็บไว้แค่ทิศที่ λ ใหญ่</p>
 
-<div class="bx bg"><div class="bt">🧮 ตัวอย่างจริง — PCA ของ yield curve</div>
-<p>อัตราดอกเบี้ยมีหลายช่วงอายุ (3 เดือน, 1 ปี, ..., 30 ปี) ดูเหมือนหลายสิบตัวแปร · แต่ PCA (หา eigenvector ของ covariance matrix) พบว่า (ผลคลาสสิกของ Litterman-Scheinkman 1991) <strong>3 ทิศทางหลักอธิบายการขยับได้เกือบ 99%</strong>:</p>
+<div class="fm">C v = λ v                          (v = eigenvector · λ = eigenvalue)
+% ที่ทิศ i อธิบาย = λᵢ / (λ₁ + λ₂ + … + λₙ)      ผลรวม λ = trace(C) = n ถ้า C เป็น correlation matrix</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> บรรทัดแรก "ซี คูณ วี เท่ากับ แลมบ์ดา คูณ วี" — ข้างซ้ายคือเมทริกซ์คูณเวกเตอร์ (ได้เวกเตอร์ใหม่) ข้างขวาคือตัวเลขตัวเดียวคูณเวกเตอร์เดิม · ประโยคเต็มคือ "มีทิศ v ที่เมทริกซ์ C ทำกับมันแค่<em>ยืด</em>ให้ยาวขึ้น λ เท่า ไม่บิดไปทางอื่น" · <strong>โครงที่ต้องเห็น:</strong> ถ้า C คือ covariance matrix ของบทนี้ λ ก็คือ variance ของพอร์ตที่ถือน้ำหนัก v — เพราะ vᵀCv = λ·vᵀv = λ เมื่อ v ยาว 1 ซึ่งคือสูตร wᵀΣw ของ <a href="#s1-3">§1.3</a> ตัวเดิม · ทิศที่ λ ใหญ่สุดจึงคือ "พอร์ตที่เหวี่ยงแรงสุด" = ทิศที่ตลาดชอบขยับ · <strong>กับดักการอ่าน:</strong> λ (แลมบ์ดา) ตรงนี้คือ eigenvalue ไม่ใช่ตัวคูณ Lagrange ของ <a href="math-part5.html#s4-2">เล่ม 2 · B §4.2</a> และไม่ใช่ λ ของ EWMA · ตัวห้อยของ v₁, v₂ คือ<em>ลำดับ</em>ทิศเรียงตาม λ ไม่ใช่เวลา · เครื่องหมายของ v เลือกได้ตามใจ — ถ้า v เป็น eigenvector แล้ว −v ก็เป็นด้วย (คูณ −1 ทั้งสองข้างของสมการ) โปรแกรมแต่ละตัวจึงให้เครื่องหมายไม่เหมือนกัน · ตัวเลข % ต่างกันตามว่าใส่ covariance หรือ correlation matrix: covariance ให้ตัวแปรที่ σ ใหญ่มีน้ำหนักมาก correlation ทำให้ทุกตัวหนักเท่ากัน — ตัวอย่างในหน้านี้ใช้ correlation</p>
+
+<div class="bx ba"><div class="bt">🧮 เดินเลขจริง — 2 ช่วงอายุ ทำมือได้ครบทุกขั้น</div>
+<p>ดอกเบี้ย 2 ปี กับ 10 ปี มี correlation 0.8 → C = [[1, 0.8], [0.8, 1]] · <strong>ขั้น 1 — หา λ</strong> จากเงื่อนไข det(C − λI) = 0 (ดีเทอร์มิแนนต์ของ C ลบ λ คูณ identity matrix เท่ากับศูนย์ — คือเงื่อนไขที่สมการ Cv = λv มีคำตอบ v ที่ไม่ใช่ศูนย์):</p>
+<div class="fm">(1 − λ)(1 − λ) − 0.8 × 0.8 = 0   →   (1 − λ)² = 0.64   →   1 − λ = ±0.8
+λ₁ = 1.8    λ₂ = 0.2        ผลรวม 2.0 = trace(C) ✓
+PC1 อธิบาย 1.8 / 2.0 = 90%      PC2 อธิบาย 0.2 / 2.0 = 10%</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "หนึ่งลบแลมบ์ดา ยกกำลังสอง ลบ ศูนย์จุดแปดยกกำลังสอง เท่ากับศูนย์" — ดีเทอร์มิแนนต์ของ 2×2 คือ "ทแยงหลักคูณกัน ลบ ทแยงรองคูณกัน" · <strong>โครงที่ต้องเห็น:</strong> สำหรับ 2×2 ที่แนวทแยงเป็น 1 จะได้ λ = 1 ± ρ เสมอ — ρ ใหญ่แปลว่าทิศแรกกินเกือบหมด (ρ = 0.95 → 97.5% / 2.5%) ρ = 0 → 50 / 50 ไม่มีทิศหลัก · <strong>กับดักการอ่าน:</strong> I คือ identity matrix (เลข 1 บนแนวทแยง ศูนย์ที่อื่น) ไม่ใช่ตัวแปร · "− λI" คือลบ λ ออกจาก<em>แนวทแยง</em>เท่านั้น</p>
+<p><strong>ขั้น 2 — หา v</strong> แทน λ₁ = 1.8 ลงในแถวแรกของ Cv = λv: 1·v₁ + 0.8·v₂ = 1.8·v₁ → 0.8·v₂ = 0.8·v₁ → v₁ = v₂ → ปรับให้ยาว 1 ได้ v = [1, 1]/√2 = <strong>[0.71, 0.71]</strong> · ตรวจ: C·[1, 1] = [1.8, 1.8] = 1.8·[1, 1] ✓ · แทน λ₂ = 0.2: v₁ + 0.8·v₂ = 0.2·v₁ → v₂ = −v₁ → v = [1, −1]/√2 = <strong>[0.71, −0.71]</strong> · ตรวจ: C·[1, −1] = [0.2, −0.2] = 0.2·[1, −1] ✓</p>
+<p><strong>อ่านผล:</strong> PC1 = [0.71, 0.71] คือ "2 ปีกับ 10 ปีขึ้นพร้อมกันเท่า ๆ กัน" = <strong>Level</strong> กิน 90% · PC2 = [0.71, −0.71] คือ "2 ปีขึ้น 10 ปีลง" = <strong>Slope</strong> กิน 10% · และ λ ทั้งสองคือ variance จริงของสองพอร์ต: long ทั้งคู่ (น้ำหนัก v₁) เหวี่ยง 1.8 ส่วน long 2 ปี short 10 ปี (น้ำหนัก v₂) เหวี่ยง 0.2 — ตรวจด้วย wᵀΣw ของ §1.3: (1 + 1 + 2 × 0.8)/2 = 1.8 และ (1 + 1 − 2 × 0.8)/2 = 0.2 ✓ · spread trade จึงเหวี่ยงน้อยกว่าพอร์ตทิศเดียว 9 เท่า — นี่คือเหตุผลเชิงตัวเลขที่ curve trade ใช้ leverage ได้มากกว่า outright</p></div>
+
+<div class="bx bg"><div class="bt">🧮 ตัวอย่างจริง — PCA ของ yield curve หลายช่วงอายุ</div>
+<p>อัตราดอกเบี้ยมีหลายช่วงอายุ (3 เดือน, 1 ปี, …, 30 ปี) ดูเหมือนหลายสิบตัวแปร · แต่ PCA บนความเคลื่อนไหวของทั้งเส้นพบว่า (ผลคลาสสิกของ Litterman-Scheinkman 1991 ที่งานหลัง ๆ ทำซ้ำได้ตลอด) <strong>3 ทิศทางหลักอธิบายได้ราว 98%</strong> — ตัวเลขแม่นขึ้นกับช่วงเวลาและช่วงอายุที่ใช้ แต่ลำดับและขนาดคร่าว ๆ เหมือนกันทุกตลาด:</p>
 <ul>
-<li><strong>PC1 = Level</strong> (~90%): ดอกเบี้ยทุกช่วงขึ้น/ลงพร้อมกัน</li>
-<li><strong>PC2 = Slope</strong> (~8%): สั้นกับยาวแยกทาง (ชัน/แบน)</li>
-<li><strong>PC3 = Curvature</strong> (~1%): กลางโค้งต่างจากปลาย</li>
+<li><strong>PC1 = Level</strong> (~90%): ดอกเบี้ยทุกช่วงขึ้น/ลงพร้อมกัน — v ทุกตัวเครื่องหมายเดียวกัน อย่าง [0.71, 0.71] ข้างบน</li>
+<li><strong>PC2 = Slope</strong> (~8%): สั้นกับยาวแยกทาง (ชัน/แบน) — v เปลี่ยนเครื่องหมายหนึ่งครั้งจากสั้นไปยาว อย่าง [0.71, −0.71]</li>
+<li><strong>PC3 = Curvature</strong> (~2%): กลางโค้งต่างจากปลาย — v เปลี่ยนเครื่องหมายสองครั้ง</li>
 </ul>
-<p>จากหลายสิบมิติ เหลือแค่ 3 ตัวเลขที่มีความหมาย → hedge ง่ายขึ้นมหาศาล</p></div>
+<p>จากหลายสิบมิติ เหลือแค่ 3 ตัวเลขที่มีความหมาย → hedge ง่ายขึ้นมหาศาล · <a href="pillars-part1.html">เสาหลัก · Part 1</a> ต่อเรื่องนี้ไปถึงการเทรด curve จริง</p></div>
 
-<p><strong>🐍 หา eigenvalue เองด้วย numpy</strong> — ตัวเลข "90% / 8% / 1%" ข้างบนมาจากไหน? มาจาก eigenvalue ของ correlation matrix หารด้วยผลรวม · <code>np.linalg.eigh</code> ทำให้ในบรรทัดเดียว:</p>
+<p><strong>🐍 ทำแบบเดียวกับ 2×2 แต่ 5 ช่วงอายุ</strong> — กลับเมทริกซ์ 5×5 ด้วยมือไม่คุ้ม ให้ <code>np.linalg.eigh</code> ทำขั้น 1–2 ให้ในบรรทัดเดียว · ใส่ correlation matrix (ไม่ใช่ covariance) เพื่อให้ทุกช่วงอายุหนักเท่ากัน:</p>
 
 <div class="code"><div class="hdr">🐍 Python — PCA: eigenvalue → % ที่แต่ละทิศอธิบายได้</div><pre>import numpy as np
 
-<span class="c"># correlation matrix ของการเปลี่ยนแปลงดอกเบี้ย 5 ช่วงอายุ (สั้น→ยาว)</span>
+<span class="c"># correlation matrix ของการเปลี่ยนแปลงดอกเบี้ย 5 ช่วงอายุ (สั้น→ยาว) — ตัวเลขสมมติแบบที่เห็นจริง</span>
 C = np.array([[1.00, 0.95, 0.88, 0.80, 0.72],
               [0.95, 1.00, 0.96, 0.90, 0.83],
               [0.88, 0.96, 1.00, 0.97, 0.92],
               [0.80, 0.90, 0.97, 1.00, 0.97],
               [0.72, 0.83, 0.92, 0.97, 1.00]])
 
-vals, vecs = np.linalg.eigh(C)      <span class="c"># eigh = สำหรับเมทริกซ์สมมาตร</span>
+vals, vecs = np.linalg.eigh(C)      <span class="c"># eigh = สำหรับเมทริกซ์สมมาตร · คืน λ เรียงจากเล็กไปใหญ่</span>
 vals = vals[::-1]                   <span class="c"># เรียงจากใหญ่ไปเล็ก</span>
-pct  = vals / vals.sum() * 100      <span class="c"># แต่ละทิศอธิบาย variance กี่ %</span>
+pct  = vals / vals.sum() * 100      <span class="c"># แต่ละทิศอธิบาย variance กี่ % · vals.sum() = 5 = trace</span>
 
 for i, p in enumerate(pct, 1):
     print(f"PC{i}: {p:5.2f}%   (สะสม {np.cumsum(pct)[i-1]:5.2f}%)")
 <span class="o"># PC1: 91.29%   (สะสม 91.29%)   ← Level: ทุกช่วงขยับพร้อมกัน</span>
 <span class="o"># PC2:  7.25%   (สะสม 98.54%)   ← Slope: สั้น vs ยาว</span>
 <span class="o"># PC3:  0.87%   (สะสม 99.41%)   ← Curvature</span>
-<span class="o"># PC4:  0.38%   (สะสม 99.78%)   ← noise ตัดทิ้งได้</span>
+<span class="o"># PC4:  0.38%   (สะสม 99.78%)</span>
 <span class="o"># PC5:  0.22%   (สะสม 100.00%)</span></pre></div>
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
-<p>ดอกเบี้ย 5 ช่วงอายุ (จริง ๆ มีเป็นสิบ) ถูกย่อเหลือ <strong>3 ทิศ</strong> ที่อธิบายได้ 99.4% · PC1 อย่างเดียวกิน 91% — นั่นคือเหตุผลที่เทรดเดอร์พันธบัตร hedge "duration" (= exposure ต่อ Level) เป็นอย่างแรก · ที่เหลือ (0.38%, 0.22%) คือ noise ทิ้งได้ · <strong>เปลี่ยนแค่ correlation matrix</strong> ก็ใช้วิธีเดียวกันย่อ volatility surface, พอร์ตหุ้น, หรือ factor อะไรก็ได้</p></div>
+<p>ดอกเบี้ย 5 ช่วงอายุ (จริง ๆ มีเป็นสิบ) ถูกย่อเหลือ <strong>3 ทิศ</strong> ที่อธิบายได้ 99.4% · PC1 อย่างเดียวกิน 91% — นั่นคือเหตุผลที่เทรดเดอร์พันธบัตร hedge "duration" (= exposure ต่อ Level) เป็นอย่างแรก · PC4–PC5 (0.38%, 0.22%) มักถูกเรียกว่า noise และตัดทิ้งตอน<em>สร้างโมเดลความเสี่ยง</em> — แต่อย่าอ่านว่า "ไม่มีค่า": relative-value trade จำนวนมากอาศัยแกนเล็ก ๆ เหล่านี้พอดี เพราะมันคือส่วนที่คนส่วนใหญ่ไม่ hedge (<a href="pillars-part1.html">เสาหลัก · Part 1</a> ขยายประเด็นนี้) · <strong>เปลี่ยนแค่เมทริกซ์ที่ใส่</strong> ก็ใช้วิธีเดียวกันย่อ volatility surface, พอร์ตหุ้น หรือ factor อะไรก็ได้</p></div>
 
-<div class="bx ba"><div class="bt">✍️ ลองทำเอง</div>
-<p>รันโค้ดข้างบน แล้วดู <code>vecs[:, -1]</code> (eigenvector ของ PC1) · คาดเดาก่อน: ค่าทั้ง 5 ตัวควรมีเครื่องหมาย<strong>เดียวกัน</strong> (บวกหมดหรือลบหมด) — เพราะ Level = "ทุกช่วงขยับไปทางเดียวกัน"</p>
-<p style="font-size:.88em;color:var(--g6)">เฉลย: ได้ประมาณ [0.43, 0.45, 0.46, 0.46, 0.44] — บวกใกล้เคียงกันหมด = ทุกช่วงอายุขยับพร้อมกัน ✓ (นี่คือ "Level factor")</p></div>
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>รันโค้ดข้างบน แล้วดู <code>vecs[:, -1]</code> (eigenvector ของ PC1 — คอลัมน์สุดท้ายเพราะ eigh เรียงจากเล็กไปใหญ่) และ <code>vecs[:, -2]</code> (PC2) · คาดเดาก่อน: ค่า 5 ตัวของ PC1 ควรมีเครื่องหมาย<strong>เดียวกัน</strong>ทั้งหมด (Level = ทุกช่วงขยับทางเดียวกัน) ส่วน PC2 ควรเปลี่ยนเครื่องหมาย<strong>หนึ่งครั้ง</strong>จากสั้นไปยาว (Slope)</p>
+<details><summary>ดูเฉลย</summary><p>PC1 = [−0.43, −0.45, −0.46, −0.46, −0.44] — ลบหมดและขนาดใกล้กัน = ทุกช่วงอายุขยับพร้อมกัน ✓ · เครื่องหมายลบไม่ได้แปลว่า "ลง": numpy เลือกเครื่องหมายให้ตามใจ (กับดักในกล่อง 📖) กลับเป็น [0.43, …, 0.44] ก็คือ eigenvector ตัวเดียวกัน · PC2 = [−0.66, −0.33, 0.05, 0.35, 0.57] — จากลบไปบวก เปลี่ยนเครื่องหมายครั้งเดียวตรงช่วงกลาง = สั้นกับยาวไปคนละทาง ✓ (Slope) · ถ้าดูต่อ PC3 = [−0.56, 0.41, 0.50, 0.11, −0.51] เปลี่ยนเครื่องหมายสองครั้ง = ปลายสองข้างกับกลางไปคนละทาง (Curvature)</p></details></div>
 
 <div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
-<p>PCA ใช้ย่อ <strong>volatility surface</strong> (σ ของทุก strike × ทุกอายุ) ให้เหลือ factor ไม่กี่ตัว · eigenvalue ใหญ่ = ทิศสำคัญ · eigenvalue เล็ก = noise ตัดทิ้งได้</p></div>
+<p>PCA ใช้ย่อ <strong>volatility surface</strong> (σ ของทุก strike × ทุกอายุ) ให้เหลือ factor ไม่กี่ตัว — ทิศแรกมักเป็น "ทั้ง surface ขึ้นลงพร้อมกัน" ทิศสองคือ skew เปลี่ยน ทิศสามคือ term structure เปลี่ยน · โครงเดียวกับ Level / Slope / Curvature ของดอกเบี้ย</p></div>
 
 <h3 id="s1-5">1.5 Positive Definite — ทำไม covariance matrix "ผิดเพี้ยน" ไม่ได้</h3>
 
@@ -351,6 +364,9 @@ R² = 0.986   ·   SE = [0.246, 0.080, 0.179, 0.203]   ·   t = [0.22, 15.4, 3.7
 <li>β นิ่งในหน้าต่างที่ใช้ — ถ้า β เลื่อน ดู <a href="math-part9.html#s9-4">เล่ม 2 · D §9.4</a></li>
 </ul></div>
 
+<div class="deep"><div class="bt">🔍 ศัพท์ที่คนสลับกันบ่อย — multiple ≠ multivariate</div>
+<p><strong>Multiple regression</strong> = y <em>ตัวเดียว</em> x หลายตัว — คือหัวข้อนี้ทั้งหัวข้อ · <strong>Multivariate regression</strong> = y <em>หลายตัว</em>พร้อมกัน (เช่น ΔA และ ΔB) บนตัวแปรทางขวาชุดเดียวกัน — คือ VAR/VECM ของ <a href="math-part9.html#s9-5">เล่ม 2 · D §9.5</a> · ข่าวดี: เมื่อ X ชุดเดียวกัน OLS ของ multivariate regression ก็คือ multiple regression <em>ทีละสมการ</em> β ที่ได้เท่ากันทุกตัว ไม่มีสูตรใหม่ต้องเรียน (§9.5 ใช้ข้อนี้ตรง ๆ: regress ΔB บน X แล้ว regress ΔA บน X เดิม) · สิ่งที่ multivariate เพิ่มคือยอมให้ residual ของสมการต่าง ๆ สัมพันธ์กัน ซึ่งสำคัญตอนทดสอบสมมติฐาน<em>ข้ามสมการ</em> ไม่ใช่ตอนหา β</p></div>
+
 <p>ทฤษฎีจบตรงนี้ ที่เหลือคือให้คอมพิวเตอร์กลับเมทริกซ์แทนเรา:</p>
 
 <div class="code"><div class="hdr">🐍 Python — multiple regression ด้วย numpy (ข้อมูลเดียวกับที่คิดมือ)</div><pre>import numpy as np
@@ -462,7 +478,7 @@ print(f"β ตลาดอย่างเดียว = {b1:.4f}")              
 </table></div></div>
 
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
-<p><strong>Vector</strong> = รายการตัวเลข · <strong>Dot product</strong> = จับคู่คูณแล้วบวก · <strong>Matrix</strong> = ตารางตัวเลข · <strong>Covariance Matrix (Σ)</strong> = ตารางความเสี่ยงทุกคู่ · <strong>wᵀΣw</strong> = Portfolio Variance · <strong>Eigenvalue/Eigenvector</strong> = ทิศทางหลัก + ความสำคัญ · <strong>PCA</strong> = ย่อมิติด้วย eigenvalue · <strong>Regression/OLS</strong> = หาเส้น fit · <strong>Beta (β)</strong> = หุ้นขยับกี่เท่าตลาด · <strong>R²</strong> = โมเดลอธิบายได้กี่ % · <strong>Overfitting</strong> = จำ noise แทน pattern · <strong>Multiple regression</strong> = regression หลาย x พร้อมกัน β แต่ละตัวอ่าน "เมื่อตรึงตัวอื่น" · <strong>Factor model</strong> = ผลตอบแทน = Σ β × ปัจจัย → hedge ทีละปัจจัย · <strong>Multicollinearity</strong> = ปัจจัยเกือบซ้ำกัน ทำให้ β และ SE พองโดยข้อมูลไม่เปลี่ยน · <strong>(XᵀX)⁻¹Xᵀy</strong> = Cov/Var รุ่นหลายตัวแปร</p></div>
+<p><strong>Vector</strong> = รายการตัวเลข · <strong>Dot product</strong> = จับคู่คูณแล้วบวก · <strong>Matrix</strong> = ตารางตัวเลข · <strong>Covariance Matrix (Σ)</strong> = ตารางความเสี่ยงทุกคู่ · <strong>wᵀΣw</strong> = Portfolio Variance · <strong>Eigenvalue/Eigenvector</strong> = ทิศทางหลัก + ความสำคัญ · <strong>PCA</strong> = ย่อมิติด้วย eigenvalue · <strong>Regression/OLS</strong> = หาเส้น fit · <strong>Beta (β)</strong> = หุ้นขยับกี่เท่าตลาด · <strong>R²</strong> = โมเดลอธิบายได้กี่ % · <strong>Overfitting</strong> = จำ noise แทน pattern · <strong>Multiple regression</strong> = regression หลาย x พร้อมกัน β แต่ละตัวอ่าน "เมื่อตรึงตัวอื่น" · <strong>Factor model</strong> = ผลตอบแทน = Σ β × ปัจจัย → hedge ทีละปัจจัย · <strong>Multivariate regression</strong> = y หลายตัวบน X ชุดเดียวกัน (VAR ของเล่ม 2 · D) — ต่างจาก multiple regression ที่ y ตัวเดียว · <strong>Multicollinearity</strong> = ปัจจัยเกือบซ้ำกัน ทำให้ β และ SE พองโดยข้อมูลไม่เปลี่ยน · <strong>(XᵀX)⁻¹Xᵀy</strong> = Cov/Var รุ่นหลายตัวแปร</p></div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
 <div style="text-align:center;padding:16px;color:#64748b">
