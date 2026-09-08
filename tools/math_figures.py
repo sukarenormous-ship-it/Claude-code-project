@@ -91,6 +91,18 @@ expect("math-part4.html", "§2.2 SE₃ หลังเติม", f"{se2[3]:.2f}
 expect("math-part4.html", "§2.2 ρ(val,grow)", f"{np.corrcoef(val,grow)[0,1]:.3f}".replace("-", "−"))
 expect("math-part4.html", "§2.2 numpy β", f"[{beta[0]:.4f} {beta[1]:.4f} {beta[2]:.4f} {beta[3]:.4f}]")
 expect("math-part4.html", "§2.2 numpy R²", f"R² = {r2:.4f}")
+um4 = lambda v, f: f"{v:{f}}".replace("-", "−")
+expect("math-part4.html", "§2.2 x₄ series", "x₄ = [" + ", ".join(("+" if v > 0 else "") + um4(round(v, 1), ".1f") for v in grow * 100) + "]")
+expect("math-part4.html", "§2.2 β₁ หลังเติม", f"β₁ (ตลาด) = {beta2[1]:.3f}")
+expect("math-part4.html", "§2.2 β₂ หลังเติม", f"β₂ (ขนาด) = {beta2[2]:.3f}")
+expect("math-part4.html", "§2.2 SE₄", f"SE = {se2[4]:.2f}")
+C4 = np.corrcoef([mkt, size, val])
+expect("math-part4.html", "§2.2 ρ ปัจจัย", f"ρ = {C4[0,1]:.2f} และ {C4[0,2]:.2f}")
+expect("math-part4.html", "§2.2 ρ ขนาด-มูลค่า", um4(C4[1,2], ".2f"))
+Xd = np.column_stack([np.ones(8), mkt, size]); bd, sed, r2d = ols(Xd, stk)
+expect("math-part4.html", "§2.2 ✍️ β ตลาด", f"1.230 → {bd[1]:.3f}")
+expect("math-part4.html", "§2.2 ✍️ β ขนาด", f"0.670 → {bd[2]:.3f}")
+expect("math-part4.html", "§2.2 ✍️ R²", f"R² {r2:.4f} → {r2d:.4f} ลดแค่ {r2 - r2d:.4f}")
 
 # ── 2·B §4.2½ min-variance 2 สินทรัพย์ ──────────────────────────────────
 sA, sB, rho = .20, .10, .2
