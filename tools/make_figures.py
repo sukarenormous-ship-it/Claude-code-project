@@ -758,7 +758,8 @@ def figure_map():
         rows.append(f"<tr><td>{name}</td><td class=\"nw\">{len(fs)}</td><td class=\"nw\">{n_svg}</td><td class=\"nw\">{g}</td><td>{' · '.join(empty) if empty else '—'}</td></tr>")
     total_svg = sum(int(re.search(r'<td class="nw">\d+</td><td class="nw">(\d+)</td>', r).group(1)) for r in rows)
     return ("<h2 id=\"figmap\">ภาพประกอบ — บทไหนมีภาพ บทไหนยังไม่มี</h2>\n"
-            f"<p>สร้างอัตโนมัติจาก <code>tools/make_figures.py --map</code> · SVG ทั้งคลัง {total_svg} ชิ้น · \"จาก generator\" = ภาพที่วาดจากข้อมูลชุดเดียวกับตัวตรวจตัวเลข (ตัวเลขในภาพกับในข้อความจึงตรงกันโดยโครงสร้าง) · คอลัมน์ขวาคือบทที่ยังไม่มีภาพเลย — รายการรอทำของแผนส่วนที่ 3</p>\n"
+            f"<p>สร้างอัตโนมัติจาก <code>tools/make_figures.py --map</code> · SVG ทั้งคลัง {total_svg} ชิ้น · \"จาก generator\" = ภาพที่วาดจากข้อมูลชุดเดียวกับตัวตรวจตัวเลข (ตัวเลขในภาพกับในข้อความจึงตรงกันโดยโครงสร้าง) · คอลัมน์ขวาคือบทที่ยังไม่มีภาพเลย</p>\n"
+            "<p><strong>แผนปรับภาพประกอบ (ก.ย. 2026):</strong> ส่วน 1 ข้อควรระวังของ regression (outlier · jump · robust) — เสร็จ · ส่วน 2 ภาพกลุ่ม PCA/OLS/first passage/logistic จาก generator — เสร็จ · ส่วน 3 ไล่ทั้งคลัง: ให้ aria-label ทุกภาพ · svg_qa ผ่านทั้งคลัง · ภาพจากข้อมูลให้ทฤษฎีของ Quant/เสาหลัก/Payoff 5a แล้ว — ที่เหลือคือบทในคอลัมน์ขวา</p>\n"
             "<div class=\"tw\"><table>\n<tr><th>เล่ม</th><th class=\"nw\">ไฟล์</th><th class=\"nw\">SVG</th><th class=\"nw\">จาก generator</th><th>บทที่ยังไม่มีภาพ</th></tr>\n" + "\n".join(rows) + "\n</table></div>")
 
 
