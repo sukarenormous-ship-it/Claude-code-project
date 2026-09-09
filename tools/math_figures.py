@@ -93,6 +93,10 @@ assert w_a[2] < 0.01 and np.all(w_a[np.arange(11) != 2] > 0.99), w_a
 expect("math-part8.html", "§5.2 คู่", f"11 จุดได้ {11*10//2} คู่")
 b7_ts = theilslopes(s7, m7)[0]; b7_h, _ = _huber(m7, s7)
 print(f"2·C §5.2 robust 7 เดือน: OLS {b7:.2f} TS {b7_ts:.2f} Huber {b7_h:.2f}")
+_sl7 = [(s7[6] - s7[i]) / (m7[6] - m7[i]) for i in range(6)]; _w7 = _huber(m7, s7)[1][6]
+expect("math-part8.html", "§5.2 คู่เดือน 7", f"จุดเดียวอยู่ใน {6} จาก {21} คู่ ({6/21*100:.0f}% ของคู่")
+expect("math-part8.html", "§5.2 min slope เดือน 7", f"ให้ความชันตั้งแต่ {min(_sl7):.2f} ขึ้นไป")
+expect("math-part8.html", "§5.2 Huber w เดือน 7", f"น้ำหนักเดือนที่ 7 เหลือ {_w7:.2f}")
 expect("math-part8.html", "§5.2 robust 7 เดือน", f"OLS = <strong>{b7:.2f}</strong> · Theil-Sen = <strong>{b7_ts:.2f}</strong> · Huber = <strong>{b7_h:.2f}</strong> · 6 เดือนแรกล้วน = {b21:.2f}")
 _w0, _w1 = slice(_J - _W, _J), slice(_J - _W + 1, _J + 1)
 rb_ts0, rb_ts1 = theilslopes(_s[_w0], _m[_w0])[0], theilslopes(_s[_w1], _m[_w1])[0]
@@ -113,7 +117,7 @@ expect("math-part4.html", "§1.4½ ภาพ OLS", f"ความชัน = {b_
 expect("math-part4.html", "§1.4½ ภาพ PC1", f"ความชัน = {b_pca_f:.2f}")
 expect("math-part4.html", "§1.4½ ลำดับ", f"({b_ols_f:.2f} &lt; {b_pca_f:.2f} &lt; {b_rev_f:.2f})")
 expect("math-part4.html", "§1.4½ bullet", f"OLS คือคำตอบ ({b_ols_f:.2f}) · PC1 ({b_pca_f:.2f}) ตอบคำถามอื่น")
-expect("math-part4.html", "§1.4½ สลับ", f"({b_rev_f:.2f} กับ {b_ols_f:.2f} ห่างกัน")
+expect("math-part4.html", "§1.4½ สลับ", f"ในภาพนี้ {b_ols_f:.2f} กับ {b_rev_f:.2f} ห่างกัน")
 assert b_ols_f < b_pca_f < b_rev_f
 
 # ── 2·A §1.3 wᵀΣw ────────────────────────────────────────────────────────
