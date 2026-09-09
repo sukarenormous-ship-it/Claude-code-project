@@ -341,6 +341,59 @@ def build():
         }
 
     k12 = 2 / (MACD_FAST + 1)
+    def _lsma_flat_block(n):
+        """LSMA บนตลาดแบน (จุดอิสระรอบระดับคงที่) และที่จุดเปลี่ยนเทรนด์→แบน / แบน→เทรนด์
+        ทั้งหมดเป็นเลขคณิตของ OLS บนเวลา ไม่ใช้ราคาจริง — ตอบคำถาม "ข้อมูลแบนทำให้ regression ช้าไหม"
+        """
+        h_end = (4 * n - 2) / (n * (n + 1))            # leverage ของจุดปลายหน้าต่าง = Var(LSMA)/σ²
+        var_ratio = h_end / (1 / n)                    # เทียบ SMA ที่ Var = σ²/n
+        tc = [i - (n - 1) / 2 for i in range(n)]
+        stt = sum(c * c for c in tc)
+
+        def fit(w):
+            m = sum(w) / n
+            s = sum(c * (v - m) for c, v in zip(tc, w)) / stt
+            return s, m + s * (n - 1) / 2             # slope, จุดปลาย (LSMA)
+
+        def ema(seq, m):
+            k = 2 / (m + 1); e = [seq[0]]
+            for v in seq[1:]:
+                e.append(k * v + (1 - k) * e[-1])
+            return e
+
+        step = 100.0
+        up_flat = [step * i for i in range(1, n + 1)] + [step * n] * (n + 5)
+        flat_up = [step * n] * n + [step * n + step * j for j in range(1, n + 1)]
+        e1, e2 = ema(up_flat, n), ema(flat_up, n)
+        rows_a, rows_b = {}, {}
+        half_at = None
+        for k in range(0, n + 1):
+            i = n - 1 + k
+            s, l = fit(up_flat[i - n + 1:i + 1]); sma_ = sum(up_flat[i - n + 1:i + 1]) / n
+            if half_at is None and s < step / 2:
+                half_at = k
+            if k in (0, 1, 2, 5, 10, 15, 19, 20):
+                rows_a[str(k)] = {"ความชัน LSMA ต่อวัน": r(s, 1), "LSMA − ราคา": r(l - up_flat[i], 1),
+                                  "SMA − ราคา": r(sma_ - up_flat[i], 1), "EMA − ราคา": r(e1[i] - up_flat[i], 1)}
+            if k >= 1:
+                s2, l2 = fit(flat_up[i - n + 1:i + 1]); sma2 = sum(flat_up[i - n + 1:i + 1]) / n
+                if k in (1, 2, 5, 10, 19):
+                    rows_b[str(k)] = {"ความชัน LSMA ต่อวัน": r(s2, 1), "LSMA − ราคา": r(l2 - flat_up[i], 1),
+                                      "SMA − ราคา": r(sma2 - flat_up[i], 1), "EMA − ราคา": r(e2[i] - flat_up[i], 1)}
+        return {
+            "คำอธิบาย": f"หน้าต่าง {n} วัน · เทรนด์ +{step:.0f}/วัน · 'แบน' = ราคาคงที่พอดี · ตัวเลขทั้งหมดเป็นเลขคณิตของ OLS ไม่ขึ้นกับข้อมูลจริง",
+            "ตลาดแบนมี noise อิสระ": {
+                "leverage จุดปลาย (Var LSMA / σ²)": r(h_end, 4),
+                "Var LSMA / Var SMA เท่า": r(var_ratio, 2),
+                "SD LSMA / SD SMA เท่า": r(math.sqrt(var_ratio), 2),
+                "ความช้าของระดับ (วัน)": 0,
+                "ความช้าของความชัน (วัน)": (n - 1) / 2,
+            },
+            "เทรนด์แล้วแบน — k วันหลังราคาหยุด": rows_a,
+            "ความชันเหลือครึ่งของเดิมที่ k (วัน)": half_at,
+            "แบนแล้วเทรนด์ — k วันหลังราคาเริ่มวิ่ง": rows_b,
+        }
+
     lr_block = {
         "คำอธิบาย": f"OLS ของราคาบนเวลา หน้าต่าง {LR_N} วัน (Linear Regression Indicator / LSMA / channel) และ OLS ของ EMA12 บนเวลา หน้าต่าง {LR_EMA_N} วัน",
         "หน้าต่างราคา": LR_N, "หน้าต่างบนEMA": LR_EMA_N,
@@ -372,6 +425,7 @@ def build():
             "คำอธิบาย": "ถ้าราคาเป็นเส้นตรงสมบูรณ์ ค่าเฉลี่ยจะตามหลังเส้นนั้นกี่วัน — (n−1)/2 สำหรับ SMA และ EMA(k=2/(n+1)); ปลาย regression = 0",
             "SMA20 / EMA20": (LR_N - 1) / 2, "EMA12": (MACD_FAST - 1) / 2, "EMA26": (MACD_SLOW - 1) / 2, "LSMA20": 0,
         },
+        "ตลาดแบนกับจุดเปลี่ยน (สังเคราะห์)": _lsma_flat_block(LR_N),
     }
 
     # ── Donchian / จุดสูงสุด N วัน ────────────────────────────────────────────
