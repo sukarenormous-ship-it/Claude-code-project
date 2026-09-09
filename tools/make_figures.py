@@ -158,8 +158,9 @@ def legend(out, items, x, y):
         x += 27 + 6.2 * len(lab) + 18
 
 
-def svg_open(W, H, label):
-    return [f'<svg class="d" viewBox="0 0 {W} {H}" role="img" aria-label="{label}">',
+def svg_open(W, H, label, multipanel=False):
+    mp = ' data-legend="per-panel"' if multipanel else ""   # หลายพาเนล พาเนลละซีรีส์เดียว — ไม่ต้องมี legend รวม
+    return [f'<svg class="d" viewBox="0 0 {W} {H}" role="img" aria-label="{label}"{mp}>',
             '<defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>']
 
 
@@ -356,7 +357,7 @@ def fig_logistic():
     th, rows = logistic_data()
     NUMS["logistic"] = dict(coef1=th[1], coef2=th[2], **{f"bin{i}_pred": r[1] for i, r in enumerate(rows)}, **{f"bin{i}_act": r[2] for i, r in enumerate(rows)})
     Wd, H = 560, 290
-    out = svg_open(Wd, H, "ซ้าย: เส้น sigmoid ของ logistic regression กับจุดจากตารางแทนค่า · ขวา: calibration plot ห้าช่อง ความน่าจะเป็นที่ทำนายเทียบสัดส่วนที่เกิดจริง")
+    out = svg_open(Wd, H, "ซ้าย: เส้น sigmoid ของ logistic regression กับจุดจากตารางแทนค่า · ขวา: calibration plot ห้าช่อง ความน่าจะเป็นที่ทำนายเทียบสัดส่วนที่เกิดจริง", multipanel=True)
     # ซ้าย sigmoid
     out.append(f'<text x="150" y="18" text-anchor="middle" {FONT} font-size="12" font-weight="700" fill="{INK}">sigmoid: P = 1/(1 + e^−(β₀ + β₁x))</text>')
     out.append(f'<text x="150" y="32" text-anchor="middle" {FONT} font-size="10" fill="{INK2}">β₀ = −0.2 · β₁ = 0.8 (ตารางแทนค่า)</text>')
@@ -382,6 +383,83 @@ def fig_logistic():
         out.append(f'<circle cx="{sx2(pr):.1f}" cy="{sy2(ac):.1f}" r="{rad:.1f}" fill="{GREEN}" opacity="0.75"/>')
         out.append(f'<text x="{sx2(pr)+9:.1f}" y="{sy2(ac)+3.5:.1f}" {FONT} font-size="8.5" fill="{INK2}">n={nn}</text>')
     out.append(f'<text x="{x1+2}" y="{y0+h-6}" {FONT} font-size="9" fill="{INK2}">ขนาดจุด = จำนวนตัวอย่างในช่อง</text>')
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+
+# ── Payoff Mastery 5a — Black-Scholes: เส้นโค้งราคา Call กับความชัน Δ · Greeks ตามราคาหุ้น ──
+def _N(x):
+    from math import erf, sqrt
+    return 0.5 * (1 + erf(x / sqrt(2)))
+def _npdf(x):
+    return np.exp(-x * x / 2) / np.sqrt(2 * np.pi)
+def bs_greeks(S, K=100.0, r=0.05, sg=0.20, T=0.5):
+    S = np.asarray(S, float)
+    d1 = (np.log(S / K) + (r + sg * sg / 2) * T) / (sg * np.sqrt(T)); d2 = d1 - sg * np.sqrt(T)
+    Nd1 = np.vectorize(_N)(d1); Nd2 = np.vectorize(_N)(d2); disc = np.exp(-r * T)
+    C = S * Nd1 - K * disc * Nd2
+    return dict(C=C, delta=Nd1, gamma=_npdf(d1) / (S * sg * np.sqrt(T)),
+                theta_day=(-(S * _npdf(d1) * sg) / (2 * np.sqrt(T)) - r * K * disc * Nd2) / 365,
+                vega1=S * _npdf(d1) * np.sqrt(T) / 100)
+
+
+@fig("pm-part5a.html", "bs-call-curve")
+def fig_bs_call_curve():
+    S = np.linspace(70, 130, 121); g = bs_greeks(S); g0 = bs_greeks(100.0)
+    NUMS["bs-call-curve"] = dict(C=float(g0["C"]), delta=float(g0["delta"]))
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เส้นโค้งราคา Call ของ Black-Scholes เหนือเส้นหักศอกของ intrinsic value จุด S = 100 ราคา 6.89 และเส้นสัมผัสความชัน 0.5977 คือ Delta")
+    title(out, Wd, "Black-Scholes บอกว่า 'เส้นโค้ง' อยู่ตรงไหนเหนือเส้นหักศอก", "K = 100 · r = 5% · σ = 20% · T = 0.5 ปี · ตัวเลขชุดเดียวกับตัวอย่างคำนวณ")
+    x0, y0, w, h = 50, 46, 480, 195
+    sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")], [(0, "0"), (10, "10"), (20, "20"), (30, "30")], xlab="ราคาหุ้น S วันนี้", ylab="ราคา Call (฿)")
+    # intrinsic
+    polyline(out, [(sx(70), sy(0)), (sx(100), sy(0)), (sx(130), sy(30))], INK2, 1.6, dash="5 4", shadow=False)
+    out.append(f'<text x="{sx(121):.1f}" y="{sy(21)+14:.1f}" {FONT} font-size="9.5" fill="{INK2}">intrinsic = max(S − K, 0)</text>')
+    # time value shading ระหว่างเส้นโค้งกับ intrinsic
+    pts = [(sx(a), sy(b)) for a, b in zip(S, g["C"])] + [(sx(a), sy(max(a - 100, 0))) for a in S[::-1]]
+    out.append('<polygon points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in pts) + f'" fill="{BLUE}" opacity="0.08"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, g["C"])], BLUE, 2.75)
+    # tangent at S=100
+    C0, D0 = float(g0["C"]), float(g0["delta"])
+    out.append(f'<line x1="{sx(86):.1f}" y1="{sy(C0 + D0*(86-100)):.1f}" x2="{sx(114):.1f}" y2="{sy(C0 + D0*(114-100)):.1f}" stroke="{PURPLE}" stroke-width="1.6" stroke-dasharray="6 3"/>')
+    out.append(f'<circle cx="{sx(100):.1f}" cy="{sy(C0):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
+    out.append(f'<text x="{sx(100)-8:.1f}" y="{sy(C0)-10:.1f}" text-anchor="end" {FONT} font-size="10" fill="{PURPLE}" font-weight="700">S = 100: C = ฿{C0:.2f}</text>')
+    out.append(f'<text x="{sx(100)-8:.1f}" y="{sy(C0)+3:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{PURPLE}">ความชันเส้นสัมผัส = Δ = {D0:.4f}</text>')
+    out.append(f'<text x="{sx(100)+6:.1f}" y="{sy(C0/2)+3:.1f}" {FONT} font-size="9.5" fill="{BLUE}">time value ที่ ATM = ทั้งก้อน ฿{C0:.2f}</text>')
+    out.append(f'<line x1="{sx(100):.1f}" y1="{sy(C0):.1f}" x2="{sx(100):.1f}" y2="{sy(0):.1f}" stroke="{BLUE}" stroke-width="1" stroke-dasharray="2 2"/>')
+    out.append(f'<text x="{sx(72):.1f}" y="{sy(3.2):.1f}" {FONT} font-size="9.5" fill="{INK2}">OTM ลึก: เส้นโค้งแนบศูนย์ Δ → 0</text>')
+    out.append(f'<text x="{sx(129):.1f}" y="{sy(9):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ITM ลึก: เส้นโค้งขนานเส้นหักศอก Δ → 1</text>')
+    legend(out, [(BLUE, "ราคา Call (Black-Scholes)", ""), (INK2, "intrinsic value", "5 4"), (PURPLE, "เส้นสัมผัสที่ S = 100 (ความชัน = Δ)", "6 3")], x0, H - 10)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("pm-part5a.html", "greeks-grid")
+def fig_greeks_grid():
+    S = np.linspace(70, 130, 121); g = bs_greeks(S); g0 = bs_greeks(100.0)
+    NUMS["greeks-grid"] = dict(delta=float(g0["delta"]), gamma=float(g0["gamma"]), theta_day=float(g0["theta_day"]), vega1=float(g0["vega1"]))
+    Wd, H = 560, 400
+    out = svg_open(Wd, H, "Greeks ของ Call ตามราคาหุ้น 4 ช่อง: Delta รูปตัว S จาก 0 ถึง 1 · Gamma ยอดแหลมที่ ATM · Theta ติดลบสุดที่ ATM · Vega ยอดที่ ATM · จุดที่ S = 100 ตรงกับตารางค่าตัวอย่าง", multipanel=True)
+    title(out, Wd, "Greeks ตามราคาหุ้น — ทุกตัว 'สุด' ที่ ATM ยกเว้น Delta ที่แค่ผ่านครึ่งทาง", "K = 100 · r = 5% · σ = 20% · T = 0.5 · จุดม่วง = ค่าในตารางที่ S = 100")
+    panels = [("Delta = N(d₁)", "delta", (0, "0"), (0.5, "0.5"), (1, "1"), f"{g0['delta']:.4f}", GREEN),
+              ("Gamma = N′(d₁)/(Sσ√T)", "gamma", (0, "0"), (0.015, "0.015"), (0.03, "0.03"), f"{g0['gamma']:.4f}", BLUE),
+              ("Theta ต่อวัน (฿)", "theta_day", (-0.03, "−0.03"), (-0.015, "−0.015"), (0, "0"), f"−฿{abs(g0['theta_day']):.3f}", RED),
+              ("Vega ต่อ vol 1% (฿)", "vega1", (0, "0"), (0.15, "0.15"), (0.3, "0.30"), f"฿{g0['vega1']:.3f}", AMBER)]
+    pw, ph = 205, 120
+    for k, (name, key, y_a, y_m, y_b, lab, col) in enumerate(panels):
+        cx, cy = 50 + (k % 2) * 275, 56 + (k // 2) * 170
+        out.append(f'<text x="{cx + pw/2:.0f}" y="{cy-6}" text-anchor="middle" {FONT} font-size="11" font-weight="700" fill="{INK}">{name}</text>')
+        sx, sy = frame(out, cx, cy, pw, ph, [(70, "70"), (100, "100"), (130, "130")], [y_a, y_m, y_b], xlab="S" if k >= 2 else "")
+        if key == "theta_day":
+            out.append(f'<line x1="{cx}" y1="{sy(0):.1f}" x2="{cx+pw}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1"/>')
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(S, g[key])], col, 2.4)
+        v0 = float(g0[key])
+        out.append(f'<circle cx="{sx(100):.1f}" cy="{sy(v0):.1f}" r="4" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
+        dy = 16 if key in ("theta_day",) else -8
+        anchor_ = "start" if key == "delta" else "end"; dx = 7 if key == "delta" else -7
+        out.append(f'<text x="{sx(100)+dx:.1f}" y="{sy(v0)+dy:.1f}" text-anchor="{anchor_}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">{lab}</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Gamma · Theta · Vega คือ "ญาติ" กัน — ทุกตัวมี N′(d₁) เป็นแกน จึงมียอดที่ ATM พร้อมกัน และหายไปเมื่อ ITM/OTM ลึก</text>')
     out.append("</svg>")
     return "\n".join(out)
 
