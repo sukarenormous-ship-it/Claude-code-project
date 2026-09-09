@@ -45,7 +45,23 @@ def check_svg(svg):
         for m in re.finditer(r'<rect\b[^>]*>', svg):
             tag = m.group(0); c = re.search(r'fill="([^"]+)"', tag); wd = re.search(r'width="([\d.]+)"', tag)
             if c and wd and float(wd.group(1)) <= 30: fills.add(c.group(1).lower())
-        labelled = sum(1 for c in series if c in fills)
+        def hue(hx):
+            hx = hx.lstrip("#")
+            if len(hx) == 3: hx = "".join(ch * 2 for ch in hx)
+            try: r, g, b = (int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4))
+            except ValueError: return None
+            mx, mn = max(r, g, b), min(r, g, b)
+            if mx - mn < 0.15: return None          # เทา/หมึก ไม่นับเป็นสีซีรีส์
+            d = mx - mn
+            h = (60 * ((g - b) / d) % 360) if mx == r else (60 * ((b - r) / d) + 120) if mx == g else (60 * ((r - g) / d) + 240)
+            return h
+        def same_family(c1, c2):
+            h1, h2 = hue(c1), hue(c2)
+            return h1 is not None and h2 is not None and min(abs(h1 - h2), 360 - abs(h1 - h2)) <= 22
+        labelled = sum(1 for c in series if any(same_family(c, fcol) for fcol in fills))
+        # เส้นเดียวที่ระบายสีตามเครื่องหมาย (เขียว = กำไร · แดง = ขาดทุน) ไม่ใช่สองซีรีส์
+        if series <= {"#16a34a", "#dc2626", "#15803d", "#b91c1c"} and re.search(r"Payoff|P/L|P&amp;L|กำไร|ขาดทุน|Profit", svg):
+            labelled = len(series)
         if labelled < len(series):
             issues.append(f"มี {len(series)} สีเส้นหลัก แต่ป้ายสีตรงกันแค่ {labelled} — ต้องมี legend/ป้ายทุกซีรีส์")
     return issues

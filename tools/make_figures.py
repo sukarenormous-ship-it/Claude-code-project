@@ -468,9 +468,62 @@ def render_all():
     return {(fl, nm): fn() for (fl, nm), fn in FIGS.items()}
 
 
+
+VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
+           ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
+           ("ทฤษฎีของ Quant (เล่ม A)", r"^theory-"), ("เสาหลัก (เล่ม B)", r"^pillars-"), ("Arbitrage", r"^arb-"),
+           ("ตาของ Arbitrageur", r"^eye-"), ("statarb", r"^statarb-"), ("เครื่องมือ / หน้ารวม", r"^(tool|tools|notation|index|curriculum|quant-tool|case-|math-for)")]
+
+
+# หน้าที่โดยธรรมชาติไม่ต้องมีภาพ (อภิธานศัพท์ · แผนที่ · หน้ารวม · เครื่องคิดเลข · ฉบับเล่าเรื่อง)
+NO_FIG_NEEDED = r"-narrative|glossary|appendix-map|appendix-drills|runbook|^index|nq-index|tools-index|^tools\.|notation|curriculum|^tool-|nq-tool-|guide|critique|^case-"
+
+
+def figure_map():
+    """ตารางภาพประกอบต่อเล่ม: จำนวนไฟล์ · ไฟล์ที่ไม่มีภาพ · SVG ทั้งหมด · ภาพจาก generator"""
+    import glob
+    files = sorted(os.path.basename(f) for f in glob.glob(os.path.join(DOCS, "*.html")))
+    gen = {}
+    for (fl, nm) in FIGS: gen[fl] = gen.get(fl, 0) + 1
+    rows = []
+    for name, pat in VOLUMES:
+        fs = [f for f in files if re.search(pat, f)]
+        if not fs: continue
+        n_svg = 0; empty = []
+        for f in fs:
+            s = open(os.path.join(DOCS, f), encoding="utf-8").read()
+            k = sum(1 for m in re.finditer(r"<svg\b.*?</svg>", s, re.S) if len(m.group(0)) >= 200)
+            n_svg += k
+            if k == 0 and not re.search(NO_FIG_NEEDED, f): empty.append(f[:-5])
+        g = sum(gen.get(f, 0) for f in fs)
+        rows.append(f"<tr><td>{name}</td><td class=\"nw\">{len(fs)}</td><td class=\"nw\">{n_svg}</td><td class=\"nw\">{g}</td><td>{' · '.join(empty) if empty else '—'}</td></tr>")
+    total_svg = sum(int(re.search(r'<td class="nw">\d+</td><td class="nw">(\d+)</td>', r).group(1)) for r in rows)
+    return ("<h2 id=\"figmap\">ภาพประกอบ — บทไหนมีภาพ บทไหนยังไม่มี</h2>\n"
+            f"<p>สร้างอัตโนมัติจาก <code>tools/make_figures.py --map</code> · SVG ทั้งคลัง {total_svg} ชิ้น · \"จาก generator\" = ภาพที่วาดจากข้อมูลชุดเดียวกับตัวตรวจตัวเลข (ตัวเลขในภาพกับในข้อความจึงตรงกันโดยโครงสร้าง) · คอลัมน์ขวาคือบทที่ยังไม่มีภาพเลย — รายการรอทำของแผนส่วนที่ 3</p>\n"
+            "<div class=\"tw\"><table>\n<tr><th>เล่ม</th><th class=\"nw\">ไฟล์</th><th class=\"nw\">SVG</th><th class=\"nw\">จาก generator</th><th>บทที่ยังไม่มีภาพ</th></tr>\n" + "\n".join(rows) + "\n</table></div>")
+
+
+def write_map():
+    p = os.path.join(DOCS, "curriculum-map.html"); s = open(p, encoding="utf-8").read()
+    b, e = "<!-- FIGMAP:BEGIN -->", "<!-- FIGMAP:END -->"
+    assert b in s and e in s, "ไม่พบ marker FIGMAP ใน curriculum-map.html"
+    new = re.sub(re.escape(b) + r".*?" + re.escape(e), lambda m: b + "\n" + figure_map() + "\n" + e, s, flags=re.S)
+    if new != s: open(p, "w", encoding="utf-8").write(new); print("✏️  curriculum-map.html · ตารางภาพประกอบ เขียนแล้ว")
+    return new != s
+
+
 def main():
     check = "--check" in sys.argv
     bad = 0
+    if "--map" in sys.argv:
+        write_map(); return 0
+    if check:
+        # ตารางภาพประกอบต้องเป็นปัจจุบันด้วย
+        p = os.path.join(DOCS, "curriculum-map.html"); s0 = open(p, encoding="utf-8").read()
+        if write_map():
+            open(p, "w", encoding="utf-8").write(s0); print("❌ curriculum-map.html: ตารางภาพประกอบล้าสมัย — รัน python3 tools/make_figures.py"); bad += 1
+    else:
+        write_map()
     for (fl, nm), svg in render_all().items():
         p = os.path.join(DOCS, fl)
         s = open(p, encoding="utf-8").read()
