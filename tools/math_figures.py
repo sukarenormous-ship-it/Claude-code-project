@@ -638,6 +638,26 @@ expect("statarb-ledger.html", "ledger pct_change", f"ให้ \"ผลตอบ
 print(f"ledger    gross={pnlB+pnlA:.2f} net={net_:.2f} naive={naive:.2f} gap={naive-net_:.2f} ({(naive-net_)/naive*100:.1f}%)")
 
 
+# ── theory-extra: การ์ด Decision & Dependence (เลขคณิตล้วน) ──────────────────────────
+for rho_ in (0.3, 0.8):
+    mi_ = -0.5 * math.log(1 - rho_ ** 2)
+    expect("theory-extra.html", f"MI ρ={rho_}", f"<strong>{mi_:.3f} nats</strong> ({mi_/math.log(2):.3f} bits)")
+Hy = -(1/3 * math.log2(1/3) + 2/3 * math.log2(2/3))
+expect("theory-extra.html", "H(Y) X²", f"= <strong>{Hy:.3f} bits</strong>")
+expect("theory-extra.html", "MI ratio", f"ข้อมูลที่ได้เพิ่ม {(-0.5*math.log(1-0.64))/(-0.5*math.log(1-0.09)):.0f} เท่า")
+pred_ = 0.2 * 0.7 + 0.8 * 0.1; lc_ = math.exp(-0.5 * 9); ls_ = math.exp(-0.5) / 3; post_ = pred_ * ls_ / (pred_ * ls_ + (1 - pred_) * lc_)
+expect("theory-extra.html", "HMM predict", f"0.2 × 0.7 + 0.8 × 0.1 = <strong>{pred_:.2f}</strong>")
+expect("theory-extra.html", "HMM lik", f"= {lc_:.4f} · ภายใต้ปั่นป่วน ∝ e^{{−½(3/3)²}}/3 = {ls_:.4f}")
+expect("theory-extra.html", "HMM post", f"= <strong>{post_:.3f}</strong>")
+expect("theory-extra.html", "HMM LR", f"อัตราส่วน likelihood {ls_/lc_:.0f} เท่า")
+expect("theory-extra.html", "stop 50%", f"= <strong>{0.5*105+0.5*97-0.3:.1f}</strong>")
+expect("theory-extra.html", "stop 40%", f"= <strong>{0.4*105+0.6*97-0.3:.1f}</strong>")
+p_star = (100 + 0.3 - 97) / (105 - 97)
+expect("theory-extra.html", "stop p*", f"เส้นแบ่งอยู่ที่โอกาสราว {p_star*100:.0f}%")
+expect("theory-extra.html", "pinball", f"(10 − 8) × 0.9 = {2*0.9:.1f} · ทำนาย 12 → (10 − 12) × (0.9 − 1) = {(-2)*(0.9-1):.1f}")
+print(f"theory-extra MI={-0.5*math.log(1-0.09):.4f}/{-0.5*math.log(1-0.64):.4f} H(Y)={Hy:.3f} HMM pred={pred_:.2f} post={post_:.3f} LR={ls_/lc_:.1f} p*={p_star:.3f}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
