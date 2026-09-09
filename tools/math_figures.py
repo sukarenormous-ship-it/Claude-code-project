@@ -616,7 +616,7 @@ B_in, B_q = 150.20, 100; A_in1, A_q1, A_in2, A_q2 = 96.80, 100, 96.95, 51; B_out
 notB = B_q * B_in; notA = A_q1 * A_in1 + A_q2 * A_in2
 fees_in = fee_ * B_q * B_in + fee_ * A_q1 * A_in1 + fee_ * A_q2 * A_in2
 pnlB = (B_in - B_out) * B_q; pnlA = (A_out - A_in1) * A_q1 + (A_out - A_in2) * A_q2
-fees_out = fee_ * (B_q * B_out + (A_q1 + A_q2) * A_out); borrow_c = borrow_ * notB * days_
+fees_out = round(fee_ * B_q * B_out, 2) + round(fee_ * (A_q1 + A_q2) * A_out, 2); borrow_c = borrow_ * notB * days_  # ปัดทีละบรรทัดเหมือนในหน้า
 net_ = pnlB + pnlA - fees_in - fees_out - borrow_c
 sp_in = B_in - 1.51 * A_in1; sp_out = B_out - 1.51 * A_out; naive = 100 * (sp_in - sp_out)
 expect("statarb-ledger.html", "ledger ขา B", f"= +{pnlB:.2f}")
@@ -626,7 +626,7 @@ expect("statarb-ledger.html", "ledger fees", f"{fee_*B_q*B_in:.2f} + {fee_*A_q1*
 expect("statarb-ledger.html", "ledger net", f"= +{net_:.2f}")
 expect("statarb-ledger.html", "ledger spread", f"= <strong>{sp_in:.3f}</strong> · วันออก = 147.90 − 1.51 × 96.40 = <strong>{sp_out:.3f}</strong> · backtest บอกว่ากำไร = 100 × ({sp_in:.3f} − {sp_out:.3f}) = <strong>{naive:.2f}</strong>")
 expect("statarb-ledger.html", "ledger partial", f"<td>−{A_q2*(A_in2-A_in1):.2f}</td><td>{A_q2*(A_in2-A_in1)/naive*100:.1f}%</td>")
-expect("statarb-ledger.html", "ledger fees share", f"<td>−{fees_in+fees_out:.2f}</td><td>{(fees_in+fees_out)/naive*100:.1f}%</td>")
+expect("statarb-ledger.html", "ledger fees share", f"(14.82 + {fees_out:.2f})</td><td>−{fees_in+fees_out:.2f}</td><td>{(fees_in+fees_out)/naive*100:.1f}%</td>")
 expect("statarb-ledger.html", "ledger borrow share", f"<td>−{borrow_c:.2f}</td><td>{borrow_c/naive*100:.1f}%</td>")
 expect("statarb-ledger.html", "ledger gap total", f"<strong>−{naive-net_:.2f}</strong></td><td><strong>{(naive-net_)/naive*100:.1f}%</strong>")
 expect("statarb-ledger.html", "ledger exposure gap", f"net short {notB - A_q1*A_in1:,.0f}")
