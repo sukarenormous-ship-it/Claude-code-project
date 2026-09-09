@@ -622,7 +622,7 @@ sp_in = B_in - 1.51 * A_in1; sp_out = B_out - 1.51 * A_out; naive = 100 * (sp_in
 expect("statarb-ledger.html", "ledger ขา B", f"= +{pnlB:.2f}")
 expect("statarb-ledger.html", "ledger ขา A", f"= −{-(A_out - A_in1) * A_q1:.2f} − {-(A_out - A_in2) * A_q2:.2f} = −{-pnlA:.2f}")
 expect("statarb-ledger.html", "ledger gross", f"= +{pnlB + pnlA:.2f}")
-expect("statarb-ledger.html", "ledger fees", f"{fee_*B_q*B_in:.2f} + {fee_*A_q1*A_in1:.2f} + {fee_*A_q2*A_in2:.2f} = {fees_in:.2f}  ·  ออก {fee_*B_q*B_out:.2f} + {fee_*(A_q1+A_q2)*A_out:.2f} = {fees_out:.2f}  ·  ค่ายืม {borrow_c:.2f}")
+expect("statarb-ledger.html", "ledger fees", f"{fee_*B_q*B_in:.2f} + {fee_*A_q1*A_in1:.2f} + {fee_*A_q2*A_in2:.2f} = {fees_in:.2f} &nbsp;·&nbsp; ออก {fee_*B_q*B_out:.2f} + {fee_*(A_q1+A_q2)*A_out:.2f} = {fees_out:.2f} &nbsp;·&nbsp; ค่ายืม {borrow_c:.2f}")
 expect("statarb-ledger.html", "ledger net", f"= +{net_:.2f}")
 expect("statarb-ledger.html", "ledger spread", f"= <strong>{sp_in:.3f}</strong> · วันออก = 147.90 − 1.51 × 96.40 = <strong>{sp_out:.3f}</strong> · backtest บอกว่ากำไร = 100 × ({sp_in:.3f} − {sp_out:.3f}) = <strong>{naive:.2f}</strong>")
 expect("statarb-ledger.html", "ledger partial", f"<td>−{A_q2*(A_in2-A_in1):.2f}</td><td>{A_q2*(A_in2-A_in1)/naive*100:.1f}%</td>")
