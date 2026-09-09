@@ -187,7 +187,6 @@ def fig_rolling_beta():
     x0, y0, w, h = 50, 46, 480, 180
     sx, sy = frame(out, x0, y0, w, h, [(60, "60"), (120, "120"), (180, "180"), (240, "240")], [(0.8, "0.8"), (1.2, "1.2"), (1.6, "1.6"), (2.0, "2.0"), (2.4, "2.4")], xlab="วันที่ (วันทำการ)", ylab="β")
     out.append(f'<line x1="{x0}" y1="{sy(1.2):.1f}" x2="{x0+w}" y2="{sy(1.2):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="4 4"/>')
-    out.append(f'<text x="{x0+w-2}" y="{sy(1.2)+11:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">β จริง 1.2</text>')
     # แถบ 60 วันที่วัน jump อยู่ในหน้าต่าง
     out.append(f'<rect x="{sx(J):.1f}" y="{y0}" width="{sx(J+W)-sx(J):.1f}" height="{h}" fill="{RED}" opacity="0.06"/>')
     out.append(f'<text x="{(sx(J)+sx(J+W))/2:.1f}" y="{y0+12}" text-anchor="middle" {FONT} font-size="9.5" fill="{RED}">วัน jump อยู่ในหน้าต่าง (60 วัน)</text>')
@@ -199,7 +198,7 @@ def fig_rolling_beta():
     out.append(f'<text x="{sx(J)-6:.1f}" y="{sy(bj)-8:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">วันที่ 120: {bj:.2f} — ขึ้นวันเดียว</text>')
     out.append(f'<circle cx="{sx(J+W):.1f}" cy="{sy(ba):.1f}" r="4" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
     out.append(f'<text x="{sx(J+W)+7:.1f}" y="{sy(ba)+14:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">วันที่ 180: {ba:.2f} — ตกวันเดียว ไม่มีข่าว</text>')
-    legend(out, [(RED, "OLS", ""), (GREEN, "Theil-Sen (median ของความชันทุกคู่)", "")], x0, H - 10)
+    legend(out, [(RED, "OLS", ""), (GREEN, "Theil-Sen (median ของความชันทุกคู่)", ""), (INK2, "β จริง 1.2", "4 4")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
 
@@ -429,8 +428,8 @@ def fig_bs_call_curve():
     out.append(f'<text x="{sx(100)+6:.1f}" y="{sy(C0/2)+3:.1f}" {FONT} font-size="9.5" fill="{BLUE}">time value ที่ ATM = ทั้งก้อน ฿{C0:.2f}</text>')
     out.append(f'<line x1="{sx(100):.1f}" y1="{sy(C0):.1f}" x2="{sx(100):.1f}" y2="{sy(0):.1f}" stroke="{BLUE}" stroke-width="1" stroke-dasharray="2 2"/>')
     out.append(f'<text x="{sx(72):.1f}" y="{sy(3.2):.1f}" {FONT} font-size="9.5" fill="{INK2}">OTM ลึก: เส้นโค้งแนบศูนย์ Δ → 0</text>')
-    out.append(f'<text x="{sx(129):.1f}" y="{sy(9):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ITM ลึก: เส้นโค้งขนานเส้นหักศอก Δ → 1</text>')
-    legend(out, [(BLUE, "ราคา Call (Black-Scholes)", ""), (INK2, "intrinsic value", "5 4"), (PURPLE, "เส้นสัมผัสที่ S = 100 (ความชัน = Δ)", "6 3")], x0, H - 10)
+    out.append(f'<text x="{sx(128):.1f}" y="{sy(2.5):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ITM ลึก: Δ → 1</text>')
+    legend(out, [(BLUE, "ราคา Call (Black-Scholes)", ""), (INK2, "intrinsic value", "5 4"), (PURPLE, "เส้นสัมผัส (ความชัน = Δ)", "6 3")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
 
@@ -518,11 +517,11 @@ def fig_diversification_corr():
     out.append(f'<line x1="{x0}" y1="{sy(20):.1f}" x2="{x0+w}" y2="{sy(20):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="4 4"/>')
     out.append(f'<text x="{x0+4}" y="{sy(20)+12:.1f}" {FONT} font-size="9.5" fill="{INK2}">ถือตัวเดียว σ = 20%</text>')
     polyline(out, [(sx(a), sy(b)) for a, b in zip(rho, sp)], BLUE, 2.75)
-    for r_, lab, dy, anc in [(-1, f"ρ = −1: σ = {sp[0]:.0f}% — กำจัดหมด (ทฤษฎี)", -8, "start"), (0, f"ρ = 0: σ = {sp[100]:.1f}% — ลด ~30% ฟรี", -10, "middle"), (1, f"ρ = +1: σ = {sp[-1]:.0f}% — ไม่ลดเลย", 24, "end")]:
+    for r_, lab, dy, anc in [(-1, f"ρ = −1: σ = {sp[0]:.0f}% — กำจัดหมด (ทฤษฎี)", -8, "start"), (0, f"ρ = 0: σ = {sp[100]:.1f}% — ลด ~30% ฟรี", -10, "middle"), (1, f"ρ = +1: σ = {sp[-1]:.0f}% — ไม่ลดเลย", -7, "end")]:
         v = float(np.interp(r_, rho, sp))
         out.append(f'<circle cx="{sx(r_):.1f}" cy="{sy(v):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
         out.append(f'<text x="{sx(r_)+(6 if anc=="start" else -6 if anc=="end" else 0):.1f}" y="{sy(v)+dy:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">{lab}</text>')
-    out.append(f'<text x="{sx(0.5):.1f}" y="{sy(3):.1f}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ของจริงส่วนใหญ่อยู่แถว ρ = 0.3–0.8 — ลดได้แต่ไม่หมด และ ρ วิ่งขึ้นตอนวิกฤต (เสาหลัก Part 5 กฎ 3)</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(3):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ของจริงส่วนใหญ่อยู่แถว ρ = 0.3–0.8 — ลดได้แต่ไม่หมด และ ρ วิ่งขึ้นตอนวิกฤต (เสาหลัก Part 5 กฎ 3)</text>')
     out.append("</svg>")
     return "\n".join(out)
 
@@ -540,7 +539,7 @@ def fig_prospect_value():
     out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1"/>')
     out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1"/>')
     polyline(out, [(sx(-100), sy(-100)), (sx(0), sy(0)), (sx(100), sy(100))], INK2, 1.4, dash="5 4", shadow=False)
-    out.append(f'<text x="{sx(30):.1f}" y="{sy(30)+16:.1f}" {FONT} font-size="9.5" fill="{INK2}">คนไร้ bias: v(x) = x</text>')
+    out.append(f'<text x="{sx(58):.1f}" y="{sy(58)+18:.1f}" {FONT} font-size="9.5" fill="{INK2}">คนไร้ bias: v(x) = x</text>')
     polyline(out, [(sx(-100), sy(-lam * 100)), (sx(0), sy(0))], RED, 2.75)
     polyline(out, [(sx(0), sy(0)), (sx(100), sy(100))], GREEN, 2.75)
     out.append(f'<circle cx="{sx(100):.1f}" cy="{sy(100):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
@@ -558,7 +557,7 @@ def fig_prospect_value():
 def fig_binomial_tree():
     u, d, S0, K = 1.1, 0.9, 100, 100; p = (1 - d) / (u - d); C = p * max(S0 * u - K, 0) + (1 - p) * max(S0 * d - K, 0)
     NUMS["binomial-tree"] = dict(p=p, C=C)
-    Wd, H = 560, 250
+    Wd, H = 560, 290
     out = svg_open(Wd, H, "ต้นไม้ทวินามขั้นเดียว หุ้น 100 ขึ้นเป็น 110 หรือลงเป็น 90 · ความน่าจะเป็น risk-neutral 0.5 · call strike 100 จ่าย 10 หรือ 0 · ราคาวันนี้ 5")
     title(out, Wd, "ต้นไม้ขั้นเดียว — ราคา call มาจาก p* ที่คำนวณ ไม่ใช่ความน่าจะเป็นที่เชื่อ", "u = 1.1 · d = 0.9 · r ≈ 0 · K = 100 · p* = (1 − d)/(u − d)")
     xa, xb = 130, 415; ya, yu, yd = 140, 78, 202
@@ -573,8 +572,8 @@ def fig_binomial_tree():
     node(xa, ya, f"หุ้น ${S0}", f"call = {p:.1f}×10 + {1-p:.1f}×0 = ${C:.0f}", PURPLE)
     node(xb, yu, f"หุ้น ${S0*u:.0f}", f"call จ่าย max({S0*u:.0f} − {K}, 0) = $10", GREEN)
     node(xb, yd, f"หุ้น ${S0*d:.0f}", f"call จ่าย max({S0*d:.0f} − {K}, 0) = $0", RED)
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-24}" text-anchor="middle" {FONT} font-size="10" fill="{INK}">p* = (1 − {d})/({u} − {d}) = {p:.1f} คือค่าที่ทำให้ "หุ้นวันนี้ = ค่าคาดหวังของหุ้นพรุ่งนี้" พอดี ({p:.1f}×110 + {1-p:.1f}×90 = 100)</text>')
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ถ้าคุณเชื่อว่าหุ้นขึ้น 90% ราคา call ก็ยัง $5 — ความเชื่อไม่อยู่ในสูตร มีแต่ replication</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-30}" text-anchor="middle" {FONT} font-size="10" fill="{INK}">p* = (1 − {d})/({u} − {d}) = {p:.1f} คือค่าที่ทำให้ "หุ้นวันนี้ = ค่าคาดหวังของหุ้นพรุ่งนี้" พอดี ({p:.1f}×110 + {1-p:.1f}×90 = 100)</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-12}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ถ้าคุณเชื่อว่าหุ้นขึ้น 90% ราคา call ก็ยัง $5 — ความเชื่อไม่อยู่ในสูตร มีแต่ replication</text>')
     out.append("</svg>")
     return "\n".join(out)
 
@@ -683,7 +682,7 @@ def fig_sqrt_impact():
     polyline(out, [(sx(0), sy(0)), (sx(0.30), sy(0.02 * 0.30 / 0.10 * np.sqrt(0.10) * 100))], INK2, 1.4, dash="5 4", shadow=False)
     out.append(f'<text x="{sx(0.29):.1f}" y="{sy(0.02*0.29/0.10*np.sqrt(0.10)*100)+14:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ถ้าเป็นเส้นตรง (สัญชาตญาณผิด)</text>')
     out.append(f'<line x1="{x0}" y1="{sy(0.5):.1f}" x2="{x0+w}" y2="{sy(0.5):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="4 4"/>')
-    out.append(f'<text x="{x0+4}" y="{sy(0.5)-5:.1f}" {FONT} font-size="9.5" fill="{RED}">กำไรที่กลยุทธ์คาด 0.5% ต่อเทรด</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(0.5)-5:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{RED}">กำไรที่กลยุทธ์คาด 0.5% ต่อเทรด</text>')
     polyline(out, [(sx(a), sy(b)) for a, b in zip(q, imp)], BLUE, 2.75)
     v10 = Y * sg * np.sqrt(0.10) * 100
     out.append(f'<circle cx="{sx(0.10):.1f}" cy="{sy(v10):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
@@ -723,8 +722,8 @@ def fig_var_es_tail():
     out.append(f'<line x1="{sx(ex):.1f}" y1="{sy(0)-6:.1f}" x2="{sx(ex):.1f}" y2="{y0+52}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
     out.append(f'<text x="{sx(-7.9):.1f}" y="{y0+36}" {FONT} font-size="9.5" fill="{RED}" font-weight="700">ES₉₉ = −{es_mult*sg:.2f}% (${es_mult*sg:.2f}M)</text>')
     out.append(f'<text x="{sx(-7.9):.1f}" y="{y0+48}" {FONT} font-size="9" fill="{RED}">= ค่าเฉลี่ยของพื้นที่แดง (1% ของวัน) — อยู่ลึกกว่าเส้น VaR เสมอ</text>')
-    out.append(f'<text x="{sx(3.2):.1f}" y="{sy(0.12):.1f}" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">เส้นประ = หางอ้วน (t, ν = 4) σ เท่ากัน</text>')
-    out.append(f'<text x="{sx(3.2):.1f}" y="{sy(0.12)+13:.1f}" {FONT} font-size="9.5" fill="{INK2}">หางจริงหนากว่า normal — ES ที่คำนวณจาก normal ยังต่ำเกินจริง</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(0.12):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">เส้นประ = หางอ้วน (t, ν = 4) σ เท่ากัน</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(0.12)+13:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">หางจริงหนากว่า normal — ES จาก normal ยังต่ำเกินจริง</text>')
     out.append("</svg>")
     return "\n".join(out)
 
