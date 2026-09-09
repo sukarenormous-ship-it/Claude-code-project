@@ -465,6 +465,12 @@ for k_ in range(1, 3000):
     if not al7.any():
         break
 expect("math-part9.html", "§9.3½ FP φ0.7", f"<td class=\"nw\">{-math.log(2)/math.log(phi7):.2f} วัน</td><td><strong>{np.median(t7):.0f} วัน</strong></td><td>{t7.mean():.1f} วัน</td><td>{np.percentile(t7,90):.0f} วัน</td><td>{np.percentile(t7,95):.0f} วัน</td>")
+expect("math-part9.html", "§9.3½ ≤HL φ0.7", f"แถว 1.94 วัน ที่ก้าวรายวันหยาบกว่าครึ่งชีวิต: แค่ {100*(t7 <= -math.log(2)/math.log(phi7)).mean():.1f}%")
+r12b = np.random.default_rng(12); varA_l = []
+for _ in range(2000):
+    A_ = 100 + np.cumsum(r12b.normal(0, 1, n60)); r12b.normal(0, 1, n60); r12b.normal(0, 3, n60); r12b.normal(0, 3, n60); varA_l.append(A_.var())
+mvA = np.median(varA_l)
+expect("math-part9.html", "§9.1½ median Var(A)", f"Var(A)/(Var(A) + 9) ≈ {mvA/(mvA+9):.2f} เมื่อ Var(A) ค่ากลางของหน้าต่าง 60 วันอยู่ราว {mvA:.0f}")
 expect("math-part9.html", "§9.3½ FP φ0.9048", f"<td><strong>{np.median(t_fp):.0f} วัน</strong></td><td>{t_fp.mean():.1f} วัน</td><td>{np.percentile(t_fp,90):.0f} วัน</td><td>{np.percentile(t_fp,95):.0f} วัน</td>")
 # threshold economics (2M days)
 r21 = np.random.default_rng(21); N21 = 2_000_000; xs21 = np.empty(N21); v_ = 0.0
@@ -488,6 +494,78 @@ for c_ in (0, 0.5, 1.0, 1.5, 2.0):
 expect("math-part9.html", "§9.3½ trades/1000d", "จำนวนรอบต่อ 1,000 วัน: " + " · ".join(f"{cyc[z_][0]/N21*1000:.1f}" + (" (z = 0.5)" if z_ == 0.5 else (" (z = 3)" if z_ == 3.0 else "")) for z_ in zs))
 expect("math-part9.html", "§9.3½ per-trade", "กำไรต่อรอบ " + " · ".join(f"{cyc[z_][1]/cyc[z_][0]:.2f}" for z_ in zs) + " SD")
 print(f"2·D §9.3½ FP φ0.7 median={np.median(t7):.0f} mean={t7.mean():.1f} p90={np.percentile(t7,90):.0f} p95={np.percentile(t7,95):.0f} · threshold best z by c: " + " ".join(f"c={c_}:{zs[int(np.argmax([(cyc[z_][1]-c_*cyc[z_][0]) for z_ in zs]))]}" for c_ in (0,0.5,1.0,1.5,2.0)))
+
+
+# ── 2·A §1.7 score ≠ return ≠ P&L · residual สะสม · หน้าต่าง 60 วัน ─────────────────
+def _ar1s(x_):
+    xm = x_[:-1]; ym = x_[1:]; A_ = np.column_stack([np.ones(len(xm)), xm]); c_ = np.linalg.lstsq(A_, ym, rcond=None)[0]; e_ = ym - A_ @ c_
+    s2_ = e_ @ e_ / (len(ym) - 2); seb = math.sqrt(s2_ * np.linalg.inv(A_.T @ A_)[1, 1]); return c_[0], c_[1], (c_[1] - 1) / seb
+def _ports(Rm, k=2):
+    sg = Rm.std(0, ddof=1); Cm = np.corrcoef(Rm.T); l_, V_ = np.linalg.eigh(Cm); l_ = l_[::-1]; V_ = V_[:, ::-1]
+    F_ = [Rm @ ((V_[:, j] * np.sign(V_[:, j].sum() if j == 0 else V_[-1, j])) / sg) for j in range(k)]
+    return sg, l_, V_, np.column_stack(F_)
+n7 = 2500
+def _data(p_, seed=2):
+    r_ = np.random.default_rng(seed); g1 = r_.standard_normal(n7); g2 = r_.standard_normal(n7); En = r_.standard_normal((n7, p_))
+    L2_ = .2 * np.array([-2, -1, 0, 1, 2.]) if p_ == 5 else np.linspace(-.4, .4, p_)
+    return g1, g2, L2_, np.outer(g1, np.full(p_, .8)) + np.outer(g2, L2_) + En
+g1, g2, L2_5, R5 = _data(5)
+sg5, l5_, V5_, F5 = _ports(R5); v1_ = V5_[:, 0] * np.sign(V5_[:, 0].sum()); Z5 = (R5 - R5.mean(0)) / sg5; sc1 = Z5 @ v1_; w5 = v1_ / sg5; wn5 = w5 / w5.sum()
+expect("math-part4.html", "§1.7 σ", "σ ของห้าหุ้น = [" + ", ".join(f"{x:.3f}" for x in sg5) + "]")
+expect("math-part4.html", "§1.7 v₁", "v₁ = [" + ", ".join(f"{x:.3f}" for x in v1_) + "]")
+um7 = lambda v, f=".3f": f"{v:{f}}".replace("-", "−")
+expect("math-part4.html", "§1.7 r day0", "<td>" + "</td><td>".join(um7(x) for x in R5[0]) + "</td>")
+expect("math-part4.html", "§1.7 z day0", "<td>" + "</td><td>".join(um7(x) for x in Z5[0]) + "</td>")
+expect("math-part4.html", "§1.7 score day0", f"score₁ = Σ v·z = {sc1[0]:.3f}")
+expect("math-part4.html", "§1.7 w", "<td>" + "</td><td>".join(f"{x:.3f}" for x in w5) + "</td>")
+expect("math-part4.html", "§1.7 Σw", f"Σw = <strong>{w5.sum():.3f}</strong>")
+expect("math-part4.html", "§1.7 F₁ day0", f"<strong>{w5 @ R5[0]:.3f}%</strong> ต่อทุน")
+expect("math-part4.html", "§1.7 w̃", "<td>" + "</td><td>".join(f"{x:.3f}" for x in wn5) + "</td>")
+expect("math-part4.html", "§1.7 P&L", f"return <strong>{wn5 @ R5[0]:.3f}%</strong> · ฿1M → <strong>P&amp;L ฿{wn5 @ R5[0] / 100 * 1e6:,.0f}</strong>")
+expect("math-part4.html", "§1.7 Var score", f"Var(score₁) ตลอด 2,500 วัน = {sc1.var(ddof=1):.3f}")
+expect("math-part4.html", "§1.7 SD ports", f"{(R5 @ w5).std(ddof=1):.3f}% ต่อวัน (w) หรือ {(R5 @ wn5).std(ddof=1):.3f}% (w̃)")
+expect("math-part4.html", "§1.7 corr F1 f1", f"สัมพันธ์กับปัจจัย Level ที่ใช้สร้างข้อมูล {np.corrcoef(R5 @ w5, g1)[0,1]:.3f}")
+expect("math-part4.html", "§1.7 self weight", f"{w5[0]:.3f}/{w5.sum():.3f} = {w5[0]/w5.sum()*100:.0f}%")
+# case A: LOO residual of stock 1
+sgA, lA, VA, FA = _ports(R5[:, 1:]); XA = np.column_stack([np.ones(n7), FA]); bA = np.linalg.lstsq(XA, R5[:, 0], rcond=None)[0]; epsA = R5[:, 0] - XA @ bA; XcA = np.cumsum(epsA)
+aA, phA, tA = _ar1s(XcA)
+expect("math-part4.html", "§1.7 β LOO", f"β = [{bA[1]:.3f}, {um7(bA[2])}]")
+expect("math-part4.html", "§1.7 resid SD", f"SD {epsA.std():.3f}%")
+expect("math-part4.html", "§1.7 φ̂ A", f"φ̂ = {phA:.4f}   t ของ (φ̂ − 1) = {um7(tA, '.2f')}")
+expect("math-part4.html", "§1.7 HL A", f"\"{math.log(2)/-math.log(phA):.0f} วัน\"")
+print(f"2·A §1.7  score0={sc1[0]:.3f} F1={w5@R5[0]:.3f}% P&L={wn5@R5[0]/100*1e6:,.0f} · caseA φ={phA:.4f} t={tA:.2f} HL={math.log(2)/-math.log(phA):.0f} Xc range {XcA.min():.1f}..{XcA.max():.1f}")
+# case B at p=5 and p=50
+def _ou(seed=3, phi_=.9, sd_=1.0):
+    r_ = np.random.default_rng(seed); X_ = np.zeros(n7); et = r_.standard_normal(n7) * math.sqrt(1 - phi_ ** 2) * sd_
+    for t_ in range(1, n7): X_[t_] = phi_ * X_[t_ - 1] + et[t_]
+    return X_
+Xou = _ou(); rowsB = []
+for p_ in (5, 50):
+    g1p, g2p, L2p, Rp = _data(p_); Rb = Rp.copy(); Rb[:, 0] = .8 * g1p + L2p[0] * g2p + np.diff(np.concatenate([[0], Xou]))
+    _, _, _, Fb = _ports(Rb[:, 1:]); Xb = np.column_stack([np.ones(n7), Fb]); bb_ = np.linalg.lstsq(Xb, Rb[:, 0], rcond=None)[0]; epsb = Rb[:, 0] - Xb @ bb_; Xcb = np.cumsum(epsb)
+    ab, phb, tb = _ar1s(Xcb); hlb = math.log(2) / -math.log(phb); cb = np.corrcoef(Xcb, Xou)[0, 1]
+    expect("math-part4.html", f"§1.7 case B p={p_}", f"<td>{phb:.4f}</td><td>{um7(tb, '.2f')}</td><td>{hlb:.1f} วัน</td><td>{cb:.2f}</td>" if p_ == 50 else f"<td>{phb:.4f}</td><td>{um7(tb, '.2f')}</td><td>{hlb:.0f} วัน</td><td>{cb:.2f}</td>")
+    rowsB.append((p_, phb, tb, hlb, cb))
+    if p_ == 50:
+        epsA50 = None
+        _, _, _, Fa = _ports(Rp[:, 1:]); Xa = np.column_stack([np.ones(n7), Fa]); ba_ = np.linalg.lstsq(Xa, Rp[:, 0], rcond=None)[0]; epsA50 = Rp[:, 0] - Xa @ ba_
+        def _win(eps_, W):
+            hls = []
+            for st in range(0, n7 - W, W):
+                a_, ph_, _t = _ar1s(np.cumsum(eps_[st:st + W]))
+                hls.append(math.log(2) / -math.log(ph_) if 0 < ph_ < 1 else float("inf"))
+            hls = np.array(hls); fin = hls[np.isfinite(hls)]
+            return len(hls), np.median(fin), np.percentile(fin, 25), np.percentile(fin, 75), (hls < 30).mean()
+        for W_ in (60, 250):
+            nA, mA, q1A, q3A, shA = _win(epsA50, W_); nB, mB, q1B, q3B, shB = _win(epsb, W_)
+            print(f"2·A §1.7  W={W_}: noise windows={nA} HL median={mA:.1f} p25={q1A:.1f} p75={q3A:.1f} pass={shA:.2f} | OU median={mB:.1f} p25={q1B:.1f} p75={q3B:.1f} pass={shB:.2f}")
+            if W_ == 60:
+                expect("math-part4.html", "§1.7 win60 noise", f"<td><strong>{mA:.1f} วัน</strong></td><td>{q1A:.1f}–{q3A:.1f}</td><td><strong>{shA*100:.0f}%</strong></td>")
+                expect("math-part4.html", "§1.7 win60 OU", f"<td>{mB:.1f} วัน</td><td>{q1B:.1f}–{q3B:.1f}</td><td>{shB*100:.0f}%</td>")
+                expect("math-part4.html", "§1.7 win60 count", f"หน้าต่าง 60 วัน {nA} หน้าต่าง")
+            else:
+                expect("math-part4.html", "§1.7 win250", f"ครึ่งชีวิตค่ากลาง <strong>{mA:.0f} วัน</strong> และผ่านเกณฑ์ &lt; 30 วันแค่ <strong>{int(round(shA*nA))} ใน {nA}</strong> หน้าต่าง ส่วน OU จริงยังให้ค่ากลาง {mB:.1f} วัน ผ่าน {int(round(shB*nB))} ใน {nB}")
+print("2·A §1.7  case B:", [(p_, round(ph, 4), round(t_, 2), round(h, 1), round(c_, 2)) for p_, ph, t_, h, c_ in rowsB])
 
 
 def main():
