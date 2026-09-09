@@ -426,6 +426,14 @@ def build():
             "SMA20 / EMA20": (LR_N - 1) / 2, "EMA12": (MACD_FAST - 1) / 2, "EMA26": (MACD_SLOW - 1) / 2, "LSMA20": 0,
         },
         "ตลาดแบนกับจุดเปลี่ยน (สังเคราะห์)": _lsma_flat_block(LR_N),
+        "วัน jump ที่ปลายหน้าต่าง": (lambda i, o20, o19, oL: {
+            "คำอธิบาย": "วันโฟกัสราคากระโดดวันเดียว และอยู่ที่ปลายหน้าต่าง (leverage สูงสุด) — เทียบ OLS 20 วันที่จบเมื่อวาน · ที่จบวันนี้ · และที่จบวันนี้แต่ตัดวันนี้ทิ้ง (19 จุด)",
+            "เมื่อวาน (หน้าต่างยังไม่มีวัน jump)": {"วันที่": days[i - 1], "slope ต่อวัน": r(o19["slope"]), "t-stat": r(o19["t"]), "LSMA": r(o19["end"])},
+            "วันนี้ (วัน jump เป็นจุดสุดท้าย)": {"วันที่": days[i], "slope ต่อวัน": r(o20["slope"]), "t-stat": r(o20["t"]), "LSMA": r(o20["end"])},
+            "วันนี้แต่ตัดวัน jump ทิ้ง (19 จุด)": {"slope ต่อวัน": r(oL["slope"]), "t-stat": r(oL["t"]), "LSMA ต่อถึงวันนี้": r(oL["intercept"] + oL["slope"] * LR_N)},
+            "slope เปลี่ยนเพราะวันเดียว (ดอลลาร์/วัน)": r(o20["slope"] - oL["slope"]),
+            "ราคากระโดดวันนี้": r(p[i] - p[i - 1]),
+        })(idx[FOCUS], ols_time(p[idx[FOCUS] - LR_N + 1:idx[FOCUS] + 1]), ols_time(p[idx[FOCUS] - LR_N:idx[FOCUS]]), ols_time(p[idx[FOCUS] - LR_N + 1:idx[FOCUS]])),
     }
 
     # ── Donchian / จุดสูงสุด N วัน ────────────────────────────────────────────

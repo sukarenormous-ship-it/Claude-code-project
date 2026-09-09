@@ -77,6 +77,30 @@ expect("math-part4.html", "§2.1❌ rolling after", f"β วันที่ 180 
 expect("math-part4.html", "§2.1❌ rolling loo", f"ตัดวันที่ 120 ทิ้งได้ {rb_loo:.2f}")
 expect("math-part4.html", "§2.1❌ rolling prose", f"จาก {rb_before:.2f} เป็น {rb_jump:.2f}")
 
+# ── 2·C §5.2 Robust regression — Theil-Sen · Huber บน Anscombe ชุด 3, β 7 เดือน, rolling ─────
+from scipy.stats import theilslopes  # noqa: E402
+import statsmodels.api as sm  # noqa: E402
+_xa = np.array([10, 8, 13, 9, 11, 14, 6, 4, 12, 7, 5], float)
+_y3 = np.array([7.46, 6.77, 12.74, 7.11, 7.81, 8.84, 6.08, 5.39, 8.15, 6.42, 5.73])
+def _huber(x, y):
+    rr = sm.RLM(y, sm.add_constant(x), M=sm.robust.norms.HuberT()).fit(); return rr.params[1], rr.weights
+b_a_ols = np.polyfit(_xa, _y3, 1)[0]; b_a_cut = np.polyfit(_xa[_y3 < 12], _y3[_y3 < 12], 1)[0]
+b_a_ts = theilslopes(_y3, _xa)[0]; b_a_h, w_a = _huber(_xa, _y3)
+print(f"2·C §5.2 robust: OLS {b_a_ols:.3f} ตัด {b_a_cut:.3f} TS {b_a_ts:.3f} Huber {b_a_h:.3f} w_outlier {w_a[2]:.3f}")
+expect("math-part8.html", "§5.2 robust Anscombe", f"OLS = <strong>{b_a_ols:.3f}</strong> · ตัด outlier ด้วยมือ = {b_a_cut:.3f} · Theil-Sen = <strong>{b_a_ts:.3f}</strong> · Huber = <strong>{b_a_h:.3f}</strong>")
+expect("math-part8.html", "§5.2 robust code", f"# OLS {b_a_ols:.3f} · Theil-Sen {b_a_ts:.3f} · Huber {b_a_h:.3f}")
+assert w_a[2] < 0.01 and np.all(w_a[np.arange(11) != 2] > 0.99), w_a
+expect("math-part8.html", "§5.2 คู่", f"11 จุดได้ {11*10//2} คู่")
+b7_ts = theilslopes(s7, m7)[0]; b7_h, _ = _huber(m7, s7)
+print(f"2·C §5.2 robust 7 เดือน: OLS {b7:.2f} TS {b7_ts:.2f} Huber {b7_h:.2f}")
+expect("math-part8.html", "§5.2 robust 7 เดือน", f"OLS = <strong>{b7:.2f}</strong> · Theil-Sen = <strong>{b7_ts:.2f}</strong> · Huber = <strong>{b7_h:.2f}</strong> · 6 เดือนแรกล้วน = {b21:.2f}")
+_w0, _w1 = slice(_J - _W, _J), slice(_J - _W + 1, _J + 1)
+rb_ts0, rb_ts1 = theilslopes(_s[_w0], _m[_w0])[0], theilslopes(_s[_w1], _m[_w1])[0]
+rb_h0, rb_h1 = _huber(_m[_w0], _s[_w0])[0], _huber(_m[_w1], _s[_w1])[0]
+print(f"2·C §5.2 robust rolling: OLS {rb_before:.2f}→{rb_jump:.2f} TS {rb_ts0:.2f}→{rb_ts1:.2f} Huber {rb_h0:.2f}→{rb_h1:.2f}")
+expect("math-part8.html", "§5.2 robust rolling", f"OLS กระโดด {rb_before:.2f} → <strong>{rb_jump:.2f}</strong> · Theil-Sen {rb_ts0:.2f} → <strong>{rb_ts1:.2f}</strong> · Huber {rb_h0:.2f} → <strong>{rb_h1:.2f}</strong>")
+expect("math-part8.html", "§5.2 ลิงก์ 2·A", f"β ที่กระโดดจาก {rb_before:.2f} เป็น {rb_jump:.2f}")
+
 # ── 2·A §1.4½ OLS vs PCA — ความชันสามแบบจากข้อมูลชุดเดียว (ภาพวาดโดย tools/make_figures.py) ──
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from make_figures import ols_pca_data  # noqa: E402
