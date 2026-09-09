@@ -51,6 +51,47 @@ expect("math-part4.html", "§2.1 Var", f"{var:.6f}")
 expect("math-part4.html", "§2.1 β", f"{b21:.2f}")
 expect("math-part4.html", "§2.1 β polyfit", f"{b21:.4f}")
 
+# ── 2·A §2.1 ❌ จุดเดียวคุมทั้งเส้น — เดือนที่ 7 · rolling 60 วันที่ jump เข้า/ออกหน้าต่าง ─────
+def _beta(x, y):
+    return np.cov(x, y, ddof=1)[0, 1] / np.var(x, ddof=1)
+m7 = np.append(mkt6, -0.06); s7 = np.append(stk6, -0.20)
+b7 = _beta(m7, s7)
+r2_7 = 1 - ((s7 - np.polyval(np.polyfit(m7, s7, 1), m7)) ** 2).sum() / ((s7 - s7.mean()) ** 2).sum()
+print(f"2·A §2.1❌ β7={b7:.4f} R²={r2_7:.3f} hedge ฿{b7*1e6:,.0f} vs ฿{b21*1e6:,.0f} ต่าง ฿{(b7-b21)*1e6:,.0f}")
+expect("math-part4.html", "§2.1❌ β7", f"β = <b>{b7:.2f}</b>")
+expect("math-part4.html", "§2.1❌ R²", f"R² = {r2_7:.2f}")
+expect("math-part4.html", "§2.1❌ hedge", f"฿{b7*1e6/1e6:.2f}M แทน ฿{b21*1e6/1e6:.2f}M")
+expect("math-part4.html", "§2.1❌ ต่าง", f"ต่างกัน ฿{round((b7-b21)*1e6, -3):,.0f}")
+_rng = np.random.default_rng(11); _T, _W, _J = 250, 60, 120
+_m = _rng.normal(0, 0.01, _T); _s = 1.2 * _m + _rng.normal(0, 0.008, _T)
+_m[_J], _s[_J] = -0.07, -0.20
+_rb = np.array([_beta(_m[i - _W + 1:i + 1], _s[i - _W + 1:i + 1]) for i in range(_W - 1, _T)])
+_idx = np.arange(_W - 1, _T)
+rb_before, rb_jump, rb_last, rb_after = _rb[_idx == _J - 1][0], _rb[_idx == _J][0], _rb[_idx == _J + _W - 1][0], _rb[_idx == _J + _W][0]
+rb_loo = _beta(_m[_J - _W + 1:_J], _s[_J - _W + 1:_J])
+print(f"2·A §2.1❌ rolling: ก่อน {rb_before:.2f} · วัน jump {rb_jump:.2f} · วันที่ 60 {rb_last:.2f} · วันที่ 61 {rb_after:.2f} · ตัดวัน jump {rb_loo:.2f}")
+expect("math-part4.html", "§2.1❌ rolling ก่อน", f"β วันที่ 119 = {rb_before:.2f}")
+expect("math-part4.html", "§2.1❌ rolling jump", f"β วันที่ 120 = {rb_jump:.2f}")
+expect("math-part4.html", "§2.1❌ rolling last", f"β วันที่ 179 = {rb_last:.2f}")
+expect("math-part4.html", "§2.1❌ rolling after", f"β วันที่ 180 = {rb_after:.2f}")
+expect("math-part4.html", "§2.1❌ rolling loo", f"ตัดวันที่ 120 ทิ้งได้ {rb_loo:.2f}")
+expect("math-part4.html", "§2.1❌ rolling prose", f"จาก {rb_before:.2f} เป็น {rb_jump:.2f}")
+
+# ── 2·A §1.4½ OLS vs PCA — ความชันสามแบบจากข้อมูลชุดเดียว (ภาพวาดโดย tools/make_figures.py) ──
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from make_figures import ols_pca_data  # noqa: E402
+_x, _y, b_ols_f, b_pca_f, b_rev_f = ols_pca_data()
+print(f"2·A §1.4½ OLS={b_ols_f:.4f} PC1={b_pca_f:.4f} OLS สลับ={b_rev_f:.4f}")
+expect("math-part4.html", "§1.4½ OLS", f"OLS (Y บน X) = <b>{b_ols_f:.2f}</b>")
+expect("math-part4.html", "§1.4½ PC1", f"PC1 (TLS) = <b>{b_pca_f:.2f}</b>")
+expect("math-part4.html", "§1.4½ OLS สลับ", f"OLS สลับข้าง (X บน Y แล้วกลับ) = <b>{b_rev_f:.2f}</b>")
+expect("math-part4.html", "§1.4½ ภาพ OLS", f"ความชัน = {b_ols_f:.2f}")
+expect("math-part4.html", "§1.4½ ภาพ PC1", f"ความชัน = {b_pca_f:.2f}")
+expect("math-part4.html", "§1.4½ ลำดับ", f"({b_ols_f:.2f} &lt; {b_pca_f:.2f} &lt; {b_rev_f:.2f})")
+expect("math-part4.html", "§1.4½ bullet", f"OLS คือคำตอบ ({b_ols_f:.2f}) · PC1 ({b_pca_f:.2f}) ตอบคำถามอื่น")
+expect("math-part4.html", "§1.4½ สลับ", f"({b_rev_f:.2f} กับ {b_ols_f:.2f} ห่างกัน")
+assert b_ols_f < b_pca_f < b_rev_f
+
 # ── 2·A §1.3 wᵀΣw ────────────────────────────────────────────────────────
 w = np.array([0.5, 0.3, 0.2]); sd = np.array([0.20, 0.15, 0.30])
 Corr = np.array([[1, .3, .2], [.3, 1, .5], [.2, .5, 1]])

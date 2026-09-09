@@ -222,6 +222,99 @@ for i, p in enumerate(pct, 1):
 <div class="bx bg"><div class="bt">เชื่อมกับ Options</div>
 <p>PCA ใช้ย่อ <strong>volatility surface</strong> (σ ของทุก strike × ทุกอายุ) ให้เหลือ factor ไม่กี่ตัว — ทิศแรกมักเป็น "ทั้ง surface ขึ้นลงพร้อมกัน" ทิศสองคือ skew เปลี่ยน ทิศสามคือ term structure เปลี่ยน · โครงเดียวกับ Level / Slope / Curvature ของดอกเบี้ย</p></div>
 
+<h3 id="s1-4b">1.4½ PCA กับ OLS — ข้อมูลชุดเดียว ได้เส้นคนละเส้น</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ทั้ง PCA (§1.4) และ regression (§2.1 ข้างหน้า) "ลากเส้นผ่านกลุ่มจุด" เหมือนกัน คนจึงมักคิดว่าได้เส้นเดียวกัน · ไม่ใช่ — ต่างกันที่ <em>สั่งให้ย่อระยะแบบไหน</em>: OLS ย่อระยะ<strong>แนวตั้ง</strong> (ผิดพลาดได้เฉพาะ Y เพราะถือว่า X รู้แน่) ส่วน PC1 ย่อระยะ<strong>ตั้งฉาก</strong>กับเส้น (ทั้ง X และ Y ผิดพลาดได้เท่ากัน) · จุดชุดเดียวกันจึงให้ความชันคนละค่า และยิ่งจุดกระจายห่างเส้นมาก สองเส้นก็ยิ่งแยกจากกัน</p>
+
+<!-- FIG:ols-vs-pca:BEGIN -->
+<svg class="d" viewBox="0 0 560 300" role="img" aria-label="OLS ย่อระยะแนวตั้ง PCA ย่อระยะตั้งฉาก บนจุดข้อมูลชุดเดียวกัน — ได้เส้นคนละเส้น">
+<defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>
+<text x="155" y="26" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151">OLS — ย่อระยะแนวตั้ง</text>
+<text x="155" y="40" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280">ความชัน = 0.75</text>
+<g stroke="#e5e7eb" stroke-width="1"><line x1="78.3" y1="48" x2="78.3" y2="248"/><line x1="40" y1="214.7" x2="270" y2="214.7"/><line x1="116.7" y1="48" x2="116.7" y2="248"/><line x1="40" y1="181.3" x2="270" y2="181.3"/><line x1="193.3" y1="48" x2="193.3" y2="248"/><line x1="40" y1="114.7" x2="270" y2="114.7"/><line x1="231.7" y1="48" x2="231.7" y2="248"/><line x1="40" y1="81.3" x2="270" y2="81.3"/></g>
+<line x1="40" y1="148.0" x2="270" y2="148.0" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="155.0" y1="48" x2="155.0" y2="248" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="270" y="261" text-anchor="end" font-family="Sarabun" font-size="9.5" fill="#6b7280">X — ผลตอบแทน BTC (%)</text>
+<text x="42" y="57" font-family="Sarabun" font-size="9.5" fill="#6b7280">Y — ETH (%)</text>
+<line x1="40.0" y1="261.0" x2="270.0" y2="35.0" stroke="#16a34a" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.55"/>
+<line x1="235.1" y1="80.4" x2="235.1" y2="95.8" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="58.9" y1="220.9" x2="58.9" y2="210.6" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="172.9" y1="141.3" x2="172.9" y2="136.3" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="135.1" y1="141.4" x2="135.1" y2="161.0" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="139.5" y1="94.5" x2="139.5" y2="158.1" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="148.6" y1="158.8" x2="148.6" y2="152.2" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="79.4" y1="200.1" x2="79.4" y2="197.2" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="148.0" y1="118.9" x2="148.0" y2="152.6" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="123.7" y1="193.5" x2="123.7" y2="168.4" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="284.3" y1="77.0" x2="284.3" y2="63.8" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="165.5" y1="112.0" x2="165.5" y2="141.1" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="143.4" y1="135.1" x2="143.4" y2="155.6" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="146.1" y1="148.9" x2="146.1" y2="153.8" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="131.3" y1="139.6" x2="131.3" y2="163.5" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="116.4" y1="259.4" x2="116.4" y2="173.1" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="141.9" y1="122.0" x2="141.9" y2="156.5" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="175.4" y1="164.4" x2="175.4" y2="134.7" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="147.7" y1="203.7" x2="147.7" y2="152.7" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="193.6" y1="114.2" x2="193.6" y2="122.9" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="149.2" y1="127.7" x2="149.2" y2="151.8" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="157.8" y1="158.8" x2="157.8" y2="146.2" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="216.1" y1="143.3" x2="216.1" y2="108.2" stroke="#dc2626" stroke-width="1.3" opacity="0.9"/>
+<line x1="40.0" y1="222.9" x2="270.0" y2="73.1" stroke="#dc2626" stroke-width="2.75" stroke-linecap="round" filter="url(#fsoft)"/>
+<g fill="#2563eb" opacity="0.85"><circle cx="235.1" cy="80.4" r="3.6"/><circle cx="58.9" cy="220.9" r="3.6"/><circle cx="172.9" cy="141.3" r="3.6"/><circle cx="135.1" cy="141.4" r="3.6"/><circle cx="139.5" cy="94.5" r="3.6"/><circle cx="148.6" cy="158.8" r="3.6"/><circle cx="79.4" cy="200.1" r="3.6"/><circle cx="148.0" cy="118.9" r="3.6"/><circle cx="123.7" cy="193.5" r="3.6"/><circle cx="284.3" cy="77.0" r="3.6"/><circle cx="165.5" cy="112.0" r="3.6"/><circle cx="143.4" cy="135.1" r="3.6"/><circle cx="146.1" cy="148.9" r="3.6"/><circle cx="131.3" cy="139.6" r="3.6"/><circle cx="116.4" cy="259.4" r="3.6"/><circle cx="141.9" cy="122.0" r="3.6"/><circle cx="175.4" cy="164.4" r="3.6"/><circle cx="147.7" cy="203.7" r="3.6"/><circle cx="193.6" cy="114.2" r="3.6"/><circle cx="149.2" cy="127.7" r="3.6"/><circle cx="157.8" cy="158.8" r="3.6"/><circle cx="216.1" cy="143.3" r="3.6"/></g>
+<text x="122.4" y="216.3" font-family="Sarabun" font-size="9.5" fill="#dc2626" font-weight="600">yᵢ − ŷᵢ</text>
+<text x="425" y="26" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151">PCA (= TLS) — ย่อระยะตั้งฉาก</text>
+<text x="425" y="40" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280">ความชัน = 1.13</text>
+<g stroke="#e5e7eb" stroke-width="1"><line x1="348.3" y1="48" x2="348.3" y2="248"/><line x1="310" y1="214.7" x2="540" y2="214.7"/><line x1="386.7" y1="48" x2="386.7" y2="248"/><line x1="310" y1="181.3" x2="540" y2="181.3"/><line x1="463.3" y1="48" x2="463.3" y2="248"/><line x1="310" y1="114.7" x2="540" y2="114.7"/><line x1="501.7" y1="48" x2="501.7" y2="248"/><line x1="310" y1="81.3" x2="540" y2="81.3"/></g>
+<line x1="310" y1="148.0" x2="540" y2="148.0" stroke="#9ca3af" stroke-width="1.2"/>
+<line x1="425.0" y1="48" x2="425.0" y2="248" stroke="#9ca3af" stroke-width="1.2"/>
+<text x="540" y="261" text-anchor="end" font-family="Sarabun" font-size="9.5" fill="#6b7280">X — ผลตอบแทน BTC (%)</text>
+<text x="312" y="57" font-family="Sarabun" font-size="9.5" fill="#6b7280">Y — ETH (%)</text>
+<line x1="310.0" y1="222.9" x2="540.0" y2="73.1" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.55"/>
+<line x1="505.1" y1="80.4" x2="498.8" y2="75.5" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="328.9" y1="220.9" x2="341.2" y2="230.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="442.9" y1="141.3" x2="436.7" y2="136.5" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="405.1" y1="141.4" x2="420.0" y2="152.9" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="409.5" y1="94.5" x2="448.7" y2="124.7" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="418.6" y1="158.8" x2="416.0" y2="156.8" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="349.4" y1="200.1" x2="362.1" y2="209.8" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="418.0" y1="118.9" x2="438.5" y2="134.7" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="393.7" y1="193.5" x2="385.3" y2="187.0" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="554.3" y1="77.0" x2="522.3" y2="52.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="435.5" y1="112.0" x2="450.1" y2="123.3" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="413.4" y1="135.1" x2="427.2" y2="145.8" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="416.1" y1="148.9" x2="420.6" y2="152.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="401.3" y1="139.6" x2="419.4" y2="153.5" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="386.4" y1="259.4" x2="344.5" y2="227.2" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="411.9" y1="122.0" x2="434.1" y2="139.1" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="445.4" y1="164.4" x2="424.6" y2="148.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="417.7" y1="203.7" x2="390.0" y2="182.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="463.6" y1="114.2" x2="461.3" y2="112.4" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="419.2" y1="127.7" x2="434.0" y2="139.1" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="427.8" y1="158.8" x2="420.1" y2="152.8" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="486.1" y1="143.3" x2="454.5" y2="119.0" stroke="#16a34a" stroke-width="1.3" opacity="0.9"/>
+<line x1="310.0" y1="261.0" x2="540.0" y2="35.0" stroke="#16a34a" stroke-width="2.75" stroke-linecap="round" filter="url(#fsoft)"/>
+<g fill="#2563eb" opacity="0.85"><circle cx="505.1" cy="80.4" r="3.6"/><circle cx="328.9" cy="220.9" r="3.6"/><circle cx="442.9" cy="141.3" r="3.6"/><circle cx="405.1" cy="141.4" r="3.6"/><circle cx="409.5" cy="94.5" r="3.6"/><circle cx="418.6" cy="158.8" r="3.6"/><circle cx="349.4" cy="200.1" r="3.6"/><circle cx="418.0" cy="118.9" r="3.6"/><circle cx="393.7" cy="193.5" r="3.6"/><circle cx="554.3" cy="77.0" r="3.6"/><circle cx="435.5" cy="112.0" r="3.6"/><circle cx="413.4" cy="135.1" r="3.6"/><circle cx="416.1" cy="148.9" r="3.6"/><circle cx="401.3" cy="139.6" r="3.6"/><circle cx="386.4" cy="259.4" r="3.6"/><circle cx="411.9" cy="122.0" r="3.6"/><circle cx="445.4" cy="164.4" r="3.6"/><circle cx="417.7" cy="203.7" r="3.6"/><circle cx="463.6" cy="114.2" r="3.6"/><circle cx="419.2" cy="127.7" r="3.6"/><circle cx="427.8" cy="158.8" r="3.6"/><circle cx="486.1" cy="143.3" r="3.6"/></g>
+<polyline points="349.6,231.1 345.1,235.6 339.9,231.7" fill="none" stroke="#16a34a" stroke-width="1"/>
+<text x="392.4" y="255.4" font-family="Sarabun" font-size="9.5" fill="#16a34a" font-weight="600">dᵢ ⊥ เส้น</text>
+<line x1="40" y1="286" x2="64" y2="286" stroke="#dc2626" stroke-width="2.5"/><text x="70" y="289.5" font-family="Sarabun" font-size="10" fill="#374151">เส้น OLS (Y บน X)</text>
+<line x1="200" y1="286" x2="224" y2="286" stroke="#16a34a" stroke-width="2.5"/><text x="230" y="289.5" font-family="Sarabun" font-size="10" fill="#374151">เส้น PC1 = TLS</text>
+<line x1="330" y1="286" x2="354" y2="286" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 4"/><text x="360" y="289.5" font-family="Sarabun" font-size="10" fill="#374151">อีกวิธีวางทาบ (จาง) — ไม่ทับกัน</text>
+</svg>
+<!-- FIG:ols-vs-pca:END -->
+
+<div class="fm">OLS (Y บน X):          minimize Σ(yᵢ − ŷᵢ)²        → ความชัน β = Cov(X,Y)/Var(X)
+PC1 = TLS:             minimize Σdᵢ²  (dᵢ ตั้งฉากกับเส้น) → ความชัน = v₂/v₁ ของ eigenvector ตัวแรก
+ผลตอบแทน BTC/ETH 22 วันในภาพ:  OLS (Y บน X) = <b>0.75</b> · PC1 (TLS) = <b>1.13</b> · OLS สลับข้าง (X บน Y แล้วกลับ) = <b>1.58</b></div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ดีไอ" คือระยะจากจุดที่ i ไปยังเส้น <em>วัดตั้งฉาก</em> (มุมฉากเล็ก ๆ ในภาพขวา) ส่วน yᵢ − ŷᵢ คือระยะ<em>ดิ่งลง</em>ตามแกน Y (เส้นประในภาพซ้าย) · "วีสอง หาร วีหนึ่ง" คือส่วนประกอบ Y หารส่วนประกอบ X ของ eigenvector — ความชันของทิศที่ variance มากสุด · <strong>โครงที่ต้องเห็น:</strong> สองสูตรต่างกันแค่ "ระยะอะไร" แต่ให้เส้นคนละเส้น เพราะ OLS มีแกนที่ถือว่าไม่ผิด (X) ส่วน PCA ไม่มี — และ OLS ที่สลับแกนก็ให้เส้นที่สาม · เส้น PC1 อยู่<em>ระหว่าง</em> OLS สองแบบเสมอ (0.75 &lt; 1.13 &lt; 1.58) · <strong>กับดักการอ่าน:</strong> "ความชัน 0.75" ใน OLS มีหน่วย "% ของ Y ต่อ 1% ของ X" ใช้เป็น hedge ratio ได้ตรง ๆ · ความชันของ PC1 ขึ้นกับ<em>สเกลของแกน</em> — ถ้า Y วัดเป็น bp แทน % เส้น PC1 จะเปลี่ยนทิศ แต่เส้น OLS ให้คำตอบเดิมแค่คูณ 100 · ภาพนี้จึงต้องวาดสองแกนสเกลเดียวกัน</p>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร — เลือกวิธีตามความสวย ไม่ใช่ตามว่า "ใครผิดพลาดได้"</div>
+<ul>
+<li><strong>ใช้ PC1 เป็น hedge ratio เพราะ "ดูสมมาตรกว่า"</strong> — ถ้าคำถามคือ "ETH ขยับกี่ % เมื่อ BTC ขยับ 1%" นั่นคือคำถามแบบ Y บน X ที่ X เป็นตัวตั้ง OLS คือคำตอบ (0.75) · PC1 (1.13) ตอบคำถามอื่น: "ทิศที่คู่นี้เคลื่อนไปด้วยกัน" ซึ่งไม่มีใครเป็นตัวตั้ง</li>
+<li><strong>ใช้ OLS กับสองขาที่ผิดพลาดพอกัน</strong> — ใน pairs trading ราคาหุ้น A กับ B ต่างก็มี noise ฝั่งตัวเอง OLS จะให้ β <em>เอียงเข้าหาศูนย์</em> (attenuation) และสลับข้างแล้วได้อีกค่า (1.58 กับ 0.75 ห่างกันกว่าเท่าตัว) · <a href="math-part9.html#s9-1b">2 · D §9.1½</a> เดินเลขเรื่องนี้เต็ม ๆ และเพิ่ม Box-Tiao เป็นวิธีที่สาม</li>
+<li><strong>ลืมว่า PC1 ไวต่อสเกล</strong> — PCA บน covariance ของตัวแปรที่หน่วยต่างกันจะให้ทิศแรกเป็น "ตัวแปรที่หน่วยใหญ่สุด" เสมอ นี่คือเหตุผลที่ §1.4 ป้อน correlation matrix ไม่ใช่ covariance</li>
+</ul>
+<p>สิ่งที่ภาพนี้อยากให้จำ: <strong>ก่อนลากเส้น ถามก่อนว่าใครผิดพลาดได้</strong> — X แน่นอน → OLS · ทั้งคู่ผิดพลาดเท่ากัน → TLS/PC1 · ทั้งคู่ผิดพลาดแต่ไม่เท่ากัน → ไม่มีวิธีไหนถูกจากสูตรอย่างเดียว ต้องรู้สัดส่วน noise (2 · D §9.1½)</p></div>
+
 <h3 id="s1-5">1.5 Positive Definite — ทำไม covariance matrix "ผิดเพี้ยน" ไม่ได้</h3>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เพราะ σ²ₚ = wᵀΣw คือ variance ซึ่ง<strong>ติดลบไม่ได้</strong> covariance matrix ที่ถูกต้องต้องให้ wᵀΣw ≥ 0 ทุกน้ำหนัก w (เรียกว่า positive semi-definite) · ถ้าคำนวณแล้วได้ค่าลบ = ข้อมูลมีข้อผิดพลาด (เช่น correlation ที่ประเมินมาไม่สอดคล้องกัน)</p>
@@ -518,6 +611,34 @@ print(f"R-squared = {r2:.4f}")                       <span class="o"># R-squared
 
 <div class="bx bg"><div class="bt">✅ อ่านผลลัพธ์</div>
 <p>β = <strong>1.54</strong> ตรงกับที่คิดมือ · α ≈ 0 (หุ้นไม่ได้ให้ผลตอบแทนเกินตลาดอย่างมีนัย) · R² = <strong>0.96</strong> แปลว่าการขยับของหุ้น ~96% อธิบายได้ด้วยตลาด เหลือ 4% เป็นเรื่องเฉพาะตัว · β นี้เอาไป <strong>hedge</strong> ได้ทันที: ถือหุ้นนี้ ฿1M อยากตัดความเสี่ยงตลาด → short ดัชนี ฿1.54M (β×มูลค่า)</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร — จุดเดียวคุมทั้งเส้น (outlier · วัน jump · หน้าต่างเลื่อน)</div>
+<p>least squares ให้น้ำหนักตามระยะ<em>ยกกำลังสอง</em> จุดที่อยู่ไกลจึงมีเสียงดังกว่าเพื่อนมหาศาล — และ β ที่ "ดูน่าเชื่อถือบนหน้าจอ" อาจมาจากจุดเดียว · ลองเติมเดือนที่ 7 ให้ข้อมูล 6 เดือนข้างบน: ตลาด −6% วันประกาศงบ หุ้นร่วง −20%</p>
+<div class="fm">6 เดือน:   β = 1.54   R² = 0.96
+7 เดือน:   X = [+3, −2, +5, −1, +2, −4, <b>−6</b>]%   Y = [+5, −4, +7, 0, +2, −7, <b>−20</b>]%
+           β = <b>2.16</b>   R² = 0.87
+hedge หุ้น ฿1M:  short ดัชนี ฿2.16M แทน ฿1.54M  → ต่างกัน ฿624,000 จากจุดข้อมูลจุดเดียว</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> เดือนที่ 7 อยู่ไกลจากค่าเฉลี่ยทั้งสองแกน (x₇ − x̄ ติดลบมาก และ y₇ − ȳ ติดลบมาก) พจน์ (x₇ − x̄)(y₇ − ȳ) ใน Cov จึงเป็นบวกก้อนใหญ่ก้อนเดียวที่ดัน β ขึ้น · <strong>โครงที่ต้องเห็น:</strong> ใน Cov/Var ทั้งเศษและส่วนโตตามระยะ<em>ยกกำลังสอง</em> — จุดที่ห่าง 3 เท่ามีน้ำหนัก 9 เท่า · <strong>กับดักการอ่าน:</strong> R² ที่ลดจาก 0.96 เป็น 0.87 <em>ยังดูดี</em> — R² ไม่เตือนเรื่องนี้ ต้องดูกราฟ (<a href="math-part8.html#s5-2">2 · C §5.2</a> สอนจับ outlier กับ leverage point ด้วยตา และวิธี "ตัดจุดนั้นออกแล้วคำนวณใหม่")</p>
+<p><strong>แบบที่เจอบ่อยกว่าในงานจริง — β บนหน้าต่างเลื่อน:</strong> คำนวณ β ด้วยข้อมูล 60 วันล่าสุดทุกวัน (rolling) · วันที่ 120 ตลาดร่วง −7% หุ้นร่วง −20% (วันเดียว) · จำลองด้วย β จริง 1.2 ทั้งปี:</p>
+<div class="code"><div class="hdr">🐍 Python — rolling β 60 วัน เมื่อวัน jump เข้าและออกจากหน้าต่าง</div><pre>import numpy as np
+rng = np.random.default_rng(11)
+T, W, J = 250, 60, 120
+mkt = rng.normal(0, 0.01, T)                          <span class="c"># ตลาด σ 1%/วัน</span>
+stk = 1.2*mkt + rng.normal(0, 0.008, T)               <span class="c"># β จริง = 1.2 ทั้งปี</span>
+mkt[J], stk[J] = -0.07, -0.20                          <span class="c"># วันที่ 120: วัน jump</span>
+
+def beta(x, y): return np.cov(x, y, ddof=1)[0,1] / np.var(x, ddof=1)
+rb = {d: beta(mkt[d-W+1:d+1], stk[d-W+1:d+1]) for d in range(W-1, T)}
+for d in (J-1, J, J+W-1, J+W):
+    print(f"β วันที่ {d} = {rb[d]:.2f}")
+<span class="o"># β วันที่ 119 = 1.30   ← ก่อน jump (ประมาณ 1.2 + noise)</span>
+<span class="o"># β วันที่ 120 = 2.00   ← วัน jump เข้าหน้าต่าง: เด้งวันเดียว</span>
+<span class="o"># β วันที่ 179 = 2.06   ← ยังค้างสูงตลอด 60 วัน ทั้งที่ตลาดกลับมาปกติแล้ว</span>
+<span class="o"># β วันที่ 180 = 1.18   ← วัน jump หลุดจากหน้าต่าง: ตกวันเดียว</span>
+print(f"ตัดวันที่ 120 ทิ้งได้ {beta(mkt[J-W+1:J], stk[J-W+1:J]):.2f}")
+<span class="o"># ตัดวันที่ 120 ทิ้งได้ 1.30   ← 59 วันที่เหลือให้ค่าเดิม</span></pre></div>
+<p>β กระโดดจาก 1.30 เป็น 2.00 ในวันเดียว แล้ว<em>ค้าง</em>ราว 2.0 นาน 60 วัน แล้วตกกลับ 1.18 ในวันที่ 180 — <strong>ทั้งสองครั้งตลาดไม่ได้เปลี่ยนอะไรเลย</strong> สิ่งที่เกิดคือวัน jump เข้าและออกจากหน้าต่าง · คนที่ hedge ตาม β รายวันจะ short ดัชนีเกินจริงเกือบ 70% ตลอดสองเดือน แล้ว "ปรับกลับ" ในวันที่ไม่มีข่าวอะไร · นี่คือรูปธรรมของประโยคที่คลังนี้พูดซ้ำ: <em>โมเดลไม่ได้พัง — เราเอาตัวเลขของมันไปใช้ผิด</em></p>
+<p><strong>แล้วทำอย่างไร:</strong> (1) ก่อนเชื่อ β ให้ทำ leave-one-out: ตัดทีละจุดแล้วดูว่า β เปลี่ยนเกิน 10% ไหม (<a href="math-part8.html#s5-2">2 · C §5.2</a>) · (2) ถามว่าวัน jump คือ "ข้อมูลผิด" หรือ "เหตุการณ์จริง" — วัน crash คือข้อมูลจริงที่บอกว่าในวันเลวร้าย β ของหุ้นนี้สูงกว่าปกติ ไม่ควรลบ แต่ควร<em>รายงานสองค่า</em> (β วันปกติ กับ β วันวิกฤต) แทนค่าเดียว · (3) ถ้าอยากได้ค่าที่จุดเดียวลากไม่ได้ ใช้ตัวประมาณที่ทนต่อ outlier (2 · C §5.2 การ์ด Robust regression) · (4) rolling window ให้ดูกราฟ β ตามเวลาเสมอ — ขั้นบันไดที่ขึ้นแล้วลงห่างกันพอดี W วันคือลายเซ็นของหน้าต่าง ไม่ใช่ของตลาด</p></div>
 
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>หุ้นมี β = 1.5 · วันหนึ่งตลาดขึ้น +2% · ประมาณว่าหุ้นน่าจะขยับกี่ %? (ใช้ y ≈ βx)</p>
