@@ -411,7 +411,7 @@ def fig_bs_call_curve():
     out = svg_open(Wd, H, "เส้นโค้งราคา Call ของ Black-Scholes เหนือเส้นหักศอกของ intrinsic value จุด S = 100 ราคา 6.89 และเส้นสัมผัสความชัน 0.5977 คือ Delta")
     title(out, Wd, "Black-Scholes บอกว่า 'เส้นโค้ง' อยู่ตรงไหนเหนือเส้นหักศอก", "K = 100 · r = 5% · σ = 20% · T = 0.5 ปี · ตัวเลขชุดเดียวกับตัวอย่างคำนวณ")
     x0, y0, w, h = 50, 46, 480, 195
-    sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")], [(0, "0"), (10, "10"), (20, "20"), (30, "30")], xlab="ราคาหุ้น S วันนี้", ylab="ราคา Call (฿)")
+    sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")], [(0, "0"), (10, "10"), (20, "20"), (30, "30"), (40, "40")], xlab="ราคาหุ้น S วันนี้", ylab="ราคา Call (฿)")
     # intrinsic
     polyline(out, [(sx(70), sy(0)), (sx(100), sy(0)), (sx(130), sy(30))], INK2, 1.6, dash="5 4", shadow=False)
     out.append(f'<text x="{sx(121):.1f}" y="{sy(21)+14:.1f}" {FONT} font-size="9.5" fill="{INK2}">intrinsic = max(S − K, 0)</text>')
@@ -458,7 +458,8 @@ def fig_greeks_grid():
         dy = 16 if key in ("theta_day",) else -8
         anchor_ = "start" if key == "delta" else "end"; dx = 7 if key == "delta" else -7
         out.append(f'<text x="{sx(100)+dx:.1f}" y="{sy(v0)+dy:.1f}" text-anchor="{anchor_}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">{lab}</text>')
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Gamma · Theta · Vega คือ "ญาติ" กัน — ทุกตัวมี N′(d₁) เป็นแกน จึงมียอดที่ ATM พร้อมกัน และหายไปเมื่อ ITM/OTM ลึก</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-20}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Gamma · Vega และก้อนแรกของ Theta มี N′(d₁) เป็นแกน — จึงมียอดที่ ATM พร้อมกัน</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-6}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Theta ฝั่ง ITM ลึกยังเหลือก้อนดอกเบี้ย −rKe⁻ʳᵀ ไม่ถึงศูนย์</text>')
     out.append("</svg>")
     return "\n".join(out)
 
@@ -521,7 +522,7 @@ def fig_diversification_corr():
         v = float(np.interp(r_, rho, sp))
         out.append(f'<circle cx="{sx(r_):.1f}" cy="{sy(v):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
         out.append(f'<text x="{sx(r_)+(6 if anc=="start" else -6 if anc=="end" else 0):.1f}" y="{sy(v)+dy:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">{lab}</text>')
-    out.append(f'<text x="{x0+w-4}" y="{sy(3):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ของจริงส่วนใหญ่อยู่แถว ρ = 0.3–0.8 — ลดได้แต่ไม่หมด และ ρ วิ่งขึ้นตอนวิกฤต (เสาหลัก Part 5 กฎ 3)</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(3):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">หุ้นกับหุ้นมัก ρ ≈ 0.3–0.8 — ลดได้แต่ไม่หมด และ ρ วิ่งขึ้นตอนวิกฤต (เสาหลัก Part 5 กฎ 3)</text>')
     out.append("</svg>")
     return "\n".join(out)
 
@@ -546,7 +547,7 @@ def fig_prospect_value():
     out.append(f'<text x="{sx(100)-8:.1f}" y="{sy(100)-8:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ชนะ +$100 → ค่าทางใจ +100</text>')
     out.append(f'<circle cx="{sx(-50):.1f}" cy="{sy(-lam*50):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
     out.append(f'<text x="{sx(-50)+8:.1f}" y="{sy(-lam*50)+24:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">แพ้ −$50 → ค่าทางใจ −{lam*50:.2f} (= 2.25 × 50)</text>')
-    out.append(f'<text x="{sx(-98):.1f}" y="{sy(60):.1f}" {FONT} font-size="10" fill="{INK}" font-weight="700">เดิมพัน 50/50: EV = +$25 แต่ค่าทางใจ = ½(100) − ½({lam*50:.2f}) = {0.5*100-0.5*lam*50:+.2f} → ปฏิเสธ</text>')
+    out.append(f'<text x="{sx(-98):.1f}" y="{sy(130):.1f}" {FONT} font-size="10" fill="{INK}" font-weight="700">เดิมพัน 50/50: EV = +$25 แต่ค่าทางใจ = ½(100) − ½({lam*50:.2f}) = {0.5*100-0.5*lam*50:+.2f} → ปฏิเสธ</text>')
     legend(out, [(GREEN, "ฝั่งกำไร ความชัน 1", ""), (RED, "ฝั่งขาดทุน ความชัน 2.25", ""), (INK2, "เส้นอ้างอิงไร้ bias", "5 4")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
@@ -608,7 +609,7 @@ def fig_garch_sim():
     im = int(np.argmax(sg))
     out.append(f'<circle cx="{sx2(im):.1f}" cy="{sy2(sg[im]*100):.1f}" r="4" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
     anc = "end" if im > len(sg) / 2 else "start"; dx = -8 if anc == "end" else 8
-    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">σ พุ่งถึง {sg[im]*100:.1f}% หลังวันช็อก แล้วจางลงทีละ 2% ต่อวัน (1 − 0.98)</text>')
+    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">σ พุ่งถึง {sg[im]*100:.1f}% หลังวันช็อก · ส่วนเกินของ σ² เหนือ long-run หายไป 2% ของที่เหลือทุกวัน (ตัวคูณ 0.98 · half-life ≈ {np.log(0.5)/np.log(0.98):.0f} วัน)</text>')
     out.append(f'<text x="{x0+w-4}" y="{y1+12}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ช่วงที่แท่งบนหนาแน่น = σ ล่างสูง — วันเหวี่ยงแรงมักตามด้วยวันเหวี่ยงแรง</text>')
     out.append("</svg>")
     return "\n".join(out)
@@ -628,7 +629,7 @@ def fig_yc_loadings():
     NUMS["yc-loadings"] = dict(pc1=pct[0], pc2=pct[1], pc3=pct[2], cum3=pct[:3].sum())
     Wd, H = 560, 300
     out = svg_open(Wd, H, "โหลดของสามองค์ประกอบหลักของเส้นผลตอบแทน 5 ช่วงอายุ: Level แบนเครื่องหมายเดียว · Slope เปลี่ยนเครื่องหมายครั้งเดียวจากสั้นไปยาว · Curvature โก่งตรงกลาง")
-    title(out, Wd, "Level · Slope · Curvature — หน้าตาของ eigenvector สามตัวแรก", f"จาก correlation matrix ตัวอย่างใน 2 · A §1.4 · อธิบาย {pct[0]:.1f}% · {pct[1]:.1f}% · {pct[2]:.1f}% (รวม {pct[:3].sum():.1f}%)")
+    title(out, Wd, "Level · Slope · Curvature — หน้าตาของ eigenvector สามตัวแรก", f"จาก correlation matrix ตัวอย่างใน 2 · A §1.4 · อธิบาย {pct[0]:.1f}% · {pct[1]:.1f}% · {pct[2]:.1f}% (ของจริงราว 90 / 8 / 2 ตามการ์ด)")
     x0, y0, w, h = 50, 46, 480, 180
     mats = ["3 เดือน", "2 ปี", "5 ปี", "10 ปี", "30 ปี"]
     sx, sy = frame(out, x0, y0, w, h, [(i, m) for i, m in enumerate(mats)], [(-0.8, "−0.8"), (-0.4, "−0.4"), (0, "0"), (0.4, "+0.4"), (0.8, "+0.8")], xlab="ช่วงอายุ (สั้น → ยาว)", ylab="โหลด (น้ำหนักของแต่ละช่วงอายุใน PC)")
@@ -676,7 +677,7 @@ def fig_sqrt_impact():
     NUMS["sqrt-impact"] = dict(imp10=float(Y * sg * np.sqrt(0.10) * 100), imp2_5=float(Y * sg * np.sqrt(0.025) * 100))
     Wd, H = 560, 280
     out = svg_open(Wd, H, "เส้นโค้งรากที่สองของ market impact ตามสัดส่วนขนาดออเดอร์ต่อปริมาณเฉลี่ยต่อวัน · ที่ 10% ของ ADV impact 0.63% ของราคา · ชันมากช่วงแรกแล้วแบนลง")
-    title(out, Wd, "√-law — ออเดอร์เล็กจ่ายแพงต่อหุ้นที่สุด และกำไรที่คาด 0.5% หายไปตั้งแต่ 10% ของ ADV", "impact ≈ Y · σ · √(Q/ADV) · σ = 2%/วัน · Y = 1")
+    title(out, Wd, "√-law — ชิ้นแรกดันราคาแรงสุด แต่ละชิ้นที่เพิ่มดันน้อยลง", "impact ≈ Y · σ · √(Q/ADV) · σ = 2%/วัน · Y = 1 · กำไรที่คาด 0.5% หมดก่อนถึง 10% ของ ADV")
     x0, y0, w, h = 50, 46, 480, 180
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%")], [(0, "0"), (0.4, "0.4%"), (0.8, "0.8%"), (1.2, "1.2%")], xlab="ขนาดออเดอร์ Q เป็นสัดส่วนของ ADV", ylab="impact (% ของราคา)")
     polyline(out, [(sx(0), sy(0)), (sx(0.30), sy(0.02 * 0.30 / 0.10 * np.sqrt(0.10) * 100))], INK2, 1.4, dash="5 4", shadow=False)
@@ -689,7 +690,7 @@ def fig_sqrt_impact():
     out.append(f'<text x="{sx(0.10)+8:.1f}" y="{sy(v10)-16:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">10% ของ ADV: impact = 2% × √0.10 ≈ {v10:.2f}% → กินกำไรหมด</text>')
     qc = (0.5 / (Y * sg * 100)) ** 2
     out.append(f'<line x1="{sx(qc):.1f}" y1="{sy(0.5):.1f}" x2="{sx(qc):.1f}" y2="{sy(0):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
-    out.append(f'<text x="{sx(qc):.1f}" y="{sy(0)-6:.1f}" text-anchor="middle" {FONT} font-size="9.5" fill="{RED}">capacity ≈ {qc*100:.1f}% ของ ADV</text>')
+    out.append(f'<text x="{sx(qc):.1f}" y="{sy(0)-6:.1f}" text-anchor="middle" {FONT} font-size="9.5" fill="{RED}">capacity ≈ {qc*100:.2f}% ของ ADV</text>')
     out.append("</svg>")
     return "\n".join(out)
 
@@ -705,7 +706,7 @@ def fig_var_es_tail():
     out = svg_open(Wd, H, "การแจกแจง normal ของผลตอบแทนรายวัน σ 2% · เส้น VaR 99% ที่ −4.66% ตัดหางซ้าย 1% · ES คือค่าเฉลี่ยของหางที่ถูกตัดอยู่ที่ −5.34% · เส้นประหางอ้วนแสดงว่าหางจริงลึกกว่า")
     title(out, Wd, "VaR คือ 'เส้น' — ES คือ 'พื้นที่ใต้หาง' ที่อยู่เลยเส้นนั้น", f"ผลตอบแทนรายวัน σ = 2% (พอร์ต $100M) · VaR₉₉ = 2.33σ = {z99*sg:.2f}% = $4.66M · ES₉₉ = {es_mult:.2f}σ = {es_mult*sg:.2f}% = ${es_mult*sg:.2f}M")
     x0, y0, w, h = 50, 46, 480, 185
-    sx, sy = frame(out, x0, y0, w, h, [(-8, "−8%"), (-6, "−6%"), (-4, "−4%"), (-2, "−2%"), (0, "0"), (2, "+2%"), (4, "+4%"), (6, "+6%"), (8, "+8%")], [(0, "0"), (0.1, ""), (0.2, "")], xlab="ผลตอบแทนรายวัน", ylab="ความหนาแน่น", grid_y=False)
+    sx, sy = frame(out, x0, y0, w, h, [(-8, "−8%"), (-6, "−6%"), (-4, "−4%"), (-2, "−2%"), (0, "0"), (2, "+2%"), (4, "+4%"), (6, "+6%"), (8, "+8%")], [(0, "0"), (0.15, ""), (0.3, "")], xlab="ผลตอบแทนรายวัน", ylab="ความหนาแน่น", grid_y=False)
     tail = xs <= -z99 * sg
     poly = [(sx(a), sy(b)) for a, b in zip(xs[tail], pdf[tail])] + [(sx(-z99 * sg), sy(0)), (sx(-8), sy(0))]
     out.append('<polygon points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in poly) + f'" fill="{RED}" opacity="0.35"/>')
