@@ -316,6 +316,22 @@ expect("arb-part1.html", "§1.5 pairs กระจาย", f"กระจาย�
 print(f"Arb §1.5  σ/√N: " + " ".join(f"{30/math.sqrt(n):.2f}" for n in (1,2,10,100,1000)) + " · P(v<0): " + " ".join(f"{100*Phi_(-0.1*math.sqrt(t)):.2f}" for t in (1,20,100,252,400,1000)))
 
 
+# ── 2·D §9.1 ครึ่งชีวิต ≠ เวลาปิดไม้ — first passage ของ OU (φ ของ §8.4½) ─────────
+rng_fp = np.random.default_rng(1); phi_fp = 0.9048; hl_fp = -math.log(2) / math.log(phi_fp)
+n_fp = 200_000; x_fp = np.full(n_fp, 2.0); t_fp = np.zeros(n_fp); alive = np.ones(n_fp, bool)
+sig_fp = math.sqrt(1 - phi_fp ** 2)  # ให้ SD นิ่งของ spread = 1 → เข้าที่ 2 SD
+for k_ in range(1, 5001):
+    x_fp = phi_fp * x_fp + sig_fp * rng_fp.standard_normal(n_fp)
+    hit = alive & (x_fp <= 0); t_fp[hit] = k_; alive &= ~hit
+    if not alive.any():
+        break
+print(f"2·D §9.1  first passage 2SD→0: HL={hl_fp:.2f} median={np.median(t_fp):.0f} mean={t_fp.mean():.1f} p90={np.percentile(t_fp,90):.0f} p95={np.percentile(t_fp,95):.0f} ≤HL={100*(t_fp<=hl_fp).mean():.0f}%")
+expect("math-part9.html", "first passage HL", f"ครึ่งชีวิต {hl_fp:.2f} วัน")
+expect("math-part9.html", "first passage median", f"มัธยฐาน <strong>{np.median(t_fp):.0f} วัน</strong> ค่าเฉลี่ย {t_fp.mean():.1f} วัน")
+expect("math-part9.html", "first passage p90/p95", f"1 ใน 10 ไม้นานเกิน {np.percentile(t_fp,90):.0f} วัน · 1 ใน 20 เกิน {np.percentile(t_fp,95):.0f} วัน")
+expect("math-part9.html", "first passage ≤HL", f"มีแค่ {100*(t_fp<=hl_fp).mean():.0f}% ที่ปิดภายในหนึ่งครึ่งชีวิต")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
