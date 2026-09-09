@@ -752,7 +752,7 @@ def fig_combined_payoff():
     c90 = float(np.interp(90, S, comb))
     out.append(f'<line x1="{sx(90):.1f}" y1="{sy(3):.1f}" x2="{sx(90):.1f}" y2="{sy(c90):.1f}" stroke="{PURPLE}" stroke-width="1" stroke-dasharray="2 2"/>')
     out.append(f'<circle cx="{sx(90):.1f}" cy="{sy(c90):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
-    out.append(f'<text x="{sx(90)+8:.1f}" y="{sy(c90)+18:.1f}" {FONT} font-size="10" fill="{PURPLE}" font-weight="700">S = 90: −5 + (−2) + (−10) = {c90:.0f}</text>')
+    out.append(f'<text x="{sx(90)+8:.1f}" y="{sy(c90)+18:.1f}" {FONT} font-size="10" fill="{PURPLE}" font-weight="700">S = 90: −5 + (−2) + (−10) = −{abs(c90):.0f}</text>')
     out.append(f'<text x="{x0+6}" y="{y0+14}" {FONT} font-size="9.5" fill="{BLUE}" font-weight="700">เส้นรวมชัน +2 ทั้งเหนือ 100 (หุ้น + call) และใต้ 95 (หุ้น + short put)</text>')
     out.append(f'<text x="{x0+6}" y="{y0+28}" {FONT} font-size="9.5" fill="{BLUE}">→ ขาลงเจ็บสองเท่าของหุ้นเปล่า — risk ที่ดูทีละขาไม่เห็น</text>')
     legend(out, [(BLUE, "รวม 3 ขา", ""), (GREEN, "Long Call 100", "5 3"), (RED, "Short Put 95", "5 3"), (AMBER, "Long Stock @100", "5 3")], x0, H - 10)
@@ -769,7 +769,7 @@ def fig_visual_greeks():
     NUMS["visual-greeks"] = dict(delta=float(g0["delta"]), c_near_100=float(bs_greeks(100.0, T=0.1)["C"]), c_hv_100=float(bs_greeks(100.0, T=0.5, sg=0.30)["C"]))
     Wd, H = 560, 320
     out = svg_open(Wd, H, "P/L ของ Long Call 100 ก่อนหมดอายุเป็นเส้นโค้งเหนือเส้นหักศอกที่หมดอายุ · ความชันที่ ATM คือ Delta · ความโค้งคือ Gamma · เส้นโค้งหดเข้าหาเส้นหักศอกเมื่อเวลาผ่าน (Theta) และถ่างออกเมื่อ vol เพิ่ม (Vega)")
-    title(out, Wd, "อ่าน Greeks ด้วยตาจากเส้นโค้งเส้นเดียว — slope · ความโค้ง · หด · ถ่าง", "Long Call K=100 ซื้อที่ ฿6.89 (S=100, σ=20%, r=5%, T=0.5) · เส้นหักศอก = ณ วันหมดอายุ")
+    title(out, Wd, "อ่าน Greeks ด้วยตาจากเส้นโค้งเส้นเดียว — slope · ความโค้ง · หด · ถ่าง", "Long Call K=100 ซื้อที่ ฿6.89 (ราคา BS: S=100, σ=20%, r=5%, T=0.5) · เส้นหักศอก = ณ วันหมดอายุ")
     x0, y0, w, h = 55, 46, 475, 210
     sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")], [(-10, "−10"), (0, "0"), (10, "+10"), (20, "+20"), (30, "+30")], xlab="ราคาหุ้น S วันนี้", ylab="P/L (฿)")
     out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1"/>')
@@ -781,7 +781,7 @@ def fig_visual_greeks():
     out.append(f'<line x1="{sx(90):.1f}" y1="{sy(D*(90-100)):.1f}" x2="{sx(110):.1f}" y2="{sy(D*(110-100)):.1f}" stroke="{PURPLE}" stroke-width="1.6"/>')
     out.append(f'<circle cx="{sx(100):.1f}" cy="{sy(0):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
     out.append(f'<text x="{x0+6}" y="{y0+14}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">Δ = ความชันของเส้นสัมผัสที่ ATM = {D:.2f} (เส้นม่วง)</text>')
-    out.append(f'<text x="{x0+6}" y="{y0+28}" {FONT} font-size="9.5" fill="{PURPLE}">Γ = ความโค้ง — โค้งสุดตรง ATM ตรงที่เส้นตรงกลายเป็นเส้นหักศอก</text>')
+    out.append(f'<text x="{x0+6}" y="{y0+28}" {FONT} font-size="9.5" fill="{PURPLE}">Γ = ความโค้ง — โค้งสุดที่ ATM (จุดที่ slope เปลี่ยนเร็วที่สุด)</text>')
     out.append(f'<text x="{x0+6}" y="{y0+42}" {FONT} font-size="9.5" fill="{GREEN}" font-weight="700">Θ: เวลาผ่านไป (T=0.5 → 0.1) เส้นโค้งหดเข้าหาเส้นหักศอก</text>')
     out.append(f'<text x="{x0+6}" y="{y0+56}" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">ν: vol ขึ้น (20% → 30%) เส้นโค้งถ่างออกจากเส้นหักศอก</text>')
     legend(out, [(BLUE, "วันนี้ T=0.5 σ=20%", ""), (GREEN, "เหลือ T=0.1", "3 3"), (AMBER, "σ=30%", "6 3"), (INK2, "หมดอายุ", "5 4")], x0, H - 10)
@@ -796,7 +796,7 @@ def fig_overround_bars():
     NUMS["overround-bars"] = dict(tot=tot * 100, over=(tot - 1) * 100, **{f"imp{i}": p * 100 for i, p in enumerate(imp)}, **{f"fair{i}": p * 100 for i, p in enumerate(fair)})
     Wd, H = 560, 260
     out = svg_open(Wd, H, "แท่งซ้อนสองแท่ง: ความน่าจะเป็นโดยนัยจาก odds 2.10, 3.30, 3.50 รวม 106.5% เกินเส้น 100% อยู่ 6.5% · แท่งขวาหารกลับด้วย 1.065 จนรวม 100% พอดี")
-    title(out, Wd, "overround — ผลลัพธ์ที่ตัดกันขาดต้องรวม 100% ส่วนที่เกินคือค่าธรรมเนียมที่ซ่อนในราคา", "odds 2.10 / 3.30 / 3.50 → 1/odds = 47.6% + 30.3% + 28.6% = 106.5% · หารด้วย 1.065 → 44.7% + 28.5% + 26.9%")
+    title(out, Wd, "overround — ผลลัพธ์ที่ตัดกันขาดต้องรวม 100% ส่วนที่เกินคือค่าธรรมเนียมที่ซ่อนในราคา", f"odds 2.10 / 3.30 / 3.50 → 1/odds = {imp[0]*100:.1f}% + {imp[1]*100:.1f}% + {imp[2]*100:.1f}% = {tot*100:.1f}% · หารด้วย {tot:.3f} → {fair[0]*100:.1f}% + {fair[1]*100:.1f}% + {fair[2]*100:.1f}%")
     x0, y0, w, h = 60, 46, 470, 165
     cols = [BLUE, GREEN, AMBER]; names = ["ทีม A (2.10)", "เสมอ (3.30)", "ทีม B (3.50)"]
     def sy(v): return y0 + h - v / 110 * h
@@ -826,14 +826,14 @@ def fig_funding_carry():
     out = svg_open(Wd, H, "funding 0.03% ต่อ 8 ชั่วโมงสะสมเป็นเส้นตรงถึง 32.85% ต่อปีเมื่อคิดไม่ทบต้น 1,095 รอบ · เส้นประคือถ้าทบต้น · แถบเตือนว่าอัตราพลิกได้ทุก 8 ชั่วโมง")
     title(out, Wd, "3 bp ต่อรอบดูไม่มีอะไร — จนเห็นว่ามันเกิด 1,095 รอบต่อปี", f"0.03% × 3 รอบ/วัน × 365 วัน = {simple[-1]:.2f}% (ไม่ทบต้น) · ถ้าทบต้นทุกรอบ = {comp[-1]:.1f}% · สมมติอัตราคงที่ทั้งปี")
     x0, y0, w, h = 55, 46, 475, 180
-    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (91, "3 เดือน"), (182, "6 เดือน"), (273, "9 เดือน"), (365, "1 ปี")], [(0, "0"), (10, "10%"), (20, "20%"), (30, "30%"), (40, "40%")], xlab="เวลาที่ถือ (วัน)", ylab="funding สะสม (% ของ notional)")
+    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (91, "3 เดือน"), (182, "6 เดือน"), (273, "9 เดือน"), (365, "1 ปี")], [(0, "0"), (10, "10%"), (20, "20%"), (30, "30%"), (40, "40%")], xlab="เวลาที่ถือ", ylab="funding สะสม (% ของ notional)")
     days = k / 3
     polyline(out, [(sx(a), sy(b)) for a, b in zip(days[::9], comp[::9])], INK2, 1.6, dash="5 4", shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(days[::9], simple[::9])], GREEN, 2.75)
     out.append(f'<circle cx="{sx(365):.1f}" cy="{sy(simple[-1]):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
-    out.append(f'<text x="{sx(365)-8:.1f}" y="{sy(simple[-1])+14:.1f}" text-anchor="end" {FONT} font-size="10" fill="{PURPLE}" font-weight="700">1 ปี = {n:,} รอบ × 0.03% = {simple[-1]:.2f}%</text>')
+    out.append(f'<text x="{sx(365)-8:.1f}" y="{sy(18):.1f}" text-anchor="end" {FONT} font-size="10" fill="{PURPLE}" font-weight="700">1 ปี = {n:,} รอบ × 0.03% = {simple[-1]:.2f}%</text>')
     out.append(f'<text x="{sx(250):.1f}" y="{sy(comp[750])-10:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ทบต้น (นำ funding ไปเพิ่ม position) → {comp[-1]:.1f}% ที่ 1 ปี</text>')
-    d1 = 30; out.append(f'<text x="{sx(d1)+6:.1f}" y="{sy(simple[d1*3])-8:.1f}" {FONT} font-size="9.5" fill="{GREEN}">1 เดือน ≈ {simple[d1*3]:.1f}%</text>')
+    d1 = 30; out.append(f'<text x="{sx(d1)-6:.1f}" y="{sy(simple[d1*3])-6:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{GREEN}">1 เดือน ≈ {simple[d1*3]:.1f}%</text>')
     out.append(f'<text x="{x0+6}" y="{y0+14}" {FONT} font-size="9.5" fill="{RED}" font-weight="700">[Heuristic] เส้นนี้ฉายอัตรา "ปัจจุบัน" ไปทั้งปี — funding พลิกเครื่องหมายได้ทุก 8 ชั่วโมง</text>')
     legend(out, [(GREEN, "ไม่ทบต้น (ตามที่บทคิด)", ""), (INK2, "ทบต้นทุกรอบ", "5 4")], x0, H - 10)
     out.append("</svg>")
@@ -860,7 +860,7 @@ def fig_pm_parity():
         out.append(f'<text x="{gx+55}" y="{sy(s_)-6:.1f}" text-anchor="middle" {FONT} font-size="11" font-weight="700" fill="{col}">รวม ${s_:.2f}</text>')
         out.append(f'<text x="{gx+55}" y="{y0+h+14}" text-anchor="middle" {FONT} font-size="10" fill="{INK2}">{lab}: {"ไม่มี arb (จ่ายเกิน $" + f"{s_-1:.2f}" + ")" if s_ >= 1 else "ซื้อทั้งคู่ กำไรแน่ $" + f"{1-s_:.2f}" + " ต่อชุด"}</text>')
     out.append(f'<line x1="{x0}" y1="{sy(1):.1f}" x2="{x0+w}" y2="{sy(1):.1f}" stroke="{RED}" stroke-width="1.6" stroke-dasharray="5 3"/>')
-    out.append(f'<text x="{x0+4}" y="{sy(1)-5:.1f}" {FONT} font-size="9.5" fill="{RED}" font-weight="700">$1.00 ที่จะได้แน่เมื่อ settle</text>')
+    out.append(f'<text x="{x0-4}" y="{sy(1)+3.5:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{RED}" font-weight="700">$1.00</text>')
     out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.2"/>')
     out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ใช้ราคา ask ทั้งคู่ (ราคาที่ซื้อได้จริง) · ยังไม่หัก fee และเงินที่ล็อกจนถึง settle</text>')
     out.append("</svg>")
@@ -893,14 +893,14 @@ def fig_pair_states():
     box(470, yB, "HALTED", "ความสัมพันธ์ขาด / tracking error เกิน", RED, 150)
     arrow(120, yA, 150, yA, INK, lab="เข้า", ly=-9)
     arrow(270, yA, 290, yA, INK, lab="ครบ", ly=-9)
-    arrow(410, yA, 435, yA, INK, lab="ออก", ly=-9)
+    arrow(410, yA, 435, yA, INK, lab="ออก/stop", ly=-9)
     # EXITING → FLAT (โค้งกลับด้านบน)
     out.append(f'<path d="M490,{yA-22} C490,52 70,52 70,{yA-22}" fill="none" stroke="{INK}" stroke-width="1.8"/>')
     out.append(f'<polygon points="70,{yA-22} 65,{yA-31} 75,{yA-31}" fill="{INK}"/>')
-    out.append(f'<text x="280" y="62" text-anchor="middle" {FONT} font-size="9" fill="{INK}">ปิดครบ → กลับ FLAT · ledger ปิดบัญชีไม้นี้ · OPEN → EXITING เมื่อมีสัญญาณออกหรือ stop</text>')
+    out.append(f'<text x="280" y="56" text-anchor="middle" {FONT} font-size="9" fill="{INK}">ปิดครบ → กลับ FLAT · ledger ปิดบัญชีไม้นี้</text>')
     arrow(225, yA + 22, 265, yB - 22, RED, dash="4 3", lab="เกินเวลา", lx=-30, ly=4)
     arrow(475, yA + 22, 320, yB - 22, RED, dash="4 3", lab="เกินเวลา", lx=30, ly=-4)
-    arrow(330, yB, 395, yB, RED, dash="4 3", lab="กฎที่เขียนไว้ก่อน", ly=-8)
+    arrow(220, yB, 85, yA + 22, RED, dash="4 3", lab="คนตัดสิน / กฎที่เขียนไว้ก่อน", lx=-55, ly=-4)
     arrow(370, yA + 22, 440, yB - 22, RED, dash="4 3")
     out.append(f'<text x="{Wd/2:.0f}" y="{H-24}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ENTERING/EXITING = ช่วงที่ net exposure ≠ 0 (ในบท: 5,340 บาทนาน 70 วินาที) — บันทึกทุก fill แยกบรรทัด</text>')
     out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{RED}">HALTED เข้าได้จากทุกสถานะ (วาดจาก OPEN เพื่อไม่ให้รก) · STUCK ออกทาง EXITING หรือ FLAT ตามทางเลือก (ก)(ข)(ค)</text>')
@@ -915,9 +915,9 @@ def fig_theory_chain():
     out = svg_open(Wd, H, "แผนภาพสายโซ่ห้าทฤษฎี: Random Walk 1900 ไป Mean-Variance และ CAPM 1952–64 ไป EMH 1970 ไป Black-Scholes 1973 ไป Time Series และ Backtest 1982–2014 แล้ววนกลับไป Random Walk · แต่ละลูกศรคือคำถามที่ทฤษฎีก่อนทิ้งไว้")
     title(out, Wd, "ห้าตำนานคือบทสนทนาเดียว — แต่ละทฤษฎีตอบช่องโหว่ของทฤษฎีก่อนหน้า", "ปี = ผลงานหลัก · ข้อความบนลูกศร = คำถามที่ส่งต่อ · ลูกศรประ = วงปิดกลับไปที่จุดเริ่ม")
     nodes = [(95, 90, "Random Walk", "1900 · Bachelier", BLUE), (330, 90, "Mean-Variance · CAPM", "1952–64 · Markowitz · Sharpe", GREEN),
-             (470, 180, "EMH", "1970 · Fama", AMBER), (330, 270, "Black-Scholes", "1973 · Black · Scholes · Merton", PURPLE), (95, 270, "Time Series · Backtest", "1982–2014 · Engle → López de Prado", RED)]
+             (470, 180, "EMH", "1970 · Fama", AMBER), (330, 270, "Black-Scholes", "1973 · Black · Scholes · Merton", PURPLE), (95, 270, "Time Series · Backtest", "1982–2014 · Engle · López de Prado", RED)]
     for x, y, nm, sub, col in nodes:
-        wd = 150 if len(nm) > 12 else 110
+        wd = 160 if len(nm) > 20 else 150 if len(nm) > 12 else 110
         out.append(f'<rect x="{x-wd/2:.0f}" y="{y-22}" width="{wd}" height="44" rx="10" fill="#fff" stroke="{col}" stroke-width="2.2"/>')
         out.append(f'<text x="{x}" y="{y-4}" text-anchor="middle" {FONT} font-size="11.5" font-weight="700" fill="{INK}">{nm}</text>')
         out.append(f'<text x="{x}" y="{y+11}" text-anchor="middle" {FONT} font-size="8.5" fill="{col}">{sub}</text>')
@@ -930,7 +930,7 @@ def fig_theory_chain():
     arrow(150, 90, 255, 90, "ทิศเดาไม่ได้ — แล้ววัดความเสี่ยงยังไง?", 0, -30)
     arrow(405, 100, 425, 160, "ราคาที่ 'ถูก' มาจากไหน?", 62, 0)
     arrow(425, 200, 405, 250, "ถ้า hedge ได้ ราคาถูกบังคับด้วย no-arb", -95, -4)
-    arrow(255, 270, 170, 270, "vol คงที่ไม่จริง — วัดจากข้อมูล", 0, 28)
+    arrow(255, 270, 170, 270, "vol คงที่ไม่จริง — วัดจากข้อมูล", 0, 33)
     arrow(95, 248, 95, 112, "ทุก edge คือ deviation จากความสุ่ม ที่ต้องพิสูจน์", 118, 0, dash="5 4")
     out.append(f'<text x="{Wd/2:.0f}" y="{H-8}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">คำว่า "เกือบ" ทุกตัว (เกือบ efficient · เกือบถูก · เกือบจริง) คือที่ที่ quant ทำมาหากิน — และที่ quant เจ๊ง</text>')
     out.append("</svg>")
