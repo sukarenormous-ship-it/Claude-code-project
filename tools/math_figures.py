@@ -655,6 +655,7 @@ expect("theory-extra.html", "stop 50%", f"= <strong>{0.5*105+0.5*97-0.3:.1f}</st
 expect("theory-extra.html", "stop 40%", f"= <strong>{0.4*105+0.6*97-0.3:.1f}</strong>")
 p_star = (100 + 0.3 - 97) / (105 - 97)
 expect("theory-extra.html", "stop p*", f"เส้นแบ่งอยู่ที่โอกาสราว {p_star*100:.0f}%")
+expect("theory-extra.html", "MI bias", f"81/(500 × 0.693) ≈ <strong>{81/(2*250*math.log(2)):.2f} bits</strong>")
 expect("theory-extra.html", "pinball", f"(10 − 8) × 0.9 = {2*0.9:.1f} · ทำนาย 12 → (10 − 12) × (0.9 − 1) = {(-2)*(0.9-1):.1f}")
 print(f"theory-extra MI={-0.5*math.log(1-0.09):.4f}/{-0.5*math.log(1-0.64):.4f} H(Y)={Hy:.3f} HMM pred={pred_:.2f} post={post_:.3f} LR={ls_/lc_:.1f} p*={p_star:.3f}")
 
