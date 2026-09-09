@@ -604,6 +604,7 @@ try:
     jo1 = coint_johansen(Yj, det_order=0, k_ar_diff=1)
     expect("math-part9.html", "§9.5½ lag1", f"ใช้ lag 1 ได้ trace {jo1.lr1[0]:.2f} / {jo1.lr1[1]:.2f} / {jo1.lr1[2]:.2f}")
     Dj = 50 + np.cumsum(rj.normal(0, 1, nj)); jo4 = coint_johansen(np.column_stack([Aj, Bj, Cj, Dj]), 0, 0)
+    expect("math-part9.html", "§9.5½ ratio", f"(อัตราส่วน trace ต่อค่าวิกฤตลดจาก {jo.lr1[1]/jo.cvt[1,1]:.2f} เหลือ {jo4.lr1[1]/jo4.cvt[1,1]:.2f})")
     expect("math-part9.html", "§9.5½ 4 vars", "trace = [" + ", ".join(f"{v:.2f}" for v in jo4.lr1) + "] เทียบ [" + ", ".join(f"{v:.2f}" for v in jo4.cvt[:, 1]) + "]")
     print(f"2·D §9.5½ eig={np.round(jo.eig,4)} trace={np.round(jo.lr1,2)} β={np.round(bj,3)} HL={-math.log(2)/math.log(phj):.2f} · 4 vars trace={np.round(jo4.lr1,2)}")
 except ImportError:
