@@ -341,10 +341,14 @@ def eig_corr6(Xm):
     return np.linalg.eigvalsh(np.corrcoef(Xm.T))[::-1]
 def vec_corr6(Xm):
     return np.linalg.eigh(np.corrcoef(Xm.T))[1][:, ::-1]
+_np95_cache = {}
 def noise_p95(pp, nn, sims=1000, seed=1):
-    r_ = np.random.default_rng(seed)
-    arr = np.array([eig_corr6(r_.standard_normal((nn, pp)))[0] for _ in range(sims)])
-    return np.percentile(arr, 95), np.median(arr), arr.max()
+    key = (pp, nn, sims, seed)
+    if key not in _np95_cache:  # ผลเดิมทุกครั้ง (seed คงที่) — cache ไว้เพราะ peel() ถูกเรียกหลายร้อยรอบ
+        r_ = np.random.default_rng(seed)
+        arr = np.array([eig_corr6(r_.standard_normal((nn, pp)))[0] for _ in range(sims)])
+        _np95_cache[key] = (np.percentile(arr, 95), np.median(arr), arr.max())
+    return _np95_cache[key]
 def peel(lam, nn):
     out, used = [], 0.0
     for k in range(len(lam) - 1):
@@ -526,7 +530,8 @@ expect("math-part4.html", "§1.7 F₁ day0", f"<strong>{w5 @ R5[0]:.3f}%</strong
 expect("math-part4.html", "§1.7 w̃", "<td>" + "</td><td>".join(f"{x:.3f}" for x in wn5) + "</td>")
 expect("math-part4.html", "§1.7 P&L", f"return <strong>{wn5 @ R5[0]:.3f}%</strong> · ฿1M → <strong>P&amp;L ฿{wn5 @ R5[0] / 100 * 1e6:,.0f}</strong>")
 expect("math-part4.html", "§1.7 Var score", f"Var(score₁) ตลอด 2,500 วัน = {sc1.var(ddof=1):.3f}")
-expect("math-part4.html", "§1.7 SD ports", f"{(R5 @ w5).std(ddof=1):.3f}% ต่อวัน (w) หรือ {(R5 @ wn5).std(ddof=1):.3f}% (w̃)")
+expect("math-part4.html", "§1.7 SD ports", f"SD ของพอร์ต w คือ {(R5 @ w5).std(ddof=1):.3f}% ต่อวัน")
+expect("math-part4.html", "§1.7 SD w̃", f"SD {(R5 @ wn5).std(ddof=1):.3f}% = {(R5 @ w5).std(ddof=1):.3f}/{w5.sum():.3f}")
 expect("math-part4.html", "§1.7 corr F1 f1", f"สัมพันธ์กับปัจจัย Level ที่ใช้สร้างข้อมูล {np.corrcoef(R5 @ w5, g1)[0,1]:.3f}")
 expect("math-part4.html", "§1.7 self weight", f"{w5[0]:.3f}/{w5.sum():.3f} = {w5[0]/w5.sum()*100:.0f}%")
 # case A: LOO residual of stock 1
@@ -536,6 +541,7 @@ expect("math-part4.html", "§1.7 β LOO", f"β = [{bA[1]:.3f}, {um7(bA[2])}]")
 expect("math-part4.html", "§1.7 resid SD", f"SD {epsA.std():.3f}%")
 expect("math-part4.html", "§1.7 φ̂ A", f"φ̂ = {phA:.4f}   t ของ (φ̂ − 1) = {um7(tA, '.2f')}")
 expect("math-part4.html", "§1.7 HL A", f"\"{math.log(2)/-math.log(phA):.0f} วัน\"")
+expect("math-part4.html", "§1.7 Xc range", f"เดินไปถึง {XcA.min():.0f} และ +{XcA.max():.0f}".replace("-", "−"))
 print(f"2·A §1.7  score0={sc1[0]:.3f} F1={w5@R5[0]:.3f}% P&L={wn5@R5[0]/100*1e6:,.0f} · caseA φ={phA:.4f} t={tA:.2f} HL={math.log(2)/-math.log(phA):.0f} Xc range {XcA.min():.1f}..{XcA.max():.1f}")
 # case B at p=5 and p=50
 def _ou(seed=3, phi_=.9, sd_=1.0):
@@ -558,7 +564,7 @@ for p_ in (5, 50):
                 a_, ph_, _t = _ar1s(np.cumsum(eps_[st:st + W]))
                 hls.append(math.log(2) / -math.log(ph_) if 0 < ph_ < 1 else float("inf"))
             hls = np.array(hls); fin = hls[np.isfinite(hls)]
-            return len(hls), np.median(fin), np.percentile(fin, 25), np.percentile(fin, 75), (hls < 30).mean()
+            return len(hls), np.median(fin), np.percentile(fin, 25), np.percentile(fin, 75), (hls < 30 * math.log(2)).mean()
         for W_ in (60, 250):
             nA, mA, q1A, q3A, shA = _win(epsA50, W_); nB, mB, q1B, q3B, shB = _win(epsb, W_)
             print(f"2·A §1.7  W={W_}: noise windows={nA} HL median={mA:.1f} p25={q1A:.1f} p75={q3A:.1f} pass={shA:.2f} | OU median={mB:.1f} p25={q1B:.1f} p75={q3B:.1f} pass={shB:.2f}")
@@ -567,7 +573,8 @@ for p_ in (5, 50):
                 expect("math-part4.html", "§1.7 win60 OU", f"<td>{mB:.1f} วัน</td><td>{q1B:.1f}–{q3B:.1f}</td><td>{shB*100:.0f}%</td>")
                 expect("math-part4.html", "§1.7 win60 count", f"หน้าต่าง 60 วัน {nA} หน้าต่าง")
             else:
-                expect("math-part4.html", "§1.7 win250", f"ครึ่งชีวิตค่ากลาง <strong>{mA:.0f} วัน</strong> และผ่านเกณฑ์ &lt; 30 วันแค่ <strong>{int(round(shA*nA))} ใน {nA}</strong> หน้าต่าง ส่วน OU จริงยังให้ค่ากลาง {mB:.1f} วัน ผ่าน {int(round(shB*nB))} ใน {nB}")
+                expect("math-part4.html", "§1.7 win250", f"ครึ่งชีวิตค่ากลาง <strong>{mA:.0f} วัน</strong> และผ่านเกณฑ์ &lt; 20.8 วันแค่ <strong>{int(round(shA*nA))} ใน {nA}</strong> หน้าต่าง ส่วน OU จริงให้ค่ากลาง {mB:.1f} วัน ผ่าน {int(round(shB*nB))} ใน {nB}")
+                expect("math-part4.html", "§1.7 win250 pct", f"(80% → {shA*100:.0f}% กับ 95% → {shB*100:.0f}%)")
 print("2·A §1.7  case B:", [(p_, round(ph, 4), round(t_, 2), round(h, 1), round(c_, 2)) for p_, ph, t_, h, c_ in rowsB])
 
 
@@ -601,6 +608,34 @@ try:
     print(f"2·D §9.5½ eig={np.round(jo.eig,4)} trace={np.round(jo.lr1,2)} β={np.round(bj,3)} HL={-math.log(2)/math.log(phj):.2f} · 4 vars trace={np.round(jo4.lr1,2)}")
 except ImportError:
     print("⚠️  statsmodels ไม่ได้ติดตั้ง — ข้ามบล็อก §9.5½ (pip install statsmodels)")
+
+
+# ── statarb-ledger: บัญชีหนึ่งไม้ pairs (เลขคณิตล้วน) ────────────────────────────
+fee_ = 0.0005; borrow_ = 0.0002; days_ = 5
+B_in, B_q = 150.20, 100; A_in1, A_q1, A_in2, A_q2 = 96.80, 100, 96.95, 51; B_out, A_out = 147.90, 96.40
+notB = B_q * B_in; notA = A_q1 * A_in1 + A_q2 * A_in2
+fees_in = fee_ * B_q * B_in + fee_ * A_q1 * A_in1 + fee_ * A_q2 * A_in2
+pnlB = (B_in - B_out) * B_q; pnlA = (A_out - A_in1) * A_q1 + (A_out - A_in2) * A_q2
+fees_out = fee_ * (B_q * B_out + (A_q1 + A_q2) * A_out); borrow_c = borrow_ * notB * days_
+net_ = pnlB + pnlA - fees_in - fees_out - borrow_c
+sp_in = B_in - 1.51 * A_in1; sp_out = B_out - 1.51 * A_out; naive = 100 * (sp_in - sp_out)
+expect("statarb-ledger.html", "ledger ขา B", f"= +{pnlB:.2f}")
+expect("statarb-ledger.html", "ledger ขา A", f"= −{-(A_out - A_in1) * A_q1:.2f} − {-(A_out - A_in2) * A_q2:.2f} = −{-pnlA:.2f}")
+expect("statarb-ledger.html", "ledger gross", f"= +{pnlB + pnlA:.2f}")
+expect("statarb-ledger.html", "ledger fees", f"{fee_*B_q*B_in:.2f} + {fee_*A_q1*A_in1:.2f} + {fee_*A_q2*A_in2:.2f} = {fees_in:.2f}  ·  ออก {fee_*B_q*B_out:.2f} + {fee_*(A_q1+A_q2)*A_out:.2f} = {fees_out:.2f}  ·  ค่ายืม {borrow_c:.2f}")
+expect("statarb-ledger.html", "ledger net", f"= +{net_:.2f}")
+expect("statarb-ledger.html", "ledger spread", f"= <strong>{sp_in:.3f}</strong> · วันออก = 147.90 − 1.51 × 96.40 = <strong>{sp_out:.3f}</strong> · backtest บอกว่ากำไร = 100 × ({sp_in:.3f} − {sp_out:.3f}) = <strong>{naive:.2f}</strong>")
+expect("statarb-ledger.html", "ledger partial", f"<td>−{A_q2*(A_in2-A_in1):.2f}</td><td>{A_q2*(A_in2-A_in1)/naive*100:.1f}%</td>")
+expect("statarb-ledger.html", "ledger fees share", f"<td>−{fees_in+fees_out:.2f}</td><td>{(fees_in+fees_out)/naive*100:.1f}%</td>")
+expect("statarb-ledger.html", "ledger borrow share", f"<td>−{borrow_c:.2f}</td><td>{borrow_c/naive*100:.1f}%</td>")
+expect("statarb-ledger.html", "ledger gap total", f"<strong>−{naive-net_:.2f}</strong></td><td><strong>{(naive-net_)/naive*100:.1f}%</strong>")
+expect("statarb-ledger.html", "ledger exposure gap", f"net short {notB - A_q1*A_in1:,.0f}")
+expect("statarb-ledger.html", "ledger gross notional", f"<td>{notB+notA:,.2f}</td><td><strong>{net_/(notB+notA)*100:.3f}%</strong>")
+expect("statarb-ledger.html", "ledger on B", f"<td>{notB:,.2f}</td><td>{net_/notB*100:.2f}%</td>")
+expect("statarb-ledger.html", "ledger on margin", f"<td>{0.25*(notB+notA):,.2f}</td><td><strong>{net_/(0.25*(notB+notA))*100:.2f}%</strong>")
+expect("statarb-ledger.html", "ledger borrow % of net", f"{borrow_c/net_*100:.1f}% ของกำไรสุทธิ")
+expect("statarb-ledger.html", "ledger pct_change", f"ให้ \"ผลตอบแทน\" {(0.05-0.40)/0.40*100:.0f}% แล้ว {(-0.30-0.05)/0.05*100:.0f}%".replace("-", "−"))
+print(f"ledger    gross={pnlB+pnlA:.2f} net={net_:.2f} naive={naive:.2f} gap={naive-net_:.2f} ({(naive-net_)/naive*100:.1f}%)")
 
 
 def main():
