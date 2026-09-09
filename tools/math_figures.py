@@ -388,11 +388,106 @@ expect("math-part4.html", "§1.6 cos struct2500", f"<td>{hcos(X25,0):.3f}</td><t
 r3 = np.random.default_rng(3); a3 = r3.standard_normal((20000, 5)); b3 = r3.standard_normal((20000, 5))
 c3 = np.abs((a3 * b3).sum(1)) / np.linalg.norm(a3, axis=1) / np.linalg.norm(b3, axis=1)
 expect("math-part4.html", "§1.6 cos random", f"ค่ากลาง {np.median(c3):.3f} และเปอร์เซ็นไทล์ 95 อยู่ที่ {np.percentile(c3,95):.3f}")
+ls250 = eig_corr6(make6(250)); ls2500 = eig_corr6(make6(2500))
+expect("math-part4.html", "§1.6 MP prefactor 250", f"{(5-ls250[0])/4:.3f} × {(1+math.sqrt(4/250))**2:.3f} = {(5-ls250[0])/4*(1+math.sqrt(4/250))**2:.3f}")
+expect("math-part4.html", "§1.6 MP prefactor 2500", f"{(5-ls2500[0])/4:.3f} × {(1+math.sqrt(4/2500))**2:.3f} = {(5-ls2500[0])/4*(1+math.sqrt(4/2500))**2:.3f}")
+expect("math-part4.html", "§1.6 cos struct250 PC1", f"<td>{hcos(X2,0):.3f}</td><td>{hcos(X2,1):.3f}</td>")
+expect("math-part4.html", "§1.6 cos noise PC3", f"<td>{hcos(noise6,0):.3f}</td><td>{hcos(noise6,1):.3f}</td><td>{hcos(noise6,2):.3f}</td>")
+det = 0
+for sd_ in range(300):
+    lv = eig_corr6(make6(250, seed=100 + sd_)); pl_ = peel(lv, 250); det += len(pl_) >= 2 and pl_[1][2]
+print(f"2·A §1.6  detection of weak factor at n=250 over 300 seeds: {det/300:.2f}")
 rng6b = np.random.default_rng(0); n25 = rng6b.standard_normal((2500, p6)); l25 = eig_corr6(n25)
 expect("math-part4.html", "§1.6 ✍️ eig", "<strong>" + ", ".join(f"{v:.3f}" for v in l25) + "</strong>")
 expect("math-part4.html", "§1.6 ✍️ ฐาน", f"ลงมาที่ <strong>{noise_p95(5,2500)[0]:.3f}</strong>")
 expect("math-part4.html", "§1.6 ✍️ λ₊", f"(1 + √(5/2500))² = {(1+math.sqrt(5/2500))**2:.3f}")
 print(f"2·A §1.6  noise eig={np.round(ln,3)} PA95={q95:.3f} fp={fp:.4f} cos noise={hcos(noise6,0):.3f}/{hcos(noise6,1):.3f} cos struct2500={hcos(X25,0):.3f}/{hcos(X25,1):.3f}/{hcos(X25,2):.3f} ✍️={np.round(l25,3)}")
+
+
+# ── 2·D §9.1½ ตระกูล β · §9.2½ distance · §9.3½ first passage + threshold ──────────────
+def _make_ex95(seed=0, n=500):
+    r_ = np.random.default_rng(seed); u_ = r_.normal(0, 2, n); e_ = r_.normal(0, 1, n)
+    s_ = np.zeros(n); A_ = np.zeros(n); A_[0] = 100
+    for t_ in range(1, n):
+        s_[t_] = 0.7 * s_[t_ - 1] + u_[t_]; A_[t_] = A_[t_ - 1] + 0.1 * s_[t_ - 1] + e_[t_]
+    return A_, 5 + 1.5 * A_ + s_
+def _hl(sp):
+    x_ = sp[:-1] - sp.mean(); y_ = sp[1:] - sp.mean(); ph = (x_ @ y_) / (x_ @ x_)
+    return ph, -math.log(2) / math.log(ph)
+def _tls(x_, y_):
+    Cv = np.cov(np.vstack([x_, y_])); v_ = np.linalg.eigh(Cv)[1][:, -1]; return v_[1] / v_[0]
+Ah, Bh = _make_ex95()
+b_ols = np.polyfit(Ah, Bh, 1)[0]; b_rev = 1 / np.polyfit(Bh, Ah, 1)[0]; b_tls = _tls(Ah, Bh)
+grid_b = np.linspace(1.3, 1.7, 4001); phis_b = np.array([_hl(Bh - b_ * Ah)[0] for b_ in grid_b]); b_min = grid_b[phis_b.argmin()]
+rows_b = [("OLS", b_ols), ("rev", b_rev), ("TLS", b_tls), ("minHL", b_min), ("true", 1.5)]
+for nm, b_ in rows_b:
+    expect("math-part9.html", f"§9.1½ β {nm}", f"<td>{b_:.4f}</td><td>{_hl(Bh - b_ * Ah)[1]:.2f} วัน" if nm != "true" else f"<td>1.5</td><td>{_hl(Bh - 1.5 * Ah)[1]:.2f} วัน")
+sp_o = Bh - np.polyval(np.polyfit(Ah, Bh, 1), Ah); expect("math-part9.html", "§9.1½ SD spread OLS", f"<td>{sp_o.std():.3f}</td>")
+expect("math-part9.html", "§9.1½ SD spread TLS", f"<td>{(Bh - Bh.mean() - b_tls * (Ah - Ah.mean())).std():.3f}</td>")
+expect("math-part9.html", "§9.1½ SD spread true", f"<td>{(Bh - 1.5 * Ah).std():.3f}</td>")
+expect("math-part9.html", "§9.1½ A range", f"ช่วง {Ah.min():.0f}–{Ah.max():.0f}")
+# noisy 60-day windows
+r11 = np.random.default_rng(11); n60 = 60
+A60 = 100 + np.cumsum(r11.normal(0, 1, n60)); B60 = 5 + 1.5 * A60 + r11.normal(0, 1, n60)
+Ao = A60 + r11.normal(0, 3, n60); Bo = B60 + r11.normal(0, 3, n60)
+expect("math-part9.html", "§9.1½ noisy OLS", f"<td>{np.polyfit(Ao, Bo, 1)[0]:.3f}</td>")
+expect("math-part9.html", "§9.1½ noisy rev", f"<td>{1/np.polyfit(Bo, Ao, 1)[0]:.3f}</td>")
+expect("math-part9.html", "§9.1½ noisy TLS", f"<td>{_tls(Ao, Bo):.3f}</td>")
+expect("math-part9.html", "§9.1½ clean OLS", f"<td>{np.polyfit(A60, B60, 1)[0]:.3f}</td>")
+expect("math-part9.html", "§9.1½ attenuation", f"9/(9 + 9) = {A60.var()/(A60.var()+9):.3f}")
+r12 = np.random.default_rng(12); ols_l, rev_l, tls_l = [], [], []
+for _ in range(2000):
+    A_ = 100 + np.cumsum(r12.normal(0, 1, n60)); B_ = 5 + 1.5 * A_ + r12.normal(0, 1, n60)
+    Ao_ = A_ + r12.normal(0, 3, n60); Bo_ = B_ + r12.normal(0, 3, n60)
+    ols_l.append(np.polyfit(Ao_, Bo_, 1)[0]); rev_l.append(1 / np.polyfit(Bo_, Ao_, 1)[0]); tls_l.append(_tls(Ao_, Bo_))
+expect("math-part9.html", "§9.1½ median OLS", f"<td><strong>{np.median(ols_l):.3f}</strong></td>")
+expect("math-part9.html", "§9.1½ median rev", f"<td><strong>{np.median(rev_l):.3f}</strong></td>")
+expect("math-part9.html", "§9.1½ median TLS", f"<td><strong>{np.median(tls_l):.3f}</strong></td>")
+# units
+dAh, dBh = np.diff(Ah), np.diff(Bh)
+b_dl = np.polyfit(dAh, dBh, 1)[0]; b_rt = np.polyfit(dAh / Ah[:-1], dBh / Bh[:-1], 1)[0]; b_lg = np.polyfit(np.log(Ah), np.log(Bh), 1)[0]
+expect("math-part9.html", "§9.1½ β Δ", f"<td>{b_dl:.4f}</td>")
+expect("math-part9.html", "§9.1½ β return", f"<td>{b_rt:.4f}</td>")
+expect("math-part9.html", "§9.1½ β log", f"<td>{b_lg:.4f}</td>")
+expect("math-part9.html", "§9.1½ units return", f"{b_rt:.4f} × P_B/P_A = <strong>{b_rt*Bh[-1]/Ah[-1]:.2f}</strong>")
+expect("math-part9.html", "§9.1½ units log", f"{b_lg:.4f} × P_B/P_A = {b_lg*Bh[-1]/Ah[-1]:.2f}")
+print(f"2·D §9.1½ β OLS={b_ols:.4f} rev={b_rev:.4f} TLS={b_tls:.4f} minHL={b_min:.4f} · noisy medians {np.median(ols_l):.3f}/{np.median(rev_l):.3f}/{np.median(tls_l):.3f} · β Δ={b_dl:.4f} ret={b_rt:.4f} log={b_lg:.4f}")
+# distance
+ssd_ab = ((Ah / Ah[0] - Bh / Bh[0]) ** 2).sum(); r5 = np.random.default_rng(5)
+Cw = 100 + np.cumsum(r5.normal(0, 1, 500)); Dw = 155 + np.cumsum(r5.normal(0, 2, 500)); ssd_un = ((Cw / Cw[0] - Dw / Dw[0]) ** 2).sum()
+expect("math-part9.html", "§9.2½ SSD pair", f"SSD = <strong>{ssd_ab:.3f}</strong>")
+expect("math-part9.html", "§9.2½ SSD unrelated", f"SSD = <strong>{ssd_un:.3f}</strong> — ต่างกัน {ssd_un/ssd_ab:.0f} เท่า")
+# first passage φ=0.7
+phi7 = 0.7; se7 = math.sqrt(1 - phi7 ** 2); r1 = np.random.default_rng(1); M7 = 200_000
+y7 = np.full(M7, 2.0); t7 = np.zeros(M7); al7 = np.ones(M7, bool)
+for k_ in range(1, 3000):
+    y7 = phi7 * y7 + se7 * r1.standard_normal(M7); hit = al7 & (y7 <= 0); t7[hit] = k_; al7 &= ~hit
+    if not al7.any():
+        break
+expect("math-part9.html", "§9.3½ FP φ0.7", f"<td class=\"nw\">{-math.log(2)/math.log(phi7):.2f} วัน</td><td><strong>{np.median(t7):.0f} วัน</strong></td><td>{t7.mean():.1f} วัน</td><td>{np.percentile(t7,90):.0f} วัน</td><td>{np.percentile(t7,95):.0f} วัน</td>")
+expect("math-part9.html", "§9.3½ FP φ0.9048", f"<td><strong>{np.median(t_fp):.0f} วัน</strong></td><td>{t_fp.mean():.1f} วัน</td><td>{np.percentile(t_fp,90):.0f} วัน</td><td>{np.percentile(t_fp,95):.0f} วัน</td>")
+# threshold economics (2M days)
+r21 = np.random.default_rng(21); N21 = 2_000_000; xs21 = np.empty(N21); v_ = 0.0
+for i_ in range(N21):
+    v_ = phi7 * v_ + se7 * r21.standard_normal(); xs21[i_] = v_
+def _cyc(z_):
+    pos = 0; entry = 0.0; gross = 0.0; trades = 0
+    for v_ in xs21:
+        if pos == 0:
+            if v_ >= z_: pos = -1; entry = v_; trades += 1
+            elif v_ <= -z_: pos = 1; entry = v_; trades += 1
+        elif (pos == -1 and v_ <= 0) or (pos == 1 and v_ >= 0):
+            gross += (entry - v_) if pos == -1 else (v_ - entry); pos = 0
+    return trades, gross
+zs = (0.5, 1.0, 1.5, 2.0, 2.5, 3.0); cyc = {z_: _cyc(z_) for z_ in zs}
+um9 = lambda v: f"{v:.1f}".replace("-", "−")
+for c_ in (0, 0.5, 1.0, 1.5, 2.0):
+    nets = [(cyc[z_][1] - c_ * cyc[z_][0]) / N21 * 1000 for z_ in zs]; best = zs[int(np.argmax(nets))]
+    cells = "".join(f"<td>{'<strong>' if z_ == best else ''}{um9(nv)}{'</strong>' if z_ == best else ''}</td>" for z_, nv in zip(zs, nets))
+    expect("math-part9.html", f"§9.3½ threshold c={c_}", cells + f'<td class="nw">{best}</td>')
+expect("math-part9.html", "§9.3½ trades/1000d", "จำนวนรอบต่อ 1,000 วัน: " + " · ".join(f"{cyc[z_][0]/N21*1000:.1f}" + (" (z = 0.5)" if z_ == 0.5 else (" (z = 3)" if z_ == 3.0 else "")) for z_ in zs))
+expect("math-part9.html", "§9.3½ per-trade", "กำไรต่อรอบ " + " · ".join(f"{cyc[z_][1]/cyc[z_][0]:.2f}" for z_ in zs) + " SD")
+print(f"2·D §9.3½ FP φ0.7 median={np.median(t7):.0f} mean={t7.mean():.1f} p90={np.percentile(t7,90):.0f} p95={np.percentile(t7,95):.0f} · threshold best z by c: " + " ".join(f"c={c_}:{zs[int(np.argmax([(cyc[z_][1]-c_*cyc[z_][0]) for z_ in zs]))]}" for c_ in (0,0.5,1.0,1.5,2.0)))
 
 
 def main():
