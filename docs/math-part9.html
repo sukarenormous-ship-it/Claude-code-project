@@ -1127,13 +1127,108 @@ print(f"φ ที่ VECM บอกเป็นนัย = {phi:.4f} → คร�
 </details></div>
 </div>
 
+<h3 id="s9-5b">9.5½ Johansen — เมื่อคู่ไม่พอ และตะกร้าที่ประหยัดขา</h3>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> §9.1 ทดสอบทีละคู่ · §9.5 บอกว่าเกินสองตัวต้องใช้ Johansen แล้วส่งคุณไป statsmodels · หัวข้อนี้เดินเลขให้ดูจริง ๆ ว่า Johansen ทำอะไร ด้วยตะกร้า 3 ตัวที่รู้คำตอบ และแสดงกรณีที่ทำให้มันจำเป็น: <strong>สามคู่ที่ทดสอบทีละคู่แล้วสอบตกทั้งหมด แต่ตะกร้าทั้งสามคือ cointegrated จริง</strong> · ปิดด้วยการ์ดสั้นเรื่องตะกร้าที่ "ประหยัดขา" (sparse portfolio) — เพราะตะกร้า 30 ตัวที่ทุกตัวมีน้ำหนักคือ 60 fills ต่อรอบ</p>
+
+<div class="fm">VECM ของ k อนุกรม:   Δyₜ = μ + Π yₜ₋₁ + (พจน์ VAR) + εₜ        Π เป็นเมทริกซ์ k × k
+rank(Π) = r  =  จำนวน cointegrating vector       r = 0 ไม่มีเลย · r = k ทุกตัวนิ่งอยู่แล้ว · 0 &lt; r &lt; k คือกรณีที่เทรดได้
+Π = α βᵀ      β (k × r) = เวกเตอร์ที่ทำให้ βᵀyₜ นิ่ง · α (k × r) = ความเร็วปรับตัวของแต่ละขา (γ ของ §9.5 ในรูปเมทริกซ์)
+
+trace statistic ทดสอบ H₀: rank ≤ r      λ_trace(r) = −T Σ_{i &gt; r} ln(1 − λ̂ᵢ)       เทียบตารางค่าวิกฤตของ Johansen ไม่ใช่ตาราง ADF</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เดลตา-วาย เท่ากับ มิว บวก พาย คูณ วาย เมื่อวาน บวก … บวก เอปไซลอน" — yₜ เป็นเวกเตอร์ราคาทั้ง k ตัว Π (พายใหญ่) เป็นเมทริกซ์ ไม่ใช่ 3.1416 · <strong>โครงที่ต้องเห็น:</strong> นี่คือ VECM ของ §9.5 ที่เขียนรวมทุกขา — บรรทัด Π = αβᵀ คือการแยก "ใครปรับ (α)" จาก "ปรับเข้าหาอะไร (β)" ซึ่ง §9.5 ทำด้วยมือทีละขา · rank ของ Π คือจำนวนความสัมพันธ์ระยะยาวที่ซ่อนอยู่ ตะกร้า k ตัวมีได้ตั้งแต่ 0 ถึง k − 1 (ถ้า rank = k ราคาทุกตัวนิ่งเอง ไม่ต้องทำ spread) · λ̂ᵢ คือ eigenvalue ของปัญหา regression แบบลดอันดับ อ่านว่า "ความแรงของความสัมพันธ์ตัวที่ i" — ตัวที่ใกล้ 0 คือทิศที่ไม่นิ่ง · <strong>กับดักการอ่าน:</strong> λ ที่นี่เป็น eigenvalue ตัวเดียวกับ <a href="math-part4.html#s1-4">2 · A §1.4</a> ในเชิงคณิต แต่มาจากเมทริกซ์คนละตัว (ไม่ใช่ covariance ของราคา) จึงมีค่าอยู่ใน [0, 1) และ<em>ไม่ใช่</em>เปอร์เซ็นต์ variance · trace statistic ทดสอบ "ไม่เกิน r" เรียงจาก r = 0 ขึ้นไป หยุดที่ค่าแรกที่ปฏิเสธไม่ได้ — อ่านผลจากบนลงล่าง ไม่ใช่เลือกแถวที่ชอบ · Σ_{i &gt; r} คือรวมเฉพาะ eigenvalue ที่<em>เล็กกว่า</em> r ตัวแรก</p>
+
+<div class="bx ba"><div class="bt">🧮 เดินเลขจริง — ตะกร้า 3 ตัวที่รู้คำตอบ (seed 4 · 500 วัน)</div>
+<p>A และ B เดินสุ่มอิสระกัน · C = 10 + 0.5·A + 0.8·B + spread ที่เป็น OU φ = 0.8 (ครึ่งชีวิต 3.11 วัน) · คำตอบที่ฝังไว้: cointegrating vector หนึ่งตัว [0.5, 0.8, −1] · rank = 1</p>
+<p><strong>ขั้น 1 — ทดสอบทีละคู่แบบ §9.1</strong> (Engle-Granger ผ่าน <code>coint</code>):</p>
+<div class="tw"><table>
+<tr><th>คู่</th><th>t</th><th>p-value</th><th>ผล</th></tr>
+<tr><td class="nw">A กับ B</td><td>−0.96</td><td>0.910</td><td>ไม่ cointegrated (ถูก — ทั้งคู่เดินสุ่มอิสระ)</td></tr>
+<tr><td class="nw">A กับ C</td><td>−1.47</td><td>0.773</td><td>ไม่ cointegrated</td></tr>
+<tr><td class="nw">B กับ C</td><td>−1.83</td><td>0.613</td><td>ไม่ cointegrated</td></tr>
+</table></div>
+<p><strong>สอบตกทั้งสามคู่</strong> — ถูกต้องตามตัวมันเอง เพราะ C ผูกกับ A <em>และ</em> B พร้อมกัน ตัดใครออกตัวหนึ่ง spread ที่เหลือก็มี random walk อีกตัวปนอยู่ · คนที่สแกนเฉพาะคู่จะไม่มีวันเจอความสัมพันธ์นี้</p>
+<p><strong>ขั้น 2 — Johansen บนทั้งสาม</strong> (<code>coint_johansen(Y, det_order=0, k_ar_diff=0)</code> · ค่าคงที่ · ไม่มีพจน์ VAR):</p>
+<div class="tw"><table>
+<tr><th>H₀</th><th>λ̂</th><th>trace</th><th>ค่าวิกฤต 95%</th><th>ผล</th></tr>
+<tr><td class="nw">rank ≤ 0</td><td>0.1082</td><td><strong>67.65</strong></td><td>29.80</td><td>ปฏิเสธ → มีอย่างน้อย 1</td></tr>
+<tr><td class="nw">rank ≤ 1</td><td>0.0185</td><td><strong>10.49</strong></td><td>15.49</td><td>ปฏิเสธไม่ได้ → <strong>หยุด: rank = 1</strong></td></tr>
+<tr><td class="nw">rank ≤ 2</td><td>0.0024</td><td>1.18</td><td>3.84</td><td>(ไม่ต้องดูแล้ว)</td></tr>
+</table></div>
+<p><strong>ขั้น 3 — อ่าน β</strong> · eigenvector ตัวแรกปรับให้สัมประสิทธิ์ของ C = −1: <strong>[0.488, 0.733, −1]</strong> เทียบค่าจริง [0.5, 0.8, −1] · spread = 0.488·A + 0.733·B − C มี φ = 0.7985 → ครึ่งชีวิต <strong>3.08 วัน</strong> (จริง 3.11) · เทียบกับ OLS แบบ Engle-Granger สามตัวแปร (regress C บน A, B): [0.488, 0.752] — ใกล้กันในตัวอย่างนี้ เพราะ noise เล็กและความสัมพันธ์แน่น ต่างกันมากขึ้นเมื่อมี noise ในทุกขา (§9.1½)</p>
+<p><strong>ขั้น 4 — ใส่ตัวที่ไม่เกี่ยวเพิ่ม</strong> · เติม D ที่เดินสุ่มอิสระเป็นตัวที่สี่: trace = [79.44, 18.83, 7.79, 1.98] เทียบ [47.85, 29.80, 15.49, 3.84] → ปฏิเสธแถวแรก แถวสองไม่ปฏิเสธ → rank ยังเป็น 1 · Johansen ไม่ถูกหลอกให้เห็นความสัมพันธ์เพิ่มจากตัวที่ไม่เกี่ยว แต่สังเกตว่า trace แถวสองขึ้นจาก 10.49 เป็น 18.83 — ใส่ตัวแปรที่ไม่เกี่ยวมากพอ วันหนึ่งมันจะข้าม 29.80 โดยบังเอิญ (ปัญหาเดียวกับ <a href="math-part4.html#s1-6">2 · A §1.6</a>: ยิ่ง k มาก noise ยิ่งสร้าง "ความสัมพันธ์" ได้ใหญ่)</p></div>
+
+<div class="code"><div class="hdr">🐍 Python — Johansen บนตะกร้าที่รู้คำตอบ</div><pre><span class="c"># pip install numpy statsmodels</span>
+import numpy as np
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from statsmodels.tsa.stattools import coint
+
+rng = np.random.default_rng(4); n = 500
+A = 100 + np.cumsum(rng.normal(0, 1, n))           <span class="c"># เดินสุ่ม</span>
+B = 80 + np.cumsum(rng.normal(0, 1.2, n))          <span class="c"># เดินสุ่ม อิสระจาก A</span>
+u = rng.normal(0, 1, n); s = np.zeros(n)
+for t in range(1, n): s[t] = 0.8 * s[t-1] + u[t]   <span class="c"># OU φ = 0.8</span>
+C = 10 + 0.5 * A + 0.8 * B + s                    <span class="c"># ★ ผูกกับทั้งสองตัว</span>
+Y = np.column_stack([A, B, C])
+
+for i, j, nm in [(0, 1, "A,B"), (0, 2, "A,C"), (1, 2, "B,C")]:
+    t, p, _ = coint(Y[:, i], Y[:, j]); print(f"คู่ {nm}: t = {t:.2f}  p = {p:.3f}")
+<span class="o"># คู่ A,B: t = -0.96  p = 0.910   ← ทีละคู่ตกหมด</span>
+<span class="o"># คู่ A,C: t = -1.47  p = 0.773</span>
+<span class="o"># คู่ B,C: t = -1.83  p = 0.613</span>
+
+jo = coint_johansen(Y, det_order=0, k_ar_diff=0)  <span class="c"># det_order 0 = มีค่าคงที่ · k_ar_diff 0 = ไม่มีพจน์ VAR</span>
+print("eigenvalues", jo.eig.round(4))
+print("trace      ", jo.lr1.round(2))                <span class="c"># H0: rank ≤ 0, ≤ 1, ≤ 2</span>
+print("crit 95%   ", jo.cvt[:, 1].round(2))
+<span class="o"># eigenvalues [0.1082 0.0185 0.0024]</span>
+<span class="o"># trace       [67.65 10.49  1.18]</span>
+<span class="o"># crit 95%    [29.8  15.49  3.84]      → rank = 1</span>
+beta = jo.evec[:, 0] / -jo.evec[2, 0]             <span class="c"># ปรับให้ C = −1</span>
+print("β =", beta.round(3))                        <span class="o"># β = [ 0.488  0.733 -1.   ]   (จริง 0.5, 0.8, −1)</span></pre></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li><strong>ใช้ตาราง ADF กับ trace statistic</strong> — คนละการแจกแจง · statsmodels ให้ <code>cvt</code> มาแล้วอย่าไปเทียบ −2.86</li>
+<li><strong>rank ที่ได้ขึ้นกับจำนวน lag และแบบของค่าคงที่</strong> (<code>k_ar_diff</code>, <code>det_order</code>) — ตัวอย่างนี้ใช้ lag 1 ได้ trace 63.62 / 8.54 / 1.47 คำตอบเดิม แต่กับข้อมูลจริงมันพลิกได้ · ล็อกทั้งสองก่อนดูผล (บทเรียน AIC/BIC ของ <a href="#s8-5">§8.5</a>) และรายงานว่า rank ทนต่อการเปลี่ยน lag ไหม</li>
+<li><strong>rank = 2 ในตะกร้า 3 ตัวไม่ได้แปลว่ามีสอง spread ให้เทรดแยกกัน</strong> — β สองคอลัมน์ไม่ unique (ผลรวมเชิงเส้นของมันก็เป็น cointegrating vector) ต้องเลือกโดยมีเหตุผลทางเศรษฐศาสตร์ ไม่ใช่เอาตามที่ eigenvector ออกมา</li>
+<li><strong>k ใหญ่ T สั้น</strong> — พารามิเตอร์ของ Π คือ k² ตัว ตะกร้า 10 ตัวบนข้อมูล 1 ปีคือ 100 ตัวจาก 250 จุด · ค่าวิกฤตในตารางเป็นค่าเชิงลิมิต (T → ∞) กับ T เล็กจะปฏิเสธบ่อยเกินจริง</li>
+</ul></div>
+
+<p>เมื่อ rank = 1 ในตะกร้า 30 ตัว β จะมี 30 ตัวเลขที่ไม่เป็นศูนย์ทั้งหมด — และนั่นคือปัญหาถัดไป</p>
+
+<div class="card">
+<h3>Sparse mean-reverting portfolio — ตะกร้าที่ประหยัดขา <span class="yr">d'Aspremont 2011</span> <span class="lvl">★★ ควรรู้</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"Johansen และ Box-Tiao ให้ตะกร้าที่นิ่งที่สุด<em>โดยไม่สนว่าใช้กี่ตัว</em> · ของจริงทุกตัวที่มีน้ำหนักคือสอง fills ต่อรอบ ค่ายืมหุ้น และความเสี่ยงที่ตัวนั้นเปลี่ยนพฤติกรรม — ตะกร้าที่นิ่งกว่า 5% แต่ใช้หุ้น 30 ตัวแทน 4 ตัว แพ้หลังหักต้นทุน · sparse portfolio คือการใส่เงื่อนไข 'ใช้ได้ไม่เกิน k ตัว' เข้าไปในการหาตะกร้าที่นิ่ง"</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก — คำถามที่ค้างจากบทนี้</div>
+<p>§9.3 คำนวณไว้ว่า pairs 21 เทรดคือ 84 fills และต้นทุน 25 bps กินกำไรไปครึ่ง · ตะกร้า Johansen 30 ตัวคือ 60 fills <em>ต่อรอบ</em> และ β 30 ตัวที่ประมาณจากข้อมูลจำกัดแต่ละตัวมีช่วงความเชื่อมั่นของตัวเอง (<a href="math-part8.html#s6-4">2 · C §6.4</a>) · ตะกร้าที่ "นิ่งที่สุดในตัวอย่าง" จึงมักเป็นตะกร้าที่ overfit ที่สุดและแพงที่สุดพร้อมกัน · sparse คือคำตอบของคำถาม "ตัดเหลือกี่ตัวแล้วยังนิ่งพอ"</p></div>
+
+<div class="bx bb"><div class="bt">🔧 มันแก้อะไร ต้องสมมติอะไรเพิ่ม</div>
+<ul>
+<li><strong>แก้:</strong> ต้นทุนและ overfit ที่โตตามจำนวนขา — โดยหาน้ำหนัก w ที่ทำให้ spread wᵀy ทำนายได้น้อยสุด (Box-Tiao ของ §9.1½ ในหลายมิติ) <em>ภายใต้</em>เงื่อนไขว่า w มีสมาชิกไม่เป็นศูนย์ไม่เกิน k</li>
+<li><strong>สมมติเพิ่ม:</strong> ความสัมพันธ์ระยะยาวที่ดีพอ "มีอยู่" ในหุ้นย่อยไม่กี่ตัว ไม่ได้กระจายบางเท่ากันทั้งตะกร้า — ถ้าความจริงคือทุกตัวมีส่วนเล็ก ๆ เท่ากัน การบีบให้เหลือ k ตัวจะทิ้งความนิ่งไปมาก</li>
+<li><strong>ราคาที่จ่าย:</strong> ปัญหาที่มีเงื่อนไขนับจำนวนเป็น NP-hard ต้องใช้ตัวคลาย (relaxation) เช่นบทลงโทษ L1 แบบ Lasso ของ <a href="math-part11.html#s14-3">2 · F §14.3</a> หรือ greedy search — คำตอบที่ได้เป็น "ดีพอ" ไม่ใช่ "ดีที่สุด" และขึ้นกับ k ที่คุณเลือก ซึ่งเป็นพารามิเตอร์อีกตัวที่ต้องล็อกก่อน backtest</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>เลือก k จากผล backtest (จูน k = 3, 4, 5, … แล้วเลือกที่กำไรสูงสุด) — นี่คือ "จูน 50 แบบ" ของ <a href="nq-appendix-indicators.html">NQ App E</a> ในอีกชื่อ · บีบจนเหลือ 2 ตัวแล้วเรียกมันว่า pairs — คุณกลับมาที่ §9.1 พร้อม selection bias จากการค้นทั่วตะกร้า · ใช้ sparsity แทนการคิดต้นทุนจริง — จำนวนขาน้อยช่วยเรื่อง fills แต่ไม่ช่วยเรื่องขายืมไม่ได้ (§9.3 ข้อ SBL)</p></div>
+
+<div class="bx bg"><div class="bt">✅ เมื่อไรไม่จำเป็น</div>
+<p>ตะกร้าเล็ก (k ≤ 4) — Johansen ธรรมดาพอ · ต้นทุนต่อขาต่ำมากและยืมได้ทุกตัว — ความนิ่งชนะความประหยัด · ไม่มีเวลาทำ baseline: ก่อนใช้ sparse ต้องเทียบกับ distance method (<a href="#s9-2b">§9.2½</a>) และ Johansen เต็มบนข้อมูลนอกตัวอย่าง ถ้าสามตัวไม่ต่างกันหลังหักต้นทุน ความซับซ้อนที่เพิ่มไม่ได้จ่ายค่าตัว (เกณฑ์ข้อ 8 ของ<a href="curriculum-map.html">แผนที่หลักสูตร</a>)</p></div>
+
+<p style="font-size:.92em;color:var(--g7)">📚 <strong>ต้นฉบับ:</strong> d'Aspremont, A. (2011) "Identifying Small Mean-Reverting Portfolios" <em>Quantitative Finance</em> 11(3), 351–364 — ตั้งปัญหา Box-Tiao แบบมีเงื่อนไขจำนวนขา และวิธีคลายด้วย semidefinite relaxation · Johansen, S. (1988) "Statistical Analysis of Cointegration Vectors" <em>Journal of Economic Dynamics and Control</em> 12, 231–254 — trace test และการแยก Π = αβᵀ ที่ใช้ในหัวข้อนี้</p>
+</div>
+
 <div class="bx bg"><div class="bt">🎯 5 อย่างที่ต้องจำจากบทที่ 9</div>
 <ul>
 <li><strong>Cointegration = ราคาไม่นิ่งทั้งคู่ แต่ spread นิ่ง</strong> — ทดสอบด้วย <code>coint()</code> <strong>ไม่ใช่</strong> <code>adfuller()</code> บน residual (ซึ่งเจอของปลอมมากกว่าที่ควร 3 เท่า)</li>
 <li><strong>regression ให้ hedge ratio</strong> — β จาก เล่ม 2 · A กลับมาเป็นอัตราส่วนถือ/ขายจริง · <strong>และดู<u>ครึ่งชีวิต</u>ทุกครั้ง</strong> — ถ้าเกิน 60 วัน อย่าเทรด ไม่ว่าสถิติจะสวยแค่ไหน</li>
 <li><strong>z-score เปลี่ยน spread เป็นสัญญาณ</strong> — และต้องมี stop เสมอ เพราะความสัมพันธ์ขาดได้ · <strong>backtest ที่ชนะ 100% และ drawdown = 0 คือหลักฐานว่าข้อมูลผิด ไม่ใช่ว่ากลยุทธ์ดี</strong></li>
 <li><strong>β ไม่นิ่ง — ให้ Kalman filter อัปเดตมันทุกวัน</strong> (<a href="#s9-4">§9.4</a>) · โครงคือ EMA ที่น้ำหนักปรับเอง: ค่าเก่า + K × (ของจริง − ที่ทาย) · Q/R คือคำนิยามว่าอะไรคือความสัมพันธ์ อะไรคือโอกาส — ตั้ง Q ใหญ่เกิน spread จะหายทั้งที่โอกาสยังอยู่</li>
-<li><strong>VECM แยก mean reversion ออกเป็นสองขา</strong> (<a href="#s9-5">§9.5</a>) · ΔB และ ΔA ต่างมี spread เมื่อวานอยู่ทางขวา ตัวคูณ γ บอกว่าขาไหนวิ่งตาม ขาไหนเป็นตัวลาก · γ<sub>B</sub> − β·γ<sub>A</sub> = φ − 1 — กำไรรวมของ spread เท่าเดิม แต่รู้แล้วว่ามันมาจากขาไหน · ต้องผ่าน <code>coint()</code> ก่อน ไม่งั้นพจน์ที่เพิ่มมาคือ spurious</li>
+<li><strong>VECM แยก mean reversion ออกเป็นสองขา</strong> (<a href="#s9-5">§9.5</a>) · เกินสองตัวใช้ Johansen หา rank ก่อน (<a href="#s9-5b">§9.5½</a> — สามคู่สอบตกทีละคู่ แต่ตะกร้า cointegrated) · ΔB และ ΔA ต่างมี spread เมื่อวานอยู่ทางขวา ตัวคูณ γ บอกว่าขาไหนวิ่งตาม ขาไหนเป็นตัวลาก · γ<sub>B</sub> − β·γ<sub>A</sub> = φ − 1 — กำไรรวมของ spread เท่าเดิม แต่รู้แล้วว่ามันมาจากขาไหน · ต้องผ่าน <code>coint()</code> ก่อน ไม่งั้นพจน์ที่เพิ่มมาคือ spurious</li>
 </ul></div>
 
 <!-- ═══════════════ ปิดเล่ม 2 · D ═══════════════ -->

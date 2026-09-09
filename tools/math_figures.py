@@ -4,11 +4,14 @@
 
 ครอบคลุม: 2·A §2.1 β/α · §2.2 multiple regression + multicollinearity · §1.3 wᵀΣw ·
 2·B §4.2½ min-variance · 2·C §5.5 DR portfolio · 2·D §9.4 Kalman (มือ + จำลอง) ·
-2·F §14.6 logistic (ตาราง sigmoid + fit + calibration)
+2·F §14.6 logistic (ตาราง sigmoid + fit + calibration) · 2·A §1.4 PCA · §1.6 Factor or Noise ·
+§1.7 PC→พอร์ต · 2·D §9.1½ β หลายตัว · §9.2½ distance · §9.3½ first passage/threshold ·
+§9.5½ Johansen · Arb §1.5 σ/√N และ P(v<0)
 
 ใช้:  python3 tools/math_figures.py          → พิมพ์ค่าและตรวจทุกไฟล์ (exit 1 ถ้าไม่ตรง)
       python3 tools/math_figures.py --print  → พิมพ์ค่าอย่างเดียว
 ต้องมี numpy (pip install numpy) เพราะ 2·D/2·F ใช้สายสุ่มของ numpy.random.default_rng
+บล็อก 2·D §9.5½ (Johansen) ต้องมี statsmodels ด้วย — ถ้าไม่มีจะข้ามพร้อมเตือน ไม่ล้ม
 """
 import math
 import os
@@ -566,6 +569,38 @@ for p_ in (5, 50):
             else:
                 expect("math-part4.html", "§1.7 win250", f"ครึ่งชีวิตค่ากลาง <strong>{mA:.0f} วัน</strong> และผ่านเกณฑ์ &lt; 30 วันแค่ <strong>{int(round(shA*nA))} ใน {nA}</strong> หน้าต่าง ส่วน OU จริงยังให้ค่ากลาง {mB:.1f} วัน ผ่าน {int(round(shB*nB))} ใน {nB}")
 print("2·A §1.7  case B:", [(p_, round(ph, 4), round(t_, 2), round(h, 1), round(c_, 2)) for p_, ph, t_, h, c_ in rowsB])
+
+
+# ── 2·D §9.5½ Johansen บนตะกร้า 3 ตัว (ต้องมี statsmodels) ────────────────────────
+try:
+    from statsmodels.tsa.vector_ar.vecm import coint_johansen
+    from statsmodels.tsa.stattools import coint as _coint
+    rj = np.random.default_rng(4); nj = 500
+    Aj = 100 + np.cumsum(rj.normal(0, 1, nj)); Bj = 80 + np.cumsum(rj.normal(0, 1.2, nj))
+    uj = rj.normal(0, 1, nj); sj = np.zeros(nj)
+    for t_ in range(1, nj): sj[t_] = 0.8 * sj[t_ - 1] + uj[t_]
+    Cj = 10 + 0.5 * Aj + 0.8 * Bj + sj; Yj = np.column_stack([Aj, Bj, Cj])
+    umj = lambda v, f=".2f": f"{v:{f}}".replace("-", "−")
+    for i_, j_, nm in [(0, 1, "A กับ B"), (0, 2, "A กับ C"), (1, 2, "B กับ C")]:
+        tj, pj, _ = _coint(Yj[:, i_], Yj[:, j_])
+        expect("math-part9.html", f"§9.5½ EG {nm}", f"<td class=\"nw\">{nm}</td><td>{umj(tj)}</td><td>{pj:.3f}</td>")
+    jo = coint_johansen(Yj, det_order=0, k_ar_diff=0)
+    for r_ in range(3):
+        cell = f"<td>{jo.eig[r_]:.4f}</td><td>" + ("<strong>" if r_ < 2 else "") + f"{jo.lr1[r_]:.2f}" + ("</strong>" if r_ < 2 else "") + f"</td><td>{jo.cvt[r_,1]:.2f}</td>"
+        expect("math-part9.html", f"§9.5½ trace r≤{r_}", cell)
+    bj = jo.evec[:, 0] / -jo.evec[2, 0]
+    expect("math-part9.html", "§9.5½ β", f"<strong>[{bj[0]:.3f}, {bj[1]:.3f}, −1]</strong>")
+    spj = Yj @ bj; xj = spj[:-1] - spj.mean(); yj = spj[1:] - spj.mean(); phj = (xj @ yj) / (xj @ xj)
+    expect("math-part9.html", "§9.5½ spread HL", f"φ = {phj:.4f} → ครึ่งชีวิต <strong>{-math.log(2)/math.log(phj):.2f} วัน</strong> (จริง {-math.log(2)/math.log(0.8):.2f})")
+    bo = np.linalg.lstsq(np.column_stack([np.ones(nj), Aj, Bj]), Cj, rcond=None)[0]
+    expect("math-part9.html", "§9.5½ OLS", f"(regress C บน A, B): [{bo[1]:.3f}, {bo[2]:.3f}]")
+    jo1 = coint_johansen(Yj, det_order=0, k_ar_diff=1)
+    expect("math-part9.html", "§9.5½ lag1", f"ใช้ lag 1 ได้ trace {jo1.lr1[0]:.2f} / {jo1.lr1[1]:.2f} / {jo1.lr1[2]:.2f}")
+    Dj = 50 + np.cumsum(rj.normal(0, 1, nj)); jo4 = coint_johansen(np.column_stack([Aj, Bj, Cj, Dj]), 0, 0)
+    expect("math-part9.html", "§9.5½ 4 vars", "trace = [" + ", ".join(f"{v:.2f}" for v in jo4.lr1) + "] เทียบ [" + ", ".join(f"{v:.2f}" for v in jo4.cvt[:, 1]) + "]")
+    print(f"2·D §9.5½ eig={np.round(jo.eig,4)} trace={np.round(jo.lr1,2)} β={np.round(bj,3)} HL={-math.log(2)/math.log(phj):.2f} · 4 vars trace={np.round(jo4.lr1,2)}")
+except ImportError:
+    print("⚠️  statsmodels ไม่ได้ติดตั้ง — ข้ามบล็อก §9.5½ (pip install statsmodels)")
 
 
 def main():
