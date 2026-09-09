@@ -332,6 +332,69 @@ expect("math-part9.html", "first passage p90/p95", f"1 ใน 10 ไม้นา
 expect("math-part9.html", "first passage ≤HL", f"มีแค่ {100*(t_fp<=hl_fp).mean():.0f}% ที่ปิดภายในหนึ่งครึ่งชีวิต")
 
 
+# ── 2·A §1.6 Factor or Noise — MP edges · parallel analysis ปอกทีละชั้น · ความนิ่ง ──────
+p6 = 5
+def eig_corr6(Xm):
+    return np.linalg.eigvalsh(np.corrcoef(Xm.T))[::-1]
+def vec_corr6(Xm):
+    return np.linalg.eigh(np.corrcoef(Xm.T))[1][:, ::-1]
+def noise_p95(pp, nn, sims=1000, seed=1):
+    r_ = np.random.default_rng(seed)
+    arr = np.array([eig_corr6(r_.standard_normal((nn, pp)))[0] for _ in range(sims)])
+    return np.percentile(arr, 95), np.median(arr), arr.max()
+def peel(lam, nn):
+    out, used = [], 0.0
+    for k in range(len(lam) - 1):
+        dims = len(lam) - k
+        base = (len(lam) - used) / dims * noise_p95(dims, nn)[0]
+        out.append((lam[k], base, lam[k] > base))
+        if lam[k] <= base:
+            break
+        used += lam[k]
+    return out
+lp6 = (1 + math.sqrt(p6 / 250)) ** 2; lm6 = (1 - math.sqrt(p6 / 250)) ** 2
+expect("math-part4.html", "§1.6 λ₊", f"(1 + 0.1414)² = {lp6:.3f}")
+expect("math-part4.html", "§1.6 λ₋", f"λ₋ = {lm6:.3f}")
+rng6 = np.random.default_rng(0); noise6 = rng6.standard_normal((250, p6)); ln = eig_corr6(noise6); wn6 = vec_corr6(noise6)
+expect("math-part4.html", "§1.6 noise eig", "<td>" + "</td><td>".join(f"{v:.3f}" for v in ln) + "</td>")
+expect("math-part4.html", "§1.6 noise %", f"<strong>{ln[0]/5*100:.1f}%</strong></td><td><strong>{ln[1]/5*100:.1f}%</strong>")
+expect("math-part4.html", "§1.6 noise cum", f"{np.cumsum(ln)[1]/5*100:.1f}%</td><td>{np.cumsum(ln)[2]/5*100:.1f}%</td><td>{np.cumsum(ln)[3]/5*100:.1f}%")
+sgn = 1 if wn6[0, 1] > 0 else -1
+expect("math-part4.html", "§1.6 noise PC2", "[" + ", ".join(f"{sgn*x:.2f}".replace("-", "−") for x in wn6[:, 1]) + "]")
+q95, qmed, qmax = noise_p95(5, 250)
+expect("math-part4.html", "§1.6 PA p95", f"เปอร์เซ็นไทล์ 95 = <strong>{q95:.3f}</strong> (ค่ากลาง {qmed:.3f} · ใหญ่สุดที่เจอใน 1,000 ชุด {qmax:.2f})")
+pl = peel(ln, 250)
+expect("math-part4.html", "§1.6 noise peel", f"ฐานของ λ₂ = {(5-ln[0])/4:.3f} × {noise_p95(4,250)[0]:.3f} = <strong>{pl[1][1]:.3f}</strong>")
+r7 = np.random.default_rng(7); fp = sum(eig_corr6(r7.standard_normal((250, p6)))[0] > q95 for _ in range(2000)) / 2000
+expect("math-part4.html", "§1.6 false positive", f"ผ่านข้อแรก {fp*100:.2f}%")
+def make6(nn, seed=2):
+    r_ = np.random.default_rng(seed); f1 = r_.standard_normal(nn); f2 = r_.standard_normal(nn)
+    return np.outer(f1, np.full(p6, .8)) + np.outer(f2, .2 * np.array([-2, -1, 0, 1, 2.])) + r_.standard_normal((nn, p6))
+for nn in (250, 2500):
+    Xs = make6(nn); ls = eig_corr6(Xs); ps = peel(ls, nn); ws = vec_corr6(Xs)
+    cells = " · ".join(f"{l:.3f} · {b:.3f} {'✓' if ok else '✗'}" for l, b, ok in ps)
+    expect("math-part4.html", f"§1.6 struct n={nn}", "<td>" + "</td><td>".join(f"{l:.3f} · {b:.3f} {'✓' if ok else '✗'}" for l, b, ok in ps) + "</td>")
+    sg = 1 if ws[0, 1] < 0 else -1
+    expect("math-part4.html", f"§1.6 struct PC2 n={nn}", "[" + ", ".join(f"{sg*x:.2f}".replace("-", "−").replace("−0.00", "0.00") for x in ws[:, 1]) + "]")
+    expect("math-part4.html", f"§1.6 MP-adj n={nn}", f"{(5-ls[0])/4*(1+math.sqrt(4/nn))**2:.3f}")
+    print(f"2·A §1.6  n={nn} eig={np.round(ls,3)} peel={[(round(l,3),round(b,3),bool(o)) for l,b,o in ps]}")
+def hcos(Xm, k):
+    h = len(Xm) // 2
+    return abs(vec_corr6(Xm[:h])[:, k] @ vec_corr6(Xm[h:])[:, k])
+X25 = make6(2500); X2 = make6(250)
+expect("math-part4.html", "§1.6 cos noise", f"<td>{hcos(noise6,0):.3f}</td><td>{hcos(noise6,1):.3f}</td>")
+expect("math-part4.html", "§1.6 cos struct250", f"<td>{hcos(X2,1):.3f}</td>")
+expect("math-part4.html", "§1.6 cos struct2500", f"<td>{hcos(X25,0):.3f}</td><td>{hcos(X25,1):.3f}</td><td>{hcos(X25,2):.3f}</td>")
+r3 = np.random.default_rng(3); a3 = r3.standard_normal((20000, 5)); b3 = r3.standard_normal((20000, 5))
+c3 = np.abs((a3 * b3).sum(1)) / np.linalg.norm(a3, axis=1) / np.linalg.norm(b3, axis=1)
+expect("math-part4.html", "§1.6 cos random", f"ค่ากลาง {np.median(c3):.3f} และเปอร์เซ็นไทล์ 95 อยู่ที่ {np.percentile(c3,95):.3f}")
+rng6b = np.random.default_rng(0); n25 = rng6b.standard_normal((2500, p6)); l25 = eig_corr6(n25)
+expect("math-part4.html", "§1.6 ✍️ eig", "<strong>" + ", ".join(f"{v:.3f}" for v in l25) + "</strong>")
+expect("math-part4.html", "§1.6 ✍️ ฐาน", f"ลงมาที่ <strong>{noise_p95(5,2500)[0]:.3f}</strong>")
+expect("math-part4.html", "§1.6 ✍️ λ₊", f"(1 + √(5/2500))² = {(1+math.sqrt(5/2500))**2:.3f}")
+print(f"2·A §1.6  noise eig={np.round(ln,3)} PA95={q95:.3f} fp={fp:.4f} cos noise={hcos(noise6,0):.3f}/{hcos(noise6,1):.3f} cos struct2500={hcos(X25,0):.3f}/{hcos(X25,1):.3f}/{hcos(X25,2):.3f} ✍️={np.round(l25,3)}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
