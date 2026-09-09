@@ -303,6 +303,19 @@ p_id = sum(math.comb(101, j) * 0.55 ** j * 0.45 ** (101 - j) for j in range(0, 5
 expect("math-part11.html", "Beta↔Binomial ตัวอย่าง", f"P(Binomial(101, 0.55) ≤ 58) = {p_id:.3f}")
 
 
+# ── Arb เล่ม 1 §1.5 บันไดสามขั้น — σ_ε/√N และ P(v(T)<0) = Φ(−(μ/σ)√T) ────────
+Phi_ = lambda x: 0.5 * (1 + math.erf(x / math.sqrt(2)))
+for N_ in (1, 2, 10, 100, 1000):
+    v_ = 30 / math.sqrt(N_)
+    expect("arb-part1.html", f"§1.5 σ_ε/√N N={N_}", f"<td>{v_:.1f}%</td>" if N_ in (1, 100) else f"<td>{v_:.2f}%</td>")
+for T_ in (1, 20, 100, 252, 400, 1000):
+    expect("arb-part1.html", f"§1.5 P(v<0) T={T_}", f"<td>{100 * Phi_(-0.1 * math.sqrt(T_)):.2f}%</td>")
+expect("arb-part1.html", "§1.5 ไตรมาส", f"63 วัน โอกาสไตรมาสติดลบ {100 * Phi_(-0.1 * math.sqrt(63)):.1f}%")
+expect("arb-part1.html", "§1.5 Sharpe ต่อปี", f"ต่อปี ≈ {0.1 * math.sqrt(252):.2f}")
+expect("arb-part1.html", "§1.5 pairs กระจาย", f"กระจายได้แค่ {100 * (1 - 1 / math.sqrt(2)):.0f}%")
+print(f"Arb §1.5  σ/√N: " + " ".join(f"{30/math.sqrt(n):.2f}" for n in (1,2,10,100,1000)) + " · P(v<0): " + " ".join(f"{100*Phi_(-0.1*math.sqrt(t)):.2f}" for t in (1,20,100,252,400,1000)))
+
+
 def main():
     if "--print" in sys.argv:
         return 0
