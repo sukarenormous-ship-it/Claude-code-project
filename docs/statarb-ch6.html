@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb บทที่ 6 — Hurst Exponent &amp; การทดสอบ Stationarity</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:var(--red-bg);border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;white-space:pre;font-size:.88em;line-height:1.7;padding:18px 22px;border-radius:10px;margin:16px 0;overflow-x:auto}
+.pseudo .kw{color:#cba6f7}
+.pseudo .fn{color:#89b4fa}
+.pseudo .cm{color:#6c7086;font-style:italic}
+.pseudo .st{color:#a6e3a1}
+.pseudo .nu{color:#fab387}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 6</div>
+<h1>Hurst Exponent &amp; การทดสอบ Stationarity</h1>
+<div class="sub">H &lt; 0.5 = Mean-Reverting &nbsp;·&nbsp; H = 0.5 = Random Walk &nbsp;·&nbsp; H &gt; 0.5 = Trending</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แนวคิดหลัก — อ่านตรงนี้ก่อน</div>
+<div class="ki-text"><strong>Hurst Exponent (H)</strong> วัด "ความจำ" ของ time series — กล่าวคือ การเคลื่อนไหวในอดีตส่งผลต่ออนาคตแค่ไหน คำนวณจาก Rescaled Range (R/S) analysis: ยิ่ง n (ขนาด window) ใหญ่ขึ้น R/S โตตาม n<sup>H</sup> ค่า H ต่ำกว่า 0.5 บ่งว่า series มีแนวโน้ม <strong>mean-revert</strong> — เหมาะกับ stat arb; H = 0.5 คือ random walk ที่เทรดไม่ได้กำไร; H เกิน 0.5 แสดงถึง trend ที่ควรใช้ momentum แทน</div>
+<div style="margin-top:10px;text-align:center">
+$$\log\!\left(\frac{R}{S}\right) = H \cdot \log(n) + C \qquad \Longrightarrow \qquad H = \text{slope ของ log-log plot}$$
+</div>
+<div class="ki-eq">H &lt; 0.5: mean-reverting &nbsp;·&nbsp; H = 0.5: random walk &nbsp;·&nbsp; H &gt; 0.5: trending</div>
+</div>
+
+<!-- 6.1 -->
+<h2 id="s6-1">6.1 H วัดอะไร — สามโหมดของ Time Series</h2>
+
+<p>Hurst exponent ถูกพัฒนาขึ้นโดย Harold Hurst จากการศึกษาวัฏจักรน้ำท่วมแม่น้ำไนล์ ในทางการเงิน H วัดว่า series มี "ความจำ" หรือเปล่า — กล่าวคือการเคลื่อนไหวในอดีตมีอิทธิพลต่ออนาคตอย่างไร ด้านล่างแสดง time series สังเคราะห์สามแบบที่แสดงสามโหมดอย่างชัดเจน</p>
+
+<img class="chart" src="charts/ch6-zscore-signal.svg">
+<div class="caption">Time series สังเคราะห์สามแบบ: mean-reverting (H≈0.3), random walk (H≈0.5), trending (H≈0.7) — แสดงให้เห็นความแตกต่างของ "ความจำ" ใน series แต่ละประเภท</div>
+
+<div class="bx bd">
+<div class="bt">ข้อปฏิบัติจริง — Rolling Window สำหรับ μ และ σ</div>
+<p>ในการเทรดจริง <strong>ห้ามใช้ข้อมูลทั้งหมดตั้งแต่ต้น</strong> ในการคำนวณ μ<sub>ε</sub> และ σ<sub>ε</sub> ให้ใช้ <strong>rolling window 30 วัน</strong> (≈ 720 บาร์รายชั่วโมงสำหรับ crypto perp) เพื่อให้ z-score ปรับตัวตาม regime ล่าสุด เช่น ถ้า funding rate เปลี่ยนเชิงโครงสร้าง ค่าเฉลี่ยของ spread จะดริฟต์ไป และ mean จากข้อมูลทั้งหมดจะหมดอายุภายในไม่กี่วัน Rolling window ช่วยให้ z-score วนรอบศูนย์อยู่เสมอ สำหรับคู่ที่ใช้บาร์ 5 นาที ใช้ window 7 วัน (2016 บาร์) ตรวจสอบโดยดูว่า |mean(z)| &lt; 0.1 บนข้อมูล out-of-sample</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — Z-score สมมติว่า residual กระจายแบบ Normal</div>
+<p>Threshold ±2 ถูก calibrate ไว้บน Normal distribution ซึ่ง P(|z|&gt;2) ≈ 4.6% แต่ในทางปฏิบัติ spread residual มี <strong>fat tail</strong> (leptokurtosis) — ความน่าจะเป็นที่จะเกิด event ขนาด 3σ สูงกว่าที่ Normal ทำนายถึง 2–5 เท่า ผลที่ตามมา: (1) entry threshold ±2 ถูก trigger บ่อยกว่าที่คิด — ทำให้ edge เจือจางลง และ (2) stop-loss ที่ ±3 เกิดบ่อยขึ้น — เพิ่ม tail risk แนวทางแก้: ใช้ robust z-score ที่ใช้ Median Absolute Deviation (MAD) เป็น denominator หรือขยาย entry เป็น ±2.5 หลังจากดู empirical exceedance rate จากประวัติ pair นั้นจริงๆ</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม H &lt; 0.5 ถึงสร้าง Edge</div>
+<p>เมื่อ H &lt; 0.5 การเคลื่อนไหวในอดีตทำนาย <em>ทิศตรงข้าม</em> ในอนาคต — ถ้า spread ขึ้น 1 standard deviation ใน bar นี้ bar ถัดไปน่าจะลง นี่คือแรงที่เราใช้ประโยชน์เมื่อ enter ที่ ±2σ และรอ reversion ยิ่ง H ต่ำ แรง mean-reversion ยิ่งแข็ง edge ต่อ trade ยิ่งสูง</p>
+</div>
+
+<!-- 6.2 -->
+<h2 id="s6-2">6.2 R/S Analysis — วิธีคำนวณ H</h2>
+
+<p><strong>สัญชาตญาณ:</strong> R = range (สูงสุด − ต่ำสุดของ cumulative sum) วัดว่า series "แพร่กระจาย" ไปไกลแค่ไหน; S = std วัด volatility ตามปกติ อัตราส่วน R/S จึงบอกว่า series แพร่กระจายผิดปกติหรือเปล่า — random walk มี R/S ∝ √n แต่ mean-reverting series มี R/S เติบโตช้ากว่า slope H &lt; 0.5 ในกราฟ log-log</p>
+
+<p>วิธี <strong>Rescaled Range (R/S)</strong> คือ algorithm มาตรฐานในการ estimate H โดยวัดจากหลาย window size n:</p>
+
+<ol>
+<li>Demean the series: y_i = x_i − mean(x_{1..n})</li>
+<li>Compute cumulative sum: Y_k = Σ y_i for i=1..k</li>
+<li>R(n) = max(Y) − min(Y) &nbsp;(range of cumulative sum)</li>
+<li>S(n) = std(x_{1..n}) &nbsp;(standard deviation)</li>
+<li>Rescaled range = R(n) / S(n)</li>
+</ol>
+
+<p>Repeat for many window sizes n, then fit: <strong>log(R/S) = H · log(n) + C</strong>. The slope H is the Hurst exponent.</p>
+
+<img class="chart" src="charts/ch6-zscore-dist.svg">
+<div class="caption">R/S log-log plot: แกน x = log(n), แกน y = log(R/S) — slope ของเส้นที่ fit คือ Hurst exponent H; ตัวอย่างแสดง H ≈ 0.35 (mean-reverting spread)</div>
+
+<!-- 6.3 -->
+<h2 id="s6-3">6.3 ADF Test + KPSS Test — ยืนยันสองชั้น</h2>
+
+<p>ADF และ KPSS มี <strong>null hypothesis ตรงกันข้าม</strong> การใช้ทั้งสองพร้อมกันให้คำตอบที่แน่นกว่าเรื่อง stationarity</p>
+
+<table>
+<tr><th>การทดสอบ</th><th>H₀ (สมมติฐานว่าง)</th><th>Reject H₀ หมายความว่า</th><th>เราต้องการ</th></tr>
+<tr><td><strong>ADF</strong></td><td>Series ไม่ stationary (มี unit root)</td><td>Series IS stationary</td><td>p-value &lt; 0.05 (reject)</td></tr>
+<tr><td><strong>KPSS</strong></td><td>Series IS stationary</td><td>Series ไม่ stationary</td><td>p-value &gt; 0.05 (fail to reject)</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">แปลผลรวม — สี่กรณี</div>
+<table style="margin:8px 0">
+<tr><th>ผล ADF</th><th>ผล KPSS</th><th>ข้อสรุป</th><th>เทรดได้?</th></tr>
+<tr><td>Reject (p &lt; 0.05)</td><td>Fail to reject (p &gt; 0.05)</td><td><strong>Stationary แน่นหนา</strong></td><td>ได้</td></tr>
+<tr><td>Reject (p &lt; 0.05)</td><td>Reject (p &lt; 0.05)</td><td>ขอบเขต / short memory</td><td>ระวัง ลด size</td></tr>
+<tr><td>Fail to reject</td><td>Fail to reject (p &gt; 0.05)</td><td>ไม่ชัดเจน — เก็บข้อมูลเพิ่ม / ขยาย window</td><td>ไม่ / รอก่อน</td></tr>
+<tr><td>Fail to reject</td><td>Reject (p &lt; 0.05)</td><td><strong>ไม่ stationary ชัดเจน</strong></td><td>ห้ามเด็ดขาด</td></tr>
+</table>
+</div>
+
+<!-- 6.4 -->
+<h2 id="s6-4">6.4 ตารางแปลผล — ช่วง H สู่การตัดสินใจเทรด</h2>
+
+<table>
+<tr><th>ช่วง H</th><th>พฤติกรรม</th><th>การตัดสินใจเทรด</th><th>Half-Life โดยประมาณ</th></tr>
+<tr><td>H &lt; 0.35</td><td>Mean-reverting แข็งมาก</td><td>เทรดได้เต็มที่ ใช้ band แคบลงได้</td><td>สั้นมาก (ชั่วโมง)</td></tr>
+<tr><td>0.35 ≤ H &lt; 0.45</td><td>Mean-reverting ระดับปานกลาง</td><td>เทรดปกติ ใช้ band มาตรฐาน</td><td>สั้นถึงปานกลาง</td></tr>
+<tr><td>0.45 ≤ H &lt; 0.55</td><td>ใกล้ random walk — ไม่แน่นอน</td><td>ลด size ต้องการ ADF ยืนยัน</td><td>ยาวหรือไม่น่าเชื่อถือ</td></tr>
+<tr><td>0.55 ≤ H &lt; 0.65</td><td>มีแนวโน้ม (trending) เล็กน้อย</td><td>ห้ามเทรด mean-reversion</td><td>N/A (เทรด trend แทน)</td></tr>
+<tr><td>H ≥ 0.65</td><td>Trending แข็ง</td><td>ทิ้ง pair นี้ หาคู่ใหม่</td><td>N/A</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ข้อควรระวัง: คำนวณ H ใหม่ทุกเดือน</div>
+<p>H ไม่คงที่ตลอดไป pair ที่มี H = 0.33 เดือนที่แล้ว อาจเปลี่ยนเป็น H = 0.51 หลังเกิด structural break (นโยบาย exchange เปลี่ยน ค่า fee ปรับโครงสร้าง หรือ liquidity event ขนาดใหญ่) ควรคำนวณ H ใหม่บน rolling 90-day window เสมอ และแจ้งเตือนถ้า H ทะลุ 0.45</p>
+</div>
+
+<!-- Pseudo-code -->
+<h2 id="s6-pc">6.5 Pseudo-Code: hurst_rs() และ check_stationarity()</h2>
+
+<div class="pseudo">
+<span class="kw">function</span> <span class="fn">hurst_rs</span>(series, min_window=<span class="nu">10</span>):
+    <span class="cm"># series: array of log-prices or spread values</span>
+    n_total = len(series)
+    window_sizes = [<span class="nu">10</span>, <span class="nu">20</span>, <span class="nu">40</span>, <span class="nu">80</span>, <span class="nu">160</span>, <span class="nu">320</span>]  <span class="cm"># geometric spacing</span>
+    log_n_list = []
+    log_rs_list = []
+
+    <span class="kw">for</span> n <span class="kw">in</span> window_sizes:
+        <span class="kw">if</span> n &gt;= n_total: <span class="kw">continue</span>
+        rs_values = []
+
+        <span class="cm"># Slide window (non-overlapping). ถ้าต้องการ H แม่นยำขึ้น</span>
+        <span class="cm"># ใช้ overlapping windows (step=1) แต่ช้ากว่า O(n²)</span>
+        <span class="kw">for</span> start <span class="kw">in</span> range(<span class="nu">0</span>, n_total - n, n):
+            chunk = series[start : start + n]
+            demeaned = chunk - mean(chunk)
+            cumsum  = cumulative_sum(demeaned)
+            R = max(cumsum) - min(cumsum)
+            S = std(chunk)
+            <span class="kw">if</span> S &gt; <span class="nu">0</span>:
+                rs_values.append(R / S)
+
+        <span class="kw">if</span> len(rs_values) &gt; <span class="nu">0</span>:
+            log_n_list.append(log(n))
+            # ✅ FIX: mean(log(RS)) ไม่ใช่ log(mean(RS))
+            # log(mean(x)) ≠ mean(log(x)) โดย Jensen's inequality
+            # การใช้ log(mean()) จะ bias H สูงขึ้น (overestimate mean-reversion)
+            log_rs_list.append(mean([log(x) <span class="kw">for</span> x <span class="kw">in</span> rs_values]))
+
+    <span class="cm"># OLS regression: log(R/S) = H * log(n) + const</span>
+    H, const = ols_slope_intercept(log_n_list, log_rs_list)
+    <span class="kw">return</span> H
+
+
+<span class="kw">function</span> <span class="fn">check_stationarity</span>(series):
+    H    = hurst_rs(series)
+    adf_p  = adf_test(series).p_value
+    kpss_p = kpss_test(series).p_value
+
+    tradeable = (H &lt; <span class="nu">0.45</span>) <span class="kw">and</span> (adf_p &lt; <span class="nu">0.05</span>) <span class="kw">and</span> (kpss_p &gt; <span class="nu">0.05</span>)
+    <span class="kw">return</span> {<span class="st">"H"</span>: H, <span class="st">"adf_p"</span>: adf_p, <span class="st">"kpss_p"</span>: kpss_p, <span class="st">"tradeable"</span>: tradeable}
+</div>
+
+<!-- 6.6 Bootstrap CI -->
+<h2 id="s6-6">6.6 Confidence Interval สำหรับ H — Bootstrap Test</h2>
+
+<p>H = 0.31 กับ H = 0.35 <strong>อาจแยกไม่ออกทางสถิติ</strong> เพราะ R/S estimator มี noise โดยเฉพาะเมื่อ sample size น้อย การรายงาน H โดยไม่มี SE หรือ CI อาจทำให้ตัดสินใจ trade ผิด</p>
+
+<div class="bx bb">
+<div class="bt">Bootstrap CI สำหรับ H — แนวคิด</div>
+<ol>
+<li><strong>Resample:</strong> สุ่มดึง bootstrap sample ขนาดเท่า original (with replacement) ทำ B = 500 รอบ</li>
+<li><strong>Compute H:</strong> คำนวณ H จาก R/S analysis ทุก bootstrap sample → ได้ distribution {H₁, H₂, …, H_B}</li>
+<li><strong>SE(H):</strong> SE = std({H₁, …, H_B})</li>
+<li><strong>95% CI:</strong> [H − 1.96·SE, H + 1.96·SE]</li>
+</ol>
+<p><strong>Rule:</strong> CI ต้อง <strong>ทั้งหมดอยู่ต่ำกว่า 0.5</strong> ถึงจะ trade ได้อย่างมั่นใจ ถ้า CI ทะลุ 0.5 ให้ลดขนาด position หรือรอ sample เพิ่ม</p>
+</div>
+
+<div class="pseudo">
+<span class="kw">function</span> <span class="fn">hurst_bootstrap_ci</span>(series, B=<span class="nu">500</span>, confidence=<span class="nu">0.95</span>):
+    n = len(series)
+    h_samples = []
+
+    <span class="kw">for</span> _ <span class="kw">in</span> range(B):
+        <span class="cm"># Block bootstrap: สุ่ม block ขนาด sqrt(n) เพื่อรักษา autocorrelation</span>
+        block_size = <span class="fn">int</span>(<span class="fn">sqrt</span>(n))
+        resampled = []
+        <span class="kw">while</span> len(resampled) &lt; n:
+            start = <span class="fn">randint</span>(<span class="nu">0</span>, n - block_size)
+            resampled.extend(series[start : start + block_size])
+        resampled = resampled[:n]
+
+        h_b = <span class="fn">hurst_rs</span>(resampled)
+        h_samples.append(h_b)
+
+    H_mean = <span class="fn">mean</span>(h_samples)
+    H_se   = <span class="fn">std</span>(h_samples)
+    alpha  = <span class="nu">1</span> - confidence
+    z_crit = <span class="nu">1.96</span>  <span class="cm"># 95% normal approximation</span>
+    ci_low  = H_mean - z_crit * H_se
+    ci_high = H_mean + z_crit * H_se
+
+    tradeable_ci = ci_high &lt; <span class="nu">0.50</span>   <span class="cm"># entire CI must be below 0.5</span>
+    <span class="kw">return</span> {<span class="st">"H"</span>: H_mean, <span class="st">"SE"</span>: H_se,
+            <span class="st">"CI_95"</span>: (ci_low, ci_high),
+            <span class="st">"tradeable_CI"</span>: tradeable_ci}
+</div>
+
+<div class="bx ba">
+<div class="bt">เหตุผลที่ใช้ Block Bootstrap แทน i.i.d. Bootstrap</div>
+<p>Spread residuals มี autocorrelation (นั่นคือ mean-reverting behavior ที่เราวัด H) — ถ้า resample แบบ i.i.d. (สุ่มแต่ละจุดแยกกัน) จะทำลาย autocorrelation structure ทำให้ SE ของ H ต่ำเกินจริง (overconfident CI)<br>
+Block bootstrap ขนาด √n รักษา local autocorrelation ไว้ → SE ที่ได้จริงกว่า</p>
+</div>
+
+<table>
+<tr><th>H_point</th><th>SE (bootstrap)</th><th>95% CI</th><th>CI ต่ำกว่า 0.5?</th><th>ตัดสินใจ</th></tr>
+<tr><td>0.31</td><td>0.03</td><td>[0.25, 0.37]</td><td>ใช่ ✓</td><td>Trade ได้ — confident</td></tr>
+<tr><td>0.43</td><td>0.04</td><td>[0.35, 0.51]</td><td>ไม่ — CI ทะลุ 0.5</td><td>ลด size 50%, re-test next month</td></tr>
+<tr><td>0.46</td><td>0.05</td><td>[0.36, 0.56]</td><td>ไม่ — CI ทะลุ 0.5</td><td>ไม่ trade จนกว่า H จะลง</td></tr>
+<tr><td>0.38</td><td>0.02</td><td>[0.34, 0.42]</td><td>ใช่ ✓</td><td>Trade ได้ — บาง SE → น่าเชื่อถือ</td></tr>
+</table>
+
+<!-- Running example -->
+<div class="running-ex">
+<div class="re-title">ตัวอย่างจริง: Bybit BTC Perp ↔ Lighter BTC Perp</div>
+<p>คำนวณ H บน two series — spread ε และ ราคา BTC ดิบ — จาก 90 วันล่าสุดของข้อมูลรายชั่วโมง:</p>
+
+<table>
+<tr><th>Series</th><th>H (R/S)</th><th>Interpretation</th><th>ADF p-value</th><th>KPSS p-value</th><th>Verdict</th></tr>
+<tr><td>Spread ε (Bybit − 1.003·Lighter)</td><td><strong>0.31</strong></td><td>Strongly mean-reverting</td><td>0.0003</td><td>0.18</td><td style="color:#16a34a"><strong>Trade ✓</strong></td></tr>
+<tr><td>Raw BTC log-price (Bybit)</td><td><strong>0.52</strong></td><td>Near random walk</td><td>0.41</td><td>0.02</td><td style="color:#dc2626"><strong>Do not trade</strong></td></tr>
+</table>
+
+<p>Spread มี H = 0.31 — อยู่ลึกใน mean-reverting territory ADF reject non-stationarity (p = 0.0003) และ KPSS fail to reject stationarity (p = 0.18) — นี่คือการยืนยันที่แข็งแกร่งที่สุดเท่าที่จะเป็นไปได้ ในทางตรงข้าม ราคา BTC ดิบแสดง H = 0.52 — ใกล้เคียง random walk สมบูรณ์แบบ ตรงกับที่ทฤษฎีทำนาย</p>
+
+<div class="fm">Estimated half-life from H = 0.31:
+  → Hurst-implied: ~4–8 hours (tight, fast reversion)
+  → Confirmed by OU fit: κ = 2.8/day → half-life ≈ 5.9 hours</div>
+</div>
+
+<!-- Exercises -->
+<div class="ex">
+<div class="et">โจทย์ 6.1 — แปลความหมาย H = 0.43</div>
+<p>คู่ใหม่ (Binance BTC Perp ↔ OKX BTC Perp) ให้ H = 0.43 จาก R/S analysis, ADF p = 0.032, KPSS p = 0.08</p>
+<p><strong>คำถาม:</strong> Spread นี้ mean-reverting ไหม? ควรใช้แนวทางเทรดแบบใด?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>H = 0.43 &lt; 0.5 → mean-reverting</strong> แต่ระดับปานกลาง อยู่ในช่วง "mean-reverting ปานกลาง" (0.35–0.45)</p>
+<p><strong>ADF p = 0.032 → reject non-stationarity (ดี)</strong> KPSS p = 0.08 → fail to reject stationarity (ดี) ทั้งสองการทดสอบเห็นพ้อง: spread stationary</p>
+<p><strong>การตัดสินใจ:</strong> เทรดได้ปกติแต่ใช้ band มาตรฐาน (ไม่ใช่ aggressive) ใช้ entry ±2σ ไม่ใช่ ±1.5σ ติดตาม H ทุกเดือน — ถ้าขึ้นเกิน 0.45 ให้ลด size Half-life อยู่ระดับปานกลาง (น่าจะ 12–48 ชั่วโมง) ควรถือหลายชั่วโมง</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 6.2 — ผลทดสอบขัดแย้งกัน</div>
+<p>Spread ตัวหนึ่ง: ADF p = 0.08 (fail to reject), KPSS p = 0.03 (rejects stationarity)</p>
+<p><strong>คำถาม:</strong> แปลผลรวมนี้อย่างไร? ควรเทรด spread นี้ไหม?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>ADF fail to reject</strong> (p = 0.08 &gt; 0.05): หลักฐานไม่เพียงพอจะบอกว่า stationary ภายใต้ ADF</p>
+<p><strong>KPSS rejects</strong> (p = 0.03 &lt; 0.05): KPSS ปฏิเสธ null ว่า series เป็น stationary อย่างชัดเจน</p>
+<p><strong>ข้อสรุปรวม:</strong> ทั้งสองการทดสอบเห็นตรงกันว่า series <strong>ไม่ stationary</strong> นี่คือผลลัพธ์แย่ที่สุด — หลักฐานชัดว่ามี unit root หรือพฤติกรรม trending ห้ามเทรด ให้กลับไป re-estimate β หรือหา pair ใหม่</p>
+<p><strong>สาเหตุที่เป็นไปได้:</strong> β ไม่ถูกต้อง (ใช้ recent window รัน OLS ใหม่), เกิด structural break ในความสัมพันธ์ของ pair หรือทั้งสอง asset แยกออกจากกันถาวร</p>
+</div>
+</details>
+</div>
+
+<div class="bx bb">
+<div class="bt">หมายเหตุ: Hurst/Stationarity Test นี้ใช้ได้กับ F(·) อื่นเช่นกัน</div>
+<p>Hurst exponent และ KPSS test ใช้สูตรเดิมกับทุก F(·) โดยไม่ต้องปรับ — ข้อควรระวัง: ε ที่สุ่มตัวอย่างความถี่สูง (funding spread ทุกชั่วโมง, IV ทุกนาที) มักมี microstructure noise มากกว่า log-price daily bar ทำให้ H และผล stationarity ประเมินคลาดเคลื่อนได้ง่ายกว่า (bid-ask bounce อาจดูเหมือน mean-reversion เทียม) ควรตรวจสอบด้วย synchronized mid-quote data เสมอ ไม่ใช่ last-trade ที่ไม่ sync กัน (ดู <a href="statarb-ch10b.html#s10b-3">ch10B §10B.3</a>)</p>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+บทที่ 6 Hurst Exponent &amp; การทดสอบ Stationarity | ต่อไป → <strong>บทที่ 7: GARCH on Residuals</strong>
+</p>
+
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

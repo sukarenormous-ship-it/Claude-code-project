@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.10B — Spread Data Engineering: TF, Executable Spread และ Chart ที่ไม่โกหก</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.1em;font-weight:700;color:var(--g9);margin-top:6px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{background:#1e1e2e;color:#cdd6f4;font-family:'Courier New',monospace;white-space:pre;padding:16px 20px;border-radius:8px;margin:14px 0;font-size:.88em;line-height:1.7}
+.pseudo .c{color:#6c7086}.pseudo .kw{color:#cba6f7}.pseudo .fn{color:#89b4fa}.pseudo .nm{color:#fab387}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+.katex{font-size:1.05em}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.chart{max-width:100%}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 10B</div>
+<h1>Spread Data Engineering</h1>
+<div class="sub">เลือก Timeframe ให้ถูก · สร้าง Spread ที่เทรดได้จริง · Chart ที่ไม่โกหก<br>
+คำถาม "ควรดู TF ไหน" และ "line หรือ candlestick" มีคำตอบเชิงวิศวกรรม ไม่ใช่รสนิยม</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<p style="margin-top:8px">ปัญหา "TF เล็กเจอ false signal เยอะ / TF ใหญ่พลาด spike" และปัญหา "spread chart มี spike ประหลาดที่เทรดไม่ได้" ทั้งสองเรื่องนี้ <strong>ไม่ใช่ปัญหารสนิยมการดูกราฟ</strong> แต่เป็นปัญหาวิศวกรรมข้อมูลที่มีคำตอบชัดเจน: TF เลือกจาก half-life ของ ε (<a href="statarb-ch3.html">บทที่ 3</a>) ไม่ใช่ความรู้สึก และ spike ปลอมมาจาก data สองขาที่ไม่ sync เวลากัน ไม่ใช่จาก "ตลาดผันผวน"</p>
+</div>
+
+<h2 id="s10b-1">10B.1 เลือก Timeframe จาก Half-life ไม่ใช่จากความรู้สึก</h2>
+
+<p>κ ที่ fit ได้จาก OU process (<a href="statarb-ch3.html">บทที่ 3</a>) บอก half-life ของ ε อยู่แล้ว — ใช้ตัวเลขนี้กำหนด TF โดยตรง แทนที่จะเดา:</p>
+
+<div class="key-idea">
+<div class="ki-label">กฎเลือก TF</div>
+<div class="ki-eq">TF_สัญญาณ ≈ half-life / 10  ถึง  half-life / 20</div>
+<p style="margin-top:8px">เหตุผล: ต้องมีจุดข้อมูลมากพอ (10-20 จุด) ภายในหนึ่งรอบ mean-reversion เพื่อให้เห็นรูปร่างของการกลับค่ากลาง — TF ที่หยาบกว่านี้จะเห็นแค่จุดเริ่มกับจุดจบของแต่ละรอบ ไม่เห็น dynamics ระหว่างทาง</p>
+</div>
+
+<table>
+<tr><th>Half-life ของ ε</th><th>TF สัญญาณที่แนะนำ</th><th>ตัวอย่างสถานการณ์</th></tr>
+<tr><td>นาที (เช่น 15 นาที)</td><td>1 นาที</td><td>cross-venue latency arb, funding spread ความถี่สูง</td></tr>
+<tr><td>ชั่วโมง (เช่น 4-8 ชม.)</td><td>5 นาที</td><td>Bybit↔Lighter perp pairs ทั่วไป</td></tr>
+<tr><td>วัน (เช่น 1-3 วัน)</td><td>H4 (4 ชั่วโมง)</td><td>cross-exchange commodity calendar (<a href="statarb-ch17.html">บทที่ 17</a>)</td></tr>
+<tr><td>สัปดาห์ (เช่น 1-2 สัปดาห์)</td><td>Daily</td><td>FX pairs, macro-driven spread</td></tr>
+</table>
+
+<h2 id="s10b-2">10B.2 สถาปัตยกรรม 2 ชั้น — แก้ Dilemma "TF เล็ก False เยอะ / TF ใหญ่พลาด Spike"</h2>
+
+<p>ปัญหาที่ดูเหมือนแก้ไม่ได้ ("TF เล็กจับ spike ได้แต่ false เยอะ, TF ใหญ่กรอง noise ได้แต่พลาด spike ที่หายเร็ว") แก้ได้ด้วยการแยกหน้าที่เป็น 2 ชั้น ไม่ใช่เลือก TF เดียวให้ทำทุกอย่าง:</p>
+
+<div class="fm">ชั้น 1 — Signal Layer (TF จาก half-life ตาม §10B.1)
+  หน้าที่: ตัดสินใจว่า "ตอนนี้ควรเปิด position ไหม"
+  Gate: |ε_t − θ| > friction_band + k·σ  (ε เบี่ยงเกินต้นทุน + noise พอจะคุ้มเทรด)
+  ผลลัพธ์: ONNOFF สัญญาณเดียว (อนุญาตเทรด / ไม่อนุญาต)
+
+ชั้น 2 — Execution Layer (TF เล็กกว่ามาก เช่น 1-5 นาที หรือ tick)
+  หน้าที่: ถ้าชั้น 1 อนุญาตแล้ว หาจังหวะเข้าที่ราคาดีที่สุด "ภายใน" ช่วงที่อนุญาต
+  ไม่มีสิทธิ์ตัดสินใจเปิด/ปิด position เอง — แค่ optimize timing ของการ execute</div>
+
+<div class="bx bg">
+<div class="bt">ทำไมสถาปัตยกรรมนี้แก้ปัญหาได้จริง</div>
+<p>Spike บน TF เล็กที่ไม่ผ่านเกณฑ์ของชั้น 1 (signal layer) <strong>ไม่มีสิทธิ์สั่งเทรด</strong> — จบตรงนั้น ไม่ต้องมาคิดว่า "false positive กี่ % " เพราะ TF เล็กถูกลดบทบาทเหลือแค่ "หาจังหวะ fill ที่ดี" หลังจากมีสัญญาณอนุญาตแล้วเท่านั้น ส่วนสัญญาณหลักที่มาจาก TF ที่สอดคล้องกับ half-life จะไม่พลาด spike ที่มีนัยสำคัญเชิงสถิติจริง (เพราะ TF ถูกเลือกให้เห็น dynamics ของรอบ mean-reversion แล้วตั้งแต่ต้น)</p>
+</div>
+
+<h2 id="s10b-3">10B.3 Spike ปลอมจาก Data ไม่ Sync — ไม่ใช่ "ตลาดผันผวน"</h2>
+
+<p>Spread ที่สร้างจาก <strong>last-trade</strong> ของสองขาที่ print คนละเวลากันสร้าง spike ที่ไม่มีอยู่จริง: ถ้าขา B illiquid กว่าขา A ราคาของ B อาจ "ค้าง" อยู่หลายวินาที/นาที ขณะที่ A print ราคาใหม่ต่อเนื่อง — spread ที่คำนวณจาก last-trade ทั้งคู่จะกระโดดทุกครั้งที่ A ขยับ ทั้งที่ B ยังไม่ได้ trade จริงที่ระดับราคาใหม่</p>
+
+<div class="bx bk">
+<div class="bt">Spike แบบนี้เทรดไม่ได้ — ไม่ว่าจะดูเป็น line หรือ candle</div>
+<p>ปัญหาอยู่ที่ <strong>ข้อมูลตั้งต้น</strong> ไม่ใช่วิธี plot — เปลี่ยนจาก line เป็น candlestick ไม่ได้แก้อะไร เพราะทั้งสองแบบยัง plot จากตัวเลขที่ผิดอยู่ดี วิธีแก้ที่ถูกต้องคือ <strong>สร้าง spread จาก synchronized mid quotes</strong> (ราคากลาง ณ timestamp เดียวกันของทั้งสองขา) ไม่ใช่ last-trade</p>
+</div>
+
+<div class="fm">ผิด:  spread_t = last_trade_A(t) − last_trade_B(t)
+      ← ถ้า A trade ทุกวินาที แต่ B trade ทุก 30 วินาที
+        spread จะกระโดดตาม A ล้วนๆ ในช่วงที่ B ไม่ trade (ราคา B ค้าง)
+
+ถูก:  spread_t = mid_A(t) − mid_B(t)
+      โดย mid(t) = (best_bid(t) + best_ask(t)) / 2
+      ← mid quote update ทุกครั้งที่ order book เปลี่ยน (เร็วกว่า last-trade มาก)
+        และมีอยู่ตลอดเวลาแม้ไม่มี trade เกิดขึ้น</div>
+
+<h2 id="s10b-4">10B.4 Executable Spread — สัญญาณจริงต้องเทรดได้ ไม่ใช่แค่ "เห็น"</h2>
+
+<p>แม้ mid spread จะ sync แล้ว มันยังเป็นแค่ราคาอ้างอิง (reference) — ราคาที่ <strong>เทรดได้จริง</strong> ต้องคิดจาก bid/ask ของทั้งสองขาตามทิศทางที่จะเข้า:</p>
+
+<div class="key-idea">
+<div class="ki-label">Executable Spread — สองเส้น ไม่ใช่เส้นเดียว</div>
+<div class="ki-eq">enter_long_spread_t  = ask_A(t) − bid_B(t)   (ซื้อ A แพงสุด, ขาย B ถูกสุด)
+enter_short_spread_t = bid_A(t) − ask_B(t)   (ขาย A ถูกสุด, ซื้อ B แพงสุด)</div>
+</div>
+
+<p>สัญญาณ entry ที่แท้จริงต้องดูว่า <strong>เส้น executable</strong> ทะลุ band หรือไม่ — ไม่ใช่ mid spread ทะลุ เพราะ mid spread ทะลุ band ไม่ได้แปลว่าเทรดได้จริงในราคานั้น (bid-ask อาจกว้างพอที่ executable spread ยังไม่ทะลุ band แม้ mid จะทะลุแล้ว)</p>
+
+<div class="bx ba">
+<div class="bt">สิ่งที่ต้องมีจริงบน chart (ไม่ใช่แค่เส้นเดียว)</div>
+<ul>
+<li>Mid spread (เส้นอ้างอิงสำหรับดูภาพรวม)</li>
+<li>Executable spread ทั้งสองทิศ (enter_long, enter_short)</li>
+<li>Friction band (fee + slippage + funding ที่ต้องเบี่ยงเกินถึงจะคุ้มเทรด)</li>
+<li>Fair-carry line (ถ้าเป็น calendar/basis spread — ดู <a href="statarb-ch17.html#s17-9">บทที่ 17 §17.9</a>)</li>
+</ul>
+</div>
+
+<h2 id="s10b-5">10B.5 Line vs Candlestick — คำถามที่ใช่กว่า</h2>
+
+<p>คำถาม "ควรดู line หรือ candlestick" เป็นคำถามที่ผิดตั้งแต่ต้น — คำถามที่ถูกคือ <strong>"ข้อมูลข้างใต้ sync แล้วหรือยัง"</strong>:</p>
+
+<div class="bx bk">
+<div class="bt">Candle ของ Spread ต้อง Aggregate จาก Series ที่ Sync แล้วเท่านั้น</div>
+<p>ห้ามคำนวณ high ของ spread จาก <code>high_A − low_B</code> (แบบที่บาง platform ทำอัตโนมัติ) — high/low ของแต่ละขาเกิดคนละเวลากัน เอามาลบกันได้ค่าที่ไม่เคยเกิดขึ้นจริงในตลาดเลย <strong>วิธีที่ถูก:</strong> คำนวณ spread_t = mid_A(t) − mid_B(t) ที่ความถี่สูง (เช่นทุก 1 วินาที) ก่อน แล้วค่อย aggregate เป็นแท่ง OHLC ของ<em>อนุกรม spread ที่ sync แล้ว</em> ไม่ใช่เอา OHLC ของแต่ละขาที่มีอยู่แล้วมาลบกันทีหลัง</p>
+</div>
+
+<p>ถ้าทำถูกวิธีนี้ candlestick จะช่วยเห็น intraperiod range ของ spread ได้จริง (มีประโยชน์กว่า line) — แต่ถ้า data ข้างใต้ยัง async อยู่ <strong>candle จะดูน่าเชื่อถือกว่า line เฉยๆ โดยที่ข้อมูลยังผิดเหมือนเดิม</strong> ความน่าเชื่อถือที่เพิ่มมาเป็นภาพลวงตา ไม่ใช่ความถูกต้องที่เพิ่มขึ้นจริง</p>
+
+<div class="bx bg">
+<div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card)</div>
+<ul>
+<li><strong>Trigger:</strong> เห็น spike ใหญ่ผิดปกติบน spread chart ที่ TF เล็ก</li>
+<li><strong>เช็คก่อนเทรด:</strong> spike นี้เกิดจาก mid quote ทั้งสองขา sync กันจริงไหม หรือขาใดขาหนึ่งราคาค้าง (ไม่มี trade/quote update ในช่วงนั้น)</li>
+<li><strong>เช็คที่สอง:</strong> executable spread (ไม่ใช่ mid) ทะลุ band จริงไหม</li>
+<li><strong>สัญญาณ setup พัง:</strong> spike ที่หายไปทันทีในบาร์ถัดไปโดยไม่มี trade volume รองรับ = สัญญาณของ stale quote ไม่ใช่ mean-reversion opportunity</li>
+</ul>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 10B.1 — หา Spike ที่เทรดได้จริงจาก 4 จุด (3 ปลอม, 1 จริง)</div>
+<p>ข้อมูล mid quote และ volume ของสองขา A, B ที่ 4 timestamp ที่ spread ดูเหมือนกระโดด:</p>
+<table>
+<tr><th>เวลา</th><th>Mid A</th><th>Mid B</th><th>Spread (A−B)</th><th>Volume A (5 นาทีก่อนหน้า)</th><th>Volume B (5 นาทีก่อนหน้า)</th></tr>
+<tr><td>t1</td><td>100.50</td><td>99.80</td><td>0.70</td><td>ปกติ</td><td>0 (ไม่มี trade 8 นาที)</td></tr>
+<tr><td>t2</td><td>100.20</td><td>99.85</td><td>0.35</td><td>ปกติ</td><td>ปกติ</td></tr>
+<tr><td>t3</td><td>101.00</td><td>99.90</td><td>1.10</td><td>ปกติ</td><td>0 (ไม่มี trade 12 นาที)</td></tr>
+<tr><td>t4</td><td>100.60</td><td>99.75</td><td>0.85</td><td>ปกติ</td><td>ปกติ</td></tr>
+</table>
+<p>Band ปกติของ spread นี้ (fair value ± friction) อยู่ที่ 0.30–0.50 — ที่ t1, t3, t4 spread ทะลุ band บนขึ้นไปเกิน 0.70</p>
+<p><strong>ถาม:</strong> spike ไหนน่าเชื่อถือว่าเทรดได้จริง และไหนน่าจะเป็น stale-quote artifact?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>t1 (spread 0.70) — น่าจะปลอม:</strong> ขา B ไม่มี trade มา 8 นาที (mid B อาจเป็น quote ที่ไม่มีใคร trade จริงที่ระดับนั้นแล้ว) spike มาจาก A ขยับขึ้นเพียงฝ่ายเดียวขณะ B "ค้าง"</p>
+<p><strong>t3 (spread 1.10 — ใหญ่สุด) — น่าจะปลอมเช่นกัน:</strong> B ไม่มี trade 12 นาที (นานกว่า t1 อีก) และ spread ใหญ่สุดในบรรดา 4 จุด — รูปแบบคลาสสิกของ stale quote: ยิ่งขา illiquid ค้างนาน ยิ่งเห็น spread ปลอมใหญ่ขึ้นตามที่อีกขาขยับสะสม</p>
+<p><strong>t4 (spread 0.85) — น่าเชื่อถือว่าเทรดได้จริง:</strong> volume ทั้งสองขาปกติ (มี trade รองรับราคาจริงทั้งคู่) spike นี้มาจากราคาที่ trade จริง ไม่ใช่ quote ค้าง</p>
+<p><strong>t2</strong> ไม่ใช่ spike (0.35 อยู่ในช่วง band ปกติ) — เป็นจุดอ้างอิงให้เห็นว่า "ปกติ" หน้าตาเป็นอย่างไร</p>
+<p><strong>บทเรียน:</strong> เช็ค volume/trade activity ของทั้งสองขาก่อนเชื่อ spike เสมอ — ยิ่งขาใดขาหนึ่งเงียบนานเท่าไร spike ที่เห็นยิ่งน่าสงสัยว่าเป็น artifact ไม่ใช่โอกาสจริง (ตรงข้ามกับความรู้สึกที่ว่า "spike ใหญ่ = โอกาสใหญ่")</p>
+</div>
+</details>
+</div>
+
+<!-- 10B.6 -->
+<h2 id="s10b-6">10B.6 Overlap Window & Gap Reversion Illusion</h2>
+
+<p>Cross-exchange calendar arb (<a href="statarb-ch17.html#s17-10">ch17 §17.10</a>) เพิ่มปัญหาเชิงโครงสร้างอีกชั้นที่ sync ระดับ tick แก้ไม่ได้: <strong>บาง venue ไม่ได้เปิดตลอด 24 ชั่วโมง</strong></p>
+
+<div class="bx bk">
+<div class="bt">"Half-life สั้นสวยงาม" อาจเป็นแค่ราคาที่ค้างแล้วไล่ตาม ไม่ใช่แรงดึงกลับจริง</div>
+<p>CME เทรดทองคำ ~23 ชม./วัน แต่ exchange เอเชียบางแห่งเปิดเฉพาะช่วงเอเชีย (~7-9 ชม.) — ช่วงที่ venue เอเชียปิด ราคาขานั้น "แช่แข็ง" ขณะ CME ยังขยับต่อ พอ venue เอเชียเปิดใหม่ ราคาขานั้นกระโดดไล่ตาม CME ทันที บนกราฟ spread นี้ดูเหมือน "ถ่างแล้วดึงกลับเร็ว" — fit OU ได้ half-life สั้นสวยงาม แต่ความจริงคือ <strong>stale-price catch-up ไม่ใช่แรงดึงกลับที่เทรดกินได้</strong> — backtest จึงบอกมี edge แต่ live ไม่มี order ให้เข้า (เพราะ "การกลับ" เกิดตอน venue ปิดพอดี) หรือเข้าได้แต่ไม่ converge (เพราะ artifact ไม่ใช่ mean reversion)</p>
+</div>
+
+<div class="fm"><span class="c"># วิธีตรวจจับ Gap Reversion Illusion</span>
+1. หา overlap window = ช่วงเวลาที่ทั้งสอง venue เปิดพร้อมกัน
+2. Fit κ/σ/half-life จาก "overlap-only series" เทียบกับ "full series"
+3. ถ้า half-life ต่างกันมาก → reversion ส่วนใหญ่มาจาก stale repricing ไม่ใช่ของจริง
+
+<span class="c"># กติกา: ถ้า overlap สั้นกว่า half-life ของ ε → คู่นี้เทรดไม่ได้เชิงโครงสร้าง</span></div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: GC ↔ Exchange เอเชีย</div>
+<p>GC เทรด ~23 ชม./วัน; venue เอเชียเปิด ~7-9 ชม./วัน → overlap จริงอาจไม่ถึง 1/3 ของวัน<br>
+ช่วง 19:30–21:00 น. เวลาไทย (ตรงกับข่าวเศรษฐกิจสหรัฐฯ ที่ทองมักขยับแรง) มักเทรดได้แค่ขาเดียว (venue เอเชียปิดไปแล้ว) — เป็นช่วงที่ delta เปลือยเกิดขึ้นทุกวันโดยไม่มีทางเลือก</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§10B.6 คือปัญหาระดับ session → §10B.7 คือปัญหาระดับ settlement/mark ▶</p>
+
+<!-- 10B.7 -->
+<h2 id="s10b-7">10B.7 Settlement ≠ Close ≠ Executable — สามราคาที่ไม่ใช่ตัวเดียวกัน</h2>
+
+<p>ปัญหา async ใน <a href="#s10b-3">§10B.3</a> อยู่ระดับ tick/intraday — ที่นี่คือ<strong>เวอร์ชัน slow-motion ระดับรายวัน</strong>ที่หลอก backtest ของคนใช้ EOD (end-of-day) data โดยเฉพาะ</p>
+
+<div class="bx bk">
+<div class="bt">Daily "Close" ของสองตลาด ไม่ใช่ราคา ณ เวลาเดียวกัน</div>
+<p>CME GC settle จาก VWAP window ~13:29-13:30 ET ส่วน exchange เอเชีย settle ตามเวลาเอเชีย — ห่างกันหลายชั่วโมง สร้าง daily spread series ที่มีการเคลื่อนไหวของราคาหลายชั่วโมงฝังอยู่ข้างใน (ขาหนึ่ง "ค้าง" ขณะอีกขา "วิ่งตาม" ข้ามคืน) — β, θ, band ที่ fit จาก series นี้ผิดตั้งแต่ต้นทาง และ margin call ที่โบรกเรียกจริงอาจไม่ตรงกับ "spread executable" ที่คุณเห็น</p>
+</div>
+
+<div class="fm"><span class="c"># แก้ด้วยการแยกสองชั้นเสมอ</span>
+ε_mark      = spread ตาม settlement ของแต่ละ venue
+              (ตัวที่ตัดสิน margin call)
+ε_executable = spread ณ snapshot เวลาเดียวกันที่ทั้งสอง venue เปิด+liquid พร้อมกัน
+              (ตัวที่ตัดสิน trade)
+
+<span class="c"># Fit OU / คำนวณ band จาก ε_executable เท่านั้น — ห้ามใช้ ε_mark มา fit</span>
+<span class="c"># แต่ต้อง monitor ε_mark ด้วยเสมอ เพราะมันคือสิ่งที่ทำให้โดน margin call</span></div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: วันที่ Settlement สองฝั่งสวนทาง</div>
+<div class="fm">CME settle 13:30 ET, venue เอเชีย settle ห่าง ~10 ชม.
+วันที่ทองขยับ 1.5%
+ระหว่างสอง settlement window:
+
+daily ε_mark กระโดด ≈ <span class="nm">$35-50</span>/oz
+executable spread จริง (วัดจาก overlap snapshot)
+ขยับไม่ถึง <span class="nm">$5</span>/oz
+
+→ ε_mark ที่ใช้ fit OU จะให้ σ บวมเกินจริง, threshold ผิดทั้งระบบ
+→ ถ้าถือ position ข้ามวันนั้น อาจโดน margin call จาก ε_mark
+  ทั้งที่ position จริงแทบไม่ขยับ</div>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§10B.7 คือปัญหาจาก "เวลา" ของราคา → §10B.8 คือปัญหาจาก "ธรรมชาติ" ของราคาแม้ sync สมบูรณ์แล้ว ▶</p>
+
+<!-- 10B.8 -->
+<h2 id="s10b-8">10B.8 Mean Reversion ปลอมจาก Microstructure — Bounce, Epps Effect, และ Half-Life ที่เชื่อได้</h2>
+
+<p>ต่อให้แก้ปัญหา timestamp sync (<a href="#s10b-3">§10B.3</a>) และ settlement mismatch (<a href="#s10b-7">§10B.7</a>) หมดแล้ว ราคา <strong>last-trade</strong> ยังมีธรรมชาติที่สร้าง mean-reversion ปลอมได้อีกชั้น</p>
+
+<div class="bx bk">
+<div class="bt">Bid-Ask Bounce: κ เฟ้อจาก Noise ไม่ใช่จาก Alpha</div>
+<p>ราคา last-trade เด้งสลับ bid/ask (ซื้อทีราคาแตะ ask, ขายทีราคาแตะ bid) — การเด้งนี้สร้าง negative autocorrelation ในราคาที่<strong>ไม่มี mean reversion จริงอยู่เลย</strong> (Roll model) AR(1) ที่ fit บนราคาแบบนี้ได้ b̂ ต่ำปลอม → κ เฟ้อ → half-life สั้นในระดับ "นาที" ที่ดูน่าตื่นเต้น แต่ "ระยะกลับตัว" ที่เห็นคือครึ่งหนึ่งของ bid-ask spread ที่ต้องจ่ายเพื่อเข้า-ออกพอดี — เก็บ edge เท่า spread แต่จ่าย cost เท่า spread ทุกไม้</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Epps Effect: β เพี้ยนที่ TF ละเอียด</div>
+<p>ที่ timeframe ละเอียด (เช่น 1 นาที) correlation/β ระหว่างสอง instrument ถูกกดต่ำลงเพราะ trade ของทั้งสองขาไม่เกิดพร้อมกันเป๊ะ — β ที่ fit บน 1m จึงต่างจาก β โครงสร้างจริง (ที่เห็นชัดกว่าบน TF หยาบ เช่น 1h) hedge ที่สร้างจาก β ผิดนี้ไม่สมดุล เกิด residual drift ที่ดูเหมือนสัญญาณแต่จริงๆ คือ hedge error</p>
+</div>
+
+<div class="fm"><span class="c"># Robustness Checklist ก่อนเชื่อ Half-Life</span>
+1. Red flag อัตโนมัติ: half-life ≤ 3 bar ของ TF ที่ใช้
+   → สงสัย microstructure ก่อน alpha เสมอ
+2. Fit OU จาก mid-quote (ไม่ใช่ last-trade) แล้วเทียบ half-life สองแบบ
+   — ต่างกันมาก = bounce
+3. ประเมิน half-life บน 3-4 TF (1m/5m/15m/1h)
+   — half-life "จริง" ต้อง converge ข้าม TF
+   ถ้าสั้นลงเรื่อยๆ เมื่อ TF เล็กลง
+   = bounce/staleness ไม่ใช่ alpha
+4. เทียบ σ_stat ที่ fit ได้ กับ (half bid-ask A + half bid-ask B)
+   — ถ้าใกล้กัน สปริงนั้นคือ bid-ask ไม่ใช่ alpha
+5. ประเมิน β จาก TF หยาบกว่า (H1/H4) แล้วนำมาใช้กับ execution TF
+   — ห้าม fit β บน TF ที่จะยิง order</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: Half-Life ที่ต่างกัน 80 เท่า</div>
+<div class="fm">Bid-ask spread s = <span class="nm">4</span> ticks, mid นิ่ง
+
+AR(1) บน last-trade (1m):  half-life ≈ <span class="nm">3</span> นาที   ← ดูน่าตื่นเต้น
+AR(1) บน mid-quote:        half-life ≈ <span class="nm">4</span> ชั่วโมง ← ต่างกัน 80 เท่า!
+
+Round-trip cost = <span class="nm">4+</span> ticks
+"Reversion amplitude" ที่เห็นบน last-trade ≈ <span class="nm">2</span> ticks
+→ เก็บ edge เท่า 2 ticks แต่จ่าย cost 4+ ticks = แพ้ทุกไม้แบบคงเส้นคงวา</div>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§10B.8 คือความน่าเชื่อถือของสัญญาณ → §10B.9 คือช่องว่างระหว่างเห็นสัญญาณกับได้ fill จริง ▶</p>
+
+<!-- 10B.9 -->
+<h2 id="s10b-9">10B.9 Latency Tax: Signal-to-Fill Decay</h2>
+
+<p>Backtest มาตรฐานคำนวณ z ที่ bar close แล้ว fill ที่ราคา close ของ bar เดียวกัน — ของจริงมี delay ระหว่างสัญญาณกับ fill เสมอ (<a href="statarb-ch14.html">ch14</a>: 120-500ms ถ้า infra ดี, หลายวินาทีถึงนาทีถ้ารัน bot บน VPS ทั่วไป+rate limit) และ ε ไม่ได้รอเรา — มันถูกสปริงดึงกลับด้วยอัตรา e^(−κΔt) ตลอดเวลา</p>
+
+<div class="bx bk">
+<div class="bt">ยิ่ง Half-Life สั้น (คู่ที่ระบบ "ชอบ" เพราะ Sharpe สวย) ยิ่งเสีย Decay มาก</div>
+<p>สัดส่วนของ deviation ที่หายไประหว่าง signal→fill แปรผกผันกับ half-life — คู่ half-life สั้นเสีย decay มากกว่าตามสัดส่วน ซ้ำร้าย: การที่ z ทะลุ threshold "ณ close" แปลว่าจุด extreme จริงเกิดกลางบาร์และผ่านไปแล้ว — backtest ได้เข้าที่จุดที่โลกจริงไม่มีวันได้เข้า</p>
+</div>
+
+<div class="fm">decay_ratio = 1 − e^(−κ·delay)
+
+<span class="c"># ตัวอย่าง: half-life 45 นาที, entry z=2.0, gross 15bps</span>
+delay = <span class="nm">1</span> bar = <span class="nm">15</span> นาที
+เหลือ = <span class="nm">15</span> × e^(−0.693×<span class="nm">15</span>/<span class="nm">45</span>) = <span class="nm">11.9</span>bps
+หายไป <span class="nm">3.1</span>bps ก่อนหักค่าธรรมเนียมด้วยซ้ำ</div>
+
+<div class="bx ba">
+<div class="bt">กติกา</div>
+<ul>
+<li>ทดสอบ equity curve สองแบบ: fill ที่ close ของ bar สัญญาณ (lookahead) vs fill ที่ open ของ bar ถัดไป (หรือ mid ณ t_signal+latency จริง) — ส่วนต่างคือ "latency tax" ของกลยุทธ์</li>
+<li>ใส่ decay_ratio เป็น cost อีกบรรทัดใน edge waterfall (<a href="statarb-ch19.html">ch19</a>)</li>
+<li>Gate เข้มกว่าเกณฑ์เดิม: ถ้า latency รวม &gt; <strong>10-15% ของ half-life</strong> ให้ถือว่าคู่นั้นเทรดไม่ได้ด้วย infra ปัจจุบัน (เข้มกว่ากฎ "latency &gt; 2×holding time" ที่พูดผ่านๆ ใน ch14)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§10B.9 คือ latency ระหว่างเทรด → §10B.10 คือ artifact จากการต่อเชื่อมข้อมูลย้อนหลังก่อนจะเทรดด้วยซ้ำ ▶</p>
+
+<!-- 10B.10 -->
+<h2 id="s10b-10">10B.10 Splicing Artifact จาก Continuous Contract</h2>
+
+<p>ปัญหานี้เกิด<strong>ก่อน</strong>ถึงขั้นเทรด — ตอน fit OU ด้วยข้อมูลย้อนหลัง Platform ส่วนใหญ่ (TradingView/MT5) เสิร์ฟ "continuous contract" เป็น default ซึ่งต่อเชื่อมหลาย generation ของสัญญาเข้าด้วยกัน</p>
+
+<div class="bx bk">
+<div class="bt">Series ที่ Fit OU ไม่ใช่ Instrument ที่คุณถือจริง</div>
+<p>รอยต่อ (roll) ระหว่างสัญญาสร้าง jump ปลอมใน continuous series — mean reversion ที่ ADF เห็นบน series ต่อเชื่อมส่วนหนึ่งคือ artifact ของการ splice ไม่ใช่แรงดึงที่เทรดได้บนสัญญาจริงตัวใดตัวหนึ่ง นอกจากนี้ half-life ที่ fit ได้จาก series 2 ปี อาจยาวกว่าอายุที่เหลือของสัญญา front จริงมาก — รายละเอียดเต็มเรื่อง feasibility check ระหว่างนาฬิกาสัญญากับนาฬิกา OU ดู <a href="statarb-ch17.html#s17-11">ch17 §17.11</a></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">แก้ที่ระดับ Data Engineering ก่อนถึงขั้นสถิติ</div>
+<ul>
+<li>Fit OU บนข้อมูลของ contract-generation จริง (เช่น Jun-Aug ปีก่อนๆ) ไม่ใช่ continuous series</li>
+<li>ถ้าจำเป็นต้องใช้ continuous ให้ตัด bar ที่คร่อมวัน roll ทิ้งก่อน fit เสมอ</li>
+<li>Backtest ต้อง simulate การ roll พร้อม cost จริง ไม่ปล่อยให้ position ข้าม roll ราวกับเป็น instrument เดียวกัน</li>
+</ul>
+</div>
+
+
+<div class="bx bg">
+<div class="bt">✓ สรุปบทนี้ — 3 อย่างที่ต้องจำ</div>
+<ol>
+<li><strong>TF มาจาก half-life เสมอ</strong> (÷10 ถึง ÷20) ไม่ใช่ความรู้สึก — และแยกหน้าที่เป็น signal layer (ตัดสินใจ) กับ execution layer (หา timing) ไม่ใช้ TF เดียวทำทุกอย่าง</li>
+<li><strong>Spike ปลอมเกิดจาก data ไม่ sync ไม่ใช่ตลาดผันผวน</strong> — เช็ค volume/trade activity ของทั้งสองขาก่อนเชื่อ spike เสมอ</li>
+<li><strong>Line vs candlestick ไม่ใช่คำถามที่ถูก</strong> — คำถามที่ถูกคือ data ข้างใต้ sync แล้วหรือยัง และสัญญาณคือ executable spread ทะลุ band ไม่ใช่ mid spread ทะลุ</li>
+</ol>
+</div>
+
+<div class="bx bg">
+<div class="bt">✓ เพิ่มเติม (§10B.6–10B.10) — 5 กับดักขั้นสูงของ Data Engineering</div>
+<ol>
+<li><strong>Overlap window</strong> — ถ้า venue หนึ่งปิดตลาด "reversion เร็ว" ที่เห็นอาจเป็นแค่ราคาค้างแล้วไล่ตาม (§10B.6)</li>
+<li><strong>Settlement ≠ close ≠ executable</strong> — daily series จาก settlement คนละเวลาสร้าง mean reversion ปลอมระดับวัน (§10B.7)</li>
+<li><strong>Bid-ask bounce + Epps effect</strong> — ทำให้ half-life สั้นปลอมและ β เพี้ยน แม้ data จะ sync สมบูรณ์แล้ว (§10B.8)</li>
+<li><strong>Latency tax</strong> — ε สลายตัวระหว่างรอ fill ด้วยอัตรา e^(−κΔt) ยิ่ง half-life สั้นยิ่งเสียมาก (§10B.9)</li>
+<li><strong>Continuous contract splicing</strong> — series ที่ fit OU อาจไม่ใช่ instrument ที่ถือจริง (§10B.10)</li>
+</ol>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+Ch.10B Spread Data Engineering | ต่อไป → <strong>Ch.11: Entry/Exit State Machine</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

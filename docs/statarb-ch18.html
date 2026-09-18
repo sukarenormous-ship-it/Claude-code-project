@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.18 — Options Overlay: Put-Call Parity Arbitrage</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 18</div>
+<h1>Options Overlay: Put-Call Parity Arbitrage</h1>
+<div class="sub">ε = Call − Put − (F−K)e^{−rT} — deviation คือโอกาส arbitrage<br>
+ค้นหาและ exploit ความไม่สมดุลใน options market อย่างเป็นระบบ</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">Put-Call Parity เป็นกฎพื้นฐานที่ต้องเป็นจริงในตลาดที่ไม่มี arbitrage เมื่อ ε ≠ 0 แสดงว่า call หรือ put ราคาผิดสัมพัทธ์กัน และสามารถทำ riskless profit ได้โดยการ construct portfolio ที่สอดคล้อง</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$C - P = S - K\,e^{-rT} \quad \Rightarrow \quad \varepsilon_{\text{pcp}} = (C - P) - (S - Ke^{-rT})$$
+</div>
+</div>
+</div>
+
+<!-- 18.1 -->
+<h2 id="s18-1">18.1 Put-Call Parity — สูตรและที่มา</h2>
+
+<p>Put-Call Parity เป็น no-arbitrage relationship ที่เชื่อม call, put, forward, และ strike เข้าด้วยกัน:</p>
+
+<div class="key-idea">
+<div class="ki-label">Put-Call Parity สำหรับ European Options</div>
+<div class="ki-text">
+สำหรับ European options บน futures contract F ที่ strike K expiry T:<br>
+<strong>C − P = (F − K) × e^{−rT}</strong><br><br>
+สำหรับ European options บน spot asset S:<br>
+<strong>C − P = S × e^{−qT} − K × e^{−rT}</strong><br><br>
+โดยที่: C = call price, P = put price, r = risk-free rate, q = dividend/funding yield
+</div>
+</div>
+
+<p>ที่มาของสูตร: พิจารณา 2 portfolio ที่ให้ payoff เดียวกัน:</p>
+
+<table>
+<tr><th>Portfolio</th><th>ส่วนประกอบ</th><th>Payoff เมื่อ F_T &gt; K</th><th>Payoff เมื่อ F_T ≤ K</th></tr>
+<tr><td>A: Long Call</td><td>Buy C, Invest (F−K)e^{−rT}</td><td>(F_T − K) + (F−K)</td><td>0 + (F−K)</td></tr>
+<tr><td>B: Long Fwd + Put</td><td>Long F at K, Buy P</td><td>(F_T − K) + 0</td><td>0 + (K − F_T)</td></tr>
+</table>
+
+<p>เนื่องจาก payoff เท่ากัน ราคาต้องเท่ากัน → C − P = (F − K)e^{−rT} ต้องเป็นจริงเสมอ</p>
+
+<!-- 18.2 -->
+<h2 id="s18-2">18.2 Parity Deviation ε — เมื่อไรจึง Arbitrage ได้</h2>
+
+<div class="key-idea">
+<div class="ki-label">นิยาม Parity Deviation</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon = C - P - (F - K)\,e^{-rT}$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+ถ้า <strong>ε &gt; 0</strong>: Call แพงเกินไปเทียบกับ put → Sell call, Buy put, Buy forward<br>
+ถ้า <strong>ε &lt; 0</strong>: Put แพงเกินไปเทียบกับ call → Buy call, Sell put, Sell forward<br>
+ถ้า <strong>ε = 0</strong>: parity สมบูรณ์ — ไม่มีโอกาส arbitrage
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">เงื่อนไขที่ ε ≠ 0 ในทางปฏิบัติ</div>
+<ul>
+<li><strong>Bid-Ask spread:</strong> ε ต้องเกิน bid-ask cost รวมทุก leg ก่อนจะ profitable</li>
+<li><strong>Margin/collateral cost:</strong> ต้องใช้ margin วาง → มีต้นทุน opportunity</li>
+<li><strong>Execution risk:</strong> ต้อง fill ทุก leg พร้อมกัน ไม่เช่นนั้นเป็น legged risk</li>
+<li><strong>American vs European:</strong> American options มี early exercise premium → parity แตกต่าง</li>
+</ul>
+</div>
+
+<!-- 18.3 -->
+<h2 id="s18-3">18.3 BTC Options ตัวอย่าง — Deribit Put-Call Parity</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC Options บน Deribit</div>
+<p>ข้อมูลจาก Deribit สำหรับ BTC-28JUN-65000 (Strike K = $65,000, expiry 30 วัน):</p>
+<ul>
+<li>BTC Futures (28JUN) = <strong>$66,200</strong></li>
+<li>Call (K=65000, T=30d) = <strong>$2,850</strong></li>
+<li>Put (K=65000, T=30d) = <strong>$1,520</strong></li>
+<li>Risk-free rate r = 5% ต่อปี → e^{−rT} = e^{−0.05×30/365} = 0.9959</li>
+</ul>
+<div class="fm">Theoretical C - P = (F - K) × e^{-rT}
+               = ($66,200 - $65,000) × 0.9959
+               = $1,200 × 0.9959
+               = $1,195.08
+
+Observed C - P = $2,850 - $1,520 = $1,330
+
+ε = $1,330 - $1,195 = +$135  →  Call แพงเกินไปเทียบกับ Put
+Trade: Sell Call + Buy Put + Long Forward (at K=$65,000)
+Expected profit ≈ $135 (ก่อนหักค่าธรรมเนียม)</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">ตรวจสอบต้นทุนก่อน Trade</div>
+<p>Deribit taker fee ≈ 0.03% ต่อ option position (per leg)<br>
+3 legs: Sell C + Buy P + Long F → total fee ≈ 0.09% × notional<br>
+Notional ≈ $65,000 → fee ≈ $58.50<br>
+Net profit ≈ $135 − $58.50 = <strong>$76.50</strong> ต่อ BTC → ยังคุ้ม แต่ต้องระวัง execution<br>
+หมายเหตุ: conversion เป็น delta-flat โดยโครงสร้าง (ดู §18.6) จึงไม่ต้องมี hedge leg แยกต่างหาก</p>
+</div>
+
+<!-- 18.4 -->
+<h2 id="s18-4">18.4 IV Surface Arbitrage — Calendar Spread ใน IV</h2>
+
+<p>นอกจาก put-call parity แล้ว ยังมีโอกาส arbitrage จากความไม่สอดคล้องของ Implied Volatility (IV) ข้าม expiry:</p>
+
+<div class="bx bg">
+<div class="bt">ประเภทของ IV Surface Arbitrage</div>
+<ul>
+<li><strong>Calendar Spread IV Arb:</strong> IV ของ near-expiry สูงกว่า far-expiry ผิดปกติ → sell near, buy far vega</li>
+<li><strong>Strike Spread (Skew Arb):</strong> IV skew ระหว่าง OTM put และ OTM call ผิดปกติ</li>
+<li><strong>Butterfly Arb:</strong> IV ของ ATM ผิดจาก weighted average ของ OTM wings</li>
+</ul>
+</div>
+
+<h3>No-Arbitrage Constraints ของ IV Surface</h3>
+
+<table>
+<tr><th>Constraint</th><th>สูตร / เงื่อนไข</th><th>ถ้าฝ่าฝืน</th></tr>
+<tr><td>Calendar spread</td><td>Total variance V(T) = IV²×T ต้องเพิ่มตาม T</td><td>Sell near, buy far → calendar arb</td></tr>
+<tr><td>Butterfly</td><td>∂²C/∂K² ≥ 0 (call spread เป็น convex)</td><td>Butterfly spread ให้ riskless profit</td></tr>
+<tr><td>Call spread</td><td>∂C/∂K ≤ 0 (call price ลดเมื่อ K ขึ้น)</td><td>Vertical spread arb</td></tr>
+<tr><td>Horizontal bound</td><td>C(K,T₂) ≥ C(K,T₁) สำหรับ T₂ &gt; T₁</td><td>Calendar spread arb</td></tr>
+</table>
+
+<!-- 18.5 SVG IV Surface -->
+<h2 id="s18-5">18.5 IV Surface Diagram (2D Slice)</h2>
+
+<p>แผนภาพ 2D slice ของ IV surface ที่ expiry คงที่ (IV vs. Strike):</p>
+
+<img class="chart" src="charts/ch18-iv-surface.svg" alt="IV surface smile comparison">
+<div class="caption">Near expiry IV (แดง) ต้องไม่สูงกว่า far expiry IV อย่างผิดปกติที่ strike เดียวกัน มิฉะนั้นเป็น calendar arb</div>
+
+<!-- 18.6 -->
+<h2 id="s18-6">18.6 Delta Hedge ของ Options Spread</h2>
+
+<p>เมื่อ trade IV surface arb (เช่น calendar spread ใน IV) ต้องระวังว่า position มี <strong>delta exposure</strong> ที่ต้อง hedge ออก ส่วน conversion (put-call parity) นั้น delta-flat โดยโครงสร้างอยู่แล้ว — ดูตัวอย่างด้านล่าง:</p>
+
+<div class="bx bi">
+<div class="bt">ขั้นตอน Delta Hedge</div>
+<ol>
+<li>คำนวณ net delta ของ options portfolio: Δ_net = Δ_call − Δ_put + Δ_forward</li>
+<li>Sell/Buy futures ในปริมาณ Δ_net เพื่อให้ net delta ≈ 0</li>
+<li>Re-hedge เมื่อ delta drift (เนื่องจาก gamma effect) หรือทุก interval ที่กำหนด</li>
+<li>ระวัง gamma risk: position ที่ delta-neutral อาจมี gamma ที่ทำให้ P&L เป็น non-linear</li>
+</ol>
+</div>
+
+<div class="fm">ตัวอย่าง: ε trade บน BTC K=65000, T=30d
+
+Long Put:   Δ_put = −0.42  →  contribution = +1×(−0.42) = −0.42
+Short Call: Δ_call = +0.58 →  contribution = −1×(+0.58) = −0.58
+Long Fwd:  Δ_fwd = +1.00  →  contribution = +1×(+1.00) = +1.00
+
+Net Δ = −0.42 − 0.58 + 1.00 ≈ 0.00
+
+→ conversion เป็น delta-neutral โดยอัตโนมัติ ไม่ต้อง hedge เพิ่ม</div>
+
+<div class="bx ba">
+<div class="bt">Re-hedge Frequency</div>
+<p>สำหรับ crypto options ที่ volatile มาก: re-hedge ทุก 30–60 นาที หรือทุกครั้งที่ delta drift เกิน ±0.05<br>
+Transaction cost ของ re-hedge ต้องรวมใน edge calculation (<a href="statarb-ch19.html">บทที่ 19</a>)</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">ข้อปฏิบัติจริง — BTC Options (Deribit)</div>
+<p>สำหรับ BTC options บน Deribit PCP ถือได้ภายใน 0.1–0.3% ในตลาดปกติ ตรวจสอบ: strike เดียวกัน, expiry เดียวกัน, European exercise เท่านั้น เข้า arb เมื่อ |ε_pcp| &gt; max(0.3%, 2× bid-ask รวมทุก 4 ขา) Execute ทั้ง 4 ขาพร้อมกันในรูป combo order ถ้าทำได้ — leg risk ทำลาย PCP arb ทันที Delta-hedge net position ทันทีหลัง entry</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk — ข้อสมมติและข้อจำกัดของ PCP</div>
+<p>PCP สมมติว่าไม่มี counterparty risk และ exercise ไม่มี friction — แต่บน Deribit options ถูก settle กับ index ไม่ใช่ spot ทำให้เกิด basis risk นอกจากนี้ IV skew หมายความว่า put และ call ที่ 25Δ มี IV ต่างกัน ซึ่ง PCP สูตรพื้นฐานไม่ได้จับ ถ้าใช้ options คนละ strike จะทำให้ ε ดูใหญ่เกินจริง สำหรับ calendar spread arb บน IV ต้องพยากรณ์ว่า IV จะ converge — term structure สามารถ invert มากขึ้นก่อนที่จะ converge</p>
+</div>
+
+<!-- 18.7 -->
+<h2 id="s18-7">18.7 แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 18.1 — คำนวณ ε และ Direction</div>
+<p>ETH Options บน Deribit: Strike K = $3,500, Expiry = 45 วัน<br>
+ETH Futures (45d) = $3,620 | Call = $285 | Put = $148 | r = 5% ต่อปี</p>
+<p><strong>ถาม:</strong> คำนวณ ε และระบุ direction ของ trade arbitrage</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>e^{−rT} = e^{−0.05 × 45/365} = e^{−0.00616} ≈ 0.9939</p>
+<p>Theoretical C − P = (F − K) × e^{−rT} = ($3,620 − $3,500) × 0.9939 = $120 × 0.9939 = <strong>$119.27</strong></p>
+<p>Observed C − P = $285 − $148 = <strong>$137</strong></p>
+<p>ε = $137 − $119.27 = <strong>+$17.73</strong> → Call แพงเกินไป</p>
+<p>Trade: <strong>Sell Call + Buy Put + Long Forward at K</strong><br>
+Expected gross profit = $17.73 ต่อ ETH (ก่อนค่าธรรมเนียม)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 18.2 — IV Calendar Constraint</div>
+<p>BTC options ที่ K = ATM: IV_30d = 72%, IV_90d = 58%<br>
+Total variance: V_30 = 0.72² × (30/365) = 0.0426, V_90 = 0.58² × (90/365) = 0.0832</p>
+<p><strong>ถาม:</strong> IV surface นี้ violate calendar constraint หรือไม่? ถ้า violate ควร trade อย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p>Calendar constraint: V(T) ต้องเพิ่มตาม T (ไม่ลด)<br>
+V_30 = 0.0426 &lt; V_90 = 0.0832 → <strong>ไม่ violate</strong> — constraint ถูกต้อง</p>
+<p>แต่ตรวจสอบ implied forward IV ระหว่าง 30d ถึง 90d:<br>
+Forward variance = (V_90 − V_30) / (60/365) = (0.0832 − 0.0426) / 0.1644 = 0.2469<br>
+Forward IV = √0.2469 = 49.7%</p>
+<p>ถ้าคุณเชื่อว่า realized vol ช่วง 30–90d จะสูงกว่า 49.7% → ซื้อ calendar spread (long 90d, short 30d vega)</p>
+</div>
+</details>
+</div>
+
+<!-- 18.8 -->
+<h2 id="s18-8">18.8 PCP Violation เป็น ε — เชื่อมสู่ Stat Arb Framework</h2>
+
+<p>ตลอด §18.1–18.7 เราใช้ PCP เพื่อ <em>สร้าง</em> synthetic position — แต่มีมุมมองที่ทรงพลังกว่า: <strong>PCP violation คือ ε ในรูปแบบหนึ่ง</strong> ที่สามารถนำเข้า stat arb framework ทั้งเล่มได้ทันที</p>
+
+<div class="key-idea">
+<div class="ki-label">Key Idea — PCP Violation = ε ชนิดใหม่</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon_{\text{PCP}} = (C - P) - (S - K e^{-rT})$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+PCP บอกว่า ε นี้ควร = 0 ในตลาดไร้ friction<br>
+ในตลาดจริง ε_PCP ≠ 0 เล็กน้อยและ mean-revert รอบ 0
+</div>
+</div>
+
+<p>โครงสร้างนี้เหมือนกับ ε = log(P_A) − β·log(P_B) ใน <a href="statarb-ch3.html">บทที่ 3</a> ทุกประการ — เราสร้าง synthetic process ที่ควรเป็น 0 แล้วเทรดเมื่อมันเบี่ยงออก ความแตกต่างคือ ε_PCP มาจาก no-arbitrage constraint ของ PCP ไม่ใช่ cointegration ของราคา</p>
+
+<div class="bx bb">
+<div class="bt">ε_PCP mean-revert ได้ไหม?</div>
+<p>ε_PCP ≠ 0 เกิดจาก:</p>
+<ul>
+<li><strong>Liquidity mismatch:</strong> bid-ask spread ของ C และ P ไม่เท่ากัน</li>
+<li><strong>Borrow cost:</strong> หายากสำหรับ short stock → put premium ขึ้น</li>
+<li><strong>Vol regime:</strong> ช่วง crash IV_put เพิ่มเร็วกว่า IV_call → skew spike</li>
+<li><strong>Funding:</strong> crypto options มี basis risk ระหว่าง underlying spot กับ perp</li>
+</ul>
+<p>แต่ทั้งหมดนี้เป็น transient → ε_PCP mean-revert รอบ 0 ในระยะสั้น</p>
+</div>
+
+<table>
+<tr><th></th><th>ε ราคา (ch3–ch14)</th><th>ε_PCP (ch18.8)</th></tr>
+<tr><td>สร้างจาก</td><td>log(P_A) − β·log(P_B)</td><td>C − P − (S − K·e^{−rT})</td></tr>
+<tr><td>ควรเป็น</td><td>ค่าคงที่ θ (mean)</td><td>0 (no-arbitrage)</td></tr>
+<tr><td>เบี่ยงเพราะ</td><td>market inefficiency</td><td>liquidity/skew/funding</td></tr>
+<tr><td>test ด้วย</td><td>ADF, half-life, z-score</td><td>เหมือนกันทุกอย่าง</td></tr>
+<tr><td>trade</td><td>z-score entry/exit</td><td>เหมือนกัน</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">Running Example: BTC Options — ε_PCP จาก Deribit</div>
+<div class="fm">ข้อมูล ณ วันที่ T (BTC ≈ $95,000):
+  Call ATM (K=95,000, T=30d):  C = $4,820
+  Put ATM  (K=95,000, T=30d):  P = $4,310
+  Spot BTC:                    S = $95,000
+  r = 5%/yr,  T = 30/365
+
+PCP fair value:  S − K·e^{−rT} = 95,000 − 95,000·e^{−0.05×30/365}
+                               = 95,000 − 95,000·0.99590
+                               = 95,000 − 94,610 = 390
+
+ε_PCP = (C − P) − 390
+       = (4,820 − 4,310) − 390
+       = 510 − 390 = +120
+
+→ ε_PCP = +$120 → Call แพงกว่า Put ผิดปกติ
+→ ถ้า ε_PCP mean-revert → เปิด: Short Call + Long Put + Long Stock (Conversion)
+   รับกำไรเมื่อ ε_PCP กลับสู่ 0</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ข้อควรระวัง — Options friction สูงกว่า Perp มาก</div>
+<ul>
+<li>Bid-ask ของ options กว้างกว่า perp 5–20x → breakeven ε_PCP สูงมาก</li>
+<li>American options (equity): early exercise ทำให้ PCP ไม่ strict — ใช้เฉพาะ European</li>
+<li>Crypto options (Deribit): European, ไม่มี dividend → PCP strict ✅<br>
+  <em>หมายเหตุ:</em> Deribit settle against futures reference index ไม่ใช่ spot → PCP ที่ถูกต้องคือ C−P = (F−K)·e^{−rT} (F คือ futures price) ความต่างจาก spot PCP ≈ basis × T ซึ่งเล็กมากสำหรับ T ≤ 30 วัน แต่ควรระวังถ้า basis กว้าง</li>
+<li>ต้องคำนวณ breakeven ε_PCP ≥ total_friction ก่อนเทรดเสมอ (ดู <a href="statarb-ch19.html">บทที่ 19</a>)</li>
+</ul>
+</div>
+
+<div class="bx bi">
+<div class="bt">บทที่ 22 — Options-Based Stat Arb เต็มรูปแบบ</div>
+<p>บทที่ 22 ขยาย ε_PCP ไปสู่ IV Surface Stat Arb ครบชุด:</p>
+<p>§22.1 IV series เป็น process ใหม่ · §22.2 Box Spread Arb<br>
+§22.3 IV Skew Stat Arb · §22.4 Cross-venue IV Arb (Deribit↔Bybit)<br>
+§22.5 Vol Risk Premium · §22.6 Friction · §22.7 Practical Setup</p>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 18.8 — คำนวณ ε_PCP</div>
+<p>Given: BTC C(K=100k, T=7d) = $2,400, P(K=100k, T=7d) = $2,350, S = $100,000, K = $100,000, r = 5%/yr</p>
+<p><strong>(ก)</strong> คำนวณ PCP fair value = S − K·e^{−rT}<br>
+<strong>(ข)</strong> คำนวณ ε_PCP<br>
+<strong>(ค)</strong> ถ้า ε_PCP = +$80 และ normal range ±$30 → ควรเปิด position ไหน?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก)</strong> PCP fair = 100,000 − 100,000·e^{−0.05×7/365} = 100,000 − 100,000·0.99904 = 100,000 − 99,904 = <strong>$96</strong></p>
+<p><strong>(ข)</strong> ε_PCP = (2,400−2,350) − 96 = 50 − 96 = <strong>−$46</strong><br>
+→ Call ถูกกว่า Put → negative ε_PCP</p>
+<p><strong>(ค)</strong> ε_PCP = −$46 จากข้อ (ข) อยู่ใน normal range ±$30 หรือไม่: −$46 &lt; −$30 → <strong>ออกนอก normal range ด้านลบ</strong> → แต่ขนาดไม่ใหญ่พอหลัง friction → รอสัญญาณที่ชัดขึ้น<br>
+โจทย์ถามแทน: <em>ถ้า ε_PCP = +$80</em> → ε &gt; +$30 (2σ threshold) → Signal: เปิด <strong>Conversion</strong> — Short Call + Long Put + Long Stock<br>
+รอ ε_PCP revert กลับสู่ 0 → close เมื่อ ε_PCP &lt; $30</p>
+</div>
+</details>
+</div>
+
+<!-- 18.9 -->
+<h2 id="s18-9">18.9 American vs European Exercise — เมื่อ PCP กลายเป็น Inequality</h2>
+
+<p>ทุกสูตรใน §18.1–§18.8 สมมติว่า options เป็น <strong>European</strong> (exercise ได้เฉพาะวัน expiry) — Deribit BTC/ETH options เป็นแบบนี้จริง ทำให้ ε_PCP มี fair value เป้าหมายเดียวคือ 0 แต่ options บางตลาดเป็น <strong>American</strong> (exercise ได้ทุกวันก่อน expiry) ซึ่งเปลี่ยนสมการทั้งชุด</p>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม American ถึงทำให้ Equality พังเป็น Inequality</div>
+<div class="ki-text">
+Early-exercise คือ <strong>สิทธิ์เพิ่ม</strong> ที่ European ไม่มี → American option ราคา ≥ European เสมอ<br><br>
+บน underlying ที่ไม่มี dividend/yield: <strong>Call ไม่เคย</strong>คุ้มที่จะ exercise ก่อนกำหนด (เสีย time value ฟรี) → C_American = C_European<br>
+แต่ <strong>Put อาจคุ้ม</strong>ที่จะ exercise ก่อนกำหนด (ยิ่ง deep ITM + r สูง ยิ่งคุ้ม เพราะรับเงินสดเร็วไปลงทุนต่อ) → P_American ≥ P_European
+</div>
+</div>
+
+<div class="fm"><span class="c"># American PCP: equality กลายเป็น bounds สองด้าน</span>
+European (Deribit):   C - P  =  (F - K)·e^{-rT}              <span class="c"># จุดเดียว</span>
+American (equity-style options): S - K  ≤  C - P  ≤  S - K·e^{-rT}   <span class="c"># แถบ ไม่ใช่จุด</span>
+
+<span class="c"># เหตุผล: C_Am = C_Eu (call ไม่ early-exercise) แต่ P_Am ≥ P_Eu</span>
+<span class="c">→ C_Am - P_Am = C_Eu - P_Am ≤ C_Eu - P_Eu = S - K·e^{-rT}   (ขอบบน)</span>
+<span class="c">→ ขอบล่างมาจาก P_Am - P_Eu ≤ K(1 - e^{-rT})  →  C_Am - P_Am ≥ S - K</span></div>
+
+<div class="bx bk">
+<div class="bt">ผลต่อการเทรด: ไม่มี "fair value จุดเดียว" ให้ mean-revert เข้าหา</div>
+<p>สูตร ε_PCP = (C−P) − (F−K)e^{−rT} ใน §18.2/§18.8 ใช้ได้เฉพาะเมื่อ options เป็น European เท่านั้น — ถ้านำสูตรนี้ไปใช้กับ American options โดยไม่ปรับ จะเห็น "ε" ที่ดูเหมือนเบี่ยงออกจาก 0 ตลอดเวลา ทั้งที่จริงมันอยู่ในแถบ [S−K, S−Ke^{−rT}] ที่ถูกต้องอยู่แล้ว — ไม่ใช่ arbitrage opportunity</p>
+</div>
+
+<table>
+<tr><th>ตลาด</th><th>Exercise Style</th><th>ใช้สูตรไหน</th></tr>
+<tr><td>Deribit BTC/ETH Options</td><td>European</td><td>ε_PCP = 0 point-target (§18.2, §18.8) ✅</td></tr>
+<tr><td>CME BTC/ETH Options (on futures)</td><td>European</td><td>ε_PCP = 0 point-target ✅</td></tr>
+<tr><td>CBOE Options บน Spot-ETF (IBIT, FBTC)</td><td><strong>American</strong> (equity-style)</td><td>ต้องใช้ inequality bounds — จุด 0 ใช้ไม่ได้</td></tr>
+</table>
+
+<div class="bx bd">
+<div class="bt">Quirk เพิ่มเติม: Coin-Margined (Inverse) Options</div>
+<p>Options บางตัวบน Deribit/OKX/Bybit เป็น <strong>coin-margined</strong> — จ่าย premium และ settle เป็น BTC/ETH เอง ไม่ใช่ USD สิ่งนี้สร้าง quanto-like effect เพราะ "หน่วยที่ใช้จ่าย premium" เองก็เป็นตัวแปรสุ่มเทียบ USD → สูตร PCP มาตรฐาน (ที่สมมติ premium กับ strike เป็นหน่วยเดียวกัน) จะมี bias เล็กๆ ที่คงอยู่ต่อเนื่อง ซึ่ง<strong>ไม่ใช่ arbitrage</strong> แต่เป็นต้นทุนเชิงโครงสร้างของ instrument เอง — เหมือนหลักการ "θ ≠ 0 ต้อง estimate จริง ห้าม assume 0" ใน <a href="statarb-ch17.html#s17-10">ch17 §17.10</a> ต้องวัด bias นี้เชิงประจักษ์ก่อน แล้วหักออกจาก ε_PCP ที่สังเกตได้ ก่อนตัดสินใจว่าเหลือ ε แท้เท่าไหร่</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.9 ตรวจ exercise style ก่อนใช้สูตร → §18.10 คำนวณ band จริงจาก fee+spread ก่อนเทรด ▶</p>
+
+<!-- 18.10 -->
+<h2 id="s18-10">18.10 PCP Band ในโลกจริง — คำนวณจาก Fee + Bid-Ask จริง</h2>
+
+<p>§18.3 คำนวณ net profit โดยหักแค่ <strong>taker fee</strong> ($58.50) แต่นั่นคือครึ่งเดียวของ friction จริง — ยังไม่รวม bid-ask spread ที่ต้อง cross ทั้ง 3 ขา ของ Conversion (Sell Call + Buy Put + Long Forward) มาคำนวณ <strong>band ที่แท้จริง</strong> จากตัวอย่างเดิม:</p>
+
+<div class="fm"><span class="c"># จากตัวอย่าง §18.3: BTC K=65,000, T=30d</span>
+<span class="c"># Call=$2,850, Put=$1,520, Futures=$66,200</span>
+
+<span class="c"># 1) Taker fee (3 legs, 0.03% ต่อ leg ของ notional) — จาก §18.3</span>
+fee_total     = <span class="nm">0.03%</span> × <span class="nm">3</span> × <span class="nm">65,000</span> ≈ <span class="nm">$58.50</span>
+
+<span class="c"># 2) Bid-ask ของ options (ATM ~0.5–3% ของราคา option, ดู ch22 §22.6)</span>
+bidask_call   = <span class="nm">1%</span> × <span class="nm">2,850</span> ≈ <span class="nm">$28.50</span>
+bidask_put    = <span class="nm">1%</span> × <span class="nm">1,520</span> ≈ <span class="nm">$15.20</span>
+
+<span class="c"># 3) Bid-ask ของขา futures (deep liquid, แคบมาก)</span>
+bidask_fwd    = <span class="nm">0.003%</span> × <span class="nm">65,000</span> ≈ <span class="nm">$2.00</span>
+
+<span class="c"># รวม total friction</span>
+total_friction = <span class="nm">58.50</span> + <span class="nm">28.50</span> + <span class="nm">15.20</span> + <span class="nm">2.00</span> = <strong>$104.20</strong></div>
+
+<div class="key-idea">
+<div class="ki-label">PCP Band ที่แท้จริง (ไม่ใช่ ±0)</div>
+<div class="ki-eq">|ε_PCP| ต้อง &gt; total_friction ถึงเทรดได้</div>
+<div class="ki-text" style="margin-top:8px">
+ตัวอย่างนี้: band ≈ ±$104 (ปัดเป็น ±$100–110)<br>
+เทียบกับ ε ที่สังเกตได้ใน §18.3 = +$135 → ยังอยู่นอก band → เทรดได้ แต่ net edge หลังหัก friction ทั้งหมด = 135 − 104.20 = <strong>$30.80</strong> ไม่ใช่ $76.50 ที่คิดแบบหักแค่ fee (§18.3 มองข้าม bid-ask ไปครึ่งหนึ่งของต้นทุนจริง)
+</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">บทเรียน: อย่าคิด Friction แค่ Fee Schedule</div>
+<ul>
+<li>Fee schedule (0.03% taker) เป็นต้นทุนที่ <strong>เห็นชัด</strong> แต่มักเป็นแค่ 40–60% ของ friction จริง</li>
+<li>Bid-ask ของ options (โดยเฉพาะ far-OTM) กว้างกว่า fee หลายเท่า — ต้องใช้ตัวเลข bid-ask จริงจาก order book ไม่ใช่ mid price</li>
+<li>Band ต้องคำนวณใหม่ทุกครั้งที่ liquidity เปลี่ยน (เช่น ช่วง low-volume หรือช่วง event) — band ที่คำนวณตอนตลาดสงบ ใช้ไม่ได้ตอนตลาดผันผวน (ดู §18.11)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.10 ได้ band ตอนตลาดปกติ → §18.11 ดูว่า PCP หลุดจริงตอนไหน และ band นั้นเปลี่ยนไปยังไง ▶</p>
+
+<!-- 18.11 -->
+<h2 id="s18-11">18.11 Situation Card — PCP หลุดตอนไหนในโลกจริง</h2>
+
+<p>ε_PCP ที่ใหญ่พอจะเทรดได้ (เกิน band ใน §18.10) ไม่ได้เกิดขึ้นสุ่มๆ ตลอดเวลา — มันมี pattern ชัดเจนว่าเกิด<em>ตอนไหน</em> และมาพร้อมกับดักที่ต้องระวัง:</p>
+
+<div class="bx bg">
+<div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card) — PCP Violation</div>
+<ul>
+<li><strong>Trigger:</strong> ใกล้ expiry (1–3 วันสุดท้าย) พร้อมกับ panic/crash — put ฝั่ง order book ถูกซื้อกวาดแรง (demand ป้องกัน downside พุ่ง) ขณะที่ market maker ถอนสภาพคล่องฝั่งนั้นเป็นการเฉพาะ</li>
+<li><strong>Regime:</strong> เกิดถี่ขึ้นรอบ event calendar ที่รู้ล่วงหน้าได้ (FOMC, ETF flow decision, options expiry รายไตรมาส) — ไม่ใช่สุ่มตลอดปี</li>
+<li><strong>Edge vs Friction:</strong> ช่วง stress เดียวกันที่ ε_PCP กว้างขึ้น bid-ask ก็กว้างขึ้นพร้อมกัน (มักเป็น 2–5 เท่าของ §18.10) → ต้องคำนวณ band ใหม่แบบ real-time ไม่ใช่ใช้ band ที่วัดตอนตลาดสงบ — edge ที่ดูใหญ่อาจถูกกิน friction เกือบหมด</li>
+<li><strong>ใครอยู่อีกฝั่ง:</strong> retail ที่ panic-buy put เพื่อประกันความเสี่ยง (ยอมจ่ายแพง), ตำแหน่งที่ถูก force-liquidate (ขาย call ทิ้งแบบไม่สนราคา), market maker ที่ถอนตัวจาก two-sided quote ฝั่ง put พอดีตอน volume พุ่งสูงสุด</li>
+<li><strong>สัญญาณ setup พัง:</strong> ε_PCP กว้างค้างนานหลายชั่วโมง/วันโดยไม่ revert หลัง event ผ่านไปแล้ว — ให้สงสัย index/settlement basis จริง (ดู bx model-risk ใน §18.6) ไม่ใช่แค่ liquidity ชั่วคราว</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§18.9–§18.11 คือ mechanics ของ PCP ให้ครบ real-world edge cases → ต่อยอดเต็มรูปแบบใน <a href="statarb-ch22.html">บทที่ 22</a> ▶</p>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.18 Options Overlay | ต่อไป → <strong>Ch.19: Cost Analysis &amp; Edge — คำนวณ Net Edge ก่อนเทรด</strong> | §18.8 ดู <a href="statarb-ch22.html">ch22</a> สำหรับ Options Stat Arb เต็มรูปแบบ
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.22 — Options-Based Stat Arb</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+.fm .c{color:#6b7280}
+.fm .kw{color:#7c3aed;font-weight:700}
+.fm .fn{color:#0d9488}
+.fm .nm{color:#dc2626}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.pseudo{font-family:'Courier New',monospace;background:var(--g1);padding:14px 18px;border-radius:6px;margin:14px 0;overflow-x:auto;font-size:.92em;line-height:1.7;border-left:3px solid var(--teal)}
+.pseudo .c{color:#6b7280}
+.pseudo .kw{color:#7c3aed;font-weight:700}
+.pseudo .fn{color:#0d9488}
+.pseudo .nm{color:#dc2626}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}.fm{overflow:visible;white-space:pre-wrap;word-break:break-all}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 22</div>
+<h1>Options-Based Stat Arb</h1>
+<div class="sub">IV Surface · Box Spread · Cross-venue IV · Vol Risk Premium<br>ต่อยอดจาก Put-Call Parity (<a href="statarb-ch18.html">บทที่ 18</a>)</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">
+แทนที่ราคา P_A, P_B → ใช้ <strong>Implied Volatility IV_A, IV_B</strong><br>
+<strong>ε_IV = IV_A − β·IV_B</strong> ยังคง mean-revert เหมือน ε ราคา — ใช้ pipeline เดิมทั้งหมด (ADF, half-life, z-score)<br>
+แหล่งกำไรใหม่: IV mispricing จาก skew, cross-venue, vol risk premium
+</div>
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon_{\text{IV}} = \text{IV}_{\text{BTC}} - \text{IV}_{\text{ETH}} - \theta_{\text{IV}} \qquad \text{RR}_{25\Delta} = \sigma_{\text{call},25\Delta} - \sigma_{\text{put},25\Delta}$$
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">Prerequisites — ต้องเข้าใจก่อนอ่านบทนี้</div>
+<ul>
+<li><strong>ch3</strong> OU process, half-life, mean-reversion — ε_IV fit OU เหมือนกัน</li>
+<li><strong>ch4 §4.2b</strong> OLS β = Cov/Var — β_IV คำนวณแบบเดียวกัน</li>
+<li><strong>ch5</strong> ADF + Pair Selection Pipeline — ใช้กับ IV pairs ได้ตรงๆ</li>
+<li><strong>ch10</strong> z-score entry/exit — เหมือนกันทุกประการ</li>
+<li><strong>ch12</strong> Kelly sizing — f* × 0.3 สำหรับ short vol strategy</li>
+<li><a href="statarb-ch18.html#s18-8"><strong>ch18 §18.8</strong></a> ε_PCP — starting point สำหรับ options-based ε</li>
+<li><strong>pm-part1</strong> PCP fundamentals + synthetic construction</li>
+</ul>
+</div>
+
+<div class="bx ba">
+<div class="bt">Glossary — คำศัพท์ Options ที่ใช้ในบทนี้</div>
+<ul>
+<li><strong>ATM (At-the-Money)</strong>: strike K = spot price S — เป็น strike ที่ liquid ที่สุด</li>
+<li><strong>Straddle</strong>: Long Call(K) + Long Put(K) — กำไรเมื่อ vol สูง ไม่สนทิศทาง</li>
+<li><strong>Vega</strong>: sensitivity ของ option price ต่อ IV change — Long option = Long Vega</li>
+<li><strong>Gamma</strong>: sensitivity ของ delta ต่อ S change — Short straddle = Short Gamma</li>
+<li><strong>Delta hedge</strong>: ซื้อ/ขาย underlying เพื่อให้ net delta ≈ 0 (ป้องกัน directional risk)</li>
+<li><strong>Vol Smile/Skew</strong>: IV ที่แตกต่างกันตาม strike K — OTM puts มักมี IV สูงกว่า OTM calls</li>
+<li><strong>25Δ</strong>: options ที่มี absolute delta = 0.25 — OTM แต่ยัง liquid พอ</li>
+</ul>
+</div>
+
+<!-- 22.1 -->
+<h2 id="s22-1">22.1 IV เป็น Process ใหม่ — สร้าง ε บน Vol Surface</h2>
+
+<p><strong>Implied Volatility (IV)</strong> คือค่า σ ที่แทนลงใน Black-Scholes แล้วได้ราคา option ที่ตลาดซื้อขายจริงพอดี — IV ไม่ใช่ historical volatility แต่คือ <em>market's forward-looking expectation of volatility</em> ณ ขณะนั้น</p>
+
+<p>จุดสำคัญ: IV ของ asset ที่มีความสัมพันธ์กัน (เช่น BTC และ ETH) ควรเคลื่อนที่ไปด้วยกัน — เมื่อ crypto market มี risk-off event ทั้งสองจะพุ่งขึ้นพร้อมกัน และเมื่อตลาดสงบ ทั้งสองจะลดลงพร้อมกัน ด้วยเหตุนี้:</p>
+
+<div class="key-idea">
+<div class="ki-label">สมการหลัก — IV Spread Process</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon_{\text{IV},t} = \text{IV}_A(K,T,t) - \beta \cdot \text{IV}_B(K,T,t)$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+โดยที่ K คือ strike (เลือก ATM เพื่อ liquidity สูงสุด), T คือ <strong>constant-maturity</strong> (เช่น 30d interpolated — ไม่ใช่ fixed-calendar expiry ที่ T หดทุกวัน), t คือ timestamp<br>
+β_IV คำนวณจาก OLS: β_IV = Cov(IV_A, IV_B) / Var(IV_B) — เหมือนกับ <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a> ทุกประการ<br>
+θ_IV = E[ε_IV] = ค่ากลางของ spread (อาจไม่ใช่ 0 เพราะ structural premium ต่างกัน)
+</div>
+</div>
+
+<table>
+<tr><th></th><th>ε ราคา</th><th>ε_IV</th></tr>
+<tr><td><strong>Input</strong></td><td>log P_A, log P_B</td><td>IV_A(K,T), IV_B(K,T)</td></tr>
+<tr><td><strong>สร้างด้วย</strong></td><td>OLS β (<a href="statarb-ch4.html">ch4</a>)</td><td>OLS β_IV</td></tr>
+<tr><td><strong>mean ของ ε</strong></td><td>θ ≈ 0 (log-price)</td><td>θ_IV (vol level differential)</td></tr>
+<tr><td><strong>mean-revert เพราะ</strong></td><td>cointegration (<a href="statarb-ch5.html">ch5</a>)</td><td>vol surfaces ของ correlated assets linked</td></tr>
+<tr><td><strong>test ด้วย</strong></td><td>ADF + half-life + z-score</td><td>ADF + half-life + z-score — เหมือนกัน</td></tr>
+<tr><td><strong>trade ด้วย</strong></td><td>z-score บน ε (<a href="statarb-ch10.html">ch10</a>)</td><td>z-score บน ε_IV — pipeline เดิมทั้งหมด</td></tr>
+</table>
+
+<img class="chart" src="charts/ch22-iv-spread.svg" alt="BTC vs ETH IV spread">
+<div class="caption">ซ้าย: IV_BTC (teal) และ IV_ETH (น้ำเงิน) เคลื่อนที่ไปด้วยกัน | ขวา: ε_IV oscillates รอบ θ_IV ≈ 3% ภายใน ±2σ band</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม IV ของ BTC กับ ETH ควร Cointegrate?</div>
+<ul>
+<li>BTC และ ETH ขับเคลื่อนโดย <strong>crypto market sentiment</strong> เดียวกัน — ความกลัวหรือความโลภกระทบทั้งคู่พร้อมกัน</li>
+<li>Institutional vol sellers มักขาย <strong>volatility ทั้งสองพร้อมกัน</strong> เพราะ hedge ด้วย BTC และ ETH ในสัดส่วนใกล้เคียงกัน</li>
+<li>Risk-off event (เช่น regulatory news, macro shock) กระทบ <strong>IV ทั้งคู่พร้อมกัน</strong> ในทิศทางเดียว</li>
+<li>→ ε_IV = IV_BTC − β·IV_ETH stationary ได้ ถ้า pair เลือกถูก และ β calibrate ด้วย OLS บน window ที่เหมาะสม</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.1 ใช้ IV ของ assets ต่างกัน → §22.2 ดู case พิเศษที่ ε ควรเป็น 0 อย่างแน่นอน: Box Spread ▶</p>
+
+<!-- 22.2 -->
+<h2 id="s22-2">22.2 Box Spread Stat Arb — ε_box</h2>
+
+<p><strong>Box Spread</strong> คือ synthetic bond ที่สร้างจาก options 4 legs โดยรวม long bull call spread กับ short bull put spread ที่ K เดียวกัน สิ่งที่ได้คือ fixed payoff = K2 − K1 ณ expiry ไม่ว่า underlying จะเป็นเท่าไหร่</p>
+
+<div class="bx bg">
+<div class="bt">พื้นฐาน: Bull Call Spread คืออะไร?</div>
+<p>Bull Call Spread = Long Call(K1) + Short Call(K2) ที่ K1 &lt; K2 — payoff = max(S−K1, 0) − max(S−K2, 0) ซึ่งมีค่าสูงสุด = K2−K1<br>
+<strong>Box Spread</strong> = Long Bull Call Spread (K1,K2) + Short Bull Put Spread (K1,K2) = ผลรวมที่ได้ K2−K1 แน่นอนทุก scenario ไม่ว่า S จะเป็นเท่าไหร่ → Box = synthetic zero-coupon bond ที่ maturity = K2−K1</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Fair Value ของ Box Spread</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$V_{\text{box}} = (K_2 - K_1)\,e^{-rT}$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+Market box price = (C_K1 − P_K1) − (C_K2 − P_K2)<br>
+ε_box = Market_box − (K2 − K1)·e^{−rT}<br><br>
+เนื่องจาก payoff ของ box = K2 − K1 แน่นอน fair value จึงต้องเป็น present value ของ spread นั้น<br>
+ε_box ควร = 0 ในตลาดที่ไม่มี friction — เมื่อ ε_box ≠ 0 คือ arbitrage opportunity
+</div>
+</div>
+
+<div class="fm"><span class="c"># สูตร Box Spread</span>
+Market box price = (C_K1 − P_K1) − (C_K2 − P_K2)
+Fair box value   = (K2 − K1) · e<span class="kw">^</span>{−rT}
+ε_box           = Market_box − Fair_box</div>
+
+<table>
+<tr><th>ε_box</th><th>ความหมาย</th><th>Action</th></tr>
+<tr><td><strong>&gt; 0</strong> (แพงไป)</td><td>ตลาดประเมิน box สูงกว่า fair value</td><td>Short box: <strong>Sell C(K1) + Buy P(K1) + Buy C(K2) + Sell P(K2)</strong></td></tr>
+<tr><td><strong>&lt; 0</strong> (ถูกไป)</td><td>ตลาดประเมิน box ต่ำกว่า fair value</td><td>Long box: <strong>Buy C(K1) + Sell P(K1) + Sell C(K2) + Buy P(K2)</strong></td></tr>
+<tr><td><strong>≈ 0</strong></td><td>Fair — ไม่มีความไม่สมดุล</td><td>ไม่มีสัญญาณ รอ</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC Box Spread บน Deribit</div>
+<p style="font-size:.9em;color:#92400e;margin-bottom:.6em"><strong>⚠️ หมายเหตุก่อนอ่าน:</strong> ตัวอย่างนี้ใช้ option quotes ที่ <strong>ละเมิด PCP โดยตั้งใจ</strong> เพื่อสาธิตการตรวจจับ ε_box ขนาดใหญ่ — ราคาเหล่านี้ไม่สามารถ coexist ได้ในตลาดจริง ในตลาดปกติ ε_box จะอยู่ที่ ±$50–200 เท่านั้น</p>
+<p><strong>ข้อมูล:</strong><br>
+K1 = 90,000, K2 = 100,000 (spread = $10,000)<br>
+T = 7 วัน = 7/365, r = 5%/ปี<br>
+Deribit quotes: C(90k) = $6,200, P(90k) = $1,050, C(100k) = $2,400, P(100k) = $2,350</p>
+
+<div class="fm"><span class="c"># คำนวณ Market Box Price</span>
+Market box = (C_K1 − P_K1) − (C_K2 − P_K2)
+           = (<span class="nm">6200</span> − <span class="nm">1050</span>) − (<span class="nm">2400</span> − <span class="nm">2350</span>)
+           = <span class="nm">5150</span> − <span class="nm">50</span>
+           = <span class="nm">$5,100</span>
+
+<span class="c"># คำนวณ Fair Box Value</span>
+Fair box   = <span class="nm">10000</span> × e^{−<span class="nm">0.05</span>×<span class="nm">7</span>/<span class="nm">365</span>}
+           = <span class="nm">10000</span> × <span class="nm">0.99904</span>
+           = <span class="nm">$9,990</span>
+
+<span class="c"># ε_box</span>
+ε_box = <span class="nm">5100</span> − <span class="nm">9990</span> = <strong>−$4,890</strong></div>
+
+<p>→ ε_box <strong>ลบมาก</strong> → ตลาดประเมิน box ต่ำกว่า fair value $4,890<br>
+→ ถ้า total friction ≤ $4,890 → <strong>Long box</strong>: Buy (C_K1−P_K1), Sell (C_K2−P_K2) รับกำไร $4,890 ณ expiry</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">ข้อจำกัดของ Box Spread Arb</div>
+<ul>
+<li>ต้องการ <strong>4 legs พร้อมกัน</strong> → friction สูง 4× เทียบกับ single leg trade</li>
+<li>Liquidity ของ deep ITM/OTM options <strong>ต่ำมาก</strong> → bid-ask กว้าง → ε_box ที่ profitable จริงหายาก</li>
+<li>ดีที่สุดกับ <strong>near-ATM options ที่ liquid</strong> — strike ที่ volume สูง</li>
+<li>Crypto: ใช้ Deribit เพราะ <strong>European options</strong> (ไม่มี early exercise risk) — American options จะทำให้ fair value ซับซ้อนขึ้น</li>
+<li>ε_box ≠ 0 ที่คงอยู่มักเกิดจาก execution friction ไม่ใช่ market error — ต้องวัด friction จริงก่อน</li>
+</ul>
+<p style="margin-top:8px;font-size:.9em;color:#6b7280">ดูพื้นฐาน Box Spread เพิ่มเติม: <em>arb-part1 · arb-part2 · arb-part3</em></p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">Box Spread วัด mispricing ที่ PCP level → §22.3 ขยับขึ้นดู mispricing บน vol surface: IV Skew ▶</p>
+
+<!-- 22.3 -->
+<h2 id="s22-3">22.3 IV Skew Stat Arb — Risk Reversal (RR_25Δ)</h2>
+
+<p>IV Skew หมายถึง IV ของ options ที่ strike ต่างกันนั้นไม่เท่ากัน — put ที่ strike ต่ำมักมี IV สูงกว่า call ที่ strike สูง เพราะ demand ซื้อ protective put สูงกว่า ปรากฏการณ์นี้สะท้อนอยู่ใน <strong>vol smile curve ที่เอียงซ้าย</strong></p>
+
+<div class="bx bb">
+<div class="bt">ทำไมต้องวัด IV ข้ามสไตรก์? — PCP Constraint</div>
+<p>Put-Call Parity (<a href="statarb-ch18.html#s18-1">บทที่ 18 §18.1</a>) บังคับว่า IV_call(K,T) = IV_put(K,T) สำหรับ <strong>K เดียวกัน, T เดียวกัน</strong> เสมอ — ถ้าต่างกัน จะมี riskless arbitrage ทันที ดังนั้น ε_skew จึงวัดไม่ได้ที่ K เดียวกัน<br>
+→ "Skew" ต้องวัดโดยเปรียบ IV <em>ข้ามสองสไตรก์ที่ต่างกัน</em><br>
+→ วิธีมาตรฐานของตลาด: <strong>Risk Reversal 25Δ</strong> — เปรียบ IV ที่ 25Δ put (strike ต่ำ) กับ IV ที่ 25Δ call (strike สูง)</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">Risk Reversal 25Δ — นิยาม IV Skew มาตรฐาน</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\text{RR}_{25\Delta} = \sigma_{\text{call}}(\Delta = +0.25) - \sigma_{\text{put}}(\Delta = -0.25)$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+25Δ put: strike ≈ 80–90% ของ spot (OTM put ทางซ้ายของ smile curve)<br>
+25Δ call: strike ≈ 110–120% ของ spot (OTM call ทางขวาของ smile curve)<br><br>
+ปกติ: RR_25Δ ≈ −5% ถึง −10% สำหรับ BTC (กว้างกว่า FX/equity เพราะ downside skew เรื้อรัง)<br>
+Panic spike: RR_25Δ ลงถึง −15% ถึง −25% แล้ว mean-revert กลับ<br><br>
+ε_RR = RR_25Δ − θ_RR &nbsp;&nbsp;&nbsp;(θ_RR = mean ปกติ เช่น −8% สำหรับ BTC)<br><br>
+<em>หมายเหตุ:</em> ตลาด FX ใช้ convention ตรงข้าม (RR = IV_call − IV_put &gt; 0 เมื่อ call แพงกว่า) — บทนี้ใช้ convention เดียวกับ equity/crypto ที่ RR &lt; 0 เมื่อ put skew มี
+</div>
+</div>
+
+<p>ทฤษฎีบังคับว่า IV_call = IV_put ที่ K เดียวกัน → ในตลาดจริง smile curve เอียงทำให้ IV ต่างกันข้ามสไตรก์ → <strong>เทรด gap นั้นเมื่อ spike ผิดปกติ</strong></p>
+
+<img class="chart" src="charts/ch22-vol-smile.svg" alt="Vol smile skew regimes">
+<div class="caption">ซ้าย: Vol smile เอียงซ้าย (pure skew) — 25Δ put (K≈85%S) IV=58% &gt; 25Δ call (K≈115%S) IV=50% → RR_25Δ = IV_call−IV_put = 50%−58% = −8% | ขวา: RR_25Δ mean-reverts รอบ −8% spike ลงถึง −16% ระหว่าง panic แล้วกลับ</div>
+
+<table>
+<tr><th>สถานการณ์</th><th>RR_25Δ</th><th>ε_RR = RR − θ_RR</th><th>Action</th></tr>
+<tr><td>Normal</td><td>≈ −5% ถึง −10% (BTC)</td><td>ε_RR ≈ 0</td><td>ไม่มีสัญญาณ — รอ</td></tr>
+<tr><td>Panic: put demand พุ่ง</td><td>spike ลง −12% ถึง −20%</td><td>ε_RR ≪ 0, z &lt; −2</td><td>Long RR: Buy 25Δ Call + Sell 25Δ Put</td></tr>
+<tr><td>Post-panic: normalize</td><td>กลับ −3% ถึง −5%</td><td>ε_RR ≈ 0</td><td>Close position รับกำไรจาก reversion</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC 25Δ Risk Reversal — Panic Event</div>
+<p><strong>สภาวะปกติ:</strong> BTC spot S = $95,000, T = 30 วัน</p>
+<div class="fm"><span class="c"># 25Δ put: strike ≈ 85% ของ spot = $80,750  (IV สูงกว่า ATM เพราะ demand ป้องกัน downside)</span>
+<span class="c"># 25Δ call: strike ≈ 115% ของ spot = $109,250 (IV ต่ำกว่า ATM)</span>
+
+IV_put(25Δ)  = <span class="nm">58%</span>
+IV_call(25Δ) = <span class="nm">50%</span>
+RR_25Δ       = IV_call − IV_put = <span class="nm">50%</span> − <span class="nm">58%</span> = <strong>−8%</strong>  ← normal (BTC range −5% ถึง −10%)
+
+Historical θ_RR = −8%, σ_RR = 2%
+ε_RR = −8% − (−8%) = <span class="nm">0%</span>   z_RR = 0 → ไม่มีสัญญาณ</div>
+
+<p><strong>ช่วง panic (flash crash −15%):</strong></p>
+<div class="fm"><span class="c"># Spot ลงเหลือ ≈ $80,750 → 25Δ strikes ขยับตาม</span>
+IV_put(25Δ)  = <span class="nm">73%</span>   <span class="c"># put demand พุ่งแรง — ผู้คนแห่ซื้อ downside protection</span>
+IV_call(25Δ) = <span class="nm">57%</span>   <span class="c"># call IV ขึ้นน้อยกว่ามาก</span>
+RR_25Δ       = IV_call − IV_put = <span class="nm">57%</span> − <span class="nm">73%</span> = <strong>−16%</strong>  ← spike!
+
+ε_RR = −16% − (−8%) = −8%
+z_RR = −8% / 2% = <strong>−4.0</strong>  ← &gt;&gt; 2σ → Signal!</div>
+
+<div class="bx bi">
+<div class="bt">ทำไม Long RR? — เหตุผลเบื้องหลังการเทรด</div>
+<p>ในช่วง panic: put IV พุ่งสูงผิดปกติ → put <em>ราคาแพง</em> relative to fair value<br>
+→ <strong>ขาย put</strong> (เก็บ premium ที่แพงเกินไป) + <strong>ซื้อ call</strong> (ถูกกว่า relative)<br>
+→ รอ panic ผ่านไป → skew normalize → RR กลับ −8% → ปิด position รับกำไร<br><br>
+⚠️ Long Call + Short Put = net <strong>positive delta</strong> (long underlying exposure)<br>
+→ <strong>ต้อง delta-hedge:</strong> ขาย BTC futures จำนวน ≈ net_delta units ทันทีที่เปิด position<br>
+→ ไม่เช่นนั้นจะเป็นการ bet ทิศทาง ไม่ใช่ skew arb</p>
+</div>
+<div class="fm">Action: <strong>Long RR</strong> — Buy 25Δ Call + Sell 25Δ Put บน Deribit
+         + Short BTC-PERP ≈ net_delta units (delta hedge)
+→ รอ panic subsides → RR_25Δ กลับ −8% → Close ทุก leg
+→ กำไร ≈ Δ_ε_RR × Vega (per 1% IV change)</div>
+
+<p style="font-size:.9em;color:#6b7280">IV Skew Selection Algorithm: <em>vp-part4</em></p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.3 เปรียบ IV ข้ามสไตรก์ใน exchange เดียว → §22.4 เปรียบ IV ของ option เดียวกันข้าม exchanges ▶</p>
+
+<!-- 22.4 -->
+<h2 id="s22-4">22.4 Cross-venue IV Stat Arb — Deribit ↔ Bybit</h2>
+
+<p>สำหรับ underlying เดียวกัน (BTC), strike K เดียวกัน, expiry T เดียวกัน — IV ควรเท่ากันระหว่าง exchanges ในทางทฤษฎี แต่ในทางปฏิบัติ IV แตกต่างกันได้จาก liquidity structure และ market maker behavior ที่ต่างกัน</p>
+
+<div class="key-idea">
+<div class="ki-label">ε Cross-venue — Process เดิม Pipeline เดิม</div>
+<div class="ki-eq">ε_xvenue = IV_Deribit(K,T) − β·IV_Bybit(K,T)</div>
+<div class="ki-text" style="margin-top:8px">
+β ≈ 1 (same underlying) แต่มี small deviation จาก structural liquidity premium<br>
+→ ใช้ OLS คำนวณ β_IV จาก historical data เหมือน <a href="statarb-ch4.html#s4-2b">บทที่ 4 §4.2b</a><br>
+→ ε_xvenue มี θ_IV บวก = structural alpha (Deribit IV สูงกว่าเรื้อรัง)
+</div>
+</div>
+
+<h3>Apply Full Stat Arb Pipeline (ต่อจากบทก่อน)</h3>
+
+<ol>
+<li><strong>Scatter plot</strong> IV_Deribit vs IV_Bybit → ρ ≥ 0.85? (<a href="statarb-ch5.html">ch5</a>)</li>
+<li><strong>OLS β_IV</strong> = Cov(IV_D, IV_B) / Var(IV_B) (<a href="statarb-ch4.html#s4-2b">ch4 §4.2b</a>)</li>
+<li><strong>ADF</strong> บน ε_xvenue → p &lt; 0.05? (<a href="statarb-ch5.html">ch5</a>)</li>
+<li><strong>Half-life</strong> → อยู่ใน target horizon? (<a href="statarb-ch3.html">ch3</a>)</li>
+<li><strong>z-score</strong> entry/exit (<a href="statarb-ch10.html">ch10</a>)</li>
+</ol>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC IV Cross-venue — 90 วัน Hourly Data</div>
+<div class="fm"><span class="c"># Pipeline Results</span>
+β_IV     = <span class="nm">0.98</span>   <span class="c"># Deribit ≈ Bybit แต่สูงกว่าเล็กน้อย</span>
+θ_IV     = <span class="nm">+0.8%</span>  <span class="c"># Deribit IV สูงกว่า Bybit 0.8% โดยเฉลี่ย</span>
+σ_IV     = <span class="nm">1.2%</span>   <span class="c"># standard deviation ของ ε_xvenue</span>
+Half-life = <span class="nm">8</span> ชม.  <span class="c"># φ = 0.92 → OU process</span>
+ADF p    = <span class="nm">0.021</span>  <span class="c"># ✅ stationary</span>
+
+<span class="c"># Entry Signal</span>
+ε_xvenue &gt; θ + 2×σ = <span class="nm">0.8%</span> + <span class="nm">2.4%</span> = <span class="nm">3.2%</span>
+→ Deribit แพง relative → Short Deribit straddle + Long Bybit straddle
+
+<span class="c"># Exit Signal</span>
+ε_xvenue &lt; θ + 0.5×σ = <span class="nm">0.8%</span> + <span class="nm">0.6%</span> = <span class="nm">1.4%</span></div>
+</div>
+
+<img class="chart" src="charts/ch22-rr-zscore.svg" alt="Risk Reversal z-score signal">
+<div class="caption">Pipeline รับ IV feed จากทั้ง Deribit และ Bybit → คำนวณ ε_xvenue → ส่ง trade signal: Short straddle (Deribit) + Long straddle (Bybit)</div>
+
+<div class="bx bg">
+<div class="bt">ทำไม Deribit IV &gt; Bybit IV เรื้อรัง</div>
+<ul>
+<li><strong>Deribit</strong> = dominant crypto options exchange → vol sellers มากกว่า → bid-ask แคบกว่า → IV คำนวณได้แม่นยำกว่า</li>
+<li><strong>Bybit</strong> = newer options market → market makers demand higher premium เพราะ uncertainty สูงกว่า → IV underpriced relative to Deribit</li>
+<li>→ ε_xvenue มี <strong>positive drift θ_IV = structural alpha</strong> — ε_xvenue = θ + noise</li>
+<li>→ mean-revert รอบ θ_IV บวก ไม่ใช่ 0</li>
+</ul>
+<p style="margin-top:8px;font-size:.9em;color:#6b7280">Cross-venue concept: <em>eye-part3</em></p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.1–22.4 เปรียบ IV ระหว่างสองสิ่ง → §22.5 เปรียบ IV กับ realized volatility ที่เกิดขึ้นจริง ▶</p>
+
+<!-- 22.5 -->
+<h2 id="s22-5">22.5 Vol Risk Premium — IV − RV</h2>
+
+<p><strong>Vol Risk Premium (VRP)</strong> คือปรากฏการณ์ที่ Implied Volatility (IV) สูงกว่า Realized Volatility (RV) โดยเฉลี่ยอย่างต่อเนื่อง — เพราะผู้ซื้อ options ยินดีจ่ายเพิ่มเป็น insurance premium แหล่งกำไรคือการ <em>ขาย volatility</em> รับ IV เมื่อ IV สูงกว่า RV ที่คาด</p>
+
+<p><strong>RV_Nd</strong> (Realized Volatility N วัน) = annualized standard deviation ของ daily log-returns ใน N วันที่ผ่านมา: <code>RV = √(252/N · Σ r_t²)</code> โดย r_t = log(S_t/S_{t-1})</p>
+
+<div class="key-idea">
+<div class="ki-label">VRP Process — Mean-Reversion แหล่งที่สาม</div>
+<div class="ki-eq">ε_VRP = IV_t − RV_t   (ปกติ &gt; 0 = positive alpha เรื้อรัง)</div>
+<div class="ki-text" style="margin-top:8px">
+เมื่อ ε_VRP spike สูงผิดปกติ (panic-driven IV explosion) → ขาย vol รอ normalize<br>
+เมื่อ ε_VRP ลบ (vol surprise — realized &gt; implied) → ซื้อ vol ป้องกัน<br>
+→ ใช้ z-score บน ε_VRP เหมือนกับ ε ราคา — pipeline เดิมทั้งหมด
+</div>
+</div>
+
+<table>
+<tr><th></th><th>BTC/ETH Options</th><th>S&amp;P500 Options</th></tr>
+<tr><td><strong>Average VRP</strong></td><td>10–20% (IV − RV)</td><td>3–5%</td></tr>
+<tr><td><strong>Regime: normal</strong></td><td>ε_VRP ≈ +15%</td><td>ε_VRP ≈ +4%</td></tr>
+<tr><td><strong>Regime: crisis</strong></td><td>ε_VRP → −20% (IV explodes)</td><td>ε_VRP → −30% ★</td></tr>
+<tr><td><strong>Mean-reversion τ½</strong></td><td>≈ 5–15 วัน</td><td>≈ 10–20 วัน</td></tr>
+<tr><td colspan="3" style="font-size:.88em;color:#6b7280">★ S&amp;P500 ε_VRP ลบมากกว่าในช่วง crisis เพราะ IV_normal ต่ำกว่า BTC มาก (VIX ≈ 15% vs BTC IV ≈ 60%) เมื่อ realized vol พุ่งพร้อมกัน อัตราส่วน RV/IV ของ S&amp;P500 จึงเกิน 1 ได้มากกว่า</td></tr>
+<tr><td><strong>Trade</strong></td><td>Short straddle เมื่อ z &gt; 2σ</td><td>Short straddle เมื่อ z &gt; 2σ</td></tr>
+</table>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC VRP Signal — Normal vs Bull Run</div>
+<p><strong>สภาวะปกติ:</strong></p>
+<div class="fm">IV_30d      = <span class="nm">65%</span>
+RV_30d      = <span class="nm">48%</span>  <span class="c"># realized ใน 30 วันที่ผ่านมา</span>
+ε_VRP       = <span class="nm">65%</span> − <span class="nm">48%</span> = <span class="nm">+17%</span>
+
+Historical mean ε_VRP = <span class="nm">+13%</span>, σ_VRP = <span class="nm">6%</span>
+z_VRP = (<span class="nm">17%</span> − <span class="nm">13%</span>) / <span class="nm">6%</span> = <span class="nm">+0.67</span>  ← ไม่ถึง 2σ → ยังไม่ trade</div>
+
+<p><strong>ช่วง bull run (IV พุ่งไม่สมเหตุผล):</strong></p>
+<div class="fm">IV_30d      = <span class="nm">90%</span>
+RV_30d      = <span class="nm">55%</span>
+ε_VRP       = <span class="nm">90%</span> − <span class="nm">55%</span> = <span class="nm">+35%</span>
+
+z_VRP = (<span class="nm">35%</span> − <span class="nm">13%</span>) / <span class="nm">6%</span> = <strong>+3.67</strong>  ← &gt;&gt; 2σ → Signal!
+
+Action: <strong>ขาย vol</strong> → Short straddle BTC (Sell ATM Call + Sell ATM Put)
+         หรือ Short variance swap (ถ้ามี)
+Position size: Kelly f* × <span class="nm">0.3</span> (conservative เพราะ tail risk)</div>
+</div>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยง VRP Trade — อ่านก่อนเทรด</div>
+<ul>
+<li><strong>Tail risk:</strong> vol spike ใน crisis ทำ loss ไม่จำกัด — Short straddle = Short gamma = unlimited downside</li>
+<li><strong>Black swan:</strong> RV พุ่งเกิน IV ได้ — ε_VRP negative หนัก ทำให้ loss ใหญ่มาก</li>
+<li><strong>Stop-loss บังคับ:</strong> ต้องมี stop เมื่อ ε_VRP ลดลงต่ำกว่า mean อย่างชัดเจน (เช่น z_VRP &lt; −1)</li>
+<li><strong>Kelly sizing อนุรักษ์นิยม:</strong> f* ≤ 30% ของ Kelly เต็ม (<a href="statarb-ch12.html">ch12</a>) เพราะ left tail ของ P&amp;L ไม่สมมาตร</li>
+<li><strong>Delta hedge ต่อเนื่อง:</strong> Short straddle มี gamma risk — ต้อง re-hedge delta ทุก 30–60 นาที</li>
+</ul>
+<p style="margin-top:8px;font-size:.9em;color:#6b7280">Vol Clustering และ GARCH forecast: <em>vol-part4</em></p>
+</div>
+
+<!-- 22.6 -->
+<h2 id="s22-6">22.6 Friction &amp; Breakeven สำหรับ Options</h2>
+
+<p>Options มี friction structure ที่ซับซ้อนและสูงกว่า perpetual futures มาก — ต้องเข้าใจ component ทุกตัวก่อนคำนวณ edge:</p>
+
+<table>
+<tr><th>Component</th><th>Perp (Bybit)</th><th>Options (Deribit)</th></tr>
+<tr><td><strong>Commission</strong></td><td>0.055% taker</td><td>0.03% taker (maker 0%)</td></tr>
+<tr><td><strong>Bid-ask spread</strong></td><td>0.002–0.004% ของ notional</td><td>0.5–3% ของ option price (สูงมาก)</td></tr>
+<tr><td><strong>Slippage</strong></td><td>ต่ำ (deep liquid)</td><td>สูง โดยเฉพาะ OTM options</td></tr>
+<tr><td><strong>Greeks hedge cost</strong></td><td>ไม่มี</td><td>Delta hedge ทุกวัน (Gamma cost สะสม)</td></tr>
+<tr><td><strong>Overnight financing</strong></td><td>Funding rate (อาจ + หรือ −)</td><td>ไม่มี (IV baked in เป็น annualized)</td></tr>
+<tr><td><strong>สรุป friction</strong></td><td>~13 bps ทั่วไป</td><td>~100–300 bps (5–20× สูงกว่า perp)</td></tr>
+</table>
+
+<div class="key-idea">
+<div class="ki-label">Breakeven σ_IV Formula (เดิมจาก <a href="statarb-ch19.html#s19-7">ch19 §19.7</a>)</div>
+<div class="ki-eq">Breakeven σ_IV = total_friction / (z_entry − z_exit)</div>
+<div class="ki-text" style="margin-top:8px">
+เงื่อนไข: σ_IV ≥ breakeven σ_IV → มี edge<br>
+สำหรับ options: total_friction สูงกว่า perp 5–10× → ต้องเลือกเฉพาะ signal ที่ deep enough
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: Breakeven Calculation สำหรับ Options Strategy</div>
+<div class="fm">Parameters:
+  z_entry       = <span class="nm">2.0</span>
+  z_exit        = <span class="nm">0.5</span>
+  total_friction = <span class="nm">200</span> bps ใน IV-space (= 2% IV change; ต้องใช้หน่วยเดียวกับ σ_IV)
+
+Breakeven σ_IV = <span class="nm">200</span> / (<span class="nm">2.0</span> − <span class="nm">0.5</span>)
+               = <span class="nm">200</span> / <span class="nm">1.5</span>
+               = <strong>133 bps = 1.33%</strong>
+
+→ ต้องการ σ_IV ≥ 1.33% ถึงจะ trade ได้
+→ เทียบ: Perp breakeven σ ≈ 13 bps — options ต้องการ σ สูงกว่า ~10×</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">สรุป: เมื่อไหร่จึง Trade Options Stat Arb ได้</div>
+<ul>
+<li><strong>ε_IV หรือ ε_skew หรือ ε_VRP ≥ 1–3%</strong> (ขึ้นอยู่กับ friction จริง) — ไม่ใช่ทุก signal</li>
+<li>ATM options ที่ <strong>liquid</strong> เท่านั้น — OTM options มี bid-ask กว้างเกินไป</li>
+<li>Deribit BTC/ETH เป็น venue ที่ดีที่สุดสำหรับ crypto เพราะ European + ลึกที่สุด</li>
+<li>ต้องวัด friction จริงล่วงหน้า — อย่าประมาณ friction ต่ำเกินไป</li>
+</ul>
+</div>
+
+<!-- 22.7 -->
+<h2 id="s22-7">22.7 Practical Setup — Data, Code, Position Sizing</h2>
+
+<h3>Data Sources</h3>
+
+<table>
+<tr><th>Data</th><th>Source</th><th>Free/Paid</th></tr>
+<tr><td>BTC/ETH option prices + IV</td><td>Deribit API (REST + WebSocket)</td><td>Free</td></tr>
+<tr><td>IV Surface historical</td><td>Deribit <code>/api/v2/public/get_volatility_index_data</code></td><td>Free</td></tr>
+<tr><td>Cross-venue comparison</td><td>Bybit Options API</td><td>Free</td></tr>
+<tr><td>RV calculation</td><td>Spot price (Binance/Bybit) คำนวณเอง</td><td>Free</td></tr>
+</table>
+
+<h3>Pseudo-code: IV Stat Arb Pipeline</h3>
+
+<div class="pseudo"><span class="c"># 1. Fetch ATM IV จาก Deribit</span>
+<span class="kw">def</span> <span class="fn">get_atm_iv</span>(currency, expiry):
+    <span class="c"># Deribit API: /api/v2/public/get_order_book</span>
+    <span class="c"># หา ATM strike ที่ |delta| ≈ 0.5</span>
+    <span class="c"># return (IV_call + IV_put) / 2  (mid IV)</span>
+    ...
+
+<span class="c"># 2. สร้าง ε_IV time series</span>
+btc_iv = [<span class="fn">get_atm_iv</span>(<span class="nm">"BTC"</span>, expiry) <span class="kw">for</span> expiry <span class="kw">in</span> expiry_list]
+eth_iv = [<span class="fn">get_atm_iv</span>(<span class="nm">"ETH"</span>, expiry) <span class="kw">for</span> expiry <span class="kw">in</span> expiry_list]
+
+<span class="c"># OLS β_IV = Cov(IV_BTC, IV_ETH) / Var(IV_ETH)  — ch4 §4.2b</span>
+beta_iv = np.<span class="fn">cov</span>(btc_iv, eth_iv)[<span class="nm">0</span>,<span class="nm">1</span>] / np.<span class="fn">var</span>(eth_iv, ddof=<span class="nm">1</span>)
+epsilon_iv = np.<span class="fn">array</span>(btc_iv) - beta_iv * np.<span class="fn">array</span>(eth_iv)
+
+<span class="c"># 3. z-score  (ch10)</span>
+mean_iv = epsilon_iv.<span class="fn">mean</span>()
+std_iv  = epsilon_iv.<span class="fn">std</span>()
+z_iv    = (epsilon_iv[<span class="nm">-1</span>] - mean_iv) / std_iv
+
+<span class="c"># 4. Entry/Exit Signal</span>
+<span class="kw">if</span> z_iv &gt; <span class="nm">2.0</span>:
+    <span class="c"># BTC IV แพงเทียบกับ ETH IV → Short BTC vol, Long ETH vol</span>
+    <span class="c"># Short BTC straddle (Sell ATM call + Sell ATM put บน Deribit)</span>
+    <span class="c"># Long ETH straddle (Buy ATM call + Buy ATM put บน Deribit/Bybit)</span>
+    signal = <span class="nm">"SELL_BTC_IV_BUY_ETH_IV"</span>
+<span class="kw">elif</span> z_iv &lt; <span class="nm">-2.0</span>:
+    <span class="c"># BTC IV ถูกเทียบกับ ETH IV → Long BTC vol, Short ETH vol</span>
+    signal = <span class="nm">"BUY_BTC_IV_SELL_ETH_IV"</span>
+<span class="kw">else</span>:
+    signal = <span class="nm">"NO_SIGNAL"</span>  <span class="c"># รอ</span>
+
+<span class="c"># 5. Exit</span>
+<span class="kw">if</span> abs(z_iv) &lt; <span class="nm">0.5</span>:
+    signal = <span class="nm">"EXIT"</span>  <span class="c"># z กลับค่ากลาง</span></div>
+
+<h3>Position Sizing กับ Options — Vega-equivalent</h3>
+
+<p>Options position size ไม่ควรใช้ dollar-notional เหมือน perp เพราะ sensitivity ต่อ IV ต่างกัน — ต้องใช้ <strong>Vega-equivalent</strong>:</p>
+
+<div class="bx bi">
+<div class="bt">Vega-Neutral Sizing</div>
+<ul>
+<li><strong>Vega</strong> ≈ S·√T·N'(d₁)/100 — ค่าเปลี่ยนของ option price ต่อ 1 percentage-point IV change<br>&nbsp;&nbsp;&nbsp;&nbsp;(BS Vega มาตรฐาน = S·√T·N'(d₁) คือ per 1.00 change ใน σ; หาร 100 เพื่อให้ได้ per 1% move; √T คือ annualized แล้ว | ATM approximation: N'(d₁) ≈ 0.40)</li>
+<li>Target: <strong>Vega_A ≈ β_IV · Vega_B</strong> ระหว่างสองขา (Vega-neutral)</li>
+<li>ตัวอย่าง: ถ้า Vega_BTC = $200/% และ Vega_ETH = $50/% และ β_IV = 1.05<br>
+→ ต้องการ BTC: 1 lot, ETH: 200/(50×1.05) ≈ 3.81 lots → rounded = 4 lots</li>
+<li><strong>Kelly adjustment:</strong> f* × 0.3 เพราะ tail risk ของ short options (<a href="statarb-ch12.html">ch12</a>)</li>
+</ul>
+</div>
+
+<div class="fm"><span class="c"># Vega-neutral position sizing</span>
+<span class="kw">def</span> <span class="fn">vega_neutral_size</span>(vega_a, vega_b, beta_iv, kelly_fraction=<span class="nm">0.3</span>):
+    <span class="c"># ratio เพื่อให้ Vega_A = beta_iv * Vega_B</span>
+    ratio = vega_a / (vega_b * beta_iv)
+    <span class="c"># ใช้ lots_b = 1 เป็น base → คำนวณ lots_a</span>
+    lots_b = <span class="nm">1.0</span>
+    lots_a = lots_b * ratio
+    <span class="c"># Kelly: ลด size ลง 70% สำหรับ short vol strategy</span>
+    <span class="kw">return</span> {
+        <span class="nm">"lots_a"</span>: lots_a * kelly_fraction,
+        <span class="nm">"lots_b"</span>: lots_b * kelly_fraction
+    }</div>
+
+<!-- 22.8 -->
+<h2 id="s22-8">22.8 เชื่อมหนังสือทั้งชุด</h2>
+
+<p>บทนี้ต่อยอดจากหลายบทในตำราชุดนี้โดยตรง — ทุก concept เดิมยังใช้ได้ เพียงแต่ <em>input เปลี่ยนจากราคาเป็น IV</em>:</p>
+
+<table>
+<tr><th>หนังสือ / บท</th><th>Content ที่ใช้ใน ch22</th></tr>
+<tr><td><strong>pm-part1</strong></td><td>PCP fundamentals, synthetic construction — พื้นฐาน options ทั้งหมด</td></tr>
+<tr><td><strong>arb-part1/arb-part2/arb-part3</strong></td><td>Box Spread concept — §22.2 ขยายเพิ่ม stat arb layer บน top</td></tr>
+<tr><td><strong>vol-part4</strong></td><td>Vol Clustering, IV mean reversion — basis ทางทฤษฎีของ §22.5 VRP</td></tr>
+<tr><td><strong>vp-part4</strong></td><td>IV Skew Selection Algorithm — §22.3 ใช้โดยตรง</td></tr>
+<tr><td><strong>eye-part3</strong></td><td>Cross-venue IV gap as arb signal — §22.4 ขยาย full pipeline</td></tr>
+<tr><td><a href="statarb-ch3.html"><strong>statarb-ch3</strong></a></td><td>OU process, half-life — ε_IV ก็ fit OU เหมือนกัน</td></tr>
+<tr><td><a href="statarb-ch4.html"><strong>statarb-ch4</strong></a></td><td>OLS β_IV = Cov/Var — §22.1, §22.4</td></tr>
+<tr><td><a href="statarb-ch5.html"><strong>statarb-ch5</strong></a></td><td>ADF + Pair Selection Pipeline — §22.4 ใช้ full pipeline</td></tr>
+<tr><td><a href="statarb-ch10.html"><strong>statarb-ch10</strong></a></td><td>z-score entry/exit — ใช้กับ ε_IV เหมือนกันทุกประการ</td></tr>
+<tr><td><a href="statarb-ch12.html"><strong>statarb-ch12</strong></a></td><td>Kelly sizing — f* × 0.3 สำหรับ short vol (§22.5, §22.7)</td></tr>
+<tr><td><a href="statarb-ch18.html#s18-8"><strong>statarb-ch18 §18.8</strong></a></td><td>PCP — §18.8 ε_PCP คือ starting point ที่ ch22 ต่อยอด</td></tr>
+<tr><td><a href="statarb-ch19.html"><strong>statarb-ch19</strong></a></td><td>Breakeven σ framework — §22.6 ขยาย to options friction</td></tr>
+</table>
+
+<div class="bx bb">
+<div class="bt">บทสรุป: Options Stat Arb = Same Pipeline, New Input</div>
+<p>แก่นของ ch22 คือ <strong>ไม่ต้องเรียน pipeline ใหม่</strong> — เพียงแต่เปลี่ยน input จากราคา log(P) เป็น IV และ understand ว่า IV process มี 5 แหล่ง alpha ใหม่:</p>
+<ol>
+<li><strong>§22.1</strong> ε_IV = IV cross-asset spread (BTC vs ETH IV)</li>
+<li><strong>§22.2</strong> ε_box = Box spread deviation จาก fair value</li>
+<li><strong>§22.3</strong> ε_RR = deviation ของ RR_25Δ จาก mean θ_RR (cross-strike IV asymmetry)</li>
+<li><strong>§22.4</strong> ε_xvenue = Cross-exchange IV gap</li>
+<li><strong>§22.5</strong> ε_VRP = IV − RV premium spike</li>
+</ol>
+<p>ทั้งหมดนี้ใช้ ADF, half-life, z-score, Kelly เหมือนกันทุกประการ</p>
+</div>
+
+<div class="bx bd">
+<div class="bt">Practitioner Notes</div>
+<p>IV stat arb requires very precise timing — IV moves fast and stale quotes create ghost signals. Use real-time IV snapshots from the exchange API (not delayed feed). Enter with vega-neutral position (equal vega on each leg) to isolate the IV spread from directional vol moves. Re-calibrate θ_IV weekly as the long-run IV ratio shifts with market regime.</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">Model Risk</div>
+<p>IV is not directly tradeable — you must trade options, which have bid-ask spreads of 0.5–1.5 IV points. A "signal" of ε_IV = 2σ may be entirely consumed by transaction costs. Also: IV mean-reversion speed is highly non-stationary; during vol-of-vol regime, IV can trend for days without reverting. Options gamma and theta bleed creates P&amp;L even with perfect IV hedge.</p>
+</div>
+
+
+<!-- 22.9 -->
+<h2 id="s22-9">22.9 IV Term Structure ε — Front vs Back เต็มรูปแบบ</h2>
+
+<p><a href="statarb-ch18.html#s18-4">ch18 §18.4</a> แตะเรื่อง Calendar Spread IV Arb ไว้แค่ในฐานะ no-arbitrage constraint (variance ต้องเพิ่มตาม T) — ที่นี่เราขยายให้เป็น <strong>stat arb strategy เต็มรูปแบบ</strong> บน term structure ที่ยังไม่ผิด no-arb bound แต่เบี่ยงจาก "รูปทรงปกติ" ของมันเอง</p>
+
+<div class="key-idea">
+<div class="ki-label">ε Term Structure — Constant-Maturity Front vs Back</div>
+<div class="ki-eq">
+<div style="margin-top:10px;text-align:center">
+$$\varepsilon_{\text{term}} = \text{IV}_{\text{front}}(t) - \beta \cdot \text{IV}_{\text{back}}(t)$$
+</div>
+</div>
+<div class="ki-text" style="margin-top:8px">
+front/back = constant-maturity (เช่น 7d vs 30d) ไม่ใช่ fixed-calendar expiry ที่ T หดทุกวัน (เหมือน §22.1)<br>
+θ_term ปกติติดลบเล็กน้อย (front ถูกกว่า back เล็กน้อยในสภาวะปกติ — contango ของ vol) <br>
+ต่างจาก §22.1 (cross-asset) และ §22.4 (cross-venue): ที่นี่ทั้งสองขาคือ <strong>underlying เดียวกัน คนละ maturity</strong>
+</div>
+</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม Term Structure ถึง Invert ได้แบบคาดการณ์ล่วงหน้า</div>
+<p>ก่อนเหตุการณ์ที่รู้กำหนดการล่วงหน้า (FOMC, ETF flow decision, network upgrade, options expiry รายไตรมาส) — <strong>front IV ถูกบวก event-risk premium</strong> เพราะตลาดรู้ว่าจะมีความผันผวนกระจุกในช่วงสั้นๆ นั้น ขณะที่ back IV แทบไม่ขยับ (event นั้นเป็นสัดส่วนน้อยของ 30 วันข้างหน้า) → term structure invert ชั่วคราว (front &gt; back) หลัง event ผ่านไป front IV จะ "vol crush" กลับลงเร็ว (event risk หายไปทันที) ขณะ back แทบไม่เปลี่ยน → term structure normalize กลับ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: BTC IV Term Structure รอบ FOMC</div>
+<p><strong>สภาวะปกติ (ไม่มี event ใกล้):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">55%</span>,  IV_30d = <span class="nm">58%</span>,  β ≈ <span class="nm">1.0</span>
+ε_term = <span class="nm">55%</span> − <span class="nm">58%</span> = <span class="nm">−3%</span>   ← θ_term ปกติ, σ_term = <span class="nm">1.5%</span>
+z = 0 → ไม่มีสัญญาณ</div>
+<p><strong>T−3 วันก่อน FOMC (event premium สะสมใน front):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">68%</span>   <span class="c"># FOMC ตกอยู่ในช่วง 7 วันนี้พอดี</span>
+IV_30d = <span class="nm">59%</span>   <span class="c"># แทบไม่ขยับ</span>
+ε_term = <span class="nm">68%</span> − <span class="nm">59%</span> = <span class="nm">+9%</span>
+z = (<span class="nm">9%</span> − (<span class="nm">−3%</span>)) / <span class="nm">1.5%</span> = <strong>+8.0</strong>  ← สุดขั้ว → Signal!
+
+Action: <strong>Calendar Spread</strong> — Sell 7d straddle (front, vega แพง) + Buy 30d straddle (back, vega ถูกกว่า)
+         + delta-hedge สุทธิทั้งสองขา (§18.6)</div>
+<p><strong>หลัง FOMC ผ่านไป (vol crush):</strong></p>
+<div class="fm">IV_7d  = <span class="nm">50%</span>   <span class="c"># event risk หายไปทันที — crush แรงกว่าที่คาด</span>
+IV_30d = <span class="nm">57%</span>
+ε_term = <span class="nm">50%</span> − <span class="nm">57%</span> = <span class="nm">−7%</span>  ← ใกล้ θ_term ปกติ (−3%) → close position รับกำไรจาก crush</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 สถานการณ์ที่ได้ใช้ (Situation Card) — IV Term Structure ทั้งบทที่ 22</div>
+<ul>
+<li><strong>Trigger:</strong> event calendar ที่รู้ล่วงหน้า (FOMC, ETF decision, expiry รายไตรมาส) อยู่ใน front window</li>
+<li><strong>ข้อดีเทียบ ε ราคา:</strong> IV เบี่ยงตาม event ที่ <strong>กำหนดการชัดเจนล่วงหน้า</strong> — ความถี่และจังหวะคาดการณ์ได้แม่นยำกว่า ε ราคาปกติมาก (ที่ mean-revert แบบสุ่มตาม noise ตลาด)</li>
+<li><strong>แต่ Friction สูงกว่ามาก:</strong> total friction ของ options (~100–300 bps ตาม <a href="statarb-ch22.html#s22-6">§22.6</a>) สูงกว่า perp 5–20 เท่า — "คาดเดาได้ง่ายกว่า" ไม่ได้แปลว่า "กำไรง่ายกว่า" ต้องผ่าน breakeven check ทุกครั้ง</li>
+<li><strong>สัญญาณ setup พัง:</strong> event ถูกเลื่อน/ยกเลิก (front premium ค้างนานผิดคาด), หรือ crush ไม่เกิดตามที่คาด (event surprise ใหญ่กว่าที่ priced ไว้ → IV ไม่ลง อาจขึ้นต่อ)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.9 เทียบ IV underlying เดียวกันข้าม maturity → §22.10 ดู topic ขั้นสูง: เทียบ IV ของ index กับ basket ▶</p>
+
+<!-- 22.10 -->
+<h2 id="s22-10">22.10 Dispersion เบื้องต้น (L2 — Advanced Topic)</h2>
+
+<div class="bx ba">
+<div class="bt">⚠️ หัวข้อนี้คือ L2/Advanced — อ่านเพื่อความเข้าใจ ไม่ใช่ setup ที่พร้อมเทรดทันที</div>
+<p>Dispersion trading ในตลาดหุ้นดั้งเดิม (SPX vs single-name options) เป็นกลยุทธ์ที่ established มานาน แต่ในตลาด crypto ยังมีข้อจำกัดข้อมูลสำคัญ: options ที่ liquid พอจะเชื่อ IV ได้จริงมีแค่ BTC และ ETH เป็นหลัก — altcoin options (SOL, และอื่นๆ) volume บางมาก ทำให้ "basket IV" ที่แม่นยำยังสร้างยาก หัวข้อนี้จึงนำเสนอเป็น <strong>โครงสร้างแนวคิด</strong> ให้เข้าใจ ไม่ใช่ pipeline พร้อมใช้เหมือนหัวข้ออื่นในบทนี้</p>
+</div>
+
+<p>โครงสร้างเดียวกับ multi-leg spread ใน <a href="statarb-ch16.html">บทที่ 16</a> — เพียงแต่แทนที่ "ราคา" ด้วย "IV":</p>
+
+<div class="key-idea">
+<div class="ki-label">ε Dispersion — Index Vol vs Basket Vol</div>
+<div class="ki-eq">ε_disp = IV_index − f(IV_1, IV_2, ..., IV_n, ρ_implied)</div>
+<div class="ki-text" style="margin-top:8px">
+Variance ของ basket (ตามทฤษฎี portfolio variance):<br>
+σ²_index ≈ Σᵢ Σⱼ wᵢ wⱼ σᵢ σⱼ ρᵢⱼ<br><br>
+Dispersion trade แท้จริงคือการเทรด <strong>implied correlation (ρ_implied)</strong> ที่ฝังอยู่ใน IV_index เทียบกับ IV ของ component แต่ละตัว — ถ้า ρ_implied สูงกว่า ρ_realized ที่คาด (correlation risk premium) → ตลาดจ่ายแพงเกินไปสำหรับ index vol
+</div>
+</div>
+
+<table>
+<tr><th>ทิศทาง</th><th>ความหมาย</th><th>Trade (แนวคิด)</th></tr>
+<tr><td>ρ_implied แพงไป</td><td>IV_index สูงเกินไปเทียบ basket</td><td>Short index vol (BTC-index straddle) + Long basket vol (BTC+ETH straddles)</td></tr>
+<tr><td>ρ_implied ถูกไป</td><td>IV_index ต่ำเกินไปเทียบ basket</td><td>Long index vol + Short basket vol</td></tr>
+</table>
+
+<div class="bx bk">
+<div class="bt">ข้อจำกัดในทางปฏิบัติของ Crypto Dispersion วันนี้</div>
+<ul>
+<li>"Index" ที่มี options ลึกพอมีแค่ BTC (และ ETH บางส่วน) — ยังไม่มี broad crypto-index options ที่ liquid เทียบเท่า SPX</li>
+<li>Basket ที่ใช้จริงมักเหลือแค่ BTC+ETH สองตัว ซึ่งไม่ใช่ "basket" ที่มีความหลากหลายพอจะให้ dispersion premium ชัดเจนแบบตลาดหุ้น</li>
+<li>Correlation matrix ของ altcoin ที่ IV ไม่ liquid ต้องประมาณจาก historical realized correlation แทน — เพิ่ม model risk อีกชั้น</li>
+<li>เหมาะสำหรับติดตามเป็นแนวคิดสำรองเมื่อตลาด options altcoin พัฒนาขึ้นในอนาคต มากกว่าจะเป็น setup หลักวันนี้</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.10 คือกับดักข้อมูล → §22.11 คือกับดักเชิงโครงสร้างที่ร้ายแรงกว่า: สิ่งที่ทำให้ §22.3 อาจเป็นภาพลวงตา ▶</p>
+
+<!-- 22.11 -->
+<h2 id="s22-11">22.11 Sticky Strike vs Sticky Delta — กับดักเชิงโครงสร้างของ RR_25Δ</h2>
+
+<p><a href="statarb-ch22.html#s22-3">§22.3</a> เทรด RR_25Δ โดยสมมติว่าการเบี่ยงจาก θ_RR สะท้อน skew ที่ผิดปกติจริง — แต่มี effect เชิงกลไกที่ทำให้ RR_25Δ ขยับได้ <strong>โดยไม่มี skew อะไรเปลี่ยนเลย</strong> เพียงเพราะ spot เคลื่อนที่ ถ้าไม่แยกสอง effect นี้ออกจากกัน อาจคิดว่ามี alpha ทั้งที่กำลังจับ noise เชิงกลไก</p>
+
+<div class="bx bb">
+<div class="bt">Sticky Strike vs Sticky Delta — สอง Convention ของการเคลื่อนที่ของ Smile</div>
+<ul>
+<li><strong>Sticky Strike:</strong> IV ที่ strike K <em>คงที่</em>ตัวเลข (เช่น IV ที่ K=$90,000 ยังคงเดิม) แม้ spot จะเปลี่ยน — smile curve "ติดอยู่กับ" แกน strike</li>
+<li><strong>Sticky Delta (Sticky Moneyness):</strong> IV ที่ delta/moneyness <em>คงที่</em> (เช่น IV ที่ 25Δ put ยังคงเดิม) — เมื่อ spot เปลี่ยน strike ที่ตรงกับ 25Δ ก็เปลี่ยนตาม แต่ IV ที่จุดนั้นเท่าเดิม — smile curve "เลื่อนตาม" spot</li>
+<li>ตลาดจริงมักอยู่ระหว่างสองแบบนี้ ไม่ใช่ pure convention ใดแบบหนึ่ง — และ regime อาจสลับไปมาตามช่วงเวลา</li>
+</ul>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">ทำไม RR_25Δ ขยับได้โดยไม่มี Skew เปลี่ยน (ถ้าตลาด Sticky Strike)</div>
+<div class="ki-text">
+ถ้า smile เป็นฟังก์ชันคงที่ของ strike (sticky strike) แล้ว spot รีบาวด์ขึ้น: strike ที่เคยเป็น "25Δ put" (OTM ต่ำกว่า spot มาก) จะมี delta หดลง (OTM มากขึ้นสัมพัทธ์) จุด 25Δ ใหม่จะขยับไปที่ strike ที่<em>สูงกว่าเดิม</em>บนแกน strike เดียวกัน — ถ้า smile ไม่เปลี่ยนรูปเลย IV ที่จุด 25Δ ใหม่ (ใกล้ ATM มากกว่าเดิม) จะ<strong>ต่างจาก</strong> IV ที่จุด 25Δ เดิม โดยอัตโนมัติ<br><br>
+→ RR_25Δ ขยับ "ดูเหมือน" mean-revert ทั้งที่ risk sentiment (รูปร่างจริงของ smile เทียบ strike) <strong>ไม่ได้เปลี่ยนเลย</strong> — เป็นแค่ผลของ spot ที่เลื่อน delta ไปคนละจุดบน smile เดิม
+</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">วิธีป้องกัน: แยก "Smile-Roll Effect" ออกจาก Skew ที่แท้จริง</div>
+<ol>
+<li>เก็บ smile แบบ strike-indexed ของเมื่อวาน (IV เป็นฟังก์ชันของ strike จริง ไม่ใช่ delta)</li>
+<li>คำนวณว่า RR_25Δ<em>ควรจะเป็นเท่าไหร่วันนี้</em> ถ้าสมมติ sticky-strike ล้วนๆ (ประเมิน smile เดิมที่ strike ใหม่ที่ตรงกับ 25Δ วันนี้)</li>
+<li>Roll effect = ค่าที่คำนวณได้ในข้อ 2 ลบด้วย RR_25Δ ของเมื่อวาน</li>
+<li>Genuine skew move = RR_25Δ ที่สังเกตได้จริงวันนี้ ลบด้วย roll effect</li>
+<li>เทรดเฉพาะ <strong>genuine skew move</strong> เท่านั้น — ไม่ใช่ raw ΔRR_25Δ ที่ปนกันทั้งสอง effect</li>
+</ol>
+</div>
+
+<div class="bx bd">
+<div class="bt">Practitioner Note</div>
+<p>ถ้า spot ไม่ได้เคลื่อนที่มากระหว่างการวัด RR สองจุด effect นี้เล็กน้อยจนละเลยได้ — ปัญหาจะรุนแรงเฉพาะตอนที่ RR เปลี่ยนพร้อมกับ spot เคลื่อนแรง (เช่น ตัวอย่าง panic ใน §22.3 ที่ spot ร่วง 15% ด้วย) ซึ่งเป็นกรณีที่ signal ดูแรงที่สุดพอดี — เป็นเหตุผลว่าทำไมต้องเช็ค roll effect ทุกครั้งที่ spot เคลื่อนที่มากในช่วงเดียวกับ RR spike ไม่ใช่แค่ตอน spot นิ่ง</p>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.11 คือกับดักก่อนเข้าเทรด → §22.12 ปิดท้ายด้วยระบบบัญชีหลังเทรด: กำไรที่ได้จริงมาจากไหนบ้าง ▶</p>
+
+<!-- 22.12 -->
+<h2 id="s22-12">22.12 PnL Decomposition ของ ε Trade บน Options</h2>
+
+<p>ต่อยอดจาก Delta Hedge (<a href="statarb-ch18.html#s18-6">ch18 §18.6</a>) และ Vega-equivalent sizing (<a href="statarb-ch22.html#s22-7">§22.7</a>) — เมื่อปิด position แล้ว ต้องแยกให้ออกว่ากำไร/ขาดทุนที่เกิดขึ้นจริงมาจากส่วนไหนบ้าง เพราะมีแค่ส่วนเดียวที่เป็น "edge ที่ตั้งใจเทรด" ส่วนที่เหลือคือของแถมหรือต้นทุนที่ติดมาโดยไม่ได้ตั้งใจ</p>
+
+<div class="key-idea">
+<div class="ki-label">4 องค์ประกอบของ P&L บน Options ε Trade</div>
+<div class="ki-eq">Total P&amp;L = Vega P&amp;L + Gamma P&amp;L + Theta P&amp;L + Delta Residual</div>
+<div class="ki-text" style="margin-top:8px">
+<strong>Vega P&L</strong> = Vega_position × ΔIV — ส่วนที่ <em>ตั้งใจเก็บ</em> (ε revert) คือแก่นของทั้งบทที่ 22<br>
+<strong>Gamma P&L</strong> = กำไร/ขาดทุนจากการ re-hedge delta ตาม realized vol ที่เกิดขึ้นจริง — ติดมาโดยอัตโนมัติจากการถือ options<br>
+<strong>Theta P&L</strong> = time decay ต่อวัน — "ค่าเช่า" ของการเป็น short/long gamma<br>
+<strong>Delta Residual</strong> = ความคลาดเคลื่อนจากการ re-hedge แบบ discrete-time (ไม่ต่อเนื่อง)
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่างหลัก: แกะ P&L ของ VRP Short-Straddle Trade (ต่อจาก §22.5)</div>
+<p>ใช้ position จาก §22.5 (Short ATM Straddle BTC, notional $100,000, Vega = −$500/%, delta-hedged) ถือ 5 วันจนกว่า ε_VRP revert:</p>
+<div class="fm"><span class="c"># 1) Vega P&L — ส่วนที่ตั้งใจเก็บ (VRP mean-revert: IV ลง)</span>
+IV เปลี่ยน: <span class="nm">90%</span> → <span class="nm">70%</span>  (ΔIV = <span class="nm">−20</span> จุด)
+Vega P&amp;L = Vega_position × ΔIV = (−<span class="nm">$500</span>/%) × (−<span class="nm">20</span>%) = <strong>+$10,000</strong>
+
+<span class="c"># 2) Gamma P&L — ต้นทุนที่ติดมาจาก short gamma (สมมติ realized vol สูงระหว่างถือ)</span>
+Gamma P&amp;L (สมมติจาก re-hedging cost 5 วัน) = <strong>−$3,000</strong>
+
+<span class="c"># 3) Theta P&L — "ค่าเช่า" จากการ short options (ชดเชย short gamma)</span>
+Theta ≈ <span class="nm">$400</span>/วัน × <span class="nm">5</span> วัน = <strong>+$2,000</strong>
+
+<span class="c"># 4) Delta Residual — hedge slippage จาก re-hedge แบบ discrete</span>
+Residual (จาก rehedge ไม่ต่อเนื่อง) = <strong>−$300</strong>
+
+<span class="c"># รวม</span>
+Total realized P&amp;L = <span class="nm">10,000</span> − <span class="nm">3,000</span> + <span class="nm">2,000</span> − <span class="nm">300</span> = <strong>+$8,700</strong></div>
+</div>
+
+<div class="bx bk">
+<div class="bt">บทเรียนจากการแกะ P&L นี้</div>
+<ul>
+<li>กำไร <strong>$10,000 จาก Vega</strong> คือ edge แท้จริงที่เทรด VRP นี้ตั้งใจเก็บ — ตัวเลขนี้ต่างหากที่ควรใช้ประเมินว่า strategy "ทำงาน" หรือไม่</li>
+<li>Theta (+$2,000) เป็นของแถม <strong>ไม่ใช่ thesis หลัก</strong> — ห้ามเข้าใจผิดว่ากำไรจาก theta คือหลักฐานว่า VRP-timing แม่นยำ</li>
+<li>Gamma (−$3,000) คือต้นทุนที่หลีกเลี่ยงไม่ได้ของการ short options ระหว่าง realized vol สูง — ต้องถูกงบประมาณไว้ล่วงหน้าใน friction estimate (<a href="statarb-ch22.html#s22-6">§22.6</a>) ไม่ใช่ค้นพบทีหลังตอนขาดทุน</li>
+<li><strong>ถ้า realized vol สูงกว่านี้อีก</strong> gamma cost อาจกิน vega gain จนหมด — ทำให้ VRP call ที่ "ถูกต้องตามทฤษฎี" (IV จริงลงตามคาด) กลายเป็นขาดทุนสุทธิได้ นี่คือเหตุผลที่ §22.5 เตือนเรื่อง Kelly sizing แบบอนุรักษ์นิยม (f* × 0.3)</li>
+</ul>
+</div>
+
+<p style="text-align:right;font-size:.9em;color:#0d9488;font-style:italic">§22.9–§22.12 ปิดชุดหัวข้อขั้นสูงของ Options Stat Arb — กลับไป §22.8 เพื่อดูภาพรวมทั้งบท หรือไปต่อบทที่ 23 ▶</p>
+
+<!-- Exercises -->
+<h2 id="s22-ex">แบบฝึกหัด</h2>
+
+<div class="ex">
+<div class="et">โจทย์ 22.1 — ε_IV Pipeline</div>
+<p>BTC ATM IV (30d) วันนี้ = 62%, ETH ATM IV (30d) = 56%<br>
+Historical parameters: β_IV = 1.05, θ_IV = +3%, σ_IV = 2%</p>
+<p><strong>(ก)</strong> คำนวณ ε_IV,today<br>
+<strong>(ข)</strong> คำนวณ z-score<br>
+<strong>(ค)</strong> ควร trade ไหม? ถ้าใช่ เปิด position ไหน?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) ε_IV,today:</strong><br>
+ε_IV = IV_BTC − β_IV × IV_ETH = 62% − 1.05 × 56% = 62% − 58.8% = <strong>3.2%</strong></p>
+<p><strong>(ข) z-score:</strong><br>
+z = (ε_IV − θ_IV) / σ_IV = (3.2% − 3%) / 2% = 0.2% / 2% = <strong>+0.10</strong></p>
+<p><strong>(ค) ควร trade ไหม:</strong><br>
+z = 0.10 ต่ำมาก — ไม่ถึง 2σ threshold → <strong>ไม่ trade</strong><br>
+รอจนกว่า z &gt; 2.0 (ε_IV &gt; 3% + 2×2% = 7%) หรือ z &lt; −2.0 (ε_IV &lt; 3% − 4% = −1%)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 22.2 — Breakeven IV</div>
+<p>Options strategy parameters: total_friction = 250 bps, z_entry = 2.0, z_exit = 0.5<br>
+Observed σ_IV ของ ε_IV = 1.8%</p>
+<p><strong>(ก)</strong> คำนวณ Breakeven σ_IV<br>
+<strong>(ข)</strong> σ_IV = 1.8% ≥ breakeven? trade ได้ไหม? margin of safety เป็นอย่างไร?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) Breakeven σ_IV:</strong><br>
+Breakeven = total_friction / (z_entry − z_exit) = 250 / (2.0 − 0.5) = 250 / 1.5 = <strong>166.7 bps = 1.667%</strong></p>
+<p><strong>(ข) trade ได้ไหม:</strong><br>
+σ_IV = 1.8% &gt; breakeven = 1.667% → <strong>✅ trade ได้</strong><br>
+Margin of safety = 1.8% − 1.667% = <strong>0.133%</strong> — แคบมาก<br>
+→ ควรระวัง: ถ้า friction จริงสูงกว่าประมาณ หรือ σ_IV ลดลงเล็กน้อย edge จะหายไปทันที<br>
+→ แนะนำ: รอ σ_IV ≥ 2.0% เพื่อ margin of safety ที่ดีกว่า</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 22.3 — VRP Signal</div>
+<p>IV_30d = 80%, RV_30d = 45%<br>
+Historical parameters: mean ε_VRP = 15%, σ_VRP = 8%</p>
+<p><strong>(ก)</strong> คำนวณ ε_VRP และ z-score<br>
+<strong>(ข)</strong> แนะนำ action พร้อม position sizing และ stop-loss</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) ε_VRP และ z-score:</strong><br>
+ε_VRP = IV_30d − RV_30d = 80% − 45% = <strong>+35%</strong><br>
+z_VRP = (ε_VRP − mean) / σ = (35% − 15%) / 8% = 20% / 8% = <strong>+2.50</strong></p>
+<p><strong>(ข) แนะนำ action:</strong><br>
+z_VRP = +2.50 &gt; 2σ → <strong>ขาย vol: Short straddle BTC</strong> (Sell ATM Call + Sell ATM Put)<br>
+Position size: Kelly f* × 0.3 (conservative เพราะ tail risk ของ short straddle)<br>
+Delta hedge: re-hedge ทุก 30–60 นาที หรือเมื่อ delta drift &gt; ±0.05<br>
+Stop-loss: เมื่อ ε_VRP ลดลงต่ำกว่า mean (ε_VRP &lt; 15%) หรือ z_VRP &lt; −1<br>
+Exit profit: เมื่อ z_VRP กลับมา ≤ 0.5 (ε_VRP ≈ 19%)</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 22.4 — Box Spread (§22.2)</div>
+<p>BTC options บน Deribit: K1 = 90,000, K2 = 95,000 (spread = $5,000), T = 14 วัน, r = 5%/ปี<br>
+Quotes: C(90k) = $6,200 · P(90k) = $1,050 · C(95k) = $3,800 · P(95k) = $2,750<br>
+Total friction per box = $40</p>
+<p><strong>(ก)</strong> คำนวณ Fair box value<br>
+<strong>(ข)</strong> คำนวณ Market box price และ ε_box<br>
+<strong>(ค)</strong> ควร Long box หรือ Short box? ระบุ 4 legs และ net edge หลัง friction</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) Fair box value:</strong><br>
+Fair = 5,000 × e^{−0.05×14/365} = 5,000 × 0.99808 ≈ <strong>$4,990</strong></p>
+<p><strong>(ข) Market box price:</strong><br>
+Market box = (C_K1 − P_K1) − (C_K2 − P_K2)<br>
+= (6,200 − 1,050) − (3,800 − 2,750)<br>
+= 5,150 − 1,050 = <strong>$4,100</strong><br>
+ε_box = 4,100 − 4,990 = <strong>−$890</strong> → ตลาดประเมิน box ต่ำกว่า fair $890</p>
+<p><strong>(ค) Long box:</strong><br>
+ε_box &lt; 0 → ตลาดถูกเกินไป → Long box<br>
+Legs: Buy C(90k) + Sell P(90k) + Sell C(95k) + Buy P(95k)<br>
+Net edge = $890 − $40 (friction) = <strong>$850 ✅</strong> → trade ได้</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 22.5 — Risk Reversal (§22.3)</div>
+<p>BTC S = $90,000, T = 30 วัน. Historical: θ_RR = −8%, σ_RR = 2%<br>
+Observe: IV_put(25Δ) = 71%, IV_call(25Δ) = 60%</p>
+<p><strong>(ก)</strong> คำนวณ RR_25Δ และ ε_RR<br>
+<strong>(ข)</strong> คำนวณ z_RR — ควร trade ไหม?<br>
+<strong>(ค)</strong> ถ้า trade: ระบุ legs และอธิบายว่าต้อง delta-hedge อย่างไร</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>(ก) RR_25Δ และ ε_RR:</strong><br>
+RR_25Δ = IV_call − IV_put = 60% − 71% = <strong>−11%</strong><br>
+ε_RR = −11% − (−8%) = <strong>−3%</strong></p>
+<p><strong>(ข) z_RR:</strong><br>
+z_RR = −3% / 2% = <strong>−1.5</strong> → ไม่ถึง 2σ threshold → <strong>ยังไม่ trade</strong><br>
+ต้องรอจนถึง ε_RR ≤ −4% (z_RR ≤ −2.0)</p>
+<p><strong>(ค) ถ้า z ≤ −2: Long RR</strong><br>
+Legs: Buy 25Δ Call (K≈$103,500) + Sell 25Δ Put (K≈$76,500) บน Deribit<br>
+Delta hedge: Long Call + Short Put = net positive delta → ขาย BTC-PERP จำนวน ≈ net_delta units ทันที<br>
+Close เมื่อ RR_25Δ กลับสู่ θ_RR = −8%</p>
+</div>
+</details>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.22 Options-Based Stat Arb | ← <a href="statarb-ch21.html">Ch.21: MT5 Swap Arb</a> | <a href="statarb-ch23.html">Ch.23: Kalman &amp; t-Distribution →</a>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>

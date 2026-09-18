@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stat Arb Ch.11 — Entry/Exit State Machine</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;white-space:pre;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:20px auto;width:100%}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{font-family:'Courier New',monospace;font-size:1.15em;font-weight:700;color:var(--g9);margin-top:8px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.chart{display:block;margin:18px auto;width:100%;max-width:760px;height:auto}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bd .bt::before{content:"🏛️ ";}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.bk .bt::before{content:"⚠️ ";}
+@media print{body{padding:15px;font-size:14px}.katex{font-size:1.05em}h2{page-break-before:always}.cover{page-break-after:always}}
+@media(max-width:640px){.katex-display{overflow-x:auto;overflow-y:hidden;max-width:100%}table{display:block;overflow-x:auto;max-width:100%}}</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Statistical Arbitrage · บทที่ 11</div>
+<h1>Entry/Exit State Machine:<br>กลไกการเข้าและออกจาก Trade</h1>
+<div class="sub">State machine ควบคุมทุก transition — ไม่มี ad-hoc decision<br>
+ตัวอย่างหลัก: Bybit BTC Perp ↔ Lighter BTC Perp</div>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้ — อ่านก่อน</div>
+<div class="ki-text">แทนที่จะตัดสินใจ "เข้า/ออก" แบบ ad-hoc ทุกครั้ง ให้ออกแบบ <strong>State Machine</strong> ที่กำหนด state ทั้งหมดและเงื่อนไขการ transition อย่างชัดเจน — ป้องกัน race condition, double-entry, และ logic กระจัดกระจาย</div>
+<div style="margin-top:10px;text-align:center">
+$$z_t > 2.0 \Rightarrow \text{WATCH} \to \text{PAPER\_GO} \to \text{MANUAL\_GO} \qquad |z_t| < 0.5 \Rightarrow \text{EXIT}$$
+</div>
+</div>
+
+<!-- 11.1 -->
+<h2 id="s11-1">11.1 ทำไมต้องมี State Machine</h2>
+
+<p>ในระบบ trading จริง สิ่งที่เกิดขึ้นพร้อมกันมีมาก: ราคาอัปเดตทุก millisecond, สัญญาณ cointegration เปลี่ยน, regime model อัปเดต, manual approval เข้ามา — ถ้าไม่มีโครงสร้างที่ชัดเจน โค้ดจะกลายเป็น chaos</p>
+
+<div class="bx br">
+<div class="bt">ปัญหาที่พบบ่อยเมื่อไม่มี State Machine</div>
+<ul>
+<li><strong>Race condition:</strong> เปิด position สองครั้งเพราะ signal มาพร้อมกันสองทาง</li>
+<li><strong>Double-entry:</strong> ระบบ "ลืม" ว่า position เปิดอยู่แล้ว และเพิ่มขนาดซ้ำ</li>
+<li><strong>Logic กระจัดกระจาย:</strong> เงื่อนไข if/else กระจายทั่วโค้ด ไม่รู้ว่า "สถานะ" ปัจจุบันคืออะไร</li>
+<li><strong>Stop-loss ไม่ trigger:</strong> เช็คเงื่อนไขผิด state ทำให้ stop-loss ไม่ทำงาน</li>
+</ul>
+</div>
+
+<div class="bx bg">
+<div class="bt">ข้อดีของ State Machine</div>
+<ul>
+<li>ทุก transition ต้องผ่านเงื่อนไขที่กำหนดไว้ล่วงหน้า — ไม่มีการข้ามขั้นตอน</li>
+<li>ณ ทุกจังหวะ ระบบรู้ว่าอยู่ใน state ไหน และ action ที่ valid มีอะไรบ้าง</li>
+<li>ง่ายต่อการ log, debug, และ audit trail</li>
+<li>สามารถ test แต่ละ transition แยกกันได้</li>
+</ul>
+</div>
+
+<!-- 11.2 -->
+<h2 id="s11-2">11.2 State Diagram — 7 States และ Transitions</h2>
+
+<p>State machine ของเราประกอบด้วย 7 states หลัก แต่ละ state มี transitions ที่ชัดเจน:</p>
+
+<img class="chart" src="charts/ch11-state-machine.svg" alt="7-state entry/exit state machine">
+<div style="display:none"><svg class="d" viewBox="0 0 820 520">
+<defs>
+<marker id="arw" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#374151"/></marker>
+<marker id="arw-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#dc2626"/></marker>
+<marker id="arw-teal" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0d9488"/></marker>
+</defs>
+
+<!-- NO_TRADE -->
+<rect x="20" y="220" width="110" height="44" rx="8" fill="#f3f4f6" stroke="#374151" stroke-width="2"/>
+<text x="75" y="238" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">NO_TRADE</text>
+<text x="75" y="256" text-anchor="middle" font-size="9" fill="#6b7280">ไม่มี position</text>
+
+<!-- WATCH -->
+<rect x="190" y="220" width="110" height="44" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+<text x="245" y="238" text-anchor="middle" font-size="10" font-weight="700" fill="#d97706">WATCH</text>
+<text x="245" y="256" text-anchor="middle" font-size="9" fill="#92400e">กำลังเฝ้าดู</text>
+
+<!-- PAPER_GO -->
+<rect x="360" y="220" width="110" height="44" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="415" y="238" text-anchor="middle" font-size="10" font-weight="700" fill="#2563eb">PAPER_GO</text>
+<text x="415" y="256" text-anchor="middle" font-size="9" fill="#1d4ed8">รอ approval</text>
+
+<!-- MANUAL_GO -->
+<rect x="530" y="220" width="110" height="44" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="585" y="238" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">MANUAL_GO</text>
+<text x="585" y="256" text-anchor="middle" font-size="9" fill="#15803d">position เปิดอยู่</text>
+
+<!-- DE_RISK -->
+<rect x="530" y="360" width="110" height="44" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+<text x="585" y="378" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">DE_RISK</text>
+<text x="585" y="396" text-anchor="middle" font-size="9" fill="#991b1b">ปิดขา</text>
+
+<!-- EXIT -->
+<rect x="360" y="360" width="110" height="44" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/>
+<text x="415" y="378" text-anchor="middle" font-size="10" font-weight="700" fill="#0d9488">EXIT</text>
+<text x="415" y="396" text-anchor="middle" font-size="9" fill="#115e59">ปิดครบแล้ว</text>
+
+<!-- INVALIDATED -->
+<rect x="330" y="60" width="130" height="44" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="395" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#7c3aed">INVALIDATED</text>
+<text x="395" y="96" text-anchor="middle" font-size="9" fill="#5b21b6">cointegration หาย</text>
+
+<!-- Transitions: NO_TRADE → WATCH -->
+<line x1="130" y1="242" x2="188" y2="242" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<text x="159" y="234" text-anchor="middle" font-size="8" fill="#374151">|z|&gt;1.5</text>
+<text x="159" y="260" text-anchor="middle" font-size="8" fill="#6b7280">coint OK</text>
+
+<!-- WATCH → PAPER_GO -->
+<line x1="300" y1="242" x2="358" y2="242" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arw-teal)"/>
+<text x="329" y="234" text-anchor="middle" font-size="8" fill="#2563eb">|z|&gt;2.0</text>
+<text x="329" y="260" text-anchor="middle" font-size="8" fill="#6b7280">regime=Normal</text>
+
+<!-- PAPER_GO → MANUAL_GO -->
+<line x1="470" y1="242" x2="528" y2="242" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arw-teal)"/>
+<text x="499" y="234" text-anchor="middle" font-size="8" fill="#16a34a">manual_ok</text>
+<text x="499" y="260" text-anchor="middle" font-size="8" fill="#6b7280">หรือ auto</text>
+
+<!-- MANUAL_GO → DE_RISK -->
+<line x1="585" y1="264" x2="585" y2="358" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arw-red)"/>
+<text x="618" y="315" text-anchor="middle" font-size="8" fill="#dc2626">z กลับ</text>
+<text x="618" y="330" text-anchor="middle" font-size="8" fill="#dc2626">หรือ stop-loss</text>
+
+<!-- DE_RISK → EXIT -->
+<line x1="528" y1="382" x2="472" y2="382" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arw-teal)"/>
+<text x="500" y="374" text-anchor="middle" font-size="8" fill="#0d9488">legs_closed()</text>
+
+<!-- Any → INVALIDATED (from WATCH) -->
+<line x1="245" y1="220" x2="355" y2="104" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arw)"/>
+<text x="268" y="150" text-anchor="middle" font-size="8" fill="#7c3aed">!coint</text>
+
+<!-- Any → INVALIDATED (from MANUAL_GO) -->
+<line x1="575" y1="220" x2="460" y2="104" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arw)"/>
+<text x="545" y="150" text-anchor="middle" font-size="8" fill="#7c3aed">regime=Broken</text>
+
+<!-- EXIT back to NO_TRADE (curved) -->
+<path d="M 360,395 Q 200,460 130,260" fill="none" stroke="#374151" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arw)"/>
+<text x="205" y="455" text-anchor="middle" font-size="8" fill="#374151">reset → NO_TRADE</text>
+
+<!-- Legend -->
+<rect x="650" y="200" width="155" height="120" rx="6" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+<text x="727" y="218" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Legend</text>
+<line x1="660" y1="230" x2="690" y2="230" stroke="#374151" stroke-width="1.5" marker-end="url(#arw)"/>
+<text x="755" y="234" text-anchor="middle" font-size="8" fill="#374151">normal transition</text>
+<line x1="660" y1="250" x2="690" y2="250" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arw-red)"/>
+<text x="755" y="254" text-anchor="middle" font-size="8" fill="#dc2626">de-risk trigger</text>
+<line x1="660" y1="270" x2="690" y2="270" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arw)"/>
+<text x="763" y="274" text-anchor="middle" font-size="8" fill="#7c3aed">invalidation (any state)</text>
+<line x1="660" y1="290" x2="690" y2="290" stroke="#374151" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arw)"/>
+<text x="750" y="294" text-anchor="middle" font-size="8" fill="#374151">reset loop</text>
+</svg></div>
+<div class="caption">State diagram: 7 states พร้อม transition conditions — arrows แสดง z-score thresholds ที่กระตุ้น state change แต่ละขั้น</div>
+
+<!-- 11.3 -->
+<h2 id="s11-3">11.3 Transition Conditions Table</h2>
+
+<p>ตารางด้านล่างสรุป transition ทั้งหมด พร้อมเงื่อนไขและ action ที่เกิดขึ้น:</p>
+
+<table>
+<tr><th>State ปัจจุบัน</th><th>เงื่อนไข</th><th>Next State</th><th>Action ที่ทำ</th></tr>
+<tr><td>NO_TRADE</td><td>|z| &gt; 1.5 AND coint_ok AND regime = Normal</td><td>WATCH</td><td>บันทึก z_watch, ตั้ง alert</td></tr>
+<tr><td>WATCH</td><td>|z| &gt; 2.0 AND coint_ok AND regime = Normal</td><td>PAPER_GO</td><td>บันทึก entry_zscore, ส่ง paper signal</td></tr>
+<tr><td>WATCH</td><td>!coint_ok OR regime = Broken</td><td>INVALIDATED</td><td>ล้าง watch state, log เหตุผล</td></tr>
+<tr><td>WATCH</td><td>|z| &lt; 1.0 (signal หาย)</td><td>NO_TRADE</td><td>reset กลับ</td></tr>
+<tr><td>PAPER_GO</td><td>manual_ok = True (หรือ auto_mode)</td><td>MANUAL_GO</td><td>ส่ง order จริงทั้งสองขา</td></tr>
+<tr><td>MANUAL_GO</td><td>z × entry_sign &lt; 0.5 OR stop_loss_hit()</td><td>DE_RISK</td><td>เริ่มปิด position ทีละขา</td></tr>
+<tr><td>MANUAL_GO</td><td>!coint_ok OR regime = Broken</td><td>INVALIDATED</td><td>ปิด position ทันที (emergency)</td></tr>
+<tr><td>DE_RISK</td><td>legs_closed() = True</td><td>EXIT</td><td>บันทึก P&amp;L, ล้าง state</td></tr>
+<tr><td>EXIT / INVALIDATED</td><td>หลัง cooldown</td><td>NO_TRADE</td><td>reset ทุก field</td></tr>
+</table>
+
+<div class="bx ba">
+<div class="bt">ทำไม 1.5 และ 2.0? — ค่าเหล่านี้ไม่ใช่กฎตายตัว</div>
+<p>Threshold 1.5 (WATCH) และ 2.0 (PAPER_GO) เป็น <em>จุดเริ่มต้น</em> ที่มาจาก breakeven formula ใน §3.4:</p>
+<div class="fm" style="margin:0.5rem 0">z_entry ≥ z_exit + 2 × fee / σ_stat</div>
+<p>ด้วยค่าทั่วไป fee≈0.06%, σ_stat≈0.08%, z_exit≈0.5 → z_entry ≈ 2.0 พอดี ค่า 1.5 ใช้เป็น early-warning (WATCH) ให้ระบบเตรียมตัวก่อน trigger จริง</p>
+<table>
+<tr><th>สภาพแวดล้อม</th><th>WATCH threshold</th><th>PAPER_GO threshold</th><th>เหตุผล</th></tr>
+<tr><td>Fee สูง (&gt;0.10%)</td><td>1.8–2.0</td><td>2.5–3.0</td><td>ต้องการ spread กว้างขึ้นเพื่อคุ้มค่า fee</td></tr>
+<tr><td>ปกติ (0.04–0.10%)</td><td>1.5</td><td>2.0</td><td>ค่า default ที่ใช้ในหนังสือนี้</td></tr>
+<tr><td>Fee ต่ำ (&lt;0.03%)</td><td>1.2–1.3</td><td>1.5–1.7</td><td>เข้าได้บ่อยขึ้น เพราะ fee ไม่ค่อย hurt</td></tr>
+<tr><td>อยากเทรดบ่อย (high turnover)</td><td>1.0–1.2</td><td>1.5</td><td>ยอมรับ expected profit ต่อ trade น้อยลง แต่จำนวน trade มากขึ้น</td></tr>
+</table>
+<p style="margin-top:0.5rem"><strong>แนวทางการ calibrate:</strong> คำนวณ fee/σ_stat ของ pair จริง → ใส่ใน formula → ได้ z_entry ทางทฤษฎี → ทดสอบใน walk-forward (§3.9) ก่อน deploy จริง อย่า copy ค่า 1.5/2.0 ไปใช้โดยไม่ตรวจสอบ</p>
+</div>
+
+<!-- 11.4 -->
+<h2 id="s11-4">11.4 Pseudo-code: StateMachine Class</h2>
+
+<p>โค้ดด้านล่างแสดงโครงสร้างหลักของ State Machine — ทุก transition อยู่ใน method เดียว <code>update()</code> เพื่อความชัดเจน:</p>
+
+<div class="fm">class StateMachine:
+    def __init__(self):
+        self.state = "NO_TRADE"
+        self.entry_zscore = None
+
+    def update(self, zscore, regime, coint_ok, manual_ok=False):
+        if self.state == "NO_TRADE":
+            if abs(zscore) &gt; 1.5 and coint_ok and regime == "Normal":
+                self.state = "WATCH"
+
+        elif self.state == "WATCH":
+            if abs(zscore) &gt; 2.0 and coint_ok and regime == "Normal":
+                self.state = "PAPER_GO"
+                self.entry_zscore = zscore
+            elif not coint_ok or regime == "Broken":
+                self.state = "INVALIDATED"
+            elif abs(zscore) &lt; 1.0:
+                self.state = "NO_TRADE"  # signal หาย reset
+
+        elif self.state == "PAPER_GO":
+            if manual_ok:
+                self.state = "MANUAL_GO"
+
+        elif self.state == "MANUAL_GO":
+            entry_sign = 1 if self.entry_zscore &gt; 0 else -1
+            if zscore * entry_sign &lt; 0.5 or stop_loss_hit():
+                self.state = "DE_RISK"
+            elif not coint_ok or regime == "Broken":
+                self.state = "INVALIDATED"
+
+        elif self.state == "DE_RISK":
+            if legs_closed():
+                self.state = "EXIT"
+
+        return self.state</div>
+
+<div class="bx bb">
+<div class="bt">หมายเหตุสำคัญเกี่ยวกับโค้ด</div>
+<ul>
+<li><code>entry_sign</code> บอกทิศทาง (1 ถ้า entry z บวก, −1 ถ้าลบ): ถ้า entry ที่ z = +2.3 → รอให้ z กลับมาต่ำกว่า +0.5</li>
+<li><code>stop_loss_hit()</code> ควร implement แยกต่างหาก เช็คทั้ง unrealized P&amp;L และ z-score absolute</li>
+<li><code>legs_closed()</code> เช็คว่าทั้งสองขา (long และ short) ได้รับ fill ครบแล้ว</li>
+<li>ใน production ควรเพิ่ม persistence — บันทึก state ลง DB เพื่อกู้คืนได้หลัง crash</li>
+</ul>
+</div>
+
+<!-- 11.5 -->
+<h2 id="s11-5">11.5 Running Example: Bybit↔Lighter BTC Perp</h2>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Sequence ของ State Transitions จริง</div>
+<p>สมมติเวลา 14:00 น. วันหนึ่ง ระบบเริ่มตรวจพบ signal ใน Bybit↔Lighter BTC perp pair:</p>
+</div>
+
+<table>
+<tr><th>เวลา</th><th>z-score</th><th>Event</th><th>State เก่า</th><th>State ใหม่</th></tr>
+<tr><td>14:00</td><td>0.8</td><td>ปกติ ไม่มีสัญญาณ</td><td>NO_TRADE</td><td>NO_TRADE</td></tr>
+<tr><td>14:15</td><td>1.7</td><td>|z| &gt; 1.5, coint OK, regime Normal</td><td>NO_TRADE</td><td><strong>WATCH</strong></td></tr>
+<tr><td>14:22</td><td>2.3</td><td>|z| &gt; 2.0, confirm signal</td><td>WATCH</td><td><strong>PAPER_GO</strong></td></tr>
+<tr><td>14:25</td><td>2.1</td><td>trader กด approve (manual_ok=True)</td><td>PAPER_GO</td><td><strong>MANUAL_GO</strong></td></tr>
+<tr><td>14:25</td><td>2.1</td><td>ส่ง order: Short Bybit, Long Lighter</td><td>MANUAL_GO</td><td>MANUAL_GO</td></tr>
+<tr><td>15:10</td><td>0.4</td><td>z &lt; 0.5 (mean reversion สำเร็จ)</td><td>MANUAL_GO</td><td><strong>DE_RISK</strong></td></tr>
+<tr><td>15:12</td><td>0.3</td><td>ปิดทั้งสองขาครบ (legs_closed)</td><td>DE_RISK</td><td><strong>EXIT</strong></td></tr>
+<tr><td>15:20</td><td>—</td><td>หลัง cooldown 8 นาที</td><td>EXIT</td><td>NO_TRADE</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">ผลลัพธ์ของ Trade นี้</div>
+<p>Entry: z = +2.3 (Short Bybit ที่แพง, Long Lighter ที่ถูก)<br>
+<small>หมายเหตุ: threshold เข้า trade คือ z = 2.0 — ค่า 2.3 คือ z จริง ณ ที่ fill (realized z) ที่ "เกิน" 2.0 พอดี ไม่ใช่ threshold ตัวที่สอง</small><br>
+Exit: z = +0.4 (spread กลับมาใกล้ค่ากลาง)<br>
+กำไร ≈ (2.3 − 0.4) × σ_spread × position_size = 1.9σ × ขนาด position<br>
+เวลาถือ: ~47 นาที ตรงกับ half-life ที่ estimate ไว้ ~45 นาที</p>
+</div>
+
+<h3>การ Visualize Sequence บน z-score Timeline</h3>
+
+<img class="chart" src="charts/ch11-ou-state-path.svg" alt="OU spread path with state machine activations">
+<div style="display:none"><svg class="d" viewBox="0 0 760 240">
+<defs>
+<marker id="arw2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#374151"/></marker>
+</defs>
+<!-- Axes -->
+<line x1="60" y1="180" x2="720" y2="180" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw2)"/>
+<line x1="60" y1="200" x2="60" y2="30" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arw2)"/>
+<text x="725" y="183" font-size="9" fill="#6b7280">เวลา</text>
+<text x="55" y="28" text-anchor="end" font-size="9" fill="#6b7280">z</text>
+
+<!-- Zero line -->
+<line x1="60" y1="180" x2="720" y2="180" stroke="#e5e7eb" stroke-width="1"/>
+<!-- +2σ line -->
+<line x1="60" y1="90" x2="720" y2="90" stroke="#dc2626" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="56" y="93" text-anchor="end" font-size="8" fill="#dc2626">+2.0</text>
+<!-- +1.5σ line -->
+<line x1="60" y1="120" x2="720" y2="120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="56" y="123" text-anchor="end" font-size="8" fill="#f59e0b">+1.5</text>
+<!-- +0.5 line -->
+<line x1="60" y1="163" x2="720" y2="163" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="56" y="166" text-anchor="end" font-size="8" fill="#0d9488">+0.5</text>
+
+<!-- z-score path -->
+<polyline points="60,205 120,200 190,140 250,97 310,103 400,108 500,140 580,168 630,173 680,180" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+
+<!-- State labels -->
+<text x="90" y="218" text-anchor="middle" font-size="8" fill="#374151">NO_TRADE</text>
+<text x="215" y="218" text-anchor="middle" font-size="8" fill="#d97706">WATCH</text>
+<text x="290" y="218" text-anchor="middle" font-size="8" fill="#2563eb">PAPER_GO</text>
+<text x="450" y="218" text-anchor="middle" font-size="8" fill="#16a34a">MANUAL_GO</text>
+<text x="610" y="218" text-anchor="middle" font-size="8" fill="#dc2626">DE_RISK</text>
+<text x="680" y="218" text-anchor="middle" font-size="8" fill="#0d9488">EXIT</text>
+
+<!-- Vertical state separators -->
+<line x1="190" y1="30" x2="190" y2="195" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="250" y1="30" x2="250" y2="195" stroke="#2563eb" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="310" y1="30" x2="310" y2="195" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="580" y1="30" x2="580" y2="195" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="650" y1="30" x2="650" y2="195" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- z values -->
+<text x="190" y="135" font-size="8" fill="#d97706">z=1.7</text>
+<text x="255" y="85" font-size="8" fill="#2563eb">z=2.3</text>
+<text x="582" y="162" font-size="8" fill="#dc2626">z=0.4</text>
+</svg></div>
+<div class="caption">OU spread path (บน) พร้อม state color overlay: grey=NO_TRADE, amber=WATCH, blue=PAPER_GO, green=MANUAL_GO, red=DE_RISK, teal=EXIT | z-score timeline (ล่าง)</div>
+
+<!-- 11.6 -->
+<h2 id="s11-6">11.6 Grid Trading บน OU Process</h2>
+
+<div class="key-idea">
+<div class="ki-label">Key Idea</div>
+<div class="ki-text">Grid Trading บน Raw Price เสี่ยงเรื่อง "กรอบแตก" เมื่อตลาดเป็นเทรนด์. แต่ถ้าวาง Grid บน ε ที่พิสูจน์แล้วว่า Mean-Revert (OU Process) — กรอบจะแตกก็ต่อเมื่อ Cointegration พัง ซึ่งเรามี Hamilton Filter คอยตรวจแล้ว</div>
+</div>
+
+<table>
+<tr><th></th><th>Grid บน Raw Price</th><th>Grid บน OU Process (ε)</th></tr>
+<tr><td><strong>เสี่ยงกรอบแตก</strong></td><td>สูง — เมื่อตลาด trend</td><td>ต่ำ — ε mean-reverts โดยนิสัย</td></tr>
+<tr><td><strong>Market-Neutral</strong></td><td>❌ — เจ็บถ้า BTC พุ่ง/ดิ่ง</td><td>✅ — β hedge ปิดความเสี่ยงทิศทาง</td></tr>
+<tr><td><strong>Grid Step คำนวณยังไง</strong></td><td>อิงจาก % หรือ ATR</td><td>อิงจาก σ_stat (มีสถิติหนุนหลัง)</td></tr>
+<tr><td><strong>Hard Stop</strong></td><td>กำหนดยาก</td><td>ชัดเจน — Broken regime หรือ ADF p&gt;0.1</td></tr>
+</table>
+
+<h3>การคำนวณ Grid Levels</h3>
+
+<p>Grid levels คำนวณจาก:</p>
+<ul>
+<li>Grid levels: θ ± k × σ_stat สำหรับ k = 1, 2, 3, ...</li>
+<li>Grid step ขั้นต่ำ: step &gt; total_friction_cost (ดูรายละเอียดใน <a href="statarb-ch19.html">ch19</a>)</li>
+</ul>
+
+<p><strong>ตัวอย่าง:</strong> θ = 0.001, σ_stat = 0.003, step = 1σ</p>
+<ul>
+<li>Buy levels: ε &lt; 0.001 − 0.003 = −0.002 (z &lt; −1)</li>
+<li>Strong buy: ε &lt; −0.004 (z &lt; −2)</li>
+<li>Sell levels: ε &gt; 0.004 (z &gt; 1)</li>
+<li>Minimum step (จาก <a href="statarb-ch19.html">ch19</a>): 19.6 bps taker → ต้องให้แต่ละ step ให้ gross ≥ 20 bps</li>
+</ul>
+
+<img class="chart" src="charts/ch11-grid-levels.svg" alt="Grid levels on OU spread — Buy below θ, Sell above θ" style="display:block;margin:20px auto;width:100%;max-width:680px;height:auto">
+<div class="caption">Grid levels บน ε: Buy ที่ด้านล่าง (สีน้ำเงิน), Sell ที่ด้านบน (สีแดง) — ε mean-reverts กลับหา θ เสมอ</div>
+
+<h3>Pseudo-code: OUGrid Class</h3>
+
+<div class="fm">class OUGrid:
+    def __init__(self, theta, sigma_stat, levels=3, step_multiplier=1.0):
+        self.theta  = theta
+        self.step   = sigma_stat * step_multiplier
+        self.levels = levels
+
+    def get_grid_action(self, epsilon, adf_pvalue=None, regime_probs=None):
+        # Hard stop: close all grid if cointegration breaks
+        if adf_pvalue is not None and regime_probs is not None:
+            if not self.is_cointegration_healthy(adf_pvalue, regime_probs):
+                return "CLOSE_ALL_GRID"
+
+        z = (epsilon - self.theta) / self.step
+        level = int(abs(z))  # which grid level crossed
+
+        if level &gt;= self.levels:
+            return "HARD_STOP"  # z &gt;= max_levels → too far, may be broken
+
+        if z &lt; -0.5:  # below θ → buy (long spread)
+            return f"BUY_LEVEL_{level}"
+        elif z &gt; 0.5:  # above θ → sell (short spread)
+            return f"SELL_LEVEL_{level}"
+        else:
+            return "HOLD"
+
+    def is_cointegration_healthy(self, adf_pvalue, regime_probs):
+        # Close all grid if cointegration fails
+        return adf_pvalue &lt; 0.05 and regime_probs['broken'] &lt; 0.5</div>
+
+<h3>Grid Trading vs State Machine</h3>
+
+<p>Grid Trading เป็น <strong>parallel tracks</strong> — สามารถมีหลาย position พร้อมกันได้ตามแต่ละ level ที่ถูก trigger ต่างจาก State Machine ใน Ch.11 ที่เป็น <strong>sequential</strong> (1 position ต่อครั้ง และต้องรอ EXIT ก่อนเปิดใหม่) Grid เหมาะกับพอร์ตที่มีทุนมากพอรองรับหลาย levels พร้อมกัน</p>
+
+<div class="bx br">
+<div class="bt">ความเสี่ยงของ Grid Trading</div>
+<p>ความเสี่ยงของ Grid คือการสะสม position ไปเรื่อยๆ ถ้า ε ไม่กลับ → ต้องตั้ง max_levels และ cointegration health check ทุก bar ถ้า ADF p-value &gt; 0.1 หรือ regime = Broken → ปิด grid ทั้งหมดทันที</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example: Bybit↔Lighter — Grid บน OU Process</div>
+<ul>
+<li>θ = 0.001 (0.1%), σ_stat = 0.003 (0.3%), grid step = 1σ</li>
+<li>Total friction ≈ 20 bps (ดู <a href="statarb-ch19.html">ch19</a>) → gross per step = 0.3% = 30 bps &gt; 20 bps ✅</li>
+<li>Grid levels: BUY ที่ z &lt; −1 (ε &lt; −0.002), BUY+++ ที่ z &lt; −2 (ε &lt; −0.005), SELL ที่ z &gt; 1</li>
+<li>ใน 30 วัน: grid triggered 47 ครั้ง, avg hold 5.2h, avg gross/trade = 28 bps, net = 8 bps (หลัง friction)</li>
+</ul>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 11.4 — Grid Step ขั้นต่ำ</div>
+<p>ถ้า σ_stat = 0.004 และ total friction = 20 bps — กี่ sigma ต่อ step จึงจะทำกำไรได้? (ใช้ 1% notional per step)</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>คำตอบ:</strong> gross = step_size × notional</p>
+<p>step = 1σ = 0.4% = 40 bps &gt; 20 bps ✅ → 1σ step ใช้ได้</p>
+<p>ถ้า friction = 35 bps ต้องใช้ step ≥ 35/40 = 0.875σ → ปัดขึ้นเป็น 1σ</p>
+</div>
+</details>
+</div>
+
+<!-- 11.7 -->
+<div class="bx bd">
+<div class="bt">บนโต๊ะจริง — State Machine ใน Production</div>
+<ol>
+<li><strong>Cointegration gate:</strong> ก่อนให้ transition จาก NO_TRADE → WATCH ต้อง check p-value ADF < 0.05 และ β stability (|β_t − β_{t-30}| < 0.15) ก่อนทุกครั้ง</li>
+<li><strong>PAPER_GO → MANUAL_GO manual review:</strong> 30 วันแรกของแต่ละ pair ต้องมีคน approve ก่อน auto-transition; เริ่ม auto หลังผ่าน 10 paper trades ที่ Sharpe > 0.8</li>
+<li><strong>Cooldown หลัง INVALIDATED:</strong> รอ 4 ชั่วโมงก่อน re-enter pair เดิม — ป้องกัน re-enter ทันทีหลัง cointegration fail</li>
+<li><strong>State log ทุก transition:</strong> บันทึก timestamp, z-score, regime posterior, β ณ วันที่ transition เพื่อ post-mortem</li>
+</ol>
+</div>
+
+<div class="bx bk">
+<div class="bt">คณิตที่พัง — เมื่อ State Machine พัง</div>
+<ul>
+<li><strong>Cointegration break → infinite signal:</strong> ถ้า cointegration แตกแต่ไม่มี gate, state machine จะ trigger WATCH/PAPER_GO ทุก bar เพราะ spread drift ห่างจาก old mean ตลอดเวลา — loss ไม่มีที่สิ้นสุด</li>
+<li><strong>7 states อาจไม่พอ:</strong> pairs ที่มี liquidity หลาย regime (weekday vs weekend, pre/post funding) ต้องการ sub-states; ไม่งั้น MANUAL_GO อาจ fire ในช่วงที่ spread ไม่ stationary จริงๆ</li>
+<li><strong>Transition threshold ตายตัว:</strong> z > 2.0 ที่ calibrate ในช่วง low-vol จะ over-trigger ในช่วง high-vol — ควรใช้ GARCH z-score แทน raw z ใน state conditions</li>
+</ul>
+</div>
+
+<!-- 11.7 -->
+<h2 id="s11-7">11.7 เศรษฐศาสตร์ของ Stop บน Mean Reversion</h2>
+
+<p>Transition table ใน <a href="#s11-3">§11.3</a> ใช้ <code>stop_loss_hit()</code> เป็น condition ทั่วไป — ในทางปฏิบัติ trader ส่วนใหญ่ implement เป็นระยะราคา (เช่น |z|≥3) ตามตัวอย่างใน <a href="statarb-ch3.html#s3-4">ch3 §3.4</a> แต่การตั้ง stop แบบระยะราคาบน OU process มีต้นทุนแฝงที่มักถูกมองข้าม</p>
+
+<div class="bx bk">
+<div class="bt">Stop แบบระยะราคา ตัด Position ตรงจุดที่ควรถือมากที่สุด</div>
+<p>สำหรับ OU process แรงดึงกลับ (mean-reversion force) แปรผันตามระยะห่างจาก θ — ยิ่งไกล ยิ่งดึงแรง จุด 3σ จึงเป็นจุดที่ expected return สูงสุดพอดี การตั้ง stop ที่ระยะนี้จึงมักขายทิ้งตรงจุดที่ทฤษฎีบอกว่าควรถือ ไม่ใช่จุดที่ควรหนี</p>
+<p style="margin-top:6px">เข้าที่ 2σ: P(แตะ 3σ ก่อนกลับ θ) โดยทั่วไปอยู่ที่ <strong>15-25%</strong> (ไม่ใช่ ~0.3% ที่เป็น unconditional probability ตาม <a href="statarb-ch3.html#s3-4">ch3 §3.4</a>) — นี่คือเหตุการณ์ที่เกิดบ่อยพอจะกิน edge ต่อไม้อย่างมีนัยสำคัญ เรียกต้นทุนนี้ว่า <strong>stop-loss tax</strong> ต้องรวมเข้า edge calculation เสมอ (สูตรเต็ม: <a href="statarb-ch19.html#s19-12">ch19 §19.12</a>)</p>
+</div>
+
+<div class="key-idea">
+<div class="ki-label">แยก Stop สองชนิดที่ทำหน้าที่ต่างกัน</div>
+<div class="ki-text">
+<strong>Structural stop</strong> (ต้องออกทันที ไม่มีข้อยกเว้น): ADF test fail ใน rolling window (<a href="statarb-ch5.html">ch5</a>), θ shift ที่ regime filter ตรวจพบ (<a href="statarb-ch9.html">ch9</a>), funding/carry structure เปลี่ยนถาวร<br><br>
+<strong>Price stop</strong> (ตั้งไกลพอ ≥4σ): ให้ trigger จาก break จริงเท่านั้น ไม่ใช่ excursion ปกติของ OU ที่ยังอยู่ในกรอบทฤษฎี
+</div>
+</div>
+
+<div class="fm"><span class="c"># เพิ่ม time-stop ควบ — "ช้าเกิน" คือหลักฐานของ break ที่ดีกว่า "ไกลเกิน"</span>
+time_stop = P75 ของ first-passage time distribution (ดู ch19 §19.11)
+
+<span class="kw">if</span> excursion_z &gt;= <span class="nm">4.0</span>:
+    action = <span class="nm">"STRUCTURAL_STOP — ออกทันที"</span>
+<span class="kw">elif</span> holding_time &gt; time_stop <span class="kw">and</span> <span class="kw">not</span> reverting:
+    action = <span class="nm">"TIME_STOP — น่าสงสัยว่า break แล้ว"</span>
+<span class="kw">else</span>:
+    action = <span class="nm">"HOLD — ยังอยู่ในกรอบ OU ปกติ"</span></div>
+
+<div class="bx ba">
+<div class="bt">เช็คด่วน</div>
+<p>Backtest ควรรายงาน % ของ trade ที่จบด้วย price stop แยกจาก structural stop และ normal exit — ถ้า price stop เกิน ~10% ของ trade ทั้งหมด แปลว่ากำลังจ่าย stop-loss tax หนักเกินไป ให้ทบทวน threshold (ขยับจาก 3σ เป็น 3.5-4σ) แทนที่จะยอมรับว่า "เป็นแบบนี้ปกติ"</p>
+</div>
+
+<!-- 11.8 -->
+<h2 id="s11-8">11.8 Leg-Cut Temptation — จิตวิทยาที่ทำลายสิ่งที่โมเดลสร้าง</h2>
+
+<p>State machine ทั้งบทนี้ออกแบบให้ position เป็นคู่เสมอ (เปิดพร้อมกัน ปิดพร้อมกัน) — แต่ dashboard ของแต่ละ venue มักโชว์ PnL แยกขา ("ขา A +$650 / ขา B −$800") ซึ่งกระตุ้นพฤติกรรมที่ไม่มีอยู่ใน state diagram ของ <a href="#s11-2">§11.2</a> เลย</p>
+
+<div class="bx bk">
+<div class="bt">"เก็บกำไรขาที่บวกก่อน" = เปลี่ยน Arb เป็น Directional Bet ตรงจุดที่แย่ที่สุด</div>
+<p>ตอน spread วิ่งสวนนานกว่า half-life ที่คำนวณไว้ (ซึ่งเป็นเรื่องปกติ — half-life คือค่ากลาง ไม่ใช่เพดาน) แรงกระตุ้นทางจิตวิทยาคือ "ล็อกกำไรขาบวกก่อน เดี๋ยวขาลบเด้งค่อยปิด" — ผลคือเหลือขาเดียว = position ทิศทางเปล่าๆ ที่ไม่เคยผ่านการอนุมัติจาก state machine เลย และมักเกิด ณ จุดที่ spread ยืดไกลที่สุด (2.5-3σ) ซึ่งคือจุดที่ expected reversion แรงที่สุดพอดี (เหมือนปัญหาเดียวกับ <a href="#s11-7">§11.7</a>) — พอ spread revert กลับจริงตามที่โมเดลทำนาย ขาที่เหลือ (ปิดไม่ครบ) จะขาดทุนซ้ำอีกรอบ</p>
+</div>
+
+<div class="running-ex">
+<div class="re-title">ตัวอย่าง: ต้นทุนของการตัดขาเดียว</div>
+<div class="fm">ถือ spread ที่ −2.8σ มา 12 วัน (τ½ = 4 วัน — เกิน 3×τ½ แล้ว แต่ยังไม่ break ตาม §11.7)
+
+ถ้าปิดขากำไรตอนนี้ (leg-cut):
+  → คืนถัดมา spread revert 1.5σ ตามที่ OU ทำนาย
+  → ขาที่เหลือ (ทิศทางเปล่า) ขาดทุนเพิ่ม −$1,900
+
+ถ้าถือครบสองขาตาม state machine (หรือ time-stop ปิดพร้อมกันตาม §11.7):
+  → ทั้ง position ได้ +$400 (ตามที่โมเดลออกแบบไว้)</div>
+</div>
+
+<div class="bx bg">
+<div class="bt">วิธีป้องกัน — สร้างระบบที่กันมือมนุษย์ออกจากจุดอ่อนไหวที่สุด</div>
+<ol>
+<li><strong>กติกาเหล็ก:</strong> spread เข้าเป็นคู่ ออกเป็นคู่เสมอ — ปิดขาเดียวทำได้กรณีเดียวคือ emergency hedge ตาม playbook <a href="statarb-ch20.html">ch20</a> (venue ล่ม/technical failure) ไม่ใช่เพราะ "รู้สึกว่าควร"</li>
+<li><strong>ซ่อน PnL รายขา:</strong> dashboard ควรโชว์เฉพาะ ε, z, และ spread PnL รวม — การเห็น PnL แยกขาคือสิ่งที่กระตุ้น loss aversion แบบรายขาซึ่งไม่มีเหตุผลเชิงกลยุทธ์รองรับ</li>
+<li><strong>มี "ทางออกตอนทรมาน" อยู่แล้วในระบบ:</strong> time-stop จาก §11.7 (P75 ของ first-passage time) ทำให้มีจุดจบที่กำหนดไว้ล่วงหน้า ไม่ต้องด้นสดตอนกดดันที่สุด</li>
+</ol>
+</div>
+
+<!-- 11.9 -->
+<h2 id="s11-9">11.9 แบบฝึกหัด</h2>
+
+
+<div class="ex">
+<div class="et">โจทย์ 11.1 — Transition ที่ถูกต้อง</div>
+<p>ระบบอยู่ใน state MANUAL_GO กับ entry_zscore = +2.5 (Short Bybit, Long Lighter)<br>
+ปัจจุบัน z-score = +0.3 และ cointegration ยังคง OK<br>
+<strong>ถาม:</strong> ระบบควร transition ไป state ไหน? เพราะเหตุใด?</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Transition ไป: DE_RISK</strong></p>
+<p>เหตุผล: entry_sign = 1 (entry_zscore = +2.5 &gt; 0); z × entry_sign = 0.3 × 1 = 0.3 ซึ่ง &lt; 0.5</p>
+<p>เงื่อนไข <code>zscore * entry_sign &lt; 0.5</code> เป็นจริง → transition ไป DE_RISK</p>
+<p>ความหมาย: spread ได้ mean-revert กลับมาใกล้ค่ากลางแล้ว (จาก 2.5σ เหลือ 0.3σ) ถึงเวลาปิด position</p>
+<p>cointegration OK ไม่เปลี่ยนแปลงผล เพราะเงื่อนไข z กลับมาถึงก่อน</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 11.2 — Emergency Invalidation</div>
+<p>ระบบอยู่ใน state MANUAL_GO กำลัง hold position (Short Bybit, Long Lighter)<br>
+z-score = +1.8 (ยังไม่ถึง exit threshold) แต่กะทันหัน cointegration test fail (p-value = 0.15)<br>
+<strong>ถาม:</strong> ระบบควรทำอะไร? อธิบาย action และเหตุผล</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>Action: Transition ไป INVALIDATED ทันที และปิด position เป็น emergency</strong></p>
+<p>เงื่อนไข <code>not coint_ok</code> เป็นจริง → transition จาก MANUAL_GO → INVALIDATED</p>
+<p>เหตุผลสำคัญ: ถ้า cointegration หาย หมายความว่าสมมติฐานพื้นฐานของ strategy (ทั้งสองราคา mean-revert ด้วยกัน) ไม่เป็นจริงอีกต่อไป</p>
+<p>การ hold position ต่อไปจะเสี่ยงมาก เพราะไม่มีกลไกที่จะทำให้ spread กลับมา</p>
+<p>Action: ปิดทั้งสองขาในราคาตลาดทันที แม้จะขาดทุน — นี่คือ priority ด้าน risk management</p>
+</div>
+</details>
+</div>
+
+<div class="ex">
+<div class="et">โจทย์ 11.3 — ออกแบบ Anti-Thrashing Logic</div>
+<p>ปัญหา: z-score วนอยู่ที่ 1.45–1.55 ทำให้ระบบ transition NO_TRADE → WATCH → NO_TRADE ซ้ำๆ ทุก 2 นาที (เรียกว่า "thrashing")<br>
+<strong>ถาม:</strong> ออกแบบ modification ใน StateMachine เพื่อแก้ปัญหานี้ โดยไม่เปลี่ยน threshold หลัก</p>
+<details>
+<summary>ดูคำตอบ</summary>
+<div class="ans">
+<p><strong>วิธีแก้: เพิ่ม cooldown timer และ hysteresis</strong></p>
+<p><strong>1. Cooldown:</strong> หลัง transition จาก WATCH กลับไป NO_TRADE ให้รอ min_watch_cooldown (เช่น 10 นาที) ก่อนจะ enter WATCH อีกครั้ง</p>
+<p><strong>2. Hysteresis:</strong> เพิ่ม counter <code>watch_count</code> — ต้องเห็น |z| &gt; 1.5 ติดต่อกัน N bars (เช่น 3 bars) จึง transition ไป WATCH</p>
+<div class="fm">def __init__(self):
+    self.state = "NO_TRADE"
+    self.last_watch_exit = None
+    self.watch_streak = 0  # bars ติดต่อกันที่ |z| > 1.5
+
+def update(self, zscore, regime, coint_ok, ...):
+    if self.state == "NO_TRADE":
+        cooldown_ok = (now() - self.last_watch_exit) > 600  # 10 min
+        if abs(zscore) > 1.5 and coint_ok and cooldown_ok:
+            self.watch_streak += 1
+            if self.watch_streak >= 3:
+                self.state = "WATCH"
+        else:
+            self.watch_streak = 0</div>
+</div>
+</details>
+</div>
+
+<div class="bx bb">
+<div class="bt">หมายเหตุ: State Machine นี้ใช้ได้กับ F(·) อื่นเช่นกัน</div>
+<p>state machine (ENTRY/HOLD/EXIT/STOP) ทำงานบน z-score ที่ normalize แล้ว จึงใช้ได้กับทุก F(·) โดยไม่ต้องปรับ logic — สิ่งที่เปลี่ยนคือ polling frequency: half-life ของ funding spread (<a href="statarb-ch13c.html">ch13C</a>) สั้นกว่า log-price pair มาก ดังนั้น state machine ของ funding spread ต้อง poll ถี่กว่ามาก (นาทีแทนที่จะเป็นชั่วโมง/วัน) มิฉะนั้นจะพลาด window การ entry/exit ทั้งหมด</p>
+</div>
+
+<p style="color:#64748b;font-size:.9em;text-align:center;margin-top:30px">
+  Ch.11 Entry/Exit State Machine | ต่อไป → <strong>Ch.12: Position Sizing</strong>
+</p>
+
+<nav data-libnav style="margin-top:48px;padding:14px 18px;border-top:2px solid #7c3aed;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;font-size:.9em;font-family:'Sarabun',sans-serif"><a href="index.html" style="color:#64748b;text-decoration:none;font-weight:700">🏛️ ห้องสมุด Options &amp; Arbitrage</a><a href="statarb-ch0.html" style="color:#7c3aed;text-decoration:none;font-weight:700">Statistical Arbitrage — เริ่มต้น</a></nav>
+</body>
+</html>
