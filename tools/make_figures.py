@@ -15,7 +15,8 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
-FIGS = {}  # (file, name) -> svg string
+FIGS = {}
+_CUR = ["?"]  # ชื่อภาพที่กำลังวาด (ใช้ตอนรายงานข้อความล้นขอบ)
 NUMS = {}  # name -> dict ตัวเลขที่ภาพใช้ (ให้ math_figures.py เทียบกับข้อความ)
 
 FONT = 'font-family="Sarabun"'
@@ -146,7 +147,32 @@ def polyline(out, pts, col, width=2.5, dash="", shadow=True):
     out.append(f'<polyline points="{d}" fill="none" stroke="{col}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round"{extra}{fl}/>')
 
 
+# สระ/วรรณยุกต์ไทยที่ซ้อนบน-ล่าง ไม่กินความกว้าง จึงไม่นับ
+_COMBINING = set("\u0e31\u0e34\u0e35\u0e36\u0e37\u0e38\u0e39\u0e3a\u0e47\u0e48\u0e49\u0e4a\u0e4b\u0e4c\u0e4d\u0e4e")
+WIDE = []  # (ชื่อภาพ, ชนิด, กว้างที่ประมาณได้, กว้างที่มีจริง) — เก็บไว้ให้ --check รายงาน
+
+
+_NARROW = set("ijltfrI.,:;!|'\u2019 ")
+# ความกว้างต่ออักษร (เท่าของ font-size) วัดจริงจาก Sarabun ในเบราว์เซอร์ด้วย getComputedTextLength
+# แล้ว fit กำลังสองน้อยสุดจากหัวภาพ/คำโปรยทั้งคลัง 335 ชิ้น — คลาดเคลื่อนเฉลี่ย ~1.7%
+_W_THAI, _W_NARROW, _W_LATIN, _W_SYM = 0.601, 0.293, 0.530, 0.404
+
+
+def text_width(text, size):
+    """ความกว้างโดยประมาณของข้อความ Sarabun (px) — ใช้กันหัวภาพ/คำโปรยล้นขอบ"""
+    w = 0.0
+    for ch in text:
+        if ch in _COMBINING: continue          # สระ/วรรณยุกต์ซ้อน ไม่กินความกว้าง
+        if ch in _NARROW: w += _W_NARROW
+        elif "\u0e00" <= ch <= "\u0e7f": w += _W_THAI
+        elif ch.isdigit() or ("a" <= ch <= "z") or ("A" <= ch <= "Z"): w += _W_LATIN
+        else: w += _W_SYM
+    return w * size
+
+
 def title(out, W, text, sub=""):
+    for t, size, kind in ((text, 12.5, "หัวภาพ"), (sub, 10.0, "คำโปรย")):
+        if t and text_width(t, size) > W - 20: WIDE.append((_CUR[0], kind, text_width(t, size), W - 20))
     out.append(f'<text x="{W/2:.0f}" y="18" text-anchor="middle" {FONT} font-size="12.5" font-weight="700" fill="{INK}">{text}</text>')
     if sub: out.append(f'<text x="{W/2:.0f}" y="32" text-anchor="middle" {FONT} font-size="10" fill="{INK2}">{sub}</text>')
 
@@ -465,7 +491,11 @@ def fig_greeks_grid():
 
 
 def render_all():
-    return {(fl, nm): fn() for (fl, nm), fn in FIGS.items()}
+    out = {}
+    for (fl, nm), fn in FIGS.items():
+        _CUR[0] = nm          # ให้ title() รู้ว่ากำลังวาดภาพไหน เวลารายงานข้อความล้นขอบ
+        out[(fl, nm)] = fn()
+    return out
 
 
 
@@ -1396,7 +1426,7 @@ def _calendar_svg(title_text, sub):
 @fig("pm-part3.html", "p3-calendar")
 def fig_p3_calendar():
     return _calendar_svg("Calendar Spread — payoff เป็นเส้นโค้ง ไม่ใช่เส้นหักศอก เพราะขาไกลยังมี time value",
-                         "S₀ = 100 · K = 100 · σ = 20% · r = 5% · ขาใกล้ 1 เดือน ขาไกล 3 เดือน · ราคาจาก Black-Scholes (เล่มคณิตศาสตร์ บท 7 และ 15)")
+                         "S₀ = K = 100 · σ = 20% · r = 5% · ขาใกล้ 1 เดือน ขาไกล 3 เดือน · ตีราคาด้วย Black-Scholes")
 
 # ── Payoff Chart Study Guide — 16 ภาพ ใช้ตัวเลขจริงชุดเดียวกับเล่ม (K = 100 · เบี้ย 5 · สเปรด 90/110) ─────
 SG = "payoff-chart-study-guide.html"
@@ -1428,7 +1458,7 @@ payoff(SG, "sg-strangle", [Leg("put", 90, 1, 2), Leg("call", 110, 1, 2)],
        "ถูกกว่า straddle แต่ต้องวิ่งไกลกว่า · ขาดทุนสูงสุด −4 ระหว่าง 90–110 · BE = 90 − 4 = 86 และ 110 + 4 = 114", slopes=True, xr=(75, 125))
 payoff(SG, "sg-iron-condor", [Leg("put", 90, 1, 1), Leg("put", 95, -1, 2), Leg("call", 105, -1, 2), Leg("call", 110, 1, 1)],
        "4.5 Iron Condor 90/95/105/110 — ที่ราบสูง: รับเบี้ยสุทธิ 2",
-       "Long Put 90 (1) + Short Put 95 (2) + Short Call 105 (2) + Long Call 110 (1) · กำไรสูงสุด +2 · ขาดทุนสูงสุด −(5 − 2) = −3 · BE 93 / 107",
+       "LP 90 (1) + SP 95 (2) + SC 105 (2) + LC 110 (1) · กำไรสูงสุด +2 · ขาดทุนสูงสุด −(5 − 2) = −3 · BE 93 / 107",
        show_legs=False, slopes=True, xr=(80, 120))
 payoff(SG, "sg-butterfly", BF,
        "4.6 Long Call Butterfly 90/100/110 — เต็นท์: ยอด +7 ที่ K₂ = 100",
@@ -1525,13 +1555,13 @@ payoff("arb-part2b.html", "a2b-belief-cap", CS2000 + [Leg("dput", 2500, 100, 0)]
        with_premium=False, show_legs=True, slopes=False, xr=(1500, 3000), total_label="รวม: Call Spread + PM No ×100", legend_rows=2, callouts=False,
        notes=[(2480, 600, "ก่อนถึง 2500 ได้เกือบ 600 (500 + 100)", PURPLE, "end", -8), (2950, 500, "ทะลุ 2500: PM หมดค่า เหลือ cap 500", INK2, "end", 16)], **USD_K)
 payoff("arb-part3.html", "a3-conversion", [Leg("stock", 100, 1, 0), Leg("put", 100, 1, 0), Leg("call", 100, -1, 0)],
-       "Conversion — Long Stock @100 + Long Put(100) + Short Call(100): payoff แบนที่ 0 = ได้คืน 100 แน่ทุกราคา",
+       "Conversion — หุ้น @100 + Long Put(100) + Short Call(100): payoff แบน = ได้คืน 100 แน่",
        "ตัวอย่าง §11.4: จ่ายวันนี้ S + P − C = 100 + 5.80 − 8.50 = 97.30 · ได้ 100 แน่ที่หมดอายุ · เทียบ PV(K) = 97.53 → ล็อกกำไร 0.23",
        with_premium=False, show_legs=True, callouts=False, xr=(60, 140), total_label="รวม 3 ขา (เทียบต้นทุนหุ้น 100) = 0 คงที่", legend_rows=2,
        notes=[(62, 0, "สามขาหักล้างกันหมด → สิ้นงวดถือเงิน 100 พอดี = พันธบัตร", PURPLE, "start", -8)])
 payoff("arb-part3.html", "a3-box", [Leg("call", 90, 1, 0), Leg("call", 110, -1, 0), Leg("put", 110, 1, 0), Leg("put", 90, -1, 0)],
        "Box Spread 90/110 — Bull Call Spread + Bear Put Spread = แบนที่ 20 ทุกราคา = พันธบัตร",
-       "ซ้ายของ 90: call spread 0 + put spread 20 · ขวาของ 110: 20 + 0 · ตรงกลาง (S − 90) + (110 − S) = 20 · มูลค่ายุติธรรม = PV(20)",
+       "ซ้ายของ 90 ได้ 0 + 20 · ขวาของ 110 ได้ 20 + 0 · ตรงกลาง (S − 90) + (110 − S) = 20 · ค่ายุติธรรม = PV(20)",
        with_premium=False, show_legs=False, callouts=False, xr=(70, 130), total_label="Box = รวมสองสเปรด = 20",
        overlays=[dict(legs=[Leg("call", 90, 1, 0), Leg("call", 110, -1, 0)], label="Bull Call Spread 90/110", color=GREEN, dash="6 3", width=2),
                  dict(legs=[Leg("put", 110, 1, 0), Leg("put", 90, -1, 0)], label="Bear Put Spread 90/110", color=RED, dash="6 3", width=2)],
@@ -1944,7 +1974,7 @@ def fig_m3_tangent():
     Wd, H = 560, 300
     out = svg_open(Wd, H, "เส้นโค้ง f(x) = x² กับเส้นสัมผัสที่ x = 1 ความชัน f′(1) = 2 และเส้น secant จาก h = 1 ที่ชันกว่า")
     title(out, Wd, "อนุพันธ์ = ความชันของเส้นสัมผัส — f(x) = x² ที่ x = 1: f′(1) = 2·1 = 2",
-          "secant (h = 1) ชัน [f(2) − f(1)]/1 = 3 · บีบ h → 0 เส้น secant กลายเป็นเส้นสัมผัสชัน 2 · Delta ก็คือความชันแบบนี้ของราคา option")
+          "secant (h = 1) ชัน [f(2) − f(1)]/1 = 3 · บีบ h → 0 จะกลายเป็นเส้นสัมผัสชัน 2 · Delta คือความชันแบบนี้")
     (sx, sy), _ = _std_frame(out, Wd, H, [(-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], [(-1, "−1"), (0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8")], "x", "f(x)")
     _zero_line(out, sx, sy, -1, 3)
     xs = np.linspace(-1, 3, 200); polyline(out, [(sx(a), sy(a * a)) for a in xs], BLUE, 2.6)
@@ -2240,7 +2270,7 @@ def fig_m7_mc_paths():
     Wd, H = 560, 320
     out = svg_open(Wd, H, f"เส้นทางราคาหุ้น GBM 20 เส้นจาก S₀ = 100 หนึ่งปี {n_itm} เส้นจบเหนือ K = 100 (ITM) ที่เหลือจบต่ำกว่าได้ payoff 0")
     title(out, Wd, "Monte Carlo — จำลองเส้นทางราคาหลายเส้น: จบเหนือ K ได้ S − K · จบต่ำกว่าได้ 0",
-          f"GBM risk-neutral · S₀ = K = 100 · r = 5% · σ = 20% · T = 1 · 20 เส้นนี้ ITM {n_itm} · เฉลี่ย payoff คิดลด {mc:.2f} (BS {bs:.2f} — ต้องใช้หมื่นเส้น)")
+          f"GBM risk-neutral · S₀ = K = 100 · r = 5% · σ = 20% · T = 1 · ITM {n_itm} เส้น · เฉลี่ยคิดลด {mc:.2f} (BS {bs:.2f})")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.25, "0.25"), (0.5, "0.5"), (0.75, "0.75"), (1.0, "T = 1 ปี")], [(60, "60"), (80, "80"), (100, "100"), (120, "120"), (140, "140"), (160, "160")], "เวลา", "S")
     t = np.linspace(0, 1, steps + 1)
     out.append(f'<line x1="{x0}" y1="{sy(100):.1f}" x2="{x0+w}" y2="{sy(100):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>'); _txt(out, x0 + 4, sy(100) - 5, "K = 100", PURPLE, "start", size=9, bold=True)
@@ -2478,7 +2508,7 @@ def fig_m8_boxplot():
     Wd, H = 560, 250
     out = svg_open(Wd, H, f"กายวิภาคของ box plot: กล่อง Q1 {q1:.2f} ถึง Q3 {q3:.2f} เส้น median {med:.2f} หนวดถึง {lo_w:.2f} และ {hi_w:.2f} จุดเลยหนวด {len(outl)} จุด")
     title(out, Wd, "Box plot ย่อข้อมูลทั้งกองเหลือ 5 ตัวเลข — และจุดที่เลยหนวดไม่ได้แปลว่า \"ข้อมูลผิด\"",
-          f"จำลอง {len(d)} จุด · Q1 = {q1:.2f} · median = {med:.2f} · Q3 = {q3:.2f} · IQR = {iqr:.2f} · หนวด = ค่าจริงไกลสุดที่ยังไม่เกิน Q1 − 1.5·IQR / Q3 + 1.5·IQR")
+          f"จำลอง {len(d)} จุด · Q1 = {q1:.2f} · median = {med:.2f} · Q3 = {q3:.2f} · IQR = {iqr:.2f} · หนวดยืดถึงค่าจริงไกลสุดในกฎ 1.5·IQR")
     x0, w, yc = 60, 440, 130; lo, hi = -5, 5
     def sx(v): return x0 + (v - lo) / (hi - lo) * w
     out.append(f'<line x1="{x0}" y1="{yc+50}" x2="{x0+w}" y2="{yc+50}" stroke="{AXIS}"/>')
@@ -2648,7 +2678,7 @@ def fig_m10_kelly():
     Wd, H = 560, 310
     out = svg_open(Wd, H, f"อัตราเติบโตต่องวดเทียบขนาดเดิมพัน เป็นรูประฆังคว่ำ สูงสุดที่ Kelly f* = 10% ตัดศูนย์ที่ {f0*100:.2f}% ราวสองเท่าของ Kelly แล้วติดลบ")
     title(out, Wd, "Kelly — เดิมพันมากขึ้นไม่ได้ดีขึ้นเสมอ: ยอดที่ f* = 10% · เกิน ~20% (2×Kelly) เติบโตติดลบทั้งที่ยังมี edge",
-          f"เกมชนะ 55% จ่าย 1:1 · g(f) = 0.55·ln(1 + f) + 0.45·ln(1 − f) · g สูงสุด {gmax*100:.3f}% ต่องวดที่ f = 10% · ตัดศูนย์จริงที่ f = {f0*100:.2f}% = {f0/fstar:.2f}×Kelly")
+          f"ชนะ 55% จ่าย 1:1 · g(f) = 0.55·ln(1 + f) + 0.45·ln(1 − f) · ยอด {gmax*100:.3f}% ต่องวดที่ f = 10% · ตัดศูนย์ที่ {f0*100:.2f}%")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%")], [(-0.02, "−2%"), (-0.01, "−1%"), (0, "0"), (0.01, "+1%")], "ขนาดเดิมพัน f (สัดส่วนของพอร์ต) →", "อัตราเติบโตต่องวด")
     out.append(f'<rect x="{sx(f0):.1f}" y="{y0}" width="{sx(0.30)-sx(f0):.1f}" height="{h}" fill="{RED}" opacity="0.08"/>')
     _zero_line(out, sx, sy, 0, 0.30)
@@ -2683,7 +2713,7 @@ def fig_m10_drawdown():
     Wd, H = 560, 380
     out = svg_open(Wd, H, f"กราฟเงินทุน 1000 วันจบที่ {total*100:+.0f}% พร้อมกราฟ underwater แสดง drawdown สูงสุด {mdd*100:.1f}% ยอดถึงก้น {bottom-top} วัน กลับเท่าทุนอีก {recov} วัน รวม {bottom-top+recov} วัน", multipanel=True)
     title(out, Wd, f"กลยุทธ์ที่ \"ดี\" ก็ยังเจ็บ — กำไรรวม {total*100:+.0f}% (Sharpe {sharpe:.2f}) แต่ระหว่างทางเงินหาย {mdd*100:.1f}% จากยอด",
-          f"โค้ดในบท (seed 17 · 1000 วัน) · ยอด→ก้น {bottom-top} วัน · ก้น→เท่าทุน {recov} วัน · รวม {bottom-top+recov} วันเห็นตัวเลขแดง · ต้องกำไร {1/(1+mdd)-1:.0%} กลับเท่าทุน")
+          f"โค้ดในบท (seed 17 · 1000 วัน) · ยอด→ก้น {bottom-top} วัน · ก้น→เท่าทุน {recov} วัน · รวม {bottom-top+recov} วัน · ต้องกำไร {1/(1+mdd)-1:.0%}")
     # บน: equity
     x0, y0, w, h = 55, 55, 483, 150
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (250, "250"), (500, "500"), (750, "750"), (1000, "1000")], [(0.8, "0.8"), (1.2, "1.2"), (1.6, "1.6"), (2.0, "2.0"), (2.4, "2.4")], ylab="เงินทุน (เริ่ม 1.0)")
@@ -2704,6 +2734,369 @@ def fig_m10_drawdown():
     _txt(out, sx2(bottom), sy2(mdd) - 4, f"{mdd*100:.1f}%", RED, "middle", size=9, bold=True)
     out.append("</svg>")
     NUMS["m10-drawdown"] = dict(total=total, mdd=mdd, sharpe=sharpe, top_to_bottom=bottom - top, recov=recov)
+    return "\n".join(out)
+
+
+# ── Arbitrage (arb-part1…6) · ตาของ Arbitrageur · เล่ม 2·F — กราฟตัวเลขที่เคยวาดมือ ──────────
+def converge_data(pa=30000.0, pb=30500.0, n=60, k=0.09):
+    """ราคาสองตลาดวิ่งเข้าหากันแบบเลขชี้กำลัง: กึ่งกลางคงที่ ช่องว่างหดด้วยอัตรา k ต่อหน่วยเวลา"""
+    t = np.arange(n + 1); mid = (pa + pb) / 2; gap0 = pb - pa
+    gap = gap0 * np.exp(-k * t)
+    return t, mid - gap / 2, mid + gap / 2, gap
+
+
+@fig("arb-part1.html", "a1-converge")
+def fig_a1_converge():
+    t, A, B, gap = converge_data(); n = len(t) - 1
+    i90 = int(np.argmax(gap <= 0.1 * gap[0]))
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"ราคาตลาด A ไต่ขึ้นและตลาด B ไหลลงเข้าหากัน ช่องว่าง 500 บาทหดเหลือไม่ถึง 50 บาทภายใน {i90} หน่วยเวลา")
+    title(out, Wd, "No-Arbitrage — พอมีคนไล่ซื้อที่ถูกและไล่ขายที่แพง ช่องว่างก็ปิดตัวเอง",
+          f"ตลาด A ฿{A[0]:,.0f} · ตลาด B ฿{B[0]:,.0f} · ช่องว่าง ฿{gap[0]:,.0f} = arb · เหลือ ฿{gap[i90]:,.0f} ใน {i90} หน่วยเวลา")
+    yt = [(v, f"{v:,.0f}") for v in (29900, 30100, 30300, 30500, 30700)]
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (15, "15"), (30, "30"), (45, "45"), (60, "60")], yt, "เวลา →", "ราคา (฿)")
+    pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t, B)) + " " + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t[::-1], A[::-1]))
+    out.append(f'<polygon points="{pts}" fill="{AMBER}" opacity="0.18"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, A)], GREEN, 2.5)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, B)], RED, 2.5)
+    out.append(f'<line x1="{sx(0):.1f}" y1="{sy(A[0]):.1f}" x2="{sx(0):.1f}" y2="{sy(B[0]):.1f}" stroke="{AMBER}" stroke-width="2"/>')
+    _txt(out, sx(2), sy((A[0] + B[0]) / 2) + 3.5, f"ช่องว่าง ฿{gap[0]:,.0f} = arb", AMBER, "start", bold=True)
+    _txt(out, sx(1), sy(A[0]) + 14, f"ตลาด A ฿{A[0]:,.0f} — ถูกกว่า จึงมีคนไล่ซื้อ ↑", GREEN, "start", size=9, bold=True)
+    _txt(out, sx(1), sy(B[0]) - 6, f"ตลาด B ฿{B[0]:,.0f} — แพงกว่า จึงมีคนไล่ขาย ↓", RED, "start", size=9, bold=True)
+    _dot(out, sx(n), sy((A[-1] + B[-1]) / 2)); _txt(out, sx(n) - 4, sy((A[-1] + B[-1]) / 2) - 10, "converge → ไม่เหลือ arb", PURPLE, "end", bold=True)
+    out.append("</svg>")
+    NUMS["a1-converge"] = dict(gap0=float(gap[0]), gap_end=float(gap[-1]), t90=float(i90))
+    return "\n".join(out)
+
+
+def call_bounds_data(K=100.0, r=0.05, T=0.5, sg=0.20):
+    S = np.linspace(0, 200, 401); disc = K * np.exp(-r * T)
+    return S, S, np.maximum(S - disc, 0), bs_greeks(S[1:], K=K, r=r, sg=sg, T=T)["C"], disc
+
+
+@fig("arb-part1.html", "a1-call-bounds")
+def fig_a1_call_bounds():
+    S, up, lo_, C, disc = call_bounds_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"โซนราคา Call ที่เป็นไปได้ อยู่ระหว่างเส้นล่าง max(0, S − {disc:.2f}) กับเส้นบน C = S · ราคาจริงจาก Black-Scholes อยู่ในโซนเสมอ")
+    title(out, Wd, "Bounds — ราคา Call ต้องอยู่ในโซนนี้เสมอ ไม่ต้องรู้ σ ก็บอกได้",
+          f"K = 100 · r = 5% · T = 0.5 ปี · PV(K) = 100·e⁻⁰·⁰²⁵ = {disc:.2f} · เพดาน C ≤ S · พื้น C ≥ max(0, S − PV(K)) · หลุดโซน = arb ที่พิสูจน์ได้")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (50, "50"), (100, "100 (K)"), (150, "150"), (200, "200")], [(0, "0"), (50, "50"), (100, "100"), (150, "150"), (200, "200")], "S (ราคาหุ้น)", "ราคา Call")
+    pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(S, up)) + " " + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(S[::-1], lo_[::-1]))
+    out.append(f'<polygon points="{pts}" fill="{GREEN}" opacity="0.14"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, up)], INK2, 1.8, dash="5 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, lo_)], INK2, 1.8, dash="5 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S[1:], C)], BLUE, 2.5)
+    _txt(out, sx(168), sy(180), "เพดาน C = S", INK2, "middle", size=9, bold=True)
+    _txt(out, sx(198), sy(88), "พื้น C = S − PV(K)", INK2, "end", size=9, bold=True)
+    _txt(out, sx(60), sy(120), "Valid Zone", GREEN, "start", size=11, bold=True)
+    _txt(out, sx(60), sy(105), "ราคา Call ต้องอยู่ในโซนนี้", GREEN, "start", size=9.5, bold=True)
+    _txt(out, sx(60), sy(90), "เหนือเพดานหรือใต้พื้น = arb", RED, "start", size=9.5, bold=True)
+    _txt(out, sx(128), sy(24), f"เส้นทึบ = Black-Scholes ที่ σ = 20% · C(100) = {float(bs_greeks(100.0)['C']):.2f}", BLUE, "start", size=9)
+    out.append("</svg>")
+    NUMS["a1-call-bounds"] = dict(disc=disc)
+    return "\n".join(out)
+
+
+def convexity_data(S0=100.0, r=0.05, sg=0.20, T=0.5, ks=(90.0, 100.0, 110.0)):
+    cs = [float(bs_greeks(S0, K=k, r=r, sg=sg, T=T)["C"]) for k in ks]
+    chord = (cs[0] + cs[2]) / 2
+    return ks, cs, chord, cs[0] - 2 * cs[1] + cs[2]
+
+
+@fig("arb-part2a.html", "a2a-convexity")
+def fig_a2a_convexity():
+    ks, cs, chord, fly = convexity_data()
+    Kg = np.linspace(80, 120, 161); Cg = bs_greeks(100.0, K=Kg, r=0.05, sg=0.20, T=0.5)["C"]
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"ราคา Call เทียบ strike เป็นเส้นโค้งคว่ำลงและโค้งขึ้น จุดกลางของคอร์ด {chord:.2f} อยู่เหนือราคาจริงที่ K = 100 ซึ่งเท่ากับ {cs[1]:.2f}")
+    title(out, Wd, "Convexity ใน K — ราคาจริงที่ K กลาง ต้องอยู่ใต้จุดกึ่งกลางของคอร์ดเสมอ",
+          f"S = 100 · r = 5% · σ = 20% · T = 0.5 · Butterfly = {cs[0]:.2f} − 2({cs[1]:.2f}) + {cs[2]:.2f} = {fly:.2f} ≥ 0 ✓")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(80, "80"), (90, "90 (K₁)"), (100, "100 (K₂)"), (110, "110 (K₃)"), (120, "120")], [(0, "0"), (5, "5"), (10, "10"), (15, "15"), (20, "20")], "Strike (K)", "ราคา Call")
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(Kg, Cg)], BLUE, 2.6)
+    polyline(out, [(sx(ks[0]), sy(cs[0])), (sx(ks[2]), sy(cs[2]))], AMBER, 1.8, dash="5 3", shadow=False)
+    out.append(f'<line x1="{sx(100):.1f}" y1="{sy(chord):.1f}" x2="{sx(100):.1f}" y2="{sy(cs[1]):.1f}" stroke="{GREEN}" stroke-width="2.4"/>')
+    for k, c in zip(ks, cs):
+        _dot(out, sx(k), sy(c), BLUE, 4)
+        _txt(out, sx(k), sy(c) + (-9 if k != 100 else 16), f"C({k:g}) = {c:.2f}", BLUE, "middle", size=9, bold=True)
+    _dot(out, sx(100), sy(chord), AMBER, 4)
+    _txt(out, sx(100) + 8, sy(chord) - 4, f"จุดกึ่งกลางคอร์ด = {chord:.2f}", AMBER, "start", size=9, bold=True)
+    _txt(out, sx(101), sy((chord + cs[1]) / 2) + 3.5, f"ห่าง {fly:.2f} = ราคา Butterfly", GREEN, "start", size=9, bold=True)
+    _txt(out, sx(119), sy(18.5), "ถ้าราคาจริงโผล่เหนือคอร์ด → Butterfly ติดลบ = arb", RED, "end", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["a2a-convexity"] = dict(c1=cs[0], c2=cs[1], c3=cs[2], chord=chord, fly=fly)
+    return "\n".join(out)
+
+
+def iv_rv_data(n=120, seed=13, base=0.24):
+    rng = np.random.default_rng(seed)
+    # RV เหวี่ยงแรง (วัดจากราคาจริง) · IV ปรับตัวช้ากว่าและมีส่วนเกินเฉลี่ยเป็นบวก แต่บางช่วง RV แซงได้
+    shock = np.zeros(n); shock[46:56] = np.linspace(0, 0.11, 10); shock[56:70] = np.linspace(0.11, 0, 14)
+    rv = base + 0.035 * np.sin(np.arange(n) / 9.0) + shock + rng.normal(0, 0.020, n)
+    iv = base + 0.038 + 0.022 * np.sin(np.arange(n) / 14.0 + 1.0) + 0.45 * shock + rng.normal(0, 0.007, n)
+    return rv, iv, float((iv - rv).mean()), float((iv > rv).mean())
+
+
+@fig("arb-part3.html", "a3-iv-rv")
+def fig_a3_iv_rv():
+    rv, iv, gap, share = iv_rv_data(); n = len(rv); t = np.arange(n)
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"เส้น implied volatility อยู่เหนือ realized volatility เกือบตลอด {n} วัน ช่องว่างเฉลี่ย {gap*100:.1f} จุดเปอร์เซ็นต์")
+    title(out, Wd, "IV เทียบ RV — ส่วนใหญ่ IV อยู่เหนือ RV ช่องว่างนั้นคือ edge ของคนขาย vol",
+          f"จำลอง {n} วัน · IV เฉลี่ย {iv.mean()*100:.1f}% · RV {rv.mean()*100:.1f}% · ส่วนเกิน {gap*100:.1f} จุด · IV > RV {share*100:.0f}% ของวัน [Heuristic]")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (30, "30"), (60, "60"), (90, "90"), (120, "120")], [(0.10, "10%"), (0.20, "20%"), (0.30, "30%"), (0.40, "40%")], "วัน", "Volatility (ต่อปี)")
+    for a, b in zip(range(n - 1), range(1, n)):  # ระบายทีละช่วง: เขียวเมื่อ IV เหนือ RV แดงเมื่อ RV แซง
+        col = GREEN if (iv[a] + iv[b]) > (rv[a] + rv[b]) else RED
+        out.append(f'<polygon points="{sx(a):.1f},{sy(rv[a]):.1f} {sx(a):.1f},{sy(iv[a]):.1f} {sx(b):.1f},{sy(iv[b]):.1f} {sx(b):.1f},{sy(rv[b]):.1f}" fill="{col}" opacity="0.22"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, rv)], BLUE, 2.0, shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, iv)], RED, 2.2, shadow=False)
+    _txt(out, sx(4), sy(0.375), f"แถบเขียว = IV เหนือ RV (edge ของคนขาย vol · เฉลี่ยทั้งช่วง {gap*100:.1f} จุด)", GREEN, "start", size=9.5, bold=True)
+    _txt(out, sx(4), sy(0.375) + 13, f"แถบแดง = RV แซง IV ({(1-share)*100:.0f}% ของวัน — ช่วงที่คนขาย vol เจ็บ)", RED, "start", size=9.5, bold=True)
+    legend(out, [(RED, "IV — ที่ตลาดฝังไว้ในราคา option", ""), (BLUE, "RV — ที่วัดได้จริงจากราคาหุ้น", "")], x0, H - 10)
+    out.append("</svg>")
+    NUMS["a3-iv-rv"] = dict(gap=gap, share=share, iv_mean=float(iv.mean()), rv_mean=float(rv.mean()))
+    return "\n".join(out)
+
+
+def basis_data(S0=900.0, r=0.02, d=0.025, T=0.25, F_mkt=905.0, n=90, seed=2):
+    """ตัวอย่าง SET50 ของ §15.4: ค่ายุติธรรม F = S·e^(r−d)T · ตลาดเสนอ 905 · basis หดเป็น 0 ที่หมดอายุ"""
+    fair = S0 * np.exp((r - d) * T)
+    rng = np.random.default_rng(seed); t = np.linspace(0, T, n + 1)
+    S = S0 + np.cumsum(np.concatenate([[0.0], rng.normal(0, 1.1, n)]))
+    prem = (F_mkt - S0) * (1 - t / T)  # ส่วนเกินเหนือ spot หดเป็นศูนย์เชิงเส้น
+    return t, S, S + prem, fair, F_mkt - fair
+
+
+@fig("arb-part4.html", "a4-basis")
+def fig_a4_basis():
+    t, S, F, fair, over = basis_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"ราคา futures เริ่มที่ 905 สูงกว่า spot 900 แล้วหดเข้าหา spot จนเท่ากันที่วันหมดอายุ ค่ายุติธรรมอยู่ที่ {fair:.2f} จึงแพงเกินไป {over:.2f}")
+    title(out, Wd, "Basis หดเป็นศูนย์ที่วันหมดอายุเสมอ — นั่นคือสิ่งที่ล็อกกำไรของ cash & carry",
+          f"§15.4: spot 900 · r = 2% · d = 2.5% · T = 3 เดือน → ค่ายุติธรรม {fair:.2f} · ตลาดเสนอ 905 → แพงเกิน {over:.2f}")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "วันนี้"), (0.0625, ""), (0.125, "1.5 เดือน"), (0.1875, ""), (0.25, "หมดอายุ")], [(885, "885"), (895, "895"), (905, "905"), (915, "915")], "เวลา →", "ราคา")
+    pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t, F)) + " " + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t[::-1], S[::-1]))
+    out.append(f'<polygon points="{pts}" fill="{AMBER}" opacity="0.22"/>')
+    out.append(f'<line x1="{x0}" y1="{sy(fair):.1f}" x2="{x0+w}" y2="{sy(fair):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, S)], BLUE, 2.2, shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, F)], RED, 2.4, shadow=False)
+    _txt(out, sx(0.004), sy(913), f"basis = F − S = {905-900:.0f} วันนี้", AMBER, "start", size=9, bold=True)
+    _txt(out, sx(0.246), sy(889), f"เส้นประ = ค่ายุติธรรม {fair:.2f} · ตลาดเสนอ 905 จึงแพงเกิน {over:.2f}", PURPLE, "end", size=9, bold=True)
+    _dot(out, sx(0.25), sy(F[-1])); _txt(out, sx(0.246), sy(913), "converge → basis = 0 ที่หมดอายุ", PURPLE, "end", size=9, bold=True)
+    legend(out, [(BLUE, "Spot", ""), (RED, "Futures", "")], x0, H - 10)
+    out.append("</svg>")
+    NUMS["a4-basis"] = dict(fair=float(fair), over=float(over))
+    return "\n".join(out)
+
+
+FX = dict(usd_eur=0.92, eur_gbp=0.86, gbp_usd=1.28, start=1000.0)
+
+
+def triangular_data(start=None, **rates):
+    r = dict(FX); r.update(rates); start = FX["start"] if start is None else start
+    a = start * r["usd_eur"]; b = a * r["eur_gbp"]; c = b * r["gbp_usd"]
+    return a, b, c, c - start, r["usd_eur"] * r["eur_gbp"] * r["gbp_usd"]
+
+
+@fig("arb-part4.html", "a4-triangular")
+def fig_a4_triangular():
+    eur, gbp, back, profit, loop = triangular_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"วงสามเหลี่ยมค่าเงิน: 1,000 ดอลลาร์แลกเป็น {eur:,.0f} ยูโร แล้วเป็น {gbp:,.2f} ปอนด์ แล้วกลับเป็น {back:,.2f} ดอลลาร์ กำไร {profit:.2f} ดอลลาร์ต่อรอบ")
+    title(out, Wd, f"Triangular Arbitrage — เดินครบวงแล้วได้เงินกลับมามากกว่าเดิม ${profit:.2f}",
+          f"ผลคูณรอบวง {FX['usd_eur']} × {FX['eur_gbp']} × {FX['gbp_usd']} = {loop:.5f} ≠ 1 · ส่วนเกิน {(loop-1)*100:.3f}% ต่อรอบ ไม่ขึ้นกับว่าเริ่มด้วยเงินเท่าไร")
+    nodes = [("USD", 280, 70, f"${FX['start']:,.0f}"), ("EUR", 120, 215, f"€{eur:,.0f}"), ("GBP", 440, 215, f"£{gbp:,.2f}")]
+    for nm, cx, cy, amt in nodes:
+        out.append(f'<circle cx="{cx}" cy="{cy}" r="40" fill="{BLUE}" opacity="0.12" stroke="{BLUE}" stroke-width="2"/>')
+        _txt(out, cx, cy - 4, nm, INK, "middle", size=13, bold=True); _txt(out, cx, cy + 13, amt, BLUE, "middle", size=11, bold=True)
+    arrows = [((280, 70), (120, 215), f"×{FX['usd_eur']}", -30, 4), ((120, 215), (440, 215), f"×{FX['eur_gbp']}", 0, 22), ((440, 215), (280, 70), f"×{FX['gbp_usd']}", 30, 4)]
+    for (ax, ay), (bx, by), lab, dx, dy in arrows:
+        ux, uy = bx - ax, by - ay; L = (ux * ux + uy * uy) ** 0.5; ux, uy = ux / L, uy / L
+        x1, y1 = ax + ux * 42, ay + uy * 42; x2, y2 = bx - ux * 46, by - uy * 46
+        out.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{AMBER}" stroke-width="2.4" marker-end="url(#arrA)"/>')
+        _txt(out, (x1 + x2) / 2 + dx, (y1 + y2) / 2 + dy, lab, AMBER, "middle", size=11, bold=True)
+    _txt(out, 280, 268, f"${FX['start']:,.0f} → €{eur:,.0f} → £{gbp:,.2f} → ${back:,.2f}  =  กำไร ${profit:.2f} ต่อรอบ ({(loop-1)*100:.3f}%)", GREEN, "middle", size=10.5, bold=True)
+    _txt(out, 280, 285, "ถ้าผลคูณรอบวง = 1 พอดี ก็ไม่มี arb · อ่านทิศอัตราผิดทางเดียว \"กำไร\" กลายเป็นขาดทุน", INK2, "middle", size=9, italic=True)
+    out.append('<defs><marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d97706"/></marker></defs>')
+    out.append("</svg>")
+    NUMS["a4-triangular"] = dict(eur=eur, gbp=gbp, back=back, profit=profit, loop=loop)
+    return "\n".join(out)
+
+
+def ou_z_data(n=260, theta=0.06, seed=4):
+    rng = np.random.default_rng(seed); x = np.zeros(n)
+    for t in range(1, n): x[t] = (1 - theta) * x[t - 1] + rng.normal(0, 1)
+    return (x - x.mean()) / x.std(ddof=1)
+
+
+@fig("arb-part5.html", "a5-zscore")
+def fig_a5_zscore():
+    z = ou_z_data(); n = len(z); t = np.arange(n)
+    # หาไม้แรก: ข้าม +2 → ปิดที่ 0 · ข้าม −2 → ปิดที่ 0
+    trades = []
+    i = 1
+    while i < n and len(trades) < 2:
+        if abs(z[i]) >= 2 and abs(z[i - 1]) < 2:
+            side = "short" if z[i] > 0 else "long"
+            j = i
+            while j < n and (z[j] > 0) == (z[i] > 0) and abs(z[j]) > 0.05: j += 1
+            if j < n: trades.append((i, j, side)); i = j
+        i += 1
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"z-score ของ spread วนรอบศูนย์ แตะ +2 แล้วเปิด short และแตะ −2 แล้วเปิด long ปิดสถานะเมื่อกลับมาที่ศูนย์")
+    title(out, Wd, "z-score ของ spread — แตะ +2 ขาย · แตะ −2 ซื้อ · กลับมา 0 ปิดไม้",
+          f"จำลอง OU {n} วัน (θ = 0.06) · z = (spread − ค่าเฉลี่ย) / SD · วันที่ |z| ≥ 2 มี {int((abs(z)>=2).sum())} วันจาก {n} ({(abs(z)>=2).mean()*100:.1f}% ใกล้ 4.6% ของ Normal)")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (50, "50"), (100, "100"), (150, "150"), (200, "200"), (250, "250")], [(-4, "−4"), (-2, "−2"), (0, "0"), (2, "+2"), (4, "+4")], "วัน", "Z")
+    out.append(f'<rect x="{x0}" y="{sy(4):.1f}" width="{w}" height="{sy(2)-sy(4):.1f}" fill="{RED}" opacity="0.08"/><rect x="{x0}" y="{sy(-2):.1f}" width="{w}" height="{sy(-4)-sy(-2):.1f}" fill="{GREEN}" opacity="0.08"/>')
+    for v, col in ((2, RED), (-2, GREEN)): out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{col}" stroke-width="1.2" stroke-dasharray="5 3"/>')
+    _zero_line(out, sx, sy, 0, n - 1)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, z)], BLUE, 1.6, shadow=False)
+    for i, j, side in trades:
+        col = RED if side == "short" else GREEN
+        _dot(out, sx(i), sy(z[i]), col, 4.4); _dot(out, sx(j), sy(z[j]), PURPLE, 4)
+        _txt(out, sx(i), sy(z[i]) + (-9 if side == "short" else 16), "Short!" if side == "short" else "Long!", col, "middle", size=9.5, bold=True)
+        _txt(out, sx(j) + 5, sy(z[j]) - 7, "Exit", PURPLE, "start", size=9, bold=True)
+    _txt(out, x0 + w - 4, sy(2) - 5, "+2σ → ขาย spread", RED, "end", size=9, bold=True)
+    _txt(out, x0 + w - 4, sy(-2) + 13, "−2σ → ซื้อ spread", GREEN, "end", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["a5-zscore"] = dict(n_extreme=int((abs(z) >= 2).sum()))
+    return "\n".join(out)
+
+
+def merger_data(pre=42.0, deal=50.0, start=47.50, fail=35.0, n=90):
+    t = np.arange(n + 1)
+    p = np.where(t < 10, pre, start + (deal - start) * np.clip((t - 10) / (n - 10), 0, 1) ** 1.6)
+    return t, p, deal - start, (deal - start) / deal * 100, (start - fail) / start * 100
+
+
+@fig("arb-part6.html", "a6-merger-spread")
+def fig_a6_merger_spread():
+    t, p, spread, pct, downside = merger_data(); n = len(t) - 1
+    Wd, H = 560, 320
+    out = svg_open(Wd, H, f"ราคาหุ้นเป้าหมายกระโดดจาก 42 เป็น 47.50 วันประกาศดีล แล้วไต่เข้าหาราคาดีล 50 บาท ส่วนต่าง 2.50 บาทค่อย ๆ แคบลงจนปิดดีล")
+    title(out, Wd, "Merger Arbitrage — ส่วนต่างจากราคาดีลคือค่าจ้างของการแบกความเสี่ยงว่าดีลจะล่ม",
+          f"ประกาศซื้อที่ ฿50 · ราคาเด้ง ฿42 → ฿47.50 · เหลือส่วนต่าง ฿{spread:.2f} = {pct:.0f}% · ดีลล่มกลับไป ฿35 = −{downside:.1f}%")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "ก่อนประกาศ"), (10, "ประกาศ"), (35, "Regulatory"), (60, "โหวต"), (90, "ปิดดีล")], [(34, "34"), (38, "38"), (42, "42"), (46, "46"), (50, "50")], "เวลา →", "ราคาหุ้น B (฿)")
+    out.append(f'<line x1="{x0}" y1="{sy(50):.1f}" x2="{x0+w}" y2="{sy(50):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')
+    _txt(out, x0 + 4, sy(50) - 5, "ราคาดีล ฿50", PURPLE, "start", size=9, bold=True)
+    pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t[10:], p[10:])) + f" {sx(n):.1f},{sy(50):.1f} {sx(10):.1f},{sy(50):.1f}"
+    out.append(f'<polygon points="{pts}" fill="{AMBER}" opacity="0.22"/>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, p)], BLUE, 2.5, shadow=False)
+    polyline(out, [(sx(12), sy(47.5)), (sx(38), sy(35))], RED, 1.8, dash="5 3", shadow=False)
+    _txt(out, sx(40), sy(35.4), "ถ้าดีลล่ม → ฿35 (เสีย ฿12.50)", RED, "start", size=9, bold=True)
+    _dot(out, sx(10), sy(47.5)); _txt(out, sx(12), sy(46.2), "ประกาศดีล: ฿42 → ฿47.50", PURPLE, "start", size=9, bold=True)
+    _txt(out, sx(88), sy(48.4), f"ส่วนต่าง ฿{spread:.2f} ค่อย ๆ แคบลง", AMBER, "end", size=9, bold=True)
+    for xv, lab in ((35, "Regulatory review"), (60, "Shareholder vote")):
+        out.append(f'<line x1="{sx(xv):.1f}" y1="{y0}" x2="{sx(xv):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1" stroke-dasharray="3 3"/>')
+        _txt(out, sx(xv), sy(41.2), lab, INK2, "middle", size=9)
+    _txt(out, x0 + w, H - 8, "เสีย ฿12.50 เพื่อได้ ฿2.50 → ต้องมั่นใจเกิน 83.3% ว่าดีลจะปิด", INK2, "end", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["a6-merger-spread"] = dict(spread=spread, pct=pct, downside=downside)
+    return "\n".join(out)
+
+
+@fig("eye-part2.html", "e2-five-markets")
+def fig_e2_five_markets():
+    X = 2500.0
+    Wd, H = 560, 330
+    out = svg_open(Wd, H, "เทียบสองรูปแบบของ 'จ่ายถ้าเกิน X' ที่ชื่อต่างกันห้าตลาด: จ่ายคงที่แบบดิจิทัล กับจ่ายตามส่วนเกินแบบเส้นตรง", multipanel=True)
+    title(out, Wd, "\"จ่ายถ้าเกิน X\" — ห้าตลาดเรียกคนละชื่อ แต่โครงเดียวกัน ต่างแค่ \"จ่ายเท่าไร\"",
+          f"X = {X:,.0f} · เงื่อนไขจ่ายเหมือนกัน (S > X) · ซ้าย = จ่ายก้อนคงที่ · ขวา = จ่ายตามส่วนเกิน")
+    S = np.linspace(2000, 3000, 401)
+    panels = [("จ่ายคงที่ (ดิจิทัล)", np.where(S > X, 1.0, 0.0), (0, 1.35), ["PM Above Yes", "Betting \"Over X\"", "ประกันแบบจ่ายก้อน"], PURPLE),
+              ("จ่ายตามส่วนเกิน (เชิงเส้น)", np.maximum(S - X, 0) / 500, (0, 1.35), ["Call(X)", "Call on DEX", "ประกันตามความเสียหาย"], BLUE)]
+    for i, (nm, y, (ylo, yhi), names, col) in enumerate(panels):
+        cx, cy, pw, ph = 55 + i * 265, 70, 215, 130
+        _txt(out, cx + pw / 2, cy - 8, nm, INK, "middle", size=11, bold=True)
+        sx, sy = frame(out, cx, cy, pw, ph, [(2000, "2,000"), (2500, "X"), (3000, "3,000")], [(0, "0"), (1, "จ่ายเต็ม")], xlab="ราคา S", ylab="payoff", grid_y=False)
+        out.append(f'<line x1="{sx(X):.1f}" y1="{cy}" x2="{sx(X):.1f}" y2="{cy+ph}" stroke="{GRID}" stroke-width="1" stroke-dasharray="3 3"/>')
+        pts = " ".join(f"{sx(a):.1f},{sy(min(b, yhi)):.1f}" for a, b in zip(S, y))
+        out.append(f'<polygon points="{sx(S[0]):.1f},{sy(0):.1f} {pts} {sx(S[-1]):.1f},{sy(0):.1f}" fill="{col}" opacity="0.13"/>')
+        polyline(out, [(sx(a), sy(min(b, yhi))) for a, b in zip(S, y)], col, 2.6)
+        for j, nmm in enumerate(names):
+            _txt(out, cx, cy + ph + 30 + j * 15, f"• {nmm}", col, "start", size=9.5, bold=True)
+    _txt(out, Wd / 2, H - 10, "เงื่อนไขเหมือนกัน แต่คนละรูปจ่าย — เอาราคามาเทียบกันตรง ๆ คือเทียบคนละของ", RED, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def indicator_breakeven_data(cost=0.00436):
+    """เส้นกำไรต่อไม้ = k·σ โดย k มาจากจุดตัดต้นทุนที่บทวัดไว้ · จุดวัดจริงจากตาราง §13.4"""
+    cross = {"RSI(14) 30→50": 0.0015, "Bollinger −2SD": 0.0033, "Stochastic %K 20→50": 0.0074}
+    ks = {k: cost / v for k, v in cross.items()}
+    meas = {"RSI(14) 30→50": [(0.001, 0.002864), (0.003, 0.008673), (0.012, 0.036056)],
+            "Stochastic %K 20→50": [(0.001, 0.000583), (0.003, 0.001769), (0.012, 0.007321)]}
+    return cost, cross, ks, meas
+
+
+@fig("math-part11.html", "m11-indicator-breakeven")
+def fig_m11_indicator_breakeven():
+    cost, cross, ks, meas = indicator_breakeven_data()
+    Wd, H = 560, 334
+    out = svg_open(Wd, H, "เส้นตรงสามเส้นของกำไรต่อไม้ก่อนหักต้นทุนที่โตตามความผันผวนรายวัน ตัดเส้นต้นทุน 0.436% ที่ σ 0.15% 0.33% และ 0.74% ตามลำดับ")
+    title(out, Wd, "เส้นเอียงชนเส้นแบน — กำไรต่อไม้โตตาม σ แต่ต้นทุนไม่สนใจว่าตลาดเหวี่ยงหรือนิ่ง",
+          f"ต้นทุนไป-กลับหุ้น SET50 = {cost*100:.3f}% · แต่ละเครื่องมือมีจุดตัดของตัวเอง: RSI {cross['RSI(14) 30→50']*100:.2f}% · Bollinger {cross['Bollinger −2SD']*100:.2f}% · %K {cross['Stochastic %K 20→50']*100:.2f}%")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.002, "0.2%"), (0.004, "0.4%"), (0.006, "0.6%"), (0.008, "0.8%"), (0.010, "1.0%")], [(0, "0"), (0.01, "1.0%"), (0.02, "2.0%"), (0.03, "3.0%")], "σ ต่อวัน (ความผันผวนของตลาด) →", "กำไรต่อไม้ ก่อนหักต้นทุน")
+    out.append(f'<rect x="{x0}" y="{sy(cost):.1f}" width="{w}" height="{sy(0)-sy(cost):.1f}" fill="{RED}" opacity="0.10"/>')
+    out.append(f'<line x1="{x0}" y1="{sy(cost):.1f}" x2="{x0+w}" y2="{sy(cost):.1f}" stroke="{RED}" stroke-width="2"/>')
+    _txt(out, x0 + w - 6, sy(cost * 0.42), "โซนแดง = ขาดทุนแน่นอน", RED, "end", size=9, bold=True)
+    cols = {"RSI(14) 30→50": GREEN, "Bollinger −2SD": BLUE, "Stochastic %K 20→50": AMBER}
+    dash = {"RSI(14) 30→50": "", "Bollinger −2SD": "6 3", "Stochastic %K 20→50": "2 3"}
+    for nm, k in ks.items():
+        xmax = min(0.010, 0.032 / k)
+        polyline(out, [(sx(0), sy(0)), (sx(xmax), sy(k * xmax))], cols[nm], 2.2, dash=dash[nm], shadow=not dash[nm])
+        xv = cross[nm]; _dot(out, sx(xv), sy(cost), cols[nm], 4)
+        _txt(out, sx(xv), sy(cost) + 15, f"{xv*100:.2f}%", cols[nm], "middle", size=9, bold=True)
+        for mx, my in meas.get(nm, []):
+            if mx <= xmax: out.append(f'<circle cx="{sx(mx):.1f}" cy="{sy(my):.1f}" r="3" fill="#fff" stroke="{cols[nm]}" stroke-width="1.8"/>')
+    _txt(out, sx(0.0078), sy(0.0262), "RSI — เก็บได้มากต่อไม้", GREEN, "end", size=9, bold=True)
+    _txt(out, x0 + 4, y0 + 12, "เส้นแดงแนวนอน = ต้นทุนไป-กลับ 0.436% — ไม่ขึ้นกับ σ", RED, "start", size=9, bold=True)
+    _txt(out, x0 + 4, y0 + 26, "วงกลมกลวง = ค่าที่วัดได้จริงจากตาราง §13.4", INK2, "start", size=9, italic=True)
+    _txt(out, x0 + 4, y0 + 38, "ทุกเส้นผ่านจุดกำเนิด — กำไรต่อไม้แปรตาม σ", INK2, "start", size=9, italic=True)
+    legend(out, [(GREEN, "RSI(14) 30→50", ""), (BLUE, "Bollinger −2SD", "6 3"), (AMBER, "Stochastic %K 20→50 (ถี่กว่า 10 เท่า)", "2 3")], x0, H - 10)
+    out.append("</svg>")
+    NUMS["m11-indicator-breakeven"] = dict(cost=cost, **{f"cross_{i}": v for i, v in enumerate(cross.values())})
+    return "\n".join(out)
+
+
+def ridge_path_data(seed=5, n=250):
+    """ข้อมูลชุดเดียวกับโค้ดในบท §14.3: val เกือบเป็นตัวเดียวกับ mkt (VIF 113) · β จริง = [0.8, 0.4, 0.3]"""
+    rng = np.random.default_rng(seed)
+    mkt = rng.normal(0, 1, n); val = mkt + rng.normal(0, 0.10, n); size = rng.normal(0, 1, n)
+    X = np.column_stack([mkt, val, size]); beta_true = np.array([0.8, 0.4, 0.3])
+    y = X @ beta_true + rng.normal(0, 1.0, n)
+    Xc = X - X.mean(0); yc = y - y.mean()
+    alphas = np.logspace(-2, 2, 200)
+    paths = np.array([np.linalg.solve(Xc.T @ Xc + a * np.eye(3), Xc.T @ yc) for a in alphas])
+    ols = np.linalg.solve(Xc.T @ Xc, Xc.T @ yc)
+    return alphas, paths, ols, beta_true
+
+
+@fig("math-part11.html", "m11-ridge-path")
+def fig_m11_ridge_path():
+    alphas, paths, ols, bt = ridge_path_data()
+    r10 = paths[np.argmin(abs(alphas - 10))]
+    Wd, H = 560, 320
+    out = svg_open(Wd, H, f"เส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: market เริ่มที่ติดลบ {ols[0]:.2f} แล้วไต่ขึ้น value เริ่มสูง {ols[1]:.2f} แล้วลดลง ทั้งคู่มาบรรจบกันราว 0.6 ส่วน size คงที่")
+    title(out, Wd, "Ridge Path — ยิ่งเพิ่มค่าปรับ α สองตัวที่ซ้ำกันยิ่งเลิกแย่งกัน แล้วเดินเข้าหาคำตอบจริง",
+          f"§14.3 (val ≈ mkt · VIF 113) · OLS ให้ {ols[0]:.2f} / {ols[1]:.2f} — เพี้ยน · α = 10 ได้ {r10[0]:.2f} / {r10[1]:.2f} / {r10[2]:.2f} · จริง 0.8 / 0.4 / 0.3")
+    (sx0, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(-2, "0.01"), (-1, "0.1"), (0, "1"), (1, "10"), (2, "100")], [(-0.4, "−0.4"), (0, "0"), (0.4, "0.4"), (0.8, "0.8"), (1.2, "1.2"), (1.6, "1.6")], "α (ค่าปรับ) — สเกล log →", "สัมประสิทธิ์ β̂")
+    def sx(a): return sx0(np.log10(a))
+    _zero_line(out, sx0, sy, -2, 2)
+    for v, col in ((0.8, BLUE), (0.4, GREEN), (0.3, AMBER)):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{col}" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>')
+    _txt(out, x0 + w - 4, sy(0.8) - 5, "← ค่าจริง 0.8", BLUE, "end", size=9)
+    _txt(out, x0 + w - 4, sy(0.4) - 5, "← ค่าจริง 0.4", GREEN, "end", size=9)
+    names = [("market (จริง 0.8)", BLUE, ""), ("value (จริง 0.4)", GREEN, "6 3"), ("size (จริง 0.3)", AMBER, "")]
+    for j, (nm, col, dsh) in enumerate(names):
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(alphas, paths[:, j])], col, 2.4, dash=dsh, shadow=not dsh)
+    out.append(f'<line x1="{sx(10):.1f}" y1="{y0}" x2="{sx(10):.1f}" y2="{y0+h}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')
+    _txt(out, sx(10) + 5, y0 + 12, "α = 10 ที่บทเลือก", PURPLE, "start", size=9, bold=True)
+    _txt(out, sx(0.012), sy(ols[1]) + 15, f"OLS: value พุ่งไป {ols[1]:.2f}", GREEN, "start", size=9, bold=True)
+    _txt(out, sx(0.012), sy(ols[0]) + 15, f"OLS: market ติดลบ {ols[0]:.2f}", BLUE, "start", size=9, bold=True)
+    legend(out, [(c, n_, d) for n_, c, d in names], x0, H - 10)
+    out.append("</svg>")
+    NUMS["m11-ridge-path"] = dict(ols_mkt=float(ols[0]), ols_val=float(ols[1]), r10_mkt=float(r10[0]), r10_val=float(r10[1]), r10_size=float(r10[2]))
     return "\n".join(out)
 
 
@@ -2778,6 +3171,8 @@ def main():
         write_map()
     for nm, d in NUMS.items():
         print(f"   {nm}: " + " ".join(f"{k}={v:.4f}" for k, v in d.items()))
+    for nm, kind, got, lim in WIDE:  # หัวภาพ/คำโปรยที่ยาวเกินกรอบ — ล้นขอบเวลาเรนเดอร์จริง
+        print(f"❌ {nm}: {kind}ยาวเกินกรอบ ~{got:.0f}px (พื้นที่ {lim:.0f}px) — ตัดข้อความให้สั้นลง"); bad += 1
     print(f"ภาพ {len(FIGS)} ชิ้น · ปัญหา {bad}")
     return 1 if bad else 0
 
