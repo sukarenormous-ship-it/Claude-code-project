@@ -246,6 +246,18 @@ payoff_checks("pm-part3a.html", "3x cap", [Leg("call", 100, 3, 0), Leg("call", 1
 payoff_checks("pm-part8.html", "DW cap", [Leg("call", 100, 1, 6), Leg("call", 120, -1, 0)],
               [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
 
+payoff_checks("math-part1.html", "m1 long call", LC, [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+payoff_checks("math-part1.html", "m1 bull call spread", [Leg("call", 90, 1, 5), Leg("call", 110, -1, 0)],
+              [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}", lambda sm: f"110 − 90 − 5 = {pm(sm['max_profit'])}"])
+payoff_checks("math-part1.html", "m1 straddle 4+3", [Leg("call", 100, 1, 4), Leg("put", 100, 1, 3)],
+              [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}",
+               lambda sm: f"คุ้มทุน {sm['breakevens'][0]:g} และ {sm['breakevens'][1]:g}"])
+for f in ("arb-part2a.html", "eye-part2.html"):
+    payoff_checks(f, "call spread 2000/2500", [Leg("call", 2000, 1, 0), Leg("call", 2500, -1, 0)],
+                  [lambda sm: f"payoff สูงสุด {pm(sm['max_profit'])}"], with_premium=False)
+payoff_checks("arb-part3.html", "box 90/110", [Leg("call", 90, 1, 0), Leg("call", 110, -1, 0), Leg("put", 110, 1, 0), Leg("put", 90, -1, 0)],
+              [lambda sm: f"แบนที่ {sm['max_profit']:g} ทุกราคา"], with_premium=False)
+
 
 
 def main():

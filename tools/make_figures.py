@@ -1043,12 +1043,19 @@ def _draw_payoff(out, legs, box, *, with_premium=True, show_legs=True, slopes=Fa
     polyline(out, [(sx(a), sy(b)) for a, b in tp], total_color, 2.75)
     for lg, wp, col, wd, dash, is_total in lines[1:]:
         polyline(out, [(sx(a), sy(b)) for a, b in _pts(lg, lo, hi, wp)], col, wd, dash=dash, shadow=False)
+    def _tbox(xpx, ybase, anc, tw):  # กล่องข้อความโดยประมาณ (x0, y0, x1, y1) หน่วย px
+        xl = xpx - tw if anc == "end" else xpx if anc == "start" else xpx - tw / 2
+        return (xl, ybase - 9, xl + tw, ybase + 2)
+    def _hit(b1, b2, pad=3):
+        return not (b1[2] + pad < b2[0] or b2[2] + pad < b1[0] or b1[3] + pad < b2[1] or b2[3] + pad < b1[1])
+    be_boxes = []
     # callouts · กราฟ payoff ก่อนหักเบี้ย (with_premium=False) ไม่เรียก "กำไร/ขาดทุน/BE" เพื่อไม่ให้สับสนกับ profit
     W_MAX, W_MIN, W_BE, W_UP, W_DN = (("กำไรสูงสุด", "ขาดทุนสูงสุด", "BE", "กำไรไม่จำกัด →", "ขาดทุนไม่จำกัด →") if with_premium
                                      else ("payoff สูงสุด", "payoff ต่ำสุด", "ตัดศูนย์", "ขึ้นไม่จำกัด →", "ลงไม่จำกัด →"))
     if callouts:
+        d = 0.01 * (hi - lo)
         for i, b in enumerate(sm["breakevens"]):
-            if lo <= b <= hi:
+            if lo <= b <= hi and value(legs, b - d, with_premium) * value(legs, b + d, with_premium) < 0:  # ต้องเปลี่ยนเครื่องหมายจริง
                 out.append(f'<circle cx="{sx(b):.1f}" cy="{sy(0):.1f}" r="4.2" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
                 # ป้ายวางเฉียงขึ้น ฝั่งที่เส้นอยู่ต่ำกว่าศูนย์ (ไม่ทับเส้นที่กำลังไต่ผ่านศูนย์)
                 s_here = slope_between(legs, b - 1e-6, b + 1e-6)
@@ -1056,6 +1063,7 @@ def _draw_payoff(out, legs, box, *, with_premium=True, show_legs=True, slopes=Fa
                 elif s_here < 0: anc, dx = "start", 7
                 else: anc, dx = "middle", 0
                 if be_below: anc, dx = ("start", 7) if anc == "end" else ("end", -7) if anc == "start" else (anc, dx)
+                be_boxes.append(_tbox(sx(b) + dx, sy(0) + (16 if be_below else -8), anc, 6 * len(f"{W_BE} {b:g}")))
                 out.append(f'<text x="{sx(b)+dx:.1f}" y="{sy(0)+(16 if be_below else -8):.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{PURPLE}" font-weight="700">{W_BE} {b:g}</text>')
         mp, mpa, ml, mla = sm["max_profit"], sm["max_profit_at"], sm["max_loss"], sm["max_loss_at"]
         if mp is not None and mp > 0:
@@ -1078,10 +1086,21 @@ def _draw_payoff(out, legs, box, *, with_premium=True, show_legs=True, slopes=Fa
         for a, b, s, fa, fb in segments(legs, lo, hi, with_premium):
             xm = (a + b) / 2
             # ป้าย slope อย่าให้ทับป้าย BE ที่อยู่บนช่วงเดียวกัน: ขยับจุดยึดออกห่าง ≥ 55px ไปฝั่งที่มีที่ว่างมากกว่า
-            for be in sm["breakevens"]:
-                if a < be < b and abs(sx(xm) - sx(be)) < 55:
-                    xm = be + (55 / w) * (hi - lo) if (b - be) >= (be - a) else be - (55 / w) * (hi - lo)
-                    xm = min(max(xm, a + 0.1 * (b - a)), b - 0.1 * (b - a))
+            lab0 = "แบน (slope 0)" if abs(s) < 1e-9 else f"slope {fmt(s)}"
+            tw0 = 6 * len(lab0)
+            anc0, dx0, dy0 = ("middle", 0, -8) if abs(s) < 1e-9 else ("end", -7, -5) if s > 0 else ("start", 7, -5)
+            def _box_at(x):
+                return _tbox(sx(x) + dx0, sy(value(legs, x, with_premium)) + dy0, anc0, tw0)
+            for bb in be_boxes:  # ถ้าป้าย slope ทับป้าย BE ให้เลื่อนไปทางที่ขยับน้อยกว่าแต่ยังอยู่ในช่วง
+                if _hit(_box_at(xm), bb):
+                    step = (b - a) / 40; cands = []
+                    for sgn in (1, -1):
+                        x = xm
+                        for _ in range(40):
+                            x += sgn * step
+                            if not (a + 0.05 * (b - a) <= x <= b - 0.05 * (b - a)): break
+                            if not _hit(_box_at(x), bb): cands.append((abs(x - xm), x)); break
+                    if cands: xm = min(cands)[1]
             ym = value(legs, xm, with_premium)
             lab = "แบน (slope 0)" if abs(s) < 1e-9 else f"slope {fmt(s)}"
             below = abs(s) < 1e-9 and sm["max_profit"] is not None and abs(ym - sm["max_profit"]) < 1e-9 and ym > 0
@@ -1473,6 +1492,68 @@ def fig_sg_time_value():
 def fig_sg_calendar():
     return _calendar_svg("6.3 Calendar Spread — ณ วันหมดอายุขาใกล้ P/L เป็นเส้นโค้ง ไม่ใช่เส้นตรงหักศอก",
                          "ขาย Call 1 เดือน + ซื้อ Call 3 เดือน K = 100 · S₀ = 100 · σ = 20% · r = 5% · ขาไกลตีราคาด้วย Black-Scholes")
+
+
+# ── Arbitrage · ตาของ Arbitrageur · คณิตศาสตร์เล่ม 1 — กราฟ payoff ที่เคยวาดมือ ─────────────────
+USD_K = dict(ylab="payoff ($)", ytick_fmt=lambda v: f"${v:,.0f}".replace("$-", "−$"), strike_fmt=lambda k: f"{k:,.0f}")
+CS2000 = [Leg("call", 2000, 1, 0), Leg("call", 2500, -1, 0)]
+payoff_grid_reg("arb-part1.html", "a1-payoff-shapes",
+                [([Leg("stock", 100, 1, 0)], "Linear (Spot) · slope +1", {}),
+                 ([Leg("call", 100, 1, 0)], "Convex (Call) · หักศอกที่ K", {}),
+                 ([Leg("dcall", 100, 1, 0)], "Binary (PM Yes) · 0 หรือ 1", {})],
+                "รูปร่าง payoff 3 ตระกูล — เชิงเส้น · หักศอก · ดิจิทัล (K = 100 · ยังไม่หักเบี้ย)",
+                "Spot ได้เสียเท่าราคาที่เคลื่อน · Call ไม่เสียซ้าย ได้ +1 ขวา · PM จ่าย 1 หรือ 0 ไม่สนว่าเกินเท่าไร",
+                with_premium=False, callouts=False, slopes=False, cols=3, W=620, H=260, xr=(70, 130), ylab="payoff")
+payoff("arb-part1.html", "a1-synthetic-stock", [Leg("stock", 100, 1, 0)],
+       "Replication — หุ้นจริง กับหุ้นสังเคราะห์ Call − Put + Bond: payoff ซ้อนกันพอดี",
+       "S = C − P + PV(K) · K = 100 · ทั้งสองเส้นให้ S ทุกราคา → ราคาวันนี้ต้องเท่ากัน มิฉะนั้นซื้อถูก ขายแพง = arb",
+       with_premium=False, show_legs=False, callouts=False, xr=(60, 140), total_label="หุ้นจริง (S − 100)",
+       overlays=[dict(legs=[Leg("call", 100, 1, 0), Leg("put", 100, -1, 0), Leg("bond", 100, 1, 0), Leg("bond", 100, -1, 0)],
+                      label="สังเคราะห์: Long Call(100) + Short Put(100) (+ Bond หักต้นทุน 100)", color=RED, dash="7 4", width=2.2)],
+       notes=[(138, -10, "ซ้อนทับกันพอดี → ราคาวันนี้ต้องเท่ากัน", PURPLE, "end", 0)])
+payoff("arb-part2a.html", "a2a-call-spread-2000-2500", CS2000,
+       "Step 3: Solve — payoff ที่ต้องการ 0 → S − 2000 → ตันที่ +500 คือ Call Spread(2000, 2500)",
+       "Long Call 2000 + Short Call 2500 · ยังไม่หักเบี้ย · ต่ำกว่า 2000 ไม่เสีย · ระหว่างชัน +1 · เหนือ 2500 ได้ 500 คงที่",
+       with_premium=False, show_legs=True, slopes=True, xr=(1500, 3000), total_label="Call Spread(2000, 2500)", **USD_K)
+payoff("eye-part2.html", "e2-call-spread-2000-2500", CS2000,
+       "Payoff Construction — \"ขึ้นไม่เกิน $2,500 ไม่อยากเสียถ้าลง\" = Call Spread(2000, 2500)",
+       "0 ถ้า S < 2000 · S − 2000 ระหว่าง 2000–2500 (slope +1) · +500 cap เหนือ 2500 · ซื้อ 1 ชุดจบ (ยังไม่หักเบี้ย)",
+       with_premium=False, show_legs=True, slopes=True, xr=(1500, 3000), total_label="Call Spread(2000, 2500)", **USD_K)
+payoff("arb-part2b.html", "a2b-belief-cap", CS2000 + [Leg("dput", 2500, 100, 0)],
+       "Belief \"ขึ้นแต่ไม่เกิน 2500\" → Call Spread(2000, 2500) + PM No(2500) ×100 สัญญา",
+       "Call spread ให้ขาขึ้นถึง 2500 · PM No จ่าย $100 เพิ่มถ้าไม่ทะลุ 2500 (income) · ทะลุแล้ว PM หมดค่า เหลือ cap 500",
+       with_premium=False, show_legs=True, slopes=False, xr=(1500, 3000), total_label="รวม: Call Spread + PM No ×100", legend_rows=2, callouts=False,
+       notes=[(2480, 600, "ก่อนถึง 2500 ได้เกือบ 600 (500 + 100)", PURPLE, "end", -8), (2950, 500, "ทะลุ 2500: PM หมดค่า เหลือ cap 500", INK2, "end", 16)], **USD_K)
+payoff("arb-part3.html", "a3-conversion", [Leg("stock", 100, 1, 0), Leg("put", 100, 1, 0), Leg("call", 100, -1, 0)],
+       "Conversion — Long Stock @100 + Long Put(100) + Short Call(100): payoff แบนที่ 0 = ได้คืน 100 แน่ทุกราคา",
+       "ตัวอย่าง §11.4: จ่ายวันนี้ S + P − C = 100 + 5.80 − 8.50 = 97.30 · ได้ 100 แน่ที่หมดอายุ · เทียบ PV(K) = 97.53 → ล็อกกำไร 0.23",
+       with_premium=False, show_legs=True, callouts=False, xr=(60, 140), total_label="รวม 3 ขา (เทียบต้นทุนหุ้น 100) = 0 คงที่", legend_rows=2,
+       notes=[(62, 0, "สามขาหักล้างกันหมด → สิ้นงวดถือเงิน 100 พอดี = พันธบัตร", PURPLE, "start", -8)])
+payoff("arb-part3.html", "a3-box", [Leg("call", 90, 1, 0), Leg("call", 110, -1, 0), Leg("put", 110, 1, 0), Leg("put", 90, -1, 0)],
+       "Box Spread 90/110 — Bull Call Spread + Bear Put Spread = แบนที่ 20 ทุกราคา = พันธบัตร",
+       "ซ้ายของ 90: call spread 0 + put spread 20 · ขวาของ 110: 20 + 0 · ตรงกลาง (S − 90) + (110 − S) = 20 · มูลค่ายุติธรรม = PV(20)",
+       with_premium=False, show_legs=False, callouts=False, xr=(70, 130), total_label="Box = รวมสองสเปรด = 20",
+       overlays=[dict(legs=[Leg("call", 90, 1, 0), Leg("call", 110, -1, 0)], label="Bull Call Spread 90/110", color=GREEN, dash="6 3", width=2),
+                 dict(legs=[Leg("put", 110, 1, 0), Leg("put", 90, -1, 0)], label="Bear Put Spread 90/110", color=RED, dash="6 3", width=2)],
+       notes=[(128, 20, "= 20 เสมอ → ราคาวันนี้ต้อง = 20·e⁻ʳᵀ", PURPLE, "end", -8)])
+payoff("math-part1.html", "m1-long-call", LC,
+       "Long Call: payoff = max(0, S − 100) − 5 — จุดหักศอกที่ K = 100 · จุดคุ้มทุน 105",
+       "ซ้ายของ K แบนที่ −5 (ปุ่ม \"ห้ามติดลบ\" ตัดเป็น 0 แล้วหักเบี้ย) · ขวาของ K ชัน +1 กำไรวิ่งขึ้นเรื่อย ๆ", slopes=True, xr=(70, 130))
+payoff("math-part1.html", "m1-mirror", LC,
+       "Short คือ Long พลิกหัว — Short Call = −f(S): กระจกสะท้อนผ่านเส้นศูนย์",
+       "K = 100 · เบี้ย 5 · ที่ไหน Long กำไร Short ขาดทุนเท่ากันเป๊ะ · จุดคุ้มทุน 105 เดียวกัน",
+       show_legs=False, callouts=False, xr=(70, 130), total_label="Long Call = f(S)",
+       overlays=[dict(legs=SC, label="Short Call = −f(S)", color=RED, dash="7 4", width=2.2)],
+       notes=[(120, -15, "พลิกหัว!", RED, "middle", 0), (104, 0, "คุ้มทุน 105 ทั้งคู่", PURPLE, "end", -20),
+              (72, -5, "Long ขาดทุนสูงสุด −5 ↔ Short กำไรสูงสุด +5", INK2, "start", 14)])
+payoff("math-part1.html", "m1-bull-call-spread", [Leg("call", 90, 1, 5), Leg("call", 110, -1, 0)],
+       "Bull Call Spread 90/110 จ่ายสุทธิ 5 — ฟังก์ชันแบ่งช่วง 3 ช่วง: −5 → S − 95 → +15",
+       "ช่วง 1 (S < 90) ขาดทุนคงที่ −5 · ช่วง 2 (90–110) ชัน +1 · ช่วง 3 (S > 110) กำไรคงที่ 110 − 90 − 5 = +15 · คุ้มทุน 95",
+       show_legs=False, slopes=True, xr=(70, 130))
+payoff("math-part1.html", "m1-straddle", [Leg("call", 100, 1, 4), Leg("put", 100, 1, 3)],
+       "Long Straddle — Call(100) จ่าย 4 + Put(100) จ่าย 3: รูปตัว V คุ้มทุน 93 และ 107",
+       "1 strike → 2 ช่วง · ซ้ายชัน −1 ขวาชัน +1 · ขาดทุนสูงสุด −7 (เบี้ยรวม) เมื่อหุ้นนิ่งที่ 100 · คุ้มทุน = 100 ∓ 7",
+       show_legs=True, slopes=True, xr=(80, 120), unbounded_dy=-22)
 
 
 
