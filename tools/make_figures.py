@@ -2255,6 +2255,458 @@ def fig_m7_mc_paths():
     return "\n".join(out)
 
 
+# ── คณิตศาสตร์เล่ม 2 · C (math-part8) — อ่านข้อมูลด้วยตา ──────────────────────────────────
+def _panel(out, x0, y0, w, h, name, xt, yt, xlab="", ylab=""):
+    _txt(out, x0 + w / 2, y0 - 6, name, INK, "middle", size=10, bold=True)
+    return frame(out, x0, y0, w, h, xt, yt, xlab=xlab, ylab=ylab)
+
+
+def _ols_line(x, y):
+    b, a = np.polyfit(x, y, 1); return a, b
+
+
+ANSCOMBE = dict(
+    x123=[10, 8, 13, 9, 11, 14, 6, 4, 12, 7, 5],
+    y1=[8.04, 6.95, 7.58, 8.81, 8.33, 9.96, 7.24, 4.26, 10.84, 4.82, 5.68],
+    y2=[9.14, 8.14, 8.74, 8.77, 9.26, 8.10, 6.13, 3.10, 9.13, 7.26, 4.74],
+    y3=[7.46, 6.77, 12.74, 7.11, 7.81, 8.84, 6.08, 5.39, 8.15, 6.42, 5.73],
+    x4=[8, 8, 8, 8, 8, 8, 8, 19, 8, 8, 8],
+    y4=[6.58, 5.76, 7.71, 8.84, 8.47, 7.04, 5.25, 12.50, 5.56, 7.91, 6.89])
+
+
+def anscombe_stats():
+    A = ANSCOMBE; sets = [(A["x123"], A["y1"]), (A["x123"], A["y2"]), (A["x123"], A["y3"]), (A["x4"], A["y4"])]
+    rows = []
+    for x, y in sets:
+        x, y = np.array(x, float), np.array(y, float); a, b = _ols_line(x, y)
+        rows.append(dict(xm=x.mean(), ym=y.mean(), b=b, a=a, r=float(np.corrcoef(x, y)[0, 1])))
+    return sets, rows
+
+
+@fig("math-part8.html", "m8-anscombe")
+def fig_m8_anscombe():
+    sets, rows = anscombe_stats()
+    Wd, H = 560, 420
+    out = svg_open(Wd, H, "Anscombe's quartet: กราฟ 4 ใบที่ค่าเฉลี่ย ความชัน และ correlation เท่ากัน แต่รูปร่างข้อมูลต่างกันสิ้นเชิง", multipanel=True)
+    title(out, Wd, "Anscombe's quartet — สถิติเท่ากันทั้ง 4 ชุด แต่สิ่งที่ข้อมูลบอกคนละเรื่อง",
+          f"ทุกชุด: x̄ = {rows[0]['xm']:.1f} · ȳ = {rows[0]['ym']:.2f} · เส้น OLS y = {rows[0]['a']:.2f} + {rows[0]['b']:.2f}x · ρ = {rows[0]['r']:.3f} — ดูตารางไม่พอ ต้องวาด")
+    names = ["ชุดที่ 1 — ปกติดี", "ชุดที่ 2 — จริง ๆ เป็นเส้นโค้ง", "ชุดที่ 3 — จุดหลุด 1 จุดลากเส้น", "ชุดที่ 4 — x เท่ากันหมดยกเว้น 1"]
+    notes = ["", "เส้นตรงจับรูปโค้งไม่ได้", "จุดเดียวคุมทั้งเส้น (leverage)", "จุดเดียวสร้างความชันทั้งหมด"]
+    pw, ph = 215, 130
+    for i, ((x, y), r_) in enumerate(zip(sets, rows)):
+        cx = 60 + (i % 2) * 265; cy = 62 + (i // 2) * 175
+        sx, sy = _panel(out, cx, cy, pw, ph, names[i], [(2, "2"), (6, "6"), (10, "10"), (14, "14"), (18, "18"), (20, "")], [(2, "2"), (6, "6"), (10, "10"), (14, "14")])
+        polyline(out, [(sx(2), sy(r_["a"] + r_["b"] * 2)), (sx(20), sy(r_["a"] + r_["b"] * 20))], RED, 1.6, shadow=False)
+        for a, b in zip(x, y):
+            out.append(f'<circle cx="{sx(a):.1f}" cy="{sy(b):.1f}" r="3.6" fill="{BLUE}" opacity="0.85"/>')
+        if notes[i]: _txt(out, cx + 4, cy + 12, notes[i], RED, "start", size=9, italic=True)
+        if i == 2: _txt(out, sx(13) + 6, sy(12.74) + 3, "outlier", RED, "start", size=9, bold=True)
+    _txt(out, Wd / 2, H - 8, "สถิติเท่ากันทั้ง 4 ใบ · แต่สิ่งที่ข้อมูลบอก คนละเรื่องสิ้นเชิง — นี่คือเหตุที่ต้องพล็อตก่อนเชื่อตัวเลข", INK2, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["m8-anscombe"] = dict(b=rows[0]["b"], r=rows[0]["r"], b3=rows[2]["b"], r4=rows[3]["r"])
+    return "\n".join(out)
+
+
+def corr_gallery_data(n=80, seed=21):
+    rng = np.random.default_rng(seed); x = rng.normal(0, 1, n); x = (x - x.mean()) / x.std()
+    def mk(rho):  # สร้าง y ให้ correlation ตัวอย่างเท่ากับ rho พอดี (ทำ e ให้ตั้งฉากกับ x ก่อน)
+        e = rng.normal(0, 1, n); e = e - e.mean(); e = e - (e @ x) / (x @ x) * x; e = e / e.std()
+        return rho * x + np.sqrt(1 - rho * rho) * e
+    ys = [x.copy(), mk(0.7), mk(0.0), mk(-0.7), x * x - 1 + 0.3 * rng.normal(0, 1, n)]
+    return x, ys, [float(np.corrcoef(x, y)[0, 1]) for y in ys]
+
+
+@fig("math-part8.html", "m8-corr-gallery")
+def fig_m8_corr_gallery():
+    x, ys, rhos = corr_gallery_data()
+    Wd, H = 560, 270
+    out = svg_open(Wd, H, "แกลเลอรี scatter 5 ใบ: ρ = +1 ตรงกันเป๊ะ · +0.7 ไปด้วยกัน · 0 ไม่เกี่ยวกัน · −0.7 สวนทาง · รูปตัว U ที่ ρ ≈ 0 แต่สัมพันธ์ชัด", multipanel=True)
+    title(out, Wd, "Correlation ρ แต่ละค่าหน้าตาเป็นอย่างไร — และกับดักตัว U ที่ ρ ≈ 0 แต่สัมพันธ์ชัด",
+          f"จำลอง 80 จุดต่อใบ · ρ ที่วัดได้จริง: {rhos[0]:+.2f} · {rhos[1]:+.2f} · {rhos[2]:+.2f} · {rhos[3]:+.2f} · {rhos[4]:+.2f} (ตัว U) — ρ วัดได้แต่ความเป็นเส้นตรง")
+    names = ["ρ = +1.0", "ρ = +0.7", "ρ = 0", "ρ = −0.7", "ρ ≈ 0 (!)"]; subs = ["ตรงกันเป๊ะ", "ไปด้วยกัน", "ไม่เกี่ยวกัน", "สวนทาง", "แต่สัมพันธ์ชัด!"]
+    pw, ph = 88, 120
+    for i, y in enumerate(ys):
+        cx = 30 + i * 106; cy = 62
+        out.append(f'<rect x="{cx}" y="{cy}" width="{pw}" height="{ph}" fill="none" stroke="{GRID}"/>')
+        _txt(out, cx + pw / 2, cy - 6, names[i], INK if i < 4 else RED, "middle", size=10, bold=True)
+        lo_x, hi_x = -3, 3; lo_y, hi_y = (-3, 3) if i < 4 else (-2, 8)
+        for a, b in zip(x, y):
+            px = cx + (a - lo_x) / (hi_x - lo_x) * pw; py = cy + ph - (b - lo_y) / (hi_y - lo_y) * ph
+            if cx <= px <= cx + pw and cy <= py <= cy + ph: out.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="2.4" fill="{BLUE if i < 4 else RED}" opacity="0.7"/>')
+        _txt(out, cx + pw / 2, cy + ph + 14, subs[i], INK2 if i < 4 else RED, "middle", size=9, bold=i == 4)
+    _txt(out, Wd / 2, H - 10, "ρ = 0 ไม่ได้แปลว่า \"ไม่เกี่ยวกัน\" — แปลว่า \"ไม่เกี่ยวกันแบบเส้นตรง\" เท่านั้น · ต้องพล็อตดูเสมอ", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    NUMS["m8-corr-gallery"] = {f"rho{i}": r for i, r in enumerate(rhos)}
+    return "\n".join(out)
+
+
+def residual_panels_data(n=60, seed=8):
+    rng = np.random.default_rng(seed); x = np.linspace(0, 10, n)
+    return x, [rng.normal(0, 1, n), 0.25 * (x - 5) ** 2 - 2 + rng.normal(0, 0.5, n), rng.normal(0, 1, n) * (0.2 + 0.25 * x), 1.8 * np.sin(x * 1.3) + rng.normal(0, 0.4, n)]
+
+
+@fig("math-part8.html", "m8-residual-plots")
+def fig_m8_residual_plots():
+    x, res = residual_panels_data()
+    Wd, H = 560, 400
+    out = svg_open(Wd, H, "residual plot 4 แบบ: สุขภาพดีสุ่มไร้รูปแบบ · โค้ง (ไม่เป็นเส้นตรง) · กรวย (heteroskedasticity) · คลื่น (autocorrelation)", multipanel=True)
+    title(out, Wd, "Residual plot — อ่าน \"ของที่โมเดลอธิบายไม่ได้\": มีแต่ใบแรกที่ผ่าน อีก 3 ใบคือสัญญาณว่ามีอะไรผิด",
+          "แกนตั้ง = residual (จริง − ทำนาย) · แกนนอน = ค่าทำนายหรือลำดับเวลา · จำลอง 60 จุดต่อใบ")
+    names = ["✅ สุขภาพดี — สุ่มไร้รูปแบบ", "❌ โค้ง — ความสัมพันธ์ไม่เป็นเส้นตรง", "❌ กรวย — heteroskedasticity", "❌ คลื่น — autocorrelation"]
+    pw, ph = 215, 120
+    for i, rr in enumerate(res):
+        cx = 60 + (i % 2) * 265; cy = 62 + (i // 2) * 165
+        sx, sy = _panel(out, cx, cy, pw, ph, names[i], [(0, "0"), (5, "5"), (10, "10")], [(-4, "−4"), (0, "0"), (4, "4")])
+        out.append(f'<line x1="{sx(0):.1f}" y1="{sy(0):.1f}" x2="{sx(10):.1f}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.2"/>')
+        col = GREEN if i == 0 else RED
+        for a, b in zip(x, rr):
+            if -4 <= b <= 4: out.append(f'<circle cx="{sx(a):.1f}" cy="{sy(b):.1f}" r="2.8" fill="{col}" opacity="0.75"/>')
+        if i == 2:
+            polyline(out, [(sx(0), sy(2 * 0.2)), (sx(10), sy(2 * 2.7))], RED, 1, dash="4 3", shadow=False); polyline(out, [(sx(0), sy(-2 * 0.2)), (sx(10), sy(-2 * 2.7))], RED, 1, dash="4 3", shadow=False)
+    _txt(out, Wd / 2, H - 8, "โค้ง → เพิ่มพจน์กำลังสอง/แปลงตัวแปร · กรวย → ใช้ log หรือ robust SE · คลื่น → มี autocorrelation ต้องใช้แบบจำลองอนุกรมเวลา", INK2, "middle", size=9)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+HEAT = dict(names=["TECH-A", "TECH-B", "BANK", "GOLD", "BOND"],
+            M=[[1.00, 0.86, 0.42, -0.05, -0.30], [0.86, 1.00, 0.38, -0.02, -0.26], [0.42, 0.38, 1.00, 0.10, -0.44], [-0.05, -0.02, 0.10, 1.00, 0.18], [-0.30, -0.26, -0.44, 0.18, 1.00]])
+
+
+def _heat_color(v):
+    # แดง (+1) ↔ ขาว (0) ↔ น้ำเงิน (−1)
+    if v >= 0: r, g, b = 220, int(235 - 180 * v), int(235 - 200 * v)
+    else: r, g, b = int(235 - 190 * -v), int(235 - 130 * -v), 235
+    return f"rgb({r},{g},{b})"
+
+
+@fig("math-part8.html", "m8-heatmap")
+def fig_m8_heatmap():
+    names, M = HEAT["names"], HEAT["M"]
+    Wd, H = 560, 330
+    out = svg_open(Wd, H, "correlation heatmap ของ 5 สินทรัพย์: TECH-A กับ TECH-B สัมพันธ์ 0.86 กลุ่มหุ้นสีแดง พันธบัตรสวนทางกับหุ้น −0.30 ถึง −0.44")
+    title(out, Wd, "Correlation Heatmap — เห็นทั้งพอร์ตในภาพเดียว: กลุ่มแดงเข้มไปด้วยกัน · น้ำเงินสวนทาง",
+          "ตัวอย่างพอร์ต 5 ตัว (10 คู่) · TECH-A/TECH-B 0.86 · BOND สวนทางหุ้น −0.26 ถึง −0.44 · GOLD แทบไม่เกี่ยวใคร")
+    cell = 44; x0, y0 = 150, 70
+    for i, nm in enumerate(names):
+        _txt(out, x0 - 8, y0 + i * cell + cell / 2 + 3.5, nm, INK, "end", size=9.5, bold=True)
+        _txt(out, x0 + i * cell + cell / 2, y0 - 8, nm, INK, "middle", size=9.5, bold=True)
+        for j, v in enumerate(M[i]):
+            out.append(f'<rect x="{x0 + j*cell}" y="{y0 + i*cell}" width="{cell}" height="{cell}" fill="{_heat_color(v)}" stroke="#fff" stroke-width="1.5"/>')
+            _txt(out, x0 + j * cell + cell / 2, y0 + i * cell + cell / 2 + 3.5, f"{v:.2f}".replace("-", "−"), "#fff" if abs(v) > 0.6 else INK, "middle", size=9.5, bold=abs(v) > 0.6)
+    # แถบสี
+    bx, by = 400, 90
+    for k in range(20):
+        v = 1 - k / 9.5
+        out.append(f'<rect x="{bx}" y="{by + k*8}" width="16" height="8" fill="{_heat_color(max(-1, min(1, v)))}"/>')
+    _txt(out, bx + 22, by + 6, "+1 ไปด้วยกัน", INK2, "start", size=9); _txt(out, bx + 22, by + 84, "0 ไม่เกี่ยวกัน", INK2, "start", size=9); _txt(out, bx + 22, by + 162, "−1 สวนทาง", INK2, "start", size=9)
+    _txt(out, x0, y0 + 5 * cell + 22, "กลุ่มสีแดงเข้ม = แทบเป็นตัวเดียวกัน (ถือทั้งคู่ไม่ได้กระจายความเสี่ยงเพิ่ม)", RED, "start", size=9, bold=True)
+    _txt(out, x0, y0 + 5 * cell + 36, "สีน้ำเงิน = สวนทาง (ตัวช่วยพยุงพอร์ตเวลาหุ้นร่วง)", BLUE, "start", size=9, bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def hist_bins_data(n=3000, seed=4):
+    rng = np.random.default_rng(seed); return rng.normal(0, 1, n)
+
+
+@fig("math-part8.html", "m8-hist-bins")
+def fig_m8_hist_bins():
+    d = hist_bins_data()
+    Wd, H = 560, 250
+    out = svg_open(Wd, H, "histogram ข้อมูลชุดเดียวกัน 3,000 จุด ที่จำนวนแท่ง 6, 18 และ 45 ให้ภาพต่างกัน: หยาบไป พอดี ฟันหลอ", multipanel=True)
+    title(out, Wd, "ข้อมูลชุดเดียวกัน 3 ภาพ — จำนวนแท่งเปลี่ยนข้อสรุปได้",
+          "Normal(0, 1) จำลอง 3,000 จุด · 6 แท่งเห็นแค่ \"มียอดเดียว\" · 18 แท่งเห็นระฆังชัด · 45 แท่งฟันหลอ noise บังรูปทรง")
+    names = ["6 แท่ง — หยาบไป", "18 แท่ง — พอดี", "45 แท่ง — ฟันหลอ"]; subs = ["เห็นแค่ \"มียอดเดียว\"", "เห็นรูประฆังชัด", "noise บังรูปทรง"]
+    pw, ph = 150, 120
+    for i, nb in enumerate((6, 18, 45)):
+        cx = 30 + i * 178; cy = 62
+        cnt, edges = np.histogram(d, bins=nb, range=(-4, 4)); dens = cnt / cnt.max()
+        _txt(out, cx + pw / 2, cy - 6, names[i], INK if i == 1 else RED, "middle", size=10, bold=True)
+        out.append(f'<line x1="{cx}" y1="{cy+ph}" x2="{cx+pw}" y2="{cy+ph}" stroke="{AXIS}"/>')
+        for a, b, c in zip(edges[:-1], edges[1:], dens):
+            px0 = cx + (a + 4) / 8 * pw; px1 = cx + (b + 4) / 8 * pw
+            out.append(f'<rect x="{px0+0.5:.1f}" y="{cy + ph - c*ph:.1f}" width="{max(px1-px0-1, 0.8):.1f}" height="{c*ph:.1f}" fill="{BLUE if i == 1 else INK2}" opacity="0.7"/>')
+        _txt(out, cx + pw / 2, cy + ph + 14, subs[i], INK2, "middle", size=9)
+    _txt(out, Wd / 2, H - 10, "กฎหยาบ ๆ: จำนวนแท่ง ≈ √n หรือกฎ Freedman–Diaconis · ลองหลายค่าเสมอก่อนสรุปรูปทรง", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def qq_data(n=300, seed=12):
+    from scipy.stats import norm
+    rng = np.random.default_rng(seed)
+    samples = [rng.normal(0, 1, n), rng.standard_t(3, n) / np.sqrt(3), (np.exp(rng.normal(0, 0.6, n)) - np.exp(0.18))]
+    p = (np.arange(1, n + 1) - 0.5) / n; theo = norm.ppf(p)
+    outp = []
+    for smp in samples:
+        z = (smp - smp.mean()) / smp.std(ddof=1); outp.append(np.sort(z))
+    return theo, outp
+
+
+@fig("math-part8.html", "m8-qq")
+def fig_m8_qq():
+    theo, qs = qq_data()
+    Wd, H = 560, 260
+    out = svg_open(Wd, H, "QQ plot สามแบบ: Normal จุดเกาะเส้นตลอด · หางหนาปลายทั้งสองข้างงอออก · เบ้โค้งทั้งเส้นไม่สมมาตร", multipanel=True)
+    title(out, Wd, "QQ plot — ถ้าข้อมูลเป็น Normal จริง จุดต้องเรียงบนเส้นตรง จุดที่หลุด = ตรงนั้นไม่เหมือน Normal",
+          "จำลอง 300 จุดต่อใบ (ปรับให้ mean 0, SD 1) · แกนนอน = quantile ของ Normal ที่ควรเป็น · แกนตั้ง = quantile ของข้อมูลจริง")
+    names = ["✅ Normal", "❌ หางหนา (fat tails)", "❌ เบ้ (skew)"]; subs = ["จุดเกาะเส้นตลอด", "ปลายทั้งสองข้างงอออกจากเส้น", "โค้งทั้งเส้น ไม่สมมาตร"]
+    pw, ph = 150, 130
+    for i, q in enumerate(qs):
+        cx = 45 + i * 175; cy = 62
+        sx, sy = _panel(out, cx, cy, pw, ph, names[i], [(-3, "−3"), (0, "0"), (3, "3")], [(-4, "−4"), (0, "0"), (4, "4")])
+        polyline(out, [(sx(-3), sy(-3)), (sx(3), sy(3))], RED, 1.4, dash="5 3", shadow=False)
+        for a, b in zip(theo, q):
+            if -4 <= b <= 4: out.append(f'<circle cx="{sx(a):.1f}" cy="{sy(b):.1f}" r="2" fill="{GREEN if i == 0 else BLUE}" opacity="0.7"/>')
+        _txt(out, cx + pw / 2, cy + ph + 26, subs[i], INK2, "middle", size=9)
+    _txt(out, Wd / 2, H - 6, "เส้นประแดง = ถ้าเป็น Normal เป๊ะ จุดต้องอยู่บนเส้นนี้", RED, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def boxplot_data(n=120, seed=9):
+    rng = np.random.default_rng(seed); d = np.concatenate([rng.normal(0, 1, n), [3.9, -3.4, 4.6]])
+    q1, med, q3 = np.percentile(d, [25, 50, 75]); iqr = q3 - q1
+    lo_w = d[d >= q1 - 1.5 * iqr].min(); hi_w = d[d <= q3 + 1.5 * iqr].max()
+    outl = d[(d < q1 - 1.5 * iqr) | (d > q3 + 1.5 * iqr)]
+    return d, q1, med, q3, iqr, lo_w, hi_w, outl
+
+
+@fig("math-part8.html", "m8-boxplot")
+def fig_m8_boxplot():
+    d, q1, med, q3, iqr, lo_w, hi_w, outl = boxplot_data()
+    Wd, H = 560, 250
+    out = svg_open(Wd, H, f"กายวิภาคของ box plot: กล่อง Q1 {q1:.2f} ถึง Q3 {q3:.2f} เส้น median {med:.2f} หนวดถึง {lo_w:.2f} และ {hi_w:.2f} จุดเลยหนวด {len(outl)} จุด")
+    title(out, Wd, "Box plot ย่อข้อมูลทั้งกองเหลือ 5 ตัวเลข — และจุดที่เลยหนวดไม่ได้แปลว่า \"ข้อมูลผิด\"",
+          f"จำลอง {len(d)} จุด · Q1 = {q1:.2f} · median = {med:.2f} · Q3 = {q3:.2f} · IQR = {iqr:.2f} · หนวด = ค่าจริงไกลสุดที่ยังไม่เกิน Q1 − 1.5·IQR / Q3 + 1.5·IQR")
+    x0, w, yc = 60, 440, 130; lo, hi = -5, 5
+    def sx(v): return x0 + (v - lo) / (hi - lo) * w
+    out.append(f'<line x1="{x0}" y1="{yc+50}" x2="{x0+w}" y2="{yc+50}" stroke="{AXIS}"/>')
+    for v in range(-4, 5): _txt(out, sx(v), yc + 63, f"{v}".replace("-", "−"), INK2, "middle", size=9)
+    out.append(f'<line x1="{sx(lo_w):.1f}" y1="{yc}" x2="{sx(q1):.1f}" y2="{yc}" stroke="{INK}" stroke-width="1.6"/><line x1="{sx(q3):.1f}" y1="{yc}" x2="{sx(hi_w):.1f}" y2="{yc}" stroke="{INK}" stroke-width="1.6"/>')
+    out.append(f'<line x1="{sx(lo_w):.1f}" y1="{yc-10}" x2="{sx(lo_w):.1f}" y2="{yc+10}" stroke="{INK}" stroke-width="1.6"/><line x1="{sx(hi_w):.1f}" y1="{yc-10}" x2="{sx(hi_w):.1f}" y2="{yc+10}" stroke="{INK}" stroke-width="1.6"/>')
+    out.append(f'<rect x="{sx(q1):.1f}" y="{yc-24}" width="{sx(q3)-sx(q1):.1f}" height="48" fill="{BLUE}" opacity="0.18" stroke="{BLUE}" stroke-width="1.8"/>')
+    out.append(f'<line x1="{sx(med):.1f}" y1="{yc-24}" x2="{sx(med):.1f}" y2="{yc+24}" stroke="{PURPLE}" stroke-width="2.4"/>')
+    for v in outl: out.append(f'<circle cx="{sx(v):.1f}" cy="{yc}" r="3.5" fill="#fff" stroke="{RED}" stroke-width="1.8"/>')
+    _txt(out, sx(q1) - 2, yc - 32, f"Q1 (25%) = {q1:.2f}", BLUE, "end", size=9, bold=True); _txt(out, sx(q3) + 2, yc - 32, f"Q3 (75%) = {q3:.2f}", BLUE, "start", size=9, bold=True)
+    _txt(out, sx(med), yc + 40, f"median = {med:.2f}", PURPLE, "middle", size=9, bold=True)
+    _txt(out, sx(lo_w), yc - 16, f"หนวดล่าง {lo_w:.2f}", INK2, "middle", size=9); _txt(out, sx(hi_w), yc - 16, f"หนวดบน {hi_w:.2f}", INK2, "middle", size=9)
+    _txt(out, sx((q1 + q3) / 2), yc + 6 + 24 + 24, "", INK2)
+    _txt(out, sx(outl.max()), yc - 10, "\"outlier\"", RED, "middle", size=9, bold=True); _txt(out, sx(outl.min()), yc - 10, "\"outlier\"", RED, "middle", size=9, bold=True)
+    _txt(out, x0, H - 26, f"IQR = ข้อมูลตรงกลาง 50% · หนวดยาวสุดถึง Q3 + 1.5×IQR = {q3 + 1.5*iqr:.2f} (กฎมาตรฐาน) · เลยจากนี้ถูกวาดเป็นจุด", INK2, "start", size=9)
+    _txt(out, x0, H - 12, "แต่ \"จุด\" ไม่ได้แปลว่า \"ข้อมูลผิด\" — ในข้อมูลหางหนา จุดพวกนี้คือของจริงที่สำคัญที่สุด (ดูกับดักข้างล่าง)", RED, "start", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["m8-boxplot"] = dict(q1=q1, med=med, q3=q3, iqr=iqr, n_out=len(outl))
+    return "\n".join(out)
+
+
+# ── คณิตศาสตร์เล่ม 2 · D (math-part9) — อนุกรมเวลา ─────────────────────────────────────
+def series3_data(n=200, seed=6):
+    rng = np.random.default_rng(seed); e = rng.normal(0, 1, n)
+    return e, np.cumsum(e), 0.06 * np.arange(n) + e
+
+
+@fig("math-part9.html", "m9-stationary")
+def fig_m9_stationary():
+    wn, rw, tr = series3_data(); n = len(wn); t = np.arange(n)
+    Wd, H = 560, 330
+    out = svg_open(Wd, H, "เทียบ 3 อนุกรม 200 จุด: white noise วนรอบศูนย์ (นิ่ง) · random walk ลอยไปไม่กลับ · trend มีทิศทางชัด (ไม่นิ่ง)", multipanel=True)
+    title(out, Wd, "Stationary หรือไม่ — ใบบนวนรอบจุดยึด · สองใบล่างลอยไปไม่กลับ",
+          f"จำลอง 200 จุดจากช็อกชุดเดียวกัน · white noise σ 1 · random walk = ผลรวมสะสมของช็อก (จบที่ {rw[-1]:+.1f}) · trend = 0.06t + ช็อก")
+    panels = [(wn, "✅ White noise — นิ่ง (stationary)", GREEN, (-4, 4)), (rw, "❌ Random walk — ไม่นิ่ง (แบบราคาหุ้น)", RED, (min(-4, rw.min() - 1), max(4, rw.max() + 1))), (tr, "❌ Trend — ไม่นิ่ง (มีทิศทางชัด)", RED, (-4, 16))]
+    for i, (y, name, col, (lo, hi)) in enumerate(panels):
+        cx, cy, pw, ph = 55, 60 + i * 88, 483, 62
+        _txt(out, cx, cy - 4, name, col, "start", size=10, bold=True)
+        def sy(v, lo=lo, hi=hi, cy=cy, ph=ph): return cy + ph - (v - lo) / (hi - lo) * ph
+        def sx(v, cx=cx, pw=pw): return cx + v / (n - 1) * pw
+        out.append(f'<rect x="{cx}" y="{cy}" width="{pw}" height="{ph}" fill="none" stroke="{GRID}"/>')
+        if lo < 0 < hi: out.append(f'<line x1="{cx}" y1="{sy(0):.1f}" x2="{cx+pw}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1" stroke-dasharray="3 3"/>')
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(t, y)], col, 1.4, shadow=False)
+        if i == 0: _txt(out, cx + pw - 4, cy + ph - 4, "เส้นประ = จุดยึด (ค่าเฉลี่ย 0)", INK2, "end", size=9)
+    out.append("</svg>")
+    NUMS["m9-stationary"] = dict(rw_end=float(rw[-1]))
+    return "\n".join(out)
+
+
+def acf_data(phi=0.7, n=2000, seed=6, lags=7):
+    rng = np.random.default_rng(seed); e = rng.normal(0, 1, n)
+    ar = np.zeros(n)
+    for t in range(1, n): ar[t] = phi * ar[t - 1] + e[t]
+    rw = np.cumsum(e)
+    def acf(x, k):
+        xc = x - x.mean(); return float((xc[:-k] @ xc[k:]) / (xc @ xc))
+    return [phi ** k for k in range(1, lags + 1)], [acf(ar, k) for k in range(1, lags + 1)], [acf(rw, k) for k in range(1, lags + 1)]
+
+
+@fig("math-part9.html", "m9-acf")
+def fig_m9_acf():
+    theo, ar, rw = acf_data()
+    Wd, H = 560, 270
+    out = svg_open(Wd, H, "เทียบ ACF 7 lag: AR(1) φ = 0.7 ลดเร็วตาม 0.7 ยกกำลัง k เหลือ 0.08 ที่ lag 7 กับ random walk ที่ยังสูงกว่า 0.9 ทุก lag", multipanel=True)
+    title(out, Wd, "ACF — ลายนิ้วมือของอนุกรม: AR(1) ลดเร็วแบบเรขาคณิต · random walk แทบไม่ลดเลย",
+          f"AR(1) φ = 0.7: ทฤษฎี ACF(k) = 0.7ᵏ (lag 1 = 0.70 · lag 7 = {theo[-1]:.2f}) · จำลอง 2,000 จุด · random walk: lag 7 ยัง {rw[-1]:.2f}")
+    names = ["AR(1) φ = 0.7 — นิ่ง", "Random walk — ไม่นิ่ง"]; subs = ["ลดเร็ว → มีจุดยึด", "แทบไม่ลดเลย"]
+    for i, vals in enumerate((ar, rw)):
+        cx, cy, pw, ph = 60 + i * 270, 62, 215, 130
+        sx, sy = _panel(out, cx, cy, pw, ph, names[i], [(0.5, ""), (1, "1"), (3, "3"), (5, "5"), (7, "7"), (7.5, "")], [(0, "0"), (0.5, "0.5"), (1, "1.0"), (1.15, "")], xlab="lag (กี่วันก่อน)")
+        for k, v in enumerate(vals, 1):
+            out.append(f'<rect x="{sx(k-0.3):.1f}" y="{sy(v):.1f}" width="{sx(k+0.3)-sx(k-0.3):.1f}" height="{sy(0)-sy(v):.1f}" fill="{GREEN if i == 0 else RED}" opacity="0.75" rx="2"/>')
+            _txt(out, sx(k), sy(v) - 4, f"{v:.2f}", INK2, "middle", size=8)
+        if i == 0:
+            polyline(out, [(sx(k), sy(v)) for k, v in enumerate(theo, 1)], INK2, 1.2, dash="3 3", shadow=False); _txt(out, sx(4), sy(0.62), "เส้นประ = 0.7ᵏ ทฤษฎี", INK2, "start", size=8.5)
+        _txt(out, cx + pw / 2, cy + ph + 28, subs[i], GREEN if i == 0 else RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, H - 6, "ACF ที่ลดช้ามาก = สัญญาณว่าอนุกรมไม่นิ่ง → ต้อง difference ก่อนสร้างโมเดล", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m9-acf"] = dict(ar7=ar[-1], rw7=rw[-1], theo7=theo[-1])
+    return "\n".join(out)
+
+
+def pair_ab_data(seed=0, n=500):
+    """คู่ A/B ของ §9.1 ตรงกับโค้ดในบท: A = 100 + random walk · B = 5 + 1.5A + N(0, 2) → β OLS = 1.5068"""
+    rng = np.random.default_rng(seed)
+    A_ = 100 + np.cumsum(rng.normal(0, 1, n)); B_ = 5.0 + 1.5 * A_ + rng.normal(0, 2, n)
+    beta, alpha = np.polyfit(A_, B_, 1); spread = B_ - (alpha + beta * A_); z = (spread - spread.mean()) / spread.std(ddof=1)
+    return A_, B_, float(beta), spread, z
+
+
+@fig("math-part9.html", "m9-coint-pair")
+def fig_m9_coint_pair():
+    A_, B_, beta, spread, z = pair_ab_data(); n = len(A_); t = np.arange(n)
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"ราคาหุ้น A และ B 500 วันที่ต่างเดินสุ่ม แต่ B เกาะ A ไปตลอดด้วย β = {beta:.4f} (cointegrated)")
+    title(out, Wd, "Cointegration — แต่ละเส้นเดินสุ่มทำนายไม่ได้ แต่เกาะกันไปตลอด",
+          f"คู่ A/B ของ §9.1 (โค้ดในบท · 500 วัน) · B = 5 + 1.5A + noise · β OLS = {beta:.4f} · spread = B − (α + βA) มีจุดยึด")
+    lo = min(A_.min(), B_.min()) - 5; hi = max(A_.max(), B_.max()) + 12
+    step = 20 if hi - lo > 80 else 10
+    yt = [(v, f"{v:g}") for v in np.arange(np.ceil(lo / step) * step, hi, step)]
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (100, "100"), (200, "200"), (300, "300"), (400, "400"), (500, "500")], yt, "วัน", "ราคา")
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, A_)], BLUE, 1.6, shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, B_)], RED, 1.6, dash="4 3", shadow=False)
+    legend(out, [(BLUE, "หุ้น A", ""), (RED, "หุ้น B (เส้นประ)", "4 3")], x0, H - 10)
+    _txt(out, x0 + w, H - 8, "ต่างเดินสุ่ม แต่ส่วนต่างถ่วงน้ำหนักมีจุดยึด", INK2, "end", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m9-coint-pair"] = dict(beta=beta)
+    return "\n".join(out)
+
+
+@fig("math-part9.html", "m9-zscore")
+def fig_m9_zscore():
+    A_, B_, beta, spread, z = pair_ab_data(); n = len(z); t = np.arange(n)
+    n_hi = int((z > 2).sum()); n_lo = int((z < -2).sum())
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"z-score ของ spread 500 วัน วนรอบศูนย์ แตะ +2 {n_hi} วัน และ −2 {n_lo} วัน: เกิน +2 ขาย spread · ต่ำกว่า −2 ซื้อ spread · กลับศูนย์ปิดสถานะ")
+    title(out, Wd, "z-score ของ spread — วนรอบศูนย์เสมอ แตะขอบ ±2 เมื่อไรคือโอกาส",
+          f"z = (spread − ค่าเฉลี่ย) / SD · จากคู่ A/B ด้านบน · วันที่ z > +2: {n_hi} วัน · z < −2: {n_lo} วัน จาก 500 ({(n_hi+n_lo)/n*100:.1f}% ใกล้ 4.6% ของ Normal)")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (100, "100"), (200, "200"), (300, "300"), (400, "400"), (500, "500")], [(-4, "−4"), (-2, "−2"), (0, "0"), (2, "+2"), (4, "+4")], "วัน", "z-score")
+    out.append(f'<rect x="{x0}" y="{sy(4):.1f}" width="{w}" height="{sy(2)-sy(4):.1f}" fill="{RED}" opacity="0.08"/><rect x="{x0}" y="{sy(-2):.1f}" width="{w}" height="{sy(-4)-sy(-2):.1f}" fill="{GREEN}" opacity="0.08"/>')
+    for v, col in ((2, RED), (-2, GREEN)): out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{col}" stroke-width="1.2" stroke-dasharray="5 3"/>')
+    _zero_line(out, sx, sy, 0, n - 1)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, z)], BLUE, 1.5, shadow=False)
+    _txt(out, x0 + 4, sy(2) - 5, "z = +2 → ขาย spread (short B, long βA)", RED, "start", size=9, bold=True)
+    _txt(out, x0 + 4, sy(-2) + 13, "z = −2 → ซื้อ spread (long B, short βA)", GREEN, "start", size=9, bold=True)
+    _txt(out, x0 + w - 4, sy(3.3), "z กลับมา 0 (ค่าเฉลี่ย) → ปิดสถานะ", INK2, "end", size=9)
+    out.append("</svg>")
+    NUMS["m9-zscore"] = dict(n_hi=n_hi, n_lo=n_lo)
+    return "\n".join(out)
+
+
+# ── คณิตศาสตร์เล่ม 2 · E (math-part10) — ผลตอบแทน ความเสี่ยง ขนาดเดิมพัน ─────────────────────
+@fig("math-part10.html", "m10-sml")
+def fig_m10_sml():
+    rf, prem = 0.02, 0.07; beta_f, ret_f = 1.5, 0.14; capm = rf + beta_f * prem; alpha = ret_f - capm
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"Security Market Line จาก r_f 2% ชันขึ้น 7% ต่อหนึ่ง β กองทุน β 1.5 ได้ 14% อยู่เหนือเส้นที่ {capm*100:.1f}% คือ alpha {alpha*100:+.1f}%")
+    title(out, Wd, "Security Market Line — อยู่เหนือเส้น = เก่งจริง (alpha) · อยู่บนเส้น = แค่รับความเสี่ยงมากขึ้น",
+          f"r_f = 2% · market premium 7% · CAPM: E[r] = 2% + β × 7% · กองทุน β = 1.5 ได้ 14% ทั้งที่ CAPM บอก {capm*100:.1f}% → alpha = {alpha*100:+.1f}%")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (0.5, "0.5"), (1.0, "1.0"), (1.5, "1.5"), (2.0, "2.0")], [(0, "0"), (0.04, "4%"), (0.08, "8%"), (0.12, "12%"), (0.16, "16%"), (0.20, "20%")], "β →", "ผลตอบแทนคาดหวัง")
+    polyline(out, [(sx(0), sy(rf)), (sx(2), sy(rf + 2 * prem))], BLUE, 2.4)
+    for b in (0.5, 1.0, 1.5, 2.0): _dot(out, sx(b), sy(rf + b * prem), BLUE, 3)
+    _dot(out, sx(0), sy(rf), INK2, 3.5); _txt(out, sx(0) + 8, sy(rf) + 4, "r_f = 2%", INK2, "start", size=9)
+    _dot(out, sx(1.0), sy(rf + prem), INK2, 3.5); _txt(out, sx(1.0) + 8, sy(rf + prem) + 12, "ตลาด (β = 1): 9%", INK2, "start", size=9)
+    out.append(f'<line x1="{sx(beta_f):.1f}" y1="{sy(capm):.1f}" x2="{sx(beta_f):.1f}" y2="{sy(ret_f):.1f}" stroke="{GREEN}" stroke-width="2" stroke-dasharray="3 2"/>')
+    _dot(out, sx(beta_f), sy(ret_f), GREEN, 5); _txt(out, sx(beta_f) - 8, sy(ret_f) - 6, f"กองทุนนี้ β 1.5 ได้ 14%", GREEN, "end", size=9.5, bold=True)
+    _txt(out, sx(beta_f) + 8, sy((capm + ret_f) / 2) + 3, f"alpha = {alpha*100:+.1f}%", GREEN, "start", size=9.5, bold=True)
+    _txt(out, sx(beta_f) + 8, sy(capm) + 12, f"CAPM บอก {capm*100:.1f}%", BLUE, "start", size=9)
+    _txt(out, sx(1.75), sy(0.185), "Security Market Line", BLUE, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["m10-sml"] = dict(capm=capm, alpha=alpha)
+    return "\n".join(out)
+
+
+def kelly_data(p=0.55, b=1.0):
+    f = np.linspace(0.0, 0.30, 301)
+    g = p * np.log1p(b * f) + (1 - p) * np.log1p(-f)
+    fstar = (p * (b + 1) - 1) / b
+    # จุดตัดศูนย์ (f > 0)
+    idx = np.where((g[:-1] > 0) & (g[1:] <= 0))[0][0]; f0 = f[idx] + (0 - g[idx]) * (f[idx + 1] - f[idx]) / (g[idx + 1] - g[idx])
+    return f, g, fstar, float(f0), float(p * np.log1p(b * fstar) + (1 - p) * np.log1p(-fstar))
+
+
+@fig("math-part10.html", "m10-kelly")
+def fig_m10_kelly():
+    f, g, fstar, f0, gmax = kelly_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"อัตราเติบโตต่องวดเทียบขนาดเดิมพัน เป็นรูประฆังคว่ำ สูงสุดที่ Kelly f* = 10% ตัดศูนย์ที่ {f0*100:.2f}% ราวสองเท่าของ Kelly แล้วติดลบ")
+    title(out, Wd, "Kelly — เดิมพันมากขึ้นไม่ได้ดีขึ้นเสมอ: ยอดที่ f* = 10% · เกิน ~20% (2×Kelly) เติบโตติดลบทั้งที่ยังมี edge",
+          f"เกมชนะ 55% จ่าย 1:1 · g(f) = 0.55·ln(1 + f) + 0.45·ln(1 − f) · g สูงสุด {gmax*100:.3f}% ต่องวดที่ f = 10% · ตัดศูนย์จริงที่ f = {f0*100:.2f}% = {f0/fstar:.2f}×Kelly")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%")], [(-0.02, "−2%"), (-0.01, "−1%"), (0, "0"), (0.01, "+1%")], "ขนาดเดิมพัน f (สัดส่วนของพอร์ต) →", "อัตราเติบโตต่องวด")
+    out.append(f'<rect x="{sx(f0):.1f}" y="{y0}" width="{sx(0.30)-sx(f0):.1f}" height="{h}" fill="{RED}" opacity="0.08"/>')
+    _zero_line(out, sx, sy, 0, 0.30)
+    mask = g >= -0.02; polyline(out, [(sx(a), sy(b)) for a, b in zip(f[mask], g[mask])], BLUE, 2.6)
+    for xv, col, lab, dy in ((0.05, GREEN, "half-Kelly 5%", -10), (fstar, PURPLE, "Kelly f* = 10% — โตเร็วที่สุด", -10), (f0, RED, f"{f0*100:.1f}% ≈ 2×Kelly: เติบโต = 0 (เท่าทุน)", 0)):
+        gv = 0.55 * np.log1p(xv) + 0.45 * np.log1p(-xv)
+        out.append(f'<line x1="{sx(xv):.1f}" y1="{sy(gv):.1f}" x2="{sx(xv):.1f}" y2="{sy(0):.1f}" stroke="{col}" stroke-width="1.2" stroke-dasharray="3 3"/>'); _dot(out, sx(xv), sy(gv), col)
+    _txt(out, sx(0.05), sy(0) + 14, "half-Kelly 5%", GREEN, "middle", size=9, bold=True)
+    _txt(out, sx(fstar) + 6, sy(gmax) - 8, "Kelly f* = 10% — โตเร็วที่สุด", PURPLE, "start", size=9.5, bold=True)
+    _txt(out, sx(f0) + 6, sy(0) - 8, f"{f0*100:.1f}% ≈ 2×Kelly: เติบโต = 0 (เท่าทุน)", RED, "start", size=9, bold=True)
+    _txt(out, sx(0.245), sy(-0.011), "เกินจากนี้ = เงินหดทุกงวด", RED, "middle", size=9.5, bold=True)
+    _txt(out, sx(0.245), sy(-0.011) + 12, "ทั้งที่ยังชนะ 55% ทุกครั้ง", RED, "middle", size=9)
+    _txt(out, x0 + 4, sy(-0.0165), "ฝั่งซ้ายของยอดลาดน้อย ฝั่งขวาชันมาก → ถ้าไม่แน่ใจ ให้พลาดไปทางน้อย", INK2, "start", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m10-kelly"] = dict(fstar=fstar, f0=f0, gmax=gmax)
+    return "\n".join(out)
+
+
+def drawdown_data():
+    """ตรงกับโค้ด Python ในบท: seed 17 · 1000 วัน · r ~ N(0.0006, 0.013)"""
+    rng = np.random.default_rng(17); r = rng.normal(0.0006, 0.013, 1000)
+    equity = np.concatenate([[1.0], np.cumprod(1 + r)]); peak = np.maximum.accumulate(equity); dd = equity / peak - 1
+    bottom = int(dd.argmin()); top = int(np.argmax(equity[:bottom + 1]))
+    idx = np.where(equity[bottom:] >= equity[top])[0]; recov = int(idx[0]) if len(idx) else None
+    sharpe = (r.mean() * 252 - 0.02) / (r.std() * np.sqrt(252))
+    return equity, dd, top, bottom, recov, float(equity[-1] - 1), float(dd.min()), float(sharpe)
+
+
+@fig("math-part10.html", "m10-drawdown")
+def fig_m10_drawdown():
+    equity, dd, top, bottom, recov, total, mdd, sharpe = drawdown_data(); n = len(equity); t = np.arange(n)
+    Wd, H = 560, 380
+    out = svg_open(Wd, H, f"กราฟเงินทุน 1000 วันจบที่ {total*100:+.0f}% พร้อมกราฟ underwater แสดง drawdown สูงสุด {mdd*100:.1f}% ยอดถึงก้น {bottom-top} วัน กลับเท่าทุนอีก {recov} วัน รวม {bottom-top+recov} วัน", multipanel=True)
+    title(out, Wd, f"กลยุทธ์ที่ \"ดี\" ก็ยังเจ็บ — กำไรรวม {total*100:+.0f}% (Sharpe {sharpe:.2f}) แต่ระหว่างทางเงินหาย {mdd*100:.1f}% จากยอด",
+          f"โค้ดในบท (seed 17 · 1000 วัน) · ยอด→ก้น {bottom-top} วัน · ก้น→เท่าทุน {recov} วัน · รวม {bottom-top+recov} วันเห็นตัวเลขแดง · ต้องกำไร {1/(1+mdd)-1:.0%} กลับเท่าทุน")
+    # บน: equity
+    x0, y0, w, h = 55, 55, 483, 150
+    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (250, "250"), (500, "500"), (750, "750"), (1000, "1000")], [(0.8, "0.8"), (1.2, "1.2"), (1.6, "1.6"), (2.0, "2.0"), (2.4, "2.4")], ylab="เงินทุน (เริ่ม 1.0)")
+    peak = np.maximum.accumulate(equity)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, peak)], INK2, 1, dash="3 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, equity)], BLUE, 1.6, shadow=False)
+    out.append(f'<rect x="{sx(top):.1f}" y="{y0}" width="{sx(top + (bottom-top) + recov)-sx(top):.1f}" height="{h}" fill="{RED}" opacity="0.07"/>')
+    _dot(out, sx(top), sy(equity[top]), INK2, 3.5); _txt(out, sx(top), sy(equity[top]) - 8, "ยอดเดิม", INK2, "middle", size=9)
+    _dot(out, sx(bottom), sy(equity[bottom]), RED, 3.5); _txt(out, sx(bottom), sy(equity[bottom]) + 14, f"ก้นบึ้ง {mdd*100:.1f}%", RED, "middle", size=9, bold=True)
+    _txt(out, sx(n - 1) - 4, sy(equity[-1]) - 8, f"จบที่ {total*100:+.0f}%", BLUE, "end", size=9.5, bold=True)
+    _txt(out, sx(top + (bottom - top + recov) / 2), y0 + 12, f"เจ็บอยู่ {bottom-top+recov} วัน กว่าจะกลับเท่าทุน", RED, "middle", size=9, bold=True)
+    # ล่าง: underwater
+    y1, h1 = 240, 100
+    sx2, sy2 = frame(out, x0, y1, w, h1, [(0, "0"), (250, "250"), (500, "500"), (750, "750"), (1000, "1000")], [(-0.4, "−40%"), (-0.2, "−20%"), (0, "0%")], xlab="วัน · Drawdown = ต่ำกว่ายอดสูงสุดที่เคยเห็นกี่ %", ylab="Drawdown")
+    pts = " ".join(f"{sx2(a):.1f},{sy2(b):.1f}" for a, b in zip(t, dd))
+    out.append(f'<polygon points="{sx2(0):.1f},{sy2(0):.1f} {pts} {sx2(n-1):.1f},{sy2(0):.1f}" fill="{RED}" opacity="0.25"/>')
+    polyline(out, [(sx2(a), sy2(b)) for a, b in zip(t, dd)], RED, 1.2, shadow=False)
+    _txt(out, sx2(bottom), sy2(mdd) - 4, f"{mdd*100:.1f}%", RED, "middle", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["m10-drawdown"] = dict(total=total, mdd=mdd, sharpe=sharpe, top_to_bottom=bottom - top, recov=recov)
+    return "\n".join(out)
+
+
 
 VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
            ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
