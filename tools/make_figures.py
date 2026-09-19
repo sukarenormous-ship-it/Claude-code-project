@@ -185,9 +185,9 @@ def legend(out, items, x, y):
         x += 27 + 6.2 * len(lab) + 18
 
 
-def svg_open(W, H, label, multipanel=False):
+def svg_open(W, H, label, multipanel=False, cls="d"):
     mp = ' data-legend="per-panel"' if multipanel else ""   # หลายพาเนล พาเนลละซีรีส์เดียว — ไม่ต้องมี legend รวม
-    return [f'<svg class="d" viewBox="0 0 {W} {H}" role="img" aria-label="{label}"{mp}>',
+    return [f'<svg class="{cls}" viewBox="0 0 {W} {H}" role="img" aria-label="{label}"{mp}>',
             '<defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>']
 
 
@@ -491,11 +491,28 @@ def fig_greeks_grid():
     return "\n".join(out)
 
 
+_TEXT_TAG = re.compile(r'<text\b([^>]*)>')
+
+
+def add_halo(svg):
+    """ใส่ขอบขาวบาง ๆ หลังตัวอักษรทุกชิ้น — ข้อความที่บังเอิญวางทับเส้นกราฟจึงยังอ่านออก
+    (paint-order="stroke" วาดเส้นขอบก่อนแล้วค่อยวาดตัวอักษรทับ จึงไม่ทำให้ตัวอักษรบวม)"""
+    def one(m):
+        tag = m.group(1)
+        if "paint-order" in tag or "stroke=" in tag: return m.group(0)
+        fill = re.search(r'fill="([^"]*)"', tag)
+        if fill and fill.group(1).lower() in ("#fff", "#ffffff", "white"): return m.group(0)
+        sz = re.search(r'font-size="([\d.]+)"', tag)
+        w = max(2.0, float(sz.group(1)) * 0.26) if sz else 2.6
+        return f'<text{tag} paint-order="stroke" stroke="#fff" stroke-width="{w:.1f}" stroke-linejoin="round" stroke-opacity="0.92">'
+    return _TEXT_TAG.sub(one, svg)
+
+
 def render_all():
     out = {}
     for (fl, nm), fn in FIGS.items():
         _CUR[0] = nm          # ให้ title() รู้ว่ากำลังวาดภาพไหน เวลารายงานข้อความล้นขอบ
-        out[(fl, nm)] = fn()
+        out[(fl, nm)] = add_halo(fn())
     return out
 
 
@@ -640,7 +657,8 @@ def fig_garch_sim():
     im = int(np.argmax(sg))
     out.append(f'<circle cx="{sx2(im):.1f}" cy="{sy2(sg[im]*100):.1f}" r="4" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
     anc = "end" if im > len(sg) / 2 else "start"; dx = -8 if anc == "end" else 8
-    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">σ พุ่งถึง {sg[im]*100:.1f}% หลังวันช็อก · ส่วนเกินของ σ² เหนือ long-run หายไป 2% ของที่เหลือทุกวัน (ตัวคูณ 0.98 · half-life ≈ {np.log(0.5)/np.log(0.98):.0f} วัน)</text>')
+    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-20:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">σ พุ่งถึง {sg[im]*100:.1f}% หลังวันช็อก</text>')
+    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}">ส่วนเกินของ σ² เหนือ long-run หายไป 2% ของที่เหลือทุกวัน (half-life ≈ {np.log(0.5)/np.log(0.98):.0f} วัน)</text>')
     out.append(f'<text x="{x0+w-4}" y="{y1+12}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ช่วงที่แท่งบนหนาแน่น = σ ล่างสูง — วันเหวี่ยงแรงมักตามด้วยวันเหวี่ยงแรง</text>')
     out.append("</svg>")
     return "\n".join(out)
@@ -712,7 +730,7 @@ def fig_sqrt_impact():
     x0, y0, w, h = 50, 46, 480, 180
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%")], [(0, "0"), (0.4, "0.4%"), (0.8, "0.8%"), (1.2, "1.2%")], xlab="ขนาดออเดอร์ Q เป็นสัดส่วนของ ADV", ylab="impact (% ของราคา)")
     polyline(out, [(sx(0), sy(0)), (sx(0.30), sy(0.02 * 0.30 / 0.10 * np.sqrt(0.10) * 100))], INK2, 1.4, dash="5 4", shadow=False)
-    out.append(f'<text x="{sx(0.29):.1f}" y="{sy(0.02*0.29/0.10*np.sqrt(0.10)*100)+14:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ถ้าเป็นเส้นตรง (สัญชาตญาณผิด)</text>')
+    out.append(f'<text x="{sx(0.168):.1f}" y="{sy(1.08):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ถ้าเป็นเส้นตรง (สัญชาตญาณผิด)</text>')
     out.append(f'<line x1="{x0}" y1="{sy(0.5):.1f}" x2="{x0+w}" y2="{sy(0.5):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="4 4"/>')
     out.append(f'<text x="{x0+w-4}" y="{sy(0.5)-5:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{RED}">กำไรที่กลยุทธ์คาด 0.5% ต่อเทรด</text>')
     polyline(out, [(sx(a), sy(b)) for a, b in zip(q, imp)], BLUE, 2.75)
@@ -1628,7 +1646,8 @@ def fig_m1_drawdown_bars():
         _txt(out, mid - lw * d - 5, yc + 3.5, f"−{d*100:.0f}%", RED, "end", bold=True)
         _txt(out, mid + rw * r / 9 + 5, yc + 3.5, f"+{r*100:.0f}%" if r >= 1 else f"+{r*100:.1f}%", GREEN, "start", bold=True)
         _txt(out, x0 - 4, yc + 3.5, f"฿100 → ฿{100*(1-d):.0f}", INK2, "end", size=9)
-    _txt(out, x0, H - 14, "ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก — นี่คือเหตุผลที่ Options วัดผลด้วย log return (ln(50/100) = −0.69 และ ln(100/50) = +0.69 สมมาตรกัน)", INK2, "start", size=9)
+    _txt(out, x0, H - 24, "ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก — นี่คือเหตุผลที่ Options วัดผลด้วย log return", INK2, "start", size=9)
+    _txt(out, x0, H - 11, "ln(50/100) = −0.69 และ ln(100/50) = +0.69 สมมาตรกัน ส่วน −50% กับ +100% ไม่สมมาตร", INK2, "start", size=9)
     out.append("</svg>")
     NUMS["m1-drawdown-bars"] = {f"reb{int(d*100)}": r * 100 for d, r in zip(drops, reb)}
     return "\n".join(out)
@@ -3667,8 +3686,8 @@ def fig_nq2_claim_ladder():
         _txt(out, 88, y + 27, f"{i+1}", col, "end", size=13, bold=True)
     out.append(arrow_defs())
     out.append(f'<line x1="60" y1="72" x2="60" y2="266" stroke="{INK2}" stroke-width="1.6" marker-end="url(#ar-ink2)"/>')
-    _txt(out, 54, 84, "ตรวจสอบไม่ได้", RED, "end", size=9, bold=True)
-    _txt(out, 54, 262, "ตรวจสอบได้", GREEN, "end", size=9, bold=True)
+    _txt(out, 52, 84, "ตรวจสอบไม่ได้", RED, "middle", size=9, bold=True)
+    _txt(out, 52, 262, "ตรวจสอบได้", GREEN, "middle", size=9, bold=True)
     _txt(out, Wd / 2, 292, "ห้าช่อง: อะไร · เท่าไร · เมื่อไร · วัดจากไหน · ผิดเมื่อไร", INK, "middle", size=9.5, bold=True)
     out.append("</svg>")
     return "\n".join(out)
@@ -3714,6 +3733,213 @@ def fig_copula_tail_by_family():
     out.append("</svg>")
     NUMS["copula-tail-by-family"] = dict(lo=lo, hi=hi, best_aic=best)
     return "\n".join(out)
+
+
+# ── ภาคผนวก E (nq) และ statarb — ภาพที่เคยอยู่ใน marker CHART แต่ไม่มี generator เขียนให้ ──────
+# ไฟล์กลุ่มนี้ใช้ CSS คลาส .fig (เต็มความกว้าง) และมีบรรทัดคำบรรยายใต้ภาพ จึงคืน svg + <div class="cap">
+def _cap(text):
+    return f'<div class="cap">{text}</div>'
+
+
+def _load(name):
+    with open(os.path.join(DOCS, name), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _daily_prices():
+    d = _load("nq-figures.json")["ราคารายวัน"]
+    ks = sorted(d)
+    return ks, [float(d[k]) for k in ks]
+
+
+def _thai_day(iso):
+    m = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+    y, mo, dd = iso.split("-")
+    return f"{int(dd)} {m[int(mo)-1]}"
+
+
+def rsi_series():
+    import indicator_figures as IF
+    ks, px = _daily_prices()
+    rows = IF.rsi_wilder(px)
+    pts = [(k, r["rsi"]) for k, r in zip(ks, rows) if r]
+    return pts, _load("indicator-figures.json")["RSI"]
+
+
+@fig("nq-appendix-indicators.html", "ind-rsi")
+def fig_ind_rsi():
+    pts, R = rsi_series()
+    first = R["ครั้งแรกที่เกิน70"]; top = R["RSI สูงสุด"]
+    n_over, n_under = R["จำนวนวันเกิน70"], R["จำนวนวันต่ำกว่า30"]
+    Wd, H = 780, 300
+    out = svg_open(Wd, H, f"กราฟ RSI 14 วันของ BTC {len(pts)} วัน พร้อมเส้น 70 และ 30 · RSI ทะลุ 70 ครั้งแรกวันที่ {first['วันที่']} ที่ {first['RSI']} แล้วค้างอยู่เหนือ 70 รวม {n_over} วัน ส่วนโซนต่ำกว่า 30 ไม่มีวันไหนแตะเลย", cls="fig")
+    title(out, Wd, f"RSI(14) บนราคาจริง — ทะลุ 70 แล้วค้าง {n_over} วัน ขณะราคายังขึ้นต่อ +{first['ราคาเปลี่ยนหลังจากนั้นเปอร์เซ็นต์']}%",
+          f"{_thai_day(pts[0][0])} – {_thai_day(pts[-1][0])} 2026 · โซนต่ำกว่า 30 ไม่มีวันไหนแตะเลยทั้งช่วง ({n_under} วัน) — เพราะเป็นตลาดขาขึ้น ไม่ใช่เพราะสูตรแม่น")
+    x0, y0, w, h = 56, 56, Wd - 96, 176
+    sx = lambda i: x0 + i / (len(pts) - 1) * w
+    sy = lambda v: y0 + h - v / 100 * h
+    for v, lab, col in ((70, "70", RED), (50, "50", INK2), (30, "30", GREEN)):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{col}" stroke-width="1.2" stroke-dasharray="5 3" opacity="0.8"/>')
+        _txt(out, x0 - 8, sy(v) + 4, lab, col, "end", size=10, bold=True)
+    for v in (0, 100): _txt(out, x0 - 8, sy(v) + 4, str(v), INK2, "end", size=9)
+    out.append(f'<rect x="{x0}" y="{sy(100):.1f}" width="{w}" height="{sy(70)-sy(100):.1f}" fill="{RED}" opacity="0.07"/>')
+    out.append(f'<rect x="{x0}" y="{sy(30):.1f}" width="{w}" height="{sy(0)-sy(30):.1f}" fill="{GREEN}" opacity="0.07"/>')
+    _txt(out, x0 + 6, sy(94), "โซน \"overbought\" ตามตำรา", RED, "start", size=9.5, bold=True)
+    _txt(out, x0 + w - 6, sy(8), f"โซน \"oversold\" ตามตำรา — ไม่มีวันไหนลงมาเลย ({n_under} วัน)", GREEN, "end", size=9.5, bold=True)
+    polyline(out, [(sx(i), sy(v)) for i, (_, v) in enumerate(pts)], BLUE, 2.2, shadow=False)
+    idx = {k: i for i, (k, _) in enumerate(pts)}
+    vmap = dict(pts)
+    for key, lab, anc, dx, dy in ((first["วันที่"], f"{_thai_day(first['วันที่'])} · RSI {first['RSI']}", "end", -9, 4),
+                                  (top["วันที่"], f"{_thai_day(top['วันที่'])} · สูงสุด {top['RSI']}", "start", 9, -6)):
+        i = idx[key]; v = vmap[key]
+        _dot(out, sx(i), sy(v), PURPLE, 4)
+        _txt(out, sx(i) + dx, sy(v) + dy, lab, PURPLE, anc, size=9.5, bold=True)
+    i0 = idx[first["วันที่"]]
+    _txt(out, sx(i0) - 9, sy(vmap[first["วันที่"]]) + 18, "EMA สั่งซื้อวันเดียวกัน", AMBER, "end", size=9, bold=True)
+    out.append(f'<line x1="{x0}" y1="{y0+h:.1f}" x2="{x0+w}" y2="{y0+h:.1f}" stroke="{AXIS}" stroke-width="1.2"/>')
+    _txt(out, x0, y0 + h + 15, _thai_day(pts[0][0]), INK2, "start", size=9)
+    _txt(out, x0 + w, y0 + h + 15, _thai_day(pts[-1][0]), INK2, "end", size=9)
+    _txt(out, Wd / 2, y0 + h + 40, f"RSI ทะลุ 70 แล้วค้างอยู่ {n_over} วัน ขณะราคาขึ้นต่ออีก +{first['ราคาเปลี่ยนหลังจากนั้นเปอร์เซ็นต์']}% — \"overbought\" ไม่ได้แปลว่าจะลง", RED, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, y0 + h + 58, f"สัดส่วนวันที่ RSI เกิน 70 = {R['สัดส่วนวันเกิน70เปอร์เซ็นต์']}% ของ {len(pts)} วันที่คำนวณได้", INK2, "middle", size=9.5)
+    out.append("</svg>")
+    NUMS["ind-rsi"] = dict(n=len(pts), over70=n_over, under30=n_under, first=first["RSI"], top=top["RSI"])
+    return "\n".join(out) + "\n" + _cap(f"RSI(14) แบบ Wilder บนราคา BTC รายวันจริง {len(pts)} วันที่คำนวณได้ · ช่วงอุ่นเครื่อง 14 วันแรกตัดทิ้ง")
+
+
+def lsma_series(win=20, last=24):
+    import indicator_figures as IF
+    ks, px = _daily_prices()
+    em = IF.ema(px, win)
+    ls = [None] * len(px)
+    for i in range(win - 1, len(px)):
+        ls[i] = IF.ols_time(px[i - win + 1:i + 1])["end"]
+    sl = slice(len(px) - last, len(px))
+    return ks[sl], px[sl], em[sl], ls[sl]
+
+
+@fig("nq-appendix-indicators.html", "ind-lsma")
+def fig_ind_lsma():
+    ks, px, em, ls = lsma_series()
+    LR = _load("indicator-figures.json")["LinearRegression"]["วันสุดท้าย"]
+    Wd, H = 780, 320
+    out = svg_open(Wd, H, f"กราฟราคา BTC เทียบ EMA 20 วัน และ LSMA 20 วัน · EMA ตามหลังราคาตลอดขาขึ้น ส่วน LSMA แซงขึ้นไปอยู่เหนือราคาในวันสุดท้ายที่ {ls[-1]:,.0f} ขณะราคาอยู่ที่ {px[-1]:,.0f}", cls="fig")
+    title(out, Wd, "ค่าเฉลี่ยตามหลัง · regression ล้ำหน้า — ราคาอยู่ตรงกลาง",
+          f"{_thai_day(ks[0])} – {_thai_day(ks[-1])} 2026 · EMA20 ตามหลังเพราะถ่วงอดีต · LSMA คือปลายเส้นถดถอย 20 วัน จึงยื่นไปตามความชันล่าสุด")
+    x0, y0, w, h = 64, 58, Wd - 108, 190
+    vals = [v for v in px + list(em) + list(ls) if v is not None]
+    lo, hi = min(vals) * 0.985, max(vals) * 1.015
+    sx = lambda i: x0 + i / (len(px) - 1) * w
+    sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
+    for v in range(int(lo // 5000) * 5000, int(hi) + 5000, 5000):
+        if lo <= v <= hi:
+            out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+            _txt(out, x0 - 8, sy(v) + 4, f"{v//1000}k", INK2, "end", size=9)
+    for series, col, wdt, dash in ((px, INK, 2.4, ""), (em, BLUE, 2.0, ""), (ls, GREEN, 2.0, "6 3")):
+        pts = [(sx(i), sy(v)) for i, v in enumerate(series) if v is not None]
+        polyline(out, pts, col, wdt, dash=dash, shadow=False)
+    _dot(out, sx(len(px) - 1), sy(ls[-1]), GREEN, 4); _dot(out, sx(len(px) - 1), sy(px[-1]), INK, 4); _dot(out, sx(len(px) - 1), sy(em[-1]), BLUE, 4)
+    _txt(out, sx(len(px) - 1) - 8, sy(ls[-1]) - 8, f"LSMA20 {ls[-1]:,.0f} — ล้ำหน้าราคา", GREEN, "end", size=9.5, bold=True)
+    _txt(out, sx(len(px) - 1) - 8, sy(px[-1]) + 18, f"ราคา {px[-1]:,.0f}", INK, "end", size=9.5, bold=True)
+    _txt(out, sx(len(px) - 1) - 8, sy(em[-1]) + 16, f"EMA20 {em[-1]:,.0f} — ตามหลังราคา", BLUE, "end", size=9.5, bold=True)
+    out.append(f'<line x1="{x0}" y1="{y0+h:.1f}" x2="{x0+w}" y2="{y0+h:.1f}" stroke="{AXIS}" stroke-width="1.2"/>')
+    _txt(out, x0, y0 + h + 15, _thai_day(ks[0]), INK2, "start", size=9)
+    _txt(out, x0 + w, y0 + h + 15, _thai_day(ks[-1]), INK2, "end", size=9)
+    legend(out, [(INK, "ราคา BTC", ""), (BLUE, "EMA20", ""), (GREEN, "LSMA20 (ปลายเส้นถดถอย 20 วัน)", "6 3")], x0, H - 34)
+    _txt(out, Wd / 2, H - 12, f"วันสุดท้าย regression ชัน {LR['slope ต่อวัน']:,.0f} ดอลลาร์/วัน (R² = {LR['R2']}) — LSMA จึงยื่นเลยราคาไป {ls[-1]-px[-1]:,.0f}", INK2, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["ind-lsma"] = dict(lsma=float(ls[-1]), price=float(px[-1]), ema=float(em[-1]))
+    return "\n".join(out) + "\n" + _cap("ราคา BTC รายวันจริง · EMA20 และ LSMA20 คำนวณจากชุดเดียวกัน · บนเทรนด์เส้นตรง EMA20 ตามหลัง 9.5 วันโดยนิยาม ส่วน LSMA ตามหลัง 0 วัน — แต่ที่โค้งมันจะยื่นเลย")
+
+
+def _hbars(out, rows, x0, y0, w, bh, gap, vmax, fmt_v, hi_i=None):
+    """แท่งแนวนอน: rows = [(ป้าย, ค่า, สี, ป้ายย่อย)]"""
+    for i, (lab, v, col, sub) in enumerate(rows):
+        y = y0 + i * (bh + gap)
+        out.append(f'<rect x="{x0:.1f}" y="{y:.1f}" width="{max(v/vmax*w, 2):.1f}" height="{bh:.1f}" rx="3" fill="{col}" opacity="{0.85 if i == hi_i else 0.7}"/>')
+        _txt(out, x0 - 8, y + bh / 2 + 4, lab, INK, "end", size=10, bold=True)
+        _txt(out, x0 + max(v / vmax * w, 2) + 8, y + bh / 2 + 4, fmt_v(v), col, "start", size=11, bold=True)
+        if sub: _txt(out, x0 + max(v / vmax * w, 2) + 8 + 6.2 * len(fmt_v(v)) + 10, y + bh / 2 + 4, sub, INK2, "start", size=9)
+
+
+@fig("statarb-alpha-decay.html", "decay-detection")
+def fig_decay_detection():
+    d = _load("alpha-decay-figures.json")
+    tab = [r for r in d["ตารางตรวจจับ"] if (r["edgeเดิมเปอร์เซ็นต์"], r["ลดลงจุด"]) in {(55.0, 3.0), (55.0, 5.0), (55.0, 7.0), (60.0, 5.0), (60.0, 10.0)}]
+    base = d["กรณีตั้งต้นของบท"]; rate = d["สมมติฐานจังหวะเทรดของมิน"]["ไม้ต่อสัปดาห์"]
+    Wd, H = 780, 288
+    out = svg_open(Wd, H, f"กราฟแท่งแสดงจำนวนปีที่ต้องใช้ถึงจะตรวจจับได้ว่า edge เสื่อมจริง ที่ {rate} ไม้ต่อสัปดาห์ · edge ลดลงยิ่งน้อย ยิ่งใช้เวลานาน จาก {tab[0]['ปี']} ปีเหลือ {tab[-1]['ปี']} ปี", cls="fig")
+    title(out, Wd, f"ยิ่ง edge เสื่อมน้อย ยิ่งตรวจจับยากแบบไม่เป็นเส้นตรง — ที่ {rate} ไม้/สัปดาห์",
+          f"กรณีตั้งต้นของบท: {base['edgeเดิมเปอร์เซ็นต์']:.0f}% → {base['edgeหลังเสื่อมเปอร์เซ็นต์']:.0f}% ต้องใช้ {base['จำนวนไม้']:,} ไม้ = {base['ปี']} ปี · ระหว่างนั้นยังไม่รู้ว่า edge หายจริงหรือแค่ดวงไม่ดี")
+    rows = [(f"{r['edgeเดิมเปอร์เซ็นต์']:.0f}% → {r['edgeหลังเสื่อมเปอร์เซ็นต์']:.0f}%", r["ปี"],
+             RED if r["ปี"] > 20 else (AMBER if r["ปี"] > 8 else GREEN), f"ลดลง {r['ลดลงจุด']:.0f} จุด · {r['จำนวนไม้']:,} ไม้") for r in tab]
+    vmax = max(v for _, v, _, _ in rows) * 1.12
+    _hbars(out, rows, 150, 66, 430, 28, 10, vmax, lambda v: f"{v} ปี")
+    _txt(out, Wd / 2, 260, f"เวลาที่ต้องใช้ถึงจะตรวจจับได้ (ที่ {rate} ไม้/สัปดาห์) — ไม่ใช่เวลาที่ edge หายไป", INK, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, 278, "แปลว่า: การสรุปว่า \"edge หายแล้ว\" หลังขาดทุนสองเดือน แทบไม่มีหลักฐานทางสถิติรองรับ", RED, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["decay-detection"] = dict(base_years=base["ปี"], n_rows=len(rows))
+    return "\n".join(out) + "\n" + _cap(f"สูตร power calculation เดียวกับ nq-tool-samplesize · z_alpha={d['สูตร']['z_alpha']} z_beta={d['สูตร']['z_beta']} (90% power) · จังหวะเทรดของมิน {rate} ไม้/สัปดาห์")
+
+
+@fig("statarb-data-quality.html", "data-quality-survivorship")
+def fig_dq_survivorship():
+    d = _load("data-quality-figures.json")["ผู้รอดชีวิต"]
+    ven = [("Deribit", d["deribit"]), ("OKX", d["okx"])]
+    days = _load("nq-figures.json")["btc"]["ช่วงข้อมูล"]["จำนวนวัน"]
+    Wd, H = 780, 178
+    out = svg_open(Wd, H, f"กราฟแท่งเทียบอัตราการรอดของสัญญา BTC จากวันแรกถึงวันสุดท้ายของข้อมูล {days} วัน Deribit รอด {ven[0][1]['สัดส่วนที่รอดเปอร์เซ็นต์']}% ส่วน OKX รอดเพียง {ven[1][1]['สัดส่วนที่รอดเปอร์เซ็นต์']}%", cls="fig")
+    title(out, Wd, f"สัญญาที่ยังอยู่ครบทั้งวันแรกและวันสุดท้าย — Deribit {ven[0][1]['สัดส่วนที่รอดเปอร์เซ็นต์']}% · OKX {ven[1][1]['สัดส่วนที่รอดเปอร์เซ็นต์']}%",
+          f"ถ้าเทสต์กับเฉพาะสัญญาที่ \"ยังอยู่\" ก็กำลังเลือกเฉพาะผู้รอดชีวิต · และสองตลาดรอดไม่เท่ากัน จึงย้ายผลข้ามตลาดไม่ได้")
+    rows = [(nm, v["สัดส่วนที่รอดเปอร์เซ็นต์"], BLUE if i == 0 else AMBER, f"{v['อยู่ครบทั้งสองวัน']:,}/{v['จำนวนวันแรก']:,} สัญญา") for i, (nm, v) in enumerate(ven)]
+    _hbars(out, rows, 130, 62, 420, 30, 12, 100.0, lambda v: f"{v}%")
+    _txt(out, Wd / 2, 156, f"ฐาน = สัญญา BTC ที่มีอยู่ในวันแรก ({days} วัน) · ที่เหลือหมดอายุหรือหายไประหว่างทาง", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, 172, "ตลาดหนึ่งบอกอะไรไม่ได้เลยเกี่ยวกับอีกตลาด — ความต่างนี้คือสัญญาณ ไม่ใช่ noise", RED, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["data-quality-survivorship"] = dict(deribit=ven[0][1]["สัดส่วนที่รอดเปอร์เซ็นต์"], okx=ven[1][1]["สัดส่วนที่รอดเปอร์เซ็นต์"])
+    return "\n".join(out) + "\n" + _cap(f"Deribit: {ven[0][1]['อยู่ครบทั้งสองวัน']}/{ven[0][1]['จำนวนวันแรก']} สัญญา · OKX: {ven[1][1]['อยู่ครบทั้งสองวัน']}/{ven[1][1]['จำนวนวันแรก']} สัญญา · ทั้งสองตลาดข้อมูลครบ {days}/{days} วัน ไม่มีวันขาดหาย")
+
+
+@fig("statarb-live-vs-backtest.html", "live-liquidity")
+def fig_live_liquidity():
+    d = _load("live-backtest-figures.json")
+    L = d["สภาพคล่องทั้งกระดาน"]; day = d["ข้อมูล"]["วันที่ตรวจ"]
+    rows = [("ไม่มีปริมาณซื้อขายเลยใน 24 ชม. · Deribit", L["deribit"]["ไม่มีปริมาณซื้อขาย24ชมเปอร์เซ็นต์"], RED, f"{L['deribit']['ไม่มีปริมาณซื้อขาย24ชม']:,}/{L['deribit']['สัญญาทั้งหมด']:,}"),
+            ("ไม่มีปริมาณซื้อขายเลยใน 24 ชม. · OKX", L["okx"]["ไม่มีปริมาณซื้อขาย24ชมเปอร์เซ็นต์"], RED, f"{L['okx']['ไม่มีปริมาณซื้อขาย24ชม']:,}/{L['okx']['สัญญาทั้งหมด']:,}"),
+            ("ไม่มีราคาเสนอซื้อเลย · Deribit", L["deribit"]["ไม่มีราคาเสนอซื้อเปอร์เซ็นต์"], AMBER, f"{L['deribit']['ไม่มีราคาเสนอซื้อ']:,}/{L['deribit']['สัญญาทั้งหมด']:,}"),
+            ("ไม่มีราคาเสนอซื้อเลย · OKX", L["okx"]["ไม่มีราคาเสนอซื้อเปอร์เซ็นต์"], AMBER, f"{L['okx']['ไม่มีราคาเสนอซื้อ']:,}/{L['okx']['สัญญาทั้งหมด']:,}")]
+    Wd, H = 780, 268
+    out = svg_open(Wd, H, f"กราฟแท่งเทียบสัดส่วนสัญญาที่ไม่มีปริมาณซื้อขายใน 24 ชั่วโมงและไม่มีราคาเสนอซื้อ ระหว่าง Deribit และ OKX ในวันที่ {day}", cls="fig")
+    title(out, Wd, "การมีราคาในไฟล์ข้อมูล ไม่ได้แปลว่าเทรดได้จริง",
+          f"ตรวจทั้งกระดานในวันเดียว ({day}) ไม่ใช่แค่ใกล้ ATM · เกือบครึ่งกระดานไม่มีใครซื้อขายเลยตลอด 24 ชั่วโมง")
+    _hbars(out, rows, 260, 62, 300, 26, 12, 55.0, lambda v: f"{v}%")
+    _txt(out, Wd / 2, 226, f"mark price อยู่นอกช่วง bid-ask: Deribit {L['deribit']['markอยู่นอกช่วงbidask']} สัญญา · OKX {L['okx']['markอยู่นอกช่วงbidask']} สัญญา", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, 246, "backtest ที่สมมติว่า \"ถ้าราคาผ่านเกณฑ์ก็เทรดได้\" กำลังนับไม้ที่ไม่มีทางเกิดขึ้นจริง", RED, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, 262, "ตัวเลขนี้เป็นของวันเดียว — แต่พอจะบอกได้ว่า \"มีข้อมูล\" กับ \"มีสภาพคล่อง\" เป็นคนละเรื่อง", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["live-liquidity"] = dict(novol_deribit=rows[0][1], novol_okx=rows[1][1], nobid_deribit=rows[2][1], nobid_okx=rows[3][1])
+    return "\n".join(out) + "\n" + _cap(f"ทั้งกระดาน ไม่ใช่แค่ใกล้ ATM · Deribit {L['deribit']['สัญญาทั้งหมด']:,} สัญญา · OKX {L['okx']['สัญญาทั้งหมด']:,} สัญญา · mark price อยู่นอกช่วง bid-ask: Deribit {L['deribit']['markอยู่นอกช่วงbidask']} สัญญา · OKX {L['okx']['markอยู่นอกช่วงbidask']} สัญญา")
+
+
+@fig("statarb-signal-blending.html", "blending-search")
+def fig_blending_search():
+    d = _load("blending-figures.json")
+    S = d["การค้นหา"]; trap = S["ตัวกรองเดี่ยวที่ดีที่สุดแบบไม่จำกัดวันกระตุ้น_กับดัก"]
+    solo = S["ตัวกรองเดี่ยวที่ดีที่สุดที่วันกระตุ้นพอ"]; best = S["ชุดรวมที่ดีที่สุด"]
+    gain = S["ส่วนที่การรวมสร้างขึ้นจุดเปอร์เซ็นต์"]; base = d["ป้ายกำกับ"]["อัตราฐานเปอร์เซ็นต์"]
+    rows = [(f"ตัวกรองเดี่ยว ไม่จำกัดวันกระตุ้น", trap["ค่ายกเปอร์เซ็นต์"], RED, f"{trap['ชื่อวิธี']} · กระตุ้นแค่ {trap['จำนวนวันกระตุ้น']} วัน (กับดัก)"),
+            (f"ตัวกรองเดี่ยว กระตุ้น ≥ 5 วัน", solo["ค่ายกเปอร์เซ็นต์"], BLUE, f"{solo['ชื่อวิธี']} · กระตุ้น {solo['จำนวนวันกระตุ้น']} วัน"),
+            (f"ชุดรวมที่ดีที่สุดจาก {S['จำนวนวิธีรวมทั้งหมด']} วิธี", best["ค่ายกเปอร์เซ็นต์"], GREEN, f"= {best['ชื่อวิธี']} เท่านั้น · กระตุ้น {best['จำนวนวันกระตุ้น']} วัน")]
+    Wd, H = 780, 262
+    out = svg_open(Wd, H, f"กราฟแท่งเทียบค่ายกของตัวกรอง: ตัวกรองเดี่ยวที่ไม่จำกัดวันกระตุ้นให้ {trap['ค่ายกเปอร์เซ็นต์']} จุดแต่เป็นกับดักตัวอย่างเล็ก ส่วนตัวกรองเดี่ยวที่กระตุ้นพอและชุดรวมที่ดีที่สุดให้เท่ากันที่ {best['ค่ายกเปอร์เซ็นต์']} จุด", cls="fig")
+    title(out, Wd, f"ค้นหา {S['จำนวนวิธีรวมทั้งหมด']} วิธีรวมตัวกรอง — ชุดที่ดีที่สุดคือตัวกรองเดี่ยว การรวมไม่ได้เพิ่มอะไรเลย",
+          f"ป้ายกำกับ: สเปรดวันถัดไปลู่เข้าจริงไหม · อัตราฐาน {base}% · ค่ายก = อัตราสำเร็จ − อัตราฐาน (จุดเปอร์เซ็นต์)")
+    _hbars(out, rows, 250, 66, 300, 30, 14, 55.0, lambda v: f"+{v} จุด")
+    _txt(out, Wd / 2, 200, f"ส่วนที่ \"การรวม\" สร้างขึ้นจริง = {gain} จุด — ชุดรวมที่ดีที่สุดเท่ากับตัวกรองเดี่ยวพอดี", PURPLE, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, 222, f"แถบแดงคือกับดัก: กระตุ้นแค่ {trap['จำนวนวันกระตุ้น']} วันแล้วถูก {trap['อัตราสำเร็จเปอร์เซ็นต์']:.0f}% ทุกวัน — ตัวอย่างเล็กเกินกว่าจะเชื่อ", RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 242, f"จาก {S['จำนวนวิธีรวมทั้งหมด']} วิธี เหลือ {S['จำนวนวิธีที่มีวันกระตุ้นพอ(≥5วัน)']} วิธีที่มีวันกระตุ้นพอจะอ่านค่าได้", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["blending-search"] = dict(trap=trap["ค่ายกเปอร์เซ็นต์"], solo=solo["ค่ายกเปอร์เซ็นต์"], best=best["ค่ายกเปอร์เซ็นต์"], gain=gain)
+    return "\n".join(out) + "\n" + _cap(f"ป้ายกำกับ: สเปรดวันถัดไปลู่เข้าจริงไหม · อัตราฐาน {base}% · ค้นหาทั้งหมด {S['จำนวนวิธีรวมทั้งหมด']} วิธี เหลือ {S['จำนวนวิธีที่มีวันกระตุ้นพอ(≥5วัน)']} วิธีที่มีวันกระตุ้นพอจะอ่านค่าได้")
 
 
 

@@ -15,6 +15,7 @@ import json
 import math
 import os
 import re
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
@@ -487,10 +488,11 @@ CHARTS = {
 
 
 def main():
+    check = "--check" in sys.argv          # ตรวจอย่างเดียว ไม่เขียนทับ (ใช้ใน QA ก่อน commit)
     with open(os.path.join(DOCS, "nq-figures.json")) as fh:
         fig = json.load(fh)
 
-    written = 0
+    written = found = stale = 0
     for name in sorted(os.listdir(DOCS)):
         if not (name.startswith("nq-") and name.endswith(".html")):
             continue
@@ -503,15 +505,23 @@ def main():
                 r"(<!--CHART:" + re.escape(key) + r"-->).*?(<!--/CHART:" + re.escape(key) + r"-->)",
                 re.S)
             if pattern.search(html):
+                found += 1
                 html = pattern.sub(lambda m: m.group(1) + "\n" + build(fig) + "\n" + m.group(2), html)
         if html != original:
-            with open(path, "w") as fh:
-                fh.write(html)
-            written += 1
-            print("อัปเดตกราฟใน", name)
-    if not written:
-        print("ไม่มีไฟล์ไหนมีตัวคั่น <!--CHART:ชื่อ--> ให้เขียน")
+            if check:
+                stale += 1
+                print(f"❌ {name}: กราฟในไฟล์ไม่ตรงกับที่สคริปต์สร้าง — รัน python3 tools/nq_charts.py")
+            else:
+                with open(path, "w") as fh:
+                    fh.write(html)
+                written += 1
+                print("อัปเดตกราฟใน", name)
+    if not found:
+        print("ไม่พบตัวคั่น <!--CHART:ชื่อ--> ในไฟล์ nq-*.html เลย")
+        return 1
+    print(f"กราฟจาก nq-figures.json {found} ชิ้น · ไม่ตรง {stale}" if check else f"กราฟจาก nq-figures.json {found} ชิ้น · เขียนใหม่ {written} ไฟล์")
+    return 1 if stale else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
