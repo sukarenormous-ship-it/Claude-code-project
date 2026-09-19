@@ -3100,6 +3100,326 @@ def fig_m11_ridge_path():
     return "\n".join(out)
 
 
+# ── เครื่องมือวาดผัง (กล่อง · ลูกศร) ─────────────────────────────────────────────────────
+_ARROW_COLS = dict(ink2=INK2, blue=BLUE, green=GREEN, red=RED, amber=AMBER, purple=PURPLE)
+
+
+def arrow_defs():
+    """marker หัวลูกศรครบทุกสีของเล่ม — เรียกครั้งเดียวต่อภาพที่มีลูกศร"""
+    ms = "".join(f'<marker id="ar-{k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{v}"/></marker>' for k, v in _ARROW_COLS.items())
+    return f"<defs>{ms}</defs>"
+
+
+def _arrow_key(col):
+    for k, v in _ARROW_COLS.items():
+        if v == col: return k
+    return "ink2"
+
+
+def dbox(out, x, y, w, h, lines, col=BLUE, fill=0.10, rx=7):
+    """กล่องมุมมน + ข้อความกึ่งกลาง · lines = [(ข้อความ, ขนาด, สี, หนา)] หรือสตริงล้วน"""
+    out.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{rx}" fill="{col}" fill-opacity="{fill}" stroke="{col}" stroke-width="1.8"/>')
+    rows = [(ln, 10.5, INK, True) if isinstance(ln, str) else ln for ln in lines]
+    total = sum(sz + 3.5 for _, sz, _, _ in rows) - 3.5
+    cy = y + h / 2 - total / 2
+    for text, sz, c, bold in rows:
+        cy += sz
+        _txt(out, x + w / 2, cy - sz * 0.22, text, c, "middle", size=sz, bold=bold)
+        cy += 3.5
+
+
+def darrow(out, x1, y1, x2, y2, col=INK2, width=2.0, dash="", label="", lsize=9, ldy=-5, lcol=None):
+    ex = f' stroke-dasharray="{dash}"' if dash else ""
+    out.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{col}" stroke-width="{width}"{ex} marker-end="url(#ar-{_arrow_key(col)})"/>')
+    if label: _txt(out, (x1 + x2) / 2, (y1 + y2) / 2 + ldy, label, lcol or col, "middle", size=lsize, bold=True)
+
+
+def dchain(out, x, y, bw, h, gap, items, col=BLUE, fill=0.10, arrow_col=None):
+    """กล่องเรียงแนวนอนพร้อมลูกศรเชื่อม · items = [lines, …] · คืนพิกัด x กึ่งกลางของแต่ละกล่อง"""
+    xs = []
+    for i, lines in enumerate(items):
+        bx = x + i * (bw + gap)
+        dbox(out, bx, y, bw, h, lines, col=col, fill=fill); xs.append(bx + bw / 2)
+        if i: darrow(out, bx - gap + 2, y + h / 2, bx - 3, y + h / 2, arrow_col or INK2, 2.0)
+    return xs
+
+
+# ── Arbitrage (arb-part1…9) — ผังและแผนภาพ ────────────────────────────────────────────────
+@fig("arb-part1.html", "a1-two-shops")
+def fig_a1_two_shops():
+    buy, sell = 30000.0, 30500.0
+    Wd, H = 560, 250
+    out = svg_open(Wd, H, f"ของชิ้นเดียวกันขายอยู่สองร้านคนละราคา ซื้อจากร้าน A ที่ {buy:,.0f} บาท แล้วขายที่ร้าน B ที่ {sell:,.0f} บาท ได้กำไร {sell-buy:,.0f} บาททันทีโดยไม่ต้องเดาราคา")
+    title(out, Wd, f"Arbitrage คือซื้อถูกขายแพง พร้อมกัน ของชิ้นเดียวกัน — กำไร ฿{sell-buy:,.0f} ที่ไม่ต้องเดาทิศทาง",
+          f"ทองแท่งเดียวกัน · ร้าน A ขาย ฿{buy:,.0f} · ร้าน B รับซื้อ ฿{sell:,.0f} · ทำสองขาพร้อมกัน จึงไม่มีความเสี่ยงราคาระหว่างทาง")
+    out.append(arrow_defs())
+    dbox(out, 40, 74, 180, 92, [("ร้าน A", 13, INK, True), ("ขาย ฿30,000", 11.5, GREEN, True), ("(ถูกกว่า)", 9.5, INK2, False)], col=GREEN, fill=0.12)
+    dbox(out, 340, 74, 180, 92, [("ร้าน B", 13, INK, True), ("รับซื้อ ฿30,500", 11.5, RED, True), ("(แพงกว่า)", 9.5, INK2, False)], col=RED, fill=0.12)
+    darrow(out, 228, 102, 332, 102, GREEN, 2.4, label="ซื้อที่ ฿30,000 →", ldy=-8)
+    darrow(out, 332, 140, 228, 140, RED, 2.4, label="← ขายที่ ฿30,500", ldy=16)
+    dbox(out, 190, 182, 180, 46, [(f"กำไร ฿{sell-buy:,.0f} ต่อแท่ง", 12.5, PURPLE, True), ("ไม่ต้องเดาว่าทองจะขึ้นหรือลง", 9.5, INK2, False)], col=PURPLE, fill=0.10)
+    _txt(out, Wd / 2, 244, "เงื่อนไขที่ทำให้เป็น arb จริง: ของเหมือนกันเป๊ะ · ทำสองขาพร้อมกัน · ส่วนต่างเหลือหลังหักค่าใช้จ่ายทุกอย่าง", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["a1-two-shops"] = dict(profit=sell - buy)
+    return "\n".join(out)
+
+
+def cost_waterfall_data(gross=0.80, comm=0.20, spread=0.40, slip=0.10):
+    steps = [("Gross", gross, GREEN), ("Commission", -comm, RED), ("Bid-Ask Spread", -spread, RED), ("Slippage", -slip, RED)]
+    return steps, gross - comm - spread - slip, comm + spread + slip
+
+
+@fig("arb-part1.html", "a1-cost-waterfall")
+def fig_a1_cost_waterfall():
+    steps, net, total_cost = cost_waterfall_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"แผนภาพน้ำตก: กำไรก่อนหักค่าใช้จ่าย 0.80 บาท ถูกหักค่านายหน้า 0.20 ส่วนต่างราคา 0.40 และ slippage 0.10 เหลือสุทธิ {net:.2f} บาท")
+    title(out, Wd, f"ค่าใช้จ่ายกินส่วนต่างไปเกือบหมด — Gross ฿0.80 เหลือ Net ฿{net:.2f}",
+          f"ค่าใช้จ่ายรวม ฿{total_cost:.2f} = {total_cost/0.80*100:.0f}% ของ gross · นี่คือเหตุผลที่ arb ที่ 'เห็น' บนจอ ส่วนใหญ่ทำจริงแล้วไม่เหลือ")
+    x0, y0, w, h = 60, 62, 460, 170
+    ymax = 0.9
+    def sy(v): return y0 + h - v / ymax * h
+    out.append(f'<g stroke="{GRID}" stroke-width="1">' + "".join(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}"/>' for v in (0.2, 0.4, 0.6, 0.8)) + "</g>")
+    for v in (0, 0.2, 0.4, 0.6, 0.8): _txt(out, x0 - 6, sy(v) + 3.5, f"{v:.1f}", INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    bw = 62; gap = (w - 5 * bw) / 4; run = 0.0
+    for i, (nm, dv, col) in enumerate(steps):
+        bx = x0 + i * (bw + gap)
+        top, bot = (run, run + dv) if dv < 0 else (dv, 0.0)
+        if i == 0: top, bot = dv, 0.0
+        else: top, bot = run, run + dv
+        out.append(f'<rect x="{bx:.1f}" y="{sy(max(top, bot)):.1f}" width="{bw}" height="{abs(sy(top)-sy(bot)):.1f}" rx="3" fill="{col}" opacity="0.75"/>')
+        _txt(out, bx + bw / 2, sy(max(top, bot)) - 6, f"{dv:+.2f}".replace("-", "−"), col, "middle", size=10, bold=True)
+        _txt(out, bx + bw / 2, y0 + h + 15, nm, INK2, "middle", size=9)
+        run = dv if i == 0 else run + dv
+        if i < len(steps) - 1:
+            out.append(f'<line x1="{bx+bw:.1f}" y1="{sy(run):.1f}" x2="{bx+bw+gap:.1f}" y2="{sy(run):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="3 2"/>')
+    bx = x0 + 4 * (bw + gap)
+    out.append(f'<rect x="{bx:.1f}" y="{sy(net):.1f}" width="{bw}" height="{sy(0)-sy(net):.1f}" rx="3" fill="{PURPLE}" opacity="0.8"/>')
+    _txt(out, bx + bw / 2, sy(net) - 6, f"฿{net:.2f}", PURPLE, "middle", size=11, bold=True)
+    _txt(out, bx + bw / 2, y0 + h + 15, "Net", PURPLE, "middle", size=9, bold=True)
+    _txt(out, x0, H - 26, f"฿0.80 − ฿0.20 − ฿0.40 − ฿0.10 = ฿{net:.2f} — ยังเหลือ แต่เหลือน้อยมาก", INK, "start", size=10.5, bold=True)
+    _txt(out, x0, H - 10, "ส่วนต่างที่ต้องเห็นก่อนกดจึงไม่ใช่ 'มากกว่า 0' แต่คือ 'มากกว่าค่าใช้จ่ายทั้งหมด'", RED, "start", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["a1-cost-waterfall"] = dict(net=net, total_cost=total_cost)
+    return "\n".join(out)
+
+
+@fig("arb-part1.html", "a1-short-selling")
+def fig_a1_short_selling():
+    Wd, H = 560, 260
+    out = svg_open(Wd, H, "สี่ขั้นของการขายชอร์ต: ยืมหุ้นจากโบรกเกอร์ ขายที่ 100 บาท รอราคาลงเหลือ 80 บาท ซื้อคืนแล้วคืนหุ้น ได้กำไร 20 บาท")
+    title(out, Wd, "Short Selling — ยืมของมาขายก่อน แล้วค่อยซื้อคืนถูกกว่า: กำไร ฿100 − ฿80 = ฿20",
+          "ขาที่คนใหม่มักลืม: ต้องมีของให้ยืมจริง · มีค่ายืม (borrow cost) · ถูกเรียกคืนกลางทางได้ (recall)")
+    out.append(arrow_defs())
+    items = [[("1. ยืมหุ้น", 11, INK, True), ("จากโบรกเกอร์", 9.5, INK2, False)],
+             [("2. ขาย ฿100", 11, RED, True), ("ในตลาดวันนี้", 9.5, INK2, False)],
+             [("3. รอราคาลง", 11, INK, True), ("฿100 → ฿80", 9.5, INK2, False)],
+             [("4. ซื้อคืน ฿80", 11, GREEN, True), ("แล้วคืนหุ้น", 9.5, INK2, False)]]
+    dchain(out, 34, 80, 112, 68, 27, items, col=BLUE, fill=0.10)
+    dbox(out, 170, 176, 220, 42, [(f"กำไร = ฿100 − ฿80 = ฿20", 12, PURPLE, True)], col=PURPLE, fill=0.10)
+    _txt(out, Wd / 2, 236, "ถ้าราคาขึ้นแทน ขาดทุนไม่จำกัด — เพราะราคาขึ้นได้ไม่มีเพดาน ต่างจากขาลงที่ตันที่ 0", RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 250, "ใน arb ขาชอร์ตมักเป็นขาที่ 'ทำไม่ได้จริง' บ่อยที่สุด — เช็คก่อนเสมอว่ายืมได้และค่ายืมเท่าไร", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("arb-part2a.html", "a2a-two-layers")
+def fig_a2a_two_layers():
+    Wd, H = 560, 280
+    out = svg_open(Wd, H, "สองชั้นของตัวต่อ: ชั้นเครื่องมือกำหนดรูปร่าง payoff ส่วนชั้นแพลตฟอร์มกำหนดเศรษฐศาสตร์ ต้นทุน yield และ margin")
+    title(out, Wd, "ตัวต่อมีสองชั้น — ชั้นบนกำหนด \"รูปร่าง payoff\" ชั้นล่างกำหนด \"เศรษฐศาสตร์\"",
+          "คนส่วนใหญ่มองแค่ชั้นบน · ดีลที่ดีที่สุดหลายดีลมาจากชั้นล่าง (ค่าธรรมเนียม · yield · margin offset)")
+    out.append(arrow_defs())
+    dbox(out, 40, 64, 480, 76, [("Instrument Blocks → กำหนดรูปร่าง Payoff", 11.5, BLUE, True),
+                                ("Spot · Futures · Call · Put · Spread · PM Above · PM Range · Box · Conversion", 9.5, INK2, False),
+                                ("ถามว่า: \"ถ้าราคาเป็นแบบนี้ → ได้หรือเสียเท่าไร\"", 9.5, INK, False)], col=BLUE, fill=0.10)
+    dbox(out, 40, 156, 480, 76, [("Platform Blocks → กำหนดเศรษฐศาสตร์", 11.5, AMBER, True),
+                                 ("Earn Yield · Convert Rate · Promo Rate · Margin Offset · Staking", 9.5, INK2, False),
+                                 ("ถามว่า: \"ต้นทุนเท่าไร · ได้ yield ไหม · ลด margin ได้ไหม\"", 9.5, INK, False)], col=AMBER, fill=0.10)
+    darrow(out, 280, 144, 280, 152, INK2, 2.0)
+    _txt(out, Wd / 2, 250, "ผสมทั้งสองชั้น — payoff เดียวกันบนคนละแพลตฟอร์ม ให้ผลตอบแทนสุทธิไม่เท่ากัน", PURPLE, "middle", size=10, bold=True)
+    _txt(out, Wd / 2, 266, "นี่คือที่มาของ near-arb ส่วนใหญ่: รูปร่างเหมือนกัน แต่เศรษฐศาสตร์ต่างกัน", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("arb-part2a.html", "a2a-claim-ladder")
+def fig_a2a_claim_ladder():
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, "บันไดความแน่นอนของข้อความสี่ระดับ จาก Exact Identity ที่จริงเสมอ ลงไปถึง Heuristic ที่อาจผิดได้")
+    title(out, Wd, "ติดป้ายทุกข้อความก่อนเชื่อ — สี่ระดับ จาก \"จริงเสมอ\" ลงไปถึง \"อาจผิดได้\"",
+          "ป้ายบอกว่าต้องตรวจอะไรก่อนลงเงิน · ข้อความที่ไม่มีป้าย คือข้อความที่ยังไม่ได้ตรวจ")
+    rows = [("[Exact Identity]", "PCP · Box Spread · PM Yes + No = $1 — จริงเสมอ ไม่มีเงื่อนไข", GREEN),
+            ("[Contract-specific]", "จริงตามกติกาของแพลตฟอร์มนั้น — ต้องเปิดอ่านกติกาก่อน", BLUE),
+            ("[Observed]", "เห็นจริงในข้อมูล แต่ตัวเลขเปลี่ยนตามเวลา — ต้องวัดซ้ำ", AMBER),
+            ("[Heuristic]", "กฎทั่วไปที่ใช้ได้บ่อย แต่อาจผิด — ต้องมีแผนรับเมื่อผิด", RED)]
+    for i, (tag, desc, col) in enumerate(rows):
+        y = 62 + i * 52
+        dbox(out, 116, y, 404, 42, [(f"{tag}  {desc}", 9.8, INK, False)], col=col, fill=0.10)
+        _txt(out, 112, y + 25, tag.strip("[]"), col, "end", size=10.5, bold=True)
+    out.append(f'<line x1="70" y1="66" x2="70" y2="{62+3*52+42:.0f}" stroke="{INK2}" stroke-width="1.6" marker-end="url(#ar-ink2)"/>')
+    out.append(arrow_defs())
+    _txt(out, 64, 78, "แน่ใจมาก", GREEN, "end", size=9.5, bold=True)
+    _txt(out, 64, 258, "ไม่แน่ใจ", RED, "end", size=9.5, bold=True)
+    _txt(out, Wd / 2, 284, "ยิ่งลงล่าง ยิ่งต้องมีหลักฐานของตัวเองมากขึ้น และยิ่งต้องลงเงินน้อยลง", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("arb-part2b.html", "a2b-levels")
+def fig_a2b_levels():
+    Wd, H = 560, 250
+    out = svg_open(Wd, H, "ห้าระดับของโอกาส จาก Pure Arb ที่กำไรแน่นอน ไล่ไปถึง Speculation ที่ต้องเดาทิศทาง")
+    title(out, Wd, "ห้าระดับของ \"โอกาส\" — จากกำไรแน่นอน ไล่ไปจนถึงการเดาทิศทาง",
+          "ระดับไม่ได้บอกว่าอันไหนดีกว่า แต่บอกว่าต้องใช้หลักฐานแค่ไหนและลงเงินได้เท่าไร")
+    names = [("Lv.1", "Pure Arb", GREEN), ("Lv.2", "Near-Pure", BLUE), ("Lv.3", "Near-Arb", AMBER),
+             ("Lv.4", "Structured", PURPLE), ("Lv.5", "Speculation", RED)]
+    bw, gap = 92, 10
+    x0 = (Wd - (5 * bw + 4 * gap)) / 2
+    for i, (lv, nm, col) in enumerate(names):
+        dbox(out, x0 + i * (bw + gap), 76, bw, 70, [(lv, 12, col, True), (nm, 10, INK, True)], col=col, fill=0.13)
+    out.append(f'<line x1="{x0}" y1="168" x2="{x0+5*bw+4*gap:.0f}" y2="168" stroke="{INK2}" stroke-width="1.6" marker-end="url(#ar-ink2)"/>')
+    out.append(arrow_defs())
+    _txt(out, x0, 184, "แน่นอนมาก · กำไรล็อกได้", GREEN, "start", size=9.5, bold=True)
+    _txt(out, x0 + 5 * bw + 4 * gap, 184, "ไม่แน่นอน · ต้องเดาทิศทาง", RED, "end", size=9.5, bold=True)
+    _txt(out, Wd / 2, 214, "Lv.1–2 ล็อกกำไรได้ตั้งแต่วันเข้า · Lv.3–4 ต้องมีสมมติฐานและแผนรับเมื่อผิด · Lv.5 คือการเดา", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, 234, "กับดัก: คนมักเรียก Lv.4–5 ว่า \"arb\" เพราะฟังดูปลอดภัยกว่า — ชื่อไม่ได้เปลี่ยนความเสี่ยง", RED, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def stack_data(locked=(("Conversion", 50.0), ("Basis", 30.0), ("Box", 20.0)), income=(("Sell Put", 40.0), ("PM Tail Fade", 50.0))):
+    return sum(v for _, v in locked), sum(v for _, v in income)
+
+
+@fig("arb-part2b.html", "a2b-stack")
+def fig_a2b_stack():
+    locked = [("Conversion", 50.0), ("Basis", 30.0), ("Box", 20.0)]
+    income = [("Sell Put", 40.0), ("PM Tail Fade", 50.0)]
+    L, I = stack_data(tuple(locked), tuple(income))
+    Wd, H = 560, 336
+    out = svg_open(Wd, H, f"แกนกลางที่ล็อกกำไรไว้ {L:.0f} บาท รองรับชั้นหารายได้ที่ขาดทุนมากสุดรวม {I:.0f} บาท ผลรวมจึงไม่ติดลบ")
+    title(out, Wd, f"วางชั้นหารายได้บนแกนที่ล็อกกำไรแล้ว — ขาดทุนมากสุด ฿{I:.0f} ≤ กำไรที่ล็อกไว้ ฿{L:.0f}",
+          f"แกนกลาง: {' + '.join(f'{n} ฿{v:.0f}' for n, v in locked)} = ฿{L:.0f} · ชั้นรายได้เสียได้มากสุด ฿{income[0][1]:.0f} + ฿{income[1][1]:.0f} = ฿{I:.0f}")
+    x0, w = 60, 440
+    dbox(out, x0, 64, w, 56, [("Locked Edge (แกนกลาง)", 11.5, GREEN, True),
+                              (" | ".join(f"{n} ฿{v:.0f}" for n, v in locked) + f"  →  รวม ฿{L:.0f}", 10, INK, False)], col=GREEN, fill=0.14)
+    for i, (nm, v) in enumerate(income):
+        dbox(out, x0, 132 + i * 56, w, 44, [(f"Income Layer {i+1} — {nm}: ขาดทุนมากสุด ฿{v:.0f}", 10.5, AMBER, True)], col=AMBER, fill=0.12)
+    y = 132 + 2 * 56 + 6
+    out.append(f'<line x1="{x0}" y1="{y:.1f}" x2="{x0+w}" y2="{y:.1f}" stroke="{RED}" stroke-width="2" stroke-dasharray="6 3"/>')
+    _txt(out, x0 + w, y - 6, f"เส้นขาดทุนรวมของชั้นรายได้ = ฿{I:.0f}", RED, "end", size=9.5, bold=True)
+    dbox(out, x0, y + 12, w, 42, [(f"฿{I:.0f} ≤ ฿{L:.0f} ✓ ถ้าชั้นรายได้เสียหมด แกนกลางยังคุ้ม — ผลรวมไม่ติดลบ", 10.5, PURPLE, True)], col=PURPLE, fill=0.10)
+    _txt(out, Wd / 2, H - 8, "ถ้าเมื่อไรขาดทุนมากสุดของชั้นรายได้เกินกำไรที่ล็อกไว้ โครงสร้างทั้งก้อนก็กลายเป็นการเดา", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["a2b-stack"] = dict(locked=L, income=I)
+    return "\n".join(out)
+
+
+@fig("arb-part2b.html", "a2b-process")
+def fig_a2b_process():
+    Wd, H = 620, 250
+    out = svg_open(Wd, H, "กระบวนการหกขั้นจากการสังเกตตลาด กรองด้วย regime จับคู่โปรไฟล์ สร้างโครงสร้าง ตรวจสี่ด่าน แล้วจัดอันดับ", multipanel=True)
+    title(out, Wd, "กระบวนการหกขั้น — จาก \"เห็นอะไรบนจอ\" ไปถึง \"ลงไม้ไหนก่อน\"",
+          "ทุกขั้นตัดของที่ไม่ผ่านทิ้ง · สิ่งที่รอดถึงขั้น 6 เท่านั้นที่ได้เงิน")
+    out.append(arrow_defs())
+    steps = [("1. OBSERVE", "ดู products", "อ่าน regime"), ("2. FILTER", "ตัดกลยุทธ์", "ที่ผิด regime"),
+             ("3. MATCH", "จับคู่สิ่งที่เห็น", "กับโปรไฟล์"), ("4. CREATE", "สร้างโครงสร้างใหม่", "ถ้ายังไม่มี"),
+             ("5. VERIFY", "4 ด่าน: ตัวเลข →", "ฐาน → ทำได้ → ข้อมูล"), ("6. RANK", "จัดอันดับ:", "ทำ / รอ / เฝ้า")]
+    bw, gap = 88, 12
+    x0 = (Wd - (6 * bw + 5 * gap)) / 2
+    for i, (a, b, c) in enumerate(steps):
+        bx = x0 + i * (bw + gap)
+        dbox(out, bx, 76, bw, 74, [(a, 10.5, BLUE, True), (b, 8.8, INK2, False), (c, 8.8, INK2, False)], col=BLUE, fill=0.10)
+        if i: darrow(out, bx - gap + 1, 113, bx - 3, 113, INK2, 1.8)
+    _txt(out, Wd / 2, 178, "ทางเข้าอื่น: มีความเชื่ออยู่แล้ว → ข้ามขั้น 1–2 เข้าขั้น 3 ได้เลย แต่ต้องผ่านขั้น 5 เสมอ", PURPLE, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 200, "ขั้นที่คนข้ามบ่อยที่สุดคือ 5 (VERIFY) — และเป็นขั้นเดียวที่กันไม่ให้เสียเงิน", RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 222, "ผลลัพธ์ของขั้น 6 ไม่ใช่ \"ทำทุกอัน\" แต่คือลำดับว่าเงินก้อนถัดไปควรไปไหน", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def ou_force_data(mu=0.0, theta=0.25, xs=(-3, -2, -1, 1, 2, 3)):
+    return [(x, -theta * (x - mu)) for x in xs]
+
+
+@fig("arb-part5.html", "a5-ou-spring")
+def fig_a5_ou_spring():
+    pts = ou_force_data(); theta = 0.25
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, "แรงดึงกลับเข้าหาค่าเฉลี่ยโตตามระยะห่าง ที่ห่าง 3 หน่วยแรงดึงกลับแรงเป็นสามเท่าของที่ห่าง 1 หน่วย")
+    title(out, Wd, "Mean Reversion เหมือนยางยืด — ยิ่งดึงออกไกลจาก μ ยิ่งถูกดึงกลับแรง",
+          f"dx = θ(μ − x)dt + σ dW · θ = {theta} คือความแข็งของยาง · แรงดึงกลับ = θ × ระยะห่าง จึงโตเป็นเส้นตรงตามระยะ")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(-3, "−3σ"), (-2, "−2σ"), (-1, "−1σ"), (0, "μ"), (1, "+1σ"), (2, "+2σ"), (3, "+3σ")], [(-0.9, "−0.9"), (-0.45, ""), (0, "0"), (0.45, ""), (0.9, "+0.9")], "ระยะห่างจากค่าเฉลี่ย", "แรงดึงกลับต่อหน่วยเวลา")
+    out.append(arrow_defs())
+    out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{PURPLE}" stroke-width="1.6" stroke-dasharray="5 3"/>')
+    _zero_line(out, sx, sy, -3, 3)
+    polyline(out, [(sx(-3), sy(theta * 3)), (sx(3), sy(-theta * 3))], BLUE, 2.4)
+    for x, f in pts:
+        col = GREEN if f > 0 else RED
+        _dot(out, sx(x), sy(f), col, 4)
+        darrow(out, sx(x), sy(f), sx(x + (0.55 if f > 0 else -0.55)), sy(f), col, 2.0)
+    _txt(out, sx(-2.9), sy(0.82), "ต่ำกว่า μ → ถูกดึงขึ้น", GREEN, "start", size=9.5, bold=True)
+    _txt(out, sx(2.9), sy(-0.82), "สูงกว่า μ → ถูกดึงลง", RED, "end", size=9.5, bold=True)
+    _txt(out, sx(0) + 6, y0 + 12, "μ = จุดยึด", PURPLE, "start", size=9.5, bold=True)
+    _txt(out, x0, H - 8, f"ครึ่งชีวิตของการกลับเข้าหาค่าเฉลี่ย = ln2 / θ ≈ {np.log(2)/theta:.1f} หน่วยเวลา — บอกว่าไม้หนึ่งควรถือนานแค่ไหน", INK2, "start", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["a5-ou-spring"] = dict(theta=theta, halflife=float(np.log(2) / theta))
+    return "\n".join(out)
+
+
+@fig("arb-part7.html", "a7-pipeline")
+def fig_a7_pipeline():
+    Wd, H = 620, 270
+    out = svg_open(Wd, H, "สายงานของระบบเทรดหกกล่อง จาก data feed ไปถึง position monitor โดยมี kill switch และ position limit คุมอยู่ทุกจุด", multipanel=True)
+    title(out, Wd, "สายงานของระบบ — ทุกกล่องมีทางหยุดของตัวเอง ไม่ใช่แค่กล่องสุดท้าย",
+          "ระบบที่หยุดไม่ได้ ไม่ใช่ระบบอัตโนมัติ แต่คือระเบิดเวลา · คนต้องเห็นและสั่งหยุดได้เสมอ")
+    out.append(arrow_defs())
+    names = [("Data Feed", "ราคา · funding · IV"), ("Scanner", "ไล่หาเงื่อนไข"), ("Signal Gen", "แปลงเป็นไม้"),
+             ("Risk Check", "ผ่าน/ไม่ผ่าน"), ("Order Router", "ส่งคำสั่ง"), ("Position Monitor", "เฝ้าและ rehedge")]
+    bw, gap = 88, 12
+    x0 = (Wd - (6 * bw + 5 * gap)) / 2
+    for i, (a, b) in enumerate(names):
+        bx = x0 + i * (bw + gap)
+        col = RED if a == "Risk Check" else BLUE
+        dbox(out, bx, 72, bw, 62, [(a, 10, col, True), (b, 8.8, INK2, False)], col=col, fill=0.12)
+        if i: darrow(out, bx - gap + 1, 103, bx - 3, 103, INK2, 1.8)
+    dbox(out, x0, 158, 2 * bw + gap, 44, [("Alert System", 10.5, AMBER, True), ("เตือนเมื่อผิดปกติ", 8.8, INK2, False)], col=AMBER, fill=0.12)
+    dbox(out, x0 + 4 * (bw + gap), 158, 2 * bw + gap, 44, [("คน (Human)", 10.5, PURPLE, True), ("ตัดสินใจและสั่งหยุด", 8.8, INK2, False)], col=PURPLE, fill=0.12)
+    darrow(out, x0 + bw, 144, x0 + bw, 154, INK2, 1.8)
+    darrow(out, x0 + 2 * bw + gap + 8, 180, x0 + 4 * (bw + gap) - 4, 180, AMBER, 1.8)
+    _txt(out, Wd / 2, 226, "Kill Switch + Position Limit ต้องมีที่ทุกจุด ไม่ใช่แค่ปลายทาง", RED, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, 246, "คำถามที่ต้องตอบได้ก่อนเปิดระบบ: ถ้ากล่องนี้พัง ระบบจะหยุดเองหรือจะยิงคำสั่งต่อ", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("arb-part9.html", "a9-checklist")
+def fig_a9_checklist():
+    Wd, H = 560, 430
+    out = svg_open(Wd, H, "ผังตัดสินใจเจ็ดข้อ ตั้งแต่ติดป้ายชนิดข้อความ ไปจนถึงลงขนาดครึ่ง Kelly โดยมีทางออก STOP สองจุด")
+    title(out, Wd, "เจอ \"โอกาส\" แล้วทำอะไรต่อ — เจ็ดคำถามที่ต้องผ่านก่อนลงเงิน",
+          "สองข้อที่ทำให้หยุดบ่อยที่สุดคือข้อ 3 (เหลือกำไรจริงไหม) และข้อ 5 (กรณีแย่สุดรับได้ไหม)")
+    out.append(arrow_defs())
+    rows = [("เจอ \"Opportunity\"", INK2, False), ("1. ติดป้าย: [Exact] หรือ [Heuristic]?", BLUE, False),
+            ("2. ระดับไหน: Lv.1–5?", BLUE, False), ("3. หักค่าใช้จ่ายทุกอย่างแล้ว ยังเหลือกำไรไหม?", RED, True),
+            ("4. ดีกว่าทางที่ง่ายที่สุดไหม (baseline)?", BLUE, False), ("5. กรณีแย่สุดรับไหวไหม · อยู่รอดไหม?", RED, True),
+            ("6. ขนาด: Kelly → ใช้ครึ่ง Kelly", AMBER, False), ("7. ลงไม้ + เฝ้า + บันทึก", GREEN, False)]
+    bw = 330; x0 = 80
+    for i, (text, col, stop) in enumerate(rows):
+        y = 58 + i * 42
+        dbox(out, x0, y, bw, 32, [(text, 10, INK, i in (0, 7))], col=col, fill=0.10)
+        if i: darrow(out, x0 + bw / 2, y - 10, x0 + bw / 2, y - 3, INK2, 1.6)
+        if stop:
+            darrow(out, x0 + bw + 4, y + 16, x0 + bw + 52, y + 16, RED, 1.8)
+            _txt(out, x0 + bw + 56, y + 20, "ไม่ → STOP", RED, "start", size=9.5, bold=True)
+    _txt(out, Wd / 2, H - 22, "ไม่มีข้อไหนข้ามได้ — ข้อที่ข้ามคือข้อที่จะทำให้เสียเงิน", RED, "middle", size=10, bold=True)
+    _txt(out, Wd / 2, H - 6, "STOP ไม่ใช่ความล้มเหลว · ส่วนใหญ่ของวันที่ทำงานดี คือวันที่ไม่ได้ลงไม้เลย", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
 
 VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
            ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
