@@ -3942,6 +3942,193 @@ def fig_blending_search():
     return "\n".join(out) + "\n" + _cap(f"ป้ายกำกับ: สเปรดวันถัดไปลู่เข้าจริงไหม · อัตราฐาน {base}% · ค้นหาทั้งหมด {S['จำนวนวิธีรวมทั้งหมด']} วิธี เหลือ {S['จำนวนวิธีที่มีวันกระตุ้นพอ(≥5วัน)']} วิธีที่มีวันกระตุ้นพอจะอ่านค่าได้")
 
 
+# ── statarb: IC lab (Part XIII Alpha Discovery) — ทุกตัวเลขอ่านจาก docs/ic-figures.json ─────
+def _ic():
+    return _load("ic-figures.json")
+
+
+@fig("statarb-ic-lab.html", "ic-vs-null")
+def fig_ic_vs_null():
+    d = _ic(); rows = d["สัญญาณ"]; nd = d["ข้อมูล"]["จำนวนวัน"]
+    Wd, H = 780, 318
+    out = svg_open(Wd, H, f"IC ของสัญญาณหกตัวบน BTC {nd} วัน วางบนแถบฐานจากความสุ่มของแต่ละตัว — ทุกตัวอยู่ในแถบฐานทั้งหมด จึงยังแยกจากความสุ่มไม่ได้", cls="fig")
+    title(out, Wd, "IC ของทั้งหกสัญญาณตกอยู่ในแถบความสุ่มทั้งหมด — ยังไม่มีตัวไหนพิสูจน์ได้",
+          f"BTC {nd} วัน · แถบเทา = ช่วงที่ความสุ่มล้วนให้ได้ 95% ของเวลา (กว้างไม่เท่ากันเพราะจำนวนวันใช้ได้ต่างกัน)")
+    x0, y0, w, h = 210, 58, 470, 190
+    lo, hi = -0.5, 0.5
+    sx = lambda v: x0 + (v - lo) / (hi - lo) * w
+    for v in (-0.4, -0.2, 0.0, 0.2, 0.4):
+        out.append(f'<line x1="{sx(v):.1f}" y1="{y0}" x2="{sx(v):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, sx(v), y0 + h + 15, f"{v:+.1f}".replace("-", "−").replace("+0.0", "0"), INK2, "middle", size=9)
+    bh = h / len(rows) - 10
+    for i, r in enumerate(rows):
+        y = y0 + i * (bh + 10) + 5
+        a95 = r["ฐานสุ่ม"]["absที่95"]
+        out.append(f'<rect x="{sx(-a95):.1f}" y="{y:.1f}" width="{sx(a95)-sx(-a95):.1f}" height="{bh:.1f}" rx="3" fill="{INK2}" opacity="0.13"/>')
+        ic = r["IC1วัน"]
+        col = RED if r["นอกฐาน"] else BLUE
+        out.append(f'<line x1="{sx(ic):.1f}" y1="{y:.1f}" x2="{sx(ic):.1f}" y2="{y+bh:.1f}" stroke="{col}" stroke-width="3"/>')
+        _txt(out, x0 - 10, y + bh / 2 + 4, r["สัญญาณ"], INK, "end", size=9.5, bold=True)
+        _txt(out, sx(ic) - 6, y + bh / 2 + 4, f"{ic:+.3f}".replace("-", "−"), col, "end", size=9, bold=True)
+        _txt(out, sx(a95) + 6, y + bh / 2 + 4, f"ฐาน ±{a95:.2f} · n = {r['จำนวนวัน']}", INK2, "start", size=8.5)
+    out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.4"/>')
+    _txt(out, Wd / 2, y0 + h + 36, "แท่งสีคือ IC ที่วัดได้ · แถบเทาคือสิ่งที่ \"ไม่มีสัญญาณเลย\" ให้ได้ — ไม่มีตัวไหนโผล่พ้นแถบ", INK, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, y0 + h + 54, "อ่านว่า: ยังสรุปไม่ได้ว่าใช้ได้ และยังสรุปไม่ได้ว่าใช้ไม่ได้ — ตัวอย่างน้อยเกินไปทั้งคู่", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    NUMS["ic-vs-null"] = {r["สัญญาณ"][:10]: r["IC1วัน"] for r in rows}
+    return "\n".join(out) + "\n" + _cap(f"IC = Spearman rank correlation ระหว่างสัญญาณวันที่ t กับผลตอบแทนวันถัดไป · ฐานจากการสลับผลตอบแทน {d['วิธีวัด']['จำนวนรอบจำลองฐาน']:,} รอบ")
+
+
+@fig("statarb-ic-lab.html", "ic-selection")
+def fig_ic_selection():
+    d = _ic(); sel = d["ผลของการเลือกตัวที่ดีที่สุด"]; hs = d["การกระจายของmaxABSจากความสุ่ม"]
+    edges, cnt = hs["ขอบช่อง"], hs["จำนวน"]
+    Wd, H = 780, 300
+    out = svg_open(Wd, H, f"ฮิสโทแกรมของ max|IC| จากข้อมูลสุ่มล้วนเมื่อลอง {sel['จำนวนสัญญาณที่ลอง']} สัญญาณ ค่าเฉลี่ย {sel['maxABSเฉลี่ยจากความสุ่ม']} ขณะที่ของจริงได้เพียง {sel['ของจริง']}", cls="fig")
+    title(out, Wd, f"ลองหกสัญญาณแล้วหยิบตัวที่ดีที่สุด — ความสุ่มล้วนยังให้ max|IC| เฉลี่ย {sel['maxABSเฉลี่ยจากความสุ่ม']:.2f}",
+          f"สลับผลตอบแทน {hs['จำนวนรอบ']:,} รอบ · แต่ละรอบวัด IC ทั้ง {sel['จำนวนสัญญาณที่ลอง']} ตัวแล้วเก็บค่าสัมบูรณ์ที่ใหญ่ที่สุด · ของจริงได้ {sel['ของจริง']:.3f}")
+    x0, y0, w, h = 60, 62, 660, 168
+    lo, hi = edges[0], edges[-1]
+    sx = lambda v: x0 + (v - lo) / (hi - lo) * w
+    mx = max(cnt)
+    sy = lambda c: y0 + h - c / mx * h
+    for i, c in enumerate(cnt):
+        a, b = edges[i], edges[i + 1]
+        col = GREEN if b <= sel["ของจริง"] else INK2
+        out.append(f'<rect x="{sx(a)+0.6:.1f}" y="{sy(c):.1f}" width="{sx(b)-sx(a)-1.2:.1f}" height="{sy(0)-sy(c):.1f}" fill="{col}" opacity="0.55"/>')
+    for v in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7):
+        if lo <= v <= hi: _txt(out, sx(v), y0 + h + 15, f"{v:.1f}", INK2, "middle", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.2"/>')
+    for v, col, lab, dy in ((sel["ของจริง"], RED, f"ของจริง {sel['ของจริง']:.3f}", 0),
+                            (sel["maxABSเฉลี่ยจากความสุ่ม"], PURPLE, f"ค่าเฉลี่ยจากความสุ่ม {sel['maxABSเฉลี่ยจากความสุ่ม']:.3f}", 16),
+                            (sel["maxABSที่95จากความสุ่ม"], AMBER, f"95% ของความสุ่ม {sel['maxABSที่95จากความสุ่ม']:.3f}", 32)):
+        out.append(f'<line x1="{sx(v):.1f}" y1="{y0}" x2="{sx(v):.1f}" y2="{y0+h}" stroke="{col}" stroke-width="2" stroke-dasharray="5 3"/>')
+        _txt(out, sx(v) + 6, y0 + 14 + dy, lab, col, "start", size=9.5, bold=True)
+    _txt(out, x0 + w / 2, y0 + h + 34, "max|IC| ที่ได้จากข้อมูลที่ไม่มีความสัมพันธ์จริงเลย", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, y0 + h + 56, f"ของจริงอยู่ที่เปอร์เซ็นไทล์ {sel['เปอร์เซ็นไทล์ของของจริง']:.1f} ของความสุ่ม — เล็กกว่าที่ความสุ่มให้ตามปกติด้วยซ้ำ", RED, "middle", size=10.5, bold=True)
+    out.append("</svg>")
+    NUMS["ic-selection"] = {"mean_null": sel["maxABSเฉลี่ยจากความสุ่ม"], "obs": sel["ของจริง"], "pct": sel["เปอร์เซ็นไทล์ของของจริง"]}
+    return "\n".join(out) + "\n" + _cap(f"ยิ่งลองหลายสัญญาณ ยิ่งได้ค่าสูงโดยไม่ต้องมีสัญญาณจริง — ฐานที่ถูกจึงต้องเป็นฐานของ \"ตัวที่ดีที่สุด\" ไม่ใช่ฐานของตัวเดียว")
+
+
+@fig("statarb-ic-lab.html", "ic-samplesize")
+def fig_ic_samplesize():
+    d = _ic(); cur = d["เส้นขนาดตัวอย่าง"]; best = d["สัญญาณที่ดีที่สุด"]
+    ics, ns = cur["IC"], cur["จำนวนวันที่ต้องใช้"]
+    have = best["จำนวนวัน"]
+    # จำนวนวันที่ต้องใช้ "ที่ IC ที่วัดได้จริง" — อ่านจากตารางใน JSON ไม่ใช่ปัดไปจุดใกล้ ๆ บนเส้น
+    need = next(v for k, v in d["ขนาดตัวอย่างที่ต้องใช้"].items() if "ที่วัดได้" in k)
+    Wd, H = 780, 300
+    out = svg_open(Wd, H, f"เส้นจำนวนวันที่ต้องใช้เพื่อแยก IC ออกจากศูนย์ ยิ่ง IC เล็กยิ่งต้องใช้วันมากแบบกำลังสอง ที่ IC {abs(best['IC']):.3f} ต้องใช้ราว {need:,} วัน ขณะที่มีอยู่ {have} วัน", cls="fig")
+    title(out, Wd, f"IC เล็กลงครึ่งหนึ่ง ต้องใช้วันมากขึ้นสี่เท่า — ที่ IC {abs(best['IC']):.3f} ต้องใช้ราว {need:,} วัน",
+          f"{cur['สูตร']} · ข้อมูลที่มีจริง {have} วัน จึงห่างจากที่ต้องใช้อยู่ราว {need/have:.0f} เท่า")
+    x0, y0, w, h = 66, 60, 650, 175
+    lo, hi = 0.03, 0.42
+    ylo, yhi = 1.5, 4.2      # log10 ของจำนวนวัน
+    sx = lambda v: x0 + (v - lo) / (hi - lo) * w
+    sy = lambda n: y0 + h - (np.log10(n) - ylo) / (yhi - ylo) * h
+    for e, lab in ((2, "100 วัน"), (3, "1,000 วัน"), (4, "10,000 วัน")):
+        out.append(f'<line x1="{x0}" y1="{sy(10**e):.1f}" x2="{x0+w}" y2="{sy(10**e):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(10 ** e) + 4, lab, INK2, "end", size=9)
+    for v in (0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40):
+        _txt(out, sx(v), y0 + h + 15, f"{v:.2f}", INK2, "middle", size=9)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(ics, ns)], BLUE, 2.6)
+    out.append(f'<line x1="{x0}" y1="{sy(have):.1f}" x2="{x0+w}" y2="{sy(have):.1f}" stroke="{RED}" stroke-width="2" stroke-dasharray="6 3"/>')
+    _txt(out, x0 + 8, sy(have) - 7, f"ข้อมูลที่มีจริง {have} วัน", RED, "start", size=9.5, bold=True)
+    _dot(out, sx(abs(best["IC"])), sy(need))
+    _txt(out, sx(abs(best["IC"])) + 10, sy(need) - 20, f"IC {abs(best['IC']):.3f} → ต้องใช้ {need:,} วัน", PURPLE, "start", size=9.5, bold=True)
+    _txt(out, sx(abs(best["IC"])) + 10, sy(need) - 6, f"≈ {need/252:.1f} ปีทำการ", PURPLE, "start", size=9)
+    _txt(out, x0 + w / 2, y0 + h + 34, "ขนาดของ IC ที่อยากแยกออกจากศูนย์", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, y0 + h + 56, "นี่คือเหตุผลที่ IC เล็ก ๆ ต้องใช้ข้อมูลมหาศาล — ไม่ใช่เพราะสูตรยาก แต่เพราะเสียงรบกวนดังกว่าสัญญาณมาก", INK, "middle", size=10, bold=True)
+    out.append("</svg>")
+    NUMS["ic-samplesize"] = {"need": need, "have": have}
+    return "\n".join(out) + "\n" + _cap(f"สูตรเดียวกับ nq-tool-samplesize และบท edge เสื่อม · z_α = 1.96 (two-sided 5%) · z_β = 1.2816 (power 90%)")
+
+
+@fig("statarb-ic-lab.html", "ic-tercile")
+def fig_ic_tercile():
+    d = _ic(); T = d["กลุ่มสามส่วนของสัญญาณที่ดีที่สุด"]; best = d["สัญญาณที่ดีที่สุด"]
+    gs = T["กลุ่ม"]
+    Wd, H = 780, 290
+    out = svg_open(Wd, H, f"แท่งผลตอบแทนวันถัดไปเฉลี่ยของสามกลุ่มที่แบ่งตาม {best['ชื่อ']} กลุ่มสัญญาณสูงสุดกลับให้ผลตอบแทนติดลบ ส่วนต่างสูงสุดลบต่ำสุดคือ {T['ส่วนต่างสูงสุดลบต่ำสุดเปอร์เซ็นต์']}%", cls="fig")
+    title(out, Wd, f"แบ่งวันตาม \"{best['ชื่อ']}\" เป็นสามกลุ่ม — กลุ่มสัญญาณแรงที่สุดกลับได้ผลตอบแทนติดลบ",
+          f"ผลตอบแทนวันถัดไปเฉลี่ยของแต่ละกลุ่ม · แต่ละกลุ่มมีแค่ 12–13 วัน จึงยังไม่ใช่หลักฐาน")
+    x0, y0, w, h = 130, 62, 520, 150
+    vals = [g["ผลตอบแทนเฉลี่ยเปอร์เซ็นต์"] for g in gs]
+    lo, hi = min(min(vals) - 0.3, -0.5), max(max(vals) + 0.4, 1.2)
+    sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
+    for v in np.arange(np.ceil(lo * 2) / 2, hi, 0.5):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(v) + 4, f"{v:+.1f}%".replace("-", "−").replace("+0.0", "0.0"), INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    bw = w / len(gs) - 46
+    for i, g in enumerate(gs):
+        cx = x0 + i * (w / len(gs)) + 23
+        v = g["ผลตอบแทนเฉลี่ยเปอร์เซ็นต์"]
+        col = GREEN if v > 0 else RED
+        out.append(f'<rect x="{cx:.1f}" y="{sy(max(v, 0)):.1f}" width="{bw:.1f}" height="{abs(sy(v)-sy(0)):.1f}" rx="3" fill="{col}" opacity="0.72"/>')
+        _txt(out, cx + bw / 2, sy(v) + (-7 if v > 0 else 15), f"{v:+.2f}%".replace("-", "−"), col, "middle", size=11, bold=True)
+        _txt(out, cx + bw / 2, y0 + h + 17, f"สัญญาณ{g['กลุ่ม']}", INK, "middle", size=9.5, bold=True)
+        _txt(out, cx + bw / 2, y0 + h + 31, f"n = {g['จำนวนวัน']} วัน", INK2, "middle", size=9)
+    _txt(out, Wd / 2, y0 + h + 56, f"ส่วนต่างกลุ่มสูงสุด − ต่ำสุด = {T['ส่วนต่างสูงสุดลบต่ำสุดเปอร์เซ็นต์']:+.2f}% ต่อวัน · ต้นทุนไป-กลับ {T['ต้นทุนไปกลับเปอร์เซ็นต์']}% → เหลือ {T['เหลือหลังต้นทุนเปอร์เซ็นต์']:+.2f}%".replace("-", "−"), RED, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, y0 + h + 74, "ส่วนต่างติดลบแปลว่า \"เทรดกลับทาง\" ไม่ใช่ข้อสรุป — เพราะทั้ง IC และส่วนต่างยังอยู่ในช่วงที่ความสุ่มให้ได้", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    NUMS["ic-tercile"] = {"spread": T["ส่วนต่างสูงสุดลบต่ำสุดเปอร์เซ็นต์"], "after_cost": T["เหลือหลังต้นทุนเปอร์เซ็นต์"]}
+    return "\n".join(out) + "\n" + _cap(f"แบ่งสามกลุ่มเท่า ๆ กันตามค่าสัญญาณ แล้วดูผลตอบแทนวันถัดไป · ต้นทุนไป-กลับ {T['ต้นทุนไปกลับเปอร์เซ็นต์']}% ชุดเดียวกับที่ \"มิน\" ใช้ทั้งเล่ม")
+
+
+@fig("statarb-ic-lab.html", "ic-decay")
+def fig_ic_decay():
+    d = _ic(); rows = d["สัญญาณ"]
+    hs = ["1 วัน", "3 วัน", "5 วัน", "10 วัน"]
+    last = hs[-1]
+    out_n = sum(1 for r in rows if r["ทุกhorizon"].get(last, {}).get("นอกฐาน"))
+    neffs = [r["ทุกhorizon"][last]["จำนวนวันอิสระโดยประมาณ"] for r in rows if last in r["ทุกhorizon"]]
+    Wd, H = 780, 352
+    out = svg_open(Wd, H, f"เส้น IC ของสัญญาณหกตัวที่ระยะล่วงหน้า 1 3 5 และ 10 วัน · ที่ 10 วันมี {out_n} ใน {len(rows)} ตัวที่ IC ดิ่งจนหลุดแถบฐาน พร้อมกันทั้งหมด ทั้งที่จำนวนวันอิสระเหลือเพียง {min(neffs)} ถึง {max(neffs)} วัน", cls="fig")
+    title(out, Wd, f"ยืดระยะเป็น 10 วัน แล้ว {out_n} ใน {len(rows)} ตัว \"ผ่าน\" พร้อมกัน — นั่นคืออาการว่าการทดสอบพัง",
+          f"ถ้าเป็น edge จริง ไม่มีเหตุผลที่สัญญาณคนละชนิดจะติดลบแรงพร้อมกันเป๊ะ ๆ ที่ระยะเดียว")
+    x0, y0, w, h = 62, 62, 505, 190
+    lo, hi = -0.85, 0.32
+    sx = lambda i: x0 + i / (len(hs) - 1) * w
+    sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
+    for v in (-0.8, -0.6, -0.4, -0.2, 0.0, 0.2):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(v) + 4, f"{v:+.1f}".replace("-", "−").replace("+0.0", "0"), INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    for i, lab in enumerate(hs):
+        _txt(out, sx(i), y0 + h + 16, lab, INK, "middle", size=9.5, bold=True)
+    _txt(out, x0 + w / 2, y0 + h + 32, "ระยะล่วงหน้าที่ใช้วัด IC", INK2, "middle", size=9)
+    cols = [BLUE, RED, GREEN, AMBER, PURPLE, INK2]
+    for j, r in enumerate(rows):
+        c = cols[j % len(cols)]
+        pts = [(sx(i), sy(r["ทุกhorizon"][lab]["IC"])) for i, lab in enumerate(hs) if lab in r["ทุกhorizon"]]
+        polyline(out, pts, c, 1.8, shadow=False)
+        for k, (px_, py_) in enumerate(pts):
+            ring = hs[k] == last and r["ทุกhorizon"][last]["นอกฐาน"]
+            out.append(f'<circle cx="{px_:.1f}" cy="{py_:.1f}" r="{4.6 if ring else 2.6:.1f}" fill="{c}"'
+                       + (f' stroke="{RED}" stroke-width="2"/>' if ring else "/>"))
+    legend(out, [(cols[j % len(cols)], r["สัญญาณ"], "") for j, r in enumerate(rows[:3])], x0, H - 28)
+    legend(out, [(cols[(j + 3) % len(cols)], r["สัญญาณ"], "") for j, r in enumerate(rows[3:])], x0, H - 10)
+    bx = x0 + w + 22
+    out.append(f'<rect x="{bx-8}" y="{y0-4}" width="{Wd-bx-6:.0f}" height="196" rx="8" fill="{RED}" opacity="0.06"/>')
+    _txt(out, bx, y0 + 14, f"ที่ 10 วัน: {out_n} ใน {len(rows)} ตัว", RED, "start", size=10, bold=True)
+    _txt(out, bx, y0 + 30, "หลุดแถบฐานพร้อมกัน", RED, "start", size=10, bold=True)
+    for k, line in enumerate(["ผลตอบแทน 10 วันของ", "วันติดกันซ้อนทับกัน 9 ใน 10",
+                              f"วันอิสระจริงเหลือ {min(neffs)}–{max(neffs)} วัน", "",
+                              "การสลับป้ายทำลายการ", "ซ้อนทับนั้นทิ้ง แถบฐาน", "จึงแคบเกินจริง"]):
+        if line:
+            _txt(out, bx, y0 + 54 + k * 14, line, INK, "start", size=8.8)
+    _txt(out, bx, y0 + 162, "วงแดง = หลุดฐาน", RED, "start", size=8.5, bold=True)
+    _txt(out, bx, y0 + 176, "(ที่ไม่ควรเชื่อ)", INK2, "start", size=8.5)
+    _txt(out, Wd / 2, y0 + h + 54, "อ่านว่า: ที่ 1 วันไม่มีตัวไหนผ่าน · พอยืดระยะจนตัวอย่างซ้อนทับ เกือบทุกตัวผ่าน — การทดสอบเปลี่ยน ไม่ใช่สัญญาณเปลี่ยน", INK, "middle", size=10, bold=True)
+    out.append("</svg>")
+    NUMS["ic-decay"] = {"out_at_10": out_n, "n_signals": len(rows), "neff_lo": min(neffs), "neff_hi": max(neffs)}
+    return "\n".join(out) + "\n" + _cap("ทุกเส้นคำนวณจากราคาชุดเดียวกัน · แถบฐานของแต่ละระยะได้จากการสลับผลตอบแทนล่วงหน้าของระยะนั้น ซึ่งเป็นฐานที่แคบเกินจริงเมื่อผลตอบแทนซ้อนทับกัน")
+
+
+
+
 
 VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
            ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
