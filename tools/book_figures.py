@@ -130,7 +130,6 @@ expect("pm-part8.html", "EV B", f"EV = 0.3×10 + 0.7×(-2) = <strong>+{0.3*10-0.
 
 # ── Arbitrage (arb-part1…8) ─────────────────────────────────────────────────────
 expect("arb-part1.html", "ทอง A/B", f"<strong>กำไร ฿{30500-30000} ทันที")
-expect("arb-part1.html", "Gross/Net", f"Gross ฿0.80 − ค่าใช้จ่าย ฿0.70 = Net ฿{0.80-0.70:.2f}")
 expect("arb-part1.html", "BTC 4 ขา", f"(2,100,000 + 2,105,000) = ฿{round((2100000+2105000)*0.001):,} → กำไร ฿{5000-200-round((2100000+2105000)*0.001)}")
 expect("arb-part1.html", "commission 4 ขา", f"Net=500−4(50)−4(80)=500−{4*50+4*80}= −฿{4*50+4*80-500} ขาดทุน!")
 expect("arb-part1.html", "PV(K) 5% 1 ปี", f"100 × {math.exp(-0.05):.4f} = ฿{100*math.exp(-0.05):.2f}")

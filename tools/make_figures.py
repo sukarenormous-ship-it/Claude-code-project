@@ -3164,7 +3164,8 @@ def fig_a1_two_shops():
     return "\n".join(out)
 
 
-def cost_waterfall_data(gross=0.80, comm=0.20, spread=0.40, slip=0.10):
+def cost_waterfall_data(gross=0.80, comm=0.20, spread=0.50, slip=0.20):
+    """ตัวเลขชุดเดียวกับกล่อง "กฎทอง" ในบท: arb 4 ขา · gross ฿0.80 → หักแล้วขาดทุน ฿0.10"""
     steps = [("Gross", gross, GREEN), ("Commission", -comm, RED), ("Bid-Ask Spread", -spread, RED), ("Slippage", -slip, RED)]
     return steps, gross - comm - spread - slip, comm + spread + slip
 
@@ -3173,14 +3174,14 @@ def cost_waterfall_data(gross=0.80, comm=0.20, spread=0.40, slip=0.10):
 def fig_a1_cost_waterfall():
     steps, net, total_cost = cost_waterfall_data()
     Wd, H = 560, 300
-    out = svg_open(Wd, H, f"แผนภาพน้ำตก: กำไรก่อนหักค่าใช้จ่าย 0.80 บาท ถูกหักค่านายหน้า 0.20 ส่วนต่างราคา 0.40 และ slippage 0.10 เหลือสุทธิ {net:.2f} บาท")
-    title(out, Wd, f"ค่าใช้จ่ายกินส่วนต่างไปเกือบหมด — Gross ฿0.80 เหลือ Net ฿{net:.2f}",
-          f"ค่าใช้จ่ายรวม ฿{total_cost:.2f} = {total_cost/0.80*100:.0f}% ของ gross · นี่คือเหตุผลที่ arb ที่ 'เห็น' บนจอ ส่วนใหญ่ทำจริงแล้วไม่เหลือ")
+    out = svg_open(Wd, H, f"แผนภาพน้ำตก: กำไรก่อนหักค่าใช้จ่าย 0.80 บาท ถูกหักค่านายหน้า 0.20 ส่วนต่างราคา 0.50 และ slippage 0.20 จึงติดลบ {net:.2f} บาท")
+    title(out, Wd, f"ดูเหมือนกำไร ฿0.80 — หักค่าใช้จ่ายแล้วขาดทุนจริง ฿{abs(net):.2f}",
+          f"arb 4 ขา จึงจ่ายค่านายหน้าและสเปรดสี่รอบ · ค่าใช้จ่ายรวม ฿{total_cost:.2f} = {total_cost/0.80*100:.0f}% ของ gross")
     x0, y0, w, h = 60, 62, 460, 170
-    ymax = 0.9
-    def sy(v): return y0 + h - v / ymax * h
+    ymax, ymin = 0.9, -0.2
+    def sy(v): return y0 + h - (v - ymin) / (ymax - ymin) * h
     out.append(f'<g stroke="{GRID}" stroke-width="1">' + "".join(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}"/>' for v in (0.2, 0.4, 0.6, 0.8)) + "</g>")
-    for v in (0, 0.2, 0.4, 0.6, 0.8): _txt(out, x0 - 6, sy(v) + 3.5, f"{v:.1f}", INK2, "end", size=9)
+    for v in (-0.2, 0, 0.2, 0.4, 0.6, 0.8): _txt(out, x0 - 6, sy(v) + 3.5, f"{v:.1f}".replace("-", "−"), INK2, "end", size=9)
     out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
     bw = 62; gap = (w - 5 * bw) / 4; run = 0.0
     for i, (nm, dv, col) in enumerate(steps):
@@ -3195,11 +3196,13 @@ def fig_a1_cost_waterfall():
         if i < len(steps) - 1:
             out.append(f'<line x1="{bx+bw:.1f}" y1="{sy(run):.1f}" x2="{bx+bw+gap:.1f}" y2="{sy(run):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="3 2"/>')
     bx = x0 + 4 * (bw + gap)
-    out.append(f'<rect x="{bx:.1f}" y="{sy(net):.1f}" width="{bw}" height="{sy(0)-sy(net):.1f}" rx="3" fill="{PURPLE}" opacity="0.8"/>')
-    _txt(out, bx + bw / 2, sy(net) - 6, f"฿{net:.2f}", PURPLE, "middle", size=11, bold=True)
-    _txt(out, bx + bw / 2, y0 + h + 15, "Net", PURPLE, "middle", size=9, bold=True)
-    _txt(out, x0, H - 26, f"฿0.80 − ฿0.20 − ฿0.40 − ฿0.10 = ฿{net:.2f} — ยังเหลือ แต่เหลือน้อยมาก", INK, "start", size=10.5, bold=True)
-    _txt(out, x0, H - 10, "ส่วนต่างที่ต้องเห็นก่อนกดจึงไม่ใช่ 'มากกว่า 0' แต่คือ 'มากกว่าค่าใช้จ่ายทั้งหมด'", RED, "start", size=9.5, bold=True)
+    col_net = PURPLE if net > 0 else RED
+    out.append(f'<rect x="{bx:.1f}" y="{sy(max(net, 0)):.1f}" width="{bw}" height="{abs(sy(net)-sy(0)):.1f}" rx="3" fill="{col_net}" opacity="0.8"/>')
+    _txt(out, bx + bw / 2, sy(min(net, 0)) + 14, f"−฿{abs(net):.2f}" if net < 0 else f"฿{net:.2f}", col_net, "middle", size=11, bold=True)
+    _txt(out, bx + bw / 2, y0 + h + 15, "Net", col_net, "middle", size=9, bold=True)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    _txt(out, x0, H - 26, f"฿0.80 − ฿0.20 − ฿0.50 − ฿0.20 = −฿{abs(net):.2f} — ส่วนต่างที่เห็นบนจอหายไปหมดแล้วยังติดลบ", INK, "start", size=10.5, bold=True)
+    _txt(out, x0, H - 10, "เกณฑ์ก่อนกดจึงไม่ใช่ \"มากกว่า 0\" แต่คือ \"มากกว่าค่าใช้จ่ายทั้งหมดของทุกขา\"", RED, "start", size=9.5, bold=True)
     out.append("</svg>")
     NUMS["a1-cost-waterfall"] = dict(net=net, total_cost=total_cost)
     return "\n".join(out)
@@ -3363,6 +3366,7 @@ def fig_a5_ou_spring():
     _txt(out, sx(-2.9), sy(0.82), "ต่ำกว่า μ → ถูกดึงขึ้น", GREEN, "start", size=9.5, bold=True)
     _txt(out, sx(2.9), sy(-0.82), "สูงกว่า μ → ถูกดึงลง", RED, "end", size=9.5, bold=True)
     _txt(out, sx(0) + 6, y0 + 12, "μ = จุดยึด", PURPLE, "start", size=9.5, bold=True)
+    _txt(out, sx(-2.9), sy(-0.62), "เส้นน้ำเงิน = แรงดึงกลับ θ(μ − x)", BLUE, "start", size=9.5, bold=True)
     _txt(out, x0, H - 8, f"ครึ่งชีวิตของการกลับเข้าหาค่าเฉลี่ย = ln2 / θ ≈ {np.log(2)/theta:.1f} หน่วยเวลา — บอกว่าไม้หนึ่งควรถือนานแค่ไหน", INK2, "start", size=9, italic=True)
     out.append("</svg>")
     NUMS["a5-ou-spring"] = dict(theta=theta, halflife=float(np.log(2) / theta))

@@ -728,6 +728,14 @@ expect("theory-extra.html", "MI bias", f"81/(500 × 0.693) ≈ <strong>{81/(2*25
 expect("theory-extra.html", "pinball", f"(10 − 8) × 0.9 = {2*0.9:.1f} · ทำนาย 12 → (10 − 12) × (0.9 − 1) = {(-2)*(0.9-1):.1f}")
 print(f"theory-extra MI={-0.5*math.log(1-0.09):.4f}/{-0.5*math.log(1-0.64):.4f} H(Y)={Hy:.3f} HMM pred={pred_:.2f} post={post_:.3f} LR={ls_/lc_:.1f} p*={p_star:.3f}")
 
+# ── Arb เล่ม 1 §2.3 ค่าใช้จ่าย — ตัวเลขในกล่อง "กฎทอง" ต้องตรงกับภาพน้ำตก ────────────────
+import make_figures as _mf  # noqa: E402
+
+_steps, _net, _cost = _mf.cost_waterfall_data()
+print(f"Arb §2.3   gross={_steps[0][1]:.2f} ค่าใช้จ่ายรวม={_cost:.2f} net={_net:+.2f}")
+expect("arb-part1.html", "§2.3 กฎทอง", f"Arb ที่ดูเหมือนกำไร ฿{_steps[0][1]:.2f} อาจขาดทุนจริง ฿{abs(_net):.2f} หลังหักค่าใช้จ่าย")
+
+
 
 def main():
     if "--print" in sys.argv:
