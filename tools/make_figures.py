@@ -937,6 +937,545 @@ def fig_theory_chain():
     return "\n".join(out)
 
 
+# ══ เครื่องวาด payoff diagram — ทุกภาพ payoff ในคลังวาดจาก spec ของขา ═══════════════════════
+from payoff_lib import Leg, value, strikes, segments, summary, net_premium, slope_between  # noqa: E402
+
+LEG_COLORS = [GREEN, RED, AMBER, PURPLE, "#0891b2", "#be185d"]
+KIND_TH = {"call": "Call", "put": "Put", "stock": "Stock", "bond": "Bond", "dcall": "Digital Call", "dput": "Digital Put"}
+
+
+def leg_name(l):
+    side = "Long" if l.qty > 0 else "Short"
+    n = "" if abs(l.qty) == 1 else f"{abs(l.qty):g}× "
+    if l.kind == "stock": return f"{side} {n}Stock @{l.K:g}"
+    if l.kind == "bond": return f"Bond เงินต้น {l.K:g}"
+    return f"{side} {n}{KIND_TH[l.kind]}({l.K:g})"
+
+
+def fmt(v):
+    s = f"{v:+g}" if abs(v) < 1e6 else f"{v:+.3g}"
+    return s.replace("-", "−")
+
+
+def _pts(legs, lo, hi, with_premium):
+    """จุดของเส้น payoff ระหว่าง lo..hi รวมรอยกระโดดของ digital"""
+    ks = [k for k in strikes(legs) if lo < k < hi]
+    pts = [(lo, value(legs, lo, with_premium))]
+    for k in ks:
+        fl, fr = value(legs, k - 1e-9, with_premium), value(legs, k + 1e-9, with_premium)
+        pts.append((k, fl))
+        if abs(fl - fr) > 1e-9: pts.append((k, fr))
+    pts.append((hi, value(legs, hi, with_premium)))
+    return pts
+
+
+def _nice_ticks(lo, hi, n=5):
+    span = hi - lo
+    if span <= 0: return [lo]
+    raw = span / n; mag = 10 ** np.floor(np.log10(raw)); step = mag * min([1, 2, 2.5, 5, 10], key=lambda m: abs(m * mag - raw))
+    a = np.floor(lo / step) * step; b = np.ceil(hi / step) * step
+    return [round(v, 6) for v in np.arange(a, b + step / 2, step)]
+
+
+def _draw_payoff(out, legs, box, *, with_premium=True, show_legs=True, slopes=False, overlays=(), fill=True,
+                 callouts=True, xr=None, notes=(), total_color=BLUE, total_label=None, ylab="P/L (฿)", xlab="ราคาสินทรัพย์ S ณ วันหมดอายุ", xticks=None, be_below=False, unbounded_dy=-8,
+                 strike_fmt=None, compact=False, ytick_fmt=None):
+    x0, y0, w, h = box
+    all_legs = list(legs) + [l for o in overlays for l in o["legs"]]
+    ks = strikes(all_legs) or [100]
+    tick_ks = list(xticks) if xticks is not None else ks  # สไตรก์ที่ติดป้ายบนแกน X (ค่าเริ่มต้น = ทุกสไตรก์รวม overlay)
+    sm = summary(legs, with_premium)
+    if xr is None:
+        span = max(ks) - min(ks); pad = max(10.0, 0.6 * span) if span else 30.0
+        lo, hi = min(ks) - pad, max(ks) + pad
+        for b in sm["breakevens"]:
+            lo, hi = min(lo, b - pad * 0.4), max(hi, b + pad * 0.4)
+        lo = max(0.0, lo)
+    else:
+        lo, hi = xr
+    lines = [(legs, with_premium, total_color, 2.75, "", True)]
+    for o in overlays:
+        lines.append((o["legs"], o.get("with_premium", with_premium), o.get("color", INK2), o.get("width", 1.8), o.get("dash", "6 3"), False))
+    leg_lines = [([l], with_premium, LEG_COLORS[i % len(LEG_COLORS)], 1.5, "5 3") for i, l in enumerate(legs)] if show_legs and len(legs) > 1 else []
+    ys = [0.0]
+    for lg, wp, *_ in lines + [(a, b, None) for a, b, *_ in leg_lines]:
+        ys += [y for _, y in _pts(lg, lo, hi, wp)]
+    ymin, ymax = min(ys), max(ys)
+    if ymax - ymin < 1e-9: ymin, ymax = ymin - 10, ymax + 10
+    padv = (ymax - ymin) * 0.12; ymin -= padv; ymax += padv
+    yt = _nice_ticks(ymin, ymax, 4 if compact else 5); ymin, ymax = min(yt), max(yt)
+    def sx(v): return x0 + (v - lo) / (hi - lo) * w
+    def sy(v): return y0 + h - (v - ymin) / (ymax - ymin) * h
+    fs = 8.5 if compact else 9.5
+    # grid + แกน
+    out.append(f'<g stroke="{GRID}" stroke-width="1">' + "".join(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}"/>' for v in yt if abs(v) > 1e-9) + "</g>")
+    for k in tick_ks:
+        if lo <= k <= hi: out.append(f'<line x1="{sx(k):.1f}" y1="{y0}" x2="{sx(k):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1" stroke-dasharray="3 3"/>')
+    out.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.2"/>')
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    for v in yt:
+        lab = (ytick_fmt(v) if ytick_fmt else fmt(v).replace("+", ""))
+        out.append(f'<text x="{x0-5}" y="{sy(v)+3.5:.1f}" text-anchor="end" {FONT} font-size="{fs}" fill="{INK2}">{lab}</text>')
+    for k in tick_ks:
+        if lo <= k <= hi:
+            lab = strike_fmt(k) if strike_fmt else f"{k:g}"
+            out.append(f'<text x="{sx(k):.1f}" y="{y0+h+13}" text-anchor="middle" {FONT} font-size="{fs}" fill="{INK}" font-weight="600">{lab}</text>')
+    if not compact:
+        out.append(f'<text x="{x0+w}" y="{y0+h+27}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">{xlab}</text>')
+        out.append(f'<text transform="rotate(-90)" x="{-(y0 + h/2):.1f}" y="{x0-38}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">{ylab}</text>')
+    # พื้นที่กำไร/ขาดทุนใต้เส้นรวม
+    tp = _pts(legs, lo, hi, with_premium)
+    if fill:
+        dense = []
+        for (xa, ya), (xb, yb) in zip(tp[:-1], tp[1:]):
+            dense.append((xa, ya))
+            if ya * yb < 0 and xb != xa: dense.append((xa + (0 - ya) * (xb - xa) / (yb - ya), 0.0))
+        dense.append(tp[-1])
+        for (xa, ya), (xb, yb) in zip(dense[:-1], dense[1:]):
+            if xb == xa: continue
+            col = GREEN if (ya + yb) > 0 else RED
+            out.append(f'<polygon points="{sx(xa):.1f},{sy(0):.1f} {sx(xa):.1f},{sy(ya):.1f} {sx(xb):.1f},{sy(yb):.1f} {sx(xb):.1f},{sy(0):.1f}" fill="{col}" opacity="0.10"/>')
+    # ขาแยก (ประ) · overlays · เส้นรวม (hero)
+    for lg, wp, col, wd, dash in leg_lines:
+        polyline(out, [(sx(a), sy(b)) for a, b in _pts(lg, lo, hi, wp)], col, wd, dash=dash, shadow=False)
+    # แถบเรือง (halo) ใต้เส้นรวม: ให้เห็นเส้นรวมแม้ขาย่อย/overlay จะทับพอดี (เช่น parity, bracket)
+    out.append(f'<g opacity="0.22">'); polyline(out, [(sx(a), sy(b)) for a, b in tp], total_color, 8, shadow=False); out.append('</g>')
+    polyline(out, [(sx(a), sy(b)) for a, b in tp], total_color, 2.75)
+    for lg, wp, col, wd, dash, is_total in lines[1:]:
+        polyline(out, [(sx(a), sy(b)) for a, b in _pts(lg, lo, hi, wp)], col, wd, dash=dash, shadow=False)
+    # callouts · กราฟ payoff ก่อนหักเบี้ย (with_premium=False) ไม่เรียก "กำไร/ขาดทุน/BE" เพื่อไม่ให้สับสนกับ profit
+    W_MAX, W_MIN, W_BE, W_UP, W_DN = (("กำไรสูงสุด", "ขาดทุนสูงสุด", "BE", "กำไรไม่จำกัด →", "ขาดทุนไม่จำกัด →") if with_premium
+                                     else ("payoff สูงสุด", "payoff ต่ำสุด", "ตัดศูนย์", "ขึ้นไม่จำกัด →", "ลงไม่จำกัด →"))
+    if callouts:
+        for i, b in enumerate(sm["breakevens"]):
+            if lo <= b <= hi:
+                out.append(f'<circle cx="{sx(b):.1f}" cy="{sy(0):.1f}" r="4.2" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
+                # ป้ายวางเฉียงขึ้น ฝั่งที่เส้นอยู่ต่ำกว่าศูนย์ (ไม่ทับเส้นที่กำลังไต่ผ่านศูนย์)
+                s_here = slope_between(legs, b - 1e-6, b + 1e-6)
+                if s_here > 0: anc, dx = "end", -7
+                elif s_here < 0: anc, dx = "start", 7
+                else: anc, dx = "middle", 0
+                if be_below: anc, dx = ("start", 7) if anc == "end" else ("end", -7) if anc == "start" else (anc, dx)
+                out.append(f'<text x="{sx(b)+dx:.1f}" y="{sy(0)+(16 if be_below else -8):.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{PURPLE}" font-weight="700">{W_BE} {b:g}</text>')
+        mp, mpa, ml, mla = sm["max_profit"], sm["max_profit_at"], sm["max_loss"], sm["max_loss_at"]
+        if mp is not None and mp > 0:
+            xa = min(max(mpa, lo), hi); anc = "start" if xa < (lo + hi) / 2 else "end"; dx = 6 if anc == "start" else -6
+            if mpa >= hi - 1e-9 or (sm["right_slope"] == 0 and mpa == max(ks) and value(legs, hi, with_premium) == mp): xa, anc, dx = hi, "end", -4
+            tail = " (ที่ S = 0)" if mpa == 0 and lo > 0 else ""
+            yy = sy(min(mp, ymax)) if mpa >= lo else sy(value(legs, lo, with_premium))
+            out.append(f'<text x="{sx(xa)+dx:.1f}" y="{yy-6:.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{GREEN}" font-weight="700">{W_MAX} {fmt(mp)}{tail}</text>')
+        elif mp is None:
+            out.append(f'<text x="{x0+w-4}" y="{sy(value(legs, hi, with_premium))+unbounded_dy:.1f}" text-anchor="end" {FONT} font-size="{fs}" fill="{GREEN}" font-weight="700">{W_UP}</text>')
+        if ml is not None and ml < 0:
+            if mla <= lo + 1e-9:
+                out.append(f'<text x="{x0+4}" y="{sy(value(legs, lo, with_premium))+14:.1f}" {FONT} font-size="{fs}" fill="{RED}" font-weight="700">{W_MIN} {fmt(ml)}' + (f" (ที่ S = 0)" if mla == 0 and lo > 0 and sm["left_slope"] != 0 else "") + '</text>')
+            else:
+                anc = "start" if mla < (lo + hi) / 2 else "end"; dx = 6 if anc == "start" else -6
+                out.append(f'<text x="{sx(mla)+dx:.1f}" y="{sy(ml)+14:.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{RED}" font-weight="700">{W_MIN} {fmt(ml)}</text>')
+        elif ml is None:
+            out.append(f'<text x="{x0+w-4}" y="{sy(value(legs, hi, with_premium))+14:.1f}" text-anchor="end" {FONT} font-size="{fs}" fill="{RED}" font-weight="700">{W_DN}</text>')
+    if slopes:
+        for a, b, s, fa, fb in segments(legs, lo, hi, with_premium):
+            xm = (a + b) / 2
+            # ป้าย slope อย่าให้ทับป้าย BE ที่อยู่บนช่วงเดียวกัน: ขยับจุดยึดออกห่าง ≥ 55px ไปฝั่งที่มีที่ว่างมากกว่า
+            for be in sm["breakevens"]:
+                if a < be < b and abs(sx(xm) - sx(be)) < 55:
+                    xm = be + (55 / w) * (hi - lo) if (b - be) >= (be - a) else be - (55 / w) * (hi - lo)
+                    xm = min(max(xm, a + 0.1 * (b - a)), b - 0.1 * (b - a))
+            ym = value(legs, xm, with_premium)
+            lab = "แบน (slope 0)" if abs(s) < 1e-9 else f"slope {fmt(s)}"
+            below = abs(s) < 1e-9 and sm["max_profit"] is not None and abs(ym - sm["max_profit"]) < 1e-9 and ym > 0
+            if abs(s) < 1e-9 and ym < 0 and leg_lines:  # พื้นราบใต้ศูนย์และมีขาประ: วางป้ายใต้เส้น ค่อนไปทางขวา
+                below = True; xm = a + 0.62 * (b - a); ym = value(legs, xm, with_premium)
+            # ตัวเลือกตำแหน่ง (anchor, dx, dy): ลองฝั่งแรกก่อน ถ้าทับเส้นขาประให้สลับไปอีกฝั่ง
+            if abs(s) < 1e-9: opts = [("middle", 0, 14), ("middle", 0, -8)] if below else [("middle", 0, -8), ("middle", 0, 14)]
+            elif s > 0: opts = [("end", -7, -5), ("start", 7, 14)]
+            else: opts = [("start", 7, -5), ("end", -7, 14)]
+            tw = 6 * len(lab)  # ความกว้างป้ายโดยประมาณ (px)
+            def _clear(anc, dx, dy):
+                xl = sx(xm) + dx + (tw / 2 if anc == "start" else -tw / 2 if anc == "end" else 0); yc = sy(ym) + dy - 3.5
+                for lg, wp, *_ in leg_lines:
+                    for px in (xl - tw / 2, xl, xl + tw / 2):
+                        xx = lo + (px - x0) / w * (hi - lo)
+                        if lo <= xx <= hi and abs(sy(value(lg, xx, wp)) - yc) < 8: return False
+                return True
+            anc, dx, dy = next((o for o in opts if _clear(*o)), opts[0])
+            out.append(f'<text x="{sx(xm)+dx:.1f}" y="{sy(ym)+dy:.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{INK2}" font-style="italic">{lab}</text>')
+    for n in notes:  # (x, y, text, color, anchor, dy)
+        x, y, text, col = n[:4]; anc = n[4] if len(n) > 4 else "start"; dy = n[5] if len(n) > 5 else 0
+        out.append(f'<text x="{sx(x):.1f}" y="{sy(y)+dy:.1f}" text-anchor="{anc}" {FONT} font-size="{fs}" fill="{col}" font-weight="600">{text}</text>')
+    dflt = ("profit (หักเบี้ยแล้ว)" if len(legs) == 1 else "รวมทุกขา (หักเบี้ยแล้ว)") if with_premium else ("payoff ณ วันหมดอายุ" if len(legs) == 1 else "payoff รวม ณ วันหมดอายุ")
+    items = [(total_color, total_label or dflt, "")]
+    items += [(col, leg_name(lg[0]), "5 3") for lg, wp, col, wd, dash in leg_lines]
+    items += [(o.get("color", INK2), o["label"], o.get("dash", "6 3")) for o in overlays]
+    return sm, items, (sx, sy, lo, hi)
+
+
+def payoff_fig(legs, title_text, sub="", *, W=560, H=310, legend_rows=1, **kw):
+    out = svg_open(W, H, kw.pop("aria", title_text))
+    title(out, W, title_text, sub)
+    box = (55, 48, W - 55 - 22, H - 48 - 66 - (legend_rows - 1) * 15)
+    sm, items, _ = _draw_payoff(out, legs, box, **kw)
+    per = max(1, int(np.ceil(len(items) / legend_rows)))
+    for r in range(legend_rows):
+        legend(out, items[r * per:(r + 1) * per], 55, H - 10 - (legend_rows - 1 - r) * 15)
+    out.append("</svg>")
+    return "\n".join(out), sm
+
+
+def payoff_grid(panels, title_text, sub="", *, W=560, H=400, cols=2, **kw):
+    """หลายพาเนลเล็ก · panels = [(legs, ชื่อพาเนล, opts), …]"""
+    out = svg_open(W, H, kw.pop("aria", title_text), multipanel=True)
+    title(out, W, title_text, sub)
+    rows = int(np.ceil(len(panels) / cols)); pw = (W - 60) / cols - 20; ph = (H - 70) / rows - 40
+    sms = []
+    for i, (legs, name, opts) in enumerate(panels):
+        cx = 50 + (i % cols) * (pw + 40); cy = 62 + (i // cols) * (ph + 40)
+        out.append(f'<text x="{cx + pw/2:.0f}" y="{cy-6}" text-anchor="middle" {FONT} font-size="11" font-weight="700" fill="{INK}">{name}</text>')
+        o = dict(kw); o.update(opts); o.setdefault("compact", True); o.setdefault("show_legs", False)
+        sm, _, _ = _draw_payoff(out, legs, (cx, cy, pw, ph), **o); sms.append(sm)
+    out.append("</svg>")
+    return "\n".join(out), sms
+
+
+def payoff(file, name, legs, title_text, sub="", **kw):
+    """ลงทะเบียนภาพ payoff หนึ่งชิ้น และเก็บสรุปตัวเลข (BE, กำไร/ขาดทุนสูงสุด, เบี้ยสุทธิ) ไว้ใน NUMS"""
+    def fn():
+        svg, sm = payoff_fig(legs, title_text, sub, **kw)
+        NUMS[name] = {k: (v if v is not None else float("nan")) for k, v in sm.items() if k != "breakevens"}
+        NUMS[name].update({f"be{i+1}": b for i, b in enumerate(sm["breakevens"])})
+        return svg
+    FIGS[(file, name)] = fn
+    return fn
+
+
+# ── Payoff Mastery Part 0 — ขั้นตอนอ่านกราฟ (K = 100 · เบี้ย 5 ตามเล่ม) ────────────────────
+LC = [Leg("call", 100, 1, 5)]; SC = [Leg("call", 100, -1, 5)]; LP = [Leg("put", 100, 1, 5)]; SP = [Leg("put", 100, -1, 5)]
+payoff("pm-part0.html", "p0-payoff-vs-profit", LC,
+       "Payoff กับ Profit ต่างกันแค่เลื่อนลงเท่าเบี้ย 5 — รูปร่างและความชันเหมือนเดิม",
+       "Long Call K = 100 · เบี้ย 5 · เส้นทึบ = profit (หักเบี้ยแล้ว) · เส้นประ = payoff (ก่อนหักเบี้ย)",
+       overlays=[dict(legs=[Leg("call", 100, 1, 0)], label="payoff ก่อนหักเบี้ย max(S − K, 0)", color=INK2)],
+       notes=[(85, -2.5, "ระยะห่าง = เบี้ย 5", RED, "start", 3), (129, 4, "ทั้งสองเส้นชัน +1 เท่ากัน", INK2, "end", 0)], slopes=False, unbounded_dy=-22)
+payoff("pm-part0.html", "p0-step1-long-call", LC,
+       "ขั้นตอนที่ 1 — Long Call: แบนที่ −5 จนถึง K แล้วหักขึ้นชัน +1 ตัดศูนย์ที่ K + เบี้ย",
+       "Long Call K = 100 · เบี้ย 5 · BE = 100 + 5 = 105 · ขาดทุนสูงสุด = เบี้ยที่จ่าย", slopes=True)
+payoff("pm-part0.html", "p0-step2-short-call", SC,
+       "ขั้นตอนที่ 2 — Short Call คือ Long Call พลิกหัวกลับ: กำไรจำกัดที่เบี้ย ขาดทุนไม่จำกัด",
+       "Short Call K = 100 · รับเบี้ย 5 · เส้นประ = Long Call เดิม · สังเกตว่า BE อยู่ที่ 105 เท่ากัน",
+       overlays=[dict(legs=LC, label="Long Call (พลิกกลับได้เส้นนี้)", color=INK2)], slopes=True)
+payoff("pm-part0.html", "p0-put-pair", LP,
+       "ขั้นตอนที่ 2.5 — Long Put ชันลง −1 ทางซ้าย · Short Put คือภาพพลิก ชันขึ้น +1 แล้วแบนที่ +5",
+       "K = 100 · เบี้ย 5 · BE ทั้งคู่ = 100 − 5 = 95 · Short Put ขาดทุนได้ถึง −95 ที่ S = 0",
+       overlays=[dict(legs=SP, label="Short Put (พลิกกลับ)", color=RED, dash="6 3", width=2.2)], slopes=True, xr=(60, 140),
+       notes=[(80, -20, "slope +1", RED, "middle", 14)])
+payoff("pm-part0.html", "p0-step3-bull-call-spread", [Leg("call", 100, 1, 0), Leg("call", 110, -1, 0)],
+       "ขั้นตอนที่ 3 — รวมสองขา: วาดทีละขาแล้วบวก y ที่ราคาเดียวกัน ได้ Bull Call Spread",
+       "Long Call(100) + Short Call(110) · ภาพนี้เป็น payoff ณ วันหมดอายุ ยังไม่หักเบี้ย · ปลายขวาแบนเพราะ +1 − 1 = 0",
+       with_premium=False, slopes=True, xr=(80, 130))
+
+
+def payoff_grid_reg(file, name, panels, title_text, sub="", **kw):
+    def fn():
+        svg, sms = payoff_grid(panels, title_text, sub, **kw)
+        for (legs, pname, _), sm in zip(panels, sms):
+            NUMS[f"{name}/{pname}"] = {k: (v if v is not None else float("nan")) for k, v in sm.items() if k != "breakevens"}
+        return svg
+    FIGS[(file, name)] = fn
+
+
+USD = dict(ylab="payoff ($)", ytick_fmt=lambda v: f"${v:g}".replace("$-", "−$"))
+
+# ── Payoff Mastery Part 1 ─────────────────────────────────────────────────────────────────
+payoff_grid_reg("pm-part1.html", "p1-four-blocks",
+                [(LC, "Long Call — ขาดทุนจำกัด −5 · กำไรไม่จำกัด", {}), (SC, "Short Call — กำไรจำกัด +5 · ขาดทุนไม่จำกัด", {}),
+                 (LP, "Long Put — ขาดทุนจำกัด −5 · กำไรถึง +95", {}), (SP, "Short Put — กำไรจำกัด +5 · ขาดทุนถึง −95", {})],
+                "4 ตัวต่อพื้นฐาน — K = 100 · เบี้ย 5 · Short คือ Long พลิกหัว", "ทุกภาพสเกลเดียวกัน · BE ของ Call = 105 · BE ของ Put = 95", xr=(60, 140))
+payoff("pm-part1.html", "p1-pcp-overlay", [Leg("call", 100, 1, 0), Leg("bond", 100, 1, 0)],
+       "Put-Call Parity ในภาพ — Call + Bond กับ Put + Stock ให้ payoff เส้นเดียวกันทุกจุด",
+       "ทั้งสองข้าง = max(S, 100) ณ วันหมดอายุ · เส้นซ้อนกันพอดี → ราคาวันนี้จึงต้องเท่ากัน (C + PV(K) = P + S)",
+       with_premium=False, show_legs=False, xr=(60, 140), callouts=False,
+       overlays=[dict(legs=[Leg("put", 100, 1, 0), Leg("stock", 0, 1, 0)], label="Put(100) + Stock", color=RED, dash="7 4", width=2.2)],
+       total_label="Call(100) + Bond เงินต้น 100", ylab="มูลค่า ณ วันหมดอายุ (฿)",
+       notes=[(120, 120, "= max(S, 100) ทั้งคู่", PURPLE, "middle", -8), (75, 100, "แบนที่ 100 (bond / put คุ้มกัน)", INK2, "start", -8)])
+
+# ── Payoff Mastery Part 2 ─────────────────────────────────────────────────────────────────
+payoff("pm-part2.html", "p2-bull-call-spread", [Leg("call", 90, 1, 8), Leg("call", 110, -1, 3)],
+       "Bull Call Spread 90/110 เบี้ยสุทธิ 5 — เริ่มที่ −5 · ชัน +1 ที่ 90 · กลับมาแบนที่ 110",
+       "ขั้น 1 ระดับเริ่ม = −(เบี้ยสุทธิ) = −5 · ขั้น 2 เดินขวา ปรับ slope ทุกสไตรก์ · ปลายขวา +1 − 1 = 0 → กำไรสูงสุด −5 + 20 = +15",
+       show_legs=False, slopes=True, xr=(70, 130))
+payoff("pm-part2.html", "p2-straddle-strangle", [Leg("call", 100, 1, 5), Leg("put", 100, 1, 5)],
+       "Long Straddle กับ Long Strangle — ตัว V สองแบบ ยิ่งถูก ยิ่งต้องวิ่งไกล",
+       "ตัวอย่างสมมติ: Straddle ซื้อ Call + Put ที่ 100 เบี้ยรวม 10 · Strangle ซื้อ Put 90 + Call 110 เบี้ยรวม 4",
+       show_legs=False, xr=(70, 130),
+       overlays=[dict(legs=[Leg("put", 90, 1, 2), Leg("call", 110, 1, 2)], label="Long Strangle 90/110 (เบี้ยรวม 4)", color=AMBER, dash="6 3", width=2.2)],
+       total_label="Long Straddle 100 (เบี้ยรวม 10)")
+payoff("pm-part2.html", "p2-covered-call-short-put", [Leg("stock", 100, 1, 0), Leg("call", 100, -1, 5)],
+       "Covered Call กับ Short Put — รูปเดียวกันทุกจุด ต่างแค่ PV(K) ของเงินที่ต้องวางวันนี้",
+       "สมมติเบี้ยเท่ากัน 5 (S = PV(K)) · หุ้นซื้อที่ 100 + ขาย Call(100) · เทียบขาย Put(100) · ชัน +1 ทางซ้าย แบนที่ +5 ทางขวา",
+       show_legs=False, slopes=True, xr=(60, 140),
+       overlays=[dict(legs=SP, label="Short Put(100) รับเบี้ย 5", color=RED, dash="7 4", width=2.2)],
+       total_label="Covered Call = Stock @100 + Short Call(100)")
+payoff("pm-part2.html", "p2-collar", [Leg("stock", 100, 1, 0), Leg("put", 90, 1, 3), Leg("call", 110, -1, 3)],
+       "Collar — หุ้น + Long Put(90) + Short Call(110): ตัดทั้งขาดทุนและกำไร",
+       "ตัวอย่างสมมติ zero-cost: เบี้ย Put ที่จ่าย = เบี้ย Call ที่รับ = 3 · เส้นประ = ถือหุ้นเปล่า",
+       show_legs=False, slopes=True, xr=(60, 140),
+       overlays=[dict(legs=[Leg("stock", 100, 1, 0)], label="ถือหุ้นเปล่า (ซื้อที่ 100)", color=INK2)],
+       total_label="Collar")
+
+# ── Payoff Mastery Part 3 ─────────────────────────────────────────────────────────────────
+BF = [Leg("call", 90, 1, 12), Leg("call", 100, -2, 6), Leg("call", 110, 1, 3)]
+payoff("pm-part3.html", "p3-butterfly", BF,
+       "Long Call Butterfly 90/100/110 — เต็นท์ยอดแหลม ยอด = ความกว้าง − เบี้ยสุทธิ = 10 − 3 = +7",
+       "+1 Call(90) −2 Call(100) +1 Call(110) · เบี้ยสุทธิ 3 · slope 0 → +1 → −1 → 0 · บวกเลขหน้าทุกขา +1 − 2 + 1 = 0 → ปลายแบน",
+       show_legs=False, slopes=True, xr=(80, 120))
+payoff("pm-part3.html", "p3-iron-condor", [Leg("put", 90, 1, 1), Leg("put", 95, -1, 2), Leg("call", 105, -1, 2), Leg("call", 110, 1, 1)],
+       "Iron Condor 90/95/105/110 — ที่ราบสูงตรงกลาง กำไรสูงสุด = เบี้ยสุทธิที่รับ 2",
+       "Bull Put Spread(90,95) + Bear Call Spread(105,110) · ขาดทุนสูงสุด = −(ความกว้าง 5 − เบี้ย 2) = −3 · ตัวเลขตามตัวอย่างในบท",
+       show_legs=False, slopes=True, xr=(80, 120))
+payoff("pm-part3.html", "p3-ratio-1x2", [Leg("call", 100, 1, 0), Leg("call", 110, -2, 0)],
+       "Ratio Call Spread 1×2 — เต็นท์ข้างเดียว: ยอดที่ 110 แล้วชันลง −1 ไม่มีพื้น",
+       "Long 1 Call(100) + Short 2 Call(110) · payoff ณ วันหมดอายุ ยังไม่หักเบี้ย · +1 − 2 = −1 ≠ 0 → ขาดทุนไม่จำกัดทางขวา",
+       with_premium=False, slopes=False, xr=(85, 135),
+       notes=[(92, 0, "แบน (slope 0)", INK2, "middle", -8), (103, 3, "slope +1", INK2, "end", 14), (121, -1, "slope −1", INK2, "middle", 16)])
+
+# ── Payoff Mastery Part 3a — วิธี slope และ reverse engineering ─────────────────────────────
+payoff("pm-part3a.html", "p3a-active-zone", [Leg("put", 90, 1, 0), Leg("put", 100, -1, 0)],
+       "โซนที่ขา 'ทำงาน' — ฝั่งซ้ายของ Iron Condor: Long Put(90) + Short Put(100)",
+       "ซ้ายของ 90 ทั้งสองขา active: −1 + 1 = 0 หักล้างกัน · ระหว่าง 90–100 มีแต่ Short Put: +1 · เหนือ 100 ไม่มีขาไหนทำงาน: 0",
+       with_premium=False, show_legs=True, slopes=True, xr=(70, 120), callouts=False, legend_rows=1)
+payoff("pm-part3a.html", "p3a-re-bull-call-spread", [Leg("call", 100, 1, 0), Leg("call", 110, -1, 0)],
+       "ตัวอย่างที่ 1 — ลำดับความชัน 0 → +1 → 0 ถอดเป็น +1 ที่ 100 และ −1 ที่ 110",
+       "Long Call(100) + Short Call(110) · เช็ค s₀ + ΣΔs = 0 + 1 − 1 = 0 = ความชันปลายขวา ✓",
+       with_premium=False, show_legs=True, slopes=True, xr=(85, 125))
+payoff("pm-part3a.html", "p3a-3x-cap", [Leg("call", 100, 3, 0), Leg("call", 110, -3, 0)],
+       "ตัวอย่างที่ 2 — slope +3 แล้วกลับเป็น 0: 3× Bull Call Spread 100/110",
+       "Long 3 Call(100) + Short 3 Call(110) · payoff สูงสุด 3 × 10 = 30 (ก่อนหักเบี้ยสุทธิ) · ขาดทุนสูงสุด = เบี้ยสุทธิ",
+       with_premium=False, show_legs=False, slopes=True, xr=(85, 125))
+payoff("pm-part3a.html", "p3a-asymmetric", [Leg("call", 95, 2, 0), Leg("call", 105, -3, 0), Leg("call", 115, 1, 0)],
+       "ตัวอย่างที่ 3 — ความชันไม่สมมาตร +2 → −1 → 0: เต็นท์เอียงซ้าย",
+       "Long 2 Call(95) + Short 3 Call(105) + Long 1 Call(115) · Δs = +2, −3, +1 รวม 0 → ปลายขวาแบน (bounded)",
+       with_premium=False, show_legs=False, slopes=True, xr=(80, 130))
+payoff("pm-part3a.html", "p3a-mixed-4sp", [Leg("call", 100, 1, 0), Leg("put", 100, -4, 0), Leg("call", 100, -1, 0)],
+       "LC(100) + 4× SP(100) + SC(100) — ปลายขวาแบน แต่ซ้ายชัน +4: ราคาลงเจ็บสี่เท่า",
+       "payoff ณ วันหมดอายุ ยังไม่หักเบี้ย · Call สองขาหักล้างกัน เหลือ 4× Short Put(100) · slope ซ้าย +4 · ขวา 0",
+       with_premium=False, show_legs=False, slopes=True, xr=(80, 120))
+payoff("pm-part3a.html", "p3a-re-butterfly", BF,
+       "RE ตัวอย่างที่ 1 — Butterfly จากกราฟ: Δs = +1 ที่ 90, −2 ที่ 100, +1 ที่ 110",
+       "เบี้ยสุทธิ 3 → ยอดที่ 100 = −3 + 10 = +7 · ปลายขวา 0 + 1 − 2 + 1 = 0 ✓",
+       show_legs=False, slopes=False, xr=(80, 120),
+       notes=[(90, -3, "Δs = +1", PURPLE, "middle", 16), (101, 7, "Δs = −2", PURPLE, "start", 2), (110, -3, "Δs = +1", PURPLE, "middle", 16)])
+payoff("pm-part3a.html", "p3a-re-covered-call", [Leg("stock", 100, 1, 0), Leg("call", 100, -1, 0)],
+       "RE ตัวอย่างที่ 3 — เริ่มชัน +1 แล้วแบนที่ 100: s₀ = +1 คือหุ้น · Δs = −1 คือ Short Call",
+       "Long Stock @100 + Short Call(100) = Covered Call · payoff ยังไม่รวมเบี้ยที่รับ",
+       with_premium=False, show_legs=True, slopes=True, xr=(70, 130), callouts=False)
+
+# ── Payoff Mastery Part 4a — prediction market เป็น digital option ──────────────────────────
+payoff("pm-part4a.html", "p4a-above-yes", [Leg("dcall", 100, 1, 0)],
+       "PM Above Yes(100) — จ่าย $1 ถ้า S > 100 ไม่ว่าจะเกินไปเท่าไร: บันไดขั้นเดียว",
+       "เส้นประ = Call Spread 100/105 ÷ 5 (ทางลาดที่จ่ายสูงสุด $1 พอดี) · ยิ่งสเปรดแคบ ยิ่งใกล้บันได",
+       with_premium=False, show_legs=False, xr=(85, 115), callouts=False,
+       overlays=[dict(legs=[Leg("call", 100, 0.2, 0), Leg("call", 105, -0.2, 0)], label="Call Spread 100/105 ÷ 5", color=AMBER, dash="6 3", width=2)],
+       total_label="PM Above Yes(100)", **USD)
+payoff("pm-part4a.html", "p4a-above-no", [Leg("dput", 100, 1, 0)],
+       "PM Above No(100) — จ่าย $1 คงที่เมื่อ S < 100 · ไม่ใช่ Long Put ที่จ่ายมากขึ้นเมื่อราคาลงแรง",
+       "เส้นประ = Long Put(100) ÷ 10: ที่ S = 90 ได้ $1 เท่ากัน แต่ที่ S = 80 ได้ $2 ส่วน PM ยังได้ $1",
+       with_premium=False, show_legs=False, xr=(75, 115), callouts=False,
+       overlays=[dict(legs=[Leg("put", 100, 0.1, 0)], label="Long Put(100) ÷ 10 (เชิงเส้น)", color=AMBER, dash="6 3", width=2)],
+       total_label="PM Above No(100)", **USD)
+payoff("pm-part4a.html", "p4a-range-yes", [Leg("dcall", 90, 1, 0), Leg("dcall", 110, -1, 0)],
+       "PM Range Yes(90–110) — จ่าย $1 เมื่ออยู่ในช่วง = Digital Call(90) − Digital Call(110)",
+       "เส้นประ = Butterfly 90/100/110 ÷ 10 (สามเหลี่ยม) · Range Yes คือสามเหลี่ยมที่ถูกดันเป็นสี่เหลี่ยม",
+       with_premium=False, show_legs=False, xr=(75, 125), callouts=False,
+       overlays=[dict(legs=[Leg("call", 90, 0.1, 0), Leg("call", 100, -0.2, 0), Leg("call", 110, 0.1, 0)], label="Butterfly 90/100/110 ÷ 10", color=AMBER, dash="6 3", width=2)],
+       total_label="PM Range Yes(90–110)", **USD)
+payoff("pm-part4a.html", "p4a-range-no", [Leg("dput", 90, 1, 0), Leg("dcall", 110, 1, 0)],
+       "PM Range No(90–110) — จ่าย $1 เมื่ออยู่นอกช่วง: ส่วนกลับของ Range Yes",
+       "Digital Put(90) + Digital Call(110) · ช่องว่างตรงกลางคือ $0 · คล้าย Strangle แต่จ่ายเป็นขั้น",
+       with_premium=False, show_legs=False, xr=(75, 125), callouts=False, total_label="PM Range No(90–110)", **USD)
+payoff("pm-part4a.html", "p4a-parity", [Leg("dcall", 100, 1, 0), Leg("dput", 100, 1, 0)],
+       "PM Parity — Above Yes + Above No = $1 เสมอ ไม่ว่าราคาจะจบที่ไหน",
+       "ถือทั้งสองขาได้ $1 แน่ · ราคา Yes + No จึงต้อง ≈ $1 (ต่างได้แค่ค่า spread) มิฉะนั้นมี arb",
+       with_premium=False, show_legs=True, xr=(80, 120), callouts=False, total_label="Yes + No", **USD)
+payoff("pm-part4a.html", "p4a-brackets", [Leg("dput", 90, 1, 0), Leg("dcall", 90, 1, 0)],
+       "Multi-bracket — ปูกระเบื้องราคา: ทุกช่วงรวมกัน = $1 เสมอ (Generalized Parity)",
+       "ช่วง <90 · 90–100 · 100–110 · >110 · แต่ละช่วงคือ Range Yes หนึ่งชิ้น · ผลรวมทุกชิ้น = เส้นแบนที่ $1",
+       with_premium=False, show_legs=False, xr=(75, 125), callouts=False, legend_rows=2, total_label="ผลรวมทุก bracket", **USD,
+       overlays=[dict(legs=[Leg("dput", 90, 1, 0)], label="<90", color=GREEN, dash="", width=1.8),
+                 dict(legs=[Leg("dcall", 90, 1, 0), Leg("dcall", 100, -1, 0)], label="90–100", color=AMBER, dash="", width=1.8),
+                 dict(legs=[Leg("dcall", 100, 1, 0), Leg("dcall", 110, -1, 0)], label="100–110", color=PURPLE, dash="", width=1.8),
+                 dict(legs=[Leg("dcall", 110, 1, 0)], label=">110", color=RED, dash="", width=1.8)])
+payoff("pm-part4a.html", "p4a-staircase", [Leg("dcall", k, 1, 0) for k in (90, 95, 100, 105, 110)],
+       "PM Staircase — ซ้อน Above Yes ห่างกัน d = 5 ห้าขั้น ได้บันไดที่เฉลี่ยแล้วชัน 1/5",
+       "Above Yes(90) + (95) + (100) + (105) + (110) · เส้นประ = เส้นตรงอุดมคติ slope $0.20 ต่อ $1 · ระหว่างขั้น payoff ไม่ขยับเลย",
+       with_premium=False, show_legs=False, xr=(80, 120), callouts=False, total_label="บันได 5 ขั้น", **USD,
+       xticks=(90, 95, 100, 105, 110),
+       overlays=[dict(legs=[Leg("call", 87.5, 0.2, 0), Leg("call", 112.5, -0.2, 0)], label="เส้นตรงอุดมคติ (slope 1/5 · ตันที่ $5)", color=AMBER, dash="6 3", width=2)])
+
+# ── Payoff Mastery Part 7 — structured products ────────────────────────────────────────────
+payoff("pm-part7.html", "p7-eln", [Leg("bond", 100, 1, 0), Leg("call", 100, 0.5, 0)],
+       "ELN = พันธบัตรไม่มีคูปอง + Long Call: แบนซ้าย (เงินต้นคืน) ชันขวา (ร่วมขาขึ้นบางส่วน)",
+       "เงินต้น 100 · participation 50% ของส่วนที่เกิน K = 100 · ตัวอย่างสมมติ · เส้นประ = ถือหุ้นเปล่า",
+       with_premium=False, show_legs=True, xr=(60, 160), callouts=False, ylab="มูลค่าที่ได้คืน (฿ ต่อเงินต้น 100)",
+       overlays=[dict(legs=[Leg("stock", 0, 1, 0)], label="ถือหุ้นเปล่า (= S)", color=INK2)], total_label="ELN",
+       notes=[(75, 100, "เงินต้นคืน 100 ทุกกรณี (ถ้าผู้ออกไม่ผิดนัด)", GREEN, "start", -8), (150, 125, "slope 0.5 = participation", INK2, "end", 16)])
+payoff("pm-part7.html", "p7-risk-reversal", [Leg("put", 90, -1, 0), Leg("call", 110, 1, 0)],
+       "Risk Reversal — Short Put(90) + Long Call(110): synthetic forward ที่มีช่องว่างตรงกลาง",
+       "slope +1 → 0 → +1 · payoff ณ วันหมดอายุ ยังไม่หักเบี้ย (โครงสร้างนี้มักตั้งให้เบี้ยหักกันเป็นศูนย์)",
+       with_premium=False, show_legs=True, slopes=True, xr=(70, 130), callouts=False)
+
+# ── Payoff Mastery Part 8 — ปรับ position ระหว่างทาง และ DW ───────────────────────────────
+payoff("pm-part8.html", "p8-roll-up", [Leg("call", 110, -1, 0)],
+       "Roll Up — ปิด Short Call(100) เปิด Short Call(110): จุดหักศอกเลื่อนขวา ได้ upside room อีก 10",
+       "payoff ณ วันหมดอายุ ยังไม่รวมเบี้ย · การ roll ขึ้นมักต้องจ่าย debit เพราะขาเดิม ITM แพงกว่าขาใหม่ OTM",
+       with_premium=False, show_legs=False, slopes=True, xr=(80, 130), callouts=False,
+       overlays=[dict(legs=[Leg("call", 100, -1, 0)], label="ก่อน roll: Short Call(100)", color=RED, dash="6 3", width=2.2)],
+       total_label="หลัง roll: Short Call(110)")
+payoff("pm-part8.html", "p8-dw-vs-vanilla", [Leg("call", 100, 1, 6), Leg("call", 120, -1, 0)],
+       "DW กับ Vanilla Call — รูปคล้ายกัน แต่ DW แพงกว่า และรุ่นที่มี cap จะมีเพดาน",
+       "ตัวอย่างสมมติ: Vanilla Call(100) เบี้ย 5 · DW สไตรก์ 100 เบี้ย 6 (issuer margin) สมมติมี cap ที่ 120",
+       show_legs=False, xr=(80, 140),
+       overlays=[dict(legs=[Leg("call", 100, 1, 5)], label="Vanilla Call(100) เบี้ย 5", color=INK2)], total_label="DW (cap 120 · เบี้ย 6)")
+
+
+# ── Payoff 3 บทที่ 12 · study-guide 6.3: Calendar spread ที่วันหมดอายุของขาใกล้ (เส้นโค้งจาก BS) ──
+def calendar_data(S0=100.0, K=100.0, r=0.05, sg=0.20, T1=1 / 12, T2=3 / 12):
+    c_near = float(bs_greeks(S0, K=K, r=r, sg=sg, T=T1)["C"]); c_far = float(bs_greeks(S0, K=K, r=r, sg=sg, T=T2)["C"])
+    debit = c_far - c_near
+    S = np.linspace(70, 130, 121)
+    far_left = bs_greeks(S, K=K, r=r, sg=sg, T=T2 - T1)["C"]
+    pl = far_left - np.maximum(S - K, 0) - debit
+    return S, pl, debit, c_near, c_far
+
+
+def _calendar_svg(title_text, sub):
+    S, pl, debit, c_near, c_far = calendar_data()
+    Wd, H = 560, 314
+    out = svg_open(Wd, H, "P/L ของ calendar spread ณ วันหมดอายุของขาใกล้ เป็นเส้นโค้งยอดที่สไตรก์ ไม่ใช่เส้นหักศอก เทียบกับเส้นหักศอกของ short call ขาใกล้")
+    title(out, Wd, title_text, sub)
+    x0, y0, w, h = 55, 48, 483, 180
+    sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")], [(-4, "−4"), (-2, "−2"), (0, "0"), (2, "+2"), (4, "+4")], xlab="ราคาหุ้น S ณ วันหมดอายุของขาใกล้", ylab="P/L (฿)")
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    for (xa, ya), (xb, yb) in zip(zip(S[:-1], pl[:-1]), zip(S[1:], pl[1:])):
+        out.append(f'<polygon points="{sx(xa):.1f},{sy(0):.1f} {sx(xa):.1f},{sy(ya):.1f} {sx(xb):.1f},{sy(yb):.1f} {sx(xb):.1f},{sy(0):.1f}" fill="{GREEN if ya+yb>0 else RED}" opacity="0.10"/>')
+    sc = -np.maximum(S - 100, 0) + c_near
+    keep = sc >= -4.4  # ตัดส่วนที่ทะลุขอบล่างของกรอบ (ขาดทุนไม่จำกัดของ short call)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S[keep], sc[keep])], RED, 1.6, dash="5 3", shadow=False)
+    xe = float(S[keep][-1]); out.append(f'<text x="{sx(xe)+4:.1f}" y="{y0+h-4:.1f}" {FONT} font-size="9" fill="{RED}">Short Call ขาใกล้: ลงต่อ −1 ต่อ 1 บาท ↘</text>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, pl)], BLUE, 2.75)
+    i = int(np.argmax(pl))
+    out.append(f'<circle cx="{sx(S[i]):.1f}" cy="{sy(pl[i]):.1f}" r="4.2" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
+    out.append(f'<text x="{sx(S[i])+8:.1f}" y="{sy(pl[i])-4:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ยอดที่ S ≈ {S[i]:.0f}: +{pl[i]:.2f}</text>')
+    out.append(f'<text x="{sx(S[i])+8:.1f}" y="{sy(pl[i])+8:.1f}" {FONT} font-size="9" fill="{PURPLE}">ขาไกลยังมี time value เต็ม ขาใกล้หมดค่า</text>')
+    out.append(f'<text x="{x0+4}" y="{y0+14}" {FONT} font-size="9.5" fill="{INK2}">เบี้ยสุทธิที่จ่ายวันแรก = {c_far:.2f} − {c_near:.2f} = {debit:.2f} · ขาดทุนสูงสุดเมื่อราคาวิ่งไกลจาก K ทั้งสองทาง</text>')
+    legend(out, [(BLUE, "Calendar: ขาย Call 1 เดือน + ซื้อ Call 3 เดือน (K = 100) ณ วันหมดอายุขาใกล้", "")], x0, H - 24)
+    legend(out, [(RED, "Short Call ขาใกล้อย่างเดียว (เส้นหักศอก)", "5 3")], x0, H - 8)
+    out.append("</svg>")
+    NUMS["calendar"] = dict(debit=debit, c_near=c_near, c_far=c_far, peak=float(pl[i]), peak_at=float(S[i]))
+    return "\n".join(out)
+
+
+@fig("pm-part3.html", "p3-calendar")
+def fig_p3_calendar():
+    return _calendar_svg("Calendar Spread — payoff เป็นเส้นโค้ง ไม่ใช่เส้นหักศอก เพราะขาไกลยังมี time value",
+                         "S₀ = 100 · K = 100 · σ = 20% · r = 5% · ขาใกล้ 1 เดือน ขาไกล 3 เดือน · ราคาจาก Black-Scholes (เล่มคณิตศาสตร์ บท 7 และ 15)")
+
+# ── Payoff Chart Study Guide — 16 ภาพ ใช้ตัวเลขจริงชุดเดียวกับเล่ม (K = 100 · เบี้ย 5 · สเปรด 90/110) ─────
+SG = "payoff-chart-study-guide.html"
+payoff(SG, "sg-anatomy", LC,
+       "องค์ประกอบของกราฟ payoff — ตัวอย่าง Long Call K = 100 เบี้ย 5",
+       "แกน X = ราคา S ณ วันหมดอายุ · แกน Y = กำไร/ขาดทุนสุทธิ · เส้นศูนย์แบ่งโซนกำไร (เขียว) / ขาดทุน (แดง) · BE คือจุดตัดศูนย์",
+       slopes=False, xr=(70, 130),
+       notes=[(118, 10, "โซนกำไร (เหนือเส้นศูนย์)", GREEN, "middle", 0), (90, -2.5, "โซนขาดทุน (ใต้เส้นศูนย์)", RED, "middle", 3),
+              (100, -5, "จุดหักศอก = K", INK2, "middle", 26), (72, 0, "เส้นศูนย์ (Y = 0)", INK2, "start", -6)])
+payoff(SG, "sg-long-call", LC, "2.1 Long Call — K = 100 · เบี้ย 5: แบนที่ −5 แล้วชัน +1 หลัง K · BE = 105",
+       "กำไรไม่จำกัด · ขาดทุนสูงสุด = เบี้ย 5 · BE = K + P = 105", slopes=True)
+payoff(SG, "sg-short-call", SC, "2.2 Short Call — K = 100 · รับเบี้ย 5: แบนที่ +5 แล้วชัน −1 หลัง K · BE = 105",
+       "กำไรสูงสุด = เบี้ย 5 · ขาดทุนไม่จำกัด · BE = K + P = 105", slopes=True)
+payoff(SG, "sg-long-put", LP, "2.3 Long Put — K = 100 · เบี้ย 5: ชัน −1 ก่อน K แล้วแบนที่ −5 · BE = 95",
+       "กำไรสูงสุด = K − P = 95 (ที่ S = 0) · ขาดทุนสูงสุด = เบี้ย 5 · BE = K − P = 95", slopes=True)
+payoff(SG, "sg-short-put", SP, "2.4 Short Put — K = 100 · รับเบี้ย 5: ชัน +1 ก่อน K แล้วแบนที่ +5 · BE = 95",
+       "กำไรสูงสุด = เบี้ย 5 · ขาดทุนสูงสุด = K − P = 95 (ที่ S = 0) · BE = K − P = 95", slopes=True)
+payoff(SG, "sg-bull-call-spread", [Leg("call", 90, 1, 8), Leg("call", 110, -1, 3)],
+       "4.1 Bull Call Spread — Long Call 90 (เบี้ย 8) + Short Call 110 (รับ 3): บันไดขึ้น",
+       "เบี้ยสุทธิ 8 − 3 = 5 · กำไรสูงสุด = (110 − 90) − 5 = +15 · ขาดทุนสูงสุด = −5 · BE = 90 + 5 = 95", slopes=True, xr=(75, 125), show_legs=False)
+payoff(SG, "sg-bear-put-spread", [Leg("put", 110, 1, 8), Leg("put", 90, -1, 3)],
+       "4.2 Bear Put Spread — Long Put 110 (เบี้ย 8) + Short Put 90 (รับ 3): บันไดลง",
+       "เบี้ยสุทธิ 8 − 3 = 5 · กำไรสูงสุด = (110 − 90) − 5 = +15 · ขาดทุนสูงสุด = −5 · BE = 110 − 5 = 105", slopes=True, xr=(75, 125), show_legs=False)
+payoff(SG, "sg-straddle", [Leg("call", 100, 1, 5), Leg("put", 100, 1, 5)],
+       "4.3 Long Straddle — Call 100 + Put 100 เบี้ยรวม 10: รูปตัว V",
+       "ขาดทุนสูงสุด −10 ที่ S = 100 พอดี · BE = 100 ± 10 → 90 และ 110 · กำไรไม่จำกัดขาขึ้น (ขาลงถึง +90 ที่ S = 0)", slopes=True, xr=(75, 125))
+payoff(SG, "sg-strangle", [Leg("put", 90, 1, 2), Leg("call", 110, 1, 2)],
+       "4.4 Long Strangle — Put 90 + Call 110 เบี้ยรวม 4: ตัว V กว้าง / ตัว U",
+       "ถูกกว่า straddle แต่ต้องวิ่งไกลกว่า · ขาดทุนสูงสุด −4 ระหว่าง 90–110 · BE = 90 − 4 = 86 และ 110 + 4 = 114", slopes=True, xr=(75, 125))
+payoff(SG, "sg-iron-condor", [Leg("put", 90, 1, 1), Leg("put", 95, -1, 2), Leg("call", 105, -1, 2), Leg("call", 110, 1, 1)],
+       "4.5 Iron Condor 90/95/105/110 — ที่ราบสูง: รับเบี้ยสุทธิ 2",
+       "Long Put 90 (1) + Short Put 95 (2) + Short Call 105 (2) + Long Call 110 (1) · กำไรสูงสุด +2 · ขาดทุนสูงสุด −(5 − 2) = −3 · BE 93 / 107",
+       show_legs=False, slopes=True, xr=(80, 120))
+payoff(SG, "sg-butterfly", BF,
+       "4.6 Long Call Butterfly 90/100/110 — เต็นท์: ยอด +7 ที่ K₂ = 100",
+       "+1 Call 90 (12) −2 Call 100 (6) +1 Call 110 (3) · เบี้ยสุทธิ 12 − 12 + 3 = 3 · ยอด = 10 − 3 = +7 · ขาดทุนสูงสุด −3 · BE 93 / 107",
+       show_legs=False, slopes=True, xr=(80, 120))
+payoff(SG, "sg-ratio-1x2", [Leg("call", 100, 1, 0), Leg("call", 110, -2, 0)],
+       "6.1 Ratio Call Spread 1×2 — Long 1 Call 100 + Short 2 Call 110: เต็นท์ข้างเดียว",
+       "payoff ก่อนหักเบี้ย · slope 0 → +1 → −1 · ยอด +10 ที่ 110 · ตัดศูนย์ที่ 120 แล้วลงไม่จำกัด (ขา short 1 ตัวไม่มีอะไรคุ้ม)",
+       with_premium=False, slopes=False, xr=(85, 135),
+       notes=[(92, 0, "แบน (slope 0)", INK2, "middle", -8), (103, 3, "slope +1", INK2, "end", 14), (121, -1, "slope −1", INK2, "middle", 16)])
+payoff(SG, "sg-back-ratio-1x2", [Leg("call", 100, -1, 0), Leg("call", 110, 2, 0)],
+       "6.2 Back Ratio Call Spread 1×2 — Short 1 Call 100 + Long 2 Call 110: กลับด้าน",
+       "payoff ก่อนหักเบี้ย · slope 0 → −1 → +1 · dead zone ต่ำสุด −10 ที่ 110 · ตัดศูนย์ที่ 120 แล้วขึ้นไม่จำกัด",
+       with_premium=False, slopes=False, xr=(85, 135),
+       notes=[(92, 0, "แบน (slope 0)", INK2, "middle", -8), (103, -3, "slope −1", INK2, "end", 14), (124, 4, "slope +1", INK2, "start", -6),
+              (110, -10, "dead zone", RED, "middle", 28)], be_below=True)
+payoff_grid_reg(SG, "sg-collar-buildup",
+                [([Leg("stock", 100, 1, 0)], "Long Stock @100 — ชัน +1 ตลอด", {}),
+                 ([Leg("stock", 100, 1, 0), Leg("put", 90, 1, 3)], "+ Put 90 (เบี้ย 3) = Protective Put · พื้น −13", {}),
+                 ([Leg("stock", 100, 1, 0), Leg("call", 110, -1, 3)], "+ Short Call 110 (รับ 3) = Covered Call · เพดาน +13", {}),
+                 ([Leg("stock", 100, 1, 0), Leg("put", 90, 1, 3), Leg("call", 110, -1, 3)], "Collar 90/110 — พื้น −10 · เพดาน +10 · เบี้ยสุทธิ 0", {})],
+                "Hedging ด้วย Options — จากหุ้นเปล่า สู่ Protective Put, Covered Call และ Collar",
+                "หุ้นซื้อที่ 100 · Put 90 เบี้ย 3 · Call 110 รับ 3 · Collar นี้เป็น zero-cost: เบี้ยรับ 3 จ่าย 3", xr=(70, 130), H=420)
+
+
+def _time_value_svg():
+    """5.1 ราคา call ก่อนหมดอายุ (Black-Scholes) เทียบเส้นหักศอก ณ วันหมดอายุ — K = 100 · σ = 20% · r = 5%"""
+    S = np.linspace(70, 130, 121)
+    curves = [(90 / 365, "T = 90 วัน", PURPLE), (30 / 365, "T = 30 วัน", BLUE)]
+    Wd, H = 560, 314
+    out = svg_open(Wd, H, "ราคา call K = 100 ตามราคาหุ้น S: เส้นโค้งที่เหลือ 90 วัน อยู่สูงกว่าเส้นที่เหลือ 30 วัน และทั้งคู่อยู่เหนือเส้นหักศอก ณ วันหมดอายุ")
+    title(out, Wd, "5.1 ก่อนหมดอายุ ราคา option เป็นเส้นโค้ง อยู่เหนือเส้นหักศอกเสมอ — ยิ่งเหลือเวลามาก ยิ่งสูง",
+          "Call K = 100 · σ = 20% · r = 5% · ราคาจาก Black-Scholes · ส่วนต่างแนวดิ่งระหว่างเส้นโค้งกับเส้นหักศอก = time value")
+    x0, y0, w, h = 55, 48, 483, 180
+    sx, sy = frame(out, x0, y0, w, h, [(70, "70"), (80, "80"), (90, "90"), (100, "100"), (110, "110"), (120, "120"), (130, "130")],
+                   [(0, "0"), (10, "10"), (20, "20"), (30, "30")], xlab="ราคาหุ้น S", ylab="ราคา call (฿)")
+    intr = np.maximum(S - 100, 0)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, intr)], INK2, 2.2, dash="", shadow=False)
+    vals = {}
+    for T, lab, col in curves:
+        C = bs_greeks(S, K=100, r=0.05, sg=0.20, T=T)["C"]; vals[lab] = C
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(S, C)], col, 2.4)
+    i = 60  # S = 100
+    c90, c30 = float(vals["T = 90 วัน"][i]), float(vals["T = 30 วัน"][i])
+    out.append(f'<line x1="{sx(100):.1f}" y1="{sy(0):.1f}" x2="{sx(100):.1f}" y2="{sy(c90):.1f}" stroke="{AMBER}" stroke-width="1.4" stroke-dasharray="3 3"/>')
+    out.append(f'<text x="{sx(100)-6:.1f}" y="{sy(9.5):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">ที่ S = 100 (ATM): intrinsic = 0 ทั้งเส้นโค้งจึงเป็น time value</text>')
+    out.append(f'<text x="{sx(100)-6:.1f}" y="{sy(9.5)+12:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{AMBER}">= {c90:.2f} (90 วัน) · {c30:.2f} (30 วัน) · 0 (หมดอายุ)</text>')
+    out.append(f'<text x="{sx(71):.1f}" y="{sy(27):.1f}" {FONT} font-size="9.5" fill="{INK2}">ลึกใน ITM (ขวา) เส้นโค้งเข้าใกล้เส้นหักศอก: time value เล็กลง</text>')
+    legend(out, [(PURPLE, "T = 90 วัน (Black-Scholes)", ""), (BLUE, "T = 30 วัน", ""), (INK2, "T = 0 วันหมดอายุ: max(S − 100, 0)", "")], x0, H - 10)
+    out.append("</svg>")
+    NUMS["sg-time-value"] = dict(c90=c90, c30=c30)
+    return "\n".join(out)
+
+
+@fig(SG, "sg-time-value")
+def fig_sg_time_value():
+    return _time_value_svg()
+
+
+@fig(SG, "sg-calendar")
+def fig_sg_calendar():
+    return _calendar_svg("6.3 Calendar Spread — ณ วันหมดอายุขาใกล้ P/L เป็นเส้นโค้ง ไม่ใช่เส้นตรงหักศอก",
+                         "ขาย Call 1 เดือน + ซื้อ Call 3 เดือน K = 100 · S₀ = 100 · σ = 20% · r = 5% · ขาไกลตีราคาด้วย Black-Scholes")
+
+
+
 VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
            ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
            ("ทฤษฎีของ Quant (เล่ม A)", r"^theory-"), ("เสาหลัก (เล่ม B)", r"^pillars-"), ("Arbitrage", r"^arb-"),

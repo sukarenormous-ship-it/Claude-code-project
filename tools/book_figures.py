@@ -207,6 +207,46 @@ expect("eye-part3.html", "funding periods", f"{3*365:,} รอบ")
 expect("eye-part5.html", "Lloyd's", f"{2026-1688} ปีต่อมา")  # อิงปี 2026 ที่หนังสือเขียน
 
 
+# ── ภาพ payoff ที่ generator วาด (tools/make_figures.py) — ตรวจว่าตัวเลขในหัวภาพ/ป้าย ตรงกับ payoff_lib ──
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from payoff_lib import Leg, summary  # noqa: E402
+
+def pm(v):
+    return f"{v:+g}".replace("-", "−")
+
+def payoff_checks(file, label, legs, texts, with_premium=True):
+    """texts = รายการ f-string template ที่ใช้ตัวแปร sm (dict จาก summary) · ทุกข้อความต้องอยู่ในไฟล์"""
+    sm = summary(legs, with_premium=with_premium)
+    for t in texts:
+        expect(file, label, t(sm))
+
+LC = [Leg("call", 100, 1, 5)]; LP = [Leg("put", 100, 1, 5)]
+payoff_checks("pm-part0.html", "long call", LC, [lambda sm: f"BE = 100 + 5 = {sm['breakevens'][0]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+payoff_checks("pm-part0.html", "put pair", LP, [lambda sm: f"BE ทั้งคู่ = 100 − 5 = {sm['breakevens'][0]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+payoff_checks("pm-part0.html", "bull call spread 90/110 net 5", [Leg("call", 100, 1, 0), Leg("call", 110, -1, 0)],
+              [lambda sm: f"payoff สูงสุด {pm(sm['max_profit'])}"], with_premium=False)
+payoff_checks("pm-part2.html", "BCS 90@8/110@3", [Leg("call", 90, 1, 8), Leg("call", 110, -1, 3)],
+              [lambda sm: f"เบี้ยสุทธิ {sm['net_premium']:g}", lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}",
+               lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}", lambda sm: f"−5 + 20 = {pm(sm['max_profit'])}"])
+payoff_checks("pm-part2.html", "straddle", [Leg("call", 100, 1, 5), Leg("put", 100, 1, 5)],
+              [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+payoff_checks("pm-part2.html", "covered call", [Leg("stock", 100, 1, 0), Leg("call", 100, -1, 5)],
+              [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])} (ที่ S = 0)"])
+payoff_checks("pm-part2.html", "collar", [Leg("stock", 100, 1, 0), Leg("put", 90, 1, 3), Leg("call", 110, -1, 3)],
+              [lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+BF = [Leg("call", 90, 1, 12), Leg("call", 100, -2, 6), Leg("call", 110, 1, 3)]
+for f in ("pm-part3.html", "pm-part3a.html"):
+    payoff_checks(f, "butterfly 90/100/110", BF, [lambda sm: f"เบี้ยสุทธิ {sm['net_premium']:g}", lambda sm: f"10 − 3 = {pm(sm['max_profit'])}" if f == "pm-part3.html" else f"−3 + 10 = {pm(sm['max_profit'])}",
+                                                 lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+payoff_checks("pm-part3.html", "iron condor", [Leg("put", 90, 1, 1), Leg("put", 95, -1, 2), Leg("call", 105, -1, 2), Leg("call", 110, 1, 1)],
+              [lambda sm: f"เบี้ยสุทธิที่รับ {-sm['net_premium']:g}", lambda sm: f"−(ความกว้าง 5 − เบี้ย 2) = {pm(sm['max_loss'])}", lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}"])
+payoff_checks("pm-part3.html", "ratio 1x2", [Leg("call", 100, 1, 0), Leg("call", 110, -2, 0)],
+              [lambda sm: f"payoff สูงสุด {pm(sm['max_profit'])}", lambda sm: f"ตัดศูนย์ {sm['breakevens'][-1]:g}"], with_premium=False)
+payoff_checks("pm-part3a.html", "3x cap", [Leg("call", 100, 3, 0), Leg("call", 110, -3, 0)], [lambda sm: f"3 × 10 = {sm['max_profit']:g}"], with_premium=False)
+payoff_checks("pm-part8.html", "DW cap", [Leg("call", 100, 1, 6), Leg("call", 120, -1, 0)],
+              [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
+
+
 
 def main():
     if "--print" in sys.argv:
