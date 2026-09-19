@@ -1569,6 +1569,9 @@ def _dot(out, x, y, col=PURPLE, r=4.2):
     out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="#fff" stroke="{col}" stroke-width="2.2"/>')
 
 
+ARROW_DEF = '<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker></defs>'
+
+
 def _txt(out, x, y, text, col=INK2, anc="start", size=9.5, bold=False, italic=False):
     fw = ' font-weight="700"' if bold else ""; fi = ' font-style="italic"' if italic else ""
     out.append(f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anc}" {FONT} font-size="{size}" fill="{col}"{fw}{fi}>{text}</text>')
@@ -1931,6 +1934,324 @@ def fig_m2_fat_tails():
     _txt(out, sx(-3.3), sy(0.06), "crash บ่อยกว่าที่ Normal บอก", RED, "middle", size=9, bold=True); _txt(out, sx(3.3), sy(0.06), "rally บ่อยกว่าที่ Normal บอก", RED, "middle", size=9, bold=True)
     out.append("</svg>")
     NUMS["m2-fat-tails"] = dict(tail_n=tail_n, tail_t=tail_t)
+    return "\n".join(out)
+
+
+# ── คณิตศาสตร์เล่ม 1 Part III–VI (math-part3…7) — กราฟตัวเลขที่เคยวาดมือ ────────────────────
+@fig("math-part3.html", "m3-tangent")
+def fig_m3_tangent():
+    x1 = 1.0; f1 = x1 ** 2; m = 2 * x1
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เส้นโค้ง f(x) = x² กับเส้นสัมผัสที่ x = 1 ความชัน f′(1) = 2 และเส้น secant จาก h = 1 ที่ชันกว่า")
+    title(out, Wd, "อนุพันธ์ = ความชันของเส้นสัมผัส — f(x) = x² ที่ x = 1: f′(1) = 2·1 = 2",
+          "secant (h = 1) ชัน [f(2) − f(1)]/1 = 3 · บีบ h → 0 เส้น secant กลายเป็นเส้นสัมผัสชัน 2 · Delta ก็คือความชันแบบนี้ของราคา option")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], [(-1, "−1"), (0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8")], "x", "f(x)")
+    _zero_line(out, sx, sy, -1, 3)
+    xs = np.linspace(-1, 3, 200); polyline(out, [(sx(a), sy(a * a)) for a in xs], BLUE, 2.6)
+    polyline(out, [(sx(-0.5), sy(f1 + m * (-0.5 - x1))), (sx(3), sy(f1 + m * (3 - x1)))], GREEN, 2.0)
+    polyline(out, [(sx(-0.2), sy(f1 + 3 * (-0.2 - x1))), (sx(2.8), sy(f1 + 3 * (2.8 - x1)))], AMBER, 1.6, dash="5 3", shadow=False)
+    _dot(out, sx(1), sy(1)); _dot(out, sx(2), sy(4), AMBER, 3.5)
+    _txt(out, sx(1) + 8, sy(1) + 14, "(1, 1)", PURPLE, "start", bold=True); _txt(out, sx(2) + 8, sy(4) + 4, "(2, 4) จุดที่ h = 1", AMBER, "start", size=9)
+    _txt(out, sx(-0.9), sy(7.3), "f(x) = x²", BLUE, "start", bold=True)
+    _txt(out, sx(3) - 4, sy(2.2), "เส้นสัมผัส ชัน f′(1) = 2", GREEN, "end", bold=True)
+    _txt(out, sx(0.0), sy(5.5), "secant h = 1 ชัน 3 (เส้นประ)", AMBER, "start", size=9)
+    out.append("</svg>")
+    NUMS["m3-tangent"] = dict(slope=m, secant=3.0)
+    return "\n".join(out)
+
+
+@fig("math-part3.html", "m3-call-curve-gamma")
+def fig_m3_call_curve_gamma():
+    S = np.linspace(70, 130, 241); g = bs_greeks(S); g0 = bs_greeks(100.0)
+    C, C0, d0, gm0 = g["C"], float(g0["C"]), float(g0["delta"]), float(g0["gamma"])
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"เส้นราคา Call โค้งมากสุดที่ ATM ความชัน Delta {d0:.2f} แบนทางซ้าย OTM และเกือบตรงทางขวา ITM")
+    title(out, Wd, "ราคา Call เทียบราคาหุ้น — ความชัน = Delta · ความโค้ง = Gamma (สูงสุดที่ ATM)",
+          f"K = 100 · σ = 20% · r = 5% · T = 0.5 ปี · ที่ ATM: C = {C0:.2f} · Delta = {d0:.2f} · Gamma = {gm0:.4f} ต่อ ฿1²")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(70, "70"), (80, "80"), (90, "90"), (100, "100 (K)"), (110, "110"), (120, "120"), (130, "130")], [(0, "0"), (10, "10"), (20, "20"), (30, "30")], "S (ราคาหุ้น)", "ราคา Call")
+    polyline(out, [(sx(a), sy(max(a - 100, 0))) for a in S], INK2, 1.4, dash="4 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, C)], BLUE, 2.6)
+    polyline(out, [(sx(90), sy(C0 + d0 * -10)), (sx(112), sy(C0 + d0 * 12))], GREEN, 1.8)
+    _dot(out, sx(100), sy(C0))
+    _txt(out, sx(100) - 8, sy(C0) - 8, f"ความชัน = Delta ≈ {d0:.2f}", GREEN, "end", bold=True)
+    _txt(out, sx(100) + 8, sy(C0) + 16, f"โค้งมากสุด = Gamma สูงสุดที่ ATM ({gm0:.4f})", PURPLE, "start", bold=True)
+    _txt(out, sx(72), sy(3.5), "OTM: เกือบแบน (Γ ต่ำ · Δ → 0)", INK2, "start", size=9, italic=True)
+    _txt(out, sx(129), sy(6), "ITM: เกือบตรง (Γ ต่ำ · Δ → 1)", INK2, "end", size=9, italic=True)
+    _txt(out, sx(129), sy(29.2), "เส้นประ = intrinsic max(S − K, 0)", INK2, "end", size=9)
+    out.append("</svg>")
+    NUMS["m3-call-curve-gamma"] = dict(C=C0, delta=d0, gamma=gm0)
+    return "\n".join(out)
+
+
+def port_risk_data(w=(0.6, 0.4), s1=0.20, s2=0.30, cov=0.01):
+    var = w[0] ** 2 * s1 ** 2 + w[1] ** 2 * s2 ** 2 + 2 * w[0] * w[1] * cov
+    return s1, s2, w[0] * s1 + w[1] * s2, var ** 0.5
+
+
+@fig("math-part4.html", "m4-port-risk-bars")
+def fig_m4_port_risk_bars():
+    s1, s2, naive, real = port_risk_data()
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, f"แท่งเทียบความเสี่ยง: หุ้น A 20% หุ้น B 30% เดาไร้เดียงสา 60/40 ได้ {naive*100:.0f}% แต่พอร์ตจริง {real*100:.1f}% ต่ำกว่าหุ้นที่นิ่งที่สุด")
+    title(out, Wd, f"20% + 30% ผสม 60/40 — เดาว่า {naive*100:.0f}% แต่พอร์ตจริงเสี่ยงแค่ {real*100:.1f}%",
+          "σ²ₚ = 0.6²(0.04) + 2(0.6)(0.4)(0.01) + 0.4²(0.09) = 0.0336 → σₚ = 18.3% · Cov ต่ำ (0.01) ดึงความเสี่ยงรวมลง")
+    x0, y0, w, h = 70, 50, 470, 175; out.append(ARROW_DEF)
+    sx, sy = frame(out, x0, y0, w, h, [(0, ""), (4, "")], [(0, "0"), (0.1, "10%"), (0.2, "20%"), (0.3, "30%")], xlab="", ylab="σ")
+    bars = [(0.5, s1, BLUE, "หุ้น A", f"{s1*100:.0f}%"), (1.5, s2, BLUE, "หุ้น B", f"{s2*100:.0f}%"),
+            (2.5, naive, AMBER, "เดาไร้เดียงสา (0.6·20 + 0.4·30)", f"{naive*100:.0f}%"), (3.5, real, GREEN, "พอร์ตจริง √(wᵀΣw)", f"{real*100:.1f}%")]
+    for xc, v, col, lab, vl in bars:
+        out.append(f'<rect x="{sx(xc-0.32):.1f}" y="{sy(v):.1f}" width="{sx(xc+0.32)-sx(xc-0.32):.1f}" height="{sy(0)-sy(v):.1f}" fill="{col}" opacity="0.75" rx="3"/>')
+        _txt(out, sx(xc), sy(v) - 6, vl, INK, "middle", bold=True); _txt(out, sx(xc), y0 + h + 14, lab, INK2, "middle", size=9)
+    out.append(f'<line x1="{sx(2.5):.1f}" y1="{sy(naive):.1f}" x2="{sx(3.5):.1f}" y2="{sy(real):.1f}" stroke="{RED}" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr)"/>')
+    _txt(out, sx(3.0), sy((naive + real) / 2) - 8, "covariance ต่ำ ดึงลงมา", RED, "middle", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["m4-port-risk-bars"] = dict(naive=naive, real=real)
+    return "\n".join(out)
+
+
+def beta_data():
+    x = np.array([3, -2, 5, -1, 2, -4]) / 100; y = np.array([5, -4, 7, 0, 2, -7]) / 100
+    xb, yb = x.mean(), y.mean()
+    beta = ((x - xb) * (y - yb)).sum() / ((x - xb) ** 2).sum(); alpha = yb - beta * xb
+    return x, y, beta, alpha
+
+
+@fig("math-part4.html", "m4-beta-scatter")
+def fig_m4_beta_scatter():
+    x, y, beta, alpha = beta_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"scatter ผลตอบแทนหุ้น 6 จุดเทียบตลาด กับเส้น regression ความชัน β = {beta:.2f} และเส้น residual แนวดิ่ง")
+    title(out, Wd, f"Regression → Beta: เส้นที่ทำให้ residual² รวมน้อยสุด ความชัน β = {beta:.2f}",
+          f"ตลาด X = [3, −2, 5, −1, 2, −4]% · หุ้น Y = [5, −4, 7, 0, 2, −7]% · β = Cov/Var = {beta:.2f} · α = {alpha*100:.2f}% · หุ้นเหวี่ยงกว่าตลาด {beta:.2f} เท่า")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(-0.06, "−6%"), (-0.04, "−4%"), (-0.02, "−2%"), (0, "0"), (0.02, "+2%"), (0.04, "+4%"), (0.06, "+6%")], [(-0.09, "−9%"), (-0.06, "−6%"), (-0.03, "−3%"), (0, "0"), (0.03, "+3%"), (0.06, "+6%"), (0.09, "+9%")], "ผลตอบแทนตลาด (X)", "ผลตอบแทนหุ้น (Y)")
+    _zero_line(out, sx, sy, -0.06, 0.06); out.append(f'<line x1="{sx(0):.1f}" y1="{sy(0.09):.1f}" x2="{sx(0):.1f}" y2="{sy(-0.09):.1f}" stroke="{AXIS}" stroke-width="1"/>')
+    polyline(out, [(sx(-0.06), sy(alpha + beta * -0.06)), (sx(0.06), sy(alpha + beta * 0.06))], BLUE, 2.4)
+    for a, b in zip(x, y):
+        yhat = alpha + beta * a
+        out.append(f'<line x1="{sx(a):.1f}" y1="{sy(b):.1f}" x2="{sx(a):.1f}" y2="{sy(yhat):.1f}" stroke="{RED}" stroke-width="1.6" stroke-dasharray="3 2"/>')
+        out.append(f'<circle cx="{sx(a):.1f}" cy="{sy(b):.1f}" r="4.5" fill="{PURPLE}" opacity="0.85"/>')
+    _txt(out, sx(0.052), sy(alpha + beta * 0.052) - 10, f"ความชัน = β = {beta:.2f}", BLUE, "end", bold=True)
+    _txt(out, sx(-0.058), sy(0.075), "เส้นที่ผลรวมระยะห่าง² (residual) น้อยที่สุด", INK2, "start", size=9, italic=True)
+    _txt(out, sx(0.02) + 7, sy(0.02) - 2, "residual", RED, "start", size=9)
+    out.append("</svg>")
+    NUMS["m4-beta-scatter"] = dict(beta=beta, alpha=alpha)
+    return "\n".join(out)
+
+
+def lp_data():
+    corners = [(0, 0), (0, 5), (4, 0), (10 / 3, 5 / 3)]
+    z = [8 * a + 5 * b for a, b in corners]
+    return corners, z
+
+
+@fig("math-part5.html", "m5-lp")
+def fig_m5_lp():
+    corners, z = lp_data()
+    Wd, H = 560, 320
+    out = svg_open(Wd, H, "LP: feasible region สี่เหลี่ยมใต้เส้น 5x₁ + 2x₂ = 20 และ x₁ + x₂ = 5 มุมที่ดีที่สุด (10/3, 5/3) ให้ z = 35")
+    title(out, Wd, "Linear Programming — คำตอบอยู่ที่มุมของ feasible region เสมอ: (10/3, 5/3) ให้ z = 35",
+          "Max z = 8x₁ + 5x₂ · งบ 5x₁ + 2x₂ ≤ 20 · จำนวน x₁ + x₂ ≤ 5 · x ≥ 0 · เช็ค 4 มุม: z = 0, 25, 32, 35")
+    x0, y0, w, h = 70, 48, 240, 220
+    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5"), (6, "6")], [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], xlab="x₁ (Call K = 100)", ylab="x₂ (Call K = 110)")
+    poly = [(0, 0), (4, 0), (10 / 3, 5 / 3), (0, 5)]
+    out.append('<polygon points="' + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in poly) + f'" fill="{GREEN}" opacity="0.18"/>')
+    polyline(out, [(sx(0), sy(10)), (sx(4), sy(0))], RED, 2.0); _txt(out, sx(1.6), sy(6.6), "5x₁ + 2x₂ = 20 (งบ)", RED, "start", size=9, bold=True)
+    polyline(out, [(sx(0), sy(5)), (sx(5), sy(0))], BLUE, 2.0); _txt(out, sx(3.3), sy(2.4), "x₁ + x₂ = 5", BLUE, "start", size=9, bold=True)
+    _txt(out, sx(1.1), sy(1.6), "Feasible", GREEN, "start", bold=True); _txt(out, sx(1.1), sy(1.0), "Region", GREEN, "start", bold=True)
+    # เส้นระดับ z = 35 ผ่านจุดดีที่สุด
+    polyline(out, [(sx(0), sy(7)), (sx(4.375), sy(0))], PURPLE, 1.4, dash="5 3", shadow=False); _txt(out, sx(0.15), sy(7.5), "z = 35 (เส้นระดับ)", PURPLE, "start", size=9)
+    for (a, b), zz in zip(corners, z):
+        best = zz == max(z); _dot(out, sx(a), sy(b), PURPLE if best else INK2, 4.5 if best else 3.5)
+    # ตารางมุมด้านขวา
+    tx = 340; _txt(out, tx, y0 + 12, "มุม (x₁, x₂)", INK, "start", bold=True); _txt(out, tx + 150, y0 + 12, "z = 8x₁ + 5x₂", INK, "start", bold=True)
+    labels = ["(0, 0)", "(0, 5)", "(4, 0)", "(10/3, 5/3)"]
+    for i, (lab, zz) in enumerate(zip(labels, z)):
+        best = zz == max(z); col = PURPLE if best else INK2
+        _txt(out, tx, y0 + 34 + i * 20, lab, col, "start", bold=best); _txt(out, tx + 150, y0 + 34 + i * 20, f"{zz:g}" + (" ← ดีที่สุด" if best else ""), col, "start", bold=best)
+    _txt(out, tx, y0 + 34 + 4 * 20 + 6, "มุมที่ดีที่สุด = จุดตัดของสองเส้น constraint:", INK2, "start", size=9)
+    _txt(out, tx, y0 + 34 + 4 * 20 + 20, "แก้ 5x₁ + 2x₂ = 20 กับ x₁ + x₂ = 5 → x₁ = 10/3, x₂ = 5/3", INK2, "start", size=9)
+    _txt(out, tx, y0 + 34 + 4 * 20 + 34, "z = 8(10/3) + 5(5/3) = 80/3 + 25/3 = 35", INK2, "start", size=9)
+    out.append("</svg>")
+    NUMS["m5-lp"] = {f"z{i}": v for i, v in enumerate(z)}
+    return "\n".join(out)
+
+
+def gd_data(x0=0.0, alpha=0.1, steps=8):
+    xs = [x0]
+    for _ in range(steps): xs.append(xs[-1] - alpha * 2 * (xs[-1] - 3))
+    return xs
+
+
+@fig("math-part5.html", "m5-gradient-descent")
+def fig_m5_gradient_descent():
+    xs = gd_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"gradient descent บน f(x) = (x − 3)² + 2 เริ่ม x = 0 ก้าว α = 0.1: 0 → 0.6 → 1.08 → … → {xs[-1]:.2f} เข้าหาก้นหลุม x = 3")
+    title(out, Wd, "Gradient Descent — เดินลงเขาทีละก้าว: xₜ₊₁ = xₜ − α·f′(xₜ) เข้าหาก้นหลุมที่ x = 3",
+          f"f(x) = (x − 3)² + 2 · f′(x) = 2(x − 3) · เริ่ม x = 0 · α = 0.1 · 8 ก้าว: " + " → ".join(f"{v:.2f}" for v in xs[:5]) + f" → … → {xs[-1]:.2f}")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")], [(0, "0"), (4, "4"), (8, "8"), (12, "12"), (16, "16"), (20, "20")], "x", "f(x)")
+    out.append(ARROW_DEF); gx = np.linspace(-1, 5, 200); polyline(out, [(sx(a), sy((a - 3) ** 2 + 2)) for a in gx], BLUE, 2.4)
+    f = lambda v: (v - 3) ** 2 + 2
+    for i, (a, b) in enumerate(zip(xs[:-1], xs[1:])):
+        out.append(f'<line x1="{sx(a):.1f}" y1="{sy(f(a)):.1f}" x2="{sx(b):.1f}" y2="{sy(f(b)):.1f}" stroke="{RED}" stroke-width="1.6" marker-end="url(#arr)"/>')
+    for i, a in enumerate(xs):
+        _dot(out, sx(a), sy(f(a)), RED if i < len(xs) - 1 else PURPLE, 3.6)
+    _txt(out, sx(0) - 6, sy(f(0)) - 8, "เริ่ม x = 0 · ชัน f′ = −6 → ก้าวไปทางขวา 0.6", RED, "start", size=9, bold=True)
+    _txt(out, sx(3), sy(2) + 16, "จุดต่ำสุด x = 3 (f′ = 0 หยุดเดิน)", PURPLE, "middle", bold=True)
+    _txt(out, sx(4.9), sy(17), "ก้าวสั้นลงเรื่อย ๆ เพราะความชันเล็กลงเมื่อใกล้ก้นหลุม", INK2, "end", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m5-gradient-descent"] = {f"x{i}": v for i, v in enumerate(xs)}
+    return "\n".join(out)
+
+
+def frontier_data(m1=0.08, s1=0.20, m2=0.12, s2=0.30, rho=0.2):
+    w = np.linspace(-0.3, 1.3, 321)
+    mu = w * m1 + (1 - w) * m2
+    var = w ** 2 * s1 ** 2 + (1 - w) ** 2 * s2 ** 2 + 2 * w * (1 - w) * rho * s1 * s2
+    wmin = (s2 ** 2 - rho * s1 * s2) / (s1 ** 2 + s2 ** 2 - 2 * rho * s1 * s2)
+    mu_min = wmin * m1 + (1 - wmin) * m2; s_min = (wmin ** 2 * s1 ** 2 + (1 - wmin) ** 2 * s2 ** 2 + 2 * wmin * (1 - wmin) * rho * s1 * s2) ** 0.5
+    return w, mu, np.sqrt(var), wmin, mu_min, s_min
+
+
+@fig("math-part5.html", "m5-frontier")
+def fig_m5_frontier():
+    w, mu, sg, wmin, mu_min, s_min = frontier_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"Efficient Frontier รูปกระสุนจากหุ้นสองตัว ขอบบนคือเส้นที่ดีที่สุด จุด min-variance ที่ σ = {s_min*100:.1f}% ผลตอบแทน {mu_min*100:.1f}%")
+    title(out, Wd, "Efficient Frontier — ส่วนผสมสองหุ้นวางเป็นรูปกระสุน ขอบบนซ้ายคือ \"ดีที่สุด\" ในแต่ละระดับ σ",
+          f"A: μ 8% σ 20% · B: μ 12% σ 30% · ρ = 0.2 · Min-Variance ที่ w_A = {wmin*100:.0f}%: σ = {s_min*100:.1f}% μ = {mu_min*100:.1f}% · ขอบล่างแย่กว่าเสมอ")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%"), (0.35, "35%")], [(0.06, "6%"), (0.08, "8%"), (0.10, "10%"), (0.12, "12%"), (0.14, "14%")], "ความเสี่ยง σ →", "ผลตอบแทนคาดหวัง μ")
+    up = mu >= mu_min; lo_ = mu <= mu_min
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(sg[lo_], mu[lo_])], INK2, 1.8, dash="6 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(sg[up], mu[up])], BLUE, 2.8)
+    _dot(out, sx(0.20), sy(0.08), INK2, 4); _txt(out, sx(0.20) + 8, sy(0.08) + 14, "หุ้น A (100% A)", INK2, "start", size=9)
+    _dot(out, sx(0.30), sy(0.12), INK2, 4); _txt(out, sx(0.30) + 8, sy(0.12) + 14, "หุ้น B (100% B)", INK2, "start", size=9)
+    _dot(out, sx(s_min), sy(mu_min)); _txt(out, sx(s_min) + 8, sy(mu_min) + 4, f"Min-Variance (σ {s_min*100:.1f}%)", PURPLE, "start", bold=True)
+    _txt(out, sx(0.20), sy(0.126), "Efficient Frontier (ขอบบน)", BLUE, "start", bold=True)
+    _txt(out, sx(0.235), sy(0.068), "ขอบล่าง = เสี่ยงเท่ากันแต่ได้น้อยกว่า — ไม่มีใครเลือก", INK2, "start", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m5-frontier"] = dict(wmin=wmin, mu_min=mu_min, s_min=s_min)
+    return "\n".join(out)
+
+
+def sma_ewma_data(n=120, spike=60, lam=0.94, sg=0.01, seed=11):
+    rng = np.random.default_rng(seed); r = rng.normal(0, sg, n); r[spike] = 0.05
+    sma = np.full(n, np.nan); ew = np.zeros(n); ew[0] = sg * sg
+    for t in range(n):
+        if t >= 19: sma[t] = np.sqrt(np.mean(r[t - 19:t + 1] ** 2))
+        if t: ew[t] = lam * ew[t - 1] + (1 - lam) * r[t - 1] ** 2
+    return r, sma, np.sqrt(ew)
+
+
+@fig("math-part6.html", "m6-sma-ewma")
+def fig_m6_sma_ewma():
+    r, sma, ew = sma_ewma_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, "เทียบ σ จาก SMA 20 วันที่กระโดดขึ้นแล้วตกฮวบเมื่อวัน spike หลุดหน้าต่าง กับ EWMA λ = 0.94 ที่ขึ้นไวและจางลงเนียน")
+    title(out, Wd, "SMA กับ EWMA หลังวัน spike — SMA ค้างแล้วตกฮวบ · EWMA ขึ้นทันทีแล้วค่อย ๆ จาง",
+          f"จำลอง 120 วัน σ 1% · วันที่ 60 ผลตอบแทน +5% · SMA 20 วัน · EWMA λ = 0.94 · สูงสุด SMA {np.nanmax(sma)*100:.2f}% · EWMA {ew.max()*100:.2f}%")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (20, "20"), (40, "40"), (60, "60"), (80, "80"), (100, "100"), (120, "120")], [(0, "0"), (0.01, "1%"), (0.02, "2%"), (0.03, "3%")], "วัน", "σ รายวัน")
+    out.append(f'<line x1="{sx(60):.1f}" y1="{y0}" x2="{sx(60):.1f}" y2="{y0+h}" stroke="{RED}" stroke-width="1.2" stroke-dasharray="4 3"/>'); _txt(out, sx(60) + 4, y0 + 12, "วันที่ 60: σ พุ่ง (ผลตอบแทน +5%)", RED, "start", size=9, bold=True)
+    t = np.arange(len(r))
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t[19:], sma[19:])], AMBER, 2.2)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(t, ew)], BLUE, 2.4)
+    _txt(out, sx(119), sy(np.nanmax(sma)) - 7, "SMA ค้าง 20 วัน แล้วตกฮวบเมื่อ spike หลุดหน้าต่าง", AMBER, "end", size=9, bold=True)
+    _txt(out, sx(3), sy(0.026), f"EWMA ขึ้นทันทีวันถัดไป ({ew.max()*100:.2f}%) แล้วจางลง 6% ต่อวัน", BLUE, "start", size=9, bold=True)
+    legend(out, [(AMBER, "SMA 20 วัน (ช้า + กระตุก)", ""), (BLUE, "EWMA λ = 0.94 (ไว + เนียน)", "")], x0, H - 10)
+    out.append("</svg>")
+    NUMS["m6-sma-ewma"] = dict(sma_max=float(np.nanmax(sma)), ew_max=float(ew.max()))
+    return "\n".join(out)
+
+
+def newton_data(sigma_true=0.25, s0=0.15, S=100.0, K=100.0, r=0.05, T=0.5):
+    price = float(bs_greeks(S, K=K, r=r, sg=sigma_true, T=T)["C"])
+    def f(sg): return float(bs_greeks(S, K=K, r=r, sg=sg, T=T)["C"]) - price
+    def vega(sg): return float(bs_greeks(S, K=K, r=r, sg=sg, T=T)["vega1"]) * 100  # ต่อ 1 หน่วย σ
+    its = [s0]
+    for _ in range(3): its.append(its[-1] - f(its[-1]) / vega(its[-1]))
+    return price, f, vega, its
+
+
+@fig("math-part6.html", "m6-newton")
+def fig_m6_newton():
+    price, f, vega, its = newton_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, f"Newton-Raphson หา IV: จากเดา σ₁ = 15% ลากเส้นสัมผัสไป σ₂ = {its[1]*100:.1f}% แล้ว σ₃ = {its[2]*100:.2f}% เข้าหาราก σ* = 25%")
+    title(out, Wd, "Newton-Raphson หา Implied Vol — ลากเส้นสัมผัส (ความชัน = Vega) ไปตัดศูนย์ ซ้ำจนเข้าเป้า",
+          f"ราคาตลาด {price:.2f} (จาก σ* = 25%) · เดา σ₁ = 15% → σ₂ = {its[1]*100:.2f}% → σ₃ = {its[2]*100:.3f}% → σ₄ = {its[3]*100:.4f}% · เข้าเป้าใน 3 รอบ")
+    sgs = np.linspace(0.05, 0.40, 141); fv = np.array([f(v) for v in sgs])
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%"), (0.35, "35%"), (0.40, "40%")], [(-6, "−6"), (-4, "−4"), (-2, "−2"), (0, "0"), (2, "2"), (4, "4")], "σ (เดา)", "f(σ) = BS(σ) − ราคาตลาด")
+    _zero_line(out, sx, sy, 0.05, 0.40)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(sgs, fv)], BLUE, 2.4)
+    s1, s2 = its[0], its[1]
+    polyline(out, [(sx(s1), sy(f(s1))), (sx(s2), sy(0))], RED, 1.6, dash="5 3", shadow=False)
+    out.append(f'<line x1="{sx(s2):.1f}" y1="{sy(0):.1f}" x2="{sx(s2):.1f}" y2="{sy(f(s2)):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
+    _dot(out, sx(s1), sy(f(s1)), RED); _txt(out, sx(s1), sy(f(s1)) + 16, f"σ₁ = 15% · f = {f(s1):.2f}", RED, "middle", size=9, bold=True)
+    _dot(out, sx(s2), sy(0), RED, 3.6); _txt(out, sx(s2) + 6, sy(0) - 8, f"σ₂ = {s2*100:.1f}%", RED, "start", size=9, bold=True)
+    _dot(out, sx(0.25), sy(0)); _txt(out, sx(0.25) + 6, sy(0) + 16, "σ* = IV = 25% (ราก)", PURPLE, "start", bold=True)
+    _txt(out, sx(0.11), sy(2.6), "เส้นประ = เส้นสัมผัส ชัน Vega(σ₁)", RED, "start", size=9)
+    _txt(out, sx(0.11), sy(2.6) + 12, "σ₂ = σ₁ − f(σ₁)/Vega(σ₁)", RED, "start", size=9)
+    out.append("</svg>")
+    NUMS["m6-newton"] = dict(price=price, s2=its[1], s3=its[2], s4=its[3])
+    return "\n".join(out)
+
+
+def random_walk_data(n=60, seed=5, paths=3):
+    rng = np.random.default_rng(seed)
+    steps = rng.choice([-1.0, 1.0], size=(paths, n))
+    return np.concatenate([np.zeros((paths, 1)), np.cumsum(steps, axis=1)], axis=1)
+
+
+@fig("math-part6.html", "m6-random-walk")
+def fig_m6_random_walk():
+    W_ = random_walk_data(); n = W_.shape[1] - 1
+    Wd, H = 560, 324
+    out = svg_open(Wd, H, "เส้นทางเดินสุ่มสามเส้นจากจุดเริ่มเดียวกัน ก้าวละ ±1 กระจายออกตามเวลาในกรวย ±√t และ ±2√t")
+    title(out, Wd, "Random Walk — ก้าวละ ±1 สุ่ม: ทำนายทิศไม่ได้ แต่ทำนาย \"ความกว้าง\" ได้ = √t",
+          f"3 เส้นทาง 60 ก้าว (สุ่มแบบตรึง seed) · กรวยเทา = ±√t (1σ) และ ±2√t · จบที่ {', '.join(f'{v:+.0f}' for v in W_[:, -1])} ทั้งที่เริ่มเท่ากัน")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (10, "10"), (20, "20"), (30, "30"), (40, "40"), (50, "50"), (60, "60")], [(-20, "−20"), (-10, "−10"), (0, "S₀"), (10, "+10"), (20, "+20")], "เวลา (ก้าว)", "S − S₀")
+    t = np.arange(n + 1)
+    for k in (2, 1):
+        pts = [(sx(a), sy(k * np.sqrt(a))) for a in t] + [(sx(a), sy(-k * np.sqrt(a))) for a in t[::-1]]
+        out.append('<polygon points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in pts) + f'" fill="{INK2}" opacity="{0.07 if k == 2 else 0.10}"/>')
+    _zero_line(out, sx, sy, 0, n)
+    for i, col in enumerate((BLUE, GREEN, RED)):
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(t, W_[i])], col, 2.0, shadow=False)
+    legend(out, [(BLUE, f"เส้นทาง 1 (จบ {W_[0, -1]:+.0f})", ""), (GREEN, f"เส้นทาง 2 (จบ {W_[1, -1]:+.0f})", ""), (RED, f"เส้นทาง 3 (จบ {W_[2, -1]:+.0f})", "")], 55, H - 10)
+    _txt(out, sx(40), sy(2 * np.sqrt(40)) - 6, "±2√t", INK2, "middle", size=9); _txt(out, sx(48), sy(np.sqrt(48)) + 12, "±√t", INK2, "middle", size=9)
+    out.append("</svg>")
+    NUMS["m6-random-walk"] = {f"end{i+1}": float(W_[i, -1]) for i in range(3)}
+    return "\n".join(out)
+
+
+def mc_paths_data(S0=100.0, K=100.0, r=0.05, sg=0.20, T=1.0, n=20, steps=120, seed=3):
+    rng = np.random.default_rng(seed); dt = T / steps
+    Z = rng.standard_normal((n, steps))
+    logS = np.log(S0) + np.cumsum((r - sg * sg / 2) * dt + sg * np.sqrt(dt) * Z, axis=1)
+    S = np.concatenate([np.full((n, 1), S0), np.exp(logS)], axis=1)
+    pay = np.maximum(S[:, -1] - K, 0)
+    return S, pay, float(np.exp(-r * T) * pay.mean()), float(bs_greeks(S0, K=K, r=r, sg=sg, T=T)["C"])
+
+
+@fig("math-part7.html", "m7-mc-paths")
+def fig_m7_mc_paths():
+    S, pay, mc, bs = mc_paths_data(); n, steps = S.shape[0], S.shape[1] - 1
+    n_itm = int((pay > 0).sum())
+    Wd, H = 560, 320
+    out = svg_open(Wd, H, f"เส้นทางราคาหุ้น GBM 20 เส้นจาก S₀ = 100 หนึ่งปี {n_itm} เส้นจบเหนือ K = 100 (ITM) ที่เหลือจบต่ำกว่าได้ payoff 0")
+    title(out, Wd, "Monte Carlo — จำลองเส้นทางราคาหลายเส้น: จบเหนือ K ได้ S − K · จบต่ำกว่าได้ 0",
+          f"GBM risk-neutral · S₀ = K = 100 · r = 5% · σ = 20% · T = 1 · 20 เส้นนี้ ITM {n_itm} · เฉลี่ย payoff คิดลด {mc:.2f} (BS {bs:.2f} — ต้องใช้หมื่นเส้น)")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.25, "0.25"), (0.5, "0.5"), (0.75, "0.75"), (1.0, "T = 1 ปี")], [(60, "60"), (80, "80"), (100, "100"), (120, "120"), (140, "140"), (160, "160")], "เวลา", "S")
+    t = np.linspace(0, 1, steps + 1)
+    out.append(f'<line x1="{x0}" y1="{sy(100):.1f}" x2="{x0+w}" y2="{sy(100):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>'); _txt(out, x0 + 4, sy(100) - 5, "K = 100", PURPLE, "start", size=9, bold=True)
+    for i in range(n):
+        col = GREEN if pay[i] > 0 else RED
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(t, S[i])], col, 1.2, shadow=False)
+    _txt(out, sx(1.0) - 4, sy(150), f"จบเหนือ K → ITM ({n_itm} เส้น) payoff = S − K", GREEN, "end", size=9, bold=True)
+    _txt(out, sx(1.0) - 4, sy(66), f"จบต่ำกว่า K → payoff 0 ({n - n_itm} เส้น)", RED, "end", size=9, bold=True)
+    _txt(out, x0 + w, H - 8, "จำลองหมื่นเส้นทาง → เฉลี่ย payoff → คิดลดด้วย e⁻ʳᵀ = ราคา option", INK2, "end", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m7-mc-paths"] = dict(n_itm=n_itm, mc=mc, bs=bs)
     return "\n".join(out)
 
 
