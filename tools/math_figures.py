@@ -736,6 +736,23 @@ print(f"Arb §2.3   gross={_steps[0][1]:.2f} ค่าใช้จ่ายร�
 expect("arb-part1.html", "§2.3 กฎทอง", f"Arb ที่ดูเหมือนกำไร ฿{_steps[0][1]:.2f} อาจขาดทุนจริง ฿{abs(_net):.2f} หลังหักค่าใช้จ่าย")
 
 
+# ── เล่ม 1 Part IV §11.3 Black-Scholes — ภาพกายวิภาคต้องใช้เลขชุดเดียวกับตัวอย่างในบท ──────
+_d1, _d2, _Nd1, _Nd2, _disc, _t1, _t2, _C = _mf.bs_anatomy_data()
+print(f"เล่ม1 §11.3 d1={_d1:.3f} d2={_d2:.3f} N(d1)={_Nd1:.4f} N(d2)={_Nd2:.4f} C={_C:.3f}")
+expect("math-part7.html", "§11.3 d₁", f"d₁ = (0 + 0.08125) / 0.25 = <b>{_d1:.3f}</b>")
+expect("math-part7.html", "§11.3 d₂", f"d₂ = d₁ − σ√T = {_d1:.3f} − 0.25 = <b>{_d2:.3f}</b>")
+expect("math-part7.html", "§11.3 N(d₁)", f"N(d₁) = N({_d1:.3f}) ≈ <b>{_Nd1:.4f}</b>")
+expect("math-part7.html", "§11.3 N(d₂)", f"N(d₂) = N({_d2:.3f}) ≈ <b>{_Nd2:.4f}</b>")
+expect("math-part7.html", "§11.3 C ขั้นลบ", f"= {_t1:.2f} − {_t2:.2f}\n")
+expect("math-part7.html", "§11.3 C ละเอียด", f"(ค่าละเอียด = {_C:.3f})")
+
+# ── ตาของ Arbitrageur ถอด structured note — ภาพกับข้อความต้องได้ตัวเลขเดียวกัน ─────────────
+_eln_cost, _eln_markup = _mf.eln_data()
+print(f"eye ELN   ต้นทุนจริง={_eln_cost:.0f} จ่ายเกิน={_eln_markup:.0f}")
+expect("eye-part2.html", "ELN ต้นทุนจริง", f"ต้นทุนจริง = 97 + 5 = ฿{_eln_cost:.0f}")
+expect("eye-part2.html", "ELN markup", f"คุณจ่ายแพงเกิน ฿{_eln_markup:.0f}!")
+
+
 
 def main():
     if "--print" in sys.argv:

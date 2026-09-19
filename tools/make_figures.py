@@ -7,6 +7,7 @@
       python3 tools/make_figures.py --check    → ตรวจว่า SVG ในไฟล์ตรงกับที่สคริปต์สร้าง (exit 1 ถ้าไม่ตรง)
 ต้องมี numpy
 """
+import json
 import os
 import re
 import sys
@@ -3421,6 +3422,297 @@ def fig_a9_checklist():
     _txt(out, Wd / 2, H - 22, "ไม่มีข้อไหนข้ามได้ — ข้อที่ข้ามคือข้อที่จะทำให้เสียเงิน", RED, "middle", size=10, bold=True)
     _txt(out, Wd / 2, H - 6, "STOP ไม่ใช่ความล้มเหลว · ส่วนใหญ่ของวันที่ทำงานดี คือวันที่ไม่ได้ลงไม้เลย", INK2, "middle", size=9, italic=True)
     out.append("</svg>")
+    return "\n".join(out)
+
+
+# ── ตาของ Arbitrageur · คณิตศาสตร์ · คิดแบบ Quant — ผังและแผนภาพ ─────────────────────────
+@fig("eye-part1.html", "e1-everything-option")
+def fig_e1_everything_option():
+    Wd, H = 560, 330
+    out = svg_open(Wd, H, "ของใช้ประจำวันหกอย่างที่จริง ๆ แล้วเป็น option: ประกันรถคือ long put คูปองลดราคาคือ call มัดจำคอนโดคือ call คืนของได้เจ็ดวันคือ free put เงินเดือนคือ bond และโบนัสถึงเป้าคือ digital call")
+    title(out, Wd, "\"ถ้า…แล้ว…\" ที่ไหนก็ตาม ที่นั่นมี option ซ่อนอยู่",
+          "ทุกแถวมีคนถือสิทธิ์และคนรับภาระเสมอ · คำถามเดียวที่ต้องถามคือ \"ใครจ่ายเบี้ย และใครรับความเสี่ยง\"")
+    dbox(out, 150, 58, 260, 36, [("สัญญาที่ขึ้นกับเงื่อนไข = Option", 11.5, PURPLE, True)], col=PURPLE, fill=0.12)
+    rows = [("ประกันรถ", "Long Put — จ่ายเบี้ย ได้ชดเชยถ้าชน", "คุณ", "บริษัทประกัน", BLUE),
+            ("คูปอง \"ลด 20% ภายในเดือนนี้\"", "Call — สิทธิ์ซื้อถูก มีวันหมดอายุ", "คุณ", "ร้านค้า", GREEN),
+            ("มัดจำคอนโด ฿50,000", "Call — เบี้ย = มัดจำ · strike = ราคาคอนโด", "คุณ", "ผู้พัฒนา", GREEN),
+            ("\"คืนได้ภายใน 7 วัน\"", "Put ที่แถมฟรี — ไม่พอใจก็คืนได้", "คุณ", "ร้านค้า", BLUE),
+            ("เงินเดือนประจำ", "Bond — ได้เงินคงที่ทุกงวด ไม่ขึ้นกับผลงาน", "คุณ", "บริษัท", INK2),
+            ("โบนัส \"ถ้ายอดขายถึงเป้า\"", "Digital Call — ได้ก้อนคงที่ถ้าเกินเป้า", "คุณ", "บริษัท", AMBER)]
+    _txt(out, 40, 112, "ของใช้ประจำวัน", INK, "start", size=9.5, bold=True)
+    _txt(out, 240, 112, "จริง ๆ แล้วคือ", INK, "start", size=9.5, bold=True)
+    _txt(out, 512, 112, "ใครถือสิทธิ์ / ใครรับภาระ", INK, "end", size=9.5, bold=True)
+    for i, (thing, kind, long_, short_, col) in enumerate(rows):
+        y = 122 + i * 32
+        out.append(f'<rect x="34" y="{y}" width="492" height="28" rx="4" fill="{col}" fill-opacity="0.07"/>')
+        _txt(out, 40, y + 18, thing, INK, "start", size=9.5, bold=True)
+        _txt(out, 240, y + 18, kind, col, "start", size=9.5, bold=True)
+        _txt(out, 512, y + 18, f"{long_} / {short_}", INK2, "end", size=9)
+    _txt(out, Wd / 2, 322, "เห็น option ในของธรรมดาได้เมื่อไร ก็เริ่มถามได้ว่า \"เบี้ยที่จ่ายอยู่นี้ แพงไปหรือเปล่า\"", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def eln_data(note_price=105.0, bond=97.0, half_call=5.0):
+    """฿5 คือราคาของ \"0.5 × Call\" ทั้งชิ้น (ตามบท: 97 + 5 = 102) ไม่ใช่ราคา Call เต็มสัญญา"""
+    cost = bond + half_call
+    return cost, note_price - cost
+
+
+@fig("eye-part2.html", "e2-eln-decompose")
+def fig_e2_eln_decompose():
+    cost, markup = eln_data()
+    Wd, H = 560, 280
+    out = svg_open(Wd, H, f"ถอด structured note ราคา 105 บาท ออกเป็นพันธบัตร 97 บาท บวกครึ่งสัญญาของ call 5 บาท ต้นทุนจริงจึงเป็น {cost:.0f} บาท ส่วนต่าง {markup:.0f} บาทคือส่วนที่จ่ายเกิน")
+    title(out, Wd, f"ถอดเลโก้แล้วรู้ราคาจริง — ขาย ฿105 แต่ต้นทุนชิ้นส่วนรวม ฿{cost:.0f} ต่างกัน ฿{markup:.0f}",
+          "\"คืนเงินต้น + 50% ของ upside\" = พันธบัตร + Call ครึ่งสัญญา · ราคาของประกอบต้องเท่ากับผลรวมราคาชิ้นส่วน")
+    out.append(arrow_defs())
+    dbox(out, 34, 76, 150, 74, [("Structured Note", 11, INK, True), ("ขาย ฿105", 13, RED, True)], col=RED, fill=0.12)
+    _txt(out, 198, 118, "=", INK, "middle", size=18, bold=True)
+    dbox(out, 214, 76, 130, 74, [("Bond", 11, GREEN, True), ("฿97", 13, GREEN, True), ("(คืนเงินต้น 100)", 8.8, INK2, False)], col=GREEN, fill=0.12)
+    _txt(out, 358, 118, "+", INK, "middle", size=18, bold=True)
+    dbox(out, 374, 76, 150, 74, [("0.5 × Call", 11, BLUE, True), ("฿5", 13, BLUE, True), ("(ราคาของครึ่งสัญญา)", 8.8, INK2, False)], col=BLUE, fill=0.12)
+    darrow(out, 289, 158, 289, 176, INK2, 2.0)
+    dbox(out, 150, 182, 260, 44, [(f"ต้นทุนจริง = 97 + 5 = ฿{cost:.0f}", 11.5, PURPLE, True),
+                                  (f"คุณจ่ายแพงเกินไป ฿{markup:.0f}", 10.5, RED, True)], col=PURPLE, fill=0.10)
+    _txt(out, Wd / 2, 246, "ความซับซ้อนคือเบี้ยที่คนจ่ายเพราะไม่รู้ว่ามันประกอบจากอะไร — ถอดเป็นก็ไม่ต้องจ่าย", INK, "middle", size=10, bold=True)
+    _txt(out, Wd / 2, 266, "กับดัก: \"50% ของ upside\" คือ Call 0.5 สัญญา ไม่ใช่ Call ที่ strike ครึ่งหนึ่ง และไม่ใช่ครึ่งราคา", RED, "middle", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["e2-eln-decompose"] = dict(cost=cost, markup=markup)
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-pcp")
+def fig_m1_pcp():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "สมการ put-call parity: call บวกเงินสดเท่ากับ put บวกหุ้น แล้วย้ายข้างได้สูตรประกอบร่างสี่แบบ")
+    title(out, Wd, "Put-Call Parity — สมการเดียวที่ย้ายข้างได้สี่สูตร \"ประกอบร่าง\"",
+          "C + PV(K) = P + S ทั้งสองข้างให้ max(S, K) ที่วันหมดอายุเหมือนกัน ราคาวันนี้จึงต้องเท่ากัน")
+    out.append(arrow_defs())
+    dbox(out, 60, 62, 180, 56, [("C + PV(K)", 13, BLUE, True), ("Long Call + เงินฝาก", 9.5, INK2, False)], col=BLUE, fill=0.12)
+    _txt(out, 280, 96, "=", INK, "middle", size=20, bold=True)
+    dbox(out, 320, 62, 180, 56, [("P + S", 13, GREEN, True), ("Long Put + หุ้น", 9.5, INK2, False)], col=GREEN, fill=0.12)
+    _txt(out, Wd / 2, 138, "↓ ย้ายข้างสมการ ได้สี่สูตรประกอบร่าง ↓", PURPLE, "middle", size=10, bold=True)
+    rows = [("S = C − P + PV(K)", "Synthetic Stock", GREEN), ("C = P + S − PV(K)", "Synthetic Call", BLUE),
+            ("P = C − S + PV(K)", "Synthetic Put", AMBER), ("PV(K) = P + S − C", "Synthetic Bond", PURPLE)]
+    for i, (eq, nm, col) in enumerate(rows):
+        x = 34 + (i % 2) * 254; y = 152 + (i // 2) * 56
+        dbox(out, x, y, 238, 46, [(eq, 11, col, True), (nm, 9.5, INK2, False)], col=col, fill=0.10)
+    _txt(out, Wd / 2, 286, "อยากได้ของชิ้นไหนแต่ซื้อตรง ๆ ไม่ได้ — ย้ายข้างหาชิ้นนั้น แล้วประกอบจากที่เหลือ", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def bs_anatomy_data(S=100.0, K=100.0, r=0.05, sg=0.25, T=1.0):
+    """เลขชุดเดียวกับตัวอย่างหลักของบท §11.3: S = K = 100 · r = 5% · σ = 25% · T = 1 ปี → C = 12.34"""
+    g = bs_greeks(S, K=K, r=r, sg=sg, T=T)
+    d1 = (np.log(S / K) + (r + sg * sg / 2) * T) / (sg * np.sqrt(T)); d2 = d1 - sg * np.sqrt(T)
+    Nd1, Nd2 = _N(float(d1)), _N(float(d2)); disc = K * np.exp(-r * T)
+    return float(d1), float(d2), Nd1, Nd2, float(disc), S * Nd1, float(disc) * Nd2, float(g["C"])
+
+
+@fig("math-part7.html", "m7-bs-anatomy")
+def fig_m7_bs_anatomy():
+    d1, d2, Nd1, Nd2, disc, term1, term2, C = bs_anatomy_data()
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, f"กายวิภาคของสูตร Black-Scholes ด้วยตัวเลขจริง: สิ่งที่ได้ {term1:.2f} ลบสิ่งที่จ่าย {term2:.2f} เท่ากับราคา call {C:.2f}")
+    title(out, Wd, "สูตร Black-Scholes อ่านเป็นภาษาคน — \"คาดว่าจะได้\" ลบ \"คาดว่าจะจ่าย\"",
+          f"เลขชุดเดียวกับ §11.3: S = K = 100 · r = 5% · σ = 25% · T = 1 ปี · d₁ = {d1:.3f} · d₂ = {d2:.3f}")
+    out.append(arrow_defs())
+    dbox(out, 30, 64, 200, 80, [("S₀ · N(d₁)", 12.5, GREEN, True), (f"100 × {Nd1:.4f} = {term1:.2f}", 10.5, INK, True),
+                                ("สิ่งที่ได้: หุ้น ถ่วงด้วย Delta", 9, INK2, False)], col=GREEN, fill=0.12)
+    _txt(out, 252, 108, "−", INK, "middle", size=20, bold=True)
+    dbox(out, 274, 64, 256, 80, [("K · e⁻ʳᵀ · N(d₂)", 12.5, RED, True), (f"{disc:.2f} × {Nd2:.4f} = {term2:.2f}", 10.5, INK, True),
+                                 ("สิ่งที่จ่าย: เงิน K คิดลด ถ้าได้ใช้สิทธิ์", 9, INK2, False)], col=RED, fill=0.12)
+    darrow(out, 280, 152, 280, 170, INK2, 2.0)
+    dbox(out, 170, 176, 220, 46, [(f"= C = {term1:.2f} − {term2:.2f} = {C:.2f}", 12.5, PURPLE, True)], col=PURPLE, fill=0.10)
+    _txt(out, Wd / 2, 244, "N(d₂) = โอกาส (risk-neutral) ที่จะได้ใช้สิทธิ์ · N(d₁) = Delta ไม่ใช่ความน่าจะเป็น", INK, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 262, "S₀ มาจาก Part I · N(·) มาจาก Part II · d₁ ใช้แคลคูลัส Part III · การคิดลดมาจาก Part I", INK2, "middle", size=9, italic=True)
+    _txt(out, Wd / 2, 280, f"ATM แต่ N(d₁) = {Nd1:.4f} ไม่ใช่ 0.5 เพราะดอกเบี้ยและ σ²/2 ดัน d₁ ให้เป็นบวก", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m7-bs-anatomy"] = dict(d1=d1, d2=d2, Nd1=Nd1, Nd2=Nd2, term1=term1, term2=term2, C=C)
+    return "\n".join(out)
+
+
+@fig("math-part11.html", "m11-cv-split")
+def fig_m11_cv_split():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เทียบสองวิธีแบ่งข้อมูล: k-fold สุ่มสลับทำให้ชุดฝึกอยู่ทั้งก่อนและหลังชุดทดสอบ ส่วน walk-forward ให้ชุดฝึกอยู่ก่อนชุดทดสอบเสมอ", multipanel=True)
+    title(out, Wd, "k-fold กับ walk-forward — วิธีแบ่งข้อมูลที่ต่างกันตรง \"เวลา\"",
+          "ข้อมูลการเงินมีลำดับเวลา · แบ่งผิดวิธี ชุดฝึกจะมีอนาคตปนอยู่ และผลทดสอบจะสวยเกินจริง")
+    L, R = 55, 505; n = 5; bw = (R - L) / n
+    _txt(out, L, 66, "k-fold (สุ่มสลับ) — ชุดฝึกอยู่ทั้งสองข้างของชุดทดสอบ", RED, "start", size=10.5, bold=True)
+    for i in range(n):
+        test = i == 2
+        col = AMBER if test else BLUE
+        out.append(f'<rect x="{L+i*bw+2:.1f}" y="76" width="{bw-4:.1f}" height="36" rx="4" fill="{col}" fill-opacity="{0.55 if test else 0.20}" stroke="{col}" stroke-width="1.5"/>')
+        _txt(out, L + i * bw + bw / 2, 99, "ทดสอบ" if test else "ฝึก", INK if test else INK2, "middle", size=10, bold=test)
+    out.append(arrow_defs())
+    darrow(out, L + 3.6 * bw, 124, L + 2.6 * bw, 124, RED, 1.8)
+    _txt(out, L + 3.7 * bw, 128, "อนาคตรั่วย้อนกลับมาสอนอดีต", RED, "start", size=9.5, bold=True)
+    _txt(out, L, 166, "walk-forward — ชุดฝึกอยู่ก่อนชุดทดสอบเสมอ", GREEN, "start", size=10.5, bold=True)
+    for k in range(4):
+        y = 176 + k * 26
+        tr = 1 + k
+        out.append(f'<rect x="{L+2:.1f}" y="{y}" width="{tr*bw-4:.1f}" height="20" rx="3" fill="{BLUE}" fill-opacity="0.20" stroke="{BLUE}" stroke-width="1.2"/>')
+        _txt(out, L + tr * bw / 2, y + 14, "ฝึก", INK2, "middle", size=9)
+        out.append(f'<rect x="{L+tr*bw+2:.1f}" y="{y}" width="{bw-4:.1f}" height="20" rx="3" fill="{AMBER}" fill-opacity="0.55" stroke="{AMBER}" stroke-width="1.2"/>')
+        _txt(out, L + tr * bw + bw / 2, y + 14, "ทดสอบ", INK, "middle", size=9, bold=True)
+    darrow(out, L, 288, R, 288, INK2, 1.6)
+    _txt(out, L + 4, 282, "เวลา →  ชุดฝึกโตขึ้นเรื่อย ๆ เหมือนตอนเทรดจริง", INK2, "start", size=9.5, bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def belief_line_stations():
+    return ["① ข้อความ", "② ฐาน", "③ การวัด", "④ การกระจาย", "⑤ ต้นทุน", "⑥ โครงสร้าง", "⑦ ขนาด", "⑧ บันทึก"]
+
+
+def _belief_line_svg():
+    st = belief_line_stations()
+    Wd, H = 620, 320
+    out = svg_open(Wd, H, "สายการผลิตความเชื่อแปดสถานี เรียงสองแถว ตั้งแต่ตั้งข้อความไปจนถึงบันทึก โดยอินดิเคเตอร์อยู่ที่สถานีที่ 3 เพียงสถานีเดียว", multipanel=True)
+    title(out, Wd, "สายการผลิตความเชื่อ 8 สถานี — อินดิเคเตอร์อยู่แค่สถานีเดียว",
+          "ความรู้สึกเข้าต้นสาย · ออกปลายสายเป็นตำแหน่งที่มีขนาด มีกฎออก และมีวิธีรู้ว่าผิด")
+    out.append(arrow_defs())
+    bw, bh, gap = 92, 44, 12
+    x0, y1, y2 = 90, 92, 178
+    # หมายเหตุอินดิเคเตอร์วางไว้เหนือแถวบน เพื่อให้ช่องว่างระหว่างแถวโล่ง
+    bx3 = x0 + 2 * (bw + gap) + bw / 2
+    _txt(out, bx3, y1 - 16, "อินดิเคเตอร์ทั้งหมดอยู่ตรงนี้ — สถานีเดียว", AMBER, "middle", size=9.5, bold=True)
+    darrow(out, bx3, y1 - 12, bx3, y1 - 3, AMBER, 1.8)
+    dbox(out, 8, y1, 72, bh, [("ความรู้สึก", 9.5, INK2, True)], col=INK2, fill=0.08)
+    darrow(out, 82, y1 + bh / 2, x0 - 3, y1 + bh / 2, INK2, 1.8)
+    for i, nm in enumerate(st):
+        row, ci = divmod(i, 4)
+        bx = x0 + ci * (bw + gap); by = y1 if row == 0 else y2
+        col = AMBER if i == 2 else BLUE
+        dbox(out, bx, by, bw, bh, [(nm, 10, col, True)], col=col, fill=0.16 if i == 2 else 0.10)
+        if ci: darrow(out, bx - gap + 1, by + bh / 2, bx - 3, by + bh / 2, INK2, 1.6)
+    right = x0 + 3 * (bw + gap) + bw
+    _txt(out, right + 6, y1 + bh / 2 + 4, "↓ ต่อแถวล่าง", INK2, "start", size=9, bold=True)
+    dbox(out, 500, y2 - 4, 112, 52, [("ออกปลายทาง", 9.5, GREEN, True), ("ตำแหน่งที่มีขนาด", 9, INK, True)], col=GREEN, fill=0.12)
+    darrow(out, right + 3, y2 + bh / 2, 496, y2 + bh / 2, GREEN, 1.8)
+    _txt(out, 556, y2 + 62, "มีกฎออก · รู้ว่าผิดเมื่อไร", GREEN, "middle", size=9, bold=True)
+    yf = y2 + bh + 30
+    out.append(f'<path d="M {right-46:.0f} {y2+bh+4:.0f} C {right-46:.0f} {yf:.0f}, {x0+40:.0f} {yf:.0f}, {x0+40:.0f} {y2+bh+6:.0f}" fill="none" stroke="{PURPLE}" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar-purple)"/>')
+    _txt(out, (right + x0) / 2 - 20, yf + 4, "⑧ บันทึก ป้อนกลับไปแก้ ① ข้อความ", PURPLE, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 292, "สถานีที่คนข้ามบ่อยที่สุดคือ ② ฐาน และ ⑤ ต้นทุน — สองสถานีที่ตัดสินว่าได้เงินหรือไม่", RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 310, "ถ้าสถานีไหนตอบไม่ได้ ความเชื่อนั้นยังไม่พร้อมลงเงิน — ไม่ใช่เพราะสัญญาณไม่ดี แต่เพราะยังไม่ครบสาย", INK2, "middle", size=9, italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("nq-index.html", "nq-belief-line")
+def fig_nq_belief_line_index():
+    return _belief_line_svg()
+
+
+@fig("nq-part0.html", "nq-belief-line")
+def fig_nq_belief_line_part0():
+    return _belief_line_svg()
+
+
+def _nq_fig():
+    with open(os.path.join(DOCS, "nq-figures.json"), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+@fig("nq-part0.html", "nq0-base-rate")
+def fig_nq0_base_rate():
+    f = _nq_fig(); b = f["btc"]
+    base = b["สัดส่วนวันที่ขึ้นเปอร์เซ็นต์"]; nb = b["จำนวนวันที่มีผลตอบแทน"]
+    aft = b["วันถัดจากขึ้น3วันติด"]["สัดส่วนที่ขึ้นเปอร์เซ็นต์"]; na = b["วันถัดจากขึ้น3วันติด"]["จำนวนตัวอย่าง"]
+    flip = b["วันถัดจากขึ้น3วันติด"]["ถ้าพลิกหนึ่งครั้งเปอร์เซ็นต์"]
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"แท่งเทียบสัดส่วนวันที่ราคาขึ้น: ทุกวันได้ {base}% จาก {nb} วัน เทียบกับหลังขึ้นสามวันติดได้ {aft}% จากแค่ {na} ครั้ง")
+    title(out, Wd, f"สัญญาณทำให้แย่ลง ไม่ใช่ดีขึ้น — ฐาน {base}% แต่หลังขึ้น 3 วันติดเหลือ {aft}%",
+          f"BTC {f['btc']['ช่วงข้อมูล']['จำนวนวัน']} วัน · ก่อนถามว่า \"สัญญาณนี้ดีไหม\" ต้องรู้ก่อนว่าไม่ใช้สัญญาณเลยได้เท่าไร")
+    x0, y0, w, h = 90, 66, 380, 150
+    def sy(v): return y0 + h - (v - 40) / 25 * h
+    for v in (40, 45, 50, 55, 60):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 6, sy(v) + 3.5, f"{v}%", INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(50):.1f}" x2="{x0+w}" y2="{sy(50):.1f}" stroke="{INK2}" stroke-width="1.6" stroke-dasharray="5 3"/>')
+    _txt(out, x0 + w + 4, sy(50) + 3.5, "50% = เหรียญ", INK2, "start", size=9)
+    bars = [(base, f"ทุกวัน (ไม่ใช้สัญญาณ)", f"n = {nb}", BLUE), (aft, "หลังขึ้น 3 วันติด", f"n = {na} — น้อยเกินไป", RED)]
+    bw = 110
+    for i, (v, nm, sub, col) in enumerate(bars):
+        bx = x0 + 60 + i * 190
+        out.append(f'<rect x="{bx:.1f}" y="{sy(v):.1f}" width="{bw}" height="{sy(40)-sy(v):.1f}" rx="4" fill="{col}" opacity="0.75"/>')
+        _txt(out, bx + bw / 2, sy(v) - 7, f"{v}%", col, "middle", size=13, bold=True)
+        _txt(out, bx + bw / 2, y0 + h + 16, nm, INK, "middle", size=9.5, bold=True)
+        _txt(out, bx + bw / 2, y0 + h + 30, sub, INK2, "middle", size=9)
+    _txt(out, Wd / 2, 258, f"ตัวอย่างแค่ {na} ครั้ง — พลิกผลแค่ครั้งเดียวก็กลายเป็น {flip}% แล้ว", RED, "middle", size=10, bold=True)
+    _txt(out, Wd / 2, 276, "ตัวเลขที่ขยับง่ายขนาดนี้ ยังไม่ใช่หลักฐานว่าสัญญาณใช้ได้หรือใช้ไม่ได้", INK2, "middle", size=9.5, italic=True)
+    _txt(out, Wd / 2, 292, "สิ่งที่บอกได้แน่คือ: มันไม่ได้ดีกว่าการไม่ใช้สัญญาณเลย", INK, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["nq0-base-rate"] = dict(base=base, aft=aft, n_after=na, flip=flip)
+    return "\n".join(out)
+
+
+@fig("nq-part2.html", "nq2-claim-ladder")
+def fig_nq2_claim_ladder():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "บันไดสี่ขั้นจากความรู้สึกที่ตรวจสอบไม่ได้ ไปสู่ข้อความที่ครบห้าช่องและบอกได้ว่าผิดเมื่อไร")
+    title(out, Wd, "สี่ขั้นจาก \"ความรู้สึก\" ไปเป็น \"ข้อความที่ตัดสินได้\"",
+          "ขั้นที่ตัดสินไม่ได้ ไม่ใช่ข้อความที่ผิด — แต่เป็นข้อความที่ไม่มีวันผิด จึงสอนอะไรไม่ได้เลย")
+    rows = [("ขั้น 1 · \"BTC กำลังจะขึ้น\"", "ทุกผลลัพธ์เข้าได้หมด — ไม่มีวันผิด", RED),
+            ("ขั้น 2 · \"จะขึ้นแรงในระยะสั้น\"", "\"แรง\" กับ \"สั้น\" ไม่มีเส้นแบ่ง — ยังตัดสินไม่ได้", AMBER),
+            ("ขั้น 3 · \"ปิดเหนือ 72,000 ใน 5 วันทำการ\"", "ตรวจสอบได้แล้ว แต่ยังไม่บอกว่าวัดจากไหน", BLUE),
+            ("ขั้น 4 · ครบห้าช่อง + เงื่อนไขที่บอกว่าผิด", "ตัดสินได้ · สอนได้ · แก้ย้อนหลังไม่ได้", GREEN)]
+    for i, (head, desc, col) in enumerate(rows):
+        y = 68 + i * 52
+        dbox(out, 96, y, 424, 44, [(head, 10.5, col, True), (desc, 9.2, INK2, False)], col=col, fill=0.10)
+        _txt(out, 88, y + 27, f"{i+1}", col, "end", size=13, bold=True)
+    out.append(arrow_defs())
+    out.append(f'<line x1="60" y1="72" x2="60" y2="266" stroke="{INK2}" stroke-width="1.6" marker-end="url(#ar-ink2)"/>')
+    _txt(out, 54, 84, "ตรวจสอบไม่ได้", RED, "end", size=9, bold=True)
+    _txt(out, 54, 262, "ตรวจสอบได้", GREEN, "end", size=9, bold=True)
+    _txt(out, Wd / 2, 292, "ห้าช่อง: อะไร · เท่าไร · เมื่อไร · วัดจากไหน · ผิดเมื่อไร", INK, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def copula_tail_data():
+    with open(os.path.join(DOCS, "copula-figures.json"), encoding="utf-8") as fh:
+        d = json.load(fh)
+    tails = d["tailถ้าสมมติfamilyไว้ก่อน"]; fits = d["fitด้วยML"]
+    aic = {k: v["AIC"] for k, v in fits.items()}
+    return d, tails, aic
+
+
+@fig("statarb-copula-practice.html", "copula-tail-by-family")
+def fig_copula_tail_by_family():
+    d, tails, aic = copula_tail_data()
+    rows = [("Gaussian", tails["Gaussian"], aic.get("Gaussian")), ("Student-t (df=8)", tails["Student-t (df=8)"], None),
+            ("Student-t (df=5)", tails["Student-t (df=5)"], None), ("Student-t (df=3)", tails["Student-t (df=3)"], aic.get("Student-t")),
+            ("Gumbel", tails["Gumbel"], aic.get("Gumbel")), ("Clayton", tails["Clayton"], aic.get("Clayton"))]
+    lo, hi = min(v for _, v, _ in rows), max(v for _, v, _ in rows)
+    nd = d["ข้อมูล"]["จำนวนวันผลตอบแทน"]
+    Wd, H = 560, 334
+    out = svg_open(Wd, H, f"แท่งแสดง tail dependence จากข้อมูลชุดเดียวกัน {nd} วัน ที่เปลี่ยนไปตามตระกูล copula ที่สมมติ ตั้งแต่ {lo:.3f} ถึง {hi:.3f}")
+    title(out, Wd, f"ข้อมูลชุดเดิม {nd} วัน แต่ tail dependence วิ่งตั้งแต่ {lo:.3f} ถึง {hi:.3f}",
+          f"BTC/ETH · Kendall tau = {d['ความสัมพันธ์']['Kendall']} · ตัวเลขที่ได้ขึ้นกับว่าคุณสมมติ family ไหน ไม่ใช่ข้อมูลบอก")
+    x0, y0, w, h = 150, 62, 330, 186
+    def sx(v): return x0 + v / 0.9 * w
+    for v in (0, 0.2, 0.4, 0.6, 0.8):
+        out.append(f'<line x1="{sx(v):.1f}" y1="{y0}" x2="{sx(v):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, sx(v), y0 + h + 14, f"{v:.1f}", INK2, "middle", size=9)
+    bh = h / len(rows) - 8
+    best = min((a for _, _, a in rows if a is not None))
+    for i, (nm, v, a) in enumerate(rows):
+        y = y0 + i * (bh + 8) + 4
+        col = GREEN if a == best else (BLUE if a is None else AMBER)
+        out.append(f'<rect x="{x0:.1f}" y="{y:.1f}" width="{max(sx(v)-x0, 2):.1f}" height="{bh:.1f}" rx="3" fill="{col}" opacity="0.72"/>')
+        _txt(out, x0 - 6, y + bh / 2 + 3.5, nm, INK, "end", size=9.5, bold=True)
+        _txt(out, max(sx(v) + 6, x0 + 8), y + bh / 2 + 3.5, f"{v:.3f}" + (f"  ·  AIC {a:.2f}" if a is not None else ""), col, "start", size=9, bold=True)
+    out.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.4"/>')
+    _txt(out, x0 + w / 2, y0 + h + 32, "ค่า tail dependence (λ) ที่ family นั้นบอก", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, 302, f"ML เลือก Gaussian (AIC {best:.2f} ต่ำสุด) ซึ่งบอกว่า λ = 0 พอดี — ไม่มี tail dependence เลย", GREEN, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 322, "ถ้าสมมติ Clayton ไว้ก่อน จะได้ 0.857 จากข้อมูลชุดเดียวกัน — family คือสิ่งที่คุณเลือก ไม่ใช่สิ่งที่ข้อมูลเลือก", RED, "middle", size=9.5, bold=True)
+    out.append("</svg>")
+    NUMS["copula-tail-by-family"] = dict(lo=lo, hi=hi, best_aic=best)
     return "\n".join(out)
 
 
