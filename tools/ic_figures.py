@@ -18,6 +18,7 @@
 """
 
 import json
+import math
 import os
 import sys
 
@@ -31,6 +32,9 @@ OUT = os.path.join(ROOT, "docs", "ic-figures.json")
 HORIZONS = [1, 3, 5, 10]
 SEED, DRAWS = 20260913, 5000
 COST_ROUND_TRIP = 0.2          # % ต่อรอบ — ชุดเดียวกับ "มิน" ใน nq-figures.json
+DAYS_PER_YEAR = 365            # BTC เทรดทุกวันตามปฏิทิน (ข้อมูลในคลังมีครบทั้งเจ็ดวันของสัปดาห์)
+                               # — ไม่ใช่ 252 วันทำการของตลาดหุ้น
+Z_ALPHA, Z_BETA = 2.0, 1.2816  # ค่าเดียวกับ nq-tool-samplesize และ alpha_decay_figures ทั้งคลัง
 SIGNAL_WINDOW = 20             # วัน — หน้าต่างของ "ความชัน regression 20 วัน" (สัญญาณที่ IC แรงที่สุด)
                                # วันติดกันใช้หน้าต่างซ้อนกัน 19/20 จึงไม่ใช่เดิมพันอิสระคนละอัน
 
@@ -156,26 +160,47 @@ def build():
 
     best = max(rows, key=lambda r: abs(r["IC1วัน"]))
     f1 = fwd_returns(px, 1)
-    mats = []
+    # สัญญาณหกตัวมาจากราคาชุดเดียวกันจึงเกาะกลุ่มกันแน่น (ดู "สหสัมพันธ์ระหว่างสัญญาณ")
+    # ฐานของ "ตัวที่ดีที่สุด" จึงต้องสลับลำดับเวลา **ครั้งเดียวต่อรอบ** แล้วใช้ลำดับเดียวกัน
+    # กับทุกสัญญาณ — ถ้าสลับแยกรายสัญญาณ จะเท่ากับสมมติว่าหกตัวเป็นอิสระต่อกัน ฐานจะกว้างเกินจริง
+    masks = []
     for nm, sg in sigs.items():
         m = ~(np.isnan(sg) | np.isnan(f1))
         if m.sum() >= 8:
-            mats.append((sg[m], f1[m]))
+            masks.append((sg, m))
+    live = np.flatnonzero(~np.isnan(f1))
     rng2 = np.random.default_rng(SEED + 1)
     max_null = np.empty(DRAWS)
     for i in range(DRAWS):
-        max_null[i] = max(abs(spearman(a, rng2.permutation(b))) for a, b in mats)
-    sel = {"จำนวนสัญญาณที่ลอง": len(mats),
+        fp = f1.copy()
+        fp[live] = f1[rng2.permutation(live)]
+        max_null[i] = max(abs(spearman(sg[m], fp[m])) for sg, m in masks)
+    sel = {"จำนวนสัญญาณที่ลอง": len(masks),
+           "วิธีสลับ": "สลับลำดับเวลาครั้งเดียวต่อรอบ ใช้ลำดับเดียวกันกับทุกสัญญาณ (คงความเกาะกลุ่มระหว่างสัญญาณไว้)",
            "maxABSที่95จากความสุ่ม": round(float(np.percentile(max_null, 95)), 4),
            "maxABSเฉลี่ยจากความสุ่ม": round(float(max_null.mean()), 4),
            "ของจริง": round(abs(best["IC1วัน"]), 4),
            "เปอร์เซ็นไทล์ของของจริง": round(float((max_null < abs(best["IC1วัน"])).mean() * 100), 1)}
 
-    z_a, z_b = 1.96, 1.2816
+    z_a, z_b = Z_ALPHA, Z_BETA
     def n_needed(ic):
         return int(np.ceil(((z_a + z_b) / max(abs(ic), 1e-6)) ** 2 + 1))
+
+    def _phi(z):
+        return 0.5 * (1 + math.erf(z / math.sqrt(2)))
+
+    def power_at(ic, n):
+        """โอกาสที่การทดสอบจะจับ IC จริงขนาดนี้ได้ ที่จำนวนวัน n — ปกติประมาณ SE = 1/√(n−1)"""
+        se = 1 / math.sqrt(n - 1)
+        crit = z_a * se
+        return _phi((abs(ic) - crit) / se) + _phi((-abs(ic) - crit) / se)
     sample = {f"IC = {v}": n_needed(v) for v in (0.05, 0.10, 0.20, 0.30)}
-    sample[f"IC ที่วัดได้ของ {best['สัญญาณ']} = {abs(best['IC1วัน']):.3f}"] = n_needed(best["IC1วัน"])
+    sample[f"IC ที่วัดได้ของ {best['สัญญาณ']} = {abs(best['IC1วัน']):.4f}"] = n_needed(best["IC1วัน"])
+    power = {"จำนวนวันที่ใช้": best["จำนวนวัน"],
+             "zที่ใช้ตัด": Z_ALPHA,
+             "โอกาสจับได้": {f"IC จริง = {v}": round(power_at(v, best["จำนวนวัน"]) * 100, 1)
+                              for v in (0.10, 0.20, 0.25, 0.30, 0.40)},
+             "อ่านว่า": "ที่จำนวนวันเท่านี้ ต่อให้สัญญาณมี IC จริงขนาดนั้น การทดสอบก็มีโอกาสจับได้เท่านี้"}
 
     hist_cnt, hist_edges = np.histogram(max_null, bins=28, range=(0.0, 0.7))
     ic_grid = [round(v, 3) for v in np.arange(0.04, 0.42, 0.02)]
@@ -188,14 +213,40 @@ def build():
            "จำนวนเดิมพันอิสระที่ต้องใช้ต่อปี": {f"IC = {v}": breadth_needed(v) for v in (0.05, 0.10, 0.20)},
            "ของสัญญาณที่ดีที่สุด": {"IC": abs(best["IC1วัน"]),
                                      "เดิมพันอิสระที่ต้องใช้ต่อปี": breadth_needed(best["IC1วัน"]),
-                                     "วันทำการต่อปีของสินทรัพย์เดียว": 252,
+                                     "วันต่อปีของสินทรัพย์เดียว": DAYS_PER_YEAR,
                                      "หน้าต่างของสัญญาณ(วัน)": SIGNAL_WINDOW,
-                                     "เดิมพันอิสระที่มีจริงต่อปีต่อสินทรัพย์": 252 // SIGNAL_WINDOW,
-                                     "จำนวนสินทรัพย์ที่ต้องใช้": int(np.ceil(breadth_needed(best["IC1วัน"]) / (252 // SIGNAL_WINDOW)))}}
+                                     "เดิมพันอิสระที่มีจริงต่อปีต่อสินทรัพย์": DAYS_PER_YEAR // SIGNAL_WINDOW,
+                                     "จำนวนสินทรัพย์ที่ต้องใช้": int(np.ceil(breadth_needed(best["IC1วัน"])
+                                                                              / (DAYS_PER_YEAR // SIGNAL_WINDOW))),
+                                     "หมายเหตุ": ("ขอบล่างของ breadth — วันติดกันใช้หน้าต่างซ้อนกันจึงไม่อิสระ "
+                                                   "ขอบบนคือ " + str(DAYS_PER_YEAR) + " ถ้าทุกวันเป็นเดิมพันใหม่จริง")}}
 
     terc = terciles(sigs[best["สัญญาณ"]], f1)
     spread = round(terc[-1]["ผลตอบแทนเฉลี่ยเปอร์เซ็นต์"] - terc[0]["ผลตอบแทนเฉลี่ยเปอร์เซ็นต์"], 3)
     spread_med = round(terc[-1]["มัธยฐานเปอร์เซ็นต์"] - terc[0]["มัธยฐานเปอร์เซ็นต์"], 3)
+    # ต้นทุนหักจาก **ขนาด** ของส่วนต่างเสมอ — ส่วนต่างติดลบแปลว่าต้องเทรดกลับทาง
+    # ไม่ใช่ว่าขาดทุนหนักขึ้น · กำไรขั้นต้นของการเทรดตามทิศที่ถูกคือ |spread|
+    gross = round(abs(spread), 3)
+    net = round(gross - COST_ROUND_TRIP, 3)
+
+    names = list(sigs)
+    pair_rows, pair_vals = [], {}
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            m = ~(np.isnan(sigs[a]) | np.isnan(sigs[b]))
+            if m.sum() >= 8:
+                rho = round(spearman(sigs[a][m], sigs[b][m]), 3)
+                pair_rows.append({"คู่": [a, b], "สหสัมพันธ์อันดับ": rho, "จำนวนวัน": int(m.sum())})
+                pair_vals[(a, b)] = pair_vals[(b, a)] = rho
+    _mean_abs = {a: round(float(np.mean([abs(pair_vals[(a, b)]) for b in names if b != a and (a, b) in pair_vals])), 3)
+                 for a in names}
+    corr = {"_อ่านว่า": "สัญญาณทุกตัวคำนวณจากราคาชุดเดียวกัน จึงซ้ำกันเองสูง — หกตัวไม่ใช่หกหลักฐานอิสระ",
+            "ชื่อสัญญาณ": names,
+            "รายคู่": sorted(pair_rows, key=lambda r: -abs(r["สหสัมพันธ์อันดับ"])),
+            "สูงสุด": max(pair_rows, key=lambda r: abs(r["สหสัมพันธ์อันดับ"])),
+            "ต่ำสุด": min(pair_rows, key=lambda r: abs(r["สหสัมพันธ์อันดับ"])),
+            "ค่าเฉลี่ยสัมบูรณ์ต่อสัญญาณ": _mean_abs,
+            "ตัวที่ซ้ำกับตัวอื่นน้อยที่สุด": min(_mean_abs, key=_mean_abs.get)}
 
     return {
         "_อ่านก่อน": "สร้างด้วย tools/ic_figures.py จาก docs/nq-figures.json (ราคารายวัน) — ห้ามแก้ด้วยมือ",
@@ -208,7 +259,9 @@ def build():
                     "ข้อควรระวัง": "horizon > 1 วัน ผลตอบแทนซ้อนทับกัน t-stat จึงดูใหญ่เกินจริง"},
         "สัญญาณ": rows,
         "สัญญาณที่ดีที่สุด": {"ชื่อ": best["สัญญาณ"], "IC": best["IC1วัน"], "จำนวนวัน": best["จำนวนวัน"]},
+        "สหสัมพันธ์ระหว่างสัญญาณ": corr,
         "ผลของการเลือกตัวที่ดีที่สุด": sel,
+        "โอกาสที่การทดสอบจะจับได้": power,
         "ขนาดตัวอย่างที่ต้องใช้": sample,
         "เส้นขนาดตัวอย่าง": {"IC": ic_grid, "จำนวนวันที่ต้องใช้": [n_needed(v) for v in ic_grid],
                              "สูตร": "n = ((zα + zβ) ÷ IC)² + 1 · two-sided 5% · power 90%"},
@@ -218,8 +271,11 @@ def build():
         "กลุ่มสามส่วนของสัญญาณที่ดีที่สุด": {"กลุ่ม": terc,
                                              "ส่วนต่างสูงสุดลบต่ำสุดเปอร์เซ็นต์": spread,
                                              "ส่วนต่างมัธยฐานเปอร์เซ็นต์": spread_med,
+                                             "ทิศที่ต้องเทรด": ("ซื้อกลุ่มสัญญาณสูงสุด ขายกลุ่มต่ำสุด" if spread > 0
+                                                                else "ขายกลุ่มสัญญาณสูงสุด ซื้อกลุ่มต่ำสุด (กลับทางจากที่สัญญาณบอก)"),
+                                             "กำไรขั้นต้นตามทิศที่ถูกเปอร์เซ็นต์": gross,
                                              "ต้นทุนไปกลับเปอร์เซ็นต์": COST_ROUND_TRIP,
-                                             "เหลือหลังต้นทุนเปอร์เซ็นต์": round(spread - COST_ROUND_TRIP, 3)},
+                                             "เหลือหลังต้นทุนเปอร์เซ็นต์": net},
     }
 
 
