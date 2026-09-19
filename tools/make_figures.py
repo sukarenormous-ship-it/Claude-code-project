@@ -1556,6 +1556,384 @@ payoff("math-part1.html", "m1-straddle", [Leg("call", 100, 1, 4), Leg("put", 100
        show_legs=True, slopes=True, xr=(80, 120), unbounded_dy=-22)
 
 
+# ── คณิตศาสตร์เล่ม 1 Part I (math-part1) — กราฟตัวเลขที่เคยวาดมือ ──────────────────────────
+def _std_frame(out, Wd, H, xt, yt, xlab, ylab, x0=55, y0=48, w=483, h=180):
+    return frame(out, x0, y0, w, h, xt, yt, xlab=xlab, ylab=ylab), (x0, y0, w, h)
+
+
+def _zero_line(out, sx, sy, lo, hi):
+    out.append(f'<line x1="{sx(lo):.1f}" y1="{sy(0):.1f}" x2="{sx(hi):.1f}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+
+
+def _dot(out, x, y, col=PURPLE, r=4.2):
+    out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="#fff" stroke="{col}" stroke-width="2.2"/>')
+
+
+def _txt(out, x, y, text, col=INK2, anc="start", size=9.5, bold=False, italic=False):
+    fw = ' font-weight="700"' if bold else ""; fi = ' font-style="italic"' if italic else ""
+    out.append(f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anc}" {FONT} font-size="{size}" fill="{col}"{fw}{fi}>{text}</text>')
+
+
+@fig("math-part1.html", "m1-drawdown-bars")
+def fig_m1_drawdown_bars():
+    drops = [0.10, 0.25, 0.50, 0.75, 0.90]
+    reb = [d / (1 - d) for d in drops]
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "แท่งเทียบ: ร่วง 10/25/50/75/90% ต้องเด้งกลับ 11/33/100/300/900% — ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก")
+    title(out, Wd, "ร่วงแล้วต้องเด้งกลับเท่าไรถึงเท่าทุน — ขาลงกับขาขึ้นไม่ใช่กระจกสะท้อนกัน",
+          "เริ่ม ฿100 · เด้งกลับที่ต้องการ = ร่วง ÷ (1 − ร่วง) · ร่วง 50% ต้อง +100% · ร่วง 90% ต้อง +900%")
+    x0, y0, w, h = 70, 50, 470, 190
+    rows = len(drops); rh = h / rows; mid = x0 + 150  # แกนกลาง: ซ้ายแท่งร่วง (สเกล 100%) ขวาแท่งเด้ง (สเกล 900%)
+    lw, rw = 130, w - 150 - 10
+    _txt(out, mid - 4, y0 - 6, "ขนาดที่ร่วง", RED, "end", bold=True); _txt(out, mid + 4, y0 - 6, "ต้องเด้งกลับ", GREEN, "start", bold=True)
+    out.append(f'<line x1="{mid}" y1="{y0}" x2="{mid}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.2"/>')
+    for i, (d, r) in enumerate(zip(drops, reb)):
+        yc = y0 + i * rh + rh / 2; bh = rh * 0.52
+        out.append(f'<rect x="{mid - lw*d:.1f}" y="{yc-bh/2:.1f}" width="{lw*d:.1f}" height="{bh:.1f}" fill="{RED}" opacity="0.75" rx="2"/>')
+        out.append(f'<rect x="{mid:.1f}" y="{yc-bh/2:.1f}" width="{rw*r/9:.1f}" height="{bh:.1f}" fill="{GREEN}" opacity="0.75" rx="2"/>')
+        _txt(out, mid - lw * d - 5, yc + 3.5, f"−{d*100:.0f}%", RED, "end", bold=True)
+        _txt(out, mid + rw * r / 9 + 5, yc + 3.5, f"+{r*100:.0f}%" if r >= 1 else f"+{r*100:.1f}%", GREEN, "start", bold=True)
+        _txt(out, x0 - 4, yc + 3.5, f"฿100 → ฿{100*(1-d):.0f}", INK2, "end", size=9)
+    _txt(out, x0, H - 14, "ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก — นี่คือเหตุผลที่ Options วัดผลด้วย log return (ln(50/100) = −0.69 และ ln(100/50) = +0.69 สมมาตรกัน)", INK2, "start", size=9)
+    out.append("</svg>")
+    NUMS["m1-drawdown-bars"] = {f"reb{int(d*100)}": r * 100 for d, r in zip(drops, reb)}
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-linear-fn")
+def fig_m1_linear_fn():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "กราฟเส้นตรง f(x) = 2x − 100 ผ่าน (0, −100) ตัดแกน x ที่จุดคุ้มทุน (50, 0) และผ่าน (100, 100)")
+    title(out, Wd, "ฟังก์ชัน f(x) = 2x − 100 — ป้อน x ได้ f(x): เส้นตรงตัดแกน x ที่ (50, 0)",
+          "ใต้เส้นศูนย์ = โซนขาดทุน · เหนือเส้นศูนย์ = โซนกำไร · ทุก payoff chart ก็คือกราฟของฟังก์ชันแบบนี้")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (25, "25"), (50, "50"), (75, "75"), (100, "100")], [(-100, "−100"), (-50, "−50"), (0, "0"), (50, "50"), (100, "100")], "x", "f(x)")
+    out.append(f'<polygon points="{sx(0):.1f},{sy(0):.1f} {sx(50):.1f},{sy(0):.1f} {sx(0):.1f},{sy(-100):.1f}" fill="{RED}" opacity="0.10"/>')
+    out.append(f'<polygon points="{sx(50):.1f},{sy(0):.1f} {sx(100):.1f},{sy(0):.1f} {sx(100):.1f},{sy(100):.1f}" fill="{GREEN}" opacity="0.10"/>')
+    _zero_line(out, sx, sy, 0, 100)
+    polyline(out, [(sx(0), sy(-100)), (sx(100), sy(100))], BLUE, 2.75)
+    for x, lab, anc, dx, dy in [(0, "(0, −100)", "start", 8, -8), (50, "จุดคุ้มทุน (50, 0)", "start", 8, -8), (100, "(100, 100)", "end", -8, -8)]:
+        _dot(out, sx(x), sy(2 * x - 100)); _txt(out, sx(x) + dx, sy(2 * x - 100) + dy, lab, PURPLE, anc, bold=True)
+    _txt(out, sx(75), sy(20), "f(x) = 2x − 100", BLUE, "start", bold=True)
+    _txt(out, sx(30), sy(-80), "โซนขาดทุน", RED, "start", bold=True); _txt(out, sx(75), sy(80), "โซนกำไร", GREEN, "start", bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-slopes")
+def fig_m1_slopes():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เส้นตรงสี่เส้นจากจุดเดียวกัน ความชัน +1, +0.5, 0 และ −1 พร้อมสามเหลี่ยม Δx = 1 Δy = 1")
+    title(out, Wd, "ความชัน m = Δy/Δx — ขึ้น 1 ต่อ 1 (+1) · ขึ้นครึ่ง (+0.5 = Delta ATM) · แบน (0) · ลง 1 ต่อ 1 (−1)",
+          "Long Call หลัง strike ชัน +1 · Short Call ชัน −1 · payoff ก่อนถึง strike ชัน 0 · Delta คือความชันของราคา option")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], "x", "y")
+    _zero_line(out, sx, sy, -3, 3)
+    for m, col, lab, dash in [(1, GREEN, "m = +1", ""), (0.5, PURPLE, "m = +0.5", "5 3"), (0, INK2, "m = 0", ""), (-1, RED, "m = −1", "")]:
+        polyline(out, [(sx(-3), sy(-3 * m)), (sx(3), sy(3 * m))], col, 2.4, dash=dash, shadow=not dash)
+        if m < 0: _txt(out, sx(1.5), sy(-2.4), lab, col, "start", bold=True)
+        else: _txt(out, sx(3) - 4, sy(3 * m) - 6, lab, col, "end", bold=True)
+    # สามเหลี่ยม Δx = 1, Δy = 1 บนเส้น m = +1
+    out.append(f'<polyline points="{sx(1):.1f},{sy(1):.1f} {sx(2):.1f},{sy(1):.1f} {sx(2):.1f},{sy(2):.1f}" fill="none" stroke="{GREEN}" stroke-width="1.4" stroke-dasharray="3 3"/>')
+    _txt(out, sx(1.5), sy(1) + 12, "Δx = 1", GREEN, "middle", size=9); _txt(out, sx(2) + 4, sy(1.5) + 3, "Δy = 1", GREEN, "start", size=9)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-two-lines")
+def fig_m1_two_lines():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เส้น x + y = 10 กับ 2x − y = 5 ตัดกันที่จุดคำตอบ (5, 5)")
+    title(out, Wd, "ระบบสมการสองตัวแปร — คำตอบคือจุดที่เส้นสองเส้นตัดกัน: (5, 5)",
+          "x + y = 10 และ 2x − y = 5 · แทน y = 10 − x → 3x = 15 → x = 5, y = 5 · เหมือนหา strike ที่เบี้ย Call = เบี้ย Put ใน zero-cost collar")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], "x", "y")
+    polyline(out, [(sx(0), sy(10)), (sx(10), sy(0))], BLUE, 2.4); _txt(out, sx(1.2), sy(9.2), "x + y = 10", BLUE, "start", bold=True)
+    polyline(out, [(sx(2.5), sy(0)), (sx(7.5), sy(10))], AMBER, 2.4); _txt(out, sx(7.6), sy(9.4), "2x − y = 5", AMBER, "start", bold=True)
+    _dot(out, sx(5), sy(5)); _txt(out, sx(6.5), sy(2.6), "(5, 5) ← คำตอบ", PURPLE, "start", bold=True)
+    out.append(f'<line x1="{sx(5):.1f}" y1="{sy(5):.1f}" x2="{sx(5):.1f}" y2="{sy(0):.1f}" stroke="{PURPLE}" stroke-width="1" stroke-dasharray="3 3"/>')
+    out.append(f'<line x1="{sx(5):.1f}" y1="{sy(5):.1f}" x2="{sx(0):.1f}" y2="{sy(5):.1f}" stroke="{PURPLE}" stroke-width="1" stroke-dasharray="3 3"/>')
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def growth_data(P=10000.0, r=0.10, T=10):
+    t = np.linspace(0, T, 101)
+    return t, P * (1 + r * t), P * (1 + r) ** t, P * np.exp(r * t)
+
+
+@fig("math-part1.html", "m1-growth")
+def fig_m1_growth():
+    t, simple, comp, cont = growth_data()
+    Wd, H = 560, 328
+    out = svg_open(Wd, H, "เงิน 10,000 ที่ 10% ต่อปี 10 ปี: เชิงเดี่ยวเป็นเส้นตรงจบ 20,000 ทบต้นรายปีโค้งขึ้นจบ 25,937 ทบต้นต่อเนื่องจบ 27,183")
+    title(out, Wd, "เงินโตอย่างไร — เชิงเดี่ยวเป็นเส้นตรง · ทบต้นโค้งขึ้น · ทบต้นต่อเนื่อง (e) โค้งสุด",
+          "เริ่ม ฿10,000 · 10% ต่อปี · 10 ปี · ช่องว่างระหว่างเส้นถ่างออกตามเวลา = ดอกเบี้ยของดอกเบี้ย")
+    (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], [(10000, "10k"), (15000, "15k"), (20000, "20k"), (25000, "25k"), (30000, "30k")], "ปี", "฿")
+    for y, col, lab, dash in [(simple, INK2, "เชิงเดี่ยว → เส้นตรง", ""), (comp, BLUE, "ทบต้นรายปี → โค้งขึ้น", ""), (cont, PURPLE, "ทบต้นต่อเนื่อง (e)", "6 3")]:
+        polyline(out, [(sx(a), sy(b)) for a, b in zip(t, y)], col, 2.4, dash=dash, shadow=not dash)
+    _txt(out, x0 + 8, y0 + 14, "จบปีที่ 10:", INK, "start", bold=True)
+    _txt(out, x0 + 8, y0 + 28, f"เชิงเดี่ยว {simple[-1]:,.0f}", INK2, "start", bold=True)
+    _txt(out, x0 + 8, y0 + 42, f"ทบต้นรายปี {comp[-1]:,.0f}", BLUE, "start", bold=True)
+    _txt(out, x0 + 8, y0 + 56, f"ต่อเนื่อง (e) {cont[-1]:,.0f}", PURPLE, "start", bold=True)
+    legend(out, [(INK2, "เชิงเดี่ยว 10,000(1 + 0.1t)", ""), (BLUE, "ทบต้นรายปี 10,000(1.1)ᵗ", "")], x0, H - 24)
+    legend(out, [(PURPLE, "ทบต้นต่อเนื่อง 10,000·e^(0.1t)", "6 3")], x0, H - 8)
+    out.append("</svg>")
+    NUMS["m1-growth"] = dict(simple=float(simple[-1]), comp=float(comp[-1]), cont=float(cont[-1]))
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-log")
+def fig_m1_log():
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "กราฟ y = log₁₀(x) ผ่าน (1, 0) (10, 1) (100, 2): โตเร็วช่วงแรกแล้วค่อย ๆ แบนราบ")
+    title(out, Wd, "y = log₁₀(x) — ผ่าน (1, 0) · x เพิ่ม 10 เท่า log เพิ่มทีละ 1 · โตช้าลงเรื่อย ๆ",
+          "log บีบช่วงกว้างให้อ่านไหว: 1 → 10 → 100 กลายเป็น 0 → 1 → 2 · คูณ → บวก")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (20, "20"), (40, "40"), (60, "60"), (80, "80"), (100, "100")], [(-1, "−1"), (0, "0"), (1, "1"), (2, "2")], "x", "log₁₀(x)")
+    _zero_line(out, sx, sy, 0, 100)
+    x = np.linspace(0.12, 100, 400)
+    polyline(out, [(sx(a), sy(np.log10(a))) for a in x], BLUE, 2.6)
+    for xv, lab, dy in [(1, "log(1) = 0", 16), (10, "log(10) = 1", -8), (100, "log(100) = 2", -8)]:
+        _dot(out, sx(xv), sy(np.log10(xv))); _txt(out, sx(xv) + (8 if xv < 100 else -8), sy(np.log10(xv)) + dy, lab, PURPLE, "start" if xv < 100 else "end", bold=True)
+    _txt(out, sx(55), sy(1.45), "โตช้าลงเรื่อย ๆ (x เพิ่ม 10 เท่า → log เพิ่มแค่ 1)", INK2, "middle", italic=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+@fig("math-part1.html", "m1-exp-ln")
+def fig_m1_exp_ln():
+    Wd, H = 560, 320
+    out = svg_open(Wd, H, "เส้น y = eˣ ผ่าน (0, 1) กับ y = ln(x) ผ่าน (1, 0) เป็นภาพสะท้อนกันผ่านเส้น y = x")
+    title(out, Wd, "eˣ กับ ln(x) เป็นปุ่ม undo ของกัน — กราฟสะท้อนกันผ่านกระจก y = x",
+          "eˣ ผ่าน (0, 1) และเป็นบวกเสมอ · ln(x) ผ่าน (1, 0) และรับเฉพาะ x > 0 · ln(eˣ) = x")
+    x0, y0, w, h = 175, 48, 240, 240  # จัตุรัสเพื่อให้กระจก 45° ดูเป็น 45° จริง
+    sx, sy = frame(out, x0, y0, w, h, [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], xlab="x", ylab="y")
+    _zero_line(out, sx, sy, -3, 3); out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.2"/>')
+    polyline(out, [(sx(-3), sy(-3)), (sx(3), sy(3))], INK2, 1.4, dash="4 3", shadow=False); _txt(out, sx(2.55), sy(2.85), "y = x (กระจก)", INK2, "end", size=9)
+    xe = np.linspace(-3, np.log(3), 200); polyline(out, [(sx(a), sy(np.exp(a))) for a in xe], BLUE, 2.5)
+    xl = np.linspace(np.exp(-3), 3, 300); polyline(out, [(sx(a), sy(np.log(a))) for a in xl], GREEN, 2.5)
+    _dot(out, sx(0), sy(1)); _txt(out, sx(0) - 8, sy(1) - 6, "(0, 1)", BLUE, "end", bold=True)
+    _dot(out, sx(1), sy(0)); _txt(out, sx(1) + 8, sy(0) + 14, "(1, 0)", GREEN, "start", bold=True)
+    _txt(out, sx(0.4), sy(2.6), "y = eˣ", BLUE, "end", bold=True); _txt(out, sx(2.2), sy(0.55), "y = ln(x)", GREEN, "start", bold=True)
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+# ── คณิตศาสตร์เล่ม 1 Part II (math-part2) — ระฆังและการแจกแจง ────────────────────────────────
+def _bell_frame(out, Wd, H, xt, xlab, ylab="ความหนาแน่น", ymax=1.0, x0=55, y0=48, w=483, h=180):
+    yt = [(0, "0"), (ymax, "")]
+    sx, sy = frame(out, x0, y0, w, h, xt, yt, xlab=xlab, ylab=ylab, grid_y=False)
+    return sx, sy, (x0, y0, w, h)
+
+
+def _fill_between(out, sx, sy, xs, ys, col, op=0.18):
+    pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(xs, ys))
+    out.append(f'<polygon points="{sx(xs[0]):.1f},{sy(0):.1f} {pts} {sx(xs[-1]):.1f},{sy(0):.1f}" fill="{col}" opacity="{op}"/>')
+
+
+def two_bells_strike_data(S0=100.0, sgA=5.0, sgB=20.0, K=120.0):
+    S = np.linspace(40, 160, 481)
+    fA = _npdf((S - S0) / sgA) / sgA; fB = _npdf((S - S0) / sgB) / sgB
+    pA = 1 - _N((K - S0) / sgA); pB = 1 - _N((K - S0) / sgB)
+    return S, fA, fB, pA, pB
+
+
+@fig("math-part2.html", "m2-two-bells-strike")
+def fig_m2_two_bells_strike():
+    S, fA, fB, pA, pB = two_bells_strike_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, "ระฆังสองใบศูนย์กลาง 100 เดียวกัน หุ้น A แคบสูง (σ 5) หุ้น B กว้างเตี้ย (σ 20) พื้นที่เลย strike 120 ของ B มากกว่ามาก")
+    title(out, Wd, "หุ้น A กับ B ราคาเท่ากัน ค่าเฉลี่ยเท่ากัน — แต่โอกาส \"พุ่งเลย strike\" ต่างกันมหาศาล",
+          f"ศูนย์กลาง 100 ทั้งคู่ · A เหวี่ยง ±5 · B เหวี่ยง ±20 · พื้นที่เกิน strike 120: A ≈ {pA*100:.3f}% · B ≈ {pB*100:.1f}% → Option ของ B แพงกว่ามาก")
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, [(40, "40"), (60, "60"), (80, "80"), (100, "100"), (120, "120"), (140, "140"), (160, "160")], "ราคาหุ้นวันหมดอายุ", ymax=float(fA.max()) * 1.08)
+    mask = S >= 120
+    _fill_between(out, sx, sy, S[mask], fB[mask], RED, 0.30)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, fA)], BLUE, 2.4)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(S, fB)], RED, 2.4)
+    out.append(f'<line x1="{sx(120):.1f}" y1="{y0}" x2="{sx(120):.1f}" y2="{y0+h}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="4 3"/>')
+    _txt(out, sx(120) + 4, y0 + 12, "Strike 120", PURPLE, "start", bold=True)
+    _txt(out, sx(100) + 8, sy(fA.max()) + 4, "หุ้น A (σ แคบ)", BLUE, "start", bold=True)
+    _txt(out, sx(100) + 8, sy(fA.max()) + 16, "เกือบไม่มีทางเลย 120", BLUE, "start", size=9)
+    _txt(out, sx(60), sy(fB.max() * 1.6), "หุ้น B (σ กว้าง)", RED, "middle", bold=True)
+    _txt(out, sx(141), sy(fB.max() * 1.35), f"พื้นที่เลย strike ของ B ≈ {pB*100:.0f}%", RED, "middle", bold=True)
+    _txt(out, sx(141), sy(fB.max() * 1.35) + 12, "→ Option แพงกว่า", RED, "middle", size=9)
+    out.append("</svg>")
+    NUMS["m2-two-bells-strike"] = dict(pA=pA, pB=pB)
+    return "\n".join(out)
+
+
+def hist_data(n=500, sg=1.2, seed=7):
+    rng = np.random.default_rng(seed); r = rng.normal(0, sg, n)
+    edges = np.arange(-4.5, 4.51, 0.5); cnt, _ = np.histogram(r, edges)
+    return r, edges, cnt
+
+
+@fig("math-part2.html", "m2-histogram")
+def fig_m2_histogram():
+    r, edges, cnt = hist_data()
+    Wd, H = 560, 310
+    out = svg_open(Wd, H, "Histogram ผลตอบแทนรายวัน 500 วัน (จำลอง σ = 1.2%) รูประฆัง มีเส้น Normal ทาบ")
+    title(out, Wd, "Histogram — เอาผลตอบแทนรายวันมากองใส่ช่อง ช่องไหนสูง = เกิดบ่อย → รูประฆัง",
+          f"จำลอง 500 วัน ผลตอบแทน ~ Normal(0, σ = 1.2%) · ช่องกว้าง 0.5% · ค่าเฉลี่ยตัวอย่าง {r.mean():+.2f}% · σ ตัวอย่าง {r.std(ddof=1):.2f}%")
+    x0, y0, w, h = 55, 48, 483, 180
+    ymax = cnt.max() * 1.15
+    sx, sy = frame(out, x0, y0, w, h, [(v, f"{v:+.0f}%".replace("+0%", "0%").replace("-", "−")) for v in range(-4, 5)], [(0, "0"), (ymax, "")], xlab="ผลตอบแทนรายวัน (%)", ylab="จำนวนวัน", grid_y=False)
+    for a, b, c in zip(edges[:-1], edges[1:], cnt):
+        if c: out.append(f'<rect x="{sx(a)+1:.1f}" y="{sy(c):.1f}" width="{sx(b)-sx(a)-2:.1f}" height="{sy(0)-sy(c):.1f}" fill="{BLUE}" opacity="0.55"/>')
+    xs = np.linspace(-4.5, 4.5, 300); dens = _npdf(xs / r.std(ddof=1)) / r.std(ddof=1) * len(r) * 0.5
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(xs, dens)], RED, 2.4)
+    _txt(out, sx(1.6), sy(dens.max() * 0.85), "เส้น Normal ทาบ", RED, "start", bold=True)
+    _txt(out, sx(-4.4), sy(cnt.max()), f"ช่องสูงสุด {cnt.max()} วัน ที่ใกล้ 0%", INK2, "start", size=9)
+    out.append("</svg>")
+    NUMS["m2-histogram"] = dict(mean=float(r.mean()), sd=float(r.std(ddof=1)), peak=int(cnt.max()))
+    return "\n".join(out)
+
+
+def two_bells_sigma_data():
+    rA = np.array([1, -1, 2, -2.0]); rB = np.array([10, -8, 12, -14.0])
+    return rA.std(ddof=0), rB.std(ddof=0)  # เล่มใช้ σ ประชากร (หาร n) → 1.58% และ 11.2%
+
+
+@fig("math-part2.html", "m2-two-bells-sigma")
+def fig_m2_two_bells_sigma():
+    sA, sB = two_bells_sigma_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"ระฆังสองใบ หุ้น A σ = {sA:.2f}% แคบสูง หุ้น B σ = {sB:.1f}% กว้างเตี้ย พื้นที่ใต้กราฟเท่ากัน")
+    title(out, Wd, "σ คือความกว้างของระฆัง — A นิ่ง (แคบสูง) · B เหวี่ยง (กว้างเตี้ย) · พื้นที่เท่ากัน 100%",
+          f"หุ้น A ผลตอบแทน +1, −1, +2, −2% → σ = {sA:.2f}% · หุ้น B +10, −8, +12, −14% → σ = {sB:.1f}% · mean 0% ทั้งคู่")
+    x = np.linspace(-35, 35, 701)
+    fA = _npdf(x / sA) / sA; fB = _npdf(x / sB) / sB
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, [(-30, "−30%"), (-20, "−20%"), (-10, "−10%"), (0, "0"), (10, "+10%"), (20, "+20%"), (30, "+30%")], "ผลตอบแทน", ymax=float(fA.max()) * 1.08)
+    _fill_between(out, sx, sy, x, fB, RED, 0.12); _fill_between(out, sx, sy, x, fA, BLUE, 0.12)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(x, fA)], BLUE, 2.4); polyline(out, [(sx(a), sy(b)) for a, b in zip(x, fB)], RED, 2.4)
+    _txt(out, sx(0) + 8, sy(fA.max()) + 4, f"หุ้น A · σ = {sA:.2f}% — แคบ = นิ่ง", BLUE, "start", bold=True)
+    _txt(out, sx(29.5), sy(fB.max() * 1.6), f"หุ้น B · σ = {sB:.1f}% — กว้าง = เหวี่ยง", RED, "end", bold=True)
+    _txt(out, x0 + w, H - 8, "พื้นที่ใต้กราฟเท่ากัน (= 100%) — B แค่ \"เตี้ยลงและกว้างออก\"", INK2, "end", size=9, italic=True)
+    out.append("</svg>")
+    NUMS["m2-two-bells-sigma"] = dict(sA=float(sA), sB=float(sB))
+    return "\n".join(out)
+
+
+@fig("math-part2.html", "m2-binomial")
+def fig_m2_binomial():
+    from math import comb
+    n, p = 4, 0.5; probs = [comb(n, k) * p ** k * (1 - p) ** (n - k) for k in range(n + 1)]
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, "แท่ง Binomial n = 4 p = 0.5: 6.25% 25% 37.5% 25% 6.25% สมมาตร สูงสุดที่ k = 2")
+    title(out, Wd, "โยนเหรียญ 4 ครั้ง — โอกาสได้หัว k ครั้ง: แท่งสมมาตร สูงสุดที่ k = 2 (37.5%)",
+          "P(X = k) = C(4, k) · 0.5ᵏ · 0.5⁴⁻ᵏ · รวมทุกแท่ง = 100% · n ยิ่งมาก แท่งยิ่งเข้าใกล้ระฆัง Normal")
+    x0, y0, w, h = 55, 48, 483, 170
+    sx, sy = frame(out, x0, y0, w, h, [(-0.5, ""), (0, "0"), (1, "1"), (2, "2"), (3, "3"), (4, "4"), (4.5, "")], [(0, "0"), (0.1, "10%"), (0.2, "20%"), (0.3, "30%"), (0.4, "40%")], xlab="k (จำนวนครั้งที่ได้หัว)", ylab="ความน่าจะเป็น")
+    for k, pr in enumerate(probs):
+        out.append(f'<rect x="{sx(k-0.35):.1f}" y="{sy(pr):.1f}" width="{sx(k+0.35)-sx(k-0.35):.1f}" height="{sy(0)-sy(pr):.1f}" fill="{BLUE}" opacity="{0.9 if k == 2 else 0.6}" rx="2"/>')
+        _txt(out, sx(k), sy(pr) - 5, f"{pr*100:g}%", INK, "middle", bold=True)
+    _txt(out, sx(3.2), sy(0.34), "n ยิ่งมาก → เข้าใกล้ระฆัง Normal", INK2, "start", italic=True)
+    out.append("</svg>")
+    NUMS["m2-binomial"] = {f"p{k}": pr for k, pr in enumerate(probs)}
+    return "\n".join(out)
+
+
+@fig("math-part2.html", "m2-68-95")
+def fig_m2_68_95():
+    Wd, H = 560, 300
+    p1 = _N(1) - _N(-1); p2 = _N(2) - _N(-2)
+    out = svg_open(Wd, H, f"ระฆัง Normal กับกฎ 68-95-99.7: แถบ ±1σ ครอบ {p1*100:.1f}% แถบ ±2σ ครอบ {p2*100:.1f}% หางสองข้างที่เหลือ")
+    title(out, Wd, "กฎ 68-95-99.7 — ระฆัง Normal: ±1σ ครอบ 68% · ±2σ ครอบ 95% · เกิน ±2σ คือ \"หาง\" ราว 5%",
+          f"คำนวณจริง: N(1) − N(−1) = {p1*100:.1f}% · N(2) − N(−2) = {p2*100:.1f}% · หุ้น σ = 20%/ปี → 68% ของปีอยู่ใน ±20%")
+    x = np.linspace(-3.5, 3.5, 701); f = _npdf(x)
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, [(-3, "μ−3σ"), (-2, "μ−2σ"), (-1, "μ−1σ"), (0, "μ"), (1, "μ+1σ"), (2, "μ+2σ"), (3, "μ+3σ")], "", ymax=float(f.max()) * 1.1)
+    m2 = (x >= -2) & (x <= 2); m1 = (x >= -1) & (x <= 1)
+    _fill_between(out, sx, sy, x[m2], f[m2], AMBER, 0.22); _fill_between(out, sx, sy, x[m1], f[m1], BLUE, 0.28)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(x, f)], INK, 2.4)
+    for v in (-2, -1, 1, 2):
+        out.append(f'<line x1="{sx(v):.1f}" y1="{sy(0):.1f}" x2="{sx(v):.1f}" y2="{sy(_npdf(v)):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="3 3"/>')
+    _txt(out, sx(0), sy(0.17), f"{p1*100:.0f}%", BLUE, "middle", size=13, bold=True); _txt(out, sx(0), sy(0.17) + 13, "อยู่ใน ±1σ", BLUE, "middle", size=9)
+    _txt(out, sx(1.5), sy(0.04), f"{p2*100:.0f}% อยู่ใน ±2σ", AMBER, "middle", bold=True)
+    _txt(out, sx(2.7), sy(0.03), "หาง ≈ 2.3%", RED, "middle", size=9, bold=True); _txt(out, sx(-2.7), sy(0.03), "หาง ≈ 2.3%", RED, "middle", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["m2-68-95"] = dict(p1=p1, p2=p2)
+    return "\n".join(out)
+
+
+@fig("math-part2.html", "m2-Nd")
+def fig_m2_Nd():
+    d = 0.5; Nd = _N(d)
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, f"N(d) คือพื้นที่สะสมใต้ระฆังมาตรฐานทางซ้ายของ d: ที่ d = 0.5 พื้นที่ = {Nd:.4f}")
+    title(out, Wd, f"N(d) = พื้นที่ใต้ระฆังทางซ้ายของ d — ตัวอย่าง d = 0.5 → N(0.5) = {Nd:.4f}",
+          "N(0) = 0.5 พอดี (ครึ่งซ้าย) · d ยิ่งมาก พื้นที่ยิ่งเข้าใกล้ 1 · d ติดลบ พื้นที่น้อยกว่า 0.5 · ใน Black-Scholes ใช้ N(d₁) และ N(d₂)")
+    x = np.linspace(-3.5, 3.5, 701); f = _npdf(x)
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], "z (หน่วย σ)", ymax=float(f.max()) * 1.1)
+    m = x <= d; _fill_between(out, sx, sy, x[m], f[m], BLUE, 0.30)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(x, f)], INK, 2.4)
+    out.append(f'<line x1="{sx(d):.1f}" y1="{sy(0):.1f}" x2="{sx(d):.1f}" y2="{sy(_npdf(d)):.1f}" stroke="{PURPLE}" stroke-width="1.6"/>')
+    _txt(out, sx(d), sy(0) + 14, "d = 0.5", PURPLE, "middle", bold=True)
+    _txt(out, sx(-0.6), sy(0.15), f"N(d) = {Nd:.4f}", BLUE, "middle", size=12, bold=True); _txt(out, sx(-0.6), sy(0.15) + 13, "= พื้นที่ทางซ้าย", BLUE, "middle", size=9)
+    _txt(out, sx(1.8), sy(0.08), f"ที่เหลือ 1 − N(d) = {1-Nd:.4f}", INK2, "middle", size=9)
+    out.append("</svg>")
+    NUMS["m2-Nd"] = dict(Nd=Nd)
+    return "\n".join(out)
+
+
+def lognormal_data(S0=100.0, sg=0.20, T=1.0):
+    S = np.linspace(0.5, 200, 800)
+    mu = np.log(S0) - sg * sg * T / 2
+    f_ln = np.exp(-(np.log(S) - mu) ** 2 / (2 * sg * sg * T)) / (S * sg * np.sqrt(2 * np.pi * T))
+    sd = S0 * sg * np.sqrt(T)  # normal ที่มี σ ราคาเท่ากัน ๆ ไว้เทียบ
+    f_n = _npdf((S - S0) / sd) / sd
+    return S, f_n, f_ln, float(np.exp(mu)), float(np.exp(mu - sg * sg * T))
+
+
+@fig("math-part2.html", "m2-normal-vs-lognormal")
+def fig_m2_normal_vs_lognormal():
+    S, f_n, f_ln, med, mode = lognormal_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, "เทียบระฆัง Normal สมมาตรที่ลากไปถึงค่าลบได้ กับ Lognormal ของราคาหุ้นที่เริ่มจาก 0 และเบ้ขวา")
+    title(out, Wd, "Normal สมมาตรและ \"ติดลบได้\" — Lognormal ของราคาหุ้นเริ่มที่ 0 และเบ้ขวา",
+          f"S₀ = 100 · σ = 20% · 1 ปี · Lognormal: มัธยฐาน {med:.1f} · ยอด (mode) {mode:.1f} · หางขวายาวกว่าหางซ้าย")
+    xt = [(0, "0"), (50, "50"), (100, "100"), (150, "150"), (200, "200")]
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, xt, "ราคาหุ้น S", ymax=float(max(f_n.max(), f_ln.max())) * 1.1)
+    Sn = np.linspace(0, 200, 801); sd = 20.0; fn = _npdf((Sn - 100) / sd) / sd
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(Sn, fn)], INK2, 2.0, dash="6 3", shadow=False)
+    _fill_between(out, sx, sy, S, f_ln, GREEN, 0.15); polyline(out, [(sx(a), sy(b)) for a, b in zip(S, f_ln)], GREEN, 2.5)
+    out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{RED}" stroke-width="1.4" stroke-dasharray="4 3"/>')
+    _txt(out, sx(0) + 5, y0 + 12, "S = 0 ขอบล่าง — ราคาติดลบไม่ได้", RED, "start", size=9, bold=True)
+    _txt(out, sx(140), sy(f_n.max() * 0.62), "Normal (เส้นประ): สมมาตร มีค่าลบได้ ✗", INK2, "start", size=9)
+    _txt(out, sx(140), sy(f_ln.max() * 0.42), "Lognormal (ราคาหุ้น): เบ้ขวา ✓", GREEN, "start", bold=True)
+    out.append("</svg>")
+    NUMS["m2-normal-vs-lognormal"] = dict(median=med, mode=mode)
+    return "\n".join(out)
+
+
+def fat_tail_data(nu=3.0):
+    from math import gamma, sqrt, pi
+    x = np.linspace(-5, 5, 1001)
+    s = sqrt(nu / (nu - 2))  # ปรับให้ t มีความแปรปรวน 1 เท่ากับ Normal
+    t = gamma((nu + 1) / 2) / (sqrt(nu * pi) * gamma(nu / 2)) * (1 + (x * s) ** 2 / nu) ** (-(nu + 1) / 2) * s
+    n = _npdf(x)
+    # ความน่าจะเป็นที่เกิน 3σ (สองข้าง) เทียบกัน
+    dx = x[1] - x[0]; tail_t = float(t[np.abs(x) >= 3].sum() * dx); tail_n = 2 * (1 - _N(3))
+    return x, n, t, tail_n, tail_t
+
+
+@fig("math-part2.html", "m2-fat-tails")
+def fig_m2_fat_tails():
+    x, n, t, tail_n, tail_t = fat_tail_data()
+    Wd, H = 560, 300
+    out = svg_open(Wd, H, f"เทียบระฆัง Normal หางบาง กับการแจกแจงหางหนา (Student-t ν = 3 ความแปรปรวนเท่ากัน): เกิน 3σ Normal {tail_n*100:.2f}% หางหนา {tail_t*100:.1f}%")
+    title(out, Wd, "หางหนา (fat tails) — ความแปรปรวนเท่ากัน แต่เหตุการณ์สุดขั้วเกิดบ่อยกว่า Normal หลายเท่า",
+          f"ตัวแทนตลาดจริง = Student-t (ν = 3) ปรับให้ σ เท่ากัน · โอกาสเกิน ±3σ: Normal {tail_n*100:.2f}% · หางหนา {tail_t*100:.1f}% (≈ {tail_t/tail_n:.0f} เท่า)")
+    sx, sy, (x0, y0, w, h) = _bell_frame(out, Wd, H, [(-4, "−4σ"), (-3, "−3σ"), (-2, "−2σ"), (-1, "−1σ"), (0, "0"), (1, "+1σ"), (2, "+2σ"), (3, "+3σ"), (4, "+4σ")], "", ymax=float(t.max()) * 1.1)
+    xs = np.linspace(-5, 5, 1001)
+    mt = np.abs(xs) >= 2.5
+    _fill_between(out, sx, sy, xs[xs <= -2.5], t[xs <= -2.5], RED, 0.35); _fill_between(out, sx, sy, xs[xs >= 2.5], t[xs >= 2.5], RED, 0.35)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(xs, n)], INK2, 2.2, dash="6 3", shadow=False)
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(xs, t)], RED, 2.5)
+    _txt(out, sx(0) + 8, sy(t.max()) + 4, "ตลาดจริง (หางหนา): ยอดสูงกว่า ไหล่ต่ำกว่า", RED, "start", bold=True)
+    _txt(out, sx(-0.7), sy(n.max()) - 2, "Normal (หางบาง · เส้นประ)", INK2, "end", size=9)
+    _txt(out, sx(-3.3), sy(0.06), "crash บ่อยกว่าที่ Normal บอก", RED, "middle", size=9, bold=True); _txt(out, sx(3.3), sy(0.06), "rally บ่อยกว่าที่ Normal บอก", RED, "middle", size=9, bold=True)
+    out.append("</svg>")
+    NUMS["m2-fat-tails"] = dict(tail_n=tail_n, tail_t=tail_t)
+    return "\n".join(out)
+
+
 
 VOLUMES = [("คิดแบบ Quant", r"^nq-"), ("คณิตศาสตร์สำหรับ Options เล่ม 1", r"^math-part(1|2|3|6|7)\.html$"),
            ("คณิตศาสตร์สำหรับ Options เล่ม 2 · A–F", r"^math-part(4|5|8|9|10|11)\.html$"), ("Payoff Mastery", r"^pm-|^payoff-chart"),
