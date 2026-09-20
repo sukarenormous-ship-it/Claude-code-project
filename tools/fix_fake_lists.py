@@ -28,12 +28,15 @@ P_BLOCK = re.compile(r'(<p(?![a-z])[^>]*>)((?:(?!</?p[ >]).)*?)(</p>)', re.S)
 BR = re.compile(r'<br\s*/?>')
 # เครื่องหมายอาจอยู่ข้างในแท็ก inline เช่น <strong>• Premium</strong> — ต้องข้ามแท็กนำก่อน
 INLINE_OPEN = r'(?:<(?:strong|em|b|i|code|span|abbr|a)\b[^>]*>\s*)*'
-MARK = re.compile(r'^\s*(' + INLINE_OPEN + r')\s*(?:(•|✓|✗|◦|–)|(\d+)\.)\s+(.*)$', re.S)
+# → นับเป็นเครื่องหมายหัวข้อ **เฉพาะเมื่ออยู่ต้นส่วนที่คั่นด้วย <br>** เท่านั้น
+# (กลางประโยค → แปลว่า "นำไปสู่" ซึ่งเป็นการใช้ปกติ · regex นี้ผูกกับ ^ จึงไม่โดน)
+MARK = re.compile(r'^\s*(' + INLINE_OPEN + r')\s*(?:(•|✓|✗|◦|–|→|⇒)|(\d+)\.)\s+(.*)$', re.S)
 # รายการอีกแบบ: "หัวข้อ" เป็นตัวหนาแทนเครื่องหมาย — <strong>Step 1 — Observe:</strong> …
 # ต้องมี ≥ MIN_LABEL ข้อ ถึงจะถือว่าเป็นรายการ (กันโครงสร้างสองบรรทัดที่ตั้งใจ เช่น
 # "มือใหม่เห็น / quant เห็น" ในกล่อง 🧠)
 LABEL = re.compile(r'^\s*<(strong|b)\b[^>]*>(?:(?!</\1>).)+</\1>\s*[:：]?', re.S)
 MIN_LABEL = 3
+MIN_ARROW = 2            # → ต้องมีอย่างน้อยสองข้อติดกัน ถึงจะนับเป็นรายการ
 # บางรายการเป็น "ลูกโซ่" — คั่นแต่ละข้อด้วยลูกศรตัวเดียวโดด ๆ
 # ลูกศรพวกนี้ไม่ใช่ข้อของรายการ และไม่ใช่ตัวจบรายการ แต่คือลำดับ → ใช้ <ol> แทน
 CONNECTOR = re.compile(r'^\s*(?:<[^>]+>\s*)*[↓⇓→⇒]\s*(?:</[^>]+>\s*)*$')
@@ -55,11 +58,30 @@ def convert_block(open_tag, body):
         m = MARK.match(s)
         if m:
             pre, sym, num, rest = m.groups()
-            kind = "num" if num else ("keep" if sym in "✓✗" else "bul")
+            # → กำกวมกว่าเครื่องหมายอื่น — แยกชนิดไว้ก่อน แล้วค่อยกรองด้วยความยาวรัน
+            kind = "num" if num else ("keep" if sym in "✓✗" else ("arr" if sym in "→⇒" else "bul"))
             # คืนแท็ก inline ที่นำหน้าเครื่องหมายกลับเข้าไป (เช่น <strong> ที่ครอบ "• Premium")
             parsed.append((kind, sym, (pre or "") + rest.strip()))
         else:
             parsed.append(("text", None, s))
+    # → ที่โดดเดี่ยวไม่ใช่รายการ แต่เป็นการเชื่อมความในย่อหน้า — คืนให้เป็นข้อความ
+    i = 0
+    while i < len(parsed):
+        if parsed[i][0] != "arr":
+            i += 1
+            continue
+        j = i
+        while j < len(parsed) and parsed[j][0] == "arr":
+            j += 1
+        if j - i >= MIN_ARROW:
+            for k in range(i, j):
+                parsed[k] = ("bul", parsed[k][1], parsed[k][2])
+        else:
+            for k in range(i, j):
+                sym, t = parsed[k][1], parsed[k][2]
+                parsed[k] = ("text", None, f"{sym} {t}")
+        i = j
+
     if not any(k in ("num", "bul", "keep") for k, _, _ in parsed):
         # ไม่มีเครื่องหมาย — ลองแบบ "หัวข้อตัวหนา" แทน
         labelled = [i for i, (k, _, t) in enumerate(parsed)
