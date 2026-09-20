@@ -3942,6 +3942,195 @@ def fig_blending_search():
     return "\n".join(out) + "\n" + _cap(f"ป้ายกำกับ: สเปรดวันถัดไปลู่เข้าจริงไหม · อัตราฐาน {base}% · ค้นหาทั้งหมด {S['จำนวนวิธีรวมทั้งหมด']} วิธี เหลือ {S['จำนวนวิธีที่มีวันกระตุ้นพอ(≥5วัน)']} วิธีที่มีวันกระตุ้นพอจะอ่านค่าได้")
 
 
+# ── statarb: ความเป็นกลาง (Part XV Portfolio Engineering) — อ่านจาก docs/neutrality-figures.json ──
+def _nt():
+    return _load("neutrality-figures.json")
+
+
+@fig("statarb-neutrality.html", "nt-ladder")
+def fig_nt_ladder():
+    d = _nt(); rows = d["ขั้นบันไดความเป็นกลาง"]
+    Wd, H = 780, 330
+    out = svg_open(Wd, H, "แท่งคู่แสดง exposure ที่เหลือต่อปัจจัยตลาดและปัจจัยที่สอง ของความเป็นกลางสี่ขั้น — ขั้นที่สูงขึ้นลด exposure ลงเรื่อย ๆ แต่ dollar-neutral ไม่ลดปัจจัยที่สองเลย", cls="fig")
+    title(out, Wd, "สามขั้นของ \"ความเป็นกลาง\" ลดคนละอย่าง — ไม่ใช่คำเดียวกัน",
+          "ค่าสัมบูรณ์เฉลี่ยของ exposure ที่เหลือ วัดด้วยเบต้า/แกมมาจริง ซึ่งรู้ได้เพราะหน้าตัดขวางเป็นข้อมูลจำลอง")
+    x0, y0, w, h = 190, 66, 470, 196
+    vmax = max(max(r["exposureตลาดสัมบูรณ์เฉลี่ย"] for r in rows),
+               max(r["exposureปัจจัยสองสัมบูรณ์เฉลี่ย"] for r in rows)) * 1.18
+    sx = lambda v: x0 + v / vmax * w
+    for k in range(6):
+        v = vmax * k / 5
+        out.append(f'<line x1="{sx(v):.1f}" y1="{y0}" x2="{sx(v):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, sx(v), y0 + h + 15, f"{v:.2f}", INK2, "middle", size=9)
+    rh = h / len(rows)
+    for i, r in enumerate(rows):
+        yb = y0 + i * rh + 6
+        _txt(out, x0 - 12, yb + 14, r["ขั้น"], INK, "end", size=9.5, bold=True)
+        for j, (key, col, nm) in enumerate((("exposureตลาดสัมบูรณ์เฉลี่ย", BLUE, "ตลาด"),
+                                            ("exposureปัจจัยสองสัมบูรณ์เฉลี่ย", AMBER, "ปัจจัยสอง"))):
+            yy = yb + j * 17
+            out.append(f'<rect x="{x0}" y="{yy:.1f}" width="{max(sx(r[key])-x0, 2):.1f}" height="14" rx="2.5" fill="{col}" opacity="0.75"/>')
+            _txt(out, sx(r[key]) + 7, yy + 11, f"{r[key]:.3f}", col, "start", size=9.5, bold=True)
+    out.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.4"/>')
+    legend(out, [(BLUE, "exposure ต่อปัจจัยตลาด", ""), (AMBER, "exposure ต่อปัจจัยที่สอง", "")], x0, H - 30)
+    _txt(out, Wd / 2, H - 10, "อ่านว่า: dollar-neutral ลดตลาดได้มาก แต่ไม่แตะปัจจัยที่สองเลย · มีแต่ factor-neutral ที่ลดทั้งคู่", INK, "middle", size=10, bold=True)
+    out.append("</svg>")
+    NUMS["nt-ladder"] = {r["ขั้น"][:12]: r["exposureตลาดสัมบูรณ์เฉลี่ย"] for r in rows}
+    return "\n".join(out) + "\n" + _cap("ปัจจัยตลาดคือผลตอบแทน BTC ของจริง · หน้าตัดขวางเป็นเหรียญจำลองแปดตัวที่รู้เบต้าจริง จึงวัด exposure ที่เหลือได้ตรง ๆ")
+
+
+@fig("statarb-neutrality.html", "nt-what-it-buys")
+def fig_nt_what_it_buys():
+    d = _nt(); rows = d["หางซ้าย"]["ผลของแต่ละขั้น"]
+    Wd, H = 780, 300
+    k = "ค่าสัมบูรณ์เฉลี่ยของกำไร5วันที่ตลาดขยับแรงสุด"
+    first, last = rows[0][k], rows[-1][k]
+    out = svg_open(Wd, H, f"แท่งแสดงขนาดการแกว่งของพอร์ตใน 5 วันที่ตลาดขยับแรงที่สุด ลดจาก {first} เหลือ {last} เมื่อไล่ขึ้นบันไดความเป็นกลาง", cls="fig")
+    title(out, Wd, f"ความเป็นกลางซื้ออะไร — วันที่ตลาดเหวี่ยงแรง พอร์ตแกว่งน้อยลงครึ่งหนึ่ง",
+          f"ค่าสัมบูรณ์เฉลี่ยของกำไร/ขาดทุน ใน 5 วันที่ตลาดขยับแรงที่สุด · {first:.2f}% → {last:.2f}%")
+    x0, y0, w, h = 120, 66, 540, 150
+    vmax = max(r[k] for r in rows) * 1.25
+    bw = w / len(rows) - 44
+    sy = lambda v: y0 + h - v / vmax * h
+    for j in range(5):
+        v = vmax * j / 4
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(v) + 4, f"{v:.1f}%", INK2, "end", size=9)
+    cols = [RED, AMBER, BLUE, GREEN]
+    for i, r in enumerate(rows):
+        cx = x0 + i * (w / len(rows)) + 22
+        v = r[k]
+        out.append(f'<rect x="{cx:.1f}" y="{sy(v):.1f}" width="{bw:.1f}" height="{y0+h-sy(v):.1f}" rx="3" fill="{cols[i]}" opacity="0.75"/>')
+        _txt(out, cx + bw / 2, sy(v) - 8, f"{v:.2f}%", cols[i], "middle", size=11, bold=True)
+        for li, ln in enumerate(r["ขั้น"].split(" · ")):
+            _txt(out, cx + bw / 2, y0 + h + 17 + li * 13, ln, INK, "middle", size=9, bold=li == len(r["ขั้น"].split(" · ")) - 1)
+        _txt(out, cx + bw / 2, y0 + h + 46, f"วันแย่สุด {r['วันแย่ที่สุดเปอร์เซ็นต์']:.2f}%".replace("-", "−"), INK2, "middle", size=8.5)
+    out.append(f'<line x1="{x0}" y1="{y0+h:.1f}" x2="{x0+w}" y2="{y0+h:.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    _txt(out, Wd / 2, H - 22, "นี่คือสิ่งที่ซื้อได้จริง — ไม่ใช่กำไรที่มากขึ้น แต่คือการไม่ถูกตลาดลากในวันที่ตลาดเหวี่ยง", INK, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, H - 6, "ขาดทุนสะสมสูงสุดไม่ได้ลดตาม — ความเป็นกลางตัดความเสี่ยงจากปัจจัย ไม่ได้ตัดความเสี่ยงทั้งหมด", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    NUMS["nt-what-it-buys"] = {"first": first, "last": last}
+    return "\n".join(out) + "\n" + _cap("วัดบนพอร์ตที่ถือจริงวันต่อวัน · \"5 วันที่ตลาดขยับแรงที่สุด\" เลือกด้วยค่าสัมบูรณ์ของผลตอบแทนตลาดวันถัดไป")
+
+
+@fig("statarb-neutrality.html", "nt-beta-error")
+def fig_nt_beta_error():
+    d = _nt(); B = d["ความผิดพลาดของเบต้า"]; R = d["exposureที่เหลือจริง"]
+    rows = B["รายเหรียญ"]
+    Wd, H = 780, 340
+    out = svg_open(Wd, H, f"เบต้าจริงของเหรียญแปดตัวเทียบกับช่วงของเบต้าที่ประมาณได้จากหน้าต่าง {B['หน้าต่างที่ใช้ประมาณ']} วัน — คลาดเคลื่อนเฉลี่ย {B['ความคลาดเคลื่อนสัมบูรณ์เฉลี่ยทั้งแผง']} สูงสุด {B['ความคลาดเคลื่อนสัมบูรณ์สูงสุด']}", cls="fig")
+    title(out, Wd, f"β ที่ประมาณได้จริง แกว่งกว้างกว่าที่คิดมาก — คลาดเคลื่อนเฉลี่ย {B['ความคลาดเคลื่อนสัมบูรณ์เฉลี่ยทั้งแผง']:.2f}",
+          f"จุดม่วง = β จริง · แท่งเทา = ช่วงที่ OLS หน้าต่าง {B['หน้าต่างที่ใช้ประมาณ']} วันให้ได้ตลอดช่วงข้อมูล")
+    x0, y0, w, h = 88, 66, 540, 186
+    lo = min(min(r["เบต้าประมาณต่ำสุด"] for r in rows), 0) - 0.15
+    hi = max(max(r["เบต้าประมาณสูงสุด"] for r in rows), 2.0) + 0.15
+    sx = lambda v: x0 + (v - lo) / (hi - lo) * w
+    for v in np.arange(np.ceil(lo * 2) / 2, hi, 0.5):
+        out.append(f'<line x1="{sx(v):.1f}" y1="{y0}" x2="{sx(v):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, sx(v), y0 + h + 15, f"{v if abs(v) > 1e-9 else 0:g}", INK2, "middle", size=9)
+    rh = h / len(rows)
+    for i, r in enumerate(rows):
+        cy = y0 + i * rh + rh / 2
+        out.append(f'<rect x="{sx(r["เบต้าประมาณต่ำสุด"]):.1f}" y="{cy-6:.1f}" width="{sx(r["เบต้าประมาณสูงสุด"])-sx(r["เบต้าประมาณต่ำสุด"]):.1f}" height="12" rx="3" fill="{INK2}" opacity="0.22"/>')
+        out.append(f'<line x1="{sx(r["เบต้าประมาณเฉลี่ย"]):.1f}" y1="{cy-8:.1f}" x2="{sx(r["เบต้าประมาณเฉลี่ย"]):.1f}" y2="{cy+8:.1f}" stroke="{BLUE}" stroke-width="2.4"/>')
+        _dot(out, sx(r["เบต้าจริง"]), cy, PURPLE, 4.0)
+        _txt(out, x0 - 10, cy + 4, r["เหรียญ"], INK, "end", size=9)
+        _txt(out, x0 + w + 10, cy + 4, f"ผิด {r['ความคลาดเคลื่อนสัมบูรณ์เฉลี่ย']:.2f}",
+             RED if r["ความคลาดเคลื่อนสัมบูรณ์เฉลี่ย"] >= 0.3 else INK2, "start", size=9,
+             bold=r["ความคลาดเคลื่อนสัมบูรณ์เฉลี่ย"] >= 0.3)
+    out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.2"/>')
+    _txt(out, x0 + w / 2, y0 + h + 32, "ค่า β", INK2, "middle", size=9.5)
+    legend(out, [(PURPLE, "β จริง", ""), (BLUE, "β ประมาณเฉลี่ย", ""), (INK2, "ช่วงที่ประมาณได้", "")], x0, H - 30)
+    _txt(out, Wd / 2, H - 10, f"ผลที่ตามมา: \"beta-neutral\" ด้วย β ประมาณ ยังเหลือ exposure {R['exposureเหลือเมื่อใช้เบต้าประมาณ']:.3f} · ถ้ารู้ β จริงจะเหลือ {R['exposureเหลือถ้ารู้เบต้าจริง']:.3f} พอดี", RED, "middle", size=10.5, bold=True)
+    out.append("</svg>")
+    NUMS["nt-beta-error"] = {"mean_err": B["ความคลาดเคลื่อนสัมบูรณ์เฉลี่ยทั้งแผง"],
+                             "max_err": B["ความคลาดเคลื่อนสัมบูรณ์สูงสุด"],
+                             "resid": R["exposureเหลือเมื่อใช้เบต้าประมาณ"]}
+    return "\n".join(out) + "\n" + _cap("β จริงรู้ได้เพราะหน้าตัดขวางเป็นข้อมูลจำลอง — ในงานจริงไม่มีทางรู้ จึงไม่มีทางรู้ว่าเหลือ exposure เท่าไรด้วย")
+
+
+@fig("statarb-neutrality.html", "nt-decay")
+def fig_nt_decay():
+    d = _nt(); D = d["ความเร็วที่alphaเสื่อม"]
+    hs = ["1 วัน", "2 วัน", "3 วัน", "5 วัน"]
+    Wd, H = 780, 326
+    fast = [D["สัญญาณเร็ว"][k] for k in hs]; slow = [D["สัญญาณช้า"][k] for k in hs]
+    out = svg_open(Wd, H, f"เส้น IC ของสัญญาณสองแบบที่ระยะล่วงหน้า 1 ถึง 5 วัน — สัญญาณเร็วเริ่มที่ {fast[0]} แล้วหายไปภายในสองวัน ส่วนสัญญาณช้าเริ่มต่ำกว่าแต่ไต่ขึ้นถึง {slow[-1]}", cls="fig")
+    title(out, Wd, "สัญญาณสองแบบ เสื่อมด้วยความเร็วคนละอย่าง — และนั่นตัดสินว่าควรเทรดเร็วแค่ไหน",
+          f"IC เทียบกับผลตอบแทนส่วนเกินสะสม h วันข้างหน้า · เร็ว {fast[0]:.3f} → {fast[-1]:.3f} · ช้า {slow[0]:.3f} → {slow[-1]:.3f}")
+    x0, y0, w, h = 78, 66, 560, 170
+    lo, hi = min(min(fast), min(slow), 0) - 0.03, max(max(fast), max(slow)) + 0.05
+    sx = lambda i: x0 + i / (len(hs) - 1) * w
+    sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
+    for v in np.arange(0, hi, 0.05):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(v) + 4, f"{v:.2f}", INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    for i, lab in enumerate(hs):
+        _txt(out, sx(i), y0 + h + 16, lab, INK, "middle", size=9.5, bold=True)
+    for vals, col, nm in ((fast, RED, "สัญญาณเร็ว"), (slow, GREEN, "สัญญาณช้า")):
+        polyline(out, [(sx(i), sy(v)) for i, v in enumerate(vals)], col, 2.6)
+        for i, v in enumerate(vals):
+            _dot(out, sx(i), sy(v), col, 3.4)
+    _txt(out, sx(0) + 10, sy(fast[0]) - 10, "เริ่มสูง แล้วหายไปใน 2 วัน", RED, "start", size=9.5, bold=True)
+    _txt(out, sx(3) - 10, sy(slow[3]) - 12, "เริ่มต่ำ แต่สะสมได้เรื่อย ๆ", GREEN, "end", size=9.5, bold=True)
+    _txt(out, x0 + w / 2, y0 + h + 34, "ระยะล่วงหน้าที่ถือ", INK2, "middle", size=9.5)
+    legend(out, [(RED, "สัญญาณเร็ว (residual เมื่อวาน)", ""), (GREEN, "สัญญาณช้า (residual เฉลี่ย 10 วัน)", "")], x0, H - 34)
+    _txt(out, Wd / 2, H - 8, "สัญญาณที่เสื่อมเร็วบังคับให้เทรดเร็ว — และการเทรดเร็วคือสิ่งที่ต้องจ่ายค่าธรรมเนียม", INK, "middle", size=10, bold=True)
+    out.append("</svg>")
+    NUMS["nt-decay"] = {"fast1": fast[0], "fast5": fast[-1], "slow1": slow[0], "slow5": slow[-1]}
+    return "\n".join(out) + "\n" + _cap("ทั้งสองสัญญาณคำนวณจากแผงเดียวกันและผ่านการทำ factor-neutral เหมือนกัน — ต่างกันแค่ความยาวหน้าต่างที่ใช้อ่าน residual")
+
+
+@fig("statarb-neutrality.html", "nt-turnover")
+def fig_nt_turnover():
+    d = _nt(); T = d["turnoverControl"]
+    fast, slow = T["สัญญาณเร็ว"], T["สัญญาณช้า"]
+    gf, gs = fast["ที่ลอง"], slow["ที่ลอง"]
+    Wd, H = 780, 340
+    out = svg_open(Wd, H, f"เส้นกำไรสุทธิเทียบกับความเร็วปรับพอร์ต สำหรับสัญญาณสองแบบ — สัญญาณช้าให้กำไรสุทธิสูงกว่าที่ทุกความเร็ว และจุดที่ดีที่สุดอยู่ที่ {slow['ดีที่สุด']['ความเร็วปรับพอร์ต']}", cls="fig")
+    title(out, Wd, "เทรดช้าลงไม่ได้ช่วยเสมอ — ช่วยเฉพาะเมื่อ alpha ทนพอจะรอ",
+          f"กำไรสุทธิหลังต้นทุน เทียบกับ λ (สัดส่วนระยะทางที่เดินไปหาพอร์ตเป้าหมายต่อวัน) · ต้นทุนไป-กลับ {d['ข้อมูล']['ต้นทุนไปกลับbps']} bps")
+    x0, y0, w, h = 78, 68, 500, 178
+    lams = [g["ความเร็วปรับพอร์ต"] for g in gf]
+    allv = [g["กำไรสุทธิเปอร์เซ็นต์"] for g in gf + gs]
+    lo, hi = min(allv) - 0.6, max(allv) + 0.8
+    sx = lambda lm: x0 + (1.0 - lm) / (1.0 - min(lams)) * w
+    sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
+    for v in np.arange(np.ceil(lo / 2) * 2, hi, 2):
+        out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        _txt(out, x0 - 8, sy(v) + 4, f"{v:+.0f}%".replace("-", "−").replace("+0%", "0%"), INK2, "end", size=9)
+    out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
+    for lm in (1.0, 0.6, 0.4, 0.2, 0.05):
+        _txt(out, sx(lm), y0 + h + 16, f"{lm:g}", INK2, "middle", size=9)
+    for grid_, col, nm, bst in ((gf, RED, "สัญญาณเร็ว", fast["ดีที่สุด"]), (gs, GREEN, "สัญญาณช้า", slow["ดีที่สุด"])):
+        polyline(out, [(sx(g["ความเร็วปรับพอร์ต"]), sy(g["กำไรสุทธิเปอร์เซ็นต์"])) for g in grid_], col, 2.4)
+        for g in grid_:
+            _dot(out, sx(g["ความเร็วปรับพอร์ต"]), sy(g["กำไรสุทธิเปอร์เซ็นต์"]), col, 2.8)
+        _dot(out, sx(bst["ความเร็วปรับพอร์ต"]), sy(bst["กำไรสุทธิเปอร์เซ็นต์"]), PURPLE, 5.2)
+    _txt(out, sx(gs[2]["ความเร็วปรับพอร์ต"]), sy(slow["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"]) - 12,
+         f"ดีที่สุด {slow['ดีที่สุด']['กำไรสุทธิเปอร์เซ็นต์']:.2f}% ที่ λ = {slow['ดีที่สุด']['ความเร็วปรับพอร์ต']:g}", GREEN, "middle", size=9.5, bold=True)
+    _txt(out, sx(0.8), sy(fast["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"]) - 12,
+         f"ดีที่สุด {fast['ดีที่สุด']['กำไรสุทธิเปอร์เซ็นต์']:.2f}%", RED, "middle", size=9.5, bold=True)
+    _txt(out, x0, y0 + h + 34, "← เทรดเร็ว (λ = 1 ไปถึงเป้าทุกวัน)", INK2, "start", size=9)
+    _txt(out, x0 + w, y0 + h + 34, "เทรดช้า (λ = 0.05 ขยับทีละ 5%) →", INK2, "end", size=9)
+    bx = x0 + w + 22
+    out.append(f'<rect x="{bx-8}" y="{y0-4}" width="{Wd-bx-4:.0f}" height="128" rx="8" fill="{GREEN}" opacity="0.07"/>')
+    _txt(out, bx, y0 + 14, "turnover ต่อวัน", INK, "start", size=9.5, bold=True)
+    _txt(out, bx, y0 + 32, f"เร็ว {gf[0]['turnoverเฉลี่ยต่อวัน']:.2f}", RED, "start", size=9.5, bold=True)
+    _txt(out, bx, y0 + 47, f"ช้า {gs[0]['turnoverเฉลี่ยต่อวัน']:.2f}", GREEN, "start", size=9.5, bold=True)
+    _txt(out, bx, y0 + 70, "ต้นทุนรวม", INK, "start", size=9.5, bold=True)
+    _txt(out, bx, y0 + 88, f"เร็ว {gf[0]['ต้นทุนรวมเปอร์เซ็นต์']:.2f}%", RED, "start", size=9.5, bold=True)
+    _txt(out, bx, y0 + 103, f"ช้า {gs[0]['ต้นทุนรวมเปอร์เซ็นต์']:.2f}%", GREEN, "start", size=9.5, bold=True)
+    _txt(out, Wd / 2, H - 24, f"สัญญาณเร็ว IC สูงกว่าที่ 1 วัน แต่ turnover {gf[0]['turnoverเฉลี่ยต่อวัน']/gs[0]['turnoverเฉลี่ยต่อวัน']:.1f} เท่า ต้นทุนจึงกินไปเกือบครึ่ง", INK, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, H - 8, "และถ้าชะลอมากเกินไป สัญญาณช้าก็พังเหมือนกัน — มีจุดที่ดีที่สุดจริง ไม่ใช่ยิ่งช้ายิ่งดี", INK2, "middle", size=9.5, italic=True)
+    out.append("</svg>")
+    NUMS["nt-turnover"] = {"fast_best": fast["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"],
+                           "slow_best": slow["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"],
+                           "turn_fast": gf[0]["turnoverเฉลี่ยต่อวัน"], "turn_slow": gs[0]["turnoverเฉลี่ยต่อวัน"]}
+    return "\n".join(out) + "\n" + _cap("ทั้งสองเส้นผ่าน factor-neutral เหมือนกัน และการชะลอพอร์ตไม่ทำลายความเป็นกลาง เพราะผลรวมเชิงเส้นของพอร์ตที่เป็นกลาง ยังเป็นกลาง")
+
+
 # ── statarb: IC lab (Part XIII Alpha Discovery) — ทุกตัวเลขอ่านจาก docs/ic-figures.json ─────
 def _ic():
     return _load("ic-figures.json")
