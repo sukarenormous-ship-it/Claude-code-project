@@ -77,8 +77,15 @@ class Prose(html.parser.HTMLParser):
                 break
 
     def handle_data(self, data):
-        if self.cur and not self._skipping():
-            self.cur[2].append(data)
+        if not self.cur:
+            return
+        if self._skipping():
+            # ข้อความใน <code> ถูกข้าม (ไม่ใช่ร้อยแก้ว) แต่ถ้าตัดทิ้งเฉย ๆ
+            # รายงานจะอ่านเป็น "(, , , )" จนงง — ใส่ตัวแทนไว้ให้เห็นว่ามีอะไรอยู่
+            if any(t == "code" for t, _ in self.stack):
+                self.cur[2].append("‹code›")
+            return
+        self.cur[2].append(data)
 
 
 def sentences(text):
