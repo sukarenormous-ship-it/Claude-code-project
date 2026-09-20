@@ -4054,32 +4054,42 @@ def fig_nt_decay():
     d = _nt(); D = d["ความเร็วที่alphaเสื่อม"]
     hs = ["1 วัน", "2 วัน", "3 วัน", "5 วัน"]
     Wd, H = 780, 326
-    fast = [D["สัญญาณเร็ว"][k] for k in hs]; slow = [D["สัญญาณช้า"][k] for k in hs]
-    out = svg_open(Wd, H, f"เส้น IC ของสัญญาณสองแบบที่ระยะล่วงหน้า 1 ถึง 5 วัน — สัญญาณเร็วเริ่มที่ {fast[0]} แล้วหายไปภายในสองวัน ส่วนสัญญาณช้าเริ่มต่ำกว่าแต่ไต่ขึ้นถึง {slow[-1]}", cls="fig")
-    title(out, Wd, "สัญญาณสองแบบ เสื่อมด้วยความเร็วคนละอย่าง — และนั่นตัดสินว่าควรเทรดเร็วแค่ไหน",
-          f"IC เทียบกับผลตอบแทนส่วนเกินสะสม h วันข้างหน้า · เร็ว {fast[0]:.3f} → {fast[-1]:.3f} · ช้า {slow[0]:.3f} → {slow[-1]:.3f}")
+    F = [D["สัญญาณเร็ว"][k] for k in hs]; S = [D["สัญญาณช้า"][k] for k in hs]
+    fast = [x["IC"] for x in F]; slow = [x["IC"] for x in S]
+    n_out = sum(1 for x in S if x["หลุดฐาน"])
+    out = svg_open(Wd, H, f"เส้น IC พร้อมแถบสองเท่าของความคลาดเคลื่อนมาตรฐาน ของสัญญาณสองแบบที่ระยะล่วงหน้า 1 ถึง 5 วัน — สัญญาณช้าหลุดแถบความสุ่มที่ {n_out} ระยะ ส่วนสัญญาณเร็วไม่หลุดเลยสักระยะ", cls="fig")
+    title(out, Wd, f"สัญญาณช้าโผล่พ้นความสุ่มได้ {n_out} ระยะ — สัญญาณเร็วไม่ผ่านสักระยะเดียว",
+          f"IC ± 2 SE เทียบกับผลตอบแทนส่วนเกินสะสม h วันข้างหน้า · แถบคลุมศูนย์ = ยังแยกจากความสุ่มไม่ได้")
     x0, y0, w, h = 78, 66, 560, 170
-    lo, hi = min(min(fast), min(slow), 0) - 0.03, max(max(fast), max(slow)) + 0.05
+    lo = min(min(x["IC"] - 2 * x["SE"] for x in F + S), 0) - 0.03
+    hi = max(x["IC"] + 2 * x["SE"] for x in F + S) + 0.04
     sx = lambda i: x0 + i / (len(hs) - 1) * w
     sy = lambda v: y0 + h - (v - lo) / (hi - lo) * h
-    for v in np.arange(0, hi, 0.05):
+    for v in np.arange(np.ceil(lo / 0.1) * 0.1, hi, 0.1):
         out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0+w}" y2="{sy(v):.1f}" stroke="{GRID}" stroke-width="1"/>')
         _txt(out, x0 - 8, sy(v) + 4, f"{v:.2f}", INK2, "end", size=9)
     out.append(f'<line x1="{x0}" y1="{sy(0):.1f}" x2="{x0+w}" y2="{sy(0):.1f}" stroke="{AXIS}" stroke-width="1.4"/>')
     for i, lab in enumerate(hs):
         _txt(out, sx(i), y0 + h + 16, lab, INK, "middle", size=9.5, bold=True)
-    for vals, col, nm in ((fast, RED, "สัญญาณเร็ว"), (slow, GREEN, "สัญญาณช้า")):
-        polyline(out, [(sx(i), sy(v)) for i, v in enumerate(vals)], col, 2.6)
-        for i, v in enumerate(vals):
-            _dot(out, sx(i), sy(v), col, 3.4)
-    _txt(out, sx(0) + 10, sy(fast[0]) - 10, "เริ่มสูง แล้วหายไปใน 2 วัน", RED, "start", size=9.5, bold=True)
-    _txt(out, sx(3) - 10, sy(slow[3]) - 12, "เริ่มต่ำ แต่สะสมได้เรื่อย ๆ", GREEN, "end", size=9.5, bold=True)
+    for rows_, col, dx in ((F, RED, -4), (S, GREEN, 4)):
+        polyline(out, [(sx(i), sy(x["IC"])) for i, x in enumerate(rows_)], col, 2.6)
+        for i, x in enumerate(rows_):
+            lo_, hi_ = x["IC"] - 2 * x["SE"], x["IC"] + 2 * x["SE"]
+            out.append(f'<line x1="{sx(i)+dx:.1f}" y1="{sy(lo_):.1f}" x2="{sx(i)+dx:.1f}" y2="{sy(hi_):.1f}" stroke="{col}" stroke-width="1.6" opacity="0.65"/>')
+            for yy in (lo_, hi_):
+                out.append(f'<line x1="{sx(i)+dx-3:.1f}" y1="{sy(yy):.1f}" x2="{sx(i)+dx+3:.1f}" y2="{sy(yy):.1f}" stroke="{col}" stroke-width="1.6" opacity="0.65"/>')
+            if x["หลุดฐาน"]:
+                out.append(f'<circle cx="{sx(i):.1f}" cy="{sy(x["IC"]):.1f}" r="5.2" fill="none" stroke="{PURPLE}" stroke-width="2"/>')
+            _dot(out, sx(i), sy(x["IC"]), col, 3.2)
+    _txt(out, sx(0) + 12, sy(fast[0]) + 20, f"t = {F[0]['tstat']:+.2f} — แถบยังคลุมศูนย์", RED, "start", size=9, bold=True)
+    _txt(out, sx(3) - 12, sy(slow[3]) - 16, f"t = {S[3]['tstat']:+.2f} — หลุดฐาน", GREEN, "end", size=9.5, bold=True)
+    _txt(out, sx(3) + 14, sy(0) - 6, "วงม่วง = หลุดฐาน", PURPLE, "end", size=8.5, bold=True)
     _txt(out, x0 + w / 2, y0 + h + 34, "ระยะล่วงหน้าที่ถือ", INK2, "middle", size=9.5)
     legend(out, [(RED, "สัญญาณเร็ว (residual เมื่อวาน)", ""), (GREEN, "สัญญาณช้า (residual เฉลี่ย 10 วัน)", "")], x0, H - 34)
     _txt(out, Wd / 2, H - 8, "สัญญาณที่เสื่อมเร็วบังคับให้เทรดเร็ว — และการเทรดเร็วคือสิ่งที่ต้องจ่ายค่าธรรมเนียม", INK, "middle", size=10, bold=True)
     out.append("</svg>")
-    NUMS["nt-decay"] = {"fast1": fast[0], "fast5": fast[-1], "slow1": slow[0], "slow5": slow[-1]}
-    return "\n".join(out) + "\n" + _cap("ทั้งสองสัญญาณคำนวณจากแผงเดียวกันและผ่านการทำ factor-neutral เหมือนกัน — ต่างกันแค่ความยาวหน้าต่างที่ใช้อ่าน residual")
+    NUMS["nt-decay"] = {"fast1_t": F[0]["tstat"], "slow5_t": S[3]["tstat"], "n_out": n_out}
+    return "\n".join(out) + "\n" + _cap("ทั้งสองสัญญาณคำนวณจากแผงเดียวกันและผ่าน factor-neutral เหมือนกัน — ต่างกันแค่ความยาวหน้าต่างที่ใช้อ่าน residual · SE จากการกระจายของ IC รายวัน ตามมาตรฐานเดียวกับบท IC")
 
 
 @fig("statarb-neutrality.html", "nt-turnover")
@@ -4122,13 +4132,13 @@ def fig_nt_turnover():
     _txt(out, bx, y0 + 70, "ต้นทุนรวม", INK, "start", size=9.5, bold=True)
     _txt(out, bx, y0 + 88, f"เร็ว {gf[0]['ต้นทุนรวมเปอร์เซ็นต์']:.2f}%", RED, "start", size=9.5, bold=True)
     _txt(out, bx, y0 + 103, f"ช้า {gs[0]['ต้นทุนรวมเปอร์เซ็นต์']:.2f}%", GREEN, "start", size=9.5, bold=True)
-    _txt(out, Wd / 2, H - 24, f"สัญญาณเร็ว IC สูงกว่าที่ 1 วัน แต่ turnover {gf[0]['turnoverเฉลี่ยต่อวัน']/gs[0]['turnoverเฉลี่ยต่อวัน']:.1f} เท่า ต้นทุนจึงกินไปเกือบครึ่ง", INK, "middle", size=10.5, bold=True)
+    _txt(out, Wd / 2, H - 24, f"turnover ต่างกัน {gf[0]['turnoverเฉลี่ยต่อวัน']/gs[0]['turnoverเฉลี่ยต่อวัน']:.1f} เท่า · ต้นทุนต่อวันต่างกัน {gf[0]['ต้นทุนต่อวันเปอร์เซ็นต์']/gs[0]['ต้นทุนต่อวันเปอร์เซ็นต์']:.1f} เท่า — สัญญาณช้าจึงชนะที่กำไรสุทธิ", INK, "middle", size=10.5, bold=True)
     _txt(out, Wd / 2, H - 8, "และถ้าชะลอมากเกินไป สัญญาณช้าก็พังเหมือนกัน — มีจุดที่ดีที่สุดจริง ไม่ใช่ยิ่งช้ายิ่งดี", INK2, "middle", size=9.5, italic=True)
     out.append("</svg>")
     NUMS["nt-turnover"] = {"fast_best": fast["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"],
                            "slow_best": slow["ดีที่สุด"]["กำไรสุทธิเปอร์เซ็นต์"],
                            "turn_fast": gf[0]["turnoverเฉลี่ยต่อวัน"], "turn_slow": gs[0]["turnoverเฉลี่ยต่อวัน"]}
-    return "\n".join(out) + "\n" + _cap("ทั้งสองเส้นผ่าน factor-neutral เหมือนกัน และการชะลอพอร์ตไม่ทำลายความเป็นกลาง เพราะผลรวมเชิงเส้นของพอร์ตที่เป็นกลาง ยังเป็นกลาง")
+    return "\n".join(out) + "\n" + _cap("ทั้งสองเส้นผ่าน factor-neutral เหมือนกัน · หลังผสมพอร์ตเมื่อวานกับเป้าหมายวันนี้แล้ว ต้องฉายให้เป็นกลางซ้ำอีกครั้งเสมอ เพราะ β̂ และ γ̂ เปลี่ยนทุกวัน")
 
 
 # ── statarb: IC lab (Part XIII Alpha Discovery) — ทุกตัวเลขอ่านจาก docs/ic-figures.json ─────

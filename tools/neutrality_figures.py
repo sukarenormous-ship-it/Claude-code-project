@@ -166,12 +166,13 @@ def run(r, mkt, f2, sig, beta_est, gamma_est, beta_true, gamma_true, mode, lam=1
         w = weights_from(sig[:, t], mode, beta_est[:, t], gamma_est[:, t])
         if lam < 1.0:
             # turnover control แบบถ่วงน้ำหนัก: เดินจากพอร์ตเดิมไปหาเป้าหมายแค่ λ ของระยะทาง
-            # ผสมเชิงเส้นของเวกเตอร์ที่เป็นกลางสองตัว ยังเป็นกลางอยู่ (สเปซตั้งฉากเป็นสเปซเชิงเส้น)
-            # และการหารด้วยสเกลาร์ก็ไม่ทำลายความเป็นกลาง — turnover control จึงไม่แลกกับความเป็นกลาง
-            w = lam * w + (1 - lam) * prev
-            tot = np.abs(w).sum()
-            if tot > 1e-12:
-                w = w / tot
+            #
+            # ข้อควรระวังที่พลาดง่ายมาก: ผลผสมเชิงเส้นของพอร์ตที่เป็นกลาง "ยังเป็นกลาง" จริง
+            # เฉพาะเมื่อทั้งสองตัวตั้งฉากกับ **คอลัมน์ชุดเดียวกัน** · แต่ที่นี่ β̂ และ γ̂
+            # ถูกประมาณใหม่ทุกวัน พอร์ตเมื่อวานจึงตั้งฉากกับคอลัมน์ของ *เมื่อวาน* ไม่ใช่ของวันนี้
+            # ถ้าไม่ฉายซ้ำ ความเป็นกลางจะรั่วออกตามขนาดที่ β̂ เปลี่ยน (วัดได้ถึง |w·γ̂| = 0.14 ที่ λ ต่ำ)
+            # มีแต่ข้อจำกัด dollar-neutral (คอลัมน์ 1 ซึ่งคงที่) ที่รอดโดยไม่ต้องฉายซ้ำ
+            w = weights_from(lam * w + (1 - lam) * prev, mode, beta_est[:, t], gamma_est[:, t])
         turns.append(float(np.abs(w - prev).sum()))
         rets.append(float(w @ r[:, t + 1]))         # ถือข้ามคืน กินผลตอบแทนวันถัดไป
         exp_b.append(float(w @ beta_true))          # exposure จริง วัดด้วย β จริง ไม่ใช่ที่ประมาณ
@@ -183,11 +184,17 @@ def run(r, mkt, f2, sig, beta_est, gamma_est, beta_true, gamma_true, mode, lam=1
 
 def stats(rets, turns, cost_bps=COST_BPS):
     gross = float(rets.sum())
-    cost = float(turns.sum() * cost_bps / 100 / 2)   # turnover นับสองขา ต้นทุนคิดครึ่ง
+    # COST_BPS เป็นต้นทุน "ไป-กลับ" (ซื้อแล้วขายคืน) แต่การปรับพอร์ตแต่ละวันคือขาเดียว
+    # จึงจ่ายครึ่งเดียวของค่านั้นต่อหนึ่งหน่วย turnover · 10 bps ไป-กลับ = 5 bps ต่อขา
+    cost = float(turns.sum() * cost_bps / 100 / 2)
     sd = float(rets.std(ddof=1)) if len(rets) > 1 else 0.0
+    n = max(len(rets), 1)
     return {"กำไรรวมเปอร์เซ็นต์": round(gross, 3),
             "ต้นทุนรวมเปอร์เซ็นต์": round(cost, 3),
             "กำไรสุทธิเปอร์เซ็นต์": round(gross - cost, 3),
+            "กำไรขั้นต้นต่อวันเปอร์เซ็นต์": round(gross / n, 4),
+            "ต้นทุนต่อวันเปอร์เซ็นต์": round(cost / n, 4),
+            "กำไรสุทธิต่อวันเปอร์เซ็นต์": round((gross - cost) / n, 4),
             "ความผันผวนรายวันเปอร์เซ็นต์": round(sd, 3),
             "turnoverเฉลี่ยต่อวัน": round(float(turns.mean()), 3),
             "จำนวนวัน": int(len(rets))}
@@ -284,6 +291,7 @@ def build():
 
     # ── alpha เสื่อมเร็วแค่ไหน: IC ของแต่ละสัญญาณที่ระยะล่วงหน้า 1..5 วัน ──
     def ic_at(signal, h):
+        """IC เฉลี่ยรายวัน พร้อม SE และ t — IC เปล่า ๆ ไม่มีความหมาย (ดู statarb-ic-lab)"""
         vals = []
         for t in range(EST_WINDOW, r.shape[1] - h):
             sv = signal[:, t]
@@ -292,9 +300,17 @@ def build():
             fwd = r[:, t + 1:t + 1 + h].sum(axis=1) - beta_true * mkt[t + 1:t + 1 + h].sum()
             if sv.std() > 1e-12 and fwd.std() > 1e-12:
                 vals.append(float(np.corrcoef(sv, fwd)[0, 1]))
-        return round(float(np.mean(vals)), 4) if vals else None
+        if not vals:
+            return None
+        a = np.array(vals)
+        se = float(a.std(ddof=1) / np.sqrt(len(a)))
+        return {"IC": round(float(a.mean()), 4), "SE": round(se, 4),
+                "tstat": round(float(a.mean() / se), 2) if se > 0 else None,
+                "จำนวนวัน": int(len(a)),
+                "หลุดฐาน": bool(abs(a.mean()) > 2 * se)}
 
-    decay = {"_อ่านว่า": "IC เฉลี่ยรายวันของสัญญาณ เทียบกับผลตอบแทนส่วนเกินสะสม h วันข้างหน้า",
+    decay = {"_อ่านว่า": "IC เฉลี่ยรายวันของสัญญาณ เทียบกับผลตอบแทนส่วนเกินสะสม h วันข้างหน้า "
+                          "· SE จากการกระจายของ IC รายวัน · \"หลุดฐาน\" = |IC| เกิน 2 เท่าของ SE",
              "สัญญาณเร็ว": {f"{h} วัน": ic_at(sig, h) for h in (1, 2, 3, 5)},
              "สัญญาณช้า": {f"{h} วัน": ic_at(sig_slow, h) for h in (1, 2, 3, 5)}}
 
@@ -311,6 +327,13 @@ def build():
             "ต้นทุนไปกลับbps": COST_BPS,
             "ข้อจำกัดที่ต้องบอก": "หน้าตัดขวางเป็นข้อมูลจำลอง — ตัวเลขกำไรจึงไม่ใช่ผลของกลยุทธ์จริง "
                                     "สิ่งที่อ่านได้คือ *ความต่างระหว่างขั้น* ซึ่งเป็นผลเชิงกลไก",
+            "สิ่งที่การจำลองยื่นให้ฟรี": [
+                "γ ประมาณจากปัจจัยที่สอง *ตัวจริง* — ของจริงต้องประมาณตัวปัจจัยเองก่อน "
+                "ผลของขั้น factor-neutral จึงเป็นเพดาน ไม่ใช่สิ่งที่ทำได้",
+                "IC คำนวณโดยหักผลตอบแทนตลาดด้วย β *จริง* — ซึ่งบทเองพิสูจน์ใน §5 ว่าไม่มีทางรู้",
+                "alpha ทั้งสองความเร็วถูกฝังไว้ตอนสร้างข้อมูล และสัญญาณสองตัวคือเครื่องตรวจจับ "
+                "ที่ตรงกับมันพอดี — ข้อสรุปเรื่อง λ จึงเป็นความสัมพันธ์เชิงกลไก ไม่ใช่หลักฐานจากตลาด",
+            ],
         },
         "ขั้นบันไดความเป็นกลาง": ladder,
         "เส้นกำไรสะสม": series,
