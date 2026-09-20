@@ -353,6 +353,10 @@ bS_, tS_ = ols_t(Xv, np.diff(spr)[1:]); se_phi_vecm = bS_[1] / tS_[1]
 b1_, t1_ = ols_t(X2v, np.diff(spr)); se_phi_ar1 = b1_[1] / t1_[1]
 print(f"          SE(φ̂) VECM={se_phi_vecm:.3f} AR(1)={se_phi_ar1:.3f} · Δφ̂={abs(bS_[1]-b1_[1]):.3f}")
 expect("math-part9.html", "SE φ̂ VECM/AR1", f"SE ของมันคือ {se_phi_vecm:.3f} (VECM) กับ {se_phi_ar1:.3f} (AR(1))")
+expect("math-part9.html", "SE φ̂ VECM/AR1 · กล่องเมื่อไรไม่จำเป็น",
+       f"SE ของ φ̂ จาก VECM คือ {se_phi_vecm:.3f} ส่วนจาก AR(1) คือ {se_phi_ar1:.3f}")
+expect("math-part9.html", "SE กว้างกว่ากี่ %",
+       f"กว้างกว่าราว {round((se_phi_vecm / se_phi_ar1 - 1) * 100 / 10) * 10:.0f}%")
 expect("math-part9.html", "Δφ̂", f"ต่างกัน {abs(bS_[1]-b1_[1]):.3f} ขณะที่")
 # ✍️ 2·D §9.5 — ตัวจำลองที่ A ปรับตัวจริง (สุ่ม u ทั้งชุดก่อน แล้ว e · s[0]=0 · A[0]=100)
 rng = np.random.default_rng(0)
