@@ -29,6 +29,14 @@ BR = re.compile(r'<br\s*/?>')
 # เครื่องหมายอาจอยู่ข้างในแท็ก inline เช่น <strong>• Premium</strong> — ต้องข้ามแท็กนำก่อน
 INLINE_OPEN = r'(?:<(?:strong|em|b|i|code|span|abbr|a)\b[^>]*>\s*)*'
 MARK = re.compile(r'^\s*(' + INLINE_OPEN + r')\s*(?:(•|✓|✗|◦|–)|(\d+)\.)\s+(.*)$', re.S)
+# รายการอีกแบบ: "หัวข้อ" เป็นตัวหนาแทนเครื่องหมาย — <strong>Step 1 — Observe:</strong> …
+# ต้องมี ≥ MIN_LABEL ข้อ ถึงจะถือว่าเป็นรายการ (กันโครงสร้างสองบรรทัดที่ตั้งใจ เช่น
+# "มือใหม่เห็น / quant เห็น" ในกล่อง 🧠)
+LABEL = re.compile(r'^\s*<(strong|b)\b[^>]*>(?:(?!</\1>).)+</\1>\s*[:：]?', re.S)
+MIN_LABEL = 3
+# บางรายการเป็น "ลูกโซ่" — คั่นแต่ละข้อด้วยลูกศรตัวเดียวโดด ๆ
+# ลูกศรพวกนี้ไม่ใช่ข้อของรายการ และไม่ใช่ตัวจบรายการ แต่คือลำดับ → ใช้ <ol> แทน
+CONNECTOR = re.compile(r'^\s*(?:<[^>]+>\s*)*[↓⇓→⇒]\s*(?:</[^>]+>\s*)*$')
 
 
 def convert_block(open_tag, body):
@@ -41,6 +49,9 @@ def convert_block(open_tag, body):
         if not s:
             parsed.append(("gap", None, ""))
             continue
+        if CONNECTOR.match(s):
+            parsed.append(("chain", None, ""))
+            continue
         m = MARK.match(s)
         if m:
             pre, sym, num, rest = m.groups()
@@ -50,15 +61,24 @@ def convert_block(open_tag, body):
         else:
             parsed.append(("text", None, s))
     if not any(k in ("num", "bul", "keep") for k, _, _ in parsed):
-        return None
+        # ไม่มีเครื่องหมาย — ลองแบบ "หัวข้อตัวหนา" แทน
+        labelled = [i for i, (k, _, t) in enumerate(parsed)
+                    if k == "text" and LABEL.match(t)]
+        if len(labelled) < MIN_LABEL:
+            return None
+        for i in labelled:
+            parsed[i] = ("bul", None, parsed[i][2])
 
     out, run, kind = [], [], None
+
+    chained = [False]
 
     def flush_list():
         nonlocal run, kind
         if not run:
             return
-        tag = "ol" if kind == "num" else "ul"
+        tag = "ol" if (kind == "num" or chained[0]) else "ul"
+        chained[0] = False
         out.append(f"<{tag}>\n" + "\n".join(f"<li>{t}</li>" for t in run) + f"\n</{tag}>")
         run, kind = [], None
 
@@ -75,6 +95,8 @@ def convert_block(open_tag, body):
             kind = k
             flush_text(buf); buf = []
             run.append(item)
+        elif k == "chain":
+            chained[0] = True          # ลูกศรคั่น — อยู่รายการเดียวกัน แค่เป็นลำดับ
         elif k == "gap":
             flush_list()
         else:
