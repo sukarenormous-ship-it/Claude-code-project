@@ -10,6 +10,9 @@
        - ไฟล์ที่มี .read ต้องมี CSS .read{…}
   3. ลิงก์ภายในทุกตัว (href ที่ไม่ใช่ http/mailto/#top) ต้องชี้ไฟล์ที่มีจริง
      และ anchor (#id) ต้องมีในไฟล์ปลายทาง
+  4. รายการปลอม — <br> ตามด้วย • / ✓ / "1." คือรายการที่ควรเป็น <ul>/<ol> จริง
+     (บนมือถือบรรทัดที่ตัดใหม่จะชิดซ้ายเท่าหัวข้อย่อย จนแยกไม่ออกว่าข้อไหนจบ)
+     แปลงอัตโนมัติได้ด้วย python3 tools/fix_fake_lists.py --write
 เตือน (ไม่ล้มเหลว):
   - ไฟล์เนื้อหาที่ไม่มี banner 🧭 เส้นทางอ่าน
   - ไฟล์ที่มี .fm แต่ไม่มี script ตัดคำไทย (Intl.Segmenter)
@@ -79,6 +82,12 @@ def check(path):
         before = src[:m.start()].rstrip()
         if not (before.endswith("</div>") or before.endswith("</p>")):
             errs.append(f"บรรทัด {ln}: บล็อก 📖 ไม่ได้อยู่ถัดจากกล่องสูตร")
+
+    # รายการปลอม: <br> + เครื่องหมายหัวข้อ — กฎเหล็กของ style guide หมวด B
+    body = re.sub(r'<div class="fm">.*?</div>', "", src, flags=re.S)
+    for m in re.finditer(r'<br\s*/?>\s*(?:•|✓|✗|◦|\d+\.)\s', body):
+        ln = body[:m.start()].count("\n") + 1
+        errs.append(f"บรรทัด {ln}: รายการปลอม (<br> + เครื่องหมายหัวข้อ) — ใช้ <ul>/<ol> จริง")
 
     for m in re.finditer(r'href="([^"]+)"', src):
         h = m.group(1)
