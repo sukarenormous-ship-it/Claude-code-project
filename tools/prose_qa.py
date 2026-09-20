@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """ตรวจความอ่านง่ายของร้อยแก้วไทยทั้งคลัง — style guide หมวด C
 
-กฎที่ตรวจ (ทั้งหมดมาจาก references/style-guide.md):
-  1. ประโยค ≤ ~2 บรรทัดจอ
-     "ประโยค" = ส่วนที่คั่นด้วย " · " ตามที่ style guide กำหนดไว้เอง
-     เกณฑ์อักษรมาจากการวัดจริง: เรนเดอร์ด้วย Chromium ที่ความกว้าง body ของคลัง
-     แล้วหารความสูงด้วย line-height ได้มัธยฐาน 81 อักษร/บรรทัด → 2 บรรทัด ≈ 162
-  2. em-dash "—" ≤ 1 ตัวต่อประโยค (นับหลังตัดด้วย " · ")
-  3. มี (1)(2)(3) ในประโยคเดียว = สัญญาณให้เปลี่ยนเป็น <ul>
+กฎที่ตรวจ และเหตุผลที่แต่ละข้ออยู่คนละชั้น:
+
+  ชั้น "ต้องแก้" (นับในเพดาน --max) — กฎที่คมและ false positive ต่ำ
+    1. em-dash "—" > 1 ตัวต่อประโยค (style guide หมวด C)
+    2. มี (1)(2)(3) ในประโยคเดียว = สัญญาณให้เปลี่ยนเป็น <ul>
+    3. ประโยคยาวเกิน 400 อักษร (~5 บรรทัด) — วัดแล้วพบว่าช่วงนี้ 56%
+       เป็น "โครงสร้างที่ถูกยุบลงใน <p>" (ผังลูกศร เช็กลิสต์ ตาราง) ไม่ใช่ร้อยแก้ว
+
+  ชั้น "ดูไว้" (รายงานอย่างเดียว ไม่นับในเพดาน)
+    4. ประโยคยาวเกิน 162 อักษร = ~2 บรรทัดจอ ตามตัวอักษรของ style guide
+       เกณฑ์ 162 มาจากการวัดจริง (เรนเดอร์ด้วย Chromium แล้วหารความสูงด้วย
+       line-height ได้มัธยฐาน 81 อักษร/บรรทัด) — แต่พอสุ่มอ่านจริงพบว่า
+       ช่วง 162–250 เป็นร้อยแก้วที่อ่านรู้เรื่องดี 94% การไล่ตัดจึงเสี่ยง
+       ทำร้ายสำนวนมากกว่าช่วย · เก็บไว้เป็นสัญญาณ ไม่ใช่ประตูกั้น
+
+  "ประโยค" = ส่วนที่คั่นด้วย " · " ตามที่ style guide กำหนดไว้เอง
 
 ไม่ตรวจ: .fm (สูตร) · pre/code (โค้ด) · table · บล็อกที่มีบล็อกซ้อนข้างใน
 
@@ -26,8 +35,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
 
 CHARS_PER_LINE = 81      # วัดจริงจาก Chromium — ดู docstring
-MAX_LINES = 2            # style guide หมวด C
-LIMIT = CHARS_PER_LINE * MAX_LINES
+SOFT = CHARS_PER_LINE * 2    # ~2 บรรทัด — ตามตัวอักษรของ style guide (รายงานอย่างเดียว)
+HARD = 400                   # ~5 บรรทัด — ช่วงที่ 56% เป็นโครงสร้างยุบ (นับในเพดาน)
 SKIP_ANCESTORS = {"pre", "code", "table", "script", "style"}
 SKIP_CLASSES = {"fm", "cap"}
 NESTED = {"p", "li", "ul", "ol", "div", "table", "svg", "pre"}
@@ -81,16 +90,18 @@ def check(path):
     src = open(path, encoding="utf-8").read()
     p = Prose()
     p.feed(src)
-    long_, dash, enum = [], [], []
+    long_, dash, enum, wall = [], [], [], []
     for tag, line, text in p.blocks:
         for s in sentences(text):
-            if len(s) > LIMIT:
+            if len(s) > HARD:
+                wall.append((line, len(s), s))
+            elif len(s) > SOFT:
                 long_.append((line, len(s), s))
             if s.count("—") > 1:
                 dash.append((line, s.count("—"), s))
             if re.search(r"\(1\).{0,200}\(2\).{0,200}\(3\)", s):
                 enum.append((line, 0, s))
-    return long_, dash, enum
+    return long_, dash, enum, wall
 
 
 def main(argv):
@@ -104,38 +115,41 @@ def main(argv):
 
     files = [os.path.join(DOCS, a if a.endswith(".html") else a + ".html") for a in argv] \
         or sorted(glob.glob(os.path.join(DOCS, "*.html")))
-    rows, tot = [], [0, 0, 0]
+    rows, tot = [], [0, 0, 0, 0]
     for f in files:
-        long_, dash, enum = check(f)
-        if not (long_ or dash or enum):
+        long_, dash, enum, wall = check(f)
+        if not (long_ or dash or enum or wall):
             continue
-        rows.append((len(long_) + len(dash) + len(enum), os.path.basename(f), long_, dash, enum))
-        tot[0] += len(long_); tot[1] += len(dash); tot[2] += len(enum)
+        hard = len(wall) + len(dash) + len(enum)
+        rows.append((hard, os.path.basename(f), long_, dash, enum, wall))
+        tot[0] += len(long_); tot[1] += len(dash); tot[2] += len(enum); tot[3] += len(wall)
 
     rows.sort(reverse=True)
     teach = [r for r in rows if not NARRATIVE.search(r[1])]
     narr = [r for r in rows if NARRATIVE.search(r[1])]
     rows = teach + narr
-    for n, name, long_, dash, enum in rows:
+    for n, name, long_, dash, enum, wall in rows:
         bits = []
-        if long_: bits.append(f"ยาวเกิน {len(long_)}")
+        if wall: bits.append(f"กำแพง>{HARD} {len(wall)}")
         if dash: bits.append(f"em-dash ซ้อน {len(dash)}")
         if enum: bits.append(f"(1)(2)(3) {len(enum)}")
+        if long_: bits.append(f"(ดูไว้ >{SOFT}: {len(long_)})")
         print(f"{n:4d}  {name:<34} {' · '.join(bits)}")
         if show:
-            for line, v, s in sorted(long_, key=lambda r: -r[1])[:8]:
+            for line, v, s in sorted(wall + long_, key=lambda r: -r[1])[:8]:
                 print(f"        บรรทัด {line:>5} · {v:>4} อักษร  {s[:96]}…")
             for line, v, s in dash[:4]:
                 print(f"        บรรทัด {line:>5} · — {v} ตัว    {s[:96]}…")
             for line, _, s in enum[:4]:
                 print(f"        บรรทัด {line:>5} · (1)(2)(3)  {s[:96]}…")
 
-    total = sum(tot)
     n_teach = sum(r[0] for r in teach)
     n_narr = sum(r[0] for r in narr)
-    print(f"\nตรวจ {len(files)} ไฟล์ · ประโยคยาวเกิน {LIMIT} อักษร (~{MAX_LINES} บรรทัด) {tot[0]} "
-          f"· em-dash ซ้อน {tot[1]} · (1)(2)(3) ในประโยคเดียว {tot[2]} · รวม {total}")
-    print(f"แยกตามชนิด: บทสอน {n_teach} · ฉบับเล่าเรื่อง {n_narr} (ไม่นับในเพดาน)")
+    print(f"\nต้องแก้ · กำแพง >{HARD} อักษร {tot[3]} · em-dash ซ้อน {tot[1]} "
+          f"· (1)(2)(3) ในประโยคเดียว {tot[2]} · รวม {tot[3] + tot[1] + tot[2]}")
+    print(f"   แยกตามชนิด: บทสอน {n_teach} · ฉบับเล่าเรื่อง {n_narr} (ไม่นับในเพดาน)")
+    print(f"ดูไว้ · ประโยค {SOFT}–{HARD} อักษร {tot[0]} — ส่วนใหญ่เป็นร้อยแก้วที่อ่านรู้เรื่อง "
+          f"ไม่ต้องไล่ตัด (ดูเหตุผลใน docstring)")
     total = n_teach
     if cap is not None and total > cap:
         print(f"❌ เกินเพดานที่ตั้งไว้ {cap}")

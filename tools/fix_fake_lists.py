@@ -26,7 +26,9 @@ DOCS = os.path.join(ROOT, "docs")
 
 P_BLOCK = re.compile(r'(<p(?![a-z])[^>]*>)((?:(?!</?p[ >]).)*?)(</p>)', re.S)
 BR = re.compile(r'<br\s*/?>')
-MARK = re.compile(r'^\s*(?:(•|✓|✗|◦|–)|(\d+)\.)\s+(.*)$', re.S)
+# เครื่องหมายอาจอยู่ข้างในแท็ก inline เช่น <strong>• Premium</strong> — ต้องข้ามแท็กนำก่อน
+INLINE_OPEN = r'(?:<(?:strong|em|b|i|code|span|abbr|a)\b[^>]*>\s*)*'
+MARK = re.compile(r'^\s*(' + INLINE_OPEN + r')\s*(?:(•|✓|✗|◦|–)|(\d+)\.)\s+(.*)$', re.S)
 
 
 def convert_block(open_tag, body):
@@ -41,8 +43,10 @@ def convert_block(open_tag, body):
             continue
         m = MARK.match(s)
         if m:
-            sym, num, rest = m.groups()
-            parsed.append(("num" if num else ("keep" if sym in "✓✗" else "bul"), sym, rest.strip()))
+            pre, sym, num, rest = m.groups()
+            kind = "num" if num else ("keep" if sym in "✓✗" else "bul")
+            # คืนแท็ก inline ที่นำหน้าเครื่องหมายกลับเข้าไป (เช่น <strong> ที่ครอบ "• Premium")
+            parsed.append((kind, sym, (pre or "") + rest.strip()))
         else:
             parsed.append(("text", None, s))
     if not any(k in ("num", "bul", "keep") for k, _, _ in parsed):
