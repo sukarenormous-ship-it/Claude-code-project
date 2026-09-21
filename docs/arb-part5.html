@@ -15,14 +15,28 @@ p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
 svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+.bx .src{display:block;font-size:.8em;color:#64748b;margin-top:8px;line-height:1.55}
+sup.c{color:var(--blue);font-weight:700;font-size:.72em}
+.ev{background:var(--purple-bg);border-left:4px solid var(--purple)}
+.tag{display:inline-block;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:4px;vertical-align:middle}.tag-ok{background:var(--green-bg);color:var(--green)}.tag-no{background:var(--red-bg);color:var(--red)}.tag-warn{background:var(--amber-bg);color:var(--amber)}
+.refs{font-size:.86em;color:var(--g7);background:var(--g0);padding:18px 24px;border-radius:8px}.refs ol{padding-left:1.4em}.refs li{margin-bottom:.7em}.refs a{color:var(--blue);word-break:break-all}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}.refs a{color:var(--g8)}}
 </style>
 </head>
 <body>
 <div class="cover">
 <h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
-<div class="sub">Part V: Statistical Arbitrage (บท 18-21)</div>
+<div class="sub">Part V: Statistical Arbitrage (บท 18–21)</div>
 <div class="desc">Pairs Trading, Mean Reversion, Factor Models, ML Overview</div>
+</div>
+
+<div class="bx ba">
+<div class="bt">⚖️ อ่านก่อน: Stat Arb สำหรับรายย่อย — ทำอะไรได้จริง และต้องระวังอะไร</div>
+<p>เนื้อหา Part นี้สอน <strong>คณิตศาสตร์และเครื่องมือที่รายย่อยทำได้จริง</strong> (cointegration test, OU, Kalman — เขียน Python ฟรีได้ทั้งหมด) แต่ต้องแยกให้ออกระหว่าง <em>"ทำได้"</em> กับ <em>"กำไรจริงหลังหักต้นทุน"</em>:</p>
+<p><span class="tag tag-ok">ทำได้</span> สร้าง/วิจัยโมเดล, เทรดคู่หุ้นใหญ่สภาพคล่องสูงด้วยทุนพอประมาณ, ใช้เป็นเครื่องมือ <em>เรียนรู้</em> market-neutral (พอร์ตที่ขึ้น/ลงตามตลาดไม่กระทบ)<br>
+<span class="tag tag-warn">ระวัง</span> งานวิจัยเกือบทั้งหมดรายงานเป็นผลตอบแทน <strong>ก่อนหักต้นทุน (gross)</strong> และ <strong>edge</strong> (ความได้เปรียบที่ทำให้ชนะตลาด) เสื่อมลงต่อเนื่องหลังปี 2000<br>
+<span class="tag tag-no">เกินกำลัง</span> พอร์ต market-neutral หลายร้อยตัว, short หุ้นเล็ก/หา borrow (ยืมหุ้นมา short) ยาก, แข่ง execution กับ HFT</p>
+<p class="src">หลักฐานเรื่อง decay และต้นทุนอยู่ในกล่องของแต่ละบท + รายการอ้างอิงท้าย Part</p>
 </div>
 
 <!-- ========== CHAPTER 18 ========== -->
@@ -40,19 +54,64 @@ svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
 </table>
 
 <div class="bx bb">
-<div class="bt">Engle-Granger Cointegration Test</div>
+<div class="bt">Engle-Granger Cointegration Test<sup class="c">[13]</sup></div>
 <p>1. Regress A vs B: A = α + β×B + ε<br>
 2. ทดสอบ residuals (ε) ว่า stationary ไหม (ADF test)<br>
-3. ถ้า ε stationary → A กับ B cointegrated → <strong>Spread = A - β×B จะ mean-revert!</strong></p>
+3. ถ้า ε stationary → A กับ B cointegrated → <strong>Spread = ε = A − α − β×B จะ mean-revert!</strong></p>
+<p class="src">ข้อควรระวัง: ผล regress ไม่สมมาตร — regress A กับ B vs B กับ A ได้ β และผล ADF ต่างกัน ควรลองทั้งสองทิศ (หรือใช้ Johansen test<sup class="c">[17]</sup> ซึ่งไม่ขึ้นกับทิศทางและรองรับมากกว่า 2 ขา)</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 เข้าใจ p-value ให้ถูก: "ระดับของหลักฐาน" ไม่ใช่สวิตช์ผ่าน/ตก</div>
+<p><strong>เข้าใจผิดที่พบบ่อย:</strong> "ราคาหุ้นไม่เป็น normal → p-value ของ ADF/cointegration ใช้ไม่ได้" — <strong>ไม่จริง</strong> ADF ไม่ได้ต้องการให้ข้อมูลเป็น normal เลย: test statistic ของมันมี <strong>distribution เฉพาะตัว</strong> (ไม่ใช่ normal หรือ t) ที่สร้างจาก limit theory + simulation โดยตรง<sup class="c">[14][18]</sup> ดังนั้นการทดสอบ normality (เช่น Shapiro–Wilk) <strong>ไม่ใช่ด่านก่อนใช้ ADF</strong> — สองอย่างตอบคนละคำถาม</p>
+<p><strong>กับดักที่คน DIY พลาดบ่อยสุด:</strong> ADF บน residual ที่<em>ประมาณ β มาแล้ว</em> ห้ามใช้ critical values ปกติ — OLS จะ "ดูด" ให้ residual ดู stationary เกินจริง ต้องใช้ critical values เฉพาะของ Engle–Granger/MacKinnon ที่ติดลบมากกว่า<sup class="c">[18]</sup> → ในทางปฏิบัติ: <strong>ใช้ <code>coint()</code> ของ statsmodels ซึ่งจัดการให้แล้ว อย่ารัน <code>adfuller()</code> บน residual เอง</strong></p>
+<p><strong>ถ้า p-value สูง แปลว่าอะไร:</strong> ADF มีปัญหา <strong>power ต่ำ</strong>เมื่อ spread กลับช้าหรือ sample สั้น (แยก φ=0.98 จาก φ=1 ไม่ออก) — p สูงจึงแปลว่า <em>"ยังสรุปไม่ได้"</em> ไม่ใช่ <em>"ไม่ mean-revert แน่นอน"</em> ทางแก้ที่ดีกว่าการลดเกณฑ์: <strong>cross-check ด้วย KPSS</strong><sup class="c">[16]</sup> ซึ่งมี null กลับด้าน (null = stationary) — ถ้า ADF reject <em>และ</em> KPSS ไม่ reject = หลักฐานแข็งสองทาง; ขัดกัน = ก้ำกึ่ง เก็บไว้ดูต่อ</p>
+<p><strong>สรุป:</strong> significance เป็น "ระดับของหลักฐาน" — จะ<em>อ้าง</em>ว่าคู่ cointegrated ต้องมีผล reject จาก test ที่ถูก spec แต่การไม่ reject = ยังอ้างไม่ได้ (เข้า Watchlist) ไม่ใช่หลักฐานว่าความสัมพันธ์ไม่มีอยู่ — <em>ใช้ p-value เป็นหลักฐาน อย่าใช้เป็น strategy</em></p>
 </div>
 
 <h3>18.2 Trading the Spread</h3>
-<div class="fm">Spread = Price_A - β × Price_B<br>
+<div class="fm">Spread = Price_A − β × Price_B<br>
 Z-score = (Spread - Mean) / StdDev<br><br>
 Entry: Z > +2 → Short Spread (Short A, Long β×B)<br>
 Entry: Z < -2 → Long Spread (Long A, Short β×B)<br>
 Exit:  Z ≈ 0 → Close ทั้งสองขา<br>
 Stop:  |Z| > 4 → Cut loss (structural break?)</div>
+
+<div class="bx br">
+<div class="bt">🪤 กับดักที่กฎ Z-score ข้างบนไม่ได้บอก: "3σ ที่ไม่มี headroom"</div>
+<p>ช่วงที่ตลาดนิ่ง spread แคบ ค่า σ จะ<strong>ยุบลงตาม</strong> → เส้น mean กับ ±1σ ±2σ ±3σ <strong>เบียดกันจนเกือบทับกัน</strong> พอราคาขยับนิดเดียวก็แตะ 3σ แล้ว → ระบบเปิดออร์เดอร์ → <strong>ค่าธรรมเนียมกับ spread กินกำไรหมดตั้งแต่ยังไม่เริ่ม</strong></p>
+<p>ถ้ามองด้วยตา คุณจะไม่เข้าเทรดตอนนั้น เพราะเห็นว่า "ระยะทางมันสั้นเกินจะคุ้ม" — <strong>แต่โมเดลมองไม่เห็น</strong> เพราะ z-score เป็นค่าที่<em>ไม่มีหน่วย</em>: มันบอกว่า "ห่างกี่ σ" แต่ไม่บอกว่า "ห่างกี่บาท" การหารด้วย σ ได้<strong>ทิ้งข้อมูลที่จำเป็นต่อการเทียบกับต้นทุนไปแล้ว</strong></p>
+<p><strong>นี่คือความผิดพลาดแบบเดียวกับที่บท 18 เตือนเรื่อง p-value เป๊ะๆ</strong> — z = 3 ในช่วงบีบตัวคือ "มีนัยสำคัญทางสถิติ แต่ไร้ความหมายทางเศรษฐกิจ" เวอร์ชันเทรด (แบบเดียวกับ r = 0.08 ที่ p &lt; 0.001)</p>
+<p class="src">⚠️ <strong>อันตรายซ้อน:</strong> ช่วงที่แบนด์บีบตัวยัง<em>เพิ่มโอกาส breakout</em> ด้วย (ความผันผวนต่ำมักตามด้วยความผันผวนสูง) — การเข้า mean-reversion ตอนนั้นจึงแย่สองชั้น: headroom น้อย <em>และ</em> โอกาสที่ spread จะวิ่งหนีสูงกว่าปกติ</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🔧 ทางแก้: บังคับให้สัญญาณมี "หน่วยเงิน" ก่อนยิง</div>
+<p><strong>อนุมานเกณฑ์ออกมาตรงๆ ได้:</strong> กำไรที่จะจับได้ = (z<sub>เข้า</sub> − z<sub>ออก</sub>) × σ และเราต้องการให้มันเป็น k เท่าของต้นทุนไป-กลับ</p>
+<div class="fm">(z_เข้า − z_ออก) × σ  ≥  k × ต้นทุนไป-กลับ
+
+แทนค่าจริง z_เข้า = 2, z_ออก = 0.5, k = 3 (อยากได้กำไร 3 เท่าของต้นทุน):
+        1.5 × σ ≥ 3 × cost
+   →    <strong>σ ≥ 2 × ต้นทุนไป-กลับ</strong>   ← ถ้าต่ำกว่านี้ ไม่ต้องดู z เลย</div>
+<p><strong>วิธีที่ 1 — ตั้งพื้นให้ σ (แก้ที่ต้นเหตุ):</strong> บังคับ σ ไม่ให้ต่ำกว่าพื้น แล้ว z จะ<em>ไม่พองเอง</em>ตอนตลาดนิ่ง ไม่ต้องเขียนตัวกรองแยก</p>
+<div class="fm">sigma_floor = 2 × ต้นทุนไป-กลับ
+sigma_eff   = max(sigma_rolling, sigma_floor)
+z           = (spread − mean) / sigma_eff</div>
+<p><strong>วิธีที่ 2 — เพิ่มด่านหน่วยเงินคู่กับ z (อ่านออกชัด):</strong></p>
+<div class="fm">เข้าเทรดเมื่อ:  |z| ≥ 2                        ← นัยสำคัญทาง<em>สถิติ</em>
+          และ  |spread − mean| ≥ 3 × cost      ← นัยสำคัญทาง<em>เศรษฐกิจ</em></div>
+<p><span class="tag tag-ok">แนะนำ</span> ใช้ทั้งสองวิธีคู่กัน — วิธีที่ 1 กัน z พอง วิธีที่ 2 เป็นด่านสุดท้ายที่อ่านแล้วเข้าใจทันทีว่าทำไมถึงไม่เข้า<br>
+<span class="tag tag-warn">ทางเลือก</span> ถ้าอยากให้สะอาดที่สุดเชิงแนวคิด: <strong>เลิกใช้ z เป็นตัวตัดสิน</strong> แล้วใช้ <code>edge_ratio = |spread − mean| / ต้นทุนไป-กลับ</code> เข้าเมื่อ ≥ 3 — วิธีนี้<em>ไม่มีทางเกิดปัญหานี้ตามนิยาม</em> เพราะหน่วยถูกโดยโครงสร้าง</p>
+<p class="src">โค้ดใน <code>code/pairs_trading_starter.py</code> ใส่ทั้งสองด่านให้แล้ว (พารามิเตอร์ <code>cost_bps</code> และ <code>edge_k</code>) — บรรทัด <code>[6] สัญญาณวันนี้</code> จะบอกด้วยว่าถูกด่านไหนปฏิเสธ</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ ก่อน Short — ความเสี่ยงที่ไม่สมมาตรกับ Long</div>
+<p>ขา short ของ pairs trade <strong>ไม่เหมือนการ Long</strong>:<br>
+• <strong>ขาดทุนได้ไม่จำกัด</strong> (ราคาขึ้นได้ไม่มีเพดาน) + อาจโดน <strong>margin call / forced buy-in / ถูกเรียกหุ้นคืน (recall)</strong><br>
+• เสีย <strong>ค่า borrow ทุกวัน</strong>ที่ถือ<br>
+• <strong>stop ที่ |Z|>4 ไม่รับประกันราคา</strong> — structural break ทำให้ spread พุ่งทะลุแล้วออกได้แพงกว่าที่คิด (นี่คือสิ่งที่ทำให้ LTCM เจ็บ — ดูกล่องท้ายบท 21)</p>
+</div>
 
 <svg class="d" viewBox="0 0 520 220">
 <defs><marker id="sa1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
@@ -80,6 +139,14 @@ Stop:  |Z| > 4 → Cut loss (structural break?)</div>
 <circle cx="440" cy="110" r="4" fill="#16a34a"/>
 <text x="445" y="100" font-family="Sarabun" font-size="9" fill="#16a34a">Exit</text>
 </svg>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Pairs Trading ได้ผลจริงไหม?</div>
+<p>งานวิจัยต้นฉบับปี 2006<sup class="c">[1]</sup> ใช้ distance method (formation 12 เดือน, เทรด 6 เดือน, เปิดที่ 2σ) บนหุ้นสหรัฐ ปี 1962–2002 พบผลตอบแทนส่วนเกิน <strong>~11% ต่อปี (ก่อนหักต้นทุน)</strong></p>
+<p>แต่การศึกษาต่อมาปี 2010<sup class="c">[2]</sup> แสดงว่ากำไร <strong>เสื่อมลงชัดเจน</strong>: top-20 pairs ได้ 0.86%/เดือน (1962–1988) → 0.37% (1989–2002) → <strong>0.24% (2003–2009)</strong> และงานปี 2012<sup class="c">[3]</sup> พบว่า <strong>เมื่อหักค่าคอม + market impact + ค่า borrow แล้ว เหลือ ~0.30%/เดือน เฉพาะคู่ที่จับคู่ดีมากเท่านั้น</strong> — คู่ทั่วไปต้นทุนกินกำไรเกือบหมด</p>
+<p><span class="tag tag-warn">ระวัง</span> ค่าคอม $0 ช่วยได้ แต่ <strong>spread + slippage + ค่า borrow ฝั่ง short</strong> คือต้นทุนจริงที่ยังอยู่ และโอกาสที่เหลือมักอยู่ในหุ้นเล็กที่ short ยาก — บทวิจารณ์รวมปี 2017<sup class="c">[4]</sup> สรุปว่าวิธี distance แบบง่ายเสื่อมไปนานแล้ว ส่วน cointegration มีพื้นฐานทฤษฎีแข็งกว่า</p>
+<p class="src">ดูคำเตือนเรื่อง data-snooping และ short-sale constraints ในบทวิจารณ์ [4] — รายการอ้างอิง [1]–[4] ท้าย Part</p>
+</div>
 
 <!-- ========== CHAPTER 19 ========== -->
 <h2 id="ch19">บทที่ 19: Mean Reversion</h2>
@@ -122,9 +189,26 @@ Half-life = ln(2) / θ ← "นานแค่ไหนกว่า spread จ�
 ถ้า Half-life = 60 วัน → ช้าเกินไป → tie up capital นาน → อาจไม่คุ้ม</p>
 </div>
 
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: OU + Half-life ใช้กันจริง</div>
+<p>โมเดล "ยางยืด" นี้ไม่ใช่แค่ทฤษฎี — มืออาชีพใช้จริง งานวิจัยปี 2010<sup class="c">[5]</sup> ใช้ OU จับ residual ของหุ้นหลังหักปัจจัย (PCA / sector ETF) บนตลาดสหรัฐ 1997–2007 ได้ <strong>Sharpe ~1.44 (PCA)</strong> แต่ <strong>ลดเหลือ ~0.9 ช่วงปลาย (2003–2007)</strong></p>
+<p class="src">⚠️ ตัวเลขนี้เป็น <strong>gross</strong> (ก่อนต้นทุน) + สมมติเทรดทั้ง universe รายวันและ short ได้ทุกตัว; 1.44 เป็นค่าช่วงต้น ไม่ใช่ค่าคงที่ที่คาดหวังได้ — ตอกย้ำธีม edge เสื่อมเหมือนบท 18</p>
+<p><span class="tag tag-ok">ทำได้</span> ส่วนคำนวณ (fit OU/half-life ด้วย AR(1)/OLS) ทำได้ 100% บน <code>statsmodels</code> — ไม่ต้อง short ไม่ต้องใช้ทุน ใช้กรองคู่ที่ half-life สั้น (~5–30 วัน) ได้เลย แต่ <strong>สั้นเกินไป (1–2 วัน) มักเป็น noise/bid-ask bounce</strong> และยิ่งสั้นยิ่งเทรดถี่ = ต้นทุนสูง</p>
+</div>
+
 <h3>19.2 Kalman Filter — Dynamic Hedge Ratio</h3>
 <p>ปัญหา: β (hedge ratio) เปลี่ยนตามเวลา → ใช้ rolling regression ไม่ดีพอ<br>
-Kalman Filter: อัพเดท β แบบ real-time ตามข้อมูลใหม่ → <strong>adaptive pairs trading</strong></p>
+Kalman Filter: อัปเดต β แบบ real-time ตามข้อมูลใหม่ → <strong>adaptive pairs trading</strong></p>
+<div class="bx ba">
+<div class="bt">เปรียบเทียบง่ายๆ</div>
+<p>Kalman = "ปรับ β ทีละนิดทุกวันตามข้อมูลใหม่" แทนที่จะคำนวณ β ใหม่หมดทั้งหน้าต่าง — เหมือนหมุนพวงมาลัยแก้ทีละนิด ไม่ใช่เลี้ยวกระชากทุกครั้งที่เจอโค้ง</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Kalman ดีกว่า rolling regression อย่างไร</div>
+<p>ตำราวิชาการปี 2025 (Cambridge)<sup class="c">[6]</sup> แสดงว่า hedge ratio จาก rolling regression <strong>แกว่งแรงและ noisy</strong> (เช่น 0.6–1.2) ขณะที่ Kalman ให้ค่าที่ <strong>นิ่งกว่าแต่ยังปรับตามได้</strong> (เช่น 0.55–0.65) และตัด parameter "ความยาว window" ที่ต้องเดาออกไป</p>
+<p><span class="tag tag-ok">ทำได้</span> มีไลบรารีพร้อม (<code>pykalman</code>, <code>statsmodels</code>) — ส่วนการเทรดจริงยังติดข้อจำกัด short เหมือนทุกกลยุทธ์ long/short</p>
+</div>
 
 <h3>19.3 Regime Detection</h3>
 <div class="bx br">
@@ -154,8 +238,18 @@ Long stocks ที่มี positive alpha + Short stocks ที่มี negati
 <div class="bx bg">
 <div class="bt">PCA Factors (จากเล่มคณิตศาสตร์ บท 8)</div>
 <p>ใช้ Eigenvalues ของ Covariance Matrix → หา principal components<br>
-PC1 ≈ market factor, PC2 ≈ sector rotation, PC3 ≈ size/value<br>
+PC1 มักคล้าย market factor; PC ถัดๆ ไป <em>อาจ</em> สะท้อน sector/style แต่ไม่เสมอ และตีความยาก/ไม่นิ่ง<br>
 → Hedge ทีละ factor → เหลือแค่ alpha</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ ความจริงสำหรับรายย่อย: Market-Neutral เต็มรูปแบบ = เกินกำลัง</div>
+<p>การถือพอร์ต long-short หลายสิบ–หลายร้อยตัวเพื่อให้ beta = 0 ต้องใช้:</p>
+<p>• <strong>Short ได้ทุกตัว</strong> — แต่หุ้นเล็กที่มี alpha สูงมักหา borrow ไม่ได้/ค่า borrow แพง (HTB 5–50%+/ปี)<br>
+• <strong>ทุนมาก</strong> — margin ทั้งสองขา + ต้องกระจายหลายตำแหน่งเพื่อลด single-pair risk<br>
+• <strong>ข้อมูลคุณภาพสถาบัน</strong> — point-in-time, survivorship-bias-free (CRSP/Compustat)</p>
+<p>งานวิจัยปี 2010<sup class="c">[5]</sup> เองก็จำกัดเฉพาะหุ้นใหญ่ที่ borrow ได้ และผลตอบแทนที่รายงานเป็น gross — งานปี 2015–2025 ชี้ว่า edge ถูกบีบจากการแข่งขัน + ค่า borrow ที่ <em>สูงขึ้น</em></p>
+<p class="src"><span class="tag tag-ok">ทำได้</span> เริ่มจากพอร์ต pairs ไม่กี่คู่ในหุ้นใหญ่/ETF สภาพคล่องสูง — เก็บ market-neutral หลายร้อยตัวไว้เป็น "ของสถาบัน"</p>
 </div>
 
 <!-- ========== CHAPTER 21 ========== -->
@@ -172,12 +266,24 @@ PC1 ≈ market factor, PC2 ≈ sector rotation, PC3 ≈ size/value<br>
 </div>
 
 <h3>21.3 Overfitting — ศัตรูตัวฉกาจ</h3>
-<div class="fm">ถ้า backtest Sharpe = 5.0 → 99% overfitted<br>
-ถ้า backtest Sharpe = 1.5 → อาจจริง → ทดสอบ out-of-sample<br><br>
-กฎ: <strong>Simple models > Complex models</strong> (ส่วนใหญ่)<br>
-Linear regression มักชนะ neural network ใน finance</div>
+<div class="fm">Backtest Sharpe สูงผิดปกติ (เช่น 4–5) → สันนิษฐานไว้ก่อนว่า overfit<br>
+Backtest Sharpe ~1–2 → "พอเป็นไปได้" → ต้องทดสอบ out-of-sample จริง<br><br>
+(ตัวเลข 5 vs 1.5 เป็น <em>rule of thumb</em> ไม่ใช่เกณฑ์ที่พิสูจน์ในงานวิจัย — ดูหลักฐานด้านล่าง)</div>
 
-<div class="bx ba">
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: ทำไม Backtest Sharpe สวยๆ ถึงหลอก</div>
+<p>งานวิจัยปี 2014<sup class="c">[7]</sup> พิสูจน์ว่า แค่มีข้อมูลรายวัน 5 ปี แล้วลองสัก <strong>~45 กลยุทธ์</strong> ก็<strong>คาดได้โดยเฉลี่ย</strong>ว่าจะเจออย่างน้อย 1 ตัวที่ in-sample Sharpe = 1.0 ทั้งที่ <strong>out-of-sample ที่แท้จริง = 0</strong> — Sharpe สูงสุดที่ "ฟลุก" ได้โตตาม <strong>√(2·ln N)</strong> ของจำนวนครั้งที่ลอง (N)</p>
+<p>ทางแก้: <strong>Deflated Sharpe Ratio</strong><sup class="c">[8]</sup> ปรับ Sharpe ตามจำนวนครั้งที่ลอง + ความยาวข้อมูล + skew/kurtosis ส่วนงานสำรวจ "factor zoo" 316+ ปัจจัย ปี 2016<sup class="c">[9]</sup> แนะนำว่าสัญญาณใหม่ควรผ่าน <strong>t-stat &gt; 3.0</strong> ไม่ใช่ 2.0</p>
+<p><span class="tag tag-warn">ระวัง</span> การจูน parameter หลายๆ ค่าแล้วเก็บตัวที่ดีสุด = กระบวนการ overfit ตรงเป๊ะ — และเครื่องมือ retail มักไม่นับ N ให้ ทำให้ Sharpe ที่เห็น "มองโลกในแง่ดีเกินจริง" เสมอ</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: "Linear ชนะ Neural Net เสมอ" — จริงหรือไม่?</div>
+<p><strong>ไม่จริงตามที่เคยเชื่อ.</strong> งานวิจัยใหญ่ปี 2020<sup class="c">[10]</sup> (หุ้นสหรัฐ 1957–2016) พบว่า <strong>neural net ตื้นๆ และ tree ชนะ linear ใน gross</strong> — long-short Sharpe ≈ <strong>1.35 (NN) เทียบ 0.61 (linear)</strong> [วัดแบบ value-weighted ทั้งคู่] เก่งจากการจับ <strong>ปฏิสัมพันธ์ที่ไม่เป็นเส้นตรง</strong>; ที่น่าสนใจคือ <strong>NN ตื้น (~3 ชั้น) ชนะ NN ลึก</strong> เพราะ finance noise สูง deep net จึง overfit</p>
+<p><strong>แต่หลังหักต้นทุน edge หด/หาย:</strong> งาน ML บน S&amp;P 500 ปี 2017<sup class="c">[11]</sup> gross &gt;0.45%/วัน เหลือ ~0.25%/วันหลังต้นทุน และงานปี 2023<sup class="c">[12]</sup> พบว่าความได้เปรียบของ ML หายไปเมื่อตัดหุ้นเล็ก/distressed และคิดต้นทุนจริง</p>
+<p><span class="tag tag-ok">แนวทางรายย่อย</span> <strong>เริ่มจากโมเดลง่ายก่อน</strong> เทรดไม่ถี่ — ลดทั้ง overfitting และต้นทุน (สอดคล้องกับที่ NN ตื้นชนะ NN ลึก) รายย่อย <em>replicate งานวิจัยได้ แต่เก็บกำไร gross หลังต้นทุนแทบไม่ได้</em>; โมเดลซับซ้อน ≠ กำไรมากกว่าเสมอ</p>
+</div>
+
 <div class="bx ba">
 <div class="bt">เรื่องจริง: Pairs Trading — Royal Dutch Shell A vs B (1907-2005)</div>
 <p>Shell มีหุ้น 2 classes (Dutch=A, English=B) สัดส่วน 60:40 → ราคาควรเป็น 60:40 ตลอด<br>
@@ -187,26 +293,171 @@ Linear regression มักชนะ neural network ใน finance</div>
 </div>
 
 <div class="bx bb">
-<div class="bt">ลองคิดดู (บท 18-21)</div>
+<div class="bt">ลองคิดดู (บท 18–21)</div>
 <p>1. หุ้น A กับ B มี correlation = 0.95 → ใช้ pairs trading ได้ไหม? ทำไม?<br>
 2. Spread มี half-life = 3 วัน vs 90 วัน → อันไหนดีกว่าสำหรับ pairs trading?<br>
 <em>เฉลย: 1. Correlation สูงไม่พอ! ต้องทดสอบ cointegration — ถ้าไม่ cointegrated spread อาจ drift ไปเรื่อยๆ 2. 3 วันดีกว่ามาก — กลับเร็วกว่า tie up capital น้อยกว่า</em></p>
 </div>
 
-<div class="bt">สรุป Part V (บท 18-21) — Part 6/9 ✓</div>
+<div class="bx bg">
+<div class="bt">สรุป Part V (บท 18–21) — Part 6/9 ✓</div>
 <p>✓ <strong>Pairs Trading</strong>: Cointegration > Correlation, Z-score entry/exit<br>
+✓ <strong>p-value</strong>: เป็น "ระดับของหลักฐาน" ไม่ใช่สวิตช์ — จัดคู่ลง Evidence Tiers (Reject→Trade)<br>
 ✓ <strong>OU Process</strong>: θ = speed, Half-life กำหนดว่าคุ้มไหม<br>
 ✓ <strong>Kalman Filter</strong>: Dynamic hedge ratio<br>
 ✓ <strong>Factor Models</strong>: alpha = edge, beta = hedge ออกได้<br>
 ✓ <strong>Market-Neutral</strong>: Long alpha + Short alpha, beta = 0<br>
-✓ <strong>ML</strong>: Walk-Forward CV, Overfitting = ศัตรู, Simple > Complex<br>
-✓ <strong>ทั้งหมดเป็น Lv.4 [Heuristic]</strong> — ไม่ใช่ arb จริง มี statistical edge</p>
+✓ <strong>ML</strong>: Walk-Forward CV (ห้าม K-fold), Overfitting = ศัตรู (Deflated Sharpe, t&gt;3)<br>
+✓ <strong>รายย่อย+ML</strong>: เริ่มจากโมเดลง่าย (NN ตื้น&gt;ลึก) — ของซับซ้อนชนะแค่ gross ต้นทุนกลืน edge<br>
+✓ <strong>หลักฐาน decay</strong>: pairs &amp; stat-arb เสื่อมลงหลังปี 2000 — gross ≠ net<br>
+✓ <strong>ทั้งหมดเป็น [Lv.4 Structured]</strong> — ไม่ใช่ arb จริง มี statistical edge (และ edge บางลงเรื่อยๆ)</p>
+</div>
+
+<!-- ========== PRACTICAL LAYER ========== -->
+<h2 id="do">🛠️ ลงมือทำ: จากอ่าน → เทรดคู่แรก</h2>
+<p>ความรู้ในบท 18–21 จะเป็นแค่ทฤษฎีถ้าไม่ได้ลงมือ — ส่วนนี้คือ <strong>playbook ทำตามได้จริง</strong> ด้วย Python ฟรี โค้ดเต็มที่รันได้อยู่ใน repo: <code>code/pairs_trading_starter.py</code></p>
+<p class="src">⚠️ ส่วนนี้เพื่อ<strong>การศึกษา ไม่ใช่คำแนะนำการลงทุน</strong> — backtest/ผลในอดีตไม่รับประกันอนาคต และมีความเสี่ยงขาดทุน (โดยเฉพาะขา short)</p>
+<div class="bx bg">
+<div class="bt">🎯 เป้าหมายเดือนแรกไม่ใช่ "กำไร"</div>
+<p>คือ <strong>รันสกรีนแรกของคุณให้ได้</strong> + เข้าใจว่าทำไมต้นทุนกินกำไร — แค่นี้คุณก็นำหน้าคนที่อ่านแล้วไม่ลงมือ 99% แล้ว ส่วนกำไรจริงเป็นเรื่องระยะยาวที่ต้องพิสูจน์ด้วย paper trade ก่อน</p>
+</div>
+
+<h3>Workflow 6 ขั้น (จากศูนย์ → คู่แรก)</h3>
+<div class="fm">1) เลือก universe       → หุ้นใหญ่/ETF กลุ่มเดียวกัน สภาพคล่องสูง (เช่น KO–PEP)
+2) ทดสอบ cointegration  → EG p &lt; 0.05 + KPSS ไม่ขัด (ไม่ reject = Watchlist ไม่ใช่เทรด)
+3) กรอง half-life       → 5–30 วัน (สั้นไป = noise, ยาวไป = ทุนจม)
+4) ตั้งกฎ Z-score       → entry ±2, exit |Z|&lt;0.5, stop ±4
+5) Backtest (train→OOS) → ประเมินบน train วัดผลบน out-of-sample; ดู Sharpe "หลังหักต้นทุน"
+6) Paper trade 2-3 เดือน → แล้วค่อย size ≤ 1-2%/คู่ ด้วยเงินที่เสียได้</div>
+
+<h3>Evidence Checklist — หลักฐานแน่นแค่ไหน?</h3>
+<table>
+<tr><th>เกณฑ์</th><th>หลักฐานแข็ง ✓</th><th>สัญญาณเตือน ✗</th></tr>
+<tr><td>Cointegration (p-value)</td><td>&lt; 0.05 บน train (+ KPSS ไม่ขัด)</td><td>≥ 0.05 → ยัง<em>อ้าง</em> cointegration ไม่ได้ (Watchlist ไม่ใช่เทรด)</td></tr>
+<tr><td>Half-life</td><td>~5–30 วัน</td><td>&lt; 5 วัน (noise) หรือ &gt; 30 วัน (ทุนจม)</td></tr>
+<tr><td>Short ได้ทั้งสองขา</td><td>หุ้นใหญ่ borrow ถูก/ง่าย</td><td>หุ้นเล็ก หา borrow ไม่ได้/แพง</td></tr>
+<tr><td>สภาพคล่อง</td><td>bid-ask แคบ, วอลุ่มพอ</td><td>spread กว้าง → ต้นทุนกินกำไร</td></tr>
+<tr><td>Sharpe <strong>out-of-sample</strong> (หลังต้นทุน)</td><td>&gt; 1 และ in-sample ไม่ทิ้งห่าง OOS มาก</td><td>&gt; 3 (สงสัย overfit) หรือพังเมื่อทดสอบ OOS</td></tr>
+<tr><td>ขนาด (sizing)</td><td>≤ 1–2% ของพอร์ต/คู่</td><td>ไม่มี stop / size ใหญ่</td></tr>
+</table>
+<p class="src">⚠️ <strong>กับดัก multiple testing:</strong> ถ้าไล่สกรีนหลายสิบคู่ จะมีบางคู่ "ผ่าน p&lt;0.05" ด้วยความบังเอิญ (เหตุผลเดียวกับ √(2·ln N) ในบท 21) — อย่าเชื่อคู่เดียวที่ผ่าน ให้ดูว่ามันยังผ่านในช่วง OOS/หลาย regime ด้วย</p>
+
+<div class="bx ba">
+<div class="bt">🗂️ ตัดสินเป็น "ระดับ" ไม่ใช่ ผ่าน/ตก — Evidence Tiers</div>
+<p>อย่าใช้ p-value ตัวเดียวเป็นสวิตช์ ให้จัดคู่ที่สกรีนได้ลง 5 ระดับตามหลักฐานที่สะสม:</p>
+<p>🔴 <strong>Reject</strong> — ไม่มีเหตุผลเศรษฐกิจว่าทำไมต้องวิ่งด้วยกัน / EG ไม่ reject <em>และ</em> KPSS ชี้ไม่ stationary / short ไม่ได้ → ทิ้ง<br>
+🟡 <strong>Watchlist</strong> — เหตุผลเศรษฐกิจแน่น แต่หลักฐานสถิติก้ำกึ่ง (p ≈ 0.05–0.15, sample สั้น) → เก็บข้อมูลเพิ่ม/ดู rolling ห้ามเทรด<br>
+🔵 <strong>Research candidate</strong> — EG reject + half-life ดี แต่ OOS Sharpe &lt; 1 → paper trade / ปรับโมเดล<br>
+🟢 <strong>Trade candidate</strong> — หลักฐานครบทุกชั้น + OOS Sharpe &gt; 1 → paper trade 2–3 เดือน<br>
+🟢 <strong>Trade (size เล็ก)</strong> — paper ตรงกับคาด ≥20–30 สัญญาณ → เงินจริง ≤1–2%/คู่</p>
+<p class="src">กฎเหล็ก: ถ้า test ไม่ผ่านเพราะสงสัยว่า spec ผิด (lag ไม่พอ, structural break, β เปลี่ยนตามเวลา) → <strong>แก้โมเดล ไม่ใช่ลด threshold จนคู่ผ่าน</strong><br>
+การจัดอันดับใน Watchlist: ใช้ <strong>ขนาด + ความเสถียร</strong> (half-life, ความถี่ที่ spread ตัดผ่านค่าเฉลี่ย, β นิ่งข้าม rolling windows) — <strong>อย่าจัดอันดับด้วย p-value</strong> เพราะมันผสม effect size กับความยาวข้อมูล: คู่ข้อมูลยาวได้ p ต่ำทั้งที่ effect อ่อน ส่วนคู่เศรษฐกิจแน่นแต่ข้อมูลสั้นได้ p สูงทั้งที่น่าค้นกว่า (และ p=0.04 กับ 0.06 แทบไม่ต่างกันจริง)</p>
+</div>
+
+<h3>เครื่องมือสถิติแต่ละตัว — ต้อง "significant" ไหม?</h3>
+<table>
+<tr><th>เครื่องมือ</th><th>ใช้ significance อย่างไร</th></tr>
+<tr><td>Correlation</td><td>อย่าใช้ p เป็นด่าน — ดู<strong>ขนาด + ความเสถียร</strong> (r=0.08 ที่ p&lt;0.001 ก็ไร้ประโยชน์เชิงเทรด)</td></tr>
+<tr><td>ADF / PP<sup class="c">[14][15]</sup></td><td><strong>ต้อง reject</strong> ถ้าจะ<em>อ้าง</em>ว่า spread stationary; ไม่ reject = ยังสรุปไม่ได้ (power ต่ำ)</td></tr>
+<tr><td>KPSS<sup class="c">[16]</sup></td><td>null กลับด้าน (null = stationary) — ใช้ <strong>cross-check</strong> กับ ADF ให้หลักฐานสองทาง</td></tr>
+<tr><td>Engle–Granger<sup class="c">[13][18]</sup></td><td><strong>ต้อง reject</strong> ด้วย critical values เฉพาะ (ห้ามใช้ ADF ปกติบน residual)</td></tr>
+<tr><td>Johansen<sup class="c">[17]</sup></td><td>หลักฐานสำคัญเมื่อขา &gt; 2 หรือกังวลเรื่องทิศทาง regression</td></tr>
+<tr><td>Shapiro–Wilk (normality)</td><td><strong>ไม่ใช่ด่านก่อน ADF/cointegration</strong> — ตอบคนละคำถาม</td></tr>
+<tr><td>Backtest P&amp;L</td><td>ดู OOS + ต้นทุน + selection bias — ไม่ใช่ p-value ตัวเดียว</td></tr>
+</table>
+
+<h3>โค้ด: ทดสอบคู่หุ้นใน ~10 บรรทัด</h3>
+<div class="fm">import yfinance as yf, statsmodels.api as sm
+from statsmodels.tsa.stattools import coint
+
+px = yf.download(["KO","PEP"], start="2018-01-01",
+       auto_adjust=True, progress=False)["Close"][["KO","PEP"]].dropna()
+a, b = px["KO"], px["PEP"]
+
+t, pval, _ = coint(a, b)              # 1) cointegration (ใช้ coint() เท่านั้น —
+print("p-value:", round(pval, 4))     #    critical values ถูกชุด, อย่า adfuller residual เอง)
+
+beta   = sm.OLS(a, sm.add_constant(b)).fit().params.iloc[1]
+spread = a - beta * b                 # 2) spread = A - beta*B</div>
+<p class="src">โค้ดเต็ม (half-life + Z-score + backtest train→OOS มีต้นทุน+borrow + <strong>สัญญาณวันนี้</strong>) อยู่ที่ <code>code/pairs_trading_starter.py</code> — รัน <code>python pairs_trading_starter.py KO PEP</code><br>บรรทัด <code>[6] สัญญาณวันนี้</code> คือสิ่งที่เอาไปจดใน paper-trade log ทุกวัน (รันทุกเย็นหลังตลาดปิด)</p>
+
+<h3>ตัวอย่างการตัดสินใจ (เดินจริง 1 คู่)</h3>
+<div class="bx bb">
+<div class="bt">สมมติรันคู่ A–B แล้วได้:</div>
+<p>• p-value (train) = <strong>0.03</strong> → ผ่าน (cointegrated) ✓<br>
+• half-life = <strong>12 วัน</strong> → อยู่ในช่วง 5–30 ✓<br>
+• Sharpe: in-sample 2.1 → <strong>out-of-sample 0.8</strong> (หลังต้นทุน 20bps + borrow) → <em>ก้ำกึ่ง</em> ⚠️<br>
+• ทั้งสองตัวเป็นหุ้นใหญ่ borrow ง่าย ✓</p>
+<p><strong>คำตัดสิน:</strong> โครงสร้างดี แต่ OOS Sharpe เพียง 0.8 — จัดเป็น <strong>🔵 Research candidate</strong> (ไม่ใช่ Trade candidate) → paper trade ≥ 2–3 เดือน (≥20–30 สัญญาณ) ถ้าผลยังตรงค่อยเลื่อนระดับเป็น Trade size เล็กมาก; ถ้า OOS Sharpe ติดลบ → ลดเป็น Reject ทันที</p>
+</div>
+
+<h3>Action Plan — 3 เดือนแรก (ไม่เสี่ยงเงินก่อน)</h3>
+<div class="fm">วันนี้      : รันโค้ดกับ 1 คู่ที่สนใจ (ใช้ Google Colab ก็ได้ ไม่ต้องลงอะไร)
+สัปดาห์ 1   : คัด 3–5 คู่ที่ผ่าน Checklist ครบ
+เดือน 1–3   : paper trade — รันโค้ดทุกเย็น จดสัญญาณ [6] ลงชีต (ไม่ใช้เงินจริง)
+ทุกสัปดาห์  : re-test cointegration — ถ้า p-value โผล่ &gt; 0.10 หรือ β เลื่อนเยอะ = ถอดคู่นั้น
+จบ 3 เดือน  : มี ≥20–30 สัญญาณแล้วเทียบกับที่คาด → ตรง: size ≤1–2%/คู่ | ไม่ตรง: ทิ้ง/แก้</div>
+
+<div class="bx bb">
+<div class="bt">📝 Paper trade ทำยังไง? (สำหรับมือใหม่)</div>
+<p><strong>Paper trade = เทรดสมมติ ไม่ส่งคำสั่งจริง ไม่เสียเงิน</strong> — แค่จดว่า "ถ้าเทรดจริงจะได้/เสียเท่าไร"</p>
+<p>ทำชีต (Google Sheets/Excel) คอลัมน์: <code>วันที่ | คู่ | Z-score | Action (Long/Short/Exit) | ราคา A | ราคา B | P&amp;L สมมติ</code><br>
+ลูปประจำวัน: รันสคริปต์หลังตลาดปิด → อ่านบรรทัด <code>[6] สัญญาณวันนี้</code> → จดลงชีต → สิ้นเดือนรวม P&amp;L ดูว่าตรงกับ backtest ไหม</p>
+<p class="src">หมายเหตุ: คู่ตัวอย่างเป็นหุ้นสหรัฐ การ short จริงต้องใช้โบรกเกอร์ที่รองรับ margin/short หุ้นสหรัฐ (บัญชีไทย long-only ทำไม่ได้) — แต่ช่วง paper trade <strong>ไม่ต้องมีบัญชี</strong> แค่จดสัญญาณ</p>
+</div>
+
+<h3>Pitfalls — ทำ / ไม่ทำ</h3>
+<table>
+<tr><th>✓ ทำ</th><th>✗ ไม่ทำ</th></tr>
+<tr><td>ทดสอบ cointegration ก่อนเสมอ</td><td>เชื่อ correlation สูงอย่างเดียว</td></tr>
+<tr><td>ดู Sharpe "หลังหักต้นทุน"</td><td>ตื่นเต้นกับ Sharpe สูงๆ จาก backtest</td></tr>
+<tr><td>คิดค่า borrow + spread + slippage</td><td>ลืมต้นทุนฝั่ง short</td></tr>
+<tr><td>walk-forward / out-of-sample</td><td>random K-fold (data leakage)</td></tr>
+<tr><td>paper trade ก่อน, size เล็ก</td><td>ลงเงินก้อนใหญ่ตั้งแต่คู่แรก</td></tr>
+<tr><td>เริ่มหุ้นใหญ่ borrow ง่าย</td><td>ไล่หุ้นเล็กที่ "ส่วนต่างเยอะ" แต่ short ไม่ได้</td></tr>
+<tr><td>re-test cointegration เป็นรอบ + ถอดคู่ที่พัง</td><td>พึ่ง stop ที่ |Z|>4 อย่างเดียวกัน structural break</td></tr>
+<tr><td>มอง p-value เป็น "ระดับหลักฐาน" (Evidence Tiers)</td><td>ลด threshold จนคู่ผ่าน — แก้เกณฑ์แทนที่จะแก้โมเดล</td></tr>
+<tr><td>กระจายหลายคู่ที่ไม่ซ้ำ sector/factor</td><td>ถือ 5 คู่ที่จริงๆ เป็น bet เดียวกัน</td></tr>
+</table>
+
+<div class="bx bg">
+<div class="bt">🧰 Starter Kit</div>
+<p><strong>ไม่อยากลงอะไร?</strong> เปิด <code>colab.research.google.com</code> → เซลล์แรกพิมพ์ <code>!pip install yfinance statsmodels</code> → วางโค้ดแล้วกด Run (ฟรี ไม่ต้องติดตั้ง Python ในเครื่อง)<br>
+<strong>ลงในเครื่อง:</strong> <code>pip install yfinance statsmodels pandas numpy</code><br>
+<strong>ข้อมูลฟรี:</strong> Yahoo Finance (yfinance), Stooq — พอสำหรับงานรายวัน (ระวัง survivorship bias: ไม่เห็นหุ้นที่ถูกถอด/เจ๊ง → ผลดูดีเกินจริง)<br>
+<strong>อ่านต่อ:</strong> บทวิจารณ์รวม [4] (ภาพรวมวิธีทั้งหมด) และวิธี OU/PCA [5] ในรายการอ้างอิงด้านล่าง</p>
+</div>
+
+<h2 id="refs">📚 อ้างอิง (References) — Part V</h2>
+<p style="font-size:.92em;color:#64748b">งานวิจัย peer-reviewed ที่ใช้สนับสนุนกล่องหลักฐานในบท 18–21 (citation/ปี/วารสาร ตรวจสอบแล้ว) — ใช้เป็นจุดเริ่มอ่านต่อ ไม่ใช่คำแนะนำการลงทุน</p>
+<div class="refs">
+<ol>
+<li>Gatev, E., Goetzmann, W. N., &amp; Rouwenhorst, K. G. (2006). "Pairs Trading: Performance of a Relative-Value Arbitrage Rule." <em>The Review of Financial Studies</em>, 19(3), 797–827. <a href="https://academic.oup.com/rfs/article-abstract/19/3/797/1646694">link</a></li>
+<li>Do, B., &amp; Faff, R. (2010). "Does Simple Pairs Trading Still Work?" <em>Financial Analysts Journal</em>, 66(4), 83–95. <a href="https://www.tandfonline.com/doi/abs/10.2469/faj.v66.n4.1">link</a></li>
+<li>Do, B., &amp; Faff, R. (2012). "Are Pairs Trading Profits Robust to Trading Costs?" <em>Journal of Financial Research</em>, 35(2), 261–287. <a href="https://onlinelibrary.wiley.com/doi/10.1111/j.1475-6803.2012.01317.x">link</a></li>
+<li>Krauss, C. (2017). "Statistical Arbitrage Pairs Trading Strategies: Review and Outlook." <em>Journal of Economic Surveys</em>, 31(2), 513–545. <a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/joes.12153">link</a></li>
+<li>Avellaneda, M., &amp; Lee, J.-H. (2010). "Statistical Arbitrage in the US Equities Market." <em>Quantitative Finance</em>, 10(7), 761–782. <a href="https://www.tandfonline.com/doi/abs/10.1080/14697680903124632">link</a></li>
+<li>Palomar, D. P. (2025). <em>Portfolio Optimization: Theory and Application</em>, Ch. 15 (Pairs Trading / Kalman). Cambridge University Press. <a href="https://bookdown.org/palomar/portfoliooptimizationbook/15.6-kalman-pairs-trading.html">link</a></li>
+<li>Bailey, D., Borwein, J., López de Prado, M., &amp; Zhu, Q. (2014). "Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance." <em>Notices of the AMS</em>, 61(5), 458–471. <a href="https://www.ams.org/notices/201405/rnoti-p458.pdf">link</a></li>
+<li>Bailey, D., &amp; López de Prado, M. (2014). "The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality." <em>The Journal of Portfolio Management</em>, 40(5), 94–107. <a href="https://jpm.pm-research.com/content/40/5/94.short">link</a></li>
+<li>Harvey, C. R., Liu, Y., &amp; Zhu, H. (2016). "…and the Cross-Section of Expected Returns." <em>The Review of Financial Studies</em>, 29(1), 5–68. <a href="https://academic.oup.com/rfs/article-abstract/29/1/5/1843824">link</a></li>
+<li>Gu, S., Kelly, B., &amp; Xiu, D. (2020). "Empirical Asset Pricing via Machine Learning." <em>The Review of Financial Studies</em>, 33(5), 2223–2273. <a href="https://academic.oup.com/rfs/article/33/5/2223/5758276">link</a></li>
+<li>Krauss, C., Do, X. A., &amp; Huck, N. (2017). "Deep neural networks, gradient-boosted trees, random forests: Statistical arbitrage on the S&amp;P 500." <em>European Journal of Operational Research</em>, 259(2), 689–702. <a href="https://www.sciencedirect.com/science/article/abs/pii/S0377221716308657">link</a></li>
+<li>Avramov, D., Cheng, S., &amp; Metzker, L. (2023). "Machine Learning vs. Economic Restrictions: Evidence from Stock Return Predictability." <em>Management Science</em>, 69(5), 2587–2619. <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3450322">link</a></li>
+<li>Engle, R. F., &amp; Granger, C. W. J. (1987). "Co-integration and Error Correction: Representation, Estimation, and Testing." <em>Econometrica</em>, 55(2), 251–276. <a href="https://www.jstor.org/stable/1913236">link</a></li>
+<li>Dickey, D. A., &amp; Fuller, W. A. (1979). "Distribution of the Estimators for Autoregressive Time Series with a Unit Root." <em>Journal of the American Statistical Association</em>, 74(366), 427–431. <a href="https://www.jstor.org/stable/2286348">link</a></li>
+<li>Phillips, P. C. B., &amp; Perron, P. (1988). "Testing for a Unit Root in Time Series Regression." <em>Biometrika</em>, 75(2), 335–346. <a href="https://www.jstor.org/stable/2336182">link</a></li>
+<li>Kwiatkowski, D., Phillips, P. C. B., Schmidt, P., &amp; Shin, Y. (1992). "Testing the Null Hypothesis of Stationarity Against the Alternative of a Unit Root." <em>Journal of Econometrics</em>, 54(1–3), 159–178. <a href="https://doi.org/10.1016/0304-4076(92)90104-Y">link</a></li>
+<li>Johansen, S. (1991). "Estimation and Hypothesis Testing of Cointegration Vectors in Gaussian Vector Autoregressive Models." <em>Econometrica</em>, 59(6), 1551–1580. <a href="https://www.jstor.org/stable/2938278">link</a></li>
+<li>MacKinnon, J. G. (2010). "Critical Values for Cointegration Tests." <em>Queen's Economics Department Working Paper</em> No. 1227. <a href="https://www.econ.queensu.ca/research/working-papers/1227">link</a></li>
+</ol>
+<p class="src"><strong>วิธีอ่านตัวเลขในงานวิจัยเหล่านี้:</strong> ผลตอบแทน ~11%/ปี ของ [1] และ Sharpe จาก [5], [10] เป็นค่า <em>ก่อนหักต้นทุน (gross)</em> และมักเป็น out-of-sample บนทั้ง universe — <strong>ผลจริงหลังต้นทุนของรายย่อยจะต่ำกว่านี้มาก</strong> ให้ใช้เป็น "เพดานบน" ไม่ใช่ค่าที่คาดหวังได้จริง; ส่วนเกณฑ์ "Sharpe 5 vs 1.5" เป็น rule of thumb ไม่ใช่ผลพิสูจน์ใน [7]–[8]</p>
 </div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
 <div style="text-align:center;padding:20px;color:#64748b">
 <p style="font-size:1.2em;font-weight:700;color:var(--blue)">จบ Part V</p>
-<p>Part VI: Merger & Event Arbitrage</p>
+<p>Part VI: Merger &amp; Event Arbitrage</p>
 </div>
 </body>
 </html>

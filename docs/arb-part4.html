@@ -15,31 +15,45 @@ p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom
 .fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}th{background:var(--blue);color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid var(--g2)}tr:nth-child(even){background:var(--g0)}
 svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
-@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}}
+.bx .src{display:block;font-size:.8em;color:#64748b;margin-top:8px;line-height:1.55}
+sup.c{color:var(--blue);font-weight:700;font-size:.72em}
+.ev{background:var(--purple-bg);border-left:4px solid var(--purple)}
+.tag{display:inline-block;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:4px;vertical-align:middle}.tag-ok{background:var(--green-bg);color:var(--green)}.tag-no{background:var(--red-bg);color:var(--red)}.tag-warn{background:var(--amber-bg);color:var(--amber)}
+.refs{font-size:.86em;color:var(--g7);background:var(--g0);padding:18px 24px;border-radius:8px}.refs ol{padding-left:1.4em}.refs li{margin-bottom:.7em}.refs a{color:var(--blue);word-break:break-all}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table{page-break-inside:avoid}.refs a{color:var(--g8)}}
 </style>
 </head>
 <body>
 <div class="cover">
 <h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1>
-<div class="sub">Part IV: Cross-Market Arbitrage (บท 15-17)</div>
+<div class="sub">Part IV: Cross-Market Arbitrage (บท 15–17)</div>
 <div class="desc">Futures Basis, Forex Triangular, ETF NAV, Platform Arb</div>
 </div>
 
+<div class="bx ba">
+<div class="bt">⚖️ อ่านก่อน: Cross-Market Arb สำหรับรายย่อย — สนามไหนยังเล่นได้</div>
+<p>Part นี้มีทั้ง near-arb ที่รายย่อย<em>ยังพอทำได้</em> และ arb ที่<em>ตายไปแล้ว</em>สำหรับรายย่อย — ต้องแยกให้ออกก่อนลงมือ:</p>
+<p><span class="tag tag-ok">ทำได้</span> Crypto basis / funding harvest (ขา spot + short perp ที่เดียวกัน), platform promo/Earn ขนาดเล็ก<br>
+<span class="tag tag-warn">ระวัง</span> ตัวเลข "premium สวยๆ" ที่เห็น มักเป็นของที่เก็บไม่ได้จริง (stale NAV = NAV ค้างเพราะตลาดสินทรัพย์อ้างอิงปิดอยู่, capital controls, ต้นทุนแฝง)<br>
+<span class="tag tag-no">เกินกำลัง</span> Index cash &amp; carry, FX/triangular arb, ETF NAV arb (NAV = มูลค่าสินทรัพย์สุทธิต่อหน่วยของกองทุน), ADR arb — สนามของ HFT/สถาบัน/AP (Authorized Participant — สถาบันผู้มีสิทธิ์ create/redeem ETF) เท่านั้น</p>
+<p class="src">ข้อหลักมีหลักฐานวิจัยกำกับในกล่องของแต่ละบท + รายการอ้างอิงท้าย Part — ใช้กรอบ Evidence Tiers (จัดระดับหลักฐาน ไม่ใช่ผ่าน/ตก — อธิบายเต็มใน Part V)</p>
+</div>
+
 <!-- ========== CHAPTER 15 ========== -->
-<h2 id="ch15">บทที่ 15: Futures-Spot Arbitrage (Cash & Carry)</h2>
+<h2 id="ch15">บทที่ 15: Futures-Spot Arbitrage (Cash &amp; Carry)</h2>
 
 <h3>15.1 Cost of Carry Model</h3>
 <div class="fm" style="text-align:center;font-size:1.15em">F = S × e<sup>(r-d)T</sup></div>
 <p>F = Fair Futures Price, S = Spot, r = risk-free rate, d = dividend yield, T = time to expiry</p>
 
-<h3>15.2 Cash & Carry — ถ้า F > Fair</h3>
+<h3>15.2 Cash &amp; Carry — ถ้า F &gt; Fair</h3>
 <div class="fm">Futures "แพงเกินไป":<br>
 1. ซื้อ Spot (S)<br>
 2. ขาย Futures (F)<br>
 3. ถือจน expiry → Futures converge สู่ Spot<br>
 กำไร = F - S×e<sup>(r-d)T</sup> [locked at entry, Lv.2]</div>
 
-<h3>15.3 Reverse Cash & Carry — ถ้า F < Fair</h3>
+<h3>15.3 Reverse Cash &amp; Carry — ถ้า F &lt; Fair</h3>
 <div class="fm">Futures "ถูกเกินไป":<br>
 1. Short Spot (ยืมขาย)<br>
 2. ซื้อ Futures<br>
@@ -71,21 +85,48 @@ svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
 <div class="fm">SET50 Spot = 900, r = 2%, d = 2.5%, T = 3 เดือน (0.25 ปี)<br>
 Fair F = 900 × e<sup>(0.02-0.025)×0.25</sup> = 900 × e<sup>-0.00125</sup> = 900 × 0.99875 = <strong>898.88</strong><br><br>
 Actual F = 905 → Overpriced by 905-898.88 = <strong>฿6.12</strong><br>
-→ Cash & Carry: ซื้อ SET50 spot basket + Short Futures → locked profit ≈ ฿6</div>
+→ Cash &amp; Carry: ซื้อ SET50 spot basket + Short Futures → locked profit ≈ ฿6</div>
 
 <h3>15.5 Contango vs Backwardation</h3>
 <table>
 <tr><th>สภาพ</th><th>ลักษณะ</th><th>Arb</th></tr>
-<tr><td><strong>Contango</strong> (F > S)</td><td>ปกติ: carry cost เป็นบวก</td><td>Cash & Carry ถ้า premium สูงเกินไป</td></tr>
-<tr><td><strong>Backwardation</strong> (F < S)</td><td>ผิดปกติ: มักเกิดช่วง panic</td><td>Reverse Cash & Carry (ต้อง short spot ได้)</td></tr>
+<tr><td><strong>Contango</strong> (F > S)</td><td>ปกติ: carry cost เป็นบวก</td><td>Cash &amp; Carry ถ้า premium สูงเกินไป</td></tr>
+<tr><td><strong>Backwardation</strong> (F &lt; S)</td><td>เกิดได้ทั้งปกติ (เมื่อ d &gt; r) และช่วง panic</td><td>Reverse Cash &amp; Carry ถ้า F ต่ำกว่า <em>fair</em> มากพอ (ต้อง short spot ได้)</td></tr>
 </table>
+<p class="src">อย่าเทียบ F กับ S ตรงๆ — เทียบกับ <strong>fair value</strong> เสมอ: ถ้า d &gt; r (เช่นตัวอย่าง SET50 ด้านบน) fair จะต่ำกว่า spot อยู่แล้ว backwardation อ่อนๆ จึง<em>ไม่ใช่</em>สัญญาณ arb</p>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Index Arb เคยกำไรจริง — แล้วถูกทุนสถาบันกินเรียบ</div>
+<p>งานบุกเบิกปี 1983<sup class="c">[1]</sup> วางโมเดล cost-of-carry และพบว่า index futures ยุคแรก <strong>mispricing มีจริง</strong> ต่อมางานปี 1988<sup class="c">[2]</sup> ใช้ข้อมูล intraday S&amp;P 500 (1983–1987) พบ mispricing คงอยู่นาน <strong>~15–40 นาที</strong> — นานพอให้ arbitrageur เก็บกำไรได้สม่ำเสมอ</p>
+<p>แต่เมื่อสัญญาโตเต็มวัย + ETF เกิด (1993) + ทุนสถาบันเข้า → mispricing หดจนอยู่ <strong>ในกรอบต้นทุนของสถาบัน</strong> — ของที่เหลือรายย่อยเก็บไม่ได้เพราะต้นทุนเราสูงกว่า</p>
+<p><span class="tag tag-no">เกินกำลัง</span> Index cash &amp; carry วันนี้เป็นสนามสถาบัน — เรื่องนี้สำคัญเพราะมันคือ <em>ต้นแบบของวงจร</em> ที่จะเห็นซ้ำใน crypto ด้านล่าง</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: Crypto Basis Trade — วงจรเดิมกำลังฉายซ้ำ</div>
+<p>งานวิจัยปี 2023 ของ BIS<sup class="c">[3]</sup> วัด carry ของ long spot + short futures ใน BTC/ETH พบเฉลี่ย <strong>~6–8% ต่อปี</strong> บ่อยครั้งเกิน 20% และ peak 40–60% ต่อปี (เช่นต้นปี 2021 — futures รายไตรมาสใน exchange offshore แตะ ~40%+)</p>
+<p>จุดเปลี่ยน: spot Bitcoin ETF อนุมัติ ม.ค. 2024 → สถาบันมีขา spot ที่ถูกกำกับ → เงิน hedge fund ไหลเข้า basis trade เป็นประวัติการณ์ → ข้อมูลตลาด/รายงานอุตสาหกรรมชี้ว่า basis ถูกบีบเหลือ <strong>~5% ปลายปี 2025</strong> ต่ำสุดในรอบหลายปี — ซ้ำรอย index arb ยุค 1980s แบบตำราเป๊ะ</p>
+<p><span class="tag tag-warn">ระวัง</span> carry ที่เหลือบางจนใกล้ดอกเบี้ยไร้ความเสี่ยง — และมันมาพร้อมความเสี่ยงที่ T-bill ไม่มี (ดูส่วน "ลงมือทำ" ท้าย Part)</p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ ความจริง SET50 (TFEX) สำหรับรายย่อยไทย</div>
+<p>ขา futures ทำง่าย (multiplier ฿200/จุด — ขนาดเล็กพอ) แต่ปัญหาคือ <strong>ขา spot</strong>:</p>
+<ul>
+<li>ซื้อ basket หุ้น 50 ตัวตามน้ำหนักจริง — ทำไม่ได้ในขนาดรายย่อย</li>
+<li>ตัวแทนที่ใกล้สุด (ETF อิง SET50) มีสภาพคล่องต่ำและมีค่าธรรมเนียมรายปี — กิน edge บางๆ หมด</li>
+<li>Reverse cash &amp; carry ต้อง short หุ้น — ติดข้อจำกัด SBL (บริการยืม–ให้ยืมหุ้น) + กฎ uptick (ห้าม short ที่ราคาต่ำกว่าล่าสุด) ของตลาดไทย</li>
+<li>d (dividend yield) ของ SET50 ต้อง<em>พยากรณ์</em> — ผิดนิดเดียว "fair value" ก็เพี้ยน</li>
+</ul>
+<p>mispricing ใน SET50 futures ยังพบเห็นได้เป็นระยะ — และมันคงอยู่ได้<em>เพราะ</em> arb ทำยากนั่นเอง: <strong>mispricing ที่มองเห็น ≠ กำไรที่เก็บได้</strong></p>
+</div>
 
 <!-- ========== CHAPTER 16 ========== -->
-<h2 id="ch16">บทที่ 16: Forex & Triangular Arbitrage</h2>
+<h2 id="ch16">บทที่ 16: Forex &amp; Triangular Arbitrage</h2>
 
-<h3>16.1 Covered Interest Rate Parity (CIRP)</h3>
+<h3>16.1 Covered Interest Rate Parity (CIP)</h3>
 <div class="fm" style="text-align:center;font-size:1.1em">F/S = (1 + r_domestic) / (1 + r_foreign)</div>
-<p>ถ้า CIRP ไม่เท่ากัน → Arb ระหว่าง FX spot, forward, และ interest rate [Exact Identity]</p>
+<p>ถ้า CIP ไม่เท่ากัน → Arb ระหว่าง FX spot, forward, และ interest rate [No-arb bound — เบี่ยงได้จริงหลังปี 2008 ดูกล่องหลักฐานด้านล่าง]</p>
 
 <h3>16.2 Triangular Arbitrage</h3>
 <div class="fm">3 exchange rates: USD/EUR, EUR/GBP, GBP/USD<br>
@@ -94,6 +135,7 @@ Actual F = 905 → Overpriced by 905-898.88 = <strong>฿6.12</strong><br>
 USD/EUR = 0.92, EUR/GBP = 0.86, GBP/USD = 1.28<br>
 เริ่ม $1,000 → €920 → £791.20 → $1,012.74<br>
 กำไร = $1,012.74 - $1,000 = <strong>$12.74</strong></div>
+<p class="src">อ่านค่า: USD/EUR = 0.92 หมายถึง 1 USD แลกได้ 0.92 EUR — ส่วนต่าง 1.27% ในตัวอย่างนี้<em>จงใจเว่อร์</em>เพื่อการสอน ของจริงเล็กระดับต่ำกว่า basis point และหายในเสี้ยววินาที</p>
 
 <svg class="d" viewBox="0 0 520 220">
 <!-- Triangle -->
@@ -120,17 +162,37 @@ USD/EUR = 0.92, EUR/GBP = 0.86, GBP/USD = 1.28<br>
 ต้องมี <strong>co-located servers + direct market access</strong> ถึงจะแข่งได้</p>
 </div>
 
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: FX Arb ตายอย่างไร — และข้อยกเว้นเดียวที่เหลือ (ซึ่งรายย่อยก็เก็บไม่ได้)</div>
+<p>งานวิจัยปี 2014<sup class="c">[4]</sup> ใช้ข้อมูล high-frequency ที่แยกได้ว่า order ไหนมาจากคอมพิวเตอร์ พบว่า algorithmic trading ทำให้ <strong>โอกาส triangular arbitrage ลดลงชัดเจน</strong> — ราคา FX มีประสิทธิภาพขึ้นเพราะเครื่องแข่งกันเก็บส่วนต่างจนหมด</p>
+<p>ข้อยกเว้นที่ยังอยู่: <strong>Covered Interest Parity แตกจริงหลังปี 2008</strong> — งานปี 2018<sup class="c">[5]</sup> พิสูจน์ว่า cross-currency basis เบี่ยงหลักสิบ bps แบบเรื้อรัง ไม่ใช่เพราะ credit risk หรือ transaction cost แต่เพราะ <strong>กฎกำกับงบดุลธนาคาร</strong> — คนที่เก็บได้ต้องเข้าถึงตลาด FX swap ระดับสถาบันเท่านั้น</p>
+<p><span class="tag tag-no">เกินกำลัง</span> ฝั่งรายย่อย: ข้อมูลกำกับดูแลยุโรป (ESMA 2018)<sup class="c">[6]</sup> พบว่า <strong>74–89% ของบัญชี retail CFD/FX ขาดทุน</strong> (เฉลี่ย €1,600–29,000 ต่อราย) — "FX arb สำหรับรายย่อย" ในทางปฏิบัติไม่มีอยู่จริง บทนี้จึงเป็นบทเรียน <em>เพื่อเข้าใจกลไก</em> ไม่ใช่เพื่อลงเทรด</p>
+</div>
+
 <!-- ========== CHAPTER 17 ========== -->
-<h2 id="ch17">บทที่ 17: ETF, ADR & Platform Arbitrage</h2>
+<h2 id="ch17">บทที่ 17: ETF, ADR &amp; Platform Arbitrage</h2>
 
 <h3>17.1 ETF NAV Arbitrage</h3>
-<div class="fm">ถ้า ETF Price > NAV → Authorized Participant ซื้อ basket → create ETF shares → ขาย<br>
-ถ้า ETF Price < NAV → AP ซื้อ ETF shares → redeem for basket → ขาย basket</div>
+<div class="fm">ถ้า ETF Price &gt; NAV → Authorized Participant ซื้อ basket → create ETF shares → ขาย<br>
+ถ้า ETF Price &lt; NAV → AP ซื้อ ETF shares → redeem for basket → ขาย basket</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: ETF premium มีจริง — แต่ประตูเปิดให้ AP เท่านั้น</div>
+<p>งานวิจัยปี 2017<sup class="c">[7]</sup> วัดราคา ETF เทียบ NAV พบเบี่ยงเบนในกรอบ <strong>~±2%</strong> (ยิ่งใหญ่ใน ETF ที่ถือสินทรัพย์ต่างประเทศ/สภาพคล่องต่ำ) — แต่ครึ่งหนึ่งเป็น <strong>ภาพลวงจาก stale NAV</strong> (ตลาดบ้านของสินทรัพย์ปิดอยู่ NAV เลยค้าง) เหลือส่วนจริง ~1% และกำไรจากกลยุทธ์ในเปเปอร์เป็นตัวเลข<em>ก่อนหักต้นทุน (gross)</em></p>
+<p><span class="tag tag-no">เกินกำลัง</span> Create/redeem ทำได้เฉพาะ <strong>Authorized Participant</strong> (สถาบันที่มีสัญญากับกองทุน, ขั้นต่ำหลักหมื่นหุ้น/ครั้ง) — รายย่อยเข้ากลไกนี้ไม่ได้เลย<br>
+<span class="tag tag-ok">ทำได้</span> สิ่งเดียวที่รายย่อยใช้จากเรื่องนี้: <strong>อย่าเป็นฝ่ายจ่าย premium</strong> — ใช้ limit order, เช็ก iNAV (ค่า NAV เรียลไทม์โดยประมาณ), เลี่ยงซื้อขายช่วงเปิด/ปิดตลาดและช่วงตลาดป่วน</p>
+</div>
+
+<div class="bx ev">
+<div class="bt">📊 หลักฐานวิจัย: ADR Arbitrage — ส่วนต่างเฉลี่ยเล็กกว่าต้นทุนรายย่อยมาก</div>
+<p>งานวิจัยปี 2010<sup class="c">[8]</sup> วัดราคา ADR ในสหรัฐเทียบราคาหุ้นตัวเดียวกันในตลาดบ้านเกิด (506 บริษัท 35 ประเทศ แบบ intraday) พบเบี่ยงเบนเฉลี่ยแค่ <strong>~4.9 bps</strong> — เล็กกว่าต้นทุนไป-กลับของรายย่อยหลายเท่า ส่วนกรณีเบี่ยงแรงๆ จะกระจุกในหุ้นที่ <strong>ถือแล้วเสี่ยง/แปลงยาก</strong> พอดี (limits to arbitrage: ช่องว่างกว้างตรงที่ปิดยากที่สุด)</p>
+<p><span class="tag tag-no">เกินกำลัง</span> การแปลง ADR ↔ หุ้นบ้านเกิดต้องผ่าน depositary bank + ค่าธรรมเนียม + บัญชีสองตลาด + FX — เกมของสถาบัน</p>
+</div>
 
 <h3>17.2 Index Arbitrage</h3>
 <p>ดัชนี (Index) = weighted average ของหุ้น → ถ้า Index Futures ≠ fair value ของ basket → arb</p>
 
-<h3>17.3 Platform Arbitrage ★ จาก skill</h3>
+<h3>17.3 Platform Arbitrage</h3>
 
 <table>
 <tr><th>Platform Block</th><th>Edge Source</th><th>วิธีใช้</th></tr>
@@ -138,7 +200,7 @@ USD/EUR = 0.92, EUR/GBP = 0.86, GBP/USD = 1.28<br>
 <tr><td><strong>Earn Promo</strong></td><td>Platform subsidy</td><td>ฝากรับ yield สูง + hedge ถ้าจำเป็น</td></tr>
 <tr><td><strong>New Listing Gap</strong></td><td>Spot ก่อน perp หรือกลับกัน</td><td>Basis capture ช่วง list ใหม่</td></tr>
 <tr><td><strong>Margin Offset</strong></td><td>Portfolio Margin mode</td><td>ลด capital ที่ต้องใช้ → ROI สูงขึ้น</td></tr>
-<tr><td><strong>Cross-Exchange Funding</strong></td><td>Funding rate ต่างกัน 2 exchanges</td><td>Long ที่ได้ funding + Short ที่จ่ายน้อยกว่า</td></tr>
+<tr><td><strong>Cross-Exchange Funding</strong></td><td>Funding rate ต่างกัน 2 exchanges</td><td>Long ฝั่งที่ funding ต่ำ/ติดลบ + Short ฝั่งที่ funding สูงกว่า → เก็บส่วนต่าง (delta หักล้างกัน)</td></tr>
 </table>
 
 <div class="bx ba">
@@ -149,6 +211,7 @@ USD/EUR = 0.92, EUR/GBP = 0.86, GBP/USD = 1.28<br>
 Net = Earn APR (11%) − Funding cost (≈5%) = <strong>~6% delta-neutral yield</strong><br>
 ต้นทุน: 2 ขา (Earn + Perp) + monitoring<br>
 vs Baseline: ฝาก USDT Earn 4% (1 ขา) → marginal gain = 2% → คุ้มไหม? ขึ้นกับ size + effort</p>
+<p class="src">หมายเหตุ: ทิศทาง funding ขึ้นกับตลาด — ตัวอย่างนี้สมมติฝั่ง short ของ XAUT perp ต้อง<em>จ่าย</em> funding (~5%); บางเหรียญ/บางช่วง ฝั่ง short เป็นผู้<em>รับ</em>แทน (ดูส่วน "ลงมือทำ")<br>⚠️ "delta-neutral" ตัดความเสี่ยง<em>ราคา</em> แต่ไม่ตัดความเสี่ยง<em>แพลตฟอร์ม</em> — ดูกล่องความเสี่ยง 3 ตัวในส่วน "ลงมือทำ" ท้าย Part (FTX 2022 คือบทเรียนราคาแพงของสายนี้)</p>
 </div>
 
 <div class="bx bg">
@@ -161,33 +224,106 @@ Platform Blocks กำหนด <strong>เศรษฐศาสตร์</stron
 <h3>17.4 กรณีศึกษา: Flash Crash 2010</h3>
 <div class="bx ba">
 <div class="bt">Flash Crash — ETF Arb Breakdown</div>
-<p>6 May 2010: ดัชนีหุ้นสหรัฐลงไป ~9% ใน 5 นาทีแล้วดีดกลับ<br>
+<p>6 May 2010: ดัชนีหุ้นสหรัฐร่วงเพิ่ม ~5–6% ในไม่กี่นาที (รวมทั้งวันติดลบ ~9%) แล้วดีดกลับ<br>
 ETFs ตกหนักกว่า underlying → NAV arb mechanism พัง → <strong>premium/discount กว้างสุดขีด</strong><br>
-บทเรียน: Arb mechanism ทำงานได้ <strong>เมื่อตลาดปกติ</strong> — ช่วง panic อาจพังได้</p>
+รายงานทางการ SEC/CFTC<sup class="c">[9]</sup>: เทรดกว่า <strong>20,000 รายการ</strong>ถูกยกเลิกเพราะราคาหลุดเกิน 60% — และ <strong>~70% ของหลักทรัพย์เหล่านั้นคือ ETF</strong> (บางตัวเทรดที่ $0.01!)<br>
+บทเรียน: Arb mechanism ทำงานได้ <strong>เมื่อตลาดปกติ</strong> — ช่วง panic คนทำ arb ถอนตัวพร้อมกัน ราคา ETF หลุดจาก NAV ได้มหาศาล<br>
+<span class="tag tag-warn">ระวัง</span> สำหรับรายย่อย นี่คือ<em>อันตราย</em>ไม่ใช่โอกาส — stop-loss แบบ market order ของรายย่อยคือเทรดที่ไปเติมที่ $0.01</p>
 </div>
 
 <div class="bx ba">
-<div class="bx ba">
-<div class="bt">เรื่องจริง: Kimchi Premium (2017-2021)</div>
-<p>Bitcoin ในเกาหลีใต้ (Upbit, Bithumb) ราคาสูงกว่าตลาดโลก 5-50%! เรียกว่า "Kimchi Premium"<br>
-ทำไมยัง arb ไม่หมด? เพราะ <strong>capital controls</strong> — กฎหมายเกาหลีจำกัดการโอนเงินออกนอกประเทศ<br>
-ใครที่มีช่องทางโอนได้ (ถูกกฎหมาย) ทำกำไรมหาศาล → <strong>Friction = Arb opportunity สำหรับคนที่ข้ามมันได้</strong></p>
+<div class="bt">เรื่องจริง: Kimchi Premium (2017–ปัจจุบัน)</div>
+<p>Bitcoin ในเกาหลีใต้ (Upbit, Bithumb) เคยแพงกว่าตลาดโลกมหาศาล — งานวิจัยปี 2020<sup class="c">[10]</sup> วัดได้: ช่วง ธ.ค. 2017–ก.พ. 2018 premium เฉลี่ย <strong>เกิน 15% ต่อเนื่องหลายสัปดาห์ peak ~40–50%</strong> และกำไร arb รวมช่วงนั้น <strong>เกิน $1 พันล้าน</strong><br>
+ทำไมยัง arb ไม่หมด? เพราะ <strong>capital controls</strong> — เงินวอนออกนอกประเทศยาก + ต่างชาติเปิดบัญชี exchange เกาหลีไม่ได้ → friction กันทั้งสถาบันและรายย่อย<br>
+<strong>อัปเดต 2024–25:</strong> premium หดเหลือ <strong>~1–10% เป็นช่วงสั้นๆ</strong> (เช่นต้นปี 2025 แตะ ~9–10% ช่วงสั้นๆ; ช่วงการเมืองเกาหลีป่วน ธ.ค. 2024 กลับพลิกเป็น <em>discount</em> ชั่วคราว — ช่องว่างวิ่งได้สองทาง) — กลายเป็นดัชนีอารมณ์ตลาด ไม่ใช่ arb ที่รอให้เก็บ<br>
+<strong>บทเรียนที่ยังจริง:</strong> Friction = Arb opportunity <em>สำหรับคนที่ข้ามมันได้ถูกกฎหมาย</em> — ถ้าคุณข้ามไม่ได้ อย่าฝืน</p>
 </div>
 
 <div class="bx bb">
-<div class="bt">ลองคิดดู (บท 15-17)</div>
+<div class="bt">ลองคิดดู (บท 15–17)</div>
 <p>1. SET50 Spot=920, Futures(3mo)=930, r=2%, d=2.5% → Fair F = 920×e⁻⁰·⁰⁰¹²⁵ = ? Futures overpriced?<br>
 2. ETF ราคา ฿25.50 แต่ NAV = ฿25.00 → Premium 2% → AP ทำอย่างไร?<br>
-<em>เฉลย: 1. Fair=918.85 → Actual 930 overpriced ฿11.15! → Cash&Carry 2. AP ซื้อ basket (NAV) → create ETF shares → ขาย ETF ที่ 25.50 → กำไร ฿0.50/unit</em></p>
+<em>เฉลย: 1. Fair=918.85 → Actual 930 overpriced ฿11.15! → Cash &amp; Carry 2. AP ซื้อ basket (NAV) → create ETF shares → ขาย ETF ที่ 25.50 → กำไร ฿0.50/unit</em></p>
 </div>
 
-<div class="bt">สรุป Part IV (บท 15-17) — Part 5/9 ✓</div>
-<p>✓ <strong>Cash & Carry</strong>: F > Fair → ซื้อ spot ขาย futures → locked profit [Lv.2]<br>
+<div class="bx bg">
+<div class="bt">สรุป Part IV (บท 15–17) — Part 5/9 ✓</div>
+<p>✓ <strong>Cash &amp; Carry</strong>: F > Fair → ซื้อ spot ขาย futures → locked profit [Lv.2]<br>
 ✓ <strong>Basis converges at expiry</strong> [Exact Identity]<br>
-✓ <strong>CIRP + Triangular Arb</strong>: 3 currencies → ต้อง HFT speed<br>
-✓ <strong>ETF NAV Arb</strong>: Create/Redeem mechanism<br>
-✓ <strong>Platform Arb</strong>: Convert gap, Earn promo, Cross-exchange funding<br>
-✓ <strong>Flash Crash lesson</strong>: Arb mechanism พังได้ช่วง extreme stress</p>
+✓ <strong>วงจร decay</strong>: index arb (1980s) → crypto basis (2024–25) — ทุนสถาบันเข้าเมื่อไร edge หดเมื่อนั้น<br>
+✓ <strong>CIRP + Triangular Arb</strong>: HFT เก็บหมดแล้ว; CIP deviation เหลือจริงแต่เป็นของสถาบัน<br>
+✓ <strong>ETF NAV / ADR Arb</strong>: กลไกเป็นของ AP/depositary — รายย่อยใช้ได้แค่ "อย่าจ่ายแพง"<br>
+✓ <strong>Platform Arb</strong>: Convert gap, Earn promo, funding — สนามเดียวที่รายย่อยยังพอเล่นได้ (เล็กและมีเงื่อนไข)<br>
+✓ <strong>Flash Crash lesson</strong>: Arb mechanism พังได้ช่วง extreme stress — ~70% ของเทรดที่ถูกยกเลิกคือ ETF</p>
+</div>
+
+<h2 id="tiers">🗂️ Evidence Tiers ของ Part IV — ใครยังเล่นได้</h2>
+<p>ใช้กรอบเดียวกับ Part V (จัดระดับหลักฐาน ไม่ใช่ผ่าน/ตก) — จัดทุกกลยุทธ์ในบท 15–17 ลงระดับสำหรับ<strong>รายย่อย</strong>:</p>
+<table>
+<tr><th>กลยุทธ์</th><th>Tier (รายย่อย)</th><th>เหตุผลจากหลักฐาน</th></tr>
+<tr><td>Index cash &amp; carry (S&amp;P, SET50)</td><td>🔴 Reject</td><td>edge อยู่ในกรอบต้นทุนสถาบันแล้ว<sup class="c">[1][2]</sup>; SET50 ติดขา spot/SBL</td></tr>
+<tr><td>FX triangular / CIP</td><td>🔴 Reject</td><td>HFT เก็บหมด<sup class="c">[4]</sup>; CIP เป็นของสถาบัน<sup class="c">[5]</sup>; retail FX 74–89% ขาดทุน<sup class="c">[6]</sup></td></tr>
+<tr><td>ETF NAV arb / ADR arb</td><td>🔴 Reject</td><td>ประตูเปิดให้ AP/depositary เท่านั้น<sup class="c">[7][8]</sup></td></tr>
+<tr><td>Cross-country premium (Kimchi)</td><td>🔴 Reject</td><td>capital controls กันทุกคน<sup class="c">[10]</sup> — เหลือ 1–10% เป็นช่วงสั้น</td></tr>
+<tr><td>Crypto basis / funding harvest</td><td>🔵 Research candidate</td><td>หลักฐาน carry เฉลี่ย 6–8%<sup class="c">[3]</sup> แต่ปัจจุบันบาง (~5% — ข้อมูลตลาด) + ความเสี่ยงแพลตฟอร์ม</td></tr>
+<tr><td>Platform promo / Earn+Hedge</td><td>🟢 Trade (size เล็ก)</td><td>เป็น subsidy ของแพลตฟอร์ม มี cap — "คูปอง" มากกว่า arb</td></tr>
+</table>
+
+<!-- ========== PRACTICAL LAYER ========== -->
+<h2 id="do">🛠️ ลงมือทำ: Funding Harvest อย่างระมัดระวัง</h2>
+<p class="src">⚠️ ส่วนนี้เพื่อ<strong>การศึกษา ไม่ใช่คำแนะนำการลงทุน</strong> — ก่อนทำอะไรจริง ตรวจสถานะกฎหมาย/ภาษีของ exchange ที่ใช้ในประเทศคุณก่อน (กฎ crypto ไทยเปลี่ยนบ่อย และ perp มักอยู่บน exchange ต่างประเทศ)</p>
+
+<p>จากทั้ง Part นี้ สนามเดียวที่รายย่อยลงมือได้จริงคือ <strong>delta-neutral funding/basis harvest</strong>: long spot + short perp (perpetual futures — สัญญาไม่มีวันหมดอายุ) เหรียญเดียวกัน ที่เดียวกัน → เก็บ funding (เงินที่ฝั่ง long/short ของ perp จ่ายให้กันเป็นรอบๆ เพื่อดึงราคา perp เข้าหา spot — ตลาดร้อน ฝั่ง long มักเป็นผู้จ่าย) โดยความเสี่ยงราคาหักล้างกัน</p>
+
+<h3>ความเสี่ยง 3 ตัวที่ต้องรู้ก่อนตัวเลขกำไร</h3>
+<div class="bx br">
+<div class="bt">⚠️ "Delta-neutral" ไม่ใช่ "risk-neutral"</div>
+<ul>
+<li><strong>Exchange counterparty</strong> — FTX ล่ม (พ.ย. 2022): เงิน collateral ของสาย delta-neutral ติดอยู่ใน exchange ทั้งก้อน (กองทุนดังรายหนึ่งติดไป ~ครึ่งพอร์ต) — ความเสี่ยงนี้<em>ไม่มี</em>ใน T-bill</li>
+<li><strong>Funding พลิกลบ</strong> — ช่วงตลาดหมี funding ติดลบต่อเนื่องได้เป็นสัปดาห์ๆ (เกิดจริงปลายปี 2022) → รายได้กลายเป็นรายจ่าย</li>
+<li><strong>Liquidation ขา short</strong> — ราคาพุ่งแรง ขา perp โดน margin call ทั้งที่ "รวม" ไม่ขาดทุน เพราะกำไรฝั่ง spot ไม่ถูกนับเป็น margin อัตโนมัติ → ต้องเผื่อ margin เยอะ + เติมทัน</li>
+</ul>
+</div>
+
+<h3>Workflow 6 ขั้น</h3>
+<div class="fm">1) เลือก venue        → มีทั้ง spot + perp ที่เดียวกัน สภาพคล่องสูง (ลด risk โอนข้าม)
+2) ดูข้อมูล funding    → ย้อนหลัง 3–6 เดือน (เว็บ exchange/aggregator) — บวกสม่ำเสมอไหม?
+3) คิด net จริง       → funding APR − fees 2 ขา − spread; แล้ว "เทียบ T-bill/พันธบัตร ~4%"
+                        ถ้า net APR ไม่ถึง ~2 เท่าของ risk-free → ไม่คุ้มความเสี่ยงแพลตฟอร์ม
+4) ขนาดเล็ก           → เงินที่"เสียทั้งก้อนได้"เท่านั้น (บทเรียน FTX) + margin ขา short เผื่อ 2–3 เท่า
+5) กฎ exit ล่วงหน้า    → funding ติดลบ N วันติด → ปิด; ข่าวร้าย exchange → ปิดก่อนถาม
+6) บันทึกทุกสัปดาห์    → funding ที่ได้จริง vs คาด — ตรงไหม? ถ้าไม่ตรง หาสาเหตุก่อนเพิ่มขนาด</div>
+
+<div class="bx bb">
+<div class="bt">ตัวอย่างการตัดสินใจ (ตัวเลขปลายปี 2025)</div>
+<p>Basis/funding ช่วงปลายปี 2025 เหลือ ~5%/ปี (ข้อมูลตลาด) ขณะที่ T-bill สหรัฐให้ ~4% แบบไร้ความเสี่ยงแพลตฟอร์ม<br>
+→ ส่วนต่าง ≈ 0–1% แลกกับความเสี่ยง FTX-style = <strong>ไม่คุ้ม → รอ</strong><br>
+แต่ในช่วงตลาดร้อนจัด funding เคยพุ่ง 20–60%/ปี<sup class="c">[3]</sup> — <em>นั่น</em>คือจังหวะที่กลยุทธ์นี้มีเหตุผล<br>
+<strong>บทเรียน:</strong> กลยุทธ์นี้ไม่ใช่ "เปิดทิ้งไว้ตลอด" แต่คือ "รอเก็บช่วง premium สูงผิดปกติ" — และหลักฐาน<sup class="c">[3]</sup> ชี้ว่าช่วงแบบนั้นมาแล้วก็ไป</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🧰 เริ่มยังไง (ไม่เสี่ยงเงินก่อน)</div>
+<p>สัปดาห์ 1–4: <strong>paper trade</strong> — จดทุกวัน: funding rate จริงที่จะได้, ราคา spot/perp, ค่า fees สมมติ → สิ้นเดือนดู net APR จริงเทียบที่คาด<br>
+เครื่องมือ: หน้า funding history ของ exchange + Google Sheets พอแล้ว (ไม่ต้องเขียนโค้ด) — ใครอยากต่อยอดเชิงโค้ด ดู pattern จาก <code>code/pairs_trading_starter.py</code> ของ Part V ได้</p>
+</div>
+
+<h2 id="refs">📚 อ้างอิง (References) — Part IV</h2>
+<p style="font-size:.92em;color:#64748b">งานวิจัย/เอกสารทางการที่ใช้สนับสนุนกล่องหลักฐานในบท 15–17 (ตรวจสอบ citation แล้ว) — ใช้เป็นจุดเริ่มอ่านต่อ ไม่ใช่คำแนะนำการลงทุน</p>
+<div class="refs">
+<ol>
+<li>Cornell, B., &amp; French, K. R. (1983). "The Pricing of Stock Index Futures." <em>Journal of Futures Markets</em>, 3(1), 1–14. <a href="https://onlinelibrary.wiley.com/doi/10.1002/fut.3990030102">link</a></li>
+<li>MacKinlay, A. C., &amp; Ramaswamy, K. (1988). "Index-Futures Arbitrage and the Behavior of Stock Index Futures Prices." <em>The Review of Financial Studies</em>, 1(2), 137–158. <a href="https://academic.oup.com/rfs/article-abstract/1/2/137/1618108">link</a></li>
+<li>Schmeling, M., Schrimpf, A., &amp; Todorov, K. (2023). "Crypto Carry." BIS Working Paper No. 1087; ตีพิมพ์ใน <em>Management Science</em>. <a href="https://www.bis.org/publ/work1087.htm">link</a></li>
+<li>Chaboud, A., Chiquoine, B., Hjalmarsson, E., &amp; Vega, C. (2014). "Rise of the Machines: Algorithmic Trading in the Foreign Exchange Market." <em>The Journal of Finance</em>, 69(5), 2045–2084. <a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12186">link</a></li>
+<li>Du, W., Tepper, A., &amp; Verdelhan, A. (2018). "Deviations from Covered Interest Rate Parity." <em>The Journal of Finance</em>, 73(3), 915–957. <a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12620">link</a></li>
+<li>ESMA (2018). "ESMA agrees to prohibit binary options and restrict CFDs to protect retail investors." (สถิติ NCA: 74–89% ของบัญชี retail CFD ขาดทุน) <a href="https://www.esma.europa.eu/press-news/esma-news/esma-agrees-prohibit-binary-options-and-restrict-cfds-protect-retail-investors">link</a></li>
+<li>Petajisto, A. (2017). "Inefficiencies in the Pricing of Exchange-Traded Funds." <em>Financial Analysts Journal</em>, 73(1), 24–54. <a href="https://www.tandfonline.com/doi/abs/10.2469/faj.v73.n1.7">link</a></li>
+<li>Gagnon, L., &amp; Karolyi, G. A. (2010). "Multi-market trading and arbitrage." <em>Journal of Financial Economics</em>, 97(1), 53–80. <a href="https://www.sciencedirect.com/science/article/abs/pii/S0304405X10000486">link</a></li>
+<li>SEC &amp; CFTC (2010). "Findings Regarding the Market Events of May 6, 2010." Joint staff report. <a href="https://www.sec.gov/news/studies/2010/marketevents-report.pdf">link</a></li>
+<li>Makarov, I., &amp; Schoar, A. (2020). "Trading and Arbitrage in Cryptocurrency Markets." <em>Journal of Financial Economics</em>, 135(2), 293–319. <a href="https://www.sciencedirect.com/science/article/abs/pii/S0304405X19301746">link</a></li>
+</ol>
+<p class="src"><strong>วิธีอ่านตัวเลข:</strong> carry 6–8%/ปี และ peak 40–60% ใน [3] เป็นค่า<em>ก่อนหักต้นทุน/ความเสี่ยงแพลตฟอร์ม</em>; ±2% ของ [7] ครึ่งหนึ่งคือ stale NAV; ตัวเลข premium ระดับ 40–50% ของ [10] คือช่วงพีคประวัติศาสตร์ ไม่ใช่สภาพปัจจุบัน (~1–10% เป็นช่วงสั้น) — ใช้เป็น "เพดานบน" เสมอ ไม่ใช่ค่าคาดหวัง</p>
 </div>
 
 <hr style="margin:40px 0;border:none;border-top:3px solid var(--blue)">
