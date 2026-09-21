@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part IV</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px solid #a5f3fc;border-left:5px solid #0891b2;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.try .bt{color:#0e7490}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part IV — Kalman ลงมือ: state-space, จูน Q/R, และรู้ว่ามันโกหกคุณตอนไหน</div>
+<div class="desc">Part I ทิ้งท้ายไว้ว่า Kalman คือยอดบันได β — Part นี้ลงมือทำจริง: setup state-space, worked example ทีละ step, และคำถามที่สำคัญที่สุด — <strong>จะรู้ได้ยังไงว่า Kalman ที่คุณ tune มา "overfit" หรือ "ดีจริง"</strong></div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §4.1 ทบทวน + §4.2 state-space ภาษาคน + §4.3 worked example + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §4.4 จุดยืน Kalman + §4.5 overfit diagnostic + §4.6 วินัยจูน Q/R · <strong>เริ่มด่วน:</strong> §4.5 คือสิ่งที่คอร์สทั่วไปไม่สอน</p></div>
+
+<h2>4.1 ทวนจาก Part I — ทำไมต้องมาถึงตรงนี้</h2>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>Part I ไต่บันได β มาแล้ว 3 ขั้น: OLS (คงที่ ง่ายสุด) → TLS (แก้ noise 2 ขา) → Rolling OLS (เดินตามเวลาแบบตัดหน้าต่าง) · ปัญหาของ Rolling คือ<strong>ต้องเลือกขนาดหน้าต่าง</strong> และที่ขอบหน้าต่าง β จะ "กระโดด" ทันทีที่ข้อมูลเก่าหลุดออกไป (ไม่ใช่ค่อย ๆ ลืม)</p>
+<p>Kalman แก้ตรงนี้: แทนที่จะมี "หน้าต่าง" ตายตัว มันมี<strong>สูตรถ่วงน้ำหนักที่ดีที่สุดในทางคณิตศาสตร์</strong>ระหว่าง "เชื่อ β เดิม" กับ "เชื่อราคาล่าสุด" — ค่อย ๆ ลืมอดีตแบบนุ่มนวล ไม่ใช่ตัดทิ้งดื้อ ๆ</p></div>
+
+<h2>4.2 State-space — สมการที่ต้องเข้าใจ (ไม่ใช่แค่ท่อง)</h2>
+
+<p>Kalman filter มองปัญหาเป็น 2 สมการ:</p>
+
+<div class="fm">state (สิ่งที่มองไม่เห็น):    β_t = β_{t−1} + w_t          , w_t ~ N(0, Q)<br>
+observation (สิ่งที่เห็น):    y_t = β_t · x_t + v_t         , v_t ~ N(0, R)</div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน — 2 สมการนี้พูดว่าอะไร</div>
+<ul>
+<li><strong>สมการที่ 1 (state):</strong> "β พรุ่งนี้ = β วันนี้ + การเปลี่ยนแปลงเล็กน้อยที่คาดเดาไม่ได้" — เหมือนบอกว่า "เชื่อว่า β ไม่กระโดดข้ามคืน แต่ก็ไม่นิ่งสนิท 100%"</li>
+<li><strong>สมการที่ 2 (observation):</strong> "ราคาที่เห็นวันนี้ = β คูณราคาอีกขา บวก noise เล็กน้อย" — เหมือนบอกว่า "ราคาที่เห็นไม่ได้สะท้อน β เป๊ะ ๆ มันมี noise ปนมาด้วย"</li>
+</ul>
+<p>Kalman ทำหน้าที่เดียว: <strong>ทุกวันที่มีราคาใหม่เข้ามา ชั่งน้ำหนักระหว่าง 2 อย่างนี้ แล้วปรับความเชื่อเรื่อง β</strong></p></div>
+
+<div class="card">
+<h3>🔖 ทบทวนพื้นฐาน — Q และ R คืออะไร (ปุ่มที่สำคัญที่สุดในทั้ง Part)</h3>
+
+<div class="bx bb"><div class="bt">Q (process noise / process variance)</div>
+<p>ตอบคำถาม: <strong>"β เปลี่ยนเร็วแค่ไหน"</strong> — Q สูง = เชื่อว่า β ขยับได้เร็วและแรง (filter จะไวต่อการเปลี่ยนแปลง) · Q ต่ำ = เชื่อว่า β เกือบนิ่ง (filter จะเฉื่อย ไม่ค่อยขยับตาม)</p></div>
+
+<div class="bx bb"><div class="bt">R (observation noise / measurement variance)</div>
+<p>ตอบคำถาม: <strong>"เชื่อราคาล่าสุดแค่ไหน"</strong> — R สูง = คิดว่าราคาที่เห็นมี noise เยอะ อย่าเพิ่งรีบเชื่อ (filter จะเฉื่อย) · R ต่ำ = คิดว่าราคาแม่น เชื่อได้เต็มที่ (filter จะไว)</p></div>
+
+<div class="bx bp"><div class="bt">สังเกตไหมว่า Q กับ R "ดึงกันคนละทาง"?</div>
+<p>Q สูง+R ต่ำ = ไวมาก (เกือบเหมือน rolling หน้าต่างสั้น) · Q ต่ำ+R สูง = เฉื่อยมาก (เกือบเหมือน β คงที่แบบ OLS) → <strong>สิ่งที่สำคัญจริง ๆ ไม่ใช่ค่า Q, R แยกกัน แต่คือ<em>อัตราส่วน</em> Q/R</strong> — นี่คือปุ่มเดียวที่ควบคุมพฤติกรรมทั้งหมดของ filter</p></div>
+
+<div class="try"><div class="bt">✍️ เช็คความเข้าใจ</div>
+<ol>
+<li>ถ้าตั้ง Q สูงมาก R ต่ำมาก — filter จะพฤติกรรมคล้ายวิธีไหนใน Part I? <span style="color:#64748b">(คล้าย rolling OLS หน้าต่างสั้นมาก — ไวจัด กระตุกตามราคาทุกวัน)</span></li>
+<li>ถ้าตั้ง Q≈0 — filter จะพฤติกรรมคล้ายวิธีไหน? <span style="color:#64748b">(คล้าย OLS แบบคงที่ — เพราะบอกว่า β ไม่เปลี่ยนเลย)</span></li>
+</ol></div>
+</div>
+
+<h2>4.3 Worked example — เดิน Kalman ทีละวัน (มือ ไม่พึ่งไลบรารี)</h2>
+
+<p>ก่อนเรียก <code>pykalman</code> ให้ดูว่าข้างในมันทำอะไรทีละสเต็ป — ใช้ตัวเลขสมมติเพื่อให้เห็นภาพ (ไม่ใช่ราคาจริง)</p>
+
+<div class="bx bb"><div class="bt">🧮 ตัวอย่างเดิน 1 วัน (สมมติ)</div>
+<p>สมมติ ณ ต้นวัน: เชื่อว่า β = 1.30 (ความไม่แน่นอนของความเชื่อนี้ P = 0.02) · Q = 0.001 · R = 0.05 · วันนี้ราคา PEP (x) ขยับ +2.0 และราคา KO (y) ขยับ +2.9 จริง</p>
+
+<div class="fm">ขั้น 1 — ทำนายล่วงหน้า (predict):<br>
+  β_predict = β_เดิม = 1.30<br>
+  P_predict = P_เดิม + Q = 0.02 + 0.001 = 0.021<br><br>
+ขั้น 2 — ทำนายว่าราคา y ควรเป็นเท่าไร:<br>
+  y_predict = β_predict × x = 1.30 × 2.0 = 2.60<br>
+  innovation (ส่วนที่ทายผิด) = y_จริง − y_predict = 2.9 − 2.60 = 0.30<br><br>
+ขั้น 3 — คำนวณ "น้ำหนักที่จะเชื่อ" (Kalman gain):<br>
+  S = x² × P_predict + R = 2.0² × 0.021 + 0.05 = 0.134<br>
+  K = x × P_predict / S = 2.0 × 0.021 / 0.134 ≈ 0.313<br><br>
+ขั้น 4 — ปรับความเชื่อ β ใหม่:<br>
+  β_ใหม่ = β_predict + K × innovation = 1.30 + 0.313 × 0.30 ≈ 1.394<br>
+  P_ใหม่ = (1 − K×x) × P_predict = (1 − 0.313×2.0) × 0.021 ≈ 0.0079</div>
+</div>
+
+<p>สังเกต: β ขยับจาก 1.30 → 1.394 — <strong>ไม่ใช่กระโดดไปเชื่อราคาใหม่เต็มที่ (จะได้ β=1.45 ถ้าเอา 2.9/2.0) และไม่ใช่ไม่ขยับเลย</strong> แต่ขยับตามสัดส่วนที่ K (Kalman gain) คำนวณให้ — นี่คือแก่นทั้งหมดของ Kalman: <strong>K คือน้ำหนักที่ปรับอัตโนมัติทุกวัน</strong> ตาม Q, R และความไม่แน่นอนสะสม</p>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน — ทำไม P (ความไม่แน่นอน) ยิ่งเดินยิ่งเล็กลง</div>
+<p>สังเกตว่า P ลดจาก 0.021 เหลือ 0.0079 — ยิ่งเห็นข้อมูลมาก ยิ่งมั่นใจใน β มากขึ้น (ความไม่แน่นอนลดลง) แต่ทุกวันที่ผ่านไป Q จะบวกความไม่แน่นอนกลับเข้ามานิดหนึ่งเสมอ (ขั้น 1) — เป็นสมดุลระหว่าง "มั่นใจขึ้นเพราะเห็นข้อมูล" กับ "ไม่มั่นใจเกินไปเพราะโลกเปลี่ยนได้ตลอด"</p></div>
+
+<h2>4.4 ★ จุดยืน Kalman — ซื่อสัตย์ ไม่เชียร์เกิน ไม่ปัดทิ้ง</h2>
+
+<p>ตรงนี้คือสิ่งที่ต้องพูดให้ชัดก่อนไปต่อ เพราะ Part 0 เตือนไว้แล้วว่า "Kalman ไม่ใช่ edge"</p>
+
+<div class="bx bp"><div class="bt">แยกให้ขาด: กลไก vs การตั้งค่า</div>
+<p><strong>ตัว filter เอง</strong> ซื่อสัตย์เสมอ — มันใช้เฉพาะข้อมูลถึงวันนั้น (causal, ไม่ look-ahead) ถ้า Q/R ถูก fix ไว้ล่วงหน้า สัญญาณที่ได้<strong>ไม่มี</strong> lookahead bias เลย</p>
+<p><strong>ความ overfit ทั้งหมดที่จะเกิดขึ้น อยู่ที่ "การเลือก Q/R" ไม่ใช่ตัวกลไก</strong> — เหมือนมีดที่คมมาก ตัวมีดไม่ผิด อยู่ที่คนใช้จะบังคับมันแม่นแค่ไหน</p></div>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ คุณค่าจริงของ Kalman</div>
+<ul><li>คุม drawdown ได้นิ่งกว่า rolling-OLS (ดูผลจริงในโน้ตบุ๊ก 01 — RMSE ต่ำกว่า rolling หลายสิบเท่าเมื่อ Q ตั้งถูก)</li><li>ไม่กระตุกที่ขอบหน้าต่างเหมือน rolling</li><li>ปรับ β ทุกวันแบบ optimal ตามทฤษฎี ถ้า assumption ถูก</li></ul></div>
+<div class="con"><div class="bt">⚠️ สิ่งที่ Kalman ไม่ได้ให้ฟรี</div>
+<ul><li>ไม่บอกว่า Q/R ที่ถูกต้องคือเท่าไร (§4.6 ต้องหาเอง)</li><li>ไม่รู้ว่าความสัมพันธ์กำลังพังจนกว่าจะสาย (โยง Part VII)</li><li>ใครก็ตั้ง Kalman ได้ — ไม่ใช่ edge (Part 0)</li></ul></div>
+</div>
+
+<div class="pq">"edge ไม่ได้อยู่ที่ 'ใช้ Kalman' — อยู่ที่วินัยการจูนมัน และรู้ว่าสมมติฐานพังตอนไหน"</div>
+
+<h2>4.5 ★ จะรู้ได้ยังไงว่า Kalman ที่คุณ tune มา "overfit"</h2>
+
+<p>นี่คือคำถามที่คอร์สทั่วไปข้าม — สอนแค่ "ใช้ Kalman" แต่ไม่สอนว่าจะรู้ได้ยังไงว่ามันหลอกตัวเองอยู่ มี 4 วิธีตรวจ เรียงจากสำคัญที่สุด</p>
+
+<div class="card">
+<h3>① Q/R plateau vs peak <span class="lvl must">★★★ สำคัญสุด + ถูกสุด</span></h3>
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ลอง Q หลาย ๆ ค่า (เช่น 1e-6, 1e-5, ..., 1e-1) วัดผลบน out-of-sample แต่ละค่า แล้ว plot กราฟ — ถ้าผลลัพธ์ดีของจริง จะเห็น<strong>"ที่ราบกว้าง"</strong> (Q หลายค่าใกล้เคียงกันให้ผลดีพอ ๆ กัน) แต่ถ้าดีแค่ค่าเดียวแล้วพังทันทีที่ขยับนิดเดียว (<strong>"ยอดแหลม"</strong>) — นั่นคือสัญญาณอันตรายว่าคุณกำลัง overfit เข้ากับ noise ของช่วงทดสอบนั้นพอดี ไม่ใช่ค้นพบความจริง</p></div>
+<p>โน้ตบุ๊ก 01 (§ Kalman tuning) แสดงให้เห็นตรงนี้แล้ว: RMSE ที่ดีมากเกิดขึ้นเมื่อ Q ใกล้เคียงอัตราการเปลี่ยนจริงของ β — ลองเปลี่ยน Q ให้ห่างจากนั้น (เช่น 100 เท่า หรือ 1/100 เท่า) แล้วดูว่า RMSE แย่ลงแบบ "ค่อย ๆ" หรือ "ร่วงหน้าผา"</p>
+
+<h3>② Innovation whiteness — ตัดสินจาก "ทำนายแม่นแค่ไหน" ไม่ใช่จาก PnL</h3>
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>Innovation คือ "ส่วนที่ filter ทายผิด" (ดูขั้น 2 ใน worked example) — ถ้า filter ตั้งค่าถูก innovation ควรมีลักษณะ<strong>สุ่มล้วน ๆ</strong> (ไม่มีรูปแบบซ้ำ ไม่ autocorrelate) และขนาดของมันควรตรงกับที่ filter ทำนายไว้เอง (ค่า S ในขั้น 3 ของ worked example)</p>
+<p>ถ้า innovation ยังมีรูปแบบ (เช่น ทายผิดทางเดิมติดกันหลายวัน) = filter ยัง<strong>ตามไม่ทัน</strong> Q อาจต้องสูงขึ้น</p></div>
+
+<div class="bx bp"><div class="bt">★ ทำไมข้อนี้สำคัญ: มันตัดสิน filter โดยไม่ต้องแตะ PnL เลย</div>
+<p>นี่คือกุญแจที่ป้องกัน overfit ได้ตรงจุดที่สุด: <strong>ถ้าคุณจูน Q/R จาก PnL ที่ backtest ออกมาสวย คุณกำลัง fit noise ของช่วงนั้นเข้าไปในพารามิเตอร์</strong> แต่ถ้าคุณจูนจาก "innovation ทำนายแม่นไหม" (ซึ่งเป็นคุณสมบัติทางสถิติล้วน ๆ ไม่เกี่ยวกับกำไรขาดทุน) คุณกำลังเช็คว่าโมเดล<em>อธิบายข้อมูลได้ถูกต้อง</em> ไม่ใช่เช็คว่า<em>บังเอิญทำกำไรงวดนี้</em></p></div>
+</div>
+
+<div class="bx br"><div class="bt">③ + ④ อีก 2 diagnostic (สรุปสั้น)</div>
+<ul>
+<li><strong>IS vs OOS gap:</strong> ถ้า in-sample ดีมากแต่ out-of-sample แย่ลงฮวบ = overfit ชัดเจน (โยง deflated Sharpe, walk-forward — Part IX)</li>
+<li><strong>Q/R stability ข้าม sub-period:</strong> ถ้าจูน Q/R บนปี 2023 ได้ค่าหนึ่ง แต่จูนบนปี 2024 ได้ค่าที่ต่างลิบลับ — Q/R "ที่ดีที่สุด" ไม่ใช่คุณสมบัติที่นิ่งจริง แปลว่าคุณกำลังจับ noise เฉพาะช่วง ไม่ใช่ค้นพบพารามิเตอร์ที่แท้จริง</li>
+</ul></div>
+
+<h2>4.6 จูน Q/R ไม่ให้หลอกตัวเอง — ลำดับวินัย</h2>
+
+<div class="why"><div class="bt">⚠️ กับดักที่ tutorial ทั่วไปทำ (และทำไมมันหลอกตัวเอง)</div>
+<p>วิธีที่พบบ่อยสุดบนอินเทอร์เน็ต: grid-search Q/R หลาย ๆ ค่า เลือกค่าที่ให้ <strong>PnL backtest สูงสุด</strong> — ฟังดูสมเหตุผล แต่นี่คือการ<strong>overfit ตรง ๆ</strong>: คุณกำลังเลือกพารามิเตอร์ที่เข้ากับ noise ของอดีตพอดี ไม่ต่างจากการ curve-fit เส้นให้ผ่านทุกจุดในข้อมูล historical</p></div>
+
+<p>ลำดับที่ควรทำจริง (จากดีสุดไปหา fallback):</p>
+
+<div class="card">
+<h3>ลำดับ 1 — ประมาณเชิงสถิติ ไม่ใช่ตาม PnL <span class="lvl must">★★★</span></h3>
+<p>ใช้ <strong>Maximum Likelihood (MLE) / Expectation-Maximization (EM)</strong> — วิธีนี้หา Q/R ที่ทำให้ข้อมูลราคาที่สังเกตได้ "สมเหตุผลที่สุด" ทางสถิติ (maximize likelihood) ไม่ใช่หาที่ให้กำไรเยอะสุด — ในโค้ดจริงมักเรียกเป็นเมธอดเดียว เช่น <code>pykalman</code> มีฟังก์ชัน <code>.em()</code> ให้ใช้ได้ตรง ๆ</p>
+<div class="bx br" style="margin-top:8px"><div class="bt">⚠️ caveat</div><p>EM หลุดไปที่ค่า degenerate ได้ (เช่น R→0 ซึ่งไม่สมเหตุผล) — ต้องใส่ขอบเขต (bound) กันไว้เสมอ</p></div>
+
+<h3 style="margin-top:20px">ลำดับ 2 — ผูกกับความหมายเชิงเศรษฐกิจ</h3>
+<p>แทนที่จะเดา Q/R เป็นตัวเลขลอย ๆ ให้ผูกกับสิ่งที่มีความหมาย:</p>
+<ul>
+<li><strong>R</strong> ≈ ความแปรปรวนจาก microstructure/bid-ask ของ spread (มีความหมายจริง วัดได้จากข้อมูล)</li>
+<li><strong>Q</strong> ↔ "เชื่อว่า β ควรเปลี่ยนแบบมีนัยสำคัญทุก ๆ ~กี่เดือน" — แปลงความเชื่อนี้เป็นตัวเลข Q ได้</li>
+<li>อัตราส่วน λ=Q/R ↔ "effective window" ที่เทียบเคียงได้กับ EWMA span — <strong>เลือก lookback ด้วยความเชื่อเกี่ยวกับธุรกิจ ไม่ใช่ลองแล้วดูว่า backtest สวยไหม</strong></li>
+</ul>
+
+<h3 style="margin-top:20px">ลำดับ 3 — ถ้าจำเป็นต้อง search จริง ๆ: train/lock/test</h3>
+<p>fit บน train set → <strong>lock ค่าไว้ ห้ามแก้อีก</strong> → วัดผลบน OOS ที่ไม่เคยแตะ · ใช้ purged/embargoed cross-validation (Part IX) · ถ้าลองหลายค่า ต้องหัก deflated Sharpe ตามจำนวนที่ลอง (เหมือนปัญหา multiple-testing ใน Part II)</p>
+
+<h3 style="margin-top:20px">ลำดับ 4 — วินัยเสริม: เลือกที่ราบ + ปุ่มเดียว</h3>
+<p>เลือกจุดกลางของ "ที่ราบ" ใน §4.5① ไม่ใช่จุดยอด · ลด parameter ที่ต้องจูนให้เหลือน้อยที่สุด — เช่น fix R จากการวัด microstructure noise จริง แล้วจูนแค่ Q ตัวเดียว (หรือจูนแค่ λ=Q/R ตัวเดียว) ยิ่งปุ่มน้อย ยิ่ง overfit ยาก</p>
+</div>
+
+<h2>4.7 สรุป Part IV + สะพานสู่ Part V</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part IV</div>
+<ol>
+<li><strong>Q/R คือปุ่มเดียวที่สำคัญสุด</strong> — Q สูง/R ต่ำ = ไว (เหมือน rolling สั้น) · Q ต่ำ/R สูง = เฉื่อย (เหมือน OLS คงที่)</li>
+<li><strong>ตัดสิน filter จาก innovation ไม่ใช่จาก PnL</strong> — จูนตาม PnL = overfit ตรง ๆ; จูนตามสถิติ (MLE/EM) หรือความหมายเชิงเศรษฐกิจ = ปลอดภัยกว่ามาก</li>
+<li><strong>Q/R plateau vs peak</strong> คือวิธีเช็ค overfit ที่ถูกและตรงที่สุด — ที่ราบกว้าง = เชื่อได้ · ยอดแหลม = ฟลุค</li>
+</ol></div>
+
+<p>สมมติฐานหลักที่ Part นี้ใช้มาตลอดคือ <strong>β เดินแบบ random walk</strong> (ไม่มีบ้าน เดินไปเรื่อย ๆ ไม่จำกัด) — แต่คู่ที่ cointegrate กันจริง ๆ ควรมี β ที่ "นิ่ง" ในระดับหนึ่ง ไม่ใช่ล่องลอยไม่มีจุดหมาย และมีอันตรายที่ลึกกว่านั้น: ถ้า Kalman ปรับ β ไวเกินไป มันอาจ<strong>กลืนสัญญาณที่คุณอยากเทรด</strong>เข้าไปในตัว β เองจนไม่เหลืออะไรให้เทรด</p>
+
+<div class="pq">"ถ้า β ปรับตัวไวจนตามทันทุกอย่าง — spread จะดู 'ปกติ' ตลอดเวลา แล้วคุณจะเทรดอะไร?"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>State-space model</strong> — กรอบที่แยก "สิ่งที่มองไม่เห็น" (state, เช่น β) ออกจาก "สิ่งที่สังเกตได้" (observation, เช่นราคา)</li>
+<li><strong>Q (process noise)</strong> — ความไม่แน่นอนของการเปลี่ยนแปลง state ต่อวัน ("β เปลี่ยนเร็วแค่ไหน")</li>
+<li><strong>R (observation noise)</strong> — ความไม่แน่นอนของการสังเกต ("เชื่อราคาล่าสุดแค่ไหน")</li>
+<li><strong>Kalman gain (K)</strong> — น้ำหนักที่ filter ใช้ผสมความเชื่อเดิมกับข้อมูลใหม่ ปรับอัตโนมัติทุกวัน</li>
+<li><strong>Innovation</strong> — ส่วนที่ filter ทายผิดในแต่ละวัน; ใช้ตรวจว่าโมเดลถูกหรือไม่ (ไม่ใช่ดูจาก PnL)</li>
+<li><strong>MLE / EM</strong> — วิธีประมาณ Q/R จากสถิติของข้อมูล แทนการลองผิดลองถูกจาก PnL</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Palomar, D.P. (2025) <em>Portfolio Optimization: Theory and Application</em>, Cambridge — §15.6 Kalman filtering for pairs trading</li>
+<li>Bar-Shalom, Y., Li, X.R. &amp; Kirubarajan, T. — innovation consistency / NIS test (มาตรฐานของสาย estimation theory)</li>
+<li>Chan, E. (2013) <em>Algorithmic Trading</em> — โค้ด Kalman pairs ตัวอย่าง</li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/01_beta_ladder.ipynb</code> (ดูส่วน Kalman + คำเตือนเรื่อง Q ที่ตั้งไว้ "บังเอิญถูก") — notebook 04 (Part V) จะลงลึก Q/R tuning แบบเต็ม</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part5</code> §19.2 (Kalman concept) · Part I (บันได β, super-consistency)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>

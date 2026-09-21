@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part VII</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px solid #a5f3fc;border-left:5px solid #0891b2;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.try .bt{color:#0e7490}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part VII — Regime & Structural Break: รู้ว่าเมื่อไรไม่ควรเชื่อ</div>
+<div class="desc">Part 0 บอกไว้แล้วว่า edge ที่ทนสุดสำหรับรายย่อยคือ<strong>วินัย</strong> ไม่ใช่โมเดล — Part นี้คือที่ที่วินัยนั้นกลายเป็นระบบจริง: จับความสัมพันธ์ที่กำลังพังให้ทัน ตัดสถานะให้ถูกจังหวะ และรู้ว่าเมื่อไรถึงจะกลับเข้าไปเทรดคู่เดิมได้อีกครั้ง</div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §7.1 อุปมา 2 ชั้น + ตาราง + §7.2 stop-loss paradox + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §7.2 quarantine/re-entry + §7.3 estimator-disagreement gate · <strong>เริ่มด่วน:</strong> §7.2 stop-loss paradox คือประเด็นทองของทั้งเล่ม</p></div>
+
+<h2>7.1 เปรียบเทียบทุกวิธีจับ regime — ไวหรือแม่น เลือกได้ไม่ครบทั้งคู่</h2>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน — อุปมา "ยามรักษาความปลอดภัยกับหมอ"</div>
+<p>ลองนึกถึงระบบเตือนภัย 2 ชั้น: <strong>ยามที่ประตู</strong> เห็นอะไรผิดปกตินิดเดียวก็กดสัญญาณเตือนทันที (ไว แต่ตื่นตูมบ่อย บางทีก็แค่แมวเดินผ่าน) กับ <strong>หมอที่ตรวจร่างกายเต็มรูปแบบ</strong> (ช้ากว่ามาก แต่แม่นยำ) — จะรอหมอตรวจทุกครั้งก็ช้าเกินไปเวลาเกิดเหตุจริง จะเชื่อยามอย่างเดียวก็ตื่นตูมบ่อยเกินไป <strong>ระบบที่ดีใช้ทั้งคู่ร่วมกัน</strong>: ยามยกธงก่อน (เตรียมพร้อม) แล้วให้หมอยืนยัน (ตัดสินใจจริง)</p></div>
+
+<p>วิธีจับ "ความสัมพันธ์กำลังพัง" มีหลายแบบ แต่ไม่มีตัวไหนดีทุกมิติ — แบ่งได้เป็น 3 กลุ่มตามบทบาท</p>
+
+<div class="tw"><table>
+<tr><th class="nw">กลุ่ม</th><th>วิธี</th><th>ไว?</th><th>แม่น?</th><th>บทบาท</th></tr>
+<tr><td class="nw" rowspan="4"><strong>ชั้นเร็ว</strong><br><span style="color:#64748b;font-size:.85em">(ยาม)</span></td><td>z-score เกินปกติ</td><td class="nw">✅ ไวสุด</td><td class="nw">❌ ตื่นตูมบ่อย</td><td rowspan="4">ยกธง → เตรียมพร้อม/ลดขนาด</td></tr>
+<tr><td>Estimator-disagreement (§7.3)</td><td class="nw">✅ ไว</td><td class="nw">⚠️ ปานกลาง</td></tr>
+<tr><td>Kalman NIS (innovation, Part IV)</td><td class="nw">✅ ไว</td><td class="nw">⚠️ ปานกลาง</td></tr>
+<tr><td>ADX/RSI บน spread</td><td class="nw">⚠️ ปานกลาง</td><td class="nw">❌ เป็น proxy หยาบ</td></tr>
+<tr><td class="nw" rowspan="4"><strong>ชั้นช้า</strong><br><span style="color:#64748b;font-size:.85em">(หมอ)</span></td><td>Half-life พุ่ง (Part II)</td><td class="nw">⚠️ ช้ากว่า</td><td class="nw">✅ แม่นกว่า</td><td rowspan="4">ยืนยัน → ตัดสินใจ kill จริง</td></tr>
+<tr><td>Hurst → 0.5+ (Part II)</td><td class="nw">⚠️ ช้ากว่า</td><td class="nw">✅ แม่นกว่า</td></tr>
+<tr><td>Rolling coint re-test (ADF/Johansen)</td><td class="nw">❌ ช้าสุด</td><td class="nw">✅✅ ground truth</td></tr>
+<tr><td>CUSUM (recursive residual)</td><td class="nw">⚠️ ปานกลาง</td><td class="nw">✅ ออกแบบมาเพื่อสิ่งนี้</td></tr>
+<tr><td class="nw"><strong>Post-mortem</strong></td><td>Chow / Bai-Perron / Bayesian changepoint</td><td class="nw">❌ retrospective</td><td class="nw">✅✅ วิเคราะห์ย้อนหลัง</td><td>เรียนรู้ ไม่ใช่ตัดสินใจ real-time</td></tr>
+</table></div>
+
+<div class="bx bp"><div class="bt">★ สถาปัตยกรรมที่ถูกต้อง — 2 ชั้นเรียงลำดับ ไม่ใช่โหวตเท่ากัน</div>
+<div class="fm">ชั้นเร็วยกธง (สงสัย)  →  ลดขนาดสถานะก่อน (ยังไม่ปิดทันที)<br>
+       ↓<br>
+ชั้นช้ายืนยัน (แน่ใจ)  →  ปิดสถานะจริง (kill)</div>
+<p><strong>ทำไมต้องเรียงแบบนี้ไม่ใช่โหวต:</strong> ถ้าให้ทุกวิธีมีน้ำหนักเท่ากันแล้วนับเสียง ความไวของชั้นเร็วจะถูกชั้นช้าถ่วงจนช้าลง (เสียจุดแข็ง) ในขณะที่ความแม่นของชั้นช้าจะถูกชั้นเร็วปนเปื้อน false alarm (เสียจุดแข็งอีกด้าน) — การแยกบทบาทชัดเจน (ชั้นเร็ว=เตรียมพร้อม, ชั้นช้า=ตัดสินใจ) ทำให้ได้ข้อดีทั้งสองฝั่งโดยไม่ต้องประนีประนอม</p></div>
+
+<h2>7.2 ★ Kill-Switch ที่ถูกหลัก — และปมที่พลิกความเข้าใจเรื่อง stop-loss</h2>
+
+<p>มาถึงจุดที่ยากที่สุดของทั้งเล่ม: <strong>เมื่อยกธงแล้ว จะ "หยุด" ยังไง</strong> สัญชาตญาณทั่วไปบอกว่า "spread ห่างเกินไป = ตัดขาดทุน" — แต่สัญชาตญาณนี้มีรอยร้าวที่ต้องเห็นให้ชัด</p>
+
+<div class="bx br"><div class="bt">📉 Stop-loss Paradox ของ Mean Reversion (ประเด็นทองของทั้งเล่ม)</div>
+<p>ในกลยุทธ์ตามเทรนด์ (trend-following) "ราคาห่างจากจุดเข้าไปในทางที่ผิด" คือสัญญาณให้ตัดจริง ๆ — แต่ใน mean-reversion <strong>ตรรกะกลับด้าน</strong>: spread ที่ห่างออกไปมากกว่าเดิม<strong>ไม่ใช่สัญญาณว่าตัดสินใจผิด</strong> — มันคือ <strong>จุดเข้าที่ดีขึ้น</strong>! (spread ยิ่งห่าง ยิ่งมี mispricing ให้เก็บเกี่ยวเยอะขึ้น ถ้าความสัมพันธ์ยังไม่พัง)</p>
+<p>ถ้าคุณตั้ง stop แบบ "|z| &gt; 4 → ตัดทิ้ง" คุณกำลังจะ<strong>ตัดขาดทุนตรงจุดที่ทฤษฎีบอกว่าควรเพิ่มสถานะพอดี</strong></p></div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ลองนึกภาพยางยืด — ถ้ายางยืดยังไม่ขาด ยิ่งดึงยาวยิ่งดีดกลับแรง (นั่นคือเหตุผลที่คุณเข้าเทรด!) ปัญหาไม่ได้อยู่ที่ "ดึงยาวแค่ไหน" — ปัญหาอยู่ที่ <strong>"ยางยืดเส้นนี้ขาดไปแล้วหรือยัง"</strong> ถ้ายังไม่ขาด ยิ่งยืดยิ่งน่าเข้า ถ้าขาดแล้ว ต่อให้ยืดนิดเดียวก็ไม่มีวันดีดกลับอีกแล้ว</p></div>
+
+<div class="bx bg"><div class="bt">✅ คำตอบ: stop ต้องผูกกับ "ยางขาด" ไม่ใช่ "ยืดไกลแค่ไหน"</div>
+<p>Stop ที่ถูกต้องต้องผูกกับสัญญาณจาก <strong>§7.1</strong> (ความสัมพันธ์กำลังพังจริง — half-life พุ่ง, Hurst ข้าม 0.5, coint re-test ไม่ผ่าน) <strong>ไม่ใช่</strong>ผูกกับระยะห่างของ spread เพียงอย่างเดียว</p></div>
+
+<h3>แยก exit ให้ขาด — 2 ชนิดที่ต้องไม่ปนกัน</h3>
+
+<div class="tw"><table>
+<tr><th>ชนิด exit</th><th>เพราะอะไร</th><th>Re-entry?</th></tr>
+<tr><td class="nw"><strong>Convergence exit</strong></td><td>spread กลับสู่ปกติแล้ว (z≈0) — ทำงานตามแผน</td><td class="nw">✅ เข้าใหม่ได้ทันทีถ้า diverge อีก (Gatev: หลาย round-trip ต่อ window ปกติ)</td></tr>
+<tr><td class="nw"><strong>Structural-break exit</strong></td><td><em>ความสัมพันธ์เอง</em>พัง (ไม่ใช่แค่ spread ห่าง) — ยางขาด</td><td class="nw">❌ ห้าม re-enter บน β/spread ชุดเดิมทันที</td></tr>
+</table></div>
+
+<h3>Re-entry rule — "quarantine" แทน "รอเวลา"</h3>
+
+<div class="bx bp"><div class="bt">คู่ที่โดน structural-break exit → เข้าสู่ quarantine</div>
+<p>รับกลับเข้ามาเทรดได้เมื่อ<strong>ทั้ง 3 เงื่อนไข</strong>กลับมาปกติพร้อมกัน (ไม่ใช่แค่รอให้เวลาผ่านไป):</p>
+<ol>
+<li>coint re-test ผ่านบน<strong>ข้อมูลชุดใหม่</strong> (window ใหม่ ไม่ใช่ของเดิมที่เพิ่งพัง)</li>
+<li>half-life กลับมาอยู่ในช่วงปกติ (Part II §2.1)</li>
+<li>estimator-disagreement (§7.3) คลี่คลายลง</li>
+</ol>
+<p><strong>รอ re-qualify ไม่ใช่รอเวลา</strong> — คู่ที่พังจริงอาจไม่กลับมาปกติอีกเลย (บริษัทควบรวม เปลี่ยนธุรกิจ) และนั่นคือคำตอบที่ถูก ไม่ใช่ความผิดพลาดของระบบ</p></div>
+
+<h3>ตั้ง stop ร่วมกับ entry/exit — ไม่ใช่มั่ว</h3>
+
+<p>Leung & Li (2015) (ที่แนะนำไว้ใน Part VI สำหรับ optimal band) พิสูจน์ผลที่สำคัญอีกข้อ: <strong>entry region ที่เหมาะสมอยู่เหนือระดับ stop-loss เสมอ</strong> และ <strong>stop ที่ตั้งสูงขึ้น (ยอมรับ downside มากขึ้น) → take-profit ที่เหมาะสมจะต่ำลง</strong> — พารามิเตอร์ 3 ตัว (entry, exit, stop) ต้องคิดร่วมกันเป็นระบบเดียว ไม่ใช่ตั้งแยกกันตามใจ</p>
+
+<div class="try"><div class="bt">✍️ เช็คความเข้าใจ</div>
+<p>ทำไม "wait-one-day" (หน่วง re-entry 1 วันหลัง exit) ถึงมี evidence รองรับ ทั้งที่ดูเหมือนขัดกับ "เข้าใหม่ได้ทันทีถ้า convergence exit"? <span style="color:#64748b">(ไม่ขัดกัน — wait-one-day แก้ปัญหาคนละชั้น: มันป้องกัน bid-ask bounce/microstructure noise ตอน exit ไม่ใช่การตัดสินใจเรื่อง structural break; เป็น cooldown เล็ก ๆ ระดับ execution ไม่ใช่ quarantine ระดับความสัมพันธ์)</span></p></div>
+
+<h2>7.3 Estimator-Disagreement Gate — ไอเดียที่ต่อยอดจาก Part I</h2>
+
+<p>Part I สอน 3 วิธีหา β (OLS, TLS, Kalman) — แต่ละวิธีมีสมมติฐานต่างกัน ปกติเวลาความสัมพันธ์มั่นคง ทั้ง 3 วิธีควรให้ค่า β <strong>ใกล้เคียงกัน</strong> ไอเดียตรงนี้คือ: <strong>เมื่อไรที่ 3 วิธีเริ่มไม่ตรงกัน — นั่นอาจเป็นสัญญาณเตือนล่วงหน้าว่าความสัมพันธ์กำลังสั่น</strong></p>
+
+<div class="fm">dispersion = (max(β_OLS, β_TLS, β_Kalman) − min(...)) / mean(...)<br><br>
+ถ้า dispersion เกิน baseline ปกติของคู่นี้เอง  →  ยกธง (ชั้นเร็ว)  →  ลดขนาด/รอชั้นช้ายืนยัน</div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ลองนึกภาพ 3 คนคาดเดาน้ำหนักของวัตถุด้วยวิธีต่างกัน — ถ้าทั้ง 3 คนตอบใกล้เคียงกัน (เช่น 10, 10.2, 9.9 กก.) แปลว่าน้ำหนักนั้น "เสถียร" วัดยังไงก็ได้คำตอบคล้ายกัน แต่ถ้าจู่ ๆ 3 คนเริ่มตอบกระจาย (8, 12, 15 กก.) — นั่นไม่ใช่เพราะวิธีวัดแย่ลง แต่อาจเป็นเพราะ<strong>วัตถุที่วัดเปลี่ยนไปแล้ว</strong> (ไม่นิ่งเหมือนเดิม)</p></div>
+
+<div class="bx br"><div class="bt">⚠️ caveat ที่ต้องซื่อสัตย์ (นี่คือสมมติฐาน ยังไม่ใช่ข้อพิสูจน์)</div>
+<ul>
+<li>Dispersion บางส่วนเกิดจาก <strong>Kalman lag ตามธรรมชาติ</strong> (Part IV) ไม่ใช่ความสัมพันธ์พังเสมอไป — ต้อง calibrate baseline ของคู่นั้นตอน regime ปกติก่อน จะได้รู้ว่า "ปกติ" dispersion ควรอยู่ระดับไหน</li>
+<li>นี่คือ<strong>ไอเดียที่ต้อง backtest จริง</strong> ไม่ใช่ข้อเท็จจริงที่พิสูจน์แล้วในวรรณกรรม (ต่างจาก half-life/Hurst/coint-test ที่มีงานวิจัยรองรับหนักแน่น) — ทดสอบใน <code>vol2-code/06_regime_killswitch.ipynb</code></li>
+</ul></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "ต้องมีวิธีเดียวที่แม่นที่สุดในการจับ regime"<br>
+<strong>quant เห็น:</strong> ไม่มีวิธีเดียวที่ดีพอ — ระบบที่รอดคือระบบที่<em>ผสมหลายสัญญาณตามบทบาท</em> (ไว vs แม่น) ไม่ใช่ตามหาสัญญาณวิเศษหนึ่งเดียว เช่นเดียวกับที่ Part I สอนว่าไม่มี estimator เดียวที่ดีทุกสถานการณ์</p></div>
+
+<h2>สรุป Part VII + ปิด Phase 2</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part VII</div>
+<ol>
+<li><strong>2 ชั้นเรียงลำดับ ไม่ใช่โหวต</strong> — ชั้นเร็ว (ยาม) ยกธง/ลดขนาด → ชั้นช้า (หมอ) ยืนยัน/ตัดจริง</li>
+<li><strong>Stop-loss paradox</strong> — spread ห่างไม่ใช่สัญญาณตัด มันคือจุดเข้าดีขึ้น; stop ต้องผูกกับ "ความสัมพันธ์พัง" เท่านั้น</li>
+<li><strong>Quarantine ไม่ใช่ cooldown</strong> — คู่ที่ break ต้อง re-qualify ครบ 3 เงื่อนไขก่อนกลับมาเทรด ไม่ใช่แค่รอเวลา</li>
+</ol></div>
+
+<p>Part 0 ถึง Part VII ครบแล้วสำหรับ<strong>การสร้างสัญญาณที่เชื่อได้</strong> — β ที่ดี (I, IV, V) · คู่ที่ควรเทรด (II, III) · จุดเข้า-ออกที่คุ้มต้นทุน (VI) · และรู้ว่าเมื่อไรควรหยุดเชื่อ (VII) แต่มีคำถามหนึ่งที่ยังไม่ตอบตลอดทั้งเล่ม: <strong>สัญญาณที่สวยบนกระดาษ จะรอดจริงบนหน้าจอเทรดไหม</strong> — ค่าคอมฯ จริง ยืมช็อตได้จริงไหม แล้ว backtest ที่ทำมาทั้งหมด กำลังหลอกตัวเองอยู่หรือเปล่า</p>
+
+<div class="pq">"รู้ว่าเมื่อไรไม่ควรเชื่อสัญญาณ ก็ยังไม่พอ — ต้องรู้ว่าเมื่อไรไม่ควรเชื่อ backtest ของตัวเองด้วย"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Early-warning vs ground truth (2-tier)</strong> — สัญญาณไวที่ false-alarm สูง (ยกธง) ทำงานคู่กับสัญญาณช้าที่แม่นกว่า (ยืนยัน)</li>
+<li><strong>Stop-loss paradox</strong> — ใน mean reversion spread ที่ห่างขึ้นคือจุดเข้าดีขึ้น ไม่ใช่สัญญาณตัดขาดทุน</li>
+<li><strong>Convergence exit vs Structural-break exit</strong> — 2 เหตุผลออกจากสถานะที่มี re-entry rule ต่างกันโดยสิ้นเชิง</li>
+<li><strong>Quarantine / re-qualify</strong> — สถานะรอของคู่ที่ break จนกว่าคุณสมบัติจะกลับมาปกติ</li>
+<li><strong>Estimator-disagreement</strong> — ความไม่ตรงกันของ β จากหลายวิธี ใช้เป็นสัญญาณเตือนล่วงหน้า</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Leung, T. &amp; Li, X. (2015) — stop-loss exit ร่วมกับ entry/exit optimal (ต่อจาก Part VI)</li>
+<li>Gatev, E., Goetzmann, W. &amp; Rouwenhorst, K.G. (2006) — re-form/multi-roundtrip pairs framework</li>
+<li>Lin, Y.-X., McCrae, M. &amp; Gulati, C. (2006) — minimum-profit bound เชิง cointegration</li>
+<li>Brown, R.L., Durbin, J. &amp; Evans, J.M. (1975) — CUSUM test บน recursive residuals</li>
+<li>Bai, J. &amp; Perron, P. (1998, 2003) — multiple structural breaks</li>
+<li>Adams, R.P. &amp; MacKay, D.J.C. (2007) — Bayesian Online Changepoint Detection</li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/06_regime_killswitch.ipynb</code> (Phase 2) — ทดสอบ estimator-disagreement gate เป็นสมมติฐานจริงบนข้อมูลจำลองที่มี structural break แทรกไว้</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part5</code> §19.3 (Regime Detection) · เล่ม A <code>theory-part5</code> (backtest rigor) · Part I (estimator ladder) · Part II (half-life/Hurst/coint-retest)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part VI</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px solid #a5f3fc;border-left:5px solid #0891b2;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.try .bt{color:#0e7490}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part VI — Signals & Bands: z-score ที่ทุกคนใช้ คุ้มค่าคอมฯ จริงไหม</div>
+<div class="desc">Part I–V ให้ β ที่ดีแล้ว — แต่ β ดีแค่ไหนก็ไม่มีประโยชน์ถ้าไม่รู้ว่าจะ "เข้า" และ "ออก" ตรงไหน Part นี้รีเฟรม ATR band ที่หลายคนใช้ให้ตรงตำรา แล้วแนะนำวิธีคิด threshold แบบไม่ต้องเดา — <strong>ผูกกับต้นทุนจริงที่คุณต้องจ่าย</strong></div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §6.1 ทวน z-score + §6.2 cost-aware band (ตัวอย่างตัวเลข) + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §6.3 optimal threshold + §6.4 ตารางเทียบ 3 วิธี · <strong>เริ่มด่วน:</strong> §6.2 คำนวณได้ทันทีวันนี้เลย</p></div>
+
+<h2>6.1 ทวน z-score band — จุดตั้งต้นที่ทุกคนใช้</h2>
+
+<p>Part I §1.2 แนะนำ spread = A − β×B แล้ว · z-score band คือวิธีตัดสินใจเข้า-ออกที่ง่ายที่สุด:</p>
+
+<div class="fm">z = (spread − mean) / std<br><br>
+z &gt; +2   → short spread (spread แพงเกินไป คาดว่าจะกลับลง)<br>
+z &lt; −2   → long spread  (spread ถูกเกินไป คาดว่าจะกลับขึ้น)<br>
+z ≈ 0    → ปิดสถานะ (spread กลับสู่ปกติแล้ว)</div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>z-score บอกว่า "วันนี้ spread ห่างจากปกติกี่ SD" — ที่ ±2σ มักถูกเลือกเพราะในโลกที่ spread แจกแจงแบบ normal โดยประมาณ มีโอกาสแค่ ~5% ที่จะเจอค่าไกลขนาดนี้โดยบังเอิญ (สถิติล้วน ๆ ไม่เกี่ยวกับต้นทุนการเทรดเลย)</p></div>
+
+<div class="bx br"><div class="bt">📉 จุดอ่อนของ z-score band — มันไม่รู้จักต้นทุน</div>
+<p>±2σ มาจาก<strong>สถิติ</strong> ไม่ใช่<strong>เศรษฐศาสตร์</strong> — มันไม่รู้ว่าคุณเสียค่าคอมฯ เท่าไร เสีย spread เท่าไร หรือคู่นี้ vol สูง/ต่ำแค่ไหน คู่ vol ต่ำมาก ±2σ อาจแคบมาก (คุ้มค่าคอมฯ ไม่พอ) ส่วนคู่ vol สูงมาก ±2σ อาจกว้างเกินจำเป็น (พลาดโอกาสเข้าดี ๆ)</p></div>
+
+<h2>6.2 ★ ATR band → จริง ๆ คือ "Cost-Aware Band"</h2>
+
+<p>ไอเดียดั้งเดิม: ใช้ ATR (Average True Range) กั้นแบนด์แทน z-score — <strong>สัญชาตญาณนี้ถูก</strong> band ควรกว้างพอให้ spread ที่ถ่างออก "คุ้มค่าคอมฯ + เหลือกำไร" แต่ต้องแก้ 2 จุดให้ตรงหลัก</p>
+
+<div class="card">
+<h3>จุดแก้ที่ 1 — คำนวณ ATR บน spread ไม่ใช่ราคาดิบ</h3>
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>ATR วัด "ระยะวิ่งเฉลี่ยต่อวัน" ของสิ่งที่คุณกำลังเทรด — สิ่งที่คุณเทรดคือ <strong>spread</strong> (A − β×B) ไม่ใช่ราคา A หรือ B เดี่ยว ๆ ถ้าคำนวณ ATR จากราคาดิบของขาใดขาหนึ่ง คุณกำลังวัดความผันผวนของสิ่งที่ไม่ได้เทรด — เหมือนวัดความสูงของคลื่นทะเล เพื่อทำนายว่าเรือลำหนึ่งจะโคลงแค่ไหน ทั้งที่จริง ๆ ต้องวัด "ความต่างระดับน้ำระหว่างหัวเรือกับท้ายเรือ"</p></div>
+
+<h3 style="margin-top:20px">จุดแก้ที่ 2 — เป้าหมายคือ band ≥ round-trip cost + edge</h3>
+<p>คำถามที่ถูกไม่ใช่ "ATR ของ spread เท่าไร" (แค่ตัวเลขสถิติ) แต่คือ <strong>"spread ต้องถ่างแค่ไหน ถึงจะคุ้มค่าคอมฯ ไป-กลับ แล้วยังเหลือกำไร"</strong></p>
+
+<div class="bx bb"><div class="bt">🧮 ตัวอย่างเชิงตัวเลข (สมมติ เพื่อให้เห็นภาพ)</div>
+<p>สมมติเทรด 1 คู่ ทุน 100,000 บาท:</p>
+<div class="fm">ค่าคอมฯ ไป-กลับ (2 ขา × 2 รอบ)     ≈ 0.20%  ของทุน<br>
+Bid-ask spread ทั้ง 2 ขา            ≈ 0.15%  ของทุน<br>
+กำไรขั้นต่ำที่อยากได้ (edge)         ≈ 0.30%  ของทุน<br>
+                                    ─────────────<br>
+Band ขั้นต่ำที่ต้องถ่าง              ≈ 0.65%  ของทุน</div>
+<p>ถ้า ATR ของ spread คู่นี้ (แปลงเป็น % ของทุน) วิ่งเฉลี่ยแค่ 0.30% ต่อวัน — z=±2σ อาจถ่างไม่ถึง 0.65% เลย = <strong>เทรดแล้วไม่คุ้มค่าคอมฯ ตั้งแต่ต้น</strong> ไม่ว่า z-score จะดูสวยแค่ไหน</p></div>
+
+<div class="try"><div class="bt">✍️ ลองคิดเอง</div>
+<p>ถ้าคู่ A มี ATR ของ spread สูงกว่าคู่ B ถึง 3 เท่า — band ขั้นต่ำที่ควรใช้ของคู่ A ควรกว้างกว่าคู่ B ไหม? <span style="color:#64748b">(ไม่จำเป็น! ต้นทุน round-trip cost มักไม่ได้ขึ้นกับ ATR — คู่ A อาจแค่ "ต้องการ SD น้อยกว่าเพื่อชน band เดียวกัน" สิ่งที่ควรเทียบคือ band ขั้นต่ำ ≈ cost คงที่ vs ATR ที่ต่างกัน ไม่ใช่ปรับ band ตาม ATR โดยตรง)</span></p></div>
+</div>
+
+<h2>6.3 ★ Optimal Threshold — ไม่ต้องเดา มีทฤษฎีรองรับ</h2>
+
+<p>ตัวอย่างเชิงตัวเลขข้างบนคือ "cost-aware" แบบหยาบ — มีงานวิจัยที่ทำเรื่องนี้อย่างเข้มงวดกว่า: <strong>Leung & Li (2015)</strong> โมเดล spread เป็น OU process (Part I §1.7) แล้วแก้โจทย์ <em>optimal stopping</em> หา entry/exit threshold ที่ทำกำไรคาดหวังสูงสุดหลังหักต้นทุนต่อรอบ</p>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>แทนที่จะเดา band จาก "สถิติ" (z-score) หรือ "กฎมือ" (ATR แบบง่าย) — โจทย์นี้ถามตรง ๆ ว่า: <strong>"ถ้าฉันรู้ว่า spread นิ่งขนาดไหน (κ), แกว่งแค่ไหน (σ), และเสียต้นทุนต่อรอบเท่าไร (c) — เข้า-ออกตรงไหนถึงจะทำกำไรคาดหวังมากที่สุดในระยะยาว"</strong> คำตอบออกมาเป็นสูตร ไม่ใช่การเดา</p></div>
+
+<div class="bx bp"><div class="bt">รูปร่างของคำตอบ (ผลเชิงคุณภาพที่ต้องจำ)</div>
+<ul>
+<li><strong>ต้นทุนสูงขึ้น → band ต้องกว้างขึ้น</strong> (สมเหตุผล — ยิ่งเสียเยอะ ยิ่งต้องรอ mispricing ใหญ่กว่าเดิม)</li>
+<li><strong>mean-reversion เร็วขึ้น (κ สูง, half-life สั้น) → band แคบลงได้</strong> (spread กลับเร็ว ไม่ต้องรอไกลก็กลับ)</li>
+<li>threshold ที่ได้ไม่ใช่ค่าคงที่สากล — เป็นฟังก์ชันของพารามิเตอร์เฉพาะคู่นั้น ๆ</li>
+</ul></div>
+
+<div class="bx br"><div class="bt">⚠️ ข้อจำกัดที่ต้องซื่อสัตย์</div>
+<p>วิธีนี้ต้องการ <strong>ประมาณ κ, σ, c ให้แม่น</strong> — ถ้าประมาณ half-life ผิด (ย้อนไปดู notebook 02: half-life ประมาณจากข้อมูลจำลอง 1,000 จุดยังคลาดเคลื่อนเกือบครึ่ง!) threshold "optimal" ที่คำนวณได้ก็ผิดตามไปด้วย — ความแม่นยำของ output ไม่มีวันดีกว่าความแม่นยำของ input</p></div>
+
+<h2>6.4 เทียบ 3 วิธี — เลือกใช้เมื่อไร</h2>
+
+<div class="tw"><table>
+<tr><th></th><th>z-score band</th><th>Cost-aware / ATR band</th><th>Optimal OU-cost threshold</th></tr>
+<tr><td class="nw"><strong>คิดจาก</strong></td><td>สถิติล้วน (SD)</td><td>สถิติ + cost หยาบ ๆ</td><td>OU parameters + cost เต็มรูป</td></tr>
+<tr><td class="nw"><strong>รู้จักต้นทุนไหม</strong></td><td>❌ ไม่รู้จัก</td><td>✅ รู้จักคร่าว ๆ</td><td>✅✅ ผูกโดยตรง</td></tr>
+<tr><td class="nw"><strong>ทำง่ายแค่ไหน</strong></td><td>ง่ายสุด</td><td>ง่าย</td><td>ต้องประมาณ κ,σ,c แม่น</td></tr>
+<tr><td class="nw"><strong>ใช้เมื่อไร</strong></td><td>สำรวจเบื้องต้น / คู่ที่ยังไม่มั่นใจ</td><td>ใช้งานจริงระดับรายย่อย ส่วนใหญ่พอ</td><td>คู่ที่เทรดจริงจัง มี capital มากพอจะคุ้มลงทุนเวลาประมาณค่า</td></tr>
+</table></div>
+
+<div class="why"><div class="bt">⚠️ ธงกันโม้ (สำคัญ — อย่าให้ใครหลอกด้วยตัวเลขลอย)</div>
+<p>คุณอาจเคยได้ยินคำกล่าวอ้างแบบ "เปลี่ยนมาใช้ cost-aware band แล้วเทรดลด 60-80% กำไรสุทธิสูงขึ้น" — <strong>ตัวเลขแบบนี้ต้องพิสูจน์ด้วย backtest ของคุณเองเท่านั้น</strong> มันขึ้นกับคู่ที่เทรด ต้นทุนจริงของคุณ และ volatility regime ตอนนั้น <strong>ไม่ใช่ค่าคงที่สากล</strong> — ใครอ้างตัวเลขนี้ลอย ๆ โดยไม่โชว์โค้ด/ข้อมูลที่มาที่ไป ให้สงสัยไว้ก่อน (โยง Part IX เรื่อง backtest ที่ไม่โกหก)</p></div>
+
+<h2>6.5 Band คงที่ vs Band ปรับตัว</h2>
+
+<p>อีกมิติที่ต้องตัดสินใจ: band ควรคงที่ตลอด หรือปรับตามเวลา?</p>
+
+<div class="ad">
+<div class="pro"><div class="bt">Band คงที่</div>
+<ul><li>เข้าใจง่าย ทำนายได้ ไม่กระตุก</li><li>เหมาะกับคู่ที่ volatility ค่อนข้างนิ่ง</li></ul></div>
+<div class="con"><div class="bt">Band ปรับตัว (rolling ATR/vol)</div>
+<ul><li>ตามทัน volatility regime ที่เปลี่ยน</li><li>⚠️ เสี่ยง look-ahead ถ้าคำนวณไม่ระวัง (ต้องใช้ข้อมูลถึงเมื่อวานเท่านั้น) — เหมือนกับดักที่ Part I §1.6 เตือนเรื่อง rolling window</li></ul></div>
+</div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "band กว้างกว่า = ปลอดภัยกว่า"<br>
+<strong>quant เห็น:</strong> band ที่ "ถูกต้อง" ไม่ใช่กว้างสุดหรือแคบสุด — แต่คือ band ที่<em>สะท้อนต้นทุนจริงของคุณ</em> band แคบเกินไป = เทรดถี่จนค่าคอมฯ กินกำไร · band กว้างเกินไป = พลาดโอกาสดี ๆ ที่แท้จริงคุ้มเทรด</p></div>
+
+<h2>สรุป Part VI + สะพานสู่ Part VII</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part VI</div>
+<ol>
+<li><strong>ATR/cost-aware band</strong> = สัญชาตญาณถูก แต่ต้องคำนวณบน spread (ไม่ใช่ราคาดิบ) และเป้าหมายคือชนะ round-trip cost</li>
+<li><strong>Optimal OU-cost threshold</strong> มีทฤษฎีรองรับ (Leung-Li 2015) — แต่แม่นได้แค่ที่ input (κ,σ,c) แม่น</li>
+<li><strong>ตัวเลขผลลัพธ์เชิงพาณิชย์ต้องพิสูจน์เอง</strong> — ไม่มีค่าคงที่สากลที่ใช้ได้ทุกคู่ทุกตลาด</li>
+</ol></div>
+
+<p>ทุกอย่างที่ผ่านมา (β ดี, band ที่คำนวณถูก) ตั้งอยู่บนสมมติฐานเงียบ ๆ ข้อหนึ่ง: <strong>ความสัมพันธ์ระหว่าง A กับ B ยังคงอยู่</strong> — แต่ถ้าวันหนึ่งมันเลิกคงอยู่แล้วล่ะ? band ที่คำนวณมาสวยแค่ไหนก็ช่วยไม่ได้ ถ้า spread ที่ "ควรกลับ" ไม่มีวันกลับอีกแล้ว</p>
+
+<div class="pq">"band บอกว่าเมื่อไรควรเข้า — แต่ไม่เคยบอกว่าเมื่อไรควรเลิกเชื่อว่ามันจะกลับ"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Round-trip cost</strong> — ต้นทุนรวมของการเข้า+ออกสถานะ 1 รอบ (ค่าคอมฯ + spread + ค่ายืมช็อต)</li>
+<li><strong>Cost-aware band</strong> — band ที่กำหนดโดยผูกกับต้นทุนจริง ไม่ใช่แค่สถิติ (SD)</li>
+<li><strong>Optimal stopping</strong> — กรอบคณิตศาสตร์หาจุดตัดสินใจ (เข้า/ออก) ที่เหมาะสมที่สุดภายใต้เงื่อนไข</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Leung, T. &amp; Li, X. (2015) "Optimal Mean Reversion Trading with Transaction Costs and Stop-Loss Exit", <em>International Journal of Theoretical and Applied Finance</em></li>
+<li>Do, B. &amp; Faff, R. (2010, 2012) — ต้นทุนธุรกรรมกินกำไร pairs trading ในทางปฏิบัติ (เชื่อม Part 0)</li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/05_bands_and_costs.ipynb</code> (Phase 2) — เทียบ z-score vs cost-aware vs optimal band บนข้อมูลจำลองที่มี cost model กำกับ</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part5</code> §18.2 (Trading the Spread) · <code>arb-part7</code> §25 (Execution) · Part I §1.7 (OU process)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>

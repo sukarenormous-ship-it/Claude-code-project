@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Practical Quant: Stat Arb — Part V</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em;line-height:1.7}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.try{background:#ecfeff;border:1px solid #a5f3fc;border-left:5px solid #0891b2;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.try .bt{color:#0e7490}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+svg.d{display:block;margin:20px auto;max-width:520px;width:100%}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,svg{page-break-inside:avoid}abbr[title]{border:none}}</style></head><body>
+
+<div class="cover">
+<h1>Practical Quant: Stat Arb ที่ใช้ได้จริง</h1>
+<div class="sub">Part V — Adaptive & Robust Kalman: เมื่อ β ต้อง "รู้จักนิ่ง" และ "รู้จักไม่เชื่อ"</div>
+<div class="desc">Part IV ทิ้งคำถามไว้ว่า β เป็น random walk เหมาะจริงไหม และถ้า filter ไวเกินไปจะกลืนสัญญาณตัวเอง — Part นี้ตอบทั้งคู่: <strong>β ที่มีบ้าน (mean-reverting)</strong> และ <strong>Kalman ที่ฉลาดพอจะไม่เชื่อแท่งราคาที่สะบัดผิดปกติ</strong></div>
+</div>
+
+<div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
+<p><strong>🟢 มือใหม่:</strong> §5.1 "filter กินสัญญาณตัวเอง" + §5.2 อุปมา R ยืดหยุ่น + สรุป ✓ · <strong>🔵 มีพื้น:</strong> เน้น §5.1 AR(1) beta + §5.3 กับดัก decay/unidentifiable · <strong>เริ่มด่วน:</strong> §5.1 ปมที่พลิกมุมมองเรื่อง Kalman ทั้งหมด</p></div>
+
+<h2>5.1 ★ ปัญหาที่ลึกที่สุด — "filter กินสัญญาณตัวเอง"</h2>
+
+<p>Part IV ใช้สมมติฐาน <strong>β เดินแบบ random walk</strong> ตลอด (β พรุ่งนี้ = β วันนี้ + noise เล็กน้อย) — สมมติฐานนี้ง่ายและใช้งานได้ดี แต่มันซ่อนปัญหาที่คนไม่ค่อยพูดถึง</p>
+
+<div class="bx br"><div class="bt">📉 ปัญหา: ถ้า β ปรับตัวไวเกินไป มันจะ "ดูดกลืน" สิ่งที่คุณอยากเทรด</div>
+<p>ลองนึกภาพ: spread ห่างออกจากปกติเพราะ A แพงขึ้นเทียบ B ชั่วคราว (นี่คือสิ่งที่คุณอยากเทรด!) — แต่ถ้า Kalman ตั้ง Q สูงมาก มันจะ<strong>ตีความความห่างนั้นว่า "β เปลี่ยนไปแล้ว"</strong> แล้วปรับ β ให้ตามราคาใหม่ทันที ผลคือ spread กลับมาดู "ปกติ" เกือบตลอดเวลา — <strong>ทั้งที่ mispricing เกิดขึ้นจริง</strong> Kalman แค่ดูดมันเข้าไปในตัว β แทนที่จะปล่อยให้เป็น "ส่วนต่างที่ควรเทรด"</p></div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน — อุปมา "เพื่อนที่ให้อภัยเร็วเกินไป"</div>
+<p>ลองนึกถึงเพื่อนที่ทุกครั้งที่คุณทำอะไรผิดปกติ เขาจะรีบปรับความคาดหวังใหม่ทันที ("อ๋อ นิสัยจริงของเธอเป็นแบบนี้") — เพื่อนแบบนี้จะไม่มีวันรู้สึกว่า "เธอทำตัวแปลกไปวันนี้" เพราะเขาปรับบรรทัดฐานตามทุกครั้ง <br>Kalman ที่ Q สูงเกินไปก็เหมือนเพื่อนแบบนี้ — ปรับ "ความคาดหวังปกติ" (β) ตามทุกอย่างที่เห็น จนไม่เหลือแนวคิดเรื่อง "ผิดปกติ" ให้จับสัญญาณได้เลย</p></div>
+
+<div class="bx bp"><div class="bt">tension ที่ต้องถือไว้ในหัว</div>
+<p>ต้องการ Kalman ที่ <strong>ปรับ β พอให้ hedge ratio ยังใช้งานได้</strong> (ไม่งั้น hedge ผิดสัดส่วน) — แต่<strong>ไม่ปรับเร็วจนกลืนความเบี่ยงเบนที่ควรเป็นสัญญาณเทรด</strong> ไม่มีคำตอบสูตรสำเร็จ ต้องสมดุลตามความเชื่อว่าความสัมพันธ์นี้ "นิ่งแค่ไหนโดยธรรมชาติ"</p></div>
+
+<h3>ทางแก้ — ให้ β "มีบ้าน" แทนที่จะเดินไม่มีจุดหมาย</h3>
+
+<p>Random walk บอกว่า β ไม่มี "บ้าน" — เดินไปได้ไกลแค่ไหนก็ได้ ไม่มีอะไรดึงกลับ ทั้งที่ในความเป็นจริง คู่ที่ cointegrate กันแน่นมักมี hedge ratio ที่ <strong>นิ่งเชิงโครงสร้าง</strong> (เช่น 2 บริษัทในธุรกิจเดียวกัน มี ratio ที่ควรวนเวียนอยู่แถว ๆ ค่าหนึ่ง ไม่ใช่ล่องลอยไปเรื่อย)</p>
+
+<div class="fm">Random walk (Part IV):     β_t = β_{t−1} + w_t              (ไม่มีบ้าน)<br>
+Mean-reverting (Part นี้):  β_t = μ + φ(β_{t−1} − μ) + w_t     (มีบ้านที่ μ, ดึงกลับด้วยแรง φ)</div>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน</div>
+<p>AR(1) สำหรับ β พูดว่า: "β มักจะวนเวียนอยู่แถว μ (ค่ากลางที่เชื่อว่าถูกต้องเชิงโครงสร้าง) — ถ้ามันเบี่ยงออกไปวันนี้ พรุ่งนี้มันจะถูกดึงกลับมาทาง μ บ้าง ตามแรง φ" — เหมือนยางยืดผูก β ไว้กับ μ เดียวกับที่ Part I §1.7 อธิบาย OU process ของ<em>spread</em> เพียงแต่คราวนี้ผูกกับ<em>ตัว β เอง</em></p></div>
+
+<div class="bx bb"><div class="bt">ข่าวดี: ยังใช้ Kalman ตัวเดิมได้ แค่เปลี่ยนบรรทัดเดียว</div>
+<p>AR(1) ยังเป็น linear-Gaussian → Kalman filter ใช้ได้เหมือนเดิมทุกอย่าง เปลี่ยนแค่ <strong>transition matrix</strong> จาก 1 (random walk) เป็น φ (ค่าระหว่าง 0-1) และเพิ่มค่าคงที่ μ(1−φ) เข้าไป — โค้ดเปลี่ยนไม่กี่บรรทัด</p>
+<div class="fm">limit: φ → 1   ⟹  กลายเป็น random walk (Part IV เดิม)<br>
+      φ → 0   ⟹  β กลับบ้าน (μ) เกือบทันที ⟹ ใกล้เคียง β คงที่แบบ OLS</div></div>
+
+<div class="try"><div class="bt">✍️ เช็คความเข้าใจ</div>
+<p>ถ้า φ = 0.98 (ใกล้ 1) กับ φ = 0.7 (ห่างจาก 1 พอควร) — แบบไหนเชื่อว่า β "นิ่งเชิงโครงสร้าง" มากกว่ากัน? <span style="color:#64748b">(φ=0.7 เชื่อว่านิ่งกว่า เพราะดึงกลับบ้านเร็วกว่า — ใกล้ 1 = เกือบไม่ดึงกลับเลย เหมือน random walk)</span></p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่ quant มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "Kalman ต้องเลือกระหว่าง random walk กับ mean-reverting — อันไหนดีกว่ากัน"<br>
+<strong>quant เห็น:</strong> คำถามที่ถูกไม่ใช่ "อันไหนดีกว่า" แต่คือ <strong>"ผมเชื่อว่าความสัมพันธ์นี้เป็นโครงสร้างจริงจัง หรือเป็นแค่ความบังเอิญทางสถิติ"</strong> — ถ้าเชื่อว่าโครงสร้างจริง (เช่น 2 share-class ของบริษัทเดียวกัน) ใช้ mean-reverting ได้เต็มที่ · ถ้าไม่แน่ใจว่าความสัมพันธ์จะอยู่ยืนแค่ไหน random walk ปลอดภัยกว่า (และถ้าไม่มั่นใจเลย คำถามที่แท้จริงคือควรเทรดคู่นี้หรือเปล่า — โยง Part 0 และ Part VII)</p></div>
+
+<div class="bx br"><div class="bt">⚠️ caveat ที่ต้องซื่อสัตย์</div>
+<p>φ คือพารามิเตอร์เพิ่มอีกตัว = พื้นผิว overfit เพิ่มอีกหนึ่งมิติ — ใช้วินัยจูนเดียวกับ Part IV §4.6 (MLE/EM หรือผูกเศรษฐกิจ ไม่ใช่ grid-search ตาม PnL)</p></div>
+
+<h2>5.2 ★ Vol-Adaptive R — เมื่อแท่งราคาสะบัดผิดปกติ</h2>
+
+<p>ปัญหาที่ 2: Part IV ใช้ R คงที่ตลอด — แต่ในโลกจริงมีบางวันที่ราคา<strong>สะบัดรุนแรงผิดปกติ</strong> (ข่าวออกกะทันหัน, thin liquidity ตอนดึก) ถ้า R คงที่ Kalman จะ<strong>เชื่อแท่งราคาขยะนั้นเท่ากับวันปกติ</strong> แล้วรีบปรับ β วิ่งไล่ตาม พอราคาดึงกลับในอีก 15 นาที ก็ต้องปรับ β กลับอีกที — โดนสับขาหลอกสองเด้ง เสียค่าคอมฯ ฟรี</p>
+
+<div class="bx ba"><div class="bt">🚶 อ่านเป็นภาษาคนก่อน — อุปมา "คนที่ตื่นตกใจง่ายเกินไป"</div>
+<p>Kalman ที่ R คงที่เหมือนคนที่ตกใจกับข่าวลือทุกเรื่องพอ ๆ กับข่าวจริง — พอมีข่าวลือ (แท่งราคาสะบัด) ก็รีบเปลี่ยนความเชื่อทันที ทั้งที่ควรจะ "เอ๊ะ ข่าวนี้แปลกนะ ขอตรวจสอบก่อน" แล้วค่อยเชื่อ</p></div>
+
+<div class="bx bp"><div class="bt">วิธีแก้ที่ถูกหลัก — Innovation-based R (ไม่ใช่แค่ "vol สูงก็ปรับ R")</div>
+<p>ทุกวัน Kalman คำนวณ <strong>innovation</strong> (ส่วนที่ทายผิด, จาก Part IV §4.3) และรู้ค่าที่<em>ควรจะเป็น</em>ของมันเองอยู่แล้ว (เรียกว่า S) — ถ้า innovation จริงเกินกว่าที่ S บอกไว้มาก ๆ (วัดด้วยระยะที่เรียกว่า <strong>Mahalanobis distance</strong>) = สัญญาณว่าวันนี้ "แปลก" → <strong>inflate R ชั่วคราว</strong> (บอก filter ว่า "อย่าเพิ่งเชื่อราคาวันนี้เต็มที่")</p></div>
+
+<div class="fm">ทุกวัน:  gate = |innovation| / √S        ← ระยะที่ทายผิด เทียบกับที่ควรผิด<br>
+        ถ้า gate > threshold (เช่น 3):<br>
+            R_ใช้จริงวันนี้ = R_ปกติ × (ตัวคูณ inflate)   ← "ทำเป็นตาบอดชั่วคราว"<br>
+        ไม่งั้น:<br>
+            R_ใช้จริงวันนี้ = R_ปกติ</div>
+
+<p>อีกวิธีที่ทำได้ (ง่ายกว่าแต่หยาบกว่า): ใส่ <strong>EWMA หรือ GARCH ของความผันผวน</strong> เข้าไปเป็นส่วนหนึ่งของ R โดยตรง แทนที่จะเป็นค่าคงที่ — R จะขยับตาม volatility regime เองอัตโนมัติ</p>
+
+<div class="ad">
+<div class="pro"><div class="bt">✅ core ที่ถูก (ยืนยันแล้ว)</div>
+<ul><li>แท่งสะบัดผิดปกติ → อย่ารีบขยับ β ไล่ราคาขยะ — สัญชาตญาณนี้ถูกต้อง 100%</li><li>ป้องกันการโดน "สับขาหลอกสองเด้ง"</li></ul></div>
+<div class="con"><div class="bt">⚠️ ต้องระวัง 2 กับดัก</div>
+<ul><li><strong>ต้องมี decay กลับ</strong> — ถ้า R ค้างสูงตลอดไป filter จะ "ตาบอดถาวร" ไม่เรียนรู้อะไรอีกเลย ต้องมีกลไกให้ R ค่อย ๆ กลับสู่ปกติ</li><li><strong>อย่าปรับ Q กับ R พร้อมกันมั่ว</strong> — ถ้าทั้งคู่ขยับตามกันเอง ระบบจะ unidentifiable (แยกไม่ออกว่า "β เปลี่ยนจริง" กับ "แค่ noise เยอะขึ้น")</li></ul></div>
+</div>
+
+<div class="pq">"ไม่ใช่ปิดหูปิดตาถาวร — แค่ทำเป็นไม่ได้ยินชั่วคราว แล้วค่อยฟังใหม่"</div>
+
+<h2>5.3 สรุป Part V + สะพานสู่ Part VI</h2>
+
+<div class="bx bg"><div class="bt">✓ 3 อย่างที่ต้องจำจาก Part V</div>
+<ol>
+<li><strong>Filter ที่ไวเกินไปกินสัญญาณตัวเอง</strong> — β ปรับเร็วจนดูดซับ mispricing เข้าไปเอง ทำให้ spread ดูปกติตลอด สัญญาณหาย</li>
+<li><strong>AR(1) mean-reverting β</strong> = ทางเลือกเมื่อเชื่อว่าความสัมพันธ์นิ่งเชิงโครงสร้าง — ยังใช้ Kalman เดิม แค่เปลี่ยน transition matrix</li>
+<li><strong>Vol-adaptive R ที่ถูกหลัก</strong> = innovation-based gating + decay กลับเสมอ — ไม่ใช่แค่ "vol สูงก็ปรับ R" มั่ว ๆ</li>
+</ol></div>
+
+<p>ตอนนี้เรามี β ที่ดี (Part I–V) แล้ว — เหลือคำถามที่ดูเรียบง่ายแต่จริง ๆ ซับซ้อน: <strong>β ดีแค่ไหนก็ไม่มีประโยชน์ ถ้าไม่รู้ว่าจะเข้า-ออกที่ไหน</strong> z-score ที่ ±2σ ที่ทุกคนใช้ — คุ้มค่าคอมฯ จริงไหม?</p>
+
+<div class="pq">"β บอกว่าจะ hedge ยังไง — แต่ไม่ได้บอกว่าจะ 'เข้า' และ 'ออก' ตอนไหน"</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>AR(1) mean-reverting β</strong> — β ที่มี "บ้าน" (μ) และถูกดึงกลับด้วยแรง φ แทนที่จะเดินแบบ random walk</li>
+<li><strong>Innovation gating / Mahalanobis distance</strong> — วัดว่า innovation วันนี้ "แปลก" แค่ไหนเทียบกับที่ควรเป็น</li>
+<li><strong>Vol-adaptive R (robust/Huber Kalman)</strong> — R ที่ขยับตามความผิดปกติของราคาชั่วคราว แล้ว decay กลับ</li>
+<li><strong>Unidentifiable</strong> — เมื่อปรับพารามิเตอร์หลายตัวพร้อมกันจนแยกไม่ออกว่าอะไรทำให้ผลเปลี่ยน</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📚 อ้างอิงตอนนี้</div>
+<ul>
+<li>Bar-Shalom, Y., Li, X.R. &amp; Kirubarajan, T. — robust/adaptive Kalman filtering, innovation gating</li>
+<li>Wells, C. (1996) <em>The Kalman Filter in Finance</em> — time-varying parameter models รวม mean-reverting variant</li>
+<li>Tenyakov, A. &amp; Mamon, R. (2017) — Kalman + HMM regime-switching (แนวทางขยายต่อจาก vol-adaptive R)</li>
+</ul>
+<p style="color:#64748b;font-size:.88em">📖 <strong>ลงมือ:</strong> notebook <code>vol2-code/04_kalman_tuning.ipynb</code> (Phase 2) จะเทียบ random-walk vs AR(1) beta และทดสอบ innovation-gating R บนข้อมูลจำลองที่มี "วันสะบัดผิดปกติ" แทรกไว้</p></div>
+
+<p style="color:#64748b;font-size:.85em;margin-top:2em">↩ เชื่อมเล่ม 1: <code>arb-part5</code> §19.3 (Regime Detection) · Part I §1.7 (OU process ของ spread) · Part IV (state-space, Q/R)</p>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
