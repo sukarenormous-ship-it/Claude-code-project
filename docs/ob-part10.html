@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 10</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 10: MM-2 Optimal — วาง quote ตรงไหนถึงดีที่สุด</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ IV · Market Making<br>Avellaneda-Stoikov: reservation price, optimal spread, adverse selection, value function → ยุค RL</div>
+</div>
+
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › <b style="color:var(--blue)">ตัดสินใจเข้า-ออก</b> › ต่อยอด/คุมเสี่ยง</div>
+
+<!-- ========== PART 10 ========== -->
+<h2 id="p10">Part 10 — MM-2 Optimal: Avellaneda-Stoikov</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 9 ให้สัญชาตญาณ skew — ถือ long มากก็เลื่อน quote ลงเพื่อระบายสต็อก แต่ยังเป็นแค่ "เอียงตามความรู้สึก" (สูตรง่าย bid = mid − δ/2 − k·q) · <strong>ตอนนี้จะเติม:</strong> แปลง k·q ที่เดาเอาให้เป็นสูตรที่ออปติไมซ์จริงด้วย Avellaneda-Stoikov — reservation price บอกว่าควรเลื่อน <em>เท่าไหร่</em> โดยคิดทั้งความผันผวน เวลาที่เหลือ และความกลัวความเสี่ยง</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจ <strong>reservation price</strong> = "ราคายุติธรรมในใจพ่อค้า" ที่ขยับตามสต็อก — หัวใจของ Avellaneda-Stoikov</li>
+<li>อ่านสูตร <strong>r = s − q·γ·σ²·(T−t)</strong> ออกว่าแต่ละตัวแปรหมายถึงอะไรและทำไมมันสมเหตุสมผล</li>
+<li>เข้าใจ <strong>optimal spread</strong> ว่ามาจากการชั่งน้ำหนักระหว่างความเสี่ยง inventory กับโอกาส fill</li>
+<li>เห็นชัดว่า <strong>naive MM (quote สมมาตรไม่ skew) ตายเพราะ adverse selection</strong> ขณะ optimal รอด — ผ่านกราฟ P&amp;L</li>
+<li>เห็นภาพ <strong>เส้นทางวิวัฒนาการ</strong> จาก Ho-Stoll → A-S → Guéant → reinforcement learning</li>
+</ul>
+</div>
+
+<h3 id="p10-hook">ราคายุติธรรมในใจพ่อค้าขายร่ม</h3>
+
+<p>นึกถึงพ่อค้าขายร่มข้างถนน เช้านี้เขามีร่ม 50 คัน "ราคายุติธรรมในใจ" ของเขาคือ 100 บาท เขาจึงตั้งรับซื้อ 95 ขาย 105 — สมมาตรรอบ 100</p>
+
+<p>ผ่านไปครึ่งวัน <strong>ขายดีมากจนเหลือร่มแค่ 5 คัน</strong> ฝนกำลังจะตก เขากลัวของหมดก่อนปิดร้าน — "ราคายุติธรรมในใจ" ของเขา <strong>ขยับขึ้นเป็น 110</strong> โดยอัตโนมัติ เขาไม่อยากขายถูกแล้ว เขาตั้งขาย 115 รับซื้อ 105 (อยากซื้อร่มเข้าสต็อกคืน)</p>
+
+<p>กลับกัน ถ้าเหลือร่ม <strong>200 คัน</strong> และใกล้ฟ้าจะเปิด เขากลัวของค้าง "ราคาในใจ" จะ <strong>ตกลงเหลือ 90</strong> เขายอมขายถูกเพื่อระบายสต็อก</p>
+
+<p><strong>"ราคายุติธรรมในใจที่ขยับตามสต็อก" นี่แหละคือ reservation price</strong> — มันไม่ใช่ราคาตลาด (mid) แต่เป็นราคาที่พ่อค้าใช้เป็นจุดศูนย์กลางในการตั้ง quote ของตัวเอง ยิ่งถือเยอะ ยิ่งดึงให้ต่ำกว่า mid เพื่อเร่งระบาย</p>
+
+<svg class="d" viewBox="0 0 500 220" role="img" aria-label="reservation price ขยับตามสต็อกร่ม">
+<line x1="60" y1="115" x2="440" y2="115" stroke="var(--g2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="450" y="119" font-size="10" fill="var(--g7)">mid</text>
+<!-- low stock: r above -->
+<circle cx="140" cy="70" r="10" fill="var(--red)"/>
+<text x="140" y="74" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">r</text>
+<text x="140" y="50" text-anchor="middle" font-size="10" fill="var(--g7)">ร่มเหลือน้อย (short)</text>
+<text x="140" y="95" text-anchor="middle" font-size="9" fill="var(--red)">r &gt; mid (อยากซื้อคืน)</text>
+<!-- neutral -->
+<circle cx="250" cy="115" r="10" fill="var(--blue)"/>
+<text x="250" y="119" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">r</text>
+<text x="250" y="140" text-anchor="middle" font-size="9" fill="var(--blue)">q=0 → r = mid</text>
+<!-- high stock: r below -->
+<circle cx="360" cy="160" r="10" fill="var(--green)"/>
+<text x="360" y="164" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">r</text>
+<text x="360" y="185" text-anchor="middle" font-size="10" fill="var(--g7)">ร่มล้นสต็อก (long)</text>
+<text x="360" y="205" text-anchor="middle" font-size="9" fill="var(--green)">r &lt; mid (อยากระบาย)</text>
+<line x1="150" y1="78" x2="240" y2="110" stroke="var(--g7)" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="260" y1="120" x2="350" y2="152" stroke="var(--g7)" stroke-width="1" stroke-dasharray="3 3"/>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 10.1 · reservation price ถูกดึงออกจาก mid ตามทิศและขนาดของ inventory</p>
+
+<h3 id="p10-r">สูตร reservation price</h3>
+
+<p>Avellaneda &amp; Stoikov (2008) เขียน "ราคาในใจ" นี้เป็นสมการ:</p>
+
+<div class="fm">
+r = s − q · γ · σ² · (T − t)<br>
+<br>
+r = reservation price (ราคายุติธรรมในใจ MM)<br>
+s = mid price ปัจจุบัน<br>
+q = inventory สุทธิ (long = บวก, short = ลบ)<br>
+γ = ความกลัวความเสี่ยง (risk aversion) — γ สูง = ขี้กลัว<br>
+σ² = ความผันผวน (variance ของราคา)<br>
+(T − t) = เวลาที่เหลือก่อนปิดรอบ — ใกล้ปิดยิ่งกลัว inventory น้อยลง
+</div>
+
+<p>อ่านสูตรแบบไม่ต้องท่อง — แค่ดูว่า <strong>"ตัวลบ" q·γ·σ²·(T−t) ดึง r ออกจาก mid เท่าไหร่</strong>:</p>
+<ul>
+<li><strong>q บวกมาก (long เยอะ)</strong> → ตัวลบใหญ่ → r ต่ำกว่า mid มาก → quote เอียงลง → เร่งขายระบาย (ตรงกับพ่อค้าร่มที่ของล้น)</li>
+<li><strong>γ สูง (ขี้กลัว)</strong> → ตัวลบใหญ่ → ยิ่งกลัวยิ่งดึง r หนีจาก mid เร็ว</li>
+<li><strong>σ² สูง (ผันผวน)</strong> → ถือ inventory อันตรายขึ้น → ดึง r หนีแรงขึ้น</li>
+<li><strong>(T−t) เล็ก (ใกล้ปิด)</strong> → ตัวลบเล็กลง → ใกล้หมดเวลาแล้ว ถือ inventory ไม่กี่วินาทีไม่น่ากลัว → r เข้าใกล้ mid อีกครั้ง</li>
+</ul>
+
+<h3 id="p10-spread">Optimal spread: กว้างเท่าไหร่ถึงดี</h3>
+
+<p>มี r แล้วต้องตั้ง bid/ask ห่างจาก r เท่าไหร่? A-S ให้สูตร <strong>optimal spread</strong> ที่ชั่งน้ำหนัก 2 แรง: ความเสี่ยง inventory (อยากกว้างไว้ปลอดภัย) กับ ความถี่ fill (อยากแคบไว้ได้เทรดบ่อย)</p>
+
+<div class="fm">
+δ_total = γ·σ²·(T − t) + (2/γ)·ln(1 + γ/κ)<br>
+&nbsp;&nbsp;δ_total = สปรดรวมสองฝั่ง (bid+ask) — คนละตัวกับ δ ฐานใน Part 9<br>
+&nbsp;&nbsp;ก้อนแรก = ค่าชดเชยความเสี่ยง inventory (เหมือนใน r)<br>
+&nbsp;&nbsp;ก้อนสอง = ค่าชดเชยจาก order arrival — κ คือความไวของ fill ต่อระยะ quote<br>
+<br>
+bid = r − δ_total/2<br>
+ask = r + δ_total/2
+</div>
+
+<p>จุดสำคัญที่มือใหม่มักพลาด: <strong>bid/ask ของ A-S วางสมมาตรรอบ r ไม่ใช่รอบ mid</strong> เพราะ r เอียงไปตาม inventory อยู่แล้ว ผลลัพธ์คือ quote สองฝั่งจริง ๆ ไม่สมมาตรรอบ mid — ฝั่งที่อยากระบายจะอยู่ใกล้ mid กว่า</p>
+
+<svg class="d" viewBox="0 0 500 230" role="img" aria-label="quote วางสมมาตรรอบ r ไม่ใช่ mid เมื่อถือ long">
+<line x1="40" y1="60" x2="460" y2="60" stroke="var(--red)" stroke-width="1.5"/>
+<text x="465" y="64" font-size="9" fill="var(--red)">ask</text>
+<line x1="40" y1="115" x2="460" y2="115" stroke="var(--g2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="465" y="119" font-size="9" fill="var(--g7)">mid (s)</text>
+<line x1="40" y1="150" x2="460" y2="150" stroke="var(--blue)" stroke-width="2"/>
+<text x="465" y="154" font-size="9" font-weight="700" fill="var(--blue)">r</text>
+<line x1="40" y1="195" x2="460" y2="195" stroke="var(--green)" stroke-width="1.5"/>
+<text x="465" y="199" font-size="9" fill="var(--green)">bid</text>
+<!-- delta brackets around r -->
+<line x1="120" y1="60" x2="120" y2="150" stroke="var(--g7)" stroke-width="1" marker-end="url(#a2)" marker-start="url(#a1)"/>
+<text x="105" y="108" text-anchor="end" font-size="9" fill="var(--g7)">δ/2</text>
+<line x1="120" y1="150" x2="120" y2="195" stroke="var(--g7)" stroke-width="1" marker-end="url(#a2)" marker-start="url(#a1)"/>
+<text x="105" y="175" text-anchor="end" font-size="9" fill="var(--g7)">δ/2</text>
+<!-- r pulled below mid arrow -->
+<line x1="300" y1="115" x2="300" y2="148" stroke="var(--amber)" stroke-width="2" marker-end="url(#dn2)"/>
+<text x="315" y="138" font-size="9" fill="var(--amber)">q&gt;0 ดึง r ลง</text>
+<text x="250" y="222" text-anchor="middle" font-size="10" fill="var(--g7)">ask ห่าง mid มากกว่า · bid ใกล้ mid → ระบาย long</text>
+<defs>
+<marker id="a1" markerWidth="8" markerHeight="8" refX="3" refY="0" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="var(--g7)"/></marker>
+<marker id="a2" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,0 L6,0 L3,6 Z" fill="var(--g7)"/></marker>
+<marker id="dn2" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,0 L6,0 L3,6 Z" fill="var(--amber)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 10.2 · bid/ask สมมาตรรอบ r (ที่ถูกดึงต่ำกว่า mid เพราะ long)</p>
+
+<h3 id="p10-adverse">ทำไม naive MM ถึงตาย — adverse selection</h3>
+
+<p><strong>Naive MM</strong> = ตั้ง bid/ask สมมาตรรอบ <em>mid</em> เสมอ ไม่สนใจ inventory ฟังดูเป็นกลางดี แต่มันตายเพราะ 2 เหตุผลที่ทบกัน:</p>
+<ol>
+<li><strong>Inventory วิ่งหนีไม่หยุด</strong> — ไม่มีกลไก skew ดึงกลับ ตลาดเทรนด์เดียวจะอัด inventory ฝั่งเดียวจนพอร์ตระเบิด</li>
+<li><strong>Adverse selection</strong> — คนที่มา fill quote ของเรา "บ่อยกว่า" คือคนที่ถูกข้าง เวลาราคากำลังจะขึ้น คนแห่มากิน ask ของเรา (เราขายถูกให้เขา) เวลาราคากำลังจะลง คนแห่มาชน bid ของเรา (เรารับแพง) — <strong>MM มักโดน fill ในจังหวะที่ผิดเสมอ</strong></li>
+</ol>
+
+<p>Optimal MM สู้ adverse selection ด้วยการ skew (ผ่าน r): พอ inventory เริ่มเอียง r จะดึง quote ให้ฝั่งที่เสี่ยงอยู่ไกล mid ขึ้น ลดโอกาสโดน fill ซ้ำเติม นี่คือเหตุผลที่กราฟ P&amp;L ต่างกันราวฟ้ากับเหว</p>
+
+<svg class="d" viewBox="0 0 500 280" role="img" aria-label="กราฟ P&amp;L optimal vs naive ตามเวลา naive ระเบิด">
+<line x1="55" y1="30" x2="55" y2="230" stroke="var(--g2)" stroke-width="1.5"/>
+<line x1="55" y1="130" x2="470" y2="130" stroke="var(--g7)" stroke-width="1"/>
+<text x="50" y="40" text-anchor="end" font-size="10" fill="var(--g7)">P&amp;L</text>
+<text x="50" y="134" text-anchor="end" font-size="9" fill="var(--g7)">0</text>
+<text x="470" y="148" text-anchor="end" font-size="10" fill="var(--g7)">เวลา →</text>
+<!-- optimal: steady up -->
+<polyline points="55,130 120,122 185,112 250,100 315,88 380,74 445,58" fill="none" stroke="var(--green)" stroke-width="3"/>
+<text x="445" y="50" text-anchor="middle" font-size="10" font-weight="700" fill="var(--green)">Optimal</text>
+<text x="75" y="70" font-size="9" fill="var(--green)">สะสมสปรด คุม inventory</text>
+<!-- naive: up then crash -->
+<polyline points="55,130 120,120 185,108 250,100 290,108 340,150 390,200 445,250" fill="none" stroke="var(--red)" stroke-width="3"/>
+<text x="445" y="244" text-anchor="middle" font-size="10" font-weight="700" fill="var(--red)">Naive</text>
+<circle cx="250" cy="100" r="4" fill="var(--amber)"/>
+<text x="160" y="92" font-size="9" fill="var(--amber)">ดูดีช่วงแรก</text>
+<text x="95" y="200" font-size="9" fill="var(--red)">inventory + adverse</text>
+<text x="95" y="213" font-size="9" fill="var(--red)">selection ระเบิด</text>
+<rect x="120" y="252" width="280" height="22" rx="4" fill="var(--blue-bg)" stroke="var(--blue)"/>
+<text x="260" y="267" text-anchor="middle" font-size="10" font-weight="700" fill="var(--blue)">ต่างกันที่ "การจัดการ inventory" ไม่ใช่ความกว้างสปรด</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 10.3 · P&amp;L optimal vs naive — naive ดูดีช่วงแรกแล้วระเบิดเพราะ adverse selection + inventory</p>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่ — "เป็นกลางรอบ mid = ปลอดภัยสุด"</div>
+<p>หลายคนคิดว่าการตั้ง quote สมมาตรรอบ mid คือ "ไม่เลือกข้าง = ปลอดภัย" — <strong>ตรงกันข้าม</strong> มันคือสูตรของการโดน adverse selection เต็ม ๆ เพราะคุณปล่อยให้ตลาดเลือกข้างให้คุณ (คนถูกข้างมา fill คุณก่อนเสมอ) ความปลอดภัยจริงมาจากการ <strong>ยอมเอียง quote ตาม inventory</strong> เพื่อบังคับให้สต็อกกลับเข้าศูนย์ — γ ไม่ใช่ "ความขลาด" แต่คือ "วินัยคุมความเสี่ยง" ที่ใส่เป็นตัวเลขในสมการ</p>
+</div>
+
+<h3 id="p10-value">Value function: ที่มาของสูตร (มองผ่าน ๆ พอ)</h3>
+
+<p>สูตร r และ δ ไม่ได้เดาเอา — มันมาจากการแก้ปัญหา optimization ที่ถามว่า "ตั้ง quote ยังไงให้ <strong>มูลค่าคาดหวังของความมั่งคั่งสุดท้าย</strong> สูงสุด โดยหักโทษความเสี่ยง" คณิตศาสตร์เบื้องหลังคือ <em>value function</em> u(s, q, t) ที่แก้ผ่านสมการ HJB (Hamilton-Jacobi-Bellman)</p>
+
+<div class="fm">
+แนวคิด (ไม่ต้องแก้เอง):<br>
+u(s, q, t) = max E[ −exp(−γ · wealth สุดท้าย) ]<br>
+&nbsp;&nbsp;wealth สุดท้าย = เงินสด + q · (ราคาเลิกกิจการ)<br>
+แก้ HJB → ได้ r และ δ_total ข้างต้นเป็นคำตอบ
+</div>
+
+<p>ไม่ต้องแก้สมการเองได้ ขอแค่จับ <strong>สัญชาตญาณ</strong>: u ลงโทษ q ที่ใหญ่ (ผ่าน −exp(−γ·...)) ดังนั้นคำตอบที่ optimal จึงต้อง "พยายามดึง q กลับศูนย์เสมอ" — ซึ่งออกมาเป็นกลไก skew ที่เราเห็นใน r พอดี</p>
+
+<h3 id="p10-rl">จาก A-S สู่ยุค Reinforcement Learning</h3>
+
+<p>A-S สวยแต่ตั้งอยู่บนสมมติฐานที่สวยเกินจริง (ราคาเป็น Brownian, order arrival เป็น Poisson คงที่, ไม่มี market impact) โลกจริงไม่เป็นแบบนั้น เลยมีการต่อยอดเรื่อยมา:</p>
+
+<svg class="d" viewBox="0 0 500 170" role="img" aria-label="timeline Ho-Stoll ถึง RL">
+<line x1="40" y1="80" x2="460" y2="80" stroke="var(--g2)" stroke-width="2"/>
+<circle cx="70" cy="80" r="6" fill="var(--blue)"/>
+<text x="70" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="var(--g8)">Ho-Stoll</text>
+<text x="70" y="105" text-anchor="middle" font-size="8" fill="var(--g7)">1981</text>
+<text x="70" y="118" text-anchor="middle" font-size="8" fill="var(--g7)">inventory</text>
+<circle cx="185" cy="80" r="6" fill="var(--blue)"/>
+<text x="185" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="var(--g8)">A-S</text>
+<text x="185" y="105" text-anchor="middle" font-size="8" fill="var(--g7)">2008</text>
+<text x="185" y="118" text-anchor="middle" font-size="8" fill="var(--g7)">r + δ optimal</text>
+<circle cx="300" cy="80" r="6" fill="var(--blue)"/>
+<text x="300" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="var(--g8)">Guéant+</text>
+<text x="300" y="105" text-anchor="middle" font-size="8" fill="var(--g7)">2013</text>
+<text x="300" y="118" text-anchor="middle" font-size="8" fill="var(--g7)">closed-form</text>
+<circle cx="430" cy="80" r="6" fill="var(--green)"/>
+<text x="430" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="var(--green)">Deep RL</text>
+<text x="430" y="105" text-anchor="middle" font-size="8" fill="var(--g7)">2020s</text>
+<text x="430" y="118" text-anchor="middle" font-size="8" fill="var(--g7)">เรียนจาก LOB</text>
+<text x="250" y="150" text-anchor="middle" font-size="10" fill="var(--g7)">สมมติฐานยืดหยุ่นขึ้น · ใกล้ตลาดจริงขึ้น</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 10.4 · วิวัฒนาการ inventory model → A-S → closed-form → RL</p>
+
+<p>ยุค <strong>Reinforcement Learning</strong> เปลี่ยนจาก "แก้สมการหา quote" เป็น "ให้เอเจนต์ลองตั้ง quote ในสภาพแวดล้อมจำลองล้านครั้งแล้วเรียนรู้นโยบายเอง" โดยมีฟังก์ชันรางวัลที่ลงโทษ inventory คล้ายเดิม:</p>
+
+<div class="fm">
+RL objective: max E[ Σ (PnL_t − λ·q_t²) ]<br>
+&nbsp;&nbsp;PnL_t = กำไรแต่ละก้าว,  λ·q_t² = โทษการถือ inventory (แทน γ ใน A-S)<br>
+เอเจนต์เรียน policy π(state) → action (ตั้ง bid/ask offset) เอง<br>
+state = [inventory, spread, OBI, OFI, volatility, ...]
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ (A-S → RL)</div>
+<p><strong>Avellaneda &amp; Stoikov (2008)</strong> คือต้นฉบับของ reservation price + optimal spread ต่อยอดจาก <strong>Ho &amp; Stoll (1981)</strong> · <strong>Guéant-Lehalle-Fernandez-Tapia (2013)</strong> ให้คำตอบ closed-form ที่จัดการ inventory limit ได้ดีขึ้น · ยุคหลังมีงาน RL เช่น <em>Market Making with Deep RL from LOB</em> (arXiv 2305.15821) และ <em>Resolving Latency &amp; Inventory Risk</em> (arXiv 2505.12465) ที่ให้เอเจนต์เรียน quoting policy จากข้อมูล LOB จริง — <strong>แต่ทั้งหมดยังตั้งบนหลักเดียวกัน: ลงโทษ inventory เพื่อสู้ adverse selection</strong></p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>สูตร A-S คือการ <strong>optimize ภายใต้ความไม่แน่นอน</strong> — ใช้เครื่องมือ calculus/optimization และแนวคิด variance/risk จากเล่ม <strong>math</strong> โดยตรง (HJB คือ optimization แบบ dynamic) ส่วนการมองกำไรหลังหักโทษความเสี่ยง (PnL − λq²) คือ <strong>risk-adjusted payoff</strong> ที่ตรงกับหัวใจของ <strong>Payoff Mastery (pm)</strong> — เทรดที่ดีไม่ใช่กำไรสูงสุด แต่คือกำไรต่อหน่วยความเสี่ยงที่ดีที่สุด</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>ในเคส $5,000 long BTC ถ้าเราเล่นเป็น MM: สูตร A-S บอกตรง ๆ ว่าควรวาง bid/ask ตรงไหน — พอเราถูก fill ฝั่ง bid จน q เป็นบวก (สะสม BTC), r จะดึงต่ำกว่า mid อัตโนมัติ ทำให้ bid ฝั่งซื้อถอยห่าง (รับเพิ่มยากขึ้น) และ ask เข้าใกล้ mid (ระบายง่ายขึ้น) — เป็นวิธี <strong>คุม inventory risk จากการได้ rebate</strong> ที่ Part 9 เตือนไว้ ให้กลับเข้าศูนย์โดยไม่ต้องเดาทิศราคา</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (เขียนโค้ดสั้น ๆ ได้)</div>
+<p>เขียนฟังก์ชันคำนวณ reservation price และ quote แล้วทดลองเล่นตัวแปร:</p>
+<div class="fm">
+def quote(s, q, gamma, sigma, T_minus_t, kappa):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;r = s - q * gamma * sigma**2 * T_minus_t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;delta = gamma*sigma**2*T_minus_t + (2/gamma)*math.log(1+gamma/kappa)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;bid = r - delta/2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ask = r + delta/2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return r, bid, ask
+</div>
+<ol>
+<li>เรียกด้วย s=60000, q=0, แล้วเทียบ q=+10 และ q=−10 — สังเกตว่า r เลื่อนไปทางไหน และ quote ฝั่งไหนเข้าใกล้ mid</li>
+<li>เพิ่ม γ จาก 0.1 → 1.0 ดูว่า quote กว้างขึ้นหรือแคบลง และ r หนีจาก mid เร็วขึ้นไหม</li>
+<li>ลด (T−t) ลงเรื่อย ๆ จนใกล้ 0 ดูว่า r เข้าใกล้ mid อีกครั้งไหม (ใกล้ปิดรอบ)</li>
+<li>เขียน loop จำลอง fill ตาม Poisson เทียบ P&amp;L ของ optimal (มี skew) กับ naive (สมมาตรรอบ mid) บนชุดราคาเทรนด์เดียว — ดูว่า naive ระเบิดจริงไหม</li>
+</ol>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> สูตรสวยบนกระดาษแล้ว แต่พอเอาไปรันจริงจะเจออะไร? Part 11 ประกอบสูตร A-S เป็น MM loop ที่รันได้ พร้อมเปิดโปง 3 กับดัก backtest ที่ทำให้กราฟสวยกลายเป็นขาดทุนจริง</p>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 14</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 14: Cross-Exchange / Latency / Triangular Arb — arb จริงทำได้แค่ไหน</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ V · ต่อยอด &amp; คุมเสี่ยง<br>spread บนจอ ≠ กำไร — คิดต้นทุนครบวงจรด้วย effective price แล้วดูตารางความจริงรายย่อย</div>
+</div>
+
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › รู้ใครกดดัน &amp; เชื่อได้แค่ไหน › ตัดสินใจเข้า-ออก › <b style="color:var(--blue)">ต่อยอด/คุมเสี่ยง</b></div>
+
+<!-- ========== PART 14 ========== -->
+<h2 id="p14">Part 14 — Cross-Exchange / Latency / Triangular Arb</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 13 ใช้ OFI ทำนายทิศราคาล่วงหน้าและทำ stat-arb ได้ แต่ตอกย้ำว่า <strong>edge บางมาก ต้องชนะ cost (fee×2 + spread + slippage) ก่อน</strong> ไม่งั้น "ทำนายถูกแต่ขาดทุน" · <strong>ตอนนี้จะเติม:</strong> ขยายเรื่อง "ต้นทุนจริง" ให้ครบ — arb แบบ cross-exchange/latency/triangular ที่ดูฟรีบนจอ จริง ๆ ต้องคิด effective price (ไต่เล่ม) + ค่าถอน + เวลาโอน แล้วจะเห็นว่าทำไม OFI stat-arb ถึงเหมาะรายย่อยที่สุด</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>แยก arb 3 ชนิด: <strong>cross-exchange</strong> (สองตลาด), <strong>latency</strong> (แข่งความเร็ว), <strong>triangular</strong> (สามคู่เหรียญ)</li>
+<li>คิด <strong>effective price (ราคาเฉลี่ยจริงเมื่อไต่เล่ม) / depth</strong> — ไม่ใช่ best price บนจอ</li>
+<li>คิด <strong>ต้นทุนครบวงจร</strong>: fee + ค่าถอน + slippage + เวลาโอน — ตัวฆ่ากำไรตัวจริง</li>
+<li>เห็น <strong>ตารางความจริงรายย่อย</strong>: อันไหนทำได้ อันไหนอย่าแตะ และทำไม OFI stat-arb ถึงเหมาะที่สุด</li>
+</ul>
+</div>
+
+<h3 id="p14-hook">เริ่มจากซื้อทุเรียนตลาด A ขายตลาด B</h3>
+
+<p>ทุเรียนที่ตลาด A ลูกละ 100 บาท ตลาด B รับซื้อ 110 บาท — กำไร 10 บาทใช่ไหม? <strong>ยังก่อน</strong> คุณต้องจ่าย <strong>ค่ารถขนของ</strong> (ค่าถอน/ค่าโอน), <strong>เสียเวลาขน</strong> (ระหว่างขนราคาอาจเปลี่ยน), และถ้าคุณซื้อหลายลูก <strong>ลูกท้าย ๆ ราคาแพงขึ้น</strong> (ไต่เล่ม) ส่วนตลาด B ก็รับซื้อถูกลงเรื่อย ๆ</p>
+
+<p>นี่คือหัวใจของ arb จริง: <strong>spread บนจอเป็นแค่ "ราคาตั้ง" ของลูกแรก</strong> กำไรจริงต้องหักต้นทุนครบวงจรและคิดที่ effective price</p>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="ซื้อตลาด A ขายตลาด B มีค่ารถและเวลาขนระหว่างทาง">
+<rect x="20" y="60" width="120" height="70" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="80" y="85" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ตลาด A</text>
+<text x="80" y="108" text-anchor="middle" font-size="13" fill="var(--green)">ซื้อ 100</text>
+<rect x="360" y="60" width="120" height="70" rx="8" fill="var(--red-bg)" stroke="var(--red)" stroke-width="2"/>
+<text x="420" y="85" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">ตลาด B</text>
+<text x="420" y="108" text-anchor="middle" font-size="13" fill="var(--red)">ขาย 110</text>
+<line x1="145" y1="95" x2="355" y2="95" stroke="var(--amber)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aTr)"/>
+<text x="250" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="var(--amber)">ค่ารถ (ค่าถอน) + เวลาขน</text>
+<text x="250" y="120" text-anchor="middle" font-size="10" fill="var(--g7)">ราคาอาจเปลี่ยนระหว่างทาง</text>
+<text x="250" y="165" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g8)">กำไรจริง = 10 − ค่ารถ − slippage − fee</text>
+<defs><marker id="aTr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--amber)"/></marker></defs>
+</svg>
+
+<h3 id="p14-eff">ชั้นที่ 1 — effective price: ราคาจริงเมื่อไต่เล่ม</h3>
+
+<p>ถ้าคุณซื้อปริมาณ Q ที่มากกว่าของที่ best ask มีอยู่ คุณต้อง "กิน" ชั้นถัดไปที่แพงขึ้นเรื่อย ๆ (walk the book จาก Part 2) ราคาเฉลี่ยที่คุณได้จริงคือ <strong>effective price</strong> ซึ่งแย่กว่า best price เสมอ — และยิ่ง Q ใหญ่ ยิ่งแย่</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="ไต่เล่ม ask หลายชั้น ราคาเฉลี่ยที่ได้แพงกว่า best ask">
+<line x1="60" y1="210" x2="470" y2="210" stroke="var(--g2)" stroke-width="1.5"/>
+<text x="55" y="40" text-anchor="end" font-size="10" fill="var(--g7)">ราคา</text>
+<!-- ask levels rising -->
+<rect x="80"  y="170" width="60" height="40" fill="var(--red)" opacity="0.85"/><text x="110" y="165" text-anchor="middle" font-size="9" fill="var(--red)">60,003</text>
+<rect x="160" y="150" width="60" height="60" fill="var(--red)" opacity="0.8"/><text x="190" y="145" text-anchor="middle" font-size="9" fill="var(--red)">60,008</text>
+<rect x="240" y="125" width="60" height="85" fill="var(--red)" opacity="0.75"/><text x="270" y="120" text-anchor="middle" font-size="9" fill="var(--red)">60,015</text>
+<rect x="320" y="95"  width="60" height="115" fill="var(--red)" opacity="0.7"/><text x="350" y="90" text-anchor="middle" font-size="9" fill="var(--red)">60,025</text>
+<rect x="400" y="70"  width="60" height="140" fill="var(--red)" opacity="0.65"/><text x="430" y="65" text-anchor="middle" font-size="9" fill="var(--red)">60,040</text>
+<!-- best ask line -->
+<line x1="80" y1="170" x2="470" y2="170" stroke="var(--green)" stroke-dasharray="4 3"/>
+<text x="80" y="232" font-size="10" font-weight="700" fill="var(--green)">best ask (ลูกแรก)</text>
+<!-- effective price line -->
+<line x1="80" y1="130" x2="470" y2="130" stroke="var(--blue)" stroke-width="2"/>
+<text x="85" y="124" font-size="10" font-weight="700" fill="var(--blue)">P_eff(Q) เฉลี่ย = แพงกว่า best ask</text>
+<text x="270" y="245" text-anchor="middle" font-size="9" fill="var(--g7)">ยิ่งซื้อเยอะ ยิ่งไต่ชั้นแพง &rarr;</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 14.1 · effective price ไต่เล่ม — ราคาเฉลี่ยจริงแพงกว่า best ask</p>
+
+<h3 id="p14-cx">ชั้นที่ 2 — cross-exchange: หัก fee สองฝั่งแล้วเหลืออะไร</h3>
+
+<p>cross-exchange arb คือซื้อที่ venue A (effective ask) ขายที่ venue B (effective bid) แต่กำไรบนจอมักหายหมดเมื่อหัก <strong>fee ทั้งสองฝั่ง + ค่าถอน + slippage</strong> และที่ร้ายกว่าคือ <strong>เวลาโอนเหรียญข้าม chain</strong> ที่ราคาอาจวิ่งหนีก่อนคุณขนของถึง</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="กระดานสอง venue เทียบกัน หัก fee แล้วช่องว่างแคบลง">
+<text x="125" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">Venue A (ซื้อ)</text>
+<line x1="125" y1="40" x2="125" y2="190" stroke="var(--g2)"/>
+<rect x="60" y="70"  width="60" height="20" fill="var(--red)" opacity="0.8"/><text x="50" y="84" text-anchor="end" font-size="9" fill="var(--red)">ask 60,010</text>
+<rect x="60" y="95"  width="50" height="18" fill="var(--red)" opacity="0.6"/>
+<rect x="130" y="120" width="55" height="18" fill="var(--green)" opacity="0.6"/>
+<rect x="130" y="143" width="60" height="20" fill="var(--green)" opacity="0.8"/><text x="200" y="157" font-size="9" fill="var(--green)">bid 60,002</text>
+<text x="375" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--red)">Venue B (ขาย)</text>
+<line x1="375" y1="40" x2="375" y2="190" stroke="var(--g2)"/>
+<rect x="310" y="70"  width="55" height="18" fill="var(--red)" opacity="0.6"/>
+<rect x="310" y="93"  width="60" height="20" fill="var(--red)" opacity="0.8"/><text x="300" y="107" text-anchor="end" font-size="9" fill="var(--red)">ask 60,030</text>
+<rect x="380" y="120" width="60" height="20" fill="var(--green)" opacity="0.8"/><text x="410" y="116" text-anchor="middle" font-size="9" fill="var(--green)">bid 60,022</text>
+<rect x="380" y="145" width="50" height="18" fill="var(--green)" opacity="0.6"/>
+<!-- gross gap -->
+<line x1="60" y1="218" x2="440" y2="218" stroke="var(--blue)" stroke-width="1.5" marker-start="url(#aXL)" marker-end="url(#aXR)"/>
+<text x="250" y="212" text-anchor="middle" font-size="10" font-weight="700" fill="var(--blue)">gross gap = 60,022 − 60,010 = 12</text>
+<text x="250" y="238" text-anchor="middle" font-size="11" font-weight="700" fill="var(--red)">− fee×2 − ค่าถอน − slip = อาจเหลือ &lt; 0</text>
+<defs>
+<marker id="aXR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--blue)"/></marker>
+<marker id="aXL" markerWidth="8" markerHeight="8" refX="0" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="var(--blue)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 14.2 · cross-exchange 2 venue — gross gap สวย แต่หักต้นทุนแล้วมักติดลบ</p>
+
+<h3 id="p14-tri">ชั้นที่ 3 — triangular: วนสามคู่ในตลาดเดียว</h3>
+
+<p>triangular arb วนเงินผ่านสามคู่ในตลาดเดียวกัน เช่น USDT → BTC → ETH → USDT ถ้าผลคูณอัตราแลกเปลี่ยน <strong>R &gt; 1</strong> (หลังหัก fee สามขา) ก็มีกำไร ข้อดีคือ <strong>ไม่ต้องโอนข้าม venue</strong> (ตัดค่าถอน/เวลาโอนออก) แต่ต้องเร็วมากเพราะช่องปิดในเสี้ยววินาที และ fee สามขากินหนัก</p>
+
+<p>ผูกกับสูตรให้ชัด: ในวง USDT → BTC → ETH → USDT <strong>ขา "ซื้อ" ใช้ 1/P</strong> (จ่ายเงินอ้างอิงเพื่อได้เหรียญ) ส่วน <strong>ขา "ขาย" ใช้ ×P</strong> (ขายเหรียญกลับเป็นเงินอ้างอิง) — ขาที่ 1 ซื้อ BTC ด้วย USDT ใช้ <strong>1/P&#8321;</strong> (P&#8321; = ราคา BTC/USDT) ขาที่ 2 ซื้อ ETH ด้วย BTC ใช้ <strong>1/P&#8322;</strong> (P&#8322; = ราคา ETH/BTC) และขาที่ 3 ขาย ETH กลับเป็น USDT ใช้ <strong>×P&#8323;</strong> (P&#8323; = ราคา ETH/USDT) — จึงได้ R = (1/P&#8321;)·(1/P&#8322;)·P&#8323; ก่อนหัก fee</p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="วงสามเหลี่ยม USDT ไป BTC ไป ETH กลับ USDT ผลคูณอัตราต้องมากกว่า 1">
+<!-- nodes -->
+<circle cx="250" cy="48" r="30" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>
+<text x="250" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">USDT</text>
+<circle cx="410" cy="190" r="30" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="2"/>
+<text x="410" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="var(--amber)">BTC</text>
+<circle cx="90" cy="190" r="30" fill="var(--green-bg)" stroke="var(--green)" stroke-width="2"/>
+<text x="90" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">ETH</text>
+<!-- leg 1: USDT -> BTC (right edge) -->
+<line x1="276" y1="65" x2="386" y2="172" stroke="var(--g7)" stroke-width="2" marker-end="url(#aTr)"/>
+<text x="372" y="100" text-anchor="start" font-size="11" font-weight="700" fill="var(--g8)">ขา 1 ซื้อ</text>
+<text x="372" y="116" text-anchor="start" font-size="11" fill="var(--g7)">× 1/P&#8321;</text>
+<!-- leg 2: BTC -> ETH (bottom edge) -->
+<line x1="378" y1="200" x2="122" y2="200" stroke="var(--g7)" stroke-width="2" marker-end="url(#aTr)"/>
+<text x="250" y="224" text-anchor="middle" font-size="11" font-weight="700" fill="var(--g8)">ขา 2 ซื้อ &nbsp; × 1/P&#8322;</text>
+<!-- leg 3: ETH -> USDT (left edge) -->
+<line x1="114" y1="172" x2="224" y2="65" stroke="var(--g7)" stroke-width="2" marker-end="url(#aTr)"/>
+<text x="128" y="100" text-anchor="end" font-size="11" font-weight="700" fill="var(--g8)">ขา 3 ขาย</text>
+<text x="128" y="116" text-anchor="end" font-size="11" fill="var(--g7)">× P&#8323;</text>
+<!-- condition -->
+<text x="250" y="148" text-anchor="middle" font-size="12" font-weight="700" fill="var(--green)">R = (1/P&#8321;)(1/P&#8322;)P&#8323;(1−f)&#179; &gt; 1</text>
+<defs>
+<marker id="aTr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--g7)"/></marker>
+</defs>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 14.3 · triangular — วนสามขาในตลาดเดียว เข้าเมื่อผลคูณอัตรา (หลัง fee) &gt; 1</p>
+
+<div class="fm">
+// effective price เมื่อไต่เล่ม (เฉลี่ยถ่วงปริมาณแต่ละชั้น)<br>
+P_eff(Q) = &Sigma; p_k &middot; q_k / Q&nbsp;&nbsp;&nbsp;(q_k = ปริมาณที่กินในชั้น k)<br>
+<br>
+// กำไรสุทธิ cross-exchange (ครบวงจร)<br>
+&Pi;_net = (P_sell,B − P_buy,A) − fee − w_withdraw − slip<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;P_buy,A = P_eff ฝั่งซื้อ ; P_sell,B = P_eff ฝั่งขาย<br>
+<br>
+// triangular: มีกำไรเมื่อผลคูณอัตรา (หลัง fee 3 ขา) &gt; 1<br>
+R = (1/P&#8321;) &middot; (1/P&#8322;) &middot; P&#8323; &middot; (1−f)&#179;  ;  เข้าเมื่อ R &gt; 1
+</div>
+
+<h3 id="p14-truth">ตารางความจริงรายย่อย — อันไหนทำได้จริง</h3>
+
+<p>นี่คือหัวใจของ Part นี้ — เราจะ <strong>ซื่อสัตย์</strong> ว่ารายย่อยทำ arb แต่ละชนิดได้จริงแค่ไหน:</p>
+
+<table>
+<tr><th>ชนิด arb</th><th>รายย่อยทำได้?</th><th>ทำไม</th></tr>
+<tr><td><strong>Latency arb</strong></td><td style="color:var(--red);font-weight:700">❌ อย่าแตะ</td><td>แข่งความเร็วระดับไมโครวินาที — ต้อง colocation + โครงสร้าง HFT ที่รายย่อยสู้ไม่ได้ ไม่ว่าจะมองกระดานเก่งแค่ไหน</td></tr>
+<tr><td><strong>Cross-exchange (spot)</strong></td><td style="color:var(--amber);font-weight:700">⚠️ ระวังมาก</td><td>ทำได้บนกระดาษ แต่ fee×2 + ค่าถอน + เวลาโอนข้าม chain มักกินกำไรหมด และเสี่ยงราคาวิ่งหนีระหว่างโอน</td></tr>
+<tr><td><strong>Triangular</strong></td><td style="color:var(--amber);font-weight:700">⚠️ ระวัง</td><td>ไม่ต้องโอนข้าม venue (ดีกว่า) แต่ fee สามขากินหนัก ช่องปิดเร็ว ต้องเร็วกว่าบอตทั่วไป</td></tr>
+<tr><td><strong>OFI stat-arb (Part 13)</strong></td><td style="color:var(--green);font-weight:700">✅ เหมาะสุด</td><td>ใช้ L2 ฟรี ไม่แข่ง latency สุดขีด เป็น "ยกระดับกลยุทธ์เดิม" ด้วยกระดาน — แต่ edge บาง ต้องคุม cost เข้ม</td></tr>
+</table>
+
+<div class="bx br">
+<div class="bt">⚠️ ความจริงรายย่อย — spread บนจอ ≠ กำไร</div>
+<p>เห็น "BTC ที่ Binance ถูกกว่า Bybit 0.1%" แล้วคิดว่าได้เงินฟรี — <strong>นี่คือกับดักคลาสสิก</strong> ตัวเลขนั้นคือ best price ของลูกแรก ไม่ใช่ effective price และยังไม่หัก fee สองฝั่ง ค่าถอน เวลาโอน กว่าคุณจะขนของถึง ราคามักปิดช่องไปแล้ว <strong>latency arb โดยเฉพาะ — อย่าลองเด็ดขาด</strong> คุณกำลังแข่งกับบอตที่เร็วกว่าคุณล้านเท่า สิ่งที่รายย่อยทำได้จริงคือ OFI stat-arb ที่ใช้ "ความเข้าใจกระดาน" ไม่ใช่ "ความเร็วของเครื่อง"</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ</div>
+<p>แนวคิด effective price / market impact ของการไต่เล่มมาจากตระกูล market impact models (Kyle 1985 และงานต่อยอด) ส่วนการคิดต้นทุนการเทรดครบวงจร (transaction cost analysis) เป็นมาตรฐานในงาน execution ทุกแขนง สำหรับคริปโต <strong>โครงสร้าง fee/rebate และค่าถอนของ Binance/Bybit เปลี่ยนตามโปรโมชัน</strong> — ก่อนคำนวณจริงให้เช็คหน้า fee schedule ปัจจุบันเสมอ เพราะมันคือตัวแปรที่ตัดสินว่ากำไรเป็นบวกหรือลบ</p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📚 ทฤษฎีเบื้องหลัง (จากตำรา) — ใครนำราคา? Hasbrouck Information Share</div>
+<p>ก่อนจะ arb ข้าม venue ต้องตอบคำถามพื้นฐาน: <strong>เมื่อ BTC เทรดทั้งบน Binance/Coinbase/perp ราคา "จริง" เกิดที่ไหนก่อน?</strong> ตำรา empirical (Hasbrouck 2007 สรุปไว้ จากงานต้นฉบับปี 1995) มีเครื่องมือวัดตรงนี้:</p>
+<ul>
+<li>หลาย venue เทรดของตัวเดียวกัน ราคาต่างกันได้ชั่วคราวแต่ <strong>ผูกกันระยะยาว (cointegration)</strong> — มี "efficient price" ร่วมตัวเดียวซ่อนอยู่</li>
+<li><strong>Hasbrouck (1995) Information Share (IS):</strong> วัดว่าแต่ละ venue สร้าง <strong>กี่ % ของ variance ของ innovation (ข่าว/ข้อมูลใหม่ที่เพิ่งเข้าตลาด) ใน efficient price</strong> — venue ที่ IS สูง = ผู้นำ price discovery · <strong>Gonzalo-Granger (1995)</strong> วัดอีกมุม (component share) ด้วยน้ำหนักในดุลยภาพระยะยาว</li>
+</ul>
+<p><strong>ใช้กับเล่มนี้:</strong> สมมติฐาน "perp นำ spot" หรือ "Binance นำตลาด" ที่ stat-arb (Part 13) และ cross-exchange (Part นี้) อิงอยู่ — <strong>IS คือวิธีวัดมันจริง ๆ</strong> ไม่ใช่เดา ถ้า venue A นำ B ด้วย IS สูง สัญญาณจาก A จึงใช้ทำนาย B ได้ (lead-lag) แต่ถ้า IS พอ ๆ กัน lead-lag ก็เป็นภาพลวง</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น — สะพานสู่เล่ม arb</div>
+<p>Part 14 คือ <strong>สะพานเชื่อมตรงสู่เล่ม arb</strong>: เล่ม arb หา "โอกาส" ส่วนตรงไหนที่ effective price/depth บอกว่า <strong>ต้นทุนจริงของ arb เท่าไหร่</strong> คือสิ่งที่เล่มนี้เติมให้ <code>P_eff(Q)</code> และ <code>Π_net</code> คือเครื่องมือที่ทำให้ตัวเลขในเล่ม arb "เป็นจริงในกระดาน" ในเชิง <strong>math</strong> นี่คือผลรวมถ่วงน้ำหนักและเงื่อนไข R&gt;1 ส่วนการคิดกำไรขาดทุนหลัง cost ทั้งหมดก็คือ payoff จริงในเล่ม <strong>pm/payoff</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>ก่อนกด long BTC $5,000 เราเช็กก่อนว่าควรเข้าที่ exchange ไหน — <strong>เทียบ effective price ฝั่งซื้อข้าม venue</strong> (Binance/Bybit) สำหรับขนาด $5,000 จริง ไม่ใช่ดู best ask บนจอ เพราะไต่เล่มแล้วราคาเฉลี่ยจริง (P_eff) อาจแพงกว่าและสลับอันดับ venue ได้ ส่วนช่องว่างราคาข้าม exchange ที่เห็น — หักfee สองฝั่ง + ค่าถอน + เวลาโอนแล้วมัก <strong>ไม่คุ้มขนของไปเก็บ arb</strong> สิ่งที่คุ้มคือเลือก venue ที่ effective price ดีสุดสำหรับไม้เราเอง</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>ดึง order book L2 ของเหรียญเดียวกันจาก <strong>สอง exchange</strong> พร้อมกัน (เช่น Binance vs Bybit) คำนวณ <strong>P_eff ฝั่งซื้อที่ A และ P_eff ฝั่งขายที่ B</strong> สำหรับขนาด $1,000 แล้วหัก taker fee สองฝั่ง + ค่าถอนโดยประมาณ นับดูว่าในช่วง 1 ชั่วโมงมีกี่วินาทีที่ <strong>Π_net &gt; 0 จริง</strong> — คุณจะพบว่าน้อยมาก และส่วนใหญ่ปิดเร็วเกินกว่าจะคว้าทัน นี่คือบทพิสูจน์ว่าทำไมตารางความจริงถึงให้ cross-exchange แค่ ⚠️</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> เครื่องมือทั้ง 14 Part (spread, OBI, OFI, VPIN, MM, effective price) คือ "feature" ที่ย่อยมาแล้ว — ถ้าป้อนให้ deep learning อ่านกระดานแทนเรา จะทำนายจังหวะเข้าได้ไหม และทำไม ML ถึงเป็นปลายทางไม่ใช่จุดเริ่ม? Part โบนัสมีคำตอบ</p>
+
+</body>
+</html>

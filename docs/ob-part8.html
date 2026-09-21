@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่านกระดาน — Part 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:17px;line-height:1.85;color:var(--g8);background:#fff;max-width:820px;margin:0 auto;padding:48px 34px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em;line-height:1.25}
+h2{font-size:1.6em;font-weight:800;color:var(--g9);margin-top:2.4em;margin-bottom:.7em;padding-bottom:.35em;border-bottom:3px solid var(--blue);line-height:1.3}
+h3{font-size:1.28em;font-weight:700;color:var(--g8);margin-top:1.9em;margin-bottom:.5em;line-height:1.35}
+p{margin-bottom:1em}ul,ol{margin-bottom:1.1em;padding-left:1.6em}li{margin-bottom:.5em;line-height:1.8}strong{color:var(--g9);font-weight:700}a{color:var(--blue)}
+.cover{text-align:center;padding:60px 24px 46px;border-bottom:3px solid var(--blue);margin-bottom:36px}
+.cover h1{font-size:2.1em;line-height:1.25}.cover .sub{font-size:1.18em;color:var(--blue);font-weight:700;margin:10px 0;line-height:1.4}.cover .desc{color:#5b6b7d;max-width:640px;margin:14px auto;line-height:1.7}
+.bx{padding:16px 20px;border-radius:0 10px 10px 0;margin:20px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bt{font-weight:800;margin-bottom:6px}
+.fm{font-family:'Courier New',monospace;font-size:.94em;line-height:1.7;background:var(--g1);border:1px solid var(--g2);padding:14px 18px;border-radius:8px;margin:14px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94em}th{background:var(--blue);color:#fff;padding:9px 13px;text-align:left}td{padding:9px 13px;border-bottom:1px solid var(--g2);line-height:1.7}tr:nth-child(even){background:var(--g0)}
+svg.d{display:block;margin:22px auto;max-width:500px;width:100%}
+@media print{body{padding:16px;font-size:14.5px;line-height:1.72}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,svg.d{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="cover">
+<h1>อ่านกระดาน<br>Reading the Book</h1>
+<div class="sub">Part 8: VPIN — Order Flow Toxicity (toxic flow)</div>
+<div class="desc">Order Flow &amp; Microstructure สำหรับรายย่อย · องก์ III · อ่าน Flow<br>ปิดท้ายองก์ Flow: static(OBI) → flow(OFI) → <strong>toxicity(VPIN)</strong></div>
+</div>
+
+<div style="text-align:center;font-size:.82em;color:var(--g7);margin:6px 0 18px">🧭 อ่านกระดาน › <b style="color:var(--blue)">รู้ใครกดดัน &amp; เชื่อได้แค่ไหน</b> › ตัดสินใจเข้า-ออก › ต่อยอด/คุมเสี่ยง</div>
+
+<!-- ========== PART 8 ========== -->
+<h2 id="p8">Part 8 — VPIN / Order Flow Toxicity</h2>
+
+<div class="bx bb"><div class="bt">🔗 ต่อจากตอนก่อน</div>
+<p><strong>เพิ่งรู้มา:</strong> Part 7 วัดว่า flow ดันราคาแค่ไหนด้วย Kyle's λ (ΔP = λ·OFI) — มองที่ "price impact" · <strong>ตอนนี้จะเติม:</strong> เปลี่ยนมุมจาก "price impact" เป็น "toxicity" — เมื่อ flow ลำเอียงฝั่งเดียวสะสมจน MM โดน adverse selection หนักจนถอนตัว วัดด้วย VPIN บนนาฬิกาปริมาณ</p></div>
+
+<div class="bx bb">
+<div class="bt">🎯 อ่านจบ Part นี้คุณจะ</div>
+<ul>
+<li>เข้าใจ <strong>volume clock</strong>: ทำไมต้องวัดเวลาเป็น "ปริมาณ" ไม่ใช่ "วินาที"</li>
+<li>คำนวณ <strong>VPIN</strong> (Volume-synchronized Probability of Informed Trading) จาก volume buckets</li>
+<li>เข้าใจว่า toxicity = adverse selection สะสมของ MM และทำไม VPIN พุ่งก่อน flash crash</li>
+<li>รู้ <strong>ข้อโต้แย้ง</strong>: VPIN ไม่ใช่ปุ่มทำนาย crash — ผลขึ้นกับ calibration อย่างมาก</li>
+</ul>
+</div>
+
+<h3 id="p8-hook">นาฬิกาเดินตามปริมาณ ไม่ใช่เวลา</h3>
+
+<p>นาฬิกาปกติเดินทุก 1 วินาทีเท่ากันหมด — แต่ตลาดไม่ได้ "เกิดเหตุการณ์" สม่ำเสมอ บางวินาทีเงียบกริบ บางวินาที (ตอนข่าวออก) มีเทรดเป็นพัน ๆ ถ้าวัดทุกอย่างด้วย "เวลานาฬิกา" คุณจะเฉลี่ยช่วงพายุกับช่วงสงบเข้าด้วยกัน ทำให้พลาดสัญญาณ</p>
+
+<p><strong>VPIN ใช้ "นาฬิกาปริมาณ" (volume clock)</strong> — แทนที่จะนับ "ผ่านไป 1 นาที" มันนับ "ผ่านไปอีก V หน่วยปริมาณที่เทรด" หนึ่งช่อง (bucket) = ปริมาณคงที่ V เสมอ ช่วงตลาดคึก buckets จะเต็มเร็ว ช่วงเงียบจะเต็มช้า — เวลาจึง "ยืด/หด" ตามกิจกรรมจริง</p>
+
+<svg class="d" viewBox="0 0 500 210" role="img" aria-label="clock time แบ่งเท่ากันเทียบ volume clock ที่ยืดหดตามกิจกรรม">
+<text x="120" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="var(--g7)">Clock time (เวลานาฬิกา)</text>
+<line x1="20" y1="60" x2="230" y2="60" stroke="var(--g7)" stroke-width="1.5"/>
+<line x1="55" y1="54" x2="55" y2="66" stroke="var(--g7)"/>
+<line x1="90" y1="54" x2="90" y2="66" stroke="var(--g7)"/>
+<line x1="125" y1="54" x2="125" y2="66" stroke="var(--g7)"/>
+<line x1="160" y1="54" x2="160" y2="66" stroke="var(--g7)"/>
+<line x1="195" y1="54" x2="195" y2="66" stroke="var(--g7)"/>
+<text x="125" y="84" text-anchor="middle" font-size="10" fill="var(--g7)">ช่องเท่ากันทุกช่อง (1 นาที)</text>
+<text x="125" y="102" text-anchor="middle" font-size="9" fill="var(--red)">ช่วงพายุถูกเฉลี่ยกับช่วงสงบ</text>
+<text x="380" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="var(--blue)">Volume clock (นาฬิกาปริมาณ)</text>
+<line x1="270" y1="60" x2="480" y2="60" stroke="var(--blue)" stroke-width="1.5"/>
+<line x1="290" y1="54" x2="290" y2="66" stroke="var(--blue)"/>
+<line x1="315" y1="54" x2="315" y2="66" stroke="var(--blue)"/>
+<line x1="345" y1="54" x2="345" y2="66" stroke="var(--blue)"/>
+<line x1="395" y1="54" x2="395" y2="66" stroke="var(--blue)"/>
+<line x1="465" y1="54" x2="465" y2="66" stroke="var(--blue)"/>
+<text x="375" y="84" text-anchor="middle" font-size="10" fill="var(--blue)">แต่ละช่อง = ปริมาณ V เท่ากัน</text>
+<text x="375" y="102" text-anchor="middle" font-size="9" fill="var(--green)">คึก→ช่องสั้น · เงียบ→ช่องยาว</text>
+<rect x="40" y="140" width="180" height="50" rx="6" fill="var(--g0)" stroke="var(--g2)"/>
+<text x="130" y="170" text-anchor="middle" font-size="11" fill="var(--g7)">เวลาเดินคงที่</text>
+<rect x="280" y="140" width="180" height="50" rx="6" fill="var(--blue-bg)" stroke="var(--blue)"/>
+<text x="370" y="170" text-anchor="middle" font-size="11" fill="var(--blue)">เวลายืด/หดตามกิจกรรม</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 8.1 · clock time (ช่องเท่ากัน) เทียบ volume clock (ปริมาณเท่ากัน)</p>
+
+<div class="bx ba">
+<div class="bt">📐 Stylized fact — volatility clustering: ทำไมต้องนาฬิกาปริมาณ</div>
+<p>อีกข้อเท็จจริงเชิงสถิติที่พบทุกตลาด: <strong>"ความผันผวนเกาะกลุ่ม" (volatility clustering)</strong> — ช่วงที่ผันผวนสูงมักตามด้วยผันผวนสูง ช่วงสงบตามด้วยสงบ พายุไม่ได้กระจายสม่ำเสมอตามเวลานาฬิกา (เป็นที่มาของโมเดลตระกูล GARCH) นี่คือเหตุผลตรง ๆ ที่ VPIN เลือกใช้ <strong>volume clock</strong>: ช่วงพายุปริมาณเทรดพุ่ง buckets เต็มเร็ว นาฬิกาปริมาณจึง "ซูม" เข้าช่วงอันตรายโดยอัตโนมัติ แทนที่จะเฉลี่ยมันจมไปกับช่วงสงบเหมือนนาฬิกาเวลา</p>
+</div>
+
+<div class="bx bb">
+<div class="bt">🧬 "PIN" ใน VPIN มาจากไหน — บรรพบุรุษปี 1996</div>
+<p>ก่อนจะมี VPIN มี <strong>PIN (Probability of Informed Trading)</strong> จาก <strong>Easley, Kiefer, O'Hara &amp; Paperman (1996)</strong> ก่อน — โมเดลโครงสร้างที่มองว่าแต่ละวันสุ่มว่าจะมี "ข่าว" ไหม (prob α) ข่าวดีหรือร้าย แล้ว order มาแบบ Poisson: noise traders ทั้งสองฝั่งอัตรา ε, ส่วน informed เพิ่มอัตรา μ ฝั่งที่ได้เปรียบ ประมาณค่าพารามิเตอร์ด้วย <strong>MLE</strong> แล้วได้ <code>PIN = αμ / (αμ + 2ε)</code> = สัดส่วน flow ที่มาจากคนรู้ข่าว · จุดอ่อนของ PIN คือต้องนับ buy/sell รายวันแล้ว fit MLE — ช้าและหยาบเกินใช้ real-time · <strong>VPIN (2012)</strong> จึงเกิดมาแก้ตรงนี้: เปลี่ยนจากนาฬิกาเวลาเป็น <strong>volume clock</strong> และเลิกใช้ MLE หันมาใช้ bulk classification แทน — ได้ตัววัด toxicity ที่อัปเดตได้ทันเหตุการณ์ (นี่คือเหตุผลที่ชื่อมันคือ "<strong>V</strong>olume-synchronized <strong>PIN</strong>")</p>
+</div>
+
+<h3 id="p8-bucket">Volume buckets และ bulk classification</h3>
+
+<p>เราหั่นกระแสเทรดเป็น buckets ปริมาณเท่ากัน (เช่น V = ปริมาณเฉลี่ยต่อวัน/50) ในแต่ละ bucket เราประมาณว่า <strong>ปริมาณนั้นเป็นฝั่งซื้อกี่ส่วน ขายกี่ส่วน</strong> ด้วย <em>bulk volume classification</em> (ใช้การเปลี่ยนราคาในช่วง bucket ผ่านฟังก์ชัน Φ = CDF ของ normal):</p>
+
+<div class="fm">
+1 bucket = ปริมาณ V คงที่ (กำหนดล่วงหน้า)<br>
+<br>
+แบ่งฝั่งใน bucket ด้วย bulk classification:<br>
+&nbsp;&nbsp;V_buy  = V · Φ( ΔP / σ_ΔP )        ← Φ = CDF ของ standard normal (ไม่ใช่ z-score)<br>
+&nbsp;&nbsp;V_sell = V − V_buy<br>
+&nbsp;&nbsp;(ΔP = การเปลี่ยนราคาในช่วง bucket, σ_ΔP = ส่วนเบี่ยงเบนของ ΔP)<br>
+<br>
+VPIN = (1 / (n·V)) · Σ_{i=1..n} | V_buy,i − V_sell,i |<br>
+&nbsp;&nbsp;(เฉลี่ย imbalance |buy−sell| ข้าม n buckets ล่าสุด)
+</div>
+
+<svg class="d" viewBox="0 0 500 200" role="img" aria-label="volume buckets แต่ละช่องปริมาณเท่ากันแยกสัดส่วน buy sell">
+<line x1="40" y1="160" x2="470" y2="160" stroke="var(--g7)" stroke-width="1.5"/>
+<text x="20" y="40" font-size="10" fill="var(--g7)">V</text>
+<rect x="60"  y="60" width="55" height="60" fill="var(--green)" opacity="0.85"/>
+<rect x="60"  y="120" width="55" height="40" fill="var(--red)" opacity="0.85"/>
+<rect x="130" y="60" width="55" height="75" fill="var(--green)" opacity="0.85"/>
+<rect x="130" y="135" width="55" height="25" fill="var(--red)" opacity="0.85"/>
+<rect x="200" y="60" width="55" height="35" fill="var(--green)" opacity="0.85"/>
+<rect x="200" y="95" width="55" height="65" fill="var(--red)" opacity="0.85"/>
+<rect x="270" y="60" width="55" height="85" fill="var(--green)" opacity="0.85"/>
+<rect x="270" y="145" width="55" height="15" fill="var(--red)" opacity="0.85"/>
+<rect x="340" y="60" width="55" height="50" fill="var(--green)" opacity="0.85"/>
+<rect x="340" y="110" width="55" height="50" fill="var(--red)" opacity="0.85"/>
+<line x1="60" y1="60" x2="470" y2="60" stroke="var(--g7)" stroke-dasharray="3 3"/>
+<text x="478" y="64" font-size="9" fill="var(--g7)">V</text>
+<text x="87"  y="180" text-anchor="middle" font-size="9" fill="var(--g7)">b1</text>
+<text x="157" y="180" text-anchor="middle" font-size="9" fill="var(--g7)">b2</text>
+<text x="227" y="180" text-anchor="middle" font-size="9" fill="var(--g7)">b3</text>
+<text x="297" y="180" text-anchor="middle" font-size="9" fill="var(--g7)">b4</text>
+<text x="367" y="180" text-anchor="middle" font-size="9" fill="var(--g7)">b5</text>
+<text x="430" y="80" font-size="10" fill="var(--green)">buy</text>
+<text x="430" y="140" font-size="10" fill="var(--red)">sell</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 8.2 · ทุก bucket ปริมาณ V เท่ากัน แยกสัดส่วน buy/sell — VPIN = เฉลี่ย |buy−sell|</p>
+
+<h3 id="p8-toxic">Toxicity (ความเป็นพิษของ flow) = adverse selection สะสม → เตือน crash</h3>
+
+<p>VPIN สูง = flow "<strong>ลำเอียงไปฝั่งเดียวหนัก</strong>" ติดต่อกัน = น่าจะมี informed trader ลุยอยู่ = MM ที่ทำหน้าที่ตั้ง quote กำลังโดน <strong>adverse selection</strong> หนัก (โดนกินฝั่งเดียว) เมื่อ MM เจ็บมากพอ พวกเขาจะ <strong>ถอนสภาพคล่อง</strong> spread กว้างขึ้น และถ้าหนีพร้อมกัน → <strong>flash crash</strong></p>
+
+<svg class="d" viewBox="0 0 500 250" role="img" aria-label="เส้น VPIN มีสองครั้งที่พุ่ง ครั้งแรกเป็น false alarm ราคาไม่ร่วง ครั้งหลังพุ่งก่อนราคาร่วงจริง">
+<line x1="50" y1="100" x2="470" y2="100" stroke="var(--g2)" stroke-width="1"/>
+<text x="20" y="40" font-size="10" fill="var(--amber)">VPIN</text>
+<!-- VPIN: พุ่งครั้งแรก (false alarm) ที่ x~150 แล้วย่อ จากนั้นพุ่งจริงก่อน crash -->
+<polyline points="50,90 100,80 150,52 185,58 220,82 260,72 300,55 340,38 370,32" fill="none" stroke="var(--amber)" stroke-width="2.5"/>
+<!-- เส้นเตือน false alarm -->
+<line x1="150" y1="44" x2="150" y2="210" stroke="var(--amber)" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="150" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="var(--amber)">VPIN พุ่ง #1</text>
+<text x="150" y="38" text-anchor="middle" font-size="9" fill="var(--amber)">(false alarm)</text>
+<!-- เส้นเตือนของจริง -->
+<line x1="350" y1="30" x2="350" y2="225" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="350" y="26" text-anchor="middle" font-size="10" fill="var(--red)">VPIN พุ่ง #2 (เตือนจริง)</text>
+<text x="20" y="130" font-size="10" fill="var(--blue)">ราคา</text>
+<!-- ราคา: ช่วง false alarm ราคาไม่ร่วง (นิ่ง) · ช่วงหลังร่วงจริง -->
+<polyline points="50,150 100,148 150,150 185,146 220,150 260,148 300,151 350,150 385,178 420,200 460,194" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+<text x="170" y="172" text-anchor="middle" font-size="9" fill="var(--green)">ราคานิ่ง (ไม่ crash)</text>
+<text x="420" y="222" text-anchor="middle" font-size="10" fill="var(--blue)">ราคาร่วง (crash)</text>
+<path d="M355,40 L355,150" stroke="var(--red)" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="372" y="120" font-size="9" fill="var(--g7)">lead time</text>
+</svg>
+<p style="text-align:center;font-size:.85em;color:var(--g7);margin-top:-8px">ภาพ 8.3 · VPIN พุ่งแล้วราคาร่วงจริง (#2) ก็มี — แต่ <strong>VPIN พุ่งแล้วไม่ crash ก็มี (false alarm, #1)</strong> จึงเป็นมาตรวัดความเสี่ยง ไม่ใช่ปุ่มทำนาย</p>
+
+<div class="bx ba">
+<div class="bt">📑 งานวิจัยรองรับ — และข้อโต้แย้งเรื่อง calibration</div>
+<p><strong>Easley, López de Prado &amp; O'Hara (2012)</strong> เสนอ VPIN และแสดงว่ามันสูงผิดปกติก่อน Flash Crash 6 พ.ค. 2010 งานสาย crypto (nowcasting Bitcoin crash with order imbalance) ก็พบสัญญาณคล้ายกัน <strong>แต่มีข้อโต้แย้งสำคัญ</strong>: นักวิจัยหลายกลุ่ม (เช่น Andersen-Bondarenko) ชี้ว่าพลังทำนายของ VPIN <strong>อ่อนไหวต่อ calibration อย่างมาก</strong> — ขนาด bucket V, จำนวน buckets n, วิธี classify ฝั่ง ล้วนเปลี่ยนผลลัพธ์ และบางส่วนของสัญญาณอาจเป็นแค่ผลของ volume/volatility ทั่วไป ไม่ใช่ "informed trading" จริง <strong>อย่าใช้ VPIN เป็นปุ่มทำนาย crash เด็ดขาด</strong></p>
+</div>
+
+<div class="bx ba">
+<div class="bt">📑 Cross-ref — Detecting Toxic Flow (Cartea et al. 2023): แยก benign vs toxic สมัยใหม่กว่า VPIN</div>
+<p>VPIN เป็นตัววัด toxicity รุ่นบุกเบิก (2012) แต่งานสมัยใหม่ไปไกลกว่านั้น <strong>Cartea, Chang &amp; Penalva (2023, "Detecting Toxic Flow")</strong> เสนอกรอบจำแนกราย order/รายลูกค้าว่าเป็น <strong>benign (flow ที่ MM รับได้ ไม่ทำร้าย) vs toxic (informed ที่ทำให้ MM เสีย)</strong> โดยดูจากผลกระทบราคา <em>หลัง</em> เทรด (post-trade markout) แทนที่จะรวมเป็นค่ารวมฝั่งเดียวแบบ VPIN จุดต่าง: VPIN บอก "ภาพรวมตลาดเริ่ม toxic" ส่วนแนวทางนี้บอก "flow ก้อนไหน/รายไหน toxic" ละเอียดกว่า ตอบโจทย์ MM ที่จะ skew quote/ปฏิเสธ flow รายตัว — เป็นสะพานตรงไปองก์ <strong>Market Making (Part 9–10)</strong></p>
+</div>
+
+<div class="bx br">
+<div class="bt">⚠️ กับดักมือใหม่</div>
+<ul>
+<li>ใช้ VPIN เป็น <strong>"ปุ่มทำนาย crash"</strong> — มันเป็น <em>มาตรวัดความเสี่ยง/toxicity</em> ไม่ใช่สัญญาณซื้อขายตรง ๆ และมี false alarm</li>
+<li>คำนวณ VPIN ด้วย <strong>เวลานาฬิกา</strong> (time bars) — ผิดทั้งกระบวน! ต้องใช้ <strong>volume clock</strong> (volume buckets เท่านั้น)</li>
+<li>ลืม normalize/calibrate แล้วเทียบค่า VPIN ข้ามเหรียญ — ค่าดิบเทียบกันตรง ๆ ไม่ได้</li>
+</ul>
+</div>
+
+<div class="bx bb">
+<div class="bt">🔗 เชื่อมโยงเล่มอื่น</div>
+<p>VPIN ปิดเส้นเรื่อง <strong>static(OBI) → flow(OFI) → toxicity(VPIN)</strong>: OBI ดูภาพนิ่ง, OFI ดูการเปลี่ยน+price impact (λ), VPIN ดู "อันตราย" ของ flow แนวคิด <strong>adverse selection</strong> ที่สะสมใน VPIN คือต้นทุนเดียวกับที่ MM ต้องบริหารใน <strong>Part 9–10 (Market Making)</strong> และจะถูกใช้เป็น <strong>kill switch หยุด grid</strong> ใน <strong>Part 12</strong> (VPIN&gt;θ → ระงับไม้ทวนเทรนด์) ส่วนวิธีคิด volume clock เชื่อมกับการทำ feature ใน <strong>Part โบนัส (ML)</strong></p>
+</div>
+
+<div class="bx bg">
+<div class="bt">🎯 กับเคสของเรา</div>
+<p>เคส <strong>long BTC/USDT $5,000</strong>: ก่อนกดเข้า เช็ก VPIN — ถ้า <strong>VPIN พุ่ง (toxic flow)</strong> แปลว่ามี informed ลุยฝั่งเดียวและ MM กำลังจะถอน spread จะกว้างและเสี่ยง adverse selection สูง → <strong>ชะลอการเข้า</strong> รอให้ toxicity คลายก่อน (และอย่าใช้ VPIN เป็นสัญญาณซื้อขายตรง ๆ — ใช้เป็นไฟเตือนชะลอเท่านั้น)</p>
+</div>
+
+<div class="bx bg">
+<div class="bt">✍️ แบบฝึก (ทำได้ด้วยข้อมูลคริปโตฟรี)</div>
+<p>ดึง Binance <code>@aggTrade</code> ของ BTC/USDT 1 ชั่วโมง หั่นเป็น <strong>volume buckets</strong> ขนาด V คงที่ (เลือก V ให้ได้ราว 50 buckets) ในแต่ละ bucket แยก buy/sell ด้วย bulk classification แล้วคำนวณ <strong>VPIN แบบ rolling</strong> (เฉลี่ย n=50 buckets ล่าสุด) plot เทียบราคา — จากนั้น <strong>ลองเปลี่ยนขนาด V และ n</strong> แล้วดูว่ากราฟ VPIN เปลี่ยนแค่ไหน นี่คือบทเรียนตรง ๆ ว่าทำไม calibration สำคัญ (และทำไมต้องระวังการ over-trust)</p>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid var(--g2)">
+<p style="text-align:center;color:var(--g7);font-size:.9em"><strong>ส่งต่อ →</strong> จบองก์ "อ่าน Flow" (OBI→OFI→VPIN) — แล้วถ้าเราพลิกบทเป็นฝั่ง MM ที่ "ตั้ง quote กินสปรด" บ้างล่ะ? จะรับมือ adverse selection/inventory risk ที่เพิ่งเห็นใน VPIN ยังไง?</p>
+
+</body>
+</html>
