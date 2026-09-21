@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python for Quant Traders — Part II: Math Tools</title>
+<link href="vendor/fonts/sarabun.css" rel="stylesheet">
+<style>
+:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--violet:#7c3aed;--violet-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}
+h1{font-size:2.2em;font-weight:800;color:var(--g9);margin-bottom:.3em}
+h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--teal)}
+h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}
+p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}
+code{font-family:'Courier New',monospace;background:var(--g1);padding:1px 5px;border-radius:3px;font-size:.9em}
+.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--teal);margin-bottom:30px}
+.cover .ch-num{font-size:1em;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cover h1{font-size:2em;line-height:1.3}
+.cover .sub{font-size:1.1em;color:#64748b;margin-top:10px}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+.bg{background:var(--green-bg);border-left:4px solid var(--green)}
+.br{background:var(--red-bg);border-left:4px solid var(--red)}
+.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}
+.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}
+.bi{background:var(--violet-bg);border-left:4px solid var(--violet)}
+.bt{font-weight:700;margin-bottom:5px}
+.fm{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;margin:14px 0;overflow-x:auto;font-size:.88em;line-height:1.7;white-space:pre}
+.fm .c{color:#64748b}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th{background:var(--teal);color:#fff;padding:8px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--g2)}
+tr:nth-child(even){background:var(--g0)}
+td code{background:var(--g1)}
+/* code ในหัวตารางต้องอ่านออก — พื้นหัวตารางเป็นสีเข้ม ถ้าไม่ตั้ง
+   จะได้ตัวอักษรเข้มบนพื้นเข้มจนมองไม่เห็น */
+th code{background:rgba(255,255,255,.22);color:#fff}
+.ex{background:#f0fdf9;border:2px solid #5eead4;border-radius:10px;padding:18px 22px;margin:20px 0}
+.ex .et{font-weight:700;color:#0d9488;margin-bottom:10px;font-size:1.05em}
+details{margin:8px 0}
+.xref{background:var(--teal-bg);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;padding:8px 14px;margin:10px 0;font-size:.93em}
+.xref a{color:var(--teal);font-weight:600}
+.toc{background:var(--g1);border-radius:8px;padding:4px 0;margin:16px 0}
+.toc ol{margin:0;padding:0;list-style:none}
+.toc>ol>li{padding:6px 16px}
+.toc>ol>li+li{border-top:1px solid rgba(0,0,0,.06)}
+.toc a{color:var(--ink);text-decoration:none}
+.toc a:hover{color:var(--teal);text-decoration:underline}
+.toc .ch{font-weight:700}
+.toc .secs{margin-top:4px;font-size:.9em;line-height:1.9;color:#475569}
+.toc .secs a{margin-right:2px}
+.toc .secs .sep{color:#cbd5e1;margin:0 4px}
+@media print{details.toc-wrap>summary::before{content:""}}
+details summary{cursor:pointer;font-weight:600;color:var(--teal);padding:8px 12px;background:var(--teal-bg);border-radius:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ "}
+details[open] summary::before{content:"▼ "}
+details .ans{background:var(--green-bg);border-radius:6px;padding:14px 16px;margin-top:8px;border-left:3px solid var(--green)}
+.key-idea{background:linear-gradient(135deg,#f0fdfa,#eff6ff);border:2px solid var(--teal);border-radius:10px;padding:18px 24px;margin:20px 0}
+.key-idea .ki-label{font-size:.85em;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.key-idea .ki-text{font-size:1.05em;color:var(--g9);line-height:1.6}
+.key-idea .ki-eq{margin-top:10px}
+.running-ex{background:#fff8f0;border:2px dashed #f59e0b;border-radius:10px;padding:16px 20px;margin:20px 0}
+.running-ex .re-title{font-weight:700;color:#b45309;margin-bottom:8px}
+.caption{text-align:center;font-size:.88em;color:#64748b;margin-top:-10px;margin-bottom:16px}
+.bd{background:#f8fafc;border-left:4px solid #334155}
+.bk{background:#fef2f2;border-left:4px solid #b91c1c}
+.bk .bt{color:#b91c1c}
+.output{background:#1e293b;color:#86efac;font-family:'Courier New',monospace;font-size:.85em;padding:10px 16px;border-radius:0 0 8px 8px;margin-top:-14px;margin-bottom:14px;border-top:1px solid #334155;white-space:pre}
+.output::before{content:"► OUTPUT\A";color:#64748b;font-size:.8em}
+.nav{display:flex;justify-content:space-between;margin:40px 0 20px;padding-top:20px;border-top:2px solid var(--g2);font-size:.95em}
+.nav a{color:var(--teal);text-decoration:none;font-weight:600}
+.read-aloud{background:var(--teal-bg);border-left:4px solid var(--teal);padding:10px 16px;margin:-8px 0 16px;font-size:.95em;border-radius:0 8px 8px 0}
+.read-aloud::before{content:"\1F5E3 \0E2D\0E48\0E32\0E19\0E27\0E48\0E32: ";font-weight:700;color:var(--teal)}
+.ai-decode{border:2px solid var(--violet);border-radius:10px;margin:20px 0;overflow:hidden}
+.ai-decode .ad-title{background:var(--violet);color:#fff;font-weight:700;padding:8px 16px;font-size:.95em}
+.ai-decode .ad-code{font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:14px 20px;font-size:.88em;line-height:1.7;overflow-x:auto;white-space:pre}
+.ai-decode .ad-code .c{color:#64748b}
+.ai-decode .ad-steps{background:var(--violet-bg);padding:14px 20px;font-size:.95em}
+.ai-decode .ad-steps ol{margin-bottom:.5em}
+.ai-decode .ad-steps p:last-child{margin-bottom:0}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.ex,table{page-break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});});</script>
+</head>
+<body>
+
+<div class="cover">
+<div class="ch-num">Python for Quant Traders · Part II</div>
+<h1>Math Tools — เครื่องมือคณิตศาสตร์สำหรับ Quant</h1>
+<div class="sub">บทที่ 11–17: Statistics · Time Series · OLS Regression · Cointegration · Optimization · Linear Programming · Signals<br>
+จบ Part นี้ → สร้าง pair trading strategy ตั้งแต่ต้นจนได้ signal พร้อม trade</div>
+</div>
+
+<div class="bx bd">
+<div class="bt">🧭 อ่าน Part นี้ยังไง</div>
+<p><strong>🟢 เพิ่งจบ Part I</strong> — Part นี้คือจุดที่โค้ดเริ่มยากขึ้นชัดเจน · กลยุทธ์ที่ได้ผล: อ่าน <strong>กล่อง 💡 แก่นของบทนี้</strong> ให้เข้าใจก่อน แล้วค่อยลงโค้ด · เจอฟังก์ชันสถิติที่ไม่รู้จัก (<code>adfuller</code>, <code>coint</code>, <code>minimize</code>) <strong>ไม่ต้องเข้าใจคณิตศาสตร์ข้างในทั้งหมด</strong> — เข้าใจว่า "ใส่อะไรเข้าไป ได้อะไรออกมา แล้วตีความยังไง" ก็พอสำหรับรอบแรก</p>
+<p><strong>🔵 มีพื้น stat/econometrics</strong> — เนื้อทฤษฎีคุ้นอยู่แล้ว ข้ามได้ · ที่ควรอ่านคือ<strong>กล่อง ⚠️ กับดัก</strong> ทั้งหมด โดยเฉพาะ <strong>บทที่ 14 เรื่อง null hypothesis กลับหัว</strong> (p เล็ก = ข่าวดี) ที่คนอ่านผิดกันบ่อยมากจนเลือกคู่ที่ไม่ cointegrate มาเทรดทั้งพอร์ต · และ <strong>บทที่ 13 เรื่องชื่อคอลัมน์มาจาก pandas ไม่ใช่ statsmodels</strong></p>
+</div>
+
+<!-- TOC:START -->
+<details class="toc-wrap" open>
+<summary>สารบัญ Part นี้ — 7 บท · 22 หัวข้อ</summary>
+<div class="toc">
+<ol>
+<li><a class="ch" href="#ch11">บทที่ 11: Statistics &amp; Probability เชิงลึก</a>
+<div class="secs"><a href="#s11-1">11.1 Hypothesis Testing — กลยุทธ์ดีจริงหรือแค่โชค?</a><span class="sep">·</span><a href="#s11-2">11.2 VaR และ CVaR — ความเสี่ยงสูงสุดคือเท่าไหร่?</a><span class="sep">·</span><a href="#s11-3">11.3 Fat Tail — ทำไม Normal Distribution ถึงอันตราย?</a></div></li>
+<li><a class="ch" href="#ch12">บทที่ 12: Time Series Basics</a>
+<div class="secs"><a href="#s12-1">12.1 Stationarity — ล่องลอยหรือวนกลับ?</a><span class="sep">·</span><a href="#s12-2">12.2 ADF Test — ทดสอบ Stationarity</a><span class="sep">·</span><a href="#s12-3">12.3 Autocorrelation — ราคาวันนี้สัมพันธ์กับเมื่อวานแค่ไหน?</a></div></li>
+<li><a class="ch" href="#ch13">บทที่ 13: OLS Regression</a>
+<div class="secs"><a href="#s13-1">13.1 OLS ด้วย statsmodels</a><span class="sep">·</span><a href="#s13-2">13.2 ตีความผล OLS</a><span class="sep">·</span><a href="#s13-3">13.3 Rolling OLS — β ที่ Adaptive</a></div></li>
+<li><a class="ch" href="#ch14">บทที่ 14: Cointegration &amp; Z-score Signal</a>
+<div class="secs"><a href="#s14-1">14.1 Correlation vs Cointegration</a><span class="sep">·</span><a href="#s14-2">14.2 Engle-Granger Test — 2 ขั้นตอน</a><span class="sep">·</span><a href="#s14-3">14.3 Johansen Test — สำหรับ 3+ Pairs</a><span class="sep">·</span><a href="#s14-4">14.4 Half-Life — Spread กลับเร็วแค่ไหน?</a></div></li>
+<li><a class="ch" href="#ch15">บทที่ 15: Optimization</a>
+<div class="secs"><a href="#s15-1">15.1 scipy.optimize.minimize — API</a><span class="sep">·</span><a href="#s15-2">15.2 Sharpe Ratio Maximization</a><span class="sep">·</span><a href="#s15-3">15.3 Kelly Criterion — Optimal Position Size</a></div></li>
+<li><a class="ch" href="#ch16">บทที่ 16: Linear Programming</a>
+<div class="secs"><a href="#s16-1">16.1 scipy.linprog — API</a><span class="sep">·</span><a href="#s16-2">16.2 Portfolio LP — ใส่ Constraints หลายอย่างพร้อมกัน</a><span class="sep">·</span><a href="#s16-3">16.3 PuLP — สำหรับ Integer Programming</a></div></li>
+<li><a class="ch" href="#ch17">บทที่ 17: Signals &amp; Filters</a>
+<div class="secs"><a href="#s17-1">17.1 Bollinger Bands — Signal จาก Volatility</a><span class="sep">·</span><a href="#s17-2">17.2 Kalman Filter — Track β แบบ Adaptive</a><span class="sep">·</span><a href="#s17-3">17.3 Signal Pipeline — รวมทุกอย่างเข้าด้วยกัน</a></div></li>
+</ol>
+</div>
+</details>
+<!-- TOC:END -->
+
+<div class="key-idea">
+<div class="ki-label">สิ่งที่จะทำได้เมื่อจบ Part II</div>
+<div class="ki-text">
+• หาคู่หุ้นที่ cointegrate กัน ด้วย ADF test และ Johansen test<br>
+• ประมาณค่า (estimate) hedge ratio \(\beta\) ด้วย OLS regression (statsmodels)<br>
+• สร้าง spread และคำนวณ z-score สำหรับ entry/exit signal<br>
+• Maximize Sharpe ratio ด้วย <code>scipy.optimize</code><br>
+• กำหนด portfolio weight constraints ด้วย Linear Programming<br>
+<strong>ทุกอย่างนี้คือ core engine ของ Statistical Arbitrage</strong>
+</div>
+</div>
+
+<div class="running-ex">
+<div class="re-title">Running Example ตลอด Part II — Pair Trading: BTC Perp Bybit ↔ BTC Perp Binance</div>
+<p>เราจะสร้าง pair trading strategy ทีละขั้นตอนตลอด 7 บท:<br>
+บท 11 → ตรวจสอบ distribution ของ spread · บท 12 → ทดสอบ stationarity · บท 13 → ประมาณ β ด้วย OLS<br>
+บท 14 → ยืนยัน cointegration · บท 15 → optimize position size · บท 16 → ใส่ capital constraint · บท 17 → สร้าง signal pipeline</p>
+</div>
+
+
+<!-- ===================== CHAPTER 11 ===================== -->
+<h2 id="ch11">บทที่ 11: Statistics &amp; Probability เชิงลึก</h2>
+<div class="xref">🔗 <strong>ทฤษฎีเต็ม ๆ อยู่เล่มอื่น:</strong> ทฤษฎีเบื้องหลังการแจกแจงและหางอ้วน — <a href="math-part2.html#ch6">คณิตศาสตร์สำหรับ Options · บทที่ 6: Distributions</a> · ส่วน VaR / CVaR ลงลึกอยู่ที่ <a href="pillars-part4.html">5 เสาหลัก · Part IV (Risk Management)</a></div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">สถิติใน Part 0 เป็นแนวคิด — บทนี้แปลงเป็น Python จริง ด้วย <code>scipy.stats</code> และ <code>numpy</code> เน้น 3 เรื่องที่ Quant ใช้จริง: hypothesis testing (กลยุทธ์นี้ดีจริงหรือแค่โชค?), VaR/CVaR (ความเสี่ยงสูงสุดคือเท่าไหร่?), และ fat tail (ทำไมต้องระวัง Black Swan?)</div>
+</div>
+
+<h3 id="s11-1">11.1 Hypothesis Testing — กลยุทธ์ดีจริงหรือแค่โชค?</h3>
+
+<p>สมมติฐาน: \(H_0\) (null) = "กลยุทธ์ไม่ดีกว่าสุ่ม" vs \(H_1\) = "กลยุทธ์ดีกว่าสุ่มจริงๆ"</p>
+
+<div class="fm">from scipy import stats
+import numpy as np
+
+<span class="c"># ผลตอบแทนรายวัน 252 วัน จากกลยุทธ์</span>
+np.random.seed(42)
+strategy_returns = np.random.normal(loc=0.0008, scale=0.015, size=252)
+
+<span class="c"># t-test: H0 = mean return = 0 (ไม่ดีกว่าสุ่ม)</span>
+t_stat, p_value = stats.ttest_1samp(strategy_returns, popmean=0)
+
+print(f"Mean Return: {strategy_returns.mean():.4f} ({strategy_returns.mean()*252:.1%}/year)")
+print(f"t-statistic: {t_stat:.3f}")
+print(f"p-value:     {p_value:.4f}")
+
+if p_value &lt; 0.05:
+    print("✓ มีนัยสำคัญ — กลยุทธ์น่าจะดีกว่าสุ่ม (p &lt; 5%)")
+else:
+    print("✗ ไม่มีนัยสำคัญ — อาจเป็นแค่โชค")</div>
+<div class="output">Mean Return: 0.0007 (18.7%/year)
+t-statistic: 0.814
+p-value:     0.4167
+✗ ไม่มีนัยสำคัญ — อาจเป็นแค่โชค</div>
+
+<div class="bx ba">
+<div class="bt">ทำไม Return ดูดีแต่ p-value ยังสูง?</div>
+<p>20% ต่อปีดูน่าสนใจ แต่ถ้า σ สูง (1.5%/วัน) — noise มากกว่า signal มาก<br>
+ต้องมีข้อมูลมากพอ (หลาย 100 วัน) ถึงจะ "แยก" signal ออกจาก noise ได้<br>
+\(t = \frac{\bar{r}}{\sigma/\sqrt{n}}\) → ยิ่ง n มาก t ยิ่งใหญ่ → p-value ยิ่งเล็ก</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠️ แล้วถ้าผ่านล่ะ — <code>p &lt; 0.05</code> แปลว่า "ทำเงินได้" หรือเปล่า</div>
+<p><strong>ไม่ · และนี่คือความเข้าใจผิดที่แพงที่สุดในบรรดาความเข้าใจผิดทั้งหมดในหนังสือเล่มนี้</strong></p>
+<p>สังเกตบรรทัดที่เขียนว่า <code>popmean=0</code> ให้ดี — เรากำลังถามว่า <em>"ผลตอบแทนต่างจากศูนย์ไหม"</em> · แต่คำถามที่เราสนใจจริง ๆ คือ <em>"ผลตอบแทนชนะค่าธรรมเนียมไหม"</em> · <strong>สองคำถามนี้ไม่เหมือนกัน และสถิติตอบให้แค่คำถามที่เราถาม</strong></p>
+<p>สูตร <code>t = r̄ / (σ/√n)</code> ในกล่องข้างบนบอกความจริงอีกด้านที่ต้องเห็นให้ครบ: <strong>ตัวหารเล็กลงเรื่อย ๆ ตาม √n</strong> · แปลว่าถ้าเก็บข้อมูลมากพอ <strong>edge เล็กแค่ไหนก็ผลักให้ <code>p &lt; 0.05</code> ได้ทั้งนั้น</strong> — รวมถึง edge ที่เล็กกว่าค่าธรรมเนียมหลายเท่า · <code>p-value</code> ไม่เคยรู้ว่าคุณจ่ายค่าธรรมเนียมเท่าไร เพราะไม่มีใครบอกมัน</p>
+<p>📖 <strong>หัวข้อ 25.4b ใน Part IV</strong> แสดงตัวอย่างที่วัดเป็นตัวเลขได้: กลยุทธ์ที่ <code>t = +6.62</code> · <code>p &lt; 0.0001</code> (มี edge จริงแน่นอน) แต่<strong>ขาดทุนปีละ 27,000 บาท</strong> เพราะ edge เล็กกว่าต้นทุน · พร้อมวิธีแก้ที่ใช้เวลาแก้แค่บรรทัดเดียว</p>
+</div>
+
+<h3 id="s11-2">11.2 VaR และ CVaR — ความเสี่ยงสูงสุดคือเท่าไหร่?</h3>
+
+$$\text{VaR}_{95\%} = \text{percentile}_{5\%}(r) \qquad \text{CVaR}_{95\%} = E\!\left[r \mid r \leq \text{VaR}_{95\%}\right]$$
+
+<div class="fm"><span class="c"># VaR = ขาดทุนสูงสุดใน 95% ของวันทั้งหมด</span>
+<span class="c"># CVaR = ขาดทุนเฉลี่ยในวันที่แย่ที่สุด 5%</span>
+
+returns = strategy_returns  <span class="c"># จากข้างบน</span>
+capital = 1_000_000         <span class="c"># ทุน 1 ล้านบาท</span>
+
+var_95  = np.percentile(returns, 5)
+cvar_95 = returns[returns &lt;= var_95].mean()
+
+print(f"VaR  95%: {var_95:.2%}  → ขาดทุนไม่เกิน {abs(var_95)*capital:,.0f} บาท/วัน (95% ของเวลา)")
+print(f"CVaR 95%: {cvar_95:.2%} → เฉลี่ยขาดทุน  {abs(cvar_95)*capital:,.0f} บาท ในวันที่แย่ที่สุด 5%")</div>
+
+<div class="bx bd">
+<div class="bt">หมายเหตุ CVaR: ต้องการ sample เพียงพอ</div>
+<p>CVaR 95% ใช้เฉพาะ return ที่อยู่ใน worst 5% — ถ้ามีข้อมูล 100 วัน จะใช้แค่ 5 วัน<br>
+ถ้าข้อมูลน้อยกว่า 60 วัน CVaR อาจไม่น่าเชื่อถือ ควรใช้ <code>if len(tail) >= 5: cvar = tail.mean()</code><br>
+หรือเพิ่ม <code>n_tail = max(1, int(len(returns) * 0.05))</code> เพื่อรับประกัน minimum sample</p>
+</div>
+
+<h3 id="s11-3">11.3 Fat Tail — ทำไม Normal Distribution ถึงอันตราย?</h3>
+
+<div class="fm">from scipy import stats
+
+<span class="c"># เปรียบ Normal กับ t-distribution (fat tail)</span>
+normal_99 = stats.norm.ppf(0.01)   <span class="c"># -2.33σ</span>
+t5_99     = stats.t.ppf(0.01, df=5) <span class="c"># -3.36σ (df=5 = fat tail)</span>
+
+print(f"Normal 1% VaR: {normal_99:.2f}σ")
+print(f"t(df=5) 1% VaR: {t5_99:.2f}σ")
+print(f"ใช้ Normal จะ underestimate ความเสี่ยง {t5_99/normal_99:.1f}x")</div>
+
+<div class="bx bk">
+<div class="bt">อย่าเชื่อ Normal Distribution สำหรับ crypto และช่วง crisis</div>
+<p>BTC crash 50%+ เกิดหลายครั้ง — ถ้าใช้ Normal Distribution จะบอกว่า "แทบเป็นไปไม่ได้" (เกิน 10σ — เหตุการณ์ที่สูตร Normal บอกว่าแทบเป็นไปไม่ได้เลยในช่วงชีวิตเรา)<br>
+ในความจริง: ราคาสินทรัพย์มี "fat tail" = เหตุการณ์สุดขั้วเกิดบ่อยกว่า Normal คาด<br>
+<strong>ใช้ t-distribution, Cornish-Fisher, หรือ historical simulation แทน Normal สำหรับ risk management</strong></p>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: สรุป Return Statistics แบบมืออาชีพ</div>
+<div class="fm">def return_stats(returns, name="Strategy", capital=1_000_000):
+    """สรุป statistics สำหรับ return series"""
+    r = np.array(returns)
+    ann = 252
+
+    mean_daily  = r.mean()                  <span class="c"># return เฉลี่ยต่อวัน</span>
+    std_daily   = r.std()                   <span class="c"># ความผันผวนต่อวัน</span>
+    sharpe      = mean_daily / std_daily * np.sqrt(ann)  <span class="c"># Sharpe รายปี (คูณ √252)</span>
+    skew        = stats.skew(r)             <span class="c"># ความเบ้ (ลบ = หางซ้ายยาว = อันตราย)</span>
+    kurt        = stats.kurtosis(r)         <span class="c"># excess kurtosis (บวก = fat tail)</span>
+    var95       = np.percentile(r, 5)       <span class="c"># จุดตัด worst 5% ของวัน</span>
+    cvar95      = r[r &lt;= var95].mean()      <span class="c"># ค่าเฉลี่ยของวันที่แย่กว่า VaR</span>
+
+    equity      = capital * np.cumprod(1 + r)        <span class="c"># เส้นเงินทุนสะสมรายวัน</span>
+    rolling_max = np.maximum.accumulate(equity)      <span class="c"># จุดสูงสุดที่เคยไปถึง ณ แต่ละวัน</span>
+    max_dd      = ((equity - rolling_max) / rolling_max).min()  <span class="c"># % ร่วงจากยอดที่ลึกที่สุด</span>
+
+    print(f"=== {name} ===")
+    print(f"Annual Return: {mean_daily*ann:.1%}   Sharpe: {sharpe:.2f}")
+    print(f"Annual Vol:    {std_daily*np.sqrt(ann):.1%}   Max DD: {max_dd:.1%}")
+    print(f"Skewness: {skew:.2f}  Kurtosis: {kurt:.2f}  (Normal: 0, 0)")
+    print(f"VaR 95%: {var95:.2%}  CVaR 95%: {cvar95:.2%}")
+
+return_stats(strategy_returns)</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: เปรียบ Sharpe ของสองกลยุทธ์</summary>
+<div class="ans">
+<div class="fm"><span class="c"># กลยุทธ์ A: return ต่ำ volatility ต่ำ</span>
+ret_a = np.random.normal(0.0003, 0.005, 252)
+
+<span class="c"># กลยุทธ์ B: return สูง volatility สูง</span>
+ret_b = np.random.normal(0.002, 0.04, 252)
+
+sharpe_a = ret_a.mean() / ret_a.std() * np.sqrt(252)
+sharpe_b = ret_b.mean() / ret_b.std() * np.sqrt(252)
+
+print(f"Sharpe A: {sharpe_a:.2f}  ({ret_a.mean()*252:.0%}/yr, σ={ret_a.std()*np.sqrt(252):.0%}/yr)")
+print(f"Sharpe B: {sharpe_b:.2f}  ({ret_b.mean()*252:.0%}/yr, σ={ret_b.std()*np.sqrt(252):.0%}/yr)")</div>
+<p style="margin-top:8px">บทเรียน: B อาจให้ return ต่อปีสูงกว่า แต่ถ้า Sharpe ต่ำกว่า risk ต่อหน่วย return แย่กว่า</p>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 12 ===================== -->
+<h2 id="ch12">บทที่ 12: Time Series Basics</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">ข้อมูลราคาเรียงตามเวลา มีคุณสมบัติพิเศษที่ข้อมูลทั่วไปไม่มี: แต่ละจุดสัมพันธ์กับจุดก่อนหน้า (autocorrelation) และอาจ "ล่องลอย" ไปเรื่อยๆ โดยไม่กลับ (non-stationary) การเข้าใจ 2 เรื่องนี้คือกุญแจของ Statistical Arbitrage ทั้งหมด</div>
+</div>
+
+<h3 id="s12-1">12.1 Stationarity — ล่องลอยหรือวนกลับ?</h3>
+
+<p><strong>Stationary series</strong>: mean และ variance คงที่ตลอดเวลา — "วนกลับหาค่ากลาง"<br>
+<strong>Non-stationary series</strong>: mean เปลี่ยนตามเวลา — "ล่องลอยไม่มีทิศทาง" (random walk)</p>
+
+<div class="fm">import numpy as np
+
+<span class="c"># Non-stationary: Random Walk (ราคา BTC)</span>
+np.random.seed(0)
+random_walk = np.cumsum(np.random.normal(0, 1, 300))
+
+<span class="c"># Stationary: Spread ระหว่างสองตลาด</span>
+spread = np.random.normal(0, 1, 300)  <span class="c"># OU-like (mean-reverting)</span>
+
+<span class="c"># สังเกต: random_walk drift ออกไปเรื่อยๆ</span>
+<span class="c">#          spread วนอยู่รอบ 0</span>
+print(f"Random Walk range: {random_walk.min():.1f} to {random_walk.max():.1f}")
+print(f"Spread range:      {spread.min():.1f} to {spread.max():.1f}")</div>
+
+<div class="bx bb">
+<div class="bt">ทำไม Stationarity ถึงสำคัญสำหรับ Pair Trading?</div>
+<p>ถ้า spread ไม่ stationary แปลว่าไม่มีแรงดึงกลับ — z-score ที่สูงอยู่อาจสูงต่อไปเรื่อย ๆ โดยไม่กลับมา เท่ากับเปิด trade แล้วอาจขาดทุนไม่หยุด<br>
+ถ้า spread stationary → มีแรงดึงกลับ → z-score สูงแล้ว "ต้องลง" ในที่สุด → เป็น basis ของ arb<br>
+<strong>เราต้องพิสูจน์ก่อนเสมอว่า spread เป็น stationary จริง — ไม่ใช่แค่ดูกราฟ</strong></p>
+</div>
+
+<h3 id="s12-2">12.2 ADF Test — ทดสอบ Stationarity</h3>
+
+<p>Augmented Dickey-Fuller (ADF) test: \(H_0\) = non-stationary (random walk) vs \(H_1\) = stationary</p>
+
+<div class="fm">from statsmodels.tsa.stattools import adfuller
+
+def test_stationarity(series, name="Series"):
+    """รัน ADF test และแสดงผลแบบเข้าใจง่าย"""
+    result = adfuller(series, autolag="AIC")
+    adf_stat  = result[0]
+    p_value   = result[1]
+    crit_vals = result[4]
+
+    print(f"\n--- ADF Test: {name} ---")
+    print(f"ADF Statistic: {adf_stat:.4f}")
+    print(f"p-value:       {p_value:.4f}")
+    print(f"Critical (1%): {crit_vals['1%']:.4f}")
+    print(f"Critical (5%): {crit_vals['5%']:.4f}")
+
+    if p_value &lt; 0.05:
+        print(f"✓ STATIONARY (p={p_value:.3f} &lt; 0.05) — กลับหาค่ากลาง")
+    else:
+        print(f"✗ NON-STATIONARY (p={p_value:.3f} &gt; 0.05) — random walk")
+    return p_value &lt; 0.05
+
+<span class="c"># ทดสอบกับข้อมูลจาก pair</span>
+test_stationarity(random_walk, "BTC Price (Random Walk)")
+test_stationarity(spread, "BTC Spread (Mean-Reverting)")</div>
+
+<h3 id="s12-3">12.3 Autocorrelation — ราคาวันนี้สัมพันธ์กับเมื่อวานแค่ไหน?</h3>
+
+<div class="fm">from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+
+<span class="c"># ACF/PACF ของ returns (stationary)</span>
+plot_acf(spread, lags=30, ax=axes[0][0], title="ACF — Spread (Stationary)")
+plot_pacf(spread, lags=30, ax=axes[0][1], title="PACF — Spread")
+
+<span class="c"># ACF/PACF ของ raw price (non-stationary)</span>
+plot_acf(random_walk, lags=30, ax=axes[1][0], title="ACF — Price (Non-stationary)")
+plot_pacf(random_walk, lags=30, ax=axes[1][1], title="PACF — Price")
+
+plt.tight_layout()
+plt.savefig("acf_comparison.png", dpi=150)
+plt.show()</div>
+
+<div class="bx bd">
+<div class="bt">อ่าน ACF plot อย่างไร?</div>
+<table>
+<tr><th>Pattern ที่เห็น</th><th>แปลว่า</th><th>ทำอะไรต่อ</th></tr>
+<tr><td>ค่าลด exponentially ใน ACF</td><td>AR process (mean-reverting) ✓</td><td>ใช้เป็น spread ได้</td></tr>
+<tr><td>ค่าสูงทุก lag ไม่ลด</td><td>Non-stationary (random walk)</td><td>ต้อง difference ก่อน</td></tr>
+<tr><td>ค่าตัดที่ lag 1 ใน ACF</td><td>MA(1) process</td><td>ต้องใส่ MA term ใน model</td></tr>
+</table>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: ทดสอบ stationarity ของ spread จริง</summary>
+<div class="ans">
+<div class="fm">import numpy as np
+from statsmodels.tsa.stattools import adfuller
+
+<span class="c"># จำลอง Ornstein-Uhlenbeck process (spread จริง)</span>
+np.random.seed(1)
+n, kappa, mu, sigma = 500, 0.1, 0, 0.5
+ou = np.zeros(n)
+for t in range(1, n):
+    ou[t] = ou[t-1] + kappa*(mu - ou[t-1]) + sigma*np.random.normal()
+
+result = adfuller(ou)
+print(f"ADF p-value: {result[1]:.4f}")
+print("✓ Stationary" if result[1] &lt; 0.05 else "✗ Non-stationary")
+
+<span class="c"># OU process ควร stationary เสมอ (kappa > 0)</span></div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 13 ===================== -->
+<h2 id="ch13">บทที่ 13: OLS Regression</h2>
+<div class="xref">🔗 <strong>ทฤษฎีเต็ม ๆ อยู่เล่มอื่น:</strong> ที่มาของสูตร OLS และความหมายของ β ในฐานะ hedge ratio — <a href="math-part4.html#ch2">คณิตศาสตร์สำหรับ Options · บทที่ 2: Regression → Beta &amp; Hedge Ratio</a> · และเงื่อนไขที่ทำให้ β เชื่อถือได้จริงอยู่ที่ <a href="math-part8.html#ch6">Part VIII บทที่ 6: OLS ที่เชื่อถือได้</a></div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">OLS (Ordinary Least Squares) เป็นเครื่องมือหลักสำหรับประมาณ hedge ratio \(\beta\) — อัตราส่วนที่บอกว่าต้อง long/short ในสัดส่วนเท่าไหร่เพื่อสร้าง spread ที่ stationary — คำว่า 'ประมาณ' ในที่นี้หมายถึงการคำนวณหาค่าที่เหมาะสมที่สุดจากข้อมูล ไม่ใช่การเดาคร่าว ๆ สูตร matrix form:</div>
+<div class="ki-eq">$$\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}$$</div>
+</div>
+
+<h3 id="s13-1">13.1 OLS ด้วย statsmodels</h3>
+
+<div class="fm">import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+
+<span class="c"># จำลองราคา BTC สองตลาด — เหรียญเดียวกัน คนละตลาด</span>
+np.random.seed(42)
+n = 252
+btc_bybit = 65000 + np.cumsum(np.random.normal(0, 100, n))
+
+<span class="c"># ส่วนต่างราคาสองตลาด (spread) ไม่ได้สุ่มลอย ๆ — มันดึงกลับเข้าค่ากลาง</span>
+<span class="c"># ใช้ OU process ตัวเดียวกับบทที่ 12: กำไรของ pair trade มาจากแรงดึงนี้</span>
+kappa, sigma_ou = 0.15, 25.0        <span class="c"># kappa สูง = ดึงกลับเร็ว</span>
+spread_ou = np.zeros(n)
+for t in range(1, n):
+    spread_ou[t] = (spread_ou[t-1]
+                    + kappa * (0 - spread_ou[t-1])
+                    + np.random.normal(0, sigma_ou))
+
+<span class="c"># Binance = ราคา Bybit + basis 0.03% + spread ที่ดึงกลับได้</span>
+btc_binance = btc_bybit * 1.0003 + spread_ou
+
+<span class="c"># OLS: log(P_binance) = alpha + beta * log(P_bybit) + epsilon</span>
+log_bybit   = np.log(btc_bybit)
+log_binance = np.log(btc_binance)
+
+<span class="c"># ใส่ชื่อคอลัมน์ด้วย DataFrame — เพื่อเรียก params ด้วย "ชื่อ" ได้ทีหลัง</span>
+X = sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))
+y = log_binance
+
+model  = sm.OLS(y, X).fit()
+
+alpha  = model.params['const']
+beta   = model.params['log_bybit']
+resid  = model.resid               <span class="c"># epsilon (spread)</span>
+r2     = model.rsquared
+p_beta = model.pvalues['log_bybit']
+
+print(f"alpha (intercept): {alpha:.6f}")
+print(f"beta  (hedge ratio): {beta:.6f}")
+print(f"R²:   {r2:.4f}")
+print(f"p-value (beta): {p_beta:.6f}")
+print(f"\nSpread (residuals) stats:")
+print(f"  Mean: {resid.mean():.6f}")
+print(f"  Std:  {resid.std():.6f}")</div>
+<div class="output">alpha (intercept): 0.207854
+beta  (hedge ratio): 0.981260
+R²:   0.9903
+p-value (beta): 0.000000
+
+Spread (residuals) stats:
+  Mean: 0.000000
+  Std:  0.000695</div>
+
+<div class="read-aloud">บรรทัดที่ต้องสังเกต: <code>sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))</code> — ทำไมต้องห่อด้วย DataFrame? เพราะถ้าส่ง <strong>numpy array</strong> เข้าไปตรง ๆ ผลลัพธ์ <code>model.params</code> จะเป็น array ที่<strong>ไม่มีชื่อ</strong> เรียกได้แค่ตำแหน่ง (<code>params[0]</code>, <code>params[1]</code>) → บรรทัด <code>params['const']</code> จะพังทันที (<code>IndexError</code>) · พอห่อเป็น DataFrame ที่มีชื่อคอลัมน์ statsmodels จะคืน <strong>Series ที่มี label</strong> ให้ → เรียกด้วยชื่อได้ อ่านโค้ดรู้เรื่องกว่า และไม่พลาดสลับตำแหน่ง α กับ β</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ กับดักที่เจอบ่อย — "ชื่อ" มาจาก pandas ไม่ใช่ statsmodels</div>
+<p>นี่คือความสับสน numpy ↔ pandas ที่คลาสสิกที่สุดในงาน quant: <strong>statsmodels ไม่ได้ตั้งชื่อคอลัมน์ให้คุณ</strong> — มันแค่<em>ส่งต่อ</em>ชื่อที่มาจาก pandas ถ้าต้นทางไม่มีชื่อ ปลายทางก็ไม่มี</p>
+<p>วิธีเช็คเร็ว ๆ ก่อนเรียกด้วยชื่อ: <code>print(type(model.params))</code> — ถ้าได้ <code>ndarray</code> ให้ใช้ตำแหน่ง ถ้าได้ <code>Series</code> ใช้ชื่อได้</p>
+</div>
+
+<h3 id="s13-2">13.2 ตีความผล OLS</h3>
+
+<table>
+<tr><th>Output</th><th>ความหมาย</th><th>ค่าที่ดี</th></tr>
+<tr><td><strong>β</strong></td><td>Hedge ratio — Long 1 บาท Bybit ต้อง Short β บาท Binance</td><td>ใกล้ 1.0 สำหรับ same asset</td></tr>
+<tr><td><strong>α</strong></td><td>Constant spread ระหว่างสองตลาด</td><td>ขึ้นอยู่กับ pair</td></tr>
+<tr><td><strong>R²</strong></td><td>สัดส่วน variance ที่ X อธิบายได้</td><td>&gt; 0.85 สำหรับ good pair</td></tr>
+<tr><td><strong>p-value (β)</strong></td><td>มั่นใจแค่ไหนว่า β ≠ 0</td><td>&lt; 0.001 สำหรับ cointegrated pair</td></tr>
+<tr><td><strong>Residuals</strong></td><td>Spread = ส่วนที่ไม่สัมพันธ์กับ X — นี่คือสิ่งที่เราจะ trade</td><td>Mean ≈ 0, Stationary</td></tr>
+</table>
+
+<h3 id="s13-3">13.3 Rolling OLS — β ที่ Adaptive</h3>
+
+<p>β ไม่คงที่ตลอดเวลา ต้องอัปเดตสม่ำเสมอ</p>
+
+<div class="fm">from statsmodels.regression.rolling import RollingOLS
+
+<span class="c"># Rolling OLS window 60 วัน</span>
+window = 60
+<span class="c"># X ตัวเดิมจาก 13.1 — เป็น DataFrame ที่มีชื่อคอลัมน์อยู่แล้ว</span>
+X = sm.add_constant(pd.DataFrame({"log_bybit": log_bybit}))
+
+rolling_model = RollingOLS(log_binance, X, window=window).fit()
+rolling_beta  = rolling_model.params['log_bybit']
+
+<span class="c"># สร้าง rolling spread</span>
+rolling_alpha = rolling_model.params['const']
+spread = log_binance - (rolling_alpha + rolling_beta * log_bybit)
+
+print(f"Beta range: {rolling_beta.dropna().min():.4f} to {rolling_beta.dropna().max():.4f}")
+print(f"Spread Std: {spread.std():.6f}")</div>
+<div class="output">Beta range: 0.9071 to 1.1820
+Spread Std: 0.000718</div>
+
+<div class="read-aloud">อ่าน <code>rolling_model.params['log_bybit']</code> ว่า: "หยิบค่า β <strong>ของทุกวัน</strong> ออกมา" — ต่างจาก 13.1 ที่ได้ β ตัวเดียว ตรงนี้ได้เป็น <strong>Series ยาวเท่าจำนวนวัน</strong> (60 วันแรกเป็น <code>NaN</code> เพราะยังนับไม่ครบหน้าต่าง) · ดูช่วง 0.907–1.182 = β ขยับได้ถึง ±18% รอบ 1.0 <strong>นี่แหละความหมายของ "β ไม่คงที่"</strong> ที่หัวข้อนี้จะบอก — ถ้า hedge ด้วย β ตัวเดียวค้างไว้ตลอดปี คุณจะ hedge ผิดสัดส่วนเป็นระยะ ๆ</div>
+
+<div class="bx ba">
+<div class="bt">window เลือกอย่างไร?</div>
+<ul>
+<li><strong>สั้นเกินไป</strong> (เช่น 10 วัน): β volatile มาก, noise สูง → signal ผิดพลาดบ่อย</li>
+<li><strong>ยาวเกินไป</strong> (เช่น 500 วัน): β ตอบสนองช้ามาก → พลาด regime change</li>
+<li><strong>ดี</strong>: window ≈ 3–5 เท่าของ half-life ของ spread — เรียนวิธีหา half-life ในบทที่ 14</li>
+</ul>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: สร้าง Z-score จาก OLS Residuals</div>
+<div class="fm">def build_spread(price_a, price_b, window=60):
+    """
+    สร้าง spread และ z-score จาก OLS rolling regression
+    ทำ 3 ขั้น: (1) หา beta → (2) สร้าง spread → (3) คำนวณ z-score
+    Returns: DataFrame ของ spread, beta, zscore
+    """
+    log_a = np.log(price_a)            <span class="c"># แปลงเป็น log price ทั้งคู่</span>
+    log_b = np.log(price_b)
+
+    <span class="c"># ── ขั้น 1: หา hedge ratio (beta) ด้วย rolling OLS ──</span>
+    X = sm.add_constant(log_b)         <span class="c"># เติมคอลัมน์ค่าคงที่ (intercept) ให้ regression</span>
+    roll = RollingOLS(log_a, X, window=window).fit()
+    beta  = roll.params.iloc[:, 1]     <span class="c"># คอลัมน์ 0 คือ const (จาก add_constant), คอลัมน์ 1 คือสัมประสิทธิ์ของ log_b = hedge ratio</span>
+    alpha = roll.params['const']       <span class="c"># intercept</span>
+
+    <span class="c"># ── ขั้น 2: spread = ส่วนที่ "เหลือ" หลังหักความสัมพันธ์ออก ──</span>
+    predicted = alpha + beta * log_b   <span class="c"># ราคา A ที่ "ควรจะเป็น" ตามราคา B</span>
+    spread = log_a - predicted         <span class="c"># ของจริง - ที่ควรเป็น = ความเพี้ยน</span>
+
+    <span class="c"># ── ขั้น 3: z-score ของ spread (สูตรเดิมจาก Part I) ──</span>
+    roll_mean = spread.rolling(window).mean()
+    roll_std  = spread.rolling(window).std()
+    zscore    = (spread - roll_mean) / roll_std
+
+    return pd.DataFrame({
+        "spread": spread,
+        "beta":   beta,
+        "zscore": zscore
+    })
+
+df_pair = build_spread(
+    pd.Series(btc_bybit),
+    pd.Series(btc_binance),
+    window=60
+)
+print(df_pair.tail())
+print(f"\nCurrent Z-score: {df_pair['zscore'].iloc[-1]:.2f}")</div>
+<div class="output">       spread      beta    zscore
+247 -0.000126  0.933411 -0.497962
+248  0.000514  0.933770  0.348072
+249  0.000118  0.932216 -0.160151
+250 -0.000725  0.929067 -1.226366
+251 -0.000047  0.929990 -0.320480
+
+Current Z-score: -0.32</div>
+
+<div class="read-aloud">แก่นของฟังก์ชันนี้อยู่ที่สองบรรทัด: <code>predicted = alpha + beta * log_b</code> แล้ว <code>spread = log_a - predicted</code> — อ่านว่า <strong>"ราคา A ที่<em>ควรจะเป็น</em>ตามราคา B" แล้วเอา "ของจริง ลบ ที่ควรเป็น"</strong> · ส่วนที่เหลือคือความเพี้ยน และความเพี้ยนนี่แหละคือสิ่งที่เราเทรด ไม่ใช่ตัวราคา</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ สังเกตสองบรรทัดที่หยิบค่าคนละแบบ — ไม่ใช่ความมักง่าย</div>
+<p>ในฟังก์ชันเดียวกันมีทั้ง <code>roll.params['const']</code> (ใช้<strong>ชื่อ</strong>) และ <code>roll.params.iloc[:, 1]</code> (ใช้<strong>ตำแหน่ง</strong>) — เพราะ <code>sm.add_constant()</code> ตั้งชื่อให้เฉพาะคอลัมน์ที่มันเติมเข้าไปเอง คือ <code>const</code> · ส่วนคอลัมน์ข้อมูลเดิมจะได้ชื่อก็ต่อเมื่อ Series ที่ส่งเข้ามา<strong>มีชื่ออยู่แล้ว</strong> — ที่นี่ส่ง <code>pd.Series(btc_binance)</code> ซึ่งไม่มีชื่อ จึงต้องอ้างด้วยตำแหน่ง</p>
+<p>🧭 อยากให้เรียกด้วยชื่อได้ทั้งคู่ ให้ตั้งชื่อ Series ตั้งแต่ต้น: <code>pd.Series(btc_binance, name="log_b")</code> — หลักการเดียวกับที่เจอในบทที่ 13</p>
+</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: interpret OLS output</summary>
+<div class="ans">
+<p>สมมติ OLS ของ AAPL บน MSFT ได้: α=0.5, β=0.72, R²=0.81, p(β)=0.000<br><br>
+แปลว่า:<br>
+• β=0.72: MSFT ขึ้น 1% → AAPL มักขึ้น 0.72% (AAPL volatile น้อยกว่า)<br>
+• R²=0.81: 81% ของความผันผวน AAPL อธิบายได้ด้วย MSFT — 19% ที่เหลือคือ spread<br>
+• Hedge: Long AAPL $100K → Short MSFT $72K<br>
+• p=0.000: β ≠ 0 แน่นอน (มีนัยสำคัญสูงมาก)<br>
+• Residual mean ≈ 0 → spread ไม่ drift → น่าจะ stationary (ต้องยืนยันด้วย ADF)</p>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 14 ===================== -->
+<h2 id="ch14">บทที่ 14: Cointegration &amp; Z-score Signal</h2>
+<div class="xref">🔗 <strong>ทฤษฎีเต็ม ๆ อยู่เล่มอื่น:</strong> ทำไม stationarity ถึงเป็นเงื่อนไขตั้งต้นของทุกอย่างในบทนี้ — <a href="theory-part5.html">ทฤษฎีของ Quant · Part V (Time Series)</a> · เปิดเรื่องด้วย "กับดักที่ฆ่า quant มือใหม่มากที่สุด" ซึ่งคือเรื่องเดียวกับที่บทนี้กำลังสอน</div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Correlation บอกว่าสองสิ่งเดินไปทิศเดียวกัน — Cointegration บอกว่าสองสิ่ง <em>ผูกกันระยะยาว</em> แม้ระยะสั้นจะแยกออกจากกันได้ Cointegration = ข้อพิสูจน์ว่า spread มีแรงดึงกลับจริง = basis ของ Statistical Arbitrage ทั้งหมด</div>
+</div>
+
+<h3 id="s14-1">14.1 Correlation vs Cointegration</h3>
+
+<table>
+<tr><th></th><th>Correlation สูง</th><th>Cointegrated</th></tr>
+<tr><td><strong>หมายถึง</strong></td><td>เดินทิศเดียวกันในระยะสั้น</td><td>ผูกกันในระยะยาว มี "แรงดึง"</td></tr>
+<tr><td><strong>Spread</strong></td><td>อาจ drift ออกไปเรื่อยๆ</td><td>กลับหาค่ากลางเสมอ</td></tr>
+<tr><td><strong>ตัวอย่าง</strong></td><td>หุ้นสอง sector เดียวกัน</td><td>BTC สองตลาด, ADR vs local</td></tr>
+<tr><td><strong>Trade ได้ไหม?</strong></td><td>เสี่ยง — spread อาจไม่กลับ</td><td>ใช่ — spread ต้องกลับ (ในทฤษฎี)</td></tr>
+</table>
+
+<h3 id="s14-2">14.2 Engle-Granger Test — 2 ขั้นตอน</h3>
+
+<p>วิธี Engle-Granger: (1) OLS หา residuals → (2) ADF test บน residuals</p>
+
+<div class="fm">from statsmodels.tsa.stattools import adfuller, coint
+
+<span class="c"># วิธีที่ 1: Engle-Granger ด้วย coint() โดยตรง</span>
+score, pvalue, crit_vals = coint(np.log(btc_bybit), np.log(btc_binance))
+
+print(f"Cointegration test:")
+print(f"  Test statistic: {score:.4f}")
+print(f"  p-value:        {pvalue:.4f}")
+print(f"  Critical (5%):  {crit_vals[1]:.4f}")
+
+if pvalue &lt; 0.05:
+    print(f"✓ COINTEGRATED — spread มีแรงดึงกลับจริง")
+else:
+    print(f"✗ NOT COINTEGRATED — อย่า trade pair นี้!")
+
+<span class="c"># วิธีที่ 2: ADF บน residuals (เข้าใจกระบวนการมากขึ้น)</span>
+log_a = np.log(btc_bybit)
+log_b = np.log(btc_binance)
+X = sm.add_constant(log_b)
+residuals = sm.OLS(log_a, X).fit().resid
+adf_resid = adfuller(residuals)
+print(f"\nADF on residuals p-value: {adf_resid[1]:.4f}")</div>
+<div class="output">Cointegration test:
+  Test statistic: -4.7762
+  p-value:        0.0004
+  Critical (5%):  -3.3606
+✓ COINTEGRATED — spread มีแรงดึงกลับจริง
+
+ADF on residuals p-value: 0.0001</div>
+
+<div class="read-aloud">p-value = 0.0004 แล้วสรุปว่า "cointegrated" — <strong>ทิศทางนี้กลับหัวจากที่คนส่วนใหญ่คุ้น</strong> · เพราะสมมติฐานตั้งต้น (null) ของ <code>coint()</code> คือ <em>"คู่นี้<strong>ไม่</strong> cointegrate"</em> · p-value เล็ก = หลักฐานแรงพอจะ<strong>ล้ม</strong>สมมติฐานนั้น = คู่นี้ cointegrate จริง · จำสั้น ๆ: <strong>p เล็ก = ข่าวดี</strong></div>
+
+<div class="bx bk">
+<div class="bt">❌ ข้อผิดพลาดที่พบบ่อยที่สุดในเรื่องนี้ — อ่าน p-value กลับด้าน</div>
+<p>ถ้าเผลออ่านแบบ "p &gt; 0.05 = ผ่าน" เหมือนการทดสอบทั่วไป คุณจะ<strong>เลือกคู่ที่ไม่ cointegrate มาเทรดทั้งหมด</strong> และทิ้งคู่ที่ดีไปหมด — ผลคือพอร์ตที่ spread ไม่มีแรงดึงกลับ ซึ่งคือ<em>การเดาทิศทางล้วน ๆ</em> โดยที่คุณคิดว่ากำลังทำ market-neutral อยู่</p>
+<p>สาเหตุที่พลาด: การทดสอบตระกูลนี้ (ADF, coint, KPSS บางตัว) ตั้ง null เป็น "สิ่งที่<em>ไม่</em>อยากได้" — ต่างจาก t-test ที่ null คือ "ไม่มีผล" · <strong>เปิดคู่มือดู null ทุกครั้งก่อนตีความ</strong> อย่าเดาจากความเคยชิน</p>
+</div>
+
+<h3 id="s14-3">14.3 Johansen Test — สำหรับ 3+ Pairs</h3>
+
+<div class="fm">from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+<span class="c"># Johansen ทดสอบ cointegration ระหว่าง 3 series พร้อมกัน</span>
+btc_okx = 65000 + np.cumsum(np.random.normal(0, 100, n))  <span class="c"># ตลาดที่ 3</span>
+
+data = np.column_stack([np.log(btc_bybit), np.log(btc_binance), np.log(btc_okx)])
+result = coint_johansen(data, det_order=0, k_ar_diff=1)
+
+print("Johansen Trace Statistics:")
+for i in range(3):
+    trace_stat = result.lr1[i]
+    crit_5pct  = result.cvt[i, 1]
+    print(f"  r≤{i}: trace={trace_stat:.2f}, crit(5%)={crit_5pct:.2f} "
+          f"{'✓' if trace_stat &gt; crit_5pct else '✗'}")
+
+<span class="c"># r=0: ทดสอบว่ามีอย่างน้อย 1 cointegrating vector</span>
+<span class="c"># r≤1: ทดสอบว่ามีอย่างน้อย 2</span></div>
+<div class="output">Johansen Trace Statistics:
+  r≤0: trace=35.43, crit(5%)=29.80 ✓
+  r≤1: trace=10.34, crit(5%)=15.49 ✗
+  r≤2: trace=0.79, crit(5%)=3.84 ✗</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 อ่านผล Johansen — มันคือ "บันได" ไม่ใช่คำตอบเดียว</div>
+<div class="ad-code">r≤0: trace=35.43, crit=29.80 ✓   ← ล้มได้
+r≤1: trace=10.34, crit=15.49 ✗   ← ล้มไม่ได้ → หยุดตรงนี้
+r≤2: trace= 0.79, crit= 3.84 ✗</div>
+<div class="ad-steps">
+<p>วิธีอ่าน: ไล่<strong>จากบนลงล่าง</strong> หยุดที่แถวแรกที่ล้มไม่ได้ แล้วเลขแถวนั้นคือคำตอบ</p>
+<ol>
+<li><code>r≤0</code> ถามว่า "มี cointegrating vector <strong>0 อัน</strong> ใช่ไหม" · trace 35.43 &gt; 29.80 → <strong>ล้มข้อนี้ได้</strong> แปลว่ามีอย่างน้อย 1 อัน → ไต่ขึ้นแถวถัดไป</li>
+<li><code>r≤1</code> ถามว่า "มี<strong>ไม่เกิน 1 อัน</strong> ใช่ไหม" · trace 10.34 &lt; 15.49 → <strong>ล้มไม่ได้</strong> → ยอมรับว่าจริง</li>
+<li>สรุป: <strong>มี cointegrating vector 1 อันพอดี</strong> — คือ 3 ตลาดนี้มีความสัมพันธ์ระยะยาวชุดเดียว (ตามที่ควรเป็น เพราะเราสร้าง Bybit กับ Binance ให้เกาะกัน ส่วน OKX เป็นเส้นอิสระ)</li>
+</ol>
+<p>⚠️ <code>✓</code> ในผลลัพธ์แปลว่า "<strong>ล้ม null ได้</strong>" ไม่ได้แปลว่า "ดี" — ✓ ที่แถวสุดท้ายทุกแถวจะแปลว่าไม่มีความสัมพันธ์ระยะยาวเลย</p>
+</div>
+</div>
+
+<div class="bx bp">
+<div class="bt">🔵 [รอบสอง] ทำไมต้อง Johansen ทั้งที่มี Engle-Granger แล้ว</div>
+<p>Engle-Granger ต้อง<strong>เลือกก่อนว่าใครเป็นตัวแปรตาม</strong> (<code>coint(a, b)</code> กับ <code>coint(b, a)</code> ให้ p-value ไม่เท่ากัน!) — พอมี 3 สินทรัพย์ขึ้นไป การเลือกนี้กลายเป็นการตัดสินใจตามอำเภอใจที่กระทบผลลัพธ์ · Johansen ทดสอบ<strong>ทุกทิศพร้อมกันโดยไม่ต้องเลือก</strong> และบอกได้ด้วยว่ามีความสัมพันธ์<em>กี่ชุด</em> ไม่ใช่แค่ "มี/ไม่มี"</p>
+<p>ในทางปฏิบัติ: 2 ขา → Engle-Granger พอ (อ่านง่ายกว่า) · 3 ขาขึ้นไป (เช่น basket ข้ามตลาด, curve trade) → Johansen เท่านั้น · และ <code>k_ar_diff</code> ที่ตั้งเป็น 1 นั้นควรเลือกด้วย information criterion จริง ๆ ไม่ใช่ค่าคงที่ — ตั้งผิดทำให้ผลพลิกได้</p>
+</div>
+
+<h3 id="s14-4">14.4 Half-Life — Spread กลับเร็วแค่ไหน?</h3>
+
+<p>Half-life คือเวลาที่ spread ใช้กลับมาครึ่งทางจากค่าสุดขั้ว — ใช้เลือก window และ holding period</p>
+
+$$\text{Half-life} = \frac{-\ln(2)}{\ln(\hat{\phi})} \approx \frac{-\ln(2)}{\hat{\phi}-1}$$
+<p class="caption">ซ้าย = สูตรแม่นยำ (โค้ดด้านล่างใช้สูตรนี้) · ขวา = ค่าประมาณ (ใช้ได้เมื่อ \(\hat{\phi}\) ใกล้ 1)</p>
+
+<div class="fm">def calc_halflife(spread):
+    """คำนวณ half-life ของ mean-reverting spread"""
+    spread_lag = pd.Series(spread).shift(1)
+    delta      = pd.Series(spread) - spread_lag
+    df_hl = pd.DataFrame({"delta": delta, "lag": spread_lag}).dropna()
+
+    X = sm.add_constant(df_hl["lag"])
+    phi = sm.OLS(df_hl["delta"], X).fit().params["lag"]
+
+    if phi &gt;= 0:
+        return np.inf  <span class="c"># ไม่ mean-reverting (random walk หรือ explosive)</span>
+    if phi &lt;= -1:
+        return np.inf  <span class="c"># Oscillating — ไม่ใช่ mean-reverting จริง</span>
+    half_life = -np.log(2) / np.log(1 + phi)  <span class="c"># สูตรแม่นยำ: phi จาก regression = φ̂-1 ดังนั้น 1+phi = φ̂ → -ln(2)/ln(φ̂)</span>
+    return half_life
+
+hl = calc_halflife(resid)
+print(f"Half-life: {hl:.1f} วัน")
+print(f"แนะนำ: rolling window ≈ {hl*3:.0f} วัน, hold ไม่เกิน {hl*2:.0f} วัน")</div>
+<div class="output">Half-life: 3.8 วัน
+แนะนำ: rolling window ≈ 11 วัน, hold ไม่เกิน 8 วัน</div>
+
+<div class="read-aloud">อ่านผลนี้ว่า: "spread ใช้เวลา <strong>3.8 วัน</strong> เพื่อเดินกลับมาครึ่งทางจากจุดที่เหวี่ยงออกไป" — ตัวเลขนี้ตั้งค่าให้คุณสองอย่างทันที: <strong>window</strong> ต้องยาวพอเห็นรอบการดึงกลับ (≈3 เท่าของ half-life) และ <strong>holding period</strong> ต้องไม่ยาวเกินจนถือค้างหลังกำไรวิ่งมาแล้ว (≈2 เท่า) · ⚠️ ถ้าได้ half-life สั้นมาก (&lt;1 วัน) แปลว่า spread เป็น noise ไม่ใช่ mean-reversion จริง — ค่าคำแนะนำจะกลายเป็น 0 วันซึ่งเทรดไม่ได้ นั่นคือสัญญาณว่า pair นี้ไม่ควรเทรด ไม่ใช่ว่าโค้ดพัง</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Signal Generation Pipeline ครบวงจร</div>
+<div class="fm">def pair_signal(price_a, price_b, window=60,
+                entry_z=2.0, exit_z=0.5):
+    """
+    สร้าง trading signal สำหรับ pair trading
+    Returns: DataFrame พร้อม signal column
+    """
+    df = build_spread(price_a, price_b, window)
+    z  = df["zscore"]
+
+    signals = pd.Series("HOLD", index=z.index)
+    signals[z >  entry_z] = "SHORT_A_LONG_B"   <span class="c"># spread แพงเกิน</span>
+    signals[z &lt; -entry_z] = "LONG_A_SHORT_B"   <span class="c"># spread ถูกเกิน</span>
+    signals[abs(z) &lt; exit_z] = "EXIT"
+
+    df["signal"] = signals
+    <span class="c"># ⚠ สำคัญมาก: signal ที่ได้จาก df.index[t] ใช้ข้อมูลถึงวัน t</span>
+    <span class="c"># ต้อง .shift(1) ใน backtest ก่อน multiply ด้วย return เสมอ</span>
+    return df
+
+result = pair_signal(
+    pd.Series(btc_bybit),
+    pd.Series(btc_binance),
+    window=60, entry_z=2.0, exit_z=0.5
+)
+print(result[["spread","beta","zscore","signal"]].tail(10))</div>
+</div>
+
+
+<!-- ===================== CHAPTER 15 ===================== -->
+<h2 id="ch15">บทที่ 15: Optimization</h2>
+<div class="xref">🔗 <strong>ทฤษฎีเต็ม ๆ อยู่เล่มอื่น:</strong> ที่มาของ Markowitz และเหตุผลเชิงคณิตศาสตร์ของ efficient frontier — <a href="math-part5.html#ch4">คณิตศาสตร์สำหรับ Options · บทที่ 4: Nonlinear Optimization → Markowitz</a> · ส่วนทฤษฎีพอร์ตและ CAPM อยู่ที่ <a href="theory-part2.html">ทฤษฎีของ Quant · Part II</a></div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Optimization คือการหาค่าตัวแปร (เช่น portfolio weights, position size) ที่ทำให้ objective function (เช่น Sharpe ratio) ดีที่สุด ภายใต้ constraints (เช่น weights รวม = 1) Python ทำได้ด้วย <code>scipy.optimize.minimize</code></div>
+<div class="ki-eq">$$\max_{\mathbf{w}} \text{Sharpe}(\mathbf{w}) = \frac{\mathbf{w}^\top \boldsymbol{\mu} - r_f}{\sqrt{\mathbf{w}^\top \boldsymbol{\Sigma} \mathbf{w}}} \quad \text{s.t.} \sum w_i = 1,\ w_i \geq 0$$</div>
+</div>
+
+<h3 id="s15-1">15.1 scipy.optimize.minimize — API</h3>
+
+<div class="fm">from scipy.optimize import minimize
+import numpy as np
+
+<span class="c"># สมมติว่าต้องการหา x ที่ทำให้ f(x) = (x-3)^2 น้อยที่สุด</span>
+def f(x):
+    return (x[0] - 3)**2
+
+result = minimize(f, x0=[0], method="SLSQP")
+print(f"Optimal x: {result.x[0]:.4f}  (คาดหวัง: 3.0)")
+print(f"Min f(x):  {result.fun:.6f}")
+print(f"Success:   {result.success}")</div>
+<div class="output">Optimal x: 3.0000  (คาดหวัง: 3.0)
+Min f(x):  0.000000
+Success:   True</div>
+
+<div class="read-aloud">อ่าน <code>minimize(f, x0=[0])</code> ว่า: "หาค่า x ที่ทำให้ <code>f</code> <strong>น้อยที่สุด</strong> โดยเริ่มเดาที่ x=0" — สิ่งที่ต้องเข้าใจคือ optimizer <strong>ไม่รู้จักสูตรของคุณ</strong> มันแค่ลองค่า ดูว่าผลออกมาเท่าไร แล้วขยับไปทางที่ผลลดลง ทำซ้ำจนขยับแล้วไม่ดีขึ้น · <code>x0</code> จึงสำคัญ — จุดเริ่มต่างกันอาจได้คำตอบต่างกันถ้าฟังก์ชันมีหลุมหลายหลุม</div>
+
+<div class="bx ba">
+<div class="bt">⚠️ <code>result.success</code> ต้องเช็คทุกครั้ง — optimizer โกหกแบบเงียบ ๆ ได้</div>
+<p><code>minimize()</code> <strong>คืนค่ากลับมาเสมอ ไม่ว่าจะหาเจอหรือไม่</strong> · ถ้ามันไม่ converge ค่าใน <code>result.x</code> จะเป็นตำแหน่งที่มันยอมแพ้ ไม่ใช่คำตอบ — และถ้าคุณไม่เช็ค <code>result.success</code> คุณจะเอา "น้ำหนักพอร์ตที่ไม่ใช่คำตอบ" ไปลงเงินจริง โดยไม่มี error ใด ๆ เตือน</p>
+</div>
+
+<h3 id="s15-2">15.2 Sharpe Ratio Maximization</h3>
+
+<div class="fm">def sharpe_maximize(returns_df, risk_free=0.0, periods=252):
+    """
+    หา portfolio weights ที่ maximize Sharpe ratio
+    returns_df: DataFrame ของ daily returns (cols = assets)
+    """
+    n = len(returns_df.columns)
+    mu    = returns_df.mean().values * periods        <span class="c"># annualized mean</span>
+    sigma = returns_df.cov().values * periods         <span class="c"># annualized cov</span>
+
+    def neg_sharpe(weights):
+        """คืนค่า negative Sharpe (minimize = maximize Sharpe)"""
+        port_ret = weights @ mu
+        port_var = weights @ sigma @ weights
+        return -(port_ret - risk_free) / np.sqrt(port_var)
+
+    <span class="c"># Constraints</span>
+    constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]  <span class="c"># sum = 1</span>
+    bounds      = [(0, 1)] * n                                        <span class="c"># no short</span>
+    x0          = np.ones(n) / n                                      <span class="c"># equally weighted start</span>
+
+    result = minimize(neg_sharpe, x0,
+                      method="SLSQP",
+                      bounds=bounds,
+                      constraints=constraints)
+
+    if not result.success:
+        print("Warning: optimizer did not converge")
+
+    weights = result.x
+    port_ret = weights @ mu
+    port_vol = np.sqrt(weights @ sigma @ weights)
+
+    print("=== Max Sharpe Portfolio ===")
+    for name, w in zip(returns_df.columns, weights):
+        print(f"  {name}: {w:.1%}")
+    print(f"  Expected Return: {port_ret:.1%}/yr")
+    print(f"  Volatility:      {port_vol:.1%}/yr")
+    print(f"  Sharpe Ratio:    {(port_ret-risk_free)/port_vol:.2f}")
+    return weights
+
+<span class="c"># ทดสอบ</span>
+np.random.seed(0)
+rets = pd.DataFrame(np.random.multivariate_normal(
+    [0.001, 0.0007, 0.0012],
+    [[0.0004, 0.0002, 0.0001],
+     [0.0002, 0.0003, 0.0001],
+     [0.0001, 0.0001, 0.0005]], 252),
+    columns=["BTC","ETH","SOL"])
+
+optimal_w = sharpe_maximize(rets)</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 ฝึกอ่าน 2 ท่อนที่ดูลึกลับที่สุดในโค้ดข้างบน</div>
+<div class="ad-code"><span class="c"># ท่อนที่ 1</span>
+port_ret = weights @ mu
+<span class="c"># ท่อนที่ 2</span>
+constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]</div>
+<div class="ad-steps">
+<p><strong>ท่อนที่ 1:</strong> เครื่องหมาย <code>@</code> คือ "คูณแบบเวกเตอร์/เมทริกซ์" — <code>weights @ mu</code> อ่านว่า "เอาน้ำหนักแต่ละตัว คูณ return คาดหวังของ asset นั้น แล้วบวกรวมกัน" เท่ากับเขียน loop เองว่า:</p>
+<div style="font-family:'Courier New',monospace;background:#0f172a;color:#e2e8f0;padding:10px 14px;border-radius:6px;font-size:.85em;line-height:1.6;white-space:pre">port_ret = 0
+for w, m in zip(weights, mu):
+    port_ret = port_ret + w * m</div>
+<p style="margin-top:8px"><strong>ท่อนที่ 2:</strong> อ่านจากในออกนอก:</p>
+<ol>
+<li><code>lambda w: np.sum(w) - 1</code> — ฟังก์ชันจิ๋ว: "รับ w มา แล้วคืนค่า ผลรวมของ w ลบ 1"</li>
+<li><code>"type": "eq"</code> — บอก optimizer ว่าค่าที่ฟังก์ชันนี้คืน <strong>ต้องเท่ากับ 0</strong> → แปลว่า sum(w) - 1 = 0 → sum(w) = 1 = "ลงทุนเต็มพอดี ไม่ขาดไม่เกิน"</li>
+<li><code>[ { ... } ]</code> — เป็น list ของ dict เพราะใส่ได้หลายเงื่อนไข (scipy กำหนดรูปแบบนี้)</li>
+</ol>
+<p>นี่คือ "ภาษาเฉพาะ" ของ scipy — เจอครั้งแรกทุกคนงง พออ่านออกแล้วจะเห็นว่ามันแค่บอกว่า <em>"เงื่อนไข: น้ำหนักรวมกันต้องเป็น 1"</em></p>
+</div>
+</div>
+
+<h3 id="s15-3">15.3 Kelly Criterion — Optimal Position Size</h3>
+
+$$f^* = \frac{\mu - r_f}{\sigma^2} \qquad \text{(continuous Kelly)}$$
+
+<div class="fm">def kelly_fraction(mean_ret, std_ret, risk_free=0.0, fraction=0.25):
+    """
+    คำนวณ Kelly fraction สำหรับ continuous distribution
+    fraction: ใช้ 0.25 (Quarter-Kelly) เพื่อความปลอดภัย
+    """
+    kelly_full = (mean_ret - risk_free) / (std_ret ** 2)
+    kelly_frac = kelly_full * fraction
+
+    print(f"Full Kelly:    {kelly_full:.2f}x")
+    print(f"Quarter Kelly: {kelly_frac:.2f}x  ← แนะนำ")
+    return kelly_frac
+
+<span class="c"># ตัวอย่าง: กลยุทธ์ที่มี Sharpe = 1.5</span>
+daily_mean = 0.001      <span class="c"># 0.1% ต่อวัน</span>
+daily_std  = 0.015      <span class="c"># 1.5% ต่อวัน</span>
+f = kelly_fraction(daily_mean, daily_std)</div>
+
+<div class="bx bb">
+<div class="bt">Kelly ที่ใช้ที่นี่ = Continuous Kelly (สำหรับ return กระจาย Normal)</div>
+<p>สูตร \(f^* = \frac{\mu - r_f}{\sigma^2}\) เหมาะกับ asset ที่ return กระจายแบบ Normal distribution ต่อเนื่อง<br>
+สำหรับ <strong>discrete bet</strong> เช่น Binary outcome (win ได้ b เท่า, lose 1): \(f^* = \frac{pb - (1-p)}{b}\)<br><br>
+ใน Quant Trading ส่วนใหญ่ใช้ continuous Kelly หรือบ่อยกว่านั้นใช้ <strong>Half Kelly (f*/2) หรือ Quarter Kelly (f*/4)</strong> เพราะ:<br>
+• Return จริงไม่ Normal (fat tail)<br>
+• Estimate μ และ σ มี error เสมอ<br>
+• Full Kelly มี drawdown รุนแรงมากในช่วง streak ของ losing trades</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">อย่าใช้ Full Kelly ในทางปฏิบัติ</div>
+<p>Full Kelly maximize geometric growth ในทฤษฎี แต่ในทางปฏิบัติ:<br>
+• ประมาณ parameters จากข้อมูลมีความผิดพลาด → Full Kelly อาจ oversize มาก<br>
+• Drawdown จาก Full Kelly ใหญ่มาก (50%+ เป็นปกติ) → ทนไม่ไหว<br>
+<strong>ใช้ Quarter-Kelly (f*/4) เป็นจุดเริ่มต้น — Part IV จะพาไปลึกขึ้นในเรื่องนี้</strong></p>
+</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Mean-Variance Optimization (Efficient Frontier)</div>
+<div class="fm">def efficient_frontier(returns_df, n_points=100):
+    """
+    สร้าง efficient frontier:
+    สำหรับ return เป้าหมายแต่ละระดับ → หาพอร์ตที่ vol ต่ำสุด
+    """
+    n = len(returns_df.columns)
+    mu    = returns_df.mean().values * 252   <span class="c"># expected return รายปี</span>
+    sigma = returns_df.cov().values * 252    <span class="c"># covariance รายปี</span>
+
+    <span class="c"># ไล่ return เป้าหมาย จากต่ำสุดถึงสูงสุด เป็น n_points จุด</span>
+    target_returns = np.linspace(mu.min(), mu.max(), n_points)
+
+    def portfolio_variance(w):
+        """สิ่งที่ต้องการ minimize: ความแปรปรวนของพอร์ต"""
+        return w @ sigma @ w
+
+    frontier_vols = []                       <span class="c"># เก็บ vol ต่ำสุดของแต่ละเป้า</span>
+    for target in target_returns:
+        <span class="c"># เงื่อนไข 1: น้ำหนักรวม = 1 (ลงทุนเต็มพอดี)</span>
+        sum_to_one = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+
+        <span class="c"># เงื่อนไข 2: return ของพอร์ต = target ของรอบนี้</span>
+        <span class="c"># (t=target จำเป็น! ดูกล่องกับดักด้านล่าง)</span>
+        hit_target = {"type": "eq", "fun": lambda w, t=target: w @ mu - t}
+
+        result = minimize(portfolio_variance,
+                          x0=np.ones(n) / n,        <span class="c"># เริ่มจากน้ำหนักเท่ากันทุกตัว</span>
+                          method="SLSQP",
+                          bounds=[(0, 1)] * n,      <span class="c"># ห้าม short (0 ≤ w ≤ 1)</span>
+                          constraints=[sum_to_one, hit_target])
+
+        if result.success:
+            min_vol = np.sqrt(result.fun)    <span class="c"># ได้ variance ต่ำสุด → ถอดรากเป็น vol</span>
+        else:
+            min_vol = np.nan                 <span class="c"># แก้ไม่ได้ (เป้าสูง/ต่ำเกิน) → เว้นจุดนี้</span>
+        frontier_vols.append(min_vol)
+
+    return target_returns, np.array(frontier_vols)
+
+rets_arr, vols_arr = efficient_frontier(rets)
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(vols_arr, rets_arr, color="#0d9488", linewidth=2, label="Efficient Frontier")
+ax.set_xlabel("Annual Volatility")
+ax.set_ylabel("Annual Return")
+ax.set_title("Efficient Frontier (BTC, ETH, SOL)")
+ax.legend()
+plt.tight_layout()
+plt.show()</div>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠ กับดัก lambda ใน loop — ทำไมต้องเขียน <code>lambda w, t=target</code></div>
+<p>ถ้าเขียน <code>lambda w: w @ mu - target</code> เฉย ๆ — lambda จะ "จำชื่อตัวแปร" ไม่ใช่ "จำค่า" พอ loop จบ <code>target</code> ชี้ไปที่ค่าสุดท้ายแล้ว ทุก lambda ที่สร้างไว้จะใช้ค่าเดียวกันหมด → frontier ผิดทั้งเส้นแบบเงียบ ๆ ไม่มี error<br><br>
+ท่า <code>t=target</code> คือการ "ถ่ายสำเนาค่า ณ รอบนั้น" เก็บไว้ใน t ของ lambda ตัวนั้นเอง — นี่เป็นกับดัก Python คลาสสิกที่แม้แต่ AI ยังเขียนพลาดเป็นครั้งคราว <strong>เจอ lambda ใน loop เมื่อไหร่ ให้มองหา <code>=</code> แบบนี้เสมอ</strong></p>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: Minimize Portfolio Variance (Min-Vol Portfolio)</summary>
+<div class="ans">
+<div class="fm">def min_variance_portfolio(returns_df):
+    """หา portfolio ที่มี variance ต่ำที่สุด"""
+    n = len(returns_df.columns)
+    sigma = returns_df.cov().values * 252
+
+    result = minimize(
+        lambda w: w @ sigma @ w,
+        x0=np.ones(n)/n,
+        method="SLSQP",
+        bounds=[(0, 1)]*n,
+        constraints=[{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
+    )
+
+    w = result.x
+    vol = np.sqrt(w @ sigma @ w)
+    print("Min Variance Portfolio:")
+    for name, wi in zip(returns_df.columns, w):
+        print(f"  {name}: {wi:.1%}")
+    print(f"  Annual Vol: {vol:.1%}")
+    return w
+
+min_variance_portfolio(rets)</div>
+<div class="output">Min Variance Portfolio:
+  BTC: 23.0%
+  ETH: 44.2%
+  SOL: 32.8%
+  Annual Vol: 24.3%</div>
+
+<div class="read-aloud">หัวใจอยู่บรรทัดเดียว: <code>lambda w: w @ sigma @ w</code> — อ่านว่า "ให้ค่าความแปรปรวนของพอร์ตที่น้ำหนัก w" · เทียบกับ <code>sharpe_maximize</code> ข้างบนที่ต้องใส่เครื่องหมายลบ (<code>-Sharpe</code>) เพราะอยากได้ค่า<em>มาก</em>สุด — ตรงนี้<strong>ไม่ต้องใส่ลบ</strong> เพราะเราอยากได้ความเสี่ยง<em>น้อย</em>สุดอยู่แล้ว ตรงกับที่ <code>minimize</code> ทำพอดี</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 16 ===================== -->
+<h2 id="ch16">บทที่ 16: Linear Programming</h2>
+<div class="xref">🔗 <strong>ทฤษฎีเต็ม ๆ อยู่เล่มอื่น:</strong> ทฤษฎีของ Linear Programming — <a href="math-part5.html#ch3">คณิตศาสตร์สำหรับ Options · บทที่ 3: Linear Programming</a></div>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Linear Programming (LP) คือ optimization ที่ทั้ง objective function และ constraints เป็น linear — เร็วกว่า nonlinear optimization มาก ใช้ใน Quant สำหรับ: กำหนด portfolio weight ภายใต้หลาย constraint พร้อมกัน, minimize transaction cost, sizing หลาย position พร้อมกัน</div>
+<div class="ki-eq">$$\min_{\mathbf{w}}\ \mathbf{c}^\top \mathbf{w} \quad \text{s.t.}\ \mathbf{A}\mathbf{w} \leq \mathbf{b},\ \mathbf{A}_{eq}\mathbf{w} = \mathbf{b}_{eq},\ \mathbf{lb} \leq \mathbf{w} \leq \mathbf{ub}$$</div>
+</div>
+
+<h3 id="s16-1">16.1 scipy.linprog — API</h3>
+
+<div class="fm">from scipy.optimize import linprog
+
+<span class="c"># ตัวอย่างง่าย: minimize cost ของการซื้อ 3 assets</span>
+<span class="c"># minimize: 2*w1 + 3*w2 + 1.5*w3</span>
+<span class="c"># subject to: w1+w2+w3 = 1 (fully invested)</span>
+<span class="c">#             w1 >= 0.1 (min 10% BTC)</span>
+<span class="c">#             w2 >= 0.1 (min 10% ETH)</span>
+
+c   = [2.0, 3.0, 1.5]                   <span class="c"># objective: cost coefficients</span>
+A_eq = [[1, 1, 1]]                       <span class="c"># equality: sum = 1</span>
+b_eq = [1]
+bounds = [(0.1, 0.6), (0.1, 0.5), (0, 0.8)]  <span class="c"># min/max ของแต่ละ w</span>
+
+result = linprog(c, A_eq=A_eq, b_eq=b_eq,
+                 bounds=bounds, method="highs")
+
+print(f"Optimal weights: {result.x.round(3)}")
+print(f"Minimum cost:    {result.fun:.4f}")
+print(f"Success: {result.success}")</div>
+
+<h3 id="s16-2">16.2 Portfolio LP — ใส่ Constraints หลายอย่างพร้อมกัน</h3>
+
+<div class="fm">from scipy.optimize import linprog
+import numpy as np
+
+def lp_portfolio(expected_returns, min_return=0.10,
+                 max_weights=None, min_weights=None,
+                 max_sector=None, sectors=None):
+    """
+    Minimize portfolio variance (approximated as linear)
+    ด้วย LP — เหมาะสำหรับ constraint-heavy problem
+
+    expected_returns: array ของ expected annual return แต่ละ asset
+    min_return: minimum portfolio return ที่ต้องการ
+    """
+    n = len(expected_returns)
+
+    <span class="c"># Objective: minimize negative return (= maximize return)</span>
+    <span class="c"># Linear approximation — ใช้สำหรับ constraint-heavy problems</span>
+    c = -np.array(expected_returns)
+
+    <span class="c"># Equality: sum(w) = 1</span>
+    A_eq = [np.ones(n)]
+    b_eq = [1.0]
+
+    <span class="c"># Inequality: min return constraint</span>
+    <span class="c"># w @ returns >= min_return  →  -w @ returns <= -min_return</span>
+    A_ub = [-np.array(expected_returns)]
+    b_ub = [-min_return]
+
+    <span class="c"># Bounds: default 0–1 (long only)</span>
+    if min_weights is None: min_weights = [0.0] * n
+    if max_weights is None: max_weights = [1.0] * n
+    bounds = list(zip(min_weights, max_weights))
+
+    result = linprog(c, A_ub=A_ub, b_ub=b_ub,
+                     A_eq=A_eq, b_eq=b_eq,
+                     bounds=bounds, method="highs")
+
+    return result
+
+<span class="c"># ตัวอย่าง: 5 assets</span>
+assets  = ["BTC", "ETH", "SOL", "AAPL", "GOLD"]
+returns = [0.35,  0.25,  0.40,  0.12,   0.08]
+
+result = lp_portfolio(
+    returns,
+    min_return  = 0.20,
+    min_weights = [0.05]*5,      <span class="c"># min 5% ทุก asset</span>
+    max_weights = [0.40]*5,      <span class="c"># max 40% ทุก asset</span>
+)
+
+print("LP Portfolio Allocation:")
+for asset, w in zip(assets, result.x):
+    print(f"  {asset:5s}: {w:.1%}")
+print(f"Expected Return: {np.dot(result.x, returns):.1%}")</div>
+
+<h3 id="s16-3">16.3 PuLP — สำหรับ Integer Programming</h3>
+
+<div class="fm"><span class="c"># pip install pulp</span>
+from pulp import *
+
+<span class="c"># Integer LP: เลือก k หุ้นดีที่สุดจาก n ตัว</span>
+scores = {"BTC": 0.85, "ETH": 0.70, "SOL": 0.60,
+          "AAPL": 0.55, "GOLD": 0.40}
+costs  = {"BTC": 5000, "ETH": 2000, "SOL": 500,
+          "AAPL": 1000, "GOLD": 800}
+budget = 8000   <span class="c"># งบ 8000 บาท</span>
+
+prob = LpProblem("SelectAssets", LpMaximize)
+
+<span class="c"># ตัวแปร binary: 1=เลือก, 0=ไม่เลือก</span>
+x = {a: LpVariable(f"x_{a}", cat="Binary") for a in scores}
+
+<span class="c"># Objective: maximize total score</span>
+prob += lpSum(scores[a] * x[a] for a in scores)
+
+<span class="c"># Constraints</span>
+prob += lpSum(costs[a] * x[a] for a in scores) &lt;= budget  <span class="c"># budget</span>
+prob += lpSum(x[a] for a in scores) &lt;= 3                   <span class="c"># เลือกได้ max 3 ตัว</span>
+
+prob.solve(PULP_CBC_CMD(msg=0))
+
+print("Selected assets:")
+for a in scores:
+    if x[a].value() == 1:
+        print(f"  {a}: score={scores[a]}, cost={costs[a]}")</div>
+
+<div class="ex">
+<div class="et">ตัวอย่าง: Position Sizing LP สำหรับ Pair Trading</div>
+<div class="fm"><span class="c"># กำหนด: มี 3 pairs พร้อม trade, capital จำกัด</span>
+<span class="c"># objective: maximize expected PnL</span>
+<span class="c"># constraints: total capital, max drawdown per pair, correlation limit</span>
+
+pairs       = ["BTC-Bybit/Binance", "ETH-OKX/Bybit", "SOL-Binance/OKX"]
+exp_pnl     = [0.15, 0.12, 0.20]   <span class="c"># expected annual return</span>
+max_dd      = [0.05, 0.08, 0.10]   <span class="c"># max expected drawdown</span>
+capital     = 1_000_000             <span class="c"># total capital บาท</span>
+
+<span class="c"># Minimize negative PnL = maximize PnL</span>
+c   = [-e for e in exp_pnl]         <span class="c"># negate for minimization</span>
+
+<span class="c"># sum(allocation) = 1.0 (fully allocated)</span>
+A_eq = [[1, 1, 1]]
+b_eq = [1.0]
+
+<span class="c"># เงื่อนไข: drawdown ที่คาดของแต่ละ pair ≤ 5% ของ capital</span>
+<span class="c"># allocation_i × max_dd_i ≤ 0.05 — แยกกันทีละ pair = matrix แนวทแยง</span>
+A_ub = np.diag(max_dd)      <span class="c"># [[0.05, 0,    0   ],</span>
+                            <span class="c">#  [0,    0.08, 0   ],</span>
+                            <span class="c">#  [0,    0,    0.10]]</span>
+b_ub = [0.05] * 3
+
+bounds = [(0.0, 0.5)] * 3   <span class="c"># max 50% ต่อ pair</span>
+
+result = linprog(c, A_ub=A_ub, b_ub=b_ub,
+                 A_eq=A_eq, b_eq=b_eq,
+                 bounds=bounds, method="highs")
+
+print("Optimal Position Sizing:")
+for pair, alloc in zip(pairs, result.x):
+    print(f"  {pair}: {alloc:.1%} = ฿{alloc*capital:,.0f}")
+print(f"Expected Portfolio Return: {-result.fun:.1%}")</div>
+</div>
+
+<div class="ai-decode">
+<div class="ad-title">🤖 AI มักสร้าง matrix แนวทแยงด้วย nested comprehension — ฝึกอ่าน</div>
+<div class="ad-code">A_ub = [[max_dd[i] if j==i else 0 for j in range(3)] for i in range(3)]</div>
+<div class="ad-steps">
+<p>comprehension ซ้อนสองชั้น — <strong>อ่านจาก <code>for</code> ขวาสุดก่อน</strong>: <code>for i</code> สร้างทีละแถว แล้วค่อยอ่าน <code>for j</code> ที่อยู่ถัดมาทางซ้าย เพื่อสร้างทีละช่องในแถวนั้น:</p>
+<ol>
+<li><code>for i in range(3)</code> (ชั้นนอก, ขวาสุด) — สร้าง 3 แถว แถวละหนึ่ง i</li>
+<li><code>for j in range(3)</code> (ชั้นใน) — แต่ละแถวมี 3 ช่อง ช่องละหนึ่ง j</li>
+<li><code>max_dd[i] if j==i else 0</code> — แต่ละช่อง: "เอาค่า max_dd <strong>ถ้า</strong>อยู่บนเส้นทแยง (แถว=คอลัมน์) <strong>ไม่งั้น</strong>ใส่ 0"</li>
+</ol>
+<p>ผลคือ matrix เดียวกับ <code>np.diag(max_dd)</code> เป๊ะ — เวอร์ชัน np.diag สั้นกว่า อ่านง่ายกว่า และผิดยากกว่า ถ้า AI เขียนแบบ nested มา ขอให้มันแก้เป็น np.diag ได้เลย</p>
+</div>
+</div>
+
+<details>
+<summary>แบบฝึกหัด: LP Constraint สำหรับ Sector Limits</summary>
+<div class="ans">
+<div class="fm"><span class="c"># 6 assets ใน 2 sectors: Crypto (BTC,ETH,SOL) และ Tech (AAPL,MSFT,NVDA)</span>
+assets  = ["BTC","ETH","SOL","AAPL","MSFT","NVDA"]
+returns = [0.40, 0.30, 0.50, 0.15, 0.18, 0.25]
+
+<span class="c"># Crypto = assets 0,1,2 / Tech = assets 3,4,5</span>
+crypto = [1,1,1,0,0,0]
+tech   = [0,0,0,1,1,1]
+
+c    = [-r for r in returns]
+A_eq = [[1]*6]
+b_eq = [1.0]
+
+<span class="c"># Sector limits: Crypto ≤ 60%, Tech ≤ 60%</span>
+A_ub = [crypto, tech]
+b_ub = [0.60, 0.60]
+bounds = [(0.0, 0.4)] * 6   <span class="c"># max 40% per asset</span>
+
+res = linprog(c, A_ub=A_ub, b_ub=b_ub,
+              A_eq=A_eq, b_eq=b_eq,
+              bounds=bounds, method="highs")
+
+for a, w in zip(assets, res.x):
+    print(f"  {a}: {w:.1%}")
+print(f"Crypto total: {sum(res.x[:3]):.1%}  Tech total: {sum(res.x[3:]):.1%}")</div>
+</div>
+</details>
+
+
+<!-- ===================== CHAPTER 17 ===================== -->
+<h2 id="ch17">บทที่ 17: Signals &amp; Filters</h2>
+
+<div class="key-idea">
+<div class="ki-label">แก่นของบทนี้</div>
+<div class="ki-text">Signal คือ "เมื่อไหร่ควร trade" — บทนี้รวม 3 เครื่องมือ: <strong>Bollinger Bands</strong> (signal จาก volatility), <strong>Kalman Filter</strong> (track β แบบ adaptive), และ <strong>Signal Pipeline</strong> (รวมหลาย signal เข้าด้วยกัน) ซึ่งเป็น boilerplate ที่ใช้ได้กับทุก strategy</div>
+</div>
+
+<h3 id="s17-1">17.1 Bollinger Bands — Signal จาก Volatility</h3>
+
+<div class="fm">def bollinger_bands(series, window=20, n_std=2):
+    """คำนวณ Bollinger Bands"""
+    s    = pd.Series(series)
+    mean = s.rolling(window).mean()
+    std  = s.rolling(window).std()
+    upper = mean + n_std * std
+    lower = mean - n_std * std
+    return pd.DataFrame({"mid": mean, "upper": upper, "lower": lower,
+                          "pct_b": (s - lower) / (upper - lower)})
+
+<span class="c"># pct_b: 0 = ที่ lower band, 1 = ที่ upper band</span>
+<span class="c"># signal: SHORT เมื่อ pct_b > 1, LONG เมื่อ pct_b < 0</span>
+bb = bollinger_bands(spread, window=20, n_std=2)
+signal = pd.Series("HOLD", index=bb.index)
+signal[bb["pct_b"] &gt; 1.0] = "SHORT"
+signal[bb["pct_b"] &lt; 0.0] = "LONG"</div>
+
+<h3 id="s17-2">17.2 Kalman Filter — Track β แบบ Adaptive</h3>
+
+<p>Kalman Filter ประมาณ β แบบ real-time โดยอัปเดตทุกครั้งที่มีข้อมูลใหม่ — ดีกว่า rolling OLS ตรงที่ไม่มี window cutoff และ smooth กว่า</p>
+
+<div class="bx bb">
+<div class="bt">Kalman Filter ทำงานสองจังหวะ — "เดา แล้วแก้เดา" ซ้ำไปเรื่อย ๆ</div>
+<p>ลองนึกถึงการเดาน้ำหนักเพื่อนทุกครั้งที่เจอกัน:<br>
+<strong>จังหวะ 1 — เดา (Predict):</strong> "วันนี้น่าจะหนักเท่าเดิมจากครั้งก่อน แต่เวลาผ่านไปแล้ว ความมั่นใจของเราลดลงนิดหน่อย"<br>
+<strong>จังหวะ 2 — แก้เดา (Update):</strong> เห็นข้อมูลใหม่ (เพื่อนตัวจริง) → เทียบกับที่เดา → ถ้าต่างกัน ขยับคำเดาเข้าหาความจริง <em>ตามสัดส่วนความมั่นใจ</em> — มั่นใจคำเดาเดิมมากก็ขยับนิดเดียว ไม่มั่นใจก็ขยับเยอะ<br><br>
+ตัวเลข "สัดส่วนการขยับ" นี้คือ <strong>Kalman Gain (K)</strong> — หัวใจของทั้ง algorithm มีแค่นี้</p>
+</div>
+
+<div class="fm">def kalman_hedge_ratio(price_a, price_b,
+                        delta=1e-4, vt=1e-3):
+    """
+    Track hedge ratio beta ด้วย Kalman Filter
+    delta: process noise (ใหญ่ = ยอมให้ beta เปลี่ยนเร็ว)
+    vt:    observation noise (ใหญ่ = ราคามี noise มาก เชื่อข้อมูลใหม่น้อยลง)
+    Returns: array ของ beta ณ แต่ละเวลา
+    """
+    n       = len(price_a)
+    beta    = np.zeros(n)     <span class="c"># เตรียมที่เก็บ beta ของทุกวัน</span>
+    P       = np.ones(n)      <span class="c"># P = "ความไม่มั่นใจ" ในค่า beta (variance ของคำเดา)</span>
+    beta[0] = 1.0             <span class="c"># วันแรก: เดาไว้ก่อนว่า beta = 1</span>
+
+    for t in range(1, n):
+        <span class="c"># ── จังหวะ 1: เดา (Predict) ──</span>
+        <span class="c"># beta วันนี้น่าจะเท่าเมื่อวาน แต่ความไม่มั่นใจเพิ่มขึ้นตาม delta</span>
+        P_pred = P[t-1] + delta
+
+        <span class="c"># ── จังหวะ 2: แก้เดา (Update) ด้วยข้อมูลใหม่ ──</span>
+        x = price_b[t]              <span class="c"># ราคาตลาด B วันนี้ (ตัวพยากรณ์)</span>
+
+        y_pred = beta[t-1] * x      <span class="c"># ราคา A "ที่ควรเป็น" ตามคำเดาเดิม</span>
+        innov  = price_a[t] - y_pred  <span class="c"># ของจริง - ที่เดา = "เดาพลาดเท่าไหร่"</span>
+
+        S = x**2 * P_pred + vt      <span class="c"># ความแปรปรวนรวมของความพลาด</span>
+                                    <span class="c"># (จากความไม่มั่นใจใน beta + noise ของราคา)</span>
+        K = P_pred * x / S          <span class="c"># Kalman Gain: "ควรขยับคำเดากี่ %"</span>
+                                    <span class="c"># ไม่มั่นใจมาก (P สูง) → K ใหญ่ → ขยับเยอะ</span>
+                                    <span class="c"># ราคา noise มาก (vt สูง) → K เล็ก → ขยับนิดเดียว</span>
+
+        beta[t] = beta[t-1] + K * innov   <span class="c"># ขยับ beta เข้าหาความจริง ตามสัดส่วน K</span>
+        P[t]    = (1 - K * x) * P_pred    <span class="c"># แก้เดาแล้ว → ความมั่นใจเพิ่มขึ้น (P ลดลง)</span>
+
+    return beta
+
+<span class="c"># ทดสอบ</span>
+log_a = np.log(btc_bybit)
+log_b = np.log(btc_binance)
+kf_beta = kalman_hedge_ratio(log_a, log_b)
+
+print(f"Kalman Beta (latest 5): {kf_beta[-5:].round(6)}")</div>
+
+<h3 id="s17-3">17.3 Signal Pipeline — รวมทุกอย่างเข้าด้วยกัน</h3>
+
+<div class="fm">class PairTradingSignal:
+    """
+    Signal pipeline สำหรับ Pair Trading
+    รวม: OLS hedge ratio, z-score, Bollinger filter
+    """
+    def __init__(self, window=60, entry_z=2.0, exit_z=0.5):
+        self.window   = window
+        self.entry_z  = entry_z
+        self.exit_z   = exit_z
+
+    def fit(self, price_a: pd.Series, price_b: pd.Series):
+        """ประมาณ parameters จากข้อมูลประวัติ"""
+        self.price_a = price_a
+        self.price_b = price_b
+
+        <span class="c"># OLS spread</span>
+        self.df = build_spread(price_a, price_b, self.window)
+
+        <span class="c"># Half-life</span>
+        self.halflife = calc_halflife(self.df["spread"].dropna())
+        print(f"Half-life: {self.halflife:.1f} วัน")
+
+        <span class="c"># ADF test</span>
+        adf_p = adfuller(self.df["spread"].dropna())[1]
+        self.is_stationary = adf_p &lt; 0.05
+        print(f"Stationary: {self.is_stationary} (p={adf_p:.3f})")
+        return self
+
+    def signal(self) -> pd.Series:
+        """สร้าง trading signal"""
+        z = self.df["zscore"]
+        sig = pd.Series("HOLD", index=z.index)
+        sig[z &gt;  self.entry_z] = "SHORT_A"
+        sig[z &lt; -self.entry_z] = "LONG_A"
+        sig[abs(z) &lt; self.exit_z] = "EXIT"
+        return sig
+
+    def summary(self):
+        """แสดง summary ของ current state"""
+        current_z = self.df["zscore"].iloc[-1]
+        current_b = self.df["beta"].iloc[-1]
+        sig = self.signal().iloc[-1]
+        print(f"=== Pair Signal Summary ===")
+        print(f"Current Z-score: {current_z:.3f}")
+        print(f"Current Beta:    {current_b:.6f}")
+        print(f"Signal:          {sig}")
+        print(f"Is Stationary:   {self.is_stationary}")
+
+<span class="c"># ใช้งาน</span>
+pipeline = PairTradingSignal(window=60, entry_z=2.0, exit_z=0.5)
+pipeline.fit(pd.Series(btc_bybit), pd.Series(btc_binance))
+pipeline.summary()</div>
+
+<div class="bx bg" style="margin-top:28px">
+<div class="bt">จบ Part II — สิ่งที่ทำได้แล้ว</div>
+<p>
+• ทดสอบ stationarity ด้วย ADF test ✓<br>
+• ยืนยัน cointegration ด้วย Engle-Granger และ Johansen ✓<br>
+• ประมาณ β ด้วย OLS และ Kalman Filter ✓<br>
+• สร้าง z-score signal สำหรับ entry/exit ✓<br>
+• Maximize Sharpe ratio ด้วย <code>scipy.optimize</code> ✓<br>
+• กำหนด portfolio constraint ด้วย Linear Programming ✓<br>
+• รวมทุกอย่างเป็น <code>PairTradingSignal</code> class ✓<br><br>
+ใน <strong>Part III</strong> เราจะ refactor code นี้ให้เป็น OOP ที่ maintainable และ extensible
+</p>
+</div>
+
+<div class="bx bk">
+<div class="bt">⚠ คำเตือน: ตัวเลขใน Part II คือ In-Sample — อย่าเชื่อ 100%</div>
+<p>ยินดีด้วย — มาถึงตรงนี้แสดงว่าคุณสร้าง strategy แรกได้แล้ว แต่มีเรื่องสำคัญหนึ่งอย่างที่ต้องรู้ก่อนใช้เงินจริง: Sharpe 2.0+ และ Return 15%+ ที่เห็นใน Part II ล้วน <strong>คำนวณจากข้อมูลชุดเดียวกับที่ optimize parameter</strong> (in-sample)<br><br>
+ในชีวิตจริง (out-of-sample) ผลลัพธ์มักต่ำกว่า <strong>50–80%</strong> เพราะ:<br>
+• ตลาดเปลี่ยน — pattern ในอดีตไม่ซ้ำแบบในอนาคต<br>
+• Parameter ที่ดีในอดีต = overfit กับ noise ในอดีต<br>
+• Transaction cost ที่ลืมใส่ กินไป 20–50% ของ gross PnL<br><br>
+<strong>Part IV จะสอน Walk-Forward Validation</strong> — วิธีเดียวที่ยืนยันได้ว่า strategy มี edge จริง ไม่ใช่แค่ overfit<br>
+อย่าใช้เงินจริงจนกว่าจะผ่านการทดสอบใน Part IV</p>
+</div>
+
+<div style="text-align:center;margin:26px 0 4px;font-size:.92em;color:#64748b">
+📘 <a href="python-for-quant-traders.html" style="color:#0d9488;font-weight:600">สารบัญทั้งเล่ม</a> · 📎 <a href="python-appendix.html" style="color:#0d9488;font-weight:600">คำศัพท์ Quant Trading</a>
+</div>
+<div class="nav">
+<a href="python-part1.html">← Part I: Python Basics</a>
+<a href="python-part3.html">Part III: OOP →</a>
+</div>
+
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body>
+</html>
