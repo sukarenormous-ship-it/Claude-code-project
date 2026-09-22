@@ -1011,6 +1011,128 @@ expect(_FN, "§7 β ผิดเฉลี่ยในสรุป",
        f"เหลือ exposure {_R['exposureเหลือเมื่อใช้เบต้าประมาณ']:.2f}")
 
 
+# ── 2·E (math-part10) §10.1 SE(Sharpe) · §10.2 Sortino/ความเบ้ · §11.1–11.3 Kelly · §11.4 drawdown ──
+_M10 = "math-part10.html"
+for _nm in ("m10-sml", "m10-kelly", "m10-drawdown"):
+    _mf.FIGS[(_M10, _nm)]()          # เรียก generator ของภาพเพื่อให้ NUMS มีค่าที่มันคำนวณจริง
+
+# §10.1 ช่วงความเชื่อมั่นของ Sharpe (Lo 2002) — SE ≈ √((1 + S²/504)/T)
+def _se_sharpe(S, T):
+    return math.sqrt((1 + S * S / 504) / T)
+_ci = {(S, T): (S - 1.96 * _se_sharpe(S, T), S + 1.96 * _se_sharpe(S, T)) for S in (1.0, 2.0) for T in (3, 10)}
+print("2·E §10.1  ช่วง 95% ของ Sharpe: " + " · ".join(
+    f"S={S} T={T}ปี [{lo:.2f}, {hi:.2f}]" for (S, T), (lo, hi) in _ci.items()))
+for _S, _T in ((1.0, 3), (1.0, 10), (2.0, 3), (2.0, 10)):
+    _lo, _hi = _ci[(_S, _T)]
+    expect(_M10, f"§10.1 ช่วง 95% S={_S} T={_T}ปี", f"[{_lo:.2f}, {_hi:.2f}]".replace("-", "−"))
+
+# §10.2 Sharpe เท่ากันแต่ความเบ้ต่างกัน — โค้ดในบท (seed 5 · 1000 วัน)
+def _sortino_data():
+    """ตรงกับโค้ดในบท: seed 5 · n=1000 · sd=0.012 · mu=0.0008 · B เบ้ซ้าย 90/10"""
+    rng = np.random.default_rng(5)
+    n, sd, mu = 1000, 0.012, 0.0008
+    A = rng.normal(0, 1, n); A = (A - A.mean()) / A.std()
+    B = np.where(rng.random(n) < 0.90, rng.normal(0.45, 0.35, n), rng.normal(-4.0, 1.2, n))
+    B = (B - B.mean()) / B.std()
+    return A * sd + mu, B * sd + mu
+
+
+def _ratios(x, rf=0.02):
+    ann = x.mean() * 252
+    total_sd = x.std() * np.sqrt(252)
+    down_sd = np.sqrt(np.mean(np.minimum(x, 0.0) ** 2)) * np.sqrt(252)
+    return ann, (ann - rf) / total_sd, (ann - rf) / down_sd
+
+
+_A, _B = _sortino_data()
+_annA, _shA, _soA = _ratios(_A); _annB, _shB, _soB = _ratios(_B)
+_wrong = lambda x: (x.mean() * 252 - 0.02) / (x[x < 0].std() * np.sqrt(252))
+_wrA, _wrB = _wrong(_A), _wrong(_B)
+_fl = np.where(np.random.default_rng(1).random(1000) < 0.5, 0.01, -0.01)
+_fl_so = (_fl.mean() * 252 - 0.02) / (np.sqrt(np.mean(np.minimum(_fl, 0) ** 2)) * np.sqrt(252))
+print(f"2·E §10.2  A: {_annA:.1%} Sharpe {_shA:.2f} Sortino {_soA:.2f} แย่สุด {_A.min():.1%} · "
+      f"B: {_annB:.1%} Sharpe {_shB:.2f} Sortino {_soB:.2f} แย่สุด {_B.min():.1%} · "
+      f"สูตรผิด {_wrA:.2f}/{_wrB:.2f} (ต่าง {_wrA/_wrB:.1f} เท่า) · สูตรถูกต่าง {_soA/_soB:.2f} เท่า · stop ตายตัว {_fl_so:.2f}")
+expect(_M10, "§10.2 A ผลลัพธ์", f"A สมมาตร: ผลตอบแทน {_annA:.1%} | Sharpe {_shA:.2f} | Sortino {_soA:.2f} | แย่สุด {_A.min():.1%}")
+expect(_M10, "§10.2 B ผลลัพธ์", f"B เบ้ซ้าย: ผลตอบแทน {_annB:.1%} | Sharpe {_shB:.2f} | Sortino {_soB:.2f} | แย่สุด {_B.min():.1%}")
+expect(_M10, "§10.2 สูตรผิด", f"A = {_wrA:.2f} | B = {_wrB:.2f}")
+expect(_M10, "§10.2 อัตราส่วนสูตรถูก", f"{_soA:.2f} vs {_soB:.2f} (ต่าง {_soA/_soB:.2f} เท่า)")
+expect(_M10, "§10.2 อัตราส่วนสูตรผิด", f"สูตรผิดให้ {_wrA:.2f} vs {_wrB:.2f} (ต่าง {_wrA/_wrB:.1f} เท่า)")
+expect(_M10, "§10.2 Sortino ของ stop ตายตัว", f"สูตรถูกให้ <strong>{_fl_so:.2f}</strong>")
+
+# §10.3–10.4 CAPM/alpha — ตัวเดียวกับภาพ m10-sml
+_sml = _mf.NUMS["m10-sml"]
+print(f"2·E §10.4  CAPM ที่ β=1.5: {_sml['capm']:.1%} · alpha {_sml['alpha']:+.1%}")
+expect(_M10, "§10.4 alpha จากภาพ", f"alpha = {_sml['alpha']*100:+.1f}%")
+
+# §11.1–11.2 Kelly — เส้นโค้ง g(f) และการจำลอง 10,000 เส้นทาง (seed 42 · 200 งวด)
+_k = _mf.NUMS["m10-kelly"]
+print(f"2·E §11.1  Kelly f* = {_k['fstar']:.0%} · g สูงสุด {_k['gmax']*100:.3f}%/งวด · "
+      f"ตัดศูนย์ที่ {_k['f0']*100:.2f}% = {_k['f0']/_k['fstar']:.2f}×Kelly")
+expect(_M10, "§11.2 จุดตัดศูนย์", f"<strong>{_k['f0']*100:.2f}% = {_k['f0']/_k['fstar']:.2f}×Kelly</strong>")
+
+
+def _kelly_paths(p=0.55, N=10_000, T=200, fracs=(0.02, 0.05, 0.10, 0.25, 0.40)):
+    """ตรงกับโค้ดในบท: seed 42 · กริดแพ้ชนะสุ่มล่วงหน้าชุดเดียว ใช้ซ้ำทุกขนาดเดิมพัน"""
+    rng = np.random.default_rng(42)
+    wins = rng.random((N, T)) < p
+    out = {}
+    for frac in fracs:
+        w = np.ones(N)
+        for t in range(T):
+            w *= np.where(wins[:, t], 1 + frac, 1 - frac)
+        out[frac] = w
+    return out
+
+
+_paths = _kelly_paths()
+_med = {f: float(np.median(w)) for f, w in _paths.items()}
+_half = {f: float((w < 0.5).mean()) for f, w in _paths.items()}
+print("2·E §11.2  " + " · ".join(f"f={f:.0%} มัธยฐาน {_med[f]:.2f} จบต่ำกว่าครึ่งทุน {_half[f]:.1%}" for f in _paths))
+for _f in (0.02, 0.05, 0.10, 0.25, 0.40):
+    expect(_M10, f"§11.2 ผลจำลอง f={_f:.0%}",
+           f"เดิมพัน {_f:>3.0%}: มัธยฐาน {_med[_f]:6.2f} เท่า | จบต่ำกว่าครึ่งทุน {_half[_f]:.1%}")
+# ตารางเปิดบท (ค่าชุดเดียวกัน คนละรูปแบบ)
+for _f, _cell in ((0.02, f"{_med[0.02]:.2f} เท่า"), (0.05, f"{_med[0.05]:.2f} เท่า"),
+                  (0.10, f"<strong>{_med[0.10]:.2f} เท่า</strong> ← สูงสุด"),
+                  (0.25, f"<strong>{_med[0.25]:.2f} เท่า</strong> ← ขาดทุน!"),
+                  (0.40, f"<strong>{_med[0.40]:.4f} เท่า</strong> ← แทบไม่เหลือ")):
+    expect(_M10, f"§เปิดเรื่อง ตารางมัธยฐาน f={_f:.0%}", _cell)
+expect(_M10, "§เปิดเรื่อง ตารางโอกาสเจ็บ f=40%", f"<strong>{_half[0.40]:.1%}</strong></td></tr>")
+# ค่าเฉลี่ยตามทฤษฎีที่ f = 40% กับสัดส่วนที่เหลือไม่ถึง 1% ของทุน
+_mean40 = (0.55 * 1.4 + 0.45 * 0.6) ** 200
+_ruin40 = float((_paths[0.40] < 0.01).mean())
+print(f"2·E §11.2  ที่ f=40%: ค่าเฉลี่ยตามทฤษฎี {_mean40:,.0f} เท่า · เหลือไม่ถึง 1% ของทุน {_ruin40:.0%} · "
+      f"ค่าเฉลี่ยที่จำลองได้จริง {_paths[0.40].mean():.0f} เท่า")
+expect(_M10, "§11.2 ค่าเฉลี่ยตามทฤษฎีที่ f=40%", f"<strong>{_mean40:,.0f} เท่า</strong>")
+expect(_M10, "§11.2 เหลือไม่ถึง 1% ของทุน", f"<strong>{_ruin40:.0%} เหลือเงินไม่ถึง 1% ของที่เริ่มมา</strong>")
+
+# §11.3 half-Kelly เทียบ Kelly เต็ม — ตัวเลข "ต่างกัน" ในตาราง
+print(f"2·E §11.3  Kelly เต็มโตกว่า half {_med[0.10]/_med[0.05]-1:.0%} · เสี่ยงกว่า {_half[0.10]/_half[0.05]:.0f} เท่า")
+expect(_M10, "§11.3 Kelly ดีกว่ากี่ %", f"Kelly ดีกว่า {_med[0.10]/_med[0.05]-1:.0%}")
+expect(_M10, "§11.3 Kelly เสี่ยงกว่ากี่เท่า", f"Kelly เสี่ยงกว่า {_half[0.10]/_half[0.05]:.0f} เท่า")
+expect(_M10, "§11.3 มองจากฝั่ง Kelly เต็ม",
+       f"ยอมเสียกำไรไป <strong>{1-_med[0.05]/_med[0.10]:.0%}</strong> ({_med[0.10]:.2f} → {_med[0.05]:.2f} เท่า)")
+expect(_M10, "§11.3 สองฐานคือคู่เดียวกัน",
+       f"(ขึ้นจาก {_med[0.05]:.2f} คิด {_med[0.10]/_med[0.05]-1:.0%} · ลงจาก {_med[0.10]:.2f} คิด {1-_med[0.05]/_med[0.10]:.0%})")
+
+# §11.4 drawdown — โค้ดในบท (seed 17 · 1000 วัน) ตัวเดียวกับภาพ m10-drawdown
+_dd = _mf.NUMS["m10-drawdown"]
+_total, _mdd, _shd = _dd["total"], _dd["mdd"], _dd["sharpe"]
+_t2b, _rec = _dd["top_to_bottom"], _dd["recov"]
+print(f"2·E §11.4  กำไรรวม {_total:+.0%} · Sharpe {_shd:.2f} · MDD {_mdd:.1%} · "
+      f"ยอด→ก้น {_t2b} วัน · ก้น→เท่าทุน {_rec} วัน · รวม {_t2b+_rec} วัน · ต้องกำไร {1/(1+_mdd)-1:.0%}")
+expect(_M10, "§11.4 กำไรรวม", f"<strong>กำไรรวม {_total:+.0%}</strong>")
+expect(_M10, "§11.4 Sharpe", f"(Sharpe {_shd:.2f} ถือว่าดี)")
+expect(_M10, "§11.4 MDD", f"<strong>Max Drawdown = {_mdd:.1%}</strong>".replace("-", "−"))
+expect(_M10, "§11.4 ยอดถึงก้น", f"<strong>ใช้เวลา {_t2b} วันจากยอดถึงก้น</strong>")
+expect(_M10, "§11.4 ก้นถึงเท่าทุน", f"<strong>อีก {_rec} วันกว่าจะกลับเท่าทุนเดิม</strong>")
+expect(_M10, "§11.4 รวมวันที่เจ็บ", f"รวม <strong>{_t2b+_rec} วัน</strong>")
+expect(_M10, "§11.4 ต้องกำไรเท่าไรถึงกลับเท่าทุน", f"ต้องทำกำไร <strong>{1/(1+_mdd)-1:.0%}</strong> เพื่อกลับจากหลุม {_mdd:.1%}".replace("-", "−"))
+expect(_M10, "§11.4 ผลรันในโค้ด MDD", f"Max Drawdown   = {_mdd:.1%}")
+expect(_M10, "§11.4 ผลรันในโค้ด ระยะเวลา", f"ยอด→ก้น {_t2b} วัน · ก้น→เท่าทุน {_rec} วัน · รวม {_t2b+_rec} วัน")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
