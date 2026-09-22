@@ -1133,6 +1133,85 @@ expect(_M10, "§11.4 ผลรันในโค้ด MDD", f"Max Drawdown   = 
 expect(_M10, "§11.4 ผลรันในโค้ด ระยะเวลา", f"ยอด→ก้น {_t2b} วัน · ก้น→เท่าทุน {_rec} วัน · รวม {_t2b+_rec} วัน")
 
 
+# §11.3 กฎ "ครึ่ง Kelly ได้ 75%" — g(k·f*)/g(f*) = 2k − k² และกฎ drawdown ของ fractional Kelly
+def _g(f, p=0.55, b=1.0):
+    return p * math.log(1 + b * f) + (1 - p) * math.log(1 - f)
+_gstar = _g(_k["fstar"])
+_krows = [0.25, 0.5, 1.0, 1.5, 2.0]
+print("2·E §11.3  " + " · ".join(f"k={kk}: สูตร {2*kk-kk*kk:.4f} จริง {_g(kk*_k['fstar'])/_gstar:.4f}" for kk in _krows))
+for _kk in _krows:
+    expect(_M10, f"§11.3 ตาราง 2k−k² ที่ k={_kk}", f"<td class=\"nw\">{2*_kk-_kk*_kk:.4f}</td>".replace("-", "−")
+           if _kk not in (0.5, 1.0) else f"{2*_kk-_kk*_kk:.4f}")
+    expect(_M10, f"§11.3 ตารางเกมเหรียญจริงที่ k={_kk}",
+           f"{_g(_kk*_k['fstar'])/_gstar:.4f}".replace("-", "−"))
+expect(_M10, "§11.3 half-Kelly ได้ 75%", f"2(0.5) − 0.5² = {2*0.5-0.25:.2f}")
+
+# ความน่าจะเป็นที่เงินจะ "เคยแตะ" x เท่าของทุน — ทฤษฎีเวลาไม่จำกัด เทียบกับกริดจำลอง 200 งวด
+def _touch_prob(frac, p=0.55, N=10_000, T=200):
+    rng = np.random.default_rng(42)
+    wins = rng.random((N, T)) < p
+    w = np.ones(N); lo = np.ones(N)
+    for t in range(T):
+        w *= np.where(wins[:, t], 1 + frac, 1 - frac); lo = np.minimum(lo, w)
+    return float((lo < 0.5).mean())
+_touch = {kk: _touch_prob(kk * _k["fstar"]) for kk in (0.5, 1.0)}
+_theory = {kk: 0.5 ** (2 / kk - 1) for kk in (0.5, 1.0)}
+print(f"2·E §11.3  เคยแตะครึ่งทุน: Kelly เต็ม {_touch[1.0]:.1%} (ทฤษฎี {_theory[1.0]:.0%}) · "
+      f"half-Kelly {_touch[0.5]:.1%} (ทฤษฎี {_theory[0.5]:.1%}) · อัตราส่วนจำลอง {_touch[1.0]/_touch[0.5]:.1f} เท่า")
+expect(_M10, "§11.3 ทฤษฎี Kelly เต็มแตะครึ่งทุน", f"0.5^1 = {_theory[1.0]:.0%}")
+expect(_M10, "§11.3 ทฤษฎี half-Kelly แตะครึ่งทุน", f"0.5^3 = {_theory[0.5]:.1%}")
+expect(_M10, "§11.3 จำลอง Kelly เต็มแตะครึ่งทุน", f"เคยแตะครึ่งทุน <strong>{_touch[1.0]:.1%}</strong>")
+expect(_M10, "§11.3 จำลอง half-Kelly แตะครึ่งทุน", f"เคยแตะครึ่งทุน <strong>{_touch[0.5]:.1%}</strong>")
+expect(_M10, "§11.3 อัตราส่วนความเสี่ยงจากการจำลอง",
+       f"การจำลองได้ {_touch[1.0]/_touch[0.5]:.1f} เท่า ({_touch[1.0]*100:.1f} ต่อ {_touch[0.5]*100:.1f})")
+expect(_M10, "§11.3 อัตราส่วนความเสี่ยงตามสูตร",
+       f"สูตรบอกเสี่ยงต่างกัน {_theory[1.0]/_theory[0.5]:.0f} เท่า ({_theory[1.0]*100:.0f} ต่อ {_theory[0.5]*100:.1f})")
+
+
+# §11.2 ค่าเฉลี่ยที่ f = 40% ประมาณจากข้อมูลไม่ได้ — มัธยฐานนิ่ง ค่าเฉลี่ยกระโดดตาม seed
+def _f40(seed, p=0.55, N=10_000, T=200, frac=0.40):
+    rng = np.random.default_rng(seed)
+    wins = rng.random((N, T)) < p
+    w = np.ones(N)
+    for t in range(T):
+        w *= np.where(wins[:, t], 1 + frac, 1 - frac)
+    return float(w.mean()), float(np.median(w))
+_seeds = [42, 1, 2, 3, 7]
+_mm = [_f40(sd) for sd in _seeds]
+print("2·E §11.2  f=40% คนละ seed: ค่าเฉลี่ย " + " · ".join(f"{m:,.0f}" for m, _ in _mm)
+      + " | มัธยฐาน " + " · ".join(f"{md:.4f}" for _, md in _mm))
+assert len({f"{md:.4f}" for _, md in _mm}) == 1, "มัธยฐานควรเท่ากันทั้งห้า seed"
+expect(_M10, "§11.2 ค่าเฉลี่ยที่จำลองได้จริง",
+       f"ค่าเฉลี่ยที่วัดได้จาก 10,000 เส้นทางจริงคือ {_mm[0][0]:,.0f} เท่า ไม่ใช่ {_mean40:,.0f}</strong>")
+expect(_M10, "§11.2 ค่าเฉลี่ยห้า seed", "<strong>" + " · ".join(f"{m:,.0f}" for m, _ in _mm) + "</strong>")
+expect(_M10, "§11.2 มัธยฐานนิ่งทั้งห้า seed", f"<strong>มัธยฐานได้ {_mm[0][1]:.4f} เท่ากันทั้งห้าครั้ง</strong>")
+
+# §11.2 สูตร Kelly ทั่วไป f* = p/a − q/b — เทรดที่มี stop
+def _kelly_gen(p, a, b):
+    return p / a - (1 - p) / b
+_p, _b = 0.45, 0.10
+_ev = _p * _b - (1 - _p) * 0.05
+_f_a5, _f_a8 = _kelly_gen(_p, 0.05, _b), _kelly_gen(_p, 0.08, _b)
+print(f"2·E §11.2  สูตรทั่วไป: ตรวจกับเหรียญ {_kelly_gen(0.55, 1.0, 1.0):.2f} · "
+      f"EV {_ev:+.2%} · a=5% → f*={_f_a5:.3f} · a=8% → f*={_f_a8:.3f} · หดลง {_f_a5/_f_a8:.0f} เท่า")
+expect(_M10, "§11.2 ทั่วไป ตรวจกับเกมเหรียญ", f"0.55 ÷ 1 − 0.45 ÷ 1 = {_kelly_gen(0.55, 1.0, 1.0):.2f}")
+expect(_M10, "§11.2 ทั่วไป ค่าคาดหวังต่อหน่วยสถานะ",
+       f"0.45 × 10% − 0.55 × 5% = <strong>{_ev:+.2%}</strong>")
+expect(_M10, "§11.2 ทั่วไป f* ที่ stop 5%", f"f* = 0.45 ÷ 0.05 − 0.55 ÷ 0.10 = 9 − 5.5 = <b>{_f_a5:.1f}</b>")
+expect(_M10, "§11.2 ทั่วไป f* ที่ขาดทุนจริง 8%", f"f* = 0.45 ÷ 0.08 − 0.55 ÷ 0.10 = 5.625 − 5.5 = <b>{_f_a8:.3f}</b>")
+expect(_M10, "§11.2 ทั่วไป หดกี่เท่า", f"ลดลง <strong>{_f_a5/_f_a8:.0f} เท่า</strong>")
+expect(_M10, "§11.2 ทั่วไป notional 350%", f"ถือมูลค่า {_f_a5*100:.0f}% ของพอร์ต")
+expect(_M10, "§11.2 ทั่วไป เหลือกี่ %", f"เหลือ {_f_a8*100:.1f}% ของพอร์ต")
+
+
+# §11.4 ตารางความอสมมาตร — ขาดทุน DD แล้วต้องกำไร 1/(1+DD) − 1 ถึงเท่าทุน
+_recov = {d: 1 / (1 - d) - 1 for d in (0.10, 0.20, 0.30, 0.50, 0.70, 0.90)}
+print("2·E §11.4  ต้องกำไรเพื่อเท่าทุน: " + " · ".join(f"{d:.0%}→{r:.0%}" for d, r in _recov.items()))
+for _d, _r in _recov.items():
+    _cell = f"<strong>{_r:.0%}</strong>" if _d >= 0.50 else f"{_r:.0%}"
+    expect(_M10, f"§11.4 ตารางเท่าทุนที่ขาดทุน {_d:.0%}", f"<td>{_d:.0%}</td><td class=\"nw\">{_cell}</td>")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
