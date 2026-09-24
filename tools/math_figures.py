@@ -1212,6 +1212,40 @@ for _d, _r in _recov.items():
     expect(_M10, f"§11.4 ตารางเท่าทุนที่ขาดทุน {_d:.0%}", f"<td>{_d:.0%}</td><td class=\"nw\">{_cell}</td>")
 
 
+# §11.3½ Kelly หลายสถานะ f = Σ⁻¹(μ − r_f) — 5 กลยุทธ์เหมือนกัน μ − r_f = 10% · σ = 20%
+_n5, _ex5, _sd5 = 5, 0.10, 0.20
+def _kelly_multi(rho, n=_n5, ex=_ex5, sd=_sd5):
+    C = np.full((n, n), rho); np.fill_diagonal(C, 1.0)
+    S = C * sd * sd
+    return np.linalg.solve(S, np.full(n, ex)), S
+def _growth(f, S, ex=_ex5):
+    """อัตราเติบโตส่วนเกินเหนือ r_f แบบต่อเนื่อง g = fᵀ(μ − r_f) − fᵀΣf/2"""
+    return float(f.sum() * ex - f @ S @ f / 2)
+_naive5 = _n5 * _ex5 / _sd5 ** 2
+_ktot = {r: float(_kelly_multi(r)[0].sum()) for r in (0.0, 0.3, 0.6, 0.9)}
+print("2·E §11.3½ " + " · ".join(f"ρ={r}: ถูก {v:.2f} เกิน {_naive5/v:.1f} เท่า" for r, v in _ktot.items()))
+expect(_M10, "§11.3½ Kelly เดี่ยวรวม", f"ถ้าใส่ครบ 5 ตัวก็ได้ <strong>{_naive5:.1f} เท่า</strong>")
+for _r in (0.3, 0.6, 0.9):
+    expect(_M10, f"§11.3½ ค่าที่ถูกที่ ρ={_r}", f"<strong>{_ktot[_r]:.2f} เท่า</strong></td><td class=\"nw\"><strong>{_naive5/_ktot[_r]:.1f} เท่า</strong>")
+# 📉 คนที่ size ถูกที่ ρ = 0.3 เมื่อ ρ กระโดดเป็น 0.9
+_k_shift = _ktot[0.3] / _ktot[0.9]
+_f03, _ = _kelly_multi(0.3); _f09, _S09 = _kelly_multi(0.9)
+_g_right, _g_stale = _growth(_f09, _S09), _growth(_f03, _S09)
+print(f"2·E §11.3½ 📉 k = {_k_shift:.2f} · 2k−k² = {2*_k_shift-_k_shift**2:.2f} · "
+      f"g ถูก {_g_right:+.1%} · g ค้าง {_g_stale:+.1%} · อัตราส่วน {_g_stale/_g_right:.2f} · ¼–½ → {_k_shift/4:.2f}–{_k_shift/2:.2f}")
+assert abs(_g_stale / _g_right - (2 * _k_shift - _k_shift ** 2)) < 1e-9, "สองวิธีต้องได้ค่าเดียวกัน"
+expect(_M10, "§11.3½📉 k หลัง ρ กระโดด", f"{_ktot[0.3]:.2f} ÷ {_ktot[0.9]:.2f} = <strong>{_k_shift:.2f} เท่าของ Kelly</strong>")
+expect(_M10, "§11.3½📉 2k−k²", f"2k − k² = 2({_k_shift:.2f}) − {_k_shift:.2f}² = {2*_k_shift-_k_shift**2:.2f}".replace("-0", "−0"))
+expect(_M10, "§11.3½📉 g ที่ถูก", f"size ตาม Kelly ของ ρ = 0.9   →  {_g_right:+.1%}")
+expect(_M10, "§11.3½📉 g ที่ค้าง", f"size ตาม Kelly ของ ρ = 0.3   →  {_g_stale:+.1%}".replace("-", "−"))
+expect(_M10, "§11.3½📉 หลังคูณ ¼–½", f"k = {_k_shift:.2f} เหลือ {_k_shift/4:.2f}–{_k_shift/2:.2f}")
+
+# §11.2 📍 vol targeting = Kelly ที่ Sharpe คงที่: σ_พอร์ต = f*·σ = Sharpe
+_SR = 0.5
+expect(_M10, "§11.2📍 vol ของ Kelly เต็ม", f"กลยุทธ์ Sharpe {_SR} จึงมี Kelly เต็มที่พอร์ตเหวี่ยง {_SR:.0%} ต่อปี และ half-Kelly ที่ {_SR/2:.0%}")
+expect(_M10, "§11.2📍 เป้า vol 10–15%", f"เป้า vol ไว้ 10–15% ก็เท่ากับเดิมพัน {0.10/_SR:.1f}–{0.15/_SR:.1f} เท่าของ Kelly")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
