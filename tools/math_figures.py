@@ -1543,6 +1543,66 @@ expect(_P4, "DCC VaR เพิ่ม", f"เพิ่มขึ้น <strong>{ma
 
 
 
+# ── Payoff Chart Study Guide — ตัวเลขในเนื้อ/ตาราง เทียบกับ payoff_lib ตัวเดียวกับที่วาดภาพ ────────
+_SG = "payoff-chart-study-guide.html"
+import payoff_lib as _pl  # noqa: E402
+_L = _pl.Leg
+
+
+def _pnl(legs, S):
+    return sum(l.qty * ((max(S - l.K, 0) if l.kind == "call" else max(l.K - S, 0) if l.kind == "put" else (S - l.K)) - l.premium)
+               for l in legs)
+
+
+# บทที่ 3 ตาราง Bull Call Spread · Long Call 100 ราคา 8 + Short Call 110 ราคา 3
+_bcs = [_L("call", 100, 1, 8), _L("call", 110, -1, 3)]
+for _S in (90, 95, 100, 105, 110, 115, 120):
+    _a, _b = _pnl(_bcs[:1], _S), _pnl(_bcs[1:], _S)
+    _fmt = lambda v: f"{v:+.0f}" if v else "0"
+    _cell_a = f"{_a:.0f}" if _a < 0 else f"+{_a:.0f}"
+    _cell_b = f"{_b:.0f}" if _b < 0 else f"+{_b:.0f}"
+    _tot = _a + _b
+    _cell_t = f"<strong>{_tot:.0f}</strong>" if _tot <= 0 else f"<strong>+{_tot:.0f}</strong>"
+    if _tot == 0:
+        _cell_t = "<strong>0</strong> (BE!)"
+    expect(_SG, f"บทที่ 3 BCS ที่ S={_S}", f"<tr><td>{_S}</td><td>{_cell_a}</td><td>{_cell_b}</td><td>{_cell_t}</td></tr>")
+assert _pl.summary(_bcs)["breakevens"] == [105.0]
+
+# กฎ slope สองขั้น (s₀ จาก Put/หุ้น · ±1 ทุก Strike) ต้องตรงกับ segments() ของ engine ทุกกลยุทธ์
+def _slope_rule(legs):
+    s0 = sum(-l.qty for l in legs if l.kind == "put") + sum(l.qty for l in legs if l.kind == "stock")
+    out, cur = [s0], s0
+    for K in sorted({l.K for l in legs if l.kind in ("call", "put")}):
+        cur += sum(l.qty for l in legs if l.kind in ("call", "put") and l.K == K); out.append(cur)
+    return out
+
+
+for _nm, _legs in {"straddle": [_L("call", 100, 1, 5), _L("put", 100, 1, 5)],
+                   "bear put": [_L("put", 110, 1, 8), _L("put", 90, -1, 3)],
+                   "iron condor": [_L("put", 90, 1, 1), _L("put", 95, -1, 2), _L("call", 105, -1, 2), _L("call", 110, 1, 1)],
+                   "butterfly": [_L("call", 90, 1, 12), _L("call", 100, -2, 6), _L("call", 110, 1, 3)],
+                   "protective put": [_L("stock", 100, 1, 0), _L("put", 90, 1, 3)],
+                   "collar": [_L("stock", 100, 1, 0), _L("put", 90, 1, 3), _L("call", 110, -1, 3)]}.items():
+    _eng = [round(seg[2], 9) for seg in _pl.segments(_legs, 0, 250)]
+    assert _slope_rule(_legs) == _eng, (_nm, _slope_rule(_legs), _eng)
+print("SG  กฎ slope สองขั้นตรงกับ engine ทั้ง 6 กลยุทธ์")
+expect(_SG, "straddle slope", "s₀ = −1 · ผ่าน 100 ได้ +2 (ทั้งสองขา) → slope ขวา = +1")
+
+# Protective put · Short straddle
+_pp = _pl.summary([_L("stock", 100, 1, 0), _L("put", 90, 1, 3)])
+expect(_SG, "protective put ขาดทุนสูงสุด", f"Put K = 90 ราคา 3 → เสียได้ไม่เกิน {-_pp['max_loss']:.0f})")
+_ss = [_L("call", 100, -1, 5), _L("put", 100, -1, 5)]
+expect(_SG, "short straddle ขาลง", f"K = 100 เบี้ยรวม 10 เสียได้ถึง {-_pnl(_ss, 0):.0f}")
+# Parity example + Put ยุโรปลึก ITM ต่ำกว่า intrinsic
+_c6 = _bs_all(S=100, K=100, r=0.05, sg=0.20, T=0.5)["C"]; _pv6 = 100 * math.exp(-0.025)
+expect(_SG, "parity PV(K)", f"PV(K) = 100·e<sup>−0.025</sup> = {_pv6:.2f}")
+expect(_SG, "parity Put", f"ถ้า Call ราคา {_c6:.2f} Put ต้องราคา {_c6:.2f} + {_pv6:.2f} − 100 = <strong>{_c6+_pv6-100:.2f}</strong>")
+_dp = _bs_all(S=60, K=100, r=0.05, sg=0.20, T=1.0); _put60 = _dp["C"] - 60 + 100 * math.exp(-0.05)
+assert _put60 < 40
+expect(_SG, "Put ยุโรปลึก ITM", f"ราคา {_put60:.2f} ต่ำกว่า intrinsic 40")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
