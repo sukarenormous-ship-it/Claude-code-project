@@ -1603,6 +1603,59 @@ expect(_SG, "Put ยุโรปลึก ITM", f"ราคา {_put60:.2f} ต�
 
 
 
+# ── เสาหลัก Part I (pillars-part1) — bootstrapping · duration · carry+roll · swap/FRA/swaption ───
+_P1 = "pillars-part1.html"
+
+
+def _bond(c, y, n, k=1):
+    """บอนด์คูปอง c ต่อปี yield y จ่าย k งวด/ปี อายุ n ปี → ราคา, Macaulay, modified, convexity (ปี²)"""
+    t = np.arange(1, n * k + 1) / k
+    cf = np.full(len(t), 100 * c / k); cf[-1] += 100
+    pv = cf / (1 + y / k) ** (t * k); P = pv.sum()
+    mac = (t * pv).sum() / P
+    conv = (cf * t * (t + 1 / k) / (1 + y / k) ** (t * k + 2)).sum() / P
+    return P, mac, mac / (1 + y / k), conv
+
+
+_DF1 = 1 / 1.04; _DF2 = (100 - 5 * _DF1) / 105
+_z2 = _DF2 ** -0.5 - 1; _f12 = _DF1 / _DF2 - 1; _swp = (1 - _DF2) / (_DF1 + _DF2)
+print(f"เสา I  DF1={_DF1:.5f} DF2={_DF2:.5f} z2={_z2:.3%} f12={_f12:.2%} swap={_swp:.2%}")
+expect(_P1, "bootstrap DF1", f"DF(1) = 1/1.04 = <strong>{_DF1:.5f}</strong>")
+expect(_P1, "bootstrap DF2", f"DF(2) = (100 − 5 × {_DF1:.5f})/105 = <strong>{_DF2:.5f}</strong>")
+expect(_P1, "bootstrap z2", f"z₂ = DF(2)<sup>−1/2</sup> − 1 = <strong>{_z2:.3%}</strong>")
+expect(_P1, "bootstrap f12", f"f(1,2) = DF(1)/DF(2) − 1 = <strong>{_f12:.2%}</strong>")
+expect(_P1, "par swap", f"(1 − {_DF2:.5f})/({_DF1:.5f} + {_DF2:.5f}) = <strong>{_swp:.2%}</strong>")
+expect(_P1, "FRA", f"FRA 1→2 ปี = {_f12:.2%}")
+# duration 30 ปี par 4% annual
+_P30, _mac30, _mod30, _c30 = _bond(0.04, 0.04, 30)
+_ex30 = _bond(0.04, 0.05, 30)[0] / _P30 - 1
+print(f"เสา I  30y par: mod {_mod30:.2f} C {_c30:.0f} อันดับหนึ่ง {-_mod30:.1%} +conv {-_mod30*.01+.5*_c30*1e-4:.1%} จริง {_ex30:.1%} · ที่ 3% {_bond(.04,.03,30)[2]:.1f} ที่ 5% {_bond(.04,.05,30)[2]:.1f}")
+expect(_P1, "30y mod duration", f"มี modified duration {_mod30:.1f} → ดอกเบี้ยขึ้น 1%: ΔP/P ≈ −{_mod30:.1f} × 1%")
+expect(_P1, "30y convexity", f"พอใส่ convexity (C = {_c30:.0f}) ได้ {(-_mod30*.01+.5*_c30*1e-4)*100:.1f}%".replace("-", "−"))
+expect(_P1, "30y exact", f"ลดลง <strong>{-_ex30:.1%}</strong>")
+expect(_P1, "30y duration ขึ้นกับ yield", f"ที่ 3% เป็น {_bond(.04,.03,30)[2]:.1f} ที่ 5% เป็น {_bond(.04,.05,30)[2]:.1f}")
+_z30 = (1.04 / 1.05) ** 30 - 1
+expect(_P1, "30y zero", f"modified = 30/1.04 = {30/1.04:.1f} → อันดับหนึ่ง −{30/1.04:.1f}% ราคาจริงลด {-_z30:.1%}")
+# carry + roll: 5y yield 4% → ปีหน้าเป็น 4y ที่ 3.8%
+_P4r = _bond(0.04, 0.038, 4)[0]; _mod4 = _bond(0.04, 0.04, 4)[2]; _mac4 = _bond(0.04, 0.04, 4)[1]
+_roll = _P4r / 100 - 1
+print(f"เสา I  roll: ราคา {_P4r:.2f} roll {_roll:.2%} · mod {_mod4:.2f} mac {_mac4:.2f} · รวม {0.01+_roll:.2%}")
+expect(_P1, "carry roll ราคา", f"ที่ yield 3.8% ราคา {_P4r:.2f} ตรงกันพอดี")
+expect(_P1, "carry roll", f"0.2% × modified duration {_mod4:.2f} = <strong>roll-down ≈ +{0.002*_mod4:.2%}</strong>")
+expect(_P1, "carry roll read", f"0.2% × {_mod4:.2f} ≈ {0.002*_mod4:.2%} · duration ในสูตรนี้คือ <em>modified</em> duration (Macaulay {_mac4:.2f}")
+expect(_P1, "carry+roll รวม", f"1.0% + {_roll:.2%} = <strong>~{0.01+_roll:.2%}</strong>")
+# Vasicek / CIR · swaption
+expect(_P1, "half-life", f"half-life = ln 2 / 0.5 ≈ {math.log(2)/0.5:.2f} ปี")
+expect(_P1, "Feller", f"σ ≤ √(2ab) = {math.sqrt(2*0.5*0.04):.2f}")
+_A = sum(1.04 ** -t for t in range(2, 7))
+expect(_P1, "swaption annuity", f"(A = {_A:.2f})")
+expect(_P1, "swaption Bachelier", f"= <strong>{_A*0.01/math.sqrt(2*math.pi):.2%} ของ notional</strong>")
+# ภาพ PCA
+_pc = _mf.NUMS.get("yc-loadings") or (_mf.FIGS[(_P1, "yc-loadings")](), _mf.NUMS["yc-loadings"])[1]
+print("เสา I  yc-loadings NUMS:", {k: round(v, 4) for k, v in _pc.items()})
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
