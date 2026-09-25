@@ -2014,22 +2014,26 @@ def fig_m3_tangent():
 def fig_m3_call_curve_gamma():
     S = np.linspace(70, 130, 241); g = bs_greeks(S); g0 = bs_greeks(100.0)
     C, C0, d0, gm0 = g["C"], float(g0["C"]), float(g0["delta"]), float(g0["gamma"])
+    # Gamma เทียบ S สูงสุดที่ d₁ = −σ√T คือ S* = K·e^(−(r + 1.5σ²)T) — ต่ำกว่า K เล็กน้อย ไม่ใช่ที่ K พอดี
+    s_pk = 100.0 * np.exp(-(0.05 + 1.5 * 0.20 ** 2) * 0.5); g_pk = float(bs_greeks(s_pk)["gamma"])
+    assert abs(float(S[np.argmax(g["gamma"])]) - s_pk) < 0.3, "จุดสูงสุดของ Γ บนกริดต้องตรงกับสูตร"
     Wd, H = 560, 310
-    out = svg_open(Wd, H, f"เส้นราคา Call โค้งมากสุดที่ ATM ความชัน Delta {d0:.2f} แบนทางซ้าย OTM และเกือบตรงทางขวา ITM")
-    title(out, Wd, "ราคา Call เทียบราคาหุ้น — ความชัน = Delta · ความโค้ง = Gamma (สูงสุดที่ ATM)",
-          f"K = 100 · σ = 20% · r = 5% · T = 0.5 ปี · ที่ ATM: C = {C0:.2f} · Delta = {d0:.2f} · Gamma = {gm0:.4f} ต่อ ฿1²")
+    out = svg_open(Wd, H, f"เส้นราคา Call ความชัน Delta {d0:.2f} ที่ S = 100 โค้งมากที่สุดแถว ATM (Gamma สูงสุดจริงที่ S ≈ {s_pk:.1f}) แบนทางซ้าย OTM และเกือบตรงทางขวา ITM")
+    title(out, Wd, "ราคา Call เทียบราคาหุ้น — ความชัน = Delta · ความโค้ง = Gamma (สูงแถว ATM)",
+          f"K = 100 · σ = 20% · r = 5% · T = 0.5 ปี · ที่ S = 100: C = {C0:.2f} · Delta = {d0:.2f} · Gamma = {gm0:.4f} ต่อ ฿1")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(70, "70"), (80, "80"), (90, "90"), (100, "100 (K)"), (110, "110"), (120, "120"), (130, "130")], [(0, "0"), (10, "10"), (20, "20"), (30, "30")], "S (ราคาหุ้น)", "ราคา Call")
     polyline(out, [(sx(a), sy(max(a - 100, 0))) for a in S], INK2, 1.4, dash="4 3", shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(S, C)], BLUE, 2.6)
     polyline(out, [(sx(90), sy(C0 + d0 * -10)), (sx(112), sy(C0 + d0 * 12))], GREEN, 1.8)
     _dot(out, sx(100), sy(C0))
     _txt(out, sx(100) - 8, sy(C0) - 8, f"ความชัน = Delta ≈ {d0:.2f}", GREEN, "end", bold=True)
-    _txt(out, sx(100) + 8, sy(C0) + 16, f"โค้งมากสุด = Gamma สูงสุดที่ ATM ({gm0:.4f})", PURPLE, "start", bold=True)
+    _txt(out, sx(100) + 8, sy(C0) + 16, f"Gamma ที่ ATM = {gm0:.4f}", PURPLE, "start", bold=True)
+    _txt(out, sx(100) + 8, sy(C0) + 29, f"(สูงสุดจริงที่ S ≈ {s_pk:.1f}: {g_pk:.4f})", PURPLE, "start", size=9)
     _txt(out, sx(72), sy(3.5), "OTM: เกือบแบน (Γ ต่ำ · Δ → 0)", INK2, "start", size=9, italic=True)
     _txt(out, sx(129), sy(6), "ITM: เกือบตรง (Γ ต่ำ · Δ → 1)", INK2, "end", size=9, italic=True)
     _txt(out, sx(129), sy(29.2), "เส้นประ = intrinsic max(S − K, 0)", INK2, "end", size=9)
     out.append("</svg>")
-    NUMS["m3-call-curve-gamma"] = dict(C=C0, delta=d0, gamma=gm0)
+    NUMS["m3-call-curve-gamma"] = dict(C=C0, delta=d0, gamma=gm0, s_peak=s_pk, gamma_peak=g_pk)
     return "\n".join(out)
 
 

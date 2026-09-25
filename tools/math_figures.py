@@ -1246,6 +1246,59 @@ expect(_M10, "§11.2📍 vol ของ Kelly เต็ม", f"กลยุทธ
 expect(_M10, "§11.2📍 เป้า vol 10–15%", f"เป้า vol ไว้ 10–15% ก็เท่ากับเดิมพัน {0.10/_SR:.1f}–{0.15/_SR:.1f} เท่าของ Kelly")
 
 
+# ── เล่ม 1 Part III (math-part3) — Greeks ของ Call ชุดเดียวกับ Part V §11.3 · ภาพ Gamma · Delta-Gamma ──
+_M3 = "math-part3.html"
+from scipy.stats import norm as _nrm  # noqa: E402
+
+
+def _bs_all(S=100.0, K=100.0, r=0.05, sg=0.25, T=1.0):
+    d1 = (math.log(S / K) + (r + sg * sg / 2) * T) / (sg * math.sqrt(T)); d2 = d1 - sg * math.sqrt(T)
+    C = S * _nrm.cdf(d1) - K * math.exp(-r * T) * _nrm.cdf(d2)
+    return dict(C=C, d1=d1, delta=_nrm.cdf(d1), delta_put=_nrm.cdf(d1) - 1,
+                gamma=_nrm.pdf(d1) / (S * sg * math.sqrt(T)),
+                theta_yr=-(S * _nrm.pdf(d1) * sg) / (2 * math.sqrt(T)) - r * K * math.exp(-r * T) * _nrm.cdf(d2),
+                vega_pt=S * _nrm.pdf(d1) * math.sqrt(T) / 100, rho_pct=K * T * math.exp(-r * T) * _nrm.cdf(d2) / 100)
+
+
+_g3 = _bs_all()
+_th_day = _g3["theta_yr"] / 365
+print(f"เล่ม1 III  C={_g3['C']:.3f} Δ={_g3['delta']:.4f} Δput={_g3['delta_put']:.3f} Γ={_g3['gamma']:.4f} "
+      f"Θ/วัน={_th_day:.4f} ν/จุด={_g3['vega_pt']:.3f} ρ/1%={_g3['rho_pct']:.3f}")
+expect(_M3, "§7.6 V Δ Γ ในข้อความ", f"V = {_g3['C']:.3f}, Δ = {_g3['delta']:.3f}, Γ = {_g3['gamma']:.4f}")
+expect(_M3, "§7.3 Put Delta", f"Δ ≈ {_g3['delta_put']:.3f}".replace("-", "−"))
+expect(_M3, "§7.3 ρ เทียบ Vega", f"มี ρ ≈ {_g3['rho_pct']:.2f} ต่อดอกเบี้ย +1% มากกว่า Vega {_g3['vega_pt']:.2f} ต่อ vol +1 จุด")
+# hook: วันเดียวกันกับ Call อายุ 1 ปี — หุ้น +1 · เวลา 1 วัน · σ −4 จุด
+_hook_long = _g3["delta"] * 1 + 0.5 * _g3["gamma"] * 1 - (-_th_day) - _g3["vega_pt"] * 4
+_hook_demo = 0.5 - 0.08 - 0.12 * 4
+print(f"เล่ม1 III  hook: demo {_hook_demo:+.2f} · Call 1 ปี {_hook_long:+.3f} · หนักกว่า {_hook_long/_hook_demo:.0f} เท่า")
+expect(_M3, "§7.3 hook Greeks ของ Call 1 ปี",
+       f"(Δ {_g3['delta']:.3f} · Γ {_g3['gamma']:.4f} · Θ {_th_day:.4f}/วัน · ν {_g3['vega_pt']:.3f}/จุด)".replace("-", "−"))
+expect(_M3, "§7.3 hook ผลของ Call 1 ปี",
+       f"{_g3['delta']:.3f} + ½×{_g3['gamma']:.4f} − {-_th_day:.4f} − {_g3['vega_pt']:.3f}×4 ≈ <strong>{_hook_long:.2f}</strong>".replace("-0.9", "−0.9"))
+expect(_M3, "§7.3 hook หนักกว่ากี่เท่า", f"ขาดทุนหนักกว่าราว {_hook_long/_hook_demo:.0f} เท่า")
+
+# ภาพ 7.4 — Gamma สูงสุดจริงที่ S* = K·e^(−(r+1.5σ²)T) ไม่ใช่ที่ K
+for _nm in ("m3-call-curve-gamma",):
+    _mf.FIGS[(_M3, _nm)]()
+_cg = _mf.NUMS["m3-call-curve-gamma"]
+_Ss = 100 * math.exp(-(0.05 + 1.5 * 0.20 ** 2) * 0.5)
+assert abs(_cg["s_peak"] - _Ss) < 1e-9
+_grid = np.linspace(60, 140, 8001)
+_gg = _nrm.pdf((np.log(_grid / 100) + (0.05 + 0.02) * 0.5) / (0.2 * math.sqrt(0.5))) / (_grid * 0.2 * math.sqrt(0.5))
+assert abs(_grid[_gg.argmax()] - _Ss) < 0.02, "จุดสูงสุดเชิงตัวเลขต้องตรงกับสูตร S*"
+print(f"เล่ม1 III  ภาพ 7.4: Γ ที่ K = {_cg['gamma']:.4f} · สูงสุดที่ S* = {_Ss:.2f} ได้ {_cg['gamma_peak']:.4f}")
+
+# §7.6 ตาราง Delta-Gamma เทียบราคาจริง — ผลรันของโค้ดในบท
+for _dS in (1, 5, 10, 20, -10, -20):
+    _tr = _bs_all(S=100 + _dS)["C"] - _g3["C"]
+    _do = _g3["delta"] * _dS; _dg = _do + 0.5 * _g3["gamma"] * _dS ** 2
+    expect(_M3, f"§7.6 ผลรัน dS={_dS:+d}", f"{_dS:+4d} | {_tr:+8.3f}     | {_do:+8.3f}       | {_dg:+8.3f}".lstrip())
+_e20 = (_g3["delta"] * 20 + 0.5 * _g3["gamma"] * 400) - (_bs_all(S=120)["C"] - _g3["C"])
+_d20 = (_bs_all(S=120)["C"] - _g3["C"]) - _g3["delta"] * 20
+print(f"เล่ม1 III  +20: Delta พลาด {_d20:.2f} · Delta+Gamma พลาด {_e20:.2f}")
+expect(_M3, "§7.6 Delta พลาดที่ +20", f"Delta พลาด {_d20:.1f} · Gamma เหลือพลาด {_e20:.1f}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
