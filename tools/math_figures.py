@@ -50,16 +50,34 @@ def _code_block(file, hdr):
     return None, None
 
 
+def _discover_code_blocks():
+    """ทุกกล่อง 🐍 ในคลังที่แสดงผลลัพธ์ (<span class="o">) ถูกตรวจอัตโนมัติ ไม่ต้องลงทะเบียนเอง"""
+    import glob as _g, re as _r
+    seen = set(CODE_CHECKS)
+    for path in sorted(_g.glob(os.path.join(DOCS, "*.html"))):
+        src = open(path, encoding="utf-8").read()
+        for m in _r.finditer(r'<div class="code"><div class="hdr">(.*?)</div><pre>(.*?)</pre>', src, _r.S):
+            if '<span class="o">' in m.group(2):
+                key = (os.path.basename(path), m.group(1))
+                if not any(f == key[0] and h in key[1] for f, h in seen):
+                    CODE_CHECKS.append(key); seen.add(key)
+
+
 def _run_code_checks():
-    import subprocess as _sp
-    bad = 0
+    import subprocess as _sp, tempfile as _tf
+    bad = 0; skipped = []
+    env = dict(os.environ, MPLBACKEND="Agg")
     for file, hdr in CODE_CHECKS:
         code, shown = _code_block(file, hdr)
         if code is None:
             print(f"❌ {file} · ไม่พบกล่องโค้ด \"{hdr}\""); bad += 1; continue
-        run = _sp.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300, cwd=ROOT)
+        with _tf.TemporaryDirectory() as tmp:          # โค้ดบางกล่อง savefig — อย่าให้ไฟล์หลุดลงคลัง
+            run = _sp.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300, cwd=tmp, env=env)
+        err = run.stderr.strip().splitlines()[-1] if run.stderr.strip() else str(run.returncode)
+        if run.returncode and err.startswith("ModuleNotFoundError"):
+            skipped.append((file, hdr, err.split("'")[1] if "'" in err else err)); continue
         if run.returncode:
-            print(f"❌ {file} · โค้ด \"{hdr}\" รันไม่ผ่าน: {run.stderr.strip().splitlines()[-1] if run.stderr.strip() else run.returncode}"); bad += 1; continue
+            print(f"❌ {file} · โค้ด \"{hdr}\" รันไม่ผ่าน: {err}"); bad += 1; continue
         printed = [ln.strip() for ln in run.stdout.splitlines() if ln.strip()]
         shown_core = [t.lstrip("#").split("←")[0].strip() for t in shown]
         shown_core = [t for t in shown_core if t]
@@ -69,6 +87,9 @@ def _run_code_checks():
         for t in shown_core:
             if t not in printed:
                 print(f"❌ {file} · โค้ด \"{hdr}\" บทแสดง \"{t}\" แต่โค้ดไม่ได้พิมพ์บรรทัดนี้"); bad += 1
+    if skipped:
+        pk = sorted({m for _, _, m in skipped})
+        print(f"⚠️  ข้ามโค้ด {len(skipped)} กล่องเพราะเครื่องนี้ไม่มีแพ็กเกจ {', '.join(pk)} (pip install {' '.join(pk)} แล้วรันใหม่)")
     return bad
 
 
@@ -1465,6 +1486,7 @@ def main():
             cache[path] = open(path, encoding="utf-8").read()
         if text not in cache[path]:
             print(f"❌ {f} · {label}: ไม่พบ \"{text}\""); bad += 1
+    _discover_code_blocks()
     code_bad = _run_code_checks()
     bad += code_bad
     print(f"\nตรวจ {len(CHECKS)} ค่าใน {len(cache)} ไฟล์ · โค้ดในบท {len(CODE_CHECKS)} กล่อง (รันจริง) · ไม่ตรง {bad}")
