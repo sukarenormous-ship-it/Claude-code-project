@@ -1656,6 +1656,79 @@ print("เสา I  yc-loadings NUMS:", {k: round(v, 4) for k, v in _pc.items()}
 
 
 
+# ── เสาหลัก Part II (pillars-part2) — hazard · CDS · Merton · one-factor copula ───────────────
+_P2 = "pillars-part2.html"
+from scipy.integrate import quad as _quad  # noqa: E402
+_sv = _mf.NUMS.get("survival-curve") or (_mf.FIGS[(_P2, "survival-curve")](), _mf.NUMS["survival-curve"])[1]
+_lam2 = 0.02 / 0.6
+assert abs(_sv["lam"] - _lam2) < 1e-12
+expect(_P2, "λ จาก 200 bp", f"λ ≈ spread / (1 − R) = 2.0% / 0.6 ≈ <strong>{_lam2:.1%}/ปี</strong>")
+expect(_P2, "PD 1 ปี", f"1 − e<sup>−λ</sup> = {1-math.exp(-_lam2):.2%}")
+expect(_P2, "PD ที่ λ สูง", f"(ที่ λ = {0.1/0.6:.1%} จะได้ {1-math.exp(-0.1/0.6):.1%})")
+expect(_P2, "รอด 5 ปี", f"โอกาสรอด 5 ปี = e<sup>−5λ</sup> ≈ {_sv['s5']:.0%}")
+expect(_P2, "Lehman λ", f"spread 200 bp เดิมจะ imply λ แค่ {0.02/(1-0.08625):.2%}")
+# credit triangle ตรงเป๊ะเมื่อ λ แบน + เบี้ยต่อเนื่อง ไม่ว่า r, T
+for _r in (0.0, 0.05):
+    for _T in (1, 10):
+        _pl_ = _quad(lambda t: math.exp(-(_r + _lam2) * t), 0, _T)[0]
+        _pr_ = 0.6 * _quad(lambda t: _lam2 * math.exp(-(_r + _lam2) * t), 0, _T)[0]
+        assert abs(_pr_ / _pl_ - 0.02) < 1e-12, "triangle ต้องตรงเป๊ะเมื่อ λ แบน"
+
+
+def _par_noacc(s, R=0.4, r=0.03, T=5, dt=0.25):
+    lam = s / (1 - R); ts = [dt * i for i in range(1, int(T / dt) + 1)]
+    prem = sum(dt * math.exp(-(r + lam) * t) for t in ts)
+    prot = (1 - R) * sum(math.exp(-r * t) * (math.exp(-lam * (t - dt)) - math.exp(-lam * t)) for t in ts)
+    return prot / prem
+
+
+_pn = {s: _par_noacc(s) * 1e4 for s in (0.02, 0.05, 0.10)}
+expect(_P2, "par spread ไม่นับ accrual",
+       f"ที่ λ มาจาก 200 bp ได้ par spread {_pn[0.02]:.2f} bp · 500 bp ได้ {_pn[0.05]:.2f} · 1,000 bp ได้ {_pn[0.10]:,.2f}")
+# Merton
+_V, _D, _s, _mu = 100, 70, 0.20, 0.08
+_DD = (math.log(_V / _D) + (_mu - _s ** 2 / 2)) / _s
+_d2q = (math.log(_V / _D) + (0.03 - _s ** 2 / 2)) / _s
+print(f"เสา II  DD={_DD:.3f} PD={_nrm.cdf(-_DD):.2%} · d2Q={_d2q:.2f} PDQ={_nrm.cdf(-_d2q):.2%}")
+expect(_P2, "Merton DD", f"= [{math.log(_V/_D):.3f} + {_mu-_s**2/2:.2f}] / 0.20 ≈ <strong>{_DD:.2f}</strong>")
+expect(_P2, "Merton PD", f"→ PD = N(−{_DD:.2f}) ≈ <strong>{_nrm.cdf(-_DD):.2%}</strong>")
+expect(_P2, "Merton PD Q", f"PD<sub>Q</sub> = N(−{_d2q:.2f}) = <strong>{_nrm.cdf(-_d2q):.2%}</strong> เทียบ PD<sub>P</sub> {_nrm.cdf(-_DD):.2%}")
+
+
+def _merton_spread(T, V=100, D=70, s=0.20, r=0.03):
+    d1 = (math.log(V / D) + (r + s * s / 2) * T) / (s * math.sqrt(T)); d2 = d1 - s * math.sqrt(T)
+    debt = D * math.exp(-r * T) * _nrm.cdf(d2) + V * _nrm.cdf(-d1)
+    return (-math.log(debt / D) / T - r) * 1e4
+
+
+expect(_P2, "Merton spread สั้น", f"ได้ spread 1 ปีแค่ {_merton_spread(1):.1f} bp และ 3 เดือนแค่ {_merton_spread(0.25):.2f} bp")
+# one-factor Gaussian: 100 ชื่อ PD 2% senior รับเมื่อเจ๊ง > 10
+from scipy.stats import binom as _bn  # noqa: E402
+
+
+def _pool(rho, n=100, p=0.02):
+    if rho == 0:
+        return _bn.pmf(np.arange(n + 1), n, p)
+    k = _nrm.ppf(p); xs = np.linspace(-8, 8, 4001); w = _nrm.pdf(xs); w /= w.sum()
+    P = np.zeros(n + 1)
+    for x, wt in zip(xs, w):
+        P += wt * _bn.pmf(np.arange(n + 1), n, _nrm.cdf((k - math.sqrt(rho) * x) / math.sqrt(1 - rho)))
+    return P
+
+
+_k = np.arange(101); _res = {}
+for _rho in (0.0, 0.3, 0.5, 0.9):
+    _P = _pool(_rho); _res[_rho] = (_P[11:].sum(), (np.maximum(_k - 10, 0) * _P).sum(), (np.minimum(_k, 3) * _P).sum() / 3)
+print("เสา II  tranche: " + " · ".join(f"ρ={r}: P(>10)={v[0]:.2%} EL={v[1]:.2f} eq={v[2]:.0%}" for r, v in _res.items()))
+expect(_P2, "tranche ρ=0", f"= {_res[0.0][0]:.4%} · loss ที่ senior คาดว่าจะรับ ≈ 0 ชื่อ")
+expect(_P2, "tranche ρ=0.3", f"ρ = 0.3: โอกาส {_res[0.3][0]:.2%} · loss คาดหวัง {_res[0.3][1]:.2f} ชื่อ")
+expect(_P2, "tranche ρ=0.9", f"ρ = 0.9 (เกาะกลุ่ม): โอกาส {_res[0.9][0]:.2%} · loss คาดหวัง <strong>{_res[0.9][1]:.2f} ชื่อ</strong>")
+expect(_P2, "tranche ρ=0.5 ไม่ monotone", f"ที่ ρ = 0.5 ได้ {_res[0.5][0]:.2%} สูงกว่าที่ 0.9")
+assert _res[0.5][0] > _res[0.9][0] and _res[0.3][1] < _res[0.5][1] < _res[0.9][1]
+expect(_P2, "equity tranche", f"ลดจาก {_res[0.0][2]:.0%} ที่ ρ = 0 เหลือ {_res[0.3][2]:.0%} ที่ ρ = 0.3 และ {_res[0.9][2]:.0%} ที่ ρ = 0.9")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0

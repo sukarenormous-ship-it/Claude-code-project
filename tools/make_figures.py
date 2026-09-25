@@ -696,10 +696,11 @@ def fig_yc_loadings():
 # ── B · Part 2 Hazard rate: survival e^(−λt) กับ λ = 2%/0.6 = 3.3% ──
 @fig("pillars-part2.html", "survival-curve")
 def fig_survival_curve():
-    lam = 0.02 / 0.6; tt = np.linspace(0, 10, 101); S = np.exp(-lam * tt)
+    spread, R = 0.02, 0.40
+    lam = spread / (1 - R); tt = np.linspace(0, 10, 101); S = np.exp(-lam * tt)
     NUMS["survival-curve"] = dict(lam=lam, s5=float(np.exp(-lam * 5)), s1=float(np.exp(-lam)))
     Wd, H = 560, 280
-    out = svg_open(Wd, H, "เส้นโค้งโอกาสรอด e^(−λt) ของบริษัทที่ CDS 200 bp recovery 40% ให้ hazard rate 3.3% ต่อปี · โอกาสรอด 5 ปีราว 85%")
+    out = svg_open(Wd, H, f"เส้นโค้งโอกาสรอด e^(−λt) ของบริษัทที่ CDS {spread*1e4:.0f} bp recovery {R:.0%} ให้ hazard rate {lam:.1%} ต่อปี · โอกาสรอด 5 ปีราว {np.exp(-5*lam):.0%}")
     title(out, Wd, "credit triangle ในภาพ — spread 200 bp กับ recovery 40% แปลงเป็นโอกาสรอดแต่ละปี", f"λ = spread/(1 − R) = 2.0%/0.6 = {lam*100:.1f}%/ปี · P(รอดถึง t) = e^(−λt)")
     x0, y0, w, h = 50, 46, 480, 180
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], [(60, "60%"), (70, "70%"), (80, "80%"), (90, "90%"), (100, "100%")], xlab="ปีข้างหน้า", ylab="โอกาสรอด")
