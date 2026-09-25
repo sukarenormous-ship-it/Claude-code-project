@@ -1475,6 +1475,74 @@ expect(_M2, "§5.3 Bayes", f"0.90×0.60 / 0.70 = 0.54 / 0.70 ≈ <strong>{0.54/0
 
 
 
+# ── เสาหลัก Part IV (pillars-part4) — VaR · ES · coherence · EVT · copula ─────────────────────
+_P4 = "pillars-part4.html"
+from scipy.stats import t as _tdist, binom as _binom, multivariate_normal as _mvn  # noqa: E402
+_ve = _mf.NUMS.get("var-es-tail") or (_mf.FIGS[(_P4, "var-es-tail")](), _mf.NUMS["var-es-tail"])[1]
+_z99 = _nrm.ppf(0.99); _es99 = _nrm.pdf(_z99) / 0.01
+assert abs(_ve["z99"] - _z99) < 1e-12 and abs(_ve["es_mult"] - _es99) < 1e-12, "ภาพกับเนื้อต้องใช้ z ตัวเดียวกัน"
+expect(_P4, "VaR ตัวอย่าง", f"→ VaR = {_z99:.3f} × 2% × $100M = <strong>${_z99*2:.2f}M</strong>")
+expect(_P4, "VaR 95%", f"z = {_nrm.ppf(.95):.3f} &lt; {_z99:.3f} → VaR เล็กลง (${_nrm.ppf(.95)*2:.2f}M)")
+expect(_P4, "ES fm", f"ES₉₉ = {_es99:.3f}σ &nbsp;(จาก z₉₉ = {_z99:.3f} · เทียบ VaR₉₉ = {_z99:.3f}σ)")
+expect(_P4, "ES ตัวอย่าง", f"ES₉₉ = {_es99:.3f} × 2% × $100M = <strong>${_es99*2:.2f}M</strong>")
+expect(_P4, "ES ส่วนต่าง", f"ส่วนต่าง ${(_es99-_z99)*2:.2f}M")
+
+
+def _t4(a, sc=1 / math.sqrt(2)):
+    """t (ν = 4) ปรับให้ variance = 1 · คืน VaR และ ES หางซ้ายในหน่วย σ"""
+    q = _tdist(4).ppf(1 - a)
+    return -q * sc, (4 + q * q) / 3 * _tdist(4).pdf(q) / (1 - a) * sc
+
+
+_v99, _e99 = _t4(0.99); _v95, _ = _t4(0.95); _v999, _ = _t4(0.999); _v975, _e975 = _t4(0.975)
+print(f"เสา IV  normal VaR99 {_z99:.3f}σ ES99 {_es99:.3f}σ · t4 VaR95 {_v95:.3f} VaR99 {_v99:.3f} VaR99.9 {_v999:.3f} ES99 {_e99:.3f} ES97.5 {_e975:.3f}")
+expect(_P4, "t4 เทียบ normal ที่ 99%", f"ที่ 99% normal ให้ {_z99:.3f}σ แต่หางหนาให้ {_v99:.3f}σ")
+expect(_P4, "t4 เทียบ normal ที่ 99.9%", f"ห่างกันเป็น {_nrm.ppf(.999):.2f}σ กับ {_v999:.2f}σ")
+expect(_P4, "t4 เทียบ normal ที่ 95%", f"(normal {_nrm.ppf(.95):.3f}σ มากกว่า {_v95:.3f}σ)")
+expect(_P4, "t4 VaR ES ส่วนต่าง", f"VaR₉₉ = {_v99*2:.2f}% · ES₉₉ = {_e99*2:.2f}% · ส่วนต่าง <strong>${(_e99-_v99)*2:.2f}M</strong>")
+expect(_P4, "ES/VaR normal t4", f"normal ที่ 99% ได้ {_es99/_z99:.2f}")
+expect(_P4, "ES/VaR t4", f"t (ν = 4) ได้ {_e99/_v99:.2f}")
+expect(_P4, "ทำไม 97.5%", f"ES₉₇.₅ = {_nrm.pdf(_nrm.ppf(.975))/.025:.3f}σ แทบเท่ากับ VaR₉₉ = {_z99:.3f}σ")
+expect(_P4, "ทำไม 97.5% หางหนา", f"ES₉₇.₅ = {_e975:.3f}σ เทียบ VaR₉₉ = {_v99:.3f}σ")
+# traffic light
+_pg, _pr = _binom.cdf(4, 250, .01), 1 - _binom.cdf(9, 250, .01)
+expect(_P4, "traffic light เขียว", f"ตกอยู่ในโซนนี้ {_pg:.0%} ของเวลา")
+expect(_P4, "traffic light แดง", f"จะเข้าโซนนี้แค่ {_pr:.2%} ของเวลา")
+# Viniar
+_p25 = _nrm.cdf(-25)
+assert 1e134 < 1 / (_p25 * 252) < 1e136
+expect(_P4, "Viniar", f"มีโอกาส {_p25*1e138:.1f} × 10⁻¹³⁸ ต่อวัน")
+# พันธบัตรสองตัว — VaR ละเมิด ES ไม่ละเมิด
+_pd = 0.04; _pair = {0: (1 - _pd) ** 2, 100: 2 * _pd * (1 - _pd), 200: _pd ** 2}
+
+
+def _es95(dist):
+    left, acc = 0.05, 0.0
+    for loss in sorted(dist, reverse=True):
+        take = min(dist[loss], left); acc += take * loss; left -= take
+    return acc / 0.05
+
+
+_es1, _es2 = _es95({0: 1 - _pd, 100: _pd}), _es95(_pair)
+expect(_P4, "พันธบัตร ES ตัวเดียว", f"ตัวเดียว ES₉₅ = <strong>${_es1:.0f}</strong>")
+expect(_P4, "พันธบัตร ES คู่", f"รวม 2 ตัว ES₉₅ = <strong>${_es2:.1f}</strong> ซึ่งน้อยกว่า ${_es1:.0f} + ${_es1:.0f} = ${2*_es1:.0f}")
+# EVT
+expect(_P4, "POT จำนวนวันเกิน", f"จะมีราว {1250*_nrm.cdf(-1.5):.0f} วันจาก 1,250 วัน")
+_pt = _tdist(4).cdf(-_nrm.ppf(.999) * math.sqrt(2))
+expect(_P4, "EVT หางจริง 6 เท่า", f"จะเกิดจริง {_pt:.1%} หรือ <strong>{_pt/0.001:.0f} เท่า</strong>")
+expect(_P4, "EVT ขนาด VaR", f"ต่างกัน {_v999/_nrm.ppf(.999):.1f} เท่า: {_nrm.ppf(.999):.2f}σ เทียบ {_v999:.2f}σ")
+# copula
+_C7 = [[1, .7], [.7, 1]]
+_cond = [_mvn(cov=_C7).cdf([_nrm.ppf(u)] * 2) / u for u in (.05, .01, .001)]
+_lam = 2 * _tdist(5).cdf(-math.sqrt(5 * 0.3 / 1.7))
+expect(_P4, "Gaussian copula ลู่ช้า", "ได้ " + " · ".join(f"{c:.2f}" for c in _cond) + " ที่หาง 5% · 1% · 0.1%")
+expect(_P4, "t-copula λ", f"ρ เดียวกันค้างอยู่ที่ {_lam:.2f}")
+expect(_P4, "DCC σ พอร์ต ปกติ", f"= <strong>{math.sqrt(1.3/2):.2f}</strong> เท่าของ σ แต่ละตัว")
+expect(_P4, "DCC σ พอร์ต วิกฤต", f"σ พอร์ต = <strong>{math.sqrt(1.85/2):.2f}</strong> เท่า")
+expect(_P4, "DCC VaR เพิ่ม", f"เพิ่มขึ้น <strong>{math.sqrt(1.85/1.3)-1:.0%}</strong>")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0

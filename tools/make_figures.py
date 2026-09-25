@@ -748,12 +748,13 @@ def fig_sqrt_impact():
 @fig("pillars-part4.html", "var-es-tail")
 def fig_var_es_tail():
     from math import erf, sqrt, pi
-    sg = 2.0; z99 = 2.33; es_mult = round(float(np.exp(-2.326 ** 2 / 2) / np.sqrt(2 * np.pi) / 0.01), 2)   # 2.67 ตามการ์ด
+    from scipy.stats import norm as _nm
+    sg = 2.0; z99 = float(_nm.ppf(0.99)); es_mult = float(_nm.pdf(z99) / 0.01)   # z₉₉ = 2.326 · ES₉₉ = 2.665σ ใช้ z ตัวเดียวกันทั้งภาพ
     xs = np.linspace(-8, 8, 321); pdf = np.exp(-xs ** 2 / (2 * sg ** 2)) / (sg * np.sqrt(2 * np.pi))
-    NUMS["var-es-tail"] = dict(var=z99 * sg, es=es_mult * sg, es_mult=es_mult)
+    NUMS["var-es-tail"] = dict(var=z99 * sg, es=es_mult * sg, es_mult=es_mult, z99=z99)
     Wd, H = 560, 290
-    out = svg_open(Wd, H, "การแจกแจง normal ของผลตอบแทนรายวัน σ 2% · เส้น VaR 99% ที่ −4.66% ตัดหางซ้าย 1% · ES คือค่าเฉลี่ยของหางที่ถูกตัดอยู่ที่ −5.34% · เส้นประหางอ้วนแสดงว่าหางจริงลึกกว่า")
-    title(out, Wd, "VaR คือ 'เส้น' — ES คือ 'พื้นที่ใต้หาง' ที่อยู่เลยเส้นนั้น", f"ผลตอบแทนรายวัน σ = 2% (พอร์ต $100M) · VaR₉₉ = 2.33σ = {z99*sg:.2f}% = $4.66M · ES₉₉ = {es_mult:.2f}σ = {es_mult*sg:.2f}% = ${es_mult*sg:.2f}M")
+    out = svg_open(Wd, H, f"การแจกแจง normal ของผลตอบแทนรายวัน σ 2% · เส้น VaR 99% อยู่ที่ผลตอบแทน −{z99*sg:.2f}% ตัดหางซ้าย 1% · ES คือค่าเฉลี่ยของหางที่เลยเส้นนั้น อยู่ที่ −{es_mult*sg:.2f}% · เส้นประคือหางหนา (t, ν = 4) ที่ σ เท่ากัน")
+    title(out, Wd, "VaR คือ 'เส้น' — ES คือ 'ค่าเฉลี่ยของหาง' ที่อยู่เลยเส้นนั้น", f"ผลตอบแทนรายวัน σ = 2% (พอร์ต $100M) · VaR₉₉ = {z99:.3f}σ = {z99*sg:.2f}% = ${z99*sg:.2f}M · ES₉₉ = {es_mult:.3f}σ = {es_mult*sg:.2f}% = ${es_mult*sg:.2f}M")
     x0, y0, w, h = 50, 46, 480, 185
     sx, sy = frame(out, x0, y0, w, h, [(-8, "−8%"), (-6, "−6%"), (-4, "−4%"), (-2, "−2%"), (0, "0"), (2, "+2%"), (4, "+4%"), (6, "+6%"), (8, "+8%")], [(0, "0"), (0.15, ""), (0.3, "")], xlab="ผลตอบแทนรายวัน", ylab="ความหนาแน่น", grid_y=False)
     tail = xs <= -z99 * sg
@@ -767,12 +768,12 @@ def fig_var_es_tail():
     polyline(out, [(sx(a), sy(b)) for a, b in zip(xs, tpdf)], AMBER, 1.8, dash="5 3", shadow=False)
     vx = -z99 * sg; ex = -es_mult * sg
     out.append(f'<line x1="{sx(vx):.1f}" y1="{y0+20}" x2="{sx(vx):.1f}" y2="{sy(0):.1f}" stroke="{PURPLE}" stroke-width="1.8" stroke-dasharray="5 3"/>')
-    out.append(f'<text x="{sx(vx):.1f}" y="{y0+14}" text-anchor="middle" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">VaR₉₉ = −{z99*sg:.2f}% ($4.66M)</text>')
+    out.append(f'<text x="{sx(vx):.1f}" y="{y0+14}" text-anchor="middle" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">VaR₉₉ = {z99*sg:.2f}% (${z99*sg:.2f}M) · ที่ r = −{z99*sg:.2f}%</text>')
     out.append(f'<circle cx="{sx(ex):.1f}" cy="{sy(0):.1f}" r="4.5" fill="#fff" stroke="{RED}" stroke-width="2.4"/>')
     out.append(f'<line x1="{sx(ex):.1f}" y1="{sy(0)-6:.1f}" x2="{sx(ex):.1f}" y2="{y0+52}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
-    out.append(f'<text x="{sx(-7.9):.1f}" y="{y0+36}" {FONT} font-size="9.5" fill="{RED}" font-weight="700">ES₉₉ = −{es_mult*sg:.2f}% (${es_mult*sg:.2f}M)</text>')
+    out.append(f'<text x="{sx(-7.9):.1f}" y="{y0+36}" {FONT} font-size="9.5" fill="{RED}" font-weight="700">ES₉₉ = {es_mult*sg:.2f}% (${es_mult*sg:.2f}M)</text>')
     out.append(f'<text x="{sx(-7.9):.1f}" y="{y0+48}" {FONT} font-size="9" fill="{RED}">= ค่าเฉลี่ยของพื้นที่แดง (1% ของวัน) — อยู่ลึกกว่าเส้น VaR เสมอ</text>')
-    out.append(f'<text x="{x0+w-4}" y="{sy(0.12):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">เส้นประ = หางอ้วน (t, ν = 4) σ เท่ากัน</text>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(0.12):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{AMBER}" font-weight="700">เส้นประ = หางหนา (t, ν = 4) σ เท่ากัน</text>')
     out.append(f'<text x="{x0+w-4}" y="{sy(0.12)+13:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">หางจริงหนากว่า normal — ES จาก normal ยังต่ำเกินจริง</text>')
     out.append("</svg>")
     return "\n".join(out)
