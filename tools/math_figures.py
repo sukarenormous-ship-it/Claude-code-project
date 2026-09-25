@@ -1395,6 +1395,65 @@ expect(_M6, "§10.1 ลำดับราคา tree", "(14.6 → 11.2 → 12.8 
 
 
 
+# ── เล่ม 1 Part II (math-part2) — สถิติ ความน่าจะเป็น การแจกแจง ──────────────────────────────
+_M2 = "math-part2.html"
+expect_code(_M2, "N(d) จาก erf")
+
+
+def _bach_call(S0, K, sd):
+    """ค่าของ Call = payoff เฉลี่ยเมื่อราคาปลายทาง ~ Normal(S0, sd) ไม่คิดดอกเบี้ย"""
+    d = (S0 - K) / sd
+    return (S0 - K) * _nrm.cdf(d) + sd * _nrm.pdf(d)
+
+
+_cA, _cB = _bach_call(100, 120, 5), _bach_call(100, 120, 20)
+_atm = _bach_call(100, 100, 20) / _bach_call(100, 100, 5)
+print(f"เล่ม1 II  hook: Call K120 A ฿{_cA:.6f} B ฿{_cB:.3f} ต่างกัน {_cB/_cA:,.0f} เท่า · ATM {_atm:.4f} เท่า")
+assert _cA < 0.01 and _cB / _cA > 40_000 and abs(_atm - 4) < 1e-12
+expect(_M2, "hook ค่า Call B", f"มีค่าราว <strong>฿{_cB:.2f}</strong>")
+expect(_M2, "hook ATM 4 เท่า", f"ของ B ก็ยังแพงกว่า <strong>{_atm:.0f} เท่าพอดี</strong>")
+_tb = _mf.NUMS.get("m2-two-bells-strike") or (_mf.FIGS[(_M2, "m2-two-bells-strike")](), _mf.NUMS["m2-two-bells-strike"])[1]
+
+# §4.3 σ หุ้นนิ่ง vs หุ้นเหวี่ยง — หาร n ตามสูตรในกล่อง และหาร n − 1
+_ra, _rb = np.array([1, -1, 2, -2]), np.array([10, -8, 12, -14])
+expect(_M2, "§4.3 σ A", f"<strong>{_ra.std():.2f}%</strong>")
+expect(_M2, "§4.3 σ B", f"<strong>{_rb.std():.1f}%</strong>")
+expect(_M2, "§4.3 ddof=1", f"จะได้ {_ra.std(ddof=1):.2f}% กับ {_rb.std(ddof=1):.2f}%")
+
+# §6.3 ตาราง N(d)
+for _d, _txt in ((-2.0, "−2.0"), (-1.0, "−1.0"), (0.0, "0.0"), (1.0, "+1.0"), (2.0, "+2.0")):
+    expect(_M2, f"§6.3 N({_d})", f"<tr><td>{_txt}</td><td>{_nrm.cdf(_d):.3f}</td>")
+expect(_M2, "§6.3 ตารางละเอียด",
+       "<td><strong>N(d)</strong></td>" + "".join(f"<td>{_nrm.cdf(x):.3f}</td>".replace(">0.", ">.") for x in (0, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5)))
+expect(_M2, "§6.3 N(0.325)", f"ค่าเป๊ะจาก erf = {_nrm.cdf(0.325):.4f}")
+_d1b = (math.log(1) + (0.05 + 0.25 ** 2 / 2)) / 0.25
+assert abs(_d1b - 0.325) < 1e-12 and abs(_d1b - 0.25 - 0.075) < 1e-12, "d₁, d₂ ต้องมาจาก S = K = 100 · r = 5% · σ = 25% · T = 1"
+
+# §6.4 Lognormal (E[S] = 100) · §6.6 หางหนา
+_ln = _mf.NUMS.get("m2-normal-vs-lognormal") or (_mf.FIGS[(_M2, "m2-normal-vs-lognormal")](), _mf.NUMS["m2-normal-vs-lognormal"])[1]
+expect(_M2, "§6.4 มัธยฐาน", f"มัธยฐาน = 100·e^(−0.02) = {_ln['median']:.1f}")
+expect(_M2, "§6.4 ยอด", f"ยอด = 100·e^(−0.06) = {_ln['mode']:.1f}")
+from scipy import stats as _st  # noqa: E402
+_ft = _mf.NUMS.get("m2-fat-tails") or (_mf.FIGS[(_M2, "m2-fat-tails")](), _mf.NUMS["m2-fat-tails"])[1]
+_exact = 2 * _st.t(3).sf(3 * math.sqrt(3))
+assert abs(_ft["tail_t"] - _exact) < 1e-12, "หางในภาพต้องเท่าหางจริงของ t (ν = 3) ไม่ใช่ผลรวมบนกริดที่ถูกตัด"
+print(f"เล่ม1 II  หางเกิน 3σ: Normal {_ft['tail_n']:.3%} · t(3) {_ft['tail_t']:.3%} · {_ft['tail_t']/_ft['tail_n']:.1f} เท่า")
+
+# capstone — หุ้น ฿100 σ = 20%/ปี
+_sm = 0.20 * math.sqrt(1 / 12)
+expect(_M2, "capstone σ เดือน", f"σ เดือน = 20% × √(1/12) ≈ {_sm:.1%}")
+expect(_M2, "capstone ±1σ เดือน", f"<strong>฿{100-100*_sm:.1f}–฿{100+100*_sm:.1f}</strong>")
+expect(_M2, "capstone ±2σ เดือน", f"≈ ±฿{2*100*_sm:.1f} → <strong>฿{100-200*_sm:.1f}–฿{100+200*_sm:.1f}</strong>")
+_med2 = 100 * math.exp(-0.02)
+_p2 = _nrm.cdf((math.log(1.2) + 0.02) / 0.2) - _nrm.cdf((math.log(0.8) + 0.02) / 0.2)
+expect(_M2, "capstone lognormal",
+       f"มัธยฐานคือ ฿{_med2:.2f} ช่วง ±1σ คือ ฿{_med2*math.exp(-0.2):.1f}–฿{_med2*math.exp(0.2):.1f} และโอกาสจบใน ฿80–฿120 ได้ {_p2:.1%}")
+expect(_M2, "capstone √(1/12) √(1/52)", f"√(1/12) ≈ {math.sqrt(1/12):.2f} · 1 สัปดาห์ ≈ √(1/52) ≈ {math.sqrt(1/52):.2f}")
+# Bayes
+expect(_M2, "§5.3 Bayes", f"0.90×0.60 / 0.70 = 0.54 / 0.70 ≈ <strong>{0.54/0.70:.0%}</strong>")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
