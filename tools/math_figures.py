@@ -28,6 +28,50 @@ def expect(file, label, text):
     CHECKS.append((file, label, text))
 
 
+CODE_CHECKS = []  # (file, หัวกล่องโค้ด) — รันโค้ดในบทจริง แล้วเทียบผลรันกับบรรทัด <span class="o"> ทั้งสองทาง
+
+
+def expect_code(file, hdr):
+    """โค้ด 🐍 ในบทต้องรันได้ และผลที่บทแสดงต้องเป็นผลที่โค้ดพิมพ์จริง
+    · ทุกบรรทัดที่โค้ดพิมพ์ต้องอยู่ในบรรทัดผลลัพธ์ของบท
+    · ทุกบรรทัดผลลัพธ์ในบท (ตัดคำอธิบายหลัง ← ออก) ต้องเป็นบรรทัดที่โค้ดพิมพ์จริง"""
+    CODE_CHECKS.append((file, hdr))
+
+
+def _code_block(file, hdr):
+    import html as _h, re as _r
+    src = open(os.path.join(DOCS, file), encoding="utf-8").read()
+    for m in _r.finditer(r'<div class="code"><div class="hdr">(.*?)</div><pre>(.*?)</pre>', src, _r.S):
+        if hdr in m.group(1):
+            body = m.group(2)
+            shown = [_h.unescape(_r.sub(r"<[^>]+>", "", t)) for t in _r.findall(r'<span class="o">(.*?)</span>', body, _r.S)]
+            code = _h.unescape(_r.sub(r"<[^>]+>", "", _r.sub(r'<span class="o">.*?</span>', "", body, flags=_r.S)))
+            return code, shown
+    return None, None
+
+
+def _run_code_checks():
+    import subprocess as _sp
+    bad = 0
+    for file, hdr in CODE_CHECKS:
+        code, shown = _code_block(file, hdr)
+        if code is None:
+            print(f"❌ {file} · ไม่พบกล่องโค้ด \"{hdr}\""); bad += 1; continue
+        run = _sp.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300, cwd=ROOT)
+        if run.returncode:
+            print(f"❌ {file} · โค้ด \"{hdr}\" รันไม่ผ่าน: {run.stderr.strip().splitlines()[-1] if run.stderr.strip() else run.returncode}"); bad += 1; continue
+        printed = [ln.strip() for ln in run.stdout.splitlines() if ln.strip()]
+        shown_core = [t.lstrip("#").split("←")[0].strip() for t in shown]
+        shown_core = [t for t in shown_core if t]
+        for ln in printed:
+            if not any(ln == t or t.startswith(ln) for t in shown_core):
+                print(f"❌ {file} · โค้ด \"{hdr}\" พิมพ์ \"{ln}\" แต่บทไม่ได้แสดงบรรทัดนี้"); bad += 1
+        for t in shown_core:
+            if t not in printed:
+                print(f"❌ {file} · โค้ด \"{hdr}\" บทแสดง \"{t}\" แต่โค้ดไม่ได้พิมพ์บรรทัดนี้"); bad += 1
+    return bad
+
+
 def ols(X, y):
     beta = np.linalg.solve(X.T @ X, X.T @ y)
     res = y - X @ beta
@@ -1299,6 +1343,58 @@ print(f"เล่ม1 III  +20: Delta พลาด {_d20:.2f} · Delta+Gamma พ
 expect(_M3, "§7.6 Delta พลาดที่ +20", f"Delta พลาด {_d20:.1f} · Gamma เหลือพลาด {_e20:.1f}")
 
 
+# ── เล่ม 1 Part IV (math-part6) — GARCH · EWMA · IV (bisection/Newton) · binomial tree ──────
+_M6 = "math-part6.html"
+for _h in ("พยากรณ์เส้นทาง σ หลังเกิดช็อก", "IV ด้วย 2 วิธี", "Binomial tree (CRR)"):
+    expect_code(_M6, _h)
+for _h in ("Delta-Gamma approx เทียบราคาจริง",):
+    expect_code(_M3, _h)
+for _h in ("Sharpe · Sortino", "จำลอง 10,000 เส้นทาง", "คำนวณ Max Drawdown", "stress test พอร์ต 3 สินทรัพย์"):
+    expect_code(_M10, _h)
+
+# §8.4 GARCH ω = 0.00002 · α = 0.10 · β = 0.85
+_w, _a, _b = 0.00002, 0.10, 0.85
+_vinf = _w / (1 - _a - _b)
+_v_shock = _w + _a * 0.03 ** 2 + _b * 0.0004
+_v_calm = _w + _a * 0.0 + _b * 0.0004
+_hl = math.log(0.5) / math.log(_a + _b)
+print(f"เล่ม1 IV  GARCH σ∞={math.sqrt(_vinf):.2%}/วัน ({math.sqrt(_vinf*252):.1%}/ปี) · หลังช็อก {math.sqrt(_v_shock):.2%} · "
+      f"วันนิ่ง {math.sqrt(_v_calm):.2%} · half-life {_hl:.1f} วัน (ที่ 0.99: {math.log(.5)/math.log(.99):.0f})")
+expect(_M6, "§8.4 σ²∞", f"σ²∞ = 0.00002/(1−0.95) = {_vinf:.4f}")
+expect(_M6, "§8.4 σ หลังช็อก", f"= {_v_shock:.5f} → σ = <strong>{math.sqrt(_v_shock):.2%}/วัน</strong>")
+expect(_M6, "§8.4 ลองทำ วันนิ่ง", f"= {_v_calm:.5f} → σ = √{_v_calm:.5f} = <strong>{math.sqrt(_v_calm):.1%}/วัน</strong>")
+expect(_M6, "§8.4 half-life", f"ln 0.5 / ln 0.95 ≈ {_hl:.1f} วัน")
+expect(_M6, "§8.5 half-life", f"ส่วนที่ σ² เกินระดับปกติหดเหลือครึ่งทุกราว <strong>{_hl:.1f} วัน</strong>")
+expect(_M6, "§8.5 half-life ที่ 0.99", f"ที่ 0.99 ต้องรอราว {math.log(.5)/math.log(.99):.0f} วัน")
+expect(_M6, "§8.4 σ∞ รายปี", f"σ∞ = 2%/วัน × √252 ≈ <strong>{math.sqrt(_vinf*252):.1%}/ปี</strong>")
+# โค้ดพยากรณ์ต้องตรงกับสูตรปิด E[σ²ₜ₊ₕ] = σ²∞ + (α+β)^(h−1)(σ²ₜ₊₁ − σ²∞)
+_v = 0.0009; _v1 = _w + (_a + _b) * _v
+for _k in range(1, 8):
+    _v = _w + (_a + _b) * _v
+    assert abs(_v - (_vinf + (_a + _b) ** (_k - 1) * (_v1 - _vinf))) < 1e-15
+# §8.3 EWMA λ = 0.94
+expect(_M6, "§8.3 EWMA half-life และหน้าต่าง",
+       f"ln 0.5 / ln 0.94 ≈ {math.log(.5)/math.log(.94):.0f} วัน · เทียบเท่าหน้าต่าง 1/(1−λ) ≈ {1/(1-0.94):.0f} วัน")
+
+# §9 IV — Call S = K = 100 · r = 5% · T = 1 ปี · σ* = 25%
+_C6 = _bs_all()["C"]
+for _m, _px in ((0.505, "21.98"), (0.2575, "12.62"), (0.13375, "8.00"), (0.195625, "10.29")):
+    _got = _bs_all(sg=_m)["C"]
+    assert f"{_got:.2f}" == _px, (_m, _got)
+    expect(_M6, f"§9.3 bisection BS({_m})", f'<td class="nw">{_got:.2f}</td>')
+from scipy.optimize import brentq as _brentq  # noqa: E402
+_iv15 = _brentq(lambda v: _bs_all(sg=v)["C"] - 15.0, 0.01, 2.0)
+expect(_M6, "§9.3 ลองทำ IV ที่ราคา 15", f"เฉลย: IV ≈ {_iv15:.1%}")
+_bs0 = math.sqrt(2 * math.pi / 1.0) * _C6 / 100
+print(f"เล่ม1 IV  C={_C6:.3f} · IV(15)={_iv15:.2%} · Brenner–Subrahmanyam σ₀={_bs0:.1%} · bisection ~{math.log2(0.99/1e-4):.1f} รอบ")
+expect(_M6, "§9.3 ค่าเริ่ม Brenner–Subrahmanyam", f"√(2π) × {_C6:.3f}/100 ≈ <strong>{_bs0:.1%}</strong>")
+_nw = _mf.NUMS.get("m6-newton") or (_mf.FIGS[(_M6, "m6-newton")](), _mf.NUMS["m6-newton"])[1]
+assert abs(_nw["price"] - _C6) < 1e-9, "ภาพ Newton ต้องใช้ Call ชุดเดียวกับโค้ดในบท"
+# §10.1 tree
+expect(_M6, "§10.1 ลำดับราคา tree", "(14.6 → 11.2 → 12.8 → 12.1)")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
@@ -1310,7 +1406,9 @@ def main():
             cache[path] = open(path, encoding="utf-8").read()
         if text not in cache[path]:
             print(f"❌ {f} · {label}: ไม่พบ \"{text}\""); bad += 1
-    print(f"\nตรวจ {len(CHECKS)} ค่าใน {len(cache)} ไฟล์ · ไม่ตรง {bad}")
+    code_bad = _run_code_checks()
+    bad += code_bad
+    print(f"\nตรวจ {len(CHECKS)} ค่าใน {len(cache)} ไฟล์ · โค้ดในบท {len(CODE_CHECKS)} กล่อง (รันจริง) · ไม่ตรง {bad}")
     return 1 if bad else 0
 
 

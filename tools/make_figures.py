@@ -2210,14 +2210,15 @@ def fig_m6_sma_ewma():
     polyline(out, [(sx(a), sy(b)) for a, b in zip(t[19:], sma[19:])], AMBER, 2.2)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(t, ew)], BLUE, 2.4)
     _txt(out, sx(119), sy(np.nanmax(sma)) - 7, "SMA ค้าง 20 วัน แล้วตกฮวบเมื่อ spike หลุดหน้าต่าง", AMBER, "end", size=9, bold=True)
-    _txt(out, sx(3), sy(0.026), f"EWMA ขึ้นทันทีวันถัดไป ({ew.max()*100:.2f}%) แล้วจางลง 6% ต่อวัน", BLUE, "start", size=9, bold=True)
+    _txt(out, sx(3), sy(0.026), f"EWMA ขึ้นทันทีวันถัดไป ({ew.max()*100:.2f}%) แล้ว σ² จางลง 6%/วัน (σ ≈ {(1-0.94**0.5)*100:.0f}%/วัน)", BLUE, "start", size=9, bold=True)
     legend(out, [(AMBER, "SMA 20 วัน (ช้า + กระตุก)", ""), (BLUE, "EWMA λ = 0.94 (ไว + เนียน)", "")], x0, H - 10)
     out.append("</svg>")
     NUMS["m6-sma-ewma"] = dict(sma_max=float(np.nanmax(sma)), ew_max=float(ew.max()))
     return "\n".join(out)
 
 
-def newton_data(sigma_true=0.25, s0=0.15, S=100.0, K=100.0, r=0.05, T=0.5):
+def newton_data(sigma_true=0.25, s0=0.15, S=100.0, K=100.0, r=0.05, T=1.0):
+    """Call ชุดเดียวกับ bisection/โค้ดในบท §9.3: S = K = 100 · r = 5% · T = 1 ปี → ราคา 12.336"""
     price = float(bs_greeks(S, K=K, r=r, sg=sigma_true, T=T)["C"])
     def f(sg): return float(bs_greeks(S, K=K, r=r, sg=sg, T=T)["C"]) - price
     def vega(sg): return float(bs_greeks(S, K=K, r=r, sg=sg, T=T)["vega1"]) * 100  # ต่อ 1 หน่วย σ
@@ -2232,16 +2233,16 @@ def fig_m6_newton():
     Wd, H = 560, 310
     out = svg_open(Wd, H, f"Newton-Raphson หา IV: จากเดา σ₁ = 15% ลากเส้นสัมผัสไป σ₂ = {its[1]*100:.1f}% แล้ว σ₃ = {its[2]*100:.2f}% เข้าหาราก σ* = 25%")
     title(out, Wd, "Newton-Raphson หา Implied Vol — ลากเส้นสัมผัส (ความชัน = Vega) ไปตัดศูนย์ ซ้ำจนเข้าเป้า",
-          f"ราคาตลาด {price:.2f} (จาก σ* = 25%) · เดา σ₁ = 15% → σ₂ = {its[1]*100:.2f}% → σ₃ = {its[2]*100:.3f}% → σ₄ = {its[3]*100:.4f}% · เข้าเป้าใน 3 รอบ")
+          f"Call S = K = 100 · r = 5% · T = 1 ปี · ราคาตลาด {price:.3f} · σ₁ = 15% → σ₂ = {its[1]*100:.2f}% → σ₃ = {its[2]*100:.3f}% · เข้าเป้าใน 2 รอบ")
     sgs = np.linspace(0.05, 0.40, 141); fv = np.array([f(v) for v in sgs])
-    (sx, sy), _ = _std_frame(out, Wd, H, [(0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%"), (0.35, "35%"), (0.40, "40%")], [(-6, "−6"), (-4, "−4"), (-2, "−2"), (0, "0"), (2, "2"), (4, "4")], "σ (เดา)", "f(σ) = BS(σ) − ราคาตลาด")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%"), (0.35, "35%"), (0.40, "40%")], [(-8, "−8"), (-6, "−6"), (-4, "−4"), (-2, "−2"), (0, "0"), (2, "2"), (4, "4"), (6, "6")], "σ (เดา)", "f(σ) = BS(σ) − ราคาตลาด")
     _zero_line(out, sx, sy, 0.05, 0.40)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(sgs, fv)], BLUE, 2.4)
     s1, s2 = its[0], its[1]
     polyline(out, [(sx(s1), sy(f(s1))), (sx(s2), sy(0))], RED, 1.6, dash="5 3", shadow=False)
     out.append(f'<line x1="{sx(s2):.1f}" y1="{sy(0):.1f}" x2="{sx(s2):.1f}" y2="{sy(f(s2)):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
-    _dot(out, sx(s1), sy(f(s1)), RED); _txt(out, sx(s1), sy(f(s1)) + 16, f"σ₁ = 15% · f = {f(s1):.2f}", RED, "middle", size=9, bold=True)
-    _dot(out, sx(s2), sy(0), RED, 3.6); _txt(out, sx(s2) + 6, sy(0) - 8, f"σ₂ = {s2*100:.1f}%", RED, "start", size=9, bold=True)
+    _dot(out, sx(s1), sy(f(s1)), RED); _txt(out, sx(s1), sy(f(s1)) + 16, f"σ₁ = 15% · f = {f(s1):.2f}".replace("-", "−"), RED, "middle", size=9, bold=True)
+    _dot(out, sx(s2), sy(0), RED, 3.6); _txt(out, sx(s2) - 8, sy(0) - 10, f"σ₂ = {s2*100:.1f}% (ห่างรากแค่ {abs(s2-0.25)*100:.1f} จุด)", RED, "end", size=9, bold=True)
     _dot(out, sx(0.25), sy(0)); _txt(out, sx(0.25) + 6, sy(0) + 16, "σ* = IV = 25% (ราก)", PURPLE, "start", bold=True)
     _txt(out, sx(0.11), sy(2.6), "เส้นประ = เส้นสัมผัส ชัน Vega(σ₁)", RED, "start", size=9)
     _txt(out, sx(0.11), sy(2.6) + 12, "σ₂ = σ₁ − f(σ₁)/Vega(σ₁)", RED, "start", size=9)
