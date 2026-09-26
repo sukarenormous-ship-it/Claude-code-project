@@ -1729,6 +1729,34 @@ expect(_P2, "equity tranche", f"ลดจาก {_res[0.0][2]:.0%} ที่ ρ 
 
 
 
+# ── ทฤษฎี Part II (theory-part2) — diversification · CAPM · FF3 ──────────────────────────────
+_T2 = "theory-part2.html"
+
+
+def _sig2(rho, s=0.20):
+    return math.sqrt(0.25 * s * s * 2 + 2 * 0.25 * rho * s * s)
+
+
+_dv = _mf.NUMS.get("diversification-corr") or (_mf.FIGS[(_T2, "diversification-corr")](), _mf.NUMS["diversification-corr"])[1]
+expect(_T2, "diversification ρ=0", f"= 20%/√2 ≈ <strong>{_sig2(0):.1%}</strong> (ลด ~{1-_sig2(0)/0.2:.0%} ฟรี ๆ!)")
+assert abs(_sig2(1) - 0.20) < 1e-12 and _sig2(-1) < 1e-12
+# CAPM R_f 3% · ERP 5%
+_cp = 0.03 + 1.5 * 0.05
+expect(_T2, "CAPM เรียกร้อง", f"= 3% + 1.5 × 5% = <strong>{_cp:.1%}</strong>")
+expect(_T2, "CAPM alpha +", f"ถ้าหุ้นนี้ทำได้ 13% → <strong>alpha = +{0.13-_cp:.1%}</strong>")
+expect(_T2, "CAPM alpha −", f"ถ้าทำได้ 9% → alpha = −{_cp-0.09:.1%}")
+# FF3 ตัวอย่าง
+_capm_fund = 0.03 + 1.0 * 0.06; _ff3_fund = 0.03 + 1.0 * 0.06 + 0.5 * 0.02 + 0.3 * 0.03
+expect(_T2, "FF3 CAPM", f"ควรได้ 3% + 1.0 × 6% = {_capm_fund:.0%} → alpha = <strong>+{0.12-_capm_fund:.1%}</strong>")
+expect(_T2, "FF3", f"= {_ff3_fund:.1%} → alpha = <strong>+{0.12-_ff3_fund:.1%}</strong>")
+assert (0.12 - _ff3_fund) / (0.12 - _capm_fund) < 0.4, "alpha ต้องหายไปเกือบสองในสาม"
+# ตัวอย่าง 2 สินทรัพย์ของ 2·B ที่อ้างถึง: min-variance weight
+_wA = (0.3 ** 2 - 0.2 * 0.2 * 0.3) / (0.2 ** 2 + 0.3 ** 2 - 2 * 0.2 * 0.2 * 0.3)
+expect(_T2, "อ้าง 2·B min var", f"พอร์ตเสี่ยงต่ำสุด {_wA:.0%} ที่ตัวแรก")
+print(f"ทฤษฎี II  σ(ρ=0)={_sig2(0):.2%} ρ=0.5 {_sig2(.5):.2%} · CAPM {_cp:.1%} · FF3 {_ff3_fund:.1%} · wA {_wA:.2%}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
