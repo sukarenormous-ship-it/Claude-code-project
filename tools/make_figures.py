@@ -627,7 +627,7 @@ def fig_binomial_tree():
     return "\n".join(out)
 
 
-# ── A · Part 5 GARCH(1,1) ω = 2e-6 α = 0.08 β = 0.90: vol clustering และการลู่กลับหา 1%/วัน ──
+# ── A · Part 5 GARCH(1,1) ω = 2e-6 α = 0.08 β = 0.90: vol clustering และการถูกดึงกลับหาระดับยาว 1%/วัน ──
 def garch_sim(T=500, seed=21, om=2e-6, al=0.08, be=0.90):
     rng = np.random.default_rng(seed); z = rng.standard_normal(T)
     s2 = np.empty(T); r = np.empty(T); s2[0] = om / (1 - al - be)
@@ -639,11 +639,13 @@ def garch_sim(T=500, seed=21, om=2e-6, al=0.08, be=0.90):
 
 @fig("theory-part5.html", "garch-sim")
 def fig_garch_sim():
-    r, sg, lr = garch_sim()
-    NUMS["garch-sim"] = dict(long_run=lr, max_sigma=sg.max(), persistence=0.98)
+    om, al, be = 2e-6, 0.08, 0.90
+    r, sg, lr = garch_sim(om=om, al=al, be=be)
+    pers = al + be; hl = np.log(0.5) / np.log(pers); below = float((sg < lr).mean())
+    NUMS["garch-sim"] = dict(long_run=lr, max_sigma=sg.max(), persistence=pers, half_life=hl, below=below, median_sigma=float(np.median(sg)))
     Wd, H = 560, 330
-    out = svg_open(Wd, H, "บน: ผลตอบแทนรายวันจำลองจาก GARCH(1,1) ที่ vol จับกลุ่ม · ล่าง: σ_t ที่พุ่งหลังวันช็อกแล้วค่อยลู่กลับหา 1% ต่อวันด้วย persistence 0.98", multipanel=True)
-    title(out, Wd, "GARCH(1,1) — vol จับกลุ่ม แล้วลู่กลับหา long-run 1%/วัน อย่างช้า ๆ (persistence 0.98)", "ω = 0.000002 · α = 0.08 · β = 0.90 · 500 วันจำลอง (seed 21)")
+    out = svg_open(Wd, H, f"บน: ผลตอบแทนรายวันจำลองจาก GARCH(1,1) ที่ vol เกาะกลุ่ม · ล่าง: σ_t ที่พุ่งหลังวันช็อกแล้วค่อยถูกดึงกลับด้วย persistence {pers:.2f} · เส้นประคือรากของ variance ระยะยาว {lr*100:.0f}% ต่อวัน ซึ่ง σ อยู่ต่ำกว่าเส้น {below:.0%} ของวันเพราะ σ² เบ้ขวา", multipanel=True)
+    title(out, Wd, f"GARCH(1,1) — vol เกาะกลุ่ม แล้วถูกดึงกลับหาระดับยาวอย่างช้า ๆ (persistence {pers:.2f})", f"ω = {om:.6f} · α = {al:.2f} · β = {be:.2f} · 500 วันจำลอง (seed 21)")
     x0, w = 50, 480; T = len(r); xt = [(0, "0"), (100, "100"), (200, "200"), (300, "300"), (400, "400"), (500, "500")]
     y0, h = 46, 110
     sx, sy = frame(out, x0, y0, w, h, xt, [(-4, "−4%"), (-2, "−2%"), (0, "0"), (2, "+2%"), (4, "+4%")], ylab="ผลตอบแทนรายวัน")
@@ -652,13 +654,13 @@ def fig_garch_sim():
     y1, h1 = 186, 110
     sx2, sy2 = frame(out, x0, y1, w, h1, xt, [(0, "0"), (1, "1%"), (2, "2%"), (3, "3%")], xlab="วันที่", ylab="σ_t (GARCH)")
     out.append(f'<line x1="{x0}" y1="{sy2(lr*100):.1f}" x2="{x0+w}" y2="{sy2(lr*100):.1f}" stroke="{INK2}" stroke-width="1" stroke-dasharray="4 4"/>')
-    out.append(f'<text x="{x0+4}" y="{sy2(lr*100)-5:.1f}" {FONT} font-size="9.5" fill="{INK2}">long-run √(ω/(1−α−β)) = {lr*100:.0f}%/วัน</text>')
+    out.append(f'<text x="{sx2(110):.1f}" y="{sy2(lr*100)-5:.1f}" {FONT} font-size="9.5" fill="{INK2}">√(ω/(1−α−β)) = {lr*100:.0f}%/วัน · σ อยู่ใต้เส้น {below:.0%} ของวัน (σ² เบ้ขวา)</text>')
     polyline(out, [(sx2(i), sy2(v)) for i, v in enumerate(sg * 100)], RED, 2.2)
     im = int(np.argmax(sg))
     out.append(f'<circle cx="{sx2(im):.1f}" cy="{sy2(sg[im]*100):.1f}" r="4" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
     anc = "end" if im > len(sg) / 2 else "start"; dx = -8 if anc == "end" else 8
     out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-20:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">σ พุ่งถึง {sg[im]*100:.1f}% หลังวันช็อก</text>')
-    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}">ส่วนเกินของ σ² เหนือ long-run หายไป 2% ของที่เหลือทุกวัน (half-life ≈ {np.log(0.5)/np.log(0.98):.0f} วัน)</text>')
+    out.append(f'<text x="{sx2(im)+dx:.1f}" y="{sy2(sg[im]*100)-8:.1f}" text-anchor="{anc}" {FONT} font-size="9.5" fill="{PURPLE}">ส่วนเกินของ σ² เหนือ long-run หายไป {1-pers:.0%} ของที่เหลือทุกวัน (half-life ≈ {hl:.0f} วัน)</text>')
     out.append(f'<text x="{x0+w-4}" y="{y1+12}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ช่วงที่แท่งบนหนาแน่น = σ ล่างสูง — วันเหวี่ยงแรงมักตามด้วยวันเหวี่ยงแรง</text>')
     out.append("</svg>")
     return "\n".join(out)

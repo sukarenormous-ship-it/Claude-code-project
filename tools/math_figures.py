@@ -1757,6 +1757,51 @@ print(f"ทฤษฎี II  σ(ρ=0)={_sig2(0):.2%} ρ=0.5 {_sig2(.5):.2%} · CA
 
 
 
+# ── ทฤษฎี Part V (theory-part5) — GARCH · OU · Deflated Sharpe ─────────────────────────────
+_T5 = "theory-part5.html"
+from scipy.stats import norm as _n5
+from statsmodels.tsa.adfvalues import mackinnoncrit as _mkc
+_EG = 0.5772156649
+
+
+def _emax(N):
+    """ค่าคาดหวังของค่ามากสุดจาก N ตัวแปร N(0,1) อิสระ (Bailey-López de Prado 2014)"""
+    return (1 - _EG) * _n5.ppf(1 - 1 / N) + _EG * _n5.ppf(1 - 1 / (N * math.e))
+
+
+_gs = _mf.NUMS.get("garch-sim") or (_mf.FIGS[(_T5, "garch-sim")](), _mf.NUMS["garch-sim"])[1]
+_om, _al, _be = 2e-6, 0.08, 0.90
+_lr = _om / (1 - _al - _be)
+assert abs(_gs["long_run"] - math.sqrt(_lr)) < 1e-12 and abs(_gs["persistence"] - (_al + _be)) < 1e-12
+expect(_T5, "GARCH long-run", f"= 0.000002/0.02 = {_lr:.4f} → σ = √{_lr:.4f} = <strong>{math.sqrt(_lr):.0%}/วัน</strong> ≈ 1%×√252 ≈ {math.sqrt(_lr*252):.1%}/ปี")
+expect(_T5, "GARCH half-life", f"= ln 0.5 / ln 0.98 ≈ <strong>{math.log(.5)/math.log(_al+_be):.1f} วัน</strong>")
+expect(_T5, "GARCH ใต้เส้น", f"ในภาพ σ อยู่<em>ใต้</em>เส้น 1% ถึง {_gs['below']:.0%} ของวัน")
+expect(_T5, "math-part6 เทียบ", f"ที่ persistence 0.95 ได้ half-life {math.log(.5)/math.log(.95):.1f} วัน")
+expect("math-part6.html", "GARCH half-life 0.95", f"ln 0.5 / ln 0.95 ≈ {math.log(.5)/math.log(.95):.1f} วัน")
+# OU
+expect(_T5, "OU half-life", f"= −0.693 / ln(0.95) = 0.693 / {-math.log(.95):.4f} ≈ <strong>{-math.log(2)/math.log(.95):.1f} วัน</strong>")
+expect(_T5, "Engle-Granger MacKinnon", f"(5% ≈ {_mkc(2, 'c')[1]:.2f} สำหรับ 2 ตัวแปรมีค่าคงที่) ไม่ใช่ {_mkc(1, 'c')[1]:.2f} ของ DF ปกติ".replace("-", "−"))
+# regime duration
+expect(_T5, "regime duration", f"p = 0.95 → {1/(1-.95):.0f} วัน · p = 0.98 → {1/(1-.98):.0f} วัน")
+# Deflated Sharpe
+_z1, _z2 = _n5.ppf(1 - 1 / 1000), _n5.ppf(1 - 1 / (1000 * math.e))
+expect(_T5, "DSR quantiles", f"Φ⁻¹(1 − 1/1,000) = {_z1:.2f} · Φ⁻¹(1 − 1/(1,000e)) = {_z2:.2f}")
+expect(_T5, "DSR N=1000", f"≈ {1-_EG:.2f} × {_z1:.2f} + {_EG:.2f} × {_z2:.2f} = <strong>{_emax(1000):.2f}</strong>")
+expect(_T5, "DSR √2lnN", f"√(2·ln 1000) = {math.sqrt(2*math.log(1000)):.2f} สูงเกินไปราว {math.sqrt(2*math.log(1000))/_emax(1000)-1:.0%}")
+expect(_T5, "DSR N=10", f"ลองแค่ N = 10 → <strong>{_emax(10):.2f}</strong>")
+expect(_T5, "DSR 5 ปี", f"≈ {_emax(1000):.2f}/√5 ≈ <strong>{_emax(1000)/math.sqrt(5):.2f}</strong> จากโชคล้วน")
+expect(_T5, "MinBTL", f"{_emax(1000):.2f}² ≈ <strong>{_emax(1000)**2:.1f} ปี</strong>")
+expect(_T5, "MinBTL ตาราง", f"ต้อง ≈ {_emax(1000)**2:.1f} ปี")
+expect(_T5, "✍️ N=100 คำใบ้", f"Φ⁻¹(0.99) = {_n5.ppf(.99):.2f} · Φ⁻¹(1 − 1/(100e)) = {_n5.ppf(1-1/(100*math.e)):.2f}")
+expect(_T5, "read ratio", f"N = 10 → {_emax(10):.2f}, N = 1,000 → {_emax(1000):.2f} (เพิ่ม N ร้อยเท่า เกณฑ์ขึ้นราว {_emax(1000)/_emax(10):.1f} เท่า)")
+expect(_T5, "read √2lnN", f"ที่ N = 1,000 ให้ {math.sqrt(2*math.log(1000)):.2f} สูงกว่าค่าจริงราว {math.sqrt(2*math.log(1000))/_emax(1000)-1:.0%}")
+expect(_T5, "3 อย่าง", f"ได้ตัวดีสุดราว {_emax(1000):.2f} SE ฟรี ๆ")
+expect("theory-part5-narrative.html", "narrative DSR", f"ราว {_emax(1000):.2f} หน่วย standard error")
+expect("notation.html", "notation DSR", f"SR₀ ≈ {_emax(1000):.2f} SE ที่ N = 1,000")
+print(f"ทฤษฎี V  GARCH σ̄ {math.sqrt(_lr):.2%} hl {math.log(.5)/math.log(.98):.1f} · OU hl {-math.log(2)/math.log(.95):.2f} · E[max] 10/100/1000 = {_emax(10):.3f}/{_emax(100):.3f}/{_emax(1000):.3f} · MinBTL {_emax(1000)**2:.2f}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
