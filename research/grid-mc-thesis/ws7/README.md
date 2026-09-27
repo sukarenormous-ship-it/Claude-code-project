@@ -7,6 +7,10 @@
 | `ingest_binance.py` | ingestion gate ตาม handoff §10: ZIP ทางการ → checksum → integrity → schema → monotonic → duplicates → coverage → gap manifest → OHLC → canonical `.npz` + provenance manifest |
 | `scale_structure.py` | WS7-A: โครงสร้าง mean reversion ตามสเกล spacing δ (0.25–8%, log) เทียบ surrogate |
 | `test_ws7.py` | fixture ออฟไลน์ 15 ข้อ (`python3 test_ws7.py`) |
+| `engine_1m.py` | engine 1m อิสระ (cross-check ไม่ใช่ frozen engine) ตาม handoff §11–13 |
+| `ws7b_run.py` | WS7-B: D0/k1, D0/k1.5, D3/k1 บนข้อมูลจริง + attribution beta/timing/execution/cost |
+| `test_engine.py` | golden cases ของ engine 11 ข้อ |
+| `DATA_POLICY_v1.0.md` | นโยบาย anomaly ที่ผู้วิจัยรับรองแล้ว |
 | `reports/` | ผลรันจริง: manifests ของ ingestion + `WS7A_summary_2018-2023.md` + `WS7A_FINDINGS.md` |
 
 ต้องการ Python 3.10+ และ `numpy`
@@ -24,6 +28,9 @@ python3 ingest_binance.py --start 2018-01 --end 2023-12 --out data/ --source-dir
 
 # 2) WS7-A scale structure (~6 นาทีที่ 50 surrogates/ชนิด)
 python3 scale_structure.py --data data/canonical --out results/ws7a
+
+# 3) WS7-B frozen candidates (~20 วินาที)
+python3 test_engine.py && python3 ws7b_run.py --data data/canonical --out results/ws7b
 ```
 
 ผลลัพธ์: `data/provenance_manifest.csv`, `data/gap_manifest.csv`, `data/ingest_summary.json`,
