@@ -6,7 +6,8 @@
 |---|---|
 | `ingest_binance.py` | ingestion gate ตาม handoff §10: ZIP ทางการ → checksum → integrity → schema → monotonic → duplicates → coverage → gap manifest → OHLC → canonical `.npz` + provenance manifest |
 | `scale_structure.py` | WS7-A: โครงสร้าง mean reversion ตามสเกล spacing δ (0.25–8%, log) เทียบ surrogate |
-| `test_ws7.py` | fixture ออฟไลน์ 13 ข้อ (`python3 test_ws7.py`) |
+| `test_ws7.py` | fixture ออฟไลน์ 15 ข้อ (`python3 test_ws7.py`) |
+| `reports/` | ผลรันจริง: manifests ของ ingestion + `WS7A_summary_2018-2023.md` + `WS7A_FINDINGS.md` |
 
 ต้องการ Python 3.10+ และ `numpy`
 
@@ -14,7 +15,7 @@
 
 ```bash
 pip install numpy
-python3 test_ws7.py                                   # ต้องผ่าน 13/13
+python3 test_ws7.py                                   # ต้องผ่าน 15/15
 
 # 1) ingestion — ต้องเข้าถึง data.binance.vision ได้
 python3 ingest_binance.py --start 2018-01 --end 2023-12 --out data/
@@ -27,6 +28,16 @@ python3 scale_structure.py --data data/canonical --out results/ws7a
 
 ผลลัพธ์: `data/provenance_manifest.csv`, `data/gap_manifest.csv`, `data/ingest_summary.json`,
 `results/ws7a/summary.md`, `grid_scale.csv`, `variance_ratio.csv`, `meta.json` (มี sha256 ของข้อมูล)
+
+## Anomaly rules (เพิ่มหลังพบเหตุการณ์จริงใน archive)
+
+เหตุการณ์ของ exchange ที่เป็นการซื้อขายจริง — เก็บราคาไว้, ลงใน `anomaly_manifest.csv`, เดือนนั้นเป็น CONDITIONAL:
+- `partial_bar` — แท่งสุดท้ายก่อน exchange หยุด (open ตรงนาที แต่ close_time สั้น) พบ 12 แท่ง
+- `offset_snapped` — หลัง restart แท่งเดินบน offset ต่ำกว่านาทีด้วย spacing 60 s พอดี
+  (2018-02-09 09:59 → 2018-02-10 05:59, +14.789 s, 1,201 แท่ง) → ปัด open_time ลงเป็นนาที ราคาไม่เปลี่ยน
+- `close_time_anomaly` — close_time ผิดรูปแบบอื่น (2020-12, 1 แท่ง)
+
+กรณีอื่นที่ไม่เข้ารูปแบบเหล่านี้ยังเป็น FAIL
 
 ## กติกาที่โค้ดบังคับ
 

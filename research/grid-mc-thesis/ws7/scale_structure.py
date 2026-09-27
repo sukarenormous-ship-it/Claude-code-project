@@ -10,12 +10,11 @@ Primary statistic — lattice reversal probability at log spacing δ:
 For a driftless martingale both are 0.5 (minus a small close-sampling bias, which the
 surrogates share — so always read them against the surrogates, not against 0.5).
 
-Economic context — "trailing envelope grid": a fully funded grid with equal capital per level
-spanning `depth` below the running maximum U_t (lab: L = 0.4·U), N = floor(ln(1/(1-depth))/δ)
-levels, exposure e_t = min(M_t − j_t, N)/N (j_t lattice cell of the close, M_t its running
-max). Per δ (fractions of capital B, log-return approximation):
-  * gross   G  = Σ e_{t−1} r_t
-  * timing  TT = Σ (e_{t−1} − ē) r_t
+Economic context — "trailing envelope grid" (see `grid_stats`): k=1, α=0, fully funded,
+equal capital per level, N = floor(ln(1/(1-depth))/δ) levels below a U that trails the highest
+level touched (lab: L = 0.4·U); limit fills at level prices. Per δ (fractions of capital B):
+  * gross   G  = realized harvest + MTM of open lots (log units)
+  * timing  TT = G − ē·Σr
   * sawtooth S = G − G_smooth, G_smooth using the continuous exposure min((M^x_t − x_t)/D, 1)
   * cycles (sells) per year and fee drag
 These have low power for small-scale structure (large drawdowns dominate G); report them for
@@ -107,26 +106,18 @@ def synthetic(kind: str, years: float = 2.0, seed: int = 7) -> tuple[np.ndarray,
 
 # ---------------------------------------------------------------- statistics
 
-def grid_exposure(x: np.ndarray, delta: float, depth: float) -> tuple[np.ndarray, int]:
-    """Lots held (0..N) by the trailing-envelope grid, and N."""
-    n_levels = int(np.floor(np.log(1 / (1 - depth)) / delta))
-    j = np.floor(x / delta).astype(np.int64)
-    pos = np.minimum(np.maximum.accumulate(j) - j, n_levels)
-    return pos, n_levels
+def touch_sequence(x: np.ndarray, delta: float) -> tuple[np.ndarray, np.ndarray]:
+    """Level-touch sequence at log spacing delta: (touched level ids, bar index of each touch).
 
-
-def lattice_steps(x: np.ndarray, delta: float) -> np.ndarray:
-    """Level-to-level steps (+1/−1) of the level-touch sequence at log spacing delta.
-
-    A step is recorded when price reaches the level one above or one below the last level it
-    touched; re-touching the same level is not a step (so bid/ask-style wobble around one
-    level does not count as a reversal). Multi-level jumps expand to one step per level.
+    A touch is recorded when price reaches the level one above or one below the last level it
+    touched; re-touching the same level is not a new touch (bid/ask-style wobble around one
+    level is ignored). Multi-level jumps expand to one touch per level, all at that bar.
     """
     j = np.floor(x / delta).astype(np.int64)
     d = np.diff(j)
     nz = np.nonzero(d)[0]
     if nz.size == 0:
-        return np.zeros(0, np.int64)
+        return np.zeros(0, np.int64), np.zeros(0, np.int64)
     c, dd = j[nz], d[nz]
     n = np.abs(dd)
     start = np.repeat(np.cumsum(n) - n, n)
@@ -134,8 +125,14 @@ def lattice_steps(x: np.ndarray, delta: float) -> np.ndarray:
     up = np.repeat(dd > 0, n)
     cc = np.repeat(c, n)
     touched = np.where(up, cc + 1 + k, cc - k)
+    bar = np.repeat(nz + 1, n)
     keep = np.concatenate([[True], touched[1:] != touched[:-1]])
-    steps = np.diff(touched[keep])
+    return touched[keep], bar[keep]
+
+
+def lattice_steps(x: np.ndarray, delta: float) -> np.ndarray:
+    """Level-to-level steps (+1/−1) of the touch sequence."""
+    steps = np.diff(touch_sequence(x, delta)[0])
     assert np.all(np.abs(steps) == 1)
     return steps
 
@@ -156,16 +153,35 @@ def reversal_stats(x: np.ndarray, delta: float) -> dict:
 
 
 def grid_stats(x: np.ndarray, delta: float, depth: float, fee: float) -> dict:
-    pos, n = grid_exposure(x, delta, depth)
-    e = pos[:-1] / n
-    r = np.diff(x)
-    dpos = np.diff(pos)
-    sells = int(-dpos[dpos < 0].sum())
-    trades = int(np.abs(dpos).sum())
+    """k=1, α=0 fully funded grid with equal capital per level, trailing envelope.
+
+    Levels at multiples of delta (log). U starts one level above the first price and trails
+    the highest level touched; N = floor(ln(1/(1−depth))/delta) levels below U are live.
+    A lot at level b is bought when price touches b from above (limit fill at b) and sold
+    when price touches b+1 (TP one level up, limit fill), then b is re-armed. Lots held after
+    each touch: pos = min(U − T, N). Frictionless fills at level prices; PnL in log units,
+    as a fraction of capital B (each lot = B/N).
+    """
+    n = int(np.floor(np.log(1 / (1 - depth)) / delta))
+    T, bar = touch_sequence(x, delta)
+    r_total = float(x[-1] - x[0])
     smooth = np.minimum((np.maximum.accumulate(x) - x) / np.log(1 / (1 - depth)), 1.0)[:-1]
-    g = float(e @ r)
-    return {"gross": g, "timing": g - float(e.mean() * r.sum()), "sawtooth": g - float(smooth @ r),
-            "mean_exposure": float(e.mean()), "cycles": sells, "fees": fee * trades / n, "levels": n}
+    g_smooth = float(smooth @ np.diff(x))
+    if T.size == 0:
+        return {"gross": 0.0, "timing": 0.0, "sawtooth": -g_smooth, "mean_exposure": 0.0, "cycles": 0,
+                "fees": 0.0, "levels": n}
+    u0 = int(np.floor(x[0] / delta)) + 1
+    U = np.maximum.accumulate(np.maximum(T, u0))
+    pos = np.minimum(U - T, n)
+    g = float(pos[:-1] @ (np.diff(T) * delta)) + float(pos[-1] * (x[-1] - T[-1] * delta))
+    g /= n
+    dpos = np.diff(np.concatenate([[0], pos]))
+    # exposure per bar: lots after the latest touch at or before that bar
+    k = np.searchsorted(bar, np.arange(len(x)), side="right") - 1
+    e = np.where(k >= 0, pos[np.maximum(k, 0)], 0) / n
+    e_bar = float(e[:-1].mean())
+    return {"gross": g, "timing": g - e_bar * r_total, "sawtooth": g - g_smooth, "mean_exposure": e_bar,
+            "cycles": int(-dpos[dpos < 0].sum()), "fees": fee * int(np.abs(dpos).sum()) / n, "levels": n}
 
 
 def surrogate(t: np.ndarray, x: np.ndarray, kind: str, rng) -> np.ndarray:

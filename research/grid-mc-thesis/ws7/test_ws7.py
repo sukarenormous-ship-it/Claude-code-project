@@ -17,7 +17,7 @@ import ingest_binance as ing  # noqa: E402
 import scale_structure as ss  # noqa: E402
 
 
-def fake_month(y, m, drop=(), dup=None, conflict=False, bad_ohlc=False, header=False):
+def fake_month(y, m, drop=(), dup=None, conflict=False, bad_ohlc=False, header=False, partial=None, offset=None):
     lo, hi = ing.month_bounds_ms(y, m)
     rows = []
     p = 10000.0
@@ -28,7 +28,13 @@ def fake_month(y, m, drop=(), dup=None, conflict=False, bad_ohlc=False, header=F
         h, l = max(o, c) * 1.0002, min(o, c) * 0.9998
         if bad_ohlc and k == 5:
             h = l * 0.5
-        rows.append([t, o, h, l, c, 1.5, t + ing.MINUTE_MS - 1, 1.0, 3, 0.5, 0.5, 0])
+        tc = t + ing.MINUTE_MS - 1
+        if partial is not None and k == partial:
+            tc = t + 14838
+        tt = t
+        if offset is not None and offset[0] <= k < offset[1]:
+            tt, tc = t + 14789, t + 14789 + ing.MINUTE_MS - 1
+        rows.append([tt, o, h, l, c, 1.5, tc, 1.0, 3, 0.5, 0.5, 0])
         p = c
     if dup is not None:
         r = list(rows[dup])
@@ -90,6 +96,23 @@ def test_bad_ohlc_fails():
     assert ing.validate_month(2018, 2, zb, ck)[0]["status"] == "FAIL"
 
 
+def test_partial_bar_kept_and_flagged():
+    zb, ck = fake_month(2018, 2, partial=300, drop=range(301, 400))
+    rec, data, _ = ing.validate_month(2018, 2, zb, ck)
+    assert rec["status"] == "CONDITIONAL" and rec["anomalies"] == 1, rec
+    assert rec.pop("_anomaly_rows")[0][2] == "partial_bar"
+    assert len(data["close"]) == 28 * 1440 - 99
+
+
+def test_offset_bars_snapped_and_flagged():
+    zb, ck = fake_month(2018, 2, drop=range(500, 520), offset=(520, 600))
+    rec, data, _ = ing.validate_month(2018, 2, zb, ck)
+    assert rec["status"] == "CONDITIONAL" and rec["anomalies"] == 80, rec
+    assert np.all(data["open_time_ms"] % ing.MINUTE_MS == 0) and np.all(np.diff(data["open_time_ms"]) > 0)
+    kinds = {a[2] for a in rec["_anomaly_rows"]}
+    assert kinds == {"offset_snapped"}, kinds
+
+
 def test_sealed_period_refused():
     for start, end in [("2023-12", "2024-01"), ("2024-03", "2024-03")]:
         try:
@@ -117,21 +140,23 @@ def test_ingest_end_to_end_from_source_dir():
         assert np.all(np.diff(t) > 0) and len(t) == (31 + 28) * 1440 - 1
 
 
-def test_grid_exposure_known_paths():
+def test_grid_k1_semantics():
     d = 0.01
-    # down 3 cells, back up 3 → buys 3, sells 3, ends flat
-    pos, n = ss.grid_exposure(np.array([0.5, -0.5, -1.5, -2.5, -1.5, -0.5, 0.5]) * d, d, 0.6)
-    assert n == 91 and list(pos) == [0, 1, 2, 3, 2, 1, 0]
-    # pure rise → never holds anything (envelope trails up)
-    assert ss.grid_exposure(np.array([0.5, 1.5, 2.5, 3.5]) * d, d, 0.6)[0].max() == 0
-    # multi-level gap down then back → 3 lots, all sold
-    assert list(ss.grid_exposure(np.array([0.5, -2.5, 0.5]) * d, d, 0.6)[0]) == [0, 3, 0]
-    # below L: capped at N, no extra buys; 60% envelope with δ=20% → N=4
-    pos, n = ss.grid_exposure(np.log(np.array([1.0, 0.5, 0.2, 0.1, 0.2])), 0.2, 0.6)
-    assert n == 4 and pos.max() == 4
+    # down 3 levels then back up 3: lots bought at 0, −1, −2; −2 sold at −1, −1 sold at 0;
+    # lot at 0 still open (its TP is level +1), marked at the final price 0.5δ
     st = ss.grid_stats(np.array([0.5, -0.5, -1.5, -2.5, -1.5, -0.5, 0.5]) * d, d, 0.6, 0.001)
-    assert st["cycles"] == 3 and np.isclose(st["fees"], 0.001 * 6 / 91)
-    assert st["gross"] > 0  # bought on the way down, sold on the way up
+    assert st["levels"] == 91 and st["cycles"] == 2
+    assert np.isclose(st["gross"], 2.5 * d / 91), st["gross"]
+    assert np.isclose(st["fees"], 0.001 * 5 / 91)
+    # wobble across one level: one buy, no sell, no fee churn
+    st = ss.grid_stats(np.array([0.5, -0.1, 0.1, -0.1, 0.1, -0.1]) * d, d, 0.6, 0.001)
+    assert st["cycles"] == 0 and np.isclose(st["fees"], 0.001 / 91)
+    # pure rise: nothing bought
+    st = ss.grid_stats(np.array([0.5, 1.5, 2.5, 3.5]) * d, d, 0.6, 0.001)
+    assert st["gross"] == 0 and st["cycles"] == 0
+    # below L: capped at N lots, no sells while still below the lowest live level + 1
+    st = ss.grid_stats(np.log(np.array([1.0, 0.5, 0.2, 0.1, 0.2])), 0.2, 0.6, 0.001)
+    assert st["levels"] == 4 and st["cycles"] == 0 and np.isclose(st["fees"], 0.001 * 4 / 4)
 
 
 def test_surrogates_keep_vol_path_and_gaps():

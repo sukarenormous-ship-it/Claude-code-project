@@ -167,9 +167,23 @@ def validate_month(y: int, m: int, zb: bytes, published: str) -> tuple[dict, dic
     if np.any((t < lo_ms) | (t >= hi_ms)):
         problems.append("rows outside archive month")
         fail = True
-    if np.any(t % MINUTE_MS != 0) or np.any(tclose != t + MINUTE_MS - 1):
-        problems.append("timestamp alignment")
-        fail = True
+    # Known Binance exchange events (documented rule, see README "Anomaly rules"):
+    #  * partial bar — last bar before a halt: open on the minute, close_time cut short
+    #  * offset bars — after a restart, bars run on a sub-minute offset (e.g. 2018-02-09/10,
+    #    +14.789 s) with exact 60 s spacing: open_time is snapped down to the minute; prices kept
+    # Both are real trades, kept and listed in the anomaly manifest; the month becomes CONDITIONAL.
+    anomalies: list = []
+    off = t % MINUTE_MS
+    for i in np.where(off != 0)[0]:
+        anomalies.append((rec["archive_month"], iso(int(t[i] - off[i])), "offset_snapped", int(off[i])))
+    t = t - off
+    tclose_rel = tclose - (t + off)
+    for i in np.where((off == 0) & (tclose_rel != MINUTE_MS - 1))[0]:
+        kind = "partial_bar" if 0 <= tclose_rel[i] < MINUTE_MS - 1 else "close_time_anomaly"
+        anomalies.append((rec["archive_month"], iso(int(t[i])), kind, int(tclose_rel[i])))
+    rec["anomalies"] = len(anomalies)
+    if anomalies:
+        problems.append(f"{len(anomalies)} exchange-event anomalies flagged")
 
     if np.any(np.diff(t) < 0):
         problems.append("non-monotonic timestamps (sorted)")
@@ -221,6 +235,7 @@ def validate_month(y: int, m: int, zb: bytes, published: str) -> tuple[dict, dic
         rec["status"] = "PASS"
     rec["problems"] = "; ".join(problems)
     data = None if fail else {"open_time_ms": t, "open": o, "high": h, "low": l, "close": c, "volume": v}
+    rec["_anomaly_rows"] = anomalies
     return rec, data, gaps
 
 
@@ -240,7 +255,7 @@ def main(argv=None) -> int:
     out = args.out
     canon = out / "canonical"
     canon.mkdir(parents=True, exist_ok=True)
-    manifest, gaps_all = [], []
+    manifest, gaps_all, anomalies_all = [], [], []
     acquired = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     for y, m in months:
@@ -254,6 +269,7 @@ def main(argv=None) -> int:
             continue
         rec, data, gaps = validate_month(y, m, zb, published)
         rec.update(filename=name, source=src, acquisition_date=acquired)
+        anomalies_all.extend(rec.pop("_anomaly_rows", []))
         manifest.append(rec)
         gaps_all.extend(gaps)
         if data is not None:
@@ -262,7 +278,7 @@ def main(argv=None) -> int:
               f"{rec.get('problems', '')}")
 
     fields = ["filename", "source", "archive_month", "published_checksum", "calculated_checksum",
-              "acquisition_date", "row_count", "expected_minutes", "missing_minutes", "gap_count", "duplicates",
+              "acquisition_date", "row_count", "expected_minutes", "missing_minutes", "gap_count", "duplicates", "anomalies",
               "first_timestamp", "last_timestamp", "schema_status", "ohlc_status", "ohlc_violations", "status",
               "problems"]
     with open(out / "provenance_manifest.csv", "w", newline="") as f:
@@ -274,10 +290,16 @@ def main(argv=None) -> int:
         w.writerow(["archive_month", "gap_start_utc", "gap_end_utc", "missing_minutes"])
         w.writerows(gaps_all)
 
+    with open(out / "anomaly_manifest.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["archive_month", "bar_open_utc", "kind", "detail_ms"])
+        w.writerows(anomalies_all)
+
     counts = {s: sum(r.get("status") == s for r in manifest) for s in ("PASS", "CONDITIONAL", "FAIL")}
     summary = {"symbol": SYMBOL, "interval": INTERVAL, "start": args.start, "end": args.end,
                "months": len(months), **counts,
                "missing_minutes_total": int(sum(r.get("missing_minutes", 0) or 0 for r in manifest)),
+               "anomalies_total": len(anomalies_all),
                "sealed_from": f"{SEALED_FROM[0]:04d}-{SEALED_FROM[1]:02d}"}
     (out / "ingest_summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary, indent=2))
