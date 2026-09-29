@@ -12,6 +12,7 @@
 แต่ก่อน expiry = <strong>เส้นโค้ง</strong> → Black-Scholes บอกว่าเส้นโค้งนั้นอยู่ตรงไหน</p>
 
 <h3>Black-Scholes Call Price</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ราคา Call วันนี้ = "หุ้นที่คาดว่าจะได้" ลบ "เงินค่า strike ที่คาดว่าต้องจ่าย" · N(d₁) และ N(d₂) คือน้ำหนักที่บอกว่าแต่ละก้อนจะเกิดขึ้นมากแค่ไหน ส่วน e⁻ʳᵀ พาเงิน K ในอนาคตกลับมาเป็นค่าวันนี้</p>
 <div class="fm"><strong>C = S·N(d₁) - K·e⁻ʳᵀ·N(d₂)</strong><br><br>
 d₁ = [ln(S/K) + (r + σ²/2)·T] / (σ·√T)<br>
 d₂ = d₁ - σ·√T</div>
@@ -26,6 +27,7 @@ d₂ = d₁ - σ·√T</div>
 </ul></div>
 
 <h3>Black-Scholes Put Price</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Put คือกระจกของ Call — ได้เงิน K ถ้าหุ้นจบต่ำกว่า K แลกกับส่งมอบหุ้น · สลับสองก้อนแล้วใช้ N(−d) แทน N(d) เพราะตอนนี้เราสนใจฝั่งที่หุ้นจบ<em>ต่ำกว่า</em> K</p>
 <div class="fm"><strong>P = K·e⁻ʳᵀ·N(-d₂) - S·N(-d₁)</strong><br><br>
 หรือจาก PCP: <strong>P = C - S + K·e⁻ʳᵀ</strong> (ง่ายกว่าคำนวณเอง)</div>
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "พี เท่ากับ เค คูณ อียกกำลังลบอาร์ที คูณ เอ็นของ ลบดีสอง ลบ เอส คูณ เอ็นของ ลบดีหนึ่ง" — โครงเดียวกับ Call แต่กลับลำดับสองก้อนและใส่ลบหน้า d · <strong>กับดักการอ่าน:</strong> N(−d) ไม่ใช่ "ลบ N(d)" — ด้วยความสมมาตรของ normal N(−d) = 1 − N(d): N(−d₂) คือโอกาส (ใต้ Q) ที่จบ<em>ต่ำกว่า</em> K ส่วน N(−d₁) = 1 − Delta ของ Call ไม่ใช่ความน่าจะเป็นตัวเดียวกัน · บรรทัดสองคือ PCP ย้ายข้าง (<a href="pm-part1.html#ch2">Part I บท 2</a>) — ให้คำตอบเดียวกันเป๊ะ จึงใช้ตรวจเลขได้</p>
@@ -92,13 +94,14 @@ P = 6.89 - 100 + 97.53 = <strong>฿4.42</strong><br><br>
 
 <div class="bx bg"><div class="bt">3 สิ่งที่ต้องจำ (BS)</div>
 <ol>
-<li><strong>N(d₂) = probability ITM</strong> → "โอกาสที่ option จะมีค่าเมื่อหมดอายุ"</li>
+<li><strong>N(d₂) = probability ITM แบบ risk-neutral</strong> → "โอกาสที่ option จะมีค่าเมื่อหมดอายุ"</li>
 <li><strong>N(d₁) = Delta</strong> → "ต้องถือหุ้นกี่หุ้นเพื่อ hedge"</li>
 <li><strong>BS ใช้ได้แค่ European</strong> + สมมติ vol คงที่ (จริงๆ มี smile/skew)</li>
 </ol></div>
 
 
 <h2>Digital Option Pricing — "PM ควรราคาเท่าไร?"</h2>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ดิจิทัลจ่ายก้อนเดียวคงที่ถ้าหุ้นจบเหนือ K ไม่งั้นได้ 0 — ราคาจึงเป็นแค่ "โอกาสจ่าย (แบบ risk-neutral) × ตัวลดค่า" · สัญญา prediction market (PM) แบบ "ราคาจะเกิน K ไหม" จ่าย $1 ต่อสัญญาเป็นดิจิทัลแบบนี้พอดี ตัวอย่างนี้จึงใช้หน่วย $ และ ¢ ตาม PM</p>
 <div class="fm"><strong>Digital Call = e⁻ʳᵀ × N(d₂)</strong><br><br>
 ตัวอย่าง (ข้อมูลเดิม): e⁻⁰·⁰²⁵ × 0.5422 = 0.9753 × 0.5422 = <strong>$0.529</strong><br><br>
 ความหมาย: PM Above Yes ที่ K=100 ควรมีราคา ≈ <strong>53¢</strong> (ถ้า price ด้วย BS)<br>
@@ -107,30 +110,34 @@ P = 6.89 - 100 + 97.53 = <strong>฿4.42</strong><br><br>
 
 <h2>Greeks Formulas — "ตัวเลข exact"</h2>
 
-<p>จาก Part V เรียนว่า "Delta = slope, Gamma = curvature" แต่ไม่มีสูตร — ตอนนี้เพิ่มสูตร exact</p>
+<p>จาก <a href="pm-part5.html#ch20">Part V บท 20</a> เรียนว่า "Delta = slope, Gamma = curvature" แต่ไม่มีสูตร — ตอนนี้เพิ่มสูตร exact</p>
 
 <h3>Normal PDF: N'(x)</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> N(x) คือพื้นที่ใต้ระฆังทางซ้ายของ x (ความน่าจะเป็นสะสม) · N′(x) คือ<em>ความสูง</em>ของระฆังที่จุด x — สูงสุดที่ x = 0 แล้วลดลงสองข้าง · Greeks ที่เป็น "ความไว" ใช้ความสูงนี้</p>
 <div class="fm">N'(x) = (1/√(2π)) × e⁻ˣ²/² ≈ 0.3989 × e⁻ˣ²/²<br>
 (ใช้ในสูตร Gamma, Theta, Vega)</div>
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เอ็น-ไพรม์ของเอ็กซ์ เท่ากับ หนึ่งหารด้วยรูทของสองไพ คูณ อี ยกกำลัง ลบ เอ็กซ์กำลังสอง ส่วน สอง" — เครื่องหมาย ′ (prime) คือ<em>อนุพันธ์</em>: N′ คือความชันของ N หรือ "ความหนาแน่น" ของ normal (รูประฆัง) ส่วน N คือพื้นที่สะสม · <strong>โครงที่ต้องเห็น:</strong> ค่าคงที่ × e ยกกำลังลบ — สูงสุดที่ x = 0 (e⁰ = 1 → 0.3989) แล้วลดลงสมมาตรสองข้าง · <strong>กับดักการอ่าน:</strong> ทั้ง −x²/2 อยู่บนเลขยกกำลัง ไม่ใช่ "e ลบ x² หาร 2" · √(2π) มี π (ค่าคงที่วงกลม) ไม่ใช่ตัวแปร · 0.3989 = 1/√(2π) ≈ 1/2.5066</p>
 
 <h3>Delta — "Option เปลี่ยนเท่าไรเมื่อหุ้นขยับ ฿1"</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Delta คือความชันของกราฟราคา option ณ ราคาหุ้นตอนนี้ — Call ลึก OTM แทบไม่ขยับ (ใกล้ 0) Call ลึก ITM ขยับเกือบเท่าหุ้น (ใกล้ 1)</p>
 <div class="fm"><strong>Delta_Call = N(d₁)</strong> → ค่าอยู่ระหว่าง 0 ถึง +1<br>
 <strong>Delta_Put = N(d₁) - 1</strong> → ค่าอยู่ระหว่าง -1 ถึง 0<br><br>
 ตัวอย่าง: Delta_Call = N(0.2475) = <strong>0.5977</strong><br>
 → หุ้นขึ้น ฿1 → Call ขึ้น ≈ ฿0.60<br>
 Delta_Put = 0.5977 - 1 = <strong>-0.4023</strong><br>
 → หุ้นขึ้น ฿1 → Put ลง ≈ ฿0.40</div>
-<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เดลตาของคอล เท่ากับ เอ็นของดีหนึ่ง" · "เดลตาของพุต เท่ากับ เอ็นของดีหนึ่ง ลบ หนึ่ง" · <strong>โครงที่ต้องเห็น:</strong> Delta คือความชันของราคา option ต่อราคาหุ้น (บท 20) — N(d₁) เป็น CDF จึงอยู่ใน 0–1 อัตโนมัติ Put เลื่อนลงมาอยู่ใน −1 ถึง 0 · Delta_Call − Delta_Put = 1 เสมอ — ตามมาจาก PCP (C − P = S − PV(K)) เมื่อ S ขยับ 1 ฝั่งขวาขยับ 1 · <strong>กับดักการอ่าน:</strong> Δ ตรงนี้คือ Greek (ยืนคนเดียว) — ไม่ใช่ Δslope ของ <a href="pm-part3a.html#ch15">Part III-A บท 15</a> ที่แปลว่า "การเปลี่ยนแปลง" · ตัวห้อย Call/Put คือชื่อกำกับ ไม่ใช่ตัวแปร</p>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เดลตาของคอล เท่ากับ เอ็นของดีหนึ่ง" · "เดลตาของพุต เท่ากับ เอ็นของดีหนึ่ง ลบ หนึ่ง" · <strong>โครงที่ต้องเห็น:</strong> Delta คือความชันของราคา option ต่อราคาหุ้น (<a href="pm-part5.html#ch20">บท 20</a>) — N(d₁) เป็น CDF จึงอยู่ใน 0–1 อัตโนมัติ Put เลื่อนลงมาอยู่ใน −1 ถึง 0 · Delta_Call − Delta_Put = 1 เสมอ (หุ้นไม่จ่ายปันผล · ถ้ามีปันผลอัตรา q จะเป็น e⁻qᵀ) — ตามมาจาก PCP (C − P = S − PV(K)) เมื่อ S ขยับ 1 ฝั่งขวาขยับ 1 · <strong>กับดักการอ่าน:</strong> Δ ตรงนี้คือ Greek (ยืนคนเดียว) — ไม่ใช่ Δslope ของ <a href="pm-part3a.html#ch15">Part III-A บท 15</a> ที่แปลว่า "การเปลี่ยนแปลง" · ตัวห้อย Call/Put คือชื่อกำกับ ไม่ใช่ตัวแปร</p>
 
 <h3>Gamma — "Delta เปลี่ยนเร็วแค่ไหน"</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Gamma คือความโค้งของกราฟราคา option — ยิ่งโค้งมาก Delta ยิ่งเปลี่ยนเร็วเมื่อหุ้นขยับ · โค้งมากสุดแถว ATM ส่วนลึก ITM/OTM กราฟเกือบเป็นเส้นตรง</p>
 <div class="fm"><strong>Gamma = N'(d₁) / (S × σ × √T)</strong> (เท่ากันสำหรับ Call และ Put)<br><br>
 ตัวอย่าง: N'(0.2475) = 0.3989 × e⁻⁰·⁰³⁰⁶ = 0.3989 × 0.9698 = <strong>0.3869</strong><br>
 Gamma = 0.3869 / (100 × 0.20 × 0.7071) = 0.3869 / 14.14 = <strong>0.0274</strong><br>
 → หุ้นขึ้น ฿1 → Delta เปลี่ยนประมาณ 0.027</div>
-<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "แกมมา เท่ากับ เอ็น-ไพรม์ของดีหนึ่ง หารด้วย เอส คูณ ซิกมา คูณ รูท T" · <strong>โครงที่ต้องเห็น:</strong> อัตราส่วน — ตัวเศษคือความหนาแน่น (สูงสุดเมื่อ d₁ ≈ 0 คือ ATM) ตัวส่วนคือ "ราคา × SD ตลอดอายุ" · ตัวส่วนโตเมื่อ T หรือ σ โต → Gamma เล็ก · T เล็กมาก → ตัวส่วนวิ่งเข้าศูนย์ → Gamma พุ่ง = gamma cliff ของบท 21 · <strong>กับดักการอ่าน:</strong> N′ (มี prime) ไม่ใช่ N — ใช้ CDF แทน PDF จะได้เลขผิดโดยไม่มี error · หน่วยคือ "Delta ต่อ ฿1" จึงเป็นเลขเล็กอย่าง 0.027</p>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "แกมมา เท่ากับ เอ็น-ไพรม์ของดีหนึ่ง หารด้วย เอส คูณ ซิกมา คูณ รูท T" · <strong>โครงที่ต้องเห็น:</strong> อัตราส่วน — ตัวเศษคือความหนาแน่น (สูงสุดเมื่อ d₁ = 0 ซึ่งอยู่ใกล้ ATM) ตัวส่วนคือ "ราคา × SD ตลอดอายุ" · ตัวส่วนโตเมื่อ T หรือ σ โต → Gamma เล็ก · T เล็กมาก → ตัวส่วนวิ่งเข้าศูนย์ → Gamma <em>ที่ใกล้ ATM</em> พุ่ง = gamma cliff ของ<a href="pm-part5.html#ch21">บท 21</a> (ส่วนที่ห่าง ATM เช่น S = 90 Gamma กลับหดเข้าศูนย์ เพราะ N′(d₁) หดเร็วกว่า) · <strong>กับดักการอ่าน:</strong> N′ (มี prime) ไม่ใช่ N — ใช้ CDF แทน PDF จะได้เลขผิดโดยไม่มี error · หน่วยคือ "Delta ต่อ ฿1" จึงเป็นเลขเล็กอย่าง 0.027</p>
 
 <h3>Theta — "Option เสียค่าเท่าไรต่อวัน"</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าหุ้นไม่ขยับเลย option ก็ยังเสียมูลค่าทุกวัน เพราะเวลาที่เหลือให้หุ้น "วิ่งเข้าเงิน" สั้นลง · สูตรมีสองก้อน: ก้อนเสียความเป็นทางเลือก กับก้อนดอกเบี้ยของเงิน K</p>
 <div class="fm"><strong>Theta_Call = -S×N'(d₁)×σ/(2√T) - r×K×e⁻ʳᵀ×N(d₂)</strong><br><br>
 ส่วนแรก = time decay ของ optionality (ติดลบเสมอ)<br>
 ส่วนสอง = ดอกเบี้ยบน exercise price<br><br>
@@ -143,6 +150,7 @@ Gamma = 0.3869 / (100 × 0.20 × 0.7071) = 0.3869 / 14.14 = <strong>0.0274</stro
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ทีตาของคอล เท่ากับ ลบ เอส คูณ เอ็น-ไพรม์ของดีหนึ่ง คูณ ซิกมา หารด้วย สองรูท T ลบ อาร์ คูณ เค คูณ ตัวลดค่า คูณ เอ็นของดีสอง" · <strong>โครงที่ต้องเห็น:</strong> ผลรวมสองก้อนที่ติดลบทั้งคู่: ก้อนแรกคือ S × ความหนาแน่น × σ / (2√T) (ค่าเวลาที่ละลาย — ยิ่ง T เล็กยิ่งเร็ว) ก้อนสองคือดอกเบี้ย r บน PV(K) × โอกาสต้องจ่าย · <strong>กับดักการอ่าน:</strong> หน่วยคือ<em>ต่อปี</em> เพราะ T เป็นปี — ต้องหาร 365 เองจึงได้ต่อวัน ตามที่ตัวอย่างทำ · ก้อนแรกใช้ N′ ก้อนสองใช้ N — คนละฟังก์ชัน · 2√T คือ 2 คูณ รูท T ไม่ใช่รูทของ 2T</p>
 
 <h3>Vega — "Option เปลี่ยนเท่าไรเมื่อ vol เปลี่ยน 1%"</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> vol สูงขึ้น = หุ้นมีโอกาสวิ่งไกลขึ้นทั้งสองทาง · ขาลงของ option ตันที่ 0 แต่ขาขึ้นไม่ตัน จึงได้ประโยชน์จากการวิ่งไกล ราคาทั้ง Call และ Put จึงขึ้นเมื่อ vol ขึ้น</p>
 <div class="fm"><strong>Vega = S × N'(d₁) × √T</strong> (เท่ากันสำหรับ Call และ Put)<br><br>
 ตัวอย่าง: 100 × 0.3869 × 0.7071 = <strong>27.36</strong> (ต่อ 100% vol)<br>
 → ต่อ 1% vol: 27.36/100 = <strong>฿0.274</strong><br>
@@ -154,13 +162,13 @@ Gamma = 0.3869 / (100 × 0.20 × 0.7071) = 0.3869 / 14.14 = <strong>0.0274</stro
 <tr><th>Greek</th><th>สูตร</th><th>ความหมาย</th><th>ค่าตัวอย่าง</th></tr>
 <tr><td><strong>Delta</strong></td><td>N(d₁) / N(d₁)-1</td><td>sensitivity ต่อราคาหุ้น</td><td>+0.598 / -0.402</td></tr>
 <tr><td><strong>Gamma</strong></td><td>N'(d₁)/(Sσ√T)</td><td>อัตราเปลี่ยนของ Delta</td><td>0.0274</td></tr>
-<tr><td><strong>Theta</strong></td><td>-SN'(d₁)σ/(2√T) - rKe⁻ʳᵀN(d₂)</td><td>time decay ต่อวัน</td><td>-฿0.022/day</td></tr>
+<tr><td><strong>Theta</strong></td><td>[-SN'(d₁)σ/(2√T) - rKe⁻ʳᵀN(d₂)] ÷ 365</td><td>time decay ต่อวัน (สูตรในวงเล็บเป็นต่อปี)</td><td>-฿0.022/day</td></tr>
 <tr><td><strong>Vega</strong></td><td>SN'(d₁)√T</td><td>sensitivity ต่อ vol 1%</td><td>฿0.274</td></tr>
 </table>
 <!-- FIG:greeks-grid:BEGIN -->
-<svg class="d" viewBox="0 0 560 400" role="img" aria-label="Greeks ของ Call ตามราคาหุ้น 4 ช่อง: Delta รูปตัว S จาก 0 ถึง 1 · Gamma ยอดแหลมที่ ATM · Theta ติดลบสุดที่ ATM · Vega ยอดที่ ATM · จุดที่ S = 100 ตรงกับตารางค่าตัวอย่าง" data-legend="per-panel">
+<svg class="d" viewBox="0 0 560 400" role="img" aria-label="Greeks ของ Call ตามราคาหุ้น 4 ช่อง: Delta รูปตัว S จาก 0 ถึง 1 · Gamma ยอดที่ S ≈ 94.7 · Theta ติดลบสุดที่ S ≈ 103.6 · Vega ยอดที่ S ≈ 98.5 · ใกล้ ATM ทั้งหมดแต่ไม่ตรง K เป๊ะ · จุดที่ S = 100 ตรงกับตารางค่าตัวอย่าง" data-legend="per-panel">
 <defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>
-<text x="280" y="18" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-opacity="0.92">Greeks ตามราคาหุ้น — ทุกตัว 'สุด' ที่ ATM ยกเว้น Delta ที่แค่ผ่านครึ่งทาง</text>
+<text x="280" y="18" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-opacity="0.92">Greeks ตามราคาหุ้น — Gamma · Vega · Theta สุดใกล้ ATM ส่วน Delta แค่ผ่านครึ่งทาง</text>
 <text x="280" y="32" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">K = 100 · r = 5% · σ = 20% · T = 0.5 · จุดม่วง = ค่าในตารางที่ S = 100</text>
 <text x="152" y="50" text-anchor="middle" font-family="Sarabun" font-size="11" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="2.9" stroke-linejoin="round" stroke-opacity="0.92">Delta = N(d₁)</text>
 <g stroke="#e5e7eb" stroke-width="1"><line x1="50" y1="116.0" x2="255" y2="116.0"/><line x1="50" y1="56.0" x2="255" y2="56.0"/></g>
@@ -217,30 +225,35 @@ Gamma = 0.3869 / (100 × 0.20 × 0.7071) = 0.3869 / 14.14 = <strong>0.0274</stro
 <polyline points="325.0,340.1 326.7,339.3 328.4,338.5 330.1,337.6 331.8,336.6 333.5,335.5 335.2,334.4 337.0,333.1 338.7,331.8 340.4,330.4 342.1,328.8 343.8,327.2 345.5,325.5 347.2,323.8 348.9,321.9 350.6,319.9 352.3,317.8 354.0,315.7 355.8,313.4 357.5,311.1 359.2,308.7 360.9,306.3 362.6,303.8 364.3,301.2 366.0,298.6 367.7,295.9 369.4,293.2 371.1,290.4 372.8,287.7 374.5,284.9 376.2,282.1 378.0,279.4 379.7,276.6 381.4,273.9 383.1,271.2 384.8,268.5 386.5,265.9 388.2,263.4 389.9,261.0 391.6,258.6 393.3,256.3 395.0,254.1 396.8,252.0 398.5,250.0 400.2,248.1 401.9,246.3 403.6,244.7 405.3,243.2 407.0,241.8 408.7,240.6 410.4,239.5 412.1,238.6 413.8,237.8 415.5,237.1 417.2,236.6 419.0,236.2 420.7,236.0 422.4,235.9 424.1,236.0 425.8,236.2 427.5,236.6 429.2,237.0 430.9,237.6 432.6,238.4 434.3,239.2 436.0,240.2 437.8,241.3 439.5,242.5 441.2,243.7 442.9,245.1 444.6,246.6 446.3,248.1 448.0,249.8 449.7,251.5 451.4,253.2 453.1,255.0 454.8,256.9 456.5,258.8 458.2,260.8 460.0,262.8 461.7,264.8 463.4,266.9 465.1,268.9 466.8,271.0 468.5,273.1 470.2,275.2 471.9,277.3 473.6,279.3 475.3,281.4 477.0,283.5 478.8,285.5 480.5,287.6 482.2,289.6 483.9,291.5 485.6,293.5 487.3,295.4 489.0,297.3 490.7,299.1 492.4,300.9 494.1,302.7 495.8,304.4 497.5,306.1 499.2,307.8 501.0,309.4 502.7,310.9 504.4,312.4 506.1,313.9 507.8,315.3 509.5,316.7 511.2,318.0 512.9,319.3 514.6,320.6 516.3,321.8 518.0,323.0 519.8,324.1 521.5,325.1 523.2,326.2 524.9,327.2 526.6,328.1 528.3,329.0 530.0,329.9" fill="none" stroke="#d97706" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#fsoft)"/>
 <circle cx="427.5" cy="236.6" r="4" fill="#fff" stroke="#7c3aed" stroke-width="2.2"/>
 <text x="420.5" y="228.6" text-anchor="end" font-family="Sarabun" font-size="9.5" fill="#7c3aed" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-opacity="0.92">฿0.274</text>
-<text x="280" y="380" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-opacity="0.92">Gamma · Vega และก้อนแรกของ Theta มี N′(d₁) เป็นแกน — จึงมียอดที่ ATM พร้อมกัน</text>
+<text x="280" y="380" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-opacity="0.92">Gamma · Vega และก้อนแรกของ Theta มี N′(d₁) เป็นแกน — จึงมียอดใกล้ ATM (Gamma ที่ S ≈ 94.7 · Vega ≈ 98.5)</text>
 <text x="280" y="394" text-anchor="middle" font-family="Sarabun" font-size="9.5" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-opacity="0.92">Theta ฝั่ง ITM ลึกยังเหลือก้อนดอกเบี้ย −rKe⁻ʳᵀ ไม่ถึงศูนย์</text>
 </svg>
 <!-- FIG:greeks-grid:END -->
 
 
 <h2>Breeden-Litzenberger — "Butterfly = ตัวดูด Probability"</h2>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Butterfly แคบ ๆ รอบ K จ่ายเงินเฉพาะเมื่อหุ้นจบ<em>แถว</em> K · ราคาของมันจึงบอกว่าตลาดให้น้ำหนักกับ "จบแถว K" มากแค่ไหน — ไล่ K ไปทุกค่าก็ได้รูปการกระจายทั้งก้อนที่ตลาดใช้ตั้งราคา</p>
 
 <div class="fm"><strong>f(K) = eʳᵀ × d²C/dK²</strong><br><br>
 ความหมาย: ถ้าเราหาอนุพันธ์อันดับสองของราคา Call เทียบกับ Strike<br>
 → ได้ <strong>risk-neutral probability density</strong> ที่ strike นั้น<br><br>
-ในทางปฏิบัติ: <strong>ราคา Butterfly ที่ width → 0</strong><br>
-= ตลาดบอกว่า "probability ที่ราคาจะจบตรง K นี้ = เท่าไร"</div>
-<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เอฟของเค เท่ากับ อียกกำลังอาร์ที คูณ อนุพันธ์อันดับสองของ C เทียบกับ K" · <strong>โครงที่ต้องเห็น:</strong> อนุพันธ์อันดับสองคือ "ความโค้ง" และในตลาดจริงคือ Butterfly แคบ ๆ: [C(K−h) − 2C(K) + C(K+h)] / h² — ราคาเต็นท์หารด้วยความกว้างกำลังสอง · ผลลัพธ์คือความหนาแน่น f(K): ยิ่งสูง ตลาดยิ่งให้น้ำหนักว่าราคาจะจบแถว K · <strong>กับดักการอ่าน:</strong> d²C/dK² ไม่ใช่ "d กำลังสอง คูณ C" — เป็นสัญลักษณ์เดียวอ่านว่า "อนุพันธ์อันดับสอง" · eʳᵀ เลขยกกำลัง<em>บวก</em> คือตัวถอดการลดค่า (กลับด้านของ e⁻ʳᵀ) เพราะราคา Call ถูกลดค่ามาแล้ว · f(K) เป็นความหนาแน่นแบบ risk-neutral (ต้องคูณความกว้างช่วงจึงเป็นความน่าจะเป็น) ไม่ใช่โอกาสจริง</p>
+ในทางปฏิบัติ: <strong>ราคา Butterfly กว้าง h หารด้วย h²</strong> เมื่อ h → 0<br>
+= ตลาดบอกว่า "ความหนาแน่นของโอกาสที่ราคาจะจบแถว K นี้ = เท่าไร" (โอกาสจบตรง K เป๊ะเป็น 0 เสมอ)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เอฟของเค เท่ากับ อียกกำลังอาร์ที คูณ อนุพันธ์อันดับสองของ C เทียบกับ K" · <strong>โครงที่ต้องเห็น:</strong> อนุพันธ์อันดับสองคือ "ความโค้ง" และในตลาดจริงคือ Butterfly แคบ ๆ: [C(K−h) − 2C(K) + C(K+h)] / h² — ราคาเต็นท์หารด้วยความกว้างกำลังสอง · ผลลัพธ์คือความหนาแน่น f(K): ยิ่งสูง ตลาดยิ่งให้น้ำหนักว่าราคาจะจบแถว K · <strong>กับดักการอ่าน:</strong> d²C/dK² ไม่ใช่ "d กำลังสอง คูณ C" — เป็นสัญลักษณ์เดียวอ่านว่า "อนุพันธ์อันดับสอง" · eʳᵀ เลขยกกำลัง<em>บวก</em> คือตัวถอดการลดค่า (กลับด้านของ e⁻ʳᵀ) เพราะราคา Call ถูกลดค่ามาแล้ว · f(K) เป็นความหนาแน่นแบบ risk-neutral (ต้องคูณความกว้างช่วงจึงเป็นความน่าจะเป็น) ไม่ใช่โอกาสจริง · และ f ตัวนี้คนละตัวกับ f* ของ Kelly ข้างล่าง</p>
 
-<div class="bx bg"><div class="bt">เชื่อมโยงกลับ: Butterfly Convexity (บท 10)</div>
-<p>C(K₁) - 2C(K₂) + C(K₃) ≥ 0 (convexity condition)<br>
-Breeden-Litzenberger อธิบายว่า <strong>ทำไม</strong>: เพราะค่านี้ = probability density × width<br>
-Probability ≥ 0 เสมอ → Butterfly price ≥ 0 เสมอ → ถ้า &lt; 0 = arbitrage!</p></div>
+<div class="bx bg"><div class="bt">เชื่อมโยงกลับ: Butterfly Convexity (<a href="pm-part3.html#ch10">บท 10</a>)</div>
+<p>C(K₁) − 2C(K₂) + C(K₃) ≥ 0 เมื่อ strike ห่างเท่ากัน (K₂ = (K₁ + K₃)/2) — convexity condition · Breeden-Litzenberger อธิบายว่า <strong>ทำไม</strong>:</p>
+<ul>
+<li>ราคา butterfly กว้าง h ≈ e⁻ʳᵀ × density × h² (ที่ S = K = 100 · h = 1: butterfly 0.02735 เทียบ e⁻ʳᵀ × density 0.02736 — แทบเท่ากัน)</li>
+<li>density ≥ 0 เสมอ → Butterfly price ≥ 0 เสมอ</li>
+<li>ถ้าตลาดให้ราคา &lt; 0 = ได้เงินมาถือของที่ไม่มีวันขาดทุน = arbitrage!</li>
+</ul></div>
 
 <h2>Expected Payoff — "ปิดลูป Payoff ≠ Prediction"</h2>
 
-<p>บท 8 สอนว่า "Payoff ≠ Prediction — payoff chart ไม่มี probability"<br>
+<p><a href="pm-part2.html#ch8">บท 8</a> สอนว่า "Payoff ≠ Prediction — payoff chart ไม่มี probability"<br>
 ตอนนี้เรา <strong>ปิดลูป</strong>: ถ้ามี probability density → คำนวณ Expected Value ได้</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ค่าคาดหวัง = เอา payoff ของทุกฉากทัศน์ คูณโอกาสของฉากนั้น แล้วบวกกัน · payoff chart ให้ "ได้เท่าไร" ส่วนการกระจายให้ "บ่อยแค่ไหน"</p>
 
 <div class="fm"><strong>E[payoff] = ∫ payoff(S) × f(S) dS</strong><br><br>
 = "ซ้อน probability density บน payoff chart"<br>
@@ -250,14 +263,21 @@ Probability ≥ 0 เสมอ → Butterfly price ≥ 0 เสมอ → ถ้
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ค่าคาดหวังของ payoff เท่ากับ อินทิกรัลของ payoff ที่ S คูณ ความหนาแน่น f ที่ S ดีเอส" — ∫ … dS คือ "บวกทุกค่า S ที่เป็นไปได้" แบบต่อเนื่อง ส่วน Σ บรรทัดล่างคือแบบนับเป็นก้อน · <strong>โครงที่ต้องเห็น:</strong> ค่าเฉลี่ยถ่วงน้ำหนัก — น้ำหนักคือความน่าจะเป็น ต้องรวมกันได้ 1 · เช็คตัวอย่างข้างล่าง: 0.40 + 0.35 + 0.25 = 1.00 ✓ · <strong>กับดักการอ่าน:</strong> E[·] คือค่าเฉลี่ยระยะยาว ไม่ใช่ค่าที่จะเกิดจริง และไม่บอกอะไรเรื่องการกระจาย · ตัวห้อย i ใน state_i คือ "อันที่เท่าไร" ไม่ใช่เวลา · dS ท้ายอินทิกรัลบอกว่าบวกไปตามแกน S ไม่ใช่ตัวคูณ</p>
 
 <div class="bx ba"><div class="bt">ตัวอย่าง: Bull Call Spread 100/110, net premium = 5</div>
-<p>สมมติ probability distribution:<br>
-P(S &lt; 100) = 40% → payoff = -5<br>
-P(100 ≤ S ≤ 110) = 35% → payoff เฉลี่ย ≈ 0 (midpoint)<br>
-P(S &gt; 110) = 25% → payoff = +15<br><br>
-EV = 0.40×(-5) + 0.35×(0) + 0.25×(15) = -2 + 0 + 3.75 = <strong>+฿1.75</strong><br>
-→ EV &gt; 0 → trade นี้มี edge (ถ้า probability estimate ถูก)</p></div>
+<p>payoff สุทธิ: ต่ำสุด −5 (จ่ายเบี้ยทิ้ง) · สูงสุด (110 − 100) − 5 = <strong>+5</strong> · สมมติ probability distribution:</p>
+<ul>
+<li>P(S &lt; 100) = 40% → payoff = -5</li>
+<li>P(100 ≤ S ≤ 110) = 35% → payoff เฉลี่ย ≈ 0 (ช่วงนี้วิ่งจาก −5 ถึง +5 · ใช้จุดกึ่งกลาง)</li>
+<li>P(S &gt; 110) = 25% → payoff = +5</li>
+</ul>
+<p>EV = 0.40×(-5) + 0.35×(0) + 0.25×(5) = -2 + 0 + 1.25 = <strong>-฿0.75</strong><br>
+→ EV &lt; 0 → ด้วยชุดโอกาสนี้ trade นี้<strong>ไม่มี edge</strong> · ถ้า P(S &lt; 100) ยังเป็น 40% ต้องให้ P(S &gt; 110) ≥ 40% จึงคุ้มทุน</p></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>spread ตัวเดิม แต่คุณเชื่อว่า P(S &lt; 100) = 25% · P(100 ≤ S ≤ 110) = 35% · P(S &gt; 110) = 40% · EV เท่าไร และเทียบกับตลาดแล้วควรสงสัยอะไร?</p>
+<details><summary>ดูเฉลย</summary><p>EV = 0.25×(-5) + 0.35×0 + 0.40×5 = -1.25 + 0 + 2 = <strong>+฿0.75</strong> · บวกก็ต่อเมื่อความเชื่อของคุณต่างจากโอกาสที่ราคาตลาดฝังไว้ (ราคา spread = 5 คือตลาดคิดว่า EV แบบ risk-neutral ≈ 0) — ต้องถามก่อนว่าเรารู้อะไรที่ตลาดไม่รู้</p></details></div>
 
 <h2>Kelly Criterion — "ลงทุนเท่าไรต่อ trade"</h2>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Kelly ตอบว่า "ควรวางเงินกี่ % ของทุน" เพื่อให้ทุนโตเร็วที่สุดในระยะยาว — วางน้อยไปโตช้า วางมากไปแพ้ติดกันทีเดียวทุนหายจนฟื้นยาก</p>
 
 <div class="fm"><strong>f* = (b×p - q) / b</strong><br><br>
 b = odds (ได้เท่าไรต่อ 1 ที่เสี่ย)<br>
@@ -270,12 +290,16 @@ f* = (2×0.6 - 0.4) / 2 = (1.2-0.4)/2 = <strong>0.4 = 40%</strong><br><br>
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "เอฟ-สตาร์ เท่ากับ บี คูณ พี ลบ คิว ทั้งหมดหารด้วย บี" — ดอกจันบน f แปลว่า "ค่าที่ดีที่สุด" (optimal) ไม่ใช่การคูณ · <strong>โครงที่ต้องเห็น:</strong> ตัวเศษ bp − q คือ edge ต่อหนึ่งหน่วยที่เสี่ยง ตัวส่วน b คือ odds → สัดส่วน = edge/odds · ลอง b = 1, p = q = 0.5 → (0.5 − 0.5)/1 = 0 → ไม่ควรวางเลย ✓ · <strong>กับดักการอ่าน:</strong> b ต้องเป็น "กำไรสุทธิต่อ 1 ที่เสี่ยง" (ชนะได้ 2x → b = 2) ไม่ใช่ odds ทศนิยมแบบเจ้ามือที่รวมทุน · สูตรถือว่ารู้ p แน่ — ความไม่แน่นอนของ p ไม่อยู่ในสูตร นี่คือเหตุผลของ Half-Kelly</p>
 
 <div class="bx br"><div class="bt">ระวัง: สูตรนี้ใช้ได้แค่ binary outcomes!</div>
-<p>สูตร f* = (bp-q)/b สมมติว่า <strong>ผลลัพธ์มีแค่ 2 แบบ</strong>: ชนะได้ b หรือแพ้เสีย 1<br>
-สำหรับ options ที่มี payoff แบบ continuous (spreads, condors) → ต้องใช้ generalized Kelly: <strong>f* = argmax E[log(1 + f×R)]</strong><br>
-ในทางปฏิบัติ: ใช้สูตร binary เป็น <strong>upper bound</strong> แล้วลดด้วย Half-Kelly<br><br>
-ในโลกจริง probability เป็น <strong>estimate</strong> ไม่ใช่ fact<br>
-ถ้า estimate ผิดแค่ 5% → Full Kelly อาจทำให้เจ๊งได้<br>
-<strong>กฎ: ใช้ Half-Kelly หรือ Quarter-Kelly เสมอ</strong></p></div>
+<ul>
+<li>สูตร f* = (bp-q)/b สมมติว่า <strong>ผลลัพธ์มีแค่ 2 แบบ</strong>: ชนะได้ b หรือแพ้เสีย 1</li>
+<li>options ที่มี payoff แบบต่อเนื่อง (spreads, condors) ต้องใช้ generalized Kelly: <strong>f* = argmax E[log(1 + f×R)]</strong> · ในทางปฏิบัติใช้สูตร binary เป็นจุดตั้งต้นแล้วลดด้วย Half-Kelly</li>
+<li>probability ในโลกจริงเป็น <strong>estimate</strong> ไม่ใช่ fact · วาง f = 40% แต่ p จริงคือ 55% (ไม่ใช่ 60%) ทุนยังโต แต่อัตราโตแบบ log ลดจาก 0.148 เหลือ 0.093 ต่อรอบ และ drawdown ลึกกว่าที่ควร · ถ้า p จริงต่ำกว่าราว 46.5% (วางเกินสองเท่าของ Kelly จริง) ทุนจะหดในระยะยาว</li>
+<li><strong>กฎ: ใช้ Half-Kelly หรือ Quarter-Kelly</strong> — ยอมโตช้าลงนิดเพื่อกันความเสียหายจากการประเมิน p สูงเกิน</li>
+</ul></div>
+
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>trade ที่ชนะ 55% ของเวลา ได้ 1 เท่าของที่เสี่ยง (b = 1) · Full Kelly และ Half-Kelly คือกี่ %?</p>
+<details><summary>ดูเฉลย</summary><p>f* = (1×0.55 − 0.45)/1 = <strong>0.10 = 10%</strong> · Half-Kelly = <strong>5%</strong> · edge เล็กลง ขนาดเดิมพันหดลงเร็วมาก (เทียบ 40% ของตัวอย่าง b = 2, p = 60%)</p></details></div>
 
 <h2>สูตรรวม — Quick Reference</h2>
 <table>
@@ -283,7 +307,7 @@ f* = (2×0.6 - 0.4) / 2 = (1.2-0.4)/2 = <strong>0.4 = 40%</strong><br><br>
 <tr><td><strong>BS Call</strong></td><td>C = S·N(d₁) - Ke⁻ʳᵀ·N(d₂)</td><td>ราคา Call ก่อน expiry</td></tr>
 <tr><td><strong>BS Put</strong></td><td>P = Ke⁻ʳᵀ·N(-d₂) - S·N(-d₁)</td><td>ราคา Put ก่อน expiry</td></tr>
 <tr><td><strong>d₁</strong></td><td>[ln(S/K)+(r+σ²/2)T]/(σ√T)</td><td>input หลักของ BS</td></tr>
-<tr><td><strong>d₂</strong></td><td>d₁ - σ√T</td><td>probability ITM</td></tr>
+<tr><td><strong>d₂</strong></td><td>d₁ - σ√T</td><td>N(d₂) = probability ITM แบบ risk-neutral</td></tr>
 <tr><td><strong>Digital</strong></td><td>e⁻ʳᵀ × N(d₂)</td><td>ราคา PM / digital option</td></tr>
 <tr><td><strong>Delta</strong></td><td>N(d₁) / N(d₁)-1</td><td>hedge ratio</td></tr>
 <tr><td><strong>Gamma</strong></td><td>N'(d₁)/(Sσ√T)</td><td>ความโค้งของ payoff curve</td></tr>
@@ -296,10 +320,17 @@ f* = (2×0.6 - 0.4) / 2 = (1.2-0.4)/2 = <strong>0.4 = 40%</strong><br><br>
 
 <div class="bx bg"><div class="bt">3 สิ่งที่ต้องจำ (Part V-A)</div>
 <ol>
-<li><strong>BS บอกว่าเส้นโค้งอยู่ตรงไหน</strong> → N(d₂) = P(ITM), N(d₁) = Delta</li>
-<li><strong>Breeden-Litzenberger</strong>: Butterfly price = implied probability → เชื่อมกลับ Ch10</li>
-<li><strong>EV ปิดลูป Ch8</strong>: payoff × probability = expected value → ตัดสินใจ trade ได้</li>
+<li><strong>BS บอกว่าเส้นโค้งอยู่ตรงไหน</strong> → N(d₂) = P(ITM) แบบ risk-neutral, N(d₁) = Delta</li>
+<li><strong>Breeden-Litzenberger</strong>: ราคา butterfly แคบ ๆ ÷ ความกว้าง² ≈ ความหนาแน่นที่ตลาดใช้ (ลดค่าแล้ว) → เชื่อมกลับ<a href="pm-part3.html#ch10">บท 10</a></li>
+<li><strong>EV ปิดลูป<a href="pm-part2.html#ch8">บท 8</a></strong>: payoff × probability = expected value → ตัดสินใจ trade ได้</li>
 </ol></div>
+
+<div class="bx bb"><div class="bt">📚 Papers</div>
+<ul>
+<li>Black &amp; Scholes (1973), "The Pricing of Options and Corporate Liabilities", <em>Journal of Political Economy</em> 81(3)</li>
+<li>Breeden &amp; Litzenberger (1978), "Prices of State-Contingent Claims Implicit in Option Prices", <em>Journal of Business</em> 51(4)</li>
+<li>Kelly (1956), "A New Interpretation of Information Rate", <em>Bell System Technical Journal</em> 35(4)</li>
+</ul></div>
 
 <div class="bx bg"><div class="bt">สรุป Part V-A</div>
 <ul>

@@ -465,9 +465,12 @@ def fig_bs_call_curve():
 def fig_greeks_grid():
     S = np.linspace(70, 130, 121); g = bs_greeks(S); g0 = bs_greeks(100.0)
     NUMS["greeks-grid"] = dict(delta=float(g0["delta"]), gamma=float(g0["gamma"]), theta_day=float(g0["theta_day"]), vega1=float(g0["vega1"]))
+    Sf = np.linspace(70, 130, 6001); gf = bs_greeks(Sf)
+    pk = dict(gamma=float(Sf[np.argmax(gf["gamma"])]), vega=float(Sf[np.argmax(gf["vega1"])]), theta=float(Sf[np.argmin(gf["theta_day"])]))
+    NUMS["greeks-grid"].update({f"peak_{k}": v for k, v in pk.items()})
     Wd, H = 560, 400
-    out = svg_open(Wd, H, "Greeks ของ Call ตามราคาหุ้น 4 ช่อง: Delta รูปตัว S จาก 0 ถึง 1 · Gamma ยอดแหลมที่ ATM · Theta ติดลบสุดที่ ATM · Vega ยอดที่ ATM · จุดที่ S = 100 ตรงกับตารางค่าตัวอย่าง", multipanel=True)
-    title(out, Wd, "Greeks ตามราคาหุ้น — ทุกตัว 'สุด' ที่ ATM ยกเว้น Delta ที่แค่ผ่านครึ่งทาง", "K = 100 · r = 5% · σ = 20% · T = 0.5 · จุดม่วง = ค่าในตารางที่ S = 100")
+    out = svg_open(Wd, H, f"Greeks ของ Call ตามราคาหุ้น 4 ช่อง: Delta รูปตัว S จาก 0 ถึง 1 · Gamma ยอดที่ S ≈ {pk['gamma']:.1f} · Theta ติดลบสุดที่ S ≈ {pk['theta']:.1f} · Vega ยอดที่ S ≈ {pk['vega']:.1f} · ใกล้ ATM ทั้งหมดแต่ไม่ตรง K เป๊ะ · จุดที่ S = 100 ตรงกับตารางค่าตัวอย่าง", multipanel=True)
+    title(out, Wd, "Greeks ตามราคาหุ้น — Gamma · Vega · Theta สุดใกล้ ATM ส่วน Delta แค่ผ่านครึ่งทาง", "K = 100 · r = 5% · σ = 20% · T = 0.5 · จุดม่วง = ค่าในตารางที่ S = 100")
     panels = [("Delta = N(d₁)", "delta", (0, "0"), (0.5, "0.5"), (1, "1"), f"{g0['delta']:.4f}", GREEN),
               ("Gamma = N′(d₁)/(Sσ√T)", "gamma", (0, "0"), (0.015, "0.015"), (0.03, "0.03"), f"{g0['gamma']:.4f}", BLUE),
               ("Theta ต่อวัน (฿)", "theta_day", (-0.03, "−0.03"), (-0.015, "−0.015"), (0, "0"), f"−฿{abs(g0['theta_day']):.3f}", RED),
@@ -485,7 +488,7 @@ def fig_greeks_grid():
         dy = 16 if key in ("theta_day",) else -8
         anchor_ = "start" if key == "delta" else "end"; dx = 7 if key == "delta" else -7
         out.append(f'<text x="{sx(100)+dx:.1f}" y="{sy(v0)+dy:.1f}" text-anchor="{anchor_}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">{lab}</text>')
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-20}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Gamma · Vega และก้อนแรกของ Theta มี N′(d₁) เป็นแกน — จึงมียอดที่ ATM พร้อมกัน</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-20}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Gamma · Vega และก้อนแรกของ Theta มี N′(d₁) เป็นแกน — จึงมียอดใกล้ ATM (Gamma ที่ S ≈ {pk["gamma"]:.1f} · Vega ≈ {pk["vega"]:.1f})</text>')
     out.append(f'<text x="{Wd/2:.0f}" y="{H-6}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">Theta ฝั่ง ITM ลึกยังเหลือก้อนดอกเบี้ย −rKe⁻ʳᵀ ไม่ถึงศูนย์</text>')
     out.append("</svg>")
     return "\n".join(out)
