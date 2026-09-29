@@ -2116,41 +2116,60 @@ def fig_m4_beta_scatter():
     return "\n".join(out)
 
 
-def lp_data():
-    corners = [(0, 0), (0, 5), (4, 0), (10 / 3, 5 / 3)]
-    z = [8 * a + 5 * b for a, b in corners]
-    return corners, z
+# โจทย์ LP ของ §3.1 — max cᵀx s.t. Ax ≤ b, x ≥ 0 · มุมหาจากการแก้คู่เส้นขอบทุกคู่ (เลขเศษส่วนตรง ไม่ปัดทศนิยม)
+LP_M5 = dict(c=(8, 5), A=((5, 2), (1, 1)), b=(20, 5))
+
+
+def lp_data(c=LP_M5["c"], A=LP_M5["A"], b=LP_M5["b"]):
+    from fractions import Fraction as Fr
+    from itertools import combinations
+    lines = [((Fr(r[0]), Fr(r[1])), Fr(bb)) for r, bb in zip(A, b)] + [((Fr(-1), Fr(0)), Fr(0)), ((Fr(0), Fr(-1)), Fr(0))]
+    pts = []
+    for (a1, b1), (a2, b2) in combinations(lines, 2):
+        det = a1[0] * a2[1] - a1[1] * a2[0]
+        if det == 0: continue
+        x = (b1 * a2[1] - a1[1] * b2) / det; y = (a1[0] * b2 - b1 * a2[0]) / det
+        if all(r[0] * x + r[1] * y <= bb for r, bb in lines) and (x, y) not in pts: pts.append((x, y))
+    pts.sort(key=lambda p: (p[0] != int(p[0]) or p[1] != int(p[1]), p[0], p[1]))
+    z = [c[0] * x + c[1] * y for x, y in pts]
+    return pts, z
+
+
+def _fr(v):
+    return f"{v.numerator}/{v.denominator}" if v.denominator != 1 else f"{v.numerator}"
 
 
 @fig("math-part5.html", "m5-lp")
 def fig_m5_lp():
-    corners, z = lp_data()
+    corners, z = lp_data(); (c1, c2), ((a11, a12), (a21, a22)), (b1, b2) = LP_M5["c"], LP_M5["A"], LP_M5["b"]
+    ib = max(range(len(z)), key=lambda i: z[i]); xb, yb = corners[ib]; zb = z[ib]
+    lab = lambda p: f"({_fr(p[0])}, {_fr(p[1])})"
     Wd, H = 560, 320
-    out = svg_open(Wd, H, "LP: feasible region สี่เหลี่ยมใต้เส้น 5x₁ + 2x₂ = 20 และ x₁ + x₂ = 5 มุมที่ดีที่สุด (10/3, 5/3) ให้ z = 35")
-    title(out, Wd, "Linear Programming — คำตอบอยู่ที่มุมของ feasible region เสมอ: (10/3, 5/3) ให้ z = 35",
-          "Max z = 8x₁ + 5x₂ · งบ 5x₁ + 2x₂ ≤ 20 · จำนวน x₁ + x₂ ≤ 5 · x ≥ 0 · เช็ค 4 มุม: z = 0, 25, 32, 35")
+    out = svg_open(Wd, H, f"LP: feasible region สี่เหลี่ยมใต้เส้น {a11}x₁ + {a12}x₂ = {b1} และ x₁ + x₂ = {b2} มุมที่ดีที่สุด {lab(corners[ib])} ให้ z = {_fr(zb)}")
+    title(out, Wd, f"Linear Programming — คำตอบที่ดีที่สุดอยู่ที่มุมของ feasible region: {lab(corners[ib])} ให้ z = {_fr(zb)}",
+          f"Max z = {c1}x₁ + {c2}x₂ · งบ {a11}x₁ + {a12}x₂ ≤ {b1} · จำนวน x₁ + x₂ ≤ {b2} · x ≥ 0 · เช็ค {len(z)} มุม: z = " + ", ".join(_fr(v) for v in z))
     x0, y0, w, h = 70, 48, 240, 220
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5"), (6, "6")], [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], xlab="x₁ (Call K = 100)", ylab="x₂ (Call K = 110)")
-    poly = [(0, 0), (4, 0), (10 / 3, 5 / 3), (0, 5)]
+    import math
+    poly = sorted([(float(a), float(b)) for a, b in corners], key=lambda p: math.atan2(p[1] - 1.5, p[0] - 1.5))
     out.append('<polygon points="' + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in poly) + f'" fill="{GREEN}" opacity="0.18"/>')
-    polyline(out, [(sx(0), sy(10)), (sx(4), sy(0))], RED, 2.0); _txt(out, sx(1.6), sy(6.6), "5x₁ + 2x₂ = 20 (งบ)", RED, "start", size=9, bold=True)
-    polyline(out, [(sx(0), sy(5)), (sx(5), sy(0))], BLUE, 2.0); _txt(out, sx(3.3), sy(2.4), "x₁ + x₂ = 5", BLUE, "start", size=9, bold=True)
+    polyline(out, [(sx(0), sy(b1 / a12)), (sx(b1 / a11), sy(0))], RED, 2.0); _txt(out, sx(1.6), sy(6.6), f"{a11}x₁ + {a12}x₂ = {b1} (งบ)", RED, "start", size=9, bold=True)
+    polyline(out, [(sx(0), sy(b2 / a22)), (sx(b2 / a21), sy(0))], BLUE, 2.0); _txt(out, sx(3.3), sy(2.4), f"x₁ + x₂ = {b2}", BLUE, "start", size=9, bold=True)
     _txt(out, sx(1.1), sy(1.6), "Feasible", GREEN, "start", bold=True); _txt(out, sx(1.1), sy(1.0), "Region", GREEN, "start", bold=True)
     # เส้นระดับ z = 35 ผ่านจุดดีที่สุด
-    polyline(out, [(sx(0), sy(7)), (sx(4.375), sy(0))], PURPLE, 1.4, dash="5 3", shadow=False); _txt(out, sx(0.15), sy(7.5), "z = 35 (เส้นระดับ)", PURPLE, "start", size=9)
+    polyline(out, [(sx(0), sy(float(zb) / c2)), (sx(float(zb) / c1), sy(0))], PURPLE, 1.4, dash="5 3", shadow=False); _txt(out, sx(0.15), sy(float(zb) / c2 + 0.5), f"z = {_fr(zb)} (เส้นระดับ)", PURPLE, "start", size=9)
     for (a, b), zz in zip(corners, z):
-        best = zz == max(z); _dot(out, sx(a), sy(b), PURPLE if best else INK2, 4.5 if best else 3.5)
+        best = zz == zb; _dot(out, sx(float(a)), sy(float(b)), PURPLE if best else INK2, 4.5 if best else 3.5)
     # ตารางมุมด้านขวา
     tx = 340; _txt(out, tx, y0 + 12, "มุม (x₁, x₂)", INK, "start", bold=True); _txt(out, tx + 150, y0 + 12, "z = 8x₁ + 5x₂", INK, "start", bold=True)
-    labels = ["(0, 0)", "(0, 5)", "(4, 0)", "(10/3, 5/3)"]
-    for i, (lab, zz) in enumerate(zip(labels, z)):
-        best = zz == max(z); col = PURPLE if best else INK2
-        _txt(out, tx, y0 + 34 + i * 20, lab, col, "start", bold=best); _txt(out, tx + 150, y0 + 34 + i * 20, f"{zz:g}" + (" ← ดีที่สุด" if best else ""), col, "start", bold=best)
+    for i, (p, zz) in enumerate(zip(corners, z)):
+        best = zz == zb; col = PURPLE if best else INK2
+        _txt(out, tx, y0 + 34 + i * 20, lab(p), col, "start", bold=best); _txt(out, tx + 150, y0 + 34 + i * 20, _fr(zz) + (" ← ดีที่สุด" if best else ""), col, "start", bold=best)
     _txt(out, tx, y0 + 34 + 4 * 20 + 6, "มุมที่ดีที่สุด = จุดตัดของสองเส้น constraint:", INK2, "start", size=9)
-    _txt(out, tx, y0 + 34 + 4 * 20 + 20, "แก้ 5x₁ + 2x₂ = 20 กับ x₁ + x₂ = 5 → x₁ = 10/3, x₂ = 5/3", INK2, "start", size=9)
-    _txt(out, tx, y0 + 34 + 4 * 20 + 34, "z = 8(10/3) + 5(5/3) = 80/3 + 25/3 = 35", INK2, "start", size=9)
+    _txt(out, tx, y0 + 34 + 4 * 20 + 20, f"แก้ {a11}x₁ + {a12}x₂ = {b1} กับ x₁ + x₂ = {b2} → x₁ = {_fr(xb)}, x₂ = {_fr(yb)}", INK2, "start", size=9)
+    _txt(out, tx, y0 + 34 + 4 * 20 + 34, f"z = {c1}({_fr(xb)}) + {c2}({_fr(yb)}) = {_fr(c1 * xb)} + {_fr(c2 * yb)} = {_fr(zb)}", INK2, "start", size=9)
     out.append("</svg>")
-    NUMS["m5-lp"] = {f"z{i}": v for i, v in enumerate(z)}
+    NUMS["m5-lp"] = dict({f"z{i}": float(v) for i, v in enumerate(z)}, x1=float(xb), x2=float(yb), zmax=float(zb))
     return "\n".join(out)
 
 
@@ -2164,7 +2183,7 @@ def gd_data(x0=0.0, alpha=0.1, steps=8):
 def fig_m5_gradient_descent():
     xs = gd_data()
     Wd, H = 560, 300
-    out = svg_open(Wd, H, f"gradient descent บน f(x) = (x − 3)² + 2 เริ่ม x = 0 ก้าว α = 0.1: 0 → 0.6 → 1.08 → … → {xs[-1]:.2f} เข้าหาก้นหลุม x = 3")
+    out = svg_open(Wd, H, f"gradient descent บน f(x) = (x − 3)² + 2 เริ่ม x = 0 ก้าว α = 0.1: " + " → ".join(f"{v:g}" for v in (round(v, 2) for v in xs[:3])) + f" → … → {xs[-1]:.2f} เข้าหาก้นหลุม x = 3")
     title(out, Wd, "Gradient Descent — เดินลงเขาทีละก้าว: xₜ₊₁ = xₜ − α·f′(xₜ) เข้าหาก้นหลุมที่ x = 3",
           f"f(x) = (x − 3)² + 2 · f′(x) = 2(x − 3) · เริ่ม x = 0 · α = 0.1 · 8 ก้าว: " + " → ".join(f"{v:.2f}" for v in xs[:5]) + f" → … → {xs[-1]:.2f}")
     (sx, sy), _ = _std_frame(out, Wd, H, [(-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")], [(0, "0"), (4, "4"), (8, "8"), (12, "12"), (16, "16"), (20, "20")], "x", "f(x)")
@@ -2174,7 +2193,7 @@ def fig_m5_gradient_descent():
         out.append(f'<line x1="{sx(a):.1f}" y1="{sy(f(a)):.1f}" x2="{sx(b):.1f}" y2="{sy(f(b)):.1f}" stroke="{RED}" stroke-width="1.6" marker-end="url(#arr)"/>')
     for i, a in enumerate(xs):
         _dot(out, sx(a), sy(f(a)), RED if i < len(xs) - 1 else PURPLE, 3.6)
-    _txt(out, sx(0) - 6, sy(f(0)) - 8, "เริ่ม x = 0 · ชัน f′ = −6 → ก้าวไปทางขวา 0.6", RED, "start", size=9, bold=True)
+    _txt(out, sx(0) - 6, sy(f(0)) - 8, f"เริ่ม x = 0 · ชัน f′ = {2 * (xs[0] - 3):g} → ก้าวไปทางขวา {xs[1] - xs[0]:g}".replace("-", "−"), RED, "start", size=9, bold=True)
     _txt(out, sx(3), sy(2) + 16, "จุดต่ำสุด x = 3 (f′ = 0 หยุดเดิน)", PURPLE, "middle", bold=True)
     _txt(out, sx(4.9), sy(17), "ก้าวสั้นลงเรื่อย ๆ เพราะความชันเล็กลงเมื่อใกล้ก้นหลุม", INK2, "end", size=9, italic=True)
     out.append("</svg>")
@@ -2182,8 +2201,12 @@ def fig_m5_gradient_descent():
     return "\n".join(out)
 
 
-def frontier_data(m1=0.08, s1=0.20, m2=0.12, s2=0.30, rho=0.2):
-    w = np.linspace(-0.3, 1.3, 321)
+# ข้อมูลชุดเดียวกับตัวอย่างโค้ด §4.2½ (A μ 10% σ 20% · B μ 6% σ 10% · ρ 0.2) · long-only ตาม bounds=(0, 1) ในโค้ด
+FRONTIER_M5 = dict(m1=0.10, s1=0.20, m2=0.06, s2=0.10, rho=0.2)
+
+
+def frontier_data(m1=0.10, s1=0.20, m2=0.06, s2=0.10, rho=0.2):
+    w = np.linspace(0, 1, 201)
     mu = w * m1 + (1 - w) * m2
     var = w ** 2 * s1 ** 2 + (1 - w) ** 2 * s2 ** 2 + 2 * w * (1 - w) * rho * s1 * s2
     wmin = (s2 ** 2 - rho * s1 * s2) / (s1 ** 2 + s2 ** 2 - 2 * rho * s1 * s2)
@@ -2193,20 +2216,20 @@ def frontier_data(m1=0.08, s1=0.20, m2=0.12, s2=0.30, rho=0.2):
 
 @fig("math-part5.html", "m5-frontier")
 def fig_m5_frontier():
-    w, mu, sg, wmin, mu_min, s_min = frontier_data()
+    P = FRONTIER_M5; w, mu, sg, wmin, mu_min, s_min = frontier_data(**P)
     Wd, H = 560, 310
-    out = svg_open(Wd, H, f"Efficient Frontier รูปกระสุนจากหุ้นสองตัว ขอบบนคือเส้นที่ดีที่สุด จุด min-variance ที่ σ = {s_min*100:.1f}% ผลตอบแทน {mu_min*100:.1f}%")
-    title(out, Wd, "Efficient Frontier — ส่วนผสมสองหุ้นวางเป็นรูปกระสุน ขอบบนซ้ายคือ \"ดีที่สุด\" ในแต่ละระดับ σ",
-          f"A: μ 8% σ 20% · B: μ 12% σ 30% · ρ = 0.2 · Min-Variance ที่ w_A = {wmin*100:.0f}%: σ = {s_min*100:.1f}% μ = {mu_min*100:.1f}% · ขอบล่างแย่กว่าเสมอ")
-    (sx, sy), _ = _std_frame(out, Wd, H, [(0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%"), (0.35, "35%")], [(0.06, "6%"), (0.08, "8%"), (0.10, "10%"), (0.12, "12%"), (0.14, "14%")], "ความเสี่ยง σ →", "ผลตอบแทนคาดหวัง μ")
+    out = svg_open(Wd, H, f"Efficient Frontier จากหุ้นสองตัวแบบห้าม short ขอบบนคือเส้นที่ดีที่สุด จุด min-variance ถือ A {wmin:.0%} ที่ σ = {s_min*100:.2f}% ผลตอบแทน {mu_min*100:.2f}% ต่ำกว่าถือ B ล้วน")
+    title(out, Wd, "Efficient Frontier — ส่วนผสมสองหุ้นโค้งเป็นกระสุน ขอบบนคือ \"ดีที่สุด\" ในแต่ละระดับ σ",
+          f"A: μ {P['m1']:.0%} σ {P['s1']:.0%} · B: μ {P['m2']:.0%} σ {P['s2']:.0%} · ρ = {P['rho']} · ห้าม short · Min-Variance ที่ w_A = {wmin*100:.2f}%: σ = {s_min*100:.2f}% μ = {mu_min*100:.2f}%")
+    (sx, sy), _ = _std_frame(out, Wd, H, [(0.06, "6%"), (0.10, "10%"), (0.14, "14%"), (0.18, "18%"), (0.22, "22%")], [(0.05, "5%"), (0.06, "6%"), (0.07, "7%"), (0.08, "8%"), (0.09, "9%"), (0.10, "10%"), (0.11, "11%")], "ความเสี่ยง σ →", "ผลตอบแทนคาดหวัง μ")
     up = mu >= mu_min; lo_ = mu <= mu_min
     polyline(out, [(sx(a), sy(b)) for a, b in zip(sg[lo_], mu[lo_])], INK2, 1.8, dash="6 3", shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(sg[up], mu[up])], BLUE, 2.8)
-    _dot(out, sx(0.20), sy(0.08), INK2, 4); _txt(out, sx(0.20) + 8, sy(0.08) + 14, "หุ้น A (100% A)", INK2, "start", size=9)
-    _dot(out, sx(0.30), sy(0.12), INK2, 4); _txt(out, sx(0.30) + 8, sy(0.12) + 14, "หุ้น B (100% B)", INK2, "start", size=9)
-    _dot(out, sx(s_min), sy(mu_min)); _txt(out, sx(s_min) + 8, sy(mu_min) + 4, f"Min-Variance (σ {s_min*100:.1f}%)", PURPLE, "start", bold=True)
-    _txt(out, sx(0.20), sy(0.126), "Efficient Frontier (ขอบบน)", BLUE, "start", bold=True)
-    _txt(out, sx(0.235), sy(0.068), "ขอบล่าง = เสี่ยงเท่ากันแต่ได้น้อยกว่า — ไม่มีใครเลือก", INK2, "start", size=9, italic=True)
+    _dot(out, sx(P["s1"]), sy(P["m1"]), INK2, 4); _txt(out, sx(P["s1"]) - 8, sy(P["m1"]) - 8, "หุ้น A (100% A)", INK2, "end", size=9)
+    _dot(out, sx(P["s2"]), sy(P["m2"]), INK2, 4); _txt(out, sx(P["s2"]) - 8, sy(P["m2"]) + 14, "หุ้น B (100% B)", INK2, "end", size=9)
+    _dot(out, sx(s_min), sy(mu_min)); _txt(out, sx(s_min) + 10, sy(mu_min) + 4, f"Min-Variance (σ {s_min*100:.2f}%)", PURPLE, "start", bold=True)
+    _txt(out, sx(0.155), sy(0.083), "Efficient Frontier (ขอบบน)", BLUE, "start", bold=True)
+    _txt(out, sx(0.118), sy(0.053), "ขอบล่างสั้น ๆ จาก B ถึงจุด min-var = เสี่ยงกว่าแต่ได้น้อยกว่า ไม่มีใครเลือก", INK2, "start", size=9, italic=True)
     out.append("</svg>")
     NUMS["m5-frontier"] = dict(wmin=wmin, mu_min=mu_min, s_min=s_min)
     return "\n".join(out)

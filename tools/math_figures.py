@@ -1751,8 +1751,8 @@ expect(_T2, "FF3 CAPM", f"ควรได้ 3% + 1.0 × 6% = {_capm_fund:.0%} �
 expect(_T2, "FF3", f"= {_ff3_fund:.1%} → alpha = <strong>+{0.12-_ff3_fund:.1%}</strong>")
 assert (0.12 - _ff3_fund) / (0.12 - _capm_fund) < 0.4, "alpha ต้องหายไปเกือบสองในสาม"
 # ตัวอย่าง 2 สินทรัพย์ของ 2·B ที่อ้างถึง: min-variance weight
-_wA = (0.3 ** 2 - 0.2 * 0.2 * 0.3) / (0.2 ** 2 + 0.3 ** 2 - 2 * 0.2 * 0.2 * 0.3)
-expect(_T2, "อ้าง 2·B min var", f"พอร์ตเสี่ยงต่ำสุด {_wA:.0%} ที่ตัวแรก")
+_F5 = _mf.FRONTIER_M5; _fd5 = _mf.frontier_data(**_F5); _wA = _fd5[3]
+expect(_T2, "อ้าง 2·B min var", f"μ {_F5['m1']:.0%}/{_F5['m2']:.0%} σ {_F5['s1']:.0%}/{_F5['s2']:.0%} ρ {_F5['rho']:g} → พอร์ตเสี่ยงต่ำสุดถือตัวแรก {_wA:.0%} ได้ σ {_fd5[5]:.2%}")
 print(f"ทฤษฎี II  σ(ρ=0)={_sig2(0):.2%} ρ=0.5 {_sig2(.5):.2%} · CAPM {_cp:.1%} · FF3 {_ff3_fund:.1%} · wA {_wA:.2%}")
 
 
@@ -2011,6 +2011,77 @@ expect(_T4, "Black Monday", f"การร่วง 20% คือ log −{-_lr:.
 assert abs(224.84 / 282.70 - 1 + 0.2047) < 0.001
 print(f"ทฤษฎี IV  breakeven {0.2/math.sqrt(252):.4%} · p* {_bt['p']} C {_bt['C']} Δ {_bt['delta']} B {_bt['borrow']} · put {_pf[0]:.4f}/{_pk[0]:.4f} · BM z {_lr/(0.2/math.sqrt(252)):.2f}")
 
+
+
+# ── 2·B (math-part5) — LP · dual · B&B · gradient descent · Markowitz ───────
+_M5 = "math-part5.html"
+from fractions import Fraction as _Fr
+_lpc, _lpz = _mf.lp_data(); _lpb = max(range(len(_lpz)), key=lambda i: _lpz[i]); _x1, _x2 = _lpc[_lpb]
+expect(_M5, "LP มุมดีสุด", f"<td>({_mf._fr(_x1)}, {_mf._fr(_x2)})</td><td>80/3 + 25/3 = 105/3 = <strong>{_mf._fr(_lpz[_lpb])}</strong></td>")
+expect(_M5, "LP มุมอื่น", f"8(0) + 5(5) = {_mf._fr(8 * 0 + 5 * 5)}</td>")
+expect(_M5, "LP มุม (4,0)", f"8(4) + 5(0) = {_mf._fr(_Fr(32))}</td>")
+expect(_M5, "LP จุดตัด", f"x₁ = {_mf._fr(_x1)} ≈ {float(_x1):.2f}")
+expect(_M5, "LP จุดตัด x₂", f"x₂ = 5 − 10/3 = {_mf._fr(_x2)} ≈ {float(_x2):.2f}")
+# dual: 5y1 + y2 = 8, 2y1 + y2 = 5
+_y1 = _Fr(8 - 5, 5 - 2); _y2 = 8 - 5 * _y1
+expect(_M5, "shadow y", f"y₁ = {_mf._fr(_y1)} ,  แทนกลับ  y₂ = 8 − 5 = {_mf._fr(_y2)}")
+_lpc21, _lpz21 = _mf.lp_data(b=(21, 5)); _i21 = max(range(len(_lpz21)), key=lambda i: _lpz21[i])
+expect(_M5, "งบ 21", f"จุดตัดใหม่ ({_mf._fr(_lpc21[_i21][0])}, {_mf._fr(_lpc21[_i21][1])}), z = 88/3 + 20/3 = 108/3 = <strong>{_mf._fr(_lpz21[_i21])}</strong> = 35 + {_mf._fr(_y1)}")
+# ช่วงที่ราคาเงาใช้ได้: มุมตัดยังอยู่ใน x ≥ 0
+_blo = 5 * 2; _bhi = 5 * 5  # x₁=(b−10)/3 ≥ 0 และ x₂=(25−b)/3 ≥ 0
+_clo = _Fr(20, 5); _chi = _Fr(20, 2)
+expect(_M5, "ช่วงราคาเงา", f"งบ ฿{_blo}–{_bhi} (ลิมิต 5 สัญญาเท่าเดิม) และลิมิต {_mf._fr(_clo)}–{_mf._fr(_chi)} สัญญา")
+_lpc30, _lpz30 = _mf.lp_data(b=(30, 5)); _i30 = max(range(len(_lpz30)), key=lambda i: _lpz30[i])
+expect(_M5, "✍️ งบ 30", f"คำตอบ = <strong>({_mf._fr(_lpc30[_i30][0])},{_mf._fr(_lpc30[_i30][1])}) payoff {_mf._fr(_lpz30[_i30])}</strong>")
+# B&B: กิ่ง x₁ ≤ 3 และ x₁ ≥ 4 — แก้ LP ของกิ่งโดยเพิ่มขอบ x₁ ≤ 3 / −x₁ ≤ −4
+_bl, _zl = _mf.lp_data(A=((5, 2), (1, 1), (1, 0)), b=(20, 5, 3)); _br, _zr = _mf.lp_data(A=((5, 2), (1, 1), (-1, 0)), b=(20, 5, -4))
+expect(_M5, "B&B ซ้าย", f"z = 8(3)+5(2) = {_mf._fr(max(_zl))}")
+expect(_M5, "B&B ขวา", f"→ (4, 0)   z = {_mf._fr(max(_zr))}")
+expect(_M5, "B&B คำตอบ", f"<strong>(3, 2) payoff {_mf._fr(max(max(_zl), max(_zr)))}</strong>")
+# gradient descent (x−3)² + 2 · α 0.1
+_gd = _mf.gd_data()
+expect(_M5, "GD ตาราง", f"0 − 0.1(−6) = {_gd[1]:.3f}</td>")
+expect(_M5, "GD ตาราง 2", f"0.6 − 0.1(−4.8) = {_gd[2]:.3f}</td>")
+expect(_M5, "GD ตาราง 3", f"1.08 − 0.1(−3.84) = {_gd[3]:.3f}</td>")
+expect(_M5, "GD ตาราง 4", f"<td>{_gd[3]:.3f}</td><td class=\"nw\">−{abs(2 * (_gd[3] - 3)):.2f}</td><td class=\"nw\">→ {_gd[4]:.3f} …</td>")
+expect(_M5, "GD 8 ก้าว", f"ระยะห่างจาก 3 หดเหลือ {1 - 2 * 0.1:g} เท่าทุกก้าว (8 ก้าวได้ x ≈ {_gd[8]:.2f})")
+def _gd_seq(a, n=3):
+    x = 0.0; out = []
+    for _ in range(n): x = x - a * 2 * (x - 3); out.append(x)
+    return out
+_g1, _g11 = _gd_seq(1.0), _gd_seq(1.1)
+expect(_M5, "GD α=1", f"α = 1 เด้งไปมา 0 → {_g1[0]:g} → {_g1[1]:g} → {_g1[2]:g}")
+expect(_M5, "GD α=1.1", f"α = 1.1 ระยะห่างโต {abs(1 - 2 * 1.1):g} เท่าทุกก้าว (0 → {_g11[0]:.1f} → −{abs(_g11[1]):.2f} → {_g11[2]:.2f} …)")
+# Markowitz เลขชุด §4.2½ (ภาพ m5-frontier ใช้ชุดเดียวกัน)
+_P5 = _mf.FRONTIER_M5; _wf, _muf, _sgf, _wm, _mum, _sm = _mf.frontier_data(**_P5)
+_c5 = _P5["rho"] * _P5["s1"] * _P5["s2"]
+expect(_M5, "cov", f"= 0.2 × 0.20 × 0.10 = {_c5:g}")
+expect(_M5, "w สูตร", f"= {_P5['s2']**2 - _c5:.3f} / {_P5['s1']**2 + _P5['s2']**2 - 2 * _c5:.3f}")
+expect(_M5, "w_B", f"w_B = 1 − {_wm:.4f} = <b>{1 - _wm:.4f}</b>")
+_t1 = _wm**2 * _P5["s1"]**2; _t2 = (1 - _wm)**2 * _P5["s2"]**2; _t3 = 2 * _wm * (1 - _wm) * _c5
+expect(_M5, "σ² พจน์", f"= {_t1:.6f} + {_t2:.6f} + {_t3:.6f} = {_t1 + _t2 + _t3:.6f}")
+expect(_M5, "ρ วิกฤต", f"<strong>ρ &lt; σ_B/σ_A</strong> (= 0.10/0.20 = {_P5['s2'] / _P5['s1']:g} ที่นี่)")
+def _wmin(rho):
+    c = rho * _P5["s1"] * _P5["s2"]; return (_P5["s2"]**2 - c) / (_P5["s1"]**2 + _P5["s2"]**2 - 2 * c)
+expect(_M5, "ρ 0.6 short", f"ถ้า ρ = 0.6 สูตรให้ w_A = {_wmin(0.6):.1%}".replace("-", "−"))
+expect(_M5, "❌ ρ 0.6", f"ถ้า ρ = 0.6 สูตรปิดให้ w_A = {_wmin(0.6):.1%} (ต้อง short A)".replace("-", "−"))
+_wn = _wmin(-0.5); _fdn = _mf.frontier_data(**dict(_P5, rho=-0.5))
+expect(_M5, "✍️ ρ −0.5", f"w ≈ [{_wn:.4f}, {1 - _wn:.4f}] · σ ≈ <strong>{_fdn[5]:.2%}</strong> ผลตอบแทน {_fdn[4]:.2%}")
+for _r in (0.07, 0.08, 0.09, 0.10):
+    _w = (_r - _P5["m2"]) / (_P5["m1"] - _P5["m2"]); _s = (_w**2 * _P5["s1"]**2 + (1 - _w)**2 * _P5["s2"]**2 + 2 * _w * (1 - _w) * _c5) ** 0.5
+    expect(_M5, f"frontier r*={_r}", f"sigma={_s:.4f}")
+from scipy.optimize import brentq as _bq5
+_s15 = lambda w: (w**2 * _P5["s1"]**2 + (1 - w)**2 * _P5["s2"]**2 + 2 * w * (1 - w) * _c5) ** 0.5 - 0.15
+_w15 = _bq5(_s15, _wm, 1); _m15 = _w15 * _P5["m1"] + (1 - _w15) * _P5["m2"]
+expect(_M5, "✍️ σ15% μ", f"ให้ผลตอบแทนได้ราว {_m15:.2%}")
+expect(_M5, "✍️ σ15% เฉลย", f"(8% แทน {_m15:.2%}) · จุดบนเส้นที่ σ 15% คือถือ A ราว {_w15:.1%} · ย้ายไปจุดนั้นได้ผลตอบแทนเพิ่มราว {_m15 - 0.08:.2%}")
+# λ₁ = dσ²/dr* ที่ r* = 8%
+_v5 = lambda r: (lambda w: w**2 * _P5["s1"]**2 + (1 - w)**2 * _P5["s2"]**2 + 2 * w * (1 - w) * _c5)((r - _P5["m2"]) / (_P5["m1"] - _P5["m2"]))
+_lam = (_v5(0.08 + 1e-7) - _v5(0.08 - 1e-7)) / 2e-7
+expect(_M5, "λ₁", f"ที่ r* = 8% ได้ λ₁ = {_lam:.2f}")
+expect(_M5, "✍️ λ", f"σ² = {_v5(0.08):.4f} · ถ้าดัน r* เป็น 8.1%")
+expect(_M5, "✍️ λ เฉลย", f"λ₁ × 0.001 = <strong>{_lam * 0.001:.5f}</strong> · คิดตรงได้ w_A = {(0.081 - 0.06) / 0.04:.3f} และ σ² = {_v5(0.081):.5f} เพิ่มจริง {_v5(0.081) - _v5(0.08):.5f}")
+print(f"2·B LP z*={_mf._fr(_lpz[_lpb])} y=({_y1},{_y2}) · GD x8={_gd[8]:.4f} · w_min={_wm:.4f} σ={_sm:.4%} · ρ−0.5 {_fdn[5]:.2%} · σ15 μ {_m15:.2%} · λ {_lam:.3f}")
 
 
 def main():
