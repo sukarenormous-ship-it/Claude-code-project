@@ -805,7 +805,7 @@ print(f"Arb §2.3   gross={_steps[0][1]:.2f} ค่าใช้จ่ายร�
 expect("arb-part1.html", "§2.3 กฎทอง", f"Arb ที่ดูเหมือนกำไร ฿{_steps[0][1]:.2f} อาจขาดทุนจริง ฿{abs(_net):.2f} หลังหักค่าใช้จ่าย")
 
 
-# ── เล่ม 1 Part IV §11.3 Black-Scholes — ภาพกายวิภาคต้องใช้เลขชุดเดียวกับตัวอย่างในบท ──────
+# ── เล่ม 1 Part V §11.3 Black-Scholes — ภาพกายวิภาคต้องใช้เลขชุดเดียวกับตัวอย่างในบท ──────
 _d1, _d2, _Nd1, _Nd2, _disc, _t1, _t2, _C = _mf.bs_anatomy_data()
 print(f"เล่ม1 §11.3 d1={_d1:.3f} d2={_d2:.3f} N(d1)={_Nd1:.4f} N(d2)={_Nd2:.4f} C={_C:.3f}")
 expect("math-part7.html", "§11.3 d₁", f"d₁ = (0 + 0.08125) / 0.25 = <b>{_d1:.3f}</b>")
@@ -2120,6 +2120,41 @@ expect(_M1, "ATM delta 1 ปี", f"1 ปี σ 25% r 5% ≈ {_nm1.cdf(_d1):.2f}
 # straddle: Call 4 + Put 3 ที่ K 100
 expect(_M1, "straddle BE", f"S = 100 − {4 + 3} = <strong>{100 - 7}</strong> และ S = 100 + {4 + 3} = <strong>{100 + 7}</strong>")
 print(f"เล่ม 1 Part I  F {_F1:.4f} ส่วนต่าง {_g1:.4f} ({_g1/50:.3%}) · C {_C1:.4f} P {_P1:.4f} · Δ ATM {_nm1.cdf(_d1):.3f}")
+
+
+# ── เล่ม 1 Part V (math-part7) — ค่าที่เขียนในร้อยแก้ว (ผลโค้ดตรวจด้วยการรันจริงอยู่แล้ว) ──
+_M7 = "math-part7.html"
+from scipy.stats import norm as _nm7
+def _bs7(S=100, K=100, r=0.05, s=0.25, T=1.0):
+    d1 = (math.log(S / K) + (r + s * s / 2) * T) / (s * math.sqrt(T)); d2 = d1 - s * math.sqrt(T)
+    C = S * _nm7.cdf(d1) - K * math.exp(-r * T) * _nm7.cdf(d2)
+    return d1, d2, C, _nm7.cdf(d1)
+_b7 = _bs7(); _C7, _Nd17, _Nd27, _d17 = _b7[2], _b7[3], _nm7.cdf(_b7[1]), _b7[0]
+expect(_M7, "N(d) อ่านความหมาย", f"N(d₂)={_Nd27:.2f} คือ")
+expect(_M7, "N(d₂) %", f"ประมาณ {_Nd27:.0%}")
+expect(_M7, "N(d₁) Delta", f"N(d₁)={_Nd17:.2f} คือ Delta")
+expect(_M7, "C ปัด", f"= <b>{_C7:.2f} บาท</b>   (ค่าละเอียด = {_C7:.3f})")
+expect(_M7, "ตาราง BS", f'<td class="nw"><strong>{_C7:.3f}</strong></td>')
+_ph7 = _nm7.pdf(_d17)
+expect(_M7, "Gamma ร้อยแก้ว", f"Gamma +{_ph7 / (100 * 0.25):.3f}")
+expect(_M7, "Vega ร้อยแก้ว", f"Vega +{100 * _ph7 / 100:.2f}")
+expect(_M7, "Theta ร้อยแก้ว", f"Theta −{abs((-(100 * _ph7 * 0.25) / 2 - 0.05 * 100 * math.exp(-0.05) * _Nd27) / 365):.2f}")
+expect(_M7, "Rho ร้อยแก้ว", f"Rho +{100 * math.exp(-0.05) * _Nd27 / 100:.2f}")
+expect(_M7, "กฎนิ้วโป้ง", f"= 0.4 × 0.25 × 1 × 100 = <strong>{0.4 * 0.25 * 100:.0f} บาท</strong>")
+expect(_M7, "กฎนิ้วโป้ง ห่าง", f"ต่ำกว่าค่าจริง {_C7:.1f} อยู่ ~{(_C7 - 10) / _C7:.0%}")
+_o7 = _bs7(K=110)
+expect(_M7, "✍️ K=110", f"d₁ ≈ −{abs(_o7[0]):.3f}, d₂ ≈ −{abs(_o7[1]):.3f}, C ≈ {_o7[2]:.2f} บาท, Delta ≈ {_o7[3]:.3f}")
+expect(_M7, "Gamma peak", f"≈ {100 * math.exp(-(0.05 + 1.5 * 0.25 ** 2)):.1f} สำหรับเลขชุดนี้")
+_P7 = _C7 - 100 + 100 * math.exp(-0.05)
+expect(_M7, "✍️ Put parity", f"ควรได้ราคาใกล้ <strong>{_P7:.2f}</strong>")
+_rp = np.random.default_rng(42); _Zp = _rp.standard_normal(100_000)
+_pp = math.exp(-0.05) * np.maximum(100 - 100 * np.exp((0.05 - 0.25 ** 2 / 2) + 0.25 * _Zp), 0)
+_pm, _pse = _pp.mean(), _pp.std(ddof=1) / math.sqrt(100_000)
+expect(_M7, "✍️ Put MC", f"ได้ราว <strong>{_pm:.3f} ± {_pse:.3f}</strong> · ห่าง {_P7:.3f} ราว {(_pm - _P7) / _pse:.1f} เท่าของ se")
+expect(_M7, "EM 1 ก้าว %", f"ผิดไป −{0.2749:.2f} บาท</strong> จากราคา {_C7:.2f} คือ <strong>−{0.2749 / 12.2741:.1%}</strong>")
+expect(_M7, "EM หด", f"(1 → 4 ก้าวหดไปราว {0.2749 / 0.0206:.0f} เท่า)")
+expect(_M7, "antithetic", f"แม่นขึ้น ~{1 - 0.0437 / 0.0585:.0%} ฟรี")
+print(f"เล่ม1 Part V  Γ {_ph7/25:.4f} · K110 C {_o7[2]:.3f} · S* {100*math.exp(-(0.05+1.5*0.0625)):.1f} · Put MC {_pm:.3f}±{_pse:.3f}")
 
 
 def main():

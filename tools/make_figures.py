@@ -2330,7 +2330,8 @@ def fig_m6_random_walk():
     return "\n".join(out)
 
 
-def mc_paths_data(S0=100.0, K=100.0, r=0.05, sg=0.20, T=1.0, n=20, steps=120, seed=3):
+# เลขชุดเดียวกับตัวอย่างทั้งบท (math-part7 §11.3: S₀ = K = 100 · r 5% · σ 25% · T 1)
+def mc_paths_data(S0=100.0, K=100.0, r=0.05, sg=0.25, T=1.0, n=20, steps=120, seed=3):
     rng = np.random.default_rng(seed); dt = T / steps
     Z = rng.standard_normal((n, steps))
     logS = np.log(S0) + np.cumsum((r - sg * sg / 2) * dt + sg * np.sqrt(dt) * Z, axis=1)
@@ -2342,11 +2343,12 @@ def mc_paths_data(S0=100.0, K=100.0, r=0.05, sg=0.20, T=1.0, n=20, steps=120, se
 @fig("math-part7.html", "m7-mc-paths")
 def fig_m7_mc_paths():
     S, pay, mc, bs = mc_paths_data(); n, steps = S.shape[0], S.shape[1] - 1
+    import inspect; _pp = {k: v.default for k, v in inspect.signature(mc_paths_data).parameters.items()}
     n_itm = int((pay > 0).sum())
     Wd, H = 560, 320
-    out = svg_open(Wd, H, f"เส้นทางราคาหุ้น GBM 20 เส้นจาก S₀ = 100 หนึ่งปี {n_itm} เส้นจบเหนือ K = 100 (ITM) ที่เหลือจบต่ำกว่าได้ payoff 0")
+    out = svg_open(Wd, H, f"เส้นทางราคาหุ้น GBM {n} เส้นจาก S₀ = 100 หนึ่งปี {n_itm} เส้นจบเหนือ K = 100 (ITM) ที่เหลือจบต่ำกว่าได้ payoff 0")
     title(out, Wd, "Monte Carlo — จำลองเส้นทางราคาหลายเส้น: จบเหนือ K ได้ S − K · จบต่ำกว่าได้ 0",
-          f"GBM risk-neutral · S₀ = K = 100 · r = 5% · σ = 20% · T = 1 · ITM {n_itm} เส้น · เฉลี่ยคิดลด {mc:.2f} (BS {bs:.2f})")
+          f"GBM risk-neutral · S₀ = K = 100 · r = {_pp['r']:.0%} · σ = {_pp['sg']:.0%} · T = 1 · ITM {n_itm} เส้น · เฉลี่ยคิดลด {mc:.2f} (BS {bs:.2f})")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "0"), (0.25, "0.25"), (0.5, "0.5"), (0.75, "0.75"), (1.0, "T = 1 ปี")], [(60, "60"), (80, "80"), (100, "100"), (120, "120"), (140, "140"), (160, "160")], "เวลา", "S")
     t = np.linspace(0, 1, steps + 1)
     out.append(f'<line x1="{x0}" y1="{sy(100):.1f}" x2="{x0+w}" y2="{sy(100):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>'); _txt(out, x0 + 4, sy(100) - 5, "K = 100", PURPLE, "start", size=9, bold=True)
@@ -2355,7 +2357,7 @@ def fig_m7_mc_paths():
         polyline(out, [(sx(a), sy(b)) for a, b in zip(t, S[i])], col, 1.2, shadow=False)
     _txt(out, sx(1.0) - 4, sy(150), f"จบเหนือ K → ITM ({n_itm} เส้น) payoff = S − K", GREEN, "end", size=9, bold=True)
     _txt(out, sx(1.0) - 4, sy(66), f"จบต่ำกว่า K → payoff 0 ({n - n_itm} เส้น)", RED, "end", size=9, bold=True)
-    _txt(out, x0 + w, H - 8, "จำลองหมื่นเส้นทาง → เฉลี่ย payoff → คิดลดด้วย e⁻ʳᵀ = ราคา option", INK2, "end", size=9, italic=True)
+    _txt(out, x0 + w, H - 8, f"{n} เส้นยังแกว่งมาก ({mc:.2f} เทียบ {bs:.2f}) → จำลองหมื่นเส้นทาง → เฉลี่ย payoff → คิดลดด้วย e⁻ʳᵀ", INK2, "end", size=9, italic=True)
     out.append("</svg>")
     NUMS["m7-mc-paths"] = dict(n_itm=n_itm, mc=mc, bs=bs)
     return "\n".join(out)
@@ -3602,7 +3604,7 @@ def fig_m7_bs_anatomy():
     darrow(out, 280, 152, 280, 170, INK2, 2.0)
     dbox(out, 170, 176, 220, 46, [(f"= C = {term1:.2f} − {term2:.2f} = {C:.2f}", 12.5, PURPLE, True)], col=PURPLE, fill=0.10)
     _txt(out, Wd / 2, 244, "N(d₂) = โอกาส (risk-neutral) ที่จะได้ใช้สิทธิ์ · N(d₁) = Delta ไม่ใช่ความน่าจะเป็น", INK, "middle", size=9.5, bold=True)
-    _txt(out, Wd / 2, 262, "S₀ มาจาก Part I · N(·) มาจาก Part II · d₁ ใช้แคลคูลัส Part III · การคิดลดมาจาก Part I", INK2, "middle", size=9, italic=True)
+    _txt(out, Wd / 2, 262, "S₀ มาจาก Part I · N(·) มาจาก Part II · σ²/2 ใน d₁ มาจาก Ito Part IV · การคิดลดมาจาก Part I", INK2, "middle", size=9, italic=True)
     _txt(out, Wd / 2, 280, f"ATM แต่ N(d₁) = {Nd1:.4f} ไม่ใช่ 0.5 เพราะดอกเบี้ยและ σ²/2 ดัน d₁ ให้เป็นบวก", INK2, "middle", size=9, italic=True)
     out.append("</svg>")
     NUMS["m7-bs-anatomy"] = dict(d1=d1, d2=d2, Nd1=Nd1, Nd2=Nd2, term1=term1, term2=term2, C=C)
