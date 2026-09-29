@@ -2400,7 +2400,7 @@ def fig_m8_anscombe():
     title(out, Wd, "Anscombe's quartet — สถิติเท่ากันทั้ง 4 ชุด แต่สิ่งที่ข้อมูลบอกคนละเรื่อง",
           f"ทุกชุด: x̄ = {rows[0]['xm']:.1f} · ȳ = {rows[0]['ym']:.2f} · เส้น OLS y = {rows[0]['a']:.2f} + {rows[0]['b']:.2f}x · ρ = {rows[0]['r']:.3f} — ดูตารางไม่พอ ต้องวาด")
     names = ["ชุดที่ 1 — ปกติดี", "ชุดที่ 2 — จริง ๆ เป็นเส้นโค้ง", "ชุดที่ 3 — จุดหลุด 1 จุดลากเส้น", "ชุดที่ 4 — x เท่ากันหมดยกเว้น 1"]
-    notes = ["", "เส้นตรงจับรูปโค้งไม่ได้", "จุดเดียวคุมทั้งเส้น (leverage)", "จุดเดียวสร้างความชันทั้งหมด"]
+    notes = ["", "เส้นตรงจับรูปโค้งไม่ได้", "outlier 1 จุดเอียงเส้นทั้งเส้น", "จุดเดียวสร้างความชันทั้งหมด"]
     pw, ph = 215, 130
     for i, ((x, y), r_) in enumerate(zip(sets, rows)):
         cx = 60 + (i % 2) * 265; cy = 62 + (i // 2) * 175
@@ -2428,10 +2428,11 @@ def corr_gallery_data(n=80, seed=21):
 @fig("math-part8.html", "m8-corr-gallery")
 def fig_m8_corr_gallery():
     x, ys, rhos = corr_gallery_data()
+    rf = lambda v: (f"{v:+.2f}" if abs(v) >= 0.005 else "0.00").replace("-", "−")  # กัน "−0.00" จากเลขทศนิยมคลาด
     Wd, H = 560, 270
     out = svg_open(Wd, H, "แกลเลอรี scatter 5 ใบ: ρ = +1 ตรงกันเป๊ะ · +0.7 ไปด้วยกัน · 0 ไม่เกี่ยวกัน · −0.7 สวนทาง · รูปตัว U ที่ ρ ≈ 0 แต่สัมพันธ์ชัด", multipanel=True)
     title(out, Wd, "Correlation ρ แต่ละค่าหน้าตาเป็นอย่างไร — และกับดักตัว U ที่ ρ ≈ 0 แต่สัมพันธ์ชัด",
-          f"จำลอง 80 จุดต่อใบ · ρ ที่วัดได้จริง: {rhos[0]:+.2f} · {rhos[1]:+.2f} · {rhos[2]:+.2f} · {rhos[3]:+.2f} · {rhos[4]:+.2f} (ตัว U) — ρ วัดได้แต่ความเป็นเส้นตรง")
+          f"จำลอง 80 จุดต่อใบ · ρ ที่วัดได้จริง: {rf(rhos[0])} · {rf(rhos[1])} · {rf(rhos[2])} · {rf(rhos[3])} · {rf(rhos[4])} (ตัว U) — ρ วัดได้แต่ความเป็นเส้นตรง")
     names = ["ρ = +1.0", "ρ = +0.7", "ρ = 0", "ρ = −0.7", "ρ ≈ 0 (!)"]; subs = ["ตรงกันเป๊ะ", "ไปด้วยกัน", "ไม่เกี่ยวกัน", "สวนทาง", "แต่สัมพันธ์ชัด!"]
     pw, ph = 88, 120
     for i, y in enumerate(ys):
@@ -2502,6 +2503,10 @@ def fig_m8_heatmap():
         for j, v in enumerate(M[i]):
             out.append(f'<rect x="{x0 + j*cell}" y="{y0 + i*cell}" width="{cell}" height="{cell}" fill="{_heat_color(v)}" stroke="#fff" stroke-width="1.5"/>')
             _txt(out, x0 + j * cell + cell / 2, y0 + i * cell + cell / 2 + 3.5, f"{v:.2f}".replace("-", "−"), "#fff" if abs(v) > 0.6 else INK, "middle", size=9.5, bold=abs(v) > 0.6)
+    # กรอบม่วงรอบคู่ที่สัมพันธ์สูงสุดนอกแนวทแยง (ข้อความในบทอ้าง "กรอบม่วง")
+    n_ = len(names); bi, bj = max(((i, j) for i in range(n_) for j in range(n_) if i < j), key=lambda ij: M[ij[0]][ij[1]])
+    for (i, j) in ((bi, bj), (bj, bi)):
+        out.append(f'<rect x="{x0 + j*cell + 1.5}" y="{y0 + i*cell + 1.5}" width="{cell - 3}" height="{cell - 3}" fill="none" stroke="{PURPLE}" stroke-width="2.6"/>')
     # แถบสี
     bx, by = 400, 90
     for k in range(20):
@@ -2521,11 +2526,14 @@ def hist_bins_data(n=3000, seed=4):
 @fig("math-part8.html", "m8-hist-bins")
 def fig_m8_hist_bins():
     d = hist_bins_data()
+    q75, q25 = np.percentile(d, [75, 25]); fd = int(np.ceil((d.max() - d.min()) / (2 * (q75 - q25) * len(d) ** (-1 / 3))))
+    stg = int(np.ceil(np.log2(len(d)) + 1)); sq = int(round(np.sqrt(len(d))))
+    NUMS["m8-hist-bins"] = dict(fd=fd, sturges=stg, sqrt=sq)
     Wd, H = 560, 250
-    out = svg_open(Wd, H, "histogram ข้อมูลชุดเดียวกัน 3,000 จุด ที่จำนวนแท่ง 6, 18 และ 45 ให้ภาพต่างกัน: หยาบไป พอดี ฟันหลอ", multipanel=True)
+    out = svg_open(Wd, H, f"histogram ข้อมูลชุดเดียวกัน {len(d):,} จุด ที่จำนวนแท่ง 6, 18 และ 45 ให้ภาพต่างกัน: หยาบไป พอดีกับภาพขนาดนี้ และหยักจนตาจับรูปยาก", multipanel=True)
     title(out, Wd, "ข้อมูลชุดเดียวกัน 3 ภาพ — จำนวนแท่งเปลี่ยนข้อสรุปได้",
-          "Normal(0, 1) จำลอง 3,000 จุด · 6 แท่งเห็นแค่ \"มียอดเดียว\" · 18 แท่งเห็นระฆังชัด · 45 แท่งฟันหลอ noise บังรูปทรง")
-    names = ["6 แท่ง — หยาบไป", "18 แท่ง — พอดี", "45 แท่ง — ฟันหลอ"]; subs = ["เห็นแค่ \"มียอดเดียว\"", "เห็นรูประฆังชัด", "noise บังรูปทรง"]
+          "Normal(0, 1) จำลอง 3,000 จุด · 6 แท่งเห็นแค่ \"มียอดเดียว\" · 18 แท่งเห็นระฆังชัด · 45 แท่งในภาพเล็กนี้เริ่มหยัก")
+    names = ["6 แท่ง — หยาบไป", "18 แท่ง — พอดีภาพนี้", "45 แท่ง — หยัก"]; subs = ["เห็นแค่ \"มียอดเดียว\"", "เห็นรูประฆังชัด", "ภาพแคบ แท่งเล็กจนตาจับรูปยาก"]
     pw, ph = 150, 120
     for i, nb in enumerate((6, 18, 45)):
         cx = 30 + i * 178; cy = 62
@@ -2536,7 +2544,7 @@ def fig_m8_hist_bins():
             px0 = cx + (a + 4) / 8 * pw; px1 = cx + (b + 4) / 8 * pw
             out.append(f'<rect x="{px0+0.5:.1f}" y="{cy + ph - c*ph:.1f}" width="{max(px1-px0-1, 0.8):.1f}" height="{c*ph:.1f}" fill="{BLUE if i == 1 else INK2}" opacity="0.7"/>')
         _txt(out, cx + pw / 2, cy + ph + 14, subs[i], INK2, "middle", size=9)
-    _txt(out, Wd / 2, H - 10, "กฎหยาบ ๆ: จำนวนแท่ง ≈ √n หรือกฎ Freedman–Diaconis · ลองหลายค่าเสมอก่อนสรุปรูปทรง", INK2, "middle", size=9, italic=True)
+    _txt(out, Wd / 2, H - 10, f"สูตรตั้งต้นให้คำตอบต่างกันมาก (n = {len(d):,}: Sturges ≈ {stg} · Freedman–Diaconis ≈ {fd} · √n ≈ {sq}) และยังขึ้นกับความกว้างภาพ · ลองหลายค่าเสมอ", INK2, "middle", size=9, italic=True)
     out.append("</svg>")
     return "\n".join(out)
 

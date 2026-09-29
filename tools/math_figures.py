@@ -2157,6 +2157,41 @@ expect(_M7, "antithetic", f"แม่นขึ้น ~{1 - 0.0437 / 0.0585:.0%} 
 print(f"เล่ม1 Part V  Γ {_ph7/25:.4f} · K110 C {_o7[2]:.3f} · S* {100*math.exp(-(0.05+1.5*0.0625)):.1f} · Put MC {_pm:.3f}±{_pse:.3f}")
 
 
+# ── เล่ม 2 · C (math-part8) §6.7 · §7.5 · §7.6 · §7.7 — ตัวเลขร้อยแก้วที่รีวิวพบว่าไม่ตรงโค้ด ──
+_M8 = "math-part8.html"
+from scipy import stats as _st8
+import statsmodels.api as _sm8
+def _junk8(nj):  # โปรโตคอลเดียวกับโค้ด §6.7 (seed 5 · ฝึก 150 · ทดสอบ 50)
+    rng = np.random.default_rng(5); N = 200
+    x = rng.normal(0, 1, (N, 1)); y = 1 + 1.5 * x[:, 0] + rng.normal(0, 1, N); junk = rng.normal(0, 1, (N, nj))
+    X = _sm8.add_constant(np.column_stack([x, junk])); tr, te = slice(0, 150), slice(150, N)
+    m = _sm8.OLS(y[tr], X[tr]).fit(); sse = ((y[te] - m.predict(X[te])) ** 2).sum(); sst = ((y[te] - y[te].mean()) ** 2).sum()
+    return m.rsquared, m.rsquared_adj, 1 - sse / sst, sse / sst
+_j60, _j100, _j130 = _junk8(60), _junk8(100), _junk8(130)
+expect(_M8, "✍️ ขยะ 60", f'<td class="nw"><strong>{_j60[0]:.3f}</strong></td><td class="nw">{_j60[1]:.3f}</td><td class="nw"><strong>{_j60[2]:.3f}</strong>')
+expect(_M8, "ขยะ 100/130", f"R²(in) = {_j100[0]:.3f} แต่ <strong>R²(out) = −{abs(_j100[2]):.3f}</strong> · ที่ขยะ <strong>130 ตัว</strong> R²(in) = {_j130[0]:.3f} แต่ <strong>R²(out) = −{abs(_j130[2]):.3f}</strong>")
+expect(_M8, "ขยะ 130 เท่า", f"ราว {_j130[3]:.1f} เท่าของการเดาค่าเฉลี่ย")
+expect(_M8, "แนวโน้ม R²", f"0.662 → {_j60[0]:.3f} → {_j100[0]:.3f} → {_j130[0]:.3f}")
+_cm8 = _st8.t.rvs(df=4, size=(40_000, 1), random_state=21); _id8 = _st8.t.rvs(df=4, size=(40_000, 20), random_state=22); _mx8 = (_cm8 + _id8) / np.sqrt(2)
+expect(_M8, "CLT อิสระ", f'<td class="nw">{_st8.kurtosis(_id8[:, 0]):+.2f}</td><td class="nw"><strong>{_st8.kurtosis(_id8.mean(1)):+.2f}</strong></td>')
+expect(_M8, "CLT ปัจจัยร่วม", f'<td class="nw">{_st8.kurtosis(_mx8[:, 0]):+.2f}</td><td class="nw"><strong>{_st8.kurtosis(_mx8.mean(1)):+.2f}</strong></td>')
+_nd8 = np.random.default_rng(11).normal(0, 1, 3000); _nd8 = _nd8 / _nd8.std()
+_fd8 = _st8.t.rvs(df=4, size=3000, random_state=11); _fd8 = _fd8 / _fd8.std()
+expect(_M8, "ลงแย่สุด", f'<td class="nw">−{abs(_nd8.min()):.2f} SD</td><td class="nw"><strong>−{abs(_fd8.min()):.2f} SD</strong></td><td class="nw"><strong>{_fd8.min() / _nd8.min():.1f} เท่า</strong>')
+expect(_M8, "ขึ้นแรงสุด", f'<td class="nw">+{_nd8.max():.2f} SD</td><td class="nw"><strong>+{_fd8.max():.2f} SD</strong></td><td class="nw"><strong>{_fd8.max() / _nd8.max():.1f} เท่า</strong>')
+expect(_M8, "เกิน 3 SD", f'<td class="nw">{(abs(_nd8) > 3).mean():.2%}</td><td class="nw"><strong>{(abs(_fd8) > 3).mean():.2%}</strong></td><td class="nw"><strong>{(abs(_fd8) > 3).mean() / (abs(_nd8) > 3).mean():.1f} เท่า</strong>')
+_c8 = np.sqrt(2)  # t(4) มี variance 2 — หารเพื่อให้ SD = 1 เท่า Normal
+_q01, _q05 = _st8.t.ppf(0.01, 4) / _c8, _st8.t.ppf(0.05, 4) / _c8
+_es_t = -_st8.t.expect(lambda v: v / _c8, args=(4,), ub=_st8.t.ppf(0.05, 4)) / 0.05; _es_n = _st8.norm.pdf(_st8.norm.ppf(0.05)) / 0.05
+expect(_M8, "t4 ควอนไทล์", f"ควอนไทล์ 1% ลึก −{abs(_q01):.2f}σ เทียบ Normal −{abs(_st8.norm.ppf(0.01)):.2f}σ แต่ที่ 5% กลับตื้นกว่า (−{abs(_q05):.2f}σ เทียบ −{abs(_st8.norm.ppf(0.05)):.2f}σ)")
+expect(_M8, "ES95", f"ES₉₅ ต่ำไปอยู่ดี ({_es_n:.2f}σ เทียบ {_es_t:.2f}σ)")
+from scipy.optimize import brentq as _bq8
+_xo = _bq8(lambda a: _st8.t.ppf(a, 4) / _c8 - _st8.norm.ppf(a), 0.005, 0.045)
+expect(_M8, "จุดตัด 2.5%", f"เลย ~{_xo:.1%} สุดขั้ว".replace("2.5%", "2.5%"))
+expect(_M8, "ddof 3000", f"ที่ n = 3,000 ต่างกัน {(math.sqrt(3000/2999)-1)*100:.3f}%")
+print(f"2·C  ขยะ 100 {_j100[2]:.3f} · 130 {_j130[2]:.3f} ({_j130[3]:.2f}×) · kurt {_st8.kurtosis(_id8[:,0]):.2f}/{_st8.kurtosis(_mx8.mean(1)):.2f} · q01 {_q01:.3f} q05 {_q05:.3f} · ตัด {_xo:.4f}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0
