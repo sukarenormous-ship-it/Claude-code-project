@@ -520,7 +520,11 @@ def render_all():
 # ══ ทฤษฎีของ Quant (เล่ม A) และ เสาหลัก (เล่ม B) — ภาพประกอบการ์ด ★★★ ═══════════════════
 
 # ── A · Part 1 Random Walk: GBM 20 เส้น μ = 10% σ = 20% · ค่าเฉลี่ย vs มัธยฐาน (vol drag) ──
-def gbm_paths_data(n=20, T=252, mu=0.10, sg=0.20, seed=5):
+# seed 22: มัธยฐานปลายปีของ 20 เส้น (107.2) ใกล้ค่าทฤษฎี 108.3 · seed 5 เดิมได้ 118 จนเส้นม่วงไม่อยู่กลางกลุ่ม
+GBM_P1 = dict(n=20, T=252, mu=0.10, sg=0.20, seed=22)
+
+
+def gbm_paths_data(n=20, T=252, mu=0.10, sg=0.20, seed=22):
     rng = np.random.default_rng(seed); dt = 1 / 252
     z = rng.standard_normal((n, T))
     logS = np.cumsum((mu - sg * sg / 2) * dt + sg * np.sqrt(dt) * z, axis=1)
@@ -529,11 +533,11 @@ def gbm_paths_data(n=20, T=252, mu=0.10, sg=0.20, seed=5):
 
 @fig("theory-part1.html", "gbm-paths")
 def fig_gbm_paths():
-    P = gbm_paths_data(); mu, sg = 0.10, 0.20
-    NUMS["gbm-paths"] = dict(mean_end=np.exp(mu), median_end=np.exp(mu - sg * sg / 2), drag=sg * sg / 2)
+    P = gbm_paths_data(**GBM_P1); mu, sg, n, seed = GBM_P1["mu"], GBM_P1["sg"], GBM_P1["n"], GBM_P1["seed"]
+    NUMS["gbm-paths"] = dict(mean_end=np.exp(mu), median_end=np.exp(mu - sg * sg / 2), drag=sg * sg / 2, sample_median=float(np.median(P[:, -1])))
     Wd, H = 560, 300
-    out = svg_open(Wd, H, "เส้นทางราคาแบบ geometric Brownian motion 20 เส้นในหนึ่งปี กับกรวย ±1σ√t · เส้นค่าเฉลี่ยตามทฤษฎี e^μt สูงกว่าเส้นมัธยฐาน e^(μ−σ²/2)t คือ vol drag")
-    title(out, Wd, "Random walk ที่ใช้จริง (GBM) — ราคาถ่างออกตาม √t และค่าเฉลี่ยกับมัธยฐานแยกจากกัน", "μ = 10%/ปี · σ = 20%/ปี · 20 เส้นทางจำลอง (seed 5) · เริ่มที่ 100")
+    out = svg_open(Wd, H, f"เส้นทางราคาแบบ geometric Brownian motion {n} เส้นในหนึ่งปี กับกรวย ±1σ√t · เส้นค่าเฉลี่ยตามทฤษฎี e^μt สูงกว่าเส้นมัธยฐาน e^(μ−σ²/2)t คือ vol drag")
+    title(out, Wd, "Random walk ที่ใช้จริง (GBM) — ราคาถ่างออกตาม √t และค่าเฉลี่ยกับมัธยฐานแยกจากกัน", f"μ = {mu:.0%}/ปี · σ = {sg:.0%}/ปี · {n} เส้นทางจำลอง (seed {seed}) · เริ่มที่ 100")
     x0, y0, w, h = 50, 46, 480, 195
     tt = np.arange(P.shape[1]) / 252
     sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (0.25, "3 เดือน"), (0.5, "6 เดือน"), (0.75, "9 เดือน"), (1, "1 ปี")], [(60, "60"), (80, "80"), (100, "100"), (120, "120"), (140, "140"), (160, "160")], xlab="เวลา", ylab="ราคา")
@@ -546,9 +550,9 @@ def fig_gbm_paths():
     polyline(out, [(sx(a), sy(b)) for a, b in zip(tt, 100 * np.exp(mu * tt))], GREEN, 2.2, dash="6 3", shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(tt, med)], PURPLE, 2.2, shadow=False)
     out.append(f'<text x="{x0+6}" y="{y0+14}" {FONT} font-size="9.5" fill="{GREEN}" font-weight="700">ปลายปี ค่าเฉลี่ย e^μ = {100*np.exp(mu):.1f} (+{(np.exp(mu)-1)*100:.1f}%)</text>')
-    out.append(f'<text x="{x0+6}" y="{y0+28}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ปลายปี มัธยฐาน e^(μ−σ²/2) = {med[-1]:.1f} (+{(med[-1]/100-1)*100:.1f}%) — vol drag σ²/2 = 2%</text>')
+    out.append(f'<text x="{x0+6}" y="{y0+28}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ปลายปี มัธยฐาน e^(μ−σ²/2) = {med[-1]:.1f} (+{(med[-1]/100-1)*100:.1f}%) — vol drag σ²/2 = {sg*sg/2:.0%}</text>')
     out.append(f'<text x="{x0+6}" y="{y0+42}" {FONT} font-size="9.5" fill="{INK2}">แถบสีจาง = มัธยฐาน × e^(±σ√t) — กว้างขึ้นตาม √t ไม่ใช่ t</text>')
-    legend(out, [(BLUE, "เส้นทางจำลอง 20 เส้น", ""), (GREEN, "ค่าเฉลี่ยตามทฤษฎี", "6 3"), (PURPLE, "มัธยฐาน (เส้นทางตรงกลาง)", "")], x0, H - 10)
+    legend(out, [(BLUE, f"เส้นทางจำลอง {n} เส้น", ""), (GREEN, "ค่าเฉลี่ยตามทฤษฎี", "6 3"), (PURPLE, "มัธยฐาน (เส้นทางตรงกลาง)", "")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
 

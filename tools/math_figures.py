@@ -1888,6 +1888,25 @@ expect("theory-extra-narrative.html", "Kelly", f"σ=20% → f*=0.08/0.04={0.08/0
 
 
 
+# ── ทฤษฎี Part I (theory-part1) — √time · vol drag · ภาพ gbm-paths ────────────────────────────
+_T1 = "theory-part1.html"
+_gb = _mf.NUMS.get("gbm-paths") or (_mf.FIGS[(_T1, "gbm-paths")](), _mf.NUMS["gbm-paths"])[1]
+_mu1, _sg1 = _mf.GBM_P1["mu"], _mf.GBM_P1["sg"]
+assert abs(_gb["sample_median"] / _gb["median_end"] - 1) < 0.03, "มัธยฐานของเส้นจำลองต้องใกล้ค่าทฤษฎี (seed ไม่เอียง)"
+expect(_T1, "scale vol", f"1% × √252 ≈ <strong>{0.01*math.sqrt(252):.1%}</strong> (ไม่ใช่ 1% × 252 = {252*0.01:.0%}!)")
+expect(_T1, "scale vol ข่าว", f"จริง ๆ แปลว่าผันผวนปีละ ~{0.01*math.sqrt(252):.0%}")
+expect(_T1, "vol drag", f"= μ − σ²/2 = 10% − (0.2²)/2 = 10% − {_sg1**2/2:.0%} = <strong>{_mu1-_sg1**2/2:.0%}</strong> ต่อปีแบบต่อเนื่อง")
+expect(_T1, "vol drag ภาพ", f"มัธยฐานปลายปี e<sup>0.08</sup> = {100*_gb['median_end']:.1f} (+{_gb['median_end']-1:.1%} แบบธรรมดา) ต่ำกว่าเส้นเขียวค่าเฉลี่ย e<sup>0.10</sup> = {100*_gb['mean_end']:.1f}")
+expect(_T1, "drag σ=40%", f"(σ = 40% → drag = {0.4**2/2:.0%} กินไป ~{(0.4**2/2)/0.10:.0%} ของ drift 10%!)")
+expect(_T1, "drag read", f"(0.2²/2 = {0.2**2/2:.0%})")
+expect(_T1, "BTC คำใบ้", f"×√365 ≈ ×{math.sqrt(365):.1f})")
+expect(_T1, "BTC เฉลย", f"4% × √365 ≈ <strong>{0.04*math.sqrt(365):.1%}</strong> ต่อปี · ถ้าเผลอใช้ √252 จะได้ {0.04*math.sqrt(252):.1%} ต่ำไปราว {(0.04*(math.sqrt(365)-math.sqrt(252)))*100:.0f} จุด")
+expect(_T1, "RMS walk", f"ระยะแบบ SD ไกลราว √4 = {math.sqrt(4):.0f} ก้าว (ระยะเฉลี่ยแบบค่าสัมบูรณ์คือ {sum(abs(2*k-4)*math.comb(4,k) for k in range(5))/16:.1f} ก้าว)")
+expect(_T1, "Einstein", f"ก่อน Einstein จะอธิบายมันในฟิสิกส์ถึง {1905-1900} ปี")
+print(f"ทฤษฎี I  √252 {math.sqrt(252):.4f} · drag {_sg1**2/2:.2%} → {_mu1-_sg1**2/2:.2%} · mean {_gb['mean_end']:.4f} median {_gb['median_end']:.4f} (ตัวอย่าง {_gb['sample_median']:.4f}) · BTC {0.04*math.sqrt(365):.2%}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
