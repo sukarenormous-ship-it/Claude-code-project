@@ -1848,6 +1848,36 @@ print(f"เครื่องมือ  3× ได้ {_L*_mu-(_L*_sg)**2/2:.2%}
 
 
 
+# ── เสา IV ฉบับเล่าเรื่อง (pillars-part4-narrative) — ใช้ _z99/_es99 ชุดเดียวกับบทหลัก ─────────
+_P4N = "pillars-part4-narrative.html"
+expect(_P4N, "VaR99", f"= {_z99:.3f} × 2% × $100M = ${_z99*2:.2f}M</div>")
+expect(_P4N, "ES99", f"ES99 ≈ {_es99:.3f}σ × พอร์ต = ${_es99*2:.2f}M (เทียบ VaR99 = ${_z99*2:.2f}M)")
+expect(_P4N, "ES−VaR", f"ส่วนต่าง ${round(_es99*2, 2)-round(_z99*2, 2):.2f}M")
+assert abs((_es99 - _z99) * 2 - 0.68) < 0.005
+expect(_P4N, "subadditivity", f"= 1−0.96² ≈ {1-0.96**2:.1%}")
+expect(_P4N, "สรุป z99", f"z99 = {_z99:.3f} ·")
+expect(_P4N, "สรุป ES99", f"ES99 ≈ {_es99:.3f}σ")
+
+
+
+# ── เสา I ฉบับเล่าเรื่อง (pillars-part1-narrative) — ใช้ _bond ชุดเดียวกับบทหลัก ────────────────
+_P1N = "pillars-part1-narrative.html"
+expect(_P1N, "30y par duration", f"โดยทั่วไปราว {_mod30:.0f} — แปลว่าถ้าดอกเบี้ยขยับขึ้น 1% ราคาจะร่วงลงราว {_mod30:.0f}%")
+_z30m = 30 / 1.04; _z30c = 30 * 31 / 1.04**2; _z30x = (1.04 / 1.05) ** 30 - 1
+expect(_P1N, "zero 30y", f"modified duration ≈ 30/1.04 ≈ {_z30m:.1f} → ดอกเบี้ยขึ้น 1% → duration อย่างเดียวบอกว่าราคาร่วง ≈ {_z30m:.1f}% · convexity (≈ {round(_z30c, -1):.0f} เทอมปรับความโค้งอันดับสอง) คืนให้ +{0.5*_z30c*1e-4:.1%} เหลือ ≈ {_z30m/100-0.5*_z30c*1e-4:.1%} ใกล้ราคาจริงที่ร่วง {-_z30x:.1%}")
+assert abs(-_z30x - 0.25) < 0.01, "เรื่องเล่า: ร่วงราวหนึ่งในสี่"
+expect(_P1N, "roll-down", f"0.2% × modified duration ({_mod4:.2f}) ≈ {0.002*_mod4:.2%} รวมแล้วได้ผลตอบแทนราว <strong>{0.01+0.002*_mod4:.2%}</strong>")
+
+
+
+# ── เสา II ฉบับเล่าเรื่อง (pillars-part2-narrative) — Merton DD ตัวอย่างเดียวกับบทหลัก ───────────
+_P2N = "pillars-part2-narrative.html"
+_ddn = (math.log(100 / 70) + (0.08 - 0.20**2 / 2) * 1) / (0.20 * 1)
+expect(_P2N, "DD", f"ln(100/70)={math.log(100/70):.3f}, (0.08−0.02)×1={0.08-0.02:.2f} → DD=({math.log(100/70):.3f}+0.06)/0.20 ≈ {_ddn:.2f}")
+expect(_P2N, "PD", f"ได้ประมาณ {_n5.cdf(-_ddn):.1%}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
