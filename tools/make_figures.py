@@ -3051,24 +3051,26 @@ def merger_data(pre=42.0, deal=50.0, start=47.50, fail=35.0, n=90):
 @fig("arb-part6.html", "a6-merger-spread")
 def fig_a6_merger_spread():
     t, p, spread, pct, downside = merger_data(); n = len(t) - 1
+    import inspect; _m = {k: v.default for k, v in inspect.signature(merger_data).parameters.items()}
+    pre, deal, start, fail = _m["pre"], _m["deal"], _m["start"], _m["fail"]; loss = start - fail; pbe = loss / (deal - fail) * 100
     Wd, H = 560, 320
-    out = svg_open(Wd, H, f"ราคาหุ้นเป้าหมายกระโดดจาก 42 เป็น 47.50 วันประกาศดีล แล้วไต่เข้าหาราคาดีล 50 บาท ส่วนต่าง 2.50 บาทค่อย ๆ แคบลงจนปิดดีล")
+    out = svg_open(Wd, H, f"ราคาหุ้นเป้าหมายกระโดดจาก {pre:.0f} เป็น {start:.2f} วันประกาศดีล แล้วไต่เข้าหาราคาดีล {deal:.0f} บาท ส่วนต่าง {spread:.2f} บาทค่อย ๆ แคบลงจนปิดดีล")
     title(out, Wd, "Merger Arbitrage — ส่วนต่างจากราคาดีลคือค่าจ้างของการแบกความเสี่ยงว่าดีลจะล่ม",
-          f"ประกาศซื้อที่ ฿50 · ราคาเด้ง ฿42 → ฿47.50 · เหลือส่วนต่าง ฿{spread:.2f} = {pct:.0f}% · ดีลล่มกลับไป ฿35 = −{downside:.1f}%")
+          f"ประกาศซื้อที่ ฿{deal:.0f} · ราคาเด้ง ฿{pre:.0f} → ฿{start:.2f} · เหลือส่วนต่าง ฿{spread:.2f} = {pct:.0f}% · ดีลล่มตกไป ฿{fail:.0f} = −{downside:.1f}%")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "ก่อนประกาศ"), (10, "ประกาศ"), (35, "Regulatory"), (60, "โหวต"), (90, "ปิดดีล")], [(34, "34"), (38, "38"), (42, "42"), (46, "46"), (50, "50")], "เวลา →", "ราคาหุ้น B (฿)")
     out.append(f'<line x1="{x0}" y1="{sy(50):.1f}" x2="{x0+w}" y2="{sy(50):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')
-    _txt(out, x0 + 4, sy(50) - 5, "ราคาดีล ฿50", PURPLE, "start", size=9, bold=True)
+    _txt(out, x0 + 4, sy(deal) - 5, f"ราคาดีล ฿{deal:.0f}", PURPLE, "start", size=9, bold=True)
     pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t[10:], p[10:])) + f" {sx(n):.1f},{sy(50):.1f} {sx(10):.1f},{sy(50):.1f}"
     out.append(f'<polygon points="{pts}" fill="{AMBER}" opacity="0.22"/>')
     polyline(out, [(sx(a), sy(b)) for a, b in zip(t, p)], BLUE, 2.5, shadow=False)
     polyline(out, [(sx(12), sy(47.5)), (sx(38), sy(35))], RED, 1.8, dash="5 3", shadow=False)
-    _txt(out, sx(40), sy(35.4), "ถ้าดีลล่ม → ฿35 (เสีย ฿12.50)", RED, "start", size=9, bold=True)
-    _dot(out, sx(10), sy(47.5)); _txt(out, sx(12), sy(46.2), "ประกาศดีล: ฿42 → ฿47.50", PURPLE, "start", size=9, bold=True)
+    _txt(out, sx(40), sy(fail + 0.4), f"ถ้าดีลล่ม → ฿{fail:.0f} (เสีย ฿{loss:.2f})", RED, "start", size=9, bold=True)
+    _dot(out, sx(10), sy(47.5)); _txt(out, sx(12), sy(46.2), f"ประกาศดีล: ฿{pre:.0f} → ฿{start:.2f}", PURPLE, "start", size=9, bold=True)
     _txt(out, sx(88), sy(48.4), f"ส่วนต่าง ฿{spread:.2f} ค่อย ๆ แคบลง", AMBER, "end", size=9, bold=True)
     for xv, lab in ((35, "Regulatory review"), (60, "Shareholder vote")):
         out.append(f'<line x1="{sx(xv):.1f}" y1="{y0}" x2="{sx(xv):.1f}" y2="{y0+h}" stroke="{GRID}" stroke-width="1" stroke-dasharray="3 3"/>')
         _txt(out, sx(xv), sy(41.2), lab, INK2, "middle", size=9)
-    _txt(out, x0 + w, H - 8, "เสีย ฿12.50 เพื่อได้ ฿2.50 → ต้องมั่นใจเกิน 83.3% ว่าดีลจะปิด", INK2, "end", size=9, italic=True)
+    _txt(out, x0 + w, H - 8, f"เสีย ฿{loss:.2f} เพื่อได้ ฿{spread:.2f} → ต้องมั่นใจเกิน {pbe:.1f}% ว่าดีลจะปิด", INK2, "end", size=9, italic=True)
     out.append("</svg>")
     NUMS["a6-merger-spread"] = dict(spread=spread, pct=pct, downside=downside)
     return "\n".join(out)
