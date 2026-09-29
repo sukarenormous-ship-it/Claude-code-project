@@ -187,6 +187,7 @@ def legend(out, items, x, y):
 
 def svg_open(W, H, label, multipanel=False, cls="d"):
     mp = ' data-legend="per-panel"' if multipanel else ""   # หลายพาเนล พาเนลละซีรีส์เดียว — ไม่ต้องมี legend รวม
+    label = label.replace('"', "&quot;")                  # เครื่องหมายคำพูดในป้ายต้อง escape ไม่งั้น aria-label ขาดกลางทาง
     return [f'<svg class="{cls}" viewBox="0 0 {W} {H}" role="img" aria-label="{label}"{mp}>',
             '<defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>']
 
@@ -3364,20 +3365,20 @@ def fig_a2b_levels():
     out.append(arrow_defs())
     _txt(out, x0, 184, "แน่นอนมาก · กำไรล็อกได้", GREEN, "start", size=9.5, bold=True)
     _txt(out, x0 + 5 * bw + 4 * gap, 184, "ไม่แน่นอน · ต้องเดาทิศทาง", RED, "end", size=9.5, bold=True)
-    _txt(out, Wd / 2, 214, "Lv.1–2 ล็อกกำไรได้ตั้งแต่วันเข้า · Lv.3–4 ต้องมีสมมติฐานและแผนรับเมื่อผิด · Lv.5 คือการเดา", INK2, "middle", size=9.5)
+    _txt(out, Wd / 2, 214, "Lv.1 ล็อกกำไรได้ตั้งแต่วันเข้า · Lv.2 เกือบล็อก (ต้องถือถึงวันลู่เข้า) · Lv.3–4 ต้องมีสมมติฐานและแผนรับเมื่อผิด · Lv.5 คือการเดา", INK2, "middle", size=9.5)
     _txt(out, Wd / 2, 234, "กับดัก: คนมักเรียก Lv.4–5 ว่า \"arb\" เพราะฟังดูปลอดภัยกว่า — ชื่อไม่ได้เปลี่ยนความเสี่ยง", RED, "middle", size=9.5, bold=True)
     out.append("</svg>")
     return "\n".join(out)
 
 
-def stack_data(locked=(("Conversion", 50.0), ("Basis", 30.0), ("Box", 20.0)), income=(("Sell Put", 40.0), ("PM Tail Fade", 50.0))):
+def stack_data(locked=(("Conversion", 50.0), ("Basis", 30.0), ("Box", 20.0)), income=(("Put Credit Spread", 40.0), ("PM Tail Fade", 50.0))):
     return sum(v for _, v in locked), sum(v for _, v in income)
 
 
 @fig("arb-part2b.html", "a2b-stack")
 def fig_a2b_stack():
     locked = [("Conversion", 50.0), ("Basis", 30.0), ("Box", 20.0)]
-    income = [("Sell Put", 40.0), ("PM Tail Fade", 50.0)]
+    income = [("Put Credit Spread", 40.0), ("PM Tail Fade", 50.0)]
     L, I = stack_data(tuple(locked), tuple(income))
     Wd, H = 560, 336
     out = svg_open(Wd, H, f"แกนกลางที่ล็อกกำไรไว้ {L:.0f} บาท รองรับชั้นหารายได้ที่ขาดทุนมากสุดรวม {I:.0f} บาท ผลรวมจึงไม่ติดลบ")
@@ -3415,7 +3416,7 @@ def fig_a2b_process():
         dbox(out, bx, 76, bw, 74, [(a, 10.5, BLUE, True), (b, 8.8, INK2, False), (c, 8.8, INK2, False)], col=BLUE, fill=0.10)
         if i: darrow(out, bx - gap + 1, 113, bx - 3, 113, INK2, 1.8)
     _txt(out, Wd / 2, 178, "ทางเข้าอื่น: มีความเชื่ออยู่แล้ว → ข้ามขั้น 1–2 เข้าขั้น 3 ได้เลย แต่ต้องผ่านขั้น 5 เสมอ", PURPLE, "middle", size=9.5, bold=True)
-    _txt(out, Wd / 2, 200, "ขั้นที่คนข้ามบ่อยที่สุดคือ 5 (VERIFY) — และเป็นขั้นเดียวที่กันไม่ให้เสียเงิน", RED, "middle", size=9.5, bold=True)
+    _txt(out, Wd / 2, 200, "ขั้นที่คนข้ามบ่อยที่สุดคือ 5 (VERIFY) — และเป็นด่านสุดท้ายก่อนเงินจริงออกจากกระเป๋า", RED, "middle", size=9.5, bold=True)
     _txt(out, Wd / 2, 222, "ผลลัพธ์ของขั้น 6 ไม่ใช่ \"ทำทุกอัน\" แต่คือลำดับว่าเงินก้อนถัดไปควรไปไหน", INK2, "middle", size=9, italic=True)
     out.append("</svg>")
     return "\n".join(out)

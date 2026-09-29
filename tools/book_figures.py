@@ -192,7 +192,17 @@ earn = 100000*0.12/365*30
 expect("arb-part3.html", "Earn 12% 30 วัน", f"฿100,000 × 12% / 365 × 30 วัน = ฿{earn:,.0f} ต่อเดือน")
 expect("arb-part3.html", "Earn net", f"฿{earn:,.0f} (หลังหัก withdrawal fee ฿2) = <strong>฿{earn-2:,.0f}")
 k = (0.167*0.92-0.08)/0.167
-expect("arb-part2b.html", "Kelly 0.44", f"= {0.167*0.92-0.08:.3f}/0.167 = <strong>{k:.2f} → ใช้ {k/2*100:.0f}% ของพอร์ต (Half-Kelly)")
+expect("arb-part2b.html", "Kelly 0.44", f"= {0.167*0.92-0.08:.3f}/0.167 = <strong>{k:.2f} → Half-Kelly = วางขนาดให้ถ้า deal ล่มเสีย {k/2*100:.0f}% ของพอร์ต")
+expect("arb-part2b.html", "Kelly notional", f"จึงถือได้ราว {k/2/(15/97.5):.2f} เท่าของพอร์ต")
+expect("arb-part2b.html", "Kelly BE", f"p = 1/(1 + b) = {1/(1+2.5/15):.1%}")
+expect("arb-part2b.html", "Kelly b", f"b = 2.50/15 = {2.5/15:.3f}")
+expect("arb-part2b.html", "Kelly p85", f"= ({0.167*0.85:.3f} - 0.15) / 0.167 = <strong>{(0.167*0.85-0.15)/0.167:.2f} → ไม่คุ้ม!")
+_b2 = 2.5/15; _fk = (_b2*0.92-0.08)/_b2; _gk = lambda f: 0.92*math.log(1+_b2*f) + 0.08*math.log(1-f)
+expect("arb-part2b.html", "half-Kelly growth", f"ครึ่ง Kelly ยังได้ราว {_gk(_fk/2)/_gk(_fk):.0%} ของอัตราโตสูงสุด")
+assert _gk(2*_fk) < 0
+expect("arb-part2b.html", "N_max", f"N_max = 100 / 25 = <strong>{100//25} สัญญา")
+expect("arb-part2b.html", "subsidy", f"Earn 12% (ปกติ 4%) → subsidy {12-4}%")
+expect("arb-part2b.html", "baseline 2%", f"<strong>{6-4}% เพิ่มคุ้มกับความซับซ้อน 3 ขาไหม?")
 k2 = (0.135-0.1)/0.15
 expect("arb-part2b.html", "Kelly 0.233", f"f*=(0.135-0.1)/0.15 = {k2:.3f} → Half-Kelly = {k2/2*100:.1f}% ของพอร์ต")
 expect("arb-part2b.html", "funding 110%", f"+0.1%/8hr (≈{0.1*3*365:.0f}%/ปี แบบไม่ทบต้น!)")
