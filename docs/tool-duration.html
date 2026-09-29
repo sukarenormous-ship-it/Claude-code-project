@@ -61,7 +61,7 @@ a{color:var(--purple)}
 <div class="ctrl">
 <div class="row1"><label>Duration ของบอนด์/กองที่ถือ (ปี)</label><span class="val" id="vDur">7</span></div>
 <input type="range" id="dur" min="0.5" max="30" value="7" step="0.5">
-<div class="hint">กองบอนด์ระยะกลางทั่วไป ~5–8 · กองบอนด์ระยะยาว/zero อาจ 15–30</div>
+<div class="hint">กองบอนด์ระยะกลางทั่วไป ~5–8 · กองบอนด์ระยะยาว/zero อาจ 15–30 · ใช้ modified/effective duration ที่กองรายงาน (Macaulay ต้องหาร 1 + y ก่อน)</div>
 </div>
 
 <div class="ctrl">
@@ -72,8 +72,8 @@ a{color:var(--purple)}
 
 <div class="ctrl">
 <div class="row1"><label>Convexity (เทอมปรับความโค้ง)</label><span class="val" id="vCvx">60</span></div>
-<input type="range" id="cvx" min="0" max="300" value="60" step="10">
-<div class="hint">ยิ่งอายุยาว convexity ยิ่งสูง — ช่วยลดขาดทุนตอนดอกเบี้ยขยับแรง</div>
+<input type="range" id="cvx" min="0" max="1000" value="60" step="10">
+<div class="hint">ยิ่งอายุยาว convexity ยิ่งสูง ช่วยลดขาดทุนตอนดอกเบี้ยขยับแรง · ถ้าไม่รู้ค่าของกอง เครื่องนี้ตั้งให้ ≈ D² + D (ค่าของ zero-coupon) ทุกครั้งที่เลื่อน duration · บอนด์มีคูปองอายุยาวมักสูงกว่านั้น ส่วนกองที่ถือ MBS/callable อาจต่ำหรือติดลบ</div>
 </div>
 
 <div class="out">
@@ -89,7 +89,8 @@ a{color:var(--purple)}
 <div class="verdict" id="verdict">—</div>
 </div>
 
-<p>ลองดัน duration ขึ้นไปหา 20–30 (บอนด์ระยะยาวหรือ zero-coupon) พร้อมกับดอกเบี้ยขึ้นสัก 100–200 bp คุณจะเห็นขาดทุนพุ่งไปหลายสิบเปอร์เซ็นต์ทันที ทั้งที่ "ไม่มีใครผิดนัด" เลยสักราย — นี่คือความเสี่ยงที่คนเรียกบอนด์ว่า "ปลอดภัย" มองไม่เห็น สังเกตด้วยว่าแถบ convexity (สีแดง) เจ็บ<em>น้อยกว่า</em> duration เปล่า ๆ นิดหน่อยเสมอเมื่อดอกเบี้ยขยับแรง — นั่นคือของแถมเล็ก ๆ จากความโค้งของราคา</p>
+<p>ลองดัน duration ขึ้นไปหา 20–30 (บอนด์ระยะยาวหรือ zero-coupon) พร้อมกับดอกเบี้ยขึ้นสัก 100–200 bp คุณจะเห็นขาดทุนพุ่งไปหลายสิบเปอร์เซ็นต์ทันที ทั้งที่ "ไม่มีใครผิดนัด" เลยสักราย นี่คือความเสี่ยงที่คนเรียกบอนด์ว่า "ปลอดภัย" มองไม่เห็น</p>
+<p>สังเกตด้วยว่าแถบ convexity (สีแดง) เจ็บ<em>น้อยกว่า</em> duration เปล่า ๆ เสมอเมื่อ convexity เป็นบวก และห่างกันมากขึ้นเมื่อ duration ยาวหรือดอกเบี้ยขยับแรง นั่นคือของแถมจากความโค้งของราคา</p>
 
 <p class="pq">"ปลอดภัย" ในโลกบอนด์ไม่ได้แปลว่าไม่ขาดทุน — มันแปลว่าคุณรู้ล่วงหน้าว่าจะขาดทุนเท่าไรถ้าดอกเบี้ยขยับ</p>
 
@@ -97,8 +98,8 @@ a{color:var(--purple)}
 
 <div class="rulebox">
 <div class="lbl">รู้ความเสี่ยงดอกเบี้ยของพอร์ตก่อนถือ</div>
-<div class="eq">%ราคาเปลี่ยน ≈ −Duration × Δyield + ½ × Convexity × Δyield²</div>
-<div class="note-txt">เทอมแรก (duration) คือความเสี่ยงหลัก — เอา duration ของกองคูณด้วยขนาดที่คุณคิดว่าดอกเบี้ย<em>อาจ</em>ขยับได้ในกรณีเลวร้าย ก็ได้ตัวเลขขาดทุนที่ต้องเตรียมใจ กอง duration 7 เจอดอกเบี้ยขึ้น 1% = เจ็บ ~7% ก่อนซื้อกองบอนด์ไหน ถาม duration ของมันเสมอ นั่นคือความเสี่ยงตัวจริงที่ชื่อ "กองบอนด์" ไม่ได้บอกคุณ</div>
+<div class="eq">%ราคาเปลี่ยน ≈ −Duration × Δyield + ½ × Convexity × Δyield²  (Δyield เป็นทศนิยม: 100 bp = 0.01)</div>
+<div class="note-txt">เทอมแรก (duration) คือความเสี่ยงหลัก — เอา duration ของกองคูณด้วยขนาดที่คุณคิดว่าดอกเบี้ย<em>อาจ</em>ขยับได้ในกรณีเลวร้าย ก็ได้ตัวเลขขาดทุนที่ต้องเตรียมใจ กอง duration 7 เจอดอกเบี้ยขึ้น 1% = เจ็บ ~7% (convexity 60 คืนให้ 0.3% เหลือ −6.7%) · เทอมที่สองสำคัญขึ้นมากกับบอนด์ยาว ดูเฉลยข้างล่าง · ก่อนซื้อกองบอนด์ไหน ถาม duration ของมันเสมอ นั่นคือความเสี่ยงตัวจริงที่ชื่อ "กองบอนด์" ไม่ได้บอกคุณ</div>
 </div>
 
 <p>ต่างจากการอ่านนิยาม duration ในตำรา: ตอนนี้คุณกดตัวเลขของกองที่ถืออยู่จริงเข้าไปแล้วรู้ทันทีว่าเจ็บเท่าไร ครั้งหน้าที่มีคนเสนอ "กองบอนด์ปลอดภัย ผลตอบแทนดี" คุณจะถามกลับเป็นอัตโนมัติว่า <em>duration เท่าไร แล้วถ้าดอกเบี้ยขึ้น 1–2% ฉันเจ็บกี่ %</em></p>
@@ -107,7 +108,7 @@ a{color:var(--purple)}
 <h3>✍️ ลองเอง (เฉลยได้)</h3>
 <p style="margin-bottom:0">ที่ปรึกษาแนะนำกองพันธบัตรระยะยาว duration 18 บอกว่า "มั่นคง ปันผลสม่ำเสมอ เหมาะพักเงิน" — ถ้าปีหน้าดอกเบี้ยขึ้น 2% คุณควรกังวลไหม?</p>
 <button id="revealBtn">ดูเฉลย</button>
-<div class="ans" id="ans"><strong>ควรกังวลมาก.</strong> ขาดทุนโดยประมาณ ≈ −18 × 2% = <strong>−36%</strong> (convexity ช่วยลดได้นิดหน่อย เหลือราว −35%) จากกองที่ถูกเรียกว่า "มั่นคง" และ "เหมาะพักเงิน" ทั้งที่ไม่มีใครผิดนัดเลย นี่คือสิ่งที่เกิดกับคนถือบอนด์ยาวในปี 2022 เป๊ะ — คำว่า "พักเงิน" กับ duration 18 เป็นคนละเรื่องกันโดยสิ้นเชิง ยิ่ง duration ยาว ยิ่งไม่ใช่ที่พักเงิน</div>
+<div class="ans" id="ans"><strong>ควรกังวลมาก.</strong> duration อย่างเดียว ≈ −18 × 2% = −36% · บอนด์ duration 18 มี convexity ราว 340 (zero-coupon) จึงคืนให้ ½ × 340 × 0.02² = +6.8% → ขาดทุนราว <strong>−29%</strong> (ราคาจริงของ zero-coupon ที่ duration 18 ร่วง 30.0%: สูตรสองเทอมพลาดไม่ถึง 1 จุด ส่วน duration เทอมเดียวพลาดไป 6 จุด) จากกองที่ถูกเรียกว่า "มั่นคง" และ "เหมาะพักเงิน" ทั้งที่ไม่มีใครผิดนัดเลย นี่คือสิ่งที่เกิดกับคนถือบอนด์ยาวในปี 2022 เป๊ะ — คำว่า "พักเงิน" กับ duration 18 เป็นคนละเรื่องกันโดยสิ้นเชิง ยิ่ง duration ยาว ยิ่งไม่ใช่ที่พักเงิน</div>
 </div>
 
 <div class="closing">
@@ -151,6 +152,11 @@ function update(){
     v.textContent='✓ เจ็บเล็กน้อย '+Math.abs(loss).toFixed(1)+'%: duration ต่ำหรือดอกเบี้ยขยับน้อย ความเสี่ยงดอกเบี้ยยังจัดการได้';
   }
 }
+var cvxTouched=false;
+document.getElementById('cvx').addEventListener('input',function(){cvxTouched=true});
+document.getElementById('dur').addEventListener('input',function(){   // default convexity ≈ D² + D (zero-coupon) until the reader sets it
+  if(!cvxTouched){var d=num('dur');document.getElementById('cvx').value=Math.min(1000,Math.round((d*d+d)/10)*10)}
+});
 ['dur','dy','cvx'].forEach(function(id){document.getElementById(id).addEventListener('input',update)});
 update();
 document.getElementById('revealBtn').addEventListener('click',function(){var a=document.getElementById('ans');a.style.display='block';this.style.display='none'});
