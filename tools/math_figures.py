@@ -1907,6 +1907,41 @@ print(f"ทฤษฎี I  √252 {math.sqrt(252):.4f} · drag {_sg1**2/2:.2%} �
 
 
 
+# ── ทฤษฎี Part III (theory-part3) — IC decay · Palm stub · prospect theory · GS ───────────────
+_T3 = "theory-part3.html"
+_pv = _mf.NUMS.get("prospect-value") or (_mf.FIGS[(_T3, "prospect-value")](), _mf.NUMS["prospect-value"])[1]
+_lam = _pv["lam"]
+expect(_T3, "PT ค่าทางใจ", f"= 0.5×100 − 0.5×({_lam}×50) = {0.5*100:.0f} − {0.5*_lam*50:.2f} = <strong>−{-_pv['ev_mind']:.2f}</strong>")
+expect(_T3, "PT EV", f"EV = +${_pv['ev']:.0f} (เป็นเดิมพันที่")
+expect(_T3, "PT เกณฑ์รับ", f"ต้องเกิน {_lam} × 50 = {_lam*50:.1f} ดอลลาร์ (อัตราได้ต่อเสีย 100/50 = {100/50:.0f} ยังต่ำกว่า λ)")
+_w = lambda p_, c: p_**c / (p_**c + (1 - p_)**c) ** (1 / c)
+_tk = _w(0.5, 0.61) * 100**0.88 - _w(0.5, 0.69) * _lam * 50**0.88
+expect(_T3, "PT รุ่นเต็ม", f"(รุ่นเต็มให้ −{-_tk:.2f} ปฏิเสธเหมือนกัน)")
+expect("theory-part3-narrative.html", "narrative PT", f"= 50 − {0.5*_lam*50:.2f} = <strong>−{-_pv['ev_mind']:.2f}</strong>")
+# Palm/3Com
+_r, _pp, _p3 = 1.5, 95, 82
+expect(_T3, "Palm มูลค่า", f"= {_r} × ${_pp} = <strong>${_r*_pp:.1f} ต่อหุ้น 3Com</strong>")
+expect(_T3, "Palm stub", f"= {_p3} − {_r*_pp:.1f} = −${_r*_pp-_p3:.1f}/หุ้น</strong>")
+expect(_T3, "Palm LT", f"Lamont-Thaler ใช้ r = 1.525 ได้ stub ราว −${1.525*95.06-81.81:.0f})")
+expect(_T3, "Palm ✍️", f"{_p3} − {_r} × 120 = −${_r*120-_p3:.0f} ต่อหุ้น")
+expect("theory-part3-narrative.html", "narrative stub", f"= {_p3} − {_r*_pp:.1f} = <strong>−${_r*_pp-_p3:.1f}")
+# IC decay
+_ic0, _h = 0.04, 10
+_ic = lambda t: _ic0 * 0.5 ** (t / _h)
+_icavg = lambda H, h=_h: h / (H * math.log(2)) * (1 - 0.5 ** (H / h))
+expect(_T3, "IC decay", f"หลัง 10 วัน IC = {_ic(10):.2f} · หลัง 20 วัน IC = {_ic(20):.2f} · หลัง 30 วัน = {_ic(30):.3f} (เหลือ ⅛)")
+expect(_T3, "IC 21 วัน", f"สัญญาณเหลือ IC ≈ {_ic(21):.3f} ({_ic(21)/_ic0:.0%} ของตอนเริ่ม) และเฉลี่ยทั้งเดือนเหลือราว {_icavg(21):.0%}")
+expect(_T3, "IC เฉลย", f"(½)³ = {0.5**3:.1%} ของตอนเริ่ม · ถ้า rebalance ทุก 15 วัน ค่าเฉลี่ยทั้งช่วงคือ 5/(15 × ln 2) × (1 − 0.125) ≈ {_icavg(15, 5):.0%}")
+# Grossman-Stiglitz
+expect(_T3, "GS edge ขั้นต่ำ", f"2/400 = <strong>{2/400:.1%} ต่อปี</strong>")
+expect(_T3, "GS ถูกลงครึ่ง", f"จุดคุ้มทุนลดเหลือ {1/400:.2%}")
+expect(_T3, "GS 3 อย่าง", f"ต้องได้ ≥ {2/400:.1%})")
+# McLean-Pontiff · Buffett
+expect(_T3, "Buffett", "เดิมพัน $1M (2008–2017)")
+print(f"ทฤษฎี III  PT {_pv['ev_mind']:.2f} (TK92 {_tk:.3f}) · stub {_p3-_r*_pp:.1f} (LT {81.81-1.525*95.06:.2f}) · IC21 {_ic(21):.4f} avg {_icavg(21):.4f} · GS {2/400:.3%}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0

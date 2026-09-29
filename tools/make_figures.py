@@ -582,11 +582,13 @@ def fig_diversification_corr():
 # ── A · Part 3 Prospect Theory: ฟังก์ชันคุณค่าที่หักศอกที่ศูนย์ (λ = 2.25) กับเดิมพัน +100/−50 ──
 @fig("theory-part3.html", "prospect-value")
 def fig_prospect_value():
-    lam = 2.25
-    NUMS["prospect-value"] = dict(v_gain=100.0, v_loss=-lam * 50, ev_mind=0.5 * 100 - 0.5 * lam * 50)
+    lam, win, loss = 2.25, 100, 50
+    ev, u = 0.5 * win - 0.5 * loss, 0.5 * win - 0.5 * lam * loss
+    NUMS["prospect-value"] = dict(v_gain=float(win), v_loss=-lam * loss, ev_mind=u, ev=ev, lam=lam)
+    L = f"{lam:g}"; m = lambda x: f"{x:+.2f}".replace("-", "−")
     Wd, H = 560, 300
-    out = svg_open(Wd, H, "ฟังก์ชันคุณค่าของ prospect theory หักศอกที่ศูนย์ ฝั่งขาดทุนชันกว่า 2.25 เท่า · เดิมพัน 50/50 ได้ 100 หรือเสีย 50 มีค่าทางใจติดลบ −6.25 ทั้งที่ EV เป็นบวก 25")
-    title(out, Wd, "loss aversion — เส้นฝั่งขาดทุนชันกว่าฝั่งกำไร 2.25 เท่า จึงปฏิเสธเดิมพันที่ EV บวก", "v(x) = x เมื่อได้ · v(x) = 2.25x เมื่อเสีย (รุ่นเส้นตรงตามตัวอย่างในการ์ด · ของ Kahneman-Tversky โค้งเพิ่มอีกชั้น)")
+    out = svg_open(Wd, H, f"ฟังก์ชันคุณค่าของ prospect theory หักศอกที่ศูนย์ ฝั่งขาดทุนชันกว่า {L} เท่า · เดิมพัน 50/50 ได้ {win} หรือเสีย {loss} มีค่าทางใจติดลบ {m(u)} ทั้งที่ EV เป็นบวก {ev:g}")
+    title(out, Wd, f"loss aversion — เส้นฝั่งขาดทุนชันกว่าฝั่งกำไร {L} เท่า จึงปฏิเสธเดิมพันที่ EV บวก", f"v(x) = x เมื่อได้ · v(x) = {L}x เมื่อเสีย (รุ่นเส้นตรงตามตัวอย่างในการ์ด · ของ Kahneman-Tversky โค้งเพิ่มอีกชั้น)")
     x0, y0, w, h = 60, 60, 470, 186
     sx, sy = frame(out, x0, y0, w, h, [(-100, "−100"), (-50, "−50"), (0, "0"), (50, "+50"), (100, "+100")], [(-225, "−225"), (-150, "−150"), (-75, "−75"), (0, "0"), (75, "+75"), (150, "+150")], xlab="ผลลัพธ์จริง ($)", ylab="ค่าทางใจ v(x)")
     out.append(f'<line x1="{sx(0):.1f}" y1="{y0}" x2="{sx(0):.1f}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1"/>')
@@ -595,12 +597,12 @@ def fig_prospect_value():
     out.append(f'<text x="{sx(58):.1f}" y="{sy(58)+18:.1f}" {FONT} font-size="9.5" fill="{INK2}">คนไร้ bias: v(x) = x</text>')
     polyline(out, [(sx(-100), sy(-lam * 100)), (sx(0), sy(0))], RED, 2.75)
     polyline(out, [(sx(0), sy(0)), (sx(100), sy(100))], GREEN, 2.75)
-    out.append(f'<circle cx="{sx(100):.1f}" cy="{sy(100):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
-    out.append(f'<text x="{sx(100)-8:.1f}" y="{sy(100)-8:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ชนะ +$100 → ค่าทางใจ +100</text>')
-    out.append(f'<circle cx="{sx(-50):.1f}" cy="{sy(-lam*50):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
-    out.append(f'<text x="{sx(-50)+8:.1f}" y="{sy(-lam*50)+24:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">แพ้ −$50 → ค่าทางใจ −{lam*50:.2f} (= 2.25 × 50)</text>')
-    out.append(f'<text x="{sx(-98):.1f}" y="{sy(130):.1f}" {FONT} font-size="10" fill="{INK}" font-weight="700">เดิมพัน 50/50: EV = +$25 แต่ค่าทางใจ = ½(100) − ½({lam*50:.2f}) = {0.5*100-0.5*lam*50:+.2f} → ปฏิเสธ</text>')
-    legend(out, [(GREEN, "ฝั่งกำไร ความชัน 1", ""), (RED, "ฝั่งขาดทุน ความชัน 2.25", ""), (INK2, "เส้นอ้างอิงไร้ bias", "5 4")], x0, H - 10)
+    out.append(f'<circle cx="{sx(win):.1f}" cy="{sy(win):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
+    out.append(f'<text x="{sx(win)-8:.1f}" y="{sy(win)-8:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ชนะ +${win} → ค่าทางใจ +{win}</text>')
+    out.append(f'<circle cx="{sx(-loss):.1f}" cy="{sy(-lam*loss):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
+    out.append(f'<text x="{sx(-loss)+8:.1f}" y="{sy(-lam*loss)+24:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">แพ้ −${loss} → ค่าทางใจ −{lam*loss:.2f} (= {L} × {loss})</text>')
+    out.append(f'<text x="{sx(-98):.1f}" y="{sy(130):.1f}" {FONT} font-size="10" fill="{INK}" font-weight="700">เดิมพัน 50/50: EV = +${ev:g} แต่ค่าทางใจ = ½({win}) − ½({lam*loss:.2f}) = {m(u)} → ปฏิเสธ</text>')
+    legend(out, [(GREEN, "ฝั่งกำไร ความชัน 1", ""), (RED, f"ฝั่งขาดทุน ความชัน {L}", ""), (INK2, "เส้นอ้างอิงไร้ bias", "5 4")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
 
