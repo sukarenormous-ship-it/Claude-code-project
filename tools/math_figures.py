@@ -1802,6 +1802,32 @@ print(f"ทฤษฎี V  GARCH σ̄ {math.sqrt(_lr):.2%} hl {math.log(.5)/math
 
 
 
+# ── เครื่องมือ Deflated Sharpe (tool-deflated-sharpe) — ใช้ _emax ชุดเดียวกับ theory-part5 ─────
+_TD = "tool-deflated-sharpe.html"
+
+
+def _tool_dsr(sr, years, n):
+    """สูตรเดียวกับ JS ในหน้า: เกณฑ์โชค (SE ที่ SR = 0) · SE ของ Sharpe ที่เห็น (ข้อมูลรายวัน) · DSR"""
+    s0 = (_emax(n) if n >= 2 else 0.0) / math.sqrt(years)
+    se = math.sqrt((1 + sr * sr / 504) / years)
+    return s0, sr - s0, _n5.cdf((sr - s0) / se)
+
+
+_d0 = _tool_dsr(1.2, 3, 50)
+expect(_TD, "ค่าเริ่มต้น เกณฑ์โชค", f'<span class="v" id="oNoise">{_d0[0]:.2f}</span>')
+expect(_TD, "ค่าเริ่มต้น ส่วนเกิน", f'<span class="v" id="oReal">−{abs(_d0[1]):.2f}</span>')
+expect(_TD, "ค่าเริ่มต้น DSR", f'<span class="v" id="oDsr">{_d0[2]:.0%}</span>')
+assert _d0[1] < 0, "ค่าเริ่มต้นต้องแพ้โชค ตามเรื่องเปิดหน้า"
+_zq1, _zq2 = _n5.ppf(0.99), _n5.ppf(1 - 1 / (100 * math.e))
+expect(_TD, "เฉลย quantiles", f"≈ {1-_EG:.2f} × {_zq1:.2f} + {_EG:.2f} × {_zq2:.2f} = {_emax(100):.2f} (หน่วย SE)")
+expect(_TD, "เฉลย เกณฑ์ 2 ปี", f"≈ {_emax(100):.2f}/√2 ≈ <strong>{_tool_dsr(1.5, 2, 100)[0]:.2f}</strong>")
+assert _tool_dsr(1.5, 2, 100)[1] < 0
+expect(_TD, "เฉลย Sharpe 3", f"DSR ก็ได้แค่ราว {_tool_dsr(3, 2, 100)[2]:.0%} เฉียดเส้น")
+expect("tools-index.html", "กฎ DSR", f"ลอง 100 แบบบนข้อมูล 2 ปี ≈ {_tool_dsr(1.5, 2, 100)[0]:.2f}")
+print(f"เครื่องมือ DSR  ค่าเริ่มต้น {_d0[0]:.3f}/{_d0[1]:+.3f}/{_d0[2]:.3f} · เฉลย {_tool_dsr(1.5, 2, 100)[0]:.3f} · SR3 {_tool_dsr(3, 2, 100)[2]:.3f}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0

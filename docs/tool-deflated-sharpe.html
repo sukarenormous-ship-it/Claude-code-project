@@ -52,21 +52,21 @@ a{color:var(--purple)}
 
 <p class="tag">อ่านจบ = ใช้เป็น ไม่ใช่แค่รู้จัก</p>
 
-<p>คุณลองปรับกลยุทธ์ไป 50 แบบ แล้วเจอตัวที่ Sharpe = 2 ในการ backtest ดูเหมือนเจอขุมทรัพย์ — แต่ความจริงคือ ถ้าคุณลองหลายแบบพอ <strong>ความบังเอิญล้วน ๆ ก็สร้าง Sharpe สูง ๆ ให้คุณได้เอง</strong> โดยไม่มี edge จริงเลยสักนิด หน้านี้ให้คุณใส่ตัวเลขจริงของ backtest ตัวเองแล้วดูว่าเหลือ edge จริงแค่ไหนหลังหักโชค</p>
+<p>คุณลองปรับกลยุทธ์ไป 50 แบบ แล้วเจอตัวที่ Sharpe = 1.2 ใน backtest 3 ปี ดูเหมือนเจอขุมทรัพย์ — แต่ความจริงคือ ถ้าคุณลองหลายแบบพอ <strong>ความบังเอิญล้วน ๆ ก็สร้าง Sharpe สูง ๆ ให้คุณได้เอง</strong> โดยไม่มี edge จริงเลยสักนิด หน้านี้ให้คุณใส่ตัวเลขจริงของ backtest ตัวเองแล้วดูว่าเหลือ edge จริงแค่ไหนหลังหักโชค</p>
 
 <div class="lab">
 <h3>🧪 เครื่องหักโชคออกจาก Sharpe</h3>
-<div class="sub">Sharpe ที่เห็น − Sharpe ที่โชคสร้างได้ = edge จริง (ถ้ายังเหลือ)</div>
+<div class="sub">Sharpe ที่เห็น − Sharpe ที่โชคสร้างได้ = ส่วนที่เกินโชค (ถ้ายังเหลือ) · แล้วถามต่อว่าเกินห่างพอจะเชื่อไหม</div>
 
 <div class="ctrl">
-<div class="row1"><label>Sharpe ที่เห็นใน backtest</label><span class="val" id="vSr">2.0</span></div>
-<input type="range" id="sr" min="0.5" max="5" value="2" step="0.1">
+<div class="row1"><label>Sharpe ที่เห็นใน backtest</label><span class="val" id="vSr">1.2</span></div>
+<input type="range" id="sr" min="0.5" max="5" value="1.2" step="0.1">
 </div>
 
 <div class="ctrl">
-<div class="row1"><label>ความยาว backtest (ปี)</label><span class="val" id="vYears">5</span></div>
-<input type="range" id="years" min="1" max="20" value="5" step="1">
-<div class="hint">ยิ่งข้อมูลสั้น Sharpe ยิ่งไม่น่าเชื่อถือ</div>
+<div class="row1"><label>ความยาว backtest (ปี)</label><span class="val" id="vYears">3</span></div>
+<input type="range" id="years" min="1" max="20" value="3" step="1">
+<div class="hint">ยิ่งข้อมูลสั้น Sharpe ยิ่งไม่น่าเชื่อถือ (SE ของ Sharpe รายปี ≈ 1/√ปี เมื่อใช้ข้อมูลรายวัน)</div>
 </div>
 
 <div class="ctrl">
@@ -76,19 +76,20 @@ a{color:var(--purple)}
 </div>
 
 <div class="out">
-<div class="stat"><span class="k">Sharpe ที่เห็น</span><span class="v" id="oObs">2.00</span></div>
+<div class="stat"><span class="k">Sharpe ที่เห็น</span><span class="v" id="oObs">1.20</span></div>
 <div class="bar"><span id="barObs" style="background:var(--g5)"></span></div>
 
-<div class="stat"><span class="k">Sharpe ที่ "โชคล้วน ๆ" สร้างได้จากการลองเยอะ</span><span class="v" id="oNoise">2.17</span></div>
+<div class="stat"><span class="k">Sharpe ที่ "โชคล้วน ๆ" สร้างได้จากการลองเยอะ</span><span class="v" id="oNoise">1.31</span></div>
 <div class="bar"><span id="barNoise" style="background:var(--red)"></span></div>
 
-<div class="stat"><span class="k">edge จริงที่เหลือ (deflated)</span><span class="v" id="oReal">−0.17</span></div>
+<div class="stat"><span class="k">ส่วนที่เกินโชค</span><span class="v" id="oReal">−0.11</span></div>
+<div class="stat"><span class="k">DSR: ความมั่นใจว่าเกินโชคจริง (ต้อง ≥ 95%)</span><span class="v" id="oDsr">42%</span></div>
 </div>
 
 <div class="verdict" id="verdict">—</div>
 </div>
 
-<p>ลองดันจำนวนกลยุทธ์ที่ลองขึ้นไปเรื่อย ๆ สิ่งที่คุณจะเห็นคือ "Sharpe ที่โชคสร้างได้" ไต่สูงขึ้นเรื่อย ๆ — เพราะยิ่งคุณสุ่มหลายครั้ง โอกาสที่ครั้งใดครั้งหนึ่งจะ<em>ฟลุก</em>สวยก็ยิ่งสูง พอมันแซง Sharpe ที่คุณเห็น แปลว่าผลงานทั้งหมดของคุณอธิบายได้ด้วยความบังเอิญ ไม่ต้องมี edge จริงเลย นี่คือสาเหตุที่กลยุทธ์ "เทพใน backtest" ส่วนใหญ่ตายทันทีที่เจอเงินจริง</p>
+<p>ลองดันจำนวนกลยุทธ์ที่ลองขึ้นไปเรื่อย ๆ สิ่งที่คุณจะเห็นคือ "Sharpe ที่โชคสร้างได้" ไต่สูงขึ้นเรื่อย ๆ — เพราะยิ่งคุณสุ่มหลายครั้ง โอกาสที่ครั้งใดครั้งหนึ่งจะ<em>ฟลุก</em>สวยก็ยิ่งสูง พอมันแซง Sharpe ที่คุณเห็น แปลว่าผลงานทั้งหมดของคุณอธิบายได้ด้วยความบังเอิญ ไม่ต้องมี edge จริงเลย · ลองดันจำนวนปีขึ้นด้วย เกณฑ์โชคจะหดตาม 1/√ปี เพราะข้อมูลยาวทำให้ Sharpe ฟลุกยากขึ้น นี่คือสาเหตุที่กลยุทธ์ "เทพใน backtest" ส่วนใหญ่ตายทันทีที่เจอเงินจริง</p>
 
 <p class="pq">ถ้าคุณลองมากพอ คุณจะเจอกลยุทธ์ที่ดูสมบูรณ์แบบเสมอ — คำถามไม่ใช่ "มันดีไหม" แต่คือ "ดีกว่าที่โชคให้ได้หรือเปล่า"</p>
 
@@ -96,17 +97,17 @@ a{color:var(--purple)}
 
 <div class="rulebox">
 <div class="lbl">หักโชคก่อนเชื่อ backtest เสมอ</div>
-<div class="eq">Sharpe ที่โชคให้ ≈ SE × √(2·ln N) · · · SE ≈ √((1 + SR²/2) / ปี)</div>
-<div class="note-txt">N คือจำนวนครั้งที่คุณลอง (นับให้ครบ — ทุกการปรับจูนคือหนึ่งครั้ง) ยิ่ง N สูง แท่งที่ต้องเอาชนะยิ่งสูง ก่อนอวดกลยุทธ์ไหนว่า "เจอ edge" ให้ถามตัวเองว่า <strong>ลองไปกี่แบบกว่าจะเจอตัวนี้</strong> แล้วเทียบ Sharpe กับ √(2·ln N) — ถ้าไม่ชนะชัด ๆ แปลว่ายังพิสูจน์ไม่ได้ว่าไม่ใช่โชค</div>
+<div class="eq">เกณฑ์โชค SR₀ ≈ [0.42·Φ⁻¹(1 − 1/N) + 0.58·Φ⁻¹(1 − 1/(N·e))] / √ปี · · · DSR ≈ Φ[(SR − SR₀) / SE] , SE ≈ √((1 + SR²/504) / ปี)</div>
+<div class="note-txt">N คือจำนวนครั้งที่คุณลอง (นับให้ครบ — ทุกการปรับจูนคือหนึ่งครั้ง) ยิ่ง N สูง แท่งที่ต้องเอาชนะยิ่งสูง ก่อนอวดกลยุทธ์ไหนว่า "เจอ edge" ให้ถามตัวเองว่า <strong>ลองไปกี่แบบกว่าจะเจอตัวนี้</strong> แล้วเทียบ Sharpe กับเกณฑ์โชค SR₀ ถ้าไม่ชนะชัด ๆ (DSR ต่ำกว่า 95%) แปลว่ายังพิสูจน์ไม่ได้ว่าไม่ใช่โชค · สูตรนี้สมมติผลตอบแทนรายวันแจกแจงปกติและกลยุทธ์ที่ลองเป็นอิสระกัน หางอ้วนหรือ skew ลบทำให้ DSR ต่ำลงอีก · สูตรหยาบ √(2·ln N) ที่เห็นบ่อยเป็นแค่อัตราโตและให้ค่าสูงเกินจริง · ที่มาเต็ม ๆ อยู่ในการ์ด Deflated Sharpe ของ <a href="theory-part5.html">ทฤษฎี Part V</a></div>
 </div>
 
 <p>นี่คือสิ่งที่แยกคนที่รอดในตลาดจริงออกจากคนที่หลงกับ backtest สวย ๆ: ไม่ใช่รู้จักคำว่า overfitting แต่คือมี<strong>ตัวเลขแท่งที่ต้องเอาชนะ</strong>กดใส่กลยุทธ์ตัวเองได้ทันที และรู้ว่ายิ่งจูนเยอะ ยิ่งต้องขี้ระแวงผลลัพธ์มากขึ้น ไม่ใช่น้อยลง</p>
 
 <div class="try">
 <h3>✍️ ลองเอง (เฉลยได้)</h3>
-<p style="margin-bottom:0">เพื่อนอวดกลยุทธ์ crypto ที่ Sharpe 3 จาก backtest 2 ปี บอกว่า "ลองปรับพารามิเตอร์อยู่เป็นร้อยแบบกว่าจะเจอตัวเทพนี้" — น่าเชื่อไหม?</p>
+<p style="margin-bottom:0">เพื่อนอวดกลยุทธ์ crypto ที่ Sharpe 1.5 จาก backtest รายวัน 2 ปี บอกว่า "ลองปรับพารามิเตอร์อยู่เป็นร้อยแบบกว่าจะเจอตัวเทพนี้" — น่าเชื่อไหม?</p>
 <button id="revealBtn">ดูเฉลย</button>
-<div class="ans" id="ans"><strong>ไม่น่าเชื่อ.</strong> SE ≈ √((1+3²/2)/2) = √(5.5/2) = √2.75 ≈ 1.66 · Sharpe ที่โชคให้ ≈ 1.66 × √(2·ln 100) = 1.66 × √9.2 ≈ 1.66 × 3.03 ≈ <strong>5.0</strong> ซึ่ง<em>สูงกว่า</em> Sharpe 3 ที่เขาอวดเสียอีก แปลว่าผลงานทั้งหมดอธิบายได้ด้วยโชคจากการลองร้อยแบบบนข้อมูลแค่ 2 ปี — edge จริงติดลบ ยิ่ง "ลองเยอะกว่าจะเจอ" ยิ่งเป็นสัญญาณอันตราย ไม่ใช่จุดขาย</div>
+<div class="ans" id="ans"><strong>ไม่น่าเชื่อ.</strong> เกณฑ์โชคของการลอง 100 แบบ ≈ 0.42 × 2.33 + 0.58 × 2.68 = 2.53 (หน่วย SE) · ข้อมูล 2 ปี → Sharpe ที่โชคให้ ≈ 2.53/√2 ≈ <strong>1.79</strong> ซึ่ง<em>สูงกว่า</em> Sharpe 1.5 ที่เขาอวดเสียอีก แปลว่าผลงานทั้งหมดอธิบายได้ด้วยโชคจากการลองร้อยแบบบนข้อมูลแค่ 2 ปี ยิ่ง "ลองเยอะกว่าจะเจอ" ยิ่งเป็นสัญญาณอันตราย ไม่ใช่จุดขาย · ต่อให้เขาได้ Sharpe 3 ภายใต้เงื่อนไขเดียวกัน DSR ก็ได้แค่ราว 96% เฉียดเส้น และนั่นยังสมมติผลตอบแทนแจกแจงปกติ ซึ่ง crypto หางอ้วนกว่านั้นมาก</div>
 </div>
 
 <div class="closing">
@@ -118,30 +119,46 @@ a{color:var(--purple)}
 (function(){
 function num(id){return parseFloat(document.getElementById(id).value)}
 function clampPct(x){return Math.max(0,Math.min(100,x))}
+// Φ⁻¹(p): Acklam's rational approximation (relative error < 1.2e-9)
+function ninv(p){
+  var a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00],
+      b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01],
+      c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00],
+      d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00],q,r;
+  if(p<0.02425){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  if(p>1-0.02425){q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+}
+// Φ(x): Abramowitz-Stegun 7.1.26 (error < 1.5e-7)
+function ncdf(x){var t=1/(1+0.3275911*Math.abs(x)/Math.SQRT2),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x/2);return x>=0?(1+y)/2:(1-y)/2}
+// E[max of N independent N(0,1)] — Bailey-López de Prado (2014)
+function emax(n){var g=0.5772156649;return n<2?0:(1-g)*ninv(1-1/n)+g*ninv(1-1/(n*Math.E))}
 function update(){
   var sr=num('sr'),years=num('years'),n=num('n');
   document.getElementById('vSr').textContent=sr.toFixed(1);
   document.getElementById('vYears').textContent=years;
   document.getElementById('vN').textContent=n;
-  var se=Math.sqrt((1+sr*sr/2)/years);          // std error of an annualized Sharpe estimate
-  var noise=se*Math.sqrt(2*Math.log(Math.max(n,1.0001))); // expected best Sharpe from N lucky tries
-  var real=sr-noise;                             // deflated / real edge
+  var noise=emax(n)/Math.sqrt(years);            // expected best Sharpe from N no-edge tries (SE at SR = 0)
+  var se=Math.sqrt((1+sr*sr/504)/years);         // std error of the observed annualized Sharpe (daily data)
+  var real=sr-noise;                             // part of the Sharpe above luck
+  var dsr=ncdf(real/se);                         // deflated Sharpe ratio (normal returns)
   document.getElementById('oObs').textContent=sr.toFixed(2);
   document.getElementById('oNoise').textContent=noise.toFixed(2);
   document.getElementById('oReal').textContent=(real>=0?'+':'−')+Math.abs(real).toFixed(2);
+  document.getElementById('oDsr').textContent=Math.round(dsr*100)+'%';
   var scale=Math.max(sr,noise,0.01);
   document.getElementById('barObs').style.width=clampPct(sr/scale*100)+'%';
   document.getElementById('barNoise').style.width=clampPct(noise/scale*100)+'%';
   var v=document.getElementById('verdict');
   if(real<=0){
     v.className='verdict dead';
-    v.textContent='💀 อธิบายได้ด้วยโชคล้วน ๆ: โชคจากการลอง '+n+' แบบสร้าง Sharpe ได้ถึง '+noise.toFixed(2)+' ซึ่งเกิน '+sr.toFixed(2)+' ที่คุณเห็น — edge จริงติดลบ กลยุทธ์นี้ยังพิสูจน์ไม่ได้เลยว่าไม่ใช่การ overfit';
-  } else if(real<0.5){
+    v.textContent='💀 อธิบายได้ด้วยโชคล้วน ๆ: โชคจากการลอง '+n+' แบบบนข้อมูล '+years+' ปีสร้าง Sharpe ได้ถึง '+noise.toFixed(2)+' ซึ่งเกิน '+sr.toFixed(2)+' ที่คุณเห็น — กลยุทธ์นี้ยังพิสูจน์ไม่ได้เลยว่าไม่ใช่การ overfit';
+  } else if(dsr<0.95){
     v.className='verdict warn';
-    v.textContent='⚠️ เฉียดฉิว: เหลือ edge จริงแค่ '+real.toFixed(2)+' หลังหักโชค — บาง ๆ เกินกว่าจะมั่นใจ ลองยืนยันด้วยข้อมูลนอกช่วงทดสอบ (out-of-sample) ก่อนลงเงินจริง';
+    v.textContent='⚠️ ยังไม่พอ: เกินเกณฑ์โชค '+real.toFixed(2)+' แต่ Sharpe จากข้อมูล '+years+' ปีคลาดได้ราว ±'+se.toFixed(2)+' ความมั่นใจว่าเกินโชคจริงจึงมีแค่ '+Math.round(dsr*100)+'% (ต้อง ≥ 95%) — ต่อข้อมูลให้ยาวขึ้น หรือยืนยันด้วยข้อมูลนอกช่วงทดสอบ (out-of-sample) ก่อนลงเงินจริง';
   } else {
     v.className='verdict ok';
-    v.textContent='✓ ยังเหลือ edge จริง: '+sr.toFixed(2)+' − '+noise.toFixed(2)+' = '+real.toFixed(2)+' หลังหักโชคจากการลอง '+n+' แบบ — น่าสนใจ แต่ก็ยังควรยืนยัน out-of-sample อยู่ดี';
+    v.textContent='✓ ผ่านเกณฑ์โชค: '+sr.toFixed(2)+' − '+noise.toFixed(2)+' = '+real.toFixed(2)+' หลังหักโชคจากการลอง '+n+' แบบ (DSR '+Math.round(dsr*100)+'%) — น่าสนใจ แต่ก็ยังควรยืนยัน out-of-sample อยู่ดี';
   }
 }
 ['sr','years','n'].forEach(function(id){document.getElementById(id).addEventListener('input',update)});
