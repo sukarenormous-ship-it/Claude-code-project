@@ -1947,6 +1947,42 @@ expect("theory-part6.html", "cheat DSR", f"ลอง 1,000 แบบบน noise
 
 
 
+# ── เสาหลัก Part III (pillars-part3) — √-law · AC · A-S · GM · Kyle ─────────────────────────────
+_P3 = "pillars-part3.html"; _P3N = "pillars-part3-narrative.html"
+_si = _mf.NUMS.get("sqrt-impact") or (_mf.FIGS[(_P3, "sqrt-impact")](), _mf.NUMS["sqrt-impact"])[1]
+_s3, _Y3, _hd = _mf.SQRT_P3["sg"], _mf.SQRT_P3["Y"], _mf.SQRT_P3["hurdle"]
+_pk = lambda qv: _Y3 * _s3 * math.sqrt(qv)
+expect(_P3, "√-law peak", f"≈ 1 × 2% × √0.10 ≈ 2% × {math.sqrt(0.1):.3f} ≈ <strong>{_pk(0.1):.2%}</strong> ของราคา")
+expect(_P3, "√-law read", f"√0.10 ≈ {math.sqrt(0.1):.3f} → 1 × 2% × {math.sqrt(0.1):.3f} ≈ {_pk(0.1):.2%}")
+expect(_P3, "√-law เฉลี่ย", f"≈ ⅔ × {_pk(0.1):.2%} ≈ <strong>{2/3*_pk(0.1):.2%}</strong>")
+expect(_P3, "capacity", f"คือราว {(_hd/(2/3*_Y3*_s3))**2:.0%} ของ ADV (ถ้าวัดด้วย peak คือ {(_hd/(_Y3*_s3))**2:.2%})")
+assert abs(_si["cap_avg"] - (_hd / (2 / 3 * _Y3 * _s3)) ** 2) < 1e-12
+expect(_P3, "√-law เฉลย", f"2% × √0.025 ≈ {_pk(0.025):.2%}")
+expect(_P3, "AC peak", f"2% × √0.20 ≈ {_pk(0.2):.2%} ต้นทุนเฉลี่ย ≈ {2/3*_pk(0.2):.2%}")
+expect(_P3, "AC 1 ชม.", f"2% × √(1/6.5 ÷ 3) ≈ <strong>{0.02*math.sqrt(1/6.5/3):.2%}</strong>")
+expect(_P3, "AC ทั้งวัน", f"2% × √(1/3) ≈ <strong>{0.02*math.sqrt(1/3):.2%}</strong> มากกว่าต้นทุนเฉลี่ย {2/3*_pk(0.2):.2%}")
+expect(_P3, "AC เฉลย", f"2% × √(2/3) ≈ {0.02*math.sqrt(2/3):.2%}")
+expect(_P3N, "narrative AC", f"timing risk เหลือ SD ราว {0.02*math.sqrt(1/6.5/3):.2%}")
+expect(_P3N, "narrative AC วัน", f"timing risk SD ราว {0.02*math.sqrt(1/3):.2%}")
+expect(_P3N, "narrative √-law", f"ต้นทุนเฉลี่ยทั้งออเดอร์ราว ⅔ ของนั้น ≈ {2/3*_pk(0.1):.2%}")
+# Avellaneda-Stoikov
+_sk = 10 * 0.1 * 4 * 0.5
+expect(_P3, "A-S skew", f"= 10 × 0.1 × 4 × 0.5 = <strong>${_sk:.2f}</strong> → reservation price r = 100 − {_sk:.0f} = <strong>${100-_sk:.2f}</strong>")
+expect(_P3, "A-S read", f"10 × 0.1 × 4 × 0.5 = ${_sk:.2f}")
+expect(_P3, "A-S เฉลย", f"100 − 10 × 0.1 × 4 × 0.1 = ${100-10*0.1*4*0.1:.2f}")
+# Glosten-Milgrom · Kyle
+_mu, _vh, _vl = 0.2, 101, 99
+_pb_h, _pb_l = _mu + (1 - _mu) / 2, (1 - _mu) / 2
+_ask = (_pb_h * _vh + _pb_l * _vl) / (_pb_h + _pb_l); _bid = (_pb_l * _vh + _pb_h * _vl) / (_pb_h + _pb_l)
+expect(_P3, "GM prob", f"= 0.2 + 0.8 × ½ = {_pb_h:.1f} · ถ้า $99 = 0.8 × ½ = {_pb_l:.1f}")
+expect(_P3, "GM ask bid", f"= 0.6 × 101 + 0.4 × 99 = <strong>${_ask:.1f}</strong> · bid = E[V | ขาย] = <strong>${_bid:.1f}</strong>")
+expect(_P3, "GM spread", f"spread = ${_ask-_bid:.2f} = 0.2 × (101 − 99)")
+assert abs((_ask - _bid) - _mu * (_vh - _vl)) < 1e-12
+expect(_P3, "GM เฉลย", f"0.5 × 2 = ${0.5*2:.2f}")
+print(f"เสา III  peak {_pk(0.1):.4%} avg {2/3*_pk(0.1):.4%} cap {_si['cap_peak']:.4f}/{_si['cap_avg']:.4f} · AC {0.02*math.sqrt(1/3):.4%} · A-S r {100-_sk} · GM {_ask:.2f}/{_bid:.2f}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0

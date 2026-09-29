@@ -728,27 +728,35 @@ def fig_survival_curve():
     return "\n".join(out)
 
 
-# ── B · Part 3 √-law: impact = Y σ √(Q/ADV) เทียบเส้นตรง ──
+# ── B · Part 3 √-law: impact = Y σ √(Q/ADV) เทียบเส้นตรง · peak vs ต้นทุนเฉลี่ย (⅔) ──
+SQRT_P3 = dict(sg=0.02, Y=1.0, q=0.10, hurdle=0.005)
+
+
 @fig("pillars-part3.html", "sqrt-impact")
 def fig_sqrt_impact():
-    q = np.linspace(0, 0.30, 121); sg, Y = 0.02, 1.0; imp = Y * sg * np.sqrt(q) * 100
-    NUMS["sqrt-impact"] = dict(imp10=float(Y * sg * np.sqrt(0.10) * 100), imp2_5=float(Y * sg * np.sqrt(0.025) * 100))
-    Wd, H = 560, 280
-    out = svg_open(Wd, H, "เส้นโค้งรากที่สองของ market impact ตามสัดส่วนขนาดออเดอร์ต่อปริมาณเฉลี่ยต่อวัน · ที่ 10% ของ ADV impact 0.63% ของราคา · ชันมากช่วงแรกแล้วแบนลง")
-    title(out, Wd, "√-law — ชิ้นแรกดันราคาแรงสุด แต่ละชิ้นที่เพิ่มดันน้อยลง", "impact ≈ Y · σ · √(Q/ADV) · σ = 2%/วัน · Y = 1 · กำไรที่คาด 0.5% หมดก่อนถึง 10% ของ ADV")
+    sg, Y, q0, hd = SQRT_P3["sg"], SQRT_P3["Y"], SQRT_P3["q"], SQRT_P3["hurdle"]
+    xmax, ymax = 0.25, 1.2
+    q = np.linspace(0, xmax, 121); imp = Y * sg * np.sqrt(q) * 100; avg = imp * 2 / 3
+    v10 = Y * sg * np.sqrt(q0) * 100; qc = (hd / (Y * sg)) ** 2; qa = (hd / (2 / 3 * Y * sg)) ** 2
+    NUMS["sqrt-impact"] = dict(imp10=float(v10), imp2_5=float(Y * sg * np.sqrt(q0 / 4) * 100), avg10=float(v10 * 2 / 3), cap_peak=qc, cap_avg=qa)
+    Wd, H = 560, 290
+    out = svg_open(Wd, H, f"เส้นโค้งรากที่สองของ market impact ตามสัดส่วนขนาดออเดอร์ต่อปริมาณเฉลี่ยต่อวัน · ที่ {q0:.0%} ของ ADV impact สูงสุด {v10:.2f}% และต้นทุนเฉลี่ยทั้งออเดอร์ {v10*2/3:.2f}% ของราคา · ชันมากช่วงแรกแล้วแบนลง")
+    title(out, Wd, "√-law — ชิ้นแรกดันราคาแรงสุด แต่ละชิ้นที่เพิ่มดันน้อยลง", f"impact ≈ Y · σ · √(Q/ADV) · σ = {sg:.0%}/วัน · Y = {Y:g} · เส้นประม่วง = ต้นทุนเฉลี่ยที่จ่ายจริงทั้งออเดอร์ (⅔ ของ peak)")
     x0, y0, w, h = 50, 46, 480, 180
-    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%"), (0.30, "30%")], [(0, "0"), (0.4, "0.4%"), (0.8, "0.8%"), (1.2, "1.2%")], xlab="ขนาดออเดอร์ Q เป็นสัดส่วนของ ADV", ylab="impact (% ของราคา)")
-    polyline(out, [(sx(0), sy(0)), (sx(0.30), sy(0.02 * 0.30 / 0.10 * np.sqrt(0.10) * 100))], INK2, 1.4, dash="5 4", shadow=False)
-    out.append(f'<text x="{sx(0.168):.1f}" y="{sy(1.08):.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ถ้าเป็นเส้นตรง (สัญชาตญาณผิด)</text>')
-    out.append(f'<line x1="{x0}" y1="{sy(0.5):.1f}" x2="{x0+w}" y2="{sy(0.5):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="4 4"/>')
-    out.append(f'<text x="{x0+w-4}" y="{sy(0.5)-5:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{RED}">กำไรที่กลยุทธ์คาด 0.5% ต่อเทรด</text>')
+    sx, sy = frame(out, x0, y0, w, h, [(0, "0"), (0.05, "5%"), (0.10, "10%"), (0.15, "15%"), (0.20, "20%"), (0.25, "25%")], [(0, "0"), (0.4, "0.4%"), (0.8, "0.8%"), (1.2, "1.2%")], xlab="ขนาดออเดอร์ Q เป็นสัดส่วนของ ADV", ylab="impact (% ของราคา)")
+    slope = v10 / q0; xl = min(xmax, ymax / slope)
+    polyline(out, [(sx(0), sy(0)), (sx(xl), sy(slope * xl))], INK2, 1.4, dash="5 4", shadow=False)
+    out.append(f'<text x="{sx(xl)-4:.1f}" y="{sy(ymax)+12:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{INK2}">ถ้าเป็นเส้นตรง (สัญชาตญาณผิด)</text>')
+    out.append(f'<line x1="{x0}" y1="{sy(hd*100):.1f}" x2="{x0+w}" y2="{sy(hd*100):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="4 4"/>')
+    out.append(f'<text x="{x0+w-4}" y="{sy(hd*100)+14:.1f}" text-anchor="end" {FONT} font-size="9.5" fill="{RED}">กำไรที่กลยุทธ์คาด {hd:.1%} ต่อเทรด</text>')
+    polyline(out, [(sx(a), sy(b)) for a, b in zip(q, avg)], PURPLE, 1.8, dash="6 3", shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(q, imp)], BLUE, 2.75)
-    v10 = Y * sg * np.sqrt(0.10) * 100
-    out.append(f'<circle cx="{sx(0.10):.1f}" cy="{sy(v10):.1f}" r="4.5" fill="#fff" stroke="{PURPLE}" stroke-width="2.4"/>')
-    out.append(f'<text x="{sx(0.10)+8:.1f}" y="{sy(v10)-16:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">10% ของ ADV: impact = 2% × √0.10 ≈ {v10:.2f}% → กินกำไรหมด</text>')
-    qc = (0.5 / (Y * sg * 100)) ** 2
-    out.append(f'<line x1="{sx(qc):.1f}" y1="{sy(0.5):.1f}" x2="{sx(qc):.1f}" y2="{sy(0):.1f}" stroke="{RED}" stroke-width="1" stroke-dasharray="2 2"/>')
-    out.append(f'<text x="{sx(qc):.1f}" y="{sy(0)-6:.1f}" text-anchor="middle" {FONT} font-size="9.5" fill="{RED}">capacity ≈ {qc*100:.2f}% ของ ADV</text>')
+    out.append(f'<circle cx="{sx(q0):.1f}" cy="{sy(v10):.1f}" r="4.5" fill="#fff" stroke="{BLUE}" stroke-width="2.4"/>')
+    out.append(f'<text x="{sx(q0)+8:.1f}" y="{sy(v10)-12:.1f}" {FONT} font-size="9.5" fill="{BLUE}" font-weight="700">{q0:.0%} ของ ADV: peak = {sg:.0%} × √{q0:.2f} ≈ {v10:.2f}% · เฉลี่ย {v10*2/3:.2f}%</text>')
+    for xc, col, lab, dy in [(qc, RED, f"peak ชนเส้นที่ {qc:.2%}", -6), (qa, PURPLE, f"เฉลี่ยชนเส้นที่ {qa:.1%}", -6)]:
+        out.append(f'<line x1="{sx(xc):.1f}" y1="{sy(hd*100):.1f}" x2="{sx(xc):.1f}" y2="{sy(0):.1f}" stroke="{col}" stroke-width="1" stroke-dasharray="2 2"/>')
+        out.append(f'<text x="{sx(xc):.1f}" y="{sy(0)+dy:.1f}" text-anchor="middle" {FONT} font-size="9.5" fill="{col}">{lab}</text>')
+    legend(out, [(BLUE, "impact สูงสุดตอนจบออเดอร์ (peak)", ""), (PURPLE, "ต้นทุนเฉลี่ยทั้งออเดอร์ (⅔ ของ peak)", "6 3")], x0, H - 10)
     out.append("</svg>")
     return "\n".join(out)
 
