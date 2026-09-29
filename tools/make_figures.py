@@ -3140,7 +3140,7 @@ def fig_m11_indicator_breakeven():
             if mx <= xmax: out.append(f'<circle cx="{sx(mx):.1f}" cy="{sy(my):.1f}" r="3" fill="#fff" stroke="{cols[nm]}" stroke-width="1.8"/>')
     _txt(out, sx(0.0078), sy(0.0262), "RSI — เก็บได้มากต่อไม้", GREEN, "end", size=9, bold=True)
     _txt(out, x0 + 4, y0 + 12, "เส้นแดงแนวนอน = ต้นทุนไป-กลับ 0.436% — ไม่ขึ้นกับ σ", RED, "start", size=9, bold=True)
-    _txt(out, x0 + 4, y0 + 26, "วงกลมกลวง = ค่าที่วัดได้จริงจากตาราง §13.4", INK2, "start", size=9, italic=True)
+    _txt(out, x0 + 4, y0 + 26, "วงกลมกลวง = ค่าที่วัดได้จริงจากตาราง §12.7", INK2, "start", size=9, italic=True)
     _txt(out, x0 + 4, y0 + 38, "ทุกเส้นผ่านจุดกำเนิด — กำไรต่อไม้แปรตาม σ", INK2, "start", size=9, italic=True)
     legend(out, [(GREEN, "RSI(14) 30→50", ""), (BLUE, "Bollinger −2SD", "6 3"), (AMBER, "Stochastic %K 20→50 (ถี่กว่า 10 เท่า)", "2 3")], x0, H - 10)
     out.append("</svg>")
@@ -3166,9 +3166,9 @@ def fig_m11_ridge_path():
     alphas, paths, ols, bt = ridge_path_data()
     r10 = paths[np.argmin(abs(alphas - 10))]
     Wd, H = 560, 320
-    out = svg_open(Wd, H, f"เส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: market เริ่มที่ติดลบ {ols[0]:.2f} แล้วไต่ขึ้น value เริ่มสูง {ols[1]:.2f} แล้วลดลง ทั้งคู่มาบรรจบกันราว 0.6 ส่วน size คงที่")
+    out = svg_open(Wd, H, f"เส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: market เริ่มที่ติดลบ {ols[0]:.2f} แล้วไต่ขึ้น value เริ่มสูง {ols[1]:.2f} แล้วลดลง ทั้งคู่วิ่งเข้าหากัน ส่วน size หดลงช้ากว่า")
     title(out, Wd, "Ridge Path — ยิ่งเพิ่มค่าปรับ α สองตัวที่ซ้ำกันยิ่งเลิกแย่งกัน แล้วเดินเข้าหาคำตอบจริง",
-          f"§14.3 (val ≈ mkt · VIF 113) · OLS ให้ {ols[0]:.2f} / {ols[1]:.2f} — เพี้ยน · α = 10 ได้ {r10[0]:.2f} / {r10[1]:.2f} / {r10[2]:.2f} · จริง 0.8 / 0.4 / 0.3")
+          f"§14.1 (val ≈ mkt · VIF 113) · OLS ให้ {ols[0]:.2f} / {ols[1]:.2f} — เพี้ยน · α = 10 ได้ {r10[0]:.2f} / {r10[1]:.2f} / {r10[2]:.2f} · จริง 0.8 / 0.4 / 0.3")
     (sx0, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(-2, "0.01"), (-1, "0.1"), (0, "1"), (1, "10"), (2, "100")], [(-0.4, "−0.4"), (0, "0"), (0.4, "0.4"), (0.8, "0.8"), (1.2, "1.2"), (1.6, "1.6")], "α (ค่าปรับ) — สเกล log →", "สัมประสิทธิ์ β̂")
     def sx(a): return sx0(np.log10(a))
     _zero_line(out, sx0, sy, -2, 2)
@@ -3629,7 +3629,7 @@ def fig_m11_cv_split():
     title(out, Wd, "k-fold กับ walk-forward — วิธีแบ่งข้อมูลที่ต่างกันตรง \"เวลา\"",
           "ข้อมูลการเงินมีลำดับเวลา · แบ่งผิดวิธี ชุดฝึกจะมีอนาคตปนอยู่ และผลทดสอบจะสวยเกินจริง")
     L, R = 55, 505; n = 5; bw = (R - L) / n
-    _txt(out, L, 66, "k-fold (สุ่มสลับ) — ชุดฝึกอยู่ทั้งสองข้างของชุดทดสอบ", RED, "start", size=10.5, bold=True)
+    _txt(out, L, 66, "k-fold — ชุดฝึกอยู่ทั้งสองข้างของชุดทดสอบ (สุ่มสลับก็ยิ่งปนกว่านี้)", RED, "start", size=10.5, bold=True)
     for i in range(n):
         test = i == 2
         col = AMBER if test else BLUE

@@ -2192,6 +2192,60 @@ expect(_M8, "ddof 3000", f"ที่ n = 3,000 ต่างกัน {(math.sqrt
 print(f"2·C  ขยะ 100 {_j100[2]:.3f} · 130 {_j130[2]:.3f} ({_j130[3]:.2f}×) · kurt {_st8.kurtosis(_id8[:,0]):.2f}/{_st8.kurtosis(_mx8.mean(1)):.2f} · q01 {_q01:.3f} q05 {_q05:.3f} · ตัด {_xo:.4f}")
 
 
+# ── เล่ม 2 · F (math-part11) บทที่ 12 — ตัวเลขร้อยแก้ว (ผลโค้ดตรวจด้วยการรันจริงแยกอยู่แล้ว) ──
+_M11 = "math-part11.html"
+from sklearn.model_selection import KFold as _KF, TimeSeriesSplit as _TSS
+from sklearn.linear_model import LinearRegression as _LR
+_mn = lambda v: f"{v:+.3f}".replace("-", "−")
+def _rw11(seed, cv, shuffle_y=False):  # §12.3: random walk สองเส้นที่ไม่เกี่ยวกัน
+    rng = np.random.default_rng(seed); A = np.cumsum(rng.normal(0, 1, 500)); B = np.cumsum(rng.normal(0, 1, 500)); X = A.reshape(-1, 1)
+    if shuffle_y: B = rng.permutation(B)       # ตามแบบฝึก: rng ตัวเดิมหลังสุ่ม A, B
+    out = []
+    for tr, te in cv.split(X):
+        p = _LR().fit(X[tr], B[tr]).predict(X[te]); out.append(1 - ((B[te] - p) ** 2).sum() / ((B[te] - B[te].mean()) ** 2).sum())
+    return np.array(out)
+_k0 = _rw11(0, _KF(5, shuffle=True, random_state=0)); _w0 = _rw11(0, _TSS(5)); _d0 = _rw11(0, _KF(5))
+expect(_M11, "เปิดเรื่อง k-fold", f"<strong>{_mn(_k0.mean())}</strong>")
+expect(_M11, "เปิดเรื่อง walk-forward", f"<strong>{_mn(_w0.mean())}</strong>")
+expect(_M11, "4.5 เท่า", f"ความคลาดเคลื่อนราว {1 - _w0.mean():.1f} เท่า")
+expect(_M11, "KFold ไม่สลับ", f"R² จะร่วงลงไปที่ {_d0.mean():.2f}</strong> (ต่อ fold: ".replace("-", "−") + ", ".join(f"{v:.1f}".replace("-", "−") for v in _d0) + ")")
+_K100 = [_rw11(s, _KF(5, shuffle=True, random_state=0)).mean() for s in range(100)]
+_W100 = [_rw11(s, _TSS(5)).mean() for s in range(100)]
+expect(_M11, "100 ชุด k-fold", f'<td class="nw">{_mn(np.mean(_K100))}</td><td class="nw">−{abs(np.mean(_W100)):.1f} (walk-forward เฉลี่ย 100 ชุด)')
+_S0 = _rw11(0, _KF(5, shuffle=True, random_state=0), shuffle_y=True)
+expect(_M11, "✍️ สลับ y seed 0", f"จะได้ราว −{abs(round(_S0.mean(), 2)):.2f}</strong>")
+expect(_M11, "800 การทดลอง", f"= <strong>{4 * 5 * 4 * 10:,} การทดลอง</strong>")
+_rg3 = np.random.default_rng(3); _x3 = _rg3.normal(0, 1, 200); _y3 = 1 + 1.5 * _x3 + _rg3.normal(0, 1.5, 200); _X3 = np.column_stack([np.ones(200), _x3]); _r3 = []
+for _s in range(200):
+    _ix = np.random.default_rng(_s).permutation(200); _tr, _te = _ix[:150], _ix[150:]
+    _bb = np.linalg.lstsq(_X3[_tr], _y3[_tr], rcond=None)[0]; _pp = _X3[_te] @ _bb
+    _r3.append(1 - ((_y3[_te] - _pp) ** 2).sum() / ((_y3[_te] - _y3[_te].mean()) ** 2).sum())
+_r3 = np.array(_r3)
+expect(_M11, "split 200 ครั้ง", f"ได้ตั้งแต่ {_r3.min():.3f} ถึง {_r3.max():.3f}</strong> · ห่างกัน <strong>{_r3.max() - _r3.min():.2f}</strong>")
+expect(_M11, "OU +1.27%", f"<strong>+{(np.sqrt(2 * .05 / (1 - .95 ** 2)) - 1) * 100:.2f}%</strong>")
+expect(_M11, "BBW 4.8 เท่า", f"อย่างน้อยราว {1 / 0.21:.1f} เท่าของต้นทุน")
+print(f"2·F บท 12  k {_k0.mean():+.3f} wf {_w0.mean():+.3f} · KFold ไม่สลับ {_d0.mean():+.2f} · 100 ชุด {np.mean(_K100):+.3f}/{np.mean(_W100):.2f} · สลับ y {_S0.mean():+.3f} · split {_r3.min():.3f}–{_r3.max():.3f}")
+
+
+# ── เล่ม 2 · F บทที่ 13–14 — ค่าที่แก้จากรีวิว ──
+_pj = 1 / 504; _EJ = (0.12 + 0.30) / 2; _EJ2 = (0.30 ** 3 - 0.12 ** 3) / (3 * 0.18)
+_mu_j = 0.0006 - _pj * _EJ; _var_j = 0.0015 ** 2 + _pj * _EJ2 - (_pj * _EJ) ** 2
+_sr_true = _mu_j / math.sqrt(_var_j) * math.sqrt(252)  # Sharpe ของกระบวนการ (ไม่ใช่ของตัวอย่าง)
+expect(_M11, "Sharpe จริง ตาราง", f"(ค่าจริงของกระบวนการ ≈ +{_sr_true:.2f})")
+expect(_M11, "Sharpe จริง โค้ด", f"ค่าจริงของกระบวนการ ≈ {_sr_true:.2f} (คำนวณจาก mean/SD ของโมเดล)")
+expect(_M11, "19 เท่า", f"≈ {_sr_true:.2f} ถึงราว {5.72 / _sr_true:.0f} เท่า")
+expect(_M11, "23 เท่า", f"เทียบค่าจริง ≈ {_sr_true:.2f} ราว {6.93 / _sr_true:.0f} เท่า")
+expect(_M11, "13 เท่า", f"ถึง <strong>{5.72 / 0.42:.0f} เท่า</strong>")
+expect(_M11, "16 เท่า", f"ผิดไป <strong>{6.93 / 0.42:.0f} เท่า</strong>")
+_al, _pa, _ol, _ = _mf.ridge_path_data()
+_sz = lambda a: _pa[np.argmin(abs(_al - a)), 2]
+expect(_M11, "size หด", f"size ลดจาก {_ol[2]:.3f} เหลือ {_sz(10):.3f} ที่ α = 10 และ {_sz(100):.3f} ที่ α = 100")
+expect(_M11, "iid 30%", f"<strong>ต่ำไป {(3.28 - 2.30) / 3.28:.0%}</strong>")
+expect(_M11, "iid 46%", f"<strong>สูงไป {2.30 / 1.57 - 1:.0%}</strong>")
+expect(_M11, "half-life 0.66", f"ครึ่งชีวิตแค่ <strong>{math.log(.5) / math.log(.35):.2f} วัน</strong>")
+print(f"2·F บท 13–14  Sharpe จริง {_sr_true:.3f} · 5.72/{_sr_true:.2f} = {5.72/_sr_true:.1f}× · size {_ol[2]:.3f}→{_sz(10):.3f}→{_sz(100):.3f}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0

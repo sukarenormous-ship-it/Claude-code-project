@@ -55,13 +55,13 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 
 <div class="tw"><table>
 <tr><th>วิธีตรวจสอบ</th><th>R² เฉลี่ยจาก 5 fold</th><th>คำตัดสิน</th></tr>
-<tr><td class="nw"><strong>k-fold CV</strong> (สุ่มสลับ — ค่าปริยายของ sklearn)</td><td class="nw"><strong>+0.271</strong></td><td class="nw">"โมเดลใช้ได้ ✓ อธิบายได้ 27%"</td></tr>
-<tr><td class="nw"><strong>Walk-forward</strong> (เคารพลำดับเวลา)</td><td class="nw"><strong>−3.496</strong></td><td class="nw"><strong>"แย่กว่าเดาค่าเฉลี่ยเฉย ๆ 4 เท่า"</strong> ❌</td></tr>
+<tr><td class="nw"><strong>k-fold CV</strong> (สุ่มสลับ · <code>KFold(shuffle=True)</code> แบบที่คอร์สส่วนใหญ่สอน)</td><td class="nw"><strong>+0.271</strong></td><td class="nw">"โมเดลใช้ได้ ✓ อธิบายได้ 27%"</td></tr>
+<tr><td class="nw"><strong>Walk-forward</strong> (เคารพลำดับเวลา)</td><td class="nw"><strong>−3.496</strong></td><td class="nw"><strong>"ความคลาดเคลื่อนราว 4.5 เท่าของการเดาค่าเฉลี่ยเฉย ๆ"</strong> ❌</td></tr>
 </table></div>
 
 <p><strong>ข้อมูลชุดเดียวกัน · โมเดลตัวเดียวกัน · ต่างกันแค่วิธีแบ่ง</strong> — และวิธีหนึ่งบอกว่าใช้ได้ อีกวิธีบอกว่าเป็นขยะ</p>
 
-<p>ที่น่ากลัวกว่านั้น: <strong>วิธีที่ให้คำตอบผิดคือวิธีที่เป็นค่าปริยาย</strong> ของเครื่องมือที่ทุกคนใช้ · ถ้าคุณเปิดคอร์สออนไลน์ใดก็ตามแล้วทำตามทีละขั้น คุณจะได้ +0.271 แล้วเอาเงินจริงไปลง</p>
+<p>ที่น่ากลัวกว่านั้น: <strong>วิธีที่ให้คำตอบผิดคือวิธีที่คอร์สส่วนใหญ่สอน</strong> (สุ่มสลับก่อนแบ่ง — <code>train_test_split</code> ทำให้เป็นค่าปริยาย ส่วน <code>KFold</code> ต้องสั่ง <code>shuffle=True</code> เอง) · ถ้าคุณเปิดคอร์สออนไลน์ใดก็ตามแล้วทำตามทีละขั้น คุณจะได้ +0.271 แล้วเอาเงินจริงไปลง</p>
 
 <div class="pq">การไม่ตรวจสอบเลยทำให้คุณ<em>ไม่รู้</em> · การตรวจสอบผิดวิธีทำให้คุณ<em>มั่นใจในสิ่งที่ผิด</em> — และอย่างหลังแพงกว่ามาก</div>
 
@@ -82,7 +82,7 @@ svg.d{display:block;margin:18px auto;max-width:520px;width:100%;height:auto}
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "อาร์กำลังสอง เท่ากับ หนึ่ง ลบ ผลรวมของ (จริง ลบ ทำนาย)² หารด้วย ผลรวมของ (จริง ลบ ค่าเฉลี่ย)²" · "(out)" ในวงเล็บเป็น<em>ป้ายบอกว่าวัดกับข้อมูลชุดไหน</em> ไม่ใช่อินพุตของฟังก์ชัน · <strong>โครงที่ต้องเห็น:</strong> ไส้ในคือ "ความผิดพลาดของโมเดล ÷ ความผิดพลาดของการเดาแบบโง่ที่สุด (ทายค่าเฉลี่ย)" — เศษและส่วนหน่วยเดียวกัน อัตราส่วนจึงไร้หน่วย แล้วเอา 1 ลบเพื่อให้ "ยิ่งสูงยิ่งดี" · <strong>กับดักการอ่าน:</strong> คนจำว่า R² อยู่ระหว่าง 0 กับ 1 เพราะใน in-sample เส้น OLS ชนะค่าเฉลี่ยเสมอ (อัตราส่วน ≤ 1) แต่กับข้อมูลที่โมเดลไม่เคยเห็น ไม่มีอะไรห้ามให้เศษใหญ่กว่าส่วน — อัตราส่วน &gt; 1 จึงเกิดได้และ R² ติดลบ อ่านตรงตัวว่า "ทายค่าเฉลี่ยเฉย ๆ ยังดีกว่าใช้โมเดลนี้"</p>
 <p>"(out)" คือ <strong>out-of-sample</strong> — วัดกับข้อมูลที่โมเดล<strong>ไม่เคยเห็น</strong> ต่างจาก R² ธรรมดา (in-sample) ที่วัดกับข้อมูลที่มันฝึกมา · <strong>จำบรรทัดสุดท้ายไว้ให้ดี</strong> เพราะ §12.3 จะได้ค่าติดลบ และนั่นคือประเด็นทั้งหมด</p>
 
-<p>ลองแบ่งชุดข้อมูลเดิม (200 จุด · ฝึก 150 ทดสอบ 50) แบบสุ่ม <strong>200 ครั้ง</strong> ด้วยโมเดลเดิมเป๊ะ:</p>
+<p>ลองแบ่งชุดข้อมูลแบบเดียวกับ <a href="math-part8.html#s6-7">2·C §6.7</a> (200 จุด · ฝึก 150 ทดสอบ 50 · แต่ noise หนากว่า) แบบสุ่ม <strong>200 ครั้ง</strong> ด้วยโมเดลเดิมเป๊ะ:</p>
 
 <div class="code"><div class="hdr">🐍 Python — แบ่งชุดเดิม 200 ครั้ง ดูว่า R² เหวี่ยงแค่ไหน</div><pre><span class="c"># pip install numpy statsmodels</span>
 import numpy as np, statsmodels.api as sm
@@ -109,7 +109,7 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 
 <div class="bx br"><div class="bt">❌ ตัวเลขเดียวที่คุณรายงาน คือตัวเลขที่คุณบังเอิญได้</div>
 <p><strong>R² เดียวกัน โมเดลเดียวกัน ข้อมูลเดียวกัน — แต่ได้ตั้งแต่ 0.225 ถึง 0.708</strong> · ห่างกัน <strong>0.48</strong> ซึ่งกว้างกว่าความต่างระหว่าง "โมเดลดี" กับ "โมเดลใช้ไม่ได้" เสียอีก</p>
-<p>แปลว่าถ้าคุณลองโมเดล 2 แบบแล้วได้ 0.55 กับ 0.48 · <strong>คุณยังบอกไม่ได้เลยว่าแบบไหนดีกว่า</strong> เพราะความต่าง 0.07 นั้นเล็กกว่าความเหวี่ยงของการแบ่งเองมาก</p>
+<p>แปลว่าถ้าคุณลองโมเดล 2 แบบแล้วได้ 0.55 กับ 0.48 · <strong>คุณยังบอกไม่ได้เลยว่าแบบไหนดีกว่า</strong> เพราะความต่าง 0.07 นั้นเล็กกว่าความเหวี่ยงของการแบ่งเองมาก — ถ้าทั้งสองแบบวัดคนละ split · ถ้าวัดบน split เดียวกันแล้วดูผลต่างรายคู่ ความเหวี่ยงของผลต่างเล็กกว่ามาก (จับคู่แล้ว noise ของการแบ่งหักล้างกัน)</p>
 <p>และในทางปฏิบัติมันแย่กว่านั้น เพราะคนมักลองแบ่งหลายรอบแล้ว<strong>เลือกจำรอบที่ผลออกมาสวย</strong>โดยไม่รู้ตัวด้วยซ้ำ</p></div>
 
 <h3 id="s12-2">12.2 k-fold Cross-Validation — ใช้ข้อมูลทุกจุดเป็นทั้งครูและข้อสอบ</h3>
@@ -128,7 +128,9 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 รอบที่ 2:  [ ฝึก ][ทดสอบ][ ฝึก ][ ฝึก ][ ฝึก ]
 รอบที่ 3:  [ ฝึก ][ ฝึก ][ทดสอบ][ ฝึก ][ ฝึก ]
    ...
-คะแนนสุดท้าย = ค่าเฉลี่ยของ k รอบ  (+ ดูส่วนเบี่ยงเบนด้วยเสมอ)</div>
+คะแนนสุดท้าย = ค่าเฉลี่ยของ k รอบ  (+ ดูส่วนเบี่ยงเบนด้วยเสมอ)
+* SD ระหว่าง fold ไม่ใช่ SE ที่ถูกต้อง — fold ใช้ข้อมูลฝึกร่วมกัน (Bengio &amp; Grandvalet 2004)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "แบ่งข้อมูลเป็น k ส่วน · แต่ละรอบเก็บหนึ่งส่วนไว้สอบ ที่เหลือใช้ฝึก" · <strong>โครงที่ต้องเห็น:</strong> ข้อมูลทุกจุดได้เป็นข้อสอบครบหนึ่งครั้งพอดี · <strong>กับดักการอ่าน:</strong> ถ้าเอา CV ไปเลือกพารามิเตอร์ด้วย คะแนน CV ของตัวที่ถูกเลือกจะดูดีเกินจริง ต้องใช้ nested CV (CV ชั้นนอกวัดผล ชั้นในเลือก · Varma &amp; Simon 2006)</p>
 
 <div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
 <ul>
@@ -156,7 +158,7 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 <defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>
 <text x="280" y="18" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-opacity="0.92">k-fold กับ walk-forward — วิธีแบ่งข้อมูลที่ต่างกันตรง "เวลา"</text>
 <text x="280" y="32" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">ข้อมูลการเงินมีลำดับเวลา · แบ่งผิดวิธี ชุดฝึกจะมีอนาคตปนอยู่ และผลทดสอบจะสวยเกินจริง</text>
-<text x="55.0" y="66.0" text-anchor="start" font-family="Sarabun" font-size="10.5" fill="#dc2626" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="2.7" stroke-linejoin="round" stroke-opacity="0.92">k-fold (สุ่มสลับ) — ชุดฝึกอยู่ทั้งสองข้างของชุดทดสอบ</text>
+<text x="55.0" y="66.0" text-anchor="start" font-family="Sarabun" font-size="10.5" fill="#dc2626" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="2.7" stroke-linejoin="round" stroke-opacity="0.92">k-fold — ชุดฝึกอยู่ทั้งสองข้างของชุดทดสอบ (สุ่มสลับก็ยิ่งปนกว่านี้)</text>
 <rect x="57.0" y="76" width="86.0" height="36" rx="4" fill="#2563eb" fill-opacity="0.2" stroke="#2563eb" stroke-width="1.5"/>
 <text x="100.0" y="99.0" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">ฝึก</text>
 <rect x="147.0" y="76" width="86.0" height="36" rx="4" fill="#2563eb" fill-opacity="0.2" stroke="#2563eb" stroke-width="1.5"/>
@@ -210,7 +212,7 @@ def score(cv):
         out.append(1 - ((B[te]-p)**2).sum() / ((B[te]-B[te].mean())**2).sum())
     return np.array(out)
 
-k = score(KFold(5, shuffle=True, random_state=0))     <span class="c"># ★ ค่าปริยายที่คนใช้กัน</span>
+k = score(KFold(5, shuffle=True, random_state=0))     <span class="c"># ★ แบบที่คนใช้กัน (สุ่มสลับ)</span>
 w = score(TimeSeriesSplit(5))                          <span class="c"># ★ วิธีที่ถูกต้อง</span>
 print("k-fold      :", np.round(k, 3), f"เฉลี่ย {k.mean():+.3f}")
 <span class="o"># k-fold      : [0.307 0.332 0.117 0.339 0.258] เฉลี่ย +0.271</span>
@@ -223,7 +225,7 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <li><strong>walk-forward ให้ −3.496</strong> และเหวี่ยงหนัก (−6.7 ถึง +0.03) · <strong>R² ติดลบแปลว่าทำนายแย่กว่าการเดาค่าเฉลี่ยเฉย ๆ</strong> ซึ่งคือความจริงของเส้นสุ่มสองเส้นที่ไม่เกี่ยวกัน</li>
 <li>สังเกตว่า <strong>ความเหวี่ยงของ walk-forward เองก็เป็นข้อมูล</strong> — มันบอกว่าความสัมพันธ์ไม่คงที่ ซึ่ง k-fold กลบทิ้งไปหมด</li>
 </ul>
-<p>💎 <strong>กฎเดียวที่ต้องจำจากบทนี้:</strong> ถ้าข้อมูลมีแกนเวลา — <strong>ชุดฝึกต้องอยู่ก่อนชุดทดสอบเสมอ ไม่มีข้อยกเว้น</strong></p></div>
+<p>💎 <strong>กฎเดียวที่ต้องจำจากบทนี้:</strong> ถ้าข้อมูลมีแกนเวลา — <strong>ชุดฝึกต้องอยู่ก่อนชุดทดสอบ</strong> · ถ้าจำเป็นต้องใช้ข้อมูลหลังชุดทดสอบฝึกด้วย (purged k-fold) ต้องตัดรอยต่อ (purge) และเว้นช่องว่าง (embargo) ตามข้างล่าง</p></div>
 
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>เปลี่ยน <code>KFold(5, shuffle=True, ...)</code> เป็น <code>KFold(5, shuffle=False)</code> แล้วรันใหม่ · <strong>(1)</strong> คิดว่าผลจะเป็นยังไง · <strong>(2)</strong> มันเทียบเท่า <code>TimeSeriesSplit</code> หรือยัง?</p>
@@ -255,7 +257,7 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <p><strong>ทางแก้ 2 ชั้น:</strong></p>
 <ul>
 <li><strong>Purging</strong> — ตัดแถวในชุดฝึกที่ป้ายกำกับทับซ้อนกับช่วงของชุดทดสอบทิ้งไป</li>
-<li><strong>Embargo</strong> — เว้นช่องว่างเพิ่มอีกนิด (เช่น 1% ของข้อมูล) หลังชุดทดสอบ เผื่อผลกระทบที่ลากยาวกว่าที่คิด</li>
+<li><strong>Embargo</strong> — เว้นช่องว่างเพิ่มอีกนิด (เช่น 1% ของข้อมูล) หลังชุดทดสอบ เผื่อผลกระทบที่ลากยาวกว่าที่คิด (ใช้เมื่อข้อมูลฝึกบางส่วนอยู่หลังชุดทดสอบ · López de Prado 2018, <em>Advances in Financial Machine Learning</em> บทที่ 7)</li>
 </ul>
 <p>กฎง่าย ๆ: <strong>ถ้าป้ายกำกับกินเวลา h วัน ต้องเว้นอย่างน้อย h วันระหว่างชุดฝึกกับชุดทดสอบเสมอ</strong></p></div>
 
@@ -269,24 +271,26 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 
 <div class="bx ba"><div class="bt">🧮 วิธีจับ leakage ที่ได้ผลที่สุด — และใช้เวลาแค่ 5 นาที</div>
 <p>ก่อนเชื่อผลใด ๆ ให้ทำ <strong>การทดสอบด้วยป้ายมั่ว (label shuffling)</strong>:</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าโมเดลยังทำนาย "ป้ายมั่ว" ได้ดี แปลว่ามันไม่ได้เรียนจากความสัมพันธ์จริง แต่แอบเห็นคำตอบจากที่อื่น</p>
 <div class="fm">1. สลับ y แบบสุ่มทิ้งความสัมพันธ์ทั้งหมด   →   y_shuffled
 2. รันกระบวนการทั้งหมดซ้ำ (เลือกฟีเจอร์ · ปรับสเกล · CV) ด้วย y_shuffled
 3. ผลที่ได้ <b>ต้อง</b> ออกมาราว ๆ ศูนย์
 
 ถ้ายังได้ผลดีอยู่  →  มี leakage แน่นอน  (โมเดลกำลังลอกจากที่อื่น)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> ลูกศร → คือ "ได้ผลเป็น" · <strong>โครงที่ต้องเห็น:</strong> สลับ y ทำลายความสัมพันธ์จริงทิ้ง โมเดลที่สะอาดจึงควรทำนายไม่ได้เลย (R² ≈ 0) · <strong>กับดักการอ่าน:</strong> ได้ใกล้ศูนย์ไม่ได้แปลว่าไม่มี leakage — แค่แปลว่าไม่มี leakage ที่ใช้ y ข้ามแถว (ดูตารางถัดไป)</p>
 <p>เหตุผลที่มันได้ผล: <strong>คุณเพิ่งทำลายสัญญาณจริงทิ้งไปหมดแล้ว</strong> · อะไรก็ตามที่โมเดลยังหาเจอ ต้องมาจากช่องทางที่ไม่ควรมี</p></div>
 
 <div class="bx br"><div class="bt">❌ แต่การทดสอบนี้มีจุดบอดใหญ่ — และมันคือ leakage ตัวเอกของบทนี้เอง</div>
 <p>ผมเอาการทดสอบนี้ไปใช้กับตัวอย่าง §12.3 (เส้นสุ่มสองเส้น + k-fold สลับ) ซึ่งเรารู้แน่ ๆ ว่ามี leakage หนัก · ทดสอบ 100 ชุดข้อมูล:</p>
 <div class="tw"><table>
 <tr><th></th><th class="nw">k-fold บอก</th><th class="nw">ความจริง</th><th>คำตัดสินของการทดสอบ</th></tr>
-<tr><td class="nw">y จริง</td><td class="nw">+0.228</td><td class="nw">−3.50</td><td class="nw">— </td></tr>
+<tr><td class="nw">y จริง</td><td class="nw">+0.228</td><td class="nw">−10.6 (walk-forward เฉลี่ย 100 ชุด)</td><td class="nw">— </td></tr>
 <tr><td class="nw">y ที่สลับแล้ว</td><td class="nw"><strong>−0.018</strong></td><td class="nw">≈ 0</td><td class="nw"><strong>"สะอาด ✓" — จับไม่ได้เลย</strong> ❌</td></tr>
 </table></div>
 <p><strong>เหตุผลเชิงกลไก:</strong> leakage แบบ §12.3 เกิดจาก<strong>โครงสร้างเวลาที่อยู่ใน y เอง</strong> · พอคุณสลับ y คุณก็<strong>ทำลายช่องทางรั่วไปพร้อมกับสัญญาณ</strong> → การทดสอบจึงผ่านเสมอ</p>
 <div class="tw"><table>
 <tr><th>การทดสอบ</th><th>จับได้</th><th>จับไม่ได้</th></tr>
-<tr><td class="nw"><strong>สลับ y</strong></td><td class="nw">leakage <strong>ข้ามแถว</strong> (ข้อ 1 เลือกฟีเจอร์ · ข้อ 2 สเกล)</td><td class="nw"><strong>leakage ข้ามเวลาทุกชนิด</strong> (ข้อ 3 และ §12.3)</td></tr>
+<tr><td class="nw"><strong>สลับ y</strong></td><td class="nw">leakage ที่ใช้ y ข้ามแถว (ข้อ 1 เลือกฟีเจอร์)</td><td class="nw">leakage ที่ไม่แตะ y (ข้อ 2 สเกล) · <strong>leakage ข้ามเวลาทุกชนิด</strong> (ข้อ 3 และ §12.3)</td></tr>
 <tr><td class="nw"><strong>ช่องว่าง k-fold ↔ walk-forward</strong></td><td class="nw">leakage <strong>ข้ามเวลา</strong> — และวัดขนาดได้ด้วย</td><td class="nw">leakage ข้ามแถว</td></tr>
 </table></div>
 <p>💎 <strong>ต้องใช้ทั้งสองอย่าง ไม่ใช่อย่างใดอย่างหนึ่ง</strong> · และถ้า k-fold กับ walk-forward ให้คำตอบต่างกันมาก — <strong>ช่องว่างนั้นคือขนาดของ leakage ข้ามเวลาที่คุณมี</strong> (ในตัวอย่าง §12.3 คือ 0.271 − (−3.496) = <strong>3.77</strong>)</p></div>
@@ -295,7 +299,7 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <p>กลับไปที่โค้ด §12.3 (เส้นสุ่มสองเส้น) แล้วทำ <strong>label shuffling test</strong> ด้วยตัวเอง — เปลี่ยน <code>B</code> เป็น <code>rng.permutation(B)</code> แล้วรัน <code>score(KFold(5, shuffle=True, random_state=0))</code> ใหม่</p>
 <p><strong>(1)</strong> k-fold จะยังให้ +0.27 อยู่ไหม · <strong>(2)</strong> แล้วผลนั้นแปลว่าอะไร</p>
 <details><summary>ดูเฉลย</summary>
-<p><strong>(1) ไม่ — จะได้ราว −0.02</strong> คือใกล้ศูนย์ · ตามตำราแปลว่า "สะอาด ไม่มี leakage ✓"</p>
+<p><strong>(1) ไม่ — จะได้ราว −0.01</strong> คือใกล้ศูนย์ · ตามตำราแปลว่า "สะอาด ไม่มี leakage ✓"</p>
 <p><strong>(2) แต่เรารู้อยู่แล้วว่ามี leakage เต็ม ๆ</strong> (ความจริงคือ −3.50 ไม่ใช่ +0.27) · <strong>การทดสอบนี้เพิ่งพลาดมันไปทั้งดุ้น</strong></p>
 <p>นี่ไม่ใช่ความบังเอิญของ seed — ผมรัน 100 ชุดข้อมูล มัน "ผ่าน" ทั้ง 100 ครั้ง · เหตุผลคือสิ่งที่กล่องข้างบนอธิบายไว้: <strong>คุณเพิ่งทำลายช่องทางรั่วไปพร้อมกับสัญญาณ</strong> เพราะ leakage ตัวนี้อยู่ในโครงสร้างเวลาของ y เอง</p>
 <p>💎 <strong>บทเรียนที่แพงที่สุดของ §12.4:</strong> <strong>การทดสอบที่ "ผ่าน" ไม่ได้แปลว่าสะอาด — มันแปลว่าการทดสอบนั้นมองไม่เห็นปัญหาที่คุณมี</strong> · ต้องรู้เสมอว่าเครื่องมือตรวจของคุณ<strong>ตาบอดตรงไหน</strong> ซึ่งเป็นคำถามเดียวกับที่ทั้งเล่ม 2 · F ถามมาตลอด</p>
@@ -308,7 +312,7 @@ print("walk-forward:", np.round(w, 3), f"เฉลี่ย {w.mean():+.3f}")
 <p><strong>ถึงคุณจะใช้ walk-forward ถูกต้อง 100% ไม่มี leakage เลยสักจุด — มันก็ยังหลอกคุณได้เต็ม ๆ ถ้าคุณลองหลายแบบ</strong> · และนี่คือสิ่งที่คุณจะทำจริงในสัปดาห์หน้า</p></div>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าให้คน 1 คนทายผลเหรียญ 10 ครั้งแล้วถูกหมด นั่นน่าทึ่ง · แต่ถ้าให้<strong>คน 1,000 คน</strong>ทายแล้วมี 1 คนถูกหมด — <strong>นั่นคือคณิตศาสตร์ ไม่ใช่ความสามารถ</strong></p>
-<p>ตอน tune พารามิเตอร์คุณกำลังเป็นคนจัดการแข่งขันนั้น · lookback 10/20/50/100 (4 แบบ) × threshold 5 ค่า × อินดิเคเตอร์ 4 ตัว × หุ้น 10 ตัว = <strong>2,000 การทดลอง</strong> · คุณไม่ได้เรียกมันว่า "การทดลอง" คุณเรียกมันว่า "การหาพารามิเตอร์ที่เหมาะสม" — <strong>แต่คณิตศาสตร์ไม่สนใจว่าคุณเรียกมันว่าอะไร</strong></p>
+<p>ตอน tune พารามิเตอร์คุณกำลังเป็นคนจัดการแข่งขันนั้น · lookback 10/20/50/100 (4 แบบ) × threshold 5 ค่า × อินดิเคเตอร์ 4 ตัว × หุ้น 10 ตัว = <strong>800 การทดลอง</strong> · คุณไม่ได้เรียกมันว่า "การทดลอง" คุณเรียกมันว่า "การหาพารามิเตอร์ที่เหมาะสม" — <strong>แต่คณิตศาสตร์ไม่สนใจว่าคุณเรียกมันว่าอะไร</strong></p>
 
 <div class="code"><div class="hdr">🐍 Python — ลอง 200 กลยุทธ์ที่ไม่มี edge เลยสักตัว แล้วเก็บตัวที่ดีที่สุด</div><pre><span class="c"># pip install numpy scipy</span>
 import numpy as np
@@ -329,7 +333,7 @@ print(f"Sharpe ของตัวที่ดีที่สุด: เฉลี
 print(f"โอกาสที่มันจะได้ Sharpe &gt; 1.5 = {(sr &gt; 1.5).mean():.1%}")
 <span class="o"># โอกาสที่มันจะได้ Sharpe > 1.5 = 62.3%</span>
 
-<span class="c"># ★ สูตรปิด (Bailey &amp; Lopez de Prado) — ไม่ต้องจำลองก็หาได้</span>
+<span class="c"># ★ สูตรปิด (Bailey &amp; López de Prado 2014, The Deflated Sharpe Ratio) — ไม่ต้องจำลองก็หาได้</span>
 g = 0.5772                                      <span class="c"># ค่าคงที่ Euler-Mascheroni</span>
 def expected_max(N, years):
     return np.sqrt(1/years)*((1-g)*norm.ppf(1-1/N) + g*norm.ppf(1-1/(N*np.e)))
@@ -361,7 +365,7 @@ for years in [3, 5, 10]:
 <p>⚠️ <strong>และสูตรนี้สมมติว่า trials เป็นอิสระกัน</strong> · การ tune พารามิเตอร์บนหุ้นตัวเดียวกันสร้าง trials ที่<strong>ทับซ้อนกันสูงมาก</strong> ทำให้ <strong>N ที่มีผลจริงน้อยกว่า N ที่นับได้</strong> · ตารางนี้จึงเป็น<strong>เพดานบน</strong> — ถ้าอยากได้ตัวเลขที่ตรงกับสถานการณ์คุณ ให้เอา <strong>SD ของ Sharpe จาก trials ของคุณเอง</strong> มาแทน √(1/ปี) ในสูตร</p></div>
 
 <p><strong>ย้อนกลับไปดู <a href="math-part10.html#s10-1">เล่ม 2 · E §10.1</a> ที่บอกว่า "Sharpe 1.0–2.0 = ดีมาก"</strong> · ถ้าคุณลอง 200 แบบบนข้อมูล 3 ปี <strong>คุณจะได้ 1.60 มาโดยไม่มีฝีมือเลยแม้แต่นิดเดียว</strong> — และมันจะผ่าน walk-forward ของคุณสบาย ๆ เพราะไม่มี leakage จริง ๆ</p>
-<p>สังเกตทิศทางของตาราง: <strong>เพิ่มข้อมูลช่วยได้มากกว่าเพิ่มความระมัดระวัง</strong> · ที่ 10 ปีกับ 200 แบบ เกณฑ์เหลือ 0.87 · แต่ที่ 3 ปีกับ 1,000 แบบ ต้องเกิน 1.88 ถึงจะเริ่มน่าสนใจ</p></div>
+<p>สังเกตทิศทางของตาราง: <strong>ทั้งเพิ่มข้อมูลและลดจำนวนแบบที่ลองช่วยได้พอ ๆ กัน</strong> (ที่ 200 แบบ ขยาย 3 → 10 ปีเกณฑ์ลดจาก 1.60 เป็น 0.87 · ที่ 3 ปี ลด 200 → 10 แบบเกณฑ์ลดเหลือ 0.91) · ที่ 10 ปีกับ 200 แบบ เกณฑ์เหลือ 0.87 · แต่ที่ 3 ปีกับ 1,000 แบบ ต้องเกิน 1.88 ถึงจะเริ่มน่าสนใจ</p></div>
 
 <div class="bx ba"><div class="bt">🧮 ทำยังไง — 3 ข้อที่ทำได้จริงคนเดียว</div>
 <ol>
@@ -511,8 +515,10 @@ for theta in [0.02, 0.05, 0.10]:
 
 <div class="bx bb"><div class="bt">💎 ด่านที่สอง — เกณฑ์ที่มีหน่วย</div>
 <p>ถ้าเก็บได้ 21% ของ BBW เงื่อนไขที่จะไม่ขาดทุนคือ:</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> กำไรต่อไม้คือส่วนที่เก็บได้ของความกว้างแบนด์ · ถ้าส่วนนั้นยังไม่พอจ่ายค่าเข้า-ออก ไม้นั้นขาดทุนตั้งแต่ก่อนเข้า</p>
 <div class="fm">0.21 × BBW  ≥  ต้นทุนไป-กลับ
       BBW  ≥  ต้นทุนไป-กลับ ÷ 0.21   ≈   4.8 × ต้นทุนไป-กลับ</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ศูนย์จุดสองหนึ่ง คูณ ความกว้างแบนด์ มากกว่าหรือเท่ากับ ต้นทุนไป-กลับ" · <strong>โครงที่ต้องเห็น:</strong> ย้ายข้างได้ BBW ≥ ต้นทุน ÷ 0.21 คือแบนด์ต้องกว้างอย่างน้อยราว 4.8 เท่าของต้นทุน · <strong>กับดักการอ่าน:</strong> 0.21 เป็นค่าที่วัดจากข้อมูลจำลองของบทนี้ ไม่ใช่ค่าคงที่ของตลาด</p>
 <div class="tw"><table>
 <tr><th>สถานการณ์ต้นทุน</th><th class="nw">ต้นทุนไป-กลับ</th><th class="nw">ห้ามเข้าถ้า BBW ต่ำกว่า</th></tr>
 <tr><td>หุ้น SET50 (คอมฯ 0.157% + VAT, spread 0.10%)</td><td class="nw">0.436%</td><td class="nw"><strong>2.05%</strong></td></tr>
@@ -559,7 +565,7 @@ for theta in [0.02, 0.05, 0.10]:
 <circle cx="199.9" cy="217.4" r="3" fill="#fff" stroke="#d97706" stroke-width="1.8"/>
 <text x="431.7" y="70.8" text-anchor="end" font-family="Sarabun" font-size="9" fill="#16a34a" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="2.3" stroke-linejoin="round" stroke-opacity="0.92">RSI — เก็บได้มากต่อไม้</text>
 <text x="59.0" y="60.0" text-anchor="start" font-family="Sarabun" font-size="9" fill="#dc2626" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="2.3" stroke-linejoin="round" stroke-opacity="0.92">เส้นแดงแนวนอน = ต้นทุนไป-กลับ 0.436% — ไม่ขึ้นกับ σ</text>
-<text x="59.0" y="74.0" text-anchor="start" font-family="Sarabun" font-size="9" fill="#6b7280" font-style="italic" paint-order="stroke" stroke="#fff" stroke-width="2.3" stroke-linejoin="round" stroke-opacity="0.92">วงกลมกลวง = ค่าที่วัดได้จริงจากตาราง §13.4</text>
+<text x="59.0" y="74.0" text-anchor="start" font-family="Sarabun" font-size="9" fill="#6b7280" font-style="italic" paint-order="stroke" stroke="#fff" stroke-width="2.3" stroke-linejoin="round" stroke-opacity="0.92">วงกลมกลวง = ค่าที่วัดได้จริงจากตาราง §12.7</text>
 <text x="59.0" y="86.0" text-anchor="start" font-family="Sarabun" font-size="9" fill="#6b7280" font-style="italic" paint-order="stroke" stroke="#fff" stroke-width="2.3" stroke-linejoin="round" stroke-opacity="0.92">ทุกเส้นผ่านจุดกำเนิด — กำไรต่อไม้แปรตาม σ</text>
 <line x1="55" y1="324" x2="77" y2="324" stroke="#16a34a" stroke-width="2.5"/><text x="82" y="327.5" font-family="Sarabun" font-size="10" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">RSI(14) 30→50</text>
 <line x1="180.60000000000002" y1="324" x2="202.60000000000002" y2="324" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 3"/><text x="207.60000000000002" y="327.5" font-family="Sarabun" font-size="10" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">Bollinger −2SD</text>
@@ -708,13 +714,15 @@ for i in range(5):
 <p>นี่คือเหตุผลที่ปัญหานี้แก้ไม่ได้ด้วยการ "ปรับสัญญาณให้แม่นขึ้น" · เพิ่ม k จาก 2 เป็น 3 · เพิ่มตัวกรองเทรนด์ · เปลี่ยน N · <strong>ทั้งหมดนี้แก้เรื่องความแม่น ซึ่งไม่ใช่เรื่องที่พัง</strong> · สิ่งเดียวที่แก้ได้คือ<strong>ไม่เข้าเลย</strong>เมื่อระยะทางที่มีให้กินเล็กกว่าต้นทุน</p></div>
 
 <div class="bx bb"><div class="bt">💎 กฎทั่วไป — และที่อื่นในหนังสือเล่มนี้ที่คุณต้องเอาไปใช้</div>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สัญญาณแบบ z-score หรือ %B บอกว่า "ผิดปกติแค่ไหน" แต่ไม่บอกว่าได้เงินเท่าไร · ต้องมีตัวเลขที่มีหน่วยอีกตัวมาตัดสินว่าคุ้มค่าต้นทุนไหม</p>
 <div class="fm">สัญญาณไร้หน่วย  → ใช้ตัดสินว่า "เข้าข่ายหรือไม่"
 เกณฑ์มีหน่วย    → ใช้ตัดสินว่า "คุ้มค่าหรือไม่"
 ต้องผ่านทั้งสองด่าน ไม่ใช่ด่านเดียว</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> ลูกศร → คือ "ใช้ทำ" · <strong>โครงที่ต้องเห็น:</strong> สัญญาณไร้หน่วยบอกแค่ "ใช่หรือไม่" ส่วนขนาดที่มีหน่วยบอก "คุ้มไหม" — ต้องใช้คู่กัน · <strong>กับดักการอ่าน:</strong> z-score หรือ %B สูงไม่ได้แปลว่ากำไรใหญ่ ต้องแปลงกลับเป็นบาท/% ก่อนเทียบต้นทุน</p>
 <ul>
 <li><strong><a href="math-part9.html#s9-2">เล่ม 2 · D §9.2</a> — pairs trading ด้วย z = (spread − mean)/sd</strong> · นี่คือกับดักตัวเดียวกันเป๊ะ · <a href="math-part9.html#s9-3">§9.3</a> วัดจุดพลิกไว้แล้วที่ <strong>28.7 bps ต่อข้าง</strong> — ถ้า sd ของ spread แคบกว่านั้น z = 2 ก็ยังขาดทุน · <strong>ด่านที่สองของคู่นี้คือ "sd ของ spread คิดเป็น bps" ไม่ใช่ค่า z</strong></li>
 <li><strong><a href="math-part10.html#s11-2">เล่ม 2 · E §11.2</a> — Kelly / การกำหนดขนาดสถานะจาก Sharpe</strong> · Sharpe ไร้หน่วย · ในช่วงที่ σ ต่ำมาก Kelly จะสั่งให้คุณใส่ leverage หนักลงไปในสัญญาณที่ค่าธรรมเนียมกินหมดตั้งแต่แรก · <strong>ด่านที่สองคือผลตอบแทนคาดหวังหลังหักต้นทุน ต้องเป็นบวกก่อน ถึงค่อยไปคิดขนาด</strong></li>
-<li><strong>ราคาล่วงหน้า / basis</strong> — สัญญาณของเกมนี้คือ <strong>อัตราต้นทุนถือครองสุทธิที่ตลาดคิดให้</strong> (r − q ที่ implied ออกมา) <span class="fm" style="display:inline">r<sub>imp</sub> = ln(F/S) ÷ T</span> ซึ่งเป็น <strong>% ต่อปี</strong> แต่เงินที่ได้จริงคือ <span class="fm" style="display:inline">S × Δr × T</span> — <strong>มี T คูณอยู่</strong> · แปลว่า dislocation ขนาดเท่ากันยิ่งใกล้หมดอายุยิ่งไม่มีค่า: ที่ต้นทุนไป-กลับ 0.20% เหลืออายุ 3 เดือนต้องเพี้ยน <strong>80 bp</strong> แต่เหลือ 1 สัปดาห์ต้องเพี้ยนถึง <strong>1,008 bp</strong> · ด่านที่สองคือ <strong>Δr × T × S ≥ ต้นทุนไป-กลับ</strong> ไม่ใช่ค่า z (สูตร F ดูที่ <a href="math-part1.html#s3-8">Part I §3.8</a>)</li>
+<li><strong>ราคาล่วงหน้า / basis</strong>: สัญญาณของเกมนี้คือ <strong>อัตราต้นทุนถือครองสุทธิที่ตลาดคิดให้</strong> (r − q ที่ implied ออกมา) <span class="fm" style="display:inline">r<sub>imp</sub> = ln(F/S) ÷ T</span> ซึ่งเป็น <strong>% ต่อปี</strong> แต่เงินที่ได้จริงคือ <span class="fm" style="display:inline">S × Δr × T</span> — <strong>มี T คูณอยู่</strong> · แปลว่า dislocation ขนาดเท่ากันยิ่งใกล้หมดอายุยิ่งไม่มีค่า: ที่ต้นทุนไป-กลับ 0.20% เหลืออายุ 3 เดือนต้องเพี้ยน <strong>80 bp</strong> แต่เหลือ 1 สัปดาห์ต้องเพี้ยนถึง <strong>1,008 bp</strong> · ด่านที่สองคือ <strong>Δr × T × S ≥ ต้นทุนไป-กลับ</strong> ไม่ใช่ค่า z (สูตร F ดูที่ <a href="math-part1.html#s3-8">Part I §3.8</a>)</li>
 <li><strong><a href="#s12-5">§12.5</a> — deflated Sharpe</strong> ตอบว่า "เก่งจริงหรือฟลุก" · <strong><a href="#s12-6">§12.6</a></strong> ตอบว่า "ถี่เกินไปไหม" · <strong>§12.7 นี้ตอบว่า "ใหญ่พอไหม"</strong> — สามคำถามคนละคำถาม ต้องผ่านให้ครบทั้งสาม</li>
 </ul></div>
 
@@ -725,17 +733,17 @@ for i in range(5):
 <li>ของจริงวัดได้ 0.21 — ยกเหตุผลมา 2 ข้อว่าทำไมถึงต่ำกว่าอุดมคติขนาดนั้น</li>
 <li>ถ้าเปลี่ยน<strong>จุดออก</strong>เป็นแถบบน (+2SD) แทนเส้นกลาง capture จะขึ้นหรือลง แล้ว BBW ขั้นต่ำจะเปลี่ยนไปทางไหน · ลองแก้บรรทัด <code>elif inpos and p[t] &gt; m[i]:</code> เป็น <code>elif inpos and p[t] &gt; m[i] + k*sd[i]:</code> แล้วรันดู</li>
 </ol>
-<details><summary>เฉลย</summary>
+<details><summary>ดูเฉลย</summary>
 <p><strong>1)</strong> เข้าที่ −2SD ออกที่เส้นกลาง = เดินทาง 2SD · BBW = 4SD · <strong>capture ในอุดมคติ = 2SD ÷ 4SD = 0.50</strong> · ที่วัดได้ 0.21 จึงเป็นเพียง <strong>42% ของอุดมคติ</strong></p>
 <p><strong>2)</strong> เหตุผลหลักสองข้อ: <strong>(ก) คุณไม่ได้เข้าที่ −2SD พอดี</strong> — คุณเข้าที่แท่งแรกที่<u>เลย</u>แถบไปแล้ว ซึ่งอาจอยู่ที่ −2.1SD หรือ −2.6SD และราคาที่ได้จริงคือราคาปิดของแท่งนั้น · <strong>(ข) เส้นกลางเคลื่อนที่</strong> — ระหว่างที่คุณถือ ค่าเฉลี่ย 20 วันจะถูกดึงลงมาหาราคาที่เพิ่งร่วง ทำให้เป้าหมายวิ่งหนีลงมาหาคุณ คุณจึงออกที่ระดับต่ำกว่าเส้นกลางเดิม (เหตุผลอื่นที่รับได้: บางไม้ต้องถือยาวจนกรอบเปลี่ยนรูป)</p>
-<p><strong>3)</strong> <strong>capture ขึ้นเป็น ~0.40</strong> (อุดมคติของสูตรนี้คือ 4SD ÷ 4SD = 1.00 ซึ่งก็ยังได้จริงราว 40% เท่าเดิม) และ <strong>BBW ขั้นต่ำลดลงเหลือราว 1.09%</strong> จาก 2.05% · แต่<strong>จำนวนไม้หายไป 36%</strong> (2,475 → 1,585) เพราะบางไม้ไม่เคยไปถึงแถบบน · ที่ σ = 0.3% ผลพลิกจาก −0.0412% เป็น <strong>+0.3167%</strong> ต่อไม้ · <strong>บทเรียน: ถือให้ไกลขึ้น = จ่ายค่าธรรมเนียมน้อยครั้งลงต่อระยะทางที่ได้ — เป็นอีกทางหนึ่งในการชนะเกมต้นทุน นอกจากการกรอง BBW</strong></p>
+<p><strong>3)</strong> <strong>capture ขึ้นเป็น ~0.40</strong> (อุดมคติของสูตรนี้คือ 4SD ÷ 4SD = 1.00 ซึ่งก็ยังได้จริงราว 40% เท่าเดิม) และ <strong>BBW ขั้นต่ำลดลงเหลือราว 1.08%</strong> จาก 2.05% · แต่<strong>จำนวนไม้หายไป 36%</strong> (2,475 → 1,585) เพราะบางไม้ไม่เคยไปถึงแถบบน · ที่ σ = 0.3% ผลพลิกจาก −0.0412% เป็น <strong>+0.3167%</strong> ต่อไม้ · <strong>บทเรียน: ถือให้ไกลขึ้น = จ่ายค่าธรรมเนียมน้อยครั้งลงต่อระยะทางที่ได้ — เป็นอีกทางหนึ่งในการชนะเกมต้นทุน นอกจากการกรอง BBW</strong></p>
 </details></div>
 
 <div class="bx bg"><div class="bt">🎯 6 อย่างที่ต้องจำจากบทที่ 12</div>
 <ul>
 <li><strong>การแบ่งครั้งเดียวคือการโยนเหรียญ</strong> — R² เหวี่ยงได้ 0.23–0.71 บนข้อมูลและโมเดลเดียวกัน · ใช้ CV แล้ว<strong>รายงานส่วนเบี่ยงเบนคู่กับค่าเฉลี่ยเสมอ</strong></li>
 <li><strong>ข้อมูลมีเวลา = ชุดฝึกต้องอยู่ก่อนชุดทดสอบ</strong> — <code>KFold(shuffle=True)</code> ให้ +0.271 กับข้อมูลที่ความจริงคือ −3.496</li>
-<li><strong>สลับ y แล้วรันซ้ำ</strong> — จับ leakage <u>ข้ามแถว</u>ได้ · แต่<strong>จับ leakage ข้ามเวลาไม่ได้เลย</strong> ต้องดูช่องว่างระหว่าง k-fold กับ walk-forward ควบคู่</li>
+<li><strong>สลับ y แล้วรันซ้ำ</strong> — จับ leakage <u>ข้ามแถวที่ใช้ y</u> ได้ (เช่นเลือกฟีเจอร์ก่อนแบ่ง) · แต่<strong>จับ leakage ข้ามเวลาไม่ได้เลย</strong> ต้องดูช่องว่างระหว่าง k-fold กับ walk-forward ควบคู่</li>
 <li><strong>นับว่าลองมากี่แบบ แล้วเทียบกับเกณฑ์</strong> — ลอง 200 แบบบนข้อมูล 3 ปี ได้ Sharpe <strong>1.60 จาก edge = 0</strong> · walk-forward ที่ถูกต้อง 100% ก็ยังหลอกคุณได้ถ้า N ใหญ่</li>
 <li><strong>ต้นทุนต้องอยู่ใน CV ไม่ใช่หักทีหลัง</strong> — มันเปลี่ยน<u>อันดับ</u>ของกลยุทธ์ · ที่ 0.44%/รอบ คุณหมุนพอร์ตได้ราว <strong>50 ครั้ง/ปี</strong> ก่อน edge ระดับ Sharpe 1.5 จะหมด</li>
 <li><strong>สัญญาณไร้หน่วยมองไม่เห็นความผันผวน</strong> — σ ต่างกัน 12 เท่า Bollinger ยังยิง 2,475 → 2,412 ไม้เท่าเดิม · ต้องมีด่านที่สองที่<u>มีหน่วย</u>เสมอ: <strong>BBW ≥ ต้นทุนไป-กลับ ÷ capture ratio</strong> · และ capture ต้องวัดจากตลาดของตัวเอง ไม่ใช่จำตัวเลขมา</li>
@@ -762,12 +770,13 @@ for i in range(5):
   1. สุ่มหยิบข้อมูล n จุด จากข้อมูลเดิม <b>แบบใส่คืน</b> (บางจุดถูกหยิบซ้ำ บางจุดไม่ถูกหยิบเลย)
   2. คำนวณสิ่งที่สนใจ (Sharpe · β · ค่ามัธยฐาน · อะไรก็ได้)
 
-ช่วงความเชื่อมั่น 95% = เปอร์เซ็นไทล์ที่ 2.5 และ 97.5 ของค่าที่ได้ทั้ง B ค่า</div>
+ช่วงความเชื่อมั่น 95% = เปอร์เซ็นไทล์ที่ 2.5 และ 97.5 ของค่าที่ได้ทั้ง B ค่า   (percentile method)</div>
+<p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ทำซ้ำ บี ครั้ง: สุ่มหยิบแบบใส่คืน แล้วคำนวณค่าที่สนใจ" · <strong>โครงที่ต้องเห็น:</strong> ตัวอย่างเดิมถูกใช้แทน "ประชากร" แล้วจำลองการเก็บข้อมูลซ้ำจากมัน · <strong>กับดักการอ่าน:</strong> วิธีเปอร์เซ็นไทล์ตรง ๆ แบบนี้ครอบคลุมพลาดได้เมื่อสถิติเบ้หรือมี bias (เช่น Sharpe จากข้อมูลน้อย) · วิธี BCa หรือ bootstrap-t แม่นกว่า · และทั้งหมดสมมติว่าข้อมูลแต่ละจุดเป็นอิสระต่อกัน (ข้อมูลมีความจำดู §13.3)</p>
 
 <div class="bx bg"><div class="bt">✅ ทำไมมันถึงทรงพลัง</div>
 <ul>
-<li><strong>ใช้ได้กับสถิติที่ไม่มีสูตร</strong> — ค่ามัธยฐาน · max drawdown · อัตราส่วนแปลก ๆ ที่คุณคิดเอง · <strong>ตัวไหนที่คำนวณได้ ก็ bootstrap ได้</strong></li>
-<li><strong>ไม่ต้องสมมติการแจกแจง</strong> — ข้อมูลหางหนาหรือเบ้แค่ไหนก็ใช้ได้ เพราะมันสุ่มจากรูปร่างจริงของข้อมูล</li>
+<li><strong>ใช้ได้กับสถิติที่ไม่มีสูตร</strong> — ค่ามัธยฐาน · max drawdown · อัตราส่วนแปลก ๆ ที่คุณคิดเอง · <strong>ตัวไหนที่คำนวณได้ ส่วนใหญ่ก็ bootstrap ได้</strong> (ยกเว้นสถิติประเภทค่าสุดขั้ว เช่น max/min ที่ bootstrap ประเมินพลาด)</li>
+<li><strong>ไม่ต้องสมมติการแจกแจง</strong> — ข้อมูลหางหนาหรือเบ้ก็ใช้ได้ เพราะมันสุ่มจากรูปร่างจริงของข้อมูล (ตราบที่ข้อมูลแต่ละจุดเป็นอิสระต่อกัน และหางไม่หนาจนความแปรปรวนเป็นอนันต์ · Athreya 1987)</li>
 <li><strong>ช่วงที่ได้ไม่จำเป็นต้องสมมาตร</strong> — ซึ่งตรงกับความจริงมากกว่า "±1.96 SE" ที่บังคับให้สมมาตรเสมอ</li>
 </ul></div>
 </div>
@@ -808,7 +817,7 @@ print(f"สูตรวิเคราะห์  95% CI = [{obs-1.96*se:.2f}, {o
 <p><strong>bootstrap [0.42, 2.73] · สูตร [0.45, 2.71]</strong> — ต่างกันไม่ถึง 0.03 ทั้งสองปลาย</p>
 <p>นี่คือ<strong>การตรวจสอบไขว้ที่มีค่ามาก</strong> · bootstrap ไม่รู้จักสูตรของ Lo และสูตรก็ไม่รู้จัก bootstrap · เมื่อทั้งคู่มาบรรจบกัน เรามั่นใจได้ทั้งสองทาง</p>
 <p>และสังเกตประเด็นเดิมจาก §10.1: <strong>Sharpe จริงคือ 1.0 แต่ข้อมูล 3 ปีนี้บังเอิญวัดได้ 1.581</strong> · ช่วงความเชื่อมั่นกว้างตั้งแต่ 0.42 ถึง 2.73 — <strong>ข้อมูล 3 ปีบอกอะไรได้น้อยมาก</strong></p>
-<p>💎 <strong>คุณค่าที่แท้จริงของ bootstrap:</strong> ตอนนี้คุณหา CI ของ <strong>max drawdown</strong> · <strong>Sortino</strong> · <strong>ครึ่งชีวิตของ spread</strong> · หรือ <strong>อัตราชนะ</strong> ได้ทันทีด้วยโค้ดแบบเดียวกันเป๊ะ — ซึ่งไม่มีสูตรสำเร็จให้ใช้เลยสักตัว</p></div>
+<p>💎 <strong>คุณค่าที่แท้จริงของ bootstrap:</strong> ตอนนี้คุณหา CI ของ <strong>Sortino</strong> หรือ <strong>อัตราชนะ</strong> ได้ทันทีด้วยโค้ดแบบเดียวกันเป๊ะ — ซึ่งไม่มีสูตรสำเร็จให้ใช้ · ส่วนสถิติที่<strong>ขึ้นกับลำดับเวลา</strong> เช่น <strong>max drawdown</strong> และ<strong>ครึ่งชีวิตของ spread</strong> ห้ามสุ่มทีละจุด (ลำดับที่มันวัดถูกทำลายทิ้ง · ทดลองกับ spread ที่ครึ่งชีวิตจริง 5.65 วัน สุ่มทีละจุดได้ช่วง 0.10–0.28 วัน) ต้องใช้ block bootstrap ใน §13.3</p></div>
 
 <h3 id="s13-3">13.3 ❌ กับดักใหญ่ — bootstrap ธรรมดาทำลายลำดับเวลา</h3>
 
@@ -816,16 +825,16 @@ print(f"สูตรวิเคราะห์  95% CI = [{obs-1.96*se:.2f}, {o
 
 <div class="bx br"><div class="bt">❌ การหยิบแบบสุ่มทีละจุด = สมมติว่าข้อมูลเป็นอิสระต่อกัน</div>
 <p>ทุกครั้งที่คุณสุ่มหยิบทีละจุด คุณกำลังบอกว่า "ลำดับไม่สำคัญ" · <strong>แต่ผลตอบแทนสินทรัพย์ไม่เป็นอิสระ</strong> — มี momentum · mean reversion · volatility clustering (<a href="math-part6.html">Part IV</a>)</p>
-<p>ผลคือ <strong>bootstrap ธรรมดาจะประเมินความไม่แน่นอน<u>ต่ำเกินไป</u> เมื่อ autocorrelation เป็นบวก</strong> (momentum · volatility clustering) ซึ่งเป็นทิศทางที่อันตราย เพราะทำให้คุณมั่นใจเกินจริง</p>
+<p>ผลคือ <strong>bootstrap ธรรมดาจะประเมินความไม่แน่นอน<u>ต่ำเกินไป</u> เมื่อ autocorrelation เป็นบวก</strong> (momentum — ส่วน volatility clustering คือความจำของ r² ไม่ใช่ของ r จึงไม่ใช่กรณีนี้โดยตรง) ซึ่งเป็นทิศทางที่อันตราย เพราะทำให้คุณมั่นใจเกินจริง</p>
 <div class="bx bb"><div class="bt">🔧 แต่ทิศทางกลับด้านได้ ถ้าข้อมูลเป็น mean reversion</div>
 <p><strong>mean reversion = autocorrelation ติดลบ</strong> · ผมรันโค้ดเดียวกันเปลี่ยนแค่เครื่องหมายของ φ:</p>
 <div class="tw"><table>
 <tr><th>φ</th><th class="nw">iid bootstrap</th><th class="nw">block (L=21)</th><th class="nw">ความจริง</th><th>iid ผิดทางไหน</th></tr>
-<tr><td class="nw"><strong>+0.35</strong> (momentum)</td><td class="nw">2.29</td><td class="nw">2.62</td><td class="nw">3.29</td><td class="nw"><strong>ต่ำไป 30%</strong></td></tr>
-<tr><td class="nw"><strong>−0.35</strong> (mean reversion)</td><td class="nw">2.29</td><td class="nw">1.33</td><td class="nw">1.57</td><td class="nw"><strong>สูงไป 46%</strong> ← กลับด้าน</td></tr>
+<tr><td class="nw"><strong>+0.35</strong> (momentum)</td><td class="nw">2.30</td><td class="nw">2.60</td><td class="nw">3.28</td><td class="nw"><strong>ต่ำไป 30%</strong></td></tr>
+<tr><td class="nw"><strong>−0.35</strong> (mean reversion)</td><td class="nw">2.30</td><td class="nw">1.32</td><td class="nw">1.57</td><td class="nw"><strong>สูงไป 46%</strong> ← กลับด้าน</td></tr>
 </table></div>
-<p>สังเกตว่า <strong>iid ให้ 2.29 เท่ากันทั้งสองกรณี</strong> — เพราะมันมองไม่เห็นลำดับเลย · ส่วนความจริงต่างกันคนละโลก (3.29 vs 1.57)</p>
-<p>💎 <strong>ข้อสรุปที่ปลอดภัยกว่า:</strong> <strong>iid bootstrap ผิดเสมอเมื่อข้อมูลมีความจำ — ทิศทางขึ้นกับเครื่องหมายของ ACF</strong> · ส่วน <strong>block bootstrap ต่ำกว่าความจริงทั้งสองทิศ</strong> (2.62 &lt; 3.29 และ 1.33 &lt; 1.57) จึงใช้เป็น "ขอบล่าง" ได้จริง</p></div>
+<p>สังเกตว่า <strong>iid ให้ 2.30 เท่ากันทั้งสองกรณี</strong> — เพราะมันมองไม่เห็นลำดับเลย · ส่วนความจริงต่างกันคนละโลก (3.28 vs 1.57)</p>
+<p>💎 <strong>ข้อสรุปที่ปลอดภัยกว่า:</strong> <strong>iid bootstrap ผิดเสมอเมื่อข้อมูลมีความจำ — ทิศทางขึ้นกับเครื่องหมายของ ACF</strong> · ส่วน <strong>block bootstrap ในตัวอย่างนี้ต่ำกว่าความจริงทั้งสองทิศ</strong> (2.60 &lt; 3.28 และ 1.32 &lt; 1.57) · แต่อย่าถือเป็น "ขอบล่าง" ที่รับประกัน — ลองกับข้อมูลจำลองหลายชุด block กว้างเกินความจริงได้บ่อย (โดยเฉพาะเมื่อ ACF ติดลบ)</p></div>
 <p><strong>ทางแก้: block bootstrap</strong> — แทนที่จะหยิบทีละจุด <strong>ให้หยิบทีละ "ก้อน" ที่ต่อเนื่องกัน</strong> (เช่นก้อนละ 21 วัน = 1 เดือนทำการ) · โครงสร้างภายในก้อนจึงถูกรักษาไว้</p></div>
 
 <div class="code"><div class="hdr">🐍 Python — iid vs block bootstrap เทียบกับความจริง</div><pre><span class="c"># pip install numpy</span>
@@ -869,7 +878,7 @@ for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
 <p>📌 <strong>ค่า Sharpe จริงของกระบวนการนี้คือ 0.59</strong> ส่วนตัวอย่างชุดนี้บังเอิญวัดได้ 1.206 (ดวงดี — เหมือนกรณี 1.0 → 1.581 ใน §13.2) · <strong>ดังนั้นให้เทียบที่ "ความกว้าง" เป็นหลัก</strong> เพราะช่วงของ bootstrap อยู่รอบ 1.21 ส่วนช่วงความจริงอยู่รอบ 0.59 — คนละจุดศูนย์กลาง</p>
 <p><strong>block bootstrap ดีขึ้นจริง แต่ยังไม่พอ</strong> — และผมจะไม่บอกว่ามันแก้ปัญหาได้ เพราะมันไม่ได้แก้</p>
 <p>สังเกตจุดที่สำคัญที่สุด: <strong>ปลายล่างของช่วงความจริงคือ −1.07 แต่ iid bootstrap บอก +0.06</strong> · แปลว่า iid bootstrap จะทำให้คุณสรุปว่า <em>"Sharpe เป็นบวกแน่นอน"</em> ทั้งที่ความจริง<strong>ติดลบได้สบาย ๆ</strong></p>
-<p>💎 <strong>สิ่งที่ต้องเอากลับไป:</strong> <strong>block</strong> bootstrap <strong>ประเมินความไม่แน่นอนต่ำกว่าความจริงเมื่อข้อมูลมีความจำ</strong> (ส่วน iid ผิดได้ทั้งสองทิศ) · ถือว่าช่วงที่ได้เป็น<strong>ขอบล่างของความไม่แน่นอน ไม่ใช่ค่าจริง</strong> · และ <strong>ยิ่งข้อมูลมี autocorrelation สูง ยิ่งต้องเผื่อมากขึ้น</strong></p></div>
+<p>💎 <strong>สิ่งที่ต้องเอากลับไป:</strong> <strong>block</strong> bootstrap <strong>ใกล้ความจริงกว่า iid เมื่อข้อมูลมีความจำ แต่ยังคลาดได้ทั้งสองทิศ</strong> (ส่วน iid ผิดแน่ ๆ และทิศขึ้นกับ ACF) · ถือว่าช่วงที่ได้เป็น<strong>ค่าประมาณคร่าว ๆ ของความไม่แน่นอน ไม่ใช่ค่าจริง</strong> · และ <strong>ยิ่งข้อมูลมี autocorrelation สูง ยิ่งต้องเผื่อมากขึ้น</strong></p></div>
 
 <div class="try"><div class="bt">✍️ ลองทำเอง</div>
 <p>เปลี่ยนความยาวก้อนจาก <code>L=21</code> เป็น <code>L=1</code> และ <code>L=63</code> · <strong>(1)</strong> ที่ L=1 จะเกิดอะไร · <strong>(2)</strong> งั้น L ยิ่งยาวยิ่งดีหรือเปล่า?</p>
@@ -886,13 +895,13 @@ for name, a in [("iid bootstrap", iid), ("block bootstrap L=21", block(r, 21))]:
 <li><strong>L ยาวไป</strong> → จำนวนก้อนที่หยิบได้เหลือน้อยมาก (ที่ n=756, L=252 เหลือแค่ 3 ก้อน) → <strong>ตัวอย่างที่สร้างขึ้นแทบเหมือนของเดิมทุกครั้ง</strong> ความหลากหลายหายไป ประเมินผิดอีกทาง</li>
 </ul>
 <p>กฎนิ้วโป้งที่ใช้กันคือ <strong>L ≈ n<sup>1/3</sup></strong> (ที่ n = 756 ได้ราว <strong>9</strong>) ซึ่งมาจากงานเรื่องการแลกเปลี่ยน bias-variance ของความยาวก้อน</p>
-<p><strong>และผมกวาดดูจริงทุกค่า — ปรากฏว่ากฎนั้นถูก ส่วน L=21 ที่ผมใช้ในตัวอย่างนั้นแย่กว่า:</strong></p>
+<p><strong>และผมกวาดดูจริงทุกค่ากับตัวอย่างชุดนี้ชุดเดียว:</strong></p>
 <div class="tw"><table>
 <tr><th>L</th><th class="nw">1</th><th class="nw">5</th><th class="nw"><strong>9</strong></th><th class="nw">21</th><th class="nw">42</th><th class="nw">63</th><th class="nw">126</th></tr>
 <tr><td class="nw">ความกว้าง CI</td><td class="nw">2.30</td><td class="nw">2.85</td><td class="nw"><strong>2.83</strong></td><td class="nw">2.60</td><td class="nw">2.17</td><td class="nw">1.90</td><td class="nw">1.62</td></tr>
 <tr><td class="nw">ห่างจากความจริง (3.28)</td><td class="nw">−0.98</td><td class="nw"><strong>−0.43</strong></td><td class="nw"><strong>−0.45</strong></td><td class="nw">−0.68</td><td class="nw">−1.11</td><td class="nw">−1.38</td><td class="nw">−1.66</td></tr>
 </table></div>
-<p><strong>จุดที่ดีที่สุดอยู่ที่ L ≈ 5–9 ตรงกับกฎ n<sup>1/3</sup> พอดี</strong> · ที่ผมใช้ 21 ในตัวอย่างเพราะเลือกจาก "1 เดือนทำการ" ซึ่งฟังดูสมเหตุสมผล — <strong>แต่ข้อมูลไม่เห็นด้วย</strong> · ความจำของ AR(1) ที่ φ = 0.35 มีครึ่งชีวิตแค่ <strong>0.66 วัน</strong> ก้อนยาว 21 วันจึงเกินความจำไปมาก และเริ่มเสียความหลากหลายโดยไม่ได้อะไรกลับมา</p>
+<p><strong>ในตัวอย่างชุดนี้ L ≈ 5–9 ได้ใกล้ความจริงที่สุด</strong> · แต่ผลนี้มาจากข้อมูลชุดเดียว — ลองกับข้อมูลจำลอง 200 ชุด ความกว้างเฉลี่ยของ L = 5, 9, 21 ได้ 2.98, 3.10, 3.15 ใกล้กันมาก และ L = 21 ใกล้ความจริงที่สุดโดยเฉลี่ย · และกฎ n<sup>1/3</sup> บอก<em>อัตรา</em>ที่ L ควรโตตาม n (Hall, Horowitz &amp; Jing 1995) ไม่ใช่ค่า L ที่ถูกต้องเป๊ะ · ความจำของ AR(1) ที่ φ = 0.35 มีครึ่งชีวิตแค่ <strong>0.66 วัน</strong> ก้อนตั้งแต่ราว 5 วันขึ้นไปจึงเก็บความจำไว้ได้แล้ว</p>
 <p>💡 <strong>สิ่งที่ต้องเอากลับไป — และมันสำคัญกว่าค่า L ใด ๆ:</strong> <strong>ลองหลาย L แล้วดูว่าคำตอบเปลี่ยนไหม</strong> · แต่<strong>อย่าเลือก L ที่ให้คำตอบสวยที่สุด</strong> (ในตารางนี้คือ L=126 ที่ให้ช่วงแคบสุด และผิดมากที่สุดพอดี) · ให้เลือกจาก<strong>ความยาวความจำจริงของข้อมูล</strong> หรือใช้ n<sup>1/3</sup> เป็นจุดตั้งต้น แล้วยอมรับว่าช่วงที่ได้ยังแคบเกินจริงอยู่ดี</p>
 <p>⚠️ สังเกตด้วยว่า <strong>ไม่มี L ค่าไหนเลยที่ไปถึง 3.28</strong> — ค่าที่ดีที่สุดยังต่ำไป 13% · <strong>block bootstrap บรรเทาปัญหา ไม่ได้แก้ปัญหา</strong> ตามที่กล่องข้างบนบอกไว้</p>
 </details></div>
@@ -934,25 +943,25 @@ b = np.array([sharpe(r[g.integers(0, T, T)]) for _ in range(4000)])
 print(f"  bootstrap CI = [{np.percentile(b,2.5):+.2f}, {np.percentile(b,97.5):+.2f}]")
 <span class="o">#   bootstrap CI = [+5.72, +8.17]</span>
 long = np.concatenate([path(np.random.default_rng(3+i)) for i in range(20)])
-print(f"ความจริงระยะยาว 60 ปี: Sharpe = {sharpe(long):+.2f}")
-<span class="o"># ความจริงระยะยาว 60 ปี: Sharpe = +0.42</span></pre></div>
+print(f"ตัวอย่างยาว 60 ปี: Sharpe = {sharpe(long):+.2f}")
+<span class="o"># ตัวอย่างยาว 60 ปี: Sharpe = +0.42   ← ค่าจริงของกระบวนการ ≈ 0.30 (คำนวณจาก mean/SD ของโมเดล)</span></pre></div>
 
 <div class="bx br"><div class="bt">❌ อ่านตัวเลขสามบรรทัดสุดท้ายเรียงกัน</div>
 <div class="tw"><table>
 <tr><th></th><th class="nw">Sharpe</th></tr>
 <tr><td class="nw">ตัวอย่าง 3 ปีที่บังเอิญไม่เจอ jump (เกิดขึ้น <strong>23%</strong> ของเวลา)</td><td class="nw"><strong>+6.93</strong></td></tr>
 <tr><td class="nw">ช่วงความเชื่อมั่น 95% ที่ bootstrap ให้</td><td class="nw"><strong>[+5.72, +8.17]</strong></td></tr>
-<tr><td class="nw"><strong>ความจริงระยะยาว</strong></td><td class="nw"><strong>+0.42</strong></td></tr>
+<tr><td class="nw"><strong>ตัวอย่างยาว 60 ปี</strong> (ค่าจริงของกระบวนการ ≈ +0.30)</td><td class="nw"><strong>+0.42</strong></td></tr>
 </table></div>
-<p><strong>ช่วงความเชื่อมั่นไม่ได้แค่ผิด — มันไม่ครอบคลุมค่าจริงเลยแม้แต่นิดเดียว</strong> · ปลายล่างสุดของช่วง (+5.72) ยังสูงกว่าความจริงถึง <strong>13 เท่า</strong> · และ bootstrap รายงานมันด้วยความมั่นใจเต็มร้อย เพราะจากมุมของมัน ข้อมูลไม่มีวันแย่เลยสักวัน</p>
+<p><strong>ช่วงความเชื่อมั่นไม่ได้แค่ผิด — มันไม่ครอบคลุมค่าจริงเลยแม้แต่นิดเดียว</strong> · ปลายล่างสุดของช่วง (+5.72) ยังสูงกว่าตัวอย่างยาว 60 ปีถึง <strong>14 เท่า</strong> (และสูงกว่าค่าจริงของกระบวนการ ≈ 0.30 ถึงราว 19 เท่า) · และ bootstrap รายงานมันด้วยความมั่นใจเต็มร้อย เพราะจากมุมของมัน ข้อมูลไม่มีวันแย่เลยสักวัน</p>
 <p><strong>และ block bootstrap จาก §13.3 ไม่ช่วยอะไรเลยในกรณีนี้</strong> — ผมลองแล้วได้ [+5.66, +8.21] ซึ่งแทบเหมือนเดิม · เพราะปัญหาไม่ใช่ "ความจำของข้อมูล" แต่คือ<strong>เหตุการณ์ที่ยังไม่เกิด</strong> ซึ่ง<strong>ไม่มีวิธี resampling ใดแก้ได้ตามนิยาม</strong></p>
-<p>สังเกตว่านี่เป็นคนละเรื่องกับ §13.3 โดยสิ้นเชิง และ<strong>ใหญ่กว่ามาก</strong>: §13.3 ทำให้ผิดไป 21–30% · ข้อนี้ทำให้ผิดไป <strong>16 เท่า</strong></p></div>
+<p>สังเกตว่านี่เป็นคนละเรื่องกับ §13.3 โดยสิ้นเชิง และ<strong>ใหญ่กว่ามาก</strong>: §13.3 ทำให้ผิดไป 21–30% · ข้อนี้ทำให้ผิดไป <strong>16 เท่า</strong> (เทียบตัวอย่าง 60 ปี · เทียบค่าจริง ≈ 0.30 ราว 23 เท่า)</p></div>
 
 <div class="bx ba"><div class="bt">🧮 ทำยังไงแทน — 3 ข้อ</div>
 <ol>
 <li><strong>นับก่อนว่าคุณมีข้อมูลหางกี่จุด</strong> · รัน <code>(r &lt; -3*r.std()).sum()</code> · <strong>ถ้าได้ 0 หรือ 1 แปลว่าคุณกำลังประมาณความเสี่ยงหางจากจุดข้อมูล 0–1 จุด</strong> — ตัวเลขความเสี่ยงใดก็ตามที่คุณคำนวณได้ ไม่มีความหมาย</li>
 <li><strong>ยัดเหตุการณ์ที่ยังไม่เคยเกิดเข้าไปเอง</strong> — นี่คือ <strong>stress test</strong> จาก <a href="math-part10.html#s11-5">เล่ม 2 · E §11.5</a> · เติมวัน −20% ลงในซีรีส์ด้วยมือ แล้วดูว่ากลยุทธ์เหลืออะไร · <strong>สำหรับกลยุทธ์ short vol นี่คือการวิเคราะห์เดียวที่มีความหมายจริง</strong></li>
-<li><strong>ดูความเบ้ก่อนเชื่อ CI</strong> · ถ้าผลตอบแทนเบ้ลบ (<a href="math-part8.html#s7-5">เล่ม 2 · C §7.5</a>) ให้ถือว่า <strong>bootstrap CI ไร้ค่าจนกว่าจะพิสูจน์เป็นอย่างอื่น</strong></li>
+<li><strong>ดูความเบ้ก่อนเชื่อ CI</strong> · ถ้าผลตอบแทนเบ้ลบ (<a href="math-part8.html#s7-2">เล่ม 2 · C §7.2</a>) ให้ถือว่า <strong>bootstrap CI ไร้ค่าจนกว่าจะพิสูจน์เป็นอย่างอื่น</strong></li>
 </ol>
 <p>💎 <strong>ประโยคปิด:</strong> <strong>bootstrap รู้จักเฉพาะสิ่งที่เกิดขึ้นแล้ว · มันไม่รู้จักสิ่งที่ยังไม่เกิด</strong> — และในการเงิน สิ่งที่ยังไม่เกิดคือสิ่งที่ฆ่าคุณ</p></div>
 
@@ -1062,7 +1071,7 @@ for a, b in [(1, 1), (11, 9)]:
 <p>ที่พลิกวิธีมอง: คนที่บอกว่า "ผมไม่ใช้ prior ผมดูข้อมูลอย่างเดียว" ก็มี prior — มันซ่อนอยู่ในการเลือกว่าจะทดสอบกลยุทธ์ไหนจาก 200 แบบใน <a href="#s12-5">§12.5</a> และซ่อนอยู่ใน α ของ Ridge ใน <a href="#s14-2">§14.2</a> · ความต่างไม่ใช่ "มีหรือไม่มี prior" แต่คือ "เขียนมันออกมาหรือแกล้งทำเป็นไม่มี"</p></div>
 
 <div class="bx" style="background:var(--g1);border-left:4px solid var(--g6)"><div class="bt">📍 ปัจจุบันใช้จริง</div>
-<p><strong>Kalman filter ใน <a href="math-part9.html#s9-4">เล่ม 2 · D §9.4</a> คือ Bayes ตัวนี้เป๊ะ</strong> — prior เป็น Normal (β̂ ของเมื่อวาน กับความแปรปรวน P⁻) และ likelihood เป็น Normal (ราคาที่วัดได้ กับ noise R) · Normal คูณ Normal ได้ Normal จึงเป็นคู่ conjugate เหมือน Beta กับ Binomial และค่าเฉลี่ย posterior ก็เป็นค่าเฉลี่ยถ่วงน้ำหนักแบบเดียวกับ (a+k)/(a+b+n) · <strong>Kₜ·Aₜ (ไม่ใช่ K เปล่า ๆ ตามที่ §9.4 เตือน) คือน้ำหนัก posterior ที่ให้ B/A — ค่า β ที่ราคาวันนี้บอกเป็นนัย</strong> — บทบาทเดียวกับ n/(a+b+n) ตรงนี้ · ประโยค "ทายก่อน วัดจริง แล้วเลื่อนความเชื่อไปหาสิ่งที่วัดได้ตามสัดส่วนความมั่นใจ" ของ §9.4 คือนิยามของ posterior mean ในภาษาคน</p>
+<p><strong>Kalman filter ใน <a href="math-part9.html#s9-4">เล่ม 2 · D §9.4</a> คือ Bayes ตัวนี้เป๊ะ</strong> — prior เป็น Normal (β̂ ของเมื่อวาน กับความแปรปรวน P⁻) และ likelihood เป็น Normal (ราคาที่วัดได้ กับ noise R) · Normal คูณ Normal ได้ Normal จึงเป็นคู่ conjugate เหมือน Beta กับ Binomial และค่าเฉลี่ย posterior ก็เป็นค่าเฉลี่ยถ่วงน้ำหนักแบบเดียวกับ (a+k)/(a+b+n) · <strong>Kₜ·Aₜ (ไม่ใช่ K เปล่า ๆ ตามที่ §9.4 เตือน) คือน้ำหนัก posterior ที่ให้ B/A (ค่า β ที่ราคาวันนี้บอกเป็นนัย)</strong> บทบาทเดียวกับ n/(a+b+n) ตรงนี้ · ประโยค "ทายก่อน วัดจริง แล้วเลื่อนความเชื่อไปหาสิ่งที่วัดได้ตามสัดส่วนความมั่นใจ" ของ §9.4 คือนิยามของ posterior mean ในภาษาคน</p>
 <p><strong>Black-Litterman</strong> (<a href="theory-extra.html">ทฤษฎีของ Quant · ภาคเสริม</a>) คือ Bayes บน μ ของพอร์ต: prior คือผลตอบแทนดุลยภาพ Π ที่ตลาดบอกเป็นนัย · view ของคุณคือ likelihood · τ กับ Ω คือ "prior หนักกี่ไม้" กับ "view หนักกี่ไม้" — การ์ดนั้นมีเลขครบแล้ว ที่นี่ไม่ทำซ้ำ · <strong>α ของ Ridge ใน <a href="#s14-2">§14.2</a> ก็คือ prior แฝง</strong>: Ridge = จุดที่ posterior สูงสุด (MAP) เมื่อ β มี prior Normal ศูนย์กลางที่ 0 และ variance σ²/α (σ² = variance ของ noise) — α ใหญ่ = prior แคบ = มั่นใจว่า β ควรอยู่ใกล้ศูนย์ · shrinkage ทุกตัวในคลังนี้จึงเป็น Bayes ที่ไม่ได้บอกว่าตัวเองเป็น</p></div>
 
 <div class="bx" style="background:var(--g1);border-left:4px solid var(--g6)"><div class="bt">📚 Papers</div>
@@ -1090,7 +1099,7 @@ for a, b in [(1, 1), (11, 9)]:
 <ul>
 <li><strong>bootstrap ให้ CI กับสถิติที่ไม่มีสูตร</strong> — max drawdown · Sortino · อัตราชนะ · อะไรที่คำนวณได้ก็ bootstrap ได้</li>
 <li><strong>ตรงกับสูตรเมื่อสมมติฐานของสูตรเป็นจริง</strong> ([0.42, 2.73] vs [0.45, 2.71]) — ซึ่งเป็นเหตุผลที่เชื่อมันได้ในกรณีที่ไม่มีสูตร</li>
-<li><strong>ข้อมูลมีความจำ = ต้องใช้ block bootstrap</strong> — iid <strong>ผิดเสมอ</strong> (ต่ำไปเมื่อ ACF บวก · สูงไปเมื่อ ACF ลบ) · ส่วน block ต่ำกว่าความจริงทั้งสองทิศ จึงใช้เป็น<strong>ขอบล่าง</strong>ได้</li>
+<li><strong>ข้อมูลมีความจำ = ต้องใช้ block bootstrap</strong> — iid <strong>ผิดเสมอ</strong> (ต่ำไปเมื่อ ACF บวก · สูงไปเมื่อ ACF ลบ) · block ใกล้ความจริงกว่าแต่ยังคลาดได้ทั้งสองทิศ — ลองหลาย L เสมอ</li>
 <li><strong>bootstrap รู้จักเฉพาะสิ่งที่เกิดขึ้นแล้ว</strong> — กลยุทธ์เบ้ลบที่ยังไม่เจอวันระเบิด จะได้ CI [+5.72, +8.17] ทั้งที่ความจริงคือ +0.42 · <strong>ไม่มีวิธี resampling ใดแก้ข้อนี้ได้ ต้องใช้ stress test</strong></li>
 <li><strong>posterior = ค่าเฉลี่ยถ่วงน้ำหนักของ prior กับข้อมูล</strong> (<a href="#s13-5">§13.5</a>) — ชนะ 58/100 กับ prior แบนให้ P(p &gt; 0.55) = 0.72 ไม่ใช่ "ผ่านแล้ว" · a+b ของ prior คือ "ความเชื่อของฉันมีค่ากี่ไม้" ต้องเขียนก่อนดูข้อมูลและป้องกันได้ · credible interval สัญญาเรื่อง<em>ค่า</em> ส่วน confidence interval สัญญาเรื่อง<em>วิธี</em></li>
 </ul></div>
@@ -1176,10 +1185,10 @@ Ridge:  หา β ที่ทำให้  Σ(y − Xβ)²  +  <b>α · Σβⱼ
 <p>ดูว่าเกิดอะไรขึ้นเมื่อค่อย ๆ เพิ่ม α:</p>
 
 <!-- FIG:m11-ridge-path:BEGIN -->
-<svg class="d" viewBox="0 0 560 320" role="img" aria-label="เส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: market เริ่มที่ติดลบ -0.20 แล้วไต่ขึ้น value เริ่มสูง 1.44 แล้วลดลง ทั้งคู่มาบรรจบกันราว 0.6 ส่วน size คงที่">
+<svg class="d" viewBox="0 0 560 320" role="img" aria-label="เส้นทางสัมประสิทธิ์ของ Ridge เมื่อ alpha เพิ่มขึ้น: market เริ่มที่ติดลบ -0.20 แล้วไต่ขึ้น value เริ่มสูง 1.44 แล้วลดลง ทั้งคู่วิ่งเข้าหากัน ส่วน size หดลงช้ากว่า">
 <defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>
 <text x="280" y="18" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-opacity="0.92">Ridge Path — ยิ่งเพิ่มค่าปรับ α สองตัวที่ซ้ำกันยิ่งเลิกแย่งกัน แล้วเดินเข้าหาคำตอบจริง</text>
-<text x="280" y="32" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">§14.3 (val ≈ mkt · VIF 113) · OLS ให้ -0.20 / 1.44 — เพี้ยน · α = 10 ได้ 0.53 / 0.70 / 0.26 · จริง 0.8 / 0.4 / 0.3</text>
+<text x="280" y="32" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">§14.1 (val ≈ mkt · VIF 113) · OLS ให้ -0.20 / 1.44 — เพี้ยน · α = 10 ได้ 0.53 / 0.70 / 0.26 · จริง 0.8 / 0.4 / 0.3</text>
 <g stroke="#e5e7eb" stroke-width="1"><line x1="55" y1="192.0" x2="538" y2="192.0"/><line x1="55" y1="156.0" x2="538" y2="156.0"/><line x1="55" y1="120.0" x2="538" y2="120.0"/><line x1="55" y1="84.0" x2="538" y2="84.0"/><line x1="55" y1="48.0" x2="538" y2="48.0"/></g>
 <line x1="55" y1="228" x2="538" y2="228" stroke="#9ca3af" stroke-width="1.2"/>
 <line x1="55" y1="48" x2="55" y2="228" stroke="#9ca3af" stroke-width="1.2"/>
@@ -1218,9 +1227,9 @@ Ridge:  หา β ที่ทำให้  Σ(y − Xβ)²  +  <b>α · Σβⱼ
 <div class="bx bg"><div class="bt">✅ อ่านกราฟ</div>
 <ul>
 <li><strong>ที่ α เล็กมาก (ซ้ายสุด)</strong> — เป็น OLS · <code>market</code> ติดลบ (−0.19) และ <code>value</code> พุ่งไป 1.43 · <strong>สองเส้นแยกห่างกันสุดขั้ว</strong></li>
-<li><strong>พอ α เพิ่มขึ้น</strong> — เส้นน้ำเงินไต่ขึ้น เส้นส้มลดลง · <strong>ทั้งคู่วิ่งเข้าหากัน</strong> เพราะค่าปรับทำให้ "หนึ่งบวกจัดหนึ่งลบจัด" แพงเกินไป</li>
+<li><strong>พอ α เพิ่มขึ้น</strong> — เส้นน้ำเงิน (<code>market</code>) ไต่ขึ้น เส้นเขียว (<code>value</code>) ลดลง · <strong>ทั้งคู่วิ่งเข้าหากัน</strong> เพราะค่าปรับทำให้ "หนึ่งบวกจัดหนึ่งลบจัด" แพงเกินไป</li>
 <li><strong>ที่ α = 10</strong> ได้ 0.528 / 0.695 — ยังไม่ตรงค่าจริง (0.8 / 0.4) แต่<strong>อยู่ในย่านที่สมเหตุสมผลและเครื่องหมายถูกทั้งคู่</strong></li>
-<li><strong>เส้นเขียว (<code>size</code>) แทบไม่ขยับ</strong> — เพราะมันเป็นอิสระจากตัวอื่น (VIF = 1.0) จึงไม่มีปัญหาให้แก้ตั้งแต่แรก · <strong>Ridge แตะเฉพาะที่ที่มีปัญหา</strong></li>
+<li><strong>เส้นส้ม (<code>size</code>) ขยับน้อย</strong> — เพราะมันเป็นอิสระจากตัวอื่น (VIF = 1.0) · แต่ Ridge หดทุกตัว ไม่ได้แตะเฉพาะที่มีปัญหา: size ลดจาก 0.268 เหลือ 0.256 ที่ α = 10 และ 0.185 ที่ α = 100 — แค่หดน้อยกว่าคู่ที่ซ้ำกัน</li>
 </ul></div>
 
 <div class="bx ba"><div class="bt">🧮 ประโยชน์ที่แท้จริงของ Ridge วัดได้เป็นตัวเลข — ความเสถียร</div>
@@ -1304,7 +1313,7 @@ Lasso:  <b>(1/2n)</b>·Σ(y − Xβ)²  +  α · Σ<b>|βⱼ|</b>    →  β บ
 <p>Lasso หด β ลงเสมอ · แต่มันหด<strong>สิ่งที่มันกำลังประมาณ</strong> ซึ่ง<strong>ไม่ใช่ค่าจริงรายตัว</strong>เมื่อตัวแปรทับซ้อน</p>
 <div class="tw"><table>
 <tr><th>สถานการณ์</th><th>Lasso ให้</th><th>เทียบกับค่าจริง</th></tr>
-<tr><td class="nw">ตัวแปร<strong>เป็นอิสระ</strong>ต่อกัน</td><td class="nw">หดลง ≈ α ต่อตัว</td><td class="nw"><strong>ต่ำกว่าค่าจริงทุกตัว ✓</strong></td></tr>
+<tr><td class="nw">ตัวแปร<strong>เป็นอิสระ</strong>ต่อกัน</td><td class="nw">หดลง ≈ α ต่อตัว (เมื่อ X ปรับสเกลให้ variance = 1 และตามสูตร 1/2n ของ sklearn)</td><td class="nw"><strong>ต่ำกว่าค่า OLS ทุกตัว</strong> — โดยเฉลี่ยจึงต่ำกว่าค่าจริง ✓</td></tr>
 <tr><td class="nw">ตัวแปร<strong>ทับซ้อน</strong> (ตัวอย่างเรา)</td><td class="nw">β_value = <strong>1.187</strong></td><td class="nw">ค่าจริงรายตัว 0.4 → <strong>สูงกว่า 3 เท่า!</strong></td></tr>
 </table></div>
 <p><strong>ทำไม:</strong> พอ Lasso ตัด <code>market</code> ทิ้ง ตัวที่รอดต้อง<strong>แบกผลของทั้งกลุ่มไว้คนเดียว</strong> · สิ่งที่มันประมาณจึงเป็น<strong>ผลรวมของกลุ่ม = 1.20</strong> ไม่ใช่ 0.4 · แล้วค่อยถูกหดลงจากตรงนั้น → <strong>1.187 &lt; 1.20 ✓ หดจริง</strong></p>
@@ -1378,7 +1387,7 @@ for name, m in [("OLS",        LinearRegression()),
 Ridge บน X สเกลใหม่    →  β_size = 0.0027  →  แปลงกลับ = <b>0.2655</b>
 
 ต่างกัน 3.7% ทั้งที่<b>ข้อมูลเป็นชุดเดียวกันเป๊ะ</b> เปลี่ยนแค่หน่วย</div>
-<p><strong>ทางแก้:</strong> <code>StandardScaler</code> ก่อนเสมอ (และตาม §12.4 ข้อ 2 — <strong>fit บนชุดฝึกเท่านั้น</strong>) · หรือใช้ <code>Pipeline</code> ซึ่งจัดการให้ครบ · <strong>ห้ามปรับสเกลกับตัว intercept</strong> เพราะเราไม่ต้องการลงโทษค่าคงที่</p></div>
+<p><strong>ทางแก้:</strong> <code>StandardScaler</code> ก่อนเสมอ (และตาม §12.4 ข้อ 2 — <strong>fit บนชุดฝึกเท่านั้น</strong>) · หรือใช้ <code>Pipeline</code> ซึ่งจัดการให้ครบ · <strong>ห้ามลงโทษ intercept</strong> เพราะค่าคงที่ไม่ควรถูกดึงเข้าหาศูนย์ (sklearn ไม่ลงโทษให้เองอยู่แล้ว)</p></div>
 
 <div class="bx br"><div class="bt">❌ 2. Lasso เลือกตัวแปรแบบไม่เสถียร เมื่อตัวแปรทับซ้อนกัน</div>
 <p>อย่างที่เห็นใน §14.3 — Lasso ตัด <code>market</code> ทิ้งแล้วเก็บ <code>value</code> ไว้ · <strong>ถ้าเปลี่ยนข้อมูลนิดเดียว มันอาจตัด <code>value</code> แล้วเก็บ <code>market</code> แทน</strong></p>
@@ -1392,7 +1401,7 @@ Ridge บน X สเกลใหม่    →  β_size = 0.0027  →  แปล
 <div class="bx br"><div class="bt">❌ 3. α ที่ CV เลือกให้ ไม่ใช่ α ที่ดีที่สุดสำหรับการตีความ</div>
 <p><code>RidgeCV</code> เลือก α = <strong>4.24</strong> เพราะนั่นคือค่าที่<strong>ทำนายได้ดีที่สุด</strong> · แต่เราเพิ่งพิสูจน์ไปว่าการทำนายแทบไม่ต่างกันเลยในช่วง α กว้าง ๆ</p>
 <p>ถ้าเป้าหมายคือ β ที่<strong>เสถียรพอจะเอาไปใช้เป็น hedge ratio</strong> คุณอาจต้องการ α สูงกว่านั้นมาก — และนั่น<strong>ไม่ผิด</strong> ตราบใดที่คุณรู้ว่ากำลังแลกอะไรกับอะไร</p>
-<p><strong>วิธีตัดสินใจที่ตรงไปตรงมา:</strong> พล็อตกราฟเส้นทางแบบใน §14.2 แล้วเลือก α ที่<strong>เส้นเริ่มนิ่ง</strong> · จากกราฟนั้น α ราว 10–30 คือจุดที่เส้นน้ำเงินกับส้มหยุดเคลื่อนที่แรง ๆ แล้ว</p>
+<p><strong>วิธีตัดสินใจที่ตรงไปตรงมา:</strong> พล็อตกราฟเส้นทางแบบใน §14.2 แล้วเลือก α ที่<strong>เส้นเริ่มนิ่ง</strong> · จากกราฟนั้น α ราว 10–30 คือจุดที่เส้นน้ำเงินกับเขียวหยุดเคลื่อนที่แรง ๆ แล้ว</p>
 <p>⚠️ <strong>และอย่าลืมว่า CV ที่ใช้เลือก α ต้องเป็น walk-forward ถ้าข้อมูลมีเวลา</strong> · ค่าปริยายของทั้งคู่ใช้ไม่ได้ — และ <code>RidgeCV</code> แย่กว่าที่คิด:</p>
 <div class="tw"><table>
 <tr><th>ตัว</th><th>ค่าปริยาย</th><th>ปัญหา</th></tr>
@@ -1434,7 +1443,7 @@ Ridge บน X สเกลใหม่    →  β_size = 0.0027  →  แปล
 <p>"เก็บคะแนนเส้นตรง β₀ + β₁x₁ + … ไว้เหมือน OLS ทุกอย่าง แล้ว<strong>ส่งผ่านตัวบีบ</strong>ก่อนออกจากโมเดล — ผลลัพธ์จึงอยู่ระหว่าง 0 กับ 1 เสมอ และอ่านเป็น<strong>ความน่าจะเป็นของทิศ</strong>ได้ · ตัวบีบตัวนี้คือรูปเดียวกับ 100 − 100/(1 + RS) ของ RSI ที่คุณอ่านมาแล้ว"</p></div>
 
 <div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
-<p>เหตุผลเดียวที่การ์ดนี้อยู่ในคลัง: ทุกครั้งที่ใครพูดว่า "โอกาสขึ้น 55%" — จากโมเดล จากอินดิเคเตอร์ หรือจากความรู้สึก — ตัวเลขนั้นไม่มีค่าจนกว่าจะพิสูจน์ว่า <strong>calibrated</strong> (เรื่องที่บอก 55% เกิดจริงราว 55%) · logistic regression คือเครื่องมือมาตรฐานที่ผลิตความน่าจะเป็นแบบนี้ และตาราง calibration ในการ์ดคือวิธีตรวจมัน ซึ่งใช้ตรวจความน่าจะเป็นจาก<em>แหล่งไหนก็ได้</em> — <a href="#s13-5">§13.5</a> พึ่งข้อนี้ตอนบอกว่า "58%" ต้อง calibrated ก่อนจะเอาไปอัปเดตความเชื่อ · รองลงมา: คำถามแบบ "สัญญาณนี้ → เทรดหรือไม่เทรด" เกือบทั้งหมดคือ <strong>classification</strong> (การจำแนกประเภท) ไม่ใช่ regression · และเมื่อโมเดลตอบว่า P(ขึ้น) = 0.55 ตัวเลขนี้<strong>มีค่าก็ต่อเมื่ออยู่คู่กับขนาดของกำไร/ขาดทุน</strong> — Kelly ใน <a href="math-part10.html#s11-2">เล่ม 2 · E §11.2</a> ต้องการทั้ง p และ b · ความน่าจะเป็นโดยไม่มีขนาดคือครึ่งคำตอบ และหัวข้อนี้จะทำให้คุณเห็นว่าอีกครึ่ง<em>ไม่ได้อยู่ในโมเดลนี้เลย</em></p></div>
+<p>เหตุผลเดียวที่การ์ดนี้อยู่ในคลัง: ทุกครั้งที่ใครพูดว่า "โอกาสขึ้น 55%" (จากโมเดล จากอินดิเคเตอร์ หรือจากความรู้สึก) ตัวเลขนั้นไม่มีค่าจนกว่าจะพิสูจน์ว่า <strong>calibrated</strong> (เรื่องที่บอก 55% เกิดจริงราว 55%) · logistic regression คือเครื่องมือมาตรฐานที่ผลิตความน่าจะเป็นแบบนี้ และตาราง calibration ในการ์ดคือวิธีตรวจมัน ซึ่งใช้ตรวจความน่าจะเป็นจาก<em>แหล่งไหนก็ได้</em> — <a href="#s13-5">§13.5</a> พึ่งข้อนี้ตอนบอกว่า "58%" ต้อง calibrated ก่อนจะเอาไปอัปเดตความเชื่อ · รองลงมา: คำถามแบบ "สัญญาณนี้ → เทรดหรือไม่เทรด" เกือบทั้งหมดคือ <strong>classification</strong> (การจำแนกประเภท) ไม่ใช่ regression · และเมื่อโมเดลตอบว่า P(ขึ้น) = 0.55 ตัวเลขนี้<strong>มีค่าก็ต่อเมื่ออยู่คู่กับขนาดของกำไร/ขาดทุน</strong> — Kelly ใน <a href="math-part10.html#s11-2">เล่ม 2 · E §11.2</a> ต้องการทั้ง p และ b · ความน่าจะเป็นโดยไม่มีขนาดคือครึ่งคำตอบ และหัวข้อนี้จะทำให้คุณเห็นว่าอีกครึ่ง<em>ไม่ได้อยู่ในโมเดลนี้เลย</em></p></div>
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองยัด y ที่เป็น 0/1 เข้า OLS ตรง ๆ ดูก่อน · กับข้อมูลจำลอง 400 แถวในบล็อก 🐍 ข้างล่าง OLS ให้ค่าทำนายตั้งแต่ <strong>−0.185 ถึง 1.167</strong> และมี 14 แถวที่ค่าทำนายหลุดออกนอกช่วง [0, 1] · "ความน่าจะเป็นลบ 18%" ไม่มีความหมาย · ปัญหาไม่ใช่ว่าเส้นตรงผิด — คะแนนเส้นตรงยังเป็นความคิดที่ดี · ปัญหาคือเส้นตรง<strong>ไม่มีเพดานและไม่มีพื้น</strong> ต้องมีอะไรมาบีบมันให้อยู่ในช่วงก่อน</p>
 <p>ตัวที่บีบคือ <strong>sigmoid</strong> (ฟังก์ชันรูปตัว S) · <a href="notation.html#grammar">notation หมวด 0</a> เรียกโครงนี้ว่า "ตัวบีบ" — RSI ใช้ 100 − 100/(1 + RS) บีบอัตราส่วนที่วิ่งจาก 0 ถึงไม่จำกัด ให้เหลือ 0 ถึง 100 · logistic ใช้ 1/(1 + e^(−z)) บีบคะแนนที่วิ่งจากลบไม่จำกัดถึงบวกไม่จำกัด ให้เหลือ 0 ถึง 1 · และถ้าตั้ง RS = e^z สองสูตรนี้คือ<strong>สูตรเดียวกันเป๊ะ</strong> (ต่างกันแค่คูณ 100) — ไม่ใช่แค่ "คล้าย"</p>
@@ -1470,7 +1479,7 @@ y = (0.8*X[:,0] - 0.5*X[:,1] + noise &gt; 0).astype(int) <span class="c"># 1 = �
 print("สัดส่วนวันขึ้น", y.mean())
 <span class="o"># สัดส่วนวันขึ้น 0.5025</span>
 
-m = LogisticRegression(C=1.0).fit(X, y)              <span class="c"># ★ C = 1/α — ค่าปริยายมีค่าปรับ L2 อยู่แล้ว</span>
+m = LogisticRegression(C=1.0).fit(X, y)              <span class="c"># ★ C ≈ 1/α (แม่นกว่าคือ α = 1/(2C)) — ค่าปริยายมีค่าปรับ L2 อยู่แล้ว</span>
 print("coef", np.round(m.coef_[0], 3), "intercept", np.round(m.intercept_[0], 3))
 <span class="o"># coef [ 1.158 -0.643] intercept -0.03</span>
 print("odds คูณต่อ +1 SD:", np.round(np.exp(m.coef_[0]), 2))
@@ -1603,7 +1612,7 @@ for lo, hi in zip(edges[:-1], edges[1:]):
 
 <div class="qv"><div class="bt">🧠 มุมที่มองต่าง — 0/1 ทิ้งข้อมูลแบบเดียวกับ |·|</div>
 <p><strong>มือใหม่เห็น:</strong> "โมเดลบอกว่าจะขึ้น 62% — ซื้อ"<br>
-<strong>คนที่ใช้จริงเห็น:</strong> 0.62 คือ<em>จุดเริ่ม</em>ของสามคำถาม — มันเป็น 0.62 จริงไหม (calibration) · ขึ้นแล้วได้เท่าไร ลงแล้วเสียเท่าไร (ไม่อยู่ในโมเดล) · หักค่าผ่านทางแล้วเหลือไหม (NQ Part 0) · โมเดลตอบได้ข้อเดียวจากสาม</p>
+<strong>คนที่ใช้จริงเห็น:</strong> 0.62 คือ<em>จุดเริ่ม</em>ของสามคำถาม: มันเป็น 0.62 จริงไหม (calibration) · ขึ้นแล้วได้เท่าไร ลงแล้วเสียเท่าไร (ไม่อยู่ในโมเดล) · หักค่าผ่านทางแล้วเหลือไหม (NQ Part 0) · โมเดลตอบได้ข้อเดียวจากสาม</p>
 <p>ที่พลิกวิธีมอง: ตลาดไม่จ่ายตาม<em>จำนวนครั้ง</em>ที่ถูก มันจ่ายตาม<em>ขนาด</em> × ครั้ง · notation หมวด 0 สอนว่า |·| ทิ้ง "ทิศ" ตรงนั้นและไม่กลับมา — การแปลง y เป็น 0/1 ทำสิ่งเดียวกันกับ "ขนาด" · ขึ้น 0.1% กับขึ้น 8% กลายเป็นเลข 1 ตัวเดียวกันตั้งแต่ก่อนโมเดลจะเห็นข้อมูล และไม่มีโมเดลตัวไหนกู้มันกลับมาได้ ไม่ว่าจะซับซ้อนแค่ไหน</p></div>
 
 <div class="deep"><div class="bt">📍 ปัจจุบันใช้จริง · 📚 ต้นฉบับ</div>
@@ -1647,7 +1656,7 @@ for lo, hi in zip(edges[:-1], edges[1:]):
 <tr><td class="nw"><strong>k-fold / walk-forward</strong></td><td>ค่าเฉลี่ยของคะแนน k รอบ ≈ E[คะแนนบนข้อมูลใหม่] — พร้อม SD ข้ามรอบ</td><td>อนาคตที่ไม่เหมือนอดีต (ทุก fold ยังมาจากอดีต)</td></tr>
 <tr><td class="nw"><strong>Bootstrap</strong></td><td>การแจกแจงของตัวประมาณ (β̂, Sharpe) จากการสุ่มซ้ำ — ไม่ใช่ E เดี่ยว แต่ทั้งการแจกแจง</td><td>ความจำของอนุกรมเวลา ถ้าหยิบทีละจุด (ต้อง block)</td></tr>
 <tr><td class="nw"><strong>Bayes (§13.5)</strong></td><td>P(θ | ข้อมูล) ∝ P(ข้อมูล | θ) · P(θ) — ความเชื่อหลังดู = ค่าเฉลี่ยถ่วงน้ำหนักของ prior กับข้อมูล (โครง EMA/Kalman)</td><td>prior ที่คุณเลือกเอง — มันอยู่ "ข้างหน้า" ในรูป P(θ) ไม่ใช่หลังขีด · ความอิสระของแต่ละไม้</td></tr>
-<tr><td class="nw"><strong>Ridge / Lasso</strong></td><td>argmin<sub>β</sub> [Σ(y − Xβ)² + α·ขนาดของ β] — ยังประมาณ E[y | x] แต่ยอมเอนเพื่อเสถียร</td><td>ความหมายของ α ข้ามไลบรารี (2n · C = 1/α)</td></tr>
+<tr><td class="nw"><strong>Ridge / Lasso</strong></td><td>argmin<sub>β</sub> [Σ(y − Xβ)² + α·ขนาดของ β] — ยังประมาณ E[y | x] แต่ยอมเอนเพื่อเสถียร</td><td>ความหมายของ α ข้ามไลบรารี (2n · C ≈ 1/α)</td></tr>
 <tr><td class="nw"><strong>Logistic</strong></td><td>P(y = 1 | x) = 1/(1 + e<sup>−z</sup>) — คืน<em>ความน่าจะเป็น</em>ของทิศ ไม่ใช่ค่าเฉลี่ยของขนาด</td><td>ขนาดของการขึ้น/ลง — ต้องคู่กับ payoff (Kelly) จึงตัดสินได้</td></tr>
 </table></div></div>
 
