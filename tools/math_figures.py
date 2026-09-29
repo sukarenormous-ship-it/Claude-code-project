@@ -2084,6 +2084,44 @@ expect(_M5, "✍️ λ เฉลย", f"λ₁ × 0.001 = <strong>{_lam * 0.001:.
 print(f"2·B LP z*={_mf._fr(_lpz[_lpb])} y=({_y1},{_y2}) · GD x8={_gd[8]:.4f} · w_min={_wm:.4f} σ={_sm:.4%} · ρ−0.5 {_fdn[5]:.2%} · σ15 μ {_m15:.2%} · λ {_lam:.3f}")
 
 
+# ── เล่ม 1 Part I (math-part1) — drawdown · ดอกเบี้ย · e · log return · PV · forward · parity ──
+_M1 = "math-part1.html"
+from scipy.stats import norm as _nm1
+for _d in (0.10, 0.25, 0.50, 0.75, 0.90):
+    _rb = _d / (1 - _d); _left = 100 * (1 - _d)
+    _p = f"{_rb*100:.1f}" if _rb < 1 else f"{_rb*100:.0f}"
+    expect(_M1, f"drawdown {_d:.0%}", f"<td>−{_d*100:.0f}%</td><td" + ("" if _rb < 1 else ' class="nw"><strong') + f">+{_p}%" + ("" if _rb < 1 else "</strong>") + f"</td><td>฿{_left:.0f} → เด้ง ฿{100-_left:.0f}/฿{_left:.0f} = {_p}%</td>")
+    expect(_M1, f"ภาพ drawdown {_d:.0%}", f">+{_rb*100:.1f}%<".replace(".0%", "%") if _rb < 1 else f">+{_rb*100:.0f}%<")
+_I = 10000
+for _lab, _v in (("เชิงเดี่ยว", _I * (1 + 0.1 * 10)), ("รายปี", _I * 1.1 ** 10), ("รายเดือน", _I * (1 + 0.1 / 12) ** 120), ("รายวัน", _I * (1 + 0.1 / 365) ** 3650)):
+    expect(_M1, f"ดอกเบี้ย {_lab}", f"{_v:,.0f}</")
+expect(_M1, "ดอกเบี้ย e", f"font-weight:700\">{_I * math.e:,.0f}</td>")
+for _n in (1, 2, 12, 365, 1_000_000):
+    expect(_M1, f"(1+1/n)^n n={_n}", f"</td><td>{(1 + 1 / _n) ** _n:.6f}</td>")
+expect(_M1, "e", f"e = {math.e:.6f}…")
+expect(_M1, "PV(K)", f"100 × e<sup>−0.05</sup> = 100 × {math.exp(-0.05):.4f} = <strong>{100 * math.exp(-0.05):.2f}</strong>")
+expect(_M1, "log +10%", f"<td>+{math.log(1.1)*100:.2f}%</td>")
+expect(_M1, "log +100%", f"<td>+{math.log(2)*100:.2f}%</td>")
+expect(_M1, "log −50%", f"<strong>−{abs(math.log(0.5))*100:.2f}%</strong>")
+expect(_M1, "log บวกข้ามเวลา", f"= ln(99/100) = −{abs(math.log(0.99))*100:.3f}%")
+expect(_M1, "Richter", f"(พลังงานราว {10 ** 1.5:.0f} เท่า)")
+# ✍️ forward: S 50 · r 3% · 1 ปี · ตลาด 53
+_F1 = 50 * math.exp(0.03); _g1 = 53 - _F1
+expect(_M1, "✍️ F", f"F = 50·e<sup>0.03×1</sup> = <strong>{_F1:.3f}</strong> · ราคาตลาด 53 จึง<strong>แพงเกินไป {_g1:.3f} บาท</strong>")
+expect(_M1, "✍️ กำไร %", f"{_g1:.3f} บาทบนหุ้น 50 บาทคือ {_g1 / 50:.2%}")
+expect(_M1, "✍️ q 4%", f"F = 50·e<sup>−0.01</sup> = <strong>{50 * math.exp(-0.01):.2f}</strong>")
+# parity ✍️ (Black-Scholes S = K = 100 · r 5% · σ 25% · T 1)
+_d1 = (0.05 + 0.25 ** 2 / 2) / 0.25; _d2 = _d1 - 0.25
+_C1 = 100 * _nm1.cdf(_d1) - 100 * math.exp(-0.05) * _nm1.cdf(_d2); _P1 = 100 * math.exp(-0.05) * _nm1.cdf(-_d2) - 100 * _nm1.cdf(-_d1)
+expect(_M1, "✍️ parity C", f"Call ราคา {_C1:.3f} · Put ควรราคาเท่าไร? (ใช้ PV(K) = {100 * math.exp(-0.05):.3f})")
+expect(_M1, "✍️ parity P", f"P = C + PV(K) − S = {_C1:.3f} + {100 * math.exp(-0.05):.3f} − 100 = <strong>{_C1 + 100 * math.exp(-0.05) - 100:.3f}</strong>")
+assert abs(_P1 - (_C1 + 100 * math.exp(-0.05) - 100)) < 1e-9
+expect(_M1, "ATM delta 1 ปี", f"1 ปี σ 25% r 5% ≈ {_nm1.cdf(_d1):.2f}")
+# straddle: Call 4 + Put 3 ที่ K 100
+expect(_M1, "straddle BE", f"S = 100 − {4 + 3} = <strong>{100 - 7}</strong> และ S = 100 + {4 + 3} = <strong>{100 + 7}</strong>")
+print(f"เล่ม 1 Part I  F {_F1:.4f} ส่วนต่าง {_g1:.4f} ({_g1/50:.3%}) · C {_C1:.4f} P {_P1:.4f} · Δ ATM {_nm1.cdf(_d1):.3f}")
+
+
 def main():
     if "--print" in sys.argv:
         return 0

@@ -1651,23 +1651,24 @@ def fig_m1_drawdown_bars():
     drops = [0.10, 0.25, 0.50, 0.75, 0.90]
     reb = [d / (1 - d) for d in drops]
     Wd, H = 560, 300
-    out = svg_open(Wd, H, "แท่งเทียบ: ร่วง 10/25/50/75/90% ต้องเด้งกลับ 11/33/100/300/900% — ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก")
+    pc = lambda v: f"{v*100:.0f}" if v >= 1 else f"{v*100:.1f}".rstrip("0").rstrip(".")
+    out = svg_open(Wd, H, f"แท่งเทียบสเกลเดียวกัน: ร่วง {'/'.join(f'{d*100:.0f}' for d in drops)}% ต้องเด้งกลับ {'/'.join(f'{r*100:.0f}' for r in reb)}% — ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก")
     title(out, Wd, "ร่วงแล้วต้องเด้งกลับเท่าไรถึงเท่าทุน — ขาลงกับขาขึ้นไม่ใช่กระจกสะท้อนกัน",
-          "เริ่ม ฿100 · เด้งกลับที่ต้องการ = ร่วง ÷ (1 − ร่วง) · ร่วง 50% ต้อง +100% · ร่วง 90% ต้อง +900%")
+          f"เริ่ม ฿100 · เด้งกลับที่ต้องการ = ร่วง ÷ (1 − ร่วง) · ร่วง {drops[2]*100:.0f}% ต้อง +{pc(reb[2])}% · ร่วง {drops[-1]*100:.0f}% ต้อง +{pc(reb[-1])}% · สองฝั่งสเกลเดียวกัน")
     x0, y0, w, h = 70, 50, 470, 190
-    rows = len(drops); rh = h / rows; mid = x0 + 150  # แกนกลาง: ซ้ายแท่งร่วง (สเกล 100%) ขวาแท่งเด้ง (สเกล 900%)
-    lw, rw = 130, w - 150 - 10
+    rows = len(drops); rh = h / rows; mid = x0 + 70  # แกนกลาง: ซ้ายแท่งร่วง ขวาแท่งเด้ง — ใช้สเกลเดียวกันทั้งสองฝั่ง (ไม่งั้นภาพหลอกตา)
+    unit = (x0 + w - 48 - mid) / max(reb)  # px ต่อ 100%
     _txt(out, mid - 4, y0 - 6, "ขนาดที่ร่วง", RED, "end", bold=True); _txt(out, mid + 4, y0 - 6, "ต้องเด้งกลับ", GREEN, "start", bold=True)
     out.append(f'<line x1="{mid}" y1="{y0}" x2="{mid}" y2="{y0+h}" stroke="{AXIS}" stroke-width="1.2"/>')
     for i, (d, r) in enumerate(zip(drops, reb)):
         yc = y0 + i * rh + rh / 2; bh = rh * 0.52
-        out.append(f'<rect x="{mid - lw*d:.1f}" y="{yc-bh/2:.1f}" width="{lw*d:.1f}" height="{bh:.1f}" fill="{RED}" opacity="0.75" rx="2"/>')
-        out.append(f'<rect x="{mid:.1f}" y="{yc-bh/2:.1f}" width="{rw*r/9:.1f}" height="{bh:.1f}" fill="{GREEN}" opacity="0.75" rx="2"/>')
-        _txt(out, mid - lw * d - 5, yc + 3.5, f"−{d*100:.0f}%", RED, "end", bold=True)
-        _txt(out, mid + rw * r / 9 + 5, yc + 3.5, f"+{r*100:.0f}%" if r >= 1 else f"+{r*100:.1f}%", GREEN, "start", bold=True)
-        _txt(out, x0 - 4, yc + 3.5, f"฿100 → ฿{100*(1-d):.0f}", INK2, "end", size=9)
+        out.append(f'<rect x="{mid - unit*d:.1f}" y="{yc-bh/2:.1f}" width="{unit*d:.1f}" height="{bh:.1f}" fill="{RED}" opacity="0.75" rx="2"/>')
+        out.append(f'<rect x="{mid:.1f}" y="{yc-bh/2:.1f}" width="{unit*r:.1f}" height="{bh:.1f}" fill="{GREEN}" opacity="0.75" rx="2"/>')
+        _txt(out, mid - unit * d - 4, yc + 3.5, f"−{d*100:.0f}%", RED, "end", bold=True)
+        _txt(out, mid + unit * r + 5, yc + 3.5, f"+{pc(r)}%", GREEN, "start", bold=True)
+        _txt(out, x0 - 2, yc + 3.5, f"฿100 → ฿{100*(1-d):.0f}", INK2, "end", size=9)
     _txt(out, x0, H - 24, "ยิ่งร่วงลึก ช่องว่างยิ่งถ่างออก — นี่คือเหตุผลที่ Options วัดผลด้วย log return", INK2, "start", size=9)
-    _txt(out, x0, H - 11, "ln(50/100) = −0.69 และ ln(100/50) = +0.69 สมมาตรกัน ส่วน −50% กับ +100% ไม่สมมาตร", INK2, "start", size=9)
+    _txt(out, x0, H - 11, f"ln(50/100) = −{abs(np.log(0.5)):.2f} และ ln(100/50) = +{np.log(2):.2f} สมมาตรกัน ส่วน −50% กับ +100% ไม่สมมาตร", INK2, "start", size=9)
     out.append("</svg>")
     NUMS["m1-drawdown-bars"] = {f"reb{int(d*100)}": r * 100 for d, r in zip(drops, reb)}
     return "\n".join(out)
@@ -1696,8 +1697,8 @@ def fig_m1_linear_fn():
 def fig_m1_slopes():
     Wd, H = 560, 300
     out = svg_open(Wd, H, "เส้นตรงสี่เส้นจากจุดเดียวกัน ความชัน +1, +0.5, 0 และ −1 พร้อมสามเหลี่ยม Δx = 1 Δy = 1")
-    title(out, Wd, "ความชัน m = Δy/Δx — ขึ้น 1 ต่อ 1 (+1) · ขึ้นครึ่ง (+0.5 = Delta ATM) · แบน (0) · ลง 1 ต่อ 1 (−1)",
-          "Long Call หลัง strike ชัน +1 · Short Call ชัน −1 · payoff ก่อนถึง strike ชัน 0 · Delta คือความชันของราคา option")
+    title(out, Wd, "ความชัน m = Δy/Δx — ขึ้น 1 ต่อ 1 (+1) · ขึ้นครึ่ง (+0.5) · แบน (0) · ลง 1 ต่อ 1 (−1)",
+          "Long Call หลัง strike ชัน +1 · Short Call ชัน −1 · ก่อนถึง strike ชัน 0 · Delta ของ Call ATM อายุสั้น ≈ +0.5")
     (sx, sy), _ = _std_frame(out, Wd, H, [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], [(-3, "−3"), (-2, "−2"), (-1, "−1"), (0, "0"), (1, "1"), (2, "2"), (3, "3")], "x", "y")
     _zero_line(out, sx, sy, -3, 3)
     for m, col, lab, dash in [(1, GREEN, "m = +1", ""), (0.5, PURPLE, "m = +0.5", "5 3"), (0, INK2, "m = 0", ""), (-1, RED, "m = −1", "")]:
@@ -1716,7 +1717,7 @@ def fig_m1_two_lines():
     Wd, H = 560, 300
     out = svg_open(Wd, H, "เส้น x + y = 10 กับ 2x − y = 5 ตัดกันที่จุดคำตอบ (5, 5)")
     title(out, Wd, "ระบบสมการสองตัวแปร — คำตอบคือจุดที่เส้นสองเส้นตัดกัน: (5, 5)",
-          "x + y = 10 และ 2x − y = 5 · แทน y = 10 − x → 3x = 15 → x = 5, y = 5 · เหมือนหา strike ที่เบี้ย Call = เบี้ย Put ใน zero-cost collar")
+          "x + y = 10 และ 2x − y = 5 · แทน y = 10 − x → 3x = 15 → x = 5, y = 5 · เครื่องมือเดียวกับที่ใช้หา strike ของ zero-cost collar")
     (sx, sy), _ = _std_frame(out, Wd, H, [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], [(0, "0"), (2, "2"), (4, "4"), (6, "6"), (8, "8"), (10, "10")], "x", "y")
     polyline(out, [(sx(0), sy(10)), (sx(10), sy(0))], BLUE, 2.4); _txt(out, sx(1.2), sy(9.2), "x + y = 10", BLUE, "start", bold=True)
     polyline(out, [(sx(2.5), sy(0)), (sx(7.5), sy(10))], AMBER, 2.4); _txt(out, sx(7.6), sy(9.4), "2x − y = 5", AMBER, "start", bold=True)
