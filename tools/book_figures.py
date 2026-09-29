@@ -209,7 +209,14 @@ expect("arb-part2b.html", "funding 110%", f"+0.1%/8hr (≈{0.1*3*365:.0f}%/ป�
 fair = 900*math.exp((0.02-0.025)*0.25)
 expect("arb-part4.html", "SET50 fair", f"900 × {math.exp(-0.00125):.5f} = <strong>{fair:.2f}</strong>")
 expect("arb-part4.html", "SET50 overpriced", f"905-{fair:.2f} = <strong>{905-fair:.2f} จุด</strong>")
-expect("arb-part4.html", "SET50 ฿/สัญญา", f"= ฿{round(905-fair,2)*200:,.0f} ต่อสัญญา")  # หนังสือคูณจากตัวเลขที่ปัดแล้ว 6.12
+expect("arb-part4.html", "SET50 ฿/สัญญา", f"≈ ฿{round((905-fair)*200):,} ต่อสัญญา ณ วันหมดอายุ")
+expect("arb-part4.html", "SET50 locked", f"locked profit ≈ {905-fair:.2f} จุด")
+expect("arb-part4.html", "tri 1/0.92", f"(1/0.92 = {1/0.92:.3f})")
+expect("arb-part4.html", "tri chain", f"ได้ €{1000*0.92:.0f} คูณ 0.86 ได้ £{1000*0.92*0.86:.2f} คูณ 1.28 ได้ ${1000*0.92*0.86*1.28:,.2f}")
+expect("arb-part4.html", "ETF premium", f"NAV = ฿25.00 → Premium {(25.50-25.00)/25.00*100:.0f}%")
+expect("arb-part4.html", "ETF กำไร", f"กำไร ฿{25.50-25.00:.2f}/unit")
+expect("arb-part4.html", "Earn+Hedge net", f"= <strong>~{11-5}% delta-neutral yield")
+expect("arb-part4.html", "Earn+Hedge marginal", f"marginal gain = {(11-5)-4}%")  # หนังสือคูณจากตัวเลขที่ปัดแล้ว 6.12
 fair2 = 920*math.exp((0.02-0.025)*0.25)
 expect("arb-part4.html", "SET50 ลองคิด", f"Fair={fair2:.2f} → Actual 930 overpriced {930-fair2:.2f} จุด (฿{round((930-fair2)*200):,} ต่อสัญญา)")
 tri = 1000*0.92*0.86*1.28

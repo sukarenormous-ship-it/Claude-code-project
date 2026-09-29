@@ -2952,15 +2952,15 @@ def fig_a4_basis():
     Wd, H = 560, 310
     out = svg_open(Wd, H, f"ราคา futures เริ่มที่ 905 สูงกว่า spot 900 แล้วหดเข้าหา spot จนเท่ากันที่วันหมดอายุ ค่ายุติธรรมอยู่ที่ {fair:.2f} จึงแพงเกินไป {over:.2f}")
     title(out, Wd, "Basis หดเป็นศูนย์ที่วันหมดอายุเสมอ — นั่นคือสิ่งที่ล็อกกำไรของ cash & carry",
-          f"§15.4: spot 900 · r = 2% · d = 2.5% · T = 3 เดือน → ค่ายุติธรรม {fair:.2f} · ตลาดเสนอ 905 → แพงเกิน {over:.2f}")
+          f"§15.4: spot 900 · r = 2% · q = 2.5% · T = 3 เดือน → ค่ายุติธรรม {fair:.2f} · ตลาดเสนอ 905 → แพงเกิน {over:.2f}")
     (sx, sy), (x0, y0, w, h) = _std_frame(out, Wd, H, [(0, "วันนี้"), (0.0625, ""), (0.125, "1.5 เดือน"), (0.1875, ""), (0.25, "หมดอายุ")], [(885, "885"), (895, "895"), (905, "905"), (915, "915")], "เวลา →", "ราคา")
     pts = " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t, F)) + " " + " ".join(f"{sx(a):.1f},{sy(b):.1f}" for a, b in zip(t[::-1], S[::-1]))
     out.append(f'<polygon points="{pts}" fill="{AMBER}" opacity="0.22"/>')
-    out.append(f'<line x1="{x0}" y1="{sy(fair):.1f}" x2="{x0+w}" y2="{sy(fair):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')
+    out.append(f'<line x1="{x0}" y1="{sy(fair):.1f}" x2="{sx(0.25*0.55):.1f}" y2="{sy(fair):.1f}" stroke="{PURPLE}" stroke-width="1.4" stroke-dasharray="5 3"/>')  # ค่ายุติธรรมคำนวณจาก spot วันนี้ — ใช้ได้ ณ t = 0 เท่านั้น
     polyline(out, [(sx(a), sy(b)) for a, b in zip(t, S)], BLUE, 2.2, shadow=False)
     polyline(out, [(sx(a), sy(b)) for a, b in zip(t, F)], RED, 2.4, shadow=False)
     _txt(out, sx(0.004), sy(913), f"basis = F − S = {905-900:.0f} วันนี้", AMBER, "start", size=9, bold=True)
-    _txt(out, sx(0.246), sy(889), f"เส้นประ = ค่ายุติธรรม {fair:.2f} · ตลาดเสนอ 905 จึงแพงเกิน {over:.2f}", PURPLE, "end", size=9, bold=True)
+    _txt(out, sx(0.246), sy(889), f"เส้นประ = ค่ายุติธรรม ณ วันนี้ {fair:.2f} · ตลาดเสนอ 905 จึงแพงเกิน {over:.2f}", PURPLE, "end", size=9, bold=True)
     _dot(out, sx(0.25), sy(F[-1])); _txt(out, sx(0.246), sy(913), "converge → basis = 0 ที่หมดอายุ", PURPLE, "end", size=9, bold=True)
     legend(out, [(BLUE, "Spot", ""), (RED, "Futures", "")], x0, H - 10)
     out.append("</svg>")
