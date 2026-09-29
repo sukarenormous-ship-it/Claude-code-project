@@ -1942,6 +1942,11 @@ print(f"ทฤษฎี III  PT {_pv['ev_mind']:.2f} (TK92 {_tk:.3f}) · stub {_
 
 
 
+# ── ทฤษฎี Part VI (theory-part6) — cheat sheet ใช้ตัวเลขชุดเดียวกับ Part V ───────────────────────
+expect("theory-part6.html", "cheat DSR", f"ลอง 1,000 แบบบน noise ได้ตัวดีสุดราว {_emax(1000):.2f} SE ฟรี ๆ")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
