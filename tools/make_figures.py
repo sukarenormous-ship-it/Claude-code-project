@@ -610,11 +610,13 @@ def fig_prospect_value():
 # ── A · Part 4 Binomial ขั้นเดียว: $100 → $110/$90 · p* = 0.5 · call K=100 = $5 ──
 @fig("theory-part4.html", "binomial-tree")
 def fig_binomial_tree():
-    u, d, S0, K = 1.1, 0.9, 100, 100; p = (1 - d) / (u - d); C = p * max(S0 * u - K, 0) + (1 - p) * max(S0 * d - K, 0)
-    NUMS["binomial-tree"] = dict(p=p, C=C)
+    u, d, S0, K, R = 1.1, 0.9, 100, 100, 1.0          # R = e^(rΔt) · ตัวอย่างนี้ r ≈ 0
+    p = (R - d) / (u - d); Su, Sd = S0 * u, S0 * d; Vu, Vd = max(Su - K, 0), max(Sd - K, 0)
+    C = (p * Vu + (1 - p) * Vd) / R; D = (Vu - Vd) / (Su - Sd); B = (D * Sd - Vd) / R
+    NUMS["binomial-tree"] = dict(p=p, C=C, delta=D, borrow=B, EQ=p * Su + (1 - p) * Sd)
     Wd, H = 560, 290
-    out = svg_open(Wd, H, "ต้นไม้ทวินามขั้นเดียว หุ้น 100 ขึ้นเป็น 110 หรือลงเป็น 90 · ความน่าจะเป็น risk-neutral 0.5 · call strike 100 จ่าย 10 หรือ 0 · ราคาวันนี้ 5")
-    title(out, Wd, "ต้นไม้ขั้นเดียว — ราคา call มาจาก p* ที่คำนวณ ไม่ใช่ความน่าจะเป็นที่เชื่อ", "u = 1.1 · d = 0.9 · r ≈ 0 · K = 100 · p* = (1 − d)/(u − d)")
+    out = svg_open(Wd, H, f"ต้นไม้ทวินามขั้นเดียว หุ้น {S0} ขึ้นเป็น {Su:.0f} หรือลงเป็น {Sd:.0f} · ความน่าจะเป็น risk-neutral {p:.1f} · call strike {K} จ่าย {Vu:.0f} หรือ {Vd:.0f} · ราคาวันนี้ {C:.0f} เท่ากับต้นทุนถือหุ้น {D:.1f} หุ้นแล้วกู้ {B:.0f}")
+    title(out, Wd, "ต้นไม้ขั้นเดียว — ราคา call มาจาก p* ที่คำนวณ ไม่ใช่ความน่าจะเป็นที่เชื่อ", f"u = {u} · d = {d} · r ≈ 0 · K = {K} · p* = (1 − d)/(u − d)")
     xa, xb = 130, 415; ya, yu, yd = 140, 78, 202
     def node(x, y, big, small, col):
         out.append(f'<rect x="{x-90}" y="{y-24}" width="180" height="48" rx="8" fill="#fff" stroke="{col}" stroke-width="2"/>')
@@ -624,11 +626,11 @@ def fig_binomial_tree():
     out.append(f'<line x1="{xa+90}" y1="{ya+8}" x2="{xb-90}" y2="{yd}" stroke="{RED}" stroke-width="2.2"/>')
     out.append(f'<text x="{(xa+xb)/2:.0f}" y="{(ya+yu)/2-8:.0f}" text-anchor="middle" {FONT} font-size="10" fill="{GREEN}" font-weight="700">ขึ้น ×{u} · p* = {p:.1f}</text>')
     out.append(f'<text x="{(xa+xb)/2:.0f}" y="{(ya+yd)/2+16:.0f}" text-anchor="middle" {FONT} font-size="10" fill="{RED}" font-weight="700">ลง ×{d} · 1 − p* = {1-p:.1f}</text>')
-    node(xa, ya, f"หุ้น ${S0}", f"call = {p:.1f}×10 + {1-p:.1f}×0 = ${C:.0f}", PURPLE)
-    node(xb, yu, f"หุ้น ${S0*u:.0f}", f"call จ่าย max({S0*u:.0f} − {K}, 0) = $10", GREEN)
-    node(xb, yd, f"หุ้น ${S0*d:.0f}", f"call จ่าย max({S0*d:.0f} − {K}, 0) = $0", RED)
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-30}" text-anchor="middle" {FONT} font-size="10" fill="{INK}">p* = (1 − {d})/({u} − {d}) = {p:.1f} คือค่าที่ทำให้ "หุ้นวันนี้ = ค่าคาดหวังของหุ้นพรุ่งนี้" พอดี ({p:.1f}×110 + {1-p:.1f}×90 = 100)</text>')
-    out.append(f'<text x="{Wd/2:.0f}" y="{H-12}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">ถ้าคุณเชื่อว่าหุ้นขึ้น 90% ราคา call ก็ยัง $5 — ความเชื่อไม่อยู่ในสูตร มีแต่ replication</text>')
+    node(xa, ya, f"หุ้น ${S0}", f"call = {p:.1f}×{Vu:.0f} + {1-p:.1f}×{Vd:.0f} = ${C:.0f}", PURPLE)
+    node(xb, yu, f"หุ้น ${Su:.0f}", f"call จ่าย max({Su:.0f} − {K}, 0) = ${Vu:.0f}", GREEN)
+    node(xb, yd, f"หุ้น ${Sd:.0f}", f"call จ่าย max({Sd:.0f} − {K}, 0) = ${Vd:.0f}", RED)
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-30}" text-anchor="middle" {FONT} font-size="10" fill="{INK}">p* = (1 − {d})/({u} − {d}) = {p:.1f} คือค่าที่ทำให้ "หุ้นวันนี้ = ค่าคาดหวังของหุ้นพรุ่งนี้" พอดี ({p:.1f}×{Su:.0f} + {1-p:.1f}×{Sd:.0f} = {p*Su+(1-p)*Sd:.0f})</text>')
+    out.append(f'<text x="{Wd/2:.0f}" y="{H-12}" text-anchor="middle" {FONT} font-size="9.5" fill="{INK2}">replicate: ถือหุ้น {D:.1f} หุ้น + กู้ ${B:.0f} = ${D*S0-B:.0f} · เชื่อว่าหุ้นขึ้น 90% ราคาก็ยัง ${C:.0f}</text>')
     out.append("</svg>")
     return "\n".join(out)
 

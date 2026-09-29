@@ -1983,6 +1983,36 @@ print(f"เสา III  peak {_pk(0.1):.4%} avg {2/3*_pk(0.1):.4%} cap {_si['cap_
 
 
 
+# ── ทฤษฎี Part IV (theory-part4) — gamma-theta · binomial · skew · Black Monday ─────────────────
+_T4 = "theory-part4.html"
+_bt = _mf.NUMS.get("binomial-tree") or (_mf.FIGS[(_T4, "binomial-tree")](), _mf.NUMS["binomial-tree"])[1]
+expect(_T4, "breakeven", f"= σ_implied / √252 = 20% / {math.sqrt(252):.2f} ≈ <strong>{0.2/math.sqrt(252):.2%}</strong> (≈ ${100*0.2/math.sqrt(252):.2f})")
+expect(_T4, "breakeven เฉลย", f"32% / 15.87 ≈ {0.32/math.sqrt(252):.2%} ต่อวัน · vol สูงขึ้น {0.32/0.2:.1f} เท่า")
+expect(_T4, "binomial p*", f"p* = (1 − 0.9)/(1.1 − 0.9) = 0.1/0.2 = <strong>{_bt['p']:.1f}</strong>")
+expect(_T4, "binomial C", f"ราคา call = 0.5×10 + 0.5×0 = <strong>${_bt['C']:.0f}</strong>")
+expect(_T4, "binomial replicate", f"ถือหุ้น Δ = (10 − 0)/(110 − 90) = {_bt['delta']:.1f} หุ้น แล้วกู้ 0.5 × 90 = ${_bt['borrow']:.0f} · ต้นทุน 0.5 × 100 − 45 = <strong>${_bt['C']:.0f}</strong>")
+_c105 = 0.5 * (110 - 105); _d105 = (110 - 105) / 20
+expect(_T4, "binomial เฉลย", f"0.5 × 5 + 0.5 × 0 = ${_c105:.2f} · replicate ด้วย Δ = 5/20 = {_d105:.2f} หุ้น กู้ 0.25 × 90 = ${_d105*90:.2f} → 25 − 22.50 = ${_d105*100-_d105*90:.2f}")
+
+
+def _bsput(S, K, T, sg):
+    d1 = (math.log(S / K) + sg * sg / 2 * T) / (sg * math.sqrt(T)); d2 = d1 - sg * math.sqrt(T)
+    return K * _n5.cdf(-d2) - S * _n5.cdf(-d1), _n5.cdf(-d2)
+
+
+_pf, _pk = _bsput(100, 90, 0.25, 0.20), _bsput(100, 90, 0.25, 0.26)
+expect(_T4, "skew flat", f"ราคา put ≈ <strong>${_pf[0]:.2f}</strong> · โอกาสจบต่ำกว่า 90 ใต้ Q ≈ {_pf[1]:.0%}")
+expect(_T4, "skew 26", f"ราคา ≈ <strong>${_pk[0]:.2f}</strong> · โอกาสใต้ Q ≈ {_pk[1]:.0%}")
+expect(_T4, "skew ratio", f"(×{_pk[0]/_pf[0]:.2f})")
+_lr = math.log(224.84 / 282.70)
+_sup = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+_bme = str(-math.floor(math.log10(_n5.cdf(_lr / (0.2 / math.sqrt(252)))))).translate(_sup)
+expect(_T4, "Black Monday", f"การร่วง 20% คือ log −{-_lr:.3f} หรือราว −{-_lr/(0.2/math.sqrt(252)):.0f}σ โอกาสราว 10⁻{_bme}")
+assert abs(224.84 / 282.70 - 1 + 0.2047) < 0.001
+print(f"ทฤษฎี IV  breakeven {0.2/math.sqrt(252):.4%} · p* {_bt['p']} C {_bt['C']} Δ {_bt['delta']} B {_bt['borrow']} · put {_pf[0]:.4f}/{_pk[0]:.4f} · BM z {_lr/(0.2/math.sqrt(252)):.2f}")
+
+
+
 def main():
     if "--print" in sys.argv:
         return 0
