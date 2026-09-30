@@ -2908,7 +2908,7 @@ def fig_a2a_convexity():
         _txt(out, sx(k), sy(c) + (-9 if k != 100 else 16), f"C({k:g}) = {c:.2f}", BLUE, "middle", size=9, bold=True)
     _dot(out, sx(100), sy(chord), AMBER, 4)
     _txt(out, sx(100) + 8, sy(chord) - 4, f"จุดกึ่งกลางคอร์ด = {chord:.2f}", AMBER, "start", size=9, bold=True)
-    _txt(out, sx(101), sy((chord + cs[1]) / 2) + 3.5, f"ห่าง {fly:.2f} = ราคา Butterfly", GREEN, "start", size=9, bold=True)
+    _txt(out, sx(101), sy((chord + cs[1]) / 2) + 3.5, f"ห่าง {chord - cs[1]:.2f} = ครึ่งหนึ่งของ Butterfly ({fly:.2f})", GREEN, "start", size=9, bold=True)
     _txt(out, sx(119), sy(18.5), "ถ้าราคาจริงโผล่เหนือคอร์ด → Butterfly ติดลบ = arb", RED, "end", size=9, bold=True)
     out.append("</svg>")
     NUMS["a2a-convexity"] = dict(c1=cs[0], c2=cs[1], c3=cs[2], chord=chord, fly=fly)

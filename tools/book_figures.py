@@ -341,6 +341,22 @@ payoff_checks("math-part1.html", "m1 bull call spread", [Leg("call", 90, 1, 5), 
 payoff_checks("math-part1.html", "m1 straddle 4+3", [Leg("call", 100, 1, 4), Leg("put", 100, 1, 3)],
               [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}",
                lambda sm: f"คุ้มทุน {sm['breakevens'][0]:g} และ {sm['breakevens'][1]:g}"])
+# ── arb-part2a — synthetic call · piecewise → PM + options · collar (เลขคณิตจาก payoff จริง) ──
+_A2 = "arb-part2a.html"
+_syn = 100 + 2.50 - 97.50
+expect(_A2, "synthetic call", f"ต้นทุนสุทธิ ฿{_syn:g} (100 + 2.50 − 97.50)")
+expect(_A2, "synthetic arb", f"Arb ฿{6 - _syn:g}")
+_step = lambda S: -20 + 70 * (S > 2200) + 50 * (S > 2500)
+expect(_A2, "step 2300", f"−20 + 70 + 0 = {_step(2300)}")
+expect(_A2, "step 2600", f"−20 + 70 + 50 = {_step(2600)}")
+expect(_A2, "jump +70", f"เปลี่ยนจาก -20 เป็น +{_step(2300)}")
+expect(_A2, "jump size 70", f"กระโดด +{_step(2300) - _step(2000)}")
+expect(_A2, "jump size 50", f"กระโดด +{_step(2600) - _step(2300)}")
+_col = lambda S: S - 2000 + max(1800 - S, 0) - max(S - 2300, 0)
+expect(_A2, "collar floor", f"ตัดขาดทุนที่ {_col(1500)}")
+expect(_A2, "collar cap", f"จำกัดกำไรที่ +{_col(2600)}")
+expect(_A2, "✍️ jump 120", f"jump +{100 - (-20)} ที่ 2000")
+expect(_A2, "✍️ Yes price", f"20/120 ≈ {20/120:.3f}")
 for f in ("arb-part2a.html", "eye-part2.html"):
     payoff_checks(f, "call spread 2000/2500", [Leg("call", 2000, 1, 0), Leg("call", 2500, -1, 0)],
                   [lambda sm: f"payoff สูงสุด {pm(sm['max_profit'])}"], with_premium=False)
