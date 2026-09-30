@@ -151,7 +151,16 @@ expect("pm-part5a.html", "Half-Kelly", f"Half-Kelly ({(2*0.6-0.4)/2/2*100:.0f}%)
 expect("pm-part5a.html", "Call ขึ้น", f"Call ขึ้น ≈ ฿{N(d1):.2f}")
 expect("pm-part5a.html", "Put ลง", f"Put ลง ≈ ฿{1-N(d1):.2f}")
 expect("pm-part5a.html", "Kelly b=2", f"(2×0.6 - 0.4) / 2 = (1.2-0.4)/2 = <strong>{(2*0.6-0.4)/2:.1f} = {(2*0.6-0.4)/2*100:.0f}%</strong>")
-expect("pm-part6.html", "odds 1.80", f"1/1.80={1/1.80*100:.1f}% vs 60% → Options แพงกว่า {60-1/1.80*100:.1f}%")
+expect("pm-part6.html", "odds 1.80", f"1/1.80={1/1.80*100:.1f}% vs 60% → Options ให้โอกาสสูงกว่า {60-1/1.80*100:.1f} จุด%")
+expect("pm-part6.html", "PM gap", f"ต่าง {72-65} จุด%")
+_fly6 = lambda S: max(S-95,0) - 2*max(S-100,0) + max(S-105,0) - 2
+expect("pm-part6.html", "RE fly peak", f"กำไรสูงสุด 5 − 2 = +{_fly6(100):g}")
+assert _fly6(90) == -2 and _fly6(120) == -2
+_bcs6 = lambda S: max(S-90,0) - max(S-110,0) - 5
+expect("pm-part6.html", "L1 #3 flat", f"แบน(+{_bcs6(130):g})")
+_l4 = lambda S: max(S-100,0) - max(S-110,0) + max(90-S,0)
+assert min(_l4(x) for x in range(0, 200)) == 0  # payoff ก่อนหักเบี้ยไม่ติดลบ → max loss = เบี้ยสุทธิ
+expect("pm-part6.html", "L4 #1 call spread cap", f"call spread สูงสุด {_l4(150)}")
 expect("pm-part6.html", "delta+gamma", f"200 + (-50×5) = {200-50*5}")
 expect("pm-part7.html", "IC slippage", f"2.00 - 4×0.05 = <strong>฿{2.00-0.20:.2f}</strong>")
 expect("pm-part7.html", "IC slippage %", f"Slippage กิน {0.20/2.00*100:.0f}% ของ max profit")
@@ -310,9 +319,22 @@ def payoff_checks(file, label, legs, texts, with_premium=True):
         expect(file, label, t(sm))
 
 LC = [Leg("call", 100, 1, 5)]; LP = [Leg("put", 100, 1, 5)]
+# ── pm-part0 โจทย์ 1–5 (เลขคณิตจาก payoff จริง) ──
+_P0 = "pm-part0.html"
+_lp = lambda S, K=100, prem=6: max(K - S, 0) - prem
+expect(_P0, "โจทย์ 1 BE", f"BE = K-P = {100 - 6}")
+expect(_P0, "โจทย์ 1 max", f"กำไรสูงสุดที่ S=0 = 100-6 = ฿{_lp(0):g}")
+_bps = lambda S: max(110 - S, 0) - max(100 - S, 0) - (8 - 3)
+expect(_P0, "โจทย์ 2 debit", f"net debit = 8-3 = ฿{8 - 3}")
+expect(_P0, "โจทย์ 2 max profit", f"max profit = (110-100)-5 = +{_bps(90):g}")
+assert _bps(120) == -5
+_st = lambda S: max(S - 100, 0) + max(100 - S, 0) - 10
+expect(_P0, "โจทย์ 3 BE", f"max loss = -10 (2×premium) → BE = {100 - 10} และ {100 + 10}")
+expect(_P0, "โจทย์ 3 ขาลงสูงสุด", f"ขาลงกำไรสูงสุด ฿{_st(0):g} ที่ S = 0")
+expect(_P0, "โจทย์ 5 EV", f"EV = 0.8×2 + 0.2×(-8) = 1.6-1.6 = <strong>{0.8*2 + 0.2*(-8):.0f}</strong>")
 payoff_checks("pm-part0.html", "long call", LC, [lambda sm: f"BE = 100 + 5 = {sm['breakevens'][0]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
 payoff_checks("pm-part0.html", "put pair", LP, [lambda sm: f"BE ทั้งคู่ = 100 − 5 = {sm['breakevens'][0]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}"])
-payoff_checks("pm-part0.html", "bull call spread 90/110 net 5", [Leg("call", 100, 1, 0), Leg("call", 110, -1, 0)],
+payoff_checks("pm-part0.html", "bull call spread 100/110 (ก่อนหักเบี้ย)", [Leg("call", 100, 1, 0), Leg("call", 110, -1, 0)],
               [lambda sm: f"payoff สูงสุด {pm(sm['max_profit'])}"], with_premium=False)
 payoff_checks("pm-part2.html", "BCS 90@8/110@3", [Leg("call", 90, 1, 8), Leg("call", 110, -1, 3)],
               [lambda sm: f"เบี้ยสุทธิ {sm['net_premium']:g}", lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"กำไรสูงสุด {pm(sm['max_profit'])}",
