@@ -275,7 +275,7 @@ expect("arb-part6.html", "spread 4/80", f"Spread ฿4/฿80={4/80*100:.0f}% ใ�
 expect("arb-part7.html", "฿2,000/(14×4)", f"฿2,000/(14×4)=฿{2000/56:.1f}/ครั้งที่เช็ค")
 expect("arb-part8.html", "PM Yes+No 1.02", f"0.62 + 0.40 = {0.62+0.40:.2f} ไม่มี arb · 0.62 + 0.36 = {0.62+0.36:.2f}")
 expect("arb-part8.html", "PM กำไร $0.02", f"กำไร ${1-0.98:.2f} ต่อชุด")
-expect("arb-part8.html", "cross-platform 93¢", f"55¢ + ซื้อ No ที่ Polymarket 38¢ = {55+38}¢ < $1 → <strong>guaranteed ${(100-93)/100:.2f} profit/contract")
+expect("arb-part8.html", "cross-platform 93¢", f"55¢ + ซื้อ No ที่ Polymarket 38¢ = {55+38}¢ &lt; $1")
 expect("arb-part5.html", "half-life 6.9", f"θ = 0.1 ต่อวันให้ {math.log(2):.3f}/0.1 ≈ {math.log(2)/0.1:.1f} วัน")
 
 # ── ตาของ Arbitrageur (eye-part1…5) ─────────────────────────────────────────────
@@ -363,6 +363,17 @@ payoff_checks("math-part1.html", "m1 bull call spread", [Leg("call", 90, 1, 5), 
 payoff_checks("math-part1.html", "m1 straddle 4+3", [Leg("call", 100, 1, 4), Leg("put", 100, 1, 3)],
               [lambda sm: f"BE {sm['breakevens'][0]:g}", lambda sm: f"BE {sm['breakevens'][1]:g}", lambda sm: f"ขาดทุนสูงสุด {pm(sm['max_loss'])}",
                lambda sm: f"คุ้มทุน {sm['breakevens'][0]:g} และ {sm['breakevens'][1]:g}"])
+# ── arb-part8 / arb-part9 ──
+_A8 = "arb-part8.html"
+_pv8 = 100 * math.exp(-0.05 * 0.5)
+expect(_A8, "Drill L1", f"PV(K) = 100 × e⁻⁰·⁰²⁵ = {_pv8:.2f} · ซ้าย = 8.50 + {_pv8:.2f} = <strong>{8.5+_pv8:.2f}</strong> · ขวา = 5.80 + 100 = <strong>{5.8+100:.2f}</strong> · ฝั่ง Call แพงกว่า {8.5+_pv8-105.8:.2f}")
+expect(_A8, "Drill L2", f"ต้นทุน 3 ขา × (0.03 + 0.05) = {3*(0.03+0.05):.2f} · กำไรสุทธิ {8.5+_pv8-105.8:.3f} − {3*(0.03+0.05):.2f} = <strong>−{abs(8.5+_pv8-105.8-3*0.08):.3f}</strong>")
+expect(_A8, "PredictIt Trump ชนะ", f"1 − 0.1 × 0.45 − 0.93 = ${1-0.1*0.45-0.93:.3f} และหลังถอนเงินเหลือ <strong>−${abs((1-0.1*0.45)*0.95-0.93):.3f}</strong>")
+expect(_A8, "PredictIt Trump แพ้", f"ดูเหมือนได้ ${1-(0.55+0.38):.2f} ต่อชุด")
+expect(_A8, "Kalshi fee", f"≈ ${math.ceil(0.07*0.5*0.5*100)/100:.2f} ที่ P = 0.5")
+expect(_A8, "Fed gap", f"→ Gap {70-55} จุด%")
+_scan = ["PCP", "Box", "Butterfly", "Monotonicity", "Basis", "IV Surface", "Pairs Z", "Merger Spreads", "PM", "Earn/Promo"]
+expect("arb-part9.html", "daily scan", f"ทุกวัน เช็ค {len(_scan)} รายการ")
 # ── arb-part2a — synthetic call · piecewise → PM + options · collar (เลขคณิตจาก payoff จริง) ──
 _A2 = "arb-part2a.html"
 _syn = 100 + 2.50 - 97.50

@@ -4,17 +4,19 @@
 <div class="cover"><h1>Arbitrage<br>จากแนวคิดสู่การปฏิบัติ</h1><div class="sub">Part VIII: ฝึกตา + Prediction Markets + Alternative Data (บท 28-31)</div><div class="desc">24 Drills × 3 ระดับ, 6 Case Simulations, PM Parity, Cross-Asset Signals</div></div>
 
 <div class="bx bb" style="font-size:.92em"><div class="bt">🧭 เส้นทางอ่าน</div>
-<p><strong>🟢 มือใหม่:</strong> อ่านหลักการและตัวอย่างตัวเลขทีละกล่อง อย่าข้ามบรรทัด 📖 ใต้สูตร · <strong>🔵 มีพื้นแล้ว:</strong> ไปที่เช็กลิสต์และสรุปท้าย Part ได้เลย · <strong>อ่านสัญลักษณ์ไม่ออก:</strong> เปิด <a href="notation.html#grammar">notation หมวด 0</a> ไว้ข้าง ๆ</p></div>
+<p><strong>🟢 มือใหม่:</strong> อ่านหลักการและตัวอย่างตัวเลขทีละกล่อง อย่าข้ามบรรทัด 📖 ใต้สูตร · <strong>🔵 มีพื้นแล้ว:</strong> ไปที่แบบฝึกและสรุปท้าย Part ได้เลย · <strong>อ่านสัญลักษณ์ไม่ออก:</strong> เปิด <a href="notation.html#grammar">notation หมวด 0</a> ไว้ข้าง ๆ</p></div>
 
 <h2 id="ch28">บทที่ 28: Drill — ฝึกมองหา Arbitrage</h2>
 <p>แต่ละ Drill มี 3 ระดับ: <strong>L1</strong> (สมมติง่าย) → <strong>L2</strong> (+costs, bid-ask) → <strong>L3</strong> (สมจริง, มี noise)</p>
 
 <h3>Drill 1: PCP Violation</h3>
 <div class="bx bb"><div class="bt">L1 — ข้อมูลสมมติ</div>
-<p>S=100, K=100, r=5%, T=0.5, C=8.50, P=5.80<br>คำนวณ: ซ้าย = C+PV(K) = ? ขวา = P+S = ?<br>ต่างเท่าไร? ทำ Conversion หรือ Reversal? กำไรเท่าไร?</p></div>
+<p>S=100, K=100, r=5% (ทบต้นต่อเนื่อง PV(K) = K·e⁻ʳᵀ), T=0.5, C=8.50, P=5.80 · คำนวณ: ซ้าย = C+PV(K) = ? ขวา = P+S = ? · ต่างเท่าไร? ทำ Conversion หรือ Reversal? กำไรเท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>PV(K) = 100 × e⁻⁰·⁰²⁵ = 97.53 · ซ้าย = 8.50 + 97.53 = <strong>106.03</strong> · ขวา = 5.80 + 100 = <strong>105.80</strong> · ฝั่ง Call แพงกว่า 0.23 → ทำ <strong>Conversion</strong> (ขาย Call · ซื้อ Put · ซื้อหุ้น) ได้ราว 0.23 ต่อหุ้นก่อนต้นทุน</p></details></div>
 
 <div class="bx ba"><div class="bt">L2 — เพิ่ม Transaction Costs</div>
-<p>เหมือน L1 แต่: Commission = ฿0.03/leg, Bid-Ask = ฿0.05 avg/leg<br>ยังเหลือกำไรไหมหลังหัก costs?</p></div>
+<p>เหมือน L1 แต่: Commission = ฿0.03/leg, Bid-Ask = ฿0.05 avg/leg (Conversion มี 3 ขา) · ยังเหลือกำไรไหมหลังหัก costs?</p>
+<details><summary>ดูเฉลย</summary><p>ต้นทุน 3 ขา × (0.03 + 0.05) = 0.24 · กำไรสุทธิ 0.231 − 0.24 = <strong>−0.009</strong> → <strong>ไม่มีกำไร</strong> · สังเกตว่าคำตอบขึ้นกับวิธีคิดดอกเบี้ยด้วย (ถ้าคิด PV แบบทบรายปีจะได้บวกเล็กน้อย) — ส่วนต่างบางขนาดนี้ต้องรู้ว่าตลาดใช้ดอกเบี้ยแบบไหน</p></details></div>
 
 <div class="bx br"><div class="bt">L3 — ข้อมูลสมจริง</div>
 <p>ให้ option chain จริง 20 strikes × 4 expiries<br>scan ทั้งหมด → หา violations ที่ arb ได้จริงหลังหัก costs<br><strong>บาง case ไม่มี arb เลย — ต้องบอกได้ว่า "ไม่มี"</strong></p></div>
@@ -47,15 +49,17 @@
 
 <h2 id="ch30">บทที่ 30: Prediction Markets</h2>
 <h3>30.1 ราคา = Implied Probability</h3>
-<div class="fm">PM "BTC > $100K by Dec" ราคา $0.62<br>→ ตลาดให้ probability 62% ว่าจะเกิด</div>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ราคาสัญญา prediction market ที่จ่าย $1 ถ้าเกิด คือความน่าจะเป็นที่ตลาดให้ (ก่อนหักค่าธรรมเนียมและ spread)</p>
+<div class="fm">PM "BTC > $100K on Dec 31" ราคา $0.62<br>→ ตลาดให้ probability 62% ว่าจะเกิด</div>
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ราคา 0.62 ดอลลาร์ = ความน่าจะเป็น 62%" · <strong>โครงที่ต้องเห็น:</strong> อัตราส่วนหน่วยเดียวกัน — ราคาที่จ่าย ($0.62) หารด้วยเงินที่จะได้ถ้าถูก ($1.00) ดอลลาร์หายเหลือตัวเลข 0–1 ซึ่งอ่านเป็นความน่าจะเป็นได้ · <strong>กับดักการอ่าน:</strong> 62% คือความน่าจะเป็นที่<em>ตลาดตั้งราคา</em> ไม่ใช่ความน่าจะเป็นจริง และยังไม่หัก fee หรือค่าเสียโอกาสของเงินที่ล็อกจนถึงธันวาคม — ตัวเลขนี้จึงเป็น [Observed] ไม่ใช่ [Exact]</p>
 
-<h3>30.2 PM Parity [Exact Identity]</h3>
-<div class="fm">Ask(Yes) + Ask(No) ≥ $1.00 (round-trip cost)<br>ถ้า Ask(Yes) + Ask(No) < $1.00 → <strong>instant arb!</strong><br><br>
-Cross-Platform: ซื้อ Yes ที่ Polymarket + ซื้อ No ที่ Kalshi<br>ถ้ารวม < $1 → กำไร = $1 - total cost</div>
+<h3>30.2 PM Parity</h3>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถือทั้ง Yes และ No ของสัญญาเดียวกันได้ $1 แน่ไม่ว่าผลออกทางไหน · ถ้าซื้อทั้งคู่ได้ถูกกว่า $1 ส่วนต่างคือกำไร — แต่ถ้าสองขาอยู่คนละ platform ต้องแน่ใจว่ากติกาตัดสินตรงกัน</p>
+<div class="fm">Yes + No = $1.00 ต่อชุด (สัญญาเดียวกัน) <a href="arb-part2a.html#ch6">[Exact Identity]</a><br>Ask(Yes) + Ask(No) ≥ $1.00 ตามปกติ (ต้นทุนซื้อครบชุด · spread ของ market maker) [Observed]<br>ถ้า Ask(Yes) + Ask(No) < $1.00 → <strong>arb ในสัญญาเดียวกัน</strong><br><br>
+Cross-Platform: ซื้อ Yes ที่ Polymarket + ซื้อ No ที่ Kalshi [Contract-specific]<br>ถ้ารวม < $1 → กำไร = $1 − ต้นทุนรวม − ค่าธรรมเนียมทั้งสองฝั่ง (Kalshi คิดราว 7% × P × (1 − P) ต่อสัญญา ≈ $0.02 ที่ P = 0.5)</div>
 <p class="read"><strong>📖 อ่านสูตรว่า:</strong> "ราคา ask ของ Yes บวก ราคา ask ของ No มากกว่าหรือเท่ากับ หนึ่งดอลลาร์" · <strong>โครงที่ต้องเห็น:</strong> "ราคาเดียวกันสองทาง" — ถือ Yes กับ No พร้อมกันได้ $1 แน่ไม่ว่าผลจะเป็นอะไร · ทดสอบ: 0.62 + 0.40 = 1.02 ไม่มี arb · 0.62 + 0.36 = 0.98 ซื้อทั้งคู่ กำไร $0.02 ต่อชุด · <strong>กับดักการอ่าน:</strong> เป็น ≥ ไม่ใช่ = เพราะ ask รวม spread ของ market maker — ฝั่ง ≥ คือภาวะปกติ ฝั่ง &lt; คือโอกาส · ต้องใช้ <em>ask</em> ทั้งคู่ (ราคาที่ซื้อได้จริง) ไม่ใช่ mid หรือ last · ข้ามแพลตฟอร์ม "= $1" เป็นจริงเฉพาะเมื่อ resolution และวันตัดสินตรงกันจริง (ทวน <a href="eye-part1.html#ch3">ตาของ Arbitrageur บท 3</a>)</p>
 <!-- FIG:pm-parity:BEGIN -->
-<svg class="d" viewBox="0 0 560 250" role="img" aria-label="แท่งซ้อนราคา ask ของ Yes กับ No สองกรณี: 0.62 + 0.40 = 1.02 สูงกว่าเส้น 1 ดอลลาร์ ไม่มี arb · 0.62 + 0.36 = 0.98 ต่ำกว่า 1 ดอลลาร์ ซื้อทั้งคู่กำไร 2 เซนต์แน่">
+<svg class="d" viewBox="0 0 560 250" role="img" aria-label="แท่งซ้อนราคา ask ของ Yes กับ No สองกรณี: 0.62 + 0.40 = 1.02 สูงกว่าเส้น 1 ดอลลาร์ ไม่มี arb · 0.62 + 0.36 = 0.98 ต่ำกว่า 1 ดอลลาร์ ซื้อทั้งคู่ได้ 2 เซนต์ก่อนค่าธรรมเนียม">
 <defs><filter id="fsoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.4" stdDeviation="1.4" flood-color="#111827" flood-opacity="0.18"/></filter></defs>
 <text x="280" y="18" text-anchor="middle" font-family="Sarabun" font-size="12.5" font-weight="700" fill="#374151" paint-order="stroke" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-opacity="0.92">PM parity — ถือ Yes กับ No พร้อมกันได้ $1 แน่ · ถามแค่ว่าจ่ายไปเท่าไร</text>
 <text x="280" y="32" text-anchor="middle" font-family="Sarabun" font-size="10" fill="#6b7280" paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-opacity="0.92">Ask(Yes) + Ask(No) ≥ $1.00 คือภาวะปกติ (spread ของ market maker) · ต่ำกว่า $1 คือโอกาส</text>
@@ -80,9 +84,9 @@ Cross-Platform: ซื้อ Yes ที่ Polymarket + ซื้อ No ที�
 
 <h3>30.3 PM vs Options</h3>
 <div class="bx bg"><div class="bt">Inconsistency = Opportunity</div>
-<p>PM "Fed cut rate" = 70% แต่ Bond options implied = 55%<br>→ Gap 15% → ใครถูก? investigate → ถ้ามั่นใจ → trade the gap<br>[Heuristic — ต้องประเมินว่า PM หรือ Options market ถูกกว่า]</p></div>
+<p>PM "Fed cut rate" = 70% แต่ตลาด fed funds / SOFR futures (เช่น CME FedWatch) ให้ 55%<br>→ Gap 15 จุด% → ใครถูก? investigate → ถ้ามั่นใจ → trade the gap<br>[Heuristic — ต้องประเมินว่า PM หรือ Options market ถูกกว่า]</p></div>
 
-<h3>30.4 PM Architecture จาก skill</h3>
+<h3>30.4 PM Architecture</h3>
 <table>
 <tr><th>PM Type</th><th>Function</th><th>ใช้ทำอะไร</th></tr>
 <tr><td><strong>Above Yes/No</strong></td><td>Boundary claim: 1(S>K)</td><td>Repair leg, insurance, income</td></tr>
@@ -101,12 +105,15 @@ Cross-Platform: ซื้อ Yes ที่ Polymarket + ซื้อ No ที�
 </table>
 
 <div class="bx ba"><div class="bt">เรื่องจริง: Polymarket Cross-Platform (2024)</div>
-<p>ช่วง US Election 2024: Polymarket "Trump wins" = 62¢ แต่ PredictIt = 55¢<br>
-ซื้อ Yes ที่ PredictIt 55¢ + ซื้อ No ที่ Polymarket 38¢ = 93¢ < $1 → <strong>guaranteed $0.07 profit/contract</strong> (1.00 − 0.93)<br>
-แต่: PredictIt มี 10% fee on profits + withdrawal limits → net profit ลดลงมาก<br>
-<strong>บทเรียน:</strong> Cross-platform arb มีจริง แต่ fees + limits + settlement risk กิน edge</p></div>
+<p>ช่วง US Election 2024 (ราคาตัวอย่างประกอบ [Observed] ไม่ใช่ราคาปิดจริงวันใดวันหนึ่ง): Polymarket "Trump wins" = 62¢ แต่ PredictIt = 55¢</p>
+<ul>
+<li>ซื้อ Yes ที่ PredictIt 55¢ + ซื้อ No ที่ Polymarket 38¢ = 93¢ &lt; $1 → ดูเหมือนได้ $0.07 ต่อชุด (1.00 − 0.93)</li>
+<li>แต่ PredictIt หัก 10% ของกำไร และ 5% ตอนถอนเงิน · ถ้า Trump แพ้ (ขา Polymarket ชนะ) ได้ $0.07 · ถ้า Trump ชนะ (ผลจริง) ได้ 1 − 0.1 × 0.45 − 0.93 = $0.025 และหลังถอนเงินเหลือ <strong>−$0.023</strong> — <strong>ไม่ใช่กำไรแน่นอน</strong></li>
+<li>และคนในสหรัฐฯ ใช้ Polymarket ไม่ได้ในช่วงนั้น (คำสั่ง CFTC ปี 2022) ส่วน PredictIt เป็นตลาดสหรัฐฯ — สองขานี้คนคนเดียวถือพร้อมกันได้ยากตั้งแต่ต้น</li>
+</ul>
+<p><strong>บทเรียน:</strong> Cross-platform arb มีจริง แต่ fees + limits + settlement risk กิน edge ได้จนติดลบ · คิดผลทุกกรณีหลังหักทุกอย่างก่อนเรียกว่า arb</p></div>
 
-<div class="bx ba"><div class="bt">สรุป Part VIII (บท 28-31) — Part 9/9 เกือบจบแล้ว!</div><ul>
+<div class="bx ba"><div class="bt">สรุป Part VIII (บท 28-31) — Part 8/9 เหลืออีกตอนเดียว!</div><ul>
 <li>✓ <strong>24 Drills</strong> (8 types × 3 levels) — ฝึกตาจนเป็น reflex</li>
 <li>✓ <strong>6 Case Simulations</strong> — ครบวงจร: ค้นพบ→วิเคราะห์→execute→ติดตาม</li>
 <li>✓ <strong>PM Parity</strong>: Ask(Yes)+Ask(No) ≥ $1, Cross-platform arb</li>

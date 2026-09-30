@@ -917,9 +917,9 @@ def fig_funding_carry():
 @fig("arb-part8.html", "pm-parity")
 def fig_pm_parity():
     cases = [("ปกติ", 0.62, 0.40), ("โอกาส", 0.62, 0.36)]
-    NUMS["pm-parity"] = dict(s1=1.02, s2=0.98, profit=0.02)
+    (_, y1, n1), (_, y2, n2) = cases; NUMS["pm-parity"] = dict(s1=y1 + n1, s2=y2 + n2, profit=1 - (y2 + n2))
     Wd, H = 560, 250
-    out = svg_open(Wd, H, "แท่งซ้อนราคา ask ของ Yes กับ No สองกรณี: 0.62 + 0.40 = 1.02 สูงกว่าเส้น 1 ดอลลาร์ ไม่มี arb · 0.62 + 0.36 = 0.98 ต่ำกว่า 1 ดอลลาร์ ซื้อทั้งคู่กำไร 2 เซนต์แน่")
+    out = svg_open(Wd, H, f"แท่งซ้อนราคา ask ของ Yes กับ No สองกรณี: {y1:.2f} + {n1:.2f} = {y1+n1:.2f} สูงกว่าเส้น 1 ดอลลาร์ ไม่มี arb · {y2:.2f} + {n2:.2f} = {y2+n2:.2f} ต่ำกว่า 1 ดอลลาร์ ซื้อทั้งคู่ได้ {(1-y2-n2)*100:.0f} เซนต์ก่อนค่าธรรมเนียม")
     title(out, Wd, "PM parity — ถือ Yes กับ No พร้อมกันได้ $1 แน่ · ถามแค่ว่าจ่ายไปเท่าไร", "Ask(Yes) + Ask(No) ≥ $1.00 คือภาวะปกติ (spread ของ market maker) · ต่ำกว่า $1 คือโอกาส")
     x0, y0, w, h = 60, 46, 470, 150
     def sy(v): return y0 + h - v / 1.15 * h
@@ -3495,7 +3495,7 @@ def fig_a9_checklist():
     title(out, Wd, "เจอ \"โอกาส\" แล้วทำอะไรต่อ — เจ็ดคำถามที่ต้องผ่านก่อนลงเงิน",
           "สองข้อที่ทำให้หยุดบ่อยที่สุดคือข้อ 3 (เหลือกำไรจริงไหม) และข้อ 5 (กรณีแย่สุดรับได้ไหม)")
     out.append(arrow_defs())
-    rows = [("เจอ \"Opportunity\"", INK2, False), ("1. ติดป้าย: [Exact] หรือ [Heuristic]?", BLUE, False),
+    rows = [("เจอ \"Opportunity\"", INK2, False), ("1. ติดป้าย: Exact · Contract · Observed · Heuristic?", BLUE, False),
             ("2. ระดับไหน: Lv.1–5?", BLUE, False), ("3. หักค่าใช้จ่ายทุกอย่างแล้ว ยังเหลือกำไรไหม?", RED, True),
             ("4. ดีกว่าทางที่ง่ายที่สุดไหม (baseline)?", BLUE, False), ("5. กรณีแย่สุดรับไหวไหม · อยู่รอดไหม?", RED, True),
             ("6. ขนาด: Kelly → ใช้ครึ่ง Kelly", AMBER, False), ("7. ลงไม้ + เฝ้า + บันทึก", GREEN, False)]
