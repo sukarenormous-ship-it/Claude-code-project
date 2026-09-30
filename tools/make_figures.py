@@ -1458,7 +1458,7 @@ def _calendar_svg(title_text, sub):
     out.append(f'<circle cx="{sx(S[i]):.1f}" cy="{sy(pl[i]):.1f}" r="4.2" fill="#fff" stroke="{PURPLE}" stroke-width="2.2"/>')
     out.append(f'<text x="{sx(S[i])+8:.1f}" y="{sy(pl[i])-4:.1f}" {FONT} font-size="9.5" fill="{PURPLE}" font-weight="700">ยอดที่ S ≈ {S[i]:.0f}: +{pl[i]:.2f}</text>')
     out.append(f'<text x="{sx(S[i])+8:.1f}" y="{sy(pl[i])+8:.1f}" {FONT} font-size="9" fill="{PURPLE}">ขาไกลยังมี time value เต็ม ขาใกล้หมดค่า</text>')
-    out.append(f'<text x="{x0+4}" y="{y0+14}" {FONT} font-size="9.5" fill="{INK2}">เบี้ยสุทธิที่จ่ายวันแรก = {c_far:.2f} − {c_near:.2f} = {debit:.2f} · ขาดทุนสูงสุดเมื่อราคาวิ่งไกลจาก K ทั้งสองทาง</text>')
+    out.append(f'<text x="{x0+4}" y="{y0+14}" {FONT} font-size="9.5" fill="{INK2}">เบี้ยสุทธิที่จ่ายวันแรก = {c_far:.2f} − {c_near:.2f} = {debit:.2f} · ลงแรงเสียเกือบเต็ม {debit:.2f} · ขึ้นแรงเสียแค่ราว {debit - 100 * (1 - np.exp(-0.05 * (3 / 12 - 1 / 12))):.2f}</text>')
     legend(out, [(BLUE, "Calendar: ขาย Call 1 เดือน + ซื้อ Call 3 เดือน (K = 100) ณ วันหมดอายุขาใกล้", "")], x0, H - 24)
     legend(out, [(RED, "Short Call ขาใกล้อย่างเดียว (เส้นหักศอก)", "5 3")], x0, H - 8)
     out.append("</svg>")

@@ -179,6 +179,19 @@ expect("pm-part7.html", "brackets EV", f"EV = {pn:.3f} × ($1-$0.35) + {1-pn:.3f
 expect("pm-part7.html", "brackets return", f"$0.65 ({0.65/0.35*100:.0f}% return!)")
 expect("pm-part7.html", "funding 0.05%", f"0.05% × 3 × 365 = <strong>{0.05*3*365:.2f}%/year!</strong>")
 expect("pm-part8.html", "repair", f"฿2.50 × 2 = ฿{2.50*2:.0f}")
+_bf3 = lambda S: max(S-90,0) - 2*max(S-100,0) + max(S-110,0) - 3
+expect("pm-part3.html", "fly peak", f"−3 + 10 = +{_bf3(100):g}")
+expect("pm-part3.html", "fly S=100", f"ที่ S=100: <strong>+{_bf3(100):g} (peak!)</strong>")
+expect("pm-part3.html", "fly S=110", f"ที่ S=110: {_bf3(110):g}")
+expect("pm-part3.html", "fly slope", f"slope = +1-2 = {1-2}")
+expect("pm-part3.html", "digital jump", f"jump +{500-(-200)} at 2500")
+expect("pm-part3.html", "digital price", f"200/700 ≈ {200/700:.3f}")
+expect("pm-part3.html", "IC EV", f"0.8×2 − 0.2×3 = +{0.8*2-0.2*3:.1f} · คุ้มทุนที่อัตราชนะ 3/5 = {3/5:.0%}")
+_rp = lambda S: (S - 100) + max(S-85,0) - 2*max(S-92.5,0)
+assert _rp(92.5) == 0 and _rp(150) == 0 and _rp(70) == -30  # repair: เหนือ 92.50 แบนที่ 0 · ขาลงเท่าหุ้น
+expect("pm-part8.html", "repair loss", f"ขาดทุน ฿{100-85}")
+expect("pm-part8.html", "repair BE", f"ลด break-even จาก 100 → {85+(100-85)/2:.2f}")
+expect("pm-part8.html", "repair cost", f"<strong>Net cost = {5-2.50*2:.0f}</strong>")
 expect("pm-part8.html", "EV A", f"EV = 0.9×1 + 0.1×(-20) = <strong>{0.9*1-0.1*20:.2f}</strong>")
 expect("pm-part8.html", "EV B", f"EV = 0.3×10 + 0.7×(-2) = <strong>+{0.3*10-0.7*2:.2f}</strong>")
 
