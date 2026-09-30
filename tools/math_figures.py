@@ -2246,6 +2246,11 @@ expect(_M11, "size หด", f"size ลดจาก {_ol[2]:.3f} เหลือ 
 expect(_M11, "iid 30%", f"<strong>ต่ำไป {(3.28 - 2.30) / 3.28:.0%}</strong>")
 expect(_M11, "iid 46%", f"<strong>สูงไป {2.30 / 1.57 - 1:.0%}</strong>")
 expect(_M11, "half-life 0.66", f"ครึ่งชีวิตแค่ <strong>{math.log(.5) / math.log(.35):.2f} วัน</strong>")
+from sklearn.model_selection import TimeSeriesSplit as _TS2
+_sp = [(len(a), len(b)) for a, b in _TS2(5).split(np.zeros((1000, 1)))]
+expect(_M11, "✍️ TimeSeriesSplit", f"ชุดทดสอบรอบละ 1,000 ÷ 6 = {_sp[0][1]} วัน รอบแรกฝึก <strong>{_sp[0][0]}</strong> วัน แล้วขยายเป็น {_sp[1][0]}")
+expect(_M11, "✍️ ไม่ถูกหยิบ", f"(1 − 1/756)<sup>756</sup> ≈ <strong>{(1-1/756)**756:.1%}</strong>")
+expect(_M11, "✍️ ridge 1 ตัว", f"0.8 × 250 ÷ 260 = <strong>{0.8*250/260:.3f}</strong> · หดลงราว {(1-250/260)*100:.0f}%")
 print(f"2·F บท 13–14  Sharpe จริง {_sr_true:.3f} · 5.72/{_sr_true:.2f} = {5.72/_sr_true:.1f}× · size {_ol[2]:.3f}→{_sz(10):.3f}→{_sz(100):.3f}")
 
 

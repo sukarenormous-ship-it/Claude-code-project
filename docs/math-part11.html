@@ -117,6 +117,12 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 <div class="card">
 <h3>k-fold CV <span class="yr">Stone 1974</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>ตัวเลขผลลัพธ์ของโมเดลทุกตัวที่คุณจะเห็นในงานจริงผ่านการ "วัดนอกตัวอย่าง" มาแล้ว · ถ้าวัดผิดวิธี (โดยเฉพาะกับข้อมูลที่มีเวลา) ตัวเลขนั้นดูดีเกินจริงโดยไม่มีอะไรเตือน</p></div>
+<div class="bx bb"><div class="bt">🔧 ใช้ทำอะไร</div>
+<p>เลือกระหว่างโมเดลหรือพารามิเตอร์หลายแบบ · ประมาณว่าโมเดลจะทำงานได้แค่ไหนกับข้อมูลที่ไม่เคยเห็น · ใช้ข้อมูลน้อยให้คุ้มกว่าการแบ่งฝึก/ทดสอบครั้งเดียว</p></div>
+
+
 <div class="bx bp"><div class="bt">🎯 Thesis</div>
 <p>"แทนที่จะแบ่งครั้งเดียวแล้วลุ้น ให้แบ่งเป็น k ส่วน แล้วผลัดกันให้แต่ละส่วนเป็นข้อสอบ — ทุกจุดข้อมูลได้ทำหน้าที่ทั้งสองอย่าง และคุณได้ค่าเฉลี่ยแทนการโยนเหรียญ"</p></div>
 
@@ -141,6 +147,28 @@ print(f"ช่วง 5-95% = [{np.percentile(r2,5):.3f}, {np.percentile(r2,95):.
 
 <div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
 <p><strong>ทันทีที่ข้อมูลมีลำดับเวลา</strong> — ซึ่งคือข้อมูลการเงินแทบทั้งหมด · หัวข้อถัดไปคือเรื่องนี้ทั้งหัวข้อ เพราะมันสำคัญพอที่จะแยกออกมา</p></div>
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul><li>ใช้ข้อมูลทุกจุดทั้งฝึกและทดสอบ · ความเหวี่ยงของคะแนนน้อยกว่าการแบ่งครั้งเดียว</li></ul></div>
+<div class="con"><div class="bt">⚖️ ข้อเสีย</div><ul><li>ช้ากว่าเดิม k เท่า · SD ระหว่าง fold ไม่ใช่ SE ที่ถูกต้อง · ถ้าเอา CV ไปเลือกพารามิเตอร์ด้วย คะแนนของตัวที่ถูกเลือกดูดีเกินจริง (ต้อง nested CV)</li></ul></div>
+</div>
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบันใช้ทำอะไรจริง</div>
+<p>ข้อมูลตัดขวางใช้ k-fold ตามปกติ · ข้อมูลตลาดใช้ walk-forward หรือ purged k-fold ที่ตัดรอยต่อและเว้นช่องว่าง (§12.3) · งานที่ตัดสินใจจริงแยกชุดทดสอบสุดท้ายไว้ไม่แตะจนจบ</p></div>
+<p style="font-size:.93em">🧮 ตัวอย่างเดินเลขกับข้อมูลเวลาอยู่ที่ <a href="#s12-3">§12.3</a> · 🧠 มุมมองของนักเทรดอยู่ท้ายบท</p>
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ข้อมูล 1,000 วัน · <code>KFold(5)</code> แต่ละรอบฝึกกี่วัน ทดสอบกี่วัน · และ <code>TimeSeriesSplit(5)</code> รอบแรกฝึกกี่วัน?</p>
+<details><summary>ดูเฉลย</summary><p>KFold(5): ฝึก <strong>800</strong> ทดสอบ <strong>200</strong> ทุกรอบ · TimeSeriesSplit(5): ชุดทดสอบรอบละ 1,000 ÷ 6 = 166 วัน รอบแรกฝึก <strong>170</strong> วัน แล้วขยายเป็น 336 · 502 · … — ชุดฝึกอยู่ก่อนชุดทดสอบเสมอ และรอบแรก ๆ ฝึกด้วยข้อมูลน้อย</p></details></div>
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>วัดผลด้วยข้อมูลที่โมเดลไม่เคยเห็นเสมอ</li>
+<li>ข้อมูลมีเวลา → walk-forward ห้ามสุ่มสลับ</li>
+<li>ใช้ CV เลือกด้วยและวัดด้วย → ต้อง nested หรือเก็บชุดทดสอบสุดท้ายไว้</li>
+</ul></div>
+<div class="bx bb"><div class="bt">📚 Papers</div>
+<ul>
+<li>Stone (1974), "Cross-Validatory Choice and Assessment of Statistical Predictions", <em>Journal of the Royal Statistical Society B</em> 36(2)</li>
+<li>Varma &amp; Simon (2006), "Bias in Error Estimation When Using Cross-Validation for Model Selection", <em>BMC Bioinformatics</em> 7</li>
+<li>López de Prado (2018), <em>Advances in Financial Machine Learning</em> บทที่ 7 (purging · embargo)</li>
+</ul></div>
 </div>
 
 <h3 id="s12-3">12.3 💎 ทำไม k-fold ถึงใช้กับข้อมูลการเงินไม่ได้</h3>
@@ -759,6 +787,10 @@ for i in range(5):
 <div class="card">
 <h3>Bootstrap <span class="yr">Efron 1979</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>สถิติที่ใช้ตัดสินใจจริงส่วนใหญ่ (Sharpe · max drawdown · อัตราชนะ) ไม่มีสูตร SE ให้ · bootstrap ให้ช่วงความไม่แน่นอนของมันได้ด้วยโค้ดไม่กี่บรรทัด</p></div>
+
+
 <div class="bx bp"><div class="bt">🎯 Thesis</div>
 <p>"ความไม่แน่นอนเกิดจากการที่เรามีข้อมูลแค่ตัวอย่างเดียวจากความจริง · ถ้าเก็บข้อมูลใหม่ไม่ได้ ก็<strong>สุ่มหยิบซ้ำจากตัวอย่างที่มี</strong> แล้วดูว่าคำตอบเหวี่ยงแค่ไหน — ง่ายจนน่าตกใจ และใช้ได้กับสถิติแทบทุกตัว"</p></div>
 
@@ -778,6 +810,34 @@ for i in range(5):
 <li><strong>ใช้ได้กับสถิติที่ไม่มีสูตร</strong> — ค่ามัธยฐาน · max drawdown · อัตราส่วนแปลก ๆ ที่คุณคิดเอง · <strong>ตัวไหนที่คำนวณได้ ส่วนใหญ่ก็ bootstrap ได้</strong> (ยกเว้นสถิติประเภทค่าสุดขั้ว เช่น max/min ที่ bootstrap ประเมินพลาด)</li>
 <li><strong>ไม่ต้องสมมติการแจกแจง</strong> — ข้อมูลหางหนาหรือเบ้ก็ใช้ได้ เพราะมันสุ่มจากรูปร่างจริงของข้อมูล (ตราบที่ข้อมูลแต่ละจุดเป็นอิสระต่อกัน และหางไม่หนาจนความแปรปรวนเป็นอนันต์ · Athreya 1987)</li>
 <li><strong>ช่วงที่ได้ไม่จำเป็นต้องสมมาตร</strong> — ซึ่งตรงกับความจริงมากกว่า "±1.96 SE" ที่บังคับให้สมมาตรเสมอ</li>
+</ul></div>
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<ul>
+<li>ข้อมูลมีความจำ (autocorrelation) แล้วสุ่มทีละจุด — ช่วงผิดทั้งขนาดและทิศ (§13.3)</li>
+<li>ตัวอย่างไม่เคยเห็นเหตุการณ์หาง — bootstrap สุ่มได้แค่สิ่งที่อยู่ในตัวอย่าง (§13.4)</li>
+<li>สถิติค่าสุดขั้ว (max/min) และข้อมูลที่ variance เป็นอนันต์</li>
+</ul></div>
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul><li>ไม่ต้องมีสูตร · ใช้กับสถิติแทบทุกตัว · ไม่ต้องสมมติ Normal</li></ul></div>
+<div class="con"><div class="bt">⚖️ ข้อเสีย</div><ul><li>ช้า (สุ่มหลายพันรอบ) · ช่วงแบบเปอร์เซ็นไทล์พลาดเมื่อสถิติเบ้ · ดีได้เท่าตัวอย่างที่มี</li></ul></div>
+</div>
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบันใช้ทำอะไรจริง</div>
+<p>รายงาน Sharpe หรือ drawdown พร้อมช่วง bootstrap แบบ block (หรือ stationary bootstrap) เป็นเรื่องปกติของงานวิจัยกลยุทธ์ · คู่กับ stress test สำหรับเหตุการณ์ที่ตัวอย่างไม่มี</p></div>
+<p style="font-size:.93em">🧮 ตัวอย่างเดินเลข CI ของ Sharpe อยู่ที่ <a href="#s13-2">§13.2</a> · 🧠 กับดักข้อมูลไม่มีหางอยู่ใน §13.4</p>
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>ข้อมูล 756 วัน สุ่มแบบใส่คืน 756 ครั้ง · วันหนึ่งวันใดจะ<em>ไม่ถูกหยิบเลย</em>ด้วยโอกาสเท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>(1 − 1/756)<sup>756</sup> ≈ <strong>36.8%</strong> (เข้าใกล้ e<sup>−1</sup>) · แต่ละตัวอย่าง bootstrap จึงไม่มีข้อมูลราวหนึ่งในสามของของเดิม และมีบางวันซ้ำ — ถ้าวันร้ายที่สุดมีวันเดียว ตัวอย่างราว 37% จะไม่มีมันเลย</p></details></div>
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>สุ่มแบบใส่คืนจากตัวอย่าง แทนการเก็บข้อมูลใหม่</li>
+<li>ข้อมูลมีความจำ → block bootstrap</li>
+<li>สุ่มได้แค่สิ่งที่ตัวอย่างเคยเห็น — หางที่ไม่เคยเกิดไม่อยู่ในช่วง</li>
+</ul></div>
+<div class="bx bb"><div class="bt">📚 Papers</div>
+<ul>
+<li>Efron (1979), "Bootstrap Methods: Another Look at the Jackknife", <em>Annals of Statistics</em> 7(1)</li>
+<li>Künsch (1989), "The Jackknife and the Bootstrap for General Stationary Observations", <em>Annals of Statistics</em> 17(3)</li>
+<li>Politis &amp; Romano (1994), "The Stationary Bootstrap", <em>Journal of the American Statistical Association</em> 89(428)</li>
 </ul></div>
 </div>
 
@@ -1166,6 +1226,10 @@ print("Lasso(a=.05)", np.round(Lasso(alpha=0.05).fit(X, y).coef_, 3))
 <div class="card">
 <h3>Ridge Regression (L2) <span class="yr">Hoerl &amp; Kennard 1970</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
 
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>factor model จริงมีตัวแปรที่เล่าเรื่องซ้ำกันเสมอ (market กับ value) · OLS ให้ β ที่เหวี่ยงจนใช้ไม่ได้ · Ridge คือวิธีมาตรฐานที่ทำให้ β นิ่งพอจะเอาไปใช้</p></div>
+
+
 <div class="bx bp"><div class="bt">🎯 Thesis</div>
 <p>"เพิ่มค่าปรับให้กับสัมประสิทธิ์ที่ใหญ่ · โมเดลจึงต้องแลกระหว่าง 'ทาบข้อมูลให้ดี' กับ 'อย่าใช้ตัวเลขสุดโต่ง' — ผลคือคำตอบที่เอนเล็กน้อยแต่<strong>เสถียรกว่ามาก</strong>"</p></div>
 
@@ -1265,12 +1329,36 @@ for name, a in [("OLS", np.array(ols)), ("Ridge(10)", np.array(rdg))]:
 </table></div>
 <p><strong>OLS ให้คำตอบตั้งแต่ −1.59 ถึง +0.98</strong> เพียงเพราะเปลี่ยนตัวอย่างข้อมูลเล็กน้อย — <strong>ช่วงนี้คร่อมศูนย์ แปลว่ามันบอกไม่ได้ด้วยซ้ำว่าตลาดมีผลทางบวกหรือลบ</strong> · <strong>Ridge เหวี่ยงน้อยกว่า 9.5 เท่า</strong> และอยู่ในย่านบวกเสมอ</p>
 <p>ถ้าคุณใช้ β นี้เป็น hedge ratio จริง — <strong>OLS จะสั่งให้คุณสลับข้างระหว่าง long กับ short</strong> เพียงเพราะข้อมูลขยับนิดเดียว ซึ่งเป็นหายนะทั้งเรื่องต้นทุนและความเสี่ยง</p></div>
+<div class="ad">
+<div class="pro"><div class="bt">⚖️ ข้อดี</div><ul><li>β นิ่งขึ้นมากเมื่อ x ซ้ำกัน · มีสูตรปิด คำนวณเร็ว · มักพยากรณ์นอกตัวอย่างได้ดีขึ้น</li></ul></div>
+<div class="con"><div class="bt">⚖️ ข้อเสีย</div><ul><li>β มี bias (หดเข้าหาศูนย์ทุกตัว) · ไม่ตัดตัวแปรทิ้ง · ต้องปรับสเกล X และเลือก α</li></ul></div>
+</div>
+<div class="bx" style="background:var(--g0);border-left:4px solid var(--g7)"><div class="bt">📍 ปัจจุบันใช้ทำอะไรจริง</div>
+<p>ใช้ใน risk model และ factor model ที่ตัวแปรเยอะและซ้ำกัน · shrinkage ของ covariance matrix (Ledoit–Wolf) ก็เป็นความคิดเดียวกัน · α เลือกด้วย CV ที่เคารพเวลา</p></div>
+<div class="try"><div class="bt">✍️ ลองทำเอง</div>
+<p>x ตัวเดียวที่ปรับสเกลแล้ว (Σx² = n = 250) · OLS ได้ β = 0.8 · Ridge ที่ α = 10 จะได้ β เท่าไร?</p>
+<details><summary>ดูเฉลย</summary><p>β<sub>ridge</sub> = Σxy ÷ (Σx² + α) = 0.8 × 250 ÷ 260 = <strong>0.769</strong> · หดลงราว 4% — ข้อมูลเยอะ ค่าปรับเท่าเดิมมีผลน้อยลง (สูตรตาม objective ของ sklearn ที่ไม่หารด้วย n)</p></details></div>
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ul>
+<li>Ridge = OLS + ค่าปรับขนาด β (L2) → β นิ่งขึ้นเมื่อ x ซ้ำกัน</li>
+<li>หดทุกตัว ไม่ตัดใครทิ้ง · ต้องปรับสเกล X ก่อน</li>
+<li>เลือก α ด้วย CV และดูกราฟเส้นทางว่าเริ่มนิ่งตรงไหน</li>
+</ul></div>
+<div class="bx bb"><div class="bt">📚 Papers</div>
+<ul>
+<li>Hoerl &amp; Kennard (1970), "Ridge Regression: Biased Estimation for Nonorthogonal Problems", <em>Technometrics</em> 12(1)</li>
+<li>Ledoit &amp; Wolf (2004), <em>Journal of Portfolio Management</em> 30(4)</li>
+</ul></div>
 </div>
 
 <h3 id="s14-3">14.3 Lasso — ตัดตัวแปรทิ้งไปเลย</h3>
 
 <div class="card">
 <h3>Lasso Regression (L1) <span class="yr">Tibshirani 1996</span> <span class="lvl">★★ ควรรู้</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>"Lasso เปลี่ยนค่าปรับจากกำลังสองเป็นค่าสัมบูรณ์ — ผลคือมันกด β บางตัวเป็นศูนย์พอดี จึงเลือกตัวแปรให้ด้วย แต่เลือกแบบไม่นิ่งเมื่อ x ซ้ำกัน"</p></div>
+
 
 <p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Lasso เปลี่ยนแค่จุดเดียวจาก Ridge — <strong>ปรับด้วยค่าสัมบูรณ์แทนกำลังสอง</strong> · การเปลี่ยนที่ดูเล็กนี้ให้ผลที่ต่างกันทั้งเรื่อง: <strong>Lasso ผลัก β บางตัวให้เป็นศูนย์เป๊ะ ๆ</strong> ซึ่งเท่ากับ<strong>ตัดตัวแปรนั้นทิ้ง</strong></p>
 
@@ -1318,6 +1406,11 @@ Lasso:  <b>(1/2n)</b>·Σ(y − Xβ)²  +  α · Σ<b>|βⱼ|</b>    →  β บ
 </table></div>
 <p><strong>ทำไม:</strong> พอ Lasso ตัด <code>market</code> ทิ้ง ตัวที่รอดต้อง<strong>แบกผลของทั้งกลุ่มไว้คนเดียว</strong> · สิ่งที่มันประมาณจึงเป็น<strong>ผลรวมของกลุ่ม = 1.20</strong> ไม่ใช่ 0.4 · แล้วค่อยถูกหดลงจากตรงนั้น → <strong>1.187 &lt; 1.20 ✓ หดจริง</strong></p>
 <p>💎 <strong>นี่คือ §14.1 กลับมาอีกครั้ง</strong> — ข้อมูลบอก "ผลรวมของกลุ่ม" ได้ แต่บอก "รายตัว" ไม่ได้ · <strong>Lasso ก็ทำงานอยู่บนผลรวมนั้นเหมือนกัน</strong> ไม่ใช่บนตัวเลขที่คุณอยากรู้</p></div>
+<div class="bx bb"><div class="bt">📚 Papers</div>
+<ul>
+<li>Tibshirani (1996), "Regression Shrinkage and Selection via the Lasso", <em>Journal of the Royal Statistical Society B</em> 58(1)</li>
+<li>Zou &amp; Hastie (2005), "Regularization and Variable Selection via the Elastic Net", <em>Journal of the Royal Statistical Society B</em> 67(2)</li>
+</ul></div>
 </div>
 
 <h3 id="s14-4">14.4 เลือก α ยังไง — วงจรปิดกับบทที่ 12</h3>
