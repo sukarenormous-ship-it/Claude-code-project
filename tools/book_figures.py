@@ -74,6 +74,29 @@ expect("pm-part3a.html", "4× short put loss", f"ขาดทุน ฿{4*10} (�
 expect("pm-part3a.html", "drill 4 max profit", f"3(20)-10={3*20-10}")
 expect("pm-part3a.html", "deliberate flat ขวา", f"-5 + 2×(105-95) = -5+20 = +{-5+20}")
 expect("pm-part3a.html", "deliberate ค่าที่ถูก", f"+15-10 = +{15-10}")
+_pay3a = lambda legs, S: sum(q * (max(S - K, 0) if k == "c" else max(K - S, 0)) for k, K, q in legs)
+_bw = [("c", 95, 2), ("c", 105, -3), ("c", 115, 1)]  # ตัวอย่างที่ 3 / RE ตัวอย่าง 2
+expect("pm-part3a.html", "broken-wing ยอด/ปีก", f"ยอดอยู่ที่ strike กลาง 105 (+{_pay3a(_bw, 105)}) แต่ปีกขวาจบที่ +{_pay3a(_bw, 130)} สูงกว่าปีกซ้าย ({_pay3a(_bw, 90)})")
+expect("pm-part3a.html", "Σ|Δs| ตัวอย่าง 3", f"ตัวอย่างที่ 3 หัก {len(_bw)} จุด แต่ Σ|Δs| = {sum(abs(q) for _, _, q in _bw)} สัญญา")
+expect("pm-part3a.html", "net slope ตัวอย่าง 3", f"Net slope = +2-3+1 = {2-3+1} → <strong>bounded ✓</strong>")
+_mx = [("c", 110, 1), ("p", 90, -2), ("c", 120, -1)]
+expect("pm-part3a.html", "LC110+2SP90+SC120 ขวา", f"(เหนือ 120 ได้ +{_pay3a(_mx, 130)} คงที่)")
+expect("pm-part3a.html", "RE2 at 105", f"At 95: -5, slope +2 → at 105: -5+2(10) = +{-5 + 2*10}")
+expect("pm-part3a.html", "RE2 at 115", f"at 115: +15+(-1)(10) = +{15 - 10}")
+expect("pm-part3a.html", "RE2 y-intercept", f"y-intercept = {-5 - (5 - (-5))}")
+_rr = [("p", 90, -1), ("c", 110, 1)]
+_sl = lambda legs, a, b: (_pay3a(legs, b) - _pay3a(legs, a)) / (b - a)
+assert (_sl(_rr, 70, 80), _sl(_rr, 95, 105), _sl(_rr, 120, 130)) == (1.0, 0.0, 1.0)
+expect("pm-part3a.html", "risk reversal slope", f"initial slope <strong>+{_sl(_rr, 70, 80):g}</strong> จาก Short Put ก่อน 90 · profile +{_sl(_rr, 70, 80):g} → {_sl(_rr, 95, 105):g} → +{_sl(_rr, 120, 130):g})")
+# ข้อความ "call fly กับ put fly ราคาเท่ากัน (PCP)" — ตรวจด้วย BS ที่ vol ต่างกันต่อ strike (skew)
+def _bs3a(K, s, cp, S=100, r=0.05, T=0.5):
+    d1 = (math.log(S / K) + (r + s * s / 2) * T) / (s * math.sqrt(T)); d2 = d1 - s * math.sqrt(T)
+    c = S * N(d1) - K * math.exp(-r * T) * N(d2)
+    return c if cp == "c" else c - S + K * math.exp(-r * T)
+_vk = {90: 0.30, 100: 0.25, 110: 0.22}
+_cf = sum(q * _bs3a(K, _vk[K], "c") for K, q in ((90, 1), (100, -2), (110, 1)))
+_pf = sum(q * _bs3a(K, _vk[K], "p") for K, q in ((90, 1), (100, -2), (110, 1)))
+assert abs(_cf - _pf) < 1e-9, (_cf, _pf)
 expect("pm-part4.html", "PM gap", f"→ gap {62-55}%")
 p_ = [1/2.10, 1/3.30, 1/3.50]
 expect("pm-part4.html", "overround", f"{p_[0]*100:.1f}% + {p_[1]*100:.1f}% + {p_[2]*100:.1f}% = {sum(p_)*100:.1f}% → overround {sum(p_)*100-100:.1f}%")
