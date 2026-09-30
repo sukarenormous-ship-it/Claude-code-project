@@ -374,6 +374,8 @@ expect(_A8, "Kalshi fee", f"≈ ${math.ceil(0.07*0.5*0.5*100)/100:.2f} ที่
 expect(_A8, "Fed gap", f"→ Gap {70-55} จุด%")
 _scan = ["PCP", "Box", "Butterfly", "Monotonicity", "Basis", "IV Surface", "Pairs Z", "Merger Spreads", "PM", "Earn/Promo"]
 expect("arb-part9.html", "daily scan", f"ทุกวัน เช็ค {len(_scan)} รายการ")
+expect("arb-part7.html", "funding ทบต้น", f"ราว {52/2*1:.0f}% ต่อปี (ไม่ทบต้น · ทบต้นได้ราว {(1.01**26-1)*100:.1f}%)")
+expect("arb-part7.html", "monitor ต่อชั่วโมง", f"฿2,000/(14×4)=฿{2000/56:.1f}/ครั้งที่เช็ค (≈ ฿{2000/14:.0f}/ชม.)")
 # ── arb-part2a — synthetic call · piecewise → PM + options · collar (เลขคณิตจาก payoff จริง) ──
 _A2 = "arb-part2a.html"
 _syn = 100 + 2.50 - 97.50

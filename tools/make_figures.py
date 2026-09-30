@@ -3456,7 +3456,7 @@ def fig_a5_ou_spring():
     _txt(out, sx(2.9), sy(-0.82), "สูงกว่า μ → ถูกดึงลง", RED, "end", size=9.5, bold=True)
     _txt(out, sx(0) + 6, y0 + 12, "μ = จุดยึด", PURPLE, "start", size=9.5, bold=True)
     _txt(out, sx(-2.9), sy(-0.62), "เส้นน้ำเงิน = แรงดึงกลับ θ(μ − x)", BLUE, "start", size=9.5, bold=True)
-    _txt(out, x0, H - 8, f"ครึ่งชีวิตของการกลับเข้าหาค่าเฉลี่ย = ln2 / θ ≈ {np.log(2)/theta:.1f} หน่วยเวลา — บอกว่าไม้หนึ่งควรถือนานแค่ไหน", INK2, "start", size=9, italic=True)
+    _txt(out, x0, H - 8, f"ครึ่งชีวิตของการกลับเข้าหาค่าเฉลี่ย = ln2 / θ ≈ {np.log(2)/theta:.1f} หน่วยเวลา — ใช้คัดคู่ · เวลาถือจริงจาก 2 SD มักนานกว่านี้หลายเท่า", INK2, "start", size=9, italic=True)
     out.append("</svg>")
     NUMS["a5-ou-spring"] = dict(theta=theta, halflife=float(np.log(2) / theta))
     return "\n".join(out)
