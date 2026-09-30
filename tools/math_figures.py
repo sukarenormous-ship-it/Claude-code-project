@@ -2189,6 +2189,9 @@ from scipy.optimize import brentq as _bq8
 _xo = _bq8(lambda a: _st8.t.ppf(a, 4) / _c8 - _st8.norm.ppf(a), 0.005, 0.045)
 expect(_M8, "จุดตัด 2.5%", f"เลย ~{_xo:.1%} สุดขั้ว".replace("2.5%", "2.5%"))
 expect(_M8, "ddof 3000", f"ที่ n = 3,000 ต่างกัน {(math.sqrt(3000/2999)-1)*100:.3f}%")
+expect(_M8, "✍️ heatmap ρ 0.86", f"20% × √((1 + 0.86)/2) = <strong>{20*math.sqrt(1.86/2):.1f}%</strong> · ถ้า ρ = 0 ได้ 20% × √0.5 = <strong>{20*math.sqrt(.5):.1f}%</strong>")
+expect(_M8, "✍️ CI ครึ่ง SE", f"2 × 1.96 × {0.1516/2:.4f} = <strong>{2*1.96*0.1516/2:.2f}</strong>")
+expect(_M8, "✍️ √252", f"1% × √252 = <strong>{math.sqrt(252):.2f}%</strong>")
 print(f"2·C  ขยะ 100 {_j100[2]:.3f} · 130 {_j130[2]:.3f} ({_j130[3]:.2f}×) · kurt {_st8.kurtosis(_id8[:,0]):.2f}/{_st8.kurtosis(_mx8.mean(1)):.2f} · q01 {_q01:.3f} q05 {_q05:.3f} · ตัด {_xo:.4f}")
 
 
