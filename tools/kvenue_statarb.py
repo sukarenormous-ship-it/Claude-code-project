@@ -632,6 +632,8 @@ def run(d, **kw):
 
     def close_layer_taker(L, t):
         ai = L.a
+        if L.i is not None and L.j is not None and not (avail(L.i, t, ai) and avail(L.j, t, ai)):
+            return                       # ตลาดหนึ่งล่ม: แช่ทั้งชั้นไว้ (ยัง hedge อยู่) แล้วปิดเมื่อกลับมา — ไม่ปิดขาเดียว
         if L.i is not None and avail(L.i, t, ai):
             trade(ai, L.i, +L.q, taker_px(ai, L.i, +1, t), vp[L.i]["taker"], t, L)
             L.i = None
