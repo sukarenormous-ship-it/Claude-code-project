@@ -104,25 +104,38 @@ def _ar1(phi, inp):
     return y
 
 
-def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.25, shocks=False, lag_hl_s=1.0):
+def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.25, shocks=False, lag_hl_s=1.0,
+          resid_vol_elast=1.0):
     rng = np.random.default_rng(seed)
     T = int(days * 86400 // bar)
     A, K = len(assets), len(venues)
     mpb = bar / 60.0                      # นาทีต่อ bar
     bpy = 525600.0 / mpb
 
-    # regime Markov: เงียบ ↔ ผันผวน (ค่าเฉลี่ย 6 วัน / 2 วัน ที่ vol_share=0.25)
-    p01 = mpb / (6 * 1440) * (vol_share / 0.25)
-    p10 = mpb / (2 * 1440) * (0.25 / max(vol_share, 1e-6)) * (1 - vol_share) / 0.75
+    # regime Markov: เงียบ ↔ ผันผวน (ค่าเฉลี่ย 6 วัน / 2 วัน ที่ vol_share=0.25; สัดส่วนช่วงผันผวนคงที่ = vol_share)
+    vs = min(max(vol_share, 1e-3), 0.999)
+    p01 = mpb / (6 * 1440) * (vs / 0.25)
+    p10 = p01 * (1 - vs) / vs
     regime = np.zeros(T, dtype=np.int8)
     u01 = rng.random(T)
     for t in range(1, T):
         prev = regime[t - 1]
         regime[t] = (1 if u01[t] < p01 else 0) if prev == 0 else (0 if u01[t] < p10 else 1)
+    # shock (stress): ราคาคริปโตวิ่งแรงใน 6 bar; บังคับ regime ผันผวน 60 bar หลังจากนั้น (สเปรดกว้าง, ADL ทำงาน)
+    shock_list = []
+    if shocks:
+        for d_, mv in ((20, 0.12), (21, 0.08), (45, -0.20), (70, 0.15), (71, 0.10), (85, -0.15)):
+            t0 = int(d_ * 86400 // bar)
+            if t0 + 6 < T:
+                shock_list.append((t0, mv))
+                regime[t0:t0 + int(60 / mpb) + 6] = 1
 
     sig = np.array([[ASSETS[a]["sig"][0], ASSETS[a]["sig"][1]] for a in assets])     # (A,2)
     sig_t = sig[:, regime].T / math.sqrt(bpy)                                           # (T,A)
     g = sig[:, regime].T / sig[:, 0]                                                    # vol scaler
+    # สมมติฐาน: residual ข้ามตลาดขยายตามความผันผวนยกกำลัง resid_vol_elast (1 = สัดส่วนตรง, 0 = ไม่ขยาย)
+    # → "ช่วงผันผวนได้เยอะ" ในตัวจำลองมาจากสมมติฐานนี้โดยตรง ต้องวัดจากข้อมูลจริง
+    gr = g ** resid_vol_elast
 
     C = np.array([[corr_of(a, b) for b in assets] for a in assets])
     L = np.linalg.cholesky(C)
@@ -144,15 +157,10 @@ def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.
         if ASSETS[a]["rwa"]:
             opens = np.where(closed[:-1, ai] & ~closed[1:, ai])[0] + 1
             r[opens, ai] += rng.normal(0, 0.008, len(opens))
-    shock_bars = []
-    if shocks:
-        for d, mv in ((20, 0.12), (21, 0.08), (45, -0.20), (70, 0.15), (71, 0.10), (85, -0.15)):
-            t0 = int(d * 86400 // bar)
-            if t0 + 6 < T:
-                for ai, a in enumerate(assets):
-                    if a in CRYPTO:
-                        r[t0:t0 + 6, ai] += mv / 6
-                shock_bars.extend(range(t0, t0 + 6))
+    for t0, mv in shock_list:
+        for ai, a in enumerate(assets):
+            if a in CRYPTO:
+                r[t0:t0 + 6, ai] += mv / 6
     m = np.cumsum(r, axis=0) + np.log([ASSETS[a]["P0"] for a in assets])
 
     vp = [VENUES[v] for v in venues]
@@ -164,19 +172,15 @@ def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.
     # Lighter ตามราคาช้ากว่า CEX (lead-lag) แต่ไล่ทันภายใน ~1 วินาที (lag_hl_s): ที่ bar 1 นาทีแทบมองไม่เห็นในราคา
     # จึงไม่ใช่ edge ที่บัญชี Standard (หน่วง 300ms) เก็บได้ — โผล่เป็น "ต้นทุน catch-up" ตอน hedge แทน (ดู hub_px_at)
     phi_lag = 2 ** (-bar / max(lag_hl_s, 1e-9))
-    inp = s_u[None, None, :] * rmult[None, :, None] * resid_scale * g[:, :, None] \
+    inp = s_u[None, None, :] * rmult[None, :, None] * resid_scale * gr[:, :, None] \
         * np.sqrt(1 - phi_u ** 2)[None, None, :] * xi
-    if shock_bars:
-        is_l = np.array([p["kind"] == "lighter" for p in vp])
-        for t in shock_bars:
-            inp[t, :, is_l] += (-0.5 * r[t, :])[None, :].repeat(is_l.sum(), 0)
     u = _ar1(phi_u[None, :], inp)
     if phi_lag > 1e-6:
         u += _ar1(phi_lag, -lag[None, None, :] * r[:, :, None] * np.ones((1, 1, K)))
 
     # factor ร่วมของ Lighter (LC/LR มี residual สัมพันธ์กัน)
     phi_c = 2 ** (-mpb / 20.0)
-    cl = _ar1(phi_c, 1.0 * BP * resid_scale * g * math.sqrt(1 - phi_c ** 2) * rng.normal(0, 1, (T, A)))
+    cl = _ar1(phi_c, 1.0 * BP * resid_scale * gr * math.sqrt(1 - phi_c ** 2) * rng.normal(0, 1, (T, A)))
     cl_load = np.array([p["cl_load"] for p in vp])
 
     # basis ช้า: b0 + OU(HL 2 วัน, sd 1.5bp) + LR ขยับทุกวันศุกร์ 00:00 UTC (สัปดาห์ points)
@@ -193,13 +197,13 @@ def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.
 
     # ช่วงตลาดหุ้นปิด: ราคาแต่ละตลาดลอยแยกกัน แล้วหดกลับเร็ว (HL 3 นาที) หลังเปิด
     o = np.zeros((T, A, K))
-    off_sd = np.array([p["off_sd"] for p in vp]) * BP
+    off_sd = np.array([p["off_sd"] for p in vp]) * BP * resid_scale
     if closed.any():
         dec = 2 ** (-mpb / 3.0)
         noise = rng.normal(0, 1, (T, A, K)) * off_sd * math.sqrt(mpb / 60.0)
         for t in range(1, T):
             cl_t = closed[t][:, None]
-            o[t] = np.where(cl_t, o[t - 1] + noise[t] * g[t][:, None], o[t - 1] * dec)
+            o[t] = np.where(cl_t, o[t - 1] + noise[t] * gr[t][:, None], o[t - 1] * dec)
 
     # premium ร่วมของ perp (ขับ funding) + การรับ premium ไม่เท่ากันแต่ละตลาด
     phi_p = 2 ** (-mpb / 1440.0)
@@ -216,11 +220,13 @@ def synth(assets, venues, days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.
     mid = np.exp(logmid)
     hs = (np.array([p["hs"] for p in vp]) * BP)[None, None, :] * np.where(regime[:, None, None] == 1, 3.0, 1.0) \
         * np.where(closed[:, :, None], 3.0, 1.0)
-    prem = logmid - m[:, :, None]
+    # premium ที่ใช้คิด funding: ช่วงตลาดปิด index ของแต่ละตลาดอิง EMA ราคาตัวเอง (Lighter IPM 30 นาที,
+    # Bitget EMA ~20 นาที) → การลอยแยกกันช่วงปิด (o) ไม่กลายเป็น premium/funding
+    prem = logmid - m[:, :, None] - o
 
     funding = synth_funding(assets, venues, prem, closed, bar, rng)
     return dict(mid=mid, hs=hs, funding=funding, r=r, regime=regime, closed=closed, bar=bar,
-                sig1=sig_t, assets=assets, venues=venues, minute=minute)
+                assets=assets, venues=venues, minute=minute, shock_starts=[t0 for t0, _ in shock_list])
 
 
 def synth_funding(assets, venues, prem, closed, bar, rng):
@@ -285,6 +291,12 @@ def load_csv(path, data_only, bar):
             ASSETS[a] = dict(ASSETS["SOL"], b0={})
     ts_list = sorted(ts_set)
     T, A, K = len(ts_list), len(assets), len(venues)
+    if T > 1:
+        step = int(np.median(np.diff(ts_list)))
+        if step != bar:
+            print(f"คำเตือน: ระยะห่าง ts ในไฟล์ = {step} วินาที แต่ --bar = {bar}; ใช้ {step} "
+                  f"(แนะนำ resample เป็น bar 60 วินาทีก่อน — ข้อมูลรายวินาทีหลายสัปดาห์จะช้ามาก)", file=sys.stderr)
+            bar = step
     mid = np.full((T, A, K), np.nan)
     hs = np.full((T, A, K), np.nan)
     fund = np.zeros((T, A, K))
@@ -298,7 +310,7 @@ def load_csv(path, data_only, bar):
             fund[t, ai, ki] = float(row.get("funding") or 0.0)
             if row.get("mkt_open") not in (None, ""):
                 closed[t, ai] = row["mkt_open"] in ("0", "false", "False")
-    # forward-fill สูงสุด 5 bar; ที่เหลือ = stale (NaN → ไม่เทรด)
+    # forward-fill ราคา (ใช้ mark-to-market ต่อเนื่อง); ขาดเกิน 5 bar ติด = stale → ห้ามใช้ทำสัญญาณ/ส่งคำสั่ง
     for t in range(1, T):
         gap = np.isnan(mid[t])
         if gap.any():
@@ -315,13 +327,19 @@ def load_csv(path, data_only, bar):
     cons = np.nanmean(lm, axis=2)
     r = np.vstack([np.zeros((1, A)), np.diff(cons, axis=0)])
     r = np.nan_to_num(r)
-    # regime จากความผันผวนจริง: ผลรวม |r| 6 ชม. อยู่ใน quartile บน = ผันผวน
+    # regime (ใช้แค่แยกผลช่วงเงียบ/ผันผวน และ ADL): ผลรวม |r| 6 ชม. ย้อนหลัง > quantile 75% ของอดีต (causal)
     w = max(1, int(6 * 3600 // bar))
     roll = np.array([np.convolve(np.abs(r[:, i]), np.ones(w), "full")[:T] for i in range(A)]).T.mean(axis=1)
-    regime = (roll > np.quantile(roll, 0.75)).astype(np.int8)
-    sig1 = np.tile(np.std(r, axis=0), (T, 1))
-    minute = ((np.array(ts_list) - ts_list[0]) // 60).astype(np.int64)
-    return dict(mid=mid, hs=hs, funding=fund, r=r, regime=regime, closed=closed, bar=bar, sig1=sig1,
+    regime = np.zeros(T, dtype=np.int8)
+    hb = max(1, int(3600 // bar))
+    q = np.inf
+    for t in range(T):
+        if t >= w and t % hb == 0:
+            q = np.quantile(roll[w:t + 1], 0.75)
+        regime[t] = roll[t] > q
+    # นาทีนับจากวันจันทร์ 00:00 UTC (unix epoch = วันพฤหัส) — run() ใช้ % 10080 หาเวลาในสัปดาห์
+    minute = (np.array(ts_list, dtype=np.int64) // 60 + 3 * 1440).astype(np.int64)
+    return dict(mid=mid, hs=hs, funding=fund, r=r, regime=regime, closed=closed, bar=bar,
                 assets=assets, venues=venues, minute=minute, stale=stale)
 
 
@@ -332,7 +350,8 @@ DEFAULTS = dict(capital=100_000.0, lev=3.0, lalert=4.0, lxfer=5.0, rho=0.5, cex_
                 kappa=1.25, max_per_pair=3, max_per_asset=6, opens_per_bar=2, H_b_h=24.0, H_v_h=4.0,
                 pairs_only=None, allow_cex_cex=False, funding_on=True, liq_pen=0.005, p_adl=0.05,
                 outage_rate=1.0, freeze=None, no_transfers=False, alloc=None, warmup_h=24.0, seed=7,
-                dir_cap=2.0, close_ttl=10, no_trade=False, trade_venues=None)
+                dir_cap=None, close_ttl=10, no_trade=False, trade_venues=None, unit_usd=None, no_hub_pair=False,
+                static_load=0.0, shock_outage=True, derisk=True)
 
 
 class Layer:
@@ -402,10 +421,10 @@ def run(d, **kw):
             if is_cex[i] != is_cex[j]:                       # CEX–Lighter: maker ที่ CEX
                 allowed[i, j] = True
                 maker_of[i, j] = i if is_cex[i] else j
-            elif is_hub[i] and is_hub[j]:                    # LC–LR: maker ที่ LR (book บางกว่า)
+            elif is_hub[i] and is_hub[j] and not P["no_hub_pair"]:   # LC–LR: maker ที่ LR (book บางกว่า)
                 allowed[i, j] = True
                 maker_of[i, j] = i if venues[i] == "LR" else j if venues[j] == "LR" else i
-            elif is_cex[i] and is_cex[j] and P["allow_cex_cex"]:
+            elif is_cex[i] and is_cex[j] and (P["allow_cex_cex"] or max(vp[i]["maker"], vp[j]["maker"]) <= 0):
                 allowed[i, j] = True
                 maker_of[i, j] = i if vp[i]["maker"] <= vp[j]["maker"] else j
     if P["trade_venues"]:
@@ -450,9 +469,14 @@ def run(d, **kw):
     budget = np.array([ASSETS[a]["budget"] for a in assets])
     budget = budget / budget.sum()
     Q = P["lev"] * E0[None, :] * budget[:, None]                              # เพดาน notional ต่อ (asset, venue)
-    legs_used = [k for k in range(K) if trade_k[k] and allowed[k].any()]
-    spokes_used = [k for k in legs_used if is_cex[k]] or legs_used
-    unit_usd = np.array([min(Q[a, k] for k in spokes_used) / 3.0 for a in range(A)])
+    # ขนาดชั้นคงที่ไม่ขึ้นกับการแบ่งทุน (= ขนาดชั้นของชุด 4 ตลาด: lev·ทุน·งบ/12) → เทียบชุดตลาดได้อย่างยุติธรรม
+    if P["unit_usd"] is not None:
+        unit_usd = np.asarray(P["unit_usd"], float)
+    else:
+        unit_usd = P["lev"] * P["capital"] * budget / 12.0
+    dir_cap = P["dir_cap"] if P["dir_cap"] is not None else 2.0 * P["lev"] / 3.0
+    blk = np.array([0 if a in CRYPTO else 1 if ASSETS[a]["rwa"] == "us" else 2 for a in assets])
+    kill_th = np.array([0.01 if a in ("BTC", "ETH") else 0.02 for a in assets])
 
     imr = np.zeros((A, K))
     mmr = np.zeros((A, K))
@@ -510,7 +534,19 @@ def run(d, **kw):
     warm = int(P["warmup_h"] * bars_h)
     calib = defaultdict(list) if P["no_trade"] else None
     prev_total = E.sum()
-    m_sig = d["sig1"]
+    # σ ต่อ bar แบบ causal: EWMA ของ r² (HL 1 ชม.) — ไม่ใช้ σ จริงของตัวสร้างข้อมูล/ทั้งไฟล์
+    a_s = 1 - 2 ** (-1 / max(bars_h, 1.0))
+    m_sig = np.empty_like(r)
+    acc_s = np.mean(r[1:int(bars_h) + 1] ** 2, axis=0) + 1e-18
+    for t_ in range(T):
+        acc_s = (1 - a_s) * acc_s + a_s * r[t_] ** 2
+        m_sig[t_] = np.sqrt(acc_s)
+    qbuf = math.sqrt(0.3 / bar)                 # กันชน adverse ~ σ ใน 300ms
+    shock_starts = set(d.get("shock_starts", []))
+    static_layers = []
+    sum_lev = np.zeros(K)
+    bars_pos = 0
+    nbar_live = 0
 
     def trade(ai, k, dq, price, fee_bps, t, L=None):
         """ซื้อ (dq>0)/ขาย dq หน่วยที่ราคา price ณ bar t: ต้นทุน = dq·(price−mid) + fee"""
@@ -573,7 +609,9 @@ def run(d, **kw):
             bump += P["catchup"] * p["lag"] * abs(dlt)
         return base * (1 + side * bump)
 
-    def avail(k, t):
+    def avail(k, t, ai=None):
+        if ai is not None and stale is not None and stale[t, ai, k]:
+            return False
         return trade_k[k] and outage_until[k] <= t
 
     def hedge_leg(ai, hub, side, q, t, spoke, fill, Lc):
@@ -588,29 +626,34 @@ def run(d, **kw):
                 return k
         for k in range(K):
             if k not in (hub, spoke) and is_cex[k] and avail(k, t):
-                trade(ai, k, side * q, mid[t, ai, k] * (1 + side * hsd[t, ai, k]), vp[k]["taker"], t, Lc)
+                trade(ai, k, side * q, taker_px(ai, k, side, t, 0.5), vp[k]["taker"], t, Lc)
                 return k
         return None
 
     def close_layer_taker(L, t):
         ai = L.a
-        if L.i is not None and avail(L.i, t):
-            trade(ai, L.i, +L.q, mid[t, ai, L.i] * (1 + hsd[t, ai, L.i] + vp[L.i]["adv_taker"] * BP), vp[L.i]["taker"], t, L)
+        if L.i is not None and avail(L.i, t, ai):
+            trade(ai, L.i, +L.q, taker_px(ai, L.i, +1, t), vp[L.i]["taker"], t, L)
             L.i = None
-        if L.j is not None and avail(L.j, t):
-            trade(ai, L.j, -L.q, mid[t, ai, L.j] * (1 - hsd[t, ai, L.j] - vp[L.j]["adv_taker"] * BP), vp[L.j]["taker"], t, L)
+        if L.j is not None and avail(L.j, t, ai):
+            trade(ai, L.j, -L.q, taker_px(ai, L.j, -1, t), vp[L.j]["taker"], t, L)
             L.j = None
         if L.i is None and L.j is None:
             L.dead = True
 
-    def forced_reduce(ai, k, frac, px_bump, pen, t, why):
-        """ตลาด k ถูกบังคับปิดสถานะ asset ai ตามสัดส่วน frac (liquidation/ADL): ขาที่เหลือกลายเป็น orphan"""
+    def forced_reduce(ai, k, frac, px_bump, pen, t, why, sign=None):
+        """ตลาด k ถูกบังคับปิดสถานะ asset ai ตามสัดส่วน frac (liquidation/ADL): ขาที่เหลือกลายเป็น orphan
+        sign: ปิดเฉพาะขาทิศนั้น (+1 long / −1 short) เช่น ADL ตัดเฉพาะฝั่งที่กำไร; ตัดทีละชั้นทั้งชั้น"""
         target = abs(n[ai, k]) * frac
         done = 0.0
         for L in layers:
             if L.dead or L.a != ai or done >= target - 1e-12:
                 continue
             for leg in ("i", "j"):
+                if done >= target - 1e-12:
+                    break
+                if sign is not None and sign != (-1 if leg == "i" else +1):
+                    continue
                 if getattr(L, leg) == k:
                     side = +1 if leg == "i" else -1          # ปิด short = ซื้อ, ปิด long = ขาย
                     px = mid[t, ai, k] * (1 + side * px_bump)
@@ -700,7 +743,12 @@ def run(d, **kw):
                 hrs = np.maximum((t - last_settle) / bars_h, 1.0)
                 fh = np.where(nz, ft / np.where(is_cex[None, :], hrs, 1.0), fh)
                 last_settle = np.where(nz, t, last_settle)
-        # 3) outage และเงินโอนที่มาถึง
+        # 3) outage และเงินโอนที่มาถึง (shock → Lighter ล่มแบบ 10 ต.ค. 2025 ถ้าเปิด shock_outage)
+        if t in shock_starts and P["shock_outage"]:
+            for k in range(K):
+                if kind[k] == "lighter" and trade_k[k]:
+                    outage_until[k] = max(outage_until[k], t + int(rng.lognormal(math.log(120), 0.7) / mpb) + 1)
+                    stats["outages"] += 1
         for k in range(K):
             if trade_k[k] and outage_until[k] <= t and rng.random() < out_p[k]:
                 dur = int(min(12 * 60, math.exp(math.log(60) + rng.normal())) / mpb) + 1
@@ -722,7 +770,7 @@ def run(d, **kw):
             if od["type"] == "open":
                 mk, tk = od["maker"], od["taker"]
                 side_mk = -1 if mk == L.i else +1                 # i = ขา short
-                if not (avail(mk, t) and avail(tk, t)):
+                if not (avail(mk, t, ai) and avail(tk, t, ai)):
                     L.dead = True
                     continue
                 fill = maker_fill(ai, mk, side_mk, od["limit"], t)
@@ -752,6 +800,9 @@ def run(d, **kw):
                 mk = maker_of[L.i, L.j] if (L.i is not None and L.j is not None) else None
                 if mk is None or mk < 0:
                     close_layer_taker(L, t)
+                    if not L.dead:                                 # ขาที่ปิดไม่ได้ (ตลาดล่ม) → ค้างคิวไว้จนปิดครบ
+                        L.closing, od["mode"] = "taker", "taker"
+                        new_pending.append(od)
                     continue
                 tk = L.j if mk == L.i else L.i
                 side_mk = +1 if mk == L.i else -1               # ปิด short = ซื้อ
@@ -785,7 +836,7 @@ def run(d, **kw):
                     for k in range(K):
                         if is_cex[k] and avail(k, t) and has_pos(ai, k, t) and np.sign(n[ai, k]) == np.sign(r[t, ai]) \
                                 and rng.random() < P["p_adl"]:
-                            forced_reduce(ai, k, 0.5, 0.0, 0.0, t, "adl")
+                            forced_reduce(ai, k, 0.5, 0.0, 0.0, t, "adl", sign=int(np.sign(n[ai, k])))
         for L in layers:
             if not L.dead and L.closing == "orphan":
                 stats["orphan_bars"] += 1
@@ -830,12 +881,20 @@ def run(d, **kw):
         # ── สถิติ per-venue ──
         live = trade_k & (E0 > 0)
         lev_now = np.where(live, Gk / np.maximum(E, 1e-9), 0)
-        D = (n * np.nan_to_num(mid[t])).sum(axis=0)
         maxlev = np.maximum(maxlev, np.where(E > 0, lev_now, 99))
-        maxdir = np.maximum(maxdir, np.where(live & (E > 0), np.abs(D) / np.maximum(E, 1e-9), 0))
         minEr = np.minimum(minEr, np.where(live, E / np.maximum(E0, 1e-9), 1))
         cnt = (np.abs(n) * np.nan_to_num(mid[t]) > 1.0).sum(axis=1)
         legcount_hist.append(cnt)
+        if t >= warm:
+            nbar_live += 1
+            sum_lev += lev_now
+            bars_pos += int(cnt.max() > 0)
+        DB = np.zeros((3, K))
+        for b_ in range(3):
+            sel_ = blk == b_
+            if sel_.any():
+                DB[b_] = (n[sel_] * np.nan_to_num(mid[t][sel_])).sum(axis=0)
+        maxdir = np.maximum(maxdir, np.where(live & (E > 0), np.abs(DB).max(axis=0) / np.maximum(E, 1e-9), 0))
 
         # 7) สัญญาณ
         lmt = lm[t]
@@ -861,21 +920,33 @@ def run(d, **kw):
         bhat = np.where(ok, bhat + ab * (lmt - c[:, None] - bhat), bhat)
         st = cl_t.astype(int)
         outer = e[:, :, None] * e[:, None, :]
+        pair_ok = ok[:, :, None] & ok[:, None, :]
         for s_ in (0, 1):
             sel = st == s_
             if sel.any():
-                V[s_, sel] = (1 - a_v) * V[s_, sel] + a_v * outer[sel]
+                V[s_, sel] = np.where(pair_ok[sel], (1 - a_v) * V[s_, sel] + a_v * outer[sel], V[s_, sel])
         Vt = V[st, np.arange(A)]
         dg = np.diagonal(Vt, axis1=1, axis2=2)
         sig_pair = np.sqrt(np.maximum(dg[:, :, None] + dg[:, None, :] - 2 * Vt, (0.3 * BP) ** 2))
         s = e[:, :, None] - e[:, None, :]                                    # s[a,i,j] = e_i − e_j (>0: i แพง)
-        Sxx = (1 - a_ar) * Sxx + a_ar * s_prev * s_prev
-        Sxy = (1 - a_ar) * Sxy + a_ar * s * s_prev
-        s_prev = s
+        Sxx = np.where(pair_ok, (1 - a_ar) * Sxx + a_ar * s_prev * s_prev, Sxx)
+        Sxy = np.where(pair_ok, (1 - a_ar) * Sxy + a_ar * s * s_prev, Sxy)
+        s_prev = np.where(pair_ok, s, s_prev)
         phi = np.clip(Sxy / np.maximum(Sxx, 1e-18), 1e-6, 0.999999)
         hl_bars = math.log(2) / -np.log(phi)
         z = s / sig_pair
-        pair_ok = ok[:, :, None] & ok[:, None, :]
+        # gate เข้าเทรด (ใช้ร่วมกันทั้ง engine และ --calibrate)
+        carry = np.zeros((A, K, K))
+        if P["funding_on"]:
+            hold_h = np.minimum(2 * hl_bars / bars_h, 4.0)
+            carry = (fh[:, :, None] - fh[:, None, :]) * hold_h                # short i ได้ fh_i, long j จ่าย fh_j
+        edge = (s - P["z_out"] * sig_pair + carry) / BP
+        # ต้นทุนไป-กลับแบบ dynamic: ครึ่งสเปรดตอนนี้ + catch-up ที่คาด (λ·E|r|) ของขา taker
+        tk_extra = (hsd[t] / BP - hs_static[None, :]) + P["catchup"] * lag_k[None, :] * m_sig[t][:, None] * 0.8 / BP
+        RTt = RT[None] + 2 * np.where(taker_is_j[None], tk_extra[:, None, :], tk_extra[:, :, None])
+        zin = P["z_in"]
+        gate_mask = allowed[None] & pair_ok & (z >= zin[0]) & (z_prev >= zin[0]) & (hl_bars >= 1) \
+            & (hl_bars <= 240 / mpb) & (edge >= P["kappa"] * RTt)
 
         if t >= warm and t % 60 == 0:
             for (i_, j_), kd in pair_kind.items():
@@ -886,9 +957,8 @@ def run(d, **kw):
                     for j in range(i + 1, K):
                         if pair_ok[ai, i, j] and allowed[i, j]:
                             calib[(ai, i, j)].append((s[ai, i, j], sig_pair[ai, i, j], hl_bars[ai, i, j],
-                                                      abs(z[ai, i, j]) >= P["z_in"][0]
-                                                      and abs(s[ai, i, j]) / BP - P["z_out"] * sig_pair[ai, i, j] / BP
-                                                      >= P["kappa"] * RT[i, j]))
+                                                      bool(gate_mask[ai, i, j] or gate_mask[ai, j, i]),
+                                                      RTt[ai, i, j], int(regime[t])))
 
         total = E.sum() + sum(x_[2] for x_ in transfers_inflight)
         regime_pnl[regime[t]] += total - prev_total
@@ -898,12 +968,24 @@ def run(d, **kw):
         if t < warm or P["no_trade"]:
             z_prev = z
             continue
+        if t == warm and P["static_load"] > 0:
+            # stress: book ที่ "ถือค้าง" (เช่นถือเก็บ funding/basis) long hub ตัวแรก / short CEX ตัวแรก ขนาด static_load·Q
+            hubs_ = [k for k in range(K) if is_hub[k] and trade_k[k]]
+            cexs_ = [k for k in range(K) if is_cex[k] and trade_k[k]]
+            if hubs_ and cexs_:
+                h_, c_ = hubs_[0], cexs_[0]
+                for ai in range(A):
+                    qs = P["static_load"] * min(Q[ai, h_], Q[ai, c_]) / mid[t, ai].mean()
+                    L = Layer(ai, c_, h_, qs, t, "static")
+                    trade(ai, c_, -qs, taker_px(ai, c_, -1, t), vp[c_]["taker"], t, L)
+                    trade(ai, h_, +qs, taker_px(ai, h_, +1, t), vp[h_]["taker"], t, L)
+                    layers.append(L)
 
         # ── ความเสี่ยงต่อตลาด ──
         IR = (np.abs(n) * np.nan_to_num(mid[t]) * imr).sum(axis=0)
         reduce_only = (E < IR) | (lev_now > P["lalert"]) | (E <= 0)
         # เยียวยาก่อนโยกเงิน: ลด layer ใหม่สุดบนตลาดที่ leverage เกิน alert จน ≤ lev
-        for k in np.where(reduce_only & trade_k)[0]:
+        for k in np.where(reduce_only & trade_k & P["derisk"])[0]:
             proj = Gk[k]
             for L in sorted(layers, key=lambda L_: -L_.t0):
                 if proj <= P["lev"] * max(E[k], 0) or L.closing:
@@ -917,7 +999,7 @@ def run(d, **kw):
         # ── ปิด layer ──
         hold_cap = 24 * bars_h
         for L in layers:
-            if L.closing or L.dead or L.i is None or L.j is None:
+            if L.closing or L.dead or L.i is None or L.j is None or L.kind == "static":
                 continue
             ai, i, j = L.a, L.i, L.j
             if not pair_ok[ai, i, j]:
@@ -939,41 +1021,32 @@ def run(d, **kw):
             if mode == "maker":
                 mk = maker_of[i, j]
                 side_mk = +1 if mk == i else -1
-                buf = m_sig[t, ai] * math.sqrt(0.3 / 60) * mid[t, ai, mk]
+                buf = m_sig[t, ai] * qbuf * mid[t, ai, mk]
                 bid = mid[t, ai, mk] * (1 - hsd[t, ai, mk])
                 ask = mid[t, ai, mk] * (1 + hsd[t, ai, mk])
                 od["limit"] = (bid - buf) if side_mk > 0 else (ask + buf)
             pending.append(od)
 
         # ── เปิด layer ใหม่ ──
-        carry = np.zeros((A, K, K))
-        if P["funding_on"]:
-            hold_h = np.minimum(2 * hl_bars / bars_h, 4.0)
-            carry = (fh[:, :, None] - fh[:, None, :]) * hold_h                # short i ได้ fh_i, long j จ่าย fh_j
-        edge = (s - P["z_out"] * sig_pair + carry) / BP
-        # ต้นทุนไป-กลับแบบ dynamic: ครึ่งสเปรดตอนนี้ + catch-up ที่คาด (λ·E|r|) ของขา taker
-        tk_extra = (hsd[t] / BP - hs_static[None, :]) + P["catchup"] * lag_k[None, :] * m_sig[t][:, None] * 0.8 / BP
-        RTt = RT[None] + 2 * np.where(taker_is_j[None], tk_extra[:, None, :], tk_extra[:, :, None])
         nlay_pair = defaultdict(int)
         nlay_asset = np.zeros(A, dtype=int)
         for L in layers:
-            if not L.dead:
+            if not L.dead and L.kind != "static":
                 nlay_pair[(L.a, min(L.i or 0, L.j or 0), max(L.i or 0, L.j or 0))] += 1
                 nlay_asset[L.a] += 1
         cand = []
-        zin = P["z_in"]
-        mask = allowed[None] & pair_ok & (z >= zin[0]) & (z_prev >= zin[0]) & (hl_bars >= 1) & (hl_bars <= 240 / mpb)
-        mask &= edge >= P["kappa"] * RTt
-        for ai, i, j in np.argwhere(mask):
+        for ai, i, j in np.argwhere(gate_mask):
             npair = nlay_pair[(ai, min(i, j), max(i, j))]
-            if npair >= P["max_per_pair"] or z[ai, i, j] < zin[min(npair, len(zin) - 1)]:
+            thr = zin[min(npair, len(zin) - 1)]
+            if npair >= P["max_per_pair"] or z[ai, i, j] < thr or z_prev[ai, i, j] < thr:   # persistence ที่เกณฑ์ของชั้นนั้น
                 continue
             if nlay_asset[ai] >= P["max_per_asset"]:
                 continue
-            if reduce_only[i] or reduce_only[j] or not (avail(i, t) and avail(j, t)):
+            if reduce_only[i] or reduce_only[j] or not (avail(i, t, ai) and avail(j, t, ai)):
                 continue
-            # kill: ราคาหลุดราคากลางผิดปกติ
-            if abs(e[ai, i]) > 0.01 or abs(e[ai, j]) > 0.01:
+            # kill: ราคาหลุดราคากลางผิดปกติ (1% BTC/ETH, 2% อื่น, 3% หุ้น/ทองช่วงตลาดปิด) → ไม่เปิดใหม่ที่ตลาดนั้น
+            kth = 0.03 if closed[t, ai] else kill_th[ai]
+            if abs(e[ai, i]) > kth or abs(e[ai, j]) > kth:
                 stats["kill_skip"] += 1
                 continue
             score = (edge[ai, i, j] - P["kappa"] * RTt[ai, i, j]) / (imr[ai, i] + imr[ai, j] + 1e-9)
@@ -981,6 +1054,7 @@ def run(d, **kw):
         cand.sort(reverse=True)
         opened = np.zeros(A, dtype=int)
         pend_pairs = set()
+        n_proj = n.copy()                                  # รวมคำสั่งที่ส่งไปแล้วใน bar นี้
         for score, ai, i, j in cand:
             if opened[ai] >= P["opens_per_bar"] or (ai, i, j) in pend_pairs:
                 continue
@@ -989,19 +1063,20 @@ def run(d, **kw):
             q = size / np.nanmean(pa[trade_k])
             okcap = True
             for k, sgn in ((i, -1), (j, +1)):
-                newpos = (n[ai, k] + sgn * q) * pa[k]
+                newpos = (n_proj[ai, k] + sgn * q) * pa[k]
                 if abs(newpos) > Q[ai, k] + 1e-9:
                     okcap = False
                 if (Gk[k] + q * pa[k]) > P["lev"] * max(E[k], 0):
                     okcap = False
-                if abs(D[k] + sgn * q * pa[k]) > P["dir_cap"] * max(E[k], 0) and abs(D[k] + sgn * q * pa[k]) > abs(D[k]):
+                nd = DB[blk[ai], k] + sgn * q * pa[k]               # ทิศสุทธิต่อตลาด แยกกลุ่ม (คริปโต/หุ้น/ทอง)
+                if abs(nd) > dir_cap * max(E[k], 0) and abs(nd) > abs(DB[blk[ai], k]):
                     okcap = False
             if not okcap:
                 continue
             mk = maker_of[i, j]
             tk = j if mk == i else i
             side_mk = -1 if mk == i else +1
-            buf = m_sig[t, ai] * math.sqrt(0.3 / 60) * pa[mk]
+            buf = m_sig[t, ai] * qbuf * pa[mk]
             bid = pa[mk] * (1 - hsd[t, ai, mk])
             ask = pa[mk] * (1 + hsd[t, ai, mk])
             limit = (ask + buf) if side_mk < 0 else (bid - buf)
@@ -1013,8 +1088,10 @@ def run(d, **kw):
             opened[ai] += 1
             Gk[i] += q * pa[i]
             Gk[j] += q * pa[j]
-            D[i] -= q * pa[i]
-            D[j] += q * pa[j]
+            DB[blk[ai], i] -= q * pa[i]
+            DB[blk[ai], j] += q * pa[j]
+            n_proj[ai, i] -= q
+            n_proj[ai, j] += q
             stats["open_orders"] += 1
         z_prev = z
 
@@ -1046,6 +1123,8 @@ def run(d, **kw):
         legs_ge3_share=float((lc[active] >= 3).mean()) if active.any() else 0.0,
         avg_legs_active=float(lc[active].mean()) if active.any() else 0.0,
         max_unhedged=max_unhedged,
+        avg_lev={v: float(sum_lev[k] / max(nbar_live, 1)) for k, v in enumerate(venues) if trade_k[k]},
+        pos_share=bars_pos / max(nbar_live, 1), dir_cap=dir_cap,
         transfers_per_year=stats["transfers"] / years, usd_transferred=stats["usd_transferred"],
         liq_partial=stats["liq_partial"], liq_full=stats["liq_full"], liq_cex=stats["liq_cex"], adl=stats["adl"],
         leg_fail=stats["leg_fail"], outages=stats["outages"], stops=stats["stops"], timeouts=stats["timeouts"],
@@ -1079,6 +1158,8 @@ def show(r):
     print(f"จำนวนขาต่อสินทรัพย์    : เฉลี่ย {r['avg_legs_active']:.2f} ขา, เวลาที่ถือ ≥3 ขา {r['legs_ge3_share']*100:.0f}%")
     print(f"ทุนตั้งต้นต่อตลาด      : " + ", ".join(f"{k} ${v:,.0f}" for k, v in r["alloc"].items()))
     print(f"equity ต่ำสุด/ตั้งต้น  : " + ", ".join(f"{k} {v*100:.0f}%" for k, v in r["minE"].items()))
+    print(f"leverage เฉลี่ยต่อตลาด : " + ", ".join(f"{k} {v:.3f}x" for k, v in r["avg_lev"].items())
+          + f"  (มีสถานะ {r['pos_share']*100:.0f}% ของเวลา; เพดานทิศสุทธิ {r['dir_cap']:.1f}×equity)")
     print(f"leverage สูงสุดต่อตลาด : " + ", ".join(f"{k} {v:.2f}x" for k, v in r["maxlev"].items()))
     print(f"โยกเงินข้ามตลาด        : {r['transfers_per_year']:.1f} ครั้ง/ปี (${r['usd_transferred']:,.0f})")
     print(f"liquidation            : Lighter บางส่วน {r['liq_partial']:.0f}, Lighter ทั้งบัญชี {r['liq_full']:.0f}, CEX {r['liq_cex']:.0f}; ADL {r['adl']:.0f}")
@@ -1086,13 +1167,19 @@ def show(r):
 
 
 def row(label, r):
-    return (f"{label:<26} {r['ann_return']*100:7.1f}% {r['ann_calm']*100:7.1f}% {r['ann_vol']*100:7.1f}% "
-            f"{r['max_dd']*100:6.2f}% {r['transfers_per_year']:6.1f} {r['liq_partial']+r['liq_full']+r['liq_cex']:5.0f} "
-            f"{min(r['minE'].values())*100:5.0f}% {r['legs_ge3_share']*100:5.0f}% "
-            f"{r['sig_med'].get('CEX-Lighter', float('nan')):6.2f} {r['sig_med'].get('LC-LR', float('nan')):6.2f} {r['turnover_per_day']:6.2f}")
+    tr = {k: v for k, v in r["by_kind"].items() if k != "static"}
+    tot = sum(abs(v) for v in tr.values()) or 1.0
+    lclr = tr.get("LC-LR", 0.0) / tot * 100 if tr else float("nan")
+    return (f"{label:<30} {r['ann_return']*100:7.1f}% {r['ann_calm']*100:7.1f}% {r['ann_vol']*100:7.1f}% "
+            f"{r['max_dd']*100:6.2f}% {r['transfers_per_year']:6.1f} {r['liq_partial']+r['liq_full']+r['liq_cex']:4.0f} "
+            f"{min(r['minE'].values())*100:5.0f}% {max(r['avg_lev'].values()):5.2f} {r['legs_ge3_share']*100:5.0f}% "
+            f"{r['sig_med'].get('CEX-Lighter', float('nan')):5.2f} {lclr:6.0f}% {r['turnover_per_day']:6.2f}")
 
 
-HDR = f"{'ชุดทดลอง':<26} {'ret/ปี':>8} {'เงียบ':>8} {'ผันผวน':>8} {'maxDD':>7} {'โยก/ปี':>6} {'liq':>5} {'minE':>6} {'≥3ขา':>6} {'σC-L':>6} {'σLC-LR':>6} {'turn':>6}"
+HDR = (f"{'ชุดทดลอง':<30} {'ret/ปี':>8} {'เงียบ':>8} {'ผันผวน':>8} {'maxDD':>7} {'โยก/ปี':>6} {'liq':>4} {'minE':>6} "
+       f"{'ℓเฉลี่ย':>5} {'≥3ขา':>6} {'σC-L':>5} {'LC-LR':>7} {'turn':>6}")
+HDR_NOTE = ("  ℓเฉลี่ย = leverage เฉลี่ยของตลาดที่ถือหนักสุด | ≥3ขา = % เวลาที่สินทรัพย์ถือ ≥3 ตลาดพร้อมกัน (จากเวลาที่มีสถานะ) | "
+            "σC-L = σ คู่ CEX–Lighter median (bp) | LC-LR = สัดส่วนกำไรเทรดจากคู่ Lighter–Lighter | turn = turnover/วัน ×ทุน")
 
 
 def sweep(name, base, kw):
@@ -1106,18 +1193,23 @@ def sweep(name, base, kw):
 
     full = [v for v in base["venues"] if VENUES[v]["kind"] != "data"]
     print(HDR)
+    print(HDR_NOTE)
     if name in ("fees", "all"):
         print("— ค่าธรรมเนียม maker ฝั่ง CEX (bp) × ชุดตลาด —")
-        sets = [("2 ขา LC-BG", None, "LC-BG"), ("3 ตลาด LC,LR,BG", ["LC", "LR", "BG"], None),
-                ("4 ตลาด LC,LR,BG,BY", None, None)]
+        sets = [("2 ขา LC-BG", None, "LC-BG", False), ("2 ขา LC-LR", None, "LC-LR", False),
+                ("3 ตลาด LC,LR,BG", ["LC", "LR", "BG"], None, False), ("4 ตลาด", None, None, False),
+                ("4 ตลาด ไม่มีคู่ LC-LR", None, None, True)]
         for fee in (-0.5, 0.0, 1.0, 2.0, 3.0):
-            for lab, vs, po in sets:
-                go(f"{lab} fee={fee}", cex_maker=fee, pairs_only=po, trade_venues=vs)
+            for lab, vs, po, nh in sets:
+                if po == "LC-LR" and fee != 1.0:
+                    continue                                    # ไม่มีขา CEX: ค่าธรรมเนียม CEX ไม่มีผล
+                go(f"{lab} fee={fee}", cex_maker=fee, pairs_only=po, trade_venues=vs, no_hub_pair=nh)
     if name in ("legs", "all"):
         print("— 2 ขา vs หลายขา (ข้อมูลชุดเดียวกัน 4 ตลาด, ทุนเท่ากัน) —")
         go("2 ขา LC-BG", pairs_only="LC-BG")
         go("2 ขา LC-LR", pairs_only="LC-LR")
         go("หลายขา LC,LR,BG,BY")
+        go("หลายขา ไม่มีคู่ LC-LR", no_hub_pair=True)
         go("หลายขา + CEX–CEX", allow_cex_cex=True)
     if name in ("thai", "all"):
         print("— ไม่มี Bybit (ผู้ใช้ไทย) vs ครบ (ข้อมูลชุดเดียวกัน; ตลาดที่ไม่เทรดยังใช้เป็นราคาอ้างอิง) —")
@@ -1125,13 +1217,18 @@ def sweep(name, base, kw):
         go("LC,LR,BG,BY", trade_venues=full)
         go("LC,BG,BY (ไม่ใช้ LR)", trade_venues=["LC", "BG", "BY"])
         go("LC,BG (2 ตลาด หลายเหรียญ)", trade_venues=["LC", "BG"])
+        go("LC,LR (Lighter อย่างเดียว)", trade_venues=["LC", "LR"])
     if name in ("lev", "all"):
-        print("— leverage ต่อตลาด (มี shock วันที่ 20/21/45) —")
+        print("— leverage ต่อตลาด: shock วันที่ 20 (+12%), 21 (+8%), 45 (−20%) + Lighter ล่ม ~2 ชม. ตอน shock —")
+        print("  (ก) book เทรดสั้นอย่างเดียว | (ข) + ถือค้าง 50% ของความจุ (long LC / short BG) เหมือนถือเก็บ funding/basis")
         shock = synth(base["assets"], base["venues"], **dict(GEN, shocks=True, days=max(GEN["days"], 50)))
-        for lev in (1, 2, 3, 5, 8, 12, 20):
-            go(f"lev={lev}", shock, lev=lev, lalert=lev * 4 / 3, lxfer=lev * 5 / 3)
-        for lev in (3, 12):
-            go(f"lev={lev} ห้ามโยกเงิน", shock, lev=lev, lalert=lev * 4 / 3, lxfer=lev * 5 / 3, no_transfers=True)
+        for sl in (0.0, 0.5):
+            for lev in (1, 2, 3, 5, 8, 12):
+                go(f"{'(ข)' if sl else '(ก)'} lev={lev}", shock, lev=lev, lalert=lev * 4 / 3, lxfer=lev * 5 / 3,
+                   static_load=sl)
+        for lev in (3, 8, 12):
+            go(f"(ข) lev={lev} ไม่โยก ไม่ derisk", shock, lev=lev, lalert=lev * 4 / 3, lxfer=lev * 5 / 3,
+               static_load=0.5, no_transfers=True, derisk=False)
     if name in ("lcost", "all"):
         print("— ต้นทุนจริงของ taker บน Lighter (bp) × catch-up —")
         for la in (0.3, 0.7, 1.5, 3.0):
@@ -1141,6 +1238,9 @@ def sweep(name, base, kw):
         print("— ขนาด residual (สมมติฐานสำคัญที่สุด) —")
         for rs in (0.5, 0.75, 1.0, 1.5, 2.0):
             go(f"resid_scale={rs}", synth(base["assets"], base["venues"], **dict(GEN, resid_scale=rs)))
+        print("— residual ขยายตามความผันผวนแค่ไหน (elasticity; 1 = สัดส่วนตรง = ค่าเริ่ม) —")
+        for el in (0.0, 0.5, 1.0):
+            go(f"resid_vol_elast={el}", synth(base["assets"], base["venues"], **dict(GEN, resid_vol_elast=el)))
 
 
 def selftest():
@@ -1153,28 +1253,40 @@ def selftest():
     r0 = run(synth(["BTC"], ["LC", "BG", "BN"], days=8, seed=4, resid_scale=0.0), warmup_h=12, funding_on=False,
              p_adl=0.0, outage_rate=0.0)
     assert r0["pnl_total"] <= 1e-6, "ไม่มี residual ต้องไม่มีกำไร"
-    rs = run(synth(["BTC", "ETH"], ["LC", "LR", "BG", "BY", "BN"], days=40, seed=5, shocks=True), lev=12,
-             lalert=16, lxfer=20, warmup_h=12)
-    comp = sum(v for k, v in rs["pnl"].items())
-    assert abs(comp - rs["pnl_total"]) < 1e-6 * 100_000, "เงินสดรั่วระหว่าง liquidation/โยกเงิน"
-    print("ok: Σn=0, PnL แยกส่วนรวมตรง, ไม่มี residual = ไม่มีกำไร, บัญชีไม่รั่วแม้ lev 12x + shock "
-          f"(liq={rs['liq_partial']+rs['liq_full']+rs['liq_cex']:.0f}, โยก={rs['transfers_per_year']:.1f}/ปี)")
+    sd = synth(["BTC", "ETH"], ["LC", "LR", "BG", "BY", "BN"], days=50, seed=5, shocks=True)
+    nliq = ntr = 0
+    for lev, nt, dr in ((12, True, False), (8, False, True)):              # ไม่โยก+ไม่ derisk / มีทั้งคู่
+        rs = run(sd, lev=lev, lalert=lev * 4 / 3, lxfer=lev * 5 / 3, static_load=0.9, warmup_h=12, no_transfers=nt,
+                 derisk=dr)
+        comp = sum(v for k, v in rs["pnl"].items())
+        assert abs(comp - rs["pnl_total"]) < 1e-6 * 100_000, "เงินสดรั่วระหว่าง liquidation/โยกเงิน"
+        nliq += rs["liq_partial"] + rs["liq_full"] + rs["liq_cex"]
+        ntr += rs["transfers_per_year"]
+    assert nliq > 0 and ntr > 0, f"stress ต้องเกิดทั้ง liquidation และการโยกเงิน (liq={nliq}, โยก={ntr})"
+    print("ok: Σn=0, PnL แยกส่วนรวมตรง, ไม่มี residual = ไม่มีกำไร, บัญชีไม่รั่วแม้มี liquidation "
+          f"({nliq:.0f} ครั้ง) และโยกเงิน ({ntr:.1f}/ปี) ใน stress")
 
 
 def calibrate(d, kw):
     r = run(d, no_trade=True, **kw)
     calib, assets, venues, RT = r["calib"]
     bar = d["bar"]
-    print(f"{'asset':<6} {'คู่':<8} {'σ คู่ (bp)':>10} {'HL (นาที)':>10} {'|z|≥2':>7} {'ผ่าน gate':>9} {'RT bp':>6}")
+    print("วัดจากข้อมูล (ไม่เทรด): σ คู่และ half-life แยกช่วงเงียบ/ผันผวน, % เวลาที่ผ่าน gate เดียวกับที่ engine ใช้")
+    print(f"{'asset':<6} {'คู่':<8} {'σ เงียบ':>8} {'σ ผันผวน':>9} {'HL นาที':>8} {'|z|≥2':>7} {'ผ่าน gate':>9} {'RT bp':>6}")
     for (ai, i, j), vals in sorted(calib.items()):
-        arr = np.array([(v[0], v[1], v[2]) for v in vals])
+        arr = np.array([(v[0], v[1], v[2], v[4], v[5]) for v in vals])
         gate = np.mean([v[3] for v in vals])
         zz = np.abs(arr[:, 0] / arr[:, 1])
-        print(f"{assets[ai]:<6} {venues[i]+'-'+venues[j]:<8} {np.median(arr[:,1])/BP:10.2f} "
-              f"{np.median(arr[:,2])*bar/60:10.1f} {np.mean(zz>=2)*100:6.1f}% {gate*100:8.2f}% {RT[i,j]:6.1f}")
+        calm, vol = arr[arr[:, 4] == 0], arr[arr[:, 4] == 1]
+        sc = np.median(calm[:, 1]) / BP if len(calm) else float("nan")
+        sv = np.median(vol[:, 1]) / BP if len(vol) else float("nan")
+        print(f"{assets[ai]:<6} {venues[i]+'-'+venues[j]:<8} {sc:8.2f} {sv:9.2f} "
+              f"{np.median(arr[:,2])*bar/60:8.1f} {np.mean(zz>=2)*100:6.1f}% {gate*100:8.2f}% {np.median(arr[:,3]):6.1f}")
+    print("อัตราส่วน σ ผันผวน/σ เงียบ เทียบกับ vol ตลาดผันผวน/เงียบ → ใช้ตั้ง --resid-vol-elast; ถ้า HL > 240 นาทีหรือผ่าน gate"
+          " น้อยมาก = คู่นั้นไม่คุ้ม")
 
 
-GEN = dict(days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.25, shocks=False, lag_hl_s=1.0)
+GEN = dict(days=60, bar=60, seed=7, resid_scale=1.0, vol_share=0.25, shocks=False, lag_hl_s=1.0, resid_vol_elast=1.0)
 
 
 def main():
@@ -1195,7 +1307,12 @@ def main():
     ap.add_argument("--resid-scale", type=float, default=1.0, help="ขนาด residual ข้ามตลาด (สมมติ) — ตัวกำหนดผลตอบแทนหลัก")
     ap.add_argument("--vol-share", type=float, default=0.25)
     ap.add_argument("--lag-hl-s", type=float, default=1.0, help="Lighter ไล่ราคาทันภายในกี่วินาที (ยิ่งมาก = ยิ่งมี lead-lag edge ปลอม)")
-    ap.add_argument("--shocks", action="store_true")
+    ap.add_argument("--resid-vol-elast", type=float, default=1.0, help="residual ∝ (vol)^e — สมมติฐาน 'ผันผวนได้เยอะ'")
+    ap.add_argument("--shocks", action="store_true", help="ใส่ shock ±8–20%% + Lighter ล่ม ~2 ชม.")
+    ap.add_argument("--no-shock-outage", action="store_true")
+    ap.add_argument("--static-load", type=float, default=0.0, help="ถือค้าง long LC/short CEX สัดส่วนของความจุ (stress)")
+    ap.add_argument("--dir-cap", type=float, help="เพดาน |ทิศสุทธิต่อตลาด|/equity (ค่าเริ่ม 2/3·lev)")
+    ap.add_argument("--no-hub-pair", action="store_true", help="ปิดคู่ LC–LR")
     ap.add_argument("--pairs-only", help="เช่น LC-BG = baseline 2 ขา")
     ap.add_argument("--allow-cex-cex", action="store_true")
     ap.add_argument("--no-funding", action="store_true")
@@ -1212,7 +1329,7 @@ def main():
         selftest()
         return
     GEN.update(days=a.days, bar=a.bar, seed=a.seed, resid_scale=a.resid_scale, vol_share=a.vol_share, shocks=a.shocks,
-               lag_hl_s=a.lag_hl_s)
+               lag_hl_s=a.lag_hl_s, resid_vol_elast=a.resid_vol_elast)
     if a.csv:
         d = load_csv(a.csv, set(a.data_only.split(",")), a.bar)
     else:
@@ -1221,7 +1338,9 @@ def main():
     kw = dict(capital=a.capital, lev=a.lev, lalert=a.lev * 4 / 3, lxfer=a.lev * 5 / 3, cex_maker=a.cex_maker_bps,
               cex_taker=a.cex_taker_bps, lighter_adv=a.lighter_adv_bps, catchup=a.hedge_catchup,
               pairs_only=a.pairs_only, allow_cex_cex=a.allow_cex_cex, funding_on=not a.no_funding,
-              no_transfers=a.no_transfers, p_adl=a.p_adl, outage_rate=a.outage_rate, freeze=a.freeze, seed=a.seed)
+              no_transfers=a.no_transfers, p_adl=a.p_adl, outage_rate=a.outage_rate, freeze=a.freeze, seed=a.seed,
+              static_load=a.static_load, dir_cap=a.dir_cap, no_hub_pair=a.no_hub_pair,
+              shock_outage=not a.no_shock_outage)
     if a.calibrate:
         calibrate(d, kw)
         return
