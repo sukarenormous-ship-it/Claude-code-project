@@ -12,6 +12,7 @@
              ระบุไฟล์ หรือ --parts 3,5 = คำนวณเฉพาะตอนนั้น แล้วรวมเข้ากับ JSON เดิม (ตอนอื่นไม่ถูกแตะ)
     charts   เติม <!--CHART:sas-p3-ชื่อ--> … <!--/CHART:sas-p3-ชื่อ--> ด้วย HTML จาก charts() ของ sas_exp3
     fill     เติม <span data-f="p3.beta.ols_train">…</span> ด้วยค่าจาก JSON
+             data-abs = ค่าสัมบูรณ์ · data-dp="2" = แสดงทศนิยม 2 ตำแหน่งตายตัว (เติมศูนย์ท้ายที่ JSON ตัดทิ้ง)
              int/float → คั่นหลักพัน ทศนิยมตามที่เก็บไว้ · str → ตามนั้น · "-" นำหน้า → "−" (U+2212)
              ใส่ data-abs = พิมพ์ค่าสัมบูรณ์ · path ชี้เข้าลิสต์ได้ (p4.pcts.3 หรือ p4.pcts[3])
     out      เติม <!--OUT:p8.demo.good--> … <!--/OUT:p8.demo.good--> ด้วย <pre class="out">ข้อความจาก JSON</pre>
@@ -231,12 +232,23 @@ def resolve(fig, path):
         raise LookupError(hint) from None
 
 
-def fmt_value(v, absolute=False):
-    """จัดรูปค่าจาก JSON ให้เป็นข้อความที่ปรากฏในบท (กติกาเดียวกันทั้ง fill และ check)"""
+def fmt_value(v, absolute=False, dp=None):
+    """จัดรูปค่าจาก JSON ให้เป็นข้อความที่ปรากฏในบท (กติกาเดียวกันทั้ง fill และ check)
+
+    dp = จำนวนทศนิยมที่จะแสดงตายตัว (จาก data-dp="2") — ใช้เมื่อโมดูลปัดค่าไว้ที่ dp ตำแหน่ง
+    แต่ JSON ตัดศูนย์ท้ายทิ้ง (−3.20 เก็บเป็น −3.2) · ห้ามใช้เพิ่มความละเอียดเกินที่โมดูลปัดไว้
+    """
     if isinstance(v, bool) or v is None or isinstance(v, (dict, list)):
         kind = "null" if v is None else type(v).__name__
         raise TypeError(f"ค่าเป็น {kind} — data-f ต้องชี้ไปที่ตัวเลขหรือข้อความเดี่ยว")
-    if isinstance(v, int):
+    if dp is not None and isinstance(v, (int, float)):
+        if isinstance(v, float) and not math.isfinite(v):
+            raise TypeError("ค่าเป็น NaN/inf")
+        x = abs(v) if (absolute or v == 0) else v
+        if round(x, dp) != x:
+            raise TypeError(f"ค่า {v!r} มีทศนิยมมากกว่า data-dp={dp} — data-dp ใช้เติมศูนย์ท้ายเท่านั้น ห้ามปัดทิ้ง")
+        s = f"{x:,.{dp}f}"
+    elif isinstance(v, int):
         s = f"{abs(v) if absolute else v:,}"
     elif isinstance(v, float):
         if not math.isfinite(v):
@@ -252,6 +264,15 @@ def fmt_value(v, absolute=False):
         if absolute:
             s = s.lstrip("-" + MINUS)
     return MINUS + s[1:] if s.startswith("-") else s
+
+
+ATTR_DP = re.compile(r'\bdata-dp\s*=\s*"(\d)"')
+
+
+def span_value(fig, path, attrs):
+    """ค่าที่ <span data-f> ต้องแสดง — อ่าน data-abs / data-dp จาก attribute ของ span"""
+    dp = ATTR_DP.search(attrs)
+    return fmt_value(resolve(fig, path), bool(re.search(r"\bdata-abs\b", attrs)), int(dp.group(1)) if dp else None)
 
 
 def json_problems(obj, path, errs, warns):
@@ -598,7 +619,7 @@ def cmd_fill(files, log):
                 log.err(rel(path), f'data-f="{f.group(1)}": ใน <span> ต้องมีแต่ข้อความ ห้ามมีแท็กซ้อน', ln)
                 continue
             try:
-                new = fmt_value(resolve(fig, f.group(1)), bool(re.search(r"\bdata-abs\b", m.group(1))))
+                new = span_value(fig, f.group(1), m.group(1))
             except (LookupError, TypeError) as e:
                 log.err(rel(path), f'data-f="{f.group(1)}": {e}', ln)
                 continue
@@ -898,7 +919,7 @@ def check_file(path, log, strict=False, run=True):
                 log.err(name, 'data-f ต้องเขียนแบบ data-f="dot.path" (ใช้อัญประกาศคู่)', ln)
                 continue
             try:
-                want = fmt_value(resolve(fig, f.group(1)), bool(re.search(r"\bdata-abs\b", m.group(1))))
+                want = span_value(fig, f.group(1), m.group(1))
             except (LookupError, TypeError) as e:
                 log.err(name, f'data-f="{f.group(1)}": {e}', ln)
                 continue
