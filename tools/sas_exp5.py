@@ -11,7 +11,7 @@
 โรคที่ตรวจ (คีย์ใน figures() ใช้ชื่อเดียวกัน: d1 … d10)
   D1  เลือกคู่ด้วย correlation     300 โลก good เทียบ 300 โลก fake (และ fake ที่ตั้งให้ correlation เท่า good)
   D2  คัดจากหลายคู่ (selection)    400 fake + 40 good · คัดด้วย Engle-Granger บน 750 แท่งแรก แล้วดู 750 แท่งหลัง
-                                  และ "10 อันดับ Sharpe สูงสุดในช่วงคัดเลือก" เทียบกับช่วงพิสูจน์ — ค่าเฉลี่ยของแค่ 10 คู่
+                                  และ "10 อันดับ Sharpe สูงสุดในช่วงคัด" เทียบกับช่วงสอบ — ค่าเฉลี่ยของแค่ 10 คู่
                                   ขึ้นกับดวงของจักรวาลมาก จึงสุ่มจักรวาลซ้ำ 1,000 ครั้งจากสระเดิม (bootstrap) แล้วรายงาน
                                   ค่ากลาง + ช่วง 5–95% คู่กับผลของการสแกนจริงหนึ่งรอบ
   D3  มองอนาคต (look-ahead)       β, μ, σ จากข้อมูลทั้งช่วง เทียบ walk-forward บน good / drift / fake อย่างละ 100 โลก
@@ -100,7 +100,7 @@ ENTRY, EXIT = 2.0, 0.0      # เข้าเมื่อ |z| ≥ 2 · ออก
 COST = 0.0005               # c = 5 bps ต่อขา ต่อเที่ยว
 YEAR = C.DAYS_PER_YEAR
 BETA, HL = 1.4, 12.0        # ค่าจริงของโลก good (ค่าตั้งต้นของ make_pair)
-HALF = N // 2               # 750 แท่งแรก = ช่วงคัดเลือก/train · 750 แท่งหลัง = ช่วงพิสูจน์/test
+HALF = N // 2               # 750 แท่งแรก = ช่วงคัด/train · 750 แท่งหลัง = ช่วงสอบ/test
 
 N_NULL = 100_000            # จำนวนโลก "ไม่มีสายจูง" ที่ใช้หาค่าวิกฤตของ Engle-Granger
 D1_WORLDS = 300
@@ -307,8 +307,8 @@ def exp_d1():
 # ───────────────────────── D2 · คัดจากหลายคู่ ─────────────────────────
 
 def exp_d2(null_half):
-    """จักรวาล 440 คู่ (400 fake + 40 good) · ช่วงคัดเลือก = 750 แท่งแรก · ช่วงพิสูจน์ = 750 แท่งหลัง
-    backtest เป็น walk-forward ทั้งสองช่วง (ช่วงคัดเลือกเทรดแท่ง 250–749 · ช่วงพิสูจน์เทรดแท่ง 750–1499
+    """จักรวาล 440 คู่ (400 fake + 40 good) · ช่วงคัด = 750 แท่งแรก · ช่วงสอบ = 750 แท่งหลัง
+    backtest เป็น walk-forward ทั้งสองช่วง (ช่วงคัดเทรดแท่ง 250–749 · ช่วงสอบเทรดแท่ง 750–1499
     โดยใช้ 250 แท่งก่อนหน้าเป็น train) — ไม่มีพารามิเตอร์มองอนาคตเลย สิ่งเดียวที่ต่างคือ "เราเลือกจากผลที่เห็นแล้ว\""""
     g_fake, g_good = C.rng(510), C.rng(511)
     pairs = ([("fake", C.make_pair("fake", N, g_fake)) for _ in range(D2_FAKE)]
@@ -346,9 +346,9 @@ def exp_d2(null_half):
 def _d2_scan(ix, pool):
     """สแกนจักรวาลที่ประกอบด้วยคู่ลำดับ ix ของสระ → คู่ที่ถูกเลือก (เป็นลำดับในสระ) ของแต่ละวิธี
       p5 / p1        ผ่าน Engle-Granger ที่ระดับ 5% / 1% (แยกคู่จริง/ปลอม)
-      top_backtest   10 อันดับ Sharpe ช่วงคัดเลือกสูงสุด          (ทำผิด: เลือกจากผล backtest)
+      top_backtest   10 อันดับ Sharpe ช่วงคัดสูงสุด          (ทำผิด: เลือกจากผล backtest)
       top_eg         10 อันดับค่า Engle-Granger ติดลบที่สุด        (เลือกจากหลักฐานของสายจูง)
-      top_fake_only  10 อันดับ Sharpe ช่วงคัดเลือก เฉพาะคู่ fake    (จักรวาลที่ไม่มีคู่จริงเลย)"""
+      top_fake_only  10 อันดับ Sharpe ช่วงคัด เฉพาะคู่ fake    (จักรวาลที่ไม่มีคู่จริงเลย)"""
     good, adf, s_in = pool["is_good"][ix], pool["adf"][ix], pool["s_in"][ix]
     out = {}
     for q, key in ((0.05, "p5"), (0.01, "p1")):
@@ -1168,11 +1168,11 @@ def _clinic(f):
                   "Sharpe เฉลี่ยของคู่ good ที่ correlation 0.90", d1["good"]["sharpe_mean"], "Sharpe"),
         "d2": row("คัดจากหลายคู่ แล้วเชื่อผลของช่วงที่ใช้คัด",
                   "คู่ที่เลือกมาสวยมากในช่วงที่ใช้เลือก แต่พอเดินหน้าต่อผลหายไป",
-                  "กันข้อมูลช่วงพิสูจน์ไว้ไม่ให้แตะตอนคัด แล้วนับว่าคัดมาจากกี่คู่ (ยิ่งมาก ยิ่งต้องเข้มกับค่า p)",
-                  "คัดด้วยหลักฐานของสายจูง ไม่ใช่ด้วย Sharpe ของ backtest และตัดสินจากช่วงพิสูจน์เท่านั้น",
-                  "Sharpe ช่วงคัดเลือกของ 10 อันดับแรก (จักรวาล fake ล้วน · ค่ากลางของ 1,000 จักรวาล)",
+                  "กันข้อมูลช่วงสอบไว้ไม่ให้แตะตอนคัด แล้วนับว่าคัดมาจากกี่คู่ (ยิ่งมาก ยิ่งต้องเข้มกับค่า p)",
+                  "คัดด้วยหลักฐานของสายจูง ไม่ใช่ด้วย Sharpe ของ backtest และตัดสินจากช่วงสอบเท่านั้น",
+                  "Sharpe ช่วงคัดของ 10 อันดับแรก (จักรวาล fake ล้วน · ค่ากลางของ 1,000 จักรวาล)",
                   d2["top_fake_only"]["sharpe_in"],
-                  "Sharpe ช่วงพิสูจน์ของ 10 คู่เดียวกัน", d2["top_fake_only"]["sharpe_out"], "Sharpe"),
+                  "Sharpe ช่วงสอบของ 10 คู่เดียวกัน", d2["top_fake_only"]["sharpe_out"], "Sharpe"),
         "d3": row("พารามิเตอร์มองอนาคต (β, μ, σ จากทั้งช่วง)",
                   "backtest ดีเกินจริง โดยเฉพาะกับคู่ที่ไม่มีสายจูง — พอประมาณแบบเดินหน้ากำไรหายเกือบหมด",
                   "รันซ้ำแบบ walk-forward แล้วเทียบ Sharpe สองแบบ",
@@ -1244,7 +1244,7 @@ def _about():
         "d1": f"{D1_WORLDS} โลกต่อกลุ่ม: good · fake (ค่าตั้งต้น) · fake_tight (ปัจจัยร่วมแรงขึ้นจน correlation ของ"
               "ผลตอบแทนเท่าคู่ good) · ทดสอบราว 5 ปีต่อโลก",
         "d2": f"สระ {D2_FAKE} คู่ fake + {D2_GOOD} คู่ good · คัดด้วย Engle-Granger บน {HALF} แท่งแรก (ค่าวิกฤตจำลอง "
-              f"{N_NULL:,} โลก) · ช่วงคัดเลือกเทรดแท่ง {TRAIN}–{HALF - 1} ช่วงพิสูจน์เทรดแท่ง {HALF}–{N - 1} "
+              f"{N_NULL:,} โลก) · ช่วงคัดเทรดแท่ง {TRAIN}–{HALF - 1} ช่วงสอบเทรดแท่ง {HALF}–{N - 1} "
               f"เป็น walk-forward ทั้งคู่ · level* = การสแกนจริงหนึ่งรอบ · top_* = ค่ากลางของ {D2_BOOT:,} จักรวาลที่สุ่มซ้ำ"
               "จากสระ (scan_* = รอบจริง)",
         "d3": f"{D3_WORLDS} โลกต่อแบบ (good, drift, fake) · มองอนาคต = β, μ, σ จากทั้ง {N:,} แท่ง · นับผลแท่ง "
@@ -1332,10 +1332,10 @@ def _chart_selection(cid, res, f):
     hi = math.ceil(max(s_in.max(), s_out.max()) * 2) / 2
     ticks = [t for t in V.nice_ticks(lo, hi, 7) if lo <= t <= hi]
     items = [(f"คู่ fake {D2_FAKE} คู่", V.RED, "dot"), (f"คู่ good {D2_GOOD} คู่", V.BLUE, "dot"),
-             (f"{D2_TOP} อันดับ Sharpe สูงสุดในช่วงคัดเลือก", V.PURPLE, "ring"), ("เส้น y = x", V.MUTED, "line", "5 4")]
+             (f"{D2_TOP} อันดับ Sharpe สูงสุดในช่วงคัด", V.PURPLE, "ring"), ("เส้น y = x", V.MUTED, "line", "5 4")]
     fig = V.Fig(cid, 760, 452)
     p = fig.panel((lo, hi), (lo, hi), x=62, y=66, w=678, h=336)
-    p.grid(yticks=ticks, xticks=ticks).yaxis(ticks=ticks, title="Sharpe ในช่วงพิสูจน์ (แท่ง 750–1499)")
+    p.grid(yticks=ticks, xticks=ticks).yaxis(ticks=ticks, title="Sharpe ในช่วงสอบ (แท่ง 750–1499)")
     p.legend(items)
     p.hline(0, color=V.AXIS, dash=None, width=1.0).vline(0, color=V.AXIS, dash=None, width=1.0)
     p.line([lo, hi], [lo, hi], V.MUTED, width=1.2, dash="5 4")
@@ -1343,16 +1343,16 @@ def _chart_selection(cid, res, f):
     p.scatter(s_in[good], s_out[good], V.BLUE, r=3.2, opacity=0.9)
     rings = "".join(f'<circle cx="{p.X(a):.1f}" cy="{p.Y(b):.1f}" r="7"/>' for a, b in zip(s_in[top], s_out[top]))
     fig.add(f'<g fill="none" stroke="{V.PURPLE}" stroke-width="2">{rings}</g>')      # วงกลวง: ยังเห็นสีของจุดข้างใน
-    p.xaxis(ticks=ticks, title="Sharpe ในช่วงคัดเลือก (แท่ง 250–749)")
+    p.xaxis(ticks=ticks, title="Sharpe ในช่วงคัด (แท่ง 250–749)")
     tb, tf = d["top_backtest"], d["top_fake_only"]
     return fig.svg(
-        "จุดกระจายของ Sharpe ช่วงคัดเลือกเทียบกับช่วงพิสูจน์ของ 440 คู่: คู่ fake เป็นก้อนกลมรอบศูนย์ที่ไม่เอียงตามเส้นทแยง "
+        "จุดกระจายของ Sharpe ช่วงคัดเทียบกับช่วงสอบของ 440 คู่: คู่ fake เป็นก้อนกลมรอบศูนย์ที่ไม่เอียงตามเส้นทแยง "
         "คู่ good อยู่มุมขวาบน",
         f"ข้อมูลจำลอง {D2_FAKE + D2_GOOD} คู่ · แต่ละจุดคือหนึ่งคู่ · ก้อนสีแดง (fake) ไม่เอียงตามเส้น y = x: "
-        f"Sharpe ช่วงคัดเลือกบอกอะไรเกี่ยวกับช่วงพิสูจน์ไม่ได้ (correlation {_txt(d['all']['fake_corr_in_out'])}) · "
+        f"Sharpe ช่วงคัดบอกอะไรเกี่ยวกับช่วงสอบไม่ได้ (correlation {_txt(d['all']['fake_corr_in_out'])}) · "
         f"วงม่วงคือ {D2_TOP} อันดับแรกของการสแกนรอบนี้ ({tb['scan_n_good']} คู่จริง {tb['scan_n_fake']} คู่ปลอม) · "
-        f"ถ้าสุ่มจักรวาลแบบนี้ซ้ำ {D2_BOOT:,} ครั้ง {D2_TOP} อันดับแรกมีค่ากลางราว {_txt(tb['sharpe_in'])} ในช่วงคัดเลือก "
-        f"เหลือราว {_txt(tb['sharpe_out'])} ในช่วงพิสูจน์ · ถ้าจักรวาลมีแต่คู่ fake: จากราว {_txt(tf['sharpe_in'])} "
+        f"ถ้าสุ่มจักรวาลแบบนี้ซ้ำ {D2_BOOT:,} ครั้ง {D2_TOP} อันดับแรกมีค่ากลางราว {_txt(tb['sharpe_in'])} ในช่วงคัด "
+        f"เหลือราว {_txt(tb['sharpe_out'])} ในช่วงสอบ · ถ้าจักรวาลมีแต่คู่ fake: จากราว {_txt(tf['sharpe_in'])} "
         f"เหลือราว {_txt(tf['sharpe_out'])}")
 
 
@@ -1594,12 +1594,12 @@ def _print_summary(f):
         v = d2[key]
         P(f"  {name} (ค่าวิกฤต {v['cutoff']}): เลือกได้ {v['selected']} คู่ = จริง {v['tp']} + ปลอม {v['fp']} "
           f"(คาดหมาย {v['fp_expected']} · จักรวาลอื่น {v['fp_p5']}–{v['fp_p95']}) → ความแม่น {v['precision_pct']}% · "
-          f"Sharpe ช่วงพิสูจน์: จริง {v['oos_sharpe_good']:+} ปลอม {v['oos_sharpe_fake']:+} รวม {v['oos_sharpe_all']:+}")
-    P(f"  10 อันดับแรก (ค่ากลางของ {d2['universes']:,} จักรวาลที่สุ่มซ้ำ · ในวงเล็บ = ช่วง 5–95% ของช่วงพิสูจน์):")
-    for key, name in (("top_backtest", "Sharpe ช่วงคัดเลือกสูงสุด"), ("top_eg", "ค่า EG ติดลบที่สุด"),
+          f"Sharpe ช่วงสอบ: จริง {v['oos_sharpe_good']:+} ปลอม {v['oos_sharpe_fake']:+} รวม {v['oos_sharpe_all']:+}")
+    P(f"  10 อันดับแรก (ค่ากลางของ {d2['universes']:,} จักรวาลที่สุ่มซ้ำ · ในวงเล็บ = ช่วง 5–95% ของช่วงสอบ):")
+    for key, name in (("top_backtest", "Sharpe ช่วงคัดสูงสุด"), ("top_eg", "ค่า EG ติดลบที่สุด"),
                       ("top_fake_only", "Sharpe สูงสุด (จักรวาล fake ล้วน)")):
         v = d2[key]
-        P(f"    {name:<34} คู่จริงราว {v['n_good']} · Sharpe ช่วงคัดเลือก {v['sharpe_in']:+} → ช่วงพิสูจน์ "
+        P(f"    {name:<34} คู่จริงราว {v['n_good']} · Sharpe ช่วงคัด {v['sharpe_in']:+} → ช่วงสอบ "
           f"{v['sharpe_out']:+} ({v['sharpe_out_p5']:+} ถึง {v['sharpe_out_p95']:+}) · รอบจริง: {v['scan_sharpe_in']:+} → "
           f"{v['scan_sharpe_out']:+}")
 

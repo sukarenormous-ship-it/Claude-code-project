@@ -11,7 +11,7 @@ import statarb_lab as LAB
 def honest(y, x, c=0.0005):          # walk-forward: ใช้ข้อมูลถึงแท่งก่อนหน้าเท่านั้น
     return C.walk_forward_pair(y, x, cost_per_leg=c)["stats"]["sharpe"]
 
-def peeking(y, x, c=0.0005):         # ท่อที่ผิด: β, μ, σ จากข้อมูลทั้งเส้น (เห็นอนาคต)
+def peeking(y, x, c=0.0005):         # ท่อที่ผิด: β, μ, σ จากข้อมูลทั้งเส้น (มองอนาคต)
     r = C.eg_test(y, x)
     pos = C.band_positions((r["resid"] - r["resid"].mean()) / r["resid"].std())
     pnl, _ = C.spread_pnl(y, x, np.full(len(y), r["beta"][0]), pos, cost_per_leg=c)

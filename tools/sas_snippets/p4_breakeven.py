@@ -5,7 +5,7 @@ import sas_core as C
 import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p4_breakeven.py [ไฟล์.csv Y X [c_bps]]  (ไม่ใส่ไฟล์ = คู่จำลอง good · c = 5 bps)
-# คำถาม: ต้นทุนของคุณบังคับให้แถบกว้างอย่างน้อยเท่าไร — คิดจากครึ่งแรกเท่านั้น ก่อนแตะช่วงทดสอบ
+# คำถาม: ต้นทุนของคุณบังคับให้แถบกว้างอย่างน้อยเท่าไร — คิดจากครึ่งแรกเท่านั้น ก่อนแตะช่วงสอบ
 if len(sys.argv) >= 4:
     y, x = LAB.load_columns(sys.argv[1], sys.argv[2:4], "raw")[1].T   # log ราคา เรียงเก่า → ใหม่
 else:
