@@ -7,7 +7,7 @@ import statarb_lab as LAB
 # ใช้: python3 tools/sas_snippets/p2_adf_hand.py [ไฟล์.csv Y X]
 # ไม่ใส่ไฟล์ = คู่ตัวอย่างจำลอง · ADF แบบเปิดฝา (lags 0 มีค่าคงที่):
 # ถดถอย "การเปลี่ยนแปลงวันนี้" บน "ระดับเมื่อวาน"
-def adf0(s):                     # s: แถวละหนึ่งเส้น → ความชัน ρ, se, t
+def adf0(s):                     # s: แถวละหนึ่งเส้น → ความชัน γ, se, t
     s = np.atleast_2d(s)
     dx = np.diff(s, axis=1)
     lv = s[:, :-1] - s[:, :-1].mean(1, keepdims=True)
