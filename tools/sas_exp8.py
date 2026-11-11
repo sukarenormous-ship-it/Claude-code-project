@@ -3,7 +3,7 @@
 ห้องทดลองตอนที่ 8 — "ลงมือทำ: คู่มือห้องทดลองกับข้อมูลของคุณเอง"
 
 ตอนนี้ไม่มีทฤษฎีใหม่ มีแต่เครื่องมือ: tools/statarb_lab.py พาคู่ของคุณผ่านเจ็ดสถานีแล้วให้คำตัดสิน
-ครึ่งแรกของข้อมูล = ช่วงศึกษา (สถานี 2–4, 6 และคำสั่ง scan ดูแค่ครึ่งนี้) · ครึ่งหลัง = ช่วงสอบ (สถานี 5, 7)
+ครึ่งแรกของข้อมูล = ช่วงคัด (สถานี 2–4, 6 และคำสั่ง scan ดูแค่ครึ่งนี้) · ครึ่งหลัง = ช่วงสอบ (สถานี 5, 7)
 โมดูลนี้ทำสี่อย่างเพื่อให้เนื้อหาตอนที่ 8 มีหลักฐานรองรับ (ข้อมูลจำลองทั้งหมด)
 
   การทดลอง A — รันเครื่องมือจริงกับคู่ตัวอย่างสี่คู่ (ข้อมูลจำลองที่ "ถูกเลือก" ให้เห็นอาการชัด)
@@ -19,7 +19,7 @@
 
   การทดลอง C — ทำไมสถานี 7 จึง backtest แค่ครึ่งหลัง (ความลำเอียงจากการคัดเลือก)
       จำลองคู่ที่ "ไม่มีสายจูง" N_SEL คู่ เก็บเฉพาะคู่ที่บังเอิญผ่านสถานี 3 (ราว 5%) แล้ว backtest
-      แบบ walk-forward ทั้งในช่วงศึกษา (ช่วงที่ใช้คัด) และช่วงสอบ — ช่วงที่ใช้คัดดูมีกำไร ช่วงสอบไม่มี
+      แบบ walk-forward ทั้งในช่วงคัด และช่วงสอบ — ช่วงที่ใช้คัดดูมีกำไร ช่วงสอบไม่มี
 
   การทดลอง D — ตะกร้าที่ใส่ขาไม่เกี่ยว (Monte Carlo ของตัวอย่าง basket)
       คู่ good + random walk อิสระสองเส้น เทียบกับคู่ good ล้วน: ครึ่งแรกดูดีขึ้นไหม ครึ่งหลังแย่ลงไหม
@@ -40,7 +40,7 @@
                               eg_second_half_p_text, earn_bps, round_trip_bps, cost_ratio,
                               sharpe_lag1, sharpe_lag2, trades, hit_pct, hit_noise_pts, max_dd_pct,
                               ann_return_pct, avg_trade_bps, z_sd, exam_bars, exam_years, sharpe_margin,
-                              sharpe_study, trades_study   (สถานี 7 = ช่วงสอบ · *_study = แถวเทียบของช่วงศึกษา)
+                              sharpe_study, trades_study   (สถานี 7 = ช่วงสอบ · *_study = แถวเทียบของช่วงคัด)
   mc.worlds, mc.se_pts        จำนวนโลกต่อแบบ · ความคลาดมาตรฐานของ % ที่ 50% (จุด)
   mc.<kind>.*                 kind ∈ good, drift, break, fake, slow · pass_pct / warn_pct / fail_pct ·
                               s2…s7.{ok,warn,fail}_pct · sharpe_exam_{med,p05,p95} · sharpe_study_med ·
@@ -195,7 +195,7 @@ def reliability():
 
 def selection_bias():
     """คู่ที่ไม่มีสายจูง (fake) N_SEL คู่ → เก็บเฉพาะคู่ที่สถานี 3 ให้ ✅ (บังเอิญล้วน ๆ)
-    แล้วดู Sharpe (lag 2) ของ walk-forward ในช่วงศึกษา (แท่ง 251–750 = ช่วงที่ใช้คัด) เทียบกับช่วงสอบ"""
+    แล้วดู Sharpe (lag 2) ของ walk-forward ในช่วงคัด (แท่ง 251–750 = ช่วงที่ใช้คัด) เทียบกับช่วงสอบ"""
     opt = LAB.options()
     g = C.rng(SEED_SEL)
     study, exam, s7 = [], [], []
@@ -353,7 +353,7 @@ def figures(res=None):
     return {
         "about": {
             "tool": "tools/statarb_lab.py — เครื่องมือเจ็ดสถานี ใช้ numpy อย่างเดียว เรียกได้ทั้งจากบรรทัดคำสั่งและจากโค้ด",
-            "split": "ครึ่งแรกของข้อมูล = ช่วงศึกษา (ประมาณ β, σ และทดสอบสายจูง) · ครึ่งหลัง = ช่วงสอบ "
+            "split": "ครึ่งแรกของข้อมูล = ช่วงคัด (ประมาณ β, σ และทดสอบสายจูง) · ครึ่งหลัง = ช่วงสอบ "
                      "(สถานี 5 วัดด้วยไม้บรรทัดของครึ่งแรก · สถานี 7 backtest เฉพาะครึ่งหลัง)",
             "demo": "การทดลอง A: รันเครื่องมือกับคู่ตัวอย่างจำลองสี่คู่ 1,500 แท่ง (ถูกเลือกให้เห็นอาการชัด) "
                     "ด้วยค่าตั้งต้น: ต้นทุน 5 bps ต่อขาต่อเที่ยว · entry 2 · exit 0 · train 250 แท่ง · "
@@ -499,8 +499,8 @@ def chart_pipeline():
         yy = yv + 50 + 20 * j
         fig.add(f'<circle cx="{xv + 18:.1f}" cy="{yy - 4:.1f}" r="5" fill="{color}"/>',
                 V.text(xv + 30, yy, label, size=11.2, color=V.INK))
-    fig.legend([("ตรวจวัตถุดิบ", GROUP["data"], "rect"), ("วัดจากครึ่งแรก (ช่วงศึกษา)", GROUP["study"], "rect"),
-                ("สอบกับครึ่งหลัง (ข้อมูลที่ช่วงศึกษายังไม่เคยเห็น)", GROUP["exam"], "rect")], 12, 352)
+    fig.legend([("ตรวจวัตถุดิบ", GROUP["data"], "rect"), ("วัดจากครึ่งแรก (ช่วงคัด)", GROUP["study"], "rect"),
+                ("สอบกับครึ่งหลัง (ข้อมูลที่ช่วงคัดยังไม่เคยเห็น)", GROUP["exam"], "rect")], 12, 352)
     fig.text(12, 378, "ไม่ผ่านที่สถานีไหน เครื่องมือจะบอกชื่อสถานีแรกที่ติด พร้อมคำแนะนำ “ลองอะไรต่อ” ของสถานีนั้น",
              size=11, color=V.MUTED)
     return fig.svg(
@@ -567,16 +567,16 @@ def chart_selection(res):
         return {"label": label, "mid": float(mid), "lo": float(lo), "hi": float(hi), "color": color}
 
     n_sel = len(sel["study"])
-    rows = [row(f"fake ที่บังเอิญผ่านสถานี 3\nช่วงศึกษา (ช่วงที่ใช้คัด)", sel["study"], V.RED),
+    rows = [row(f"fake ที่บังเอิญผ่านสถานี 3\nช่วงคัด", sel["study"], V.RED),
             row("fake ที่บังเอิญผ่านสถานี 3\nช่วงสอบ", sel["exam"], V.MUTED),
-            row("good — ช่วงศึกษา", mc["good"]["sharpe_study"], V.BLUE),
+            row("good — ช่วงคัด", mc["good"]["sharpe_study"], V.BLUE),
             row("good — ช่วงสอบ", mc["good"]["sharpe_exam"], V.BLUE),
-            row("break — ช่วงศึกษา", mc["break"]["sharpe_study"], V.AMBER),
+            row("break — ช่วงคัด", mc["break"]["sharpe_study"], V.AMBER),
             row("break — ช่วงสอบ", mc["break"]["sharpe_exam"], V.AMBER)]
     med_study, med_exam = float(np.median(sel["study"])), float(np.median(sel["exam"]))
     return V.dot_interval(
         "sas-p8-selection", rows,
-        "จุดและเส้นช่วง แสดง Sharpe lag 2 ของ backtest แบบเดินหน้า ในช่วงศึกษากับช่วงสอบ ของคู่ที่ไม่มีสายจูงแต่ผ่านสถานี 3 "
+        "จุดและเส้นช่วง แสดง Sharpe lag 2 ของ backtest แบบเดินหน้า ในช่วงคัดกับช่วงสอบ ของคู่ที่ไม่มีสายจูงแต่ผ่านสถานี 3 "
         f"ค่ากลาง {med_study:.1f} กับ {med_exam:.1f} เทียบกับโลก good และ break",
         f"ข้อมูลจำลอง · คู่ไม่มีสายจูง {N_SEL:,} คู่ ผ่านสถานี 3 มาได้ {n_sel} คู่ (บังเอิญล้วน ๆ) · "
         f"backtest ของคู่พวกนี้ในช่วงที่ใช้คัดได้ Sharpe ค่ากลาง <b>{med_study:.1f}</b> แต่ช่วงสอบเหลือ "
@@ -604,7 +604,7 @@ def main():
     print("ตอนที่ 8 — ห้องทดลองเจ็ดสถานี (tools/statarb_lab.py) · ข้อมูลจำลองทั้งหมด")
     print(f"ค่าตั้งต้น: ต้นทุน {s['cost_bps']} bps ต่อขาต่อเที่ยว · entry {s['entry']} · exit {s['exit']} · "
           f"train {s['train_bars']} แท่ง · ประมาณใหม่ทุก {s['refit_bars']} แท่ง · จำลอง {s['sims']:,} โลกหาเส้นตัด")
-    print(f"ครึ่งแรก (แท่ง 1–{s['half_bars']:,}) = ช่วงศึกษา · ครึ่งหลัง (แท่ง {s['exam_first_bar']:,}–{s['n_bars']:,}) = ช่วงสอบ "
+    print(f"ครึ่งแรก (แท่ง 1–{s['half_bars']:,}) = ช่วงคัด · ครึ่งหลัง (แท่ง {s['exam_first_bar']:,}–{s['n_bars']:,}) = ช่วงสอบ "
           "· สถานี 7 backtest เฉพาะช่วงสอบ")
     print(f"เกณฑ์หลัก: β สามวิธีห่างกัน ≤ {t['beta_gap_warn_pct']}% · β สองครึ่งต่างกัน ≤ {t['beta_change_warn_pct']}% · "
           f"p < {t['p_pass']} · train ≥ {t['train_min_half_lives']} เท่าของ half-life · เลื่อน ≤ {t['shift_max_sigma']}σ · "
@@ -634,7 +634,7 @@ def main():
     print()
     print(f"การทดลอง B — เครื่องมือเชื่อได้แค่ไหน (แบบละ {f['mc']['worlds']} โลก · 1,500 แท่ง · % คลาดได้ราว ±{f['mc']['se_pts']} จุด)")
     print("  แบบ     ผ่านครบ มีข้อสังเกต ไม่ผ่าน |  % ที่สถานีไม่ให้ ✅ (2  3  4  5  6  7) |  "
-          "Sharpe ช่วงสอบ: กลาง (5–95%) · ช่วงศึกษา   ไม้ช่วงสอบ")
+          "Sharpe ช่วงสอบ: กลาง (5–95%) · ช่วงคัด   ไม้ช่วงสอบ")
     for k in MC_KINDS:
         m = f["mc"][k]
         flagged = " ".join(f"{100 - m[f's{j}']['ok_pct']:3d}" for j in range(2, 8))
