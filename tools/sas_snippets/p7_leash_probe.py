@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
 import sas_core as C
+import statarb_lab as LAB
 # ใช้: python3 tools/sas_snippets/p7_leash_probe.py [ไฟล์.csv Y X]
 #      (ราคาดิบ · ไม่ใส่ไฟล์ = คู่จำลอง good / break / fake)
 # กติกาใกล้เคียง 7a: ไม้บรรทัด (α, β, μ, σ) จากครึ่งแรกเท่านั้น · ครึ่งหลัง |z| ≥ 2 = เปิดเหตุการณ์
@@ -27,8 +28,7 @@ def probe(y, x):
     return [r["adf"], cut, len(wait), 100 * np.mean(wait <= 30), np.median(wait),
             100 * np.mean(np.isinf(wait)), max(worst), np.sqrt(np.mean(z[n:] ** 2))]
 if len(sys.argv) == 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    pairs = {"yours": (np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]]))}
+    pairs = {"yours": LAB.load_columns(sys.argv[1], sys.argv[2:4], "raw")[1].T}   # log ราคา เก่า → ใหม่
 else:
     pairs = {k: tuple(C.demo_pair(k)[c] for c in "yx") for k in ("good", "break", "fake")}
 rows = ["EG ครึ่งแรก (ติดลบกว่าเส้นตัด = ผ่าน)", "เส้นตัด 5% (จำลอง)", "เหตุการณ์ในครึ่งหลัง",

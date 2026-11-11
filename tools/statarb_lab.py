@@ -9,6 +9,7 @@ statarb_lab — ห้องทดลองเจ็ดสถานี สำห
 
     python3 tools/statarb_lab.py check FILE --y COL --x COL
             [--cost-bps 5] [--train 250] [--entry 2 --exit 0] [--prices raw|log] [--sims 20000]
+            [--pnl-out pnl.csv]
         พาคู่ Y, X ผ่านเจ็ดสถานี แต่ละสถานีจบด้วย ✅ / ⚠️ / ❌ แล้วสรุปเป็นคำตัดสินบรรทัดเดียว
 
     python3 tools/statarb_lab.py scan FILE [--top 15]
@@ -50,6 +51,7 @@ import datetime
 import functools
 import math
 import os
+import re
 import sys
 import types
 import unicodedata
@@ -135,8 +137,14 @@ def thresholds():
     }
 
 
-class LabError(Exception):
-    """ข้อผิดพลาดที่อธิบายให้ผู้ใช้แก้เองได้ (ไฟล์ไม่พบ · ไม่มีคอลัมน์ · ข้อมูลไม่พอ)"""
+class LabError(SystemExit):
+    """ข้อผิดพลาดที่อธิบายให้ผู้ใช้แก้เองได้ (ไฟล์ไม่พบ · ไม่มีคอลัมน์ · ข้อมูลไม่พอ)
+    เป็นลูกของ SystemExit: โค้ดที่เรียก load_columns ตรง ๆ (snippet ของแต่ละตอน) ไม่ต้องดักเอง —
+    ถ้าไม่มีใครดัก Python พิมพ์ "❌ ข้อความ" แล้วจบด้วยรหัส 1 แทน traceback · main() ยังดักได้ตามปกติ"""
+
+    def __init__(self, msg):
+        super().__init__(msg)
+        self.code = f"{FAIL} {msg}"          # สิ่งที่ Python พิมพ์เมื่อไม่มีใครดัก (str(e) ยังเป็น msg)
 
 
 def options(cost_bps=DEFAULT_COST_BPS, train=DEFAULT_TRAIN, entry=DEFAULT_ENTRY, exit=DEFAULT_EXIT,
@@ -218,9 +226,20 @@ def find_date_column(header, rows):
     return None
 
 
+def be_to_ce(s):
+    """ปี พ.ศ. → ค.ศ.: เลขปีสี่หลักที่เกิน 2400 ถือเป็น พ.ศ. แล้วลบ 543 (29/02/2567 → 29/02/2024)
+    ต้องทำก่อน strptime เพราะ 2567 ไม่ใช่ปีอธิกสุรทินแบบสากล 29/02/2567 จึงอ่านไม่ออกทั้งคอลัมน์"""
+    fix = lambda m: str(int(m.group(1)) - 543) if int(m.group(1)) > 2400 else m.group(1)
+    if re.fullmatch(r"\d{8}", s[:8]) and not s[8:9].isdigit():             # 25670229 (แบบ %Y%m%d)
+        return fix(re.match(r"(\d{4})", s)) + s[4:]
+    return re.sub(r"(?<!\d)(\d{4})(?!\d)", fix, s)
+
+
 def parse_dates(strings):
     """แปลงวันที่ทั้งคอลัมน์ด้วยรูปแบบเดียวกัน · อ่านไม่ออกสักแถว → None (จะเชื่อลำดับในไฟล์แทน)
-    ลองทั้งข้อความเต็ม และ 10 ตัวอักษรแรก (วันที่ที่มีเวลาหรือเขตเวลาต่อท้าย เช่น 2020-01-02 00:00:00+07:00)"""
+    ลองทั้งข้อความเต็ม และ 10 ตัวอักษรแรก (วันที่ที่มีเวลาหรือเขตเวลาต่อท้าย เช่น 2020-01-02 00:00:00+07:00)
+    ปี พ.ศ. (เช่น 15/01/2567) ถูกแปลงเป็น ค.ศ. ก่อน"""
+    strings = [be_to_ce(s) for s in strings]
     for cut in (None, 10):
         for fmt in DATE_FORMATS:
             try:
@@ -479,15 +498,18 @@ def station_data(y, x, opt, rep=None, dates=None):
         notes.append(f"ข้อมูลน้อยกว่า {FEW_BARS_WARN} แท่ง (สายจูงจริงก็สอบตกได้ง่าย)")
     if rep.get("scale_note"):
         notes.append(rep["scale_note"])
-    if rep.get("reordered") == "unparsed":
+    unparsed = rep.get("reordered") == "unparsed"
+    if unparsed:
         notes.append("อ่านวันที่ไม่ออก (ตรวจเองว่าแถวเรียงจากเก่าไปใหม่)")
     if stop:
-        return station(1, "ข้อมูล", "ข้อมูล", FAIL, rows, "ไปต่อไม่ได้: " + " · ".join(stop), n=n)
+        return station(1, "ข้อมูล", "ข้อมูล", FAIL, rows, "ไปต่อไม่ได้: " + " · ".join(stop), n=n,
+                       dates_unparsed=unparsed)
     if notes:
         read = f"ใช้ได้ {n:,} แท่ง แต่มีข้อสังเกต: " + " · ".join(notes)
     else:
         read = f"ข้อมูลสะอาด ใช้ได้ครบ {n:,} แท่ง"
-    return station(1, "ข้อมูล", "ข้อมูล", WARN if notes else OK, rows, read, n=n, dropped=dropped, jumps=n_jump)
+    return station(1, "ข้อมูล", "ข้อมูล", WARN if notes else OK, rows, read, n=n, dropped=dropped, jumps=n_jump,
+                   dates_unparsed=unparsed)
 
 
 def jump_list(h, leg, dates=None, limit=3):
@@ -574,9 +596,11 @@ def station_rhythm(f, opt, leash_status):
     hl = float(ar["half_life"])
     cross = crossings_per_year(f["eps1"])
     per_hl = opt.train / hl if math.isfinite(hl) and hl > 0 else float("inf")
-    hl_txt = f"{hl:.1f}" if math.isfinite(hl) else "inf"
-    rows = [f"half-life = {hl_txt} แท่ง · σ ของ ε = {f['sd1']:.2%} · ε ข้ามค่าเฉลี่ย {cross:.0f} ครั้งต่อปี",
-            f"หน้าต่าง train {opt.train:,} แท่ง = {per_hl:.1f} เท่าของ half-life"]
+    hl_txt = ("— (สถานี 3 ไม่ผ่าน)" if leash_status == FAIL       # ไม่มีสายจูง = ไม่มี half-life ให้อ่าน
+              else f"{hl:.1f} แท่ง" if math.isfinite(hl) else "inf แท่ง")
+    rows = [f"half-life = {hl_txt} · σ ของ ε = {f['sd1']:.2%} · ε ข้ามค่าเฉลี่ย {cross:.0f} ครั้งต่อปี",
+            f"หน้าต่าง train {opt.train:,} แท่ง = "
+            + ("— เท่าของ half-life" if leash_status == FAIL else f"{per_hl:.1f} เท่าของ half-life")]
     if not math.isfinite(hl):
         status, read = FAIL, "ประมาณ half-life ไม่ได้ (φ ≥ 1) → ε ไม่ถูกดึงกลับเลย"
     elif leash_status == FAIL:
@@ -739,7 +763,7 @@ def station_backtest(y, x, opt, n_jumps=0):
             f"ในช่วงสอบ Sharpe lag 2 = {sh2:.2f} หักความไม่แน่นอน ±{margin:.2f} แล้วยังเกินศูนย์ "
             f"และช้าไปหนึ่งแท่งก็ยังรอด — แต่ทั้งหมดนี้มาจาก {n_tr} ไม้เท่านั้น")
     nan = float("nan")
-    return station(7, "เดินหน้า", "backtest แบบเดินหน้า (walk-forward) บนช่วงสอบ หลังหักต้นทุน", status, rows,
+    st = station(7, "เดินหน้า", "backtest แบบเดินหน้า (walk-forward) บนช่วงสอบ หลังหักต้นทุน", status, rows,
                    read, sharpe1=sh1, sharpe2=sh2, trades=n_tr, hit2=float(s2["hit_rate"]),
                    max_dd2=float(s2["max_dd"]), ann_return2=float(s2["ann_return"]),
                    avg_trade2=float(s2["avg_trade"]), z_sd=float(s1["z_sd"]), years=years, margin=margin,
@@ -748,6 +772,8 @@ def station_backtest(y, x, opt, n_jumps=0):
                    open_at_end=bool(s2["open_at_end"]),
                    sharpe_study=float(study["sharpe"]) if study else nan,
                    trades_study=int(study["n_trades"]) if study else 0)
+    st["exam_pnl"] = runs[2]["pnl"][opt.train:]      # กำไรขาดทุนรายแท่งของช่วงสอบ (lag 2) ไว้ให้ --pnl-out
+    return st
 
 
 def run_stations(y, x, opt, rep=None, dates=None):
@@ -812,6 +838,8 @@ def verdict(stations):
     else:
         text = f"{OK} ผ่านครบ 7 สถานี — ควรค่าแก่การศึกษาต่อ (ยังไม่ใช่คำสัญญาว่าจะกำไร)"
         code = "pass"
+    if stations and stations[0]["m"].get("dates_unparsed"):
+        text += " · ตรวจลำดับวันที่ก่อนเชื่อผล"
     return code, text, next_steps(bad, warn)
 
 
@@ -925,7 +953,32 @@ def cmd_check(args):
             f"ต่อขาต่อเที่ยว · train {opt.train:,} แท่ง"]
     stations = run_stations(y, x, opt, rep, dates)
     emit(render_check(stations, head))
+    if args.pnl_out:
+        write_pnl(args.pnl_out, stations, names, dates, n)
     return 0 if verdict(stations)[0] != "fail" else 1
+
+
+def write_pnl(path, stations, names, dates, n):
+    """--pnl-out: กำไรขาดทุนรายแท่งของช่วงสอบ (สถานี 7 · lag 2 · หักต้นทุนแล้ว) เป็นสัดส่วนของทุน
+    คอลัมน์ date (ค.ศ. YYYY-MM-DD) หรือ bar (ลำดับแท่ง ถ้าไม่มี/อ่านวันที่ไม่ออก) + หนึ่งคอลัมน์ชื่อ "Y-X"
+    = รูปแบบที่ tools/sas_snippets/p6_breadth.py อ่าน (ใส่หลายไฟล์ได้ มันจับคู่กันตามวันที่ให้เอง)"""
+    if len(stations) < 7:
+        emit([f"{WARN} ไม่ได้เขียน {os.path.basename(path)} — สถานี 1 ไม่ผ่าน จึงไม่มี backtest ช่วงสอบ"])
+        return
+    pnl = stations[6]["exam_pnl"]
+    stamps = parse_dates(dates) if dates else None
+    keys = ([d.strftime("%Y-%m-%d") for d in stamps[n - len(pnl):]] if stamps
+            else [str(t + 1) for t in range(n - len(pnl), n)])
+    try:
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(["date" if stamps else "bar", f"{names[0]}-{names[1]}"])
+            w.writerows([k, f"{v + 0.0:.10g}"] for k, v in zip(keys, pnl))
+    except OSError as e:
+        raise LabError(f'เขียนไฟล์ "{path}" ไม่ได้: {e}') from None
+    emit([f"เขียน {os.path.basename(path)} แล้ว: กำไรขาดทุนรายแท่งของช่วงสอบ {len(pnl):,} แถว "
+          "(lag 2 · หักต้นทุนแล้ว · สัดส่วนของทุน) → รวมหลายคู่ด้วย  python3 tools/sas_snippets/p6_breadth.py "
+          "pnl_a.csv pnl_b.csv ..."])
 
 
 def scan_pairs(names, half, n_sim):
@@ -1094,6 +1147,10 @@ def build_parser():
                    help=f"เข้าเมื่อ |z| ถึงค่านี้ (ค่าตั้งต้น {DEFAULT_ENTRY:g})")
     p.add_argument("--exit", type=float, default=DEFAULT_EXIT,
                    help=f"ออกเมื่อ z กลับถึงค่านี้ (ค่าตั้งต้น {DEFAULT_EXIT:g})")
+    p.add_argument("--pnl-out", metavar="FILE",
+                   help="เขียนกำไรขาดทุนรายวันของช่วงสอบ (สถานี 7 · lag 2 · หักต้นทุน · สัดส่วนของทุน) "
+                        "เป็น CSV คอลัมน์ date (หรือ bar) กับ Y-X — ป้อนให้ p6_breadth.py ได้ทันที "
+                        "(หลายคู่: ใส่หลายไฟล์ มันจับคู่ตามวันที่)")
     shared(p)
     p.set_defaults(fn=cmd_check)
 

@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
 import sas_core as C
+import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p4_zones.py [ไฟล์.csv Y X]   (ราคาดิบ · ไม่ใส่ไฟล์ = คู่จำลอง good กับ fake)
 # กราฟโซนแบบ "รู้แค่อดีต" · ใช้เฉพาะครึ่งแรก · α̂, β̂ จาก 250 แท่งแรก · เส้น P10/P50/P90 ของแท่ง t
@@ -26,8 +27,7 @@ def signs(y, x):
             100 * np.mean(e <= e[-1])]
 
 if len(sys.argv) == 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    pairs = {"ของคุณ": (np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]]))}
+    pairs = {"ของคุณ": LAB.load_columns(sys.argv[1], sys.argv[2:4], "raw")[1].T}   # log ราคา เก่า → ใหม่
 else:
     pairs = {k: (C.demo_pair(k)["y"], C.demo_pair(k)["x"]) for k in ("good", "fake")}
 rows = ["แท่งต่อการตัดเส้นกลางหนึ่งครั้ง", "แท่งที่ค้างฝั่งเดียวนานสุด", "แท่งที่อยู่นอกเส้น 10/90 นานสุด (ครั้งเดียว)",

@@ -1,13 +1,15 @@
-import sys
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
+import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p7_funding_breakeven.py [ไฟล์.csv คอลัมน์ งวดต่อวัน]
-# คอลัมน์ = funding ต่องวดเป็น % ตามที่หน้าจอแสดง (เช่น 0.01) เรียงเก่าไปใหม่
+# คอลัมน์ = funding ต่องวดเป็น % ตามที่หน้าจอแสดง (เช่น 0.01) · มีคอลัมน์วันเวลา = เรียงเก่าไปใหม่ให้
 # ไม่ใส่ไฟล์ = ข้อมูลจำลองหน้าตาคล้าย 7b (ปกติ 1 bps · ช่วงติดลบ -1.5 bps)
 RATE, COST = 4.0, 20      # ต้นทุนเงินของขา spot %/ปี · ค่าซื้อขายไปกลับ bps
 if len(sys.argv) == 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    f, per_day = d[sys.argv[2]] * 100, int(sys.argv[3])     # % -> bps
+    f = LAB.load_columns(sys.argv[1], [sys.argv[2]], "log")[1][:, 0] * 100   # "log" = ไม่แปลงค่า · % -> bps
+    per_day = int(sys.argv[3])
 else:
     g, s, f, per_day = np.random.default_rng(9), False, [], 3
     for t in range(2 * 1095):

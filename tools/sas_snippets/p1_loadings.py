@@ -1,13 +1,10 @@
 import sys, os, numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import sas_core as C
+import sas_core as C, statarb_lab as LAB
 # ใช้: python3 tools/sas_snippets/p1_loadings.py [ไฟล์.csv Y X ตลาด,ดัชนีอื่น] · ไม่ใส่ไฟล์ = ข้อมูลจำลอง
 if len(sys.argv) == 5:  # CSV = ราคาปิดที่ปรับปันผลแล้ว
-    d, names = np.genfromtxt(sys.argv[1], delimiter=",", names=True), sys.argv[4].split(",")
-    miss = [c for c in sys.argv[2:4] + names if c not in d.dtype.names]
-    if miss: sys.exit(f"ไม่พบคอลัมน์ {miss} · ในไฟล์มี {d.dtype.names}")
-    P = np.log(np.column_stack([d[c] for c in sys.argv[2:4] + names]))
-    R = np.diff(P[np.all(np.isfinite(P), axis=1)], axis=0)  # ผลตอบแทน (log)
+    names = sys.argv[4].split(",")  # loader: ทิ้งแถวที่ขาดค่า · เรียงตามวันที่เก่า → ใหม่ · คืน log ราคา
+    R = np.diff(LAB.load_columns(sys.argv[1], sys.argv[2:4] + names, "raw")[1], axis=0)  # ผลตอบแทน (log)
     ry, rx, F = R[:, 0], R[:, 1], R[:, 2:]
 else:  # เฉลย: Y = 1.3·Market + 0.4·Size · X = 0.8·Market + 1.0·Size · ไม่มีสายจูง
     g, n, names = C.rng(195), 1000, ["Market", "Size"]

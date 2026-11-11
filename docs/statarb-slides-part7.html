@@ -688,6 +688,7 @@ details.ans[open]>summary{margin-bottom:8px}
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
 import sas_core as C
+import statarb_lab as LAB
 # ใช้: python3 tools/sas_snippets/p7_leash_probe.py [ไฟล์.csv Y X]
 #      (ราคาดิบ · ไม่ใส่ไฟล์ = คู่จำลอง good / break / fake)
 # กติกาใกล้เคียง 7a: ไม้บรรทัด (α, β, μ, σ) จากครึ่งแรกเท่านั้น · ครึ่งหลัง |z| ≥ 2 = เปิดเหตุการณ์
@@ -713,8 +714,7 @@ def probe(y, x):
     return [r["adf"], cut, len(wait), 100 * np.mean(wait &lt;= 30), np.median(wait),
             100 * np.mean(np.isinf(wait)), max(worst), np.sqrt(np.mean(z[n:] ** 2))]
 if len(sys.argv) == 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    pairs = {"yours": (np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]]))}
+    pairs = {"yours": LAB.load_columns(sys.argv[1], sys.argv[2:4], "raw")[1].T}   # log ราคา เก่า → ใหม่
 else:
     pairs = {k: tuple(C.demo_pair(k)[c] for c in "yx") for k in ("good", "break", "fake")}
 rows = ["EG ครึ่งแรก (ติดลบกว่าเส้นตัด = ผ่าน)", "เส้นตัด 5% (จำลอง)", "เหตุการณ์ในครึ่งหลัง",
@@ -792,16 +792,18 @@ P&amp;L = convergence + carry - costs = 1.51 + 0.00 - 0.20 = 1.31 บาท
 <div class="station" data-n="6"><div class="bt">แถว funding: วันคุ้มทุนจากประวัติจริง</div>
 <p>ใส่ไฟล์ที่มีคอลัมน์ funding ต่องวดเป็น % ตามที่หน้าจอแสดง เรียงเก่าไปใหม่ แล้วบอกว่าวันละกี่งวด เช่น <code>python3 tools/sas_snippets/p7_funding_breakeven.py funding.csv rate 3</code> ไม่ใส่ไฟล์จะรันกับสองปีจำลองหน้าตาคล้าย 7b สูตรที่มันใช้คือ ผลสะสมวันที่ d = Σ funding − ต้นทุนเงิน × d/365 − ค่าซื้อขาย</p>
 <!--CODE:p7_funding_breakeven-->
-<pre class="code">import sys
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
+import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p7_funding_breakeven.py [ไฟล์.csv คอลัมน์ งวดต่อวัน]
-# คอลัมน์ = funding ต่องวดเป็น % ตามที่หน้าจอแสดง (เช่น 0.01) เรียงเก่าไปใหม่
+# คอลัมน์ = funding ต่องวดเป็น % ตามที่หน้าจอแสดง (เช่น 0.01) · มีคอลัมน์วันเวลา = เรียงเก่าไปใหม่ให้
 # ไม่ใส่ไฟล์ = ข้อมูลจำลองหน้าตาคล้าย 7b (ปกติ 1 bps · ช่วงติดลบ -1.5 bps)
 RATE, COST = 4.0, 20      # ต้นทุนเงินของขา spot %/ปี · ค่าซื้อขายไปกลับ bps
 if len(sys.argv) == 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    f, per_day = d[sys.argv[2]] * 100, int(sys.argv[3])     # % -&gt; bps
+    f = LAB.load_columns(sys.argv[1], [sys.argv[2]], "log")[1][:, 0] * 100   # "log" = ไม่แปลงค่า · % -&gt; bps
+    per_day = int(sys.argv[3])
 else:
     g, s, f, per_day = np.random.default_rng(9), False, [], 3
     for t in range(2 * 1095):

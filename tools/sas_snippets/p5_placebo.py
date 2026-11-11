@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
 import sas_core as C
+import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p5_placebo.py [ไฟล์.csv Y X [จำนวนชุด]]   (ไม่ใส่ = คู่ good)
 # ยาหลอก: สุ่มหยิบ "วัน" ของผลตอบแทนมาเรียงใหม่ (หยิบแล้วใส่คืน) Y กับ X ย้ายวันไปด้วยกัน
@@ -18,10 +19,8 @@ def peeking(y, x, c=0.0005):         # ท่อที่ผิด: β, μ, σ �
 
 a, p = sys.argv[1:], C.demo_pair("good")
 y, x, n = p["y"], p["x"], int(a[3]) if len(a) > 3 else 40
-if a:   # หัวคอลัมน์ห้ามมีเว้นวรรค · แถวที่ราคาขาดขาใดขาหนึ่งถูกตัดทิ้ง
-    d = np.genfromtxt(a[0], delimiter=",", names=True, deletechars="")
-    y, x = np.log(d[a[1]]), np.log(d[a[2]])
-    y, x = y[np.isfinite(y + x)], x[np.isfinite(y + x)]
+if a:   # แถวที่ราคาขาดขาใดขาหนึ่งถูกตัดทิ้ง · เรียงตามวันที่ให้
+    y, x = LAB.load_columns(a[0], a[1:3], "raw")[1].T
 g, dy, dx = C.rng(581), np.diff(y), np.diff(x)
 fake = []
 for _ in range(n):

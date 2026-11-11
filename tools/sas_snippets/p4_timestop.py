@@ -2,12 +2,12 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import numpy as np
 import sas_core as C
+import statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p4_timestop.py [ไฟล์.csv Y X [c_bps entry]]  (ไม่ใส่ไฟล์ = คู่จำลอง break · 5 bps · entry 1.5)
 # สถานี 4: เปิดครึ่งหลังครั้งเดียว · time stop จาก half-life ของครึ่งแรก · ตรวจสายจูงซ้ำทุก 21 แท่ง
 if len(sys.argv) >= 4:
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
-    y, x = np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]])
+    y, x = LAB.load_columns(sys.argv[1], sys.argv[2:4], "raw")[1].T   # log ราคา เรียงเก่า → ใหม่
 else:
     p = C.demo_pair("break"); y, x = p["y"], p["x"]
 c = (float(sys.argv[4]) if len(sys.argv) >= 5 else 5.0) / 1e4

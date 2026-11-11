@@ -1,13 +1,12 @@
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import numpy as np, sas_core as C
+import numpy as np, sas_core as C, statarb_lab as LAB
 
 # ใช้: python3 tools/sas_snippets/p6_basket.py [ไฟล์.csv Y A,B,C]
 #     ราคาดิบ · ไม่ใส่ไฟล์ = ข้อมูลจำลอง
 # คำถาม: ขาที่เพิ่มคุ้มค่าผ่านทางไหม — เทียบ Y กับขาแรกขาเดียว และ Y กับทุกขา
-if len(sys.argv) == 4:  # deletechars="" เก็บจุดในชื่อคอลัมน์ไว้ เช่น PTT.BK
-    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True, deletechars="")
-    y = np.log(d[sys.argv[2]])
-    legs = np.log(np.column_stack([d[c] for c in sys.argv[3].split(",")]))
+if len(sys.argv) == 4:  # ชื่อคอลัมน์มีจุดได้ เช่น PTT.BK · ทิ้งแถวที่ขาดค่า · เรียงตามวันที่ให้
+    m = LAB.load_columns(sys.argv[1], [sys.argv[2]] + sys.argv[3].split(","), "raw")[1]
+    y, legs = m[:, 0], m[:, 1:]
 else:  # คู่ตัวอย่าง good (มีสายจูงจริง) + ขาเกิน 3 ขาที่ไม่ผูกกับ Y เลย
     p, g = C.demo_pair("good"), C.rng(691)
     y = p["y"]
