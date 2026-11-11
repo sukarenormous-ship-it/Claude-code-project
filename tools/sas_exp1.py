@@ -796,7 +796,7 @@ def _chart_three_spreads(un, fg):
     f, d = fg["unequal"], un["demo"]
     rows = (("ab", "(i) A − B", V.RED), ("beta_ols", f"(ii) A − {_n(f['beta_ols']['w_b'], 2)}·B  (β จาก OLS)", V.AMBER),
             ("three_est", "(iii) A − (B, C, D) น้ำหนักจาก regression", V.PURPLE),
-            ("three_true", "(iii) A − (B, C, D) น้ำหนักจริง", V.GREEN))
+            ("three_true", "(iv) A − (B, C, D) น้ำหนักจริง", V.GREEN))
     panels = [{"y": d[k]["full"][0] * 100, "title": title, "color": color, "zero": True,
                "sub": f"ปัจจัยเหลือ {_n(f[k]['left_sd_day_pct'], 2)}%/วัน · sd ช่วงทดสอบ {_n(f[k]['sd_all_pct'], 1)}%"}
               for k, title, color in rows]

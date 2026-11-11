@@ -1,0 +1,956 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>แกะสไลด์ Stat Arb — อ่านกราฟ ε กับเส้น VaR — จากกราฟสู่กฎเทรด</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}</style>
+<style>
+pre.code,pre.out{font-family:'Courier New',monospace;font-size:.86em;line-height:1.55;border-radius:6px;margin:12px 0;padding:12px 16px;overflow-x:auto;white-space:pre;tab-size:4}
+pre.code{background:var(--g1);color:var(--g8);border:1px solid var(--g2)}
+pre.out{background:var(--g0);color:var(--g9);border:1px solid var(--g2);border-left:4px solid var(--g7)}
+.slide{position:relative;border:1px solid #c7d2fe;background:#f8faff;border-radius:10px;padding:16px 20px 10px;margin:20px 0}
+.slide[data-label]{padding-top:26px}
+.slide[data-label]::before{content:attr(data-label)}
+.slide[data-label]::before,.slide>.lbl{position:absolute;top:-11px;left:16px;background:var(--blue);color:#fff;font-size:.72em;font-weight:700;line-height:1.5;padding:1px 10px;border-radius:20px;white-space:nowrap}
+.slide .fm{background:#fff;border:1px solid var(--g2)}
+details.ans{border:1px dashed #a5b4fc;border-radius:8px;padding:8px 16px;margin:10px 0;background:#fff}
+details.ans>summary{cursor:pointer;font-weight:700;color:var(--blue)}
+details.ans[open]{background:var(--blue-bg);padding-bottom:12px}
+details.ans[open]>summary{margin-bottom:8px}
+.station{position:relative;border:1px solid var(--g2);border-left:4px solid var(--blue);border-radius:0 10px 10px 0;background:#fff;padding:12px 18px 6px 62px;margin:16px 0;min-height:58px}
+.station[data-n]::before{content:attr(data-n)}
+.station[data-n]::before,.station>.n{position:absolute;left:14px;top:12px;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:1.05em;line-height:34px;text-align:center}
+.station>.bt{color:var(--g9)}
+.nav{text-align:center;margin-top:30px;padding-top:14px;border-top:1px solid var(--g2);font-size:.95em}
+.tag-sim{display:inline-block;font-size:.72em;font-weight:700;line-height:1.5;color:#0e7490;background:#ecfeff;border:1px solid #a5f3fc;border-radius:20px;padding:0 9px;margin-left:4px;vertical-align:middle;white-space:nowrap}
+@media(max-width:640px){pre.code,pre.out{font-size:.78em;padding:10px 12px}.slide{padding-left:14px;padding-right:14px}.station{padding-left:52px;padding-right:12px}.station[data-n]::before,.station>.n{left:10px;width:30px;height:30px;line-height:30px}.figw{overflow-x:auto;-webkit-overflow-scrolling:touch}.figw>svg.fig{width:600px;max-width:none;margin:14px 0 6px}.figw+.cap{margin-top:4px}.figw+.cap::before{content:"↔ เลื่อนกราฟไปด้านข้างได้ · ";white-space:nowrap}}
+@media print{pre.code,pre.out{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}pre.code,pre.out,.slide,.station,details.ans{page-break-inside:avoid}details.ans::details-content{content-visibility:visible;display:block}details.ans>summary{list-style:none}.nav{display:none}}
+</style>
+</head><body>
+
+<!-- ═══════════════ COVER · part4 ═══════════════ -->
+<div class="cover">
+<h1>แกะสไลด์ Stat Arb</h1>
+<div class="sub">อ่านกราฟ ε กับเส้น VaR — จากกราฟสู่กฎเทรด</div>
+<div class="desc">เส้นบนกราฟคือเปอร์เซ็นไทล์ของอดีต ไม่ใช่คำทำนาย — ตอนนี้แปลงกราฟโซนเป็นกฎเข้า ออก หยุด ที่คิดต้นทุนแล้ว และรู้ว่าวันไหนกราฟตอบไม่ได้</div>
+</div>
+
+<div class="bx bb"><div class="bt">🧭 เส้นทางอ่าน</div>
+<ul>
+<li><strong>สไลด์ที่แกะ:</strong> แผ่นที่ 6 (กราฟ ε กับเส้น VaR ของคู่ที่ดี) และแผ่นที่ 7 (กราฟชนิดเดียวกันของคู่ที่ไม่ควรแตะ)</li>
+<li><strong>ต้องรู้ก่อน:</strong> ε = Y − α − β·X และ z = (ε − μ)/σ จาก <a href="statarb-slides-part3.html">ตอนที่ 3</a> · เหตุผลที่ histogram เชื่อได้เฉพาะเมื่อ ε นิ่ง จาก <a href="statarb-slides-part2.html">ตอนที่ 2</a> · half-life และ φ ของ AR(1) จากตอนที่ 3 · Sharpe = ผลตอบแทนต่อปี ÷ ความผันผวนต่อปี · 1 bps = 0.01%</li>
+<li><strong>เวลา:</strong> อ่านราว 35 นาที · ลงมือตาม 🛠️ อีกราว 40 นาที</li>
+<li>🟢 <strong>มือใหม่:</strong> ปริศนา → 🖼️ → ภาพรวม → การ์ดที่ 1 และ 2 → 🛠️ → ส่วนปิดท้าย · 🔵 <strong>มีพื้นแล้ว:</strong> อ่านทั้งหมด จุดที่คุ้มที่สุดคือการ์ดที่ 3 (ผลของ stop ขึ้นกับว่าประมาณ σ̂ ครั้งเดียวหรือประมาณใหม่เป็นรอบ)</li>
+<li>ก่อนหน้า: <a href="statarb-slides-part3.html">ตอนที่ 3 ประกอบสเปรดให้ถูก</a> · ถัดไป: <a href="statarb-slides-part5.html">ตอนที่ 5 คลินิก backtest</a></li>
+</ul></div>
+
+<h2>ปริศนา: เส้น 99% รู้ล่วงหน้าได้อย่างไร</h2>
+
+<p>เปิดสไลด์แผ่นที่ 6 แล้วดูเส้นประบนสุด ป้ายเขียนว่า "VaR 99%: 1.5224" ตลอดสองปีกว่าบนกราฟ มีจุดโผล่เหนือเส้นนี้แค่หยิบมือ ราวหนึ่งในร้อยพอดี</p>
+
+<p>ถามตัวเองข้อเดียว เส้นนี้พาดอยู่ตั้งแต่ขอบซ้ายของกราฟ คือเดือนมกราคม 2023 ในวันนั้นมันรู้ได้อย่างไรว่าอีกสองปีข้างหน้า ε จะขึ้นไปสูงสุดแค่ไหน</p>
+
+<p>คำตอบคือมันไม่รู้ <strong>มันลอกคำตอบมา</strong> เส้นนี้คิดจากทุกจุดบนกราฟ รวมจุดของปี 2025 ที่ยังไม่เกิดในวันแรกด้วย ข้อมูลชุดไหนก็ตาม ถ้าลากเส้นที่เปอร์เซ็นไทล์ 99 ของตัวมันเอง ย่อมมีจุดอยู่เหนือเส้น 1% เสมอ ไม่ว่าจะมีสายจูงหรือไม่</p>
+
+<p>เราลองกับ <span class="tag-sim">ข้อมูลจำลอง</span> สามคู่ที่ต่างกันสุดขั้ว ลากเส้น 10% กับ 90% แบบเดียวกับสไลด์ แล้วนับว่า ε อยู่นอกสองเส้นนั้นกี่ % ของเวลา</p>
+
+<div class="tw"><table>
+<tr><th>คู่จำลอง</th><th>สายจูง</th><th>เวลาที่ ε อยู่นอกเส้น 10% / 90%</th></tr>
+<tr><td>good</td><td>มีจริงตลอดทาง</td><td><span data-f="p4.zones.good.outside_10_90_pct">20.0</span>%</td></tr>
+<tr><td>fake</td><td>ไม่มีเลย</td><td><span data-f="p4.zones.bad.outside_10_90_pct">20.0</span>%</td></tr>
+<tr><td>break</td><td>ขาดกลางทาง</td><td><span data-f="p4.zones.break.outside_10_90_pct">20.0</span>%</td></tr>
+</table></div>
+
+<p>เท่ากันเป๊ะ เพราะนิยามบังคับไว้ ตัวเลขที่ดูเหมือนบอกว่า "เส้นแม่น" จึงไม่ได้บอกอะไรเลย และกฎเทรดที่ลอกเส้นพวกนี้ไปใช้ใน backtest ก็ได้เห็นอนาคต (look-ahead bias) ไปด้วยโดยไม่รู้ตัว</p>
+
+<p>ถ้าคุณ backtest ด้วยเส้นแบบสไลด์ ผลจะสวยเกินจริง ถ้าลากเส้นอย่างซื่อสัตย์แล้วยังขาดทุน ให้สงสัยสายจูงก่อน (ตอนที่ 3) แล้วจึงดูกฎ เช่น แถบแคบเกินต้นทุน หรือ stop ที่ตัดตรงจุดที่ดีที่สุด ตอนนี้จะแปลงกราฟเป็นกฎที่ใช้ได้จริง และบอกว่าวันไหนกราฟตอบไม่ได้</p>
+
+<div class="pq">เส้นที่ลากจากทุกจุด ย่อมมีจุดอยู่เหนือมัน 1% เสมอ ไม่ใช่เพราะมันทำนายเก่ง แต่เพราะมันเห็นคำตอบก่อนคุณ</div>
+
+<h2>🖼️ สไลด์บอกอะไร</h2>
+
+<div class="slide" data-label="สไลด์แผ่นที่ 6">
+<p><strong>หน้าตา:</strong> สองกรอบวางคู่กัน กรอบซ้ายชื่อ "Error Distribution" เป็น histogram ของ ε วางตะแคง พร้อมเส้นโค้งความหนาแน่นแบบเรียบ รูปทรงเป็นระฆังลูกเดียว กรอบขวาเป็น ε รายวันตั้งแต่ต้นปี 2023 ถึงราวเมษายน 2025 แกว่งอยู่ระหว่างราว −1.5 ถึง +1.7 และข้ามแนวกลางไปมาหลายสิบครั้ง</p>
+<p><strong>เส้นแนวนอน:</strong> เส้นประพาดทั้งกราฟ มีป้ายตั้งแต่ "VaR 99%: 1.5224" · "VaR 90%: 0.8778" · "VaR 50%: −0.0217" ลงไปถึง "VaR 1%" ราว −1.46 พื้นช่วงบนระบายสีฟ้า ช่วงล่างระบายสีแดง</p>
+<p><strong>สิ่งที่สไลด์อยากให้เห็น:</strong> ε ของคู่นี้แกว่งรอบจุดศูนย์กลาง ออกไปไกลแล้วกลับมา เส้นแต่ละเส้นบอกว่า "ไกลแค่ไหนถึงเรียกว่าไกล"</p>
+</div>
+
+<p>เราวาดสไลด์นี้ใหม่จากคู่จำลอง good ด้วยวิธีเดียวกันทุกขั้น ε ใช้ α̂, β̂ จาก <span data-f="p4.settings.train_bars">750</span> แท่งแรก ส่วนเส้นคิดจากทั้ง <span data-f="p4.settings.bars">1,500</span> แท่งเหมือนในสไลด์</p>
+
+<!--CHART:sas-p4-zones-good-->
+<div class="figw"><svg class="fig" viewBox="0 0 780 372" role="img" aria-label="กราฟโซนของคู่ที่มีสายจูง: ε แกว่งรอบเส้นกลาง ออกนอกเส้นนอกแล้วกลับเข้ามาเร็ว">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p4-zones-good-clip1"><rect x="53" y="33" width="120" height="294"/></clipPath><clipPath id="sas-p4-zones-good-clip2"><rect x="197" y="33" width="486.4" height="294"/></clipPath></defs>
+<rect x="54" y="34" width="118" height="141.4" fill="#2563eb" fill-opacity="0.06"/>
+<rect x="54" y="175.4" width="118" height="150.6" fill="#dc2626" fill-opacity="0.06"/>
+<path d="M54 326H172M54 253H172M54 180H172M54 107H172M54 34H172" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="46" y="330" text-anchor="end" font-size="11" fill="#6b7280">−10</text><text x="46" y="257" text-anchor="end" font-size="11" fill="#6b7280">−5</text><text x="46" y="184" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="46" y="111" text-anchor="end" font-size="11" fill="#6b7280">5</text><text x="46" y="38" text-anchor="end" font-size="11" fill="#6b7280">10</text>
+<g fill-opacity="0.55"><rect x="54" y="282.8" width="1.4" height="7.5" fill="#dc2626"/><rect x="54" y="274.3" width="2.1" height="7.5" fill="#dc2626"/><rect x="54" y="265.7" width="2.1" height="7.5" fill="#dc2626"/><rect x="54" y="257.2" width="5.6" height="7.5" fill="#dc2626"/><rect x="54" y="248.6" width="14.7" height="7.5" fill="#dc2626"/><rect x="54" y="240.1" width="20.3" height="7.5" fill="#dc2626"/><rect x="54" y="231.5" width="27.3" height="7.5" fill="#dc2626"/><rect x="54" y="223" width="35" height="7.5" fill="#dc2626"/><rect x="54" y="214.5" width="46.2" height="7.5" fill="#dc2626"/><rect x="54" y="205.9" width="60.9" height="7.5" fill="#dc2626"/><rect x="54" y="197.4" width="74.9" height="7.5" fill="#dc2626"/><rect x="54" y="188.8" width="76.3" height="7.5" fill="#dc2626"/><rect x="54" y="180.3" width="101.6" height="7.5" fill="#dc2626"/><rect x="54" y="171.8" width="109.3" height="7.5" fill="#dc2626"/><rect x="54" y="163.2" width="103" height="7.5" fill="#2563eb"/><rect x="54" y="154.7" width="79.1" height="7.5" fill="#2563eb"/><rect x="54" y="146.1" width="75.6" height="7.5" fill="#2563eb"/><rect x="54" y="137.6" width="50.4" height="7.5" fill="#2563eb"/><rect x="54" y="129" width="33.6" height="7.5" fill="#2563eb"/><rect x="54" y="120.5" width="31.5" height="7.5" fill="#2563eb"/><rect x="54" y="112" width="25.2" height="7.5" fill="#2563eb"/><rect x="54" y="103.4" width="24.5" height="7.5" fill="#2563eb"/><rect x="54" y="94.9" width="19.6" height="7.5" fill="#2563eb"/><rect x="54" y="86.3" width="10.5" height="7.5" fill="#2563eb"/><rect x="54" y="77.8" width="7.7" height="7.5" fill="#2563eb"/><rect x="54" y="69.2" width="5.6" height="7.5" fill="#2563eb"/><rect x="54" y="60.7" width="4.2" height="7.5" fill="#2563eb"/><rect x="54" y="52.2" width="2.1" height="7.5" fill="#2563eb"/></g>
+<path d="M54 309.9l.1-4.7 .1-4.7 .3-4.7 .3-4.7 .3-4.7 .5-4.7 .6-4.7 1-4.7 1.6-4.7 2.2-4.7 3-4.7 3.3-4.7 3.4-4.7 3.4-4.7 3.7-4.7 4.2-4.7 5-4.7 5.6-4.7 6.2-4.7 6.6-4.7 6.5-4.7 6.3-4.7 6.1-4.7 6.4-4.7 7.1-4.7 7.4-4.7 6.3-4.7 3.8-4.7 .3-4.7-3.4-4.7-5.9-4.7-7.2-4.7-7.9-4.7-8.4-4.7-8.8-4.7-8.4-4.7-7.4-4.7-5.9-4.7-4.6-4.7-3.4-4.7-2.5-4.7-2.2-4.7-2.2-4.7-2.6-4.7-2.9-4.7-3.1-4.7-2.8-4.7-2.3-4.7-1.7-4.7-1.5-4.7-1.3-4.7-1.2-4.7-1-4.7-.9-4.7-.7-4.7-.6-4.7-.4-4.7-.2-4.7-.1-4.7" fill="none" stroke="#374151" stroke-width="1.5" stroke-linejoin="round" clip-path="url(#sas-p4-zones-good-clip1)"/>
+<line x1="54" y1="326" x2="172" y2="326" stroke="#cbd5e1" stroke-width="1.5"/><text x="113" y="343" text-anchor="middle" font-size="12" fill="#6b7280">ความถี่</text>
+<text x="54" y="25" font-size="12.5" fill="#374151"><tspan font-weight="700">การกระจายของ ε</tspan></text>
+<rect x="198" y="34" width="484.4" height="141.4" fill="#2563eb" fill-opacity="0.07"/>
+<rect x="198" y="175.4" width="484.4" height="150.6" fill="#dc2626" fill-opacity="0.07"/>
+<path d="M198 326H682.4M198 253H682.4M198 180H682.4M198 107H682.4M198 34H682.4" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="198" y1="257" x2="682.4" y2="257" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="198" y1="223.2" x2="682.4" y2="223.2" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="206" x2="682.4" y2="206" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="193.1" x2="682.4" y2="193.1" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="183.9" x2="682.4" y2="183.9" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="175.4" x2="682.4" y2="175.4" stroke="#374151" stroke-width="1.5"/>
+<line x1="198" y1="167.8" x2="682.4" y2="167.8" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="157.1" x2="682.4" y2="157.1" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="144.5" x2="682.4" y2="144.5" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="122" x2="682.4" y2="122" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="76.4" x2="682.4" y2="76.4" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6 3"/>
+<g clip-path="url(#sas-p4-zones-good-clip2)"><path d="M198 120.4l2.9 59.5 1.6-58.9 1 20.6 4.5 82 2 67.2 1.9-66.3 2.3 32.5 3.5-90.2 1 34.4 3.9-65.6 .9 22.8 2.6 79.5 5.2-66.1 1.6-77.4 1 14.8 4.8 98.8 .7-19.1 1.6 69.7 2.9-70 3.2-83.1 2 19.2 3.8 90.1 4.2-75.2 2 65.7 .3-7 4.5-74.5 .7 25.2 .9-49.3 4.6-14.7 2.9 90 1.6-18 4.5 55.2 .7-27.4 4.5-79.6 2.6 37.2 .9-66.2 2 57.9 3.9 68.8 2.9-44.2 2.9 86 .6-39.1 2.6-82.5 2.9 13.9 3.6 95.3 3.8-61 2 47.7 1.9 36.1 3.3-76.8 1.2 17.2 3.3-85.1 .9 8.7 4.2 77.5 .7 19 2.9-62.4 5.2 3.3 1.6 85.8 .6-38.6 3.6-70.5 2.2-4.8 4.2 72.6 .4-10.1 4.5-49.3 2.3 51 2.2-43.6 2.6 50.5 2.9-84.6 .7-.5 4.8 100.2 2.6 16.2 2.3-49.7 .3 34.8 1.6-71.4 4.8 8 3.6 45.6 1.3 3.7 1.3-34.3 5.8 14.6 1.3-42.8 2.3 36.3 3.2 70.4 .3 21.3 2.9-91.6 2.6 40.6 2.3 40.9 5.5-59.9 1.2 37.2 1.3-67.6 2.9 42.9 1.7-12.9 3.5 59.4 3.6 1.4 2.2-80.8 1.7 5.1 4.2-41.8 .9 42.5 1.6-33.6 4.2-44.7 3.3 87.4 1.3-26.4 3.2 108.4 2.6-70.5 2.9 59 .6-53.6 2.3-52.5 2.6 59.7 4.8-103.9 2.9-2.3 1.7 80.5 2.5 21 1.7-40.8 2.9 33.7 1.9-44.1 2.3 38.2 1.6 36.2 6.4-69.5 .7 31.3 3.9 31 2.2-49 2 50.3 3.2-74.4 .3 45.9 1.6 56 3.6-13 2.3-64.5 2.5 20.1 4.2-46.7 3.3-19.4 2.6 54.8 1.6-47.5 2.9 53 1.3 21.7 2.6-72.5 3.8-2.4 2.3 85.2 1 21.1 3.8-96 2.6 71.6 2.6-52.1 3.6-9.3 2.2 63.8 .7 4.8 4.5-89.9 .3-8 4.6 60.5 2.5 1.9 1.3-43.6 4.6 72.1 .9-84.6 2 46.1 1.3-107.5 3.5 86.9 4.5 78.2 .4-9.3 3.8-92.3 1.3 33.5 3.6-69.1 2.6 52 3.2-63.8 2.6-40.1 2.9 84.2 1.3-35.4 3.2 74.8 4.2-2.4 1.3 36.4 3.2-4.2 2-83.7 1.9 36.3 2.3-92.2 2.6 73.6 1.6-71.6 2.9 37 1.3-47.9 3.9 22.2 3.8 73.5 2.3-.1 1.6 52.6 2.6 5.6 3.6-72.9 1.6 48 2.9-46.4 2.9-9 2.9 77.8 .3 2.8 3.2-95.1 4.6 64.7 2.2-73.6 1.3-19.4 3.3 84.1 1.3 30.4 4.2-79 .6 12.3" fill="none" stroke="#1f2937" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></g>
+<line x1="198" y1="326" x2="682.4" y2="326" stroke="#cbd5e1" stroke-width="1.5"/><text x="198" y="342" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="278.8" y="342" text-anchor="middle" font-size="11" fill="#6b7280">250</text><text x="359.6" y="342" text-anchor="middle" font-size="11" fill="#6b7280">500</text><text x="440.4" y="342" text-anchor="middle" font-size="11" fill="#6b7280">750</text><text x="521.1" y="342" text-anchor="middle" font-size="11" fill="#6b7280">1,000</text><text x="601.9" y="342" text-anchor="middle" font-size="11" fill="#6b7280">1,250</text><text x="440.2" y="363" text-anchor="middle" font-size="12" fill="#6b7280">แท่งที่ (วัน)</text>
+<text x="198" y="25" font-size="12.5" fill="#374151"><tspan font-weight="700">ε ตามเวลา (%) กับเส้นเปอร์เซ็นไทล์</tspan></text>
+<path d="M682.4,257L691.4,257H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="260.5" font-size="10.5" font-weight="700" fill="#374151">VaR 1%: −5.28</text>
+<path d="M682.4,223.2L691.4,225.1H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="228.6" font-size="10.5" fill="#6b7280">VaR 10%: −2.96</text>
+<path d="M682.4,206L691.4,212.6H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="216.1" font-size="10.5" fill="#6b7280">VaR 20%: −1.78</text>
+<path d="M682.4,193.1L691.4,200.1H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="203.6" font-size="10.5" fill="#6b7280">VaR 30%: −0.90</text>
+<path d="M682.4,183.9L691.4,187.6H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="191.1" font-size="10.5" fill="#6b7280">VaR 40%: −0.27</text>
+<path d="M682.4,175.4L691.4,175.1H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="178.6" font-size="10.5" font-weight="700" fill="#374151">VaR 50%: 0.31</text>
+<path d="M682.4,167.8L691.4,162.6H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="166.1" font-size="10.5" fill="#6b7280">VaR 60%: 0.84</text>
+<path d="M682.4,157.1L691.4,150.1H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="153.6" font-size="10.5" fill="#6b7280">VaR 70%: 1.57</text>
+<path d="M682.4,144.5L691.4,137.6H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="141.1" font-size="10.5" fill="#6b7280">VaR 80%: 2.43</text>
+<path d="M682.4,122L691.4,122H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="125.5" font-size="10.5" fill="#6b7280">VaR 90%: 3.97</text>
+<path d="M682.4,76.4L691.4,76.4H695.4" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="698.4" y="79.9" font-size="10.5" font-weight="700" fill="#374151">VaR 99%: 7.10</text>
+<path d="M682.4 135.1V29" fill="none" stroke="#7c3aed" stroke-width="1"/><circle cx="682.4" cy="135.1" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="684.4" y="25" text-anchor="end" font-weight="700" fill="#7c3aed">ล่าสุด 3.08</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง · คู่ที่มีสายจูงจริง (แบบสไลด์ 6) · ε วัดด้วย α̂, β̂ จาก 750 แท่งแรก ส่วนเส้นคิดจากทั้ง 1,500 แท่งเหมือนในสไลด์ · ให้สังเกต: ε ตัดเส้นกลาง 222 ครั้ง (เฉลี่ยทุก 6.8 แท่ง) และออกนอกเส้น 10%/90% รวม 70 ครั้ง ครั้งที่นานที่สุดเพียง 27 แท่ง — ออกไปทีไรก็ถูกดึงกลับ</div>
+<!--/CHART:sas-p4-zones-good-->
+
+<div class="slide" data-label="สไลด์แผ่นที่ 7">
+<p><strong>หน้าตา:</strong> กราฟชนิดเดียวกัน หัวเรื่อง "Error Time Series with VaR Zones" แต่ ε เริ่มใกล้ศูนย์ ไหลลงไปถึงราว −50 กลางปี 2023 พุ่งขึ้นไปราว +80 ต้นปี 2024 ถอยกลับมาแถว −20 ถึง −40 แล้วในปี 2025 ไต่ขึ้นทะลุทุกเส้น ไปจบที่ราว 104 เหนือเส้น "VaR 99%: 93.6"</p>
+<p><strong>histogram:</strong> เบี้ยว กองอยู่ทางล่างและมีหางยาวทางบน ไม่ใช่ระฆังลูกเดียว</p>
+<p><strong>สิ่งที่สไลด์อยากให้เห็น:</strong> กราฟวาดได้หน้าตาเดียวกันทุกอย่าง แต่คู่นี้ไม่ควรเทรด</p>
+</div>
+
+<p>วาดใหม่จากคู่จำลอง fake ผลตอบแทนของสองขาขยับตามกันเพราะมีปัจจัยร่วม แต่ไม่มีอะไรดึงระยะห่างกลับ</p>
+
+<!--CHART:sas-p4-zones-bad-->
+<div class="figw"><svg class="fig" viewBox="0 0 780 372" role="img" aria-label="กราฟโซนของคู่ที่ไม่มีสายจูง: ε ไหลไปค้างฝั่งเดียวเป็นช่วงยาว และจุดล่าสุดอยู่นอกทุกเส้น">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p4-zones-bad-clip1"><rect x="53" y="33" width="120" height="294"/></clipPath><clipPath id="sas-p4-zones-bad-clip2"><rect x="197" y="33" width="480.6" height="294"/></clipPath></defs>
+<rect x="54" y="34" width="118" height="162.2" fill="#2563eb" fill-opacity="0.06"/>
+<rect x="54" y="196.2" width="118" height="129.8" fill="#dc2626" fill-opacity="0.06"/>
+<path d="M54 299.5H172M54 246.4H172M54 193.3H172M54 140.2H172M54 87.1H172M54 34H172" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="46" y="303.5" text-anchor="end" font-size="11" fill="#6b7280">−40</text><text x="46" y="250.4" text-anchor="end" font-size="11" fill="#6b7280">−20</text><text x="46" y="197.3" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="46" y="144.2" text-anchor="end" font-size="11" fill="#6b7280">20</text><text x="46" y="91.1" text-anchor="end" font-size="11" fill="#6b7280">40</text><text x="46" y="38" text-anchor="end" font-size="11" fill="#6b7280">60</text>
+<g fill-opacity="0.55"><rect x="54" y="283.6" width="3" height="7" fill="#dc2626"/><rect x="54" y="275.6" width="18" height="7" fill="#dc2626"/><rect x="54" y="267.6" width="25.9" height="7" fill="#dc2626"/><rect x="54" y="259.6" width="14.5" height="7" fill="#dc2626"/><rect x="54" y="251.6" width="8.5" height="7" fill="#dc2626"/><rect x="54" y="243.7" width="8.5" height="7" fill="#dc2626"/><rect x="54" y="235.7" width="12.5" height="7" fill="#dc2626"/><rect x="54" y="227.7" width="16.5" height="7" fill="#dc2626"/><rect x="54" y="219.7" width="33.4" height="7" fill="#dc2626"/><rect x="54" y="211.7" width="65.4" height="7" fill="#dc2626"/><rect x="54" y="203.7" width="77.3" height="7" fill="#dc2626"/><rect x="54" y="195.8" width="109.3" height="7" fill="#dc2626"/><rect x="54" y="187.8" width="64.9" height="7" fill="#2563eb"/><rect x="54" y="179.8" width="25.9" height="7" fill="#2563eb"/><rect x="54" y="171.8" width="14.5" height="7" fill="#2563eb"/><rect x="54" y="163.8" width="18.5" height="7" fill="#2563eb"/><rect x="54" y="155.8" width="42.4" height="7" fill="#2563eb"/><rect x="54" y="147.8" width="44.4" height="7" fill="#2563eb"/><rect x="54" y="139.9" width="13" height="7" fill="#2563eb"/><rect x="54" y="131.9" width="10" height="7" fill="#2563eb"/><rect x="54" y="123.9" width="11" height="7" fill="#2563eb"/><rect x="54" y="115.9" width="17" height="7" fill="#2563eb"/><rect x="54" y="107.9" width="36.9" height="7" fill="#2563eb"/><rect x="54" y="99.9" width="23.9" height="7" fill="#2563eb"/><rect x="54" y="92" width="13.5" height="7" fill="#2563eb"/><rect x="54" y="84" width="6.5" height="7" fill="#2563eb"/><rect x="54" y="76" width="11" height="7" fill="#2563eb"/><rect x="54" y="68" width="2.5" height="7" fill="#2563eb"/></g>
+<path d="M54.1 314.5l.2-4.6 .4-4.6 .8-4.5 1.4-4.6 2.1-4.6 2.9-4.6 3.1-4.6 2.8-4.6 1.9-4.5 .4-4.6-.7-4.6-1.3-4.6-1.2-4.6-.5-4.6 .5-4.5 2-4.6 3.7-4.6 5.6-4.6 7.6-4.6 9.4-4.6 10.2-4.6 9.7-4.5 7.8-4.6 4.3-4.6-.2-4.6-5-4.6-8.6-4.6-10.3-4.5-9.4-4.6-6.9-4.6-3.5-4.6-.8-4.6 .8-4.6 .7-4.5-.6-4.6-2.3-4.6-3.5-4.6-3.7-4.6-2.6-4.6-1-4.5 .6-4.6 1.8-4.6 2-4.6 1.5-4.6 .1-4.6-1.3-4.5-2.4-4.6-3-4.6-2.9-4.6-2.6-4.6-2.3-4.6-1.9-4.5-1.7-4.6-1.4-4.6-1.1-4.6-.8-4.6-.4-4.6-.3-4.5-.1-4.6" fill="none" stroke="#374151" stroke-width="1.5" stroke-linejoin="round" clip-path="url(#sas-p4-zones-bad-clip1)"/>
+<line x1="54" y1="326" x2="172" y2="326" stroke="#cbd5e1" stroke-width="1.5"/><text x="113" y="343" text-anchor="middle" font-size="12" fill="#6b7280">ความถี่</text>
+<text x="54" y="25" font-size="12.5" fill="#374151"><tspan font-weight="700">การกระจายของ ε</tspan></text>
+<rect x="198" y="34" width="478.6" height="162.2" fill="#2563eb" fill-opacity="0.07"/>
+<rect x="198" y="196.2" width="478.6" height="129.8" fill="#dc2626" fill-opacity="0.07"/>
+<path d="M198 299.5H676.6M198 246.4H676.6M198 193.3H676.6M198 140.2H676.6M198 87.1H676.6M198 34H676.6" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="198" y1="278.7" x2="676.6" y2="278.7" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="198" y1="247.9" x2="676.6" y2="247.9" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="217.9" x2="676.6" y2="217.9" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="209.4" x2="676.6" y2="209.4" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="202.1" x2="676.6" y2="202.1" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="196.2" x2="676.6" y2="196.2" stroke="#374151" stroke-width="1.5"/>
+<line x1="198" y1="188.7" x2="676.6" y2="188.7" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="161.5" x2="676.6" y2="161.5" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="148.6" x2="676.6" y2="148.6" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="111" x2="676.6" y2="111" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+<line x1="198" y1="79.8" x2="676.6" y2="79.8" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6 3"/>
+<g clip-path="url(#sas-p4-zones-bad-clip2)"><path d="M198 206l2.2-1.4 1.6 10.7 1.6-4.9 3.9 9.7 1.6-9.4 2.5 11 1.9 1.4 2.6-7.4 3.2 6.1 2.5-12.8 6.4-.5 .3 7.1 .4 .1 4.7-27.9 .4-2.7 1.9 12.6 3.2-.4 4.1-9.9 2.9 6.5 .3 8 5.1-3.4 2.6-14.1 .3-4.1 3.2 15.9 2.5-5.7 2.6 7.8 1.9-6 3.8 11.4 1.3-8.9 4.2 21.9 .9-3 4.2-17.9 1.6 8.2 2.5-13 2.9 8.1 2.2-11 2.3 16.5 1.3-17.5 6 19 1.9-10.1 1 3.8 1.6-8.9 2.9 4.4 3.8 17.5 1.3 3.5 4.4 12 2.6-4.8 2.9-21.5 .3-.7 4.5-32.5 .9-4.3 3.2-12.6 3.8 10 2.6-10.1 .3-4.2 3.2 16.9 3.5-4.1 2.9-16.8 .6 6.4 2.9 12.5 2.2-12.3 4.8 25.9 1.6-3.3 3.2 15.2 2.3 14 2.8-13.7 .7 3.2 1.2-11.7 3.9 1.6 1.9-14.1 2.9 7 4.8-15.7 2.5-10.3 1.3 9.8 2.5 .5 3.6 16.3 1.2-7.1 2.6 22.1 1.9-10.8 4.8 19.2 .6 11.7 3.2-16.3 1.6 12.1 2.6-19 2.5 14.7 3.5 15.4 2.9 2.8 2.2-13.9 2.9-4 2.9 20.1 1-4.3 4.1 12.4 3.2 4.3 2.6-11.2 .3 .2 4.1 20.5 2.3 1.2 1.2-10.3 2.3 12.1 4.8 13.5 .6-3 3.5 22.1 1.3-12.7 3.8 11 2.6 1 3.2-10.9 2.8-12.7 2.6 12.1 1.9-2.6 1.6 12.6 3.8 13.9 2.6-14 1 .1 3.8-18.6 .9 6.2 2.9 12.3 2.2-12.4 4.2-26.4 1 2.4 3.8-19.6 1.3 3.3 4.1-27.9 1-.9 2.8 20.6 5.8-9.1 1 9.8 1.2 4.5 2.6-13.9 3.2-5.2 2.5 14.3 3.2-8.4 2.6-12.8 .3-2 4.2 9.7 2.5 4.4 2.9-9.4 2.2 14.6 3.2-19.7 .3-.7 3.9 14 3.5-12.8 2.2 12.7 .6-2.8 4.8-30.2 .4-.6 4.1-41.4 1.3 4.1 3.8-27.6 1.6-.2 3.5 16.1 1-9.4 4.4-10 1 5.1 4.5-20.3 1.3-6.7 3.5 12.2 .6 6 4.2 14.9 1.6-9.9 3.8 24.3 .3 2.8 2.6 16.2 2.5-2.7 3.8 10.6 2.3-11.7 2.9 11.7 1.2-9.8 4.2 11.3 1.9 7.5 3.5-21.5 .6-3.2 4.2-16.7 1 4.5 4.7-14.7 1 5.1 4.2-9.8 1.5 11.5 3.2-14.6 .7 7 3.8-16.4 3.8-3.6 1 10 2.2 13.4 4.2-18.4 .3-.6 4.8-19.3 2.9 4.5 1.9-12.2 .6-3.2" fill="none" stroke="#1f2937" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></g>
+<line x1="198" y1="326" x2="676.6" y2="326" stroke="#cbd5e1" stroke-width="1.5"/><text x="198" y="342" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="277.8" y="342" text-anchor="middle" font-size="11" fill="#6b7280">250</text><text x="357.6" y="342" text-anchor="middle" font-size="11" fill="#6b7280">500</text><text x="437.5" y="342" text-anchor="middle" font-size="11" fill="#6b7280">750</text><text x="517.3" y="342" text-anchor="middle" font-size="11" fill="#6b7280">1,000</text><text x="597.1" y="342" text-anchor="middle" font-size="11" fill="#6b7280">1,250</text><text x="437.3" y="363" text-anchor="middle" font-size="12" fill="#6b7280">แท่งที่ (วัน)</text>
+<text x="198" y="25" font-size="12.5" fill="#374151"><tspan font-weight="700">ε ตามเวลา (%) กับเส้นเปอร์เซ็นไทล์</tspan></text>
+<path d="M676.6,278.7L685.6,278.7H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="282.2" font-size="10.5" font-weight="700" fill="#374151">VaR 1%: −32.17</text>
+<path d="M676.6,247.9L685.6,247.9H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="251.4" font-size="10.5" fill="#6b7280">VaR 10%: −20.60</text>
+<path d="M676.6,217.9L685.6,227.9H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="231.4" font-size="10.5" fill="#6b7280">VaR 20%: −9.26</text>
+<path d="M676.6,209.4L685.6,215.4H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="218.9" font-size="10.5" fill="#6b7280">VaR 30%: −6.08</text>
+<path d="M676.6,202.1L685.6,202.9H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="206.4" font-size="10.5" fill="#6b7280">VaR 40%: −3.32</text>
+<path d="M676.6,196.2L685.6,190.4H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="193.9" font-size="10.5" font-weight="700" fill="#374151">VaR 50%: −1.10</text>
+<path d="M676.6,188.7L685.6,177.9H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="181.4" font-size="10.5" fill="#6b7280">VaR 60%: 1.72</text>
+<path d="M676.6,161.5L685.6,161.5H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="165" font-size="10.5" fill="#6b7280">VaR 70%: 11.96</text>
+<path d="M676.6,148.6L685.6,148.6H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="152.1" font-size="10.5" fill="#6b7280">VaR 80%: 16.82</text>
+<path d="M676.6,111L685.6,111H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="114.5" font-size="10.5" fill="#6b7280">VaR 90%: 30.99</text>
+<path d="M676.6,79.8L685.6,79.8H689.6" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="692.6" y="83.3" font-size="10.5" font-weight="700" fill="#374151">VaR 99%: 42.75</text>
+<path d="M676.6 67.5V29" fill="none" stroke="#7c3aed" stroke-width="1"/><circle cx="676.6" cy="67.5" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="678.6" y="25" text-anchor="end" font-weight="700" fill="#7c3aed">ล่าสุด 47.38</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง · คู่ที่ไม่มีสายจูง (แบบสไลด์ 7) · สร้างกราฟด้วยวิธีเดียวกับรูปก่อนทุกขั้นตอน · ให้สังเกต: ε ตัดเส้นกลางเพียง 83 ครั้ง ค้างฝั่งเดียวนานสุด 366 แท่ง ออกนอกเส้น 10%/90% ครั้งเดียวนานถึง 148 แท่ง และโซนกว้าง 74.9% (คู่ที่ดี 12.4%) — เส้นลากได้เสมอ แต่ไม่มีอะไรดึง ε กลับมาหาเส้น</div>
+<!--/CHART:sas-p4-zones-bad-->
+
+<h3>"VaR x%" บนสไลด์ = เปอร์เซ็นไทล์ที่ x ของ ε</h3>
+
+<p>ในงานบริหารความเสี่ยง VaR (Value at Risk) หมายถึงระดับขาดทุนของพอร์ตที่ไม่น่าจะเกินด้วยความน่าจะเป็นที่กำหนด บนสองสไลด์นี้คำเดียวกันถูกใช้หลวม ๆ เป็นชื่อเส้น <strong>"VaR 90%" แปลว่าค่าของ ε ที่ 90% ของจุดทั้งหมดอยู่ต่ำกว่า</strong> ไม่มีอะไรมากกว่านั้น จากนี้ไปเราเรียกว่า P90, P50, P10 ให้ตรงกับสิ่งที่มันเป็น</p>
+
+<h3>ห้าสัญญาณที่ตาเห็น แยกแผ่นที่ 6 ออกจากแผ่นที่ 7</h3>
+
+<p>เวลาที่อยู่นอกเส้นใช้แยกไม่ได้ เพราะเท่ากันเสมอ สิ่งที่แยกได้คือ <em>ลีลา</em> ของ ε ระหว่างเส้น ตัวเลขข้างล่างนับจากสองกราฟที่เพิ่งเห็น</p>
+
+<div class="tw"><table>
+<tr><th>สัญญาณ</th><th class="nw">แบบแผ่นที่ 6</th><th class="nw">แบบแผ่นที่ 7</th><th>ทำไมถึงบอกได้</th></tr>
+<tr><td><strong>1.</strong> ข้ามเส้นกลางบ่อย</td><td class="nw"><span data-f="p4.zones.good.crossings">222</span> ครั้ง</td><td class="nw"><span data-f="p4.zones.bad.crossings">83</span> ครั้ง</td><td>แรงดึงกลับทำให้ ε ไม่อยู่ฝั่งไหนนาน</td></tr>
+<tr><td><strong>2.</strong> ไม่ค้างฝั่งเดียวนาน</td><td class="nw">นานสุด <span data-f="p4.zones.good.longest_one_side_bars">76</span> แท่ง</td><td class="nw">นานสุด <span data-f="p4.zones.bad.longest_one_side_bars">366</span> แท่ง</td><td>ไม่มีอะไรดึง ε ก็ไหลไปค้างได้เป็นปี</td></tr>
+<tr><td><strong>3.</strong> ออกนอกเส้น 10/90 แล้วรีบกลับ</td><td class="nw"><span data-f="p4.zones.good.visits">70</span> ครั้ง นานสุด <span data-f="p4.zones.good.visit_longest_bars">27</span> แท่ง</td><td class="nw"><span data-f="p4.zones.bad.visits">15</span> ครั้ง นานสุด <span data-f="p4.zones.bad.visit_longest_bars">148</span> แท่ง</td><td>เวลารวมนอกเส้นเท่ากัน แต่แบบหนึ่งเป็นหลายครั้งสั้น ๆ อีกแบบเป็นไม่กี่ครั้งยาว ๆ</td></tr>
+<tr><td><strong>4.</strong> ครึ่งหลังยังอยู่ในเส้นของครึ่งแรก</td><td class="nw">อยู่นอก <span data-f="p4.stability.good.second_outside_pct">19</span>%</td><td class="nw">อยู่นอก <span data-f="p4.stability.bad.second_outside_pct">73</span>%</td><td>โซนนิ่งไม่ได้ 20% พอดีเพราะเส้นของครึ่งแรกก็ประมาณคลาด แต่โซนที่ขยายตามเวลามักเกินครึ่ง</td></tr>
+<tr><td><strong>5.</strong> จุดล่าสุดไม่ใช่จุดสุดขั้วของทั้งกราฟ</td><td class="nw">สูงกว่า <span data-f="p4.zones.good.last_rank_pct">85</span>% ของจุดทั้งหมด</td><td class="nw">สูงสุดของทั้งกราฟ (<span data-f="p4.zones.bad.last_rank_pct">100</span>%)</td><td>จุดที่ทะลุทุกเส้นคือจุดที่กราฟยังไม่เคยเห็นว่าจากตรงนั้นมันกลับไหม</td></tr>
+</table></div>
+
+<p>สัญญาณข้อ 4 ไม่ใช่โชคของคู่ตัวอย่าง แต่ก็ไม่ใช่เส้นแบ่งคม ใน <span data-f="p4.stability.mc.good.worlds">2,000</span> โลกต่อแบบ 90% กลางของคู่ที่มีสายจูงอยู่นอกเส้นของครึ่งแรก <span data-f="p4.stability.mc.good.second_outside_p5_pct">13</span>–<span data-f="p4.stability.mc.good.second_outside_p95_pct">48</span>% (ค่ากลาง <span data-f="p4.stability.mc.good.second_outside_p50_pct">26</span>%) ส่วนคู่ที่ไม่มีสายจูงอยู่ <span data-f="p4.stability.mc.bad.second_outside_p5_pct">14</span>–<span data-f="p4.stability.mc.bad.second_outside_p95_pct">100</span>% (ค่ากลาง <span data-f="p4.stability.mc.bad.second_outside_p50_pct">67</span>%) ค่าต่ำกว่าราว 30% จึงยังตัดสินอะไรไม่ได้ ค่าเกินราวครึ่งเป็นสัญญาณแดง และต้องดูข้อ 1–3 ประกอบเสมอ ส่วน histogram บอกใบ้ในทางเดียวกัน ระฆังลูกเดียวของแผ่นที่ 6 เทียบกับกองเบี้ยวหางยาวของแผ่นที่ 7</p>
+
+<p><strong>🔁 ถามข้อมูลของคุณได้แล้ว:</strong> กราฟโซนของคู่ฉันข้ามเส้นกลางกี่ครั้ง ค้างฝั่งเดียวนานสุดกี่แท่ง และครึ่งหลังอยู่ในเส้นของครึ่งแรกไหม โปรแกรมในส่วน 🛠️ นับให้ทั้งห้าข้อ</p>
+
+<h2>🔍 สิ่งที่สไลด์ไม่ได้บอก</h2>
+
+<p>สไลด์จบที่ "แผ่นนี้เทรดได้ แผ่นนั้นไม่ได้" แต่ไม่ได้บอกสี่เรื่องที่ตัดสินว่าเงินของคุณจะออกมาบวกหรือลบ ภาพข้างล่างคือแผนที่ของทั้งสี่เรื่อง และเป็นภาพที่เราอยากให้คุณวาดได้เองเมื่ออ่านจบ</p>
+
+<div class="figw"><svg class="fig" viewBox="0 0 560 312" role="img" aria-label="ภาพแนวคิด: ε เดินข้ามบันไดเส้นเปอร์เซ็นไทล์ เปิดไม้ที่เส้นนอก ปิดที่เส้นกลาง แล้ววันหนึ่งทะลุเส้น 99 กลายเป็นทางแยกระหว่างกลับกับไม่กลับ" font-family="Sarabun,sans-serif">
+<g stroke-width="1.2">
+<line x1="100" y1="90" x2="540" y2="90" stroke="#dc2626" stroke-dasharray="4 4"/>
+<line x1="100" y1="130" x2="540" y2="130" stroke="#7c3aed" stroke-width="1.6"/>
+<line x1="100" y1="190" x2="540" y2="190" stroke="#2563eb" stroke-width="1.6"/>
+<line x1="100" y1="250" x2="540" y2="250" stroke="#7c3aed" stroke-width="1.6"/>
+<line x1="100" y1="285" x2="540" y2="285" stroke="#dc2626" stroke-dasharray="4 4"/>
+</g>
+<g font-size="14" font-weight="700" fill="#374151" text-anchor="end">
+<text x="94" y="94">P99</text>
+<text x="94" y="134">P90</text>
+<text x="94" y="194">P50</text>
+<text x="94" y="254">P10</text>
+<text x="94" y="289">P1</text>
+</g>
+<text x="540" y="306" font-size="12" fill="#6b7280" text-anchor="end">เวลา →</text>
+<path d="M100,200 L112,184 L124,206 L136,178 L148,160 L160,168 L172,146 L184,132 L190,122 L200,138 L210,158 L220,176 L230,194 L242,206 L254,186 L266,202 L278,182 L290,198 L302,178 L314,192 L326,168 L338,152 L350,160 L362,134 L374,120 L386,108 L398,98 L410,86 L420,76" fill="none" stroke="#374151" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M420,76 L434,96 L448,126 L462,156 L478,178 L496,188 L520,190 L540,190" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round"/>
+<path d="M420,76 L436,66 L456,60 L478,56 L502,52 L540,47" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round"/>
+<line x1="248" y1="135" x2="248" y2="185" stroke="#7c3aed" stroke-width="1.4"/>
+<polygon points="248,131 244,139 252,139" fill="#7c3aed"/>
+<polygon points="248,189 244,181 252,181" fill="#7c3aed"/>
+<circle cx="190" cy="122" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/>
+<circle cx="230" cy="194" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/>
+<circle cx="420" cy="76" r="5" fill="#fff" stroke="#d97706" stroke-width="2.5"/>
+<g font-size="15" font-weight="700">
+<text x="178" y="114" text-anchor="middle" fill="#7c3aed">①</text>
+<text x="216" y="214" text-anchor="middle" fill="#2563eb">②</text>
+<text x="259" y="166" text-anchor="middle" fill="#7c3aed">③</text>
+</g>
+<text x="410" y="64" font-size="13" font-weight="700" fill="#d97706" text-anchor="end">④ วันนี้ ε ทะลุ P99</text>
+<text x="540" y="36" font-size="13" font-weight="700" fill="#dc2626" text-anchor="end">สายจูงขาด → ไม่กลับ</text>
+<text x="540" y="214" font-size="13" font-weight="700" fill="#16a34a" text-anchor="end">สายจูงยืด → กลับถึงเส้นกลาง</text>
+</svg></div>
+<div class="cap">ภาพแนวคิด (ไม่ใช่ข้อมูล) · ตัวเลขในวงกลมตรงกับรายการข้างล่าง</div>
+<ul>
+<li><strong>① → ②</strong> ε แตะเส้นนอกแล้วเปิดไม้สวนทาง (เหนือ P90 = short · ใต้ P10 = long) กลับถึง P50 แล้วปิด เส้นทุกเส้นต้องคิดจากอดีตเท่านั้น · การ์ดที่ 1</li>
+<li><strong>③</strong> หนึ่งรอบได้ (entry − exit)·σ ÷ (1 + β) แล้วหักค่าผ่านทางไป-กลับ 2c คุ้มไหม · การ์ดที่ 2</li>
+<li><strong>ถ้าไม่กลับ</strong> จะหยุดด้วยอะไร ระยะ เวลา หรือเหตุผล · การ์ดที่ 3</li>
+<li><strong>④</strong> วันที่ทะลุเส้นนอกสุด กราฟตอบไม่ได้ว่ากลับหรือไม่กลับ ต้องถามสายจูง · การ์ดที่ 4</li>
+</ul>
+
+<div class="card">
+<h3>เส้นบนกราฟมาจากไหน และทำไมมันเห็นอนาคต <span class="yr">สไลด์ 6–7 · การทดลอง 4a–4c</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p>กราฟโซนสร้างได้ในสี่ขั้น ไม่มีอะไรซ่อนมากกว่านี้</p>
+<ol>
+<li>คิด ε ของทุกวันจาก Y − α̂ − β̂·X (ตอนที่ 3)</li>
+<li>เอา ε <strong>ทั้งหมด</strong> มาเรียงจากน้อยไปมาก</li>
+<li>อ่านค่าที่ตำแหน่ง 1%, 10%, …, 99% ของแถว ถ้ามี <span data-f="p4.settings.bars">1,500</span> แท่ง เส้น P99 คือค่าลำดับที่ 1,485 (1,500 × 0.99)</li>
+<li>ลากค่าเหล่านั้นเป็นเส้นแนวนอนพาดทั้งกราฟ</li>
+</ol>
+
+<p>ขั้นที่ 2 คือรอยรั่ว คำว่า "ทั้งหมด" รวมพรุ่งนี้ไปจนถึงวันสุดท้ายของข้อมูล ในชีวิตจริง ณ วันที่ t คุณมีแค่ ε ถึงวันที่ t ทางที่ทำได้จริงมีสองแบบ</p>
+<ul>
+<li><strong>expanding</strong> (หน้าต่างขยาย) · ใช้ทุกแท่งตั้งแต่ต้นจนถึงวันนั้น เริ่มเชื่อเมื่อมีอดีตครบ <span data-f="p4.settings.expanding_min_bars">250</span> แท่ง</li>
+<li><strong>rolling</strong> (หน้าต่างเลื่อน) · ใช้ <span data-f="p4.settings.roll_bars">250</span> แท่งล่าสุด</li>
+</ul>
+
+<p><strong>ทดลอง:</strong> ใช้ ε เส้นเดียวกันและกฎเดียวกัน คือ short เมื่อ ε อยู่เหนือ P90 · long เมื่ออยู่ใต้ P10 · ออกเมื่อกลับถึง P50 ต่างกันแค่วิธีลากเส้น นับผลเฉพาะ <span data-f="p4.settings.test_bars">750</span> แท่งหลังที่ β̂ ไม่เคยเห็น หลังต้นทุน <span data-f="p4.settings.cost_bps">5</span> bps ต่อขา ทำซ้ำ <span data-f="p4.lookahead.mc.good.worlds">500</span> โลกต่อแบบ</p>
+
+<!--CHART:sas-p4-lookahead-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 332" role="img" aria-label="ผลรวมของกฎโซนเมื่อใช้เส้นสามแบบ บนโลกที่มีสายจูงและไม่มีสายจูง">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M155.1 34V286M262 34V286M368.9 34V286M475.8 34V286M582.8 34V286" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="368.9" y1="34" x2="368.9" y2="286" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="143.1" y="51.5" text-anchor="end" font-size="12" fill="#374151">มีสายจูง</text><text x="143.1" y="66.5" text-anchor="end" font-size="12" fill="#374151">เส้นจากทั้งช่วง (รู้อนาคต)</text><line x1="465.2" y1="55" x2="566.7" y2="55" stroke="#d97706" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="513.3" cy="55" r="6" fill="#d97706" stroke="#fff" stroke-width="2"/><text x="650.2" y="59" font-size="12" fill="#374151"><tspan font-weight="700">27%</tspan><tspan fill="#6b7280" font-size="10.5">  (18% ถึง 37%)</tspan></text><text x="143.1" y="93.5" text-anchor="end" font-size="12" fill="#374151">มีสายจูง</text><text x="143.1" y="108.5" text-anchor="end" font-size="12" fill="#374151">expanding (รู้แค่อดีต)</text><line x1="465.2" y1="97" x2="556" y2="97" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="507.9" cy="97" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="650.2" y="101" font-size="12" fill="#374151"><tspan font-weight="700">26%</tspan><tspan fill="#6b7280" font-size="10.5">  (18% ถึง 35%)</tspan></text><text x="143.1" y="135.5" text-anchor="end" font-size="12" fill="#374151">มีสายจูง</text><text x="143.1" y="150.5" text-anchor="end" font-size="12" fill="#374151">rolling 250 แท่ง (รู้แค่อดีต)</text><line x1="465.2" y1="139" x2="561.4" y2="139" stroke="#7c3aed" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="513.3" cy="139" r="6" fill="#7c3aed" stroke="#fff" stroke-width="2"/><text x="650.2" y="143" font-size="12" fill="#374151"><tspan font-weight="700">27%</tspan><tspan fill="#6b7280" font-size="10.5">  (18% ถึง 36%)</tspan></text><text x="143.1" y="177.5" text-anchor="end" font-size="12" fill="#374151">ไม่มีสายจูง</text><text x="143.1" y="192.5" text-anchor="end" font-size="12" fill="#374151">เส้นจากทั้งช่วง (รู้อนาคต)</text><line x1="336.9" y1="181" x2="566.7" y2="181" stroke="#d97706" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="438.4" cy="181" r="6" fill="#d97706" stroke="#fff" stroke-width="2"/><text x="650.2" y="185" font-size="12" fill="#374151"><tspan font-weight="700">13%</tspan><tspan fill="#6b7280" font-size="10.5">  (−6% ถึง 37%)</tspan></text><text x="143.1" y="219.5" text-anchor="end" font-size="12" fill="#374151">ไม่มีสายจูง</text><text x="143.1" y="234.5" text-anchor="end" font-size="12" fill="#374151">expanding (รู้แค่อดีต)</text><line x1="213.9" y1="223" x2="507.9" y2="223" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="374.3" cy="223" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="650.2" y="227" font-size="12" fill="#374151"><tspan font-weight="700">1%</tspan><tspan fill="#6b7280" font-size="10.5">  (−29% ถึง 26%)</tspan></text><text x="143.1" y="261.5" text-anchor="end" font-size="12" fill="#374151">ไม่มีสายจูง</text><text x="143.1" y="276.5" text-anchor="end" font-size="12" fill="#374151">rolling 250 แท่ง (รู้แค่อดีต)</text><line x1="208.6" y1="265" x2="497.2" y2="265" stroke="#7c3aed" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="363.6" cy="265" r="6" fill="#7c3aed" stroke="#fff" stroke-width="2"/><text x="650.2" y="269" font-size="12" fill="#374151"><tspan font-weight="700">−1%</tspan><tspan fill="#6b7280" font-size="10.5">  (−30% ถึง 24%)</tspan></text>
+<line x1="155.1" y1="286" x2="636.2" y2="286" stroke="#cbd5e1" stroke-width="1.5"/><text x="155.1" y="302" text-anchor="middle" font-size="11" fill="#6b7280">−40</text><text x="262" y="302" text-anchor="middle" font-size="11" fill="#6b7280">−20</text><text x="368.9" y="302" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="475.8" y="302" text-anchor="middle" font-size="11" fill="#6b7280">20</text><text x="582.8" y="302" text-anchor="middle" font-size="11" fill="#6b7280">40</text><text x="395.7" y="323" text-anchor="middle" font-size="12" fill="#6b7280">ผลรวมของช่วงที่นับผล (% ของเงินรวมสองขา)</text>
+<circle cx="492.2" cy="18" r="4.5" fill="#6b7280"/><text x="502.2" y="22" fill="#4b5563">ค่าเฉลี่ย</text><rect x="558.2" y="12.5" width="14" height="11" rx="2" fill="#6b7280" fill-opacity=".2" stroke="#6b7280" stroke-opacity=".55"/><text x="577.2" y="22" fill="#4b5563">ช่วง 5–95%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 500 โลกต่อแบบ · ผลรวมของ 750 แท่งหลัง (ราว 3 ปี) หลังต้นทุน 5 bps · คู่ที่มีสายจูง: เส้นแบบไหนก็ได้ผลใกล้กัน (27% เทียบ 26%) · คู่ที่ไม่มีสายจูง: เส้นที่รู้อนาคตทำให้ดูเหมือนได้กำไรเฉลี่ย 13% (กำไร 85% ของโลก) ทั้งที่เส้นที่ใช้ได้จริงให้ 1% ± 1.6 (กำไร 59% ของโลก ≈ โยนเหรียญ) — การรู้อนาคตของเส้นแทบไม่ช่วยคู่ที่ดี แต่แต่งหน้าให้คู่ที่ไม่มีอะไรเลย</div>
+<!--/CHART:sas-p4-lookahead-->
+
+<p>ดูแถวที่ 4 กับ 5 ของรูป กฎเดียวกัน ε เส้นเดียวกัน ต่างกันแค่ที่มาของเส้น กำไรเฉลี่ยของโลกที่ไม่มีสายจูงหายเกือบหมด ค่าที่เหลือ (<span data-f="p4.lookahead.mc.bad.expanding.total_mean_pct">1</span>% ± <span data-f="p4.lookahead.mc.bad.expanding.total_mean_pm95_pct">1.6</span>) แยกจากศูนย์ไม่ได้ ส่วนสามแถวบนแทบไม่ขยับ</p>
+
+<p><strong>🔁 ถามข้อมูลของคุณได้แล้ว:</strong> เปลี่ยนเส้นใน backtest ของฉันเป็น expanding แล้วกำไรเหลือเท่าไร</p>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>เส้นบนสไลด์คือเปอร์เซ็นไทล์ของ ε <strong>ทั้งช่วง</strong> จึงรู้อนาคตโดยนิยาม การรู้อนาคตนี้แทบไม่ช่วยคู่ที่มีสายจูงจริง แต่ <strong>สร้างกำไรให้คู่ที่ไม่มีอะไรเลย</strong> เส้นที่ใช้เทรดต้องคิดจากอดีตเท่านั้น</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>backtest ที่ลอกเส้นแบบสไลด์ผ่านง่ายที่สุดในคู่ที่อันตรายที่สุด เพราะเส้นรู้อยู่แล้วว่า ε จะไหลไปไกลแค่ไหน จึงวางเส้นนอกไว้ตรงที่ ε เลี้ยวกลับพอดี</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เส้นของวันที่ t ต้องคิดจากสิ่งที่เกิดขึ้นแล้วถึงวันที่ t เท่านั้น เส้นแบบสไลด์คิดจากทุกวัน รวมวันที่ยังไม่มาถึง (Q<sub>x</sub> ข้างล่าง = ค่าที่ x% ของข้อมูลในวงเล็บอยู่ต่ำกว่า)</p>
+<div class="fm">สไลด์    : P<sub>x</sub>    = Q<sub>x</sub>( ε<sub>1</sub> … ε<sub>N</sub> )      ← รวมอนาคต<br>
+expanding : P<sub>x</sub>(t) = Q<sub>x</sub>( ε<sub>1</sub> … ε<sub>t</sub> )<br>
+rolling   : P<sub>x</sub>(t) = Q<sub>x</sub>( ε<sub>t−249</sub> … ε<sub>t</sub> )</div>
+
+<div class="bx bg"><div class="bt">✅ เส้นทั้งช่วงไม่ทำร้ายเมื่อไร</div>
+<p>เมื่อสายจูงจริงและนิ่ง เส้นจากอดีตกับเส้นจากทั้งช่วงอยู่ใกล้กันมาก แต่คุณไม่รู้ล่วงหน้าว่าคู่ของคุณเป็นแบบไหน จึงใช้เส้นจากอดีตไว้ก่อนเสมอ</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>เมื่อ ε ไม่นิ่ง เส้นจากทั้งช่วงกว้างพอดีกับระยะที่ ε จะเดินไปได้ทั้งหมด ส่วนเส้นจากอดีตวิ่งตามหลัง ε ทุกครั้งที่ ε ทำจุดใหม่ เส้นนอกถูกดันออกตาม กฎ "เข้าที่เส้นนอก" จึงเข้าเร็วเกินแล้วติดค้าง</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "มีจุดเหนือเส้น 99% แค่ 1% แปลว่าเส้นแม่น"<br>
+<strong>quant เห็น:</strong> ตัวเลขนั้นจริงเสมอโดยนิยาม คำถามที่มีความหมายคือ ถ้าลากเส้นจากครึ่งแรก ครึ่งหลังจะโผล่นอกเส้นกี่ %</p></div>
+
+<p><strong>📍 ในงานวิจัยจริง:</strong> งานคลาสสิกของ Gatev, Goetzmann และ Rouwenhorst (2006) จับคู่และวัด sd ในช่วง formation 12 เดือน แล้วเทรดใน 6 เดือนถัดไป เปิดไม้เมื่อราคาห่างกันเกินสองเท่าของ sd ที่วัดจากช่วง formation และปิดเมื่อราคากลับมาตัดกัน เส้นของเขามาจากอดีตล้วน</p>
+
+<div class="bx ba"><div class="bt">🧮 ตัวอย่าง: แยกกำไรที่มาจากเส้น ออกจากกำไรที่มาจากสายจูง</div>
+<p>ใช้ผลรวมเฉลี่ยของช่วงที่นับผล หลังต้นทุน 5 bps แล้วลบกันตรง ๆ</p>
+<div class="fm">good : <span data-f="p4.lookahead.mc.good.full.total_mean_pct">27</span>% (ทั้งช่วง) − <span data-f="p4.lookahead.mc.good.expanding.total_mean_pct">26</span>% (expanding) = <span data-f="p4.lookahead.mc.good.gap_full_minus_expanding_pct">1</span> จุด<br>
+fake : <span data-f="p4.lookahead.mc.bad.full.total_mean_pct">13</span>% (ทั้งช่วง) − <span data-f="p4.lookahead.mc.bad.expanding.total_mean_pct">1</span>% (expanding) = <span data-f="p4.lookahead.mc.bad.gap_full_minus_expanding_pct">12</span> จุด</div>
+<p>ในโลก good กำไรเกือบทั้งหมดมาจากสายจูง ในโลก fake กำไรเกือบทั้งหมดมาจากเส้นที่เห็นอนาคต ถ้า backtest ของคุณเปลี่ยนเส้นแล้วกำไรหายเกือบหมด กำไรนั้นไม่เคยเป็นของคุณ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ol>
+<li>"VaR x%" บนสไลด์ = เปอร์เซ็นไทล์ที่ x ของ ε ทั้งช่วง จึงมีจุดนอกเส้นตามสัดส่วนเป๊ะเสมอ</li>
+<li>เส้นที่ใช้เทรดต้องคิดจากอดีตเท่านั้น (expanding หรือ rolling)</li>
+<li>วัดผลของการรู้อนาคตด้วยการเปลี่ยนเส้น แล้วดูว่ากำไรหายไปเท่าไร</li>
+</ol></div>
+</div>
+
+<div class="card">
+<h3>เศรษฐศาสตร์ของแถบ: หนึ่งรอบได้เท่าไร ปีละกี่รอบ <span class="yr">การทดลอง 4d–4e</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p><strong>จากเส้นเปอร์เซ็นไทล์สู่ z:</strong> ทั้งสองคือไม้บรรทัดของระยะเดียวกัน ถ้า ε เป็นระฆังปกติ P90 ≈ z 1.28 · P95 ≈ z 1.64 · P99 ≈ z 2.33 จากนี้เราเขียนกฎเป็น z เพราะสูตรกำไรต่อรอบต้องการระยะในหน่วย σ เส้นเปอร์เซ็นไทล์แบบรู้แค่อดีตใช้ <em>ตรวจ</em> ห้าสัญญาณ ส่วน z ใช้ <em>สั่ง</em> เข้า-ออก</p>
+
+<p>เริ่มจากไม้จริงหนึ่งไม้ เป็นไม้แรกตามลำดับเวลาในครึ่งหลังของคู่จำลอง good ไม่ได้เลือก กฎคือเข้าเมื่อ |z| ถึง 2 ออกเมื่อ z ข้าม 0 z วัดด้วย <strong>ไม้บรรทัด</strong> ชุดเดียว คือ α̂, β̂, μ̂, σ̂ ที่ประมาณจาก <span data-f="p4.settings.train_bars">750</span> แท่งแรกแล้วไม่แตะอีก</p>
+
+<!--CHART:sas-p4-trade-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 320" role="img" aria-label="z ของคู่ good รอบไม้ตัวอย่าง: เข้าเมื่อ z แตะ 2 ออกเมื่อ z ข้าม 0">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p4-trade-clip1"><rect x="57" y="47" width="608.2" height="226"/></clipPath></defs>
+<rect x="235.4" y="48" width="103.5" height="224" fill="#6b7280" fill-opacity="0.08"/><text x="287.2" y="43" text-anchor="middle" font-size="10.5" fill="#6b7280">ถือ 7 แท่ง</text>
+<path d="M58 272H664.2M58 231.3H664.2M58 190.5H664.2M58 149.8H664.2M58 109.1H664.2M58 68.4H664.2" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="276" text-anchor="end" font-size="11" fill="#6b7280">−3</text><text x="50" y="235.3" text-anchor="end" font-size="11" fill="#6b7280">−2</text><text x="50" y="194.5" text-anchor="end" font-size="11" fill="#6b7280">−1</text><text x="50" y="153.8" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="113.1" text-anchor="end" font-size="11" fill="#6b7280">1</text><text x="50" y="72.4" text-anchor="end" font-size="11" fill="#6b7280">2</text><text x="58" y="22" font-size="11" fill="#6b7280">z</text>
+<line x1="58" y1="149.8" x2="664.2" y2="149.8" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="68.4" x2="664.2" y2="68.4" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="149.8" x2="664.2" y2="149.8" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="231.3" x2="664.2" y2="231.3" stroke="#16a34a" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="672.2" y="71.9" font-size="10.5" fill="#6b7280">เข้า short: z ≥ 2</text><text x="672.2" y="153.3" font-size="10.5" fill="#6b7280">ออก: z ข้าม 0</text><text x="672.2" y="234.8" font-size="10.5" fill="#6b7280">เข้า long: z ≤ −2</text>
+<g clip-path="url(#sas-p4-trade-clip1)"><path d="M58 136.4l14.8-19.7 14.8 5.7 14.8-1.1 14.7 4.8 14.8 5.4 14.8 8.5 14.8-20.6 14.8-11.1 14.8 10.8 14.8-.5 14.7-15.4 14.8-35.4 14.8 16.8 14.8 2.4 14.8 31.9 14.8-2.7 14.7 18.9 14.8-1.7 14.8 23.2 14.8 .5 14.8-6.8 14.8 12.4 14.8 7.1 14.7 3 14.8-13.1 14.8-25.7 14.8 5.2 14.8 16.7 14.8-8.9 14.8 36.3 14.7 3.2 14.8 27.9 14.8 14 14.8 5 14.8 6.8 14.8 11.4 14.8-28.7 14.7-17.8 14.8-14.1 14.8-15.8 14.8 27" fill="none" stroke="#1f2937" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<path d="M235.4,67.8C203.9,93.8 186.4,93.8 165.4,93.8" fill="none" stroke="#7c3aed" stroke-width="1"/><circle cx="235.4" cy="67.8" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="161.4" y="97.8" text-anchor="end" font-weight="700" fill="#7c3aed" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">เข้า · z = 2.01</text>
+<path d="M338.9,156.6C310.1,200.6 294.1,200.6 274.9,200.6" fill="none" stroke="#7c3aed" stroke-width="1"/><circle cx="338.9" cy="156.6" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="270.9" y="204.6" text-anchor="end" font-weight="700" fill="#7c3aed" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">ออก · z = −0.17</text>
+<line x1="58" y1="272" x2="664.2" y2="272" stroke="#cbd5e1" stroke-width="1.5"/><text x="58" y="288" text-anchor="middle" font-size="11" fill="#6b7280">750</text><text x="205.9" y="288" text-anchor="middle" font-size="11" fill="#6b7280">760</text><text x="353.7" y="288" text-anchor="middle" font-size="11" fill="#6b7280">770</text><text x="501.6" y="288" text-anchor="middle" font-size="11" fill="#6b7280">780</text><text x="649.4" y="288" text-anchor="middle" font-size="11" fill="#6b7280">790</text><text x="361.1" y="309" text-anchor="middle" font-size="12" fill="#6b7280">แท่งที่ (วัน)</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง · คู่ที่มีสายจูง · ไม้แรกของครึ่งหลัง: สิ้นแท่ง 762 z = 2.01 → เปิด short สเปรด · สิ้นแท่ง 769 z = −0.17 → ปิด · ถือ 7 แท่ง ได้ 2.35% ของเงินรวมสองขา หักต้นทุนครบรอบ 0.10% เหลือ 2.25% · z วัดด้วย σ̂ ของ 750 แท่งแรก</div>
+<!--/CHART:sas-p4-trade-->
+
+
+<p>ไม้นี้เปิด short สเปรด (ขาย Y 1 บาท ซื้อ X <span data-f="p4.zones.good.beta">1.381</span> บาท) ตอน z = <span data-f="p4.trade.z_entry">2.01</span> และปิดตอน z = <span data-f="p4.trade.z_exit">−0.17</span> หลังถือ <span data-f="p4.trade.bars_held">7</span> แท่ง ระหว่างนั้น Y เปลี่ยนไป <span data-f="p4.trade.dy_pct">−3.68</span>% และ X เปลี่ยนไป +<span data-f="p4.trade.dx_pct">1.4</span>% ทั้งสองขาทำเงินให้ฝั่ง short สเปรด คำถามคือรวมแล้วได้กี่ % ของเงินที่วาง</p>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> กำไรของไม้นี้คือระยะที่ ε เดินลงมา แต่สเปรดหนึ่งหน่วยใช้เงินสองขารวม 1 + β บาท จึงต้องหารด้วย 1 + β แล้วหักค่าผ่านทางขาไปกับขากลับ</p>
+<div class="fm">ขั้นต้น = (z<sub>เข้า</sub> − z<sub>ออก</sub>) × σ̂ ÷ (1 + β̂)<br>
+       = (<span data-f="p4.trade.z_entry">2.01</span> + <span data-f="p4.trade.z_exit" data-abs>0.17</span>) × <span data-f="p4.zones.good.sigma_train_pct">2.57</span>% ÷ 2.381 = <span data-f="p4.trade.gross_pct">2.35</span>%<br>
+สุทธิ  = ขั้นต้น − 2c = <span data-f="p4.trade.gross_pct">2.35</span>% − <span data-f="p4.trade.cost_pct">0.1</span>% = <span data-f="p4.trade.net_pct">2.25</span>%</div>
+
+<p>สำหรับไม้ที่จบแล้ว นี่เป็นแค่การทำบัญชี ประโยชน์จริงของสูตรคือใช้ <em>ก่อน</em> เทรด แทน z เข้า = 2 และ z ออก = 0 สูตรให้ <span data-f="p4.trade.formula_avg_pct">2.16</span>% ต่อไม้ ส่วนไม้จริงทั้ง <span data-f="p4.trade.trades">7</span> ไม้ในครึ่งหลังได้ขั้นต้นเฉลี่ย <span data-f="p4.trade.gross_avg_pct">2.64</span>%</p>
+
+<p>ส่วนเกินคือ <strong>overshoot</strong> (การทะลุเกณฑ์) ข้อมูลรายแท่งไม่หยุดตรงเส้น วันที่สัญญาณเกิด z มักเลยเส้นเข้าไปแล้ว และวันที่ออกมักเลยศูนย์ไปอีกนิด แม้ป้อนค่าจริงของโลกจำลอง (σ = <span data-f="p4.settings.sigma_true_pct">3</span>% · β = <span data-f="p4.settings.beta_true">1.4</span>) ลงในสูตร สูตรก็ให้ <span data-f="p4.threshold.known.e2.formula_pct">2.5</span>% ต่อไม้ ขณะที่ไม้จริงได้เฉลี่ย <span data-f="p4.threshold.known.e2.gross_per_trade_pct">2.96</span>%</p>
+<p>สูตรจึงเป็น <strong>พื้นโดยเฉลี่ย</strong> สำหรับไม้ที่ปิดที่เส้นออกด้วยไม้บรรทัดตายตัว ไม่ใช่ประกันรายไม้ ไม้เดี่ยวยังขาดทุนได้ และกับไม้บรรทัด walk-forward ส่วนเผื่อแทบหายไป เกณฑ์ z = 2 ได้ขั้นต้นเฉลี่ย <span data-f="p4.threshold.e2.gross_per_trade_pct">1.99</span>% เทียบสูตร <span data-f="p4.threshold.e2.true_sigma_at_entry">1.5</span> × 3% ÷ 2.4 ≈ 1.88% อีกเรื่องที่ต้องรู้ ห้องทดลองสมมติว่าซื้อขายได้ที่ราคาปิดของแท่งที่ให้สัญญาณ ถ้าคุณส่งคำสั่งได้วันรุ่งขึ้น overshoot ส่วนหนึ่งจะหายไป ผลของ check มีแถว lag 2 ให้เทียบ</p>
+
+<p>อีกครึ่งของเรื่องคือปีหนึ่งได้กี่ไม้ เราลองบน <span data-f="p4.threshold.worlds">500</span> โลก good แบบ walk-forward (ประมาณไม้บรรทัดใหม่ทุก <span data-f="p4.settings.wf_refit_bars">21</span> แท่งจาก <span data-f="p4.settings.wf_train_bars">250</span> แท่งล่าสุด) เปลี่ยนเฉพาะเกณฑ์เข้า ออกที่ z = 0 เสมอ z แบบนี้วัดด้วย σ̂ จาก 250 แท่งล่าสุด ซึ่งมักเล็กกว่าการแกว่งจริง เพราะ α̂, β̂, μ̂ จากหน้าต่างเดียวกันถูกเลือกให้ส่วนเหลือเล็กที่สุด จึงดูดการแกว่งไปส่วนหนึ่ง นอกตัวอย่าง z จึงแกว่งด้วย sd ราว <span data-f="p4.threshold.z_sd">1.25</span> แทนที่จะเป็น 1 เมื่อรวม overshoot ด้วย ไม้ที่เข้าตามเกณฑ์ z = 2 เข้าจริงที่ระยะเฉลี่ยราว <span data-f="p4.threshold.e2.true_sigma_at_entry">1.5</span> σ จริง (ไม่ใช่แค่ 2 ÷ 1.25) ค่า sd ของคู่คุณดูได้จากผลของ check ในสถานีที่ 4</p>
+
+<!--CHART:sas-p4-threshold-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 525" role="img" aria-label="เกณฑ์เข้ากว้างขึ้น: ไม้ต่อปีลดลง กำไรต่อไม้เพิ่มขึ้น และเกณฑ์ที่ให้ผลตอบแทนต่อปีสูงสุดขยับออกเมื่อต้นทุนสูงขึ้น">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p4-threshold-clip1"><rect x="57" y="31" width="686" height="120"/></clipPath><clipPath id="sas-p4-threshold-clip2"><rect x="57" y="187" width="686" height="120"/></clipPath><clipPath id="sas-p4-threshold-clip3"><rect x="57" y="360" width="686" height="120"/></clipPath></defs>
+<path d="M58 150H742M58 113.1H742M58 76.2H742M58 39.4H742M88 32V150M212.8 32V150M337.6 32V150M462.4 32V150M587.2 32V150M712 32V150" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="154" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="117.1" text-anchor="end" font-size="11" fill="#6b7280">5</text><text x="50" y="80.2" text-anchor="end" font-size="11" fill="#6b7280">10</text><text x="50" y="43.4" text-anchor="end" font-size="11" fill="#6b7280">15</text>
+<g clip-path="url(#sas-p4-threshold-clip1)"><path d="M88 50.4l124.8 39.1 124.8 22.1 124.8 14.8 124.8 10.3 124.8 5.9" fill="none" stroke="#1f2937" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#1f2937" stroke="#fff" stroke-width="2"><circle cx="88" cy="50.4" r="3.2"/><circle cx="212.8" cy="89.5" r="3.2"/><circle cx="337.6" cy="111.7" r="3.2"/><circle cx="462.4" cy="126.4" r="3.2"/><circle cx="587.2" cy="136.7" r="3.2"/><circle cx="712" cy="142.6" r="3.2"/></g>
+<text x="58" y="23" font-size="12.5" fill="#374151"><tspan font-weight="700">จำนวนไม้ต่อปี</tspan></text>
+<line x1="58" y1="150" x2="742" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
+<path d="M58 289.1H742M58 255.4H742M58 221.7H742M58 188H742M88 188V306M212.8 188V306M337.6 188V306M462.4 188V306M587.2 188V306M712 188V306" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="293.1" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="259.4" text-anchor="end" font-size="11" fill="#6b7280">1</text><text x="50" y="225.7" text-anchor="end" font-size="11" fill="#6b7280">2</text><text x="50" y="192" text-anchor="end" font-size="11" fill="#6b7280">3</text>
+<line x1="58" y1="289.1" x2="742" y2="289.1" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<g clip-path="url(#sas-p4-threshold-clip2)"><path d="M88 259.8l124.8-13.8 124.8-12.5 124.8-11.4 124.8-10.5 124.8-9.4" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#2563eb" stroke="#fff" stroke-width="2"><circle cx="88" cy="259.8" r="3.2"/><circle cx="212.8" cy="246" r="3.2"/><circle cx="337.6" cy="233.5" r="3.2"/><circle cx="462.4" cy="222.1" r="3.2"/><circle cx="587.2" cy="211.6" r="3.2"/><circle cx="712" cy="202.2" r="3.2"/></g>
+<g clip-path="url(#sas-p4-threshold-clip2)"><path d="M88 263.2l124.8-13.8 124.8-12.5 124.8-11.5 124.8-10.4 124.8-9.5" fill="none" stroke="#d97706" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#d97706" stroke="#fff" stroke-width="2"><circle cx="88" cy="263.2" r="3.2"/><circle cx="212.8" cy="249.4" r="3.2"/><circle cx="337.6" cy="236.9" r="3.2"/><circle cx="462.4" cy="225.4" r="3.2"/><circle cx="587.2" cy="215" r="3.2"/><circle cx="712" cy="205.5" r="3.2"/></g>
+<g clip-path="url(#sas-p4-threshold-clip2)"><path d="M88 273.3l124.8-13.8 124.8-12.8 124.8-11.5 124.8-10.1 124.8-9.5" fill="none" stroke="#dc2626" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#dc2626" stroke="#fff" stroke-width="2"><circle cx="88" cy="273.3" r="3.2"/><circle cx="212.8" cy="259.5" r="3.2"/><circle cx="337.6" cy="246.7" r="3.2"/><circle cx="462.4" cy="235.2" r="3.2"/><circle cx="587.2" cy="225.1" r="3.2"/><circle cx="712" cy="215.6" r="3.2"/></g>
+<g clip-path="url(#sas-p4-threshold-clip2)"><path d="M88 293.5l124.8-14.1 124.8-12.5 124.8-11.5 124.8-10.4 124.8-9.5" fill="none" stroke="#7c3aed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" stroke-dasharray="7 4"/></g>
+<g fill="#7c3aed" stroke="#fff" stroke-width="2"><circle cx="88" cy="293.5" r="3.2"/><circle cx="212.8" cy="279.4" r="3.2"/><circle cx="337.6" cy="266.9" r="3.2"/><circle cx="462.4" cy="255.4" r="3.2"/><circle cx="587.2" cy="245" r="3.2"/><circle cx="712" cy="235.5" r="3.2"/></g>
+<text x="58" y="179" font-size="12.5" fill="#374151"><tspan font-weight="700">กำไรสุทธิต่อไม้</tspan><tspan fill="#6b7280" font-size="11">  % ของเงินรวมสองขา</tspan></text>
+<line x1="399" y1="175" x2="417" y2="175" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/><text x="423" y="179" fill="#4b5563">ไม่มีต้นทุน</text><line x1="486.7" y1="175" x2="504.7" y2="175" stroke="#d97706" stroke-width="2.5" stroke-linecap="round"/><text x="510.7" y="179" fill="#4b5563">c = 5 bps</text><line x1="573.3" y1="175" x2="591.3" y2="175" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/><text x="597.3" y="179" fill="#4b5563">c = 20 bps</text><line x1="666.1" y1="175" x2="684.1" y2="175" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="7 4"/><text x="690.1" y="179" fill="#4b5563">c = 50 bps</text>
+<line x1="58" y1="306" x2="742" y2="306" stroke="#cbd5e1" stroke-width="1.5"/>
+<path d="M58 452.8H742M58 420H742M58 387.2H742M88 361V479M212.8 361V479M337.6 361V479M462.4 361V479M587.2 361V479M712 361V479" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="456.8" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="424" text-anchor="end" font-size="11" fill="#6b7280">5</text><text x="50" y="391.2" text-anchor="end" font-size="11" fill="#6b7280">10</text>
+<line x1="58" y1="452.8" x2="742" y2="452.8" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<g clip-path="url(#sas-p4-threshold-clip3)"><path d="M88 376.1l124.8 7.8 124.8 12.5 124.8 14.4 124.8 14.4 124.8 11.2" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#2563eb" stroke="#fff" stroke-width="2"><circle cx="88" cy="376.1" r="3.2"/><circle cx="212.8" cy="383.9" r="3.2"/><circle cx="337.6" cy="396.4" r="3.2"/><circle cx="462.4" cy="410.8" r="3.2"/><circle cx="587.2" cy="425.2" r="3.2"/><circle cx="712" cy="436.4" r="3.2"/></g>
+<g fill="#2563eb" stroke="#fff" stroke-width="2"><circle cx="88" cy="376.1" r="6.5"/></g>
+<g clip-path="url(#sas-p4-threshold-clip3)"><path d="M88 384.6l124.8 5.2 124.8 9.9 124.8 13.1 124.8 13.1 124.8 11.1" fill="none" stroke="#d97706" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#d97706" stroke="#fff" stroke-width="2"><circle cx="88" cy="384.6" r="3.2"/><circle cx="212.8" cy="389.8" r="3.2"/><circle cx="337.6" cy="399.7" r="3.2"/><circle cx="462.4" cy="412.8" r="3.2"/><circle cx="587.2" cy="425.9" r="3.2"/><circle cx="712" cy="437" r="3.2"/></g>
+<g fill="#d97706" stroke="#fff" stroke-width="2"><circle cx="88" cy="384.6" r="6.5"/></g>
+<g clip-path="url(#sas-p4-threshold-clip3)"><path d="M88 411.5l124.8-5.9 124.8 4.6 124.8 9.1 124.8 10.5 124.8 9.2" fill="none" stroke="#dc2626" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g fill="#dc2626" stroke="#fff" stroke-width="2"><circle cx="88" cy="411.5" r="3.2"/><circle cx="212.8" cy="405.6" r="3.2"/><circle cx="337.6" cy="410.2" r="3.2"/><circle cx="462.4" cy="419.3" r="3.2"/><circle cx="587.2" cy="429.8" r="3.2"/><circle cx="712" cy="439" r="3.2"/></g>
+<g fill="#dc2626" stroke="#fff" stroke-width="2"><circle cx="212.8" cy="405.6" r="6.5"/></g>
+<g clip-path="url(#sas-p4-threshold-clip3)"><path d="M88 463.9l124.8-26.2 124.8-7.2 124.8 1.3 124.8 5.2 124.8 5.9" fill="none" stroke="#7c3aed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" stroke-dasharray="7 4"/></g>
+<g fill="#7c3aed" stroke="#fff" stroke-width="2"><circle cx="88" cy="463.9" r="3.2"/><circle cx="212.8" cy="437.7" r="3.2"/><circle cx="337.6" cy="430.5" r="3.2"/><circle cx="462.4" cy="431.8" r="3.2"/><circle cx="587.2" cy="437" r="3.2"/><circle cx="712" cy="442.9" r="3.2"/></g>
+<g fill="#7c3aed" stroke="#fff" stroke-width="2"><circle cx="337.6" cy="430.5" r="6.5"/></g>
+<text x="58" y="352" font-size="12.5" fill="#374151"><tspan font-weight="700">ผลตอบแทนต่อปี (%)</tspan><tspan fill="#6b7280" font-size="11">  = ไม้ต่อปี × กำไรต่อไม้</tspan></text>
+<line x1="261.3" y1="331" x2="279.3" y2="331" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/><text x="285.3" y="335" fill="#4b5563">ไม่มีต้นทุน</text><line x1="349" y1="331" x2="367" y2="331" stroke="#d97706" stroke-width="2.5" stroke-linecap="round"/><text x="373" y="335" fill="#4b5563">c = 5 bps</text><line x1="435.6" y1="331" x2="453.6" y2="331" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/><text x="459.6" y="335" fill="#4b5563">c = 20 bps</text><line x1="528.4" y1="331" x2="546.4" y2="331" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="7 4"/><text x="552.4" y="335" fill="#4b5563">c = 50 bps</text><circle cx="625.3" cy="331" r="4" fill="#fff" stroke="#374151" stroke-width="2.2"/><text x="635.3" y="335" fill="#4b5563">จุดสูงสุดของแต่ละเส้น</text>
+<line x1="58" y1="479" x2="742" y2="479" stroke="#cbd5e1" stroke-width="1.5"/><text x="88" y="495" text-anchor="middle" font-size="11" fill="#6b7280">0.5</text><text x="212.8" y="495" text-anchor="middle" font-size="11" fill="#6b7280">1</text><text x="337.6" y="495" text-anchor="middle" font-size="11" fill="#6b7280">1.5</text><text x="462.4" y="495" text-anchor="middle" font-size="11" fill="#6b7280">2</text><text x="587.2" y="495" text-anchor="middle" font-size="11" fill="#6b7280">2.5</text><text x="712" y="495" text-anchor="middle" font-size="11" fill="#6b7280">3</text><text x="400" y="516" text-anchor="middle" font-size="12" fill="#6b7280">เกณฑ์เข้า: เปิดสถานะเมื่อ |z| ≥ ค่านี้ (z วัดด้วย σ ของช่วง train)</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 500 โลกที่มีสายจูง · walk-forward · ออกที่ z = 0 · ค่าเฉลี่ยทุกโลก · จุด = เกณฑ์ที่ทดสอบ · เกณฑ์กว้างขึ้น ไม้น้อยลง (13.5 → 1.0 ไม้ต่อปี) แต่ไม้อ้วนขึ้น (0.87% → 2.58% ก่อนต้นทุน) · วงใหญ่ = เกณฑ์ที่ให้ผลตอบแทนต่อปีสูงสุด ขยับออกตามต้นทุน: 0.5 ที่ 5 bps → 1 ที่ 20 bps → 1.5 ที่ 50 bps (เมื่อไม่มีต้นทุน 0.5 คือขอบล่างของตาราง) · z วัดด้วย σ ของช่วง train: z = 2 ตรงกับราว 1.5 σ จริง</div>
+<!--/CHART:sas-p4-threshold-->
+
+
+<p>อ่านกราฟเป็นสองแกน แถบกว้างขึ้น ไม้ <strong>อ้วนขึ้น</strong> แต่ <strong>น้อยลงเร็วกว่า</strong> ต้นทุนต่อไม้คงที่ที่ 2c ไม่ว่าไม้จะอ้วนหรือผอม แถบแคบจึงจ่ายค่าผ่านทางบ่อยที่สุด วงใหญ่ในกรอบล่างจึงขยับออกเมื่อต้นทุนขึ้น ถ้าเลือกตาม Sharpe ก็ขยับแบบเดียวกัน <span data-f="p4.threshold.best.c5.entry_by_sharpe">1</span> → <span data-f="p4.threshold.best.c20.entry_by_sharpe">1.5</span> → <span data-f="p4.threshold.best.c50.entry_by_sharpe">2</span> เมื่อต้นทุน 5 → 20 → 50 bps ทั้งหมดนี้วัดบนโลก good ที่ σ = <span data-f="p4.settings.sigma_true_pct">3</span>% · β = <span data-f="p4.settings.beta_true">1.4</span> · half-life <span data-f="p4.settings.half_life_true_bars">12</span> เท่านั้น จุดที่ดีที่สุดของคู่คุณขึ้นกับต้นทุนเทียบกับ σ ÷ (1 + β) และ half-life</p>
+<p>แถบกว้างยังมีราคาที่กราฟไม่แสดง ผลแต่ละปีแกว่งตามโชคของไม่กี่ไม้ และต้องรอนานกว่าจะรู้ว่ากฎใช้ได้ไหม แลกกับที่เหลือให้ σ̂, β̂ ผิด</p>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>หนึ่งรอบได้ราว (entry − exit)·σ ÷ (1 + β) หักค่าผ่านทาง 2c และผลต่อปีคือจำนวนรอบคูณกำไรสุทธิต่อรอบ แถบกว้างได้ไม้อ้วนแต่น้อย <strong>ต้นทุนยิ่งสูง แถบที่ดีที่สุดยิ่งขยับออก</strong></p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>backtest ที่แดงทั้งที่สายจูงมีจริง มักมาจากแถบที่แคบเกินต้นทุน กำไรขั้นต้นยังบวกแต่ค่าผ่านทางกินหมด Do และ Faff (2012) พบว่า pairs trading ในหุ้นสหรัฐฯ ช่วง 1963–2009 ยังมีกำไรหลังหักค่านายหน้า ผลกระทบต่อราคา และค่ายืมหุ้น แต่น้อยลงมาก</p></div>
+
+<p>แล้วแถบต้องกว้างอย่างน้อยเท่าไร</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ระยะที่ ε เดินในหนึ่งรอบ ต้องมากพอจ่ายค่าผ่านทางไป-กลับก่อน ถึงจะเริ่มมีกำไรแม้แต่บาทเดียว</p>
+<div class="fm">(entry − exit) · σ ÷ (1 + β)  &gt;  2c<br>
+⇔  entry − exit  &gt;  2c · (1 + β) ÷ σ        ← แถบคุ้มทุน (หน่วย σ จริง)</div>
+
+<p>โลกจำลองมี β = <span data-f="p4.settings.beta_true">1.4</span> และ σ = <span data-f="p4.settings.sigma_true_pct">3</span>%</p>
+<ul>
+<li>c = 5 bps: 2 × 0.0005 × 2.4 ÷ 0.03 = 0.08 σ แทบไม่มีผล</li>
+<li>c = 50 bps: 2 × 0.005 × 2.4 ÷ 0.03 = 0.8 σ เกณฑ์ walk-forward 0.5 (≈ <span data-f="p4.threshold.e0_5.true_sigma_at_entry">0.6</span> σ จริง) จึงต่ำกว่าแถบคุ้มทุน และตารางยืนยันว่าขาดทุน</li>
+</ul>
+<p>แถบคุ้มทุนแค่ทำให้เสมอตัว ยังไม่ได้เผื่อให้ σ̂ หรือ β̂ ประมาณผิดเลย</p>
+
+<div class="bx ba"><div class="bt">🧮 ตัวอย่าง: ทำไมแถบแคบตายเมื่อต้นทุนสูง</div>
+<p>ที่ c = 50 bps ค่าผ่านทางไป-กลับ = 2 × 50 bps = 1.00% ของเงินรวมสองขา</p>
+<ul>
+<li><strong>entry 0.5:</strong> ขั้นต้น <span data-f="p4.threshold.e0_5.gross_per_trade_pct">0.87</span>% ต่อไม้ ไม่พอจ่าย 1.00% เหลือสุทธิ <span data-f="p4.threshold.e0_5.c50.net_per_trade_pct">−0.13</span>% × <span data-f="p4.threshold.e0_5.trades_per_year">13.5</span> ไม้ต่อปี ≈ <span data-f="p4.threshold.e0_5.c50.ann_return_pct">−1.7</span>% ต่อปี</li>
+<li><strong>entry 1.5:</strong> ขั้นต้น <span data-f="p4.threshold.e1_5.gross_per_trade_pct">1.65</span>% เหลือสุทธิ <span data-f="p4.threshold.e1_5.c50.net_per_trade_pct">0.66</span>% × <span data-f="p4.threshold.e1_5.trades_per_year">5.2</span> ไม้ ≈ <span data-f="p4.threshold.e1_5.c50.ann_return_pct">3.4</span>% ต่อปี</li>
+</ul>
+<p>ไม้ที่ผอมกว่าค่าผ่านทาง ยิ่งเทรดบ่อยยิ่งขาดทุนเร็ว (ตัวเลขห้องทดลองเป็นค่าเฉลี่ยรายโลกก่อนปัด ผลลบผลคูณจึงคลาดได้ในหลักสุดท้าย)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "เข้าที่ z = 2 เป็นค่ามาตรฐาน"<br>
+<strong>quant เห็น:</strong> เกณฑ์เข้าเป็นคำตอบของสมการต้นทุน ไม่ใช่ธรรมเนียม ในห้องทดลอง 2 ชนะตาม Sharpe เฉพาะที่ต้นทุน 50 bps ต่อขา</p></div>
+
+
+
+
+<div class="bx bg"><div class="bt">✅ สูตรใช้ได้เมื่อไร</div>
+<p>σ และ β ในช่วงที่เทรดใกล้กับช่วงที่ประมาณ และต้นทุนต่อขานับครบ ทั้งค่าธรรมเนียมและส่วนต่างราคาซื้อ-ขาย ค่ายืมคิดตามเวลา ไม่ใช่ต่อเที่ยว ค่ายืม b% ต่อปีของขา short ที่ถือ H แท่ง เพิ่มต้นทุนราว b × H/252 แถบกว้างถือนานจึงจ่ายมากกว่า</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>σ̂ ต่ำกว่าการแกว่งจริง แถบจึงแคบกว่าที่คิด · β เปลี่ยนไปจากที่ประมาณ ε บนจอจึงไม่ใช่สเปรดที่คุณถืออยู่จริง · ราคากระโดดข้ามเส้นออก overshoot กลายเป็นทางลบ</p></div>
+
+<p><strong>ด้านออก (4e):</strong> ใช้ entry 2 ที่ 5 bps เหมือนเดิม เปลี่ยนเฉพาะจุดออก</p>
+<div class="tw"><table>
+<tr><th>วิธีออก</th><th class="nw">ผลต่อปี</th><th class="nw">Sharpe</th><th class="nw">เวลาในตลาด</th></tr>
+<tr><td>ที่ z = 0 (ถึงค่ากลาง)</td><td><span data-f="p4.exits.x0.c5.ann_return_pct">6.1</span>%</td><td><span data-f="p4.exits.x0.c5.sharpe">1.5</span></td><td><span data-f="p4.exits.x0.in_market_pct">34</span>%</td></tr>
+<tr><td>ออกก่อน ที่ |z| = 0.5</td><td><span data-f="p4.exits.x0_5.c5.ann_return_pct">5.3</span>%</td><td><span data-f="p4.exits.x0_5.c5.sharpe">1.5</span></td><td><span data-f="p4.exits.x0_5.in_market_pct">26</span>%</td></tr>
+<tr><td>รอถึงแถบตรงข้าม แล้วกลับข้างทันที</td><td><span data-f="p4.exits.flip.c5.ann_return_pct">6.2</span>%</td><td><span data-f="p4.exits.flip.c5.sharpe">0.9</span></td><td><span data-f="p4.exits.flip.in_market_pct">96</span>%</td></tr>
+</table></div>
+<p>การกลับข้างได้ต่อปีพอ ๆ กัน แต่ Sharpe ต่ำกว่ามาก เพราะอยู่ในตลาดเกือบตลอด ถือไม้ละราว <span data-f="p4.exits.flip.hold_bars">125</span> แท่ง ส่วน Avellaneda และ Lee (2010) ออกก่อนถึงค่ากลางและไม่สมมาตร: เปิดเมื่อ |s| เกิน 1.25 ปิด long ที่ −0.50 ปิด short ที่ +0.75 (s = ระยะจากค่ากลางในหน่วย sd)</p>
+
+
+<p><strong>🔁 ถามข้อมูลของคุณได้แล้ว:</strong> ต้นทุนจริงต่อขาของฉันเท่าไร แถบคุ้มทุนอยู่ตรงไหน และฉันอยู่ในตลาดกี่ % ของเวลา</p>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ol>
+<li>หนึ่งรอบได้ ≈ (entry − exit)·σ ÷ (1 + β) − 2c โดยเฉลี่ยของจริงได้มากกว่าเพราะ overshoot แต่ไม้เดี่ยวขาดทุนได้ และกับไม้บรรทัดที่ประมาณใหม่ส่วนเผื่อแทบหายไป</li>
+<li>ผลต่อปี = จำนวนรอบต่อปี × กำไรสุทธิต่อรอบ แถบกว้าง = ไม้อ้วนแต่น้อย</li>
+<li>คิดแถบคุ้มทุนจากต้นทุนของคุณก่อนเลือกเกณฑ์ ต้นทุนสูงขึ้น แถบที่ดีที่สุดขยับออก</li>
+</ol></div>
+</div>
+
+<div class="card">
+<h3>Stop บนเดิมพันที่กลับสู่ค่าเฉลี่ย <span class="yr">การทดลอง 4f</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<p>เริ่มจากคำถามที่ฟังดูแปลก ถ้าสายจูงยังอยู่ ε ยิ่งไกลยิ่งน่าเข้า หรือยิ่งน่ากลัว ห้องทดลองวัดผล 12 แท่งข้างหน้าของการเปิดไม้สวน z ณ ระดับ |z| ต่าง ๆ บน <span data-f="p4.pierce.worlds_good">500</span> โลก good (z แบบ walk-forward · นับทุกแท่ง ซึ่งซ้อนกัน ไม่ใช่ไม้อิสระ · ก่อนต้นทุน)</p>
+
+<div class="tw"><table>
+<tr><th>|z| ตอนเปิดไม้</th><th>ผลเฉลี่ย 12 แท่งข้างหน้า</th><th>สัดส่วนแท่งที่ขาดทุน</th></tr>
+<tr><td>1 – 2</td><td><span data-f="p4.pierce.forward.good.z1_2.mean_pct">0.6</span>%</td><td><span data-f="p4.pierce.forward.good.z1_2.losing_pct">29</span>%</td></tr>
+<tr><td>2 – 3</td><td><span data-f="p4.pierce.forward.good.z2_3.mean_pct">1.0</span>%</td><td><span data-f="p4.pierce.forward.good.z2_3.losing_pct">20</span>%</td></tr>
+<tr><td>3 – 4</td><td><span data-f="p4.pierce.forward.good.z3_4.mean_pct">1.2</span>%</td><td><span data-f="p4.pierce.forward.good.z3_4.losing_pct">15</span>%</td></tr>
+<tr><td>4 ขึ้นไป</td><td><span data-f="p4.pierce.forward.good.z4_up.mean_pct">1.4</span>%</td><td><span data-f="p4.pierce.forward.good.z4_up.losing_pct">13</span>%</td></tr>
+</table></div>
+
+<p>ยิ่งไกล ค่าคาดหวังยิ่งสูงและโอกาสขาดทุนยิ่งต่ำ เพราะสายจูงที่ยืดดึงกลับแรงขึ้นตามระยะ stop ที่ |z| = 3 หรือ 4 จึงสั่งปิดตรงแถวล่างของตาราง คือจุดที่ไม้น่าถือที่สุด เราเรียกสิ่งนี้ว่า <strong>stop paradox</strong> (ปฏิทรรศน์ของ stop)</p>
+
+<p>แต่ถ้าสายจูงขาด ไม้ที่ไม่มี stop อาจไม่กลับอีกเลย ห้องทดลองสร้าง <span data-f="p4.settings.worlds_break">1,000</span> โลกที่สายจูงขาด ณ แท่งสุ่ม แล้ววัด <strong>tail10</strong> คือค่าเฉลี่ยของ 10% ของโลกที่แย่ที่สุด ทุกกฎเทรดบนโลกชุดเดียวกัน นับผลแท่ง <span data-f="p4.settings.stop_from_bar">500</span> ถึงแท่งสุดท้ายเหมือนกัน ต่างกันแค่ไม้บรรทัด แบบแรกคือแบบสไลด์ ประมาณครั้งเดียวจาก <span data-f="p4.settings.fixed_train_bars">500</span> แท่งแรกแล้วไม่แตะอีก</p>
+
+<!--CHART:sas-p4-stop-fixed-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 440" role="img" aria-label="ผลรวมของกฎเดียวกันเมื่อใส่ stop แบบต่าง ๆ เมื่อใช้ไม้บรรทัดตายตัว">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M201.7 34V394M274.3 34V394M346.8 34V394M419.4 34V394M492 34V394M564.5 34V394M637.1 34V394" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="346.8" y1="34" x2="346.8" y2="394" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="189.7" y="53" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · ไม่มี stop</text><line x1="412.1" y1="49" x2="600.8" y2="49" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="506.5" cy="49" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="53" font-size="12" fill="#374151"><tspan font-weight="700">22%</tspan><tspan fill="#6b7280" font-size="10.5">  (9% ถึง 35%)</tspan></text><text x="189.7" y="83" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop ที่ |z| = 4</text><line x1="368.6" y1="79" x2="586.3" y2="79" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="492" cy="79" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="83" font-size="12" fill="#374151"><tspan font-weight="700">20%</tspan><tspan fill="#6b7280" font-size="10.5">  (3% ถึง 33%)</tspan></text><text x="189.7" y="113" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop ที่ |z| = 3</text><line x1="325.1" y1="109" x2="550" y2="109" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="455.7" cy="109" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="113" font-size="12" fill="#374151"><tspan font-weight="700">15%</tspan><tspan fill="#6b7280" font-size="10.5">  (−3% ถึง 28%)</tspan></text><text x="189.7" y="143" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · จำกัดเวลาถือ 36 แท่ง</text><line x1="383.1" y1="139" x2="579.1" y2="139" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="484.7" cy="139" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="143" font-size="12" fill="#374151"><tspan font-weight="700">19%</tspan><tspan fill="#6b7280" font-size="10.5">  (5% ถึง 32%)</tspan></text><text x="189.7" y="173" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop 4 + จำกัด 36 แท่ง</text><line x1="368.6" y1="169" x2="571.8" y2="169" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="477.5" cy="169" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="173" font-size="12" fill="#374151"><tspan font-weight="700">18%</tspan><tspan fill="#6b7280" font-size="10.5">  (3% ถึง 31%)</tspan></text><text x="189.7" y="203" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop 3 + จำกัด 36 แท่ง</text><line x1="325.1" y1="199" x2="535.5" y2="199" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="448.4" cy="199" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="203" font-size="12" fill="#374151"><tspan font-weight="700">14%</tspan><tspan fill="#6b7280" font-size="10.5">  (−3% ถึง 26%)</tspan></text><text x="189.7" y="233" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · ไม่มี stop</text><line x1="252.5" y1="229" x2="615.3" y2="229" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="441.2" cy="229" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="233" font-size="12" fill="#374151"><tspan font-weight="700">13%</tspan><tspan fill="#6b7280" font-size="10.5">  (−13% ถึง 37%)</tspan></text><text x="189.7" y="263" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop ที่ |z| = 4</text><line x1="288.8" y1="259" x2="528.3" y2="259" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="404.9" cy="259" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="263" font-size="12" fill="#374151"><tspan font-weight="700">8%</tspan><tspan fill="#6b7280" font-size="10.5">  (−8% ถึง 25%)</tspan></text><text x="189.7" y="293" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop ที่ |z| = 3</text><line x1="296" y1="289" x2="492" y2="289" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="390.4" cy="289" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="293" font-size="12" fill="#374151"><tspan font-weight="700">6%</tspan><tspan fill="#6b7280" font-size="10.5">  (−7% ถึง 20%)</tspan></text><text x="189.7" y="323" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · จำกัดเวลาถือ 36 แท่ง</text><line x1="303.3" y1="319" x2="557.3" y2="319" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="419.4" cy="319" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="323" font-size="12" fill="#374151"><tspan font-weight="700">10%</tspan><tspan fill="#6b7280" font-size="10.5">  (−6% ถึง 29%)</tspan></text><text x="189.7" y="353" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop 4 + จำกัด 36 แท่ง</text><line x1="296" y1="349" x2="521" y2="349" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="404.9" cy="349" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="353" font-size="12" fill="#374151"><tspan font-weight="700">8%</tspan><tspan fill="#6b7280" font-size="10.5">  (−7% ถึง 24%)</tspan></text><text x="189.7" y="383" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop 3 + จำกัด 36 แท่ง</text><line x1="296" y1="379" x2="492" y2="379" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="383.1" cy="379" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="383" font-size="12" fill="#374151"><tspan font-weight="700">5%</tspan><tspan fill="#6b7280" font-size="10.5">  (−7% ถึง 20%)</tspan></text>
+<line x1="201.7" y1="394" x2="637.1" y2="394" stroke="#cbd5e1" stroke-width="1.5"/><text x="201.7" y="410" text-anchor="middle" font-size="11" fill="#6b7280">−20</text><text x="274.3" y="410" text-anchor="middle" font-size="11" fill="#6b7280">−10</text><text x="346.8" y="410" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="419.4" y="410" text-anchor="middle" font-size="11" fill="#6b7280">10</text><text x="492" y="410" text-anchor="middle" font-size="11" fill="#6b7280">20</text><text x="564.5" y="410" text-anchor="middle" font-size="11" fill="#6b7280">30</text><text x="637.1" y="410" text-anchor="middle" font-size="11" fill="#6b7280">40</text><text x="419.4" y="431" text-anchor="middle" font-size="12" fill="#6b7280">ผลรวมตลอดช่วงทดสอบ (% ของเงินรวมสองขา)</text>
+<circle cx="493.1" cy="18" r="4.5" fill="#6b7280"/><text x="503.1" y="22" fill="#4b5563">ค่าเฉลี่ย</text><rect x="559.1" y="12.5" width="14" height="11" rx="2" fill="#6b7280" fill-opacity=".2" stroke="#6b7280" stroke-opacity=".55"/><text x="578.1" y="22" fill="#4b5563">ช่วง 5–95%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 500 โลกที่สายจูงอยู่ และ 1,000 โลกที่สายจูงขาด ณ แท่งสุ่ม · โลกชุดเดียวกับรูปก่อน แต่ไม้บรรทัดตายตัว: ประมาณครั้งเดียวจาก 500 แท่งแรกแล้วไม่แตะอีก (แบบลากเส้นโซนครั้งเดียว) · ผลรวมของแท่ง 500–1,499 (ราว 4 ปี) หลังต้นทุน 5 bps · สายจูงอยู่: stop ที่ |z| = 3 ลดผลรวมเฉลี่ยจาก 22% เหลือ 15% · สายจูงขาด: ค่าเฉลี่ยของ 10% ของโลกที่แย่ที่สุด −15% เมื่อไม่มี stop · stop ที่ |z| = 4 ดึงขึ้นเป็น −8% และในกลุ่มโลกที่แย่ที่สุดเมื่อไม่มี stop นั้น stop ที่ |z| = 4 ทำได้ดีกว่า 100% ของโลก · แลกกับค่าเฉลี่ยที่ลดจาก 13% เหลือ 8%</div>
+<!--/CHART:sas-p4-stop-fixed-->
+
+<p>สังเกตว่าแถวของโลกที่สายจูงขาดยังได้ค่าเฉลี่ยบวก เพราะสายจูงขาด ณ แท่งสุ่ม (บางโลกขาดช่วงท้าย) และห้องทดลองให้ส่วนที่ขาดเป็น random walk ที่ค่าเฉลี่ยเป็นศูนย์ ความเสียหายจึงอยู่ที่หางล่าง ไม่ใช่ค่าเฉลี่ย ในโลกจริงที่การขาดมีทิศทาง หางจะแย่กว่านี้ จุดและแถบในรูปคือค่าเฉลี่ยกับช่วง 5–95% ส่วน tail10 อยู่ในคำบรรยายใต้รูปและในตารางข้างล่าง</p>
+
+<p>แบบที่สองเปลี่ยนสิ่งเดียว ใช้ไม้บรรทัด walk-forward ที่ประมาณใหม่ทุก <span data-f="p4.settings.wf_refit_bars">21</span> แท่ง</p>
+
+<!--CHART:sas-p4-stop-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 440" role="img" aria-label="ผลรวมของกฎเดียวกันเมื่อใส่ stop แบบต่าง ๆ บนโลกที่สายจูงอยู่และโลกที่สายจูงขาด (ไม้บรรทัด walk-forward)">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M201.7 34V394M274.3 34V394M346.8 34V394M419.4 34V394M492 34V394M564.5 34V394M637.1 34V394" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="346.8" y1="34" x2="346.8" y2="394" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="189.7" y="53" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · ไม่มี stop</text><line x1="455.7" y1="49" x2="586.3" y2="49" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="521" cy="49" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="53" font-size="12" fill="#374151"><tspan font-weight="700">24%</tspan><tspan fill="#6b7280" font-size="10.5">  (15% ถึง 33%)</tspan></text><text x="189.7" y="83" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop ที่ |z| = 4</text><line x1="441.2" y1="79" x2="579.1" y2="79" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="506.5" cy="79" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="83" font-size="12" fill="#374151"><tspan font-weight="700">22%</tspan><tspan fill="#6b7280" font-size="10.5">  (13% ถึง 32%)</tspan></text><text x="189.7" y="113" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop ที่ |z| = 3</text><line x1="397.6" y1="109" x2="542.8" y2="109" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="470.2" cy="109" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="113" font-size="12" fill="#374151"><tspan font-weight="700">17%</tspan><tspan fill="#6b7280" font-size="10.5">  (7% ถึง 27%)</tspan></text><text x="189.7" y="143" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · จำกัดเวลาถือ 36 แท่ง</text><line x1="426.7" y1="139" x2="579.1" y2="139" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="506.5" cy="139" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="143" font-size="12" fill="#374151"><tspan font-weight="700">22%</tspan><tspan fill="#6b7280" font-size="10.5">  (11% ถึง 32%)</tspan></text><text x="189.7" y="173" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop 4 + จำกัด 36 แท่ง</text><line x1="419.4" y1="169" x2="571.8" y2="169" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="492" cy="169" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="173" font-size="12" fill="#374151"><tspan font-weight="700">20%</tspan><tspan fill="#6b7280" font-size="10.5">  (10% ถึง 31%)</tspan></text><text x="189.7" y="203" text-anchor="end" font-size="12" fill="#374151">สายจูงอยู่ · stop 3 + จำกัด 36 แท่ง</text><line x1="390.4" y1="199" x2="542.8" y2="199" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="462.9" cy="199" r="6" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="651.1" y="203" font-size="12" fill="#374151"><tspan font-weight="700">16%</tspan><tspan fill="#6b7280" font-size="10.5">  (6% ถึง 27%)</tspan></text><text x="189.7" y="233" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · ไม่มี stop</text><line x1="281.5" y1="229" x2="600.8" y2="229" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="455.7" cy="229" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="233" font-size="12" fill="#374151"><tspan font-weight="700">15%</tspan><tspan fill="#6b7280" font-size="10.5">  (−9% ถึง 35%)</tspan></text><text x="189.7" y="263" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop ที่ |z| = 4</text><line x1="259.7" y1="259" x2="579.1" y2="259" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="441.2" cy="259" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="263" font-size="12" fill="#374151"><tspan font-weight="700">13%</tspan><tspan fill="#6b7280" font-size="10.5">  (−12% ถึง 32%)</tspan></text><text x="189.7" y="293" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop ที่ |z| = 3</text><line x1="252.5" y1="289" x2="542.8" y2="289" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="412.1" cy="289" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="293" font-size="12" fill="#374151"><tspan font-weight="700">9%</tspan><tspan fill="#6b7280" font-size="10.5">  (−13% ถึง 27%)</tspan></text><text x="189.7" y="323" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · จำกัดเวลาถือ 36 แท่ง</text><line x1="296" y1="319" x2="586.3" y2="319" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="441.2" cy="319" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="323" font-size="12" fill="#374151"><tspan font-weight="700">13%</tspan><tspan fill="#6b7280" font-size="10.5">  (−7% ถึง 33%)</tspan></text><text x="189.7" y="353" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop 4 + จำกัด 36 แท่ง</text><line x1="281.5" y1="349" x2="564.5" y2="349" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="433.9" cy="349" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="353" font-size="12" fill="#374151"><tspan font-weight="700">12%</tspan><tspan fill="#6b7280" font-size="10.5">  (−9% ถึง 30%)</tspan></text><text x="189.7" y="383" text-anchor="end" font-size="12" fill="#374151">สายจูงขาด · stop 3 + จำกัด 36 แท่ง</text><line x1="267" y1="379" x2="535.5" y2="379" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="404.9" cy="379" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="651.1" y="383" font-size="12" fill="#374151"><tspan font-weight="700">8%</tspan><tspan fill="#6b7280" font-size="10.5">  (−11% ถึง 26%)</tspan></text>
+<line x1="201.7" y1="394" x2="637.1" y2="394" stroke="#cbd5e1" stroke-width="1.5"/><text x="201.7" y="410" text-anchor="middle" font-size="11" fill="#6b7280">−20</text><text x="274.3" y="410" text-anchor="middle" font-size="11" fill="#6b7280">−10</text><text x="346.8" y="410" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="419.4" y="410" text-anchor="middle" font-size="11" fill="#6b7280">10</text><text x="492" y="410" text-anchor="middle" font-size="11" fill="#6b7280">20</text><text x="564.5" y="410" text-anchor="middle" font-size="11" fill="#6b7280">30</text><text x="637.1" y="410" text-anchor="middle" font-size="11" fill="#6b7280">40</text><text x="419.4" y="431" text-anchor="middle" font-size="12" fill="#6b7280">ผลรวมตลอดช่วงทดสอบ (% ของเงินรวมสองขา)</text>
+<circle cx="493.1" cy="18" r="4.5" fill="#6b7280"/><text x="503.1" y="22" fill="#4b5563">ค่าเฉลี่ย</text><rect x="559.1" y="12.5" width="14" height="11" rx="2" fill="#6b7280" fill-opacity=".2" stroke="#6b7280" stroke-opacity=".55"/><text x="578.1" y="22" fill="#4b5563">ช่วง 5–95%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 500 โลกที่สายจูงอยู่ และ 1,000 โลกที่สายจูงขาด ณ แท่งสุ่ม · ไม้บรรทัด walk-forward (ประมาณใหม่ทุก 21 แท่ง) · ผลรวมของแท่ง 500–1,499 (ราว 4 ปี) หลังต้นทุน 5 bps · สายจูงอยู่: stop ที่ |z| = 3 ลดผลรวมเฉลี่ยจาก 24% เหลือ 17% (อัตราชนะ 98% → 70%) · สายจูงขาด: ค่าเฉลี่ยของ 10% ของโลกที่แย่ที่สุด −13% เมื่อไม่มี stop เทียบ −14% (stop 4) และ −15% (stop 3) — stop ที่ระดับ z ไม่ได้ทำให้ปลายล่างดีขึ้น · จำกัดเวลาถือ 36 แท่งได้ −11%</div>
+<!--/CHART:sas-p4-stop-->
+
+<div class="tw"><table>
+<tr><th rowspan="2">กฎหยุด</th><th colspan="2">ไม้บรรทัดตายตัว (แบบสไลด์)</th><th colspan="2">ไม้บรรทัด walk-forward</th></tr>
+<tr><th>good: ผลรวมเฉลี่ย</th><th>break: tail10</th><th>good: ผลรวมเฉลี่ย</th><th>break: tail10</th></tr>
+<tr><td>ไม่มี stop</td><td><span data-f="p4.stops.fixed.good.none.total_mean_pct">22</span>%</td><td><span data-f="p4.stops.fixed.break.none.tail10_pct">−15</span>%</td><td><span data-f="p4.stops.wf.good.none.total_mean_pct">24</span>%</td><td><span data-f="p4.stops.wf.break.none.tail10_pct">−13</span>%</td></tr>
+<tr><td>z-stop ที่ |z| = 4</td><td><span data-f="p4.stops.fixed.good.s4.total_mean_pct">20</span>%</td><td><span data-f="p4.stops.fixed.break.s4.tail10_pct">−8</span>%</td><td><span data-f="p4.stops.wf.good.s4.total_mean_pct">22</span>%</td><td><span data-f="p4.stops.wf.break.s4.tail10_pct">−14</span>%</td></tr>
+<tr><td>z-stop ที่ |z| = 3</td><td><span data-f="p4.stops.fixed.good.s3.total_mean_pct">15</span>%</td><td><span data-f="p4.stops.fixed.break.s3.tail10_pct">−8</span>%</td><td><span data-f="p4.stops.wf.good.s3.total_mean_pct">17</span>%</td><td><span data-f="p4.stops.wf.break.s3.tail10_pct">−15</span>%</td></tr>
+<tr><td>time stop 36 แท่ง</td><td><span data-f="p4.stops.fixed.good.t36.total_mean_pct">19</span>%</td><td><span data-f="p4.stops.fixed.break.t36.tail10_pct">−7</span>%</td><td><span data-f="p4.stops.wf.good.t36.total_mean_pct">22</span>%</td><td><span data-f="p4.stops.wf.break.t36.tail10_pct">−11</span>%</td></tr>
+</table></div>
+
+<p><strong>ไม้บรรทัดตายตัว:</strong> z-stop ช่วยหาง stop 4 ทำได้ดีกว่าไม่มี stop ใน <span data-f="p4.stops.fixed.break.s4.none_tail_helps_pct">100</span>% ของโลกกลุ่มที่แย่ที่สุด · <strong>ไม้บรรทัดที่ประมาณใหม่:</strong> z-stop ไม่ช่วย stop 4 ดีกว่าแค่ <span data-f="p4.stops.wf.break.s4.none_tail_helps_pct">51</span>% ของโลกกลุ่มนั้น · มีแต่ <strong>นาฬิกา</strong> ที่ช่วยทั้งสองแบบ (<span data-f="p4.stops.wf.break.t36.none_tail_helps_pct">74</span>% บน walk-forward) ส่วนต่าง tail10 ระดับ 1–2 จุดอยู่ในระดับความคลาดเคลื่อน ข้อสรุปจึงอิงสัดส่วนที่ช่วยในโลกชุดเดียวกัน ราคาของ stop อยู่ในคอลัมน์ good เช่น stop 3 บน walk-forward ทำให้อัตราชนะตกจาก <span data-f="p4.stops.wf.good.none.hit_rate_pct">98</span>% เหลือ <span data-f="p4.stops.wf.good.s3.hit_rate_pct">70</span>%</p>
+
+<p>ทำไมไม้บรรทัดถึงเปลี่ยนคำตอบ? คำอธิบายที่น่าจะเป็น (ห้องทดลองยังไม่ได้วัดโดยตรง) คือไม้บรรทัดที่ประมาณใหม่ <strong>ยืดตามปัญหา</strong> หลังสายจูงขาด σ̂ รอบถัดไปโตตาม ε และเส้นกลางเลื่อนตาม z จึงแทบไม่ถึง 4 stop ที่ผูกกับ z จึงเงียบในวันที่ต้องการมันที่สุด ส่วนนาฬิกาไม่ยืดตามใคร</p>
+
+<p><strong>🔁 ถามข้อมูลของคุณได้แล้ว:</strong> stop ใน backtest ของฉันวัดด้วยไม้บรรทัดแบบเดียวกับที่จะใช้จริงไหม</p>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>stop ที่ระดับ z ตัดไม้ตรงจุดที่ค่าคาดหวังสูงสุด ในห้องทดลองมันช่วยหางเฉพาะเมื่อไม้บรรทัดประมาณครั้งเดียว เมื่อประมาณใหม่เป็นรอบ มันไม่ช่วยหางเลย บนเดิมพันที่กลับสู่ค่าเฉลี่ย ให้หยุดด้วย <strong>เวลา</strong> และ <strong>เหตุผล</strong> เป็นหลัก</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>backtest ขาดทุนได้สองทางจากเรื่องเดียว stop แคบจนตัดไม้ดีทิ้ง หรือไม่มีอะไรหยุดไม้ที่สายจูงขาด ทั้งคู่มาจากการยืมวินัยของกลยุทธ์ตามแนวโน้ม มาใช้กับเดิมพันที่ยิ่งไกลยิ่งน่าถือ</p></div>
+
+<p><strong>stop ทางเวลา (time stop)</strong></p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ถ้าสายจูงยังอยู่ ระยะห่างจะหดเหลือครึ่งในหนึ่ง half-life และเหลือราวหนึ่งในแปดในสาม half-life ถ้าครบเวลานั้นแล้วยังไม่กลับ แปลว่าสิ่งที่คุณเดิมพันอาจไม่อยู่แล้ว</p>
+<div class="fm">HL = −ln 2 ÷ ln φ<br>
+ถือไม่เกิน ≈ 3 × HL แท่ง        (ระยะที่เหลือโดยเฉลี่ย ≈ 0.5³ = 1/8)</div>
+<p>โลกจำลองมี half-life <span data-f="p4.settings.half_life_true_bars">12</span> แท่ง จึงได้ <span data-f="p4.settings.max_hold_bars">36</span> แท่ง ห้องทดลองทดสอบเฉพาะ 3 × half-life <em>จริง</em> ส่วน half-life ที่คุณประมาณได้มักสั้นกว่าจริง (คู่ตัวอย่างได้ 8.2 แท่ง) time stop จากค่านั้นจึงตัดเร็วกว่าที่ทดสอบ ซึ่งยังไม่ได้วัด จุดตั้งต้นที่ระวังกว่าคือราว 4 × half-life ที่ประมาณได้ แล้วตรวจด้วยสถานีที่ 4</p>
+
+<p><strong>stop เชิงโครงสร้าง (structural stop)</strong> ไม่ดูราคา แต่ตรวจสายจูงซ้ำทุกครั้งที่ประมาณไม้บรรทัดใหม่ ค่าตั้งต้นของเรา (ห้องทดลองยังไม่ได้วัด): ทุก 21 แท่ง รันการทดสอบ Engle–Granger ของตอนที่ 3 บน 250 แท่งล่าสุด ถ้าไม่ผ่านที่ระดับ 10% สองรอบติดกัน หรือมีข่าวที่เปลี่ยนเหตุผลของคู่ ให้ปิดและพักคู่นี้จนกว่าจะผ่านอีกครั้ง สอบตกรอบเดียวยังไม่พอ เพราะหน้าต่าง 250 แท่งมีพลังต่ำ จึงใช้คู่กับนาฬิกา ไม่ใช่แทน โปรแกรมในสถานีที่ 4 ทำขั้นนี้ให้</p>
+
+<div class="bx bg"><div class="bt">✅ ใช้ได้เมื่อไร</div>
+<p>time stop: เมื่อสายจูงผ่านการทดสอบมาแล้วและ half-life ประมาณได้ใกล้จริง · z-stop ระยะไกล: ในห้องทดลองช่วยหางเฉพาะกับไม้บรรทัดที่ประมาณครั้งเดียวทั้งช่วง การวัด z ของไม้นั้นด้วยไม้บรรทัด ณ วันเข้าเป็นทางที่สมเหตุสมผล แต่ยังไม่ได้ทดสอบ</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div>
+<p>z-stop บนไม้บรรทัดที่ประมาณใหม่ไม่ทำงาน น่าจะเพราะ z หดตามปัญหา · time stop ตัดผิดจังหวะเมื่อ half-life ที่ประมาณคลาดจากจริงมาก · structural stop สอบตกได้ทั้งที่สายจูงยังอยู่ เมื่อหน้าต่างสั้นเกิน</p></div>
+
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "ไม่มี stop = ไม่มีวินัย"<br>
+<strong>quant เห็น:</strong> บนเดิมพันที่กลับสู่ค่าเฉลี่ย stop ที่ระยะคือการขายไม้ทิ้งตอนที่มันดีที่สุด สิ่งที่ต้องมีขอบเขตคือเวลาและเหตุผล ไม่ใช่ระยะ</p></div>
+
+
+<div class="bx ba"><div class="bt">🧮 ตัวอย่าง: ตั้ง time stop ให้คู่ของคุณ</div>
+<p>สมมติ AR(1) ของ ε ให้ φ̂ = 0.944</p>
+<div class="fm">HL = −ln 2 ÷ ln 0.944 = 0.693 ÷ 0.0576 ≈ 12 แท่ง<br>
+time stop = 3 × 12 = 36 แท่ง</div>
+<p>ตัวเลขของกฎนี้ในตารางข้างบนใช้ half-life จริง 12 ไม่ใช่ค่าที่ประมาณ</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ol>
+<li>บนเดิมพันที่กลับสู่ค่าเฉลี่ย ยิ่งไกลยิ่งน่าถือ stop ที่ระยะจึงตัดตรงจุดที่ดีที่สุด</li>
+<li>ผลของ z-stop ขึ้นกับไม้บรรทัด กับไม้บรรทัดที่ประมาณใหม่ z-stop ไม่ป้องกันหางในห้องทดลอง (น่าจะเพราะไม้บรรทัดยืดตามปัญหา)</li>
+<li>หยุดด้วยนาฬิกา (3–4 × half-life ที่ประมาณได้) และการตรวจสายจูงซ้ำ ก่อนพึ่งระยะ</li>
+</ol></div>
+</div>
+
+<div class="card">
+<h3>ε ทะลุเส้น 99%: ไม้ที่ดีที่สุดของปี หรือจุดจบของโมเดล <span class="yr">การทดลอง 4g</span> <span class="lvl">★★ ควรรู้</span></h3>
+
+<p>ห้องทดลองจับทุกครั้งที่ |z| ขึ้นไปแตะ 2.5 เป็นครั้งแรก (2.5 อยู่เหนือ P99 ของระฆังปกติเล็กน้อย) แล้วดูว่า ε กลับเข้ามาใน |z| &lt; 0.5 ภายใน 36 แท่งหรือไม่ โดยวัดด้วยไม้บรรทัด ณ วันที่แตะ</p>
+
+<div class="tw"><table>
+<tr><th>โลก</th><th>กลับภายใน 36 แท่ง</th><th>แท่งที่สวน |z| ≥ 4 แล้วขาดทุนใน 12 แท่ง</th></tr>
+<tr><td>สายจูงอยู่ (<span data-f="p4.pierce.worlds_good">500</span> โลก)</td><td><span data-f="p4.pierce.good.back_pct">72</span>%</td><td><span data-f="p4.pierce.forward.good.z4_up.losing_pct">13</span>%</td></tr>
+<tr><td>โลก break ช่วงก่อนสายจูงขาด</td><td><span data-f="p4.pierce.break_before.back_pct">73</span>%</td><td>—</td></tr>
+<tr><td>โลก break หลังสายจูงขาด (<span data-f="p4.pierce.worlds_break">1,000</span> โลก)</td><td><span data-f="p4.pierce.break_after.back_pct">33</span>%</td><td><span data-f="p4.pierce.forward.break_after.z4_up.losing_pct">43</span>%</td></tr>
+</table></div>
+
+<p>ในวันที่แตะ หน้าตาของกราฟเหมือนกันทุกอย่าง ε อยู่ไกลเท่ากัน เส้นอยู่ที่เดิม แต่โอกาสกลับต่างกันกว่าสองเท่า</p>
+
+<p><strong>🔁 ถามข้อมูลของคุณได้แล้ว:</strong> ถ้าพรุ่งนี้ ε ของฉันทะลุเส้นนอกสุด ฉันมีคำถามถึงสายจูงเตรียมไว้หรือยัง</p>
+
+<p>ค่าเฉลี่ยของการสวน |z| ≥ 4 หลังสายจูงขาดยังบวก (<span data-f="p4.pierce.forward.break_after.z4_up.mean_pct">0.4</span>%) ด้วยเหตุผลเดียวกับในการ์ดที่ 3 ความเสียหายอยู่ที่ <strong>การกระจาย</strong> ถ้าการขาดในโลกจริงมีทิศทาง เช่นข่าวที่เปลี่ยนมูลค่าของขาหนึ่งถาวร ค่าเฉลี่ยก็ติดลบได้</p>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div>
+<p>กราฟบอกได้แค่ว่า ε ไกล บอกไม่ได้ว่า <em>ทำไม</em> ไกล คำตอบว่าเป็นไม้ที่ดีที่สุดหรือจุดจบของโมเดลอยู่ที่สายจูง ไม่ได้อยู่บนกราฟ</p></div>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div>
+<p>วันที่ ε ทะลุเส้นนอกสุดคือวันที่ใจอยากเพิ่มไม้มากที่สุด และเป็นวันที่กราฟมีข้อมูลเกี่ยวกับอนาคตน้อยที่สุด เพราะไม่เคยเห็นจุดนี้มาก่อน</p></div>
+
+<p>สามคำถามที่ถามสายจูงแทนกราฟ</p>
+<ol>
+<li>มีข่าวที่เปลี่ยนเหตุผลของสายจูงไหม เช่น การควบรวม การเปลี่ยนกฎ การเปลี่ยนเงื่อนไขสัญญา</li>
+<li>การทดสอบของตอนที่ 3 บนหน้าต่างล่าสุดยังผ่านไหม</li>
+<li>นับจากวันเข้า ผ่านไปกี่ half-life แล้ว</li>
+</ol>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div>
+<p><strong>คนทั่วไปเห็น:</strong> "ทะลุ 99% = ถูกที่สุดในรอบสองปี ต้องเพิ่มไม้"<br>
+<strong>quant เห็น:</strong> ทะลุ 99% = นอกขอบเขตของทุกอย่างที่เคยเห็น ถามสายจูงก่อน ขนาดไม้ต้องเผื่อให้ถามได้ทันโดยยังไม่ถูกบังคับปิด</p></div>
+
+<p><strong>📚 Paper:</strong> Shleifer และ Vishny (1997) ชี้ว่า arbitrage จริงต้องใช้ทุนและมีความเสี่ยง และอาจไร้ผลในสถานการณ์สุดขั้ว ตอนที่ราคาห่างจากมูลค่าพื้นฐานไปมาก ไม้ที่ดีที่สุดบนกระดาษจึงอาจเป็นไม้ที่ถือไม่ไหว</p>
+</div>
+
+<h2>🧪 ห้องทดลอง</h2>
+
+<p>ทุกตัวเลขและกราฟในตอนนี้มาจากโมดูลเดียว เป็น <span class="tag-sim">ข้อมูลจำลอง</span> ทั้งหมด คู่ตัวอย่างถูกเลือกให้เห็นอาการชัด ข้อสรุปทั่วไปจึงอิงค่าเฉลี่ยหลายร้อยโลกเสมอ รันซ้ำได้ในราว 50 วินาที</p>
+<pre class="code">python3 tools/sas_exp4.py</pre>
+
+<p>โมดูลมีแปดส่วน: 4a กราฟโซน · 4b ความนิ่งของโซน · 4c เส้นที่เห็นอนาคต · แกะหนึ่งไม้ · 4d เกณฑ์เข้า · 4e จุดออก · 4f stop · 4g ทะลุเส้น ผลหลักและคำถามที่ควรถามต่อของแต่ละส่วนอยู่ในการ์ดข้างบนแล้ว ตรงนี้เก็บเรื่องที่ค้านความคาดหมายไว้หนึ่งเรื่อง</p>
+
+<ul>
+<li><strong>เส้นกลางไม่ขยับ ไม่ได้แปลว่าปลอดภัย:</strong> คู่ fake ตัวอย่างมีค่ากลางของสองครึ่งต่างกันเพียง <span data-f="p4.stability.bad.shift_p50_sigma">0.02</span> sd แต่ความกว้างโซนของครึ่งหลังเป็น <span data-f="p4.stability.bad.width_ratio">2.76</span> เท่าของครึ่งแรก ใช้ "ครึ่งหลังอยู่นอกเส้นของครึ่งแรกกี่ %" แทน</li>
+
+</ul>
+<p>ข้อควรระวัง: ค่าปลายอย่าง tail10 แกว่งได้ราว ±2 จุดเมื่อเปลี่ยนชุดโลก ใช้เทียบกฎบนโลกชุดเดียวกัน ไม่ใช่อ่านเป็นตัวเลขแม่นตัวต่อตัว</p>
+
+<h2>🛠️ ทำเองกับข้อมูลของคุณ</h2>
+
+<p>ลำดับสำคัญกว่าโค้ด ไฟล์ CSV มีหัวคอลัมน์และราคาปิดรายวันของสองขา ควรมีราว 1,000 แท่งขึ้นไป ทุกอย่างก่อนสถานีสุดท้ายใช้แค่ครึ่งแรก (โปรแกรมตัดให้เอง) ครึ่งหลังปิดไว้จนกว่าการ์ดกฎจะเขียนเสร็จ</p>
+
+<div class="station" data-n="1"><div class="bt">วาดกราฟโซนแบบรู้แค่อดีต แล้วนับห้าสัญญาณ</div>
+<p>α̂, β̂ มาจาก 250 แท่งแรก เส้น P10/P50/P90 ของแท่ง t คิดจากแท่งแรกถึงแท่ง t และนับเฉพาะแท่ง 250 ขึ้นไป ทุกอย่างที่นับจึงรู้แค่อดีต เมื่อเส้นรู้แค่อดีต เวลานอกเส้นกลับมาเป็นสัญญาณได้ (ข้อ 4 ที่นี่จึงวัดต่างจากตารางห้าสัญญาณที่เทียบครึ่งหลังกับเส้นของครึ่งแรก) ไม่ใส่ไฟล์ โปรแกรมจะเทียบคู่จำลอง good กับ fake ให้ดู</p>
+<!--CODE:p4_zones-->
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import numpy as np
+import sas_core as C
+
+# ใช้: python3 tools/sas_snippets/p4_zones.py [ไฟล์.csv Y X]   (ราคาดิบ · ไม่ใส่ไฟล์ = คู่จำลอง good กับ fake)
+# กราฟโซนแบบ "รู้แค่อดีต" · ใช้เฉพาะครึ่งแรก · α̂, β̂ จาก 250 แท่งแรก · เส้น P10/P50/P90 ของแท่ง t
+# คิดจากแท่ง 0..t · นับเฉพาะแท่ง 250 ขึ้นไป ทุกอย่างที่นับจึงรู้แค่อดีต
+def longest(mask):
+    best = cur = 0
+    for m in mask:
+        cur = cur + 1 if m else 0
+        best = max(best, cur)
+    return best
+
+def signs(y, x):
+    n = len(y) // 2                                     # ครึ่งหลังเก็บไว้ทดสอบ ห้ามแตะ
+    a, b = C.ols(y[:250], x[:250])["coef"]                # ไม้บรรทัดจากช่วงอุ่นเครื่อง
+    e = y[:n] - a - b * x[:n]
+    lo, mid, hi = np.array([np.percentile(e[:t + 1], [10, 50, 90]) for t in range(n)]).T
+    s = slice(250, n)                                   # เชื่อเส้นหลังมีอดีตครบ 250 แท่ง
+    e, lo, mid, hi = e[s], lo[s], mid[s], hi[s]
+    side = np.sign(e - mid)
+    return [len(e) / max(1, np.sum(side[1:] != side[:-1])), max(longest(side &gt; 0), longest(side &lt; 0)),
+            max(longest(e &gt; hi), longest(e &lt; lo)), 100 * np.mean((e &gt; hi) | (e &lt; lo)),
+            100 * np.mean(e &lt;= e[-1])]
+
+if len(sys.argv) == 4:
+    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
+    pairs = {"ของคุณ": (np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]]))}
+else:
+    pairs = {k: (C.demo_pair(k)["y"], C.demo_pair(k)["x"]) for k in ("good", "fake")}
+rows = ["แท่งต่อการตัดเส้นกลางหนึ่งครั้ง", "แท่งที่ค้างฝั่งเดียวนานสุด", "แท่งที่อยู่นอกเส้น 10/90 นานสุด (ครั้งเดียว)",
+        "% ของเวลานอกเส้น 10/90 (ยิ่งเกิน 20 มาก ยิ่งน่าสงสัย)",
+        "% ของแท่ง 250..ล่าสุด ที่ต่ำกว่าจุดล่าสุด"]
+res = {k: signs(*v) for k, v in pairs.items()}
+print("  ".join(f"{k:&gt;7}" for k in res) + "   สัญญาณ")
+for i, r in enumerate(rows):
+    print("  ".join(f"{res[k][i]:7.0f}" for k in res) + f"   {i + 1}. {r}")</pre>
+<!--/CODE:p4_zones-->
+<!--RUN:p4_zones-->
+<pre class="out">   good     fake   สัญญาณ
+      9       24   1. แท่งต่อการตัดเส้นกลางหนึ่งครั้ง
+     65      128   2. แท่งที่ค้างฝั่งเดียวนานสุด
+     18       60   3. แท่งที่อยู่นอกเส้น 10/90 นานสุด (ครั้งเดียว)
+     20       32   4. % ของเวลานอกเส้น 10/90 (ยิ่งเกิน 20 มาก ยิ่งน่าสงสัย)
+     88        9   5. % ของแท่ง 250..ล่าสุด ที่ต่ำกว่าจุดล่าสุด</pre>
+<!--/RUN:p4_zones-->
+<p><strong>อ่านผล:</strong> ข้อ 1 หารด้วยจำนวนครั้งแล้ว จึงเทียบกับ half-life จากสถานีที่ 2 ได้ คอลัมน์ fake แย่กว่าทุกข้อแม้ดูแค่ครึ่งแรก แต่ไม่มีข้อไหนตัดสินได้ลำพัง กฎหัวแม่มือ (ไม่ได้ทดสอบ): แดงตั้งแต่สามข้อขึ้นไป หยุดตรงนี้แล้วกลับไปหาสายจูงในตอนที่ 3</p></div>
+
+<div class="station" data-n="2"><div class="bt">คิดแถบคุ้มทุนจากต้นทุนของคุณ</div>
+<p>อาร์กิวเมนต์ที่สี่คือต้นทุนต่อขาต่อเที่ยวเป็น bps รวมค่าธรรมเนียมและส่วนต่างราคาซื้อ-ขาย ค่ายืมคิดตามเวลาถือ (ราว b × H/252 ต่อไม้) ให้บวกเพิ่มตามเวลาถือของแถบที่เลือก</p>
+<!--CODE:p4_breakeven-->
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import numpy as np
+import sas_core as C
+
+# ใช้: python3 tools/sas_snippets/p4_breakeven.py [ไฟล์.csv Y X [c_bps]]  (ไม่ใส่ไฟล์ = คู่จำลอง good · c = 5 bps)
+# คำถาม: ต้นทุนของคุณบังคับให้แถบกว้างอย่างน้อยเท่าไร — คิดจากครึ่งแรกเท่านั้น ก่อนแตะช่วงทดสอบ
+if len(sys.argv) &gt;= 4:
+    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
+    y, x = np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]])
+else:
+    p = C.demo_pair("good"); y, x = p["y"], p["x"]
+c = (float(sys.argv[4]) if len(sys.argv) == 5 else 5.0) / 1e4    # ต้นทุนต่อขาต่อเที่ยว
+n = len(y) // 2
+a, b = C.ols(y[:n], x[:n])["coef"]
+e = y[:n] - a - b * x[:n]
+sd, hl = e.std(), C.fit_ar1(e)["half_life"]
+need = 2 * c * (1 + abs(b)) / sd
+print(f"β̂ {b:.3f} · σ̂ {sd:.2%} · half-life {hl:.1f} แท่ง · ต้นทุน {c * 1e4:.0f} bps ต่อขา (ครบรอบ {2 * c:.2%})")
+print(f"แถบคุ้มทุน: entry − exit ต้องเกิน 2c(1+β)/σ = {need:.2f} σ  (ยังไม่มีกำไรเลย แค่เสมอตัว)")
+print(f"time stop ≈ 3–4 × half-life ≈ {3 * hl:.0f}–{4 * hl:.0f} แท่ง (half-life ที่ประมาณได้มักสั้นกว่าจริง)\n")
+print(" entry  สูตร/ไม้  จริง/ไม้  สุทธิ/ไม้  ไม้/ปี  สุทธิ/ปี")
+z = C.zscore_fixed(e, e.mean(), sd)
+for entry in (0.5, 1.0, 1.5, 2.0, 2.5):
+    pos = C.band_positions(z, entry=entry, exit=0.0)
+    pnl, info = C.spread_pnl(y[:n], x[:n], b, pos, cost_per_leg=c)
+    tr = C.trade_pnls(info["held"], pnl, cost_per_leg=c)
+    gross = tr.mean() + 2 * c if len(tr) else np.nan
+    per_year = len(tr) / (n / 252)
+    print(f"{entry:6.1f} {entry * sd / (1 + abs(b)):8.2%} {gross:9.2%} {gross - 2 * c:9.2%}"
+          f" {per_year:7.1f} {np.sum(pnl) / (n / 252):9.2%}")
+print("\nทุกค่าคิดในช่วงเดียวกับที่ใช้วัด σ̂ (ในตัวอย่าง) จึงมองโลกแง่ดี — ใช้เลือกแถบ ไม่ใช่คาดกำไร")</pre>
+<!--/CODE:p4_breakeven-->
+<!--RUN:p4_breakeven-->
+<pre class="out">β̂ 1.381 · σ̂ 2.57% · half-life 8.2 แท่ง · ต้นทุน 5 bps ต่อขา (ครบรอบ 0.10%)
+แถบคุ้มทุน: entry − exit ต้องเกิน 2c(1+β)/σ = 0.09 σ  (ยังไม่มีกำไรเลย แค่เสมอตัว)
+time stop ≈ 3–4 × half-life ≈ 25–33 แท่ง (half-life ที่ประมาณได้มักสั้นกว่าจริง)
+
+ entry  สูตร/ไม้  จริง/ไม้  สุทธิ/ไม้  ไม้/ปี  สุทธิ/ปี
+   0.5    0.54%     0.98%     0.88%    18.5    16.19%
+   1.0    1.08%     1.49%     1.39%     8.7    12.16%
+   1.5    1.62%     2.02%     1.92%     5.7    10.96%
+   2.0    2.16%     2.61%     2.51%     3.0     7.61%
+   2.5    2.70%     3.26%     3.16%     1.0     3.19%
+
+ทุกค่าคิดในช่วงเดียวกับที่ใช้วัด σ̂ (ในตัวอย่าง) จึงมองโลกแง่ดี — ใช้เลือกแถบ ไม่ใช่คาดกำไร</pre>
+<!--/RUN:p4_breakeven-->
+<p><strong>อ่านผล:</strong> "สูตร/ไม้" คือ entry·σ̂ ÷ (1 + β̂) ส่วน "จริง/ไม้" สูงกว่าเพราะ overshoot half-life ที่ประมาณได้ก็มักสั้นกว่าจริง (ค่าจริงของคู่จำลองนี้คือ <span data-f="p4.settings.half_life_true_bars">12</span> แท่ง) time stop จึงพิมพ์เป็นช่วง 3–4 เท่า ลองใส่ต้นทุน 50 แล้วดูแถวบนสุด</p></div>
+
+<div class="station" data-n="3"><div class="bt">เขียนการ์ดกฎ ก่อนเปิดครึ่งหลัง</div>
+<p>เขียนลงกระดาษหรือไฟล์ที่ลงวันที่ไว้ ทุกช่องต้องมีคำตอบ</p>
+<ul>
+<li><strong>คู่และสายจูง:</strong> Y, X และประโยคเดียว "ε ต้องกลับเพราะ ____"</li>
+<li><strong>ไม้บรรทัด:</strong> walk-forward train 250 แท่ง ประมาณใหม่ทุก 21 แท่ง (หรือค่าที่คุณเลือก พร้อมเหตุผล)</li>
+<li><strong>เข้า / ออก:</strong> entry = ___ (≥ แถบคุ้มทุนบวกที่เผื่อ) · exit = ___</li>
+<li><strong>หยุด:</strong> time stop = ___ × half-life ที่ประมาณได้ (3–4) = ___ แท่ง · structural stop = Engle–Granger บน 250 แท่งล่าสุดทุกรอบประมาณใหม่ ไม่ผ่านที่ 10% สองรอบติด → ปิดและพัก · z-stop = ไม่มี หรือ ___ (ไกล วัดด้วยไม้บรรทัด ณ วันเข้า)</li>
+<li><strong>ต้นทุน:</strong> c = ___ bps ต่อขา มาจากไหน</li>
+<li><strong>ขนาดไม้:</strong> กฎตั้งต้น (ไม่ได้ทดสอบในห้องทดลอง) ถ้า ε เดินต่อจากจุดเข้าอีก 3 σ̂ หรือเท่าระยะไกลสุดที่เคยเห็นในครึ่งแรก แล้วแต่ค่าไหนมากกว่า ต้องขาดทุนไม่เกิน ___% ของพอร์ต (เช่น 2%) และไม่ใช้ leverage จนโดนบังคับปิดก่อนถึง time stop (ลึกกว่านี้: <code>statarb-ch12</code> Position sizing)</li>
+<li><strong>เกณฑ์ทิ้งกฎ:</strong> ผลแบบไหนในครึ่งหลังที่จะทำให้คุณยอมรับว่ากฎนี้ใช้ไม่ได้</li>
+</ul></div>
+
+<div class="station" data-n="4"><div class="bt">เปิดครึ่งหลังครั้งเดียว</div>
+<p>โปรแกรมนี้ใช้ 250 แท่งท้ายของครึ่งแรกอุ่นเครื่อง แล้วนับผลเฉพาะครึ่งหลัง เทียบไม่มี stop กับ time stop 3 และ 4 × half-life ที่ประมาณจากครึ่งแรก ทั้ง lag 1 และ lag 2 แล้วรัน structural stop ตั้งต้นของการ์ดที่ 3 ให้ อาร์กิวเมนต์ที่สี่และห้าคือต้นทุนต่อขา (bps) กับ entry จากการ์ดของคุณ ไม่ใส่ไฟล์ = คู่จำลอง break (สายจูงขาดที่แท่ง <span data-f="p4.zones.break.break_bar">900</span>) ซึ่งเป็นเส้นทางเดียว ใช้ดูวิธีอ่าน ไม่ใช่ข้อสรุป</p>
+<!--CODE:p4_timestop-->
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import numpy as np
+import sas_core as C
+
+# ใช้: python3 tools/sas_snippets/p4_timestop.py [ไฟล์.csv Y X [c_bps entry]]  (ไม่ใส่ไฟล์ = คู่จำลอง break · 5 bps · entry 1.5)
+# สถานี 4: เปิดครึ่งหลังครั้งเดียว · time stop จาก half-life ของครึ่งแรก · ตรวจสายจูงซ้ำทุก 21 แท่ง
+if len(sys.argv) &gt;= 4:
+    d = np.genfromtxt(sys.argv[1], delimiter=",", names=True)
+    y, x = np.log(d[sys.argv[2]]), np.log(d[sys.argv[3]])
+else:
+    p = C.demo_pair("break"); y, x = p["y"], p["x"]
+c = (float(sys.argv[4]) if len(sys.argv) &gt;= 5 else 5.0) / 1e4
+E = float(sys.argv[5]) if len(sys.argv) &gt;= 6 else 1.5
+n, W = len(y) // 2, 250
+hl = C.fit_ar1(C.eg_test(y[:n], x[:n])["resid"])["half_life"]      # half-life จากครึ่งแรกเท่านั้น
+ys, xs = y[n - W:], x[n - W:]          # 250 แท่งท้ายครึ่งแรกใช้อุ่นเครื่อง · นับผลเฉพาะครึ่งหลัง
+print(f"half-life ครึ่งแรก {hl:.1f} แท่ง · entry {E} · ต้นทุน {c * 1e4:.0f} bps ต่อขา · นับผล {len(y) - n} แท่ง")
+print(" stop       H  lag  ต่อปี  Sharpe  DD ลึกสุด  ไม้")
+for name, H in (("none", None), ("3xHL", round(3 * hl)), ("4xHL", round(4 * hl))):
+    for lag in (1, 2):
+        s = C.walk_forward_pair(ys, xs, train=W, refit=21, entry=E, exit=0.0, max_hold=H,
+                                cost_per_leg=c, lag=lag)["stats"]
+        print(f" {name:&lt;6}{H or '-':&gt;4}{lag:5d}{s['ann_return']:7.1%}{s['sharpe']:8.2f}"
+              f"{s['max_dd']:10.1%}{s['n_trades']:5d}")
+
+# structural stop ตั้งต้น: Engle-Granger บน 250 แท่งล่าสุด ทุก 21 แท่ง · ไม่ผ่านที่ 10% สองรอบติด = ปิดและพักคู่
+cut = np.percentile(C.mc_null_eg(W, 2, n_sim=100_000, lags=1, g=C.rng(450)), 10)
+fails, streak, first = 0, 0, None
+for t in range(n + 21, len(y) + 1, 21):
+    bad = C.eg_test(y[t - W:t], x[t - W:t])["adf"] &gt; cut
+    fails, streak = fails + bad, (streak + 1 if bad else 0)
+    if streak == 2 and first is None:
+        first = t - 1
+checks = len(range(n + 21, len(y) + 1, 21))
+print(f"\nตรวจสายจูงซ้ำ {checks} ครั้ง (เกณฑ์ 10% = {cut:.2f}) · ไม่ผ่าน {fails} ครั้ง · "
+      + (f"ไม่ผ่านสองรอบติดครั้งแรกที่แท่ง {first}" if first else "ไม่เคยไม่ผ่านสองรอบติด"))</pre>
+<!--/CODE:p4_timestop-->
+<!--RUN:p4_timestop-->
+<pre class="out">half-life ครึ่งแรก 12.2 แท่ง · entry 1.5 · ต้นทุน 5 bps ต่อขา · นับผล 750 แท่ง
+ stop       H  lag  ต่อปี  Sharpe  DD ลึกสุด  ไม้
+ none     -    1  -8.6%   -0.69     43.9%   10
+ none     -    2  -8.9%   -0.72     42.5%   10
+ 3xHL    37    1   0.9%    0.13      8.9%   13
+ 3xHL    37    2  -0.1%   -0.02     12.9%   13
+ 4xHL    49    1   1.4%    0.20      7.6%   12
+ 4xHL    49    2   1.3%    0.19      8.7%   12
+
+ตรวจสายจูงซ้ำ 35 ครั้ง (เกณฑ์ 10% = -3.05) · ไม่ผ่าน 24 ครั้ง · ไม่ผ่านสองรอบติดครั้งแรกที่แท่ง 980</pre>
+<!--/RUN:p4_timestop-->
+<p><strong>อ่านผล:</strong> ดูแถว lag 2 เป็นหลัก (ได้ราคาช้าไปหนึ่งแท่ง ใกล้ชีวิตจริงกว่า) บนคู่ break การไม่มี stop เสียหนัก time stop ตัดความเสียหายไปมาก และการตรวจสายจูงซ้ำจับได้ไม่ถึงร้อยแท่งหลังสายจูงขาด ภาพเต็มเจ็ดสถานีใช้ <code>python3 tools/statarb_lab.py check my.csv --y Y --x X --cost-bps 20 --entry 1.5 --exit 0</code> (คู่มือเต็มอยู่ในตอนที่ 8) แถว exam คือครึ่งหลัง แถว study คือช่วงที่ใช้ตัดสินไปแล้ว บรรทัด "sd ของ z นอกตัวอย่าง" บอกว่า z ของคุณยืดกว่า σ จริงแค่ไหน บันทึกผลตามที่ออก ห้ามปรับกฎแล้วรันซ้ำบนช่วงเดิม</p></div>
+
+<div class="dft"><div class="bt">⚠️ ค่าเริ่มต้นที่แนะนำ</div>
+<ul>
+<li><strong>เส้นโซน (สำหรับตรวจ):</strong> expanding (อดีตอย่างน้อย 250 แท่ง) หรือ rolling 250 แท่ง ไม่ใช้เส้นทั้งช่วง</li>
+<li><strong>ไม้บรรทัด z (สำหรับเทรด):</strong> walk-forward train 250 · ประมาณใหม่ทุก 21 แท่ง และจำว่า z = 2 ที่วัดแบบนี้ ≈ <span data-f="p4.threshold.e2.true_sigma_at_entry">1.5</span> σ จริง</li>
+<li><strong>entry:</strong> เริ่มจากแถบคุ้มทุนของคุณ (สถานีที่ 2) บนโลก good ของห้องทดลอง (σ = <span data-f="p4.settings.sigma_true_pct">3</span>% · β = <span data-f="p4.settings.beta_true">1.4</span> · half-life <span data-f="p4.settings.half_life_true_bars">12</span>) เกณฑ์ที่ดีที่สุดตาม Sharpe อยู่ที่ <span data-f="p4.threshold.best.c5.entry_by_sharpe">1</span> · <span data-f="p4.threshold.best.c20.entry_by_sharpe">1.5</span> · <span data-f="p4.threshold.best.c50.entry_by_sharpe">2</span> เมื่อต้นทุน 5 · 20 · 50 bps ต่อขา ค่าเหล่านี้ไม่ย้ายไปคู่อื่นตรง ๆ (การ์ดที่ 2)</li>
+<li><strong>ระยะเผื่อ (กฎหัวแม่มือ ไม่ได้ทดสอบ):</strong> กำไรขั้นต้นต่อไม้ตามสูตร อย่างน้อย 2 เท่าของค่าผ่านทางไป-กลับ 2c</li>
+<li><strong>exit:</strong> z = 0 (หรือ 0.5 ถ้าอยากถือสั้นลง) ไม่กลับข้างที่แถบตรงข้าม</li>
+<li><strong>หยุด:</strong> time stop 3–4 × half-life ที่ประมาณได้ (ห้องทดลองทดสอบเฉพาะ 3 × ค่าจริง) · Engle–Granger บน 250 แท่งล่าสุด ไม่ผ่าน 10% สองรอบติด → ปิดและพัก · z-stop ถ้าจะใช้ ให้ไกล (|z| ≥ 4) วัดด้วยไม้บรรทัด ณ วันเข้า และรู้ว่ากับไม้บรรทัดที่ประมาณใหม่มันไม่ช่วยหางในห้องทดลอง</li>
+</ul>
+<p>เป็นจุดเริ่มคิด ไม่ใช่กฎตายตัว</p></div>
+
+<div class="scene"><div class="bt">🎬 ฉากหน้าจอ</div>
+<p>คืนวันพฤหัส คุณถือ short สเปรดมา 9 วัน เข้าที่ z = 2 ตามการ์ด เย็นนี้ ε ปิดเหนือเส้น P99 แบบ expanding เป็นครั้งแรก z ขึ้นไป 3.8 ขาดทุนบนกระดาษแล้ว</p>
+<p>เสียงหนึ่งบอกให้เพิ่มไม้ "ไกลขนาดนี้ ไม้ที่ดีที่สุดของปีแน่ ๆ" อีกเสียงบอกให้ตัดทิ้ง "ทะลุ 99% แล้ว โมเดลพัง" กราฟเข้าข้างทั้งสองเสียงพอ ๆ กัน</p>
+<p>การ์ดที่เขียนไว้ล่วงหน้าตอบคำถามนี้แทนคุณ ไม่เพิ่มไม้ระหว่างถือ · half-life ที่ประมาณได้ 10 แท่ง การ์ดเขียน time stop ไว้ 4 เท่า คือ 40 แท่ง ยังเหลือ 31 แท่ง · คืนนี้รัน Engle–Granger บน 250 แท่งล่าสุด และอ่านข่าวของทั้งสองขา ถ้าไม่ผ่านเป็นรอบที่สองติดกัน หรือมีข่าวที่เปลี่ยนเหตุผลของสายจูง ปิดพรุ่งนี้เช้า ถ้าไม่ ถือตามการ์ด</p></div>
+
+<div class="bx bb"><div class="bt">🧭 นิสัยคิด</div>
+<ol>
+<li>เส้นนี้ ฉันลากได้จริงในวันนั้นไหม หรือมันใช้ข้อมูลที่ยังไม่เกิด?</li>
+<li>หนึ่งรอบได้กี่ % ของเงินรวมสองขาหลังหักค่าผ่านทาง และปีละกี่รอบ?</li>
+<li>ถ้า ε ไม่กลับ อะไรจะบอกให้ฉันออก ระยะ เวลา หรือเหตุผล?</li>
+<li>stop ของฉันวัดด้วยไม้บรรทัดที่ประมาณใหม่ ซึ่งอาจยืดตามปัญหา หรือเปล่า?</li>
+<li>วันที่ ε ไกลที่สุด ฉันถามสายจูง หรือถามกราฟ?</li>
+</ol></div>
+
+<h2>📉 เมื่อทฤษฎีพังจริง: วันที่ ε ทะลุเส้น สองตอนจบ</h2>
+
+<p><strong>เรื่องที่หนึ่ง (ข้อมูลจำลอง):</strong> คู่ break ของห้องทดลอง เหมือนคู่ good ทุกอย่างจนถึงแท่ง <span data-f="p4.zones.break.break_bar">900</span> แล้วสายจูงขาด เส้นในรูปคิดจาก <span data-f="p4.settings.train_bars">750</span> แท่งแรก คือสิ่งที่คุณมีในมือก่อนเกิดเรื่อง</p>
+
+<!--CHART:sas-p4-zones-break-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 345" role="img" aria-label="ε ของคู่ break: 900 แท่งแรกแกว่งอยู่ในโซน หลังสายจูงขาด ε อยู่นอกเส้นนอกสุดเป็นส่วนใหญ่ และหลังแท่ง 1293 ไม่กลับเข้าโซนกลางอีก">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p4-zones-break-clip1"><rect x="57" y="48" width="667.5" height="252"/></clipPath></defs>
+<rect x="457.6" y="49" width="265.9" height="250" fill="#dc2626" fill-opacity="0.08"/><text x="590.5" y="44" text-anchor="middle" font-size="10.5" fill="#6b7280">หลังสายจูงขาด (แท่ง 900)</text>
+<path d="M58 274H723.5M58 211.5H723.5M58 149H723.5M58 86.5H723.5" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="278" text-anchor="end" font-size="11" fill="#6b7280">−50</text><text x="50" y="215.5" text-anchor="end" font-size="11" fill="#6b7280">−25</text><text x="50" y="153" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="90.5" text-anchor="end" font-size="11" fill="#6b7280">25</text>
+<line x1="58" y1="135.1" x2="723.5" y2="135.1" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="139.4" x2="723.5" y2="139.4" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="149.1" x2="723.5" y2="149.1" stroke="#374151" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="158.3" x2="723.5" y2="158.3" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="58" y1="168.1" x2="723.5" y2="168.1" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 4"/>
+<path d="M723.5 135.1L728.5 126" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="731.5" y="129.5" font-size="10.5" fill="#6b7280">P99</text><text x="731.5" y="141.5" font-size="10.5" fill="#6b7280">P90</text><text x="731.5" y="153.5" font-size="10.5" fill="#6b7280">P50</text><path d="M723.5 158.3L728.5 162" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="731.5" y="165.5" font-size="10.5" fill="#6b7280">P10</text><path d="M723.5 168.1L728.5 174" fill="none" stroke="#cbd5e1" stroke-width="1"/><text x="731.5" y="177.5" font-size="10.5" fill="#6b7280">P1</text>
+<g clip-path="url(#sas-p4-zones-break-clip1)"><path d="M58 148l1.8 4.9 3.1-10.2 2.6-8.3 .9 9.6 2.7-6.5 4 18.5 2.2 5.3 2.7-13.6 2.6 7 2.3-12.7 2.6 2.7 .9-5.9 2.7 3 3.1 9.1 1.3-8.5 .9 7.6 4-2.4 1.3 9.5 4-3.8 3.1-9.6 2.3 6.2 2.6-7.7 2.2 11.2 2.3-14.1 2.6 12.8 4 7.4 3.6-5.1 1.7 7.1 .5-.9 4-13 1.8 3.9 2.2-4.6 2.6-.3 2.7 6 2.7-2.8 1.8-10.8 3.9-3.9 2.3 12.6 1.3-5.4 2.7-5.8 3.1 14.3 4-11.3 .4 .5 4.5 16.1 2.6-.3 1.8-4.9 2.2-.4 2.2 5.7 3.1-2.3 3.1 10.8 .5 3.3 4.9-13.1 .9 .7 1.7-8.9 4 5.1 3.1-7 .9 .1 .9-7 4.9 5.8 2.7-5.5 2.2 2.6 3.1-6.1 1.3 2.6 4.5 8.1 .9-3.4 2.6 13.1 1.8-8.4 2.2 7.9 2.7-6.3 1.8 7 3.5-5.4 4 9.6 .9-1.8 2.2-8.2 3.6 5.9 2.2-8.6 2.2-.5 1.8-12.6 3.1 10.2 4.4 15.5 1.8 1.1 2.2 6.2 2.7-5.9 2.2 9.4 3.6 .8 2.6-8.2 1.8 3.5 3.5-19.6 .5-4.5 4.4 12.7 2.2 4.2 3.2-8.3 1.7 .5 .9-4.5 3.1 5.3 4 5.4 .9-6 3.1 6.9 1.8-3.6 3.5-11.2 1.4 3.2 1.8-7.6 3.1 6.1 4-7.5 4.4-2.5 1.3 8.9 .9-4.2 3.6 7.2 2.6-.7 1.4-9.5 2.6 8.9 2.7-5.8 4-1.8 2.2 9.4 .5 1.4 2.2 12.5 3.5-5.8 4-7.3 1.4 6.6 2.6-14.1 1.3 5.3 3.2-11.7 3.5-1.2 1.3 6.2 2.3 .5 4.4 10.7 .4-2.7 3.6 10.3 1.8-5.5 1.7-10.5 3.6 11.5 4-11.4 1.3 5.7 3.6-8.7 1.3 5.8 1.3-6.7 4.9-5 2.7 11 2.7 8.3 2.6-9.8 .9 3 1.8 11.2 3.1-6.6 4-9.6 2.6 3.9 1.8 6.7 2.7-1.5 2.7-16.2 .8 5.7 4.9 14.2 1.4 4.7 2.2-9.2 2.2 2.6 4 14.4 .4 1.8 4.5-25.9 .9 4.6 2.2-11.7 4.9 2.2 2.2 13.1 .9-5.7 2.6-9.4 2.7-12.8 1.8 15.7 3.5 10.2 2.7-17.1 4-18.6 1.8 13.1 .9-4.3 1.7-16.7 6.7 6.6 .9 7.3 3.5 7.6 1.4-11.4 2.2 7.5 3.1-13.8 1.8 5.4 3.1-16.2 1.7 9.7 2.7-20.9 1.8 8.7 3.1-14.7 1.3 3.1 2.7 12.6 5.8-7.3 1.3 14.7 1.3-2.4 3.6 19 .9-2.4 3.1-23.2 4 3.8 .4-12.9 2.7 12.6 3.5-11.1 2.2-6 2.3 11.6 2.6 14.2 .9-15.7 5.3 1.1 1.8 11.9 1.8-6.4 3.6 24.7 1.3-9.9 1.8 15.6 2.6-4 1.4-12.2 6.6 8.7 .5 6.5 1.7 4 1.4 14.3 3.5-6.7 1.8 12 7.1-3.6 .9-11.1 1.8-6.6 2.6 22 1.4 5.2 3.5-15.8 1.8 1.6 3.1 9.2 4.4-13.4 1.4 12.2 .4-.2 3.6-9.6 2.2 .6 2.6 13.2 3.2-20 1.7 23.4 1.8 5.1 4.4 19.4 2.7-13.2 1.8 16.5 3.1-1.5 1.3 13.7 2.2-1.4 1.8-15.5 4.5 11.5 3.1-12.6 1.7-1.8 3.2 18 2.6-6.6 2.7 7.9 .4 10.9 4 13.9 1.8-10.2 3.5 16.5 1.8-6.6 3.6 21.3 .9-1.3 1.3 11.2 6.2 9.1 1.3-18.7 .5-6.7 .9 12.5 4.9-1.9 2.6 10.1 1.8-1.4 4-27.1 .9 2.8 3.5 15.1 1.8-4.3 4.4 16.7 .5 10.5 4-33.3 1.3 8.4" fill="none" stroke="#1f2937" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<text x="58" y="23" font-size="12.5" fill="#374151"><tspan font-weight="700">ε ของคู่ที่สายจูงขาดกลางทาง (%)</tspan><tspan fill="#6b7280" font-size="11">  เส้นประ = เปอร์เซ็นไทล์ที่คิดจาก 750 แท่งแรก</tspan></text>
+<line x1="58" y1="299" x2="723.5" y2="299" stroke="#cbd5e1" stroke-width="1.5"/><text x="58" y="315" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="169" y="315" text-anchor="middle" font-size="11" fill="#6b7280">250</text><text x="280" y="315" text-anchor="middle" font-size="11" fill="#6b7280">500</text><text x="391" y="315" text-anchor="middle" font-size="11" fill="#6b7280">750</text><text x="502" y="315" text-anchor="middle" font-size="11" fill="#6b7280">1,000</text><text x="613" y="315" text-anchor="middle" font-size="11" fill="#6b7280">1,250</text><text x="390.8" y="336" text-anchor="middle" font-size="12" fill="#6b7280">แท่งที่ (วัน)</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง · คู่ที่สายจูงขาดที่แท่ง 900 · เส้นทั้งห้าคิดจาก 750 แท่งแรก (สิ่งที่คุณมีในมือก่อนเกิดเรื่อง) · ก่อนขาด ε อยู่นอกเส้น P1–P99 เพียง 3% ของเวลา · หลังขาดอยู่นอกเส้น 77% ของเวลา และหลังแท่ง 1,293 ไม่กลับเข้าโซนกลาง (P10–P90) อีกเลย — วันที่ ε ทะลุเส้น 99% กราฟหน้าตาเหมือนโอกาสทองทุกประการ</div>
+<!--/CHART:sas-p4-zones-break-->
+
+<p>ε ทะลุเส้นนอกครั้งแรกที่แท่ง <span data-f="p4.zones.break.first_pierce_bar">920</span> ยี่สิบแท่งหลังเกิดเรื่อง หน้าตาเหมือนโอกาสทองทุกประการ ε ยังวนกลับมาแตะเส้นกลางเป็นครั้งคราวจนถึงแท่ง <span data-f="p4.zones.break.last_middle_bar">1,293</span> แล้วไม่กลับอีก ไม้ที่เปิดที่แท่ง 920 อาจได้คืนถ้าถือไหวผ่านช่วงที่ ε ไปไกลจากเส้นนอกหลายเท่า ส่วนไม้ที่เปิดตามกฎหลังแท่งนั้นค้างจนจบข้อมูล</p>
+<p>สิ่งที่จะช่วยคุณไม่ใช่การอ่านกราฟให้เก่งขึ้น แต่คือนาฬิกาและการตรวจสายจูงซ้ำ การ์ดที่ 3 วัด time stop ให้แล้วบน <span data-f="p4.settings.worlds_break">1,000</span> โลกแบบนี้ (tail10 <span data-f="p4.stops.wf.break.none.tail10_pct">−13</span> → <span data-f="p4.stops.wf.break.t36.tail10_pct">−11</span>%) ส่วนการตรวจสายจูงซ้ำยังไม่ได้วัด สถานีที่ 4 ลองบนคู่นี้คู่เดียวให้ดู</p>
+
+<p><strong>เรื่องที่สอง (โลกจริง ผ่านการจำลองของผู้วิจัย):</strong> Khandani และ Lo (2007) เริ่มจากข้อสังเกตว่า ในสัปดาห์ของวันที่ 6 สิงหาคม 2007 กองทุน quant แบบ long/short หุ้นหลายกองขาดทุนอย่างไม่เคยเกิดมาก่อน กลยุทธ์สวนทาง (contrarian) รายวันที่เขาจำลองบนหุ้นสหรัฐฯ แบบไม่ใช้ leverage ขาดทุน 1.16%, 2.83% และ 2.86% ในวันที่ 7, 8 และ 9 สิงหาคม แล้วได้คืน 5.92% ในวันศุกร์ที่ 10 ถ้าใช้ leverage 8 เท่า วันที่ 8 และ 9 ขาดทุน 11.33% และ 11.43%</p>
+
+<p>ผู้เขียนอ่านการเด้งกลับนี้ว่าเป็นการเทขายเพราะสภาพคล่อง ไม่ใช่กลยุทธ์พังถาวร ซึ่งเป็นสมมติฐาน ไม่ใช่ข้อพิสูจน์ ส่วน back-test ของ Avellaneda และ Lee (2010) ก็เห็นกลยุทธ์กลับสู่ค่าเฉลี่ยทุกแบบขาดทุนแรงและเร็วในเดือนนั้น แล้วฟื้นในราวสิบวัน</p>
+
+<div class="bx br"><div class="bt">❌ บทเรียน: ภาพเดียวกัน ตอนจบตรงข้าม</div>
+<ul>
+<li>เรื่องแรก การทะลุเส้นคือจุดเริ่มของการพัง เรื่องที่สอง ถ้าสมมติฐานของผู้เขียนถูก คือจังหวะที่ดีที่สุดสำหรับคนที่ยังถือไหว</li>
+<li>คนที่ใช้ leverage สูงอาจถูกบังคับปิดก่อนวันที่ 10 ตรงกับที่ Shleifer และ Vishny (1997) เตือนว่า arbitrage อาจไร้ผลในสถานการณ์สุดขั้ว</li>
+<li>กราฟ ณ วันนั้นแยกสองเรื่องนี้ไม่ได้ ที่แยกได้คือคำถามถึงสายจูง และขนาดไม้ที่ทำให้คุณยังอยู่ถามได้</li>
+</ul></div>
+
+<h2>✍️ ลองทำเอง</h2>
+
+<ol>
+<li><p><strong>คิดมือ:</strong> entry 1.5 · exit 0 · σ = 2% · β = 0.8 · c = 10 bps ต่อขา หนึ่งรอบได้ขั้นต้นและสุทธิเท่าไร ถ้าปีละ 4 รอบ ได้ปีละเท่าไร</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>ขั้นต้น = 1.5 × 2% ÷ 1.8 ≈ 1.67% · ค่าผ่านทาง 2c = 0.20% · สุทธิ ≈ 1.47% ต่อรอบ · 4 รอบ ≈ 5.9% ต่อปี ถ้าปิดที่เส้นออกด้วยไม้บรรทัดตายตัว โดยเฉลี่ยได้ไม่น้อยกว่านี้เพราะ overshoot แต่ไม้เดี่ยวขาดทุนได้ และถ้า z มาจากไม้บรรทัด walk-forward ส่วนเผื่อแทบหายไป</p></details></li>
+
+<li><p><strong>อ่านกราฟของเพื่อน:</strong> เพื่อนส่งกราฟโซนแบบสไลด์มา บอกว่า "ε อยู่นอกเส้น 10/90 รวม 20% ของเวลาพอดี โมเดลแม่นมาก" คุณตอบว่าอะไร แล้วถ้าเขาเปลี่ยนเป็นเส้น expanding แล้วได้ 35% ล่ะ</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>20% เป็นจริงเสมอเมื่อเส้นคิดจากข้อมูลชุดเดียวกัน ไม่ได้บอกอะไร ส่วน 35% กับเส้นที่รู้แค่อดีตบอกว่า ε ออกนอกขอบเขตที่เคยเห็นบ่อยกว่าที่โซนนิ่งควรเป็นมาก เป็นอาการของโซนที่ขยาย ให้ดูสัญญาณข้อ 2 และ 3 ต่อ</p></details></li>
+
+<li><p><strong>นาฬิกา:</strong> half-life ที่ประมาณได้ 8 แท่ง คุณเข้ามา 30 แท่งแล้ว ε ยังไม่กลับ และ z ยังไม่ถึง stop ที่ 4 การ์ดควรบอกให้ทำอะไร</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>ถ้าการ์ดเขียน 3 เท่า: 24 แท่ง เลยมา 6 แท่งแล้ว ปิดตาม time stop แล้วตรวจสายจูงซ้ำก่อนเข้าคู่นี้อีก ถ้าเขียน 4 เท่า: 32 แท่ง ยังเหลือ 2 แท่ง สิ่งที่ห้ามคือเลือกตัวคูณใหม่ตอนนี้ การรอให้ z แตะ 4 อาจไม่เกิดเลย ถ้าไม้บรรทัดประมาณใหม่และยืดตามปัญหา</p></details></li>
+
+<li><p><strong>แถบคุ้มทุน:</strong> c = 20 bps ต่อขา · β = 1 · σ = 1.5% แถบคุ้มทุนกว้างเท่าไร ถ้าเข้าที่ z = 1 แบบ walk-forward ซึ่งเข้าจริงราว <span data-f="p4.threshold.e1.true_sigma_at_entry">0.9</span> σ (ค่าห้องทดลอง) ผ่านกฎหัวแม่มือ 2 เท่าไหม และเพื่อนที่เข้าที่ P95 ของ ε ที่เป็นระฆังปกติ เข้าที่ z เท่าไร</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>แถบคุ้มทุน = 2 × 0.002 × 2 ÷ 0.015 ≈ 0.53 σ · ขั้นต้น ≈ 0.9 × 1.5% ÷ 2 ≈ 0.68% เทียบค่าผ่านทาง 2c = 0.40% ได้ราว 1.7 เท่า ต่ำกว่า 2 เท่า จึงควรขยับเกณฑ์ออกแล้วคิดใหม่ด้วยสถานีที่ 2 · P95 ของระฆังปกติ ≈ z 1.64</p></details></li>
+
+</ol>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div>
+<ol>
+<li>เส้น "VaR" บนสไลด์คือเปอร์เซ็นไทล์ของ ε ทั้งช่วง ใช้เทรดได้เฉพาะเมื่อคิดจากอดีตเท่านั้น</li>
+<li>หนึ่งรอบได้ ≈ (entry − exit)·σ ÷ (1 + β) − 2c · ผลต่อปี = จำนวนรอบ × ค่านี้ · ต้นทุนสูงขึ้น แถบที่ดีที่สุดขยับออก</li>
+<li>หยุดด้วยเวลาและเหตุผลก่อนระยะ วันที่ ε ทะลุเส้นนอกสุด ถามสายจูง ไม่ใช่ถามกราฟ</li>
+</ol></div>
+
+<div class="bx bg"><div class="bt">✓ สรุปตอนที่ 4</div>
+<p><strong>ภาพเดียวที่ควรวาดได้:</strong> บันไดเส้นเปอร์เซ็นไทล์ที่คิดจากอดีต ε เปิดไม้ที่ขั้นนอก ปิดที่ขั้นกลาง ระยะระหว่างสองขั้น ÷ (1 + β) − 2c คือกำไรหนึ่งรอบ แล้ววันหนึ่ง ε ทะลุขั้นบนสุดกลายเป็นทางแยก กลับ หรือ ไม่กลับ (ภาพแผนที่ตอนต้นของ 🔍)</p>
+<p><strong>ประโยคเดียวที่บอกเพื่อนได้:</strong> "เส้นบนกราฟต้องวัดจากอดีตเท่านั้น กำไรมาจากการเดินระหว่างเส้นซ้ำหลายรอบหลังหักค่าผ่านทาง แต่เส้นบอกไม่ได้ว่าสายจูงยังอยู่ไหม"</p></div>
+
+<div class="pq">คุณลากเส้นจากอดีต คิดแถบจากต้นทุน เขียนการ์ดก่อนเปิดช่วงทดสอบ ตั้งนาฬิกาไว้แล้ว — แล้ว backtest ยังแดงอยู่ดี ถึงเวลาเข้าคลินิก ตอนที่ 5 ไล่หาทีละสาเหตุว่าแดงเพราะอะไร</div>
+
+<div class="bx"><div class="bt">📚 Papers</div>
+<ul>
+<li>Gatev, E., Goetzmann, W. N. &amp; Rouwenhorst, K. G. (2006). "Pairs Trading: Performance of a Relative-Value Arbitrage Rule." <em>The Review of Financial Studies</em> 19(3), 797–827</li>
+<li>Avellaneda, M. &amp; Lee, J.-H. (2010). "Statistical arbitrage in the US equities market." <em>Quantitative Finance</em> 10(7), 761–782</li>
+<li>Do, B. &amp; Faff, R. (2012). "Are Pairs Trading Profits Robust to Trading Costs?" <em>Journal of Financial Research</em> 35(2), 261–287</li>
+<li>Shleifer, A. &amp; Vishny, R. W. (1997). "The Limits of Arbitrage." <em>The Journal of Finance</em> 52(1), 35–55</li>
+<li>Khandani, A. E. &amp; Lo, A. W. (2007). "What Happened to the Quants in August 2007?" <em>Journal of Investment Management</em> 5(4)</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📖 อ่านต่อ</div>
+<ul>
+<li><a href="statarb-slides-part3.html">ตอนที่ 3: Y − βX = ε</a> · ที่มาของ α̂, β̂ และการทดสอบที่ใช้ใน structural stop</li>
+<li><a href="nq-part5.html">คิดแบบ Quant ตอนที่ 5: ต้นทุนและอีกฝั่งของดีล</a> · ต้นทุนที่มองไม่เห็นใน c</li>
+<li><a href="theory-part5.html">ทฤษฎีของ Quant Part V</a> · กับดักของ backtest</li>
+<li><a href="statarb-live-vs-backtest.html">live กับ backtest ไม่ตรงกัน</a> · จะรู้ได้อย่างไรว่าระบบกำลังพัง</li>
+<li>เล่มเดิม (อีก branch): <code>statarb-ch3</code> Ornstein-Uhlenbeck (half-life) · <code>statarb-ch10</code> Z-score &amp; robust statistics · <code>statarb-ch11</code> Entry/Exit state machine (เศรษฐศาสตร์ของ stop) · <code>statarb-ch12</code> Position sizing · <code>statarb-ch19</code> Cost analysis &amp; edge</li>
+</ul></div>
+
+<div class="bx"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>3 คำต้องจำก่อน</strong></p>
+<ul>
+<li><strong>percentile</strong> (เปอร์เซ็นไทล์) · P90 = ค่าที่ 90% ของข้อมูลอยู่ต่ำกว่า สิ่งที่สไลด์เรียกว่า "VaR 90%"</li>
+<li><strong>look-ahead bias</strong> (การเห็นอนาคต) · ใช้ข้อมูลที่ ณ วันตัดสินใจยังไม่เกิด ทำให้ backtest สวยเกินจริง</li>
+<li><strong>round trip</strong> (ไป-กลับ) · เปิดแล้วปิดหนึ่งครั้ง จ่ายต้นทุน 2c ของเงินรวมสองขา</li>
+</ul>
+<p><strong>คำอื่น ๆ</strong></p>
+<ul>
+<li><strong>expanding / rolling window</strong> · หน้าต่างขยายจากต้นถึงวันนี้ / หน้าต่างเลื่อน N แท่งล่าสุด</li>
+<li><strong>ไม้บรรทัด</strong> · ชุด α̂, β̂, μ̂, σ̂ ที่ใช้แปลง ε เป็น z ประมาณครั้งเดียวหรือประมาณใหม่เป็นรอบ</li>
+<li><strong>band</strong> (แถบ) · เกณฑ์ entry กับ exit ของ z</li>
+<li><strong>break-even band</strong> (แถบคุ้มทุน) · entry − exit &gt; 2c(1 + β)/σ</li>
+<li><strong>overshoot</strong> (การทะลุเกณฑ์) · ข้อมูลรายแท่งเลยเส้นไปก่อนที่สัญญาณจะเกิด</li>
+<li><strong>stop paradox</strong> · stop ที่ระยะตัดไม้เดิมพันกลับสู่ค่าเฉลี่ยตรงจุดที่ค่าคาดหวังสูงสุด</li>
+<li><strong>time stop</strong> · ปิดเมื่อถือครบราว 3 × half-life</li>
+<li><strong>structural stop</strong> · ปิดเมื่อการตรวจสายจูงซ้ำไม่ผ่าน</li>
+<li><strong>tail10</strong> · ค่าเฉลี่ยของ 10% ของโลกที่แย่ที่สุด</li>
+</ul></div>
+
+<p><em>เพื่อการเรียนรู้ ไม่ใช่คำแนะนำการลงทุน</em> · ตัวเลขจากห้องทดลองเป็นข้อมูลจำลองทั้งหมด</p>
+
+<p class="nav"><a href="statarb-slides-part3.html">← ตอนที่ 3: ประกอบสเปรดให้ถูก</a> · <a href="statarb-slides-index.html">สารบัญชุด</a> · <a href="statarb-slides-part5.html">ตอนที่ 5: คลินิก backtest →</a></p>
+
+
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
