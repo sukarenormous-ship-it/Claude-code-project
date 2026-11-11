@@ -1351,7 +1351,7 @@ def _chart_selection(cid, res, f):
         f"ข้อมูลจำลอง {D2_FAKE + D2_GOOD} คู่ · แต่ละจุดคือหนึ่งคู่ · ก้อนสีแดง (fake) ไม่เอียงตามเส้น y = x: "
         f"Sharpe ช่วงคัดเลือกบอกอะไรเกี่ยวกับช่วงพิสูจน์ไม่ได้ (correlation {_txt(d['all']['fake_corr_in_out'])}) · "
         f"วงม่วงคือ {D2_TOP} อันดับแรกของการสแกนรอบนี้ ({tb['scan_n_good']} คู่จริง {tb['scan_n_fake']} คู่ปลอม) · "
-        f"ถ้าสุ่มจักรวาลแบบนี้ซ้ำ {D2_BOOT:,} ครั้ง {D2_TOP} อันดับแรกเฉลี่ยราว {_txt(tb['sharpe_in'])} ในช่วงคัดเลือก "
+        f"ถ้าสุ่มจักรวาลแบบนี้ซ้ำ {D2_BOOT:,} ครั้ง {D2_TOP} อันดับแรกมีค่ากลางราว {_txt(tb['sharpe_in'])} ในช่วงคัดเลือก "
         f"เหลือราว {_txt(tb['sharpe_out'])} ในช่วงพิสูจน์ · ถ้าจักรวาลมีแต่คู่ fake: จากราว {_txt(tf['sharpe_in'])} "
         f"เหลือราว {_txt(tf['sharpe_out'])}")
 
@@ -1402,7 +1402,7 @@ def _chart_cost_grid(cid, res, f):
         f"ข้อมูลจำลอง {D4_WORLDS} โลกต่อแถว · half-life 12 แท่ง · ตัวเลข = Sharpe เฉลี่ยหลังต้นทุน · ไล่จากซ้ายไปขวาในแถวบนสุด: "
         f"สเปรดแคบ 0.5% เริ่มที่ราว {_txt(s['c0']['sharpe'], True)} และติดลบตั้งแต่ c = 20 bps "
         f"({_txt(s['c20']['sharpe'], True)}) · จุดเท่าทุนที่วัดได้คือ c ราว {_txt(s['breakeven_c_bps'])} bps "
-        f"หรือกล่าวอีกแบบ สเปรดต้องกว้างอย่างน้อยราว {_txt(d['measured_sigma_over_c'])} เท่าของ c จึงจะเท่าทุน "
+        f"หรือกล่าวอีกแบบ ในห้องทดลองนี้ (β 1.4 · เข้า 2 ออก 0) σ ของสเปรดต้องราว {_txt(d['measured_sigma_over_c'])} เท่าของ c จึงจะเท่าทุน "
         f"(สูตรที่คิดด้วย σ จริงบอก {_txt(d['formula_sigma_over_c'])} เท่า)",
         scale="div", fmt=lambda v: _txt(v, True), row_title="ความกว้างของสเปรด (σ_eq)",
         col_title="ต้นทุนต่อขาต่อเที่ยว c (bps)")
@@ -1471,7 +1471,7 @@ def _chart_stops(cid, res, f):
         "Sharpe เฉลี่ยเมื่อวาง stop ใกล้ขึ้นเรื่อย ๆ: ลดลงทั้งในโลกที่สายจูงดีและโลกที่สายจูงขาด",
         f"ข้อมูลจำลอง หลังต้นทุน 5 bps · เข้าที่ |z| = 2 · ยิ่ง stop ใกล้ ยิ่งตัดไม้ที่กำลังจะกลับมา: ในโลก good "
         f"อัตราชนะตกจากราว {g['none']['hit_rate_pct']}% เหลือราว {g['stop2_5']['hit_rate_pct']}% และ Sharpe จากราว "
-        f"{_txt(g['none']['sharpe'])} เหลือราว {_txt(g['stop2_5']['sharpe'])} · stop ไม่ได้ช่วยแม้ในโลกที่สายจูงขาด "
+        f"{_txt(g['none']['sharpe'])} เหลือราว {_txt(g['stop2_5']['sharpe'])} · stop ไม่ได้ช่วยแม้ในโลกจำลองที่จุดผูกเริ่มไหล "
         f"(Sharpe ราว {_txt(b['none']['sharpe'])} เหลือราว {_txt(b['stop2_5']['sharpe'])} และโลกที่แย่ที่สุด 5% แย่ลงจากราว "
         f"{_txt(b['none']['total_p5_pct'], True)}% เป็นราว {_txt(b['stop2_5']['total_p5_pct'], True)}%)",
         ylabel="Sharpe เฉลี่ย", fmt=_txt)
@@ -1497,7 +1497,7 @@ def _chart_killswitch(cid, res, f):
         "กำไรขาดทุนหลังสายจูงขาดของห้าวิธี: สวิตช์ Engle-Granger ตัดหางด้านขาดทุนให้สั้นลงมาก แลกกับค่าเฉลี่ยและหางด้านกำไร"
         "ที่ลดลง",
         f"ข้อมูลจำลอง {D8_WORLDS} โลก break · ผลรวม {d['after_bars']} แท่งหลังสายจูงขาด หลังต้นทุน 5 bps · "
-        f"ไม่มีสวิตช์: 5% ของโลกที่แย่ที่สุดขาดทุนเฉลี่ยราว {_txt(abs(b['none']['after_worst5_mean_pct']))}% · "
+        f"ไม่มีสวิตช์: 5% ของโลกที่แย่ที่สุดขาดทุนเฉลี่ยราว {_txt(abs(b['none']['after_worst5_mean_pct']))}% (ค่าเฉลี่ยของหาง จึงลึกกว่าปลายหนวดในกราฟ) · "
         f"จำกัดเวลาถืออย่างเดียวช่วยได้บ้าง (ราว {_txt(abs(b['time']['after_worst5_mean_pct']))}%) · สวิตช์ EG 500 แท่งหดเหลือ"
         f"ราว {_txt(abs(b['monitor_500']['after_worst5_mean_pct']))}% แต่ค่าเฉลี่ยหลังขาดก็ลดจากราว "
         f"{_txt(b['none']['after_mean_pct'], True)}% เป็นราว {_txt(b['monitor_500']['after_mean_pct'], True)}% และ Sharpe บนโลก good "
