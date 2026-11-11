@@ -1,0 +1,981 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>แกะสไลด์ Stat Arb — คลินิก backtest — ทำไมขาดทุนตั้งแต่ยังไม่ได้เทรดจริง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}</style>
+<style>
+pre.code,pre.out{font-family:'Courier New',monospace;font-size:.86em;line-height:1.55;border-radius:6px;margin:12px 0;padding:12px 16px;overflow-x:auto;white-space:pre;tab-size:4}
+pre.code{background:var(--g1);color:var(--g8);border:1px solid var(--g2)}
+pre.out{background:var(--g0);color:var(--g9);border:1px solid var(--g2);border-left:4px solid var(--g7)}
+.slide{position:relative;border:1px solid #c7d2fe;background:#f8faff;border-radius:10px;padding:16px 20px 10px;margin:20px 0}
+.slide[data-label]{padding-top:26px}
+.slide[data-label]::before{content:attr(data-label)}
+.slide[data-label]::before,.slide>.lbl{position:absolute;top:-11px;left:16px;background:var(--blue);color:#fff;font-size:.72em;font-weight:700;line-height:1.5;padding:1px 10px;border-radius:20px;white-space:nowrap}
+.slide .fm{background:#fff;border:1px solid var(--g2)}
+details.ans{border:1px dashed #a5b4fc;border-radius:8px;padding:8px 16px;margin:10px 0;background:#fff}
+details.ans>summary{cursor:pointer;font-weight:700;color:var(--blue)}
+details.ans[open]{background:var(--blue-bg);padding-bottom:12px}
+details.ans[open]>summary{margin-bottom:8px}
+.station{position:relative;border:1px solid var(--g2);border-left:4px solid var(--blue);border-radius:0 10px 10px 0;background:#fff;padding:12px 18px 6px 62px;margin:16px 0;min-height:58px}
+.station[data-n]::before{content:attr(data-n)}
+.station[data-n]::before,.station>.n{position:absolute;left:14px;top:12px;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:1.05em;line-height:34px;text-align:center}
+.station>.bt{color:var(--g9)}
+.nav{text-align:center;margin-top:30px;padding-top:14px;border-top:1px solid var(--g2);font-size:.95em}
+.tag-sim{display:inline-block;font-size:.72em;font-weight:700;line-height:1.5;color:#0e7490;background:#ecfeff;border:1px solid #a5f3fc;border-radius:20px;padding:0 9px;margin-left:4px;vertical-align:middle;white-space:nowrap}
+@media(max-width:640px){pre.code,pre.out{font-size:.78em;padding:10px 12px}.slide{padding-left:14px;padding-right:14px}.station{padding-left:52px;padding-right:12px}.station[data-n]::before,.station>.n{left:10px;width:30px;height:30px;line-height:30px}.figw{overflow-x:auto;-webkit-overflow-scrolling:touch}.figw>svg.fig{width:600px;max-width:none;margin:14px 0 6px}.figw+.cap{margin-top:4px}.figw+.cap::before{content:"↔ เลื่อนกราฟไปด้านข้างได้ · ";white-space:nowrap}}
+@media print{pre.code,pre.out{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}pre.code,pre.out,.slide,.station,details.ans{page-break-inside:avoid}details.ans::details-content{content-visibility:visible;display:block}details.ans>summary{list-style:none}.nav{display:none}}
+</style>
+</head><body>
+
+<!-- ═══════════════ COVER · part5 ═══════════════ -->
+<div class="cover">
+<h1>แกะสไลด์ Stat Arb</h1>
+<div class="sub">คลินิก backtest — ทำไมขาดทุนตั้งแต่ยังไม่ได้เทรดจริง</div>
+<div class="desc">backtest ที่ขาดทุนอย่างซื่อสัตย์คือผลตรวจ ไม่ใช่คำตัดสิน — สิบโรค สี่ด่านตรวจ และชุดตรวจที่คุณรันเองได้</div>
+</div>
+
+<div class="bx bb"><div class="bt">🧭 เส้นทางอ่าน</div>
+<ul>
+<li><strong>สไลด์ที่แกะ:</strong> ไม่มี ตอนนี้ตอบคำถามที่สไลด์ทั้ง 8 แผ่นไม่ได้แตะ แต่คุณถามมาตรง ๆ: ทำไมขาดทุนตั้งแต่ backtest</li>
+<li><strong>ต้องรู้ก่อน:</strong> ภาพสายจูงจาก <a href="statarb-slides-part1.html">ตอนที่ 1</a> · สเปรดและการทดสอบ Engle-Granger จาก <a href="statarb-slides-part3.html">ตอนที่ 3</a> · กฎเข้า-ออกและ stop จาก <a href="statarb-slides-part4.html">ตอนที่ 4</a></li>
+<li><strong>เวลาอ่าน:</strong> ราว 30 นาที · รันชุดตรวจกับข้อมูลของคุณอีกราว 20 นาที</li>
+<li>🟢 <strong>มือใหม่:</strong> ข่าวดี → แผนผังสี่ด่าน → โรคที่ 1, 3, 4 (สามใบที่ติด ★★★) → 🛠️ ชุดตรวจ → ส่วนปิดท้าย</li>
+<li>🔵 <strong>มีพื้นแล้ว:</strong> อ่านครบสิบโรค แล้วหยุดนาน ๆ ที่ "pairs trading ยากขึ้นจริงไหม" กับยาหลอกในสถานีที่ 4</li>
+<li>ก่อนหน้า: <a href="statarb-slides-part4.html">ตอนที่ 4 อ่านกราฟ ε กับเส้น VaR</a> · <a href="statarb-slides-index.html">เริ่มที่นี่</a> · ถัดไป: <a href="statarb-slides-part6.html">ตอนที่ 6 มากกว่าสองตัว</a></li>
+</ul></div>
+
+<!-- ═══════════════ เปิดเรื่อง ═══════════════ -->
+<h2>ข่าวดีก่อน: ขาดทุนใน backtest คือขาดทุนที่ถูกที่สุด</h2>
+
+<p>คุณทำตามสไลด์ครบ ประกอบสเปรด วัด z-score ตั้งเส้นเข้า-ออก แล้วกดรัน เส้นกำไรสะสมไหลลง ยังไม่ได้เทรดจริงสักบาทก็ขาดทุนแล้ว</p>
+
+<p>มองใหม่: เงินที่หายใน backtest เป็นเงินสมมติ ค่าเล่าเรียนครั้งนี้จึงเป็นศูนย์บาท และ backtest ที่ขาดทุน<strong>อย่างซื่อสัตย์</strong>คือข้อมูลที่มีค่าที่สุดที่คุณมีตอนนี้ มันคือผลตรวจ ไม่ใช่คำตัดสิน</p>
+
+<p>ปัญหาคือผลที่น่าผิดหวังแบบเดียวกันมาจากคนละโรคได้ ดูสาม backtest จากห้องทดลองของเรา <span class="tag-sim">ข้อมูลจำลอง</span></p>
+
+<div class="tw"><table>
+<tr><th>backtest และสิ่งที่รายงานบอก</th><th>สาเหตุจริง</th></tr>
+<tr><td>คู่ที่ผลตอบแทนเกาะกันแน่น (correlation ราว <span data-f="p5.d1.fake_tight.ret_corr_median">0.9</span>): Sharpe เฉลี่ยราว <span data-f="p5.d1.fake_tight.sharpe_mean">0.0</span> กำไรแค่ราว <span data-f="p5.d1.fake_tight.profitable_pct">50</span>% ของโลก</td><td>ไม่มีสายจูง</td></tr>
+<tr><td>คู่ที่มีสายจูงจริง: Sharpe ราว <span data-f="p5.d3.lag.mc.lag0.sharpe">0.6</span> ทั้งที่ควรได้ราว <span data-f="p5.d3.lag.mc.lag1.sharpe">1.6</span></td><td>โค้ดนับผลผิดแท่ง</td></tr>
+<tr><td>คู่ที่มีสายจูงจริง แต่สเปรดแคบ (σ <span data-f="p5.d4.s0_5.sigma_pct">0.5</span>%): ก่อนต้นทุน Sharpe ราว <span data-f="p5.d4.s0_5.c0.sharpe">1.7</span> · ต้นทุน 20 bps ต่อขาเหลือ <span data-f="p5.d4.s0_5.c20.sharpe">−0.3</span></td><td>ค่าผ่านทางแพงกว่ากำไรต่อไม้</td></tr>
+</table></div>
+
+<p>สามแบบนี้ยาคนละตัว คู่แรกต้องเปลี่ยนคู่ คู่ที่สองต้องแก้โค้ด คู่ที่สามต้องหาสเปรดที่กว้างกว่า ถ้าจ่ายยาผิด เช่น เอาคู่แรกไปนั่งปรับเส้นเข้า-ออก คุณจะเสียเวลาเป็นเดือนกับเหรียญที่ไม่มีวันเอียง หมอไม่เดาโรคจากอาการเดียว หมอตรวจตามลำดับ</p>
+
+<h3>แผนผังคัดกรอง: สี่ด่าน เรียงตามลำดับ</h3>
+
+<div class="figw"><svg class="fig" viewBox="0 0 560 532" role="img" style="max-width:680px" font-family="Sarabun,sans-serif" aria-label="แผนผังคัดกรองสี่ด่าน เรียงจากบนลงล่าง: สายจูง นาฬิกา ค่าผ่านทาง ดวง · ผ่านลงด่านถัดไป ไม่ผ่านออกขวาไปหาโรคของด่านนั้น">
+<text x="12" y="24" font-size="13.5" fill="#1f2937" font-weight="700">ตรวจตามลำดับ: ด่านก่อนหน้าไม่ผ่าน ด่านถัดไปก็ไม่มีความหมาย</text>
+<rect x="12" y="44" width="298" height="80" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<circle cx="38" cy="72" r="14" fill="#2563eb"/>
+<text x="38" y="77" font-size="14" fill="#fff" text-anchor="middle" font-weight="800">1</text>
+<text x="62" y="69" font-size="14" fill="#1f2937" font-weight="700">ด่าน 1 · สายจูง</text>
+<text x="62" y="90" font-size="12.5" fill="#374151">ระยะห่างถูกดึงกลับจริงไหม</text>
+<text x="62" y="110" font-size="11.5" fill="#6b7280">ตรวจ: EG ช่วง train · ค่ากลางช่วง test</text>
+<rect x="364" y="44" width="184" height="80" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="376" y="69" font-size="13" fill="#b91c1c" font-weight="700">โรค 1 · 2 · 8</text>
+<text x="376" y="90" font-size="11.5" fill="#374151">หยุดที่นี่ แล้วเปลี่ยนคู่</text>
+<text x="376" y="108" font-size="11.5" fill="#374151">แก้กฎหรือต้นทุนไม่ช่วยเหรียญ</text>
+<line x1="310" y1="84" x2="355" y2="84" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+<polygon points="362,84 354,79 354,89" fill="#dc2626"/>
+<text x="336" y="76" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="600">ไม่ผ่าน</text>
+<line x1="161" y1="124" x2="161" y2="145" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/>
+<polygon points="161,152 156,144 166,144" fill="#16a34a"/>
+<text x="171" y="143" font-size="11" fill="#16a34a" font-weight="600">ผ่าน</text>
+<rect x="12" y="154" width="298" height="80" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<circle cx="38" cy="182" r="14" fill="#2563eb"/>
+<text x="38" y="187" font-size="14" fill="#fff" text-anchor="middle" font-weight="800">2</text>
+<text x="62" y="179" font-size="14" fill="#1f2937" font-weight="700">ด่าน 2 · นาฬิกา</text>
+<text x="62" y="200" font-size="12.5" fill="#374151">ตัวเลขรู้อนาคต หรือนับผลผิดแท่งไหม</text>
+<text x="62" y="220" font-size="11.5" fill="#6b7280">ตรวจ: walk-forward · lag 0/1/2 · ยาหลอก</text>
+<rect x="364" y="154" width="184" height="80" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="376" y="179" font-size="13" fill="#b91c1c" font-weight="700">โรค 3 · 6 · 10</text>
+<text x="376" y="200" font-size="11.5" fill="#374151">แก้โค้ดหรือข้อมูล</text>
+<text x="376" y="218" font-size="11.5" fill="#374151">แล้วรันชุดตรวจใหม่ทั้งหมด</text>
+<line x1="310" y1="194" x2="355" y2="194" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+<polygon points="362,194 354,189 354,199" fill="#dc2626"/>
+<text x="336" y="186" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="600">ไม่ผ่าน</text>
+<line x1="161" y1="234" x2="161" y2="255" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/>
+<polygon points="161,262 156,254 166,254" fill="#16a34a"/>
+<text x="171" y="253" font-size="11" fill="#16a34a" font-weight="600">ผ่าน</text>
+<rect x="12" y="264" width="298" height="80" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<circle cx="38" cy="292" r="14" fill="#2563eb"/>
+<text x="38" y="297" font-size="14" fill="#fff" text-anchor="middle" font-weight="800">3</text>
+<text x="62" y="289" font-size="14" fill="#1f2937" font-weight="700">ด่าน 3 · ค่าผ่านทาง</text>
+<text x="62" y="310" font-size="12.5" fill="#374151">กำไรต่อไม้ชนะต้นทุนครบรอบไหม</text>
+<text x="62" y="330" font-size="11.5" fill="#6b7280">ตรวจ: กำไรขั้นต้นต่อไม้ ÷ ต้นทุนครบรอบ</text>
+<rect x="364" y="264" width="184" height="80" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="376" y="289" font-size="13" fill="#b91c1c" font-weight="700">โรค 4 · 5 · 7</text>
+<text x="376" y="310" font-size="11.5" fill="#374151">สเปรดกว้างขึ้น เข้าไกลขึ้น</text>
+<text x="376" y="328" font-size="11.5" fill="#374151">หรือถอด stop ที่ตัดกำไร</text>
+<line x1="310" y1="304" x2="355" y2="304" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+<polygon points="362,304 354,299 354,309" fill="#dc2626"/>
+<text x="336" y="296" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="600">ไม่ผ่าน</text>
+<line x1="161" y1="344" x2="161" y2="365" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/>
+<polygon points="161,372 156,364 166,364" fill="#16a34a"/>
+<text x="171" y="363" font-size="11" fill="#16a34a" font-weight="600">ผ่าน</text>
+<rect x="12" y="374" width="298" height="80" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<circle cx="38" cy="402" r="14" fill="#2563eb"/>
+<text x="38" y="407" font-size="14" fill="#fff" text-anchor="middle" font-weight="800">4</text>
+<text x="62" y="399" font-size="14" fill="#1f2937" font-weight="700">ด่าน 4 · ดวง</text>
+<text x="62" y="420" font-size="12.5" fill="#374151">ไม้มากพอจะแยกฝีมือจากดวงไหม</text>
+<text x="62" y="440" font-size="11.5" fill="#6b7280">ตรวจ: นับไม้ · เทียบกับแถบของยาหลอก</text>
+<rect x="364" y="374" width="184" height="80" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+<text x="376" y="399" font-size="13" fill="#b91c1c" font-weight="700">โรค 9</text>
+<text x="376" y="420" font-size="11.5" fill="#374151">ยังสรุปไม่ได้</text>
+<text x="376" y="438" font-size="11.5" fill="#374151">หาข้อมูลยาวขึ้น หรือหลายคู่</text>
+<line x1="310" y1="414" x2="355" y2="414" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+<polygon points="362,414 354,409 354,419" fill="#dc2626"/>
+<text x="336" y="406" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="600">ไม่ผ่าน</text>
+<line x1="161" y1="454" x2="161" y2="475" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/>
+<polygon points="161,482 156,474 166,474" fill="#16a34a"/>
+<text x="171" y="473" font-size="11" fill="#16a34a" font-weight="600">ผ่าน</text>
+<rect x="12" y="484" width="298" height="44" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+<text x="161" y="503" font-size="12.5" fill="#166534" text-anchor="middle" font-weight="700">ผ่านครบ: ตัวเลขชุดนี้เชื่อได้พอจะไปขั้นต่อไป</text>
+<text x="161" y="520" font-size="11" fill="#6b7280" text-anchor="middle">(ยังไม่ใช่คำสัญญาว่าจะกำไร)</text>
+</svg></div>
+<div class="cap">ภาพวาดแนวคิด (ไม่ใช่ข้อมูล) · เลขโรคตรงกับการ์ดสิบใบด้านล่าง</div>
+
+<p>ด่าน 1 ไม่ต้องใช้ backtest เลย ใช้แค่ราคาสองเส้นกับการทดสอบหนึ่งครั้ง จึงถูกที่สุด และถ้าไม่ผ่าน ด่านอื่นก็ไร้ความหมาย ด่าน 2 มาก่อนด่าน 3 เพราะนาฬิกาที่เพี้ยนทำให้ตัวเลขกำไรต่อไม้เพี้ยนตาม ด่าน 4 อยู่ท้ายสุด เพราะคำถาม "ฝีมือหรือดวง" มีความหมายเมื่อตัวเลขซื่อสัตย์แล้วเท่านั้น</p>
+
+<div class="pq">backtest ที่ขาดทุนไม่ได้บอกว่าคุณแพ้ มันบอกว่าคุณป่วยตรงไหน ถ้าคุณตรวจตามลำดับ</div>
+
+<!-- ═══════════════ สิบโรค ═══════════════ -->
+<h2>🔍 สิ่งที่สไลด์ไม่ได้บอก: สิบโรคของ backtest</h2>
+
+<p>สไลด์สอนวิธีสร้างสเปรดและกฎเทรด แต่ไม่ได้สอนวิธีอ่านผลที่ออกมาไม่ดี การ์ดทุกใบใช้โครงเดียวกัน: <strong>อาการ</strong> · <strong>ตรวจยังไง</strong> · <strong>ตัวเลขจากห้องทดลอง</strong> · <strong>ยา</strong> สามใบที่ติด ★★★ ขยายลึกกว่า เพราะน่าจะเป็นสาเหตุของคุณมากที่สุด</p>
+
+<div class="bx ba"><div class="bt">💡 อ่านตัวเลขในการ์ดอย่างไร</div>
+<ul>
+<li>ทุกตัวเลขมาจาก<strong>ข้อมูลจำลอง</strong>ที่เรารู้เฉลย เพราะเราเป็นคนสร้างสายจูงเอง แต่ละโลกยาว <span data-f="p5.settings.bars">1,500</span> แท่งรายวัน</li>
+<li>backtest แบบ walk-forward: ประมาณ β, μ, σ จาก <span data-f="p5.settings.train_bars">250</span> แท่งล่าสุด ประมาณใหม่ทุก <span data-f="p5.settings.refit_bars">21</span> แท่ง เข้าเมื่อ |z| ≥ <span data-f="p5.settings.entry_z">2</span> ออกเมื่อ z ข้าม <span data-f="p5.settings.exit_z">0</span> ต้นทุน c = <span data-f="p5.settings.cost_bps">5</span> bps ต่อขาต่อเที่ยว Sharpe คิดเป็นรายปี</li>
+<li>z วัดด้วย σ ที่ประมาณจากช่วง train ซึ่งมักเล็กกว่าจริง และ μ, β ที่ประมาณก็คลาด (เหตุผลอยู่ในโรคที่ 4) รวมกันทำให้นอกตัวอย่าง sd ของ z เป็นราว <span data-f="p5.d1.good.z_sd">1.25</span> และเส้นเข้า z = 2 เท่ากับราว <span data-f="p5.d4.entry_true_sigma">1.6</span> σ จริง · σ_eq ในกราฟคือ σ ตัวเดียวกัน</li>
+<li>คู่ good ของห้องทดลองคือสายจูงในอุดมคติ: β ไม่เปลี่ยน ไม่เคยขาด ราคาไม่มี noise ตัวเลขของมันคือเพดาน ไม่ใช่เป้าที่ควรคาดจากข้อมูลจริง</li>
+<li>ตัวเลขจากหลายร้อยโลกปัดตามความคลาดของการสุ่ม จึงมีคำว่า "ราว"</li>
+</ul></div>
+
+<!-- โรคที่ 1 -->
+<div class="card" id="d1">
+<h3>โรคที่ 1 · คู่ไม่มีสายจูง (เลือกจาก correlation) <span class="yr">ด่าน 1 สายจูง</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div><p>คู่ที่ไม่มีสายจูงไม่ได้ขาดทุนเสมอไป มันคือการโยนเหรียญที่หักค่าผ่านทางทุกครั้งที่โยน ถ้าคุณขาดทุน คุณแค่ได้ด้านก้อย และการกลับด้านก็ยังเป็นเหรียญเดิม</p></div>
+
+<ul>
+<li><strong>🩺 อาการ:</strong> ไม้ได้กับไม้เสียพอ ๆ กัน ไม้ที่เสียค้างนานเพราะสเปรดไม่กลับที่เดิม</li>
+<li><strong>🔬 ตรวจยังไง:</strong> Engle-Granger บนช่วง train และดูว่าค่ากลางของสเปรดช่วง test เลื่อนไปกี่ σ (ชุดตรวจข้อ 1–2)</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> correlation เท่าคู่ดี แต่ Sharpe เฉลี่ยราว <span data-f="p5.d1.fake_tight.sharpe_mean">0.0</span> เทียบกับราว <span data-f="p5.d1.good.sharpe_mean">1.6</span> (ตาราง 🧮 ด้านล่าง)</li>
+<li><strong>💊 ยา:</strong> หาเหตุผลทางเศรษฐกิจของสายจูงก่อน แล้วใช้สถิติยืนยันบนข้อมูลที่ไม่ได้ใช้คัด ไม่ผ่านให้หยุดที่ด่านนี้ · ตลาดไหนมีสายจูงจริงและคิดหาเหตุผลอย่างไร ดู <a href="statarb-slides-part7.html">ตอนที่ 7</a></li>
+</ul>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div><p>การหาคู่ด้วย correlation ของผลตอบแทนเป็นวิธีที่เห็นบ่อย ถ้าคุณก็ทำแบบนี้ โรคนี้คือผู้ต้องสงสัยอันดับแรก และเป็นโรคเดียวที่ไม่มียาในระดับกฎเทรดเลย</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> correlation ถามว่า "วันนี้สองตัวก้าวไปทางเดียวกันไหม" สายจูงถามว่า "ระยะห่างที่สะสมมา ถูกดึงกลับหรือเปล่า" คนสองคนที่ก้าวเหมือนกันเกือบทุกก้าว ก็ห่างกันขึ้นเรื่อย ๆ ได้ถ้าไม่มีอะไรผูกไว้ บรรทัดแรกคือ correlation บรรทัดที่สองคือสเปรดที่ต้องนิ่ง (ถูกดึงกลับ)</p>
+
+<div class="fm">corr( ΔY_t , ΔX_t )<br>ε_t = Y_t − α − β·X_t</div>
+
+<p>ห้องทดลองสร้างคู่ที่ไม่มีสายจูง แล้วเร่งปัจจัยร่วมจน correlation เท่าคู่ที่มีสายจูงพอดี จากนั้นรัน backtest เดียวกันทุกประการ</p>
+
+<!--CHART:sas-p5-corr-vs-coint-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 200" role="img" aria-label="Sharpe ของ walk-forward บนสามกลุ่ม: คู่ที่มีสายจูงอยู่เหนือศูนย์ทั้งช่วง ส่วนคู่ที่ไม่มีสายจูงกระจายรอบศูนย์ ไม่ว่า correlation จะสูงแค่ไหน">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M163 34V154M233.4 34V154M303.8 34V154M374.2 34V154M444.6 34V154M515 34V154M585.4 34V154M655.8 34V154" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="303.8" y1="34" x2="303.8" y2="154" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="151" y="50.5" text-anchor="end" font-size="12" fill="#374151">คู่ good — มีสายจูง</text><text x="151" y="65.5" text-anchor="end" font-size="12" fill="#374151">correlation 0.9</text><line x1="448.1" y1="54" x2="603.8" y2="54" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="522.9" cy="54" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="669.8" y="58" font-size="12" fill="#374151"><tspan font-weight="700">1.6</tspan><tspan fill="#6b7280" font-size="10.5">  (1.0 ถึง 2.1)</tspan></text><text x="151" y="90.5" text-anchor="end" font-size="12" fill="#374151">คู่ fake — ไม่มีสายจูง</text><text x="151" y="105.5" text-anchor="end" font-size="12" fill="#374151">correlation 0.69</text><line x1="212.1" y1="94" x2="406.5" y2="94" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="305.4" cy="94" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="669.8" y="98" font-size="12" fill="#374151"><tspan font-weight="700">0.0</tspan><tspan fill="#6b7280" font-size="10.5">  (−0.7 ถึง 0.7)</tspan></text><text x="151" y="130.5" text-anchor="end" font-size="12" fill="#374151">คู่ fake ที่ correlation สูงขึ้น</text><text x="151" y="145.5" text-anchor="end" font-size="12" fill="#374151">correlation 0.9</text><line x1="194.4" y1="134" x2="409.4" y2="134" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="304.5" cy="134" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="669.8" y="138" font-size="12" fill="#374151"><tspan font-weight="700">0.0</tspan><tspan fill="#6b7280" font-size="10.5">  (−0.8 ถึง 0.8)</tspan></text>
+<line x1="163" y1="154" x2="655.8" y2="154" stroke="#cbd5e1" stroke-width="1.5"/><text x="163" y="170" text-anchor="middle" font-size="11" fill="#6b7280">−1.0</text><text x="233.4" y="170" text-anchor="middle" font-size="11" fill="#6b7280">−0.5</text><text x="303.8" y="170" text-anchor="middle" font-size="11" fill="#6b7280">0.0</text><text x="374.2" y="170" text-anchor="middle" font-size="11" fill="#6b7280">0.5</text><text x="444.6" y="170" text-anchor="middle" font-size="11" fill="#6b7280">1.0</text><text x="515" y="170" text-anchor="middle" font-size="11" fill="#6b7280">1.5</text><text x="585.4" y="170" text-anchor="middle" font-size="11" fill="#6b7280">2.0</text><text x="655.8" y="170" text-anchor="middle" font-size="11" fill="#6b7280">2.5</text><text x="409.4" y="191" text-anchor="middle" font-size="12" fill="#6b7280">Sharpe ต่อปี (walk-forward · lag 1)</text>
+<circle cx="511.8" cy="18" r="4.5" fill="#6b7280"/><text x="521.8" y="22" fill="#4b5563">ค่าเฉลี่ย</text><rect x="577.8" y="12.5" width="14" height="11" rx="2" fill="#6b7280" fill-opacity=".2" stroke="#6b7280" stroke-opacity=".55"/><text x="596.8" y="22" fill="#4b5563">ช่วง 5–95%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 300 โลกต่อกลุ่ม ทดสอบราว 5 ปีต่อโลก หลังต้นทุน 5 bps · จุด = ค่าเฉลี่ย เส้น = ช่วง 5–95% · คู่ fake ที่ correlation ของผลตอบแทนสูงถึง 0.9 เท่ากับคู่ good ยังได้ Sharpe เฉลี่ยราว 0.0 และกำไรเพียงราว 50% ของโลก (เท่ากับโยนเหรียญ) ขณะที่คู่ good ได้ราว 1.6 — correlation สูงไม่ได้บอกว่ามีสายจูง</div>
+<!--/CHART:sas-p5-corr-vs-coint-->
+
+<div class="bx ba"><div class="bt">🧮 ตัวอย่าง: สองคู่ที่ correlation เท่ากัน (<span data-f="p5.d1.worlds">300</span> โลกต่อกลุ่ม)</div>
+<div class="tw"><table>
+<tr><th>ค่าที่วัด</th><th>มีสายจูง</th><th>ไม่มีสายจูง</th></tr>
+<tr><td>correlation ของผลตอบแทน (ค่ากลาง)</td><td><span data-f="p5.d1.good.ret_corr_median">0.9</span></td><td><span data-f="p5.d1.fake_tight.ret_corr_median">0.9</span></td></tr>
+<tr><td>Sharpe เฉลี่ยหลังต้นทุน (ช่วง 5–95%)</td><td><span data-f="p5.d1.good.sharpe_mean">1.6</span> (<span data-f="p5.d1.good.sharpe_p5">1.0</span> ถึง <span data-f="p5.d1.good.sharpe_p95">2.1</span>)</td><td><span data-f="p5.d1.fake_tight.sharpe_mean">0.0</span> (<span data-f="p5.d1.fake_tight.sharpe_p5">−0.8</span> ถึง <span data-f="p5.d1.fake_tight.sharpe_p95">0.8</span>)</td></tr>
+<tr><td>สัดส่วนโลกที่กำไร</td><td><span data-f="p5.d1.good.profitable_pct">100</span>%</td><td><span data-f="p5.d1.fake_tight.profitable_pct">50</span>%</td></tr>
+<tr><td>จำนวนไม้ต่อปี</td><td><span data-f="p5.d1.good.trades_per_year">3.2</span></td><td><span data-f="p5.d1.fake_tight.trades_per_year">1.8</span></td></tr>
+</table></div>
+<p>แถวแรกเท่ากัน แถวอื่นต่างกันหมด แถวสุดท้ายคืออาการ: คู่ไม่มีสายจูงเทรดน้อยกว่าเพราะไม้ค้าง ต้นทุนจึงแทบไม่มีบทบาทที่นี่ ถ้าเทรดถี่กว่านี้ เหรียญจะเอียงลงตามค่าผ่านทาง การขาดทุนในครึ่งหนึ่งของโลกคือดวงล้วน ๆ</p></div>
+
+<div class="bx bg"><div class="bt">✅ การทดสอบสายจูงเชื่อได้เมื่อ</div><p>มีเหตุผลทางเศรษฐกิจรองรับก่อนเปิดดูข้อมูล และทดสอบบนข้อมูลที่ไม่ได้ใช้คัดคู่ ด้วยค่าวิกฤตที่จำลองตามจำนวนแท่ง จำนวนตัวแปร และ lags เดียวกัน</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div><p>คู่ปลอมผ่านโดยบังเอิญได้ตามระดับนัยสำคัญ สแกนหลายร้อยคู่ก็ผ่านกันเป็นสิบ (โรคที่ 2) · สายจูงที่มีจริงขาดทีหลังได้ (โรคที่ 8) · noise ของราคาทำให้ผ่านง่ายเกินจริง (โรคที่ 6)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div><p>คนทั่วไปเห็น: ขาดทุนแปลว่าเทรดผิดทาง กลับด้านแล้วน่าจะกำไร<br>ผู้เชี่ยวชาญเห็น: ไม่มีสายจูงแปลว่าไม่มีทางที่ถูก ด้านไหนก็คือเหรียญเดิม</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div><ol>
+<li>correlation ดูก้าวของวันนี้ สายจูงดูระยะห่างที่สะสม</li>
+<li>คู่ไม่มีสายจูงคือการโยนเหรียญ ไม่ใช่เครื่องขาดทุน จึงดูจากกำไรอย่างเดียวไม่ออก</li>
+<li>ด่าน 1 ไม่ผ่านให้หยุด ไม่มีกฎเทรดหรือต้นทุนต่ำแบบไหนทำให้เหรียญเอียงได้</li>
+</ol></div>
+</div>
+
+<!-- โรคที่ 2 -->
+<div class="card" id="d2">
+<h3>โรคที่ 2 · คัดจากหลายร้อยคู่ แล้วเชื่อผลของช่วงที่ใช้คัด <span class="yr">ด่าน 1 สายจูง</span> <span class="lvl">★★ ควรรู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> คู่ที่คัดมาสวยมากในช่วงที่ใช้คัด พอเดินหน้าต่อ ผลจางลงหรือหายไป</li>
+<li><strong>🔬 ตรวจยังไง:</strong> นับว่าคัดมาจากกี่คู่ แล้วคำนวณจำนวนคู่ปลอมที่คาดว่าจะหลุดเข้ามา (สูตรด้านล่าง) และกันช่วงหลัง (hold-out) ไว้ไม่ให้แตะตอนคัด</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> กลุ่มตั้งต้น <span data-f="p5.d2.n_pairs">440</span> คู่ (ปลอม <span data-f="p5.d2.n_fake">400</span> จริง <span data-f="p5.d2.n_good">40</span>) คัดด้วย Engle-Granger บน <span data-f="p5.d2.select_bars">750</span> แท่งแรก ที่ระดับ 5% (ค่าวิกฤตจำลองราว <span data-f="p5.settings.eg_cutoff_750_5pct">−3.3</span>) ได้ <span data-f="p5.d2.level5.selected">60</span> คู่ เป็นคู่ปลอม <span data-f="p5.d2.level5.fp">20</span> ความแม่น (precision: สัดส่วนคู่จริงในคู่ที่คัดได้) ราว <span data-f="p5.d2.level5.precision_pct">67</span>% · ที่ระดับ 1% คู่ปลอมเหลือ <span data-f="p5.d2.level1.fp">4</span> ความแม่นราว <span data-f="p5.d2.level1.precision_pct">91</span>%</li>
+<li><strong>💊 ยา:</strong> คัดด้วยหลักฐานของสายจูง ไม่ใช่ด้วย Sharpe ของ backtest · ยิ่งสแกนมากยิ่งต้องเข้มกับค่า p · ตัดสินด้วยช่วง hold-out ที่ไม่ได้ใช้คัดเท่านั้น</li>
+</ul>
+
+<p>คู่ปลอมที่คาดว่าจะผ่าน = จำนวนคู่ไม่มีสายจูงที่สแกน × ระดับนัยสำคัญ</p>
+<div class="fm"><span data-f="p5.d2.n_fake">400</span> × 5% = <span data-f="p5.d2.level5.fp_expected">20</span>   ·   <span data-f="p5.d2.n_fake">400</span> × 1% = <span data-f="p5.d2.level1.fp_expected">4</span></div>
+<p>การสแกนจริงของเราได้คู่ปลอมตรงกับที่คาดพอดี กลุ่มตั้งต้นอื่นแบบเดียวกันจะแกว่งได้ราว <span data-f="p5.d2.level5.fp_p5">13</span> ถึง <span data-f="p5.d2.level5.fp_p95">27</span> คู่ ความแม่นยังขึ้นกับว่ามีคู่จริงกี่ % ห้องทดลองใส่ไว้ราว 9% และทุกคู่แข็งแรง ถ้าคู่จริงน้อยหรืออ่อนกว่านี้ ความแม่นจะต่ำลงมาก</p>
+
+<!--CHART:sas-p5-selection-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 452" role="img" aria-label="จุดกระจายของ Sharpe ช่วงคัดเลือกเทียบกับช่วงพิสูจน์ของ 440 คู่: คู่ fake เป็นก้อนกลมรอบศูนย์ที่ไม่เอียงตามเส้นทแยง คู่ good อยู่มุมขวาบน">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p5-selection-clip1"><rect x="61" y="65" width="680" height="338"/></clipPath></defs>
+<path d="M62 371.5H740M62 310.4H740M62 249.3H740M62 188.2H740M62 127.1H740M62 66H740M123.6 66V402M246.9 66V402M370.2 66V402M493.5 66V402M616.7 66V402M740 66V402" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="54" y="375.5" text-anchor="end" font-size="11" fill="#6b7280">−2</text><text x="54" y="314.4" text-anchor="end" font-size="11" fill="#6b7280">−1</text><text x="54" y="253.3" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="54" y="192.2" text-anchor="end" font-size="11" fill="#6b7280">1</text><text x="54" y="131.1" text-anchor="end" font-size="11" fill="#6b7280">2</text><text x="54" y="70" text-anchor="end" font-size="11" fill="#6b7280">3</text><text x="62" y="57" font-size="11" fill="#6b7280">Sharpe ในช่วงพิสูจน์ (แท่ง 750–1499)</text>
+<circle cx="268.8" cy="53" r="4.5" fill="#dc2626"/><text x="278.8" y="57" fill="#4b5563">คู่ fake 400 คู่</text><circle cx="365.3" cy="53" r="4.5" fill="#2563eb"/><text x="375.3" y="57" fill="#4b5563">คู่ good 40 คู่</text><circle cx="455.6" cy="53" r="4" fill="#fff" stroke="#7c3aed" stroke-width="2.2"/><text x="465.6" y="57" fill="#4b5563">10 อันดับ Sharpe สูงสุดในช่วงคัดเลือก</text><line x1="668.7" y1="53" x2="686.7" y2="53" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 4"/><text x="692.7" y="57" fill="#4b5563">เส้น y = x</text>
+<line x1="62" y1="249.3" x2="740" y2="249.3" stroke="#cbd5e1" stroke-width="1"/>
+<line x1="370.2" y1="66" x2="370.2" y2="402" stroke="#cbd5e1" stroke-width="1"/>
+<g clip-path="url(#sas-p5-selection-clip1)"><path d="M62 402l678-336" fill="none" stroke="#6b7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" stroke-dasharray="5 4"/></g>
+<g clip-path="url(#sas-p5-selection-clip1)"><path d="m103.7 210.8h.01m5.8 34.3h.01m5.3-.8h.01m49.9-21.3h.01m3 31.5h.01m7.6 33.4h.01m16.8-103.5h.01m3.1 116.9h.01m5.3-99.8h.01m1.8 91.1h.01m5.2-66.1h.01m5.7-11.3h.01m3.3-30.8h.01m4.3 97.2h.01m1.4 14h.01m.9-44.4h.01m2.3-27.8h.01m3.1 16.9h.01m3.7 14.5h.01m.2 21h.01m.4-58.8h.01m2.6 29.3h.01m.6 10.6h.01m3 14h.01m1.5-71.2h.01m1.4 51.8h.01m1 21.8h.01m1.1 20.3h.01m2.3-20h.01m2.7-18h.01m4.4 26h.01m.4-42.8h.01m1.6 30.3h.01m2.4-39.4h.01m.3 42.8h.01m1.7 35.7h.01m5.3-27.3h.01m1.9 33.3h.01m.3-131.5h.01m3.5 70h.01m1.3 34.9h.01m3-23.2h.01m1.5-1h.01m.1 9.9h.01m.5-43h.01m3.5 21.4h.01m2.4-38h.01m.7 9.2h.01m.7 17.1h.01m.2 28.2h.01m.5-17.4h.01m.5-29.3h.01m.5 85.5h.01m.5-46.6h.01m.7-21.5h.01m2.2-24.6h.01m.3 93.8h.01m.1-43.3h.01m1-24.6h.01m1.3-60.9h.01m.8 71.8h.01m.2 55.1h.01m.2-18h.01m.5-43.6h.01m.8-1.1h.01m1 82.1h.01m0-59.6h.01m.9-20.3h.01m2.7-27.7h.01m.7 82.6h.01m.7-49.6h.01m.3-66.9h.01m1.9 116.7h.01m3.9-105.1h.01m.6 103.7h.01m.1-49.8h.01m.9 13.7h.01m1.1 23.1h.01m.8-14.5h.01m.7-28.3h.01m.8 6h.01m.2-4.2h.01m2 12.3h.01m.1-34h.01m1.3 45.3h.01m1.7 8.9h.01m.8-10.8h.01m.2-78.6h.01m.3 21.3h.01m1.6 29.5h.01m.9-45.6h.01m.1 72.1h.01m.7-16.3h.01m.1-21.9h.01m.9 78.3h.01m.3-2.4h.01m.1-36.6h.01m.3-30.1h.01m1.3 34.7h.01m1.6-66.4h.01m.1-6.8h.01m.2 67.5h.01m.7-29h.01m.2 73.1h.01m.2-4.9h.01m.2 5.3h.01m.4-12.9h.01m.3-78.3h.01m.7 52.9h.01m.7 6.4h.01m1.8-61.7h.01m1.3 37.3h.01m.1 30.6h.01m.6-20.7h.01m.3-45.1h.01m.5 69.8h.01m.9-110.9h.01m.6 117.3h.01m.7-59.8h.01m.5 3.7h.01m.4 40.4h.01m0-71.6h.01m1.4 19h.01m.5 44.6h.01m.4-30.3h.01m.7-22h.01m1.4 34.5h.01m.5-7.4h.01m.4 14h.01m1.5 8.7h.01m.1-54.8h.01m.2 57.5h.01m.1-90.2h.01m.9 128.2h.01m.1-51.1h.01m.1 66.9h.01m.5-78h.01m.4 43.8h.01m.2-76.3h.01m.1 24.4h.01m.2-52.7h.01m1.7 76.8h.01m0-70.2h.01m.5 39.2h.01m.2 45.7h.01m.2-42.3h.01m1.9-24.9h.01m.5 33.5h.01m0-9.1h.01m0-5.4h.01m.1 18.5h.01m.9 24.4h.01m.2-68.8h.01m.8 52.7h.01m.7-17.4h.01m.3 15.9h.01m.1 9h.01m.3 51.2h.01m.3-74.2h.01m1.5 13.7h.01m.6-24.4h.01m1 23.5h.01m2.2 3.8h.01m0 11.8h.01m.1-45.8h.01m.1 54.3h.01m0 19.2h.01m1-57.6h.01m.3 16.4h.01m.4 33.5h.01m.3 .9h.01m.1-61.9h.01m.3 29.1h.01m.3 24.4h.01m.1-75h.01m.7 63h.01m0-30.1h.01m.3 28.3h.01m1.2 5.8h.01m.1 2.6h.01m.9-53.1h.01m1 33.1h.01m0 38.9h.01m.9 48.7h.01m.4-112.5h.01m.3 80.8h.01m.4-92.9h.01m1.2 38.5h.01m1.1-22.4h.01m.1 7.9h.01m.1 3.1h.01m.6 13.2h.01m1.6-13.3h.01m.3-14.1h.01m.6 19.3h.01m.3-20.7h.01m.1-.4h.01m.2 78.3h.01m.7-68.9h.01m.1-42.6h.01m.5 48.7h.01m.1-29h.01m.5-9h.01m.6-33.1h.01m.8 61h.01m.9-10.1h.01m.4-17.9h.01m1.3 60h.01m.7 16.6h.01m.7-4.4h.01m0-5.3h.01m.6-66.9h.01m.2 83h.01m0-51.1h.01m.1-13.1h.01m0 4.9h.01m1.1-32.8h.01m.8 33.4h.01m0 26.6h.01m0-2.8h.01m.3 2.4h.01m.1 82.1h.01m.2-12.7h.01m.3-87.1h.01m.2-8.7h.01m2 22.8h.01m1.6 2.7h.01m1-38.9h.01m.3 36.7h.01m.3 13.2h.01m.9-70.3h.01m.1 30.1h.01m.2 1.7h.01m.2 57.2h.01m.5-17.7h.01m1.5-33.6h.01m.3 53.7h.01m.2-30.7h.01m.4-26.9h.01m0 65.3h.01m.2-72.9h.01m.7 9.7h.01m.5 9.8h.01m.2 48h.01m1.7-75.3h.01m.2 76.8h.01m0-63.7h.01m.9 3.7h.01m1.4 6.2h.01m.1-3.9h.01m0-13h.01m.4 58.1h.01m.4-36.5h.01m.4-29h.01m.8 40.6h.01m1.6-32.2h.01m.2 22.3h.01m.5 28.2h.01m.1-40.5h.01m.3 8.2h.01m.2-10.4h.01m.2 29h.01m.1-36.9h.01m.1 4.4h.01m.3 2.3h.01m.3-25.3h.01m0 46.5h.01m.4-15.4h.01m.6-12.7h.01m.2 85.8h.01m0-43.4h.01m.1-13.6h.01m2.6 12.2h.01m.6-40.6h.01m.7-20.7h.01m.3 49.9h.01m.4 26.6h.01m.6-18.4h.01m.2-34.7h.01m.1 4.3h.01m.2 55.2h.01m.9 42.2h.01m.8-57.7h.01m.1-11.3h.01m.9 .2h.01m.5-26h.01m3.6-38.6h.01m.3 91.4h.01m1.2-114.3h.01m.2 145.7h.01m2.4-50h.01m1.3 55h.01m.9-34.6h.01m.7-41.5h.01m.5 25.6h.01m1.3 5.4h.01m.5-21.8h.01m.4-19.4h.01m.2-19h.01m.5 3.2h.01m1.1 23.8h.01m.1-3.6h.01m.9 11.3h.01m0-41.8h.01m1.4 47.6h.01m1.6-11.9h.01m0 52.8h.01m.7-39.6h.01m.2-28.5h.01m1.4 20.3h.01m1.5-54.7h.01m.3-21.6h.01m.3 57.1h.01m.8 2.6h.01m.7-23.7h.01m.3 57.8h.01m.7 32.7h.01m.2-41.4h.01m.9 19h.01m.2-48.4h.01m2.6 32.7h.01m.5 .2h.01m.9-9.6h.01m0 29.4h.01m0 21.8h.01m1.1-55.9h.01m.2 56.8h.01m.4-88.2h.01m.6 18.3h.01m.1 25.8h.01m0-7.6h.01m1-12.6h.01m2.3 48.2h.01m1.7-10.4h.01m.3-36.8h.01m.4-11.8h.01m.9 69.7h.01m.1-11.8h.01m.5-42.6h.01m.4-5.6h.01m.5 17.2h.01m.4-10.8h.01m.2-1.8h.01m1.1-6.6h.01m.4-7.9h.01m1.8 77.4h.01m.1 14.5h.01m.9-47.2h.01m1.3 58.7h.01m1.1-52.6h.01m.2-66h.01m1.3 32h.01m0-2.7h.01m0-15.3h.01m4.6 5.3h.01m1.6 20.4h.01m2.7-8.9h.01m.7-53h.01m.4 54.9h.01m.1-27.9h.01m.8 18.8h.01m.5-63.2h.01m3.6 14.8h.01m1.1 37.5h.01m.3-30.5h.01m.9 50.3h.01m.5 45.2h.01m1.3-22.6h.01m3.8-26.8h.01m1 78.2h.01m.9-65.5h.01m1.5 24h.01m.2-57h.01m1.3 18.3h.01m1.8 27.8h.01m2.6-11h.01m.4 21h.01m.7-58.5h.01m3.7 72.9h.01m.8-38.4h.01m1 33.6h.01m.7-9.2h.01m1.4 21.6h.01m.9-117.9h.01m3.6 76.6h.01m2.1-6.8h.01m2.5-42h.01m.2-4.9h.01m2.5 93.4h.01m1.1-71.5h.01m.5-47h.01m2.7-47.4h.01m8 88.5h.01m2.5-17.1h.01m6.6 95.5h.01m14.2-97h.01m9.7 70.4h.01m15.6-64h.01m21.3 92.9h.01m36.4-73.9h.01" fill="none" stroke="#dc2626" stroke-width="4.6" stroke-linecap="round" stroke-opacity="0.4"/></g>
+<g clip-path="url(#sas-p5-selection-clip1)"><path d="m432.1 177.4h.01m47.5 20.1h.01m4-27.3h.01m4.1-4.4h.01m2 8.6h.01m1.4-60.2h.01m10.3 41.5h.01m5.4 42.4h.01m11.7-46.3h.01m4.7 14.4h.01m2.2-37.6h.01m3.6-49.9h.01m13.2 88.8h.01m3.6-3.7h.01m.5-39.5h.01m2.6 88.1h.01m4.5-79.5h.01m4.8 78.7h.01m.4-83.9h.01m1.4-18.3h.01m.9 19.7h.01m1.7 52.5h.01m1.7-48.4h.01m1.1 51.5h.01m1.8-27.2h.01m1.6-8.1h.01m.5 34h.01m2.9-29.7h.01m16.6 24h.01m.5-8.4h.01m5.6 18.3h.01m30.7-28.2h.01m7.7 7.4h.01m13.1-40.6h.01m1.1 58.8h.01m4.6 9.5h.01m.7-24.6h.01m16.5-20.9h.01m6.7-22h.01m39.3 6.9h.01" fill="none" stroke="#2563eb" stroke-width="6.4" stroke-linecap="round" stroke-opacity="0.9"/></g>
+<g fill="none" stroke="#7c3aed" stroke-width="2"><circle cx="715.7" cy="133.9" r="7"/><circle cx="676.4" cy="127.0" r="7"/><circle cx="669.6" cy="149.0" r="7"/><circle cx="653.1" cy="169.9" r="7"/><circle cx="652.5" cy="194.5" r="7"/><circle cx="647.9" cy="185.0" r="7"/><circle cx="646.7" cy="126.2" r="7"/><circle cx="645.5" cy="229.3" r="7"/><circle cx="633.6" cy="166.8" r="7"/><circle cx="625.9" cy="159.4" r="7"/></g>
+<line x1="62" y1="402" x2="740" y2="402" stroke="#cbd5e1" stroke-width="1.5"/><text x="123.6" y="418" text-anchor="middle" font-size="11" fill="#6b7280">−2</text><text x="246.9" y="418" text-anchor="middle" font-size="11" fill="#6b7280">−1</text><text x="370.2" y="418" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="493.5" y="418" text-anchor="middle" font-size="11" fill="#6b7280">1</text><text x="616.7" y="418" text-anchor="middle" font-size="11" fill="#6b7280">2</text><text x="740" y="418" text-anchor="middle" font-size="11" fill="#6b7280">3</text><text x="401" y="439" text-anchor="middle" font-size="12" fill="#6b7280">Sharpe ในช่วงคัดเลือก (แท่ง 250–749)</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 440 คู่ · แต่ละจุดคือหนึ่งคู่ · ก้อนสีแดง (fake) ไม่เอียงตามเส้น y = x: Sharpe ช่วงคัดเลือกบอกอะไรเกี่ยวกับช่วงพิสูจน์ไม่ได้ (correlation 0.0) · วงม่วงคือ 10 อันดับแรกของการสแกนรอบนี้ (9 คู่จริง 1 คู่ปลอม) · ถ้าสุ่มจักรวาลแบบนี้ซ้ำ 1,000 ครั้ง 10 อันดับแรกมีค่ากลางราว 2.3 ในช่วงคัดเลือก เหลือราว 1 ในช่วงพิสูจน์ · ถ้าจักรวาลมีแต่คู่ fake: จากราว 1.6 เหลือราว 0</div>
+<!--/CHART:sas-p5-selection-->
+
+<p>จุดสีแดงไม่เอียงตามเส้นทแยง Sharpe ของคู่ปลอมในช่วงคัดเลือก (train) บอกอะไรเกี่ยวกับช่วงพิสูจน์ (test) ไม่ได้เลย ส่วน 10 อันดับแรก (ค่ากลางจาก <span data-f="p5.d2.universes">1,000</span> กลุ่มตั้งต้นที่สุ่มซ้ำ):</p>
+<ul>
+<li>คัดด้วย Sharpe ของช่วงคัดเลือก: ราว <span data-f="p5.d2.top_backtest.sharpe_in">2.3</span> หดเหลือราว <span data-f="p5.d2.top_backtest.sharpe_out">1</span> แม้ราว <span data-f="p5.d2.top_backtest.n_good">9</span> ใน 10 คู่จะเป็นคู่จริง เพราะคู่จริงที่ติดอันดับก็ติดเพราะโชคดีในช่วงคัดเลือกด้วย</li>
+<li>คัดด้วยค่าสถิติ Engle-Granger: ราว <span data-f="p5.d2.top_eg.sharpe_in">2</span> แล้วยังอยู่ราว <span data-f="p5.d2.top_eg.sharpe_out">2</span></li>
+<li>กลุ่มตั้งต้นที่มีแต่คู่ปลอม: ราว <span data-f="p5.d2.top_fake_only.sharpe_in">1.6</span> เหลือราว <span data-f="p5.d2.top_fake_only.sharpe_out">0</span></li>
+</ul>
+<p>หลักฐานของสายจูงที่แข็งแรงจริงเดินทางข้ามเวลาได้ดีกว่า Sharpe ที่ถูกคัดมาเพราะสูง เหตุผลเดียวกันนี้ทำให้ Harvey, Liu &amp; Zhu (2016) เสนอให้ปัจจัยหุ้นตัวใหม่ต้องผ่าน t มากกว่า 3.0 แทน 2.0</p>
+</div>
+
+<!-- โรคที่ 3 -->
+<div class="card" id="d3">
+<h3>โรคที่ 3 · นาฬิกาเพี้ยน: มองอนาคต และลืมเลื่อนสถานะ <span class="yr">ด่าน 2 นาฬิกา</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div><p>บั๊กเรื่องเวลาไม่ได้ทำให้ backtest สวยเกินจริงเสมอไป สำหรับกลยุทธ์ดึงกลับ การลืมเลื่อนสถานะหนึ่งแท่ง<strong>ลงโทษ</strong>ผลจนคู่ที่ดีดูแย่ ส่วนพารามิเตอร์จากทั้งช่วงทำให้คู่ที่ไม่มีสายจูงดูเหมือนมี</p></div>
+
+<ul>
+<li><strong>🩺 อาการ:</strong> มองอนาคต: คู่ที่ควรเป็นเหรียญกลับดูดี · ลืม lag: กลยุทธ์ที่ควรกำไรได้ผลแย่ลงมาก ทั้งที่กราฟสเปรดดูดึงกลับสวย</li>
+<li><strong>🔬 ตรวจยังไง:</strong> รันซ้ำแบบ walk-forward · รัน lag 0, 1, 2 เทียบกัน · ให้ท่อ backtest (โค้ดทั้งชุดตั้งแต่อ่านราคาจนได้ Sharpe) เทรดยาหลอก (สถานีที่ 4)</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> ลืม lag บนคู่ดี: lag 0 / 1 / 2 = <span data-f="p5.d3.lag.mc.lag0.sharpe">0.6</span> / <span data-f="p5.d3.lag.mc.lag1.sharpe">1.6</span> / <span data-f="p5.d3.lag.mc.lag2.sharpe">1.5</span> · พารามิเตอร์จากทั้งช่วง: ตารางในกล่อง 🧮 ที่สองด้านล่าง</li>
+<li><strong>💊 ยา:</strong> ทุกค่าที่ใช้ตัดสินใจที่แท่ง t ประมาณจากข้อมูลถึงแท่ง t เท่านั้น · สถานะที่ตัดสินใจตอนปิดแท่ง t รับผลตั้งแต่แท่ง t+1 · รายงาน lag 2 คู่กันเสมอ</li>
+</ul>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div><p>คนมักจำว่า look-ahead bias (การมองอนาคต) "ทำให้ผลดีเกินจริง" ผลที่แย่จึงถูกอ่านว่าโค้ดสะอาด แต่บั๊ก lag ทำให้กลยุทธ์ดึงกลับแย่ลง คุณอาจกำลังทิ้งคู่ที่ดีเพราะโค้ดนับผลผิดแท่ง</p></div>
+
+<p>ดูไม้ขายสเปรดหนึ่งไม้ทีละแท่ง</p>
+
+<div class="figw"><svg class="fig" viewBox="0 0 560 276" role="img" style="max-width:680px" font-family="Sarabun,sans-serif" aria-label="ภาพแกนเวลาของไม้ขายสเปรดหนึ่งไม้: lag 1 ถือแท่ง t+1 ถึง t+4 ส่วน lag 0 ถือแท่ง t ถึง t+3 จึงรับแท่งที่สเปรดถูกผลักออกและพลาดแท่งที่สเปรดกลับเข้าเส้นกลาง">
+<text x="12" y="20" font-size="13.5" fill="#1f2937" font-weight="700">lag 0 นับผลผิดแท่ง: ได้แท่งที่ขาดทุน เสียแท่งที่กำไร</text>
+<text x="12" y="38" font-size="11" fill="#6b7280">ไม้ขายสเปรดหนึ่งไม้: เข้าเมื่อ z ทะลุ 2 ตอนปิดแท่ง ออกเมื่อ z ข้าม 0 ตอนปิดแท่ง</text>
+<rect x="150" y="48" width="66" height="144" fill="#fee2e2" opacity="0.8"/>
+<rect x="414" y="48" width="66" height="144" fill="#dcfce7" opacity="0.9"/>
+<text x="183.0" y="62" font-size="11" fill="#b91c1c" text-anchor="middle" font-weight="700">แท่ง t</text>
+<text x="183.0" y="75" font-size="11" fill="#b91c1c" text-anchor="middle" font-weight="600">ถูกผลักออก</text>
+<text x="447.0" y="62" font-size="11" fill="#15803d" text-anchor="middle" font-weight="700">แท่ง t+4</text>
+<text x="447.0" y="75" font-size="11" fill="#15803d" text-anchor="middle" font-weight="600">วิ่งกลับเข้า</text>
+<line x1="84" y1="106" x2="546" y2="106" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="78" y="110" font-size="11" fill="#6b7280" text-anchor="end">z = 2</text>
+<line x1="84" y1="170" x2="546" y2="170" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="78" y="174" font-size="11" fill="#6b7280" text-anchor="end">z = 0</text>
+<polyline points="84,131.6 150,122.0 216,93.2 282,112.4 348,131.6 414,150.8 480,179.6 546,173.2" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="216" cy="93.2" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/>
+<text x="224" y="87.2" font-size="10.5" fill="#7c3aed" font-weight="700">สัญญาณเข้า</text>
+<circle cx="480" cy="179.6" r="4.5" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/>
+<text x="486" y="191.6" font-size="10.5" fill="#7c3aed" font-weight="700">สัญญาณออก</text>
+<text x="117.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t−1</text>
+<text x="183.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t</text>
+<text x="249.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t+1</text>
+<text x="315.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t+2</text>
+<text x="381.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t+3</text>
+<text x="447.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t+4</text>
+<text x="513.0" y="208" font-size="11" fill="#6b7280" text-anchor="middle">t+5</text>
+<text x="78" y="228" font-size="11" fill="#374151" text-anchor="end" font-weight="600">lag 1 ถือ</text>
+<rect x="219" y="216" width="60" height="16" rx="3" fill="#2563eb"/>
+<rect x="285" y="216" width="60" height="16" rx="3" fill="#2563eb"/>
+<rect x="351" y="216" width="60" height="16" rx="3" fill="#2563eb"/>
+<rect x="417" y="216" width="60" height="16" rx="3" fill="#2563eb"/>
+<text x="78" y="252" font-size="11" fill="#374151" text-anchor="end" font-weight="600">lag 0 ถือ</text>
+<rect x="153" y="240" width="60" height="16" rx="3" fill="#f59e0b"/>
+<rect x="219" y="240" width="60" height="16" rx="3" fill="#f59e0b"/>
+<rect x="285" y="240" width="60" height="16" rx="3" fill="#f59e0b"/>
+<rect x="351" y="240" width="60" height="16" rx="3" fill="#f59e0b"/>
+<rect x="417" y="240" width="60" height="16" rx="3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3 3"/>
+<text x="84" y="272" font-size="11.5" fill="#374151">lag 0 ถือแท่ง t (ขาดทุน) แต่ไม่ได้ถือแท่ง t+4 (พลาดกำไรช่วงสุดท้าย)</text>
+</svg></div>
+<div class="cap">ภาพวาดแนวคิด · เส้นน้ำเงินคือ z ณ ราคาปิดของแต่ละแท่ง ช่วงที่แรเงาคือการเคลื่อนที่ภายในแท่งนั้น</div>
+
+<p>สัญญาณเข้าเกิดตอนปิดแท่ง t เพราะในแท่ง t สเปรดถูกผลักออกจนเลยเส้นเข้า ถ้าโค้ดให้สถานะที่เพิ่งตัดสินใจรับผลของแท่ง t เอง (lag 0) มันก็รับแรงผลักออกนั้น ซึ่งเป็นทิศที่ขาดทุน</p>
+
+<p>ขาออกกลับกัน สัญญาณออกเกิดตอนปิดแท่ง t+4 เพราะในแท่งนั้นสเปรดวิ่งกลับข้ามเส้นกลาง lag 0 ปิดสถานะไปแล้วในแท่งนั้น จึงพลาดกำไรช่วงสุดท้าย ไม้เดียวเสียสองครั้ง กลยุทธ์ตามแนวโน้ม (momentum) เจอบั๊กเดียวกันในทิศตรงข้าม เพราะแรงที่สร้างสัญญาณคือแรงที่ได้กำไรพอดี</p>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> สถานะที่ถือในแท่งไหน ต้องตัดสินใจไว้ก่อนแท่งนั้นเริ่ม ผลของแท่งนั้นจึงเป็นของสถานะนั้น</p>
+
+<div class="fm">held_t = pos_(t − lag)      ,   lag ≥ 1<br>pnl_t  = held_t · ( ΔY_t − β·ΔX_t ) / ( 1 + |β| )</div>
+
+<!--CHART:sas-p5-lag-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 320" role="img" aria-label="Sharpe เฉลี่ยเมื่อเลื่อนสถานะ 0, 1, 2 แท่ง: คู่ราคาสะอาดเสียมากที่ lag 0 ส่วนคู่ที่ราคามี noise ดีเฉพาะที่ lag 1">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M58 252.8H742M58 208.5H742M58 164.1H742M58 119.7H742M58 75.4H742M58 31H742" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="256.8" text-anchor="end" font-size="11" fill="#6b7280">−0.5</text><text x="50" y="212.5" text-anchor="end" font-size="11" fill="#6b7280">0.0</text><text x="50" y="168.1" text-anchor="end" font-size="11" fill="#6b7280">0.5</text><text x="50" y="123.7" text-anchor="end" font-size="11" fill="#6b7280">1.0</text><text x="50" y="79.4" text-anchor="end" font-size="11" fill="#6b7280">1.5</text><text x="50" y="35" text-anchor="end" font-size="11" fill="#6b7280">2.0</text><text x="58" y="22" font-size="11" fill="#6b7280">Sharpe เฉลี่ย</text>
+<rect x="357" y="12.5" width="11" height="11" rx="2" fill="#2563eb"/><text x="373" y="22" fill="#4b5563">คู่ good ราคาสะอาด (100 โลก)</text><rect x="538" y="12.5" width="11" height="11" rx="2" fill="#d97706"/><text x="554" y="22" fill="#4b5563">คู่ที่ราคามี noise 0.3% ต่อขา (200 โลก)</text>
+<path d="M124.5,208.5V158.2Q124.5,155.2 127.5,155.2H167.5Q170.5,155.2 170.5,158.2V208.5Z" fill="#2563eb"/><text x="147.5" y="150.2" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.6</text><path d="M352.5,208.5V69.5Q352.5,66.5 355.5,66.5H395.5Q398.5,66.5 398.5,69.5V208.5Z" fill="#2563eb"/><text x="375.5" y="61.5" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.6</text><path d="M580.5,208.5V78.4Q580.5,75.4 583.5,75.4H623.5Q626.5,75.4 626.5,78.4V208.5Z" fill="#2563eb"/><text x="603.5" y="70.4" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.5</text>
+<path d="M173.5,208.5V240.9Q173.5,243.9 176.5,243.9H216.5Q219.5,243.9 219.5,240.9V208.5Z" fill="#d97706"/><text x="196.5" y="256.9" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">−0.4</text><path d="M401.5,208.5V105Q401.5,102 404.5,102H444.5Q447.5,102 447.5,105V208.5Z" fill="#d97706"/><text x="424.5" y="97" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.2</text><path d="M629.5,208.5V208.5Q629.5,205.8 632.2,205.8H672.8Q675.5,205.8 675.5,208.5V208.5Z" fill="#d97706"/><text x="652.5" y="200.8" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.03</text>
+<line x1="58" y1="208.5" x2="742" y2="208.5" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="172" y="291" text-anchor="middle" font-size="11" fill="#6b7280">lag 0 (บั๊ก)</text><text x="172" y="306" text-anchor="middle" font-size="11" fill="#6b7280">รับผลของแท่งที่ให้สัญญาณ</text><text x="400" y="291" text-anchor="middle" font-size="11" fill="#6b7280">lag 1 (มาตรฐาน)</text><text x="400" y="306" text-anchor="middle" font-size="11" fill="#6b7280">เริ่มรับผลแท่งถัดไป</text><text x="628" y="291" text-anchor="middle" font-size="11" fill="#6b7280">lag 2 (เข้มกว่า)</text><text x="628" y="306" text-anchor="middle" font-size="11" fill="#6b7280">ได้ราคาช้าไปหนึ่งแท่ง</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง · สถานะชุดเดียวกัน เปลี่ยนเฉพาะแท่งที่เริ่มรับผล · คู่ good: lag 0 ทำให้ Sharpe ตกจากราว 1.6 เหลือราว 0.6 ส่วน lag 2 เปลี่ยนน้อย (1.5) · คู่ที่ราคามี noise (σ_eq 1%): lag 1 ได้ราว 1.2 แต่ lag 2 เหลือราว 0.03 — กำไรที่หายเมื่อช้าไปหนึ่งแท่งคือกำไรจาก noise ไม่ใช่จากสายจูง</div>
+<!--/CHART:sas-p5-lag-->
+
+<div class="bx ba"><div class="bt">🧮 lag 0 เสียเงินตรงไหน ต่อหนึ่งไม้</div>
+<p>คู่ดีทำกำไรขั้นต้นราว <span data-f="p5.d3.lag.mc.gross_per_trade_bps">200</span> bps ต่อไม้เมื่อใช้ lag 1 ห้องทดลองแยกให้ว่า lag 0 เสียตรงไหน:</p>
+<ul>
+<li>แท่งเข้า รับแรงผลักออก: <span data-f="p5.d3.lag.mc.lag0_entry_bar_bps">−60</span> bps</li>
+<li>แท่งออก พลาดช่วงกลับเข้า: <span data-f="p5.d3.lag.mc.lag0_exit_bar_bps">−57</span> bps</li>
+</ul>
+<p>เหลือก่อนต้นทุน:</p>
+<div class="fm"><span data-f="p5.d3.lag.mc.gross_per_trade_bps">200</span> − <span data-f="p5.d3.lag.mc.lag0_entry_bar_bps" data-abs>60</span> − <span data-f="p5.d3.lag.mc.lag0_exit_bar_bps" data-abs>57</span> ≈ 83 bps</div>
+<p>ผลตอบแทนต่อปีตกจากราว <span data-f="p5.d3.lag.mc.lag1.ann_return_pct">6.2</span>% เหลือราว <span data-f="p5.d3.lag.mc.lag0.ann_return_pct">2.4</span>% หายไปราว <span data-f="p5.d3.lag.mc.lag0_return_lost_pct">62</span>% ทั้งที่สถานะชุดเดียวกัน ในคู่ดีของห้องทดลอง (กำไรต่อไม้ใหญ่) lag 0 ยังไม่ติดลบ แต่ถ้ามาเจอ noise ของราคา (โรคที่ 6) Sharpe ติดลบได้จริง: <span data-f="p5.d6.tight.wf.print_lag0.sharpe">−0.4</span></p></div>
+
+<div class="bx ba"><div class="bt">🧮 ครึ่งหลังของโรคนี้: เส้น VaR ที่วาดจากทั้งกราฟ</div>
+<p>ถ้าคุณวาดเส้น 5% กับ 95% ตามสไลด์แผ่นที่ 6–7 จาก ε ทั้งกราฟ แล้วใช้เส้นนั้นตัดสินใจย้อนหลัง คุณกำลังใช้ข้อมูลอนาคต ณ วันที่ 100 คุณยังไม่รู้ว่าวันที่ 1,000 ε ไปอยู่ที่ไหน เส้นที่ถูกคำนวณจากข้อมูลถึงวันนั้นเท่านั้น (ช่วง train เดียวกับ β) ห้องทดลองเทียบ β, μ, σ จากทั้งช่วงกับ walk-forward (Sharpe เฉลี่ย <span data-f="p5.d3.worlds">100</span> โลกต่อแบบ):</p>
+<div class="tw"><table>
+<tr><th>คู่</th><th>ค่าจากทั้งช่วง</th><th>walk-forward</th></tr>
+<tr><td>ไม่มีสายจูง</td><td><span data-f="p5.d3.fake.sharpe_lookahead">0.7</span> (กำไร <span data-f="p5.d3.fake.profitable_lookahead_pct">90</span>% ของโลก)</td><td><span data-f="p5.d3.fake.sharpe_wf">0.0</span> (<span data-f="p5.d3.fake.profitable_wf_pct">60</span>%)</td></tr>
+<tr><td>มีสายจูง</td><td><span data-f="p5.d3.good.sharpe_lookahead">1.7</span></td><td><span data-f="p5.d3.good.sharpe_wf">1.6</span></td></tr>
+<tr><td>β ไหล</td><td><span data-f="p5.d3.drift.sharpe_lookahead">0.8</span></td><td><span data-f="p5.d3.drift.sharpe_wf">1.5</span></td></tr>
+</table></div>
+<p>อันตรายที่สุดกับคู่ไม่มีสายจูง เพราะค่ากลางจากทั้งเส้นอยู่กลางเส้นนั้นเสมอ สเปรดจึง "กลับไปหา" มันแน่นอน ส่วนคู่ที่ β ไหล มองอนาคตกลับแย่กว่า เพราะ β ตัวเดียวทั้งช่วงตาม β ที่ไหลไม่ทัน</p></div>
+
+<div class="bx bg"><div class="bt">✅ นาฬิกาเชื่อได้เมื่อ</div><p>ทุกค่ามาจากข้อมูลก่อนแท่งที่ใช้ และ Sharpe ของ lag 1 กับ lag 2 ใกล้กัน (คู่ดี: <span data-f="p5.d3.lag.mc.lag1.sharpe">1.6</span> กับ <span data-f="p5.d3.lag.mc.lag2.sharpe">1.5</span>) lag 1 ยังมองโลกในแง่ดี เพราะสมมติว่าซื้อขายได้ที่ราคาปิดที่สร้างสัญญาณ ถ้าคุณคำนวณสัญญาณหลังตลาดปิดจากราคาที่ดาวน์โหลดมา ตัวเลขของคุณคือ lag 2 ไม่ใช่ lag 1</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div><p>ค่าใดก็ตามที่คำนวณจากทั้งช่วง (β, μ, σ, percentile ของเส้น VaR, half-life หรือแม้แต่การเลือกคู่) เป็นการมองอนาคตถ้าใช้ตัดสินใจที่แท่ง t · ราคาปิดของสองขาต่างเวลากัน ขาที่ปิดก่อนจะวิ่งตามในวันถัดไป สเปรดจึงดูดึงกลับ และ lag 1 ก็เก็บกำไรปลอมนั้นได้ทั้งที่ซื้อขายที่ราคานั้นไม่ได้ (โรคที่ 6)</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div><p>คนทั่วไปเห็น: บั๊กเวลาทำให้ผลสวยเกินจริง ผลแย่จึงแปลว่าโค้ดสะอาด<br>ผู้เชี่ยวชาญเห็น: ทิศของความเพี้ยนขึ้นกับกลยุทธ์ จึงรัน lag 0, 1, 2 เทียบกันทุกครั้ง</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div><ol>
+<li>ทุกตัวเลขที่ใช้ที่แท่ง t ต้องคำนวณจากข้อมูลถึงแท่ง t เท่านั้น</li>
+<li>ตัดสินใจตอนปิดแท่ง t รับผลตั้งแต่แท่ง t+1 และรายงาน lag 2 คู่กันเสมอ</li>
+<li>มองอนาคตไม่ได้ทำให้ผลดีขึ้นเสมอ ลืม lag ทำให้กลยุทธ์ดึงกลับแย่ลง "ผลแย่" จึงไม่ใช่หลักฐานว่าโค้ดถูก</li>
+</ol></div>
+</div>
+
+<!-- โรคที่ 4 -->
+<div class="card" id="d4">
+<h3>โรคที่ 4 · ค่าผ่านทางแพงกว่ากำไรต่อไม้ <span class="yr">ด่าน 3 ค่าผ่านทาง</span> <span class="lvl must">★★★ ต้องรู้จัก</span></h3>
+
+<div class="bx bp"><div class="bt">🎯 Thesis</div><p>ต้นทุนต้องเทียบกับกำไรต่อไม้ ไม่ใช่กับขนาดเงิน และกฎแบบ walk-forward ต้องการ σ ของสเปรดมากกว่าที่สูตรบอกราว <span data-f="p5.d4.z_sd">1.25</span> เท่าแค่เพื่อเท่าทุน ในห้องทดลอง (β <span data-f="p5.d4.beta">1.4</span> เข้า 2 ออก 0) คือราว <span data-f="p5.d4.measured_sigma_over_c">3.0</span> เท่าของ c ไม่ใช่ <span data-f="p5.d4.formula_sigma_over_c">2.4</span> เท่า</p></div>
+
+<ul>
+<li><strong>🩺 อาการ:</strong> ก่อนหักต้นทุนกำไรดี หลังหักติดลบ ยิ่งสเปรดแคบยิ่งเป็น ไม้ส่วนใหญ่ "ชนะ" แต่ชนะนิดเดียว</li>
+<li><strong>🔬 ตรวจยังไง:</strong> วัดกำไรขั้นต้นเฉลี่ยต่อไม้ แล้วเทียบกับต้นทุนครบรอบ 2c (ชุดตรวจข้อ 5)</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> สเปรดแคบ σ <span data-f="p5.d4.s0_5.sigma_pct">0.5</span>%: Sharpe ราว <span data-f="p5.d4.s0_5.c0.sharpe">1.7</span> เมื่อไม่มีต้นทุน · <span data-f="p5.d4.s0_5.c5.sharpe">1.1</span> ที่ 5 bps · <span data-f="p5.d4.s0_5.c20.sharpe">−0.3</span> ที่ 20 bps · c ที่เท่าทุนวัดได้ราว <span data-f="p5.d4.s0_5.breakeven_c_bps">16</span> bps สูตรบอก <span data-f="p5.d4.s0_5.breakeven_c_formula_bps">20.8</span></li>
+<li><strong>💊 ยา:</strong> เลือกสเปรดที่กว้างพอ เข้าให้ไกลขึ้น หรือเลิกเทรดคู่นั้น · c ต้องรวมค่าคอม ครึ่งหนึ่งของส่วนต่าง bid-ask และ slippage</li>
+</ul>
+
+<div class="why"><div class="bt">❓ ทำไมต้องรู้จัก</div><p>5 bps ฟังดูเล็ก แต่ pairs หนึ่งรอบมีสี่ขา ซื้อ Y ขาย X ตอนเข้า แล้วกลับด้านทั้งคู่ตอนออก และกำไรต่อไม้ของสเปรดแคบก็เล็กพอกัน ถ้าคุณขาดทุนทั้งที่สายจูงมีจริง โรคนี้คือผู้ต้องสงสัยอันดับต้น</p></div>
+
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> กำไรขั้นต้นต่อไม้คือระยะที่สเปรดวิ่งกลับ จากเส้นเข้าถึงเส้นออก หารด้วยเงินที่ลงทั้งสองขา ค่าผ่านทางคือ c ทุกครั้งที่เงินทั้งก้อนขยับ</p>
+<p>ทำไมสี่ขาแต่จ่ายแค่ 2c: ขา Y 1 บาท ขา X β บาท ตอนเข้าจ่าย c × (1 + β) บาท ตอนออกอีกเท่ากัน รวม 2c × (1 + β) บาท จากเงินที่ลง (1 + β) บาท คิดเป็น 2c ของเงินที่ลง c = 5 bps จึงเป็น 10 bps ต่อรอบ ไม่ใช่ 20 · gross ด้านล่างคือกำไรขั้นต้นต่อไม้</p>
+
+<div class="fm">gross ≈ (entry − exit) · σ / (1 + |β|)<br>cost  = 2c<br>gross ≥ cost  ⇔  σ ≥ 2c · (1 + |β|) / (entry − exit)</div>
+
+<p>ใส่ β = <span data-f="p5.d4.beta">1.4</span> เส้นเข้า 2 เส้นออก 0 ได้ σ ≥ <span data-f="p5.d4.formula_sigma_over_c">2.4</span>c แต่สูตรคิดว่า entry วัดด้วย σ จริง กฎ walk-forward วัดด้วย σ ของช่วง train ซึ่งมักเล็กกว่าจริง: β กับ μ ถูกเลือกมาให้ ε ในช่วง train เล็กที่สุด และค่าที่ประมาณจาก 250 แท่งก็คลาด พอใช้กับข้อมูลใหม่ ε จึงแกว่งกว้างกว่าตอน train z นอกตัวอย่างมี sd ราว <span data-f="p5.d4.z_sd">1.25</span> (z_sd ยิ่ง train สั้นยิ่งห่างจาก 1) เส้น z = 2 จึงอยู่แค่ราว <span data-f="p5.d4.entry_true_sigma">1.6</span> σ จริง เข้าใกล้กว่าที่ตั้งใจ กำไรต่อไม้จึงเล็กลง</p>
+<p>กฎทั่วไปสำหรับ β และเส้นเข้า-ออกของคุณ: σ ≥ ราว z_sd × 2c(1 + |β|) ÷ (entry − exit) เป็นกฎหัวแม่มือ ไม่ใช่กลไกแม่นตรง (ถ้ารู้ σ จริง กฎได้ถึงราว <span data-f="p5.d4.s0_5.gross_per_trade_true_bps">48</span> bps ต่อไม้ เกินสูตร เพราะจังหวะเข้ามักเลยเส้นไปแล้ว) ที่คงที่คือ walk-forward ได้ราว <span data-f="p5.d4.s0_5.wf_to_formula_ratio">0.78</span>–<span data-f="p5.d4.s2.wf_to_formula_ratio">0.8</span> เท่าของสูตรทุก σ ที่ทดลอง</p>
+
+<div class="bx ba"><div class="bt">🧮 สเปรด σ <span data-f="p5.d4.s0_5.sigma_pct">0.5</span>% กับต้นทุน 5 และ 20 bps</div>
+<p>สูตร → หารด้วย z_sd (วัดได้จริง <span data-f="p5.d4.s0_5.gross_per_trade_bps">33</span> bps) → c ที่เท่าทุน (สูตรบอก <span data-f="p5.d4.s0_5.breakeven_c_formula_bps">20.8</span>):</p>
+<div class="fm">2 × 0.5% ÷ 2.4 = <span data-f="p5.d4.s0_5.formula_per_trade_bps">41.7</span> bps<br><span data-f="p5.d4.s0_5.formula_per_trade_bps">41.7</span> ÷ <span data-f="p5.d4.z_sd">1.25</span> ≈ <span data-f="p5.d4.s0_5.formula_converted_bps">33</span> bps<br><span data-f="p5.d4.s0_5.gross_per_trade_bps">33</span> ÷ 2 ≈ <span data-f="p5.d4.s0_5.breakeven_c_bps">16</span> bps</div>
+<ul>
+<li>c = 5 bps: ต้นทุนครบรอบ 10 bps กินราวหนึ่งในสามของกำไรขั้นต้น เหลือ Sharpe ราว <span data-f="p5.d4.s0_5.c5.sharpe">1.1</span></li>
+<li>c = 20 bps: ต้นทุนครบรอบ 40 bps มากกว่ากำไรขั้นต้นต่อไม้ Sharpe ติดลบ <span data-f="p5.d4.s0_5.c20.sharpe" data-abs>0.3</span> ทั้งที่สายจูงไม่ได้เปลี่ยนเลย</li>
+</ul></div>
+
+<!--CHART:sas-p5-cost-grid-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 229" role="img" aria-label="ตาราง Sharpe เฉลี่ยตามความกว้างของสเปรดและต้นทุน: มุมซ้ายล่างเป็นบวก มุมขวาบนติดลบ">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<text x="453.3" y="20" text-anchor="middle" fill="#6b7280">ต้นทุนต่อขาต่อเที่ยว c (bps)</text>
+<text x="148.6" y="44" text-anchor="end" fill="#6b7280">ความกว้างของสเปรด (σ_eq)</text>
+<text x="209.4" y="44" text-anchor="middle" font-weight="700" fill="#374151">0</text>
+<text x="307" y="44" text-anchor="middle" font-weight="700" fill="#374151">2</text>
+<text x="404.5" y="44" text-anchor="middle" font-weight="700" fill="#374151">5</text>
+<text x="502.1" y="44" text-anchor="middle" font-weight="700" fill="#374151">10</text>
+<text x="599.7" y="44" text-anchor="middle" font-weight="700" fill="#374151">20</text>
+<text x="697.2" y="44" text-anchor="middle" font-weight="700" fill="#374151">50</text>
+<text x="148.6" y="74" text-anchor="end" fill="#374151">σ = 0.5%</text>
+<text x="148.6" y="108" text-anchor="end" fill="#374151">σ = 1%</text>
+<text x="148.6" y="142" text-anchor="end" fill="#374151">σ = 2%</text>
+<text x="148.6" y="176" text-anchor="end" fill="#374151">σ = 4%</text>
+<rect x="161.6" y="54" width="95.6" height="32" rx="4" fill="#356fec"/><text x="209.4" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.7</text><rect x="259.2" y="54" width="95.6" height="32" rx="4" fill="#487bed"/><text x="307" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.5</text><rect x="356.8" y="54" width="95.6" height="32" rx="4" fill="#6d96ef"/><text x="404.5" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.1</text><rect x="454.3" y="54" width="95.6" height="32" rx="4" fill="#a1baf2"/><text x="502.1" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+0.6</text><rect x="551.9" y="54" width="95.6" height="32" rx="4" fill="#eec5c6"/><text x="599.7" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">−0.3</text><rect x="649.4" y="54" width="95.6" height="32" rx="4" fill="#df3f40"/><text x="697.2" y="74.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">−1.6</text><rect x="161.6" y="88" width="95.6" height="32" rx="4" fill="#3e75ec"/><text x="209.4" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.6</text><rect x="259.2" y="88" width="95.6" height="32" rx="4" fill="#487bed"/><text x="307" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.5</text><rect x="356.8" y="88" width="95.6" height="32" rx="4" fill="#5a88ee"/><text x="404.5" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.3</text><rect x="454.3" y="88" width="95.6" height="32" rx="4" fill="#6d96ef"/><text x="502.1" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.1</text><rect x="551.9" y="88" width="95.6" height="32" rx="4" fill="#a1baf2"/><text x="599.7" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+0.6</text><rect x="649.4" y="88" width="95.6" height="32" rx="4" fill="#eaa2a3"/><text x="697.2" y="108.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">−0.6</text><rect x="161.6" y="122" width="95.6" height="32" rx="4" fill="#356fec"/><text x="209.4" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.7</text><rect x="259.2" y="122" width="95.6" height="32" rx="4" fill="#3e75ec"/><text x="307" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.6</text><rect x="356.8" y="122" width="95.6" height="32" rx="4" fill="#3e75ec"/><text x="404.5" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.6</text><rect x="454.3" y="122" width="95.6" height="32" rx="4" fill="#5182ed"/><text x="502.1" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.4</text><rect x="551.9" y="122" width="95.6" height="32" rx="4" fill="#648fee"/><text x="599.7" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.2</text><rect x="649.4" y="122" width="95.6" height="32" rx="4" fill="#b7caf3"/><text x="697.2" y="142.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+0.4</text><rect x="161.6" y="156" width="95.6" height="32" rx="4" fill="#3e75ec"/><text x="209.4" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.6</text><rect x="259.2" y="156" width="95.6" height="32" rx="4" fill="#3e75ec"/><text x="307" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.6</text><rect x="356.8" y="156" width="95.6" height="32" rx="4" fill="#487bed"/><text x="404.5" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.5</text><rect x="454.3" y="156" width="95.6" height="32" rx="4" fill="#487bed"/><text x="502.1" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">+1.5</text><rect x="551.9" y="156" width="95.6" height="32" rx="4" fill="#5a88ee"/><text x="599.7" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.3</text><rect x="649.4" y="156" width="95.6" height="32" rx="4" fill="#779def"/><text x="697.2" y="176.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">+1.0</text>
+<rect x="537.8" y="205" width="19" height="10" rx="2" fill="#de3637"/><rect x="557.8" y="205" width="19" height="10" rx="2" fill="#e25d5e"/><rect x="577.8" y="205" width="19" height="10" rx="2" fill="#e78788"/><rect x="597.8" y="205" width="19" height="10" rx="2" fill="#ecb5b7"/><rect x="617.8" y="205" width="19" height="10" rx="2" fill="#f3f4f6"/><rect x="637.8" y="205" width="19" height="10" rx="2" fill="#b4c8f3"/><rect x="657.8" y="205" width="19" height="10" rx="2" fill="#86a7f0"/><rect x="677.8" y="205" width="19" height="10" rx="2" fill="#5c8aee"/><rect x="697.8" y="205" width="19" height="10" rx="2" fill="#356fec"/>
+<text x="529.8" y="214" text-anchor="end" font-size="10.5" fill="#6b7280">−1.7</text>
+<text x="724.8" y="214" font-size="10.5" fill="#6b7280">+1.7</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 100 โลกต่อแถว · half-life 12 แท่ง · ตัวเลข = Sharpe เฉลี่ยหลังต้นทุน · ไล่จากซ้ายไปขวาในแถวบนสุด: สเปรดแคบ 0.5% เริ่มที่ราว +1.7 และติดลบตั้งแต่ c = 20 bps (−0.3) · จุดเท่าทุนที่วัดได้คือ c ราว 16 bps หรือกล่าวอีกแบบ ในห้องทดลองนี้ (β 1.4 · เข้า 2 ออก 0) σ ของสเปรดต้องราว 3.0 เท่าของ c จึงจะเท่าทุน (สูตรที่คิดด้วย σ จริงบอก 2.4 เท่า)</div>
+<!--/CHART:sas-p5-cost-grid-->
+
+<p>ตัวอย่างในห้องทดลอง (β <span data-f="p5.d4.beta">1.4</span>): ต้นทุนรวม 5 bps ต่อขา สเปรดต้องมี σ อย่างน้อยราว <span data-f="p5.d4.sigma_min_measured_pct.c5">0.15</span>% ต้นทุนรวม 20 bps ต้องอย่างน้อยราว <span data-f="p5.d4.sigma_min_measured_pct.c20">0.6</span>% และนี่แค่จุดเท่าทุน</p>
+<p>c ของคุณเองคิดแบบนี้: c ต่อขา ≈ ค่าคอมต่อเที่ยว + ครึ่งหนึ่งของส่วนต่าง bid-ask ÷ ราคา + slippage ตัวอย่างสมมติ: ค่าคอม 0.15% หุ้นราคา 30 บาท ส่วนต่าง bid-ask หนึ่งช่องราคา 0.25 บาท ครึ่งหนึ่งคือ 0.125 ÷ 30 ≈ 0.42% รวม c ≈ 57 bps ต่อขา มากกว่าห้องทดลองสิบเท่า ถ้า β ราว <span data-f="p5.d4.beta">1.4</span> (ราว <span data-f="p5.d4.measured_sigma_over_c">3.0</span>c) สเปรดต้องมี σ ราว 1.7% ขึ้นไปแค่เพื่อเท่าทุน ดูตัวเลขจริงจากใบยืนยันการซื้อขาย</p>
+
+<div class="bx bg"><div class="bt">✅ สูตรใช้ได้เมื่อ</div><p>เส้นเข้าวัดด้วย σ จริงที่รู้ล่วงหน้า ซึ่งในโลกจริงไม่มีใครรู้ ใช้มันเป็นเพดานบน แล้ววัดกำไรต่อไม้จริงจาก backtest ของคุณเสมอ</p></div>
+
+<div class="bx br"><div class="bt">❌ พังเมื่อไร</div><p>z วัดด้วย σ ที่ประมาณ หรือมี stop ตัดไม้กลางทาง (โรคที่ 7) กำไรต่อไม้จริงต่ำกว่าสูตร · noise ของราคาทำให้กำไรต่อไม้ดูใหญ่เกินจริง (โรคที่ 6) · ค่ายืมหุ้นของขา short ไม่อยู่ใน c ต่อไม้</p></div>
+
+<div class="qv"><div class="bt">🧠 มุมที่มองต่าง</div><p>คนทั่วไปเห็น: 5 bps เล็กนิดเดียว<br>ผู้เชี่ยวชาญเห็น: สเปรด σ <span data-f="p5.d4.s0_5.sigma_pct">0.5</span>% ทำได้แค่ราว <span data-f="p5.d4.s0_5.gross_per_trade_bps">33</span> bps ต่อไม้ ต้นทุนครบรอบ 10 bps จึงไม่เล็กเลย</p></div>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div><ol>
+<li>เทียบต้นทุนกับกำไรขั้นต้นต่อไม้ ไม่ใช่กับราคาหรือขนาดเงิน</li>
+<li>กฎ walk-forward ต้องการ σ ของสเปรดมากกว่าสูตรราว <span data-f="p5.d4.z_sd">1.25</span> เท่าแค่เพื่อเท่าทุน (ห้องทดลอง: ราว <span data-f="p5.d4.measured_sigma_over_c">3.0</span>c ไม่ใช่ <span data-f="p5.d4.formula_sigma_over_c">2.4</span>c)</li>
+<li>c คือต้นทุนทั้งหมดต่อขา และตรวจซ้ำด้วยต้นทุนสองเท่าเสมอ</li>
+</ol></div>
+</div>
+
+<!-- โรคที่ 5 -->
+<div class="card" id="d5">
+<h3>โรคที่ 5 · หน้าต่าง z-score ผิดขนาด <span class="yr">ด่าน 3 ค่าผ่านทาง</span> <span class="lvl">★★ ควรรู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> สั้นไป: ค่ากลางวิ่งตามสเปรด เข้าออกถี่ กำไรต่อไม้เล็ก · ยาวไป: ค่ากลางย้ายแล้ว แต่ z ยังวัดจากค่ากลางเก่า ไม้ค้างนาน</li>
+<li><strong>🔬 ตรวจยังไง:</strong> ลองหน้าต่าง 1 ถึง 32 เท่าของ half-life ถ้าดีอยู่ค่าเดียวแต่รอบข้างแย่ นั่นคือ noise ไม่ใช่คำตอบ</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> โลกปกติ (half-life <span data-f="p5.d5.half_life_bars">12</span> แท่ง, <span data-f="p5.d5.worlds">200</span> โลก): หน้าต่าง 1 เท่าได้ราว <span data-f="p5.d5.good.w12.sharpe">0.8</span> (ราว <span data-f="p5.d5.good.w12.trades_per_year">17.2</span> ไม้ต่อปี) · ที่ราบ (ช่วงค่าที่ให้ผลใกล้กัน) <span data-f="p5.d5.good.plateau_lo_mult">8</span>–<span data-f="p5.d5.good.plateau_hi_mult">16</span> เท่าได้ราว <span data-f="p5.d5.good.best_sharpe">1.6</span> (ราว <span data-f="p5.d5.good.w96.trades_per_year">4.0</span> ไม้ต่อปีที่ 8 เท่า) · โลกที่ค่ากลางไหลช้า ๆ: ที่ราบ <span data-f="p5.d5.drifting.plateau_lo_mult">4</span>–<span data-f="p5.d5.drifting.plateau_hi_mult">8</span> เท่าได้ราว <span data-f="p5.d5.drifting.best_sharpe">1.4</span> แต่ถ้าตรึง μ, σ ไว้ตลอดเหลือ <span data-f="p5.d5.drifting.fixed.sharpe">0.8</span></li>
+<li><strong>💊 ยา:</strong> หน้าต่างราว 8–16 เท่าของ half-life ถ้าสงสัยว่าค่ากลางไหล ลองสั้นลงถึงราว 4–8 เท่า (สองโลกจำลอง half-life 12 แท่ง) ไม่รวมแท่งปัจจุบัน และเลือกจากกลางที่ราบ ไม่ใช่ค่าที่ดีที่สุดค่าเดียว</li>
+</ul>
+<p>ที่ c = 5 bps หน้าต่าง 1 เท่ายังไม่ขาดทุน แต่เทรดถี่กว่ากลางที่ราบราวสี่เท่า ต้นทุนสูงขึ้นเมื่อไรก็ขาดทุนได้ง่าย โรคนี้จึงอยู่ด่านค่าผ่านทาง มีกับดักเล็กอีกข้อ ถ้าหน้าต่างรวมแท่งปัจจุบัน z มีเพดานทางพีชคณิต:</p>
+<div class="fm">|z_t| ≤ (w − 1) / √w<br>w = 6  :  5 / √6 ≈ <span data-f="p5.d5.bound.w6">2.04</span>     ·     w = 12  :  11 / √12 ≈ <span data-f="p5.d5.bound.w12">3.18</span></div>
+<p>หน้าต่าง 6 แท่งที่รวมวันนี้แทบไม่มีวันแตะเส้นเข้า z = 2 กลยุทธ์ไม่เทรดเพราะเลขบังคับ ไม่ใช่เพราะตลาดเงียบ</p>
+</div>
+
+<!-- โรคที่ 6 -->
+<div class="card" id="d6">
+<h3>โรคที่ 6 · การดึงกลับปลอมจาก noise ของราคา <span class="yr">ด่าน 2 นาฬิกา</span> <span class="lvl">★★ ควรรู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> half-life สั้นผิดปกติ กำไรมาจากไม้สั้นจำนวนมาก และหายเกือบหมดเมื่อได้ราคาช้าไปหนึ่งแท่ง</li>
+<li><strong>🔬 ตรวจยังไง:</strong> เทียบ lag 1 กับ lag 2 และดู half-life (ชุดตรวจข้อ 4 และ 6)</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> สเปรดจริงดึงกลับช้า (half-life <span data-f="p5.d6.half_life_true_bars">40</span> แท่ง) ราคาที่เห็นมี noise <span data-f="p5.d6.noise_leg_pct">0.3</span>% ต่อขา · half-life ที่ประมาณจากราคาที่เห็นเหลือ <span data-f="p5.d6.tight.hl_print_bars">2.3</span> แท่ง จากราคาจริงได้ราว <span data-f="p5.d6.tight.hl_true_bars">30</span> (การประมาณจากตัวอย่างจำกัดมักสั้นกว่าจริง · <span data-f="p5.d6.worlds">200</span> โลกต่อแบบ)</li>
+<li><strong>💊 ยา:</strong> ลงบัญชีด้วยราคาที่ซื้อขายได้จริง (ฝั่ง bid หรือ ask หรือราคาแท่งถัดไป) ใช้ราคาเวลาเดียวกันทั้งสองขา และสงสัยทุก half-life ที่สั้นกว่าสองสามแท่ง</li>
+</ul>
+<p>กลไก: ราคาปิดที่บันทึกบางวันอยู่ฝั่ง bid บางวันฝั่ง ask (bid-ask bounce) หรือขาหนึ่งปิดก่อนอีกขา ราคาที่สูงเกินวันนี้มักตามด้วยราคาที่ต่ำลงพรุ่งนี้ หน้าตาเหมือนการดึงกลับทุกอย่าง แต่ไม่มีใครซื้อขายที่ราคานั้นได้</p>
+<div class="tw"><table>
+<tr><th>โลกจำลอง (Sharpe เฉลี่ย · สัญญาณจากราคาที่เห็นทุกช่อง)</th><th>ลงบัญชีที่ราคาที่เห็น lag 1</th><th>ราคาที่เห็น lag 2</th><th>ราคาจริง lag 1</th></tr>
+<tr><td>สเปรดแคบ σ <span data-f="p5.d6.tight.sigma_eq_pct">1.0</span>% (noise = <span data-f="p5.d6.tight.noise_to_sigma_pct">52</span>% ของ σ)</td><td><span data-f="p5.d6.tight.wf.print_lag1.sharpe">1.2</span></td><td><span data-f="p5.d6.tight.wf.print_lag2.sharpe">0.03</span></td><td><span data-f="p5.d6.tight.wf.true_lag1.sharpe">0.2</span></td></tr>
+<tr><td>สเปรดแคบ · หน้าต่างสั้น <span data-f="p5.d6.short_window_bars">10</span> แท่ง</td><td><span data-f="p5.d6.tight.short.print_lag1.sharpe">3.5</span></td><td><span data-f="p5.d6.tight.short.print_lag2.sharpe">−0.8</span></td><td><span data-f="p5.d6.tight.short.true_lag1.sharpe">−2.9</span></td></tr>
+<tr><td>สเปรดกว้าง σ <span data-f="p5.d6.wide.sigma_eq_pct">3.0</span>% (noise = <span data-f="p5.d6.wide.noise_to_sigma_pct">17</span>% ของ σ)</td><td><span data-f="p5.d6.wide.wf.print_lag1.sharpe">0.7</span></td><td><span data-f="p5.d6.wide.wf.print_lag2.sharpe">0.5</span></td><td><span data-f="p5.d6.wide.wf.true_lag1.sharpe">0.7</span></td></tr>
+</table></div>
+<p>โรคนี้หนักแค่ไหนขึ้นกับ noise เทียบกับความกว้างของสเปรด ที่สเปรดกว้าง Sharpe แทบไม่พอง แต่ผลตอบแทนพอง (<span data-f="p5.d6.wide.wf.print_lag1.ann_return_pct">2.9</span>% ต่อปี เทียบ <span data-f="p5.d6.wide.wf.true_lag1.ann_return_pct">1.9</span>%) หน้าต่างสั้นหนักสุด สัญญาณไล่ noise ถี่มาก ที่ราคาจริงไม่มีการดึงกลับให้เก็บ น่าจะเหลือแต่ค่าผ่านทาง</p>
+<p>lag 2 ไม่ได้ให้ Sharpe เท่าราคาจริงเป๊ะ แต่ผลตอบแทนต่อปีใกล้กันทุกแถว (<span data-f="p5.d6.tight.wf.print_lag2.ann_return_pct">0.09</span> กับ <span data-f="p5.d6.tight.wf.true_lag1.ann_return_pct">0.1</span> · <span data-f="p5.d6.tight.short.print_lag2.ann_return_pct">−2.1</span> กับ <span data-f="p5.d6.tight.short.true_lag1.ann_return_pct">−2.1</span> · <span data-f="p5.d6.wide.wf.print_lag2.ann_return_pct">1.8</span> กับ <span data-f="p5.d6.wide.wf.true_lag1.ann_return_pct">1.9</span> %) จึงเปิดโปงโรคนี้ได้<strong>โดยไม่ต้องรู้ราคาจริง</strong> ข้อแม้: noise ในห้องทดลองอิสระทุกแท่ง ถ้าราคาค้างหลายวัน lag 2 อาจไม่พอ ต่อใน <a href="pillars-part3.html">Quant Part III: Microstructure</a></p>
+</div>
+
+<!-- โรคที่ 7 -->
+<div class="card" id="d7">
+<h3>โรคที่ 7 · stop ที่ตัดกำไรทิ้ง <span class="yr">ด่าน 3 ค่าผ่านทาง</span> <span class="lvl">★★ ควรรู้</span></h3>
+<p>ตอนที่ 4 อธิบายแล้วว่าทำไม stop ตามระยะ z ขัดกับตรรกะของการดึงกลับ ที่นี่ดูแค่ร่องรอยที่มันทิ้งไว้ในรายงาน</p>
+<ul>
+<li><strong>🩺 อาการ:</strong> อัตราชนะตกฮวบ ไม้ที่โดน stop มักกลับมาถูกทางหลังเราออก จำนวนไม้ต่อปีเพิ่มเพราะโดนตัดแล้วเข้าใหม่</li>
+<li><strong>🔬 ตรวจยังไง:</strong> รันกฎเดิมโดยถอด stop แล้วเทียบ Sharpe อัตราชนะ และกำไรเฉลี่ยต่อไม้</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> คู่ดี (<span data-f="p5.d7.worlds_good">300</span> โลก) ไม่มี stop: Sharpe ราว <span data-f="p5.d7.good.none.sharpe">1.6</span> อัตราชนะ <span data-f="p5.d7.good.none.hit_rate_pct">98</span>% กำไรต่อไม้ <span data-f="p5.d7.good.none.avg_trade_bps">190</span> bps · stop ที่ z = 2.5: <span data-f="p5.d7.good.stop2_5.sharpe">0.9</span> อัตราชนะ <span data-f="p5.d7.good.stop2_5.hit_rate_pct">48</span>% กำไรต่อไม้ <span data-f="p5.d7.good.stop2_5.avg_trade_bps">70</span> bps · stop ไกลที่ z = 4 เสียน้อย (<span data-f="p5.d7.good.stop4.sharpe">1.5</span>)</li>
+<li><strong>💊 ยา:</strong> ถ้าต้องมี ให้วางไกล แล้วใช้ time stop (ปิดไม้เมื่อถือเกิน N แท่ง) กับสวิตช์ระดับคู่ (โรคที่ 8) แทน stop ระดับไม้ และคุมขนาดสถานะให้ทนการยืดได้ (กล่องค่าเริ่มต้นในส่วน 🛠️)</li>
+</ul>
+
+<!--CHART:sas-p5-stops-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 320" role="img" aria-label="Sharpe เฉลี่ยเมื่อวาง stop ใกล้ขึ้นเรื่อย ๆ: ลดลงทั้งในโลกที่สายจูงดีและโลกที่สายจูงขาด">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M58 290H742M58 218.1H742M58 146.1H742M58 74.2H742" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="294" text-anchor="end" font-size="11" fill="#6b7280">0.0</text><text x="50" y="222.1" text-anchor="end" font-size="11" fill="#6b7280">0.5</text><text x="50" y="150.1" text-anchor="end" font-size="11" fill="#6b7280">1.0</text><text x="50" y="78.2" text-anchor="end" font-size="11" fill="#6b7280">1.5</text><text x="58" y="22" font-size="11" fill="#6b7280">Sharpe เฉลี่ย</text>
+<rect x="373.7" y="12.5" width="11" height="11" rx="2" fill="#2563eb"/><text x="389.7" y="22" fill="#4b5563">โลก good (300 โลก)</text><rect x="504.9" y="12.5" width="11" height="11" rx="2" fill="#d97706"/><text x="520.9" y="22" fill="#4b5563">โลก break — สายจูงขาดกลางทาง (300 โลก)</text>
+<path d="M96,290V62.8Q96,59.8 99,59.8H139Q142,59.8 142,62.8V290Z" fill="#2563eb"/><text x="119" y="54.8" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.6</text><path d="M267,290V77.2Q267,74.2 270,74.2H310Q313,74.2 313,77.2V290Z" fill="#2563eb"/><text x="290" y="69.2" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.5</text><path d="M438,290V120.3Q438,117.3 441,117.3H481Q484,117.3 484,120.3V290Z" fill="#2563eb"/><text x="461" y="112.3" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1.2</text><path d="M609,290V163.5Q609,160.5 612,160.5H652Q655,160.5 655,163.5V290Z" fill="#2563eb"/><text x="632" y="155.5" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.9</text>
+<path d="M145,290V206.7Q145,203.7 148,203.7H188Q191,203.7 191,206.7V290Z" fill="#d97706"/><text x="168" y="198.7" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.6</text><path d="M316,290V206.7Q316,203.7 319,203.7H359Q362,203.7 362,206.7V290Z" fill="#d97706"/><text x="339" y="198.7" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.6</text><path d="M487,290V221.1Q487,218.1 490,218.1H530Q533,218.1 533,221.1V290Z" fill="#d97706"/><text x="510" y="213.1" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.5</text><path d="M658,290V249.8Q658,246.8 661,246.8H701Q704,246.8 704,249.8V290Z" fill="#d97706"/><text x="681" y="241.8" text-anchor="middle" font-size="10.5" fill="#374151" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">0.3</text>
+<line x1="58" y1="290" x2="742" y2="290" stroke="#cbd5e1" stroke-width="1.5"/><text x="143.5" y="306" text-anchor="middle" font-size="11" fill="#6b7280">ไม่มี stop</text><text x="314.5" y="306" text-anchor="middle" font-size="11" fill="#6b7280">stop ที่ |z| = 4</text><text x="485.5" y="306" text-anchor="middle" font-size="11" fill="#6b7280">stop ที่ |z| = 3</text><text x="656.5" y="306" text-anchor="middle" font-size="11" fill="#6b7280">stop ที่ |z| = 2.5</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง หลังต้นทุน 5 bps · เข้าที่ |z| = 2 · ยิ่ง stop ใกล้ ยิ่งตัดไม้ที่กำลังจะกลับมา: ในโลก good อัตราชนะตกจากราว 98% เหลือราว 48% และ Sharpe จากราว 1.6 เหลือราว 0.9 · stop ไม่ได้ช่วยแม้ในโลกจำลองที่จุดผูกเริ่มไหล (Sharpe ราว 0.6 เหลือราว 0.3 และโลกที่แย่ที่สุด 5% แย่ลงจากราว 0% เป็นราว −10%)</div>
+<!--/CHART:sas-p5-stops-->
+
+<p>ที่ขัดกับความเชื่อคือแท่งสีส้ม ในโลกจำลองที่จุดผูกเริ่มไหล (แบบเดียวกับโรคที่ 8 · <span data-f="p5.d7.worlds_break">300</span> โลก) stop ก็ยังไม่ช่วย: Sharpe จากราว <span data-f="p5.d7.break.none.sharpe">0.6</span> เหลือราว <span data-f="p5.d7.break.stop2_5.sharpe">0.3</span> เหตุผลอยู่ในภาพนี้</p>
+
+<div class="figw"><svg class="fig" viewBox="0 0 560 204" role="img" style="max-width:680px" font-family="Sarabun,sans-serif" aria-label="สองภาพที่ระยะห่างเท่ากัน: ซ้ายสายจูงยืดและกำลังดึงกลับ ขวาสายจูงขาดและสุนัขเดินต่อไป · stop ที่ดูแค่ระยะห่างแยกสองภาพนี้ไม่ออก">
+<text x="140" y="22" font-size="13.5" fill="#1d4ed8" text-anchor="middle" font-weight="700">สายยืด</text>
+<text x="420" y="22" font-size="13.5" fill="#b91c1c" text-anchor="middle" font-weight="700">สายขาด</text>
+<line x1="280" y1="34" x2="280" y2="150" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4 4"/>
+<circle cx="40" cy="80" r="13" fill="#2563eb"/>
+<text x="40" y="112" font-size="11" fill="#374151" text-anchor="middle">เจ้าของ</text>
+<circle cx="230" cy="80" r="10" fill="#7c3aed"/>
+<text x="230" y="112" font-size="11" fill="#374151" text-anchor="middle">สุนัข</text>
+<circle cx="320" cy="80" r="13" fill="#2563eb"/>
+<text x="320" y="112" font-size="11" fill="#374151" text-anchor="middle">เจ้าของ</text>
+<circle cx="500" cy="80" r="10" fill="#7c3aed"/>
+<text x="500" y="112" font-size="11" fill="#374151" text-anchor="middle">สุนัข</text>
+<polyline points="53,80 57,74 65,86 73,74 81,86 89,74 97,86 105,74 113,86 121,74 129,86 137,74 145,86 153,74 161,86 169,74 177,86 185,74 193,86 201,74 209,86 220,80" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<line x1="200" y1="128" x2="96" y2="128" stroke="#16a34a" stroke-width="2"/>
+<polygon points="88,128 97,123 97,133" fill="#16a34a"/>
+<text x="148" y="122" font-size="11" fill="#15803d" text-anchor="middle" font-weight="700">แรงดึงกลับ</text>
+<text x="140" y="156" font-size="11.5" fill="#374151" text-anchor="middle">ห่างมาก แต่สายยังอยู่: กำลังจะกลับ</text>
+<polyline points="333,80 337,74 345,86 353,74 361,86 369,74 377,86 385,74 392,80" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="444,80 448,74 456,86 464,74 472,86 480,74 490,80" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>
+<line x1="514" y1="80" x2="540" y2="80" stroke="#7c3aed" stroke-width="2" stroke-dasharray="3 3"/>
+<polygon points="548,80 539,75 539,85" fill="#7c3aed"/>
+<text x="420" y="156" font-size="11.5" fill="#374151" text-anchor="middle">ห่างเท่ากัน แต่จุดผูกหลุดลอย: ไม่กลับที่เดิม</text>
+<text x="280" y="192" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="700">ตอนที่ stop ทำงาน กราฟ z เห็นแค่ระยะห่าง สองภาพนี้จึงเป็นภาพเดียวกัน</text>
+</svg></div>
+<div class="cap">ภาพวาดแนวคิด · "สายจูงยืดได้" คือชื่อเล่นของแรงดึงกลับ สายขาด = แรงดึงอ่อนลงจนจุดผูกหลุดลอย</div>
+
+<p>ในคู่ที่มีสายจูง สายยืดเกิดบ่อยกว่าสายขาดมาก แม้ในโลกที่สายจะขาดในที่สุด ก่อนหน้านั้นก็ยืดแล้วกลับมาอีกหลายครั้ง และในโลกจำลองของเรา แม้จุดผูกหลุดแล้ว แรงดึงระยะสั้นก็ยังอยู่ stop ที่ดูระยะจึงตัดไม้ที่กำลังจะกลับเป็นส่วนใหญ่ คำถามที่ถูกไม่ใช่ "ห่างแค่ไหน" แต่คือ "สายยังอยู่ไหม" ซึ่งต้องตอบด้วยการทดสอบสายจูงซ้ำ</p>
+</div>
+
+<!-- โรคที่ 8 -->
+<div class="card" id="d8">
+<h3>โรคที่ 8 · สายจูงขาด แต่ไม่มีสวิตช์ตัด <span class="yr">ด่าน 1 สายจูง</span> <span class="lvl">★★ ควรรู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> กำไรดีมาตลอด แล้วขาดทุนก้อนใหญ่ไม่กี่ครั้งกินกำไรเกือบหมด สเปรดหลังจุดหนึ่งไม่กลับมาอีก</li>
+<li><strong>🔬 ตรวจยังไง:</strong> ทดสอบ Engle-Granger ซ้ำบนข้อมูลล่าสุดเป็นระยะ และดูผลแยกก่อนกับหลังจุดที่สงสัย</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> <span data-f="p5.d8.worlds">300</span> โลกที่สายจูงขาดที่แท่ง <span data-f="p5.d8.break_bar">900</span> (หลังจากนั้นจุดผูกเริ่มเดินสุ่ม แต่แรงดึงระยะสั้นยังอยู่) วัดผลรวม <span data-f="p5.d8.after_bars">600</span> แท่งหลังขาด เป็น % ของเงินที่ลงทั้งสองขา ค่าเฉลี่ยของ 5% ของโลกที่แย่ที่สุด (ลึกกว่าปลายเส้นในกราฟ ซึ่งคือเปอร์เซ็นไทล์ที่ 5 ราว <span data-f="p5.d8.break.none.after_p5_pct">−20</span>%): ไม่มีสวิตช์ราว <span data-f="p5.d8.break.none.after_worst5_mean_pct">−30</span>% · จำกัดเวลาถือ <span data-f="p5.d8.max_hold_bars">60</span> แท่งช่วยได้บ้าง ราว <span data-f="p5.d8.break.time.after_worst5_mean_pct">−20</span>% · สวิตช์ EG บน 500 แท่งล่าสุดราว <span data-f="p5.d8.break.monitor_500.after_worst5_mean_pct">−10</span>%</li>
+<li><strong>💊 ยา:</strong> สวิตช์ระดับคู่ที่ทดสอบสายจูงซ้ำด้วยหน้าต่างยาวพอ บวก time stop และมองมันเป็นประกันที่มีเบี้ย ไม่ใช่ของฟรี</li>
+</ul>
+
+<!--CHART:sas-p5-killswitch-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 280" role="img" aria-label="กำไรขาดทุนหลังสายจูงขาดของห้าวิธี: สวิตช์ Engle-Granger ตัดหางด้านขาดทุนให้สั้นลงมาก แลกกับค่าเฉลี่ยและหางด้านกำไรที่ลดลง">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<path d="M209.9 34V234M299.1 34V234M388.2 34V234M477.4 34V234M566.5 34V234M655.7 34V234" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="388.2" y1="34" x2="388.2" y2="234" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="153.3" y="50.5" text-anchor="end" font-size="12" fill="#374151">ไม่มีสวิตช์</text><text x="153.3" y="65.5" text-anchor="end" font-size="12" fill="#374151">บนโลก good: Sharpe 1.6</text><line x1="226.9" y1="54" x2="603.7" y2="54" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="426.6" cy="54" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/><text x="669.7" y="58" font-size="12" fill="#374151"><tspan font-weight="700">+4</tspan><tspan fill="#6b7280" font-size="10.5">  (−20 ถึง +20)</tspan></text><text x="153.3" y="90.5" text-anchor="end" font-size="12" fill="#374151">จำกัดเวลาถือ 60 แท่ง</text><text x="153.3" y="105.5" text-anchor="end" font-size="12" fill="#374151">บนโลก good: Sharpe 1.5</text><line x1="221.7" y1="94" x2="582.6" y2="94" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="421.9" cy="94" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="669.7" y="98" font-size="12" fill="#374151"><tspan font-weight="700">+4</tspan><tspan fill="#6b7280" font-size="10.5">  (−20 ถึง +20)</tspan></text><text x="153.3" y="130.5" text-anchor="end" font-size="12" fill="#374151">เฝ้าด้วย EG 250 แท่ง</text><text x="153.3" y="145.5" text-anchor="end" font-size="12" fill="#374151">บนโลก good: Sharpe 1.0</text><line x1="333.8" y1="134" x2="476.4" y2="134" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="394.7" cy="134" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="669.7" y="138" font-size="12" fill="#374151"><tspan font-weight="700">+0.7</tspan><tspan fill="#6b7280" font-size="10.5">  (−6 ถึง +10)</tspan></text><text x="153.3" y="170.5" text-anchor="end" font-size="12" fill="#374151">เฝ้าด้วย EG 500 แท่ง</text><text x="153.3" y="185.5" text-anchor="end" font-size="12" fill="#374151">บนโลก good: Sharpe 1.5</text><line x1="325.7" y1="174" x2="522.6" y2="174" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="403.8" cy="174" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="669.7" y="178" font-size="12" fill="#374151"><tspan font-weight="700">+2</tspan><tspan fill="#6b7280" font-size="10.5">  (−7 ถึง +20)</tspan></text><text x="153.3" y="210.5" text-anchor="end" font-size="12" fill="#374151">EG 500 แท่ง + จำกัดเวลาถือ</text><text x="153.3" y="225.5" text-anchor="end" font-size="12" fill="#374151">บนโลก good: Sharpe 1.5</text><line x1="331.9" y1="214" x2="518.5" y2="214" stroke="#2563eb" stroke-width="5" stroke-linecap="round" stroke-opacity=".32"/><circle cx="403.7" cy="214" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="669.7" y="218" font-size="12" fill="#374151"><tspan font-weight="700">+2</tspan><tspan fill="#6b7280" font-size="10.5">  (−6 ถึง +15)</tspan></text>
+<line x1="165.3" y1="234" x2="655.7" y2="234" stroke="#cbd5e1" stroke-width="1.5"/><text x="209.9" y="250" text-anchor="middle" font-size="11" fill="#6b7280">−20</text><text x="299.1" y="250" text-anchor="middle" font-size="11" fill="#6b7280">−10</text><text x="388.2" y="250" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="477.4" y="250" text-anchor="middle" font-size="11" fill="#6b7280">10</text><text x="566.5" y="250" text-anchor="middle" font-size="11" fill="#6b7280">20</text><text x="655.7" y="250" text-anchor="middle" font-size="11" fill="#6b7280">30</text><text x="410.5" y="271" text-anchor="middle" font-size="12" fill="#6b7280">กำไรขาดทุนสะสมหลังสายจูงขาด (% ของเงินรวมสองขา)</text>
+<circle cx="511.7" cy="18" r="4.5" fill="#6b7280"/><text x="521.7" y="22" fill="#4b5563">ค่าเฉลี่ย</text><rect x="577.7" y="12.5" width="14" height="11" rx="2" fill="#6b7280" fill-opacity=".2" stroke="#6b7280" stroke-opacity=".55"/><text x="596.7" y="22" fill="#4b5563">ช่วง 5–95%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 300 โลก break · ผลรวม 600 แท่งหลังสายจูงขาด หลังต้นทุน 5 bps · ไม่มีสวิตช์: 5% ของโลกที่แย่ที่สุดขาดทุนเฉลี่ยราว 30% (ค่าเฉลี่ยของหาง จึงลึกกว่าปลายหนวดในกราฟ) · จำกัดเวลาถืออย่างเดียวช่วยได้บ้าง (ราว 20%) · สวิตช์ EG 500 แท่งหดเหลือราว 10% แต่ค่าเฉลี่ยหลังขาดก็ลดจากราว +4% เป็นราว +2% และ Sharpe บนโลก good ลดจากราว 1.6 เป็นราว 1.5 · สวิตช์ 250 แท่งเตือนผิดราว 40% ของเวลาบนคู่ที่ดี (Sharpe เหลือราว 1.0)</div>
+<!--/CHART:sas-p5-killswitch-->
+
+<p>วิธีที่ห้องทดลองใช้: ทุก <span data-f="p5.settings.refit_bars">21</span> แท่ง ทดสอบ Engle-Granger บน 500 แท่งล่าสุด ถ้าไม่ผ่านที่ระดับ <span data-f="p5.d8.level_pct">10</span>% ให้ปิดสถานะที่ถืออยู่และงดเปิดไม้ใหม่ 21 แท่ง แล้วทดสอบใหม่ ผ่านเมื่อไรก็กลับมาเทรด</p>
+<p>เบี้ยประกันมีสองก้อน (ตัวเลขอยู่ใต้กราฟ): ค่าเฉลี่ยหลังสายขาดลดลง และ Sharpe บนคู่ที่แข็งแรงลดลงเพราะเตือนผิดเป็นบางครั้ง หน้าต่าง 250 แท่งจับได้เร็วกว่า (ราว <span data-f="p5.d8.break.delay_median_250_bars">10</span> แท่ง เทียบราว <span data-f="p5.d8.break.delay_median_500_bars">80</span>) แต่ปิดคู่ที่แข็งแรงราว <span data-f="p5.d8.good.blocked_250_pct">40</span>% ของเวลา</p>
+<p>สังเกตว่าค่าเฉลี่ยหลังสายขาดยังเป็นบวก เพราะในโลกจำลองนี้แรงดึงระยะสั้นยังอยู่ ไม้ส่วนใหญ่จึงยังกลับมาได้ อันตรายอยู่ที่หาง backtest ที่รายงานแต่ค่าเฉลี่ยจึงซ่อนมันได้สนิท</p>
+</div>
+
+<!-- โรคที่ 9 -->
+<div class="card" id="d9">
+<h3>โรคที่ 9 · ข้อมูลน้อยเกินจะบอกอะไร <span class="yr">ด่าน 4 ดวง</span> <span class="lvl">★★ ควรรู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> ตัดสินจาก backtest ปีเดียวที่มีไม่กี่ไม้ คู่ปลอมก็ดูดีได้ คู่จริงก็ดูแย่ได้</li>
+<li><strong>🔬 ตรวจยังไง:</strong> นับจำนวนไม้ ไม่ใช่จำนวนวัน แล้วถามว่าคู่ไม่มีสายจูงทำ Sharpe แบบนี้ได้บ่อยแค่ไหน</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> Sharpe ของหนึ่งปี (<span data-f="p5.d9.worlds">1,000</span> โลกต่อแบบ): คู่ดีเฉลี่ยแค่ราว <span data-f="p5.d9.good.trades_mean">3.4</span> ไม้ต่อปี (นับไม้ที่ยังเปิดค้างตอนสิ้นปีเป็นหนึ่งไม้ จึงสูงกว่า <span data-f="p5.d1.good.trades_per_year">3.2</span> ในโรคที่ 1) ช่วง 5–95% <span data-f="p5.d9.good.sharpe_p5">0.4</span> ถึง <span data-f="p5.d9.good.sharpe_p95">2.8</span> · คู่จริงที่ดึงกลับช้า (half-life <span data-f="p5.d9.slow_half_life_bars">40</span>) ติดลบในราว <span data-f="p5.d9.slow.negative_pct">20</span>% ของปีจำลอง · คู่ปลอมได้ Sharpe เกิน 1 ในราว <span data-f="p5.d9.fake.above1_pct">20</span>% ของปีจำลอง แต่ดูราว 5 ปีเหลือ <span data-f="p5.d9.five_year.fake.above1_pct">2</span>%</li>
+<li><strong>💊 ยา:</strong> ข้อมูลยาวขึ้น ทดสอบหลายคู่ที่มีสายจูงแบบเดียวกัน อย่าสรุปจากปีเดียว ดู <a href="nq-tool-samplesize.html">ต้องเทรดกี่ไม้ถึงจะรู้</a></li>
+</ul>
+
+<!--CHART:sas-p5-sample-size-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 320" role="img" aria-label="การกระจายของ Sharpe หนึ่งปีของคู่สามแบบ ซ้อนทับกันเป็นบริเวณกว้าง">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<defs><clipPath id="sas-p5-sample-size-clip1"><rect x="57" y="47" width="684" height="226"/></clipPath></defs>
+<path d="M58 272H740M58 234.7H740M58 197.3H740M58 160H740M58 122.7H740M58 85.3H740M58 48H740" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+<text x="50" y="276" text-anchor="end" font-size="11" fill="#6b7280">0</text><text x="50" y="238.7" text-anchor="end" font-size="11" fill="#6b7280">5</text><text x="50" y="201.3" text-anchor="end" font-size="11" fill="#6b7280">10</text><text x="50" y="164" text-anchor="end" font-size="11" fill="#6b7280">15</text><text x="50" y="126.7" text-anchor="end" font-size="11" fill="#6b7280">20</text><text x="50" y="89.3" text-anchor="end" font-size="11" fill="#6b7280">25</text><text x="50" y="52" text-anchor="end" font-size="11" fill="#6b7280">30</text><text x="58" y="22" font-size="11" fill="#6b7280">% ของโลก</text>
+<line x1="265.9" y1="18" x2="283.9" y2="18" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/><text x="289.9" y="22" fill="#4b5563">คู่ good (half-life 12)</text><line x1="412.6" y1="18" x2="430.6" y2="18" stroke="#d97706" stroke-width="2.5" stroke-linecap="round"/><text x="436.6" y="22" fill="#4b5563">คู่ที่สายจูงจริงแต่ช้า (half-life 40)</text><line x1="618.9" y1="18" x2="636.9" y2="18" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/><text x="642.9" y="22" fill="#4b5563">คู่ fake (ไม่มีสายจูง)</text>
+<line x1="58" y1="272" x2="740" y2="272" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="358.9" y1="48" x2="358.9" y2="272" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/><text x="358.9" y="43" text-anchor="middle" font-size="10.5" fill="#6b7280">Sharpe 0</text>
+<line x1="439.1" y1="48" x2="439.1" y2="272" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/><text x="439.1" y="43" text-anchor="middle" font-size="10.5" fill="#6b7280">Sharpe 1</text>
+<g clip-path="url(#sas-p5-sample-size-clip1)"><path d="M58 272l40.1 0 40.1 0 40.2 0 40.1 0 40.1 0 40.1 0 40.1-5.2 40.1-37.4 40.2-60.4 40.1-74 40.1-26.8 40.1 65.7 40.1 84.3 40.1 32.1 40.2 20.2 40.1 1.5 40.1 0" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g clip-path="url(#sas-p5-sample-size-clip1)"><path d="M58 272l40.1 0 40.1 0 40.2-.7 40.1 0 40.1-6.8 40.1-21.6 40.1-53.8 40.1-87.3 40.2-8.3 40.1 26.2 40.1 73.9 40.1 42.6 40.1 26.1 40.1 9 40.2 .7 40.1 0 40.1 0" fill="none" stroke="#d97706" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<g clip-path="url(#sas-p5-sample-size-clip1)"><path d="M58 272l40.1-2.2 40.1 .7 40.2-5.2 40.1-23.2 40.1-27.6 40.1-40.3 40.1-53.8 40.1 8.2 40.2 29.9 40.1 35.8 40.1 36.6 40.1 25.4 40.1 9 40.1 6 40.2 0 40.1 .7 40.1 0" fill="none" stroke="#dc2626" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></g>
+<line x1="58" y1="272" x2="740" y2="272" stroke="#cbd5e1" stroke-width="1.5"/><text x="198.4" y="288" text-anchor="middle" font-size="11" fill="#6b7280">−2</text><text x="358.9" y="288" text-anchor="middle" font-size="11" fill="#6b7280">0</text><text x="519.4" y="288" text-anchor="middle" font-size="11" fill="#6b7280">2</text><text x="679.8" y="288" text-anchor="middle" font-size="11" fill="#6b7280">4</text><text x="399" y="309" text-anchor="middle" font-size="12" fill="#6b7280">Sharpe ที่เกิดขึ้นจริงใน 1 ปี (ช่องละ 0.5)</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 1,000 โลกต่อแบบ · Sharpe ที่เกิดขึ้นจริงใน 1 ปี (เฉลี่ยเพียงราว 3.4 ไม้) หลังต้นทุน 5 bps · คู่ fake ได้ Sharpe เกิน 1 ราว 20% ของโลก ขณะที่คู่ที่มีสายจูงจริงแต่ช้าติดลบราว 20% ของโลก — ปีเดียวแยกสองแบบนี้ออกจากกันไม่ได้</div>
+<!--/CHART:sas-p5-sample-size-->
+
+<p>ราว <span data-f="p5.d9.good.trades_mean">3.4</span> ไม้ต่อปีเท่ากับตัดสินเหรียญจากการโยนสามสี่ครั้ง แต่ข้อนี้ช่วยวินิจฉัยได้ด้วย คู่ดีแบบมาตรฐานติดลบแค่ราว <span data-f="p5.d9.good.negative_pct">0.7</span>% ของปีจำลอง แต่คู่จริงที่ช้ากว่าติดลบได้ราว <span data-f="p5.d9.slow.negative_pct">20</span>% ของปี การขาดทุนสองสามปีจึงยังไม่พิสูจน์อะไร ถ้า backtest ของคุณติดลบเกือบทุกปี อย่าโทษดวงก่อน ให้กลับไปสงสัยด่าน 1 ถึง 3</p>
+</div>
+
+<!-- โรคที่ 10 -->
+<div class="card" id="d10">
+<h3>โรคที่ 10 · ข้อมูลเสีย <span class="yr">ด่าน 2 นาฬิกา</span> <span class="lvl">★ น่ารู้</span></h3>
+<ul>
+<li><strong>🩺 อาการ:</strong> สเปรดกระโดดแท่งเดียวแล้วอยู่ที่ใหม่ถาวร (แตกพาร์ที่ไม่ได้ปรับ) หรือกระโดดแล้วกลับวันรุ่งขึ้น (ราคาผิด) มีไม้กำไรก้อนใหญ่ผิดปกติไม้เดียว หรือรายชื่อหุ้นมีแต่ตัวที่ยังอยู่ถึงวันนี้ (survivorship bias)</li>
+<li><strong>🔬 ตรวจยังไง:</strong> plot ε หาแท่งที่กระโดดเกินหลาย σ เทียบกับวันปันผลและแตกพาร์ และตรวจว่ารายชื่อมีตัวที่ถูกถอดออกจากตลาดด้วยไหม</li>
+<li><strong>📊 ตัวเลขจากห้องทดลอง:</strong> ไม่มี ห้องทดลองนี้ไม่ได้จำลองโรคนี้</li>
+<li><strong>💊 ยา:</strong> ราคาที่ปรับแตกพาร์และปันผลแล้ว (ขาที่ขาย short คุณเป็นคนจ่ายปันผล) รวมตัวที่ถูกถอดออก และจัดเวลาปิดสองขาให้ตรงกัน รายละเอียดใน <a href="statarb-data-quality.html">หกโรคของข้อมูล backtest</a></li>
+</ul>
+<p>ทำไมอยู่ด่านนาฬิกา: survivorship คือการมองอนาคตแบบหนึ่ง รายชื่อหุ้นวันนี้รู้แล้วว่าใครรอด ส่วนราคาผิดหรือเวลาปิดไม่ตรงก็ทำให้ backtest เห็นราคาที่ซื้อขายไม่ได้</p>
+</div>
+
+<!-- ═══════════════ ห้องทดลอง ═══════════════ -->
+<h2>🧪 ห้องทดลอง: ทั้งคลินิกในตารางเดียว</h2>
+
+<p>ทุกโรคมาจากการทดลองแบบเดียวกัน ทำแบบที่คนมักเผลอทำ กับแบบที่ควรทำ บนโลกจำลองชุดเดียวกัน แล้ววัดช่องว่าง <span class="tag-sim">ข้อมูลจำลอง</span></p>
+
+<div class="tw"><table>
+<tr><th>โรค</th><th>แบบที่เผลอทำ</th><th>แบบที่ควรทำ</th></tr>
+<tr><td>1 ไม่มีสายจูง</td><td>คู่ correlation สูงแต่ไม่มีสายจูง: Sharpe <span data-f="p5.clinic.d1.wrong">0.0</span></td><td>คู่ที่มีสายจูง: <span data-f="p5.clinic.d1.right">1.6</span></td></tr>
+<tr><td>2 คัดจากหลายคู่</td><td>เชื่อ Sharpe ช่วงคัดเลือก (กลุ่มตั้งต้นที่มีแต่คู่ปลอม): <span data-f="p5.clinic.d2.wrong">1.6</span></td><td>ช่วงพิสูจน์ของคู่ชุดเดียวกัน: <span data-f="p5.clinic.d2.right">0</span></td></tr>
+<tr><td>3 มองอนาคต</td><td>คู่ไม่มีสายจูง ใช้ β, μ, σ ทั้งช่วง: <span data-f="p5.clinic.d3.wrong">0.7</span></td><td>walk-forward: <span data-f="p5.clinic.d3.right">0.0</span></td></tr>
+<tr><td>3 ลืม lag</td><td>คู่ดี lag 0: <span data-f="p5.clinic.d3_lag.wrong">0.6</span></td><td>lag 1: <span data-f="p5.clinic.d3_lag.right">1.6</span></td></tr>
+<tr><td>4 ค่าผ่านทาง</td><td>σ <span data-f="p5.d4.s0_5.sigma_pct">0.5</span>% ไม่คิดต้นทุน: <span data-f="p5.clinic.d4.wrong">1.7</span></td><td>คิดต้นทุน 20 bps: <span data-f="p5.clinic.d4.right">−0.3</span></td></tr>
+<tr><td>5 หน้าต่าง</td><td>1 เท่าของ half-life: <span data-f="p5.clinic.d5.wrong">0.8</span></td><td>กลางที่ราบ: <span data-f="p5.clinic.d5.right">1.6</span></td></tr>
+<tr><td>6 noise ของราคา</td><td>ลงบัญชีที่ราคาที่เห็น: <span data-f="p5.clinic.d6.wrong">1.2</span></td><td>เช็กด้วย lag 2 บนราคาที่เห็น: <span data-f="p5.d6.tight.wf.print_lag2.sharpe">0.03</span> (ราคาจริง <span data-f="p5.clinic.d6.right">0.2</span>)</td></tr>
+<tr><td>7 stop</td><td>stop ที่ z = 2.5: <span data-f="p5.clinic.d7.wrong">0.9</span></td><td>ไม่มี stop: <span data-f="p5.clinic.d7.right">1.6</span></td></tr>
+<tr><td>8 ไม่มีสวิตช์</td><td>5% แย่สุดหลังสายขาด: <span data-f="p5.clinic.d8.wrong">−30</span>%</td><td>สวิตช์ EG 500 แท่ง: <span data-f="p5.clinic.d8.right">−10</span>%</td></tr>
+<tr><td>9 ข้อมูลน้อย</td><td>คู่ปลอมได้ Sharpe เกิน 1 ใน 1 ปี: <span data-f="p5.clinic.d9.wrong">20</span>% ของโลก</td><td>เมื่อดูราว 5 ปี: <span data-f="p5.clinic.d9.right">2</span>%</td></tr>
+</table></div>
+
+<p>ในโรค 2, 3 (มองอนาคต), 4 และ 6 แบบที่ควรทำให้ตัวเลขแย่กว่า นี่คือหัวใจของคลินิก หลายครั้ง การทำให้ถูกแปลว่าต้องยอมเห็นตัวเลขที่แย่ลง เพราะนั่นคือตัวเลขจริง รันซ้ำทั้งหมดได้ด้วยคำสั่งเดียว (ราวหนึ่งนาที พิมพ์ตัวเลขทุกโรคเป็นภาษาไทย):</p>
+<pre class="code">python3 tools/sas_exp5.py</pre>
+
+<!-- ═══════════════ ยากขึ้นจริงไหม ═══════════════ -->
+<h2>pairs trading ยากขึ้นจริงไหม</h2>
+
+<div class="bx bg"><div class="bt">คำตอบสั้น</div><p>ความรู้สึกของคุณมีหลักฐานรองรับ สำหรับแบบที่ง่ายที่สุดในหุ้นสหรัฐฯ ผลตอบแทนลดลงชัดเมื่อเทียบกับยุคแรก แต่ผู้วิจัยหลักไม่ได้สรุปว่า "กองทุนแย่งกันจนหมด" เพียงอย่างเดียว</p></div>
+
+<div class="tw"><table>
+<tr><th>งานวิจัย · ข้อมูล</th><th>พบอะไร</th><th>ผู้วิจัยอธิบายสาเหตุว่า</th></tr>
+<tr><td><strong>Gatev, Goetzmann &amp; Rouwenhorst (2006, GGR)</strong> · หุ้นสหรัฐฯ รายวัน 1962–2002 · จับคู่ด้วยระยะห่างของราคาที่ปรับฐาน</td><td>ผลตอบแทนส่วนเกินรายปีสูงสุดราว 11% (ไม่ใช่ตัวเลขหลังหักต้นทุน) · หลังปี 1988 ลดลงชัด แต่ส่วนที่ปรับความเสี่ยงแล้วยังบวกอย่างมีนัยสำคัญ · ช่วงกันไว้ 1999–2002 พอร์ต 20 คู่แรกยังได้ 10.4% ต่อปี</td><td>ไม่ได้สรุปว่ากองทุนแข่งกันจนกำไรหาย โยงการลดลงกับปัจจัยร่วมแฝงที่ค่อนข้างเงียบในครึ่งหลัง</td></tr>
+<tr><td><strong>Do &amp; Faff (2010)</strong> · หุ้นสหรัฐฯ ก.ค. 1962 – มิ.ย. 2009</td><td>ผลตอบแทนส่วนเกินเฉลี่ยรายเดือนของ 20 คู่แรก: 0.86% (1962–1988) → 0.37% (1989–2002) → 0.24% (2003–2009)</td><td>ส่วนใหญ่มาจากความเสี่ยงของ arbitrage ที่แย่ลง มากกว่าการแข่งขันของกองทุนอย่างเดียว</td></tr>
+<tr><td><strong>Do &amp; Faff (2012)</strong> · หุ้นสหรัฐฯ 1963–2009 หลังค่าคอม ผลกระทบต่อราคา และค่ายืมหุ้น</td><td>ยังกำไรแต่น้อยลงมาก กำไรที่เหลือกระจุกในคู่ที่จับคู่ดีภายในกลุ่มอุตสาหกรรมที่แบ่งละเอียด ราว 30 bps ต่อเดือนหลังปรับความเสี่ยง · ส่วนใหญ่ไม่มีกำไรหลังปี 2002</td><td>(งานนี้วัดเรื่องต้นทุน)</td></tr>
+<tr><td><strong>Avellaneda &amp; Lee (2010)</strong> · ส่วนเหลือหลังตัดปัจจัย</td><td>backtest หลังต้นทุน: แบบ PCA เฉลี่ย Sharpe 1.44 ช่วง 1997–2007 แต่ 0.9 ช่วง 2003–2007 · แบบ ETF 1.1 ช่วง 1997–2007 และเสื่อมคล้ายกันหลังปี 2002</td><td>(เป็นผล backtest ไม่ใช่ผลเทรดจริง)</td></tr>
+<tr><td><strong>Rad, Low &amp; Faff (2016)</strong> · หุ้นสหรัฐฯ 1962–2014</td><td>ผลตอบแทนส่วนเกินเฉลี่ยต่อเดือนก่อนต้นทุน: distance 91 · cointegration 85 · copula 43 bps หลังต้นทุน 38 · 33 · 5 bps · ตั้งแต่ 2009 โอกาสเทรดของ distance และ cointegration ลดลงมาก</td><td>—</td></tr>
+</table></div>
+
+<p>ตัวเลขของ GGR กับ Do &amp; Faff วัดคนละแบบ อย่าเอามาต่อกันเป็นเส้นเดียว และแต่ละงานบอกได้แค่ถึงปีสุดท้ายของข้อมูลตัวเอง ข้อมูลล่าสุดในตารางนี้จบที่ปี 2014</p>
+
+<h3>ทำไม: ผู้วิจัยว่าอย่างไร และเราเดาอะไรเพิ่ม</h3>
+<p>ผู้วิจัยเองชี้ไปที่ปัจจัยร่วมแฝงที่เงียบลง (GGR) และความเสี่ยงของ arbitrage ที่แย่ลง (Do &amp; Faff 2010) ไม่ใช่การแข่งขันอย่างเดียว สามข้อด้านล่างเป็น<strong>สมมติฐานของเราที่งานข้างบนไม่ได้ยืนยัน</strong> และทั้งสามเป็นเรื่องการแข่งขัน จึงถือเป็นส่วนเสริม ไม่ใช่คำอธิบายหลัก</p>
+<ul>
+<li><strong>คนแห่ (crowding):</strong> กฎง่าย ๆ ถูกตีพิมพ์และสอนกันทั่ว คนจำนวนมากถือไม้ชุดเดียวกัน และวันที่ทุกคนต้องออกพร้อมกัน สายจูงทุกเส้นถูกดึงยืดในทิศเดียวกัน</li>
+<li><strong>คอมพิวเตอร์ถูกลง:</strong> คู่ที่ดูดีถูกเจอโดยหลายคนพร้อมกัน และใครสแกนมากก็เจอคู่ปลอมมาก (โรคที่ 2)</li>
+<li><strong>แรงเสียดทานต่ำลง:</strong> ถ้าต้นทุนถูกลงสำหรับทุกคน มันช่วยกำไรสุทธิของคุณ แต่ก็ลดกำแพงให้คนอื่นด้วย edge แบบง่ายจึงอาจถูกเก็บไปเร็วขึ้น</li>
+</ul>
+
+<h3>edge ที่เหลือน่าจะอยู่ตรงไหน</h3>
+<p>หลักคิดของเรา: edge จะอยู่ได้นานต้องมีสองอย่างพร้อมกัน <strong>สายจูงมีจริง</strong> และ<strong>มีบางอย่างกันเงินทุนก้อนใหญ่ไม่ให้เข้ามาปิดช่อง</strong> Shleifer &amp; Vishny (1997) ชี้ว่า arbitrage ในโลกจริงต้องใช้ทุนและมีความเสี่ยง และอาจใช้ไม่ได้ในยามที่ราคาวิ่งห่างจากมูลค่าไปไกล ช่องว่างบางแบบจึงไม่ถูกปิดจนหมด</p>
+<ul>
+<li>สายจูงที่มีเหตุผลทางเศรษฐกิจชัด เช่น คู่ที่จับคู่อย่างละเอียดภายในอุตสาหกรรมเดียวกัน ซึ่งเป็นจุดที่ Do &amp; Faff (2012) พบกำไรหลังต้นทุนเหลืออยู่ตลอดช่วง 1963–2009 แม้งานเดียวกันพบว่าหลังปี 2002 ส่วนใหญ่ไม่มีกำไร</li>
+<li>ขนาดเล็กเกินกว่ากองทุนใหญ่จะสนใจ (capacity ต่ำ)</li>
+<li>ต้องใช้ความรู้หรือการเข้าถึงเฉพาะ เช่น ยืมหุ้นมาขาย short ได้ ต่อหลายตลาดได้ เข้าใจกลไกของสัญญา</li>
+<li>ต้องทนถือช่วงที่สายยืด ซึ่งเราเดาว่าเงินทุนที่ต้องรายงานผลถี่ ๆ อาจทนไม่ไหว</li>
+</ul>
+<p>ไม่มีข้อไหนเป็นคำสัญญา ทุกข้อแค่บอกว่าควรมองหาที่ไหน ตอนที่ 6 ดูว่าการใช้มากกว่าสองตัวช่วยตรงไหน ตอนที่ 7 ไล่ว่าตลาดไหนมีสายจูงจริง</p>
+
+<div class="pq">ถ้า edge ยังเหลืออยู่ มันน่าจะอยู่ที่ที่มีสายจูงจริง และมีบางอย่างกันคนส่วนใหญ่ไว้ข้างนอก</div>
+
+<!-- ═══════════════ ทำเอง ═══════════════ -->
+<h2>🛠️ ทำเองกับข้อมูลของคุณ: ชุดตรวจก่อนเชื่อ backtest</h2>
+
+<p>นี่คือแผนผังสี่ด่านในรูปโปรแกรม รันกับไฟล์ CSV ของคุณได้ในไม่ถึงนาที</p>
+<p><strong>ก่อนรัน:</strong> ต้องมี Python 3 กับ numpy และโฟลเดอร์ <code>tools/</code> ของชุดนี้ทั้งโฟลเดอร์ รันจากโฟลเดอร์บนสุดของชุด ขั้นตอนเต็มอยู่ใน <a href="statarb-slides-part8.html">ตอนที่ 8</a></p>
+
+<div class="station" data-n="1"><div class="bt">เตรียมข้อมูล</div>
+<p>CSV มีแถวหัวคอลัมน์ ราคาปิดของสองขา (ยังไม่ต้องแปลงเป็น log) ที่ปรับแตกพาร์และปันผลแล้ว เวลาปิดตรงกัน หัวคอลัมน์ห้ามมีเว้นวรรค (<code>ABC.BK</code> ได้ <code>ABC BK</code> ไม่ได้) แถวที่ราคาขาดขาใดขาหนึ่งโปรแกรมจะตัดทิ้งและบอกจำนวน ยิ่งยาวยิ่งดี ห้องทดลองใช้ <span data-f="p5.settings.bars">1,500</span> แท่ง (ราว 6 ปีรายวัน) เพราะชุดตรวจแบ่งครึ่งเป็น train กับ test ไม่แน่ใจเรื่องข้อมูลให้อ่าน <a href="statarb-data-quality.html">หกโรคของข้อมูล backtest</a> ก่อน</p></div>
+
+<div class="station" data-n="2"><div class="bt">รันชุดตรวจ 6 ข้อ</div>
+<p>คำสั่ง ตัวเลขท้ายคือต้นทุนรวมต่อขาของคุณเป็น bps (ค่าคอม + ครึ่งหนึ่งของ bid-ask + slippage ไม่ใส่ = 5) กับเกณฑ์ p (ไม่ใส่ = 0.05 สแกนมาหลายร้อยคู่ใช้ 0.01):</p>
+<pre class="code">python3 tools/sas_snippets/p5_battery.py my.csv Y X 15 0.01</pre>
+<p>ไม่ใส่ไฟล์จะตรวจคู่ตัวอย่าง good กับ fake ให้ดู</p>
+<!--CODE:p5_battery-->
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import numpy as np
+import sas_core as C
+
+# ใช้: python3 tools/sas_snippets/p5_battery.py [ไฟล์.csv Y X [c_bps] [p_max]]
+# ไม่ใส่ไฟล์ = คู่ตัวอย่าง good กับ fake · ครึ่งแรก = train ครึ่งหลัง = test
+a = sys.argv[1:]
+c, p_max = (float(a[3]) if len(a) &gt; 3 else 5) / 1e4, float(a[4]) if len(a) &gt; 4 else 0.05
+def battery(y, x):
+    h = len(y) // 2
+    r = C.eg_test(y[:h], x[:h])
+    p = C.p_value(r["adf"], C.mc_null_eg(r["n_obs"], r["n_vars"], lags=r["lags"], g=C.rng(580)))
+    e1, b1 = r["resid"], float(r["beta"][0])
+    e2 = y[h:] - r["alpha"] - b1 * x[h:]               # ครึ่งหลัง ด้วย α, β ของครึ่งแรก
+    sh, b2 = (e2.mean() - e1.mean()) / e1.std(ddof=1), float(C.ols(y[h:], x[h:])["coef"][1])
+    h1, h2 = C.fit_ar1(e1)["half_life"], C.fit_ar1(e2)["half_life"]
+    g, n1, n2 = (C.walk_forward_pair(y, x, cost_per_leg=k, lag=l)
+                 for k, l in ((0, 1), (c, 1), (c, 2)))
+    paid = g["pnl"].sum() - n1["pnl"].sum()            # ต้นทุนที่จ่ายไปทั้งหมด
+    q = g["pnl"].sum() / paid if paid &gt; 0 else 0.0     # = c ที่เท่าทุน ÷ c ที่ใช้
+    s1, s2 = n1["stats"]["sharpe"], n2["stats"]["sharpe"]
+    return [(f"{p:.3f}" if p &gt;= 0.001 else "&lt;0.001", "1 สายจูง: EG p ของครึ่งแรก", p &lt;= p_max),
+            (f"{sh:+.2f}", "2 ค่ากลางครึ่งหลังเลื่อนไม่ถึง 1 σ", abs(sh) &lt; 1),
+            (f"{b1:.2f} -&gt; {b2:.2f}", "3 β ครึ่งหลังต่างไม่ถึง 15%", abs(b2 / b1 - 1) &lt; 0.15),
+            (f"{h1:.1f} -&gt; {h2:.1f}", "4 half-life 2–60 ไม่ยืดเกิน 3 เท่า", 2 &lt;= h1 &lt;= 60 and h2 &lt;= 3 * h1),
+            (f"{q:.1f}", "5 กำไรขั้นต้น ÷ ต้นทุนที่จ่าย ≥ 3", q &gt;= 3),
+            (f"{s1:.2f} -&gt; {s2:.2f}", "6 Sharpe lag 2 ≥ ครึ่งของ lag 1", s1 &gt; 0 and s2 &gt;= s1 / 2)]
+pairs = {k: (C.demo_pair(k)["y"], C.demo_pair(k)["x"]) for k in ("good", "fake")}
+if a:   # หัวคอลัมน์ห้ามมีเว้นวรรค · แถวที่ราคาขาดขาใดขาหนึ่งถูกตัดทิ้ง
+    d = np.genfromtxt(a[0], delimiter=",", names=True, deletechars="")
+    y, x = np.log(d[a[1]]), np.log(d[a[2]])
+    ok = np.isfinite(y) &amp; np.isfinite(x)
+    pairs = {f"{a[1]}~{a[2]} (ตัด {np.sum(~ok)} แถว)": (y[ok], x[ok])}
+for name, (y, x) in pairs.items():
+    res = battery(y, x)
+    print(f"คู่ {name}: ผ่าน {sum(ok for *_, ok in res)} จาก 6 ข้อ"
+          f" (c = {c * 1e4:g} bps ต่อขา · เกณฑ์ EG p ≤ {p_max})")
+    print("\n".join(f"  {v:&gt;14}  {t}  -&gt; {'ผ่าน' if ok else 'ไม่ผ่าน'}" for v, t, ok in res))</pre>
+<!--/CODE:p5_battery-->
+<!--RUN:p5_battery-->
+<pre class="out">คู่ good: ผ่าน 6 จาก 6 ข้อ (c = 5 bps ต่อขา · เกณฑ์ EG p ≤ 0.05)
+          &lt;0.001  1 สายจูง: EG p ของครึ่งแรก  -&gt; ผ่าน
+           +0.31  2 ค่ากลางครึ่งหลังเลื่อนไม่ถึง 1 σ  -&gt; ผ่าน
+    1.38 -&gt; 1.38  3 β ครึ่งหลังต่างไม่ถึง 15%  -&gt; ผ่าน
+      8.2 -&gt; 9.5  4 half-life 2–60 ไม่ยืดเกิน 3 เท่า  -&gt; ผ่าน
+            19.7  5 กำไรขั้นต้น ÷ ต้นทุนที่จ่าย ≥ 3  -&gt; ผ่าน
+    1.74 -&gt; 1.48  6 Sharpe lag 2 ≥ ครึ่งของ lag 1  -&gt; ผ่าน
+คู่ fake: ผ่าน 1 จาก 6 ข้อ (c = 5 bps ต่อขา · เกณฑ์ EG p ≤ 0.05)
+           0.649  1 สายจูง: EG p ของครึ่งแรก  -&gt; ไม่ผ่าน
+           +0.65  2 ค่ากลางครึ่งหลังเลื่อนไม่ถึง 1 σ  -&gt; ผ่าน
+   1.05 -&gt; -0.08  3 β ครึ่งหลังต่างไม่ถึง 15%  -&gt; ไม่ผ่าน
+     74.3 -&gt; inf  4 half-life 2–60 ไม่ยืดเกิน 3 เท่า  -&gt; ไม่ผ่าน
+           -28.1  5 กำไรขั้นต้น ÷ ต้นทุนที่จ่าย ≥ 3  -&gt; ไม่ผ่าน
+  -0.32 -&gt; -0.20  6 Sharpe lag 2 ≥ ครึ่งของ lag 1  -&gt; ไม่ผ่าน</pre>
+<!--/RUN:p5_battery-->
+<p>คู่ good ผ่านครบ คู่ fake ตกข้อ 1 ตั้งแต่ด่านแรก แค่นั้นก็พอจะหยุดแล้ว</p></div>
+
+<div class="station" data-n="3"><div class="bt">อ่านผล: ข้อไหนไม่ผ่าน ชี้ไปโรคไหน</div>
+<div class="tw"><table>
+<tr><th>ข้อที่ไม่ผ่าน</th><th>แปลว่า</th><th>ไปที่</th></tr>
+<tr><td>1 EG ของครึ่งแรก</td><td>ไม่มีหลักฐานของสายจูง</td><td>โรค 1, 2 · หยุด</td></tr>
+<tr><td>2 ค่ากลางเลื่อน</td><td>สายจูงย้ายจุดผูก หรือเริ่มขาด</td><td>โรค 8 (ไหลช้า: โรค 5)</td></tr>
+<tr><td>3 β เปลี่ยน</td><td>อัตราส่วนป้องกันความเสี่ยงไหล ต้องประมาณแบบเดินหน้า</td><td>โรค 3 และตอนที่ 3</td></tr>
+<tr><td>4 half-life</td><td>สั้นผิดปกติ: noise · ยืดมาก: สายจูงอ่อนหรือขาด</td><td>โรค 6 หรือ 8</td></tr>
+<tr><td>5 กำไรขั้นต้น ÷ ต้นทุน</td><td>ค่าผ่านทางกินกำไร</td><td>โรค 4, 5, 7</td></tr>
+<tr><td>6 lag 2</td><td>กำไรมาจากราคาที่ซื้อขายไม่ได้จริง</td><td>โรค 6 (และตรวจโรค 3)</td></tr>
+<tr><td>ด่าน 4 (ไม่มีในโปรแกรม)</td><td>ไม้น้อย ยังแยกฝีมือจากดวงไม่ได้</td><td>โรค 9 · ยาหลอกในสถานีที่ 4</td></tr>
+</table></div>
+<p>ข้อ 5 = กำไรขั้นต้น ÷ ต้นทุนที่จ่าย = c ที่เท่าทุน ÷ c ที่ใช้ (break-even c / assumed c ในตารางล่าง) · ข้อ 6 มีความหมายเมื่อ Sharpe ของ lag 1 เป็นบวก · คู่ดีก็ตกได้ราว 1 ใน 10 โลก ส่วนใหญ่ข้อ 2 (ผ่านราว <span data-f="p5.d10.mc.good.pass_shift_pct">90</span>%) ตกข้อ 2 ข้อเดียวแบบเฉียด ให้ดูข้อ 1 กับ 4 ก่อนตัดสิน</p>
+<p>บนคู่ตัวอย่างห้าแบบของห้องทดลอง แต่ละโรคตกคนละข้อ: β ไหลตกข้อ <span data-f="p5.d10.pairs.drift.failed_checks">2, 3, 4</span> · สายจูงขาดตกข้อ <span data-f="p5.d10.pairs.break.failed_checks">4, 5, 6</span> · ราคามี noise ตกข้อ <span data-f="p5.d10.pairs.noisy.failed_checks">4, 6</span></p>
+<!--OUT:p5.outputs.battery-->
+<pre class="out">check                                     good      fake     drift     break     noisy
+--------------------------------------------------------------------------------------
+1 EG p-value (train half)               &lt;0.001      0.65    &lt;0.001    &lt;0.001    &lt;0.001
+2 mean shift, test vs train (sigma)      +0.31     +0.65     +2.64     -0.53     +0.27
+3 beta, train half                       1.381     1.054     1.581     1.414     1.401
+  beta, test half                        1.381    -0.077     2.012     1.610     1.432
+4 half-life, train (bars)                  8.2      74.3      12.0      12.2       1.8
+  half-life, test (bars)                   9.5       inf      49.5     945.7       3.3
+5 break-even c / assumed c                19.7     -28.1      15.8     -14.7       7.9
+6 Sharpe, lag 1                           1.74     -0.32      1.48     -0.34      1.15
+  Sharpe, lag 2                           1.48     -0.20      1.67     -0.33     -0.08
+checks passed (of 6)                         6         1         3         3         4
+checks failed                                - 1,3,4,5,6     2,3,4     4,5,6       4,6</pre>
+<!--/OUT:p5.outputs.battery-->
+<!--CHART:sas-p5-battery-->
+<div class="figw"><svg class="fig" viewBox="0 0 640 326" role="img" aria-label="ตารางอัตราผ่านของชุดตรวจหกข้อ: โลกที่มีสายจูงผ่านเกือบทุกข้อ โลกที่ไม่มีสายจูงแทบไม่มีโลกไหนผ่านครบ">
+<g font-family="Sarabun,sans-serif" font-size="11.5">
+<text x="334.2" y="24" text-anchor="middle" font-weight="700" fill="#374151">โลก good</text>
+<text x="334.2" y="39" text-anchor="middle" font-weight="700" fill="#374151">มีสายจูง</text>
+<text x="528.7" y="24" text-anchor="middle" font-weight="700" fill="#374151">โลก fake</text>
+<text x="528.7" y="39" text-anchor="middle" font-weight="700" fill="#374151">ไม่มีสายจูง</text>
+<text x="224.9" y="69" text-anchor="end" fill="#374151">1 · Engle-Granger ช่วง train: p &lt; 0.05</text>
+<text x="224.9" y="103" text-anchor="end" fill="#374151">2 · ค่ากลางช่วง test เลื่อน &lt; 1 σ</text>
+<text x="224.9" y="137" text-anchor="end" fill="#374151">3 · β ช่วง test ต่างจาก train &lt; 15%</text>
+<text x="224.9" y="171" text-anchor="end" fill="#374151">4 · half-life 2–60 แท่ง และไม่ยืดเกิน 3 เท่า</text>
+<text x="224.9" y="205" text-anchor="end" fill="#374151">5 · c ที่เท่าทุน ≥ 3 เท่าของ c ที่ใช้</text>
+<text x="224.9" y="239" text-anchor="end" fill="#374151">6 · Sharpe lag 2 ≥ 50% ของ lag 1</text>
+<text x="224.9" y="273" text-anchor="end" fill="#374151">ผ่านครบทั้ง 6 ข้อ</text>
+<rect x="237.9" y="49" width="192.6" height="32" rx="4" fill="#306bec"/><text x="334.2" y="69.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">100%</text><rect x="432.4" y="49" width="192.6" height="32" rx="4" fill="#eaf0fd"/><text x="528.7" y="69.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">3%</text><rect x="237.9" y="83" width="192.6" height="32" rx="4" fill="#4379ee"/><text x="334.2" y="103.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">90%</text><rect x="432.4" y="83" width="192.6" height="32" rx="4" fill="#c9d9fa"/><text x="528.7" y="103.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">20%</text><rect x="237.9" y="117" width="192.6" height="32" rx="4" fill="#326cec"/><text x="334.2" y="137.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">99%</text><rect x="432.4" y="117" width="192.6" height="32" rx="4" fill="#dde6fc"/><text x="528.7" y="137.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">10%</text><rect x="237.9" y="151" width="192.6" height="32" rx="4" fill="#306bec"/><text x="334.2" y="171.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">100%</text><rect x="432.4" y="151" width="192.6" height="32" rx="4" fill="#c9d9fa"/><text x="528.7" y="171.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">20%</text><rect x="237.9" y="185" width="192.6" height="32" rx="4" fill="#306bec"/><text x="334.2" y="205.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">100%</text><rect x="432.4" y="185" width="192.6" height="32" rx="4" fill="#90aff5"/><text x="528.7" y="205.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">50%</text><rect x="237.9" y="219" width="192.6" height="32" rx="4" fill="#306bec"/><text x="334.2" y="239.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">100%</text><rect x="432.4" y="219" width="192.6" height="32" rx="4" fill="#90aff5"/><text x="528.7" y="239.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">50%</text><rect x="237.9" y="253" width="192.6" height="32" rx="4" fill="#4379ee"/><text x="334.2" y="273.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff">90%</text><rect x="432.4" y="253" width="192.6" height="32" rx="4" fill="#f0f4fe"/><text x="528.7" y="273.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">0%</text>
+<rect x="411.8" y="302" width="19" height="10" rx="2" fill="#f0f4fe"/><rect x="431.8" y="302" width="19" height="10" rx="2" fill="#d8e3fb"/><rect x="451.8" y="302" width="19" height="10" rx="2" fill="#c0d2f9"/><rect x="471.8" y="302" width="19" height="10" rx="2" fill="#a8c1f7"/><rect x="491.8" y="302" width="19" height="10" rx="2" fill="#90aff5"/><rect x="511.8" y="302" width="19" height="10" rx="2" fill="#789ef3"/><rect x="531.8" y="302" width="19" height="10" rx="2" fill="#608df0"/><rect x="551.8" y="302" width="19" height="10" rx="2" fill="#487cee"/><rect x="571.8" y="302" width="19" height="10" rx="2" fill="#306bec"/>
+<text x="403.8" y="311" text-anchor="end" font-size="10.5" fill="#6b7280">0%</text>
+<text x="598.8" y="311" font-size="10.5" fill="#6b7280">100%</text>
+</g>
+</svg></div>
+<div class="cap">ข้อมูลจำลอง 300 โลกต่อแบบ · ตัวเลข = % ของโลกที่ผ่านข้อนั้น (ปัดตามความแม่นของการจำลอง) · ข้อ 1–4 จับ "ไม่มีสายจูง" ได้ดี ส่วนข้อ 5–6 คู่ fake ผ่านได้ราวครึ่งหนึ่งเพราะผลของมันคือการโยนเหรียญ (สองข้อนี้มีไว้จับต้นทุนและ noise ของราคา) · ผ่านครบหกข้อ: โลก good ราว 90% · โลก fake 1 ใน 300 โลก</div>
+<!--/CHART:sas-p5-battery-->
+<p>ใน <span data-f="p5.d10.mc.worlds">300</span> โลกต่อแบบ คู่ดีผ่านครบหกข้อ <span data-f="p5.d10.mc.good.pass_all_n">277</span> โลก คู่ปลอมแค่ <span data-f="p5.d10.mc.fake.pass_all_n">1</span> โลก แต่ข้อ 5 กับ 6 คู่ปลอมผ่านได้ราว <span data-f="p5.d10.mc.fake.pass_breakeven_pct">50</span>% เพราะผลของมันคือเหรียญ สองข้อนี้มีไว้จับต้นทุนกับ noise อย่าใช้แทนข้อ 1</p></div>
+
+<div class="station" data-n="4"><div class="bt">ยาหลอก: ให้ท่อ backtest ของคุณเทรดข้อมูลที่ไม่มีสายจูง</div>
+<p>ชุดตรวจ 6 ข้อตรวจ "คู่" ยาหลอก (placebo) ตรวจ "โค้ด" เราสร้างข้อมูลปลอมจากผลตอบแทนรายวันของคุณเอง โดยสุ่มหยิบวันมาเรียงใหม่ Y กับ X ย้ายวันไปด้วยกัน correlation จึงเท่าเดิม แต่สายจูงหายไปแน่นอน ท่อที่ซื่อสัตย์ต้องได้ราว 0</p>
+<!--CODE:p5_placebo-->
+<pre class="code">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import numpy as np
+import sas_core as C
+
+# ใช้: python3 tools/sas_snippets/p5_placebo.py [ไฟล์.csv Y X [จำนวนชุด]]   (ไม่ใส่ = คู่ good)
+# ยาหลอก: สุ่มหยิบ "วัน" ของผลตอบแทนมาเรียงใหม่ (หยิบแล้วใส่คืน) Y กับ X ย้ายวันไปด้วยกัน
+# → correlation เท่าเดิม แต่สายจูงหายไป · ท่อ backtest ที่ซื่อสัตย์ต้องได้ราว 0
+# ← แทน honest ด้วยฟังก์ชัน backtest ของคุณ: รับ y, x (log ราคา) คืน Sharpe ต่อปี
+def honest(y, x, c=0.0005):          # walk-forward: ใช้ข้อมูลถึงแท่งก่อนหน้าเท่านั้น
+    return C.walk_forward_pair(y, x, cost_per_leg=c)["stats"]["sharpe"]
+
+def peeking(y, x, c=0.0005):         # ท่อที่ผิด: β, μ, σ จากข้อมูลทั้งเส้น (เห็นอนาคต)
+    r = C.eg_test(y, x)
+    pos = C.band_positions((r["resid"] - r["resid"].mean()) / r["resid"].std())
+    pnl, _ = C.spread_pnl(y, x, np.full(len(y), r["beta"][0]), pos, cost_per_leg=c)
+    return C.perf_stats(pnl[250:])["sharpe"]
+
+a, p = sys.argv[1:], C.demo_pair("good")
+y, x, n = p["y"], p["x"], int(a[3]) if len(a) &gt; 3 else 40
+if a:   # หัวคอลัมน์ห้ามมีเว้นวรรค · แถวที่ราคาขาดขาใดขาหนึ่งถูกตัดทิ้ง
+    d = np.genfromtxt(a[0], delimiter=",", names=True, deletechars="")
+    y, x = np.log(d[a[1]]), np.log(d[a[2]])
+    y, x = y[np.isfinite(y + x)], x[np.isfinite(y + x)]
+g, dy, dx = C.rng(581), np.diff(y), np.diff(x)
+fake = []
+for _ in range(n):
+    k = g.integers(0, len(dy), len(dy))  # ใส่คืน: ถ้าแค่สลับลำดับ ปลายสองข้างจะถูกตรึงไว้
+    yp, xp = y[0] + np.r_[0, np.cumsum(dy[k])], x[0] + np.r_[0, np.cumsum(dx[k])]
+    fake.append((honest(yp, xp), peeking(yp, xp)))
+fake = np.array(fake)
+print(f"คู่ที่ทดสอบ (ไม่สุ่ม): Sharpe walk-forward {honest(y, x):+.2f}")
+print(f"ยาหลอก {n} ชุด (ไม่มีสายจูง):")
+for j, name in enumerate(("ท่อ walk-forward", "ท่อ β, μ, σ ทั้งเส้น (ผิด)")):
+    s = fake[:, j]
+    print(f"  ค่ากลาง {np.median(s):+.2f} · เส้น 95% {np.quantile(s, 0.95):+.2f}"
+          f" · กำไร {np.mean(s &gt; 0):4.0%} ของชุด  &lt;- {name}")</pre>
+<!--/CODE:p5_placebo-->
+<!--RUN:p5_placebo-->
+<pre class="out">คู่ที่ทดสอบ (ไม่สุ่ม): Sharpe walk-forward +1.74
+ยาหลอก 40 ชุด (ไม่มีสายจูง):
+  ค่ากลาง +0.02 · เส้น 95% +0.68 · กำไร  52% ของชุด  &lt;- ท่อ walk-forward
+  ค่ากลาง +0.78 · เส้น 95% +1.41 · กำไร  95% ของชุด  &lt;- ท่อ β, μ, σ ทั้งเส้น (ผิด)</pre>
+<!--/RUN:p5_placebo-->
+<p>ท่อ walk-forward ได้ค่ากลางใกล้ 0 และกำไรราวครึ่งหนึ่งของชุด ตรงกับโรคที่ 1 ส่วนท่อที่ใช้ β, μ, σ จากทั้งเส้นได้ค่าบวกเกือบทุกชุดทั้งที่ไม่มีสายจูงเลย</p>
+<p><strong>ใช้กับโค้ดของคุณ:</strong> แทนฟังก์ชัน <code>honest</code> ด้วยฟังก์ชัน backtest ของคุณที่รับ y, x (log ราคา) แล้วคืน Sharpe ต่อปี แล้วอ่านค่ากลางของยาหลอก:</p>
+<ul>
+<li>ราว 0: ผ่าน และ Sharpe จริงของคุณต้องสูงกว่าเส้น 95% ของยาหลอกชัดเจน ไม่ใช่แค่เหนือศูนย์</li>
+<li>บวกชัด: โค้ดแอบเห็นอนาคต</li>
+<li>ติดลบชัด: สงสัย lag 0 (โรคที่ 3) แท่งเข้าทุกไม้รับแรงผลักออก (เราลองแล้ว ค่ากลางติดลบชัดจริง)</li>
+</ul>
+<p>40 ชุดเป็นการดูเร็ว ก่อนเทียบกับเส้น 95% ให้ใส่จำนวนชุด 200 ขึ้นไปเป็นตัวเลขท้ายคำสั่ง · ยาหลอกเองก็มีกับดัก ต้องหยิบวันแบบใส่คืน ถ้าแค่สลับลำดับ ผลรวมการเคลื่อนที่ทั้งหมดเท่าเดิม สเปรดปลอมจึงเริ่มและจบที่ระดับเดิมเสมอ เท่ากับแอบผูกสายจูงไว้ที่ปลายสองข้าง ยาหลอกจึงอาจดูมีกำไรนิด ๆ ทั้งที่ไม่ควรมี</p></div>
+
+<div class="station" data-n="5"><div class="bt">ต้นทุนสองเท่า</div>
+<p>รันสถานีที่ 2 ซ้ำด้วยต้นทุนสองเท่า (เช่น 15 → 30) ข้อ 5 จะลดลงครึ่งหนึ่งพอดี เพราะต้นทุนไม่เปลี่ยนว่าเข้าไม้ไหน ถ้าข้อ 5 ที่ c จริงต่ำกว่า 2 แค่ต้นทุนสองเท่าก็ขาดทุน เช่น คู่ noisy ได้ <span data-f="p5.d10.pairs.noisy.breakeven_ratio">7.9</span> ที่ 5 bps ถ้าต้นทุนจริง 20 bps เหลือราว 2.0 ไม่ผ่าน เกณฑ์ <span data-f="p5.d10.rules.breakeven_ratio_min">3</span> เท่าเผื่อต้นทุนที่สูงกว่าที่คิด</p></div>
+
+<div class="station" data-n="6"><div class="bt">นับพารามิเตอร์และจำนวนครั้งที่ลอง</div>
+<p>จดทุกค่าที่เลือกเอง (คู่และจำนวนคู่ที่สแกน · หน้าต่าง train · ความถี่ประมาณใหม่ · เส้นเข้า-ออก · stop · หน้าต่าง z) และจำนวนแบบที่ลองไปทั้งหมด ยิ่งลองมาก Sharpe ที่ดีที่สุดยิ่งต้องหักมาก ใช้ <a href="tool-deflated-sharpe.html">เครื่องมือ Deflated Sharpe</a> ปรับตามจำนวนครั้งที่ลอง กฎหัวแม่มือ: เปลี่ยนค่าละครึ่งหนึ่งหรือสองเท่า ถ้าผลพัง ค่านั้นคือยอดแหลม ไม่ใช่ที่ราบ</p></div>
+
+<div class="dft"><div class="bt">⚠️ ค่าเริ่มต้นที่แนะนำ</div>
+<ul>
+<li>สายจูง: EG p ≤ <span data-f="p5.d10.rules.eg_p_max">0.05</span> บนช่วง train สแกนหลายร้อยคู่ใช้ 0.01 (ตัวเลขท้ายคำสั่ง · ห้องทดลอง: คู่ปลอมที่คาดว่าจะหลุดลดจาก <span data-f="p5.d2.level5.fp_expected">20</span> เหลือ <span data-f="p5.d2.level1.fp_expected">4</span>)</li>
+<li>ค่ากลางช่วง test เลื่อนน้อยกว่า <span data-f="p5.d10.rules.shift_max_sigma">1.0</span> σ · β เปลี่ยนน้อยกว่า <span data-f="p5.d10.rules.beta_change_max_pct">15</span>%</li>
+<li>half-life <span data-f="p5.d10.rules.hl_min_bars">2</span>–<span data-f="p5.d10.rules.hl_max_bars">60</span> แท่ง ช่วง test ไม่ยืดเกิน <span data-f="p5.d10.rules.hl_test_max_ratio">3</span> เท่า (เกณฑ์นี้ปรับบนห้องทดลอง ถือเป็นจุดเริ่ม)</li>
+<li>กำไรขั้นต้น ÷ ต้นทุนที่จ่าย ≥ <span data-f="p5.d10.rules.breakeven_ratio_min">3</span> · Sharpe lag 2 ≥ <span data-f="p5.d10.rules.lag2_keep_min_pct">50</span>% ของ lag 1</li>
+<li>หน้าต่าง z: ราว 8–16 เท่าของ half-life (ค่ากลางไหล: ราว 4–8 เท่า) ไม่รวมแท่งปัจจุบัน · ตัวเลขหลัก: ถ้าส่งคำสั่งหลังตลาดปิด ใช้ Sharpe ของ lag 2</li>
+<li>stop ตามระยะ z: ไม่ใช้ หรือวางไกล (z = 4) · time stop (ห้องทดลองใช้ <span data-f="p5.d8.max_hold_bars">60</span> แท่ง ราว 5 เท่าของ half-life) · สวิตช์ EG บน 500 แท่งล่าสุดที่ระดับ <span data-f="p5.d8.level_pct">10</span>%</li>
+<li>ขนาดสถานะ (ข้อเสนอของเรา ไม่ใช่ผลวัด): ถ้า z วิ่งไปสองเท่าของค่าสูงสุดที่เคยเห็นในช่วง train คุณยังขาดทุนไม่เกินที่รับได้ และไม่ใช้ margin ระหว่างทดสอบ</li>
+<li>ขา short: ยืมหุ้นได้จริงไหม ค่ายืมต่อปีเท่าไร ถูกเรียกคืนกลางทางได้ไหม และคุณจ่ายปันผลแทนผู้ให้ยืม</li>
+<li>ด่าน 4 (ดวง): ใช้ข้อมูลอย่างน้อยราว 5 ปีต่อคู่ (คู่ดีเทรดราว <span data-f="p5.d9.good.trades_mean">3.4</span> ไม้ต่อปี ห้าปีจึงได้ราว 17 ไม้) และ Sharpe ต้องสูงกว่าเส้น 95% ของยาหลอกชัดเจน ตัวเลขว่าคู่ปลอมหลอกได้บ่อยแค่ไหนอยู่ในโรคที่ 9</li>
+</ul></div>
+
+<!-- ═══════════════ ฉากหน้าจอ ═══════════════ -->
+<div class="scene"><div class="bt">🎬 ฉากหน้าจอ: คืนวันอาทิตย์ กับคู่ที่ "เกือบได้"</div>
+<p>คุณรัน backtest คู่หุ้นธนาคารสองตัวที่ผลตอบแทนเกาะกันแน่นมาก หกปีขาดทุนรวมเล็กน้อย ในหัวมีสามทาง: กลับด้านกลยุทธ์ ใส่ stop ให้แน่นขึ้น หรือสแกนอีกห้าร้อยคู่หาคู่ที่สวยกว่า</p>
+<p>คุณเลือกทางที่สี่ รันชุดตรวจก่อน ข้อ 1 กับ 2 ไม่ผ่าน ข้อ 5 กับ 6 ก็ไม่ผ่าน ทางเดิมคงเริ่มไล่ลดต้นทุน แต่คุณรู้แล้วว่าด่าน 1 ไม่ผ่าน ด่านหลังก็ไม่มีความหมาย และต่อให้ข้อ 5–6 ผ่าน ก็พิสูจน์อะไรไม่ได้ เพราะคู่ปลอมผ่านสองข้อนี้ราวครึ่งหนึ่ง ภาพชัดทันที</p>
+<p>กลับด้านก็คือเหรียญเดิม stop ที่แน่นขึ้นไม่ได้สร้างสายจูง และสแกนอีกห้าร้อยคู่ที่ระดับ 5% ถ้าไม่มีสายจูงเลยสักคู่ จะได้คู่ปลอมราว 500 × 5% = 25 คู่ที่ดูดีพอจะหลอกคุณรอบใหม่</p>
+<p>คุณปิดไฟล์ แล้วเริ่มจากคำถามที่ถูก: สายจูงของคู่นี้ควรมาจากไหน (วิธีคิดอยู่ใน <a href="statarb-slides-part7.html">ตอนที่ 7</a>)</p></div>
+
+<div class="bx bb"><div class="bt">🧭 นิสัยคิด</div>
+<ul>
+<li>ด่านไหนที่ยังไม่ได้ตรวจ และฉันกำลังแก้ด่านหลังทั้งที่ด่านหน้ายังไม่ผ่านหรือเปล่า</li>
+<li>ถ้ากลับด้านแล้วกำไร นี่คือเหรียญอีกด้านหรือเปล่า</li>
+<li>ตัวเลขนี้รู้ได้จริงตอนนั้นไหม และ lag 2 บอกอะไร</li>
+<li>กำไรต่อไม้กี่เท่าของค่าผ่านทาง</li>
+<li>ฉันลองมากี่แบบ คัดมาจากกี่คู่ และมีกี่ไม้</li>
+</ul></div>
+
+<!-- ═══════════════ เคสจริง ═══════════════ -->
+<h2>📉 เมื่อทฤษฎีพังจริง: สิงหาคม 2007 วันที่ทุกคนออกประตูเดียวกัน</h2>
+
+<p>ในสัปดาห์ที่เริ่มวันที่ 6 สิงหาคม 2007 กองทุนเชิงปริมาณแบบ long/short หุ้นหลายแห่งขาดทุนอย่างไม่เคยเกิดมาก่อน Khandani &amp; Lo (2007) ตั้งสมมติฐานว่าต้นเหตุคือการเทขายพอร์ต market-neutral ขนาดใหญ่หนึ่งพอร์ตหรือมากกว่าอย่างรวดเร็ว</p>
+
+<p>ผู้วิจัยจำลองกลยุทธ์สวนทาง (contrarian) รายวันบนหุ้นสหรัฐฯ ซึ่งเป็นญาติใกล้ของ pairs trading ตัวเลขต่อไปนี้เป็น<strong>ผลจำลองของผู้วิจัย</strong> ไม่ใช่ผลของกองทุนใด: แบบไม่ใช้ leverage ขาดทุน 1.16%, 2.83% และ 2.86% ในวันที่ 7, 8 และ 9 สิงหาคม รวม 6.85% ในสามวัน แล้ววันศุกร์ที่ 10 กำไร 5.92% ผู้วิจัยตีความการเด้งกลับว่าเป็นการขายเพราะถูกบังคับเรื่องสภาพคล่อง ไม่ใช่การพังถาวร Avellaneda &amp; Lee (2010) เห็นภาพเดียวกันใน backtest ของตัวเอง กลยุทธ์ดึงกลับทุกตัวขาดทุนหนักฉับพลัน แล้วฟื้นในราวสิบวัน</p>
+
+<ul>
+<li><strong>คนแห่ทำให้สายจูงยืดพร้อมกัน:</strong> ถ้าสมมติฐานนี้ถูก สายจูงไม่ได้ขาด แต่ถูกดึงยืดแรงเกินที่ backtest ในอดีตเคยเห็น เพราะผู้ถือไม้ชุดเดียวกันออกพร้อมกัน</li>
+<li><strong>ในผลจำลองนี้ ใครออกกลางสัปดาห์ก็พลาดวันศุกร์:</strong> stop ตามระยะ z จะสั่งออกตอนสายยืดที่สุด นี่คือภาพสายยืดกับสายขาดของโรคที่ 7 (การตีความของเรา กลยุทธ์ที่ผู้วิจัยจำลองไม่มี stop)</li>
+<li><strong>leverage ตัดสินว่าใครได้อยู่ถึงวันศุกร์:</strong> ผลจำลองเดียวกันที่ leverage 8 เท่า ขาดทุน 11.33% และ 11.43% ในวันที่ 8 และ 9 ขนาดสถานะจึงต้องทนการยืดที่ backtest ไม่เคยเห็น (วิธีคิดขนาดอยู่ในกล่องค่าเริ่มต้นของส่วน 🛠️)</li>
+</ul>
+
+<!-- ═══════════════ แบบฝึก ═══════════════ -->
+<h2>✍️ ลองทำเอง</h2>
+<ol>
+<li><p>ชุดตรวจของคุณตกข้อ 2, 3 และ 4 (ค่ากลางเลื่อน +2.1 σ · β 1.20 → 1.55 · half-life 10 → 41 แท่ง) แต่ข้อ 1 ผ่าน น่าจะเป็นโรคไหน ทำอะไรต่อ</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>สายจูงน่าจะมีจริง แต่จุดผูกหรือ β ไหล คู่ตัวอย่าง drift ของห้องทดลองก็ตกข้อ <span data-f="p5.d10.pairs.drift.failed_checks">2, 3, 4</span> แบบเดียวกัน (โรคที่ 5 และ 8 กับ β ไหลในโรคที่ 3) ประมาณ β แบบ walk-forward ใช้หน้าต่าง z ฝั่งสั้นของที่ราบ เพิ่มสวิตช์ตัดคู่ และอย่าแก้ด้วย stop ที่แน่นขึ้น</p></details></li>
+<li><p>สเปรดของคุณ σ = 0.8% · β = 1 · ต้นทุนรวม c = 10 bps ต่อขา · เข้าที่ z = 2 แบบ walk-forward (train 250 แท่ง half-life ใกล้ห้องทดลอง) ออกที่ 0 กำไรขั้นต้นต่อไม้ราวเท่าไร ผ่านข้อ 5 ไหม</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>สูตร 2 × 0.8% ÷ 2 = 0.8% = 80 bps หารด้วย z_sd ราว <span data-f="p5.d4.z_sd">1.25</span> เหลือราว 64 bps ต้นทุนครบรอบ 2c = 20 bps อัตราราว 3.2 ผ่านแบบเฉียด ถ้าต้นทุนจริงคือ 15 bps ต่อขา อัตราเหลือราว 2.1 ไม่ผ่าน ตรวจกับข้อมูลจริงได้ด้วยตัวเลขต้นทุนท้ายคำสั่งในสถานีที่ 2</p></details></li>
+<li><p>รายงานบอก: Sharpe lag 1 = 2.1 · lag 2 = 0.3 · half-life 1.5 แท่ง · ไม้ส่วนใหญ่ถือไม่กี่วัน น่าจะเป็นโรคไหน ตรวจอะไรต่อ</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>โรคที่ 6 การดึงกลับปลอมจาก noise ชุดตรวจจะตกข้อ 4 (half-life สั้นกว่า 2) และข้อ 6 (lag 2 เหลือไม่ถึงครึ่ง) ตรวจต่อว่าราคาปิดสองขาบันทึกเวลาเดียวกันไหม แล้วลงบัญชีที่ราคาฝั่ง bid หรือ ask</p></details></li>
+<li><p>เพื่อนบอกว่า "backtest ขาดทุนตลอด ก็กลับด้านสิ" คุณจะตอบอย่างไร</p>
+<details class="ans"><summary>ดูเฉลย</summary><p>ตรวจด่าน 1 ก่อน ถ้าไม่มีสายจูง ทั้งสองด้านคือเหรียญเดียวกัน ถ้ามีสายจูงแต่ขาดทุน ให้สงสัยนาฬิกา (lag 0 ลงโทษกลยุทธ์ดึงกลับ) และค่าผ่านทาง การกลับด้านคู่ที่มีสายจูงจริงคือการเดิมพันว่าสายจะไม่ดึงกลับ</p></details></li>
+</ol>
+
+<!-- ═══════════════ ปิดท้าย ═══════════════ -->
+<h2>ปิดคลินิก</h2>
+
+<div class="bx bg"><div class="bt">🎯 3 อย่างที่ต้องจำ</div><ol>
+<li>backtest ที่ขาดทุนอย่างซื่อสัตย์คือผลตรวจ ตรวจสี่ด่านตามลำดับ: สายจูง → นาฬิกา → ค่าผ่านทาง → ดวง</li>
+<li>คู่ไม่มีสายจูงคือเหรียญ ไม่ใช่เครื่องขาดทุน · บั๊กนาฬิกาเพี้ยนได้ทั้งสองทาง · stop ตามระยะตัดไม้ที่กำลังกลับมา แม้ในโลกจำลองที่จุดผูกเริ่มไหล</li>
+<li>ค่าผ่านทางต้องเทียบกับกำไรต่อไม้ กฎ walk-forward ต้องการ σ ของสเปรดมากกว่าสูตรราว <span data-f="p5.d4.z_sd">1.25</span> เท่าแค่เพื่อเท่าทุน (ห้องทดลอง: ราว <span data-f="p5.d4.measured_sigma_over_c">3.0</span>c)</li>
+</ol></div>
+
+<div class="bx bg"><div class="bt">✓ สรุปตอนที่ 5</div>
+<p><strong>ภาพเดียวที่ควรวาดได้จากความจำ:</strong> สี่กล่องเรียงลงมา สายจูง · นาฬิกา · ค่าผ่านทาง · ดวง ผ่านแล้วลงกล่องถัดไป ไม่ผ่านแล้วออกขวาไปหาโรคของกล่องนั้น</p>
+<p><strong>ประโยคเดียวที่เล่าให้เพื่อนฟังได้:</strong> "backtest ขาดทุนไม่ได้แปลว่าแพ้ ให้ตรวจตามลำดับว่าสายจูงมีจริงไหม นาฬิกาตรงไหม กำไรต่อไม้ชนะค่าผ่านทางไหม และไม้มากพอจะไม่ใช่ดวงไหม"</p>
+<ul>
+<li>แยกได้ว่าการขาดทุนมาจากเหรียญ บั๊กเวลา ต้นทุน กฎที่ตัดกำไร หรือดวง</li>
+<li>คำนวณได้ว่า σ ของสเปรดต้องมากแค่ไหนเมื่อเทียบกับต้นทุนของคุณ</li>
+<li>รันชุดตรวจ 6 ข้อกับยาหลอกบนข้อมูลของคุณเองได้</li>
+</ul></div>
+
+<div class="pq">รักษาครบทุกโรคแล้ว คู่เดียวก็ยังบางและกระตุก: ปีละราว <span data-f="p5.d9.good.trades_mean">3.4</span> ไม้ และ Sharpe ของปีเดียวแกว่งตั้งแต่ราว <span data-f="p5.d9.good.sharpe_p5">0.4</span> ถึง <span data-f="p5.d9.good.sharpe_p95">2.8</span> แม้คู่จะแข็งแรงเต็มที่ ถ้าอย่างนั้น ใช้มากกว่าสองตัวได้ไหม ตอนที่ 6 ตอบคำถามที่คุณถามไว้ตั้งแต่แรก</div>
+
+<div class="bx"><div class="bt">📚 Papers</div><ul>
+<li>Gatev, E., Goetzmann, W. N. &amp; Rouwenhorst, K. G. (2006). Pairs Trading: Performance of a Relative-Value Arbitrage Rule. <em>Review of Financial Studies</em> 19(3), 797–827</li>
+<li>Do, B. &amp; Faff, R. (2010). Does Simple Pairs Trading Still Work? <em>Financial Analysts Journal</em> 66(4), 83–95</li>
+<li>Do, B. &amp; Faff, R. (2012). Are Pairs Trading Profits Robust to Trading Costs? <em>Journal of Financial Research</em> 35(2), 261–287</li>
+<li>Avellaneda, M. &amp; Lee, J.-H. (2010). Statistical arbitrage in the US equities market. <em>Quantitative Finance</em> 10(7), 761–782</li>
+<li>Rad, H., Low, R. K. Y. &amp; Faff, R. (2016). The profitability of pairs trading strategies: distance, cointegration and copula methods. <em>Quantitative Finance</em> 16(10), 1541–1558</li>
+<li>Khandani, A. E. &amp; Lo, A. W. (2007). What Happened to the Quants in August 2007? <em>Journal of Investment Management</em> 5(4)</li>
+<li>Shleifer, A. &amp; Vishny, R. W. (1997). The Limits of Arbitrage. <em>Journal of Finance</em> 52(1), 35–55</li>
+<li>Bailey, D. H. &amp; López de Prado, M. (2014). The Deflated Sharpe Ratio. <em>Journal of Portfolio Management</em> 40(5), 94–107 · ปรับ Sharpe ตามจำนวนครั้งที่ลอง (สถานีที่ 6)</li>
+<li>Harvey, C. R., Liu, Y. &amp; Zhu, H. (2016). … and the Cross-Section of Expected Returns. <em>Review of Financial Studies</em> 29(1), 5–68 · การทดสอบหลายครั้งในงานวิจัยปัจจัย (โรคที่ 2)</li>
+</ul></div>
+
+<div class="bx ba"><div class="bt">📖 อ่านต่อ</div><ul>
+<li><a href="tool-deflated-sharpe.html">backtest ของคุณกำลังโกหกอยู่ไหม</a> · <a href="nq-tool-samplesize.html">ต้องเทรดกี่ไม้ถึงจะรู้</a> · <a href="statarb-data-quality.html">ข้อมูลที่ใช้ทดสอบเชื่อได้แค่ไหน</a></li>
+<li><a href="nq-part8.html">คิดแบบ Quant Part 8</a> · <a href="theory-part5.html">ทฤษฎีตำนานของ Quant Part V</a> · <a href="statarb-live-vs-backtest.html">live กับ backtest ไม่ตรงกัน</a> · <a href="statarb-alpha-decay.html">edge เสื่อม</a></li>
+<li>หนังสือ <em>Statistical Arbitrage</em> เล่มเดิม (อีก branch): <code>statarb-ch5</code> Cointegration · <code>statarb-ch10b</code> Spread data engineering · <code>statarb-ch11</code> Entry/Exit state machine · <code>statarb-ch19</code> Cost analysis &amp; edge · <code>statarb-ch24</code> Case studies</li>
+</ul></div>
+
+<div class="bx"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<p><strong>3 คำต้องจำก่อน</strong></p>
+<ul>
+<li><strong>look-ahead bias (การมองอนาคต)</strong> · ใช้ข้อมูลที่ ณ เวลานั้นยังไม่มีมาตัดสินใจ ผลเพี้ยนได้ทั้งดีขึ้นและแย่ลง</li>
+<li><strong>lag (การเลื่อนสถานะ)</strong> · จำนวนแท่งระหว่างตอนตัดสินใจกับแท่งแรกที่รับผล lag 1 = ได้ราคาปิดที่สร้างสัญญาณ lag 2 = ช้าไปหนึ่งแท่ง</li>
+<li><strong>break-even cost (ต้นทุนจุดเท่าทุน)</strong> · c ต่อขาที่ทำให้กำไรต่อไม้เหลือศูนย์ เท่ากับกำไรขั้นต้นต่อไม้หารสอง</li>
+</ul>
+<p><strong>ที่เหลือ</strong></p>
+<ul>
+<li><strong>selection bias (อคติจากการคัด)</strong> · ผลของสิ่งที่ถูกคัดมาเพราะดูดี มักหดเมื่อเดินหน้า</li>
+<li><strong>hold-out (ข้อมูลที่กันไว้)</strong> · ช่วงที่ไม่แตะเลยตอนคัดหรือปรับ ใช้ตัดสินครั้งเดียว</li>
+<li><strong>precision (ความแม่น)</strong> · สัดส่วนของคู่ที่คัดมาซึ่งมีสายจูงจริง</li>
+<li><strong>plateau (ที่ราบ)</strong> · ช่วงของค่าพารามิเตอร์ที่ให้ผลพอ ๆ กัน ตรงข้ามกับยอดแหลม</li>
+<li><strong>bid-ask bounce</strong> · ราคาปิดที่สลับระหว่างฝั่งซื้อกับฝั่งขาย ทำให้เกิดการดึงกลับปลอม</li>
+<li><strong>time stop (จำกัดเวลาถือ)</strong> · ปิดไม้เมื่อถือนานเกินกำหนด ไม่ว่าระยะห่างเป็นเท่าไร</li>
+<li><strong>kill switch (สวิตช์ตัดคู่)</strong> · ทดสอบสายจูงซ้ำเป็นระยะ ไม่ผ่านก็หยุดเทรดคู่นั้น</li>
+<li><strong>placebo test (ยาหลอก)</strong> · ให้ท่อ backtest เทรดข้อมูลที่รู้ว่าไม่มีสายจูง เพื่อตรวจว่าโค้ดซื่อสัตย์</li>
+<li><strong>crowding (คนแห่)</strong> · ผู้เล่นจำนวนมากถือไม้ชุดเดียวกัน กำไรบางลงและออกพร้อมกันในวันแย่</li>
+</ul></div>
+
+<p class="cc">เนื้อหานี้เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน · ตัวเลขจากห้องทดลองทั้งหมดเป็นข้อมูลจำลอง</p>
+
+<p class="nav">← <a href="statarb-slides-part4.html">ตอนที่ 4 อ่านกราฟ ε กับเส้น VaR</a> · <a href="statarb-slides-index.html">เริ่มที่นี่</a> · <a href="statarb-slides-part6.html">ตอนที่ 6 มากกว่าสองตัว</a> →</p>
+
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
