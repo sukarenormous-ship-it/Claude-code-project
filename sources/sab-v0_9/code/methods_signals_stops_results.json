@@ -1,0 +1,649 @@
+{
+  "scope": "Synthetic payoff identities, supplied forecasts and deterministic observed-bar rules only; no market-data fitting, strategy backtest or broker engine.",
+  "replication": {
+    "assumptions": [
+      "European call and put: same underlying, strike, expiry, currency and unit size",
+      "Non-dividend-paying underlying; continuously compounded interest rate is zero",
+      "No fees, financing frictions, default or early exercise in this payoff identity"
+    ],
+    "strike": "100",
+    "spot_price": "102",
+    "call_premium": "6",
+    "put_premium": "4",
+    "interest_rate": "0",
+    "cash_today": "100",
+    "initial_synthetic_cost": "102",
+    "identity": "max(S_T-K,0) - max(K-S_T,0) + K = S_T",
+    "interpretation": "Equal initial costs and terminal payoffs; this example does not show a pricing arbitrage.",
+    "rows": [
+      {
+        "terminal_stock_price": "80",
+        "long_call_payoff": "0",
+        "short_put_payoff": "-20",
+        "option_pair_payoff": "-20",
+        "cash_at_expiry": "100",
+        "synthetic_payoff": "80",
+        "stock_payoff": "80",
+        "pnl_of_either_position": "-22"
+      },
+      {
+        "terminal_stock_price": "100",
+        "long_call_payoff": "0",
+        "short_put_payoff": "0",
+        "option_pair_payoff": "0",
+        "cash_at_expiry": "100",
+        "synthetic_payoff": "100",
+        "stock_payoff": "100",
+        "pnl_of_either_position": "-2"
+      },
+      {
+        "terminal_stock_price": "120",
+        "long_call_payoff": "20",
+        "short_put_payoff": "0",
+        "option_pair_payoff": "20",
+        "cash_at_expiry": "100",
+        "synthetic_payoff": "120",
+        "stock_payoff": "120",
+        "pnl_of_either_position": "18"
+      }
+    ]
+  },
+  "forecast": {
+    "fixed_quantity_forecast": {
+      "quantities": {
+        "A": "10",
+        "B": "-10"
+      },
+      "expected_price_changes_over_same_horizon": {
+        "A": "0.8",
+        "B": "0.2"
+      },
+      "forecast_gross_pnl": "6",
+      "forecast_roundtrip_cost": "3",
+      "forecast_net_before_risk_buffer": "3",
+      "decision_risk_buffer": "1",
+      "decision_margin": "2",
+      "interpretation": "All are decision-time assumptions. The risk buffer is a policy hurdle, not a cash expense. No realized P&L is supplied."
+    },
+    "separate_win_probability_example": {
+      "probability_win": "0.65",
+      "gross_pnl_if_win": "1",
+      "gross_pnl_if_loss": "-3",
+      "cost_in_each_outcome": "0.1",
+      "expected_gross_pnl": "-0.4",
+      "expected_net_pnl": "-0.5",
+      "interpretation": "A separate hypothetical payoff distribution: 65% wins does not imply positive expected net profit."
+    }
+  },
+  "stops": {
+    "frozen_signal": {
+      "definition": "X = A - B",
+      "mean": "0",
+      "sigma": "1",
+      "B_price": "100",
+      "A_price": "100 + X"
+    },
+    "rules": {
+      "short_entry_z_at_least": "2",
+      "short_exit_z_at_most": "0.5",
+      "basket_units": "10",
+      "entry_fee": "0.4",
+      "exit_fee": "0.6",
+      "loss_limit_on_net_liquidation_pnl": "15",
+      "max_bars_after_entry": 3,
+      "exit_precedence": [
+        "loss_limit",
+        "signal_recovery",
+        "time_limit"
+      ],
+      "fill_convention": "Observe each bar, then assume entry/exit at that exact observed price. No intrabar prices, order book, queue or maker fills are modeled.",
+      "accounting_scope": "Fixed-quantity linear price P&L and two explicit fees only; no financing, borrow availability, margin, market impact or other cash flows modeled."
+    },
+    "short_loss_threshold_in_x_for_this_entry": "3.5",
+    "loss_overshoot_in_gap_case": "6",
+    "paths": {
+      "convergence": {
+        "side": "short",
+        "final_state": "FLAT",
+        "observations": [
+          {
+            "bar": 0,
+            "x": "0",
+            "z": "0",
+            "prices": {
+              "A": "100",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "flat",
+            "state_after": "FLAT"
+          },
+          {
+            "bar": 1,
+            "x": "2.1",
+            "z": "2.1",
+            "prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "entry",
+            "reason": "signal_threshold",
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "event_cashflow": "20.6",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 2,
+            "x": "1.7",
+            "z": "1.7",
+            "prices": {
+              "A": "101.7",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 1,
+            "gross_price_pnl": "4",
+            "mark_pnl_after_paid_entry_fee": "3.6",
+            "net_liquidation_pnl_if_exit_now": "3",
+            "event": "hold",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 3,
+            "x": "0.4",
+            "z": "0.4",
+            "prices": {
+              "A": "100.4",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 2,
+            "gross_price_pnl": "17",
+            "mark_pnl_after_paid_entry_fee": "16.6",
+            "net_liquidation_pnl_if_exit_now": "16",
+            "event": "exit",
+            "reason": "signal_recovery",
+            "event_cashflow": "-4.6",
+            "state_after": "FLAT"
+          }
+        ],
+        "trades": [
+          {
+            "entry_bar": 1,
+            "entry_x": "2.1",
+            "entry_prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "entry_cashflow": "20.6",
+            "exit_bar": 3,
+            "exit_x": "0.4",
+            "exit_prices": {
+              "A": "100.4",
+              "B": "100"
+            },
+            "elapsed_bars": 2,
+            "exit_reason": "signal_recovery",
+            "gross_price_pnl": "17",
+            "entry_fee": "0.4",
+            "exit_fee": "0.6",
+            "exit_cashflow": "-4.6",
+            "net_pnl": "16",
+            "sum_of_trade_cashflows": "16"
+          }
+        ]
+      },
+      "time": {
+        "side": "short",
+        "final_state": "FLAT",
+        "observations": [
+          {
+            "bar": 0,
+            "x": "0",
+            "z": "0",
+            "prices": {
+              "A": "100",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "flat",
+            "state_after": "FLAT"
+          },
+          {
+            "bar": 1,
+            "x": "2.1",
+            "z": "2.1",
+            "prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "entry",
+            "reason": "signal_threshold",
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "event_cashflow": "20.6",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 2,
+            "x": "2",
+            "z": "2",
+            "prices": {
+              "A": "102",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 1,
+            "gross_price_pnl": "1",
+            "mark_pnl_after_paid_entry_fee": "0.6",
+            "net_liquidation_pnl_if_exit_now": "0",
+            "event": "hold",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 3,
+            "x": "1.9",
+            "z": "1.9",
+            "prices": {
+              "A": "101.9",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 2,
+            "gross_price_pnl": "2",
+            "mark_pnl_after_paid_entry_fee": "1.6",
+            "net_liquidation_pnl_if_exit_now": "1",
+            "event": "hold",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 4,
+            "x": "1.8",
+            "z": "1.8",
+            "prices": {
+              "A": "101.8",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 3,
+            "gross_price_pnl": "3",
+            "mark_pnl_after_paid_entry_fee": "2.6",
+            "net_liquidation_pnl_if_exit_now": "2",
+            "event": "exit",
+            "reason": "time_limit",
+            "event_cashflow": "-18.6",
+            "state_after": "FLAT"
+          }
+        ],
+        "trades": [
+          {
+            "entry_bar": 1,
+            "entry_x": "2.1",
+            "entry_prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "entry_cashflow": "20.6",
+            "exit_bar": 4,
+            "exit_x": "1.8",
+            "exit_prices": {
+              "A": "101.8",
+              "B": "100"
+            },
+            "elapsed_bars": 3,
+            "exit_reason": "time_limit",
+            "gross_price_pnl": "3",
+            "entry_fee": "0.4",
+            "exit_fee": "0.6",
+            "exit_cashflow": "-18.6",
+            "net_pnl": "2",
+            "sum_of_trade_cashflows": "2"
+          }
+        ]
+      },
+      "gap": {
+        "side": "short",
+        "final_state": "FLAT_PAUSED",
+        "observations": [
+          {
+            "bar": 0,
+            "x": "0",
+            "z": "0",
+            "prices": {
+              "A": "100",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "flat",
+            "state_after": "FLAT"
+          },
+          {
+            "bar": 1,
+            "x": "2.1",
+            "z": "2.1",
+            "prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "state_before": "FLAT",
+            "event": "entry",
+            "reason": "signal_threshold",
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "event_cashflow": "20.6",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 2,
+            "x": "2.8",
+            "z": "2.8",
+            "prices": {
+              "A": "102.8",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 1,
+            "gross_price_pnl": "-7",
+            "mark_pnl_after_paid_entry_fee": "-7.4",
+            "net_liquidation_pnl_if_exit_now": "-8",
+            "event": "hold",
+            "state_after": "OPEN_SHORT"
+          },
+          {
+            "bar": 3,
+            "x": "4.1",
+            "z": "4.1",
+            "prices": {
+              "A": "104.1",
+              "B": "100"
+            },
+            "state_before": "OPEN_SHORT",
+            "elapsed_bars": 2,
+            "gross_price_pnl": "-20",
+            "mark_pnl_after_paid_entry_fee": "-20.4",
+            "net_liquidation_pnl_if_exit_now": "-21",
+            "event": "exit",
+            "reason": "loss_limit",
+            "event_cashflow": "-41.6",
+            "state_after": "FLAT_PAUSED"
+          }
+        ],
+        "trades": [
+          {
+            "entry_bar": 1,
+            "entry_x": "2.1",
+            "entry_prices": {
+              "A": "102.1",
+              "B": "100"
+            },
+            "quantities": {
+              "A": "-10",
+              "B": "10"
+            },
+            "entry_cashflow": "20.6",
+            "exit_bar": 3,
+            "exit_x": "4.1",
+            "exit_prices": {
+              "A": "104.1",
+              "B": "100"
+            },
+            "elapsed_bars": 2,
+            "exit_reason": "loss_limit",
+            "gross_price_pnl": "-20",
+            "entry_fee": "0.4",
+            "exit_fee": "0.6",
+            "exit_cashflow": "-41.6",
+            "net_pnl": "-21",
+            "sum_of_trade_cashflows": "-21"
+          }
+        ]
+      }
+    },
+    "long_symmetry_check": {
+      "side": "long",
+      "final_state": "FLAT",
+      "observations": [
+        {
+          "bar": 0,
+          "x": "0",
+          "z": "0",
+          "prices": {
+            "A": "100",
+            "B": "100"
+          },
+          "state_before": "FLAT",
+          "event": "flat",
+          "state_after": "FLAT"
+        },
+        {
+          "bar": 1,
+          "x": "-2.1",
+          "z": "-2.1",
+          "prices": {
+            "A": "97.9",
+            "B": "100"
+          },
+          "state_before": "FLAT",
+          "event": "entry",
+          "reason": "signal_threshold",
+          "quantities": {
+            "A": "10",
+            "B": "-10"
+          },
+          "event_cashflow": "20.6",
+          "state_after": "OPEN_LONG"
+        },
+        {
+          "bar": 2,
+          "x": "-1.7",
+          "z": "-1.7",
+          "prices": {
+            "A": "98.3",
+            "B": "100"
+          },
+          "state_before": "OPEN_LONG",
+          "elapsed_bars": 1,
+          "gross_price_pnl": "4",
+          "mark_pnl_after_paid_entry_fee": "3.6",
+          "net_liquidation_pnl_if_exit_now": "3",
+          "event": "hold",
+          "state_after": "OPEN_LONG"
+        },
+        {
+          "bar": 3,
+          "x": "-0.4",
+          "z": "-0.4",
+          "prices": {
+            "A": "99.6",
+            "B": "100"
+          },
+          "state_before": "OPEN_LONG",
+          "elapsed_bars": 2,
+          "gross_price_pnl": "17",
+          "mark_pnl_after_paid_entry_fee": "16.6",
+          "net_liquidation_pnl_if_exit_now": "16",
+          "event": "exit",
+          "reason": "signal_recovery",
+          "event_cashflow": "-4.6",
+          "state_after": "FLAT"
+        }
+      ],
+      "trades": [
+        {
+          "entry_bar": 1,
+          "entry_x": "-2.1",
+          "entry_prices": {
+            "A": "97.9",
+            "B": "100"
+          },
+          "quantities": {
+            "A": "10",
+            "B": "-10"
+          },
+          "entry_cashflow": "20.6",
+          "exit_bar": 3,
+          "exit_x": "-0.4",
+          "exit_prices": {
+            "A": "99.6",
+            "B": "100"
+          },
+          "elapsed_bars": 2,
+          "exit_reason": "signal_recovery",
+          "gross_price_pnl": "17",
+          "entry_fee": "0.4",
+          "exit_fee": "0.6",
+          "exit_cashflow": "-4.6",
+          "net_pnl": "16",
+          "sum_of_trade_cashflows": "16"
+        }
+      ]
+    },
+    "persistent_pause_demo": {
+      "observations": [
+        {
+          "bar": 0,
+          "x": "0",
+          "z": "0",
+          "prices": {
+            "A": "100",
+            "B": "100"
+          },
+          "state_before": "FLAT",
+          "event": "flat",
+          "state_after": "FLAT"
+        },
+        {
+          "bar": 1,
+          "x": "2.1",
+          "z": "2.1",
+          "prices": {
+            "A": "102.1",
+            "B": "100"
+          },
+          "state_before": "FLAT",
+          "event": "entry",
+          "reason": "signal_threshold",
+          "quantities": {
+            "A": "-10",
+            "B": "10"
+          },
+          "event_cashflow": "20.6",
+          "state_after": "OPEN_SHORT"
+        },
+        {
+          "bar": 2,
+          "x": "2.8",
+          "z": "2.8",
+          "prices": {
+            "A": "102.8",
+            "B": "100"
+          },
+          "state_before": "OPEN_SHORT",
+          "elapsed_bars": 1,
+          "gross_price_pnl": "-7",
+          "mark_pnl_after_paid_entry_fee": "-7.4",
+          "net_liquidation_pnl_if_exit_now": "-8",
+          "event": "hold",
+          "state_after": "OPEN_SHORT"
+        },
+        {
+          "bar": 3,
+          "x": "4.1",
+          "z": "4.1",
+          "prices": {
+            "A": "104.1",
+            "B": "100"
+          },
+          "state_before": "OPEN_SHORT",
+          "elapsed_bars": 2,
+          "gross_price_pnl": "-20",
+          "mark_pnl_after_paid_entry_fee": "-20.4",
+          "net_liquidation_pnl_if_exit_now": "-21",
+          "event": "exit",
+          "reason": "loss_limit",
+          "event_cashflow": "-41.6",
+          "state_after": "FLAT_PAUSED"
+        },
+        {
+          "bar": 4,
+          "x": "3.8",
+          "z": "3.8",
+          "prices": {
+            "A": "103.8",
+            "B": "100"
+          },
+          "state_before": "FLAT_PAUSED",
+          "event": "entry_blocked_by_pause",
+          "reason": "loss_limit_exit",
+          "state_after": "FLAT_PAUSED"
+        },
+        {
+          "bar": 5,
+          "x": "2.4",
+          "z": "2.4",
+          "prices": {
+            "A": "102.4",
+            "B": "100"
+          },
+          "state_before": "FLAT_PAUSED",
+          "event": "entry_blocked_by_pause",
+          "reason": "loss_limit_exit",
+          "state_after": "FLAT_PAUSED"
+        }
+      ],
+      "resume_attempts": [
+        {
+          "accepted": false,
+          "reason": "explicit_request_required",
+          "state_after": "FLAT_PAUSED"
+        },
+        {
+          "accepted": false,
+          "reason": "checks_not_passed",
+          "state_after": "FLAT_PAUSED"
+        },
+        {
+          "accepted": true,
+          "reason": "resumed_flat_after_checks",
+          "state_after": "FLAT"
+        }
+      ],
+      "final_state": "FLAT",
+      "blocked_entry_observations": 2,
+      "closed_trade_count": 1,
+      "resume_attempt_while_open": {
+        "accepted": false,
+        "reason": "position_must_be_flat",
+        "state_after": "OPEN_SHORT_ENTRIES_PAUSED"
+      },
+      "existing_position_still_monitored_while_entries_paused": true,
+      "interpretation": "Reaching a new entry signal does not clear a pause. Only an explicit request after flatness and successful checks re-arms entries; no new trade is automatically submitted by resume()."
+    }
+  },
+  "checks_passed": [
+    "European option/cash payoff identity and equal initial cost",
+    "Forecast gross, expected net and policy margin remain distinct",
+    "65 percent win probability can have negative expected net P&L",
+    "Each stopped trade reconciles fixed-quantity price P&L with cash flows",
+    "Convergence, elapsed-time and gap-loss exits use observed prices",
+    "Mirrored long-basket case has exact net P&L 16",
+    "Entry pause persists and explicit resume requires flatness and checks"
+  ]
+}
