@@ -66,3 +66,30 @@ def page(title, sub, desc, body):
     cover = (f'\n<div class="cover">\n<h1>{BOOK} · เล่ม 1 — {BOOK_TH}</h1>\n'
              f'<div class="sub">{sub}</div>\n<div class="desc">{desc}</div>\n</div>\n')
     return head + cover + body + "\n" + tail
+
+
+def fmt(v):
+    """ตัวเลขจาก JSON → ข้อความที่พิมพ์ในบท: comma หลักพัน · ลบใช้ U+2212 · ทศนิยมตามที่ JSON เก็บ"""
+    if isinstance(v, bool) or v is None:
+        return "" if v is None else str(v)
+    if isinstance(v, int):
+        s = f"{abs(v):,}"
+    elif isinstance(v, float):
+        txt = repr(abs(v))
+        dec = len(txt.split(".")[1]) if "." in txt and "e" not in txt else 2
+        s = f"{abs(v):,.{dec}f}"
+    else:
+        return str(v)
+    return ("−" if v < 0 else "") + s
+
+
+def get_path(fig, path):
+    cur = fig
+    for part in path.split("."):
+        if isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        elif isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
+            cur = cur[int(part)]
+        else:
+            raise KeyError(path)
+    return cur
