@@ -29,7 +29,7 @@ import sab_book as B  # noqa: E402
 FONT = 'font-family="Sarabun,sans-serif"'
 C = {"green": "#16a34a", "red": "#dc2626", "purple": "#7c3aed", "blue": "#2563eb", "amber": "#d97706",
      "grey": "#9ca3af", "ink": "#374151", "muted": "#6b7280", "grid": "#f3f4f6", "axis": "#d1d5db"}
-SRC = {"สอน": "🔢 ตัวเลขสมมติเพื่อสอน", "จำลอง": "🎲 จำลอง seed คงที่", "จริง": "📡 ข้อมูลจริง (สแนปช็อต)",
+SRC = {"สอน": "🔢 ตัวเลขสมมติเพื่อสอน", "จำลอง": "🎲 จำลอง (ผลนิ่งเมื่อสุ่มใหม่ 30 ชุด)", "จริง": "📡 ข้อมูลจริง (สแนปช็อต)",
        "แนวคิด": "🔢 ภาพแนวคิด ไม่ใช่ข้อมูล"}
 
 PLANNED_STAR = ["sab-converge", "sab-cost-roundtrip", "sab-tail", "sab-shape-strips", "sab-ledger-bars", "sab-two-pockets",
@@ -163,7 +163,8 @@ def lines(xs, series, title, unit="", xlabel="", W=760, H=320, marks=None):
         out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round"/>')
     for x, y, lab in marks or []:
         out.append(f'<circle cx="{X(x):.1f}" cy="{f.y(y):.1f}" r="4.5" fill="{C["purple"]}"/>')
-        out.append(text(X(x) + 8, f.y(y) - 8, lab, 11.5, C["purple"], weight=700))
+        right = X(x) > W * 0.7
+        out.append(text(X(x) + (-8 if right else 8), f.y(y) - 8, lab, 11.5, C["purple"], "end" if right else "start", 700))
     lx = f.L
     for name, _, col in series:
         out.append(f'<rect x="{lx}" y="{f.T - 16}" width="11" height="11" rx="2" fill="{col}"/>')
@@ -259,6 +260,175 @@ def chart(key):
         return fn
     return deco
 
+
+
+def grouped_bars(cats, series, title, unit="", W=760, H=330, legend=True):
+    """series = [(ชื่อ, [ค่า], สี)] · แท่งเรียงข้างกันต่อหมวด · ค่าลบลงใต้ศูนย์"""
+    vals = [v for _, s, _ in series for v in s]
+    f = Frame(min(vals + [0]), max(vals + [0]), W, H, T=70)
+    out = f.grid(nice_ticks(min(vals), max(vals)), unit)
+    gw = (W - f.L - f.R) / len(cats)
+    bw = min(46, (gw - 24) / len(series))
+    for i, c in enumerate(cats):
+        cx = f.L + gw * i + gw / 2
+        for j, (_, s, col) in enumerate(series):
+            v = s[i]
+            x = cx - len(series) * (bw + 4) / 2 + j * (bw + 4)
+            y0, y1 = f.y(0), f.y(v)
+            out.append(f'<rect x="{x:.1f}" y="{min(y0, y1):.1f}" width="{bw:.1f}" height="{max(1, abs(y1 - y0)):.1f}" rx="2" fill="{col}"/>')
+            lab = ("+" if v > 0 else "") + B.fmt(v)
+            out.append(text(x + bw / 2, (y1 - 6) if v >= 0 else (y1 + 14), lab, 10.5, col, "middle", 700))
+        out.append(text(cx, f.Bm + 18, c, 11.5, C["muted"], "middle"))
+    if legend:
+        lx = f.L
+        for name, _, col in series:
+            out.append(f'<rect x="{lx}" y="{f.T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
+            out.append(text(lx + 16, f.T - 20, name, 11.5, C["muted"]))
+            lx += 30 + 8 * len(name)
+    out.append(text(f.L, f.T - 46, title, 13, C["ink"], weight=700))
+    return out
+
+
+def stacked_bars(cats, layers, title, totals=None, W=760, H=330):
+    """layers = [(ชื่อ, [ค่า ≥ 0], สี)] ซ้อนจากล่าง · totals = ป้ายบนแท่ง"""
+    tops = [sum(l[1][i] for l in layers) for i in range(len(cats))]
+    f = Frame(0, max(tops), W, H, T=70, pad=0.15)
+    out = f.grid(nice_ticks(0, max(tops)))
+    gw = (W - f.L - f.R) / len(cats)
+    bw = min(60, gw * 0.55)
+    for i, c in enumerate(cats):
+        cx, base = f.L + gw * i + gw / 2, 0
+        for _, vals, col in layers:
+            v = vals[i]
+            if v:
+                out.append(f'<rect x="{cx - bw / 2:.1f}" y="{f.y(base + v):.1f}" width="{bw:.1f}" '
+                           f'height="{f.y(base) - f.y(base + v):.1f}" fill="{col}"/>')
+            base += v
+        if totals:
+            out.append(text(cx, f.y(tops[i]) - 7, totals[i], 11, C["ink"], "middle", 700))
+        for k, line in enumerate(c.split("\n")):
+            out.append(text(cx, f.Bm + 16 + 13 * k, line, 10.5, C["muted"], "middle"))
+    lx = f.L
+    for name, _, col in layers:
+        out.append(f'<rect x="{lx}" y="{f.T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
+        out.append(text(lx + 16, f.T - 20, name, 11.5, C["muted"]))
+        lx += 30 + 8 * len(name)
+    out.append(text(f.L, f.T - 46, title, 13, C["ink"], weight=700))
+    return out
+
+
+def range_rows(rows, title, unit="", W=760, H=None):
+    """rows = [(ชื่อ, ต่ำสุด, มัธยฐาน, สูงสุด, ค่าในเล่ม, สี)] — แถบช่วงข้ามหลายชุดสุ่ม + จุดค่าที่เล่มใช้"""
+    H = H or 90 + 46 * len(rows)
+    lo = min(r[1] for r in rows)
+    hi = max(r[3] for r in rows)
+    span = (hi - lo) or 1
+    L, R = 220, 40
+    X = lambda v: L + (v - lo + span * .05) / (span * 1.1) * (W - L - R)  # noqa: E731
+    out = [text(16, 30, title, 13, C["ink"], weight=700)]
+    for i, (name, mn, md, mx, ex, col) in enumerate(rows):
+        y = 70 + 46 * i
+        out.append(text(16, y + 4, name, 11.5, C["ink"]))
+        out.append(f'<line x1="{X(mn):.1f}" y1="{y}" x2="{X(mx):.1f}" y2="{y}" stroke="{col}" stroke-width="8" stroke-opacity=".25" stroke-linecap="round"/>')
+        out.append(f'<line x1="{X(md):.1f}" y1="{y - 9}" x2="{X(md):.1f}" y2="{y + 9}" stroke="{col}" stroke-width="3"/>')
+        out.append(text(X(md), y - 13, f"มัธยฐาน {B.fmt(md)}{unit}", 10.5, col, "middle", 700))
+        out.append(f'<circle cx="{X(ex):.1f}" cy="{y}" r="5" fill="{C["purple"]}"/>')
+        out.append(text(X(ex), y + 22, f"ในเล่ม {B.fmt(ex)}{unit}", 10.5, C["purple"], "middle"))
+        out.append(text(X(mn) - 8, y + 4, B.fmt(mn), 10, C["grey"], "end"))
+        out.append(text(X(mx) + 8, y + 4, B.fmt(mx), 10, C["grey"]))
+    return out, H
+
+
+# ── บท 0 ──
+@chart("sab-converge")
+def _converge(fig):
+    rows = fig["ch00"]["ปลายทาง"]
+    cats = [f"วันหมดอายุ {B.fmt(r['ราคาวันหมดอายุ'])}" for r in rows]
+    parts = grouped_bars(cats, [("ขา spot", [r["ขาspot"] for r in rows], C["blue"]),
+                                ("ขา short futures", [r["ขาshortfutures"] for r in rows], C["amber"]),
+                                ("รวมสองขา", [r["รวม"] for r in rows], C["green"])],
+                         f"ราคาปลายทางจะเป็นเท่าไรก็ตาม สองขารวมกันได้ +{B.fmt(fig['ch00']['basis'])} เท่ากันทุกแถว")
+    alt = "กราฟแท่งสามกลุ่ม ราคาวันหมดอายุ 60,000 100,000 150,000 ขา spot และขา short futures สวนทางกัน รวมสองขาเท่ากันทุกกลุ่ม"
+    cap = (f"ถือ spot 1 BTC ที่ {B.fmt(rows[1]['ราคาวันหมดอายุ'])} และ short futures 1 BTC · "
+           "ขาหนึ่งกำไรเท่าไร อีกขาขาดทุนเกือบเท่ากัน ส่วนที่เหลือคือ basis ที่ล็อกไว้ตั้งแต่วันเปิด (ก่อนค่าธรรมเนียม)")
+    return wrap(760, 330, alt, parts, cap, "สอน")
+
+
+# ── บท 4 ──
+@chart("sab-two-pockets")
+def _two_pockets(fig):
+    rows = fig["ch04"]["ตารางบัญชี"]
+    names = {"เริ่ม": "เริ่ม", "ซื้อspot": "ซื้อ spot", "shortfuturesวางหลักประกัน": "วาง\nหลักประกัน",
+             "ชำระวันที่9": "ชำระ\nวันที่ 9", "หลังโอนเติม": "หลังโอน\nเติม", "ชำระวันหมดอายุ": "วัน\nหมดอายุ"}
+    cats = [names.get(r["เหตุการณ์"], r["เหตุการณ์"]) for r in rows]
+    parts = stacked_bars(cats, [("มูลค่า spot", [r["มูลค่าspot"] for r in rows], "#93c5fd"),
+                                ("หลักประกัน", [r["หลักประกัน"] for r in rows], C["amber"]),
+                                ("เงินสดอิสระ", [r["เงินสดอิสระ"] for r in rows], C["green"])],
+                         "equity แทบไม่ขยับ แต่เงินย้ายกระเป๋า — กระเป๋าเงินสดอิสระคือที่ที่หมดได้",
+                         totals=[f"equity {B.fmt(r['equity'])}" for r in rows])
+    alt = "กราฟแท่งซ้อน หกเหตุการณ์ แสดงมูลค่า spot หลักประกัน และเงินสดอิสระ ยอดรวมแทบคงที่ แต่เงินสดอิสระลดจาก 14,700 เหลือ 3,480"
+    cap = (f"ราคาขึ้น 10% วันที่ 9 · equity เปลี่ยนแค่ {B.fmt(fig['ch04']['equity_เปลี่ยน'])} แต่ต้องโอนเติมหลักประกัน "
+           f"{B.fmt(fig['ch04']['ต้องโอน'])} จากเงินสดอิสระ · กติกาหลักประกันสอน 10% ของราคา futures ชำระสิ้นวัน")
+    return wrap(760, 330, alt, parts, cap, "สอน")
+
+
+@chart("sab-buffer-line")
+def _buffer_line(fig):
+    d = fig["ch04"]["dist"]
+    cash_main = fig["เรื่อง"]["part3"]["close"]["เงินสดอิสระ"]
+    cash_ton = fig["ch04"]["ต้นเงินสดอิสระ"]
+    cats = [f"ขึ้น {r['spotขึ้นเปอร์เซ็นต์']}%" for r in d]
+    vals = [r["ต้องโอน"] for r in d]
+    parts = bars(cats, vals, "ต้องโอนเติมเท่าไร เทียบกับเงินสดอิสระที่มี",
+                 colors=[C["red"] if v > cash_main else (C["amber"] if v > cash_ton else C["blue"]) for v in vals])
+    f = Frame(0, max(vals + [cash_main]), 760, 320)
+    for lvl, lab, col in ((cash_main, f"ทุน 125,000 มีเงินสดอิสระ {B.fmt(cash_main)}", C["green"]),
+                          (cash_ton, f"ทุน 120,000 (ต้น) มี {B.fmt(cash_ton)}", C["red"])):
+        y = f.y(lvl)
+        parts.append(f'<line x1="{f.L}" y1="{y:.1f}" x2="{760 - f.R}" y2="{y:.1f}" stroke="{col}" stroke-dasharray="6 4" stroke-width="1.6"/>')
+        parts.append(text(f.L + 6, y - 6, lab, 11, col, "start", 700))
+    alt = "กราฟแท่งเงินที่ต้องโอนเติมเมื่อราคาขึ้น 5 10 15 เปอร์เซ็นต์ เทียบเส้นเงินสดอิสระของทุน 125,000 และ 120,000"
+    cap = (f"ขึ้น 10% ทุน 120,000 ขาด {B.fmt(d[1]['ขาดที่ทุน120000'])} (ต้นถูกบังคับปิด) · ขึ้น 15% ทุน 125,000 ก็ขาด "
+           f"{B.fmt(d[2]['ขาดที่ทุน125000'])} · ไม่ใช่การพยากรณ์ — คือการถามว่ากันชนรับได้ถึงไหน")
+    return wrap(760, 320, alt, parts, cap, "สอน")
+
+
+# ── บท 10 ──
+@chart("sab-selection-bias")
+def _selection_bias(fig):
+    g, s = fig["ch10"]["กราฟ"], fig["ch10"]["ค้น"]
+    top, real = g["อันดับ1"], g["คู่จริง"]
+    nf = s["วันช่วงเลือก"]
+    xs = list(range(1, len(top) + 1))
+    a1 = fig["ch10"]["อันดับ1"]
+    lo_day = nf + a1["วันทดสอบที่ต่ำสุด"]
+    parts = lines(xs, [("คู่อันดับ 1 จาก 200 คู่ (ไม่มีเชือก)", top, C["red"]), ("คู่ที่มีเชือกจริง", real, C["green"])],
+                  "สวยที่สุดในช่วงเลือก — แล้วหลุดในช่วงทดสอบ", xlabel="วัน (ช่วงเลือก | ช่วงทดสอบ)",
+                  marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} ระยะแกว่ง")])
+    f = Frame(min(top + real), max(top + real), 760, 320)
+    X = lambda x: f.L + (x - 1) / (len(top) - 1) * (760 - f.L - f.R)  # noqa: E731
+    for lvl in (2, -2):
+        parts.append(f'<line x1="{f.L}" y1="{f.y(lvl):.1f}" x2="{760 - f.R}" y2="{f.y(lvl):.1f}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
+    parts.append(f'<line x1="{X(nf):.1f}" y1="{f.T}" x2="{X(nf):.1f}" y2="{f.Bm}" stroke="{C["purple"]}" stroke-width="1.5"/>')
+    parts.append(text(X(nf) + 6, f.T + 12, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
+    alt = "กราฟเส้นสองเส้น คู่ที่คัดได้อันดับ 1 อยู่ในกรอบช่วงเลือก แล้วหลุดลงถึงราว −4.85 ในช่วงทดสอบ ส่วนคู่ที่มีเชือกอยู่ในกรอบ"
+    cap = (f"ค้น {s['คู่ที่ค้น']} คู่ที่ไม่มีเชือก แล้วเลือกคู่ที่ข้ามค่ากลางบ่อยสุดในช่วงเลือก {nf} วัน · "
+           f"เทียบกับคู่ที่มีเชือกซึ่งสร้างแยกอีก {s['คู่จริง']} คู่ · ช่วงทดสอบคู่อันดับ 1 อยู่ในกรอบ ±2 เพียง "
+           f"{B.fmt(a1['ในกรอบ'])}% · เส้นประ = กรอบ ±2 ระยะแกว่ง")
+    return wrap(760, 320, alt, parts, cap, "จำลอง")
+
+
+@chart("sab-seed-spread")
+def _seed_spread(fig):
+    r = fig["seed_robustness"]["ch10"]
+    rows = [("ในกรอบ: 10 คู่ที่คัด", r["ในกรอบ"], C["red"]), ("ในกรอบ: คู่ที่มีเชือก", r["ในกรอบคู่จริง"], C["green"]),
+            ("ในกรอบ: ทั้ง 200 คู่", r["ทั้ง200ในกรอบ"], C["grey"])]
+    parts, H = range_rows([(n, v["ต่ำสุด"], v["มัธยฐาน"], v["สูงสุด"], v["ตัวอย่าง"], c) for n, v, c in rows],
+                          f"สุ่มใหม่ {r['ในกรอบ']['จำนวนseed']} ชุด: ตัวอย่างในเล่มอยู่ฝั่งที่ดูดีของช่วง", unit="%")
+    alt = "แถบช่วงของสัดส่วนวันในกรอบข้าม 30 ชุดสุ่ม คู่ที่คัดกระจาย 18 ถึง 63 เปอร์เซ็นต์ คู่ที่มีเชือกอยู่ราว 89 ถึง 95"
+    cap = (f"ตัวอย่างในเล่ม {B.fmt(r['ในกรอบ']['ตัวอย่าง'])}% แต่มัธยฐานข้ามชุดคือ {B.fmt(r['ในกรอบ']['มัธยฐาน'])}% · "
+           f"คู่ที่คัดแย่กว่าคู่ที่มีเชือกใน {r['คู่ที่คัดแย่กว่าคู่จริง']['จำนวนseed']} จาก {r['คู่ที่คัดแย่กว่าคู่จริง']['จาก']} ชุด")
+    return wrap(760, H, alt, parts, cap, "จำลอง")
 
 # ───────────────────────── ประมวลผลหน้า ─────────────────────────
 

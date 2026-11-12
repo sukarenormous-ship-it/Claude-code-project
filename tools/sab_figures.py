@@ -1215,7 +1215,7 @@ def build(orig):
     # ── บท 10 ──
     tries = {str(n): pct(1 - D("0.95") ** n) for n in (1, 10, 20, 50, 100)}
     ch10 = {
-        "ค้น": {"คู่ที่ค้น": 200, "คัด": 10, "คู่จริง": 10, "seed": SEED_SEL},
+        "ค้น": {"คู่ที่ค้น": 200, "คัด": 10, "คู่จริง": 10, "seed": SEED_SEL, "วันทั้งหมด": 500, "วันช่วงเลือก": 250},
         "ทั้ง200คู่": {"ข้ามค่ากลาง": q(sel["all_scanned"]["formation_crossings_avg"], 1),
                        "corr": q(sel["all_scanned"]["formation_return_corr_avg"], 3),
                        "ในกรอบ": pct(sel["_all_inband_avg"]), "ระยะสูงสุดเฉลี่ย": q(sel["_all_maxz_avg"])},
