@@ -23,7 +23,6 @@ import random
 import statistics
 import sys
 from decimal import ROUND_HALF_UP, Decimal as D, getcontext
-from fractions import Fraction as Fr
 
 getcontext().prec = 28
 
@@ -52,10 +51,6 @@ def q(x, n=2):
 def pct(x, n=1):
     """สัดส่วน (0–1) → เปอร์เซ็นต์ที่ปัดแล้ว"""
     return q(D(str(x)) * 100, n)
-
-
-def s(x):
-    return str(x)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -389,7 +384,7 @@ def o_v09_population(seed=SEED_POP, pairs=200, series=True):
             "test_share_inside_2sd_avg": round(avg("inband"), 3),
             "share_of_pairs_with_test_abs_z_above_3": round(sum(1 for r in rows if r["maxz"] > 3) / pairs, 3),
             "_corr_avg": avg("corr"), "_inband_avg": avg("inband"), "_phi_avg": avg("phi_formation"),
-            "_phi_median": statistics.median(phis),
+            "_phi_median": statistics.median(phis), "_phi_ge_1": sum(1 for p in phis if p >= 1),
             "_half_life_median": statistics.median(math.log(0.5) / math.log(p) for p in phis if 0 < p < 1),
             "_same_direction_avg": avg("same"), "_leak_band_inband_avg": avg("leak"),
             "_share_pass_85": sum(1 for r in rows if r["inband"] >= 0.85) / pairs,
@@ -426,6 +421,7 @@ def o_v09_selection(seed=SEED_SEL, scanned=200, top=10, genuine=10, series=True)
     test_z = b0[3][nf:]
     imin = min(range(len(test_z)), key=lambda i: test_z[i])
     out = {
+        "scanned_pairs_without_link": scanned, "selected_top_by_formation_crossings": top,
         "all_scanned": {"formation_crossings_avg": round(avg([r[0] for r in rows]), 1),
                         "formation_return_corr_avg": round(avg([r[4] for r in rows]), 3)},
         "selected": {"formation_crossings_avg": round(avg([r[0] for r in best]), 1),
@@ -475,7 +471,10 @@ def o_mean_reversion():
                      "_levels": [start * phi ** h for h in range(horizon + 1)]})
     marks = [D(10)] * 3
     means = [D(0), D(8), D(10)]
-    return {"ar_cases": rows,
+    return {"assumptions": {"conditional_innovation_mean": 0, "reference_mean": 0,
+                            "starting_spread_money_per_basket_unit": start, "fixed_short_basket_units": units,
+                            "exit_after_periods": horizon, "illustrative_total_cost_money": cost},
+            "ar_cases": rows,
             "negative_phi_example": [start * D("-0.5") ** h for h in range(5)],
             "moving_mean": {"spread_marks": marks, "estimated_means": means,
                             "computed_residuals": [a - b for a, b in zip(marks, means)],
@@ -494,7 +493,8 @@ def o_signal_design():
     a0, b0, a1, b1, hedge = D(105), D(50), D(54), D(25), D(2)
     return {
         "entry": {"spot": s0, "future": f0, "days": d0, "continuous_rate": r0,
-                  "simple_annualized_rate": float((f0 / s0 - 1) * D(365) / D(d0)), "basis": f0 - s0},
+                  "simple_annualized_rate": float((f0 / s0 - 1) * D(365) / D(d0)), "basis": f0 - s0,
+                  "spot_units": 1, "linear_future_base_units": -1},
         "alternative_cases": [
             {"case": "A", "spot": float(s0), "future": fa, "days": 60, "rate": r0, "basis": fa - float(s0), "price_pnl": pa},
             {"case": "B", "spot": sb, "future": fb, "days": 80, "rate": rb, "basis": fb - sb, "price_pnl": pb,
@@ -603,7 +603,9 @@ def o_methods():
     mirror = run_path(["0", "-2.1", "-1.7", "-0.4"], side=1)
     return {
         "forecast": {
-            "fixed_quantity_forecast": {"forecast_gross_pnl": D(6), "forecast_roundtrip_cost": D(3),
+            "fixed_quantity_forecast": {"quantities": {"A": D(10), "B": D(-10)},
+                                        "expected_price_changes_over_same_horizon": {"A": D("0.8"), "B": D("0.2")},
+                                        "forecast_gross_pnl": D(6), "forecast_roundtrip_cost": D(3),
                                         "forecast_net_before_risk_buffer": D(3), "decision_risk_buffer": D(1),
                                         "decision_margin": D(2)},
             "separate_win_probability_example": {
@@ -612,6 +614,7 @@ def o_methods():
                 "expected_gross_pnl": D("0.65") * 1 - D("0.35") * 3,
                 "expected_net_pnl": D("0.65") * 1 - D("0.35") * 3 - D("0.1")}},
         "stops": {
+            "frozen_signal": {"mean": D(0), "sigma": D(1), "B_price": D(100)},
             "rules": {"short_entry_z_at_least": D(2), "short_exit_z_at_most": D("0.5"), "basket_units": D(10),
                       "entry_fee": D("0.4"), "exit_fee": D("0.6"), "loss_limit_on_net_liquidation_pnl": D(15),
                       "max_bars_after_entry": 3},
@@ -631,38 +634,82 @@ def o_methods():
 
 
 # ── ch03_ledger_demo.py ─────────────────────────────────────────────────────
+class Account:
+    """บัญชีเงินสด + จำนวนถือ (พอร์ต Account ของต้นฉบับ)"""
+
+    def __init__(self, cash):
+        self.cash, self.qty = D(cash), {"A": D(0), "B": D(0)}
+
+    def fill(self, sym, q_, px, fee=0):
+        self.cash -= D(q_) * D(px) + D(fee)
+        self.qty[sym] += D(q_)
+
+    def charge(self, c):
+        self.cash -= D(c)
+
+    def hv(self, marks):
+        return sum((qq * marks[k] for k, qq in self.qty.items()), D(0))
+
+    def snap(self, marks):
+        return {"cash": self.cash, "quantity": dict(self.qty), "holdings_value": self.hv(marks),
+                "equity": self.cash + self.hv(marks)}
+
+
 def o_ch03():
     p0 = {"A": D(100), "B": D(50)}
     p1 = {"A": D(102), "B": D("50.5")}
-    q = {"A": D(10), "B": D(-20)}
-    leg = {k: q[k] * (p1[k] - p0[k]) for k in q}
+
+    def open_pair():
+        a = Account(1000)
+        a.fill("A", 10, 100)
+        a.fill("B", -20, 50)
+        return a
+
+    fixed = open_pair()
+    start = fixed.snap(p0)
+    leg = {k: fixed.qty[k] * (p1[k] - p0[k]) for k in p0}
     gross = sum(leg.values())
-    cash0 = D(1000) - sum(q[k] * p0[k] for k in q)          # = 1,000 (ขา short ได้เงินเข้า)
-    eq = lambda cash, marks: cash + sum(q[k] * marks[k] for k in q)
-    rebalance_cash = cash0 - D(2) * D(50)
-    slipped_cash = D(1000) - (D(10) * D("100.1") + D(-20) * D("49.95"))
+    fixed.fill("A", -10, p1["A"])
+    fixed.fill("B", 20, p1["B"])
+    costed = open_pair()
+    ledger = [costed.snap(p0)]
+    costed.charge(4)
+    ledger.append(costed.snap(p0))
+    costed.charge(3)
+    ledger.append(costed.snap(p1))
+    costed.fill("A", -10, p1["A"])
+    costed.fill("B", 20, p1["B"])
+    costed.charge(5)
+    ledger.append(costed.snap(p1))
+    net = costed.cash - 1000
+    reb = open_pair()
+    reb_before = reb.snap(p0)
+    reb.fill("B", 2, 50)
+    reb_after = reb.snap(p0)
+    reb.charge(1)
+    slipped = Account(1000)
+    slipped.fill("A", 10, "100.1")
+    slipped.fill("B", -20, "49.95")
     drag = D(10) * (D("100.1") - p0["A"]) + D(20) * (p0["B"] - D("49.95"))
-    partial_q = {"A": D(10), "B": D(-8)}
-    partial_pnl = sum(partial_q[k] * (p1[k] - p0[k]) for k in partial_q)
+    partial = Account(1000)
+    partial.fill("A", 10, 100)
+    partial.fill("B", -8, 50)
+    unchanged = open_pair()
+    assert net == -2 and drag == 2
     return {
-        "fixed_hedge": {"leg_pnl": leg, "spread_before": p0["A"] - 2 * p0["B"], "spread_after": p1["A"] - 2 * p1["B"],
-                        "gross_pnl": gross, "closing_cash": cash0 + q["A"] * -1 * -p1["A"] * 0 + D(1000) + gross - D(1000),
+        "fixed_hedge": {"start": start, "leg_pnl": leg, "spread_before": p0["A"] - 2 * p0["B"],
+                        "spread_after": p1["A"] - 2 * p1["B"], "gross_pnl": gross, "closing_cash": fixed.cash,
                         "gross_exposure_before_costs": D(2000), "gross_exposure_to_equity_before_costs": D(2)},
-        "cost_ledger": [{"equity": D(1000)}, {"equity": D(996)}, {"equity": eq(cash0 - 7, p1)},
-                        {"equity": D(1000) + gross - 12}],
-        "net_pnl": gross - D(4 + 3 + 5),
-        "net_return_on_initial_equity": (gross - D(12)) / D(1000),
+        "cost_ledger": ledger, "net_pnl": net, "net_return_on_initial_equity": net / D(1000),
         "parameter_only": {"h_before": D(2), "h_after": D("1.8"), "spread_before": p0["A"] - 2 * p0["B"],
-                           "spread_after": p0["A"] - D("1.8") * p0["B"], "actual_equity": eq(cash0, p0),
+                           "spread_after": p0["A"] - D("1.8") * p0["B"], "actual_equity": unchanged.snap(p0)["equity"],
                            "price_pnl": D(0)},
-        "rebalance": {"after_before_fee": {"cash": rebalance_cash, "holdings_value": D(10) * 100 - D(18) * 50,
-                                           "equity": rebalance_cash + D(10) * 100 - D(18) * 50},
-                      "after_fee": {"equity": rebalance_cash + D(10) * 100 - D(18) * 50 - 1}},
-        "execution_slippage": {"entry_snapshot": {"equity": slipped_cash + sum(q[k] * p0[k] for k in q)},
-                               "entry_drag_already_in_cash": drag,
-                               "later_equity": slipped_cash + sum(q[k] * p1[k] for k in q)},
-        "partial_fill": {"actual_price_pnl": partial_pnl, "fully_filled_target_price_pnl": gross,
-                         "_net_long_value": partial_q["A"] * p0["A"] + partial_q["B"] * p0["B"]},
+        "rebalance": {"before": reb_before, "after_before_fee": reb_after, "after_fee": reb.snap(p0)},
+        "execution_slippage": {"entry_snapshot": slipped.snap(p0), "entry_drag_already_in_cash": drag,
+                               "later_equity": slipped.snap(p1)["equity"]},
+        "partial_fill": {"actual_start": partial.snap(p0),
+                         "actual_price_pnl": partial.snap(p1)["equity"] - partial.snap(p0)["equity"],
+                         "fully_filled_target_price_pnl": gross},
     }
 
 
@@ -673,7 +720,8 @@ def o_part1():
     pnl = lambda a, b: sum(qq * (y - x) for qq, x, y in zip(qty, a, b))
     fg, rg, ag = pnl(mid, fexit), pnl(mid, rexit), pnl(fills, rexit)
     fees, carry = D(2), D(1)
-    return {"bridge": {"forecast_gross": fg, "realized_ideal_mid_gross": rg, "actual_fill_gross": ag,
+    return {"bridge": {"fixed_quantities": qty, "entry_mid": mid, "forecast_exit": fexit,
+                       "realized_exit_marks_and_fills": rexit, "actual_entry_fills": fills, "forecast_gross": fg, "realized_ideal_mid_gross": rg, "actual_fill_gross": ag,
                        "fill_price_difference": ag - rg, "fees": fees, "holding_carry_cost": carry,
                        "actual_net": ag - fees - carry, "forecast_comparison_gap": rg - fg}}
 
@@ -909,6 +957,7 @@ def build(orig):
                      "รวม": (t - 100000) + (103000 - t)} for t in (60000, 100000, 150000)],
         "long01BTCราคาขึ้น2000": q(v07["long_0.1_btc"], 0), "short01BTCราคาขึ้น2000": q(v07["short_0.1_btc"], 0),
         "funding_short1BTCต่อรอบ": q(v07["funding_short_1_btc"], 0),
+        "ขา": {"spot": sd_["entry"]["spot_units"], "futures": sd_["entry"]["linear_future_base_units"]},
     }
 
     # ── บท 1 ──
@@ -958,14 +1007,22 @@ def build(orig):
         "simpleบนจอ": q(carry_ladder()["simple_rate_on_spot_pct"]),
         "กรณี1_simple": {"วันที่เหลือ": 60, "spot": 100000, "futures": q(D(100000) * (1 + D(3000) / D(100000) * 60 / 90), 0),
                          "กำไรจากราคา": q(D(3000) - D(3000) * 60 / 90, 0)},
-        "กรณี2": {"spot": q(case_b["spot"], 0), "futures": q(case_b["future"], 0), "basis": q(case_b["basis"], 0),
+        "กรณี2": {"วันที่เหลือ": case_b["days"], "spot": q(case_b["spot"], 0), "futures": q(case_b["future"], 0), "basis": q(case_b["basis"], 0),
                   "ขาspot": q(case_b["_spot_leg"], 0), "ขาfutures": q(case_b["_future_leg"], 0),
                   "รวม": q(case_b["price_pnl"], 0)},
         "ลงลึก": {"continuousเปอร์เซ็นต์": q(D(str(sd_["entry"]["continuous_rate"])) * 100),
-                  "futuresแบบexp": q(case_a["future"]), "กำไรจากราคาแบบexp": q(case_a["price_pnl"])},
+                  "futuresแบบexp": q(case_a["future"]), "basisแบบexp": q(case_a["basis"]),
+                  "กำไรจากราคาแบบexp": q(case_a["price_pnl"]), "continuousกรณี2เปอร์เซ็นต์": q(D(str(case_b["rate"])) * 100)},
     }
 
     # ── บท 4 ──
+    ev_names = {"start": "เริ่ม", "buy_spot": "ซื้อspot", "short_future_post_margin": "shortfuturesวางหลักประกัน",
+                "day1_settlement": "ชำระวันที่9", "day1_after_top_up": "หลังโอนเติม", "expiry_settlement": "ชำระวันหมดอายุ"}
+
+    def ledger_rows(rs):
+        return [{"เหตุการณ์": ev_names[r["event"]], "เงินสดอิสระ": q(r["free_cash"], 0), "มูลค่าspot": q(r["spot_value"], 0),
+                 "หลักประกัน": q(r["margin"], 0), "equity": q(r["equity"], 0)} for r in rs]
+
     free125 = D(14700)
     after_day1 = free125 - m125["top_up_needed"]
     dist = []
@@ -988,10 +1045,12 @@ def build(orig):
                   "150000": pct(o_v06_margin("150000")["max_one_day_future_rise_covered"] / 103000)},
         "กันชนเงิน": {"125000": q(m125["max_one_day_future_rise_covered"]),
                       "120000": q(m120["max_one_day_future_rise_covered"])},
-        "ต้นทุน": 120000, "ต้นเงินสดอิสระ": q(m120["free_cash_before_top_up"], 0), "ต้นขาด": q(m120["shortfall"], 0),
+        "ทุนของต้น": 120000, "ต้นเงินสดอิสระ": q(m120["free_cash_before_top_up"], 0), "ต้นขาด": q(m120["shortfall"], 0),
         "ต้นequity": q(m120["rows"][3]["equity"], 0),
         "หลังวันแรกรับได้อีก": pct(after_day1 / D("1.1") / 113200),
         "dist": dist,
+        "ตารางบัญชี": ledger_rows(m125["rows"]),
+        "ตารางบัญชีต้น": ledger_rows(m120["rows"]),
     }
 
     # ── บท 5 ──
@@ -1032,7 +1091,7 @@ def build(orig):
                      "ค่าธรรมเนียมspotถ้าถือ": q(e4["spot_fee_if_held"], 1),
                      "ถือได้เพิ่ม": q(e4["extra_from_holding"]),
                      "ถือได้เพิ่มเปอร์เซ็นต์ต่อปี": q(e4["extra_pct_yr_on_capital"]),
-                     "เสียโอกาส60วัน": q(e4["opportunity_60d"]),
+                     "เสียโอกาส60วัน": q(e4["opportunity_60d"]), "hurdleทางเลือก": pct(e2h["hurdle"], 0),
                      "เสียโอกาสบนเงินที่ปลดได้": q(opp_released), "เงินที่ปลดได้": q(released),
                      "ปิดดีกว่า": [q(e4["opportunity_60d"] - e4["extra_from_holding"]),
                                    q(opp_released - e4["extra_from_holding"])],
@@ -1080,6 +1139,7 @@ def build(orig):
                          "ส่วนเกินเปอร์เซ็นต์": q((flat["net"] - opp30) / 125000 * 365 / 30 * 100)},
         "สี่เส้นทาง": {names[k]: {"fundingรวม": q(fs[k]["funding_total"], 0), "สุทธิmaker": q(fs[k]["net"], 0),
                                   "สุทธิmakerเปอร์เซ็นต์": q(fs[k]["net_pct_yr"]),
+                                  "fundingตามกฎ": q(fs[k]["rule_exit_after_3_negative"]["funding"], 0),
                                   "กฎmaker": q(fs[k]["rule_exit_after_3_negative"]["net"], 0),
                                   "ออกตามกฎ": fs[k]["rule_exit_after_3_negative"]["exited"],
                                   "สุทธิtaker": q(taker[k]["net"], 0), "สุทธิtakerเปอร์เซ็นต์": q(taker[k]["net_pct_yr"]),
@@ -1099,27 +1159,28 @@ def build(orig):
     hc = v06["ch04_hedge_comparison"]
     rows_h = {r["method"]: r for r in hc["rows"]}
     k10 = D("0.1")
+    def hedge_row(r):
+        return {"จำนวนB": q(r["units_b_short"] * k10, 0), "มูลค่าB": q(r["value_b_short"] * k10, 0),
+                "มูลค่าสุทธิ": q(r["net_dollar"] * k10, 0), "betaexposure": q(r["beta_exposure"] * k10, 0),
+                "BTCลง4": q(r["pnl_market_minus_4pct"] * k10, 0)}
+
     three = [("จำนวนเท่ากัน", "equal_units"), ("มูลค่าเท่ากัน", "dollar_neutral"), ("betaneutral", "beta_neutral")]
     ch08 = {
         "ขาเดียว": {"A": 1000, "BTCลงเปอร์เซ็นต์": -4, "Aลงเปอร์เซ็นต์": -6, "ขาA": -60, "ขาshortBTC": 40, "รวม": -20},
-        "สามวิธี": {th: {"จำนวนB": q(rows_h[en]["units_b_short"] * k10, 0), "มูลค่าB": q(rows_h[en]["value_b_short"] * k10, 0),
-                          "betaexposure": q(rows_h[en]["beta_exposure"] * k10, 0),
-                          "BTCลง4": q(rows_h[en]["pnl_market_minus_4pct"] * k10, 0)} for th, en in three},
-        "stress_B1": {"ขา500": -5, "ขา1000": -10, "ขา1500": -15},
+        "สามวิธี": {th: hedge_row(rows_h[en]) for th, en in three},
         "beta_stress": {"A": 1000, "hedgeBTC": 1500, "betaเดิม": 1.5, "betaใหม่": 1.7,
-                        "exposure": q(D(1000) * D("1.7") - 1500, 0), "BTCลง5": q((D(1000) * D("1.7") - 1500) * D("-0.05"), 0)},
+                        "exposure": q(D(1000) * D("1.7") - 1500, 0), "BTC-5%": q((D(1000) * D("1.7") - 1500) * D("-0.05"), 0)},
         "hedgeด้วยperp": {"มูลค่า": 1500, "fundingต่อรอบเปอร์เซ็นต์": 0.01, "ต่อรอบ": q(D(1500) * D("0.0001"), 2)},
         "ปัดlot": {"ต้องการBTC": q(D(1500) / D(100000), 3),
                    "ปัดลง": {"BTC": 0.01, "exposure": q(D(1500) - D("0.01") * 100000, 0)},
                    "ปัดขึ้น": {"BTC": 0.02, "exposure": q(D(1500) - D("0.02") * 100000, 0)}},
         "ลงลึก": {"regression_b": q(hc["regression_slope_b"], 1), "h_ราคา": 1.6,
-                  "sd": {th: q(rows_h[en]["_sd_exact"] * k10) for th, en in
-                         [("จำนวนเท่ากัน", "equal_units"), ("มูลค่าเท่ากัน", "dollar_neutral"), ("h16", "price_level_h_1.6"),
-                          ("b12", "return_regression_b_1.2"), ("betaneutral", "beta_neutral")]},
-                  "มูลค่าB": {"h16": q(rows_h["price_level_h_1.6"]["value_b_short"] * k10, 0),
-                              "b12": q(rows_h["return_regression_b_1.2"]["value_b_short"] * k10, 0)}},
+                  "ห้าวิธี": {th: {**hedge_row(rows_h[en]), "sd": q(rows_h[en]["_sd_exact"] * k10)} for th, en in
+                              [("จำนวนเท่ากัน", "equal_units"), ("มูลค่าเท่ากัน", "dollar_neutral"),
+                               ("h16", "price_level_h_1.6"), ("b12", "return_regression_b_1.2"),
+                               ("betaneutral", "beta_neutral")]}},
     }
-    ch08["stress_B1"] = {f"ขา{v}": q(-D(v) * D("0.01"), 0) for v in (500, 1000, 1500)}
+    ch08["stress_B1%"] = {f"ขา{v}": q(-D(v) * D("0.01"), 0) for v in (500, 1000, 1500)}
 
     # ── บท 9 ──
     def same_dir(r):
@@ -1145,7 +1206,9 @@ def build(orig):
         "ลงลึก": {"phi": q(H["formation_ar1_phi_avg"], 3),
                   "ครึ่งชีวิตจากค่าเฉลี่ยphi": q(math.log(0.5) / math.log(H["formation_ar1_phi_avg"]), 1),
                   "ครึ่งชีวิตจากมัธยฐานphi": q(math.log(0.5) / math.log(H["_phi_median"]), 1),
-                  "มัธยฐานครึ่งชีวิตรายคู่": q(H["_half_life_median"], 1)},
+                  "มัธยฐานครึ่งชีวิตรายคู่": q(H["_half_life_median"], 1),
+                  "คู่ที่phiไม่ต่ำกว่า1": H["_phi_ge_1"],
+                  "หมายเหตุ": "33.3 = มัธยฐานครึ่งชีวิตของคู่ที่ φ < 1 (ตัดคู่ที่ไม่มีครึ่งชีวิต) · ครึ่งชีวิตของมัธยฐาน φ ทั้ง 200 คู่ = 33.8"},
         "กราฟ": {"ไม่มีเชือก": ex["H_high_corr_no_link"]["spread"], "มีเชือก": ex["C_linked"]["spread"]},
     }
 
@@ -1181,13 +1244,20 @@ def build(orig):
 
     # ── บท 11 ──
     ch11 = {
-        "เปิด": {"ทุน": 1000, "A": {"จำนวน": 10, "ราคา": 100}, "B": {"จำนวน": -20, "ราคา": 50}, "ชุด": 10},
+        "เปิด": {"ทุน": q(l3["fixed_hedge"]["start"]["cash"], 0),
+                 "A": {"จำนวน": q(l3["fixed_hedge"]["start"]["quantity"]["A"], 0), "ราคา": 100},
+                 "B": {"จำนวน": q(l3["fixed_hedge"]["start"]["quantity"]["B"], 0), "ราคา": 50}, "ชุด": 10,
+                 "มูลค่าถือ": q(l3["fixed_hedge"]["start"]["holdings_value"], 0),
+                 "equity": q(l3["fixed_hedge"]["start"]["equity"], 0)},
+        "เงินสดหลังปิด": q(l3["fixed_hedge"]["closing_cash"], 0),
         "ราคาใหม่": {"A": 102, "B": 50.5},
         "ขา": {"A": q(l3["fixed_hedge"]["leg_pnl"]["A"], 0), "B": q(l3["fixed_hedge"]["leg_pnl"]["B"], 0)},
         "กำไรจากราคา": q(l3["fixed_hedge"]["gross_pnl"], 0),
         "Xก่อนหลัง": [q(l3["fixed_hedge"]["spread_before"], 0), q(l3["fixed_hedge"]["spread_after"], 0)],
         "ต้นทุน": {"เข้า": 4, "ระหว่างถือ": 3, "ออก": 5, "รวม": 12},
         "equityระหว่างทาง": [q(r["equity"], 0) for r in l3["cost_ledger"]],
+        "เงินสดระหว่างทาง": [q(r["cash"], 0) for r in l3["cost_ledger"]],
+        "มูลค่าถือระหว่างทาง": [q(r["holdings_value"], 0) for r in l3["cost_ledger"]],
         "สุทธิ": q(l3["net_pnl"], 0), "สุทธิต่อทุนเปอร์เซ็นต์": pct(l3["net_return_on_initial_equity"]),
         "gross": q(l3["fixed_hedge"]["gross_exposure_before_costs"], 0),
         "grossต่อทุน": q(l3["fixed_hedge"]["gross_exposure_to_equity_before_costs"], 0),
@@ -1196,8 +1266,11 @@ def build(orig):
         "hเปลี่ยน": {"hเดิม": q(l3["parameter_only"]["h_before"], 0), "hใหม่": q(l3["parameter_only"]["h_after"], 1),
                      "Xเดิม": q(l3["parameter_only"]["spread_before"], 0), "Xใหม่": q(l3["parameter_only"]["spread_after"], 0),
                      "กำไร": q(l3["parameter_only"]["price_pnl"], 0), "equity": q(l3["parameter_only"]["actual_equity"], 0)},
-        "sdเปลี่ยน": {"X": 5, "sd": [1, 2.5], "z": [q(z, 0) for z in sd_["normalization_only"]["z"]]},
-        "ปรับhedge": {"Bจาก": -20, "Bเป็น": -18, "เงินสด": [1000, q(l3["rebalance"]["after_before_fee"]["cash"], 0)],
+        "sdเปลี่ยน": {"X": sd_["normalization_only"]["spread"], "ค่ากลาง": sd_["normalization_only"]["mean"],
+                      "sd": sd_["normalization_only"]["scale"], "z": [q(z, 0) for z in sd_["normalization_only"]["z"]],
+                      "กำไร": sd_["normalization_only"]["price_pnl"]},
+        "ปรับhedge": {"Bจาก": -20, "Bเป็น": q(l3["rebalance"]["after_before_fee"]["quantity"]["B"], 0),
+                      "เงินสดหลังค่าธรรมเนียม": q(l3["rebalance"]["after_fee"]["cash"], 0), "เงินสด": [1000, q(l3["rebalance"]["after_before_fee"]["cash"], 0)],
                       "มูลค่าถือ": q(l3["rebalance"]["after_before_fee"]["holdings_value"], 0),
                       "equity": q(l3["rebalance"]["after_before_fee"]["equity"], 0),
                       "หลังค่าธรรมเนียม1": q(l3["rebalance"]["after_fee"]["equity"], 0)},
@@ -1205,6 +1278,7 @@ def build(orig):
                               "B": [q(v, 0) for v in sd_["ratio_and_basket"]["B"]],
                               "สัดส่วน": [q(v, 2) for v in sd_["ratio_and_basket"]["ratio"]],
                               "ตะกร้า": [q(v, 0) for v in sd_["ratio_and_basket"]["fixed_basket"]],
+                              "ถือ": sd_["ratio_and_basket"]["holdings"],
                               "กำไร": q(sd_["ratio_and_basket"]["price_pnl"], 0)},
     }
 
@@ -1212,16 +1286,21 @@ def build(orig):
     total_usd = D(50000) / D(35)
     ev_main = sum(p * o for p, o in zip(MIX_MAIN, OUTCOMES))
     ev_alt = sum(p * o for p, o in zip(MIX_ALT, OUTCOMES))
-    path_out = lambda t, xs: {"X": [q(D(x), 1) for x in xs], "เหตุออก": {"loss_limit": "งบ", "signal_recovery": "เป้า",
+    def path_out(t, xs, obs):
+        return {"X": [q(o["x"], 1) for o in obs], "Xเข้า": q(t["entry_x"], 1), "Xออก": q(t["exit_x"], 1),
+                "สุทธิถ้าออกตอนนั้น": [q(o["net_liquidation_pnl_if_exit_now"], 0) for o in obs
+                                       if "net_liquidation_pnl_if_exit_now" in o], "เหตุออก": {"loss_limit": "งบ", "signal_recovery": "เป้า",
                                                                        "time_limit": "เวลา"}[t["exit_reason"]],
                               "ช่วงที่ถือ": t["elapsed_bars"], "กำไรจากราคา": q(t["gross_price_pnl"], 0),
-                              "สุทธิ": q(t["net_pnl"], 0), "ค่าถือ": None, "สุทธิหลังค่าถือ": None}
+                "สุทธิ": q(t["net_pnl"], 0), "ค่าถือ": None, "สุทธิหลังค่าถือ": None}
+
+    obs = lambda k: stops["paths"][k]["observations"]
     ch12 = {
         "จุดเข้า": 2.1,
-        "เส้นทาง": {"1": path_out(trade("convergence"), STOP_PATHS["convergence"]),
-                    "2": path_out(trade("time"), STOP_PATHS["time"]),
-                    "3": path_out(trade("gap"), STOP_PATHS["gap"]),
-                    "4": {**path_out(p4, PATH4), "เวลาครบพร้อมกัน": p4["_time_limit_also"]}},
+        "เส้นทาง": {"1": path_out(trade("convergence"), STOP_PATHS["convergence"], obs("convergence")),
+                    "2": path_out(trade("time"), STOP_PATHS["time"], obs("time")),
+                    "3": path_out(trade("gap"), STOP_PATHS["gap"], obs("gap")),
+                    "4": {**path_out(p4, PATH4, stops["_path4"].observations), "เวลาครบพร้อมกัน": p4["_time_limit_also"]}},
         "เส้นขาดทุนถึงงบ": q(stops["short_loss_threshold_in_x_for_this_entry"], 1),
         "เกินงบ": q(stops["loss_overshoot_in_gap_case"], 0),
         "สมมาตรlong": q(stops["long_symmetry_check"]["trades"][0]["net_pnl"], 0),
@@ -1240,17 +1319,22 @@ def build(orig):
     fp3 = fp[2]
     hl_table = [{"ครึ่งชีวิต": h, "phi": q(D(0.5 ** (1 / h)), 3)} for h in (1, 2, 3, 4, 5, 7, 10, 14, 20, 30, 50, 69, 100)]
     ch13 = {
-        "ตารางphi": {k: {"ระดับ": [q(v, 4) for v in r["_levels"]], "สุทธิ4ช่วง": q(r["expected_net_pnl"]),
+        "ตารางphi": {k: {"phi": q(r["phi"], 2), "ระดับ": [q(v, 4) for v in r["_levels"]], "สุทธิ4ช่วง": q(r["expected_net_pnl"]),
                           "กำไรก่อนต้นทุน": q(r["expected_gross_pnl"], 4),
                           "ครึ่งชีวิต": q(r["mean_half_life_periods"]) if r["mean_half_life_periods"] else None,
                           "ครึ่งชีวิตปัด": q(r["mean_half_life_periods"], 0) if r["mean_half_life_periods"] else None}
                      for k, r in ar.items()},
-        "กติกาตารางphi": {"เริ่ม": 2, "ช่วงถือ": 4, "ชุด": 10, "ต้นทุน": 1},
+        "กติกาตารางphi": {"เริ่ม": q(mr["assumptions"]["starting_spread_money_per_basket_unit"], 0),
+                          "ช่วงถือ": mr["assumptions"]["exit_after_periods"],
+                          "ชุด": q(mr["assumptions"]["fixed_short_basket_units"], 0),
+                          "ต้นทุน": q(mr["assumptions"]["illustrative_total_cost_money"], 0),
+                          "ค่ากลาง": mr["assumptions"]["reference_mean"]},
         "ครึ่งชีวิตเป็นphi": hl_table,
         "phiเป็นครึ่งชีวิต": [{"phi": p, "ครึ่งชีวิต": q(math.log(0.5) / math.log(p), 1)}
                              for p in (0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.976, 0.98, 0.99)],
         "phiลบ": [q(v, 3) for v in mr["negative_phi_example"]],
-        "เดินสุ่ม": random_walk_table(),
+        "เดินสุ่ม": {**random_walk_table(),
+                     "ค่าเฉลี่ยของก้าวที่คาด": mr["assumptions"]["conditional_innovation_mean"]},
         "กฎเดียวสามโลก": three_worlds(),
         "แตะเป้า": [{"phi": r["phi"], "แรงสะบัด": r["innovation_sd"], "ครึ่งชีวิต": r["mean_half_life"],
                      "ระยะzของจุดเข้า": q(2 / r["_stationary_sd"], 2 if r["_stationary_sd"] > 1 else 1),
@@ -1270,7 +1354,8 @@ def build(orig):
     ch14 = {
         "เส้นทาง": [q(o["x"], 1) for o in pp["observations"]],
         "เหตุการณ์": [o["event"] for o in pp["observations"]],
-        "บล็อก": pp["blocked_entry_observations"], "ขอกลับมา": len(pp["resume_attempts"]),
+        "บล็อก": pp["blocked_entry_observations"], "ไม้ที่ปิด": pp["closed_trade_count"],
+        "ขอกลับมา": len(pp["resume_attempts"]),
         "ขอกลับมาสำเร็จ": sum(1 for r in pp["resume_attempts"] if r["accepted"]),
         "ราคาการพัก": q(10 * (D("3.8") - D("2.4")) - 1, 0),
         "ค่ากลางเลื่อน": {"X": [q(v, 0) for v in mr["moving_mean"]["spread_marks"]],
@@ -1283,7 +1368,12 @@ def build(orig):
     # ── บท 15 ──
     br = p1["bridge"]
     ch15 = {
-        "สะพาน": {"คาด": q(br["forecast_gross"], 0), "ราคาจริง": q(br["realized_ideal_mid_gross"], 0),
+        "สะพาน": {"จำนวน": [q(v, 0) for v in br["fixed_quantities"]],
+                  "ราคากลางตอนเข้า": [q(v, 0) for v in br["entry_mid"]],
+                  "ราคาออกที่คาด": [q(v, 1) for v in br["forecast_exit"]],
+                  "ราคาออกจริง": [q(v, 1) for v in br["realized_exit_marks_and_fills"]],
+                  "ราคาเข้าจริง": [q(v, 2) for v in br["actual_entry_fills"]],
+                  "คาด": q(br["forecast_gross"], 0), "ราคาจริง": q(br["realized_ideal_mid_gross"], 0),
                   "ราคาที่ซื้อขายได้": q(br["actual_fill_gross"], 0), "หลังค่าธรรมเนียม": q(br["actual_fill_gross"] - br["fees"], 0),
                   "หลังค่าถือ": q(br["actual_net"], 0), "ผลของราคาfill": q(br["fill_price_difference"], 0),
                   "ค่าธรรมเนียม": -q(br["fees"], 0), "ค่าใช้จ่ายระหว่างถือ": -q(br["holding_carry_cost"], 0),
@@ -1300,9 +1390,13 @@ def build(orig):
     gross3 = {"1": trade("convergence")["gross_price_pnl"], "2": trade("time")["gross_price_pnl"],
               "3": trade("gap")["gross_price_pnl"]}
     ch16 = {
-        "ได้ขาเดียวบางส่วน": {"Aได้": 10, "Bเป้า": -20, "Bได้": -8, "longสุทธิ": q(pf["_net_long_value"], 0),
+        "ได้ขาเดียวบางส่วน": {"Aได้": q(pf["actual_start"]["quantity"]["A"], 0), "Bเป้า": -20,
+                              "Bได้": q(pf["actual_start"]["quantity"]["B"], 0),
+                              "longสุทธิ": q(pf["actual_start"]["holdings_value"], 0),
+                              "เงินสด": q(pf["actual_start"]["cash"], 0),
                               "ผลจริง": q(pf["actual_price_pnl"], 0), "ผลที่ตั้งใจ": q(pf["fully_filled_target_price_pnl"], 0)},
         "fillแย่กว่าmid": {"A": 100.1, "B": 49.95, "เสีย": q(l3["execution_slippage"]["entry_drag_already_in_cash"], 0),
+                           "เงินสดตอนเข้า": q(l3["execution_slippage"]["entry_snapshot"]["cash"], 0),
                            "equityตอนเข้า": q(l3["execution_slippage"]["entry_snapshot"]["equity"], 0),
                            "equityภายหลัง": q(l3["execution_slippage"]["later_equity"], 0)},
         "ต้นทุนtakerของการ์ด": {k: q(v) for k, v in fee_rows.items()},
@@ -1355,7 +1449,7 @@ def build(orig):
                       "null = ยังตรึงไม่ได้ (ดู บัญชีมิน.ค่าถือคู่ และ _สมมติฐาน)"),
         "บัญชีมิน": build_min(),
         "_สมมติฐาน": build_assumptions(),
-        "เรื่อง": {"_หมายเหตุ": "คัมภีร์เรื่อง (partN.open/close) เป็นงานเฟส 0 — ยังว่าง"},
+        "เรื่อง": build_story(ch04, ch06, ch07, ch12, ch14, ch16),
         "ch00": ch00, "ch01": ch01, "ch02": ch02, "ch03": ch03, "ch04": ch04, "ch05": ch05, "ch06": ch06,
         "ch07": ch07, "ch08": ch08, "ch09": ch09, "ch10": ch10, "ch11": ch11, "ch12": ch12, "ch13": ch13,
         "ch14": ch14, "ch15": ch15, "ch16": ch16, "ch17": ch17, "ch18": ch18,
@@ -1431,6 +1525,26 @@ def build_robustness(sel, pop, fp):
     }
 
 
+def build_story(ch04, ch06, ch07, ch12, ch14, ch16):
+    """เรื่อง.partN.open/close จากคัมภีร์ tools/sab_bible.json · ยืนยันตัวเลขในคัมภีร์กับค่าที่คำนวณ (ไม่ตรง = หยุด)"""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_bible.json")
+    with open(path, encoding="utf-8") as fh:
+        story = json.load(fh)["เรื่อง"]
+    must = [("part4", "เงินสดอิสระ", ch04["เงินสดอิสระหลังโอน"]), ("part4", "equity", ch04["equity"]),
+            ("part6", "กำไรรับรู้_ภาค1", ch06["มินปิด"]["ต่อ1BTC"]),
+            ("part7", "กำไรรับรู้_ภาค1", ch07["บัญชีสะสมภาค1"]["ต่อ1BTC"]),
+            ("part12", "บัญชีคู่", ch12["บัญชีคู่หลังไม้2"]), ("part12", "ไม้เปิด_บนกระดาษ", ch12["ไม้3บนกระดาษที่28"]),
+            ("part14", "บัญชีคู่", ch14["บัญชีคู่"]), ("part16", "บัญชีคู่", ch16["บัญชีคู่taker"]["รวม"])]
+    for part, key, want in must:
+        got = story[part]["close"].get(key)
+        if got is None or D(str(got)) != D(str(want)):
+            raise SystemExit(f"คัมภีร์ไม่ตรงการคำนวณ: เรื่อง.{part}.close.{key} = {got} แต่คำนวณได้ {want}")
+    for n in range(1, 19):
+        if story[f"part{n}"]["open"] != story[f"part{n - 1}"]["close"]:
+            raise SystemExit(f"คัมภีร์: open ของ part{n} ≠ close ของ part{n - 1}")
+    return story
+
+
 def build_drills():
     c5 = carry_ladder(basis=D(1200), cap=D(75000), s0=D(60000), days=D(60), st=D(61200))
     c5h = carry_ladder(basis=D(600), cap=D(75000), s0=D(60000), days=D(60), st=D(60600))
@@ -1441,7 +1555,7 @@ def build_drills():
     return {
         "_หมายเหตุ": "ยังไม่ครบทุกบท — เติมเมื่อเขียน ✍️ ของบทนั้น",
         "ch04": [{"ทุน": 150000, "กันชน": pct(o_v06_margin("150000")["max_one_day_future_rise_covered"] / 103000)},
-                 {"ทุน": 125000, "ขึ้นวันที่สองเปอร์เซ็นต์": 3, "ต้องโอนวันที่สอง": q(top2, 1),
+                 {"ทุน": 125000, "ขึ้นวันที่สอง": 3, "ต้องโอนวันที่สอง": q(top2, 1),
                   "เงินสดอิสระหลังวันแรก": q(free_after1[125000], 0), "ขาด": q(top2 - free_after1[125000], 1),
                   "ทุน150000ขาด": q(max(D(0), top2 - free_after1[150000]), 1)}],
         "ch05": [{"spot": 60000, "futures": 61200, "วัน": 60, "ทุน": 75000,
@@ -1465,6 +1579,7 @@ def build_drills_v09(orig):
     v07 = orig["v07_primer_checks"]["self_check"]
     ex = orig["v06_enrichment_demo"]["exercise_checks"]
     v9 = orig["v09_ch06_ch07_demo"]["exercises"]
+    fq = orig["methods_signals_stops_demo"]["forecast"]["fixed_quantity_forecast"]
     return {
         "00.07": {"ข้อ1": q(v07["q1"], 0), "ข้อ2มูลค่า": q(v07["q2_notional"], 0), "ข้อ2เสีย": q(v07["q2_loss"], 0),
                   "ข้อ2ส่วนของหลักประกัน": pct(v07["q2_share_of_margin"], 0), "ข้อ3": q(v07["q3"], 0),
@@ -1474,6 +1589,11 @@ def build_drills_v09(orig):
         "04_ข้อ4": {"bไม่มีความเสี่ยงเฉพาะ": q(ex["ch04_ex4"]["b_if_no_specific_risk"], 1),
                     "bความเสี่ยงเฉพาะ2": q(ex["ch04_ex4"]["b_if_specific_sd_2pct"], 2),
                     "sd": {k: q(v, 1) for k, v in ex["ch04_ex4"]["pnl_sd"].items()}},
+        "08_ข้อ1": {"จำนวน": {k: q(v, 0) for k, v in fq["quantities"].items()},
+                    "ราคาที่คาดเปลี่ยน": {k: q(v, 1) for k, v in fq["expected_price_changes_over_same_horizon"].items()},
+                    "คาดก่อนต้นทุน": q(fq["forecast_gross_pnl"], 0), "ต้นทุน": q(fq["forecast_roundtrip_cost"], 0),
+                    "คาดสุทธิ": q(fq["forecast_net_before_risk_buffer"], 0), "ส่วนเผื่อ": q(fq["decision_risk_buffer"], 0),
+                    "ส่วนเหลือตัดสิน": q(fq["decision_margin"], 0)},
         "06_ข้อ1": {"หลังค่าธรรมเนียม": q(v9["ch06_ex1_capital_150000"]["net_pct_yr"]),
                     "ค่าเสียโอกาส": q(v9["ch06_ex1_capital_150000"]["opp"]),
                     "ส่วนเกิน": q(v9["ch06_ex1_capital_150000"]["excess"])},
@@ -1489,7 +1609,7 @@ def build_errata():
         {"ข้อ": 2, "ต้นฉบับ": "+5 − 7 = −2 ไม่ระบุสถานะ", "แก้": "ไม่ hedge −2 · hedge ครบ +5", "คีย์": "ch02/โจทย์funding"},
         {"ข้อ": 3, "ต้นฉบับ": "ภาพหาง 60 ช่วง", "แก้": "50 ช่วง", "คีย์": "ch02/ช่วงในภาพหาง"},
         {"ข้อ": 10, "ต้นฉบับ": "ข้อสรุป beta neutral ยืนบนคอลัมน์ sd", "แก้": "stress B ขยับเอง 1% → −5/−10/−15 · sd ไป 🔎",
-         "คีย์": "ch08/stress_B1"},
+         "คีย์": "ch08/stress_B1%"},
         {"ข้อ": 13, "ต้นฉบับ": "25,000 cash reserve", "แก้": "25,000 = หลักประกัน 10,300 + เงินสดอิสระ 14,700", "คีย์": "ch03/เปิดไม้"},
         {"ข้อ": 14, "ต้นฉบับ": "รองรับการขึ้นได้ราว 13% ต่อวัน", "แก้": "สะสม 13.0% · หลังวันแรกรับได้อีก 2.8%",
          "คีย์": "ch04/หลังวันแรกรับได้อีก"},
@@ -1530,6 +1650,8 @@ def build_originals_strings(orig):
         v = _get(orig[e["file"]], e["path"])
         if isinstance(v, (list, dict)) or v is None:
             continue
+        if isinstance(v, D):
+            v = "0" if v == 0 else format(v.normalize(), "f")
         out[f"{e['file']}:{e['path']}"] = v if isinstance(v, (str, bool)) else str(v)
     return dict(sorted(out.items()))
 
@@ -1586,15 +1708,19 @@ def dec(v):
     return v if isinstance(v, D) else D(str(v))
 
 
-def matches(orig_v, sab_v, k, places=None, translate=None):
+def matches(orig_v, sab_v, k, places=None, translate=None, tol=None):
+    """ต้นฉบับ × k ตรงกับค่าในเล่มไหม · ค่าเล่มเป็นตัวเลข → ปัดครึ่งขึ้นตามทศนิยมของค่าเล่ม (หรือ ปัด)
+    · tol = ยอมต่างได้ (ใช้เฉพาะจุดที่ต้นฉบับปัดก่อนคูณ k จนเกิดการปัดซ้อน)"""
     if isinstance(orig_v, list):
         return isinstance(sab_v, list) and len(orig_v) == len(sab_v) and all(
-            matches(a, b, k, places, translate) for a, b in zip(orig_v, sab_v))
+            matches(a, b, k, places, translate, tol) for a, b in zip(orig_v, sab_v))
     if translate is not None or isinstance(orig_v, bool):
         return (translate or {}).get(str(orig_v), orig_v) == sab_v
     if sab_v is None:
         return False
     target = dec(orig_v) * D(k)
+    if tol is not None:
+        return abs(target - dec(sab_v)) <= D(tol)
     if isinstance(sab_v, str):
         return dec(sab_v) == target
     if places is None:
@@ -1624,15 +1750,24 @@ def check_original(sab):
         except (KeyError, IndexError, TypeError) as exc:
             fails.append(f"{thai}: หา path ไม่เจอ ({exc!r})")
             continue
-        if matches(ov, sv, e.get("k", "1"), e.get("ปัด"), e.get("แปล")):
+        if matches(ov, sv, e.get("k", "1"), e.get("ปัด"), e.get("แปล"), e.get("ทน")):
             ok_map += 1
         else:
             fails.append(f"{thai} = {sv!r} แต่ต้นฉบับ {e['file']}:{e['path']} = {ov!r} × {e.get('k', '1')}")
-    ok_str = 0
+    ok_str = rounded_str = 0
     for key, v in sab.get("_ต้นฉบับ", {}).items():
         stem, path = key.split(":", 1)
         ov = _get(outputs[stem], path)
-        if (str(ov) == v) if isinstance(ov, str) and not _isnum(ov) else (ov == v if isinstance(ov, bool) else dec(ov) == dec(v)):
+        if isinstance(ov, bool) or isinstance(v, bool) or (isinstance(ov, str) and not _isnum(ov)):
+            same = ov == v
+        else:
+            same = dec(ov) == dec(v)
+            if not same and isinstance(ov, str):
+                # ต้นฉบับพิมพ์แบบปัดแล้ว (r2) ขณะที่ _ต้นฉบับ เก็บค่าเต็มของตรรกะเดียวกัน → ต้องปัดได้เท่ากันพอดี
+                places = max(0, -dec(ov).as_tuple().exponent)
+                same = dec(v).quantize(D(1).scaleb(-places), rounding=ROUND_HALF_UP) == dec(ov)
+                rounded_str += same
+        if same:
             ok_str += 1
         else:
             fails.append(f"_ต้นฉบับ {key} = {v!r} แต่ต้นฉบับ = {ov!r}")
@@ -1654,7 +1789,8 @@ def check_original(sab):
             else:
                 unmapped.append(f"{stem}:{leaf}")
     print(f"  คีย์ไทยที่จับคู่ (C4): {ok_map}/{len(om['จับคู่'])} ตรง × k")
-    print(f"  _ต้นฉบับ (สตริงเต็ม): {ok_str}/{len(sab.get('_ต้นฉบับ', {}))} ตรงตัว")
+    print(f"  _ต้นฉบับ (สตริงเต็ม): {ok_str}/{len(sab.get('_ต้นฉบับ', {}))} ตรง "
+          f"(ในนี้ {rounded_str} ค่าเก็บละเอียดกว่าที่ต้นฉบับพิมพ์ และปัดแล้วเท่ากันพอดี)")
     print(f"  ค่าตัวเลขในผลต้นฉบับ {total} ค่า: จับคู่ {mapped} · ประกาศว่าไม่ใช้ (มีเหตุผลใน origmap) {skipped} · "
           f"ยังไม่จับคู่ {len(unmapped)}")
     for u in unmapped[:40]:
