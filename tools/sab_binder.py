@@ -56,8 +56,12 @@ def collect(docs=B.DOCS):
         with open(path, encoding="utf-8") as fh:
             html = fh.read()
         for a, outer in sheet_blocks(html):
+            csvname = attr(a, "data-csv")
+            if not csvname:                                   # ใบที่อ้างไฟล์ sab-worksheets/X.csv ในเนื้อ → ใช้ชื่อนั้น
+                m = re.search(r"sab-worksheets/([\w-]+\.csv)", outer)
+                csvname = m.group(1) if m else None
             sheets.append({"บท": B.part_no(path), "id": attr(a, "data-sheet") or "?", "from": attr(a, "data-from") or "",
-                           "to": attr(a, "data-to") or "", "csv": attr(a, "data-csv"), "html": outer})
+                           "to": attr(a, "data-to") or "", "csv": csvname, "html": outer})
     return sheets
 
 
