@@ -83,7 +83,7 @@ def _formation_test(fig):
     X = lambda i: L + i / (len(z) - 1) * (W - R - L)  # noqa: E731
     Y = lambda v: y1 - (v - lo) / (hi - lo) * (y1 - y0)  # noqa: E731
     xd = X(nf - 1)
-    p = [text(L, 22, "ไม้บรรทัดวัดจากช่วงเลือก แล้วตรึงไว้ไปวัดช่วงทดสอบ", 13, INK, weight=700),
+    p = [text(L, 22, "ไม้บรรทัดจากช่วงเลือก ตรึงไว้วัดช่วงทดสอบ", 13, INK, weight=700),
          f'<rect x="{L}" y="{y0}" width="{xd - L:.1f}" height="{y1 - y0}" fill="{C["purple"]}" fill-opacity=".05"/>']
     for k in (-2, -1, 0, 1, 2):
         col = C["axis"] if k == 0 else (C["purple"] if abs(k) == 2 else C["grey"])
