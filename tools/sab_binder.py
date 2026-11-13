@@ -86,7 +86,7 @@ def check(sheets, fig):
         if not pas or len(re.findall(r"<li\b", pas.group(1))) != 3:
             P.append(f"{tag}: ต้องมีเกณฑ์ผ่าน 3 ข้อ")
         for ref in filter(None, re.split(r"[,\s]+", s["from"] + "," + s["to"])):
-            if ref not in ids and not ref.startswith("ภผ"):
+            if ref not in ids and not ref.startswith("ภผ") and re.fullmatch(r"\d+[a-z]?", ref):   # ข้อความเช่น "ปิดแฟ้ม" ไม่ใช่รหัสใบ
                 P.append(f"{tag}: data-from/to ชี้ใบ {ref} ที่ยังไม่มี")
         for k in re.findall(r'data-key="([^"]+)"', s["html"]):
             try:

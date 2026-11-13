@@ -246,7 +246,7 @@ def check_file(name, html, ctx):
     for sym in FORBIDDEN_LATIN:
         if re.search(r"(?<![A-Za-z0-9_\-])" + re.escape(sym) + r"(?![A-Za-z0-9_\-])", mp_clean):
             P.append(f"{name}: W12 สัญลักษณ์ {sym!r} นอก 🔎")
-    for m in re.finditer(r"(?<![\d.])\d+\.\d{3,}(?![\d])(?!\s*BTC)", mp):     # ปริมาณเหรียญ เช่น 0.015 BTC ยกเว้น
+    for m in (re.finditer(r"(?<![\d.])\d+\.\d{3,}(?![\d])(?!\s*BTC)", mp) if n is not None else []):   # W13 เฉพาะบท (หน้าเฉลยรวมคำตอบที่อยู่ใน details ของบท)     # ปริมาณเหรียญ เช่น 0.015 BTC ยกเว้น
         P.append(f"{name}: W13 ทศนิยมเกิน 2 ตำแหน่ง {m.group(0)} นอก 🔎")
 
     # W16 ป้ายที่มา + table.fees
@@ -311,7 +311,7 @@ def check_file(name, html, ctx):
                 P.append(f"{name}: W20 ช่องบัตรที่เติม {inner[:20]!r} ไม่มี data-key")
 
     # D1
-    if opts["final"] and re.search(r"\bdata-pending(?!-part)\b", html):
+    if opts["final"] and re.search(r"\sdata-pending(?!-part)(?=[\s=>])", re.sub(r"<style\b.*?</style>", "", html, flags=re.S)):
         P.append(f"{name}: D1 ยังมี data-pending เหลือ")
 
     if n is None:
