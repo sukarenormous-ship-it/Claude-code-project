@@ -21,9 +21,9 @@ def _exit_paths(fig):
     card = fig["บัญชีมิน"]["การ์ด"]
     line_loss = c["เส้นขาดทุนถึงงบ"]
     tmax = card["ช่วงถือสูงสุด"]
-    W, H = 760, 560
-    pw, ph = 340, 210                      # ขนาดแผง
-    origins = [(56, 70), (56 + pw + 40, 70), (56, 70 + ph + 64), (56 + pw + 40, 70 + ph + 64)]
+    W, H = 760, 592
+    pw, ph = 322, 210                      # ขนาดแผง
+    origins = [(40, 70), (40 + pw + 36, 70), (40, 70 + ph + 70), (40 + pw + 36, 70 + ph + 70)]
     lo, hi = -0.5, 4.6
     out = [text(16, 26, f"การ์ดเดียว จุดเข้าเดียว {B.fmt(c['จุดเข้า'])} — สี่ตอนจบ", 14, C["ink"], weight=700)]
     for (ox, oy), k in zip(origins, ("1", "2", "3", "4")):
@@ -46,22 +46,22 @@ def _exit_paths(fig):
         out.append(f'<line x1="{X(tmax):.1f}" y1="{oy}" x2="{X(tmax):.1f}" y2="{oy + ph}" stroke="{C["grey"]}" '
                    f'stroke-dasharray="2 3" stroke-width="1.2"/>')
         if k == "1":
-            out.append(text(X(tmax) + 3, oy + ph - 6, f"ครบ {tmax} ช่วง", 10, C["grey"]))
+            out.append(text(X(tmax) - 4, oy + 14, f"ครบ {tmax} ช่วง", 10, C["grey"], "end"))
         # เส้นทาง
         pts = " ".join(f"{X(i - 1):.1f},{Y(v):.1f}" for i, v in enumerate(xs))
         out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.2" stroke-linejoin="round"/>')
         for i, v in enumerate(xs):
             out.append(f'<circle cx="{X(i - 1):.1f}" cy="{Y(v):.1f}" r="3" fill="{C["blue"]}"/>')
             if i >= 2 and i < len(xs) - 1:
-                out.append(text(X(i - 1), Y(v) + (16 if k in ("1", "2") or i == 1 else -9), B.fmt(v), 10, C["muted"], "middle"))
+                out.append(text(X(i - 1), Y(v) + (16 if k == "1" else -9), B.fmt(v), 10, C["muted"], "middle"))
         # จุดเข้า + จุดออก
         out.append(f'<circle cx="{X(0):.1f}" cy="{Y(xs[1]):.1f}" r="5" fill="{C["purple"]}"/>')
         ex_i = len(xs) - 2
         out.append(f'<circle cx="{X(ex_i):.1f}" cy="{Y(xs[-1]):.1f}" r="5.5" fill="{col}"/>')
-        ty = Y(xs[-1]) + (22 if net > 0 and xs[-1] < 1 else -12)
+        ty = Y(xs[-1]) + (22 if net > 0 else -12)
         if k == "3":
             ty = Y(xs[-1]) + 4
-        anchor = "end" if k in ("3", "4") else "middle"
+        anchor = "middle" if k == "1" else "end"
         dx = -10 if anchor == "end" else 0
         out.append(text(X(ex_i) + dx, ty, f"ออก {B.fmt(xs[-1])} → {_sign(net)}", 12, col, anchor, 700))
         # แกน x
@@ -78,7 +78,7 @@ def _exit_paths(fig):
 def _pair_strip(fig):
     s = fig["ch12"]["แถบผล"]
     mix = fig["ch12"]["สัดส่วนตอนจบ"]
-    W, h1 = 760, 190
+    W, h1 = 760, 176
     out = [text(16, 24, "แถบผล: การ์ดเดียวกัน 20 ไม้ ในสองโลก", 14, C["ink"], weight=700)]
     for j, name in enumerate(("หลัก", "เทียบ")):
         m = mix[name]["สัดส่วน"]

@@ -71,9 +71,18 @@ def extend(data, D, q):
 
     # ── มือที่แย่งเชือก: ส่วนเกินหลัง hurdle ของแต่ละอัตรา (maker) ──
     crowd = [{"ต่อรอบเปอร์เซ็นต์": r["ต่อรอบเปอร์เซ็นต์"],
-              "fundingรวม": q(mark * D(str(r["ต่อรอบเปอร์เซ็นต์"])) / 100 * rounds, 2),
+              "fundingรวม": q(mark * D(str(r["ต่อรอบเปอร์เซ็นต์"])) / 100 * rounds, 0),
               "ส่วนเกินmakerเปอร์เซ็นต์": q(ann(mark * D(str(r["ต่อรอบเปอร์เซ็นต์"])) / 100 * rounds - fee_mk - opp30), 2)}
              for r in c7["fundingถูกแย่ง"]]
+
+    # ── ใบ 07 บันทึกรายรอบ: เลขเต็มพิมพ์ไม่มี .0 ──
+    def num(x):
+        return q(x, 0) if x == x.to_integral_value() else q(x, 2)
+
+    cum3, run = [], D(0)
+    for x in fund3:
+        run += x
+        cum3.append(num(run))
 
     # ── 🔎 ทบต้น: (1 + 0.01%) ยกกำลังจำนวนรอบในหนึ่งปี ──
     n_year = int(per_day * year)                              # 1,095 รอบ
@@ -99,7 +108,9 @@ def extend(data, D, q):
             "mark": [q(x, 0) for x in marks3], "อัตราเปอร์เซ็นต์": [float(x) for x in rates3],
             "กำไรspot": q(spot_pnl, 0), "กำไรperp": q(perp_pnl, 0),
             "ค่าธรรมเนียมปัด": q(fee3, 2), "สุทธิปัด": q(net3, 2), "fundingรวมปัด": q(sum(fund3), 2),
+            "fundingรายรอบ": [num(x) for x in fund3], "fundingสะสม": cum3,
         },
+        "เงินสดปิด": q(cap + after_alt, 2),
         "รอบ": {"ชั่วโมงต่อรอบ": int(hours), "ต่อวัน": int(per_day), "ใน30วัน": int(rounds), "fundingต่อรอบ": q(per_round, 0)},
         "บันไดเงิน": {"fundingราบ30วัน": q(fund_flat, 0), "สุทธิmaker": q(net_flat, 0),
                       "ค่าเสียโอกาส30วัน": q(opp30, 2), "ส่วนเกิน": q(net_flat - opp30, 2)},
@@ -118,7 +129,7 @@ def extend(data, D, q):
             "fundingราบ30วัน": q(fund_flat * scale, 2), "สุทธิราบ": q(net_flat * scale, 2),
             "เงินบนexchange": q(cap * scale, 0), "บัญชีทดลอง": q(D(-120) * scale, 2),
             "fundingสามรอบ": q(sum(fund3) * scale, 2), "ราคาสามรอบ": q((spot_pnl + perp_pnl) * scale, 2),
-            "ค่าธรรมเนียมสามรอบ": q(fee3 * scale, 2),
+            "ค่าธรรมเนียมสามรอบ": q(fee3 * scale, 2), "เงินสดปิด": q((cap + after_alt) * scale, 2),
         },
         "ทบต้นต่อปีเปอร์เซ็นต์": q(comp, 2), "รอบต่อปี": n_year,
         "_claims": [
