@@ -80,7 +80,7 @@ CSS = """<style>
 .v{font-weight:700;font-variant-numeric:tabular-nums}
 .bk{display:block;font-size:.76em;color:#64748b;font-weight:400;white-space:nowrap}
 td:not(.num) .bk,p .bk{display:inline;margin-left:6px}
-.tool table:not(.wide){min-width:0}
+.tool table:not(.wide),table.fit{min-width:0}
 .big{font-size:1.7em;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums}
 .src{font-size:.86em;color:#64748b;margin:4px 0 14px}
 .pos{color:var(--green)}.neg{color:var(--red)}.key{color:var(--purple)}
@@ -433,8 +433,8 @@ function drawRates(r){const sv=$('f-draw');clear(sv);const H=220,W=vb(sv,H),x0=5
   sv.onpointermove=e=>{if(dragging)paint(e);};sv.onpointerup=()=>{dragging=false;lastI=null;};
   function paint(e){const b=sv.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*W,py=(e.clientY-b.top)/b.height*H;
     const i=Math.max(0,Math.min(89,Math.floor((px-x0)/bw)));let v=((y0+y1)/2-py)/((y0-y1)/2)*LIM;v=Math.max(-LIM,Math.min(LIM,v));
-    v=Math.round(v/0.00005)*0.00005;const a=lastI===null?i:Math.min(lastI,i),b=lastI===null?i:Math.max(lastI,i);
-    for(let j=a;j<=b;j++)mine[j]=v;lastI=i;upd();}}
+    v=Math.round(v/0.00005)*0.00005;const lo=lastI===null?i:Math.min(lastI,i),hi=lastI===null?i:Math.max(lastI,i);
+    for(let j=lo;j<=hi;j++)mine[j]=v;lastI=i;upd();}}
 ['f-k','f-crowd','f-hur'].forEach(i=>$(i).addEventListener('input',upd));
 onResize(upd);upd();
 """
@@ -773,7 +773,7 @@ def hub_body(fig):
 <p>ถ้ามีเวลาสิบนาที เริ่มที่ <a href="sab-tool-carry.html">บันได carry</a> เพราะเป็นบันไดที่ทั้งเล่มใช้ซ้ำกับ funding และคู่เหรียญ</p></div>
 
 <h2>เครื่องมือของเล่มนี้</h2>
-<div class="tw"><table>
+<div class="tw"><table class="fit">
 <tr><th>เครื่องมือ</th><th>ตอบคำถามอะไร</th><th class="nw">คู่กับ</th></tr>
 {''.join(tr(r) for r in rows_new)}
 </table></div>
@@ -794,7 +794,7 @@ def hub_body(fig):
 </ul></div>
 
 <h2>เครื่องมือจากเล่มอื่นในคลังที่บทชี้ไป</h2>
-<div class="tw"><table>
+<div class="tw"><table class="fit">
 <tr><th>เครื่องมือ</th><th>ตอบคำถามอะไร</th><th class="nw">คู่กับ</th></tr>
 {''.join(tr(r) for r in existing)}
 </table></div>

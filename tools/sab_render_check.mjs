@@ -43,8 +43,10 @@ async function check(files) {
       const r = await page.evaluate(() => {
         const sw = document.documentElement.scrollWidth, cw = document.documentElement.clientWidth;
         const empty = [...document.querySelectorAll('svg')].filter((s) => {
+          if (!s.children.length) return true;
+          if (!s.getClientRects().length || s.closest('details:not([open])')) return false;   // ซ่อนอยู่ (🔎 ปิด / แท็บ) ไม่ใช่ว่าง
           const b = s.getBoundingClientRect();
-          return !s.children.length || b.width === 0 || b.height === 0;
+          return b.width === 0 || b.height === 0;
         }).length;
         return { sw, cw, empty };
       });

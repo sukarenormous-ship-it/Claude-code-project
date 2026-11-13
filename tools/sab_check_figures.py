@@ -78,15 +78,27 @@ def known_values(fig):
 
 
 def get_path(fig, path):
-    cur = fig
-    for part in path.split("."):
-        if isinstance(cur, dict) and part in cur:
-            cur = cur[part]
-        elif isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
-            cur = cur[int(part)]
-        else:
-            raise KeyError(path)
-    return cur
+    """อ่านค่าตาม path ที่คั่นด้วย "." — คีย์ที่มีจุดในตัว (เช่น "บันไดที่0.1", "0.80") หาได้ด้วยการลองคีย์ยาวสุดก่อน"""
+    parts = path.split(".")
+
+    def walk(cur, i):
+        if i == len(parts):
+            return True, cur
+        for j in range(len(parts), i, -1):
+            key = ".".join(parts[i:j])
+            if isinstance(cur, dict) and key in cur:
+                ok, v = walk(cur[key], j)
+                if ok:
+                    return True, v
+            elif isinstance(cur, list) and key.isdigit() and int(key) < len(cur):
+                ok, v = walk(cur[int(key)], j)
+                if ok:
+                    return True, v
+        return False, None
+    ok, v = walk(fig, 0)
+    if not ok:
+        raise KeyError(path)
+    return v
 
 
 def visible_text(html):
