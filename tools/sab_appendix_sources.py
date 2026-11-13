@@ -3,7 +3,7 @@
 บล็อก: SEEDS · SEEDS3 · CLAIMS · ERRATA · REFS · OUTSIDE (ระหว่าง <!--X:begin--> และ <!--X:end-->)
 รันซ้ำได้เมื่อ JSON เปลี่ยน (เช่น _claims ของบทใหม่) แล้วตามด้วย sab_charts.py --fill --scope appendix-sources"""
 import json, re, sys, os, html
-sys.path.insert(0, 'tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sab_book as B
 E = html.escape
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
