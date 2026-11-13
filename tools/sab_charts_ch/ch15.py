@@ -50,6 +50,5 @@ def _pnl_bridge(fig):
     out.append(text(lx + 178, 26, "เงินที่ไปถึงคนอื่น", 11.5, C["red"]))
     alt = (f"ห้าแท่ง {' · '.join(f'{n} {B.fmt(v)}' for n, v in zip(names, levels))} · ส่วนที่หาย "
            f"คาดพลาด {_sign(deltas[1])} ราคาเข้า {_sign(deltas[2])} ค่าธรรมเนียม {_sign(deltas[3])} ค่าถือ {_sign(deltas[4])}")
-    cap = (f"ไม้ซ้อม long A 10 · short B 20 · ส่วนแดงรวม {B.fmt(-(deltas[2] + deltas[3] + deltas[4]))} ไปถึงคนอื่น · "
-           f"กระทบยอด ไม่ใช่พิสูจน์สาเหตุ")
+    cap = (f"ส่วนแดงรวม {B.fmt(-(deltas[2] + deltas[3] + deltas[4]))} ไปถึงคนอื่น")
     return wrap(W, H, alt, out, cap, "สอน")
