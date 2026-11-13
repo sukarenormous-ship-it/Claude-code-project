@@ -347,7 +347,8 @@ def check_file(name, html, ctx):
 
     # W22 ห้ามใช้ก่อนสอน
     if terms:
-        exempt = blocks(html, lambda t, a: t == "details" or (has_class(a, "pq") and "data-hook" in a))
+        exempt = blocks(html, lambda t, a: t == "details" or (has_class(a, "pq") and "data-hook" in a)
+                        or (t == "table" and has_class(a, "ncard")))      # หัวช่องบัตร 8 ช่องเป็นแม่แบบคงที่
         exempt += box_spans(html, "🧭 เส้นทางอ่าน") + box_spans(html, "🔗") + box_spans(html, "📖")
         txt = text_of(cut(html, exempt))
         for term, info in terms.items():

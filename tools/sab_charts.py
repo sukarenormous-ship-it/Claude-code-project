@@ -151,7 +151,7 @@ def waterfall(steps, title, unit="", W=760, H=320):
     return out
 
 
-def lines(xs, series, title, unit="", xlabel="", W=760, H=320, marks=None):
+def lines(xs, series, title, unit="", xlabel="", W=760, H=320, marks=None, xticks=None, every=1):
     """series = [(ชื่อ, [y], สี)] · marks = [(x, y, ข้อความ)] จุดสำคัญสีม่วง"""
     ys = [v for _, s, _ in series for v in s if v is not None]
     f = Frame(min(ys), max(ys), W, H)
@@ -159,7 +159,8 @@ def lines(xs, series, title, unit="", xlabel="", W=760, H=320, marks=None):
     x0, x1 = min(xs), max(xs)
     X = lambda x: f.L + (x - x0) / ((x1 - x0) or 1) * (W - f.L - f.R)  # noqa: E731
     for name, s, col in series:
-        pts = " ".join(f"{X(x):.1f},{f.y(v):.1f}" for x, v in zip(xs, s) if v is not None)
+        keep = [(x, v) for i, (x, v) in enumerate(zip(xs, s)) if v is not None and (i % every == 0 or i == len(xs) - 1)]
+        pts = " ".join(f"{X(x):.1f},{f.y(v):.1f}" for x, v in keep)
         out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round"/>')
     for x, y, lab in marks or []:
         out.append(f'<circle cx="{X(x):.1f}" cy="{f.y(y):.1f}" r="4.5" fill="{C["purple"]}"/>')
@@ -173,8 +174,9 @@ def lines(xs, series, title, unit="", xlabel="", W=760, H=320, marks=None):
     out.append(text(f.L, f.T - 30, title, 13, C["ink"], weight=700))
     if xlabel:
         out.append(text((f.L + W - f.R) / 2, f.Bm + 36, xlabel, 12, C["muted"], "middle"))
-    for x in xs[:: max(1, len(xs) // 8)]:
-        out.append(text(X(x), f.Bm + 16, B.fmt(x), 10.5, C["grey"], "middle"))
+    # ป้ายแกน x: ส่ง xticks = [(x, ป้าย)] เมื่อค่า x ไม่ได้อยู่ใน JSON (ป้ายอัตโนมัติจะกลายเป็น "เลขลอย")
+    for x, lab in (xticks if xticks is not None else [(x, B.fmt(x)) for x in xs[:: max(1, len(xs) // 8)]]):
+        out.append(text(X(x), f.Bm + 16, lab, 10.5, C["grey"], "middle"))
     return out
 
 
@@ -404,13 +406,14 @@ def _selection_bias(fig):
     lo_day = nf + a1["วันทดสอบที่ต่ำสุด"]
     parts = lines(xs, [("คู่อันดับ 1 จาก 200 คู่ (ไม่มีเชือก)", top, C["red"]), ("คู่ที่มีเชือกจริง", real, C["green"])],
                   "สวยที่สุดในช่วงเลือก — แล้วหลุดในช่วงทดสอบ", xlabel="วัน (ช่วงเลือก | ช่วงทดสอบ)",
-                  marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} ระยะแกว่ง")])
+                  marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} ระยะแกว่ง")], every=2,
+                  xticks=[(1, "วันที่ 1"), (nf, f"วันที่ {B.fmt(nf)}"), (len(top), f"วันที่ {B.fmt(s['วันทั้งหมด'])}")])
     f = Frame(min(top + real), max(top + real), 760, 320)
     X = lambda x: f.L + (x - 1) / (len(top) - 1) * (760 - f.L - f.R)  # noqa: E731
     for lvl in (2, -2):
         parts.append(f'<line x1="{f.L}" y1="{f.y(lvl):.1f}" x2="{760 - f.R}" y2="{f.y(lvl):.1f}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
     parts.append(f'<line x1="{X(nf):.1f}" y1="{f.T}" x2="{X(nf):.1f}" y2="{f.Bm}" stroke="{C["purple"]}" stroke-width="1.5"/>')
-    parts.append(text(X(nf) + 6, f.T + 12, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
+    parts.append(text(X(nf) + 6, f.T - 4, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
     alt = "กราฟเส้นสองเส้น คู่ที่คัดได้อันดับ 1 อยู่ในกรอบช่วงเลือก แล้วหลุดลงถึงราว −4.85 ในช่วงทดสอบ ส่วนคู่ที่มีเชือกอยู่ในกรอบ"
     cap = (f"ค้น {s['คู่ที่ค้น']} คู่ที่ไม่มีเชือก แล้วเลือกคู่ที่ข้ามค่ากลางบ่อยสุดในช่วงเลือก {nf} วัน · "
            f"เทียบกับคู่ที่มีเชือกซึ่งสร้างแยกอีก {s['คู่จริง']} คู่ · ช่วงทดสอบคู่อันดับ 1 อยู่ในกรอบ ±2 เพียง "
