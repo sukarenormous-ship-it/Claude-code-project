@@ -104,6 +104,8 @@ if __name__ == "__main__":
             expected = json.load(fh).get("แบบฝึก", {}).get(f"ch{n:02d}") or []
         with open(ans_path, encoding="utf-8") as fh:
             answers = json.load(fh)
+        if isinstance(answers, list):                     # ยอมรับรายการคำตอบเรียงข้อด้วย
+            answers = {str(i): a for i, a in enumerate(answers, 1)}
         r, auto, detail = grade(expected, answers)
         print("\n".join(detail))
         print(f"P1 บท {n}: ถูก {r}/{auto} ข้อที่ตรวจด้วยสคริปต์ (เกณฑ์รวม ≥ 2/3 รวมคะแนนข้ออธิบายจากผู้ตรวจ)")
