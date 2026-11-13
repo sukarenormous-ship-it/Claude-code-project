@@ -67,6 +67,7 @@ def extend(data, D, q):
         "สามระดับ": lv,
         "ประหยัดถ้าmakerครบสองขา": q(saved, 0),
         "ประหยัดเป็นเปอร์เซ็นต์ของราคา": q(saved / px * 100, 2),
+        "ยอดหลังทดลองสาธิต": q(D(data["เรื่อง"]["part1"]["close"]["เงินบนexchange"]) + trial, 0),
         "leverageตาราง": lev,
         "ขาfuturesของcarry": {"กติกาเปอร์เซ็นต์": q(rule, 0), "เท่า": q(100 / rule, 0),
                                "หลักประกัน": q(rule / 100 * fut, 0)},
