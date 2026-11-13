@@ -117,6 +117,8 @@ def extend(data, D, q):
             "หลังกลับขั้ว": q(after_flip * scale, 2), "หลังสลับ": q(after_alt * scale, 2),
             "fundingราบ30วัน": q(fund_flat * scale, 2), "สุทธิราบ": q(net_flat * scale, 2),
             "เงินบนexchange": q(cap * scale, 0), "บัญชีทดลอง": q(D(-120) * scale, 2),
+            "fundingสามรอบ": q(sum(fund3) * scale, 2), "ราคาสามรอบ": q((spot_pnl + perp_pnl) * scale, 2),
+            "ค่าธรรมเนียมสามรอบ": q(fee3 * scale, 2),
         },
         "ทบต้นต่อปีเปอร์เซ็นต์": q(comp, 2), "รอบต่อปี": n_year,
         "_claims": [

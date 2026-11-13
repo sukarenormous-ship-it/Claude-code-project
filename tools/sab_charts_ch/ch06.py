@@ -11,11 +11,11 @@ from sab_charts import chart, wrap, text, Frame, C, B
 @chart("sab-hold-or-close")
 def _hold_or_close(fig):
     d = fig["ch06"]["วันที่30"]
-    W, H = 760, 340
+    W, H = 760, 320
     steps = [("basis ที่เหลือ", d["basis"]), ("ไม่ต้องจ่ายค่าปิดวันนี้", d["ค่าธรรมเนียมปิดตอนนี้"]),
              ("ค่าขาย spot วันหมดอายุ", -d["ค่าธรรมเนียมspotถ้าถือ"])]
     total, opp, opp2 = d["ถือได้เพิ่ม"], d["เสียโอกาส60วัน"], d["เสียโอกาสที่hurdle2"]
-    f = Frame(0, opp, W, H, L=64, R=200, T=60, Bm=270, pad=0.14)
+    f = Frame(0, opp, W, H, L=64, R=150, T=60, Bm=270, pad=0.14)
     out = f.grid([0, 200, 400, 600, 800])
     n = len(steps) + 1
     gw = (W - f.L - f.R) / n
@@ -40,12 +40,12 @@ def _hold_or_close(fig):
     out.append(text(cx, yt + 18, B.fmt(total), 12, "#ffffff", "middle", 700))
     out.append(text(cx, f.Bm + 18, "ถือได้เพิ่ม", 10.5, C["muted"], "middle"))
     # เส้นค่าเสียโอกาสสองระดับ
-    x_end = W - f.R + 8
-    for val, lab, col, dash in ((opp, f"ค่าเสียโอกาส 60 วัน · hurdle 4%: {B.fmt(opp)}", C["purple"], "6 4"),
+    x_end = W - 16
+    for val, lab, col, dash in ((opp, f"ค่าเสียโอกาส 60 วัน (hurdle 4%) {B.fmt(opp)}", C["purple"], "6 4"),
                                 (opp2, f"ถ้า hurdle 2%: {B.fmt(opp2)}", C["grey"], "3 3")):
         yy = f.y(val)
         out.append(f'<line x1="{f.L}" y1="{yy:.1f}" x2="{x_end:.1f}" y2="{yy:.1f}" stroke="{col}" stroke-dasharray="{dash}" stroke-width="1.6"/>')
-        out.append(text(x_end + 4, yy + 4, lab, 11, col, "start", 700))
+        out.append(text(x_end, yy - 6, lab, 11.5, col, "end", 700))
     # ช่องว่างที่ขาด
     gx = cx + bw / 2 + 12
     out.append(f'<line x1="{gx:.1f}" y1="{f.y(opp):.1f}" x2="{gx:.1f}" y2="{yt:.1f}" stroke="{C["red"]}" stroke-width="1.6"/>')
@@ -89,7 +89,7 @@ def _carry_strip(fig):
         out.append(f'<line x1="{L}" y1="{yy:.1f}" x2="{W - R}" y2="{yy:.1f}" stroke="{col}" stroke-dasharray="6 4" stroke-width="1.5"/>')
         out.append(f'<circle cx="{X(n):.1f}" cy="{yy:.1f}" r="5" fill="{C["purple"]}"/>')
         right = X(n) > W * 0.6
-        out.append(text(X(n) + (-10 if right else 10), yy - 9, lab, 11.5, C["purple"], "end" if right else "start", 700))
+        out.append(text(X(n) + (-10 if right else 10), yy - 9 if right else yy + 19, lab, 11.5, C["purple"], "end" if right else "start", 700))
     # หนึ่งครั้งที่ลบทุกอย่าง
     xe = X(n_all + 1)
     out.append(f'<line x1="{xe:.1f}" y1="{Y(gain * n_all):.1f}" x2="{xe:.1f}" y2="{Y(0) - 6:.1f}" stroke="{C["red"]}" stroke-width="2.4"/>')
