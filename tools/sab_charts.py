@@ -469,11 +469,11 @@ def process(html, fig, fill=False):
     if fill:
         def fsub(m):
             try:
-                return f"{m.group(1)}{B.fmt(B.get_path(fig, m.group(2)))}</td>"
+                return f"{m.group(1)}{B.fmt(B.get_path(fig, m.group(3)))}</{m.group(2)}>"
             except KeyError:
-                unknown.append(m.group(2))
+                unknown.append(m.group(3))
                 return m.group(0)
-        out = re.sub(r'(<td\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>).*?</td>', fsub, out, flags=re.S)
+        out = re.sub(r'(<(td|span)\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>).*?</\2>', fsub, out, flags=re.S)
     return out, unknown
 
 
