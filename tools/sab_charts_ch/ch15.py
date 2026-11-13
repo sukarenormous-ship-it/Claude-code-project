@@ -18,7 +18,7 @@ def _pnl_bridge(fig):
     deltas = [None, s["คาดพลาด"], s["ผลของราคาfill"], s["ค่าธรรมเนียม"], s["ค่าใช้จ่ายระหว่างถือ"]]
     names = ["ค่าที่คาดไว้", "ราคาจริง", "ราคาที่ซื้อขายได้", "หลังค่าธรรมเนียม", "หลังค่าถือ"]
     dnames = [None, "คาดพลาด", "ราคาเข้า", "ค่าธรรมเนียม", "ค่าถือ"]
-    W, H = 760, 330
+    W, H = 760, 300
     f = Frame(0, max(levels), W, H, T=70, Bm=262)
     out = f.grid(nice_ticks(0, max(levels)))
     gw = (W - f.L - f.R) / len(levels)
@@ -43,11 +43,11 @@ def _pnl_bridge(fig):
         out.append(text(cx, f.Bm + 20, names[i], 11.5, C["ink"] if i in (0, 4) else C["muted"], "middle", 700 if i in (0, 4) else None))
     out.append(text(16, 26, f"คาด {B.fmt(levels[0])} เหลือ {B.fmt(levels[-1])}", 14, C["ink"], weight=700))
     # คำอธิบายสีสั้น ๆ
-    lx = W - 300
+    lx = W - 330
     out.append(f'<rect x="{lx}" y="16" width="12" height="12" rx="2" fill="#fef3c7" stroke="{C["amber"]}" stroke-dasharray="3 2"/>')
-    out.append(text(lx + 18, 26, "ไม่ใช่เงินที่จ่าย", 11.5, C["amber"]))
-    out.append(f'<rect x="{lx + 130}" y="16" width="12" height="12" rx="2" fill="#fee2e2" stroke="{C["red"]}"/>')
-    out.append(text(lx + 148, 26, "เงินที่หายจริง", 11.5, C["red"]))
+    out.append(text(lx + 18, 26, "คาดพลาด ไม่มีใครได้ไป", 11.5, C["amber"]))
+    out.append(f'<rect x="{lx + 160}" y="16" width="12" height="12" rx="2" fill="#fee2e2" stroke="{C["red"]}"/>')
+    out.append(text(lx + 178, 26, "เงินที่ไปถึงคนอื่น", 11.5, C["red"]))
     alt = (f"ห้าแท่ง {' · '.join(f'{n} {B.fmt(v)}' for n, v in zip(names, levels))} · ส่วนที่หาย "
            f"คาดพลาด {_sign(deltas[1])} ราคาเข้า {_sign(deltas[2])} ค่าธรรมเนียม {_sign(deltas[3])} ค่าถือ {_sign(deltas[4])}")
     cap = (f"long A 10 · short B 20 · ไม้ซ้อมหนึ่งไม้ · อำพันประ = คาดพลาด ไม่มีใครได้ไป · "
