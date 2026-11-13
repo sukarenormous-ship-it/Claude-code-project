@@ -25,7 +25,7 @@ def _shape_gallery(fig):
         ("สภาพคล่อง", f"ให้สภาพคล่อง (ร่าง) · {sg(lp['ได้สองฝั่ง'])} / ได้ขาเดียว {B.fmt(lp['ได้ขาเดียว'])}"),
     ]
     W, h1, top = 760, 140, 34
-    out = [text(16, 22, "แถบผลสี่กลยุทธ์: ได้เล็กบ่อย เสียเป็นก้อน", 14, C["ink"], weight=700)]
+    out = [text(16, 22, "แถบผลสี่กลยุทธ์", 14, C["ink"], weight=700)]
     for j, (k, title) in enumerate(rows):
         parts = slip_strip(g[k]["ลำดับ"], title, W=W, H=h1)
         out.append(f'<g transform="translate(0,{top + j * h1})">' + "\n".join(parts) + "</g>")
