@@ -28,11 +28,12 @@ def _funding_paths(fig):
     out.append(f'<line x1="{f.L}" y1="{yf:.1f}" x2="{W - f.R}" y2="{yf:.1f}" stroke="{C["muted"]}" '
                f'stroke-dasharray="4 4" stroke-width="1.3"/>')
     out.append(text(X(62), yf - 6, f"ค่าธรรมเนียม {B.fmt(fee)} (maker)", 10.5, C["muted"], "middle"))
-    series = [("ราบ", C["blue"], ""), ("พุ่งแล้วแผ่ว", C["green"], ""), ("กลับขั้ว", C["red"], ""),
-              ("สลับ", C["amber"], ' stroke-dasharray="7 4"')]
-    for name, col, dash in series:
+    # ราบกับกลับขั้วทับกัน 45 รอบแรก: วาดราบเส้นหนาไว้ใต้ ให้เห็นเป็นขอบน้ำเงินรอบเส้นแดง
+    series = [("ราบ", C["blue"], "", 5.5), ("พุ่งแล้วแผ่ว", C["green"], "", 2.5), ("กลับขั้ว", C["red"], "", 2.2),
+              ("สลับ", C["amber"], ' stroke-dasharray="7 4"', 2.5)]
+    for name, col, dash, sw in series:
         pts = " ".join(f"{X(x):.1f},{f.y(v):.1f}" for x, v in zip(xs, g[name]))
-        out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.5" '
+        out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="{sw}" '
                    f'stroke-linejoin="round" stroke-linecap="round"{dash}/>')
         last = g[name][-1]
         out.append(text(X(n) + 8, f.y(last) + 4, f"{name} {B.fmt(p[name]['fundingรวม'])}", 11.5, col, "start", 700))

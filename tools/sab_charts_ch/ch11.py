@@ -49,17 +49,20 @@ def _pair_legs(fig):
         out.append(f'<line x1="{L2}" y1="{Y(g):.1f}" x2="{R2}" y2="{Y(g):.1f}" '
                    f'stroke="{C["axis"] if g == 0 else C["grid"]}" stroke-width="{1.5 if g == 0 else 1}"/>')
         out.append(text(L2 - 8, Y(g) + 4, B.fmt(g), 11, C["grey"], "end"))
-    xa, xb = L2 + 50, R2 - 60
+    xa, xb = L2 + 40, R2 - 130
     out.append(f'<line x1="{xa}" y1="{Y(x0):.1f}" x2="{xb}" y2="{Y(x1):.1f}" stroke="{C["blue"]}" '
                f'stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round"/>')
     for xx, v, lab in ((xa, x0, f"X = {B.fmt(pA0)} − 2 × {B.fmt(pB0)} = {B.fmt(x0)}"),
                        (xb, x1, f"X = {B.fmt(pA1)} − 2 × {B.fmt(pB1)} = {B.fmt(x1)}")):
         out.append(f'<circle cx="{xx}" cy="{Y(v):.1f}" r="5.5" fill="{C["blue"]}"/>')
-        out.append(text(xx, Y(v) + (20 if v == x0 else -12), lab, 11, C["ink"], "middle"))
+        if v == x0:
+            out.append(text(xx, Y(v) + 20, lab, 11, C["ink"], "middle"))
+        else:
+            out.append(text(xx + 10, Y(v) - 10, lab, 11, C["ink"], "start"))
     out.append(text(xa, 290, "ก่อน", 11, C["muted"], "middle"))
     out.append(text(xb, 290, "หลัง", 11, C["muted"], "middle"))
-    out.append(f'<rect x="{R2 - 165}" y="{Y(0.45):.1f}" width="165" height="30" rx="6" fill="#f5f3ff" stroke="{C["purple"]}"/>')
-    out.append(text(R2 - 82, Y(0.45) + 20, f"{B.fmt(sets)} ชุด × {B.fmt(x1 - x0)} = {sg(tot)}", 13,
+    out.append(f'<rect x="{R2 - 150}" y="{Y(0.42):.1f}" width="150" height="30" rx="6" fill="#f5f3ff" stroke="{C["purple"]}"/>')
+    out.append(text(R2 - 75, Y(0.42) + 20, f"{B.fmt(sets)} ชุด × {B.fmt(x1 - x0)} = {sg(tot)}", 13,
                     C["purple"], "middle", 700))
     out.append(text(L2 - 20, 40, "วิธีที่ 2: จำนวนชุด × X ที่ขยับ", 12.5, C["ink"], weight=700))
     out.append(f'<line x1="440" y1="30" x2="440" y2="300" stroke="{C["axis"]}" stroke-dasharray="3 4"/>')
