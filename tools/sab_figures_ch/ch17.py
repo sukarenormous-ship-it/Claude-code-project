@@ -20,8 +20,11 @@
 def _need(D, q, gain, loss, cost=0):
     g, l = D(str(gain)) - D(str(cost)), -D(str(loss)) + D(str(cost))
     k = q(l / g, 2)
-    return {"ได้": gain, "เสีย": loss, "ชนะคืนหนึ่งแพ้": int(k) if k == int(k) else k,
-            "ต้องชนะเปอร์เซ็นต์": q(l / (g + l) * 100, 2)}
+    out = {"ได้": gain, "เสีย": loss, "ชนะคืนหนึ่งแพ้": int(k) if k == int(k) else k,
+           "ต้องชนะเปอร์เซ็นต์": q(l / (g + l) * 100, 2)}
+    if cost:                                            # ตารางแสดงค่าหลังหักต้นทุน ให้ เสีย ÷ ได้ คิดซ้ำได้จากตาราง
+        out["ได้สุทธิ"], out["เสียสุทธิ"] = float(q(g, 2)), float(q(-l, 2))
+    return out
 
 
 def extend(data, D, q):
