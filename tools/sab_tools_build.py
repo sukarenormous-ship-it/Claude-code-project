@@ -79,7 +79,7 @@ CSS = """<style>
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .v{font-weight:700;font-variant-numeric:tabular-nums}
 .bk{display:block;font-size:.76em;color:#64748b;font-weight:400;white-space:nowrap}
-td:not(.num) .bk{display:inline;margin-left:6px}
+td:not(.num) .bk,p .bk{display:inline;margin-left:6px}
 .tool table:not(.wide){min-width:0}
 .big{font-size:1.7em;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums}
 .src{font-size:.86em;color:#64748b;margin:4px 0 14px}
@@ -109,14 +109,14 @@ function setv(id,v){$(id).value=v;}
 function twins(){document.querySelectorAll('[data-twin]').forEach(el=>{
   let n=el.nextElementSibling; if(!n||!n.classList.contains('bk')){n=document.createElement('span');n.className='bk';el.after(n);}
   const v=jp(el.dataset.twin),dl=((el.textContent.split('.')[1])||'').replace(/[^0-9]/g,'').length;
-  n.textContent='ในบท '+(typeof v==='number'?nf(v,Math.max(decs(v),dl)):fj(v));});}
+  n.textContent='ในบท '+(typeof v==='number'?nf(v,Math.min(2,Math.max(decs(v),dl))):fj(v));});}
 function put(id,v,d){const el=$(id);el.textContent=nf(v,d);el.classList.toggle('neg',v<0);}
 const NS='http://www.w3.org/2000/svg';
 function S(tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e;}
-function vb(svg,H){const r=svg.getBoundingClientRect().width;const W=Math.max(340,Math.min(640,Math.round(r)||640));svg.setAttribute('viewBox','0 0 '+W+' '+H);return W;}
+function vb(svg,H){const r=svg.getBoundingClientRect().width;const W=Math.max(320,Math.min(640,Math.round(r)||640));svg.setAttribute('viewBox','0 0 '+W+' '+H);return W;}
 let _rt;function onResize(f){window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(f,150);});}
 function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
-function T(svg,x,y,s,o){o=o||{};svg.appendChild(S('text',{x:x,y:y,'font-size':o.size||12,fill:o.fill||'#4b5563','text-anchor':o.anchor||'start','font-weight':o.weight||400,'font-family':'Sarabun,sans-serif'},s));}
+function T(svg,x,y,s,o){o=o||{};svg.appendChild(S('text',{x:x,y:y,'font-size':o.size||12,fill:o.fill||'#4b5563','text-anchor':o.anchor||'start','font-weight':o.weight||400,'font-family':'Sarabun,sans-serif',stroke:'#fff','stroke-width':3,'paint-order':'stroke','stroke-linejoin':'round'},s));}
 const COL={green:'#16a34a',red:'#dc2626',purple:'#7c3aed',blue:'#2563eb',amber:'#d97706',grey:'#9ca3af',ink:'#374151',grid:'#e5e7eb'};
 function gauss(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 """
@@ -283,8 +283,8 @@ function upd(){const p=P(),L=ladder(p);
   const tops=[];for(let q=0;q<=XM;q+=0.5){const f=p.s*(1+q/100)+ba;tops.push([q,(1+m)*(f-p.f)]);}
   const ymax=Math.max(free*1.6,...tops.map(t=>t[1]))*1.05,ymin=Math.min(0,...tops.map(t=>t[1]));
   const X=q=>x0+q/XM*(x1-x0),Y=v=>y0-(v-ymin)/(ymax-ymin)*(y0-y1);
-  T(sv,10,18,'ต้องโอนเติม (แดง) เทียบเงินสดอิสระ (เทา) เมื่อ spot ขึ้นในวันเดียว',{weight:700,fill:COL.ink});
-  for(let q=0;q<=XM;q+=5){sv.appendChild(S('line',{x1:X(q),x2:X(q),y1:y1,y2:y0,stroke:COL.grid}));T(sv,X(q),y0+16,q+'%',{anchor:'middle',size:11});}
+  T(sv,10,18,'ต้องโอนเติม (แดง) เทียบเงินสดอิสระ (เทา)',{weight:700,fill:COL.ink});
+  for(let q=0;q<=XM;q+=5){sv.appendChild(S('line',{x1:X(q),x2:X(q),y1:y1,y2:y0,stroke:COL.grid}));T(sv,X(q),y0+16,q+'%',{anchor:q===XM?'end':'middle',size:11});}
   sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(free),y2:Y(free),stroke:COL.grey,'stroke-width':3}));
   sv.appendChild(S('polyline',{points:tops.map(t=>X(t[0])+','+Y(t[1])).join(' '),fill:'none',stroke:COL.red,'stroke-width':3}));
   const qb=(free/(1+m)-ba+p.f)/p.s*100-100; // spot ขึ้นกี่ % แล้วเงินสดหมดพอดี
@@ -413,14 +413,14 @@ function drawCum(f,k,R){const sv=$('f-cum');clear(sv);const H=280,W=vb(sv,H),x0=
   const all=[].concat(...Object.values(series));const ymax=Math.max(10,...all)*1.08,ymin=Math.min(0,...all)*1.08;
   const X=i=>x0+i/89*(x1-x0),Y=v=>y0-(v-ymin)/(ymax-ymin)*(y0-y1);
   T(sv,10,18,'funding สะสม (ดอลลาร์ต่อ 1 BTC)',{weight:700,fill:COL.ink});
-  [0,30,60,89].forEach(i=>{sv.appendChild(S('line',{x1:X(i),x2:X(i),y1:y1,y2:y0,stroke:COL.grid}));T(sv,X(i),y0+16,'รอบ '+(i+1),{anchor:'middle',size:11});});
+  [0,30,60,89].forEach(i=>{sv.appendChild(S('line',{x1:X(i),x2:X(i),y1:y1,y2:y0,stroke:COL.grid}));T(sv,X(i),y0+16,'รอบ '+(i+1),{anchor:i===0?'start':i===89?'end':'middle',size:11});});
   sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(0),y2:Y(0),stroke:'#cbd5e1'}));T(sv,x0-6,Y(0)+4,'0',{anchor:'end',size:11});
-  Object.keys(series).forEach(n=>{const on=n===cur;const pts=series[n].map((v,i)=>X(i)+','+Y(v)).join(' ');
+  Object.keys(series).sort((a,b)=>(a===cur)-(b===cur)).forEach(n=>{const on=n===cur;const pts=series[n].map((v,i)=>X(i)+','+Y(v)).join(' ');
     sv.appendChild(S('polyline',{points:pts,fill:'none',stroke:on?COL.blue:COL.grey,'stroke-width':on?3.2:1.4,opacity:on?1:.8}));
     const last=series[n][89];T(sv,x1-2,Y(last)-5,n+' '+nf(last,0),{anchor:'end',size:11,fill:on?COL.blue:'#6b7280',weight:on?700:400});});
   if(R.exitAt){const i=R.exitAt-1,v=series[cur][i];sv.appendChild(S('circle',{cx:X(i),cy:Y(v),r:6,fill:COL.purple}));
     T(sv,X(i)+8,Y(v)+18,'ออกรอบ '+R.exitAt,{fill:COL.purple,weight:700});}}
-let dragging=false;
+let dragging=false,lastI=null;
 function drawRates(r){const sv=$('f-draw');clear(sv);const H=220,W=vb(sv,H),x0=56,x1=W-16,y0=H-26,y1=20,LIM=0.0004;
   const X=i=>x0+i/90*(x1-x0),Y=v=>(y0+y1)/2-v/LIM*(y0-y1)/2;
   sv.appendChild(S('rect',{x:x0,y:y1,width:x1-x0,height:y0-y1,fill:cur==='วาดเอง'?'#f5f3ff':'#fff',stroke:COL.grid}));
@@ -429,11 +429,12 @@ function drawRates(r){const sv=$('f-draw');clear(sv);const H=220,W=vb(sv,H),x0=5
   const bw=(x1-x0)/90;r.forEach((v,i)=>{const vv=Math.max(-LIM,Math.min(LIM,v));sv.appendChild(S('rect',{x:X(i)+0.5,y:Math.min(Y(vv),Y(0)),width:Math.max(1,bw-1),
     height:Math.abs(Y(vv)-Y(0)),fill:v>=0?COL.green:COL.red}));});
   T(sv,x1,14,cur==='วาดเอง'?'โหมดวาดเอง: ลากบนกราฟ':'กด "วาดเอง" เพื่อแก้เส้นทาง',{anchor:'end',size:11,fill:COL.purple});
-  sv.onpointerdown=e=>{if(cur!=='วาดเอง')return;dragging=true;sv.setPointerCapture(e.pointerId);paint(e);};
-  sv.onpointermove=e=>{if(dragging)paint(e);};sv.onpointerup=()=>{dragging=false;};
+  sv.onpointerdown=e=>{if(cur!=='วาดเอง')return;dragging=true;lastI=null;try{sv.setPointerCapture(e.pointerId);}catch(_){}paint(e);};
+  sv.onpointermove=e=>{if(dragging)paint(e);};sv.onpointerup=()=>{dragging=false;lastI=null;};
   function paint(e){const b=sv.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*W,py=(e.clientY-b.top)/b.height*H;
     const i=Math.max(0,Math.min(89,Math.floor((px-x0)/bw)));let v=((y0+y1)/2-py)/((y0-y1)/2)*LIM;v=Math.max(-LIM,Math.min(LIM,v));
-    mine[i]=Math.round(v/0.00005)*0.00005;upd();}}
+    v=Math.round(v/0.00005)*0.00005;const a=lastI===null?i:Math.min(lastI,i),b=lastI===null?i:Math.max(lastI,i);
+    for(let j=a;j<=b;j++)mine[j]=v;lastI=i;upd();}}
 ['f-k','f-crowd','f-hur'].forEach(i=>$(i).addEventListener('input',upd));
 onResize(upd);upd();
 """
@@ -555,7 +556,7 @@ function fan(){const p=R(),sv=$('r-fan');clear(sv);const H=280,W=vb(sv,H),x0=44,
   paths.forEach(a=>sv.appendChild(S('polyline',{points:a.map((v,t)=>X(t)+','+Y(v)).join(' '),fill:'none',stroke:COL.grey,'stroke-width':1,opacity:.55})));
   const ex=[];for(let t=0;t<=N;t++)ex.push(p.x0*Math.pow(p.phi,t));
   sv.appendChild(S('polyline',{points:ex.map((v,t)=>X(t)+','+Y(v)).join(' '),fill:'none',stroke:COL.purple,'stroke-width':3}));
-  [0,Math.round(N/2),N].forEach(t=>T(sv,X(t),y0+16,'ช่วง '+t,{anchor:'middle',size:11}));}
+  [0,Math.round(N/2),N].forEach(t=>T(sv,X(t),y0+16,'ช่วง '+t,{anchor:t===0?'start':t===N?'end':'middle',size:11}));}
 function firstPassage(phi,sd,M_){const MAX=phi>=1?1000:5000,ts=[];let up=0,inHalf=0;const h=hl(phi);
   for(let k=0;k<M_;k++){let x=2,t=0,touched=false;while(t<MAX){x=phi*x+sd*gauss();t++;if(x>=3)touched=true;if(x<=1)break;}ts.push(t);if(touched)up++;if(h!==null&&t<=h)inHalf++;}
   ts.sort((a,b)=>a-b);const n=ts.length,mean=ts.reduce((a,b)=>a+b,0)/n;
@@ -703,7 +704,7 @@ function zplot(svg,z,title,color){PLOTS[svg.id]=[z,title,color];clear(svg);const
   svg.appendChild(S('polyline',{points:z.slice(0,NF+1).map((v,i)=>X(i)+','+Y(v)).join(' '),fill:'none',stroke:COL.grey,'stroke-width':1.3}));
   svg.appendChild(S('polyline',{points:z.slice(NF).map((v,i)=>X(i+NF)+','+Y(v)).join(' '),fill:'none',stroke:color,'stroke-width':1.6}));
   let im=NF;for(let i=NF;i<z.length;i++)if(Math.abs(z[i])>Math.abs(z[im]))im=i;
-  svg.appendChild(S('circle',{cx:X(im),cy:Y(z[im]),r:5,fill:COL.purple}));T(svg,X(im)+(im>z.length*0.8?-8:8),Y(z[im])+(z[im]<0?16:-8),'ไกลสุด '+nf(z[im],2),{fill:COL.purple,weight:700,anchor:im>z.length*0.8?'end':'start'});}
+  svg.appendChild(S('circle',{cx:X(im),cy:Y(z[im]),r:5,fill:COL.purple}));T(svg,X(im)+(im>z.length*0.8?-10:10),Y(z[im])+(z[im]<0?-8:16),'ไกลสุด '+nf(z[im],2),{fill:COL.purple,weight:700,anchor:im>z.length*0.8?'end':'start'});}
 // ① ชุดในบท: คิดใหม่จากเส้นทางที่บทเก็บไว้
 const bz=zstats(C10['กราฟ']['อันดับ1'],NF,false), gz=zstats(C10['กราฟ']['คู่จริง'],NF,false);
 $('b-cross').textContent=nf(bz.cross,0);$('b-in').textContent=nf(bz.inband,1);$('b-max').textContent=nf(bz.maxz,2);
