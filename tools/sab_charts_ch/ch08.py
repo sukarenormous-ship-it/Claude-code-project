@@ -51,14 +51,14 @@ def _beta_count(fig):
     last = f.L + gw * (len(days) - 1) + gw / 2
     out.append(text(last, f.Bm + 50, "คืนในฉาก", 10.5, C["purple"], "middle", 700))
     # หัว + legend + สรุปสีม่วง
-    out.append(text(f.L, 26, f"นับ beta จากวันที่ BTC ขยับเกิน {cut}%", 13, C["ink"], weight=700))
+    out.append(text(f.L, 26, "BTC กับ A รายวัน (%)", 13, C["ink"], weight=700))
     lx = f.L
     for name, col in (("BTC", C["blue"]), ("A", C["amber"]), ("ไม่นับ", "#d1d5db")):
         out.append(f'<rect x="{lx}" y="{40}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, 50, name, 11.5, C["muted"]))
         lx += 34 + 8 * len(name)
     sA, sB = _whole(nb['ผลรวมA']), _whole(nb['ผลรวมBTC'])
-    out.append(text(f.L, 80, f"{nb['วันที่นับ']} วันที่นับ (ทุกวัน A ไปทางเดียวกับ BTC จึงจดบวก): "
+    out.append(text(f.L, 80, f"{nb['วันที่นับ']} วันที่นับ: "
                              f"A รวม {sA} ÷ BTC รวม {sB} = {B.fmt(nb['ผล'])}", 12.5, C["purple"], weight=700))
     alt = (f"กราฟแท่ง 8 วัน แท่งน้ำเงินคือการขยับของ BTC แท่งส้มคือการขยับของ A เป็นเปอร์เซ็นต์ "
            f"วันที่ BTC ขยับไม่เกิน {cut}% เป็นสีเทาและไม่นับ วันที่นับ {nb['วันที่นับ']} วัน A ขยับรวม {sA} "
@@ -99,10 +99,9 @@ def _hedge_compare(fig):
     ty = f.y(s1[1]) + 40                          # ใต้ป้าย −20 ของแถว 20 เหรียญ ไม่ทับแท่ง
     parts.append(f'<path d="M{x - 4:.1f},{y + 4:.1f} C{x - 20:.1f},{ty - 4:.1f} {x - 60:.1f},{ty - 4:.1f} {x - 100:.1f},{ty - 4:.1f}" '
                  f'fill="none" stroke="{C["purple"]}" stroke-width="1.2"/>')
-    parts.append(text(x - 104, ty, "ขา hedge ใหญ่สุด รับข่าวของ B มากสุด", 11, C["purple"], "end", 700))
+    parts.append(text(x - 104, ty, "ขาใหญ่สุด รับข่าวของ B มากสุด", 11, C["purple"], "end", 700))
     alt = (f"กราฟแท่งสามกลุ่ม ขา B 10 20 30 เหรียญ เมื่อ BTC ลง 4% เสีย {B.fmt(s1[0])} {B.fmt(s1[1])} {B.fmt(s1[2])} "
            f"เมื่อ B ขึ้นเอง 1% เสีย {B.fmt(s2[0])} {B.fmt(s2[1])} {B.fmt(s2[2])}")
     cap = (f"ถือ A {B.fmt(c['ฉาก']['Aจำนวน'])} เหรียญ ({B.fmt(c['ฉาก']['Aมูลค่า'])}) beta {B.fmt(c['ฉาก']['betaA'])} · "
-           f"B ราคา {B.fmt(fig['บัญชีมิน']['คู่']['B'])} beta {B.fmt(fig['บัญชีมิน']['beta']['B'])} · "
-           "แท่งแดงคิดเฉพาะผลของตลาด แท่งส้มคิดเฉพาะการขยับของ B เอง")
+           f"B ราคา {B.fmt(fig['บัญชีมิน']['คู่']['B'])} beta {B.fmt(fig['บัญชีมิน']['beta']['B'])}")
     return wrap(W, H, alt, parts, cap, "สอน")
