@@ -14,6 +14,7 @@ SHORT_LEN, SHORT_REPS = 60, 2000   # φ จากข้อมูลสั้น 
 
 
 def _fan(start=2.0):
+    """เดินทีละช่วงจนแตะเป้า X ≤ 1 (มินหยุดนับตรงนั้น) หรือครบ 24 ช่วง · ถึง 3 ระหว่างทางไม่หยุด แค่จดไว้"""
     rng = random.Random(SEED)
     paths = []
     for _ in range(FAN_N):
@@ -21,22 +22,24 @@ def _fan(start=2.0):
         for _ in range(FAN_T):
             x = FAN_PHI * x + rng.gauss(0.0, FAN_SD)
             p.append(x)
+            if x <= 1:
+                break
         paths.append(p)
     return paths
 
 
 def _first_event(p):
-    """('เป้า'|'ขอบ'|None, ช่วงที่เกิด) — ดูทีละจุดสังเกต: X ≤ 1 = แตะเป้า · X ≥ 3 = ถึงขอบ"""
+    """('เป้า'|'ขอบ'|None, ช่วงที่เกิด) — X ≥ 3 ก่อนแตะ X ≤ 1 = ถึงขอบก่อน (นิยามเดียวกับ 44.8%)"""
     for t, x in enumerate(p[1:], 1):
-        if x <= 1:
-            return "เป้า", t
         if x >= 3:
             return "ขอบ", t
+        if x <= 1:
+            return "เป้า", t
     return None, None
 
 
 def _hit_time(p):
-    """ช่วงแรกที่ X ≤ 1 (นับมือแบบใบ 13 · ไม่สนว่าไปถึง 3 ก่อนหรือไม่) · None = ไม่แตะใน 24 ช่วง"""
+    """ช่วงแรกที่ X ≤ 1 (นับมือแบบใบ 13) · None = ไม่แตะใน 24 ช่วง"""
     for t, x in enumerate(p[1:], 1):
         if x <= 1:
             return t
