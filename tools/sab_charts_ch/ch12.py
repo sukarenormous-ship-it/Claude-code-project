@@ -41,16 +41,18 @@ def _exit_paths(fig):
                            (line_loss, f"งบ {B.fmt(card['งบขาดทุนสุทธิ'])} ≈ X {B.fmt(line_loss)}", C["red"])):
             out.append(f'<line x1="{ox}" y1="{Y(v):.1f}" x2="{ox + pw}" y2="{Y(v):.1f}" stroke="{cc}" '
                        f'stroke-dasharray="5 4" stroke-width="1.2" stroke-opacity=".8"/>')
-            out.append(text(ox + pw - 4, Y(v) - 4, lab, 10, cc, "end"))
+            if k == "1":
+                out.append(text(ox + pw - 4, Y(v) - 4, lab, 10, cc, "end"))
         out.append(f'<line x1="{X(tmax):.1f}" y1="{oy}" x2="{X(tmax):.1f}" y2="{oy + ph}" stroke="{C["grey"]}" '
                    f'stroke-dasharray="2 3" stroke-width="1.2"/>')
-        out.append(text(X(tmax) + 3, oy + ph - 6, f"ครบ {tmax} ช่วง", 10, C["grey"]))
+        if k == "1":
+            out.append(text(X(tmax) + 3, oy + ph - 6, f"ครบ {tmax} ช่วง", 10, C["grey"]))
         # เส้นทาง
         pts = " ".join(f"{X(i - 1):.1f},{Y(v):.1f}" for i, v in enumerate(xs))
         out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.2" stroke-linejoin="round"/>')
         for i, v in enumerate(xs):
             out.append(f'<circle cx="{X(i - 1):.1f}" cy="{Y(v):.1f}" r="3" fill="{C["blue"]}"/>')
-            if i >= 1:
+            if i >= 2 and i < len(xs) - 1:
                 out.append(text(X(i - 1), Y(v) + (16 if k in ("1", "2") or i == 1 else -9), B.fmt(v), 10, C["muted"], "middle"))
         # จุดเข้า + จุดออก
         out.append(f'<circle cx="{X(0):.1f}" cy="{Y(xs[1]):.1f}" r="5" fill="{C["purple"]}"/>')
@@ -64,11 +66,11 @@ def _exit_paths(fig):
         out.append(text(X(ex_i) + dx, ty, f"ออก {B.fmt(xs[-1])} → {_sign(net)}", 12, col, anchor, 700))
         # แกน x
         for i in range(0, len(xs) - 1):
-            out.append(text(X(i), oy + ph + 14, f"ช่วง {i}", 9.5, C["grey"], "middle"))
+            out.append(text(X(i), oy + ph + 14, str(i), 9.5, C["grey"], "middle"))
     alt = ("สี่แผงจากจุดเข้า 2.1 · เส้นทาง 1 ลง 1.7 แล้ว 0.4 ออกตามสัญญาณ +16 · เส้นทาง 2 ลง 2.0 1.9 1.8 ครบสามช่วง +2 · "
            "เส้นทาง 3 ขึ้น 2.8 แล้วกระโดดไป 4.1 เลยเส้นงบ 3.5 ได้ −21 · เส้นทาง 4 ขึ้น 2.6 3.0 3.7 ครบเวลาพร้อมชนงบ ออกเพราะงบ −17")
-    cap = (f"short X 10 ชุด · ต้นทุนเข้า + ออก 1 · เส้นแดงประ = X ที่ขาดทุนสุทธิถึงงบ {B.fmt(card['งบขาดทุนสุทธิ'])} · "
-           f"ตัวเลขสีที่จุดออกคือกำไรสุทธิก่อนค่าถือขา short · เส้นเชื่อมจุดช่วยอ่านลำดับ ไม่ใช่ราคาที่ซื้อขายได้ระหว่างจุด")
+    cap = ("แกนนอน = ช่วงหลังเข้า · เส้นประแดง = X ที่ขาดทุนถึงงบ · ตัวเลขสีคือกำไรสุทธิก่อนค่าถือ · "
+           "ระหว่างจุดไม่มีราคาให้ซื้อขาย")
     return wrap(W, H, alt, out, cap, "สอน")
 
 
@@ -81,12 +83,11 @@ def _pair_strip(fig):
     for j, name in enumerate(("หลัก", "เทียบ")):
         m = mix[name]["สัดส่วน"]
         title = f"โลก {m[0]}/{m[1]}/{m[2]} · ค่าคาดหมาย {_sign(mix[name]['ค่าคาดหมาย'])} ต่อไม้"
-        parts = slip_strip(s[name]["ลำดับ"], title, W=W, H=h1, label_every=1)
+        parts = slip_strip(s[name]["ลำดับ"], title, W=W, H=h1)
         out.append(f'<g transform="translate(0,{36 + j * (h1 + 10)})">' + "\n".join(parts) + "</g>")
     H = 36 + 2 * (h1 + 10)
     alt = (f"สองแถบ 20 ไม้ แถวบน {s['หลัก']['จำนวน'][0]} ไม้ได้ 16 · {s['หลัก']['จำนวน'][1]} ไม้ได้ 2 · "
            f"{s['หลัก']['จำนวน'][2]} ไม้เสีย 21 รวม {s['หลัก']['รวม']} · แถวล่าง {s['เทียบ']['จำนวน'][0]} · "
            f"{s['เทียบ']['จำนวน'][1]} · {s['เทียบ']['จำนวน'][2]} ไม้ รวม {s['เทียบ']['รวม']}")
-    cap = ("เขียว = ไม้ที่ได้ (+16 กลับถึงเส้นออก · +2 ครบเวลา) · แดง = ไม้ที่ชนงบ −21 · ลำดับไม้ตรึงไว้เพื่อสอน ไม่ใช่ผลสุ่ม · "
-           f"กติกาเหมือนกันทุกไม้ ต่างกันแค่ว่าโลกส่งไม้แบบไหนมาบ่อยแค่ไหน")
+    cap = "เขียว = +16 หรือ +2 · แดง = −21 · ลำดับไม้ตรึงเพื่อสอน ไม่ใช่ผลสุ่ม · กติกาเหมือนกันทุกไม้"
     return wrap(W, H, alt, out, cap, "สอน")

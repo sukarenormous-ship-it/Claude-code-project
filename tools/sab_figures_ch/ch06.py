@@ -89,7 +89,7 @@ def extend(data, D, q):
         },
         "เงินบนexchangeถ้าspotอยู่นอก": q(on_ex, 0),
         "ของมิน": {
-            "กำไรจากราคา": mini(price_pnl),
+            "กำไรจากราคา": int(mini(price_pnl)) if mini(price_pnl) == int(mini(price_pnl)) else mini(price_pnl),
             "ค่าธรรมเนียมเปิด": mini(open_fee),
             "ค่าธรรมเนียมปิด": mini(close_fee),
             "เงินสดหลังปิด": mini(cap + realised),

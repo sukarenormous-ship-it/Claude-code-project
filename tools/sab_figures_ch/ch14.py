@@ -48,7 +48,7 @@ def extend(data, D, q):
     assert after == c["บัญชีคู่"], "บัญชีคู่ไม่ตรง ch14"
     trade3 = {"บัญชีคู่ก่อน": before, "บัญชีคู่หลัง": after, "สุทธิ": net3,
               "Xขยับ": q(x3 - e3, 1), "เส้นงบ": q(e3 + (-budget - cost) / sets, 1),
-              "เกินงบ": q(D(net3) - budget, 0),
+              "เกินงบ": q(budget - D(net3), 0),
               "เปอร์เซ็นต์ทุนรวม": q(D(-net3) / total * 100, 2)}
 
     # ── ถ้าเข้าที่ 3.8 (ไม้ที่ถูกบล็อก) ──
@@ -109,7 +109,7 @@ def extend(data, D, q):
     ex_a = {"เส้นทาง": [float(x) for x in ex_path], "เข้า": float(ex_path[1]),
             "ที่3.0": q(sets * (ex_path[1] - ex_path[2]) - cost, 0),
             "ออกที่": float(ex_path[j]), "เหตุออก": why, "สุทธิ": q(net, 0),
-            "เส้นงบ": q(ex_path[1] + (-budget - cost) / sets, 1), "เกินงบ": q(net - budget, 0),
+            "เส้นงบ": q(ex_path[1] + (-budget - cost) / sets, 1), "เกินงบ": q(budget - net, 0),
             "เปอร์เซ็นต์ทุนรวม": q(-net / total * 100, 2),
             "บล็อก": blocked, "จำนวนบล็อก": len(blocked), "ถ้าเข้า3.6ปิด1.0": miss}
 
