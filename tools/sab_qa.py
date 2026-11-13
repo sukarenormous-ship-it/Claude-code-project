@@ -32,6 +32,7 @@ TERM_CAP = 12
 LAST_PART = 18
 DIST_REQUIRED = {2, 4, 6, 7, 10, 12, 13, 14, 15, 16, 17}
 OTHER_REQUIRED = {1, 2, 5, 7, 9, 12, 17}
+FAST = [0, 4, 5, 10, 12, 14, 17]     # ทางด่วน 🟠 (แผน 3.1)
 
 VOID = {"br", "hr", "img", "meta", "link", "input", "wbr", "source", "path", "rect",
         "line", "circle", "text", "stop", "marker", "use", "polygon", "polyline",
@@ -376,6 +377,24 @@ def check_file(name, html, ctx):
                 if re.search(pat, txt):
                     P.append(f"{name}: W22 ใช้ {form!r} ก่อนสอน (สอนในบท {taught})")
                     break
+        # W22 ทางด่วน: บทในทางด่วนใช้คำจากบทที่ทางด่วนข้าม → ต้องนิยามในกล่อง 🟠 ของบทนี้หรือบททางด่วนก่อนหน้า
+        if n in FAST:
+            fast_txt = ""
+            for k in [k for k in FAST if k <= n]:
+                pg = html if k == n else pages.get(f"sab-part{k}.html")
+                if pg:
+                    fast_txt += " ".join(text_of(pg[s0:e0]) for s0, e0, _ in
+                                         blocks(pg, lambda t, a: 'data-path="fast"' in a))
+            body_txt = text_of(cut(html, exempt + blocks(html, lambda t, a: 'data-path="fast"' in a)))
+            for term, info in terms.items():
+                taught = info.get("สอน") if not term.startswith("_") else None
+                if taught is None or taught >= n or taught in FAST:
+                    continue
+                forms = [term] + info.get("รูปแบบ", [])
+                used = next((f for f in forms if re.search(
+                    (r"(?<![A-Za-z])" + re.escape(f) + r"(?![A-Za-z])") if f.isascii() else re.escape(f), body_txt)), None)
+                if used and not any(f in fast_txt for f in forms):
+                    P.append(f"{name}: W22 ทางด่วน ใช้ {used!r} (สอนบท {taught} ที่ทางด่วนข้าม) แต่ไม่มีในกล่อง 🟠")
     return P
 
 

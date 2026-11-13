@@ -57,8 +57,8 @@ def text(x, y, s, size=11.5, fill=None, anchor="start", weight=None):
 
 def wrap(w, h, alt, parts, cap, src):
     """SVG + คำบรรยาย · ป้ายที่มา (W16) ขึ้นต้นคำบรรยายเสมอ"""
-    return (f'<svg class="fig" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(alt)}">\n' + "\n".join(parts) +
-            f'\n</svg>\n<div class="cap">{SRC[src]} · {cap}</div>')
+    return (f'<div class="figw"><svg class="fig" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(alt)}">\n' + "\n".join(parts) +
+            f'\n</svg></div>\n<div class="cap">{SRC[src]} · {cap}</div>')
 
 
 class Frame:
@@ -258,6 +258,8 @@ CHARTS = {}
 
 def chart(key):
     def deco(fn):
+        if key in CHARTS:                      # กันปลั๊กอินทับสเปกเดิมเงียบ ๆ
+            raise SystemExit(f"กราฟ {key!r} ถูกนิยามซ้ำ ({fn.__module__}) — ย้ายมาไว้ที่เดียว")
         CHARTS[key] = fn
         return fn
     return deco
@@ -357,23 +359,6 @@ def _converge(fig):
 
 
 # ── บท 4 ──
-@chart("sab-two-pockets")
-def _two_pockets(fig):
-    rows = fig["ch04"]["ตารางบัญชี"]
-    names = {"เริ่ม": "เริ่ม", "ซื้อspot": "ซื้อ spot", "shortfuturesวางหลักประกัน": "วาง\nหลักประกัน",
-             "ชำระวันที่9": "ชำระ\nวันที่ 9", "หลังโอนเติม": "หลังโอน\nเติม", "ชำระวันหมดอายุ": "วัน\nหมดอายุ"}
-    cats = [names.get(r["เหตุการณ์"], r["เหตุการณ์"]) for r in rows]
-    parts = stacked_bars(cats, [("มูลค่า spot", [r["มูลค่าspot"] for r in rows], "#93c5fd"),
-                                ("หลักประกัน", [r["หลักประกัน"] for r in rows], C["amber"]),
-                                ("เงินสดอิสระ", [r["เงินสดอิสระ"] for r in rows], C["green"])],
-                         "equity แทบไม่ขยับ แต่เงินย้ายกระเป๋า — กระเป๋าเงินสดอิสระคือที่ที่หมดได้",
-                         totals=[f"equity {B.fmt(r['equity'])}" for r in rows])
-    alt = "กราฟแท่งซ้อน หกเหตุการณ์ แสดงมูลค่า spot หลักประกัน และเงินสดอิสระ ยอดรวมแทบคงที่ แต่เงินสดอิสระลดจาก 14,700 เหลือ 3,480"
-    cap = (f"ราคาขึ้น 10% วันที่ 9 · equity เปลี่ยนแค่ {B.fmt(fig['ch04']['equity_เปลี่ยน'])} แต่ต้องโอนเติมหลักประกัน "
-           f"{B.fmt(fig['ch04']['ต้องโอน'])} จากเงินสดอิสระ · กติกาหลักประกันสอน 10% ของราคา futures ชำระสิ้นวัน")
-    return wrap(760, 330, alt, parts, cap, "สอน")
-
-
 @chart("sab-buffer-line")
 def _buffer_line(fig):
     d = fig["ch04"]["dist"]
