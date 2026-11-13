@@ -7,8 +7,8 @@ sab-pair-strip: แถบผล 20 ไม้ของการ์ดเดีย
 from sab_charts import chart, wrap, text, slip_strip, C, B
 
 
-_TITLES = {"1": "เส้นทาง 1 · กลับถึงเส้นออก", "2": "เส้นทาง 2 · ครบเวลา 3 ช่วง",
-           "3": "เส้นทาง 3 · กระโดดข้ามเส้นงบ", "4": "เส้นทาง 4 · งบกับเวลาพร้อมกัน"}
+_TITLES = {"1": "เส้นทาง 1 · ถึงเส้นออก", "2": "เส้นทาง 2 · ครบเวลา",
+           "3": "เส้นทาง 3 · กระโดดข้ามงบ", "4": "เส้นทาง 4 · งบพร้อมเวลา"}
 
 
 def _sign(v):
@@ -30,7 +30,7 @@ def _exit_paths(fig):
         p = c["เส้นทาง"][k]
         xs = p["X"]
         Y = lambda v: oy + ph - (v - lo) / (hi - lo) * ph          # noqa: E731
-        X = lambda i: ox + (i + 1) / (tmax + 1.4) * pw             # noqa: E731  i = อายุ (−1 = ก่อนเข้า)
+        X = lambda i: ox + (i + 0.45) / (tmax + 0.9) * pw          # noqa: E731  i = ช่วงหลังเข้า (0 = จุดเข้า)
         net = p["สุทธิ"]
         col = C["green"] if net > 0 else C["red"]
         out.append(text(ox, oy - 12, _TITLES[k], 12.5, C["ink"], weight=700))
@@ -47,10 +47,12 @@ def _exit_paths(fig):
                    f'stroke-dasharray="2 3" stroke-width="1.2"/>')
         if k == "1":
             out.append(text(X(tmax) - 4, oy + 14, f"ครบ {tmax} ช่วง", 10, C["grey"], "end"))
-        # เส้นทาง
-        pts = " ".join(f"{X(i - 1):.1f},{Y(v):.1f}" for i, v in enumerate(xs))
+        # เส้นทาง (เริ่มที่จุดเข้า · ไม่วาดจุดก่อนเข้า เพื่อไม่ให้ดูเหมือน X กระโดดจาก 0 ไป 2.1 ในช่วงเดียว)
+        pts = " ".join(f"{X(i - 1):.1f},{Y(v):.1f}" for i, v in enumerate(xs) if i >= 1)
         out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.2" stroke-linejoin="round"/>')
         for i, v in enumerate(xs):
+            if i == 0:
+                continue
             out.append(f'<circle cx="{X(i - 1):.1f}" cy="{Y(v):.1f}" r="3" fill="{C["blue"]}"/>')
             if i >= 2 and i < len(xs) - 1:
                 out.append(text(X(i - 1), Y(v) + (16 if k == "1" else -9), B.fmt(v), 10, C["muted"], "middle"))
@@ -64,12 +66,13 @@ def _exit_paths(fig):
         anchor = "middle" if k == "1" else "end"
         dx = -10 if anchor == "end" else 0
         out.append(text(X(ex_i) + dx, ty, f"ออก {B.fmt(xs[-1])} → {_sign(net)}", 12, col, anchor, 700))
-        # แกน x
-        for i in range(0, len(xs) - 1):
-            out.append(text(X(i), oy + ph + 14, str(i), 9.5, C["grey"], "middle"))
+        # แกน x (เฉพาะแผงล่าง · แผงบนใช้แกนเดียวกัน)
+        if k in ("3", "4"):
+            for i in range(0, tmax + 1):
+                out.append(text(X(i), oy + ph + 14, str(i), 9.5, C["grey"], "middle"))
     alt = ("สี่แผงจากจุดเข้า 2.1 · เส้นทาง 1 ลง 1.7 แล้ว 0.4 ออกตามสัญญาณ +16 · เส้นทาง 2 ลง 2.0 1.9 1.8 ครบสามช่วง +2 · "
            "เส้นทาง 3 ขึ้น 2.8 แล้วกระโดดไป 4.1 เลยเส้นงบ 3.5 ได้ −21 · เส้นทาง 4 ขึ้น 2.6 3.0 3.7 ครบเวลาพร้อมชนงบ ออกเพราะงบ −17")
-    cap = ("แกนนอน = ช่วงหลังเข้า · เส้นประแดง = X ที่ขาดทุนถึงงบ · ตัวเลขสีคือกำไรสุทธิก่อนค่าถือ · "
+    cap = ("แกนนอน = ช่วงหลังเข้า (0 = จุดเข้า) · เส้นประแดง = X ที่ขาดทุนถึงงบ · ตัวเลขสีคือกำไรสุทธิก่อนค่าถือ · "
            "ระหว่างจุดไม่มีราคาให้ซื้อขาย")
     return wrap(W, H, alt, out, cap, "สอน")
 
