@@ -473,7 +473,7 @@ def process(html, fig, fill=False):
             except KeyError:
                 unknown.append(m.group(3))
                 return m.group(0)
-        out = re.sub(r'(<(td|span)\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>).*?</\2>', fsub, out, flags=re.S)
+        out = re.sub(r'(<(td|span|strong|b)\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>).*?</\2>', fsub, out, flags=re.S)
     return out, unknown
 
 
