@@ -159,7 +159,7 @@ def extend(data, D, q):
     per_bar = D(str(carry["ต่อรอบ"])) * carry["รอบต่อช่วง"]          # 0.1 × 3 = 0.3 ต่อช่วง
     worlds = {}
     for k, (ev, held) in _three_worlds_carry().items():
-        assert q(D(str(ev)), 2) == D(str(c13["กฎเดียวสามโลก"][k]["ค่าคาดหมายต่อไม้ก่อนค่าถือ"])), "ลำดับสุ่มไม่ตรง three_worlds"
+        assert q(D(str(ev)), 2) == c13["กฎเดียวสามโลก"][k]["ค่าคาดหมายต่อไม้ก่อนค่าถือ"], "ลำดับสุ่มไม่ตรง three_worlds"
         evd, hd = D(str(ev)), D(str(held))
         worlds[k] = {"ช่วงถือเฉลี่ย": q(hd, 2), "ค่าถือต่อไม้": q(per_bar * hd, 2),
                      "หลังค่าถือถ้ารับ": q(evd + per_bar * hd, 2), "หลังค่าถือถ้าจ่าย": q(evd - per_bar * hd, 2)}

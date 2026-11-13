@@ -40,7 +40,146 @@ details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer
 <div class="desc">ตัวเลขทั้งเล่มสร้างอย่างไร รันซ้ำอย่างไร การ์ดกติกาเขียนเป็นโค้ดเทียมได้แบบไหน และอ่านงานวิจัยคนอื่นโดยเริ่มจากบัญชี</div>
 </div>
 
-<!--BODY-->
+<style>pre{background:var(--g1);border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:.86em;line-height:1.55;margin:12px 0}pre code{font-family:'Courier New',monospace}</style>
+
+<div class="bx bb" style="font-size:.95em"><div class="bt">🧭 หน้านี้สำหรับใคร</div>
+<p>เล่มนี้ตั้งใจให้ทำได้ครบโดยไม่เขียนโค้ด (ตาราง ใบงาน และ <a href="sab-workbook.xlsx">sab-workbook.xlsx</a> แทนโค้ด) หน้านี้สำหรับคนที่เขียนโค้ดเป็นและอยากรู้สามเรื่อง: ตัวเลขทั้งเล่มสร้างและตรวจอย่างไร · การ์ดกติกาของบท 12 เขียนเป็นโค้ดเทียมได้แบบไหน · อ่านงานวิจัยหรือ tutorial ของคนอื่นโดยไม่หลงตัวเลขสวย</p>
+<p>โค้ดในหน้านี้เป็น<strong>โค้ดเทียม</strong> ใช้แค่ลูปและตัวแปรธรรมดา ไม่อ้างไลบรารีหรือ API ของ exchange ใด</p></div>
+
+<h2 id="i1">1 · ตัวเลขทั้งเล่มมาจากสคริปต์เดียว</h2>
+<p>ทุกตัวเลขในบทอยู่ใน <code>docs/sab-figures.json</code> ซึ่งสร้างโดย <code>tools/sab_figures.py</code> ไฟล์เดียว ไม่ต่อเน็ต ไม่ใช้ข้อมูลจริง และได้ผลเดิมทุกครั้งที่รัน</p>
+<ul>
+<li><strong>ใช้ไลบรารีมาตรฐานของ Python ล้วน</strong> · คิดด้วย <code>Decimal</code> แล้วปัดครึ่งขึ้นตามจำนวนทศนิยมที่บทพิมพ์ · ค่าจำลองใช้ตัวสุ่มของ Python ด้วย seed ตายตัว (seed ทั้งหมดอยู่ใน<span data-pending> <a href="sab-appendix-sources.html#h2">ภาคผนวก H</a></span>)</li>
+<li><strong>ตรรกะพอร์ตมาจากสคริปต์ของต้นฉบับ v0.9</strong> ที่ <code>sources/sab-v0_9/code/</code> แต่ตอนสร้างไม่ได้ import โค้ดต้นฉบับ ต้นฉบับถูกโหลดเฉพาะตอนตรวจเทียบ</li>
+<li><strong>ค่าใหม่ของแต่ละบท</strong> อยู่ในปลั๊กอิน <code>tools/sab_figures_ch/chNN.py</code> หนึ่งไฟล์ต่อบท แต่ละไฟล์มีฟังก์ชัน <code>extend(data, D, q)</code> ที่คืนคีย์ใหม่ไปลงใต้ <code>chNN</code> ห้ามทับคีย์เดิม · ข้ออ้างเชิงตลาดของบทเข้าทะเบียน <code>_claims</code> ผ่านปลั๊กอินเดียวกัน</li>
+<li><strong>คีย์เป็นภาษาไทย</strong> เช่น <code>ch04.ต้องโอน</code> · ค่าเต็มความละเอียดของต้นฉบับเก็บแยกใต้ <code>_ต้นฉบับ</code></li>
+</ul>
+
+<h3>รันซ้ำและตรวจ</h3>
+<pre><code># สร้าง JSON ใหม่ทั้งไฟล์
+python3 -I tools/sab_figures.py
+
+# คำนวณใหม่แล้วเทียบกับไฟล์ที่มีอยู่ (ไม่เขียน) — ต่างแม้ตัวเดียว = ไม่ผ่าน
+python3 -I tools/sab_figures.py --check
+
+# เทียบกับโค้ดต้นฉบับ v0.9 ทีละค่าตามแผนที่ tools/sab_origmap.json
+# (ต้องมีโฟลเดอร์ต้นฉบับ · ตั้งตำแหน่งอื่นด้วยตัวแปร SAB_SOURCE_DIR)
+python3 -I tools/sab_figures.py --check-original
+
+# เติมค่าจาก JSON ลงหน้าเว็บ แล้วตรวจว่าทุกตัวเลขในหน้ามีใน JSON
+python3 tools/sab_charts.py --fill --scope part4
+python3 tools/sab_check_figures.py --scope part4
+
+# สมุดงาน: สร้าง xlsx แล้วให้ LibreOffice คำนวณสูตรจริงเทียบกับ JSON
+python3 tools/sab_workbook.py --check</code></pre>
+<p>กฎเหล็กของเล่มคือ<strong>ห้ามมีตัวเลขลอย</strong>: ตัวตรวจอ่านทุกตัวเลขที่ผู้อ่านเห็นในหน้า ถ้าไม่มีใน JSON ถือว่าผิด (ยกเว้นจำนวนนับเล็ก ๆ) · การตรวจเทียบต้นฉบับผ่านครบทุกค่าที่จับคู่ได้ ค่าที่ไม่ใช้ในเล่มมีเหตุผลกำกับไว้ใน <code>tools/sab_origmap.json</code></p>
+
+<h3>บทบาทของโค้ดต้นฉบับ</h3>
+<p>ต้นฉบับ v0.9 มีสคริปต์ 10 ไฟล์ (8 ไฟล์คำนวณ + 2 ไฟล์วาดภาพที่ต้องใช้ matplotlib) และผลเป็น JSON 8 ไฟล์ ใช้ตรวจหน่วย บัญชี และตรรกะของตัวอย่างสมมติ ไม่ดาวน์โหลดข้อมูลตลาดและไม่ส่งคำสั่ง · ตารางโค้ดในต้นฉบับผูกสคริปต์กับบทผิดบางแถว และคำสั่งรันสร้าง JSON บางไฟล์ไม่ได้ (errata ข้อ 28) เล่มนี้จึงไม่พิมพ์ตารางนั้นซ้ำ แต่ใช้สคริปต์เป็น<strong>ต้นแบบที่ต้องได้ค่าตรงกัน</strong>เท่านั้น</p>
+<div class="tw"><table data-nosrc>
+<tr><th>ไฟล์ต้นฉบับ</th><th>ตรวจเรื่องอะไร</th><th>ไปอยู่ในบทไหนของเล่มนี้</th></tr>
+<tr><td><code>v07_primer_checks.py</code></td><td>long/short · leverage · ต้นทุนหนึ่งรอบ · funding</td><td>0 · 1</td></tr>
+<tr><td><code>signal_design_demo.py</code></td><td>อัตรา basis · ตะกร้าคงที่ · z เปลี่ยนโดยราคาไม่เปลี่ยน</td><td>3 · 5 · 9</td></tr>
+<tr><td><code>ch03_ledger_demo.py</code></td><td>กระทบยอดราคา เงินสด equity · ปรับ hedge · ต้นทุน · ได้ของไม่ครบ</td><td>3 · 11 · 16</td></tr>
+<tr><td><code>part1_reasoning_demo.py</code></td><td>แยกผลที่คาดออกจากผลจริงทีละชั้น · exposure</td><td>8 · 15</td></tr>
+<tr><td><code>methods_signals_stops_demo.py</code></td><td>ผลออกสามตอนจบ · โหมดพักต้องกลับมาอย่างตั้งใจ</td><td>12 · 14</td></tr>
+<tr><td><code>mean_reversion_demo.py</code></td><td>ค่าเฉลี่ยภายใต้ AR(1) · ครึ่งชีวิต · ค่ากลางที่เลื่อน</td><td>13 · 14</td></tr>
+<tr><td><code>v06_enrichment_demo.py</code></td><td>รายรับสม่ำเสมอกับความเสียหายใหญ่ · บัญชีหลักประกัน · เทียบ hedge · จำลองเวลาแตะเป้า</td><td>2 · 4 · 8 · 13</td></tr>
+<tr><td><code>v09_ch06_ch07_demo.py</code></td><td>ผลต่อทุนของ cash-and-carry · ปิดก่อนหมดอายุ · สี่เส้นทาง funding · คู่จำลอง 200 คู่</td><td>5 · 6 · 7 · 9 · 10</td></tr>
+</table></div>
+<p class="cc">ชื่อไฟล์และหน้าที่ตามส่วน "โค้ดคำนวณประกอบบท" ของต้นฉบับ · คอลัมน์ขวาคือบทของเล่มนี้ที่ใช้ค่าจากตรรกะนั้น (ดู <code>tools/sab_origmap.json</code> สำหรับการจับคู่ทีละค่า)</p>
+
+<h2 id="i2">2 · บัญชีตามเหตุการณ์ (วงหลักของทุก backtest)</h2>
+<p>ลูปนี้ดัดแปลงจากโค้ดเทียมในต้นฉบับ: กำไรของช่วงใช้ของที่ถืออยู่<em>ก่อน</em>ราคาขยับ และของที่ถือเปลี่ยนเมื่อซื้อขายได้จริงเท่านั้น ไม่ใช่ตอนส่งคำสั่ง (สูตรเดียวกันอยู่ใน<span data-pending> <a href="sab-appendix-deep.html#f5">ภาคผนวก F หัวข้อ 5</a></span>)</p>
+<pre><code># เริ่มด้วยราคาที่ใช้ได้และบัญชีเปิดที่บันทึกไว้
+for event in events_sorted_by_time:
+    if event.is_market_update:
+        update_marks(event)                      # ราคาประเมินล่าสุดของแต่ละขา
+
+    if event.is_fill:                            # ซื้อขายได้จริง (อาจได้ไม่ครบ)
+        cash -= event.signed_qty * event.fill_price
+        cash -= event.fee
+        held[event.asset] += event.signed_qty    # ซื้อ = บวก · ขาย = ลบ
+        update_pending_orders(event)
+
+    if event.is_cashflow:                        # funding · ค่าถือ (มีเครื่องหมาย)
+        cash += event.signed_amount
+
+    equity = cash + sum(held[i] * mark[i] for i in assets)
+
+    if event.is_signal_time:
+        signal = model(data_known_by(event.time))   # ใช้เฉพาะข้อมูลที่รู้แล้ว ณ เวลานั้น
+        target = size_positions(signal)
+        reconcile_and_submit(target, held, pending_orders)   # หักคำสั่งค้างก่อน ไม่สั่งซ้ำ</code></pre>
+<ul>
+<li>ส่งคำสั่งแล้วยังไม่เปลี่ยน <code>held</code> · ได้ขาเดียว (บท 16) คือสถานะที่ <code>held</code> ไม่เท่า <code>target</code></li>
+<li>ราคาที่แย่กว่าราคาประเมินอยู่ในบรรทัด <code>fill_price</code> แล้ว อย่าหัก slippage ซ้ำ</li>
+<li>เหตุการณ์เวลาเดียวกันต้องกำหนดลำดับย่อยให้ชัด: ราคาใดพร้อมให้โมเดลใช้ก่อนส่งคำสั่ง และ funding คิดจากสถานะ ณ เวลาใด</li>
+</ul>
+
+<h2 id="i3">3 · การ์ดกติกา 6 บรรทัดของบท 12 เป็นโค้ดเทียม</h2>
+<p>การ์ดของมิน (คู่ A–B · X = A − 2B · ไม้บรรทัดค่ากลาง 0 ระยะแกว่ง 1 จึงอ่าน X เป็น z ได้ตรง) เข้าเมื่อ X ≥ <span data-key="บัญชีมิน.การ์ด.เข้า">2</span> · ออกเมื่อ X ≤ <span data-key="บัญชีมิน.การ์ด.ออก">0.5</span> · ถือไม่เกิน <span data-key="บัญชีมิน.การ์ด.ช่วงถือสูงสุด">3</span> ช่วง · งบขาดทุนสุทธิ <span data-key="บัญชีมิน.การ์ด.งบขาดทุนสุทธิ">−15</span> · ต้นทุน <span data-key="บัญชีมิน.การ์ด.ต้นทุนเข้า">0.4</span> + <span data-key="บัญชีมิน.การ์ด.ต้นทุนออก">0.6</span> ต่อไม้ · ลำดับเมื่อหลายเหตุพร้อมกัน ขาดทุน → สัญญาณ → เวลา · ออกเพราะงบแล้วหยุดเปิดไม้ใหม่</p>
+<pre><code># การ์ดกติกาคู่ A–B (บท 12) — โค้ดเทียม · ค่าของเล่ม ไม่ใช่คำแนะนำ
+ENTRY, EXIT, MAX_HOLD = 2, 0.5, 3      # ช่วง = เปิดดู X หนึ่งครั้ง
+BUDGET = -15                            # งบขาดทุนสุทธิ รวมต้นทุน
+COST = 0.4 + 0.6                        # เข้า + ออก ต่อไม้
+SETS = 10                               # 1 ชุด = A 1 เหรียญ คู่ B 2 เหรียญ
+
+mode, pos = "ACTIVE", None
+for t, x in enumerate(spread_series):   # x = A - 2 * B ณ ช่วง t
+    if pos is None:
+        if mode == "PAUSED":
+            continue                    # บท 14: ไม่เปิดไม้ใหม่ แต่ยังดูแลของที่ถือ
+        if x >= ENTRY:
+            pos = open_pair(side=-1, x_in=x, t_in=t)   # short X: ขาย A 10 (ผ่าน perp) ซื้อ B 20
+        elif x <= -ENTRY:
+            pos = open_pair(side=+1, x_in=x, t_in=t)   # long X: กลับด้าน
+        continue
+
+    net_now = SETS * pos.side * (x - pos.x_in) - COST  # ถ้าปิดตอนนี้ได้สุทธิเท่าไร
+    if net_now <= BUDGET:                    # 1) ขาดทุนมาก่อน
+        close_pair(pos, reason="งบ")
+        mode = "PAUSED"                      #    ออกเพราะงบ = หยุดเปิดไม้ใหม่
+    elif -pos.side * x <= EXIT:              # 2) สัญญาณ: short ออกเมื่อ x <= 0.5 · long เมื่อ x >= -0.5
+        close_pair(pos, reason="เป้า")
+    elif t - pos.t_in >= MAX_HOLD:           # 3) เวลา
+        close_pair(pos, reason="เวลา")
+    if pos.closed:
+        pos = None</code></pre>
+<p><strong>ตรวจกับสามเส้นทางที่บทซ้อม</strong> (เข้าที่ 2.1 ทุกเส้น): 2.1 → 1.7 → 0.4 ออกเพราะเป้า ได้ <span data-key="ch12.เส้นทาง.1.สุทธิ">16</span> · 2.1 → 2.0 → 1.9 → 1.8 ออกเพราะเวลา ได้ <span data-key="ch12.เส้นทาง.2.สุทธิ">2</span> · 2.1 → 2.8 → 4.1 ออกเพราะงบ ได้ <span data-key="ch12.เส้นทาง.3.สุทธิ">−21</span> · เส้นทางที่ 4 ครบเวลาและชนงบในช่วงเดียวกัน งบชนะตามลำดับ ได้ <span data-key="ch12.เส้นทาง.4.สุทธิ">−17</span></p>
+<div class="dft"><div class="bt">⚠️ สามจุดที่โค้ดแบบนี้หลอกได้</div>
+<ul>
+<li><strong>ราคาที่ปิดได้ไม่ใช่ราคาที่เห็น:</strong> โค้ดเช็กงบที่ X ที่สังเกต แต่ X กระโดดจาก 2.8 ไป 4.1 โดยไม่มีจุดให้ซื้อขายระหว่างทาง งบ −15 จึงกลายเป็น −21 · backtest ที่ปิดที่เส้นงบพอดีทั้งที่ข้อมูลกระโดด กำลังหลอก</li>
+<li><strong>สัญญาณกับการกด:</strong> x ของช่วง t รู้หลังราคาปิด คำสั่งจึงได้ราคาของช่วงถัดไป ถ้าโค้ดเข้าที่ x เดียวกับที่ใช้ตัดสิน คือใช้อนาคต</li>
+<li><strong>ค่าถือและ beta:</strong> โค้ดนี้ยังไม่มีค่าถือขา short (funding) และคู่นี้ไม่เป็นกลางต่อตลาด (beta exposure +500 · บท 8) ผลจึงยังไม่ใช่ผลจริง · ต้นทุนจริงด้วยคำสั่งซื้อทันทีราว <span data-key="ch16.บัญชีคู่taker.ต้นทุนต่อไม้โดยประมาณ">2</span> ต่อไม้ (บท 16)</li>
+</ul></div>
+
+<h2 id="i4">4 · อ่านงานวิจัยหรือ tutorial ของคนอื่น: เริ่มจากบัญชี</h2>
+<p>ก่อนดู Sharpe หรือกำไรสะสมทั้งปี ให้ตอบสามแกนนี้ให้ได้ (จากหัวข้อ "ใช้บัญชีนี้แกะกรณีศึกษาของผู้อื่น" ของต้นฉบับ)</p>
+<div class="tw"><table data-nosrc>
+<tr><th>แกน</th><th>คำถามที่ต้องตอบ</th></tr>
+<tr><td>เลือกสินทรัพย์ (asset selection)</td><td>ทำไมสองตัวนี้อยู่ด้วยกัน (เชือกชนิดไหน) · ราคาและหน่วยเข้ากันไหม · แต่ละขาต้องซื้อขายแบบใด (short ได้ไหม ค่ายืมหรือ funding เท่าไร)</td></tr>
+<tr><td>ขั้นตอน (workflow)</td><td>ข้อมูลใดเข้าประมาณ h · สัญญาณเกิดเมื่อไร · ข้อมูลส่วนไหนยังไม่ควรถูกใช้ ณ ตอนนั้น · ช่วงเลือกกับช่วงทดสอบแยกกันไหม · ค้นมากี่คู่</td></tr>
+<tr><td>จัดการสถานะ (position management)</td><td>h แปลงเป็นจำนวนอย่างไร · เปิดหรือปรับเมื่อไร · fill ต้นทุน เงินสด หลักประกันอยู่ตรงไหนในบัญชี</td></tr>
+</table></div>
+<ol>
+<li><strong>คิดบัญชีด้วยมือหนึ่งช่วงสั้น ๆ</strong> ราคา · จำนวนที่ถือ · เงินสด · equity ถ้าไม่ตรงกับโปรแกรม หยุดไล่ช่วงนั้นก่อน มักเป็นเครื่องหมายของขา short · ใช้จำนวนผิดช่วงเวลา · หรือหักต้นทุนซ้ำ</li>
+<li><strong>หาตัวแปรที่เก็บจำนวนซื้อขายจริง</strong> และดูว่า "spread" ในงานนั้นคือราคา ผลตอบแทน หรือลอการิทึมของราคา และกำไรคิดด้วยจำนวนของช่วงไหน</li>
+<li><strong>แยกสิ่งที่ประมาณจากข้อมูลกับสิ่งที่ผู้เขียนเลือก</strong> เส้นเข้าออก จำนวนสินทรัพย์ ความเร็วปรับกลับที่ตั้งคงที่ · ดูว่าทำอะไรเมื่อไม่มีคู่ผ่าน และจัดการสถานะค้างอย่างไร</li>
+<li><strong>จดสิ่งที่เปลี่ยนเมื่อย้ายตลาด</strong> จากหุ้นเป็น perp ต้องเพิ่มชนิดสัญญา ตัวคูณสัญญา funding และหลักประกัน · ถ้าจะใช้คำสั่งตั้งรอเท่านั้น ต้องเปลี่ยนสมมติฐานการได้ของทั้งหมด · คงชื่อโมเดลเดิมไม่ได้แปลว่าบัญชีเหมือนเดิม</li>
+<li><strong>ติดระดับหลักฐานให้ข้อสรุป</strong> อ่านวิธีแล้ว · ตรวจโค้ดแล้ว · รันตัวอย่างแล้ว · ทำซ้ำผลได้แล้ว — สี่ระดับนี้ต่างกันมาก และกรณีศึกษาทั้งหมดในต้นฉบับไม่มีชุดใดถึงระดับทำซ้ำผล</li>
+</ol>
+<p>คำถามระดับสมมติฐาน (ทำไม spread ควรกลับ · คัดคู่ก่อนหรือหลังเห็นผล) ตามมาหลังบัญชีผ่านแล้ว · ใบอ่าน backtest 7 แถวที่ไม่ต้องอ่านโค้ดอยู่ใน<span data-pending> <a href="sab-part18.html">บท 18</a></span></p>
+
+<h3>แหล่งโค้ดที่ต้นฉบับอ้าง (ยังไม่ได้ตรวจ)</h3>
+<p>ต้นฉบับอ้างเอกสารของแพลตฟอร์ม backtest และไลบรารีพอร์ตหลายรายการ เช่น เอกสาร fill และ order event ของ QuantConnect (R2 · R48) · ไฟล์จัดการ drawdown ใน LEAN (R45) · ตัวอย่างกลยุทธ์เป็นกลางต่อตลาดของ Cvxportfolio (R35) · implementation ของ ArbitrageLab (R11 · R43) เล่มนี้<strong>ไม่ได้รันหรือเปิดตรวจแหล่งเหล่านี้</strong> และไม่สอนการใช้ไลบรารีใด รายการพร้อมสถานะอยู่ใน<span data-pending> <a href="sab-appendix-sources.html#h5">ภาคผนวก H</a></span></p>
+
+<div class="bx ba"><div class="bt">🔗 ต่อจากหน้านี้</div>
+<ul>
+<li>สูตรเบื้องหลังตาราง → <span data-pending><a href="sab-appendix-deep.html">ภาคผนวก F</a></span> · live กับ backtest ไม่ตรงกัน → <a href="statarb-live-vs-backtest.html">statarb-live-vs-backtest</a></li>
+<li>ข้อมูลทดสอบเชื่อได้แค่ไหน → <a href="statarb-data-quality.html">statarb-data-quality</a> · ทดสอบหลายครั้งจนเจอของปลอม → <a href="math-part11.html#s12-5">math-part11 หัวข้อ Multiple Testing</a></li>
+</ul></div>
+
 
 <!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
 <script>

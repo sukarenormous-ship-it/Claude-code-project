@@ -20,7 +20,7 @@ def _pnl_bridge(fig):
     dnames = [None, "คาดพลาด", "ราคาเข้า", "ค่าธรรมเนียม", "ค่าถือ"]
     W, H = 760, 300
     f = Frame(0, max(levels), W, H, T=70, Bm=262)
-    out = f.grid(nice_ticks(0, max(levels)))
+    out = f.grid(nice_ticks(0, max(levels))[::2])   # ทุก 4 หน่วย: ป้ายบนแท่งบอกค่าแล้ว
     gw = (W - f.L - f.R) / len(levels)
     bw = min(78, gw * 0.56)
     for i, v in enumerate(levels):

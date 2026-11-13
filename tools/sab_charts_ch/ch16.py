@@ -44,21 +44,25 @@ def _fill_timeline(fig):
     out.append(text(f.L, 26, f"มูลค่าที่ถือสุทธิ (long − short) · เป้า A 10 กับ B {B.fmt(tgtB)}", 13.5, C["ink"], weight=700))
     alt = (f"เส้นขั้นบันไดของมูลค่าสุทธิที่ถือ: ส่งคำสั่ง 0 · A ได้ครบ {B.fmt(ys[1])} · B ได้ −8 จาก {B.fmt(tgtB)} "
            f"เหลือ {B.fmt(ys[2])} · ครบเวลารอยังค้าง {B.fmt(ys[3])} ขณะที่เป้าคือ 0")
-    cap = ("แกนตั้ง = มูลค่า A ที่ถือ ลบมูลค่า B ที่ short (ดอลลาร์) · ส่งคำสั่งแล้วยังไม่ได้ถืออะไร "
-           "ของเข้าบัญชีทีละขาตามที่ได้จริง")
+    cap = "แกนตั้ง = มูลค่า A ที่ถือ ลบมูลค่า B ที่ short (ดอลลาร์) · ของเข้าบัญชีทีละขาตามที่ได้จริง"
     return wrap(W, H, alt, out, cap, "สอน")
 
 
 @chart("sab-capacity-curve")
 def _capacity_curve(fig):
     c = fig["ch16"]["capacity"]["หลัก"]["ตาราง"]
+    naive = fig["ch16"]["capacityที่อ้าง"]["ขยาย20เท่าถ้าเส้นตรง"]     # 20 × ค่าที่ขาละ 1,000 (คำตอบยั่วใจของ 🛑)
     xs = [r["ขนาดต่อขา"] for r in c]
     ys = [r["ต่อรอบ"] for r in c]
     W, H = 760, 340
-    f = Frame(min(ys), max(ys), W, H, L=70, R=30, T=60, Bm=270, pad=0.14)
-    out = f.grid(nice_ticks(min(ys), max(ys), 5))
+    f = Frame(min(ys), naive, W, H, L=70, R=30, T=60, Bm=270, pad=0.1)
+    out = f.grid(nice_ticks(min(ys), naive, 5))
     x0, x1 = 0, max(xs)
     X = lambda x: f.L + (x - x0) / (x1 - x0) * (W - f.L - f.R)    # noqa: E731
+    # เส้นประ: ถ้ากำไรโตตามขนาด (ไม่มีกระดาน) — จาก 0 ถึง 20 × ค่าที่ขาละ 1,000
+    out.append(f'<line x1="{X(0):.1f}" y1="{f.y(0):.1f}" x2="{X(max(xs)):.1f}" y2="{f.y(naive):.1f}" '
+               f'stroke="{C["grey"]}" stroke-dasharray="6 4" stroke-width="2"/>')
+    out.append(text(X(max(xs)) - 6, f.y(naive) - 8, f"ถ้าโตตามขนาด {_sign(naive)}", 12, C["muted"], "end", 700))
     pts = " ".join(f"{X(x):.1f},{f.y(y):.1f}" for x, y in zip(xs, ys))
     out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.4" stroke-linejoin="round"/>')
     for x, y in zip(xs, ys):
@@ -83,6 +87,6 @@ def _capacity_curve(fig):
     alt = (f"เส้นค่าคาดหมายต่อไม้ตามขนาดต่อขา: 1,000 ได้ {_sign(small['ต่อรอบ'])} · สูงสุดที่ "
            f"{B.fmt(peak['ขนาดต่อขา'])} ได้ {_sign(peak['ต่อรอบ'])} · 10,000 เหลือ {_sign(ten['ต่อรอบ'])} · "
            f"20,000 ติดลบ {_sign(last['ต่อรอบ'])}")
-    cap = ("การ์ดเดิม โลก 60/25/15 · หัก taker 0.05% ทุกครั้ง และราคาเฉลี่ยที่เสียจากกระดานสมมติ "
-           "(คำสั่งรอบางลงเมื่อไกลราคากลาง) · โลก 45/20/35 ติดลบทุกขนาด")
+    cap = ("การ์ดเดิม โลก 60/25/15 · หัก taker 0.05% ทุกครั้งและราคาเฉลี่ยจากกระดานสมมติ (ชั้นที่ไกลแย่ลงเท่าตัว) · "
+           "เส้นประ = คูณตามขนาด · โลก 45/20/35 ติดลบทุกขนาด")
     return wrap(W, H, alt, out, cap, "สอน")
