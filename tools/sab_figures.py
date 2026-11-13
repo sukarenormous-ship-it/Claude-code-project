@@ -20,6 +20,7 @@ import json
 import math
 import os
 import random
+import re
 import statistics
 import sys
 from decimal import ROUND_HALF_UP, Decimal as D, getcontext
@@ -1461,7 +1462,38 @@ def build(orig):
         "_errata": build_errata(),
     }
     data["_ต้นฉบับ"] = build_originals_strings(orig)
+    apply_chapter_plugins(data)
     return data
+
+
+def apply_chapter_plugins(data):
+    """ค่าใหม่ต่อบทจาก tools/sab_figures_ch/chNN.py (แยกไฟล์ต่อบท ให้หลายคนเขียนพร้อมกันได้ไม่ชนกัน)
+
+    แต่ละไฟล์มี def extend(data, D, q): คืน dict ของคีย์ใหม่ที่จะเติมใต้ data["chNN"]
+    (D = Decimal · q(x, ตำแหน่ง) = ปัดแบบ half-up) · ห้ามทับคีย์ที่มีอยู่แล้ว — ชน = หยุด
+    """
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_figures_ch")
+    if not os.path.isdir(folder):
+        return
+    for name in sorted(os.listdir(folder)):
+        m = re.fullmatch(r"(ch\d{2})\.py", name)
+        if not m:
+            continue
+        spec = importlib.util.spec_from_file_location(f"sab_figures_ch_{m.group(1)}", os.path.join(folder, name))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        extra = dict(mod.extend(data, D, q))
+        for claim in extra.pop("_claims", []):          # ข้ออ้างเชิงตลาดของบท → _claims ระดับบน
+            if any(c.get("id") == claim.get("id") for c in data["_claims"]):
+                raise SystemExit(f"{name}: _claims id ซ้ำ {claim.get('id')!r}")
+            data["_claims"].append(claim)
+        if "_แบบฝึก" in extra:                          # แนวคำตอบ ✍️ ของบท (ใช้กับ gate P1) → แบบฝึก.chNN
+            data.setdefault("แบบฝึก", {})[m.group(1)] = extra.pop("_แบบฝึก")
+        target = data.setdefault(m.group(1), {})
+        clash = sorted(set(extra) & set(target))
+        if clash:
+            raise SystemExit(f"{name}: คีย์ชนกับของเดิมใน {m.group(1)}: {clash}")
+        target.update(extra)
 
 
 def build_robustness(sel, pop, fp):

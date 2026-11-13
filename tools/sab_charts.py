@@ -430,6 +430,19 @@ def _seed_spread(fig):
            f"คู่ที่คัดแย่กว่าคู่ที่มีเชือกใน {r['คู่ที่คัดแย่กว่าคู่จริง']['จำนวนseed']} จาก {r['คู่ที่คัดแย่กว่าคู่จริง']['จาก']} ชุด")
     return wrap(760, H, alt, parts, cap, "จำลอง")
 
+
+def _load_chapter_charts():
+    """สเปกกราฟต่อบทจาก tools/sab_charts_ch/chNN.py (แยกไฟล์ต่อบท) · ไฟล์ใช้ `from sab_charts import *`"""
+    import glob as _glob
+    import importlib.util as _ilu
+    sys.modules.setdefault("sab_charts", sys.modules[__name__])
+    for path in sorted(_glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_charts_ch", "ch[0-9][0-9].py"))):
+        spec = _ilu.spec_from_file_location("sab_charts_ch_" + os.path.basename(path)[:-3], path)
+        spec.loader.exec_module(_ilu.module_from_spec(spec))
+
+
+_load_chapter_charts()
+
 # ───────────────────────── ประมวลผลหน้า ─────────────────────────
 
 PROTECT_RE = re.compile(r"<(script|style)\b.*?</\1>", re.S)
