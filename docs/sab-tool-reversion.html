@@ -51,6 +51,8 @@ details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .v{font-weight:700;font-variant-numeric:tabular-nums}
 .bk{display:block;font-size:.76em;color:#64748b;font-weight:400;white-space:nowrap}
+td:not(.num) .bk{display:inline;margin-left:6px}
+.tool table:not(.wide){min-width:0}
 .big{font-size:1.7em;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums}
 .src{font-size:.86em;color:#64748b;margin:4px 0 14px}
 .pos{color:var(--green)}.neg{color:var(--red)}.key{color:var(--purple)}
@@ -130,7 +132,8 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 <button type="button" class="btn" id="s-reset">เริ่มใหม่</button></div>
 <div><label><input type="checkbox" id="s-ok"> ตรวจครบแล้ว (เงื่อนไขกลับมาตามใบพัก)</label> <button type="button" class="btn" id="s-resume">ขอกลับมา</button>
 <span id="s-resmsg" class="v"></span></div>
-<div class="tw"><table id="s-tbl"><tr><th class="num">ช่วง</th><th class="num">X</th><th>สถานะก่อน</th><th>เหตุการณ์</th><th class="num">ช่วงที่ถือ</th><th class="num">ขา A</th><th class="num">ขา B</th><th class="num">สุทธิถ้าออกตอนนี้</th><th>สถานะหลัง</th></tr></table></div>
+<div class="tw"><table class="wide" id="s-tbl"><tr><th class="num">ช่วง</th><th class="num">X</th><th>สถานะก่อน</th><th>เหตุการณ์</th><th class="num">ช่วงที่ถือ</th><th class="num">ขา A</th><th class="num">ขา B</th><th class="num">สุทธิถ้าออกตอนนี้</th><th>สถานะหลัง</th></tr></table></div>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ขา A และขา B คิดจากราคา ณ ช่วงที่เข้า · สุทธิ = สองขารวมกัน − ต้นทุนเข้าและออก</p>
 <div class="kpi">
 <div><div class="lb">สุทธิไม้ล่าสุดที่ปิด</div><span class="v big" id="s-last" data-twin="ch12/เส้นทาง/3/สุทธิ"></span></div>
 <div><div class="lb">ไม้ที่ปิด</div><span class="v" id="s-closed" data-twin="ch14/ไม้ที่ปิด"></span></div>
@@ -170,10 +173,13 @@ function setv(id,v){$(id).value=v;}
 // ค่าในบทข้างตัวเลขสด: ทุก [data-twin] ได้ป้ายเทา "บท …" ต่อท้าย
 function twins(){document.querySelectorAll('[data-twin]').forEach(el=>{
   let n=el.nextElementSibling; if(!n||!n.classList.contains('bk')){n=document.createElement('span');n.className='bk';el.after(n);}
-  n.textContent='ในบท '+fj(jp(el.dataset.twin));});}
+  const v=jp(el.dataset.twin),dl=((el.textContent.split('.')[1])||'').replace(/[^0-9]/g,'').length;
+  n.textContent='ในบท '+(typeof v==='number'?nf(v,Math.max(decs(v),dl)):fj(v));});}
 function put(id,v,d){const el=$(id);el.textContent=nf(v,d);el.classList.toggle('neg',v<0);}
 const NS='http://www.w3.org/2000/svg';
 function S(tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e;}
+function vb(svg,H){const r=svg.getBoundingClientRect().width;const W=Math.max(340,Math.min(640,Math.round(r)||640));svg.setAttribute('viewBox','0 0 '+W+' '+H);return W;}
+let _rt;function onResize(f){window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(f,150);});}
 function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
 function T(svg,x,y,s,o){o=o||{};svg.appendChild(S('text',{x:x,y:y,'font-size':o.size||12,fill:o.fill||'#4b5563','text-anchor':o.anchor||'start','font-weight':o.weight||400,'font-family':'Sarabun,sans-serif'},s));}
 const COL={green:'#16a34a',red:'#dc2626',purple:'#7c3aed',blue:'#2563eb',amber:'#d97706',grey:'#9ca3af',ink:'#374151',grid:'#e5e7eb'};
@@ -193,7 +199,7 @@ function upd1(){const p=R();$('r-phiv').textContent=nf(p.phi,2);$('r-sdv').textC
     row.innerHTML='<td class="num">'+nf(ph,2)+'</td><td class="num">'+nf(E.x1,2)+'</td><td class="num">'+nf(E.end,2)+
     '</td><td class="num"><span class="v'+(E.net<0?' neg':'')+'" data-twin="ch13/ตารางphi/'+k+'/สุทธิ4ช่วง">'+nf(E.net,2)+'</span></td><td class="num">'+(H===null?'ไม่มี':nf(H,2))+'</td>';});
   twins();}
-function fan(){const p=R(),sv=$('r-fan');clear(sv);const W=640,H=280,x0=44,x1=W-14,N=Math.max(12,Math.min(60,p.n*4)),y0=H-28,y1=24;
+function fan(){const p=R(),sv=$('r-fan');clear(sv);const H=280,W=vb(sv,H),x0=44,x1=W-14,N=Math.max(12,Math.min(60,p.n*4)),y0=H-28,y1=24;
   const paths=[];for(let k=0;k<40;k++){let x=p.x0;const a=[x];for(let t=0;t<N;t++){x=p.phi*x+p.sd*gauss();a.push(x);}paths.push(a);}
   const all=[].concat(...paths);let ymax=Math.max(p.x0+1,...all),ymin=Math.min(-0.5,...all);ymax=Math.min(ymax,p.x0+6);ymin=Math.max(ymin,-6);
   const X=t=>x0+t/N*(x1-x0),Y=v=>y0-(Math.max(ymin,Math.min(ymax,v))-ymin)/(ymax-ymin)*(y0-y1);
@@ -266,7 +272,7 @@ function updw(){const w=num('w-win'),l=num('w-loss');put('w-need',Math.abs(l)/(w
 ['r-phi','r-sd','r-x0','r-n','r-sets','r-cost'].forEach(i=>$(i).addEventListener('input',()=>{upd1();fan();}));
 ['r-phi','r-sd'].forEach(i=>$(i).addEventListener('change',()=>{fp();w3();}));
 $('r-fanbtn').onclick=fan;$('r-fpbtn').onclick=fp;$('r-3wbtn').onclick=w3;
-upd1();fan();fp();w3();reset();while(bar<xs.length)step();updw();
+onResize(fan);upd1();fan();fp();w3();reset();while(bar<xs.length)step();updw();
 
 </script>
 <!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->

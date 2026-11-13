@@ -79,6 +79,8 @@ CSS = """<style>
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .v{font-weight:700;font-variant-numeric:tabular-nums}
 .bk{display:block;font-size:.76em;color:#64748b;font-weight:400;white-space:nowrap}
+td:not(.num) .bk{display:inline;margin-left:6px}
+.tool table:not(.wide){min-width:0}
 .big{font-size:1.7em;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums}
 .src{font-size:.86em;color:#64748b;margin:4px 0 14px}
 .pos{color:var(--green)}.neg{color:var(--red)}.key{color:var(--purple)}
@@ -106,10 +108,13 @@ function setv(id,v){$(id).value=v;}
 // ค่าในบทข้างตัวเลขสด: ทุก [data-twin] ได้ป้ายเทา "บท …" ต่อท้าย
 function twins(){document.querySelectorAll('[data-twin]').forEach(el=>{
   let n=el.nextElementSibling; if(!n||!n.classList.contains('bk')){n=document.createElement('span');n.className='bk';el.after(n);}
-  n.textContent='ในบท '+fj(jp(el.dataset.twin));});}
+  const v=jp(el.dataset.twin),dl=((el.textContent.split('.')[1])||'').replace(/[^0-9]/g,'').length;
+  n.textContent='ในบท '+(typeof v==='number'?nf(v,Math.max(decs(v),dl)):fj(v));});}
 function put(id,v,d){const el=$(id);el.textContent=nf(v,d);el.classList.toggle('neg',v<0);}
 const NS='http://www.w3.org/2000/svg';
 function S(tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e;}
+function vb(svg,H){const r=svg.getBoundingClientRect().width;const W=Math.max(340,Math.min(640,Math.round(r)||640));svg.setAttribute('viewBox','0 0 '+W+' '+H);return W;}
+let _rt;function onResize(f){window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(f,150);});}
 function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
 function T(svg,x,y,s,o){o=o||{};svg.appendChild(S('text',{x:x,y:y,'font-size':o.size||12,fill:o.fill||'#4b5563','text-anchor':o.anchor||'start','font-weight':o.weight||400,'font-family':'Sarabun,sans-serif'},s));}
 const COL={green:'#16a34a',red:'#dc2626',purple:'#7c3aed',blue:'#2563eb',amber:'#d97706',grey:'#9ca3af',ink:'#374151',grid:'#e5e7eb'};
@@ -240,7 +245,7 @@ function P(){return {s:num('c-s'),f:num('c-f'),days:num('c-days'),cap:num('c-cap
 function ladder(p,basis){const b=basis===undefined?p.f-p.s:basis, f0=p.s+b, k=365/p.days*100;
   const fees=p.fee/100*(p.s+f0+p.st), net=b-fees, opp=p.cap*p.hur/100*p.days/365;
   return {basis:b,r1:b/p.s*k,r2:b/p.cap*k,fees:fees,net:net,r3:net/p.cap*k,opp:opp,exc:net-opp,r4:(net-opp)/p.cap*k};}
-function bars(svg,items,title){clear(svg);const W=640,H=+svg.getAttribute('viewBox').split(' ')[3],x0=150,x1=W-80;
+function bars(svg,items,title){clear(svg);const H=+svg.getAttribute('viewBox').split(' ')[3],W=vb(svg,H),x0=Math.min(150,W*0.36),x1=W-70;
   const mx=Math.max(1e-9,...items.map(d=>Math.abs(d[1])));const mn=Math.min(0,...items.map(d=>d[1]));
   const sc=v=>x0+(v-mn)/(mx-mn)*(x1-x0);const bh=Math.min(34,(H-50)/items.length-10);
   T(svg,10,18,title,{weight:700,fill:COL.ink});
@@ -270,11 +275,11 @@ function upd(){const p=P(),L=ladder(p);
     short=Math.max(0,top-free),after=Math.max(0,free-top),more=after/(1+m)/f1*100,eq=(s1-p.s)-(f1-p.f);
   put('p-free',free,0);put('p-buf',buf,1);put('p-bufm',bufm,2);put('p-top',top,0);put('p-short',short,0);put('p-after',after,0);
   put('p-more',more,1);put('p-eq',eq,0);
-  bars($('p-svg'),[['กำไรขา spot',s1-p.s,COL.green,'+'+nf(s1-p.s,0)+' (ติดอยู่ในเหรียญ)'],['เงินสดอิสระก่อน',free,COL.grey],
+  bars($('p-svg'),[['กำไรขา spot',s1-p.s,COL.green,'+'+nf(s1-p.s,0)],['เงินสดอิสระก่อน',free,COL.grey,nf(free,0)],
     ['ต้องโอนเติม',-top,COL.red,nf(-top,0)],['เงินสดหลังโอน',short>0?-short:after,short>0?COL.red:COL.green,short>0?'ขาด '+nf(short,0):nf(after,0)]],
-    'คืนที่ spot ขึ้น '+nf(x,1)+'%: กำไรอยู่กระเป๋าหนึ่ง ใบเรียกเงินอยู่อีกกระเป๋า');
+    'spot ขึ้น '+nf(x,1)+'%: กำไรติดอยู่ในเหรียญ ใบเรียกเงินมาที่เงินสด');
   // เส้นต้องโอนเติมเทียบเงินสดอิสระ
-  const sv=$('p-line');clear(sv);const W=640,Hh=250,x0=60,x1=W-20,y0=Hh-34,y1=30,XM=30;
+  const sv=$('p-line');clear(sv);const Hh=250,W=vb(sv,Hh),x0=60,x1=W-20,y0=Hh-34,y1=30,XM=30;
   const tops=[];for(let q=0;q<=XM;q+=0.5){const f=p.s*(1+q/100)+ba;tops.push([q,(1+m)*(f-p.f)]);}
   const ymax=Math.max(free*1.6,...tops.map(t=>t[1]))*1.05,ymin=Math.min(0,...tops.map(t=>t[1]));
   const X=q=>x0+q/XM*(x1-x0),Y=v=>y0-(v-ymin)/(ymax-ymin)*(y0-y1);
@@ -283,7 +288,7 @@ function upd(){const p=P(),L=ladder(p);
   sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(free),y2:Y(free),stroke:COL.grey,'stroke-width':3}));
   sv.appendChild(S('polyline',{points:tops.map(t=>X(t[0])+','+Y(t[1])).join(' '),fill:'none',stroke:COL.red,'stroke-width':3}));
   const qb=(free/(1+m)-ba+p.f)/p.s*100-100; // spot ขึ้นกี่ % แล้วเงินสดหมดพอดี
-  if(qb>0&&qb<XM){sv.appendChild(S('circle',{cx:X(qb),cy:Y(free),r:6,fill:COL.purple}));T(sv,X(qb)+8,Y(free)-8,'เงินสดหมดที่ spot +'+nf(qb,1)+'%',{fill:COL.purple,weight:700});}
+  if(qb>0&&qb<XM){sv.appendChild(S('circle',{cx:X(qb),cy:Y(free),r:6,fill:COL.purple}));T(sv,X(qb)-10,Y(free)-12,'เงินสดหมดที่ spot +'+nf(qb,1)+'%',{fill:COL.purple,weight:700,anchor:'end'});}
   sv.appendChild(S('line',{x1:X(x),x2:X(x),y1:y1,y2:y0,stroke:COL.ink,'stroke-dasharray':'4 4'}));
   T(sv,x0-6,Y(free)+4,nf(free,0),{anchor:'end',size:11});
   // ④ บันไดแย่ง
@@ -298,7 +303,7 @@ function upd(){const p=P(),L=ladder(p);
 ['c-s','c-f','c-days','c-cap','c-st','c-hur','h-n','h-s','h-f','h-hur','p-m','p-x','p-ba'].forEach(i=>$(i).addEventListener('input',upd));
 $('p-min').onclick=()=>{setv('c-cap',M['ทุนภาค1']['รวม']);upd();};
 $('p-ton').onclick=()=>{setv('c-cap',C4['ทุนของต้น']);upd();};
-upd();
+onResize(upd);upd();
 """
 
 
@@ -402,7 +407,7 @@ function upd(){const k=Math.max(0,Math.round(num('f-k'))),f=num('f-crowd')/100,h
     row.innerHTML='<td class="num">'+fj(d['ต่อรอบเปอร์เซ็นต์'])+'</td><td class="num"><span class="v" data-twin="ch07/fundingถูกแย่ง/'+i+'/สุทธิmakerเปอร์เซ็นต์">'+nf(a.pct,2)+
       '</span></td><td class="num"><span class="v" data-twin="ch07/fundingถูกแย่ง/'+i+'/สุทธิtakerเปอร์เซ็นต์">'+nf(b.pct,2)+'</span></td>';});
   drawCum(f,k,R);drawRates(r);twins();}
-function drawCum(f,k,R){const sv=$('f-cum');clear(sv);const W=640,H=280,x0=56,x1=W-16,y0=H-30,y1=28;
+function drawCum(f,k,R){const sv=$('f-cum');clear(sv);const H=280,W=vb(sv,H),x0=56,x1=W-16,y0=H-30,y1=28;
   const series={};NAMES.forEach(n=>{let c=0;series[n]=rates(n,f).map(x=>c+=MARK*x);});
   if(cur==='วาดเอง'){let c=0;series['วาดเอง']=rates('วาดเอง',f).map(x=>c+=MARK*x);}
   const all=[].concat(...Object.values(series));const ymax=Math.max(10,...all)*1.08,ymin=Math.min(0,...all)*1.08;
@@ -416,7 +421,7 @@ function drawCum(f,k,R){const sv=$('f-cum');clear(sv);const W=640,H=280,x0=56,x1
   if(R.exitAt){const i=R.exitAt-1,v=series[cur][i];sv.appendChild(S('circle',{cx:X(i),cy:Y(v),r:6,fill:COL.purple}));
     T(sv,X(i)+8,Y(v)+18,'ออกรอบ '+R.exitAt,{fill:COL.purple,weight:700});}}
 let dragging=false;
-function drawRates(r){const sv=$('f-draw');clear(sv);const W=640,H=220,x0=56,x1=W-16,y0=H-26,y1=20,LIM=0.0004;
+function drawRates(r){const sv=$('f-draw');clear(sv);const H=220,W=vb(sv,H),x0=56,x1=W-16,y0=H-26,y1=20,LIM=0.0004;
   const X=i=>x0+i/90*(x1-x0),Y=v=>(y0+y1)/2-v/LIM*(y0-y1)/2;
   sv.appendChild(S('rect',{x:x0,y:y1,width:x1-x0,height:y0-y1,fill:cur==='วาดเอง'?'#f5f3ff':'#fff',stroke:COL.grid}));
   [LIM,LIM/2,0,-LIM/2,-LIM].forEach(v=>{sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(v),y2:Y(v),stroke:v===0?'#94a3b8':COL.grid}));
@@ -430,7 +435,7 @@ function drawRates(r){const sv=$('f-draw');clear(sv);const W=640,H=220,x0=56,x1=
     const i=Math.max(0,Math.min(89,Math.floor((px-x0)/bw)));let v=((y0+y1)/2-py)/((y0-y1)/2)*LIM;v=Math.max(-LIM,Math.min(LIM,v));
     mine[i]=Math.round(v/0.00005)*0.00005;upd();}}
 ['f-k','f-crowd','f-hur'].forEach(i=>$(i).addEventListener('input',upd));
-upd();
+onResize(upd);upd();
 """
 
 
@@ -505,7 +510,8 @@ REV_BODY = r"""
 <button type="button" class="btn" id="s-reset">เริ่มใหม่</button></div>
 <div><label><input type="checkbox" id="s-ok"> ตรวจครบแล้ว (เงื่อนไขกลับมาตามใบพัก)</label> <button type="button" class="btn" id="s-resume">ขอกลับมา</button>
 <span id="s-resmsg" class="v"></span></div>
-<div class="tw"><table id="s-tbl"><tr><th class="num">ช่วง</th><th class="num">X</th><th>สถานะก่อน</th><th>เหตุการณ์</th><th class="num">ช่วงที่ถือ</th><th class="num">ขา A</th><th class="num">ขา B</th><th class="num">สุทธิถ้าออกตอนนี้</th><th>สถานะหลัง</th></tr></table></div>
+<div class="tw"><table class="wide" id="s-tbl"><tr><th class="num">ช่วง</th><th class="num">X</th><th>สถานะก่อน</th><th>เหตุการณ์</th><th class="num">ช่วงที่ถือ</th><th class="num">ขา A</th><th class="num">ขา B</th><th class="num">สุทธิถ้าออกตอนนี้</th><th>สถานะหลัง</th></tr></table></div>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ขา A และขา B คิดจากราคา ณ ช่วงที่เข้า · สุทธิ = สองขารวมกัน − ต้นทุนเข้าและออก</p>
 <div class="kpi">
 <div><div class="lb">สุทธิไม้ล่าสุดที่ปิด</div><span class="v big" id="s-last" data-twin="ch12/เส้นทาง/3/สุทธิ"></span></div>
 <div><div class="lb">ไม้ที่ปิด</div><span class="v" id="s-closed" data-twin="ch14/ไม้ที่ปิด"></span></div>
@@ -538,7 +544,7 @@ function upd1(){const p=R();$('r-phiv').textContent=nf(p.phi,2);$('r-sdv').textC
     row.innerHTML='<td class="num">'+nf(ph,2)+'</td><td class="num">'+nf(E.x1,2)+'</td><td class="num">'+nf(E.end,2)+
     '</td><td class="num"><span class="v'+(E.net<0?' neg':'')+'" data-twin="ch13/ตารางphi/'+k+'/สุทธิ4ช่วง">'+nf(E.net,2)+'</span></td><td class="num">'+(H===null?'ไม่มี':nf(H,2))+'</td>';});
   twins();}
-function fan(){const p=R(),sv=$('r-fan');clear(sv);const W=640,H=280,x0=44,x1=W-14,N=Math.max(12,Math.min(60,p.n*4)),y0=H-28,y1=24;
+function fan(){const p=R(),sv=$('r-fan');clear(sv);const H=280,W=vb(sv,H),x0=44,x1=W-14,N=Math.max(12,Math.min(60,p.n*4)),y0=H-28,y1=24;
   const paths=[];for(let k=0;k<40;k++){let x=p.x0;const a=[x];for(let t=0;t<N;t++){x=p.phi*x+p.sd*gauss();a.push(x);}paths.push(a);}
   const all=[].concat(...paths);let ymax=Math.max(p.x0+1,...all),ymin=Math.min(-0.5,...all);ymax=Math.min(ymax,p.x0+6);ymin=Math.max(ymin,-6);
   const X=t=>x0+t/N*(x1-x0),Y=v=>y0-(Math.max(ymin,Math.min(ymax,v))-ymin)/(ymax-ymin)*(y0-y1);
@@ -611,7 +617,7 @@ function updw(){const w=num('w-win'),l=num('w-loss');put('w-need',Math.abs(l)/(w
 ['r-phi','r-sd','r-x0','r-n','r-sets','r-cost'].forEach(i=>$(i).addEventListener('input',()=>{upd1();fan();}));
 ['r-phi','r-sd'].forEach(i=>$(i).addEventListener('change',()=>{fp();w3();}));
 $('r-fanbtn').onclick=fan;$('r-fpbtn').onclick=fp;$('r-3wbtn').onclick=w3;
-upd1();fan();fp();w3();reset();while(bar<xs.length)step();updw();
+onResize(fan);upd1();fan();fp();w3();reset();while(bar<xs.length)step();updw();
 """
 
 
@@ -685,7 +691,8 @@ function rw(n,sd){let x=0;const o=new Array(n);for(let i=0;i<n;i++){x+=sd*gauss(
 function ar1(n,phi,sd){let x=0;const o=new Array(n);for(let i=0;i<n;i++){x=phi*x+sd*gauss();o[i]=x;}return o;}
 function pairH(){const c=rw(ND,0.03),u=rw(ND,0.01),v=rw(ND,0.01);return c.map((ci,i)=>(ci+u[i])-(ci+v[i]));}
 function pairC(){const c=rw(ND,0.03),u=rw(ND,0.01),e=ar1(ND,0.9,0.03);return c.map((ci,i)=>{const a=ci+u[i];return a-(a+e[i]);});}
-function zplot(svg,z,title,color){clear(svg);const W=640,H=300,x0=40,x1=W-12,y0=H-30,y1=26;
+const PLOTS={};
+function zplot(svg,z,title,color){PLOTS[svg.id]=[z,title,color];clear(svg);const H=300,W=vb(svg,H),x0=40,x1=W-12,y0=H-30,y1=26;
   const lim=Math.max(3,Math.ceil(Math.max(...z.map(Math.abs))));const X=i=>x0+i/(z.length-1)*(x1-x0),Y=v=>y0-(v+lim)/(2*lim)*(y0-y1);
   T(svg,10,16,title,{weight:700,fill:COL.ink});
   svg.appendChild(S('rect',{x:X(NF),y:y1,width:x1-X(NF),height:y0-y1,fill:'#f8fafc'}));
@@ -725,6 +732,7 @@ function search(){const n=Math.max(10,Math.round(num('z-n'))),top=Math.max(1,Mat
     fj(C10['เกณฑ์ในกรอบ85']['ปล่อยคู่ปลอม'])+'%) และตัดคู่มีเชือกทิ้ง '+nf(cut,0)+'% (ในบท '+fj(C10['เกณฑ์ในกรอบ85']['ตัดคู่จริง'])+'%)';
   zplot($('z-svg'),sorted[0].z,'คู่อันดับ 1 จาก '+n+' คู่ (ชุดใหม่'+(leak?' · กรอบรั่ว':'')+')',COL.red);}
 $('z-run').onclick=search;
+onResize(()=>{for(const id in PLOTS)zplot($(id),...PLOTS[id]);});
 twins();
 """
 

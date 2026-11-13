@@ -51,6 +51,8 @@ details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .v{font-weight:700;font-variant-numeric:tabular-nums}
 .bk{display:block;font-size:.76em;color:#64748b;font-weight:400;white-space:nowrap}
+td:not(.num) .bk{display:inline;margin-left:6px}
+.tool table:not(.wide){min-width:0}
 .big{font-size:1.7em;font-weight:800;color:var(--g9);font-variant-numeric:tabular-nums}
 .src{font-size:.86em;color:#64748b;margin:4px 0 14px}
 .pos{color:var(--green)}.neg{color:var(--red)}.key{color:var(--purple)}
@@ -180,10 +182,13 @@ function setv(id,v){$(id).value=v;}
 // ค่าในบทข้างตัวเลขสด: ทุก [data-twin] ได้ป้ายเทา "บท …" ต่อท้าย
 function twins(){document.querySelectorAll('[data-twin]').forEach(el=>{
   let n=el.nextElementSibling; if(!n||!n.classList.contains('bk')){n=document.createElement('span');n.className='bk';el.after(n);}
-  n.textContent='ในบท '+fj(jp(el.dataset.twin));});}
+  const v=jp(el.dataset.twin),dl=((el.textContent.split('.')[1])||'').replace(/[^0-9]/g,'').length;
+  n.textContent='ในบท '+(typeof v==='number'?nf(v,Math.max(decs(v),dl)):fj(v));});}
 function put(id,v,d){const el=$(id);el.textContent=nf(v,d);el.classList.toggle('neg',v<0);}
 const NS='http://www.w3.org/2000/svg';
 function S(tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e;}
+function vb(svg,H){const r=svg.getBoundingClientRect().width;const W=Math.max(340,Math.min(640,Math.round(r)||640));svg.setAttribute('viewBox','0 0 '+W+' '+H);return W;}
+let _rt;function onResize(f){window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(f,150);});}
 function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
 function T(svg,x,y,s,o){o=o||{};svg.appendChild(S('text',{x:x,y:y,'font-size':o.size||12,fill:o.fill||'#4b5563','text-anchor':o.anchor||'start','font-weight':o.weight||400,'font-family':'Sarabun,sans-serif'},s));}
 const COL={green:'#16a34a',red:'#dc2626',purple:'#7c3aed',blue:'#2563eb',amber:'#d97706',grey:'#9ca3af',ink:'#374151',grid:'#e5e7eb'};
@@ -204,7 +209,7 @@ function P(){return {s:num('c-s'),f:num('c-f'),days:num('c-days'),cap:num('c-cap
 function ladder(p,basis){const b=basis===undefined?p.f-p.s:basis, f0=p.s+b, k=365/p.days*100;
   const fees=p.fee/100*(p.s+f0+p.st), net=b-fees, opp=p.cap*p.hur/100*p.days/365;
   return {basis:b,r1:b/p.s*k,r2:b/p.cap*k,fees:fees,net:net,r3:net/p.cap*k,opp:opp,exc:net-opp,r4:(net-opp)/p.cap*k};}
-function bars(svg,items,title){clear(svg);const W=640,H=+svg.getAttribute('viewBox').split(' ')[3],x0=150,x1=W-80;
+function bars(svg,items,title){clear(svg);const H=+svg.getAttribute('viewBox').split(' ')[3],W=vb(svg,H),x0=Math.min(150,W*0.36),x1=W-70;
   const mx=Math.max(1e-9,...items.map(d=>Math.abs(d[1])));const mn=Math.min(0,...items.map(d=>d[1]));
   const sc=v=>x0+(v-mn)/(mx-mn)*(x1-x0);const bh=Math.min(34,(H-50)/items.length-10);
   T(svg,10,18,title,{weight:700,fill:COL.ink});
@@ -234,11 +239,11 @@ function upd(){const p=P(),L=ladder(p);
     short=Math.max(0,top-free),after=Math.max(0,free-top),more=after/(1+m)/f1*100,eq=(s1-p.s)-(f1-p.f);
   put('p-free',free,0);put('p-buf',buf,1);put('p-bufm',bufm,2);put('p-top',top,0);put('p-short',short,0);put('p-after',after,0);
   put('p-more',more,1);put('p-eq',eq,0);
-  bars($('p-svg'),[['กำไรขา spot',s1-p.s,COL.green,'+'+nf(s1-p.s,0)+' (ติดอยู่ในเหรียญ)'],['เงินสดอิสระก่อน',free,COL.grey],
+  bars($('p-svg'),[['กำไรขา spot',s1-p.s,COL.green,'+'+nf(s1-p.s,0)],['เงินสดอิสระก่อน',free,COL.grey,nf(free,0)],
     ['ต้องโอนเติม',-top,COL.red,nf(-top,0)],['เงินสดหลังโอน',short>0?-short:after,short>0?COL.red:COL.green,short>0?'ขาด '+nf(short,0):nf(after,0)]],
-    'คืนที่ spot ขึ้น '+nf(x,1)+'%: กำไรอยู่กระเป๋าหนึ่ง ใบเรียกเงินอยู่อีกกระเป๋า');
+    'spot ขึ้น '+nf(x,1)+'%: กำไรติดอยู่ในเหรียญ ใบเรียกเงินมาที่เงินสด');
   // เส้นต้องโอนเติมเทียบเงินสดอิสระ
-  const sv=$('p-line');clear(sv);const W=640,Hh=250,x0=60,x1=W-20,y0=Hh-34,y1=30,XM=30;
+  const sv=$('p-line');clear(sv);const Hh=250,W=vb(sv,Hh),x0=60,x1=W-20,y0=Hh-34,y1=30,XM=30;
   const tops=[];for(let q=0;q<=XM;q+=0.5){const f=p.s*(1+q/100)+ba;tops.push([q,(1+m)*(f-p.f)]);}
   const ymax=Math.max(free*1.6,...tops.map(t=>t[1]))*1.05,ymin=Math.min(0,...tops.map(t=>t[1]));
   const X=q=>x0+q/XM*(x1-x0),Y=v=>y0-(v-ymin)/(ymax-ymin)*(y0-y1);
@@ -247,7 +252,7 @@ function upd(){const p=P(),L=ladder(p);
   sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(free),y2:Y(free),stroke:COL.grey,'stroke-width':3}));
   sv.appendChild(S('polyline',{points:tops.map(t=>X(t[0])+','+Y(t[1])).join(' '),fill:'none',stroke:COL.red,'stroke-width':3}));
   const qb=(free/(1+m)-ba+p.f)/p.s*100-100; // spot ขึ้นกี่ % แล้วเงินสดหมดพอดี
-  if(qb>0&&qb<XM){sv.appendChild(S('circle',{cx:X(qb),cy:Y(free),r:6,fill:COL.purple}));T(sv,X(qb)+8,Y(free)-8,'เงินสดหมดที่ spot +'+nf(qb,1)+'%',{fill:COL.purple,weight:700});}
+  if(qb>0&&qb<XM){sv.appendChild(S('circle',{cx:X(qb),cy:Y(free),r:6,fill:COL.purple}));T(sv,X(qb)-10,Y(free)-12,'เงินสดหมดที่ spot +'+nf(qb,1)+'%',{fill:COL.purple,weight:700,anchor:'end'});}
   sv.appendChild(S('line',{x1:X(x),x2:X(x),y1:y1,y2:y0,stroke:COL.ink,'stroke-dasharray':'4 4'}));
   T(sv,x0-6,Y(free)+4,nf(free,0),{anchor:'end',size:11});
   // ④ บันไดแย่ง
@@ -262,7 +267,7 @@ function upd(){const p=P(),L=ladder(p);
 ['c-s','c-f','c-days','c-cap','c-st','c-hur','h-n','h-s','h-f','h-hur','p-m','p-x','p-ba'].forEach(i=>$(i).addEventListener('input',upd));
 $('p-min').onclick=()=>{setv('c-cap',M['ทุนภาค1']['รวม']);upd();};
 $('p-ton').onclick=()=>{setv('c-cap',C4['ทุนของต้น']);upd();};
-upd();
+onResize(upd);upd();
 
 </script>
 <!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
