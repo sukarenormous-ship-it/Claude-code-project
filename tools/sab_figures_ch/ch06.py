@@ -84,6 +84,8 @@ def extend(data, D, q):
             "สุทธิ": q(hold_net, 2),
             "มากกว่าปิดวันที่30": q(hold_extra, 2),
             "ส่วนที่หาย": q(D(btc["basis"]) - hold_price, 0),
+            "ขาspot": q(sold - s0, 0),
+            "ขาfutures": q(f0 - D(btc["ราคาชำระ"]), 0),
         },
         "เงินบนexchangeถ้าspotอยู่นอก": q(on_ex, 0),
         "ของมิน": {
@@ -96,7 +98,7 @@ def extend(data, D, q):
         },
         "ฝึก": {
             "1": {"วันที่เหลือ": int(e1_left), "spot": q(e1_s, 0), "futures": q(e1_f, 0), "basis": q(e1_basis, 0),
-                  "ค่าธรรมเนียมปิด": q(e1_close_fee, 2), "ค่าธรรมเนียมถือ": q(e1_hold_fee, 2),
+                  "มูลค่าปิดสองขา": q(e1_s + e1_f, 0), "ค่าธรรมเนียมปิด": q(e1_close_fee, 2), "ค่าธรรมเนียมถือ": q(e1_hold_fee, 2),
                   "ถือได้เพิ่ม": q(e1_extra, 2), "เสียโอกาส": q(e1_opp, 2), "ถือดีกว่า": q(e1_extra - e1_opp, 2),
                   "ตัดสิน": "ถือ" if e1_extra > e1_opp else "ปิด"},
             "2": {"ถือดีกว่า": q(e2_margin, 2), "ส่วนต่างราคาชำระ": q(gap, 0), "เหลือหลังหักส่วนต่าง": q(e2_after_gap, 2)},
