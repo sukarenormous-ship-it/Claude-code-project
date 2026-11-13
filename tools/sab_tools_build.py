@@ -525,7 +525,7 @@ REV_BODY = r"""
 """
 
 REV_JS = r"""
-const M=BOOK['บัญชีมิน'], C12=BOOK.ch12, C13=BOOK.ch13, C14=BOOK.ch14, G=C13['กติกาตารางphi'], CARD=M['การ์ด'];
+const M=BOOK['บัญชีมิน'], C12=BOOK.ch12, C13=BOOK.ch13, C14=BOOK.ch14, G=C13['กติกาตารางphi'], CARD=M['การ์ด'], SETS=M['คู่']['ชุด'], CST=CARD['ต้นทุนเข้า']+CARD['ต้นทุนออก'];
 setv('r-phi',C13['ตารางphi']['0.80'].phi);setv('r-sd',0.5);setv('r-x0',G['เริ่ม']);setv('r-n',G['ช่วงถือ']);setv('r-sets',G['ชุด']);setv('r-cost',G['ต้นทุน']);
 setv('s-x',C14['เส้นทาง'].join(', '));setv('s-b','');setv('w-win',C12['เส้นทาง']['1']['สุทธิ']);setv('w-loss',C12['เส้นทาง']['3']['สุทธิ']);
 function R(){return {phi:num('r-phi'),sd:num('r-sd'),x0:num('r-x0'),n:Math.max(1,Math.round(num('r-n'))),sets:num('r-sets'),cost:num('r-cost')};}
@@ -564,7 +564,7 @@ function fp(){const p=R(),Mn=p.phi>=1?5000:20000;$('r-fpn').textContent=nf(Mn,0)
   const t=$('r-fptbl');while(t.rows.length>1)t.deleteRow(1);
   rows.forEach(r=>{const row=t.insertRow();row.innerHTML='<td>'+r[0]+'</td><td class="num v">'+r[1]+'</td><td class="num">'+(r[2]||'—')+'</td>';});}
 function world(phi,sd,n){const st=2,res={'งบ':0,'เป้า':0,'เวลา':0};let tot=0,wins=0;
-  for(let k=0;k<n;k++){let x=st;for(let t=1;t<=3;t++){x=phi*x+sd*gauss();const liq=CARD['ชุด']*0+10*(st-x)-1;let r=null;
+  for(let k=0;k<n;k++){let x=st;for(let t=1;t<=3;t++){x=phi*x+sd*gauss();const liq=SETS*(st-x)-CST;let r=null;
     if(liq<=CARD['งบขาดทุนสุทธิ'])r='งบ';else if(x<=CARD['ออก'])r='เป้า';else if(t>=3)r='เวลา';
     if(r){res[r]++;tot+=liq;if(liq>0)wins++;break;}}}
   return {t:res['เป้า']/n*100,b:res['งบ']/n*100,ti:res['เวลา']/n*100,w:wins/n*100,ev:tot/n};}
@@ -581,7 +581,7 @@ function state(){return pol.pos?(pol.pos.side<0?ST.short:ST.long)+(pol.paused?' 
 function reset(){xs=parse('s-x');const b=parse('s-b');const b0=M['คู่'].B;bs=xs.map((_,i)=>b.length?(b[i]!==undefined?b[i]:b[b.length-1]):b0);
   pol={pos:null,paused:false,trades:[],blocked:0};bar=0;const t=$('s-tbl');while(t.rows.length>1)t.deleteRow(1);$('s-resmsg').textContent='';out();}
 function step(){if(bar>=xs.length)return;const x=xs[bar],b=bs[bar],a=x+M['คู่'].h*b,before=state();let ev='',el='',la='',lb='',liq=null;
-  if(pol.pos){const p=pol.pos;el=bar-p.bar;const qa=p.side*CARD['ชุด'],qb=-p.side*CARD['ชุด']*M['คู่'].h;
+  if(pol.pos){const p=pol.pos;el=bar-p.bar;const qa=p.side*SETS,qb=-p.side*SETS*M['คู่'].h;
     la=qa*(a-p.a);lb=qb*(b-p.b);liq=la+lb-CARD['ต้นทุนเข้า']-CARD['ต้นทุนออก'];
     const rec=p.side<0?x<=CARD['ออก']:x>=-CARD['ออก'];
     const r=liq<=CARD['งบขาดทุนสุทธิ']?'งบ':rec?'เป้า':el>=CARD['ช่วงถือสูงสุด']?'เวลา':null;
@@ -877,7 +877,7 @@ for (const job of spec) {
   await page.waitForTimeout(200);
   for (const a of job.actions) {
     if (a[0] === 'click') await page.click(a[1]);
-    else { await page.fill(a[1], a[2]); await page.dispatchEvent(a[1], 'input'); await page.dispatchEvent(a[1], 'change'); }
+    else await page.$eval(a[1], (e, v) => { e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }, a[2]);
     await page.waitForTimeout(80);
   }
   const twins = job.actions.length ? [] : await page.$$eval('[data-twin]', (els) => els.map((e) => [e.dataset.twin, e.textContent]));
