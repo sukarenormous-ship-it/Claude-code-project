@@ -247,7 +247,8 @@ def ladder_bars(rungs, title, unit="%", W=760, H=320):
     for i in range(1, len(rungs)):
         d = round(vals[i] - vals[i - 1], 2)
         x = f.L + gw * i
-        out.append(text(x, f.y(max(vals[i], vals[i - 1])) - 24, ("−" if d < 0 else "+") + B.fmt(abs(d)), 11, C["red"] if d < 0 else C["green"], "middle"))
+        mag = int(abs(d)) if abs(d) == int(abs(d)) else abs(d)
+        out.append(text(x, f.y(max(vals[i], vals[i - 1])) - 24, ("−" if d < 0 else "+") + B.fmt(mag), 11, C["red"] if d < 0 else C["green"], "middle"))
     return out
 
 

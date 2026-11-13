@@ -44,7 +44,7 @@ def _corr_vs_rope(fig):
         y0, y1 = top + 34, top + 180
         ex, avg = c9["คู่ตัวอย่าง"][key], c9[key]
         p.append(f'<rect x="8" y="{top}" width="{W - 16}" height="196" rx="10" fill="#fafafa" stroke="{C["grid"]}"/>')
-        p.append(text(24, top + 22, f"{name} · correlation คู่ตัวอย่าง {B.fmt(ex['corr'])} · เฉลี่ย 200 คู่ {B.fmt(avg['corr'])}",
+        p.append(text(24, top + 22, f"{name} · correlation คู่ตัวอย่าง {ex['corr']:.2f} · เฉลี่ย 200 คู่ {avg['corr']:.2f}",
                       12.5, col, weight=700))
         Y = lambda v: y1 - (v - lo) / (hi - lo) * (y1 - y0)  # noqa: E731
         for t in ticks:
@@ -90,8 +90,7 @@ def _formation_test(fig):
         dash = "" if k == 0 else ' stroke-dasharray="5 4"'
         p.append(f'<line x1="{L}" y1="{Y(k):.1f}" x2="{W - R}" y2="{Y(k):.1f}" stroke="{col}" stroke-width="1.3"{dash}/>')
         p.append(text(L - 8, Y(k) + 4, ("+" if k > 0 else "") + B.fmt(k), 10.5, col, "end"))
-    p.append(text(W - R - 4, Y(2) - 6, "+2 ระยะแกว่ง", 10.5, C["purple"], "end", 700))
-    p.append(text(W - R - 4, Y(-2) + 14, "−2 ระยะแกว่ง", 10.5, C["purple"], "end", 700))
+    p.append(text(L + 6, Y(2) - 6, "+2 ระยะแกว่ง", 10.5, C["purple"], "start", 700))
     p.append(text(W - R - 4, Y(0) - 6, "ค่ากลาง", 10.5, MUTED, "end"))
     pts = [(X(i), Y(v)) for i, v in enumerate(z)]
     p.append(f'<polyline points="{_poly(pts[:nf])}" fill="none" stroke="{NOROPE}" stroke-width="1.8"/>')
@@ -100,11 +99,10 @@ def _formation_test(fig):
         if abs(z[i]) > 2:
             p.append(f'<circle cx="{pts[i][0]:.1f}" cy="{pts[i][1]:.1f}" r="1.9" fill="{C["red"]}"/>')
     p.append(f'<line x1="{xd:.1f}" y1="{y0 - 8}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
-    p.append(text(L + 8, y0 + 16, f"ช่วงเลือก: ใน ±1 {B.fmt(st['ช่วงเลือกในหนึ่งระยะ'])}% · ±2 {B.fmt(st['ช่วงเลือกในสองระยะ'])}%",
+    p.append(text(L + 8, Y(-2.55), f"ช่วงเลือก: ใน ±1 {B.fmt(st['ช่วงเลือกในหนึ่งระยะ'])}% · ±2 {B.fmt(st['ช่วงเลือกในสองระยะ'])}%",
                   11.5, C["purple"], weight=700))
-    p.append(text(xd + 10, y0 + 16, f"ช่วงทดสอบ: ใน ±2 แค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% · จุดแดง = หลุดกรอบ",
+    p.append(text(xd + 10, Y(-2.55), f"ช่วงทดสอบ: ใน ±2 แค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% · จุดแดง = หลุดกรอบ",
                   11.5, C["red"], weight=700))
-    p.append(text(L, y1 + 22, "วันที่ 1", 10.5, C["grey"], "middle"))
     p.append(text(xd, y1 + 22, f"วันที่ {B.fmt(nf)}", 10.5, C["grey"], "middle"))
     p.append(text(W - R, y1 + 22, f"วันที่ {B.fmt(c9['จำลอง']['วัน'])}", 10.5, C["grey"], "end"))
     p.append(text(L - 44, y0 - 10, "z", 11, MUTED))
@@ -142,9 +140,8 @@ def _icon(kind, x0, x1, y):
     if kind == "pull":
         mid = (x0 + x1) / 2
         return [f'<path d="M{x0 + 6:.1f},{y} Q{mid:.1f},{y + 22} {x1 - 6:.1f},{y}" fill="none" stroke="{MUTED}" stroke-width="2.6"/>',
-                f'<line x1="{mid:.1f}" y1="{y + 11}" x2="{mid:.1f}" y2="{y - 16}" stroke="{C["green"]}" stroke-width="2"/>',
-                f'<path d="M{mid - 5:.1f},{y - 10} l5,-8 l5,8 z" fill="{C["green"]}"/>',
-                f'<circle cx="{mid:.1f}" cy="{y - 24}" r="5" fill="none" stroke="{C["green"]}" stroke-width="2"/>', a, b]
+                f'<line x1="{mid:.1f}" y1="{y + 10}" x2="{mid:.1f}" y2="{y - 2}" stroke="{C["green"]}" stroke-width="2"/>',
+                f'<path d="M{mid - 5:.1f},{y - 1} l5,-8 l5,8 z" fill="{C["green"]}"/>', a, b]
     if kind == "spring":
         n, pts = 14, []
         for i in range(n + 1):
@@ -168,7 +165,7 @@ def _rope_types(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่�
     # ลูกศรด้านซ้าย: บนผูกแน่น → ล่างต้องพึ่งข้อมูล
     p.append(f'<line x1="20" y1="{top + 8}" x2="20" y2="{H - 26}" stroke="{C["grey"]}" stroke-width="2"/>')
     p.append(f'<path d="M14,{H - 30} l6,12 l6,-12 z" fill="{C["grey"]}"/>')
-    p.append(text(30, top + 2, "ผูกแน่น", 10.5, C["grey"]))
+    p.append(text(10, top - 6, "ผูกแน่น", 10.5, C["grey"]))
     p.append(text(30, H - 8, "พึ่งข้อมูล", 10.5, C["grey"]))
     for i, (kind, name, ex, pull, fail) in enumerate(rows):
         y = top + i * rh
