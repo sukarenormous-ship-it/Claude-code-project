@@ -56,7 +56,7 @@ def _cost_roundtrip(fig):
     for name, col in (("ส่วนต่างราคาซื้อ-ขาย", C["amber"]), ("ค่าธรรมเนียม", C["red"])):
         out.append(f'<rect x="{lx}" y="{T - 46}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 36, name, 11.5, C["muted"]))
-        lx += 40 + 8 * len(name)
+        lx += 36 + 6.5 * len(name)
     out.append(text(24, 26, "ค่าผ่านทางไปกลับครบสองขา (1 BTC)", 13, C["ink"], weight=700))
     alt = (f"แท่งแนวนอนสามแถว ค่าผ่านทางไปกลับสองขา taker {B.fmt(-t0['สองขา'])} เหลือจาก basis "
            f"{B.fmt(t0['3000ลบสองขา'])} · maker ถ้าได้ครบ {B.fmt(-lv['maker']['สองขา'])} · 0.1% ต่อข้าง "
