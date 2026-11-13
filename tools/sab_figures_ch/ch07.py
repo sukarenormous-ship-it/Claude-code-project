@@ -32,7 +32,7 @@ def extend(data, D, q):
     fee3 = maker * (s_open + p_open + s_close + p_close)
     net3 = sum(fund3) + spot_pnl + perp_pnl - fee3
     sam = c7["สามรอบ"]
-    assert q(net3, 3) == D(str(sam["สุทธิ"])), "สามรอบ: สุทธิไม่ตรง JSON หลัก"
+    assert q(net3, 3) == sam["สุทธิ"], "สามรอบ: สุทธิไม่ตรง JSON หลัก"
 
     # ── บันได funding (เส้นทางราบ 30 วัน) ──
     fund_flat = mark * rate / 100 * rounds                    # 900
@@ -67,7 +67,7 @@ def extend(data, D, q):
     after3 = carry + net3
     after_flip = after3 + rule_flip
     after_alt = after_flip + rule_alt
-    assert q(after_alt, 2) == D(str(c7["บัญชีสะสมภาค1"]["ต่อ1BTC"])), "บัญชีสะสมภาค 1 ไม่ตรง"
+    assert q(after_alt, 2) == c7["บัญชีสะสมภาค1"]["ต่อ1BTC"], "บัญชีสะสมภาค 1 ไม่ตรง"
 
     # ── มือที่แย่งเชือก: ส่วนเกินหลัง hurdle ของแต่ละอัตรา (maker) ──
     crowd = [{"ต่อรอบเปอร์เซ็นต์": r["ต่อรอบเปอร์เซ็นต์"],
