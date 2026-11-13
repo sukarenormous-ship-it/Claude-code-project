@@ -47,7 +47,7 @@ def _beta_count(fig):
     # หัว + legend + สรุปสีม่วง
     out.append(text(f.L, 26, f"นับ beta: เอาเฉพาะวันที่ BTC ขยับเกิน {cut}% แล้วเทียบผลรวม", 13, C["ink"], weight=700))
     lx = f.L
-    for name, col in (("BTC", C["blue"]), ("A", C["amber"]), (f"วันที่ BTC ขยับไม่เกิน {cut}% (ไม่นับ)", "#d1d5db")):
+    for name, col in (("BTC", C["blue"]), ("A", C["amber"]), (f"ไม่นับ (BTC ขยับไม่เกิน {cut}%)", "#d1d5db")):
         out.append(f'<rect x="{lx}" y="{40}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, 50, name, 11.5, C["muted"]))
         lx += 34 + 8 * len(name)
@@ -58,8 +58,7 @@ def _beta_count(fig):
            f"BTC ขยับรวม {B.fmt(nb['ผลรวมBTC'])} ได้ beta {B.fmt(nb['ผล'])}")
     cap = (f"รายวัน A ÷ BTC แกว่งตั้งแต่ {B.fmt(min(d['Aต่อBTC'] for d in days if d['นับ']))} ถึง "
            f"{B.fmt(max(d['Aต่อBTC'] for d in days if d['นับ']))} แต่ผลรวมให้ {B.fmt(nb['ผล'])} · "
-           f"วันลงนับแยกได้ {B.fmt(nb['วันลง']['ผล'])} วันขึ้นได้ {B.fmt(nb['วันขึ้น']['ผล'])} · "
-           "การขยับของ A คิดเครื่องหมายตามทิศ BTC (ลงด้วยกัน = นับบวก)")
+           f"วันลงนับแยกได้ {B.fmt(nb['วันลง']['ผล'])} วันขึ้นได้ {B.fmt(nb['วันขึ้น']['ผล'])}")
     return wrap(W, H, alt, out, cap, "สอน")
 
 
@@ -97,5 +96,5 @@ def _hedge_compare(fig):
            f"เมื่อ B ขึ้นเอง 1% เสีย {B.fmt(s2[0])} {B.fmt(s2[1])} {B.fmt(s2[2])}")
     cap = (f"ถือ A {B.fmt(c['ฉาก']['Aจำนวน'])} เหรียญ ({B.fmt(c['ฉาก']['Aมูลค่า'])}) beta {B.fmt(c['ฉาก']['betaA'])} · "
            f"B ราคา {B.fmt(fig['บัญชีมิน']['คู่']['B'])} beta {B.fmt(fig['บัญชีมิน']['beta']['B'])} · "
-           "แท่งแดงคิดเฉพาะผลของตลาด แท่งส้มคิดเฉพาะการขยับของ B เอง · ไม่มีแถวไหนเป็นศูนย์ทั้งสองแท่ง")
+           "แท่งแดงคิดเฉพาะผลของตลาด แท่งส้มคิดเฉพาะการขยับของ B เอง")
     return wrap(W, H, alt, parts, cap, "สอน")
