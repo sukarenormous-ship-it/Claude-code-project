@@ -64,7 +64,8 @@ def extend(data, D, q):
     ton_extra = D(str(caps["120000"]["ส่วนเกินเปอร์เซ็นต์"])) - D(str(caps["125000"]["ส่วนเกินเปอร์เซ็นต์"]))
 
     def mini(x):
-        return q(D(str(x)) * scale, 2)
+        v = D(str(x)) * scale
+        return int(v) if v == v.to_integral() else q(v, 2)
 
     out = {
         "วันต่อปี": int(year),
@@ -73,6 +74,7 @@ def extend(data, D, q):
         "ต่อทุนต่อช่วง": q(basis / cap * 100, 2),                          # 2.4 ต่อ 90 วัน
         "สุทธิต่อช่วง": q(net / cap * 100, 2),
         "มูลค่าซื้อขายรวม": q(traded, 0),
+        "ค่าธรรมเนียมรวม": int(D(str(lad["ค่าธรรมเนียม"]))),               # 154 (ค่าเดิมใน บันได เป็น float 154.0)
         "ค่าธรรมเนียมรายครั้ง": {"ซื้อspot": q(fee * s0, 2), "shortfutures": q(fee * f0, 2),
                                 "ขายspotวันหมดอายุ": q(fee * settle, 2)},
         "ขั้นที่หาย": {"ตัวหาร": q(D(str(lad["บนจอ"])) - D(str(lad["ต่อทุน"])), 2),

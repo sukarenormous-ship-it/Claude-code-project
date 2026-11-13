@@ -246,7 +246,7 @@ def check_file(name, html, ctx):
     for sym in FORBIDDEN_LATIN:
         if re.search(r"(?<![A-Za-z0-9_\-])" + re.escape(sym) + r"(?![A-Za-z0-9_\-])", mp_clean):
             P.append(f"{name}: W12 สัญลักษณ์ {sym!r} นอก 🔎")
-    for m in re.finditer(r"(?<![\d.])\d+\.\d{3,}(?![\d])", mp):
+    for m in re.finditer(r"(?<![\d.])\d+\.\d{3,}(?![\d])(?!\s*BTC)", mp):     # ปริมาณเหรียญ เช่น 0.015 BTC ยกเว้น
         P.append(f"{name}: W13 ทศนิยมเกิน 2 ตำแหน่ง {m.group(0)} นอก 🔎")
 
     # W16 ป้ายที่มา + table.fees

@@ -37,11 +37,11 @@ def _tail(fig):
     out.append(text(X(n) - 8, Y(n) - 10, f"หน้าจอ +{B.fmt(t['ถ้าไม่เห็นวันเสีย50รอบ'])}", 11.5, C["purple"], "end", 700))
     out.append(text(X(n) - 8, Y(ev_n) + 18, f"ค่าคาดหมาย {B.fmt(ev_n)}", 11.5, C["muted"], "end", 700))
     out.append(f'<circle cx="{X(n + 1):.1f}" cy="{Y(after):.1f}" r="4" fill="{C["red"]}"/>')
-    out.append(text(X(n + 1) - 10, Y(after) + 4, f"ช่วงที่ {n + 1} เสีย {B.fmt(t['เสีย'])} → {B.fmt(after)}", 11, C["red"], "end", 700))
+    out.append(text(X(n + 1) - 10, Y(after) + 4, f"รอบที่ {n + 1} เสีย {B.fmt(t['เสีย'])} → {B.fmt(after)}", 11, C["red"], "end", 700))
     out.append(text((X(n) + R) / 2, Bm - 6, "นอกหน้าต่าง", 10, C["grey"], "middle"))
-    out.append(text(L, Bm + 18, "ช่วงที่ 1", 10.5, C["grey"]))
-    out.append(text(X(n), Bm + 18, f"ช่วงที่ {n}", 10.5, C["grey"], "middle"))
-    out.append(text(L, T - 26, f"ยอดสะสม: ชนะ {n} ช่วงติด", 12.5, C["ink"], weight=700))
+    out.append(text(L, Bm + 18, "รอบที่ 1", 10.5, C["grey"]))
+    out.append(text(X(n), Bm + 18, f"รอบที่ {n}", 10.5, C["grey"], "middle"))
+    out.append(text(L, T - 26, f"ยอดสะสม: ชนะ {n} รอบติด", 12.5, C["ink"], weight=700))
     # ── ขวา: โอกาสไม่เห็นวันเสีย ──
     L2, R2 = 452, 736
     rows = list(c["ไม่เห็นวันเสีย"].items())
@@ -54,14 +54,14 @@ def _tail(fig):
         col = C["purple"] if hot else C["blue"]
         out.append(f'<rect x="{cx - 20:.1f}" y="{Y2(v):.1f}" width="40" height="{Bm - Y2(v):.1f}" rx="3" fill="{col}"/>')
         out.append(text(cx, Y2(v) - 7, f"{B.fmt(v)}%", 11.5, col, "middle", 700))
-        out.append(text(cx, Bm + 18, f"{k} ช่วง", 10.5, C["grey"], "middle"))
-    out.append(text(L2, T - 26, "โอกาสไม่เห็นวันเสียเลย", 12.5, C["ink"], weight=700))
+        out.append(text(cx, Bm + 18, f"{k} รอบ", 10.5, C["grey"], "middle"))
+    out.append(text(L2, T - 26, "โอกาสไม่เห็นรอบแพ้เลย", 12.5, C["ink"], weight=700))
     out.append(text(16, 24, f"ชนะ {B.fmt(t['โอกาสชนะ'])}% แต่ค่าคาดหมายติดลบ — หางอยู่นอกหน้าต่าง", 13.5, C["ink"], weight=700))
-    alt = (f"สองภาพ ซ้าย เส้นทางที่ได้ +1 ติดกัน {n} ช่วงขึ้นไปถึง +{n} ขณะที่เส้นค่าคาดหมายลงไป {B.fmt(ev_n)} "
-           f"แล้วช่วงถัดไปเสีย 120 ครั้งเดียวยอดตกเป็น {B.fmt(after)} ขวา แท่งโอกาสไม่เห็นวันเสียเลย "
-           + " ".join(f"{k} ช่วง {B.fmt(v)}%" for k, v in rows))
-    cap = (f"แต่ละช่วง {B.fmt(t['โอกาสชนะ'])}% ได้ +{B.fmt(t['ได้'])} · 1% เสีย {B.fmt(t['เสีย'])} · "
-           f"แถบเทา = ช่วงที่ {n + 1} นอกหน้าต่างทดสอบ")
+    alt = (f"สองภาพ ซ้าย เส้นทางที่ได้ +1 ติดกัน {n} รอบขึ้นไปถึง +{n} ขณะที่เส้นค่าคาดหมายลงไป {B.fmt(ev_n)} "
+           f"แล้วช่วงถัดไปเสีย 120 ครั้งเดียวยอดตกเป็น {B.fmt(after)} ขวา แท่งโอกาสไม่เห็นรอบแพ้เลย "
+           + " ".join(f"{k} รอบ {B.fmt(v)}%" for k, v in rows))
+    cap = (f"แต่ละรอบ {B.fmt(t['โอกาสชนะ'])}% ได้ +{B.fmt(t['ได้'])} · 1% เสีย {B.fmt(t['เสีย'])} · "
+           f"แถบเทา = รอบที่ {n + 1} นอกหน้าต่างทดสอบ")
     return wrap(W, H, alt, out, cap, "สอน")
 
 

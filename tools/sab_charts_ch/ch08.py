@@ -73,7 +73,7 @@ def _hedge_compare(fig):
     cats = [f"B {m[k]['จำนวนB']} เหรียญ" for k in keys]
     s1 = [m[k]["BTCลง4"] for k in keys]
     s2 = [st["ขา500"], st["ขา1000"], st["ขา1500"]]
-    W, H = 760, 380
+    W, H = 760, 330
     parts = grouped_bars(cats, [("BTC ลง 4% (B ลงตามตลาด)", s1, C["red"]),
                                 ("B ขึ้นเอง 1% (ตลาดนิ่ง)", s2, C["amber"])],
                          "ขา B ยิ่งใหญ่ ยิ่งกันตลาดได้มาก แต่ยิ่งรับข่าวของ B เองมาก", W=W, H=H)
@@ -87,11 +87,12 @@ def _hedge_compare(fig):
     bw = min(46, (gw - 24) / 2)
     cx = f.L + gw * 2 + gw / 2
     x = cx - 2 * (bw + 4) / 2 + (bw + 4) + bw / 2
-    y = f.y(s2[2])
+    y = (f.y(0) + f.y(s2[2])) / 2
     parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.5" fill="#fff" stroke="{C["purple"]}" stroke-width="2.2"/>')
-    parts.append(f'<path d="M{x - 6:.1f},{y + 4:.1f} C{x - 40:.1f},{y + 40:.1f} {x - 80:.1f},{y + 40:.1f} {x - 110:.1f},{y + 40:.1f}" '
+    ty = f.y(s1[1]) + 40                          # ใต้ป้าย −20 ของแถว 20 เหรียญ ไม่ทับแท่ง
+    parts.append(f'<path d="M{x - 4:.1f},{y + 4:.1f} C{x - 20:.1f},{ty - 4:.1f} {x - 60:.1f},{ty - 4:.1f} {x - 100:.1f},{ty - 4:.1f}" '
                  f'fill="none" stroke="{C["purple"]}" stroke-width="1.2"/>')
-    parts.append(text(x - 114, y + 44, "ขา hedge ใหญ่สุด รับข่าวของ B มากสุด", 11, C["purple"], "end", 700))
+    parts.append(text(x - 104, ty, "ขา hedge ใหญ่สุด รับข่าวของ B มากสุด", 11, C["purple"], "end", 700))
     alt = (f"กราฟแท่งสามกลุ่ม ขา B 10 20 30 เหรียญ เมื่อ BTC ลง 4% เสีย {B.fmt(s1[0])} {B.fmt(s1[1])} {B.fmt(s1[2])} "
            f"เมื่อ B ขึ้นเอง 1% เสีย {B.fmt(s2[0])} {B.fmt(s2[1])} {B.fmt(s2[2])}")
     cap = (f"ถือ A {B.fmt(c['ฉาก']['Aจำนวน'])} เหรียญ ({B.fmt(c['ฉาก']['Aมูลค่า'])}) beta {B.fmt(c['ฉาก']['betaA'])} · "
