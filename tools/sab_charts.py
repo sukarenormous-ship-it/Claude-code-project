@@ -55,9 +55,9 @@ def text(x, y, s, size=11.5, fill=None, anchor="start", weight=None):
             f'fill="{fill or C["muted"]}"{w} {FONT}>{esc(s)}</text>')
 
 
-def wrap(w, h, alt, parts, cap, src):
-    """SVG + คำบรรยาย · ป้ายที่มา (W16) ขึ้นต้นคำบรรยายเสมอ"""
-    return (f'<div class="figw"><svg class="fig" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(alt)}">\n' + "\n".join(parts) +
+def wrap(w, h, alt, parts, cap, src, narrow=False):
+    """SVG + คำบรรยาย · ป้ายที่มา (W16) ขึ้นต้นคำบรรยายเสมอ · narrow=True = ผังแนวคิดที่ย่อเต็มจอแคบได้ (ไม่บังคับกว้าง 600)"""
+    return (f'<div class="figw{" narrow" if narrow else ""}"><svg class="fig" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(alt)}">\n' + "\n".join(parts) +
             f'\n</svg></div>\n<div class="cap">{SRC[src]} · {cap}</div>')
 
 
@@ -476,10 +476,12 @@ def process(html, fig, fill=False):
     return out, unknown
 
 
-def run(docs, fig, fill=False, write=True):
+def run(docs, fig, fill=False, write=True, scope=None):
     changed, unknown = [], []
     for name in sorted(os.listdir(docs)):
         if not (name.startswith(f"{B.PREFIX}-") and name.endswith(".html")):
+            continue
+        if scope and name != f"{B.PREFIX}-{scope}.html":
             continue
         path = os.path.join(docs, name)
         with open(path, encoding="utf-8") as fh:
@@ -557,7 +559,8 @@ if __name__ == "__main__":
             done = [k for k in keys if k in have]
             print(f"{label} {len(done)}/{len(keys)}: ยังไม่มี → " + ", ".join(k for k in keys if k not in have))
         sys.exit(0)
-    changed, unknown = run(B.DOCS, load_fig(), fill="--fill" in a, write="--check" not in a)
+    scope = a[a.index("--scope") + 1] if "--scope" in a else None
+    changed, unknown = run(B.DOCS, load_fig(), fill="--fill" in a, write="--check" not in a, scope=scope)
     for u in unknown:
         print("  - ไม่รู้จัก:", u)
     if "--check" in a:
