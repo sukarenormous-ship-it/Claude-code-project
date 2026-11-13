@@ -174,6 +174,9 @@ def selftest():
 
 
 if __name__ == "__main__":
+    if any(x not in ['--check', '--selftest'] for x in sys.argv[1:]):
+        print(__doc__)
+        sys.exit(2)
     a = sys.argv[1:]
     if a == ["--selftest"]:
         sys.exit(selftest())

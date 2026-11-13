@@ -156,6 +156,9 @@ def selftest():
 
 
 if __name__ == "__main__":
+    if any(x not in ['--check', '--selftest'] for x in sys.argv[1:]):
+        print(__doc__)
+        sys.exit(2)
     if sys.argv[1:] == ["--selftest"]:
         sys.exit(selftest())
     rows, problems = collect()

@@ -193,6 +193,9 @@ def check_file(name, html, ctx):
     # W14 anchor
     for ref, anc in set(re.findall(r'href="([^"#:]*)#([^"]+)"', html)):
         target = html if not ref else pages.get(ref)
+        if ref and not target and os.path.exists(os.path.join(DOCS, ref)):   # หน้าคลังที่ไม่ใช่ sab-: อ่านจริง
+            with open(os.path.join(DOCS, ref), encoding="utf-8") as fh:
+                target = fh.read()
         if target is not None and not re.search(r'\bid="' + re.escape(anc) + '"', target):
             P.append(f"{name}: W14 ลิงก์ไป {ref or name}#{anc} แต่ไม่มี id นี้")
 
