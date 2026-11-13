@@ -227,6 +227,10 @@ def check_file(name, html, ctx):
     if "ถอยสู่ค่าเฉลี่ย" in vis_no_allow:
         P.append(f"{name}: W18 'ถอยสู่ค่าเฉลี่ย' นอกกล่อง data-allow (ใช้ 'กลับค่ากลาง')")
     del allow
+    if n is not None and n >= 8:                                   # แผน 7.3: spread ของคู่ ห้ามเรียก "ส่วนต่าง"
+        for m in re.finditer(r"ส่วนต่าง(?!ราคาซื้อ-ขาย|ราคาซื้อขาย)", main_path(html)):
+            P.append(f"{name}: W18 'ส่วนต่าง' ในภาค 2–3 — ใช้ 'spread ของคู่' (ยกเว้น ส่วนต่างราคาซื้อ-ขาย)")
+            break
     for m in re.finditer(r"ไม่มีความเสี่ยง", vis):
         before = vis[max(0, m.start() - 2):m.start()]
         if not re.search(r"[\"“'‘]", before):
@@ -278,6 +282,8 @@ def check_file(name, html, ctx):
         pas = re.search(r'<ol class="pass">(.*?)</ol>', seg, re.S)
         if not pas or len(re.findall(r"<li\b", pas.group(1))) != 3:
             P.append(f"{name}: W19 ใบ {sid} ต้องมี <ol class=\"pass\"> 3 ข้อ")
+        elif '<p class="pass-h">' not in seg[max(0, pas.start() - 120):pas.start()]:
+            P.append(f"{name}: W19 ใบ {sid} ต้องมีหัว <p class=\"pass-h\"><strong>✅ เกณฑ์ผ่าน 3 ข้อ</strong></p> ก่อน ol.pass")
         if 'data-field="ใครจ่าย"' not in seg:
             P.append(f"{name}: W19 ใบ {sid} ไม่มีช่อง ใครจ่าย")
         if "📱" not in seg or "ถ้าแอปไม่มีค่านี้" not in seg:
@@ -437,7 +443,7 @@ def _chapter(n, extra="", hook="เงินสดอิสระ", cont=True, s
              '<div class="bt">🛠 ใบ 04 · ใบกันชนเงินสด</div><p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ทุนหมดก่อน</p>'
              '<p>🔢 สมมติเพื่อสอน</p><table class="sheet-tbl"><tr><td data-key="ch04.ต้องโอน">11,220</td>'
              '<td class="blank"></td><td data-field="ใครจ่าย"></td></tr><tr><td>ถ้าเปลี่ยนตลาด</td></tr></table>'
-             '<ol class="pass"><li>หนึ่ง</li><li>สอง</li><li>สาม</li></ol>'
+             '<p class="pass-h"><strong>✅ เกณฑ์ผ่าน 3 ข้อ</strong></p><ol class="pass"><li>หนึ่ง</li><li>สอง</li><li>สาม</li></ol>'
              '<p class="app">📱 จดจากแอป · ถ้าแอปไม่มีค่านี้: ใช้ค่าในใบมิน</p></div>')
     body = f'''<div class="bx bb"><div class="bt">🧭 เส้นทางอ่าน</div><p>อ่านต่อจากบทก่อน แนวคิด z จะมาในบท 9</p></div>
 <div class="scene-open" data-day="1"{cont_attr}><p>มินเปิดสมุด เงินสดอิสระของเขาเหลือ 14,700</p></div>

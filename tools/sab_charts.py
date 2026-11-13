@@ -29,7 +29,7 @@ import sab_book as B  # noqa: E402
 FONT = 'font-family="Sarabun,sans-serif"'
 C = {"green": "#16a34a", "red": "#dc2626", "purple": "#7c3aed", "blue": "#2563eb", "amber": "#d97706",
      "grey": "#9ca3af", "ink": "#374151", "muted": "#6b7280", "grid": "#f3f4f6", "axis": "#d1d5db"}
-SRC = {"สอน": "🔢 ตัวเลขสมมติเพื่อสอน", "จำลอง": "🎲 จำลอง (ผลนิ่งเมื่อสุ่มใหม่ 30 ชุด)", "จริง": "📡 ข้อมูลจริง (สแนปช็อต)",
+SRC = {"สอน": "🔢 ตัวเลขสมมติเพื่อสอน", "จำลอง": "🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด)", "จริง": "📡 ข้อมูลจริง (สแนปช็อต)",
        "แนวคิด": "🔢 ภาพแนวคิด ไม่ใช่ข้อมูล"}
 
 PLANNED_STAR = ["sab-converge", "sab-cost-roundtrip", "sab-tail", "sab-shape-strips", "sab-ledger-bars", "sab-two-pockets",
@@ -398,7 +398,7 @@ def _selection_bias(fig):
     for lvl in (2, -2):
         parts.append(f'<line x1="{f.L}" y1="{f.y(lvl):.1f}" x2="{760 - f.R}" y2="{f.y(lvl):.1f}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
     parts.append(f'<line x1="{X(nf):.1f}" y1="{f.T}" x2="{X(nf):.1f}" y2="{f.Bm}" stroke="{C["purple"]}" stroke-width="1.5"/>')
-    parts.append(text(X(nf) + 6, f.T - 4, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
+    parts.append(text(X(nf) + 6, f.Bm - 6, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
     alt = "กราฟเส้นสองเส้น คู่ที่คัดได้อันดับ 1 อยู่ในกรอบช่วงเลือก แล้วหลุดลงถึงราว −4.85 ในช่วงทดสอบ ส่วนคู่ที่มีเชือกอยู่ในกรอบ"
     cap = (f"ค้น {s['คู่ที่ค้น']} คู่ที่ไม่มีเชือก แล้วเลือกคู่ที่ข้ามค่ากลางบ่อยสุดในช่วงเลือก {nf} วัน · "
            f"เทียบกับคู่ที่มีเชือกซึ่งสร้างแยกอีก {s['คู่จริง']} คู่ · ช่วงทดสอบคู่อันดับ 1 อยู่ในกรอบ ±2 เพียง "
