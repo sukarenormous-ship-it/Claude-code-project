@@ -108,6 +108,7 @@ def extend(data, D, q):
             "มูลค่า": q(vFull, 0), "ล็อต": q(lots_full, 1), "มูลค่าต่อล็อต": q(lot_value, 0),
             "net": q(vA - vFull, 0), "gross": q(vA + vFull, 0), "betaexposure": q(vA * bA - vFull, 0),
             "betaexposureAใหม่": q(vA * bS, 0),
+            "BTCลง4": q((vA * bA - vFull) * down4 / 100 + 0, 0),   # + 0 กัน Decimal −0
         },
         "grossสามวิธี": {k: q(vA + D(meth[k]["มูลค่าB"]), 0) for k in ("จำนวนเท่ากัน", "มูลค่าเท่ากัน", "betaneutral")},
         "นับbeta": {

@@ -7,6 +7,12 @@ sab-hedge-compare : สามวิธีให้ขา B (10 / 20 / 30 เห�
 from sab_charts import chart, wrap, grouped_bars, text, Frame, nice_ticks, C, B
 
 
+def _whole(v):
+    """30.0 → "30" (ผลรวมที่เป็นจำนวนเต็มไม่ต้องมีทศนิยม)"""
+    t = B.fmt(v)
+    return t[:-2] if t.endswith(".0") else t
+
+
 def _signed(v):
     return ("+" if v > 0 else "") + B.fmt(v)
 
@@ -45,17 +51,18 @@ def _beta_count(fig):
     last = f.L + gw * (len(days) - 1) + gw / 2
     out.append(text(last, f.Bm + 50, "คืนในฉาก", 10.5, C["purple"], "middle", 700))
     # หัว + legend + สรุปสีม่วง
-    out.append(text(f.L, 26, f"นับ beta: เอาเฉพาะวันที่ BTC ขยับเกิน {cut}% แล้วเทียบผลรวม", 13, C["ink"], weight=700))
+    out.append(text(f.L, 26, f"นับ beta จากวันที่ BTC ขยับเกิน {cut}%", 13, C["ink"], weight=700))
     lx = f.L
-    for name, col in (("BTC", C["blue"]), ("A", C["amber"]), (f"ไม่นับ (BTC ขยับไม่เกิน {cut}%)", "#d1d5db")):
+    for name, col in (("BTC", C["blue"]), ("A", C["amber"]), ("ไม่นับ", "#d1d5db")):
         out.append(f'<rect x="{lx}" y="{40}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, 50, name, 11.5, C["muted"]))
         lx += 34 + 8 * len(name)
-    out.append(text(f.L, 80, f"{nb['วันที่นับ']} วันที่นับ: A ขยับรวม {B.fmt(nb['ผลรวมA'])} ÷ BTC ขยับรวม "
-                             f"{B.fmt(nb['ผลรวมBTC'])} = {B.fmt(nb['ผล'])}", 12.5, C["purple"], weight=700))
+    sA, sB = _whole(nb['ผลรวมA']), _whole(nb['ผลรวมBTC'])
+    out.append(text(f.L, 80, f"{nb['วันที่นับ']} วันที่นับ (ทุกวัน A ไปทางเดียวกับ BTC จึงจดบวก): "
+                             f"A รวม {sA} ÷ BTC รวม {sB} = {B.fmt(nb['ผล'])}", 12.5, C["purple"], weight=700))
     alt = (f"กราฟแท่ง 8 วัน แท่งน้ำเงินคือการขยับของ BTC แท่งส้มคือการขยับของ A เป็นเปอร์เซ็นต์ "
-           f"วันที่ BTC ขยับไม่เกิน {cut}% เป็นสีเทาและไม่นับ วันที่นับ {nb['วันที่นับ']} วัน A ขยับรวม {B.fmt(nb['ผลรวมA'])} "
-           f"BTC ขยับรวม {B.fmt(nb['ผลรวมBTC'])} ได้ beta {B.fmt(nb['ผล'])}")
+           f"วันที่ BTC ขยับไม่เกิน {cut}% เป็นสีเทาและไม่นับ วันที่นับ {nb['วันที่นับ']} วัน A ขยับรวม {sA} "
+           f"BTC ขยับรวม {sB} ได้ beta {B.fmt(nb['ผล'])}")
     cap = (f"รายวัน A ÷ BTC แกว่งตั้งแต่ {B.fmt(min(d['Aต่อBTC'] for d in days if d['นับ']))} ถึง "
            f"{B.fmt(max(d['Aต่อBTC'] for d in days if d['นับ']))} แต่ผลรวมให้ {B.fmt(nb['ผล'])} · "
            f"วันลงนับแยกได้ {B.fmt(nb['วันลง']['ผล'])} วันขึ้นได้ {B.fmt(nb['วันขึ้น']['ผล'])}")
