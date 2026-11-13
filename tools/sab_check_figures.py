@@ -138,6 +138,10 @@ def check_page(name, html, fig, known):
         except KeyError:
             problems.append(f"{name}: data-key {key!r} ไม่มีใน JSON")
             continue
+        if inner and isinstance(want, str) and norm(want) is None:      # ค่าข้อความ (เช่น โหมด PAUSED) เทียบตรงตัว
+            if inner != want:
+                problems.append(f"{name}: data-key {key} พิมพ์ {inner!r} แต่ JSON = {want!r}")
+            continue
         if inner:
             got = norm(re.sub(r"[%\s]|บาท|ดอลลาร์|\$", "", inner))
             if got is None or norm(want) is None or got.lstrip("-") != norm(want).lstrip("-") \

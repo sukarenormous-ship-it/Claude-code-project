@@ -13,13 +13,13 @@ BADGE = {"เล็ก": C["green"], "กระดาษ": C["blue"], "พัก
 
 
 def _chip(x, y, w, label, badge):
+    """ป้ายสองบรรทัด: ชื่อไอเดีย (บน) · ป้ายใบตัดสิน (ล่าง) — กันข้อความทับป้าย"""
     col = BADGE[badge]
-    out = [f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="22" rx="6" fill="#fff" stroke="{col}" stroke-width="1.4"/>',
-           text(x + 7, y + 15.5, label, 11.5, INK)]
-    bw = 9 + 11.5 * 0.62 * len(badge)
-    out.append(f'<rect x="{x + w - bw - 3:.1f}" y="{y + 3:.1f}" width="{bw:.1f}" height="16" rx="8" fill="{col}"/>')
-    out.append(text(x + w - bw / 2 - 3, y + 15, badge, 10.5, "#fff", "middle", 700))
-    return out
+    bw = 14 + 11 * 0.6 * len(badge)
+    return [f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="40" rx="6" fill="#fff" stroke="{col}" stroke-width="1.4"/>',
+            text(x + 7, y + 15, label, 11.5, INK),
+            f'<rect x="{x + 6:.1f}" y="{y + 20:.1f}" width="{bw:.1f}" height="15" rx="7.5" fill="{col}"/>',
+            text(x + 6 + bw / 2, y + 31.5, badge, 10.5, "#fff", "middle", 700)]
 
 
 @chart("sab-strategy-map")
@@ -27,15 +27,18 @@ def _strategy_map(fig):
     dec = fig["เรื่อง"]["part18"]["close"]["ใบตัดสิน"]
     cols = ["สัญญาบังคับบรรจบ", "carry", "แรงดึงกลับ", "ให้สภาพคล่อง"]
     rows = ["โซ่ที่มีวันล็อก", "perp ไม่มีวันล็อก", "เชือกที่มีคนคอยดึง", "ยางยืด", "เส้นที่วาดเอง", "ไม่มีเชือก"]
-    W, L, T, rh = 760, 150, 70, 58
+    W, L, T = 760, 150, 70
+    two = {1, 5}                                   # แถวที่มีสองไอเดียในช่องเดียว
+    hs = [96 if i in two else 52 for i in range(len(rows))]
+    ys = [T + sum(hs[:i]) for i in range(len(rows))]
     cw = (W - L - 12) / len(cols)
-    H = T + rh * len(rows) + 10
+    H = T + sum(hs) + 10
     out = [text(12, 24, "ไอเดียอยู่ช่องไหน", 13, INK, weight=700),
            text(12, 50, "ชนิดเชือก ↓  กลไก →", 11, MUTED)]
     for j, c in enumerate(cols):
         out.append(text(L + cw * j + cw / 2, 50, c, 12, INK, "middle", 700))
     for i, r in enumerate(rows):
-        y = T + i * rh
+        y, rh = ys[i], hs[i]
         fill = "#fafafa" if i % 2 == 0 else "#fff"
         out.append(f'<rect x="8" y="{y}" width="{W - 16}" height="{rh - 4}" rx="8" fill="{fill}" stroke="{C["grid"]}"/>')
         out.append(text(18, y + rh / 2 + 2, r, 12, INK, weight=700))
@@ -45,7 +48,7 @@ def _strategy_map(fig):
 
     def cell(i, j, label, badge, span=1, slot=0):
         x = L + cw * j + 5
-        y = T + i * rh + 4 + slot * 25
+        y = ys[i] + 4 + slot * 44
         return _chip(x, y, cw * span - 10, label, badge)
 
     out += cell(0, 0, "carry BTC · บท 3–6", dec["carry"], span=2, slot=0)
