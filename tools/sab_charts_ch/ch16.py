@@ -72,7 +72,7 @@ def _capacity_curve(fig):
     last = c[-1]
     small = next(r for r in c if r["ขนาดต่อขา"] == 1000)
     out.append(f'<circle cx="{X(peak["ขนาดต่อขา"]):.1f}" cy="{f.y(peak["ต่อรอบ"]):.1f}" r="6" fill="{C["purple"]}"/>')
-    out.append(text(X(peak["ขนาดต่อขา"]), f.y(peak["ต่อรอบ"]) - 12, f"สูงสุด {_sign(peak['ต่อรอบ'])}",
+    out.append(text(X(peak["ขนาดต่อขา"]), f.y(peak["ต่อรอบ"]) - 28, f"สูงสุด {_sign(peak['ต่อรอบ'])}",
                     12.5, C["purple"], "middle", 700))
     out.append(f'<circle cx="{X(last["ขนาดต่อขา"]):.1f}" cy="{f.y(last["ต่อรอบ"]):.1f}" r="6" fill="{C["purple"]}"/>')
     out.append(text(X(last["ขนาดต่อขา"]) - 10, f.y(last["ต่อรอบ"]) + 4, _sign(last["ต่อรอบ"]), 12.5, C["purple"], "end", 700))
@@ -88,5 +88,5 @@ def _capacity_curve(fig):
            f"{B.fmt(peak['ขนาดต่อขา'])} ได้ {_sign(peak['ต่อรอบ'])} · 10,000 เหลือ {_sign(ten['ต่อรอบ'])} · "
            f"20,000 ติดลบ {_sign(last['ต่อรอบ'])}")
     cap = ("การ์ดเดิม โลก 60/25/15 · หัก taker 0.05% ทุกครั้งและราคาเฉลี่ยจากกระดานสมมติ (ชั้นที่ไกลแย่ลงเท่าตัว) · "
-           "เส้นประ = คูณตามขนาด · โลก 45/20/35 ติดลบทุกขนาด")
+           "เส้นประ = คูณตามขนาด")
     return wrap(W, H, alt, out, cap, "สอน")
