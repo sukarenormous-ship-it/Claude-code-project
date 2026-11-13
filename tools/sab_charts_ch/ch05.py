@@ -3,7 +3,14 @@
 sab-carry-ladder    : บันไดสี่ขั้นของสถานะเดียวกัน (บนจอ → ต่อทุน → หลังค่าธรรมเนียม → ส่วนเกินหลัง hurdle) · แก้หมายเหตุ 25,000 (errata 13)
 sab-crowding-ladder : มือที่แย่งเชือก — basis 3,000 → 500 แล้วส่วนเกินหลัง hurdle ลดจาก 5.23% เป็น −2.87% (hurdle คงที่ 4%)
 """
+import re
+
 from sab_charts import chart, wrap, ladder_bars, bars, text, Frame, C, B
+
+
+def _num(v):
+    """154.0 → 154 (ค่าเต็มใน JSON เป็น float)"""
+    return B.fmt(int(v)) if float(v).is_integer() else B.fmt(v)
 
 
 @chart("sab-carry-ladder")
@@ -14,16 +21,17 @@ def _carry_ladder(fig):
     rungs = [("อัตราบนจอ", d["บนจอ"]), ("ต่อทุนทั้งก้อน", d["ต่อทุน"]),
              ("หลังค่าธรรมเนียม", d["หลังค่าธรรมเนียม"]), ("ส่วนเกินหลัง hurdle", d["ส่วนเกินเปอร์เซ็นต์"])]
     subs = [f"basis ÷ ราคา spot {B.fmt(m['BTC']['spot'])}", f"basis ÷ ทุน {B.fmt(cap)}",
-            f"หักค่าธรรมเนียม {B.fmt(fee)}", f"หักค่าเสียโอกาส {B.fmt(opp)}"]
+            f"หักค่าธรรมเนียม {_num(fee)}", f"หักค่าเสียโอกาส {B.fmt(opp)}"]
     W, H = 760, 320
     out = ladder_bars(rungs, "สถานะเดียวกัน วัดสี่แบบ (% ต่อปี)", "%", W, H)
+    out = [re.sub(r">([−+]\d+)\.0<", r">\1<", o) for o in out]          # ป้ายส่วนที่หาย −4.0 → −4
     vals = [v for _, v in rungs]
     f = Frame(min(vals + [0]), max(vals + [0]), W, H)
     gw = (W - f.L - f.R) / len(rungs)
     for i, s in enumerate(subs):
         out.append(text(f.L + gw * i + gw / 2, f.Bm + 34, s, 10.5, C["grey"], "middle"))
     alt = (f"กราฟแท่งสี่ขั้น อัตราบนจอ {B.fmt(d['บนจอ'])}% เมื่อหารด้วยทุนทั้งก้อน {B.fmt(cap)} เหลือ {B.fmt(d['ต่อทุน'])}% "
-           f"หักค่าธรรมเนียม {B.fmt(fee)} เหลือ {B.fmt(d['หลังค่าธรรมเนียม'])}% หักค่าเสียโอกาสที่ hurdle 4% "
+           f"หักค่าธรรมเนียม {_num(fee)} เหลือ {B.fmt(d['หลังค่าธรรมเนียม'])}% หักค่าเสียโอกาสที่ hurdle 4% "
            f"เหลือส่วนเกิน {B.fmt(d['ส่วนเกินเปอร์เซ็นต์'])}%")
     cap_txt = (f"อัตรา simple ต่อปีของสถานะเดียวกัน · เงินสด {B.fmt(fig['ch03']['เปิดไม้']['เงินสดหลังซื้อspot'])} "
                f"หลังซื้อ spot = หลักประกัน {B.fmt(m['ทุนภาค1']['หลักประกัน'])} + เงินสดอิสระ {B.fmt(m['ทุนภาค1']['เงินสดอิสระ'])} "
