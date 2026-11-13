@@ -18,30 +18,30 @@ def _pause_timeline(fig):
     xs = c["เส้นทาง"]
     card = acct["การ์ด"]
     t3, w = c["ไม้3"], c["ถ้าเข้า38"]
-    W, H, L, R, T, Bm = 760, 350, 64, 40, 92, 300
+    W, H, L, R, T, Bm = 760, 350, 64, 72, 92, 300
     lo, hi = -0.5, max(w["เชือกขาด"]["ออก"], max(xs)) + 0.4
     Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
     gx = (W - L - R) / (len(xs) - 1)
     X = lambda i: L + gx * i  # noqa: E731
-    out = [text(L - 40, 26, f"ไม้ 3 ปิด {B.fmt(t3['สุทธิ'])} แล้วการ์ดสั่งพัก: สัญญาณที่กลับมาถูกบล็อกสองครั้ง",
+    out = [text(L - 40, 26, f"ไม้ 3 ปิด {B.fmt(t3['สุทธิ'])} แล้วพัก: สัญญาณที่กลับมาถูกบล็อก",
                 13, C["ink"], weight=700)]
     # แถบโหมด
     i_exit = c["เหตุการณ์"].index("exit")
     out.append(f'<rect x="{X(0) - 20:.1f}" y="42" width="{X(i_exit) - X(0) + 20:.1f}" height="20" rx="4" fill="#dcfce7"/>')
-    out.append(text((X(0) + X(i_exit)) / 2 - 10, 56, "โหมด ACTIVE (เปิดไม้ใหม่ได้)", 11, C["green"], "middle", 700))
+    out.append(text((X(0) + X(i_exit)) / 2 - 10, 56, "ACTIVE", 11, C["green"], "middle", 700))
     out.append(f'<rect x="{X(i_exit):.1f}" y="42" width="{X(len(xs) - 1) - X(i_exit) + 20:.1f}" height="20" rx="4" fill="#e5e7eb"/>')
-    out.append(text((X(i_exit) + X(len(xs) - 1)) / 2 + 10, 56, "โหมด PAUSED (พัก)", 11, C["ink"], "middle", 700))
+    out.append(text((X(i_exit) + X(len(xs) - 1)) / 2 + 10, 56, "PAUSED (พัก)", 11, C["ink"], "middle", 700))
     # ช่วงที่ถือ
     i_in = c["เหตุการณ์"].index("entry")
     out.append(f'<rect x="{X(i_in):.1f}" y="{T}" width="{X(i_exit) - X(i_in):.1f}" height="{Bm - T}" fill="#fef2f2"/>')
-    out.append(text((X(i_in) + X(i_exit)) / 2, Bm - 8, "ถือ short X 10 ชุด", 10.5, C["red"], "middle"))
+    out.append(text((X(i_in) + X(i_exit)) / 2, Bm - 8, "ถือ 10 ชุด", 10.5, C["red"], "middle"))
     # เส้นอ้างอิง
-    for lvl, lab, col in ((card["เข้า"], f"เส้นเข้า {B.fmt(card['เข้า'])}", C["purple"]),
-                          (t3["เส้นงบ"], f"เส้นงบ {B.fmt(t3['เส้นงบ'])}", C["red"]),
-                          (card["ออก"], f"เส้นออก {B.fmt(card['ออก'])}", C["grey"])):
+    for lvl, lab, col in ((card["เข้า"], f"เข้า {B.fmt(card['เข้า'])}", C["purple"]),
+                          (t3["เส้นงบ"], f"งบ {B.fmt(t3['เส้นงบ'])}", C["red"]),
+                          (card["ออก"], f"ออก {B.fmt(card['ออก'])}", C["grey"])):
         out.append(f'<line x1="{L}" y1="{Y(lvl):.1f}" x2="{W - R}" y2="{Y(lvl):.1f}" stroke="{col}" '
                    f'stroke-dasharray="5 4" stroke-width="1.3"/>')
-        out.append(text(W - R + 2, Y(lvl) + 4, lab, 10, col, "end" if False else "start"))
+        out.append(text(W - R + 6, Y(lvl) + 4, lab, 10.5, col, "start"))
     out.append(f'<line x1="{L}" y1="{Y(0):.1f}" x2="{W - R}" y2="{Y(0):.1f}" stroke="{C["axis"]}"/>')
     out.append(text(L - 8, Y(0) + 4, "X = 0", 10.5, C["grey"], "end"))
     # เส้น X จริง
@@ -49,13 +49,13 @@ def _pause_timeline(fig):
     out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.4" stroke-linejoin="round"/>')
     # สองโลกของไม้ที่ถูกบล็อก
     i_b = c["เหตุการณ์"].index("entry_blocked_by_pause")
-    for v, lab, col in ((w["เชือกขาด"]["ออก"], f"ถ้าเข้าแล้วเชือกขาด {sg(w['เชือกขาด']['สุทธิ'])}", C["red"]),):
+    for v, lab, col in ((w["เชือกขาด"]["ออก"], f"เชือกขาด {sg(w['เชือกขาด']['สุทธิ'])}", C["red"]),):
         out.append(f'<line x1="{X(i_b):.1f}" y1="{Y(xs[i_b]):.1f}" x2="{X(i_b + 1):.1f}" y2="{Y(v):.1f}" '
                    f'stroke="{col}" stroke-width="1.8" stroke-dasharray="4 4"/>')
         out.append(f'<circle cx="{X(i_b + 1):.1f}" cy="{Y(v):.1f}" r="4" fill="none" stroke="{col}" stroke-width="1.6"/>')
         out.append(text(X(i_b + 1) - 10, Y(v) - 8, lab, 10.5, col, "end", 700))
-    out.append(text(X(i_b + 1) - 10, Y(xs[i_b + 1]) + 34, f"ถ้าเข้าแล้วกลับมา {sg(w['เชือกอยู่']['สุทธิ'])}", 10.5,
-                    C["green"], "end", 700))
+    out.append(text((X(i_b) + X(i_b + 1)) / 2 + 6, (Y(xs[i_b]) + Y(xs[i_b + 1])) / 2 + 22, f"เชือกอยู่ {sg(w['เชือกอยู่']['สุทธิ'])}", 10.5,
+                    C["green"], "middle", 700))
     # จุดสำคัญ
     for i, v in enumerate(xs):
         ev = c["เหตุการณ์"][i]
@@ -72,7 +72,9 @@ def _pause_timeline(fig):
             out.append(f'<circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="7" fill="#fff" stroke="{C["ink"]}" stroke-width="1.8"/>')
             out.append(f'<path d="M{X(i) - 4:.1f},{Y(v) - 4:.1f} L{X(i) + 4:.1f},{Y(v) + 4:.1f} M{X(i) + 4:.1f},{Y(v) - 4:.1f} '
                        f'L{X(i) - 4:.1f},{Y(v) + 4:.1f}" stroke="{C["ink"]}" stroke-width="1.8"/>')
-            out.append(text(X(i) + 12, Y(v) + 4, f"{B.fmt(v)} บล็อก", 11, C["ink"], "start", 700))
+            last = i == len(xs) - 1
+            out.append(text(X(i) + (-12 if last else 12), Y(v) + (22 if last else 4), f"{B.fmt(v)} บล็อก", 11,
+                            C["ink"], "end" if last else "start", 700))
     labels = ["ก่อนเข้า", "เข้า"] + [f"ช่วง {k}" for k in range(1, len(xs) - 1)]
     for i, lab in enumerate(labels):
         out.append(text(X(i), Bm + 18, lab, 10.5, C["grey"], "middle"))
@@ -80,10 +82,8 @@ def _pause_timeline(fig):
            f"{B.fmt(t3['สุทธิ'])} แถบโหมดเปลี่ยนจาก ACTIVE เป็น PAUSED จุด {B.fmt(xs[4])} และ {B.fmt(xs[5])} ถูกบล็อก "
            f"เส้นประสองเส้นแสดงว่าถ้าเข้าที่ {B.fmt(xs[4])} อาจได้ {sg(w['เชือกอยู่']['สุทธิ'])} หรือเสีย "
            f"{B.fmt(w['เชือกขาด']['สุทธิ'])}")
-    cap = (f"เส้นทางไม้ 3 ของมิน (ขนาดจริง 10 ชุด · ต้นทุน 1) · เส้นงบ {B.fmt(t3['เส้นงบ'])} คือจุดที่ขาดทุนสุทธิถึง "
-           f"{B.fmt(card['งบขาดทุนสุทธิ'])} แต่ X กระโดดข้ามไป · หลังปิด สัญญาณที่ {B.fmt(xs[4])} และ {B.fmt(xs[5])} "
-           f"อยู่เหนือเส้นเข้าแต่ถูกบล็อก · เส้นประสีแดงเป็นโลกสมมติที่ X ขยับต่อ {B.fmt(w['เชือกขาด']['ขยับ'])} "
-           f"เท่าที่ไม้ 3 เจอ ไม่ใช่ข้อมูล · เส้นที่เชื่อมจุดช่วยอ่านลำดับ ไม่ใช่ราคาระหว่างช่วง")
+    cap = (f"ไม้ 3 ของมิน 10 ชุด · X กระโดดข้ามเส้นงบ {B.fmt(t3['เส้นงบ'])} · หลังปิด {B.fmt(xs[4])} และ {B.fmt(xs[5])} "
+           f"ถูกบล็อก · เส้นประแดงเป็นโลกสมมติที่ X ขยับต่อ {B.fmt(w['เชือกขาด']['ขยับ'])} ไม่ใช่ข้อมูล")
     return wrap(W, H, alt, out, cap, "สอน")
 
 
@@ -92,11 +92,11 @@ def _moving_mean(fig):
     m = fig["ch14"]["ค่ากลางเลื่อน"]
     xs, mu, gap, pnl = m["X"], m["ค่ากลาง"], m["ระยะ"], m["กำไร"]
     W, H, T, Bm = 760, 300, 78, 240
-    pw, gapw = 220, 30
-    out = [text(16, 26, f"ระยะห่างหด {B.fmt(gap[0])} → {B.fmt(gap[-1])} ทั้งที่ X ไม่ขยับ — กำไรจึงเป็น {B.fmt(pnl)}",
+    pw, gapw = 210, 35
+    out = [text(16, 26, f"ระยะหด {B.fmt(gap[0])} → {B.fmt(gap[-1])} แต่กำไร {B.fmt(pnl)}",
                 13, C["ink"], weight=700)]
     hi = max(xs + mu + gap) * 1.2
-    for p, (title, kind) in enumerate((("X กับค่ากลาง", "line"), ("ระยะห่าง X − ค่ากลาง", "bar"), ("กำไรของที่ถือ", "pnl"))):
+    for p, (title, kind) in enumerate((("X กับค่ากลาง", "line"), ("ระยะห่าง", "bar"), ("กำไรของที่ถือ", "pnl"))):
         L = 40 + p * (pw + gapw)
         Rr = L + pw
         out.append(text(L, T - 22, title, 12, C["ink"], weight=700))
@@ -113,7 +113,7 @@ def _moving_mean(fig):
                 out.append(f'<circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="4" fill="{C["amber"]}"/>')
                 out.append(text(X(i) + (8 if i == 0 else 0), Y(v) + (4 if i == 0 else 18), B.fmt(v), 11, C["amber"],
                                 "start" if i == 0 else "middle", 700))
-            out.append(text(X(0), Y(xs[0]) - 8, f"X = {B.fmt(xs[0])} ทุกช่วง", 11, C["blue"], "start", 700))
+            out.append(text(X(0), Y(xs[0]) - 8, f"X = {B.fmt(xs[0])}", 11, C["blue"], "start", 700))
             out.append(text(X(len(xs) - 1), Y(mu[1]) + 4 + 30, "ค่ากลาง", 10.5, C["amber"], "end"))
         elif kind == "bar":
             for i, v in enumerate(gap):
@@ -132,6 +132,5 @@ def _moving_mean(fig):
             out.append(text(X(i), Bm + 18, f"ช่วง {i + 1}", 10.5, C["grey"], "middle"))
     alt = (f"สามแผง แผงแรก X คงที่ {B.fmt(xs[0])} ขณะค่ากลางเลื่อน {B.fmt(mu[0])} {B.fmt(mu[1])} {B.fmt(mu[2])} "
            f"แผงสองระยะห่าง {B.fmt(gap[0])} {B.fmt(gap[1])} {B.fmt(gap[2])} แผงสามกำไรของที่ถือเป็น {B.fmt(pnl)} ทุกช่วง")
-    cap = (f"โมเดลเลื่อนค่ากลางตาม X ระยะห่างจึงหดจนดูเหมือน \"กลับแล้ว\" แต่ราคาและจำนวนที่ถือไม่เปลี่ยน "
-           f"กำไรจากราคาจึงเป็น {B.fmt(pnl)} · แผงที่สามคือสิ่งที่ภาพต้นฉบับไม่มี และเป็นแผงเดียวที่เป็นเงิน")
+    cap = f"ระยะหดเพราะย้ายไม้บรรทัด ไม่ใช่ราคา · แผงขวาเป็นแผงเดียวที่เป็นเงิน (ภาพต้นฉบับไม่มี)"
     return wrap(W, H, alt, out, cap, "สอน")

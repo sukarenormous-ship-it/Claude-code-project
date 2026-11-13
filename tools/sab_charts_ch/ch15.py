@@ -2,9 +2,9 @@
 
 sab-pnl-bridge (★): ห้าค่า 12 → 8 → 5 → 3 → 2 เป็นแท่งเต็ม · ส่วนที่หายจากแท่งก่อนเป็นกล่องผี
                    ชั้นแรก (8 − 12 = −4) สีอำพันประ = คาดพลาด ไม่ใช่เงินที่จ่าย · ชั้นที่เหลือสีแดง = เงินที่หายจริง
-sab-tries-luck (☆): ลอง 1 / 10 / 50 แบบ → โอกาสเจอแบบที่ดูดีโดยบังเอิญ 5 / 40.1 / 92.3%
+sab-tries-luck (☆): ยังไม่ทำ (บทพูดตัวเลข 40.1 / 92.3% ในร้อยแก้ว)
 """
-from sab_charts import chart, wrap, text, bars, Frame, nice_ticks, C, B
+from sab_charts import chart, wrap, text, Frame, nice_ticks, C, B
 
 
 def _sign(v):
@@ -50,19 +50,6 @@ def _pnl_bridge(fig):
     out.append(text(lx + 148, 26, "เงินที่หายจริง", 11.5, C["red"]))
     alt = (f"ห้าแท่ง {' · '.join(f'{n} {B.fmt(v)}' for n, v in zip(names, levels))} · ส่วนที่หาย "
            f"คาดพลาด {_sign(deltas[1])} ราคาเข้า {_sign(deltas[2])} ค่าธรรมเนียม {_sign(deltas[3])} ค่าถือ {_sign(deltas[4])}")
-    cap = (f"long A 10 · short B 20 · ไม้ซ้อมหนึ่งไม้ · กล่องอำพันประ = คาดพลาด {_sign(deltas[1])} (ผลจริงที่ราคากลางต่างจากที่คาด) "
-           f"· กล่องแดง = เงินที่หายจริงเป็นชั้น ๆ รวม {B.fmt(-(deltas[2] + deltas[3] + deltas[4]))} · "
-           f"ภาพนี้คือการกระทบยอด ไม่ใช่การพิสูจน์ว่าแต่ละชั้นเป็นสาเหตุ")
+    cap = (f"long A 10 · short B 20 · ไม้ซ้อมหนึ่งไม้ · อำพันประ = คาดพลาด ไม่มีใครได้ไป · "
+           f"แดง = เงินที่ไปถึงคนอื่น รวม {B.fmt(-(deltas[2] + deltas[3] + deltas[4]))} · เป็นการกระทบยอด ไม่ใช่การพิสูจน์สาเหตุ")
     return wrap(W, H, alt, out, cap, "สอน")
-
-
-@chart("sab-tries-luck")
-def _tries_luck(fig):
-    t = fig["ch15"]["ลองหลายครั้ง"]
-    ks = ["1", "10", "50"]
-    vals = [t[k] for k in ks]
-    parts = bars([f"ลอง {k} แบบ" for k in ks], vals, "โอกาสเจอแบบที่ดูดีโดยบังเอิญ", "%",
-                 colors=[C["grey"], C["amber"], C["red"]], labels=[f"{B.fmt(v)}%" for v in vals], W=760, H=280)
-    alt = "สามแท่ง ลอง 1 แบบ 5% · 10 แบบ 40.1% · 50 แบบ 92.3%"
-    cap = "แต่ละแบบที่ไม่มีกำไรจริงมีโอกาส 5% ที่จะดูผ่าน · ลองหลายแบบแล้วเลือกตัวที่ดีที่สุด โอกาสโดนหลอกโตเร็ว (ตารางเดียวกับบท 10)"
-    return wrap(760, 280, alt, parts, cap, "สอน")

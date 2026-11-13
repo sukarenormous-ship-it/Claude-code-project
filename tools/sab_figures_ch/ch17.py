@@ -19,7 +19,9 @@
 
 def _need(D, q, gain, loss, cost=0):
     g, l = D(str(gain)) - D(str(cost)), -D(str(loss)) + D(str(cost))
-    return {"ได้": gain, "เสีย": loss, "ชนะคืนหนึ่งแพ้": q(l / g, 2), "ต้องชนะเปอร์เซ็นต์": q(l / (g + l) * 100, 2)}
+    k = q(l / g, 2)
+    return {"ได้": gain, "เสีย": loss, "ชนะคืนหนึ่งแพ้": int(k) if k == int(k) else k,
+            "ต้องชนะเปอร์เซ็นต์": q(l / (g + l) * 100, 2)}
 
 
 def extend(data, D, q):
@@ -60,7 +62,7 @@ def extend(data, D, q):
         "สภาพคล่อง": _need(D, q, lp["ได้สองฝั่ง"], lp["ได้ขาเดียว"]),
     }
     assert need["carry"]["ชนะคืนหนึ่งแพ้"] == r6["เสียทั้ง125000_ทศนิยม"]
-    assert q(D(str(need["carryเฉพาะexchange"]["ชนะคืนหนึ่งแพ้"])), 1) == D(str(r6["เสียเฉพาะ25000"]))
+    assert q(D(str(need["carryเฉพาะexchange"]["ชนะคืนหนึ่งแพ้"])), 1) == r6["เสียเฉพาะ25000"]
     assert need["บอท65"]["ต้องชนะเปอร์เซ็นต์"] == bot["คุ้มทุนเปอร์เซ็นต์"]
     assert q(D(str(need["คู่"]["ต้องชนะเปอร์เซ็นต์"])), 0) == c17["ต้องชนะคู่"]
 

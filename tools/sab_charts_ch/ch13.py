@@ -37,7 +37,7 @@ def _mult_table(fig):
     lo, hi = 0.7, 2.25
     X = lambda t: L + t / hold * (W - L - R)  # noqa: E731
     Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
-    out = [text(16, 26, f"เริ่มที่ {B.fmt(start)} แล้วคูณ φ ทุกช่วง: เหลือเท่าไรเมื่อครบ {hold} ช่วง", 13, INK, weight=700)]
+    out = [text(16, 26, f"คูณ φ ทุกช่วง: เหลือเท่าไรเมื่อครบ {hold} ช่วง", 13, INK, weight=700)]
     for g in (1, 1.5, 2):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["grid"]}"/>')
         out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
@@ -46,7 +46,7 @@ def _mult_table(fig):
     # เส้นคุ้มต้นทุน
     out.append(f'<line x1="{L}" y1="{Y(even):.1f}" x2="{W - R}" y2="{Y(even):.1f}" stroke="{C["purple"]}" '
                f'stroke-dasharray="5 4" stroke-width="1.5"/>')
-    out.append(text(L + 6, Y(even) + 15, f"ต้องลงต่ำกว่า {B.fmt(even)} จึงคุ้มต้นทุน {B.fmt(cost)}", 11, C["purple"], weight=700))
+    out.append(text(W - R - 4, Y(even) + 16, f"ต้องลงต่ำกว่า {B.fmt(even)} จึงคุ้มต้นทุน {B.fmt(cost)}", 11, C["purple"], "end", 700))
     cols = {"0.80": C["green"], "0.99": C["amber"], "1.00": GREY, "1.02": C["red"]}
     keys = ["0.80", "0.99", "1.00", "1.02"]
     ends = []
@@ -64,11 +64,10 @@ def _mult_table(fig):
         s = f"φ {k} → {B.fmt(c['ปลายทาง4ช่วงปัด'][k])} · สุทธิ {'+' if net > 0 else ''}{B.fmt(net)}"
         out.append(f'<line x1="{W - R + 4}" y1="{y0:.1f}" x2="{W - R + 14}" y2="{y:.1f}" stroke="{cols[k]}"/>')
         out.append(text(W - R + 18, y + 4, s, 11.5, cols[k] if k != "1.00" else MUTED, weight=700))
-    out.append(text(W - R + 18, T - 14, f"สุทธิ = {B.fmt(sets)} ชุด × (เริ่ม − ปลายทาง) − {B.fmt(cost)}", 10.5, MUTED))
     alt = ("กราฟเส้นสี่เส้นเริ่มที่ 2 φ 0.80 ลงเหลือ 0.82 ใน 4 ช่วง φ 0.99 ลงเหลือ 1.92 φ 1.00 อยู่ที่ 2 "
            "φ 1.02 ขึ้นเป็น 2.16 เส้นประคุ้มต้นทุนที่ 1.9")
-    cap = (f"เส้นค่าเฉลี่ย ไม่ใช่เส้นทางที่ราคาจะเดิน · short ตะกร้า {B.fmt(sets)} ชุดที่ X = {B.fmt(start)} ปิดเมื่อครบ "
-           f"{hold} ช่วง ต้นทุนรวม {B.fmt(cost)} · φ 0.99 ยังมีแรงดึงกลับ แต่ใน {hold} ช่วงลงไม่ถึงเส้นคุ้มต้นทุน")
+    cap = (f"เส้นค่าเฉลี่ย ไม่ใช่เส้นทาง · short {B.fmt(sets)} ชุดที่ X = {B.fmt(start)} ถือ {hold} ช่วง ต้นทุน {B.fmt(cost)} · "
+           f"φ 0.99 ยังมีแรงดึงกลับ แต่ลงไม่ถึงเส้นคุ้มต้นทุน")
     return wrap(W, H, alt, out, cap, "สอน")
 
 
@@ -82,7 +81,7 @@ def _paths_fan(fig):
     lo, hi = min(-1, int(min(allv)) - 1), max(5, int(max(allv)) + 1)
     X = lambda t: L + t / n_t * (W - L - R)  # noqa: E731
     Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
-    out = [text(16, 26, f"เส้นค่าเฉลี่ยเลื่อนจาก 2 เหลือ {B.fmt(f['ค่าเฉลี่ยที่ช่วง24'])} ใน {n_t} ช่วง — เส้นทางจริงไม่ได้เดินตามมัน",
+    out = [text(16, 26, "เส้นค่าเฉลี่ยแทบไม่ขยับ เส้นทางจริงไปทั้งสองทาง",
                 13, INK, weight=700)]
     for g in range(lo, hi + 1):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
@@ -91,7 +90,7 @@ def _paths_fan(fig):
         out.append(text(X(t), Bm + 18, f"ช่วง {t}", 10.5, GREY, "middle"))
     for lvl, lab, col in ((1, "เป้า X ≤ 1", C["green"]), (3, "ขอบ X ≥ 3", C["red"])):
         out.append(f'<line x1="{L}" y1="{Y(lvl):.1f}" x2="{W - R}" y2="{Y(lvl):.1f}" stroke="{col}" stroke-dasharray="6 4" stroke-width="1.4"/>')
-        out.append(text(W - R - 4, Y(lvl) - 6, lab, 11, col, "end", 700))
+        out.append(text(W - R - 4, Y(lvl) + (16 if lvl == 1 else -6), lab, 11, col, "end", 700))
     for p, e in zip(paths, ev):
         col = C["red"] if e["ชนิด"] == "ขอบ" else C["green"]
         pts = [(X(t), Y(v)) for t, v in enumerate(p)]
@@ -104,18 +103,15 @@ def _paths_fan(fig):
     mpts = [(X(t), Y(v)) for t, v in enumerate(mean)]
     out.append(f'<polyline points="{_poly(mpts)}" fill="none" stroke="{C["purple"]}" stroke-width="3.2" stroke-linejoin="round"/>')
     out.append(f'<circle cx="{mpts[-1][0]:.1f}" cy="{mpts[-1][1]:.1f}" r="4.5" fill="{C["purple"]}"/>')
-    out.append(text(mpts[-1][0] - 8, mpts[-1][1] + 18, f"เส้นค่าเฉลี่ย {B.fmt(f['ค่าเฉลี่ยที่ช่วง24'])}", 11.5, C["purple"], "end", 700))
+    out.append(text(mpts[-1][0] - 8, mpts[-1][1] - 10, f"เส้นค่าเฉลี่ย {B.fmt(f['ค่าเฉลี่ยที่ช่วง24'])}", 11.5, C["purple"], "end", 700))
     lx = L
     for lab, col in ((f"แตะ 1 ก่อน ({f['แตะเป้าก่อน']} เส้น)", C["green"]), (f"ถึง 3 ก่อนแตะ 1 ({f['ถึงขอบก่อน']} เส้น)", C["red"]),
-                     ("เส้นค่าเฉลี่ย (2 × 0.99 ซ้ำ)", C["purple"])):
+                     ("เส้นค่าเฉลี่ย", C["purple"])):
         out.append(f'<rect x="{lx}" y="{T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 20, lab, 11.5, MUTED))
         lx += 34 + 7.2 * len(lab)
     alt = ("กราฟ 20 เส้นทางเริ่มที่ 2 กระจายขึ้นลง บางเส้นลงแตะ 1 บางเส้นขึ้นเกิน 3 ก่อน "
            "เส้นค่าเฉลี่ยสีม่วงค่อย ๆ ลงจาก 2 เหลือ 1.57 อย่างราบเรียบ")
-    cap = (f"φ {B.fmt(f['phi'])} แรงสะบัด {B.fmt(f['แรงสะบัด'])} ต่อช่วง · แต่ละเส้นเดินจนแตะ 1 หรือครบ {n_t} ช่วง · "
-           f"ในภาพ {f['ถึงขอบก่อน']} จาก {f['จำนวน']} เส้นถึง 3 ก่อน · จาก 100,000 เส้นทางคือ "
-           f"{B.fmt(fig['ch13']['แตะเป้า'][2]['ขึ้นถึง3ก่อนเปอร์เซ็นต์'])}% และสุ่มใหม่ 30 ชุดได้ "
-           f"{B.fmt(fig['seed_robustness']['ch13']['ขึ้นถึง3ก่อน']['ต่ำสุด'])}–"
-           f"{B.fmt(fig['seed_robustness']['ch13']['ขึ้นถึง3ก่อน']['สูงสุด'])}% ข้อสรุปจึงนิ่ง")
+    cap = (f"φ {B.fmt(f['phi'])} แรงสะบัด {B.fmt(f['แรงสะบัด'])} · แต่ละเส้นเดินจนแตะ 1 หรือครบ {n_t} ช่วง · "
+           f"ถึง 3 ก่อน {B.fmt(fig['ch13']['แตะเป้า'][2]['ขึ้นถึง3ก่อนเปอร์เซ็นต์'])}% จาก 100,000 เส้นทาง นิ่งข้าม 30 ชุด")
     return wrap(W, H, alt, out, cap, "จำลอง")
