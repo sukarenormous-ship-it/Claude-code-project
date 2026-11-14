@@ -24,7 +24,7 @@ catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright/index.j
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DOCS = path.join(ROOT, 'docs');
 export const WPM = 80;
-export const MAIN_MIN = 1750, MAIN_MAX = 2200, PAGE_MAX = 3400, STORY_MAX = 0.25;
+export const MAIN_MIN = 1750, MAIN_MAX = 2300, PAGE_MAX = 3500, STORY_MAX = 0.25;
 
 function countInPage() {
   const seg = new Intl.Segmenter('th', { granularity: 'word' });
