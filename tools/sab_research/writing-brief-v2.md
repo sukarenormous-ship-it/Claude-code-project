@@ -93,6 +93,44 @@ v2 ยาวกว่าราวสี่เท่า และนั่นค�
 5. อ่านทวนแบบมือใหม่หนึ่งรอบ: ไล่ทุกตัวเลขในเส้นทางหลักแล้วถามว่า "ตามที่มาได้ไหม" · ทุกศัพท์ "เห็นเหตุการณ์ก่อนชื่อไหม"
 6. รายงาน: สิ่งที่เปลี่ยน · จำนวนคำ · คีย์ตัวเลขที่เพิ่ม/แก้ · ศัพท์ที่ย้ายบท · สิ่งที่บทอื่นต้องแก้ตาม · ห้าม commit/push
 
-## 6. markup ที่ตัวตรวจพึ่ง (เติมหลังเครื่องมือ v2 เสร็จ)
+## 6. markup ที่ตัวตรวจพึ่ง (กฎ V1–V8 ใน `tools/sab_qa.py`)
 
-_รอผู้ดูแลเครื่องมือ_
+```html
+<body data-tpl="2">
+<p class="pos"><strong>ภาค 1 · บท 4 จาก 18</strong> · ต้องรู้จากบทก่อน: (1) … (2) … (3) …</p>
+<div class="scene-open" data-day="…" data-continues="part3">…</div>
+<div class="pq">คำถามของบท</div>
+<h2>ตอนสอน …</h2>
+<table>…<th class="calc">คิดอย่างไร</th>…<td class="calc">110,000 − 100,000</td>…</table>
+<!--CHART:คีย์-->…<!--/CHART:คีย์-->
+<p class="readfig"><strong>อ่านภาพ:</strong> …</p>
+<div class="fm">…</div><p class="readeq"><strong>อ่านสมการ:</strong> …</p>
+<div class="rest"><div class="bt">พักตรงนี้ได้</div><p>…</p></div>
+<div class="sum3"><div class="bt">สรุป 3 ข้อ</div><ol><li>…</li><li>…</li><li>…</li></ol></div>
+<div class="bx bg"><div class="bt">✍️ ลองทำเอง</div><ol>
+<li>โจทย์
+ <details class="hint"><summary>คำใบ้</summary><p>ขั้น 1 …</p>
+  <details class="hint"><summary>คำใบ้ขั้นที่ 2</summary><p>…</p></details></details>
+ <details class="ans"><summary>เฉลย</summary><p>… ถ้าได้ … แปลว่า …</p></details></li>
+</ol></div>
+<div class="pq" data-hook="วลี hook ของบทนี้">คำถามสะพาน</div>
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div><ul>
+<li><strong>Term (ไทย)</strong> = … <span class="tier" data-tier="ข"></span></li></ul></div>
+<details class="file"><summary>📁 แฟ้มของบทนี้</summary>… .sheet · table.ledger · table.ncard · ลิงก์ · 🔎 …</details>
+```
+
+- `.readfig` วาง **หลัง** `<!--/CHART:…-->` (ข้างในตัวคั่นถูกเขียนทับเมื่อ `--fill`)
+- รายการแบบฝึกคือ `<ol>` ตัวแรกหลังหัว ✍️ · ≥ 5 ข้อ (หน้าพื้นฐาน ≥ 3) ทุกข้อมี `details.ans` · ≥ 3 ข้อมี `details.hint` (หน้าพื้นฐาน ≥ 2)
+- ตารางที่แสดงผลจำลอง/ข้อมูลจริง/ค่าจากแอป ใส่ `data-src="sim|real|app"` ที่ `<table>` แล้วติดป้าย 🎲/📡/📱 ใกล้ ๆ · ตารางสอนธรรมดาไม่ต้องมีทั้งคู่ · กราฟ SVG ยังต้องมีป้ายที่มาใน `.cap` ตามเดิม
+- 🔁 ห้ามมีทั้งหน้า รวมถึงแถว "🔁 ถ้าเปลี่ยนตลาด" ในใบงานเดิม (คงข้อความ ตัดอีโมจิ) · บรรทัดค่าเริ่มต้นเขียนโดยไม่มี "⚠️"
+- "nq" ถูกจับบนเส้นทางหลัก รวม `href="nq-…"` — ย้ายลิงก์ไปใน `details.file`
+- ใน `details.file` ใช้ `<h3>` ไม่ใช่ `<h2>`
+- 📖 ใน v2 เป็นรายการเดียวได้ (ไม่ต้องแบ่ง "3 คำที่ต้องจำก่อน / ที่เหลือ") · ไม่ใส่ tier = ข (หน้าพื้นฐาน = ก)
+- `tools/sab_terms.json` รับ `"สอน": "base3"` · คำที่หน้าพื้นฐานสอน (Long · Short · ขา · Hedging · Spot · Futures …) ต้องย้ายทะเบียนไปหน้าพื้นฐาน มิฉะนั้น W22 ฟ้อง
+- ตัวเลขหน้าพื้นฐานอยู่ใต้ `base.*` ใน `tools/sab_figures_ch/base.py` · กราฟใน `tools/sab_charts_ch/base.py`
+- โครงเปล่า: `python3 tools/sab_new_part.py base1` (ปฏิเสธถ้ามีไฟล์) · ประเมินหน้า v1 ด้วยเกณฑ์ v2: `node tools/sab_wordcount.mjs --as-v2 partN` · รายการสิ่งที่ต้องย้าย: `python3 tools/sab_migrate_v2.py partN`
+- เปลี่ยน CSS ที่ `tools/sab_shell/head.html` เท่านั้น แล้ว `python3 tools/sab_reshell.py`
+
+## 7. ไฟล์กลางที่หลายคนแก้พร้อมกัน
+
+`tools/sab_terms.json` และ `tools/sab_bible.json` แก้ได้ **เฉพาะรายการของหน้าคุณ** (ศัพท์ที่หน้าคุณสอน · สถานะเรื่องและ hook ของหน้าคุณ · ป้ายบัตรที่เติมในบทคุณ) · อ่านไฟล์ใหม่ทุกครั้งก่อนแก้ และแก้ด้วยการแทนที่เฉพาะจุด (ห้ามเขียนทับทั้งไฟล์) · `docs/sab-figures.json` สร้างจากปลั๊กอินของทุกบท ถ้ารันแล้วพังเพราะปลั๊กอินของบทอื่นกำลังถูกแก้ ให้รอแล้วรันใหม่ · ห้ามแก้ `tools/sab_*.py|mjs` กลางและ `sab_shell/` — เจอบั๊กให้รายงาน

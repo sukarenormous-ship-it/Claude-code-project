@@ -1469,15 +1469,17 @@ def build(orig):
 
 def apply_chapter_plugins(data):
     """ค่าใหม่ต่อบทจาก tools/sab_figures_ch/chNN.py (แยกไฟล์ต่อบท ให้หลายคนเขียนพร้อมกันได้ไม่ชนกัน)
+    และของภาคพื้นฐานจาก tools/sab_figures_ch/base.py (หน้า docs/sab-base1..4.html · แผน 14.5 · รันก่อน ch00)
 
-    แต่ละไฟล์มี def extend(data, D, q): คืน dict ของคีย์ใหม่ที่จะเติมใต้ data["chNN"]
+    แต่ละไฟล์มี def extend(data, D, q): คืน dict ของคีย์ใหม่ที่จะเติมใต้ data["chNN"] (base.py → data["base"])
     (D = Decimal · q(x, ตำแหน่ง) = ปัดแบบ half-up) · ห้ามทับคีย์ที่มีอยู่แล้ว — ชน = หยุด
+    ปลั๊กอินที่ยังคืน {} ไม่สร้างคีย์เปล่าใน JSON
     """
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_figures_ch")
     if not os.path.isdir(folder):
         return
     for name in sorted(os.listdir(folder)):
-        m = re.fullmatch(r"(ch\d{2})\.py", name)
+        m = re.fullmatch(r"(ch\d{2}|base)\.py", name)
         if not m:
             continue
         spec = importlib.util.spec_from_file_location(f"sab_figures_ch_{m.group(1)}", os.path.join(folder, name))
@@ -1490,6 +1492,8 @@ def apply_chapter_plugins(data):
             data["_claims"].append(claim)
         if "_แบบฝึก" in extra:                          # แนวคำตอบ ✍️ ของบท (ใช้กับ gate P1) → แบบฝึก.chNN
             data.setdefault("แบบฝึก", {})[m.group(1)] = extra.pop("_แบบฝึก")
+        if not extra and m.group(1) not in data:        # ปลั๊กอินว่าง (เช่น base.py ก่อนเขียนหน้าพื้นฐาน) → JSON ไม่เปลี่ยน
+            continue
         target = data.setdefault(m.group(1), {})
         clash = sorted(set(extra) & set(target))
         if clash:

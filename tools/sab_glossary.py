@@ -9,6 +9,8 @@
   - คำเดียวกันห้ามอยู่คนละชั้น · คำซ้ำข้ามบทเก็บบทแรกที่พบ
   - รวมศัพท์ v0.9 ที่ยังใช้จาก docs/sab-figures.json คีย์ ศัพท์_v09 (ถ้ามี)
   - ใช้เปลือก tools/sab_shell/ (ต้นแบบดึงเปลือกจาก nq-part1.html ตายตัว)
+  - รอบ v2 (แผน 14.5): อ่านกล่อง 📖 ของหน้าพื้นฐาน docs/sab-baseN.html ก่อนบท 0 (ป้าย "พื้นฐาน N" · ชั้นตั้งต้น ก)
+    หน้า v2 เขียนกล่อง 📖 เป็นรายการเดียวได้ (ไม่ต้องแบ่ง "3 คำที่ต้องจำก่อน / ที่เหลือ") — ไม่มี span.tier = ชั้น ข (หน้าพื้นฐาน = ก)
 
     python3 tools/sab_glossary.py
     python3 tools/sab_glossary.py --check      # ตรวจอย่างเดียว ไม่เขียน
@@ -52,18 +54,21 @@ def _items(seg):
 
 def collect(docs=B.DOCS, fig_path=None):
     rows, problems, seen = [], [], {}
-    for path in B.chapter_files(docs):
-        part = B.part_no(path)
+    for path in B.teaching_files(docs):                 # หน้าพื้นฐาน 1..4 ก่อน แล้วบท 0..18
+        part, base = B.part_no(path), B.base_no(path)
         name = os.path.basename(path)
         with open(path, encoding="utf-8") as fh:
             html = fh.read()
-        box = re.search(r"📖 ศัพท์ใหม่ในตอนนี้</div>(.*?)</div>\s*(?:<!--|$)", html, re.S)
-        if not box:
+        v2 = B.is_v2(html, path)
+        blk = B.term_box(html, v2)
+        if blk is None:
             continue
-        blk = box.group(1)
         must = re.search(r"<strong>3 คำที่ต้องจำก่อน</strong></p>\s*<ul>(.*?)</ul>", blk, re.S)
         rest = re.search(r"<strong>ที่เหลือ</strong>(.*)", blk, re.S)
-        groups = [(must.group(1) if must else "", "ก"), (rest.group(1) if rest else "", "ข")]
+        if v2 and not must and not rest:                # v2: รายการเดียวทั้งกล่อง
+            groups = [(blk, "ก" if base is not None else "ข")]
+        else:
+            groups = [(must.group(1) if must else "", "ก"), (rest.group(1) if rest else "", "ข")]
         for seg, default in groups:
             for term, desc, tier, prob in _items(seg):
                 if prob:
@@ -73,10 +78,11 @@ def collect(docs=B.DOCS, fig_path=None):
                 key = term.casefold()
                 if key in seen:
                     if seen[key][1] != tier:
-                        problems.append(f"{name}: {term!r} ชั้น {tier} แต่บท {seen[key][0]} ให้ชั้น {seen[key][1]}")
+                        problems.append(f"{name}: {term!r} ชั้น {tier} แต่{seen[key][0]} ให้ชั้น {seen[key][1]}")
                     continue
-                seen[key] = (part, tier)
-                rows.append({"บท": part, "ชั้น": tier, "คำ": term, "นิยาม": desc})
+                seen[key] = (B.page_label(path), tier)
+                rows.append({"บท": part, "ชั้น": tier, "คำ": term, "นิยาม": desc,
+                             **({"พื้นฐาน": base} if base is not None else {})})
     fig_path = fig_path or os.path.join(docs, "sab-figures.json")
     if os.path.exists(fig_path):
         with open(fig_path, encoding="utf-8") as fh:
@@ -85,7 +91,7 @@ def collect(docs=B.DOCS, fig_path=None):
             term = it.get("คำ")
             if not term or term.casefold() in seen:
                 continue
-            seen[term.casefold()] = (None, it.get("ชั้น", "ค"))
+            seen[term.casefold()] = ("ต้นฉบับ v0.9", it.get("ชั้น", "ค"))
             rows.append({"บท": None, "ชั้น": it.get("ชั้น", "ค"), "คำ": term, "นิยาม": it.get("นิยาม", "")})
     return rows, problems
 
@@ -94,7 +100,8 @@ def render(rows):
     def table(items):
         trs = []
         for r in items:
-            where = (f'<a href="{B.PREFIX}-part{r["บท"]}.html">บท {r["บท"]}</a>' if r["บท"] is not None
+            where = (f'<a href="{B.PREFIX}-base{r["พื้นฐาน"]}.html">พื้นฐาน {r["พื้นฐาน"]}</a>' if r.get("พื้นฐาน")
+                     else f'<a href="{B.PREFIX}-part{r["บท"]}.html">บท {r["บท"]}</a>' if r["บท"] is not None
                      else "ต้นฉบับ v0.9")
             trs.append(f'<tr><td class="nw"><strong>{r["คำ"]}</strong></td><td>{r["นิยาม"]}</td>'
                        f'<td class="nw">{where}</td></tr>')
@@ -137,6 +144,23 @@ def selftest():
             '<li><strong>basis</strong> = ซ้ำ <span class="tier" data-tier="ก"></span></li>'
             '<li><strong>คู่ปลอม</strong> = y <span class="tier" data-tier="ค"></span></li>'))
         rows, probs = collect(d, os.path.join(d, "none.json"))
+        # v2: หน้าพื้นฐานมาก่อนบท · รายการเดียว · <li> ใน details.file ที่ตามหลังกล่อง 📖 ไม่ถูกเก็บเป็นศัพท์
+        v2box = ('<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div><ul>{}</ul></div>\n'
+                 '<details class="file"><summary>📁 แฟ้มของบทนี้</summary><div class="bx sheet"><ul>'
+                 '<li><strong>ไม่ใช่ศัพท์</strong> = อยู่ในแฟ้ม</li></ul></div></details>\n')
+        v2head = head.replace("<body>", '<body data-tpl="2">')
+        open(os.path.join(d, "sab-base2.html"), "w", encoding="utf-8").write(v2head + v2box.format(
+            '<li><strong>Short (สถานะขาย/ขายชอร์ต)</strong> = ขายก่อน</li>') + tail)
+        open(os.path.join(d, "sab-part3.html"), "w", encoding="utf-8").write(v2head + v2box.format(
+            '<li><strong>Carry (ผลตอบแทนจากการถือ)</strong> = ได้จากการถือ</li>'
+            '<li><strong>Margin (หลักประกัน)</strong> = เงินค้ำ <span class="tier" data-tier="ก"></span></li>') + tail)
+        rows2, probs2 = collect(d, os.path.join(d, "none.json"))
+    got2 = [(r.get("พื้นฐาน"), r["บท"], r["คำ"], r["ชั้น"]) for r in rows2]
+    want2 = [(2, None, "Short (สถานะขาย/ขายชอร์ต)", "ก"), (None, 2, "basis", "ข"), (None, 2, "funding", "ข"),
+             (None, 3, "Carry (ผลตอบแทนจากการถือ)", "ข"), (None, 3, "Margin (หลักประกัน)", "ก"), (None, 10, "คู่ปลอม", "ค")]
+    if got2 != want2 or len(probs2) != len(probs) or 'sab-base2.html">พื้นฐาน 2</a>' not in render(rows2):
+        ok = False
+        print("selftest ล้ม: หน้า base / บท v2", got2, probs2)
     order = [r["บท"] for r in rows]
     if order != sorted(order):
         ok = False
@@ -151,7 +175,8 @@ def selftest():
         if not any(e in p for p in probs):
             ok = False
             print("selftest ล้ม: ไม่จับ", e, probs)
-    print("selftest", "ผ่าน ✓ (เรียง part2 ก่อน part10 · data-tier ผิดที่ถูกจับ · คำซ้ำข้ามชั้นถูกจับ)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", "ผ่าน ✓ (เรียง part2 ก่อน part10 · data-tier ผิดที่ถูกจับ · คำซ้ำข้ามชั้นถูกจับ · "
+          "หน้า base มาก่อนบทและติดป้าย \"พื้นฐาน N\" · กล่อง 📖 แบบ v2 ไม่เก็บ <li> ของ details.file)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

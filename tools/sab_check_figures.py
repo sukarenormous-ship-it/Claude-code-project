@@ -12,6 +12,7 @@
 
     python3 tools/sab_check_figures.py                 # ทุกไฟล์ docs/sab-*.html
     python3 tools/sab_check_figures.py --scope part4   # เฉพาะบท
+    python3 tools/sab_check_figures.py --scope base1   # หน้าพื้นฐาน (แผน 14.5 · คีย์ตัวเลขอยู่ใต้ base.* จาก tools/sab_figures_ch/base.py)
     python3 tools/sab_check_figures.py --selftest      # ใส่ข้อผิดจงใจในบทหุ่น ต้องจับได้ครบ
 """
 
@@ -215,7 +216,10 @@ def selftest():
         "ch08": {"beta": {"A": 1.2}},                                   # ผิดจงใจ: beta A ไม่ตรงค่าตรึง
         "เรื่อง": {"part3": {"close": {"เงินสดอิสระ": 14700}}, "part4": {"open": {"เงินสดอิสระ": 14000}}},  # ผิดจงใจ
         "_ต้นฉบับ": {"x": "2846.00"},
+        "base": {"b1": {"ซื้อ": 100000, "ขาย": 103000, "กำไร": 3000}},      # หน้าพื้นฐาน: คีย์ใต้ base.*
     }
+    base_good = ('<p>ซื้อที่ 100,000 แล้วขายที่ 103,000</p><table><tr><td data-key="base.b1.กำไร">3,000</td></tr></table>')
+    base_bad = '<p>ได้กำไร 3,500</p><td data-key="base.b1.กำไร">3,500</td><td data-key="base.b9.ไม่มี">1</td>'
     good = ('<p>ต้องโอน <strong>11,220</strong> ดอลลาร์ · equity เปลี่ยน <strong>−200</strong> · '
             'กันชน 13.0% ที่ทุน 120,000 · ค่าธรรมเนียมรวม 2,846 · บทที่ 4 วันที่ 30</p>'
             '<table class="ledger" data-part="4"><tr><td data-key="ch04.ต้องโอน">11,220</td>'
@@ -236,7 +240,21 @@ def selftest():
         with open(os.path.join(d, "sab-part5.html"), "w", encoding="utf-8") as fh:
             fh.write(bad)
         _, p_all = run(fp, d, quiet=True)
+        with open(os.path.join(d, "sab-base1.html"), "w", encoding="utf-8") as fh:
+            fh.write(base_good)
+        _, p_base_good = run(fp, d, scope="base1", quiet=True)
+        with open(os.path.join(d, "sab-base2.html"), "w", encoding="utf-8") as fh:
+            fh.write(base_bad)
+        _, p_base_bad = run(fp, d, scope="base2", quiet=True)
     ok = True
+    if [p for p in p_base_good if p.startswith("sab-base1")] or any(not p.startswith("sab-base2") for p in p_base_bad
+                                                                    if p.startswith("sab-")):
+        ok = False
+        print("selftest ล้ม: --scope base1 / base2 →", p_base_good, p_base_bad)
+    for e in ("เลขลอย 3,500", "data-key base.b1.กำไร พิมพ์ '3,500'", "base.b9.ไม่มี"):
+        if not any(e in p for p in p_base_bad):
+            ok = False
+            print(f"selftest ล้ม: หน้า base ไม่จับข้อผิดจงใจ {e!r}")
     if page_good:
         ok = False
         print("selftest ล้ม: บทที่ถูกต้องถูกฟ้องผิด →", page_good)
@@ -244,7 +262,7 @@ def selftest():
         if not any(e in p for p in p_all):
             ok = False
             print(f"selftest ล้ม: ไม่จับข้อผิดจงใจ {e!r}")
-    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง · หน้า base: --scope base1 และคีย์ base.* ใช้ได้)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

@@ -1,6 +1,6 @@
 # สเปกกราฟต่อบท (ปลั๊กอินของ `tools/sab_charts.py`)
 
-ไฟล์ `chNN.py` หนึ่งไฟล์ต่อบท:
+ไฟล์ `chNN.py` หนึ่งไฟล์ต่อบท (และ `base.py` สำหรับหน้าพื้นฐาน `docs/sab-base1..4.html`):
 
 ```python
 from sab_charts import chart, wrap, bars, waterfall, lines, steps, dots, grouped_bars, stacked_bars, \

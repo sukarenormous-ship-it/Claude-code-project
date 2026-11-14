@@ -39,9 +39,23 @@ TITLES = {
     18: "เอาไปต่อยอด: คู่ใหม่ ตลาดใหม่ ไอเดียใหม่",
 }
 
+# ภาคพื้นฐาน "คืนก่อนวันที่ 1" (แผน 14.5) — หน้า docs/sab-baseN.html อ่านก่อนบท 0 · เป็นแม่แบบ v2 เสมอ
+BASE_TITLES = {
+    1: "ซื้อไว้ก่อน แล้วขายทีหลัง",
+    2: "ขายก่อน แล้วซื้อคืนทีหลัง",
+    3: "สองขาในชุดเดียว",
+    4: "สัญญาที่มีวันหมดอายุ และเงินสามกอง",
+}
+LAST_BASE = max(BASE_TITLES)
+
 
 def part_no(path):
     m = re.search(rf"{PREFIX}-part(\d+)\.html$", os.path.basename(path))
+    return int(m.group(1)) if m else None
+
+
+def base_no(path):
+    m = re.search(rf"{PREFIX}-base(\d+)\.html$", os.path.basename(path))
     return int(m.group(1)) if m else None
 
 
@@ -49,6 +63,54 @@ def chapter_files(docs=DOCS):
     """docs/sab-partN.html เรียงตามเลขบท (ไม่ใช่ตามสตริง)"""
     files = [p for p in glob.glob(os.path.join(docs, f"{PREFIX}-part*.html")) if part_no(p) is not None]
     return sorted(files, key=part_no)
+
+
+def base_files(docs=DOCS):
+    """docs/sab-baseN.html เรียงตามเลขหน้า"""
+    files = [p for p in glob.glob(os.path.join(docs, f"{PREFIX}-base*.html")) if base_no(p) is not None]
+    return sorted(files, key=base_no)
+
+
+def teaching_files(docs=DOCS):
+    """ลำดับอ่านของหน้าสอน: หน้าพื้นฐาน 1..4 แล้วบท 0..18"""
+    return base_files(docs) + chapter_files(docs)
+
+
+def page_label(path):
+    """"พื้นฐาน N" หรือ "บท N" (None ถ้าไม่ใช่หน้าสอน)"""
+    b, n = base_no(path), part_no(path)
+    return f"พื้นฐาน {b}" if b is not None else (f"บท {n}" if n is not None else None)
+
+
+def page_title(path):
+    b, n = base_no(path), part_no(path)
+    return BASE_TITLES.get(b, "") if b is not None else TITLES.get(n, "")
+
+
+def is_v2(html, path=None):
+    """หน้าแม่แบบ v2 = <body data-tpl="2"> (แผน 14.3) · หน้าพื้นฐานนับเป็น v2 เสมอ"""
+    if path is not None and base_no(path) is not None:
+        return True
+    m = re.search(r"<body\b([^>]*)>", html)
+    return bool(m and re.search(r'\bdata-tpl="2"', m.group(1)))
+
+
+def term_box(html, v2=None):
+    """เนื้อในกล่อง 📖 ศัพท์ใหม่ในตอนนี้ (ส่วนหลังหัวกล่อง) หรือ None
+    v1: กล่อง 📖 เป็นกล่องสุดท้ายของหน้า (regex เดิมของ sab_glossary / sab_qa W9)
+    v2: มี details.file ตามหลัง จึงนับ <div> เปิด/ปิดจนกล่องปิดจริง"""
+    if not (is_v2(html) if v2 is None else v2):
+        box = re.search(r"📖 ศัพท์ใหม่ในตอนนี้</div>(.*?)</div>\s*(?:<!--|$)", html, re.S)
+        return box.group(1) if box else None
+    m = re.search(r"📖 ศัพท์ใหม่ในตอนนี้\s*</div>", html)
+    if not m:
+        return None
+    depth = 1
+    for t in re.finditer(r"<(/?)div\b[^>]*>", html[m.end():]):
+        depth += -1 if t.group(1) else 1
+        if depth == 0:
+            return html[m.end():m.end() + t.start()]
+    return None
 
 
 def shell():
