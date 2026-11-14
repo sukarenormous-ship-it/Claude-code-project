@@ -247,5 +247,31 @@ English technical term (คำแปลไทย)
 | Depeg | การหลุดหมุด |
 | Pause Mode | โหมดพัก |
 | Grid Bot | บอทกริด (ซื้อขายเป็นขั้นบันได) |
+| Median | มัธยฐาน |
+| Mid Price | ราคากลาง |
+| Market Maker | ผู้ดูแลสภาพคล่อง |
+| Adverse Selection | การคัดเลือกที่ไม่พึงประสงค์ |
+| Rebate | เงินคืนค่าธรรมเนียม |
+| Linear Contract | สัญญาแบบเชิงเส้น |
+| Inverse Contract | สัญญาแบบผกผัน |
+| Position Value | มูลค่าสถานะ |
+| Unrealized PnL | กำไรค้าง (ยังไม่ปิดสถานะ) |
+| Realized PnL | กำไรรับรู้ |
+| Daily Settlement | การชำระสิ้นวัน |
+| Variation Margin | เงินโอนตามกำไรขาดทุนรายวัน |
+| Initial Margin | หลักประกันเริ่มต้น |
+| Maintenance Margin | ระดับรักษาหลักประกัน |
+| Margin Call | การเรียกหลักประกัน |
+| Premium Index | ส่วนพรีเมียม (ส่วนหนึ่งของสูตร funding) |
+| Interest Rate Component | ส่วนดอกเบี้ย (ส่วนหนึ่งของสูตร funding) |
+| Stop-loss | เส้นตัดขาดทุน |
+| Sunk Cost | ต้นทุนที่จ่ายแล้ว |
+| Factor Model | โมเดลปัจจัย |
+| Rebalance | การปรับสัดส่วน (ปรับ hedge) |
+| Survivorship Bias | อคติผู้รอด |
+| Regression to the Mean | ถอยสู่ค่าเฉลี่ย (คนละเรื่องกับ Mean Reversion) |
+| Noise | แรงสะบัด |
+| Strategy Specification | ข้อกำหนดกลยุทธ์ |
+| Forecast Error | คาดพลาด |
 
 คำสอนเฉพาะเล่มที่ไม่ใช่ศัพท์เทคนิค ใช้ไทยได้เลย: เชือก (ภาพเปรียบ) · คนเร่ง / คนรีบ / คนรู้ · มือที่แย่งเชือก (ภาพของ Crowding) · บัตรธรรมชาติ · แถบผล · รอบชดเชย · กฎทอง · ไม้บรรทัด · สองกระเป๋า
