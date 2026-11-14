@@ -228,7 +228,12 @@ def check_file(name, html, ctx):
         P.append(f"{name}: W18 'ถอยสู่ค่าเฉลี่ย' นอกกล่อง data-allow (ใช้ 'กลับค่ากลาง')")
     del allow
     if n is not None and n >= 8:                                   # แผน 7.3: spread ของคู่ ห้ามเรียก "ส่วนต่าง"
-        for m in re.finditer(r"ส่วนต่าง(?!ราคาซื้อ-ขาย|ราคาซื้อขาย)", main_path(html)):
+        mp8 = main_path(html)
+        for m in re.finditer(r"ส่วนต่าง(?!ราคาซื้อ-ขาย|ราคาซื้อขาย)", mp8):
+            # ยกเว้นคำแปลในวงเล็บต่อท้ายศัพท์อังกฤษ (กฎ CLAUDE.md) เช่น Basis (ส่วนต่างราคา futures กับ spot)
+            lp = mp8.rfind("(", 0, m.start())
+            if lp >= 0 and ")" not in mp8[lp:m.start()] and re.search(r"[A-Za-z)]\s*$", mp8[max(0, lp - 40):lp]):
+                continue
             P.append(f"{name}: W18 'ส่วนต่าง' ในภาค 2–3 — ใช้ 'spread ของคู่' (ยกเว้น ส่วนต่างราคาซื้อ-ขาย)")
             break
     for m in re.finditer(r"ไม่มีความเสี่ยง", vis):
