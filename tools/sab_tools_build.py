@@ -135,29 +135,29 @@ def tool_page(fname, title, sub, desc, body, keys, js):
 
 CARRY_BODY = r"""
 <div class="bx bb"><div class="bt">🎯 เครื่องมือนี้ตอบอะไร</div>
-<p>ส่วนต่าง futures กับ spot บนจอดูเหมือนเงินที่รออยู่ แต่กว่าจะถึงมือต้องผ่านสี่ขั้น: หารด้วยทุนทั้งก้อน หักค่าธรรมเนียม หักค่าเสียโอกาส
-แล้วยังต้องเหลือเงินสดพอรับวันที่ราคาวิ่งสวน เครื่องมือนี้ให้คุณเปลี่ยนตัวเลขเองแล้วดูว่าขั้นไหนกินมากที่สุด
-ค่าตั้งต้นคือไม้แรกของมินในบท 4–6 (ตารางคิดที่ 1 BTC) และทุกตัวเลขสดมีป้ายเทา "ในบท" วางข้างกันให้เทียบ</p></div>
+<p>Basis (ส่วนต่างราคา futures กับ spot) บนจอดูเหมือนเงินที่รออยู่ แต่กว่าจะถึงมือต้องผ่านสี่ขั้น: หารด้วยทุนทั้งก้อน หักค่าธรรมเนียม หัก Opportunity Cost (ค่าเสียโอกาส)
+แล้วยังต้องเหลือเงินสดพอรับวันที่ราคาวิ่งสวน เครื่องมือนี้ให้คุณเปลี่ยนตัวเลขเองแล้วดูว่าขั้นไหนกิน Carry (ผลตอบแทนจากการถือ) มากที่สุด</p>
+<p>ค่าตั้งต้นคือไม้แรกของมินในบท 4–6 (ตารางคิดที่ 1 BTC) และทุกตัวเลขสดมีป้ายเทา "ในบท" วางข้างกันให้เทียบ</p></div>
 
 <div class="tool" id="t-ladder">
 <h3>① บันไดสี่ขั้น: จาก % บนจอ ถึงส่วนเกินในมือ</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: % บนจอคิดจากราคา spot ไม่ใช่จากทุนที่คุณต้องวางจริง และยังไม่หักอะไรเลย</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: % บนจอคิดจากราคา Spot (ตลาดซื้อขายทันที) ไม่ใช่จากทุนที่คุณต้องวางจริง และยังไม่หักอะไรเลย</p>
 <div class="ctrl">
 <label for="c-s">ราคา spot ตอนเปิด</label><input type="number" id="c-s" step="100">
-<label for="c-f">ราคา futures ตอนเปิด</label><input type="number" id="c-f" step="100">
+<label for="c-f">ราคา Futures (สัญญาซื้อขายล่วงหน้า · มีวันหมดอายุ) ตอนเปิด</label><input type="number" id="c-f" step="100">
 <label for="c-days">วันถึงหมดอายุ</label><input type="number" id="c-days" step="1" min="1">
-<label for="c-cap">ทุนที่วางทั้งก้อน (spot + หลักประกัน + เงินสดอิสระ)</label><input type="number" id="c-cap" step="1000">
-<label for="c-st">ราคาชำระวันหมดอายุ (ใช้คิดค่าธรรมเนียมขาย spot)</label><input type="number" id="c-st" step="100">
-<label for="c-hur">hurdle ต่อปี (%) — ผลตอบแทนที่ได้แน่ ๆ ถ้าไม่ทำอะไร</label><input type="number" id="c-hur" step="0.5">
+<label for="c-cap">ทุนที่วางทั้งก้อน: spot + Margin (หลักประกัน) + Free Cash (เงินสดอิสระ)</label><input type="number" id="c-cap" step="1000">
+<label for="c-st">Settlement Price (ราคาชำระ) วันหมดอายุ ใช้คิดค่าธรรมเนียมขาย spot</label><input type="number" id="c-st" step="100">
+<label for="c-hur">Hurdle Rate (ผลตอบแทนขั้นต่ำของทุน) ต่อปี (%) — ผลตอบแทนที่ได้แน่ ๆ ถ้าไม่ทำอะไร</label><input type="number" id="c-hur" step="0.5">
 </div>
-<p style="margin-bottom:4px">ค่าธรรมเนียมต่อข้าง</p>
+<p style="margin-bottom:4px">ค่าธรรมเนียมต่อข้าง: Taker Order (คำสั่งซื้อขายทันที) หรือ Maker Order (คำสั่งตั้งรอ)</p>
 <div class="seg" id="c-feeseg"></div>
 <div class="tw"><table>
 <tr><th>ขั้น</th><th>คิดอย่างไร</th><th class="num">% ต่อปี</th></tr>
 <tr><td>① บนจอ</td><td>basis <span class="v" id="c-basis" data-twin="ch05/บันได/basis"></span> ÷ ราคา spot · ปรับเป็นทั้งปี</td><td class="num"><span class="v" id="c-r1" data-twin="ch05/บันได/บนจอ"></span></td></tr>
 <tr><td>② ต่อทุน</td><td>basis ÷ ทุนทั้งก้อน (ไม่ใช่ราคา spot)</td><td class="num"><span class="v" id="c-r2" data-twin="ch05/บันได/ต่อทุน"></span></td></tr>
 <tr><td>③ หลังค่าธรรมเนียม</td><td>หักค่าธรรมเนียมสามครั้ง (ซื้อ spot · short futures · ขาย spot วันหมดอายุ) รวม <span class="v" id="c-fee" data-twin="ch05/บันได/ค่าธรรมเนียม"></span> เหลือ <span class="v" id="c-net" data-twin="ch05/บันได/สุทธิ"></span></td><td class="num"><span class="v" id="c-r3" data-twin="ch05/บันได/หลังค่าธรรมเนียม"></span></td></tr>
-<tr><td>④ ส่วนเกิน</td><td>หักค่าเสียโอกาสของทุนตลอดช่วง <span class="v" id="c-opp" data-twin="ch05/บันได/ค่าเสียโอกาส"></span> เหลือ <span class="v" id="c-exc" data-twin="ch05/บันได/ส่วนเกิน"></span></td><td class="num"><span class="v" id="c-r4" data-twin="ch05/บันได/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
+<tr><td>④ ส่วนเกิน</td><td>หัก Opportunity Cost ของทุนตลอดช่วง <span class="v" id="c-opp" data-twin="ch05/บันได/ค่าเสียโอกาส"></span> เหลือ <span class="v" id="c-exc" data-twin="ch05/บันได/ส่วนเกิน"></span></td><td class="num"><span class="v" id="c-r4" data-twin="ch05/บันได/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
 </table></div>
 <svg class="chart" id="c-ladsvg" viewBox="0 0 640 230" role="img" aria-label="บันไดสี่ขั้นของ carry"></svg>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · สูตรเดียวกับแท็บ "บันได carry" ในสมุดงาน · ค่าธรรมเนียม futures ตอนชำระไม่มีในตัวอย่างนี้</p>
@@ -165,7 +165,7 @@ CARRY_BODY = r"""
 
 <div class="tool" id="t-hold">
 <h3>② ปิดหรือถือวันที่ N</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ถ้า basis หดเร็ว เงินที่ยังเหลือให้เก็บอาจน้อยกว่าค่าเสียโอกาสของทุนที่ค้างอยู่</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ถ้า basis หดเร็ว เงินที่ยังเหลือให้เก็บอาจน้อยกว่า Opportunity Cost ของทุนที่ค้างอยู่</p>
 <div class="ctrl">
 <label for="h-n">วันที่ตัดสิน (นับจากวันเปิด)</label><input type="number" id="h-n" step="1" min="0">
 <label for="h-s">ราคา spot วันนั้น</label><input type="number" id="h-s" step="100">
@@ -178,20 +178,20 @@ CARRY_BODY = r"""
 <tr><td>ค่าธรรมเนียมที่ประหยัดได้ถ้าไม่ปิดตอนนี้ (ปิดสองขา)</td><td class="num"><span class="v" id="h-cf" data-twin="ch06/วันที่30/ค่าธรรมเนียมปิดตอนนี้"></span></td></tr>
 <tr><td>ค่าธรรมเนียมขาย spot ถ้าถือถึงวันหมดอายุ</td><td class="num"><span class="v" id="h-hf" data-twin="ch06/วันที่30/ค่าธรรมเนียมspotถ้าถือ"></span></td></tr>
 <tr><td><strong>ถือต่อได้เพิ่ม</strong></td><td class="num"><span class="v" id="h-extra" data-twin="ch06/วันที่30/ถือได้เพิ่ม"></span></td></tr>
-<tr><td>ค่าเสียโอกาสของทุนในวันที่เหลือ <span id="h-rem"></span> วัน</td><td class="num"><span class="v" id="h-opp" data-twin="ch06/วันที่30/เสียโอกาส60วัน"></span></td></tr>
+<tr><td>Opportunity Cost ของทุนในวันที่เหลือ <span id="h-rem"></span> วัน</td><td class="num"><span class="v" id="h-opp" data-twin="ch06/วันที่30/เสียโอกาส60วัน"></span></td></tr>
 <tr><td><strong>ตัดสิน</strong></td><td class="num"><span class="v key" id="h-dec" data-twin="ch06/วันที่30/ตัดสินที่hurdle4"></span></td></tr>
 <tr><td>hurdle ที่ทำให้ปิดกับถือเท่ากัน (% ต่อปี)</td><td class="num"><span class="v" id="h-sw" data-twin="ch06/วันที่30/จุดเปลี่ยนhurdle"></span></td></tr>
 </table></div>
 <p>ลองเปลี่ยน basis ของวันนั้นทีละขั้น (ราคา spot ตามค่าตั้งต้น · futures = spot + basis):</p>
-<div class="tw"><table id="h-dist"><tr><th class="num">basis วันนั้น</th><th class="num">ถือต่อได้เพิ่ม</th><th class="num">ค่าเสียโอกาส</th><th>ตัดสิน</th></tr></table></div>
+<div class="tw"><table id="h-dist"><tr><th class="num">basis วันนั้น</th><th class="num">ถือต่อได้เพิ่ม</th><th class="num">Opportunity Cost</th><th>ตัดสิน</th></tr></table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ใช้ทุน ค่าธรรมเนียม และวันถึงหมดอายุจากส่วน ①</p>
 </div>
 
 <div class="tool" id="t-pockets">
-<h3>③ สองกระเป๋า และกันชนสะสม</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: กำไรขา spot อยู่ในเหรียญ ใช้จ่ายหลักประกันขา futures ไม่ได้ — เงินสดอิสระคือกันชนเดียวที่มี</p>
+<h3>③ สองกระเป๋า และ Cash Buffer (กันชนเงินสด) สะสม</h3>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: กำไรขา spot อยู่ในเหรียญ ใช้จ่าย Margin ขา futures ไม่ได้ — Free Cash คือกันชนเดียวที่มี</p>
 <div class="ctrl">
-<label for="p-m">หลักประกัน (% ของราคา futures ปัจจุบัน · กติกาสอน)</label><input type="number" id="p-m" step="1" min="1">
+<label for="p-m">Margin (% ของราคา futures ปัจจุบัน · กติกาสอน)</label><input type="number" id="p-m" step="1" min="1">
 <label for="p-x">spot ขึ้นในวันเดียว (%)</label><span class="val" id="p-xv"></span>
 <input type="range" id="p-x" min="0" max="30" step="0.5">
 <label for="p-ba">basis หลังราคาขยับ</label><input type="number" id="p-ba" step="100">
@@ -205,16 +205,16 @@ CARRY_BODY = r"""
 <div><div class="lb">ขาด</div><span class="v" id="p-short" data-twin="ch04/dist/1/ขาดที่ทุน125000"></span></div>
 <div><div class="lb">เงินสดอิสระหลังโอน</div><span class="v" id="p-after" data-twin="ch04/เงินสดอิสระหลังโอน"></span></div>
 <div><div class="lb">กันชนสะสม: วันถัดไปรับได้อีก (%)</div><span class="v" id="p-more" data-twin="ch04/หลังวันแรกรับได้อีก"></span></div>
-<div><div class="lb">equity เปลี่ยน (สองขารวมกัน)</div><span class="v" id="p-eq" data-twin="ch04/equity_เปลี่ยน"></span></div>
+<div><div class="lb">Equity (มูลค่าบัญชีรวม) เปลี่ยน · สองขารวมกัน</div><span class="v" id="p-eq" data-twin="ch04/equity_เปลี่ยน"></span></div>
 </div>
 <svg class="chart" id="p-svg" viewBox="0 0 640 250" role="img" aria-label="สองกระเป๋า: กำไรขา spot กับเงินสดที่ต้องโอนเติม"></svg>
 <svg class="chart" id="p-line" viewBox="0 0 640 250" role="img" aria-label="เงินที่ต้องโอนเติมเทียบเงินสดอิสระเมื่อราคาขึ้นมากขึ้น"></svg>
-<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ต้องโอนเติม = (1 + อัตราหลักประกัน) × (futures ใหม่ − futures เดิม) · ใช้ราคาและทุนจากส่วน ① · ชำระสิ้นวัน</p>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ต้องโอนเติม = (1 + อัตรา Margin) × (futures ใหม่ − futures เดิม) · ใช้ราคาและทุนจากส่วน ① · ชำระสิ้นวัน</p>
 </div>
 
 <div class="tool" id="t-crowd">
-<h3>④ บันไดแย่ง: basis หดเมื่อคนแห่มาทำแบบเดียวกัน</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ส่วนเกินคือสิ่งที่คนอื่นแย่งได้ ค่าธรรมเนียมกับค่าเสียโอกาสไม่หดตาม</p>
+<h3>④ บันไดแย่ง: basis หดเมื่อเกิด Crowding (การแห่ทำกลยุทธ์เดียวกัน)</h3>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ส่วนเกินคือสิ่งที่คนอื่นแย่งได้ ค่าธรรมเนียมกับ Opportunity Cost ไม่หดตาม</p>
 <div class="tw"><table id="k-tbl"><tr><th class="num">basis</th><th class="num">① บนจอ</th><th class="num">③ หลังค่าธรรมเนียม</th><th class="num">④ ส่วนเกิน</th></tr></table></div>
 <p>basis ต่ำสุดที่ยังเหลือส่วนเกินมากกว่าศูนย์ (ค่าอื่นตามส่วน ①): <span class="v key" id="k-zero"></span></p>
 <svg class="chart" id="k-svg" viewBox="0 0 640 230" role="img" aria-label="ส่วนเกินเมื่อ basis หด"></svg>
@@ -225,7 +225,7 @@ CARRY_BODY = r"""
 <ul>
 <li>ถ้า ④ ติดลบ แปลว่าเอาเงินไปวางที่ได้ hurdle แน่ ๆ ดีกว่า แม้ ① จะดูสูง</li>
 <li>ทุนมากขึ้นทำให้กันชนหนาขึ้น แต่ ② ③ ④ บางลง — สองกระเป๋ากับบันไดแลกกันเสมอ</li>
-<li>เครื่องมือนี้ไม่ได้บอกกติกาของ exchange ใด ค่าธรรมเนียมและหลักประกันจริงต้องจดจากบัตรตลาดของคุณเอง 📱</li>
+<li>เครื่องมือนี้ไม่ได้บอกกติกาของ exchange ใด ค่าธรรมเนียมและ Margin จริงต้องจดจากบัตรตลาดของคุณเอง 📱</li>
 </ul></div>
 <p>คู่กับเครื่องมือในคลัง: <a href="tool-carry-blowup.html">carry ค่าเงินกับหางที่ระเบิด</a> (เรื่องคนละแบบ — carry ของค่าเงินและความเสี่ยงหาง)</p>
 """
@@ -311,10 +311,10 @@ onResize(upd);upd();
 
 FUND_BODY = r"""
 <div class="bx bb"><div class="bt">🎯 เครื่องมือนี้ตอบอะไร</div>
-<p>perp ไม่มีวันหมดอายุ เงินที่ได้จึงไม่ล็อกไว้ล่วงหน้าแบบ basis — มันมาเป็นรอบ ๆ และเปลี่ยนทิศได้
-มินถือ long spot คู่ short perp 30 วัน (90 รอบ · รอบละ 8 ชั่วโมงในตัวอย่างนี้) ที่ราคา mark ตรึงไว้
-เลือกเส้นทาง funding แล้วดูว่าเงินที่ได้จริงต่างจาก % บนจอแค่ไหน กฎ "ติดลบ k รอบติดแล้วออก" ช่วยหรือทำร้าย
-และค่าธรรมเนียม maker กับ taker ต่างกันเท่าไร</p></div>
+<p>สำหรับ Perp (สัญญาล่วงหน้าแบบไม่มีวันหมดอายุ) เงินที่ได้จึงไม่ล็อกไว้ล่วงหน้าแบบ Basis (ส่วนต่างราคา futures กับ spot) — มันมาเป็นรอบ ๆ และเปลี่ยนทิศได้
+มินถือ Long (สถานะซื้อ/ถือซื้อ) Spot (ตลาดซื้อขายทันที) คู่กับ Short (สถานะขาย/ขายชอร์ต) perp 30 วัน (90 รอบ · รอบละ 8 ชั่วโมงในตัวอย่างนี้) ที่ Mark Price (ราคาที่ exchange ใช้คิดหลักประกัน) ตรึงไว้
+เลือกเส้นทางของ Funding Rate (อัตราค่าธรรมเนียมการถือสถานะ · สัญญา Perpetual) แล้วดูว่าเงินที่ได้จริงต่างจาก % บนจอแค่ไหน กฎ "ติดลบ k รอบติดแล้วออก" ช่วยหรือทำร้าย
+และค่าธรรมเนียม Maker Order (คำสั่งตั้งรอ) กับ Taker Order (คำสั่งซื้อขายทันที) ต่างกันเท่าไร</p></div>
 
 <div class="tool">
 <h3>เลือกเส้นทางและกติกา</h3>
@@ -324,7 +324,7 @@ FUND_BODY = r"""
 <label for="f-k">กฎออก: ติดลบกี่รอบติดกันแล้วออก (0 = ไม่ใช้กฎ)</label><input type="number" id="f-k" min="0" max="20" step="1">
 <label for="f-crowd">อัตราที่เหลือเมื่อถูกแย่ง (% ของเส้นทางเดิม)</label><span class="val" id="f-crowdv"></span>
 <input type="range" id="f-crowd" min="10" max="100" step="5">
-<label for="f-hur">hurdle ต่อปี (%)</label><input type="number" id="f-hur" step="0.5">
+<label for="f-hur">Hurdle Rate (ผลตอบแทนขั้นต่ำของทุน) ต่อปี (%)</label><input type="number" id="f-hur" step="0.5">
 </div>
 <div class="seg" id="f-feeseg"></div>
 <div class="kpi">
@@ -335,7 +335,7 @@ FUND_BODY = r"""
 <div><div class="lb">กฎออกทำงานที่รอบ</div><span class="v key" id="f-exit"></span></div>
 </div>
 <svg class="chart" id="f-cum" viewBox="0 0 640 280" role="img" aria-label="funding สะสมของสี่เส้นทาง"></svg>
-<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ดอลลาร์ต่อ 1 BTC ที่ราคา mark คงที่ · เส้นหนา = เส้นทางที่เลือก · จุดม่วง = รอบที่กฎออกทำงาน</p>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ดอลลาร์ต่อ 1 BTC ที่ Mark Price คงที่ · เส้นหนา = เส้นทางที่เลือก · จุดม่วง = รอบที่กฎออกทำงาน</p>
 <h3>อัตรารายรอบ (แตะหรือลากบนกราฟเพื่อวาดเส้นทางของคุณเอง)</h3>
 <svg class="chart" id="f-draw" viewBox="0 0 640 220" role="img" aria-label="อัตรา funding รายรอบ วาดเองได้"></svg>
 <p class="src">🔢 อัตราต่อรอบ (%) · บวก = short perp ได้รับ · ลบ = short perp จ่าย · กดปุ่ม "วาดเอง" แล้วลากนิ้วบนกราฟ</p>
@@ -348,7 +348,7 @@ FUND_BODY = r"""
 <tr><td>① บนจอ</td><td>อัตรารอบแรก × 3 รอบต่อวัน · ปรับเป็นทั้งปี</td><td class="num"><span class="v" id="f-l1" data-twin="ch07/บันไดfunding/บนจอ"></span></td></tr>
 <tr><td>② ต่อทุน</td><td>funding ที่ได้จริงทั้ง 30 วัน ÷ ทุนทั้งก้อน</td><td class="num"><span class="v" id="f-l2" data-twin="ch07/บันไดfunding/ต่อทุน"></span></td></tr>
 <tr><td>③ หลังค่าธรรมเนียม</td><td>หักค่าธรรมเนียมเปิดปิดสองขา (ถือครบ ไม่ใช้กฎ)</td><td class="num"><span class="v" id="f-l3" data-twin="ch07/บันไดfunding/หลังค่าธรรมเนียม"></span></td></tr>
-<tr><td>④ ส่วนเกิน</td><td>หักค่าเสียโอกาสของทุนตาม hurdle</td><td class="num"><span class="v" id="f-l4" data-twin="ch07/บันไดfunding/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
+<tr><td>④ ส่วนเกิน</td><td>หัก Opportunity Cost (ค่าเสียโอกาส) ของทุนตาม hurdle</td><td class="num"><span class="v" id="f-l4" data-twin="ch07/บันไดfunding/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
 </table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ค่าในบท (ป้ายเทา) คือเส้นทางราบ ค่าธรรมเนียม maker</p>
 </div>
@@ -444,9 +444,9 @@ onResize(upd);upd();
 
 REV_BODY = r"""
 <div class="bx bb"><div class="bt">🎯 เครื่องมือนี้ตอบอะไร</div>
-<p>"กลับแน่" กับ "กลับทันก่อนเงินหมด" เป็นคนละคำถาม φ บอกว่าทุกช่วงระยะห่างจากค่ากลางเหลือกี่ส่วน
+<p>สำหรับ Mean Reversion (การกลับเข้าสู่ค่าเฉลี่ย) "กลับแน่" กับ "กลับทันก่อนเงินหมด" เป็นคนละคำถาม Persistence φ (อัตราคงเหลือต่อช่วง) บอกว่าทุกช่วงระยะห่างจาก Mean (ค่าเฉลี่ย) เหลือกี่ส่วน
 แรงสะบัดบอกว่าแต่ละช่วงถูกเขย่าแรงแค่ไหน ส่วนต้นทุนกับช่วงถือบอกว่ามีเวลาและเงินให้รอเท่าไร
-เครื่องมือนี้มีห้าส่วน: ค่าคาดหมายของเส้นทางที่คาด · พัดเส้นทางสุ่ม · เวลาแตะเป้า · กฎเดียวสามโลก · stepper ของการ์ดกติกา</p></div>
+เครื่องมือนี้มีห้าส่วน: Expected Value (มูลค่าคาดหวัง) ของเส้นทางที่คาด · พัดเส้นทางสุ่ม · Time to Target (เวลาแตะเป้า) · กฎเดียวสามโลก · stepper ของการ์ดกติกา</p></div>
 
 <div class="tool">
 <h3>ตั้งค่า</h3>
@@ -458,34 +458,34 @@ REV_BODY = r"""
 <label for="r-x0">X ตอนเข้า</label><input type="number" id="r-x0" step="0.1">
 <label for="r-n">ถือกี่ช่วง</label><input type="number" id="r-n" step="1" min="1" max="60">
 <label for="r-sets">จำนวนชุด</label><input type="number" id="r-sets" step="1" min="1">
-<label for="r-cost">ต้นทุนไปกลับ</label><input type="number" id="r-cost" step="0.1" min="0">
+<label for="r-cost">ต้นทุนต่อ Round Trip (การเปิดแล้วปิดหนึ่งครั้ง · ไปกลับ)</label><input type="number" id="r-cost" step="0.1" min="0">
 </div>
 </div>
 
 <div class="tool">
-<h3>① ค่าคาดหมายเมื่อถือครบ (เส้นทางที่คาด ไม่มีสัญญาณรบกวน)</h3>
+<h3>① Expected Value เมื่อถือครบ (เส้นทางที่คาด ไม่มีสัญญาณรบกวน)</h3>
 <p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: φ ใกล้ 1 ดูเหมือน "ยังกลับ" แต่ในช่วงถือสั้น ๆ ระยะที่หดได้แทบไม่พอจ่ายต้นทุน</p>
 <div class="kpi">
 <div><div class="lb">X เมื่อครบช่วงถือ</div><span class="v" id="r-end"></span></div>
 <div><div class="lb">กำไรก่อนต้นทุน</div><span class="v" id="r-gross" data-twin="ch13/ตารางphi/0.80/กำไรก่อนต้นทุน"></span></div>
-<div><div class="lb">ค่าคาดหมายสุทธิ</div><span class="v big" id="r-net" data-twin="ch13/ตารางphi/0.80/สุทธิ4ช่วง"></span></div>
-<div><div class="lb">ครึ่งชีวิต (ช่วง)</div><span class="v" id="r-hl" data-twin="ch13/ตารางphi/0.80/ครึ่งชีวิต"></span></div>
+<div><div class="lb">Expected Value สุทธิ</div><span class="v big" id="r-net" data-twin="ch13/ตารางphi/0.80/สุทธิ4ช่วง"></span></div>
+<div><div class="lb">Half-life (ครึ่งชีวิต · เวลาที่ระยะห่างหดเหลือครึ่ง) นับเป็นช่วง</div><span class="v" id="r-hl" data-twin="ch13/ตารางphi/0.80/ครึ่งชีวิต"></span></div>
 </div>
-<div class="tw"><table id="r-phitbl"><tr><th class="num">φ</th><th class="num">X หลัง 1 ช่วง</th><th class="num">X เมื่อครบ</th><th class="num">สุทธิ</th><th class="num">ครึ่งชีวิต</th></tr></table></div>
-<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · short ตะกร้าที่ X ตอนเข้า · กำไร = จำนวนชุด × ระยะที่หด · สูตรเดียวกับแท็บ "ตาราง φ" ในสมุดงาน · แรงสะบัดไม่เปลี่ยนค่าคาดหมายเมื่อถือครบโดยไม่มีกฎออก</p>
+<div class="tw"><table id="r-phitbl"><tr><th class="num">φ</th><th class="num">X หลัง 1 ช่วง</th><th class="num">X เมื่อครบ</th><th class="num">สุทธิ</th><th class="num">Half-life</th></tr></table></div>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · short ตะกร้าที่ X ตอนเข้า · กำไร = จำนวนชุด × ระยะที่หด · สูตรเดียวกับแท็บ "ตาราง φ" ในสมุดงาน · แรงสะบัดไม่เปลี่ยน Expected Value เมื่อถือครบโดยไม่มีกฎออก</p>
 </div>
 
 <div class="tool">
 <h3>② พัดเส้นทาง</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ค่าคาดหมายเป็นเส้นเดียว แต่คุณจะได้เดินแค่เส้นเดียวในพัด และเส้นนั้นอาจขึ้นก่อนลง</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: Expected Value เป็นเส้นเดียว แต่คุณจะได้เดินแค่เส้นเดียวในพัด และเส้นนั้นอาจขึ้นก่อนลง</p>
 <button type="button" class="btn pri" id="r-fanbtn">สุ่มพัดใหม่</button>
 <svg class="chart" id="r-fan" viewBox="0 0 640 280" role="img" aria-label="พัดเส้นทาง X ที่สุ่มด้วย φ และแรงสะบัดที่เลือก"></svg>
 <p class="src">🎲 จำลองในเบราว์เซอร์ — ตัวอย่างใหม่ทุกครั้ง ไม่ใช่ชุดในบท · เส้นม่วง = เส้นทางที่คาด · เส้นเขียวประ = เป้าออก · เส้นแดงประ = ระยะที่ขาดทุนถึงงบ</p>
 </div>
 
 <div class="tool">
-<h3>③ เวลาแตะเป้า: จาก X = 2 ถึง X ≤ 1</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ครึ่งชีวิตเป็นค่าของเส้นทางที่คาด เวลาจริงที่แตะเป้ากระจายกว้างกว่านั้นมาก</p>
+<h3>③ Time to Target: จาก X = 2 ถึง X ≤ 1</h3>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: Half-life เป็นค่าของเส้นทางที่คาด เวลาจริงที่แตะเป้ากระจายกว้างกว่านั้นมาก</p>
 <button type="button" class="btn pri" id="r-fpbtn">จำลองใหม่</button>
 <div class="tw"><table id="r-fptbl"><tr><th>ค่า</th><th class="num">จำลองตอนนี้</th><th class="num">ในบท (ชุดตายตัว)</th></tr></table></div>
 <p class="src">🎲 จำลอง <span id="r-fpn"></span> เส้นในเบราว์เซอร์ ตัวเลขสุ่มของเบราว์เซอร์ต่างจากชุดสุ่มตายตัวในบท ค่าจึงขยับเล็กน้อยทุกครั้ง · คอลัมน์ "ในบท" มีเฉพาะสามกรณีที่บท 13 คำนวณไว้</p>
@@ -495,13 +495,13 @@ REV_BODY = r"""
 <h3>④ กฎเดียวสามโลก (การ์ดบท 12 ที่ X = 2 · ออก 0.5 · งบ −15 · ครบ 3 ช่วง)</h3>
 <p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: การ์ดใบเดียวกันให้ผลต่างกันสุดขั้วตาม φ ที่คุณไม่รู้ค่าจริง</p>
 <button type="button" class="btn pri" id="r-3wbtn">จำลองใหม่</button>
-<div class="tw"><table id="r-3w"><tr><th class="num">φ</th><th class="num">ออกเพราะเป้า %</th><th class="num">ออกเพราะงบ %</th><th class="num">ออกเพราะเวลา %</th><th class="num">ไม้กำไร %</th><th class="num">ค่าคาดหมายต่อไม้</th></tr></table></div>
+<div class="tw"><table id="r-3w"><tr><th class="num">φ</th><th class="num">ออกเพราะเป้า %</th><th class="num">ออกเพราะงบ %</th><th class="num">ออกเพราะเวลา %</th><th class="num">ไม้กำไร %</th><th class="num">Expected Value ต่อไม้</th></tr></table></div>
 <p class="src">🎲 จำลองในเบราว์เซอร์ <span id="r-3wn"></span> ไม้ต่อโลก ที่แรงสะบัดตามที่ตั้ง · ป้ายเทา = ค่าในบท 13 (แรงสะบัด 0.5 · ชุดสุ่มตายตัว) · ก่อนค่าถือ</p>
 </div>
 
 <div class="tool">
 <h3>⑤ stepper กฎเข้า–ถือ–ออก</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ลำดับ ขาดทุน → สัญญาณ → เวลา และโหมดพักหลังออกเพราะงบ ต้องเห็นทีละช่วงถึงจะเชื่อ</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ลำดับ ขาดทุน → สัญญาณ → เวลา และ Pause Mode (โหมดพัก) หลังออกเพราะงบ ต้องเห็นทีละช่วงถึงจะเชื่อ</p>
 <p style="margin-bottom:4px">เส้นทาง X (คั่นด้วยจุลภาค · ช่วงแรกคือก่อนเข้า)</p>
 <textarea class="path" id="s-x" rows="2"></textarea>
 <p style="margin:8px 0 4px">ราคา B แต่ละช่วง (เว้นว่าง = B นิ่ง · ราคา A = X + 2 × B)</p>
@@ -520,13 +520,13 @@ REV_BODY = r"""
 <div><div class="lb">สถานะตอนจบ</div><span class="v key" id="s-state"></span></div>
 </div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ตะกร้า 10 ชุด (short X = short A 10 · long B 20) · ค่าตั้งต้นคือเส้นทางในบท 14 · ก่อนค่าถือ</p>
-<h3>อัตราชนะที่ต้องได้</h3>
+<h3>Break-even Win Rate (อัตราชนะที่ต้องได้)</h3>
 <div class="ctrl">
 <label for="w-win">กำไรเฉลี่ยของไม้ชนะ</label><input type="number" id="w-win" step="1">
 <label for="w-loss">ขาดทุนเฉลี่ยของไม้แพ้</label><input type="number" id="w-loss" step="1">
 </div>
 <p>ต้องชนะอย่างน้อย <span class="v big" id="w-need" data-twin="ch12/ต้องชนะทศนิยม"></span> % ของไม้ที่ออกแบบชนะหรือแพ้</p>
-<div class="tw"><table id="w-mix"><tr><th>สัดส่วนตอนจบ (เป้า / เวลา / งบ)</th><th class="num">ค่าคาดหมายต่อไม้</th></tr></table></div>
+<div class="tw"><table id="w-mix"><tr><th>สัดส่วนตอนจบ (เป้า / เวลา / งบ)</th><th class="num">Expected Value ต่อไม้</th></tr></table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ผลสามตอนจบจากบท 12</p>
 </div>
 """
@@ -551,7 +551,7 @@ function fan(){const p=R(),sv=$('r-fan');clear(sv);const H=280,W=vb(sv,H),x0=44,
   const X=t=>x0+t/N*(x1-x0),Y=v=>y0-(Math.max(ymin,Math.min(ymax,v))-ymin)/(ymax-ymin)*(y0-y1);
   T(sv,10,16,'X ของตะกร้า '+N+' ช่วง · φ '+nf(p.phi,2)+' · แรงสะบัด '+nf(p.sd,2),{weight:700,fill:COL.ink});
   const stopX=p.x0+(Math.abs(CARD['งบขาดทุนสุทธิ'])-CARD['ต้นทุนเข้า']-CARD['ต้นทุนออก'])/p.sets;
-  [[0,'#94a3b8','ค่ากลาง 0'],[CARD['ออก'],COL.green,'ออก '+fj(CARD['ออก'])],[stopX,COL.red,'งบ −15 ที่ X '+nf(stopX,1)]].forEach(([v,c,l])=>{
+  [[0,'#94a3b8','Mean 0'],[CARD['ออก'],COL.green,'ออก '+fj(CARD['ออก'])],[stopX,COL.red,'งบ −15 ที่ X '+nf(stopX,1)]].forEach(([v,c,l])=>{
     sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(v),y2:Y(v),stroke:c,'stroke-dasharray':v===0?'':'5 4'}));T(sv,x1-2,Y(v)-4,l,{anchor:'end',size:11,fill:c});});
   paths.forEach(a=>sv.appendChild(S('polyline',{points:a.map((v,t)=>X(t)+','+Y(v)).join(' '),fill:'none',stroke:COL.grey,'stroke-width':1,opacity:.55})));
   const ex=[];for(let t=0;t<=N;t++)ex.push(p.x0*Math.pow(p.phi,t));
@@ -563,9 +563,9 @@ function firstPassage(phi,sd,M_){const MAX=phi>=1?1000:5000,ts=[];let up=0,inHal
   return {med:ts[Math.floor(n/2)],mean:mean,p90:ts[Math.floor(0.9*n)],in4:ts.filter(t=>t<=4).length/n*100,up:up/n*100,half:h===null?null:inHalf/n*100,cap:ts.filter(t=>t>=MAX).length/n*100,MAX:MAX};}
 function fp(){const p=R(),Mn=p.phi>=1?5000:20000;$('r-fpn').textContent=nf(Mn,0);const F=firstPassage(p.phi,p.sd,Mn);
   const bk=C13['แตะเป้า'].find(d=>Math.abs(d.phi-p.phi)<1e-9&&Math.abs(d['แรงสะบัด']-p.sd)<1e-9);
-  const rows=[['มัธยฐานช่วงจนแตะ',nf(F.med,0),bk&&fj(bk['มัธยฐานช่วง'])],['เฉลี่ยช่วงจนแตะ',nf(F.mean,1),bk&&fj(bk['เฉลี่ยช่วง'])],
+  const rows=[['Median (มัธยฐาน) ช่วงจนแตะ',nf(F.med,0),bk&&fj(bk['มัธยฐานช่วง'])],['เฉลี่ยช่วงจนแตะ',nf(F.mean,1),bk&&fj(bk['เฉลี่ยช่วง'])],
     ['90% แตะภายใน (ช่วง)',nf(F.p90,0),bk&&fj(bk['p90ช่วง'])],['จบใน 4 ช่วง (%)',nf(F.in4,1),bk&&fj(bk['จบใน4ช่วงเปอร์เซ็นต์'])],
-    ['แตะก่อนครึ่งชีวิต (%)',F.half===null?'ไม่มีครึ่งชีวิต':nf(F.half,1),bk&&fj(bk['แตะก่อนครึ่งชีวิตเปอร์เซ็นต์'])],
+    ['แตะก่อน Half-life (%)',F.half===null?'ไม่มี Half-life':nf(F.half,1),bk&&fj(bk['แตะก่อนครึ่งชีวิตเปอร์เซ็นต์'])],
     ['ขึ้นถึง 3 ก่อนแตะ (%)',nf(F.up,1),bk&&fj(bk['ขึ้นถึง3ก่อนเปอร์เซ็นต์'])]];
   if(F.cap>0)rows.push(['ไม่แตะเลยใน '+nf(F.MAX,0)+' ช่วง (%)',nf(F.cap,1),null]);
   const t=$('r-fptbl');while(t.rows.length>1)t.deleteRow(1);
@@ -603,7 +603,7 @@ function step(){if(bar>=xs.length)return;const x=xs[bar],b=bs[bar],a=x+M['คู
 function out(){const tr=pol.trades;$('s-last').textContent=tr.length?nf(tr[tr.length-1].net,0):'—';$('s-last').classList.toggle('neg',tr.length&&tr[tr.length-1].net<0);
   $('s-closed').textContent=tr.length;$('s-block').textContent=pol.blocked;$('s-state').textContent=state();twins();}
 $('s-step').onclick=step;$('s-all').onclick=()=>{while(bar<xs.length)step();};$('s-reset').onclick=reset;
-$('s-resume').onclick=()=>{let msg;if(!pol.paused)msg='ไม่ได้อยู่ในโหมดพัก';else if(pol.pos)msg='ต้องว่างก่อน';else if(!$('s-ok').checked)msg='ยังไม่ผ่านการตรวจ — กลับมาไม่ได้';
+$('s-resume').onclick=()=>{let msg;if(!pol.paused)msg='ไม่ได้อยู่ใน Pause Mode';else if(pol.pos)msg='ต้องว่างก่อน';else if(!$('s-ok').checked)msg='ยังไม่ผ่านการตรวจ — กลับมาไม่ได้';
   else{pol.paused=false;msg='กลับมาแล้ว (ว่าง · เปิดไม้ใหม่ได้)';}$('s-resmsg').textContent=msg;out();};
 const pr=$('s-presets');
 [['บท 14',C14['เส้นทาง']]].concat(Object.keys(C12['เส้นทาง']).map(k=>['บท 12 เส้นทาง '+k,C12['เส้นทาง'][k].X])).forEach(([n,a])=>{
@@ -626,26 +626,26 @@ onResize(fan);upd1();fan();fp();w3();reset();while(bar<xs.length)step();updw();
 
 FAKE_BODY = r"""
 <div class="bx bb"><div class="bt">🎯 เครื่องมือนี้ตอบอะไร</div>
-<p>ค้นคู่เหรียญจำนวนมากแล้วเลือกคู่ที่ "ข้ามค่ากลางบ่อยที่สุด" ในช่วงเลือก ฟังดูเหมือนหาคู่ที่ดีที่สุด
-แต่ถ้าทุกคู่ไม่มีเชือกผูกเลย ผู้ชนะคือคู่ที่บังเอิญดูดีที่สุด แล้วช่วงทดสอบจะเปิดโปงมัน
-เครื่องมือนี้สร้างคู่ไม่มีเชือก (สองราคาเดินตามปัจจัยร่วมแต่ไม่มีอะไรดึงส่วนต่างกลับ) กับคู่มีเชือก
-จัดอันดับด้วยครั้งข้ามค่ากลาง แล้วให้คุณดูช่วงทดสอบเอง</p></div>
+<p>ค้นคู่เหรียญจำนวนมากแล้วเลือกคู่ที่ "ข้าม Mean (ค่าเฉลี่ย) บ่อยที่สุด" ใน Formation Period (ช่วงเลือก) ฟังดูเหมือนหาคู่ที่ดีที่สุด
+แต่ถ้าทุกคู่ไม่มีเชือกผูกเลย ผู้ชนะคือคู่ที่บังเอิญดูดีที่สุด แล้ว Test Period (ช่วงทดสอบ) จะเปิดโปงมัน</p>
+<p>เครื่องมือนี้สร้างคู่ไม่มีเชือก (สองราคาเดินตามปัจจัยร่วมแต่ไม่มีอะไรดึง Spread ของคู่ หรือส่วนต่างของคู่ กลับ) กับคู่มีเชือก
+จัดอันดับด้วยครั้งข้าม Mean แล้วให้คุณดู Test Period เอง</p></div>
 
 <div class="tool">
 <h3>① ชุดในบท 10 (เปิดมาเห็นค่าตรงบท)</h3>
 <p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: อันดับหนึ่งจากการค้นคือผลของการค้น ไม่ใช่หลักฐานว่ามีเชือก</p>
 <div class="kpi">
-<div><div class="lb">คู่อันดับ 1: ครั้งข้ามค่ากลาง (ช่วงเลือก)</div><span class="v" id="b-cross" data-twin="ch10/อันดับ1/ข้ามค่ากลาง"></span></div>
-<div><div class="lb">คู่อันดับ 1: % วันในกรอบ (ช่วงทดสอบ)</div><span class="v big" id="b-in" data-twin="ch10/อันดับ1/ในกรอบ"></span></div>
-<div><div class="lb">คู่อันดับ 1: ระยะไกลสุด (ช่วงทดสอบ)</div><span class="v" id="b-max" data-twin="ch10/อันดับ1/ระยะสูงสุด"></span></div>
+<div><div class="lb">คู่อันดับ 1: ครั้งข้าม Mean (Formation Period)</div><span class="v" id="b-cross" data-twin="ch10/อันดับ1/ข้ามค่ากลาง"></span></div>
+<div><div class="lb">คู่อันดับ 1: % วันในกรอบ (Test Period)</div><span class="v big" id="b-in" data-twin="ch10/อันดับ1/ในกรอบ"></span></div>
+<div><div class="lb">คู่อันดับ 1: ระยะไกลสุด (Test Period)</div><span class="v" id="b-max" data-twin="ch10/อันดับ1/ระยะสูงสุด"></span></div>
 <div><div class="lb">คู่มีเชือกตัวแรก: ครั้งข้าม</div><span class="v" id="g-cross" data-twin="ch10/คู่จริงตัวแรก/ข้ามค่ากลาง"></span></div>
 <div><div class="lb">คู่มีเชือกตัวแรก: % ในกรอบ</div><span class="v big" id="g-in" data-twin="ch10/คู่จริงตัวแรก/ในกรอบ"></span></div>
 <div><div class="lb">คู่มีเชือกตัวแรก: ระยะไกลสุด</div><span class="v" id="g-max" data-twin="ch10/คู่จริงตัวแรก/ระยะสูงสุด"></span></div>
 </div>
-<svg class="chart" id="b-svg" viewBox="0 0 640 300" role="img" aria-label="z ของคู่อันดับ 1 ในบท 10 ช่วงเลือกและช่วงทดสอบ"></svg>
+<svg class="chart" id="b-svg" viewBox="0 0 640 300" role="img" aria-label="z ของคู่อันดับ 1 ในบท 10 Formation Period และ Test Period"></svg>
 <p class="src">🎲 จำลอง (ชุดสุ่มตายตัวของบท 10 · ผลนิ่งเมื่อสุ่มใหม่ 30 ชุด) · ตัวเลขข้างบนคิดใหม่ในเบราว์เซอร์จากเส้นทางที่บทเก็บไว้ · ไม่ใช่เหรียญจริง</p>
-<div class="tw"><table id="b-tbl"><tr><th>กลุ่ม (ชุดในบท)</th><th class="num">ครั้งข้ามเฉลี่ย</th><th class="num">% ในกรอบ ช่วงทดสอบ</th><th class="num">ระยะไกลสุดเฉลี่ย</th></tr></table></div>
-<p class="src">🎲 จำลอง · ค้น 200 คู่ไม่มีเชือก × 500 วัน (ช่วงเลือก 250 วัน) · คู่มีเชือก 10 คู่ · มัธยฐานเมื่อสุ่มใหม่ 30 ชุด: 10 อันดับแรกอยู่ในกรอบ <span class="v" data-twin="seed_robustness/ch10/ในกรอบ/มัธยฐาน" id="b-med"></span></p>
+<div class="tw"><table id="b-tbl"><tr><th>กลุ่ม (ชุดในบท)</th><th class="num">ครั้งข้ามเฉลี่ย</th><th class="num">% ในกรอบ Test Period</th><th class="num">ระยะไกลสุดเฉลี่ย</th></tr></table></div>
+<p class="src">🎲 จำลอง · ค้น 200 คู่ไม่มีเชือก × 500 วัน (Formation Period 250 วัน) · คู่มีเชือก 10 คู่ · Median (มัธยฐาน) เมื่อสุ่มใหม่ 30 ชุด: 10 อันดับแรกอยู่ในกรอบ <span class="v" data-twin="seed_robustness/ch10/ในกรอบ/มัธยฐาน" id="b-med"></span></p>
 </div>
 
 <div class="tool">
@@ -655,11 +655,11 @@ FAKE_BODY = r"""
 <label for="z-top">คัดอันดับต้น ๆ กี่คู่</label><input type="number" id="z-top" min="1" max="50" step="1">
 <label for="z-gen">จำนวนคู่มีเชือกไว้เทียบ</label><input type="number" id="z-gen" min="1" max="100" step="1">
 </div>
-<div><label><input type="checkbox" id="z-leak"> กรอบรั่ว: คิดค่ากลางและระยะแกว่งจากทั้ง 500 วัน (แอบเห็นช่วงทดสอบ)</label></div>
+<div><label><input type="checkbox" id="z-leak"> กรอบรั่ว: คิด Mean และ Standard Deviation (ส่วนเบี่ยงเบนมาตรฐาน) จากทั้ง 500 วัน · แอบเห็น Test Period</label></div>
 <button type="button" class="btn pri" id="z-run">ค้นใหม่ (สุ่มชุดใหม่)</button>
 <p class="src" id="z-note">ยังไม่ได้ค้น — กดปุ่มเพื่อสร้างชุดใหม่ ผลจะต่างจากชุดในบททุกครั้ง เพราะตัวเลขสุ่มของเบราว์เซอร์ไม่ใช่ชุดตายตัวของบท</p>
-<div class="tw"><table id="z-tbl"><tr><th>กลุ่ม (ชุดใหม่)</th><th class="num">ครั้งข้ามเฉลี่ย</th><th class="num">% ในกรอบ ช่วงทดสอบ</th><th class="num">ระยะไกลสุดเฉลี่ย</th><th class="num">ในบท (% ในกรอบ)</th></tr></table></div>
-<p class="src">🎲 จำลองในเบราว์เซอร์ — ตัวอย่างใหม่ ไม่ใช่ชุดในบท · ไม่มีเชือก: ปัจจัยร่วมเดินสุ่ม + ส่วนเฉพาะเดินสุ่มทั้งสองเหรียญ · มีเชือก: ส่วนต่างถูกดึงกลับทุกวัน</p>
+<div class="tw"><table id="z-tbl"><tr><th>กลุ่ม (ชุดใหม่)</th><th class="num">ครั้งข้ามเฉลี่ย</th><th class="num">% ในกรอบ Test Period</th><th class="num">ระยะไกลสุดเฉลี่ย</th><th class="num">ในบท (% ในกรอบ)</th></tr></table></div>
+<p class="src">🎲 จำลองในเบราว์เซอร์ — ตัวอย่างใหม่ ไม่ใช่ชุดในบท · ไม่มีเชือก: ปัจจัยร่วมเป็น Random Walk (การเดินสุ่ม) + ส่วนเฉพาะเป็น Random Walk ทั้งสองเหรียญ · มีเชือก: Spread ของคู่ถูกดึงกลับทุกวัน</p>
 <svg class="chart" id="z-svg" viewBox="0 0 640 300" role="img" aria-label="z ของคู่อันดับ 1 จากการค้นใหม่"></svg>
 <p class="src">🎲 จำลองในเบราว์เซอร์ · ก่อนกดค้นใหม่ กราฟนี้แสดงคู่มีเชือกตัวแรกของบท 10 ไว้เทียบ</p>
 </div>
@@ -673,7 +673,7 @@ FAKE_BODY = r"""
 
 <div class="bx ba"><div class="bt">💡 อ่านผลอย่างไร</div>
 <ul>
-<li>คู่ที่ข้ามค่ากลางบ่อยที่สุดในช่วงเลือกมักอยู่ในกรอบช่วงทดสอบแย่กว่าคู่มีเชือกที่ไม่ได้ถูกคัด</li>
+<li>คู่ที่ข้าม Mean บ่อยที่สุดใน Formation Period มักอยู่ในกรอบระหว่าง Test Period แย่กว่าคู่มีเชือกที่ไม่ได้ถูกคัด</li>
 <li>เปิดสวิตช์กรอบรั่วแล้วคู่ไม่มีเชือกจะดูดีขึ้นทันที เพราะไม้บรรทัดถูกวัดจากอนาคตที่มันกำลังถูกทดสอบ</li>
 <li>เครื่องมือนี้ตอบว่า "คัดแล้วหลอกได้แค่ไหน" ไม่ได้ตอบว่าคู่จริงของคุณมีเชือก — นั่นต้องใช้คำถาม "อะไรดึงสองราคากลับ" ในบท 9</li>
 </ul></div>
@@ -700,7 +700,7 @@ function zplot(svg,z,title,color){PLOTS[svg.id]=[z,title,color];clear(svg);const
   [[2,COL.green],[-2,COL.green],[0,'#94a3b8']].forEach(([v,c])=>{svg.appendChild(S('line',{x1:x0,x2:x1,y1:Y(v),y2:Y(v),stroke:c,'stroke-dasharray':v?'5 4':''}));
     T(svg,x0-6,Y(v)+4,(v>0?'+':v<0?'−':'')+Math.abs(v),{anchor:'end',size:11});});
   svg.appendChild(S('line',{x1:X(NF),x2:X(NF),y1:y1,y2:y0,stroke:COL.ink}));
-  T(svg,(x0+X(NF))/2,y0+18,'ช่วงเลือก '+NF+' วัน',{anchor:'middle',size:11.5});T(svg,(X(NF)+x1)/2,y0+18,'ช่วงทดสอบ',{anchor:'middle',size:11.5,weight:700});
+  T(svg,(x0+X(NF))/2,y0+18,'Formation Period '+NF+' วัน',{anchor:'middle',size:11.5});T(svg,(X(NF)+x1)/2,y0+18,'Test Period',{anchor:'middle',size:11.5,weight:700});
   svg.appendChild(S('polyline',{points:z.slice(0,NF+1).map((v,i)=>X(i)+','+Y(v)).join(' '),fill:'none',stroke:COL.grey,'stroke-width':1.3}));
   svg.appendChild(S('polyline',{points:z.slice(NF).map((v,i)=>X(i+NF)+','+Y(v)).join(' '),fill:'none',stroke:color,'stroke-width':1.6}));
   let im=NF;for(let i=NF;i<z.length;i++)if(Math.abs(z[i])>Math.abs(z[im]))im=i;
@@ -747,7 +747,7 @@ def hub_body(fig):
         ("nq-tool-samplesize.html", "ต้องเทรดกี่ไม้ถึงจะรู้", "ผลที่มีตอนนี้พิสูจน์อะไรได้แล้ว และต้องอีกกี่ไม้", "15"),
         ("nq-tool-randomness.html", "จริงหรือสุ่ม", "แยกกราฟตลาดจริงออกจากการโยนเหรียญได้จริงไหม", "10"),
         ("tool-deflated-sharpe.html", "backtest กำลังโกหกไหม",
-         "ลองหลายแบบแล้วเลือกตัวที่ดีที่สุด ผลดีจะหดเหลือเท่าไร · Sharpe = ผลตอบแทนเฉลี่ยต่อความผันผวน (เล่มนี้ไม่สอน ใช้อ่านเครื่องมือนี้เท่านั้น)", "15"),
+         "ลองหลายแบบแล้วเลือกตัวที่ดีที่สุด ผลดีจะหดเหลือเท่าไร · Sharpe Ratio (อัตราส่วนชาร์ป) = ผลตอบแทนเฉลี่ยต่อ Volatility (ความผันผวน) ซึ่งเล่มนี้ไม่สอน ใช้อ่านเครื่องมือนี้เท่านั้น", "15"),
         ("tool-diversification.html", "กระจายความเสี่ยง", "ถือหลายคู่ช่วยได้แค่ไหนเมื่อคู่ขยับไปด้วยกัน", "8, 17"),
         ("tool-carry-blowup.html", "carry ที่ระเบิด", "carry ของค่าเงิน กำไรเล็กสม่ำเสมอกับหางที่ระเบิด (คนละเรื่องกับ basis)", "1, 4, 17"),
     ]
@@ -756,13 +756,13 @@ def hub_body(fig):
             raise SystemExit(f"ไม่มีไฟล์ {f} ใน docs/ — เอาออกจากรายการ hub")
     rows_new = [
         ("sab-tool-carry.html", "บันได carry · ปิดหรือถือ · สองกระเป๋า",
-         "จาก % บนจอถึงส่วนเกินในมือ · วันที่ N ควรปิดไหม · กันชนเงินสดเมื่อราคาวิ่งสวน · basis หดเมื่อคนแห่มา", "4, 5, 6"),
+         "จาก % บนจอถึงส่วนเกินในมือ · วันที่ N ควรปิดไหม · Cash Buffer (กันชนเงินสด) เมื่อราคาวิ่งสวน · Basis (ส่วนต่างราคา futures กับ spot) หดเมื่อเกิด Crowding (การแห่ทำกลยุทธ์เดียวกัน)", "4, 5, 6"),
         ("sab-tool-funding.html", "funding หลายเส้นทาง",
-         "สี่เส้นทาง + วาดเอง · กฎติดลบ k รอบแล้วออก · maker กับ taker · อัตราถูกแย่ง", "7"),
-        ("sab-tool-reversion.html", "แรงดึงกลับ: กลับทันไหม",
-         "φ แรงสะบัด ต้นทุน ช่วงถือ → ค่าคาดหมาย พัดเส้นทาง เวลาแตะเป้า กฎเดียวสามโลก · stepper การ์ดกติกา", "12, 13, 14"),
+         "สี่เส้นทาง + วาดเอง · กฎติดลบ k รอบแล้วออก · Maker Order (คำสั่งตั้งรอ) กับ Taker Order (คำสั่งซื้อขายทันที) · อัตราถูกแย่ง", "7"),
+        ("sab-tool-reversion.html", "Mean Reversion (การกลับเข้าสู่ค่าเฉลี่ย): กลับทันไหม",
+         "φ แรงสะบัด ต้นทุน ช่วงถือ → Expected Value (มูลค่าคาดหวัง) พัดเส้นทาง Time to Target (เวลาแตะเป้า) กฎเดียวสามโลก · stepper การ์ดกติกา", "12, 13, 14"),
         ("sab-tool-fakepair.html", "คู่ปลอมจากการค้น",
-         "ค้นหลายคู่ จัดอันดับด้วยครั้งข้าม ดูช่วงทดสอบ สุ่มชุดใหม่ สวิตช์กรอบรั่ว", "9, 10"),
+         "ค้นหลายคู่ จัดอันดับด้วยครั้งข้าม ดู Test Period (ช่วงทดสอบ) สุ่มชุดใหม่ สวิตช์กรอบรั่ว", "9, 10"),
     ]
     tr = lambda r: (f'<tr><td><a href="{r[0]}"><strong>{r[1]}</strong></a></td><td>{r[2]}</td>'  # noqa: E731
                     f'<td class="nw">บท {r[3]}</td></tr>')
@@ -770,7 +770,7 @@ def hub_body(fig):
 <div class="bx bb"><div class="bt">🧭 วิธีใช้</div>
 <p>ไม่มีบทใดต้องพึ่งเครื่องมือ — ทุกบทลงมือได้ด้วยตารางในบท ใบงาน และแท็บในสมุดงาน
 ส่วนเครื่องมือมีไว้ให้เปลี่ยนตัวเลขเองแล้วดูว่าอะไรขยับ ค่าตั้งต้นทุกหน้าคือตัวเลขของมินในบท และมีป้ายเทา "ในบท" วางข้างตัวเลขสดไว้ให้เทียบ</p>
-<p>ถ้ามีเวลาสิบนาที เริ่มที่ <a href="sab-tool-carry.html">บันได carry</a> เพราะเป็นบันไดที่ทั้งเล่มใช้ซ้ำกับ funding และคู่เหรียญ</p></div>
+<p>ถ้ามีเวลาสิบนาที เริ่มที่ <a href="sab-tool-carry.html">บันได carry</a> เพราะเป็นบันไดของ Carry (ผลตอบแทนจากการถือ) ที่ทั้งเล่มใช้ซ้ำกับ Funding Rate (อัตราค่าธรรมเนียมการถือสถานะ · สัญญา Perpetual) และคู่เหรียญ</p></div>
 
 <h2>เครื่องมือของเล่มนี้</h2>
 <div class="tw"><table class="fit">
@@ -783,14 +783,14 @@ def hub_body(fig):
 <div class="bx bg"><div class="bt">📒 <a href="sab-workbook.xlsx">sab-workbook.xlsx</a></div>
 <p>ทุกช่องเป็นสูตรสด ช่องสีเหลืองคือช่องที่ใส่ค่าเอง และค่าตั้งต้นคือตัวอย่างของมิน</p>
 <ul>
-<li><strong>วิเคราะห์คู่</strong> — วางราคาปิดสองเหรียญ → X · ค่ากลางและระยะแกว่งของช่วงเลือก · z · % วันในกรอบ · ครั้งข้าม · correlation · φ และครึ่งชีวิต · ไม้ตามการ์ดบท 12 (บท 9, 10, 12, 13, 18)</li>
-<li><strong>beta และระยะแกว่ง</strong> — วันที่ BTC ขยับเกิน 2% → beta · exposure สามวิธี · beta เปลี่ยนตอนตลาดลงแรง · ปัด lot (บท 8)</li>
-<li><strong>ต้นทุน</strong> — ต้นทุนไปกลับต่อขาและสองขา (บท 1)</li>
-<li><strong>บัญชีสองขา</strong> — เงินสดอิสระ · มูลค่า spot · หลักประกัน · equity ทีละเหตุการณ์ (บท 3, 4)</li>
-<li><strong>กันชน</strong> — futures ขึ้นได้กี่ % ก่อนเงินสดหมด · ตารางราคาขึ้น 5 / 10 / 15% (บท 4)</li>
+<li><strong>วิเคราะห์คู่</strong> — วางราคาปิดสองเหรียญ → X · Mean (ค่าเฉลี่ย) และ Standard Deviation (ส่วนเบี่ยงเบนมาตรฐาน) ของ Formation Period (ช่วงเลือก) · Z-score (ค่ามาตรฐาน · ระยะห่างเป็นจำนวนส่วนเบี่ยงเบนมาตรฐาน) · % วันในกรอบ · ครั้งข้าม · Correlation (สหสัมพันธ์) · φ และ Half-life (ครึ่งชีวิต · เวลาที่ระยะห่างหดเหลือครึ่ง) · ไม้ตามการ์ดบท 12 (บท 9, 10, 12, 13, 18)</li>
+<li><strong>beta และระยะแกว่ง</strong> — วันที่ BTC ขยับเกิน 2% → Beta (ค่าเบต้า · ความไวต่อตลาด) · Exposure (ความเสี่ยงสุทธิต่อตลาด) สามวิธี · beta เปลี่ยนตอนตลาดลงแรง · ปัดตาม Lot Size (ขนาดสั่งขั้นต่ำ) (บท 8)</li>
+<li><strong>ต้นทุน</strong> — ต้นทุนต่อ Round Trip (การเปิดแล้วปิดหนึ่งครั้ง · ไปกลับ) ต่อขาและสองขา (บท 1)</li>
+<li><strong>บัญชีสองขา</strong> — Free Cash (เงินสดอิสระ) · มูลค่า Spot (ตลาดซื้อขายทันที) · Margin (หลักประกัน) · Equity (มูลค่าบัญชีรวม) ทีละเหตุการณ์ (บท 3, 4)</li>
+<li><strong>กันชน</strong> — Futures (สัญญาซื้อขายล่วงหน้า · มีวันหมดอายุ) ขึ้นได้กี่ % ก่อนเงินสดหมด · ตารางราคาขึ้น 5 / 10 / 15% (บท 4)</li>
 <li><strong>บันได carry</strong> — บันไดสี่ขั้น · บันไดแย่ง · ปิดหรือถือวันที่ N (บท 5, 6)</li>
 <li><strong>funding หลายเส้นทาง</strong> — 90 รอบ สี่เส้นทาง + ช่องของคุณ · กฎติดลบ k รอบ · maker/taker (บท 7)</li>
-<li><strong>ตาราง φ</strong> — φ → ระยะที่เหลือและสุทธิ · ครึ่งชีวิต ↔ φ · หา φ ด้วยการนับมือ (บท 13)</li>
+<li><strong>ตาราง φ</strong> — φ → ระยะที่เหลือและสุทธิ · Half-life ↔ φ · หา φ ด้วยการนับมือ (บท 13)</li>
 </ul></div>
 
 <h2>เครื่องมือจากเล่มอื่นในคลังที่บทชี้ไป</h2>
@@ -812,7 +812,7 @@ def build():
                   ["บัญชีมิน", "ch03", "ch04", "ch05", "ch06"], CARRY_JS),
         tool_page("sab-tool-funding.html", "ลองเอง: funding หลายเส้นทาง", "ลองเอง: funding หลายเส้นทาง",
                   "เครื่องมือประกอบบท 7 · long spot คู่ short perp 30 วัน", FUND_BODY, ["บัญชีมิน", "ch07"], FUND_JS),
-        tool_page("sab-tool-reversion.html", "ลองเอง: แรงดึงกลับ", "ลองเอง: แรงดึงกลับ กลับทันไหม",
+        tool_page("sab-tool-reversion.html", "ลองเอง: Mean Reversion", "ลองเอง: Mean Reversion กลับทันไหม",
                   "เครื่องมือประกอบบท 12–14 · φ แรงสะบัด ต้นทุน ช่วงถือ และการ์ดกติกา", REV_BODY,
                   ["บัญชีมิน", "ch12", "ch13", "ch14"], REV_JS),
         tool_page("sab-tool-fakepair.html", "ลองเอง: คู่ปลอมจากการค้น", "ลองเอง: คู่ปลอมจากการค้น",

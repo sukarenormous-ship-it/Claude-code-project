@@ -66,29 +66,29 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 </style>
 
 <div class="bx bb"><div class="bt">🎯 เครื่องมือนี้ตอบอะไร</div>
-<p>ส่วนต่าง futures กับ spot บนจอดูเหมือนเงินที่รออยู่ แต่กว่าจะถึงมือต้องผ่านสี่ขั้น: หารด้วยทุนทั้งก้อน หักค่าธรรมเนียม หักค่าเสียโอกาส
-แล้วยังต้องเหลือเงินสดพอรับวันที่ราคาวิ่งสวน เครื่องมือนี้ให้คุณเปลี่ยนตัวเลขเองแล้วดูว่าขั้นไหนกินมากที่สุด
-ค่าตั้งต้นคือไม้แรกของมินในบท 4–6 (ตารางคิดที่ 1 BTC) และทุกตัวเลขสดมีป้ายเทา "ในบท" วางข้างกันให้เทียบ</p></div>
+<p>Basis (ส่วนต่างราคา futures กับ spot) บนจอดูเหมือนเงินที่รออยู่ แต่กว่าจะถึงมือต้องผ่านสี่ขั้น: หารด้วยทุนทั้งก้อน หักค่าธรรมเนียม หัก Opportunity Cost (ค่าเสียโอกาส)
+แล้วยังต้องเหลือเงินสดพอรับวันที่ราคาวิ่งสวน เครื่องมือนี้ให้คุณเปลี่ยนตัวเลขเองแล้วดูว่าขั้นไหนกิน Carry (ผลตอบแทนจากการถือ) มากที่สุด</p>
+<p>ค่าตั้งต้นคือไม้แรกของมินในบท 4–6 (ตารางคิดที่ 1 BTC) และทุกตัวเลขสดมีป้ายเทา "ในบท" วางข้างกันให้เทียบ</p></div>
 
 <div class="tool" id="t-ladder">
 <h3>① บันไดสี่ขั้น: จาก % บนจอ ถึงส่วนเกินในมือ</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: % บนจอคิดจากราคา spot ไม่ใช่จากทุนที่คุณต้องวางจริง และยังไม่หักอะไรเลย</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: % บนจอคิดจากราคา Spot (ตลาดซื้อขายทันที) ไม่ใช่จากทุนที่คุณต้องวางจริง และยังไม่หักอะไรเลย</p>
 <div class="ctrl">
 <label for="c-s">ราคา spot ตอนเปิด</label><input type="number" id="c-s" step="100">
-<label for="c-f">ราคา futures ตอนเปิด</label><input type="number" id="c-f" step="100">
+<label for="c-f">ราคา Futures (สัญญาซื้อขายล่วงหน้า · มีวันหมดอายุ) ตอนเปิด</label><input type="number" id="c-f" step="100">
 <label for="c-days">วันถึงหมดอายุ</label><input type="number" id="c-days" step="1" min="1">
-<label for="c-cap">ทุนที่วางทั้งก้อน (spot + หลักประกัน + เงินสดอิสระ)</label><input type="number" id="c-cap" step="1000">
-<label for="c-st">ราคาชำระวันหมดอายุ (ใช้คิดค่าธรรมเนียมขาย spot)</label><input type="number" id="c-st" step="100">
-<label for="c-hur">hurdle ต่อปี (%) — ผลตอบแทนที่ได้แน่ ๆ ถ้าไม่ทำอะไร</label><input type="number" id="c-hur" step="0.5">
+<label for="c-cap">ทุนที่วางทั้งก้อน: spot + Margin (หลักประกัน) + Free Cash (เงินสดอิสระ)</label><input type="number" id="c-cap" step="1000">
+<label for="c-st">Settlement Price (ราคาชำระ) วันหมดอายุ ใช้คิดค่าธรรมเนียมขาย spot</label><input type="number" id="c-st" step="100">
+<label for="c-hur">Hurdle Rate (ผลตอบแทนขั้นต่ำของทุน) ต่อปี (%) — ผลตอบแทนที่ได้แน่ ๆ ถ้าไม่ทำอะไร</label><input type="number" id="c-hur" step="0.5">
 </div>
-<p style="margin-bottom:4px">ค่าธรรมเนียมต่อข้าง</p>
+<p style="margin-bottom:4px">ค่าธรรมเนียมต่อข้าง: Taker Order (คำสั่งซื้อขายทันที) หรือ Maker Order (คำสั่งตั้งรอ)</p>
 <div class="seg" id="c-feeseg"></div>
 <div class="tw"><table>
 <tr><th>ขั้น</th><th>คิดอย่างไร</th><th class="num">% ต่อปี</th></tr>
 <tr><td>① บนจอ</td><td>basis <span class="v" id="c-basis" data-twin="ch05/บันได/basis"></span> ÷ ราคา spot · ปรับเป็นทั้งปี</td><td class="num"><span class="v" id="c-r1" data-twin="ch05/บันได/บนจอ"></span></td></tr>
 <tr><td>② ต่อทุน</td><td>basis ÷ ทุนทั้งก้อน (ไม่ใช่ราคา spot)</td><td class="num"><span class="v" id="c-r2" data-twin="ch05/บันได/ต่อทุน"></span></td></tr>
 <tr><td>③ หลังค่าธรรมเนียม</td><td>หักค่าธรรมเนียมสามครั้ง (ซื้อ spot · short futures · ขาย spot วันหมดอายุ) รวม <span class="v" id="c-fee" data-twin="ch05/บันได/ค่าธรรมเนียม"></span> เหลือ <span class="v" id="c-net" data-twin="ch05/บันได/สุทธิ"></span></td><td class="num"><span class="v" id="c-r3" data-twin="ch05/บันได/หลังค่าธรรมเนียม"></span></td></tr>
-<tr><td>④ ส่วนเกิน</td><td>หักค่าเสียโอกาสของทุนตลอดช่วง <span class="v" id="c-opp" data-twin="ch05/บันได/ค่าเสียโอกาส"></span> เหลือ <span class="v" id="c-exc" data-twin="ch05/บันได/ส่วนเกิน"></span></td><td class="num"><span class="v" id="c-r4" data-twin="ch05/บันได/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
+<tr><td>④ ส่วนเกิน</td><td>หัก Opportunity Cost ของทุนตลอดช่วง <span class="v" id="c-opp" data-twin="ch05/บันได/ค่าเสียโอกาส"></span> เหลือ <span class="v" id="c-exc" data-twin="ch05/บันได/ส่วนเกิน"></span></td><td class="num"><span class="v" id="c-r4" data-twin="ch05/บันได/ส่วนเกินเปอร์เซ็นต์"></span></td></tr>
 </table></div>
 <svg class="chart" id="c-ladsvg" viewBox="0 0 640 230" role="img" aria-label="บันไดสี่ขั้นของ carry"></svg>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · สูตรเดียวกับแท็บ "บันได carry" ในสมุดงาน · ค่าธรรมเนียม futures ตอนชำระไม่มีในตัวอย่างนี้</p>
@@ -96,7 +96,7 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 
 <div class="tool" id="t-hold">
 <h3>② ปิดหรือถือวันที่ N</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ถ้า basis หดเร็ว เงินที่ยังเหลือให้เก็บอาจน้อยกว่าค่าเสียโอกาสของทุนที่ค้างอยู่</p>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ถ้า basis หดเร็ว เงินที่ยังเหลือให้เก็บอาจน้อยกว่า Opportunity Cost ของทุนที่ค้างอยู่</p>
 <div class="ctrl">
 <label for="h-n">วันที่ตัดสิน (นับจากวันเปิด)</label><input type="number" id="h-n" step="1" min="0">
 <label for="h-s">ราคา spot วันนั้น</label><input type="number" id="h-s" step="100">
@@ -109,20 +109,20 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 <tr><td>ค่าธรรมเนียมที่ประหยัดได้ถ้าไม่ปิดตอนนี้ (ปิดสองขา)</td><td class="num"><span class="v" id="h-cf" data-twin="ch06/วันที่30/ค่าธรรมเนียมปิดตอนนี้"></span></td></tr>
 <tr><td>ค่าธรรมเนียมขาย spot ถ้าถือถึงวันหมดอายุ</td><td class="num"><span class="v" id="h-hf" data-twin="ch06/วันที่30/ค่าธรรมเนียมspotถ้าถือ"></span></td></tr>
 <tr><td><strong>ถือต่อได้เพิ่ม</strong></td><td class="num"><span class="v" id="h-extra" data-twin="ch06/วันที่30/ถือได้เพิ่ม"></span></td></tr>
-<tr><td>ค่าเสียโอกาสของทุนในวันที่เหลือ <span id="h-rem"></span> วัน</td><td class="num"><span class="v" id="h-opp" data-twin="ch06/วันที่30/เสียโอกาส60วัน"></span></td></tr>
+<tr><td>Opportunity Cost ของทุนในวันที่เหลือ <span id="h-rem"></span> วัน</td><td class="num"><span class="v" id="h-opp" data-twin="ch06/วันที่30/เสียโอกาส60วัน"></span></td></tr>
 <tr><td><strong>ตัดสิน</strong></td><td class="num"><span class="v key" id="h-dec" data-twin="ch06/วันที่30/ตัดสินที่hurdle4"></span></td></tr>
 <tr><td>hurdle ที่ทำให้ปิดกับถือเท่ากัน (% ต่อปี)</td><td class="num"><span class="v" id="h-sw" data-twin="ch06/วันที่30/จุดเปลี่ยนhurdle"></span></td></tr>
 </table></div>
 <p>ลองเปลี่ยน basis ของวันนั้นทีละขั้น (ราคา spot ตามค่าตั้งต้น · futures = spot + basis):</p>
-<div class="tw"><table id="h-dist"><tr><th class="num">basis วันนั้น</th><th class="num">ถือต่อได้เพิ่ม</th><th class="num">ค่าเสียโอกาส</th><th>ตัดสิน</th></tr></table></div>
+<div class="tw"><table id="h-dist"><tr><th class="num">basis วันนั้น</th><th class="num">ถือต่อได้เพิ่ม</th><th class="num">Opportunity Cost</th><th>ตัดสิน</th></tr></table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ใช้ทุน ค่าธรรมเนียม และวันถึงหมดอายุจากส่วน ①</p>
 </div>
 
 <div class="tool" id="t-pockets">
-<h3>③ สองกระเป๋า และกันชนสะสม</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: กำไรขา spot อยู่ในเหรียญ ใช้จ่ายหลักประกันขา futures ไม่ได้ — เงินสดอิสระคือกันชนเดียวที่มี</p>
+<h3>③ สองกระเป๋า และ Cash Buffer (กันชนเงินสด) สะสม</h3>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: กำไรขา spot อยู่ในเหรียญ ใช้จ่าย Margin ขา futures ไม่ได้ — Free Cash คือกันชนเดียวที่มี</p>
 <div class="ctrl">
-<label for="p-m">หลักประกัน (% ของราคา futures ปัจจุบัน · กติกาสอน)</label><input type="number" id="p-m" step="1" min="1">
+<label for="p-m">Margin (% ของราคา futures ปัจจุบัน · กติกาสอน)</label><input type="number" id="p-m" step="1" min="1">
 <label for="p-x">spot ขึ้นในวันเดียว (%)</label><span class="val" id="p-xv"></span>
 <input type="range" id="p-x" min="0" max="30" step="0.5">
 <label for="p-ba">basis หลังราคาขยับ</label><input type="number" id="p-ba" step="100">
@@ -136,16 +136,16 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 <div><div class="lb">ขาด</div><span class="v" id="p-short" data-twin="ch04/dist/1/ขาดที่ทุน125000"></span></div>
 <div><div class="lb">เงินสดอิสระหลังโอน</div><span class="v" id="p-after" data-twin="ch04/เงินสดอิสระหลังโอน"></span></div>
 <div><div class="lb">กันชนสะสม: วันถัดไปรับได้อีก (%)</div><span class="v" id="p-more" data-twin="ch04/หลังวันแรกรับได้อีก"></span></div>
-<div><div class="lb">equity เปลี่ยน (สองขารวมกัน)</div><span class="v" id="p-eq" data-twin="ch04/equity_เปลี่ยน"></span></div>
+<div><div class="lb">Equity (มูลค่าบัญชีรวม) เปลี่ยน · สองขารวมกัน</div><span class="v" id="p-eq" data-twin="ch04/equity_เปลี่ยน"></span></div>
 </div>
 <svg class="chart" id="p-svg" viewBox="0 0 640 250" role="img" aria-label="สองกระเป๋า: กำไรขา spot กับเงินสดที่ต้องโอนเติม"></svg>
 <svg class="chart" id="p-line" viewBox="0 0 640 250" role="img" aria-label="เงินที่ต้องโอนเติมเทียบเงินสดอิสระเมื่อราคาขึ้นมากขึ้น"></svg>
-<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ต้องโอนเติม = (1 + อัตราหลักประกัน) × (futures ใหม่ − futures เดิม) · ใช้ราคาและทุนจากส่วน ① · ชำระสิ้นวัน</p>
+<p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ต้องโอนเติม = (1 + อัตรา Margin) × (futures ใหม่ − futures เดิม) · ใช้ราคาและทุนจากส่วน ① · ชำระสิ้นวัน</p>
 </div>
 
 <div class="tool" id="t-crowd">
-<h3>④ บันไดแย่ง: basis หดเมื่อคนแห่มาทำแบบเดียวกัน</h3>
-<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ส่วนเกินคือสิ่งที่คนอื่นแย่งได้ ค่าธรรมเนียมกับค่าเสียโอกาสไม่หดตาม</p>
+<h3>④ บันไดแย่ง: basis หดเมื่อเกิด Crowding (การแห่ทำกลยุทธ์เดียวกัน)</h3>
+<p class="whyline">🔩 ทำไมต้องมีเครื่องมือนี้: ส่วนเกินคือสิ่งที่คนอื่นแย่งได้ ค่าธรรมเนียมกับ Opportunity Cost ไม่หดตาม</p>
 <div class="tw"><table id="k-tbl"><tr><th class="num">basis</th><th class="num">① บนจอ</th><th class="num">③ หลังค่าธรรมเนียม</th><th class="num">④ ส่วนเกิน</th></tr></table></div>
 <p>basis ต่ำสุดที่ยังเหลือส่วนเกินมากกว่าศูนย์ (ค่าอื่นตามส่วน ①): <span class="v key" id="k-zero"></span></p>
 <svg class="chart" id="k-svg" viewBox="0 0 640 230" role="img" aria-label="ส่วนเกินเมื่อ basis หด"></svg>
@@ -156,7 +156,7 @@ textarea.path{width:100%;font:inherit;font-variant-numeric:tabular-nums;border:1
 <ul>
 <li>ถ้า ④ ติดลบ แปลว่าเอาเงินไปวางที่ได้ hurdle แน่ ๆ ดีกว่า แม้ ① จะดูสูง</li>
 <li>ทุนมากขึ้นทำให้กันชนหนาขึ้น แต่ ② ③ ④ บางลง — สองกระเป๋ากับบันไดแลกกันเสมอ</li>
-<li>เครื่องมือนี้ไม่ได้บอกกติกาของ exchange ใด ค่าธรรมเนียมและหลักประกันจริงต้องจดจากบัตรตลาดของคุณเอง 📱</li>
+<li>เครื่องมือนี้ไม่ได้บอกกติกาของ exchange ใด ค่าธรรมเนียมและ Margin จริงต้องจดจากบัตรตลาดของคุณเอง 📱</li>
 </ul></div>
 <p>คู่กับเครื่องมือในคลัง: <a href="tool-carry-blowup.html">carry ค่าเงินกับหางที่ระเบิด</a> (เรื่องคนละแบบ — carry ของค่าเงินและความเสี่ยงหาง)</p>
 
