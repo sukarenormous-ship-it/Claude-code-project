@@ -53,7 +53,7 @@ def _cost_roundtrip(fig):
                     f"สองขา × (ส่วนต่าง {B.fmt(-t0['ส่วนต่าง'])} + ค่าธรรมเนียม {B.fmt(-t0['ค่าธรรมเนียมไปกลับ'])}) "
                     f"= {B.fmt(-t0['สองขา'])}", 11, C["purple"], "start", 700))
     lx = L
-    for name, col in (("ส่วนต่างราคาซื้อ-ขาย", C["amber"]), ("ค่าธรรมเนียม", C["red"])):
+    for name, col in (("Bid-Ask Spread", C["amber"]), ("ค่าธรรมเนียม", C["red"])):
         out.append(f'<rect x="{lx}" y="{T - 46}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 36, name, 11.5, C["muted"]))
         lx += 36 + 6.5 * len(name)

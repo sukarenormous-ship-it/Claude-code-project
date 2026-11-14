@@ -13,11 +13,11 @@ def _ledger_bars(fig):
     cap = m["ทุนภาค1"]["รวม"]
     spot, margin, free = m["ทุนภาค1"]["spot"], m["ทุนภาค1"]["หลักประกัน"], m["ทุนภาค1"]["เงินสดอิสระ"]
     w = c3["จอบวกผิด"]
-    seg = {"cash": ("เงินสดอิสระ", C["blue"]), "spot": ("มูลค่า spot", C["grey"]),
-           "margin": ("บัญชีหลักประกัน", C["amber"]), "contract": ("ขนาดสัญญา futures (ไม่ใช่เงิน)", C["red"])}
+    seg = {"cash": ("Free Cash", C["blue"]), "spot": ("มูลค่า spot", C["grey"]),
+           "margin": ("บัญชี Margin", C["amber"]), "contract": ("ขนาดสัญญา futures (ไม่ใช่เงิน)", C["red"])}
     rows = [("เริ่ม", [("cash", cap)]),
             ("ซื้อ spot 1 BTC", [("spot", spot), ("cash", cap - spot)]),
-            ("short futures + วางหลักประกัน", [("spot", spot), ("margin", margin), ("cash", free)]),
+            ("short futures + วาง Margin", [("spot", spot), ("margin", margin), ("cash", free)]),
             ("ยอดที่มินบวกจากหน้าจอ", [("spot", w["spot"]), ("contract", w["ขนาดสัญญาfutures"]), ("cash", w["เงินสดอิสระ"])])]
     W, H = 760, 352
     L, R, T = 210, 30, 92
@@ -65,9 +65,9 @@ def _ledger_bars(fig):
     out.append(text(16, T - 70, f"เงินแค่ย้ายช่อง ยอดรวมจึงเท่าเดิม — ยอด {B.fmt(w['รวมผิด'])} มาจากการนับสัญญาเป็นเงิน",
                     13, C["ink"], weight=700))
     alt = (f"แท่งนอนสี่แถว สามแถวแรกยาวเท่ากันที่ {B.fmt(cap)} เงินสดย้ายไปเป็นมูลค่า spot {B.fmt(spot)} "
-           f"บัญชีหลักประกัน {B.fmt(margin)} และเหลือเงินสดอิสระ {B.fmt(free)} แถวสุดท้ายคือยอดที่มินบวกจากหน้าจอ "
+           f"บัญชี Margin {B.fmt(margin)} และเหลือ Free Cash {B.fmt(free)} แถวสุดท้ายคือยอดที่มินบวกจากหน้าจอ "
            f"{B.fmt(w['รวมผิด'])} เพราะนับขนาดสัญญา futures {B.fmt(w['ขนาดสัญญาfutures'])} เป็นเงิน")
     cap_txt = (f"คิดที่ 1 BTC (ของมิน ÷ 100) · ยังไม่หักค่าธรรมเนียม · ยอดที่บวกผิดเกินจริง {B.fmt(w['เกินจริง'])} "
-               f"= ขนาดสัญญา {B.fmt(w['ขนาดสัญญาfutures'])} − เงินจริงในบัญชีหลักประกัน {B.fmt(margin)}")
+               f"= ขนาดสัญญา {B.fmt(w['ขนาดสัญญาfutures'])} − เงินจริงในบัญชี Margin {B.fmt(margin)}")
     return wrap(W, H, alt, out, cap_txt, "สอน")
 
