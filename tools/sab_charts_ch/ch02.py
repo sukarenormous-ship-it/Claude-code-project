@@ -34,7 +34,7 @@ def _tail(fig):
     out.append(f'<line x1="{X(0):.1f}" y1="{Y(0):.1f}" x2="{X(n):.1f}" y2="{Y(ev_n):.1f}" stroke="{C["grey"]}" '
                f'stroke-dasharray="6 4" stroke-width="2"/>')
     out.append(f'<circle cx="{X(n):.1f}" cy="{Y(n):.1f}" r="4.5" fill="{C["purple"]}"/>')
-    out.append(text(X(n) - 8, Y(n) - 10, f"หน้าจอ +{B.fmt(t['ถ้าไม่เห็นวันเสีย50รอบ'])}", 11.5, C["purple"], "end", 700))
+    out.append(text(X(n) - 8, Y(n) - 10, f"หน้าจอ +{B.fmt(t['ถ้าไม่เห็นวันเสีย50รอบ'])}", 11.5, C["green"], "end", 700))
     out.append(text(X(n) - 8, Y(ev_n) + 18, f"ค่าคาดหมาย {B.fmt(ev_n)}", 11.5, C["muted"], "end", 700))
     out.append(f'<circle cx="{X(n + 1):.1f}" cy="{Y(after):.1f}" r="4" fill="{C["red"]}"/>')
     out.append(text(X(n + 1) - 10, Y(after) + 4, f"รอบที่ {n + 1} เสีย {B.fmt(t['เสีย'])} → {B.fmt(after)}", 11, C["red"], "end", 700))
