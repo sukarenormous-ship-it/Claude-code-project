@@ -38,13 +38,13 @@ def _corr_vs_rope(fig):
     lo, hi = min(ticks[0], min(allv)), max(ticks[-1], max(allv))
     W, H = 760, 470
     L, R = 64, 24
-    p = [text(L, 26, "correlation สูงกว่า แต่ระยะห่างเดินออกไปไม่กลับ", 13, INK, weight=700)]
+    p = [text(L, 26, "Correlation สูงกว่า แต่ระยะห่างเดินออกไปไม่กลับ", 13, INK, weight=700)]
     panels = [("ไม่มีเชือก", "คู่ไม่มีเชือก", NOROPE, 52), ("มีเชือก", "คู่มีเชือก", ROPE, 262)]
     for key, name, col, top in panels:
         y0, y1 = top + 34, top + 180
         ex, avg = c9["คู่ตัวอย่าง"][key], c9[key]
         p.append(f'<rect x="8" y="{top}" width="{W - 16}" height="196" rx="10" fill="#fafafa" stroke="{C["grid"]}"/>')
-        p.append(text(24, top + 22, f"{name} · correlation คู่ตัวอย่าง {ex['corr']:.2f} · เฉลี่ย 200 คู่ {avg['corr']:.2f}",
+        p.append(text(24, top + 22, f"{name} · Correlation คู่ตัวอย่าง {ex['corr']:.2f} · เฉลี่ย 200 คู่ {avg['corr']:.2f}",
                       12.5, col, weight=700))
         Y = lambda v: y1 - (v - lo) / (hi - lo) * (y1 - y0)  # noqa: E731
         for t in ticks:
@@ -56,12 +56,12 @@ def _corr_vs_rope(fig):
         p.append(f'<line x1="{xd:.1f}" y1="{y0 - 6}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
         line, _, _ = _panel(pctd[key], L, W - R, y0, y1, lo, hi, col)
         p.append(line)
-        p.append(text(W - R - 6, y0 + 8, f"ช่วงทดสอบอยู่ในกรอบ {B.fmt(ex['ในกรอบ'])}%", 11.5, C["purple"], "end", 700))
-    p.append(text((L + W - R) / 2 - 150, H - 14, "← ช่วงเลือก 250 วัน", 11, MUTED, "middle"))
-    p.append(text((L + W - R) / 2 + 150, H - 14, "ช่วงทดสอบ 250 วัน →", 11, MUTED, "middle"))
-    alt = (f"กราฟสองแผง ระยะห่างของ A เทียบ B ตลอด {ndays} วัน คู่ไม่มีเชือก correlation {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['corr'])} "
-           f"ระยะห่างเดินขึ้นไปเรื่อย ๆ ช่วงทดสอบอยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['ในกรอบ'])}% "
-           f"คู่มีเชือก correlation {B.fmt(c9['คู่ตัวอย่าง']['มีเชือก']['corr'])} แกว่งแรงกว่าแต่กลับมารอบศูนย์ "
+        p.append(text(W - R - 6, y0 + 8, f"Test Period อยู่ในกรอบ {B.fmt(ex['ในกรอบ'])}%", 11.5, C["purple"], "end", 700))
+    p.append(text((L + W - R) / 2 - 150, H - 14, "← Formation Period 250 วัน", 11, MUTED, "middle"))
+    p.append(text((L + W - R) / 2 + 150, H - 14, "Test Period 250 วัน →", 11, MUTED, "middle"))
+    alt = (f"กราฟสองแผง ระยะห่างของ A เทียบ B ตลอด {ndays} วัน คู่ไม่มีเชือก Correlation {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['corr'])} "
+           f"ระยะห่างเดินขึ้นไปเรื่อย ๆ Test Period อยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['ในกรอบ'])}% "
+           f"คู่มีเชือก Correlation {B.fmt(c9['คู่ตัวอย่าง']['มีเชือก']['corr'])} แกว่งแรงกว่าแต่กลับมารอบศูนย์ "
            f"อยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['มีเชือก']['ในกรอบ'])}%")
     cap = "แกนตั้ง = A ห่างจาก B กี่ % นับจากวันแรก · คู่ตัวอย่างที่ใกล้ค่าเฉลี่ยของแบบ"
     return wrap(W, H, alt, p, cap, "จำลอง")
@@ -83,15 +83,15 @@ def _formation_test(fig):
     X = lambda i: L + i / (len(z) - 1) * (W - R - L)  # noqa: E731
     Y = lambda v: y1 - (v - lo) / (hi - lo) * (y1 - y0)  # noqa: E731
     xd = X(nf - 1)
-    p = [text(L, 22, "ไม้บรรทัดจากช่วงเลือก ตรึงไว้วัดช่วงทดสอบ", 13, INK, weight=700),
+    p = [text(L, 22, "ไม้บรรทัดจาก Formation Period ตรึงไว้วัด Test Period", 13, INK, weight=700),
          f'<rect x="{L}" y="{y0}" width="{xd - L:.1f}" height="{y1 - y0}" fill="{C["purple"]}" fill-opacity=".05"/>']
     for k in (-2, -1, 0, 1, 2):
         col = C["axis"] if k == 0 else (C["purple"] if abs(k) == 2 else C["grey"])
         dash = "" if k == 0 else ' stroke-dasharray="5 4"'
         p.append(f'<line x1="{L}" y1="{Y(k):.1f}" x2="{W - R}" y2="{Y(k):.1f}" stroke="{col}" stroke-width="1.3"{dash}/>')
         p.append(text(L - 8, Y(k) + 4, ("+" if k > 0 else "") + B.fmt(k), 10.5, col, "end"))
-    p.append(text(L + 6, Y(2) - 6, "+2 ระยะแกว่ง", 10.5, C["purple"], "start", 700))
-    p.append(text(W - R - 4, Y(0) - 6, "ค่ากลาง", 10.5, MUTED, "end"))
+    p.append(text(L + 6, Y(2) - 6, "+2 Standard Deviation", 10.5, C["purple"], "start", 700))
+    p.append(text(W - R - 4, Y(0) - 6, "Mean", 10.5, MUTED, "end"))
     pts = [(X(i), Y(v)) for i, v in enumerate(z)]
     p.append(f'<polyline points="{_poly(pts[:nf])}" fill="none" stroke="{NOROPE}" stroke-width="1.8"/>')
     p.append(f'<polyline points="{_poly(pts[nf - 1:])}" fill="none" stroke="{NOROPE}" stroke-width="1.8" stroke-opacity=".55"/>')
@@ -99,15 +99,15 @@ def _formation_test(fig):
         if abs(z[i]) > 2:
             p.append(f'<circle cx="{pts[i][0]:.1f}" cy="{pts[i][1]:.1f}" r="1.9" fill="{C["red"]}"/>')
     p.append(f'<line x1="{xd:.1f}" y1="{y0 - 8}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
-    p.append(text(L + 8, Y(-2.55), f"ช่วงเลือก: ใน ±1 {B.fmt(st['ช่วงเลือกในหนึ่งระยะ'])}% · ±2 {B.fmt(st['ช่วงเลือกในสองระยะ'])}%",
+    p.append(text(L + 8, Y(-2.55), f"Formation Period: ใน ±1 {B.fmt(st['ช่วงเลือกในหนึ่งระยะ'])}% · ±2 {B.fmt(st['ช่วงเลือกในสองระยะ'])}%",
                   11.5, C["purple"], weight=700))
-    p.append(text(xd + 10, Y(-2.55), f"ช่วงทดสอบ: ใน ±2 แค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% · จุดแดง = หลุดกรอบ",
+    p.append(text(xd + 10, Y(-2.55), f"Test Period: ใน ±2 แค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% · จุดแดง = หลุดกรอบ",
                   11.5, C["red"], weight=700))
     p.append(text(xd, y1 + 22, f"วันที่ {B.fmt(nf)}", 10.5, C["grey"], "middle"))
     p.append(text(W - R, y1 + 22, f"วันที่ {B.fmt(c9['จำลอง']['วัน'])}", 10.5, C["grey"], "end"))
-    p.append(text(L - 44, y0 - 10, "z", 11, MUTED))
-    alt = (f"กราฟเส้นระยะห่างของคู่ไม่มีเชือกในหน่วยระยะแกว่ง ช่วงเลือกอยู่ในกรอบ ±2 ราว {B.fmt(st['ช่วงเลือกในสองระยะ'])}% "
-           f"แต่ในช่วงทดสอบอยู่ในกรอบเดิมแค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% และหลุดกรอบเป็นช่วงยาว")
+    p.append(text(L - 44, y0 - 10, "Z-score", 11, MUTED))
+    alt = (f"กราฟเส้นระยะห่างของคู่ไม่มีเชือกในหน่วย Standard Deviation ช่วง Formation Period อยู่ในกรอบ ±2 ราว {B.fmt(st['ช่วงเลือกในสองระยะ'])}% "
+           f"แต่ใน Test Period อยู่ในกรอบเดิมแค่ {B.fmt(st['ช่วงทดสอบในสองระยะ'])}% และหลุดกรอบเป็นช่วงยาว")
     cap = "คู่ไม่มีเชือกตัวอย่างเดียวกับภาพบน"
     return wrap(W, H, alt, p, cap, "จำลอง")
 
@@ -178,5 +178,5 @@ def _rope_types(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่�
         p.append(text(xr, y + 64, fail, 14.5, C["red"]))
     alt = ("ผังบันไดเชือกสี่ขั้นจากผูกแน่นลงไปหลวม โซ่ที่มีวันล็อก เชือกที่มีคนคอยดึง ยางยืด และเส้นที่วาดเอง "
            "แต่ละขั้นบอกว่าอะไรดึงสองราคากลับ และพังเมื่อไร")
-    cap = "บนผูกแน่น ล่างต้องพึ่งข้อมูลที่ไม่ได้ใช้เลือกคู่ · perp (บท 7) คือเชือกไม่มีวันล็อกที่มีค่าดึงทุกรอบ"
+    cap = "บนผูกแน่น ล่างต้องพึ่งข้อมูลที่ไม่ได้ใช้เลือกคู่ · perp หรือ Perpetual Futures (สัญญาล่วงหน้าแบบไม่มีวันหมดอายุ) จากบท 7 คือเชือกไม่มีวันล็อกที่มีค่าดึงทุกรอบ"
     return wrap(W, H, alt, p, cap, "แนวคิด", narrow=True)

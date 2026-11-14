@@ -391,18 +391,18 @@ def _selection_bias(fig):
     a1 = fig["ch10"]["อันดับ1"]
     lo_day = nf + a1["วันทดสอบที่ต่ำสุด"]
     parts = lines(xs, [("คู่อันดับ 1 จาก 200 คู่ (ไม่มีเชือก)", top, C["red"]), ("คู่ที่มีเชือกจริง", real, C["green"])],
-                  "สวยที่สุดในช่วงเลือก — แล้วหลุดในช่วงทดสอบ", xlabel="วัน (ช่วงเลือก | ช่วงทดสอบ)",
-                  marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} ระยะแกว่ง")], every=2,
+                  "สวยที่สุดใน Formation Period — แล้วหลุดใน Test Period", xlabel="วัน (Formation Period | Test Period)",
+                  marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} Standard Deviation")], every=2,
                   xticks=[(1, "วันที่ 1"), (nf, f"วันที่ {B.fmt(nf)}"), (len(top), f"วันที่ {B.fmt(s['วันทั้งหมด'])}")])
     f = Frame(min(top + real), max(top + real), 760, 320)
     X = lambda x: f.L + (x - 1) / (len(top) - 1) * (760 - f.L - f.R)  # noqa: E731
     for lvl in (2, -2):
         parts.append(f'<line x1="{f.L}" y1="{f.y(lvl):.1f}" x2="{760 - f.R}" y2="{f.y(lvl):.1f}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
     parts.append(f'<line x1="{X(nf):.1f}" y1="{f.T}" x2="{X(nf):.1f}" y2="{f.Bm}" stroke="{C["purple"]}" stroke-width="1.5"/>')
-    parts.append(text(X(nf) + 6, f.Bm - 6, "เริ่มช่วงทดสอบ", 11, C["purple"], weight=700))
-    alt = "กราฟเส้นสองเส้น คู่ที่คัดได้อันดับ 1 อยู่ในกรอบช่วงเลือก แล้วหลุดลงถึงราว −4.85 ในช่วงทดสอบ ส่วนคู่ที่มีเชือกอยู่ในกรอบ"
-    cap = (f"ค้น {s['คู่ที่ค้น']} คู่ที่ไม่มีเชือก แล้วเลือกคู่ที่ข้ามค่ากลางบ่อยสุดในช่วงเลือก {nf} วัน · "
-           "เทียบกับคู่มีเชือกที่สร้างแยก · เส้นประ = กรอบ ±2 ระยะแกว่ง")
+    parts.append(text(X(nf) + 6, f.Bm - 6, "เริ่ม Test Period", 11, C["purple"], weight=700))
+    alt = "กราฟเส้นสองเส้น คู่ที่คัดได้อันดับ 1 อยู่ในกรอบตลอด Formation Period แล้วหลุดลงถึงราว −4.85 ใน Test Period ส่วนคู่ที่มีเชือกอยู่ในกรอบ"
+    cap = (f"ค้น {s['คู่ที่ค้น']} คู่ที่ไม่มีเชือก แล้วเลือกคู่ที่ข้าม Mean บ่อยสุดใน Formation Period {nf} วัน · "
+           "เทียบกับคู่มีเชือกที่สร้างแยก · เส้นประ = กรอบ ±2 Standard Deviation")
     return wrap(760, 320, alt, parts, cap, "จำลอง")
 
 
@@ -414,7 +414,7 @@ def _seed_spread(fig):
     parts, H = range_rows([(n, v["ต่ำสุด"], v["มัธยฐาน"], v["สูงสุด"], v["ตัวอย่าง"], c) for n, v, c in rows],
                           f"สุ่มใหม่ {r['ในกรอบ']['จำนวนseed']} ชุด: ตัวอย่างในเล่มอยู่ฝั่งที่ดูดีของช่วง", unit="%")
     alt = "แถบช่วงของสัดส่วนวันในกรอบข้าม 30 ชุดสุ่ม คู่ที่คัดกระจาย 18 ถึง 63 เปอร์เซ็นต์ คู่ที่มีเชือกอยู่ราว 89 ถึง 95"
-    cap = f"ตัวอย่างในเล่ม {B.fmt(r['ในกรอบ']['ตัวอย่าง'])}% แต่มัธยฐานข้ามชุดคือ {B.fmt(r['ในกรอบ']['มัธยฐาน'])}%"
+    cap = f"ตัวอย่างในเล่ม {B.fmt(r['ในกรอบ']['ตัวอย่าง'])}% แต่ Median ข้ามชุดคือ {B.fmt(r['ในกรอบ']['มัธยฐาน'])}%"
     return wrap(760, H, alt, parts, cap, "จำลอง")
 
 

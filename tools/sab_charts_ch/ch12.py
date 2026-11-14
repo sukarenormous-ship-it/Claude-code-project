@@ -85,7 +85,7 @@ def _pair_strip(fig):
     out = [text(16, 24, "แถบผล: การ์ดเดียวกัน 20 ไม้ ในสองโลก", 14, C["ink"], weight=700)]
     for j, name in enumerate(("หลัก", "เทียบ")):
         m = mix[name]["สัดส่วน"]
-        title = f"โลก {m[0]}/{m[1]}/{m[2]} · ค่าคาดหมาย {_sign(mix[name]['ค่าคาดหมาย'])} ต่อไม้"
+        title = f"โลก {m[0]}/{m[1]}/{m[2]} · Expected Value {_sign(mix[name]['ค่าคาดหมาย'])} ต่อไม้"
         parts = slip_strip(s[name]["ลำดับ"], title, W=W, H=h1)
         out.append(f'<g transform="translate(0,{36 + j * (h1 + 10)})">' + "\n".join(parts) + "</g>")
     H = 36 + 2 * (h1 + 10)

@@ -96,7 +96,7 @@ def _moving_mean(fig):
     out = [text(16, 26, f"ระยะหด {B.fmt(gap[0])} → {B.fmt(gap[-1])} แต่กำไร {B.fmt(pnl)}",
                 13, C["ink"], weight=700)]
     hi = max(xs + mu + gap) * 1.2
-    for p, (title, kind) in enumerate((("X กับค่ากลาง", "line"), ("ระยะห่าง", "bar"), ("กำไรของที่ถือ", "pnl"))):
+    for p, (title, kind) in enumerate((("X กับ Mean", "line"), ("ระยะห่าง", "bar"), ("กำไรของที่ถือ", "pnl"))):
         L = 40 + p * (pw + gapw)
         Rr = L + pw
         out.append(text(L, T - 22, title, 12, C["ink"], weight=700))
@@ -114,7 +114,7 @@ def _moving_mean(fig):
                 out.append(text(X(i) + (8 if i == 0 else 0), Y(v) + (4 if i == 0 else 18), B.fmt(v), 11, C["amber"],
                                 "start" if i == 0 else "middle", 700))
             out.append(text(X(0), Y(xs[0]) - 8, f"X = {B.fmt(xs[0])}", 11, C["blue"], "start", 700))
-            out.append(text(X(len(xs) - 1), Y(mu[1]) + 4 + 30, "ค่ากลาง", 10.5, C["amber"], "end"))
+            out.append(text(X(len(xs) - 1), Y(mu[1]) + 4 + 30, "Mean", 10.5, C["amber"], "end"))
         elif kind == "bar":
             for i, v in enumerate(gap):
                 out.append(f'<rect x="{X(i) - 18:.1f}" y="{Y(v):.1f}" width="36" height="{max(1, Y(0) - Y(v)):.1f}" rx="3" '
@@ -130,7 +130,7 @@ def _moving_mean(fig):
             out.append(text(L + pw / 2, Y(pnl) - 33, f"{B.fmt(pnl)} ทุกช่วง", 12.5, C["purple"], "middle", 700))
         for i in range(len(xs)):
             out.append(text(X(i), Bm + 18, f"ช่วง {i + 1}", 10.5, C["grey"], "middle"))
-    alt = (f"สามแผง แผงแรก X คงที่ {B.fmt(xs[0])} ขณะค่ากลางเลื่อน {B.fmt(mu[0])} {B.fmt(mu[1])} {B.fmt(mu[2])} "
+    alt = (f"สามแผง แผงแรก X คงที่ {B.fmt(xs[0])} ขณะ Mean เลื่อน {B.fmt(mu[0])} {B.fmt(mu[1])} {B.fmt(mu[2])} "
            f"แผงสองระยะห่าง {B.fmt(gap[0])} {B.fmt(gap[1])} {B.fmt(gap[2])} แผงสามกำไรของที่ถือเป็น {B.fmt(pnl)} ทุกช่วง")
     cap = "แผงขวาเป็นแผงเดียวที่เป็นเงิน"
     return wrap(W, H, alt, out, cap, "สอน")

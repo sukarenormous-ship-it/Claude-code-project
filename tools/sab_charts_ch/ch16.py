@@ -41,10 +41,10 @@ def _fill_timeline(fig):
         out.append(text(X(i), f.Bm + 20, r["จังหวะ"], 11.5, C["ink"], "middle", 700))
         out.append(text(X(i), f.Bm + 38, f"A {B.fmt(r['Aได้'])} · B {B.fmt(r['Bได้'])}", 11, C["muted"], "middle"))
     out.append(text(X(2) + 12, f.y(tilt) + 24, f"เอียง long {B.fmt(tilt)}", 12.5, C["purple"], "start", 700))
-    out.append(text(f.L, 26, f"มูลค่าที่ถือสุทธิ (long − short) · เป้า A 10 กับ B {B.fmt(tgtB)}", 13.5, C["ink"], weight=700))
-    alt = (f"เส้นขั้นบันไดของมูลค่าสุทธิที่ถือ: ส่งคำสั่ง 0 · A ได้ครบ {B.fmt(ys[1])} · B ได้ −8 จาก {B.fmt(tgtB)} "
+    out.append(text(f.L, 26, f"Net Exposure (long − short) · เป้า A 10 กับ B {B.fmt(tgtB)}", 13.5, C["ink"], weight=700))
+    alt = (f"เส้นขั้นบันไดของ Net Exposure: ส่งคำสั่ง 0 · A ได้ครบ {B.fmt(ys[1])} · B ได้ −8 จาก {B.fmt(tgtB)} "
            f"เหลือ {B.fmt(ys[2])} · ครบเวลารอยังค้าง {B.fmt(ys[3])} ขณะที่เป้าคือ 0")
-    cap = "แกนตั้ง = มูลค่าที่ถือสุทธิ (ดอลลาร์) · ของเข้าบัญชีทีละขาตามที่ได้จริง"
+    cap = "แกนตั้ง = Net Exposure (ดอลลาร์)"
     return wrap(W, H, alt, out, cap, "สอน")
 
 
@@ -83,10 +83,10 @@ def _capacity_curve(fig):
     for x in (1000, 5000, 10000, 20000):
         out.append(text(X(x), f.Bm + 18, B.fmt(x), 11, C["grey"], "middle"))
     out.append(text((f.L + W - f.R) / 2, f.Bm + 40, "ขนาดต่อขา (ดอลลาร์)", 12, C["muted"], "middle"))
-    out.append(text(f.L, 26, "ค่าคาดหมายต่อไม้ เมื่อขยายขนาด (กระดานเดิม)", 13.5, C["ink"], weight=700))
-    alt = (f"เส้นค่าคาดหมายต่อไม้ตามขนาดต่อขา: 1,000 ได้ {_sign(small['ต่อรอบ'])} · สูงสุดที่ "
+    out.append(text(f.L, 26, "Expected Value ต่อไม้ เมื่อขยายขนาด (Order Book เดิม)", 13.5, C["ink"], weight=700))
+    alt = (f"เส้น Expected Value ต่อไม้ตามขนาดต่อขา: 1,000 ได้ {_sign(small['ต่อรอบ'])} · สูงสุดที่ "
            f"{B.fmt(peak['ขนาดต่อขา'])} ได้ {_sign(peak['ต่อรอบ'])} · 10,000 เหลือ {_sign(ten['ต่อรอบ'])} · "
            f"20,000 ติดลบ {_sign(last['ต่อรอบ'])}")
-    cap = ("หัก taker 0.05% ทุกครั้งและราคาเฉลี่ยจากกระดานสมมติ · "
+    cap = ("หัก taker 0.05% ทุกครั้งและราคาเฉลี่ยจาก Order Book สมมติ · "
            "เส้นประ = คูณตามขนาด")
     return wrap(W, H, alt, out, cap, "สอน")
