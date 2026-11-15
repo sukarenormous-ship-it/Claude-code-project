@@ -2,6 +2,7 @@
 
 sab-cases-venues : เคส 1 · มูลค่าบัญชีของสองแห่งทีละรอบ เทียบระดับรักษาหลักประกัน (แห่ง short หลุดรอบ 3)
 sab-cases-ruler  : เคส 3 · X ค้างที่ 2 แต่ Mean แบบเลื่อนไล่ขึ้น · Z-score แบบเลื่อนลงถึงเส้นออก ส่วน Z-score ที่ตรึงไว้อยู่ที่ 2
+sab-cases-stop   : เคส 4 · ที่ถือ (ทึบ) กับที่ค้าง (จาง) ของขา A และ B ห้าจังหวะ · ที่ค้างหายไปแต่ที่ถือยังเหลือ A 4 · B −10
 แกนทุกแกนใช้ค่าจาก JSON (ไม่ใช้ nice_ticks) เพื่อให้ป้ายแกนไม่กลายเป็นเลขลอย
 """
 
@@ -116,7 +117,7 @@ def _ruler(fig):
     for i, v in rz:
         p.append(f'<circle cx="{X2(i):.1f}" cy="{Y(v):.1f}" r="4" fill="{C["amber"]}"/>')
         p.append(text(X2(i) + 7, Y(v) - 7, B.fmt(v), 10.5, C["amber"], "start", 700))
-    p.append(text(X2(m - 1), Y(lo) - 8, "หารด้วย 0 ไม่ได้", 10, C["muted"], "middle"))
+    p.append(text(x1, Y(lo) - 8, "หารด้วย 0 ไม่ได้", 10, C["muted"], "end"))
     for i, d in enumerate(ds):
         p.append(text(X2(i), Bm + 18, f"วัน {d['วัน']}", 10, C["grey"], "middle"))
     p += _legend(40, 300 + 10, [("X", C["blue"], "line"), ("ไม้บรรทัดตรึง (Mean และ Z-score)", C["purple"], "dash"),
@@ -126,3 +127,44 @@ def _ruler(fig):
            f"Z-score แบบเลื่อนลง {', '.join(B.fmt(d['Z']) for d in ds if d['Z'] is not None)} ถึงเส้นออกในวันที่ 2")
     cap = f"ถือ short X {c['ชุด']} ชุด · ไม้บรรทัดเลื่อนใช้ X {c['หน้าต่าง']} วันล่าสุดรวมวันนี้ · ไม้บรรทัดตรึงคือ Mean {B.fmt(c['Meanตรึง'])} กับ SD {B.fmt(c['SDตรึง'])}"
     return wrap(W, H + 20, alt, p, cap, "สอน")
+
+
+@chart("sab-cases-stop")
+def _stop(fig):
+    """เคส 4 · ห้าจังหวะแรกของสมุด: ต่อจังหวะมีสองขา (A น้ำเงิน · B ส้ม) · แท่งทึบ = ที่ถือ · แท่งจางเส้นประ = ที่ค้าง (ทิศตรงข้าม)
+    สี่จังหวะแรก ที่ถือ + ที่ค้าง = 0 (ค้างจะปิดให้เอง) · จังหวะสุดท้ายที่ค้างหายไป เหลือ A 4 กับ B −10 ที่ยังถือ"""
+    c = fig["cases"]["c4"]
+    rows = c["สมุด"][:5]
+    names = [("วางคำสั่งปิด", "ตั้งรอทั้งสองขา"), ("ได้ขาย A 6", ""), ("ได้ซื้อคืน B 8", ""), ("กดหยุด", "ได้ B เพิ่ม 2"),
+             ("แอปยืนยัน", "ยกเลิกที่ค้างหมด")]
+    W, H, L, R, T, Bm = 760, 360, 64, 24, 84, 280
+    lim = max(abs(c["Bเริ่ม"]), abs(c["Aเริ่ม"])) + 2
+    Y = lambda v: (T + Bm) / 2 - v / lim * (Bm - T) / 2  # noqa: E731
+    gw = (W - L - R) / len(rows)
+    bw = 26
+    out = [text(16, 24, f"ที่ค้างหายไปหมด แต่ที่ถือยังอยู่: A {B.fmt(rows[-1]['A'])} กับ B {B.fmt(rows[-1]['B'])}", 13.5, C["ink"], weight=700)]
+    out += _legend(16, 56, [("A ที่ถือ", LONG, "box"), ("B ที่ถือ", SHORT, "box"), ("แท่งจางเส้นประ = คำสั่งที่ค้าง", MM, "dash")])
+    for v in (c["Bเริ่ม"], -c["Aเริ่ม"], 0, c["Aเริ่ม"], -c["Bเริ่ม"]):
+        out.append(f'<line x1="{L}" y1="{Y(v):.1f}" x2="{W - R}" y2="{Y(v):.1f}" stroke="{C["axis"] if v == 0 else C["grid"]}" '
+                   f'stroke-width="{1.5 if v == 0 else 1}"/>')
+        out.append(text(L - 8, Y(v) + 4, B.fmt(v), 10.5, C["grey"], "end"))
+    for i, (r, (n1, n2)) in enumerate(zip(rows, names)):
+        cx = L + gw * i + gw / 2
+        for j, (held, pend, col) in enumerate(((r["A"], r["ค้างA"], LONG), (r["B"], r["ค้างB"], SHORT))):
+            x = cx - bw - 3 + j * (bw + 6)
+            out.append(f'<rect x="{x:.1f}" y="{min(Y(0), Y(held)):.1f}" width="{bw}" height="{abs(Y(held) - Y(0)):.1f}" fill="{col}"/>')
+            out.append(text(x + bw / 2, Y(held) + (-6 if held > 0 else 14), B.fmt(held), 10.5, col, "middle", 700))
+            if pend:
+                out.append(f'<rect x="{x:.1f}" y="{min(Y(0), Y(pend)):.1f}" width="{bw}" height="{abs(Y(pend) - Y(0)):.1f}" '
+                           f'fill="{col}" fill-opacity=".15" stroke="{col}" stroke-dasharray="4 3"/>')
+        last = i == len(rows) - 1
+        out.append(text(cx, Bm + 24, n1, 11.5, C["ink"], "middle", 700))
+        if n2:
+            out.append(text(cx, Bm + 39, n2, 10.5, C["muted"], "middle"))
+        tag = "ยังเปิดอยู่" if last else "ถือ + ค้าง = 0"
+        out.append(text(cx, Bm + 58, tag, 11, C["red"] if last else C["green"], "middle", 700))
+    alt = ("ห้ากลุ่มแท่ง แต่ละกลุ่มมีขา A และขา B แท่งทึบคือจำนวนที่ถือ แท่งจางคือคำสั่งที่ค้าง "
+           + " · ".join(f"A {B.fmt(r['A'])} ค้าง {B.fmt(r['ค้างA'])} B {B.fmt(r['B'])} ค้าง {B.fmt(r['ค้างB'])}" for r in rows)
+           + " กลุ่มสุดท้ายไม่มีที่ค้าง เหลือที่ถือ")
+    cap = f"แกนตั้ง = จำนวนเหรียญ · เป้าของทั้งสองขาคือ 0 · A ราคา {B.fmt(c['ราคาA'])} · B ราคา {B.fmt(c['ราคาB'])} · ค้าง = จำนวนที่คำสั่งตั้งรอจะซื้อขายถ้ามีคนชน"
+    return wrap(W, H, alt, out, cap, "สอน")

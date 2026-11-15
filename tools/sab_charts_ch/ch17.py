@@ -5,6 +5,7 @@ sab-shape-gallery (★): แถบผลสี่กลยุทธ์ (slip_str
     คู่ A–B 20 ไม้ (60/25/15) · ให้สภาพคล่อง 20 ครั้ง (+20 · ได้ขาเดียว −40 ที่ 1 BTC · ร่าง)
 sab-drawdown (★): สองแผง — บน: ยอดสะสม 100 ไม้ของการ์ดคู่ · ล่าง: ระยะใต้ยอดเดิม (underwater)
     callout ลึกสุด −55 และนานสุด 14 ไม้ (ช่วงเดียวกัน ไม้ 78 → 93 · ฐานต้นทุนเดียว ch17.v2)
+sab-crowded-unwind (v2): X ของ short 10 ชุด 2.1 → 3.7 (เลยเส้นงบ · ปิด −18) → 0.4 (ถ้ายังถือ +15) · ch17.v2.แห่ปิด
 """
 from sab_charts import chart, wrap, text, slip_strip, C, B
 
@@ -22,7 +23,7 @@ def _shape_gallery(fig):
     r6 = fig["ch06"]["รอบชดเชย"]
     lp = fig["ch17"]["v2"]["บัตร4"]
     rows = [
-        ("carry", f"carry · รอบละ {sg(r6['กำไรต่อรอบ'])} · เสีย {B.fmt(-g['carry']['เสีย'])} ครั้งเดียว"),
+        ("carry", f"carry · รอบละ {sg(r6['กำไรต่อรอบ'])} · เสีย {B.fmt(g['carry']['เสีย'])} ครั้งเดียว (เหรียญนอก exchange)"),
         ("funding", f"funding carry · {g['funding']['รอบบวก']} รอบ +10 แล้วกลับขั้ว {g['funding']['รอบลบ']} รอบ −10"),
         ("คู่", f"คู่ A–B · {sg(rr[0])} / {sg(rr[1])} / {B.fmt(rr[2])}"),
         ("สภาพคล่อง", f"ให้ Liquidity (ร่าง) · {sg(lp['ได้สองฝั่ง'])} / ได้ขาเดียว {B.fmt(lp['ได้ขาเดียว'])}"),
@@ -51,7 +52,7 @@ def _drawdown(fig):
     n = len(eq) - 1
     W, L, R = 760, 64, 24
     X = lambda i: L + i / n * (W - L - R)  # noqa: E731
-    out = [text(16, 22, f"100 ไม้ของการ์ดคู่: ยอดขึ้นถึง {sg(ex['ผลรวม100ไม้'])} แต่ระหว่างทางต้องทน", 14, C["ink"], weight=700)]
+    out = [text(16, 22, f"100 ไม้ของการ์ดคู่: จบที่ {sg(ex['ผลรวม100ไม้'])} แต่ระหว่างทางต้องทน", 14, C["ink"], weight=700)]
     # แผงบน: ยอดสะสม
     T1, B1 = 48, 196
     hi = max(eq) * 1.08
@@ -100,3 +101,43 @@ def _drawdown(fig):
     cap = (f"การ์ดบท 12 ส่วนผสม 60/25/15 · {sg(rr[0])} / {sg(rr[1])} / {B.fmt(rr[2])} · ได้เงิน {ex['ไม้บวก']} ไม้ · "
            f"ชนงบ {ex['ไม้ชนงบ']} ไม้ · แถบแดงอ่อน = ช่วงใต้ยอดเดิมที่นานสุด")
     return wrap(W, H, alt, out, cap, "จำลอง")
+
+
+@chart("sab-crowded-unwind")
+def _crowded_unwind(fig):
+    """คืนที่ทุกคนออก: X ของ short 10 ชุด 2.1 → 3.7 (เลยเส้นงบ 3.4 · การ์ดปิด −18) → 0.4 สองช่วงต่อมา (ถ้ายังถือ +15)
+    เส้นทึบ = ที่มินเจอ · เส้นประ = ทางที่ไม่ได้อยู่ถึง · ส่วนต่าง 33"""
+    u = fig["ch17"]["v2"]["แห่ปิด"]
+    exit_line = fig["บัญชีมิน"]["การ์ด"]["ออก"]          # เส้นออก Z 0.5 = X 0.5 สำหรับ A–B (Mean 0 · SD 1)
+    W, H, L, R, T, Bm = 760, 330, 64, 210, 60, 270
+    pts = [("เข้า", u["เข้า"]), ("คืนที่ทุกคนออก", u["Xวันแห่"]), ("สองช่วงต่อมา", u["Xหลังแห่"])]
+    lo, hi = 0, u["Xวันแห่"] + 0.5
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    gx = (W - L - R) / (len(pts) - 1)
+    X = lambda i: L + 30 + (gx - 30) * i  # noqa: E731
+    out = [text(16, 24, f"ถ่างก่อนแล้วค่อยแคบ: การ์ดปิดที่ {B.fmt(u['Xวันแห่'])} ได้ {B.fmt(u['สุทธิถ้าปิด'])} "
+                        f"ถ้ารอดถึง {B.fmt(u['Xหลังแห่'])} จะได้ {sg(u['สุทธิถ้ารอด'])}", 13.5, C["ink"], weight=700)]
+    for gv in range(0, int(hi) + 1):
+        out.append(f'<line x1="{L}" y1="{Y(gv):.1f}" x2="{W - R}" y2="{Y(gv):.1f}" stroke="{C["axis"] if gv == 0 else C["grid"]}"/>')
+        out.append(text(L - 8, Y(gv) + 4, B.fmt(gv), 11, C["grey"], "end"))
+    for v, lab, col in ((u["เส้นงบ"], f"เส้นงบ {B.fmt(u['เส้นงบ'])}", C["red"]), (u["เข้า"], f"เข้า short {B.fmt(u['เข้า'])}", C["purple"]),
+                        (exit_line, f"เส้นออก {B.fmt(exit_line)}", C["green"])):
+        out.append(f'<line x1="{L}" y1="{Y(v):.1f}" x2="{W - R}" y2="{Y(v):.1f}" stroke="{col}" stroke-dasharray="6 4" stroke-width="1.4"/>')
+        out.append(text(W - R + 8, Y(v) + 4, lab, 11, col, "start", 700))
+    (n0, v0), (n1, v1), (n2, v2) = pts
+    out.append(f'<line x1="{X(0):.1f}" y1="{Y(v0):.1f}" x2="{X(1):.1f}" y2="{Y(v1):.1f}" stroke="{C["blue"]}" stroke-width="2.8"/>')
+    out.append(f'<line x1="{X(1):.1f}" y1="{Y(v1):.1f}" x2="{X(2):.1f}" y2="{Y(v2):.1f}" stroke="{C["blue"]}" stroke-width="2.2" '
+               f'stroke-dasharray="6 5" stroke-opacity=".7"/>')
+    out.append(f'<circle cx="{X(0):.1f}" cy="{Y(v0):.1f}" r="5" fill="{C["purple"]}"/>')
+    out.append(f'<circle cx="{X(1):.1f}" cy="{Y(v1):.1f}" r="6" fill="{C["red"]}"/>')
+    out.append(text(X(1) - 12, Y(v1) - 24, f"การ์ดปิด · {B.fmt(u['สุทธิถ้าปิด'])}", 12, C["red"], "end", 700))
+    out.append(text(X(1) - 12, Y(v1) - 9, f"เลยเส้นงบ {B.fmt(u['เกินเส้นงบ'])}", 10.5, C["red"], "end"))
+    out.append(f'<circle cx="{X(2):.1f}" cy="{Y(v2):.1f}" r="6" fill="#fff" stroke="{C["green"]}" stroke-width="2.4"/>')
+    out.append(text(X(2) - 12, Y(v2) + 15, f"ถ้ายังถือ · {sg(u['สุทธิถ้ารอด'])}", 12, C["green"], "end", 700))
+    for i, (nm, v) in enumerate(pts):
+        out.append(text(X(i), Bm + 20, nm, 11.5, C["ink"], "middle", 700))
+        out.append(text(X(i), Bm + 36, f"X {B.fmt(v)}", 10.5, C["muted"], "middle"))
+    alt = (f"เส้น X ของ short 10 ชุด จากเข้า {B.fmt(v0)} ขึ้นไป {B.fmt(v1)} ในคืนที่ทุกคนออก เลยเส้นงบ {B.fmt(u['เส้นงบ'])} "
+           f"การ์ดปิดได้ {B.fmt(u['สุทธิถ้าปิด'])} เส้นประต่อลงไป {B.fmt(v2)} ใต้เส้นออก ถ้ายังถือจะได้ {sg(u['สุทธิถ้ารอด'])}")
+    cap = f"short X 10 ชุดของการ์ดบท 12 · ต้นทุนไปกลับ 2 · ผลสองทางต่างกัน {B.fmt(u['ต่าง'])}"
+    return wrap(W, H, alt, out, cap, "สอน")

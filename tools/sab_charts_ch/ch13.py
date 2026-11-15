@@ -4,6 +4,8 @@ sab-mult-table : ตารางคูณเป็นภาพ — ระดั�
                  + เส้นคุ้มต้นทุน (2 − ต้นทุน ÷ ชุด = 1.8) · ป้ายท้ายเส้นบอกสุทธิหลังต้นทุน 2 (ch13.v2 · ฐานต้นทุน ch11.v2)
 sab-paths-fan  : 20 เส้นทางจริงของโลก φ 0.99 แรงสะบัด 0.5 จาก X = 2 (เดินจนแตะ 1 หรือครบ 24 ช่วง)
                  + เส้นค่าเฉลี่ย · เส้นทางที่ถึง 3 ก่อนแตะ 1 เป็นสีแดง
+sab-coin-vs-rope (v2): เกมโยนเหรียญ (Random Walk จบที่ 4) กับเกมที่เหลือ 80% ต่อช่วง (จบที่ 0.21) จากจุดเริ่ม 2 เดียวกัน
+sab-phi-scatter (v2): 19 คู่วันของ A–B · X วันนี้ กับ X พรุ่งนี้ · เส้นเท่าเดิม (φ 1) กับเส้น φ 0.74 ที่หาด้วยมือ
 """
 
 from sab_charts import chart, wrap, text, C, B
@@ -114,3 +116,89 @@ def _paths_fan(fig):
            "เส้นค่าเฉลี่ยสีม่วงค่อย ๆ ลงจาก 2 เหลือ 1.57 อย่างราบเรียบ")
     cap = (f"φ {B.fmt(f['phi'])} แรงสะบัด {B.fmt(f['แรงสะบัด'])} · แต่ละเส้นเดินจนแตะ 1 หรือครบ {n_t} ช่วง")
     return wrap(W, H, alt, out, cap, "จำลอง")
+
+
+@chart("sab-coin-vs-rope")
+def _coin_vs_rope(fig):
+    """สองเกมจากจุดเริ่ม 2 เดียวกัน สิบช่วง: เกมโยนเหรียญ (Random Walk · ขั้นบันได ±1) จบที่ 4
+    กับเกมที่เหลือ 80% ต่อช่วง (Mean Reversion) จบที่ 0.21 · เส้น Mean 0 · ลูกศรสั้นบอกว่าช่วงแรกถูกดึงมากกว่าช่วงหลัง"""
+    g = fig["ch13"]["เดินสุ่ม"]
+    rw, mr = g["เดินสุ่ม"], g["เหลือ80เปอร์เซ็นต์"]
+    n = len(rw) - 1
+    W, H, L, R, T, Bm = 760, 330, 64, 150, 64, 270
+    lo, hi = -0.5, max(rw) + 0.6
+    X = lambda t: L + t / n * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 24, f"จุดเริ่มเดียวกัน: เกมโยนเหรียญเดินไปจบที่ {B.fmt(rw[-1])} เกมที่มีเชือกถูกดึงกลับจนเหลือ {B.fmt(mr[-1])}",
+                13.5, C["ink"], weight=700)]
+    for gv in range(0, int(hi) + 1):
+        out.append(f'<line x1="{L}" y1="{Y(gv):.1f}" x2="{W - R}" y2="{Y(gv):.1f}" stroke="{C["axis"] if gv == 0 else C["grid"]}" '
+                   f'stroke-width="{1.5 if gv == 0 else 1}"/>')
+        out.append(text(L - 8, Y(gv) + 4, B.fmt(gv), 11, GREY, "end"))
+    out.append(text(W - R + 8, Y(0) + 16, "Mean 0", 11, MUTED, "start", 700))
+    for t in range(n + 1):
+        out.append(text(X(t), Bm + 18, f"{t}", 10.5, GREY, "middle"))
+    out.append(text((L + W - R) / 2, Bm + 38, "ช่วง", 11, MUTED, "middle"))
+    # เกมโยนเหรียญ: ขั้นบันได
+    d = f"M{X(0):.1f},{Y(rw[0]):.1f}"
+    for t in range(1, n + 1):
+        d += f" L{X(t):.1f},{Y(rw[t]):.1f}"
+    out.append(f'<path d="{d}" fill="none" stroke="{GREY}" stroke-width="2.4" stroke-linejoin="round"/>')
+    for t, v in enumerate(rw):
+        out.append(f'<circle cx="{X(t):.1f}" cy="{Y(v):.1f}" r="3.2" fill="{GREY}"/>')
+    # เกมที่เหลือ 80%
+    pts = " ".join(f"{X(t):.1f},{Y(v):.1f}" for t, v in enumerate(mr))
+    out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.8" stroke-linejoin="round"/>')
+    for t, v in enumerate(mr):
+        out.append(f'<circle cx="{X(t):.1f}" cy="{Y(v):.1f}" r="3.4" fill="{C["blue"]}"/>')
+    # ส่วนที่ถูกดึงในช่วงแรกกับช่วงที่ 10
+    for t in (1, n):
+        a, b = mr[t - 1], mr[t]
+        out.append(f'<line x1="{X(t) + 9:.1f}" y1="{Y(a):.1f}" x2="{X(t) + 9:.1f}" y2="{Y(b):.1f}" stroke="{C["purple"]}" stroke-width="2"/>')
+    out.append(text(X(1) + 14, (Y(mr[0]) + Y(mr[1])) / 2 + 4, f"ช่วงแรกดึง {B.fmt(round(mr[0] - mr[1], 2))}", 10.5, C["purple"], "start", 700))
+    out.append(text(W - R + 8, Y(rw[-1]) + 4, f"เกมโยนเหรียญ {B.fmt(rw[-1])}", 11.5, MUTED, "start", 700))
+    out.append(text(W - R + 8, Y(mr[-1]) - 22, "เหลือ 80% ต่อช่วง", 11.5, C["blue"], "start", 700))
+    out.append(text(W - R + 8, Y(mr[-1]) - 7, f"จบ {B.fmt(mr[-1])}", 11.5, C["blue"], "start", 700))
+    alt = (f"สองเส้นเริ่มที่ 2 เส้นเทาของเกมโยนเหรียญขึ้นลงทีละหนึ่ง {', '.join(B.fmt(v) for v in rw)} จบที่ {B.fmt(rw[-1])} "
+           f"เส้นน้ำเงินของเกมที่เหลือ 80% ต่อช่วงลดลงเร็วตอนแรกแล้วช้าลง {', '.join(B.fmt(v) for v in mr)}")
+    cap = "เกมบนกระดาษของมิน · โยนเหรียญชุดเดียว (หัว +1 ก้อย −1) · เส้นน้ำเงินไม่มีแรงสะบัด"
+    return wrap(W, H, alt, out, cap, "สอน")
+
+
+@chart("sab-phi-scatter")
+def _phi_scatter(fig):
+    """19 คู่วันของ A–B (บท 9): แกนนอน X วันนี้ แกนตั้ง X พรุ่งนี้ · เส้นเทาประ = เดาเท่าเดิม (φ 1)
+    เส้นม่วง = φ 0.74 ที่หาได้ (ผ่านจุด 0,0 เพราะ Mean 0) · จุดวันที่ 11 → 12 (2.2 → 1.2) ถูกเน้น"""
+    xs = fig["ch09"]["นับมือ20วัน"]["X"]
+    h = fig["ch13"]["v2"]["phiมือบท9"]
+    phi = h["phi"]
+    pairs = list(zip(xs[:-1], xs[1:]))
+    W, H = 760, 380
+    L, R, T, Bm = 250, 250, 56, 336
+    lim = 2.5
+    X = lambda v: L + (v + lim) / (2 * lim) * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (v + lim) / (2 * lim) * (Bm - T)  # noqa: E731
+    out = [text(16, 24, f"X พรุ่งนี้ ≈ {B.fmt(phi)} × X วันนี้: จุดเอียงตามเส้นที่ลาดน้อยกว่าเส้นเท่าเดิม", 13.5, INK, weight=700)]
+    for gv in (-2, -1, 0, 1, 2):
+        out.append(f'<line x1="{X(gv):.1f}" y1="{T}" x2="{X(gv):.1f}" y2="{Bm}" stroke="{C["axis"] if gv == 0 else C["grid"]}"/>')
+        out.append(f'<line x1="{L}" y1="{Y(gv):.1f}" x2="{W - R}" y2="{Y(gv):.1f}" stroke="{C["axis"] if gv == 0 else C["grid"]}"/>')
+        out.append(text(X(gv), Bm + 16, B.fmt(gv), 10.5, GREY, "middle"))
+        out.append(text(L - 8, Y(gv) + 4, B.fmt(gv), 10.5, GREY, "end"))
+    out.append(text((L + W - R) / 2, Bm + 34, "X วันนี้", 11.5, MUTED, "middle", 700))
+    out.append(text(L - 8, T - 10, "X พรุ่งนี้", 11.5, MUTED, "end", 700))
+    out.append(f'<line x1="{X(-lim):.1f}" y1="{Y(-lim):.1f}" x2="{X(lim):.1f}" y2="{Y(lim):.1f}" stroke="{GREY}" '
+               f'stroke-width="1.6" stroke-dasharray="6 4"/>')
+    out.append(f'<line x1="{X(-lim):.1f}" y1="{Y(-lim * phi):.1f}" x2="{X(lim):.1f}" y2="{Y(lim * phi):.1f}" stroke="{C["purple"]}" '
+               f'stroke-width="2.4"/>')
+    for a, b in pairs:
+        out.append(f'<circle cx="{X(a):.1f}" cy="{Y(b):.1f}" r="4.2" fill="{C["blue"]}" fill-opacity=".8"/>')
+    a, b = xs[10], xs[11]
+    out.append(f'<circle cx="{X(a):.1f}" cy="{Y(b):.1f}" r="7" fill="none" stroke="{INK}" stroke-width="1.6"/>')
+    out.append(text(X(a) + 12, Y(b) + 4, f"วันที่ 11 → 12: {B.fmt(a)} → {B.fmt(b)}", 10.5, INK, "start", 700))
+    out.append(text(W - R + 10, Y(lim) + 4, "เดาเท่าเดิม (φ 1)", 11.5, MUTED, "start", 700))
+    out.append(text(W - R + 10, Y(lim * phi) + 4, f"φ {B.fmt(phi)} ที่หาได้", 11.5, C["purple"], "start", 700))
+    out.append(text(W - R + 10, Y(lim * phi) + 20, f"= {B.fmt(h['ผลรวมผลคูณ'])} ÷ {B.fmt(h['ผลรวมกำลังสอง'])}", 10.5, C["purple"]))
+    alt = (f"กราฟจุด {h['คู่วัน']} จุด แกนนอน X วันนี้ แกนตั้ง X พรุ่งนี้ ของคู่ A–B ช่วง 20 วันในบท 9 "
+           f"เส้นประเท่าเดิมลาดหนึ่งต่อหนึ่ง เส้นม่วงลาด {B.fmt(phi)} ผ่านศูนย์ จุดส่วนใหญ่อยู่ใกล้เส้นม่วง")
+    cap = f"{h['คู่วัน']} คู่วันจาก X 20 วันของ A–B ในบท 9 · Mean 0 เส้นจึงผ่านจุด (0, 0)"
+    return wrap(W, H, alt, out, cap, "สอน")

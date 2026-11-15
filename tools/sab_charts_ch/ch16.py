@@ -1,6 +1,7 @@
 """บท 16 — จากกราฟสู่คำสั่งจริง · สเปกกราฟของบท
 
 sab-fill-timeline : มูลค่าสุทธิที่ถือ (long − short) สี่จังหวะของคำสั่งตั้งรอสองขา · เป้า = 0 (เส้นประ) · เอียง 600
+sab-book-walk (v2): เดินกระดานสมมติของ A สี่ชั้น · ขาละ 1,000 / 5,000 / 10,000 / 20,000 กินถึงชั้นไหน เสียต่อ fill 0.5 / 4 / 14 / 54
 sab-capacity-curve: เส้นกำไรตามขนาด (ch16.v2: 5.95 × ขาละ ÷ 1,000 − 4 × ราคาที่เสียต่อ fill จากกระดานสมมติ · โลก 60/25/15)
 """
 from sab_charts import chart, wrap, text, Frame, nice_ticks, C, B
@@ -153,4 +154,63 @@ def _notrade_buffer(fig):
            f"{', '.join(B.fmt(v) for v in g['เดินทางเดียว']['เป้า'])} มีกันชนส่ง {g['เดินทางเดียว']['มีกันชน']['คำสั่ง']} "
            f"ครั้ง ต้นทุนเท่ากัน {B.fmt(g['เดินทางเดียว']['มีกันชน']['ต้นทุน'])}")
     cap = f"ขา B ของคู่ A–B · กันชน {buf} ตัว · ต้นทุน 0.1% ของมูลค่าที่ซื้อขาย"
+    return wrap(W, H, alt, out, cap, "สอน")
+
+
+@chart("sab-book-walk")
+def _book_walk(fig):
+    """เดิน Order Book ฝั่งขายของ A: แถวบน = กระดานสมมติสี่ชั้น (ความกว้าง = มูลค่าที่รอ · สีเข้มขึ้น = ห่าง Mid Price มากขึ้น)
+    แถวล่าง = ขนาดต่อขา 1,000 / 5,000 / 10,000 / 20,000 กินไปถึงชั้นไหน · ป้ายขวา = เสียต่อ fill และเฉลี่ย %"""
+    bk = fig["ch16"]["v2"]["กระดาน"]
+    layers, walk = bk["ชั้น"], bk["เดิน"]
+    mid = fig["ch16"]["v2"]["ทันที"]["A"]["mid"]
+    sizes = ["1000", "5000", "10000", "20000"]
+    shades = ["#fde68a", "#fbbf24", "#f97316", "#dc2626"]
+    W = 760
+    L, R, T, rh, gap = 130, 170, 92, 30, 16
+    total = sum(l["มูลค่า"] for l in layers)
+    X = lambda v: L + v / total * (W - L - R)  # noqa: E731
+    H = T + (len(sizes) + 1) * (rh + gap) + 40
+    out = [text(16, 24, "ขนาดใหญ่ขึ้นห้าเท่า แต่ราคาที่เสียต่อ fill ใหญ่ขึ้นแปดเท่า เพราะต้องเอื้อมไปชั้นที่แพงกว่า",
+                13.5, C["ink"], weight=700)]
+    lx = 16
+    for k, (l, sh) in enumerate(zip(layers, shades)):
+        lab = f"ชั้น {k + 1} · ห่าง {B.fmt(l['ห่างเปอร์เซ็นต์'])}%"
+        out.append(f'<rect x="{lx}" y="46" width="12" height="12" rx="2" fill="{sh}"/>')
+        out.append(text(lx + 17, 56, lab, 11, C["muted"]))
+        lx += 34 + 7.0 * len(lab)
+    # แถวบน: กระดาน
+    y = T
+    out.append(text(L - 10, y + rh / 2 + 4, "กระดานฝั่งขาย A", 11.5, C["ink"], "end", 700))
+    acc = 0
+    for k, (l, sh) in enumerate(zip(layers, shades)):
+        x0, x1 = X(acc), X(acc + l["มูลค่า"])
+        out.append(f'<rect x="{x0:.1f}" y="{y}" width="{x1 - x0:.1f}" height="{rh}" fill="{sh}" fill-opacity=".45" '
+                   f'stroke="{sh}" stroke-width="1.5"/>')
+        out.append(text((x0 + x1) / 2, y + rh / 2 + 4, f"รอ {B.fmt(l['มูลค่า'])}", 10.5, C["ink"], "middle"))
+        acc += l["มูลค่า"]
+    out.append(text(W - R + 10, y + rh / 2 + 4, "ราคาที่เสียต่อ fill", 11, C["muted"], "start", 700))
+    # แถวขนาด
+    for i, s in enumerate(sizes):
+        y = T + (i + 1) * (rh + gap)
+        w = walk[s]
+        out.append(text(L - 10, y + rh / 2 + 4, f"ขาละ {B.fmt(int(s))}", 11.5, C["ink"], "end", 700 if s in ("1000", "5000") else None))
+        acc = 0
+        for k, part in enumerate(w["ชั้น"]):
+            val = part["เหรียญ"] * mid                 # มูลค่าที่ราคากลาง (ขาละ … คิดที่ Mid Price)
+            x0, x1 = X(acc), X(acc + val)
+            out.append(f'<rect x="{x0:.1f}" y="{y}" width="{x1 - x0:.1f}" height="{rh}" fill="{shades[k]}" stroke="#fff" stroke-width="1"/>')
+            if x1 - x0 > 34:
+                out.append(text((x0 + x1) / 2, y + rh / 2 + 4, f"+{B.fmt(part['เกิน'])}", 11, "#ffffff" if k >= 2 else C["ink"], "middle", 700))
+            acc += val
+        out.append(text(W - R + 10, y + rh / 2 + 4, f"{B.fmt(w['เกินรวม'])} (เฉลี่ย {B.fmt(w['เกินเฉลี่ยเปอร์เซ็นต์'])}%)", 12,
+                        C["red"] if w["เกินรวม"] > walk["1000"]["เกินรวม"] else C["ink"], "start", 700))
+    ybot = T + (len(sizes) + 1) * (rh + gap) - gap
+    for t in (0, 5000, 10000, 20000):
+        out.append(text(X(t), ybot + 18, B.fmt(t), 10.5, C["grey"], "middle"))
+    out.append(text((X(0) + X(total)) / 2, ybot + 34, "มูลค่าที่ซื้อ (ดอลลาร์)", 11, C["muted"], "middle"))
+    alt = (f"แถวบนคือกระดานสี่ชั้น รอ {', '.join(B.fmt(l['มูลค่า']) for l in layers)} ที่ห่าง Mid Price "
+           f"{', '.join(B.fmt(l['ห่างเปอร์เซ็นต์']) for l in layers)}% แถวล่างคือขาละ 1,000 5,000 10,000 20,000 "
+           f"เสียต่อ fill {', '.join(B.fmt(walk[s]['เกินรวม']) for s in sizes)}")
+    cap = "Order Book สมมติของ A ช่วงปกติ · ตัวเลขในแท่ง = ส่วนที่จ่ายเกิน Mid Price ในชั้นนั้น"
     return wrap(W, H, alt, out, cap, "สอน")
