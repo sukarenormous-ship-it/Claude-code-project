@@ -6,6 +6,7 @@
 //   node tools/sab_render_check.mjs              # ทุกหน้า sab-*
 //   node tools/sab_render_check.mjs part4 index  # เฉพาะหน้า
 //   node tools/sab_render_check.mjs --selftest
+//   node tools/sab_render_check.mjs --book sab2   # เล่ม 2: docs/sab2-*.html (หรือ SAB_BOOK=sab2)
 //
 // Playwright + Chromium ที่ติดตั้งในเครื่อง (ห้าม playwright install) · ตัดคำขอเครือข่ายภายนอก (ฟอนต์) เพื่อให้รันออฟไลน์ได้
 
@@ -79,12 +80,17 @@ async function selftest() {
 }
 
 const args = process.argv.slice(2);
+// เลือกเล่ม: --book sab2 หรือ SAB_BOOK=sab2 (ค่าเริ่มต้น sab = เล่ม 1)
+const bi = args.indexOf('--book');
+if (bi >= 0) { process.env.SAB_BOOK = args[bi + 1]; args.splice(bi, 2); }
+const PREFIX = process.env.SAB_BOOK || 'sab';
+if (!/^sab2?$/.test(PREFIX)) { console.error(`SAB_BOOK / --book ต้องเป็น sab หรือ sab2 (พบ ${PREFIX})`); process.exit(2); }
 if (args[0] === '--selftest') process.exit(await selftest());
 let files = args.length
-  ? args.map((a) => path.join(DOCS, `sab-${a}.html`))
-  : fs.readdirSync(DOCS).filter((n) => /^sab-.*\.html$/.test(n)).sort().map((n) => path.join(DOCS, n));
+  ? args.map((a) => path.join(DOCS, `${PREFIX}-${a}.html`))
+  : fs.readdirSync(DOCS).filter((n) => n.startsWith(`${PREFIX}-`) && n.endsWith('.html')).sort().map((n) => path.join(DOCS, n));
 files = files.filter((f) => fs.existsSync(f));
-if (!files.length) { console.log('ยังไม่มีหน้า docs/sab-*.html ให้ตรวจ'); process.exit(0); }
+if (!files.length) { console.log(`ยังไม่มีหน้า docs/${PREFIX}-*.html ให้ตรวจ`); process.exit(0); }
 const problems = await check(files);
 console.log(`ตรวจ ${files.length} หน้า × ${WIDTHS.join('/')} px`);
 if (problems.length) { console.log(`พบปัญหา ${problems.length} ข้อ`); problems.forEach((p) => console.log('  -', p)); process.exit(1); }

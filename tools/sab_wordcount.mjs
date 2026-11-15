@@ -5,6 +5,7 @@
 //   node tools/sab_wordcount.mjs part4 base1    # เฉพาะหน้า
 //   node tools/sab_wordcount.mjs --as-v2 part4  # ตัดสินด้วยเกณฑ์ v2 แม้หน้ายังเป็น v1 (ใช้โดย sab_migrate_v2.py)
 //   node tools/sab_wordcount.mjs --selftest
+//   node tools/sab_wordcount.mjs --book sab2     # เล่ม 2: docs/sab2-partN.html (หรือ SAB_BOOK=sab2)
 //
 // หน้า v1 (ยังไม่ย้าย · แผน 5.1 "งบคำ")
 //   เส้นทางหลัก = ทั้งหน้า ลบ: 🔎 details (deep/ans) · .sheet (ใบงานรวม 🔩 🔁 📱) · table.ledger · table.ncard ·
@@ -31,10 +32,15 @@ catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright/index.j
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DOCS = path.join(ROOT, 'docs');
+// เลือกเล่ม: --book sab2 หรือ SAB_BOOK=sab2 (ค่าเริ่มต้น sab = เล่ม 1) — หน้า docs/<prefix>-partN.html
+const bi = process.argv.indexOf('--book');
+if (bi >= 0) { process.env.SAB_BOOK = process.argv[bi + 1]; process.argv.splice(bi, 2); }
+export const PREFIX = process.env.SAB_BOOK || 'sab';
+if (!/^sab2?$/.test(PREFIX)) { console.error(`SAB_BOOK / --book ต้องเป็น sab หรือ sab2 (พบ ${PREFIX})`); process.exit(2); }
 export const WPM = 80;
 export const MAIN_MIN = 1750, MAIN_MAX = 2300, PAGE_MAX = 3500, STORY_MAX = 0.25;                       // v1
 export const V2 = { MAIN_MIN: 2800, BASE_MIN: 1200, BASE_MAX: 2600, SHARE_MIN: 0.65, STORY_MAX: 0.20, LONG: 6000, PART_MAX: 3500 };   // แผน 14.4
-const isBase = (name) => /^sab-base\d+\.html$/.test(name);
+const isBase = (name) => new RegExp(`^${PREFIX}-base\\d+\\.html$`).test(name);
 
 function countInPage(forceV2) {
   const v2 = forceV2 || document.body.getAttribute('data-tpl') === '2';
@@ -112,7 +118,7 @@ export function notes(r) {
 
 async function selftest() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sabwc-'));
-  const f = path.join(d, 'sab-part1.html');
+  const f = path.join(d, `${PREFIX}-part1.html`);
   const w = (n) => Array.from({ length: n }, () => 'เงิน').join(' ');
   fs.writeFileSync(f, `<!DOCTYPE html><html><body><div class="cover">${w(50)}</div>
 <div class="scene-open">${w(10)}</div><p>${w(30)}</p>
@@ -129,7 +135,7 @@ async function selftest() {
 <details class="file"><summary>เงิน</summary><div class="bx sheet">${w(40)}</div><table class="ledger"><tr><td>${w(20)}</td></tr></table><p>${w(15)}</p></details>
 <div class="bx sheet">${w(12)}</div><table class="ncard"><tr><td>${w(8)}</td></tr></table>
 <script>var x="${w(5)}"</script>`;
-  const f2 = path.join(d, 'sab-part2.html'), fb = path.join(d, 'sab-base1.html');
+  const f2 = path.join(d, `${PREFIX}-part2.html`), fb = path.join(d, `${PREFIX}-base1.html`);
   fs.writeFileSync(f2, `<!DOCTYPE html><html><body data-tpl="2">${v2body}</body></html>`);
   fs.writeFileSync(fb, `<!DOCTYPE html><html><body>${v2body}</body></html>`);          // หน้า base = v2 เสมอ แม้ไม่มีป้าย
   const [r] = await count([f]);
@@ -165,10 +171,10 @@ async function main() {
   const num = (n) => parseInt(n.match(/\d+/));
   const byNum = (re) => fs.readdirSync(DOCS).filter((n) => re.test(n)).sort((a, b) => num(a) - num(b));
   let files = names.length
-    ? names.map((a) => path.join(DOCS, `sab-${a}.html`))
-    : [...byNum(/^sab-base\d+\.html$/), ...byNum(/^sab-part\d+\.html$/)].map((n) => path.join(DOCS, n));   // หน้าพื้นฐานมาก่อนบท 0
+    ? names.map((a) => path.join(DOCS, `${PREFIX}-${a}.html`))
+    : [...byNum(new RegExp(`^${PREFIX}-base\\d+\\.html$`)), ...byNum(new RegExp(`^${PREFIX}-part\\d+\\.html$`))].map((n) => path.join(DOCS, n));   // หน้าพื้นฐานมาก่อนบท 0
   files = files.filter((f) => fs.existsSync(f));
-  if (!files.length) { console.log('ยังไม่มีบท docs/sab-partN.html ให้นับ'); return; }
+  if (!files.length) { console.log(`ยังไม่มีบท docs/${PREFIX}-partN.html ให้นับ`); return; }
   const rows = await count(files, asV2);
   let bad = 0, totalMain = 0;
   for (const r of rows) {

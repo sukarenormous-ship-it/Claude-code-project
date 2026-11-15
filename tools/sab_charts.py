@@ -429,7 +429,9 @@ def _load_chapter_charts():
     import glob as _glob
     import importlib.util as _ilu
     sys.modules.setdefault("sab_charts", sys.modules[__name__])
-    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_charts_ch")
+    folder = B.CHART_PLUGINS                             # เล่ม 2: tools/sab2_charts_ch/
+    if B.BOOK_ID != "sab":                              # กราฟในไฟล์นี้เป็นของเล่ม 1 — เล่มอื่นเริ่มจากทะเบียนว่าง
+        CHARTS.clear()
     for path in sorted(_glob.glob(os.path.join(folder, "base.py")) + _glob.glob(os.path.join(folder, "ch[0-9][0-9].py"))
                        + _glob.glob(os.path.join(folder, "realdata.py"))       # realdata.py = ภาคผนวก K
                        + _glob.glob(os.path.join(folder, "cases.py"))):        # cases.py = ภาคผนวก J
@@ -537,7 +539,7 @@ def selftest():
     for k in [k for k in CHARTS if k.startswith("sab-zz")]:
         del CHARTS[k]
     # ทุกกราฟจริงต้องวาดได้จาก JSON ปัจจุบันและมีป้ายที่มา
-    figp = os.path.join(B.DOCS, "sab-figures.json")
+    figp = B.FIG
     if os.path.exists(figp):
         with open(figp, encoding="utf-8") as fh:
             real = json.load(fh)
@@ -553,7 +555,9 @@ def selftest():
 
 
 def load_fig():
-    with open(os.path.join(B.DOCS, "sab-figures.json"), encoding="utf-8") as fh:
+    if not os.path.exists(B.FIG):
+        sys.exit(f"ยังไม่มี docs/{os.path.basename(B.FIG)} — รัน python3 -I tools/sab_figures.py" + (f" --book {B.PREFIX}" if B.PREFIX != "sab" else ""))
+    with open(B.FIG, encoding="utf-8") as fh:
         return json.load(fh)
 
 
@@ -561,6 +565,9 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if a == ["--selftest"]:
         sys.exit(selftest())
+    if a == ["--list"] and B.BOOK_ID != "sab":
+        print(f"กราฟเล่ม {B.VOL}: {len(CHARTS)} คีย์" + (" — " + ", ".join(sorted(CHARTS)) if CHARTS else ""))
+        sys.exit(0)
     if a == ["--list"]:
         have = set(CHARTS)
         for label, keys in (("★", PLANNED_STAR), ("☆", PLANNED_OPT)):

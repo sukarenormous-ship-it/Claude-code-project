@@ -27,9 +27,12 @@ from decimal import ROUND_HALF_UP, Decimal as D, getcontext
 
 getcontext().prec = 28
 
-PREFIX = "sab"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # -I ตัดโฟลเดอร์สคริปต์ออกจาก sys.path
+import sab_book as B  # noqa: E402  (เลือกเล่มด้วย SAB_BOOK หรือ --book · ค่าเริ่มต้น sab)
+
+PREFIX = B.PREFIX
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "docs", f"{PREFIX}-figures.json")
+OUT = B.FIG
 ORIGMAP = os.path.join(ROOT, "tools", f"{PREFIX}_origmap.json")
 SOURCE_DIR = os.environ.get("SAB_SOURCE_DIR", os.path.join("sources", "sab-v0_9"))
 if not os.path.isabs(SOURCE_DIR):
@@ -1489,7 +1492,7 @@ def apply_chapter_plugins(data):
     (D = Decimal · q(x, ตำแหน่ง) = ปัดแบบ half-up) · ห้ามทับคีย์ที่มีอยู่แล้ว — ชน = หยุด
     ปลั๊กอินที่ยังคืน {} ไม่สร้างคีย์เปล่าใน JSON
     """
-    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_figures_ch")
+    folder = B.FIG_PLUGINS                               # เล่ม 2: tools/sab2_figures_ch/
     if not os.path.isdir(folder):
         return
     for name in sorted(os.listdir(folder)):
@@ -1708,7 +1711,47 @@ def build_originals_strings(orig):
 
 
 def compute():
+    if B.BOOK_ID != "sab":
+        return build_next_volume()
     return build(originals_port())
+
+
+def build_story_next():
+    """เรื่อง.partN ของเล่ม 2 จาก tools/sab2_bible.json · open/close = null แปลว่าแผนยังไม่ระบุ (ข้ามการตรวจ)
+    ตรวจ: open ของบท N = close ของบท N−1 (เมื่อมีทั้งคู่) · open ของบทแรก = close ของบทสุดท้ายเล่มก่อน ทุกคีย์ที่มีทั้งคู่"""
+    with open(B.BIBLE, encoding="utf-8") as fh:
+        story = json.load(fh).get("เรื่อง") or {}
+    parts = sorted(int(k[4:]) for k in story if re.fullmatch(r"part\d+", k))
+    for n in parts:
+        prev = story.get(f"part{n - 1}")
+        op = story[f"part{n}"].get("open")
+        cl = (prev or {}).get("close")
+        if op is not None and cl is not None and op != cl:
+            raise SystemExit(f"คัมภีร์ {os.path.basename(B.BIBLE)}: open ของ part{n} ≠ close ของ part{n - 1}")
+    first = story.get(f"part{B.FIRST_PART}", {}).get("open")
+    prev_book = B.CFG["prev"]
+    if first and prev_book:
+        with open(os.path.join(os.path.dirname(B.BIBLE), f"{prev_book}_bible.json"), encoding="utf-8") as fh:
+            old = json.load(fh)["เรื่อง"]
+        last = old[f"part{max(B.BOOKS[prev_book]['titles'])}"]["close"]
+        for k in set(first) & set(last):
+            if first[k] != last[k]:
+                raise SystemExit(f"คัมภีร์: เรื่อง.part{B.FIRST_PART}.open.{k} = {first[k]!r} ≠ close บทสุดท้ายเล่มก่อน {last[k]!r}")
+    return story
+
+
+def build_next_volume():
+    """เล่ม 2+: โครง JSON เล็ก (ไม่มีตรรกะของเล่ม 1) แล้วเติมทุกค่าจากปลั๊กอิน tools/<prefix>_figures_ch/"""
+    data = {
+        "_อ่านก่อน": (f"สร้างโดย tools/sab_figures.py --book {PREFIX} — ห้ามแก้ด้วยมือ · ตัวเลขทุกตัวมาจากปลั๊กอิน "
+                      f"tools/{PREFIX}_figures_ch/chNN.py (คีย์ chNN = เลขบทเล่ม {B.VOL}) · โลกจำลองจาก tools/sab2_sim.py "
+                      "(seed ระบุในปลั๊กอิน) · ข้อมูลจริงจาก tools/sab2_realdata.py · ช่วงทดสอบสุดท้ายเปิดได้เฉพาะ ch17"),
+        "เรื่อง": build_story_next(),
+        "_claims": [],
+        "แบบฝึก": {},
+    }
+    apply_chapter_plugins(data)
+    return data
 
 
 def dump(data):
@@ -1861,6 +1904,8 @@ def _isnum(x):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if "--check-original" in args and B.BOOK_ID != "sab":
+        sys.exit("--check-original ใช้ได้เฉพาะเล่ม 1 (sab)")
     if "--check-original" in args:
         if not os.path.isdir(os.path.join(SOURCE_DIR, "code")):
             sys.exit(f"ไม่พบโค้ดต้นฉบับที่ {SOURCE_DIR}/code — ตั้งตัวแปร SAB_SOURCE_DIR")
@@ -1872,6 +1917,8 @@ if __name__ == "__main__":
     data = compute()
     text = dump(data)
     if "--check" in args:
+        if not os.path.exists(OUT):
+            sys.exit(f"ยังไม่มี {os.path.relpath(OUT, ROOT)} — รัน tools/sab_figures.py" + (f" --book {PREFIX}" if PREFIX != "sab" else ""))
         with open(OUT, encoding="utf-8") as fh:
             old = fh.read()
         if old != text:
@@ -1891,7 +1938,7 @@ if __name__ == "__main__":
             walk(a, b)
             for d_ in diffs[:40]:
                 print(" ", d_)
-            print(f"{os.path.basename(OUT)} ไม่ตรงกับการคำนวณ ({len(diffs)} จุด) — รัน tools/sab_figures.py ใหม่")
+            print(f"{os.path.basename(OUT)} ไม่ตรงกับการคำนวณ ({len(diffs)} จุด) — รัน tools/sab_figures.py ใหม่" + (f" --book {PREFIX}" if PREFIX != "sab" else ""))
             sys.exit(1)
         print(f"{os.path.basename(OUT)} ตรงกับการคำนวณ ✓")
     else:

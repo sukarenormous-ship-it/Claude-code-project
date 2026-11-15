@@ -15,15 +15,16 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sab_book as B  # noqa: E402  (--book sab2 → หน้า docs/sab2-*.html กับเปลือกกลาง + tools/sab2_shell/extra.css)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
-HEAD = os.path.join(ROOT, "tools", "sab_shell", "head.html")
 STYLE_RE = re.compile(r"<style>.*?</style>", re.S)
 
 
 def shell_style():
-    with open(HEAD, encoding="utf-8") as fh:
-        m = STYLE_RE.search(fh.read())
+    m = STYLE_RE.search(B.shell()[0])
     if not m:
         sys.exit("ไม่พบ <style>…</style> ใน tools/sab_shell/head.html")
     return m.group(0)
@@ -41,7 +42,7 @@ def reshell(html, style):
 def run(docs=DOCS, write=True):
     style = shell_style()
     differ, skipped, n = [], [], 0
-    for path in sorted(glob.glob(os.path.join(docs, "sab-*.html"))):
+    for path in sorted(glob.glob(os.path.join(docs, f"{B.PREFIX}-*.html"))):
         name = os.path.basename(path)
         with open(path, encoding="utf-8") as fh:
             src = fh.read()

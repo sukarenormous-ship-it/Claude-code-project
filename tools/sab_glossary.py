@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sab_book as B  # noqa: E402
 
 TIER_NAMES = {"ก": "ชั้น ก — คำบนแอปและบัญชี", "ข": "ชั้น ข — แกนของกลยุทธ์", "ค": "ชั้น ค — ลงลึก (อ่านเมื่อพร้อม)"}
-TARGET = "sab-appendix-glossary.html"
+TARGET = f"{B.PREFIX}-appendix-glossary.html"
 
 
 def _strip(s):
@@ -52,7 +52,7 @@ def _items(seg):
     return out
 
 
-def collect(docs=B.DOCS, fig_path=None):
+def collect(docs=B.DOCS, fig_path=None, prev_check=True):
     rows, problems, seen = [], [], {}
     for path in B.teaching_files(docs):                 # หน้าพื้นฐาน 1..4 ก่อน แล้วบท 0..18
         part, base = B.part_no(path), B.base_no(path)
@@ -83,7 +83,19 @@ def collect(docs=B.DOCS, fig_path=None):
                 seen[key] = (B.page_label(path), tier)
                 rows.append({"บท": part, "ชั้น": tier, "คำ": term, "นิยาม": desc,
                              **({"พื้นฐาน": base} if base is not None else {})})
-    fig_path = fig_path or os.path.join(docs, "sab-figures.json")
+    if B.CFG["prev"] and prev_check:                    # เล่ม 2: คำของเล่มก่อนสอนแล้ว — ไม่ใช่ "ศัพท์ใหม่" ในกล่อง 📖
+        taught = {}
+        for k, v in (B.load_terms() or {}).items():
+            if not k.startswith("_") and str(v.get("สอน", "")).startswith("เล่ม"):
+                for f in [k] + v.get("รูปแบบ", []):
+                    taught[f.casefold()] = v["สอน"]
+        for r in rows:
+            head = re.split(r"\s*\(", r["คำ"], maxsplit=1)[0].strip().casefold()
+            if head in taught:
+                page = f"base{r['พื้นฐาน']}" if r.get("พื้นฐาน") else f"part{r['บท']}"
+                problems.append(f"{B.PREFIX}-{page}.html: 📖 {r['คำ']!r} สอนแล้วใน{taught[head]} — "
+                                "ใช้ในเนื้อได้เลย ไม่ต้องลงกล่องศัพท์ใหม่")
+    fig_path = fig_path or os.path.join(docs, f"{B.PREFIX}-figures.json")
     if os.path.exists(fig_path):
         with open(fig_path, encoding="utf-8") as fh:
             v09 = json.load(fh).get("ศัพท์_v09") or []
@@ -136,29 +148,33 @@ def selftest():
                 f'<p><strong>ที่เหลือ</strong></p><ul>{items_rest}</ul></div>\n' + tail)
     ok = True
     with tempfile.TemporaryDirectory() as d:
-        open(os.path.join(d, "sab-part2.html"), "w", encoding="utf-8").write(ch(
+        open(os.path.join(d, f"{B.PREFIX}-part2.html"), "w", encoding="utf-8").write(ch(
             '<li><strong>basis</strong> = ส่วนต่าง <span class="tier" data-tier="ข"></span></li>',
             '<li><strong>funding</strong> = ค่าถือ</li>'))
-        open(os.path.join(d, "sab-part10.html"), "w", encoding="utf-8").write(ch(
+        open(os.path.join(d, f"{B.PREFIX}-part10.html"), "w", encoding="utf-8").write(ch(
             '<li data-tier="ก"><strong>ผิดที่</strong> = x</li>'
             '<li><strong>basis</strong> = ซ้ำ <span class="tier" data-tier="ก"></span></li>'
             '<li><strong>คู่ปลอม</strong> = y <span class="tier" data-tier="ค"></span></li>'))
-        rows, probs = collect(d, os.path.join(d, "none.json"))
+        rows, probs = collect(d, os.path.join(d, "none.json"), prev_check=False)
         # v2: หน้าพื้นฐานมาก่อนบท · รายการเดียว · <li> ใน details.file ที่ตามหลังกล่อง 📖 ไม่ถูกเก็บเป็นศัพท์
         v2box = ('<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div><ul>{}</ul></div>\n'
                  '<details class="file"><summary>📁 แฟ้มของบทนี้</summary><div class="bx sheet"><ul>'
                  '<li><strong>ไม่ใช่ศัพท์</strong> = อยู่ในแฟ้ม</li></ul></div></details>\n')
         v2head = head.replace("<body>", '<body data-tpl="2">')
-        open(os.path.join(d, "sab-base2.html"), "w", encoding="utf-8").write(v2head + v2box.format(
+        open(os.path.join(d, f"{B.PREFIX}-base2.html"), "w", encoding="utf-8").write(v2head + v2box.format(
             '<li><strong>Short (สถานะขาย/ขายชอร์ต)</strong> = ขายก่อน</li>') + tail)
-        open(os.path.join(d, "sab-part3.html"), "w", encoding="utf-8").write(v2head + v2box.format(
+        open(os.path.join(d, f"{B.PREFIX}-part3.html"), "w", encoding="utf-8").write(v2head + v2box.format(
             '<li><strong>Carry (ผลตอบแทนจากการถือ)</strong> = ได้จากการถือ</li>'
             '<li><strong>Margin (หลักประกัน)</strong> = เงินค้ำ <span class="tier" data-tier="ก"></span></li>') + tail)
-        rows2, probs2 = collect(d, os.path.join(d, "none.json"))
+        rows2, probs2 = collect(d, os.path.join(d, "none.json"), prev_check=False)
+        _, probs3 = collect(d, os.path.join(d, "none.json"))
+    if B.CFG["prev"] and not any("'basis' สอนแล้วในเล่ม" in p for p in probs3):
+        ok = False
+        print("selftest ล้ม: เล่ม 2 ไม่จับคำที่สอนแล้วในเล่มก่อน", probs3)
     got2 = [(r.get("พื้นฐาน"), r["บท"], r["คำ"], r["ชั้น"]) for r in rows2]
     want2 = [(2, None, "Short (สถานะขาย/ขายชอร์ต)", "ก"), (None, 2, "basis", "ข"), (None, 2, "funding", "ข"),
              (None, 3, "Carry (ผลตอบแทนจากการถือ)", "ข"), (None, 3, "Margin (หลักประกัน)", "ก"), (None, 10, "คู่ปลอม", "ค")]
-    if got2 != want2 or len(probs2) != len(probs) or 'sab-base2.html">พื้นฐาน 2</a>' not in render(rows2):
+    if got2 != want2 or len(probs2) != len(probs) or f'{B.PREFIX}-base2.html">พื้นฐาน 2</a>' not in render(rows2):
         ok = False
         print("selftest ล้ม: หน้า base / บท v2", got2, probs2)
     order = [r["บท"] for r in rows]
@@ -176,7 +192,7 @@ def selftest():
             ok = False
             print("selftest ล้ม: ไม่จับ", e, probs)
     print("selftest", "ผ่าน ✓ (เรียง part2 ก่อน part10 · data-tier ผิดที่ถูกจับ · คำซ้ำข้ามชั้นถูกจับ · "
-          "หน้า base มาก่อนบทและติดป้าย \"พื้นฐาน N\" · กล่อง 📖 แบบ v2 ไม่เก็บ <li> ของ details.file)" if ok else "ไม่ผ่าน ✗")
+          "หน้า base มาก่อนบทและติดป้าย \"พื้นฐาน N\" · กล่อง 📖 แบบ v2 ไม่เก็บ <li> ของ details.file" + (" · เล่ม 2: จับคำของเล่มก่อนในกล่อง 📖" if B.CFG["prev"] else "") + ")" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

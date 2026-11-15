@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""สร้างไฟล์บทใหม่ของ "Stat Arb for Non Quant · เล่ม 1" จากเปลือกกลาง tools/sab_shell/
+"""สร้างไฟล์บทใหม่ของ "Stat Arb for Non Quant" (เล่ม 1 ค่าเริ่มต้น · เล่ม 2 ด้วย --book sab2) จากเปลือกกลาง tools/sab_shell/
 
 เปลือก (CSS · palette · Thai line-break script) เก็บที่เดียวใน tools/sab_shell/head.html + tail.html
 เพื่อไม่ให้ความต่างเล็ก ๆ สะสมข้ามบท — ห้ามแก้ Thai line-break script ด้วยมือ (กฎ style guide)
@@ -8,6 +8,8 @@
     python3 tools/sab_new_part.py base1 ["หัวข้อรอง" "คำโปรย"]   # หน้าพื้นฐาน base1..base4 (แผน 14.5) → docs/sab-base1.html
     python3 tools/sab_new_part.py index "หน้ารวมเล่ม" "คำโปรย"     # slug ใดก็ได้ → docs/sab-<slug>.html
     python3 tools/sab_new_part.py --sync                          # เขียนหัว/ท้ายใหม่ให้ docs/sab-*.html ทุกไฟล์เมื่อเปลือกเปลี่ยน
+    python3 tools/sab_new_part.py --book sab2 part3               # เล่ม 2 → docs/sab2-part3.html (ชื่อบทจากแผน sab2 ·
+                                                                  #   โครง v2 + กล่อง .fails + บล็อก 💻 details.code)
 
 บท (partN) และหน้าพื้นฐาน (baseN) ได้โครงแม่แบบ v2 (แผน 14.3): <body data-tpl="2"> · .pos · .scene-open · .pq ·
 ตอนสอนที่จบด้วย .rest · .sum3 · ✍️ พร้อม details.hint สองระดับและ details.ans · .pq[data-hook] · 📖 · details.file
@@ -28,20 +30,32 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sab_book as B  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHELL = os.path.join(ROOT, "tools", "sab_shell")
 DOCS = os.path.join(ROOT, "docs")
-BOOK = "Stat Arb for Non Quant"
-BOOK_TH = "เชือกที่ผูกสองราคา"
+BOOK = B.BOOK
+BOOK_TH = B.BOOK_TH
 BODY_MARK = "<!--BODY-->"
 TAIL_MARK = "<!-- ═══════════════ Thai line-break script"
+shell = B.shell        # เปลือกกลาง (+ tools/sab2_shell/extra.css เมื่อ --book sab2)
 
+# เล่ม 2 (แผน sab2 หัวข้อ 5): กล่อง "พังเมื่อไร / บอกอะไรไม่ได้" และบล็อกพับ "💻 ทำด้วย Python" — ตรวจโดย sab_qa V9 · V10
+V2_EXTRA = '''
+<!-- กล่อง .fails หนึ่งกล่องต่อเครื่องมือ (กฎ V10: อย่างน้อยหนึ่งกล่องต่อบท) · เงื่อนไขที่ทำให้ผลใช้ไม่ได้ พร้อมตัวเลข ไม่ใช่ข้อเสียทั่วไป -->
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้</div>
+<ul>
+<li><strong>พังเมื่อ</strong> … (ตัวเลข: เช่น ข้อมูลสั้นกว่า … วัน ค่า … คลาดได้ถึง …)</li>
+<li><strong>บอกไม่ได้ว่า</strong> …</li>
+</ul></div>
 
-def shell():
-    with open(os.path.join(SHELL, "head.html"), encoding="utf-8") as fh:
-        head = fh.read()
-    with open(os.path.join(SHELL, "tail.html"), encoding="utf-8") as fh:
-        tail = fh.read()
-    return head, tail
+<!-- บล็อก 💻 (กฎ V9): ≤ 25 บรรทัด · ทำซ้ำสิ่งที่เพิ่งทำด้วยมือ · รันด้วย PYTHONPATH=tools (import sab2_stats / sab2_sim / sab2_realdata ได้)
+     ไม่มีเครือข่าย · บรรทัดสุดท้ายของ <pre> ต้องเป็น "# ผลที่ต้องได้: ค่า · ค่า" — ตัวเลขที่โค้ดพิมพ์ต้องตรงตามลำดับ
+     (ปัดตามจำนวนทศนิยมที่เขียน) และทุกค่าต้องปรากฏในเนื้อหน้านอกบล็อกนี้ · เขียน < > & ในโค้ดเป็น &lt; &gt; &amp; -->
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>xs = [1, 2, 3]
+print(sum(xs) / len(xs))
+# ผลที่ต้องได้: 2</pre>
+<p>…อธิบายสั้น ๆ ว่าบรรทัดไหนตรงกับขั้นไหนที่ทำด้วยมือ · แบบ numpy/pandas ที่ผู้อ่านน่าจะใช้จริง…</p>
+</details>
+'''
 
 
 EX_STEPS = ["ทำตาม", "เปลี่ยนเลขหนึ่งตัว", "เปลี่ยนเงื่อนไขหนึ่งข้อ", "ตัดสินใจ", "ถ่ายโอน"]      # บันไดห้าขั้น (แผน 14.3 ข้อ 6)
@@ -60,7 +74,7 @@ def v2_kind(slug):
 
 def v2_body(kind, n):
     """โครงบท v2 — ข้อความ "…" คือที่ให้เขียนแทน · คำแนะนำอยู่ใน comment (ไม่นับคำ ไม่ถูกตัวตรวจอ่าน)"""
-    last_part = max(B.TITLES)
+    last_part = B.LAST_PART
     if kind == "base":
         where = f"ภาคพื้นฐาน · หน้า {n} จาก {B.LAST_BASE}"
         cont = f' data-continues="base{n - 1}"' if n > 1 else ""
@@ -68,9 +82,11 @@ def v2_body(kind, n):
         nxt = f"หน้าพื้นฐาน {n + 1}" if n < B.LAST_BASE else "บท 0"
     else:
         where = f"ภาค … · บท {n} จาก {last_part}"
-        cont = f' data-continues="part{n - 1}"' if n > 0 else f' data-continues="base{B.LAST_BASE}"'
+        cont = (f' data-continues="part{n - 1}"' if n > B.FIRST_PART
+                else f' data-continues="base{B.LAST_BASE}"' if B.LAST_BASE else "")
         n_ex, n_hint, term_cap, tier = 5, 3, 7, "ข"
         nxt = f"บท {n + 1}"
+    extra = kind == "part" and B.BOOK_ID != "sab"      # เล่ม 2: .fails + details.code
     hint = ('<details class="hint"><summary>คำใบ้</summary>\n'
             '<p>…ขั้นที่ 1: เริ่มจากตรงไหน…</p>\n'
             '<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>…ตัวเลขกลางทางหนึ่งตัว…</p></details>\n'
@@ -120,6 +136,7 @@ def v2_body(kind, n):
 <div class="fm">… = …</div>
 <p class="readeq"><strong>อ่านสมการ:</strong> …แทนเลขจริงของตัวอย่างลงในสูตร…</p>
 
+{V2_EXTRA if extra else ""}
 <div class="rest"><div class="bt">พักตรงนี้ได้</div>
 <p>…สองสามประโยค พร้อมตัวเลขหลักของตอน · ไม่มีศัพท์ใหม่…</p></div>
 
@@ -161,7 +178,7 @@ def skeleton(slug, sub, desc):
 
 <!-- ═══════════════ COVER ═══════════════ -->
 <div class="cover">
-<h1>{BOOK} · เล่ม 1 — {BOOK_TH}</h1>
+<h1>{BOOK} · เล่ม {B.VOL} — {BOOK_TH}</h1>
 <div class="sub">{esc(sub)}</div>
 <div class="desc">{esc(desc)}</div>
 </div>
@@ -175,7 +192,7 @@ def skeleton(slug, sub, desc):
 def target(slug):
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug):
         sys.exit(f"slug ต้องเป็น a-z 0-9 - เท่านั้น: {slug!r}")
-    return os.path.join(DOCS, f"sab-{slug}.html")
+    return os.path.join(DOCS, f"{B.PREFIX}-{slug}.html")
 
 
 def create(slug, sub=None, desc=None):
@@ -198,12 +215,12 @@ def sync():
     """แทนหัว (ถึง <body>) และท้าย (ตั้งแต่ Thai script) ด้วยเปลือกปัจจุบัน · เก็บ <title> เดิมของแต่ละไฟล์"""
     head, tail = shell()
     changed = 0
-    for path in sorted(glob.glob(os.path.join(DOCS, "sab-*.html"))):
+    for path in sorted(glob.glob(os.path.join(DOCS, f"{B.PREFIX}-*.html"))):
         with open(path, encoding="utf-8") as fh:
             src = fh.read()
         body_tag = re.search(r"<body\b[^>]*>", src)           # หน้า v2 มี <body data-tpl="2"> — เก็บแท็กเดิมไว้
         if not body_tag or TAIL_MARK not in src:
-            print(f"ข้าม (ไม่ใช่เปลือก sab): {os.path.basename(path)}")
+            print(f"ข้าม (ไม่ใช่เปลือก {B.PREFIX}): {os.path.basename(path)}")
             continue
         m = re.search(r"<title>(.*?)</title>", src, re.S)
         title = m.group(1) if m else BOOK

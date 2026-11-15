@@ -23,9 +23,12 @@ import sys
 import tempfile
 from decimal import Decimal, InvalidOperation
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sab_book as B  # noqa: E402  (เลือกเล่มด้วย SAB_BOOK หรือ --book · ค่าเริ่มต้น sab)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
-FIG = os.path.join(DOCS, "sab-figures.json")
+FIG = B.FIG
 
 # ตัวเลขที่อธิบายได้เองในบท (ลำดับ · จำนวนนับเล็ก · ค่าคงที่ของการสอน) — เพิ่มเฉพาะเมื่อมีเหตุผล
 ALLOWED = {str(i) for i in range(0, 100)} | {"100", "1000", "0.5", "0.1", "0.01"}
@@ -102,17 +105,20 @@ def get_path(fig, path):
     return v
 
 
-def visible_text(html):
-    """ข้อความที่ผู้อ่านเห็น (ตัด script/style/comment และแท็ก)"""
+def visible_text(html, skip_code=False):
+    """ข้อความที่ผู้อ่านเห็น (ตัด script/style/comment และแท็ก)
+    skip_code (เล่ม 2): ตัด <pre> ด้วย — โค้ดในบล็อก 💻 details.code ตรวจโดย sab_qa V9 (รันจริง · ผลต้องปรากฏในหน้า)"""
     body = re.sub(r"<!--.*?-->", " ", html, flags=re.S)
+    if skip_code:
+        body = re.sub(r"<pre\b.*?</pre>", " ", body, flags=re.S)
     body = re.sub(r"<(script|style)\b.*?</\1>", " ", body, flags=re.S)
     body = re.sub(r"<[^>]+>", " ", body)
     return body.replace("&nbsp;", " ").replace("&minus;", "−")
 
 
-def page_numbers(html):
+def page_numbers(html, skip_code=False):
     out = []
-    for m in NUM_RE.finditer(visible_text(html)):
+    for m in NUM_RE.finditer(visible_text(html, skip_code)):
         raw, unit = m.group(1), (m.group(2) or "").strip()
         n = norm(raw)
         if n is None:
@@ -127,11 +133,11 @@ def page_numbers(html):
 DATA_KEY_RE = re.compile(r'<(\w+)[^>]*\bdata-key="([^"]+)"[^>]*>(.*?)</\1>', re.S)
 
 
-def check_page(name, html, fig, known):
+def check_page(name, html, fig, known, skip_code=False, fig_name="sab-figures.json"):
     problems = []
-    for raw, n in page_numbers(html):
+    for raw, n in page_numbers(html, skip_code):
         if n not in known and n.lstrip("-") not in known and n not in ALLOWED:
-            problems.append(f"{name}: เลขลอย {raw!s} ไม่มีใน sab-figures.json")
+            problems.append(f"{name}: เลขลอย {raw!s} ไม่มีใน {fig_name}")
     for m in DATA_KEY_RE.finditer(html):
         key, inner = m.group(2), re.sub(r"<[^>]+>", "", m.group(3)).strip()
         try:
@@ -185,27 +191,29 @@ def check_json(fig):
     return problems
 
 
-def run(fig_path, docs_dir, scope=None, quiet=False):
+def run(fig_path, docs_dir, scope=None, quiet=False, prefix=None):
+    prefix = prefix or B.PREFIX
     if not os.path.exists(fig_path):
-        print(f"ยังไม่มี {os.path.relpath(fig_path, ROOT)} — รัน tools/sab_figures.py ก่อน")
+        print(f"ยังไม่มี {os.path.relpath(fig_path, ROOT)} — รัน tools/sab_figures.py" + (f" --book {prefix}" if prefix != "sab" else "") + " ก่อน")
         return 1, ["no-json"]
     with open(fig_path, encoding="utf-8") as fh:
         fig = json.load(fh)
     known = known_values(fig)
-    names = sorted(n for n in os.listdir(docs_dir) if n.startswith("sab-") and n.endswith(".html"))
+    names = sorted(n for n in os.listdir(docs_dir) if n.startswith(f"{prefix}-") and n.endswith(".html"))
     if scope:
-        names = [n for n in names if n == f"sab-{scope}.html"]
+        names = [n for n in names if n == f"{prefix}-{scope}.html"]
     problems = check_json(fig)
+    fig_name = f"{prefix}-figures.json"
     for name in names:
         with open(os.path.join(docs_dir, name), encoding="utf-8") as fh:
-            problems += check_page(name, fh.read(), fig, known)
+            problems += check_page(name, fh.read(), fig, known, skip_code=prefix != "sab", fig_name=fig_name)
     if not quiet:
         if problems:
             print("พบปัญหา", len(problems), "ข้อ")
             for p in problems:
                 print("  -", p)
         else:
-            print(f"ตรวจ {len(names)} ไฟล์ · ค่าที่รู้จัก {len(known)} ค่า · ตรงกับ sab-figures.json ทั้งหมด ✓")
+            print(f"ตรวจ {len(names)} ไฟล์ · ค่าที่รู้จัก {len(known)} ค่า · ตรงกับ {fig_name} ทั้งหมด ✓")
     return (1 if problems else 0), problems
 
 
@@ -235,18 +243,26 @@ def selftest():
             json.dump(fig, fh, ensure_ascii=False)
         with open(os.path.join(d, "sab-part4.html"), "w", encoding="utf-8") as fh:
             fh.write(good)
-        _, p_good = run(fp, d, quiet=True)
+        _, p_good = run(fp, d, quiet=True, prefix="sab")
         page_good = [p for p in p_good if p.startswith("sab-part4")]
         with open(os.path.join(d, "sab-part5.html"), "w", encoding="utf-8") as fh:
             fh.write(bad)
-        _, p_all = run(fp, d, quiet=True)
+        _, p_all = run(fp, d, quiet=True, prefix="sab")
         with open(os.path.join(d, "sab-base1.html"), "w", encoding="utf-8") as fh:
             fh.write(base_good)
-        _, p_base_good = run(fp, d, scope="base1", quiet=True)
+        _, p_base_good = run(fp, d, scope="base1", quiet=True, prefix="sab")
         with open(os.path.join(d, "sab-base2.html"), "w", encoding="utf-8") as fh:
             fh.write(base_bad)
-        _, p_base_bad = run(fp, d, scope="base2", quiet=True)
+        _, p_base_bad = run(fp, d, scope="base2", quiet=True, prefix="sab")
+        # เล่ม 2: เลขในโค้ด <pre> ของ details.code ไม่นับเป็นเลขลอย · เลขในย่อหน้าธรรมดายังนับ · ไฟล์ sab-* ไม่ปนกับ sab2-*
+        with open(os.path.join(d, "sab2-part1.html"), "w", encoding="utf-8") as fh:
+            fh.write('<p>ต้องโอน 11,220</p><details class="code"><summary>💻 ทำด้วย Python</summary>'
+                     '<pre>x = 98765.43\nprint(round(x, 1))\n# ผลที่ต้องได้: 98765.4</pre></details><p>อีก 4,321.5</p>')
+        _, p_v2 = run(fp, d, quiet=True, prefix="sab2")
     ok = True
+    if [p for p in p_v2 if "98765" in p] or not any("4,321.5" in p for p in p_v2) or any(p.startswith("sab-") for p in p_v2):
+        ok = False
+        print("selftest ล้ม: เล่ม 2 (โค้ดใน <pre> / แยกไฟล์ตาม prefix) →", p_v2)
     if [p for p in p_base_good if p.startswith("sab-base1")] or any(not p.startswith("sab-base2") for p in p_base_bad
                                                                     if p.startswith("sab-")):
         ok = False
@@ -262,7 +278,7 @@ def selftest():
         if not any(e in p for p in p_all):
             ok = False
             print(f"selftest ล้ม: ไม่จับข้อผิดจงใจ {e!r}")
-    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง · หน้า base: --scope base1 และคีย์ base.* ใช้ได้)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง · หน้า base: --scope base1 และคีย์ base.* ใช้ได้ · เล่ม 2: ข้ามเลขใน <pre> ของ 💻)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 
