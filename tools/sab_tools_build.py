@@ -468,7 +468,7 @@ REV_BODY = r"""
 <div class="kpi">
 <div><div class="lb">X เมื่อครบช่วงถือ</div><span class="v" id="r-end"></span></div>
 <div><div class="lb">กำไรก่อนต้นทุน</div><span class="v" id="r-gross" data-twin="ch13/ตารางphi/0.80/กำไรก่อนต้นทุน"></span></div>
-<div><div class="lb">Expected Value สุทธิ</div><span class="v big" id="r-net" data-twin="ch13/ตารางphi/0.80/สุทธิ4ช่วง"></span></div>
+<div><div class="lb">Expected Value สุทธิ</div><span class="v big" id="r-net" data-twin="ch13/v2/ตารางคูณ/0.80/สุทธิ4ช่วง"></span></div>
 <div><div class="lb">Half-life (ครึ่งชีวิต · เวลาที่ระยะห่างหดเหลือครึ่ง) นับเป็นช่วง</div><span class="v" id="r-hl" data-twin="ch13/ตารางphi/0.80/ครึ่งชีวิต"></span></div>
 </div>
 <div class="tw"><table id="r-phitbl"><tr><th class="num">φ</th><th class="num">X หลัง 1 ช่วง</th><th class="num">X เมื่อครบ</th><th class="num">สุทธิ</th><th class="num">Half-life</th></tr></table></div>
@@ -514,7 +514,7 @@ REV_BODY = r"""
 <div class="tw"><table class="wide" id="s-tbl"><tr><th class="num">ช่วง</th><th class="num">X</th><th>สถานะก่อน</th><th>เหตุการณ์</th><th class="num">ช่วงที่ถือ</th><th class="num">ขา A</th><th class="num">ขา B</th><th class="num">สุทธิถ้าออกตอนนี้</th><th>สถานะหลัง</th></tr></table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ขา A และขา B คิดจากราคา ณ ช่วงที่เข้า · สุทธิ = สองขารวมกัน − ต้นทุนเข้าและออก</p>
 <div class="kpi">
-<div><div class="lb">สุทธิไม้ล่าสุดที่ปิด</div><span class="v big" id="s-last" data-twin="ch12/เส้นทาง/3/สุทธิ"></span></div>
+<div><div class="lb">สุทธิไม้ล่าสุดที่ปิด</div><span class="v big" id="s-last" data-twin="ch12/v2/เส้นทาง/3/สุทธิ"></span></div>
 <div><div class="lb">ไม้ที่ปิด</div><span class="v" id="s-closed" data-twin="ch14/ไม้ที่ปิด"></span></div>
 <div><div class="lb">ช่วงที่ถูกพักบล็อก</div><span class="v" id="s-block" data-twin="ch14/บล็อก"></span></div>
 <div><div class="lb">สถานะตอนจบ</div><span class="v key" id="s-state"></span></div>
@@ -525,16 +525,16 @@ REV_BODY = r"""
 <label for="w-win">กำไรเฉลี่ยของไม้ชนะ</label><input type="number" id="w-win" step="1">
 <label for="w-loss">ขาดทุนเฉลี่ยของไม้แพ้</label><input type="number" id="w-loss" step="1">
 </div>
-<p>ต้องชนะอย่างน้อย <span class="v big" id="w-need" data-twin="ch12/ต้องชนะทศนิยม"></span> % ของไม้ที่ออกแบบชนะหรือแพ้</p>
+<p>ต้องชนะอย่างน้อย <span class="v big" id="w-need" data-twin="ch12/v2/ต้องชนะทศนิยม"></span> % ของไม้ที่ออกแบบชนะหรือแพ้</p>
 <div class="tw"><table id="w-mix"><tr><th>สัดส่วนตอนจบ (เป้า / เวลา / งบ)</th><th class="num">Expected Value ต่อไม้</th></tr></table></div>
 <p class="src">🔢 ตัวเลขสมมติเพื่อสอน · ผลสามตอนจบจากบท 12</p>
 </div>
 """
 
 REV_JS = r"""
-const M=BOOK['บัญชีมิน'], C12=BOOK.ch12, C13=BOOK.ch13, C14=BOOK.ch14, G=C13['กติกาตารางphi'], CARD=M['การ์ด'], SETS=M['คู่']['ชุด'], CST=CARD['ต้นทุนเข้า']+CARD['ต้นทุนออก'];
-setv('r-phi',C13['ตารางphi']['0.80'].phi);setv('r-sd',0.5);setv('r-x0',G['เริ่ม']);setv('r-n',G['ช่วงถือ']);setv('r-sets',G['ชุด']);setv('r-cost',G['ต้นทุน']);
-setv('s-x',C14['เส้นทาง'].join(', '));setv('s-b','');setv('w-win',C12['เส้นทาง']['1']['สุทธิ']);setv('w-loss',C12['เส้นทาง']['3']['สุทธิ']);
+const M=BOOK['บัญชีมิน'], C12=BOOK.ch12, C13=BOOK.ch13, C14=BOOK.ch14, G=C13['กติกาตารางphi'], CARD=M['การ์ด'], SETS=M['คู่']['ชุด'], CV=C12.v2['ต้นทุน'], CST=CV['ไปกลับ'];   // ฐานต้นทุนเดียว ch11.v2 (taker 0.05% × 4 fill × 1,000 = 2)
+setv('r-phi',C13['ตารางphi']['0.80'].phi);setv('r-sd',0.5);setv('r-x0',G['เริ่ม']);setv('r-n',G['ช่วงถือ']);setv('r-sets',G['ชุด']);setv('r-cost',C13.v2['ต้นทุน']);
+setv('s-x',C14['เส้นทาง'].join(', '));setv('s-b','');setv('w-win',C12.v2['เส้นทาง']['1']['สุทธิ']);setv('w-loss',C12.v2['เส้นทาง']['3']['สุทธิ']);
 function R(){return {phi:num('r-phi'),sd:num('r-sd'),x0:num('r-x0'),n:Math.max(1,Math.round(num('r-n'))),sets:num('r-sets'),cost:num('r-cost')};}
 function hl(phi){return (phi>0&&phi<1)?Math.log(0.5)/Math.log(phi):null;}
 function expect(p,phi){const end=p.x0*Math.pow(phi,p.n),g=p.sets*(p.x0-end);return {end:end,g:g,net:g-p.cost,x1:p.x0*phi};}
@@ -543,14 +543,14 @@ function upd1(){const p=R();$('r-phiv').textContent=nf(p.phi,2);$('r-sdv').textC
   const t=$('r-phitbl');while(t.rows.length>1)t.deleteRow(1);
   Object.keys(C13['ตารางphi']).forEach(k=>{const ph=C13['ตารางphi'][k].phi,E=expect(p,ph),H=hl(ph),row=t.insertRow();
     row.innerHTML='<td class="num">'+nf(ph,2)+'</td><td class="num">'+nf(E.x1,2)+'</td><td class="num">'+nf(E.end,2)+
-    '</td><td class="num"><span class="v'+(E.net<0?' neg':'')+'" data-twin="ch13/ตารางphi/'+k+'/สุทธิ4ช่วง">'+nf(E.net,2)+'</span></td><td class="num">'+(H===null?'ไม่มี':nf(H,2))+'</td>';});
+    '</td><td class="num"><span class="v'+(E.net<0?' neg':'')+'" data-twin="ch13/v2/ตารางคูณ/'+k+'/สุทธิ4ช่วง">'+nf(E.net,2)+'</span></td><td class="num">'+(H===null?'ไม่มี':nf(H,2))+'</td>';});
   twins();}
 function fan(){const p=R(),sv=$('r-fan');clear(sv);const H=280,W=vb(sv,H),x0=44,x1=W-14,N=Math.max(12,Math.min(60,p.n*4)),y0=H-28,y1=24;
   const paths=[];for(let k=0;k<40;k++){let x=p.x0;const a=[x];for(let t=0;t<N;t++){x=p.phi*x+p.sd*gauss();a.push(x);}paths.push(a);}
   const all=[].concat(...paths);let ymax=Math.max(p.x0+1,...all),ymin=Math.min(-0.5,...all);ymax=Math.min(ymax,p.x0+6);ymin=Math.max(ymin,-6);
   const X=t=>x0+t/N*(x1-x0),Y=v=>y0-(Math.max(ymin,Math.min(ymax,v))-ymin)/(ymax-ymin)*(y0-y1);
   T(sv,10,16,'X ของตะกร้า '+N+' ช่วง · φ '+nf(p.phi,2)+' · แรงสะบัด '+nf(p.sd,2),{weight:700,fill:COL.ink});
-  const stopX=p.x0+(Math.abs(CARD['งบขาดทุนสุทธิ'])-CARD['ต้นทุนเข้า']-CARD['ต้นทุนออก'])/p.sets;
+  const stopX=p.x0+(Math.abs(CARD['งบขาดทุนสุทธิ'])-CST)/p.sets;
   [[0,'#94a3b8','Mean 0'],[CARD['ออก'],COL.green,'ออก '+fj(CARD['ออก'])],[stopX,COL.red,'งบ −15 ที่ X '+nf(stopX,1)]].forEach(([v,c,l])=>{
     sv.appendChild(S('line',{x1:x0,x2:x1,y1:Y(v),y2:Y(v),stroke:c,'stroke-dasharray':v===0?'':'5 4'}));T(sv,x1-2,Y(v)-4,l,{anchor:'end',size:11,fill:c});});
   paths.forEach(a=>sv.appendChild(S('polyline',{points:a.map((v,t)=>X(t)+','+Y(v)).join(' '),fill:'none',stroke:COL.grey,'stroke-width':1,opacity:.55})));
@@ -576,7 +576,7 @@ function world(phi,sd,n){const st=2,res={'งบ':0,'เป้า':0,'เวล�
     if(r){res[r]++;tot+=liq;if(liq>0)wins++;break;}}}
   return {t:res['เป้า']/n*100,b:res['งบ']/n*100,ti:res['เวลา']/n*100,w:wins/n*100,ev:tot/n};}
 function w3(){const p=R(),n=20000;$('r-3wn').textContent=nf(n,0);const t=$('r-3w');while(t.rows.length>1)t.deleteRow(1);
-  Object.keys(C13['กฎเดียวสามโลก']).forEach(k=>{const b=C13['กฎเดียวสามโลก'][k],W=world(+k,p.sd,n),row=t.insertRow();
+  Object.keys(C13.v2['กฎเดียวสามโลก']).filter(k=>/^\d/.test(k)).forEach(k=>{const b=C13.v2['กฎเดียวสามโลก'][k],W=world(+k,p.sd,n),row=t.insertRow();
     const c=(v,d,bv)=>'<td class="num"><span class="v">'+nf(v,d)+'</span><span class="bk">ในบท '+fj(bv)+'</span></td>';
     row.innerHTML='<td class="num">'+k+'</td>'+c(W.t,1,b['ออกเพราะเป้าเปอร์เซ็นต์'])+c(W.b,1,b['ออกเพราะงบเปอร์เซ็นต์'])+c(W.ti,1,b['ออกเพราะเวลาเปอร์เซ็นต์'])+
       c(W.w,1,b['ไม้กำไรเปอร์เซ็นต์'])+c(W.ev,2,b['ค่าคาดหมายต่อไม้ก่อนค่าถือ']);});}
@@ -589,7 +589,7 @@ function reset(){xs=parse('s-x');const b=parse('s-b');const b0=M['คู่'].B;
   pol={pos:null,paused:false,trades:[],blocked:0};bar=0;const t=$('s-tbl');while(t.rows.length>1)t.deleteRow(1);$('s-resmsg').textContent='';out();}
 function step(){if(bar>=xs.length)return;const x=xs[bar],b=bs[bar],a=x+M['คู่'].h*b,before=state();let ev='',el='',la='',lb='',liq=null;
   if(pol.pos){const p=pol.pos;el=bar-p.bar;const qa=p.side*SETS,qb=-p.side*SETS*M['คู่'].h;
-    la=qa*(a-p.a);lb=qb*(b-p.b);liq=la+lb-CARD['ต้นทุนเข้า']-CARD['ต้นทุนออก'];
+    la=qa*(a-p.a);lb=qb*(b-p.b);liq=la+lb-CST;
     const rec=p.side<0?x<=CARD['ออก']:x>=-CARD['ออก'];
     const r=liq<=CARD['งบขาดทุนสุทธิ']?'งบ':rec?'เป้า':el>=CARD['ช่วงถือสูงสุด']?'เวลา':null;
     if(r){pol.trades.push({net:liq,r:r});pol.pos=null;if(r==='งบ')pol.paused=true;ev='ออก: '+r;}else ev='ถือ';}
@@ -611,9 +611,9 @@ const pr=$('s-presets');
 ['s-x','s-b'].forEach(i=>$(i).addEventListener('change',reset));
 function updw(){const w=num('w-win'),l=num('w-loss');put('w-need',Math.abs(l)/(w+Math.abs(l))*100,2);
   const o=BOOK['บัญชีมิน']&&C12['สัดส่วนตอนจบ'];const t=$('w-mix');while(t.rows.length>1)t.deleteRow(1);
-  const outc=[C12['เส้นทาง']['1']['สุทธิ'],C12['เส้นทาง']['2']['สุทธิ'],C12['เส้นทาง']['3']['สุทธิ']];
+  const outc=[C12.v2['เส้นทาง']['1']['สุทธิ'],C12.v2['เส้นทาง']['2']['สุทธิ'],C12.v2['เส้นทาง']['3']['สุทธิ']];
   ['หลัก','เทียบ'].forEach(k=>{const mx=C12['สัดส่วนตอนจบ'][k]['สัดส่วน'];const ev=mx.reduce((s,v,i)=>s+v/100*outc[i],0);const row=t.insertRow();
-    row.innerHTML='<td>'+mx.join(' / ')+'</td><td class="num"><span class="v'+(ev<0?' neg':'')+'" data-twin="ch12/สัดส่วนตอนจบ/'+k+'/ค่าคาดหมาย">'+nf(ev,2)+'</span></td>';});twins();}
+    row.innerHTML='<td>'+mx.join(' / ')+'</td><td class="num"><span class="v'+(ev<0?' neg':'')+'" data-twin="ch12/v2/สัดส่วนตอนจบ/'+k+'/ค่าคาดหมาย">'+nf(ev,2)+'</span></td>';});twins();}
 ['w-win','w-loss'].forEach(i=>$(i).addEventListener('input',updw));
 ['r-phi','r-sd','r-x0','r-n','r-sets','r-cost'].forEach(i=>$(i).addEventListener('input',()=>{upd1();fan();}));
 ['r-phi','r-sd'].forEach(i=>$(i).addEventListener('change',()=>{fp();w3();}));
@@ -857,12 +857,12 @@ SCENARIOS = [
     ("sab-tool-funding.html", [("fill", "#f-crowd", "50")],
      [("#f-l3", "ch07/fundingถูกแย่ง/1/สุทธิmakerเปอร์เซ็นต์")]),
     ("sab-tool-reversion.html", [("fill", "#r-phi", "0.99")],
-     [("#r-net", "ch13/ตารางphi/0.99/สุทธิ4ช่วง"), ("#r-gross", "ch13/ตารางphi/0.99/กำไรก่อนต้นทุน"),
+     [("#r-net", "ch13/v2/ตารางคูณ/0.99/สุทธิ4ช่วง"), ("#r-gross", "ch13/ตารางphi/0.99/กำไรก่อนต้นทุน"),
       ("#r-hl", "ch13/ตารางphi/0.99/ครึ่งชีวิต")]),
-    ("sab-tool-reversion.html", [("fill", "#r-phi", "1.02")], [("#r-net", "ch13/ตารางphi/1.02/สุทธิ4ช่วง")]),
-    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(2)")], [("#s-last", "ch12/เส้นทาง/1/สุทธิ")]),
-    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(3)")], [("#s-last", "ch12/เส้นทาง/2/สุทธิ")]),
-    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(5)")], [("#s-last", "ch12/เส้นทาง/4/สุทธิ")]),
+    ("sab-tool-reversion.html", [("fill", "#r-phi", "1.02")], [("#r-net", "ch13/v2/ตารางคูณ/1.02/สุทธิ4ช่วง")]),
+    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(2)")], [("#s-last", "ch12/v2/เส้นทาง/1/สุทธิ")]),
+    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(3)")], [("#s-last", "ch12/v2/เส้นทาง/2/สุทธิ")]),
+    ("sab-tool-reversion.html", [("click", "#s-presets button:nth-child(5)")], [("#s-last", "ch12/v2/เส้นทาง/4/สุทธิ")]),
     ("sab-tool-reversion.html", [("click", "#s-ok"), ("click", "#s-resume")], [("#s-state", "!ว่าง")]),
 ]
 

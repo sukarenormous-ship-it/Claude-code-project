@@ -136,7 +136,7 @@ def _v2(data, D, q, fan_count):
 
     # ── ตารางคูณถือ 4 ช่วง: ปลายทางไม่ปัด และสุทธิ ──
     table = {}
-    for k in ("0.80", "0.99"):
+    for k in c13["ตารางphi"]:
         end = start * D(k) ** 4
         table[k] = {"ปลายทางไม่ปัด": q(end, 4), "ปลายทางปัด": q(end, 2), "ลด": q(start - end, 4),
                     "สุทธิ4ช่วง": q(sets * (start - end) - cost, 2)}

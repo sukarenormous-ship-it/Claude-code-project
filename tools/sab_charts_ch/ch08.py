@@ -1,7 +1,7 @@
 """บท 8 — hedge แล้ว…จากอะไร · สเปกกราฟของบท
 
-sab-beta-count : 8 วันของ BTC กับ A · วันที่ BTC ขยับไม่เกิน 2% เป็นสีเทา (ไม่นับ) · ใต้แต่ละวันบอก A ÷ BTC ของวันนั้น
-                 เพื่อให้เห็นว่ารายวันแกว่ง แต่ผลรวมของวันที่นับให้ 1.5
+sab-beta-count : 8 วันของ BTC กับ A (ตาราง v2 · ch08.v2.นับbeta) · วันที่ BTC ขยับไม่เกิน 2% เป็นสีเทา (ไม่นับ)
+                 ใต้แต่ละวันบอก A ÷ BTC ของวันนั้น (วันที่ 6 สวนทาง จดลบ) เพื่อให้เห็นว่ารายวันแกว่ง แต่ผลรวมของวันที่นับให้ 1.5
 sab-hedge-compare : สามวิธีให้ขา B (10 / 20 / 30 เหรียญ) · แท่งแดง = BTC ลง 4% · แท่งส้ม = B ขึ้นเอง 1% (stress)
 """
 from sab_charts import chart, wrap, grouped_bars, text, Frame, nice_ticks, C, B
@@ -14,13 +14,13 @@ def _whole(v):
 
 
 def _signed(v):
-    return ("+" if v > 0 else "") + B.fmt(v)
+    return ("+" if v > 0 else "") + _whole(v)
 
 
 @chart("sab-beta-count")
 def _beta_count(fig):
-    nb = fig["ch08"]["นับbeta"]
-    days, cut = nb["วัน"], nb["เกณฑ์เปอร์เซ็นต์"]
+    nb = fig["ch08"]["v2"]["นับbeta"]
+    days, cut = nb["วัน"], fig["ch08"]["นับbeta"]["เกณฑ์เปอร์เซ็นต์"]
     W, H = 760, 372
     vals = [d[k] for d in days for k in ("BTC", "A")]
     f = Frame(min(vals), max(vals), W, H, T=112, Bm=290, pad=0.1)
@@ -45,7 +45,9 @@ def _beta_count(fig):
                             C["ink"] if d["นับ"] else C["grey"], "middle", 700 if d["นับ"] else None))
         out.append(text(cx, f.Bm + 18, f"วัน {i + 1}", 11, C["ink"], "middle", 700))
         if d["นับ"]:
-            out.append(text(cx, f.Bm + 34, f"A÷BTC {B.fmt(d['Aต่อBTC'])}", 10.5, C["muted"], "middle"))
+            out.append(text(cx, f.Bm + 34, f"A÷BTC {_whole(d['Aต่อBTC'])}", 10.5, C["muted"], "middle"))
+            if d["ทิศ"] == "สวนทาง":
+                out.append(text(cx, f.Bm + 50, "สวนทาง จดลบ", 10.5, C["red"], "middle", 700))
         else:
             out.append(text(cx, f.Bm + 34, "ไม่นับ", 10.5, C["grey"], "middle"))
     last = f.L + gw * (len(days) - 1) + gw / 2
@@ -63,9 +65,7 @@ def _beta_count(fig):
     alt = (f"กราฟแท่ง 8 วัน แท่งน้ำเงินคือการขยับของ BTC แท่งส้มคือการขยับของ A เป็นเปอร์เซ็นต์ "
            f"วันที่ BTC ขยับไม่เกิน {cut}% เป็นสีเทาและไม่นับ วันที่นับ {nb['วันที่นับ']} วัน A ขยับรวม {sA} "
            f"BTC ขยับรวม {sB} ได้ beta {B.fmt(nb['ผล'])}")
-    cap = (f"รายวัน A ÷ BTC แกว่งตั้งแต่ {B.fmt(min(d['Aต่อBTC'] for d in days if d['นับ']))} ถึง "
-           f"{B.fmt(max(d['Aต่อBTC'] for d in days if d['นับ']))} แต่ผลรวมให้ {B.fmt(nb['ผล'])} · "
-           f"วันลงนับแยกได้ {B.fmt(nb['วันลง']['ผล'])} วันขึ้นได้ {B.fmt(nb['วันขึ้น']['ผล'])}")
+    cap = f"8 วันของ BTC กับ A เป็น % · วันที่ BTC ขยับไม่เกิน {cut}% ไม่นับ"
     return wrap(W, H, alt, out, cap, "สอน")
 
 

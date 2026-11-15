@@ -6,6 +6,108 @@
 อัตราต่อปีแบบ simple ทั้งบท ยกเว้น 🔎 (ทบต้น)
 """
 
+import math
+
+
+def _v2(D, q, m, c7, g, marks3, rates3, fund3, cum3, s_open, p_open, s_close, p_close,
+        maker, taker, mark, rate, per_day, rounds, year, days, cap, hurdle, fee_mk, fee_tk, opp30, n_year):
+    """ตัวเลขกลางทางของบท 7 v2 (แสดงการคิด) · ไม่แตะคีย์เดิม"""
+    def num(x):
+        return q(x, 0) if x == x.to_integral_value() else q(x, 2)
+
+    # ── สมุด funding ทีละรอบ (เงินเข้า = บวก · มองจากบัญชีของมิน · คน long perp เป็นกระจก) ──
+    book = []
+    for i, (mk, r, f, c) in enumerate(zip(marks3, rates3, fund3, cum3)):
+        book.append({"รอบ": i + 1, "อัตราเปอร์เซ็นต์": float(r), "ราคาฐาน": q(mk, 0),
+                     "ขาshort": num(f), "คนlong": num(-f), "สะสม": c})
+    pos = sum(f for f in fund3 if f > 0)
+    neg = sum(f for f in fund3 if f < 0)
+
+    # ── ค่าธรรมเนียมสี่ครั้ง: เลขกลมที่ 100,000 กับราคาจริงของสี่ครั้ง ──
+    half_spread = D(m["ต้นทุนหนึ่งรอบต่อขา"]["ส่วนต่างราคา"]) / 2         # 10
+    mk1, tk1 = mark * maker, mark * taker                                 # 20 · 50
+    fills = [s_open, p_open, s_close, p_close]
+    fee_fill = [x * maker for x in fills]
+    spot_fee = fee_fill[0] + fee_fill[2]
+    perp_fee = fee_fill[1] + fee_fill[3]
+    spot_pnl, perp_pnl = s_close - s_open, p_open - p_close
+    f3 = sum(fund3)
+    spot_leg = spot_pnl - spot_fee
+    perp_leg = perp_pnl + f3 - perp_fee
+    per_round = mark * rate / 100
+
+    # ── บันได (เส้นทางราบ 30 วัน): เงินต่อปีของแต่ละขั้น ──
+    flat = per_round * rounds
+    net_flat = flat - fee_mk
+
+    def per_year(x):
+        return x * year / days
+
+    # ── สี่เส้นทาง: ที่มาของยอดรวม (อ่านจากเส้นสะสมของกราฟ) ──
+    up, fl, alt = g["พุ่งแล้วแผ่ว"], g["กลับขั้ว"], g["สลับ"]
+    set_len = 8                                                           # +10 ห้ารอบ แล้ว −5 สามรอบ
+    n_sets = int(rounds) // set_len
+    k = 3
+
+    # ── มือที่แย่งเชือก: เงินหลังค่าธรรมเนียมของแต่ละอัตรา ──
+    crowd_net = [q(mark * D(str(r["ต่อรอบเปอร์เซ็นต์"])) / 100 * rounds - fee_mk, 0) for r in c7["fundingถูกแย่ง"]]
+
+    # ── ✍️ ข้อ 5 (ถ่ายโอน): เหรียญ E ที่มีแต่ spot กับ perp ──
+    e_px, e_qty, e_rate = D(2000), D(5), D("0.03")
+    e_val = e_px * e_qty
+    e_round = e_val * e_rate / 100
+    e_fee = e_val * maker * 4
+    e_screen = e_rate * per_day * year
+
+    return {
+        "เปิด": {"spot": q(s_open, 0), "perp": q(p_open, 0), "ห่าง": q(p_open - s_open, 0),
+                 "ราคาสมมติคนแห่long": q(marks3[1], 0), "ห่างสมมติ": q(marks3[1] - mark, 0)},
+        "สมุด": book, "สมุดบวกรวม": num(pos), "สมุดลบรวม": num(neg), "สมุดรวม": num(f3),
+        "ค่าธรรมเนียม": {
+            "makerต่อครั้ง": q(mk1, 0), "makerสี่ครั้ง": q(4 * mk1, 0),
+            "takerต่อครั้ง": q(tk1, 0), "takerสี่ครั้ง": q(4 * tk1, 0),
+            "ครึ่งช่องว่าง": q(half_spread, 0), "ช่องว่างสี่ครั้ง": q(4 * half_spread, 0),
+            "takerรวมช่องว่าง": q(4 * tk1 + 4 * half_spread, 0), "makerประหยัด": q(4 * tk1 - 4 * mk1, 0),
+            "ขาเดียวรอนาที": 15, "ส่งtakerแพงขึ้น": q(tk1 - mk1, 0),
+            "ราคาจริงสี่ครั้ง": [q(x, 0) for x in fills], "ค่าจริงสี่ครั้ง": [q(x, 2) for x in fee_fill],
+            "ผลรวมราคาสี่ครั้ง": q(sum(fills), 0), "ค่าจริงรวม": q(sum(fee_fill), 2),
+        },
+        "สามรอบ": {
+            "ค่าธรรมเนียมขาspot": q(spot_fee, 2), "ค่าธรรมเนียมขาperp": q(perp_fee, 2),
+            "ขาspot": q(spot_leg, 2), "ขาperp": q(perp_leg, 2), "รวม": q(spot_leg + perp_leg, 2),
+            "ห่างแคบลง": q((p_open - s_open) - (p_close - s_close), 0),
+            "รอบพอค่าธรรมเนียม": q(fee_mk / per_round, 0), "ชั่วโมงพอค่าธรรมเนียม": q(fee_mk / per_round * 24 / per_day, 0),
+        },
+        "บันได": {
+            "ทุนspot": q(mark, 0), "ทุนขาperp": q(cap - mark, 0), "รอบต่อปี": n_year,
+            "บนจอเงินต่อปี": q(per_round * per_day * year, 0),
+            "funding30วัน": q(flat, 0), "funding30วันต่อปี": q(per_year(flat), 0),
+            "สุทธิ30วัน": q(net_flat, 0), "สุทธิ30วันต่อปี": q(per_year(net_flat), 2),
+            "ค่าเสียโอกาส30วัน": q(opp30, 2), "ส่วนเกิน30วัน": q(net_flat - opp30, 2),
+            "ส่วนเกินต่อปีเงิน": q(per_year(net_flat - opp30), 2), "hurdle": q(hurdle, 0),
+        },
+        "เส้นทาง": {
+            "พุ่งต่อรอบแรก": q(D(str(up[0])), 0), "พุ่งช่วงแรก": q(D(str(up[29])), 0),
+            "พุ่งต่อรอบหลัง": q(D(str(up[30])) - D(str(up[29])), 0), "พุ่งช่วงหลัง": q(D(str(up[-1])) - D(str(up[29])), 0),
+            "กลับขั้วขาขึ้น": q(D(str(fl[44])), 0), "กลับขั้วขาลง": q(D(str(fl[-1])) - D(str(fl[44])), 0),
+            "สลับรอบต่อชุด": set_len, "สลับต่อชุด": q(D(str(alt[set_len - 1])), 0), "สลับชุดเต็ม": n_sets,
+            "สลับรอบในชุดเต็ม": n_sets * set_len, "สลับชุดเต็มรวม": q(D(str(alt[n_sets * set_len - 1])), 0),
+            "สลับรอบท้าย": q(D(str(alt[-1])) - D(str(alt[n_sets * set_len - 1])), 0),
+            "สลับบวกห้ารอบ": q(D(str(alt[4])), 0), "สลับลบสามรอบ": q(D(str(alt[7])) - D(str(alt[4])), 0),
+            "makerช่วย": q(fee_tk - fee_mk, 0),
+        },
+        "กฎออก": {
+            "รอบติดลบ": k,
+            "กลับขั้วสะสม": [q(D(str(x)), 0) for x in fl[44:48]],
+            "สลับสะสม": [q(D(str(x)), 0) for x in alt[:set_len]],
+        },
+        "แย่งสุทธิmaker": crowd_net,
+        "แบบฝึก5": {"ราคา": q(e_px, 0), "จำนวน": int(e_qty), "มูลค่า": q(e_val, 0), "อัตรา": float(e_rate),
+                    "ต่อรอบ": q(e_round, 0), "ค่าธรรมเนียมต่อครั้ง": q(e_val * maker, 0),
+                    "ค่าธรรมเนียมสี่ครั้ง": q(e_fee, 0), "รอบพอค่าธรรมเนียม": q(e_fee / e_round, 2),
+                    "รอบพอค่าธรรมเนียมปัดขึ้น": math.ceil(float(e_fee / e_round)), "บนจอ": q(e_screen, 2)},
+    }
+
 
 def extend(data, D, q):
     m, c0, c6, c7 = data["บัญชีมิน"], data["ch00"], data["ch06"], data["ch07"]
@@ -101,7 +203,11 @@ def extend(data, D, q):
     per_day4 = D(24) / D(4)
     screen4 = rate * per_day4 * year
 
+    v2 = _v2(D, q, m, c7, g, marks3, rates3, fund3, cum3, s_open, p_open, s_close, p_close,
+             maker, taker, mark, rate, per_day, rounds, year, days, cap, hurdle, fee_mk, fee_tk, opp30, n_year)
+
     return {
+        "v2": v2,
         "สามรอบเพิ่ม": {
             "spotเปิด": q(s_open, 0), "perpเปิด": q(p_open, 0), "spotปิด": q(s_close, 0), "perpปิด": q(p_close, 0),
             "basisเปิด": q(p_open - s_open, 0), "basisปิด": q(p_close - s_close, 0),
@@ -148,17 +254,28 @@ def extend(data, D, q):
             {"id": "ch07-reverse-borrow",
              "ข้อความ": "เมื่อ funding ติดลบ การกลับทิศ (short spot + long perp) ต้องยืมเหรียญมาขาย ซึ่งยืมไม่ได้เสมอ มีค่ายืม และถูกเรียกคืนได้ · กลยุทธ์จึงไม่สมมาตร: ฝั่งรับ funding บวกทำง่ายกว่าฝั่งรับ funding ลบ",
              "ระดับหลักฐาน": "สมมติฐาน", "แหล่ง": None, "บท": [7, 18]},
+            {"id": "ch07-funding-pull",
+             "ข้อความ": "funding ทำให้ฝั่งที่ราคา perp เอียงไปหาต้องจ่ายทุกรอบ จึงจูงใจให้คนขาย perp ที่แพงกว่า spot และซื้อ spot ที่ถูกกว่า (หรือกลับกันเมื่ออัตราติดลบ) ราคา perp จึงมักอยู่ใกล้ spot · แต่ไม่มีวันใดบังคับให้สองราคาเท่ากัน ระยะห่างกว้างได้ในวันที่คนแห่ไปฝั่งเดียว",
+             "ระดับหลักฐาน": "สมมติฐาน", "แหล่ง": None, "บท": [7]},
+            {"id": "ch07-funding-base-eligibility",
+             "ข้อความ": "เงิน funding ของแต่ละรอบคิดจากราคาที่ exchange กำหนด ณ เวลาตัดยอดของรอบนั้น (บางแห่งใช้ Mark Price บางแห่งใช้ราคาดัชนี) คูณขนาดสถานะที่ถืออยู่ตอนนั้น ไม่ใช่ราคาที่เปิด · ต้องมีสถานะที่ได้ราคาแล้ว ณ เวลาตัดยอด คำสั่งที่ยังตั้งรอไม่ได้รับหรือจ่าย · เวลาตัดยอดและราคาฐานต่างกันตาม exchange ต้องอ่านจากเอกสารสัญญา",
+             "ระดับหลักฐาน": "สมมติฐาน", "แหล่ง": None, "บท": [7]},
         ],
         "_แบบฝึก": [
             {"โจทย์": "อัตรา +0.02% ต่อรอบ ราคา mark 100,000 ค่าธรรมเนียม maker 80 ถือ 90 รอบ — สุทธิเท่าไร", "คำตอบ": float(q(net1, 0))},
             {"โจทย์": "ถือ 20 รอบที่ +0.01% แล้วติดลบ −0.01% สองรอบติด ค่าธรรมเนียม 80 — ถ้าออกตอนนี้ได้สุทธิเท่าไร", "คำตอบ": float(q(now2, 0))},
             {"โจทย์": "exchange ที่รอบละ 4 ชั่วโมงในตัวอย่าง อัตรา 0.01% ต่อรอบ — อัตราบนจอต่อปีแบบ simple กี่ %", "คำตอบ": float(q(screen4, 2))},
+            {"โจทย์": "v2 ข้อ 1 · สมุดสามรอบ (mark 100,000 / 101,000 / 99,000 · อัตรา +0.01 / +0.03 / −0.02%) — funding สะสมของขา short หลังรอบ 3", "คำตอบ": float(q(sum(fund3), 2))},
+            {"โจทย์": "v2 ข้อ 5 · เหรียญ E ราคา 2,000 ถือ 5 เหรียญคู่ short perp 5 เหรียญ อัตรา +0.03% maker 0.02% — funding ต่อรอบ", "คำตอบ": float(v2["แบบฝึก5"]["ต่อรอบ"])},
+            {"โจทย์": "v2 ข้อ 5 · ค่าธรรมเนียมเปิดปิดสองขา (สี่ครั้ง)", "คำตอบ": float(v2["แบบฝึก5"]["ค่าธรรมเนียมสี่ครั้ง"])},
+            {"โจทย์": "v2 ข้อ 5 · ต้องได้ funding กี่รอบเต็มจึงพอค่าธรรมเนียม", "คำตอบ": float(v2["แบบฝึก5"]["รอบพอค่าธรรมเนียมปัดขึ้น"])},
         ],
         "แบบฝึกค่า": {
             "ข้อ1": {"อัตรา": float(r1), "ต่อรอบ": q(per1, 0), "รอบพอค่าธรรมเนียม": q(fee_mk / per1, 0),
                      "fundingรวม": q(per1 * rounds, 0), "สุทธิ": q(net1, 0), "ต่อปีของทุน": q(ann(net1), 2),
                      "ส่วนเกิน": q(ann(net1 - opp30), 2)},
             "ข้อ2": {"ได้แล้ว": q(got2, 0), "ออกตอนนี้": q(now2, 0), "รอแล้วติดลบอีก": q(wait_neg, 0),
+                     "fundingถ้ารอแล้วติดลบ": q(got2 - per_round, 0),
                      "ต่างกัน": q(now2 - wait_neg, 0)},
             "ข้อ3": {"รอบต่อวัน": int(per_day4), "ต่อวัน": q(per_round * per_day4, 0), "บนจอ": q(screen4, 2)},
         },
