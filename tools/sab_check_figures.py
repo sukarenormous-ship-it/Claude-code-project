@@ -296,7 +296,8 @@ def run(fig_path, docs_dir, scope=None, quiet=False, prefix=None, strict=False):
         if not problems:
             print(f"ตรวจ {len(names)} ไฟล์ · ค่าที่รู้จัก {len(known)} ค่า · ตรงกับ {fig_name} ทั้งหมด ✓"
                   + (f" · เตือนที่มา {len(notes)} ข้อ" if notes else ""))
-    return (1 if problems else 0), problems + notes if quiet else problems
+    run.notes = notes
+    return (1 if problems else 0), problems
 
 
 def selftest():
@@ -341,7 +342,20 @@ def selftest():
             fh.write('<p>ต้องโอน 11,220</p><details class="code"><summary>💻 ทำด้วย Python</summary>'
                      '<pre>x = 98765.43\nprint(round(x, 1))\n# ผลที่ต้องได้: 98765.4</pre></details><p>อีก 4,321.5</p>')
         _, p_v2 = run(fp, d, quiet=True, prefix="sab2")
+        # เล่ม 2 ที่มาเข้ม: 13.5 อยู่ใต้ ch04 เท่านั้น → หน้า sab2-part5 อ้างไม่ได้ · 2,846 ของเล่ม 1 อ้างได้ · ปี 2025 ได้
+        fig2 = {"ch05": {"ผล": 7.25}, "ch04": {"อื่น": 13.5}, "ch03": {"ปี": 2025, "เล่ม1": 2846}, "แบบฝึก": {"ch05": [{"คำตอบ": 1.75}]}}
+        with open(os.path.join(d, "sab2-figures.json"), "w", encoding="utf-8") as fh:
+            json.dump(fig2, fh, ensure_ascii=False)
+        with open(os.path.join(d, "sab2-part5.html"), "w", encoding="utf-8") as fh:
+            fh.write('<p>ผล 7.25 · ข้อ 1.75 · ปี 2025 · เล่ม 1 2,846 · บังเอิญ 13.5</p><td data-key="ch04.อื่น">13.5</td>')
+        code_s, p_s = run(os.path.join(d, "sab2-figures.json"), d, scope="part5", quiet=True, prefix="sab2")
+        notes_s = run.notes
+        code_x, p_x = run(os.path.join(d, "sab2-figures.json"), d, scope="part5", quiet=True, prefix="sab2", strict=True)
     ok = True
+    if code_s != 0 or p_s or len(notes_s) != 2 or not any("13.5" in n and "ch04.อื่น" in n for n in notes_s) \
+            or not any("data-key ch04.อื่น" in n for n in notes_s) or code_x != 1 or len(p_x) != 2:
+        ok = False
+        print("selftest ล้ม: เล่ม 2 ที่มาเข้ม →", code_s, p_s, notes_s, code_x, p_x)
     if [p for p in p_v2 if "98765" in p] or not any("4,321.5" in p for p in p_v2) or any(p.startswith("sab-") for p in p_v2):
         ok = False
         print("selftest ล้ม: เล่ม 2 (โค้ดใน <pre> / แยกไฟล์ตาม prefix) →", p_v2)
@@ -360,7 +374,7 @@ def selftest():
         if not any(e in p for p in p_all):
             ok = False
             print(f"selftest ล้ม: ไม่จับข้อผิดจงใจ {e!r}")
-    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง · หน้า base: --scope base1 และคีย์ base.* ใช้ได้ · เล่ม 2: ข้ามเลขใน <pre> ของ 💻)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", "ผ่าน ✓ (จับข้อผิดจงใจครบ", len(expect), "ชนิด · บทถูกไม่ถูกฟ้อง · หน้า base: --scope base1 และคีย์ base.* ใช้ได้ · เล่ม 2: ข้ามเลขใน <pre> ของ 💻 · ที่มาเข้ม chNN/แบบฝึก/เล่ม 1/ปี · --strict)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 
