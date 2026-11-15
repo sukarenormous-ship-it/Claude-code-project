@@ -1,7 +1,7 @@
 """บท 5 — 12.17% บนจอ เหลือ 5.23% ในมือ · สเปกกราฟของบท
 
 sab-carry-ladder    : บันไดสี่ขั้นของสถานะเดียวกัน (บนจอ → ต่อทุน → หลังค่าธรรมเนียม → ส่วนเกินหลัง hurdle) · แก้หมายเหตุ 25,000 (errata 13)
-sab-crowding-ladder : มือที่แย่งเชือก — basis 3,000 → 500 แล้วส่วนเกินหลัง hurdle ลดจาก 5.23% เป็น −2.87% (hurdle คงที่ 4%)
+sab-crowding-ladder : Crowding (มือที่แย่งเชือก) — basis 3,000 → 500 แล้วส่วนเกินหลัง hurdle ลดจาก 5.23% เป็น −2.87% (hurdle คงที่ 4%)
 """
 import re
 
@@ -23,7 +23,7 @@ def _carry_ladder(fig):
     subs = [f"basis ÷ ราคา spot {B.fmt(m['BTC']['spot'])}", f"basis ÷ ทุน {B.fmt(cap)}",
             f"หักค่าธรรมเนียม {_num(fee)}", f"หักค่าเสียโอกาส {B.fmt(opp)}"]
     W, H = 760, 320
-    out = ladder_bars(rungs, "สถานะเดียวกัน วัดสี่แบบ (% ต่อปี)", "%", W, H)
+    out = ladder_bars(rungs, "ไม้เดียวกัน วัดสี่แบบ (% ต่อปี)", "%", W, H)
     out = [re.sub(r">([−+]\d+)\.0<", r">\1<", o) for o in out]          # ป้ายส่วนที่หาย −4.0 → −4
     vals = [v for _, v in rungs]
     f = Frame(min(vals + [0]), max(vals + [0]), W, H)
@@ -33,7 +33,7 @@ def _carry_ladder(fig):
     alt = (f"กราฟแท่งสี่ขั้น อัตราบนจอ {B.fmt(d['บนจอ'])}% เมื่อหารด้วยทุนทั้งก้อน {B.fmt(cap)} เหลือ {B.fmt(d['ต่อทุน'])}% "
            f"หักค่าธรรมเนียม {_num(fee)} เหลือ {B.fmt(d['หลังค่าธรรมเนียม'])}% หักค่าเสียโอกาสที่ hurdle 4% "
            f"เหลือส่วนเกิน {B.fmt(d['ส่วนเกินเปอร์เซ็นต์'])}%")
-    cap_txt = "อัตรา simple ต่อปีของสถานะเดียวกัน · ยังไม่รวม Bid-Ask Spread"
+    cap_txt = f"ไม้เดียวกัน ทุน {B.fmt(cap)} · ยืดเป็นต่อปีแบบคูณตรง ไม่ทบต้น · ยังไม่รวม Bid-Ask Spread"
     return wrap(W, H, alt, out, cap_txt, "สอน")
 
 
@@ -44,7 +44,7 @@ def _crowding_ladder(fig):
     W, H = 760, 330
     vals = [r["ส่วนเกินเปอร์เซ็นต์"] for r in rows]
     cats = [f"basis {B.fmt(r['basis'])}" for r in rows]
-    out = bars(cats, vals, "มือที่แย่งเชือกมากขึ้น → basis แคบลง → ส่วนเกินหลัง hurdle (% ต่อปี)",
+    out = bars(cats, vals, "Crowding มากขึ้น → basis แคบลง → ส่วนเกินหลัง hurdle (% ต่อปี)",
                "%", W=W, H=H)
     f = Frame(min(vals + [0]), max(vals + [0]), W, H)
     gw = (W - f.L - f.R) / len(rows)
