@@ -250,6 +250,11 @@ English technical term (คำแปลไทย)
 | Leg | ขา (ส่วนหนึ่งของชุดที่ถือ) |
 | Bid / Ask | ราคาเสนอซื้อ / ราคาเสนอขาย |
 | Moving Average | ค่าเฉลี่ยเคลื่อนที่ |
+| UTC | เวลาสากลเชิงพิกัด |
+| Candlestick | แท่งราคา |
+| Look-ahead Bias | อคติมองล่วงหน้า |
+| Null Result | ผลว่าง |
+| Equity Curve | เส้นมูลค่าบัญชี |
 | Position | สถานะ (สิ่งที่บัญชีถือหรือติดภาระอยู่) |
 | Median | มัธยฐาน |
 | Mid Price | ราคากลาง |
