@@ -42,6 +42,7 @@ function countInPage(forceV2) {
   const words = (t) => { let n = 0; for (const s of seg.segment(t || '')) if (s.isWordLike) n++; return n; };
   const all = document.body.cloneNode(true);
   all.querySelectorAll('script,style,.cover').forEach((e) => e.remove());
+  if (v2) all.querySelectorAll('svg').forEach((e) => e.remove());   // v2: ข้อความในกราฟไม่ใช่คำที่อ่านเป็นร้อยแก้ว
   const page = words(all.textContent);
   const main = all.cloneNode(true);
   main.querySelectorAll('details,.sheet,table.ledger,table.ncard').forEach((e) => e.remove());
