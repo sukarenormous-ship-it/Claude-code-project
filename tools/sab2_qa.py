@@ -50,7 +50,10 @@ FORBIDDEN_TOKENS = ("sab2-data", "closes-daily", "funding-8h", "splits.json", "_
 RUNNER = r'''import runpy, socket, sys
 def _blocked(*a, **k):
     raise OSError("เครือข่ายถูกปิดในการตรวจบล็อก 💻 (sab2_qa V9)")
-socket.socket = _blocked
+class _BlockedSocket(socket.socket):      # ต้องเป็นคลาส: ssl (ที่ urllib.request โหลดตอน import sab2_realdata) สืบทอด socket.socket
+    def __init__(self, *a, **k):
+        _blocked()
+socket.socket = _BlockedSocket
 socket.create_connection = _blocked
 socket.getaddrinfo = _blocked
 path = sys.argv[1]
