@@ -33,7 +33,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DOCS = path.join(ROOT, 'docs');
 export const WPM = 80;
 export const MAIN_MIN = 1750, MAIN_MAX = 2300, PAGE_MAX = 3500, STORY_MAX = 0.25;                       // v1
-export const V2 = { MAIN_MIN: 2800, BASE_MIN: 1200, BASE_MAX: 2600, SHARE_MIN: 0.65, STORY_MAX: 0.20, LONG: 6000 };   // แผน 14.4
+export const V2 = { MAIN_MIN: 2800, BASE_MIN: 1200, BASE_MAX: 2600, SHARE_MIN: 0.65, STORY_MAX: 0.20, LONG: 6000, PART_MAX: 3500 };   // แผน 14.4
 const isBase = (name) => /^sab-base\d+\.html$/.test(name);
 
 function countInPage(forceV2) {
@@ -53,7 +53,19 @@ function countInPage(forceV2) {
   const mainWords = words(main.textContent);
   let story = 0;
   main.querySelectorAll('.scene-open,.scene').forEach((e) => { story += words(e.textContent); });
-  return { page, main: mainWords, story, v2 };
+  // คำต่อ "ตอน" (h2 ที่ขึ้นต้น "ตอน ก/ข/ค…") — บทยาวที่แบ่งตอนแล้วตัดสินทีละตอน
+  const parts = {};
+  let cur = null;
+  const tw = document.createTreeWalker(main, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  for (let nd = tw.nextNode(); nd; nd = tw.nextNode()) {
+    if (nd.nodeType === 1) {
+      if (nd.tagName === 'H2') { const m = nd.textContent.match(/^\s*ตอน\s*([ก-ฮ])/); if (m) cur = m[1]; }
+      else if (nd.classList && (nd.classList.contains('sum3') || (nd.classList.contains('bg') && /✍️/.test(nd.textContent)))) cur = null;
+      continue;
+    }
+    if (cur) parts[cur] = (parts[cur] || 0) + words(nd.textContent);
+  }
+  return { page, main: mainWords, story, v2, parts };
 }
 
 export async function count(files, asV2 = false) {
@@ -91,7 +103,11 @@ export function judge(r) {
 
 // ข้อสังเกตที่ไม่ทำให้ล้ม (แผน 14.4: ไม่มีเพดานแข็ง แต่บทยาวต้องแบ่งตอน)
 export function notes(r) {
-  return r.v2 && !r.base && r.main > V2.LONG ? [`⚠ ยาว แบ่งตอน (เส้นทางหลัก ${r.main} คำ เกิน ${V2.LONG})`] : [];
+  if (!r.v2 || r.base || r.main <= V2.LONG) return [];
+  const ps = Object.entries(r.parts || {});
+  if (ps.length < 2) return [`⚠ ยาว แบ่งตอน (เส้นทางหลัก ${r.main} คำ เกิน ${V2.LONG} และยังไม่แบ่งตอน)`];
+  const big = ps.filter(([, w]) => w > V2.PART_MAX);
+  return big.length ? big.map(([k, w]) => `⚠ ตอน ${k} ยาว ${w} คำ (เกิน ${V2.PART_MAX}) แบ่งย่อยได้`) : [];
 }
 
 async function selftest() {
