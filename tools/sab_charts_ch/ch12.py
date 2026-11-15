@@ -6,6 +6,8 @@ sab-breakeven-winrate: (v2 ตอน ค · 3) โลกสองตอนจบ
                 (ch12.v2.หน้า.สามต้นทุน) · เส้น 50% ให้เห็นว่าชนะครึ่งหนึ่งยังติดลบทุกเส้น
 sab-pair-strip: แถบผล 20 ไม้ของการ์ดเดียวกันในสองโลก (60/25/15 vs 45/20/35) · ลำดับตรึงเพื่อสอน
 """
+import re
+
 from sab_charts import chart, wrap, text, slip_strip, Frame, C, B
 
 
@@ -92,7 +94,8 @@ def _pair_strip(fig):
         m = mix[name]["สัดส่วน"]
         title = f"ส่วนผสมซ้อม {m[0]}/{m[1]}/{m[2]} (สมมติ) · Expected Value {_sign(mix[name]['ค่าคาดหมาย'])} ต่อไม้"
         parts = slip_strip(s[name]["ลำดับ"], title, W=W, H=h1)
-        out.append(f'<g transform="translate(0,{36 + j * (h1 + 10)})">' + "\n".join(parts) + "</g>")
+        dy = 36 + j * (h1 + 10)                    # เลื่อนพิกัด y ตรง ๆ (ไม่ใช้ transform ให้ svg_overlap อ่านตำแหน่งจริงได้)
+        out += [re.sub(r'\b(y|y1|y2)="(-?[\d.]+)"', lambda m: f'{m.group(1)}="{float(m.group(2)) + dy:.1f}"', ln) for ln in parts]
     H = 36 + 2 * (h1 + 10)
     alt = (f"สองแถบ 20 ไม้ แถวบน {s['หลัก']['จำนวน'][0]} ไม้ได้ {r[0]} · {s['หลัก']['จำนวน'][1]} ไม้ได้ {r[1]} · "
            f"{s['หลัก']['จำนวน'][2]} ไม้เสีย {-r[2]} รวม {B.fmt(s['หลัก']['รวม'])} · แถวล่าง {s['เทียบ']['จำนวน'][0]} · "

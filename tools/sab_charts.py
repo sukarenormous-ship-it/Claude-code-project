@@ -390,7 +390,7 @@ def _selection_bias(fig):
     xs = list(range(1, len(top) + 1))
     a1 = fig["ch10"]["อันดับ1"]
     lo_day = nf + a1["วันทดสอบที่ต่ำสุด"]
-    parts = lines(xs, [("คู่อันดับ 1 จาก 200 คู่ (ไม่มีเชือก)", top, C["red"]), ("คู่ที่มีเชือกจริง", real, C["green"])],
+    parts = lines(xs, [("คู่อันดับ 1 จาก 200 คู่ (ไม่มีเชือก)", top, C["blue"]), ("คู่ที่มีเชือกจริง", real, C["amber"])],
                   "สวยที่สุดใน Formation Period — แล้วหลุดใน Test Period", xlabel="วัน (Formation Period | Test Period)",
                   marks=[(lo_day, top[lo_day - 1], f"{B.fmt(a1['zต่ำสุด'])} Standard Deviation")], every=2,
                   xticks=[(1, "วันที่ 1"), (nf, f"วันที่ {B.fmt(nf)}"), (len(top), f"วันที่ {B.fmt(s['วันทั้งหมด'])}")])
@@ -409,7 +409,7 @@ def _selection_bias(fig):
 @chart("sab-seed-spread")
 def _seed_spread(fig):
     r = fig["seed_robustness"]["ch10"]
-    rows = [("ในกรอบ: 10 คู่ที่คัด", r["ในกรอบ"], C["red"]), ("ในกรอบ: คู่ที่มีเชือก", r["ในกรอบคู่จริง"], C["green"]),
+    rows = [("ในกรอบ: 10 คู่ที่คัด", r["ในกรอบ"], C["blue"]), ("ในกรอบ: คู่ที่มีเชือก", r["ในกรอบคู่จริง"], C["amber"]),
             ("ในกรอบ: ทั้ง 200 คู่", r["ทั้ง200ในกรอบ"], C["grey"])]
     parts, H = range_rows([(n, v["ต่ำสุด"], v["มัธยฐาน"], v["สูงสุด"], v["ตัวอย่าง"], c) for n, v, c in rows],
                           f"สุ่มใหม่ {r['ในกรอบ']['จำนวนseed']} ชุด: ตัวอย่างในเล่มอยู่ฝั่งที่ดูดีของช่วง", unit="%")
