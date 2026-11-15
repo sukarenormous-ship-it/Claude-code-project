@@ -297,7 +297,7 @@ def _real(q):
     tz = zmax_t
     x24, x29 = A[tz] - h * B[tz], A[tz] - hFV * B[tz]
     peak = {"วัน": dv[tz], "BTC": q(A[tz], 2), "ETH": q(B[tz], 2), "ETHคูณh": q(h * B[tz], 2), "X": q(x24, 2),
-            "ห่างMean": q(x24 - m, 2), "Z": q(z[tz], 2), "ETHคูณhต้น": q(hFV * B[tz], 2), "Xต้น": q(x29, 2),
+            "ห่างMean": q(x24 - m, 2), "Z": q(z[tz], 2), "Zลืมลบ": q(x24 / s, 2), "ETHคูณhต้น": q(hFV * B[tz], 2), "Xต้น": q(x29, 2),
             "ห่างMeanต้น": q(x29 - mFV, 2), "Zต้น": q((x29 - mFV) / sFV, 2)}
     first = fills[0]
     notional0 = sets * first["A"] + sets * h * first["B"]

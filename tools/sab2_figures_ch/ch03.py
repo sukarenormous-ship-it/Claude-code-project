@@ -178,6 +178,8 @@ def extend(data, D, q):
         er = S.engle_granger(lf[b], lf[a])
         xv = [ya - ef["h"] * yb - ef["intercept"] for ya, yb in zip(lv[a], lv[b])]
         af = S.adf(xv)
+        e1 = S.engle_granger(lf[a], lf[b], lags=1)
+        real.setdefault("lag1", {})[f"{a}-{b}"] = {"stat": _r(e1["stat"]), "ผ่าน": bool(e1["reject5"])}
         real["คู่"][f"{a}-{b}"] = {"ช่วงเลือก": pack(ef), "ช่วงตรวจ": pack(ev), "กลับทิศ": pack(er),
                                     "ตรึงh": {"stat": _r(af["stat"]), "เส้น5": _r(af["crit"]["5%"]), "ผ่าน": bool(af["reject5"]),
                                               "Mean": _r(100 * S.mean(xv), 0)}}
