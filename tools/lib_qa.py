@@ -119,7 +119,7 @@ def check(path):
     if run > 4:
         warns.append(f"บรรทัด {run_start}: กล่องสีติดกัน {run} กล่อง (เกิน 4)")
 
-    if name not in SKIP_BANNER and "🧭" not in src and 'class="fm"' in src:
+    if name not in SKIP_BANNER and "🧭" not in src and 'class="fm"' in src and 'data-tpl="2"' not in src:   # หน้า v2 ใช้แถบ .pos แทน
         warns.append("ไม่มี banner 🧭 เส้นทางอ่าน")
     if 'class="fm"' in src and "Intl.Segmenter" not in src:
         warns.append("ไม่มี script ตัดคำไทย")

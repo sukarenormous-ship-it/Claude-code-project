@@ -1,5 +1,7 @@
-"""บท 0 — ผังแนวคิด "โซ่ที่มีวันล็อก" (dated futures) + "เชือกไม่มีวันล็อก" (perp)
+"""บท 0 — ผังแนวคิดเชือกที่ผูกสองราคา
 
+`sab-rope-lock0` (บท 0 v2 ใช้ตัวนี้): แผงเดียว dated futures — เชือกยืดหดระหว่างทาง แล้วสัญญาบังคับให้สองราคาเจอกันในวันหมดอายุ
+`sab-rope-types0` (บท 0 v1 · คงนิยามไว้ให้บท 7 ใช้ต่อ): สองแผง dated futures + perp
 ภาพแนวคิด ไม่มีตัวเลข (ผังครบ 4 ชนิดอยู่บท 9) · `sab-converge` ของบทนี้อยู่ใน tools/sab_charts.py แล้ว
 """
 
@@ -140,3 +142,51 @@ def _rope_types0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่
            "แผงล่างเป็นเส้นราคา perp กับ spot ที่เดินคู่กันไปไม่มีวันจบ มีเหรียญค่าดึงเครื่องหมายบวกหรือลบทุกรอบ")
     cap = "dated futures ล็อกในวันหมดอายุ ส่วน perp มีแต่ค่าดึงที่ฝั่งจ่ายสลับกันได้"
     return wrap(W, H, alt, p, cap, "แนวคิด", narrow=True)
+
+
+@chart("sab-rope-lock0")
+def _rope_lock0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่อ่านตัวเลข
+    """แผงเดียว: ราคา futures กับ spot ผูกด้วยเชือก · ระหว่างทางยืดหดได้ · วันหมดอายุสองเส้นต้องเจอกัน"""
+    W, H = 760, 290
+    p = [f'<rect x="0" y="0" width="{W}" height="{H}" fill="#fff"/>']
+    x0, xm, xl, xe = 74, 250, 600, 700
+    base = 250
+
+    def pair(x):
+        t = min(1.0, (x - x0) / (xl - x0))
+        mid = 150 + _wiggle(x, 9) * (1 - 0.35 * t)
+        bump = 26 * math.exp(-((x - xm) / 70.0) ** 2)    # ระหว่างทางเชือกยืดออกได้ก่อนหดกลับ
+        gap = (84 + bump) * (1 - t)
+        return mid - gap / 2, mid + gap / 2               # (futures, spot) — ค่า y บนจอ
+
+    p.append(text(24, 30, "เชือกที่ผูกราคา futures กับราคา spot", 14, INK, weight=700))
+    p.append(text(24, 50, "ระหว่างทางยืดหรือหดได้ แต่สัญญาบังคับให้สองราคาเจอกันในวันหมดอายุ", 12, MUTED))
+    xs = [x0 + i * 4 for i in range(int((xl - x0) / 4) + 1)]
+    for x in (x0 + 30, xm + 40, x0 + 0.78 * (xl - x0)):
+        a, b = pair(x)
+        p += _chain(x, a + 3, b - 3)
+    p.append(_line([(x, pair(x)[0]) for x in xs], FUT))
+    p.append(_line([(x, pair(x)[1]) for x in xs], SPOT))
+    after = [(x, 150 + _wiggle(x, 9) * 0.65) for x in range(xl, xe + 1, 4)]
+    p.append(f'<polyline points="{_poly(after)}" fill="none" stroke="{SPOT}" stroke-width="2" stroke-opacity=".35" '
+             f'stroke-dasharray="4 4"/>')
+    fy0, sy0 = pair(x0)
+    p.append(text(x0, fy0 - 12, "ราคา futures", 12, FUT, weight=700))
+    p.append(text(x0, sy0 + 20, "ราคา spot", 12, SPOT, weight=700))
+    a, b = pair(x0 + 30)
+    p.append(text(x0 + 42, (a + b) / 2 + 4, "ระยะที่เชือกยืด = basis", 12, INK, weight=700))
+    a, b = pair(xm + 40)
+    p.append(text(xm + 54, a - 8, "ยืดออกได้ระหว่างทาง", 11.5, MUTED))
+    ly = pair(xl)[0]
+    p += _lock(xl, ly - 16)
+    p.append(f'<circle cx="{xl}" cy="{ly:.1f}" r="5" fill="#fff" stroke="{C["purple"]}" stroke-width="2.4"/>')
+    p.append(text(xl - 14, ly - 34, "วันหมดอายุ: สองราคาเท่ากัน", 12, C["purple"], "end", 700))
+    p.append(f'<line x1="{x0}" y1="{base}" x2="{xe}" y2="{base}" stroke="{C["axis"]}" stroke-width="1.5"/>')
+    for x, lab in ((x0, "วันเปิด"), (xl, "วันหมดอายุ")):
+        p.append(f'<line x1="{x}" y1="{base - 5}" x2="{x}" y2="{base + 5}" stroke="{C["grey"]}" stroke-width="1.5"/>')
+        p.append(text(x, base + 18, lab, 11, MUTED, "middle"))
+    p.append(text(xe - 2, base - 8, "สัญญาจบ", 11, C["grey"], "end"))
+    alt = ("ผังแผงเดียว เส้นราคา futures อยู่เหนือเส้นราคา spot ผูกกันด้วยเชือก ระยะห่างยืดออกช่วงหนึ่งแล้วหดลง "
+           "จนสองเส้นมาเจอกันที่แม่กุญแจวันหมดอายุ หลังจากนั้นเหลือเส้น spot เส้นเดียว")
+    cap = "ระยะห่างของสองเส้นคือ basis · กำไรของชุดมาจากระยะนี้หดลง ไม่ได้มาจากเส้นทั้งคู่ขึ้นหรือลง"
+    return wrap(W, H, alt, p, cap, "แนวคิด")   # แผงกว้างเตี้ย: เลื่อนในกรอบบนจอแคบ (ย่อเต็มจอแล้วป้ายเล็กจนอ่านไม่ได้)
