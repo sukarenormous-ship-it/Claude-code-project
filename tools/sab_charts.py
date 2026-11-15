@@ -478,12 +478,37 @@ def process(html, fig, fill=False):
     if fill:
         def fsub(m):
             try:
-                return f"{m.group(1)}{B.fmt(B.get_path(fig, m.group(3)))}</{m.group(2)}>"
+                v = B.get_path(fig, m.group(3))
             except KeyError:
                 unknown.append(m.group(3))
                 return m.group(0)
-        out = re.sub(r'(<(td|span|strong|b)\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>).*?</\2>', fsub, out, flags=re.S)
+            return f"{m.group(1)}{fill_cell(m.group(4), v)}</{m.group(2)}>"
+        out = re.sub(r'(<(td|span|strong|b)\b(?=[^>]*\bdata-key="([^"]+)")(?![^>]*\bclass="blank")[^>]*>)(.*?)</\2>', fsub, out, flags=re.S)
     return out, unknown
+
+
+# ตัวเลขตัวแรกในเซลล์ (นอกแท็ก): เครื่องหมาย · หลักพันมี comma · ทศนิยม — แบบเดียวกับที่ sab_check_figures อ่าน
+CELL_NUM_RE = re.compile(r"(?<![\w.])([+\-−]?)(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?![\w.])")
+
+
+def fill_cell(inner, v):
+    """ข้อความใหม่ของเซลล์ data-key = B.fmt(v) (comma · U+2212 · ทศนิยมตามที่ JSON เก็บ — เล่ม 1 พิมพ์ 50.0 ไม่ใช่ 50)
+    · เซลล์ที่มีตัวเลขอยู่แล้ว: แทนเฉพาะตัวเลขตัวแรก ข้อความรอบ ๆ (เช่น "%" · "+" · "×" · หน่วย) คงไว้
+    · ค่า float ที่ลงตัว (56.0) และตัวเลขเดิมในเซลล์ไม่มีจุดทศนิยม → พิมพ์ 56 ตามที่ผู้เขียนเลือก (ค่าเท่ากันทุกบิต)
+    · ค่าข้อความ (วันที่ · โหมด) หรือเซลล์ที่ไม่มีตัวเลข → แทนทั้งเซลล์ (พฤติกรรมเดิม)"""
+    new = B.fmt(v)
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return new
+    text = re.sub(r"<[^>]+>", lambda t: "\0" * len(t.group(0)), inner)     # ตำแหน่งในแท็กห้ามจับ
+    m = CELL_NUM_RE.search(text)
+    if not m:
+        return new
+    sign, old = m.group(1), m.group(2)
+    if isinstance(v, float) and v == int(v) and "." not in old and new.endswith(".0"):
+        new = new[:-2]
+    if sign == "+" and v > 0:
+        new = "+" + new
+    return inner[:m.start()] + new + inner[m.end():]
 
 
 def run(docs, fig, fill=False, write=True, scope=None):
@@ -518,8 +543,17 @@ def selftest():
             '<td class="blank" data-key="ch04.ต้องโอน"></td></tr></table>'
             '<script>var s = "<!--CHART:sab-zz-test--><!--/CHART:sab-zz-test-->";</script>'
             '<!--CHART:sab-nope--><!--/CHART:sab-nope-->' + tail)
+    fig["ch05"] = {"pct": 56.0, "x": 12.5, "d": "2025-05-07", "neg": -3.25}
+    page = page.replace("</table>", '<table><tr><td data-key="ch05.pct">56%</td><td data-key="ch05.pct"></td>'
+                        '<td data-key="ch05.x">+1.0 เท่า</td><td data-key="ch05.d">2024-01-01</td>'
+                        '<td data-key="ch05.neg">(−9.99)</td><td data-key="ch05.x"><b>9</b>%</td></tr></table>', 1)
     ok = True
     one, unk = process(page, fig, fill=True)
+    for want in ('>56%</td>', '"ch05.pct">56.0</td>', '>+12.5 เท่า</td>', '>2025-05-07</td>', '>(−3.25)</td>',
+                 '><b>12.5</b>%</td>'):
+        if want not in one:
+            ok = False
+            print("selftest ล้ม: --fill คงข้อความรอบตัวเลข / 56.0 ลงตัว →", want)
     two, _ = process(one, fig, fill=True)
     if one != two:
         ok = False
@@ -550,7 +584,7 @@ def selftest():
             except Exception as e:  # noqa: BLE001
                 ok = False
                 print(f"selftest ล้ม: กราฟ {k} วาดไม่ได้ — {e!r}")
-    print("selftest", f"ผ่าน ✓ (รันซ้ำนิ่ง · DATA · --fill ข้ามใบเปล่า · ไม่แตะ <script> · จับคีย์ไม่รู้จัก · กราฟจริง {len(CHARTS)} คีย์วาดได้)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", f"ผ่าน ✓ (รันซ้ำนิ่ง · DATA · --fill ข้ามใบเปล่า · คงข้อความรอบตัวเลข (% · + · หน่วย) · ไม่แตะ <script> · จับคีย์ไม่รู้จัก · กราฟจริง {len(CHARTS)} คีย์วาดได้)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

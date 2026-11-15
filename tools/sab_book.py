@@ -116,6 +116,19 @@ FIG_PLUGINS = os.path.join(TOOLS, f"{PREFIX}_figures_ch")
 CHART_PLUGINS = os.path.join(TOOLS, f"{PREFIX}_charts_ch")
 
 
+def load_figures(book=None):
+    """ค่าตัวเลขของเล่มใดก็ได้ (docs/<book>-figures.json) เป็น dict ใหม่ทุกครั้ง · ค่าเริ่มต้น = เล่มที่เลือกอยู่
+    ปลั๊กอินเล่ม 2 อ่านตัวเลขเล่ม 1 ผ่านตัวนี้เท่านั้น: load_figures("sab")["ch13"]["v2"]… (V11 ห้ามเปิด sab-figures.json ตรง)"""
+    book = book or BOOK_ID
+    if book not in BOOKS:
+        raise ValueError(f"ไม่รู้จักเล่ม {book!r} (มี {', '.join(BOOKS)})")
+    path = os.path.join(DOCS, f"{book}-figures.json")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"ยังไม่มี docs/{book}-figures.json — รัน python3 -I tools/sab_figures.py --book {book}")
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def load_terms(book=None):
     """ทะเบียนศัพท์ของเล่ม (tools/<prefix>_terms.json) · เล่มที่มีเล่มก่อนหน้า: คำของเล่มก่อนถือว่าสอนแล้ว
     (ใส่ "สอน": "เล่ม1" → teach_order = None → W22 ไม่ฟ้อง) · คำที่ลงทะเบียนซ้ำในเล่มนี้ใช้ของเล่มก่อน และติด "_ซ้ำ"

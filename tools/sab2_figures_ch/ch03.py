@@ -101,10 +101,11 @@ def extend(data, D, q):
     }
 
     # ═══ หมื่นโลก: เส้น 5% แบบจำลอง ═══
-    many = sorted(S.adf(M.random_walk_pair(seed=s, n=N_HAND)["X"])["stat"] for s in range(1, N_MANY + 1))
+    sim = S.adf_pvalue_sim(stat, N_HAND, worlds=N_MANY, seed=1,               # seed 1–10,000 ของโลกเดียวกับมือ
+                           world=lambda sd, n: M.random_walk_pair(seed=sd, n=n)["X"])
     k5 = int(0.05 * N_MANY)
-    below_hand = sum(v <= stat for v in many)
-    tenk = {"จำนวน": N_MANY, "เส้น5จำลอง": _r(many[k5 - 1]), "ตาราง5": _r(crit10["5%"]),
+    below_hand = sim["below"]
+    tenk = {"จำนวน": N_MANY, "เส้น5จำลอง": _r(sim["crit"]["5%"]), "ตาราง5": _r(crit10["5%"]),
             "ต่ำกว่ามือ": below_hand, "ต่ำกว่ามือเปอร์เซ็นต์": _r(100 * below_hand / N_MANY, 1),
             "pตารางเชิงเส้นกำกับ": _r(100 * S.adf_pvalue(stat), 0), "ห้าเปอร์เซ็นต์ของหมื่น": k5}
 
@@ -238,15 +239,11 @@ def extend(data, D, q):
                        "ครึ่งชีวิตรอบ": _r(S.half_life(af["phi"]), 1), "Meanต่อรอบ": _r(S.mean(fr), 4),
                        "ต่อหมื่น": _r(S.mean(fr) / 100 * 10000)}
 
-    # ตัวเลขของเล่ม 1 ที่บทนี้ทวน (φ ด้วยมือของ A–B · เล่ม 1 บท 13) — อ่านจาก docs/sab-figures.json ของเล่ม 1 ที่มาเดียว
-    import json
-    import os
-    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "docs", "sab-figures.json"),
-              encoding="utf-8") as fh:
-        v1 = json.load(fh)["ch13"]["v2"]["phiมือบท9"]
-    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "docs", "sab-figures.json"),
-              encoding="utf-8") as fh:
-        sd_v1 = json.load(fh)["ch13"]["v2"]["sdหน้า"][1]["sd"]         # โลก φ 0.80 แรงสะบัด 0.5 → SD 0.83
+    # ตัวเลขของเล่ม 1 ที่บทนี้ทวน (φ ด้วยมือของ A–B · เล่ม 1 บท 13) — อ่านผ่าน sab_book.load_figures("sab") ที่มาเดียว
+    import sab_book as SB
+    fig1 = SB.load_figures("sab")
+    v1 = fig1["ch13"]["v2"]["phiมือบท9"]
+    sd_v1 = fig1["ch13"]["v2"]["sdหน้า"][1]["sd"]         # โลก φ 0.80 แรงสะบัด 0.5 → SD 0.83
     vol1 = {"รวมคูณ": v1["ผลรวมผลคูณ"], "รวมกำลังสอง": v1["ผลรวมกำลังสอง"], "phi": v1["phi"], "ครึ่งชีวิต": v1["ครึ่งชีวิต"],
             "sdโลก080": sd_v1}
     # ตัวเลขกลางทางที่หน้าคิดให้ดู (ทุกตัวคำนวณจากค่าข้างบน)

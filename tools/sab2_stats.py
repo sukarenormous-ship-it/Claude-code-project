@@ -7,7 +7,7 @@ Every function takes plain lists and returns plain floats / lists / dicts.
 
     python3 tools/sab2_stats.py --selftest     # เทียบ numpy (1e-9) · ค่าวิกฤต ADF ที่ตีพิมพ์ · การจำลองที่รู้คำตอบ
 
-หมวด (sections): ค่าพื้นฐาน · การถดถอย · AR(1)/OU/half-life · ADF · Engle–Granger · หน้าต่างเลื่อน · Kalman 1 มิติ ·
+หมวด (sections): ค่าพื้นฐาน · การถดถอย · AR(1)/OU/half-life · ADF (+ p-value แบบจำลอง adf_pvalue_sim) · Engle–Granger · หน้าต่างเลื่อน · Kalman 1 มิติ ·
 PCA (Jacobi) · พอร์ต · Kelly · walk-forward
 """
 
@@ -253,6 +253,49 @@ def adf(xs, lags=0, const=True, n_vars=1):
     crit = adf_crit(nobs, n_vars)
     return {"stat": stat, "pvalue": adf_pvalue(stat, n_vars), "crit": crit, "gamma": r["coef"][j],
             "phi": 1.0 + r["coef"][j], "nobs": nobs, "lags": lags, "reject5": stat < crit["5%"]}
+
+
+_NULL_CACHE = {}
+
+
+def _rw_world(seed, n, n_vars=1):
+    """โลกเดินสุ่มมาตรฐาน (ก้าว N(0, 1)) ยาว n · n_vars = 2 → คู่เดินสุ่มอิสระ (y, x) สำหรับ Engle–Granger"""
+    rng = random.Random(seed)
+    walks = []
+    for _ in range(n_vars):
+        v, w = 0.0, []
+        for _ in range(n):
+            v += rng.gauss(0.0, 1.0)
+            w.append(v)
+        walks.append(w)
+    return walks[0] if n_vars == 1 else tuple(walks)
+
+
+def adf_null(n, worlds=10000, seed=1, lags=0, n_vars=1, world=None):
+    """ค่าสถิติ ADF (n_vars = 1 · มีค่าคงที่) หรือ Engle–Granger (n_vars = 2) ของโลกเดินสุ่ม worlds โลก ยาว n เท่าข้อมูล
+    เรียงจากน้อยไปมาก · โลกที่ i ใช้ seed + i (i = 0 … worlds − 1) · world(seed, n) → ซีรีส์ (หรือคู่ (y, x) ถ้า n_vars = 2)
+    แทนโลกมาตรฐานได้ (เช่น lambda s, n: sab2_sim.random_walk_pair(seed=s, n=n)["X"]) · จำผลไว้ในกระบวนการ
+    null distribution of the ADF / EG statistic by simulation (small samples, where the asymptotic table is off)"""
+    key = (n, worlds, seed, lags, n_vars, world)
+    if key not in _NULL_CACHE:
+        gen = world or (lambda s, m: _rw_world(s, m, n_vars))
+        out = []
+        for i in range(worlds):
+            w = gen(seed + i, n)
+            out.append(engle_granger(w[0], w[1], lags)["stat"] if n_vars == 2 else adf(w, lags=lags)["stat"])
+        _NULL_CACHE[key] = sorted(out)
+    return _NULL_CACHE[key]
+
+
+def adf_pvalue_sim(stat, n, worlds=10000, seed=1, lags=0, n_vars=1, world=None):
+    """p-value แบบจำลองของค่าสถิติ ADF/EG ที่ข้อมูลยาว n (จำนวนจุดของซีรีส์ ไม่ใช่จำนวนแถวการเปลี่ยน):
+    สัดส่วนโลกเดินสุ่มที่ได้ค่าสถิติ ≤ stat · คืน pvalue · below (จำนวนโลก) · worlds · crit ({"1%","5%","10%"} =
+    ค่าที่ลำดับ int(p·worlds) จากล่าง) · asymptotic (adf_pvalue ของ MacKinnon เทียบ) · simulated small-sample p-value"""
+    null = adf_null(n, worlds, seed, lags, n_vars, world)
+    below = sum(1 for v in null if v <= stat)
+    crit = {k: null[max(0, int(p * worlds) - 1)] for k, p in (("1%", 0.01), ("5%", 0.05), ("10%", 0.10))}
+    return {"pvalue": below / worlds, "below": below, "worlds": worlds, "n": n, "crit": crit,
+            "asymptotic": adf_pvalue(stat, n_vars)}
 
 
 def engle_granger(y, x, lags=0):
@@ -626,8 +669,22 @@ def selftest():
     wa = walk_forward(100, 40, 20, anchored=True)
     check("walk_forward anchored", [w[0] for w in wa] == [(0, 40), (0, 60), (0, 80)]
           and all(tr[1] == te[0] for tr, te in wa))
+    # p-value แบบจำลอง: ข้อมูลยาว → ใกล้ MacKinnon 1994 (เชิงเส้นกำกับ) · ข้อมูลสั้น → เส้น 5% ต่ำกว่าตาราง asymptotic
+    for st in (-3.43, -2.86, -2.3, -1.6):
+        ps = adf_pvalue_sim(st, 500, worlds=2000, seed=7)
+        check(f"ADF p แบบจำลอง 500 จุด ≈ MacKinnon ที่ {st} (±0.02)", abs(ps["pvalue"] - adf_pvalue(st)) <= 0.02,
+              f"{ps['pvalue']:.4f} vs {adf_pvalue(st):.4f}")
+    pe = adf_pvalue_sim(-3.34, 500, worlds=1000, seed=7, n_vars=2)
+    check("EG p แบบจำลอง 500 จุด ≈ MacKinnon N=2 ที่ −3.34 (±0.025)", abs(pe["pvalue"] - adf_pvalue(-3.34, 2)) <= 0.025,
+          f"{pe['pvalue']:.4f} vs {adf_pvalue(-3.34, 2):.4f}")
+    sm = adf_pvalue_sim(-2.86, 11, worlds=4000, seed=1)
+    check("ADF 11 จุด: เส้น 5% แบบจำลองใกล้ MacKinnon 2010 ที่ 10 แถว (±0.2) และต่ำกว่า −2.86 · p > asymptotic",
+          abs(sm["crit"]["5%"] - adf_crit(10)["5%"]) <= 0.2 and sm["crit"]["5%"] < -2.86 and sm["pvalue"] > sm["asymptotic"],
+          f"{sm['crit']['5%']:.3f} vs {adf_crit(10)['5%']:.3f}")
+    check("adf_pvalue_sim: seed เดิมผลเดิม · world แทนได้", adf_pvalue_sim(-2.0, 30, 300, seed=3)["below"] ==
+          adf_pvalue_sim(-2.0, 30, 300, seed=3, world=lambda s_, m: _rw_world(s_, m))["below"])
     print("selftest", f"ผ่าน ✓ ({n_checks} ข้อ · เทียบ numpy ≤ 1e-9 สัมพัทธ์ · ค่าวิกฤต MacKinnon 2010 / ตาราง Fuller ≤ 0.03 · "
-          "p-value MacKinnon 1994 ±0.003 · จำลองที่รู้คำตอบ: ขนาด/อำนาจ ADF · EG · ช่วง half-life · Kalman · Kelly)"
+          "p-value MacKinnon 1994 ±0.003 · p-value แบบจำลอง (adf_pvalue_sim) ≈ MacKinnon ที่ 500 จุด · จำลองที่รู้คำตอบ: ขนาด/อำนาจ ADF · EG · ช่วง half-life · Kalman · Kelly)"
           if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 

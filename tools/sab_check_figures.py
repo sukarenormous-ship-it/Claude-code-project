@@ -14,6 +14,11 @@
     python3 tools/sab_check_figures.py --scope part4   # เฉพาะบท
     python3 tools/sab_check_figures.py --scope base1   # หน้าพื้นฐาน (แผน 14.5 · คีย์ตัวเลขอยู่ใต้ base.* จาก tools/sab_figures_ch/base.py)
     python3 tools/sab_check_figures.py --selftest      # ใส่ข้อผิดจงใจในบทหุ่น ต้องจับได้ครบ
+    SAB_BOOK=sab2 python3 tools/sab_check_figures.py --strict   # เล่ม 2: เลขที่มาไม่ใช่บทนี้ (chNN / แบบฝึก.chNN / เล่ม 1) = ล้ม
+
+เล่ม 2 (ที่มาเข้ม): เลขบนหน้า sab2-partN ต้องอยู่ใต้ chNN.* · แบบฝึก.chNN · เรื่อง.partN · ตัวเลขเล่ม 1 (docs/sab-figures.json
+ผ่านเล่มก่อนหน้าในทะเบียน sab_book.BOOKS) หรือเป็นจำนวนนับ < 100 / ปี 1900–2100 / ALLOWED — นอกนั้นรายงานเป็น "⚠️ ที่มา
+ไม่ใช่บทนี้" (เตือน · --strict ให้ล้ม) พร้อม path ที่เลขไปบังเอิญตรง · data-key ที่ชี้คีย์บทอื่นก็รายงาน
 """
 
 import json
@@ -191,7 +196,63 @@ def check_json(fig):
     return problems
 
 
-def run(fig_path, docs_dir, scope=None, quiet=False, prefix=None):
+YEARS = {str(y) for y in range(1900, 2101)}
+
+
+def value_paths(o, path=""):
+    """ค่าตัวเลข (normalize แล้ว · ไม่มีเครื่องหมาย) → path แรกที่พบใน JSON (ไว้บอกว่าเลขที่ "ข้ามบท" มาจากไหน)"""
+    out = {}
+
+    def walk(x, p):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                walk(v, f"{p}.{k}" if p else str(k))
+        elif isinstance(x, list):
+            for i, v in enumerate(x):
+                walk(v, f"{p}.{i}")
+        elif not (isinstance(x, bool) or x is None) and isinstance(x, (int, float, str)):
+            n = norm(x)
+            if n is not None:
+                out.setdefault(n.lstrip("-"), p)
+    walk(o, path)
+    return out
+
+
+def strict_sources(fig, part, prev_fig=None):
+    """ชุดค่าที่หน้าบท part ของเล่ม 2 อ้างได้: chNN.* · แบบฝึก.chNN (_แบบฝึก ของปลั๊กอิน) · เรื่อง.partN · ตัวเลขเล่ม 1
+    (sab_book.load_figures ของเล่มก่อน) — ไม่รวมบทอื่นของเล่ม 2 (เลขที่บังเอิญตรงกับบทอื่นไม่นับ)"""
+    ch = f"ch{part:02d}"
+    own = {"ch": fig.get(ch, {}), "drill": (fig.get("แบบฝึก") or {}).get(ch, []),
+           "story": (fig.get("เรื่อง") or {}).get(f"part{part}", {})}
+    allowed = known_values(own)
+    if prev_fig is not None:
+        allowed |= known_values(prev_fig)
+    return allowed
+
+
+def check_strict(name, html, fig, part, prev_fig=None, where=None):
+    """เล่ม 2: เลขบนหน้าบท N ต้องมีที่มาใต้ chNN / แบบฝึก.chNN / เรื่อง.partN / เล่ม 1 หรืออยู่ในรายการยกเว้น
+    (จำนวนนับ < 100 · ปี 1900–2100 · ALLOWED) · data-key ต้องชี้คีย์ของบทนี้ (หรือแบบฝึก/เรื่องของบทนี้)
+    คืนรายการข้อสังเกต (ไม่ล้มเว้นแต่ --strict)"""
+    allowed = strict_sources(fig, part, prev_fig)
+    where = where if where is not None else value_paths(fig)
+    ch = f"ch{part:02d}"
+    out, seen = [], set()
+    for raw, n in page_numbers(html, skip_code=True):
+        a = n.lstrip("-")
+        if n in allowed or a in allowed or n in ALLOWED or a in ALLOWED or a in YEARS or raw in seen:
+            continue
+        seen.add(raw)
+        src = where.get(a)
+        out.append(f"{name}: {raw} ไม่มีใต้ {ch} / แบบฝึก.{ch} / เล่ม 1" + (f" (ตรงกับ {src} โดยบังเอิญ?)" if src else ""))
+    for m in DATA_KEY_RE.finditer(html):
+        key = m.group(2)
+        if not (key.startswith(ch + ".") or key.startswith(f"แบบฝึก.{ch}") or key.startswith(f"เรื่อง.part{part}.")):
+            out.append(f"{name}: data-key {key} ชี้คีย์นอกบทนี้ ({ch})")
+    return out
+
+
+def run(fig_path, docs_dir, scope=None, quiet=False, prefix=None, strict=False):
     prefix = prefix or B.PREFIX
     if not os.path.exists(fig_path):
         print(f"ยังไม่มี {os.path.relpath(fig_path, ROOT)} — รัน tools/sab_figures.py" + (f" --book {prefix}" if prefix != "sab" else "") + " ก่อน")
@@ -204,17 +265,38 @@ def run(fig_path, docs_dir, scope=None, quiet=False, prefix=None):
         names = [n for n in names if n == f"{prefix}-{scope}.html"]
     problems = check_json(fig)
     fig_name = f"{prefix}-figures.json"
+    notes = []
+    prev = B.BOOKS.get(prefix, {}).get("prev") if prefix != "sab" else None
+    prev_fig = None
+    if prev:
+        prev_path = os.path.join(os.path.dirname(fig_path), f"{prev}-figures.json")
+        if os.path.exists(prev_path):
+            with open(prev_path, encoding="utf-8") as fh:
+                prev_fig = json.load(fh)
+    where = value_paths(fig) if prefix != "sab" else None
     for name in names:
         with open(os.path.join(docs_dir, name), encoding="utf-8") as fh:
-            problems += check_page(name, fh.read(), fig, known, skip_code=prefix != "sab", fig_name=fig_name)
+            html = fh.read()
+        problems += check_page(name, html, fig, known, skip_code=prefix != "sab", fig_name=fig_name)
+        m = re.fullmatch(rf"{prefix}-part(\d+)\.html", name)
+        if prefix != "sab" and m:                      # เล่ม 2: ที่มาต้องเป็นบทนี้ (หรือเล่ม 1) ไม่ใช่ที่ไหนก็ได้ใน JSON
+            notes += check_strict(name, html, fig, int(m.group(1)), prev_fig, where)
+    if strict:
+        problems += notes
+        notes = []
     if not quiet:
         if problems:
             print("พบปัญหา", len(problems), "ข้อ")
             for p in problems:
                 print("  -", p)
-        else:
-            print(f"ตรวจ {len(names)} ไฟล์ · ค่าที่รู้จัก {len(known)} ค่า · ตรงกับ {fig_name} ทั้งหมด ✓")
-    return (1 if problems else 0), problems
+        if notes:
+            print(f"⚠️ ที่มาไม่ใช่บทนี้ {len(notes)} ข้อ (เตือน · --strict ให้ล้ม · ตัวเลขต้องอยู่ใต้ chNN / แบบฝึก.chNN / เล่ม 1):")
+            for p in notes:
+                print("  -", p)
+        if not problems:
+            print(f"ตรวจ {len(names)} ไฟล์ · ค่าที่รู้จัก {len(known)} ค่า · ตรงกับ {fig_name} ทั้งหมด ✓"
+                  + (f" · เตือนที่มา {len(notes)} ข้อ" if notes else ""))
+    return (1 if problems else 0), problems + notes if quiet else problems
 
 
 def selftest():
@@ -287,4 +369,4 @@ if __name__ == "__main__":
     if a == ["--selftest"]:
         sys.exit(selftest())
     scope = a[a.index("--scope") + 1] if "--scope" in a else None
-    sys.exit(run(FIG, DOCS, scope)[0])
+    sys.exit(run(FIG, DOCS, scope, strict="--strict" in a)[0])

@@ -9,8 +9,10 @@
   V10 ทุกบทมีกล่อง .fails "พังเมื่อไร / บอกอะไรไม่ได้" อย่างน้อยหนึ่งกล่องบนเส้นทางหลัก (นอก details)
       หัว .bt มีทั้ง "พังเมื่อไร" และ "บอกอะไรไม่ได้" · ในกล่องมีตัวเลขอย่างน้อยหนึ่งตัว (เงื่อนไขพร้อมตัวเลข)
   V11 ปลั๊กอิน tools/sab2_figures_ch/*.py และ tools/sab2_charts_ch/*.py ยกเว้น ch17.py ห้ามแตะช่วงทดสอบสุดท้าย:
-      ห้ามมี unlock_final (ยกเว้นเขียนตรงตัวว่า unlock_final=False) · ห้ามอ่านไฟล์ข้อมูลตรง (sab2-data · closes-daily ·
-      funding-8h · splits.json) หรือเรียกตัวช่วยภายใน (_split_range · _csv_rows) ของ sab2_realdata
+      ห้ามมี unlock_final (ยกเว้นเขียนตรงตัวว่า unlock_final=False) · ห้ามส่ง **kwargs ให้ load_closes/load_funding ·
+      ห้ามอ่านไฟล์ข้อมูลตรง (sab2-data · closes-daily · funding-8h · splits.json) หรือเรียกตัวช่วยภายใน
+      (_split_range · _csv_rows) ของ sab2_realdata · ตัวเลขเล่ม 1 อ่านผ่าน sab_book.load_figures("sab") เท่านั้น
+      (ห้ามเปิด sab-figures.json ตรง) · docstring ไม่นับ (คำอธิบาย ไม่ใช่โค้ด)
 
 markup ที่ผู้เขียนต้องใช้
     <details class="code"><summary>💻 ทำด้วย Python</summary>
@@ -45,6 +47,13 @@ FINAL_PART = 17              # บทเดียวที่เปิดช่�
 EXPECT_RE = re.compile(r"^\s*#\s*ผลที่ต้องได้\s*:\s*(.*?)\s*$")
 NUM_RE = re.compile(r"(?<![A-Za-z_\d.])[-−+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?(?![\d])")
 FORBIDDEN_TOKENS = ("sab2-data", "closes-daily", "funding-8h", "splits.json", "_split_range", "_csv_rows")
+VOL1_FIG = "sab-figures.json"                  # ตัวเลขเล่ม 1: ผ่าน sab_book.load_figures("sab") เท่านั้น (ที่มาเดียว · ตรวจได้)
+LOADERS = ("load_closes", "load_funding")        # **kwargs ห้ามเฉพาะตอนส่งให้ตัวโหลดข้อมูลจริง (ส่งให้โลกจำลอง/ฟังก์ชันอื่นได้)
+
+
+def _call_name(call):
+    f = call.func
+    return f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else None)
 
 # ตัวรัน: ปิด socket ก่อนรันโค้ดของบล็อก (กันเครือข่ายแม้เครื่องไม่มี unshare)
 RUNNER = r'''import runpy, socket, sys
@@ -253,15 +262,24 @@ def _plugin_problems(path):
                 ok_kw.add(node.value.lineno)
             else:
                 P.append(f"{rel}: V11 เรียกด้วย unlock_final (บรรทัด {node.value.lineno}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch17.py")
-        elif isinstance(node, ast.keyword) and node.arg is None:   # **kwargs อาจซ่อน unlock_final
-            P.append(f"{rel}: V11 ส่ง **kwargs (บรรทัด {node.value.lineno}) — เขียนอาร์กิวเมนต์ตรงตัวเพื่อให้ตรวจช่วงข้อมูลได้")
+        elif isinstance(node, ast.Call) and _call_name(node) in LOADERS \
+                and any(k.arg is None for k in node.keywords):          # **kwargs เข้าตัวโหลดข้อมูลอาจซ่อน unlock_final
+            P.append(f"{rel}: V11 ส่ง **kwargs ให้ {_call_name(node)} (บรรทัด {node.lineno}) — เขียนอาร์กิวเมนต์ตรงตัวเพื่อให้ตรวจช่วงข้อมูลได้")
+    doc_lines = set()                               # docstring (คำอธิบาย ไม่ใช่โค้ดที่รัน) ไม่นับคำต้องห้าม
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+            doc_lines.update(range(node.lineno, node.end_lineno + 1))
     for i, text in enumerate(src.split("\n"), 1):
+        if i in doc_lines:
+            continue
         code = text.split("#", 1)[0]
         if "unlock_final" in code and i not in ok_kw and not any(f"บรรทัด {i})" in p for p in P):
             P.append(f"{rel}: V11 มีคำว่า unlock_final (บรรทัด {i}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch17.py")
         for tok in FORBIDDEN_TOKENS:
             if tok in code:
                 P.append(f"{rel}: V11 อ้าง {tok!r} (บรรทัด {i}) — อ่านข้อมูลผ่าน sab2_realdata.load_closes/load_funding เท่านั้น")
+        if VOL1_FIG in code:
+            P.append(f"{rel}: V11 เปิด {VOL1_FIG} ตรง (บรรทัด {i}) — อ่านตัวเลขเล่ม 1 ผ่าน sab_book.load_figures(\"sab\")")
     return P
 
 
@@ -352,6 +370,10 @@ def selftest():
                         "    kw = {'unlock_final': True}\n    R.load_closes('final_test', **kw)\n    return {}\n")
         plug("ch07.py", "import csv\ndef extend(data, D, q):\n"
                         "    open('docs/sab2-data/closes-daily.csv')\n    return {}\n")
+        plug("ch08.py", '"""ไม่มี unlock_final · ไม่อ่าน sab2-data หรือ sab-figures.json ตรง"""\nimport sab_book as SB\n'
+                        "import sab2_sim as M\ndef extend(data, D, q):\n    kw = {'phi': 0.9}\n"
+                        "    M.stationary_pair(seed=1, **kw)\n    return {'x': SB.load_figures('sab')['ch13']}\n")
+        plug("ch09.py", "import json\ndef extend(data, D, q):\n    return json.load(open('docs/sab-figures.json'))\n")
         probs = check_plugins([d])
 
         def of(fn):
@@ -360,11 +382,13 @@ def selftest():
         expect("ch06 **kwargs", of("ch06.py"), "**kwargs")
         expect("ch07 อ่านไฟล์ตรง", of("ch07.py"), "'sab2-data'")
         expect("ch03/ch17 ไม่ถูกฟ้อง", of("ch03.py") + of("ch17.py"), None)
+        expect("ch08 docstring · **kwargs ให้โลกจำลอง · load_figures ไม่ถูกฟ้อง", of("ch08.py"), None)
+        expect("ch09 เปิด sab-figures.json ตรง", of("ch09.py"), "load_figures")
     for m in msgs:
         print(m)
     net = "unshare -n + ปิด socket" if _unshare_prefix() else "ปิด socket (เครื่องนี้ไม่มี unshare -n)"
     print("selftest V9–V11", f"ผ่าน ✓ (💻 รันจริง · ปัดตามทศนิยม · จับค่าไม่ตรง/จำนวนไม่ตรง/ไม่มีบรรทัดคาดหวัง/รันพัง/timeout/"
-          f"ค่าไม่อยู่ในหน้า/summary/ยาวเกิน/unlock_final · เครือข่าย: {net} · .fails 4 กรณี · ปลั๊กอิน 5 กรณี)"
+          f"ค่าไม่อยู่ในหน้า/summary/ยาวเกิน/unlock_final · เครือข่าย: {net} · .fails 4 กรณี · ปลั๊กอิน 7 กรณี)"
           if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 

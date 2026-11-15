@@ -4,13 +4,14 @@
 ตอน ข  สเปรดชีตของต้น: โลกจำลองที่รู้คำตอบ (ไม่มีเชือกที่เก็บได้) + Look-ahead Bias สามแบบ แก้ทีละจุด
 ตอน ค  เครื่องเดียวกันบน BTC–ETH ช่วงเลือก → ช่วงตรวจ (ไม่แตะช่วงทดสอบสุดท้าย) · โลกจำลองคู่กัน · Survivorship
 
-เครื่อง _backtest ตรงกับบล็อก 💻 ในหน้า docs/sab2-part12.html ทุกบรรทัด (ห้ามแก้ที่เดียว)
+เครื่อง _backtest / _trades = tools/sab2_engine.run (เท่าลูปในบล็อก 💻 ของ docs/sab2-part12.html ทุกบิต — ตรวจใน selftest ของเครื่อง)
 ข้อมูลจริงผ่าน sab2_realdata.load_closes เท่านั้น · สถิติผ่าน sab2_stats · โลกจำลองผ่าน sab2_sim (seed ระบุทุกที่)
 """
 
 import math
 import statistics
 
+import sab2_engine as E
 import sab2_realdata as R
 import sab2_sim as M
 import sab2_stats as S
@@ -25,49 +26,18 @@ SIM_SETS = 5          # โลกจำลอง: 5 ชุด (ขา C รา�
 
 
 def _backtest(A, B, h, z, sets, lag=1, fee=FEE, enter=ENTER, leave=LEAVE, hold=HOLD):
-    """เครื่องห้าขั้น (ตรงกับบล็อก 💻) · held: +1 = long X · −1 = short X · fill ที่ราคาปิดวัน t จากสัญญาณวัน t − lag"""
-    cash, held, t_in, eq, n = CAPITAL, 0, 0, [], 0
-    for t in range(len(A)):
-        if t >= lag:
-            zt = z[t - lag]
-            want = held
-            if held == 0 and abs(zt) >= enter:
-                want = -1 if zt > 0 else 1
-            elif held != 0 and (abs(zt) <= leave or t - t_in >= hold):
-                want = 0
-            if want != held:
-                qa, qb = (want - held) * sets, -(want - held) * sets * h
-                cash -= qa * A[t] + qb * B[t] + fee * (abs(qa) * A[t] + abs(qb) * B[t])
-                held, t_in, n = want, t, n + 1
-        eq.append(cash + held * sets * (A[t] - h * B[t]))
-    return eq, n
+    """เครื่องห้าขั้น = tools/sab2_engine.run (selftest ของเครื่องยืนยันว่าเท่าลูปในบล็อก 💻 ของหน้าทุกบิต)
+    held: +1 = long X · −1 = short X · fill ที่ราคาปิดวัน t จากสัญญาณวัน t − lag · คืน (Equity รายวัน, จำนวน fill)"""
+    r = E.run(A, B, h, z, sets, capital=CAPITAL, lag=lag, fee=fee, enter=enter, leave=leave, hold=hold)
+    return r["equity"], r["fills"]
 
 
 def _trades(A, B, h, z, sets, lag=1, fee=FEE):
-    """เดินเครื่องเดิมซ้ำแต่จดทุก fill: (วัน, ทิศใหม่, ราคา A, ราคา B, ค่าธรรมเนียม, เงินสดหลัง) และกำไรต่อไม้ที่ปิด"""
-    cash, held, t_in, fills, closed = CAPITAL, 0, 0, [], []
-    before = None
-    for t in range(len(A)):
-        if t >= lag:
-            zt = z[t - lag]
-            want = held
-            if held == 0 and abs(zt) >= ENTER:
-                want = -1 if zt > 0 else 1
-            elif held != 0 and (abs(zt) <= LEAVE or t - t_in >= HOLD):
-                want = 0
-            if want != held:
-                if held == 0:
-                    before = cash
-                qa, qb = (want - held) * sets, -(want - held) * sets * h
-                f = fee * (abs(qa) * A[t] + abs(qb) * B[t])
-                cash -= qa * A[t] + qb * B[t] + f
-                why = "เข้า" if held == 0 else ("เวลา" if t - t_in >= HOLD and abs(zt) > LEAVE else "เป้า")
-                fills.append({"t": t, "ทิศ": want, "A": A[t], "B": B[t], "ค่าธรรมเนียม": f, "เงินสด": cash, "เหตุ": why,
-                              "z_ที่ใช้": zt})
-                if want == 0:
-                    closed.append((t, cash - before))
-                held, t_in = want, t
-    return fills, closed
+    """เครื่องเดิมแต่คืนทุก fill: (วัน, ทิศใหม่, ราคา A, ราคา B, ค่าธรรมเนียม, เงินสดหลัง, เหตุ) และกำไรต่อไม้ที่ปิด"""
+    r = E.run(A, B, h, z, sets, capital=CAPITAL, lag=lag, fee=fee, enter=ENTER, leave=LEAVE, hold=HOLD)
+    fills = [{"t": f["t"], "ทิศ": f["side"], "A": f["A"], "B": f["B"], "ค่าธรรมเนียม": f["fee"], "เงินสด": f["cash"],
+              "เหตุ": E.REASON_TH[f["reason"]], "z_ที่ใช้": f["signal"]} for f in r["fill_list"]]
+    return fills, [(x["t_out"], x["pnl"]) for x in r["trade_list"]]
 
 
 def _ruler(A, B, h):
@@ -225,12 +195,16 @@ def _ton(q):
     # ราคาเข้าออกไม้แรกของต้นเทียบกับ fill วันถัดไป (h และไม้บรรทัดเดิม)
     # ── 30 โลก (seed 1–30) ──
     agg = {k: [] for k in keys}
+    fees_h, gross_h = [], []      # เครื่องที่ซื่อครบ: ค่าธรรมเนียมรวมต่อโลก และผลก่อนค่าธรรมเนียม (ไว้เทียบว่า Median ≈ −ค่าธรรมเนียม)
     mono = 0
     for sd in M.ROBUST_SEEDS:
         vv = _four_versions(_ton_world(seed=sd))
         r = [vv[k]["eq"][-1] - CAPITAL for k in keys]
         for k, x in zip(keys, r):
             agg[k].append(x)
+        fh = sum(f["ค่าธรรมเนียม"] for f in vv["แก้h"]["fills"])
+        fees_h.append(fh)
+        gross_h.append(r[-1] + fh)
     many = {k: {"มัธยฐาน": q(statistics.median(agg[k]), 2), "บวก": sum(1 for x in agg[k] if x > 0),
                 "ต่ำสุด": q(min(agg[k]), 2), "สูงสุด": q(max(agg[k]), 2)} for k in keys}
     p_pos = many["แก้h"]["บวก"] / len(M.ROBUST_SEEDS)
@@ -249,6 +223,8 @@ def _ton(q):
         "Xfillซื่อ": honest_fill_X,
         "สามสิบโลก": many, "วันที่เหลือหลังไม้แรก": T_SIM - sig["วัน"], "แกนกราฟ": [0, 200, 400, 600],
         "สัดส่วนโลกไม่มีเชือกที่บวก": q(p_pos * 100, 0),
+        "ซื่อครบ": {"ค่าธรรมเนียมมัธยฐาน": q(statistics.median(fees_h), 2),
+                    "ก่อนค่าธรรมเนียมมัธยฐาน": q(statistics.median(gross_h), 2)},
         "_p": p_pos,
     }
 
@@ -306,13 +282,15 @@ def _real(q):
         "ช่วงตรวจ": {"เริ่ม": dv[0], "จบ": dv[-1], "วัน": len(dv)},
         "hถดถอย": q(reg["slope"], 2), "h": h, "Mean": q(m, 2), "SD": q(s, 2),
         "เส้นเข้าบน": q(m + 2 * s, 2), "เส้นเข้าล่าง": q(m - 2 * s, 2),
+        "สองเท่าSDปัด": q(2 * q(s, 2), 2),                                   # หน้าแสดงการคิดจากเลขปัดที่ผู้อ่านเห็น
+        "เส้นเข้าบนจากเลขปัด": q(q(m, 2) + 2 * q(s, 2), 2), "เส้นเข้าล่างจากเลขปัด": q(q(m, 2) - 2 * q(s, 2), 2),
         "ชุด": sets, "BTCต่อชุด": sets, "ETHต่อชุด": q(sets * h, 2),
         "Zต่ำสุด": q(min(z), 2), "Zสูงสุด": q(max(z), 2), "วันZสูงสุด": dv[zmax_t],
         "วันที่Zเกิน2": sum(1 for x in z if abs(x) >= ENTER),
         "วันแรก": {"วัน": dv[0], "BTC": q(A[0], 2), "ETH": q(B[0], 2), "ETHคูณh": q(h * B[0], 2), "X": q(A[0] - h * B[0], 2),
                    "ห่างMean": q(A[0] - h * B[0] - m, 2), "Z": q(z[0], 2)},
         "fillแรก": {"ขาBTC": q(sets * fills[0]["A"], 2), "ขาETH": q(sets * h * fills[0]["B"], 2)},
-        "fill": n, "ไม้ปิด": len(closed), "ไม้ชนะ": sum(1 for _, p in closed if p > 0),
+        "fill": n, "ไม้ปิด": len(closed), "ไม้ค้างตอนจบ": n - 2 * len(closed), "ไม้ชนะ": sum(1 for _, p in closed if p > 0),
         "ออกเพราะเวลา": sum(1 for f in fills if f["เหตุ"] == "เวลา"),
         "ค่าธรรมเนียมรวม": q(fees, 2), "ผล": q(eq[-1] - CAPITAL, 2), "Equityจบ": q(eq[-1], 2),
         "Equityต่ำสุด": q(eq[tmin], 2), "วันEquityต่ำสุด": dv[tmin], "ลดลงมากสุด": q(CAPITAL - eq[tmin], 2),
@@ -344,9 +322,10 @@ def _worlds(q):
         eq, n = _backtest(A[F_SIM:], B[F_SIM:], h, z, SIM_SETS)
         return {"ผล": eq[-1] - CAPITAL, "ต่ำสุด": min(eq), "zmax": max(abs(x) for x in z)}
     out = {}
-    for name, world, kw in [("มีเชือก", M.stationary_pair, {"phi": 0.9}),
-                            ("เชือกขาด", M.broken_pair, {"break_at": F_SIM, "phi_before": 0.9, "phi_after": 1.0})]:
-        vals = [honest(world(seed=sd, n=F_SIM + T_SIM, **kw)) for sd in M.ROBUST_SEEDS]
+    for name, world in [("มีเชือก", lambda sd: M.stationary_pair(seed=sd, n=F_SIM + T_SIM, phi=0.9)),
+                        ("เชือกขาด", lambda sd: M.broken_pair(seed=sd, n=F_SIM + T_SIM, break_at=F_SIM, phi_before=0.9,
+                                                              phi_after=1.0))]:
+        vals = [honest(world(sd)) for sd in M.ROBUST_SEEDS]
         out[name] = {"มัธยฐาน": q(statistics.median(v["ผล"] for v in vals), 2),
                      "บวก": sum(1 for v in vals if v["ผล"] > 0),
                      "มัธยฐานต่ำสุดEquity": q(statistics.median(v["ต่ำสุด"] for v in vals), 2),

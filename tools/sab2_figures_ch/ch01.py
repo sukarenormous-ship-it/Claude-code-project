@@ -8,12 +8,11 @@
        ถดถอยบนการขยับรายวัน · ครึ่งแรก/ครึ่งหลัง · หน้าต่าง 60 วัน · Residual ข้ามค่าเฉลี่ยกี่ครั้ง
        🎲 โลกจำลองที่รู้คำตอบ (sab2_sim.stationary_pair · random_walk_pair · sd 0.01 · φ 0.9 · n 731)
        ตัวอย่าง seed 101/102 · สุ่มซ้ำ seed 1–30 ที่ 20 / 60 / 250 / 731 วัน
-ค่าเล่ม 1 ที่อ้าง (2.53 · 14.56 ÷ 19.74 · 28 กับ 19) คำนวณซ้ำ/อ่านจาก docs/sab-figures.json (ไม่ใช่ข้อมูลจริงของเล่ม 2)
+ค่าเล่ม 1 ที่อ้าง (2.53 · 14.56 ÷ 19.74 · 28 กับ 19) คำนวณซ้ำ/อ่านผ่าน sab_book.load_figures("sab") (ไม่ใช่ข้อมูลจริงของเล่ม 2)
 ช่วงทดสอบสุดท้ายไม่ถูกแตะ (ใช้ load_closes("formation") เท่านั้น · ไม่มี unlock_final)
 """
 
-import json
-import os
+import sab_book as SB
 
 
 def extend(data, D, q):
@@ -100,8 +99,7 @@ def extend(data, D, q):
     }
 
     # ════════════ ค่าเล่ม 1 ที่อ้าง ════════════
-    v1 = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     "docs", "sab-figures.json"), encoding="utf-8"))
+    v1 = SB.load_figures("sab")
     a20 = [float(x) for x in v1["ch09"]["นับมือ20วัน"]["A"]]
     b20 = [float(x) for x in v1["ch09"]["นับมือ20วัน"]["B"]]
     o20 = S.ols(b20, a20)
@@ -112,6 +110,7 @@ def extend(data, D, q):
         "phiผลรวมผลคูณ": phi9["ผลรวมผลคูณ"], "phiผลรวมกำลังสอง": phi9["ผลรวมกำลังสอง"], "phi": phi9["phi"],
         "Kมูลค่าเท่ากัน": v1["realdata"]["h"]["มูลค่าเท่ากันปัด"], "Kข้อมูล": v1["realdata"]["h"]["ข้อมูลปัด"],
         "Kปีเริ่ม": v1["realdata"]["แหล่ง"]["ปีเริ่ม"], "Kปีจบ": v1["realdata"]["แหล่ง"]["ปีจบ"],
+        "Kปีเริ่มข้อความ": str(v1["realdata"]["แหล่ง"]["ปีเริ่ม"]), "Kปีจบข้อความ": str(v1["realdata"]["แหล่ง"]["ปีจบ"]),   # ปีพิมพ์ไม่มีจุลภาค
     }
     assert out["เล่ม1"]["SLOPE20วัน"] == v1["ch11"]["v2"]["hสองทาง"]["SLOPE20วัน"]
 
@@ -145,6 +144,7 @@ def extend(data, D, q):
         "ปี": yr, "เหรียญ": len(px), "วันรวม": nf + len(dv) + 365,
         "hAบนB": r2(h_ab), "InterceptAบนB": r2(ab["intercept"]), "R2": r2(ab["r2"]), "R2เต็ม": round(ab["r2"], 4),
         "SDResidual": r2(ab["sigma"]),
+        "SDResidualSTDEV": r2(S.sd(ab["residuals"])),   # หาร n − 1 แบบ STDEV ของเล่ม 1 (ค่าที่หน้าบท 1 พิมพ์)
         "BบนAต่อBTC1000": r2(ba["slope"] * 1000), "hBบนA": r2(h_ba),
         "hAบนBหารR2": r2(h_ab / ab["r2"]), "อัตราส่วนสองทิศ": r2(h_ab / h_ba),
         "ห่างสองทิศเปอร์เซ็นต์": i0((h_ba / h_ab - 1) * 100),

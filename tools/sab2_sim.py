@@ -6,7 +6,8 @@
 x[t] = φ·x[t−1] + e (φ < 1 = มีเชือก · φ = 1 = เดินสุ่ม) · ไม่ตั้งชื่อเหรียญจริง (แผน 6) · ไม่พึ่งข้อมูลจริง
 
 ทุกโลกคืน dict: ซีรีส์ (log ราคา "logA"/"logB" และราคา "A"/"B" · ระยะห่างจริง "X") + "true" (พารามิเตอร์จริง) + "seed"
-    stationary_pair    คู่ที่มีเชือก φ คงที่ (รู้ φ · h · ค่ากลาง · half-life)
+    stationary_pair    คู่ที่มีเชือก φ คงที่ (รู้ φ · h · ค่ากลาง · half-life) — h อยู่บน log ราคา
+    price_pair         คู่ที่มีเชือกบนราคา A = α + h·B + X (รู้ h บนระดับราคา → ถดถอยแบบบท 1 ได้ h ในค่าคาดหวัง)
     random_walk_pair   คู่ที่ไม่มีเชือก (ระยะห่างเดินสุ่ม φ = 1)
     drifting_h_pair    คู่ที่ h ค่อย ๆ ไหลจาก h0 ไป h1 (หรือเดินสุ่มช้า ๆ)
     broken_pair        คู่ที่เชือกขาดที่วัน break_at (φ ก่อน → φ หลัง · เลือกให้ค่ากลางกระโดดได้)
@@ -68,6 +69,23 @@ def stationary_pair(seed=101, n=500, phi=0.95, h=1.0, alpha=math.log(2.0), sd=SP
                     "true": {"phi": phi, "h": h, "alpha": alpha, "mean": 0.0, "sd_shock": sd,
                              "sd_stationary": sd / math.sqrt(1 - phi * phi), "half_life": _half_life(phi),
                              "cointegrated": True}})
+
+
+def price_pair(seed=106, n=500, h=2.0, phi=0.9, sd=0.5, alpha=0.0, common_sd=COMMON_SD, b0=50.0):
+    """คู่ที่มีเชือกบน "ราคา" (ไม่ใช่ log): A = α + h·B + X · X เป็น AR(1) φ หน่วยเป็นราคา (แรงกระแทก SD sd ต่อวัน ·
+    เริ่มจากการกระจายนิ่ง) · B = b0 × exp(เดินสุ่ม SD common_sd) · X ไม่ขึ้นกับ B → ถดถอย A บน B ด้วยราคา (แบบบท 1)
+    ได้ความชันเท่า h จริงในค่าคาดหวัง · price-level cointegrated pair with a known hedge ratio h on prices
+    ค่าเริ่มต้น: A ≈ 100 · B ≈ 50 · h 2 (คู่ A–B ของเล่ม 1) · "logA"/"logB" = None ถ้ามีราคา A ≤ 0 (โลกที่ B ตกแรงมาก)"""
+    rng = random.Random(seed)
+    b = [b0 * math.exp(v) for v in _rw(rng, n, common_sd)]
+    x = _ar1(rng, n, phi, sd)
+    a = [alpha + h * bb + e for bb, e in zip(b, x)]
+    pos = min(a) > 0
+    return {"A": a, "B": b, "X": x, "logA": [math.log(v) for v in a] if pos else None,
+            "logB": [math.log(v) for v in b], "seed": seed,
+            "true": {"h": h, "alpha": alpha, "phi": phi, "mean": 0.0, "sd_shock": sd,
+                     "sd_stationary": sd / math.sqrt(1 - phi * phi) if abs(phi) < 1 else float("inf"),
+                     "half_life": _half_life(phi), "cointegrated": abs(phi) < 1, "scale": "price"}}
 
 
 def random_walk_pair(seed=102, n=500, h=1.0, alpha=math.log(2.0), sd=SPREAD_SD, common_sd=COMMON_SD, b0=math.log(50.0)):
@@ -225,7 +243,28 @@ def selftest():
         check("factor: ความยาวไม่ตรง → ValueError", False)
     except ValueError:
         check("factor: ความยาวไม่ตรง → ValueError", True)
-    print("selftest", f"ผ่าน ✓ ({n} ข้อ · ทำซ้ำได้ด้วย seed · stationary / random walk / h ไหล / เชือกขาด / ตะกร้าแรงร่วม "
+    # price_pair: h บนระดับราคา · ถดถอย A บน B (ราคา) ได้ h ในค่าคาดหวัง · X = A − α − h·B ตรงตัว
+    pp, pp2 = price_pair(seed=7), price_pair(seed=7)
+    check("price_pair: seed เดิม = ผลเดิม · X = A − α − hB · A ≈ 100 / B ≈ 50",
+          pp["A"] == pp2["A"] and max(abs(a - 2.0 * b - x) for a, b, x in zip(pp["A"], pp["B"], pp["X"])) < 1e-9
+          and 80 < pp["A"][0] < 125 and 40 < pp["B"][0] < 62 and pp["true"]["scale"] == "price")
+    hp = reseed(price_pair, lambda d: S.ols(d["B"], d["A"])["slope"] - d["true"]["h"], n=250)
+    hp_mean = S.mean(hp["values"])
+    check("price_pair: h จากถดถอยราคา 250 วัน · 30 seed: ค่าเฉลี่ยคลาด ≤ 0.02 · มัธยฐานคลาด ≤ 0.02",
+          abs(hp_mean) <= 0.02 and abs(hp["median"]) <= 0.02, f"mean={hp_mean:.4f} med={hp['median']:.4f}")
+    big = [S.ols(price_pair(seed=s, n=250)["B"], price_pair(seed=s, n=250)["A"])["slope"] - 2.0 for s in range(1, 401)]
+    se_big = S.sd(big) / math.sqrt(len(big))
+    check("price_pair: 400 seed ค่าเฉลี่ยคลาดอยู่ในสาม SE ของศูนย์ (ไม่เอนเอียง)", abs(S.mean(big)) <= 3 * se_big,
+          f"{S.mean(big):.5f} ± {se_big:.5f}")
+    pl = price_pair(seed=8, n=5000, h=1.5, alpha=10.0)
+    ol = S.ols(pl["B"], pl["A"])
+    check("price_pair: 5000 วัน h 1.5 α 10 กลับมาได้ (±0.01 · ±1) · φ ของ X ≈ 0.9 · EG บนราคาปฏิเสธ",
+          abs(ol["slope"] - 1.5) < 0.01 and abs(ol["intercept"] - 10.0) < 1.0 and abs(S.ar1(pl["X"])["phi"] - 0.9) < 0.02
+          and S.engle_granger(pl["A"], pl["B"])["reject5"], f"h={ol['slope']:.4f} a={ol['intercept']:.3f}")
+    lg = reseed(price_pair, lambda d: S.ols(d["logB"], d["logA"])["slope"], n=250)
+    check("price_pair: ถดถอยบน log ให้ความชันราว 1 ไม่ใช่ h 2 (h ราคาต่างจาก h log)", 0.8 < lg["median"] < 1.2,
+          f"{lg['median']:.3f}")
+    print("selftest", f"ผ่าน ✓ ({n} ข้อ · ทำซ้ำได้ด้วย seed · stationary / ราคา (price_pair) / random walk / h ไหล / เชือกขาด / ตะกร้าแรงร่วม "
           "ประมาณพารามิเตอร์จริงกลับมาได้ · reseed 30 ชุด)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
