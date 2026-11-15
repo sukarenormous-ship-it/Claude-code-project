@@ -542,7 +542,7 @@ def check_file(name, html, ctx):
 
     # W12/W13 เส้นทางหลัก
     mp = main_path(html)
-    mp_clean = re.sub(r"ภาคผนวก\s+[A-I]\b", " ", mp)
+    mp_clean = re.sub(r"ภาคผนวก\s+[A-K]\b", " ", mp)          # J · K = ภาคผนวกของแผน 14.5
     mp_clean = re.sub(r"[\w.-]+\.(?:csv|xlsx|html|py)", " ", mp_clean)
     for sym in FORBIDDEN_SYMBOLS:
         if sym in mp_clean:

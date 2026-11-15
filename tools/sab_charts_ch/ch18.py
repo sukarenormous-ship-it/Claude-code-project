@@ -2,10 +2,12 @@
 
 sab-strategy-map : ผังแผนที่กลยุทธ์ (ชนิดเชือก × กลไก × บท) พร้อมป้ายใบตัดสินของมิน
                    ระดับใบตัดสินอ่านจาก เรื่อง.part18.close.ใบตัดสิน (ภาพแนวคิด · ไม่มีตัวเลขตลาด)
+sab-token-ladder : บันไดสี่ขั้นของโทเคนแลกคืน (บนจอ → ต่อทุน → หลังค่าธรรมเนียม → ส่วนเกินหลัง hurdle) แบบเดียวกับ sab-carry-ladder บท 5
 sab-transfer-matrix เป็นตาราง HTML ในบท (ไม่ใช่กราฟ — แผน 10.3)
 """
+import re
 
-from sab_charts import chart, wrap, text, C
+from sab_charts import chart, wrap, text, ladder_bars, Frame, C, B
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
 BADGE = {"เล็ก": C["green"], "กระดาษ": C["blue"], "พัก": C["amber"], "ไม่รับ": C["red"], "คัดออก": C["red"],
@@ -65,3 +67,30 @@ def _strategy_map(fig):
            "คู่ A–B อยู่ช่องยางยืดกับ Prediction ป้ายพัก บอท AI และ Grid Bot อยู่แถวไม่มีเชือก ป้ายไม่รับ")
     cap = "ช่องเดียวกันตัดสินต่างได้"
     return wrap(W, H, alt, out, cap, "แนวคิด")
+
+
+def _num(v):
+    return B.fmt(int(v)) if float(v).is_integer() else B.fmt(v)
+
+
+@chart("sab-token-ladder")
+def _token_ladder(fig):
+    t = fig["ch18"]["โทเคน"]
+    L = fig["ch18"]["v2"]["โทเคน"]["บันได"]
+    rungs = [("อัตราบนจอ", L["บนจอ"]["ต่อปีเปอร์เซ็นต์"]), ("ต่อทุนทั้งก้อน", L["ต่อทุน"]["ต่อปีเปอร์เซ็นต์"]),
+             ("หลังค่าธรรมเนียม", L["หลังค่าธรรมเนียม"]["ต่อปีเปอร์เซ็นต์"]), ("ส่วนเกินหลัง hurdle", L["หลังhurdle"]["ต่อปีเปอร์เซ็นต์"])]
+    subs = [f"ส่วนลด ÷ ราคา P {_num(t['ราคาเหรียญแม่'])}", f"ส่วนลดรวม ÷ ทุน {B.fmt(t['ทุน'])}",
+            f"หักค่าธรรมเนียม {_num(t['ค่าธรรมเนียม'])}", f"หักค่าเสียโอกาส {B.fmt(L['หลังhurdle']['ค่าเสียโอกาสต่อปี'])} ต่อปี"]
+    W, H = 760, 320
+    out = ladder_bars(rungs, "โทเคนแลกคืน วัดสี่แบบ (% ต่อปี)", "%", W, H)
+    out = [re.sub(r">([−+]\d+)\.0<", r">\1<", o) for o in out]
+    vals = [v for _, v in rungs]
+    f = Frame(min(vals + [0]), max(vals + [0]), W, H)
+    gw = (W - f.L - f.R) / len(rungs)
+    for i, sub in enumerate(subs):
+        out.append(text(f.L + gw * i + gw / 2, f.Bm + 34, sub, 10.5, C["grey"], "middle"))
+    alt = (f"กราฟแท่งสี่ขั้นของโทเคนแลกคืน อัตราบนจอ {B.fmt(rungs[0][1])}% หารด้วยทุน {B.fmt(t['ทุน'])} "
+           f"เหลือ {B.fmt(rungs[1][1])}% หักค่าธรรมเนียม {_num(t['ค่าธรรมเนียม'])} เหลือ {B.fmt(rungs[2][1])}% "
+           f"หักค่าเสียโอกาสที่ hurdle 4% เหลือส่วนเกิน {B.fmt(rungs[3][1])}%")
+    cap = f"โทเคน {t['จำนวน']} ตัว คิว {t['คิววัน']} วัน ทุน {B.fmt(t['ทุน'])} · ยืดเป็นต่อปีแบบคูณตรง ไม่ทบต้น"
+    return wrap(W, H, alt, out, cap, "สอน")

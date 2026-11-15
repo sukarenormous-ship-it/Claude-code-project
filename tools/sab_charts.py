@@ -424,7 +424,8 @@ def _load_chapter_charts():
     import importlib.util as _ilu
     sys.modules.setdefault("sab_charts", sys.modules[__name__])
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sab_charts_ch")
-    for path in sorted(_glob.glob(os.path.join(folder, "base.py")) + _glob.glob(os.path.join(folder, "ch[0-9][0-9].py"))):
+    for path in sorted(_glob.glob(os.path.join(folder, "base.py")) + _glob.glob(os.path.join(folder, "ch[0-9][0-9].py"))
+                       + _glob.glob(os.path.join(folder, "realdata.py"))):     # realdata.py = ภาคผนวก K
         spec = _ilu.spec_from_file_location("sab_charts_ch_" + os.path.basename(path)[:-3], path)
         spec.loader.exec_module(_ilu.module_from_spec(spec))
 

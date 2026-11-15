@@ -133,7 +133,7 @@ def _moving_mean(fig):
                                f'fill="{col}" fill-opacity=".85"/>')
                 if i > 0:
                     out.append(text(X(i), Y(max(gfast[i], gslow[i])) - 6, B.fmt(gslow[i]), 10.5, C["purple"], "middle", 700))
-            out.append(text(X(1) + 10, Y(gfast[1]) - 6, B.fmt(gfast[1]), 10.5, C["amber"], "start", 700))
+            out.append(text(X(1) - 15, Y(gfast[1]) - 6, B.fmt(gfast[1]), 10.5, C["amber"], "end", 700))
             out.append(text(X(0), Y(gfast[0]) - 6, B.fmt(gfast[0]), 10.5, C["ink"], "middle", 700))
         else:
             out.append(f'<polyline points="{" ".join(f"{X(i):.1f},{Y(pnl):.1f}" for i in range(n))}" fill="none" '
@@ -160,23 +160,27 @@ def _rolling_exit(fig):
     xs = hist + [xv] * (len(rows) - 1)
     n = len(xs)
     i0 = len(hist) - 1                               # ดัชนีจุดเข้า
-    W, H, L, R, T, Bm = 760, 330, 64, 96, 64, 276
+    W, H, L, R, T, Bm = 760, 330, 64, 110, 70, 276
     lo, hi = -2.6, 4.2
     Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
     gx = (W - L - R) / (n - 1)
     X = lambda i: L + gx * i  # noqa: E731
-    out = [text(24, 26, "แอปวาดไม้บรรทัดเฉลี่ย 4 ช่วง: เส้นเลื่อนขึ้นมาหา X ทั้งที่ X ไม่ขยับ", 13, C["ink"], weight=700)]
+    out = [text(24, 24, "แอปวาดไม้บรรทัดเฉลี่ย 4 ช่วง: เส้นเลื่อนขึ้นมาหา X ทั้งที่ X ไม่ขยับ", 13, C["ink"], weight=700)]
     for g in (-2, 0, 2, 4):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
         out.append(text(L - 8, Y(g) + 4, B.fmt(g), 10.5, C["grey"], "end"))
     ids = list(range(i0, n))
+    lx = 300
     for key, lab, col, dash in (("เส้นเข้า", "เส้นเข้า Mean + 2", C["red"], "5 4"),
-                                ("Mean", "Mean 4 ช่วง", C["amber"], ""),
+                                ("Mean", "Mean 4 ช่วงล่าสุด", C["amber"], ""),
                                 ("เส้นออก", "เส้นออก Mean + 0.5", C["green"], "5 4")):
         pts = " ".join(f"{X(i):.1f},{Y(rows[k][key]):.1f}" for k, i in enumerate(ids))
         out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="1.8"'
                    + (f' stroke-dasharray="{dash}"' if dash else "") + "/>")
-        out.append(text(X(n - 1) + 8, Y(rows[-1][key]) + (4 if key != "เส้นออก" else 16), lab, 10.5, col, "start", 700))
+        out.append(f'<line x1="{lx}" y1="44" x2="{lx + 22}" y2="44" stroke="{col}" stroke-width="2"'
+                   + (f' stroke-dasharray="{dash}"' if dash else "") + "/>")
+        out.append(text(lx + 28, 48, lab, 11, col, "start", 700))
+        lx += 150
     pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(xs))
     out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.6" stroke-linejoin="round"/>')
     for i, v in enumerate(xs):
@@ -188,7 +192,7 @@ def _rolling_exit(fig):
     out.append(f'<circle cx="{X(i0):.1f}" cy="{Y(xv):.1f}" r="6" fill="{C["purple"]}"/>')
     out.append(text(X(i0), Y(xv) + 22, "เข้า short", 11, C["purple"], "middle", 700))
     out.append(f'<circle cx="{X(n - 1):.1f}" cy="{Y(xv):.1f}" r="6" fill="#fff" stroke="{C["green"]}" stroke-width="2.2"/>')
-    out.append(text(X(n - 1), Y(xv) + 22, "สัญญาณออก", 11, C["green"], "middle", 700))
+    out.append(text(X(n - 1) + 12, Y(xv) + 4, "สัญญาณออก", 11, C["green"], "start", 700))
     out.append(text((X(i0) + X(n - 1)) / 2, Bm + 40, f"X อยู่ที่ {B.fmt(xv)} ตลอด · กำไรจากราคา {B.fmt(r['กำไรจากราคา'])} · "
                     f"หลังต้นทุน {B.fmt(r['สุทธิ'])}", 11.5, C["red"], "middle", 700))
     for i in range(n):

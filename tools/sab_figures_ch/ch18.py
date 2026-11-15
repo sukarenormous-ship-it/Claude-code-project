@@ -113,9 +113,13 @@ def extend(data, D, q):
     def score_row(score, acc):
         p = D(acc) / 100
         gross = p * g_ai - (1 - p) * l_ai
-        return {"คะแนน": float(D(score)), "แม่น": acc, "ส่วนได้": q(p * g_ai, 2), "ส่วนเสีย": -q((1 - p) * l_ai, 2),
+        return {"คะแนน": float(D(score)), "แม่น": acc, "โอกาสแพ้": q(1 - p, 2),
+                "ส่วนได้": q(p * g_ai, 2), "ส่วนเสีย": -q((1 - p) * l_ai, 2),
                 "ก่อนต้นทุน": q(gross, 2), "หลังต้นทุน": q(gross - c_ai, 2), "สวนทาง": q(-gross - c_ai, 2)}
+    need_ai = (l_ai + c_ai) / (g_ai + l_ai) * 100
     v2_ai = {"เสียบวกต้นทุน": q(l_ai + c_ai, 1), "ได้บวกเสีย": q(g_ai + l_ai, 0),
+             "แพ้หมด100ครั้ง": -q(100 * (l_ai + c_ai), 0), "ย้ายแพ้เป็นชนะ": q(g_ai + l_ai, 0),
+             "ขาดจาก65": q(need_ai - ai_test["ชนะ"], 1), "ขาดจาก70": q(need_ai - 70, 1),
              "คะแนน": [score_row("0.4", 76), score_row("0.8", 80)]}
 
     # โทเคน: หนึ่งตัวก่อน (สองปลายทางของ P) → สิบตัว → สมุดสามบัญชี → บันไดสี่ขั้นแบบ "ต่อปีเป็นเงิน" (บท 5)
@@ -135,8 +139,9 @@ def extend(data, D, q):
     ledger = [{"จังหวะ": a, "เงินสด": q(c, 0), "โทเคน": q(s, 0), "เหรียญP": q(pp, 0), "หลักประกัน": q(mm, 0),
                "equity": q(c + s + pp + mm, 0)} for a, c, s, pp, mm in led]
     per_year = lambda money: money * yr / days                              # noqa: E731
+    net_r = net.quantize(D("1"))                                            # 4 ตามที่บทพิมพ์ — ผู้อ่านคิดซ้ำได้
     hurdle_money = cap * hurdle / 100
-    excess_money = per_year(net) - hurdle_money
+    excess_money = per_year(net_r) - hurdle_money
     P_up = D(110)
     tail_days = token["หาง"]["รอบชดเชย"] * days
     crowd_fill_sum = n * crowd_S + 3 * n * P
@@ -152,8 +157,8 @@ def extend(data, D, q):
                      "ต่อปีเปอร์เซ็นต์": q(per_year(P - S) / P * 100, 2)},
             "ต่อทุน": {"ต่อช่วง": q(gain, 0), "ต่อปีเงิน": q(per_year(gain), 2),
                        "ต่อปีเปอร์เซ็นต์": q(per_year(gain) / cap * 100, 2)},
-            "หลังค่าธรรมเนียม": {"ต่อช่วง": q(net, 0), "ต่อปีเงิน": q(per_year(net), 2),
-                                 "ต่อปีเปอร์เซ็นต์": q(per_year(net) / cap * 100, 2)},
+            "หลังค่าธรรมเนียม": {"ต่อช่วง": q(net, 0), "ต่อปีเงิน": q(per_year(net_r), 2),
+                                 "ต่อปีเปอร์เซ็นต์": q(per_year(net_r) / cap * 100, 2)},
             "หลังhurdle": {"ค่าเสียโอกาสต่อปี": q(hurdle_money, 2), "ต่อปีเงิน": q(excess_money, 2),
                            "ต่อปีเปอร์เซ็นต์": q(excess_money / cap * 100, 2)},
             "ตัวคูณต่อปี": q(yr / days, 2)},
@@ -161,7 +166,8 @@ def extend(data, D, q):
                 "วัน": int(tail_days), "ปี": q(D(tail_days) / yr, 2)},
         "แย่ง": {"มูลค่าซื้อขายรวม": q(crowd_fill_sum, 0), "ค่าธรรมเนียมสามตำแหน่ง": q(taker * crowd_fill_sum, 3),
                  "ขาซื้อ": q(n * crowd_S, 0)},
-        "คิวยาว": {"ต่อปีเงิน": q(net * yr / long_q, 2)},
+        "ผิดบ่อย": {"หารด้วยเงินซื้อSอย่างเดียวเปอร์เซ็นต์": q(per_year(net_r) / (n * S) * 100, 2)},
+        "คิวยาว": {"ต่อปีเงิน": q(net_r * yr / long_q, 2), "ต่อปีเปอร์เซ็นต์": q(net_r * yr / long_q / cap * 100, 2)},
     }
 
     # แบบฝึกข้อ 5 (ถ่ายโอน): กองทุนหุ้นที่ไถ่ถอนเป็นหุ้นในตะกร้าได้ · short ตะกร้าด้วยการยืมหุ้น (ค่าสอน)
@@ -177,7 +183,8 @@ def extend(data, D, q):
                "มูลค่าซื้อขายรวม": q(f_fills, 0), "ค่าธรรมเนียมสามตำแหน่ง": q(f_fees, 3), "ค่าธรรมเนียม": q(f_fees, 0),
                "ค่ายืมหุ้น": q(f_borrow, 0), "สุทธิ": q(f_net, 0), "ทุนขาซื้อ": q(fn * fu, 0), "ทุน": q(f_cap, 0),
                "ต่อปีเงิน": q(f_year, 2), "ต่อปีเปอร์เซ็นต์": q(f_year / f_cap * 100, 2),
-               "ส่วนเกินเปอร์เซ็นต์": q(f_year / f_cap * 100 - hurdle, 2)}
+               "ส่วนเกินเปอร์เซ็นต์": q(f_year / f_cap * 100 - hurdle, 2),
+               "ผิดบ่อยหารด้วยเงินซื้อเปอร์เซ็นต์": q(f_year / (fn * fu) * 100, 1)}
 
     v2 = {"grid": v2_grid, "AI": v2_ai, "โทเคน": v2_token, "กองทุนหุ้น": v2_fund}
 

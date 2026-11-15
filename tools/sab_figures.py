@@ -1493,7 +1493,7 @@ def apply_chapter_plugins(data):
     if not os.path.isdir(folder):
         return
     for name in sorted(os.listdir(folder)):
-        m = re.fullmatch(r"(ch\d{2}|base)\.py", name)
+        m = re.fullmatch(r"(ch\d{2}|base|realdata)\.py", name)   # realdata.py = ภาคผนวก K → data["realdata"]
         if not m:
             continue
         spec = importlib.util.spec_from_file_location(f"sab_figures_ch_{m.group(1)}", os.path.join(folder, name))
