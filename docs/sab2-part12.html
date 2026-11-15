@@ -1,0 +1,573 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stat Arb for Non Quant — บท 12 — เครื่อง backtest ของตัวเอง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}
+/* ═══ sab: กล่องเพิ่มของเล่ม Stat Arb for Non Quant (แผน 5.1) ═══ */
+.scene-open{background:#fefce8;border:1px solid #fde68a;border-left:5px solid var(--amber);border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0}.scene-open .bt{color:#92400e}
+.stop{background:#fff1f2;border:2px dashed var(--red);border-radius:10px;padding:12px 18px;margin:18px 0}.stop .bt{color:var(--red)}
+.other{background:#f0f9ff;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.other .bt{color:#0369a1}
+.dist{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:12px 18px;margin:14px 0;font-size:.95em}.dist .bt{color:var(--g8)}
+.nature{background:#f7fee7;border:1px solid #d9f99d;border-left:5px solid #65a30d;border-radius:0 10px 10px 0;padding:14px 20px;margin:18px 0}.nature .bt{color:#3f6212}
+table.ncard{min-width:0}table.ncard td.on{background:#ecfccb;font-weight:600}table.ncard td.done{background:#f7fee7}table.ncard td[data-pending-part]{background:var(--g1);color:#9ca3af}
+.transfer{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px 18px;margin:14px 0}.transfer .bt{color:var(--purple)}
+.whyline{font-size:.92em;color:var(--g7);border-left:3px solid var(--g2);padding:4px 12px;margin:10px 0}
+.sheet{background:#fff;border:2px solid var(--blue);border-radius:10px}.sheet .bt{color:var(--blue)}.sheet td[data-key]{font-variant-numeric:tabular-nums}.sheet .blank td{height:2em}
+table.ledger th{background:var(--g8)}table.ledger td{font-variant-numeric:tabular-nums}table.ledger tr.off td{color:#64748b;font-style:italic}
+table.fees caption{caption-side:top;text-align:left;font-size:.88em;color:var(--g7);padding:4px 0}
+details.deep{border:1px solid var(--g2);border-radius:8px;padding:10px 16px;margin:16px 0;background:var(--g0)}details.deep>summary{cursor:pointer;font-weight:700;color:var(--g8)}
+details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer;color:var(--blue)}
+.tier{display:inline-block;font-size:.72em;color:#64748b;margin-left:4px}.tier[data-tier]::before{content:'ชั้น ' attr(data-tier)}
+[data-pending]{opacity:.65}
+.figw{overflow-x:auto;-webkit-overflow-scrolling:touch}@media(max-width:640px){.figw .fig{min-width:600px}.figw.narrow .fig{min-width:0}body{padding:20px 16px}.cover{padding:20px 4px;margin-bottom:18px}.cover h1{font-size:1.45em}.cover .sub{font-size:1.05em}}
+@media print{details.deep,details.ans{display:block}.scene-open,.stop,.other,.nature,.sheet,.transfer,table.ledger,table.ncard{page-break-inside:avoid}}
+/* ═══ sab v2: แม่แบบบท v2 (แผน 14.3) — .pos .rest .readfig .readeq .sum3 details.hint details.file .calc ═══ */
+.pos{font-size:.88em;color:#64748b;border-bottom:1px solid var(--g2);padding:0 2px 8px;margin:-12px 0 18px}.pos strong{color:var(--g7)}
+.rest{background:var(--g0);border-radius:8px;padding:12px 18px 6px;margin:26px 0 10px;color:var(--g7)}.rest .bt{font-size:.82em;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:2px}
+.readfig,.readeq{font-size:.94em;color:var(--g7);border-left:3px solid #bfdbfe;padding:4px 12px;margin:10px 0 18px}.readeq{border-left-color:#ddd6fe;margin-top:-4px}
+.sum3{background:var(--green-bg);border:1px solid #bbf7d0;border-left:5px solid var(--green);border-radius:0 10px 10px 0;padding:14px 20px;margin:24px 0}.sum3 .bt{color:#166534}.sum3 ol{margin-bottom:0}
+details.hint{margin:6px 0 4px;font-size:.93em}details.hint>summary{cursor:pointer;color:#b45309}details.hint details.hint{margin-left:16px;font-size:1em}
+details.file{border:1px solid var(--g2);border-radius:10px;padding:12px 18px;margin:28px 0 16px;background:var(--g0)}details.file>summary{cursor:pointer;font-weight:700;font-size:1.1em;color:var(--g8)}details.file[open]>summary{margin-bottom:10px}
+th.calc{background:var(--g7)}td.calc{font-size:.95em;color:var(--g7);font-variant-numeric:tabular-nums;border-left:2px solid var(--g2)}
+@media print{details.hint,details.file{display:block}.rest,.sum3{page-break-inside:avoid}}
+@media print{details::details-content{content-visibility:visible}}
+
+/* ═══ sab2: ส่วนเพิ่มของเล่ม 2 (docs/sab2-book-plan.md หัวข้อ 5) — details.code "💻 ทำด้วย Python" · .fails "พังเมื่อไร / บอกอะไรไม่ได้" ═══
+   ต่อท้าย <style> ของ tools/sab_shell/head.html โดย sab_book.shell() เมื่อ SAB_BOOK=sab2 (เปลือกกลางไม่เปลี่ยน) */
+details.code{border:1px solid #cbd5e1;border-radius:8px;padding:10px 16px;margin:16px 0;background:#f8fafc}details.code>summary{cursor:pointer;font-weight:700;color:#334155}details.code[open]>summary{margin-bottom:8px}
+details.code pre{font-family:'Courier New',monospace;font-size:.86em;line-height:1.55;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;white-space:pre;margin:8px 0;tab-size:4}
+details.code pre .cm,details.code pre .out{color:#86efac}details.code p{font-size:.93em}
+.fails{background:#fff7ed;border:1px solid #fdba74;border-left:4px solid #ea580c;border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0}.fails .bt{font-weight:700;color:#9a3412;margin-bottom:6px}.fails ul{margin-bottom:.4em}.fails li strong{color:#7c2d12}
+@media(max-width:640px){details.code pre{font-size:.78em}}
+@media print{details.code{display:block}details.code pre{background:#f1f5f9;color:#0f172a;white-space:pre-wrap}.fails{page-break-inside:avoid}}
+</style></head><body data-tpl="2">
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+<h1>Stat Arb for Non Quant · เล่ม 2 — วัดเชือก สร้างพอร์ต ทดสอบให้ซื่อ</h1>
+<div class="sub">บท 12 — เครื่อง backtest ของตัวเอง</div>
+<div class="desc">สเปรดชีตของต้นได้ +576.38 จากทุน 1,000 ในหนึ่งปีและไม่มีเดือนไหนขาดทุน บทนี้สร้างเครื่อง backtest ห้าขั้นด้วยมือ แล้วใช้มันแก้ที่โกงทีละจุดจนเหลือ −19.87 ในโลกจำลองที่รู้คำตอบ และได้ −55.53 บนคู่ BTC–ETH จริงในช่วงตรวจ</div>
+</div>
+
+<!-- ═══ แม่แบบ v2 (แผน 14.3 · คู่มือ tools/sab_research/writing-brief-v2.md + writing-brief-sab2.md) ═══ -->
+<p class="pos"><strong>ภาค 4 · บท 12 จาก 17 · บทนี้มีสามตอน อ่านทีละตอนได้</strong> (ตอน ก เดินเครื่องห้าขั้นด้วยมือสิบวัน · ตอน ข จับที่โกงในสเปรดชีตของต้น · ตอน ค เครื่องเดียวกันกับข้อมูลจริงและเหรียญที่รอด) · ต้องรู้จากบทก่อน: (1) X = A − 2B คือราคาของหนึ่งชุด ไม้บรรทัดของ A–B คือ Mean 0 กับ SD 1 จึงอ่าน X เป็น Z-score ได้ตรง และ short X 10 ชุดคือขาย A 10 ซื้อ B 20 (เล่ม 1 บท 9 และบท 11) · (2) ค่าธรรมเนียม taker 0.05% ของมูลค่าต่อ fill ทำให้ไปกลับ 10 ชุดเสียราว 2 (เล่ม 1 บท 11) · (3) h หาได้จาก Regression ของราคาสองเหรียญ และข้อมูลของเล่มแบ่งเป็นช่วงเลือก ช่วงตรวจ และช่วงทดสอบสุดท้ายที่ยังห้ามเปิด (บท 1)</p>
+
+<div class="scene-open" data-day="เดือนที่ 12" data-continues="part11"><div class="bt">📓 สมุดของมิน · เดือนที่ 12 · คืนวันอาทิตย์</div>
+<p>ต้นส่งไฟล์มาพร้อมข้อความสั้น ๆ ว่า "คู่ P–Q ชนะทุกเดือน ปีเดียวได้ +576.38 จากทุน 1,000" ตารางสรุปท้ายไฟล์มีสิบสองเดือน เดือนที่มีไม้ปิดเป็นบวกทุกเดือน ไม่มีเดือนไหนติดลบเลย</p>
+<p>มินส่งต่อให้พี่ฝนในกลุ่มอ่านหนังสือ คำตอบกลับมาเป็นคำถามเดียว "ตัวเลขทุกช่องในไฟล์นี้ รู้ได้วันไหน"</p>
+<p>เขาเปิดสมุดเขียนสี่บรรทัด</p>
+<ol>
+<li>คาดกำไรจากอะไร — ระยะห่างของ P กับ Q ที่ยืดออกแล้วกลับ</li>
+<li>ถืออะไรจริง — ยังไม่รู้ ไฟล์บอกแต่กำไร ไม่บอกว่าวันไหนถืออะไร</li>
+<li>เงินในบัญชีเปลี่ยนอย่างไร — ยังไม่รู้ ไม่มีบัญชีทีละวัน</li>
+<li>ใครจ่าย และเมื่อไรเงินนี้จะหาย — ถ้าไฟล์ใช้ข้อมูลที่ตอนนั้นยังไม่มี ก็ไม่มีใครจ่ายเลย</li>
+</ol></div>
+
+<div class="pq">backtest ที่ไม่หลอกตัวเองต้องมีชิ้นส่วนอะไรบ้าง และจะจับได้อย่างไรว่าสเปรดชีตแอบใช้ข้อมูลที่ ณ วันนั้นยังไม่มีใครรู้</div>
+
+<!-- ═══════════════ ตอน ก ═══════════════ -->
+<h2 id="ka">ตอน ก เดินเครื่องห้าขั้นด้วยมือ · 1 — สัญญาณวันที่ 3 ได้ราคาวันที่ 4</h2>
+<p>มินตัดสินใจไม่เถียงกับตัวเลขของต้น เขาจะสร้างเครื่องของตัวเองก่อน แล้วเอาคู่ P–Q มาเดินในเครื่องนั้น ถ้าผลตรงกับของต้นก็ดีไป ถ้าไม่ตรง เขาจะรู้ว่าต่างกันตรงไหน เครื่องแบบนี้เล่ม 1 เรียกว่า Backtest (การทดสอบย้อนหลัง) ในบท 15 และภาคผนวก I เคยให้โครงของวงหลักไว้แล้ว บทนี้จะเดินวงนั้นด้วยมือทีละวัน</p>
+<p>เริ่มจากคู่ที่คุ้นที่สุด คือคู่ A–B ของเล่ม 1 หนึ่งชุดคือ A หนึ่งเหรียญกับ B สองเหรียญทางตรงข้าม X จึงเท่ากับ A − 2B ไม้บรรทัดของคู่นี้วัดจาก 20 วันในบท 9 ของเล่ม 1 ได้ Mean 0 กับ SD 1 ไม้บรรทัดนี้วัดไว้ <strong>ก่อน</strong> สิบวันที่เราจะเดิน และไม่ถูกแก้ระหว่างทาง ทุกวัน Z-score (ค่ามาตรฐาน) จึงเท่ากับ X ของวันนั้นพอดี</p>
+<p>กติกาของเครื่องมีสามบรรทัด เข้า short X เมื่อ Z-score ขึ้นถึง 2 หรือเข้า long X เมื่อลงถึง −2 ออกเมื่อ Z-score กลับมาอยู่ในระยะ 0.5 จาก Mean และถือไม่เกิน 30 วัน ขนาดคือ 10 ชุด ทุนเริ่ม 1,000 ตารางนี้คือราคาปิดสิบวัน</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>A</th><th>B</th><th class="calc">X คิดอย่างไร</th><th>X (= Z)</th></tr>
+<tr><td>1</td><td>100.6</td><td>50</td><td class="calc">100.6 − 2 × 50</td><td>0.6</td></tr>
+<tr><td>2</td><td>103.4</td><td>51</td><td class="calc">103.4 − 2 × 51</td><td>1.4</td></tr>
+<tr><td>3</td><td>106.3</td><td>52</td><td class="calc">106.3 − 2 × 52</td><td><strong>2.3</strong></td></tr>
+<tr><td>4</td><td>105</td><td>51.5</td><td class="calc">105 − 2 × 51.5</td><td>2</td></tr>
+<tr><td>5</td><td>103.6</td><td>51</td><td class="calc">103.6 − 2 × 51</td><td>1.6</td></tr>
+<tr><td>6</td><td>101.1</td><td>50</td><td class="calc">101.1 − 2 × 50</td><td>1.1</td></tr>
+<tr><td>7</td><td>99.4</td><td>49.5</td><td class="calc">99.4 − 2 × 49.5</td><td><strong>0.4</strong></td></tr>
+<tr><td>8</td><td>100.7</td><td>50</td><td class="calc">100.7 − 2 × 50</td><td>0.7</td></tr>
+<tr><td>9</td><td>100.5</td><td>50.5</td><td class="calc">100.5 − 2 × 50.5</td><td>−0.5</td></tr>
+<tr><td>10</td><td>96.8</td><td>49</td><td class="calc">96.8 − 2 × 49</td><td>−1.2</td></tr>
+</table></div>
+<p>ทีนี้เดินทีละวัน แต่ละวันทำห้าขั้นเรียงกันเสมอ ขั้นแรกถามว่า <strong>ตอนนี้รู้อะไรแล้วบ้าง</strong> คำตอบคือราคาปิดของวันนี้และวันก่อนหน้า ไม่มีอะไรของพรุ่งนี้ ขั้นที่สองเอาสิ่งที่รู้มาคิดเป็น <strong>สัญญาณ</strong> ตามกติกา ขั้นที่สามแปลงสัญญาณเป็น <strong>คำสั่ง</strong> ว่าจะซื้อขายอะไรเท่าไร ขั้นที่สี่ถามว่าคำสั่งนั้น <strong>ได้ราคาเท่าไรจริง</strong> และขั้นที่ห้า <strong>ลงบัญชี</strong> ว่าเงินสดและของที่ถือเปลี่ยนไปอย่างไร</p>
+<p>วันที่ 1 และวันที่ 2 Z-score ยังไม่ถึง 2 เครื่องไม่ทำอะไร วันที่ 3 ราคาปิดออกมาแล้ว X เป็น 2.3 ซึ่งเกิน 2 สัญญาณจึงบอกให้ short X คำสั่งคือขาย A 10 เหรียญคู่กับซื้อ B 20 เหรียญ คำถามสำคัญอยู่ที่ขั้นที่สี่ เรารู้ว่า X เป็น 2.3 ก็ต่อเมื่อราคาปิดออกมาแล้ว ซึ่งคือวินาทีที่วันที่ 3 จบลง ไม่มีใครซื้อขายที่ราคาปิดของวันที่ 3 ได้หลังจากเห็นราคานั้นแล้ว</p>
+<p>เล่ม 1 ภาคผนวก K ตั้งกติกาไว้แล้วว่า คำสั่งที่ส่งหลังราคาปิดจะได้ราคาปิดของวันถัดไป เครื่องของมินใช้กติกาเดียวกัน คำสั่งของวันที่ 3 จึงได้ราคาวันที่ 4 คือ A ที่ 105 และ B ที่ 51.5 ซึ่ง X เป็น 2 ไม่ใช่ 2.3 อีกต่อไป</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>1) รู้อะไร</th><th>2) สัญญาณ</th><th>3) คำสั่ง</th><th>4) ได้ราคาที่</th></tr>
+<tr><td>1–2</td><td>Z 0.6 และ 1.4</td><td>ยังไม่ถึง 2</td><td>—</td><td>—</td></tr>
+<tr><td>3</td><td>Z 2.3</td><td>short X</td><td>ขาย A 10 ซื้อ B 20</td><td>ส่งหลังปิด รอวันถัดไป</td></tr>
+<tr><td>4</td><td>Z 2</td><td>ถืออยู่ ยังไม่ถึง 0.5</td><td>—</td><td>คำสั่งของวันที่ 3 ได้ A 105 · B 51.5</td></tr>
+<tr><td>5–6</td><td>Z 1.6 และ 1.1</td><td>ถือต่อ</td><td>—</td><td>—</td></tr>
+<tr><td>7</td><td>Z 0.4</td><td>ปิด</td><td>ซื้อคืน A 10 ขาย B 20</td><td>ส่งหลังปิด รอวันถัดไป</td></tr>
+<tr><td>8</td><td>Z 0.7</td><td>ไม่ถือแล้ว</td><td>—</td><td>คำสั่งของวันที่ 7 ได้ A 100.7 · B 50</td></tr>
+<tr><td>9–10</td><td>Z −0.5 และ −1.2</td><td>ยังไม่ถึง −2</td><td>—</td><td>—</td></tr>
+</table></div>
+<!--CHART:sab2-hand-loop-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 340" role="img" aria-label="เส้น X ของคู่ A–B สิบวัน ขึ้นจาก 0.6 ถึง 2.3 ในวันที่ 3 ซึ่งเป็นวันสัญญาณ แล้วได้ราคาวันที่ 4 ที่ 2.0 ลงถึง 0.4 ในวันที่ 7 ซึ่งเป็นสัญญาณปิด และได้ราคาวันที่ 8 ที่ 0.7">
+<text x="16.0" y="26.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">สัญญาณเกิดหลังราคาปิด ราคาที่ได้คือราคาปิดวันถัดไป</text>
+<line x1="64" y1="262.0" x2="730" y2="262.0" stroke="#f3f4f6"/>
+<text x="56.0" y="266.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−1</text>
+<line x1="64" y1="205.9" x2="730" y2="205.9" stroke="#d1d5db"/>
+<text x="56.0" y="209.9" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="149.8" x2="730" y2="149.8" stroke="#f3f4f6"/>
+<text x="56.0" y="153.8" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<line x1="64" y1="93.7" x2="730" y2="93.7" stroke="#f3f4f6"/>
+<text x="56.0" y="97.7" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<line x1="64" y1="93.7" x2="730" y2="93.7" stroke="#dc2626" stroke-dasharray="5 4"/>
+<text x="730.0" y="87.7" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า Z 2</text>
+<line x1="64" y1="177.8" x2="730" y2="177.8" stroke="#16a34a" stroke-dasharray="5 4"/>
+<text x="730.0" y="192.8" text-anchor="end" font-size="11" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">เส้นออก Z 0.5</text>
+<text x="64.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 1</text>
+<text x="138.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 2</text>
+<text x="212.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 3</text>
+<text x="286.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 4</text>
+<text x="360.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 5</text>
+<text x="434.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 6</text>
+<text x="508.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 7</text>
+<text x="582.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 8</text>
+<text x="656.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 9</text>
+<text x="730.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 10</text>
+<polyline points="64.0,172.2 138.0,127.3 212.0,76.8 286.0,93.7 360.0,116.1 434.0,144.1 508.0,183.4 582.0,166.6 656.0,233.9 730.0,273.2" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>
+<circle cx="64.0" cy="172.2" r="3" fill="#2563eb"/>
+<circle cx="138.0" cy="127.3" r="3" fill="#2563eb"/>
+<circle cx="212.0" cy="76.8" r="3" fill="#2563eb"/>
+<circle cx="286.0" cy="93.7" r="3" fill="#2563eb"/>
+<circle cx="360.0" cy="116.1" r="3" fill="#2563eb"/>
+<circle cx="434.0" cy="144.1" r="3" fill="#2563eb"/>
+<circle cx="508.0" cy="183.4" r="3" fill="#2563eb"/>
+<circle cx="582.0" cy="166.6" r="3" fill="#2563eb"/>
+<circle cx="656.0" cy="233.9" r="3" fill="#2563eb"/>
+<circle cx="730.0" cy="273.2" r="3" fill="#2563eb"/>
+<circle cx="212.0" cy="76.8" r="6.5" fill="none" stroke="#7c3aed" stroke-width="2.4"/>
+<text x="212.0" y="64.8" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">สัญญาณ short 2.3</text>
+<circle cx="286.0" cy="93.7" r="6.5" fill="none" stroke="#d97706" stroke-width="2.4"/>
+<text x="286.0" y="115.7" text-anchor="middle" font-size="11" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">ได้ราคา 2.0</text>
+<circle cx="508.0" cy="183.4" r="6.5" fill="none" stroke="#7c3aed" stroke-width="2.4"/>
+<text x="508.0" y="205.4" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">สัญญาณปิด 0.4</text>
+<circle cx="582.0" cy="166.6" r="6.5" fill="none" stroke="#d97706" stroke-width="2.4"/>
+<text x="582.0" y="154.6" text-anchor="middle" font-size="11" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">ได้ราคา 0.7</text>
+</svg></div>
+<div class="cap">🔢 ตัวเลขสมมติเพื่อสอน · คู่ A–B ของเล่ม 1 · ไม้บรรทัด Mean 0 SD 1 จึงอ่าน X เป็น Z ได้ตรง · short X 10 ชุด</div>
+<!--/CHART:sab2-hand-loop-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือวันที่ 1 ถึง 10 แกนตั้งคือ X ซึ่งเท่ากับ Z-score ของคู่นี้ เส้นประแดงคือเส้นเข้า 2 และเส้นประเขียวคือเส้นออก 0.5 วงม่วงคือวันที่เห็นสัญญาณ วงส้มคือวันที่ได้ราคา ให้ดูว่าวงม่วงกับวงส้มห่างกันหนึ่งวันเสมอ และ X ที่ได้จริง (2 กับ 0.7) แย่กว่า X ที่เห็นตอนสัญญาณ (2.3 กับ 0.4) ทั้งสองครั้ง สรุปได้ว่าราคาที่ทำให้เกิดสัญญาณไม่ใช่ราคาที่เราได้</p>
+
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>ถ้าเครื่องยอมให้ได้ราคาปิดของวันที่เห็นสัญญาณ คือเข้าที่ X 2.3 และออกที่ X 0.4 คุณคิดว่ากำไรของไม้นี้จะต่างจากการได้ราคาวันถัดไปกี่ดอลลาร์ และส่วนที่ต่างนั้นมีใครจ่ายจริงไหม ทายก่อนอ่านต่อ</p></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>เครื่องทำห้าขั้นทุกวัน คือรู้อะไร สัญญาณ คำสั่ง ได้ราคาเท่าไร และลงบัญชี วันที่ 3 X เป็น 2.3 จึงเกิดสัญญาณ short X แต่ราคาที่ได้คือราคาปิดวันที่ 4 ที่ X 2 ส่วนสัญญาณปิดวันที่ 7 ที่ X 0.4 ได้ราคาวันที่ 8 ที่ X 0.7</p></div>
+
+<h2 id="kb">ตอน ก · 2 — ลงบัญชีทีละวัน: Equity จบที่ 1,010.96 และตรวจอีกทางได้ 10.96 เท่ากัน</h2>
+<p>ขั้นที่ห้าคือลงบัญชี ซึ่งใช้วิธีกระดาษของเล่ม 1 บท 11 การขาย A ได้เงินสดเข้ามา แต่ได้ภาระที่ต้องซื้อคืนมาด้วย จึงเขียนจำนวน A ที่ถือเป็นลบ วันที่ 4 คำสั่ง short ได้ราคา มินขาย A 10 เหรียญที่ 105 ได้เงิน 1,050 แล้วซื้อ B 20 เหรียญที่ 51.5 จ่ายไป 1,030 เงินสดจากสองขาจึงเข้ามาสุทธิ 20</p>
+<p>ค่าธรรมเนียมคิดจากมูลค่าที่ซื้อขายจริงทั้งสองขา มูลค่ารวมคือ 1,050 + 1,030 หรือ 2,080 ค่าธรรมเนียม 0.05% ของ 2,080 คือ 1.04 เงินสดหลัง fill นี้จึงเป็น 1,000 + 20 − 1.04 หรือ 1,018.96 ส่วนของที่ถือคือ A −10 กับ B 20</p>
+<p>เงินสด 1,018.96 ยังไม่ใช่กำไร เพราะมีภาระซื้อ A คืนค้างอยู่ <strong>Equity (มูลค่าบัญชีรวม)</strong> ของแต่ละวันจึงต้องคิดจากเงินสดบวกมูลค่าของที่ถือตามราคาปิดวันนั้น ตารางนี้เดินตั้งแต่วันที่ 4 ถึงวันที่ 8</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>เหตุการณ์</th><th>เงินสด</th><th>ถือ A</th><th>ถือ B</th><th class="calc">Equity คิดอย่างไร</th><th>Equity</th></tr>
+<tr><td>1–3</td><td>ยังไม่ถือ</td><td>1,000</td><td>0</td><td>0</td><td class="calc">เงินสดอย่างเดียว</td><td>1,000</td></tr>
+<tr><td>4</td><td>fill short</td><td>1,018.96</td><td data-key="ch12.v2.มือ.ถือA">−10</td><td>20</td><td class="calc">1,018.96 − 10 × 105 + 20 × 51.5</td><td data-key="ch12.v2.มือ.วัน.3.Equity">998.96</td></tr>
+<tr><td>5</td><td>ถือ</td><td>1,018.96</td><td>−10</td><td>20</td><td class="calc">1,018.96 − 10 × 103.6 + 20 × 51</td><td data-key="ch12.v2.มือ.วัน.4.Equity">1,002.96</td></tr>
+<tr><td>6</td><td>ถือ</td><td>1,018.96</td><td>−10</td><td>20</td><td class="calc">1,018.96 − 10 × 101.1 + 20 × 50</td><td data-key="ch12.v2.มือ.วัน.5.Equity">1,007.96</td></tr>
+<tr><td>7</td><td>ถือ · เกิดสัญญาณปิด</td><td>1,018.96</td><td>−10</td><td>20</td><td class="calc">1,018.96 − 10 × 99.4 + 20 × 49.5</td><td data-key="ch12.v2.มือ.วัน.6.Equity">1,014.96</td></tr>
+<tr><td>8</td><td>fill ปิด</td><td data-key="ch12.v2.มือ.fillออก.เงินสดหลัง">1,010.96</td><td>0</td><td>0</td><td class="calc">เงินสดอย่างเดียว</td><td data-key="ch12.v2.มือ.Equityจบ">1,010.96</td></tr>
+</table></div>
+<p>วันที่ 4 Equity เป็น 998.96 ต่ำกว่าทุนเริ่มอยู่ 1.04 พอดี ซึ่งก็คือค่าธรรมเนียมที่เพิ่งจ่าย ตรงกับที่ควรเป็น เพราะการเปิดไม้ไม่ได้ทำให้รวยหรือจนลง นอกจากค่าธรรมเนียม หลังจากนั้นทุกวันที่ X ลด Equity จะขึ้น 10 เท่าของระยะที่ลด เช่นวันที่ 5 X ลดจาก 2 เป็น 1.6 Equity ขึ้นจาก 998.96 เป็น 1,002.96 คือขึ้น 4 หรือ 10 × 0.4</p>
+<p>วันที่ 8 คำสั่งปิดได้ราคา มินซื้อ A คืน 10 เหรียญที่ 100.7 จ่าย 1,007 แล้วขาย B 20 เหรียญที่ 50 ได้ 1,000 เงินสดจึงออกสุทธิ 7 มูลค่ารวมของ fill นี้คือ 2,007 ค่าธรรมเนียมคือ 2,007 × 0.05% ได้ราว 1.00 เงินสดจึงเหลือ 1,018.96 − 7 − 1.00 หรือ 1,010.96 และไม่มีของถือค้าง Equity จึงเท่ากับเงินสด</p>
+<p><strong>ตรวจอีกทาง</strong> ด้วยราคาของชุด มินเข้า short ที่ X 2 และออกที่ X 0.7 X ลดลง 1.3 สิบชุดจึงได้ 10 × 1.3 หรือ 13 ค่าธรรมเนียมสองครั้งคือ 1.04 + 1.00 หรือ 2.04 สุทธิจึงเป็น 13 − 2.04 หรือ 10.96 ตรงกับ Equity ที่ขึ้นจาก 1,000 เป็น 1,010.96 ทุกเซนต์</p>
+<p>สิ่งที่เพิ่งทำมีชื่อว่า <strong>Event-driven Backtest (backtest ตามเหตุการณ์)</strong> คือเครื่องที่เดินไปตามเวลาทีละเหตุการณ์ ทุกเหตุการณ์ทำห้าขั้นเรียงกัน และใช้ได้เฉพาะสิ่งที่รู้แล้ว ณ เหตุการณ์นั้น ต่างจากสเปรดชีตที่มองทั้งคอลัมน์พร้อมกัน ซึ่งเผลอหยิบตัวเลขของแถวล่าง ๆ มาใช้ได้ง่ายมาก</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> Equity ของวันใดก็ตามคือเงินที่จะเหลือถ้าปิดทุกอย่างที่ราคาปิดวันนั้น จึงเท่ากับเงินสดบวกมูลค่าของที่ถือ ของที่ติดลบคือภาระที่ต้องซื้อคืน จึงลดมูลค่าลง</p>
+<div class="fm">Equity = เงินสด + จำนวน A ที่ถือ × ราคา A + จำนวน B ที่ถือ × ราคา B</div>
+<p class="readeq"><strong>อ่านสมการ:</strong> วันที่ 6 เงินสด 1,018.96 ถือ A −10 ที่ราคา 101.1 และถือ B 20 ที่ราคา 50 Equity จึงเป็น 1,018.96 − 1,011 + 1,000 ได้ 1,007.96 ตรงกับแถววันที่ 6 ในตาราง</p>
+
+<p>เฉลย 🛑: ถ้ายอมให้ได้ราคาวันที่เห็นสัญญาณ ไม้นี้จะเข้าที่ X 2.3 และออกที่ X 0.4 X ลดลง 1.9 สิบชุดได้ 19 ค่าธรรมเนียมคิดจากราคาวันที่ 3 และวันที่ 7 ได้ 1.05 กับ 0.99 รวม 2.04 เท่าเดิม สุทธิจึงเป็น 16.96 และ Equity จบที่ 1,016.96 มากกว่าของจริง 6 ส่วนที่ต่าง 6 นี้มาจากสองที่ ตอนเข้าได้มากกว่า 10 × (2.3 − 2) หรือ 3 และตอนออกได้มากกว่า 10 × (0.7 − 0.4) อีก 3</p>
+<p>ไม่มีใครจ่าย 6 ส่วนนี้ เพราะไม่มีใครซื้อขายที่ราคาที่ยังไม่เกิดได้ เครื่องจึงต้องมีกติกาที่บอกชัดว่าคำสั่งได้ราคาเมื่อไรและเท่าไร กติกานี้มีชื่อว่า <strong>Fill Model (แบบจำลองการได้ราคา)</strong> ของมินคือ "ได้ราคาปิดวันถัดไป ครบทั้งสองขา บวกค่าธรรมเนียม 0.05% ของมูลค่า" ซึ่งเป็นกติกาที่ง่ายที่สุดที่ยังซื่อ แต่ก็ยังเป็นการสมมติอยู่ดี</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>def backtest(A, B, h, z, sets, lag=1, fee=0.0005, enter=2, leave=0.5, hold=30):
+    cash, held, t_in, eq, n = 1000.0, 0, 0, [], 0   # held: +1 = long X · -1 = short X
+    for t in range(len(A)):
+        if t &gt;= lag:
+            zt = z[t - lag]                     # 1) รู้อะไร: Z ของวัน t - lag
+            want = held                         # 2) สัญญาณ
+            if held == 0 and abs(zt) &gt;= enter: want = -1 if zt &gt; 0 else 1
+            elif held != 0 and (abs(zt) &lt;= leave or t - t_in &gt;= hold): want = 0
+            if want != held:                    # 3) คำสั่ง  4) ได้ราคาปิดวัน t
+                qa, qb = (want - held) * sets, -(want - held) * sets * h
+                cash -= qa * A[t] + qb * B[t] + fee * (abs(qa) * A[t] + abs(qb) * B[t])
+                held, t_in, n = want, t, n + 1
+        eq.append(cash + held * sets * (A[t] - h * B[t]))   # 5) ลงบัญชี
+    return eq, n
+
+A = [100.6, 103.4, 106.3, 105, 103.6, 101.1, 99.4, 100.7, 100.5, 96.8]
+B = [50, 51, 52, 51.5, 51, 50, 49.5, 50, 50.5, 49]
+X = [a - 2 * b for a, b in zip(A, B)]           # ไม้บรรทัด Mean 0 SD 1 → Z = X
+honest, _ = backtest(A, B, 2, X, 10, lag=1)     # ได้ราคาวันถัดไป
+same_day, _ = backtest(A, B, 2, X, 10, lag=0)   # ได้ราคาวันที่เห็นสัญญาณ (โกง)
+print(round(honest[-1], 2), round(same_day[-1], 2))
+# ผลที่ต้องได้: 1010.96 · 1016.96</pre>
+<p>นี่คือเครื่องทั้งเครื่องในสิบสี่บรรทัด บรรทัด <code>zt = z[t - lag]</code> คือขั้นที่หนึ่ง เครื่องดู Z ของเมื่อวานเมื่อ <code>lag=1</code> แล้วได้ราคาปิดของวันนี้ ซึ่งก็คือการได้ราคาวันถัดไปจากวันที่เห็นสัญญาณ</p>
+<p>ส่วน <code>lag=0</code> คือสเปรดชีตที่ได้ราคาวันเดียวกับสัญญาณ เงินสดลดเมื่อซื้อและเพิ่มเมื่อขาย และค่าธรรมเนียมคิดจากมูลค่าทั้งสองขาทุกครั้งที่สถานะเปลี่ยน ถ้าใช้ pandas ให้คิดคอลัมน์ Z ให้เสร็จก่อน แล้วใช้ <code>shift(1)</code> กับคอลัมน์สัญญาณ ก่อนจะคูณกับการเปลี่ยนของราคา ซึ่งเป็นหน้าที่เดียวกับ <code>lag</code></p>
+</details>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — Fill Model "ราคาปิดวันถัดไป"</div>
+<ul>
+<li><strong>พังเมื่อ</strong> ราคาที่ได้จริงแย่กว่าราคาปิด ถ้าทุกขาได้ราคาแย่ลงเพียง 0.1% ตอนเข้าจะเสียเพิ่ม 2,080 × 0.1% ราว 2.08 ตอนออกเสียเพิ่มอีก 2.01 รวม 4.09 สุทธิ 10.96 จะเหลือ 6.87 คือหายไปกว่าหนึ่งในสามจากความคลาดเคลื่อนที่เล็กจนมองไม่เห็นในตาราง ซึ่งเล่ม 1 บท 15 เรียกว่า Slippage (ส่วนต่างราคาที่คลาดเคลื่อน)</li>
+<li><strong>พังเมื่อ</strong> ขนาดโตขึ้น ค่าธรรมเนียม 0.05% เป็นสัดส่วนคงที่ เครื่องจึงคิดว่า 10 ชุดกับ 10,000 ชุดเสียต้นทุนเป็นสัดส่วนเท่ากัน ซึ่งไม่จริง คำสั่งก้อนใหญ่กินคำสั่งที่รออยู่หลายชั้นใน Order Book (กระดานคำสั่ง) แบบเส้นกำไรตามขนาดของเล่ม 1 บท 16</li>
+<li><strong>บอกไม่ได้ว่า</strong> ทั้งสองขาได้ราคาพร้อมกันจริงไหม เครื่องสมมติว่าได้ครบทั้ง A 10 และ B 20 ในวินาทีเดียว ถ้าได้ขาเดียวก่อน ระยะเวลาที่ถือขาเดียวคือ Legging Risk (ความเสี่ยงได้ขาเดียว) ของเล่ม 1 บท 7 ซึ่งเครื่องนี้มองไม่เห็นเลย</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ก</div>
+<p>ลงบัญชีทีละวันได้ Equity จบที่ 1,010.96 และคิดจากราคาของชุดได้ 10 × 1.3 − 2.04 หรือ 10.96 ตรงกัน ถ้ายอมให้ได้ราคาวันที่เห็นสัญญาณจะได้ 1,016.96 มากกว่าของจริง 6 ซึ่งเป็นเงินที่ไม่มีใครจ่าย เครื่องจึงต้องมี Fill Model ที่ซื่อ</p></div>
+
+<!-- ═══════════════ ตอน ข ═══════════════ -->
+<h2 id="kc">ตอน ข จับที่โกงในสเปรดชีตของต้น · 1 — ชนะทุกเดือน +576.38: ถามทีละช่องว่ารู้ได้วันไหน</h2>
+<p>คราวนี้เปิดไฟล์ของต้น คู่ P–Q มีราคาปิดรายวัน 360 วัน ต้นแบ่งเป็น 12 เดือน เดือนละ 30 วัน ใช้กติกาเดียวกับเครื่องของมิน คือเข้าที่ Z-score 2 ออกที่ 0.5 ถือไม่เกิน 30 วัน ขนาด 5 ชุด (P หนึ่งเหรียญคู่กับ Q ราวสองเหรียญ ขา P มีมูลค่าราว 1,000) ทุนเริ่ม 1,000 ตารางสรุปท้ายไฟล์เป็นแบบนี้</p>
+<p class="cap">🎲 จำลอง · คู่ P–Q เป็นโลกจำลองที่เล่มสร้างไว้และรู้คำตอบ (ตอนนี้ยังไม่บอกว่าโลกนี้เป็นอย่างไร) · ตัวเลขจากการสุ่มชุดตัวอย่างหนึ่งชุด</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เดือน</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th></tr>
+<tr><td>ไม้ที่ปิด</td><td>0</td><td>0</td><td>2</td><td>0</td><td>1</td><td>2</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>กำไรของไม้ที่ปิด</td><td>0</td><td>0</td><td>88.02</td><td>0</td><td>62.28</td><td>132.23</td><td>43.01</td><td>52.1</td><td>49.07</td><td>55.77</td><td>54.04</td><td>39.85</td></tr>
+</table></div>
+<p>ตลอดปีมีไม้ปิด 11 ไม้ ชนะทั้ง 11 ไม้ เดือนที่มีไม้ปิด 9 เดือนเป็นบวกทุกเดือน อีก 3 เดือนไม่มีไม้ ทั้งปีได้ <span data-key="ch12.v2.ต้น.ผล.ต้นเดิม.ผล">576.38</span> ต้นจึงพูดว่า "ชนะทุกเดือน" ซึ่งถ้าเชื่อตาราง ก็แปลว่าทุนโตเกินครึ่งในปีเดียวโดยไม่เคยเจอเดือนที่เสีย</p>
+<p>มินไม่เริ่มจากผลรวม เขาเลื่อนลงไปดูวันที่ไม้แรกเปิด แล้วคิดซ้ำทีละช่องด้วยมือ เขาเพิ่มคอลัมน์ "สูตรในชีต" ไว้ข้างแต่ละค่าเพื่อดูว่าค่านั้นมาจากแถวไหน</p>
+<p class="cap">🎲 จำลอง · สี่แถวรอบไม้แรกในไฟล์ของต้น · h 2.01 · Mean 2.84 · SD 4.74</p>
+<div class="tw"><table data-src="sim">
+<tr><th>วัน</th><th>P</th><th>Q</th><th class="calc">X คิดอย่างไร</th><th>X</th><th class="calc">Z คิดอย่างไร</th><th>Z</th><th>ในชีตทำอะไร</th></tr>
+<tr><td>73</td><td>213.26</td><td>103.74</td><td class="calc">213.26 − 208.52</td><td>4.74</td><td class="calc">1.9 ÷ 4.74</td><td>0.4</td><td>—</td></tr>
+<tr><td>74</td><td>225.04</td><td>105.58</td><td class="calc">225.04 − 212.22</td><td>12.82</td><td class="calc">9.98 ÷ 4.74</td><td><strong>2.11</strong></td><td>short X ที่ X 12.82</td></tr>
+<tr><td>75</td><td>227.67</td><td>108.57</td><td class="calc">227.67 − 218.23</td><td>9.44</td><td class="calc">6.6 ÷ 4.74</td><td>1.39</td><td>ถือ</td></tr>
+<tr><td>76</td><td>224.42</td><td>108.03</td><td class="calc">224.42 − 217.14</td><td>7.28</td><td class="calc">4.44 ÷ 4.74</td><td>0.94</td><td>ถือ</td></tr>
+</table></div>
+<p>ลองคิดแถววันที่ 74 ไปด้วยกัน X คือ P ลบ h เท่าของ Q โดย h ในชีตคือ 2.01 ส่วน 2.01 × 105.58 ได้ 212.22 X จึงเป็น 225.04 − 212.22 หรือ 12.82 ต่อมาเอา X ลบ Mean ของชีตซึ่งคือ 2.84 ได้ระยะห่าง 9.98 แล้วหารด้วย SD ของชีตซึ่งคือ 4.74 ได้ Z-score 2.11 เกิน 2 ชีตจึง short X ที่ X 12.82 ตัวเลขตรงกับที่ต้นพิมพ์ไว้ทุกตัว ต้นคำนวณไม่ผิด</p>
+<p>แต่คำถามของพี่ฝนไม่ได้ถามว่าคิดถูกไหม พี่ฝนถามว่าแต่ละช่อง <strong>รู้ได้วันไหน</strong> มินจึงไล่ทีละช่องของแถววันที่ 74 แล้วเขียนวันที่ที่ค่านั้นมีให้ใช้ได้จริงลงไป</p>
+<div class="tw"><table>
+<tr><th>ช่องในแถววันที่ 74</th><th>สูตรในชีตของต้น</th><th>รู้ได้วันไหน</th><th>ใช้ในวันที่ 74 ได้ไหม</th></tr>
+<tr><td>ราคา P และ Q</td><td>ราคาปิดวันที่ 74</td><td>หลังปิดวันที่ 74</td><td>ได้ ถ้าใช้หลังราคาปิด</td></tr>
+<tr><td>h 2.01</td><td>ความชันจาก Regression ของ P บน Q ทั้งวันที่ 1 ถึง 360</td><td>วันที่ 360</td><td><strong>ไม่ได้</strong> ใช้ราคาอีก 286 วันข้างหน้า</td></tr>
+<tr><td>Mean 2.84 และ SD 4.74</td><td>ค่าเฉลี่ยและ SD ของ X วันที่ 1 ถึง 360</td><td>วันที่ 360</td><td><strong>ไม่ได้</strong> รู้ระดับที่ X จะกลับไปหาล่วงหน้า</td></tr>
+<tr><td>ราคาที่ได้ X 12.82</td><td>ราคาปิดวันเดียวกับที่เห็นสัญญาณ</td><td>เห็นหลังปิดวันที่ 74</td><td><strong>ไม่ได้</strong> ซื้อขายที่ราคานั้นไม่ทันแล้ว</td></tr>
+</table></div>
+<p>สามช่องสุดท้ายใช้ข้อมูลที่ ณ วันที่ 74 ยังไม่มีใครรู้ เล่ม 1 ภาคผนวก K เรียกความผิดแบบนี้ว่า Look-ahead Bias (อคติมองล่วงหน้า) ไฟล์ของต้นมีมันครบสามแบบในแถวเดียว แบบแรกคือ h ที่วัดจากทั้งปี แบบที่สองคือไม้บรรทัดที่วัดจากทั้งปี และแบบที่สามคือราคาที่ได้ในวันเดียวกับที่เห็นสัญญาณ</p>
+<p>ข้อมูลที่ซื่อต้องเป็น <strong>Point-in-time Data (ข้อมูล ณ เวลานั้น)</strong> คือทุกค่าที่เครื่องใช้ ณ วันใดก็ตาม ต้องเป็นค่าที่คนจริงจะมีอยู่ในมือ ณ วันนั้น ไม่ใช่ค่าที่เรามีในวันนี้ วิธีตรวจด้วยมือก็คือสิ่งที่มินเพิ่งทำ เพิ่มคอลัมน์ "รู้ได้วันไหน" ให้ทุกค่าที่ใช้ตัดสินใจ ถ้าช่องไหนรู้ได้หลังวันของแถว ช่องนั้นโกง</p>
+<p><strong>🚶 อ่านเป็นภาษาคน:</strong> สเปรดชีตไม่รู้ว่าวันนี้คือวันไหน ทุกแถวมองเห็นทั้งคอลัมน์ได้พร้อมกัน สูตรที่ลากคลุมทั้งคอลัมน์จึงเหมือนส่งหนังสือพิมพ์ของปลายปีไปให้คนในเดือนมีนาคม ตัวเลขทุกตัวคิดถูก แต่คิดจากสิ่งที่คนในเดือนมีนาคมไม่มีทางมี</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>ชีตของต้นมีไม้ปิด 11 ไม้ ชนะทั้ง 11 ไม้ และได้ทั้งปี +576.38 คิดแถววันที่ 74 ซ้ำด้วยมือได้ X 12.82 และ Z-score 2.11 ตรงกับชีต แต่ h 2.01 กับไม้บรรทัด Mean 2.84 และ SD 4.74 รู้ได้วันที่ 360 และราคาที่ได้คือราคาวันที่เห็นสัญญาณ ชีตจึงมี Look-ahead Bias สามแบบ</p></div>
+
+<h2 id="kd">ตอน ข · 2 — แก้ทีละจุด: +576.38 → +119.22 → −20.62 → −19.87</h2>
+<p>มินแก้ทีละจุดโดยไม่แตะอย่างอื่น แล้วเดินชีตใหม่ด้วยเครื่องห้าขั้นทุกครั้ง การแก้ทีละจุดทำให้รู้ว่ากำไรที่หายไปมาจากที่โกงข้อไหน ถ้าแก้พร้อมกันสามจุด จะเห็นแค่ว่ากำไรหาย แต่ไม่รู้ว่าหายเพราะอะไร</p>
+<p><strong>จุดที่ 1 · ราคาที่ได้</strong> ให้ได้ราคาปิดวันถัดไปแบบเครื่องของมิน ไม้แรกที่เคยเข้าที่ X 12.82 ในวันที่ 74 จะได้ราคาวันที่ 75 ที่ X 9.44 แทน ราคาของชุดต่างกัน 3.38 ห้าชุดจึงเสียไป 5 × 3.38 หรือ 16.9 ตั้งแต่ตอนเข้า ในชีตเดิมไม้นี้ปิดในวันที่ 84 ที่ X 2.9 และได้จาก X ไป 5 × 9.92 หรือ 49.6 ส่วนที่เสียตอนเข้าอย่างเดียวจึงเท่ากับราวหนึ่งในสามของไม้</p>
+
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>ไม้ทุกไม้ในชีตของต้นเข้าในวันที่ Z-score เพิ่งข้าม 2 คุณคิดว่าหลังแก้จุดที่ 1 อย่างเดียว ผลทั้งปีจะลดจาก +576.38 ลงเหลือราวเท่าไร และยังจะชนะทุกเดือนอยู่ไหม</p></div>
+
+<p>ผลทั้งปีหลังแก้จุดที่ 1 คือ <span data-key="ch12.v2.ต้น.ผล.แก้fill.ผล">119.22</span> หายไปราวสี่ในห้า ไม้ที่ปิดยังมี 11 ไม้ แต่ชนะเหลือ 8 ไม้ และมี 2 เดือนที่ติดลบ คำว่า "ชนะทุกเดือน" หายไปตั้งแต่จุดแรก ไม้ส่วนใหญ่ของต้นเคยได้กำไรจากการที่ X พุ่งขึ้นวันเดียวแล้วกลับลงในวันรุ่งขึ้น ซึ่งเป็นส่วนที่ไม่มีใครซื้อขายตามทัน</p>
+<p><strong>จุดที่ 2 · ไม้บรรทัด</strong> ต้นมีราคาของคู่นี้ย้อนหลังอีก 250 วันก่อนวันแรกของชีต แต่ไม่ได้ใช้ มินวัด Mean และ SD จาก 250 วันนั้นด้วย h เดิมของต้น ได้ Mean 0.53 กับ SD 3.1 แล้วตรึงไว้ตลอด 360 วัน ไม้บรรทัดนี้รู้ได้ตั้งแต่ก่อนวันแรกของชีต จึงใช้ได้ทุกวัน ผลทั้งปีกลายเป็น <span data-key="ch12.v2.ต้น.ผล.แก้ไม้บรรทัด.ผล">−20.62</span> จากไม้ที่ปิด 24 ไม้ ชนะ 11 ไม้ และ 7 เดือนติดลบ</p>
+<p><strong>จุดที่ 3 · h</strong> สุดท้ายวัด h จาก 250 วันก่อนหน้าด้วย ได้ h 2.19 แล้ววัดไม้บรรทัดใหม่ด้วย h นี้ ได้ Mean −10.42 กับ SD 2.46 ตอนนี้ทุกค่าที่เครื่องใช้รู้ได้ก่อนวันที่ใช้ทั้งหมด ผลทั้งปีคือ <strong data-key="ch12.v2.ต้น.ผล.แก้h.ผล">−19.87</strong> จากไม้ที่ปิด 20 ไม้ ชนะ 9 ไม้ และ 7 เดือนติดลบ</p>
+<div class="tw"><table data-src="sim">
+<tr><th>ชีตของต้น</th><th>h</th><th>ไม้บรรทัด</th><th>ได้ราคา</th><th>ไม้ที่ปิด / ชนะ</th><th>เดือนติดลบ</th><th>ผลทั้งปี</th></tr>
+<tr><td>เดิม</td><td>ทั้งปี</td><td>ทั้งปี</td><td>วันสัญญาณ</td><td>11 / 11</td><td>0</td><td>+576.38</td></tr>
+<tr><td>แก้จุดที่ 1</td><td>ทั้งปี</td><td>ทั้งปี</td><td>วันถัดไป</td><td>11 / 8</td><td>2</td><td>+119.22</td></tr>
+<tr><td>แก้จุดที่ 2</td><td>ทั้งปี</td><td>250 วันก่อน</td><td>วันถัดไป</td><td>24 / 11</td><td>7</td><td>−20.62</td></tr>
+<tr><td>แก้จุดที่ 3 (ซื่อครบ)</td><td>250 วันก่อน</td><td>250 วันก่อน</td><td>วันถัดไป</td><td>20 / 9</td><td>7</td><td><strong>−19.87</strong></td></tr>
+</table></div>
+<p class="cap">🎲 จำลอง · โลกตัวอย่างเดียวกับไฟล์ของต้น · 5 ชุด · ค่าธรรมเนียม 0.05% ต่อ fill</p>
+<p>ทีนี้ถึงเวลาเปิดว่าโลกของคู่ P–Q เป็นอย่างไร เล่มสร้างมันจากสองส่วน ส่วนแรกคือระยะห่างที่เดินสุ่มช้า ๆ วันละราว 0.3% โดยไม่มีอะไรดึงกลับ ส่วนที่สองคือแรงสะบัดรายวันราว 1.5% ที่หายไปเองภายในวันเดียว ซึ่งก็คือ Noise (แรงสะบัด) ของเล่ม 1 บท 13 ที่ไม่มีเชือกต่อเลย โลกนี้จึงไม่มีเชือกที่คนซื้อขายตามได้ ระยะห่างที่ดูเหมือนกลับคือแรงสะบัดที่หายไปก่อนจะมีใครได้ราคา</p>
+<p>คำตอบที่ถูกของโลกนี้จึงรู้ล่วงหน้า เครื่องที่ซื่อควรได้ราวศูนย์ลบค่าธรรมเนียม หนึ่งโลกอาจโชคดีหรือโชคร้ายได้ มินจึงสร้างโลกแบบเดียวกันอีก 30 โลก แต่ละโลกสุ่มใหม่ แล้วเดินสี่แบบเหมือนเดิม ชีตเดิมของต้นได้บวกครบ 30 จาก 30 โลก มีค่า Median (มัธยฐาน) <span data-key="ch12.v2.ต้น.สามสิบโลก.ต้นเดิม.มัธยฐาน">289.81</span> ส่วนเครื่องที่ซื่อครบได้บวกเพียง 9 จาก 30 โลก และมี Median <span data-key="ch12.v2.ต้น.สามสิบโลก.แก้h.มัธยฐาน">−46.51</span> ตรงกับคำตอบที่รู้ว่าควรเป็นราวค่าธรรมเนียม</p>
+<!--CHART:sab2-ton-fixes-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 330" role="img" aria-label="แท่งผลทั้งปีสี่แบบ ชีตเดิมของต้นบวกมาก แก้ราคาที่ได้แล้วเหลือบวกเล็กน้อย แก้ไม้บรรทัดและ h แล้วติดลบราวค่าธรรมเนียม ทั้งในโลกตัวอย่างและในมัธยฐานของ 30 โลก">
+<line x1="64" y1="221.7" x2="736" y2="221.7" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="56.0" y="225.7" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="175.1" x2="736" y2="175.1" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="179.1" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">200</text>
+<line x1="64" y1="128.5" x2="736" y2="128.5" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="132.5" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">400</text>
+<line x1="64" y1="81.9" x2="736" y2="81.9" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="85.9" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">600</text>
+<rect x="98.0" y="87.4" width="46.0" height="134.3" rx="2" fill="#2563eb"/>
+<text x="121.0" y="81.4" text-anchor="middle" font-size="10.5" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">+576.38</text>
+<rect x="148.0" y="154.2" width="46.0" height="67.5" rx="2" fill="#7c3aed"/>
+<text x="171.0" y="148.2" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">+289.81</text>
+<text x="148.0" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ชีตเดิมของต้น</text>
+<rect x="266.0" y="194.0" width="46.0" height="27.8" rx="2" fill="#2563eb"/>
+<text x="289.0" y="188.0" text-anchor="middle" font-size="10.5" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">+119.22</text>
+<rect x="316.0" y="220.5" width="46.0" height="1.2" rx="2" fill="#7c3aed"/>
+<text x="339.0" y="214.5" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">+5.16</text>
+<text x="316.0" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">แก้ราคาที่ได้</text>
+<rect x="434.0" y="221.7" width="46.0" height="4.8" rx="2" fill="#2563eb"/>
+<text x="457.0" y="240.5" text-anchor="middle" font-size="10.5" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">−20.62</text>
+<rect x="484.0" y="221.7" width="46.0" height="2.3" rx="2" fill="#7c3aed"/>
+<text x="507.0" y="238.0" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">−9.89</text>
+<text x="484.0" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">แก้ไม้บรรทัด</text>
+<rect x="602.0" y="221.7" width="46.0" height="4.6" rx="2" fill="#2563eb"/>
+<text x="625.0" y="240.4" text-anchor="middle" font-size="10.5" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">−19.87</text>
+<rect x="652.0" y="221.7" width="46.0" height="10.8" rx="2" fill="#7c3aed"/>
+<text x="675.0" y="246.6" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">−46.51</text>
+<text x="652.0" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">แก้ h (ซื่อครบ)</text>
+<rect x="64" y="40" width="11" height="11" rx="2" fill="#2563eb"/>
+<text x="80.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">โลกตัวอย่างในชีตของต้น</text>
+<rect x="270" y="40" width="11" height="11" rx="2" fill="#7c3aed"/>
+<text x="286.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">มัธยฐานของ 30 โลกแบบเดียวกัน</text>
+<text x="64.0" y="24.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">ผลทั้งปีหลังแก้ Look-ahead ทีละจุด (ทุนเริ่ม 1,000)</text>
+</svg></div>
+<div class="cap">🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด) · โลกที่ไม่มีเชือกให้เก็บ (เดินสุ่มช้า + แรงสะบัดที่หายในวันเดียว) · 5 ชุด · ค่าธรรมเนียม 0.05% ต่อ fill</div>
+<!--/CHART:sab2-ton-fixes-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือชีตสี่แบบเรียงตามลำดับที่แก้ แกนตั้งคือผลทั้งปีจากทุนเริ่ม 1,000 แท่งน้ำเงินคือโลกตัวอย่างในไฟล์ของต้น แท่งม่วงคือ Median ของ 30 โลกแบบเดียวกัน ให้ดูว่าแท่งทั้งสองสีลดลงแรงที่สุดตั้งแต่การแก้จุดที่ 1 แล้วติดลบเมื่อแก้ไม้บรรทัดและ h ครบ สรุปได้ว่ากำไรของชีตเดิมเกือบทั้งหมดมาจากข้อมูลที่ยังไม่มีใครรู้ ไม่ได้มาจากเชือก</p>
+<p>ทำไมต้องลองกับโลกที่ไม่มีเชือก เพราะนี่คือการทดสอบตัวเครื่องเอง ถ้าเครื่องให้กำไรในโลกที่เรารู้ว่าไม่มีอะไรให้เก็บ เครื่องนั้นโกง ไม่ว่ากับข้อมูลจริงจะได้ผลสวยแค่ไหน ชีตเดิมของต้นไม่ผ่านการทดสอบนี้ทั้ง 30 ครั้ง ส่วนเครื่องห้าขั้นที่ใช้ Point-in-time Data ผ่าน เพราะมันตอบตามที่ควร</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — การแก้ Look-ahead ครบทุกจุด</div>
+<ul>
+<li><strong>บอกไม่ได้ว่า</strong> ผลที่ซื่อแล้วเป็นของจริง ในโลกที่ไม่มีเชือกเลย เครื่องที่ซื่อครบยังได้บวก 9 จาก 30 โลก หรือราว 30% ถ้าลองกับข้อมูลชุดเดียวกัน 6 แบบแล้วเลือกแบบที่ดีที่สุด โอกาสที่จะเจออย่างน้อยหนึ่งแบบที่บวกทั้งที่ไม่มีอะไรจริงคือราว 88% ถ้าลอง 10 แบบเป็นราว 97% นี่คือ Data Snooping (โชคจากการลองหลายครั้ง) ของเล่ม 1 บท 10 ซึ่งการแก้ Look-ahead ไม่ได้ช่วยอะไรเลย</li>
+<li><strong>พังเมื่อ</strong> ไม่นับจำนวนครั้งที่รัน ทุกครั้งที่เปลี่ยนกติกาแล้วกดรันใหม่กับช่วงเวลาเดิม ให้จดลงสมุดวิจัยหนึ่งบรรทัด ในบทนี้มินดูช่วงตรวจของข้อมูลจริงไปแล้ว 6 ครั้ง (สี่แบบในตารางของตอน ค และอีกสองครั้งในกล่องพังเมื่อไรของตอนนั้น) ตัวเลขนี้ต้องติดไปกับผลเสมอ</li>
+<li><strong>บอกไม่ได้ว่า</strong> ต้นลองไปกี่คู่ก่อนจะส่งคู่ P–Q มา ถ้าคู่นี้คือคู่ที่ดีที่สุดจากหลายสิบคู่ ผลในชีตก็มีโชคจากการเลือกปนอยู่อีกชั้น ซึ่งไฟล์ไม่ได้บอก</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ข</div>
+<p>แก้ทีละจุดได้ +576.38 เป็น +119.22 เมื่อได้ราคาวันถัดไป เป็น −20.62 เมื่อใช้ไม้บรรทัดจาก 250 วันก่อน และเป็น −19.87 เมื่อใช้ h จาก 250 วันก่อนด้วย ใน 30 โลกที่ไม่มีเชือก ชีตเดิมบวกครบ 30 โลก แต่เครื่องที่ซื่อมี Median −46.51 ตรงกับคำตอบที่รู้</p></div>
+
+<!-- ═══════════════ ตอน ค ═══════════════ -->
+<h2 id="ke">ตอน ค เครื่องเดียวกันกับข้อมูลจริง · 1 — BTC–ETH ในช่วงตรวจ: จบ −55.53 และเคยลงไปถึง 608.92</h2>
+<p>เครื่องผ่านการทดสอบกับโลกที่รู้คำตอบแล้ว ตอนนี้มินเอามันไปเดินกับคู่จริงที่คุ้นที่สุด คือ BTC กับ ETH จากชุดข้อมูลกลางของเล่ม เขาแบ่งงานตามช่วงที่บท 1 ประกาศไว้ ทุกค่าที่ต้องวัดจะวัดจากช่วงเลือก (2022-11-15 ถึง 2024-11-14 รวม 731 วัน) แล้วตรึงไว้ จากนั้นเดินเครื่องในช่วงตรวจ (2024-11-15 ถึง 2025-11-14 รวม 365 วัน) ช่วงทดสอบสุดท้ายยังปิดอยู่</p>
+<p>ค่าแรกคือ h ใช้วิธี Regression (การถดถอย) ของบท 1 ถดถอยราคา BTC บนราคา ETH ในช่วงเลือก ได้ความชัน 23.69 เพื่อให้สั่งซื้อขายได้จริง มินปัดเป็น 24 หนึ่งชุดจึงคือ BTC หนึ่งเหรียญกับ ETH 24 เหรียญทางตรงข้าม หนึ่งชุดมีมูลค่าราวแสนดอลลาร์ ใหญ่เกินทุน 1,000 มาก เขาจึงถือ 0.01 ชุด คือ BTC 0.01 เหรียญกับ ETH 0.24 เหรียญ</p>
+<p>ค่าที่สองคือไม้บรรทัด X ในช่วงเลือกคือ BTC − 24 × ETH ทุกวัน Mean ของ X คือ <span data-key="ch12.v2.จริง.Mean">−12,244.14</span> และ SD คือ <span data-key="ch12.v2.จริง.SD">6,888.86</span> ดอลลาร์ต่อชุด เส้นเข้าทั้งสองจึงอยู่ที่ X 1,533.59 กับ −26,021.87 ไม้บรรทัดนี้รู้ได้ตั้งแต่ปลายวันที่ 2024-11-14 จึงใช้ได้ทุกวันของช่วงตรวจ</p>
+<p>เดินวันแรกของช่วงตรวจด้วยมือ วันที่ 2024-11-15 BTC ปิดที่ 91,032.07 และ ETH ที่ 3,090.01 ส่วน 24 × 3,090.01 ได้ 74,160.24 X จึงเป็น 91,032.07 − 74,160.24 หรือ 16,871.83 ห่างจาก Mean อยู่ 16,871.83 + 12,244.14 หรือ 29,115.97 หารด้วย SD ได้ Z-score 4.23 ซึ่งเกิน 2 ไปมาก สัญญาณจึงบอกให้ short X ตั้งแต่วันแรก</p>
+<p>คำสั่งได้ราคาปิดวันถัดไป วันที่ 2024-11-16 ขา BTC มีมูลค่า 0.01 × 90,586.92 ราว 905.87 ขา ETH มีมูลค่า 0.24 × 3,132.87 ราว 751.89 มูลค่ารวม 1,657.76 ค่าธรรมเนียม 0.05% ของมูลค่ารวมคือ 0.83 ต้นทุนจึงคิดจากขนาดจริงของสองขา แบบเดียวกับที่เครื่องคิดให้ 10 ชุดของคู่ A–B ตารางนี้คือสี่ fill แรกของสมุดบัญชี</p>
+<p class="cap">📡 ข้อมูลจริง · ราคาปิดรายวัน Binance spot (UTC) · สี่ fill แรกในช่วงตรวจ · 0.01 BTC คู่ ETH 0.24</p>
+<div class="tw"><table data-src="real">
+<tr><th>วันสัญญาณ</th><th>Z ที่เห็น</th><th>วันที่ได้ราคา</th><th>BTC</th><th>ETH</th><th>ทำอะไร</th><th>ค่าธรรมเนียม</th><th>Equity วันนั้น</th></tr>
+<tr><td>2024-11-15</td><td>4.23</td><td>2024-11-16</td><td>90,586.92</td><td>3,132.87</td><td>เข้า short X</td><td>0.83</td><td>999.17</td></tr>
+<tr><td>2024-12-15</td><td>3.15</td><td>2024-12-16</td><td>106,058.66</td><td>3,986.24</td><td>ปิดเพราะครบ 30 วัน</td><td>1.01</td><td>1,048.25</td></tr>
+<tr><td>2024-12-16</td><td>3.29</td><td>2024-12-17</td><td>106,133.74</td><td>3,893.01</td><td>เข้า short X อีกครั้ง</td><td>1</td><td>1,047.26</td></tr>
+<tr><td>2025-01-15</td><td>4.34</td><td>2025-01-16</td><td>99,987.3</td><td>3,308.05</td><td>ปิดเพราะครบ 30 วัน</td><td>0.9</td><td>967.43</td></tr>
+</table></div>
+<p>สี่แถวนี้บอกเรื่องสำคัญก่อนจะเห็นผลรวม ไม้แรกถือครบ 30 วันโดย Z-score ไม่เคยกลับมาใกล้ Mean เลย วันที่ปิดยังเป็น 3.15 พอปิดแล้ววันรุ่งขึ้นกติกาก็สั่งเข้าใหม่ทันที เพราะ Z-score ยังเกิน 2 อยู่ เครื่องจึงวนเข้าออกตามกติกาเวลา ไม่ใช่ตามการกลับของระยะห่าง</p>
+<p>ตลอดช่วงตรวจ เครื่องมี 23 fill ปิดไป 11 ไม้ ทุกไม้ปิดเพราะครบ 30 วัน ไม่มีไม้ไหนปิดเพราะ Z-score กลับถึง 0.5 เลย ชนะ 5 ไม้ ค่าธรรมเนียมรวม 20.64 ก่อนค่าธรรมเนียมได้ −34.89 หลังค่าธรรมเนียมจบที่ <strong data-key="ch12.v2.จริง.ผล">−55.53</strong> หรือ Equity 944.47</p>
+<p>ระหว่างทาง Equity เคยลงไปต่ำสุดที่ 608.92 ในวันที่ 2025-05-07 ซึ่งเป็นวันเดียวกับที่ Z-score ขึ้นไปสูงสุดที่ 9.55 Z-score ของช่วงตรวจอยู่ระหว่าง 1.6 ถึง 9.55 และอยู่นอกเส้นเข้า 361 จาก 365 วัน</p>
+<p>ไม้บรรทัดที่วัดจากช่วงเลือกไม่ได้อธิบายช่วงตรวจเลย X ไม่ได้แกว่งรอบ −12,244.14 อีกแล้ว มันย้ายไปอยู่สูงกว่านั้นหลาย SD ตลอดปี แบบเดียวกับที่ภาคผนวก K ของเล่ม 1 เจอไม้บรรทัดของปีหนึ่งไม่เหมาะกับอีกปี ผลข้อนี้ไม่ได้บอกว่าเครื่องผิด มันบอกว่าเชือกที่วัดได้ในช่วงเลือกไม่อยู่ที่เดิมในช่วงตรวจ</p>
+<p>ต่อไปมินเดินแบบเดียวกับตอน ข โดยเริ่มจากชีตที่โกงครบสามจุด คือวัด h และไม้บรรทัดจากช่วงเลือกรวมช่วงตรวจ (1,096 วัน ได้ h 29 กับ Mean −11,847.57 และ SD 20,929.01) และได้ราคาวันสัญญาณ แล้วแก้ทีละจุดเหมือนเดิม</p>
+<p class="cap">📡 ข้อมูลจริง · BTC–ETH เดินในช่วงตรวจทุกแบบ · ทุนเริ่ม 1,000 · 0.01 ชุด</p>
+<div class="tw"><table data-src="real">
+<tr><th>แบบ</th><th>h</th><th>ไม้บรรทัด</th><th>ได้ราคา</th><th>Equity ต่ำสุด</th><th>ผลในช่วงตรวจ</th></tr>
+<tr><td>โกงครบสามจุด</td><td>29 (สองช่วง)</td><td>สองช่วง</td><td>วันสัญญาณ</td><td>849.51</td><td>+169.23</td></tr>
+<tr><td>แก้จุดที่ 1</td><td>29 (สองช่วง)</td><td>สองช่วง</td><td>วันถัดไป</td><td>849.26</td><td>+206.91</td></tr>
+<tr><td>แก้จุดที่ 2</td><td>29 (สองช่วง)</td><td>ช่วงเลือก</td><td>วันถัดไป</td><td>690.63</td><td>+267.87</td></tr>
+<tr><td>แก้จุดที่ 3 (ซื่อครบ)</td><td>24 (ช่วงเลือก)</td><td>ช่วงเลือก</td><td>วันถัดไป</td><td>608.92</td><td><strong>−55.53</strong></td></tr>
+</table></div>
+<p>ผลบนข้อมูลจริงไม่ได้ลดลงเป็นขั้นบันไดสวย ๆ แบบโลกจำลอง การแก้จุดที่ 1 กับจุดที่ 2 กลับทำให้ผลดีขึ้น เพราะเส้นทางจริงมีเส้นเดียว ที่โกงไม่ได้ช่วยทุกไม้ มันช่วย <strong>โดยเฉลี่ย</strong> แบบที่ 30 โลกในตอน ข แสดงไว้ ส่วนเส้นทางเดียวขึ้นอยู่กับว่าไม้แต่ละไม้ไปตกวันไหน สิ่งที่ข้อมูลจริงบอกได้ชัดคือแถวสุดท้าย ซึ่งเป็นแบบเดียวที่ใช้แต่ข้อมูลที่รู้ ณ เวลานั้น</p>
+<p>ดู h อย่างเดียวก็เห็นปัญหา h ที่วัดจากสองช่วงรวมกันคือ 29 ส่วน h ที่รู้ได้ ณ ปลายช่วงเลือกคือ 24 ชีตที่ใช้ h 29 จึง "รู้" ล่วงหน้าว่า ETH จะอ่อนลงเมื่อเทียบกับ BTC ในปีถัดไป และรู้ว่าระดับใหม่ของ X อยู่ตรงไหน ไม้บรรทัดสองช่วงมี SD 20,929.01 กว้างกว่าของช่วงเลือกราวสามเท่า กว้างพอจะครอบปีที่ X ย้ายระดับไว้ได้ทั้งปี</p>
+<!--CHART:sab2-real-equity-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 340" role="img" aria-label="เส้น Equity สองเส้นตลอดช่วงตรวจ เส้นน้ำเงินของเครื่องซื่อลงไปต่ำกว่า 650 กลางปีแล้วกลับขึ้นมาจบต่ำกว่า 1,000 เส้นส้มของชีตแบบต้นแกว่งน้อยกว่าและจบเหนือ 1,000">
+<text x="16.0" y="26.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">Equity รายสัปดาห์ของคู่ BTC–ETH ในช่วงตรวจ (ทุนเริ่ม 1,000)</text>
+<line x1="70" y1="290.0" x2="730" y2="290.0" stroke="#f3f4f6"/>
+<text x="62.0" y="294.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">600</text>
+<line x1="70" y1="222.1" x2="730" y2="222.1" stroke="#f3f4f6"/>
+<text x="62.0" y="226.1" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">800</text>
+<line x1="70" y1="154.2" x2="730" y2="154.2" stroke="#d1d5db"/>
+<text x="62.0" y="158.2" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1,000</text>
+<line x1="70" y1="86.4" x2="730" y2="86.4" stroke="#f3f4f6"/>
+<text x="62.0" y="90.4" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1,200</text>
+<text x="70.0" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2024-11-15</text>
+<text x="231.9" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-02-14</text>
+<text x="393.8" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-05-16</text>
+<text x="555.7" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-08-15</text>
+<text x="717.5" y="310.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-11-14</text>
+<polyline points="70.0,154.2 82.5,154.2 94.9,154.2 107.4,154.2 119.8,154.2 132.3,154.2 144.7,154.2 157.2,154.2 169.6,154.2 182.1,154.2 194.5,154.2 207.0,154.2 219.4,154.2 231.9,154.2 244.3,154.2 256.8,154.2 269.2,154.2 281.7,154.2 294.2,154.2 306.6,154.2 319.1,157.0 331.5,180.0 344.0,181.5 356.4,196.7 368.9,198.9 381.3,172.9 393.8,155.7 406.2,169.8 418.7,158.0 431.1,165.4 443.6,161.3 456.0,168.9 468.5,179.9 480.9,172.6 493.4,160.7 505.8,104.1 518.3,85.5 530.8,94.2 543.2,96.8 555.7,96.8 568.1,96.8 580.6,96.8 593.0,96.8 605.5,96.8 617.9,96.8 630.4,96.8 642.8,96.8 655.3,96.8 667.7,96.8 680.2,96.8 692.6,96.8 705.1,96.8 717.5,96.8 730.0,96.8" fill="none" stroke="#d97706" stroke-width="2.4" stroke-linejoin="round"/>
+<polyline points="70.0,154.2 82.5,166.8 94.9,140.4 107.4,115.1 119.8,128.3 132.3,144.2 144.7,143.6 157.2,134.3 169.6,150.5 182.1,165.6 194.5,181.6 207.0,174.1 219.4,209.3 231.9,204.2 244.3,213.3 256.8,207.8 269.2,223.9 281.7,233.1 294.2,232.5 306.6,239.2 319.1,243.9 331.5,262.7 344.0,264.5 356.4,281.0 368.9,284.0 381.3,263.6 393.8,249.7 406.2,256.9 418.7,245.2 431.1,250.7 443.6,248.3 456.0,253.3 468.5,259.9 480.9,256.2 493.4,251.9 505.8,205.3 518.3,180.4 530.8,185.0 543.2,154.0 555.7,121.3 568.1,123.0 580.6,132.4 593.0,144.5 605.5,129.7 617.9,148.2 630.4,152.9 642.8,156.5 655.3,180.0 667.7,158.3 680.2,161.8 692.6,164.1 705.1,176.4 717.5,173.1 730.0,173.1" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linejoin="round"/>
+<rect x="70" y="44" width="11" height="11" rx="2" fill="#2563eb"/>
+<text x="86.0" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เครื่องซื่อ (ค่าจากช่วงเลือก · ได้ราคาวันถัดไป)</text>
+<rect x="442.40000000000003" y="44" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="458.4" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ชีตแบบต้น</text>
+<circle cx="368.9" cy="284.0" r="5" fill="#7c3aed"/>
+<text x="376.9" y="300.0" text-anchor="start" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">ต่ำสุดรายสัปดาห์ 617.82</text>
+<text x="730.0" y="189.1" text-anchor="end" font-size="11" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">จบ 944.47</text>
+<text x="730.0" y="88.8" text-anchor="end" font-size="11" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">จบ 1,169.23</text>
+</svg></div>
+<div class="cap">📡 ข้อมูลจริง (สแนปช็อต) · ราคาปิดรายวัน Binance spot (UTC) ช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · 0.01 BTC คู่ ETH 0.24 · จุดรายสัปดาห์ (ทุก 7 วัน + วันสุดท้าย)</div>
+<!--/CHART:sab2-real-equity-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือวันในช่วงตรวจ ทุกจุดห่างกัน 7 วัน แกนตั้งคือ Equity จากทุนเริ่ม 1,000 เส้นน้ำเงินคือเครื่องซื่อ เส้นส้มคือชีตที่โกงครบสามจุด ให้ดูช่วงกลางปีที่เส้นน้ำเงินลงไปถึงจุดม่วงราว 617.82 (ค่าต่ำสุดรายวันคือ 608.92) ขณะที่เส้นส้มลงต่ำสุดเพียง 849.51 และแบนอยู่ที่ 1,000 ในช่วงต้นปี เพราะไม้บรรทัดสองช่วงกว้างจนยังไม่มีสัญญาณ สรุปได้ว่าชีตที่รู้อนาคตไม่ได้แค่กำไรมากกว่า มันยังซ่อนการลดลงจากจุดสูงสุดที่คนถือจริงต้องทนด้วย</p>
+<p>ก่อนจะเชื่อหรือไม่เชื่อตัวเลข −55.53 มินเปิดโลกจำลองสองโลกคู่กันเพื่อดูว่าเครื่องตอบอย่างไรเมื่อรู้คำตอบ ทั้งสองโลกเดินแบบเดียวกับข้อมูลจริง วัด h และไม้บรรทัดจาก 250 วันแรก แล้วเดิน 360 วันถัดไปด้วย 5 ชุด สุ่มใหม่ 30 ครั้งต่อโลก</p>
+<p class="cap">🎲 จำลอง · 30 โลกต่อแบบ · วัดค่าจาก 250 วันแรก เดิน 360 วัน · 5 ชุด · เทียบกับ 📡 BTC–ETH แถวล่าง</p>
+<div class="tw"><table data-src="sim">
+<tr><th>โลก</th><th>ความจริงที่เล่มรู้</th><th>ผล Median</th><th>บวกกี่โลก</th><th>Equity ต่ำสุด (Median)</th><th>Z สูงสุด (Median)</th></tr>
+<tr><td>มีเชือก</td><td>ระยะห่างเหลือ 90% ต่อวันตลอด</td><td>+489.74</td><td>27 จาก 30</td><td>989.12</td><td>5.36</td></tr>
+<tr><td>เชือกขาด</td><td>เหลือ 90% ต่อวันใน 250 วันแรก แล้วเดินสุ่ม</td><td>+69.71</td><td>18 จาก 30</td><td>762.78</td><td>11.44</td></tr>
+<tr><td>📡 BTC–ETH</td><td>ไม่รู้</td><td>−55.53 (เส้นเดียว)</td><td>—</td><td>608.92</td><td>9.55</td></tr>
+</table></div>
+<p>ในโลกที่มีเชือก เครื่องได้กำไร 27 จาก 30 ครั้ง และ Equity แทบไม่ลงต่ำกว่าทุน เครื่องจึงหาเงินเจอเมื่อมีเงินให้หา</p>
+<p>ในโลกที่เชือกขาด ผลกลางยังบวกเล็กน้อยเพราะบางไม้โชคดี แต่ Equity ต่ำสุดลงไปถึงราว 762.78 และ Z-score สูงสุดขึ้นไปถึงราว 11.44 คู่ BTC–ETH ในช่วงตรวจหน้าตาใกล้โลกที่สองมากกว่า คือ Z-score ขึ้นถึง 9.55 และ Equity ลงลึก แต่เส้นทางเดียวยังแยกสองโลกออกจากกันอย่างมั่นใจไม่ได้ ผลที่ซื่อจึงเป็นผลลบที่ต้องรายงานตามที่ได้</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>from sab2_realdata import load_closes
+import sab2_stats as S
+
+def backtest(A, B, h, z, sets, lag=1, fee=0.0005, enter=2, leave=0.5, hold=30):
+    cash, held, t_in, eq, n = 1000.0, 0, 0, [], 0
+    for t in range(len(A)):
+        if t &gt;= lag:
+            zt, want = z[t - lag], held
+            if held == 0 and abs(zt) &gt;= enter: want = -1 if zt &gt; 0 else 1
+            elif held != 0 and (abs(zt) &lt;= leave or t - t_in &gt;= hold): want = 0
+            if want != held:
+                qa, qb = (want - held) * sets, -(want - held) * sets * h
+                cash -= qa * A[t] + qb * B[t] + fee * (abs(qa) * A[t] + abs(qb) * B[t])
+                held, t_in, n = want, t, n + 1
+        eq.append(cash + held * sets * (A[t] - h * B[t]))
+    return eq, n
+
+_, f = load_closes("formation", coins=["BTC", "ETH"])     # ค่าทุกตัววัดจากช่วงเลือก
+_, v = load_closes("validation", coins=["BTC", "ETH"])    # เดินในช่วงตรวจ
+slope = S.ols(f["ETH"], f["BTC"])["slope"]; h = round(slope)
+X = [a - h * b for a, b in zip(f["BTC"], f["ETH"])]; m, s = S.mean(X), S.sd(X)
+z = [(a - h * b - m) / s for a, b in zip(v["BTC"], v["ETH"])]
+eq, n = backtest(v["BTC"], v["ETH"], h, z, 0.01)
+print(round(slope, 2), round(eq[-1] - 1000, 2), n)
+# ผลที่ต้องได้: 23.69 · −55.53 · 23</pre>
+<p>เครื่องเป็นบรรทัดเดียวกับบล็อกในตอน ก ทุกตัว ส่วนที่เพิ่มมีแค่ห้าบรรทัดท้าย คือโหลดสองช่วงแยกกัน วัด h กับไม้บรรทัดจากช่วงเลือกเท่านั้น แล้วคิด Z ของช่วงตรวจด้วยไม้บรรทัดที่ตรึงไว้ ถ้าเผลอเขียน <code>f["BTC"] + v["BTC"]</code> ในบรรทัดที่วัด h หรือไม้บรรทัด ก็จะได้ชีตแบบต้นทันที ลองเปลี่ยน <code>lag</code> เป็น 2 หรือคูณ <code>fee</code> ด้วยสาม แล้วเทียบกับตัวเลขในกล่องด้านล่าง</p>
+</details>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — ผลของเครื่องบนข้อมูลจริง</div>
+<ul>
+<li><strong>พังเมื่อ</strong> Fill Model ไม่ตรงกับที่ทำได้จริง ถ้าคำสั่งได้ราคาช้าไปอีกหนึ่งวัน (ได้ราคาปิดสองวันหลังสัญญาณ) ผลในช่วงตรวจเปลี่ยนจาก −55.53 เป็น +38.91 คือกลับเครื่องหมายได้จากสมมติฐานข้อเดียว ผลที่ไวต่อรายละเอียดแบบนี้ไม่ใช่หลักฐานของอะไร ทั้งทางบวกและทางลบ</li>
+<li><strong>พังเมื่อ</strong> ต้นทุนโตตามขนาด ถ้าค่าใช้จ่ายต่อ fill เป็น 0.15% แทน 0.05% ผลจะเป็น −96.82 ที่ 0.01 ชุดยังพอใช้ค่าธรรมเนียมคงที่ได้ แต่ถ้าขยายร้อยเท่า ขาแต่ละขาจะมีมูลค่าราวแสนดอลลาร์ และราคาที่ได้จะแย่ลงตามขนาด ซึ่งเครื่องนี้ไม่ได้คิด</li>
+<li><strong>บอกไม่ได้ว่า</strong> จะเกิดอะไรในวันที่ไม่มีในข้อมูล ชุดข้อมูลก่อนช่วงทดสอบมี 1,096 วันที่ครบทุกวัน วันหาย 0 วัน จึงไม่มีวันที่ exchange หยุด ถอนเงินไม่ได้ หรือถูกบังคับปิดสถานะ backtest ทุกตัวบอกได้แค่สิ่งที่อยู่ในข้อมูล</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>ค่าทุกตัววัดจากช่วงเลือก (h 24 · Mean −12,244.14 · SD 6,888.86) แล้วเดินในช่วงตรวจ ได้ 23 fill ทุกไม้ปิดเพราะครบเวลา จบ −55.53 และ Equity เคยลงถึง 608.92 ชีตที่โกงครบสามจุดได้ +169.23 โลกที่มีเชือกให้ผลบวก 27 จาก 30 ครั้ง ส่วนคู่จริงหน้าตาใกล้โลกที่เชือกขาด</p></div>
+
+<h2 id="kf">ตอน ค · 2 — เหรียญที่คุณจะรู้จักในปี 2022: Median 1.12 กลายเป็น 1.5 เมื่อนับแต่ตัวที่รอด</h2>
+<p>ยังมีข้อมูลอีกชั้นที่ต้องถามว่ารู้ได้วันไหน คือรายชื่อเหรียญเอง ชุดข้อมูลกลางมี 10 เหรียญ เหตุผลที่เลือกเขียนไว้ใน README ว่าเป็นเหรียญใหญ่ที่ซื้อขายคู่กับ USDT บน Binance <strong>ต่อเนื่องตลอดสี่ปีโดยไม่มีวันหาย</strong> เงื่อนไขนี้ตรวจได้ในปี 2026 เท่านั้น ถ้ามินยืนอยู่ในวันที่ 2022-11-15 เขาไม่มีทางรู้ว่าเหรียญไหนจะยังซื้อขายอยู่ในอีกสี่ปีข้างหน้า</p>
+<p>กลุ่มสินทรัพย์ที่เราเลือกมาให้เครื่องทดสอบมีชื่อว่า <strong>Universe (กลุ่มสินทรัพย์ที่ทดสอบ)</strong> Universe ก็ต้องเป็น Point-in-time Data เหมือนราคา คือต้องเป็นรายชื่อที่คนจริงมีอยู่ในมือ ณ วันที่เริ่มทดสอบ ถ้าเลือกรายชื่อด้วยความรู้ของวันนี้ เครื่องจะไม่เคยเห็นเหรียญที่หายไประหว่างทาง ความเอนเอียงนี้เล่ม 1 บท 10 เรียกว่า Survivorship Bias (อคติผู้รอด)</p>
+<p>มินลองวัดว่ามันใหญ่แค่ไหนในโลกที่รู้คำตอบ เขาสร้างเหรียญจำลอง 100 เหรียญ ทุกเหรียญเริ่มที่ราคาเดียวกันและเดินสุ่มวันละราว 3% เป็นเวลา 731 วัน ไม่มีเหรียญไหนเก่งกว่าเหรียญไหน แล้วตั้งกติกาว่าเหรียญที่ราคาเคยลงเหลือไม่ถึงครึ่งของราคาเริ่ม จะหลุดจากรายชื่อ "เหรียญใหญ่" และไม่อยู่ในชุดข้อมูลของปลายทาง</p>
+<p class="cap">🎲 จำลอง · 100 เหรียญ เดินสุ่ม 731 วัน · หลุดรายชื่อเมื่อราคาเคยลงต่ำกว่า 50% ของราคาเริ่ม</p>
+<div class="tw"><table data-src="sim">
+<tr><th>นับอย่างไร</th><th>จำนวนเหรียญ</th><th>ราคาปลาย ÷ ราคาเริ่ม (Median)</th><th>เหรียญที่ราคาปลายสูงกว่าเริ่ม</th></tr>
+<tr><td>ทุกเหรียญที่มีอยู่ ณ วันเริ่ม</td><td>100</td><td>1.12</td><td>59</td></tr>
+<tr><td>เฉพาะที่ยังอยู่ในรายชื่อ ณ วันจบ</td><td>69</td><td><strong>1.5</strong></td><td>55</td></tr>
+</table></div>
+<p>เหรียญหลุดรายชื่อไป 31 เหรียญ ถ้านับทุกเหรียญที่มีอยู่ ณ วันเริ่ม ราคาปลายเทียบราคาเริ่มมี Median 1.12 ถ้านับแต่ตัวที่ยังอยู่ ณ วันจบ Median กลายเป็น 1.5 ทั้งที่ทุกเหรียญมาจากโลกเดียวกัน ส่วนที่เพิ่มขึ้นไม่ได้มาจากฝีมือของใคร มันมาจากการที่เราลบเหรียญที่แพ้ทิ้งก่อนจะนับ</p>
+<p>กับคู่ก็เป็นแบบเดียวกัน คู่ที่สร้างจากเหรียญที่รอดคือคู่ที่ทั้งสองขาไม่เคยพังจนหายไป ระยะห่างของคู่แบบนี้จึงดูกลับดีกว่าคู่ที่คนจริงในปี 2022 จะเลือกได้ เพราะคู่ที่ขาหนึ่งพังไปแล้วไม่เคยถูกนับ ผลของเครื่องบน 10 เหรียญนี้จึงต้องเขียนกำกับเสมอว่าเป็นผลบน Universe ที่เลือกด้วยความรู้ของปี 2026</p>
+<p>ชุดข้อมูลกลางเองก็มีร่องรอยของ Point-in-time อยู่สองจุดที่ควรรู้ จุดแรก README บอกว่าตัดแท่งราคาของวันที่ 2026-11-15 ทิ้ง เพราะตอนดึงข้อมูลแท่งนั้นยังไม่ปิด ราคา "ปิด" ของมันยังเปลี่ยนได้ จุดที่สอง Funding Rate (อัตราค่าธรรมเนียมการถือสถานะ) ของรอบ 08:00 คือผลรวมของ 8 ชั่วโมงที่จบตอน 08:00 ถ้าเครื่องเอาค่านี้ไปตัดสินใจตอน 00:00 ของวันเดียวกัน ก็คือการมองล่วงหน้าแปดชั่วโมง</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — Universe และสิ่งที่ backtest ไม่มีวันเห็น</div>
+<ul>
+<li><strong>พังเมื่อ</strong> Universe เลือกจากผู้รอด ในโลกจำลอง 100 เหรียญ การนับแต่ 69 เหรียญที่รอดทำให้ Median ของราคาปลายเทียบราคาเริ่มขึ้นจาก 1.12 เป็น 1.5 ทั้งที่ไม่มีใครเก่งกว่าใคร ชุดข้อมูลกลางของเล่มมี 10 จาก 10 เหรียญที่รอดครบโดยเงื่อนไขการเลือก จึงแก้ข้อนี้ไม่ได้ ทำได้แค่เขียนกำกับ</li>
+<li><strong>บอกไม่ได้ว่า</strong> เมื่อมีคนทำแบบเดียวกันมากขึ้น ระยะห่างจะกลับช้าลงแค่ไหน แบบ Crowding ของเล่ม 1 บท 5 เพราะข้อมูลในอดีตไม่มีคำสั่งของคุณและของคนที่จะมาทำตามในวันหน้า</li>
+<li><strong>บอกไม่ได้ว่า</strong> คุณจะทำตามกติกาได้จริงในวันที่ Equity ลงเหลือ 608.92 เครื่องทำตามทุกบรรทัดโดยไม่ลังเล ส่วนคนที่ถือจริงอาจปิดก่อน หรือเพิ่มขนาดเพื่อเอาคืน ซึ่งเปลี่ยนผลได้มากกว่าทุกตัวเลขในบทนี้</li>
+</ul></div>
+
+<p>มินปิดไฟล์ของต้นแล้วเขียนการตัดสินใจลงสมุดวิจัย ข้อแรก เขาจะไม่ใช้ผลจากไฟล์ใดที่ไม่มีคอลัมน์ "รู้ได้วันไหน" ข้อที่สอง คู่ BTC–ETH แบบไม้บรรทัดตรึงจากช่วงเลือกได้ผลลบในช่วงตรวจ และเครื่องเห็นว่าไม้บรรทัดใช้ไม่ได้ตั้งแต่วันแรก เขาจะไม่เอาคู่นี้ไปลงเงิน และจะไม่เปลี่ยนกติกาแล้วรันช่วงตรวจซ้ำจนกว่าจะได้บวก เพราะนั่นคือการลองหลายครั้งกับข้อมูลชุดเดิม</p>
+<p>การทดลองถัดไปเปลี่ยนเพียงหนึ่งอย่าง คือให้ไม้บรรทัดเลื่อนตามข้อมูลแทนที่จะตรึงไว้ ตามแบบที่บท 5 สอน โดยใช้ข้อมูลย้อนหลังเท่านั้น ส่วน h 24 ขนาด 0.01 ชุด กติกาเข้าออก ค่าธรรมเนียม 0.05% และ Fill Model วันถัดไปคงเดิมทั้งหมด เขาเขียนไว้ก่อนรันว่าผลแบบไหนแปลว่าไม่ช่วย คือถ้าผลในช่วงตรวจยังติดลบหลังค่าธรรมเนียม หรือถ้าบวกแต่หายไปเมื่อเลื่อน fill ไปอีกหนึ่งวัน และนับว่านี่จะเป็นครั้งที่ 7 ที่ดูช่วงตรวจ</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ค</div>
+<p>รายชื่อ 10 เหรียญของเล่มเลือกด้วยความรู้ของปี 2026 จึงเป็น Universe ของผู้รอด ในโลกจำลอง 100 เหรียญ การนับแต่ 69 เหรียญที่รอดเปลี่ยน Median จาก 1.12 เป็น 1.5 มินตัดสินใจไม่เอาคู่ BTC–ETH ไปลงเงิน และการทดลองถัดไปเปลี่ยนแค่ไม้บรรทัดให้เลื่อนตามข้อมูลย้อนหลัง</p></div>
+
+<div class="sum3"><div class="bt">สรุป 3 ข้อ</div>
+<ol>
+<li>เครื่อง backtest ที่ซื่อเดินทีละวันด้วยห้าขั้น คือรู้อะไร สัญญาณ คำสั่ง ได้ราคาเท่าไร และลงบัญชี คู่ A–B สิบวันได้ Equity จบ 1,010.96 ตรงกับ 10 × 1.3 − 2.04 ถ้าได้ราคาวันที่เห็นสัญญาณจะได้ 1,016.96 ซึ่ง 6 ที่เกินมาไม่มีใครจ่าย</li>
+<li>ชีต "ชนะทุกเดือน" ของต้นมี Look-ahead Bias สามแบบ คือ h และไม้บรรทัดที่วัดจากทั้งปี กับราคาที่ได้ในวันสัญญาณ แก้ทีละจุดได้ +576.38 → +119.22 → −20.62 → −19.87 และใน 30 โลกที่ไม่มีเชือก ชีตเดิมบวกครบทุกโลก ส่วนเครื่องที่ซื่อมี Median −46.51</li>
+<li>บนคู่ BTC–ETH ที่วัดค่าจากช่วงเลือกแล้วเดินในช่วงตรวจ เครื่องที่ซื่อได้ −55.53 และ Equity เคยลงถึง 608.92 ส่วนชีตที่โกงได้ +169.23 ผลยังไวต่อ Fill Model (ช้าอีกวันได้ +38.91) และ Universe 10 เหรียญเป็นรายชื่อของผู้รอด</li>
+</ol></div>
+
+<div class="bx bg"><div class="bt">✍️ ลองทำเอง</div>
+<ol>
+<li><strong>(ทำตาม)</strong> ใช้สิบวันของคู่ A–B ในตอน ก กติกาเดิม ได้ราคาวันถัดไป 10 ชุด ทุนเริ่ม 1,000 เติมช่องว่าง: วันที่ได้ราคาเข้า ___ ค่าธรรมเนียมตอนเข้า ___ เงินสดหลังเข้า ___ Equity วันที่ 6 ___ Equity จบ ___
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: สัญญาณเกิดวันที่ 3 แต่ได้ราคาปิดของวันถัดไป ใช้ราคา A และ B ของวันนั้นคิดเงินที่ได้จากการขาย A 10 เหรียญ และเงินที่จ่ายซื้อ B 20 เหรียญ</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>มูลค่ารวมของ fill เข้าคือ 1,050 + 1,030 หรือ 2,080 ค่าธรรมเนียมคือ 0.05% ของมูลค่ารวม</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>ได้ราคาเข้าวันที่ 4 ขาย A ได้ 1,050 ซื้อ B จ่าย 1,030 มูลค่ารวม 2,080 ค่าธรรมเนียม <span data-key="ch12.v2.มือ.fillเข้า.ค่าธรรมเนียม">1.04</span> เงินสดหลังเข้าคือ 1,000 + 20 − 1.04 หรือ <span data-key="ch12.v2.มือ.fillเข้า.เงินสดหลัง">1,018.96</span> วันที่ 6 Equity คือ 1,018.96 − 1,011 + 1,000 หรือ <span data-key="ch12.v2.มือ.วัน.5.Equity">1,007.96</span> และ Equity จบคือ <span data-key="ch12.v2.มือ.Equityจบ">1,010.96</span></p>
+<p>ถ้าได้ 1,020 เป็นเงินสดหลังเข้า แปลว่าลืมหักค่าธรรมเนียม ถ้าได้ Equity วันที่ 6 เป็น 1,018.96 แปลว่าเอาเงินสดเป็นกำไร ลืมว่ายังมีภาระซื้อ A คืน 10 เหรียญค้างอยู่ ถ้าได้ Equity จบ 1,016.96 แปลว่าใช้ราคาวันที่เห็นสัญญาณ</p></details>
+</li>
+<li><strong>(เปลี่ยนเลขหนึ่งตัว)</strong> สิบวันเดิมทุกอย่าง แต่ราคาปิดของ A ในวันที่ 8 เป็น 100.2 แทน 100.7 Equity จบเท่าไร และตรวจอีกทางด้วยราคาของชุดได้เท่ากันไหม
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: การเปลี่ยนนี้ไม่กระทบสัญญาณ เพราะสัญญาณปิดเกิดวันที่ 7 มันเปลี่ยนแค่ราคาที่ได้ตอนปิด คิด X วันที่ 8 ใหม่ก่อน</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>X วันที่ 8 กลายเป็น 100.2 − 2 × 50 หรือ 0.2 ส่วนการซื้อ A คืน 10 เหรียญจ่าย 1,002</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>ตอนปิดซื้อ A คืน 1,002 ขาย B ได้ 1,000 มูลค่ารวม 2,002 ค่าธรรมเนียมราว 1.00 เงินสดเหลือ 1,018.96 − 2 − 1.00 หรือ <span data-key="ch12.v2.มือ.แบบฝึก.ข้อ2.Equityจบ">1,015.96</span> ตรวจอีกทาง X ลดจาก 2 เป็น 0.2 สิบชุดได้ 18 หักค่าธรรมเนียม 2.04 ได้ <span data-key="ch12.v2.มือ.แบบฝึก.ข้อ2.สุทธิ">15.96</span> ตรงกัน</p>
+<p>ถ้าได้ 16.96 แปลว่าใช้ค่าธรรมเนียมสองครั้งเท่ากับ 1.04 ทั้งคู่โดยไม่คิดใหม่จากมูลค่า ซึ่งพอดีกับตัวเลขนี้แต่เป็นนิสัยที่ผิด ถ้าคิดว่าสัญญาณเปลี่ยน แปลว่ายังสับสนระหว่างวันที่เห็นสัญญาณกับวันที่ได้ราคา</p></details>
+</li>
+<li><strong>(เปลี่ยนเงื่อนไขหนึ่งข้อ)</strong> สิบวันเดิม แต่ Fill Model เปลี่ยนเป็น "ได้ราคาปิดสองวันหลังสัญญาณ" ไม้นี้เข้าวันไหนที่ X เท่าไร ออกวันไหนที่ X เท่าไร และ Equity จบเท่าไร ทำไมช้าลงแล้วกลับได้มากขึ้น
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: สัญญาณเข้าวันที่ 3 จะได้ราคาวันที่ 5 และสัญญาณปิดวันที่ 7 จะได้ราคาวันที่ 9 อ่าน X ของสองวันนั้นจากตารางแรกของตอน ก</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>เข้าที่ X 1.6 และออกที่ X −0.5 ค่าธรรมเนียมตอนเข้าคิดจากมูลค่า 2,056</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>เข้าวันที่ 5 ที่ X 1.6 และออกวันที่ 9 ที่ X −0.5 X ลดลง 2.1 สิบชุดได้ <span data-key="ch12.v2.มือ.แบบฝึก.ข้อ3.ได้จากX">21.0</span> ค่าธรรมเนียมคือ 2,056 × 0.05% ราว 1.03 กับ 2,015 × 0.05% ราว 1.01 สุทธิ <span data-key="ch12.v2.มือ.แบบฝึก.ข้อ3.สุทธิ">18.96</span> และ Equity จบ <span data-key="ch12.v2.มือ.แบบฝึก.ข้อ3.Equityจบ">1,018.96</span> ได้มากขึ้นเพราะในสิบวันนี้ X ลงต่อหลังวันที่ 8 ไปถึง −0.5 การออกช้าจึงบังเอิญได้ราคาดีกว่า ไม่ใช่เพราะการได้ราคาช้าเป็นเรื่องดี</p>
+<p>ข้อนี้คือเรื่องเดียวกับคู่ BTC–ETH ที่ได้ราคาช้าอีกวันแล้วผลเปลี่ยนจาก −55.53 เป็น +38.91 ถ้าผลกลับทิศได้จาก Fill Model ข้อเดียว แปลว่าเส้นทางนี้สั้นหรือแกว่งเกินกว่าจะสรุปอะไร ถ้าได้ 1,016.96 แปลว่ายังใช้ราคาวันสัญญาณ</p></details>
+</li>
+<li><strong>(ตัดสินใจ)</strong> หลังมินแก้จุดที่ 1 ต้นตอบว่า "ได้ราคาวันถัดไปแล้วยังได้ +119.22 ชนะ 8 จาก 11 ไม้ กลยุทธ์ยังดีอยู่ เพิ่มทุนเป็นสองเท่าเลย" คุณเห็นด้วยไหม เพราะอะไร
+<details class="ans"><summary>เฉลย</summary><p>ไม่เห็นด้วย ทางที่ยั่วใจคือเชื่อว่าแก้ที่โกงแล้วหนึ่งจุดคือแก้ครบ ชีตยังใช้ h 2.01 และไม้บรรทัด Mean 2.84 กับ SD 4.74 ที่รู้ได้วันที่ 360 พอแก้ครบสามจุดผลเป็น <span data-key="ch12.v2.ต้น.ผล.แก้h.ผล">−19.87</span> และโลกนี้คือโลกที่ไม่มีเชือก ซึ่งใน 30 โลก เครื่องที่ซื่อมี Median −46.51</p>
+<p>แม้ผลที่ซื่อครบจะเป็นบวก ก็ยังต้องถามต่อว่าลองไปกี่แบบแล้ว เพราะโลกที่ไม่มีเชือกให้ผลบวกได้ราว 30% ของครั้ง ข้อระวังของคนทำจริง: การเพิ่มทุนเป็นการตัดสินใจเรื่องขนาด ซึ่งต้องมาจากงบขาดทุนและหลักฐานนอกช่วงที่ใช้เลือก ไม่ใช่จากกำไรในชีต</p></details>
+</li>
+<li><strong>(ถ่ายโอน · ข้อมูลจริง)</strong> วันที่ 2025-05-07 BTC ปิดที่ 97,030.5 และ ETH ที่ 1,811.11 คิด X และ Z-score ของวันนั้นสองแบบ แบบซื่อใช้ h 24 กับไม้บรรทัดช่วงเลือก (Mean −12,244.14 · SD 6,888.86) แบบชีตของต้นใช้ h 29 กับไม้บรรทัดสองช่วง (Mean −11,847.57 · SD 20,929.01) แล้วบอกว่าคนถือจริงในวันนั้นควรเห็นภาพแบบไหน
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: คิด 24 × 1,811.11 ก่อน แล้วลบออกจากราคา BTC จะได้ X แบบซื่อ จากนั้นลบ Mean และหารด้วย SD ทำแบบเดียวกันกับ h 29</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>X แบบซื่อคือ 97,030.5 − 43,466.64 หรือ 53,563.86 ซึ่งห่างจาก Mean 65,808</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>แบบซื่อ X คือ <span data-key="ch12.v2.จริง.วันสูงสุด.X">53,563.86</span> ห่างจาก Mean 65,808 หารด้วย 6,888.86 ได้ Z-score <span data-key="ch12.v2.จริง.วันสูงสุด.Z">9.55</span> แบบชีตของต้น 29 × 1,811.11 ได้ 52,522.19 X คือ 44,508.31 ห่างจาก Mean 56,355.88 หารด้วย 20,929.01 ได้ Z-score <span data-key="ch12.v2.จริง.วันสูงสุด.Zต้น">2.69</span></p>
+<p>คนถือจริงในวันนั้นมีแค่ไม้บรรทัดของช่วงเลือก จึงเห็นภาพแบบซื่อ คือระยะห่างไกลจากที่เคยเป็นเกือบสิบ SD และ Equity อยู่ที่ต่ำสุดของปี ชีตของต้นทำให้วันเดียวกันดูเป็นวันธรรมดาที่ไกลแค่ 2.69 SD เพราะไม้บรรทัดของมันรู้แล้วว่าปีนั้นจะแกว่งกว้างแค่ไหน ถ้าได้ Z-score ราว 7.8 แปลว่าเอา X แบบซื่อไปหารด้วย SD 6,888.86 โดยลืมลบ Mean ที่ติดลบ ซึ่งต้องบวกกลับเข้าไป</p></details>
+</li>
+</ol></div>
+
+<div class="pq" data-hook="ลองไปกี่แบบแล้ว">มินกำลังจะกดรันไม้บรรทัดแบบเลื่อน ซึ่งจะเป็นครั้งที่ 7 ที่ดูช่วงตรวจ แล้วนึกถึงคำถามที่สองที่พี่ฝนชอบถาม คำถามที่ตอบไม่ได้ด้วยคอลัมน์ "รู้ได้วันไหน" — ลองไปกี่แบบแล้ว และถ้าลองต่อไปเรื่อย ๆ ผลที่ดีที่สุดจะยังมีความหมายอยู่ไหม</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Event-driven Backtest (backtest ตามเหตุการณ์)</strong> = เครื่องที่เดินตามเวลาทีละเหตุการณ์ ทำห้าขั้น (รู้อะไร · สัญญาณ · คำสั่ง · ได้ราคา · ลงบัญชี) และใช้ได้แต่สิ่งที่รู้แล้ว ณ เหตุการณ์นั้น · คู่ A–B สิบวันจบที่ 1,010.96 <span class="tier" data-tier="ข"></span></li>
+<li><strong>Fill Model (แบบจำลองการได้ราคา)</strong> = กติกาว่าคำสั่งได้ราคาเมื่อไรและเท่าไร · ของมินคือราคาปิดวันถัดไป ครบสองขา บวกค่าธรรมเนียม 0.05% · ช้าอีกวันผล BTC–ETH เปลี่ยนจาก −55.53 เป็น +38.91 <span class="tier" data-tier="ข"></span></li>
+<li><strong>Point-in-time Data (ข้อมูล ณ เวลานั้น)</strong> = ค่าที่คนจริงมีในมือ ณ วันที่ใช้ตัดสินใจ ไม่ใช่ค่าที่เรามีวันนี้ · h 2.01 ของต้นรู้ได้วันที่ 360 จึงใช้ในวันที่ 74 ไม่ได้ <span class="tier" data-tier="ข"></span></li>
+<li><strong>Universe (กลุ่มสินทรัพย์ที่ทดสอบ)</strong> = รายชื่อสินทรัพย์ที่ให้เครื่องทดสอบ ต้องเป็นรายชื่อที่มีอยู่ ณ วันเริ่ม · 100 เหรียญจำลอง นับแต่ตัวรอดแล้ว Median จาก 1.12 กลายเป็น 1.5 <span class="tier" data-tier="ข"></span></li>
+</ul></div>
+
+<details class="file"><summary>📁 แฟ้มของบทนี้</summary>
+
+<h3>สมุดวิจัย: ไอเดีย "คู่ BTC–ETH ไม้บรรทัดตรึง" · ช่องที่เติมในบทนี้</h3>
+<p>สมุดวิจัยหนึ่งหน้าต่อไอเดีย มีเจ็ดช่อง บทนี้เติมห้าช่อง ช่องคำถามและช่องสิ่งที่ถือเติมไว้แล้วตั้งแต่ภาค 1 คอลัมน์ขวาเว้นไว้ให้คุณกรอกจากไอเดียของคุณเอง</p>
+<div class="tw"><table class="sheet-tbl">
+<tr><th>ช่อง</th><th>มิน (บทนี้)</th><th style="min-width:9em">ไอเดียของฉัน</th></tr>
+<tr><td>② ข้อมูล</td><td>ราคาปิดรายวัน UTC ของ Binance · ค่าทุกตัววัดจากช่วงเลือก 2022-11-15 ถึง 2024-11-14 · เดินในช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · Universe 10 เหรียญเป็นรายชื่อผู้รอดของปี 2026 · ทุกค่ามีคอลัมน์ "รู้ได้วันไหน"</td><td class="blank"></td></tr>
+<tr><td>③ ตัวแปรและกฎ</td><td>h 24 (Regression ได้ 23.69) · ไม้บรรทัด Mean −12,244.14 SD 6,888.86 ตรึงไว้ · เข้าที่ Z-score 2 ออกที่ 0.5 ถือไม่เกิน 30 วัน · Fill Model ราคาปิดวันถัดไป</td><td class="blank"></td></tr>
+<tr><td>⑤ ต้นทุนและทุน</td><td>ทุน 1,000 · 0.01 ชุด (BTC 0.01 · ETH 0.24) · ค่าธรรมเนียม 0.05% ของมูลค่าทั้งสองขาทุก fill รวมทั้งปี 20.64 · ยังไม่ได้คิดราคาที่แย่ลงตามขนาด</td><td class="blank"></td></tr>
+<tr><td>⑥ ผลและความไม่แน่นอน</td><td>ช่วงตรวจ −55.53 (ก่อนค่าธรรมเนียม −34.89) · Equity ต่ำสุด 608.92 · ทุกไม้ปิดเพราะครบเวลา · fill ช้าอีกวันได้ +38.91 · ดูช่วงตรวจไปแล้ว 6 ครั้ง · เทียบโลกจำลอง: ใกล้โลกเชือกขาดมากกว่าโลกที่มีเชือก</td><td class="blank"></td></tr>
+<tr><td>⑦ ข้อสรุปและการทดลองถัดไป</td><td>ไม่ลงเงิน · ทดลองถัดไปเปลี่ยนแค่ไม้บรรทัดเป็นแบบเลื่อนจากข้อมูลย้อนหลัง อย่างอื่นคงเดิม · ไม่ช่วยถ้ายังติดลบหลังค่าธรรมเนียม หรือบวกแต่หายเมื่อ fill ช้าอีกวัน · จะเป็นครั้งที่ 7</td><td class="blank"></td></tr>
+</table></div>
+<p class="pass-h"><strong>✅ เกณฑ์ผ่านของเครื่อง backtest 3 ข้อ</strong></p>
+<ol class="pass">
+<li>ทุกค่าที่ใช้ตัดสินใจมีคอลัมน์ "รู้ได้วันไหน" และไม่มีค่าไหนรู้ได้หลังวันที่ใช้</li>
+<li>ลองกับโลกที่ไม่มีเชือกแล้วได้ราวศูนย์ลบค่าธรรมเนียม และลองกับโลกที่มีเชือกแล้วได้บวก</li>
+<li>บัญชีทีละวันกับการคิดจากราคาของชุดได้ผลตรงกัน และจดจำนวนครั้งที่ดูช่วงตรวจไว้กับผล</li>
+</ol>
+<p>ค่าที่มินใช้ในบทนี้เป็นค่าของเล่ม ไม่ใช่คำแนะนำ: เข้า 2 · ออก 0.5 · ถือไม่เกิน 30 วัน · ค่าธรรมเนียม 0.05% · ทุน 1,000</p>
+
+<div class="bx ba"><div class="bt">🔗 อยากลึกกว่านี้</div>
+<ul>
+<li>คุณภาพข้อมูลและข้อมูล ณ เวลานั้น → <a href="statarb-data-quality.html">statarb-data-quality.html</a></li>
+<li>ทำไมผลจริงต่างจาก backtest → <a href="statarb-live-vs-backtest.html">statarb-live-vs-backtest.html</a></li>
+<li>วงหลักของ backtest ในเล่ม 1 → <a href="sab-appendix-coders.html">sab-appendix-coders.html</a> · ไม้บรรทัดที่ใช้ไม่ได้ในอีกปี → <a href="sab-appendix-realdata.html">sab-appendix-realdata.html</a></li>
+</ul></div>
+
+<details class="deep" id="deep-engine"><summary>🔎 ลงลึก: ลำดับเหตุการณ์ในหนึ่งวัน และทำไม lag ต้องอยู่ที่สัญญาณ</summary>
+<p>เครื่องในหน้านี้ย่อหนึ่งวันเหลือเหตุการณ์เดียว (ราคาปิด) แล้วให้คำสั่งที่ตัดสินจาก Z<sub>t−1</sub> ได้ราคาปิด P<sub>t</sub> ซึ่งเท่ากับ "ส่งคำสั่งหลังปิดวัน t−1 ได้ราคาปิดวัน t" ถ้าข้อมูลถี่กว่ารายวัน วงจะต้องมีลำดับย่อยในเหตุการณ์เวลาเดียวกัน: fill ของคำสั่งค้าง → อัปเดตราคา mark → เงินโอน (funding) → คิด Equity → คิดสัญญาณ → ส่งคำสั่งใหม่ แบบภาคผนวก I ของเล่ม 1</p>
+<p>ในสเปรดชีตหรือ pandas การเลื่อนต้องอยู่ที่สถานะ ไม่ใช่ที่ผลตอบแทน: pnl<sub>t</sub> = pos<sub>t−1</sub> × (X<sub>t</sub> − X<sub>t−1</sub>) โดย pos<sub>t−1</sub> ตัดสินจากข้อมูลถึง t−1 · ถ้าเขียน pos<sub>t</sub> × (X<sub>t</sub> − X<sub>t−1</sub>) ก็คือ lag = 0 · เครื่องในหน้านี้ใช้รูปแบบสมุดบัญชี (เงินสด + ของที่ถือ × ราคา) จึงได้ค่าธรรมเนียมตามมูลค่าจริงของแต่ละ fill และ Equity ตรงกับการคิดจาก X ทุกเซนต์</p>
+<p>โลกของต้น: log P = α + log Q + w<sub>t</sub> + e<sub>t</sub> โดย w เดินสุ่ม SD 0.003 ต่อวัน และ e เป็น AR(1) ที่ φ = 0 SD 0.015 · e<sub>t</sub> ไม่บอกอะไรเกี่ยวกับ e<sub>t+1</sub> ส่วนที่ "กลับ" จึงหายก่อน fill วันถัดไปเสมอ ค่าคาดหวังของเครื่องที่ซื่อจึงเท่ากับ −ค่าธรรมเนียม (บวกส่วนที่ w ให้โดยบังเอิญ) · ชีตที่ได้ราคาวันสัญญาณเก็บ e<sub>t</sub> ที่ ≥ 2 SD ได้ทุกไม้ จึงชนะ 11 จาก 11 ไม้</p>
+</details>
+
+<details class="deep" id="deep-real"><summary>🔎 ลงลึก: ทำไม X แบบราคาของ BTC–ETH ย้ายระดับ</summary>
+<p>X = BTC − 24 × ETH เป็นเงินดอลลาร์ต่อชุด เมื่อราคาทั้งคู่เปลี่ยนระดับ X ก็เปลี่ยนระดับตาม แม้อัตราส่วนของสองราคาจะคงที่ ช่วงตรวจ BTC ปิดระหว่าง 76,322.42 ถึง 124,658.54 ขณะที่ ETH อ่อนลงเมื่อเทียบกับ BTC ระดับของ X จึงสูงกว่าช่วงเลือกหลาย SD (Z 1.6 ถึง 9.55) · บท 2 ใช้ log ราคาเพื่อแยกเรื่องระดับออกจากเรื่องอัตราส่วน · บท 3 ทดสอบว่า X ของช่วงเลือกนิ่งพอหรือไม่ด้วย ADF ก่อนจะเชื่อไม้บรรทัด · เครื่อง backtest ไม่ได้แทนการทดสอบเหล่านั้น มันแค่บอกว่ากติกานี้ได้เงินเท่าไรบนเส้นทางที่เกิดขึ้น</p>
+</details>
+
+</details>
+
+
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
