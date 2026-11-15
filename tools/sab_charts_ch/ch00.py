@@ -103,7 +103,7 @@ def _rope_types0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่
     base2 = top + 196
     p.append(f'<rect x="8" y="{top}" width="{W - 16}" height="236" rx="10" fill="#fafafa" stroke="{C["grid"]}"/>')
     p.append(text(24, top + 28, "เชือกไม่มีวันล็อก · perp", 14, INK, weight=700))
-    p.append(text(24, top + 48, "ไม่มีวันที่สัญญาบังคับให้เจอกัน · มีค่าดึง (funding) จ่ายทุกรอบ", 12, MUTED))
+    p.append(text(24, top + 48, "ไม่มีวันที่สัญญาบังคับให้เจอกัน · มี funding จ่ายทุกรอบ", 12, MUTED))
     xe2 = 720
     mid0 = top + 118
 
@@ -140,7 +140,7 @@ def _rope_types0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่
 
     alt = ("ผังสองแผง แผงบนเป็นเส้นราคา futures กับ spot ผูกด้วยโซ่ที่สั้นลงเรื่อย ๆ จนสองเส้นมาเจอกันที่แม่กุญแจวันหมดอายุ "
            "แผงล่างเป็นเส้นราคา perp กับ spot ที่เดินคู่กันไปไม่มีวันจบ มีเหรียญค่าดึงเครื่องหมายบวกหรือลบทุกรอบ")
-    cap = "dated futures ล็อกในวันหมดอายุ ส่วน perp มีแต่ค่าดึงที่ฝั่งจ่ายสลับกันได้"
+    cap = "dated futures ล็อกในวันหมดอายุ ส่วน perp มีแต่ funding ที่ฝั่งจ่ายสลับกันได้ทุกรอบ"
     return wrap(W, H, alt, p, cap, "แนวคิด", narrow=True)
 
 
