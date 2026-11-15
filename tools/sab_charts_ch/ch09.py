@@ -3,7 +3,9 @@
 sab-corr-vs-rope    : คู่ตัวอย่างสองแบบ ระยะห่าง (% ของ A เทียบ B) ตลอด 500 วัน + ป้าย correlation สองชั้น
                       (คู่ตัวอย่าง 0.91 / 0.74 · เฉลี่ย 200 คู่ 0.90 / 0.72 — แผน errata 18 · 8.2 แถว 7.1)
 sab-formation-test  : คู่ไม่มีเชือกตัวอย่างในหน่วยระยะแกว่ง (z) · ไม้บรรทัดวัดจากช่วงเลือกแล้วตรึงไปวัดช่วงทดสอบ
-sab-rope-types      : ผังเชือก 4 ชนิด (ภาพแนวคิด · ไม่มีตัวเลข) · ต่อจาก sab-rope-types0 ของบท 0
+sab-rope-types      : ผังเชือก 4 ชนิด (ภาพแนวคิด · ไม่มีตัวเลข) · ต่อจาก sab-rope-types0 ของบท 0 (v2: อยู่ในแฟ้มท้ายบท)
+sab-ruler20         : (v2) X ของ A–B 20 วัน กับเส้น Mean และแถบ ±1 / ±2 Standard Deviation — ตอน ก
+sab-test10          : (v2) ไม้บรรทัดจากวันที่ 1–20 ตรึงไว้ แล้ววัดวันทดสอบ 21–30 — ตอน ข
 """
 
 import math
@@ -56,11 +58,11 @@ def _corr_vs_rope(fig):
         p.append(f'<line x1="{xd:.1f}" y1="{y0 - 6}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
         line, _, _ = _panel(pctd[key], L, W - R, y0, y1, lo, hi, col)
         p.append(line)
-        p.append(text(W - R - 6, y0 + 8, f"Test Period อยู่ในกรอบ {B.fmt(ex['ในกรอบ'])}%", 11.5, C["purple"], "end", 700))
-    p.append(text((L + W - R) / 2 - 150, H - 14, "← Formation Period 250 วัน", 11, MUTED, "middle"))
-    p.append(text((L + W - R) / 2 + 150, H - 14, "Test Period 250 วัน →", 11, MUTED, "middle"))
+        p.append(text(W - R - 6, y0 + 8, f"ครึ่งหลังอยู่ในกรอบ {B.fmt(ex['ในกรอบ'])}%", 11.5, C["purple"], "end", 700))
+    p.append(text((L + W - R) / 2 - 150, H - 14, "← ครึ่งแรก 250 วัน (ใช้วัดกรอบ)", 11, MUTED, "middle"))
+    p.append(text((L + W - R) / 2 + 150, H - 14, "ครึ่งหลัง 250 วัน →", 11, MUTED, "middle"))
     alt = (f"กราฟสองแผง ระยะห่างของ A เทียบ B ตลอด {ndays} วัน คู่ไม่มีเชือก Correlation {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['corr'])} "
-           f"ระยะห่างเดินขึ้นไปเรื่อย ๆ Test Period อยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['ในกรอบ'])}% "
+           f"ระยะห่างเดินขึ้นไปเรื่อย ๆ ครึ่งหลังอยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['ไม่มีเชือก']['ในกรอบ'])}% "
            f"คู่มีเชือก Correlation {B.fmt(c9['คู่ตัวอย่าง']['มีเชือก']['corr'])} แกว่งแรงกว่าแต่กลับมารอบศูนย์ "
            f"อยู่ในกรอบ {B.fmt(c9['คู่ตัวอย่าง']['มีเชือก']['ในกรอบ'])}%")
     cap = "แกนตั้ง = A ห่างจาก B กี่ % นับจากวันแรก · คู่ตัวอย่างที่ใกล้ค่าเฉลี่ยของแบบ"
@@ -178,5 +180,97 @@ def _rope_types(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่�
         p.append(text(xr, y + 64, fail, 14.5, C["red"]))
     alt = ("ผังบันไดเชือกสี่ขั้นจากผูกแน่นลงไปหลวม โซ่ที่มีวันล็อก เชือกที่มีคนคอยดึง ยางยืด และเส้นที่วาดเอง "
            "แต่ละขั้นบอกว่าอะไรดึงสองราคากลับ และพังเมื่อไร")
-    cap = "บนผูกแน่น ล่างต้องพึ่งข้อมูลที่ไม่ได้ใช้เลือกคู่ · perp หรือ Perpetual Futures (สัญญาล่วงหน้าแบบไม่มีวันหมดอายุ) จากบท 7 คือเชือกไม่มีวันล็อกที่มีค่าดึงทุกรอบ"
+    cap = "บนผูกแน่น ล่างต้องพึ่งข้อมูลที่ไม่ได้ใช้เลือกคู่"
     return wrap(W, H, alt, p, cap, "แนวคิด", narrow=True)
+
+
+# ── v2: ไม้บรรทัดของ A–B ──
+
+def _f(v):
+    """ตัวเลขบนกราฟ: 2.0 → 2 · 2.2 → 2.2"""
+    return B.fmt(int(v)) if float(v).is_integer() else B.fmt(v)
+
+
+def _ruler_frame(W, L, R, y0, y1, n, lo=-3.0, hi=3.0):
+    X = lambda d: L + (d - 1) / (n - 1) * (W - R - L)  # noqa: E731
+    Y = lambda v: y1 - (v - lo) / (hi - lo) * (y1 - y0)  # noqa: E731
+    return X, Y
+
+
+def _bands(p, X, Y, x0, x1, mean, sd, labels=True):
+    p.append(f'<rect x="{x0:.1f}" y="{Y(mean + sd):.1f}" width="{x1 - x0:.1f}" height="{Y(mean - sd) - Y(mean + sd):.1f}" '
+             f'fill="{C["purple"]}" fill-opacity=".09"/>')
+    for k in (-2, -1, 0, 1, 2):
+        v = mean + k * sd
+        col = C["axis"] if k == 0 else (C["purple"] if abs(k) == 2 else C["grey"])
+        dash = "" if k == 0 else ' stroke-dasharray="5 4"'
+        p.append(f'<line x1="{x0:.1f}" y1="{Y(v):.1f}" x2="{x1:.1f}" y2="{Y(v):.1f}" stroke="{col}" stroke-width="1.3"{dash}/>')
+        if labels:
+            p.append(text(x0 - 8, Y(v) + 4, ("+" if v > 0 else "") + _f(v), 10.5, col, "end"))
+
+
+@chart("sab-ruler20")
+def _ruler20(fig):
+    c = fig["ch09"]["นับมือ20วัน"]
+    xs, mean, sd = c["X"], c["ค่ากลาง"], c["ระยะแกว่งนับมือ"]
+    n = len(xs)
+    W, H, L, R, y0, y1 = 760, 380, 64, 150, 60, 320
+    X, Y = _ruler_frame(W, L, R, y0, y1, n)
+    p = [text(L, 24, f"X ของ A–B {n} วัน กับไม้บรรทัด Mean {_f(mean)} · SD {_f(sd)}", 13, INK, weight=700)]
+    _bands(p, X, Y, L, W - R, mean, sd)
+    xr = W - R + 8
+    p.append(text(xr, Y(mean) + 4, f"Mean {_f(mean)}", 11, MUTED))
+    p.append(text(xr, Y(mean + sd) - 4, "ขอบ ±1 SD", 11, C["grey"]))
+    p.append(text(xr, Y(mean + sd) + 12, f"แถบนี้มี {c['ในหนึ่งระยะ']} วัน", 11, C["purple"], weight=700))
+    p.append(text(xr, Y(mean + 2 * sd) - 4, "ขอบ ±2 SD", 11, C["purple"], weight=700))
+    p.append(text(xr, Y(mean + 2 * sd) + 12, f"ข้างในมี {c['ในสองระยะ']} วัน", 11, C["purple"]))
+    pts = [(X(i + 1), Y(v)) for i, v in enumerate(xs)]
+    p.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{NOROPE}" stroke-width="1.4" stroke-opacity=".5"/>')
+    far = c["วันไกลสุด"]
+    for i, (x, y) in enumerate(pts):
+        d = abs(xs[i] - mean)
+        col = C["purple"] if d > 2 * sd else (NOROPE if d <= sd else C["ink"])
+        p.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{5 if i + 1 == far else 3.6}" fill="{col}"/>')
+    fx, fy = pts[far - 1]
+    p.append(text(fx + 8, fy - 6, f"วันที่ {far}: X = {B.fmt(c['Xไกลสุด'])}", 11.5, C["purple"], weight=700))
+    for d in (1, 5, 10, 15, 20):
+        p.append(text(X(d), y1 + 20, f"วันที่ {d}", 10.5, C["grey"], "middle"))
+    p.append(text(L - 50, y0 - 12, "X (ดอลลาร์ต่อชุด)", 11, MUTED))
+    alt = (f"จุด X ของคู่ A–B {n} วัน รอบเส้น Mean {_f(mean)} แถบ ±1 Standard Deviation มี {c['ในหนึ่งระยะ']} วัน "
+           f"แถบ ±2 มี {c['ในสองระยะ']} วัน วันที่ {far} อยู่นอกแถบ ±2 ที่ X {B.fmt(c['Xไกลสุด'])}")
+    cap = "จุดสีน้ำเงิน = อยู่ในแถบ ±1 · จุดเทาเข้ม = นอก ±1 แต่ใน ±2 · จุดม่วง = นอก ±2"
+    return wrap(W, H, alt, p, cap, "สอน")
+
+
+@chart("sab-test10")
+def _test10(fig):
+    c9 = fig["ch09"]
+    c, t = c9["นับมือ20วัน"], c9["วันทดสอบ"]
+    mean, sd = c["ค่ากลาง"], c["ระยะแกว่งนับมือ"]
+    xs = c["X"] + t["X"]
+    nf, n = len(c["X"]), len(c["X"]) + len(t["X"])
+    W, H, L, R, y0, y1 = 760, 380, 64, 24, 60, 320
+    X, Y = _ruler_frame(W, L, R, y0, y1, n)
+    xd = (X(nf) + X(nf + 1)) / 2
+    p = [text(L, 24, f"ไม้บรรทัดจากวันที่ 1–{nf} ตรึงไว้ แล้ววัดวันที่ {nf + 1}–{n}", 13, INK, weight=700),
+         f'<rect x="{L}" y="{y0}" width="{xd - L:.1f}" height="{y1 - y0}" fill="{C["grey"]}" fill-opacity=".07"/>']
+    _bands(p, X, Y, L, W - R, mean, sd)
+    p.append(f'<line x1="{xd:.1f}" y1="{y0 - 6}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
+    pts = [(X(i + 1), Y(v)) for i, v in enumerate(xs)]
+    p.append(f'<polyline points="{_poly(pts[:nf])}" fill="none" stroke="{NOROPE}" stroke-width="1.4" stroke-opacity=".45"/>')
+    p.append(f'<polyline points="{_poly(pts[nf - 1:])}" fill="none" stroke="{ROPE}" stroke-width="1.6"/>')
+    for i, (x, y) in enumerate(pts):
+        out = abs(xs[i] - mean) > 2 * sd
+        col = C["red"] if (out and i >= nf) else (NOROPE if i < nf else ROPE)
+        p.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{4.6 if out and i >= nf else 3.3}" fill="{col}"/>')
+    d1, d2 = t["วันหลุด"][0], t["วันหลุด"][-1]
+    p.append(text(X(d2) + 10, Y(t["Xสูงสุด"]) - 4, f"วันที่ {d1}–{d2} หลุด +2", 11.5, C["red"], weight=700))
+    p.append(text(L + 8, y1 - 10, f"ช่วงที่ใช้วัด {nf} วัน", 11.5, MUTED, weight=700))
+    p.append(text(W - R - 6, y1 - 10, f"ช่วงทดสอบ: ใน ±2 = {t['วันในกรอบ']} จาก {t['วัน']} วัน", 11.5, ROPE, "end", 700))
+    for d in (1, 10, 20, 30):
+        p.append(text(X(d), y1 + 20, f"วันที่ {d}", 10.5, C["grey"], "middle"))
+    p.append(text(L - 50, y0 - 12, "X (ดอลลาร์ต่อชุด)", 11, MUTED))
+    alt = (f"X ของคู่ A–B วันที่ 1 ถึง {n} เส้น Mean และแถบ ±1 ±2 Standard Deviation วัดจาก {nf} วันแรกแล้วลากต่อโดยไม่แก้ "
+           f"วันที่ {nf + 1}–{n} อยู่ในแถบ ±2 {t['วันในกรอบ']} วัน หลุดวันที่ {d1} และ {d2}")
+    cap = f"เส้นน้ำเงิน = {nf} วันที่ใช้วัดไม้บรรทัด · เส้นส้ม = {t['วัน']} วันที่จดหลังตรึงไม้บรรทัด · จุดแดง = หลุดกรอบ ±2"
+    return wrap(W, H, alt, p, cap, "สอน")
