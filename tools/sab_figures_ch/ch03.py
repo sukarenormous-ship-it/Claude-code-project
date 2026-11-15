@@ -132,6 +132,7 @@ def extend(data, D, q):
                   "ต่อ30วัน": q(pct0 * 30 / days0, 2),
                   "basis60": q(s0 * pct0 * D(c1["วันที่เหลือ"]) / days0 / 100, 0),
                   "futures60": q(s0 + s0 * pct0 * D(c1["วันที่เหลือ"]) / days0 / 100, 0)},
+        "ต่อทุนต่อปี": q(basis0 / cap * 100 * year / days0, 2),   # 2.4 × 365 ÷ 90 ≈ 9.73 (ตรงกับ ch05.บันได.ต่อทุน)
         "ฝึก1": {"พลาดลืมสัญญา": q(free0 + D(ex1["spot"]) + margin0, 0)},
         "ฝึก2": ex2v,
         "ฝึก4": {"Marginหลังชำระ": q(margin0 + D(ex2["ขาfutures"]), 0)},

@@ -1464,7 +1464,21 @@ def build(orig):
     }
     data["_ต้นฉบับ"] = build_originals_strings(orig)
     apply_chapter_plugins(data)
+    check_story_v2(data)
     return data
+
+
+def check_story_v2(data):
+    """คัมภีร์เรื่องภาค 2 ใช้ฐานต้นทุนเดียว (ch11.v2 · taker 0.05% × 4 fill × 1,000 = 2 ต่อไปกลับ) — ไม่ตรง = หยุด"""
+    st = data["เรื่อง"]
+    must = [("part11", "กระดาษ", data["ch11"]["v2"]["กระดาษ"]["สุทธิ"]),
+            ("part12", "บัญชีคู่", data["ch12"]["v2"]["บัญชีคู่หลังไม้2"]),
+            ("part12", "ไม้เปิด_บนกระดาษ", data["ch12"]["v2"]["ไม้3บนกระดาษที่28"]),
+            ("part14", "บัญชีคู่", data["ch14"]["v2"]["บัญชีคู่ก่อนค่าถือ"])]
+    for part, key, want in must:
+        got = st[part]["close"].get(key)
+        if got is None or D(str(got)) != D(str(want)):
+            raise SystemExit(f"คัมภีร์ไม่ตรงการคำนวณ (v2): เรื่อง.{part}.close.{key} = {got} แต่คำนวณได้ {want}")
 
 
 def apply_chapter_plugins(data):
@@ -1570,8 +1584,8 @@ def build_story(ch04, ch06, ch07, ch12, ch14, ch16):
     must = [("part4", "เงินสดอิสระ", ch04["เงินสดอิสระหลังโอน"]), ("part4", "equity", ch04["equity"]),
             ("part6", "กำไรรับรู้_ภาค1", ch06["มินปิด"]["ต่อ1BTC"]),
             ("part7", "กำไรรับรู้_ภาค1", ch07["บัญชีสะสมภาค1"]["ต่อ1BTC"]),
-            ("part12", "บัญชีคู่", ch12["บัญชีคู่หลังไม้2"]), ("part12", "ไม้เปิด_บนกระดาษ", ch12["ไม้3บนกระดาษที่28"]),
-            ("part14", "บัญชีคู่", ch14["บัญชีคู่"]), ("part16", "บัญชีคู่", ch16["บัญชีคู่taker"]["รวม"])]
+            ("part16", "บัญชีคู่", ch16["บัญชีคู่taker"]["รวม"])]
+    # part11 กระดาษ · part12 บัญชีคู่/ไม้เปิด_บนกระดาษ · part14 บัญชีคู่ ใช้ฐานต้นทุน v2 (ch11.v2) → ตรวจหลังปลั๊กอินใน check_story_v2
     for part, key, want in must:
         got = story[part]["close"].get(key)
         if got is None or D(str(got)) != D(str(want)):

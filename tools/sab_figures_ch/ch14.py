@@ -141,7 +141,7 @@ def extend(data, D, q):
     e3, x3 = D(str(p3["Xเข้า"])), D(str(p3["Xออก"]))
     net3 = q(sets * (e3 - x3) - cost, 0)
     assert net3 == p3["สุทธิ"], "ไม้ 3 ไม่ตรง ch12"
-    before = data["เรื่อง"]["part14"]["open"]["บัญชีคู่"]
+    before = data["ch12"]["บัญชีคู่หลังไม้2"]          # ต้นทุนการ์ดเดิม 1 (คัมภีร์ใช้ v2 แล้ว · ดู _v2)
     after = before + net3
     assert after == c["บัญชีคู่"], "บัญชีคู่ไม่ตรง ch14"
     trade3 = {"บัญชีคู่ก่อน": before, "บัญชีคู่หลัง": after, "สุทธิ": net3,
