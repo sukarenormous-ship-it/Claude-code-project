@@ -8,6 +8,8 @@ def extend(data, D, q):
     return {"คีย์ใหม่": q(D("3000") / D("100000") * 100, 2)}
 ```
 
+`drills.py` = ภาคผนวก D (`docs/sab-appendix-drills.html`) → `data["drills"]` · รันหลัง ch18 จึงอ่านค่าของทุกบทได้ · หน้าอ้างด้วย `data-key="drills.…"` แล้ว `python3 tools/sab_drills.py` เติมตัวเลขลงช่อง (`--check` ตรวจว่าตรง)
+
 ค่าที่คืนจะเติมใต้ `data["chNN"]` · ห้ามทับคีย์เดิม (ชน = หยุด) · คำนวณจากค่าใน `data` หรือจากสูตร — ห้ามพิมพ์ผลลัพธ์ลอย ๆ
 หลังแก้ให้รัน `python3 -I tools/sab_figures.py && python3 -I tools/sab_figures.py --check`
 
