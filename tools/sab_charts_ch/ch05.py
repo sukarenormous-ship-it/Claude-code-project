@@ -68,3 +68,51 @@ def _crowding_ladder(fig):
     cap_txt = (f"ทุน {B.fmt(fig['บัญชีมิน']['ทุนภาค1']['รวม'])} · ค่าธรรมเนียมและ hurdle 4% คงที่ ตัวที่เปลี่ยนมีแค่ basis "
                "· แถวใต้แท่งคืออัตราบนจอ ยังบวกทุกแถว · ไม่ใช่ข้อมูลตลาด")
     return wrap(W, H, alt, out, cap_txt, "สอน")
+
+
+@chart("sab-capital-tradeoff")
+def _capital_tradeoff(fig):
+    """v2 (ตอน ข · กันเงินมากขึ้น): ทุนสามขนาด — ซ้าย = กันชน (% ที่ราคาสัญญาขึ้นสะสมได้) เทียบคืนวันที่ 9 ·
+    ขวา = ส่วนเกินหลัง hurdle · ทุนที่กันชนไม่ถึงคืนวันที่ 9 ส่วนเกินเป็นแค่ตัวเลขบนกระดาษ"""
+    rows = [fig["ch05"]["v2"]["ทุน"][k] for k in ("120000", "125000", "150000")]
+    night = fig["ch04"]["futuresขึ้นเปอร์เซ็นต์คืนวันที่9"]
+    who = {120000: " (ต้น)", 125000: " (มิน)", 150000: ""}
+    W, rh, top = 760, 58, 118
+    H = top + rh * len(rows) + 40
+    L1, R1, L2, R2 = 170, 430, 500, 736
+    bmax = max(r["กันชน"] for r in rows) * 1.15
+    emax = max(r["ส่วนเกินเปอร์เซ็นต์"] for r in rows) * 1.8
+    X1 = lambda v: L1 + v / bmax * (R1 - L1)                   # noqa: E731
+    X2 = lambda v: L2 + v / emax * (R2 - L2)                   # noqa: E731
+    out = [text(16, 26, "กันเงินมากขึ้น กันชนหนาขึ้น แต่ส่วนเกินบางลง — ต้องรอดก่อน ส่วนเกินจึงเป็นเงิน", 13.5, C["ink"], weight=700)]
+    out.append(text(L1, 62, "กันชน: ราคาสัญญาขึ้นสะสมได้กี่ %", 12, C["ink"], weight=700))
+    out.append(text(L2, 62, "ส่วนเกินหลัง hurdle (% ต่อปี)", 12, C["ink"], weight=700))
+    yb = top + rh * len(rows) - 8
+    for x0, x1 in ((L1, R1), (L2, R2)):
+        out.append(f'<line x1="{x0}" y1="{top - 30}" x2="{x0}" y2="{yb}" stroke="{C["axis"]}" stroke-width="1.5"/>')
+    xn = X1(night)
+    out.append(f'<line x1="{xn:.1f}" y1="{top - 30}" x2="{xn:.1f}" y2="{yb}" stroke="{C["red"]}" stroke-width="1.6" stroke-dasharray="5 4"/>')
+    out.append(text(xn + 6, top - 18, f"คืนวันที่ 9 ขึ้น {B.fmt(night)}%", 11, C["red"], "start", 700))
+    bh = 24
+    for i, r in enumerate(rows):
+        y = top + rh * i
+        ok = r["กันชน"] >= night
+        out.append(text(16, y + bh / 2 + 4, f"ทุน {B.fmt(r['ทุน'])}{who.get(r['ทุน'], '')}", 12, C["ink"], weight=700))
+        cb = C["green"] if ok else C["red"]
+        out.append(f'<rect x="{L1}" y="{y:.1f}" width="{X1(r["กันชน"]) - L1:.1f}" height="{bh}" rx="3" fill="{cb}"/>')
+        lx = X1(r["กันชน"]) + 6 if ok else xn + 6               # ป้ายของแท่งที่ไม่ถึงเส้น วางขวาเส้น ไม่ให้เส้นพาด
+        out.append(text(lx, y + bh / 2 + 4, f"{B.fmt(r['กันชน'])}%" + ("" if ok else " · ไม่รอด"), 11.5, cb, "start", 700))
+        xe = X2(r["ส่วนเกินเปอร์เซ็นต์"])
+        fill = (f'fill="{C["blue"]}"' if ok else f'fill="{C["blue"]}" fill-opacity=".18" stroke="{C["blue"]}" stroke-dasharray="4 3"')
+        out.append(f'<rect x="{L2}" y="{y:.1f}" width="{xe - L2:.1f}" height="{bh}" rx="3" {fill}/>')
+        lab = f"{B.fmt(r['ส่วนเกินเปอร์เซ็นต์'])}%" + ("" if ok else " บนกระดาษ")
+        out.append(text(xe + 6, y + bh / 2 + 4, lab, 11.5, C["blue"] if ok else C["muted"], "start", 700))
+        out.append(text(16, y + bh + 14, f"Free Cash {B.fmt(r['เงินสดอิสระ'])}", 10.5, C["grey"]))
+        out.append(text(L2 + 4, y + bh + 14, f"หักค่าเสียโอกาส {B.fmt(r['ค่าเสียโอกาสต่อปี'])} ต่อปี", 10.5, C["grey"]))
+    alt = ("แท่งนอนสองแผงของทุนสามขนาด " + " · ".join(
+        f"ทุน {r['ทุน']} กันชน {r['กันชน']}% ส่วนเกิน {r['ส่วนเกินเปอร์เซ็นต์']}%" for r in rows) +
+        f" เส้นคืนวันที่ 9 อยู่ที่ {night}% กันชนของทุน 120,000 ไม่ถึงเส้นนี้")
+    btc = fig["บัญชีมิน"]["BTC"]
+    cap = (f"เปิดชุดเดียวกันทุกแถว (spot 1 BTC · short futures 1 BTC · basis {B.fmt(btc['basis'])} · "
+           f"{btc['วันถึงหมดอายุ']} วัน) · hurdle {B.fmt(fig['บัญชีมิน']['hurdle'])}% · แต่ละแถวเป็นคนละทุน")
+    return wrap(W, H, alt, out, cap, "สอน")

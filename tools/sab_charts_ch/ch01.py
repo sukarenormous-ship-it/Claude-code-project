@@ -112,3 +112,58 @@ def _orderbook(fig):
            f"{B.fmt(bid)} ราคาบนกราฟ {B.fmt(mid)} อยู่ตรงกลางและไม่มีใครซื้อขายได้ที่ราคานั้น")
     cap = "1 BTC · ความยาวแถบแทนปริมาณที่รออยู่ ไม่ใช่ตัวเลขจริง"
     return wrap(W, H, alt, out, cap, "แนวคิด")
+
+
+@chart("sab-leverage-lines")
+def _leverage_lines(fig):
+    """v2: Margin ที่เหลือ (% ของที่วาง) เมื่อราคาสวน x% · เส้นละหนึ่งระดับ Leverage · ตกถึงศูนย์ที่ 100% ÷ เท่า
+    เน้น 10 เท่า (หน้าจอของมิน) · spot 1 เท่าเป็นเส้นอ้างอิง (เสียเท่ากันเป็นเงิน แต่ยังเหลือเงินส่วนใหญ่)"""
+    tab = fig["ch01"]["leverageตาราง"]
+    lv = fig["ch01"]["leverage"]
+    walk = fig["ch01"]["v2"]["หลักประกันเดิน"]["แถว"]
+    levels = sorted(tab.values(), key=lambda r: r["เท่า"])
+    xmax = max(r["สวนแล้วหมดเปอร์เซ็นต์"] for r in levels)
+    W, H = 760, 340
+    L, R, T, Bm = 70, 730, 84, 270
+    X = lambda p: L + p / xmax * (R - L)                      # noqa: E731
+    Y = lambda v: Bm - v / 100 * (Bm - T)                     # noqa: E731
+    out = [text(16, 26, f"ยิ่งหลายเท่า ระยะก่อน Margin หมดยิ่งสั้น: {lv['เท่า']} เท่าหมดเมื่อราคาสวน "
+                        f"{tab[str(lv['เท่า'])]['สวนแล้วหมดเปอร์เซ็นต์']}%", 13.5, C["ink"], weight=700)]
+    for g in (0, 50, 100):
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}" '
+                   f'stroke-width="{1.5 if g == 0 else 1}"/>')
+        out.append(text(L - 8, Y(g) + 4, f"{g}%", 11, C["grey"], "end"))
+    out.append(text(L - 56, T - 16, "Margin ที่เหลือ เทียบกับที่วาง", 11, C["muted"]))
+    # spot 1 เท่า: จ่ายเต็ม · เส้นอ้างอิง
+    out.append(f'<line x1="{X(0):.1f}" y1="{Y(100):.1f}" x2="{X(xmax):.1f}" y2="{Y(100 - xmax):.1f}" stroke="{C["blue"]}" '
+               f'stroke-width="2" stroke-dasharray="6 4"/>')
+    out.append(text(X(xmax) - 4, Y(100 - xmax) + 20, f"spot {fig['ch01']['v2']['spotเท่า']} เท่า (จ่ายเต็ม)", 11.5, C["blue"], "end", 700))
+    for r in levels:
+        k, z = r["เท่า"], r["สวนแล้วหมดเปอร์เซ็นต์"]
+        hot = k == lv["เท่า"]
+        col = C["purple"] if hot else C["muted"]
+        out.append(f'<line x1="{X(0):.1f}" y1="{Y(100):.1f}" x2="{X(z):.1f}" y2="{Y(0):.1f}" stroke="{col}" '
+                   f'stroke-width="{3 if hot else 1.8}" stroke-linecap="round"/>')
+        out.append(f'<circle cx="{X(z):.1f}" cy="{Y(0):.1f}" r="4.5" fill="#fff" stroke="{col}" stroke-width="2"/>')
+        last = z == xmax
+        if last:                                               # ขวาสุดไม่มีที่ และซ้ายมีเส้นพาด: ป้ายไว้ใต้ตัวเลขแกน
+            out.append(text(X(z), Bm + 33, f"{k} เท่า", 11.5, col, "middle", 700))
+        else:
+            out.append(text(X(z) + 7, Y(0) - 7, f"{k} เท่า", 11.5, col, "start", 700))
+        out.append(text(X(z), Bm + 18, f"{z}%", 11, C["grey"], "middle"))
+    # จุดจากตารางเดินเงิน: 10 เท่า ราคาสวน 5% เหลือ 500 (50%)
+    r5 = walk["5"]
+    px, py = X(r5["ราคาเปลี่ยนเปอร์เซ็นต์"]), Y(r5["เหลือเปอร์เซ็นต์"])
+    out.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4.5" fill="{C["purple"]}"/>')
+    lx, ly = X(xmax * .42), Y(24)                              # ช่องว่างระหว่างเส้น 5 เท่ากับ 2 เท่า
+    out.append(f'<path d="M{px + 5:.1f},{py + 3:.1f} C{px + 60:.1f},{py + 20:.1f} {lx - 60:.1f},{ly - 4:.1f} {lx - 6:.1f},{ly - 4:.1f}" '
+               f'fill="none" stroke="{C["purple"]}" stroke-width="1"/>')
+    out.append(text(lx, ly, f"10 เท่า สวน {r5['ราคาเปลี่ยนเปอร์เซ็นต์']}%: เหลือ {B.fmt(r5['เหลือ'])} จาก {B.fmt(lv['หลักประกัน'])}",
+                    11.5, C["purple"], "start", 700))
+    out.append(text(X(0), Bm + 18, "0%", 11, C["grey"], "middle"))
+    out.append(text((L + R) / 2, Bm + 40, "ราคาเดินสวนทางสถานะ (%)", 12, C["muted"], "middle"))
+    alt = ("กราฟเส้นลาดลง Margin ที่เหลือเทียบกับที่วาง เมื่อราคาสวน " + " ".join(
+        f"{r['เท่า']} เท่าหมดที่ {r['สวนแล้วหมดเปอร์เซ็นต์']}%" for r in levels) +
+        f" ส่วน spot ที่จ่ายเต็มยังเหลือครึ่งหนึ่งเมื่อราคาสวน {xmax}%")
+    cap = f"สถานะมูลค่า {B.fmt(lv['ถือ'])} · กติกาสอน: Margin หมดเมื่อขาดทุนเท่าที่วาง · ยังไม่นับการบังคับปิดก่อนถึงศูนย์"
+    return wrap(W, H, alt, out, cap, "สอน")

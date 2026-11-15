@@ -192,3 +192,154 @@ def _converge(fig):
            "ทั้งสองแผงเส้นสัญญามาเจอเส้น spot พอดีในวันหมดอายุ")
     cap = "จุดเริ่มและจุดปลายคือเลขในตาราง · เส้นระหว่างทางเป็นภาพตัวอย่างหนึ่งแบบ ไม่ใช่ราคาจริง"
     return wrap(W, H, alt, out, cap, "แนวคิด")
+
+
+# ───────── หน้า 1 (เพิ่ม): มูลค่าตามจอขยับได้ จนกว่าจะขาย แล้วจึงนิ่งเป็นเงิน ─────────
+def _wig(t, a):
+    """คลื่นเล็กระหว่างจุดตัวเลข (ภาพแนวคิด) · ศูนย์ที่ปลายช่วงเสมอ เพื่อให้ผ่านจุดในตารางพอดี"""
+    import math
+    return a * math.sin(math.pi * t) * math.sin(5 * math.pi * t)
+
+
+@chart("sab-base-screen-cash")
+def _screen_cash(fig):
+    h = fig["base"]["b1"]["ยังไม่ขาย"]
+    paid, knots = h["จ่ายไปแล้ว"], [h["มูลค่าหลังซื้อ"], h["มูลค่าคืนนี้"], h["มูลค่าพรุ่งนี้"]]
+    W, H = 760, 352
+    L, R = 70, 736
+    ax = Axis(min(knots) - 3, max(knots) + 3, 96, 262)
+    xs = [L + 40, L + 200, L + 360, L + 500]           # หลังซื้อ · คืนนี้ · พรุ่งนี้ · ขาย
+    out = [text(24, 26, "ยังไม่ขาย ตัวเลขบนจอขยับได้ทุกนาที ขายแล้วจึงนิ่งเป็นเงินจริง", 13.5, C["ink"], weight=700)]
+    out += _legend(24, 52, [(f"มูลค่าตามจอของ A {h['จำนวน']} หน่วย (ยังไม่ใช่เงิน)", LEG["A"], "dash"),
+                            ("เงินที่รับเข้าบัญชีจริง", C["green"], "line")])
+    out.append(f'<rect x="{xs[3]:.1f}" y="{ax.top - 8}" width="{R - xs[3]:.1f}" height="{ax.bottom - ax.top + 8}" fill="#f0fdf4"/>')
+    out.append(text(xs[3] + 8, ax.top + 6, "ขายแล้ว", 11, C["green"], weight=700))
+    out += _grid(ax, sorted(set(knots + [paid])), L, R)
+    yp = ax.y(paid)
+    out.append(f'<line x1="{L}" y1="{yp:.1f}" x2="{xs[3]:.1f}" y2="{yp:.1f}" stroke="{C["grey"]}" stroke-width="1.6" '
+               f'stroke-dasharray="3 3"/>')
+    out.append(text(xs[3] - 6, yp + 16, f"จ่ายไปแล้ว {B.fmt(paid)}", 11, C["muted"], "end", 700))
+    # เส้นประ: ผ่านจุดในตารางพอดี · ระหว่างจุดเป็นคลื่นแนวคิด
+    pts = []
+    segs = [(xs[0], xs[1], knots[0], knots[1]), (xs[1], xs[2], knots[1], knots[2]), (xs[2], xs[3], knots[2], knots[2])]
+    for x0, x1, v0, v1 in segs:
+        for k in range(21):
+            t = k / 20
+            pts.append((x0 + (x1 - x0) * t, ax.y(v0 + (v1 - v0) * t + _wig(t, 0.9 if v0 != v1 else 0.45))))
+    out.append(f'<polyline points="{" ".join(f"{x:.1f},{y:.1f}" for x, y in pts)}" fill="none" stroke="{LEG["A"]}" '
+               f'stroke-width="2.4" stroke-dasharray="6 4"/>')
+    sold = knots[2]
+    out.append(f'<line x1="{xs[3]:.1f}" y1="{ax.y(sold):.1f}" x2="{R:.1f}" y2="{ax.y(sold):.1f}" stroke="{C["green"]}" '
+               f'stroke-width="3" stroke-linecap="round"/>')
+    labs = [(xs[0], knots[0], f"หลังซื้อ {B.fmt(knots[0])}", -14),
+            (xs[1], knots[1], f"คืนนี้ {B.fmt(knots[1])} · ต่ำกว่าที่จ่าย {B.fmt(abs(h['ต่างคืนนี้']))}", 20),
+            (xs[2], knots[2], f"พรุ่งนี้ {B.fmt(knots[2])} · สูงกว่าที่จ่าย {B.fmt(h['ต่างพรุ่งนี้'])}", -12)]
+    for x, v, lab, dy in labs:
+        out.append(f'<circle cx="{x:.1f}" cy="{ax.y(v):.1f}" r="4.5" fill="#fff" stroke="{LEG["A"]}" stroke-width="2.2"/>')
+        out.append(text(x, ax.y(v) + dy, lab, 11.5, C["ink"], "middle", 700))
+    out.append(f'<circle cx="{xs[3]:.1f}" cy="{ax.y(sold):.1f}" r="5.5" fill="{C["green"]}" stroke="#fff" stroke-width="2"/>')
+    out.append(text((xs[3] + R) / 2 + 6, ax.y(sold) - 12, f"รับจริง {B.fmt(sold)} · ผล {_sign(sold - paid)} นิ่งแล้ว",
+                    11.5, C["green"], "middle", 700))
+    # แถวล่าง: เงินที่รับจริงในแต่ละจังหวะ
+    names = ["หลังซื้อ", "คืนนี้ ยังไม่ขาย", "พรุ่งนี้ ยังไม่ขาย", "พรุ่งนี้ ขายทั้งหมด"]
+    got = [0, 0, 0, sold]
+    for x, n, g in zip(xs, names, got):
+        out.append(text(x, ax.bottom + 20, n, 11, C["muted"], "middle"))
+        out.append(text(x, ax.bottom + 42, B.fmt(g), 12, C["green"] if g else C["grey"], "middle", 700))
+    out.append(text(L - 50, ax.bottom + 42, "รับจริง", 11, C["muted"]))
+    alt = (f"กราฟเส้นแนวคิด มูลค่าตามจอของ A สองหน่วยเป็นเส้นประ เริ่ม {knots[0]} คืนนี้ลงเป็น {knots[1]} พรุ่งนี้ขึ้นเป็น {knots[2]} "
+           f"ระหว่างนั้นเงินที่รับจริงเป็นศูนย์ พอขายทั้งหมดจึงเป็นเส้นทึบสีเขียวนิ่งที่ {sold} เทียบกับเส้นที่จ่ายไป {paid}")
+    cap = "ซื้อ A 2 หน่วยที่ 100 · จุดที่มีตัวเลขคือเลขในตาราง · เส้นระหว่างจุดเป็นภาพตัวอย่าง ไม่ใช่ราคาจริง"
+    return wrap(W, H, alt, out, cap, "แนวคิด")
+
+
+# ───────── หน้า 2 (เพิ่ม): ยืมมาขาย กับ ตกลงขาย — ผลเท่ากัน ต่างแค่จังหวะเงิน ─────────
+@chart("sab-base-cash-timing")
+def _cash_timing(fig):
+    b = fig["base"]["b2"]
+    t = b["ยืมมาขาย"]
+    sell, buy = t["ขายรวม"], t["ซื้อคืนรวม"]
+    res = t["ผล"]
+    borrow = [0, sell, sell - buy, sell - buy]
+    agree = [0, 0, res, res]
+    W, H = 760, 340
+    L, R = 70, 736
+    ax = Axis(min(borrow + agree) - 6, max(borrow) + 8, 92, 262)
+    xs = [L + 50 + i * (R - L - 100) / 3 for i in range(4)]
+    out = [text(24, 26, f"ขาย B ไว้ก่อนสองแบบ: เงินเดินคนละจังหวะ แต่จบที่ {_sign(res)} เท่ากัน", 13.5, C["ink"], weight=700)]
+    out += _legend(24, 52, [("ยืม B มาขายจริง", LEG["B"], "line"), ("ตกลงขาย ไม่มีเหรียญเปลี่ยนมือ", C["ink"], "dash")])
+    out += _grid(ax, [0, sell], L, R)
+
+    def path(vals):
+        d = f"M{xs[0]:.1f},{ax.y(vals[0]):.1f}"
+        for i in range(1, 4):
+            d += f" H{xs[i]:.1f} V{ax.y(vals[i]):.1f}"
+        return d + f" H{R - 10:.1f}"
+    out.append(f'<path d="{path(borrow)}" fill="none" stroke="{LEG["B"]}" stroke-width="2.8" stroke-linejoin="round"/>')
+    out.append(f'<path d="{path(agree)}" fill="none" stroke="{C["ink"]}" stroke-width="2" stroke-dasharray="6 4"/>')
+    yb = ax.y(sell)
+    out.append(text(xs[1] + 10, yb - 10, f"รับ {B.fmt(sell)} ก่อน · แต่ยังค้างภาระซื้อ B คืน {t['จำนวน']} หน่วย", 11.5, C["ink"],
+                    "start", 700))
+    out.append(text(xs[2] - 8, ax.y(0) - 34, f"ซื้อคืนจ่าย {B.fmt(buy)}", 11, LEG["B"], "end", 700))
+    out.append(text(xs[2] - 8, ax.y(0) - 18, f"ตกลงขาย: จ่ายแค่ส่วนต่าง {B.fmt(abs(res))}", 11, C["ink"], "end", 700))
+    out.append(f'<circle cx="{xs[3]:.1f}" cy="{ax.y(res):.1f}" r="5" fill="{C["red"]}" stroke="#fff" stroke-width="2"/>')
+    out.append(text(xs[3], ax.y(res) + 22, f"สองแบบจบที่ {_sign(res)}", 12, C["red"], "middle", 700))
+    names = ["เริ่ม", f"เปิด: ขายที่ {B.fmt(t['ราคาขาย'])}", f"ปิด: ซื้อคืนที่ {B.fmt(t['ราคาซื้อคืน'])}", "จบ ไม่มีอะไรค้าง"]
+    for x, n in zip(xs, names):
+        out.append(text(x, ax.bottom + 44, n, 11, C["muted"], "middle"))
+    out.append(text(L - 50, ax.top - 14, "เงินที่เข้า/ออกสะสม", 11, C["muted"]))
+    alt = (f"กราฟขั้นบันไดสองเส้น เส้นส้มคือยืม B มาขาย เงินขึ้นเป็น {sell} ตอนเปิด แล้วลงเป็น {sell - buy} เมื่อซื้อคืนที่ "
+           f"{t['ราคาซื้อคืน']} เส้นประคือข้อตกลงขาย เงินเป็นศูนย์ตอนเปิด แล้วจ่ายส่วนต่าง {abs(res)} ตอนปิด ทั้งสองเส้นจบที่ {res}")
+    cap = "ขาย B 1 หน่วยที่ 50 · ปิดที่ 51 · ยังไม่คิดค่าธรรมเนียม"
+    return wrap(W, H, alt, out, cap, "สอน")
+
+
+# ───────── หน้า 4 (เพิ่ม): เงินสามกองทีละจังหวะ ─────────
+@chart("sab-base-three-pockets")
+def _three_pockets(fig):
+    b = fig["base"]["b4"]
+    acc = b["บัญชี"]
+    names = {"เริ่ม": ["เริ่ม", ""], "ซื้อBspot": ["ซื้อ B spot", f"ที่ {B.fmt(b['spot'])}"],
+             "ขายสัญญา": ["ขายสัญญา", f"ที่ {B.fmt(b['สัญญา'])}"],
+             "กลางทาง": ["กลางทาง", f"spot {B.fmt(b['กลางทาง']['spot'])} สัญญา {B.fmt(b['กลางทาง']['สัญญา'])}"],
+             "วันหมดอายุ": ["วันหมดอายุ", f"spot {B.fmt(b['ขายBวันหมดอายุ'])}"], "ปิดครบ": ["ปิดครบ", "ทุกอย่างเป็นเงินสด"]}
+    W, H = 800, 380
+    L, R = 70, 784
+    top = max(r["เงินสด"] + r["มูลค่าB"] for r in acc)
+    ax = Axis(-12, top * 1.12, 96, 290)
+    gw = (R - L) / len(acc)
+    bw = 54
+    col = {"cash": LEG["A"], "B": LEG["B"], "k": LEG["สัญญา"]}
+    out = [text(24, 26, "ซื้อ B แล้วเงินสดเหลือครึ่งเดียว แต่ equity ยังเป็น 100 — เงินแค่ย้ายกอง", 13.5, C["ink"], weight=700)]
+    out += _legend(24, 52, [("เงินสด", col["cash"], "box"), ("B ในมือ (ตามราคาตอนนั้น)", col["B"], "box"),
+                            ("สัญญาที่ขายไว้ (ถ้าปิดตอนนี้)", col["k"], "box"), ("equity", C["ink"], "line")])
+    out += _grid(ax, [0, b["เงินสดตั้งต้น"]], L, R)
+    for i, r in enumerate(acc):
+        cx = L + gw * i + gw / 2
+        x = cx - bw / 2
+        base = 0
+        for key, v in (("cash", r["เงินสด"]), ("B", r["มูลค่าB"])):
+            if v:
+                y1, y0 = ax.y(base + v), ax.y(base)
+                out.append(f'<rect x="{x:.1f}" y="{y1:.1f}" width="{bw}" height="{y0 - y1:.1f}" fill="{col[key]}"/>')
+                out.append(text(cx, (y0 + y1) / 2 + 4, B.fmt(v), 11, "#ffffff", "middle", 700))
+                base += v
+        k = r["สัญญา"]
+        if k:
+            y0 = ax.y(0)
+            hk = max(5, ax.y(k) - y0)
+            out.append(f'<rect x="{x:.1f}" y="{y0:.1f}" width="{bw}" height="{hk:.1f}" fill="{col["k"]}" fill-opacity=".25" '
+                       f'stroke="{col["k"]}" stroke-dasharray="3 2"/>')
+            out.append(text(cx, y0 + hk + 13, B.fmt(k), 11, col["k"], "middle", 700))
+        ye = ax.y(r["equity"])
+        out.append(f'<line x1="{x - 8:.1f}" y1="{ye:.1f}" x2="{x + bw + 8:.1f}" y2="{ye:.1f}" stroke="{C["ink"]}" stroke-width="2.4"/>')
+        out.append(text(cx, ye - 8, f"equity {B.fmt(r['equity'])}", 11, C["ink"], "middle", 700))
+        n1, n2 = names.get(r["จังหวะ"], [r["จังหวะ"], ""])
+        out.append(text(cx, ax.bottom + 30, n1, 11.5, C["ink"], "middle", 700))
+        if n2:
+            out.append(text(cx, ax.bottom + 46, n2, 10.5, C["muted"], "middle"))
+    alt = "กราฟแท่งซ้อนหกจังหวะ " + " · ".join(
+        f"{r['จังหวะ']} เงินสด {r['เงินสด']} B {r['มูลค่าB']} สัญญา {r['สัญญา']} equity {r['equity']}" for r in acc)
+    cap = (f"เริ่มด้วยเงินสด {B.fmt(b['เงินสดตั้งต้น'])} · ซื้อ B spot 1 หน่วย คู่กับขายสัญญา 1 ใบ · "
+           "ยังไม่คิดค่าธรรมเนียมและเงินค้ำสัญญา")
+    return wrap(W, H, alt, out, cap, "สอน")

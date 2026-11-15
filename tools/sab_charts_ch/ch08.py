@@ -2,6 +2,9 @@
 
 sab-beta-count : 8 วันของ BTC กับ A (ตาราง v2 · ch08.v2.นับbeta) · วันที่ BTC ขยับไม่เกิน 2% เป็นสีเทา (ไม่นับ)
                  ใต้แต่ละวันบอก A ÷ BTC ของวันนั้น (วันที่ 6 สวนทาง จดลบ) เพื่อให้เห็นว่ารายวันแกว่ง แต่ผลรวมของวันที่นับให้ 1.5
+                 สี: A น้ำเงิน · BTC (ขา hedge) ส้ม ตามธรรมเนียมเล่ม (ขา A น้ำเงิน · ขา B/ขา hedge ส้ม)
+sab-two-neutrals : (v2 ตอน ข · 2) เป็นกลางสองแบบ: มูลค่า A +1,000 / BTC −1,000 รวม 0 · แรงต่อตลาด +1,500 / −1,000 รวม +500
+                 · short BTC 1,500: แรง 0 แต่มูลค่าสุทธิ −500 (ch08.ฉาก · ch08.v2.ล็อต)
 sab-hedge-compare : สามวิธีให้ขา B (10 / 20 / 30 เหรียญ) · แท่งแดง = BTC ลง 4% · แท่งส้ม = B ขึ้นเอง 1% (stress)
 """
 from sab_charts import chart, wrap, grouped_bars, text, Frame, nice_ticks, C, B
@@ -34,7 +37,7 @@ def _beta_count(fig):
     bw = 26
     for i, d in enumerate(days):
         cx = f.L + gw * i + gw / 2
-        for j, (k, col) in enumerate((("BTC", C["blue"]), ("A", C["amber"]))):
+        for j, (k, col) in enumerate((("BTC", C["amber"]), ("A", C["blue"]))):
             v = d[k]
             colr = col if d["นับ"] else "#d1d5db"
             x = cx - bw - 2 + j * (bw + 4)
@@ -55,14 +58,14 @@ def _beta_count(fig):
     # หัว + legend + สรุปสีม่วง
     out.append(text(f.L, 26, "BTC กับ A รายวัน (%)", 13, C["ink"], weight=700))
     lx = f.L
-    for name, col in (("BTC", C["blue"]), ("A", C["amber"]), ("ไม่นับ", "#d1d5db")):
+    for name, col in (("BTC", C["amber"]), ("A", C["blue"]), ("ไม่นับ", "#d1d5db")):
         out.append(f'<rect x="{lx}" y="{40}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, 50, name, 11.5, C["muted"]))
         lx += 34 + 8 * len(name)
     sA, sB = _whole(nb['ผลรวมA']), _whole(nb['ผลรวมBTC'])
     out.append(text(f.L, 80, f"{nb['วันที่นับ']} วันที่นับ: "
                              f"A รวม {sA} ÷ BTC รวม {sB} = {B.fmt(nb['ผล'])}", 12.5, C["purple"], weight=700))
-    alt = (f"กราฟแท่ง 8 วัน แท่งน้ำเงินคือการขยับของ BTC แท่งส้มคือการขยับของ A เป็นเปอร์เซ็นต์ "
+    alt = (f"กราฟแท่ง 8 วัน แท่งส้มคือการขยับของ BTC แท่งน้ำเงินคือการขยับของ A เป็นเปอร์เซ็นต์ "
            f"วันที่ BTC ขยับไม่เกิน {cut}% เป็นสีเทาและไม่นับ วันที่นับ {nb['วันที่นับ']} วัน A ขยับรวม {sA} "
            f"BTC ขยับรวม {sB} ได้ beta {B.fmt(nb['ผล'])}")
     cap = f"8 วันของ BTC กับ A เป็น % · วันที่ BTC ขยับไม่เกิน {cut}% ไม่นับ"
@@ -105,3 +108,52 @@ def _hedge_compare(fig):
     cap = (f"ถือ A {B.fmt(c['ฉาก']['Aจำนวน'])} เหรียญ ({B.fmt(c['ฉาก']['Aมูลค่า'])}) beta {B.fmt(c['ฉาก']['betaA'])} · "
            f"B ราคา {B.fmt(fig['บัญชีมิน']['คู่']['B'])} beta {B.fmt(fig['บัญชีมิน']['beta']['B'])}")
     return wrap(W, H, alt, parts, cap, "สอน")
+
+
+@chart("sab-two-neutrals")
+def _two_neutrals(fig):
+    c = fig["ch08"]
+    sc, lot = c["ฉาก"], c["v2"]["ล็อต"]
+    a_val, btc_val = sc["Aมูลค่า"], sc["BTCมูลค่า"]
+    a_force, btc_force = sc["betaexposureA"], sc["betaexposureBTC"]
+    full = -lot["ต้องการ"] * lot["ต่อล็อต"]                      # short BTC 1,500 = 1.5 ล็อต × 1,000
+    rows = [("วัดเป็นมูลค่า", f"A {B.fmt(sc['Aจำนวน'])} เหรียญ · short {B.fmt(sc['BTCจำนวน'])} BTC", a_val, btc_val,
+             "Dollar-neutral"),
+            ("วัดเป็นแรงต่อตลาด (มูลค่า × beta)", f"beta A {B.fmt(sc['betaA'])} · beta BTC {_whole(sc['betaBTC'])}",
+             a_force, btc_force, "ยังเดิมพันตลาด"),
+            ("short BTC 1,500 แทน · วัดเป็นแรงต่อตลาด", f"มูลค่าสุทธิกลายเป็น {_signed(a_val + full)}",
+             a_force, full * sc["betaBTC"], "Market-neutral")]
+    W, H = 760, 330
+    L, R, top, rh = 250, 150, 70, 78
+    span = 1700
+    X0 = (L + W - R) / 2
+    X = lambda v: X0 + v / span * ((W - R - L) / 2)               # noqa: E731
+    out = [text(16, 26, "มูลค่าเท่ากัน แต่แรงต่อตลาดไม่เท่ากัน", 13, C["ink"], weight=700)]
+    lx = 16
+    for name, col in (("ขา A", C["blue"]), ("ขา short BTC", C["amber"])):
+        out.append(f'<rect x="{lx}" y="{40}" width="11" height="11" rx="2" fill="{col}"/>')
+        out.append(text(lx + 16, 50, name, 11.5, C["muted"]))
+        lx += 40 + 8 * len(name)
+    yb = top + rh * len(rows) - 14
+    for g in (-1500, -1000, -500, 0, 500, 1000, 1500):
+        out.append(f'<line x1="{X(g):.1f}" y1="{top - 8}" x2="{X(g):.1f}" y2="{yb}" '
+                   f'stroke="{C["axis"] if g == 0 else C["grid"]}" stroke-width="{1.5 if g == 0 else 1}"/>')
+        out.append(text(X(g), yb + 16, _signed(g), 10.5, C["grey"], "middle"))
+    out.append(text(W - R + 70, top - 14, "รวมสองขา", 11.5, C["muted"], "middle", 700))
+    for i, (name, sub, va, vb, tag) in enumerate(rows):
+        y = top + rh * i + 14
+        out.append(text(16, y + 4, name, 12, C["ink"], weight=700))
+        out.append(text(16, y + 22, sub, 10.5, C["muted"]))
+        for v, col, dy in ((va, C["blue"], 0), (vb, C["amber"], 20)):
+            x0, x1 = sorted((X(0), X(v)))
+            out.append(f'<rect x="{x0:.1f}" y="{y - 8 + dy}" width="{x1 - x0:.1f}" height="16" rx="3" fill="{col}"/>')
+            tx = X(v) + (6 if v > 0 else -6)
+            out.append(text(tx, y + 4 + dy, _signed(v), 10.5, C["ink"], "start" if v > 0 else "end", 700))
+        tot = va + vb
+        out.append(text(W - R + 70, y + 10, _signed(tot), 15, C["purple"], "middle", 700))
+        out.append(text(W - R + 70, y + 27, tag, 10.5, C["purple"], "middle"))
+    alt = (f"สามแถว แถวบนวัดเป็นมูลค่า ขา A {_signed(a_val)} ขา short BTC {_signed(btc_val)} รวม 0 "
+           f"แถวกลางวัดเป็นแรงต่อตลาด ขา A {_signed(a_force)} ขา BTC {_signed(btc_force)} รวม {_signed(a_force + btc_force)} "
+           f"แถวล่าง short BTC 1,500 แรงต่อตลาดรวม 0 แต่มูลค่าสุทธิ {_signed(a_val + full)}")
+    cap = f"ถือ A {B.fmt(sc['Aจำนวน'])} เหรียญที่ {B.fmt(sc['Aราคา'])} · BTC ราคา 100,000 · แต่ละแถวเป็นวิธีวัดหรือทางเลือกแยกกัน"
+    return wrap(W, H, alt, out, cap, "สอน")

@@ -50,7 +50,7 @@ def _tail(fig):
     out.append(f'<line x1="{L2}" y1="{Bm}" x2="{R2}" y2="{Bm}" stroke="{C["axis"]}" stroke-width="1.5"/>')
     for i, (k, v) in enumerate(rows):
         cx = L2 + gw * i + gw / 2
-        hot = int(k) in (50, 100)
+        hot = int(k) == n                      # ม่วง = จำนวนรอบที่ภาพซ้ายดู (คำถามให้ทายของบท)
         col = C["purple"] if hot else C["blue"]
         out.append(f'<rect x="{cx - 20:.1f}" y="{Y2(v):.1f}" width="40" height="{Bm - Y2(v):.1f}" rx="3" fill="{col}"/>')
         out.append(text(cx, Y2(v) - 7, f"{B.fmt(v)}%", 11.5, col, "middle", 700))

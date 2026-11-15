@@ -3,6 +3,8 @@
 sab-pair-legs (★): สองวิธีนับเงินก้อนเดียวกัน — ซ้าย: กำไรรายขา (A +20 · B −19 · รวม +1 · ch11.v2.กระดาษ)
 ขวา: X = A − 2B ขยับ 0 → 0.1 คูณ 10 ชุด = +1 (แทนภาพ 3.2 fixed_holdings ที่มีสี่ช่อง)
 sab-cost-steps (★): น้ำตก +20 −19 = 1 แล้วหักค่าธรรมเนียมเข้า 1 · ออก 1 (ch11.v2.ต้นทุน) → −1
+sab-pair-ledger (v2 · ตอน ข · 1): สองบัญชีห้าจังหวะ กระดาษ (เงินสด 1,000 → 0 → 1,000 · ภาระ B −1,000) vs perp (หลักประกัน 100)
+                 Equity 1,000 → 1,001 และ 1,100 → 1,101 (ch11.เปิด · ch11.v2.กระดาษ · ch11.v2.perp)
 sab-h-jump (v2 · ตอน ค): ราคานิ่ง A 100 · B 50 แต่ h 2 → 1.8 ทำให้ X 0 → 10 ขณะที่กำไรจากราคาของ 10 ชุดอยู่ที่ 0 (ch11.hเปลี่ยน)
 """
 from sab_charts import chart, wrap, waterfall, lines, text, Frame, C, B
@@ -98,13 +100,83 @@ def _h_jump(fig):
     x0, x1, h0, h1 = c["Xเดิม"], c["Xใหม่"], c["hเดิม"], c["hใหม่"]
     money = c["กำไร"]
     xs = [0, 1, 2, 2, 3, 4]
-    series = [("X บนจอ (ดอลลาร์ต่อชุด)", [x0, x0, x0, x1, x1, x1], C["blue"]),
-              ("กำไรจากราคาของ 10 ชุด (ดอลลาร์)", [money] * 6, C["green"])]
+    series = [("กำไรจากราคาของ 10 ชุด (ดอลลาร์)", [money] * 6, C["green"]),
+              ("X บนจอ (ดอลลาร์ต่อชุด)", [x0, x0, x0, x1, x1, x1], C["blue"])]
     marks = [(2, x1, f"h {B.fmt(h0)} → {B.fmt(h1)}: X {B.fmt(x0)} → {B.fmt(x1)}"), (4, money, f"เงิน {B.fmt(money)}")]
     xt = [(0, "วันเปิด"), (2, "หน้าวิเคราะห์อัปเดต h"), (4, "วันนี้")]
     parts = lines(xs, series, "A 100 · B 50 ไม่ขยับเลย แต่เส้น X กระโดดเมื่อ h เปลี่ยน", W=760, H=320, marks=marks,
                   xticks=xt)
+    # เส้นเขียวหนาไว้ใต้ (สองเส้นทับกันที่ 0 ช่วงก่อนกระโดด → เห็นเป็นขอบเขียวรอบเส้นน้ำเงิน)
+    k = next(i for i, ln in enumerate(parts) if ln.startswith("<polyline") and C["green"] in ln)
+    parts[k] = parts[k].replace('stroke-width="2.2"', 'stroke-width="6"')
     alt = (f"เส้น X สีน้ำเงินอยู่ที่ {B.fmt(x0)} แล้วกระโดดเป็น {B.fmt(x1)} ตอนหน้าวิเคราะห์เปลี่ยน h จาก {B.fmt(h0)} "
            f"เป็น {B.fmt(h1)} ส่วนเส้นกำไรจากราคาสีเขียวอยู่ที่ {B.fmt(money)} ตลอด เพราะราคาไม่ขยับ")
     cap = "ราคาสองเหรียญนิ่งตลอด · ถือ A 10 กับ short B 20 ไม่เปลี่ยน"
     return wrap(760, 320, alt, parts, cap, "สอน")
+
+
+@chart("sab-pair-ledger")
+def _pair_ledger(fig):
+    c = fig["ch11"]
+    v2, pp = c["v2"], c["v2"]["perp"]
+    cap0 = c["เปิด"]["ทุน"]
+    nA, pA0 = c["เปิด"]["A"]["จำนวน"], c["เปิด"]["A"]["ราคา"]
+    nB, pB0 = c["เปิด"]["B"]["จำนวน"], c["เปิด"]["B"]["ราคา"]
+    a0, b0 = nA * pA0, nB * pB0                                     # 1,000 · −1,000
+    a1, b1 = v2["กระดาษ"]["มูลค่าที่ราคาใหม่"]["A"], v2["กระดาษ"]["มูลค่าที่ราคาใหม่"]["B"]
+    eq1 = v2["กระดาษ"]["equityก่อนต้นทุน"]
+    # (ชื่อจังหวะ, เงินสด, มูลค่า A, ภาระ B (ลบ), หลักประกัน, ขาดทุนค้าง B (ลบ), Equity)
+    paper = [("ก่อนเปิด", cap0, 0, 0, 0, 0, cap0), ("ซื้อ A", cap0 - a0, a0, 0, 0, 0, cap0),
+             ("short B", cap0 - a0 - b0, a0, b0, 0, 0, cap0), ("3 วันต่อมา", cap0 - a0 - b0, a1, b1, 0, 0, eq1),
+             ("ปิดสองขา", eq1, 0, 0, 0, 0, eq1)]
+    perp = [("ก่อนเปิด", pp["เริ่ม"], 0, 0, 0, 0, pp["เริ่ม"]),
+            ("ซื้อ A", pp["เงินสดหลังซื้อA"], a0, 0, 0, 0, pp["เริ่ม"]),
+            ("short B", pp["เงินสดหลังวางหลักประกัน"], a0, 0, pp["หลักประกัน"], 0, pp["เริ่ม"]),
+            ("3 วันต่อมา", pp["เงินสดหลังวางหลักประกัน"], pp["มูลค่าAใหม่"], 0, pp["หลักประกัน"], pp["ขาดทุนค้างB"],
+             pp["equityที่ราคาใหม่"]),
+            ("ปิดสองขา", pp["เงินสดหลังปิด"], 0, 0, 0, 0, pp["เงินสดหลังปิด"])]
+    W, H = 800, 400
+    lo, hi, T, Bm = -1200.0, 2200.0, 92, 300
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)           # noqa: E731
+    col = {"cash": C["muted"], "A": C["blue"], "B": C["amber"], "m": C["purple"], "u": C["red"]}
+    out = [text(16, 24, "เงินสดขึ้นลงคนละแบบ แต่ Equity เพิ่ม 1 เท่ากันทั้งสองบัญชี", 13, C["ink"], weight=700)]
+    lx = 16
+    for name, k in (("เงินสด", "cash"), ("A ที่ถือ", "A"), ("ภาระซื้อคืน B", "B"), ("หลักประกันขา B", "m"),
+                    ("ขาดทุนค้างขา B", "u")):
+        out.append(f'<rect x="{lx}" y="38" width="11" height="11" rx="2" fill="{col[k]}"/>')
+        out.append(text(lx + 16, 48, name, 11, C["muted"]))
+        lx += 30 + 7.6 * len(name)
+    panels = [("บัญชีกระดาษ (ยืม B มาขาย)", paper, 70, 390), ("บัญชีแบบ perp (ขา B เป็นสัญญา)", perp, 440, 760)]
+    for g in (-1000, 0, 1000, 2000):
+        out.append(f'<line x1="70" y1="{Y(g):.1f}" x2="{W - 24}" y2="{Y(g):.1f}" '
+                   f'stroke="{C["axis"] if g == 0 else C["grid"]}" stroke-width="{1.5 if g == 0 else 1}"/>')
+        out.append(text(62, Y(g) + 4, B.fmt(g), 10.5, C["grey"], "end"))
+    out.append(f'<line x1="415" y1="62" x2="415" y2="{H - 20}" stroke="{C["axis"]}" stroke-dasharray="3 4"/>')
+    for title, rows, x0, x1 in panels:
+        out.append(text(x0, 76, title, 12, C["ink"], weight=700))
+        gw = (x1 - x0) / len(rows)
+        bw = 34
+        for i, (name, cash, av, bv, mg, un, eq) in enumerate(rows):
+            cx = x0 + gw * i + gw / 2
+            base = 0
+            for v, k in ((cash, "cash"), (av, "A"), (mg, "m")):
+                if v > 0:
+                    out.append(f'<rect x="{cx - bw / 2:.1f}" y="{Y(base + v):.1f}" width="{bw}" '
+                               f'height="{Y(base) - Y(base + v):.1f}" fill="{col[k]}"/>')
+                    base += v
+            neg = 0
+            for v, k in ((bv, "B"), (un, "u")):
+                if v < 0:
+                    out.append(f'<rect x="{cx - bw / 2:.1f}" y="{Y(neg):.1f}" width="{bw}" '
+                               f'height="{max(2.0, Y(neg + v) - Y(neg)):.1f}" fill="{col[k]}"/>')
+                    neg += v
+            out.append(text(cx, Bm + 18, name, 10.5, C["muted"], "middle"))
+            out.append(text(cx, Bm + 40, B.fmt(eq), 11.5, C["ink"], "middle", 700))
+        out.append(text(x0 - 4, Bm + 40, "Equity", 10.5, C["ink"], "end", 700))
+    out.append(text(16, H - 12, "เงินสด = ส่วนเทา · Equity = เงินสด + มูลค่าที่ถือ + หลักประกัน − ภาระ − ขาดทุนค้าง", 10.5, C["muted"]))
+    alt = ("สองแผงห้าจังหวะ แผงกระดาษ เงินสด " + " ".join(B.fmt(r[1]) for r in paper)
+           + " Equity " + " ".join(B.fmt(r[6]) for r in paper)
+           + " แผง perp เงินสด " + " ".join(B.fmt(r[1]) for r in perp)
+           + " Equity " + " ".join(B.fmt(r[6]) for r in perp))
+    cap = f"ถือ A {B.fmt(nA)} กับ short B {B.fmt(-nB)} · ราคา A {B.fmt(pA0)} → {B.fmt(v2['กระดาษ']['ราคาออก']['A'])} · B {B.fmt(pB0)} → {B.fmt(v2['กระดาษ']['ราคาออก']['B'])} · ยังไม่หักค่าธรรมเนียม"
+    return wrap(W, H, alt, out, cap, "สอน")

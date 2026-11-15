@@ -2,6 +2,7 @@
 
 sab-hold-or-close : ถือต่ออีก 60 วันได้เพิ่ม 550.75 (basis 500 + ไม่ต้องจ่ายค่าปิดวันนี้ − ค่าขาย spot วันหมดอายุ)
                     เทียบเส้นค่าเสียโอกาส 821.92 (hurdle 4%) และ 410.96 (hurdle 2%)
+sab-margin-rules  : (v2 ตอน ค ทางที่สาม) แยก/รวมกระเป๋า: ราคาสัญญาที่แตะ Maintenance 108,150 · 122,850 · 107,850 เทียบคืนวันที่ 9
 sab-carry-strip   : รอบชดเชย — ยอดสะสมของกำไรสุทธิ 2,846 ต่อรอบ 90 วัน ต้องกี่รอบจึงเท่าความเสียหายครั้งเดียว
                     125,000 (44 รอบ) หรือ 25,000 ถ้าวาง spot นอก exchange (8.8 รอบ)
 """
@@ -109,4 +110,49 @@ def _carry_strip(fig):
            f"ถ้าเงินที่เสี่ยงมีแค่ {B.fmt(small)} ต้อง {B.fmt(n_small)} รอบ แล้วความเสียหายครั้งเดียวลบยอดทั้งหมดกลับเป็นศูนย์")
     cap = (f"ทุกรอบถือครบ 90 วันแบบบท 5 · "
            "ไม่ใช่การพยากรณ์ว่า exchange จะล้ม แต่ถามว่าเสียครั้งเดียวต้องทำงานกี่ปีชดเชย")
+    return wrap(W, H, alt, out, cap, "สอน")
+
+
+@chart("sab-margin-rules")
+def _margin_rules(fig):
+    """ตอน ค ทางที่สาม: ราคาสัญญาไปได้ถึงไหนก่อนแตะ Maintenance Margin ภายใต้สามกติกา (ch06.v2.แยกรวม)
+    แท่งเริ่มที่ราคาเปิด 103,000 → จุดที่ถูกบังคับปิด · เส้นประน้ำเงิน = คืนวันที่ 9 (113,200)"""
+    m = fig["ch06"]["v2"]["แยกรวม"]
+    open_px = fig["ch03"]["v2"]["กติกาMargin"]["ราคาfutures"]
+    iso = fig["ch03"]["v2"]["กติกาMargin"]["Margin"]
+    night = fig["ch04"]["คืนวันที่9"]["futures"]
+    rows = [("Isolated Margin (แยกกระเป๋า)", f"กระเป๋าค้ำของสัญญา {B.fmt(iso)} · ถ้าไม่โอน Free Cash เข้ามา", m["แตะแบบแยก"]),
+            ("Cross Margin (รวมกระเป๋า)", f"ทั้งบัญชีค้ำร่วม {B.fmt(m['กระเป๋ารวม'])}", m["แตะแบบรวม"]),
+            ("Cross Margin + สถานะอื่นเสีย " + B.fmt(m["สถานะอื่นขาดทุน"]),
+             f"กระเป๋ารวมเหลือ {B.fmt(m['เหลือหลังสถานะอื่น'])}", m["แตะหลังสถานะอื่น"])]
+    W, H = 760, 330
+    L, R, top, rh = 250, 40, 96, 64
+    lo, hi = 100000, 125000
+    X = lambda v: L + (v - lo) / (hi - lo) * (W - L - R)          # noqa: E731
+    yb = top + rh * len(rows) - 8
+    out = [text(16, 26, "ราคาสัญญาขึ้นไปได้ถึงไหน ก่อน exchange บังคับปิด — กติกาเงินค้ำสามแบบ", 13, C["ink"], weight=700)]
+    for g in range(lo, hi + 1, 5000):
+        out.append(f'<line x1="{X(g):.1f}" y1="{top - 18}" x2="{X(g):.1f}" y2="{yb}" stroke="{C["grid"]}"/>')
+        out.append(text(X(g), yb + 18, B.fmt(g), 10.5, C["grey"], "middle"))
+    out.append(text((L + W - R) / 2, yb + 38, "ราคาสัญญา futures ที่มิน short ไว้ (ยิ่งขึ้น ขา short ยิ่งขาดทุน)", 11.5, C["muted"], "middle"))
+    for v, lab, col, dash, ty in ((open_px, f"เปิด {B.fmt(open_px)}", C["grey"], "4 4", 52),
+                                  (night, f"คืนวันที่ 9: {B.fmt(night)}", C["blue"], "6 4", 52)):
+        out.append(f'<line x1="{X(v):.1f}" y1="{top - 30}" x2="{X(v):.1f}" y2="{yb}" stroke="{col}" '
+                   f'stroke-dasharray="{dash}" stroke-width="1.6"/>')
+        out.append(text(X(v) + (-6 if v == open_px else 6), ty + 8, lab, 11.5, col, "end" if v == open_px else "start", 700))
+    for i, (name, sub, stop) in enumerate(rows):
+        y = top + rh * i + 18
+        out.append(text(16, y - 2, name, 12, C["ink"], weight=700))
+        out.append(text(16, y + 15, sub, 10.5, C["muted"]))
+        ok = stop > night
+        col = C["green"] if ok else C["red"]
+        out.append(f'<rect x="{X(open_px):.1f}" y="{y - 9}" width="{X(stop) - X(open_px):.1f}" height="18" rx="4" '
+                   f'fill="{C["amber"]}" fill-opacity=".35"/>')
+        out.append(f'<line x1="{X(stop):.1f}" y1="{y - 14}" x2="{X(stop):.1f}" y2="{y + 14}" stroke="{col}" stroke-width="3"/>')
+        out.append(text(X(stop) + (4 if ok else 0), y - 18, f"แตะเส้นที่ {B.fmt(stop)}", 11.5, col, "end" if ok else "middle", 700))
+    alt = (f"แท่งแนวนอนสามแท่งเริ่มที่ราคาเปิด {B.fmt(open_px)} แบบแยกกระเป๋าถูกบังคับปิดที่ {B.fmt(m['แตะแบบแยก'])} "
+           f"แบบรวมกระเป๋าไปได้ถึง {B.fmt(m['แตะแบบรวม'])} แบบรวมกระเป๋าที่มีสถานะอื่นเสีย {B.fmt(m['สถานะอื่นขาดทุน'])} "
+           f"ถูกปิดที่ {B.fmt(m['แตะหลังสถานะอื่น'])} เทียบเส้นคืนวันที่ 9 ที่ {B.fmt(night)}")
+    cap = (f"short futures 1 BTC ที่ {B.fmt(open_px)} · บังคับปิดเมื่อเงินค้ำเหลือ Maintenance Margin {B.fmt(m['maintenance'])} · "
+           "กติกาสองแบบเป็นค่าสอนของเล่ม")
     return wrap(W, H, alt, out, cap, "สอน")

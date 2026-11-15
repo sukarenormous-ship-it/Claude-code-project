@@ -92,7 +92,10 @@ def _buffer_gauge(fig):
     for v, F in ((c4["เงินสดอิสระหลังโอน"], f9), (-c4["ต้นขาด"], f9), (-v2["หลังคืนวันที่9"]["ขาด"], f10)):
         y = f.y(v)
         out.append(f'<circle cx="{X(F):.1f}" cy="{y:.1f}" r="4.5" fill="{C["purple"]}"/>')
-        out.append(text(X(F) + 8, y + 4, B.fmt(v), 11.5, C["purple"], "start", 700))
+        if v < 0 and F == f9:      # ใต้ศูนย์ไม่ไกล: วางล่างซ้าย (เส้นลาดลง ฝั่งซ้ายล่างจึงว่าง และไม่ชนเส้นศูนย์)
+            out.append(text(X(F) - 8, y + 18, B.fmt(v), 11.5, C["purple"], "end", 700))
+        else:                      # บนขวา: เส้นลาดลง จึงไม่พาดป้าย
+            out.append(text(X(F) + 8, y - 9, B.fmt(v), 11.5, C["purple"], "start", 700))
     for F, lab in ((f0, B.fmt(f0)), (f9, B.fmt(f9)), (f15, B.fmt(f15))):
         out.append(text(X(F), f.Bm + 16, lab, 10.5, C["grey"], "middle"))
     out.append(text((f.L + W - f.R) / 2, f.Bm + 36, "ราคา futures (ขึ้นสะสมจากราคาเปิด)", 12, C["muted"], "middle"))
@@ -107,3 +110,71 @@ def _buffer_gauge(fig):
            f"{B.fmt(c4['เงินสดอิสระหลังโอน'])} ที่คืนวันที่ 9 แล้วแตะศูนย์ที่ {B.fmt(who[0][3])}")
     cap = f"ถือ spot 1 BTC กับ short futures 1 BTC ที่ {B.fmt(f0)} · กติกาหลักประกัน 10% ชำระสิ้นวัน"
     return wrap(W, H, alt, out, cap, "สอน")
+
+
+@chart("sab-mark-trigger")
+def _mark_trigger(fig):
+    """v2 (ตอน ข · Mark Price): สองแผงแนวคิด — (ก) Wick บนกระดานถึง 109,000 แต่ Mark สูงสุด 107,000 ไม่ถึงระดับปิด
+    (ข) Mark แตะ 108,150 แล้วคำสั่งปิดได้ราคา 108,500 · จุดที่มีตัวเลขมาจาก ch04.v2.mark · เส้นระหว่างจุดเป็นภาพตัวอย่าง"""
+    m = fig["ch04"]["v2"]["mark"]
+    f0 = fig["บัญชีมิน"]["BTC"]["futures"]
+    trig, fill, wick, wmark = m["ราคาแตะ"], m["ราคาที่ปิดได้"], m["wickราคาล่าสุด"], m["wickMark"]
+    W, H = 760, 340
+    T, Bm = 120, 296
+    lo, hi = f0 - 1000, wick + 700
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)        # noqa: E731
+    LAST, MARK = C["amber"], C["ink"]
+    out = [text(16, 26, "ราคาที่ใช้ตัดสินคือ Mark Price และราคาที่ถูกปิดจริงอาจแย่กว่าราคาที่แตะ", 13.5, C["ink"], weight=700)]
+    lx = 16
+    for name, col, dash in (("ราคาล่าสุดบนกระดาน (futures)", LAST, ""), ("Mark Price", MARK, ' stroke-dasharray="6 4"'),
+                            (f"ระดับบังคับปิด {B.fmt(trig)}", C["red"], ' stroke-dasharray="3 3"')):
+        out.append(f'<line x1="{lx}" y1="48" x2="{lx + 20}" y2="48" stroke="{col}" stroke-width="2.4"{dash}/>')
+        out.append(text(lx + 26, 52, name, 11.5, C["muted"]))
+        lx += 52 + 7.4 * len(name)
+
+    def panel(x0, x1, title, sub, last, mark, labels):
+        o = []
+        X = lambda t: x0 + 6 + t * (x1 - x0 - 12)              # noqa: E731
+        for g in (f0, wmark, trig, wick):
+            o.append(f'<line x1="{x0}" y1="{Y(g):.1f}" x2="{x1}" y2="{Y(g):.1f}" stroke="{C["grid"]}"/>')
+            if x0 < 100:
+                o.append(text(x0 - 8, Y(g) + 4, B.fmt(g), 10.5, C["grey"], "end"))
+        o.append(f'<line x1="{x0}" y1="{Y(trig):.1f}" x2="{x1}" y2="{Y(trig):.1f}" stroke="{C["red"]}" stroke-width="1.5" '
+                 f'stroke-dasharray="3 3"/>')
+        o.append(text(x0, T - 34, title, 12.5, C["ink"], weight=700))
+        o.append(text(x0, T - 16, sub, 11, C["muted"]))
+        pl = lambda pts: " ".join(f"{X(t):.1f},{Y(v):.1f}" for t, v in pts)  # noqa: E731
+        o.append(f'<polyline points="{pl(last)}" fill="none" stroke="{LAST}" stroke-width="2.4" stroke-linejoin="round"/>')
+        o.append(f'<polyline points="{pl(mark)}" fill="none" stroke="{MARK}" stroke-width="2" stroke-dasharray="6 4"/>')
+        for t, v, lab, col, dx, dy, anc, kind in labels:
+            if kind == "dot":
+                o.append(f'<circle cx="{X(t):.1f}" cy="{Y(v):.1f}" r="5" fill="{col}" stroke="#fff" stroke-width="2"/>')
+            elif kind == "ring":
+                o.append(f'<circle cx="{X(t):.1f}" cy="{Y(v):.1f}" r="5.5" fill="#fff" stroke="{col}" stroke-width="2.4"/>')
+            o.append(text(X(t) + dx, Y(v) + dy, lab, 11, col, anc, 700))
+        o.append(text(x0 + 6, Bm + 18, "เวลาในวันนั้น →", 10.5, C["grey"]))
+        return o
+
+    mid = f0 + (wmark - f0) * 0.8
+    # (ก) Wick: ราคาบนกระดานพุ่งชั่วขณะ · Mark อิงหลายตลาด ขึ้นไปสูงสุดแค่ wickMark
+    last_a = [(0, f0), (.25, mid - 400), (.45, mid + 300), (.52, wick), (.58, mid + 500), (.8, wmark - 300), (1, mid + 200)]
+    mark_a = [(0, f0), (.25, mid - 450), (.45, mid + 200), (.55, wmark), (.62, mid + 450), (.8, wmark - 350), (1, mid + 150)]
+    out += panel(70, 370, "(ก) Wick บนกระดาน แต่ Mark ไม่ถึง", f"ราคาบนกระดานแตะ {B.fmt(wick)} ชั่วสองนาที → ไม่ถูกปิด",
+                 last_a, mark_a,
+                 [(.52, wick, f"ไส้เทียน {B.fmt(wick)}", LAST, 10, 4, "start", "dot"),
+                  (.55, wmark, f"Mark สูงสุด {B.fmt(wmark)}", MARK, 8, 20, "start", "ring")])
+    # (ข) Mark แตะระดับปิด แล้วคำสั่งปิดได้ราคาแย่กว่า
+    t_hit, t_fill = .55, .66
+    last_b = [(0, f0), (.25, mid), (.45, trig - 600), (t_hit, trig + 150), (t_fill, fill), (.8, fill - 900), (1, wmark)]
+    mark_b = [(0, f0), (.25, mid - 100), (.45, trig - 700), (t_hit, trig), (t_fill, fill - 100), (.8, fill - 950), (1, wmark + 50)]
+    out += panel(430, 736, f"(ข) Mark แตะ {B.fmt(trig)} → ถูกปิด", f"ขาดทุน {B.fmt(m['ขาดทุนที่ปิดได้'])} ไม่ใช่ "
+                 f"{B.fmt(m['ขึ้นถึงแตะ'])} · เหลือคืน {B.fmt(m['คืนเข้าบัญชี'])}", last_b, mark_b,
+                 [(t_hit, trig, f"Mark แตะ {B.fmt(trig)}", C["purple"], -10, -12, "end", "ring"),
+                  (t_fill, fill, f"ปิดได้ {B.fmt(fill)}", C["red"], 10, -24, "start", "dot"),
+                  (t_fill, fill, f"แย่กว่า {B.fmt(m['แย่กว่าราคาแตะ'])}", C["red"], 10, -10, "start", None)])
+    alt = (f"สองแผง แผงซ้ายราคาบนกระดานพุ่งถึง {wick} ชั่วขณะ แต่ Mark Price สูงสุด {wmark} ไม่ถึงระดับบังคับปิด {trig} "
+           f"จึงไม่ถูกปิด แผงขวา Mark Price แตะ {trig} แล้วคำสั่งปิดได้ราคา {fill} แย่กว่า {m['แย่กว่าราคาแตะ']} "
+           f"ขาดทุน {m['ขาดทุนที่ปิดได้']}")
+    cap = (f"short futures 1 BTC ที่ {B.fmt(f0)} · Initial Margin {B.fmt(m['initial'])} · Maintenance Margin "
+           f"{B.fmt(m['maintenance'])} · จุดที่มีตัวเลขคือเลขในบท เส้นระหว่างจุดเป็นภาพตัวอย่าง")
+    return wrap(W, H, alt, out, cap, "แนวคิด")

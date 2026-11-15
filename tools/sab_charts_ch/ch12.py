@@ -2,9 +2,11 @@
 
 sab-exit-paths: สี่แผง (2 × 2) เส้นทาง X จากจุดเข้าเดียวกัน 2.1 · เส้นออก 0.5 · เส้นงบ 3.4 (ต้นทุน 2 · ch12.v2) · เส้นเวลา 3 ช่วง
                แผง 4 = งบกับเวลาพร้อมกัน (ลำดับ ขาดทุน → สัญญาณ → เวลา → ออกเพราะงบ)
+sab-breakeven-winrate: (v2 ตอน ค · 3) โลกสองตอนจบ: เงินเฉลี่ยต่อไม้ตามสัดส่วนไม้ชนะ · ต้นทุน 2 / 4 / 6 ตัดศูนย์ที่ 59 / 65 / 70%
+                (ch12.v2.หน้า.สามต้นทุน) · เส้น 50% ให้เห็นว่าชนะครึ่งหนึ่งยังติดลบทุกเส้น
 sab-pair-strip: แถบผล 20 ไม้ของการ์ดเดียวกันในสองโลก (60/25/15 vs 45/20/35) · ลำดับตรึงเพื่อสอน
 """
-from sab_charts import chart, wrap, text, slip_strip, C, B
+from sab_charts import chart, wrap, text, slip_strip, Frame, C, B
 
 
 _TITLES = {"1": "เส้นทาง 1 · ถึงเส้นออก", "2": "เส้นทาง 2 · ครบเวลา",
@@ -96,4 +98,41 @@ def _pair_strip(fig):
            f"{s['หลัก']['จำนวน'][2]} ไม้เสีย {-r[2]} รวม {B.fmt(s['หลัก']['รวม'])} · แถวล่าง {s['เทียบ']['จำนวน'][0]} · "
            f"{s['เทียบ']['จำนวน'][1]} · {s['เทียบ']['จำนวน'][2]} ไม้ รวม {B.fmt(s['เทียบ']['รวม'])}")
     cap = f"ส่วนผสมสมมติเพื่อซ้อม ไม่ใช่ค่าที่วัด · เขียว = {_sign(r[0])} หรือ {_sign(r[1])} · แดง = {B.fmt(r[2])} · ลำดับไม้ตรึงเพื่อสอน ไม่ใช่ผลสุ่ม"
+    return wrap(W, H, alt, out, cap, "สอน")
+
+
+@chart("sab-breakeven-winrate")
+def _breakeven_winrate(fig):
+    rows = fig["ch12"]["v2"]["หน้า"]["สามต้นทุน"]
+    cols = {"2": C["blue"], "4": C["amber"], "6": C["red"]}
+    W, H = 760, 340
+    allv = [v for k in rows for v in (rows[k]["สามตอนจบ"][0], rows[k]["สามตอนจบ"][2])]
+    f = Frame(min(allv), max(allv), W, H, L=64, R=150, T=70, Bm=280, pad=0.08)
+    X = lambda p: f.L + p / 100 * (W - f.L - f.R)                  # noqa: E731
+    out = [text(f.L, 24, "ถ้าทุกไม้จบแค่ชนะหรือชนงบ ต้องชนะบ่อยแค่ไหนจึงเท่าทุน", 13, C["ink"], weight=700)]
+    out += f.grid([-20, -10, 0, 10])
+    for p in (0, 25, 50, 75, 100):
+        out.append(text(X(p), f.Bm + 18, f"{p}%", 10.5, C["grey"], "middle"))
+    out.append(text((f.L + W - f.R) / 2, f.Bm + 38, "สัดส่วนไม้ที่ชนะ (ที่เหลือคือไม้ที่ชนงบ)", 11.5, C["muted"], "middle"))
+    out.append(text(f.L - 50, f.T - 14, "เงินเฉลี่ยต่อไม้", 11, C["muted"]))
+    out.append(f'<line x1="{X(50):.1f}" y1="{f.T}" x2="{X(50):.1f}" y2="{f.Bm}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
+    out.append(text(X(50) - 6, f.T + 12, "ชนะครึ่งหนึ่ง", 11, C["muted"], "end", 700))
+    ylab = f.T - 4                                                # ป้ายปลายเส้นเรียงห่างกันอย่างน้อย 16 px
+    for k, r in rows.items():
+        win, _, lose = r["สามตอนจบ"]
+        col = cols[k]
+        out.append(f'<line x1="{X(0):.1f}" y1="{f.y(lose):.1f}" x2="{X(100):.1f}" y2="{f.y(win):.1f}" stroke="{col}" '
+                   f'stroke-width="2.4" stroke-linecap="round"/>')
+        ylab = max(ylab + 16, f.y(win) + 4)
+        out.append(text(X(100) + 8, ylab, f"ต้นทุน {k}: +{B.fmt(win)} / {B.fmt(lose)}", 11.5, col, "start", 700))
+        be = r["ต้องชนะ"]
+        out.append(f'<line x1="{X(be):.1f}" y1="{f.y(0):.1f}" x2="{X(be):.1f}" y2="{f.Bm - 22:.1f}" stroke="{C["purple"]}" '
+                   f'stroke-dasharray="2 3" stroke-width="1.2"/>')
+        out.append(f'<circle cx="{X(be):.1f}" cy="{f.y(0):.1f}" r="4.5" fill="{C["purple"]}"/>')
+        out.append(text(X(be), f.Bm - 8, f"{B.fmt(r['ต้องชนะปัด'])}%", 11.5, C["purple"], "middle", 700))
+    out.append(text(X(be) + 24, f.Bm - 8, "จุดเท่าทุน", 11, C["purple"], "start"))
+    alt = ("เส้นตรงสามเส้นของเงินเฉลี่ยต่อไม้ตามสัดส่วนไม้ชนะ ต้นทุน 2 ตัดศูนย์ที่ "
+           + " · ".join(f"ต้นทุน {k} ตัดศูนย์ที่ {B.fmt(r['ต้องชนะปัด'])}%" for k, r in rows.items())
+           + " ที่ชนะครึ่งหนึ่งทุกเส้นยังติดลบ")
+    cap = "การ์ดเดียวกัน 10 ชุด · โลกสมมติที่มีแค่ตอนจบ \"ถึงเส้นออก\" กับ \"ชนงบ\" (ไม่มีไม้ครบเวลา) · ยังไม่รวมค่าถือ"
     return wrap(W, H, alt, out, cap, "สอน")

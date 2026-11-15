@@ -45,6 +45,8 @@ def _ledger_bars(fig):
             if x1 - x0 > 52:
                 out.append(text((x0 + x1) / 2, y + rh / 2 + 4, lab, 11, C["red"] if key == "contract" else "#ffffff",
                                 "middle", 700))
+            elif k == len(parts) - 1 and i < 3:     # ช่องแคบท้ายแถวที่จบที่เส้น equity: ป้ายไว้ขวามือ ไม่ลอยไปใกล้แถวถัดไป
+                out.append(text(x1 + 8, y + rh / 2 + 4, lab, 10.5, col, "start", 700))
             else:                                   # ช่องแคบ: สลับป้ายบน/ล่างไม่ให้ชนกัน
                 small += 1
                 yy = y - 5 if small % 2 else y + rh + 13

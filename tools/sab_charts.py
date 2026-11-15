@@ -354,8 +354,9 @@ def _converge(fig):
                                 ("รวมสองขา", [r["รวม"] for r in rows], C["green"])],
                          f"ราคาปลายทางจะเป็นเท่าไรก็ตาม สองขารวมกันได้ +{B.fmt(fig['ch00']['basis'])} เท่ากันทุกแถว")
     alt = "กราฟแท่งสามกลุ่ม ราคาวันหมดอายุ 60,000 100,000 150,000 ขา spot และขา short futures สวนทางกัน รวมสองขาเท่ากันทุกกลุ่ม"
-    cap = (f"ถือ spot 1 BTC ที่ {B.fmt(rows[1]['ราคาวันหมดอายุ'])} และ short futures 1 BTC · "
-           "ขาหนึ่งกำไรเท่าไร อีกขาขาดทุนเกือบเท่ากัน ส่วนที่เหลือคือระยะห่างของสองราคาที่ล็อกไว้ตั้งแต่วันเปิด (ก่อนค่าธรรมเนียม)")
+    btc = fig["บัญชีมิน"]["BTC"]
+    cap = (f"ถือ spot 1 BTC ที่ {B.fmt(btc['spot'])} คู่กับ short futures 1 BTC ที่ {B.fmt(btc['futures'])} "
+           "จนวันหมดอายุ · ก่อนค่าธรรมเนียม")
     return wrap(760, 330, alt, parts, cap, "สอน")
 
 
@@ -367,16 +368,16 @@ def _buffer_line(fig):
     cash_ton = fig["ch04"]["ต้นเงินสดอิสระ"]
     cats = [f"ขึ้น {r['spotขึ้นเปอร์เซ็นต์']}%" for r in d]
     vals = [r["ต้องโอน"] for r in d]
-    parts = bars(cats, vals, "ต้องโอนเติมเท่าไร เทียบกับเงินสดอิสระที่มี",
+    parts = bars(cats, vals, "ต้องโอนเติมเท่าไร เทียบกับ Free Cash ที่มี",
                  colors=[C["red"] if v > cash_main else (C["amber"] if v > cash_ton else C["blue"]) for v in vals])
     f = Frame(0, max(vals + [cash_main]), 760, 320)
-    for lvl, lab, col in ((cash_main, f"ทุน 125,000 มีเงินสดอิสระ {B.fmt(cash_main)}", C["green"]),
-                          (cash_ton, f"ทุน 120,000 (ต้น) มี {B.fmt(cash_ton)}", C["red"])):
+    for lvl, lab, col in ((cash_main, f"ทุน 125,000 (มิน) · Free Cash {B.fmt(cash_main)}", C["green"]),
+                          (cash_ton, f"ทุน 120,000 (ต้น) · Free Cash {B.fmt(cash_ton)}", C["red"])):
         y = f.y(lvl)
         parts.append(f'<line x1="{f.L}" y1="{y:.1f}" x2="{760 - f.R}" y2="{y:.1f}" stroke="{col}" stroke-dasharray="6 4" stroke-width="1.6"/>')
         parts.append(text(f.L + 6, y - 6, lab, 11, col, "start", 700))
-    alt = "กราฟแท่งเงินที่ต้องโอนเติมเมื่อราคาขึ้น 5 10 15 เปอร์เซ็นต์ เทียบเส้นเงินสดอิสระของทุน 125,000 และ 120,000"
-    cap = "ชุด 1 BTC สองขา · เทียบทุน 125,000 กับ 120,000 · ไม่ใช่การพยากรณ์ แต่เป็นการถามว่ากันชนรับได้ถึงไหน"
+    alt = "กราฟแท่งเงินที่ต้องโอนเติมเมื่อราคาขึ้น 5 10 15 เปอร์เซ็นต์ เทียบเส้น Free Cash ของทุน 125,000 และ 120,000"
+    cap = "ชุด 1 BTC สองขา · เทียบทุน 125,000 กับ 120,000 · แต่ละแท่งเริ่มใหม่จากจุดเปิดเดิม · ไม่ใช่การพยากรณ์"
     return wrap(760, 320, alt, parts, cap, "สอน")
 
 
