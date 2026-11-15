@@ -95,6 +95,173 @@ def _v2(data, D, q):
     return {"กระทบยอด": recon, "capacity": cap}
 
 
+H_TREND = ["2", "2.1", "2.2", "2.3", "2.4"]      # 🔢 สมมติเพื่อสอน: h ที่เดินทางเดียว (เชือกเปลี่ยนจริง) · ทางที่กันชนแพ้
+
+
+def _buffer_run(targets, buffer_units, unit_value, cost_pct):
+    """เดินเป้า B ทีละเดือน · ส่งคำสั่งเมื่อ |เป้า − ที่ถือ| ≥ กันชน · คืนรายเดือน + สรุป"""
+    held, rows, orders, traded, worst, lag_months = targets[0], [], 0, 0, 0, 0
+    for t in targets[1:]:
+        gap = abs(t - held)
+        before = held
+        sent = 0
+        if gap >= buffer_units and gap > 0:
+            sent = t - held
+            orders += 1
+            traded += abs(sent)
+            held = t
+        off = abs(t - held)
+        worst = max(worst, off)
+        lag_months += 1 if off else 0
+        rows.append({"เป้า": t, "ถือก่อน": before, "ห่าง": gap, "ส่ง": sent, "ถือหลัง": held, "เอียงตัว": off,
+                     "ต้นทุน": abs(sent) * unit_value * cost_pct / 100})
+    return rows, {"คำสั่ง": orders, "Bที่ซื้อขาย": traded, "ต้นทุน": traded * unit_value * cost_pct / 100,
+                  "เอียงสูงสุดตัว": worst, "เอียงสูงสุดมูลค่า": worst * unit_value, "เดือนที่เอียง": lag_months}
+
+
+def _v2_more(data, D, q):
+    """บท 16 v2 · ค่ากลางทางที่หน้าใช้ "แสดงการคิด" (รายงาน C §2.6 ข้อ 15–17 · §6 ข้อ 1 และ 4)
+
+    - ทันที: กดทันทีทั้งสองขาคืนไม้ซ้อม (ch16.fillแย่กว่าmid: ask A 100.1 · bid B 49.95) → Mid Price · เสีย 1 + 1 = 2
+    - คำสั่งค้าง: เป้า − ที่ถือ − ที่ค้าง = ที่ต้องส่ง (B −8 จาก −20 · ได้เพิ่ม −2 ระหว่างกดยกเลิก)
+    - กระดาน: ราคา A ในแต่ละชั้นของกระดานสมมติ · เดินขาละ 1,000 และ 5,000 ทีละชั้น (เป็นเหรียญ)
+    - หลักประกันขา B: กติกาตัวอย่างบท 4 (Maintenance = ครึ่งหนึ่งของ Initial = 5% ของมูลค่าตอนเปิด)
+      → ถูกบังคับปิดก่อนหลักประกันหมด · ย้ายเงินเหลือ 150 มาเติม: ปิดที่ +20% ก่อนหลักประกันหมดที่ +25%
+    - กันชน: เส้นทางแกว่ง (เชือกเดิม) และเส้นทางเดินทางเดียว (กันชนแพ้)
+    - ✍️: ขาละ 3,000 · หลักประกัน 150 · B ได้ −12
+    """
+    acct, c16 = data["บัญชีมิน"], data["ch16"]
+    pair = acct["คู่"]
+    pA, pB = D(str(pair["A"])), D(str(pair["B"]))
+    nA, nB = D(str(pair["จำนวนA"])), D(str(pair["จำนวนB"]))          # 10 · −20
+    h = D(str(pair["h"]))
+    newA, newB = D(str(data["ch11"]["ราคาใหม่"]["A"])), D(str(data["ch11"]["ราคาใหม่"]["B"]))
+
+    # ── กดทันทีทั้งสองขา ──
+    fm = c16["fillแย่กว่าmid"]
+    askA, bidB = D(str(fm["A"])), D(str(fm["B"]))
+    hA, hB = askA - pA, pB - bidB
+    legA_now, legB_now = nA * (newA - askA), nB * (newB - bidB)
+    now = {"A": {"bid": q(pA - hA, 2), "ask": q(askA, 2), "mid": q(pA, 0), "ห่าง": q(hA, 2),
+                 "ห่างเปอร์เซ็นต์": q(hA / pA * 100, 2), "จ่าย": q(nA * askA, 0), "มูลค่าที่mid": q(nA * pA, 0),
+                 "เสีย": q(nA * hA, 0)},
+           "B": {"bid": q(bidB, 2), "ask": q(pB + hB, 2), "mid": q(pB, 0), "ห่าง": q(hB, 2),
+                 "ห่างเปอร์เซ็นต์": q(hB / pB * 100, 2), "ขายได้": q(-nB * bidB, 0), "มูลค่าที่mid": q(-nB * pB, 0),
+                 "เสีย": q(-nB * hB, 0)},
+           "เสียรวม": q(nA * hA - nB * hB, 0),
+           "ภายหลัง": {"ขาA": q(legA_now, 0), "Aต่อเหรียญ": q(newA - askA, 2), "ขาB": q(legB_now, 0),
+                       "Bต่อเหรียญ": q(newB - bidB, 2), "รวม": q(legA_now + legB_now, 0)}}
+    assert now["เสียรวม"] == fm["เสีย"] and q(legA_now + legB_now, 0) + 1000 == fm["equityภายหลัง"]
+
+    # ── เป้า − ที่ถือ − ที่ค้าง ──
+    pf = c16["ได้ขาเดียวบางส่วน"]
+    tgt, got = D(str(pf["Bเป้า"])), D(str(pf["Bได้"]))
+    pend = tgt - got
+    late = D(-2)
+    got2 = got + late
+    trimA2, trimA1 = -got2 / h, -got / h
+    pending = {"เป้า": q(tgt, 0), "ได้": q(got, 0), "ค้าง": q(pend, 0), "ต้องส่ง": q(tgt - got - pend, 0),
+               "ส่งซ้ำ": q(pend, 0), "ถ้าได้ทั้งคู่": q(got + pend + pend, 0), "เกินเป้า": q(pend, 0),
+               "หลังยกเลิกต้องส่ง": q(tgt - got, 0),
+               "ได้เพิ่มระหว่างยกเลิก": q(late, 0), "ได้หลังยกเลิก": q(got2, 0), "ต้องส่งหลังยกเลิก": q(tgt - got2, 0),
+               "ตัดเหลือA": q(trimA2, 0), "ขายA": q(nA - trimA2, 0),
+               "ตัดเหลือAจากยอดเก่า": q(trimA1, 0), "ขายAจากยอดเก่า": q(nA - trimA1, 0),
+               "สุทธิถ้าใช้ยอดเก่า": q(trimA1 * pA + got2 * pB, 0),
+               "เอียงที่ยอมได้": q(-nB * pB * 10 / 100, 0)}
+
+    # ── กระดาน: ราคา A ในแต่ละชั้น · เดินเป็นเหรียญ ──
+    book = data["_สมมติฐาน"]["กระดานสมมติ"]
+    layers = []
+    for p, v in book[:4]:
+        p, v = D(str(p)), D(str(v))
+        layers.append({"ห่างเปอร์เซ็นต์": q(p, 2), "ราคาA": q(pA * (1 + p / 100), 2), "เกินmidต่อเหรียญ": q(pA * p / 100, 2),
+                       "มูลค่า": q(v, 0), "เหรียญA": q(v / pA, 0), "ราคาBฝั่งซื้อ": q(pB * (1 - p / 100), 3)})
+
+    def walk_coins(size):
+        coins, rem, out, extra = D(size) / pA, D(size), [], D(0)
+        for L in layers:
+            take = min(rem, D(str(L["มูลค่า"])))
+            if take <= 0:
+                break
+            c = take / pA
+            e = c * D(str(L["เกินmidต่อเหรียญ"]))
+            out.append({"เหรียญ": q(c, 0), "ราคา": L["ราคาA"], "เกิน": q(e, 2)})
+            extra += e
+            rem -= take
+        return {"เหรียญ": q(coins, 0), "ชั้น": out, "เกินรวม": q(extra, 2),
+                "ราคาเฉลี่ย": q(pA + extra / coins, 2), "เกินเฉลี่ยเปอร์เซ็นต์": q(extra / D(size) * 100, 2)}
+
+    walks = {str(s): walk_coins(s) for s in (1000, 3000, 5000, 10000, 20000)}
+
+    # ── หลักประกันขา B: ถูกบังคับปิดก่อนหลักประกันหมด ──
+    perp = data["ch11"]["v2"]["perp"]
+    margin = D(str(perp["หลักประกัน"]))
+    legB_val = -nB * pB
+    maint = margin / 2                                              # กติกาตัวอย่างบท 4: 5,150 = 10,300 ÷ 2
+    assert D(str(data["ch04"]["v2"]["mark"]["maintenance"])) * 2 == D(str(data["ch04"]["v2"]["mark"]["initial"]))
+    left = D(str(c16["หลักประกันขาB"]["เหลือบนexchange"]))           # 150
+
+    def margin_case(m):
+        to_liq, to_zero = m - maint, m
+        return {"หลักประกัน": q(m, 0), "maintenance": q(maint, 0),
+                "ขาดทุนถึงถูกปิด": q(to_liq, 0), "Bขึ้นต่อเหรียญถึงถูกปิด": q(to_liq / -nB, 2),
+                "Bที่ถูกปิด": q(pB + to_liq / -nB, 2), "ถูกปิดเปอร์เซ็นต์": q(to_liq / legB_val * 100, 0),
+                "Bที่หลักประกันหมด": q(pB + to_zero / -nB, 2), "หมดเปอร์เซ็นต์": q(to_zero / legB_val * 100, 0)}
+
+    margin_v2 = {"maintenanceเปอร์เซ็นต์": q(maint / legB_val * 100, 0),
+                 "แยก100": margin_case(margin), "รวมเงินเหลือ": margin_case(margin + left),
+                 "แบบฝึก150": margin_case(margin + 50)}
+
+    # ── กันชน: แกว่ง vs เดินทางเดียว ──
+    unit_cost = D(str(c16["กันชนไม่เทรด"]["ต้นทุนต่อดอลลาร์เปอร์เซ็นต์"]))
+    flat_t = [-nA * D(x) for x in H_MONTHLY]
+    trend_t = [-nA * D(x) for x in H_TREND]
+    buf = {}
+    for name, ts in (("แกว่ง", flat_t), ("เดินทางเดียว", trend_t)):
+        r1, s1 = _buffer_run(ts, 1, pB, unit_cost)
+        r2, s2 = _buffer_run(ts, BUFFER_UNITS, pB, unit_cost)
+        buf[name] = {"h": [float(x) if "." in x else int(x) for x in (H_MONTHLY if name == "แกว่ง" else H_TREND)],
+                     "เป้า": [q(t, 0) for t in ts],
+                     "ตามทุกครั้ง": {"เดือน": [{k: (q(v, 2) if k == "ต้นทุน" else q(v, 0)) for k, v in r.items()} for r in r1],
+                                    **{k: (q(v, 2) if k == "ต้นทุน" else q(v, 0)) for k, v in s1.items()}},
+                     "มีกันชน": {"เดือน": [{k: (q(v, 2) if k == "ต้นทุน" else q(v, 0)) for k, v in r.items()} for r in r2],
+                                **{k: (q(v, 2) if k == "ต้นทุน" else q(v, 0)) for k, v in s2.items()}}}
+    tr = buf["เดินทางเดียว"]
+    tr["ประหยัด"] = q(D(str(tr["ตามทุกครั้ง"]["ต้นทุน"])) - D(str(tr["มีกันชน"]["ต้นทุน"])), 2)
+    tr["Bขยับ"] = 1
+    tr["Bขยับเปอร์เซ็นต์"] = q(D(1) / pB * 100, 0)
+    tr["พลาดต่อเดือนที่เอียง"] = q(D(str(tr["มีกันชน"]["เอียงสูงสุดตัว"])) * 1, 0)
+    tr["พลาดรวม"] = q(D(str(tr["มีกันชน"]["เดือนที่เอียง"])) * D(str(tr["มีกันชน"]["เอียงสูงสุดตัว"])), 0)
+    fl = buf["แกว่ง"]
+    fl["ต้นทุนต่อเหรียญB"] = q(pB * unit_cost / 100, 2)
+    fl["มูลค่าที่ซื้อขายตามทุกครั้ง"] = q(D(str(fl["ตามทุกครั้ง"]["Bที่ซื้อขาย"])) * pB, 0)
+    fl["มูลค่าที่ซื้อขายมีกันชน"] = q(D(str(fl["มีกันชน"]["Bที่ซื้อขาย"])) * pB, 0)
+    tr["มูลค่าที่ซื้อขาย"] = q(D(str(tr["ตามทุกครั้ง"]["Bที่ซื้อขาย"])) * pB, 0)
+    assert fl["ตามทุกครั้ง"]["คำสั่ง"] == c16["กันชนไม่เทรด"]["ปรับทุกครั้ง"]["คำสั่ง"]
+    assert fl["มีกันชน"]["ต้นทุน"] == c16["กันชนไม่เทรด"]["มีกันชน"]["ต้นทุน"]
+
+    # ── Capacity ของบัตรใบ 1–2: ส่วนเกิน ÷ มูลค่าที่ซื้อขาย ──
+    c05, c07 = data["ch05"], data["ch07"]
+    card12 = {"carry": {"ส่วนเกิน": c05["บันได"]["ส่วนเกิน"], "มูลค่าซื้อขาย": c05["มูลค่าซื้อขายรวม"],
+                        "fill": [100000, 103000, 105000]},
+              "funding": {"ส่วนเกิน": c07["บันไดเงิน"]["ส่วนเกิน"],
+                          "มูลค่าซื้อขาย": c16["capacityที่อ้าง"]["มูลค่าซื้อขายfunding"]}}
+
+    # ── ✍️ ──
+    cap_rows = {r["ขนาดต่อขา"]: r for r in c16["v2"]["capacity"]["ตาราง"]}
+    r3 = cap_rows[3000]
+    ex = {"ขาละ3000": {"การ์ด": r3["การ์ด_หลัก"], "เสียต่อfill": r3["เสียต่อfill"], "เสียสี่fill": r3["เสียสี่fill"],
+                       "ต่อไม้": r3["ต่อไม้_หลัก"],
+                       "ผิด_ลืมคูณสี่": q(D(str(r3["การ์ด_หลัก"])) - D(str(r3["เสียต่อfill"])), 2),
+                       "ผิด_ชั้นแรกทั้งหมด": q(D(str(r3["การ์ด_หลัก"])) - 4 * D(3000) * D(str(book[0][0])) / 100, 2),
+                       "ชั้นแรก": q(D(str(book[0][1])) * D(str(book[0][0])) / 100, 2),
+                       "ชั้นสอง": q((D(3000) - D(str(book[0][1]))) * D(str(book[1][0])) / 100, 2),
+                       "ชั้นสองมูลค่า": q(D(3000) - D(str(book[0][1])), 0)},
+          "Bได้12": {"ค้าง": q(tgt - D(-12), 0), "ต้องส่งก่อนยกเลิก": 0, "ขาB": q(D(-12) * (newB - pB), 0)}}
+    return {"ทันที": now, "คำสั่งค้าง": pending, "กระดาน": {"ชั้น": layers, "เดิน": walks},
+            "หลักประกัน": margin_v2, "กันชน": buf, "บัตร12": card12, "แบบฝึก": ex}
+
+
 def _ints(o):
     """ค่า float ที่เป็นจำนวนเต็ม → int (พิมพ์ไม่มี .0 · คู่มือข้อ 33)"""
     if isinstance(o, dict):
@@ -252,6 +419,11 @@ def extend(data, D, q):
     }
 
     v2 = _ints(_v2(data, D, q))
+    # ค่า v2 ที่ใช้ c16 ที่เพิ่งคำนวณข้างบน (กันชน · capacityที่อ้าง · v2.capacity)
+    view = dict(data)                                # สำเนาตื้น: sab_figures.py ห้ามคีย์ชนกับ ch16 เดิม
+    view["ch16"] = {**data["ch16"], "v2": v2, "กันชนไม่เทรด": _ints(buffer), "capacityที่อ้าง": capx,
+                    "หลักประกันขาB": margin_info}
+    v2.update(_ints(_v2_more(view, D, q)))
     return {
         "v2": v2,
         "ขาเดียว": one_leg, "ขาเดียวกระจาย": dist, "ขาเดียวกลับทาง": mirror,
