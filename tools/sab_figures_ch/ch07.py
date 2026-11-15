@@ -100,6 +100,8 @@ def _v2(D, q, m, c7, g, marks3, rates3, fund3, cum3, s_open, p_open, s_close, p_
             "รอบติดลบ": k,
             "กลับขั้วสะสม": [q(D(str(x)), 0) for x in fl[44:48]],
             "สลับสะสม": [q(D(str(x)), 0) for x in alt[:set_len]],
+            "สลับสะสมท้ายชุด": [q(D(str(alt[i * set_len - 1])), 0) for i in range(1, n_sets + 1)],
+            "สลับสะสมรอบท้าย": [q(D(str(x)), 0) for x in alt[n_sets * set_len:]],
         },
         "แย่งสุทธิmaker": crowd_net,
         "แบบฝึก5": {"ราคา": q(e_px, 0), "จำนวน": int(e_qty), "มูลค่า": q(e_val, 0), "อัตรา": float(e_rate),
