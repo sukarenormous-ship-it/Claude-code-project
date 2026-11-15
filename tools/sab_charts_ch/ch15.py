@@ -19,9 +19,9 @@ def _pnl_bridge(fig):
     s = fig["ch15"]["v2"]["สะพาน"]
     levels = s["ชั้น"]
     deltas = [None, s["คาดพลาด"], s["ส่วนต่างเข้ารวม"], s["ส่วนต่างออกรวม"], s["slippage"], s["ค่าธรรมเนียม"], s["ค่าถือ"]]
-    names = [("ค่าที่คาดไว้", "(การ์ด)"), ("ผลที่", "ราคากลาง"), ("หลังส่วนต่าง", "ตอนเข้า"), ("หลังส่วนต่าง", "ตอนออก"),
+    names = [("ค่าที่คาดไว้", "(การ์ด)"), ("ผลที่", "ราคากลาง"), ("หลัง bid/ask", "ตอนเข้า"), ("หลัง bid/ask", "ตอนออก"),
              ("หลัง", "Slippage"), ("หลัง", "ค่าธรรมเนียม"), ("ในบัญชี", "(หลังค่าถือ)")]
-    dnames = [None, "คาดพลาด", "ส่วนต่างเข้า", "ส่วนต่างออก", "กระดาษ = 0", "ค่าธรรมเนียม", "ค่าถือ"]
+    dnames = [None, "คาดพลาด", "bid/ask เข้า", "bid/ask ออก", "กระดาษ = 0", "ค่าธรรมเนียม", "ค่าถือ"]
     W, H = 760, 320
     f = Frame(0, max(levels), W, H, T=78, Bm=262)
     out = f.grid(nice_ticks(0, max(levels))[::2])
@@ -63,7 +63,7 @@ def _pnl_bridge(fig):
     out.append(f'<rect x="{lx + 160}" y="14" width="12" height="12" rx="2" fill="#fee2e2" stroke="{C["red"]}"/>')
     out.append(text(lx + 178, 24, "เงินที่ไปถึงคนอื่น", 11.5, C["red"]))
     alt = (f"เจ็ดแท่ง {' · '.join(f'{a} {b} {B.fmt(v)}' for (a, b), v in zip(names, levels))} · ส่วนที่หาย "
-           f"คาดพลาด {_sign(deltas[1])} ส่วนต่างราคาตอนเข้า {_sign(deltas[2])} ตอนออก {_sign(deltas[3])} "
+           f"คาดพลาด {_sign(deltas[1])} ข้าม bid/ask ตอนเข้า {_sign(deltas[2])} ตอนออก {_sign(deltas[3])} "
            f"Slippage 0 ค่าธรรมเนียม {_sign(deltas[5])} ค่าถือ {_sign(deltas[6])}")
     cap = f"ไม้ซ้อม long A 10 · short B 20 บนกระดาษ · ส่วนแดงรวม {B.fmt(s['ไปถึงคนอื่น'])}"
     return wrap(W, H, alt, out, cap, "สอน")
