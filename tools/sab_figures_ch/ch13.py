@@ -91,6 +91,155 @@ def _three_worlds_carry(start=2.0, sd=0.5, trials=100_000, phis=(0.80, 0.99, 1.0
     return out
 
 
+def _three_worlds_v2(cost, start=2.0, sd=0.5, trials=100_000, phis=(0.80, 0.99, 1.00), budget=-15.0,
+                     exit_line=0.5, max_hold=3, sets=10):
+    """กฎเดียวสามโลกด้วยฐานต้นทุน v2 (ต้นทุน 2) · กติกาเดียวกับ three_worlds ใน sab_figures.py ทุกข้อ ยกเว้นต้นทุน
+    คืน เหตุออก · ไม้กำไร · ค่าคาดหมาย · ช่วงถือเฉลี่ย · Standard Deviation ของผลต่อไม้ (ใช้คิดไม้ที่ต้องมีแบบบท 15)"""
+    rng = random.Random(SEED)
+    out = {}
+    for phi in phis:
+        reasons = {"งบ": 0, "เป้า": 0, "เวลา": 0}
+        tot = tot2 = 0.0
+        wins = held = 0
+        for _ in range(trials):
+            x = start
+            for t in range(1, max_hold + 1):
+                x = phi * x + rng.gauss(0.0, sd)
+                liq = sets * (start - x) - cost
+                if liq <= budget:
+                    r = "งบ"
+                elif x <= exit_line:
+                    r = "เป้า"
+                elif t >= max_hold:
+                    r = "เวลา"
+                else:
+                    continue
+                reasons[r] += 1
+                tot += liq
+                tot2 += liq * liq
+                wins += liq > 0
+                held += t
+                break
+        mean = tot / trials
+        out[f"{phi:.2f}"] = {"เป้า": reasons["เป้า"] / trials, "งบ": reasons["งบ"] / trials,
+                             "เวลา": reasons["เวลา"] / trials, "กำไร": wins / trials, "ค่าคาดหมาย": mean,
+                             "ช่วงถือ": held / trials, "sd": (tot2 / trials - mean * mean) ** 0.5}
+    return out
+
+
+def _v2(data, D, q, fan_count):
+    """บท 13 ด้วยฐานต้นทุนเดียว (ch11.v2 · ต้นทุน 2) + ตัวกลางที่ทำให้ Z-score / φ คิดตามได้ (รายงาน B S13–S16 · C §2.6 ข้อ 9, 11)"""
+    c12, c13 = data["ch12"], data["ch13"]
+    cost = D(str(data["ch11"]["v2"]["ต้นทุน"]["ไปกลับ"]))      # 2
+    sets = D(str(c13["กติกาตารางphi"]["ชุด"]))                  # 10
+    start = D(str(c13["กติกาตารางphi"]["เริ่ม"]))               # 2
+
+    # ── ตารางคูณถือ 4 ช่วง: ปลายทางไม่ปัด และสุทธิ ──
+    table = {}
+    for k in ("0.80", "0.99"):
+        end = start * D(k) ** 4
+        table[k] = {"ปลายทางไม่ปัด": q(end, 4), "ปลายทางปัด": q(end, 2), "ลด": q(start - end, 4),
+                    "สุทธิ4ช่วง": q(sets * (start - end) - cost, 2)}
+    breakeven_x = start - cost / sets                              # 1.8: X ต้องลงต่ำกว่านี้จึงคุ้มต้นทุน
+
+    # ── SD ของ X ในแต่ละโลก: ความแปรปรวนนิ่ง = แรงสะบัด² ÷ (1 − φ²) · SD = รากที่สอง ──
+    def world_sd(phi, noise):
+        phi, noise = D(str(phi)), D(str(noise))
+        one = 1 - phi * phi
+        var = noise * noise / one
+        sd = var.sqrt()
+        return {"phi": float(phi), "แรงสะบัด": float(noise), "phiกำลังสอง": q(phi * phi, 4),
+                "หนึ่งลบphiกำลังสอง": q(one, 4), "แรงสะบัดกำลังสอง": q(noise * noise, 2),
+                "ความแปรปรวน": q(var, 4), "ความแปรปรวนปัด": q(var, 2), "sd": q(sd, 2), "sdละเอียด": q(sd, 4),
+                "รากหนึ่งลบphiกำลังสอง": q(one.sqrt(), 3),
+                "zของจุดเข้า2": q(start / sd, 2 if sd > 1 else 1),
+                "zจากsdปัด": q(start / D(str(q(sd, 2))), 2 if sd > 1 else 1)}
+    sd_fp = [world_sd(r["phi"], r["แรงสะบัด"]) for r in c13["แตะเป้า"]]
+    for got, r in zip(sd_fp, c13["แตะเป้า"]):
+        assert got["zของจุดเข้า2"] == r["ระยะzของจุดเข้า"], "SD ไม่ตรงคอลัมน์ Z-score เดิม"
+
+    # ── กฎเดียวสามโลก (ต้นทุน 2) ──
+    worlds = {}
+    carry = data["บัญชีมิน"]["ค่าถือคู่"]
+    per_bar = D(str(carry["ต่อรอบ"])) * carry["รอบต่อช่วง"]       # 0.3
+    for k, r in _three_worlds_v2(float(cost)).items():
+        ev, held, sdv = D(str(r["ค่าคาดหมาย"])), D(str(r["ช่วงถือ"])), D(str(r["sd"]))
+        w = {"ออกเพราะเป้าเปอร์เซ็นต์": q(D(str(r["เป้า"])) * 100, 1),
+             "ออกเพราะงบเปอร์เซ็นต์": q(D(str(r["งบ"])) * 100, 1),
+             "ออกเพราะเวลาเปอร์เซ็นต์": q(D(str(r["เวลา"])) * 100, 1),
+             "ไม้กำไรเปอร์เซ็นต์": q(D(str(r["กำไร"])) * 100, 1),
+             "ค่าคาดหมายต่อไม้ก่อนค่าถือ": q(ev, 2), "ช่วงถือเฉลี่ย": q(held, 2),
+             "ค่าถือต่อไม้": q(per_bar * held, 2),
+             "หลังค่าถือถ้ารับ": q(ev + per_bar * held, 2), "หลังค่าถือถ้าจ่าย": q(ev - per_bar * held, 2),
+             "sdผลต่อไม้": q(sdv, 2)}
+        w["ไม้ที่ต้องมี"] = int(math.ceil((2 * sdv / ev) ** 2)) if ev > 0 else None
+        if k != "1.00":
+            s = world_sd(k, 0.5)
+            w["sdของX"] = s["sd"]
+            w["zของจุดเข้า2"] = s["zจากsdปัด"]
+        else:
+            w["sdของX"] = None      # ไม่มีเชือก: ระยะแกว่งโตตามเวลา ไม่มีค่านิ่ง
+            w["zของจุดเข้า2"] = None
+        worlds[k] = w
+    worlds["ค่าถือต่อช่วง"] = q(per_bar, 1)
+    worlds["กติกา"] = "การ์ดบท 12 · เริ่ม X = 2 · แรงสะบัด 0.5 · 100,000 ไม้ต่อโลก · ต้นทุน 2 (ch11.v2) · seed 20261111"
+
+    # ── ไม้ 3 ที่ 2.8: อีก 2 ช่วงตามเส้นค่าเฉลี่ย ──
+    entry = D(str(c12["จุดเข้า"]))
+    now = D(str(c12["เส้นทาง"]["3"]["X"][2]))
+    trade3 = {}
+    for k in ("0.80", "0.99", "1.00"):
+        phi = D(k)
+        x_end = now * phi * phi
+        trade3[k] = {"phiกำลังสอง": q(phi * phi, 4), "Xคาดไม่ปัด": q(x_end, 4), "Xคาดตอนครบเวลา": q(x_end, 2),
+                     "สุทธิถ้าครบเวลา": q(sets * (entry - x_end) - cost, 2)}
+    trade3["ตอนนี้"] = q(sets * (entry - now) - cost, 0)              # −9
+
+    # ── ใบ 13: นับมือ → Median → φ (ทุกขั้นเห็นได้) ──
+    sorted_hits = fan_count["นับได้เรียง"]
+    miss = fan_count["ไม่แตะใน24ช่วง"]
+    full = sorted_hits + [None] * miss
+    tenth, eleventh = full[9], full[10]
+    med = D(tenth + eleventh) / 2
+    phi_m = D("0.5") ** (1 / med)
+    phi_r = q(phi_m, 2)
+    count = {"จำนวน": len(full), "ลำดับที่10": tenth, "ลำดับที่11": eleventh, "ผลรวมสองตัวกลาง": tenth + eleventh,
+             "มัธยฐาน": q(med, 0) if med == med.to_integral() else q(med, 1),
+             "phiไม่ปัด": q(phi_m, 3), "phiปัด": phi_r, "phiปัดยกกำลังมัธยฐาน": q(D(str(phi_r)) ** int(med), 2),
+             "ตารางครึ่งชีวิตล่าง": {"phi": 0.9, "ครึ่งชีวิต": next(r["ครึ่งชีวิต"] for r in c13["phiเป็นครึ่งชีวิต"] if r["phi"] == 0.9)},
+             "ตารางครึ่งชีวิตบน": {"phi": 0.95, "ครึ่งชีวิต": next(r["ครึ่งชีวิต"] for r in c13["phiเป็นครึ่งชีวิต"] if r["phi"] == 0.95)}}
+
+    # ── ประมาณ φ ด้วยมือจาก 20 วันของบท 9 (Mean 0): φ ≈ Σ(X วันนี้ × X พรุ่งนี้) ÷ Σ(X วันนี้²) ──
+    X = [D(str(v)) for v in data["ch09"]["นับมือ20วัน"]["X"]]
+    assert sum(X) == 0, "สูตรมือใช้ได้เมื่อ Mean = 0"
+    prods = [a * b for a, b in zip(X[:-1], X[1:])]
+    sq = [a * a for a in X[:-1]]
+    phi_h = sum(prods) / sum(sq)
+    phi_hr = q(phi_h, 2)
+    hl = D(str(math.log(0.5) / math.log(phi_hr)))
+    hand = {"คู่วัน": len(prods), "ผลคูณ": [q(v, 2) + 0.0 for v in prods], "ผลรวมผลคูณ": q(sum(prods), 2),
+            "กำลังสอง": [q(v, 2) for v in sq], "ผลรวมกำลังสอง": q(sum(sq), 2),
+            "phiไม่ปัด": q(phi_h, 3), "phi": phi_hr, "ยกกำลังสอง": q(D(str(phi_hr)) ** 2, 2), "ยกกำลังสาม": q(D(str(phi_hr)) ** 3, 2),
+            "ครึ่งชีวิต": q(hl, 1),
+            "หมายเหตุ": "20 วันเป็นข้อมูลสั้น — 🔎 บท 13 แสดงว่าข้อมูลสั้นมักให้ φ ต่ำกว่าจริง (กลับเร็วเกินจริง)"}
+
+    ex = start * D("0.9") ** 4
+    return {"ต้นทุน": q(cost, 0), "ตารางคูณ": table, "เส้นคุ้มต้นทุน": q(breakeven_x, 1),
+            "sdโลก": sd_fp, "กฎเดียวสามโลก": worlds, "ไม้3": trade3, "ใบ13นับ": count, "phiมือบท9": hand,
+            "แบบฝึกก": {"ปลายทาง": q(ex, 2), "สุทธิ": q(sets * (start - ex) - cost, 2)}}
+
+
+def _ints(o):
+    """ค่า float ที่เป็นจำนวนเต็ม → int (พิมพ์ไม่มี .0 · คู่มือข้อ 33)"""
+    if isinstance(o, dict):
+        return {k: _ints(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_ints(v) for v in o]
+    if isinstance(o, float) and o == int(o):
+        return int(o)
+    return o
+
+
 def extend(data, D, q):
     c12, c13 = data["ch12"], data["ch13"]
     entry = D(str(c12["จุดเข้า"]))                 # 2.1
@@ -170,7 +319,9 @@ def extend(data, D, q):
     lv2 = {k: [q(D(str(v)), 2) for v in c13["ตารางphi"][k]["ระดับ"]] for k in ("0.80", "0.99")}
     ex = [D(2) * D("0.9") ** t for t in range(5)]
 
+    v2 = _ints(_v2(data, D, q, count))
     return {
+        "v2": v2,
         "ปลายทาง4ช่วงปัด": ends,
         "ระดับปัด": lv2,
         "แบบฝึกก": {"phi": 0.9, "ระดับ": [q(v, 2) for v in ex], "สุทธิ": q(sets * (D(2) - ex[-1]) - cost, 2)},
@@ -187,8 +338,8 @@ def extend(data, D, q):
                                  "ตัวเลข φ 0.80 → 0.99 ในบท 13 เป็นตัวเลขสมมติ ไม่ใช่ค่าที่วัดจากตลาด",
                      "ระดับหลักฐาน": "สมมติฐาน", "แหล่ง": None, "บท": [13]}],
         "_แบบฝึก": [
-            {"โจทย์": "φ 0.90 ต่อช่วง เริ่ม 2 short 10 ชุด ถือ 4 ช่วง ต้นทุน 1 — กำไรสุทธิตามเส้นค่าเฉลี่ย",
-             "คำตอบ": q(sets * (D(2) - D(2) * D("0.9") ** 4) - cost, 2)},
+            {"โจทย์": "φ 0.90 ต่อช่วง เริ่ม 2 short 10 ชุด ถือ 4 ช่วง ต้นทุน 2 — กำไรสุทธิตามเส้นค่าเฉลี่ย",
+             "คำตอบ": v2["แบบฝึกก"]["สุทธิ"]},
             {"โจทย์": "เพื่อนประมาณ φ ได้ 0.99 แล้วบอกว่ามีแรงดึงกลับ ถือ 3 ช่วงตามการ์ดก็คุ้ม — เห็นด้วยไหม"},
             {"โจทย์": "basis spot–perp ที่ห่างจากปกติเหลือ 98% ต่อวัน — ครึ่งชีวิตกี่วัน และทำไมใช้ φ กับ dated futures ไม่ได้",
              "คำตอบ": next(r["ครึ่งชีวิต"] for r in c13["phiเป็นครึ่งชีวิต"] if r["phi"] == 0.98)},

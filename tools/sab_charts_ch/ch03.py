@@ -2,9 +2,11 @@
 
 sab-ledger-bars (★): แท่งนอนซ้อนสามแถวของ 03.09 (เริ่ม → ซื้อ spot → short futures) — ยาวเท่ากันทุกแถว (equity 125,000)
 เพราะเงินแค่ย้ายช่อง · แถวที่สี่คือยอดที่มินบวกจากหน้าจอเอง (นับขนาดสัญญา futures เป็นเงิน) ยาวเกินเส้น equity
-sab-basis-time (☆): เลื่อนไว้ — ร้อยแก้วกรณี 1 + ตารางสี่แถวพูดประเด็นเดียวกันแล้ว และงบคำเส้นทางหลักไม่พอ
+sab-case-legs (v2): แท่งกลุ่มสามเหตุการณ์ (ผ่านไป 30 วัน · BTC พุ่ง · วันหมดอายุ) ขา spot / ขา futures / รวมสองขา
+ใต้ชื่อกลุ่มมีป้ายต่อปีบนจอ — ผลรวมตาม basis ที่หด ไม่ตามขา spot หรือป้าย
+sab-basis-time (☆): เลื่อนไว้ — ตารางสี่แถว + sab-case-legs พูดประเด็นเดียวกันแล้ว
 """
-from sab_charts import chart, wrap, text, C, B
+from sab_charts import chart, wrap, text, grouped_bars, C, B
 
 
 @chart("sab-ledger-bars")
@@ -14,7 +16,7 @@ def _ledger_bars(fig):
     spot, margin, free = m["ทุนภาค1"]["spot"], m["ทุนภาค1"]["หลักประกัน"], m["ทุนภาค1"]["เงินสดอิสระ"]
     w = c3["จอบวกผิด"]
     seg = {"cash": ("Free Cash", C["blue"]), "spot": ("มูลค่า spot", C["grey"]),
-           "margin": ("บัญชี Margin", C["amber"]), "contract": ("ขนาดสัญญา futures (ไม่ใช่เงิน)", C["red"])}
+           "margin": ("บัญชี Margin", C["amber"]), "contract": ("มูลค่าสถานะ futures (ไม่ใช่เงิน)", C["red"])}
     rows = [("เริ่ม", [("cash", cap)]),
             ("ซื้อ spot 1 BTC", [("spot", spot), ("cash", cap - spot)]),
             ("short futures + วาง Margin", [("spot", spot), ("margin", margin), ("cash", free)]),
@@ -66,8 +68,23 @@ def _ledger_bars(fig):
                     13, C["ink"], weight=700))
     alt = (f"แท่งนอนสี่แถว สามแถวแรกยาวเท่ากันที่ {B.fmt(cap)} เงินสดย้ายไปเป็นมูลค่า spot {B.fmt(spot)} "
            f"บัญชี Margin {B.fmt(margin)} และเหลือ Free Cash {B.fmt(free)} แถวสุดท้ายคือยอดที่มินบวกจากหน้าจอ "
-           f"{B.fmt(w['รวมผิด'])} เพราะนับขนาดสัญญา futures {B.fmt(w['ขนาดสัญญาfutures'])} เป็นเงิน")
-    cap_txt = (f"คิดที่ 1 BTC (ของมิน ÷ 100) · ยังไม่หักค่าธรรมเนียม · ยอดที่บวกผิดเกินจริง {B.fmt(w['เกินจริง'])} "
-               f"= ขนาดสัญญา {B.fmt(w['ขนาดสัญญาfutures'])} − เงินจริงในบัญชี Margin {B.fmt(margin)}")
+           f"{B.fmt(w['รวมผิด'])} เพราะนับมูลค่าสถานะ futures {B.fmt(w['ขนาดสัญญาfutures'])} เป็นเงิน")
+    cap_txt = (f"คิดที่ 1 BTC · ก่อนค่าธรรมเนียม · ยอดที่บวกผิดเกิน equity อยู่ {B.fmt(w['เกินจริง'])} "
+               f"= มูลค่าสถานะ {B.fmt(w['ขนาดสัญญาfutures'])} − เงินจริงในบัญชี Margin {B.fmt(margin)}")
     return wrap(W, H, alt, out, cap_txt, "สอน")
 
+
+
+@chart("sab-case-legs")
+def _case_legs(fig):
+    t = fig["ch03"]["ตารางกรณี"]
+    k1, k2, ke = t["กรณี1"], t["กรณี2"], t["หมดอายุ"]
+    cats = [f"ผ่านไป 30 วัน · ป้าย {B.fmt(k1['อัตราบนจอ'])}%", f"BTC พุ่ง · ป้าย {B.fmt(k2['อัตราบนจอ'])}%", "วันหมดอายุ"]
+    series = [("ขา spot", [k1["ขาspot"], k2["ขาspot"], ke["ขาspot"]], C["blue"]),
+              ("ขา futures", [k1["ขาfutures"], k2["ขาfutures"], ke["ขาfutures"]], C["amber"]),
+              ("รวมสองขา", [k1["รวม"], k2["รวม"], ke["รวม"]], C["green"])]
+    out = grouped_bars(cats, series, "รวมสองขาตาม basis ที่หด ไม่ตามขา spot และไม่ตามป้ายต่อปี", H=330)
+    alt = (f"แท่งกลุ่มสามเหตุการณ์ ผ่านไป 30 วัน รวมสองขา {B.fmt(k1['รวม'])} BTC พุ่ง ขา spot {B.fmt(k2['ขาspot'])} "
+           f"ขา futures {B.fmt(k2['ขาfutures'])} รวม {B.fmt(k2['รวม'])} วันหมดอายุ รวม {B.fmt(ke['รวม'])}")
+    cap_txt = "ถือ spot 1 BTC กับ short futures 1 BTC เปิดที่ 100,000 กับ 103,000 · แต่ละกลุ่มเป็นเหตุการณ์แยกกัน · ก่อนค่าธรรมเนียม"
+    return wrap(760, 330, alt, out, cap_txt, "สอน")

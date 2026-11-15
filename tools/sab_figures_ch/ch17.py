@@ -27,6 +27,84 @@ def _need(D, q, gain, loss, cost=0):
     return out
 
 
+def _drawdown(seed, outcomes, trades=100):
+    """สำเนาตรรกะ drawdown ของ sab_figures.py (ลำดับสุ่มเดียวกัน) ที่รับผลสามแบบเป็นตัวแปร"""
+    import random
+    rng = random.Random(seed)
+    win, mid, lose = outcomes
+    seq = []
+    for _ in range(trades):
+        u = rng.random()
+        seq.append(win if u < 0.60 else mid if u < 0.85 else lose)
+    cum, peak, deepest, longest, cur = 0, 0, 0, 0, 0
+    curve = []
+    for x in seq:
+        cum += x
+        curve.append(cum)
+        if cum >= peak:
+            peak, cur = cum, 0
+        else:
+            cur += 1
+            deepest = max(deepest, peak - cum)
+            longest = max(longest, cur)
+    return {"ลึกสุด": -deepest, "นานสุดไม้": longest, "ผลรวม100ไม้": cum,
+            "ไม้บวก": sum(1 for x in seq if x > 0), "ไม้ชนงบ": sum(1 for x in seq if x == lose), "กราฟ": curve}
+
+
+def _v2(data, D, q):
+    """บท 17 ด้วยฐานต้นทุนเดียว (ch11.v2 · การ์ด +15 / +1 / −22) — ลำดับสุ่มของ drawdown เดิม (seed 20261111 · 1–30)"""
+    import statistics
+    v12 = data["ch12"]["v2"]
+    res = tuple(v12["เส้นทาง"][k]["สุทธิ"] for k in ("1", "2", "3"))
+    need = _need(D, q, res[0], res[2])
+    seed = int(data["บัญชีมิน"]["seed"]["บท13"])
+    ex = _drawdown(seed, res)
+    old = _drawdown(seed, (16, 2, -21))
+    assert old["ลึกสุด"] == data["ch17"]["drawdown"]["ตัวอย่าง"]["ลึกสุด"], "ลำดับสุ่มไม่ตรง drawdown เดิม"
+    many = [_drawdown(sd, res) for sd in range(1, 31)]
+
+    def summ(vals):
+        return {"มัธยฐาน": q(D(str(statistics.median(vals))), 0), "ต่ำสุด": min(vals), "สูงสุด": max(vals)}
+    eq = [0] + ex["กราฟ"]
+    peak, pi, worst, uw, longest = eq[0], 0, (0, 0, 0), None, (0, 0, 0)
+    for i, v in enumerate(eq):
+        if v >= peak:
+            if uw is not None and i - uw - 1 > longest[0]:
+                longest = (i - uw - 1, uw, i)
+            peak, pi, uw = v, i, None
+        else:
+            uw = pi if uw is None else uw
+            if v - peak < worst[0]:
+                worst = (v - peak, pi, i)
+    assert worst[0] == ex["ลึกสุด"]
+    ev = D(str(v12["สัดส่วนตอนจบ"]["หลัก"]["ค่าคาดหมาย"]))
+    total = D(str(data["บัญชีมิน"]["กฎ1%"]["ทุนรวมดอลลาร์"]))
+    med_deep = summ([d["ลึกสุด"] for d in many])
+    dd = {"ตัวอย่าง": {k: v for k, v in ex.items() if k != "กราฟ"}, "กราฟ": ex["กราฟ"],
+          "ไม้ยอด": worst[1], "ยอด": eq[worst[1]], "ไม้ต่ำสุด": worst[2], "ต่ำสุด": eq[worst[2]],
+          "ไม้กลับยอด": longest[2] if longest[0] else None,
+          "ลึกสุดเป็นไม้เฉลี่ย": q(D(-worst[0]) / ev, 1), "ลึกสุดเปอร์เซ็นต์ทุนรวม": q(D(-worst[0]) / total * 100, 2),
+          "สามสิบชุด": {"ลึกสุด": med_deep, "นานสุดไม้": summ([d["นานสุดไม้"] for d in many]),
+                        "ผลรวม100ไม้": summ([d["ผลรวม100ไม้"] for d in many]),
+                        "จบบวก": sum(1 for d in many if d["ผลรวม100ไม้"] > 0)},
+          "มัธยฐานเปอร์เซ็นต์ทุนรวม": q(D(-med_deep["มัธยฐาน"]) / total * 100, 2)}
+    cap = data["ch16"]["v2"]["capacity"]
+    return {"ต้องชนะคู่": need, "drawdown": dd, "ค่าคาดหมายการ์ด": {"หลัก": float(ev), "เทียบ": v12["สัดส่วนตอนจบ"]["เทียบ"]["ค่าคาดหมาย"]},
+            "capacity": {"ที่1000": cap["ต่อรอบ"][0], "สูงสุด": cap["สูงสุด"], "ที่20000": cap["ต่อรอบ"][3]},
+            "แถบผลคู่": v12["แถบผล"]["หลัก"]}
+
+
+def _ints(o):
+    """ค่า float ที่เป็นจำนวนเต็ม → int (พิมพ์ไม่มี .0 · คู่มือข้อ 33)"""
+    if isinstance(o, dict):
+        return {k: _ints(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_ints(v) for v in o]
+    if isinstance(o, float) and o == int(o):
+        return int(o)
+    return o
+
+
 def extend(data, D, q):
     acct = data["บัญชีมิน"]
     c17 = data["ch17"]
@@ -108,7 +186,9 @@ def extend(data, D, q):
     grid["ชนะ90ค่าคาดหมาย"] = q(D("0.9") * grid_gain + D("0.1") * grid_loss, 2)
     drill = {"carry1500": {"กำไรต่อรอบ": int(g_new), "เสีย": -small, "รอบ": ex1, "ปี": q(ex1 / 4, 1)}, "grid": grid}
 
+    v2 = _ints(_v2(data, D, q))
     return {
+        "v2": v2,
         "แกลเลอรี": gallery,
         "ต้องชนะ": need,
         "drawdownจุด": dd,

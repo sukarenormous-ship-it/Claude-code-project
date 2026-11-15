@@ -46,6 +46,118 @@ def _bridge_case(D, q, qty, mid, fc, ex, fill, fee, carry):
             "คาดพลาด": q(real - exp, 0), "ผลของราคาfill": q(trad - real, 0)}
 
 
+def _fake_money(sel, cost, leg=1000, budget=-15):
+    """สำเนาตรรกะ fake_money ของ sab_figures.py ที่รับต้นทุนเป็นตัวแปร (เดิมตรึง 1) — การ์ดบท 12 ขาละ 1,000 ก่อนค่าถือ"""
+    a, b, z = sel["_best_pair"]["a"], sel["_best_pair"]["b"], sel["_best_pair"]["z"]
+    nf, n = 250, len(z)
+    PA = [100 * math.exp(v) for v in a]
+    PB = [100 * math.exp(v) for v in b]
+    trades, pos, paused = [], None, False
+    for i in range(nf, n):
+        if pos is not None:
+            el = i - pos["i"]
+            gross = pos["qa"] * (PA[i] - PA[pos["i"]]) + pos["qb"] * (PB[i] - PB[pos["i"]])
+            liq = gross - cost
+            rec = z[i] <= 0.5 if pos["side"] < 0 else z[i] >= -0.5
+            r = "งบ" if liq <= budget else "เป้า" if rec else "เวลา" if el >= 3 else None
+            if r:
+                trades.append({"วันเข้า": pos["i"] - nf + 1, "zเข้า": z[pos["i"]], "วันออก": i - nf + 1,
+                               "zออก": z[i], "เหตุออก": r, "กำไรจากราคา": gross, "สุทธิ": liq})
+                pos = None
+                paused = paused or r == "งบ"
+        elif not paused and abs(z[i]) >= 2:
+            side = -1 if z[i] > 0 else 1
+            pos = {"i": i, "side": side, "qa": side * leg / PA[i], "qb": -side * leg / PB[i]}
+    return {"ไม้": trades, "รวมสุทธิ": sum(t["สุทธิ"] for t in trades), "หยุดเปิดเพราะงบ": paused}
+
+
+def _v2(data, D, q, L, base, sels):
+    """บท 15 ด้วยฐานต้นทุนเดียว (ch11.v2 · ต้นทุน 2 · สามตอนจบ +15 / +1 / −22 ของ ch12.v2)"""
+    cost = D(str(data["ch11"]["v2"]["ต้นทุน"]["ไปกลับ"]))
+    v12 = data["ch12"]["v2"]
+    res = tuple(v12["เส้นทาง"][k]["สุทธิ"] for k in ("1", "2", "3"))    # 15 · 1 · −22
+    table = []
+    for mix in _MIXES:
+        p = [D(m) / 100 for m in mix]
+        x = [D(v) for v in res]
+        mean = sum(pi * xi for pi, xi in zip(p, x))
+        ex2 = sum(pi * xi * xi for pi, xi in zip(p, x))
+        var = ex2 - mean * mean
+        sd = var.sqrt()
+        row = {"สัดส่วน": list(mix), "ค่าคาดหมาย": q(mean, 2), "ค่าเฉลี่ยกำลังสอง": q(ex2, 2),
+               "ความแปรปรวน": q(var, 2), "ระยะแกว่งต่อไม้": q(sd, 2)}
+        if mean > 0:
+            raw = (2 * sd / mean) ** 2
+            row.update({"สองเท่าsdหารค่าคาดหมาย": q(2 * sd / mean, 2), "ไม้ก่อนปัด": q(raw, 1),
+                        "ไม้ที่ต้องมี": int(math.ceil(raw))})
+        else:
+            row.update({"ไม้ที่ต้องมี": None, "เหตุ": "ค่าคาดหมายไม่บวก — ไม่มีจำนวนไม้ที่ทำให้ผลเฉลี่ยพ้นศูนย์ฝั่งบวกได้"})
+        table.append(row)
+    assert table[0]["ค่าคาดหมาย"] == v12["สัดส่วนตอนจบ"]["หลัก"]["ค่าคาดหมาย"]
+    # บันไดการแกว่งของค่าเฉลี่ย (รายงาน B S18): ไม้ 4 / 16 / 64 → แกว่ง sd ÷ √n · ต้องการ 2 × แกว่ง ≤ ค่าคาดหมาย
+    sd0, mean0 = D(str(table[0]["ระยะแกว่งต่อไม้"])), D(str(table[0]["ค่าคาดหมาย"]))
+    ladder = []
+    for n in (4, 16, 64, table[0]["ไม้ที่ต้องมี"]):
+        wob = sd0 / D(n).sqrt()
+        ladder.append({"ไม้": n, "รากที่สอง": q(D(n).sqrt(), 2), "แกว่งของค่าเฉลี่ย": q(wob, 2),
+                       "สองเท่า": q(2 * wob, 2), "ผ่าน": bool(2 * wob <= mean0)})
+
+    # คู่ปลอมบนการ์ดบท 12 ด้วยต้นทุน 2
+    fm = _fake_money(base, float(cost))
+    fakes = [_fake_money(s, float(cost)) for s in sels]
+    totals = sorted(f["รวมสุทธิ"] for f in fakes)
+    import statistics
+    budget_trades = [t["สุทธิ"] for f in fakes for t in f["ไม้"] if t["เหตุออก"] == "งบ"]
+    fake = {"ไม้": [{"วันเข้า": t["วันเข้า"], "วันออก": t["วันออก"], "zเข้า": q(D(str(t["zเข้า"])), 2),
+                     "zออก": q(D(str(t["zออก"])), 2), "เหตุออก": t["เหตุออก"],
+                     "กำไรจากราคา": q(D(str(t["กำไรจากราคา"])), 2), "สุทธิ": q(D(str(t["สุทธิ"])), 2)} for t in fm["ไม้"]],
+            "รวมสุทธิ": q(D(str(fm["รวมสุทธิ"])), 2), "หยุดเปิดเพราะงบ": fm["หยุดเปิดเพราะงบ"],
+            "สามสิบชุด": {"จำนวนชุด": len(fakes), "จบที่พัก": sum(1 for f in fakes if f["หยุดเปิดเพราะงบ"]),
+                          "มัธยฐานรวม": q(D(str(statistics.median(totals))), 2),
+                          "ต่ำสุดรวม": q(D(str(totals[0])), 2), "สูงสุดรวม": q(D(str(totals[-1])), 2),
+                          "ไม้แรกกำไร": sum(1 for f in fakes if f["ไม้"] and f["ไม้"][0]["สุทธิ"] > 0),
+                          "รวมบวก": sum(1 for f in fakes if f["รวมสุทธิ"] > 0),
+                          "ไม้งบเสียเกิน20": sum(1 for v in budget_trades if v < -20),
+                          "ไม้แย่สุด": q(D(str(min(t["สุทธิ"] for f in fakes for t in f["ไม้"]))), 2)}}
+    sd_money = D(str(base["_best_sd"])) * 1000
+    room = -D(str(data["บัญชีมิน"]["การ์ด"]["งบขาดทุนสุทธิ"])) - cost                  # 13
+    unit = {"หนึ่งระยะแกว่งเป็นเงินคู่ปลอม": q(sd_money, 1), "หนึ่งระยะแกว่งเป็นเงินAB": 10,
+            "ขาดทุนจากราคาก่อนชนงบ": q(room, 0), "งบเป็นระยะแกว่งคู่ปลอม": q(room / sd_money, 2),
+            "งบเป็นระยะแกว่งAB": q(room / 10, 1)}
+
+    # ค่าธรรมเนียมของไม้ซ้อมในสะพาน = taker 0.05% × มูลค่าซื้อขายจริงสี่ fill (ตรวจว่าปัดเป็น 2 ตามฐานต้นทุน)
+    br = data["ch15"]["สะพาน"]
+    rate = D(str(data["ch11"]["v2"]["ต้นทุน"]["อัตราtakerเปอร์เซ็นต์"])) / 100
+    qa, qb = (abs(D(v)) for v in br["จำนวน"])
+    fills = [qa * D(str(br["ราคาเข้าจริง"][0])), qb * D(str(br["ราคาเข้าจริง"][1])),
+             qa * D(str(br["ราคาออกจริง"][0])), qb * D(str(br["ราคาออกจริง"][1]))]
+    fee_exact = rate * sum(fills)
+    assert q(fee_exact, 0) == -br["ค่าธรรมเนียม"] == cost
+    bridge_fee = {"มูลค่าfill": [q(v, 0) for v in fills], "มูลค่ารวม": q(sum(fills), 0), "ค่าธรรมเนียมไม่ปัด": q(fee_exact, 2),
+                  "ตามฐานต้นทุน": q(cost, 0)}
+
+    # ไม้ที่ต้องมีในโลกจำลองของบท 13 (รายงาน B S15) — จากค่าคาดหมายและ SD ของผลต่อไม้ในโลกนั้น
+    w13 = data["ch13"]["v2"]["กฎเดียวสามโลก"]
+    worlds = {k: {"ค่าคาดหมาย": w13[k]["ค่าคาดหมายต่อไม้ก่อนค่าถือ"], "sd": w13[k]["sdผลต่อไม้"],
+                  "ไม้ที่ต้องมี": w13[k]["ไม้ที่ต้องมี"]} for k in ("0.80", "0.99", "1.00")}
+    return {"สามตอนจบ": list(res), "จำนวนรอบ": table, "บันไดแกว่ง": ladder, "เงินก็หลอกได้": fake,
+            "หน่วยการ์ด": unit, "ค่าธรรมเนียมสะพาน": bridge_fee, "ไม้ที่ต้องมีโลกบท13": worlds,
+            "จำนวนรอบ_คิดมือ": {"กำลังสอง15": 15 * 15, "กำลังสอง1": 1, "กำลังสอง22": 22 * 22,
+                               "ค่าเฉลี่ยกำลังสอง": table[0]["ค่าเฉลี่ยกำลังสอง"],
+                               "ค่าคาดหมายกำลังสอง": q(mean0 * mean0, 4), "ความแปรปรวน": table[0]["ความแปรปรวน"]}}
+
+
+def _ints(o):
+    """ค่า float ที่เป็นจำนวนเต็ม → int (พิมพ์ไม่มี .0 · คู่มือข้อ 33)"""
+    if isinstance(o, dict):
+        return {k: _ints(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_ints(v) for v in o]
+    if isinstance(o, float) and o == int(o):
+        return int(o)
+    return o
+
+
 def extend(data, D, q):
     L = _lib()
     c15 = data["ch15"]
@@ -80,7 +192,8 @@ def extend(data, D, q):
     assert fm["รวมสุทธิ"] == c15["เงินก็หลอกได้"]["รวมสุทธิ"], "จำลองซ้ำไม่ตรง ch15.เงินก็หลอกได้"
     sd_money = D(str(base["_best_sd"])) * 1000
     leg = 1000
-    fakes = [L.fake_money(L.o_v09_selection(seed=s, series=False)) for s in L.ROBUST_SEEDS]
+    sels = [L.o_v09_selection(seed=s, series=False) for s in L.ROBUST_SEEDS]
+    fakes = [L.fake_money(x) for x in sels]
     first_win = sum(1 for f in fakes if f["ไม้"] and f["ไม้"][0]["สุทธิ"] > 0)
     total_pos = sum(1 for f in fakes if f["รวมสุทธิ"] > 0)
     budget_trades = [t["สุทธิ"] for f in fakes for t in f["ไม้"] if t["เหตุออก"] == "งบ"]
@@ -97,7 +210,9 @@ def extend(data, D, q):
                              ex_a["ราคาออกจริง"], ex_a["ราคาเข้าจริง"], ex_a["ค่าธรรมเนียม"], ex_a["ค่าถือ"]))
     ex_b = {"ไม้": 12, "เฉลี่ยต่อไม้": 5, "แถวใกล้สุด": table[1]["ไม้ที่ต้องมี"]}
 
+    v2 = _ints(_v2(data, D, q, L, base, sels))
     return {
+        "v2": v2,
         "สะพานรายขา": legs,
         "สะพานหายรวม": q(lost, 0),
         "สะพานจ่ายจริง": q(paid, 0),
