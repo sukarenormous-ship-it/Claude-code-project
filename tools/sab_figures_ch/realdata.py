@@ -344,7 +344,7 @@ def extend(data, D, q):
 
     return {
         "แหล่ง": {
-            "ปีเริ่ม": 2025, "ปีจบ": 2026, "แถวดิบ": int(meta["raw_rows_A"]), "แถว": len(rows),
+            "ปีเริ่ม": 2025, "ปีจบ": 2026, "ปีตั้งต้นเวลา": 1970, "แถวดิบ": int(meta["raw_rows_A"]), "แถว": len(rows),
             "วันช่วงเลือก": len(F), "วันช่วงทดสอบ": len(T), "ดึงเมื่อ": meta["fetched_A_utc"],
             "ตัด": {"วัน": drop[0], "เวลาปิด": drop[2], "BTCตอนดึง": float(D(drop[-1].rstrip(")"))),
                     "ETHตอนดึง": float(D(drop_b[-1].rstrip(")")))},
