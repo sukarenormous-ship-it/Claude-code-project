@@ -279,7 +279,7 @@ def extend(data, D, q):
         "เห็นบนจอB": seen_B, "เห็นค้างB": seen_pend_B, "สูตรตอนยังไม่ยืนยัน": 0 - seen_B - seen_pend_B,
         "ส่งผิด": wrong_send, "Bถ้าส่งผิด": seen_B + 2 + wrong_send, "ตัดเหลือ": 10,
         "ค่าปิดทันที": m(now_cost), "equityปิดทันที": m(e_now), "ราคาของการไม่แบน": m(e_now - e_flat),
-        "ค่าธรรมเนียมรวม": m(fees4), "Bเสียตอนเช้า": m(10 * (pB2 - pB)),
+        "ค่าธรรมเนียมรวม": m(fees4), "equityลดรวม": m(e0 - e_flat), "Bเสียตอนเช้า": m(10 * (pB2 - pB)),
         "Bขึ้นเปอร์เซ็นต์": pct((pB2 - pB) / pB, 0),
         "ค่าธรรมเนียมmakerเปอร์เซ็นต์": float(acct["ค่าธรรมเนียม"]["maker"]),
     }

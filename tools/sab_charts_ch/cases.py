@@ -58,7 +58,7 @@ def _venues(fig):
                  f'stroke="{C["ink"]}" stroke-width="2" stroke-dasharray="5 3"/>')
         p.append(text(cx, Bm + 18, cat, 11.5, C["muted"], "middle"))
     last = L + gw * (len(cats) - 1) + gw / 2
-    p.append(text(last + bw + 12, Y(mm[-1]) + 16, "หลุดเส้น", 11, C["red"], "end", 700))
+    p.append(text(last + bw / 2 + 3, Y(mm[-1]) - 22, "หลุดเส้น", 11, C["red"], "middle", 700))
     alt = (f"แท่งคู่สี่กลุ่ม เปิด รอบ 1 ถึง 3 บัญชี long ขึ้นจาก {B.fmt(e1[0])} เป็น {B.fmt(e1[-1])} "
            f"บัญชี short ลงจาก {B.fmt(e2[0])} เป็น {B.fmt(e2[-1])} ต่ำกว่าเส้นระดับรักษา {B.fmt(mm[-1])} ในรอบ 3")
     cap = f"ถือ {B.fmt(c['ขนาดBTC'])} BTC ต่อแห่ง · วางแห่งละ {B.fmt(c['ฝากต่อแห่ง'])} · เส้นประ = ระดับรักษา {B.fmt(c['ระดับรักษาเปอร์เซ็นต์'])}% ของมูลค่าสัญญา ณ ราคาของรอบ"
