@@ -195,6 +195,13 @@ def _v2(D, q, A, B, X, h, mid, hd):
            "ทิศเดียวกัน": "✓" if (A[i] - A[i - 1]) * (B[i] - B[i - 1]) > 0 else "✗"} for i in range(1, 11)]
     same10 = sum(1 for r in mv if r["ทิศเดียวกัน"] == "✓")
     count10 = {"แถว": mv, "วัน": len(mv), "ทิศเดียวกัน": same10, "เปอร์เซ็นต์": q(D(same10) / len(mv) * 100, 0)}
+    # CORREL ของการขยับรายวัน 19 วัน (วันที่ 2–20) — ให้ผู้อ่านที่ลองสูตรเองเห็นว่าช่วงสั้นไม่ตรงกับการนับทิศ
+    dA = [A[i] - A[i - 1] for i in range(1, len(A))]
+    dB = [B[i] - B[i - 1] for i in range(1, len(B))]
+    mA, mB = sum(dA) / len(dA), sum(dB) / len(dB)
+    cov = sum((x - mA) * (y - mB) for x, y in zip(dA, dB))
+    corr19 = cov / (sum((x - mA) ** 2 for x in dA) * sum((y - mB) ** 2 for y in dB)).sqrt()
+    count10["CORREL19วัน"] = q(corr19, 2)
     # ข ③ โลกย่อสองโลก
     keep = D(_TOY_KEEP)
     g1 = g2 = D(0)

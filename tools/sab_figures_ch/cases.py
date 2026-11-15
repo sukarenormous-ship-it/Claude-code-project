@@ -190,7 +190,7 @@ def extend(data, D, q):
     pa, pb = D(102), D(50)
     na, nb = sets * pa, 2 * sets * pb
     fa, fb = na * taker, nb * taker
-    start = D(1100)
+    start = D(1110)   # ซื้อ B 1,000 + หลักประกันขา short A 10% ของ 1,020 (102) + เผื่อค่าธรรมเนียม 8
     led, cash = [], start
     hold_b = D(0)
     steps3 = [("เข้า: ซื้อ B 20 ที่ 50", -nb, fb, nb, 0), ("เข้า: short A 10 ที่ 102", 0, fa, nb, 0),

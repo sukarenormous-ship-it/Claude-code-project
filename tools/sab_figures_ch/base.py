@@ -123,7 +123,7 @@ def extend(data, D, q):
     acc = [{"จังหวะ": n, "เงินสด": num(c), "มูลค่าB": num(b), "สัญญา": num(k), "equity": num(c + b + k)}
            for n, c, b, k in rows]
     assert acc[-1]["equity"] == acc[-2]["equity"] == i(cash0 + endA["รวม"])
-    fee, n_fee = D("0.5"), 3
+    fee, n_fee = D("0.5"), 4   # สี่ครั้งตามแบบของเล่ม (เปิดสองขา · ปิดสองขา รวมการปิดสัญญาในวันหมดอายุ)
     b4 = {"spot": i(S0), "สัญญา": i(F0), "เดือน": months, "ห่าง": i(F0 - S0),
           "ห่างต่อเงินที่ซื้อเปอร์เซ็นต์": q((F0 - S0) / S0 * 100, 0),
           "จบก": endA, "จบข": endB,

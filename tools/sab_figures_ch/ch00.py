@@ -160,7 +160,10 @@ def _v2(data, D, q, spot, fut, basis, card):
     ex4 = {"basis30วัน": q(near_basis, 0), "basis90วัน": q(basis, 0),
            "จำนวนช่วง30วัน": q(days / near_days, 0),
            "ต่อ30วันของสัญญา90วัน": q(basis * near_days / days, 0),
-           "ค่าผ่านทางสามรอบ": q(per_fill * fills * days / near_days, 0)}
+           "ค่าผ่านทางสามรอบ": q(per_fill * fills * days / near_days, 0),
+           # v2 รีวิวผู้อ่าน: เทียบเงินที่เหลือในช่วง 90 วันเท่ากัน (สัญญา 30 วันสามรอบ สมมติทุกรอบ basis 1,000 เท่าเดิม)
+           "เหลือสัญญา90วัน": q(basis - per_fill * fills, 0),
+           "เหลือสัญญา30วันสามรอบ": q(near_basis * days / near_days - per_fill * fills * days / near_days, 0)}
     is_, if_ = D(2000), D(2030)
     rows5 = []
     for t in (D(1800), D(2300)):

@@ -38,12 +38,20 @@ def _v2(data, D, q):
     B = D(str(acct["คู่"]["B"]))
     e = D(str(data["ch12"]["จุดเข้า"]))
     rec = []
+    legs3 = data["ch14"]["v2"]["รายขา"]                                   # ไม้ 3 ทีละขาของบท 14: ออกที่ A 106.1 · B 51
     for k in ("1", "2", "3"):
         xo = D(str(v12["เส้นทาง"][k]["Xออก"]))
         vals = [sets * (100 + e), -(-20) * B, sets * (100 + xo), 20 * B]      # A = 100 + X · B = 50
+        if k == "3":   # ราคาออกต้องตรงกับที่บท 14 พิมพ์ (ไม่ใช่ B คงที่ 50) — ผู้อ่านคิดซ้ำได้จากบท 14
+            assert D(str(legs3["Aออก"])) - 2 * D(str(legs3["Bออก"])) == xo
+            vals = [sets * D(str(legs3["Aเข้า"])), 20 * D(str(legs3["Bเข้า"])),
+                    sets * D(str(legs3["Aออก"])), 20 * D(str(legs3["Bออก"]))]
+        aout = vals[2] / sets
+        bout = vals[3] / 20
         fee = rate * sum(vals)
         gross = D(str(v12["เส้นทาง"][k]["กำไรจากราคา"]))
         rec.append({"มูลค่าfill": [q(v, 0) for v in vals], "มูลค่ารวม": q(sum(vals), 0), "takerจริง": q(fee, 2),
+                    "Aออก": q(aout, 1), "Bออก": q(bout, 0), "เกินการ์ด": q(fee - cost, 2),
                     "กำไรจากราคา": q(gross, 0), "สุทธิการ์ด": q(gross - cost, 0), "สุทธิจริง": q(gross - fee, 2)})
     recon = {"ต้นทุนการ์ด": q(cost, 0), "ไม้": rec,
              "รวมการ์ด": q(sum(D(str(r["สุทธิการ์ด"])) for r in rec), 0),
