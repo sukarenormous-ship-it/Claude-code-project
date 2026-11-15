@@ -1,23 +1,49 @@
-"""ค่าคงที่และตัวช่วยกลางของเล่ม "Stat Arb for Non Quant · เล่ม 1" — ใช้ร่วมโดย sab_*.py
+"""ค่าคงที่และตัวช่วยกลางของหนังสือ "Stat Arb for Non Quant" (เล่ม 1 = sab · เล่ม 2 = sab2) — ใช้ร่วมโดย sab_*.py
 
 prefix · ชื่อบท · การเรียงบทเป็นตัวเลข · ประกอบหน้าด้วยเปลือก tools/sab_shell/
 (nq_*.py ฝังค่าเหล่านี้ซ้ำในทุกไฟล์และเรียงบทแบบสตริง ทำให้ part10 มาก่อน part2)
+
+เลือกเล่ม (Book selection): ตัวแปรแวดล้อม SAB_BOOK=sab2 หรืออาร์กิวเมนต์ --book sab2 ของเครื่องมือใดก็ได้
+(ค่าเริ่มต้น sab = เล่ม 1 · ไม่ระบุ = พฤติกรรมเดิมทุกอย่าง) — import โมดูลนี้จะดึง --book ออกจาก sys.argv
+แล้วตั้ง SAB_BOOK ให้กระบวนการลูกด้วย จึงใส่ --book ตรงไหนของบรรทัดคำสั่งก็ได้
+    python3 tools/sab_qa.py --book sab2 --selftest      ≡   SAB_BOOK=sab2 python3 tools/sab_qa.py --selftest
 """
 
 import glob
 import html as htmllib
+import json
 import os
 import re
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
+TOOLS = os.path.join(ROOT, "tools")
 SHELL = os.path.join(ROOT, "tools", "sab_shell")
-PREFIX = "sab"
-BOOK = "Stat Arb for Non Quant"
-BOOK_TH = "เชือกที่ผูกสองราคา"
 
+
+def _book_from_argv():
+    """--book X / --book=X ใน sys.argv → ตัดออก (ให้ตัวแยกอาร์กิวเมนต์เดิมของแต่ละเครื่องมือไม่เห็น) แล้วตั้ง SAB_BOOK"""
+    a = sys.argv
+    for i, x in enumerate(list(a)):
+        if x == "--book" and i + 1 < len(a):
+            os.environ["SAB_BOOK"] = a[i + 1]
+            del a[i:i + 2]
+            return
+        if x.startswith("--book="):
+            os.environ["SAB_BOOK"] = x.split("=", 1)[1]
+            del a[i]
+            return
+
+
+_book_from_argv()
+BOOK_ID = os.environ.get("SAB_BOOK", "sab") or "sab"
+if BOOK_ID not in ("sab", "sab2"):
+    sys.exit(f"SAB_BOOK / --book ต้องเป็น sab หรือ sab2 (พบ {BOOK_ID!r})")
+PREFIX = BOOK_ID
+BOOK = "Stat Arb for Non Quant"
 # ชื่อบทตามสารบัญในแผน (docs/sab-book-plan.md หัวข้อ 4)
-TITLES = {
+TITLES_1 = {
     0: "ส่วนต่าง 3,000 บนหน้าจอ",
     1: "ค่าผ่านทางสองขา และนิ้วที่จับเชือก",
     2: "เงินบนโต๊ะมาจากไหน",
@@ -40,13 +66,77 @@ TITLES = {
 }
 
 # ภาคพื้นฐาน "คืนก่อนวันที่ 1" (แผน 14.5) — หน้า docs/sab-baseN.html อ่านก่อนบท 0 · เป็นแม่แบบ v2 เสมอ
-BASE_TITLES = {
+BASE_TITLES_1 = {
     1: "ซื้อไว้ก่อน แล้วขายทีหลัง",
     2: "ขายก่อน แล้วซื้อคืนทีหลัง",
     3: "สองขาในชุดเดียว",
     4: "สัญญาที่มีวันหมดอายุ และเงินสามกอง",
 }
-LAST_BASE = max(BASE_TITLES)
+
+# เล่ม 2 (docs/sab2-book-plan.md หัวข้อ 4 · ชื่อร่าง) — บท sab2-part1..17 · ไม่มีหน้าพื้นฐาน
+TITLES_2 = {
+    1: "เส้นที่ลากผ่านจุด: h มาจากข้อมูลอย่างไร",
+    2: "ราคาหรือ log ราคา",
+    3: "มีเชือกจริงไหม: ทดสอบแทนการมอง",
+    4: "กลับเร็วแค่ไหน และมั่นใจได้แค่ไหน",
+    5: "ไม้บรรทัดที่เลื่อนได้",
+    6: "เชื่อข้อมูลใหม่แค่ไหน: Kalman แบบคิดด้วยมือ",
+    7: "เข้าเมื่อไร ออกเมื่อไร: จากเส้น 2 ไปถึง \"optimal\"",
+    8: "หักแรงร่วมออก เหลืออะไร",
+    9: "PCA: ให้ข้อมูลบอกแรงร่วมเอง",
+    10: "ตะกร้าหลายขา",
+    11: "จัดเงินหลายกลยุทธ์",
+    12: "เครื่อง backtest ของตัวเอง",
+    13: "ลองได้กี่ครั้งก่อนผลจะไม่มีความหมาย",
+    14: "ต้นทุน ขนาด และการเสื่อมของกลยุทธ์",
+    15: "รวมหลายสัญญาณ และโมเดลที่เรียนรู้เอง",
+    16: "สิ่งที่อยู่ถัดไป: ความสัมพันธ์ไม่เป็นเส้นตรง และ options",
+    17: "โครงงานของคุณเอง",
+}
+
+# ทะเบียนเล่ม: ทุกอย่างที่ต่างกันระหว่างเล่มอยู่ที่นี่ที่เดียว (เครื่องมืออ่านผ่านชื่อระดับโมดูลด้านล่าง)
+BOOKS = {
+    "sab": {"vol": 1, "th": "เชือกที่ผูกสองราคา", "titles": TITLES_1, "base_titles": BASE_TITLES_1,
+            "plan": "docs/sab-book-plan.md", "shell_extra": None, "prev": None},
+    "sab2": {"vol": 2, "th": "วัดเชือก สร้างพอร์ต ทดสอบให้ซื่อ", "titles": TITLES_2, "base_titles": {},
+             "plan": "docs/sab2-book-plan.md", "shell_extra": os.path.join(TOOLS, "sab2_shell", "extra.css"),
+             "prev": "sab"},
+}
+CFG = BOOKS[BOOK_ID]
+VOL = CFG["vol"]
+BOOK_TH = CFG["th"]
+TITLES = CFG["titles"]
+BASE_TITLES = CFG["base_titles"]
+FIRST_PART, LAST_PART = min(TITLES), max(TITLES)
+LAST_BASE = max(BASE_TITLES, default=0)
+FIG = os.path.join(DOCS, f"{PREFIX}-figures.json")
+TERMS = os.path.join(TOOLS, f"{PREFIX}_terms.json")
+BIBLE = os.path.join(TOOLS, f"{PREFIX}_bible.json")
+FIG_PLUGINS = os.path.join(TOOLS, f"{PREFIX}_figures_ch")
+CHART_PLUGINS = os.path.join(TOOLS, f"{PREFIX}_charts_ch")
+
+
+def load_terms(book=None):
+    """ทะเบียนศัพท์ของเล่ม (tools/<prefix>_terms.json) · เล่มที่มีเล่มก่อนหน้า: คำของเล่มก่อนถือว่าสอนแล้ว
+    (ใส่ "สอน": "เล่ม1" → teach_order = None → W22 ไม่ฟ้อง) · คำที่ลงทะเบียนซ้ำในเล่มนี้ใช้ของเล่มก่อน และติด "_ซ้ำ"
+    คืน None ถ้าเล่มนี้ยังไม่มีทะเบียน"""
+    book = book or BOOK_ID
+    path = os.path.join(TOOLS, f"{book}_terms.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        terms = json.load(fh)
+    prev = BOOKS[book]["prev"]
+    if prev:
+        old = load_terms(prev) or {}
+        for k, v in old.items():
+            if k.startswith("_"):
+                continue
+            taught = {**v, "สอน": f"เล่ม{BOOKS[prev]['vol']}"}
+            if k in terms:
+                taught["_ซ้ำ"] = terms[k].get("สอน")
+            terms[k] = taught
+    return terms
 
 
 def part_no(path):
@@ -60,7 +150,7 @@ def base_no(path):
 
 
 def chapter_files(docs=DOCS):
-    """docs/sab-partN.html เรียงตามเลขบท (ไม่ใช่ตามสตริง)"""
+    """docs/<prefix>-partN.html เรียงตามเลขบท (ไม่ใช่ตามสตริง)"""
     files = [p for p in glob.glob(os.path.join(docs, f"{PREFIX}-part*.html")) if part_no(p) is not None]
     return sorted(files, key=part_no)
 
@@ -114,10 +204,18 @@ def term_box(html, v2=None):
 
 
 def shell():
+    """(head, tail) ของเปลือก · เล่มที่มี shell_extra (เล่ม 2: tools/sab2_shell/extra.css) = เปลือกกลาง + CSS เพิ่ม
+    ต่อท้ายบล็อก <style> (เปลือกกลางไม่เปลี่ยน → หน้าเล่ม 1 ไม่ต้อง reshell)"""
     with open(os.path.join(SHELL, "head.html"), encoding="utf-8") as fh:
         head = fh.read()
     with open(os.path.join(SHELL, "tail.html"), encoding="utf-8") as fh:
         tail = fh.read()
+    extra = CFG["shell_extra"]
+    if extra:
+        with open(extra, encoding="utf-8") as fh:
+            css = fh.read().strip()
+        i = head.index("</style>")
+        head = head[:i] + "\n" + css + "\n" + head[i:]
     return head, tail
 
 
@@ -125,7 +223,7 @@ def page(title, sub, desc, body):
     head, tail = shell()
     esc = htmllib.escape
     head = head.replace("{{TITLE}}", esc(f"{BOOK} — {title}"), 1)
-    cover = (f'\n<div class="cover">\n<h1>{BOOK} · เล่ม 1 — {BOOK_TH}</h1>\n'
+    cover = (f'\n<div class="cover">\n<h1>{BOOK} · เล่ม {VOL} — {BOOK_TH}</h1>\n'
              f'<div class="sub">{sub}</div>\n<div class="desc">{desc}</div>\n</div>\n')
     return head + cover + body + "\n" + tail
 
