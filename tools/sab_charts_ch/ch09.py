@@ -245,7 +245,7 @@ def _ruler20(fig):
 @chart("sab-test10")
 def _test10(fig):
     c9 = fig["ch09"]
-    c, t = c9["นับมือ20วัน"], c9["วันทดสอบ"]
+    c, t = c9["นับมือ20วัน"], c9["v2"]["วันทดสอบ"]
     mean, sd = c["ค่ากลาง"], c["ระยะแกว่งนับมือ"]
     xs = c["X"] + t["X"]
     nf, n = len(c["X"]), len(c["X"]) + len(t["X"])
