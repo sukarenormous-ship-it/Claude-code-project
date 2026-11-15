@@ -118,7 +118,7 @@ def _rope_types0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่
     py0, sy0 = bot_pair(x0)
     p.append(text(x0, py0 - 26, "ราคา perp", 12, FUT, weight=700))
     p.append(text(x0, sy0 + 30, "ราคา spot", 12, SPOT, weight=700))
-    # รอบ funding: เหรียญค่าดึงบนแกนเวลา · เครื่องหมายตามว่า perp อยู่เหนือหรือใต้ spot
+    # รอบ funding: เหรียญ funding บนแกนเวลา · เครื่องหมายตามว่า perp อยู่เหนือหรือใต้ spot
     p.append(f'<line x1="{x0}" y1="{base2}" x2="{xe2}" y2="{base2}" stroke="{C["axis"]}" stroke-width="1.5"/>')
     p.append(f'<path d="M{xe2},{base2} l-9,-5 v10 z" fill="{C["grey"]}"/>')
     p.append(text(xe2 - 4, base2 - 10, "ไม่มีวันจบ", 11, C["grey"], "end"))
@@ -139,7 +139,7 @@ def _rope_types0(fig):  # noqa: ARG001 — ภาพแนวคิด ไม่
     p.append(text(250, H - 12, "− = ฝั่ง short จ่ายฝั่ง long", 11.5, INK))
 
     alt = ("ผังสองแผง แผงบนเป็นเส้นราคา futures กับ spot ผูกด้วยโซ่ที่สั้นลงเรื่อย ๆ จนสองเส้นมาเจอกันที่แม่กุญแจวันหมดอายุ "
-           "แผงล่างเป็นเส้นราคา perp กับ spot ที่เดินคู่กันไปไม่มีวันจบ มีเหรียญค่าดึงเครื่องหมายบวกหรือลบทุกรอบ")
+           "แผงล่างเป็นเส้นราคา perp กับ spot ที่เดินคู่กันไปไม่มีวันจบ มีเหรียญ funding เครื่องหมายบวกหรือลบทุกรอบ")
     cap = "dated futures ล็อกในวันหมดอายุ ส่วน perp มีแต่ funding ที่ฝั่งจ่ายสลับกันได้ทุกรอบ"
     return wrap(W, H, alt, p, cap, "แนวคิด", narrow=True)
 

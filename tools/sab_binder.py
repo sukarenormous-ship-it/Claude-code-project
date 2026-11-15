@@ -8,6 +8,10 @@
 
     python3 tools/sab_binder.py            # เขียนภาคผนวก E (ฉบับเปล่าก่อน ตามด้วยฉบับมิน) + CSV
     python3 tools/sab_binder.py --check    # ตรวจอย่างเดียว: เกณฑ์ผ่าน 3 ข้อ · data-from/to ชี้ใบที่มีจริง · data-key มีใน JSON
+                                           #   · หน้า v2 (data-tpl="2") ใบงานต้องอยู่ใน <details class="file"> (แผน 14.3 ข้อ 9)
+
+รอบ v2: ใบงานย้ายเข้าบล็อกพับ "📁 แฟ้มของบทนี้" — ตัวรวมเล่มยังสแกนทั้งหน้า (จึงเก็บใบในแฟ้มได้เลย)
+และบันทึกว่าแต่ละใบอยู่ใน details.file หรือไม่ เพื่อให้ --check ฟ้องใบของหน้า v2 ที่หลุดออกมานอกแฟ้ม
     python3 tools/sab_binder.py --selftest
 """
 
@@ -50,18 +54,37 @@ def attr(a, name):
     return m.group(1) if m else None
 
 
+def file_spans(html):
+    """ช่วง (เริ่ม, จบ) ของ <details class="file"> ทุกบล็อก (นับชั้น details)"""
+    out = []
+    for m in re.finditer(r'<details\b[^>]*class="[^"]*\bfile\b[^"]*"[^>]*>', html):
+        depth = 1
+        for t in re.finditer(r"<(/?)details\b[^>]*>", html[m.end():]):
+            depth += -1 if t.group(1) else 1
+            if depth == 0:
+                out.append((m.start(), m.end() + t.end()))
+                break
+        else:
+            out.append((m.start(), len(html)))
+    return out
+
+
 def collect(docs=B.DOCS):
     sheets = []
     for path in B.chapter_files(docs):
         with open(path, encoding="utf-8") as fh:
             html = fh.read()
+        spans, v2, pos = file_spans(html), B.is_v2(html, path), 0
         for a, outer in sheet_blocks(html):
+            at = html.find(outer, pos)
+            pos = at + len(outer)
             csvname = attr(a, "data-csv")
             if not csvname:                                   # ใบที่อ้างไฟล์ sab-worksheets/X.csv ในเนื้อ → ใช้ชื่อนั้น
                 m = re.search(r"sab-worksheets/([\w-]+\.csv)", outer)
                 csvname = m.group(1) if m else None
             sheets.append({"บท": B.part_no(path), "id": attr(a, "data-sheet") or "?", "from": attr(a, "data-from") or "",
-                           "to": attr(a, "data-to") or "", "csv": csvname, "html": outer})
+                           "to": attr(a, "data-to") or "", "csv": csvname, "html": outer,
+                           "v2": v2, "ในแฟ้ม": any(s <= at < e for s, e in spans)})
     return sheets
 
 
@@ -82,6 +105,8 @@ def check(sheets, fig):
     ids = {s["id"] for s in sheets}
     for s in sheets:
         tag = f"บท {s['บท']} ใบ {s['id']}"
+        if s.get("v2") and not s.get("ในแฟ้ม"):
+            P.append(f"{tag}: หน้า v2 ต้องวางใบงานไว้ใน <details class=\"file\"> (📁 แฟ้มของบทนี้)")
         pas = re.search(r'<ol class="pass">(.*?)</ol>', s["html"], re.S)
         if not pas or len(re.findall(r"<li\b", pas.group(1))) != 3:
             P.append(f"{tag}: ต้องมีเกณฑ์ผ่าน 3 ข้อ")
@@ -115,13 +140,17 @@ def render(sheets, fig):
         out = []
         for s in sorted(sheets, key=lambda s: (s["บท"], s["id"])):
             body = fill(s["html"], fig, blank)
+            # ใบงานจากบท v2 เป็นตารางสอนธรรมดา (แผน 14.3: ไม่ต้องติดป้ายที่มา) — หน้ารวมเล่มเป็นแม่แบบเดิม
+            # จึงประกาศ data-nosrc ให้ตารางที่ไม่ได้ประกาศ data-src (ป้าย 🔢 ของทั้งหน้าอยู่ในกล่องวิธีใช้)
+            if s.get("v2"):
+                body = re.sub(r"<table\b(?![^>]*\bdata-(?:src|nosrc)\b)", "<table data-nosrc", body)
             out.append(f'<div class="sheet-page"><p class="nw" style="font-size:.85em;color:#64748b">'
                        f'จากบท {s["บท"]} — <a href="{B.PREFIX}-part{s["บท"]}.html">{B.TITLES.get(s["บท"], "")}</a></p>\n{body}</div>')
         return "\n".join(out)
     body = f'''
 <div class="bx bb" style="font-size:.92em"><div class="bt">🧭 วิธีใช้หน้านี้</div>
 <p>ใบงาน {len(sheets)} ใบจากทุกบท · ส่วนแรกเป็นฉบับเปล่าให้พิมพ์กรอก (หนึ่งใบหนึ่งหน้า) ส่วนที่สองเป็นฉบับที่มินกรอกไว้
-ใช้เทียบหลังทำเสร็จ · ตัวเลขในใบของมินดึงจากชุดตัวเลขเดียวกับในบท จึงตรงกันเสมอ</p></div>
+ใช้เทียบหลังทำเสร็จ · ตัวเลขในใบของมินดึงจากชุดตัวเลขเดียวกับในบท จึงตรงกันเสมอ · 🔢 ตัวเลขสมมติเพื่อสอน</p></div>
 <style>@media print{{.sheet-page{{page-break-after:always}}}}</style>
 <h2 id="blank">ฉบับเปล่า — กรอกเอง</h2>
 {section(True)}
@@ -154,18 +183,27 @@ def selftest():
     with tempfile.TemporaryDirectory() as d:
         open(os.path.join(d, "sab-part4.html"), "w", encoding="utf-8").write(head + sheet + tail)
         open(os.path.join(d, "sab-part10.html"), "w", encoding="utf-8").write(head + bad + tail)
+        v2head = head.replace("<body>", '<body data-tpl="2">')
+        infile = sheet.replace('data-sheet="04" data-from="00" data-to="05" data-csv="buffer.csv"', 'data-sheet="11"')
+        loose = sheet.replace('data-sheet="04" data-from="00" data-to="05" data-csv="buffer.csv"', 'data-sheet="12"')
+        open(os.path.join(d, "sab-part11.html"), "w", encoding="utf-8").write(
+            v2head + '<details class="file"><summary>📁 แฟ้มของบทนี้</summary>' + infile + '</details>\n' + tail)
+        open(os.path.join(d, "sab-part12.html"), "w", encoding="utf-8").write(v2head + loose + tail)
         sheets = collect(d)
         probs = check(sheets, fig)
         made = write_csv(sheets, d)
         with open(os.path.join(d, CSV_DIR, "buffer.csv"), encoding="utf-8-sig") as fh:
             heads = fh.read().strip()
-    if [s["id"] for s in sheets] != ["04", "05"] or "ซ้อน" not in sheets[0]["html"]:
+    if [s["id"] for s in sheets] != ["04", "05", "11", "12"] or "ซ้อน" not in sheets[0]["html"]:
         ok = False
         print("selftest ล้ม: แยกใบ", [s["id"] for s in sheets])
     filled, blank = fill(sheets[0]["html"], fig, False), fill(sheets[0]["html"], fig, True)
     if "11,220" not in filled or "−200" not in filled or "11,220" in blank:
         ok = False
         print("selftest ล้ม: เติมค่า", filled, blank)
+    if not any("ใบ 12: หน้า v2" in p for p in probs) or any("ใบ 11: หน้า v2" in p for p in probs):
+        ok = False
+        print("selftest ล้ม: ใบงานในแฟ้ม v2", probs)
     for e in ("ใบ 05: ต้องมีเกณฑ์ผ่าน", "ชี้ใบ 99", "'ไม่มี'"):
         if not any(e in p for p in probs):
             ok = False
@@ -173,7 +211,7 @@ def selftest():
     if made != ["buffer.csv"] or heads != "ช่อง,ค่า":
         ok = False
         print("selftest ล้ม: CSV", made, heads)
-    print("selftest", "ผ่าน ✓ (แยกใบแบบนับชั้น · ฉบับมิน/เปล่าจาก markup เดียว · ตรวจเกณฑ์/ลิงก์ใบ/key · CSV BOM)" if ok else "ไม่ผ่าน ✗")
+    print("selftest", "ผ่าน ✓ (แยกใบแบบนับชั้น · ฉบับมิน/เปล่าจาก markup เดียว · ตรวจเกณฑ์/ลิงก์ใบ/key · CSV BOM · หน้า v2 ใบต้องอยู่ใน details.file)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 
