@@ -257,16 +257,16 @@ def _test10(fig):
     _bands(p, X, Y, L, W - R, mean, sd)
     p.append(f'<line x1="{xd:.1f}" y1="{y0 - 6}" x2="{xd:.1f}" y2="{y1}" stroke="{C["grey"]}" stroke-dasharray="4 4"/>')
     pts = [(X(i + 1), Y(v)) for i, v in enumerate(xs)]
-    p.append(f'<polyline points="{_poly(pts[:nf])}" fill="none" stroke="{NOROPE}" stroke-width="1.4" stroke-opacity=".45"/>')
-    p.append(f'<polyline points="{_poly(pts[nf - 1:])}" fill="none" stroke="{ROPE}" stroke-width="1.6"/>')
+    p.append(f'<polyline points="{_poly(pts[:nf])}" fill="none" stroke="{C["muted"]}" stroke-width="1.4" stroke-opacity=".6"/>')
+    p.append(f'<polyline points="{_poly(pts[nf - 1:])}" fill="none" stroke="{C["ink"]}" stroke-width="1.6"/>')
     for i, (x, y) in enumerate(pts):
         out = abs(xs[i] - mean) > 2 * sd
-        col = C["red"] if (out and i >= nf) else (NOROPE if i < nf else ROPE)
+        col = C["red"] if (out and i >= nf) else (C["muted"] if i < nf else C["ink"])
         p.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{4.6 if out and i >= nf else 3.3}" fill="{col}"/>')
     d1, d2 = t["วันหลุด"][0], t["วันหลุด"][-1]
     p.append(text(X(d2) + 10, Y(t["Xสูงสุด"]) - 4, f"วันที่ {d1}–{d2} หลุด +2", 11.5, C["red"], weight=700))
     p.append(text(L + 8, y1 - 10, f"ช่วงที่ใช้วัด {nf} วัน", 11.5, MUTED, weight=700))
-    p.append(text(W - R - 6, y1 - 10, f"ช่วงทดสอบ: ใน ±2 = {t['วันในกรอบ']} จาก {t['วัน']} วัน", 11.5, ROPE, "end", 700))
+    p.append(text(W - R - 6, y1 - 10, f"ช่วงทดสอบ: ใน ±2 = {t['วันในกรอบ']} จาก {t['วัน']} วัน", 11.5, C["ink"], "end", 700))
     for d in (1, 10, 20, 30):
         p.append(text(X(d), y1 + 20, f"วันที่ {d}", 10.5, C["grey"], "middle"))
     p.append(text(L - 50, y0 - 12, "X (ดอลลาร์ต่อชุด)", 11, MUTED))

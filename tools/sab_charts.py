@@ -248,7 +248,12 @@ def ladder_bars(rungs, title, unit="%", W=760, H=320):
         d = round(vals[i] - vals[i - 1], 2)
         x = f.L + gw * i
         mag = int(abs(d)) if abs(d) == int(abs(d)) else abs(d)
-        out.append(text(x, f.y(max(vals[i], vals[i - 1])) - 24, ("−" if d < 0 else "+") + B.fmt(mag), 11, C["red"] if d < 0 else C["green"], "middle"))
+        col = C["red"] if d < 0 else C["green"]
+        # เส้นประจากยอดขั้นก่อนข้ามช่องว่าง · ส่วนที่หายวางใต้เส้นประกลางช่อง (ไม่ลอยเหนือแท่ง ไม่ทับป้ายค่า)
+        y_prev, y_now = f.y(vals[i - 1]), f.y(vals[i])
+        bw = gw * 0.38
+        out.append(f'<line x1="{x - bw:.1f}" y1="{y_prev:.1f}" x2="{x + bw:.1f}" y2="{y_prev:.1f}" stroke="{col}" stroke-dasharray="3 3" stroke-width="1.2"/>')
+        out.append(text(x, y_prev + (16 if d < 0 else -6), ("−" if d < 0 else "+") + B.fmt(mag), 11.5, col, "middle", 700))
     return out
 
 
