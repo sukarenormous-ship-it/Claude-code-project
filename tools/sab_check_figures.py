@@ -231,18 +231,23 @@ def strict_sources(fig, part, prev_fig=None):
 
 
 def check_strict(name, html, fig, part, prev_fig=None, where=None):
-    """เล่ม 2: เลขบนหน้าบท N ต้องมีที่มาใต้ chNN / แบบฝึก.chNN / เรื่อง.partN / เล่ม 1 หรืออยู่ในรายการยกเว้น
+    """เล่ม 2: เลขบนหน้าบท N ต้องมีที่มาใต้ chNN / แบบฝึก.chNN / เรื่อง.partN หรืออยู่ในรายการยกเว้น · เลขที่ตรงเฉพาะเล่ม 1
+    แจ้งแยก (พร้อม path ในเล่ม 1) เพราะเล่ม 1 มีหลายพันค่า
     (จำนวนนับ < 100 · ปี 1900–2100 · ALLOWED) · data-key ต้องชี้คีย์ของบทนี้ (หรือแบบฝึก/เรื่องของบทนี้)
     คืนรายการข้อสังเกต (ไม่ล้มเว้นแต่ --strict)"""
-    allowed = strict_sources(fig, part, prev_fig)
+    own = strict_sources(fig, part, None)
+    vol1 = value_paths(prev_fig) if prev_fig is not None else {}
     where = where if where is not None else value_paths(fig)
     ch = f"ch{part:02d}"
     out, seen = [], set()
     for raw, n in page_numbers(html, skip_code=True):
         a = n.lstrip("-")
-        if n in allowed or a in allowed or n in ALLOWED or a in ALLOWED or a in YEARS or raw in seen:
+        if n in own or a in own or n in ALLOWED or a in ALLOWED or a in YEARS or raw in seen:
             continue
         seen.add(raw)
+        if a in vol1:      # เล่ม 1 มีราว 6,000 ค่า → เลขที่ตรงเฉพาะเล่ม 1 อาจบังเอิญ: แจ้ง path ให้ตรวจว่าตั้งใจอ้าง (คัดลอกไว้ใต้ chNN.เล่ม1 จะเงียบ)
+            out.append(f"{name}: {raw} ตรงเฉพาะเล่ม 1 ({vol1[a]}) — ตั้งใจอ้างไหม" + (f" · บทอื่นเล่ม 2: {where[a]}" if a in where else ""))
+            continue
         src = where.get(a)
         out.append(f"{name}: {raw} ไม่มีใต้ {ch} / แบบฝึก.{ch} / เล่ม 1" + (f" (ตรงกับ {src} โดยบังเอิญ?)" if src else ""))
     for m in DATA_KEY_RE.finditer(html):
@@ -352,8 +357,9 @@ def selftest():
         notes_s = run.notes
         code_x, p_x = run(os.path.join(d, "sab2-figures.json"), d, scope="part5", quiet=True, prefix="sab2", strict=True)
     ok = True
-    if code_s != 0 or p_s or len(notes_s) != 2 or not any("13.5" in n and "ch04.อื่น" in n for n in notes_s) \
-            or not any("data-key ch04.อื่น" in n for n in notes_s) or code_x != 1 or len(p_x) != 2:
+    if code_s != 0 or p_s or len(notes_s) != 3 or not any("13.5" in n and "ch04.อื่น" in n for n in notes_s) \
+            or not any("data-key ch04.อื่น" in n for n in notes_s) or not any("2,846 ตรงเฉพาะเล่ม 1" in n for n in notes_s) \
+            or code_x != 1 or len(p_x) != 3:
         ok = False
         print("selftest ล้ม: เล่ม 2 ที่มาเข้ม →", code_s, p_s, notes_s, code_x, p_x)
     if [p for p in p_v2 if "98765" in p] or not any("4,321.5" in p for p in p_v2) or any(p.startswith("sab-") for p in p_v2):

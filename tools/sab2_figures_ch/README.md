@@ -17,6 +17,7 @@ def extend(data, D, q):
 กติกาเฉพาะเล่ม 2
 - สถิติใช้ `tools/sab2_stats.py` (stdlib · ทดสอบเทียบ numpy/ค่าอ้างอิงแล้ว) · โลกจำลองใช้ `tools/sab2_sim.py` (ระบุ seed เสมอ)
 - ข้อมูลจริงใช้ `tools/sab2_realdata.py` (`load_closes(split=…)` · `load_funding(split=…)`)
+- ตัวเลขเล่ม 1 ใช้ `sab_book.load_figures("sab")` (ห้ามเปิด docs/sab-figures.json ตรง · V11) · backtest ใช้ `tools/sab2_engine.py` (`run`)
 - **ช่วงทดสอบสุดท้ายเปิดได้เฉพาะ `ch17.py`** — ปลั๊กอินอื่นที่มีคำว่า `unlock_final` (นอกจาก `unlock_final=False`)
   ถูก `sab_qa.py --book sab2` ฟ้อง (กฎ V11)
 

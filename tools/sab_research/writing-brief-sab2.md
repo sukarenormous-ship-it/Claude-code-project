@@ -55,6 +55,14 @@ print(round(h, 2), round(r2, 2))
 - `.fails` อยู่นอกบล็อกพับ อย่างน้อยหนึ่งกล่องต่อบท และมีตัวเลขอย่างน้อยหนึ่งตัว (V10)
 - `details.code` ≤ 25 บรรทัด · บรรทัดสุดท้าย `# ผลที่ต้องได้: …` · ตัวเลขที่ print ต้องตรงตามลำดับ (ปัดตามทศนิยมที่เขียน) และต้องปรากฏในหน้านอก `<pre>` · ห้าม `unlock_final` ก่อนบท 17 (V9) · รันใน temp dir ด้วย `PYTHONPATH=tools` ไม่มีเครือข่าย
 - ปลั๊กอิน `tools/sab2_figures_ch/chNN.py` อ่านข้อมูลผ่าน `sab2_realdata.load_closes/load_funding` เท่านั้น และคำนวณด้วย `sab2_stats` / `sab2_sim` (V11)
+- ตัวเลขเล่ม 1 ในปลั๊กอิน: `sab_book.load_figures("sab")` เท่านั้น (V11 ห้ามเปิด `sab-figures.json` ตรง) · คัดลอกค่าที่อ้างไว้ใต้ `chNN.เล่ม1` ให้หน้าใช้
+- backtest: `tools/sab2_engine.py` — `from sab2_engine import run` · `run(A, B, h, z, sets, fill="next"|"same", lag=N, fee=0.0005, hold=30, loss_budget=None, rule=None)` → `trades · wins · net · max_drawdown · costs · trade_list · ledger · equity` (fill "same" ติด `lookahead=True`) · ใช้ในบล็อก 💻 ได้ (V9 รันด้วย `PYTHONPATH=tools`)
+- โลกที่รู้ h บนราคา (ไม่ใช่ log): `sab2_sim.price_pair(seed, n, h=2, phi=0.9, sd=0.5)` — ถดถอยราคาแบบบท 1 ได้ h ในค่าคาดหวัง
+- p-value ADF/EG ข้อมูลสั้น: `sab2_stats.adf_pvalue_sim(stat, n, worlds=10000, seed=1, n_vars=1|2)` (n = จำนวนจุดของซีรีส์) · อย่าเขียนลูปจำลองเองในปลั๊กอิน
+- Engle–Granger: ขั้น 2 **ไม่มีค่าคงที่** (= statsmodels.coint · ค่าวิกฤต MacKinnon N = 2) — ถ้าหน้าคิด ADF ของ residual ด้วยมือแบบมีจุดตัด ต้องใช้ `engle_granger(..., resid_const=True)` ให้ตรงกัน (ต่างกันหลักทศนิยมที่ 3)
+- ตัวเติมเซลล์ `data-key` (`sab_charts --fill`) แทนเฉพาะตัวเลขในเซลล์ ข้อความรอบ ๆ (`%` · `+` · หน่วย) คงไว้ · float ลงตัว (56.0) พิมพ์ 56 ได้ถ้าเซลล์เขียนไว้ไม่มีจุด
+- ที่มาเข้ม (`sab_check_figures`): เลขบนหน้า sab2-partN ควรอยู่ใต้ `chNN` / `แบบฝึก.chNN` / ค่าเล่ม 1 ที่คัดลอกมา · นอกนั้นเตือน "⚠️ ที่มาไม่ใช่บทนี้" (`--strict` ให้ล้ม)
+- ความยาว (เล่ม 2): เส้นทางหลัก ≥ 5,000 คำ ไม่มีเพดานแข็ง · ตอนละไม่เกิน ~3,000 (เกินเตือน)
 - ศัพท์เล่ม 1 ใช้ได้เลย (ทวนหนึ่งบรรทัด) และ **ห้ามใส่ใน 📖 ของเล่ม 2** · ศัพท์ใหม่ลง `tools/sab2_terms.json` · เรื่องลง `tools/sab2_bible.json`
 - เล่ม 2 อนุญาต log · σ บนเส้นทางหลัก (สอนก่อนใช้) · กฎ "ห้ามเรียก spread ของคู่ว่าส่วนต่าง" ใช้ตั้งแต่บท 1
 

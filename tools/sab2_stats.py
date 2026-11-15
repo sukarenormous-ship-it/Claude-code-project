@@ -298,12 +298,16 @@ def adf_pvalue_sim(stat, n, worlds=10000, seed=1, lags=0, n_vars=1, world=None):
             "asymptotic": adf_pvalue(stat, n_vars)}
 
 
-def engle_granger(y, x, lags=0):
-    """Engle–Granger สองขั้น: (1) ถดถอย y = a + h·x หา h และ residual (2) ADF บน residual (ไม่มีค่าคงที่ ·
-    ค่าวิกฤตแบบ N = 2 ของ MacKinnon) · two-step cointegration test, same convention as statsmodels.coint
+def engle_granger(y, x, lags=0, resid_const=False):
+    """Engle–Granger สองขั้น: (1) ถดถอย y = a + h·x หา h และ residual (2) ADF บน residual · two-step cointegration test
+    ข้อตกลงของเล่ม (convention): ขั้น 2 **ไม่มีค่าคงที่** (resid_const=False · ค่าเริ่มต้น) เหมือน statsmodels.coint —
+    ค่าคงที่ของคู่ถูกดูดไปแล้วใน a ของขั้น 1 (residual มี Mean 0 พอดี) และค่าวิกฤต/p-value ใช้ MacKinnon case "c" N = 2
+    ซึ่งตารางสร้างจากสมการถดถอยขั้น 1 ที่มีค่าคงที่ → ค่าวิกฤตเดียวกันใช้ได้ทั้งสองแบบ (ค่าคงที่ในขั้น 2 ประมาณได้ ≈ 0)
+    resid_const=True = ใส่ค่าคงที่ในขั้น 2 (แบบ "ADF ด้วยมือ" ที่มีจุดตัด) · ค่าสถิติต่างราว 0.003 (LTC บน LINK
+    ช่วงเลือก −3.6271 ไม่มี → −3.6247 มี) — หน้าและปลั๊กอินต้องใช้แบบเดียวกัน
     คืน h · intercept · residuals · stat · pvalue · crit · reject5 · adf (ผลขั้น 2 ทั้งชุด)"""
     step1 = ols(x, y)
-    a = adf(step1["residuals"], lags=lags, const=False, n_vars=2)
+    a = adf(step1["residuals"], lags=lags, const=resid_const, n_vars=2)
     return {"h": step1["slope"], "intercept": step1["intercept"], "residuals": step1["residuals"],
             "stat": a["stat"], "pvalue": a["pvalue"], "crit": a["crit"], "reject5": a["reject5"], "adf": a}
 
@@ -497,6 +501,14 @@ def walk_forward(n, train, test, step=None, anchored=False):
 # ═══════════════════════════ selftest ═══════════════════════════
 
 
+def _ar1_noise(rng, n, phi=0.8):
+    v, out = 0.0, []
+    for _ in range(n):
+        v = phi * v + rng.gauss(0, 1)
+        out.append(v)
+    return out
+
+
 def _close(a, b, tol, rel=True):
     if isinstance(a, (list, tuple)):
         return len(a) == len(b) and all(_close(u, v, tol, rel) for u, v in zip(a, b))
@@ -681,6 +693,14 @@ def selftest():
     check("ADF 11 จุด: เส้น 5% แบบจำลองใกล้ MacKinnon 2010 ที่ 10 แถว (±0.2) และต่ำกว่า −2.86 · p > asymptotic",
           abs(sm["crit"]["5%"] - adf_crit(10)["5%"]) <= 0.2 and sm["crit"]["5%"] < -2.86 and sm["pvalue"] > sm["asymptotic"],
           f"{sm['crit']['5%']:.3f} vs {adf_crit(10)['5%']:.3f}")
+    gx = [0.0]
+    for _ in range(299):
+        gx.append(gx[-1] + rng.gauss(0, 1))
+    gy = [2 + 1.5 * u + e for u, e in zip(gx, _ar1_noise(rng, 300))]
+    e0, e1 = engle_granger(gy, gx), engle_granger(gy, gx, resid_const=True)
+    check("EG ข้อตกลง: ค่าเริ่มต้นไม่มีค่าคงที่ขั้น 2 (= adf const=False) · resid_const=True ต่างเล็กน้อย · ค่าวิกฤตเดียวกัน",
+          e0["stat"] == adf(e0["residuals"], const=False, n_vars=2)["stat"] and 0 < abs(e0["stat"] - e1["stat"]) < 0.05
+          and e0["crit"] == e1["crit"], f"{e0['stat']:.4f} / {e1['stat']:.4f}")
     check("adf_pvalue_sim: seed เดิมผลเดิม · world แทนได้", adf_pvalue_sim(-2.0, 30, 300, seed=3)["below"] ==
           adf_pvalue_sim(-2.0, 30, 300, seed=3, world=lambda s_, m: _rw_world(s_, m))["below"])
     print("selftest", f"ผ่าน ✓ ({n_checks} ข้อ · เทียบ numpy ≤ 1e-9 สัมพัทธ์ · ค่าวิกฤต MacKinnon 2010 / ตาราง Fuller ≤ 0.03 · "

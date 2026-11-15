@@ -6,6 +6,7 @@
 //   node tools/sab_wordcount.mjs --as-v2 part4  # ตัดสินด้วยเกณฑ์ v2 แม้หน้ายังเป็น v1 (ใช้โดย sab_migrate_v2.py)
 //   node tools/sab_wordcount.mjs --selftest
 //   node tools/sab_wordcount.mjs --book sab2     # เล่ม 2: docs/sab2-partN.html (หรือ SAB_BOOK=sab2)
+//     เกณฑ์เล่ม 2: เส้นทางหลัก ≥ 5000 (ไม่มีเพดานแข็ง) · คำต่อตอนเกิน 3000 เตือนทุกบท (ไม่ล้ม) · สัดส่วน/เรื่องเล่าเหมือน v2 เล่ม 1
 //
 // หน้า v1 (ยังไม่ย้าย · แผน 5.1 "งบคำ")
 //   เส้นทางหลัก = ทั้งหน้า ลบ: 🔎 details (deep/ans) · .sheet (ใบงานรวม 🔩 🔁 📱) · table.ledger · table.ncard ·
@@ -39,7 +40,10 @@ export const PREFIX = process.env.SAB_BOOK || 'sab';
 if (!/^sab2?$/.test(PREFIX)) { console.error(`SAB_BOOK / --book ต้องเป็น sab หรือ sab2 (พบ ${PREFIX})`); process.exit(2); }
 export const WPM = 80;
 export const MAIN_MIN = 1750, MAIN_MAX = 2300, PAGE_MAX = 3500, STORY_MAX = 0.25;                       // v1
-export const V2 = { MAIN_MIN: 2800, BASE_MIN: 1200, BASE_MAX: 2600, SHARE_MIN: 0.65, STORY_MAX: 0.20, LONG: 6000, PART_MAX: 3500 };   // แผน 14.4
+export const V2_BOOK1 = { MAIN_MIN: 2800, BASE_MIN: 1200, BASE_MAX: 2600, SHARE_MIN: 0.65, STORY_MAX: 0.20, LONG: 6000, PART_MAX: 3500 };   // แผน 14.4
+// เล่ม 2 (sab2): บทยาว 3–4 ตอน (แผน sab2 หัวข้อ 4: 6,000–9,000 คำต่อบท) → เส้นทางหลัก ≥ 5000 · ตรวจคำต่อตอนทุกบท (เกิน 3000 เตือน) · ไม่มีเพดานแข็ง
+export const V2_BOOK2 = { ...V2_BOOK1, MAIN_MIN: 5000, PART_MAX: 3000, PARTS_ALWAYS: true };
+export const V2 = PREFIX === 'sab2' ? V2_BOOK2 : V2_BOOK1;
 const isBase = (name) => new RegExp(`^${PREFIX}-base\\d+\\.html$`).test(name);
 
 function countInPage(forceV2) {
@@ -109,9 +113,10 @@ export function judge(r) {
 
 // ข้อสังเกตที่ไม่ทำให้ล้ม (แผน 14.4: ไม่มีเพดานแข็ง แต่บทยาวต้องแบ่งตอน)
 export function notes(r) {
-  if (!r.v2 || r.base || r.main <= V2.LONG) return [];
+  if (!r.v2 || r.base) return [];
   const ps = Object.entries(r.parts || {});
-  if (ps.length < 2) return [`⚠ ยาว แบ่งตอน (เส้นทางหลัก ${r.main} คำ เกิน ${V2.LONG} และยังไม่แบ่งตอน)`];
+  if (ps.length < 2) return r.main > V2.LONG ? [`⚠ ยาว แบ่งตอน (เส้นทางหลัก ${r.main} คำ เกิน ${V2.LONG} และยังไม่แบ่งตอน)`] : [];
+  if (!V2.PARTS_ALWAYS && r.main <= V2.LONG) return [];                 // เล่ม 1: ดูคำต่อตอนเฉพาะบทที่ยาวเกิน LONG · เล่ม 2: ทุกบท
   const big = ps.filter(([, w]) => w > V2.PART_MAX);
   return big.length ? big.map(([k, w]) => `⚠ ตอน ${k} ยาว ${w} คำ (เกิน ${V2.PART_MAX}) แบ่งย่อยได้`) : [];
 }
@@ -149,16 +154,18 @@ async function selftest() {
   const v2ok = r2.v2 && !r2.base && r2.main === 108 && r2.story === 20 && r2.page === 276
     && rb.v2 && rb.base && rb.main === 108 && rf.v2 && rf.main > 40
     && ['W17a', 'W17c'].every((k) => judge(r2).some((s) => s.startsWith(k))) && !judge(r2).some((s) => s.startsWith('เรื่องเล่า'))
-    && judge(row({ main: 2800, page: 4000, story: 560 })).length === 0             // พอดีเกณฑ์: 2800 คำ · 70% · เรื่องเล่า 20%
-    && fails({ main: 2799 }, 'W17a') && fails({ page: 5000 }, 'W17c') && fails({ story: 601 }, 'เรื่องเล่า')
-    && judge(row({ main: 6500, page: 8000 })).length === 0 && notes(row({ main: 6500, page: 8000 })).length === 1   // ยาว = เตือน ไม่ล้ม
-    && notes(row({})).length === 0
+    && judge(row({ main: V2.MAIN_MIN, page: V2.MAIN_MIN / 0.7, story: V2.MAIN_MIN * 0.2 })).length === 0   // พอดีเกณฑ์: MAIN_MIN คำ · 70% · เรื่องเล่า 20%
+    && fails({ main: V2.MAIN_MIN - 1 }, 'W17a') && fails({ page: 5000 }, 'W17c') && fails({ story: 601 }, 'เรื่องเล่า')
+    && judge(row({ main: 9500, page: 12000 })).length === 0 && notes(row({ main: 9500, page: 12000 })).length === 1   // ยาว = เตือน ไม่ล้ม
+    && notes(row({ main: 9500, page: 12000, parts: { ก: 3000, ข: 3000, ค: 3600 } })).length === 1                       // ตอนที่เกิน PART_MAX เท่านั้น
+    && (PREFIX !== 'sab2' || notes(row({ main: 5200, page: 7000, parts: { ก: 3100, ข: 2100 } })).length === 1)          // เล่ม 2: ตรวจตอนทุกบท
+    && notes(row({ main: Math.max(3000, V2.MAIN_MIN) })).length === 0
     && fails({ base: true, main: 1199, page: 1500 }, 'W17a') && fails({ base: true, main: 2601, page: 3000 }, 'W17a')
     && judge(row({ base: true, main: 2000, page: 2500 })).length === 0
     && judge({ v2: false, main: 2000, page: 3000, story: 100 }).length === 0 && judge({ v2: false, main: 2800, page: 3000, story: 100 }).some((s) => s.startsWith('W17a'));
   const ok = v1ok && v2ok;
   console.log(ok ? 'selftest ผ่าน ✓ (ตัด 🔎/ใบงาน/🔗/ปก/script ออกจากเส้นทางหลัก · นับเรื่องเล่า · v2: ตัด details ทุกชนิด/ใบงาน/บัญชี/บัตร/📖 · '
-    + 'เกณฑ์ ≥ 2800 · ≥ 65% · เรื่องเล่า ≤ 20% · ยาวเกิน 6000 เตือนไม่ล้ม · หน้า base 1200–2600 · หน้า v1 ใช้เกณฑ์เดิม)'
+    + `เกณฑ์ ≥ ${V2.MAIN_MIN} · ≥ 65% · เรื่องเล่า ≤ 20% · ตอนเกิน ${V2.PART_MAX} เตือนไม่ล้ม · หน้า base 1200–2600 · หน้า v1 ใช้เกณฑ์เดิม · เล่ม ${PREFIX})`
     : `selftest ไม่ผ่าน ✗ ${JSON.stringify({ r, r2, rb, rf })}`);
   return ok ? 0 : 1;
 }
