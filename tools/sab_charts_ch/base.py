@@ -56,8 +56,8 @@ def _long_cash(fig):
     b = fig["base"]["b1"]
     one, two = b["หนึ่งหน่วย"], b["สองหน่วย"]
     ticks = b["แกนกราฟ"]
-    W, H = 760, 360
-    ax = Axis(min(ticks), max(ticks), 92, 300)
+    W, H = 760, 372
+    ax = Axis(min(ticks), max(ticks), 112, 298)
     out = [text(24, 26, "เงินที่ออกและเข้าดูใหญ่ แต่ผลที่เหลือจริงเล็กกว่ามาก", 13.5, C["ink"], weight=700)]
     out += _legend(24, 52, [("เงินของขา A ที่ออก/เข้า", LEG["A"], "box"), ("ผลได้", C["green"], "box"),
                             ("ผลเสีย", C["red"], "box")])
@@ -78,9 +78,9 @@ def _long_cash(fig):
             out.append(f'<rect x="{cx - bw / 2:.1f}" y="{top:.1f}" width="{bw}" height="{h:.1f}" rx="3" fill="{col}"/>')
             ly = (top - 7) if v >= 0 else (top + h + 15)
             out.append(text(cx, ly, _sign(v), 12, C["ink"], "middle", 700))
-            out.append(text(cx, 324, name, 11.5, C["muted"], "middle"))
+            out.append(text(cx, 338, name, 11.5, C["muted"], "middle"))
         hold = f"ถือ A {t['จำนวน']} หน่วยระหว่างนี้"
-        out.append(text(x0 + 150, 342, hold, 11, C["grey"], "middle"))
+        out.append(text(x0 + 150, 358, hold, 11, C["grey"], "middle"))
     alt = (f"กราฟแท่งสองแผง แผงซ้ายซื้อ A {one['จำนวน']} หน่วยที่ {one['ราคาซื้อ']} จ่าย {one['จ่าย']} ขายที่ {one['ราคาขาย']} "
            f"รับ {one['รับ']} ผลได้ {one['ผล']} แผงขวาซื้อ {two['จำนวน']} หน่วยที่ {two['ราคาซื้อ']} จ่าย {two['จ่าย']} "
            f"ขายที่ {two['ราคาขาย']} รับ {two['รับ']} ผลเสีย {abs(two['ผล'])}")
@@ -108,12 +108,13 @@ def _short_line(fig):
     pts = lambda ys: " ".join(f"{X(p):.1f},{ax.y(v):.1f}" for p, v in zip(xs, ys))  # noqa: E731
     out.append(f'<polyline points="{pts(long_)}" fill="none" stroke="{C["grey"]}" stroke-width="2" stroke-dasharray="6 4"/>')
     out.append(f'<polyline points="{pts(short)}" fill="none" stroke="{LEG["B"]}" stroke-width="2.6" stroke-linecap="round"/>')
-    for key, dx, anchor in (("ขึ้น", 10, "start"), ("ลง", -10, "end")):
+    # ป้ายวางฝั่งที่เส้นลาดลงไม่ผ่าน: จุดซ้าย (ได้) ป้ายล่างซ้าย · จุดขวา (เสีย) ป้ายบนขวา
+    for key, dx, dy, anchor in (("ขึ้น", 12, -12, "start"), ("ลง", -12, 22, "end")):
         t = b["ตกลงขาย"][key]
         cx, cy = X(t["ราคาซื้อคืน"]), ax.y(t["ผล"])
         out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="{LEG["B"]}" stroke="#fff" stroke-width="2"/>')
         lab = f"ซื้อคืนที่ {B.fmt(t['ราคาซื้อคืน'])}: {_sign(t['ผล'])}"
-        out.append(text(cx + dx, cy - 10 if t["ผล"] > 0 else cy + 20, lab, 12, C["ink"], anchor, 700))
+        out.append(text(cx + dx, cy + dy, lab, 12, C["ink"], anchor, 700))
     for p in xs:
         out.append(text(X(p), ax.bottom + 18, B.fmt(p), 11, C["grey"], "middle"))
     out.append(text((L + R) / 2, ax.bottom + 40, "ราคา B ตอนซื้อคืน (ปิด)", 12, C["muted"], "middle"))
@@ -178,7 +179,7 @@ def _converge(fig):
         pts = lambda ys: " ".join(f"{X(m):.1f},{ax.y(v):.1f}" for m, v in zip(months, ys))  # noqa: E731
         out.append(f'<polyline points="{pts(fu)}" fill="none" stroke="{LEG["สัญญา"]}" stroke-width="2.4" stroke-dasharray="6 4"/>')
         out.append(f'<polyline points="{pts(sp)}" fill="none" stroke="{LEG["B"]}" stroke-width="2.6" stroke-linecap="round"/>')
-        out.append(text(X(0) + 6, ax.y(fu[0]) - 9, f"สัญญา {B.fmt(b['สัญญา'])}", 11.5, C["ink"], "start", 700))
+        out.append(text(X(0) + 2, ax.y(fu[0]) - 18, f"สัญญา {B.fmt(b['สัญญา'])}", 11.5, C["ink"], "start", 700))
         out.append(text(X(0) + 6, ax.y(sp[0]) + 18, f"spot {B.fmt(b['spot'])}", 11.5, C["ink"], "start", 700))
         ex, ey = X(months[-1]), ax.y(sp[-1])
         out.append(f'<circle cx="{ex:.1f}" cy="{ey:.1f}" r="5.5" fill="{LEG["สัญญา"]}" stroke="#fff" stroke-width="2"/>')
