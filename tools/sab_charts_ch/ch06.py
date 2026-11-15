@@ -8,12 +8,18 @@ sab-carry-strip   : รอบชดเชย — ยอดสะสมของ�
 from sab_charts import chart, wrap, text, Frame, C, B
 
 
+def _m(v):
+    """เงินในป้ายกราฟ: จำนวนเต็มไม่มีทศนิยม · ไม่ลงตัวพิมพ์สองตำแหน่งให้ตรงกับร้อยแก้ว (50.50 ไม่ใช่ 50.5)"""
+    v = abs(v)
+    return f"{v:,.0f}" if float(v).is_integer() else f"{v:,.2f}"
+
+
 @chart("sab-hold-or-close")
 def _hold_or_close(fig):
     d = fig["ch06"]["วันที่30"]
     W, H = 760, 320
-    steps = [("basis ที่เหลือ", d["basis"]), ("ไม่ต้องจ่ายค่าปิดวันนี้", d["ค่าธรรมเนียมปิดตอนนี้"]),
-             ("ค่าขาย spot วันหมดอายุ", -d["ค่าธรรมเนียมspotถ้าถือ"])]
+    steps = [("basis ที่เหลือ", d["basis"]), ("ไม่ต้องจ่ายค่าปิดคืนนี้", d["ค่าธรรมเนียมปิดตอนนี้"]),
+             ("ค่าขายเหรียญวันหมดอายุ", -d["ค่าธรรมเนียมspotถ้าถือ"])]
     total, opp, opp2 = d["ถือได้เพิ่ม"], d["เสียโอกาส60วัน"], d["เสียโอกาสที่hurdle2"]
     f = Frame(0, opp, W, H, L=64, R=150, T=60, Bm=270, pad=0.14)
     out = f.grid([0, 200, 400, 600, 800])
@@ -27,7 +33,7 @@ def _hold_or_close(fig):
         col = C["green"] if v >= 0 else C["red"]
         ya, yb = f.y(a), f.y(b)
         out.append(f'<rect x="{cx - bw / 2:.1f}" y="{min(ya, yb):.1f}" width="{bw:.1f}" height="{max(1, abs(yb - ya)):.1f}" rx="2" fill="{col}"/>')
-        out.append(text(cx, min(ya, yb) - 7, ("+" if v > 0 else "−") + B.fmt(abs(v)), 12, col, "middle", 700))
+        out.append(text(cx, min(ya, yb) - 7, ("+" if v > 0 else "−") + _m(v), 12, col, "middle", 700))
         out.append(text(cx, f.Bm + 18, name, 10.5, C["muted"], "middle"))
         if prev is not None:
             out.append(f'<line x1="{prev:.1f}" y1="{ya:.1f}" x2="{cx - bw / 2:.1f}" y2="{ya:.1f}" stroke="{C["axis"]}" stroke-dasharray="3 3"/>')
@@ -38,7 +44,7 @@ def _hold_or_close(fig):
     out.append(f'<line x1="{prev:.1f}" y1="{yt:.1f}" x2="{cx - bw / 2:.1f}" y2="{yt:.1f}" stroke="{C["axis"]}" stroke-dasharray="3 3"/>')
     out.append(f'<rect x="{cx - bw / 2:.1f}" y="{yt:.1f}" width="{bw:.1f}" height="{f.y(0) - yt:.1f}" rx="2" fill="{C["blue"]}"/>')
     out.append(text(cx, yt + 18, B.fmt(total), 12, "#ffffff", "middle", 700))
-    out.append(text(cx, f.Bm + 18, "ถือได้เพิ่ม", 10.5, C["muted"], "middle"))
+    out.append(text(cx, f.Bm + 18, "ถือได้มากกว่า", 10.5, C["muted"], "middle"))
     # เส้นค่าเสียโอกาสสองระดับ
     x_end = W - 16
     for val, lab, col, dash in ((opp, f"ค่าเสียโอกาส 60 วัน (hurdle 4%) {B.fmt(opp)}", C["purple"], "6 4"),
@@ -52,13 +58,13 @@ def _hold_or_close(fig):
     for yy in (f.y(opp), yt):
         out.append(f'<line x1="{gx - 4:.1f}" y1="{yy:.1f}" x2="{gx + 4:.1f}" y2="{yy:.1f}" stroke="{C["red"]}" stroke-width="1.6"/>')
     out.append(text(gx + 8, (f.y(opp) + yt) / 2 + 4, f"ขาด {B.fmt(d['ปิดดีกว่า'][0])} → ปิดดีกว่า", 11.5, C["red"], "start", 700))
-    out.append(text(f.L, f.T - 30, "ถือต่อ 60 วันได้เพิ่มเท่าไร เทียบที่เงิน 125,000 หาได้จากทางอื่น",
+    out.append(text(f.L, f.T - 30, f"ถือได้มากกว่าปิดคืนนี้ {B.fmt(total)} แต่ไม่ถึงที่เงิน 125,000 หาได้จากการฝาก 60 วัน",
                     13, C["ink"], weight=700))
-    alt = (f"กราฟแท่งลอย ถือต่อได้ basis ที่เหลือ {B.fmt(d['basis'])} บวกค่าปิดวันนี้ที่ไม่ต้องจ่าย {B.fmt(d['ค่าธรรมเนียมปิดตอนนี้'])} "
-           f"ลบค่าขาย spot วันหมดอายุ {B.fmt(d['ค่าธรรมเนียมspotถ้าถือ'])} รวม {B.fmt(total)} ต่ำกว่าเส้นค่าเสียโอกาส {B.fmt(opp)} "
+    alt = (f"กราฟแท่งลอย ถือได้มากกว่าปิดคืนนี้ เท่ากับ basis ที่เหลือ {B.fmt(d['basis'])} บวกค่าปิดคืนนี้ที่ไม่ต้องจ่าย {B.fmt(d['ค่าธรรมเนียมปิดตอนนี้'])} "
+           f"ลบค่าขายเหรียญวันหมดอายุ {_m(d['ค่าธรรมเนียมspotถ้าถือ'])} รวม {B.fmt(total)} ต่ำกว่าเส้นค่าเสียโอกาส {B.fmt(opp)} "
            f"ที่ hurdle 4% อยู่ {B.fmt(d['ปิดดีกว่า'][0])} แต่สูงกว่าเส้น {B.fmt(opp2)} ที่ hurdle 2%")
-    cap = (f"ค่าธรรมเนียมเปิดไม่อยู่ในภาพเพราะเท่ากันทั้งสองทาง · "
-           "ยังไม่รวม Bid-Ask Spread (ส่วนต่างราคาเสนอซื้อ-เสนอขาย)")
+    cap = ("ถือ spot 1 BTC + short futures 1 BTC · ทุน 125,000 · ค่าธรรมเนียมเปิดไม่อยู่ในภาพเพราะเท่ากันทั้งสองทาง · "
+           "ยังไม่รวม Bid-Ask Spread")
     return wrap(W, H, alt, out, cap, "สอน")
 
 
