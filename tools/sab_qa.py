@@ -23,6 +23,13 @@
     python3 tools/sab_qa.py --pending          # ลิงก์ไปไฟล์ที่ยังไม่มีในกล่อง data-pending = เตือน ไม่ fatal
     python3 tools/sab_qa.py --final            # เฟส 5: data-pending ห้ามเหลือ
     python3 tools/sab_qa.py --selftest         # ใส่ข้อผิดจงใจในบทหุ่น ต้องจับได้ครบ และกรณียกเว้นต้องไม่ถูกฟ้อง
+
+เล่ม 2 (--book sab2 หรือ SAB_BOOK=sab2 · หน้า docs/sab2-partN.html บท 1–17 · ค่าตั้งของเล่มอยู่ใน sab_book.BOOKS)
+  ทุกบทต้องเป็น v2 · บทแรก (บท 1) ไม่มี data-continues · ไม่มีหน้าพื้นฐาน/ทางด่วน/.dist/.other บังคับ · details.file ไม่บังคับ .sheet
+  W12 ห้ามเฉพาะ Π κ τ E[ C V K G ln (เล่ม 2 สอน log · σ · a, b) · W18 "ส่วนต่าง" → "spread ของคู่" ทุกบท
+  W22 ใช้ tools/sab2_terms.json + คำของ tools/sab_terms.json ถือว่าสอนแล้ว (sab_book.load_terms)
+  + V9 💻 details.code รันจริง · V10 กล่อง .fails · V11 ปลั๊กอินห้ามแตะช่วงทดสอบสุดท้าย — รายละเอียดใน tools/sab2_qa.py
+    python3 tools/sab_qa.py --book sab2 --selftest
 """
 
 import glob
@@ -33,19 +40,27 @@ import sys
 import tempfile
 from html.parser import HTMLParser
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sab_book as B  # noqa: E402  (เลือกเล่มด้วย SAB_BOOK หรือ --book · ค่าเริ่มต้น sab)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
-FIG = os.path.join(DOCS, "sab-figures.json")
-TERMS = os.path.join(ROOT, "tools", "sab_terms.json")
+PREFIX = B.PREFIX
+NEXT_VOL = B.BOOK_ID != "sab"                     # เล่ม 2: ทุกบทเป็น v2 · กฎ V9–V11 (tools/sab2_qa.py)
+FIG = B.FIG
+TERMS = B.TERMS
 TERM_CAP = 12
-LAST_PART = 18
-DIST_REQUIRED = {2, 4, 6, 7, 10, 12, 13, 14, 15, 16, 17}
-OTHER_REQUIRED = {1, 2, 5, 7, 9, 12, 17}
-FAST = [0, 4, 5, 10, 12, 14, 17]     # ทางด่วน 🟠 (แผน 3.1)
+LAST_PART = B.LAST_PART
+FIRST_PART = B.FIRST_PART
+DIST_REQUIRED = set() if NEXT_VOL else {2, 4, 6, 7, 10, 12, 13, 14, 15, 16, 17}
+OTHER_REQUIRED = set() if NEXT_VOL else {1, 2, 5, 7, 9, 12, 17}
+FAST = [] if NEXT_VOL else [0, 4, 5, 10, 12, 14, 17]     # ทางด่วน 🟠 (แผน 3.1) · เล่ม 2 ไม่มี
+SPREAD_WORD_FROM = 1 if NEXT_VOL else 8           # W18 "ส่วนต่าง" → "spread ของคู่" ตั้งแต่บทนี้ (เล่ม 2: ทุกบท · ตารางศัพท์ Pair Spread)
+SHEET_REQUIRED = not NEXT_VOL                     # V1 details.file ต้องมี .sheet (เล่ม 2: แฟ้มเป็นหน้าสมุดวิจัย ไม่บังคับใบงาน)
 
 # ── v2 (แผน 14) ──
 TERM_CAP_V2, TERM_CAP_BASE = 7, 4
-LAST_BASE = 4                                     # หน้าพื้นฐาน sab-base1..4.html อยู่ก่อนบท 0
+LAST_BASE = B.LAST_BASE                           # หน้าพื้นฐาน sab-base1..4.html อยู่ก่อนบท 0 (เล่ม 2 ไม่มี → 0)
 EX_MIN = {"part": (5, 3), "base": (3, 2)}         # ✍️ (จำนวนข้อขั้นต่ำ, ข้อที่มี details.hint ขั้นต่ำ)
 EQ_MAX = 2                                        # V6: "=" ต่อ <p> บรรยาย
 RETIRED = [("🔁", r"🔁"), ("⚠️ ค่าเริ่มต้น", r"⚠\s*ค่าเริ่มต้น"), ("🧭 นิสัยคิด", r"🧭\s*นิสัยคิด"),
@@ -81,6 +96,9 @@ ONE_OF = [("🧠 .qv หรือ 🎬 .scene", ['class="qv"', 'class="scene"'])
 
 FORBIDDEN_SYMBOLS = ["Π", "κ", "τ", "σ", "Σ", "E["]
 FORBIDDEN_LATIN = ["b", "C", "V", "K", "d", "G", "ln", "log"]   # ตัวเดี่ยวตามขอบคำ ASCII
+if NEXT_VOL:                                      # เล่ม 2 สอน log ราคา · การถดถอย (a, b) · σ ในบท 1–4 → ห้ามเฉพาะที่ยังไม่สอน
+    FORBIDDEN_SYMBOLS = ["Π", "κ", "τ", "E["]
+    FORBIDDEN_LATIN = ["C", "V", "K", "G", "ln"]
 SOURCE_TAGS = ("🔢", "🎲", "📡", "📱")
 
 
@@ -166,12 +184,12 @@ def main_path(html):
 
 
 def part_no(name):
-    m = re.fullmatch(r"sab-part(\d+)\.html", name)
+    m = re.fullmatch(rf"{PREFIX}-part(\d+)\.html", name)
     return int(m.group(1)) if m else None
 
 
 def base_no(name):
-    m = re.fullmatch(r"sab-base(\d+)\.html", name)
+    m = re.fullmatch(rf"{PREFIX}-base(\d+)\.html", name)
     return int(m.group(1)) if m else None
 
 
@@ -347,7 +365,7 @@ def audit_v2(html, kind, num):
     P += [f"V1 ขาด {m}" for m in miss]
     if kind == "part" and len(files) != 1:
         P.append(f"V1 ต้องมี details.file (📁 แฟ้มของบทนี้) หนึ่งบล็อกพอดี (พบ {len(files)})")
-    elif kind == "part" and not file_sheets:
+    elif kind == "part" and not file_sheets and SHEET_REQUIRED:
         P.append("V1 details.file ต้องมี .sheet อย่างน้อยหนึ่งใบ")
     elif len(files) > 1:
         P.append(f"V1 details.file มีได้ไม่เกินหนึ่งบล็อก (พบ {len(files)})")
@@ -475,10 +493,12 @@ def check_file(name, html, ctx):
     P = []
     n, b = part_no(name), base_no(name)
     kind = "part" if n is not None else ("base" if b is not None else None)
-    v2 = kind is not None and (is_v2(html) or kind == "base")     # หน้า v1 (บทที่ยังไม่ย้าย) ใช้กฎเดิมทุกข้อ
+    v2 = kind is not None and (is_v2(html) or kind == "base" or NEXT_VOL)   # หน้า v1 (บทที่ยังไม่ย้าย) ใช้กฎเดิมทุกข้อ
     pages, fig, terms, opts = ctx["pages"], ctx["fig"], ctx["terms"], ctx["opts"]
     if kind == "base" and not is_v2(html):
         P.append(f"{name}: หน้าพื้นฐานต้องเป็นแม่แบบ v2 — ใส่ <body data-tpl=\"2\">")
+    if kind == "part" and NEXT_VOL and not is_v2(html):
+        P.append(f"{name}: บทเล่ม {B.VOL} ต้องเป็นแม่แบบ v2 — ใส่ <body data-tpl=\"2\">")
 
     # โครงสร้าง
     parser = Balance()
@@ -526,7 +546,7 @@ def check_file(name, html, ctx):
     if "ถอยสู่ค่าเฉลี่ย" in vis_no_allow:
         P.append(f"{name}: W18 'ถอยสู่ค่าเฉลี่ย' นอกกล่อง data-allow (ใช้ 'กลับค่ากลาง')")
     del allow
-    if n is not None and n >= 8:                                   # แผน 7.3: spread ของคู่ ห้ามเรียก "ส่วนต่าง"
+    if n is not None and n >= SPREAD_WORD_FROM:                    # แผน 7.3: spread ของคู่ ห้ามเรียก "ส่วนต่าง"
         mp8 = main_path(html)
         for m in re.finditer(r"ส่วนต่าง(?!ราคาซื้อ-ขาย|ราคาซื้อขาย)", mp8):
             # ยกเว้นคำแปลในวงเล็บต่อท้ายศัพท์อังกฤษ (กฎ CLAUDE.md) เช่น Basis (ส่วนต่างราคา futures กับ spot)
@@ -642,6 +662,10 @@ def check_file(name, html, ctx):
         for label, needles in ONE_OF:
             if not any(x in html for x in needles):
                 P.append(f"{name}: ต้องมี {label}")
+    if NEXT_VOL and kind == "part":                                 # เล่ม 2: V9 💻 รันจริง · V10 กล่อง .fails
+        import sab2_qa
+        P += sab2_qa.check_code(name, html, part=n)
+        P += sab2_qa.check_fails(name, html, blocks, has_class, text_of)
     has_dist = bool(blocks(html, lambda t, a: has_class(a, "dist"))) if v2 else 'class="dist"' in html
     if kind == "part" and n in DIST_REQUIRED and not has_dist:
         P.append(f"{name}: W23 บท {n} ต้องมี .dist")
@@ -665,9 +689,9 @@ def check_file(name, html, ctx):
     if so and kind == "part":
         a = so[0][2]
         cont = re.search(r'data-continues="([^"]+)"', a)
-        if n == 0 and cont and not (v2 and cont.group(1) == f"base{LAST_BASE}"):     # v2: ต่อจากหน้าพื้นฐานสุดท้ายได้
-            P.append(f"{name}: W15 บท 0 ต้องไม่มี data-continues" + (f" (หรือ data-continues=\"base{LAST_BASE}\")" if v2 else ""))
-        if n > 0 and (not cont or cont.group(1) != f"part{n - 1}"):
+        if n == FIRST_PART and cont and not (v2 and LAST_BASE and cont.group(1) == f"base{LAST_BASE}"):   # v2: ต่อจากหน้าพื้นฐานสุดท้ายได้
+            P.append(f"{name}: W15 บท {FIRST_PART} ต้องไม่มี data-continues" + (f" (หรือ data-continues=\"base{LAST_BASE}\")" if v2 and LAST_BASE else ""))
+        if n > FIRST_PART and (not cont or cont.group(1) != f"part{n - 1}"):
             P.append(f"{name}: W15 ฉากเปิดต้องมี data-continues=\"part{n - 1}\"")
     if kind == "base" or n < LAST_PART:
         if v2:                                                      # .pq[data-hook] ตามคลาส (ลำดับ attribute ใดก็ได้)
@@ -679,10 +703,10 @@ def check_file(name, html, ctx):
         if not hooks and not v2:                                    # หน้า v2: V1 ฟ้องแล้ว (หน้าพื้นฐานไม่บังคับสะพาน)
             P.append(f"{name}: W15 ไม่มี .pq สะพานที่มี data-hook")
         if kind == "base":
-            nxt_name, nxt_label = ((f"sab-base{b + 1}.html", f"หน้าพื้นฐาน {b + 1}") if b < LAST_BASE
-                                   else ("sab-part0.html", "บท 0"))
+            nxt_name, nxt_label = ((f"{PREFIX}-base{b + 1}.html", f"หน้าพื้นฐาน {b + 1}") if b < LAST_BASE
+                                   else (f"{PREFIX}-part{FIRST_PART}.html", f"บท {FIRST_PART}"))
         else:
-            nxt_name, nxt_label = f"sab-part{n + 1}.html", f"บท {n + 1}"
+            nxt_name, nxt_label = f"{PREFIX}-part{n + 1}.html", f"บท {n + 1}"
         nxt = pages.get(nxt_name)
         if nxt is not None and hooks:
             ns = blocks(nxt, lambda t, a: has_class(a, "scene-open"))
@@ -711,10 +735,10 @@ def check_file(name, html, ctx):
         # W22 ทางด่วน: บทในทางด่วนใช้คำจากบทที่ทางด่วนข้าม → ต้องนิยามในกล่อง 🟠 ของบทนี้หรือบททางด่วนก่อนหน้า
         # เลิกตรวจในหน้า v2 (กล่อง 🟠 เลิกใช้ · แผน 14.6) และในบท v1 ที่บททางด่วนก่อนหน้าย้ายเป็น v2 แล้ว (โซ่กล่อง 🟠 ขาด)
         if kind == "part" and not v2 and n in FAST and not any(
-                is_v2(pages.get(f"sab-part{k}.html")) for k in FAST if k < n):
+                is_v2(pages.get(f"{PREFIX}-part{k}.html")) for k in FAST if k < n):
             fast_txt = ""
             for k in [k for k in FAST if k <= n]:
-                pg = html if k == n else pages.get(f"sab-part{k}.html")
+                pg = html if k == n else pages.get(f"{PREFIX}-part{k}.html")
                 if pg:
                     fast_txt += " ".join(text_of(pg[s0:e0]) for s0, e0, _ in
                                          blocks(pg, lambda t, a: 'data-path="fast"' in a))
@@ -736,22 +760,29 @@ def run(docs_dir, fig_path, terms_path, scope=None, pending=False, final=False, 
         name = os.path.basename(p)
         b, n = base_no(name), part_no(name)
         return (0, b, p) if b is not None else (1, n, p) if n is not None else (2, 0, p)
-    files = sorted(glob.glob(os.path.join(docs_dir, "sab-*.html")), key=order)
+    files = sorted(glob.glob(os.path.join(docs_dir, f"{PREFIX}-*.html")), key=order)
     pages = {}
     for p in files:
         with open(p, encoding="utf-8") as fh:
             pages[os.path.basename(p)] = fh.read()
     for p in glob.glob(os.path.join(docs_dir, "*")):
         pages.setdefault(os.path.basename(p), None)
+    terms = B.load_terms() if os.path.abspath(terms_path) == os.path.abspath(B.TERMS) else load_json(terms_path)
     ctx = {"pages": {k: v for k, v in pages.items() if v is not None}, "fig": load_json(fig_path),
-           "terms": load_json(terms_path), "opts": {"pending": pending, "final": final}, "warnings": []}
+           "terms": terms, "opts": {"pending": pending, "final": final}, "warnings": []}
+    for k, v in (terms or {}).items():                              # เล่ม 2: คำที่ลงทะเบียนซ้ำกับเล่มก่อน (ใช้ของเล่มก่อน = สอนแล้ว)
+        if not k.startswith("_") and isinstance(v, dict) and "_ซ้ำ" in v:
+            ctx["warnings"].append(f"{os.path.basename(terms_path)}: {k!r} สอนแล้วใน{v['สอน']} — ลบออกจากทะเบียนเล่มนี้ได้")
     ctx["pages"].update({k: "" for k, v in pages.items() if v is None})
-    targets = [f for f in files if not scope or os.path.basename(f) == f"sab-{scope}.html"]
+    targets = [f for f in files if not scope or os.path.basename(f) == f"{PREFIX}-{scope}.html"]
     problems = []
     for p in targets:
         problems += check_file(os.path.basename(p), pages[os.path.basename(p)], ctx)
+    if NEXT_VOL and not scope and docs_dir == DOCS:                 # V11 ปลั๊กอินห้ามแตะช่วงทดสอบสุดท้าย (ยกเว้น ch17)
+        import sab2_qa
+        problems += sab2_qa.check_plugins()
     if not quiet:
-        print(f"ตรวจ {len(targets)} ไฟล์" + (" (ยังไม่มี tools/sab_terms.json — ข้าม W22)" if not ctx["terms"] else ""))
+        print(f"ตรวจ {len(targets)} ไฟล์" + (f" (ยังไม่มี tools/{PREFIX}_terms.json — ข้าม W22)" if not ctx["terms"] else ""))
         for w in ctx["warnings"]:
             print("  ·", w)
         if problems:
@@ -761,7 +792,7 @@ def run(docs_dir, fig_path, terms_path, scope=None, pending=False, final=False, 
         else:
             print("ผ่านทุกข้อ ✓")
     if not targets and not quiet:
-        print("ยังไม่มีไฟล์ docs/sab-*.html ให้ตรวจ")
+        print(f"ยังไม่มีไฟล์ docs/{PREFIX}-*.html ให้ตรวจ")
     return (1 if problems else 0), problems
 
 
@@ -1035,9 +1066,75 @@ def _selftest_v2(head, tail, fig):
     return ok, len(cases) + 2
 
 
+def selftest_next():
+    """--book sab2 --selftest: กฎ V9–V11 (tools/sab2_qa.py) + บทหุ่นเล่ม 2 ผ่าน run() จริง
+    (ทุกบทเป็น v2 · บทแรก = บท 1 ไม่มี data-continues · คำเล่ม 1 ใช้ได้อิสระ · W22 ของคำเล่ม 2 · W18 ส่วนต่าง ทุกบท)"""
+    import sab2_qa
+    ok = sab2_qa.selftest() == 0
+    head, tail = B.shell()
+    fails = ('<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้</div>'
+             '<ul><li><strong>พังเมื่อ</strong> ข้อมูลสั้นกว่า 3 วัน</li></ul></div>\n')
+    code = ('<details class="code"><summary>💻 ทำด้วย Python</summary>\n<pre>print(2 + 1)\n# ผลที่ต้องได้: 3</pre>\n'
+            '<p>ทำซ้ำสิ่งที่คิดด้วยมือ</p></details>\n')
+
+    def page(n, cont=None, scene="", drop=(), extra="", body_v2=True, **repl):
+        d = _v2_parts("part", n, scene=scene, cont=cont)
+        d["pos"] = d["pos"].replace("บท 4 จาก 18", f"บท {n} จาก {LAST_PART}")
+        d["file"] = '<details class="file"><summary>📁 แฟ้มของบทนี้</summary><p>หน้าสมุดวิจัย</p></details>\n'
+        for k in ("other", "dist"):
+            del d[k]
+        d["rest_a"] = fails + code + d["rest_a"]
+        d["h2b"] = d["h2b"].replace("<p>เนื้อหาของตอนที่สอง</p>", f"<p>เนื้อหาของตอนที่สอง {extra}</p>")
+        for k in drop:
+            d["rest_a"] = d["rest_a"].replace({"fails": fails, "code": code}[k], "")
+        for k, v in repl.items():
+            d[k] = v
+        h = head.replace("<body>", '<body data-tpl="2">') if body_v2 else head
+        return h + "".join(d.values()) + tail
+
+    with tempfile.TemporaryDirectory() as d0:
+        fp = os.path.join(d0, f"{PREFIX}-figures.json")
+        with open(fp, "w", encoding="utf-8") as fh:
+            json.dump({"_claims": []}, fh)
+        tp = os.path.join(d0, "terms.json")
+        with open(tp, "w", encoding="utf-8") as fh:
+            json.dump({"Kalman Filter": {"สอน": 6}}, fh)
+
+        def run_set(pages, terms=tp):
+            d = tempfile.mkdtemp(dir=d0)
+            for name, html in pages.items():
+                with open(os.path.join(d, name), "w", encoding="utf-8") as fh:
+                    fh.write(html)
+            return run(d, fp, terms, quiet=True)[1]
+        good = {f"{PREFIX}-part1.html": page(1, cont="", extra="ใช้ Funding Rate จากเล่ม 1"),
+                f"{PREFIX}-part2.html": page(2, scene="เงินสดอิสระ"),
+                f"sab-part1.html": "<p>หน้าเล่ม 1 ต้องไม่ถูกตรวจ</p>"}
+        probs = run_set(good, terms=B.TERMS) + run_set(good)
+        if probs:
+            ok = False
+            print("selftest ล้ม: บทเล่ม 2 ที่ถูกต้องถูกฟ้อง →", probs)
+        bad = {
+            "V10 ไม่มีกล่อง .fails": page(1, cont="", drop=("fails",)),
+            "V9 บล็อก 💻": page(1, cont="",
+                               rest_a=fails + code.replace("print(2 + 1)", "print(2 + 2)") + '<div class="rest"><div class="bt">พักตรงนี้ได้</div><p>ถึงตรงนี้ได้ 3</p></div>\n'),
+            "ต้องเป็นแม่แบบ v2": page(1, cont="", body_v2=False),
+            "W15 บท 1 ต้องไม่มี data-continues": page(1, cont="part0"),
+            "W22 ใช้ 'Kalman Filter' ก่อนสอน": page(1, cont="", extra="Kalman Filter"),
+            "W18 'ส่วนต่าง'": page(1, cont="", extra="ส่วนต่างของคู่"),
+        }
+        for want, html in bad.items():
+            got = run_set({f"{PREFIX}-part1.html": html})
+            if not any(want in p for p in got):
+                ok = False
+                print(f"selftest ล้ม: ไม่จับ {want!r} → {got}")
+    print("selftest", f"ผ่าน ✓ (เล่ม {B.VOL}: บทหุ่นที่ถูกต้องไม่ถูกฟ้อง · คำเล่ม 1 ใช้ได้ · จับ {len(bad)} กรณี "
+          "V9 · V10 · v2 บังคับ · W15 บทแรก · W22 คำเล่มนี้ · W18 ส่วนต่าง)" if ok else "ไม่ผ่าน ✗")
+    return 0 if ok else 1
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a == ["--selftest"]:
-        sys.exit(selftest())
+        sys.exit(selftest_next() if NEXT_VOL else selftest())
     scope = a[a.index("--scope") + 1] if "--scope" in a else None
     sys.exit(run(DOCS, FIG, TERMS, scope, "--pending" in a, "--final" in a)[0])

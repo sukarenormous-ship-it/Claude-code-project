@@ -35,6 +35,37 @@ markup และคำสั่งตรวจ: ดูหัวข้อ 6 ท�
 - ทุกบทจบด้วยการตัดสินใจของมิน และ "การทดลองถัดไป" (เปลี่ยนหนึ่งอย่าง · อะไรคงที่ · ผลแบบไหนแปลว่าไม่ช่วย)
 - เสียงเล่าเหมือนเล่ม 1 (ดู `thai-style-review.md`) · ไม่เอ่ยชื่อหนังสือเล่มอื่นในคลังบนเส้นทางหลัก (ลิงก์ "บ้านในคลัง" อยู่ใน 📁)
 
-## 6. markup ที่ตัวตรวจพึ่ง
+## 6. markup ที่ตัวตรวจพึ่ง และคำสั่งตรวจ
 
-_รอผู้ดูแลเครื่องมือเติม — ใช้ markup ของเล่ม 1 v2 ทั้งหมด (writing-brief-v2.md §6) และเพิ่ม `details.code` กับ `.fails`_
+ใช้ markup ของเล่ม 1 v2 ทั้งหมด (`writing-brief-v2.md` §6) และเพิ่ม:
+
+```html
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้</div>
+<p>… เงื่อนไขพร้อมตัวเลข …</p></div>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary><pre>
+from sab2_realdata import load_closes
+from sab2_stats import ols
+...
+print(round(h, 2), round(r2, 2))
+# ผลที่ต้องได้: 1.94 · 0.15
+</pre></details>
+```
+
+- `.fails` อยู่นอกบล็อกพับ อย่างน้อยหนึ่งกล่องต่อบท และมีตัวเลขอย่างน้อยหนึ่งตัว (V10)
+- `details.code` ≤ 25 บรรทัด · บรรทัดสุดท้าย `# ผลที่ต้องได้: …` · ตัวเลขที่ print ต้องตรงตามลำดับ (ปัดตามทศนิยมที่เขียน) และต้องปรากฏในหน้านอก `<pre>` · ห้าม `unlock_final` ก่อนบท 17 (V9) · รันใน temp dir ด้วย `PYTHONPATH=tools` ไม่มีเครือข่าย
+- ปลั๊กอิน `tools/sab2_figures_ch/chNN.py` อ่านข้อมูลผ่าน `sab2_realdata.load_closes/load_funding` เท่านั้น และคำนวณด้วย `sab2_stats` / `sab2_sim` (V11)
+- ศัพท์เล่ม 1 ใช้ได้เลย (ทวนหนึ่งบรรทัด) และ **ห้ามใส่ใน 📖 ของเล่ม 2** · ศัพท์ใหม่ลง `tools/sab2_terms.json` · เรื่องลง `tools/sab2_bible.json`
+- เล่ม 2 อนุญาต log · σ บนเส้นทางหลัก (สอนก่อนใช้) · กฎ "ห้ามเรียก spread ของคู่ว่าส่วนต่าง" ใช้ตั้งแต่บท 1
+
+```bash
+export SAB_BOOK=sab2
+python3 -I tools/sab_figures.py && python3 -I tools/sab_figures.py --check
+python3 tools/sab_charts.py --fill --scope partN
+python3 tools/sab_check_figures.py --scope partN
+python3 tools/sab_qa.py --scope partN --final
+python3 tools/sab2_qa.py --scope partN          # V9–V11
+node tools/sab_wordcount.mjs partN && node tools/sab_render_check.mjs partN
+python3 tools/lib_qa.py sab2-partN && python3 tools/arith_qa.py sab2-partN && python3 tools/prose_qa.py sab2-partN && python3 tools/svg_qa.py sab2-partN
+```
+สร้างหน้าใหม่: `SAB_BOOK=sab2 python3 tools/sab_new_part.py partN`

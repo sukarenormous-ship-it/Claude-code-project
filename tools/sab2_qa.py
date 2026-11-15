@@ -17,7 +17,7 @@ markup ที่ผู้เขียนต้องใช้
     <pre>import sab2_stats as S
     r = S.ols([1, 2, 3, 4], [2.1, 3.9, 6.2, 7.8])
     print(round(r["slope"], 2), round(r["intercept"], 2))
-    # ผลที่ต้องได้: 1.94 · 0.1</pre>
+    # ผลที่ต้องได้: 1.94 · 0.15</pre>
     <p>…</p></details>
 
     <div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้</div>
@@ -293,11 +293,11 @@ def selftest():
             ok = False
             msgs.append(f"selftest ล้ม: {label} → {probs}")
 
-    page_txt = "<p>ความชัน 1.94 และจุดตัด 0.1 · φ ประมาณ 0.9</p>"
+    page_txt = "<p>ความชัน 1.94 และจุดตัด 0.15 · φ ประมาณ 0.9</p>"
     good = _code("import sab2_stats as S\n"
                  "r = S.ols([1, 2, 3, 4], [2.1, 3.9, 6.2, 7.8])\n"
                  "print(round(r[&quot;slope&quot;], 2), round(r[&quot;intercept&quot;], 2))\n"
-                 "# ผลที่ต้องได้: 1.94 · 0.1")
+                 "# ผลที่ต้องได้: 1.94 · 0.15")
     expect("บล็อกถูก (import sab2_stats · &quot; ถูกถอด)", check_code("t.html", page_txt + good, part=1), None)
     rounding = _code("print(0.94999 + 0.95)\nprint(1 &lt; 2)\n# ผลที่ต้องได้: 1.9")   # 1.89999 → 1.9 · True ไม่ใช่ตัวเลข
     expect("ปัดตามทศนิยมที่เขียน · &lt; ถูกถอด", check_code("t.html", "<p>1.9</p>" + rounding, part=1), None)
@@ -350,10 +350,13 @@ def selftest():
         plug("ch07.py", "import csv\ndef extend(data, D, q):\n"
                         "    open('docs/sab2-data/closes-daily.csv')\n    return {}\n")
         probs = check_plugins([d])
-        expect("ch05 unlock_final=ตัวแปร", [p for p in probs if "ch05.py" in p], "เรียกด้วย unlock_final")
-        expect("ch06 **kwargs", [p for p in probs if "ch06.py" in p], "**kwargs")
-        expect("ch07 อ่านไฟล์ตรง", [p for p in probs if "ch07.py" in p], "'sab2-data'")
-        expect("ch03/ch17 ไม่ถูกฟ้อง", [p for p in probs if "ch03.py" in p or "ch17.py" in p], None)
+
+        def of(fn):
+            return [p for p in probs if p.split(":", 1)[0].endswith(fn)]
+        expect("ch05 unlock_final=ตัวแปร", of("ch05.py"), "เรียกด้วย unlock_final")
+        expect("ch06 **kwargs", of("ch06.py"), "**kwargs")
+        expect("ch07 อ่านไฟล์ตรง", of("ch07.py"), "'sab2-data'")
+        expect("ch03/ch17 ไม่ถูกฟ้อง", of("ch03.py") + of("ch17.py"), None)
     for m in msgs:
         print(m)
     net = "unshare -n + ปิด socket" if _unshare_prefix() else "ปิด socket (เครื่องนี้ไม่มี unshare -n)"
