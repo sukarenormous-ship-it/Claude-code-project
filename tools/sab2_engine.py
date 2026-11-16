@@ -16,6 +16,7 @@ fill: "next" (lag 1 · ค่าเริ่มต้น) · "same" (lag 0 · re
 signal: list ยาวเท่าราคา หรือฟังก์ชัน signal(t) → ค่าที่รู้ ณ ปิดวัน t · rule: ฟังก์ชัน rule(z, held) → ทิศใหม่
 (ค่าเริ่มต้น threshold_rule(enter, leave): ว่าง & |z| ≥ enter → สวนทิศ z · ถือ & |z| ≤ leave → ปิด)
 
+ตะกร้าหลายขา (บท 11): run_basket([P1, P2, P3], [1, −w2, −w3], z, sets) — วงเดียวกัน ค่าธรรมเนียมคิดทุกขา
 h เปลี่ยนทุกวัน (บท 5 rolling · บท 6 Kalman): run_hpath(A, B, hs, z, sets, rebalance=True, band=0.0) — ปรับขา B ตาม h ใหม่
 ระหว่างถือ (ค่าธรรมเนียมแยกเป็น costs_rebalance) · บัญชีตามจำนวนที่ถือจริง · price_pnl / chart_pnl / redefinition
 
@@ -171,6 +172,54 @@ def run_hpath(A, B, hs, signal, sets=1.0, capital=CAPITAL, fill="next", lag=None
             "open_units": (qa, qb), "lag": lag, "lookahead": lag == 0}
 
 
+def run_basket(prices, units, signal, sets=1.0, capital=CAPITAL, rule=None, fill="next", lag=None, fee=FEE,
+               enter=2.0, leave=0.5, hold=30):
+    """วงห้าขั้นเดียวกับ run แต่ถือได้หลายขา (เล่ม 2 บท 11 · ตะกร้า) · multi-leg basket version of run
+    prices = [ราคาขา 1, ราคาขา 2, …] · units = จำนวนต่อหนึ่งชุด มีเครื่องหมาย (ขาแรกมัก +1 · ขา short ติดลบ)
+    long ชุด = ซื้อทุกขาตาม units · fill ราคาปิดวัน t ทุกขาพร้อมกัน (ไม่จำลองการได้ราคาไม่ครบ) · ค่าธรรมเนียม fee × มูลค่าที่ซื้อขาย
+    ทุกขา · run_basket([A, B], [1, −h], …) ได้ผลเท่า run(A, B, h, …) ทุกบิต · คืนเหมือน run (ไม่มี loss_budget) + legs · gross0
+    (มูลค่าสองฝั่งรวมของหนึ่งชุด ณ ราคาวันแรก)"""
+    if lag is None:
+        lag = {"next": 1, "same": 0}[fill]
+    rule = rule or threshold_rule(enter, leave)
+    sig = signal if callable(signal) else signal.__getitem__
+    cash, held, t_in, before, costs = float(capital), 0, 0, None, 0.0
+    equity, ledger, fills, trades = [], [], [], []
+    for t in range(len(prices[0])):
+        if t >= lag:
+            s = t - lag
+            zt = sig(s)                                              # 1) รู้อะไร
+            want = rule(zt, held)                                    # 2) สัญญาณ
+            why = "enter" if held == 0 else "target"
+            if held != 0 and want == held and hold is not None and t - t_in >= hold:
+                want, why = 0, "time"
+            if want != held:                                         # 3) คำสั่ง  4) fill ราคาปิดวัน t ทุกขา
+                if held == 0:
+                    before = cash
+                q = [(want - held) * sets * u for u in units]
+                f = fee * sum(abs(qi) * p[t] for qi, p in zip(q, prices))
+                cash -= sum(qi * p[t] for qi, p in zip(q, prices)) + f
+                costs += f
+                fills.append({"t": t, "side": want, "fee": f, "cash": cash, "reason": why, "signal": zt, "signal_t": s})
+                if held != 0:
+                    trades.append({"side": held, "t_in": t_in, "t_out": t, "pnl": cash - before, "reason": why})
+                    if want != 0:
+                        before = cash
+                held, t_in = want, t
+        eq = cash + held * sets * sum(u * p[t] for u, p in zip(units, prices))   # 5) ลงบัญชี
+        equity.append(eq)
+        ledger.append({"t": t, "cash": cash, "units": [held * sets * u for u in units], "equity": eq, "costs": costs})
+    peak, mdd = float(capital), 0.0
+    for e in equity:
+        peak = max(peak, e)
+        mdd = max(mdd, peak - e)
+    return {"equity": equity, "ledger": ledger, "fill_list": fills, "trade_list": trades,
+            "fills": len(fills), "trades": len(trades), "wins": sum(1 for x in trades if x["pnl"] > 0),
+            "net": (equity[-1] if equity else capital) - capital, "costs": costs, "max_drawdown": mdd,
+            "min_equity": min(equity) if equity else capital, "open": held, "lag": lag, "lookahead": lag == 0,
+            "legs": len(units), "gross0": sets * sum(abs(u) * p[0] for u, p in zip(units, prices))}
+
+
 # ═══════════════════════════ selftest ═══════════════════════════
 
 def _reference(A, B, h, z, sets, lag=1, fee=FEE, enter=2, leave=0.5, hold=30):
@@ -280,8 +329,34 @@ def selftest():
     check("run_hpath: ราคานิ่ง h 2 → 2.2 · ไม่มีเงินจากราคา · ผลนิยามใหม่ +10 · ปรับขา B หนึ่งครั้ง",
           abs(r5["price_pnl"]) < 1e-12 and abs(r5["chart_pnl"] - 10) < 1e-9 and r5["rebalances"] == 1
           and abs(r5["open_units"][1] - 2.2) < 1e-12)
+    # 6) run_basket (บท 11): สองขา [1, −h] เท่า run ทุกบิต · สามขา: บัญชีรวมกลับ · ค่าธรรมเนียมคิดทุกขา
+    rng = random.Random(11)
+    same2, ident3 = True, True
+    for k in range(60):
+        m = rng.randint(30, 150)
+        b, d, x = [50.0], [20.0], [0.0]
+        for _ in range(m - 1):
+            b.append(b[-1] * (1 + rng.gauss(0, 0.02)))
+            d.append(d[-1] * (1 + rng.gauss(0, 0.02)))
+            x.append(0.85 * x[-1] + rng.gauss(0, 1.0))
+        hh = rng.choice([1, 2, 1.7])
+        a = [hh * u + 3 + v for u, v in zip(b, x)]
+        z = [v / 2.0 for v in x]
+        lag = 1 + k % 2
+        r, rb = run(a, b, hh, z, 0.5, lag=lag), run_basket([a, b], [1, -hh], z, 0.5, lag=lag)
+        same2 = same2 and r["equity"] == rb["equity"] and r["fills"] == rb["fills"] and r["costs"] == rb["costs"]
+        r3 = run_basket([a, b, d], [1, -hh, 0.8], z, 0.5, lag=lag)
+        fees = sum(f["fee"] for f in r3["fill_list"])
+        ident3 = ident3 and abs(r3["ledger"][-1]["costs"] - fees) < 1e-9 and all(
+            abs(row["equity"] - (row["cash"] + sum(q * p[t] for q, p in zip(row["units"], (a, b, d))))) < 1e-9
+            for t, row in enumerate(r3["ledger"]))
+    check("run_basket: สองขา [1, −h] เท่า run ทุกบิต (60 โลก)", same2)
+    check("run_basket: สามขา Equity = เงินสด + Σ จำนวนถือ × ราคา ทุกวัน · ค่าธรรมเนียมสะสม = ผลรวม fee", ident3)
+    rb3 = run_basket([[10.0] * 4, [20.0] * 4, [5.0] * 4], [1, -0.5, -2], [3, 3, 3, 3], 2, fee=0.001, hold=None)
+    check("run_basket มือ: เปิดชุด −1 × 2 วันที่ 1 · มูลค่าซื้อขาย 2 × (10 + 10 + 10) = 60 · ค่าธรรมเนียม 0.06 · gross0 60",
+          abs(rb3["costs"] - 0.06) < 1e-12 and abs(rb3["gross0"] - 60) < 1e-12 and rb3["open"] == -1)
     print("selftest", f"ผ่าน ✓ ({n} ข้อ · สิบวันของบท 13 ตรงหน้า · เท่าลูป 💻 ทุกบิต 200 โลก · lag/same/ฟังก์ชันสัญญาณ · "
-          "เวลาถือ · งบขาดทุน · บัญชีเงินสด/จำนวนถือ/ค่าธรรมเนียม · drawdown · run_hpath h เปลี่ยนได้)" if ok else "ไม่ผ่าน ✗")
+          "เวลาถือ · งบขาดทุน · บัญชีเงินสด/จำนวนถือ/ค่าธรรมเนียม · drawdown · run_hpath h เปลี่ยนได้ · run_basket หลายขา)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

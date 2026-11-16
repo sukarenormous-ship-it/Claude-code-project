@@ -7,7 +7,7 @@ Every function takes plain lists and returns plain floats / lists / dicts.
 
     python3 tools/sab2_stats.py --selftest     # เทียบ numpy (1e-9) · ค่าวิกฤต ADF ที่ตีพิมพ์ · การจำลองที่รู้คำตอบ
 
-หมวด (sections): ค่าพื้นฐาน · การถดถอย · AR(1)/OU/half-life · ADF (+ p-value แบบจำลอง adf_pvalue_sim) · Engle–Granger · หน้าต่างเลื่อน · Kalman 1 มิติ ·
+หมวด (sections): ค่าพื้นฐาน · การถดถอย · AR(1)/OU/half-life · ADF (+ p-value แบบจำลอง adf_pvalue_sim) · Engle–Granger (คู่ · ตะกร้า engle_granger_multi) · หน้าต่างเลื่อน · Kalman 1 มิติ ·
 PCA (Jacobi) · พอร์ต · Kelly · walk-forward
 """
 
@@ -210,6 +210,8 @@ MACKINNON_2010_C = {
         "10%": (-2.56677, -1.5384, -2.809, 0.0)},
     2: {"1%": (-3.89644, -10.9519, -33.527, 0.0), "5%": (-3.33613, -6.1101, -6.823, 0.0),
         "10%": (-3.04445, -4.2412, -2.720, 0.0)},
+    3: {"1%": (-4.29374, -14.4354, -33.195, 47.433), "5%": (-3.74066, -8.5632, -10.852, 27.982),   # เล่ม 2 บท 11 (ตะกร้า 3 เหรียญ)
+        "10%": (-3.45218, -6.2143, -3.718, 0.0)},
 }
 # MacKinnon (1994) "Approximate asymptotic distribution functions for unit-root and cointegration tests", JBES 12:
 #   p ≈ Φ(Σ γ_i τ^i) · ใช้ชุด small-p เมื่อ τ ≤ τ* และชุด large-p เมื่อ τ > τ* · นอก [τ_min, τ_max] = 0 หรือ 1 (case "c")
@@ -229,6 +231,8 @@ def adf_crit(nobs, n_vars=1):
 
 def adf_pvalue(stat, n_vars=1):
     """p-value โดยประมาณของสถิติ ADF/EG (MacKinnon 1994 · เชิงเส้นกำกับ) · approximate asymptotic p-value"""
+    if n_vars not in MACKINNON_1994_C:                  # ไม่มีตาราง (ตะกร้า N ≥ 3) → ใช้ adf_pvalue_sim
+        return float("nan")
     c = MACKINNON_1994_C[n_vars]
     if stat > c["max"]:
         return 1.0
@@ -250,9 +254,10 @@ def adf(xs, lags=0, const=True, n_vars=1):
     j = 1 if const else 0
     stat = r["coef"][j] / r["se"][j]
     nobs = len(y)
-    crit = adf_crit(nobs, n_vars)
-    return {"stat": stat, "pvalue": adf_pvalue(stat, n_vars), "crit": crit, "gamma": r["coef"][j],
-            "phi": 1.0 + r["coef"][j], "nobs": nobs, "lags": lags, "reject5": stat < crit["5%"]}
+    crit = adf_crit(nobs, n_vars) if n_vars in MACKINNON_2010_C else None     # N ที่ไม่มีตาราง → None (ใช้ adf_pvalue_sim)
+    return {"stat": stat, "pvalue": adf_pvalue(stat, n_vars) if n_vars in MACKINNON_1994_C else float("nan"),
+            "crit": crit, "gamma": r["coef"][j], "phi": 1.0 + r["coef"][j], "nobs": nobs, "lags": lags,
+            "reject5": stat < crit["5%"] if crit else None}
 
 
 _NULL_CACHE = {}
@@ -282,7 +287,12 @@ def adf_null(n, worlds=10000, seed=1, lags=0, n_vars=1, world=None):
         out = []
         for i in range(worlds):
             w = gen(seed + i, n)
-            out.append(engle_granger(w[0], w[1], lags)["stat"] if n_vars == 2 else adf(w, lags=lags)["stat"])
+            if n_vars == 1:
+                out.append(adf(w, lags=lags)["stat"])
+            elif n_vars == 2:
+                out.append(engle_granger(w[0], w[1], lags)["stat"])
+            else:                                                    # ตะกร้า n_vars เหรียญ (บท 11)
+                out.append(engle_granger_multi(w[0], list(w[1:]), lags)["stat"])
         _NULL_CACHE[key] = sorted(out)
     return _NULL_CACHE[key]
 
@@ -310,6 +320,17 @@ def engle_granger(y, x, lags=0, resid_const=False):
     a = adf(step1["residuals"], lags=lags, const=resid_const, n_vars=2)
     return {"h": step1["slope"], "intercept": step1["intercept"], "residuals": step1["residuals"],
             "stat": a["stat"], "pvalue": a["pvalue"], "crit": a["crit"], "reject5": a["reject5"], "adf": a}
+
+
+def engle_granger_multi(y, xs, lags=0):
+    """Engle–Granger สองขั้นของตะกร้า (เล่ม 2 บท 11): (1) ถดถอยหลายตัวแปร y = a + Σ w_j·x_j (2) ADF บน residual
+    ไม่มีค่าคงที่ (ข้อตกลงเดียวกับ engle_granger) · ค่าวิกฤต MacKinnon 2010 case "c" N = 1 + len(xs) มีถึง N = 3 ·
+    N อื่น crit = None และ pvalue = nan → ใช้ adf_pvalue_sim(stat, n, n_vars=N) · len(xs) = 1 ได้ผลเท่า engle_granger
+    multi-coin (basket) Engle–Granger · คืน weights · intercept · residuals · stat · pvalue · crit · reject5 · adf · ols"""
+    step1 = ols_multi(xs, y)
+    a = adf(step1["residuals"], lags=lags, const=False, n_vars=1 + len(xs))
+    return {"weights": step1["coef"][1:], "intercept": step1["coef"][0], "residuals": step1["residuals"],
+            "stat": a["stat"], "pvalue": a["pvalue"], "crit": a["crit"], "reject5": a["reject5"], "adf": a, "ols": step1}
 
 
 # ═══════════════════════════ หน้าต่างเลื่อน (rolling) ═══════════════════════════
@@ -701,6 +722,23 @@ def selftest():
     check("EG ข้อตกลง: ค่าเริ่มต้นไม่มีค่าคงที่ขั้น 2 (= adf const=False) · resid_const=True ต่างเล็กน้อย · ค่าวิกฤตเดียวกัน",
           e0["stat"] == adf(e0["residuals"], const=False, n_vars=2)["stat"] and 0 < abs(e0["stat"] - e1["stat"]) < 0.05
           and e0["crit"] == e1["crit"], f"{e0['stat']:.4f} / {e1['stat']:.4f}")
+    eg1, egm1 = engle_granger(gy, gx), engle_granger_multi(gy, [gx])
+    check("engle_granger_multi: หนึ่งเหรียญ = engle_granger (h · ค่าสถิติ ≤ 1e-9)",
+          _close([egm1["weights"][0], egm1["stat"]], [eg1["h"], eg1["stat"]], T))
+    gz = [0.0]
+    for _ in range(299):
+        gz.append(gz[-1] + rng.gauss(0, 1))
+    g3 = [1 + 0.5 * u + 0.5 * v + e for u, v, e in zip(gx, gz, _ar1_noise(rng, 300))]
+    m3, p3 = engle_granger_multi(g3, [gx, gz]), engle_granger(g3, gx)
+    check("ตะกร้าที่รู้คำตอบ (y = 0.5x + 0.5z + AR(1)): น้ำหนัก ≈ 0.5/0.5 ±0.12 · ตะกร้าผ่าน 5% · แรงกว่าคู่ y–x ≥ 1",
+          abs(m3["weights"][0] - 0.5) < 0.12 and abs(m3["weights"][1] - 0.5) < 0.12 and m3["reject5"] and
+          m3["stat"] < p3["stat"] - 1,
+          f"{m3['weights']} {m3['stat']:.2f} {p3['stat']:.2f}")
+    n3 = adf_pvalue_sim(-3.0, 300, worlds=3000, seed=1, n_vars=3)
+    check("N = 3: เส้น 5% แบบจำลอง (3,000 โลก · 300 จุด) ใกล้ MacKinnon 2010 (±0.08) · N ที่ไม่มีตาราง crit = None",
+          abs(n3["crit"]["5%"] - adf_crit(299, 3)["5%"]) <= 0.08 and
+          engle_granger_multi(g3, [gx, gz, [u - v for u, v in zip(gx, gz)][::-1]])["crit"] is None,
+          f"{n3['crit']['5%']:.3f} vs {adf_crit(299, 3)['5%']:.3f}")
     check("adf_pvalue_sim: seed เดิมผลเดิม · world แทนได้", adf_pvalue_sim(-2.0, 30, 300, seed=3)["below"] ==
           adf_pvalue_sim(-2.0, 30, 300, seed=3, world=lambda s_, m: _rw_world(s_, m))["below"])
     print("selftest", f"ผ่าน ✓ ({n_checks} ข้อ · เทียบ numpy ≤ 1e-9 สัมพัทธ์ · ค่าวิกฤต MacKinnon 2010 / ตาราง Fuller ≤ 0.03 · "

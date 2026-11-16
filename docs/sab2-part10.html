@@ -1,0 +1,809 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stat Arb for Non Quant — บท 10 — PCA: ให้ข้อมูลบอกแรงร่วมเอง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}
+/* ═══ sab: กล่องเพิ่มของเล่ม Stat Arb for Non Quant (แผน 5.1) ═══ */
+.scene-open{background:#fefce8;border:1px solid #fde68a;border-left:5px solid var(--amber);border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0}.scene-open .bt{color:#92400e}
+.stop{background:#fff1f2;border:2px dashed var(--red);border-radius:10px;padding:12px 18px;margin:18px 0}.stop .bt{color:var(--red)}
+.other{background:#f0f9ff;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.other .bt{color:#0369a1}
+.dist{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:12px 18px;margin:14px 0;font-size:.95em}.dist .bt{color:var(--g8)}
+.nature{background:#f7fee7;border:1px solid #d9f99d;border-left:5px solid #65a30d;border-radius:0 10px 10px 0;padding:14px 20px;margin:18px 0}.nature .bt{color:#3f6212}
+table.ncard{min-width:0}table.ncard td.on{background:#ecfccb;font-weight:600}table.ncard td.done{background:#f7fee7}table.ncard td[data-pending-part]{background:var(--g1);color:#9ca3af}
+.transfer{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px 18px;margin:14px 0}.transfer .bt{color:var(--purple)}
+.whyline{font-size:.92em;color:var(--g7);border-left:3px solid var(--g2);padding:4px 12px;margin:10px 0}
+.sheet{background:#fff;border:2px solid var(--blue);border-radius:10px}.sheet .bt{color:var(--blue)}.sheet td[data-key]{font-variant-numeric:tabular-nums}.sheet .blank td{height:2em}
+table.ledger th{background:var(--g8)}table.ledger td{font-variant-numeric:tabular-nums}table.ledger tr.off td{color:#64748b;font-style:italic}
+table.fees caption{caption-side:top;text-align:left;font-size:.88em;color:var(--g7);padding:4px 0}
+details.deep{border:1px solid var(--g2);border-radius:8px;padding:10px 16px;margin:16px 0;background:var(--g0)}details.deep>summary{cursor:pointer;font-weight:700;color:var(--g8)}
+details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer;color:var(--blue)}
+.tier{display:inline-block;font-size:.72em;color:#64748b;margin-left:4px}.tier[data-tier]::before{content:'ชั้น ' attr(data-tier)}
+[data-pending]{opacity:.65}
+.figw{overflow-x:auto;-webkit-overflow-scrolling:touch}@media(max-width:640px){.figw .fig{min-width:600px}.figw.narrow .fig{min-width:0}body{padding:20px 16px}.cover{padding:20px 4px;margin-bottom:18px}.cover h1{font-size:1.45em}.cover .sub{font-size:1.05em}}
+@media print{details.deep,details.ans{display:block}.scene-open,.stop,.other,.nature,.sheet,.transfer,table.ledger,table.ncard{page-break-inside:avoid}}
+/* ═══ sab v2: แม่แบบบท v2 (แผน 14.3) — .pos .rest .readfig .readeq .sum3 details.hint details.file .calc ═══ */
+.pos{font-size:.88em;color:#64748b;border-bottom:1px solid var(--g2);padding:0 2px 8px;margin:-12px 0 18px}.pos strong{color:var(--g7)}
+.rest{background:var(--g0);border-radius:8px;padding:12px 18px 6px;margin:26px 0 10px;color:var(--g7)}.rest .bt{font-size:.82em;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:2px}
+.readfig,.readeq{font-size:.94em;color:var(--g7);border-left:3px solid #bfdbfe;padding:4px 12px;margin:10px 0 18px}.readeq{border-left-color:#ddd6fe;margin-top:-4px}
+.sum3{background:var(--green-bg);border:1px solid #bbf7d0;border-left:5px solid var(--green);border-radius:0 10px 10px 0;padding:14px 20px;margin:24px 0}.sum3 .bt{color:#166534}.sum3 ol{margin-bottom:0}
+details.hint{margin:6px 0 4px;font-size:.93em}details.hint>summary{cursor:pointer;color:#b45309}details.hint details.hint{margin-left:16px;font-size:1em}
+details.file{border:1px solid var(--g2);border-radius:10px;padding:12px 18px;margin:28px 0 16px;background:var(--g0)}details.file>summary{cursor:pointer;font-weight:700;font-size:1.1em;color:var(--g8)}details.file[open]>summary{margin-bottom:10px}
+th.calc{background:var(--g7)}td.calc{font-size:.95em;color:var(--g7);font-variant-numeric:tabular-nums;border-left:2px solid var(--g2)}
+@media print{details.hint,details.file{display:block}.rest,.sum3{page-break-inside:avoid}}
+@media print{details::details-content{content-visibility:visible}}
+
+/* ═══ sab2: ส่วนเพิ่มของเล่ม 2 (docs/sab2-book-plan.md หัวข้อ 5) — details.code "💻 ทำด้วย Python" · .fails "พังเมื่อไร / บอกอะไรไม่ได้" ═══
+   ต่อท้าย <style> ของ tools/sab_shell/head.html โดย sab_book.shell() เมื่อ SAB_BOOK=sab2 (เปลือกกลางไม่เปลี่ยน) */
+details.code{border:1px solid #cbd5e1;border-radius:8px;padding:10px 16px;margin:16px 0;background:#f8fafc}details.code>summary{cursor:pointer;font-weight:700;color:#334155}details.code[open]>summary{margin-bottom:8px}
+details.code pre{font-family:'Courier New',monospace;font-size:.86em;line-height:1.55;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;white-space:pre;margin:8px 0;tab-size:4}
+details.code pre .cm,details.code pre .out{color:#86efac}details.code p{font-size:.93em}
+.fails{background:#fff7ed;border:1px solid #fdba74;border-left:4px solid #ea580c;border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0}.fails .bt{font-weight:700;color:#9a3412;margin-bottom:6px}.fails ul{margin-bottom:.4em}.fails li strong{color:#7c2d12}
+@media(max-width:640px){details.code pre{font-size:.78em}}
+@media print{details.code{display:block}details.code pre{background:#f1f5f9;color:#0f172a;white-space:pre-wrap}.fails{page-break-inside:avoid}}
+</style></head><body data-tpl="2">
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+<h1>Stat Arb for Non Quant · เล่ม 2 — วัดเชือก สร้างพอร์ต ทดสอบให้ซื่อ</h1>
+<div class="sub">บท 10 — PCA: ให้ข้อมูลบอกแรงร่วมเอง</div>
+<div class="desc">ถ้าไม่บอกล่วงหน้าว่าแรงร่วมของเหรียญคืออะไร ข้อมูลจะหาเองได้ไหม บทนี้หมุนแกนผ่านกองจุดของสองเหรียญด้วยมือจนเจอทิศที่แกว่งมากที่สุด ใช้สามเหรียญดูว่าทิศเหล่านั้นคือพอร์ตที่ถือได้จริงและแปลงกลับเป็นจำนวนเหรียญ แล้ววัดกับ 10 เหรียญของเล่มว่าแรงร่วมก้อนแรกคือตลาดแค่ไหน และก้อนที่สองนิ่งพอจะใช้หรือเปล่า เทียบกับโลกที่รู้คำตอบสองโลก</div>
+</div>
+
+<!-- ═══ แม่แบบ v2 (แผน 14.3 · คู่มือ tools/sab_research/writing-brief-v2.md + writing-brief-sab2.md) ═══ -->
+<p class="pos"><strong>ภาค 3 · บท 10 จาก 18 · บทนี้มีสี่ตอน อ่านทีละตอนได้</strong> (ตอน ก สองเหรียญ หมุนแกนด้วยมือ · ตอน ข สามเหรียญ loading คือพอร์ต · ตอน ค 10 เหรียญจริงกับโลกที่รู้คำตอบ · ตอน ง พังเมื่อไร และการตัดสินของมิน) · ต้องรู้จากบทก่อน: (1) Covariance คือผลรวมของ dB × dA หารด้วยจำนวนวันลบหนึ่ง เช่น <span data-key="ch10.บท1.ผลรวมdBคูณdA">25</span> ÷ <span data-key="ch10.บท1.ตัวหาร">5</span> ได้ <span data-key="ch10.บท1.cov">5</span> และ Variance คือแบบเดียวกันของเหรียญเดียว เช่น <span data-key="ch10.บท1.ผลรวมdBกำลังสอง">10</span> ÷ 5 ได้ <span data-key="ch10.บท1.varB">2</span> (บท 1) · (2) แรงร่วมหักกันใน X ที่ correlation <span data-key="ch10.บท8.rho">0.98</span> กับเหรียญที่แกว่งวันละ <span data-key="ch10.บท8.sigma">3.5</span>% X เหลือแกว่งวันละ <span data-key="ch10.บท8.sdวัน">0.7</span>% (บท 8) · (3) ขาซื้อ <span data-key="ch10.เล่ม1.ขา">1,000</span> กับขาขาย 1,000 มี Gross Exposure <span data-key="ch10.เล่ม1.gross">2,000</span> และ Net Exposure <span data-key="ch10.เล่ม1.net">0</span> (เล่ม 1 บท 8)</p>
+
+<!-- ฉากเปิดของมิน: สั้น · ต้องมีวลี data-hook ของหน้าก่อนตรงตัว -->
+<div class="scene-open" data-day="เดือนที่ 11 สัปดาห์ 3" data-continues="part9"><div class="bt">📓 สมุดของมิน · เดือนที่ 11 สัปดาห์ 3</div>
+<p>สัปดาห์ก่อนมินหักแรงร่วมออกโดยเลือกเองว่าตลาดคือ BTC แล้วจดการทดลองถัดไปไว้ว่าจะให้ข้อมูลบอกแรงร่วมเอง คืนนี้ในกลุ่มอ่านหนังสือ พี่ฝนถามสองข้อ "ถ้าไม่เลือกให้ ข้อมูลจะเลือก BTC ไหม" และ "แรงร่วมของสิบเหรียญมีแค่ก้อนเดียวจริงหรือ"</p>
+<p>ต้นตอบแทนก่อนว่ามีเครื่องมือชื่อ PCA ที่หาแรงร่วมเองได้โดยไม่ต้องบอกอะไรเลย เขาลองแล้ว เจอ "แรงลับ" ก้อนที่สองเป็น SOL สู้กับ XRP และอยากเทรดมันพรุ่งนี้</p>
+<p>มินจดคำถามใหม่ลงสมุดวิจัย ถ้าให้ข้อมูลบอกเอง มันจะบอกว่าแรงร่วมคืออะไร มีกี่ก้อน และก้อนที่ต้นเจอจะยังอยู่ในปีถัดไปไหม เงินในบัญชีไม่ขยับ ทุนคู่ยังว่าง</p>
+</div>
+
+<div class="pq">ถ้าไม่บอกล่วงหน้าว่าแรงร่วมคืออะไร ข้อมูลจะหาเองได้ไหมว่ามีแรงร่วมกี่ก้อน แต่ละก้อนคือพอร์ตแบบไหนที่ถือได้จริง และก้อนที่หาเจอนิ่งพอจะใช้หรือเปล่า</div>
+
+<!-- ═════════════════════════ ตอน ก ═════════════════════════ -->
+<h2>ตอน ก สองเหรียญ หมุนแกนด้วยมือ · 1 — หกวัน หกจุด และค่าบนแกน: วันที่ 1 บนแกน (0.8, 0.6) ได้ 10</h2>
+<p>บท 9 มินเลือกเองว่าแรงร่วมคือ BTC และลองดัชนีที่ถือทุกเหรียญเท่ากันเทียบ การเลือกแบบนี้ง่าย แต่มีข้อสมมติซ่อนอยู่สองข้อ ข้อแรกคือตลาดทั้งตลาดขยับตาม BTC ตัวเดียว ข้อที่สองคือแรงร่วมมีก้อนเดียว คำถามของพี่ฝนคือถ้าไม่สมมติทั้งสองข้อ จะให้ตัวเลขบอกเองได้อย่างไร</p>
+<p>เราจะเริ่มจากของเล็กที่สุดแบบบท 1 คือสองเหรียญสมมติ A กับ B หกวัน ตัวเลขในตารางคือการขยับรายวันเป็นเปอร์เซ็นต์ ชุดนี้ตั้งให้วันที่ 4 ถึง 6 เป็นภาพกลับเครื่องหมายของวันที่ 1 ถึง 3 เพื่อให้ Mean (ค่าเฉลี่ย) ของทั้งสองเหรียญเป็นศูนย์พอดี และให้คิดแค่สามวันแล้วคูณสองได้ ข้อมูลจริงไม่เป็นแบบนี้ เราจะลบ Mean ออกก่อนเสมอแบบ dA กับ dB ของบท 1</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>A ขยับ (%)</th><th>B ขยับ (%)</th><th>อ่านเป็นคำ</th></tr>
+<tr><td>1</td><td data-key="ch10.สองเหรียญ.A.0">8</td><td data-key="ch10.สองเหรียญ.B.0">6</td><td>ขึ้นทั้งคู่ วันที่ตลาดพุ่ง</td></tr>
+<tr><td>2</td><td data-key="ch10.สองเหรียญ.A.1">1</td><td data-key="ch10.สองเหรียญ.B.1">7</td><td>B ขึ้นแรงกว่า A มาก</td></tr>
+<tr><td>3</td><td data-key="ch10.สองเหรียญ.A.2">−7</td><td data-key="ch10.สองเหรียญ.B.2">1</td><td>A ลง แต่ B แทบไม่ขยับ</td></tr>
+<tr><td>4</td><td data-key="ch10.สองเหรียญ.A.3">−8</td><td data-key="ch10.สองเหรียญ.B.3">−6</td><td>วันที่ 1 กลับเครื่องหมาย</td></tr>
+<tr><td>5</td><td data-key="ch10.สองเหรียญ.A.4">−1</td><td data-key="ch10.สองเหรียญ.B.4">−7</td><td>วันที่ 2 กลับเครื่องหมาย</td></tr>
+<tr><td>6</td><td data-key="ch10.สองเหรียญ.A.5">7</td><td data-key="ch10.สองเหรียญ.B.5">−1</td><td>วันที่ 3 กลับเครื่องหมาย</td></tr>
+</table></div>
+<p>วาดแต่ละวันเป็นจุดหนึ่งจุด ให้แกนนอนเป็นการขยับของ A และแกนตั้งเป็นการขยับของ B วันที่ 1 จึงเป็นจุดที่ A เท่ากับ 8 และ B เท่ากับ 6 หกจุดนี้เรียงเอียงขึ้นไปทางขวาบน เพราะวันที่ A ขึ้น B ก็มักขึ้นด้วย ภาพนี้อยู่ในกราฟท้ายหัวข้อที่ 2</p>
+<p>ก่อนหาแรงร่วม ขอนับก่อนว่าสองเหรียญนี้แกว่งรวมกันเท่าไร ใช้วิธีเดียวกับบท 1 คือยกกำลังสองทุกวันแล้วรวม A สามวันแรกได้ 64 + 1 + 49 เท่ากับ <span data-key="ch10.สองเหรียญ.AAสามวัน">114</span> คูณสองเป็นหกวันได้ <strong data-key="ch10.สองเหรียญ.AA">228</strong> ส่วน B สามวันแรกได้ 36 + 49 + 1 เท่ากับ <span data-key="ch10.สองเหรียญ.BBสามวัน">86</span> หกวันได้ <strong data-key="ch10.สองเหรียญ.BB">172</strong></p>
+<p>สองก้อนนี้รวมกันได้ <strong data-key="ch10.สองเหรียญ.รวม">400</strong> ตัวเลขนี้คือการแกว่งทั้งหมดของสองเหรียญ จำไว้ เพราะตลอดตอนนี้มันจะไม่เปลี่ยนเลย สิ่งที่เปลี่ยนคือวิธีแบ่งมันออกเป็นก้อน</p>
+<p>ทีนี้ลองคิดอีกแบบ แทนที่จะดูแกน A กับแกน B ตามที่ตารางให้มา ลองลากแกนใหม่ผ่านจุดศูนย์กลางในทิศใดก็ได้ แล้วถามว่าแต่ละวัน จุดอยู่ไกลจากศูนย์กลางเท่าไรเมื่อวัดตามแกนใหม่นี้ ตัวเลขนั้นเรียกในเล่มนี้ว่า <strong>ค่าบนแกน</strong> ของวันนั้น</p>
+<p>ทิศของแกนเขียนเป็นคู่ตัวเลข (a, b) แปลว่าเดินไปทาง A ระยะ a และไปทาง B ระยะ b ค่าบนแกนของวันหนึ่งคือ a คูณการขยับของ A บวก b คูณการขยับของ B มีเงื่อนไขข้อเดียวคือ a² + b² ต้องเท่ากับ 1 เสมอ</p>
+<p>เหตุผลของเงื่อนไขนี้คือ ถ้าไม่ล็อกขนาด ทิศ (1.6, 1.2) จะให้ค่าบนแกนเป็นสองเท่าของทิศ (0.8, 0.6) ทุกวัน และผลรวมกำลังสองโตเป็นสี่เท่า ทั้งที่ชี้ทางเดียวกัน การเทียบทิศจึงต้องล็อกให้ทุกทิศ "ยาวหนึ่งหน่วย" เท่ากัน ทิศ (0.8, 0.6) ผ่านเงื่อนไขเพราะ 0.64 + 0.36 เท่ากับ 1 ซึ่งคือสามเหลี่ยมด้าน 3 กับ 4 ที่มีด้านยาวที่สุด 5 หดลงห้าเท่า</p>
+<p>ลองคิดค่าบนแกน (0.8, 0.6) ของวันที่ 1 ทีละขั้น A ขยับ 8 คูณ 0.8 ได้ 6.4 ส่วน B ขยับ 6 คูณ 0.6 ได้ 3.6 รวมกันได้ 10 วันที่ 1 จึงอยู่ห่างศูนย์กลาง 10 ตามแกนนี้ ต่อด้วยวันที่ 2 ได้ 0.8 × 1 บวก 0.6 × 7 คือ 0.8 + 4.2 เท่ากับ 5</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>A</th><th>B</th><th class="calc">คิดอย่างไร (0.8 × A + 0.6 × B)</th><th>ค่าบนแกน</th><th>ยกกำลังสอง</th></tr>
+<tr><td>1</td><td>8</td><td>6</td><td class="calc">6.4 + 3.6</td><td data-key="ch10.สองเหรียญ.ทิศ.2.ค่า.0">10</td><td data-key="ch10.สองเหรียญ.ทิศ.2.กำลังสอง.0">100</td></tr>
+<tr><td>2</td><td>1</td><td>7</td><td class="calc">0.8 + 4.2</td><td data-key="ch10.สองเหรียญ.ทิศ.2.ค่า.1">5</td><td data-key="ch10.สองเหรียญ.ทิศ.2.กำลังสอง.1">25</td></tr>
+<tr><td>3</td><td>−7</td><td>1</td><td class="calc">−5.6 + 0.6</td><td data-key="ch10.สองเหรียญ.ทิศ.2.ค่า.2">−5</td><td data-key="ch10.สองเหรียญ.ทิศ.2.กำลังสอง.2">25</td></tr>
+<tr><td colspan="5"><strong>สามวันรวม</strong> (100 + 25 + 25)</td><td data-key="ch10.สองเหรียญ.ทิศ.2.สามวัน">150</td></tr>
+<tr><td colspan="5"><strong>หกวันรวม</strong> (คูณสอง เพราะวันที่ 4 ถึง 6 กลับเครื่องหมาย ยกกำลังสองแล้วเท่าเดิม)</td><td><strong data-key="ch10.สองเหรียญ.ทิศ.2.ss">300</strong></td></tr>
+</table></div>
+<p>แกน (0.8, 0.6) ได้ผลรวมกำลังสอง 300 จาก 400 ทั้งหมด แกนเดียวจับการแกว่งไว้ได้สามในสี่ ตัวเลขนี้ยังบอกอะไรไม่ได้ถ้าอยู่ตัวเดียว ต้องหมุนแกนไปทิศอื่นแล้วเทียบ ซึ่งคือสิ่งที่หัวข้อถัดไปทำ</p>
+<p>ค่าบนแกนยังอ่านเป็นเงินได้ด้วย ถ้ามินถือ A <span data-key="ch10.สองเหรียญ.เงิน.pc1A">800</span> ดอลลาร์คู่กับ B <span data-key="ch10.สองเหรียญ.เงิน.pc1B">600</span> ดอลลาร์ วันที่ 1 ขา A ได้ 8% ของ 800 คือ 64 ดอลลาร์ ขา B ได้ 6% ของ 600 คือ 36 ดอลลาร์ รวม 100 ดอลลาร์ ซึ่งคือค่าบนแกน 10 คูณ 10 พอดี ค่าบนแกนจึงเป็นผลตอบแทนของพอร์ตที่ถือเงินตามสัดส่วน (a, b) ตัวคูณ 10 มาจากการถือหนึ่งหน่วยของทิศเป็นเงิน 1,000 ดอลลาร์ เรื่องนี้จะกลับมาเต็ม ๆ ในตอน ข</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>สองเหรียญหกวันแกว่งรวมกัน 400 (A 228 กับ B 172) ทิศ (a, b) ที่ a² + b² เท่ากับ 1 ให้ค่าบนแกนของแต่ละวันเป็น a × A + b × B แกน (0.8, 0.6) ได้วันที่ 1 เท่ากับ 10 และผลรวมกำลังสองหกวัน 300 ซึ่งคือผลตอบแทนของพอร์ต A 800 กับ B 600 ดอลลาร์หารด้วย 10</p></div>
+
+<h2>ตอน ก · 2 — หมุนหกทิศ: ผลรวมกำลังสองขึ้นจาก 228 ไปถึง 300 แล้วลงเหลือ 172</h2>
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>A แกว่งมากกว่า B (228 เทียบ 172) แกนที่จับการแกว่งได้มากที่สุดควรเป็นแกน A ตรง ๆ แกนครึ่งทางระหว่าง A กับ B หรือแกนที่เอียงไปทาง A แต่ไม่สุด ทายก่อนเลื่อนลง</p></div>
+<p>วิธีคิดเหมือนหัวข้อที่แล้วทุกขั้น เปลี่ยนแค่ตัวคูณ a กับ b ทิศที่เลือกมาลองหกทิศล้วนผ่านเงื่อนไข a² + b² เท่ากับ 1 แบบลงตัว ทิศ (0.96, 0.28) มาจากสามเหลี่ยมด้าน 7, 24 และ 25 หดลง 25 เท่า เพราะ 0.96² + 0.28² เท่ากับ 1 พอดี (ลองกดเครื่องคิดเลขดู) มุมในคอลัมน์ที่สองบอกว่าแกนหมุนออกจากแกน A ไปกี่องศา</p>
+<div class="tw"><table>
+<tr><th>ทิศ (a, b)</th><th>มุม</th><th class="calc">วันที่ 1 (a × 8 + b × 6)</th><th class="calc">วันที่ 2 (a × 1 + b × 7)</th><th class="calc">วันที่ 3 (a × −7 + b × 1)</th><th class="calc">สามวัน (ยกกำลังสองแล้วรวม)</th><th>หกวัน</th></tr>
+<tr><td>(1, 0)</td><td>0°</td><td data-key="ch10.สองเหรียญ.ทิศ.0.ค่า.0">8</td><td data-key="ch10.สองเหรียญ.ทิศ.0.ค่า.1">1</td><td data-key="ch10.สองเหรียญ.ทิศ.0.ค่า.2">−7</td><td class="calc">64 + 1 + 49</td><td data-key="ch10.สองเหรียญ.ทิศ.0.ss">228</td></tr>
+<tr><td>(0.96, 0.28)</td><td data-key="ch10.สองเหรียญ.ทิศ.1.มุม">16</td><td data-key="ch10.สองเหรียญ.ทิศ.1.ค่า.0">9.36</td><td data-key="ch10.สองเหรียญ.ทิศ.1.ค่า.1">2.92</td><td data-key="ch10.สองเหรียญ.ทิศ.1.ค่า.2">−6.44</td><td class="calc">87.61 + 8.53 + 41.47</td><td data-key="ch10.สองเหรียญ.ทิศ.1.ss">275.22</td></tr>
+<tr><td><strong>(0.8, 0.6)</strong></td><td data-key="ch10.สองเหรียญ.ทิศ.2.มุม">37</td><td>10</td><td>5</td><td>−5</td><td class="calc">100 + 25 + 25</td><td><strong>300</strong></td></tr>
+<tr><td>(0.6, 0.8)</td><td data-key="ch10.สองเหรียญ.ทิศ.3.มุม">53</td><td data-key="ch10.สองเหรียญ.ทิศ.3.ค่า.0">9.6</td><td data-key="ch10.สองเหรียญ.ทิศ.3.ค่า.1">6.2</td><td data-key="ch10.สองเหรียญ.ทิศ.3.ค่า.2">−3.4</td><td class="calc">92.16 + 38.44 + 11.56</td><td data-key="ch10.สองเหรียญ.ทิศ.3.ss">284.32</td></tr>
+<tr><td>(0.28, 0.96)</td><td data-key="ch10.สองเหรียญ.ทิศ.4.มุม">74</td><td data-key="ch10.สองเหรียญ.ทิศ.4.ค่า.0">8</td><td data-key="ch10.สองเหรียญ.ทิศ.4.ค่า.1">7</td><td data-key="ch10.สองเหรียญ.ทิศ.4.ค่า.2">−1</td><td class="calc">64 + 49 + 1</td><td data-key="ch10.สองเหรียญ.ทิศ.4.ss">228</td></tr>
+<tr><td>(0, 1)</td><td>90°</td><td data-key="ch10.สองเหรียญ.ทิศ.5.ค่า.0">6</td><td data-key="ch10.สองเหรียญ.ทิศ.5.ค่า.1">7</td><td data-key="ch10.สองเหรียญ.ทิศ.5.ค่า.2">1</td><td class="calc">36 + 49 + 1</td><td data-key="ch10.สองเหรียญ.ทิศ.5.ss">172</td></tr>
+</table></div>
+<p>เฉลย 🛑: แกนที่ดีที่สุดในหกทิศคือ (0.8, 0.6) ที่ 37 องศา ได้ 300 แกน A ตรง ๆ ได้แค่ 228 ส่วนแกน (0.6, 0.8) ที่เลยครึ่งทางไปทาง B ได้ 284.32 คำตอบคือเอียงไปทาง A แต่ไม่สุด เพราะ A แกว่งมากกว่า แกนจึงเอนเข้าหา A แต่ B ก็ขยับไปทางเดียวกับ A ในวันส่วนใหญ่ แกนจึงต้องเอนมาทาง B บ้างเพื่อเก็บการขยับร่วมของสองเหรียญไว้ด้วย</p>
+<p>ตัวเลขในคอลัมน์สุดท้ายขึ้นจาก 228 ไปถึงยอด 300 แล้วลงไปที่ 172 เมื่อหมุนครบ 90 องศา ถ้าหมุนต่อจะลงต่ำสุดที่ <span data-key="ch10.สองเหรียญ.pc2มุม">127</span> องศา ตรงทิศ (−0.6, 0.8) ซึ่งตั้งฉากกับแกนยอดพอดี ผลรวมกำลังสองบนแกนนั้นคือ <strong data-key="ch10.สองเหรียญ.pc2.ss">100</strong> (คิดเองในแบบฝึกข้อ 1) และ 300 + 100 ได้ 400 เท่ากับการแกว่งทั้งหมดที่นับไว้ตอนต้น</p>
+<p>นี่คือการตรวจข้อแรก การหมุนแกนไม่ได้สร้างหรือทำลายการแกว่งเลย มันแค่แบ่ง 400 ใหม่ แกนคู่เดิม (A กับ B) แบ่งเป็น 228 กับ 172 ส่วนแกนคู่ใหม่ที่ตั้งฉากกัน (0.8, 0.6) กับ (−0.6, 0.8) แบ่งเป็น 300 กับ 100 คือดึงการแกว่งเข้าแกนแรกให้มากที่สุดเท่าที่ทำได้</p>
+<!--CHART:sab2-pca-rotate-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 380" role="img" aria-label="หกจุดของสองเหรียญเรียงเอียงขึ้นขวา แกน PC1 ทิศ (0.8, 0.6) ผ่านแนวยาวของกองจุด ผลรวมกำลังสองบนแกนนี้ 300 สูงสุด แกน PC2 ตั้งฉากได้ 100 ต่ำสุด เมื่อหมุนแกนจาก 0 ถึง 180 องศา ค่าขึ้นลงเป็นคลื่นเดียว">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13.5" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">หมุนแกนผ่านกองจุด แล้ววัดว่าค่าบนแกนแกว่งมากแค่ไหน</text>
+<line x1="66.0" y1="70.5" x2="66.0" y2="349.5" stroke="#f3f4f6"/>
+<line x1="50.5" y1="334.0" x2="329.5" y2="334.0" stroke="#f3f4f6"/>
+<text x="66.0" y="363.5" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">−8</text>
+<text x="44.5" y="338.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">−8</text>
+<line x1="128.0" y1="70.5" x2="128.0" y2="349.5" stroke="#f3f4f6"/>
+<line x1="50.5" y1="272.0" x2="329.5" y2="272.0" stroke="#f3f4f6"/>
+<text x="128.0" y="363.5" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">−4</text>
+<text x="44.5" y="276.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">−4</text>
+<line x1="190.0" y1="70.5" x2="190.0" y2="349.5" stroke="#f3f4f6"/>
+<line x1="50.5" y1="210.0" x2="329.5" y2="210.0" stroke="#f3f4f6"/>
+<line x1="252.0" y1="70.5" x2="252.0" y2="349.5" stroke="#f3f4f6"/>
+<line x1="50.5" y1="148.0" x2="329.5" y2="148.0" stroke="#f3f4f6"/>
+<text x="252.0" y="363.5" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">4</text>
+<text x="44.5" y="152.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">4</text>
+<line x1="314.0" y1="70.5" x2="314.0" y2="349.5" stroke="#f3f4f6"/>
+<line x1="50.5" y1="86.0" x2="329.5" y2="86.0" stroke="#f3f4f6"/>
+<text x="314.0" y="363.5" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">8</text>
+<text x="44.5" y="90.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">8</text>
+<line x1="50.5" y1="210" x2="329.5" y2="210" stroke="#d1d5db" stroke-width="1.4"/>
+<line x1="190" y1="70.5" x2="190" y2="349.5" stroke="#d1d5db" stroke-width="1.4"/>
+<text x="329.5" y="379.5" text-anchor="end" font-size="11" fill="#6b7280" font-weight="700" font-family="Sarabun,sans-serif">A ขยับ (%)</text>
+<text x="50.5" y="62.5" text-anchor="start" font-size="11" fill="#6b7280" font-weight="700" font-family="Sarabun,sans-serif">B ขยับ (%)</text>
+<line x1="100.7" y1="277.0" x2="279.3" y2="143.0" stroke="#7c3aed" stroke-width="2.4"/>
+<text x="283.3" y="163.0" text-anchor="start" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">PC1 (0.8, 0.6)</text>
+<line x1="257.0" y1="299.3" x2="123.0" y2="120.7" stroke="#d97706" stroke-width="2.4" stroke-dasharray="6 4"/>
+<text x="117.0" y="122.7" text-anchor="end" font-size="11" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">PC2 (−0.6, 0.8)</text>
+<circle cx="314.0" cy="117.0" r="5" fill="#2563eb"/>
+<text x="321.0" y="121.0" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 1</text>
+<circle cx="205.5" cy="101.5" r="5" fill="#2563eb"/>
+<text x="212.5" y="105.5" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 2</text>
+<circle cx="81.5" cy="194.5" r="5" fill="#2563eb"/>
+<text x="88.5" y="198.5" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 3</text>
+<circle cx="66.0" cy="303.0" r="5" fill="#2563eb"/>
+<text x="73.0" y="307.0" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 4</text>
+<circle cx="174.5" cy="318.5" r="5" fill="#2563eb"/>
+<text x="181.5" y="322.5" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 5</text>
+<circle cx="298.5" cy="225.5" r="5" fill="#2563eb"/>
+<text x="305.5" y="229.5" text-anchor="start" font-size="9.5" fill="#6b7280" font-family="Sarabun,sans-serif">วัน 6</text>
+<line x1="430" y1="320.0" x2="740" y2="320.0" stroke="#d1d5db"/>
+<text x="424.0" y="324.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="430" y1="246.5" x2="740" y2="246.5" stroke="#f3f4f6"/>
+<text x="424.0" y="250.5" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">100</text>
+<line x1="430" y1="172.9" x2="740" y2="172.9" stroke="#f3f4f6"/>
+<text x="424.0" y="176.9" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">200</text>
+<line x1="430" y1="99.4" x2="740" y2="99.4" stroke="#f3f4f6"/>
+<text x="424.0" y="103.4" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">300</text>
+<text x="430.0" y="336.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0°</text>
+<text x="507.5" y="336.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">45°</text>
+<text x="585.0" y="336.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">90°</text>
+<text x="662.5" y="336.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">135°</text>
+<text x="740.0" y="336.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">180°</text>
+<text x="585.0" y="354.0" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="700" font-family="Sarabun,sans-serif">มุมของแกนที่หมุนจากแกน A</text>
+<text x="430.0" y="56.0" text-anchor="start" font-size="11.5" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">ผลรวมกำลังสองของค่าบนแกน (หกวัน)</text>
+<polyline points="430.0,152.4 435.2,145.1 440.3,138.1 445.5,131.5 450.7,125.4 455.8,119.8 461.0,114.8 466.2,110.4 471.3,106.7 476.5,103.7 481.7,101.5 486.8,100.1 492.0,99.4 497.2,99.6 502.3,100.6 507.5,102.4 512.7,104.9 517.8,108.2 523.0,112.2 528.2,116.8 533.3,122.1 538.5,127.9 543.7,134.3 548.8,141.0 554.0,148.1 559.2,155.5 564.3,163.0 569.5,170.7 574.7,178.4 579.8,186.0 585.0,193.5 590.2,200.8 595.3,207.8 600.5,214.3 605.7,220.5 610.8,226.1 616.0,231.1 621.2,235.5 626.3,239.2 631.5,242.1 636.7,244.4 641.8,245.8 647.0,246.4 652.2,246.3 657.3,245.3 662.5,243.5 667.7,241.0 672.8,237.7 678.0,233.7 683.2,229.1 688.3,223.8 693.5,217.9 698.7,211.6 703.8,204.9 709.0,197.8 714.2,190.4 719.3,182.8 724.5,175.2 729.7,167.5 734.8,159.8 740.0,152.4" fill="none" stroke="#9ca3af" stroke-width="2"/>
+<circle cx="430.0" cy="152.4" r="4.5" fill="#2563eb"/>
+<circle cx="457.6" cy="117.6" r="4.5" fill="#2563eb"/>
+<circle cx="493.7" cy="99.4" r="4.5" fill="#2563eb"/>
+<circle cx="521.3" cy="110.9" r="4.5" fill="#2563eb"/>
+<circle cx="557.4" cy="152.4" r="4.5" fill="#2563eb"/>
+<circle cx="585.0" cy="193.5" r="4.5" fill="#2563eb"/>
+<circle cx="493.7" cy="99.4" r="6.5" fill="none" stroke="#7c3aed" stroke-width="2.4"/>
+<text x="501.7" y="90.4" text-anchor="start" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">ยอด 300 ที่ 37°</text>
+<circle cx="648.7" cy="246.5" r="6.5" fill="none" stroke="#d97706" stroke-width="2.4"/>
+<text x="648.7" y="268.5" text-anchor="middle" font-size="11" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">ต่ำสุด 100 ที่ 127°</text>
+</svg></div>
+<div class="cap">🔢 ตัวเลขสมมติเพื่อสอน · สองเหรียญสมมติ หกวัน Mean เป็นศูนย์ · จุดน้ำเงินทางขวาคือหกทิศที่ลองในตาราง · ผลรวมทั้งหมด 400 ทุกมุมของคู่แกนที่ตั้งฉากกัน</div>
+<!--/CHART:sab2-pca-rotate-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แผงซ้ายคือหกวัน แกนนอนคือ A แกนตั้งคือ B เส้นม่วงคือแกน (0.8, 0.6) ตามแนวยาวของกองจุด เส้นประส้มคือแกนที่ตั้งฉาก แผงขวาคือผลรวมกำลังสองเมื่อหมุนแกนจาก 0 ถึง 180 องศา จุดน้ำเงินคือหกทิศในตาราง ให้ดูว่ายอดอยู่ที่ 37 องศาและก้นอยู่ที่ 127 องศา ห่างกัน 90 องศาพอดี สรุปได้ว่าทิศที่แกว่งมากที่สุดกับทิศที่แกว่งน้อยที่สุดตั้งฉากกันเสมอ และสองค่ารวมกันเท่ากับการแกว่งทั้งหมด</p>
+<p>การตรวจข้อที่สองไม่ต้องคิดค่าบนแกนทีละวันเลย ผลรวมกำลังสองบนแกน (a, b) แตกออกได้เป็นสามก้อน คือ a² × ผลรวม A² บวก 2ab × ผลรวมของ A × B บวก b² × ผลรวม B² ก้อนกลางต้องการผลรวมของ A × B สามวันแรกคือ 48 + 7 − 7 ได้ <span data-key="ch10.สองเหรียญ.ABสามวัน">48</span> หกวันได้ <strong data-key="ch10.สองเหรียญ.AB">96</strong></p>
+<div class="tw"><table>
+<tr><th>ก้อน</th><th class="calc">คิดอย่างไร (ทิศ 0.8, 0.6)</th><th>ผล</th></tr>
+<tr><td>a² × ผลรวม A²</td><td class="calc">0.64 × 228</td><td data-key="ch10.สองเหรียญ.ทิศ.2.สูตรAA">145.92</td></tr>
+<tr><td>2ab × ผลรวม A × B</td><td class="calc">2 × 0.48 × 96</td><td data-key="ch10.สองเหรียญ.ทิศ.2.สูตรAB">92.16</td></tr>
+<tr><td>b² × ผลรวม B²</td><td class="calc">0.36 × 172</td><td data-key="ch10.สองเหรียญ.ทิศ.2.สูตรBB">61.92</td></tr>
+<tr><td><strong>รวม</strong></td><td class="calc">145.92 + 92.16 + 61.92</td><td><strong data-key="ch10.สองเหรียญ.ทิศ.2.สูตร">300</strong></td></tr>
+</table></div>
+<p>ได้ 300 ตรงกับการคิดทีละวัน สูตรสามก้อนนี้สำคัญเพราะมันใช้แค่สามตัวเลข คือ 228, 96 และ 172 ไม่ว่าข้อมูลจะยาวหกวันหรือเจ็ดร้อยวัน ถ้ามีสามตัวเลขนี้ ก็ลองทิศได้ทุกทิศโดยไม่ต้องกลับไปที่ข้อมูลดิบ เส้นโค้งในแผงขวาของภาพคิดด้วยสูตรนี้ทีละ 3 องศา</p>
+<p>สามตัวเลขนั้นเมื่อหารด้วยจำนวนวันลบหนึ่ง (หกวันลบหนึ่งได้ 5) ก็คือของที่บท 1 สอนแล้ว 228 ÷ 5 ได้ Variance (ความแปรปรวน) ของ A เท่ากับ <span data-key="ch10.สองเหรียญ.varA">45.6</span> และ 172 ÷ 5 ได้ Variance ของ B เท่ากับ <span data-key="ch10.สองเหรียญ.varB">34.4</span> ส่วน 96 ÷ 5 ได้ Covariance (ความแปรปรวนร่วม) ของ A กับ B เท่ากับ <span data-key="ch10.สองเหรียญ.cov">19.2</span></p>
+<p>ข้อสังเกตสุดท้ายของหัวข้อนี้เชื่อมกับบท 1 ความชันของแกนยอดคือ b ÷ a เท่ากับ 0.6 ÷ 0.8 ได้ <span data-key="ch10.สองเหรียญ.ชันpc1">0.75</span> ถ้าใช้ Regression (การถดถอย) B บน A แบบบท 1 จะได้ความชัน 96 ÷ 228 ราว <span data-key="ch10.สองเหรียญ.ชันBบนA">0.42</span> ส่วนถ้าถดถอย A บน B แล้วพลิกกลับมาเป็นความชันของ B จะได้ 172 ÷ 96 ราว <span data-key="ch10.สองเหรียญ.ชันAบนBกลับ">1.79</span> แกนยอดอยู่ระหว่างสองทิศของ Regression เสมอ เพราะมันไม่เลือกข้างว่าเหรียญไหนคือตัวถูกอธิบาย</p>
+<p>แกนนี้คือเส้น Total Least Squares (กำลังสองน้อยสุดแบบตั้งฉาก) ที่บท 1 เอ่ยถึงในกล่องคนทำงานจริง เส้นนั้นวัดระยะพลาดตั้งฉากกับเส้นแทนแนวตั้ง ระยะตั้งฉากของแต่ละวันก็คือค่าบนแกนที่ตั้งฉาก ผลรวมกำลังสองของมันจึงเป็น 100 และเป็นค่าที่ต่ำที่สุดที่หาได้ เพราะ 400 ลบด้วยค่าที่สูงที่สุด 300 การหาแกนที่แกว่งมากที่สุดกับการหาเส้นที่ระยะตั้งฉากน้อยที่สุดจึงเป็นงานเดียวกัน</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>หมุนหกทิศได้ 228, 275.22, 300, 284.32, 228 และ 172 ยอดอยู่ที่ (0.8, 0.6) ที่ 37 องศา แกนที่ตั้งฉากได้ 100 และ 300 + 100 เท่ากับ 400 ทั้งหมด สูตรสามก้อน 145.92 + 92.16 + 61.92 ให้ 300 ตรงกัน และต้องใช้แค่ 228, 96 และ 172 ซึ่งหารด้วย 5 แล้วคือ Variance และ Covariance</p></div>
+
+<h2>ตอน ก · 3 — ตั้งชื่อ: แกนแรกจับได้ 75% และแกนที่สองคือคู่ที่เหลือ 25%</h2>
+<p>สิ่งที่ทำมาสองหัวข้อมีชื่อเรียก การหมุนแกนหาทิศที่ข้อมูลแกว่งมากที่สุด แล้วหาทิศถัดไปที่ตั้งฉากกับทิศแรกและแกว่งมากที่สุดในส่วนที่เหลือ เรียกว่า <strong>Principal Component Analysis (การวิเคราะห์องค์ประกอบหลัก)</strong> ย่อว่า PCA</p>
+<p>แกนแต่ละแกนที่ได้เรียกว่า <strong>Principal Component (องค์ประกอบหลัก)</strong> ย่อว่า PC แกนที่แกว่งมากที่สุดคือ PC1 ซึ่งในตัวอย่างคือทิศ (0.8, 0.6) แกนถัดไปคือ PC2 คือทิศ (−0.6, 0.8) ถ้ามีสิบเหรียญจะมีสิบแกน เรียงจากแกว่งมากไปน้อย ทุกแกนตั้งฉากกันหมด</p>
+<p>ตัวเลข a กับ b ของแต่ละแกนเรียกว่า <strong>Loading (น้ำหนักองค์ประกอบ)</strong> PC1 มี loading ของ A เท่ากับ 0.8 และของ B เท่ากับ 0.6 ในตำราคณิตศาสตร์ชุดตัวเลขนี้มีชื่อว่า Eigenvector (เวกเตอร์ลักษณะเฉพาะ) เล่มนี้จะเรียกว่า loading ตามที่คนทำงานกับพอร์ตเรียก เพราะมันคือน้ำหนักของเงินในแต่ละเหรียญ</p>
+<p>ความแกว่งตามแกน คือผลรวมกำลังสองหารด้วยจำนวนวันลบหนึ่ง ซึ่งก็คือ Variance ของค่าบนแกน เรียกว่า <strong>Eigenvalue (ค่าลักษณะเฉพาะ)</strong> PC1 ได้ 300 ÷ 5 เท่ากับ <strong data-key="ch10.สองเหรียญ.pc1var">60</strong> และ PC2 ได้ 100 ÷ 5 เท่ากับ <span data-key="ch10.สองเหรียญ.pc2var">20</span> รวมกัน 80 เท่ากับ Variance ของ A บวกของ B คือ 45.6 + 34.4 พอดี</p>
+<p>สัดส่วนที่แต่ละแกนจับไว้จากทั้งหมดเรียกว่า <strong>Explained Variance (สัดส่วนความแปรปรวนที่อธิบายได้)</strong> PC1 ได้ 60 ÷ 80 เท่ากับ <strong data-key="ch10.สองเหรียญ.pc1เปอร์เซ็นต์">75</strong>% และ PC2 ได้ <span data-key="ch10.สองเหรียญ.pc2เปอร์เซ็นต์">25</span>% ถ้าคิดด้วยผลรวมกำลังสองก็ได้สัดส่วนเดียวกัน คือ 300 ÷ 400 กับ 100 ÷ 400 เพราะหารด้วย 5 เท่ากันทั้งบนและล่าง</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> ลองทุกทิศที่ยาวหนึ่งหน่วย เอาทิศที่ทำให้ค่าบนแกนแกว่งมากที่สุดเป็นแกนแรก แล้วหาทิศถัดไปที่ตั้งฉากกับแกนแรก ทำซ้ำจนครบจำนวนเหรียญ ความแกว่งของแต่ละแกนรวมกันได้เท่ากับความแกว่งของทุกเหรียญรวมกันเสมอ</p>
+<div class="fm">PC1 = ทิศ (a, b) ที่ a² + b² = 1 และทำให้ Variance ของ (a × A + b × B) มากที่สุด<br>Explained Variance ของแกน = Eigenvalue ของแกน ÷ ผลรวม Eigenvalue ทุกแกน</div>
+<p class="readeq"><strong>อ่านสมการ:</strong> ทิศ (0.8, 0.6) ผ่านเงื่อนไขเพราะ 0.64 + 0.36 เท่ากับ 1 และ Variance ของค่าบนแกนคือ 300 ÷ 5 ได้ 60 ซึ่งมากที่สุดในทุกทิศ ผลรวม Eigenvalue คือ 60 + 20 ได้ 80 Explained Variance ของ PC1 จึงเป็น 60 ÷ 80 เท่ากับ 75%</p>
+<p>ทีนี้อ่านสองแกนเป็นพอร์ต PC1 มี loading เป็นบวกทั้งคู่ คือถือทั้ง A และ B ไปทางเดียวกัน พอร์ตนี้ขึ้นเมื่อทั้งสองเหรียญขึ้น นี่คือแรงร่วมที่ข้อมูลหาเอง โดยไม่มีใครบอกว่ามันคือ BTC หรือคืออะไร</p>
+<p>PC2 น่าสนใจกว่า loading ของ A ติดลบ (−0.6) และของ B เป็นบวก (0.8) แปลว่าขาย A แล้วซื้อ B ถ้าหนึ่งหน่วยคือ 1,000 ดอลลาร์ PC2 คือ short A 600 ดอลลาร์คู่กับ long B <span data-key="ch10.สองเหรียญ.เงิน.pc2B">800</span> ดอลลาร์ ซึ่งหน้าตาเหมือนคู่ของเล่ม 1 ทุกอย่าง ในสองเหรียญ แกนที่เหลือหลังหักแรงร่วมออกคือคู่ซื้อหนึ่งขายหนึ่งเสมอ</p>
+<p>ลองตามเงินของคู่นี้สองวัน วันที่ 1 ค่าบน PC2 คือ −0.6 × 8 บวก 0.8 × 6 ได้ −4.8 + 4.8 เท่ากับ <span data-key="ch10.สองเหรียญ.เงิน.วัน1pc2">0</span> วันที่ตลาดพุ่งทั้งคู่ คู่นี้ไม่ขยับเลย วันที่ 2 ขา A เสีย 1% ของ 600 คือ <span data-key="ch10.สองเหรียญ.เงิน.วัน2pc2A">−6</span> ดอลลาร์ ขา B ได้ 7% ของ 800 คือ <span data-key="ch10.สองเหรียญ.เงิน.วัน2pc2B">56</span> ดอลลาร์ รวม <strong data-key="ch10.สองเหรียญ.เงิน.วัน2pc2">50</strong> ดอลลาร์ เท่ากับค่าบน PC2 ของวันที่ 2 คือ 5 คูณ 10 ตรงกันสองวิธี</p>
+<p>มีอีกเครื่องมือหนึ่งที่ต้องใช้ในตอน ค คือการวัดว่าสองทิศชี้ไปทางเดียวกันแค่ไหน วิธีคือคูณ loading ทีละเหรียญแล้วรวม ทิศ (0.8, 0.6) กับทิศ (0.6, 0.8) ได้ 0.48 + 0.48 เท่ากับ <span data-key="ch10.สองเหรียญ.ตรงทิศ.pc1กับ0.6">0.96</span> ใกล้ 1 คือเกือบทิศเดียวกัน ส่วน PC1 กับ PC2 ได้ 0.8 × (−0.6) บวก 0.6 × 0.8 คือ −0.48 + 0.48 เท่ากับ <span data-key="ch10.สองเหรียญ.ตรงทิศ.pc1กับpc2">0</span> คือตั้งฉากกันพอดี เล่มนี้เรียกตัวเลขนี้ว่า <strong>ความตรงทิศ</strong> และไม่สนเครื่องหมาย เพราะทิศที่กลับหัวคือแกนเส้นเดิม</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>from sab2_stats import pca
+A = [8, 1, -7, -8, -1, 7]
+B = [6, 7, 1, -6, -7, -1]
+p = pca([A, B])                      # PCA จากความแปรปรวนร่วม (ตัวหาร n − 1)
+pc1, pc2 = p["vectors"][0], p["vectors"][1]
+print(round(pc1[0], 2), round(pc1[1], 2), round(pc2[0], 2), round(pc2[1], 2))
+print(round(p["values"][0], 2), round(p["values"][1], 2), round(p["explained"][0], 2))
+# ผลที่ต้องได้: 0.8 · 0.6 · -0.6 · 0.8 · 60 · 20 · 0.75</pre>
+<p><code>pca</code> ของเล่มสร้างตาราง Variance และ Covariance แล้วหาแกนด้วยการหมุนทีละคู่แบบเดียวกับที่ทำด้วยมือ (วิธีของ Jacobi) จนตารางเหลือแต่แนวทแยง ใน numpy ใช้ <code>np.linalg.eigh(np.cov([A, B]))</code> ซึ่งเรียงค่าจากน้อยไปมาก และเครื่องหมายของ loading อาจกลับด้าน ส่วน scikit-learn ใช้ <code>PCA().fit(np.column_stack([A, B]))</code> แล้วอ่าน <code>components_</code> กับ <code>explained_variance_ratio_</code></p>
+</details>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ก</div>
+<p>PCA หมุนแกนหาทิศที่แกว่งมากที่สุดทีละแกน ตัวอย่างสองเหรียญได้ PC1 (0.8, 0.6) มี Eigenvalue 60 หรือ 75% และ PC2 (−0.6, 0.8) มี 20 หรือ 25% PC1 คือแรงร่วมที่ถือสองเหรียญไปทางเดียวกัน ส่วน PC2 คือคู่ short A 600 กับ long B 800 ดอลลาร์ ที่วันตลาดพุ่งไม่ขยับ และวันที่ 2 ได้ 50 ดอลลาร์</p></div>
+
+<!-- ═════════════════════════ ตอน ข ═════════════════════════ -->
+<h2>ตอน ข สามเหรียญ loading คือพอร์ต · 1 — Covariance Matrix และสามพอร์ตที่ไม่ขยับด้วยกัน: 200 + 50 + 12.5 เท่ากับ 262.5</h2>
+<p>สองเหรียญหมุนแกนด้วยมือได้ เพราะมีมุมให้หมุนแค่มุมเดียว สามเหรียญมีทิศให้ลองเป็นพื้นผิวทั้งผืน การลองทีละทิศจึงไม่ไหว เครื่องมือในบล็อกโค้ดหมุนแทนเรา หน้าที่ของเราในตอนนี้คือตรวจว่าผลที่เครื่องมือให้มาถูก และอ่านให้ออกว่ามันคือพอร์ตอะไร</p>
+<p>ข้อมูลคือสามเหรียญสมมติ A, B และ D หกวัน วันที่ 4 ถึง 6 กลับเครื่องหมายของวันที่ 1 ถึง 3 เหมือนเดิม ชุดนี้จัดให้แต่ละวันมีแรงเพียงแรงเดียวเพื่อให้เห็นชัด ข้อมูลจริงทุกวันมีทุกแรงปนกัน</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>A ขยับ (%)</th><th>B ขยับ (%)</th><th>D ขยับ (%)</th><th>อ่านเป็นคำ</th></tr>
+<tr><td>1</td><td data-key="ch10.สามเหรียญ.วัน.0.0">4.8</td><td data-key="ch10.สามเหรียญ.วัน.0.1">6.4</td><td data-key="ch10.สามเหรียญ.วัน.0.2">6</td><td>ขึ้นทั้งสามเหรียญ</td></tr>
+<tr><td>2</td><td data-key="ch10.สามเหรียญ.วัน.1.0">−1.8</td><td data-key="ch10.สามเหรียญ.วัน.1.1">−2.4</td><td data-key="ch10.สามเหรียญ.วัน.1.2">4</td><td>D ขึ้น ขณะที่ A กับ B ลง</td></tr>
+<tr><td>3</td><td data-key="ch10.สามเหรียญ.วัน.2.0">2</td><td data-key="ch10.สามเหรียญ.วัน.2.1">−1.5</td><td data-key="ch10.สามเหรียญ.วัน.2.2">0</td><td>A ขึ้น B ลง D นิ่ง</td></tr>
+<tr><td>4–6</td><td colspan="4">วันที่ 1 ถึง 3 กลับเครื่องหมาย</td></tr>
+</table></div>
+<p>ตอน ก ใช้สามตัวเลขคือผลรวม A², ผลรวม A × B และผลรวม B² สามเหรียญต้องใช้หกตัวเลข คือผลรวมกำลังสองของแต่ละเหรียญสามตัว และผลรวมของผลคูณทุกคู่อีกสามตัว ลองคิดหนึ่งช่องให้ดู ผลรวม D² สามวันแรกคือ 36 + 16 + 0 ได้ <span data-key="ch10.สามเหรียญ.DDสามวัน">52</span> หกวันได้ <span data-key="ch10.สามเหรียญ.ss.D">104</span></p>
+<p>อีกช่องหนึ่งคือผลรวม A × B สามวันแรก ได้ 4.8 × 6.4 บวก (−1.8) × (−2.4) บวก 2 × (−1.5) คือ <span data-key="ch10.สามเหรียญ.ABพจน์.0">30.72</span> + <span data-key="ch10.สามเหรียญ.ABพจน์.1">4.32</span> − 3 เท่ากับ <span data-key="ch10.สามเหรียญ.ABสามวัน">32.04</span> หกวันได้ <span data-key="ch10.สามเหรียญ.ข้าม.AB">64.08</span> ทำแบบเดียวกันครบหกช่องแล้วหารด้วย 5 ได้ตารางนี้</p>
+<div class="tw"><table>
+<tr><th></th><th>A</th><th>B</th><th>D</th></tr>
+<tr><th>A</th><td data-key="ch10.สามเหรียญ.cov.A">12.11</td><td data-key="ch10.สามเหรียญ.cov.AB">12.82</td><td data-key="ch10.สามเหรียญ.cov.AD">8.64</td></tr>
+<tr><th>B</th><td>12.82</td><td data-key="ch10.สามเหรียญ.cov.B">19.59</td><td data-key="ch10.สามเหรียญ.cov.BD">11.52</td></tr>
+<tr><th>D</th><td>8.64</td><td>11.52</td><td data-key="ch10.สามเหรียญ.cov.D">20.8</td></tr>
+</table></div>
+<p>ตารางที่วาง Variance ของทุกเหรียญไว้บนแนวทแยง และวาง Covariance ของทุกคู่ไว้นอกแนวทแยง เรียกว่า <strong>Covariance Matrix (เมทริกซ์ความแปรปรวนร่วม)</strong> ตารางนี้สมมาตร คือช่อง A–B กับช่อง B–A เป็นเลขเดียวกัน เพราะ A × B กับ B × A เท่ากัน ตารางสองเหรียญของตอน ก คือ 45.6, 19.2 และ 34.4 ซึ่งเป็นแบบเดียวกันแต่เล็กกว่า</p>
+<p>PCA ทุกครั้งเริ่มจากตารางนี้ ไม่ใช่จากข้อมูลดิบ ด้วยเหตุผลเดียวกับสูตรสามก้อนในตอน ก ความแกว่งตามทิศไหนก็ตามคิดได้จากตารางนี้ทั้งหมด แนวทแยงรวมกันได้ 12.11 + 19.59 + 20.8 เท่ากับ <strong data-key="ch10.สามเหรียญ.ตรวจcov">52.5</strong> นี่คือการแกว่งทั้งหมดของสามเหรียญ</p>
+<p>เครื่องมือให้ loading สามแกนมาดังนี้ ทุกแกนผ่านเงื่อนไขยาวหนึ่งหน่วย ลองกดเครื่องคิดเลขดูว่า 0.48² + 0.64² + 0.6² ได้ 1 พอดี</p>
+<div class="tw"><table>
+<tr><th>แกน</th><th>loading ของ A</th><th>loading ของ B</th><th>loading ของ D</th><th>อ่านเป็นคำ</th></tr>
+<tr><td>PC1</td><td data-key="ch10.สามเหรียญ.loading.0.0">0.48</td><td data-key="ch10.สามเหรียญ.loading.0.1">0.64</td><td data-key="ch10.สามเหรียญ.loading.0.2">0.6</td><td>ถือทั้งสามไปทางเดียวกัน</td></tr>
+<tr><td>PC2</td><td data-key="ch10.สามเหรียญ.loading.1.0">−0.36</td><td data-key="ch10.สามเหรียญ.loading.1.1">−0.48</td><td data-key="ch10.สามเหรียญ.loading.1.2">0.8</td><td>ซื้อ D ขาย A กับ B</td></tr>
+<tr><td>PC3</td><td data-key="ch10.สามเหรียญ.loading.2.0">0.8</td><td data-key="ch10.สามเหรียญ.loading.2.1">−0.6</td><td data-key="ch10.สามเหรียญ.loading.2.2">0</td><td>ซื้อ A ขาย B ไม่แตะ D</td></tr>
+</table></div>
+<p>อย่าเพิ่งเชื่อ ลองตรวจด้วยเงินแบบตอน ก ให้หนึ่งหน่วยของแต่ละแกนเป็นเงิน 1,000 ดอลลาร์ พอร์ต PC1 จึงถือ A <span data-key="ch10.สามเหรียญ.ถือ.0.ดอลลาร์.0">480</span> ดอลลาร์ B <span data-key="ch10.สามเหรียญ.ถือ.0.ดอลลาร์.1">640</span> ดอลลาร์ และ D <span data-key="ch10.สามเหรียญ.ถือ.0.ดอลลาร์.2">600</span> ดอลลาร์ วันที่ 1 ขา A ได้ 4.8% ของ 480 คือ 23.04 ดอลลาร์ ขา B ได้ 6.4% ของ 640 คือ 40.96 ดอลลาร์ ขา D ได้ 6% ของ 600 คือ 36 ดอลลาร์ รวม <span data-key="ch10.สามเหรียญ.กำไร.0.0.รวม">100</span> ดอลลาร์</p>
+<p>ทำแบบเดียวกันครบสามพอร์ตสามวัน พอร์ต PC2 คือ short A 360 short B 480 และ long D 800 ดอลลาร์ ส่วนพอร์ต PC3 คือ long A 800 กับ short B 600 ดอลลาร์ ไม่ถือ D</p>
+<div class="tw"><table>
+<tr><th>พอร์ต</th><th class="calc">วันที่ 1 (ขา A + ขา B + ขา D)</th><th>วันที่ 1</th><th class="calc">วันที่ 2</th><th>วันที่ 2</th><th class="calc">วันที่ 3</th><th>วันที่ 3</th></tr>
+<tr><td>PC1</td><td class="calc">23.04 + 40.96 + 36</td><td><strong>100</strong></td><td class="calc">−8.64 − 15.36 + 24</td><td data-key="ch10.สามเหรียญ.กำไร.0.1.รวม">0</td><td class="calc">9.6 − 9.6 + 0</td><td data-key="ch10.สามเหรียญ.กำไร.0.2.รวม">0</td></tr>
+<tr><td>PC2</td><td class="calc">−17.28 − 30.72 + 48</td><td data-key="ch10.สามเหรียญ.กำไร.1.0.รวม">0</td><td class="calc">6.48 + 11.52 + 32</td><td><strong data-key="ch10.สามเหรียญ.กำไร.1.1.รวม">50</strong></td><td class="calc">−7.2 + 7.2 + 0</td><td data-key="ch10.สามเหรียญ.กำไร.1.2.รวม">0</td></tr>
+<tr><td>PC3</td><td class="calc">38.4 − 38.4 + 0</td><td data-key="ch10.สามเหรียญ.กำไร.2.0.รวม">0</td><td class="calc">−14.4 + 14.4 + 0</td><td data-key="ch10.สามเหรียญ.กำไร.2.1.รวม">0</td><td class="calc">16 + 9 + 0</td><td><strong data-key="ch10.สามเหรียญ.กำไร.2.2.รวม">25</strong></td></tr>
+</table></div>
+<p>ตารางนี้อ่านได้สองทาง อ่านตามแถว แต่ละพอร์ตขยับเพียงวันเดียวในสามวัน พอร์ต PC1 ขยับวันที่ตลาดขึ้นทั้งหมด พอร์ต PC2 ขยับวันที่ D สวนทางกับ A และ B ส่วนพอร์ต PC3 ขยับวันที่ A กับ B แยกทางกัน อ่านตามคอลัมน์ แต่ละวันมีพอร์ตเดียวที่ได้เงิน อีกสองพอร์ตเป็นศูนย์</p>
+<p>นี่คือความหมายของการตั้งฉากเมื่อแปลเป็นเงิน สามพอร์ตนี้ไม่ขยับด้วยกันเลยในข้อมูลชุดนี้ correlation ของกำไรรายวันระหว่างพอร์ตคู่ไหนก็ตามเป็นศูนย์ การมีพอร์ตหนึ่งไม่ได้บอกอะไรเกี่ยวกับอีกพอร์ต</p>
+<p>ตรวจข้อที่สองคือความแกว่ง ค่าบนแกนคือกำไรหารด้วย 10 พอร์ต PC1 จึงมีค่าบนแกน 10 ในวันที่ 1 และ −10 ในวันที่ 4 ที่เหลือเป็นศูนย์ ผลรวมกำลังสองหกวันคือ 100 + 100 เท่ากับ <span data-key="ch10.สามเหรียญ.ssPC.0">200</span> คิดแบบเดียวกัน PC2 ได้ 25 + 25 เท่ากับ <span data-key="ch10.สามเหรียญ.ssPC.1">50</span> และ PC3 ได้ <span data-key="ch10.สามเหรียญ.ค่ากำลังสองวัน.2">6.25</span> + 6.25 เท่ากับ <span data-key="ch10.สามเหรียญ.ssPC.2">12.5</span></p>
+<p>200 + 50 + 12.5 ได้ <strong data-key="ch10.สามเหรียญ.รวม">262.5</strong> ซึ่งคือผลรวมกำลังสองของสามเหรียญรวมกัน (60.56 + 97.94 + 104) หารด้วย 5 ได้ Eigenvalue <span data-key="ch10.สามเหรียญ.varPC.0">40</span>, <span data-key="ch10.สามเหรียญ.varPC.1">10</span> และ <span data-key="ch10.สามเหรียญ.varPC.2">2.5</span> รวมกันได้ 52.5 เท่ากับแนวทแยงของ Covariance Matrix พอดี การแกว่งไม่หายไปไหนเหมือนในตอน ก</p>
+<div class="tw"><table>
+<tr><th>แกน</th><th>Eigenvalue</th><th class="calc">คิดอย่างไร</th><th>Explained Variance</th><th>อ่านเป็นพอร์ต</th></tr>
+<tr><td>PC1</td><td>40</td><td class="calc">40 ÷ 52.5</td><td><span data-key="ch10.สามเหรียญ.เปอร์เซ็นต์.0">76.2</span>%</td><td>แรงร่วมของทั้งสาม</td></tr>
+<tr><td>PC2</td><td>10</td><td class="calc">10 ÷ 52.5</td><td><span data-key="ch10.สามเหรียญ.เปอร์เซ็นต์.1">19</span>%</td><td>D สวน A กับ B</td></tr>
+<tr><td>PC3</td><td>2.5</td><td class="calc">2.5 ÷ 52.5</td><td><span data-key="ch10.สามเหรียญ.เปอร์เซ็นต์.2">4.8</span>%</td><td>คู่ A กับ B</td></tr>
+</table></div>
+<p>สังเกตว่าคู่ A กับ B ที่เป็นแบบเล่ม 1 อยู่ท้ายสุด แกว่งน้อยที่สุด แค่ 4.8% PCA เรียงแกนตามขนาดที่แกว่ง ไม่ได้เรียงตามว่าแกนไหนน่าเทรด คู่ที่แกว่งน้อยแปลว่าสองเหรียญไปด้วยกันแน่นมาก ซึ่งบท 8 บอกแล้วว่าอาจไม่เหลือระยะให้ทำเงิน หรืออาจเป็นคู่ที่ดี เครื่องมือนี้ตอบเรื่องนั้นไม่ได้</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>Covariance Matrix ของสามเหรียญมีแนวทแยงรวม 52.5 loading สามแกนคือ (0.48, 0.64, 0.6) (−0.36, −0.48, 0.8) และ (0.8, −0.6, 0) เมื่อถือเป็นเงินแกนละ 1,000 ดอลลาร์ แต่ละพอร์ตได้เงินวันเดียว (100 · 50 · 25 ดอลลาร์) และไม่ขยับด้วยกัน ผลรวมกำลังสอง 200 + 50 + 12.5 เท่ากับ 262.5 ของสามเหรียญพอดี หรือ 76.2% · 19% · 4.8%</p></div>
+
+<h2>ตอน ข · 2 — จาก loading กลับเป็นจำนวนเหรียญ: พอร์ต PC2 คือ short A 9 เหรียญ short B 48 เหรียญ และซื้อ D 4 เหรียญ</h2>
+<p>loading บอกสัดส่วนของเงิน แต่ตลาดไม่ได้ขายสัดส่วน ตลาดขายเป็นเหรียญ ขั้นสุดท้ายจึงเป็นการแปลงเงินของแต่ละขาเป็นจำนวนเหรียญ ด้วยการหารด้วยราคา สมมติว่าวันนี้ A ราคา <span data-key="ch10.สามเหรียญ.ราคา.0">40</span> ดอลลาร์ B ราคา <span data-key="ch10.สามเหรียญ.ราคา.1">10</span> ดอลลาร์ และ D ราคา <span data-key="ch10.สามเหรียญ.ราคา.2">200</span> ดอลลาร์</p>
+<p>เริ่มจากพอร์ต PC2 ขา A ต้อง short 360 ดอลลาร์ หารด้วยราคา 40 ได้ขาย <span data-key="ch10.สามเหรียญ.ถือ.1.เหรียญ.0">−9</span> เหรียญ (เครื่องหมายลบแปลว่าขาย) ขา B ต้อง short 480 ดอลลาร์ หารด้วย 10 ได้ <span data-key="ch10.สามเหรียญ.ถือ.1.เหรียญ.1">−48</span> เหรียญ ขา D ต้องซื้อ 800 ดอลลาร์ หารด้วย 200 ได้ <span data-key="ch10.สามเหรียญ.ถือ.1.เหรียญ.2">4</span> เหรียญ</p>
+<div class="tw"><table>
+<tr><th>พอร์ต</th><th class="calc">ขา A (เงิน ÷ 40)</th><th class="calc">ขา B (เงิน ÷ 10)</th><th class="calc">ขา D (เงิน ÷ 200)</th><th class="calc">Gross Exposure (รวมขนาดทุกขา)</th><th class="calc">Net Exposure (รวมแบบมีเครื่องหมาย)</th></tr>
+<tr><td>PC1</td><td class="calc">ซื้อ 480 ÷ 40 = <span data-key="ch10.สามเหรียญ.ถือ.0.เหรียญ.0">12</span></td><td class="calc">ซื้อ 640 ÷ 10 = <span data-key="ch10.สามเหรียญ.ถือ.0.เหรียญ.1">64</span></td><td class="calc">ซื้อ 600 ÷ 200 = <span data-key="ch10.สามเหรียญ.ถือ.0.เหรียญ.2">3</span></td><td class="calc">รวม 480 + 640 + 600 = <span data-key="ch10.สามเหรียญ.ถือ.0.gross">1,720</span></td><td class="calc">สุทธิ <span data-key="ch10.สามเหรียญ.ถือ.0.net">1,720</span></td></tr>
+<tr><td>PC2</td><td class="calc">ขาย 360 ÷ 40 = 9</td><td class="calc">ขาย 480 ÷ 10 = 48</td><td class="calc">ซื้อ 800 ÷ 200 = 4</td><td class="calc">รวม 360 + 480 + 800 = <span data-key="ch10.สามเหรียญ.ถือ.1.gross">1,640</span></td><td class="calc">สุทธิ 800 − 360 − 480 = <span data-key="ch10.สามเหรียญ.ถือ.1.net">−40</span></td></tr>
+<tr><td>PC3</td><td class="calc">ซื้อ 800 ÷ 40 = <span data-key="ch10.สามเหรียญ.ถือ.2.เหรียญ.0">20</span></td><td class="calc">ขาย 600 ÷ 10 = 60</td><td class="calc">ไม่ถือ</td><td class="calc">รวม 800 + 600 = <span data-key="ch10.สามเหรียญ.ถือ.2.gross">1,400</span></td><td class="calc">สุทธิ 800 − 600 = <span data-key="ch10.สามเหรียญ.ถือ.2.net">200</span></td></tr>
+</table></div>
+<p>ตรวจอีกทางด้วยวันที่ 2 ซึ่งพอร์ต PC2 ควรได้ 50 ดอลลาร์ วันนั้น A ลง 1.8% จากราคา 40 ราคาจึงเปลี่ยน <span data-key="ch10.สามเหรียญ.วัน2ต่อเหรียญ.0">−0.72</span> ดอลลาร์ต่อเหรียญ มินขาย A ไว้ 9 เหรียญ จึงได้ 9 × 0.72 เท่ากับ <span data-key="ch10.สามเหรียญ.วัน2pnl.0">6.48</span> ดอลลาร์</p>
+<p>ขา B ลง 2.4% จากราคา 10 ราคาเปลี่ยน <span data-key="ch10.สามเหรียญ.วัน2ต่อเหรียญ.1">−0.24</span> ดอลลาร์ต่อเหรียญ ขายไว้ 48 เหรียญ ได้ 48 × 0.24 เท่ากับ <span data-key="ch10.สามเหรียญ.วัน2pnl.1">11.52</span> ดอลลาร์ D ขึ้น 4% จากราคา 200 ราคาเปลี่ยน +<span data-key="ch10.สามเหรียญ.วัน2ต่อเหรียญ.2">8</span> ดอลลาร์ต่อเหรียญ ถือ 4 เหรียญ ได้ 4 × 8 เท่ากับ <span data-key="ch10.สามเหรียญ.วัน2pnl.2">32</span> ดอลลาร์ รวม <strong data-key="ch10.สามเหรียญ.วัน2รวม">50</strong> ดอลลาร์ ตรงกับตารางในหัวข้อที่แล้ว</p>
+<p>พอร์ตที่สร้างจาก loading ของ PCA แบบนี้เรียกว่า <strong>Eigenportfolio (พอร์ตองค์ประกอบหลัก)</strong> PC1 คือพอร์ตของแรงร่วม และพอร์ตที่เหลือคือพอร์ตที่ไม่ขยับไปกับแรงร่วมในข้อมูลที่ใช้หา</p>
+<p>คอลัมน์สองคอลัมน์ขวาสุดมีสิ่งที่ต้องระวัง พอร์ตทั้งสามมี Gross Exposure (มูลค่าสองขารวมกัน) ไม่เท่ากัน คือ 1,720, 1,640 และ 1,400 ดอลลาร์ ทั้งที่ทุกพอร์ตคือ "หนึ่งหน่วย" ถ้าทุนคู่ของมินมี 1,000 ดอลลาร์และเขาอยากให้มูลค่าทุกขารวมไม่เกินทุน เขาต้องย่อทุกขาลงตามสัดส่วนเดียวกัน</p>
+<p>ข้อที่สำคัญกว่าคือ Net Exposure (มูลค่าสุทธิ) ของพอร์ต PC3 เป็น +200 ไม่ใช่ศูนย์ พอร์ตนี้ไม่ขยับไปกับแรงร่วมในหกวันนี้ แต่มันไม่ได้เป็น Dollar-neutral (เป็นกลางต่อมูลค่า) แบบเล่ม 1 บท 8 วันที่ทุกเหรียญขึ้นเท่ากันพอดี พอร์ตนี้จะได้เงินจากขาซื้อที่ใหญ่กว่า (แบบฝึกข้อ 3 ให้ลองคิด)</p>
+<p>เหตุผลคือ PC1 ของข้อมูลชุดนี้ไม่ได้ถือทุกเหรียญเท่ากัน loading ของ B (0.64) มากกว่าของ A (0.48) "ตั้งฉากกับ PC1" จึงแปลว่าเป็นกลางต่อแรงร่วมแบบที่ข้อมูลหกวันวัดได้ ไม่ใช่เป็นกลางต่อเงิน และถ้าข้อมูลช่วงถัดไปให้ PC1 คนละทิศ ความเป็นกลางนั้นก็หายไปด้วย ตอน ค จะวัดเรื่องนี้กับข้อมูลจริง</p>
+<p>มีอีกเรื่องหนึ่งที่ตามมาเมื่อถือจริง loading คือสัดส่วนของ <strong>เงิน</strong> ณ วันที่เปิด พอราคาขยับ เงินในแต่ละขาก็ขยับไม่เท่ากัน ถ้า D ขึ้น 4% แต่ A กับ B ลง ขา D จะใหญ่กว่า 800 และขาอื่นจะเล็กกว่าเดิม จะรักษาสัดส่วนไว้ได้ต้องซื้อขายปรับทุกขาเป็นระยะ ซึ่งมีค่าธรรมเนียมแบบ Rebalance Cost (ต้นทุนการปรับ hedge) ของบท 5 และพอร์ตสามขาก็มีขาให้ปรับมากกว่าคู่</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ (PCA กับพอร์ตจาก loading)</div>
+<ul>
+<li><strong>เหรียญที่แกว่งแรงดึงแกนเข้าหาตัว</strong> PCA จาก Covariance Matrix ให้น้ำหนักตามขนาดที่แกว่ง ถ้า A แกว่งเป็นสองเท่าของเดิม PC1 ของตอน ก จะเลื่อนจาก (0.8, 0.6) ไปเป็นราว (<span data-key="ch10.แบบฝึก.ข้อ2.จริงa">0.97</span>, <span data-key="ch10.แบบฝึก.ข้อ2.จริงb">0.24</span>) และจับได้ <span data-key="ch10.แบบฝึก.ข้อ2.จริงเปอร์เซ็นต์">88.5</span>% แทน 75% แกนแรกเกือบกลายเป็นเหรียญ A ตัวเดียว (ลองในแบบฝึกข้อ 2)</li>
+<li><strong>บอกไม่ได้ว่าพอร์ตไหนกลับ</strong> PCA เรียงแกนตามการแกว่ง คู่ A กับ B ที่แกว่งเพียง 4.8% อยู่ท้ายสุด จะมีเชือกหรือไม่ต้องทดสอบแยกด้วยเครื่องมือของบท 3 และบท 4</li>
+<li><strong>ตั้งฉากในข้อมูลที่ใช้หา ไม่ได้แปลว่าเป็นกลางต่อเงิน</strong> พอร์ต PC3 มี Net Exposure +200 ดอลลาร์ วันที่ทุกเหรียญขึ้นเท่ากันมันได้เงิน และถ้า PC1 ของช่วงถัดไปเปลี่ยนทิศ ความเป็นกลางต่อแรงร่วมก็หายไป</li>
+<li><strong>เครื่องหมายของ loading เลือกเองได้</strong> ทิศ (0.48, 0.64, 0.6) กับ (−0.48, −0.64, −0.6) คือแกนเดียวกัน เครื่องมือของเล่มตั้งให้ตัวที่ใหญ่ที่สุดเป็นบวก ไลบรารีอื่นอาจกลับด้าน ถ้าเทียบสองช่วงต้องดูความตรงทิศแบบไม่สนเครื่องหมาย</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ข</div>
+<p>loading คูณ 1,000 ดอลลาร์คือเงินของแต่ละขา หารด้วยราคา 40 · 10 · 200 ได้จำนวนเหรียญ พอร์ต PC2 คือ short A 9 short B 48 และซื้อ D 4 เหรียญ วันที่ 2 ได้ 6.48 + 11.52 + 32 เท่ากับ 50 ดอลลาร์ พอร์ตแบบนี้เรียกว่า Eigenportfolio ต้องย่อตาม Gross Exposure ปรับขาเมื่อราคาขยับ และพอร์ต PC3 มี Net Exposure +200 จึงไม่ได้เป็นกลางต่อเงิน</p></div>
+
+<!-- ═════════════════════════ ตอน ค ═════════════════════════ -->
+<h2>ตอน ค 10 เหรียญจริงกับโลกที่รู้คำตอบ · 1 — 📡 PC1 จับได้ 65.4% และแทบเป็นเส้นเดียวกับดัชนีถ่วงน้ำหนักเท่ากัน</h2>
+<p>ทีนี้ใช้เครื่องมือเดียวกันกับชุดข้อมูลของเล่ม มินคิด Log Return (ผลตอบแทนแบบ log) รายวันของ 10 เหรียญเป็นเปอร์เซ็นต์ตามบท 2 ในช่วงเลือก <span data-key="ch10.จริง.วันเลือก">731</span> วัน ได้ <span data-key="ch10.จริง.แถวเลือก">730</span> แถว แล้วสร้าง Covariance Matrix ขนาด 10 × 10 และให้เครื่องมือหมุนแกนหาสิบแกน ทุกขั้นเหมือนตอน ข เพียงแต่ตารางใหญ่ขึ้น</p>
+<p>ผลรวม Eigenvalue ทั้งสิบแกนคือ <span data-key="ch10.จริง.varรวม">130.67</span> ซึ่งเท่ากับผลรวม Variance ของ 10 เหรียญ PC1 ได้ <span data-key="ch10.จริง.ค่าลักษณะ.0">85.44</span> หรือ <strong data-key="ch10.จริง.เปอร์เซ็นต์.0">65.4</strong>% ของทั้งหมด PC2 ได้ <span data-key="ch10.จริง.เปอร์เซ็นต์.1">7.5</span>% และ PC3 ได้ <span data-key="ch10.จริง.เปอร์เซ็นต์.2">6.6</span>% สามแกนแรกรวมกัน <span data-key="ch10.จริง.เปอร์เซ็นต์สาม">79.6</span>% แกนที่ 4 ถึง 10 ลดหลั่นจาก <span data-key="ch10.จริง.เปอร์เซ็นต์.3">5.4</span>% ไปจนถึง <span data-key="ch10.จริง.เปอร์เซ็นต์.9">0.9</span>%</p>
+<p>📡 ข้อมูลจริง · ราคาปิดรายวัน Binance · ช่วงเลือกเท่านั้น · Log Return รายวัน (%) · PCA จาก Covariance Matrix (ไม่ปรับมาตรฐาน)</p>
+<div class="tw"><table data-src="real">
+<tr><th>เหรียญ</th><th>SD ต่อวัน (%)</th><th>loading PC1</th><th>loading PC2</th><th>loading PC3</th><th>R² บน BTC</th><th>R² บน PC1</th></tr>
+<tr><td>BTC</td><td data-key="ch10.จริง.ตาราง.0.sd">2.49</td><td data-key="ch10.จริง.ตาราง.0.pc1">0.23</td><td data-key="ch10.จริง.ตาราง.0.pc2">0.02</td><td data-key="ch10.จริง.ตาราง.0.pc3">0.13</td><td data-key="ch10.จริง.ตาราง.0.r2btc">1</td><td data-key="ch10.จริง.ตาราง.0.r2pc1">0.71</td></tr>
+<tr><td>ETH</td><td data-key="ch10.จริง.ตาราง.1.sd">2.88</td><td data-key="ch10.จริง.ตาราง.1.pc1">0.27</td><td data-key="ch10.จริง.ตาราง.1.pc2">0.01</td><td data-key="ch10.จริง.ตาราง.1.pc3">0.09</td><td data-key="ch10.จริง.ตาราง.1.r2btc">0.68</td><td data-key="ch10.จริง.ตาราง.1.r2pc1">0.73</td></tr>
+<tr><td>BNB</td><td data-key="ch10.จริง.ตาราง.2.sd">2.71</td><td data-key="ch10.จริง.ตาราง.2.pc1">0.21</td><td data-key="ch10.จริง.ตาราง.2.pc2">0.05</td><td data-key="ch10.จริง.ตาราง.2.pc3">0.1</td><td data-key="ch10.จริง.ตาราง.2.r2btc">0.41</td><td data-key="ch10.จริง.ตาราง.2.r2pc1">0.5</td></tr>
+<tr><td>SOL</td><td data-key="ch10.จริง.ตาราง.3.sd">4.7</td><td data-key="ch10.จริง.ตาราง.3.pc1">0.42</td><td><strong data-key="ch10.จริง.ตาราง.3.pc2">0.68</strong></td><td data-key="ch10.จริง.ตาราง.3.pc3">−0.28</td><td data-key="ch10.จริง.ตาราง.3.r2btc">0.46</td><td data-key="ch10.จริง.ตาราง.3.r2pc1">0.69</td></tr>
+<tr><td>XRP</td><td data-key="ch10.จริง.ตาราง.4.sd">3.79</td><td data-key="ch10.จริง.ตาราง.4.pc1">0.27</td><td><strong data-key="ch10.จริง.ตาราง.4.pc2">−0.6</strong></td><td><strong data-key="ch10.จริง.ตาราง.4.pc3">−0.66</strong></td><td data-key="ch10.จริง.ตาราง.4.r2btc">0.24</td><td data-key="ch10.จริง.ตาราง.4.r2pc1">0.44</td></tr>
+<tr><td>ADA</td><td data-key="ch10.จริง.ตาราง.5.sd">3.65</td><td data-key="ch10.จริง.ตาราง.5.pc1">0.35</td><td data-key="ch10.จริง.ตาราง.5.pc2">−0.11</td><td data-key="ch10.จริง.ตาราง.5.pc3">−0.09</td><td data-key="ch10.จริง.ตาราง.5.r2btc">0.48</td><td data-key="ch10.จริง.ตาราง.5.r2pc1">0.78</td></tr>
+<tr><td>DOGE</td><td data-key="ch10.จริง.ตาราง.6.sd">4.35</td><td data-key="ch10.จริง.ตาราง.6.pc1">0.38</td><td data-key="ch10.จริง.ตาราง.6.pc2">−0.34</td><td><strong data-key="ch10.จริง.ตาราง.6.pc3">0.67</strong></td><td data-key="ch10.จริง.ตาราง.6.r2btc">0.51</td><td data-key="ch10.จริง.ตาราง.6.r2pc1">0.65</td></tr>
+<tr><td>LTC</td><td data-key="ch10.จริง.ตาราง.7.sd">3.49</td><td data-key="ch10.จริง.ตาราง.7.pc1">0.28</td><td data-key="ch10.จริง.ตาราง.7.pc2">−0.16</td><td data-key="ch10.จริง.ตาราง.7.pc3">−0.02</td><td data-key="ch10.จริง.ตาราง.7.r2btc">0.36</td><td data-key="ch10.จริง.ตาราง.7.r2pc1">0.57</td></tr>
+<tr><td>LINK</td><td data-key="ch10.จริง.ตาราง.8.sd">3.93</td><td data-key="ch10.จริง.ตาราง.8.pc1">0.35</td><td data-key="ch10.จริง.ตาราง.8.pc2">0.13</td><td data-key="ch10.จริง.ตาราง.8.pc3">0</td><td data-key="ch10.จริง.ตาราง.8.r2btc">0.42</td><td data-key="ch10.จริง.ตาราง.8.r2pc1">0.67</td></tr>
+<tr><td>DOT</td><td data-key="ch10.จริง.ตาราง.9.sd">3.55</td><td data-key="ch10.จริง.ตาราง.9.pc1">0.34</td><td data-key="ch10.จริง.ตาราง.9.pc2">0.08</td><td data-key="ch10.จริง.ตาราง.9.pc3">0.02</td><td data-key="ch10.จริง.ตาราง.9.r2btc">0.5</td><td data-key="ch10.จริง.ตาราง.9.r2pc1">0.79</td></tr>
+</table></div>
+<p>อ่านคอลัมน์ PC1 ก่อน loading เป็นบวกทั้งสิบเหรียญ ตั้งแต่ <span data-key="ch10.จริง.pc1ต่ำสุด">0.21</span> ถึง <span data-key="ch10.จริง.pc1สูงสุด">0.42</span> แปลว่าพอร์ต PC1 ถือทุกเหรียญไปทางเดียวกัน แบบเดียวกับ PC1 ของตัวอย่างสองเหรียญและสามเหรียญ แรงร่วมก้อนแรกที่ข้อมูลหาเองจึงคือ "ทั้งตลาดขึ้นหรือลงด้วยกัน"</p>
+<p>แต่ไม่ได้ถือเท่ากันทุกเหรียญ SOL ได้ loading มากที่สุดที่ 0.42 และ BNB ได้น้อยที่สุดที่ 0.21 ลองเทียบกับคอลัมน์ SD ต่อวัน SOL แกว่งแรงที่สุดที่ <span data-key="ch10.จริง.sdสูงสุด.ค่า">4.7</span>% ส่วน BTC แกว่งเบาที่สุดที่ <span data-key="ch10.จริง.sdต่ำสุด.ค่า">2.49</span>% และได้ loading แค่ 0.23 นี่คือผลของการใช้ Covariance Matrix ตรง ๆ เหรียญที่แกว่งแรงดึงแกนเข้าหาตัว แบบที่กล่อง ⚠️ ของตอน ข เตือนไว้</p>
+<p>คำถามของพี่ฝนคือ "ทำไมต้องเป็น BTC" ลองเทียบสามตัวแทนของตลาด ตัวแรกคือ BTC ตัวเดียว ตัวที่สองคือพอร์ต PC1 ตัวที่สามคือ Equal-weight Index (ดัชนีถ่วงน้ำหนักเท่ากัน) ของบท 9 ซึ่งการขยับรายวันคือ Mean ของ 10 เหรียญในวันนั้น วิธีเทียบคือ Correlation (สหสัมพันธ์) ของผลตอบแทนรายวัน</p>
+<p>ค่าบน PC1 กับ Equal-weight Index มี correlation <strong data-key="ch10.จริง.corrEWปัด">1</strong> เมื่อปัดสองตำแหน่ง (ค่าละเอียดอยู่ใน 🔎 ท้ายบท) คือแทบเป็นเส้นเดียวกัน ส่วนค่าบน PC1 กับ BTC ได้ <span data-key="ch10.จริง.corrBTC">0.84</span> สูงแต่ไม่ใช่ตัวเดียวกัน ข้อมูลที่ไม่มีใครบอกอะไรเลยจึงหาดัชนีของบท 9 เจอเอง ไม่ใช่ BTC ตัวเดียว</p>
+<p>สองคอลัมน์ขวาสุดบอกเรื่องเดียวกันอีกแบบ R² (สัดส่วนที่เส้นอธิบายได้) ของบท 1 บอกว่าการขยับของเหรียญหนึ่งอธิบายได้ด้วยตัวแทนตลาดกี่ส่วน เมื่อนับเฉพาะเก้าเหรียญที่ไม่ใช่ BTC BTC อธิบายได้เฉลี่ย <span data-key="ch10.จริง.r2btcเฉลี่ย9">0.45</span> ส่วน PC1 อธิบายได้เฉลี่ย <strong data-key="ch10.จริง.r2pc1เฉลี่ย9">0.65</strong> และ Equal-weight Index ได้ <span data-key="ch10.จริง.r2ewเฉลี่ย9">0.65</span> เท่ากับ PC1 เหรียญที่ BTC อธิบายได้น้อยที่สุดคือ XRP ที่ <span data-key="ch10.จริง.r2btcต่ำสุด.ค่า">0.24</span> ขณะที่ PC1 อธิบายได้ 0.44</p>
+<p>ถ้ามินหักแรงร่วมด้วย BTC ตัวเดียว ส่วนที่เหลือของเหรียญอื่นยังมีแรงร่วมค้างอยู่อีกก้อนหนึ่ง คือส่วนที่ PC1 อธิบายได้แต่ BTC อธิบายไม่ได้ ราว 0.65 − 0.45 หรือ <span data-key="ch10.จริง.r2ห่าง">0.2</span> ของการขยับของเหรียญทั่วไป บท 9 เห็นเรื่องนี้จากอีกด้าน หลังหัก BTC ส่วนที่เหลือของเก้าเหรียญยังไปด้วยกันที่ correlation เฉลี่ย <span data-key="ch10.จริง.ส่วนที่เหลือ.BTC.corr">0.3</span></p>
+<p>ลองหักด้วยค่าบน PC1 แทน correlation เฉลี่ยของส่วนที่เหลือลดลงเป็น <span data-key="ch10.จริง.ส่วนที่เหลือ.PC1.corr">−0.11</span> ใกล้กับ <span data-key="ch10.บท9.corrresEW">−0.12</span> ที่บท 9 ได้จากดัชนี แรงร่วมก้อนแรกหายไปจริง (ค่าติดลบเล็กน้อยเกิดจากการหักแกนที่ทุกเหรียญมีส่วนสร้าง)</p>
+<p>แต่เงื่อนไขอีกข้อที่บท 9 ตั้งไว้ยังไม่ผ่าน ADF ของบท 3 บน Cumulative Residual (ส่วนที่เหลือสะสม) ของเก้าเหรียญผ่านที่เส้น 5% <span data-key="ch10.จริง.ส่วนที่เหลือ.PC1.adfผ่าน">0</span> เหรียญ เท่ากับตอนหักด้วย BTC การเปลี่ยนตัวแทนตลาดทำให้ส่วนที่เหลือสะอาดขึ้น แต่ไม่ได้สร้างเชือกขึ้นมา</p>
+<p>คอลัมน์ PC2 กับ PC3 หน้าตาต่างออกไป PC2 มีสองเหรียญที่ loading ใหญ่ คือ SOL ที่ +0.68 กับ XRP ที่ −0.6 ส่วนเหรียญอื่นเล็ก PC2 ของช่วงเลือกจึงอ่านได้ว่า "SOL สู้กับ XRP" ซึ่งคือแรงลับที่ต้นเจอ PC3 คล้ายกัน มี DOGE ที่ +0.67 กับ XRP ที่ −0.66 คือ "DOGE สู้กับ XRP" สองแกนนี้คือแบบเดียวกับ PC2 ของตอน ก คือคู่ที่เหลือหลังหักแรงร่วมออก แต่คราวนี้ข้อมูลเลือกเหรียญเอง</p>
+<p>คำถามที่ต้องตอบก่อนจะเชื่อต้นคือ PC2 ขนาด 7.5% เป็นแรงจริงที่อยู่ในตลาด หรือเป็นแค่แรงสะบัดที่ PCA จับมาเรียงลำดับ เพราะ PCA ให้สิบแกนเสมอไม่ว่าในโลกจะมีแรงร่วมจริงกี่ก้อน แกนที่ 2 ต้องมีอะไรสักอย่างเสมอ ข้อมูลจริงตอบคำถามนี้เองไม่ได้ เพราะเราไม่รู้คำตอบ หัวข้อถัดไปจึงไปที่โลกที่เรารู้</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>บนข้อมูลช่วงเลือก PC1 จับได้ 65.4% ทุก loading เป็นบวก (0.21 ถึง 0.42) และค่าบน PC1 ไปกับ Equal-weight Index แทบเป็นเส้นเดียวกัน (correlation ปัดแล้ว 1) เทียบกับ BTC ที่ 0.84 PC1 อธิบายเก้าเหรียญได้เฉลี่ย 0.65 ส่วน BTC ได้ 0.45 PC2 (7.5%) คือ SOL สู้กับ XRP และ PC3 (6.6%) คือ DOGE สู้กับ XRP</p></div>
+
+<h2>ตอน ค · 2 — 🎲 โลกที่รู้คำตอบ: แรงที่สองจริงทำให้ PC2 ตรงทิศข้ามช่วง 0.98 โลกที่ไม่มีแรงที่สองได้ 0.26</h2>
+<p>มินสร้างโลกสองแบบที่รู้คำตอบ ทั้งสองโลกมี 10 เหรียญ ยาวเท่าช่วงเลือกบวกช่วงตรวจ (731 + 365 วัน) และสุ่มซ้ำ <span data-key="ch10.จำลอง.โลก">30</span> ครั้ง</p>
+<p><strong>โลกแรงเดียว</strong> ทุกเหรียญขยับตามแรงตลาดก้อนเดียวที่แกว่งวันละ SD <span data-key="ch10.จำลอง.แรงตลาดsd">3</span>% โดยแต่ละเหรียญตามแรงนี้ไม่เท่ากัน ตั้งแต่ <span data-key="ch10.จำลอง.betaต่ำสุด">0.6</span> ถึง <span data-key="ch10.จำลอง.betaสูงสุด">1.4</span> เท่า แล้วบวกส่วนของเหรียญเองที่แกว่งราว SD <span data-key="ch10.จำลอง.เฉพาะsd">2.2</span>% ต่อวัน ส่วนนี้ไม่เกี่ยวกันระหว่างเหรียญ ในโลกนี้มีแรงร่วมจริงก้อนเดียว คำตอบที่ถูกของ PC2 คือ "ไม่มีอะไร"</p>
+<p><strong>โลกสองแรง</strong> เหมือนโลกแรกทุกอย่าง แต่เพิ่มแรงกลุ่มอีกก้อนที่แกว่งวันละ SD <span data-key="ch10.จำลอง.กลุ่มsd">1.5</span>% ให้ <span data-key="ch10.จำลอง.กลุ่มเหรียญ">3</span> เหรียญแรกขยับด้วยกัน ในโลกนี้มีแรงร่วมจริงสองก้อน และ PC2 ที่ถูกต้องคือแกนของกลุ่มสามเหรียญนั้น</p>
+<p>เพราะรู้ว่าแต่ละโลกสร้างจากอะไร เราจึงคิด Covariance Matrix ที่แท้จริงได้ตรง ๆ โดยไม่ต้องใช้ข้อมูล แล้วหาแกนจากตารางนั้น ได้ "คำตอบจริง" ของแต่ละโลก โลกแรงเดียวมี PC1 จริง <span data-key="ch10.จำลอง.จริงW1pc1เปอร์เซ็นต์">68.8</span>% และ PC2 จริงเพียง <span data-key="ch10.จำลอง.จริงW1pc2เปอร์เซ็นต์">3.6</span>% (มาจากส่วนของเหรียญเองที่แกว่งไม่เท่ากันเล็กน้อย) โลกสองแรงมี PC2 จริง <span data-key="ch10.จำลอง.จริงW2pc2เปอร์เซ็นต์">7.1</span>%</p>
+<p>🎲 จำลอง · โลกละ 10 เหรียญ · ช่วงแรก 731 วันแทนช่วงเลือก ช่วงหลัง 365 วันแทนช่วงตรวจ · สุ่มซ้ำ 30 โลก · ค่าคือมัธยฐาน (ต่ำสุดถึงสูงสุด)</p>
+<div class="tw"><table data-src="sim">
+<tr><th>สิ่งที่วัดในช่วงแรก</th><th>โลกแรงเดียว</th><th>โลกสองแรง</th><th>ข้อมูลจริงของเล่ม</th></tr>
+<tr><td>PC1 (%)</td><td><span data-key="ch10.จำลอง.W1.pc1เปอร์เซ็นต์.มัธยฐาน">68.9</span> (<span data-key="ch10.จำลอง.W1.pc1เปอร์เซ็นต์.ต่ำสุด">66.6</span>–<span data-key="ch10.จำลอง.W1.pc1เปอร์เซ็นต์.สูงสุด">70.7</span>)</td><td><span data-key="ch10.จำลอง.W2.pc1เปอร์เซ็นต์.มัธยฐาน">66.6</span> (<span data-key="ch10.จำลอง.W2.pc1เปอร์เซ็นต์.ต่ำสุด">64.2</span>–<span data-key="ch10.จำลอง.W2.pc1เปอร์เซ็นต์.สูงสุด">68.1</span>)</td><td>65.4</td></tr>
+<tr><td>PC2 (%)</td><td><strong data-key="ch10.จำลอง.W1.pc2เปอร์เซ็นต์.มัธยฐาน">4.2</strong> (<span data-key="ch10.จำลอง.W1.pc2เปอร์เซ็นต์.ต่ำสุด">3.7</span>–<span data-key="ch10.จำลอง.W1.pc2เปอร์เซ็นต์.สูงสุด">4.7</span>)</td><td><strong data-key="ch10.จำลอง.W2.pc2เปอร์เซ็นต์.มัธยฐาน">7.2</strong> (<span data-key="ch10.จำลอง.W2.pc2เปอร์เซ็นต์.ต่ำสุด">6.4</span>–<span data-key="ch10.จำลอง.W2.pc2เปอร์เซ็นต์.สูงสุด">8.1</span>)</td><td><strong>7.5</strong></td></tr>
+<tr><td>PC แกนที่ตรงกับคำตอบจริง</td><td>PC1 ตรงทิศ <span data-key="ch10.จำลอง.W1.ตรงpc1.มัธยฐาน">1</span> ทุกโลก (ปัดสองตำแหน่ง)</td><td>PC2 ตรงทิศ <span data-key="ch10.จำลอง.W2.ตรงpc2.มัธยฐาน">0.99</span> (<span data-key="ch10.จำลอง.W2.ตรงpc2.ต่ำสุด">0.97</span>–<span data-key="ch10.จำลอง.W2.ตรงpc2.สูงสุด">1</span>)</td><td>ไม่รู้คำตอบ</td></tr>
+<tr><td>PC2 ช่วงแรกตรงทิศกับ PC2 ช่วงหลัง</td><td><strong data-key="ch10.จำลอง.W1.ข้ามpc2.มัธยฐาน">0.26</strong> (<span data-key="ch10.จำลอง.W1.ข้ามpc2.ต่ำสุด">0.03</span>–<span data-key="ch10.จำลอง.W1.ข้ามpc2.สูงสุด">0.73</span>)</td><td><strong data-key="ch10.จำลอง.W2.ข้ามpc2.มัธยฐาน">0.98</strong> (<span data-key="ch10.จำลอง.W2.ข้ามpc2.ต่ำสุด">0.92</span>–<span data-key="ch10.จำลอง.W2.ข้ามpc2.สูงสุด">1</span>)</td><td>หัวข้อถัดไป</td></tr>
+</table></div>
+<p>อ่านทีละแถว แถวแรก PC1 ของทั้งสองโลกใกล้ของจริงที่ 65.4% ข้อนี้เราตั้งโลกให้ใกล้ไว้โดยตั้งใจ เพื่อให้เทียบแถวอื่นได้อย่างยุติธรรม แถวที่สามบอกว่าเครื่องมือหาคำตอบเจอ ในโลกแรงเดียว PC1 ชี้ทิศเดียวกับแรงตลาดจริงทุกโลก และในโลกสองแรง PC2 ชี้ทิศเดียวกับแกนกลุ่มที่ 0.97 ขึ้นไป เมื่อมีแรงจริง PCA หามันเจอ</p>
+<p>แถวที่สองคือจุดที่ต้องระวัง โลกแรงเดียวไม่มีแรงที่สองเลย แต่ PC2 ที่วัดได้ก็ยังจับไว้ราว 4.2% ซึ่งสูงกว่าค่าจริง 3.6% ด้วย เพราะ PCA เลือกทิศที่บังเอิญแกว่งมากที่สุดในข้อมูลชุดนั้นเสมอ ส่วนข้อมูลจริงได้ 7.5% ซึ่งสูงกว่าโลกแรงเดียวทุกโลก และใกล้โลกสองแรงมาก ถ้าดูแค่ขนาด เราจะสรุปว่าแรงลับของต้นมีจริง</p>
+<p>แถวสุดท้ายคือการทดสอบที่ขนาดให้ไม่ได้ มินแบ่งแต่ละโลกเป็นสองช่วงเหมือนช่วงเลือกกับช่วงตรวจ หา PC2 แยกในแต่ละช่วง แล้ววัดความตรงทิศของสองแกนนั้นตามวิธีท้ายตอน ก ถ้า PC2 คือแรงจริงที่อยู่ในโลก สองช่วงต้องชี้ทิศเดียวกัน โลกสองแรงได้ 0.98 คือแทบทับกัน ส่วนโลกแรงเดียวได้ 0.26 และกระจายตั้งแต่ 0.03 ถึง 0.73 แล้วแต่โชค เพราะ PC2 ของแต่ละช่วงคือแรงสะบัดคนละชุด</p>
+<!--CHART:sab2-pca-sim-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 350" role="img" aria-label="สัดส่วน PC2: โลกแรงเดียว 4.2% โลกสองแรง 7.2% ข้อมูลจริง 7.5% · ความตรงทิศข้ามช่วง: โลกแรงเดียว 0.26 โลกสองแรง 0.98 ข้อมูลจริง 0.08">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13.5" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">PC2 จริงหรือแค่แรงสะบัด: สองโลกที่รู้คำตอบเทียบข้อมูลของเล่ม</text>
+<line x1="70" y1="290.0" x2="360" y2="290.0" stroke="#d1d5db"/>
+<text x="64.0" y="294.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="70" y1="247.2" x2="360" y2="247.2" stroke="#f3f4f6"/>
+<text x="64.0" y="251.2" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<line x1="70" y1="204.4" x2="360" y2="204.4" stroke="#f3f4f6"/>
+<text x="64.0" y="208.4" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">4</text>
+<line x1="70" y1="161.6" x2="360" y2="161.6" stroke="#f3f4f6"/>
+<text x="64.0" y="165.6" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">6</text>
+<line x1="70" y1="118.8" x2="360" y2="118.8" stroke="#f3f4f6"/>
+<text x="64.0" y="122.8" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">8</text>
+<line x1="70" y1="76.0" x2="360" y2="76.0" stroke="#f3f4f6"/>
+<text x="64.0" y="80.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">10</text>
+<text x="70.0" y="54.0" text-anchor="start" font-size="12" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">สัดส่วนของ PC2 ในช่วงเลือก (%)</text>
+<rect x="94.3" y="200.1" width="48" height="89.9" rx="3" fill="#9ca3af"/>
+<line x1="118.3" y1="210.8" x2="118.3" y2="189.4" stroke="#374151" stroke-width="1.6"/>
+<line x1="111.3" y1="210.8" x2="125.3" y2="210.8" stroke="#374151" stroke-width="1.6"/>
+<line x1="111.3" y1="189.4" x2="125.3" y2="189.4" stroke="#374151" stroke-width="1.6"/>
+<text x="118.3" y="181.4" text-anchor="middle" font-size="11" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">4.2%</text>
+<text x="118.3" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">โลกแรงเดียว</text>
+<rect x="191.0" y="135.9" width="48" height="154.1" rx="3" fill="#16a34a"/>
+<line x1="215.0" y1="153.0" x2="215.0" y2="116.7" stroke="#374151" stroke-width="1.6"/>
+<line x1="208.0" y1="153.0" x2="222.0" y2="153.0" stroke="#374151" stroke-width="1.6"/>
+<line x1="208.0" y1="116.7" x2="222.0" y2="116.7" stroke="#374151" stroke-width="1.6"/>
+<text x="215.0" y="108.7" text-anchor="middle" font-size="11" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">7.2%</text>
+<text x="215.0" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">โลกสองแรง</text>
+<rect x="287.7" y="129.5" width="48" height="160.5" rx="3" fill="#2563eb"/>
+<text x="311.7" y="121.5" text-anchor="middle" font-size="11" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">7.5%</text>
+<text x="311.7" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ข้อมูลจริง</text>
+<line x1="450" y1="290.0" x2="740" y2="290.0" stroke="#d1d5db"/>
+<text x="444.0" y="294.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="450" y1="241.4" x2="740" y2="241.4" stroke="#f3f4f6"/>
+<text x="444.0" y="245.4" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.25</text>
+<line x1="450" y1="192.7" x2="740" y2="192.7" stroke="#f3f4f6"/>
+<text x="444.0" y="196.7" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.5</text>
+<line x1="450" y1="144.1" x2="740" y2="144.1" stroke="#f3f4f6"/>
+<text x="444.0" y="148.1" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.75</text>
+<line x1="450" y1="95.5" x2="740" y2="95.5" stroke="#f3f4f6"/>
+<text x="444.0" y="99.5" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<text x="450.0" y="54.0" text-anchor="start" font-size="12" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">ความตรงทิศของ PC2 ช่วงเลือกกับช่วงตรวจ</text>
+<rect x="474.3" y="239.4" width="48" height="50.6" rx="3" fill="#9ca3af"/>
+<line x1="498.3" y1="284.2" x2="498.3" y2="148.0" stroke="#374151" stroke-width="1.6"/>
+<line x1="491.3" y1="284.2" x2="505.3" y2="284.2" stroke="#374151" stroke-width="1.6"/>
+<line x1="491.3" y1="148.0" x2="505.3" y2="148.0" stroke="#374151" stroke-width="1.6"/>
+<text x="498.3" y="140.0" text-anchor="middle" font-size="11" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">0.26</text>
+<text x="498.3" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">โลกแรงเดียว</text>
+<rect x="571.0" y="99.3" width="48" height="190.7" rx="3" fill="#16a34a"/>
+<line x1="595.0" y1="111.0" x2="595.0" y2="95.5" stroke="#374151" stroke-width="1.6"/>
+<line x1="588.0" y1="111.0" x2="602.0" y2="111.0" stroke="#374151" stroke-width="1.6"/>
+<line x1="588.0" y1="95.5" x2="602.0" y2="95.5" stroke="#374151" stroke-width="1.6"/>
+<text x="595.0" y="87.5" text-anchor="middle" font-size="11" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">0.98</text>
+<text x="595.0" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">โลกสองแรง</text>
+<rect x="667.7" y="274.4" width="48" height="15.6" rx="3" fill="#2563eb"/>
+<text x="691.7" y="266.4" text-anchor="middle" font-size="11" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.08</text>
+<text x="691.7" y="308.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ข้อมูลจริง</text>
+</svg></div>
+<div class="cap">🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด) · โลกละ 10 เหรียญ 731 + 365 วัน · สุ่มซ้ำ 30 โลก · แท่งคือมัธยฐาน เส้นคือต่ำสุดถึงสูงสุด · โลกสองแรงเพิ่มแรงกลุ่มให้ 3 เหรียญ · ข้อมูลจริงคือ 10 เหรียญของเล่ม</div>
+<!--/CHART:sab2-pca-sim-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แผงซ้ายคือสัดส่วนของ PC2 ในช่วงแรก แผงขวาคือความตรงทิศของ PC2 ระหว่างสองช่วง แท่งเทาคือโลกแรงเดียว แท่งเขียวคือโลกสองแรง แท่งน้ำเงินคือข้อมูลของเล่ม เส้นดำคือต่ำสุดถึงสูงสุดของ 30 โลก ให้ดูว่าทางซ้ายแท่งน้ำเงินสูงเท่าแท่งเขียว แต่ทางขวามันเตี้ยกว่าแท่งเทาเสียอีก สรุปได้ว่าขนาดของ PC2 บอกไม่ได้ว่ามีแรงที่สองจริง สิ่งที่บอกได้คือ PC2 ชี้ทิศเดิมในช่วงถัดไปหรือไม่ และ PC2 ของเล่มไม่ชี้ทิศเดิม</p>
+<p>โลกทั้งสองยังบอกเรื่องข้อมูลสั้นด้วย ถ้าหา PCA จากหน้าต่างแค่ 90 วัน โลกแรงเดียวได้ PC2 ราว <span data-key="ch10.จำลอง.W1.pc2สั้นเปอร์เซ็นต์.มัธยฐาน">5.5</span>% และบางโลกถึง <span data-key="ch10.จำลอง.W1.pc2สั้นเปอร์เซ็นต์.สูงสุด">6.7</span>% ใกล้ระดับของโลกสองแรง ส่วนโลกสองแรงที่ 90 วันยังหาแกนกลุ่มเจอ แต่ความตรงทิศกับคำตอบจริงลดลงเหลือมัธยฐาน <span data-key="ch10.จำลอง.W2.ตรงpc2สั้น.มัธยฐาน">0.92</span> และต่ำสุด <span data-key="ch10.จำลอง.W2.ตรงpc2สั้น.ต่ำสุด">0.78</span> ข้อมูลยิ่งสั้น แรงสะบัดยิ่งดูเหมือนแรงจริง</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>ในโลกที่รู้คำตอบ PCA หาแรงจริงเจอ (ตรงทิศ 0.97 ขึ้นไป) แต่ในโลกที่มีแรงร่วมก้อนเดียว PC2 ก็ยังจับไว้ 4.2% จากแรงสะบัด ขนาดของ PC2 ของเล่ม (7.5%) ใกล้โลกสองแรงที่ 7.2% จึงตัดสินจากขนาดไม่ได้ สิ่งที่แยกสองโลกออกคือความตรงทิศข้ามช่วง โลกสองแรงได้ 0.98 โลกแรงเดียวได้ 0.26</p></div>
+
+<h2>ตอน ค · 3 — 📡 PC2 ของเล่มข้ามไปช่วงตรวจแล้วตรงทิศเพียง 0.08</h2>
+<p>มินทำกับข้อมูลจริงแบบเดียวกับโลกจำลอง คือเปิดช่วงตรวจ <span data-key="ch10.จริง.วันตรวจ">365</span> วัน หา PCA ใหม่จากช่วงตรวจล้วน ๆ แล้วเทียบทิศกับแกนของช่วงเลือก ช่วงทดสอบสุดท้ายยังล็อกอยู่</p>
+<p>PC1 ของสองช่วงตรงทิศกัน <strong data-key="ch10.จริง.ตรงทิศ.0">0.99</strong> แรงตลาดก้อนแรกอยู่ที่เดิม และใหญ่ขึ้นด้วย จาก 65.4% ในช่วงเลือกเป็น <span data-key="ch10.จริง.ตรวจ.เปอร์เซ็นต์.0">75.8</span>% ในช่วงตรวจ ค่าบน PC1 ของช่วงตรวจยังแทบเป็นเส้นเดียวกับ Equal-weight Index</p>
+<p>PC2 ไม่รอด ความตรงทิศของ PC2 สองช่วงคือ <strong data-key="ch10.จริง.ตรงทิศ.1">0.08</strong> เกือบตั้งฉากกัน และต่ำกว่ามัธยฐาน 0.26 ของโลกแรงเดียวด้วย PC2 ของช่วงตรวจไม่ใช่ SOL สู้กับ XRP แล้ว แต่เป็น LTC ที่ <span data-key="ch10.จริง.ตรวจ.pc2สองตัว.0.loading">0.63</span> สู้กับ ADA ที่ <span data-key="ch10.จริง.ตรวจ.pc2สองตัว.1.loading">−0.46</span> ถ้าค้นทุกแกนของช่วงตรวจว่าแกนไหนใกล้ PC2 เดิมที่สุด จะได้แกนที่ <span data-key="ch10.จริง.pc2ไปตรงกับpcที่">6</span> ที่ตรงทิศเพียง <span data-key="ch10.จริง.ตรงที่ดีสุดของpc2">0.69</span></p>
+<!--CHART:sab2-pca-loadings-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 470" role="img" aria-label="PC1 ทุกเหรียญเป็นบวกทั้งสองช่วง ตรงทิศกัน 0.99 · PC2 ช่วงเลือกคือ SOL บวก XRP ลบ ช่วงตรวจกลายเป็น LTC บวก ADA ลบ ตรงทิศกันเพียง 0.08">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13.5" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">loading ของ 10 เหรียญ ช่วงเลือกเทียบช่วงตรวจ</text>
+<line x1="64" y1="182.8" x2="736" y2="182.8" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="186.8" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.6</text>
+<line x1="64" y1="156.9" x2="736" y2="156.9" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="160.9" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.3</text>
+<line x1="64" y1="131.0" x2="736" y2="131.0" stroke="#d1d5db" stroke-width="1.4"/>
+<text x="58.0" y="135.0" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="105.1" x2="736" y2="105.1" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="109.1" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0.3</text>
+<line x1="64" y1="79.3" x2="736" y2="79.3" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="83.3" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0.6</text>
+<text x="64.0" y="52.0" text-anchor="start" font-size="12" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">PC1 · ความตรงทิศสองช่วง 0.99</text>
+<rect x="81.6" y="111.2" width="15" height="19.8" rx="2" fill="#2563eb"/>
+<rect x="98.6" y="118.1" width="15" height="12.9" rx="2" fill="#d97706"/>
+<text x="97.6" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">BTC</text>
+<rect x="148.8" y="107.7" width="15" height="23.3" rx="2" fill="#2563eb"/>
+<rect x="165.8" y="106.8" width="15" height="24.2" rx="2" fill="#d97706"/>
+<text x="164.8" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ETH</text>
+<rect x="216.0" y="112.9" width="15" height="18.1" rx="2" fill="#2563eb"/>
+<rect x="233.0" y="117.2" width="15" height="13.8" rx="2" fill="#d97706"/>
+<text x="232.0" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">BNB</text>
+<rect x="283.2" y="94.8" width="15" height="36.2" rx="2" fill="#2563eb"/>
+<rect x="300.2" y="104.3" width="15" height="26.7" rx="2" fill="#d97706"/>
+<text x="299.2" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">SOL</text>
+<rect x="350.4" y="107.7" width="15" height="23.3" rx="2" fill="#2563eb"/>
+<rect x="367.4" y="101.7" width="15" height="29.3" rx="2" fill="#d97706"/>
+<text x="366.4" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">XRP</text>
+<rect x="417.6" y="100.8" width="15" height="30.2" rx="2" fill="#2563eb"/>
+<rect x="434.6" y="95.6" width="15" height="35.4" rx="2" fill="#d97706"/>
+<text x="433.6" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ADA</text>
+<rect x="484.8" y="98.2" width="15" height="32.8" rx="2" fill="#2563eb"/>
+<rect x="501.8" y="99.1" width="15" height="31.9" rx="2" fill="#d97706"/>
+<text x="500.8" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">DOGE</text>
+<rect x="552.0" y="106.8" width="15" height="24.2" rx="2" fill="#2563eb"/>
+<rect x="569.0" y="105.1" width="15" height="25.9" rx="2" fill="#d97706"/>
+<text x="568.0" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">LTC</text>
+<rect x="619.2" y="100.8" width="15" height="30.2" rx="2" fill="#2563eb"/>
+<rect x="636.2" y="97.4" width="15" height="33.6" rx="2" fill="#d97706"/>
+<text x="635.2" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">LINK</text>
+<rect x="686.4" y="101.7" width="15" height="29.3" rx="2" fill="#2563eb"/>
+<rect x="703.4" y="99.9" width="15" height="31.1" rx="2" fill="#d97706"/>
+<text x="702.4" y="216.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">DOT</text>
+<line x1="64" y1="400.2" x2="736" y2="400.2" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="404.2" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.6</text>
+<line x1="64" y1="370.6" x2="736" y2="370.6" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="374.6" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.3</text>
+<line x1="64" y1="341.0" x2="736" y2="341.0" stroke="#d1d5db" stroke-width="1.4"/>
+<text x="58.0" y="345.0" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="311.4" x2="736" y2="311.4" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="315.4" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0.3</text>
+<line x1="64" y1="281.8" x2="736" y2="281.8" stroke="#f3f4f6" stroke-width="1"/>
+<text x="58.0" y="285.8" text-anchor="end" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">0.6</text>
+<text x="64.0" y="252.0" text-anchor="start" font-size="12" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">PC2 · ความตรงทิศสองช่วง 0.08</text>
+<rect x="81.6" y="339.0" width="15" height="2.0" rx="2" fill="#2563eb"/>
+<rect x="98.6" y="341.0" width="15" height="9.9" rx="2" fill="#d97706"/>
+<text x="97.6" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">BTC</text>
+<rect x="148.8" y="340.0" width="15" height="1.0" rx="2" fill="#2563eb"/>
+<rect x="165.8" y="341.0" width="15" height="3.0" rx="2" fill="#d97706"/>
+<text x="164.8" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ETH</text>
+<rect x="216.0" y="336.1" width="15" height="4.9" rx="2" fill="#2563eb"/>
+<rect x="233.0" y="333.1" width="15" height="7.9" rx="2" fill="#d97706"/>
+<text x="232.0" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">BNB</text>
+<rect x="283.2" y="273.9" width="15" height="67.1" rx="2" fill="#2563eb"/>
+<rect x="300.2" y="341.0" width="15" height="32.6" rx="2" fill="#d97706"/>
+<text x="299.2" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">SOL</text>
+<rect x="350.4" y="341.0" width="15" height="59.2" rx="2" fill="#2563eb"/>
+<rect x="367.4" y="341.0" width="15" height="26.7" rx="2" fill="#d97706"/>
+<text x="366.4" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">XRP</text>
+<rect x="417.6" y="341.0" width="15" height="10.9" rx="2" fill="#2563eb"/>
+<rect x="434.6" y="341.0" width="15" height="45.4" rx="2" fill="#d97706"/>
+<text x="433.6" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ADA</text>
+<rect x="484.8" y="341.0" width="15" height="33.6" rx="2" fill="#2563eb"/>
+<rect x="501.8" y="338.0" width="15" height="3.0" rx="2" fill="#d97706"/>
+<text x="500.8" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">DOGE</text>
+<rect x="552.0" y="341.0" width="15" height="15.8" rx="2" fill="#2563eb"/>
+<rect x="569.0" y="278.8" width="15" height="62.2" rx="2" fill="#d97706"/>
+<text x="568.0" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">LTC</text>
+<rect x="619.2" y="328.2" width="15" height="12.8" rx="2" fill="#2563eb"/>
+<rect x="636.2" y="331.1" width="15" height="9.9" rx="2" fill="#d97706"/>
+<text x="635.2" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">LINK</text>
+<rect x="686.4" y="333.1" width="15" height="7.9" rx="2" fill="#2563eb"/>
+<rect x="703.4" y="298.5" width="15" height="42.5" rx="2" fill="#d97706"/>
+<text x="702.4" y="436.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">DOT</text>
+<rect x="436" y="14" width="11" height="11" rx="2" fill="#2563eb"/>
+<text x="452.0" y="24.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงเลือก</text>
+<rect x="546" y="14" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="562.0" y="24.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงตรวจ</text>
+</svg></div>
+<div class="cap">📡 ข้อมูลจริง (สแนปช็อต) · Binance ราคาปิดรายวัน 10 เหรียญ · ผลตอบแทน log รายวัน · PCA จากความแปรปรวนร่วม · ช่วงเลือก 2022-11-15 ถึง 2024-11-14 · ช่วงตรวจ 2024-11-15 ถึง 2025-11-14</div>
+<!--/CHART:sab2-pca-loadings-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แต่ละแผงคือ loading ของสิบเหรียญ แท่งน้ำเงินคือช่วงเลือก แท่งส้มคือช่วงตรวจ แผงบนคือ PC1 แผงล่างคือ PC2 ให้ดูว่าแผงบนแท่งสองสีเป็นบวกทุกเหรียญและสูงใกล้กัน ส่วนแผงล่าง แท่งน้ำเงินใหญ่ที่ SOL กับ XRP แต่แท่งส้มใหญ่ที่ LTC, DOT และ ADA สรุปได้ว่าแรงตลาดก้อนแรกอยู่ที่เดิม แต่ "แรงที่สอง" ของช่วงเลือกหายไป และช่วงตรวจมีแรงที่สองของมันเองซึ่งเป็นคนละชุดเหรียญ</p>
+<p>การเทียบสองช่วงใหญ่อาจโชคร้ายได้ มินจึงดูอีกแบบด้วย Rolling Window (หน้าต่างเลื่อน) ของบท 5 คือหา PCA จาก <span data-key="ch10.จริง.หน้าต่างวัน">90</span> วันล่าสุด เลื่อนทีละ <span data-key="ch10.จริง.หน้าต่างเลื่อน">30</span> วันตลอดช่วงเลือกและช่วงตรวจ ได้ <span data-key="ch10.จริง.หน้าต่างจำนวน">34</span> หน้าต่าง โดย <span data-key="ch10.จริง.หน้าต่างในตรวจ">12</span> หน้าต่างจบในช่วงตรวจ แต่ละหน้าต่างวัดความตรงทิศกับ PC1 และ PC2 ของช่วงเลือกทั้งช่วง</p>
+<!--CHART:sab2-pca-rolling-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 340" role="img" aria-label="PC1 ของทุกหน้าต่างตรงทิศกับช่วงเลือกตั้งแต่ 0.89 ขึ้นไป ส่วน PC2 กระโดดระหว่าง 0.04 ถึง 0.84 และต่ำกว่า 0.5 ใน 19 จาก 34 หน้าต่าง">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13.5" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">PC ของหน้าต่าง 90 วัน ตรงทิศกับ PC ของช่วงเลือกทั้งช่วงแค่ไหน</text>
+<rect x="501.8" y="70" width="234.2" height="200" fill="#fef3c7" opacity="0.6"/>
+<text x="732.0" y="62.0" text-anchor="end" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">พื้นเหลือง = หน้าต่างที่จบในช่วงตรวจ</text>
+<line x1="64" y1="270.0" x2="736" y2="270.0" stroke="#d1d5db"/>
+<text x="56.0" y="274.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="220.0" x2="736" y2="220.0" stroke="#f3f4f6"/>
+<text x="56.0" y="224.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.25</text>
+<line x1="64" y1="170.0" x2="736" y2="170.0" stroke="#f3f4f6"/>
+<text x="56.0" y="174.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.5</text>
+<line x1="64" y1="120.0" x2="736" y2="120.0" stroke="#f3f4f6"/>
+<text x="56.0" y="124.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">0.75</text>
+<line x1="64" y1="70.0" x2="736" y2="70.0" stroke="#f3f4f6"/>
+<text x="56.0" y="74.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<polyline points="64.0,76.0 84.4,74.0 104.7,70.0 125.1,72.0 145.5,70.0 165.8,80.0 186.2,86.0 206.5,92.0 226.9,76.0 247.3,74.0 267.6,76.0 288.0,76.0 308.4,74.0 328.7,72.0 349.1,74.0 369.5,72.0 389.8,72.0 410.2,70.0 430.5,70.0 450.9,72.0 471.3,72.0 491.6,72.0 512.0,78.0 532.4,78.0 552.7,78.0 573.1,76.0 593.5,76.0 613.8,76.0 634.2,72.0 654.5,72.0 674.9,74.0 695.3,74.0 715.6,72.0 736.0,72.0" fill="none" stroke="#7c3aed" stroke-width="2.4"/>
+<circle cx="64.0" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="84.4" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="104.7" cy="70.0" r="2.6" fill="#7c3aed"/>
+<circle cx="125.1" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="145.5" cy="70.0" r="2.6" fill="#7c3aed"/>
+<circle cx="165.8" cy="80.0" r="2.6" fill="#7c3aed"/>
+<circle cx="186.2" cy="86.0" r="2.6" fill="#7c3aed"/>
+<circle cx="206.5" cy="92.0" r="2.6" fill="#7c3aed"/>
+<circle cx="226.9" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="247.3" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="267.6" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="288.0" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="308.4" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="328.7" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="349.1" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="369.5" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="389.8" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="410.2" cy="70.0" r="2.6" fill="#7c3aed"/>
+<circle cx="430.5" cy="70.0" r="2.6" fill="#7c3aed"/>
+<circle cx="450.9" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="471.3" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="491.6" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="512.0" cy="78.0" r="2.6" fill="#7c3aed"/>
+<circle cx="532.4" cy="78.0" r="2.6" fill="#7c3aed"/>
+<circle cx="552.7" cy="78.0" r="2.6" fill="#7c3aed"/>
+<circle cx="573.1" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="593.5" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="613.8" cy="76.0" r="2.6" fill="#7c3aed"/>
+<circle cx="634.2" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="654.5" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="674.9" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="695.3" cy="74.0" r="2.6" fill="#7c3aed"/>
+<circle cx="715.6" cy="72.0" r="2.6" fill="#7c3aed"/>
+<circle cx="736.0" cy="72.0" r="2.6" fill="#7c3aed"/>
+<polyline points="64.0,110.0 84.4,118.0 104.7,132.0 125.1,150.0 145.5,174.0 165.8,188.0 186.2,184.0 206.5,192.0 226.9,214.0 247.3,128.0 267.6,142.0 288.0,114.0 308.4,114.0 328.7,140.0 349.1,260.0 369.5,248.0 389.8,160.0 410.2,208.0 430.5,102.0 450.9,150.0 471.3,160.0 491.6,182.0 512.0,190.0 532.4,200.0 552.7,182.0 573.1,260.0 593.5,262.0 613.8,250.0 634.2,258.0 654.5,244.0 674.9,192.0 695.3,136.0 715.6,122.0 736.0,244.0" fill="none" stroke="#d97706" stroke-width="2.4"/>
+<circle cx="64.0" cy="110.0" r="2.6" fill="#d97706"/>
+<circle cx="84.4" cy="118.0" r="2.6" fill="#d97706"/>
+<circle cx="104.7" cy="132.0" r="2.6" fill="#d97706"/>
+<circle cx="125.1" cy="150.0" r="2.6" fill="#d97706"/>
+<circle cx="145.5" cy="174.0" r="2.6" fill="#d97706"/>
+<circle cx="165.8" cy="188.0" r="2.6" fill="#d97706"/>
+<circle cx="186.2" cy="184.0" r="2.6" fill="#d97706"/>
+<circle cx="206.5" cy="192.0" r="2.6" fill="#d97706"/>
+<circle cx="226.9" cy="214.0" r="2.6" fill="#d97706"/>
+<circle cx="247.3" cy="128.0" r="2.6" fill="#d97706"/>
+<circle cx="267.6" cy="142.0" r="2.6" fill="#d97706"/>
+<circle cx="288.0" cy="114.0" r="2.6" fill="#d97706"/>
+<circle cx="308.4" cy="114.0" r="2.6" fill="#d97706"/>
+<circle cx="328.7" cy="140.0" r="2.6" fill="#d97706"/>
+<circle cx="349.1" cy="260.0" r="2.6" fill="#d97706"/>
+<circle cx="369.5" cy="248.0" r="2.6" fill="#d97706"/>
+<circle cx="389.8" cy="160.0" r="2.6" fill="#d97706"/>
+<circle cx="410.2" cy="208.0" r="2.6" fill="#d97706"/>
+<circle cx="430.5" cy="102.0" r="2.6" fill="#d97706"/>
+<circle cx="450.9" cy="150.0" r="2.6" fill="#d97706"/>
+<circle cx="471.3" cy="160.0" r="2.6" fill="#d97706"/>
+<circle cx="491.6" cy="182.0" r="2.6" fill="#d97706"/>
+<circle cx="512.0" cy="190.0" r="2.6" fill="#d97706"/>
+<circle cx="532.4" cy="200.0" r="2.6" fill="#d97706"/>
+<circle cx="552.7" cy="182.0" r="2.6" fill="#d97706"/>
+<circle cx="573.1" cy="260.0" r="2.6" fill="#d97706"/>
+<circle cx="593.5" cy="262.0" r="2.6" fill="#d97706"/>
+<circle cx="613.8" cy="250.0" r="2.6" fill="#d97706"/>
+<circle cx="634.2" cy="258.0" r="2.6" fill="#d97706"/>
+<circle cx="654.5" cy="244.0" r="2.6" fill="#d97706"/>
+<circle cx="674.9" cy="192.0" r="2.6" fill="#d97706"/>
+<circle cx="695.3" cy="136.0" r="2.6" fill="#d97706"/>
+<circle cx="715.6" cy="122.0" r="2.6" fill="#d97706"/>
+<circle cx="736.0" cy="244.0" r="2.6" fill="#d97706"/>
+<text x="64.0" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2023-02</text>
+<text x="186.2" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2023-08</text>
+<text x="308.4" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2024-02</text>
+<text x="430.5" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2024-08</text>
+<text x="552.7" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-02</text>
+<text x="674.9" y="288.0" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-08</text>
+<text x="400.0" y="306.0" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="700" font-family="Sarabun,sans-serif">เดือนที่หน้าต่างจบ</text>
+<rect x="64" y="40" width="11" height="11" rx="2" fill="#7c3aed"/>
+<text x="80.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">PC1 ของหน้าต่าง</text>
+<rect x="214" y="40" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="230.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">PC2 ของหน้าต่าง</text>
+</svg></div>
+<div class="cap">📡 ข้อมูลจริง (สแนปช็อต) · Binance ราคาปิดรายวัน 10 เหรียญ · หน้าต่าง 90 วันเลื่อนทีละ 30 วัน · 34 หน้าต่าง · 12 หน้าต่างจบในช่วงตรวจ · 1 = ทิศเดียวกัน 0 = ตั้งฉาก</div>
+<!--/CHART:sab2-pca-rolling-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือเดือนที่หน้าต่างจบ แกนตั้งคือความตรงทิศ 1 คือทิศเดียวกัน 0 คือตั้งฉาก เส้นม่วงคือ PC1 ของหน้าต่าง เส้นส้มคือ PC2 ของหน้าต่าง พื้นเหลืองคือหน้าต่างที่จบในช่วงตรวจ ให้ดูว่าเส้นม่วงเกาะใกล้ 1 ตลอด ส่วนเส้นส้มกระโดดขึ้นลงทั้งในช่วงเลือกเองและในช่วงตรวจ สรุปได้ว่า PC2 เปลี่ยนทิศทุกไม่กี่เดือน แม้ในช่วงที่มันถูกหามา</p>
+<p>ตัวเลขของภาพนี้คือ PC1 ของทุกหน้าต่างตรงทิศกับช่วงเลือกตั้งแต่ <span data-key="ch10.จริง.ตรงpc1ต่ำสุด">0.89</span> ขึ้นไป ส่วน PC2 อยู่ระหว่าง <span data-key="ch10.จริง.ตรงpc2ต่ำสุด">0.04</span> ถึง <span data-key="ch10.จริง.ตรงpc2สูงสุด">0.84</span> และต่ำกว่า 0.5 ใน <span data-key="ch10.จริง.หน้าต่างครึ่งต่ำ">19</span> จาก 34 หน้าต่าง ขนาดของแรงตลาดก็ไม่คงที่เช่นกัน PC1 จับได้ตั้งแต่ <span data-key="ch10.จริง.pc1เปอร์เซ็นต์ต่ำสุด">52.2</span>% ถึง <span data-key="ch10.จริง.pc1เปอร์เซ็นต์สูงสุด">86.2</span>% แล้วแต่หน้าต่าง</p>
+<p>เมื่อวางคู่กับโลกจำลอง ภาพก็ชัด ข้อมูลของเล่มทำตัวเหมือนโลกแรงเดียวในเรื่องที่สำคัญ คือมีแรงตลาดก้อนใหญ่ก้อนเดียวที่นิ่ง ส่วนแกนที่ 2 เป็นต้นไปเปลี่ยนชุดเหรียญไปเรื่อย ๆ อาจมีแรงกลุ่มจริงที่อยู่ได้ไม่กี่เดือน แต่ไม่มีแรงที่สองก้อนไหนที่อยู่ข้ามปีพอให้ใช้ตามแบบโลกสองแรง</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>import math
+from sab2_realdata import load_closes
+from sab2_stats import pca
+
+def rets(split):                     # Log Return รายวัน (%) ของ 10 เหรียญ
+    d, px = load_closes(split)
+    return [[100 * math.log(b / a) for a, b in zip(px[c], px[c][1:])] for c in px]
+
+f, v = pca(rets("formation")), pca(rets("validation"))
+print(round(100 * f["explained"][0], 1), round(100 * f["explained"][1], 1))
+for k in (0, 1):                     # ความตรงทิศ = |ผลรวมของผลคูณ loading|
+    print(round(abs(sum(x * y for x, y in zip(f["vectors"][k], v["vectors"][k]))), 2))
+# ผลที่ต้องได้: 65.4 · 7.5 · 0.99 · 0.08</pre>
+<p>loading ที่เครื่องมือให้ยาวหนึ่งหน่วยอยู่แล้ว ความตรงทิศจึงเป็นแค่ผลรวมของผลคูณแบบที่ทำด้วยมือในตอน ก ถ้าใช้ numpy ให้เรียง <code>np.linalg.eigh(np.cov(R))</code> จากมากไปน้อยก่อน และเทียบด้วย <code>abs(v1 @ v2)</code> เพราะเครื่องหมายของแต่ละแกนอาจกลับด้านระหว่างสองช่วง</p>
+</details>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ค</div>
+<p>ข้ามไปช่วงตรวจ PC1 ตรงทิศเดิม 0.99 และโตจาก 65.4% เป็น 75.8% แต่ PC2 ตรงทิศเพียง 0.08 และกลายเป็น LTC สู้กับ ADA หน้าต่าง 90 วันให้ PC1 ตรงทิศตั้งแต่ 0.89 ขึ้นไป ส่วน PC2 อยู่ระหว่าง 0.04 ถึง 0.84 ข้อมูลของเล่มมีแรงร่วมที่นิ่งก้อนเดียวแบบโลกแรงเดียว</p></div>
+
+<!-- ═════════════════════════ ตอน ง ═════════════════════════ -->
+<h2>ตอน ง พังเมื่อไร และการตัดสินของมิน · 1 — PCA บอกอะไรไม่ได้: ทิศที่ไม่นิ่ง การปรับมาตรฐาน และพอร์ตที่ไม่มีเชือก</h2>
+<p>ก่อนตัดสิน มินรวบรวมเงื่อนไขที่ทำให้ผลของ PCA บนข้อมูลจริงใช้ไม่ได้ ทุกข้อมีตัวเลขจากบทนี้กำกับ ข้อแรกเห็นแล้วในตอน ค อีกสองข้อมาจากการลองเปลี่ยนวิธีคิดเล็กน้อยกับข้อมูลชุดเดิม</p>
+<p>ข้อที่สองคือการปรับมาตรฐาน ตอน ค ใช้ Covariance Matrix ตรง ๆ เหรียญที่แกว่งแรงจึงได้ loading มาก อีกวิธีที่ไลบรารีส่วนใหญ่มีให้คือหารการขยับของแต่ละเหรียญด้วย SD ของตัวเองก่อน ให้ทุกเหรียญแกว่งเท่ากัน แล้วค่อยหา PCA ทำแบบนั้นกับช่วงเลือก PC1 ยังจับได้ <span data-key="ch10.จริง.มาตรฐาน.เปอร์เซ็นต์.0">65.7</span>% แทบเท่าเดิม และ loading แคบลงเหลือ <span data-key="ch10.จริง.มาตรฐาน.pc1ต่ำสุด">0.26</span> ถึง <span data-key="ch10.จริง.มาตรฐาน.pc1สูงสุด">0.34</span> คือใกล้ถือเท่ากันยิ่งขึ้น</p>
+<p>แต่ PC2 เปลี่ยนหน้าตา PC2 แบบปรับมาตรฐานคือ XRP ที่ <span data-key="ch10.จริง.มาตรฐาน.pc2สองตัว.0.loading">0.83</span> สู้กับ BNB ที่ <span data-key="ch10.จริง.มาตรฐาน.pc2สองตัว.1.loading">−0.39</span> ไม่ใช่ SOL สู้กับ XRP และตรงทิศกับ PC2 แบบไม่ปรับเพียง <span data-key="ch10.จริง.มาตรฐาน.ตรงpc2กับไม่ปรับ">0.65</span> ทั้งที่เป็นข้อมูลชุดเดียวกันช่วงเดียวกัน "แรงที่สอง" จึงขึ้นกับการตัดสินใจเรื่องหน่วยของคนวัดด้วย</p>
+<p>ข้อที่สามคือเชือก มินลองถามคำถามของบท 3 กับพอร์ตทั้งสิบแกน ถ้าถือพอร์ตตาม loading ของช่วงเลือกตลอด แล้วสะสมค่าบนแกนเป็นเส้นมูลค่า เส้นไหนบ้างที่นิ่ง ADF ของบท 3 บนเส้นสะสมของ PC2 ได้ค่าสถิติ <span data-key="ch10.จริง.pc2adf">−1.18</span> ห่างจากเส้นตัดสินมาก แรงลับของต้นไม่มีเชือกแม้ในช่วงที่มันถูกหามา</p>
+<p>ทั้งสิบแกนผ่านที่เส้น 5% <span data-key="ch10.จริง.adfผ่าน">1</span> แกน คือ PC4 ขณะที่โชคล้วน ๆ จากการทดสอบสิบครั้งให้ราว 10 × 5% หรือ <span data-key="ch10.จริง.adfโชค">0.5</span> แกน และ loading ใหญ่สองตัวของ PC4 คือ LINK ที่ <span data-key="ch10.จริง.pc4สองตัว.0.loading">0.58</span> กับ LTC ที่ <span data-key="ch10.จริง.pc4LTC">0.48</span> ซึ่งคือเหรียญที่นิ่งด้วยตัวเองในบท 8 ผลนี้จึงยังไม่ใช่หลักฐานของเชือก ทั้ง loading และการทดสอบมาจากข้อมูลชุดเดียวกัน</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ (PCA บนข้อมูลจริง)</div>
+<ul>
+<li><strong>พังเมื่อแกนเปลี่ยนทิศข้ามช่วง</strong> PC2 ของช่วงเลือกกับช่วงตรวจตรงทิศกันเพียง 0.08 และหน้าต่าง 90 วันกระโดดระหว่าง 0.04 ถึง 0.84 พอร์ตที่สร้างจาก PC2 ของปีที่แล้วจึงไม่ใช่ PC2 ของปีนี้ ส่วน PC1 ตรงทิศ 0.99 ใช้ข้ามช่วงได้</li>
+<li><strong>บอกไม่ได้ว่ามีแรงร่วมกี่ก้อนจากขนาดอย่างเดียว</strong> โลกที่มีแรงร่วมก้อนเดียวก็ให้ PC2 ราว 4.2% และหน้าต่าง 90 วันให้ได้ถึง 6.7% ต้องเทียบกับโลกที่ไม่มีแรงที่สอง และดูว่าแกนอยู่ข้ามช่วงหรือไม่</li>
+<li><strong>ผลขึ้นกับหน่วย</strong> ไม่ปรับมาตรฐาน PC2 คือ SOL สู้กับ XRP ปรับแล้วคือ XRP สู้กับ BNB สองแบบตรงทิศกันเพียง 0.65 ต้องบอกเสมอว่าใช้แบบไหน</li>
+<li><strong>บอกไม่ได้ว่าพอร์ตไหนมีเชือก</strong> PCA เรียงแกนตามการแกว่ง ADF บนเส้นสะสมของสิบแกนผ่าน 1 แกน ใกล้ 0.5 ที่โชคให้ และแกนนั้นมี LTC หนัก 0.48</li>
+<li><strong>PC1 ไม่ใช่ BTC และหักแล้วก็ยังไม่มีเชือก</strong> ค่าบน PC1 ไปกับ BTC ที่ 0.84 แต่ไปกับ Equal-weight Index แทบเป็นเส้นเดียวกัน การหักด้วย PC1 ลด correlation ของส่วนที่เหลือจาก 0.3 เป็น −0.11 แต่ Cumulative Residual ผ่าน ADF 0 จาก 9 เหรียญ</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">🧰 คนทำงานจริงทำอย่างไร</div>
+<ul>
+<li><strong>ใช้ PCA หาแรงร่วม แล้วเทรดส่วนที่เหลือ ไม่ได้เทรดแกน</strong> Avellaneda และ Lee (<span data-key="ch10.คนทำงานจริง.ปีAL">2010</span>) ถดถอยหุ้นแต่ละตัวบนพอร์ตจาก PCA หรือบนกองทุน ETF ของกลุ่มอุตสาหกรรม แล้วเทรดส่วนที่เหลือที่กลับเข้าหาค่ากลาง บันทึกค้นคว้าของเล่มอ่านฉบับร่างปี <span data-key="ch10.คนทำงานจริง.ปีALร่าง">2009</span> และจดไว้ว่าเขาคิดทุกอย่างใหม่จากหน้าต่าง <span data-key="ch10.คนทำงานจริง.ALหน้าต่าง">60</span> วัน และเก็บเฉพาะตัวที่ส่วนที่เหลือกลับเร็วกว่าราว <span data-key="ch10.คนทำงานจริง.ALวัน">30</span> วัน ประตูของเขาคือความเร็วกลับ ไม่ใช่การทดสอบนัยสำคัญ</li>
+<li><strong>สิ่งที่บันทึกไม่ได้จด</strong> บันทึกค้นคว้าไม่ได้จดว่า Avellaneda และ Lee เก็บ PC ไว้กี่แกน หรือใช้กฎ Explained Variance แบบไหนตัดสินจำนวนแกน เล่มจึงไม่ใส่ตัวเลขนั้นที่นี่ ใครอยากรู้ต้องเปิดอ่านจากตัวงานเอง</li>
+<li><strong>ใช้ PCA ย่อข้อมูลก่อนจัดกลุ่มเหรียญ</strong> Sarmento และ Horta (<span data-key="ch10.คนทำงานจริง.ปีSarmento">2020</span>) ใช้ PCA ย่อข้อมูลผลตอบแทน จัดกลุ่มด้วยวิธีชื่อ OPTICS แล้วจับคู่เฉพาะในกลุ่มเดียวกัน จากนั้นยังต้องผ่านกฎอีกสี่ข้อ คือ Engle–Granger ที่ค่า p <span data-key="ch10.คนทำงานจริง.SarmentoEGเปอร์เซ็นต์">1</span>% · Hurst ต่ำกว่า <span data-key="ch10.คนทำงานจริง.Hurst">0.5</span> · Half-life ระหว่างหนึ่งวันถึงหนึ่งปี · ตัดผ่าน Mean อย่างน้อย <span data-key="ch10.คนทำงานจริง.Sarmentoข้ามต่อปี">12</span> ครั้งต่อปี บันทึกอ่านเกณฑ์เหล่านี้จากวิทยานิพนธ์ปี <span data-key="ch10.คนทำงานจริง.ปีSarmentoวิทยานิพนธ์">2019</span> ส่วนข้อมูลของงานตีพิมพ์ (ราคาทุก <span data-key="ch10.คนทำงานจริง.Sarmentoนาที">5</span> นาทีของ ETF <span data-key="ch10.คนทำงานจริง.SarmentoETF">208</span> ตัว) บันทึกเห็นจากข้อความในผลค้นหาเท่านั้น จึงเป็นข้อมูลมือสอง และบันทึกไม่ได้จดว่าเขาใช้ PC กี่แกน</li>
+<li><strong>โค้ดสาธารณะทำตามแบบเดียวกัน</strong> ไลบรารีโอเพนซอร์ส ArbitrageLab (โค้ดล่าสุดปี <span data-key="ch10.คนทำงานจริง.ปีArbLab">2024</span>) มีโมดูลที่จัดกลุ่มผลตอบแทนหลังย่อด้วย PCA ก่อนส่งต่อให้ตัวกรองคู่ บันทึกเปิดอ่านซอร์สแล้ว ข้อที่เห็นตรงกันคือ PCA ทำหน้าที่คัดผู้สมัคร ส่วนกฎยังเป็นประตู</li>
+<li><strong>สิ่งที่บันทึกยังไม่พบ</strong> งานที่วัดว่า loading ของเหรียญคริปโตนิ่งแค่ไหนข้ามช่วง และงานที่ทดสอบว่าการจัดกลุ่มด้วย PCA ช่วยคู่คริปโตรายวันได้จริง ตัวเลข 0.99 กับ 0.08 ในบทนี้มาจากข้อมูลของเล่มเอง ไม่ได้มาจากงานที่ตีพิมพ์</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>PCA บนข้อมูลจริงพังได้สี่ทาง แกนที่ 2 เปลี่ยนทิศข้ามช่วง (0.08) ขนาดของแกนบอกจำนวนแรงไม่ได้ (โลกแรงเดียวก็ได้ 4.2%) ผลขึ้นกับการปรับมาตรฐาน (สองแบบตรงทิศกัน 0.65) และ PCA ไม่ได้หาเชือก (ADF ผ่าน 1 จาก 10 แกน ใกล้ 0.5 ที่โชคให้) คนทำงานจริงใช้ PCA หาแรงร่วมหรือคัดผู้สมัคร แล้วใช้ความเร็วกลับและกฎอื่นเป็นประตู</p></div>
+
+<h2>ตอน ง · 2 — มินตัดสิน: ใช้ดัชนีถ่วงน้ำหนักเท่ากันแทน BTC ไม่เทรดแกนที่ 2 และการทดลองถัดไป</h2>
+<p>มินตอบต้นในกลุ่มสองข้อ ข้อแรก แรงลับ SOL สู้กับ XRP มีจริงในช่วงเลือก แต่ข้ามปีแล้วตรงทิศเดิมแค่ 0.08 โลกที่มีแรงที่สองจริงให้ 0.98 ส่วนโลกที่ไม่มีให้ 0.26 ข้อมูลของเรายังต่ำกว่าโลกที่ไม่มีเสียอีก </p>
+<p>ข้อสอง พอร์ตของแรงนั้นไม่มีเชือก ADF ได้แค่ −1.18 ต้นตอบกลับมาสั้น ๆ ว่า "งั้นแกนที่ 3 ล่ะ" มินส่งตัวเลขของแกนที่ 3 กลับไป ตรงทิศข้ามช่วง <span data-key="ch10.จริง.ตรงทิศ.2">0.63</span> ดีกว่าแกนที่ 2 แต่ก็ยังต่ำกว่า 0.73 ที่โลกไม่มีแรงที่สองให้ได้จากโชค</p>
+<p>ส่วนคำถามของพี่ฝน มินตอบว่า ถ้าให้ข้อมูลบอกเอง มันบอกว่ามีแรงร่วมที่นิ่งก้อนเดียว และก้อนนั้นไม่ใช่ BTC แต่เกือบเป็น Equal-weight Index ที่บท 9 ลองไว้ สมุดวิจัยของเขาได้สามบรรทัด</p>
+<ul>
+<li><strong>ตัดสิน</strong> ใช้ Equal-weight Index ของ 10 เหรียญเป็นตัวแทนตลาดแทน BTC เมื่อจะวัดหรือหักแรงร่วม เพราะแทบเป็นเส้นเดียวกับ PC1 อธิบายเหรียญอื่นได้ 0.65 เทียบกับ 0.45 และไม่ต้องหา loading ใหม่ ข้อเสียที่บท 9 ชี้ไว้ยังอยู่ คือ hedge ด้วยดัชนีต้องใช้ 10 ขา ส่วน PCA ใช้เป็นเครื่องตรวจว่าแรงร่วมยังมีก้อนเดียวหรือไม่ ไม่ใช้เทรดแกนที่ 2 หรือ 3 ทุนคู่ 1,000 ยังว่าง ช่วงทดสอบสุดท้ายยังไม่แตะ</li>
+<li><strong>กติกาที่เขียนไว้ก่อน</strong> แกนจาก PCA จะนับเป็นแรงร่วมจริงได้เมื่อ (1) Explained Variance สูงกว่าโลกที่ไม่มีแรงนั้นทุกโลก และ (2) ตรงทิศข้ามช่วงไม่ต่ำกว่าค่าสูงสุดของโลกที่ไม่มีแรงนั้น ซึ่งในบทนี้คือ <span data-key="ch10.จำลอง.W1.ข้ามpc2.สูงสุด">0.73</span> ทุกครั้งต้องบอกว่าปรับมาตรฐานหรือไม่</li>
+<li><strong>จำนวนที่ลอง</strong> พี่ฝนถามซ้ำว่า "ลองไปกี่แบบแล้ว" บทนี้หา PCA สองแบบ (ปรับมาตรฐานกับไม่ปรับ) ทดสอบ ADF สิบแกน และเปิดช่วงตรวจ <span data-key="ch10.จริง.ดูช่วงตรวจ">2</span> ครั้ง (PCA ทั้งช่วงตรวจ · หน้าต่าง 90 วันที่จบในช่วงตรวจ)</li>
+</ul>
+<p><strong>การทดลองถัดไป</strong> ภาพของบทนี้มีข้อหนึ่งที่ยังไม่ได้ใช้ แกนสุดท้ายของ PCA บนข้อมูลจริง คือพอร์ตที่แกว่งน้อยที่สุดในสิบแกน (<span data-key="ch10.จริง.pc10เปอร์เซ็นต์">0.9</span>%) เป็นคู่ BTC ที่ <span data-key="ch10.จริง.pc10สองตัว.0.loading">0.81</span> กับ ETH ที่ <span data-key="ch10.จริง.pc10สองตัว.1.loading">−0.58</span> คือพอร์ตที่แน่นที่สุดที่หาได้ แต่ก็ยังเป็นแค่สองขา และบท 3 บอกแล้วว่าคู่นี้ไม่ผ่านการทดสอบเชือก</p>
+<p>มินจึงจะเปลี่ยนหนึ่งอย่าง คือจากคู่สองขาเป็นพอร์ตสามขาขึ้นไป แล้วหาน้ำหนักที่ทำให้เส้นมูลค่านิ่งที่สุด แทนที่จะหาทิศที่แกว่งมากที่สุดแบบ PCA สิ่งที่คงที่คือข้อมูลช่วงเลือก การ์ดเดิม และต้นทุน 0.05% ต่อ fill ผลแบบที่แปลว่าไม่ช่วยคือ พอร์ตสามขาที่ดีที่สุดในช่วงเลือกไม่นิ่งในช่วงตรวจ หรือต้นทุนของขาที่เพิ่มกินกำไรจนแย่กว่าคู่ที่ดีที่สุด</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ง</div>
+<p>มินใช้ Equal-weight Index เป็นตัวแทนตลาด (แทบเป็นเส้นเดียวกับ PC1 อธิบายเหรียญอื่น 0.65 เทียบกับ BTC 0.45) ไม่เทรดแกนที่ 2 ที่ตรงทิศข้ามปีเพียง 0.08 เขียนกติกาว่าแกนจะนับเป็นแรงจริงเมื่อชนะโลกที่ไม่มีแรงนั้นทั้งขนาดและความตรงทิศ เปิดช่วงตรวจ 2 ครั้ง การทดลองถัดไปคือพอร์ตสามขาขึ้นไปที่หาน้ำหนักให้นิ่งที่สุด</p></div>
+
+<div class="sum3"><div class="bt">สรุป 3 ข้อ</div>
+<ol>
+<li>PCA หมุนแกนหาทิศที่แกว่งมากที่สุดทีละแกน แกนทั้งหมดตั้งฉากกันและแบ่งการแกว่งทั้งหมดใหม่โดยไม่หายไปไหน สองเหรียญหกวันได้ PC1 (0.8, 0.6) จับ 300 จาก 400 หรือ 75% และ PC2 (−0.6, 0.8) คือคู่ซื้อหนึ่งขายหนึ่งที่เหลือ 25% ซึ่งตรงกับสูตรสามก้อน 145.92 + 92.16 + 61.92</li>
+<li>loading คือสัดส่วนเงินของพอร์ต สามเหรียญได้สามพอร์ตที่ไม่ขยับด้วยกัน (100 · 50 · 25 ดอลลาร์ในวันของตัวเอง) แปลงเป็นจำนวนเหรียญด้วยการหารด้วยราคา เช่นพอร์ต PC2 คือ short A 9 short B 48 และซื้อ D 4 เหรียญ แต่ตั้งฉากกับ PC1 ไม่ได้แปลว่าเป็นกลางต่อเงิน (PC3 มี Net Exposure +200)</li>
+<li>บน 10 เหรียญของเล่ม PC1 จับได้ 65.4% ไปกับ Equal-weight Index แทบเป็นเส้นเดียวกัน และตรงทิศข้ามช่วง 0.99 ส่วน PC2 (7.5% · SOL สู้กับ XRP) ใหญ่เท่าโลกสองแรง (7.2%) แต่ตรงทิศข้ามช่วงเพียง 0.08 ขณะที่โลกสองแรงได้ 0.98 และโลกแรงเดียวได้ 0.26 ข้อมูลของเล่มจึงมีแรงร่วมที่นิ่งก้อนเดียว</li>
+</ol></div>
+
+<!-- แบบฝึก 5 ข้อ · ทุกข้อมี details.ans · ข้อคำนวณมี details.hint สองระดับ (อย่างน้อย 3 ข้อ) -->
+<div class="bx bg"><div class="bt">✍️ ลองทำเอง</div>
+<ol>
+<li>(ทำตาม) ใช้หกวันของสองเหรียญในตอน ก คิดค่าบนแกน PC2 ทิศ (−0.6, 0.8) ของวันที่ 1 ถึง 3 แล้วเติมช่องว่าง: ค่าบนแกน ___ · ___ · ___ ผลรวมกำลังสองหกวัน ___ Eigenvalue ___ Explained Variance ___% และตรวจว่าเมื่อบวกกับ PC1 ได้การแกว่งทั้งหมดเท่าเดิม
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: วันที่ 1 คือ −0.6 × 8 บวก 0.8 × 6 แล้วทำแบบเดียวกันกับวันที่ 2 (A 1, B 7) และวันที่ 3 (A −7, B 1)</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>วันที่ 2 คือ −0.6 + 5.6 ได้ <span data-key="ch10.แบบฝึก.ข้อ1.ค่า.1">5</span> ยกกำลังสองได้ 25 และอย่าลืมคูณสองเป็นหกวัน</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>วันที่ 1 ได้ −4.8 + 4.8 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ1.ค่า.0">0</span> วันที่ 2 ได้ −0.6 + 5.6 เท่ากับ 5 วันที่ 3 ได้ 4.2 + 0.8 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ1.ค่า.2">5</span> ยกกำลังสองได้ 0, 25, 25 รวมสามวัน 50 หกวัน <strong data-key="ch10.แบบฝึก.ข้อ1.ss">100</strong> Eigenvalue คือ 100 ÷ 5 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ1.var">20</span> Explained Variance คือ 20 ÷ 80 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ1.เปอร์เซ็นต์">25</span>% ตรวจ: 300 + 100 ได้ 400 เท่ากับ 228 + 172</p>
+<p>ถ้าวันที่ 3 ได้ −5 แปลว่าลืมว่า −0.6 × (−7) เป็นบวก 4.2 ถ้าได้ผลรวม 50 แปลว่าลืมคูณสองสำหรับวันที่ 4 ถึง 6 และถ้า 300 + ของคุณไม่ได้ 400 แปลว่ามีวันหนึ่งคิดผิด</p></details>
+</li>
+<li>(เปลี่ยนเลขหนึ่งตัว) สมมติว่า A แกว่งเป็นสองเท่าของตอน ก ทุกวัน (8 เป็น 16, 1 เป็น 2 และต่อไปเรื่อย ๆ) ส่วน B เท่าเดิม ใช้สูตรสามก้อนคิดผลรวมกำลังสองของสามทิศ (1, 0) · (0.96, 0.28) · (0.8, 0.6) แล้วบอกว่าทิศไหนแกว่งมากที่สุด และแกนแรกเอียงไปทางไหนเมื่อเทียบกับตอน ก
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: A คูณสอง ผลรวม A² จึงคูณสี่ และผลรวม A × B คูณสอง ส่วนผลรวม B² เท่าเดิม 172</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>ผลรวม A² ใหม่คือ <span data-key="ch10.แบบฝึก.ข้อ2.AA">912</span> และผลรวม A × B ใหม่คือ <span data-key="ch10.แบบฝึก.ข้อ2.AB">192</span> แล้วแทนในสูตร a² × 912 + 2ab × 192 + b² × 172</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>ทิศ (1, 0) ได้ 912 ทิศ (0.96, 0.28) ได้ <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.1.AA">840.5</span> + <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.1.AB">103.22</span> + <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.1.BB">13.48</span> เท่ากับ <strong data-key="ch10.แบบฝึก.ข้อ2.ทิศ.1.ss">957.2</strong> ทิศ (0.8, 0.6) ได้ <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.2.AA">583.68</span> + <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.2.AB">184.32</span> + <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.2.BB">61.92</span> เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ2.ทิศ.2.ss">829.92</span> ทิศที่ดีที่สุดในสามทิศคือ (0.96, 0.28) ใกล้กับคำตอบจริงจากเครื่องมือที่ (0.97, 0.24) ซึ่งได้ <span data-key="ch10.แบบฝึก.ข้อ2.จริงss">958.85</span> จาก <span data-key="ch10.แบบฝึก.ข้อ2.รวม">1,084</span> หรือ <span data-key="ch10.แบบฝึก.ข้อ2.จริงเปอร์เซ็นต์">88.5</span>%</p>
+<p>แกนแรกเอียงเข้าหา A มากขึ้น จากเดิมที่ 37 องศามาอยู่ใกล้ทิศ (0.96, 0.28) ที่ 16 องศา ทั้งที่ความสัมพันธ์ระหว่างสองเหรียญเหมือนเดิมทุกอย่าง เปลี่ยนแค่ขนาดที่ A แกว่ง ข้อนี้คือเหตุผลที่ต้องบอกเสมอว่าปรับมาตรฐานหรือไม่ ถ้าคุณได้ (0.8, 0.6) ดีที่สุด แปลว่าลืมคูณผลรวม A² ด้วยสี่ (คูณแค่สอง)</p></details>
+</li>
+<li>(เปลี่ยนเงื่อนไขหนึ่งข้อ) ใช้สามพอร์ตของตอน ข (หนึ่งหน่วยเท่ากับ 1,000 ดอลลาร์) แต่คราวนี้เป็นวันที่ทุกเหรียญขึ้น 5% เท่ากันพอดี พอร์ต PC3 และพอร์ต PC2 ได้เงินเท่าไร และทำไมพอร์ตที่ "ไม่ขยับไปกับแรงร่วม" จึงขยับในวันนี้
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: คิดทีละขา PC3 ถือ A 800 กับ short B 600 ดอลลาร์ แต่ละขาได้หรือเสีย 5% ของเงินในขานั้น</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>ขา A ของ PC3 ได้ <span data-key="ch10.แบบฝึก.ข้อ3.pc3.ขา.0">40</span> ดอลลาร์ ขา B ที่ short ไว้เสีย 30 ดอลลาร์ แล้วลองเทียบกับ Net Exposure ของพอร์ต</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>พอร์ต PC3 ได้ 40 − 30 เท่ากับ <strong data-key="ch10.แบบฝึก.ข้อ3.pc3.รวม">10</strong> ดอลลาร์ ซึ่งคือ Net Exposure +200 คูณ 5% พอดี พอร์ต PC2 ขา A เสีย 18 ขา B เสีย 24 ขา D ได้ 40 รวม <span data-key="ch10.แบบฝึก.ข้อ3.pc2.รวม">−2</span> ดอลลาร์ คือ Net Exposure −40 คูณ 5% ส่วนพอร์ต PC1 ได้ <span data-key="ch10.แบบฝึก.ข้อ3.pc1.รวม">86</span> ดอลลาร์</p>
+<p>วันนี้ไม่ใช่แบบวันที่ 1 ในข้อมูลหกวัน วันที่ 1 B ขึ้นมากกว่า A ตามสัดส่วน 0.64 ต่อ 0.48 ของ PC1 พอดี แต่วันนี้ทุกเหรียญขึ้นเท่ากัน "ตั้งฉากกับ PC1" จึงไม่ได้กันพอร์ตจากวันแบบนี้ ถ้าคุณตอบว่า PC3 ได้ 0 เพราะ "ไม่ขยับไปกับตลาด" แปลว่ายังสับสนระหว่างเป็นกลางต่อแรงร่วมที่ข้อมูลวัดได้กับเป็นกลางต่อเงิน</p></details>
+</li>
+<li>(ตัดสินใจ · ข้อมูลจริง) ต้นเสนอว่า "PC2 ของช่วงเลือกจับได้ 7.5% มากกว่าที่แรงสะบัดให้ (4.2%) เกือบสองเท่า และเท่ากับโลกที่มีแรงที่สองจริง (7.2%) แปลว่าแรงลับ SOL สู้กับ XRP มีจริง ซื้อขายพอร์ต PC2 ด้วยการ์ดของเล่ม 1 เลย" คุณเห็นด้วยไหม และจะตรวจอะไรก่อน
+<details class="ans"><summary>เฉลย</summary><p>ไม่เห็นด้วย คำตอบที่ยั่วใจคือ "7.5% ชนะโลกแรงเดียวทุกโลก จึงเป็นแรงจริง" แต่ขนาดอย่างเดียวแยกสองโลกไม่ได้ ข้อมูลสั้นหรือเหรียญที่แกว่งไม่เท่ากันก็ทำให้แกนที่ 2 ใหญ่ได้ สิ่งที่แยกได้คือความตรงทิศข้ามช่วง ซึ่งข้อมูลจริงได้ <span data-key="ch10.จริง.ตรงทิศ.1">0.08</span> ต่ำกว่าโลกแรงเดียว (0.26) และห่างไกลโลกสองแรง (0.98) PC2 ของช่วงตรวจเป็น LTC สู้กับ ADA ไปแล้ว ทั้งพอร์ต PC2 ยังไม่มีเชือกแม้ในช่วงเลือก (ADF −1.18)</p>
+<p>สิ่งที่ควรตรวจก่อนคือ หา PCA ในช่วงอื่นแล้วดูว่าแกนยังชี้ทิศเดิมไหม ใช้หน้าต่างเลื่อนดูว่าแกนเปลี่ยนบ่อยแค่ไหน ทดสอบเชือกของพอร์ตแยกต่างหาก และบอกว่าปรับมาตรฐานหรือไม่ ถ้าคุณตอบว่า "เห็นด้วยเพราะ 7.5% ใหญ่กว่าแรงสะบัด" แปลว่ายังนับขนาดเป็นหลักฐาน แทนที่จะถามว่าแรงนั้นอยู่ต่อหรือเปล่า</p></details>
+</li>
+<li>(ถ่ายโอน) หุ้นธนาคารสมมติสามตัว X, Y และ Z มี loading จาก PCA ดังนี้ PC1 (0.6, 0.48, 0.64) · PC2 (−0.8, 0.36, 0.48) · PC3 (0, 0.8, −0.6) แกนไหนคือแรงร่วมของทั้งกลุ่ม แกนไหนหน้าตาเป็นคู่แบบเล่ม 1 และถ้าหนึ่งหน่วยเท่ากับ <span data-key="ch10.แบบฝึก.ข้อ5.หน่วย">500</span> ดอลลาร์ โดยราคาหุ้น Y คือ <span data-key="ch10.แบบฝึก.ข้อ5.ราคา.1">20</span> ดอลลาร์และ Z คือ <span data-key="ch10.แบบฝึก.ข้อ5.ราคา.2">50</span> ดอลลาร์ พอร์ตของแกนนั้นต้องซื้อขายหุ้นกี่หุ้น
+<details class="ans"><summary>เฉลย</summary><p>PC1 มี loading เป็นบวกทั้งสามตัว จึงเป็นแรงร่วมของทั้งกลุ่ม PC3 มี loading ของ X เป็นศูนย์ ซื้อ Y และขาย Z จึงหน้าตาเป็นคู่ เงินของขา Y คือ 0.8 × 500 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ5.ดอลลาร์.2.1">400</span> ดอลลาร์ หารด้วย 20 ได้ซื้อ <strong data-key="ch10.แบบฝึก.ข้อ5.หุ้น.2.1">20</strong> หุ้น ขา Z คือ −0.6 × 500 เท่ากับ <span data-key="ch10.แบบฝึก.ข้อ5.ดอลลาร์.2.2">−300</span> ดอลลาร์ หารด้วย 50 ได้ขาย <span data-key="ch10.แบบฝึก.ข้อ5.หุ้น.2.2">−6</span> หุ้น พอร์ตนี้มี Net Exposure <span data-key="ch10.แบบฝึก.ข้อ5.net.2">100</span> ดอลลาร์ จึงไม่ได้เป็นกลางต่อเงิน</p>
+<p>วิธีคิดเหมือนเหรียญทุกขั้น ตลาดไหนก็ใช้ได้ แต่คำถามของตอน ค ยังต้องถามซ้ำ คือแกนนี้ชี้ทิศเดิมในปีถัดไปไหม ถ้าคุณตอบว่า PC2 คือคู่เพราะมีทั้งบวกและลบ แปลว่ายังไม่ได้ดูว่า PC2 ถือสามตัว ส่วนคู่จริงคือแกนที่มีขาเป็นศูนย์หนึ่งขา</p></details>
+</li>
+</ol></div>
+
+<!-- คำถามสะพาน: data-hook = วลีที่ฉากเปิดของบท 11 ต้องมีตรงตัว (W15) -->
+<div class="pq" data-hook="สามขาขึ้นไป">PCA หาทิศที่แกว่งมากที่สุด และแกนสุดท้ายของมันคือคู่ที่แน่นที่สุด แต่ยังไม่มีเชือก ถ้าใช้สามขาขึ้นไปแล้วหาน้ำหนักที่ทำให้เส้นมูลค่านิ่งที่สุดแทน จะได้สิ่งที่สองขาทำไม่ได้ไหม และต้องจ่ายอะไรเพิ่มสำหรับทุกขาที่เพิ่มเข้ามา</div>
+
+<!-- ศัพท์ที่สอนครั้งแรกในหน้านี้ ไม่เกิน 7 คำ · ชั้นคำ ก = แอป/บัญชี · ข = แกนกลยุทธ์ · ค = ลงลึก -->
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Principal Component Analysis (การวิเคราะห์องค์ประกอบหลัก)</strong> = ย่อว่า PCA · หมุนแกนหาทิศที่ข้อมูลแกว่งมากที่สุดทีละแกน แกนทั้งหมดตั้งฉากกัน · สองเหรียญหกวันได้ 300 + 100 เท่ากับ 400 ทั้งหมด <span class="tier" data-tier="ข"></span></li>
+<li><strong>Principal Component (องค์ประกอบหลัก)</strong> = ย่อว่า PC · แกนหนึ่งแกนที่ PCA ให้ เรียงจากแกว่งมากไปน้อย · PC1 ของ 10 เหรียญคือแรงตลาด แทบเป็นเส้นเดียวกับ Equal-weight Index <span class="tier" data-tier="ข"></span></li>
+<li><strong>Loading (น้ำหนักองค์ประกอบ)</strong> = ตัวเลขของแต่ละสินทรัพย์ในแกนหนึ่ง ผลรวมกำลังสองเท่ากับ 1 · อ่านเป็นสัดส่วนเงินของพอร์ต · ในตำราเรียกชุดนี้ว่า Eigenvector · PC1 ของสองเหรียญคือ (0.8, 0.6) <span class="tier" data-tier="ข"></span></li>
+<li><strong>Eigenvalue (ค่าลักษณะเฉพาะ)</strong> = Variance ของค่าบนแกน · ทุกแกนรวมกันเท่ากับ Variance ของทุกสินทรัพย์รวมกัน · สองเหรียญได้ 60 กับ 20 รวม 80 <span class="tier" data-tier="ค"></span></li>
+<li><strong>Explained Variance (สัดส่วนความแปรปรวนที่อธิบายได้)</strong> = Eigenvalue ของแกนหารด้วยผลรวมทุกแกน · PC1 ของ 10 เหรียญ 65.4% · PC2 7.5% ซึ่งโลกแรงเดียวก็ให้ได้ราว 4.2% <span class="tier" data-tier="ข"></span></li>
+<li><strong>Covariance Matrix (เมทริกซ์ความแปรปรวนร่วม)</strong> = ตารางที่มี Variance ของทุกสินทรัพย์บนแนวทแยง และ Covariance ของทุกคู่นอกแนวทแยง · สามเหรียญมีแนวทแยงรวม 52.5 · PCA เริ่มจากตารางนี้เสมอ <span class="tier" data-tier="ค"></span></li>
+<li><strong>Eigenportfolio (พอร์ตองค์ประกอบหลัก)</strong> = พอร์ตที่ถือเงินตาม loading ของแกนหนึ่ง แปลงเป็นจำนวนเหรียญด้วยการหารด้วยราคา · พอร์ต PC2 สามเหรียญคือ short A 9 short B 48 ซื้อ D 4 <span class="tier" data-tier="ข"></span></li>
+</ul></div>
+
+<!-- แฟ้มท้ายบท (พับไว้) -->
+<details class="file"><summary>📁 แฟ้มของบทนี้</summary>
+
+<h3>สมุดวิจัย · หน้าใหม่ "แรงร่วมจาก PCA" · ช่องที่เติมในบทนี้</h3>
+<div class="tw"><table data-nosrc>
+<tr><th>ช่อง</th><th>สิ่งที่เขียน (บท 10)</th><th>ของคุณ</th></tr>
+<tr><td>① คำถาม</td><td>ถ้าให้ข้อมูลบอกเอง แรงร่วมของ 10 เหรียญมีกี่ก้อน ก้อนแรกคือตลาดแค่ไหน และก้อนที่สองนิ่งพอจะใช้ไหม</td><td></td></tr>
+<tr><td>② ข้อมูล</td><td>Log Return รายวัน (%) ของ 10 เหรียญ Binance · ช่วงเลือก <span data-key="ch10.จริง.เริ่มเลือก">2022-11-15</span> ถึง <span data-key="ch10.จริง.จบเลือก">2024-11-14</span> · ช่วงตรวจ <span data-key="ch10.จริง.เริ่มตรวจ">2024-11-15</span> ถึง <span data-key="ch10.จริง.จบตรวจ">2025-11-14</span> · เปิดช่วงตรวจ 2 ครั้ง (PCA ทั้งช่วง · หน้าต่าง 90 วัน) · ช่วงทดสอบสุดท้ายยังล็อก</td><td></td></tr>
+<tr><td>③ ตัวแปรและกฎ</td><td>PCA จาก Covariance Matrix ไม่ปรับมาตรฐาน (และแบบปรับเพื่อเทียบ) · แกนนับเป็นแรงจริงเมื่อ Explained Variance สูงกว่าโลกที่ไม่มีแรงนั้นทุกโลก และตรงทิศข้ามช่วงไม่ต่ำกว่า <span data-key="ch10.จำลอง.W1.ข้ามpc2.สูงสุด">0.73</span> · โลกที่รู้คำตอบสองโลก (แรงเดียว · สองแรง) โลกละ 30 ครั้ง</td><td></td></tr>
+<tr><td>④ สิ่งที่ถือ</td><td>Eigenportfolio คือเงินตาม loading หารด้วยราคาเป็นจำนวนเหรียญ · ตัวแทนตลาดที่เลือก: Equal-weight Index ของ 10 เหรียญ · ไม่ถือพอร์ตแกนที่ 2 หรือ 3</td><td></td></tr>
+<tr><td>⑥ ผลและความไม่แน่นอน</td><td>PC1 65.4% (ช่วงตรวจ 75.8%) correlation กับ Equal-weight Index ปัดแล้ว 1 กับ BTC 0.84 · R² เฉลี่ยเก้าเหรียญบน PC1 0.65 บน BTC 0.45 · PC2 7.5% (โลกแรงเดียว 4.2 · โลกสองแรง 7.2) ตรงทิศข้ามช่วง 0.08 (โลกแรงเดียว 0.26 · โลกสองแรง 0.98) · หน้าต่าง 90 วัน PC2 0.04 ถึง 0.84 · ปรับมาตรฐานแล้ว PC2 ตรงทิศกับแบบเดิม 0.65 · ADF สิบแกนผ่าน 1</td><td></td></tr>
+<tr><td>⑦ ข้อสรุปและการทดลองถัดไป</td><td>มีแรงร่วมที่นิ่งก้อนเดียว ใช้ Equal-weight Index แทน BTC · ไม่เทรดแกนที่ 2 · ถัดไป: พอร์ตสามขาขึ้นไปที่หาน้ำหนักให้เส้นมูลค่านิ่งที่สุด · "ไม่ช่วย" ถ้าพอร์ตที่ดีที่สุดในช่วงเลือกไม่นิ่งในช่วงตรวจ หรือต้นทุนของขาที่เพิ่มทำให้แย่กว่าคู่ที่ดีที่สุด</td><td></td></tr>
+</table></div>
+<p>บัญชีของมินไม่เปลี่ยนในบทนี้ Equity (มูลค่าบัญชีรวม) <span data-key="เรื่อง.part10.close.equity">127,563.14</span> ทุนคู่ <span data-key="เรื่อง.part10.close.ทุนคู่">1,000</span> ยังไม่ได้ใช้</p>
+
+<h3>ทำในสเปรดชีต (ไม่ต้องเขียนโค้ด)</h3>
+<ul>
+<li>หมุนแกนสองเหรียญ: วางการขยับของ A กับ B สองคอลัมน์ ใช้ SUMSQ ของแต่ละคอลัมน์และ SUMPRODUCT ของสองคอลัมน์ได้สามตัวเลข (228 · 96 · 172 ในตัวอย่าง) แล้วทำคอลัมน์มุม 0 ถึง 180 องศา คิด a = COS(RADIANS(มุม)) กับ b = SIN(RADIANS(มุม)) และผลรวมกำลังสองด้วยสูตรสามก้อน แถวที่ได้ค่ามากที่สุด (ใช้ MAX กับ MATCH) คือ PC1</li>
+<li>Covariance Matrix: ใช้ COVARIANCE.S ทุกคู่ หรือ MMULT ของตารางที่ลบ Mean แล้วกับตารางที่พลิกด้าน (TRANSPOSE) แล้วหารด้วยจำนวนวันลบหนึ่ง ผลรวมแนวทแยงต้องเท่ากับผลรวม VAR.S ของทุกคอลัมน์</li>
+<li>ตรวจ loading ที่ได้จากโปรแกรมอื่น: SUMSQ ของ loading หนึ่งแกนต้องได้ 1 · SUMPRODUCT ของสองแกนต่างกันต้องได้ 0 · SUMPRODUCT ของแกนเดียวกันจากสองช่วงคือความตรงทิศ (ใช้ ABS)</li>
+<li>จาก loading เป็นจำนวนเหรียญ: เงินของขา = loading × ทุนต่อหน่วย แล้วหารด้วยราคาปิดวันที่เปิด ผลรวม ABS ของเงินทุกขาคือ Gross Exposure ผลรวมแบบมีเครื่องหมายคือ Net Exposure</li>
+</ul>
+
+<h3>บ้านในคลัง</h3>
+<div class="bx"><div class="bt">🔗 อ่านต่อในคลัง</div>
+<ul>
+<li><a href="math-part8.html">คณิตศาสตร์สำหรับ Options เล่ม 2 · อ่านข้อมูลให้เป็น</a> สำหรับ Covariance การอ่านกราฟก่อนเชื่อตัวเลข และ Regression ที่เชื่อถือได้</li>
+<li><a href="theory-part2.html">ทฤษฎีของ Quant ภาค 2</a> สำหรับแนวคิดแรงร่วมและส่วนที่เหลือของสินทรัพย์</li>
+<li><a href="statarb-live-vs-backtest.html">Stat arb: ผลจริงเทียบ backtest</a> สำหรับเหตุผลที่สิ่งที่วัดได้ในช่วงหนึ่งไม่อยู่ต่อในช่วงถัดไป</li>
+<li>บันทึกค้นคว้า <code>tools/sab_research/practitioner-research.md</code> หัวข้อ 1, 4 และ 6 คือที่มาของกล่อง 🧰 พร้อมระบุว่าข้อไหนอ่านจากตัวงาน ข้อไหนอ่านผ่านบทสรุปหรือผลค้นหา</li>
+</ul></div>
+
+<details class="deep"><summary>🔎 ลงลึก: ทิศพิเศษของตาราง · ทำไมแกนตั้งฉาก · แกนที่แกว่งน้อยที่สุด · จำนวนแกนที่ควรเก็บ</summary>
+<p><strong>ทิศพิเศษ</strong> ถ้าเอาตารางผลรวมกำลังสองของสองเหรียญ (228 กับ 96 ในแถวแรก 96 กับ 172 ในแถวที่สอง) คูณกับทิศ (0.8, 0.6) แถวแรกได้ <span data-key="ch10.สองเหรียญ.คูณทิศพจน์.0">182.4</span> + <span data-key="ch10.สองเหรียญ.คูณทิศพจน์.1">57.6</span> เท่ากับ <span data-key="ch10.สองเหรียญ.คูณทิศ.0">240</span> แถวที่สองได้ <span data-key="ch10.สองเหรียญ.คูณทิศพจน์.2">76.8</span> + <span data-key="ch10.สองเหรียญ.คูณทิศพจน์.3">103.2</span> เท่ากับ <span data-key="ch10.สองเหรียญ.คูณทิศ.1">180</span> ผลคือ (240, 180) ซึ่งเท่ากับ 300 × (0.8, 0.6) ทิศเดิมเป๊ะ คูณตารางแล้วทิศไม่เปลี่ยน แค่ยืดออก 300 เท่า นี่คือนิยามของ Eigenvector และตัวคูณ 300 คือ Eigenvalue ในหน่วยผลรวมกำลังสอง ทิศอื่นทุกทิศจะถูกหมุนเมื่อคูณตาราง</p>
+<p><strong>ทำไมแกนตั้งฉาก</strong> เมื่อได้ PC1 แล้ว ส่วนที่เหลือของข้อมูลคือสิ่งที่ PC1 จับไม่ได้ ซึ่งอยู่ในทิศที่ตั้งฉากกับ PC1 ทั้งหมด การหาแกนที่แกว่งมากที่สุดในส่วนที่เหลือจึงได้ทิศที่ตั้งฉากเสมอ และเพราะแต่ละแกนจับส่วนที่แกนก่อนหน้าไม่ได้จับ ค่าบนแกนของสองแกนใดก็ตามจึงมี correlation เป็นศูนย์ในข้อมูลที่ใช้หา แต่ในข้อมูลช่วงอื่นไม่จำเป็นต้องเป็นศูนย์</p>
+<p><strong>แกนที่แกว่งน้อยที่สุด</strong> PC10 ของช่วงเลือกจับได้เพียง 0.9% และเป็นคู่ BTC กับ ETH ซึ่งคือพอร์ตสองเหรียญที่ขยับด้วยกันแน่นที่สุดในทุกน้ำหนักที่เป็นไปได้ ADF บนเส้นสะสมของแกนนี้ได้ <span data-key="ch10.จริง.adf.9.stat">−2.86</span> ใกล้เส้น 5% แต่ไม่ผ่าน แกนท้าย ๆ ของ PCA จึงเป็นที่เริ่มหาพอร์ตหลายขาที่อาจมีเชือก วิธีที่ออกแบบมาเพื่อหาน้ำหนักที่นิ่งที่สุดโดยตรงคือการทดสอบ Johansen ซึ่งแผนของเล่มวางไว้ในบทถัดไป</p>
+<p><strong>จำนวนแกนที่ควรเก็บ</strong> กฎที่พบบ่อยในตำราสถิติมีสองแบบ คือเก็บแกนจนสัดส่วนสะสมถึงระดับที่ตั้งไว้ หรือเก็บแกนที่ใหญ่กว่าที่ข้อมูลสุ่มล้วนให้ บทนี้ใช้แบบที่สอง โดยใช้โลกแรงเดียวที่ตั้งให้ใกล้ข้อมูลจริงเป็นเส้นเทียบ และเพิ่มเงื่อนไขว่าแกนต้องอยู่ข้ามช่วง เพราะคนเทรดใช้แกนในช่วงถัดไปเสมอ บันทึกค้นคว้าของเล่มไม่มีเกณฑ์ตัวเลขที่ตรวจแล้วจากงานคนทำงานจริงเรื่องนี้ (ดูกล่อง 🧰)</p>
+<p><strong>PC1 กับดัชนี</strong> correlation ของค่าบน PC1 กับ Equal-weight Index เมื่อเขียนสามตำแหน่งคือ <span data-key="ch10.จริง.corrEW">0.999</span> ในช่วงเลือก และ <span data-key="ch10.จริง.ตรวจ.corrEW">0.999</span> ในช่วงตรวจ เหตุผลที่ใกล้กันขนาดนี้คือ loading ของ PC1 เป็นบวกทั้งหมดและไม่ห่างกันมาก (0.21 ถึง 0.42) ขณะที่การขยับของสิบเหรียญมีแรงร่วมเป็นส่วนใหญ่ ถ่วงน้ำหนักต่างกันเล็กน้อยจึงแทบไม่เปลี่ยนเส้น</p>
+<p><strong>ปรับมาตรฐานหรือไม่</strong> แบบไม่ปรับตรงกับเงินจริงทันที เพราะ loading คือสัดส่วนเงิน แต่เหรียญที่แกว่งแรงจะครองแกนแรก แบบปรับมาตรฐานให้ทุกเหรียญมีเสียงเท่ากัน แต่ต้องหาร loading ด้วย SD ของแต่ละเหรียญก่อนจะเป็นสัดส่วนเงิน (เหรียญที่แกว่งแรงได้เงินน้อยลง) บันทึกค้นคว้าไม่ได้จดว่า Avellaneda และ Lee หรือ Sarmento และ Horta ใช้แบบไหน บทนี้จึงไม่อ้างว่าคนทำงานจริงนิยมแบบใด</p>
+</details>
+</details>
+
+
+
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>
