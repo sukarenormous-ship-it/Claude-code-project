@@ -140,9 +140,16 @@ def _count(data):
     ]
     total = sum(r[1] for r in rows)
     ch5_7 = sum(r[1] for r in rows if r[0] <= 7)
+    # ตัวนับสะสมในคัมภีร์ (close.ดูช่วงตรวจรวมเล่ม) ต้องเท่ากับผลรวมทีละบทพอดี — ไม่ใช่ขั้นต่ำ
+    story = data.get("เรื่อง", {})
+    run = 0
+    for b, n, _ in rows:
+        run += n
+        got = (story.get(f"part{b}", {}).get("close") or {}).get("ดูช่วงตรวจรวมเล่ม")
+        assert got in (None, run), f"คัมภีร์ part{b}.close.ดูช่วงตรวจรวมเล่ม = {got} ≠ ผลรวมทีละบท {run}"
     return {"บท": [{"บท": b, "ครั้ง": n, "ดู": t} for b, n, t in rows], "รวม": total,
-            "รวมบท2ถึง7": ch5_7, "ตัวนับบท7": get("ch07.นับ.ดูช่วงตรวจรวม", 8), "ตัวนับบท13": 6,
-            "ครั้งถัดไปบท13": get("ch13.v2.นับรอบ.ครั้งถัดไป", 7),
+            "รวมบท2ถึง7": ch5_7, "ตัวนับบท7": get("ch07.นับ.ดูช่วงตรวจรวม", 11),
+            "ตัวนับบท13": get("ch13.v2.นับรอบ.รวมเล่ม", 29),
             "วิธีหาh": get("ch02.จำนวนวิธีรวม", 7), "คู่บท3": get("ch03.จริง.สี่สิบห้า.คู่", 45),
             "โชคบท3": get("ch03.จริง.สี่สิบห้า.คาดจากโชค", 2.25),
             "สองทิศบท8": get("ch08.แปดคู่.ทดสอบสองทิศ", 90), "ตะกร้าบท11": get("ch11.สแกน.ทดสอบไม่มีLTC", 252),
@@ -220,7 +227,7 @@ def _wf(A, B, dates=None, train=WF_TRAIN, test=WF_TEST, nd=2):
     return out
 
 
-def _real(q, data):
+def _real(q, data, looks_before):
     df, pf = R.load_closes("formation", coins=["LTC", "DOT"])
     dv, pv = R.load_closes("validation", coins=["LTC", "DOT"])
     fa, fb, va, vb = pf["LTC"], pf["DOT"], pv["LTC"], pv["DOT"]
@@ -271,7 +278,7 @@ def _real(q, data):
         "ตรวจมัธยฐาน": _r(statistics.median(V)), "ตรวจบวก": sum(1 for v in V if v > 0),
         "ตรวจต่ำสุด": _r(min(V)), "เลือกมัธยฐาน": _r(statistics.median(F)), "เลือกบวก": sum(1 for v in F if v > 0),
         "อันดับสัมพันธ์": _r(fx["spearman"]),
-        "เส้นโชคเลือก": hf, "เส้นโชคตรวจ": hv, "เส้นโชคตรวจ29": _hurdle(29, fx["sr_v"]["เดือน"]),
+        "เส้นโชคเลือก": hf, "เส้นโชคตรวจ": hv, "เส้นโชคตรวจเล่ม": _hurdle(looks_before, fx["sr_v"]["เดือน"]),
         "เดินหน้า": {"หน้าต่าง": wf, "รวม": _r(sum(w["ผล"] for w in wf)),
                      "สัญญารวม": _r(sum(w["ในช่วงเลือกต่อ121วัน"] for w in wf)),
                      "ไม้รวม": sum(w["ไม้"] for w in wf), "วันทดสอบ": WF_TEST * len(wf),
@@ -329,17 +336,19 @@ def extend(data, D, q):
     hand = _hand(q)
     coin = {"สองแบบ": {"ผลลัพธ์": [[1, 1, 1], [1, -1, 1], [-1, 1, 1], [-1, -1, -1]], "คาด": _r(_coin_best(2))},
             "คาด": {str(N): _r(_coin_best(N)) for N in (1, 2, 3, 5, 10)}}
-    normal = {str(N): _r(_normal_best(N)) for N in (1, 2, 5, 10, 25, 29, 100, 252)}
+    count = _count(data)
+    normal = {str(N): _r(_normal_best(N)) for N in sorted({1, 2, 5, 10, 25, count["รวม"], 100, 252})}
     v1 = SB.load_figures("sab")["ch10"]["ลองหลายครั้ง"]
     vol1 = {"ลองหลายครั้ง": {k: v1[k] for k in ("1", "10", "20", "50", "100")}}
-    count = _count(data)
-    real = _real(q, data)
+    real = _real(q, data, count["รวม"])
     sim = _sim()
     small = _hurdle(5, 16)                    # ตัวอย่างมือ: 5 แบบ × 16 เดือน
-    looks = {   # การดูช่วงตรวจของบทนี้ (บันทึกเองตามคำสั่งของคู่มือ · ตัวนับในคัมภีร์กำลังถูกปรับให้ตรงกัน)
+    looks = {   # การดูช่วงตรวจของบทนี้ (ตาราง 25 แบบรันรอบเดียว = หนึ่งครั้ง) ต่อจากตัวนับสะสมบท 2–13
         "ครั้ง": 3, "รายการ": ["ตาราง 25 แบบทั้งช่วงตรวจ (ครั้งเดียว 25 ผล)", "walk-forward สามหน้าต่าง",
                                "walk-forward เลื่อนสองวัน (กล่องพัง)"],
         "ผลที่เห็น": 25 + 1 + 1, "รวมเล่มหลังบทนี้": count["รวม"] + 3}
+    mine = (data.get("เรื่อง", {}).get("part14", {}).get("close") or {}).get("ดูช่วงตรวจรวมเล่ม")
+    assert mine in (None, looks["รวมเล่มหลังบทนี้"]), f"คัมภีร์ part14.close.ดูช่วงตรวจรวมเล่ม = {mine}"
     prac = {   # กล่อง 🧰 · ที่มา tools/sab_research/practitioner-research.md §3.2 · §3.3 · §5 · §7 (ตัวเลขตามที่บันทึก ไม่ได้คำนวณ)
         "ปีKrauss": "2015", "คู่Krauss": 1225, "ปลอมKrauss": 61, "ปีDoFaff": "2012", "แบบDoFaff": 29,
         "ปีHLZ": "2016", "tHLZ": 3, "ปีBLdP": "2014", "ปีSarmento": "2019", "สินทรัพย์Sarmento": 20,
