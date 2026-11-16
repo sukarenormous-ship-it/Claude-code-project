@@ -52,7 +52,9 @@ def _five(fig):
                     [(x, "เริ่ม" if x == 0 else f"วัน {x}") for x in xs], W=W, H=H)
     for x, v in zip(xs[1:], seen):
         out.append(f'<circle cx="{_xpos(x, 0, 5, W):.1f}" cy="{y(v):.1f}" r="5" fill="none" stroke="{C["blue"]}" stroke-width="2"/>')
-        out.append(text(_xpos(x, 0, 5, W) + 8, y(v) + 4, f"เห็น {B.fmt(v)}", 10.5, C["blue"]))
+        right = x == 5
+        out.append(text(_xpos(x, 0, 5, W) + (-9 if right else 8), y(v) - 8, f"เห็น {B.fmt(v)}", 10.5, C["blue"],
+                        "end" if right else "start"))
     for x, v, col in ((5, kal[-1], C["purple"]), (5, fix[-1], C["amber"])):
         out.append(text(_xpos(x, 0, 5, W) - 8, y(v) + 4, B.fmt(v), 11, col, "end", 700))
     alt = (f"ห้าวันด้วยมือ ค่าที่เห็น {', '.join(B.fmt(v) for v in seen)} เส้นม่วงคือค่ากลางจาก Kalman จาก {B.fmt(kal[0])} "
@@ -84,7 +86,7 @@ def _btceth(fig):
     xs = g["i"]
     out, y = _lines(xs, [("หน้าต่าง 60 วัน", g["r60"], C["grey"]), ("Kalman SD 0.01", g["k001"], C["purple"]),
                          ("Kalman SD 0.1", g["k01"], C["red"])],
-                    "h ของ BTC บน ETH แต่ละวัน (ใช้ข้อมูลถึงเมื่อวานเท่านั้น)", [-0.5, 0, 0.5, 1, 1.5], "เดือน",
+                    "h ของ BTC บน ETH แต่ละวัน (ใช้ข้อมูลถึงเมื่อวานเท่านั้น)", [0, 0.5, 1, 1.5], "เดือน",
                     [(x, lab) for x, lab in g["ปีป้าย"]], W=W, H=H)
     xb = _xpos(g["เส้นแบ่ง"], xs[0], xs[-1], W)
     out.append(f'<line x1="{xb:.1f}" y1="56" x2="{xb:.1f}" y2="250" stroke="{C["ink"]}" stroke-dasharray="5 4" stroke-width="1.3"/>')
