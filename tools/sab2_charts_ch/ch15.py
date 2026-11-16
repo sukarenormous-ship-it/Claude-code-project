@@ -32,16 +32,16 @@ def _capacity(fig):
     out.append(text((L + W - R) / 2, Bm + 40, "ขนาดต่อขา (ดอลลาร์)", 11, GREY, "middle"))
     lin = [(X(0), Y(0)), (X(xmax), Y(rows[20000]["ถ้าเส้นตรง"]))]
     out.append(f'<polyline points="{_poly(lin)}" fill="none" stroke="{GREY}" stroke-width="2" stroke-dasharray="6 5"/>')
-    out.append(text(X(xmax) - 4, Y(rows[20000]["ถ้าเส้นตรง"]) - 8, f"ถ้าขยายเป็นเส้นตรง {B.fmt(rows[20000]['ถ้าเส้นตรง'])}", 11, GREY, "end", 700))
+    out.append(text(X(xmax) - 4, Y(rows[20000]["ถ้าเส้นตรง"]) - 8, f"ถ้าขยายเป็นเส้นตรง {B.fmt(int(rows[20000]['ถ้าเส้นตรง']))}", 11, GREY, "end", 700))
     pts = []
     for i in range(0, 41):
         k = i * 0.5
         pts.append((X(k * 1000), Y(a * k - b * k * k)))
     out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{C["blue"]}" stroke-width="2.6" stroke-linejoin="round"/>')
-    marks = [(1000, rows[1000]["สุทธิ"], "ขาละ 1,000", C["blue"], -12, "start"),
-             (c["จุดสูงสุด"], c["สุทธิสูงสุด"], "ยอด 7,500", C["purple"], -12, "middle"),
+    marks = [(1000, rows[1000]["สุทธิ"], "ขาละ 1,000", C["blue"], 22, "start"),
+             (c["จุดสูงสุด"], c["สุทธิสูงสุด"], "ยอด 7,500", C["purple"], 24, "middle"),
              (c["คุ้มทุน"], 0, "คุ้มทุน 15,000", C["amber"], -12, "middle"),
-             (20000, rows[20000]["สุทธิ"], "ขาละ 20,000", C["red"], 22, "end")]
+             (20000, int(rows[20000]["สุทธิ"]), "ขาละ 20,000", C["red"], 22, "end")]
     for s, v, lab, col, dy, anc in marks:
         out.append(f'<circle cx="{X(s):.1f}" cy="{Y(v):.1f}" r="5" fill="{col}"/>')
         out.append(text(X(s), Y(v) + dy, f"{lab}: {B.fmt(v)}", 11, col, anc, 700))
@@ -72,7 +72,7 @@ def _funding_years(fig):
             out.append(f'<rect x="{x0:.1f}" y="{Y(v):.1f}" width="{bw}" height="{Y(0) - Y(v):.1f}" fill="{cols[coin]}" opacity="0.85"/>')
             out.append(text(x0 + bw / 2, Y(v) - 6, f"{coin} {B.fmt(v)}", 11, cols[coin], "middle", 700))
         out.append(text(cx, Bm + 20, lab, 11, GREY, "middle"))
-    for coin, dy, anc in (("BTC", 14, "start"), ("ETH", -6, "end")):
+    for coin, dy, anc in (("BTC", 14, "start"), ("ETH", -8, "start")):
         v = d[coin]["ช่วงเลือก"]["Mean"]
         out.append(f'<line x1="{L}" y1="{Y(v):.1f}" x2="{W - R}" y2="{Y(v):.1f}" stroke="{cols[coin]}" stroke-dasharray="5 4"/>')
         x = L + 4 if anc == "start" else W - R - 4
@@ -110,7 +110,7 @@ def _funnel(fig):
     last = rows[-1]
     out.append(text(X(n) - 4, Y(last["คาด"]) - 8, f"ที่คาด {B.fmt(last['คาด'])}", 11, GREY, "end", 700))
     out.append(text(X(n) - 4, Y(last["เตือน"]) - 8, f"เส้นเตือน {B.fmt(last['เตือน'])}", 11, C["amber"], "end", 700))
-    out.append(text(X(n) - 4, Y(last["ลงมือ"]) + 16, f"เส้นลงมือ {B.fmt(last['ลงมือ'])}", 11, C["red"], "end", 700))
+    out.append(text(X(n - 2), Y(rows[n - 3]["ลงมือ"]) + 20, f"เส้นลงมือ {B.fmt(last['ลงมือ'])}", 11, C["red"], "middle", 700))
     out.append(text(X(n) - 4, Y(last["สะสม"]) - 8, f"ผลจริง {B.fmt(last['สะสม'])}", 11, C["blue"], "end", 700))
     w = rows[e["เตือนเดือน"] - 1]
     out.append(f'<circle cx="{X(w["เดือน"]):.1f}" cy="{Y(w["สะสม"]):.1f}" r="6.5" fill="none" stroke="{C["purple"]}" stroke-width="2.4"/>')
