@@ -24,7 +24,7 @@ Empirical check on our own data (formation + validation only, final test untouch
 
 | Family | What it ranks on | Key reference | Notes |
 |---|---|---|---|
-| Distance (GGR) | Sum of squared differences (SSD) of normalised price indices over a 12-month formation; trade the top 5/20 pairs for 6 months; open at a 2-SD gap, close at the crossing | Gatev, Goetzmann & Rouwenhorst (2006), *RFS* 19(3):797–827, doi 10.1093/rfs/hhj020 | **[verified: Yale ICF WP 08-03 version, Feb 2006, pp. 9–11 and 16]** "We form pairs over a twelve-month period (formation period) and trade them in the next six-month period"; the method is chosen because "Interviews with pair traders suggest that they try to find two stocks whose prices 'move together.'" Top-20 pairs: "71% of the stocks in the top 20 pairs are utility stocks". Headline result up to about 11%/yr. |
+| Distance (GGR) | Sum of squared differences (SSD) of normalised price indices over a 12-month formation; trade the top 5/20 pairs for 6 months; open at a 2-SD gap, close at the crossing | Gatev, Goetzmann & Rouwenhorst (2006), *RFS* 19(3):797–827, doi 10.1093/rfs/hhj020 | **[verified: Yale ICF WP 08-03 version, Feb 2006, §2.1–2.2 and the Table 2 discussion]** "We form pairs over a twelve-month period (formation period) and trade them in the next six-month period"; the method is chosen because "Interviews with pair traders suggest that they try to find two stocks whose prices 'move together.'" Top-20 pairs: "71% of the stocks in the top 20 pairs are utility stocks". Headline result up to about 11%/yr. |
 | Distance with refinements | Same, but only within 48 Fama–French industries, and favouring pairs with many **zero crossings** in formation | Do & Faff (2010) *FAJ* 66(4):83–95; Do & Faff (2012) *J. Financial Research* 35(2):261–287 | **[verified via Krauss 2015 WP p. 8; JFR abstract via OpenAlex]** Krauss: Do & Faff "only allow for matching securities within the 48 Fama-French industries" and "favor pairs with a high number of zero-crossings in the formation period"; the top portfolios "are still slightly profitable, even after full consideration of transaction costs". JFR abstract: about "30 basis points per month among portfolios of well-matched pairs that are formed within refined industry groups", but "both these types of contrarian investing are largely unprofitable after 2002." |
 | Return correlation | Pearson correlation of monthly returns over 5 years; trade divergence from the most-correlated partner(s) | Chen, Chen, Chen & Li (2019), *Management Science* 65(1):370–389, doi 10.1287/mnsc.2017.2825 | **[verified: abstract via OpenAlex]** profits "largely explained by the short-term reversal and a version of the industry momentum". |
 | Cointegration (Vidyamurthy) | Engle–Granger regression of log prices, then a *tradability* check | Vidyamurthy (2004), *Pairs Trading: Quantitative Methods and Analysis*, Wiley | **[verified only via Krauss 2015 WP p. 22]** "Key for a practitioner is not necessarily a cointegrated pair, but a spread with strong mean-reversion properties. A valid proxy for the latter is the zero-crossing frequency". I did not see the book itself. |
@@ -91,7 +91,7 @@ Correlation of price *levels* between two trending series is the classic spuriou
 ### 3.3 How p-values are actually used (practice; partly FOLKLORE)
 
 - **As a filter inside a chain, not the sole gate.** Rad et al. (SSD → EG); Sarmento & Horta (cluster → EG at 1% → Hurst → half-life → crossings); Clegg & Krauss CI1 (same sector, then both ADF and Johansen at 5%).
-- **As a ranking signal.** Dunis et al. (cited in Krauss WP p. 24) find "in-sample t-statistics of the ADF test … seem to have a certain predictive power for the out-of-sample information ratio", so the *strength* of the statistic, not a yes/no, carries information. Do & Faff rank by zero crossings; GGR rank by SSD.
+- **As a ranking signal.** Dunis et al. (cited in Krauss WP pp. 23–24) find "in-sample t-statistics of the ADF test … seem to have a certain predictive power for the out-of-sample information ratio", so the *strength* of the statistic, not a yes/no, carries information. Do & Faff rank by zero crossings; GGR rank by SSD.
 - **Not at all, replaced by a speed rule.** Avellaneda & Lee keep any residual whose OU mean-reversion time is under 30 days (κ > 8.4) on a rolling 60-day window. Chan, *Algorithmic Trading* (Wiley 2013), says, per secondary quotes that I could not open in the book, that "we don't necessarily need true stationarity or cointegration in order to implement a successful mean reversion strategy" (**unverified against the book**).
 - **Rolling re-estimation** is the default in practice: GGR re-form every month with overlapping 6-month windows; Avellaneda & Lee re-estimate daily on 60 days; Clegg & Krauss re-form every month.
 
@@ -108,7 +108,7 @@ Correlation of price *levels* between two trending series is the classic spuriou
 
 | Filter | Threshold seen | Who (verified where) |
 |---|---|---|
-| Same industry/sector | 48 FF industries; GICS sector; 4 S&P groups | Do & Faff; Clegg & Krauss WP p. 14; GGR WP p. 10 |
+| Same industry/sector | 48 FF industries; GICS sector; 4 S&P groups | Do & Faff; Clegg & Krauss WP p. 14; GGR WP §2.1 |
 | Cointegration p-value | 1% | Sarmento thesis §3.5 ("cointegrated, using a p-value of 1%") |
 | | 5% (both ADF and Johansen) | Clegg & Krauss CI1 (WP p. 14) |
 | | ArbitrageLab default 95% critical value | `spread_selection/cointegration.py`, `adf_cutoff_threshold=0.95` |
@@ -120,13 +120,13 @@ Correlation of price *levels* between two trending series is the classic spuriou
 | Spread variance (high, not low) | rank top-SSD pool by variance | Krauss WP p. 8 (proposal); ArbitrageLab `method='variance'` |
 | Max holding / time stop | a small multiple of the half-life | Chan blog 2007: "exit a spread once we have held it for 3 times the half-life"; reply: "some small multiple (<10) of this half life" |
 | | 10 days beats 6 months | Engelberg et al. (abstract, unverified full text) |
-| Wait one day after signal | — | GGR WP p. 15: profits drop "about 30-55" bps when opening on the day after divergence (bid-ask bounce) |
-| Liquidity | top size deciles; no missing days | GGR (74% of top-20 stocks in top 3 size deciles, WP p. 16); Clegg & Krauss "do not exhibit missing data" |
+| Wait one day after signal | — | GGR WP (discussion of Table 1, Panel B): profits drop "about 30-55" bps when opening on the day after divergence (bid-ask bounce) |
+| Liquidity | top size deciles; no missing days | GGR (74% of top-20 stocks in top 3 size deciles, Table 2 Panel B discussion); Clegg & Krauss "do not exhibit missing data" |
 | Longer formation for test power | 48 months | Clegg & Krauss WP p. 13 |
 | Structural-break / stability of h | (not found with a published threshold) | Our ch. 5–6 cover it; partial cointegration and Kalman (Palomar §15.4) are the published responses. **FOLKLORE on thresholds.** |
 
 Evidence that these filters *help out of sample* is thin and mixed:
-- Sarmento reports a "visible influence" of the Hurst and half-life constraints (thesis §5).
+- Sarmento reports a "visible influence" of the Hurst and half-life constraints (thesis §6.2).
 - Bui & Ślepaczuk find Hurst selection no better than correlation.
 - Grande et al. (2024), *Mathematics* 12(18):2911 **[verified: abstract]**, find that crypto spreads with anti-persistent local Hurst "revert to their mean significantly faster".
 - In our own data (§8), Hurst ranked the **wrong** way (Spearman +0.26 with profit, where lower Hurst "should" help).
@@ -194,7 +194,7 @@ Evidence that these filters *help out of sample* is thin and mixed:
 | Trade many pairs, not one; but pairs sharing a leg are *not* diversification | CONSENSUS (top-5/top-20 portfolios in all academic work). The leg-sharing point is shown in our data (§8.5: average PnL correlation 0.92 among the 8 LTC pairs, 1.00 among the XRP pairs) | GGR; Rad et al.; §8 |
 | Time stops over price stops | CONSENSUS-ish | Chan 2007; Engelberg et al.; our engine `hold=30` |
 | Re-form pairs periodically (monthly, rolling) | CONSENSUS | GGR, Clegg & Krauss, Avellaneda & Lee |
-| Open the day after the signal | CONSENSUS | GGR WP p. 15 (already the book's `lag=1`) |
+| Open the day after the signal | CONSENSUS | GGR WP, Table 1 Panel B discussion (already the book's `lag=1`) |
 | Size by spread volatility / equal risk per pair | FOLKLORE (common, rarely tested in papers) | — |
 | Avoid crowded trades; expect sudden simultaneous unwinds | CONSENSUS as a risk; hard to measure | Khandani & Lo (2011), *J. Financial Markets* 14(1):1–46: losses July–Aug 2007 attributed to deleveraging and the withdrawal of market-making capital (abstract per MIT DSpace record; not opened) |
 | Expect decay; monitor live vs backtest | CONSENSUS | Do & Faff 2012 ("largely unprofitable after 2002"); Rad et al. (fewer opportunities after 2009); Clegg & Krauss Table 13 (2010–15 ≈ 0) |
@@ -352,7 +352,7 @@ For EG, half-life and Hurst a negative Spearman means the filter helped; for ret
 | 3 (ADF/EG) | The persistence evidence (Clegg 2014; Palomar; our 0/8). Multiple testing (Quantopian spectrum; Krauss's 61 false positives in 1,225; HLZ t > 3). "Testing both directions doubles your tests" (our 2 → 8 passes). The EG pass caused by one stationary leg (LTC). |
 | 4 (half-life) | Half-life as a *gate* (Avellaneda & Lee < 30 days on 60; Sarmento 1 day–1 year) and to set max holding (Chan: about 3× HL). |
 | 5–6 (rolling, Kalman) | The practitioner default is rolling re-estimation and periodic re-formation. Partial cointegration and Kalman as the published answer to non-persistence. Our fixed-vs-rolling ruler flip (+25 vs −163 mean). |
-| 7 (entry/exit) | GGR's one-day wait (−30 to −55 bps); time stops vs price stops (Chan); Engelberg's 10-day result; 297/312 time-stop exits in our data. |
+| 7 (entry/exit) | GGR's one-day wait (−30 to −55 bps, Table 1 Panel B); time stops vs price stops (Chan); Engelberg's 10-day result; 297/312 time-stop exits in our data. |
 | 8–10 (factors, PCA, baskets) | Avellaneda & Lee as the "residual vs factor" template; Leung & Nguyen's BTC–ETH–BCH–LTC basket; Gabriel & Kunst (Johansen). |
 | 11 (allocation) | Pairs sharing a leg are one bet (PnL correlation 0.92 and 1.00). Count *independent legs*, not pairs. |
 | 12 (backtest) | Converged vs unconverged trades (Rad et al. 62.5% converged; the left tail comes from unconverged trades). |
