@@ -181,6 +181,10 @@ def extend(data, D, q):
         af = S.adf(xv)
         e1 = S.engle_granger(lf[a], lf[b], lags=1)
         real.setdefault("lag1", {})[f"{a}-{b}"] = {"stat": _r(e1["stat"]), "ผ่าน": bool(e1["reject5"])}
+        # ขั้น 2 แบบใส่ค่าคงที่ (resid_const=True) — ใช้แค่เทียบว่าต่างจากข้อตกลงของเล่ม (ไม่ใส่) เพียงเล็กน้อย
+        ec = S.engle_granger(lf[a], lf[b], resid_const=True)
+        real.setdefault("มีค่าคงที่", {})[f"{a}-{b}"] = {"stat": _r(ec["stat"]), "stat3": _r(ec["stat"], 3),
+                                                        "statไม่มี3": _r(ef["stat"], 3), "ผ่าน": bool(ec["reject5"])}
         real["คู่"][f"{a}-{b}"] = {"ช่วงเลือก": pack(ef), "ช่วงตรวจ": pack(ev), "กลับทิศ": pack(er),
                                     "ตรึงh": {"stat": _r(af["stat"]), "เส้น5": _r(af["crit"]["5%"]), "ผ่าน": bool(af["reject5"]),
                                               "Mean": _r(100 * S.mean(xv), 0)}}
@@ -196,6 +200,8 @@ def extend(data, D, q):
     real["เดี่ยวผ่านเลือก"] = sum(v["ผ่านเลือก"] for v in single.values())
     real["เดี่ยวผ่านตรวจ"] = sum(v["ผ่านตรวจ"] for v in single.values())
     real["LTCราคา"] = [_r(min(pf["LTC"]), 0), _r(max(pf["LTC"]), 0)]
+    real["เหรียญ"] = len(coins)
+    real["เดี่ยวไม่ผ่านเลือก"] = len(coins) - real["เดี่ยวผ่านเลือก"]
     # 45 คู่ (ลำดับเหรียญตามไฟล์ · เหรียญที่มาก่อนถูกอธิบาย) และแบบสองทิศ 90 คู่
     combos = list(itertools.combinations(coins, 2))
     pf_pass = [(a, b) for a, b in combos if S.engle_granger(lf[a], lf[b])["reject5"]]
@@ -254,7 +260,20 @@ def extend(data, D, q):
             "แถวแรกhคูณ": _r(lt_dot["h"] * r0["logDOT"]),
             "แถวแรกX": _r(r0["logLTC"] - _r(lt_dot["h"] * r0["logDOT"]) - lt_dot["a"])}
 
-    ch = {"เล่ม1": vol1, "ทวน": walk, "มือ": hand, "สามสิบโลก": thirty, "หมื่นโลก": tenk, "ความยาว": length, "eg_sim": eg_sim,
+    # ทวนบท 2 (ตอนจบ: ใช้ log เป็นหน่วยของเล่ม · h แบบ log ของ BTC บน ETH · ลองหา h ไปแล้วกี่วิธี) — h คำนวณซ้ำที่นี่
+    walk["บท2hlog"] = real["คู่"]["BTC-ETH"]["ช่วงเลือก"]["h"]
+    walk["บท2วิธี"] = data["ch02"]["จำนวนวิธีรวม"]
+
+    # กล่อง 🧰 (ที่มา: tools/sab_research/practitioner-research.md §3.1–3.3 · ตัวเลขตามที่บันทึกไว้ ไม่ได้คำนวณ · ปีเก็บเป็นข้อความ)
+    #   Clegg (2014): ตัวเลขมาจากบทสรุปของ CXO Advisory (2014) ไม่ได้ตรวจกับตัวงาน · Palomar §15.4 · Quantopian คู่หุ้นโซลาร์ปี 2014
+    #   Sarmento & Horta (2020): EG ที่ 1% แล้วกรองต่อ · Harvey, Liu & Zhu (2016): t > 3.0 สำหรับปัจจัยใหม่
+    pros = {"ปีClegg": "2014", "ปีสรุปCXO": "2014", "Cleggปีเริ่ม": "2002", "Cleggปีจบ": "2012",
+            "Cleggผ่านต่อปีเปอร์เซ็นต์": 5.0, "Cleggยังผ่านปีถัดไปเปอร์เซ็นต์": 4.9,
+            "หัวข้อPalomar": "15.4", "ปีโซลาร์": "2014", "ปีSH": "2020", "SHเส้นเปอร์เซ็นต์": 1,
+            "ปีHLZ": "2016", "HLZt": 3, "tทั่วไป": 2}
+    pros["คาดจากโชค"] = real["สี่สิบห้า"]["คาดจากโชค"]
+
+    ch = {"เล่ม1": vol1, "คนทำงานจริง": pros, "ทวน": walk, "มือ": hand, "สามสิบโลก": thirty, "หมื่นโลก": tenk, "ความยาว": length, "eg_sim": eg_sim,
           "เชือกขาด": broken, "จริง": real, "ปีMacKinnon": [1994, 2010]}
     lt = real["คู่"]["LTC-LINK"]
     ch["_แบบฝึก"] = [

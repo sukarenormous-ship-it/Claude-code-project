@@ -12,6 +12,8 @@ x[t] = φ·x[t−1] + e (φ < 1 = มีเชือก · φ = 1 = เดิน
     random_walk_pair   คู่ที่ไม่มีเชือก (ระยะห่างเดินสุ่ม φ = 1)
     drifting_h_pair    คู่ที่ h ค่อย ๆ ไหลจาก h0 ไป h1 (หรือเดินสุ่มช้า ๆ)
     broken_pair        คู่ที่เชือกขาดที่วัน break_at (φ ก่อน → φ หลัง · เลือกให้ค่ากลางกระโดดได้)
+    threshold_pair     คู่บนราคาที่เชือกดึงเฉพาะเมื่อ |X| เกิน band (ในกรอบเดินสุ่ม · เล่ม 2 บท 7 Threshold Model)
+    regime_pair        คู่บนราคาที่สลับสองสภาวะแบบสุ่ม (φ และค่ากลางต่างกันได้ · เล่ม 2 บท 7 Regime Switching)
     factor_basket      N เหรียญ = β_i × แรงร่วม + ส่วนเฉพาะที่กลับค่ากลาง (รู้ β · φ ของแต่ละตัว)
     reseed             รันโลกเดิมด้วย seed 1–30 (ชุดเดียวกับเล่ม 1) → ค่าต่ำสุด · มัธยฐาน · สูงสุด · ตัวอย่าง
 
@@ -152,6 +154,45 @@ def broken_pair(seed=104, n=500, break_at=300, phi_before=0.9, phi_after=1.0, ju
                              "h": h, "alpha": alpha, "sd_shock": sd, "half_life_before": _half_life(phi_before)}})
 
 
+def threshold_pair(seed=108, n=500, band=1.0, phi_out=0.8, phi_in=1.0, sd=0.5, h=2.0, alpha=0.0,
+                   common_sd=COMMON_SD, b0=50.0):
+    """คู่บน "ราคา" ที่เชือกดึงเฉพาะนอกกรอบ (Threshold Model · เล่ม 2 บท 7): A = α + h·B + X
+    X[t] = φ_in·X[t−1] + e เมื่อ |X[t−1]| ≤ band (ค่าเริ่มต้น φ_in 1 = ในกรอบเดินสุ่ม ไม่มีแรงดึง) ·
+    X[t] = φ_out·X[t−1] + e เมื่อ |X[t−1]| > band · X เริ่มที่ 0 · B แบบ price_pair · threshold (band) pair with known band"""
+    rng = random.Random(seed)
+    b = [b0 * math.exp(v) for v in _rw(rng, n, common_sd)]
+    x, xs = 0.0, []
+    for _ in range(n):
+        x = (phi_in if abs(x) <= band else phi_out) * x + rng.gauss(0.0, sd)
+        xs.append(x)
+    a = [alpha + h * bb + e for bb, e in zip(b, xs)]
+    return {"A": a, "B": b, "X": xs, "seed": seed,
+            "true": {"h": h, "alpha": alpha, "band": band, "phi_in": phi_in, "phi_out": phi_out, "sd_shock": sd,
+                     "scale": "price"}}
+
+
+def regime_pair(seed=109, n=500, phis=(0.9, 0.9), mus=(0.0, 1.0), stays=(0.995, 0.99), sd=0.5, h=2.0, alpha=0.0,
+                common_sd=COMMON_SD, b0=50.0):
+    """คู่บน "ราคา" ที่สลับสองสภาวะ (Regime Switching · เล่ม 2 บท 7): สภาวะ s ∈ {0, 1} เปลี่ยนแบบสุ่มทุกวัน
+    (อยู่สภาวะเดิมด้วยโอกาส stays[s]) · X = mus[s] + u · u[t] = phis[s]·u[t−1] + e (เริ่มสภาวะ 0 · u จากการกระจายนิ่ง
+    ของสภาวะ 0) · A = α + h·B + X · true["state"] = สภาวะทุกวัน · two-state Markov-switching pair (mean and/or φ)"""
+    rng = random.Random(seed)
+    b = [b0 * math.exp(v) for v in _rw(rng, n, common_sd)]
+    s = 0
+    u = rng.gauss(0.0, sd / math.sqrt(1 - phis[0] ** 2)) if abs(phis[0]) < 1 else 0.0
+    xs, st = [], []
+    for _ in range(n):
+        if rng.random() > stays[s]:
+            s = 1 - s
+        u = phis[s] * u + rng.gauss(0.0, sd)
+        xs.append(mus[s] + u)
+        st.append(s)
+    a = [alpha + h * bb + e for bb, e in zip(b, xs)]
+    return {"A": a, "B": b, "X": xs, "seed": seed,
+            "true": {"h": h, "alpha": alpha, "phis": list(phis), "mus": list(mus), "stays": list(stays), "sd_shock": sd,
+                     "state": st, "scale": "price"}}
+
+
 def factor_basket(seed=105, n=500, n_coins=5, betas=None, phis=None, idio_sd=0.02, factor_sd=COMMON_SD,
                   levels=None):
     """N เหรียญที่มีแรงร่วมหนึ่งตัว: logP_i = a_i + β_i·F[t] + u_i[t] · F เดินสุ่ม · u_i เป็น AR(1) φ_i (กลับค่ากลาง)
@@ -239,6 +280,21 @@ def selftest():
     bj = broken_pair(seed=15, n=800, break_at=400, phi_before=0.8, phi_after=0.8, jump=0.3)
     check("broken แบบค่ากลางกระโดด: ค่าเฉลี่ยหลัง − ก่อน ≈ 0.3 (±0.08)",
           abs(S.mean(bj["X"][420:]) - S.mean(bj["X"][:400]) - 0.3) < 0.08)
+    # threshold: ในกรอบเดินสุ่ม นอกกรอบถูกดึง · X = A − hB · regime: สภาวะสลับ ค่ากลางตามสภาวะ
+    th = threshold_pair(seed=17, n=20000, band=1.5, sd=0.4, common_sd=0.0)
+    xin = [(x0, x1) for x0, x1 in zip(th["X"], th["X"][1:]) if abs(x0) <= 1.5]
+    xout = [(x0, x1) for x0, x1 in zip(th["X"], th["X"][1:]) if abs(x0) > 1.5]
+    fin = S.ols_origin([p for p, _ in xin], [q for _, q in xin])["slope"]
+    fout = S.ols_origin([p for p, _ in xout], [q for _, q in xout])["slope"]
+    check("threshold: φ ในกรอบ ≈ 1 · นอกกรอบ ≈ 0.8 · X = A − 2B",
+          abs(fin - 1.0) < 0.03 and abs(fout - 0.8) < 0.03
+          and max(abs(a - 2.0 * b - x) for a, b, x in zip(th["A"], th["B"], th["X"])) < 1e-9, f"{fin:.3f} / {fout:.3f}")
+    rg = regime_pair(seed=18, n=20000, phis=(0.9, 0.9), mus=(0.0, 3.0), stays=(0.99, 0.98), sd=0.4, common_sd=0.0)
+    s1 = [x for x, k in zip(rg["X"], rg["true"]["state"]) if k == 1]
+    s0 = [x for x, k in zip(rg["X"], rg["true"]["state"]) if k == 0]
+    frac = len(s1) / len(rg["X"])
+    check("regime: สัดส่วนสภาวะ 1 ≈ 1/3 · ค่ากลางสองสภาวะห่างราว 3", 0.25 < frac < 0.42
+          and 2.4 < S.mean(s1) - S.mean(s0) < 3.3, f"{frac:.2f} {S.mean(s1) - S.mean(s0):.2f}")
     # factor basket: β จากการถดถอยบน F · PCA ตัวแรกชี้ทิศ β · ส่วนเฉพาะกลับค่ากลาง
     fb = factor_basket(seed=16, n=3000, n_coins=5)
     bh = [S.ols(fb["F"], s)["slope"] for s in fb["logP"]]
@@ -285,7 +341,7 @@ def selftest():
     lg = reseed(price_pair, lambda d: S.ols(d["logB"], d["logA"])["slope"], n=250)
     check("price_pair: ถดถอยบน log ให้ความชันราว 1 ไม่ใช่ h 2 (h ราคาต่างจาก h log)", 0.8 < lg["median"] < 1.2,
           f"{lg['median']:.3f}")
-    print("selftest", f"ผ่าน ✓ ({n} ข้อ · ทำซ้ำได้ด้วย seed · stationary / ราคา (price_pair) / random walk / h ไหล / เชือกขาด / ตะกร้าแรงร่วม "
+    print("selftest", f"ผ่าน ✓ ({n} ข้อ · ทำซ้ำได้ด้วย seed · stationary / ราคา (price_pair) / random walk / h ไหล / เชือกขาด / เชือกมีกรอบ / สลับสภาวะ / ตะกร้าแรงร่วม "
           "ประมาณพารามิเตอร์จริงกลับมาได้ · reseed 30 ชุด)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
