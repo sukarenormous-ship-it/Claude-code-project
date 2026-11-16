@@ -1,0 +1,736 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Stat Arb for Non Quant — บท 16 — รวมหลายสัญญาณ และโมเดลที่เรียนรู้เอง</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--blue:#2563eb;--blue-bg:#eff6ff;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--g7:#374151;--g8:#1f2937;--g9:#111827;--g1:#f3f4f6;--g2:#e5e7eb;--g0:#f9fafb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Sarabun",sans-serif;font-size:16px;line-height:1.8;color:var(--g8);background:#fff;max-width:900px;margin:0 auto;padding:40px 30px;word-break:normal;word-break:auto-phrase;overflow-wrap:break-word;line-break:loose;text-wrap:pretty;hanging-punctuation:allow-end}h1{font-size:2.2em;font-weight:800;color:var(--g9)}h2{font-size:1.7em;font-weight:700;color:var(--g9);margin-top:2em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:3px solid var(--blue)}h3{font-size:1.3em;font-weight:700;color:var(--g8);margin-top:1.5em;margin-bottom:.6em}p{margin-bottom:.8em}ul,ol{margin-bottom:1em;padding-left:1.8em}li{margin-bottom:.4em}strong{color:var(--g9)}a{color:var(--blue)}.cover{text-align:center;padding:50px 20px;border-bottom:3px solid var(--blue);margin-bottom:30px}.cover h1{font-size:2em;line-height:1.3}.cover .sub{font-size:1.2em;color:var(--blue);font-weight:600;margin:8px 0}.cover .desc{color:#64748b;max-width:640px;margin:12px auto}
+.bx{padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0}.bg{background:var(--green-bg);border-left:4px solid var(--green)}.br{background:var(--red-bg);border-left:4px solid var(--red)}.bb{background:var(--blue-bg);border-left:4px solid var(--blue)}.ba{background:var(--amber-bg);border-left:4px solid var(--amber)}.bp{background:var(--purple-bg);border-left:4px solid var(--purple)}.bt{font-weight:700;margin-bottom:5px}.fm{font-family:'Courier New',monospace;background:var(--g1);padding:12px 16px;border-radius:6px;margin:12px 0;overflow-x:auto;font-size:.93em}
+.tw{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.9em;min-width:520px}th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}tr:nth-child(even){background:var(--g0)}.nw{white-space:nowrap}
+.card{border:1px solid var(--g2);border-radius:10px;padding:6px 22px 18px;margin:24px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}.yr{display:inline-block;background:var(--g9);color:#fff;font-size:.6em;font-weight:700;padding:3px 9px;border-radius:20px;vertical-align:middle;margin-left:8px}.must{color:var(--red);font-weight:700}.lvl{font-size:.85em;letter-spacing:1px;white-space:nowrap}.cc{font-size:.7em;color:#64748b}
+.pq{font-size:1.3em;font-weight:700;color:var(--g9);font-style:italic;border-left:5px solid var(--purple);background:var(--purple-bg);padding:18px 22px;margin:22px 0;border-radius:0 10px 10px 0}
+.ad{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--g2)}.ad>div{padding:12px 16px}.ad .pro{background:var(--green-bg)}.ad .con{background:#fff7ed;border-left:1px solid var(--g2)}.ad .bt{margin-bottom:6px}.ad ul{margin:0;padding-left:1.3em;font-size:.93em}
+.qv{background:#f3effe;border:1px solid #ddd6fe;border-left:5px solid var(--purple);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.qv .bt{color:var(--purple)}
+.why{background:#fff7ed;border:1px dashed var(--amber);border-radius:8px;padding:12px 18px;margin:14px 0}.why .bt{color:var(--amber)}
+.dft{background:#ecfeff;border:2px solid #06b6d4;border-radius:10px;padding:14px 20px;margin:18px 0}.dft .bt{color:#0e7490}
+.scene{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:16px 20px;margin:18px 0}.scene .bt{color:var(--g9)}
+.fig{display:block;margin:22px auto;width:100%;height:auto}.cap{text-align:center;font-size:.87em;color:#64748b;margin:-12px 0 20px}
+abbr[title]{border-bottom:1px dotted var(--g7);cursor:help;text-decoration:none}
+@media(max-width:640px){.ad{grid-template-columns:1fr}.ad .con{border-left:none;border-top:1px solid var(--g2)}.fm{font-size:.82em}}
+@media print{body{padding:15px;font-size:14px}h2{page-break-before:always}.cover{page-break-after:always}.bx,table,.card,.ad,.qv,.dft,.scene{page-break-inside:avoid}abbr[title]{border:none}}
+/* ═══ sab: กล่องเพิ่มของเล่ม Stat Arb for Non Quant (แผน 5.1) ═══ */
+.scene-open{background:#fefce8;border:1px solid #fde68a;border-left:5px solid var(--amber);border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0}.scene-open .bt{color:#92400e}
+.stop{background:#fff1f2;border:2px dashed var(--red);border-radius:10px;padding:12px 18px;margin:18px 0}.stop .bt{color:var(--red)}
+.other{background:#f0f9ff;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}.other .bt{color:#0369a1}
+.dist{background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:12px 18px;margin:14px 0;font-size:.95em}.dist .bt{color:var(--g8)}
+.nature{background:#f7fee7;border:1px solid #d9f99d;border-left:5px solid #65a30d;border-radius:0 10px 10px 0;padding:14px 20px;margin:18px 0}.nature .bt{color:#3f6212}
+table.ncard{min-width:0}table.ncard td.on{background:#ecfccb;font-weight:600}table.ncard td.done{background:#f7fee7}table.ncard td[data-pending-part]{background:var(--g1);color:#9ca3af}
+.transfer{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px 18px;margin:14px 0}.transfer .bt{color:var(--purple)}
+.whyline{font-size:.92em;color:var(--g7);border-left:3px solid var(--g2);padding:4px 12px;margin:10px 0}
+.sheet{background:#fff;border:2px solid var(--blue);border-radius:10px}.sheet .bt{color:var(--blue)}.sheet td[data-key]{font-variant-numeric:tabular-nums}.sheet .blank td{height:2em}
+table.ledger th{background:var(--g8)}table.ledger td{font-variant-numeric:tabular-nums}table.ledger tr.off td{color:#64748b;font-style:italic}
+table.fees caption{caption-side:top;text-align:left;font-size:.88em;color:var(--g7);padding:4px 0}
+details.deep{border:1px solid var(--g2);border-radius:8px;padding:10px 16px;margin:16px 0;background:var(--g0)}details.deep>summary{cursor:pointer;font-weight:700;color:var(--g8)}
+details.ans{margin:6px 0 10px;font-size:.93em}details.ans>summary{cursor:pointer;color:var(--blue)}
+.tier{display:inline-block;font-size:.72em;color:#64748b;margin-left:4px}.tier[data-tier]::before{content:'ชั้น ' attr(data-tier)}
+[data-pending]{opacity:.65}
+.figw{overflow-x:auto;-webkit-overflow-scrolling:touch}@media(max-width:640px){.figw .fig{min-width:600px}.figw.narrow .fig{min-width:0}body{padding:20px 16px}.cover{padding:20px 4px;margin-bottom:18px}.cover h1{font-size:1.45em}.cover .sub{font-size:1.05em}}
+@media print{details.deep,details.ans{display:block}.scene-open,.stop,.other,.nature,.sheet,.transfer,table.ledger,table.ncard{page-break-inside:avoid}}
+/* ═══ sab v2: แม่แบบบท v2 (แผน 14.3) — .pos .rest .readfig .readeq .sum3 details.hint details.file .calc ═══ */
+.pos{font-size:.88em;color:#64748b;border-bottom:1px solid var(--g2);padding:0 2px 8px;margin:-12px 0 18px}.pos strong{color:var(--g7)}
+.rest{background:var(--g0);border-radius:8px;padding:12px 18px 6px;margin:26px 0 10px;color:var(--g7)}.rest .bt{font-size:.82em;font-weight:600;letter-spacing:.05em;color:#64748b;margin-bottom:2px}
+.readfig,.readeq{font-size:.94em;color:var(--g7);border-left:3px solid #bfdbfe;padding:4px 12px;margin:10px 0 18px}.readeq{border-left-color:#ddd6fe;margin-top:-4px}
+.sum3{background:var(--green-bg);border:1px solid #bbf7d0;border-left:5px solid var(--green);border-radius:0 10px 10px 0;padding:14px 20px;margin:24px 0}.sum3 .bt{color:#166534}.sum3 ol{margin-bottom:0}
+details.hint{margin:6px 0 4px;font-size:.93em}details.hint>summary{cursor:pointer;color:#b45309}details.hint details.hint{margin-left:16px;font-size:1em}
+details.file{border:1px solid var(--g2);border-radius:10px;padding:12px 18px;margin:28px 0 16px;background:var(--g0)}details.file>summary{cursor:pointer;font-weight:700;font-size:1.1em;color:var(--g8)}details.file[open]>summary{margin-bottom:10px}
+th.calc{background:var(--g7)}td.calc{font-size:.95em;color:var(--g7);font-variant-numeric:tabular-nums;border-left:2px solid var(--g2)}
+@media print{details.hint,details.file{display:block}.rest,.sum3{page-break-inside:avoid}}
+@media print{details::details-content{content-visibility:visible}}
+
+/* ═══ sab2: ส่วนเพิ่มของเล่ม 2 (docs/sab2-book-plan.md หัวข้อ 5) — details.code "💻 ทำด้วย Python" · .fails "พังเมื่อไร / บอกอะไรไม่ได้" ═══
+   ต่อท้าย <style> ของ tools/sab_shell/head.html โดย sab_book.shell() เมื่อ SAB_BOOK=sab2 (เปลือกกลางไม่เปลี่ยน) */
+details.code{border:1px solid #cbd5e1;border-radius:8px;padding:10px 16px;margin:16px 0;background:#f8fafc}details.code>summary{cursor:pointer;font-weight:700;color:#334155}details.code[open]>summary{margin-bottom:8px}
+details.code pre{font-family:'Courier New',monospace;font-size:.86em;line-height:1.55;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;white-space:pre;margin:8px 0;tab-size:4}
+details.code pre .cm,details.code pre .out{color:#86efac}details.code p{font-size:.93em}
+.fails{background:#fff7ed;border:1px solid #fdba74;border-left:4px solid #ea580c;border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0}.fails .bt{font-weight:700;color:#9a3412;margin-bottom:6px}.fails ul{margin-bottom:.4em}.fails li strong{color:#7c2d12}
+@media(max-width:640px){details.code pre{font-size:.78em}}
+@media print{details.code{display:block}details.code pre{background:#f1f5f9;color:#0f172a;white-space:pre-wrap}.fails{page-break-inside:avoid}}
+</style></head><body data-tpl="2">
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+<h1>Stat Arb for Non Quant · เล่ม 2 — วัดเชือก สร้างพอร์ต ทดสอบให้ซื่อ</h1>
+<div class="sub">บท 16 — รวมหลายสัญญาณ และโมเดลที่เรียนรู้เอง</div>
+<div class="desc">มินมีสัญญาณสามตัวสำหรับชุด ETH–BTC และต้นมีต้นไม้ที่ "ทายถูก 62.2%" บทนี้รวมสัญญาณด้วยมือบนแปดวัน วัดด้วย IC แปลงคะแนนเป็นผลที่คาดเทียบต้นทุน แล้วถามสามคำถามของนักวิจัยกับโมเดลที่เรียนรู้เอง คือเทียบกับอะไร ลองไปกี่แบบ และป้ายคำตอบรู้ได้วันไหน ในโลกจำลองการรวมสัญญาณช่วยจริง แต่บนข้อมูลจริงทุกแบบพลิกทิศในช่วงตรวจ</div>
+</div>
+
+<!-- ═══ แม่แบบ v2 (แผน 14.3 · คู่มือ tools/sab_research/writing-brief-v2.md + writing-brief-sab2.md) ═══ -->
+<p class="pos"><strong>ภาค 5 · บท 16 จาก 18 · บทนี้มีสี่ตอน อ่านทีละตอนได้</strong> (ตอน ก รวมสามสัญญาณด้วยมือแปดวัน · ตอน ข โมเดลที่เรียนรู้เอง: เทียบกับอะไร ลองกี่แบบ ป้ายคำตอบรู้ได้วันไหน · ตอน ค โลกจำลองที่รู้คำตอบ และ IC ของชุด ETH–BTC จริง · ตอน ง หลังต้นทุนในช่วงตรวจ และการตัดสินใจ) · ต้องรู้จากบทก่อน: (1) Rank Correlation คือ correlation ของอันดับ คิดลัดได้จาก 1 − 6 × ผลรวมของอันดับที่ต่างกันยกกำลังสอง ÷ n(n² − 1) และถ้าไม่มีอะไรจริงเลย ค่านี้จะสั่นเองราว 1 ÷ √(n − 1) (บท 8) · (2) ความชันของ Regression คือ Σ(x × y) ÷ Σ(x²) เมื่อ x มี Mean 0 ตรวจได้อีกทางด้วยก้นชาม (บท 1) และ Multiple Regression ให้ข้อมูลเลือกน้ำหนักหลายตัวพร้อมกัน (บท 11) · (3) เครื่อง backtest ห้าขั้นได้ราคาปิดวันถัดไป ค่าธรรมเนียม 0.05% ต่อ fill (บท 13) และทุกครั้งที่รันกับช่วงตรวจต้องนับและจดไว้กับผล (บท 13–14)</p>
+
+<div class="scene-open" data-day="เดือนที่ 13 สัปดาห์ 3" data-continues="part15"><div class="bt">📓 สมุดของมิน · เดือนที่ 13 สัปดาห์ 3 · คืนวันศุกร์</div>
+<p>คำถามที่ค้างจากสัปดาห์ก่อนคือจะรวมหลายสัญญาณเป็นการตัดสินใจเดียวได้อย่างไร สมุดวิจัยของมินมีสัญญาณที่วัดไว้แล้วสามตัวสำหรับชุด ETH–BTC คือ Z-score บนไม้บรรทัดเลื่อน funding ของสองสัญญา และส่วนที่เหลือหลังหักแรงร่วม บางวันทั้งสามชี้ทางเดียวกัน บางวันชี้คนละทาง</p>
+<p>คืนนี้ต้นส่งข้อความมาว่า "ไม่ต้องเลือกเอง ให้เครื่องเรียนเอง ต้นไม้ของผมทายถูก 62.2%" พี่ฝนตอบในกลุ่มสั้น ๆ ว่า "62.2% เทียบกับอะไร"</p>
+<p>มินเปิดหน้าใหม่แล้วเขียนสี่บรรทัด</p>
+<ol>
+<li>คาดกำไรจากอะไร — ชุด ETH–BTC ที่ยืดไปแล้วกลับ บวกเบาะแสจาก funding</li>
+<li>ถืออะไรจริง — long ETH คู่ short BTC มูลค่าเท่ากัน ถือ 5 วัน</li>
+<li>เงินในบัญชีเปลี่ยนอย่างไร — ทุกไม้จ่ายค่าธรรมเนียมไปกลับราว 0.2% ของขาหนึ่ง</li>
+<li>ใครจ่าย และเมื่อไรเงินนี้จะหาย — ถ้าสามสัญญาณคือเรื่องเดียวกัน หรือเครื่องจำโชคมาแทนเชือก ก็ไม่มีใครจ่ายเลย</li>
+</ol></div>
+
+<div class="pq">มีสัญญาณสามตัว จะรวมเป็นการตัดสินใจเดียวอย่างไรโดยไม่ฟิตเกิน และเมื่อให้เครื่องเรียนน้ำหนักหรือกฎเอง ต้องตรวจอะไรก่อนจะเชื่อตัวเลขที่มันรายงาน</div>
+
+<!-- ═══════════════ ตอน ก ═══════════════ -->
+<h2 id="ka">ตอน ก รวมสามสัญญาณด้วยมือ · 1 — แปดวัน สามคะแนน: IC ของ Z คือ 0.5</h2>
+<p>หน้านี้มินจะไม่หาคู่ใหม่ ชุดที่ใช้คือ long ETH คู่กับ short BTC ที่มูลค่าเท่ากันในวันเข้า ถ้า ETH ขึ้นมากกว่า BTC ชุดนี้ได้ ถ้า ETH ขึ้นน้อยกว่าหรือลงมากกว่า ชุดนี้เสีย ผลของชุดวัดเป็นเปอร์เซ็นต์ของขาหนึ่ง เช่น ขาละ 500 ดอลลาร์แล้วชุดได้ 1% ก็คือได้ 5 ดอลลาร์ก่อนค่าธรรมเนียม</p>
+<p>ทุกเย็นหลังราคาปิด เขาอยากรู้ว่าใน 5 วันข้างหน้าชุดนี้จะได้หรือเสียเท่าไร เขามีเบาะแสสามตัวจากบทก่อน ๆ</p>
+<ul>
+<li><strong>Z</strong> คือ Z-score (ค่ามาตรฐาน) ของ log ราคา ETH เทียบ BTC บนไม้บรรทัดเลื่อน 60 วัน (บท 5) ถ้าสูง แปลว่า ETH แพงเทียบ BTC กว่าปกติ และน่าจะกลับลง</li>
+<li><strong>funding</strong> คือ Funding Rate (อัตราค่าธรรมเนียมการถือสถานะ) ของสัญญา ETH ลบของสัญญา BTC เฉลี่ย 7 วัน เป็นเปอร์เซ็นต์ต่อปี ถ้าสูง แปลว่าคนอยากได้เลเวอเรจแห่ long ETH และฝั่งที่แออัดมักเสียเปรียบ (เล่ม 1 บท 5 และบท 7)</li>
+<li><strong>ส่วนที่เหลือ</strong> คือผลของชุดใน 20 วันที่ผ่านมา หักส่วนที่แรงร่วมของตลาดอธิบายได้ (บท 9) ถ้าสูง แปลว่า ETH วิ่งเกินกว่าที่ตลาดพาไป และน่าจะกลับบางส่วน</li>
+</ul>
+<p>ทั้งสามตัวคาดไปทาง "สวนกลับ" เหมือนกัน คือค่าสูงคาดว่าชุดจะลง ค่าต่ำคาดว่าชุดจะขึ้น ตารางนี้คือแปดวันตัวอย่าง คอลัมน์สุดท้ายคือผลของชุดใน 5 วันถัดจากวันนั้น ซึ่งตอนตัดสินใจยังไม่มีใครรู้</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>Z</th><th>funding (% ต่อปี)</th><th>ส่วนที่เหลือ (%)</th><th>ผล 5 วันข้างหน้า (%)</th></tr>
+<tr><td>1</td><td>−1</td><td>2.5</td><td>−4</td><td>−1.2</td></tr>
+<tr><td>2</td><td>−2</td><td>10</td><td>−8</td><td>0.8</td></tr>
+<tr><td>3</td><td>2</td><td>−2.5</td><td>8</td><td>−2.4</td></tr>
+<tr><td>4</td><td>−0.5</td><td>−5</td><td>2</td><td>1.8</td></tr>
+<tr><td>5</td><td>0.5</td><td>7.5</td><td>−2</td><td>−0.4</td></tr>
+<tr><td>6</td><td>1.5</td><td>5</td><td>6</td><td>−1.6</td></tr>
+<tr><td>7</td><td>1</td><td>−10</td><td>4</td><td>1.4</td></tr>
+<tr><td>8</td><td>−1.5</td><td>−7.5</td><td>−6</td><td>0.2</td></tr>
+</table></div>
+<p>ปัญหาแรกคือสามคอลัมน์ใช้หน่วยต่างกัน ตัวเลข 10 ของ funding จึงไม่ได้ "แรง" กว่าตัวเลข 2 ของ Z เสมอไป ต้องทำให้ทุกตัวพูดภาษาเดียวกันก่อน</p>
+<p>วิธีที่เล่ม 1 ใช้มาตลอดคือวัดเป็นจำนวน SD สมมติว่าในช่วงเลือกของตัวอย่างนี้ ทั้งสามตัวมี Mean 0 ส่วน SD ของ Z คือ 1 ของ funding คือ 5 และของส่วนที่เหลือคือ 4 เอาค่าของแต่ละวันหารด้วย SD ของมัน แล้วกลับเครื่องหมาย เพราะทั้งสามตัวคาดสวนกลับ ผลที่ได้มินเรียกว่า <strong>คะแนน</strong> คะแนนบวกแปลว่าคาดว่าชุดจะขึ้น คะแนนลบแปลว่าคาดว่าชุดจะลง</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th class="calc">คะแนน Z คิดอย่างไร</th><th>คะแนน Z</th><th>คะแนน funding</th><th>คะแนนส่วนที่เหลือ</th></tr>
+<tr><td>1</td><td class="calc">−(−1) ÷ 1</td><td>1</td><td>−0.5</td><td>1</td></tr>
+<tr><td>2</td><td class="calc">−(−2) ÷ 1</td><td>2</td><td>−2</td><td>2</td></tr>
+<tr><td>3</td><td class="calc">−(2) ÷ 1</td><td>−2</td><td>0.5</td><td>−2</td></tr>
+<tr><td>4</td><td class="calc">−(−0.5) ÷ 1</td><td>0.5</td><td>1</td><td>−0.5</td></tr>
+<tr><td>5</td><td class="calc">−(0.5) ÷ 1</td><td>−0.5</td><td>−1.5</td><td>0.5</td></tr>
+<tr><td>6</td><td class="calc">−(1.5) ÷ 1</td><td>−1.5</td><td>−1</td><td>−1.5</td></tr>
+<tr><td>7</td><td class="calc">−(1) ÷ 1</td><td>−1</td><td>2</td><td>−1</td></tr>
+<tr><td>8</td><td class="calc">−(−1.5) ÷ 1</td><td>1.5</td><td>1.5</td><td>1.5</td></tr>
+</table></div>
+<p>สองคอลัมน์ขวาคิดแบบเดียวกันโดยหารด้วย 5 และ 4 เช่นวันที่ 2 funding เป็น 10 คะแนนจึงเป็น −(10) ÷ 5 หรือ −2 และวันที่ 1 ส่วนที่เหลือเป็น −4 คะแนนจึงเป็น −(−4) ÷ 4 หรือ 1 ตอนนี้ตัวเลข 2 ของทุกคอลัมน์มีความหมายเท่ากัน คือ "ไกลจากปกติสอง SD ไปทางที่คาดว่าชุดจะขึ้น"</p>
+<p>คำถามถัดไปคือคะแนนตัวไหนทายผลได้ดี มินไม่สนว่าทายเปอร์เซ็นต์ได้ตรงแค่ไหน เขาสนว่า <strong>วันที่คะแนนสูงกว่า ผลที่ตามมาสูงกว่าด้วยหรือเปล่า</strong> ซึ่งคือคำถามเรื่องลำดับ บท 8 มีเครื่องมือสำหรับคำถามแบบนี้อยู่แล้ว คือ Rank Correlation (สหสัมพันธ์เชิงอันดับ) เรียงอันดับสองคอลัมน์ แล้วดูว่าอันดับตรงกันแค่ไหน</p>
+<p>เริ่มจากคะแนน Z ผลที่ต่ำสุดคือ −2.4 ของวันที่ 3 จึงได้อันดับ 1 ผลที่สูงสุดคือ 1.8 ของวันที่ 4 จึงได้อันดับ 8 ทำแบบเดียวกันกับคะแนน Z แล้วดูว่าแต่ละวันอันดับต่างกันเท่าไร</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>ผล</th><th>อันดับผล</th><th>คะแนน Z</th><th>อันดับคะแนน</th><th>ต่างกัน (คะแนน − ผล)</th><th>ต่างกันยกกำลังสอง</th><th class="calc">(อันดับคะแนน − 4.5) × (อันดับผล − 4.5)</th></tr>
+<tr><td>1</td><td>−1.2</td><td>3</td><td>1</td><td>6</td><td>"calc">6 − 3</td><td>9</td><td class="calc">1.5 × (−1.5) = −2.25</td></tr>
+<tr><td>2</td><td>0.8</td><td>6</td><td>2</td><td>8</td><td>"calc">8 − 6</td><td>4</td><td class="calc">3.5 × 1.5 = 5.25</td></tr>
+<tr><td>3</td><td>−2.4</td><td>1</td><td>−2</td><td>1</td><td>"calc">1 − 1</td><td>0</td><td class="calc">(−3.5) × (−3.5) = 12.25</td></tr>
+<tr><td>4</td><td>1.8</td><td>8</td><td>0.5</td><td>5</td><td>"calc">5 − 8</td><td>9</td><td class="calc">0.5 × 3.5 = 1.75</td></tr>
+<tr><td>5</td><td>−0.4</td><td>4</td><td>−0.5</td><td>4</td><td>"calc">4 − 4</td><td>0</td><td class="calc">(−0.5) × (−0.5) = 0.25</td></tr>
+<tr><td>6</td><td>−1.6</td><td>2</td><td>−1.5</td><td>2</td><td>"calc">2 − 2</td><td>0</td><td class="calc">(−2.5) × (−2.5) = 6.25</td></tr>
+<tr><td>7</td><td>1.4</td><td>7</td><td>−1</td><td>3</td><td>"calc">3 − 7</td><td>16</td><td class="calc">(−1.5) × 2.5 = −3.75</td></tr>
+<tr><td>8</td><td>0.2</td><td>5</td><td>1.5</td><td>7</td><td>"calc">7 − 5</td><td>4</td><td class="calc">2.5 × 0.5 = 1.25</td></tr>
+<tr><td>รวม</td><td></td><td></td><td></td><td></td><td></td><td><strong data-key="ch16.มือ.บล็อก.z.รวมต่าง2">42</strong></td><td><strong>21</strong></td></tr>
+</table></div>
+<p>ทางแรกใช้สูตรลัดของบท 8 ผลรวมของอันดับที่ต่างกันยกกำลังสองคือ 42 หกเท่าของมันคือ <span data-key="ch16.มือ.บล็อก.z.หกเท่า">252</span> ส่วน n × (n² − 1) ของแปดวันคือ 8 × 63 ได้ <span data-key="ch16.มือ.nกำลังสามลบn">504</span> จึงได้ 1 − 252 ÷ 504 หรือ <strong data-key="ch16.มือ.บล็อก.z.IC">0.5</strong></p>
+<p><strong>ตรวจอีกทาง</strong> ด้วย correlation ของอันดับตรง ๆ อันดับ 1 ถึง 8 มีกึ่งกลางที่ 4.5 คอลัมน์ขวาสุดคือระยะห่างจากกึ่งกลางของสองอันดับคูณกัน รวมได้ 21 ส่วนผลรวมของระยะห่างยกกำลังสองของอันดับ 1 ถึง 8 คือ 42 เท่ากันทั้งสองคอลัมน์ เพราะเป็นเลข 1 ถึง 8 ชุดเดียวกัน correlation จึงเป็น 21 ÷ 42 ได้ 0.5 ตรงกับทางแรก</p>
+<p>ตัวเลข 0.5 นี้คือ Rank Correlation ระหว่าง "คะแนนที่รู้วันนี้" กับ "ผลที่ตามมาทีหลัง" คนทำงานจริงตั้งชื่อเฉพาะให้มันว่า <strong>Information Coefficient (สหสัมพันธ์ระหว่างคะแนนกับผลที่ตามมา)</strong> เรียกสั้น ๆ ว่า IC ถ้าเป็น 1 แปลว่าเรียงลำดับวันได้ถูกหมด ถ้าเป็น 0 แปลว่าคะแนนไม่บอกอะไรเรื่องลำดับเลย และถ้าติดลบ แปลว่าคะแนนชี้กลับทาง</p>
+<p>ทำแบบเดียวกันกับอีกสองคะแนน ตารางย่อนี้ใช้คอลัมน์ "คิดอย่างไร" แทนการเล่าซ้ำ (อันดับทีละวันอยู่ในเฉลยแบบฝึกข้อ 1 และในตารางของตอน ก · 2)</p>
+<div class="tw"><table>
+<tr><th>คะแนน</th><th>ผลรวมต่างกันยกกำลังสอง</th><th class="calc">IC คิดอย่างไร</th><th>IC</th></tr>
+<tr><td>Z</td><td>42</td><td class="calc">1 − 6 × 42 ÷ 504</td><td>0.5</td></tr>
+<tr><td>funding</td><td data-key="ch16.มือ.บล็อก.f.รวมต่าง2">56</td><td class="calc">1 − 336 ÷ 504</td><td data-key="ch16.มือ.บล็อก.f.IC">0.33</td></tr>
+<tr><td>ส่วนที่เหลือ</td><td data-key="ch16.มือ.บล็อก.r.รวมต่าง2">50</td><td class="calc">1 − 300 ÷ 504</td><td data-key="ch16.มือ.บล็อก.r.IC">0.4</td></tr>
+</table></div>
+<p>ทั้งสามตัวบวก แต่ไม่มีตัวไหนใกล้ 1 คำถามที่น่าสนใจคือมันผิดวันเดียวกันหรือผิดคนละวัน</p>
+
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>ถ้าเอาคะแนน Z กับคะแนน funding ของแต่ละวันมาบวกกัน แล้ววัด IC ของคะแนนรวม คุณคิดว่าจะได้ค่าระหว่าง 0.33 กับ 0.5 หรือได้สูงกว่า 0.5 และถ้าบวกคะแนนส่วนที่เหลือเข้าไปอีกตัว IC จะขึ้นหรือลง ทายก่อนอ่านต่อ</p></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>สามสัญญาณใช้หน่วยต่างกัน จึงต้องแปลงเป็นคะแนนก่อน โดยหารด้วย SD แล้วกลับเครื่องหมายตามทิศที่คาด IC ของคะแนน Z คิดได้สองทาง คือ 1 − 252 ÷ 504 กับ 21 ÷ 42 ได้ 0.5 เท่ากัน ส่วน funding ได้ 0.33 และส่วนที่เหลือได้ 0.4</p></div>
+
+<h2 id="kb">ตอน ก · 2 — บวกคะแนน: 0.5 กับ 0.33 รวมกันได้ 0.67 แต่บวกสำเนาเพิ่มแล้วเหลือ 0.52</h2>
+<p>เริ่มจากรวมสองตัวก่อน มินบวกคะแนน Z กับคะแนน funding ของแต่ละวัน แล้วเรียงอันดับคะแนนรวมเทียบกับอันดับผลเหมือนเดิม</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>คะแนน Z</th><th>คะแนน funding</th><th class="calc">คะแนนรวม คิดอย่างไร</th><th>คะแนนรวม</th><th>อันดับรวม</th><th>อันดับผล</th><th>ต่างกันยกกำลังสอง</th></tr>
+<tr><td>1</td><td>1</td><td>−0.5</td><td class="calc">1 + (−0.5)</td><td>0.5</td><td>5</td><td>3</td><td>4</td></tr>
+<tr><td>2</td><td>2</td><td>−2</td><td class="calc">2 + (−2)</td><td>0</td><td>4</td><td>6</td><td>4</td></tr>
+<tr><td>3</td><td>−2</td><td>0.5</td><td class="calc">−2 + 0.5</td><td>−1.5</td><td>3</td><td>1</td><td>4</td></tr>
+<tr><td>4</td><td>0.5</td><td>1</td><td class="calc">0.5 + 1</td><td>1.5</td><td>7</td><td>8</td><td>1</td></tr>
+<tr><td>5</td><td>−0.5</td><td>−1.5</td><td class="calc">−0.5 + (−1.5)</td><td>−2</td><td>2</td><td>4</td><td>4</td></tr>
+<tr><td>6</td><td>−1.5</td><td>−1</td><td class="calc">−1.5 + (−1)</td><td>−2.5</td><td>1</td><td>2</td><td>1</td></tr>
+<tr><td>7</td><td>−1</td><td>2</td><td class="calc">−1 + 2</td><td>1</td><td>6</td><td>7</td><td>1</td></tr>
+<tr><td>8</td><td>1.5</td><td>1.5</td><td class="calc">1.5 + 1.5</td><td>3</td><td>8</td><td>5</td><td>9</td></tr>
+<tr><td>รวม</td><td></td><td></td><td></td><td>0</td><td></td><td></td><td><strong data-key="ch16.มือ.บล็อก.รวมสอง.รวมต่าง2">28</strong></td></tr>
+</table></div>
+<p>ผลรวมของอันดับที่ต่างกันยกกำลังสองลดจาก 42 เหลือ 28 หกเท่าของมันคือ <span data-key="ch16.มือ.บล็อก.รวมสอง.หกเท่า">168</span> IC ของคะแนนรวมจึงเป็น 1 − 168 ÷ 504 ได้ <strong data-key="ch16.มือ.บล็อก.รวมสอง.IC">0.67</strong> สูงกว่าทั้ง 0.5 ของ Z และ 0.33 ของ funding</p>
+<p>ทำไมรวมแล้วดีกว่าตัวที่ดีที่สุด ดูวันที่ 7 เป็นตัวอย่าง คะแนน Z เป็น −1 คือคาดว่าชุดจะลง แต่ผลจริงขึ้น 1.4 คะแนน Z จึงผิด ส่วนคะแนน funding เป็น 2 คาดว่าขึ้น ซึ่งถูก พอบวกกันได้ 1 คะแนนรวมจึงยังชี้ขึ้น วันที่ 1 ก็คล้ายกัน คะแนน Z เป็น 1 คาดขึ้นแต่ผลลง 1.2 ส่วน funding เป็น −0.5 ช่วยดึงคะแนนรวมลงเหลือ 0.5 ทำให้วันนั้นไม่ได้อยู่อันดับต้น ๆ อีก</p>
+<p>สองสัญญาณนี้ผิดกัน <strong>คนละวัน</strong> ความผิดจึงหักล้างกันบางส่วน นี่คือเหตุผลเดียวของการรวมสัญญาณ ถ้าสองตัวผิดวันเดียวกันเสมอ รวมกันก็ไม่ได้อะไรเพิ่ม</p>
+<p>ทีนี้ลองเพิ่มตัวที่สาม คะแนนส่วนที่เหลือมี IC 0.4 สูงกว่า funding เสียอีก น่าจะช่วยได้ แต่ให้สังเกตก่อนว่ามันหน้าตาเหมือนคะแนน Z แทบทุกวัน ถ้าเรียงอันดับคะแนนส่วนที่เหลือเทียบกับอันดับคะแนน Z จะต่างกันแค่วันที่ 4 กับวันที่ 5 ที่สลับที่กัน ผลรวมต่างกันยกกำลังสองจึงเป็น <span data-key="ch16.มือ.ZกับRต่าง2">2</span> และ Rank Correlation ของสองคะแนนนี้คือ 1 − 12 ÷ 504 ได้ <span data-key="ch16.มือ.ZกับR">0.98</span> ซึ่งแทบเป็นตัวเดียวกัน เหตุผลก็เข้าใจได้ ทั้งสองตัววัดว่า "ETH วิ่งเกินไปแค่ไหนเมื่อเร็ว ๆ นี้" เพียงแต่ใช้ไม้บรรทัดคนละอัน</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>ผลรวมต่างกันยกกำลังสอง</th><th>IC</th></tr>
+<tr><td>คะแนนรวมสามตัว (Z + funding + ส่วนที่เหลือ)</td><td>1.5</td><td>2</td><td>−3.5</td><td>1</td><td>−1.5</td><td>−4</td><td>0</td><td>4.5</td><td></td><td></td></tr>
+<tr><td>อันดับรวมสามตัว</td><td>6</td><td>7</td><td>2</td><td>5</td><td>3</td><td>1</td><td>4</td><td>8</td><td></td><td></td></tr>
+<tr><td>อันดับผล</td><td>3</td><td>6</td><td>1</td><td>8</td><td>4</td><td>2</td><td>7</td><td>5</td><td data-key="ch16.มือ.บล็อก.รวมสาม.รวมต่าง2">40</td><td data-key="ch16.มือ.บล็อก.รวมสาม.IC">0.52</td></tr>
+</table></div>
+<p>ผลรวมต่างกันยกกำลังสองของคะแนนรวมสามตัวคือ 40 หกเท่าคือ <span data-key="ch16.มือ.บล็อก.รวมสาม.หกเท่า">240</span> IC จึงเป็น 1 − 240 ÷ 504 ได้ 0.52 <strong>ต่ำกว่า</strong> 0.67 ของการรวมสองตัว ทั้งที่ใส่ข้อมูลเพิ่มเข้าไป สาเหตุคือคะแนนรวมสามตัวนับเรื่อง "ETH วิ่งเกิน" ไปสองครั้ง Z กับส่วนที่เหลือจึงมีน้ำหนักรวมกันสองในสาม ส่วน funding ที่ผิดคนละวันกับ Z เหลือแค่หนึ่งในสาม ประโยชน์จากการหักล้างความผิดจึงหายไปเกือบหมด</p>
+<p>สิ่งที่มินเพิ่งทำมีชื่อว่า <strong>Signal Blending (การรวมสัญญาณ)</strong> คือการเอาสัญญาณหลายตัวที่แปลงเป็นคะแนนภาษาเดียวกันแล้ว มารวมเป็นคะแนนเดียวด้วยน้ำหนักที่ตั้งไว้ก่อน แบบที่ง่ายที่สุดคือน้ำหนักเท่ากัน ซึ่งก็คือการบวกกันตรง ๆ หรือหาค่าเฉลี่ย (ค่าเฉลี่ยคือผลบวกหารด้วยจำนวนตัว ลำดับของวันไม่เปลี่ยน IC จึงเท่ากัน)</p>
+<p>น้ำหนักเท่ากันดูเหมือนขี้เกียจ แต่มีเหตุผล บท 12 สอนว่า Shrinkage (การหดค่าประมาณ) คือการดึงค่าที่ประมาณจากข้อมูลน้อยเข้าหาค่ากลาง น้ำหนักเท่ากันคือ Shrinkage แบบสุดทาง ราคาที่จ่ายคือถ้ามีตัวหนึ่งดีกว่าจริงมาก เราจะใช้มันน้อยไป สิ่งที่ได้คือไม่หลงเชื่อน้ำหนักที่มาจากโชค</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> แปลงทุกสัญญาณเป็นจำนวน SD ไปทางที่คาดว่าชุดจะขึ้น แล้วบวกกันตามน้ำหนักที่ตั้งไว้ก่อนดูผล สัญญาณสองตัวที่วัดเรื่องเดียวกันควรนับเป็นตัวเดียว</p>
+<div class="fm">คะแนนของสัญญาณ = −(ค่าวันนี้ − Mean ช่วงเลือก) ÷ SD ช่วงเลือก · คะแนนรวม = น้ำหนัก₁ × คะแนน₁ + น้ำหนัก₂ × คะแนน₂ + …</div>
+<p class="readeq"><strong>อ่านสมการ:</strong> วันที่ 8 funding เป็น −7.5 Mean 0 SD 5 คะแนน funding จึงเป็น −(−7.5 − 0) ÷ 5 ได้ 1.5 คะแนน Z ของวันเดียวกันก็เป็น 1.5 ด้วยน้ำหนัก 1 กับ 1 คะแนนรวมคือ 1 × 1.5 + 1 × 1.5 ได้ 3 ซึ่งสูงสุดในแปดวัน</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>รวมคะแนน Z กับ funding ได้ IC 0.67 สูงกว่าทั้ง 0.5 และ 0.33 เพราะสองตัวผิดคนละวัน แต่บวกคะแนนส่วนที่เหลือที่เหมือน Z ถึง 0.98 เข้าไปอีกตัว IC ลดลงเหลือ 0.52 เพราะนับเรื่องเดียวกันสองครั้ง</p></div>
+
+<h2 id="kc">ตอน ก · 3 — คะแนนไม่ใช่ขนาด: ความชัน 0.5 กับต้นทุนไปกลับ 0.2%</h2>
+<p>IC บอกแค่ลำดับ มันไม่ได้บอกว่าคะแนน 3 ของวันที่ 8 แปลว่าชุดจะได้กี่เปอร์เซ็นต์ และไม่ได้บอกว่าคุ้มค่าธรรมเนียมไหม เล่ม 1 บท 18 เคยสรุปบทเรียนนี้ไว้สั้น ๆ ว่า "คะแนนไม่ใช่ขนาด" คะแนนสองเท่าไม่ได้แปลว่าได้เงินสองเท่า ตอนนี้ถึงเวลาแปลงคะแนนเป็นผลที่คาดเป็นเปอร์เซ็นต์จริง ๆ</p>
+<p>เครื่องมือที่ใช้คือ Regression (การถดถอย) ของบท 1 ลากเส้นตรงผ่านจุดของคะแนนรวมกับผล คะแนนรวมสองตัวของแปดวันบวกกันได้ 0 พอดี Mean ของมันจึงเป็น 0 ความชันจึงคิดได้จาก Σ(x × y) ÷ Σ(x²) โดย x คือคะแนนรวมและ y คือผล</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>คะแนนรวม x</th><th>ผล y</th><th class="calc">x × y คิดอย่างไร</th><th>x × y</th><th>x²</th></tr>
+<tr><td>1</td><td>0.5</td><td>−1.2</td><td class="calc">0.5 × (−1.2)</td><td>−0.6</td><td>0.25</td></tr>
+<tr><td>2</td><td>0</td><td>0.8</td><td class="calc">0 × 0.8</td><td>0</td><td>0</td></tr>
+<tr><td>3</td><td>−1.5</td><td>−2.4</td><td class="calc">(−1.5) × (−2.4)</td><td>3.6</td><td>2.25</td></tr>
+<tr><td>4</td><td>1.5</td><td>1.8</td><td class="calc">1.5 × 1.8</td><td>2.7</td><td>2.25</td></tr>
+<tr><td>5</td><td>−2</td><td>−0.4</td><td class="calc">(−2) × (−0.4)</td><td>0.8</td><td>4</td></tr>
+<tr><td>6</td><td>−2.5</td><td>−1.6</td><td class="calc">(−2.5) × (−1.6)</td><td>4</td><td>6.25</td></tr>
+<tr><td>7</td><td>1</td><td>1.4</td><td class="calc">1 × 1.4</td><td>1.4</td><td>1</td></tr>
+<tr><td>8</td><td>3</td><td>0.2</td><td class="calc">3 × 0.2</td><td>0.6</td><td>9</td></tr>
+<tr><td>รวม</td><td>0</td><td></td><td></td><td><strong data-key="ch16.มือ.รวมxy">12.5</strong></td><td><strong data-key="ch16.มือ.รวมx2">25</strong></td></tr>
+</table></div>
+<p>ความชันจึงเป็น 12.5 ÷ 25 ได้ <strong data-key="ch16.มือ.ความชัน">0.5</strong> แปลว่าคะแนนรวมทุก 1 คะแนน คาดว่าชุดจะได้เพิ่ม 0.5% ใน 5 วัน คะแนน 3 ของวันที่ 8 จึงคาดได้ 3 × 0.5 หรือ 1.5% ส่วนคะแนน −2.5 ของวันที่ 6 คาดว่าชุดจะเสีย 1.25% ซึ่งแปลว่าวันนั้นควรถือกลับทาง คือ short ETH คู่ long BTC</p>
+<p><strong>ตรวจอีกทาง</strong> ด้วยก้นชามของบท 1 ถ้า 0.5 คือความชันที่ดีที่สุดจริง ผลรวมของระยะพลาดยกกำลังสองที่ความชันข้าง ๆ ต้องมากกว่า ลองความชัน 0.4 ก่อน วันที่ 1 คาดได้ 0.4 × 0.5 หรือ 0.2 แต่ผลจริงคือ −1.2 พลาดไป −1.4 ยกกำลังสองได้ 1.96 ทำครบแปดวันแล้วรวม แล้วทำซ้ำที่ความชัน 0.6</p>
+<div class="tw"><table>
+<tr><th>วัน</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>รวม</th></tr>
+<tr><td>พลาดที่ความชัน 0.4 (y − 0.4x)</td><td>−1.4</td><td>0.8</td><td>−1.8</td><td>1.2</td><td>0.4</td><td>−0.6</td><td>1</td><td>−1</td><td></td></tr>
+<tr><td>ยกกำลังสอง</td><td>1.96</td><td>0.64</td><td>3.24</td><td>1.44</td><td>0.16</td><td>0.36</td><td>1</td><td>1</td><td><strong>9.8</strong></td></tr>
+<tr><td>พลาดที่ความชัน 0.6 (y − 0.6x)</td><td>−1.5</td><td>0.8</td><td>−1.5</td><td>0.9</td><td>0.8</td><td>−0.1</td><td>0.8</td><td>−1.6</td><td></td></tr>
+<tr><td>ยกกำลังสอง</td><td>2.25</td><td>0.64</td><td>2.25</td><td>0.81</td><td>0.64</td><td>0.01</td><td>0.64</td><td>2.56</td><td><strong>9.8</strong></td></tr>
+</table></div>
+<p>สองข้างได้ 9.8 เท่ากัน ชามของบท 1 เป็นชามที่สมมาตร ก้นชามจึงอยู่กึ่งกลางระหว่าง 0.4 กับ 0.6 พอดี คือ 0.5 ตรงกับสูตร และถ้าคิดที่ความชัน 0.5 แบบเดียวกันจะได้ <span data-key="ch16.มือ.ผลรวมกำลังสอง.0.5">9.55</span> ซึ่งต่ำกว่าทั้งสองข้าง (แต่ละแถวมีทศนิยมสี่ตำแหน่ง จึงไม่ใส่ในตาราง)</p>
+<p>ทีนี้ใส่ต้นทุน ชุดสองขามูลค่าเท่ากันจ่ายค่าธรรมเนียม 0.05% ของแต่ละขาทุก fill เข้าหนึ่งครั้งและออกหนึ่งครั้งเท่ากับสี่ครั้ง รวมเป็น 4 × 0.05% หรือ <span data-key="ch16.ค่า.ต้นทุนไปกลับ">0.2</span>% ของขาหนึ่ง ไม้ที่คุ้มจึงต้องมีผลที่คาดเกิน 0.2% และเพราะผลที่คาดคือ 0.5 × คะแนน คะแนนรวมจึงต้องเกิน 0.2 ÷ 0.5 หรือ <span data-key="ch16.มือ.คะแนนต้องเกิน">0.4</span> ทั้งทางบวกและทางลบ</p>
+<div class="tw"><table>
+<tr><th>คะแนนรวม</th><th class="calc">ผลที่คาด คิดอย่างไร</th><th>ผลที่คาด (%)</th><th class="calc">หลังต้นทุน คิดอย่างไร</th><th>หลังต้นทุน (%)</th></tr>
+<tr><td>0.5</td><td class="calc">0.5 × 0.5</td><td>0.25</td><td class="calc">0.25 − 0.2</td><td data-key="ch16.มือ.สุทธิตามคะแนน.0.5.สุทธิ">0.05</td></tr>
+<tr><td>1</td><td class="calc">0.5 × 1</td><td>0.5</td><td class="calc">0.5 − 0.2</td><td data-key="ch16.มือ.สุทธิตามคะแนน.1.สุทธิ">0.3</td></tr>
+<tr><td>2</td><td class="calc">0.5 × 2</td><td>1</td><td class="calc">1 − 0.2</td><td data-key="ch16.มือ.สุทธิตามคะแนน.2.สุทธิ">0.8</td></tr>
+<tr><td>3</td><td class="calc">0.5 × 3</td><td>1.5</td><td class="calc">1.5 − 0.2</td><td data-key="ch16.มือ.สุทธิตามคะแนน.3.สุทธิ">1.3</td></tr>
+</table></div>
+<p>คะแนน 2 ได้หลังต้นทุน 0.8 ส่วนคะแนน 1 ได้ 0.3 คะแนนสองเท่าจึงได้เงินหลังต้นทุนราว 0.8 ÷ 0.3 หรือ <span data-key="ch16.มือ.อัตราส่วนสุทธิ">2.67</span> เท่า ไม่ใช่ 2 เท่า ส่วนคะแนน 0.5 ของวันที่ 1 ผ่านเส้น 0.4 แต่เหลือหลังต้นทุนแค่ 0.05 ซึ่งบางจนความคลาดเคลื่อนนิดเดียวก็ทำให้ติดลบ ในแปดวันนี้มีวันที่ผ่านเส้น <span data-key="ch16.มือ.จำนวนวันที่เทรด">7</span> วัน มีแค่วันที่ 2 ที่คะแนนรวมเป็น 0 และไม่ควรทำอะไร</p>
+<!--CHART:sab2-blend-hand-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 360" role="img" aria-label="จุดแปดจุดของแปดวัน แกนนอนคือคะแนนรวมจาก -2.5 ถึง 3 แกนตั้งคือผลห้าวันข้างหน้าจาก -2.4 ถึง 1.8 เส้นประม่วงคือผลที่คาดเท่ากับครึ่งหนึ่งของคะแนน แถบเทากลางคือคะแนนระหว่าง -0.4 ถึง 0.4 ที่ผลที่คาดไม่ถึงต้นทุนไปกลับ">
+<text x="16.0" y="26.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">คะแนนรวมสูงกว่า ผลที่ตามมามักสูงกว่า แต่ไม่ใช่ทุกวัน</text>
+<rect x="356.0" y="60" width="88.0" height="240" fill="#f3f4f6" stroke="#d1d5db" stroke-dasharray="4 3"/>
+<text x="400.0" y="74.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-weight="700" font-family="Sarabun,sans-serif">ไม่คุ้มต้นทุน</text>
+<line x1="70" y1="300.0" x2="730" y2="300.0" stroke="#f3f4f6"/>
+<text x="62.0" y="304.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−3</text>
+<line x1="70" y1="252.0" x2="730" y2="252.0" stroke="#f3f4f6"/>
+<text x="62.0" y="256.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−2</text>
+<line x1="70" y1="204.0" x2="730" y2="204.0" stroke="#f3f4f6"/>
+<text x="62.0" y="208.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−1</text>
+<line x1="70" y1="156.0" x2="730" y2="156.0" stroke="#d1d5db"/>
+<text x="62.0" y="160.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="70" y1="108.0" x2="730" y2="108.0" stroke="#f3f4f6"/>
+<text x="62.0" y="112.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<line x1="70" y1="60.0" x2="730" y2="60.0" stroke="#f3f4f6"/>
+<text x="62.0" y="64.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<text x="70.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−3</text>
+<text x="180.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−2</text>
+<text x="290.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−1</text>
+<text x="400.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<text x="510.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<text x="620.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<text x="730.0" y="318.0" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">3</text>
+<text x="400.0" y="338.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">คะแนนรวม (คะแนน Z + คะแนน funding)</text>
+<text x="16.0" y="52.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ผล 5 วันข้างหน้า (% ของขาหนึ่ง)</text>
+<line x1="70.0" y1="228.0" x2="730.0" y2="84.0" stroke="#7c3aed" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="726.0" y="76.0" text-anchor="end" font-size="11" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">ผลที่คาด = 0.5 × คะแนน</text>
+<circle cx="455.0" cy="213.6" r="5.5" fill="#dc2626"/>
+<text x="463.0" y="217.6" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">วัน 1</text>
+<circle cx="400.0" cy="117.6" r="5.5" fill="#16a34a"/>
+<text x="408.0" y="121.6" text-anchor="start" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">วัน 2</text>
+<circle cx="235.0" cy="271.2" r="5.5" fill="#dc2626"/>
+<text x="243.0" y="275.2" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">วัน 3</text>
+<circle cx="565.0" cy="69.6" r="5.5" fill="#16a34a"/>
+<text x="573.0" y="73.6" text-anchor="start" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">วัน 4</text>
+<circle cx="180.0" cy="175.2" r="5.5" fill="#dc2626"/>
+<text x="188.0" y="179.2" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">วัน 5</text>
+<circle cx="125.0" cy="232.8" r="5.5" fill="#dc2626"/>
+<text x="133.0" y="236.8" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">วัน 6</text>
+<circle cx="510.0" cy="88.8" r="5.5" fill="#16a34a"/>
+<text x="518.0" y="92.8" text-anchor="start" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">วัน 7</text>
+<circle cx="730.0" cy="146.4" r="5.5" fill="#16a34a"/>
+<text x="738.0" y="150.4" text-anchor="start" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">วัน 8</text>
+</svg></div>
+<div class="cap">🔢 ตัวเลขสมมติเพื่อสอน · แปดวันตัวอย่างของบท · ผลที่คาดจากความชันของ Regression · ต้นทุนไปกลับ 0.2% ของขาหนึ่ง</div>
+<!--/CHART:sab2-blend-hand-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือคะแนนรวมของแต่ละวัน แกนตั้งคือผลของชุดใน 5 วันถัดไป จุดเขียวคือวันที่ชุดได้ จุดแดงคือวันที่ชุดเสีย เส้นประม่วงคือผลที่คาดเท่ากับ 0.5 × คะแนน แถบเทากลางคือคะแนนระหว่าง −0.4 ถึง 0.4 ที่ผลที่คาดไม่ถึงต้นทุน ให้ดูว่าจุดทางขวาส่วนใหญ่สูงกว่าจุดทางซ้าย แต่ไม่มีจุดไหนอยู่บนเส้นพอดี และวันที่ 8 ที่คะแนนสูงสุดกลับได้แค่ 0.2 สรุปได้ว่าคะแนนช่วยเรียงวัน แต่ผลของวันเดียวยังกระจายรอบเส้นมาก</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — IC และการรวมสัญญาณ</div>
+<ul>
+<li><strong>พังเมื่อ</strong> ข้อมูลน้อย ถ้าไม่มีอะไรจริงเลย IC ของแปดวันจะสั่นเองราว 1 ÷ √7 หรือ 1 ÷ <span data-key="ch16.มือ.รากnลบหนึ่ง">2.65</span> ได้ <span data-key="ch16.มือ.สั่นเอง">0.38</span> ตามสูตรของบท 8 ค่า 0.67 ของคะแนนรวมจึงยังไม่ถึงสองเท่าของการสั่นนี้ ตัวอย่างแปดวันใช้สอนวิธีคิดได้ แต่ใช้ตัดสินว่าสัญญาณดีไม่ได้</li>
+<li><strong>พังเมื่อ</strong> ผลของแต่ละแถวซ้อนกัน ผล 5 วันข้างหน้าของวันนี้กับของพรุ่งนี้ใช้ราคาร่วมกันสี่วัน ข้อมูลจริงในตอน ค มี <span data-key="ch16.จริง.แถวช่วงเลือก">666</span> แถวในช่วงเลือก แต่มีช่วงห้าวันที่ไม่ซ้อนกันเพียงราว <span data-key="ch16.จริง.แถวไม่ซ้อนช่วงเลือก">133</span> ช่วง การสั่นของ IC จึงเป็นราว <span data-key="ch16.จริง.สั่นเองช่วงเลือก">0.09</span> ไม่ใช่ <span data-key="ch16.จริง.สั่นเองถ้านับทุกวัน">0.04</span> ที่ได้ถ้านับทุกแถวเป็นอิสระ</li>
+<li><strong>พังเมื่อ</strong> นับสัญญาณเดียวกันซ้ำ ในข้อมูลจริง คะแนน Z กับคะแนนส่วนที่เหลือมี correlation <span data-key="ch16.จริง.corrคะแนน.Zกับส่วนที่เหลือ">0.79</span> การรวมสามตัวด้วยน้ำหนักเท่ากันจึงให้น้ำหนักเรื่องเดียวกันเกินครึ่ง แบบเดียวกับที่ 0.67 กลายเป็น 0.52 ในตัวอย่างแปดวัน</li>
+<li><strong>บอกไม่ได้ว่า</strong> ลำดับจะอยู่ต่อในปีหน้า บนข้อมูลจริงในตอน ค IC ของคะแนน Z เปลี่ยนจาก <span data-key="ch16.จริง.IC.z.ช่วงเลือก">0.14</span> เป็น <span data-key="ch16.จริง.IC.z.ช่วงตรวจ">−0.13</span></li>
+</ul></div>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>def ranks(v):
+    order = sorted(range(len(v)), key=lambda i: v[i])
+    r = [0] * len(v)
+    for k, i in enumerate(order):
+        r[i] = k + 1
+    return r
+
+def ic(score, result):                       # Rank Correlation ระหว่างคะแนนกับผลที่ตามมา
+    n = len(score)
+    d2 = sum((a - b) ** 2 for a, b in zip(ranks(score), ranks(result)))
+    return 1 - 6 * d2 / (n * (n * n - 1))
+
+y = [-1.2, 0.8, -2.4, 1.8, -0.4, -1.6, 1.4, 0.2]   # ผล 5 วันข้างหน้า (%)
+sz = [1, 2, -2, 0.5, -0.5, -1.5, -1, 1.5]          # คะแนน Z
+sf = [-0.5, -2, 0.5, 1, -1.5, -1, 2, 1.5]          # คะแนน funding
+sr = [1, 2, -2, -0.5, 0.5, -1.5, -1, 1.5]          # คะแนนส่วนที่เหลือ
+two = [a + b for a, b in zip(sz, sf)]
+three = [a + b + c for a, b, c in zip(sz, sf, sr)]
+slope = sum(a * b for a, b in zip(two, y)) / sum(a * a for a in two)
+print(round(ic(sz, y), 2), round(ic(sf, y), 2), round(ic(two, y), 2), round(ic(three, y), 2), round(slope, 2))
+# ผลที่ต้องได้: 0.5 · 0.33 · 0.67 · 0.52 · 0.5</pre>
+<p>ฟังก์ชัน <code>ranks</code> คือการเรียงอันดับด้วยมือ (ใช้ได้เมื่อไม่มีค่าซ้ำ) และ <code>ic</code> คือสูตรลัดของบท 8 บรรทัด <code>slope</code> คือ Σ(x × y) ÷ Σ(x²) ซึ่งใช้ได้เพราะคะแนนรวมมี Mean 0 ถ้าใช้ pandas ให้เขียน <code>df["score"].corr(df["y"], method="spearman")</code> ได้ IC ทันที และ <code>scipy.stats.spearmanr</code> ให้ค่าเดียวกันพร้อมจัดการค่าซ้ำด้วยอันดับเฉลี่ย</p>
+</details>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ก</div>
+<p>ความชันของผลบนคะแนนรวมคือ 12.5 ÷ 25 ได้ 0.5 และก้นชามที่ 0.4 กับ 0.6 ได้ 9.8 เท่ากันทั้งสองข้าง ต้นทุนไปกลับ 0.2% ทำให้คะแนนต้องเกิน 0.4 คะแนน 2 ได้หลังต้นทุน 0.8 ซึ่งเป็น 2.67 เท่าของคะแนน 1 ไม่ใช่ 2 เท่า</p></div>
+
+<!-- ═══════════════ ตอน ข ═══════════════ -->
+<h2 id="kd">ตอน ข โมเดลที่เรียนรู้เอง · 1 — ต้นไม้ของต้นทายถูก 7 จาก 8 วัน: เทียบกับอะไร</h2>
+<p>ต้นเอาแปดวันชุดเดียวกันไปใส่เครื่องมือจากคอร์สออนไลน์ที่เขาเพิ่งเรียน แล้วส่งกฎกลับมาหนึ่งบรรทัด "ถ้าคะแนน funding เกิน <span data-key="ch16.ต้นไม้มือ.funding.จุดตัด.4.จุดตัด">0.75</span> ให้ทายว่าชุดขึ้น ไม่งั้นทายว่าลง" กฎนี้ทายถูก 7 จาก 8 วัน หรือ <span data-key="ch16.ต้นไม้มือ.ทายถูกเปอร์เซ็นต์ดีสุด">87.5</span>% ต้นเขียนต่อท้ายว่า "ดีกว่า IC ทุกตัวของมินอีก"</p>
+<p>มินอยากรู้ว่าเครื่องหาเลข 0.75 มาจากไหน เขาเรียงแปดวันตามคะแนน funding จากน้อยไปมาก แล้วลองตั้งจุดตัดไว้ระหว่างแต่ละคู่ที่ติดกัน วันที่คะแนนต่ำกว่าจุดตัดให้ทายว่าลง วันที่สูงกว่าให้ทายว่าขึ้น แล้วนับว่าทายถูกกี่วัน ถ้าทายกลับทางได้ถูกมากกว่า ก็ใช้ทางกลับ</p>
+<div class="tw"><table>
+<tr><th>เรียงตามคะแนน funding</th><th>วัน 2</th><th>วัน 5</th><th>วัน 6</th><th>วัน 1</th><th>วัน 3</th><th>วัน 4</th><th>วัน 8</th><th>วัน 7</th></tr>
+<tr><td>คะแนน funding</td><td>−2</td><td>−1.5</td><td>−1</td><td>−0.5</td><td>0.5</td><td>1</td><td>1.5</td><td>2</td></tr>
+<tr><td>ผลจริง</td><td>ขึ้น</td><td>ลง</td><td>ลง</td><td>ลง</td><td>ลง</td><td>ขึ้น</td><td>ขึ้น</td><td>ขึ้น</td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th>จุดตัด</th><th>−1.75</th><th>−1.25</th><th>−0.75</th><th>0</th><th>0.75</th><th>1.25</th><th>1.75</th></tr>
+<tr><td>ทายถูก (ทางที่ดีกว่า)</td><td>5</td><td>4</td><td>5</td><td>6</td><td><strong>7</strong></td><td>6</td><td>5</td></tr>
+</table></div>
+<p>ลองคิดจุดตัด 0.75 ด้วยกัน ห้าวันแรกในแถวเรียงมีคะแนนต่ำกว่า 0.75 จึงทายว่าลง ในห้าวันนั้นลงจริงสี่วัน ผิดแค่วันที่ 2 ส่วนสามวันสุดท้ายทายว่าขึ้น และขึ้นจริงทั้งสามวัน รวมถูก 4 + 3 หรือ 7 วัน จุดตัดอื่นได้น้อยกว่านี้ทั้งหมด เครื่องจึงเลือก 0.75</p>
+<p>เครื่องไม่ได้ลองแค่ funding มันลองทุกคอลัมน์ที่ได้รับ คะแนน Z ได้ดีสุด <span data-key="ch16.ต้นไม้มือ.Z.ดีสุด">6</span> วัน คะแนนส่วนที่เหลือก็ได้ดีสุด <span data-key="ch16.ต้นไม้มือ.ส่วนที่เหลือ.ดีสุด">6</span> วัน แต่ละคอลัมน์มีจุดตัด 7 จุด สามคอลัมน์จึงเป็น <span data-key="ch16.ต้นไม้มือ.จุดตัดที่ลองสามตัวแปร">21</span> จุด และแต่ละจุดลองได้สองทาง จึงเป็นกฎที่ลองทั้งหมด <span data-key="ch16.ต้นไม้มือ.กฎที่ลองสองทิศ">42</span> แบบ กฎที่ส่งมาคือแบบที่ดีที่สุดใน 42 แบบนั้น</p>
+<p>แต่ละคอลัมน์ที่ป้อนให้เครื่องมีชื่อเรียกว่า <strong>Feature (ตัวแปรทำนาย)</strong> ในตัวอย่างนี้มีสามตัว คือคะแนน Z คะแนน funding และคะแนนส่วนที่เหลือ ส่วนสิ่งที่อยากทาย คือผลของชุดใน 5 วันข้างหน้า เรียกว่า Label (ป้ายคำตอบ) ซึ่งจะกลับมาดูอย่างละเอียดในตอน ข · 2</p>
+<p>กฎที่ถามคำถามหนึ่งข้อเกี่ยวกับตัวแปรทำนายหนึ่งตัว แล้วแยกวันเป็นสองกอง เรียกว่า <strong>Decision Tree (ต้นไม้ตัดสินใจ)</strong> ต้นไม้ของต้นมีคำถามเดียว จึงเป็นต้นไม้ชั้นเดียว ต้นไม้ที่ลึกกว่านี้จะถามคำถามต่อในแต่ละกอง เช่น "ในกองที่ funding ต่ำ ให้ดูคะแนน Z ต่อ" แต่ละชั้นที่เพิ่มคือการลองจุดตัดอีกหลายสิบแบบในกองที่เล็กลงเรื่อย ๆ</p>
+<p>การให้คอมพิวเตอร์ลองกฎหรือน้ำหนักจำนวนมากกับข้อมูล แล้วเก็บแบบที่เข้ากับข้อมูลที่สุด มีชื่อรวมว่า <strong>Machine Learning (การเรียนรู้ของเครื่อง)</strong> ต้นไม้เป็นแบบหนึ่ง Multiple Regression (การถดถอยหลายตัวแปร) ของบท 11 ก็เป็นอีกแบบหนึ่ง เพราะมันให้ข้อมูลเลือกน้ำหนักของ Z funding และส่วนที่เหลือเอง แทนที่จะตั้งน้ำหนักเท่ากันไว้ก่อนแบบตอน ก</p>
+<p>คำถามของพี่ฝนในฉากเปิดคือ "เทียบกับอะไร" กฎที่ง่ายที่สุดคือทายว่าขึ้นทุกวัน ซึ่งถูก 4 จาก 8 วัน แต่การเทียบกับ 4 ไม่ยุติธรรมกับคำถามนี้ เพราะเครื่องไม่ได้ลองกฎเดียว มันค้นหาจุดตัดที่ดีที่สุด คำถามที่ถูกคือ <strong>ถ้าคอลัมน์หนึ่งไม่เกี่ยวกับผลเลย การค้นหาจุดตัดที่ดีที่สุดในคอลัมน์นั้นจะได้ถูกกี่วัน</strong></p>
+<p>คำถามนี้นับได้ตรง ๆ ไม่ต้องสุ่ม คอลัมน์ที่ไม่เกี่ยวกับผลก็คือการวาง "ขึ้น" สี่วันกับ "ลง" สี่วันลงในแปดอันดับแบบมั่ว ๆ ซึ่งวางได้ทั้งหมด <span data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.แบบ">70</span> แบบ และทุกแบบมีโอกาสเท่ากัน มินไล่ทุกแบบ แล้วหาจุดตัดที่ดีที่สุดของแต่ละแบบด้วยวิธีเดียวกับตารางข้างบน</p>
+<div class="tw"><table>
+<tr><th>จุดตัดที่ดีที่สุดทายถูก</th><th>8 วัน</th><th>7 วัน</th><th>6 วัน</th><th>5 วัน</th><th>รวม</th></tr>
+<tr><td>จำนวนแบบ (จาก 70)</td><td data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.ดีสุด8">2</td><td data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.ดีสุด7">14</td><td data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.ดีสุด6">38</td><td data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.ดีสุด5">16</td><td>70</td></tr>
+</table></div>
+<p>คอลัมน์ที่ไม่เกี่ยวอะไรเลยได้ถูก 7 วันขึ้นไปใน 2 + 14 หรือ 16 แบบจาก 70 แบบ คิดเป็นราว <span data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.โอกาสอย่างน้อย7เปอร์เซ็นต์">23</span>% และไม่ถึง 7 วันใน 54 แบบ ถ้าป้อนคอลัมน์ที่ไม่เกี่ยวอะไรเลยสามคอลัมน์ โอกาสที่ไม่มีคอลัมน์ไหนถึง 7 คือ 54 ÷ 70 คูณกันสามครั้ง ได้ราว 46% โอกาสที่มีอย่างน้อยหนึ่งคอลัมน์ทายถูก 7 จาก 8 จึงเป็นราว <span data-key="ch16.ต้นไม้มือ.สุ่มทุกแบบ.สามคอลัมน์อย่างน้อยหนึ่งเปอร์เซ็นต์">54</span>% ตัวเลขนี้คิดเหมือนสามคอลัมน์เป็นอิสระต่อกัน ซึ่งคะแนนจริงของเราไม่เป็นอย่างนั้น (Z กับส่วนที่เหลือแทบเป็นตัวเดียวกัน) จึงเป็นค่าหยาบ แต่บอกขนาดได้ชัด คือ 87.5% ของต้นคือสิ่งที่โชคให้ได้ราวครึ่งหนึ่งของครั้ง</p>
+<p>สิ่งที่โมเดลต้องเอาชนะให้ได้ในการทดสอบเดียวกันมีชื่อว่า <strong>Baseline (เกณฑ์เทียบขั้นต่ำ)</strong> Baseline ที่ดีเป็นกฎง่าย ๆ ที่ไม่ต้องเรียนอะไร เช่น ไม่ทำอะไรเลย ทายทางเดียวกันทุกวัน หรือใช้สัญญาณตัวเดียวที่มีอยู่แล้ว โมเดลต้องชนะ Baseline ในช่วงที่มันไม่ได้เห็นตอนเรียน หลังหักต้นทุนเท่ากัน ไม่ใช่ชนะในข้อมูลที่ใช้เรียน</p>
+<p>เล่ม 1 บท 18 เคยเจอเรื่องคล้ายกัน บอท AI ตัวหนึ่งโฆษณาว่าแม่น <span data-key="ch16.เล่ม1.แม่นช่วงสอน">70</span>% ในช่วงที่ใช้สอน แต่เหลือ <span data-key="ch16.เล่ม1.แม่นช่วงหลัง">65</span>% ในช่วงหลัง ขณะที่ได้เสียต่อครั้งของมันทำให้ต้องแม่นถึง <span data-key="ch16.เล่ม1.ต้องชนะเปอร์เซ็นต์">77.5</span>% จึงจะคุ้ม ความแม่นเป็นเปอร์เซ็นต์จึงไม่ใช่คำตอบในตัวเอง ต้องรู้ว่าเทียบกับอะไร และชนะแล้วได้เงินเท่าไร</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>ต้นไม้ชั้นเดียวของต้นลองกฎ 42 แบบแล้วเก็บแบบที่ดีที่สุด คือคะแนน funding เกิน 0.75 ทายถูก 7 จาก 8 วัน แต่คอลัมน์ที่ไม่เกี่ยวอะไรเลยก็ได้ถูก 7 วันขึ้นไปใน 16 จาก 70 แบบ และถ้ามีสามคอลัมน์ โอกาสที่อย่างน้อยหนึ่งคอลัมน์ได้ถึง 7 คือราว 54% โมเดลจึงต้องชนะ Baseline ในช่วงที่ไม่ได้ใช้เรียน</p></div>
+
+<h2 id="ke">ตอน ข · 2 — ป้ายคำตอบของวันที่ 6 รู้ได้วันที่ 11: Label Leakage</h2>
+<p>บท 13 สอนให้ถามทุกช่องว่า "รู้ได้วันไหน" ตอนนั้นเราถามกับราคา h และไม้บรรทัด แต่โมเดลที่เรียนรู้เองมีช่องใหม่ที่ต้องถามด้วย คือคอลัมน์ที่มันพยายามทาย ในบทนี้คือผลของชุดใน 5 วันข้างหน้า ซึ่งตอน ข · 1 เรียกว่าป้ายคำตอบ</p>
+<p>ป้ายคำตอบของวันที่ 6 คือระดับของชุดวันที่ 11 ลบระดับของชุดวันที่ 6 มันจึงรู้ได้หลังราคาปิดของวันที่ 11 เท่านั้น ไม่ใช่วันที่ 6 สมมติว่ามินจะให้โมเดลเรียนจากวันที่ 1 ถึง 10 แล้วทดสอบตั้งแต่วันที่ 11 ตามแบบ Walk-forward (การทดสอบแบบเดินหน้า) ของบท 14 ที่เรียนจากอดีตแล้วทดสอบช่วงถัดไป ลองเขียนคอลัมน์ "รู้ได้วันไหน" ให้แถวท้าย ๆ ของช่วงเรียน</p>
+<div class="tw"><table>
+<tr><th>แถวของวัน</th><th>ป้ายคำตอบใช้ราคาปิดของวัน</th><th>รู้ได้วันไหน</th><th>ใช้เรียนก่อนทดสอบวันที่ 11 ได้ไหม</th></tr>
+<tr><td>5</td><td>5 และ 10</td><td>หลังปิดวันที่ 10</td><td>ได้</td></tr>
+<tr><td>6</td><td>6 และ 11</td><td>หลังปิดวันที่ 11</td><td><strong>ไม่ได้</strong> ใช้ราคาของวันทดสอบ</td></tr>
+<tr><td>7</td><td>7 และ 12</td><td>หลังปิดวันที่ 12</td><td><strong>ไม่ได้</strong></td></tr>
+<tr><td>8</td><td>8 และ 13</td><td>หลังปิดวันที่ 13</td><td><strong>ไม่ได้</strong></td></tr>
+<tr><td>9</td><td>9 และ 14</td><td>หลังปิดวันที่ 14</td><td><strong>ไม่ได้</strong></td></tr>
+<tr><td>10</td><td>10 และ 15</td><td>หลังปิดวันที่ 15</td><td><strong>ไม่ได้</strong></td></tr>
+</table></div>
+<p>ห้าแถวสุดท้ายของช่วงเรียนมีป้ายคำตอบที่ใช้ราคาในช่วงทดสอบ ถ้าปล่อยไว้ โมเดลจะได้เห็นว่าชุดไปทางไหนในวันที่ 11 ถึง 15 แล้วค่อยถูกทดสอบในวันเดียวกันนั้น วิธีแก้คือตัดแถวท้ายของช่วงเรียนออกเท่ากับจำนวนวันที่ป้ายคำตอบมองไปข้างหน้า คือ <span data-key="ch16.ค่า.ป้ายวัน">5</span> แถว ช่วงเรียนวันที่ 1 ถึง 10 จึงเหลือแถวที่ใช้ได้จริงแค่ 5 แถว</p>
+<p>ความผิดแบบที่สองร้ายกว่า เพราะมองไม่เห็นในตาราง สมมติว่าตอนต่อตาราง funding เข้ากับตารางผล มินเผลอจับคู่ด้วยวันปลายของป้ายคำตอบ แทนวันที่ตัดสินใจ คอลัมน์ที่ชื่อ "funding 5 วัน" จึงกลายเป็น funding ของวันที่ 7 ถึง 11 สำหรับแถววันที่ 6 ซึ่งเป็นวันเดียวกับที่ป้ายคำตอบวัดผล funding มักขยับตามราคา วันที่ ETH วิ่งขึ้นแรง คนแห่ long ETH และ funding ของ ETH ก็สูงขึ้นตาม คอลัมน์นี้จึง "ทาย" ผลได้ดีอย่างน่าตกใจ ทั้งที่มันแค่เห็นผลไปแล้ว</p>
+<p>บนข้อมูลจริงในช่วงเลือก funding ที่ต่อถูก คือเฉลี่ย 7 วันที่จบที่วันตัดสินใจ มี IC เพียง <span data-key="ch16.จริง.รั่ว.ICอดีต">0.03</span> แต่ funding ของห้าวันเดียวกับป้ายคำตอบมี IC <strong data-key="ch16.จริง.รั่ว.ICอนาคต">0.23</strong> สูงกว่าสัญญาณทุกตัวของมิน ถ้าเห็นตัวเลขแบบนี้ในงานของใคร คำถามแรกไม่ใช่ "ใช้ได้เลยไหม" แต่คือ "คอลัมน์นี้รู้ได้วันไหน"</p>
+<p>ความผิดทั้งสองแบบมีชื่อเดียวกันว่า <strong>Label Leakage (การรั่วของป้ายคำตอบ)</strong> คือการที่ข้อมูลจากช่วงเวลาของป้ายคำตอบรั่วเข้าไปในตัวแปรทำนาย หรือในแถวที่ใช้เรียน โมเดลจึงเรียน "คำตอบ" แทนที่จะเรียน "เบาะแส" ผลในช่วงเรียนดูดีมาก แต่ใช้จริงไม่ได้เลย เพราะในวันจริงไม่มีใครรู้คำตอบล่วงหน้า</p>
+<p><strong>🚶 อ่านเป็นภาษาคน:</strong> ทุกคอลัมน์ รวมทั้งป้ายคำตอบ ต้องมีวันที่ที่มันรู้ได้ ตัวแปรทำนายต้องรู้ได้ไม่เกินวันตัดสินใจ ส่วนแถวที่ใช้เรียนต้องมีป้ายคำตอบที่รู้ได้ก่อนวันแรกของช่วงทดสอบ ถ้าตัวแปรตัวไหนทายผลรายวันได้ดีเกินกว่าที่ควร ให้สงสัยการรั่วก่อนเสมอ</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — โมเดลที่เรียนรู้เอง</div>
+<ul>
+<li><strong>พังเมื่อ</strong> ลองกฎมาก ต้นไม้ชั้นเดียวบนข้อมูลจริงของตอน ค ลองจุดตัด <span data-key="ch16.จริง.ต้นไม้.จุดตัดที่ลอง">1,995</span> จุด หรือ <span data-key="ch16.จริง.ต้นไม้.กฎที่ลอง">3,990</span> กฎเมื่อนับสองทาง แล้วได้ทายถูก <span data-key="ch16.จริง.ต้นไม้.ถูกช่วงเลือก">62.2</span>% ในช่วงเลือก ขณะที่การทายว่าชุดลงทุกวันถูกอยู่แล้ว <span data-key="ch16.จริง.ต้นไม้.ทายลงตลอดช่วงเลือก">60.2</span>% ทุกจุดตัดที่ลองคือการดูข้อมูลหนึ่งครั้ง แบบ Data Snooping (โชคจากการลองหลายครั้ง) ของเล่ม 1 บท 10 เพียงแต่เครื่องทำให้เงียบ ๆ ในวินาทีเดียว</li>
+<li><strong>พังเมื่อ</strong> ตัวแปรมากเทียบกับข้อมูล บนข้อมูลจริง Multiple Regression ที่ใส่ตัวแปร 12 ตัวอธิบายผลในช่วงเลือกได้ <span data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.R2ช่วงเลือก">11.2</span>% แต่ในช่วงตรวจได้ <span data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.R2ช่วงตรวจ">−19.4</span>% คือทายแย่กว่าการทายค่าเฉลี่ยเฉย ๆ นี่คือ Overfitting (การฟิตเกินพอดี) ของบท 14 ในรูปที่เห็นชัดที่สุด</li>
+<li><strong>บอกไม่ได้ว่า</strong> โมเดลเรียนอะไรมา ต้นไม้ของข้อมูลจริงส่ง <span data-key="ch16.จริง.ต้นไม้.สัดส่วนใบล่างช่วงเลือก">88</span>% ของวันในช่วงเลือกไปกองที่ทายว่าลง ซึ่งแทบเท่ากับการเรียนว่า "ช่วงนี้ ETH อ่อนกว่า BTC" มันไม่ได้เจอเบาะแสใหม่ มันจำทิศของทั้งช่วงที่เรียน ซึ่งไม่มีอะไรรับประกันว่าปีหน้าจะเหมือนเดิม</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ข</div>
+<p>ป้ายคำตอบของวันที่ 6 รู้ได้วันที่ 11 ช่วงเรียนวันที่ 1 ถึง 10 จึงต้องตัด 5 แถวท้ายก่อนทดสอบวันที่ 11 funding ที่ต่อด้วยวันปลายของป้ายคำตอบได้ IC 0.23 ส่วน funding ที่ต่อถูกได้เพียง 0.03 ต้นไม้บนข้อมูลจริงลอง 3,990 กฎแล้วได้ 62.2% เทียบกับ 60.2% ของการทายว่าลงทุกวัน</p></div>
+
+<!-- ═══════════════ ตอน ค ═══════════════ -->
+<h2 id="kf">ตอน ค โลกจำลองและข้อมูลจริง · 1 — 🎲 โลกที่รู้คำตอบ: รวมสองสัญญาณจริงได้ IC 0.22 ตัวเดียวได้ 0.14</h2>
+<p>ก่อนจะเอาวิธีของตอน ก และตอน ข ไปใช้กับข้อมูลจริง มินต้องเห็นก่อนว่ามันตอบถูกในโลกที่รู้คำตอบ ถ้าการรวมสัญญาณไม่ช่วยแม้ในโลกที่สร้างให้มันช่วย ก็ไม่ต้องไปหวังกับข้อมูลจริง</p>
+<p>เล่มสร้างโลกของชุดหนึ่งชุดที่มีความจริงสามข้อ ข้อแรก ระดับของชุดมีเชือก ทุกวันระยะห่างจากค่ากลางเหลือ <span data-key="ch16.โลก.φ">0.97</span> ของเมื่อวาน (ครึ่งชีวิตราว <span data-key="ch16.โลก.ครึ่งชีวิต">23</span> วัน) บวกแรงสะบัดวันละ <span data-key="ch16.โลก.แรงสะบัด">1.5</span>% Z บนไม้บรรทัดเลื่อน 60 วันจึงเป็นสัญญาณจริง ข้อที่สอง มี "funding จำลอง" ที่ขยับช้า ๆ และกดชุดลงจริงวันละ <span data-key="ch16.โลก.k">0.15</span>% ต่อหนึ่ง SD ของมัน จึงเป็นสัญญาณจริงตัวที่สองที่ไม่เกี่ยวกับ Z ข้อที่สาม มี "สำเนาของ Z" ซึ่งคือ Z บวกแรงสะบัด SD <span data-key="ch16.โลก.สำเนาSD">0.6</span> แบบเดียวกับที่ส่วนที่เหลือจริงเหมือน Z</p>
+<p>นอกจากนั้นยังมีตัวแปรสุ่มอีก <span data-key="ch16.โลก.ตัวแปรสุ่ม">17</span> ตัวที่ไม่เกี่ยวกับอะไรเลย ไว้ป้อนให้โมเดลที่ "ใส่ทุกอย่าง" รวมเป็นตัวแปร 20 ตัว ทุกโลกเรียน 731 วันแล้วตรวจ 365 วัน ยาวเท่าข้อมูลจริง และสุ่มใหม่ 30 ครั้ง ตารางนี้คือค่ากลางของ 30 โลก</p>
+<p class="cap">🎲 จำลอง · 30 โลก · ค่าในตารางเป็น Median ของ 30 โลก · คะแนนทุกตัวใช้ Mean และ SD จาก 731 วันแรก</p>
+<div class="tw"><table data-src="sim">
+<tr><th>คะแนนหรือโมเดล</th><th>ความจริงที่เล่มรู้</th><th>IC ช่วงเรียน</th><th>IC ช่วงตรวจ</th></tr>
+<tr><td>Z ตัวเดียว</td><td>สัญญาณจริง</td><td data-key="ch16.โลก.IC_z.ช่วงเลือก">0.14</td><td data-key="ch16.โลก.IC_z.ช่วงตรวจ">0.14</td></tr>
+<tr><td>funding จำลองตัวเดียว</td><td>สัญญาณจริง ไม่เกี่ยวกับ Z</td><td data-key="ch16.โลก.IC_f.ช่วงเลือก">0.12</td><td data-key="ch16.โลก.IC_f.ช่วงตรวจ">0.14</td></tr>
+<tr><td>สำเนาของ Z ตัวเดียว</td><td>ไม่มีอะไรใหม่</td><td data-key="ch16.โลก.IC_c.ช่วงเลือก">0.11</td><td data-key="ch16.โลก.IC_c.ช่วงตรวจ">0.14</td></tr>
+<tr><td>รวมสอง (Z + funding)</td><td>สองตัวที่ผิดคนละวัน</td><td data-key="ch16.โลก.IC_รวมสอง.ช่วงเลือก">0.21</td><td data-key="ch16.โลก.IC_รวมสอง.ช่วงตรวจ"><strong>0.22</strong></td></tr>
+<tr><td>รวมสาม (มีสำเนา)</td><td>นับ Z สองครั้ง</td><td data-key="ch16.โลก.IC_รวมสาม.ช่วงเลือก">0.19</td><td data-key="ch16.โลก.IC_รวมสาม.ช่วงตรวจ">0.2</td></tr>
+<tr><td>Multiple Regression 3 ตัว</td><td>ข้อมูลเลือกน้ำหนักเอง</td><td data-key="ch16.โลก.IC_Regression.ช่วงเลือก">0.22</td><td data-key="ch16.โลก.IC_Regression.ช่วงตรวจ">0.21</td></tr>
+<tr><td>ใส่ทุกอย่าง 20 ตัว</td><td>มีตัวสุ่ม 17 ตัว</td><td data-key="ch16.โลก.IC_ใส่ทุกอย่าง.ช่วงเลือก">0.25</td><td data-key="ch16.โลก.IC_ใส่ทุกอย่าง.ช่วงตรวจ">0.16</td></tr>
+</table></div>
+<p>อ่านทีละแถว เครื่องมือตอบตามความจริงที่เล่มรู้ทุกข้อ สัญญาณเดี่ยวทั้งสามตัวมี IC ราว 0.11 ถึง 0.14 การรวมสองตัวที่ผิดคนละวันให้ 0.22 ในช่วงตรวจ สูงกว่าตัวเดียวชัดเจน การใส่สำเนาเข้าไปด้วยทำให้ลดลงเหลือ 0.2 แบบเดียวกับที่ 0.67 กลายเป็น 0.52 ในตอน ก Multiple Regression ที่ให้ข้อมูลเลือกน้ำหนักเองได้ 0.21 ใกล้กับน้ำหนักเท่ากัน คือการเรียนน้ำหนักไม่ได้ให้อะไรเพิ่ม แต่ก็ไม่เสียอะไร</p>
+<p>แถวสุดท้ายคือบทเรียนของตอน ข ในตัวเลข โมเดลที่ใส่ทุกอย่าง 20 ตัวได้ IC สูงสุดในช่วงเรียนคือ 0.25 แต่ตกลงเหลือ 0.16 ในช่วงตรวจ ต่ำกว่าการรวมสองตัวแบบง่าย ๆ เพราะมันเรียนจากตัวแปรสุ่มไปด้วย สัดส่วนที่เส้นอธิบายได้บอกเรื่องเดียวกันชัดกว่า R² (สัดส่วนที่เส้นอธิบายได้) ของโมเดล 3 ตัวคือ <span data-key="ch16.โลก.R2_3.ช่วงเลือก">4.5</span>% ในช่วงเรียน และ <span data-key="ch16.โลก.R2_3.ช่วงตรวจ">3.0</span>% ในช่วงตรวจ ส่วนโมเดล 20 ตัวได้ <span data-key="ch16.โลก.R2_20.ช่วงเลือก">7.0</span>% ในช่วงเรียน แต่เหลือ <span data-key="ch16.โลก.R2_20.ช่วงตรวจ">0.1</span>% ในช่วงตรวจ และติดลบใน <span data-key="ch16.โลก.R2_20.ช่วงตรวจติดลบ">15</span> จาก 30 โลก</p>
+<!--CHART:sab2-blend-sim-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 350" role="img" aria-label="แท่งคู่เจ็ดหมวด สัญญาณเดี่ยวมี IC ราว 0.11 ถึง 0.14 ทั้งสองช่วง คะแนนรวม Z กับ funding ราว 0.21 ถึง 0.22 โมเดลใส่ทุกอย่าง 20 ตัวได้ 0.25 ในช่วงเลือกแต่เหลือ 0.16 ในช่วงตรวจ">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">IC มัธยฐานของ 30 โลกที่รู้คำตอบ: รวมสองสัญญาณจริงชนะตัวเดียว ใส่ตัวสุ่มเพิ่มแล้วตกในปีถัดไป</text>
+<line x1="64" y1="296.0" x2="736" y2="296.0" stroke="#d1d5db"/>
+<text x="56.0" y="300.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="223.3" x2="736" y2="223.3" stroke="#f3f4f6"/>
+<text x="56.0" y="227.3" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.1</text>
+<line x1="64" y1="150.7" x2="736" y2="150.7" stroke="#f3f4f6"/>
+<text x="56.0" y="154.7" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.2</text>
+<line x1="64" y1="78.0" x2="736" y2="78.0" stroke="#f3f4f6"/>
+<text x="56.0" y="82.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.3</text>
+<rect x="75.0" y="194.3" width="34.0" height="101.7" rx="2" fill="#2563eb"/>
+<text x="92.0" y="189.3" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.14</text>
+<rect x="112.0" y="194.3" width="34.0" height="101.7" rx="2" fill="#d97706"/>
+<text x="129.0" y="189.3" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.14</text>
+<text x="112.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">Z</text>
+<rect x="171.0" y="208.8" width="34.0" height="87.2" rx="2" fill="#2563eb"/>
+<text x="188.0" y="203.8" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.12</text>
+<rect x="208.0" y="194.3" width="34.0" height="101.7" rx="2" fill="#d97706"/>
+<text x="225.0" y="189.3" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.14</text>
+<text x="208.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">funding</text>
+<text x="208.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">จำลอง</text>
+<rect x="267.0" y="216.1" width="34.0" height="79.9" rx="2" fill="#2563eb"/>
+<text x="284.0" y="211.1" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.11</text>
+<rect x="304.0" y="194.3" width="34.0" height="101.7" rx="2" fill="#d97706"/>
+<text x="321.0" y="189.3" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.14</text>
+<text x="304.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">สำเนา</text>
+<text x="304.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ของ Z</text>
+<rect x="363.0" y="143.4" width="34.0" height="152.6" rx="2" fill="#2563eb"/>
+<text x="380.0" y="138.4" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.21</text>
+<rect x="400.0" y="136.1" width="34.0" height="159.9" rx="2" fill="#d97706"/>
+<text x="417.0" y="131.1" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.22</text>
+<text x="400.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">รวมสอง</text>
+<text x="400.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">Z + funding</text>
+<rect x="459.0" y="157.9" width="34.0" height="138.1" rx="2" fill="#2563eb"/>
+<text x="476.0" y="152.9" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.19</text>
+<rect x="496.0" y="150.7" width="34.0" height="145.3" rx="2" fill="#d97706"/>
+<text x="513.0" y="145.7" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.2</text>
+<text x="496.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">รวมสาม</text>
+<text x="496.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">(มีสำเนา)</text>
+<rect x="555.0" y="136.1" width="34.0" height="159.9" rx="2" fill="#2563eb"/>
+<text x="572.0" y="131.1" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.22</text>
+<rect x="592.0" y="143.4" width="34.0" height="152.6" rx="2" fill="#d97706"/>
+<text x="609.0" y="138.4" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.21</text>
+<text x="592.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">Regression</text>
+<text x="592.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">3 ตัว</text>
+<rect x="651.0" y="114.3" width="34.0" height="181.7" rx="2" fill="#2563eb"/>
+<text x="668.0" y="109.3" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.25</text>
+<rect x="688.0" y="179.7" width="34.0" height="116.3" rx="2" fill="#d97706"/>
+<text x="705.0" y="174.7" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">0.16</text>
+<text x="688.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ใส่ทุกอย่าง</text>
+<text x="688.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">20 ตัว</text>
+<rect x="64" y="44" width="11" height="11" rx="2" fill="#2563eb"/>
+<text x="80.0" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงเลือก (ที่ใช้เรียน)</text>
+<rect x="274.20000000000005" y="44" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="290.2" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงตรวจ (ปีถัดไป)</text>
+</svg></div>
+<div class="cap">🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด) · 30 โลก · ชุดที่มีเชือก φ 0.97 · funding จำลองมีผลจริง · สำเนาของ Z · ตัวแปรสุ่ม 17 ตัว · เรียน 731 วัน ตรวจ 365 วัน</div>
+<!--/CHART:sab2-blend-sim-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แท่งคู่แต่ละกลุ่มคือ IC ของคะแนนหรือโมเดลหนึ่งแบบ แท่งน้ำเงินคือช่วงที่ใช้เรียน แท่งส้มคือปีถัดไปที่ไม่ได้ใช้เรียน ทุกค่าเป็น Median ของ 30 โลก ให้ดูสองจุด จุดแรก แท่งของ "รวมสอง" สูงกว่าแท่งของสัญญาณเดี่ยวทั้งสองช่วง จุดที่สอง "ใส่ทุกอย่าง" เป็นแท่งเดียวที่น้ำเงินสูงกว่าส้มมาก สรุปได้ว่าการรวมสัญญาณจริงที่ผิดคนละวันช่วยได้จริง ส่วนการเพิ่มตัวแปรที่ไม่มีเหตุผลทำให้ผลในช่วงเรียนสวยขึ้นแต่ปีถัดไปแย่ลง</p>
+<p>ต้นไม้ชั้นเดียวที่ลองจุดตัดทั้ง 20 ตัวแปรทายถูก <span data-key="ch16.โลก.ต้นไม้.ช่วงเลือก">57.4</span>% ในช่วงเรียน แต่เหลือ <span data-key="ch16.โลก.ต้นไม้.ช่วงตรวจ">50.6</span>% ในช่วงตรวจ ขณะที่การทายทางเดียวทุกวันได้ <span data-key="ch16.โลก.ทายทางเดียว.ช่วงตรวจ">51.7</span>% และใน <span data-key="ch16.โลก.ต้นไม้เลือกตัวสุ่ม">5</span> จาก 30 โลก จุดตัดที่ดีที่สุดของมันอยู่บนตัวแปรสุ่มตัวใดตัวหนึ่ง ต้นไม้ชั้นเดียวจึงแพ้ Baseline ในโลกที่มีสัญญาณจริงอยู่ด้วยซ้ำ เพราะคำถามข้อเดียวแบบ "เกินหรือไม่เกิน" ทิ้งข้อมูลเรื่องขนาดของคะแนนไปเกือบหมด</p>
+<p>สุดท้ายคือเงินหลังต้นทุน มินเดินทุกแบบในเครื่องเดียวกับบท 13 ทุกเย็นคิดผลที่คาดจากความชันที่เรียนในช่วงเรียน ถ้าผลที่คาดเกินต้นทุนไปกลับ 0.2% ก็เข้าทางนั้นด้วยราคาปิดวันถัดไป ถือ 5 วันแล้วปิด ขาละราว 500 ทุน 1,000</p>
+<p class="cap">🎲 จำลอง · 30 โลก · ผลในช่วงตรวจ 365 วันหลังค่าธรรมเนียม · ทุนเริ่ม 1,000</p>
+<div class="tw"><table data-src="sim">
+<tr><th>แบบ</th><th>ผล Median</th><th>บวกกี่โลก</th><th>ต่ำสุด</th><th>สูงสุด</th></tr>
+<tr><td>Z ตัวเดียว</td><td data-key="ch16.โลก.ผล_Z.มัธยฐาน">60.11</td><td data-key="ch16.โลก.ผล_Z.บวก">23</td><td data-key="ch16.โลก.ผล_Z.ต่ำสุด">−207.05</td><td data-key="ch16.โลก.ผล_Z.สูงสุด">308.07</td></tr>
+<tr><td>รวมสอง (Z + funding)</td><td data-key="ch16.โลก.ผล_รวมสอง.มัธยฐาน">98.69</td><td data-key="ch16.โลก.ผล_รวมสอง.บวก">25</td><td data-key="ch16.โลก.ผล_รวมสอง.ต่ำสุด">−150.4</td><td data-key="ch16.โลก.ผล_รวมสอง.สูงสุด">1,214.86</td></tr>
+<tr><td>รวมสาม (มีสำเนา)</td><td data-key="ch16.โลก.ผล_รวมสาม.มัธยฐาน">102.82</td><td data-key="ch16.โลก.ผล_รวมสาม.บวก">25</td><td data-key="ch16.โลก.ผล_รวมสาม.ต่ำสุด">−272.49</td><td data-key="ch16.โลก.ผล_รวมสาม.สูงสุด">735.83</td></tr>
+<tr><td>Multiple Regression 3 ตัว</td><td data-key="ch16.โลก.ผล_Regression.มัธยฐาน">73.29</td><td data-key="ch16.โลก.ผล_Regression.บวก">25</td><td data-key="ch16.โลก.ผล_Regression.ต่ำสุด">−221.65</td><td data-key="ch16.โลก.ผล_Regression.สูงสุด">576.93</td></tr>
+<tr><td>ใส่ทุกอย่าง 20 ตัว</td><td data-key="ch16.โลก.ผล_ใส่ทุกอย่าง.มัธยฐาน">70.8</td><td data-key="ch16.โลก.ผล_ใส่ทุกอย่าง.บวก">26</td><td data-key="ch16.โลก.ผล_ใส่ทุกอย่าง.ต่ำสุด">−63.93</td><td data-key="ch16.โลก.ผล_ใส่ทุกอย่าง.สูงสุด">708.01</td></tr>
+</table></div>
+<p>ในโลกที่มีสัญญาณจริงสองตัว การรวมสองตัวได้ Median <span data-key="ch16.โลก.ผล_รวมสอง.มัธยฐาน">98.69</span> เทียบกับ <span data-key="ch16.โลก.ผล_Z.มัธยฐาน">60.11</span> ของ Z ตัวเดียว และชนะ Z ใน <span data-key="ch16.โลก.รวมสองชนะZ">19</span> จาก 30 โลก หลังต้นทุนแบบรวมสามกับแบบรวมสองใกล้กันจนแยกไม่ออก ถึง IC จะต่างกันเล็กน้อย เพราะเงินของไม้ไม่กี่สิบไม้ในหนึ่งปีแกว่งมากกว่าความต่างนั้น ให้สังเกตช่วงต่ำสุดถึงสูงสุดด้วย แม้ในโลกที่สัญญาณจริงทุกตัว ปีหนึ่งปีก็ยังติดลบได้ ต่ำสุดของแบบรวมสองคือ −150.4 และของแบบรวมสามคือ −272.49</p>
+<p>มินลองอีกโลกหนึ่งเป็นการตรวจเครื่อง คือโลกที่ชุดเดินสุ่มไม่มีเชือก และ funding จำลองไม่มีผลเลย ในโลกนี้การรวมสองตัวได้ Median <span data-key="ch16.โลก.โลกว่าง.มัธยฐาน">−15.11</span> และบวกเพียง <span data-key="ch16.โลก.โลกว่าง.บวก">9</span> จาก 30 โลก เครื่องจึงไม่สร้างเงินจากความว่างเปล่า ถ้าโลกไม่มีอะไรให้เก็บ การรวมสัญญาณก็ได้ราวศูนย์ลบต้นทุนตามที่ควร</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>ใน 30 โลกที่รู้คำตอบ การรวม Z กับ funding จำลองได้ IC 0.22 ในปีถัดไป เทียบกับ 0.14 ของ Z ตัวเดียว และได้เงินหลังต้นทุน Median 98.69 เทียบกับ 60.11 โมเดลที่ใส่ทุกอย่าง 20 ตัวได้ IC 0.25 ในช่วงเรียนแต่เหลือ 0.16 ในปีถัดไป ส่วนในโลกที่ไม่มีอะไรให้เก็บ การรวมสัญญาณได้ Median −15.11</p></div>
+
+<h2 id="kg">ตอน ค · 2 — 📡 ETH–BTC: IC ของ Z จาก 0.14 ในช่วงเลือก เป็น −0.13 ในช่วงตรวจ</h2>
+<p>ทีนี้ถึงข้อมูลจริง ชุดคือ long ETH คู่ short BTC มูลค่าเท่ากัน ราคาปิดรายวันจากชุดข้อมูลกลางของเล่ม funding ใช้ของสัญญาไม่มีวันหมดอายุบน Deribit ที่มีครบทั้งช่วง ช่วงเลือกมี <span data-key="ch16.จริง.วันช่วงเลือก">731</span> วัน ช่วงตรวจมี <span data-key="ch16.จริง.วันช่วงตรวจ">365</span> วัน ช่วงทดสอบสุดท้ายยังปิดอยู่ ทุกค่าที่ต้องประมาณ ทั้ง Mean และ SD ของคะแนน ความชัน น้ำหนักของ Regression และจุดตัดของต้นไม้ มาจากช่วงเลือกแล้วตรึงไว้</p>
+<p>สามสัญญาณคิดจากข้อมูลที่รู้ได้ ณ ปิดวันนั้นเท่านั้น Z ใช้ 60 วันล่าสุด funding เฉลี่ย <span data-key="ch16.ค่า.รอบfunding">21</span> รอบล่าสุด (7 วัน) ซึ่งรอบสุดท้ายชำระตอน 16:00 UTC ก่อนราคาปิด และส่วนที่เหลือใช้ 20 วันล่าสุดหักแรงร่วมด้วยค่า beta บนดัชนีถ่วงน้ำหนักเท่ากันจากช่วงเลือก (บท 9) ป้ายคำตอบคือผลของชุดใน 5 วันข้างหน้า และไม่ข้ามเส้นแบ่งช่วง ช่วงเลือกจึงมีแถวที่ใช้ได้ <span data-key="ch16.จริง.แถวช่วงเลือก">666</span> แถว ช่วงตรวจมี <span data-key="ch16.จริง.แถวช่วงตรวจ">360</span> แถว</p>
+<p>ไม้บรรทัดของคะแนนวัดจากช่วงเลือก Z มี Mean <span data-key="ch16.จริง.ไม้บรรทัด.z.Mean">−0.7</span> และ SD <span data-key="ch16.จริง.ไม้บรรทัด.z.SD">1.26</span> funding มี Mean <span data-key="ch16.จริง.ไม้บรรทัด.f.Mean">−0.3</span> และ SD <span data-key="ch16.จริง.ไม้บรรทัด.f.SD">6.21</span> % ต่อปี ส่วนที่เหลือมี Mean <span data-key="ch16.จริง.ไม้บรรทัด.r.Mean">−2.35</span> และ SD <span data-key="ch16.จริง.ไม้บรรทัด.r.SD">6.21</span>% ตารางนี้คือหกวันตัวอย่างจากปลายช่วงเลือก ห่างกันวันละห้า</p>
+<p class="cap">📡 ข้อมูลจริง · ราคาปิดรายวัน Binance spot (UTC) · funding Deribit · หกวันในช่วงเลือก · คะแนนใช้ไม้บรรทัดช่วงเลือก</p>
+<div class="tw"><table data-src="real">
+<tr><th>วัน</th><th>Z</th><th>funding</th><th>ส่วนที่เหลือ</th><th>คะแนน Z</th><th>คะแนน funding</th><th>คะแนนส่วนที่เหลือ</th><th>ผล 5 วันข้างหน้า (%)</th></tr>
+<tr><td>2024-10-11</td><td>−1.31</td><td>−1.91</td><td>−5.08</td><td>0.48</td><td>0.26</td><td>0.44</td><td>−1.01</td></tr>
+<tr><td>2024-10-16</td><td>−1.42</td><td>−5.66</td><td>−4.1</td><td>0.57</td><td>0.86</td><td>0.28</td><td>2.47</td></tr>
+<tr><td>2024-10-21</td><td>−0.64</td><td>−4.69</td><td>−2.78</td><td>−0.05</td><td>0.71</td><td>0.07</td><td>−6.73</td></tr>
+<tr><td>2024-10-26</td><td>−2.07</td><td>−4.77</td><td>−5.26</td><td>1.08</td><td>0.72</td><td>0.47</td><td>−3.21</td></tr>
+<tr><td>2024-10-31</td><td>−2.36</td><td>−3.6</td><td>−9.3</td><td>1.31</td><td>0.53</td><td>1.12</td><td>−2.57</td></tr>
+<tr><td>2024-11-05</td><td>−2.39</td><td>−0.84</td><td>−9.96</td><td>1.33</td><td>0.09</td><td>1.22</td><td>12.59</td></tr>
+</table></div>
+<p>ลองคิดแถวแรกด้วยกัน Z ของวันที่ 2024-10-11 คือ −1.31 ห่างจาก Mean −0.7 อยู่ <span data-key="ch16.จริง.ตัวอย่าง.0.ห่างZ">−0.61</span> หารด้วย SD 1.26 แล้วกลับเครื่องหมาย ได้คะแนน 0.48 funding −1.91 ห่างจาก Mean อยู่ <span data-key="ch16.จริง.ตัวอย่าง.0.ห่างfunding">−1.61</span> หารด้วย 6.21 แล้วกลับเครื่องหมาย ได้ 0.26 ทั้งสามคะแนนบวก คาดว่าชุดจะขึ้น แต่ผลจริงใน 5 วันถัดมาคือ −1.01 หกวันนี้มีห้าวันที่คะแนน Z บวก แต่ผลบวกเพียงสองวัน และวันสุดท้ายผลขึ้นถึง 12.59% ในห้าวัน ซึ่งใหญ่กว่าผลที่คาดจากคะแนนใด ๆ หลายเท่า</p>
+<p>ตารางหกแถวบอกอะไรไม่ได้มาก ต้องดู IC ทั้งช่วง มินคิด IC ของแต่ละคะแนนในช่วงเลือก แยกครึ่งแรกกับครึ่งหลังของช่วงเลือกเพื่อดูว่ามันนิ่งไหม แล้วจึงคิดในช่วงตรวจ</p>
+<p class="cap">📡 ข้อมูลจริง · IC (Rank Correlation ของคะแนนกับผล 5 วันข้างหน้า) · ช่วงเลือกแบ่งครึ่งที่วันที่ 365</p>
+<div class="tw"><table data-src="real">
+<tr><th>คะแนน</th><th>ช่วงเลือกทั้งหมด</th><th>ครึ่งแรก</th><th>ครึ่งหลัง</th><th>ช่วงตรวจ</th></tr>
+<tr><td>Z (60 วัน)</td><td data-key="ch16.จริง.IC.z.ช่วงเลือก">0.14</td><td data-key="ch16.จริง.IC.z.ครึ่งแรก">0.12</td><td data-key="ch16.จริง.IC.z.ครึ่งหลัง">0.16</td><td data-key="ch16.จริง.IC.z.ช่วงตรวจ"><strong>−0.13</strong></td></tr>
+<tr><td>funding (7 วัน)</td><td data-key="ch16.จริง.IC.f.ช่วงเลือก">−0.03</td><td data-key="ch16.จริง.IC.f.ครึ่งแรก">0.04</td><td data-key="ch16.จริง.IC.f.ครึ่งหลัง">−0.07</td><td data-key="ch16.จริง.IC.f.ช่วงตรวจ">−0.08</td></tr>
+<tr><td>ส่วนที่เหลือ (20 วัน)</td><td data-key="ch16.จริง.IC.r.ช่วงเลือก">0.15</td><td data-key="ch16.จริง.IC.r.ครึ่งแรก">0.2</td><td data-key="ch16.จริง.IC.r.ครึ่งหลัง">0.11</td><td data-key="ch16.จริง.IC.r.ช่วงตรวจ">−0.04</td></tr>
+</table></div>
+<p>ในช่วงเลือก Z กับส่วนที่เหลือดูดี IC บวกราว 0.14 ถึง 0.15 และบวกทั้งครึ่งแรกและครึ่งหลัง ซึ่งดูเหมือนสัญญาณที่นิ่ง การสั่นของ IC ที่นับช่วงห้าวันที่ไม่ซ้อนกันคือราว 0.09 ค่า 0.14 จึงห่างศูนย์ราวหนึ่งเท่าครึ่งของการสั่น ยังไม่ถึงสองเท่า ส่วน funding มี IC <span data-key="ch16.จริง.IC.f.ช่วงเลือก">−0.03</span> คือติดลบเล็กน้อย ทิศที่คาดจากเหตุผลเรื่องคนแห่ long จึงไม่ปรากฏในข้อมูลเลย</p>
+<p>ช่วงตรวจพลิกทุกตัว IC ของ Z กลายเป็น <span data-key="ch16.จริง.IC.z.ช่วงตรวจ">−0.13</span> คือในปีนั้นวันที่ ETH แพงเทียบ BTC กลับตามมาด้วยการที่ ETH ยิ่งแพงขึ้น ส่วนที่เหลือเหลือ <span data-key="ch16.จริง.IC.r.ช่วงตรวจ">−0.04</span> การสั่นของช่วงตรวจที่มีช่วงห้าวันไม่ซ้อนกันราว <span data-key="ch16.จริง.แถวไม่ซ้อนช่วงตรวจ">72</span> ช่วงคือราว <span data-key="ch16.จริง.สั่นเองช่วงตรวจ">0.12</span> ค่าทุกตัวในช่วงตรวจจึงอยู่ในแถบที่โชคให้ได้ ข้อสรุปที่ซื่อคือ <strong>สัญญาณที่ดูนิ่งในสองปีของช่วงเลือกไม่ได้อยู่ต่อในปีถัดไป</strong> ไม่ใช่ "พลิกเป็นสัญญาณตามทิศ" เพราะ −0.13 ก็แยกจากโชคไม่ออกเหมือนกัน</p>
+<p>ต่อไปคือการรวมและโมเดลที่เรียนรู้เอง ทุกตัวเรียนจากช่วงเลือกทั้งหมด</p>
+<p class="cap">📡 ข้อมูลจริง · IC ของคะแนนรวมและโมเดล · เรียนจากช่วงเลือก ตรวจในช่วงตรวจ</p>
+<div class="tw"><table data-src="real">
+<tr><th>แบบ</th><th>เรียนอะไรจากช่วงเลือก</th><th>IC ช่วงเลือก</th><th>IC ช่วงตรวจ</th></tr>
+<tr><td>รวมสาม น้ำหนักเท่ากัน</td><td>Mean และ SD ของคะแนนเท่านั้น</td><td data-key="ch16.จริง.ICรวม.รวมสาม.ช่วงเลือก">0.11</td><td data-key="ch16.จริง.ICรวม.รวมสาม.ช่วงตรวจ">−0.11</td></tr>
+<tr><td>Multiple Regression 3 ตัว</td><td>น้ำหนัก Z <span data-key="ch16.จริง.Regression.น้ำหนัก.z">0.24</span> · funding <span data-key="ch16.จริง.Regression.น้ำหนัก.f">−0.29</span> · ส่วนที่เหลือ <span data-key="ch16.จริง.Regression.น้ำหนัก.r">0.66</span></td><td data-key="ch16.จริง.Regression.ICช่วงเลือก">0.18</td><td data-key="ch16.จริง.Regression.ICช่วงตรวจ">−0.03</td></tr>
+<tr><td>ใส่ทุกอย่าง 12 ตัว</td><td>น้ำหนัก 12 ตัว (Z สามหน้าต่าง · funding สามหน้าต่าง · ส่วนที่เหลือสามช่วง · ตลาด · SD สองเหรียญ)</td><td data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.ICช่วงเลือก">0.36</td><td data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.ICช่วงตรวจ">−0.06</td></tr>
+</table></div>
+<p>คะแนนรวมสามตัวได้ IC ในช่วงเลือกต่ำกว่า Z ตัวเดียว คือ 0.11 เทียบกับ 0.14 สาเหตุมีสองข้อที่ตอน ก เตือนไว้แล้ว ข้อแรก funding ที่ใส่ไปมีทิศผิดในช่วงเลือก ข้อที่สอง Z กับส่วนที่เหลือมี correlation 0.79 จึงนับเรื่องเดียวกันเกือบสองครั้ง ในช่วงตรวจคะแนนรวมได้ −0.11 ไม่ได้ดีกว่าการ์ดใบเดียวของ Z</p>
+<p>Multiple Regression เลือกน้ำหนักเองได้น่าสนใจ มันให้ funding น้ำหนักติดลบ คือกลับทิศจากเหตุผลที่มินตั้งไว้ เพราะในช่วงเลือก funding สูงตามมาด้วย ETH ที่แข็งขึ้นเล็กน้อย และมันให้น้ำหนักส่วนที่เหลือมากกว่า Z เกือบสามเท่า ทั้งที่สองตัวแทบเป็นเรื่องเดียวกัน นี่คือลักษณะของการเรียนน้ำหนักจากข้อมูลที่สัญญาณซ้อนกัน น้ำหนักจะไปตกที่ตัวไหนก็ได้ตามโชคของช่วงนั้น ค่า t ของสามน้ำหนักคือ <span data-key="ch16.จริง.Regression.t.z">1.0</span> · <span data-key="ch16.จริง.Regression.t.f">−1.77</span> · <span data-key="ch16.จริง.Regression.t.r">2.72</span> แต่ค่า t ของ Regression คิดเหมือนทุกแถวเป็นอิสระ ซึ่งไม่จริงเมื่อป้ายคำตอบซ้อนกันห้าวัน ค่าจริงจึงเล็กกว่านี้มาก IC ในช่วงตรวจของมันคือ <span data-key="ch16.จริง.Regression.ICช่วงตรวจ">−0.03</span></p>
+<p>โมเดลที่ใส่ทุกอย่าง 12 ตัวให้ภาพเดียวกับโลกจำลอง แต่แรงกว่า IC ในช่วงเลือกขึ้นไปถึง <span data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.ICช่วงเลือก">0.36</span> สูงกว่าทุกแบบ แต่ในช่วงตรวจเหลือ <span data-key="ch16.จริง.ใส่ทุกอย่าง.สิบสอง.ICช่วงตรวจ">−0.06</span> ส่วน R² ลดจาก 11.2% เป็น −19.4% ตามที่กล่องพังเมื่อไรของตอน ข เล่าไว้</p>
+<!--CHART:sab2-blend-real-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 350" role="img" aria-label="แท่งคู่หกหมวด ช่วงเลือก Z กับส่วนที่เหลือบวกราว 0.14 ถึง 0.15 funding ราวศูนย์ โมเดลใส่ทุกอย่างบวก 0.36 ช่วงตรวจทุกแท่งอยู่ใต้ศูนย์หรือใกล้ศูนย์ และอยู่ในแถบที่โชคให้ได้">
+<text x="16.0" y="24.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">IC ของชุด ETH–BTC: ทุกแบบที่บวกในช่วงเลือก กลายเป็นลบในช่วงตรวจ</text>
+<rect x="64" y="136.1" width="672" height="174.4" fill="#f3f4f6" stroke="#d1d5db" stroke-dasharray="4 3"/>
+<text x="732.0" y="305.5" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">แถบที่โชคให้ได้ในช่วงตรวจ (±0.24)</text>
+<line x1="64" y1="296.0" x2="736" y2="296.0" stroke="#f3f4f6"/>
+<text x="56.0" y="300.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.2</text>
+<line x1="64" y1="259.7" x2="736" y2="259.7" stroke="#f3f4f6"/>
+<text x="56.0" y="263.7" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−0.1</text>
+<line x1="64" y1="223.3" x2="736" y2="223.3" stroke="#d1d5db"/>
+<text x="56.0" y="227.3" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="187.0" x2="736" y2="187.0" stroke="#f3f4f6"/>
+<text x="56.0" y="191.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.1</text>
+<line x1="64" y1="150.7" x2="736" y2="150.7" stroke="#f3f4f6"/>
+<text x="56.0" y="154.7" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.2</text>
+<line x1="64" y1="114.3" x2="736" y2="114.3" stroke="#f3f4f6"/>
+<text x="56.0" y="118.3" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.3</text>
+<line x1="64" y1="78.0" x2="736" y2="78.0" stroke="#f3f4f6"/>
+<text x="56.0" y="82.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0.4</text>
+<rect x="83.0" y="172.5" width="34.0" height="50.9" rx="2" fill="#2563eb"/>
+<text x="100.0" y="167.5" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.14</text>
+<rect x="120.0" y="223.3" width="34.0" height="47.2" rx="2" fill="#d97706"/>
+<text x="137.0" y="283.6" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.13</text>
+<text x="120.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">Z</text>
+<text x="120.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">(60 วัน)</text>
+<rect x="195.0" y="223.3" width="34.0" height="10.9" rx="2" fill="#2563eb"/>
+<text x="212.0" y="247.2" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">−0.03</text>
+<rect x="232.0" y="223.3" width="34.0" height="29.1" rx="2" fill="#d97706"/>
+<text x="249.0" y="265.4" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.08</text>
+<text x="232.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">funding</text>
+<text x="232.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">(7 วัน)</text>
+<rect x="307.0" y="168.8" width="34.0" height="54.5" rx="2" fill="#2563eb"/>
+<text x="324.0" y="163.8" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.15</text>
+<rect x="344.0" y="223.3" width="34.0" height="14.5" rx="2" fill="#d97706"/>
+<text x="361.0" y="250.9" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.04</text>
+<text x="344.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ส่วนที่เหลือ</text>
+<text x="344.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">(20 วัน)</text>
+<rect x="419.0" y="183.4" width="34.0" height="40.0" rx="2" fill="#2563eb"/>
+<text x="436.0" y="178.4" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.11</text>
+<rect x="456.0" y="223.3" width="34.0" height="40.0" rx="2" fill="#d97706"/>
+<text x="473.0" y="276.3" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.11</text>
+<text x="456.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">รวมสาม</text>
+<rect x="531.0" y="157.9" width="34.0" height="65.4" rx="2" fill="#2563eb"/>
+<text x="548.0" y="152.9" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.18</text>
+<rect x="568.0" y="223.3" width="34.0" height="10.9" rx="2" fill="#d97706"/>
+<text x="585.0" y="247.2" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.03</text>
+<text x="568.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">Regression</text>
+<text x="568.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">3 ตัว</text>
+<rect x="643.0" y="92.5" width="34.0" height="130.8" rx="2" fill="#2563eb"/>
+<text x="660.0" y="87.5" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700" font-family="Sarabun,sans-serif">0.36</text>
+<rect x="680.0" y="223.3" width="34.0" height="21.8" rx="2" fill="#d97706"/>
+<text x="697.0" y="258.1" text-anchor="middle" font-size="10" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">−0.06</text>
+<text x="680.0" y="314.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">ใส่ทุกอย่าง</text>
+<text x="680.0" y="327.0" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Sarabun,sans-serif">12 ตัว</text>
+<rect x="64" y="44" width="11" height="11" rx="2" fill="#2563eb"/>
+<text x="80.0" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงเลือก (ที่ใช้เรียน)</text>
+<rect x="274.20000000000005" y="44" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="290.2" y="54.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ช่วงตรวจ (ปีถัดไป)</text>
+</svg></div>
+<div class="cap">📡 ข้อมูลจริง (สแนปช็อต) · ราคาปิดรายวัน Binance spot (UTC) · funding Deribit · ช่วงเลือก 2022-11-15 ถึง 2024-11-14 · ช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · ผล 5 วันข้างหน้า</div>
+<!--/CHART:sab2-blend-real-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แท่งคู่แต่ละกลุ่มคือ IC ของคะแนนหรือโมเดลหนึ่งแบบบนชุด ETH–BTC จริง แท่งน้ำเงินคือช่วงเลือกที่ใช้เรียน แท่งส้มคือช่วงตรวจ แถบเทาที่มีเส้นประคือช่วง ±<span data-key="ch16.จริง.สองเท่าสั่นเองช่วงตรวจ">0.24</span> ที่โชคล้วน ๆ ให้ได้ในช่วงตรวจ (สองเท่าของการสั่น 0.12) ให้ดูว่าแท่งน้ำเงินของ Z ส่วนที่เหลือ และโมเดลทั้งสองบวกทุกแท่ง แต่แท่งส้มทุกแท่งอยู่ใต้ศูนย์และอยู่ในแถบเทา สรุปได้ว่าทุกแบบที่ดูดีในช่วงเลือกไม่เหลืออะไรในช่วงตรวจ และแบบที่ดูดีที่สุดในช่วงเลือกคือแบบที่ใส่ตัวแปรมากที่สุด</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ค</div>
+<p>บนชุด ETH–BTC จริง IC ของ Z เป็น 0.14 ในช่วงเลือกและบวกทั้งสองครึ่ง แต่เป็น −0.13 ในช่วงตรวจ funding มีทิศผิดตั้งแต่ช่วงเลือก (−0.03) คะแนนรวมสามตัวได้ 0.11 ในช่วงเลือกและ −0.11 ในช่วงตรวจ โมเดลที่ใส่ทุกอย่าง 12 ตัวได้ 0.36 ในช่วงเลือกแต่ −0.06 ในช่วงตรวจ</p></div>
+
+<!-- ═══════════════ ตอน ง ═══════════════ -->
+<h2 id="kh">ตอน ง หลังต้นทุน และการตัดสินใจของมิน — ช่วงตรวจ: ไม่มีแบบไหนชนะการไม่ทำอะไรอย่างมีความหมาย</h2>
+<p>IC บอกลำดับ แต่สิ่งที่มินต้องตัดสินคือเงิน เขาเดินทุกแบบในเครื่องเดียวกับบท 13 กติกาเดียวกับโลกจำลอง ทุกเย็นคิดผลที่คาดของ 5 วันข้างหน้าจากความชันหรือน้ำหนักที่เรียนในช่วงเลือก ถ้าผลที่คาดเกิน 0.2% ก็เข้าทางนั้นด้วยราคาปิดวันถัดไป ถือ 5 วันแล้วปิด ขา ETH คือ <span data-key="ch16.ค่า.ETHเหรียญ">0.16</span> เหรียญ ซึ่งต้นช่วงตรวจที่ราคา <span data-key="ch16.จริง.ETHต้นช่วงตรวจ">3,090.01</span> มีมูลค่าราว <span data-key="ch16.จริง.มูลค่าขาETHต้นช่วงตรวจ">494</span> ส่วนขา BTC มีมูลค่าเท่ากับขา ETH ในวันเข้า ทุนเริ่ม 1,000</p>
+<p>มินใส่ Baseline สองตัวไว้ในตารางด้วย ตัวแรกคือไม่ทำอะไรเลย ซึ่งได้ 0 พอดี ตัวที่สองคือ "short ชุดทุกไม้" ซึ่งเข้า short ETH คู่ long BTC ทุกครั้งที่ว่าง เพราะต้นไม้ในตอน ข ส่งวันส่วนใหญ่ไปกองที่ทายว่าลง ถ้าต้นไม้ไม่ชนะ Baseline ตัวนี้ แปลว่ามันไม่ได้เรียนอะไรมากกว่าทิศของช่วงเลือก</p>
+<p class="cap">📡 ข้อมูลจริง · ETH–BTC มูลค่าเท่ากัน · ถือ 5 วัน · ค่าธรรมเนียม 0.05% ต่อ fill ต่อขา · ทุนเริ่ม 1,000 · "ค้าง" = ไม้ที่ยังเปิดอยู่ตอนจบช่วง (นับตามราคาปิดวันสุดท้าย)</p>
+<div class="tw"><table data-src="real">
+<tr><th>แบบ</th><th>ช่วงเลือก (ข้อมูลที่ใช้เรียน)</th><th>ช่วงตรวจ: ผล</th><th>ไม้ปิด / ชนะ</th><th>ค่าธรรมเนียม</th><th>Equity ต่ำสุด</th><th>ค้าง</th></tr>
+<tr><td>ไม่ทำอะไร (Baseline)</td><td>0</td><td>0</td><td>0 / 0</td><td>0</td><td>1,000</td><td>0</td></tr>
+<tr><td>Z ตัวเดียว (การ์ดใบเดียว)</td><td data-key="ch16.จริง.backtest.Z.ช่วงเลือก.ผล">+258.85</td><td data-key="ch16.จริง.backtest.Z.ช่วงตรวจ.ผล">−139.85</td><td>57 / 28</td><td data-key="ch16.จริง.backtest.Z.ช่วงตรวจ.ค่าธรรมเนียม">57.58</td><td data-key="ch16.จริง.backtest.Z.ช่วงตรวจ.Equityต่ำสุด">718.63</td><td>1</td></tr>
+<tr><td>รวมสาม น้ำหนักเท่ากัน</td><td data-key="ch16.จริง.backtest.รวมสาม.ช่วงเลือก.ผล">+4.48</td><td data-key="ch16.จริง.backtest.รวมสาม.ช่วงตรวจ.ผล"><strong>−439.51</strong></td><td>55 / 19</td><td data-key="ch16.จริง.backtest.รวมสาม.ช่วงตรวจ.ค่าธรรมเนียม">54.85</td><td data-key="ch16.จริง.backtest.รวมสาม.ช่วงตรวจ.Equityต่ำสุด">552.94</td><td>0</td></tr>
+<tr><td>Multiple Regression 3 ตัว</td><td data-key="ch16.จริง.backtest.Regression.ช่วงเลือก.ผล">+111.89</td><td data-key="ch16.จริง.backtest.Regression.ช่วงตรวจ.ผล">−228.57</td><td>57 / 27</td><td data-key="ch16.จริง.backtest.Regression.ช่วงตรวจ.ค่าธรรมเนียม">57.02</td><td data-key="ch16.จริง.backtest.Regression.ช่วงตรวจ.Equityต่ำสุด">598.75</td><td>1</td></tr>
+<tr><td>Regression เรียนใหม่ทุก 30 วัน</td><td>—</td><td data-key="ch16.จริง.backtest.เรียนใหม่ทุก30วัน.ช่วงตรวจ.ผล">−163.18</td><td>58 / 29</td><td data-key="ch16.จริง.backtest.เรียนใหม่ทุก30วัน.ช่วงตรวจ.ค่าธรรมเนียม">58.64</td><td data-key="ch16.จริง.backtest.เรียนใหม่ทุก30วัน.ช่วงตรวจ.Equityต่ำสุด">827.97</td><td>1</td></tr>
+<tr><td>ต้นไม้ชั้นเดียว</td><td data-key="ch16.จริง.backtest.ต้นไม้.ช่วงเลือก.ผล">+230.16</td><td data-key="ch16.จริง.backtest.ต้นไม้.ช่วงตรวจ.ผล">+14.65</td><td>60 / 31</td><td data-key="ch16.จริง.backtest.ต้นไม้.ช่วงตรวจ.ค่าธรรมเนียม">60.37</td><td data-key="ch16.จริง.backtest.ต้นไม้.ช่วงตรวจ.Equityต่ำสุด">812.81</td><td>1</td></tr>
+<tr><td>short ชุดทุกไม้ (Baseline)</td><td data-key="ch16.จริง.backtest.ขายETHตลอด.ช่วงเลือก.ผล">+96.65</td><td data-key="ch16.จริง.backtest.ขายETHตลอด.ช่วงตรวจ.ผล">−37.94</td><td>60 / 32</td><td data-key="ch16.จริง.backtest.ขายETHตลอด.ช่วงตรวจ.ค่าธรรมเนียม">60.37</td><td data-key="ch16.จริง.backtest.ขายETHตลอด.ช่วงตรวจ.Equityต่ำสุด">749.99</td><td>1</td></tr>
+</table></div>
+<p>อ่านคอลัมน์ช่วงเลือกก่อน ทุกแบบบวกในข้อมูลที่ใช้เรียน แต่นั่นไม่ใช่หลักฐาน เพราะความชันและน้ำหนักถูกเลือกมาให้เข้ากับข้อมูลชุดนั้นเอง คะแนนรวมสามตัวได้แค่ +4.48 แม้ในช่วงเลือก ซึ่งเตือนไว้แล้วตั้งแต่ IC</p>
+<p>ช่วงตรวจคือคำตอบ Z ตัวเดียวเสีย 139.85 คะแนนรวมสามตัวเสียหนักที่สุดคือ 439.51 และ Equity เคยลงไปถึง 552.94 Multiple Regression เสีย 228.57 แบบเรียนใหม่ทุก 30 วันซึ่งใช้ 365 แถวล่าสุดที่ป้ายคำตอบรู้แล้ว และตัดแถวท้ายห้าแถวตามตอน ข · 2 เสีย 163.18 คือการเรียนใหม่บ่อย ๆ ไม่ได้ช่วยเมื่อสัญญาณไม่มีอยู่จริง ทุกแบบมีไม้ค้างหนึ่งไม้ตอนจบ ยกเว้นคะแนนรวมสามตัว</p>
+<p>แบบเดียวที่บวกคือต้นไม้ชั้นเดียว +14.65 แต่ให้ดูว่ามันทำอะไร ในช่วงตรวจมันส่งวัน <span data-key="ch16.จริง.ต้นไม้.สัดส่วนใบล่างช่วงตรวจ">79</span>% ไปกองที่ทายว่าลง จึงทำตัวเกือบเหมือน Baseline "short ชุดทุกไม้" ที่ได้ −37.94 ความต่างของสองแบบนี้มาจากไม้ไม่กี่ไม้ที่ต้นไม้ทายว่าขึ้น ความแม่นของต้นไม้ในช่วงตรวจคือ <span data-key="ch16.จริง.ต้นไม้.ถูกช่วงตรวจ">55.8</span>% ขณะที่การทายว่าลงทุกวันแม่น <span data-key="ch16.จริง.ต้นไม้.ทายลงตลอดช่วงตรวจ">56.1</span>% มันจึงไม่ได้ชนะ Baseline ในเรื่องความแม่นเลย และ +14.65 จากค่าธรรมเนียม 60.37 ในหนึ่งปีคือผลที่เล็กเกินกว่าจะแยกจากโชคได้</p>
+<p>สรุปคำถามของบทบนข้อมูลจริง <strong>คะแนนรวมไม่ได้ชนะการ์ดใบเดียวในช่วงตรวจหลังต้นทุน มันแพ้มากกว่า</strong> และไม่มีแบบไหนชนะการไม่ทำอะไรอย่างมีความหมาย ผลนี้เป็นผลว่างที่ต้องรายงานตามที่ได้ มันตรงกับสิ่งที่โลกจำลองสอน คือการรวมสัญญาณขยายสิ่งที่สัญญาณแต่ละตัวมีอยู่จริง ถ้าสัญญาณแต่ละตัวไม่มีอะไรในปีนั้น การรวมก็ไม่สร้างอะไรขึ้นมา</p>
+<p>มินนับจำนวนครั้งที่ดูช่วงตรวจในบทนี้ตามที่บท 13 และบท 14 สอน คือ Z ตัวเดียว คะแนนรวมสามตัว Multiple Regression ต้นไม้ Baseline short ชุดทุกไม้ แบบเรียนใหม่ทุก 30 วัน และโมเดลใส่ทุกอย่าง 12 ตัว รวม <strong data-key="ch16.จริง.ดูช่วงตรวจ">7</strong> ครั้ง ถ้ามีแบบใดแบบหนึ่งออกมาบวกสวย ๆ ตัวเลขนี้จะต้องติดไปกับผลนั้นเสมอ เพราะในเจ็ดครั้ง การเจออย่างน้อยหนึ่งแบบที่บวกโดยบังเอิญเป็นเรื่องปกติ ซึ่งต้นไม้ +14.65 อาจเป็นแบบนั้นพอดี</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>import math
+from sab2_realdata import load_closes
+import sab2_stats as S
+
+def ranks(v):
+    order = sorted(range(len(v)), key=lambda i: v[i])
+    r = [0] * len(v)
+    for k, i in enumerate(order):
+        r[i] = k + 1
+    return r
+
+d1, f = load_closes("formation", coins=["ETH", "BTC"])
+d2, v = load_closes("validation", coins=["ETH", "BTC"])
+L = [math.log(e / b) for e, b in zip(f["ETH"] + v["ETH"], f["BTC"] + v["BTC"])]
+nf = len(d1)
+
+def ic_z(lo, hi):                                # IC ของคะแนน Z (60 วัน) กับผล 5 วันข้างหน้า
+    score, y = [], []
+    for t in range(max(lo, 60), hi - 5):         # ป้ายคำตอบไม่ข้ามเส้นแบ่งช่วง
+        w = L[t - 59:t + 1]
+        score.append(-(L[t] - S.mean(w)) / S.sd(w))
+        y.append(100 * (L[t + 5] - L[t]))
+    return S.corr(ranks(score), ranks(y)), len(y)
+
+print(*[round(x, 2) for x in ic_z(0, nf) + ic_z(nf, len(L))])
+# ผลที่ต้องได้: 0.14 · 666 · −0.13 · 360</pre>
+<p>บรรทัด <code>w = L[t - 59:t + 1]</code> คือไม้บรรทัดเลื่อน 60 วันที่จบที่วันตัดสินใจ ส่วน <code>range(max(lo, 60), hi - 5)</code> ทำสองอย่าง คือเริ่มเมื่อหน้าต่างครบ และตัดห้าวันท้ายของแต่ละช่วงทิ้ง เพื่อไม่ให้ป้ายคำตอบของช่วงเลือกไปใช้ราคาของช่วงตรวจ คะแนนไม่ได้ลบ Mean ของช่วงเลือก เพราะการลบค่าคงที่ไม่เปลี่ยนอันดับ IC จึงเท่าเดิม ถ้าใช้ pandas ให้คิดป้ายคำตอบด้วย <code>L.shift(-5) - L</code> แล้ว <b>ตัด</b> แถวที่ข้ามเส้นแบ่งก่อนคิด correlation แบบ <code>method="spearman"</code></p>
+</details>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ — ผลของการรวมสัญญาณบนข้อมูลจริง</div>
+<ul>
+<li><strong>บอกไม่ได้ว่า</strong> ทั้งสามสัญญาณ "ตายแล้ว" ช่วงตรวจมีช่วงห้าวันที่ไม่ซ้อนกันเพียงราว 72 ช่วง IC จึงสั่นได้ราว ±0.12 จากโชคล้วน ๆ ค่า −0.13 ของ Z แยกจากศูนย์ไม่ออก และแยกจาก 0.14 ของช่วงเลือกก็ไม่ออกเต็มที่ ผลนี้บอกได้แค่ว่าไม่มีหลักฐานว่าสัญญาณยังอยู่</li>
+<li><strong>พังเมื่อ</strong> เลือกทิศของสัญญาณจากข้อมูล ถ้ามินเห็นว่า funding มี IC −0.03 แล้วกลับทิศมันก่อนรวม หรือเห็น −0.13 ในช่วงตรวจแล้วกลับทิศ Z ไปเป็นสัญญาณตามทิศ นั่นคือการลองเพิ่มอีกหนึ่งครั้งที่ต้องนับ และต้องรอข้อมูลชุดใหม่มาตรวจ ไม่ใช่เอาผลของช่วงตรวจเดิมมายืนยัน</li>
+<li><strong>พังเมื่อ</strong> ต้นทุนสูงขึ้น ทุกแบบในตารางจ่ายค่าธรรมเนียมราว 55 ถึง 60 ต่อปีจากไม้ราว 57 ไม้ ซึ่งมากกว่า +14.65 ของต้นไม้สี่เท่า ถ้าต้นทุนจริงสูงกว่า 0.05% ต่อ fill ต่อขา แบบที่บวกเล็กน้อยจะติดลบทันที</li>
+<li><strong>บอกไม่ได้ว่า</strong> ชุดอื่นจะเหมือนกัน บทนี้ใช้ชุดเดียวคือ ETH–BTC เพราะมี funding ครบทั้งช่วงแค่สองเหรียญนี้ ผลว่างบนชุดเดียวไม่ได้แปลว่าการรวมสัญญาณใช้ไม่ได้ทั่วไป มันแปลว่าสามสัญญาณนี้บนชุดนี้ไม่มีอะไรให้รวมในปีนั้น</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">🧰 คนทำงานจริงทำอย่างไร</div>
+<ul>
+<li><strong>ใช้ Machine Learning คัดผู้สมัคร แต่ให้กฎเป็นประตู</strong> Sarmento และ Horta (<span data-key="ch16.คนทำงานจริง.ปีSarmento">2020</span>) ใช้ PCA (การวิเคราะห์องค์ประกอบหลัก) ย่อผลตอบแทนแล้วจัดกลุ่มด้วยวิธี OPTICS ให้เครื่องเสนอคู่เฉพาะในกลุ่มเดียวกัน แต่คู่ที่ผ่านต้องผ่านกฎตายตัวอีกสี่ข้อ คือผ่านการทดสอบ Engle–Granger ที่ p <span data-key="ch16.คนทำงานจริง.Sarmentop">1</span>% · Hurst Exponent (เลขชี้กำลังเฮิร์สต์) ต่ำกว่า <span data-key="ch16.คนทำงานจริง.SarmentoHurst">0.5</span> · Half-life (ครึ่งชีวิต) ระหว่างหนึ่งวันถึงหนึ่งปี · ตัดผ่านค่าเฉลี่ยอย่างน้อย <span data-key="ch16.คนทำงานจริง.Sarmentoข้าม">12</span> ครั้งต่อปี (บันทึกค้นคว้าตรวจจากวิทยานิพนธ์ปี <span data-key="ch16.คนทำงานจริง.ปีวิทยานิพนธ์">2019</span> · ส่วนข้อมูลราคาทุก <span data-key="ch16.คนทำงานจริง.Sarmentoนาที">5</span> นาทีของ ETF <span data-key="ch16.คนทำงานจริง.SarmentoETF">208</span> ตัวมาจากข้อความค้นหา ไม่ได้ตรวจฉบับเต็ม) ไลบรารีโอเพนซอร์ส ArbitrageLab ทำสายพานนี้ไว้ บันทึกค้นคว้าสรุปว่าเครื่องช่วยเลือกผู้สมัคร ส่วนกฎยังเป็นคนตัดสิน</li>
+<li><strong>ยิ่งค้นมาก เส้นผ่านยิ่งต้องสูง</strong> วิทยานิพนธ์เดียวกันเตือนว่าสินทรัพย์ <span data-key="ch16.คนทำงานจริง.Sarmentoสินทรัพย์">20</span> ตัวจับคู่ได้ <span data-key="ch16.คนทำงานจริง.Sarmentoคู่">190</span> คู่ ที่ระดับ 5% จะมีผลผิดราว <span data-key="ch16.คนทำงานจริง.Sarmentoผิด">9</span> คู่ Harvey, Liu และ Zhu (<span data-key="ch16.คนทำงานจริง.ปีHLZ">2016</span>) เสนอให้ปัจจัยใหม่ต้องมีค่า t เกิน <span data-key="ch16.คนทำงานจริง.HLZt">3.0</span> และ Bailey กับ López de Prado (<span data-key="ch16.คนทำงานจริง.ปีBailey">2014</span>) เสนอ Deflated Sharpe Ratio (อัตราส่วนชาร์ปที่หักส่วนลดจากการเลือก) ซึ่งหักส่วนลดตามจำนวนแบบที่ลอง (ทั้งสองข้อบันทึกตรวจจากบทคัดย่อ) ต้นไม้ที่ลอง 3,990 กฎในบทนี้คือการค้นที่ต้องเจอเส้นแบบนี้</li>
+<li><strong>ระวังขนาดที่เงินจะใส่ได้</strong> Fischer, Krauss และ Deinert (<span data-key="ch16.คนทำงานจริง.ปีFischer">2019</span>) ใช้ Random Forest (ป่าต้นไม้ตัดสินใจ) จัดอันดับเหรียญ <span data-key="ch16.คนทำงานจริง.Fischerเหรียญ">40</span> เหรียญด้วยข้อมูลรายนาที (ไม่ใช่กลยุทธ์คู่) ได้ผลนอกช่วงเรียน <span data-key="ch16.คนทำงานจริง.Fischerต่อวัน">7.1</span> จุดพื้นฐานต่อวันหลังต้นทุน <span data-key="ch16.คนทำงานจริง.Fischerต้นทุน">15</span> จุดพื้นฐานต่อการซื้อหรือขายหนึ่งครั้ง แต่บทคัดย่อเองเตือนเรื่องข้อจำกัดของปริมาณซื้อขาย (บันทึกเห็นแค่บทคัดย่อ)</li>
+<li><strong>ความแรงของค่าสถิติใช้เป็นคะแนนได้</strong> Krauss อ้างงานของ Dunis และคณะว่าค่าสถิติ ADF ในช่วงเลือกมีพลังทำนายผลนอกช่วงอยู่บ้าง คนทำงานจึงใช้ค่าสถิติเป็นคะแนนเรียงลำดับ ไม่ใช่แค่ผ่านหรือไม่ผ่าน ข้อนี้เป็นข้อมูลมือสอง บันทึกไม่ได้เปิดงานของ Dunis เอง</li>
+<li><strong>สิ่งที่บันทึกค้นคว้าไม่มี</strong> บันทึกไม่มีแหล่งที่ตรวจแล้วว่าคนทำ stat arb จริงตั้งน้ำหนักรวมสัญญาณอย่างไร ใช้ IC ระดับไหนเป็นเกณฑ์ หรือกันการรั่วของป้ายคำตอบด้วยวิธีใด บทนี้จึงไม่อ้างตัวเลขหรือกฎของวงการในเรื่องเหล่านี้ วิธีในบทนี้ (ตั้งทิศก่อนดู · น้ำหนักเท่ากัน · ตัดแถวท้าย · นับการลอง) มาจากเหตุผลและโลกจำลองของเล่มเอง</li>
+</ul></div>
+
+<p>มินปิดหน้านี้ด้วยการตัดสินใจสามข้อ ข้อแรก ไม่ใช้คะแนนรวม Multiple Regression หรือต้นไม้กับเงินจริงหรือบนกระดาษ เพราะไม่มีแบบไหนชนะ Baseline ในช่วงตรวจอย่างมีความหมาย ข้อที่สอง เก็บวิธีรวมสัญญาณไว้เป็นกติกาของเล่ม คือตั้งทิศของทุกสัญญาณจากเหตุผลก่อนดูข้อมูล วัด IC แยกสองครึ่งของช่วงเลือก ตัดสัญญาณที่ซ้ำกันเกิน 0.8 ออกให้เหลือตัวเดียว ใช้น้ำหนักเท่ากันเป็นค่าเริ่มต้น และเทียบกับ Baseline สองตัวทุกครั้ง ข้อที่สาม ต้นไม้ของต้นไม่ผ่าน เพราะความแม่นของมันในช่วงตรวจไม่ชนะการทายว่าลงทุกวัน</p>
+<p>การทดลองถัดไปเปลี่ยนเพียงหนึ่งอย่าง และไม่ต้องเปิดช่วงตรวจเลย ทุกโมเดลในบทนี้ยกเว้นต้นไม้คิดว่าผลที่คาดเป็นเส้นตรงของคะแนน มินจะแบ่งวันในช่วงเลือกเป็นห้ากลุ่มตามคะแนน Z แล้วดูผลเฉลี่ยของแต่ละกลุ่ม ส่วนสัญญาณ ชุด ต้นทุน และการถือ 5 วันคงเดิม เขาเขียนไว้ก่อนดูว่า ถ้าผลเฉลี่ยของห้ากลุ่มเรียงเป็นเส้นตรงตามคะแนน แปลว่าเส้นตรงพอแล้วและไม่ต้องทำอะไรเพิ่ม แต่ถ้ามีแต่กลุ่มปลายสุดที่กลับทิศ แปลว่าความสัมพันธ์มีรูปร่างที่เส้นตรงมองไม่เห็น ซึ่งเป็นงานของบทถัดไป</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ง</div>
+<p>หลังต้นทุนในช่วงตรวจ Z ตัวเดียวได้ −139.85 คะแนนรวมสามตัวได้ −439.51 Multiple Regression ได้ −228.57 และต้นไม้ได้ +14.65 ซึ่งแม่นเพียง 55.8% เทียบกับ 56.1% ของการทายว่าลงทุกวัน บทนี้ดูช่วงตรวจไป 7 ครั้ง มินไม่ใช้โมเดลใดเลย แต่เก็บกติการวมสัญญาณไว้เป็นวิธีของเล่ม</p></div>
+
+<div class="sum3"><div class="bt">สรุป 3 ข้อ</div>
+<ol>
+<li>สัญญาณหลายตัวต้องแปลงเป็นคะแนนภาษาเดียวกันก่อน แล้ววัดด้วย IC ซึ่งคือ Rank Correlation ระหว่างคะแนนกับผลที่ตามมา ในแปดวันตัวอย่าง Z ได้ 0.5 funding ได้ 0.33 รวมกันได้ 0.67 เพราะผิดคนละวัน แต่ใส่สำเนาของ Z เพิ่มแล้วเหลือ 0.52 และคะแนนต้องแปลงเป็นผลที่คาดด้วยความชัน (0.5) ก่อนเทียบต้นทุนไปกลับ 0.2%</li>
+<li>โมเดลที่เรียนรู้เองต้องตอบสามคำถาม คือเทียบกับ Baseline อะไร ลองไปกี่แบบ และป้ายคำตอบรู้ได้วันไหน ต้นไม้ชั้นเดียวที่ทายถูก 7 จาก 8 วันคือสิ่งที่โชคให้ได้ราว 54% ของครั้งเมื่อมีสามคอลัมน์ และ funding ที่ต่อผิดวันได้ IC 0.23 แทน 0.03</li>
+<li>ในโลกจำลองที่รู้คำตอบ การรวมสองสัญญาณจริงได้ IC 0.22 เทียบกับ 0.14 ของตัวเดียว แต่บนชุด ETH–BTC จริง ทุกแบบพลิกในช่วงตรวจ (Z จาก 0.14 เป็น −0.13) และหลังต้นทุนไม่มีแบบไหนชนะการไม่ทำอะไรอย่างมีความหมาย คะแนนรวมสามตัวแพ้การ์ดใบเดียว (−439.51 เทียบกับ −139.85) โดยดูช่วงตรวจไป 7 ครั้ง</li>
+</ol></div>
+
+<div class="bx bg"><div class="bt">✍️ ลองทำเอง</div>
+<ol>
+<li><strong>(ทำตาม)</strong> ใช้แปดวันของตอน ก เรียงอันดับคะแนน funding ของวันที่ 1 ถึง 8 แล้วเติมช่องว่าง: อันดับคะแนน funding ทีละวัน ___ ผลรวมของอันดับที่ต่างจากอันดับผลยกกำลังสอง ___ IC จากสูตรลัด ___ และตรวจอีกทางด้วยผลรวมของผลคูณ ÷ 42 ได้ ___
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: คะแนน funding ที่ต่ำสุดคือ −2 ของวันที่ 2 จึงได้อันดับ 1 ส่วนที่สูงสุดคือ 2 ของวันที่ 7 จึงได้อันดับ 8 อันดับผลใช้แถวเดิมในตารางของตอน ก · 1 (3 · 6 · 1 · 8 · 4 · 2 · 7 · 5)</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>อันดับคะแนน funding คือ 4 · 1 · 5 · 6 · 2 · 3 · 8 · 7 วันที่ 2 ต่างจากอันดับผลมากที่สุด คือ 1 − 6 หรือ −5 ยกกำลังสองได้ 25</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>อันดับที่ต่างกันทีละวันคือ 1 · −5 · 4 · −2 · −2 · 1 · 1 · 2 ยกกำลังสองแล้วรวมได้ <span data-key="ch16.มือ.บล็อก.f.รวมต่าง2">56</span> หกเท่าคือ 336 IC จึงเป็น 1 − 336 ÷ 504 ได้ <span data-key="แบบฝึก.ch16.0.คำตอบ">0.33</span> ตรวจอีกทาง ผลคูณของระยะห่างจากกึ่งกลางรวมได้ <span data-key="ch16.มือ.บล็อก.f.ผลคูณรวม">14</span> และ 14 ÷ 42 ก็ได้ 0.33 เท่ากัน</p>
+<p>ถ้าได้ IC ติดลบ แปลว่าเรียงอันดับคะแนนกลับทาง (ให้อันดับ 1 กับค่ามากสุด) ถ้าได้ผลรวมเป็นเลขคี่ แปลว่าลบอันดับผิดสักแถว เพราะผลรวมของอันดับที่ต่างกันยกกำลังสองเป็นเลขคู่เสมอ</p></details>
+</li>
+<li><strong>(เปลี่ยนเลขหนึ่งตัว)</strong> ทุกอย่างเหมือนเดิม แต่ผลของวันที่ 8 เป็น +2.6 แทน +0.2 IC ของคะแนน Z เป็นเท่าไร และทำไมขึ้นหรือลง
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: ผล +2.6 สูงกว่าผลของทุกวัน วันที่ 8 จึงได้อันดับผล 8 และวันที่เคยอยู่อันดับ 6 ถึง 8 ต้องขยับลงหนึ่งอันดับ</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>อันดับผลใหม่ของวันที่ 1 ถึง 8 คือ 3 · 5 · 1 · 7 · 4 · 2 · 6 · 8 ส่วนอันดับคะแนน Z ยังเป็น 6 · 8 · 1 · 5 · 4 · 2 · 3 · 7</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>อันดับที่ต่างกันคือ 3 · 3 · 0 · −2 · 0 · 0 · −3 · −1 ยกกำลังสองแล้วรวมได้ <span data-key="ch16.มือ.แบบฝึก.ข้อ2.รวมต่าง2">32</span> หกเท่าคือ <span data-key="ch16.มือ.แบบฝึก.ข้อ2.หกเท่า">192</span> IC จึงเป็น 1 − 192 ÷ 504 ได้ <span data-key="ch16.มือ.แบบฝึก.ข้อ2.IC">0.62</span> ขึ้นจาก 0.5 เพราะวันที่ 8 มีคะแนน Z สูงเป็นอันดับ 7 พอผลของวันนั้นขึ้นไปอยู่อันดับ 8 สองอันดับจึงใกล้กันขึ้น</p>
+<p>ข้อนี้แสดงว่าเปลี่ยนผลของวันเดียวในแปดวัน IC ขยับได้ 0.12 ซึ่งคือเหตุผลที่ IC จากข้อมูลน้อยเชื่อไม่ได้ ถ้าได้ 0.5 เท่าเดิม แปลว่าลืมขยับอันดับของวันอื่นลง</p></details>
+</li>
+<li><strong>(เปลี่ยนเงื่อนไขหนึ่งข้อ)</strong> ความชันยังเป็น 0.5 แต่ต้นทุนไปกลับเป็น 0.6% แทน 0.2% (เช่นค่าธรรมเนียมแพงขึ้นสามเท่า) คะแนนรวมต้องเกินเท่าไร ในแปดวันเหลือกี่วันที่ควรเทรด และคะแนน 3 กับคะแนน 2 ได้หลังต้นทุนเท่าไร
+<details class="hint"><summary>คำใบ้</summary>
+<p>ขั้นที่ 1: ผลที่คาดคือ 0.5 × คะแนน ไม้ที่คุ้มต้องมีผลที่คาดเกินต้นทุน จึงหาคะแนนที่ทำให้ 0.5 × คะแนน เท่ากับ 0.6</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>คะแนนต้องเกิน 0.6 ÷ 0.5 หรือ 1.2 ไม่ว่าทางบวกหรือทางลบ ดูคะแนนรวมของแปดวันในตารางของตอน ก · 3</p></details>
+</details>
+<details class="ans"><summary>เฉลย</summary><p>คะแนนต้องเกิน <span data-key="ch16.มือ.แบบฝึก.ข้อ3.คะแนนต้องเกิน">1.2</span> วันที่ผ่านคือวันที่ 3 (−1.5) · 4 (1.5) · 5 (−2) · 6 (−2.5) · 8 (3) รวม <span data-key="ch16.มือ.แบบฝึก.ข้อ3.จำนวน">5</span> วัน วันที่ 1 กับ 7 ที่เคยผ่านเส้น 0.4 หลุดออกไป คะแนน 3 ได้หลังต้นทุน 1.5 − 0.6 หรือ <span data-key="ch16.มือ.แบบฝึก.ข้อ3.สุทธิคะแนนสาม">0.9</span> ส่วนคะแนน 2 ได้ 1 − 0.6 หรือ <span data-key="ch16.มือ.แบบฝึก.ข้อ3.สุทธิคะแนนสอง">0.4</span></p>
+<p>ต้นทุนสามเท่าไม่ได้ทำให้กำไรหายไปเท่ากันทุกไม้ มันตัดไม้คะแนนต่ำทิ้งหมด และกินไม้คะแนนกลางหนักที่สุด คะแนน 3 ตอนนี้ได้มากกว่าคะแนน 2 ถึงสองเท่าเศษ ถ้าคิดว่ายังเทรด 7 วันเท่าเดิม แปลว่ายังใช้เส้น 0.4 ของต้นทุนเดิม</p></details>
+</li>
+<li><strong>(ตัดสินใจ)</strong> ต้นส่งต้นไม้ชั้นเดียวบนข้อมูลจริงมาให้อีกรอบ "ช่วงเลือกทายถูก 62.2% ได้ +230.16 ดีกว่า Z ตัวเดียวที่ทายได้น้อยกว่า เอาไปลงเงินเลย" คุณเห็นด้วยไหม ตอบด้วยคำถามสามข้อของบทนี้
+<details class="ans"><summary>เฉลย</summary><p>ไม่เห็นด้วย ทางที่ยั่วใจคือเทียบ 62.2% กับ 50% หรือกับสัญญาณตัวอื่น ข้อแรก เทียบกับอะไร การทายว่าชุดลงทุกวันในช่วงเลือกถูกอยู่แล้ว <span data-key="แบบฝึก.ch16.3.คำตอบ">60.2</span>% และต้นไม้ส่ง 88% ของวันไปกองที่ทายว่าลง มันจึงแทบไม่ได้เรียนอะไรนอกจากทิศของช่วงเลือก ข้อที่สอง ลองไปกี่แบบ มันลอง 3,990 กฎ แล้วเก็บแบบที่ดีที่สุด ข้อที่สาม ผลในช่วงตรวจเป็นอย่างไร ต้นไม้แม่น 55.8% เทียบกับ 56.1% ของการทายว่าลงทุกวัน และได้ +14.65 จากค่าธรรมเนียม 60.37</p>
+<p>ข้อระวังของคนทำจริง: +230.16 เป็นผลบนข้อมูลที่ใช้เลือกจุดตัด จึงไม่ใช่หลักฐาน และถ้าจะทดสอบใหม่ ต้องนับว่าเป็นการดูช่วงตรวจครั้งที่ 8</p></details>
+</li>
+<li><strong>(ถ่ายโอน · ข้อมูลจริง)</strong> เพื่อนในกลุ่มอ่านหนังสือส่งผลมาว่า "funding 5 วัน" ของชุด ETH–BTC มี IC <span data-key="ch16.จริง.รั่ว.ICอนาคต">0.23</span> ในช่วงเลือก ซึ่งสูงกว่าสัญญาณทุกตัวของมิน เมื่อถามวิธีคิด เขาตอบว่า "เอา funding เฉลี่ยของห้าวันที่ป้ายคำตอบวัดผล" ข้อมูลนี้รั่วตรงไหน ถ้าแก้ให้ถูกจะได้ IC เท่าไร และถ้าเจอโมเดลหุ้นที่ใช้ "ปริมาณซื้อขายของวันเดียวกับผลตอบแทน" จะถามอะไร
+<details class="ans"><summary>เฉลย</summary><p>ป้ายคำตอบของวัน t ใช้ราคาวัน t ถึงวัน t + 5 ส่วน "funding ของห้าวันเดียวกัน" ใช้รอบชำระของวัน t + 1 ถึงวัน t + 5 ซึ่งยังไม่เกิดตอนตัดสินใจ funding ขยับตามราคา วันที่ ETH วิ่งขึ้น funding ของ ETH ก็สูงขึ้นตาม ตัวแปรนี้จึงเห็นคำตอบไปแล้วบางส่วน นี่คือ Label Leakage แบบที่สองของตอน ข · 2 ถ้าแก้เป็น funding เฉลี่ย 7 วันที่จบที่วันตัดสินใจ IC จะลดจาก <span data-key="แบบฝึก.ch16.4.คำตอบ">0.23</span> เหลือเพียง <span data-key="ch16.จริง.รั่ว.ICอดีต">0.03</span></p>
+<p>กับโมเดลหุ้นให้ถามคำถามเดียวกัน คือ "ปริมาณซื้อขายของวันนั้นรู้ได้เมื่อไร" ถ้ารู้ได้หลังตลาดปิด แต่โมเดลใช้มันทายผลตอบแทนของวันเดียวกันที่ซื้อขายระหว่างวัน ก็รั่วแบบเดียวกัน ถ้าได้ IC ราว 0.23 หลังแก้แล้ว แปลว่ายังแก้ไม่ครบ ให้ไล่คอลัมน์ "รู้ได้วันไหน" ทีละช่องอีกรอบ</p></details>
+</li>
+</ol></div>
+
+<div class="pq" data-hook="ไม่เป็นเส้นตรง">ทุกโมเดลในบทนี้ยกเว้นต้นไม้ถือว่าผลที่คาดเป็นเส้นตรงของคะแนน ถ้าความสัมพันธ์ระหว่างสองเหรียญไม่เป็นเส้นตรง เช่นกลับแรงเฉพาะตอนที่ห่างกันมาก หรือร่วงพร้อมกันแรงกว่าขึ้นพร้อมกัน จะวัดมันอย่างไรโดยไม่ต้องเดารูปร่างของเส้นไว้ก่อน</div>
+
+<div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
+<ul>
+<li><strong>Information Coefficient (สหสัมพันธ์ระหว่างคะแนนกับผลที่ตามมา)</strong> = Rank Correlation ระหว่างคะแนนที่รู้วันนี้กับผลที่ตามมาทีหลัง เรียกสั้น ๆ ว่า IC · แปดวันตัวอย่าง คะแนน Z ได้ 1 − 252 ÷ 504 = 0.5 · ETH–BTC จริง 0.14 ในช่วงเลือก −0.13 ในช่วงตรวจ <span class="tier" data-tier="ข"></span></li>
+<li><strong>Signal Blending (การรวมสัญญาณ)</strong> = แปลงสัญญาณหลายตัวเป็นคะแนนภาษาเดียวกัน แล้วรวมด้วยน้ำหนักที่ตั้งไว้ก่อน · Z กับ funding ที่ผิดคนละวันรวมได้ 0.67 แต่ใส่สำเนาของ Z แล้วเหลือ 0.52 <span class="tier" data-tier="ข"></span></li>
+<li><strong>Feature (ตัวแปรทำนาย)</strong> = แต่ละคอลัมน์ที่ป้อนให้โมเดลใช้ทาย ต้องรู้ได้ไม่เกินวันตัดสินใจ · ตัวอย่างแปดวันมีสามตัว โมเดลใส่ทุกอย่างบนข้อมูลจริงมี 12 ตัว <span class="tier" data-tier="ข"></span></li>
+<li><strong>Decision Tree (ต้นไม้ตัดสินใจ)</strong> = กฎที่ถามว่าตัวแปรทำนายเกินจุดตัดหรือไม่ แล้วแยกวันเป็นกอง · ต้นไม้ชั้นเดียวของต้นลอง 42 กฎ ได้ "funding เกิน 0.75" ทายถูก 7 จาก 8 <span class="tier" data-tier="ค"></span></li>
+<li><strong>Machine Learning (การเรียนรู้ของเครื่อง)</strong> = ให้คอมพิวเตอร์ลองกฎหรือน้ำหนักจำนวนมากกับข้อมูลแล้วเก็บแบบที่เข้ากับข้อมูลที่สุด ทั้งต้นไม้และ Multiple Regression · ใส่ 12 ตัวได้ IC 0.36 ในช่วงเลือก −0.06 ในช่วงตรวจ <span class="tier" data-tier="ข"></span></li>
+<li><strong>Baseline (เกณฑ์เทียบขั้นต่ำ)</strong> = กฎง่ายที่ไม่ต้องเรียนอะไร ซึ่งโมเดลต้องชนะในช่วงที่ไม่ได้ใช้เรียนหลังต้นทุนเท่ากัน · ต้นไม้แม่น 55.8% เทียบกับทายว่าลงทุกวัน 56.1% <span class="tier" data-tier="ข"></span></li>
+<li><strong>Label Leakage (การรั่วของป้ายคำตอบ)</strong> = ข้อมูลจากช่วงเวลาของป้ายคำตอบรั่วเข้าไปในตัวแปรทำนายหรือแถวที่ใช้เรียน · funding ห้าวันเดียวกับป้ายคำตอบได้ IC 0.23 ส่วน funding ที่รู้ได้จริงได้ 0.03 <span class="tier" data-tier="ข"></span></li>
+</ul></div>
+
+<details class="file"><summary>📁 แฟ้มของบทนี้</summary>
+
+<h3>สมุดวิจัย: ไอเดีย "รวมสามสัญญาณของชุด ETH–BTC" · ช่องที่เติมในบทนี้</h3>
+<p>สมุดวิจัยหนึ่งหน้าต่อไอเดีย มีเจ็ดช่อง บทนี้เปิดหน้าใหม่และเติมครบเจ็ดช่อง คอลัมน์ขวาเว้นไว้ให้คุณกรอกจากไอเดียของคุณเอง</p>
+<div class="tw"><table class="sheet-tbl">
+<tr><th>ช่อง</th><th>มิน (บทนี้)</th><th style="min-width:9em">ไอเดียของฉัน</th></tr>
+<tr><td>① คำถาม</td><td>สามสัญญาณที่มีอยู่แล้ว (Z 60 วัน · funding 7 วัน · ส่วนที่เหลือ 20 วัน) รวมกันแล้วทายผล 5 วันข้างหน้าของชุด ETH–BTC ได้ดีกว่าตัวเดียวหลังต้นทุนไหม</td><td class="blank"></td></tr>
+<tr><td>② ข้อมูล</td><td>ราคาปิดรายวัน Binance spot (UTC) · funding Deribit ของสองสัญญา · ช่วงเลือก 731 วัน ช่วงตรวจ 365 วัน · ป้ายคำตอบไม่ข้ามเส้นแบ่ง · ทุกคอลัมน์มี "รู้ได้วันไหน" รวมทั้งป้ายคำตอบ</td><td class="blank"></td></tr>
+<tr><td>③ ตัวแปรและกฎ</td><td>คะแนน = −(ค่า − Mean) ÷ SD จากช่วงเลือก · ทิศตั้งจากเหตุผลก่อนดู (สวนกลับทั้งสาม) · ผลที่คาด = ความชัน × คะแนน · เข้าเมื่อผลที่คาดเกิน 0.2% · ถือ 5 วัน · ได้ราคาปิดวันถัดไป</td><td class="blank"></td></tr>
+<tr><td>④ สิ่งที่ถือ</td><td>long ETH 0.16 เหรียญ คู่ short BTC มูลค่าเท่ากันในวันเข้า (หรือกลับทาง) · ไม่ปรับขาระหว่างถือ</td><td class="blank"></td></tr>
+<tr><td>⑤ ต้นทุนและทุน</td><td>ทุน 1,000 · ค่าธรรมเนียม 0.05% ต่อ fill ต่อขา (ไปกลับ 0.2% ของขาหนึ่ง) · ราว 55–60 ต่อปีจากราว 57 ไม้</td><td class="blank"></td></tr>
+<tr><td>⑥ ผลและความไม่แน่นอน</td><td>IC ช่วงเลือก → ช่วงตรวจ: Z 0.14 → −0.13 · funding −0.03 → −0.08 · ส่วนที่เหลือ 0.15 → −0.04 · รวมสาม 0.11 → −0.11 · ใส่ทุกอย่าง 0.36 → −0.06 (สั่นเอง ±0.12) · หลังต้นทุนช่วงตรวจ: Z −139.85 · รวมสาม −439.51 · Regression −228.57 · ต้นไม้ +14.65 · short ชุดทุกไม้ −37.94 · ดูช่วงตรวจ 7 ครั้ง · โลกจำลอง: รวมสองช่วยจริง (0.22 เทียบกับ 0.14)</td><td class="blank"></td></tr>
+<tr><td>⑦ ข้อสรุปและการทดลองถัดไป</td><td>ไม่ใช้โมเดลใด · เก็บกติการวมสัญญาณ (ทิศก่อนดู · IC สองครึ่ง · ตัดตัวซ้ำเกิน 0.8 · น้ำหนักเท่ากัน · Baseline สองตัว) · ทดลองถัดไป: ผลเฉลี่ยห้ากลุ่มตามคะแนน Z ในช่วงเลือกเท่านั้น · ไม่ช่วยถ้าห้ากลุ่มเรียงเป็นเส้นตรง</td><td class="blank"></td></tr>
+</table></div>
+<p class="pass-h"><strong>✅ เกณฑ์ผ่านของการรวมสัญญาณและโมเดลที่เรียนรู้เอง 3 ข้อ</strong></p>
+<ol class="pass">
+<li>ทิศของทุกสัญญาณตั้งจากเหตุผลก่อนดูข้อมูล IC บวกทั้งสองครึ่งของช่วงเลือก และสัญญาณที่ซ้ำกันเกิน 0.8 ถูกตัดเหลือตัวเดียว</li>
+<li>ทุกคอลัมน์ รวมทั้งป้ายคำตอบ มี "รู้ได้วันไหน" และแถวท้ายของช่วงเรียนถูกตัดเท่ากับจำนวนวันที่ป้ายคำตอบมองไปข้างหน้า</li>
+<li>ชนะ Baseline (ไม่ทำอะไร และทายทางเดียวทุกวัน) ในช่วงที่ไม่ได้ใช้เรียน หลังต้นทุนเท่ากัน โดยจดจำนวนแบบที่ลองและจำนวนครั้งที่ดูช่วงตรวจไว้กับผล</li>
+</ol>
+<p>ค่าที่มินใช้ในบทนี้เป็นค่าของเล่ม ไม่ใช่คำแนะนำ: Z 60 วัน · funding 7 วัน · ส่วนที่เหลือ 20 วัน · ผล 5 วันข้างหน้า · ต้นทุนไปกลับ 0.2% · ทุน 1,000</p>
+
+<div class="bx ba"><div class="bt">🔗 อยากลึกกว่านี้</div>
+<ul>
+<li>การรวมสัญญาณในงาน stat arb → <a href="statarb-signal-blending.html">statarb-signal-blending.html</a></li>
+<li>การฟิตเกินพอดีและการลองหลายครั้ง → <a href="math-part11.html">math-part11.html</a></li>
+<li>คะแนนไม่ใช่ขนาด และบอท AI ที่แม่น 70% → <a href="sab-part18.html">sab-part18.html</a> · Rank Correlation → <a href="sab2-part8.html">sab2-part8.html</a> · เครื่อง backtest → <a href="sab2-part13.html">sab2-part13.html</a></li>
+<li>บันทึกค้นคว้า <code>tools/sab_research/practitioner-research.md</code> คือที่มาของกล่อง 🧰 พร้อมรายการแหล่งอ้างอิงเต็ม</li>
+</ul></div>
+
+<details class="deep" id="deep-logit"><summary>🔎 ลงลึก: Logistic Regression คืออะไร และต่างจากเส้นตรงอย่างไร</summary>
+<p>ถ้าป้ายคำตอบเป็น "ขึ้น" หรือ "ลง" แทนเปอร์เซ็นต์ โมเดลที่นิยมคือ logistic regression แทนที่จะทายผลเป็นเส้นตรง y = a + b·x มันทายความน่าจะเป็นที่จะขึ้น p = 1 ÷ (1 + e<sup>−(a + b·x)</sup>) ซึ่งอยู่ระหว่าง 0 ถึง 1 เสมอ และเลือก a กับ b ให้ความน่าจะเป็นของสิ่งที่เกิดจริงสูงที่สุด (maximum likelihood) แทนผลรวมกำลังสองน้อยสุด · สิ่งที่บทนี้สอนใช้ได้เหมือนเดิมทุกข้อ: ตัวแปรทำนายต้องรู้ได้ก่อนวันตัดสินใจ · ต้องเทียบ Baseline (เช่นสัดส่วนวันขึ้นของช่วงเรียน) · ยิ่งใส่ตัวแปรมาก ช่วงเรียนยิ่งดูดี · และความน่าจะเป็นที่ได้ยังไม่ใช่ขนาด ต้องคูณกับขนาดของผลที่ได้และเสีย แล้วหักต้นทุน แบบบอท AI ของเล่ม 1 บท 18 ที่ต้องแม่น 77.5% จึงจะคุ้ม</p>
+</details>
+
+<details class="deep" id="deep-overlap"><summary>🔎 ลงลึก: ทำไมป้ายคำตอบที่ซ้อนกันทำให้ IC และค่า t ดูมั่นใจเกินจริง</summary>
+<p>ผล 5 วันข้างหน้าของวัน t คือผลรวมของผลรายวันวัน t + 1 ถึง t + 5 ส่วนของวัน t + 1 คือวัน t + 2 ถึง t + 6 สองแถวนี้ใช้ผลรายวันร่วมกันสี่วัน ถ้าผลรายวันเป็นอิสระ correlation ของสองแถวที่ห่างกัน k วันคือ (5 − k) ÷ 5 สำหรับ k น้อยกว่า 5 · ข้อมูล n แถวจึงมีข้อมูลอิสระราว n ÷ 5 ช่วง การสั่นของ IC จึงราว 1 ÷ √(n ÷ 5 − 1) ไม่ใช่ 1 ÷ √(n − 1) · ช่วงเลือก 666 แถวให้ 0.09 แทน 0.04 · ค่า t ของ Regression ที่คิดเหมือนทุกแถวอิสระก็ใหญ่เกินจริงด้วยเหตุผลเดียวกัน วิธีที่ใช้กันคือคิดเฉพาะแถวที่ไม่ซ้อน (ทุกวันที่ห้า) หรือปรับ SE ด้วยวิธี Newey–West ซึ่งเกินขอบเขตของเล่ม</p>
+</details>
+
+<details class="deep" id="deep-tree"><summary>🔎 ลงลึก: ต้นไม้ที่ลึกขึ้น ป่าของต้นไม้ และสิ่งที่ยังต้องถาม</summary>
+<p>ต้นไม้สองชั้นถามคำถามที่สองในแต่ละกอง จำนวนกฎที่ลองจึงคูณกันเร็วมาก บนข้อมูลจริงชั้นแรกลอง 1,995 จุดตัด ชั้นที่สองลองอีกหลายร้อยจุดในแต่ละกอง random forest ลดการจำโชคด้วยการปลูกต้นไม้หลายร้อยต้นบนข้อมูลที่สุ่มแถวและสุ่มตัวแปร แล้วเฉลี่ยคำตอบ ซึ่งคล้ายกับการรวมสัญญาณด้วยน้ำหนักเท่ากันในตอน ก แต่ทำกับกฎ · ข้อมูลรายวันของคู่เดียวมีช่วงอิสระแค่ราว 133 ช่วงในสองปี น้อยเกินกว่าจะให้ป่าของต้นไม้เรียนอะไรได้มากกว่าทิศของช่วงเรียน งานที่ใช้ random forest กับคริปโตแล้วได้ผล (กล่อง 🧰) ใช้ข้อมูลรายนาทีของ 40 เหรียญพร้อมกัน ซึ่งมีแถวมากกว่าหลายพันเท่า</p>
+</details>
+
+</details>
+
+<!-- ═══════════════ Thai line-break script — ต้องอยู่ก่อน </body> ทุกไฟล์ (ห้ามแก้) ═══════════════ -->
+<script>
+(function(){if(typeof Intl=='undefined'||typeof Intl.Segmenter!='function')return;if(document.body.getAttribute('data-thwbr')=='1')return;var T=/[฀-๿]/,E=/[฀-๿]$/,S=/^[฀-๿]/,SK={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1},seg;try{seg=new Intl.Segmenter('th',{granularity:'word'})}catch(e){return}
+function skip(n){for(var el=n.parentNode;el&&el.nodeType==1;el=el.parentNode){if(SK[el.tagName])return 1;if(el.classList&&el.classList.contains('fm'))return 1}return 0}
+function proc(tn){var s=tn.nodeValue;if(!s||s.length<2||!T.test(s))return;var parts=[],prev=null,buf='';for(var it of seg.segment(s)){var w=it.segment;if(prev!==null&&E.test(prev)&&S.test(w)){parts.push(buf);buf=''}buf+=w;prev=w}parts.push(buf);if(parts.length<2)return;var f=document.createDocumentFragment();for(var i=0;i<parts.length;i++){if(i>0)f.appendChild(document.createElement('wbr'));f.appendChild(document.createTextNode(parts[i]))}tn.parentNode.replaceChild(f,tn)}
+function run(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return !T.test(n.nodeValue)||skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}}),t=[],n;while(n=w.nextNode())t.push(n);for(var i=0;i<t.length;i++)proc(t[i]);document.body.setAttribute('data-thwbr','1')}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run()})();
+</script>
+</body></html>

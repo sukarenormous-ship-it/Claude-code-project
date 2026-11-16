@@ -1,0 +1,110 @@
+"""บท 16 เล่ม 2 — รวมหลายสัญญาณ และโมเดลที่เรียนรู้เอง · สเปกกราฟของบท (อ่านตัวเลขจาก docs/sab2-figures.json เท่านั้น)
+
+sab2-blend-hand  : แปดวันด้วยมือ · คะแนนรวม (Z + funding) กับผล 5 วันข้างหน้า · เส้นผลที่คาด (ความชัน 0.5) · แถบที่ไม่คุ้มต้นทุนไปกลับ
+sab2-blend-sim   : โลกจำลองที่รู้คำตอบ (30 โลก) · IC มัธยฐานช่วงเลือกเทียบช่วงตรวจ ของสัญญาณเดี่ยว · คะแนนรวม · Regression · ใส่ทุกอย่าง
+sab2-blend-real  : ETH–BTC จริง · IC ช่วงเลือกเทียบช่วงตรวจ ของสามสัญญาณ · คะแนนรวม · Regression · ใส่ทุกอย่าง 12 ตัว · แถบโชคช่วงตรวจ
+แกนทุกแกนมาจาก JSON (ch16.แกน) — ไม่ใช้ nice_ticks
+"""
+
+from sab_charts import B, C, chart, text, wrap
+
+INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+
+
+def _ic_bars(cats, fvals, vvals, ticks, title, band=None):
+    """แท่งคู่ (ช่วงเลือก · ช่วงตรวจ) ต่อหมวด · แกนจาก ticks · band = ครึ่งความกว้างแถบโชครอบศูนย์ (ช่วงตรวจ)"""
+    W, H, L, R, T, Bm = 760, 350, 64, 24, 78, 296
+    lo, hi = ticks[0], ticks[-1]
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 24, title, 13, INK, weight=700)]
+    if band is not None:
+        out.append(f'<rect x="{L}" y="{Y(band):.1f}" width="{W - L - R}" height="{Y(-band) - Y(band):.1f}" fill="{C["grid"]}" '
+                   f'stroke="{C["axis"]}" stroke-dasharray="4 3"/>')
+        out.append(text(W - R - 4, Y(-band) - 5, f"แถบที่โชคให้ได้ในช่วงตรวจ (±{B.fmt(band)})", 10.5, GREY, "end"))
+    for g in ticks:
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" '
+                   f'stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
+    gw = (W - L - R) / len(cats)
+    bw = min(34, (gw - 22) / 2)
+    for i, cat in enumerate(cats):
+        cx = L + gw * i + gw / 2
+        for j, (v, col) in enumerate(((fvals[i], C["blue"]), (vvals[i], C["amber"]))):
+            x = cx - (bw + 3) + j * (bw + 3)
+            y0, y1 = Y(0), Y(v)
+            out.append(f'<rect x="{x:.1f}" y="{min(y0, y1):.1f}" width="{bw:.1f}" height="{max(1, abs(y1 - y0)):.1f}" '
+                       f'rx="2" fill="{col}"/>')
+            out.append(text(x + bw / 2, (y1 - 5) if v >= 0 else (y1 + 13), B.fmt(v), 10, col, "middle", 700))
+        for k, line in enumerate(cat.split("\n")):
+            out.append(text(cx, Bm + 18 + 13 * k, line, 10.5, MUTED, "middle"))
+    lx = L
+    for name, col in (("ช่วงเลือก (ที่ใช้เรียน)", C["blue"]), ("ช่วงตรวจ (ปีถัดไป)", C["amber"])):
+        out.append(f'<rect x="{lx}" y="{T - 34}" width="11" height="11" rx="2" fill="{col}"/>')
+        out.append(text(lx + 16, T - 24, name, 11.5, MUTED))
+        lx += 40 + 7.4 * len(name)
+    return W, H, out
+
+
+@chart("sab2-blend-hand")
+def _blend_hand(fig):
+    c = fig["ch16"]["มือ"]
+    ax = fig["ch16"]["แกน"]["มือ"]
+    days = c["วัน"]
+    slope, cut = c["ความชัน"], c["คะแนนต้องเกิน"]
+    W, H, L, R, T, Bm = 760, 360, 70, 30, 60, 300
+    xlo, xhi, ylo, yhi = ax["x"][0], ax["x"][-1], ax["y"][0], ax["y"][-1]
+    X = lambda v: L + (v - xlo) / (xhi - xlo) * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (v - ylo) / (yhi - ylo) * (Bm - T)  # noqa: E731
+    out = [text(16, 26, "คะแนนรวมสูงกว่า ผลที่ตามมามักสูงกว่า แต่ไม่ใช่ทุกวัน", 13, INK, weight=700)]
+    out.append(f'<rect x="{X(-cut):.1f}" y="{T}" width="{X(cut) - X(-cut):.1f}" height="{Bm - T}" fill="{C["grid"]}" '
+               f'stroke="{C["axis"]}" stroke-dasharray="4 3"/>')
+    out.append(text(X(0), T + 14, "ไม่คุ้มต้นทุน", 10.5, GREY, "middle", 700))
+    for g in ax["y"]:
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
+    for g in ax["x"]:
+        out.append(text(X(g), Bm + 18, B.fmt(g), 11, GREY, "middle"))
+    out.append(text((L + W - R) / 2, Bm + 38, "คะแนนรวม (คะแนน Z + คะแนน funding)", 11.5, MUTED, "middle"))
+    out.append(text(16, T - 8, "ผล 5 วันข้างหน้า (% ของขาหนึ่ง)", 11.5, MUTED))
+    out.append(f'<line x1="{X(xlo):.1f}" y1="{Y(slope * xlo):.1f}" x2="{X(xhi):.1f}" y2="{Y(slope * xhi):.1f}" '
+               f'stroke="{C["purple"]}" stroke-width="2.2" stroke-dasharray="7 4"/>')
+    out.append(text(X(xhi) - 4, Y(slope * xhi) - 8, f"ผลที่คาด = {B.fmt(slope)} × คะแนน", 11, C["purple"], "end", 700))
+    for d in days:
+        col = C["green"] if d["ผล"] > 0 else C["red"]
+        out.append(f'<circle cx="{X(d["รวมสอง"]):.1f}" cy="{Y(d["ผล"]):.1f}" r="5.5" fill="{col}"/>')
+        out.append(text(X(d["รวมสอง"]) + 8, Y(d["ผล"]) + 4, f"วัน {d['วัน']}", 10.5, col, "start", 700))
+    alt = ("จุดแปดจุดของแปดวัน แกนนอนคือคะแนนรวมจาก -2.5 ถึง 3 แกนตั้งคือผลห้าวันข้างหน้าจาก -2.4 ถึง 1.8 "
+           "เส้นประม่วงคือผลที่คาดเท่ากับครึ่งหนึ่งของคะแนน แถบเทากลางคือคะแนนระหว่าง -0.4 ถึง 0.4 ที่ผลที่คาดไม่ถึงต้นทุนไปกลับ")
+    return wrap(W, H, alt, out, "แปดวันตัวอย่างของบท · ผลที่คาดจากความชันของ Regression · ต้นทุนไปกลับ 0.2% ของขาหนึ่ง", "สอน")
+
+
+@chart("sab2-blend-sim")
+def _blend_sim(fig):
+    s = fig["ch16"]["โลก"]
+    ticks = fig["ch16"]["แกน"]["ICโลก"]
+    names = [("Z", "IC_z"), ("funding\nจำลอง", "IC_f"), ("สำเนา\nของ Z", "IC_c"), ("รวมสอง\nZ + funding", "IC_รวมสอง"),
+             ("รวมสาม\n(มีสำเนา)", "IC_รวมสาม"), ("Regression\n3 ตัว", "IC_Regression"), ("ใส่ทุกอย่าง\n20 ตัว", "IC_ใส่ทุกอย่าง")]
+    W, H, out = _ic_bars([n for n, _ in names], [s[k]["ช่วงเลือก"] for _, k in names], [s[k]["ช่วงตรวจ"] for _, k in names],
+                         ticks, "IC มัธยฐานของ 30 โลกที่รู้คำตอบ: รวมสองสัญญาณจริงชนะตัวเดียว ใส่ตัวสุ่มเพิ่มแล้วตกในปีถัดไป")
+    alt = ("แท่งคู่เจ็ดหมวด สัญญาณเดี่ยวมี IC ราว 0.11 ถึง 0.14 ทั้งสองช่วง คะแนนรวม Z กับ funding ราว 0.21 ถึง 0.22 "
+           "โมเดลใส่ทุกอย่าง 20 ตัวได้ 0.25 ในช่วงเลือกแต่เหลือ 0.16 ในช่วงตรวจ")
+    return wrap(W, H, alt, out, "30 โลก · ชุดที่มีเชือก φ 0.97 · funding จำลองมีผลจริง · สำเนาของ Z · ตัวแปรสุ่ม 17 ตัว · "
+                "เรียน 731 วัน ตรวจ 365 วัน", "จำลอง")
+
+
+@chart("sab2-blend-real")
+def _blend_real(fig):
+    r = fig["ch16"]["จริง"]
+    ticks = fig["ch16"]["แกน"]["ICจริง"]
+    ic = r["IC"]
+    cats = ["Z\n(60 วัน)", "funding\n(7 วัน)", "ส่วนที่เหลือ\n(20 วัน)", "รวมสาม", "Regression\n3 ตัว", "ใส่ทุกอย่าง\n12 ตัว"]
+    fv = [ic["z"]["ช่วงเลือก"], ic["f"]["ช่วงเลือก"], ic["r"]["ช่วงเลือก"], r["ICรวม"]["รวมสาม"]["ช่วงเลือก"],
+          r["Regression"]["ICช่วงเลือก"], r["ใส่ทุกอย่าง"]["สิบสอง"]["ICช่วงเลือก"]]
+    vv = [ic["z"]["ช่วงตรวจ"], ic["f"]["ช่วงตรวจ"], ic["r"]["ช่วงตรวจ"], r["ICรวม"]["รวมสาม"]["ช่วงตรวจ"],
+          r["Regression"]["ICช่วงตรวจ"], r["ใส่ทุกอย่าง"]["สิบสอง"]["ICช่วงตรวจ"]]
+    W, H, out = _ic_bars(cats, fv, vv, ticks, "IC ของชุด ETH–BTC: ทุกแบบที่บวกในช่วงเลือก กลายเป็นลบในช่วงตรวจ",
+                         band=r["สองเท่าสั่นเองช่วงตรวจ"])
+    alt = ("แท่งคู่หกหมวด ช่วงเลือก Z กับส่วนที่เหลือบวกราว 0.14 ถึง 0.15 funding ราวศูนย์ โมเดลใส่ทุกอย่างบวก 0.36 "
+           "ช่วงตรวจทุกแท่งอยู่ใต้ศูนย์หรือใกล้ศูนย์ และอยู่ในแถบที่โชคให้ได้")
+    return wrap(W, H, alt, out, "ราคาปิดรายวัน Binance spot (UTC) · funding Deribit · ช่วงเลือก 2022-11-15 ถึง 2024-11-14 · "
+                "ช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · ผล 5 วันข้างหน้า", "จริง")
