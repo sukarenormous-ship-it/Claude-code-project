@@ -27,7 +27,7 @@ import math
 import sab_book as SB
 
 SIGMA = 3.5          # SD ต่อวันของแต่ละเหรียญในตัวอย่าง (%)
-RHOS = ("0.80", "0.95", "0.98", "0.995")
+RHOS = ("0.80", "0.95", "0.98", "0.99")
 HLS = (2, 5)
 LEG = 500            # ขา A 500 ดอลลาร์ (ทุนคู่ 1,000 แบ่งสองขา)
 RETAIL_FILL = "0.15"  # ค่าธรรมเนียม 0.1% + ราคาคลาด 0.05% ต่อ fill (สมมติ · ไม่ใช่ราคาของ exchange ใด)
@@ -157,7 +157,7 @@ def extend(data, D, q):
 
     # 🎲 ตรวจด้วยโลกจำลองที่ตั้ง ρ กับ Half-life ไว้
     sim_c = {}
-    for rs, hl in (("0.98", 5), ("0.995", 2)):
+    for rs, hl in (("0.98", 5), ("0.99", 2), ("0.995", 2)):
         rho = float(rs)
         sd_day = SIGMA / 100 * math.sqrt(2 * (1 - rho))
         phi = 0.5 ** (1 / hl)
@@ -179,10 +179,24 @@ def extend(data, D, q):
         sim_c[_key(rs) + "h" + str(hl)] = {"rho": rho, "hl": hl, "ต่อไม้gross": _r(med(acc["gross"])),
                                             "ต่อไม้เล่ม": _r(med(acc["book"])), "ต่อไม้แอป": _r(med(acc["retail"])),
                                             "ไม้": _r(med(acc["trades"]), 1), "ปีแอป": _r(med(acc["netแอป"]), 1),
-                                            "ปีเล่ม": _r(med(acc["netเล่ม"]), 1), "corr": _r(med(acc["corr"]), 3),
+                                            "ปีเล่ม": _r(med(acc["netเล่ม"]), 1), "corr": _r(med(acc["corr"]), 2),
                                             "แอปขาดทุนโลก": sum(1 for v in acc["netแอป"] if v < 0), "โลก": len(M.ROBUST_SEEDS),
                                             "กินแอปเปอร์เซ็นต์": _r((1 - med(acc["retail"]) / med(acc["gross"])) * 100, 0)}
     out["จำลองต้นทุน"] = sim_c
+    # 🔎 ลงลึก: แรงสะบัดกับการขยับรายวัน · correlation 0.995 ด้วยมือ
+    deep = {}
+    for hl in HLS:
+        ph = D(str(hl_rows[str(hl)]["phi"]))
+        k = qd(2 / (1 + ph), 2)
+        deep["ตัวคูณ" + str(hl)] = float(k)
+        deep["คลาด" + str(hl)] = _r((1 - 1 / math.sqrt(float(k))) * 100, 0)
+    d995 = qd(D(str(SIGMA)) * D("0.1"), 2)
+    sw995 = qd(d995 / D(str(hl_rows["2"]["ราก"])), 2)
+    p995 = qd(D("1.5") * sw995, 2)
+    u995 = qd(p995 * LEG / 100, 2)
+    deep.update({"sdวัน995": float(d995), "sdแกว่ง995": float(sw995), "กำไร995": float(p995), "ดอลลาร์995": float(u995),
+                 "กิน995": float(qd(qd(rt_retail * LEG / 100) / u995 * 100, 0))})
+    out["ลึก"] = deep
 
     # ════════════ ข้อมูลจริง: 45 คู่ (ย้ายจาก pairs_check.py) ════════════
     fd, F = load_closes("formation")
@@ -198,6 +212,7 @@ def extend(data, D, q):
         single[c] = {"stat": _r(a["stat"]), "p": _r(a["pvalue"], 3), "pเปอร์เซ็นต์": _r(a["pvalue"] * 100, 1),
                      "ผ่าน": a["reject5"], "เส้น5": _r(a["crit"]["5%"])}
     av = S.adf(LV["LTC"])
+    out["เส้นคู่"] = _r(S.engle_granger(LF["BTC"], LF["ETH"])["crit"]["5%"])
     out["เดี่ยว"] = {"เหรียญ": single, "ผ่าน": [c for c in coins if single[c]["ผ่าน"]],
                      "LTCตรวจ": _r(av["stat"]), "LTCตรวจเส้น5": _r(av["crit"]["5%"]),
                      "รองลงมา": min((c for c in coins if not single[c]["ผ่าน"]), key=lambda c: single[c]["p"])}
@@ -271,8 +286,8 @@ def extend(data, D, q):
         "BTCSOLระดับ": _r(by["BTC/SOL"]["rho_lvl"]), "BTCSOLp": _r(by["BTC/SOL"]["eg_p"]),
         "BTCSOLpเปอร์เซ็นต์": _r(by["BTC/SOL"]["eg_p"] * 100, 0), "BTCSOLrho": _r(by["BTC/SOL"]["rho_ret"]),
         "ต้นทุนไปกลับ": _r(RT * 100),
-        "หนึ่งจุดห้าSD": _r(1.5 * top_rc[0]["sd"] * 100, 1),
-        "ต่อไม้ดอลลาร์": _r(1.5 * top_rc[0]["sd"] * LEG, 0),
+        "หนึ่งจุดห้าSD": float(qd(D("1.5") * qd(D(top_rc[0]["sd"] * 100), 1), 1)),
+        "ต่อไม้ดอลลาร์": float(qd(qd(D("1.5") * qd(D(top_rc[0]["sd"] * 100), 1), 1) * LEG / 100, 1)),
     }
 
     # ── ตอน ข: แปดคู่ที่ผ่าน (ทดสอบสองทิศ) ──
@@ -305,7 +320,7 @@ def extend(data, D, q):
         tri.append({"คู่": pr, "h": float(hh), "LTC": ltc_move, "คู่ขยับ": float(mv), "เงิน": float(pnl),
                     "ส่วนคู่": float(qd(-hh * D(str(mv)), 2)), "สุทธิเปอร์เซ็นต์": float(qd(D(ltc_move) - hh * D(str(mv)), 2))})
     out["สามคู่"] = {"แถว": tri, "LTCอย่างเดียว": float(qd(D(LEG) * ltc_move / 100, 0)),
-                     "ต่างสูงสุด": float(max(t["เงิน"] for t in tri) - min(t["เงิน"] for t in tri))}
+                     "ต่างสูงสุด": _r(max(t["เงิน"] for t in tri) - min(t["เงิน"] for t in tri))}
 
     def avg_corr(names):
         cs = []
@@ -437,7 +452,8 @@ def extend(data, D, q):
         "ครบสามโลก": sum(1 for v in acc["rope"][4] if v == 3), "หลุดอื่นศูนย์โลก": sum(1 for v in acc["other"][4] if v == 0),
         "แน่นcorrสูงสุดโลก": extra["tight_top"], "แน่นผ่านEG": extra["tight_pass"],
         "แน่นเงินมัธยฐาน": _r(med(extra["tight_net"]), 1),
-        "เชือกเงินมัธยฐาน": _r(med(extra["rope_net"]), 1), "กับดักเงินมัธยฐาน": _r(med(extra["trap_net"]), 1),
+        "เชือกเงินมัธยฐาน": _r(med(extra["rope_net"]), 1),
+        "เชือกเงินต่ำสุด": _r(min(extra["rope_net"]), 0), "เชือกเงินสูงสุด": _r(max(extra["rope_net"]), 0), "กับดักเงินมัธยฐาน": _r(med(extra["trap_net"]), 1),
         "อื่นเงินมัธยฐาน": _r(med(extra["other_net"]), 1),
         "อื่นเงินต่ำสุด": _r(min(extra["other_net"]), 0), "อื่นเงินสูงสุด": _r(max(extra["other_net"]), 0),
         "กับดักถูกจับโลก": extra["trapflag"], "กับดักผ่านมัธยฐาน": _r(med(extra["trap_pass"]), 1),
@@ -445,6 +461,8 @@ def extend(data, D, q):
         "ศูนย์ทิศเดียวต่ำสุด": min(nul["one"]), "ศูนย์ทิศเดียวสูงสุด": max(nul["one"]),
         "ศูนย์สองทิศเฉลี่ย": _r(S.mean(nul["best"]), 2), "ศูนย์สองทิศสูงสุด": max(nul["best"]),
         "ศูนย์หกขึ้นไป": sum(1 for v in nul["one"] if v >= 6),
+        "ทวินามหกเปอร์เซ็นต์": _r(100 * (1 - sum(math.comb(45, k) * 0.05 ** k * 0.95 ** (45 - k) for k in range(6))), 1),
+        "ทวินามหกโลก": _r(nw * (1 - sum(math.comb(45, k) * 0.05 ** k * 0.95 ** (45 - k) for k in range(6))), 1),
         "ศูนย์ทิศเดียว": nul["one"],
         "phi": 0.9, "hlเชือก": _r(S.half_life(0.9), 1), "กับดักphi": 0.97,
     }
@@ -464,6 +482,8 @@ def extend(data, D, q):
     out["สเปียร์แมน"] = {m_["คีย์"]: m_ for m_ in sp}
     out["สเปียร์แมนแถว"] = sp
     out["ช่วยได้"] = sum(1 for m_ in sp if m_["ช่วย"])
+    out["สั่นเอง"] = {"n": n45, "nลบหนึ่ง": n45 - 1, "ราก": _r(math.sqrt(n45 - 1)), "สั่น": _r(1 / math.sqrt(n45 - 1)),
+                      "สองเท่า": _r(2 / math.sqrt(n45 - 1))}
 
     # Rank Correlation ด้วยมือห้าคู่ (อันดับ correlation ไม่ซ้ำกันเมื่อปัดสองตำแหน่ง)
     five = ["ETH/BTC", "ADA/BTC", "LTC/ETH", "BNB/DOGE", "XRP/BNB"]
