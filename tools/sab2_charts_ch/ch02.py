@@ -27,7 +27,7 @@ def _ruler2(fig):
               ("X แบบ log (เปอร์เซ็นต์)", g["zlog"], C["blue"], ml)]
     half = g["iครึ่ง"]
     W, L, R = 760, 64, 200
-    ph, gap, top = 130, 40, 56
+    ph, gap, top = 130, 48, 56
     H = top + len(panels) * (ph + gap) + 16
     lo, hi = -3, 8
     out = [text(16, 26, "ไม้บรรทัดวัดจากปีแรก แล้วใช้วัดปีหลัง: แบบราคายืดหลุดกรอบ แบบ log หลุดน้อยกว่า", 13.5, INK, weight=700)]
@@ -45,15 +45,15 @@ def _ruler2(fig):
             out.append(text(L - 8, Y(gv) + 4, B.fmt(gv), 10, GREY, "end"))
         pts = [(X(i), Y(v)) for i, v in enumerate(zs)]
         out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{col}" stroke-width="1.4" stroke-linejoin="round"/>')
-        out.append(text(X(half / 2), t0 + ph - 8, "ปีแรก (วัดไม้บรรทัด)", 10.5, MUTED, "middle"))
-        out.append(text((X(half) + X(n - 1)) / 2, t0 + ph - 8, "ปีหลัง (ใช้ไม้เดิม)", 10.5, MUTED, "middle"))
+        out.append(text(X(half / 2), t0 + ph + 15, "ปีแรก (วัดไม้บรรทัด)", 10.5, MUTED, "middle"))
+        out.append(text((X(half) + X(n - 1)) / 2, t0 + ph + 15, "ปีหลัง (ใช้ไม้เดิม)", 10.5, MUTED, "middle"))
         lx = W - R + 14
         out.append(text(lx, t0 + 22, f"ปีหลัง Z สูงสุด {B.fmt(m['Zสูงสุด'])}", 11.5, col, weight=700))
         out.append(text(lx, t0 + 42, f"นอก ±2 อยู่ {B.fmt(m['นอกสองเปอร์เซ็นต์'])}% ของวัน", 11, INK))
         out.append(text(lx, t0 + 62, f"h ปีแรก {B.fmt(m['h'])}", 11, MUTED))
         out.append(text(lx, t0 + 80, f"h ปีหลัง {B.fmt(m['hปีหลัง'])}", 11, MUTED))
         if m["Zสูงสุด"] > hi:
-            out.append(text(X(n - 1) - 4, Y(hi) + 12, f"เส้นขึ้นไปถึง {B.fmt(m['Zสูงสุด'])} (ตัดที่ {hi})", 10, col, "end", 700))
+            out.append(text(lx, t0 + 100, f"(ภาพตัดที่ {hi})", 10.5, col))
     out.append(text(L, H - 6, f"แกนนอน = {B.fmt(r['วัน'])} วันของช่วงเลือก · แกนตั้ง = Z-score · เส้นประแดง = ±2", 10.5, MUTED))
     alt = (f"สองแผงเส้น Z-score {r['วัน']} วัน ไม้บรรทัดวัดจากปีแรก แผงบน X แบบราคา ปีหลังพุ่งขึ้นถึง {mp['Zสูงสุด']} "
            f"อยู่นอก ±2 {mp['นอกสองเปอร์เซ็นต์']}% ของวัน แผงล่าง X แบบ log ปีหลังขึ้นถึง {ml['Zสูงสุด']} "
