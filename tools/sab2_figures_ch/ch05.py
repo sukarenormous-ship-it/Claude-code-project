@@ -105,7 +105,7 @@ def _hand():
             "วัน6": {"Xเดิม": _r(x6_old), "Zตรึง": _r(z_fixed), "SDตรึง": _r(w5["SD"]),
                      "Zตรึงจากเลขปัด": _r(x6_old / w5["SD"]), "Zเลื่อนจากเลขปัด": _r((w6["X"][-1] - w6["MeanX"]) / w6["SD"]),
                      "Xh2หน้าต่าง": [_r(v) for v in xs_h2], "Meanh2": _r(S.mean(xs_h2)),
-                     "Zh2เลื่อนMean": _r((xs_h2[-1] - S.mean(xs_h2)) / S.sd(xs_h2)),
+                     "Zh2เลื่อนMean": _r((xs_h2[-1] - S.mean(xs_h2)) / S.sd(xs_h2)), "SDh2": _r(S.sd(xs_h2)),
                      "ห่างMeanเลื่อน": _r(w6["X"][-1] - w6["MeanX"]), "ห่างMeanตรึง": _r(x6_old - w5["MeanX"])},
             "MeanXกระโดด": _r(w6["MeanX"] - w5["MeanX"]), "hคูณBกระโดด": _r((w6["h"] - w5["h"]) * w6["MeanB"]),
             "hเปลี่ยน": _r(w6["h"] - w5["h"])}
