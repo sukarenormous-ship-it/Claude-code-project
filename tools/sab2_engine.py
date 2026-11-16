@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""เครื่อง backtest กลางของเล่ม 2 (stdlib) · shared pair backtest engine for volume 2 (บท 12 เป็นต้นไป)
+"""เครื่อง backtest กลางของเล่ม 2 (stdlib) · shared pair backtest engine for volume 2 (บท 13 เป็นต้นไป)
 
 วงห้าขั้นต่อวัน t (five-step event loop, one pass per close):
   1) รู้อะไร   ค่าสัญญาณของวัน t − lag (data known at the signal close; lag 0 = แอบดูอนาคต)
@@ -174,7 +174,7 @@ def run_hpath(A, B, hs, signal, sets=1.0, capital=CAPITAL, fill="next", lag=None
 # ═══════════════════════════ selftest ═══════════════════════════
 
 def _reference(A, B, h, z, sets, lag=1, fee=FEE, enter=2, leave=0.5, hold=30):
-    """ลูปในบล็อก 💻 ของ docs/sab2-part12.html ตรงตัว (ต้นแบบที่เครื่องต้องให้ผลเท่ากันทุกบิต)"""
+    """ลูปในบล็อก 💻 ของ docs/sab2-part13.html ตรงตัว (ต้นแบบที่เครื่องต้องให้ผลเท่ากันทุกบิต)"""
     cash, held, t_in, eq, n = 1000.0, 0, 0, [], 0
     for t in range(len(A)):
         if t >= lag:
@@ -201,7 +201,7 @@ def selftest():
             ok = False
             print(f"  ✗ {label} {detail}")
 
-    # 1) สิบวันของบท 12 (ตอน ก): ราคาวันถัดไป 1010.96 · ราคาวันเดียวกัน 1016.96 (ตรงบรรทัดคาดหวังของหน้า)
+    # 1) สิบวันของบท 13 (ตอน ก): ราคาวันถัดไป 1010.96 · ราคาวันเดียวกัน 1016.96 (ตรงบรรทัดคาดหวังของหน้า)
     A = [100.6, 103.4, 106.3, 105, 103.6, 101.1, 99.4, 100.7, 100.5, 96.8]
     B = [50, 51, 52, 51.5, 51, 50, 49.5, 50, 50.5, 49]
     X = [a - 2 * b for a, b in zip(A, B)]
@@ -280,7 +280,7 @@ def selftest():
     check("run_hpath: ราคานิ่ง h 2 → 2.2 · ไม่มีเงินจากราคา · ผลนิยามใหม่ +10 · ปรับขา B หนึ่งครั้ง",
           abs(r5["price_pnl"]) < 1e-12 and abs(r5["chart_pnl"] - 10) < 1e-9 and r5["rebalances"] == 1
           and abs(r5["open_units"][1] - 2.2) < 1e-12)
-    print("selftest", f"ผ่าน ✓ ({n} ข้อ · สิบวันของบท 12 ตรงหน้า · เท่าลูป 💻 ทุกบิต 200 โลก · lag/same/ฟังก์ชันสัญญาณ · "
+    print("selftest", f"ผ่าน ✓ ({n} ข้อ · สิบวันของบท 13 ตรงหน้า · เท่าลูป 💻 ทุกบิต 200 โลก · lag/same/ฟังก์ชันสัญญาณ · "
           "เวลาถือ · งบขาดทุน · บัญชีเงินสด/จำนวนถือ/ค่าธรรมเนียม · drawdown · run_hpath h เปลี่ยนได้)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 

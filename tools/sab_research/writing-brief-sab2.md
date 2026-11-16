@@ -17,7 +17,7 @@ markup และคำสั่งตรวจ: ดูหัวข้อ 6 ท�
 
 ## 3. ข้อมูลและช่วงเวลา
 
-- ช่วงแบ่งตายตัวทั้งเล่ม (`docs/sab2-data/splits.json`): ช่วงเลือก · ช่วงตรวจ · **ช่วงทดสอบสุดท้าย ห้ามแตะก่อนบท 17** (ตัวตรวจจับ)
+- ช่วงแบ่งตายตัวทั้งเล่ม (`docs/sab2-data/splits.json`): ช่วงเลือก · ช่วงตรวจ · **ช่วงทดสอบสุดท้าย ห้ามแตะก่อนบท 18** (ตัวตรวจจับ)
 - รายงานผลข้อมูลจริงตามที่ได้ รวมผลว่าง/ลบ · บอกเสมอว่าเห็นอะไร "ในช่วงไหน"
 - ชุดจำลองห้ามตั้งชื่อเหรียญจริง · ไม่อ้างตัวเลขตลาดที่ไม่มีแหล่ง
 - ตัวเลขทุกตัวในหน้ามาจาก `docs/sab2-figures.json` ผ่านปลั๊กอิน `tools/sab2_figures_ch/chNN.py` ซึ่งคำนวณด้วย `tools/sab2_stats.py` (ห้ามพิมพ์ตัวเลขลอย)
@@ -53,7 +53,7 @@ print(round(h, 2), round(r2, 2))
 ```
 
 - `.fails` อยู่นอกบล็อกพับ อย่างน้อยหนึ่งกล่องต่อบท และมีตัวเลขอย่างน้อยหนึ่งตัว (V10)
-- `details.code` ≤ 25 บรรทัด · บรรทัดสุดท้าย `# ผลที่ต้องได้: …` · ตัวเลขที่ print ต้องตรงตามลำดับ (ปัดตามทศนิยมที่เขียน) และต้องปรากฏในหน้านอก `<pre>` · ห้าม `unlock_final` ก่อนบท 17 (V9) · รันใน temp dir ด้วย `PYTHONPATH=tools` ไม่มีเครือข่าย
+- `details.code` ≤ 25 บรรทัด · บรรทัดสุดท้าย `# ผลที่ต้องได้: …` · ตัวเลขที่ print ต้องตรงตามลำดับ (ปัดตามทศนิยมที่เขียน) และต้องปรากฏในหน้านอก `<pre>` · ห้าม `unlock_final` ก่อนบท 18 (V9) · รันใน temp dir ด้วย `PYTHONPATH=tools` ไม่มีเครือข่าย
 - ปลั๊กอิน `tools/sab2_figures_ch/chNN.py` อ่านข้อมูลผ่าน `sab2_realdata.load_closes/load_funding` เท่านั้น และคำนวณด้วย `sab2_stats` / `sab2_sim` (V11)
 - ตัวเลขเล่ม 1 ในปลั๊กอิน: `sab_book.load_figures("sab")` เท่านั้น (V11 ห้ามเปิด `sab-figures.json` ตรง) · คัดลอกค่าที่อ้างไว้ใต้ `chNN.เล่ม1` ให้หน้าใช้
 - backtest: `tools/sab2_engine.py` — `from sab2_engine import run` · `run(A, B, h, z, sets, fill="next"|"same", lag=N, fee=0.0005, hold=30, loss_budget=None, rule=None)` → `trades · wins · net · max_drawdown · costs · trade_list · ledger · equity` (fill "same" ติด `lookahead=True`) · ใช้ในบล็อก 💻 ได้ (V9 รันด้วย `PYTHONPATH=tools`)

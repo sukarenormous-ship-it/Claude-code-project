@@ -4,11 +4,11 @@
   V9  บล็อก 💻 details.code: ทุก <pre> ในบล็อกรันได้จริงและพิมพ์ค่าตรงกับบรรทัด "# ผลที่ต้องได้: …" ท้ายโค้ด
       (ตัวเลขตามลำดับ · จำนวนเท่ากัน · ค่าที่พิมพ์ปัดตามจำนวนทศนิยมที่เขียนในบรรทัดคาดหวังแล้วต้องเท่ากัน) ·
       ทุกค่าที่คาดหวังต้องปรากฏในเนื้อหน้านอก <pre> · ≤ 25 บรรทัดโค้ด (ไม่นับบรรทัดว่างและบรรทัดคาดหวัง) ·
-      summary ขึ้นต้น "💻 ทำด้วย Python" · บทก่อน 17 ห้ามมี unlock_final ในโค้ด
+      summary ขึ้นต้น "💻 ทำด้วย Python" · บทก่อน 18 ห้ามมี unlock_final ในโค้ด
       รัน: temp dir · PYTHONPATH=tools · timeout · ไม่มีเครือข่าย (unshare -n ถ้าเครื่องรองรับ + ปิด socket ในตัวรัน)
   V10 ทุกบทมีกล่อง .fails "พังเมื่อไร / บอกอะไรไม่ได้" อย่างน้อยหนึ่งกล่องบนเส้นทางหลัก (นอก details)
       หัว .bt มีทั้ง "พังเมื่อไร" และ "บอกอะไรไม่ได้" · ในกล่องมีตัวเลขอย่างน้อยหนึ่งตัว (เงื่อนไขพร้อมตัวเลข)
-  V11 ปลั๊กอิน tools/sab2_figures_ch/*.py และ tools/sab2_charts_ch/*.py ยกเว้น ch17.py ห้ามแตะช่วงทดสอบสุดท้าย:
+  V11 ปลั๊กอิน tools/sab2_figures_ch/*.py และ tools/sab2_charts_ch/*.py ยกเว้น ch18.py ห้ามแตะช่วงทดสอบสุดท้าย:
       ห้ามมี unlock_final (ยกเว้นเขียนตรงตัวว่า unlock_final=False) · ห้ามส่ง **kwargs ให้ load_closes/load_funding ·
       ห้ามอ่านไฟล์ข้อมูลตรง (sab2-data · closes-daily · funding-8h · splits.json) หรือเรียกตัวช่วยภายใน
       (_split_range · _csv_rows) ของ sab2_realdata · ตัวเลขเล่ม 1 อ่านผ่าน sab_book.load_figures("sab") เท่านั้น
@@ -43,7 +43,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 CODE_TIMEOUT = 60            # วินาทีต่อบล็อก
 CODE_MAX_LINES = 25          # แผน sab2 หัวข้อ 5
-FINAL_PART = 17              # บทเดียวที่เปิดช่วงทดสอบสุดท้ายได้
+FINAL_PART = 18              # บทเดียวที่เปิดช่วงทดสอบสุดท้ายได้
 EXPECT_RE = re.compile(r"^\s*#\s*ผลที่ต้องได้\s*:\s*(.*?)\s*$")
 NUM_RE = re.compile(r"(?<![A-Za-z_\d.])[-−+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?(?![\d])")
 FORBIDDEN_TOKENS = ("sab2-data", "closes-daily", "funding-8h", "splits.json", "_split_range", "_csv_rows")
@@ -261,7 +261,7 @@ def _plugin_problems(path):
             if isinstance(node.value, ast.Constant) and node.value.value is False:
                 ok_kw.add(node.value.lineno)
             else:
-                P.append(f"{rel}: V11 เรียกด้วย unlock_final (บรรทัด {node.value.lineno}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch17.py")
+                P.append(f"{rel}: V11 เรียกด้วย unlock_final (บรรทัด {node.value.lineno}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch18.py")
         elif isinstance(node, ast.Call) and _call_name(node) in LOADERS \
                 and any(k.arg is None for k in node.keywords):          # **kwargs เข้าตัวโหลดข้อมูลอาจซ่อน unlock_final
             P.append(f"{rel}: V11 ส่ง **kwargs ให้ {_call_name(node)} (บรรทัด {node.lineno}) — เขียนอาร์กิวเมนต์ตรงตัวเพื่อให้ตรวจช่วงข้อมูลได้")
@@ -274,7 +274,7 @@ def _plugin_problems(path):
             continue
         code = text.split("#", 1)[0]
         if "unlock_final" in code and i not in ok_kw and not any(f"บรรทัด {i})" in p for p in P):
-            P.append(f"{rel}: V11 มีคำว่า unlock_final (บรรทัด {i}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch17.py")
+            P.append(f"{rel}: V11 มีคำว่า unlock_final (บรรทัด {i}) — เปิดช่วงทดสอบสุดท้ายได้เฉพาะ ch18.py")
         for tok in FORBIDDEN_TOKENS:
             if tok in code:
                 P.append(f"{rel}: V11 อ้าง {tok!r} (บรรทัด {i}) — อ่านข้อมูลผ่าน sab2_realdata.load_closes/load_funding เท่านั้น")
@@ -284,7 +284,7 @@ def _plugin_problems(path):
 
 
 def check_plugins(folders=None):
-    """V11 — ปลั๊กอินทุกไฟล์ยกเว้น ch17.py"""
+    """V11 — ปลั๊กอินทุกไฟล์ยกเว้น ch18.py"""
     folders = folders or [os.path.join(TOOLS, "sab2_figures_ch"), os.path.join(TOOLS, "sab2_charts_ch")]
     P = []
     for folder in folders:
@@ -333,8 +333,8 @@ def selftest():
         ("เครือข่ายถูกปิด", _code("import socket\nsocket.create_connection(('example.com', 80))\nprint(1.94)\n"
                                   "# ผลที่ต้องได้: 1.94"), "รันไม่ผ่าน"),
         ("timeout", None, "timeout"),
-        ("unlock_final ก่อนบท 17", _code("import sab2_realdata as R\nR.load_closes('final_test', unlock_final=True)\n"
-                                        "print(1.94)\n# ผลที่ต้องได้: 1.94"), "ใช้ unlock_final ก่อนบท 17"),
+        ("unlock_final ก่อนบท 18", _code("import sab2_realdata as R\nR.load_closes('final_test', unlock_final=True)\n"
+                                        "print(1.94)\n# ผลที่ต้องได้: 1.94"), "ใช้ unlock_final ก่อนบท 18"),
     ]
     for label, block, want in cases:
         if block is None:                                  # timeout: เรียก run_code ตรงด้วยเวลาสั้น
@@ -361,9 +361,9 @@ def selftest():
                 fh.write(src)
         plug("ch03.py", "import sab2_realdata as R\ndef extend(data, D, q):\n"
                         "    R.load_closes('formation', unlock_final=False)\n    return {}\n")
-        plug("ch17.py", "import sab2_realdata as R\ndef extend(data, D, q):\n"
+        plug("ch18.py", "import sab2_realdata as R\ndef extend(data, D, q):\n"
                         "    R.load_closes('final_test', unlock_final=True)\n    return {}\n")
-        expect("ปลั๊กอินถูก (False ได้ · ch17 เปิดได้)", check_plugins([d]), None)
+        expect("ปลั๊กอินถูก (False ได้ · ch18 เปิดได้)", check_plugins([d]), None)
         plug("ch05.py", "import sab2_realdata as R\nFLAG = True\ndef extend(data, D, q):\n"
                         "    R.load_closes('final_test', unlock_final=FLAG)\n    return {}\n")
         plug("ch06.py", "import sab2_realdata as R\ndef extend(data, D, q):\n"
@@ -381,7 +381,7 @@ def selftest():
         expect("ch05 unlock_final=ตัวแปร", of("ch05.py"), "เรียกด้วย unlock_final")
         expect("ch06 **kwargs", of("ch06.py"), "**kwargs")
         expect("ch07 อ่านไฟล์ตรง", of("ch07.py"), "'sab2-data'")
-        expect("ch03/ch17 ไม่ถูกฟ้อง", of("ch03.py") + of("ch17.py"), None)
+        expect("ch03/ch18 ไม่ถูกฟ้อง", of("ch03.py") + of("ch18.py"), None)
         expect("ch08 docstring · **kwargs ให้โลกจำลอง · load_figures ไม่ถูกฟ้อง", of("ch08.py"), None)
         expect("ch09 เปิด sab-figures.json ตรง", of("ch09.py"), "load_figures")
     for m in msgs:

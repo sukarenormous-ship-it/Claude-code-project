@@ -28,8 +28,8 @@ docs/sab2-data/manifest.json บอก URL · เวลาดึง (UTC) · ข
     from sab2_realdata import load_closes, load_funding
     dates, px = load_closes("formation")          # px["BTC"] = [ราคาปิด float ...] เรียงตาม dates
     rows = load_funding("formation", instrument="BTC-USDT-SWAP")
-    load_closes("final_test")                     # ValueError — ช่วงทดสอบสุดท้ายล็อกไว้จนถึงบท 17
-    load_closes("final_test", unlock_final=True)  # บท 17 เท่านั้น
+    load_closes("final_test")                     # ValueError — ช่วงทดสอบสุดท้ายล็อกไว้จนถึงบท 18
+    load_closes("final_test", unlock_final=True)  # บท 18 เท่านั้น
 """
 
 import datetime as dt
@@ -465,8 +465,8 @@ def _split_range(split, unlock_final):
     if split is not None and split not in SPLIT_NAMES:
         raise ValueError(f"split ต้องเป็นหนึ่งใน {SPLIT_NAMES} หรือ None (ทั้งหมด)")
     if split in (None, "final_test") and not unlock_final:
-        raise ValueError("ช่วงทดสอบสุดท้าย (final_test) ล็อกไว้จนถึงบท 17 — "
-                         "ใช้ 'formation' หรือ 'validation' หรือเรียกด้วย unlock_final=True ในบท 17 เท่านั้น")
+        raise ValueError("ช่วงทดสอบสุดท้าย (final_test) ล็อกไว้จนถึงบท 18 — "
+                         "ใช้ 'formation' หรือ 'validation' หรือเรียกด้วย unlock_final=True ในบท 18 เท่านั้น")
     sp = read_splits()["splits"]
     if split is None:
         return sp["formation"]["start"], sp["final_test"]["end"]
@@ -481,7 +481,7 @@ def _csv_rows(path):
 
 def load_closes(split, unlock_final=False, coins=None):
     """คืน (dates, {COIN: [ราคาปิด float ...]}) ของช่วงที่ขอ · split: 'formation' | 'validation' | 'final_test' | None
-    'final_test' และ None (ทั้งหมด) ต้องส่ง unlock_final=True (บท 17)"""
+    'final_test' และ None (ทั้งหมด) ต้องส่ง unlock_final=True (บท 18)"""
     a, b = _split_range(split, unlock_final)
     head, rows = _csv_rows(CLOSES_CSV)
     names = [h.upper() for h in head[1:]]

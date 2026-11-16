@@ -1,10 +1,10 @@
-"""บท 12 เล่ม 2 — เครื่อง backtest ของตัวเอง · ค่าทุกตัวของบท (ปลั๊กอินของ tools/sab_figures.py --book sab2)
+"""บท 13 เล่ม 2 — เครื่อง backtest ของตัวเอง · ค่าทุกตัวของบท (ปลั๊กอินของ tools/sab_figures.py --book sab2)
 
 ตอน ก  วงห้าขั้นด้วยมือ 10 วันบนคู่ A–B ของเล่ม 1 (X = A − 2B · ไม้บรรทัด Mean 0 SD 1 จากบท 9 เล่ม 1)
 ตอน ข  สเปรดชีตของต้น: โลกจำลองที่รู้คำตอบ (ไม่มีเชือกที่เก็บได้) + Look-ahead Bias สามแบบ แก้ทีละจุด
 ตอน ค  เครื่องเดียวกันบน BTC–ETH ช่วงเลือก → ช่วงตรวจ (ไม่แตะช่วงทดสอบสุดท้าย) · โลกจำลองคู่กัน · Survivorship
 
-เครื่อง _backtest / _trades = tools/sab2_engine.run (เท่าลูปในบล็อก 💻 ของ docs/sab2-part12.html ทุกบิต — ตรวจใน selftest ของเครื่อง)
+เครื่อง _backtest / _trades = tools/sab2_engine.run (เท่าลูปในบล็อก 💻 ของ docs/sab2-part13.html ทุกบิต — ตรวจใน selftest ของเครื่อง)
 ข้อมูลจริงผ่าน sab2_realdata.load_closes เท่านั้น · สถิติผ่าน sab2_stats · โลกจำลองผ่าน sab2_sim (seed ระบุทุกที่)
 """
 
