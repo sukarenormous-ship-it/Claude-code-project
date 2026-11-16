@@ -106,7 +106,8 @@ def _hand(q):
 def _pool(worlds, ruler, lines=LINES, years=YEARS):
     """worlds = [โลก] · ruler(โลก) → (Mean, SD) · คืนต่อเส้น: ไม้ต่อปี · กำไรต่อไม้ก่อนต้นทุน · ต้นทุนต่อไม้ ×1 ×3 ×5 ·
     สุทธิต่อปี (เฉพาะไม้ที่ปิด) · สัดส่วนที่ออกเพราะครบเวลา · กำไรเฉลี่ยของไม้ที่ออกที่เส้นกับที่ออกเพราะครบเวลา"""
-    acc = {L: {"n": 0, "gross": 0.0, "fee": 0.0, "time": 0, "g_time": 0.0, "g_tgt": 0.0} for L in lines}
+    acc = {L: {"n": 0, "gross": 0.0, "fee": 0.0, "time": 0, "g_time": 0.0, "g_tgt": 0.0, "zin": 0.0, "zout": 0.0}
+           for L in lines}
     for w in worlds:
         m, s = ruler(w)
         z = [(x - m) / s for x in w["X"]]
@@ -119,6 +120,8 @@ def _pool(worlds, ruler, lines=LINES, years=YEARS):
                 a["n"] += 1
                 a["gross"] += g
                 a["fee"] += fees[t["t_in"]] + fees[t["t_out"]]
+                a["zin"] += -t["side"] * z[t["t_in"]]          # ระยะจาก Mean ตอนได้ราคาเข้า (บวก = ฝั่งที่เข้า)
+                a["zout"] += -t["side"] * z[t["t_out"]]        # ระยะที่เหลือตอนได้ราคาออก
                 if t["reason"] == "time":
                     a["time"] += 1
                     a["g_time"] += g
@@ -132,6 +135,7 @@ def _pool(worlds, ruler, lines=LINES, years=YEARS):
         gross, fee = a["gross"] / n, a["fee"] / n
         row = {"เส้น": L, "ไม้ต่อปี": _r(a["n"] / yrs, 1), "ไม้รวม": a["n"], "กำไรต่อไม้": _r(gross, 1),
                "ระยะต่อไม้": _r(gross / SETS, 2), "ต้นทุนต่อไม้": _r(fee, 1),
+               "Zเข้าเฉลี่ย": _r(a["zin"] / n, 2), "Zออกเฉลี่ย": _r(a["zout"] / n, 2),
                "ครบเวลาเปอร์เซ็นต์": _r(100 * a["time"] / n, 0),
                "กำไรไม้ครบเวลา": _r(a["g_time"] / max(1, a["time"]), 1),
                "กำไรไม้ถึงเส้น": _r(a["g_tgt"] / max(1, a["n"] - a["time"]), 1)}
@@ -202,7 +206,7 @@ def _regime():
             tv = rv["trade_list"]
             res[L] = (rf["net"], rv["net"], sum(1 for t in tv if t["reason"] == "time"), len(tv))
         groups["ย้าย" if v_frac > 0.5 else "ไม่ย้าย"].append(res)
-    out = {"โลก": REG_WORLDS, "phi": REG_PHI, "ค่ากลางที่ย้าย": REG_MU, "อยู่ต่อ": REG_STAY,
+    out = {"โลก": REG_WORLDS, "phi": REG_PHI, "ค่ากลางที่ย้าย": REG_MU, "อยู่ต่อ": REG_STAY, "โอกาสสลับเปอร์เซ็นต์": _r(100 * (1 - REG_STAY), 1),
            "อยู่เฉลี่ยวัน": _r(1 / (1 - REG_STAY), 0), "ครึ่งชีวิต": _r(S.half_life(REG_PHI), 1)}
     for g, rs in groups.items():
         bf = [max(LINES, key=lambda L: r[L][0]) for r in rs]
@@ -251,7 +255,7 @@ def _real():
         key = f"{an}-{bn}"
         best_f = max(rows.values(), key=lambda r: r["เลือก"]["ผล"])
         best_v = max(rows.values(), key=lambda r: r["ตรวจ"]["ผล"])
-        out[key] = {"h": h, "Mean": _r(m), "SD": _r(s), "phi": _r(S.ar1(xf)["phi"], 3),
+        out[key] = {"h": h, "Mean": _r(m), "SD": _r(s), "phi": _r(S.ar1(xf)["phi"], 3), "phi2": _r(S.ar1(xf)["phi"], 2),
                     "ครึ่งชีวิต": _r(S.half_life(S.ar1(xf)["phi"]), 1), "ชุด": sets, "แถว": rows,
                     "ดีสุดเลือก": best_f["เส้น"], "ดีสุดตรวจ": best_v["เส้น"],
                     "Zตรวจเฉลี่ย": _r(S.mean(zv)), "Zตรวจต่ำสุด": _r(min(zv)), "Zตรวจสูงสุด": _r(max(zv)),
@@ -303,7 +307,11 @@ def _sim_twin():
 
 
 def extend(data, D, q):
-    out = {}
+    out = {"ค่า": {"ปีจำลอง": len(M.ROBUST_SEEDS) * YEARS, "ปีต่อโลก": YEARS, "โลก": len(M.ROBUST_SEEDS),
+                   "เส้นที่ลอง": list(LINES), "ค่าธรรมเนียมเท่า": list(FEE_MULTS), "ค่าธรรมเนียมเปอร์เซ็นต์": 0.05,
+                   "ต้นทุนสามระดับ": [HAND_COST * k for k in FEE_MULTS], "วันต่อโลก": YEARS * YDAYS,
+                   # สัดส่วนวันที่ |X| เกิน 1 · 2 · 3 SD ของการกระจายปกติ (🔎 ทำไมไม้ลดเร็ว)
+                   "หางปกติเปอร์เซ็นต์": [_r(200 * (1 - S.norm_cdf(k)), 1 if k < 3 else 2) for k in (1, 2, 3)]}}
     f1 = SB.load_figures("sab")["ch12"]["v2"]["ก่อนเข้า"]
     out["เล่ม1"] = {"เส้นเข้า": 2, "เส้นออก": LEAVE, "ถือ": HOLD, "ชุด": SETS, "ระยะต่อชุด": f1["ระยะต่อชุด"],
                     "กลับถึงเส้นออก": f1["กลับถึงเส้นออกได้"], "ต้นทุน": f1["ต้นทุน"], "เหลือ": f1["เหลือ"]}

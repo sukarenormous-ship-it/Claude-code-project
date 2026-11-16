@@ -56,119 +56,546 @@ details.code pre .cm,details.code pre .out{color:#86efac}details.code p{font-siz
 <div class="cover">
 <h1>Stat Arb for Non Quant · เล่ม 2 — วัดเชือก สร้างพอร์ต ทดสอบให้ซื่อ</h1>
 <div class="sub">บท 7 — เข้าเมื่อไร ออกเมื่อไร: จากเส้น 2 ไปถึง &quot;optimal&quot;</div>
-<div class="desc">…</div>
+<div class="desc">การ์ดของมินเข้าเมื่อ Z-score ถึง 2 มาตั้งแต่เล่ม 1 บทนี้ถามว่าเลข 2 มาจากไหน นับไม้ด้วยมือบนเส้นทาง 40 วัน แล้วเอาไปวัดบนโลกจำลองที่รู้คำตอบนาน 300 ปี จะเห็นว่าเส้นที่ดีที่สุดขึ้นกับความเร็วกลับของเชือกกับต้นทุนต่อไม้ คำว่า &quot;optimal&quot; จึงซ่อนสมมติฐานไว้หลายข้อ และเมื่อนำไปใช้กับ LTC กับ DOT เส้นที่ดีที่สุดของช่วงเลือกกลับเป็นเส้นที่แย่ที่สุดของช่วงตรวจ</div>
 </div>
 
-<!-- ═══ แม่แบบ v2 (แผน 14.3 · คู่มือ tools/sab_research/writing-brief-v2.md) · ตรวจด้วย python3 tools/sab_qa.py ═══ -->
-<p class="pos"><strong>ภาค … · บท 7 จาก 18</strong> · ต้องรู้จากบทก่อน: (1) … (2) … (3) …</p>
+<!-- ═══ แม่แบบ v2 (แผน 14.3 · คู่มือ tools/sab_research/writing-brief-v2.md + writing-brief-sab2.md) ═══ -->
+<p class="pos"><strong>ภาค 2 · บท 7 จาก 18 · บทนี้มีสามตอน อ่านทีละตอนได้</strong> (ตอน ก นับไม้กับกำไรต่อไม้ · ตอน ข เมื่อเชือกเปลี่ยนนิสัย · ตอน ค LTC กับ DOT และการตัดสินของมิน) · ต้องรู้จากบทก่อน: (1) การ์ดของเล่ม 1 เข้าเมื่อ Z-score ถึง <span data-key="ch07.เล่ม1.เส้นเข้า">2</span> ออกเมื่อกลับถึง <span data-key="ch07.เล่ม1.เส้นออก">0.5</span> และถือไม่เกิน <span data-key="ch07.เล่ม1.ถือ">30</span> วัน ถ้าทุกอย่างไปตามแผน X ลด <span data-key="ch07.เล่ม1.ระยะต่อชุด">1.5</span> ต่อชุด <span data-key="ch07.เล่ม1.ชุด">10</span> ชุดได้ <span data-key="ch07.เล่ม1.กลับถึงเส้นออก">15</span> หักต้นทุน <span data-key="ch07.เล่ม1.ต้นทุน">2</span> เหลือ <span data-key="ch07.เล่ม1.เหลือ">13</span> (เล่ม 1 บท 12) · (2) φ บอกว่าระยะห่างเหลือกี่ส่วนต่อวัน φ <span data-key="ch07.ou.phi09.phi">0.9</span> มี Half-life (ครึ่งชีวิต) ราว <span data-key="ch07.ou.phi09.ครึ่งชีวิต">6.6</span> วัน และเชือกแบบนี้คือ OU Process (กระบวนการ OU) ของบท 4 · (3) LTC บน DOT บนราคามี h <span data-key="ch07.จริง.LTC-DOT.h">3.76</span> จากช่วงเลือก และการ์ดเดิมได้ <span data-key="ch07.อ้างบท5.ตรึง">180.51</span> ดอลลาร์ในช่วงตรวจ (บท 5) ส่วนบท 4 พบว่าค่ากลางของ X ย้ายจาก <span data-key="ch07.อ้างบท4.Meanเลือก">1.9</span>% ไปราว <span data-key="ch07.อ้างบท4.Meanตรวจ">37.8</span>% ในช่วงตรวจ</p>
 
 <!-- ฉากเปิดของมิน: สั้น · ต้องมีวลี data-hook ของหน้าก่อนตรงตัว -->
-<div class="scene-open" data-day="…" data-continues="part6"><div class="bt">📓 สมุดของมิน</div>
-<p>…</p>
+<div class="scene-open" data-day="เดือนที่ 10 สัปดาห์ 4" data-continues="part6"><div class="bt">📓 สมุดของมิน · เดือนที่ 10 สัปดาห์ 4</div>
+<p>มินตั้งใจจะเดินการ์ดบน h ที่ขยับได้ของบท 6 แต่ก่อนกดรัน พี่ฝนถามในกลุ่มหนึ่งข้อ "เส้นเข้า 2 มาจากไหน ถ้าตอบไม่ได้ ผลที่ได้คืนนี้จะเป็นผลของ h หรือผลของเลข 2"</p>
+<p>มินเปิดเล่ม 1 บท 12 ดู เลข 2 ถูกเขียนไว้เป็นค่าเริ่มต้น พร้อมเหตุผลข้อเดียวว่าหักต้นทุนแล้วยังเหลือ เขาไม่เคยลอง 1.5 หรือ 2.5 เลยสักครั้ง</p>
+<p>คืนนี้เขาจะยังไม่แตะ h เขาอยากรู้ก่อนว่าเส้นเข้าที่ดีที่สุดขึ้นกับอะไร เงินในบัญชีไม่ขยับ ทุนคู่ยังว่าง</p>
 </div>
 
-<div class="pq">…คำถามของบท…</div>
+<div class="pq">ถ้าย้ายเส้นเข้าจาก 2 ไป 1.5 หรือ 2.5 จะได้ไม้มากขึ้นหรือได้กำไรต่อไม้มากขึ้น อะไรตัดสินว่าเส้นไหนดีที่สุด และเส้นที่ "ดีที่สุด" บนข้อมูลชุดหนึ่งเชื่อได้แค่ไหนเมื่อเจอข้อมูลชุดถัดไป</div>
 
-<!-- ═══ ตอนสอน (h2) 3 ถึง 6 ตอน · ทุกตอนจบด้วย .rest ═══
-     ลำดับในตอน: สถานการณ์ → ตามเงินทีละประโยค → ตาราง (คอลัมน์ "คิดอย่างไร" = th/td class="calc") → ตั้งชื่อศัพท์ → 🛑 ทายก่อน
-     → กราฟ + .readfig → 🚶 + .fm + .readeq → .rest · ย่อหน้า p หนึ่งย่อหน้ามีเครื่องหมายเท่ากับไม่เกินสองตัว
-     ตารางสอนธรรมดาไม่ต้องติดป้ายที่มา · ตารางผลจำลอง/ข้อมูลจริง/ค่าจากแอป ใส่ data-src="sim|real|app" และป้าย 🎲/📡/📱 ใกล้ตาราง -->
-<h2>…หัวข้อตอนที่ 1 (มีตัวเลขหลัก หรือเป็นคำถามที่ตอนนี้ตอบ)…</h2>
-<p>…</p>
-<div class="tw"><table>
-<tr><th>เหตุการณ์</th><th class="calc">คิดอย่างไร</th><th class="nw">ผล</th></tr>
-<tr><td>…</td><td class="calc">…</td><td class="nw">…</td></tr>
+<!-- ═════════════════════════ ตอน ก ═════════════════════════ -->
+<h2>ตอน ก นับไม้กับกำไรต่อไม้ · 1 — สี่เส้นบนเส้นทางเดียวกัน: ได้ 4 · 3 · 2 · 1 ไม้</h2>
+<p>เริ่มจากสิ่งที่นับได้ด้วยมือ ตารางข้างล่างคือ X ของคู่หนึ่ง 40 วัน คู่นี้สร้างแบบคู่ A–B ของเล่ม 1 คือ Mean (ค่าเฉลี่ย) ระยะยาวเป็น 0 และ Standard Deviation (ส่วนเบี่ยงเบนมาตรฐาน) หรือ SD เป็น 1 ไม้บรรทัดของคู่นี้จึงลบศูนย์แล้วหารด้วยหนึ่ง และ Z-score (ค่ามาตรฐาน) ของแต่ละวันก็คือ X ของวันนั้นเลย</p>
+<p>เส้นทางนี้มาจากโลกจำลองเชือก φ <span data-key="ch07.มือ.phi">0.85</span> ปัดทศนิยมหนึ่งตำแหน่ง เลขติดลบแปลว่า X ต่ำกว่าปกติ การ์ดจึง long X คือซื้อ A และ short B</p>
+<p>🎲 จำลอง · เชือก φ 0.85 หนึ่งเส้นทาง · Mean 0 SD 1 จึงอ่าน X เป็น Z ได้ตรง ๆ · อ่านตารางเป็นแถวละสิบวัน เช่นวันที่ 15 คือแถวที่สอง ช่องที่ 5</p>
+<div class="tw"><table data-src="sim">
+<tr><th>แถว</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
+<tr><th>วันที่ 1–10</th><td data-key="ch07.มือ.X.0">0.2</td><td data-key="ch07.มือ.X.1">0.9</td><td data-key="ch07.มือ.X.2">1.5</td><td data-key="ch07.มือ.X.3">0.1</td><td data-key="ch07.มือ.X.4">0.4</td><td data-key="ch07.มือ.X.5">−0.7</td><td data-key="ch07.มือ.X.6">−1.2</td><td data-key="ch07.มือ.X.7">−1.1</td><td data-key="ch07.มือ.X.8">−0.9</td><td data-key="ch07.มือ.X.9">−0.3</td></tr>
+<tr><th>วันที่ 11–20</th><td data-key="ch07.มือ.X.10">0</td><td data-key="ch07.มือ.X.11">0</td><td data-key="ch07.มือ.X.12">−1.2</td><td data-key="ch07.มือ.X.13">−1.4</td><td data-key="ch07.มือ.X.14">−2.3</td><td data-key="ch07.มือ.X.15">−2.8</td><td data-key="ch07.มือ.X.16">−2.5</td><td data-key="ch07.มือ.X.17">−2.1</td><td data-key="ch07.มือ.X.18">−1.4</td><td data-key="ch07.มือ.X.19">−0.5</td></tr>
+<tr><th>วันที่ 21–30</th><td data-key="ch07.มือ.X.20">−0.8</td><td data-key="ch07.มือ.X.21">−0.2</td><td data-key="ch07.มือ.X.22">−1.1</td><td data-key="ch07.มือ.X.23">−1.2</td><td data-key="ch07.มือ.X.24">−2</td><td data-key="ch07.มือ.X.25">−1.6</td><td data-key="ch07.มือ.X.26">−1.3</td><td data-key="ch07.มือ.X.27">−0.6</td><td data-key="ch07.มือ.X.28">−1.4</td><td data-key="ch07.มือ.X.29">−1.5</td></tr>
+<tr><th>วันที่ 31–40</th><td data-key="ch07.มือ.X.30">−1</td><td data-key="ch07.มือ.X.31">−1.1</td><td data-key="ch07.มือ.X.32">−1.7</td><td data-key="ch07.มือ.X.33">−2.4</td><td data-key="ch07.มือ.X.34">−1.9</td><td data-key="ch07.มือ.X.35">−1.1</td><td data-key="ch07.มือ.X.36">−1</td><td data-key="ch07.มือ.X.37">−0.3</td><td data-key="ch07.มือ.X.38">−0.7</td><td data-key="ch07.มือ.X.39">−0.1</td></tr>
 </table></div>
+<p>กติกาเหมือนการ์ดของเล่ม 1 ยกเว้นเส้นเข้าที่ลองสี่ค่า คือเข้าเมื่อ |Z| ถึงเส้นเข้า และออกเมื่อ |Z| กลับถึง 0.5 ราคาปิดของวันหนึ่งรู้ได้ก็ต่อเมื่อวันนั้นจบแล้ว ตามเล่ม 1 บท 9 คำสั่งจึงได้ราคาปิดของวันถัดไป ช่วงแรกนี้นับแค่ว่าแต่ละเส้นเปิดกี่ไม้</p>
+<p>ลองเส้น 2 ก่อน ไล่วันไปเรื่อย ๆ วันที่ 15 X เป็น −2.3 ซึ่งห่างจากศูนย์เกิน 2 จึงเป็นสัญญาณเข้า จากนั้นรอจนวันที่ 20 ที่ X กลับมาเป็น −0.5 จึงเป็นสัญญาณออก นี่คือไม้แรก ต่อมาวันที่ 25 X เป็น −2 ถึงเส้นพอดี จึงเข้าอีกครั้ง แล้วออกวันที่ 38 ที่ X เป็น −0.3 เส้น 2 จึงได้สองไม้</p>
+<p>เส้น 1 ไวกว่ามาก วันที่ 3 X เป็น 1.5 ก็เข้าแล้ว วันที่ 4 X เหลือ 0.1 จึงออก แล้วเข้าอีกวันที่ 7, 13 และ 23 รวมสี่ไม้ ส่วนเส้น 2.5 เข้าได้ครั้งเดียวในวันที่ 16 ที่ X ลงไปถึง −2.8</p>
+<div class="tw"><table>
+<tr><th>เส้นเข้า</th><th>วันสัญญาณเข้า (X วันนั้น)</th><th>วันสัญญาณออก (X วันนั้น)</th><th>จำนวนไม้</th></tr>
+<tr><td data-key="ch07.มือ.เส้น.0.เส้น">1</td><td>วัน 3 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.0.Xสัญญาณเข้า">1.5</span>) · วัน 7 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.1.Xสัญญาณเข้า">−1.2</span>) · วัน 13 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.2.Xสัญญาณเข้า">−1.2</span>) · วัน 23 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.3.Xสัญญาณเข้า">−1.1</span>)</td><td>วัน 4 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.0.Xสัญญาณออก">0.1</span>) · วัน 10 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.1.Xสัญญาณออก">−0.3</span>) · วัน 20 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.2.Xสัญญาณออก">−0.5</span>) · วัน 38 (<span data-key="ch07.มือ.เส้น.0.ไม้จริง.3.Xสัญญาณออก">−0.3</span>)</td><td><strong data-key="ch07.มือ.เส้น.0.ไม้">4</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.1.เส้น">1.5</td><td>วัน 3 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.0.Xสัญญาณเข้า">1.5</span>) · วัน 15 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.1.Xสัญญาณเข้า">−2.3</span>) · วัน 25 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.2.Xสัญญาณเข้า">−2</span>)</td><td>วัน 4 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.0.Xสัญญาณออก">0.1</span>) · วัน 20 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.1.Xสัญญาณออก">−0.5</span>) · วัน 38 (<span data-key="ch07.มือ.เส้น.1.ไม้จริง.2.Xสัญญาณออก">−0.3</span>)</td><td><strong data-key="ch07.มือ.เส้น.1.ไม้">3</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.2.เส้น">2</td><td>วัน 15 (<span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xสัญญาณเข้า">−2.3</span>) · วัน 25 (<span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xสัญญาณเข้า">−2</span>)</td><td>วัน 20 (<span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xสัญญาณออก">−0.5</span>) · วัน 38 (<span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xสัญญาณออก">−0.3</span>)</td><td><strong data-key="ch07.มือ.เส้น.2.ไม้">2</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.3.เส้น">2.5</td><td>วัน 16 (<span data-key="ch07.มือ.เส้น.3.ไม้จริง.0.Xสัญญาณเข้า">−2.8</span>)</td><td>วัน 20 (<span data-key="ch07.มือ.เส้น.3.ไม้จริง.0.Xสัญญาณออก">−0.5</span>)</td><td><strong data-key="ch07.มือ.เส้น.3.ไม้">1</strong></td></tr>
+</table></div>
+<p>เส้นยิ่งไกลศูนย์ ไม้ยิ่งน้อย เพราะ X ไปถึงระยะไกลไม่บ่อย ตลอด 40 วันนี้ |X| ถึง 1 อยู่ <span data-key="ch07.มือ.วันที่ถึง.1">24</span> วัน ถึง 1.5 อยู่ <span data-key="ch07.มือ.วันที่ถึง.1_5">11</span> วัน ถึง 2 อยู่ <span data-key="ch07.มือ.วันที่ถึง.2">6</span> วัน และถึง 2.5 เพียง <span data-key="ch07.มือ.วันที่ถึง.2_5">2</span> วัน แต่หลายวันที่ถึงเส้นนั้นเป็นวันที่ถือไม้อยู่แล้ว จำนวนไม้จึงน้อยกว่าจำนวนวัน</p>
+<!--CHART:sab2-entry-path-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 320" role="img" aria-label="X 40 วัน ต่ำสุด −2.8 สูงสุด 1.5 เส้นเข้า 1 1.5 2 2.5 ได้ 4, 3, 2, 1 ไม้">
+<line x1="64" y1="250.0" x2="736" y2="250.0" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="254.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−3</text>
+<line x1="64" y1="211.2" x2="736" y2="211.2" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="215.2" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−2</text>
+<line x1="64" y1="172.4" x2="736" y2="172.4" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="176.4" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−1</text>
+<line x1="64" y1="133.6" x2="736" y2="133.6" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="56.0" y="137.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="94.8" x2="736" y2="94.8" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="98.8" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">1</text>
+<line x1="64" y1="56.0" x2="736" y2="56.0" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="60.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<rect x="64" y="114.2" width="672" height="38.8" fill="#9ca3af" fill-opacity="0.15"/>
+<line x1="64" y1="172.4" x2="736" y2="172.4" stroke="#d97706" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="167.4" text-anchor="start" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 1 (4 ไม้)</text>
+<line x1="64" y1="191.8" x2="736" y2="191.8" stroke="#16a34a" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="186.8" text-anchor="start" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 1.5 (3 ไม้)</text>
+<line x1="64" y1="211.2" x2="736" y2="211.2" stroke="#7c3aed" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="206.2" text-anchor="start" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 2 (2 ไม้)</text>
+<line x1="64" y1="230.6" x2="736" y2="230.6" stroke="#dc2626" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="225.6" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 2.5 (1 ไม้)</text>
+<polyline points="64.0,125.8 81.2,98.7 98.5,75.4 115.7,129.7 132.9,118.1 150.2,160.8 167.4,180.2 184.6,176.3 201.8,168.5 219.1,145.2 236.3,133.6 253.5,133.6 270.8,180.2 288.0,187.9 305.2,222.8 322.5,242.2 339.7,230.6 356.9,215.1 374.2,187.9 391.4,153.0 408.6,164.6 425.8,141.4 443.1,176.3 460.3,180.2 477.5,211.2 494.8,195.7 512.0,184.0 529.2,156.9 546.5,187.9 563.7,191.8 580.9,172.4 598.2,176.3 615.4,199.6 632.6,226.7 649.8,207.3 667.1,176.3 684.3,172.4 701.5,145.2 718.8,160.8 736.0,137.5" fill="none" stroke="#2563eb" stroke-width="1.6" stroke-opacity="0.6"/>
+<circle cx="64.0" cy="125.8" r="3.2" fill="#2563eb"/>
+<circle cx="81.2" cy="98.7" r="3.2" fill="#2563eb"/>
+<circle cx="98.5" cy="75.4" r="3.2" fill="#2563eb"/>
+<circle cx="115.7" cy="129.7" r="3.2" fill="#2563eb"/>
+<circle cx="132.9" cy="118.1" r="3.2" fill="#2563eb"/>
+<circle cx="150.2" cy="160.8" r="3.2" fill="#2563eb"/>
+<circle cx="167.4" cy="180.2" r="3.2" fill="#2563eb"/>
+<circle cx="184.6" cy="176.3" r="3.2" fill="#2563eb"/>
+<circle cx="201.8" cy="168.5" r="3.2" fill="#2563eb"/>
+<circle cx="219.1" cy="145.2" r="3.2" fill="#2563eb"/>
+<circle cx="236.3" cy="133.6" r="3.2" fill="#2563eb"/>
+<circle cx="253.5" cy="133.6" r="3.2" fill="#2563eb"/>
+<circle cx="270.8" cy="180.2" r="3.2" fill="#2563eb"/>
+<circle cx="288.0" cy="187.9" r="3.2" fill="#2563eb"/>
+<circle cx="305.2" cy="222.8" r="3.2" fill="#2563eb"/>
+<circle cx="322.5" cy="242.2" r="3.2" fill="#2563eb"/>
+<circle cx="339.7" cy="230.6" r="3.2" fill="#2563eb"/>
+<circle cx="356.9" cy="215.1" r="3.2" fill="#2563eb"/>
+<circle cx="374.2" cy="187.9" r="3.2" fill="#2563eb"/>
+<circle cx="391.4" cy="153.0" r="3.2" fill="#2563eb"/>
+<circle cx="408.6" cy="164.6" r="3.2" fill="#2563eb"/>
+<circle cx="425.8" cy="141.4" r="3.2" fill="#2563eb"/>
+<circle cx="443.1" cy="176.3" r="3.2" fill="#2563eb"/>
+<circle cx="460.3" cy="180.2" r="3.2" fill="#2563eb"/>
+<circle cx="477.5" cy="211.2" r="3.2" fill="#2563eb"/>
+<circle cx="494.8" cy="195.7" r="3.2" fill="#2563eb"/>
+<circle cx="512.0" cy="184.0" r="3.2" fill="#2563eb"/>
+<circle cx="529.2" cy="156.9" r="3.2" fill="#2563eb"/>
+<circle cx="546.5" cy="187.9" r="3.2" fill="#2563eb"/>
+<circle cx="563.7" cy="191.8" r="3.2" fill="#2563eb"/>
+<circle cx="580.9" cy="172.4" r="3.2" fill="#2563eb"/>
+<circle cx="598.2" cy="176.3" r="3.2" fill="#2563eb"/>
+<circle cx="615.4" cy="199.6" r="3.2" fill="#2563eb"/>
+<circle cx="632.6" cy="226.7" r="3.2" fill="#2563eb"/>
+<circle cx="649.8" cy="207.3" r="3.2" fill="#2563eb"/>
+<circle cx="667.1" cy="176.3" r="3.2" fill="#2563eb"/>
+<circle cx="684.3" cy="172.4" r="3.2" fill="#2563eb"/>
+<circle cx="701.5" cy="145.2" r="3.2" fill="#2563eb"/>
+<circle cx="718.8" cy="160.8" r="3.2" fill="#2563eb"/>
+<circle cx="736.0" cy="137.5" r="3.2" fill="#2563eb"/>
+<text x="64.0" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 1</text>
+<text x="219.1" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 10</text>
+<text x="391.4" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 20</text>
+<text x="563.7" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 30</text>
+<text x="736.0" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">วัน 40</text>
+<text x="64.0" y="26.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">X ของคู่จำลอง 40 วัน (Mean 0 · SD 1 จึงเท่ากับ Z) กับเส้นเข้าสี่เส้น</text>
+<text x="64.0" y="44.0" text-anchor="start" font-size="11" fill="#6b7280" font-family="Sarabun,sans-serif">แถบเทา = ช่วง ±0.5 ที่การ์ดออก</text>
+</svg></div>
+<div class="cap">🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด) · โลกเชือก φ 0.85 หนึ่งเส้นทาง ปัดทศนิยมหนึ่งตำแหน่ง · เส้นเข้าแสดงเฉพาะฝั่งลบซึ่งเป็นฝั่งที่ X ไปถึง</div>
+<!--/CHART:sab2-entry-path-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือวัน แกนตั้งคือ X (เท่ากับ Z) จุดน้ำเงินคือ X แต่ละวัน เส้นประคือเส้นเข้าฝั่งลบ แถบเทาคือช่วง ±0.5 ที่การ์ดออก ให้ดูวันที่ 13 ถึง 20 กับ 23 ถึง 38 ที่ X ลงแล้วกลับขึ้น เส้น 1 ถูกแตะก่อนเส้นอื่นทุกครั้ง ส่วนเส้น 2.5 ถูกแตะเพียงวันที่ 16 สรุปได้ว่าเส้นใกล้ศูนย์ได้ไม้มากแต่แต่ละไม้เข้าที่ระยะสั้น เส้นไกลได้ไม้น้อยแต่เข้าที่ระยะยาว</p>
 
-<div class="stop"><div class="bt">🛑 ทายก่อน</div>
-<p>…</p></div>
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>บนเส้นทาง 40 วันเดียวกัน เส้นเข้า 1 ได้ 4 ไม้ เส้น 1.5 ได้ 3 ไม้ เส้น 2 ได้ 2 ไม้ และเส้น 2.5 ได้ 1 ไม้ ทุกเส้นออกที่ 0.5 และได้ราคาวันถัดไปจากสัญญาณ เส้นไกลได้ไม้น้อยเพราะ X ไปถึงระยะไกลไม่บ่อย</p></div>
 
-<!-- กราฟ: วางตัวคั่น CHART ของ sab_charts.py ตรงนี้ แล้ววาง .readfig ไว้หลังตัวคั่นปิด (ข้างในตัวคั่นจะถูกเขียนทับ) -->
-<p class="readfig"><strong>อ่านภาพ:</strong> …แกนและแท่งคืออะไร · ให้มองตรงไหน · สรุปได้ว่าอะไร…</p>
+<h2>ตอน ก · 2 — จำนวนไม้ × (กำไรต่อไม้ − ต้นทุน): บนเส้นทางนี้เส้น 2 ได้ 26</h2>
+<p>นับไม้ได้แล้ว ต่อไปคิดเงิน ใช้ตัวเลขของเล่ม 1 บท 12 คือถือ 10 ชุด และต้นทุนต่อไม้ 2 ดอลลาร์ (สี่ fill ละ 0.5) เริ่มจากกรณีที่ง่ายที่สุดก่อน คือสมมติว่าทุกไม้ได้ราคาตรงเส้นพอดี เข้าที่ระยะเท่าเส้นเข้า แล้วออกที่ระยะ 0.5</p>
+<p>เส้น 2 เข้าที่ระยะ 2 ออกที่ระยะ 0.5 X จึงเดินเข้าหาค่ากลาง 1.5 ต่อชุด ถือ 10 ชุดจึงได้ 15 ดอลลาร์ต่อไม้ หักต้นทุน 2 เหลือ 13 ต่อไม้ เส้น 2 มีสองไม้ ทั้งเส้นจึงได้ 26 ดอลลาร์ ตัวเลข 15 กับ 13 นี้คือตัวเลขเดียวกับที่เล่ม 1 ใช้ตัดสินว่าเส้น 2 "หักต้นทุนแล้วยังเหลือ"</p>
+<p>เส้น 1 เข้าที่ระยะ 1 X เดินได้เพียง 0.5 ต่อชุด ได้ 5 ดอลลาร์ต่อไม้ หักต้นทุนเหลือ 3 แม้มีสี่ไม้ก็ได้รวมแค่ 12 ตารางนี้คิดครบทั้งสี่เส้น</p>
+<div class="tw"><table>
+<tr><th>เส้นเข้า</th><th>ไม้</th><th class="calc">X เดินต่อชุด (เส้นเข้า − 0.5)</th><th class="calc">กำไรต่อไม้ (× 10 ชุด)</th><th class="calc">สุทธิต่อไม้ (− ต้นทุน 2)</th><th class="calc">รวม (ไม้ × สุทธิต่อไม้)</th></tr>
+<tr><td data-key="ch07.มือ.เส้น.0.เส้น">1</td><td data-key="ch07.มือ.เส้น.0.ไม้">4</td><td class="calc">1 − 0.5 = <span data-key="ch07.มือ.เส้น.0.ระยะ">0.5</span></td><td class="calc">0.5 × 10 = <span data-key="ch07.มือ.เส้น.0.ต่อไม้">5</span></td><td class="calc">5 − 2 = <span data-key="ch07.มือ.เส้น.0.สุทธิต่อไม้">3</span></td><td class="calc">4 × 3 = <strong data-key="ch07.มือ.เส้น.0.สุทธิ">12</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.1.เส้น">1.5</td><td data-key="ch07.มือ.เส้น.1.ไม้">3</td><td class="calc">1.5 − 0.5 = <span data-key="ch07.มือ.เส้น.1.ระยะ">1</span></td><td class="calc">1 × 10 = <span data-key="ch07.มือ.เส้น.1.ต่อไม้">10</span></td><td class="calc">10 − 2 = <span data-key="ch07.มือ.เส้น.1.สุทธิต่อไม้">8</span></td><td class="calc">3 × 8 = <strong data-key="ch07.มือ.เส้น.1.สุทธิ">24</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.2.เส้น">2</td><td data-key="ch07.มือ.เส้น.2.ไม้">2</td><td class="calc">2 − 0.5 = <span data-key="ch07.มือ.เส้น.2.ระยะ">1.5</span></td><td class="calc">1.5 × 10 = <span data-key="ch07.มือ.เส้น.2.ต่อไม้">15</span></td><td class="calc">15 − 2 = <span data-key="ch07.มือ.เส้น.2.สุทธิต่อไม้">13</span></td><td class="calc">2 × 13 = <strong data-key="ch07.มือ.เส้น.2.สุทธิ">26</strong></td></tr>
+<tr><td data-key="ch07.มือ.เส้น.3.เส้น">2.5</td><td data-key="ch07.มือ.เส้น.3.ไม้">1</td><td class="calc">2.5 − 0.5 = <span data-key="ch07.มือ.เส้น.3.ระยะ">2</span></td><td class="calc">2 × 10 = <span data-key="ch07.มือ.เส้น.3.ต่อไม้">20</span></td><td class="calc">20 − 2 = <span data-key="ch07.มือ.เส้น.3.สุทธิต่อไม้">18</span></td><td class="calc">1 × 18 = <strong data-key="ch07.มือ.เส้น.3.สุทธิ">18</strong></td></tr>
+</table></div>
+<p>อ่านคอลัมน์สุดท้าย เส้น 2 ได้มากที่สุด เส้น 1.5 ตามมาใกล้ ๆ ส่วนเส้น 1 กับเส้น 2.5 แพ้ด้วยเหตุผลตรงข้ามกัน เส้น 1 มีไม้มากที่สุดแต่ต้นทุนกินกำไรต่อไม้ไปเกือบครึ่ง ส่วนเส้น 2.5 ได้กำไรต่อไม้มากที่สุดแต่มีไม้เดียว เงินทั้งหมดจึงเป็น <strong>จำนวนไม้คูณกำไรสุทธิต่อไม้</strong> และสองตัวนี้ดึงกันไปคนละทาง</p>
+<p>ต้นทุนเปลี่ยนคำตอบได้ ตารางถัดไปใช้จำนวนไม้เดิม แต่ต้นทุนต่อไม้เป็น 0, 2, 6 และ 10 คิดแบบตารางที่แล้วทุกช่อง</p>
+<div class="tw"><table>
+<tr><th>เส้นเข้า</th><th>ไม้</th><th>กำไรต่อไม้</th><th>ต้นทุน 0</th><th>ต้นทุน 2</th><th>ต้นทุน 6</th><th>ต้นทุน 10</th><th>ต้นทุนต่อไม้ที่กินหมด</th></tr>
+<tr><td data-key="ch07.มือ.เส้น.0.เส้น">1</td><td data-key="ch07.มือ.เส้น.0.ไม้">4</td><td data-key="ch07.มือ.เส้น.0.ต่อไม้">5</td><td data-key="ch07.มือ.เส้น.0.สุทธิต้นทุน0">20</td><td data-key="ch07.มือ.เส้น.0.สุทธิ">12</td><td data-key="ch07.มือ.เส้น.0.สุทธิต้นทุน6">−4</td><td data-key="ch07.มือ.เส้น.0.สุทธิต้นทุน10">−20</td><td data-key="ch07.มือ.เส้น.0.ต้นทุนกินหมด">5</td></tr>
+<tr><td data-key="ch07.มือ.เส้น.1.เส้น">1.5</td><td data-key="ch07.มือ.เส้น.1.ไม้">3</td><td data-key="ch07.มือ.เส้น.1.ต่อไม้">10</td><td data-key="ch07.มือ.เส้น.1.สุทธิต้นทุน0">30</td><td data-key="ch07.มือ.เส้น.1.สุทธิ">24</td><td data-key="ch07.มือ.เส้น.1.สุทธิต้นทุน6">12</td><td data-key="ch07.มือ.เส้น.1.สุทธิต้นทุน10">0</td><td data-key="ch07.มือ.เส้น.1.ต้นทุนกินหมด">10</td></tr>
+<tr><td data-key="ch07.มือ.เส้น.2.เส้น">2</td><td data-key="ch07.มือ.เส้น.2.ไม้">2</td><td data-key="ch07.มือ.เส้น.2.ต่อไม้">15</td><td data-key="ch07.มือ.เส้น.2.สุทธิต้นทุน0">30</td><td data-key="ch07.มือ.เส้น.2.สุทธิ">26</td><td data-key="ch07.มือ.เส้น.2.สุทธิต้นทุน6">18</td><td data-key="ch07.มือ.เส้น.2.สุทธิต้นทุน10">10</td><td data-key="ch07.มือ.เส้น.2.ต้นทุนกินหมด">15</td></tr>
+<tr><td data-key="ch07.มือ.เส้น.3.เส้น">2.5</td><td data-key="ch07.มือ.เส้น.3.ไม้">1</td><td data-key="ch07.มือ.เส้น.3.ต่อไม้">20</td><td data-key="ch07.มือ.เส้น.3.สุทธิต้นทุน0">20</td><td data-key="ch07.มือ.เส้น.3.สุทธิ">18</td><td data-key="ch07.มือ.เส้น.3.สุทธิต้นทุน6">14</td><td data-key="ch07.มือ.เส้น.3.สุทธิต้นทุน10">10</td><td data-key="ch07.มือ.เส้น.3.ต้นทุนกินหมด">20</td></tr>
+</table></div>
+<p>ถ้าไม่มีต้นทุนเลย เส้น 1.5 กับเส้น 2 เสมอกันที่ 30 พอต้นทุนเป็น 6 เส้น 1 ก็ติดลบ เพราะได้แค่ 5 ต่อไม้แต่ต้องจ่าย 6 ต้นทุนต่อไม้จึงมี <strong>จุดที่กินหมด</strong> ของแต่ละเส้นคือ (เส้นเข้า − 0.5) × 10 สำหรับเส้น 1 คือ 5 สำหรับเส้น 1.5 คือ 10 พอต้นทุนเป็น 10 เส้น 1.5 จึงเหลือศูนย์พอดี และเส้น 2 เสมอกับเส้น 2.5 ที่ 10</p>
+<p>ตอนนี้ตรวจอีกทางด้วยราคาที่ได้จริง เพราะคำสั่งไม่ได้ราคาตรงเส้น มันได้ราคาปิดของวันถัดจากสัญญาณ ซึ่งอาจเลยเส้นไปหรือย้อนกลับมาแล้วก็ได้ ตารางนี้เดินทั้งสองไม้ของเส้น 2 ด้วยราคาวันถัดไป ไม้ long X ได้กำไรเมื่อ X เพิ่มขึ้น จึงคิดจาก X ตอนออกลบ X ตอนเข้า</p>
+<div class="tw"><table>
+<tr><th>ไม้</th><th>สัญญาณเข้า</th><th>ได้ราคาเข้า (วันถัดไป)</th><th>สัญญาณออก</th><th>ได้ราคาออก (วันถัดไป)</th><th class="calc">X เดิน (ออก − เข้า)</th><th class="calc">ได้ (× 10 ชุด)</th><th>ถ้าได้ราคาตรงเส้น</th></tr>
+<tr><td>1 (long X)</td><td>วัน 15 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xสัญญาณเข้า">−2.3</span></td><td>วัน 16 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xเข้า">−2.8</span></td><td>วัน 20 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xสัญญาณออก">−0.5</span></td><td>วัน 21 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xออก">−0.8</span></td><td class="calc">−0.8 − (−2.8) = <span data-key="ch07.มือ.เส้น.2.ไม้จริง.0.Xเปลี่ยน">2</span></td><td class="calc">2 × 10 = <strong data-key="ch07.มือ.เส้น.2.ไม้จริง.0.ได้">20</strong></td><td>15</td></tr>
+<tr><td>2 (long X)</td><td>วัน 25 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xสัญญาณเข้า">−2</span></td><td>วัน 26 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xเข้า">−1.6</span></td><td>วัน 38 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xสัญญาณออก">−0.3</span></td><td>วัน 39 ที่ <span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xออก">−0.7</span></td><td class="calc">−0.7 − (−1.6) = <span data-key="ch07.มือ.เส้น.2.ไม้จริง.1.Xเปลี่ยน">0.9</span></td><td class="calc">0.9 × 10 = <strong data-key="ch07.มือ.เส้น.2.ไม้จริง.1.ได้">9</strong></td><td>15</td></tr>
+<tr><td>รวม</td><td></td><td></td><td></td><td></td><td></td><td class="calc"><strong data-key="ch07.มือ.เส้น.2.จริงก่อนต้นทุน">29</strong></td><td>30</td></tr>
+</table></div>
+<p>ไม้แรกเข้าวันที่ 16 ที่ X −2.8 ซึ่งเลยเส้นไปไกลกว่าที่คิด จึงได้ 20 แทน 15 ไม้ที่สองเข้าวันที่ 26 ที่ X −1.6 เพราะ X เด้งกลับขึ้นมาก่อนคำสั่งจะได้ราคา จึงได้แค่ 9 รวมสองไม้ได้ <span data-key="ch07.มือ.เส้น.2.จริงก่อนต้นทุน">29</span> ใกล้กับ 30 ของกรณีราคาตรงเส้น หักต้นทุน 4 เหลือ <span data-key="ch07.มือ.เส้น.2.จริงสุทธิ">25</span></p>
+<p>ไม้แรกของเส้น 1 ควรจำ วันที่ 3 X เป็น 1.5 การ์ดส่งคำสั่ง short X แต่วันที่ 4 X ตกเหลือ 0.1 ก่อนได้ราคา ไม้นี้จึงเข้าที่ 0.1 แล้วออกวันรุ่งขึ้นที่ 0.4 เสีย 3 ก่อนหักต้นทุน ราคาจริงของสี่เส้นรวมก่อนต้นทุนได้ <span data-key="ch07.มือ.เส้น.0.จริงก่อนต้นทุน">19</span>, <span data-key="ch07.มือ.เส้น.1.จริงก่อนต้นทุน">26</span>, <span data-key="ch07.มือ.เส้น.2.จริงก่อนต้นทุน">29</span> และ <span data-key="ch07.มือ.เส้น.3.จริงก่อนต้นทุน">17</span> หักต้นทุนแล้วเหลือ <span data-key="ch07.มือ.เส้น.0.จริงสุทธิ">11</span>, <span data-key="ch07.มือ.เส้น.1.จริงสุทธิ">20</span>, <span data-key="ch07.มือ.เส้น.2.จริงสุทธิ">25</span> และ <span data-key="ch07.มือ.เส้น.3.จริงสุทธิ">15</span> เส้น 2 ยังชนะเหมือนเดิม ทั้งสองวิธีจึงให้คำตอบเดียวกันบนเส้นทางนี้</p>
 
-<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> …</p>
-<div class="fm">… = …</div>
-<p class="readeq"><strong>อ่านสมการ:</strong> …แทนเลขจริงของตัวอย่างลงในสูตร…</p>
-
-
-<!-- กล่อง .fails หนึ่งกล่องต่อเครื่องมือ (กฎ V10: อย่างน้อยหนึ่งกล่องต่อบท) · เงื่อนไขที่ทำให้ผลใช้ไม่ได้ พร้อมตัวเลข ไม่ใช่ข้อเสียทั่วไป -->
-<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้</div>
-<ul>
-<li><strong>พังเมื่อ</strong> … (ตัวเลข: เช่น ข้อมูลสั้นกว่า … วัน ค่า … คลาดได้ถึง …)</li>
-<li><strong>บอกไม่ได้ว่า</strong> …</li>
-</ul></div>
-
-<!-- บล็อก 💻 (กฎ V9): ≤ 25 บรรทัด · ทำซ้ำสิ่งที่เพิ่งทำด้วยมือ · รันด้วย PYTHONPATH=tools (import sab2_stats / sab2_sim / sab2_realdata ได้)
-     ไม่มีเครือข่าย · บรรทัดสุดท้ายของ <pre> ต้องเป็น "# ผลที่ต้องได้: ค่า · ค่า" — ตัวเลขที่โค้ดพิมพ์ต้องตรงตามลำดับ
-     (ปัดตามจำนวนทศนิยมที่เขียน) และทุกค่าต้องปรากฏในเนื้อหน้านอกบล็อกนี้ · เขียน < > & ในโค้ดเป็น &lt; &gt; &amp; -->
 <details class="code"><summary>💻 ทำด้วย Python</summary>
-<pre>xs = [1, 2, 3]
-print(sum(xs) / len(xs))
-# ผลที่ต้องได้: 2</pre>
-<p>…อธิบายสั้น ๆ ว่าบรรทัดไหนตรงกับขั้นไหนที่ทำด้วยมือ · แบบ numpy/pandas ที่ผู้อ่านน่าจะใช้จริง…</p>
+<pre>import math
+import sab2_sim as M, sab2_engine as E
+w = M.price_pair(seed=161, n=40, h=2, phi=0.85,
+                 sd=math.sqrt(1 - 0.85 * 0.85), common_sd=0.0)
+X = [round(x, 1) for x in w["X"]]     # เส้นทาง 40 วันของตาราง
+A, B = [100 + x for x in X], [50] * 40   # A = 2 × B + X
+for L in (1, 1.5, 2, 2.5):
+    r = E.run(A, B, 2, X, 10, enter=L, leave=0.5, hold=30, fee=0)
+    print(L, r["trades"], round(r["net"], 1))
+# ผลที่ต้องได้: 1 · 4 · 19 · 1.5 · 3 · 26 · 2 · 2 · 29 · 2.5 · 1 · 17</pre>
+<p><code>E.run</code> คือเครื่อง backtest กลางของเล่ม มันส่งคำสั่งจากราคาปิดของวันสัญญาณแล้วได้ราคาปิดวันถัดไปแบบตาราง <code>fee=0</code> ทำให้ผลเป็นเงินก่อนต้นทุน ซึ่งตรงกับคอลัมน์ "ราคาจริง" ถ้าจะทำในสเปรดชีต ให้มีคอลัมน์ X คอลัมน์ "ถืออยู่ไหม" ที่ดูจาก X ของแถวก่อน และคอลัมน์เงินที่คิดเฉพาะวันที่ถือเปลี่ยน</p>
 </details>
 
 <div class="rest"><div class="bt">พักตรงนี้ได้</div>
-<p>…สองสามประโยค พร้อมตัวเลขหลักของตอน · ไม่มีศัพท์ใหม่…</p></div>
+<p>เงินของแต่ละเส้นคือจำนวนไม้คูณ "กำไรต่อไม้ลบต้นทุน" ถ้าได้ราคาตรงเส้นและต้นทุน 2 สี่เส้นได้ 12, 24, 26 และ 18 เส้น 2 ชนะ ต้นทุนต่อไม้ที่กินหมดของเส้น 1 คือ 5 ราคาจริงวันถัดไปให้ 11, 20, 25 และ 15 ซึ่งยังชี้เส้น 2</p></div>
 
-<h2>…หัวข้อตอนที่ 2…</h2>
-<p>…</p>
+<h2>ตอน ก · 3 — 🎲 300 ปีของโลกที่รู้คำตอบ: เส้น 1 ชนะเมื่อต้นทุน 2 · เส้นที่ดีที่สุดขยับตามต้นทุนและความเร็ว</h2>
+<p>เส้นทาง 40 วันเป็นแค่หนึ่งตัวอย่าง คำถามที่ควรถามคือถ้าเล่นโลกแบบนี้ไปนาน ๆ เส้นไหนชนะ จึงต้องใช้โลกจำลองที่รู้คำตอบ คือคู่ที่มีเชือกแบบเดียวกัน ราคา B คงที่ที่ 50 เพื่อให้ต้นทุนต่อไม้ราว 2 ทุกไม้ และ SD ของ X คือ 1 เท่าเดิม ไม้บรรทัดจึงถูกเป๊ะ ทั้งหมดสร้าง 30 โลก โลกละ 10 ปี รวม <span data-key="ch07.ค่า.ปีจำลอง">300</span> ปี</p>
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>ในโลกที่มีเชือก φ 0.9 (Half-life ราว 6.6 วัน) และต้นทุนต่อไม้ 2 เท่าเส้นทางในตารางข้างบน ถ้าเล่น 300 ปี เส้นไหนจะได้เงินต่อปีมากที่สุด เส้น 2 ที่ชนะบนเส้นทาง 40 วัน หรือเส้นอื่น ทายก่อนอ่านตาราง</p></div>
+<p>ตารางนี้เฉลี่ยจากทุกไม้ที่ปิดแล้วใน 300 ปี "Z ตอนเข้า" คือระยะของ X จากค่ากลางวันที่ได้ราคาเข้า "Z ตอนออก" คือระยะที่เหลือวันที่ได้ราคาออก กำไรต่อไม้ก่อนต้นทุนจึงราว 10 ชุดคูณผลต่างของสองระยะนี้</p>
+<p>🎲 จำลอง · price_pair φ 0.9 · B คงที่ 50 · 30 โลก × 10 ปี · การ์ดเดิม (ออก 0.5 · ถือไม่เกิน 30 วัน · ได้ราคาวันถัดไป) · ค่าธรรมเนียม 0.05% ของมูลค่าทุก fill และสามเท่า ห้าเท่าของค่านั้น · ช่องสุทธิคิดจากเลขปัดบนหน้า</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เส้นเข้า</th><th>ไม้ต่อปี</th><th>Z ตอนเข้า</th><th>Z ตอนออก</th><th>กำไรต่อไม้ก่อนต้นทุน</th><th class="calc">สุทธิต่อปี ต้นทุน 2</th><th>ต้นทุน 6</th><th>ต้นทุน 10</th><th>ออกเพราะครบ 30 วัน</th></tr>
+<tr><td data-key="ch07.ou.phi09.แถว.1.เส้น">1</td><td data-key="ch07.ou.phi09.แถว.1.ไม้ต่อปี">21.1</td><td data-key="ch07.ou.phi09.แถว.1.Zเข้าเฉลี่ย">1.12</td><td data-key="ch07.ou.phi09.แถว.1.Zออกเฉลี่ย">0.23</td><td data-key="ch07.ou.phi09.แถว.1.กำไรต่อไม้">8.9</td><td class="calc">21.1 × (8.9 − 2) = <span data-key="ch07.ou.phi09.แถว.1.ปัดx1">145.6</span></td><td data-key="ch07.ou.phi09.แถว.1.ปัดx3">61.2</td><td data-key="ch07.ou.phi09.แถว.1.ปัดx5">−23.2</td><td><span data-key="ch07.ou.phi09.แถว.1.ครบเวลาเปอร์เซ็นต์">2</span>%</td></tr>
+<tr><td data-key="ch07.ou.phi09.แถว.1_5.เส้น">1.5</td><td data-key="ch07.ou.phi09.แถว.1_5.ไม้ต่อปี">10.1</td><td data-key="ch07.ou.phi09.แถว.1_5.Zเข้าเฉลี่ย">1.56</td><td data-key="ch07.ou.phi09.แถว.1_5.Zออกเฉลี่ย">0.25</td><td data-key="ch07.ou.phi09.แถว.1_5.กำไรต่อไม้">13.1</td><td class="calc">10.1 × (13.1 − 2) = <span data-key="ch07.ou.phi09.แถว.1_5.ปัดx1">112.1</span></td><td data-key="ch07.ou.phi09.แถว.1_5.ปัดx3">71.7</td><td data-key="ch07.ou.phi09.แถว.1_5.ปัดx5">31.3</td><td><span data-key="ch07.ou.phi09.แถว.1_5.ครบเวลาเปอร์เซ็นต์">3</span>%</td></tr>
+<tr><td data-key="ch07.ou.phi09.แถว.2.เส้น">2</td><td data-key="ch07.ou.phi09.แถว.2.ไม้ต่อปี">4.5</td><td data-key="ch07.ou.phi09.แถว.2.Zเข้าเฉลี่ย">1.95</td><td data-key="ch07.ou.phi09.แถว.2.Zออกเฉลี่ย">0.26</td><td data-key="ch07.ou.phi09.แถว.2.กำไรต่อไม้">16.9</td><td class="calc">4.5 × (16.9 − 2) = <span data-key="ch07.ou.phi09.แถว.2.ปัดx1">67</span></td><td data-key="ch07.ou.phi09.แถว.2.ปัดx3">49</td><td data-key="ch07.ou.phi09.แถว.2.ปัดx5">31</td><td><span data-key="ch07.ou.phi09.แถว.2.ครบเวลาเปอร์เซ็นต์">4</span>%</td></tr>
+<tr><td data-key="ch07.ou.phi09.แถว.2_5.เส้น">2.5</td><td data-key="ch07.ou.phi09.แถว.2_5.ไม้ต่อปี">1.4</td><td data-key="ch07.ou.phi09.แถว.2_5.Zเข้าเฉลี่ย">2.43</td><td data-key="ch07.ou.phi09.แถว.2_5.Zออกเฉลี่ย">0.27</td><td data-key="ch07.ou.phi09.แถว.2_5.กำไรต่อไม้">21.7</td><td class="calc">1.4 × (21.7 − 2) = <span data-key="ch07.ou.phi09.แถว.2_5.ปัดx1">27.6</span></td><td data-key="ch07.ou.phi09.แถว.2_5.ปัดx3">22</td><td data-key="ch07.ou.phi09.แถว.2_5.ปัดx5">16.4</td><td><span data-key="ch07.ou.phi09.แถว.2_5.ครบเวลาเปอร์เซ็นต์">4</span>%</td></tr>
+<tr><td data-key="ch07.ou.phi09.แถว.3.เส้น">3</td><td data-key="ch07.ou.phi09.แถว.3.ไม้ต่อปี">0.4</td><td data-key="ch07.ou.phi09.แถว.3.Zเข้าเฉลี่ย">2.92</td><td data-key="ch07.ou.phi09.แถว.3.Zออกเฉลี่ย">0.28</td><td data-key="ch07.ou.phi09.แถว.3.กำไรต่อไม้">26.4</td><td class="calc">0.4 × (26.4 − 2) = <span data-key="ch07.ou.phi09.แถว.3.ปัดx1">9.8</span></td><td data-key="ch07.ou.phi09.แถว.3.ปัดx3">8.2</td><td data-key="ch07.ou.phi09.แถว.3.ปัดx5">6.6</td><td><span data-key="ch07.ou.phi09.แถว.3.ครบเวลาเปอร์เซ็นต์">4</span>%</td></tr>
+</table></div>
+<p>เฉลย 🛑: เส้น 1 ชนะขาด ได้ราว <span data-key="ch07.ou.phi09.แถว.1.ปัดx1">145.6</span> ดอลลาร์ต่อปี เทียบกับ <span data-key="ch07.ou.phi09.แถว.2.ปัดx1">67</span> ของเส้น 2 คำตอบต่างจากเส้นทาง 40 วันด้วยสองเหตุผล</p>
+<p>เหตุผลแรกคือจำนวนไม้ลดเร็วกว่าที่เส้นทางสั้น ๆ บอก ใน 300 ปี ไม้ต่อปีลดจาก <span data-key="ch07.ou.phi09.แถว.1.ไม้ต่อปี">21.1</span> เป็น <span data-key="ch07.ou.phi09.แถว.1_5.ไม้ต่อปี">10.1</span>, <span data-key="ch07.ou.phi09.แถว.2.ไม้ต่อปี">4.5</span> และ <span data-key="ch07.ou.phi09.แถว.2_5.ไม้ต่อปี">1.4</span> คือหายไปราวครึ่งหนึ่งหรือมากกว่าทุกครั้งที่เลื่อนเส้นออกไป 0.5 ขณะที่เส้นทาง 40 วันลดแค่ 4, 3, 2, 1</p>
+<p>เหตุผลที่สองคือกำไรต่อไม้ของเส้นใกล้ศูนย์ดีกว่าที่สูตรราคาตรงเส้นบอก เส้น 1 ได้ราคาเข้าเฉลี่ยที่ระยะ <span data-key="ch07.ou.phi09.แถว.1.Zเข้าเฉลี่ย">1.12</span> เพราะวันที่ X ข้ามเส้น 1 มันมักข้ามไปไกลกว่าเส้นแล้ว และได้ราคาออกเฉลี่ยที่ระยะ <span data-key="ch07.ou.phi09.แถว.1.Zออกเฉลี่ย">0.23</span> เพราะคืนที่รอออก X ยังเดินเข้าหาค่ากลางต่อ เส้น 1 จึงได้ราว <span data-key="ch07.ou.phi09.แถว.1.ระยะต่อไม้">0.89</span> ต่อชุด ไม่ใช่ 0.5 ส่วนเส้นไกลกลับได้ราคาเข้าต่ำกว่าเส้นเล็กน้อย เช่นเส้น 2 ได้ <span data-key="ch07.ou.phi09.แถว.2.Zเข้าเฉลี่ย">1.95</span> เพราะ X ที่ไปไกลมักเด้งกลับก่อนได้ราคา</p>
+<p>แต่ภาพนี้พลิกได้ด้วยต้นทุน ดูสองคอลัมน์ขวา เมื่อต้นทุนต่อไม้เป็น 6 เส้น 1.5 ชนะ เมื่อต้นทุนเป็น 10 เส้น 1 ติดลบ <span data-key="ch07.ou.phi09.แถว.1.ปัดx5">−23.2</span> ต่อปี ส่วนเส้น 1.5 กับเส้น 2 แทบเสมอกันที่ราว 31 ต้นทุนยิ่งแพง เส้นที่ดีที่สุดยิ่งถอยห่างศูนย์</p>
+<!--CHART:sab2-entry-ou-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 330" role="img" aria-label="เงินต่อปี ต้นทุน 2: 145.6, 112.1, 67, 27.6, 9.8 · ต้นทุน 6: 61.2, 71.7, 49, 22, 8.2 · ต้นทุน 10: −23.2, 31.3, 31, 16.4, 6.6">
+<line x1="64" y1="212.6" x2="736" y2="212.6" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="56.0" y="216.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="169.6" x2="736" y2="169.6" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="173.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">50</text>
+<line x1="64" y1="126.6" x2="736" y2="126.6" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="130.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">100</text>
+<line x1="64" y1="83.6" x2="736" y2="83.6" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="87.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">150</text>
+<rect x="70.0" y="87.4" width="36.8" height="125.2" rx="2" fill="#16a34a"/>
+<text x="88.4" y="81.4" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">+145.6</text>
+<rect x="110.8" y="160.0" width="36.8" height="52.6" rx="2" fill="#d97706"/>
+<text x="129.2" y="154.0" text-anchor="middle" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">+61.2</text>
+<rect x="151.6" y="212.6" width="36.8" height="20.0" rx="2" fill="#dc2626"/>
+<text x="170.0" y="246.6" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">−23.2</text>
+<text x="131.2" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เส้น 1</text>
+<rect x="204.4" y="116.2" width="36.8" height="96.4" rx="2" fill="#16a34a"/>
+<text x="222.8" y="110.2" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">+112.1</text>
+<rect x="245.2" y="151.0" width="36.8" height="61.7" rx="2" fill="#d97706"/>
+<text x="263.6" y="145.0" text-anchor="middle" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">+71.7</text>
+<rect x="286.0" y="185.7" width="36.8" height="26.9" rx="2" fill="#dc2626"/>
+<text x="304.4" y="179.7" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">+31.3</text>
+<text x="265.6" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เส้น 1.5</text>
+<rect x="338.8" y="155.0" width="36.8" height="57.6" rx="2" fill="#16a34a"/>
+<text x="357.2" y="149.0" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">+67</text>
+<rect x="379.6" y="170.5" width="36.8" height="42.1" rx="2" fill="#d97706"/>
+<text x="398.0" y="164.5" text-anchor="middle" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">+49</text>
+<rect x="420.4" y="186.0" width="36.8" height="26.7" rx="2" fill="#dc2626"/>
+<text x="438.8" y="180.0" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">+31</text>
+<text x="400.0" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เส้น 2</text>
+<rect x="473.2" y="188.9" width="36.8" height="23.7" rx="2" fill="#16a34a"/>
+<text x="491.6" y="182.9" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">+27.6</text>
+<rect x="514.0" y="193.7" width="36.8" height="18.9" rx="2" fill="#d97706"/>
+<text x="532.4" y="187.7" text-anchor="middle" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">+22</text>
+<rect x="554.8" y="198.5" width="36.8" height="14.1" rx="2" fill="#dc2626"/>
+<text x="573.2" y="192.5" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">+16.4</text>
+<text x="534.4" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เส้น 2.5</text>
+<rect x="607.6" y="204.2" width="36.8" height="8.4" rx="2" fill="#16a34a"/>
+<text x="626.0" y="198.2" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" font-family="Sarabun,sans-serif">+9.8</text>
+<rect x="648.4" y="205.6" width="36.8" height="7.1" rx="2" fill="#d97706"/>
+<text x="666.8" y="199.6" text-anchor="middle" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">+8.2</text>
+<rect x="689.2" y="207.0" width="36.8" height="5.7" rx="2" fill="#dc2626"/>
+<text x="707.6" y="201.0" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">+6.6</text>
+<text x="668.8" y="268.0" text-anchor="middle" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">เส้น 3</text>
+<rect x="64" y="40" width="11" height="11" rx="2" fill="#16a34a"/>
+<text x="80.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ต้นทุนต่อไม้ 2</text>
+<rect x="206" y="40" width="11" height="11" rx="2" fill="#d97706"/>
+<text x="222.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ต้นทุน 6</text>
+<rect x="300" y="40" width="11" height="11" rx="2" fill="#dc2626"/>
+<text x="316.0" y="50.0" text-anchor="start" font-size="11.5" fill="#6b7280" font-family="Sarabun,sans-serif">ต้นทุน 10</text>
+<text x="64.0" y="24.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">โลก φ 0.9: เงินต่อปี (ดอลลาร์ · 10 ชุด) ของแต่ละเส้นเข้า</text>
+</svg></div>
+<div class="cap">🎲 จำลอง (ตัวเลขมาจากการสุ่มชุดตัวอย่างหนึ่งชุด) · price_pair φ 0.9 · 30 โลก × 10 ปี · ออก 0.5 · ถือไม่เกิน 30 วัน · คิดจากเลขปัดในตาราง</div>
+<!--/CHART:sab2-entry-ou-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือเส้นเข้า 1 ถึง 3 แท่งสามสีคือเงินต่อปีเมื่อต้นทุนต่อไม้เป็น 2, 6 และ 10 ดอลลาร์ ให้ดูว่าแท่งสูงสุดของแต่ละสีอยู่ที่เส้นไหน สีแรกสูงสุดที่เส้น 1 อีกสองสีสูงสุดที่เส้น 1.5 และแท่งของเส้น 1 สีสุดท้ายลงไปใต้ศูนย์ สรุปได้ว่าเส้นที่ดีที่สุดไม่ใช่ค่าคงที่ มันขยับออกจากศูนย์เมื่อต้นทุนสูงขึ้น และเส้น 3 ได้น้อยในทุกต้นทุนเพราะแทบไม่มีไม้</p>
+<p>ตัวแปรที่สองคือความเร็วกลับ ลองเชือกเร็ว (φ 0.8) และเชือกช้า (φ 0.97 ใกล้ LTC กับ DOT ของบท 4) ตารางนี้บอกเส้นที่ได้มากที่สุดของแต่ละช่อง ในวงเล็บคือเงินต่อปีของเส้นนั้น</p>
+<p>🎲 จำลอง · 30 โลก × 10 ปีต่อช่อง · เส้นที่ลอง 1 / 1.5 / 2 / 2.5 / 3 · ออก 0.5 · ถือไม่เกิน 30 วัน</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เชือก</th><th>Half-life (วัน)</th><th>ต้นทุนต่อไม้ 2</th><th>ต้นทุน 6</th><th>ต้นทุน 10</th></tr>
+<tr><td>φ <span data-key="ch07.ou.phi08.phi">0.8</span></td><td data-key="ch07.ou.phi08.ครึ่งชีวิต">3.1</td><td>เส้น <strong data-key="ch07.ou.phi08.ดีสุด.x1">1</strong> (<span data-key="ch07.ou.phi08.ดีสุดสุทธิ.x1">247.9</span>)</td><td>เส้น <strong data-key="ch07.ou.phi08.ดีสุด.x3">1.5</strong> (<span data-key="ch07.ou.phi08.ดีสุดสุทธิ.x3">118.6</span>)</td><td>เส้น <strong data-key="ch07.ou.phi08.ดีสุด.x5">1.5</strong> (<span data-key="ch07.ou.phi08.ดีสุดสุทธิ.x5">51.8</span>)</td></tr>
+<tr><td>φ <span data-key="ch07.ou.phi09.phi">0.9</span></td><td data-key="ch07.ou.phi09.ครึ่งชีวิต">6.6</td><td>เส้น <strong data-key="ch07.ou.phi09.ดีสุด.x1">1</strong> (<span data-key="ch07.ou.phi09.ดีสุดสุทธิ.x1">145.6</span>)</td><td>เส้น <strong data-key="ch07.ou.phi09.ดีสุด.x3">1.5</strong> (<span data-key="ch07.ou.phi09.ดีสุดสุทธิ.x3">71.7</span>)</td><td>เส้น <strong data-key="ch07.ou.phi09.ดีสุด.x5">1.5</strong> (<span data-key="ch07.ou.phi09.ดีสุดสุทธิ.x5">31.3</span>)</td></tr>
+<tr><td>φ <span data-key="ch07.ou.phi097.phi">0.97</span></td><td data-key="ch07.ou.phi097.ครึ่งชีวิต">22.8</td><td>เส้น <strong data-key="ch07.ou.phi097.ดีสุด.x1">1</strong> (<span data-key="ch07.ou.phi097.ดีสุดสุทธิ.x1">40.6</span>)</td><td>เส้น <strong data-key="ch07.ou.phi097.ดีสุด.x3">1.5</strong> (<span data-key="ch07.ou.phi097.ดีสุดสุทธิ.x3">14.3</span>)</td><td>เส้น <strong data-key="ch07.ou.phi097.ดีสุด.x5">2</strong> (<span data-key="ch07.ou.phi097.ดีสุดสุทธิ.x5">4</span>)</td></tr>
+</table></div>
+<p>เชือกเร็วกับต้นทุนถูกให้คำตอบที่เส้นใกล้ศูนย์ เชือกช้ากับต้นทุนแพงให้คำตอบที่เส้นไกลขึ้น เส้น 2 ของเล่ม 1 ชนะเพียงช่องเดียว คือเชือกช้า φ 0.97 กับต้นทุนต่อไม้ 10 ซึ่งได้แค่ <span data-key="ch07.ou.phi097.ดีสุดสุทธิ.x5">4</span> ดอลลาร์ต่อปี เชือกช้ายังทำให้การ์ดออกเพราะครบ 30 วันบ่อยขึ้นมาก เส้น 2 ของโลก φ 0.97 ออกเพราะครบเวลา <span data-key="ch07.ou.phi097.แถว.2.ครบเวลาเปอร์เซ็นต์">48</span>% ของไม้ เทียบกับ <span data-key="ch07.ou.phi09.แถว.2.ครบเวลาเปอร์เซ็นต์">4</span>% ของโลก φ 0.9</p>
+<p>สิ่งที่เพิ่งทำคือการหาจุดที่ควร "หยุดรอแล้วลงมือ" ให้ได้ผลที่คาดไว้มากที่สุด ปัญหาแบบนี้เรียกว่า <strong>Optimal Stopping (การหยุดที่เหมาะที่สุด)</strong> ในคณิตศาสตร์ มันคือการเลือกกฎว่าจะหยุดรอแล้วลงมือเมื่อไร จากสิ่งที่รู้ ณ วันนั้น เส้นเข้าและเส้นออกของการ์ดคือคำตอบแบบหยาบ ๆ ส่วนงานวิจัยที่คำนวณเส้น "optimal" แก้ปัญหาเดียวกันด้วยคณิตศาสตร์แทนการจำลอง</p>
+<p><strong>🚶 อ่านเป็นภาษาคนก่อน:</strong> เงินต่อปีคือจำนวนครั้งที่ X ไปถึงเส้นในหนึ่งปี คูณกับสิ่งที่เหลือในแต่ละครั้งหลังหักต้นทุน เส้นใกล้ทำให้ตัวแรกโต เส้นไกลทำให้ตัวหลังโต และจุดที่ผลคูณสูงสุดคือเส้นที่ดีที่สุด</p>
+<div class="fm">เงินต่อปี = ไม้ต่อปี × (กำไรต่อไม้ก่อนต้นทุน − ต้นทุนต่อไม้)<br>กำไรต่อไม้ก่อนต้นทุน ≈ ชุด × (Z ตอนเข้า − Z ตอนออก) × SD ของ X</div>
+<p class="readeq"><strong>อ่านสมการ:</strong> โลก φ 0.9 เส้น 1 มีไม้ต่อปี <span data-key="ch07.ou.phi09.แถว.1.ไม้ต่อปี">21.1</span> กำไรต่อไม้ก่อนต้นทุน <span data-key="ch07.ou.phi09.แถว.1.กำไรต่อไม้">8.9</span> ต้นทุนต่อไม้ 2 เงินต่อปีคือ 21.1 × (8.9 − 2) ได้ราว <span data-key="ch07.ou.phi09.แถว.1.ปัดx1">145.6</span> ส่วนบรรทัดที่สองคือ 10 × (1.12 − 0.23) × 1 ได้ราว 8.9 ทุกตัวในสูตรขึ้นกับความเร็วของเชือก ต้นทุน และกฎออก ไม่มีตัวไหนเป็นค่าคงที่ของธรรมชาติ</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>import math
+import sab2_sim as M, sab2_engine as E
+for L in (1, 2):
+    n = g = 0
+    for s in range(1, 31):
+        w = M.price_pair(seed=s, n=3650, h=2, phi=0.9,
+                         sd=math.sqrt(1 - 0.9 * 0.9), common_sd=0.0)
+        r = E.run(w["A"], w["B"], 2, w["X"], 10, enter=L, leave=0.5, hold=30)
+        fee = {f["t"]: f["fee"] for f in r["fill_list"]}
+        for t in r["trade_list"]:
+            n += 1
+            g += t["pnl"] + fee[t["t_in"]] + fee[t["t_out"]]
+    print(L, round(n / 300, 1), round(g / n, 1))
+# ผลที่ต้องได้: 1 · 21.1 · 8.9 · 2 · 4.5 · 16.9</pre>
+<p>โลกแต่ละโลกยาว <span data-key="ch07.ค่า.วันต่อโลก">3,650</span> วัน (สิบปี) ไม้บรรทัดคือ Mean 0 SD 1 ที่รู้อยู่แล้ว จึงส่ง <code>w["X"]</code> เป็น Z ได้ตรง ๆ กำไรก่อนต้นทุนของแต่ละไม้คือกำไรสุทธิบวกค่าธรรมเนียมสอง fill ที่เครื่องหักไว้ ถ้าเปลี่ยน <code>phi</code> เป็น 0.97 หรือส่ง <code>fee</code> เป็นห้าเท่าของค่าเริ่มต้น จะได้ช่องอื่นของตาราง</p>
+</details>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ (เส้นเข้าที่ "optimal")</div>
+<ul>
+<li><strong>พังเมื่อไม่รู้ความเร็วจริง</strong> เส้นที่ดีที่สุดขึ้นกับ φ ถ้าเชือกจริงเป็น φ 0.97 แต่เราคิดว่าเป็น 0.9 เราจะเลือกเส้น 1.5 สำหรับต้นทุน 10 และคาดว่าได้ <span data-key="ch07.ou.phi09.แถว.1_5.ปัดx5">31.3</span> ต่อปี แต่ในโลก φ 0.97 เส้นเดียวกันได้ <span data-key="ch07.ou.phi097.แถว.1_5.ปัดx5">−4.1</span> ต่อปี บท 4 แสดงไว้แล้วว่า φ จากข้อมูลสองปียังคลาดได้มาก</li>
+<li><strong>พังเมื่อไม้บรรทัดต้องประมาณเอง</strong> ตารางข้างบนรู้ Mean และ SD ที่ถูกเป๊ะ ในโลก φ 0.97 ที่ต้องประมาณ h, Mean และ SD จาก 731 วัน เส้นที่ดีที่สุดของ 731 วันแรกตรงกับเส้นที่ดีที่สุดของ 365 วันถัดไปเพียง <span data-key="ch07.แฝด.ตรงกัน">9</span> จาก <span data-key="ch07.แฝด.โลก">30</span> โลก (ตอน ค จะใช้ผลนี้อีกครั้ง)</li>
+<li><strong>บอกไม่ได้ว่าเชือกยังอยู่</strong> สูตรเงินต่อปีสมมติว่าทุกไม้มีเชือกดึงกลับ ถ้าเชือกขาดหรือค่ากลางย้าย จำนวนไม้ยังนับได้เหมือนเดิม แต่กำไรต่อไม้หายไป ตอน ข จะวัดเรื่องนี้</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ก</div>
+<p>ในโลก φ 0.9 ที่ต้นทุนต่อไม้ 2 เส้น 1 ได้ราว 145.6 ต่อปี ส่วนเส้น 2 ได้ 67 เพราะไม้ลดลงราวครึ่งหนึ่งทุกครั้งที่เลื่อนเส้นออก 0.5 และเส้นใกล้ได้ราคาดีกว่าเส้น ต้นทุน 6 หรือ 10 ทำให้เส้น 1.5 ชนะ เส้น 2 ชนะเพียงช่องเชือกช้าต้นทุนแพง ปัญหานี้ชื่อ Optimal Stopping และคำตอบของมันพึ่ง φ ไม้บรรทัด และเชือกที่ยังอยู่</p></div>
+
+<!-- ═════════════════════════ ตอน ข ═════════════════════════ -->
+<h2>ตอน ข เมื่อเชือกเปลี่ยนนิสัย · 1 — 🎲 เชือกที่ดึงเฉพาะนอกกรอบ: สูตร OU คาดว่าเส้น 2 ได้ 29.9 ต่อปี แต่ได้จริง 17</h2>
+<p>ตอน ก สมมติว่าเชือกดึงทุกวันด้วยแรงตามระยะห่าง ห่างมากดึงมาก ห่างน้อยดึงน้อย นั่นคือรูปของ OU แต่ลองนึกถึงคู่ที่คนเก็บกำไรจากระยะห่างจะเข้ามาก็ต่อเมื่อระยะห่างกว้างพอจ่ายต้นทุนของเขา ในกรอบแคบ ๆ ไม่มีใครสนใจ X จึงเดินสุ่มได้อิสระ เมื่อหลุดกรอบจึงมีแรงดึงกลับ</p>
+<p>โลกจำลองแบบนี้มีกรอบ ±2 ในกรอบเป็นการเดินสุ่ม (φ 1) และนอกกรอบมีเชือก φ 0.8 ถ้าวัดจากข้อมูลยาว ๆ โลกนี้มี SD ของ X ราว <span data-key="ch07.มีกรอบ.sdยาว">1.18</span> และถ้าประมาณ φ แบบบท 4 ด้วยข้อมูลทั้งหมด จะได้ราว <span data-key="ch07.มีกรอบ.phiประมาณ">0.96</span> หรือ Half-life ราว <span data-key="ch07.มีกรอบ.ครึ่งชีวิตประมาณ">19.1</span> วัน ดูจากตัวเลขสรุปแล้วเหมือนเชือก OU ธรรมดาทุกอย่าง</p>
+<p>จึงเทียบกับ "แฝด" คือโลก OU ที่มี φ และ SD เท่ากันพอดี ทั้งสองโลกใช้ไม้บรรทัด Mean 0 กับ SD ระยะยาวเดียวกัน ถ้าเราเชื่อว่าคู่นี้เป็น OU ผลของแฝดคือสิ่งที่สูตรของตอน ก จะคาดให้</p>
+<p>🎲 จำลอง · threshold_pair (กรอบ ±2 · ในกรอบ φ 1 · นอกกรอบ φ 0.8) เทียบ price_pair φ และ SD เท่ากัน · 30 โลก × 10 ปีต่อแบบ · การ์ดเดิม · สุทธิคิดจากเลขปัด</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เส้นเข้า</th><th>ไม้ต่อปี แฝด OU</th><th>ไม้ต่อปี มีกรอบ</th><th>สุทธิต่อปี ต้นทุน 2 แฝด OU</th><th>มีกรอบ</th><th>สุทธิต่อปี ต้นทุน 10 แฝด OU</th><th>มีกรอบ</th><th>ออกเพราะครบเวลา แฝด / มีกรอบ</th></tr>
+<tr><td data-key="ch07.มีกรอบ.แฝด.1.เส้น">1</td><td data-key="ch07.มีกรอบ.แฝด.1.ไม้ต่อปี">11</td><td data-key="ch07.มีกรอบ.มีกรอบ.1.ไม้ต่อปี">11.4</td><td data-key="ch07.มีกรอบ.แฝด.1.ปัดx1">62.7</td><td data-key="ch07.มีกรอบ.มีกรอบ.1.ปัดx1">60.4</td><td data-key="ch07.มีกรอบ.แฝด.1.ปัดx5">−25.3</td><td data-key="ch07.มีกรอบ.มีกรอบ.1.ปัดx5">−30.8</td><td><span data-key="ch07.มีกรอบ.แฝด.1.ครบเวลาเปอร์เซ็นต์">18</span>% / <span data-key="ch07.มีกรอบ.มีกรอบ.1.ครบเวลาเปอร์เซ็นต์">26</span>%</td></tr>
+<tr><td data-key="ch07.มีกรอบ.แฝด.1_5.เส้น">1.5</td><td data-key="ch07.มีกรอบ.แฝด.1_5.ไม้ต่อปี">5.1</td><td data-key="ch07.มีกรอบ.มีกรอบ.1_5.ไม้ต่อปี">6.7</td><td data-key="ch07.มีกรอบ.แฝด.1_5.ปัดx1">50.5</td><td data-key="ch07.มีกรอบ.มีกรอบ.1_5.ปัดx1">59</td><td data-key="ch07.มีกรอบ.แฝด.1_5.ปัดx5">9.7</td><td data-key="ch07.มีกรอบ.มีกรอบ.1_5.ปัดx5">5.4</td><td><span data-key="ch07.มีกรอบ.แฝด.1_5.ครบเวลาเปอร์เซ็นต์">28</span>% / <span data-key="ch07.มีกรอบ.มีกรอบ.1_5.ครบเวลาเปอร์เซ็นต์">31</span>%</td></tr>
+<tr><td data-key="ch07.มีกรอบ.แฝด.2.เส้น">2</td><td data-key="ch07.มีกรอบ.แฝด.2.ไม้ต่อปี">2.2</td><td data-key="ch07.มีกรอบ.มีกรอบ.2.ไม้ต่อปี">1.6</td><td data-key="ch07.มีกรอบ.แฝด.2.ปัดx1">29.9</td><td data-key="ch07.มีกรอบ.มีกรอบ.2.ปัดx1">17</td><td data-key="ch07.มีกรอบ.แฝด.2.ปัดx5">12.3</td><td data-key="ch07.มีกรอบ.มีกรอบ.2.ปัดx5">4.2</td><td><span data-key="ch07.มีกรอบ.แฝด.2.ครบเวลาเปอร์เซ็นต์">37</span>% / <span data-key="ch07.มีกรอบ.มีกรอบ.2.ครบเวลาเปอร์เซ็นต์">31</span>%</td></tr>
+<tr><td data-key="ch07.มีกรอบ.แฝด.2_5.เส้น">2.5</td><td data-key="ch07.มีกรอบ.แฝด.2_5.ไม้ต่อปี">0.8</td><td data-key="ch07.มีกรอบ.มีกรอบ.2_5.ไม้ต่อปี">0</td><td data-key="ch07.มีกรอบ.แฝด.2_5.ปัดx1">14.2</td><td data-key="ch07.มีกรอบ.มีกรอบ.2_5.ปัดx1">0</td><td data-key="ch07.มีกรอบ.แฝด.2_5.ปัดx5">7.8</td><td data-key="ch07.มีกรอบ.มีกรอบ.2_5.ปัดx5">0</td><td><span data-key="ch07.มีกรอบ.แฝด.2_5.ครบเวลาเปอร์เซ็นต์">47</span>% / <span data-key="ch07.มีกรอบ.มีกรอบ.2_5.ครบเวลาเปอร์เซ็นต์">75</span>%</td></tr>
+</table></div>
+<p>ดูเส้น 1 ก่อน สองโลกแทบเหมือนกัน ราว 60 ต่อปี แต่ไม้ของโลกที่มีกรอบออกเพราะครบ 30 วันถึง <span data-key="ch07.มีกรอบ.มีกรอบ.1.ครบเวลาเปอร์เซ็นต์">26</span>% เพราะในกรอบไม่มีแรงดึง ไม้ที่เข้าที่ระยะ 1 ต้องรอโชคพาให้กลับ</p>
+<p>ความต่างใหญ่อยู่ที่เส้นไกล เส้น 2 ของแฝดได้ <span data-key="ch07.มีกรอบ.แฝด.2.ปัดx1">29.9</span> ต่อปี แต่โลกที่มีกรอบได้เพียง <span data-key="ch07.มีกรอบ.มีกรอบ.2.ปัดx1">17</span> ส่วนเส้น 2.5 ของโลกที่มีกรอบแทบไม่มีไม้เลย ทั้ง 300 ปีมีเพียง <span data-key="ch07.มีกรอบ.มีกรอบ.2_5.ไม้รวม">4</span> ไม้ เพราะพอ X หลุดกรอบ เชือก φ 0.8 ก็ดึงกลับแรงจน X ไปไม่ถึงระยะไกล</p>
+<p>ผลนี้เปลี่ยนคำตอบเมื่อต้นทุนแพง ที่ต้นทุนต่อไม้ 10 แฝดบอกให้เลือกเส้น 2 และคาดว่าได้ <span data-key="ch07.มีกรอบ.แฝด.2.ปัดx5">12.3</span> ต่อปี แต่ในโลกที่มีกรอบ เส้น 2 ได้แค่ <span data-key="ch07.มีกรอบ.มีกรอบ.2.ปัดx5">4.2</span> และเส้นที่ดีที่สุดจริงคือเส้น 1.5 ซึ่งได้ <span data-key="ch07.มีกรอบ.มีกรอบ.1_5.ปัดx5">5.4</span></p>
+<p>เชือกแบบที่ดึงต่างกันตามว่า X อยู่ในหรือนอกเกณฑ์ เรียกว่า <strong>Threshold Model (แบบจำลองมีเกณฑ์)</strong> เกณฑ์ในตัวอย่างนี้คือกรอบ ±2 สิ่งที่ต้องจำคือ φ ตัวเดียวที่ประมาณจากข้อมูลทั้งหมดเป็นค่าเฉลี่ยของสองนิสัย มันไม่ได้บอกว่าแรงดึงอยู่ตรงไหน และสูตรเส้น optimal ที่คิดจาก φ ตัวเดียวก็จะชี้ผิดที่</p>
 
 <div class="rest"><div class="bt">พักตรงนี้ได้</div>
-<p>…</p></div>
+<p>โลกที่ในกรอบ ±2 เดินสุ่มและนอกกรอบมีเชือก φ 0.8 วัดได้ φ ราว 0.96 เหมือนเชือก OU ธรรมดา แต่เส้น 2 ได้จริง 17 ต่อปี ไม่ใช่ 29.9 ที่แฝด OU คาด และเส้น 2.5 มีเพียง 4 ไม้ใน 300 ปี ที่ต้นทุน 10 แฝดชี้เส้น 2 แต่เส้นที่ดีที่สุดจริงคือ 1.5</p></div>
+
+<h2>ตอน ข · 2 — 🎲 ค่ากลางที่ย้ายแล้วย้ายกลับ: เส้นที่ดีที่สุดของสองปีแรกตรงกับปีถัดไปเพียง 32%</h2>
+<p>อีกแบบหนึ่งที่พบบ่อยคือเชือกยังอยู่ แต่หมุดที่มันผูกย้ายไป วันหนึ่งค่ากลางของ X ขยับไปอยู่ระดับใหม่ แล้วเชือกก็ดึง X เข้าหาระดับใหม่นั้นแทน เล่ม 1 บท 14 เรียกการเปลี่ยนครั้งเดียวแบบนี้ว่า Regime Change (การเปลี่ยนสภาพตลาด) ตอนนี้ให้มันสลับไปมาได้หลายครั้ง</p>
+<p>โลกจำลองนี้มีสองสภาวะ สภาวะแรกค่ากลางเป็น 0 สภาวะที่สองค่ากลางเป็น <span data-key="ch07.สลับ.ค่ากลางที่ย้าย">2.5</span> (นับเป็น SD) ทั้งสองสภาวะมีเชือก φ 0.97 แต่ละวันมีโอกาสเพียง <span data-key="ch07.สลับ.โอกาสสลับเปอร์เซ็นต์">0.2</span>% ที่จะสลับสภาวะ จึงอยู่นานเฉลี่ยราว <span data-key="ch07.สลับ.อยู่เฉลี่ยวัน">500</span> วันก่อนสลับ ทำซ้ำ <span data-key="ch07.สลับ.โลก">200</span> โลก แต่ละโลกยาว 731 วันเท่าช่วงเลือก ตามด้วย 365 วันเท่าช่วงตรวจ</p>
+<p>ในแต่ละโลกเราทำแบบที่มินทำกับข้อมูลจริง คือวัด Mean และ SD จาก 731 วันแรก ลองห้าเส้นในช่วงแรก เลือกเส้นที่ได้มากที่สุด แล้วดูว่าเส้นนั้นยังดีที่สุดในปีถัดไปไหม แล้วแยกโลกออกเป็นสองกลุ่ม กลุ่มแรกคือโลกที่ปีถัดไปส่วนใหญ่อยู่สภาวะเดียวกับช่วงแรก กลุ่มที่สองคือโลกที่ปีถัดไปส่วนใหญ่อยู่อีกสภาวะ คือค่ากลางย้ายไปแล้ว</p>
+<p>🎲 จำลอง · regime_pair (ค่ากลาง 0 กับ 2.5 · φ 0.97 ทั้งสองสภาวะ) · 200 โลก × (731 + 365 วัน) · ไม้บรรทัดจาก 731 วันแรก · ค่าในตารางคือจำนวนโลกที่เส้นนั้นได้มากที่สุดในปีถัดไป และในวงเล็บคือเงินมัธยฐานของปีถัดไป</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เส้นเข้า</th><th>ดีสุดในช่วงแรก (ไม่ย้าย)</th><th>ดีสุดในปีถัดไป (ไม่ย้าย)</th><th>ดีสุดในช่วงแรก (ย้าย)</th><th>ดีสุดในปีถัดไป (ย้าย)</th></tr>
+<tr><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.1.เส้น">1</td><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.1.ดีสุดช่วงเลือก">84</td><td><span data-key="ch07.สลับ.ไม่ย้าย.เส้น.1.ดีสุดช่วงตรวจ">66</span> (<span data-key="ch07.สลับ.ไม่ย้าย.เส้น.1.ตรวจมัธยฐาน">34</span>)</td><td data-key="ch07.สลับ.ย้าย.เส้น.1.ดีสุดช่วงเลือก">57</td><td><span data-key="ch07.สลับ.ย้าย.เส้น.1.ดีสุดช่วงตรวจ">28</span> (<span data-key="ch07.สลับ.ย้าย.เส้น.1.ตรวจมัธยฐาน">24</span>)</td></tr>
+<tr><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.1_5.เส้น">1.5</td><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.1_5.ดีสุดช่วงเลือก">29</td><td><span data-key="ch07.สลับ.ไม่ย้าย.เส้น.1_5.ดีสุดช่วงตรวจ">31</span> (<span data-key="ch07.สลับ.ไม่ย้าย.เส้น.1_5.ตรวจมัธยฐาน">25</span>)</td><td data-key="ch07.สลับ.ย้าย.เส้น.1_5.ดีสุดช่วงเลือก">18</td><td><span data-key="ch07.สลับ.ย้าย.เส้น.1_5.ดีสุดช่วงตรวจ">19</span> (<span data-key="ch07.สลับ.ย้าย.เส้น.1_5.ตรวจมัธยฐาน">23</span>)</td></tr>
+<tr><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.2.เส้น">2</td><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.2.ดีสุดช่วงเลือก">10</td><td><span data-key="ch07.สลับ.ไม่ย้าย.เส้น.2.ดีสุดช่วงตรวจ">16</span> (<span data-key="ch07.สลับ.ไม่ย้าย.เส้น.2.ตรวจมัธยฐาน">17</span>)</td><td data-key="ch07.สลับ.ย้าย.เส้น.2.ดีสุดช่วงเลือก">2</td><td><span data-key="ch07.สลับ.ย้าย.เส้น.2.ดีสุดช่วงตรวจ">8</span> (<span data-key="ch07.สลับ.ย้าย.เส้น.2.ตรวจมัธยฐาน">15</span>)</td></tr>
+<tr><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.2_5.เส้น">2.5</td><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.2_5.ดีสุดช่วงเลือก">0</td><td><span data-key="ch07.สลับ.ไม่ย้าย.เส้น.2_5.ดีสุดช่วงตรวจ">7</span> (<span data-key="ch07.สลับ.ไม่ย้าย.เส้น.2_5.ตรวจมัธยฐาน">0</span>)</td><td data-key="ch07.สลับ.ย้าย.เส้น.2_5.ดีสุดช่วงเลือก">0</td><td><span data-key="ch07.สลับ.ย้าย.เส้น.2_5.ดีสุดช่วงตรวจ">14</span> (<span data-key="ch07.สลับ.ย้าย.เส้น.2_5.ตรวจมัธยฐาน">3</span>)</td></tr>
+<tr><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.3.เส้น">3</td><td data-key="ch07.สลับ.ไม่ย้าย.เส้น.3.ดีสุดช่วงเลือก">0</td><td><span data-key="ch07.สลับ.ไม่ย้าย.เส้น.3.ดีสุดช่วงตรวจ">3</span> (<span data-key="ch07.สลับ.ไม่ย้าย.เส้น.3.ตรวจมัธยฐาน">0</span>)</td><td data-key="ch07.สลับ.ย้าย.เส้น.3.ดีสุดช่วงเลือก">0</td><td><span data-key="ch07.สลับ.ย้าย.เส้น.3.ดีสุดช่วงตรวจ">8</span> (<span data-key="ch07.สลับ.ย้าย.เส้น.3.ตรวจมัธยฐาน">0</span>)</td></tr>
+<tr><td>จำนวนโลก</td><td data-key="ch07.สลับ.ไม่ย้าย.จำนวน">123</td><td data-key="ch07.สลับ.ไม่ย้าย.จำนวน">123</td><td data-key="ch07.สลับ.ย้าย.จำนวน">77</td><td data-key="ch07.สลับ.ย้าย.จำนวน">77</td></tr>
+</table></div>
+<p>ในโลกที่ค่ากลางไม่ย้าย เส้นที่ดีที่สุดของสองปีแรกตรงกับปีถัดไป <span data-key="ch07.สลับ.ไม่ย้าย.ตรงกัน">53</span> จาก <span data-key="ch07.สลับ.ไม่ย้าย.จำนวน">123</span> โลก หรือ <span data-key="ch07.สลับ.ไม่ย้าย.ตรงกันเปอร์เซ็นต์">43</span>% ซึ่งน้อยกว่าครึ่งแม้เชือกจะไม่เปลี่ยนอะไรเลย เพราะสองปีมีไม้ไม่กี่ไม้ โชคจึงตัดสินอันดับได้มาก ในโลกที่ค่ากลางย้าย ตัวเลขนี้ลดเหลือ <span data-key="ch07.สลับ.ย้าย.ตรงกัน">25</span> จาก <span data-key="ch07.สลับ.ย้าย.จำนวน">77</span> โลก หรือ <span data-key="ch07.สลับ.ย้าย.ตรงกันเปอร์เซ็นต์">32</span>%</p>
+<p>ดูคอลัมน์ของเส้นไกลด้วย ในโลกที่ไม่ย้าย เส้น 2.5 กับเส้น 3 ดีที่สุดในปีถัดไปรวมกันเพียง 10 โลก แต่ในโลกที่ย้ายเพิ่มเป็น 22 โลก</p>
+<p>เหตุผลคือเมื่อค่ากลางย้ายไปอยู่ที่ 2.5 Z ที่วัดด้วยไม้บรรทัดเก่าจะค้างอยู่แถว 2.5 เกือบทั้งปี เส้น 1 จึงเข้าแทบทุกวันที่ว่างและแทบไม่เคยกลับถึง 0.5 ไม้ของเส้น 1 ในโลกที่ย้ายออกเพราะครบเวลา <span data-key="ch07.สลับ.ย้าย.เส้น.1.ครบเวลาเปอร์เซ็นต์">66</span>% เทียบกับ <span data-key="ch07.สลับ.ไม่ย้าย.เส้น.1.ครบเวลาเปอร์เซ็นต์">35</span>% ในโลกที่ไม่ย้าย ส่วนเส้นไกลเข้าเฉพาะวันที่ X หนีไปไกลกว่าค่ากลางใหม่</p>
+<p>เชือกที่สลับไปมาระหว่างสภาวะต่าง ๆ แบบนี้เรียกว่า <strong>Regime Switching (การสลับสภาวะ)</strong> ต่างจาก Regime Change ตรงที่มันกลับมาได้ และเราไม่รู้ล่วงหน้าว่าจะสลับเมื่อไร ในระยะยาวมาก ๆ โลกนี้ยังทำเงินได้ เพราะค่ากลางกลับมาที่เดิมในที่สุด แต่ในหนึ่งปีที่เราดูได้จริง มันทำให้ "เส้นที่ดีที่สุด" กลายเป็นเรื่องของว่าปีนั้นอยู่สภาวะไหน</p>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ (เส้นที่เลือกจากข้อมูลช่วงเดียว)</div>
+<ul>
+<li><strong>พังเมื่อเชือกดึงไม่เท่ากันทุกระยะ</strong> ในโลกที่มีกรอบ φ ที่วัดได้ราว 0.96 ทำให้คาดว่าเส้น 2 ได้ 29.9 ต่อปี แต่ได้จริง 17 และที่ต้นทุน 10 สูตร OU ชี้เส้น 2 ทั้งที่เส้นที่ดีที่สุดคือ 1.5</li>
+<li><strong>พังเมื่อค่ากลางย้าย</strong> ใน 77 โลกที่ค่ากลางย้าย เส้นที่ดีที่สุดของช่วงแรกยังดีที่สุดในปีถัดไปเพียง 32% และไม้ของเส้น 2 ออกเพราะครบเวลา <span data-key="ch07.สลับ.ย้าย.เส้น.2.ครบเวลาเปอร์เซ็นต์">89</span>%</li>
+<li><strong>บอกไม่ได้แม้เชือกไม่เปลี่ยน</strong> ในโลกที่ไม่ย้ายเลย การเลือกเส้นจาก 731 วันยังตรงกับปีถัดไปเพียง 43% ตารางเส้นเข้าบนข้อมูลสองปีจึงเป็นหลักฐานที่อ่อนเสมอ ไม่ว่าเชือกจะเป็นแบบไหน</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ข</div>
+<p>เชือกที่ดึงเฉพาะนอกกรอบ (Threshold Model) ทำให้สูตร OU คาดเงินของเส้นไกลเกินจริง เชือกที่ค่ากลางสลับไปมา (Regime Switching) ทำให้เส้นที่ดีที่สุดของสองปีแรกตรงกับปีถัดไปเพียง 32% เทียบกับ 43% เมื่อค่ากลางไม่ย้าย และเมื่อค่ากลางย้าย เส้นไกลชนะบ่อยขึ้นจาก 10 เป็น 22 โลก</p></div>
+
+<!-- ═════════════════════════ ตอน ค ═════════════════════════ -->
+<h2>ตอน ค LTC กับ DOT และการตัดสินของมิน · 1 — 📡 ช่วงเลือกบอกเส้น 1 (+1,394.52) ช่วงตรวจบอกเส้น 2.5 และเส้น 1 เสีย 364.45</h2>
+<p>ทีนี้ใช้กับคู่จริง LTC บน DOT บนราคา แบบเดียวกับบท 5 ทุกอย่าง h <span data-key="ch07.จริง.LTC-DOT.h">3.76</span> มาจาก Regression (การถดถอย) ของช่วงเลือก ไม้บรรทัดของ X คือ Mean <span data-key="ch07.จริง.LTC-DOT.Mean">55.66</span> กับ SD <span data-key="ch07.จริง.LTC-DOT.SD">10.18</span> จากช่วงเลือก ถือ 10 ชุด แต่ละชุดคือ LTC หนึ่งเหรียญคู่กับ short DOT 3.76 เหรียญ เครื่อง backtest เดิมของเล่มคิดค่าธรรมเนียม 0.05% ทุก fill และได้ราคาวันถัดไป</p>
+<p>φ ของ X ในช่วงเลือกคือราว <span data-key="ch07.จริง.LTC-DOT.phi2">0.97</span> หรือ Half-life ราว <span data-key="ch07.จริง.LTC-DOT.ครึ่งชีวิต">21.6</span> วัน ใกล้กับโลกเชือกช้า φ 0.97 ของตอน ก ซึ่งตารางของตอน ก บอกว่าที่ต้นทุนถูก เส้น 1 ควรชนะ</p>
+<p>ขั้นแรกคือลองห้าเส้นในช่วงเลือก 731 วัน ต้องจำไว้ว่าไม้บรรทัดคำนวณจากวันชุดเดียวกับที่ใช้ทดสอบ ผลช่วงนี้จึงเป็นผลในตัวอย่าง ซึ่งดูดีเกินจริงเสมอ</p>
+<p>ข้อมูลคือราคาปิดรายวันของ Binance ช่วงเลือก <span data-key="ch07.จริง.ช่วงเลือก.เริ่ม">2022-11-15</span> ถึง <span data-key="ch07.จริง.ช่วงเลือก.จบ">2024-11-14</span> และช่วงตรวจคือ <span data-key="ch07.จริง.ช่วงตรวจ.เริ่ม">2024-11-15</span> ถึง <span data-key="ch07.จริง.ช่วงตรวจ.จบ">2025-11-14</span> ช่วงทดสอบสุดท้ายยังไม่ได้แตะ</p>
+<p>📡 ข้อมูลจริง · LTC บน DOT · ทุนคู่ 1,000 · ไม้ที่ค้างตอนจบคิดตามราคาปิดวันสุดท้าย</p>
+<div class="tw"><table data-src="real">
+<tr><th>เส้นเข้า</th><th>ช่วงเลือก ไม้</th><th>ช่วงเลือก ผล (ดอลลาร์)</th><th>ช่วงตรวจ ไม้</th><th>ช่วงตรวจ ออกเพราะครบเวลา</th><th>ช่วงตรวจ ผล (ดอลลาร์)</th></tr>
+<tr><td data-key="ch07.จริง.LTC-DOT.แถว.1.เส้น">1</td><td data-key="ch07.จริง.LTC-DOT.แถว.1.เลือก.ไม้">17</td><td data-key="ch07.จริง.LTC-DOT.แถว.1.เลือก.ผล">1,394.52</td><td data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ไม้">11</td><td data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ครบเวลา">10</td><td data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ผล">−364.45</td></tr>
+<tr><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.เส้น">1.5</td><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.เลือก.ไม้">11</td><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.เลือก.ผล">1,153.26</td><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.ตรวจ.ไม้">11</td><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.ตรวจ.ครบเวลา">10</td><td data-key="ch07.จริง.LTC-DOT.แถว.1_5.ตรวจ.ผล">−353.23</td></tr>
+<tr><td data-key="ch07.จริง.LTC-DOT.แถว.2.เส้น">2</td><td data-key="ch07.จริง.LTC-DOT.แถว.2.เลือก.ไม้">2</td><td data-key="ch07.จริง.LTC-DOT.แถว.2.เลือก.ผล">379.38</td><td data-key="ch07.จริง.LTC-DOT.แถว.2.ตรวจ.ไม้">10</td><td data-key="ch07.จริง.LTC-DOT.แถว.2.ตรวจ.ครบเวลา">10</td><td data-key="ch07.จริง.LTC-DOT.แถว.2.ตรวจ.ผล">180.51</td></tr>
+<tr><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.เส้น">2.5</td><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.เลือก.ไม้">1</td><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.เลือก.ผล">137.91</td><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.ตรวจ.ไม้">8</td><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.ตรวจ.ครบเวลา">8</td><td data-key="ch07.จริง.LTC-DOT.แถว.2_5.ตรวจ.ผล">498.2</td></tr>
+<tr><td data-key="ch07.จริง.LTC-DOT.แถว.3.เส้น">3</td><td data-key="ch07.จริง.LTC-DOT.แถว.3.เลือก.ไม้">1</td><td data-key="ch07.จริง.LTC-DOT.แถว.3.เลือก.ผล">137.91</td><td data-key="ch07.จริง.LTC-DOT.แถว.3.ตรวจ.ไม้">6</td><td data-key="ch07.จริง.LTC-DOT.แถว.3.ตรวจ.ครบเวลา">6</td><td data-key="ch07.จริง.LTC-DOT.แถว.3.ตรวจ.ผล">486.88</td></tr>
+</table></div>
+<p>ช่วงตรวจทุกเส้นจบโดยมีไม้ค้างหนึ่งไม้ (short X) ซึ่งรวมในผลตามราคาปิดวันสุดท้ายแล้ว ช่วงเลือกไม่มีไม้ค้าง</p>
+<p>คอลัมน์ช่วงเลือกให้คำตอบชัดเจน เส้น 1 ได้ <span data-key="ch07.จริง.LTC-DOT.แถว.1.เลือก.ผล">1,394.52</span> จาก <span data-key="ch07.จริง.LTC-DOT.แถว.1.เลือก.ไม้">17</span> ไม้ เส้น 2 ของการ์ดเดิมได้แค่ <span data-key="ch07.จริง.LTC-DOT.แถว.2.เลือก.ผล">379.38</span> จาก <span data-key="ch07.จริง.LTC-DOT.แถว.2.เลือก.ไม้">2</span> ไม้ ตรงกับที่ตอน ก ทำนายไว้สำหรับเชือกช้าต้นทุนถูก ถ้าหยุดตรงนี้ มินจะเปลี่ยนการ์ดเป็นเส้น 1</p>
+<div class="stop"><div class="bt">🛑 ทายก่อน</div>
+<p>มินเปิดช่วงตรวจ 365 วันหนึ่งครั้งเพื่อดูว่าเส้น 1 ยังชนะไหม บท 4 บอกไว้แล้วว่าในช่วงตรวจค่ากลางของ X ย้ายขึ้นไป ใช้ผลของตอน ข · 2 ทายก่อนว่าเส้นไหนจะดีที่สุดในช่วงตรวจ และเส้น 1 จะเป็นอย่างไร</p></div>
+<p>มินจดลงสมุดว่านี่คือการดูช่วงตรวจครั้งที่ <span data-key="เรื่อง.part7.close.สมุดวิจัย_เส้นเข้าออก_บท7.ดูช่วงตรวจรวม">8</span> ของเล่ม และลองไป <span data-key="ch07.นับ.เส้นที่ลอง">5</span> เส้น ผลอยู่ในคอลัมน์ขวาของตาราง เส้น 1 ที่ชนะช่วงเลือกกลายเป็นเส้นที่แย่ที่สุด เสีย <span data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ผล">−364.45</span> ดอลลาร์ ส่วนเส้น 2.5 ที่แทบไม่มีไม้ในช่วงเลือก กลายเป็นเส้นที่ดีที่สุด ได้ <span data-key="ch07.จริง.LTC-DOT.แถว.2_5.ตรวจ.ผล">498.2</span> เส้น 2 ได้ <span data-key="ch07.จริง.LTC-DOT.แถว.2.ตรวจ.ผล">180.51</span> เท่ากับผลการ์ดเดิมของบท 5 ทุกสตางค์</p>
+<p>สาเหตุเห็นได้จากตัวเลขสองตัว Z เฉลี่ยของช่วงตรวจคือ <span data-key="ch07.จริง.LTC-DOT.Zตรวจเฉลี่ย">2.86</span> และตลอด 365 วันมีเพียง <span data-key="ch07.จริง.LTC-DOT.วันZตรวจในครึ่ง">3</span> วันที่ |Z| กลับถึง 0.5 เทียบกับ <span data-key="ch07.จริง.LTC-DOT.วันZเลือกในครึ่ง">235</span> วันในช่วงเลือก X ไม่ได้หายไปไหน มันไปแกว่งรอบระดับใหม่ที่สูงกว่าเดิมเกือบสาม SD ไม้แทบทุกไม้ของทุกเส้นในช่วงตรวจจึงออกเพราะครบ 30 วัน เส้น 1 ออกเพราะครบเวลา <span data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ครบเวลา">10</span> จาก <span data-key="ch07.จริง.LTC-DOT.แถว.1.ตรวจ.ไม้">11</span> ไม้</p>
+<p>ภาพนี้คือโลกที่ค่ากลางย้ายของตอน ข · 2 เกือบทุกรายละเอียด เส้น 1 เข้า short X ตั้งแต่ Z แตะ 1 แล้วถูกบังคับออกทุก 30 วันโดยที่ X ยังค้างอยู่ฝั่งเดิม ส่วนเส้น 2.5 และเส้น 3 เข้าเฉพาะวันที่ X พุ่งขึ้นไปเหนือระดับใหม่ แล้วได้กำไรตอน X ย้อนกลับมาที่ระดับใหม่ แม้จะไม่เคยกลับถึงเส้นออก</p>
+<!--CHART:sab2-entry-ltcdot-->
+<div class="figw"><svg class="fig" viewBox="0 0 760 330" role="img" aria-label="Z ของ LTC บน DOT ช่วงเลือกแกว่ง −1.96 ถึง 3.66 รอบศูนย์ ช่วงตรวจขึ้นไปแกว่ง 0.08 ถึง 5.98 เฉลี่ย 2.86">
+<line x1="64" y1="230.6" x2="736" y2="230.6" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="234.6" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">−2</text>
+<line x1="64" y1="191.8" x2="736" y2="191.8" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="56.0" y="195.8" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">0</text>
+<line x1="64" y1="153.0" x2="736" y2="153.0" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="157.0" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">2</text>
+<line x1="64" y1="114.2" x2="736" y2="114.2" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="118.2" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">4</text>
+<line x1="64" y1="75.4" x2="736" y2="75.4" stroke="#f3f4f6" stroke-width="1"/>
+<text x="56.0" y="79.4" text-anchor="end" font-size="11" fill="#9ca3af" font-family="Sarabun,sans-serif">6</text>
+<rect x="64" y="182.1" width="672" height="19.4" fill="#9ca3af" fill-opacity="0.15"/>
+<line x1="64" y1="172.4" x2="736" y2="172.4" stroke="#d97706" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="186.4" text-anchor="start" font-size="10.5" fill="#d97706" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 1</text>
+<line x1="64" y1="153.0" x2="736" y2="153.0" stroke="#7c3aed" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="167.0" text-anchor="start" font-size="10.5" fill="#7c3aed" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 2</text>
+<line x1="64" y1="143.3" x2="736" y2="143.3" stroke="#dc2626" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="68.0" y="138.3" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700" font-family="Sarabun,sans-serif">เส้นเข้า 2.5</text>
+<polyline points="64.0,229.8 68.3,201.1 72.6,191.4 76.9,185.0 81.2,188.3 85.5,206.0 89.8,199.2 94.1,186.4 98.4,179.2 102.7,174.7 107.0,176.1 111.3,163.5 115.6,155.3 119.8,160.0 124.1,171.0 128.4,164.6 132.7,175.3 137.0,182.5 141.3,186.4 145.6,171.4 149.9,167.6 154.2,164.3 158.5,153.2 162.8,167.4 167.1,170.7 171.4,183.8 175.7,164.3 180.0,161.9 184.3,161.1 188.6,161.9 192.9,183.3 197.2,178.2 201.5,166.6 205.8,137.5 210.1,150.9 214.4,160.6 218.7,164.4 222.9,156.1 227.2,174.3 231.5,181.3 235.8,206.0 240.1,200.1 244.4,208.1 248.7,212.2 253.0,199.4 257.3,205.0 261.6,202.3 265.9,204.0 270.2,206.0 274.5,196.1 278.8,198.4 283.1,193.4 287.4,200.5 291.7,206.5 296.0,202.7 300.3,198.6 304.6,211.0 308.9,211.2 313.2,221.5 317.5,219.2 321.8,221.3 326.0,219.2 330.3,218.6 334.6,218.2 338.9,216.4 343.2,219.2 347.5,220.5 351.8,216.8 356.1,208.5 360.4,188.9 364.7,211.2 369.0,184.8 373.3,155.9 377.6,174.1 381.9,193.5 386.2,187.7 390.5,192.4 394.8,193.9 399.1,194.1 403.4,184.2 407.7,191.6 412.0,189.9 416.3,196.3 420.6,200.7 424.9,203.8 429.2,199.8 433.4,217.2 437.7,203.8 442.0,201.3 446.3,200.7 450.6,219.2 454.9,209.6 459.2,207.5 463.5,214.1 467.8,204.4 472.1,211.2 476.4,206.2 480.7,204.0 485.0,206.7 489.3,202.1 493.6,194.3 497.9,195.3 502.2,186.9 506.5,200.9 510.8,189.9 512.0,175.1 512.6,175.3 516.9,169.7 521.2,162.9 525.5,115.4 529.8,125.6 534.1,156.9 538.4,155.7 542.7,138.6 547.0,148.0 551.3,90.5 555.6,116.9 559.9,99.1 564.2,134.4 568.5,96.9 572.8,90.1 577.1,87.6 581.3,131.9 585.6,154.0 589.9,157.1 594.2,162.1 598.5,166.0 602.8,178.2 607.1,179.4 611.4,163.9 615.7,160.0 620.0,140.8 624.3,142.3 628.6,149.1 632.9,163.7 637.2,159.4 641.5,160.4 645.8,164.4 650.1,160.4 654.4,156.5 658.7,146.2 663.0,134.4 667.3,110.3 671.6,120.2 675.9,90.5 680.2,98.9 684.4,93.4 688.7,115.6 693.0,111.9 697.3,103.9 701.6,111.9 705.9,126.8 710.2,99.1 714.5,134.4 718.8,146.8 723.1,136.1 727.4,136.7 731.7,127.0 736.0,131.9 736.0,131.9" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+<line x1="512.6" y1="56" x2="512.6" y2="250" stroke="#374151" stroke-dasharray="5 4" stroke-width="1.3"/>
+<text x="506.6" y="70.0" text-anchor="end" font-size="11" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">ช่วงเลือก</text>
+<text x="518.6" y="70.0" text-anchor="start" font-size="11" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">ช่วงตรวจ</text>
+<text x="64.0" y="26.0" text-anchor="start" font-size="13" fill="#374151" font-weight="700" font-family="Sarabun,sans-serif">Z ของ LTC บน DOT วัดด้วยไม้บรรทัดของช่วงเลือก</text>
+<text x="64.0" y="44.0" text-anchor="start" font-size="11" fill="#6b7280" font-family="Sarabun,sans-serif">แถบเทา = ช่วง ±0.5 ที่การ์ดออก</text>
+<text x="64.0" y="266.0" text-anchor="start" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2022-11-15</text>
+<text x="512.6" y="266.0" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2024-11-15</text>
+<text x="736.0" y="266.0" text-anchor="end" font-size="10.5" fill="#9ca3af" font-family="Sarabun,sans-serif">2025-11-14</text>
+</svg></div>
+<div class="cap">📡 ข้อมูลจริง (สแนปช็อต) · Binance ราคาปิดรายวัน · h 3.76 · Mean 55.66 · SD 10.18 จากช่วงเลือก · แสดงทุก 7 วัน · ช่วงทดสอบสุดท้ายไม่ได้แตะ</div>
+<!--/CHART:sab2-entry-ltcdot-->
+<p class="readfig"><strong>อ่านภาพ:</strong> แกนนอนคือเวลา แกนตั้งคือ Z ของ LTC บน DOT ที่วัดด้วยไม้บรรทัดของช่วงเลือก เส้นประแนวนอนคือเส้นเข้าฝั่งบวก แถบเทาคือช่วงที่การ์ดออก เส้นประตั้งคือวันแรกของช่วงตรวจ ให้ดูด้านขวาของเส้นประตั้ง Z ขึ้นไปแกว่งเหนือเส้น 1 เกือบตลอดและแทบไม่ลงมาถึงแถบเทาเลย สรุปได้ว่าในช่วงตรวจค่ากลางของคู่นี้ย้ายขึ้นไป เส้นใกล้จึงเข้าซ้ำแล้วออกเพราะครบเวลา ส่วนเส้นไกลเข้าเฉพาะยอดของการแกว่งรอบระดับใหม่</p>
+<p>ก่อนจะสรุปว่าเส้น 2.5 คือคำตอบ ให้ดูคู่จำลองที่รู้คำตอบ คือโลกเชือก φ 0.97 ที่ไม่เปลี่ยนอะไรเลย 30 โลก ประมาณ h, Mean และ SD จาก 731 วันแรกแบบที่มินทำ เส้นที่ดีที่สุดของช่วงแรกตรงกับเส้นที่ดีที่สุดของปีถัดไปเพียง <span data-key="ch07.แฝด.ตรงกัน">9</span> จาก <span data-key="ch07.แฝด.โลก">30</span> โลก และเส้นที่ดีที่สุดของปีถัดไปกระจายไปทุกเส้น</p>
+<p>🎲 จำลอง · price_pair φ 0.97 · 30 โลก × (731 + 365 วัน) · h และไม้บรรทัดประมาณจาก 731 วันแรก · ค่าคือจำนวนโลกที่เส้นนั้นได้มากที่สุด</p>
+<div class="tw"><table data-src="sim">
+<tr><th>เส้นเข้า</th><th>ดีสุดใน 731 วันแรก (โลก)</th><th>ดีสุดในปีถัดไป (โลก)</th></tr>
+<tr><td data-key="ch07.แฝด.เส้น.1.เส้น">1</td><td data-key="ch07.แฝด.เส้น.1.ดีสุดช่วงเลือก">10</td><td data-key="ch07.แฝด.เส้น.1.ดีสุดช่วงตรวจ">11</td></tr>
+<tr><td data-key="ch07.แฝด.เส้น.1_5.เส้น">1.5</td><td data-key="ch07.แฝด.เส้น.1_5.ดีสุดช่วงเลือก">14</td><td data-key="ch07.แฝด.เส้น.1_5.ดีสุดช่วงตรวจ">7</td></tr>
+<tr><td data-key="ch07.แฝด.เส้น.2.เส้น">2</td><td data-key="ch07.แฝด.เส้น.2.ดีสุดช่วงเลือก">6</td><td data-key="ch07.แฝด.เส้น.2.ดีสุดช่วงตรวจ">2</td></tr>
+<tr><td data-key="ch07.แฝด.เส้น.2_5.เส้น">2.5</td><td data-key="ch07.แฝด.เส้น.2_5.ดีสุดช่วงเลือก">0</td><td data-key="ch07.แฝด.เส้น.2_5.ดีสุดช่วงตรวจ">4</td></tr>
+<tr><td data-key="ch07.แฝด.เส้น.3.เส้น">3</td><td data-key="ch07.แฝด.เส้น.3.ดีสุดช่วงเลือก">0</td><td data-key="ch07.แฝด.เส้น.3.ดีสุดช่วงตรวจ">6</td></tr>
+</table></div>
+<p>ในโลกที่เชือกไม่เปลี่ยนเลย ปีถัดไปยังเลือกเส้น 3 ถึง <span data-key="ch07.แฝด.เส้น.3.ดีสุดช่วงตรวจ">6</span> โลกและเส้น 2.5 อีก <span data-key="ch07.แฝด.เส้น.2_5.ดีสุดช่วงตรวจ">4</span> โลก ทั้งที่ตลอดช่วงแรกไม่มีโลกไหนเลือกสองเส้นนี้เลย การที่เส้น 2.5 ชนะช่วงตรวจของ LTC กับ DOT จึงเป็นหลักฐานที่อ่อนพอ ๆ กับการที่เส้น 1 ชนะช่วงเลือก</p>
+
+<details class="code"><summary>💻 ทำด้วย Python</summary>
+<pre>from sab2_realdata import load_closes
+import sab2_stats as S, sab2_engine as E
+_, f = load_closes("formation")
+_, v = load_closes("validation")
+h = 3.76
+xf = [a - h * b for a, b in zip(f["LTC"], f["DOT"])]
+m, s = S.mean(xf), S.sd(xf)                  # ไม้บรรทัดช่วงเลือก
+zf = [(x - m) / s for x in xf]
+zv = [(a - h * b - m) / s for a, b in zip(v["LTC"], v["DOT"])]
+for L in (1, 2, 2.5):
+    rf = E.run(f["LTC"], f["DOT"], h, zf, 10, enter=L)   # ออก 0.5 · ถือ 30 วัน
+    rv = E.run(v["LTC"], v["DOT"], h, zv, 10, enter=L)
+    print(L, round(rf["net"], 2), round(rv["net"], 2))
+# ผลที่ต้องได้: 1 · 1394.52 · −364.45 · 2 · 379.38 · 180.51 · 2.5 · 137.91 · 498.2</pre>
+<p>ค่าเริ่มต้นของ <code>E.run</code> คือการ์ดของเล่ม 1 (ออก 0.5 · ถือไม่เกิน 30 วัน · ค่าธรรมเนียม 0.05% · ได้ราคาวันถัดไป) เปลี่ยนแค่ <code>enter</code> ช่วงตรวจใช้ไม้บรรทัดของช่วงเลือกเท่านั้น ไม่คิดใหม่ เพื่อไม่ให้รู้ข้อมูลของช่วงตรวจล่วงหน้า</p>
+</details>
+
+<div class="fails"><div class="bt">⚠️ พังเมื่อไร / บอกอะไรไม่ได้ (ตารางเส้นเข้าบนข้อมูลจริง)</div>
+<ul>
+<li><strong>พังเมื่อไม้บรรทัดมาจากข้อมูลชุดเดียวกับที่ทดสอบ</strong> ช่วงเลือกให้เส้น 1 ได้ +1,394.52 จากทุน 1,000 ตัวเลขนี้ใหญ่เพราะ Mean และ SD รู้คำตอบของ 731 วันนั้นอยู่แล้ว ในช่วงตรวจ เส้นเดียวกันเสีย 364.45</li>
+<li><strong>พังเมื่อค่ากลางย้าย</strong> Z เฉลี่ยช่วงตรวจ 2.86 และมีเพียง 3 วันที่กลับถึง 0.5 ไม้ 10 จาก 11 ของเส้น 1 จึงออกเพราะครบเวลา กฎออกที่ 0.5 ใช้ไม่ได้ทั้งปี</li>
+<li><strong>บอกไม่ได้ว่าเส้น 2.5 ดีกว่า</strong> เส้น 2.5 ชนะช่วงตรวจด้วย 8 ไม้ ในคู่จำลองที่เชือกไม่เปลี่ยน เส้นที่ดีที่สุดของปีถัดไปตรงกับช่วงแรกเพียง 9 จาก 30 โลก การเลือกเส้นจากช่วงตรวจจึงเป็นการทำให้ช่วงตรวจกลายเป็นช่วงเลือกอีกชุด</li>
+</ul></div>
+
+<div class="bx bp"><div class="bt">🧰 คนทำงานจริงทำอย่างไร</div>
+<ul>
+<li><strong>เส้นเข้าออกที่ใช้กันจริงต่างกันไปและไม่มีใครใช้เส้นเดียวกันทุกงาน</strong> Gatev, Goetzmann และ Rouwenhorst (<span data-key="ch07.คนทำงานจริง.ปีGGR">2006</span>) เปิดเมื่อระยะห่างถึง <span data-key="ch07.คนทำงานจริง.GGRเปิด">2</span> SD ของช่วงเลือก แล้วปิดเมื่อสองราคากลับมาตัดกัน</li>
+<li><strong>บางงานใช้เส้นไม่สมมาตร</strong> Avellaneda และ Lee (<span data-key="ch07.คนทำงานจริง.ปีAL">2010</span>) เปิดเมื่อค่ามาตรฐานของส่วนที่เหลือเกิน <span data-key="ch07.คนทำงานจริง.ALเปิด">1.25</span> ปิดฝั่ง long ที่ −<span data-key="ch07.คนทำงานจริง.ALปิดlong">0.5</span> และปิดฝั่ง short ที่ <span data-key="ch07.คนทำงานจริง.ALปิดshort">0.75</span> ต่างจากการ์ดของเราที่ออกที่ 0.5 ทั้งสองฝั่ง ตัวเลขของทั้งสองงานอยู่บนไม้บรรทัดและตลาดของเขา (หุ้นสหรัฐ) จึงยกมาใช้ตรง ๆ ไม่ได้</li>
+<li><strong>เขาคัดด้วยความเร็วกลับก่อนจะคิดเรื่องเส้น</strong> Avellaneda และ Lee ประมาณใหม่ทุกวันจากหน้าต่าง <span data-key="ch07.คนทำงานจริง.ALหน้าต่าง">60</span> วัน และเก็บเฉพาะชื่อที่กลับเร็วกว่าราว <span data-key="ch07.คนทำงานจริง.ALวันกลับ">30</span> วัน โดยไม่ได้ใช้การทดสอบความนิ่งเป็นด่าน ตรงกับตอน ก ที่เส้นที่ดีที่สุดขึ้นกับความเร็วกลับเป็นหลัก</li>
+<li><strong>รอหนึ่งวันก่อนเข้า</strong> GGR รายงานว่าถ้าเปิดไม้วันถัดจากวันที่ระยะห่างถึงเส้น กำไรลดลงราว <span data-key="ch07.คนทำงานจริง.GGRรอวันลดล่าง">30</span>–<span data-key="ch07.คนทำงานจริง.GGRรอวันลดบน">55</span> bps ต่อเดือน เพราะราคาปิดวันสัญญาณมีการเด้งระหว่างราคาเสนอซื้อกับเสนอขายปนอยู่ การ์ดของเล่มรอหนึ่งวันมาตั้งแต่เล่ม 1 แล้ว ตัวเลขในบทนี้จึงไม่ได้รวมกำไรส่วนนั้น</li>
+<li><strong>ไม้ที่ไม่กลับคือที่มาของขาดทุนก้อนใหญ่</strong> Rad, Low และ Faff (<span data-key="ch07.คนทำงานจริง.ปีRLF">2016</span>) พบว่าไม้ที่กลับมาบรรจบได้กำไรเกิน <span data-key="ch07.คนทำงานจริง.RLFไม้กลับมาบวกเปอร์เซ็นต์">98</span>% แต่แม้วิธีที่ดีที่สุดก็มีไม้ที่กลับมาเพียง <span data-key="ch07.คนทำงานจริง.RLFไม้กลับมาเปอร์เซ็นต์">62.53</span>% และไม้ที่เหลือคือส่วนที่ขาดทุนหนัก Do และ Faff (<span data-key="ch07.คนทำงานจริง.ปีDF">2010</span>) รายงานว่าราว <span data-key="ch07.คนทำงานจริง.DFไม่กลับเปอร์เซ็นต์">32</span>% ของคู่ไม่กลับมาบรรจบเลย (ตัวเลขนี้เราเห็นผ่านบทสรุปของ Krauss ไม่ใช่จากตัวงาน)</li>
+<li><strong>คนจริงตั้งเวลาออก</strong> Ernie Chan แนะนำในบล็อกปี <span data-key="ch07.คนทำงานจริง.ปีChan">2007</span> ให้ออกเมื่อถือนานราว <span data-key="ch07.คนทำงานจริง.Chanเท่า">3</span> เท่าของ Half-life และไม่แนะนำเส้นตัดขาดทุนตามราคากับกลยุทธ์ที่กลับค่ากลาง ส่วนงานของ Engelberg, Gao และ Jagannathan (<span data-key="ch07.คนทำงานจริง.ปีEGJ">2009</span>) ว่าการปิดไม้ที่ไม่กลับภายใน <span data-key="ch07.คนทำงานจริง.EGJวัน">10</span> วันดีกว่าถือ <span data-key="ch07.คนทำงานจริง.EGJเดือน">6</span> เดือน บันทึกค้นคว้าของเล่มเห็นเพียงบทคัดย่อจากผลค้นหา จึงยังไม่ได้ตรวจกับตัวงาน</li>
+<li><strong>ในข้อมูลของเล่มเอง เพดานเวลาทำงานแทนเส้นออกเกือบทั้งหมด</strong> เมื่อเดินการ์ดเดิมบนคู่ทั้ง 45 คู่ของเล่มในช่วงตรวจ ไม้ <span data-key="ch07.คนทำงานจริง.เล่มครบเวลา">297</span> จาก <span data-key="ch07.คนทำงานจริง.เล่มออกรวม">312</span> ไม้ออกเพราะครบ 30 วัน ผลของการ์ดจึงเป็นเดิมพันว่าระดับเดิมจะกลับมาเป็นหลัก ไม่ใช่การกลับค่ากลางทีละไม้</li>
+<li><strong>เส้น "optimal" ในงานวิจัยตั้งอยู่บนสมมติฐานที่เราเพิ่งเห็นว่าพัง</strong> Krauss จัดงานกลุ่มที่จำลอง spread เป็น OU แล้วคำนวณเส้นเข้าออกไว้เป็นกลุ่มหนึ่งในบทสำรวจของเขา บันทึกค้นคว้าของเล่มไม่ได้เปิดอ่านงานกลุ่มนี้ฉบับใดโดยตรง จึงไม่อ้างตัวเลขของเขา สิ่งที่บทนี้แสดงเองคือการคำนวณแบบนั้นต้องรู้ φ ไม้บรรทัด และต้นทุน และต้องสมมติว่าเชือกไม่เปลี่ยน ซึ่งตอน ข และ LTC กับ DOT แสดงว่าไม่จริงเสมอไป</li>
+</ul></div>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้</div>
+<p>LTC บน DOT ช่วงเลือกให้เส้น 1 ชนะที่ +1,394.52 แต่ช่วงตรวจเส้น 1 เสีย 364.45 เส้น 2 ได้ 180.51 เท่าบท 5 และเส้น 2.5 ได้ 498.2 เพราะค่ากลางย้ายจน Z เฉลี่ย 2.86 และกลับถึง 0.5 เพียง 3 วัน คู่จำลองที่เชือกไม่เปลี่ยนให้เส้นดีที่สุดตรงกันข้ามช่วงเพียง 9 จาก 30 โลก</p></div>
+
+<h2>ตอน ค · 2 — มินตัดสิน: คงเส้น 2 บนกระดาษ ไม่เลือกเส้นจากข้อมูลช่วงเดียว และการทดลองถัดไป</h2>
+<p>มินกลับไปที่คำถามของบท เส้นเข้า 2 มาจากไหน คำตอบคือมันมาจากการคิดว่าหักต้นทุนแล้วยังเหลือ ซึ่งเป็นเงื่อนไขที่จำเป็นแต่ไม่พอ เส้นที่ดีที่สุดจริงคือจุดที่ "จำนวนไม้คูณกำไรสุทธิต่อไม้" สูงสุด และจุดนั้นขยับตามความเร็วกลับ ต้นทุน และกฎออก ในโลกที่รู้คำตอบเกือบทุกแบบ เส้น 2 ไม่ใช่เส้นที่ดีที่สุด</p>
+<p>คำถามที่สองคือเส้นที่ดีที่สุดบนข้อมูลชุดหนึ่งเชื่อได้แค่ไหน คำตอบจากทั้งโลกจำลองและข้อมูลจริงคือเชื่อได้น้อย แม้เชือกจะไม่เปลี่ยน การเลือกจากสองปีก็ตรงกับปีถัดไปไม่ถึงครึ่ง และเมื่อค่ากลางย้าย ลำดับของเส้นกลับหัวได้ทั้งตาราง เขาจึงจดลงสมุดวิจัยดังนี้</p>
+<ul>
+<li><strong>ตัดสิน</strong> คงการ์ดเส้นเข้า 2 ออก 0.5 ถือไม่เกิน 30 วันบนกระดาษ ไม่เปลี่ยนเป็นเส้น 1 ที่ชนะช่วงเลือก และไม่เปลี่ยนเป็นเส้น 2.5 ที่ชนะช่วงตรวจ ไม่เปิดเงินจริง ทุนคู่ 1,000 ยังว่าง ช่วงทดสอบสุดท้ายยังไม่แตะ</li>
+<li><strong>เหตุผลที่ไม่เปลี่ยน</strong> เส้น 2 ไม่ได้ถูกเลือกเพราะดีที่สุด แต่มันถูกเขียนไว้ก่อนเห็นข้อมูลทั้งสองช่วง ผลของมันในช่วงตรวจ (+180.51) จึงเป็นผลที่ไม่ได้ฟิต ส่วนเส้นอื่นถูกเลือกหลังเห็นข้อมูล ถ้าวันหนึ่งจะเปลี่ยนเส้น ต้องตัดสินจากความเร็วกลับและต้นทุนที่วัดได้ก่อน แล้วทดสอบบนข้อมูลที่ยังไม่ได้ใช้</li>
+<li><strong>สิ่งที่เพิ่มในการ์ด</strong> บรรทัดเตือนหนึ่งข้อ ถ้า |Z| ไม่กลับถึงเส้นออกเลยตลอด 60 วันติดกัน ให้ถือว่าค่ากลางอาจย้าย และพักการเปิดไม้ใหม่ของคู่นั้นไว้ก่อนจนกว่าจะตรวจซ้ำ ตัวเลข 60 วันเป็นค่าที่ตั้งก่อนทดสอบ ไม่ได้ฟิตจากตาราง</li>
+<li><strong>จำนวนแบบที่ลอง</strong> พี่ฝนถามซ้ำว่า "ลองไปกี่แบบแล้ว" บทนี้ลอง 5 เส้นบน LTC กับ DOT และเปิดช่วงตรวจเพิ่มหนึ่งครั้ง รวมเป็นการดูช่วงตรวจครั้งที่ 8 ของเล่ม มินจดตัวเลขไว้มุมหน้า</li>
+</ul>
+<p><strong>การทดลองถัดไป</strong> เปลี่ยนหนึ่งอย่าง คือจากคู่ LTC กับ DOT คู่เดียวไปเป็นทั้ง 45 คู่ของชุดข้อมูล สิ่งที่คงที่คือการ์ดเส้น 2 ออก 0.5 ถือไม่เกิน 30 วัน ไม้บรรทัดจากช่วงเลือก และต้นทุน คำถามคือค่ากลางที่ย้ายในช่วงตรวจเป็นปัญหาของคู่เดียว หรือเกิดกับคู่ส่วนใหญ่ และตัวกรองที่คนทำงานจริงใช้คัดคู่ช่วยหลบปัญหานี้ได้ไหม</p>
+<p>ผลแบบที่แปลว่า "ไม่ช่วย" คือคู่ที่ผ่านตัวกรองหลายชั้นมีสัดส่วนไม้ที่ออกเพราะครบเวลาในช่วงตรวจไม่ต่างจากคู่ที่ไม่ผ่าน ถ้าเป็นแบบนั้น ปัญหาอยู่ที่ไม้บรรทัดตรึง ไม่ใช่ที่การคัดคู่</p>
+
+<div class="rest"><div class="bt">พักตรงนี้ได้ — จบตอน ค</div>
+<p>มินคงเส้น 2 บนกระดาษเพราะเป็นเส้นเดียวที่เขียนไว้ก่อนเห็นข้อมูล ไม่เลือกเส้น 1 หรือ 2.5 จากข้อมูลช่วงเดียว เพิ่มบรรทัดเตือนเมื่อ |Z| ไม่กลับถึงเส้นออก 60 วัน ลองไป 5 เส้น เปิดช่วงตรวจครั้งที่ 8 การทดลองถัดไปคือดูว่าค่ากลางที่ย้ายเกิดกับคู่ส่วนใหญ่ใน 45 คู่หรือไม่</p></div>
 
 <div class="sum3"><div class="bt">สรุป 3 ข้อ</div>
 <ol>
-<li>…</li>
-<li>…</li>
-<li>…</li>
+<li>เงินของเส้นเข้าคือจำนวนไม้คูณ "กำไรต่อไม้ลบต้นทุน" บนเส้นทาง 40 วัน เส้น 1, 1.5, 2, 2.5 ได้ 4, 3, 2, 1 ไม้ และสุทธิ 12, 24, 26, 18 แต่ใน 300 ปีของโลก φ 0.9 เส้น 1 ได้ราว 145.6 ต่อปีเทียบกับ 67 ของเส้น 2 เพราะไม้ลดลงครึ่งหนึ่งทุก 0.5 และเส้นใกล้ได้ราคาดีกว่าเส้น</li>
+<li>เส้นที่ดีที่สุดขยับออกจากศูนย์เมื่อต้นทุนแพงหรือเชือกช้า การหาเส้นนี้คือ Optimal Stopping และคำตอบพึ่งสมมติฐานว่ารู้ φ ไม้บรรทัด และเชือกไม่เปลี่ยน Threshold Model ทำให้เส้น 2 ได้ 17 แทน 29.9 ที่สูตร OU คาด Regime Switching ทำให้เส้นที่ดีที่สุดของสองปีตรงกับปีถัดไปเพียง 32%</li>
+<li>LTC บน DOT: ช่วงเลือกเส้น 1 ชนะ (+1,394.52) ช่วงตรวจเส้น 1 เสีย 364.45 เส้น 2 ได้ 180.51 และเส้น 2.5 ได้ 498.2 เพราะค่ากลางย้ายจน Z เฉลี่ย 2.86 คู่จำลองที่เชือกไม่เปลี่ยนให้เส้นดีที่สุดตรงกันเพียง 9 จาก 30 โลก มินจึงคงเส้น 2 ที่เขียนไว้ก่อนเห็นข้อมูล</li>
 </ol></div>
 
 <!-- แบบฝึก 5 ข้อ · ทุกข้อมี details.ans · ข้อคำนวณมี details.hint สองระดับ (อย่างน้อย 3 ข้อ) -->
 <div class="bx bg"><div class="bt">✍️ ลองทำเอง</div>
 <ol>
-<li>(ทำตาม) …โจทย์…
+<li>(ทำตาม) ใช้จำนวนไม้ของเส้นทาง 40 วันในตอน ก (4, 3, 2, 1) และกรณีได้ราคาตรงเส้น แต่ต้นทุนต่อไม้เป็น <span data-key="ch07.แบบฝึก.ข้อ1.ต้นทุน">4</span> ดอลลาร์ เติมช่องว่าง: กำไรสุทธิต่อไม้ของเส้น 1 คือ ___ เงินรวมของเส้น 1 คือ ___ ของเส้น 2 คือ ___ และเส้นที่ดีที่สุดคือ ___
 <details class="hint"><summary>คำใบ้</summary>
-<p>…ขั้นที่ 1: เริ่มจากตรงไหน…</p>
-<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>…ตัวเลขกลางทางหนึ่งตัว…</p></details>
+<p>ขั้นที่ 1: กำไรต่อไม้ก่อนต้นทุนยังเท่าเดิม คือ 5, 10, 15, 20 เปลี่ยนแค่ต้นทุนที่หัก</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>เส้น 1 เหลือ 5 − 4 คือ <span data-key="ch07.แบบฝึก.ข้อ1.สุทธิต่อไม้.0">1</span> ต่อไม้ แล้วคูณด้วย 4 ไม้</p></details>
 </details>
-<details class="ans"><summary>เฉลย</summary><p>…เดินทีละขั้นเป็นประโยค… ถ้าได้ … แปลว่าพลาดตรง …</p></details>
+<details class="ans"><summary>เฉลย</summary><p>เส้น 1 เหลือ 1 ต่อไม้ สี่ไม้ได้ <span data-key="ch07.แบบฝึก.ข้อ1.สุทธิ.0">4</span> เส้น 1.5 เหลือ 6 ต่อไม้ สามไม้ได้ <span data-key="ch07.แบบฝึก.ข้อ1.สุทธิ.1">18</span> เส้น 2 เหลือ 11 ต่อไม้ สองไม้ได้ <strong data-key="ch07.แบบฝึก.ข้อ1.สุทธิ.2">22</strong> และเส้น 2.5 เหลือ 16 ได้ <span data-key="ch07.แบบฝึก.ข้อ1.สุทธิ.3">16</span> เส้น 2 ยังดีที่สุด แต่ช่องว่างระหว่างเส้น 1 กับเส้นอื่นกว้างขึ้น เพราะต้นทุนกินไม้ของเส้น 1 เกือบหมด</p>
+<p>ถ้าได้เส้น 1 เป็น 16 แปลว่าหักต้นทุนครั้งเดียวทั้งเส้นแทนที่จะหักทุกไม้ ต้นทุนเกิดทุกครั้งที่เปิดและปิด จึงต้องคูณกับจำนวนไม้เสมอ</p></details>
 </li>
-<li>(เปลี่ยนเลขหนึ่งตัว) …โจทย์…
+<li>(เปลี่ยนเลขหนึ่งตัว) สมมติว่าการ์ดออกที่ 0 แทน 0.5 และสมมติว่าจำนวนไม้ยังเป็น 4, 3, 2, 1 เท่าเดิม (บนเส้นทางจริงจำนวนไม้อาจเปลี่ยน เพราะไม้ถือนานขึ้น) ได้ราคาตรงเส้นและต้นทุน 2 ต่อไม้ เงินรวมของแต่ละเส้นเป็นเท่าไร และเส้นไหนดีที่สุด
 <details class="hint"><summary>คำใบ้</summary>
-<p>…ขั้นที่ 1: เริ่มจากตรงไหน…</p>
-<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>…ตัวเลขกลางทางหนึ่งตัว…</p></details>
+<p>ขั้นที่ 1: ระยะที่ X เดินต่อไม้ตอนนี้คือเส้นเข้าลบศูนย์ ไม่ใช่ลบ 0.5</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>เส้น 2 ได้ <span data-key="ch07.แบบฝึก.ข้อ2.ต่อไม้.2">20</span> ต่อไม้ก่อนต้นทุน</p></details>
 </details>
-<details class="ans"><summary>เฉลย</summary><p>…เดินทีละขั้นเป็นประโยค… ถ้าได้ … แปลว่าพลาดตรง …</p></details>
+<details class="ans"><summary>เฉลย</summary><p>กำไรต่อไม้ก่อนต้นทุนเป็น 10, 15, 20 และ 25 หักต้นทุน 2 แล้วคูณจำนวนไม้ได้ <span data-key="ch07.แบบฝึก.ข้อ2.สุทธิ.0">32</span>, <span data-key="ch07.แบบฝึก.ข้อ2.สุทธิ.1">39</span>, <span data-key="ch07.แบบฝึก.ข้อ2.สุทธิ.2">36</span> และ <span data-key="ch07.แบบฝึก.ข้อ2.สุทธิ.3">23</span> เส้น 1.5 ดีที่สุด การออกที่ 0 เพิ่มกำไรต่อไม้ของทุกเส้นเท่ากัน คือ 5 ดอลลาร์ ซึ่งมีผลต่อเส้นที่มีไม้มากมากกว่า คำตอบจึงขยับเข้าหาศูนย์</p>
+<p>ถ้าได้เส้น 2 ดีที่สุดเหมือนเดิม ลองตรวจว่าเพิ่ม 5 ให้ทุกไม้ทุกเส้นแล้วหรือยัง ข้อระวังของคนทำจริง: ออกที่ 0 ทำให้ถือนานขึ้น ไม้จึงลดลงและมีไม้ที่ครบ 30 วันมากขึ้น สมมติฐาน "จำนวนไม้เท่าเดิม" จึงเป็นข้อที่ต้องตรวจบนข้อมูลจริง</p></details>
 </li>
-<li>(เปลี่ยนเงื่อนไขหนึ่งข้อ) …โจทย์…
+<li>(เปลี่ยนเงื่อนไขหนึ่งข้อ) ใช้ตาราง 🎲 ของโลก φ 0.9 ในตอน ก · 3 แต่สมมติว่าต้นทุนต่อไม้เป็น <span data-key="ch07.แบบฝึก.ข้อ3.ต้นทุน8">8</span> ดอลลาร์ (ไม้ต่อปีและกำไรต่อไม้ก่อนต้นทุนเท่าเดิม) เงินต่อปีของเส้น 1, 1.5 และ 2 เป็นเท่าไร และเส้นไหนดีที่สุด
 <details class="hint"><summary>คำใบ้</summary>
-<p>…ขั้นที่ 1: เริ่มจากตรงไหน…</p>
-<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>…ตัวเลขกลางทางหนึ่งตัว…</p></details>
+<p>ขั้นที่ 1: ใช้สูตรเงินต่อปีเท่ากับไม้ต่อปีคูณ "กำไรต่อไม้ลบ 8"</p>
+<details class="hint"><summary>ยังไม่ออก? คำใบ้ขั้นที่ 2</summary><p>เส้น 2 คือ 4.5 × (16.9 − 8) ได้ราว <span data-key="ch07.แบบฝึก.ข้อ3.สุทธิ.2">40</span></p></details>
 </details>
-<details class="ans"><summary>เฉลย</summary><p>…เดินทีละขั้นเป็นประโยค… ถ้าได้ … แปลว่าพลาดตรง …</p></details>
+<details class="ans"><summary>เฉลย</summary><p>เส้น 1 คือ 21.1 × (8.9 − 8) ได้ราว <span data-key="ch07.แบบฝึก.ข้อ3.สุทธิ.1">19</span> เส้น 1.5 คือ 10.1 × (13.1 − 8) ได้ราว <strong data-key="ch07.แบบฝึก.ข้อ3.สุทธิ.1_5">51.5</strong> เส้น 2 ได้ราว <span data-key="ch07.แบบฝึก.ข้อ3.สุทธิ.2">40</span> เส้น 1.5 ดีที่สุด ต้นทุน 8 อยู่ระหว่าง 6 กับ 10 ของตาราง คำตอบจึงอยู่ที่เส้นเดียวกับสองคอลัมน์นั้น และเส้น 1 เกือบเท่าศูนย์เพราะต้นทุนใกล้กับกำไรต่อไม้ของมัน</p>
+<p>ถ้าได้เส้น 1 ราว <span data-key="ch07.ou.phi09.แถว.1.ปัดx1">145.6</span> แปลว่าใช้ต้นทุน 2 เดิม ถ้าได้ค่าติดลบมากของทุกเส้น ให้ตรวจว่าคูณต้นทุนด้วยไม้ต่อปีครั้งเดียวไม่ใช่สองครั้ง</p></details>
 </li>
-<li>(ตัดสินใจ) …โจทย์…
-<details class="ans"><summary>เฉลย</summary><p>…เดินทีละขั้นเป็นประโยค… ถ้าได้ … แปลว่าพลาดตรง …</p></details>
+<li>(ตัดสินใจ) เพื่อนในกลุ่มอ่านหนังสือดูตาราง 📡 ของตอน ค แล้วบอกว่า "ช่วงตรวจเส้น 2.5 ได้ +498.2 ดีกว่าเส้น 2 เกือบสามเท่า เปลี่ยนการ์ดเป็น 2.5 แล้วเปิดเงินจริงเลย" คุณเห็นด้วยไหม และจะทำอะไรก่อน
+<details class="ans"><summary>เฉลย</summary><p>ไม่เห็นด้วย คำตอบที่ยั่วใจคือเลือกแถวที่ดีที่สุดของช่วงตรวจ แต่ในช่วงเลือกเส้น 2.5 มีเพียงไม้เดียวและแพ้เส้น 1 ขาด มันชนะช่วงตรวจเพราะค่ากลางย้ายจน Z ค้างแถว 2.86 ซึ่งเป็นเหตุการณ์ของปีนั้น ไม่ใช่คุณสมบัติของเส้น ในคู่จำลองที่เชือกไม่เปลี่ยน เส้นที่ดีที่สุดยังตรงกันข้ามช่วงเพียง 9 จาก 30 โลก และการเลือกจากช่วงตรวจทำให้ช่วงตรวจกลายเป็นช่วงเลือก</p>
+<p>สิ่งที่ควรทำก่อนคือนับว่าดูช่วงตรวจไปแล้ว 8 ครั้ง ถามว่าค่ากลางของคู่ยังอยู่ที่เดิมไหม (ช่วงตรวจบอกว่าไม่) และถ้าจะเปลี่ยนเส้น ให้ตัดสินจากความเร็วกลับกับต้นทุนก่อน แล้วรอข้อมูลที่ยังไม่ได้ใช้ ถ้าคุณตอบว่า "เห็นด้วยเพราะ 498.2 มากที่สุด" แปลว่ายังไม่ได้ถามว่าตัวเลขนี้มาจากไม้กี่ไม้และจากเหตุการณ์อะไร</p></details>
 </li>
-<li>(ถ่ายโอน) …โจทย์…
-<details class="ans"><summary>เฉลย</summary><p>…เดินทีละขั้นเป็นประโยค… ถ้าได้ … แปลว่าพลาดตรง …</p></details>
+<li>(ถ่ายโอน · ข้อมูลจริง) คู่ BTC บน ETH บนราคาของบท 13 (h <span data-key="ch07.จริง.BTC-ETH.h">24</span> · 0.01 ชุด · ไม้บรรทัดช่วงเลือก) ลองห้าเส้นแบบเดียวกันในช่วงเลือกได้ <span data-key="ch07.จริง.BTC-ETH.แถว.1.เลือก.ผล">−94</span>, <span data-key="ch07.จริง.BTC-ETH.แถว.1_5.เลือก.ผล">−135.89</span>, <span data-key="ch07.จริง.BTC-ETH.แถว.2.เลือก.ผล">−23.26</span>, <span data-key="ch07.จริง.BTC-ETH.แถว.2_5.เลือก.ผล">−91.59</span> และ <span data-key="ch07.จริง.BTC-ETH.แถว.3.เลือก.ผล">−54.58</span> ดอลลาร์ สำหรับเส้น 1, 1.5, 2, 2.5 และ 3 φ ของ X ช่วงเลือกปัดสองตำแหน่งได้ <span data-key="ch07.จริง.BTC-ETH.phi2">1</span> เส้นไหน "ดีที่สุด" และผลนี้บอกอะไรเกี่ยวกับการเลือกเส้น
+<details class="ans"><summary>เฉลย</summary><p>เส้น 2 เสียน้อยที่สุด (−23.26) แต่ทุกเส้นเสียเงิน แม้ในช่วงเลือกที่ไม้บรรทัดรู้คำตอบอยู่แล้ว φ ที่เกือบเท่า 1 แบบนี้มี Half-life ราว <span data-key="ch07.จริง.BTC-ETH.ครึ่งชีวิต">349.1</span> วัน ช้ากว่าเพดาน 30 วันของการ์ดมาก ไม้ของคู่นี้จึงออกเพราะครบเวลาแทบทั้งหมด การเลือกเส้นไม่ได้แก้ปัญหานี้ เพราะปัญหาคือแทบไม่มีเชือกให้เก็บ</p>
+<p>บทเรียนคือตารางเส้นเข้ามีความหมายเฉพาะเมื่อมีเชือกที่เร็วพอ ถ้าคุณตอบว่า "เลือกเส้น 2 เพราะเสียน้อยที่สุด" แปลว่ากำลังเลือกระหว่างวิธีเสียเงิน ข้อระวังของคนทำจริง: ตอน ก บอกว่าเส้นที่ดีที่สุดขึ้นกับความเร็วกลับ ดังนั้นควรวัดความเร็วก่อนจะลองเส้น ไม่ใช่ลองเส้นก่อนแล้วค่อยหาเหตุผล</p></details>
 </li>
 </ol></div>
 
 <!-- คำถามสะพาน: data-hook = วลีที่ฉากเปิดของบท 8 ต้องมีตรงตัว (W15) -->
-<div class="pq" data-hook="…">…คำถามสะพาน…</div>
+<div class="pq" data-hook="คนทำงานจริงคัดคู่อย่างไร">ตั้งแต่บท 3 เล่มนี้ใช้ LTC กับ DOT เป็นตัวอย่างหลัก และบทนี้เพิ่งเห็นว่าค่ากลางของมันย้ายในช่วงตรวจ ถ้าต้องเลือกจาก 45 คู่ใหม่ทั้งหมด คนทำงานจริงคัดคู่อย่างไร และตัวกรองที่เขาใช้ช่วยหลบคู่แบบนี้ได้จริงหรือเปล่า</div>
 
 <!-- ศัพท์ที่สอนครั้งแรกในหน้านี้ ไม่เกิน 7 คำ · ชั้นคำ ก = แอป/บัญชี · ข = แกนกลยุทธ์ · ค = ลงลึก -->
 <div class="bx bb"><div class="bt">📖 ศัพท์ใหม่ในตอนนี้</div>
 <ul>
-<li><strong>English Term (คำแปลไทย)</strong> = … <span class="tier" data-tier="ข"></span></li>
+<li><strong>Optimal Stopping (การหยุดที่เหมาะที่สุด)</strong> = ปัญหาการเลือกกฎว่าจะหยุดรอแล้วลงมือเมื่อไรให้ผลที่คาดสูงสุด · เส้นเข้าออกของการ์ดคือคำตอบแบบหยาบ · เงินต่อปีเท่ากับไม้ต่อปีคูณ (กำไรต่อไม้ − ต้นทุน) <span class="tier" data-tier="ข"></span></li>
+<li><strong>Threshold Model (แบบจำลองมีเกณฑ์)</strong> = เชือกที่ดึงต่างกันตามว่า X อยู่ในหรือนอกเกณฑ์ เช่นในกรอบ ±2 เดินสุ่ม นอกกรอบมีแรงดึง · φ ตัวเดียวของทั้งชุดบอกไม่ได้ว่าแรงดึงอยู่ตรงไหน <span class="tier" data-tier="ค"></span></li>
+<li><strong>Regime Switching (การสลับสภาวะ)</strong> = โลกที่สลับไปมาระหว่างสภาวะที่มีค่ากลางหรือ φ ต่างกันโดยไม่รู้ล่วงหน้า · ต่างจาก Regime Change ที่เปลี่ยนครั้งเดียว <span class="tier" data-tier="ค"></span></li>
 </ul></div>
 
-<!-- แฟ้มท้ายบท (พับไว้): ใบงาน .sheet เต็มใบตามกติกา W19 เดิม (อย่างน้อยหนึ่งใบ) · บัญชีมิน table.ledger เมื่อบัญชีเปลี่ยน ·
-     ช่องบัตร table.ncard ที่เติมในบทนี้ · ลิงก์อ่านลึก · 🔎 details.deep รอบสอง · หัวข้อย่อยในแฟ้มใช้ h3 (ไม่ใช้ h2) -->
+<!-- แฟ้มท้ายบท (พับไว้) -->
 <details class="file"><summary>📁 แฟ้มของบทนี้</summary>
-…
+
+<h3>สมุดวิจัย · หน้า LTC–DOT · ช่องที่เติมในบทนี้</h3>
+<div class="tw"><table data-nosrc>
+<tr><th>ช่อง</th><th>สิ่งที่เขียน (บท 7)</th><th>ของคุณ</th></tr>
+<tr><td>③ ตัวแปรและกฎ</td><td>เส้นเข้า Z 2 · ออก 0.5 · ถือไม่เกิน 30 วัน (คงเดิม) · ลองเส้น 1 / 1.5 / 2 / 2.5 / 3 บน LTC บน DOT (h 3.76 · ไม้บรรทัดช่วงเลือก Mean 55.66 SD 10.18) · เพิ่มบรรทัดเตือน: |Z| ไม่กลับถึงเส้นออก 60 วัน ให้พักการเปิดไม้ใหม่ · ลองแล้ว 5 เส้น</td><td></td></tr>
+<tr><td>⑥ ผลและความไม่แน่นอน</td><td>ช่วงเลือก (ในตัวอย่าง): เส้น 1 +1,394.52 ดีที่สุด · เส้น 2 +379.38 · ช่วงตรวจ: เส้น 1 −364.45 · เส้น 2 +180.51 · เส้น 2.5 +498.2 · ไม้ส่วนใหญ่ออกเพราะครบเวลา · Z เฉลี่ยช่วงตรวจ 2.86 · คู่จำลองเชือกคงที่ เส้นดีที่สุดตรงกัน 9 จาก 30 โลก · ดูช่วงตรวจรวม 8 ครั้ง</td><td></td></tr>
+<tr><td>⑦ ข้อสรุปและการทดลองถัดไป</td><td>คงเส้น 2 บนกระดาษ ไม่เลือกเส้นจากข้อมูลช่วงเดียว · ถัดไป: เดินการ์ดเดิมบน 45 คู่ ดูว่าค่ากลางย้ายเกิดกับคู่ส่วนใหญ่ไหม และตัวกรองคัดคู่ช่วยไหม · "ไม่ช่วย" ถ้าคู่ที่ผ่านตัวกรองออกเพราะครบเวลาบ่อยพอ ๆ กับคู่ที่ไม่ผ่าน</td><td></td></tr>
+</table></div>
+<p>บัญชีของมินไม่เปลี่ยนในบทนี้ Equity (มูลค่าบัญชีรวม) <span data-key="เรื่อง.part7.close.equity">127,563.14</span> ทุนคู่ <span data-key="เรื่อง.part7.close.ทุนคู่">1,000</span> ยังไม่ได้ใช้</p>
+
+<h3>ทำในสเปรดชีต (ไม่ต้องเขียนโค้ด)</h3>
+<ul>
+<li>ตารางเส้นเข้าด้วยมือ: คอลัมน์ X หนึ่งคอลัมน์ แล้วต่อเส้นละหนึ่งคอลัมน์ "ถือ" ที่ดูจาก X ของแถวก่อน (ว่างและ |X| ถึงเส้น → เข้า · ถืออยู่และ |X| ไม่เกิน 0.5 → ออก · นอกนั้นคงเดิม) แล้วนับแถวที่ "ถือ" เปลี่ยนจากว่างเป็นถือ เส้นทาง 40 วันต้องได้ 4, 3, 2, 1</li>
+<li>เงินต่อเส้น: คอลัมน์เงินของวันที่ถือ = ถือของเมื่อวาน × 10 × (X วันนี้ − X เมื่อวาน) รวมทั้งคอลัมน์แล้วหักต้นทุน 2 ต่อไม้ ต้องได้ 19, 26, 29 และ 17 ก่อนต้นทุน</li>
+<li>ลองเปลี่ยนต้นทุนในช่องเดียว แล้วดูว่าเส้นที่ดีที่สุดขยับไปไหน ตารางต้นทุนของตอน ก · 2 คือคำตอบที่ควรได้</li>
+</ul>
+
+<h3>บ้านในคลัง</h3>
+<div class="bx"><div class="bt">🔗 อ่านต่อในคลัง</div>
+<p>หมายเหตุ: math-part9 เรียก hedge ratio ว่า β ส่วนเล่มนี้เรียกว่า h ทั้งสองคือตัวเลขเดียวกัน</p>
+<ul>
+<li><a href="theory-part5.html">ทฤษฎีของ Quant ภาค 5</a> สำหรับ Mean Reversion (การกลับเข้าสู่ค่าเฉลี่ย) ของคู่ เชือก OU และการเลือกเส้นเข้าออก</li>
+<li><a href="math-part9.html">คณิตศาสตร์สำหรับ Quant ภาค 9</a> สำหรับ OU และการแปลง φ เป็นความเร็วกลับ</li>
+<li>บันทึกค้นคว้า <code>tools/sab_research/practitioner-research.md</code> คือที่มาของกล่อง 🧰 พร้อมรายการแหล่งอ้างอิงเต็ม (§1 · §4 · §6 · §7 · §8.5)</li>
+</ul></div>
+
+<details class="deep"><summary>🔎 ลงลึก: ทำไมไม้ลดลงเร็ว · เส้นออกก็เลือกได้ · เส้น optimal แบบสูตร</summary>
+<p><strong>ทำไมไม้ลดลงราวครึ่งหนึ่งทุก 0.5</strong> เชือก OU ที่นิ่งแล้วมี X กระจายเกือบเป็นรูประฆัง วันที่ |X| เกิน 1 มีราว <span data-key="ch07.ค่า.หางปกติเปอร์เซ็นต์.0">31.7</span>% ของวัน เกิน 2 มีราว <span data-key="ch07.ค่า.หางปกติเปอร์เซ็นต์.1">4.6</span>% และเกิน 3 มีราว <span data-key="ch07.ค่า.หางปกติเปอร์เซ็นต์.2">0.27</span>% จำนวนครั้งที่ X เดินออกไปถึงเส้นจึงลดลงเร็วกว่าแบบเส้นตรงเมื่อเส้นอยู่ไกล ตารางของโลก φ 0.9 ลดจาก 21.1 เป็น 10.1, 4.5, 1.4 และ 0.4 ไม้ต่อปี ซึ่งช่วงหลังลดเร็วกว่าครึ่งหนึ่งมาก</p>
+<p><strong>เส้นออกก็เป็นตัวเลือกเหมือนกัน</strong> บทนี้ตรึงเส้นออกที่ 0.5 และเพดาน 30 วันไว้ แต่ทั้งสองค่าก็เป็นคำตอบของปัญหา Optimal Stopping เช่นกัน การเลือกเส้นเข้าและเส้นออกพร้อมกันบนข้อมูลชุดเดียวเพิ่มจำนวนแบบที่ลองเป็นผลคูณ ห้าเส้นเข้าคูณสามเส้นออกคือ 15 แบบ ซึ่งบท 14 จะนับและหักส่วนลดจากการเลือก</p>
+<p><strong>เส้น optimal แบบสูตร</strong> งานกลุ่มที่สมมติว่า spread เป็น OU เขียนเงินที่คาดต่อหน่วยเวลาเป็นฟังก์ชันของ θ μ σ ของบท 4 กับต้นทุน แล้วหาเส้นที่ให้ค่าสูงสุดด้วยคณิตศาสตร์ ผลที่ได้มีโครงเหมือนตารางของตอน ก คือเชือกเร็วกับต้นทุนถูกชี้เส้นใกล้ และต้นทุนแพงชี้เส้นไกล ตัวเลขในบทนี้ได้จากการจำลองแทน เพราะการจำลองรวมผลของการได้ราคาวันถัดไปกับเพดาน 30 วันไว้ด้วย ซึ่งสูตรส่วนใหญ่ไม่ได้รวม</p>
+</details>
 </details>
 
 
