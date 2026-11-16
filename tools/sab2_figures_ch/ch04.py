@@ -292,7 +292,7 @@ def extend(data, D, q):
     ex4 = pairs["LTC-LINK"]["ตรวจหาhใหม่"]
     drills = {"ข้อ2": {"แถว": ex2_n, "SE": ex2_se, "ครึ่งกว้าง": _r(z * ex2_se), "ล่าง": ex2_lo, "บน": ex2_hi,
                        "ครึ่งชีวิตล่าง": _r(_hl(ex2_lo), 1), "ครึ่งชีวิตบน": _r(_hl(ex2_hi), 1),
-                       "หารn": _r(one_minus / ex2_n, 4), "ผิดไม่ราก": _r(se_r / 4, 3)},
+                       "หารn": _r(one_minus / ex2_n, 4), "ผิดไม่ราก": _r(se_r / 4, 3), "รากn": _r(math.sqrt(ex2_n), 2)},
               "ข้อ1ผิดลืมยก": _r(math.sqrt((1 - phi2) / n), 2)}
 
     ch = {"เล่ม1": v1, "มือ": hand, "บันได": lad, "สามสิบโลก": thirty, "พันโลก": thousand, "ou": ou, "จริง": real,

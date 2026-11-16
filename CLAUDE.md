@@ -307,6 +307,8 @@ English technical term (คำแปลไทย)
 | ADF Test (Augmented Dickey–Fuller) | การทดสอบ ADF |
 | p-value | ค่า p (โอกาสที่โลกไม่มีเชือกให้ผลสุดขนาดนี้) |
 | Engle–Granger (Two-step) | วิธีสองขั้นของ Engle–Granger (ถดถอยหา h แล้ว ADF บน X · ใช้กับ Cointegration) |
+| Rolling Window | หน้าต่างเลื่อน (เล่ม 2 บท 5 · คิด h, Mean, SD จาก W วันล่าสุดใหม่ทุกวัน) |
+| Rebalance Cost | ต้นทุนการปรับ hedge (ค่าธรรมเนียมของการปรับขาให้ตรง h ใหม่ทุกครั้งรวมกัน) |
 | Confidence Interval | ช่วงความเชื่อมั่น (เล่ม 2 บท 4 · ค่าที่ประมาณ ± 1.96 × SE) |
 | Estimation Bias | ความเอนเอียงของค่าประมาณ (เล่ม 2 บท 4 · φ จากข้อมูลสั้นเอียงต่ำ เชือกดูเร็วเกินจริง) |
 | OU Process (Ornstein–Uhlenbeck) | กระบวนการ OU (เชือกแบบเวลาต่อเนื่อง · θ ความเร็วดึงกลับ · μ ระดับที่ถูกดึงเข้าหา · σ ขนาดแรงสะบัด · θ ไม่ใช่ Theta ของกรีก) |
