@@ -16,9 +16,13 @@ fill: "next" (lag 1 · ค่าเริ่มต้น) · "same" (lag 0 · re
 signal: list ยาวเท่าราคา หรือฟังก์ชัน signal(t) → ค่าที่รู้ ณ ปิดวัน t · rule: ฟังก์ชัน rule(z, held) → ทิศใหม่
 (ค่าเริ่มต้น threshold_rule(enter, leave): ว่าง & |z| ≥ enter → สวนทิศ z · ถือ & |z| ≤ leave → ปิด)
 
+h เปลี่ยนทุกวัน (บท 5 rolling · บท 6 Kalman): run_hpath(A, B, hs, z, sets, rebalance=True, band=0.0) — ปรับขา B ตาม h ใหม่
+ระหว่างถือ (ค่าธรรมเนียมแยกเป็น costs_rebalance) · บัญชีตามจำนวนที่ถือจริง · price_pnl / chart_pnl / redefinition
+
     python3 tools/sab2_engine.py --selftest
 """
 
+import math
 import random
 import sys
 
@@ -86,6 +90,85 @@ def run(A, B, h, signal, sets=1.0, capital=CAPITAL, rule=None, fill="next", lag=
             "fills": len(fills), "trades": len(trades), "wins": sum(1 for x in trades if x["pnl"] > 0),
             "net": (equity[-1] if equity else capital) - capital, "costs": costs, "max_drawdown": mdd,
             "min_equity": min(equity) if equity else capital, "open": held, "lag": lag, "lookahead": lag == 0}
+
+
+def run_hpath(A, B, hs, signal, sets=1.0, capital=CAPITAL, fill="next", lag=None, fee=FEE, enter=2.0, leave=0.5,
+              hold=30, rebalance=True, band=0.0):
+    """วงห้าขั้นเดียวกับ run แต่ h เปลี่ยนได้ทุกวัน (เล่ม 2 บท 5 · rolling h / Kalman) · time-varying hedge ratio
+    hs[t] = h ที่รู้ ณ ปิดวัน t (None = ยังไม่มี → ไม่เปิดไม้ใหม่) · คำสั่งวัน t ใช้ hs[t − lag] เหมือนสัญญาณ
+    เข้า: A +ทิศ×sets · B −ทิศ×sets×h · ระหว่างถือ rebalance=True → ปรับขา B ให้ตรง h ใหม่ทุกวัน (จ่าย fee × มูลค่าที่ซื้อขาย)
+    เมื่อ |ส่วนที่ต้องซื้อขาย| > band × |ขา B ที่ถือ| (band = กันชนไม่เทรด เป็นสัดส่วน) · ออก: ปิดทั้งสองขาตามจำนวนที่ถือจริง
+    บัญชีตามจำนวนที่ถือจริง: Equity = เงินสด + qA×A + qB×B (ไม่ใช่ ชุด × X ใหม่)
+    คืนเหมือน run + costs_trade (ค่าธรรมเนียมเข้า/ออก) · costs_rebalance · rebalances (จำนวนครั้งที่ปรับ) ·
+    price_pnl (Σ จำนวนที่ถือก่อนราคาขยับ × ราคาที่ขยับ = เงินจริงก่อนค่าธรรมเนียม) · chart_pnl (Σ ทิศเมื่อวาน × sets ×
+    การเปลี่ยนของ X ที่วาดด้วย h ของแต่ละวัน = backtest แบบไร้เดียงสา) · redefinition = chart_pnl − price_pnl"""
+    if lag is None:
+        lag = {"next": 1, "same": 0}[fill]
+    rule = threshold_rule(enter, leave)
+    sig = signal if callable(signal) else signal.__getitem__
+    hof = hs if callable(hs) else hs.__getitem__
+    cash, held, t_in, before = float(capital), 0, 0, None
+    qa = qb = 0.0
+    c_trade = c_reb = 0.0
+    n_reb, price_pnl, chart_pnl = 0, 0.0, 0.0
+    equity, ledger, fills, trades = [], [], [], []
+    held_prev, x_prev = 0, None
+    for t in range(len(A)):
+        if t > 0:
+            price_pnl += qa * (A[t] - A[t - 1]) + qb * (B[t] - B[t - 1])
+        ht = hof(t)
+        x_now = None if ht is None else A[t] - ht * B[t]
+        if held_prev != 0 and x_prev is not None and x_now is not None:
+            chart_pnl += held_prev * sets * (x_now - x_prev)
+        if t >= lag:
+            s = t - lag
+            zt, hsig = sig(s), hof(s)
+            want = held if zt is None else rule(zt, held)
+            if held == 0 and hsig is None:
+                want = 0
+            why = "enter" if held == 0 else "target"
+            if held != 0 and want == held and hold is not None and t - t_in >= hold:
+                want, why = 0, "time"
+            if want != held:
+                if held == 0:
+                    before = cash
+                ta = want * sets
+                tb = -want * sets * hsig if want != 0 else 0.0
+                da, db = ta - qa, tb - qb
+                f = fee * (abs(da) * A[t] + abs(db) * B[t])
+                cash -= da * A[t] + db * B[t] + f
+                c_trade += f
+                qa, qb = ta, tb
+                fills.append({"t": t, "side": want, "A": A[t], "B": B[t], "h": hsig, "fee": f, "cash": cash,
+                              "reason": why, "signal": zt, "signal_t": s})
+                if held != 0:
+                    trades.append({"side": held, "t_in": t_in, "t_out": t, "pnl": cash - before, "reason": why})
+                    if want != 0:
+                        before = cash
+                held, t_in = want, t
+            elif held != 0 and rebalance and hsig is not None:
+                db = -held * sets * hsig - qb
+                if db != 0 and abs(db) > band * abs(qb):
+                    f = fee * abs(db) * B[t]
+                    cash -= db * B[t] + f
+                    c_reb += f
+                    n_reb += 1
+                    qb += db
+        eq = cash + qa * A[t] + qb * B[t]
+        equity.append(eq)
+        ledger.append({"t": t, "cash": cash, "units_A": qa, "units_B": qb, "equity": eq, "costs": c_trade + c_reb})
+        held_prev, x_prev = held, x_now
+    peak, mdd = float(capital), 0.0
+    for e in equity:
+        peak = max(peak, e)
+        mdd = max(mdd, peak - e)
+    return {"equity": equity, "ledger": ledger, "fill_list": fills, "trade_list": trades,
+            "fills": len(fills), "trades": len(trades), "wins": sum(1 for x in trades if x["pnl"] > 0),
+            "net": (equity[-1] if equity else capital) - capital, "costs": c_trade + c_reb,
+            "costs_trade": c_trade, "costs_rebalance": c_reb, "rebalances": n_reb,
+            "price_pnl": price_pnl, "chart_pnl": chart_pnl, "redefinition": chart_pnl - price_pnl,
+            "max_drawdown": mdd, "min_equity": min(equity) if equity else capital, "open": held,
+            "open_units": (qa, qb), "lag": lag, "lookahead": lag == 0}
 
 
 # ═══════════════════════════ selftest ═══════════════════════════
@@ -168,8 +251,37 @@ def selftest():
     rn = run(up, flat, 1, zz, 1, hold=None)
     check("max drawdown = จุดสูงสุด − จุดต่ำสุดหลังจากนั้น", abs(rn["max_drawdown"] - (1000.0 - rn["min_equity"])) < 1e-9
           and rn["max_drawdown"] > 70 and rn["open"] == -1)
+    # 5) run_hpath (บท 5): h คงที่ → เท่า run · บัญชีรวมกลับ · h เปลี่ยน → แยกเงินจากราคา / ผลจากการนิยามใหม่
+    rng = random.Random(5)
+    agree, ident = True, True
+    for k in range(60):
+        m = rng.randint(30, 150)
+        b, x = [50.0], [0.0]
+        for _ in range(m - 1):
+            b.append(b[-1] * (1 + rng.gauss(0, 0.02)))
+            x.append(0.85 * x[-1] + rng.gauss(0, 1.0))
+        hh = rng.choice([1, 2, 1.7])
+        a = [hh * u + 3 + v for u, v in zip(b, x)]
+        z = [v / 2.0 for v in x]
+        r = run(a, b, hh, z, 0.5)
+        rh = run_hpath(a, b, [hh] * m, z, 0.5)
+        agree = agree and r["fills"] == rh["fills"] and r["trades"] == rh["trades"] and rh["rebalances"] == 0 \
+            and max(abs(p - q) for p, q in zip(r["equity"], rh["equity"])) < 1e-8 and abs(rh["redefinition"]) < 1e-8
+        hp = [hh + 0.3 * math.sin(t / 7.0) for t in range(m)]
+        rv = run_hpath(a, b, hp, z, 0.5)
+        ident = ident and abs(rv["price_pnl"] - rv["costs"] - rv["net"]) < 1e-8 and all(
+            abs(row["equity"] - (row["cash"] + row["units_A"] * p + row["units_B"] * q)) < 1e-9
+            for row, p, q in zip(rv["ledger"], a, b))
+    check("run_hpath: h คงที่เท่า run (fill · ไม้ · Equity) · ไม่มีการปรับ · ผลนิยามใหม่ 0", agree)
+    check("run_hpath: h เปลี่ยน → เงินจากราคา − ค่าธรรมเนียม = net · Equity = เงินสด + จำนวนถือ × ราคา", ident)
+    # ไม้มือ: short X 1 ชุดที่ h 2 → วันถัดไป h 2.2 ราคาไม่ขยับ → เงินจากราคา 0 · X บนจอ −(2.2 − 2) × 50 = −10 → ไม้ short เห็น +10
+    A2, B2 = [100.0, 104, 104, 104, 104], [50.0, 50, 50, 50, 50]
+    r5 = run_hpath(A2, B2, [2, 2, 2, 2.2, 2.2], [0, 2.5, 2.5, 2.5, 2.5], 1, fee=0.0, hold=None)
+    check("run_hpath: ราคานิ่ง h 2 → 2.2 · ไม่มีเงินจากราคา · ผลนิยามใหม่ +10 · ปรับขา B หนึ่งครั้ง",
+          abs(r5["price_pnl"]) < 1e-12 and abs(r5["chart_pnl"] - 10) < 1e-9 and r5["rebalances"] == 1
+          and abs(r5["open_units"][1] - 2.2) < 1e-12)
     print("selftest", f"ผ่าน ✓ ({n} ข้อ · สิบวันของบท 12 ตรงหน้า · เท่าลูป 💻 ทุกบิต 200 โลก · lag/same/ฟังก์ชันสัญญาณ · "
-          "เวลาถือ · งบขาดทุน · บัญชีเงินสด/จำนวนถือ/ค่าธรรมเนียม · drawdown)" if ok else "ไม่ผ่าน ✗")
+          "เวลาถือ · งบขาดทุน · บัญชีเงินสด/จำนวนถือ/ค่าธรรมเนียม · drawdown · run_hpath h เปลี่ยนได้)" if ok else "ไม่ผ่าน ✗")
     return 0 if ok else 1
 
 

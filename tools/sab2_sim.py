@@ -8,6 +8,7 @@ x[t] = φ·x[t−1] + e (φ < 1 = มีเชือก · φ = 1 = เดิน
 ทุกโลกคืน dict: ซีรีส์ (log ราคา "logA"/"logB" และราคา "A"/"B" · ระยะห่างจริง "X") + "true" (พารามิเตอร์จริง) + "seed"
     stationary_pair    คู่ที่มีเชือก φ คงที่ (รู้ φ · h · ค่ากลาง · half-life) — h อยู่บน log ราคา
     price_pair         คู่ที่มีเชือกบนราคา A = α + h·B + X (รู้ h บนระดับราคา → ถดถอยแบบบท 1 ได้ h ในค่าคาดหวัง)
+    drifting_price_pair  คู่บนราคาที่ h ไหลเป็นเส้นตรง h0 → h1 (บท 5 · rolling h ที่รู้คำตอบ)
     random_walk_pair   คู่ที่ไม่มีเชือก (ระยะห่างเดินสุ่ม φ = 1)
     drifting_h_pair    คู่ที่ h ค่อย ๆ ไหลจาก h0 ไป h1 (หรือเดินสุ่มช้า ๆ)
     broken_pair        คู่ที่เชือกขาดที่วัน break_at (φ ก่อน → φ หลัง · เลือกให้ค่ากลางกระโดดได้)
@@ -87,6 +88,20 @@ def price_pair(seed=106, n=500, h=2.0, phi=0.9, sd=0.5, alpha=0.0, common_sd=COM
                      "sd_stationary": sd / math.sqrt(1 - phi * phi) if abs(phi) < 1 else float("inf"),
                      "half_life": _half_life(phi), "cointegrated": abs(phi) < 1, "scale": "price"}}
 
+
+def drifting_price_pair(seed=107, n=500, h0=2.0, h1=2.2, phi=0.9, sd=0.5, alpha=0.0, common_sd=COMMON_SD, b0=50.0):
+    """คู่บน "ราคา" ที่ h ไหลเป็นเส้นตรง h0 → h1 (เล่ม 2 บท 5 · rolling h ที่รู้คำตอบ): A = α + h[t]·B + X
+    price-level pair whose hedge ratio drifts linearly · สุ่มเหมือน price_pair ทุกขั้น (h0 = h1 → ได้ price_pair เดิมตรงตัว)
+    true["h_path"] = h ทุกวัน · X ไม่ขึ้นกับ B · ค่าเริ่มต้น A ≈ 100 · B ≈ 50 แบบคู่ A–B ของเล่ม 1"""
+    rng = random.Random(seed)
+    b = [b0 * math.exp(v) for v in _rw(rng, n, common_sd)]
+    x = _ar1(rng, n, phi, sd)
+    hs = [h0 + (h1 - h0) * t / (n - 1) for t in range(n)] if n > 1 else [h0]
+    a = [alpha + h * bb + e for h, bb, e in zip(hs, b, x)]
+    return {"A": a, "B": b, "X": x, "seed": seed,
+            "true": {"h_path": hs, "h0": h0, "h1": h1, "alpha": alpha, "phi": phi, "sd_shock": sd,
+                     "sd_stationary": sd / math.sqrt(1 - phi * phi) if abs(phi) < 1 else float("inf"),
+                     "half_life": _half_life(phi), "scale": "price"}}
 
 def random_walk_pair(seed=102, n=500, h=1.0, alpha=math.log(2.0), sd=SPREAD_SD, common_sd=COMMON_SD, b0=math.log(50.0)):
     """คู่ที่ไม่มีเชือก: เหมือน stationary_pair แต่ระยะห่าง X เดินสุ่ม (φ = 1) — ดูเหมือนเดินด้วยกันได้ แต่ไม่กลับ
@@ -243,6 +258,12 @@ def selftest():
         check("factor: ความยาวไม่ตรง → ValueError", False)
     except ValueError:
         check("factor: ความยาวไม่ตรง → ValueError", True)
+    # drifting_price_pair: h0 = h1 → เท่า price_pair ตรงตัว · h ไหล → X = A − α − h[t]·B
+    dq, pq0 = drifting_price_pair(seed=7, h0=2.0, h1=2.0), price_pair(seed=7)
+    dr = drifting_price_pair(seed=7, h0=2.0, h1=2.4)
+    check("drifting_price_pair: h คงที่ = price_pair · h ไหล 2 → 2.4 · X = A − h[t]B",
+          dq["A"] == pq0["A"] and dq["B"] == pq0["B"] and abs(dr["true"]["h_path"][-1] - 2.4) < 1e-12
+          and max(abs(a - h * b - x) for a, b, x, h in zip(dr["A"], dr["B"], dr["X"], dr["true"]["h_path"])) < 1e-9)
     # price_pair: h บนระดับราคา · ถดถอย A บน B (ราคา) ได้ h ในค่าคาดหวัง · X = A − α − h·B ตรงตัว
     pp, pp2 = price_pair(seed=7), price_pair(seed=7)
     check("price_pair: seed เดิม = ผลเดิม · X = A − α − hB · A ≈ 100 / B ≈ 50",
