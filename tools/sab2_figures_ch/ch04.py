@@ -90,6 +90,8 @@ def extend(data, D, q):
         # ที่มาของทางลัด: Σx² ÷ n ≈ SD² ของ X ≈ s² ÷ (1 − φ²) (เล่ม 1 บท 13)
         "เฉลี่ยกำลังสอง": _r(sxx / n), "s2": _r(_r(a1["sigma"]) ** 2), "s2หาร": _r(_r(_r(a1["sigma"]) ** 2) / one_minus, 1),
         "รากn": _r(math.sqrt(n), 2), "ล่างกำลังสอง": _r(lo_r * lo_r),
+        "รากหนึ่งลบ": _r(math.sqrt(one_minus)), "thetaเปอร์เซ็นต์": _r(-100 * math.log(phi2), 1),
+        "SEลัดสองขั้น": _r(_r(math.sqrt(one_minus)) / _r(math.sqrt(n), 2)),
     }
 
     # ═══ ตอน ข · บันได 20 / 60 / 250 วันของโลกเดียวกัน ═══
@@ -109,6 +111,8 @@ def extend(data, D, q):
         lad["ครึ่งชีวิตล่าง"].append(_r(c["lo"], 1))
         lad["ครึ่งชีวิตบน"].append(_r(c["hi"], 1) if c["phi_hi"] < 1 else None)
         lad["ครอบจริง"].append(bool(c["phi_lo"] <= PHI_TRUE <= c["phi_hi"]))
+    lad["SE2"] = [_r(v) for v in lad["SE"]]
+    lad["SEลัด2"] = [_r(v) for v in lad["SEลัด"]]
     lad["SEอัตราส่วน"] = _r(lad["SE"][0] / lad["SE"][2], 1)
     lad["รากอัตราส่วนวัน"] = _r(math.sqrt(lad["แถว"][2] / lad["แถว"][0]), 1)
 
@@ -161,6 +165,11 @@ def extend(data, D, q):
           "ln05": _r(math.log(0.5), 3), "วงเล็บ": _r(2 * ou_true["theta"] / (1 - PHI_TRUE ** 2), 2),
           "รากวงเล็บ": _r(math.sqrt(2 * ou_true["theta"] / (1 - PHI_TRUE ** 2)), 2),
           "รากหนึ่งลบ": _r(math.sqrt(1 - PHI_TRUE ** 2), 3),
+          "thetaเปอร์เซ็นต์": _r(100 * ou_true["theta"]), "theta7เปอร์เซ็นต์": _r(700 * ou_true["theta"], 1),
+          "ln05เปอร์เซ็นต์": _r(100 * math.log(0.5), 1), "คูณตรวจเปอร์เซ็นต์": _r(_r(ou_true["half_life"], 1) * _r(100 * ou_true["theta"]), 1),
+          "sdนิ่ง1": _r(ou_true["sd_stationary"], 1), "รากหนึ่งลบ2": _r(math.sqrt(1 - PHI_TRUE ** 2)),
+          "phiเปอร์เซ็นต์": _r(100 * PHI_TRUE, 1), "phi250เปอร์เซ็นต์": _r(100 * r250["phi"], 1),
+          "theta250เปอร์เซ็นต์": _r(100 * ou_250["theta"]),
           "ครึ่งชีวิตสัปดาห์": _r(_hl(PHI_TRUE ** 7), 2), "ครึ่งชีวิตสัปดาห์เป็นวัน": _r(7 * _hl(PHI_TRUE ** 7), 1)}
 
     # ═══ ข้อมูลจริง ═══
@@ -178,7 +187,10 @@ def extend(data, D, q):
              "ล่าง": _r(c["phi_lo"], 3), "บน": _r(c["phi_hi"], 3),
              "ครึ่งชีวิต": _r(c["half_life"], 1), "ครึ่งชีวิตล่าง": _r(c["lo"], 1),
              "ครึ่งชีวิตบน": _r(c["hi"], 1) if c["phi_hi"] < 1 else None, "บนอนันต์": bool(c["phi_hi"] >= 1),
-             "s": _r(r["sigma"] * k), "Mean": _r(r["mean"] * k, 1) if r["phi"] < 1 else None}
+             "s": _r(r["sigma"] * k), "Mean": _r(r["mean"] * k, 1) if r["phi"] < 1 else None,
+             "phiเปอร์เซ็นต์": _r(100 * r["phi"], 1), "SEเปอร์เซ็นต์": _r(100 * r["se_phi"], 1),
+             "ล่างเปอร์เซ็นต์": _r(100 * c["phi_lo"], 1), "บนเปอร์เซ็นต์": _r(100 * c["phi_hi"], 1),
+             "thetaเปอร์เซ็นต์": _r(-100 * math.log(r["phi"])) if 0 < r["phi"] < 1 else None}
         if 0 < r["phi"] < 1:
             o = S.ou_from_ar1(r["phi"], r["c"] * k, r["sigma"] * k)
             d.update({"theta": _r(o["theta"], 4), "theta3": _r(o["theta"], 3), "mu": _r(o["mu"], 1),
@@ -215,7 +227,8 @@ def extend(data, D, q):
     ph_d = S.ar1(xr)["phi"]
     real["สัปดาห์"] = {"จุด": len(wk), "phi": _r(rw_["phi"]), "phi3": _r(rw_["phi"], 3),
                        "ครึ่งชีวิตสัปดาห์": _r(_hl(rw_["phi"]), 2), "ครึ่งชีวิตวัน": _r(7 * _hl(rw_["phi"]), 1),
-                       "รายวันยกเจ็ด": _r(ph_d ** 7), "thetaสัปดาห์": _r(-math.log(rw_["phi"]), 3),
+                       "รายวันยกเจ็ด": _r(ph_d ** 7), "phiเปอร์เซ็นต์": _r(100 * rw_["phi"], 1),
+                       "thetaเปอร์เซ็นต์": _r(-100 * math.log(rw_["phi"]), 1), "thetaสัปดาห์": _r(-math.log(rw_["phi"]), 3),
                        "thetaวันคูณเจ็ด": _r(-7 * math.log(ph_d), 3)}
     # funding BTC (แบบฝึกข้อ 5) · หนึ่งรอบ = 8 ชั่วโมง
     fr = [r_[2] * 100 for r_ in R.load_funding("formation", instrument="BTC-PERPETUAL")]
@@ -224,7 +237,9 @@ def extend(data, D, q):
                        "ครึ่งชีวิตรอบ": pfr["ครึ่งชีวิต"], "ครึ่งชีวิตล่าง": pfr["ครึ่งชีวิตล่าง"],
                        "ครึ่งชีวิตบน": pfr["ครึ่งชีวิตบน"], "ครึ่งชีวิตชั่วโมง": _r(8 * pfr["ครึ่งชีวิต"], 0),
                        "thetaรอบ": pfr["theta3"], "thetaวัน": _r(3 * pfr["theta"], 2),
-                       "phiวัน": _r(pfr["phi3"] ** 3), "ครึ่งชีวิตวัน": _r(pfr["ครึ่งชีวิต"] / 3, 2)}
+                       "phiวัน": _r(pfr["phi3"] ** 3), "phiเปอร์เซ็นต์": pfr["phiเปอร์เซ็นต์"], "SEเปอร์เซ็นต์": pfr["SEเปอร์เซ็นต์"],
+                       "ล่างเปอร์เซ็นต์": pfr["ล่างเปอร์เซ็นต์"], "บนเปอร์เซ็นต์": pfr["บนเปอร์เซ็นต์"],
+                       "thetaรอบเปอร์เซ็นต์": _r(pfr["thetaเปอร์เซ็นต์"], 1), "thetaวันเปอร์เซ็นต์": _r(3 * pfr["thetaเปอร์เซ็นต์"], 0), "ครึ่งชีวิตวัน": _r(pfr["ครึ่งชีวิต"] / 3, 2)}
 
     # ═══ คู่จำลองของข้อมูลจริง ═══
     def ci_world(s, phi_, nn):
@@ -282,7 +297,9 @@ def extend(data, D, q):
 
     ch = {"เล่ม1": v1, "มือ": hand, "บันได": lad, "สามสิบโลก": thirty, "พันโลก": thousand, "ou": ou, "จริง": real,
           "จำลองคู่": sim_like, "จำลองเดินสุ่ม": sim_rw, "แบบฝึก": drills,
-          "บันทึก": {"แบบที่ลองเพิ่ม": 3, "ช่วงตรวจดูไปแล้ว": 1}}
+          "บันทึก": {"แบบที่ลองเพิ่ม": 3, "ช่วงตรวจดูไปแล้ว": 1},
+          "อ้างอิง": {"ปีKendall": 1954, "เส้นADF731": _r(S.adf_crit(N_REAL - 1)["5%"]), "phiห่างออก": f1["ตารางphi"]["1.02"]["phi"],
+                      "แกนphi": [0.5, 1.1], "แกนวัน": [0, 120]}}
     ch["_แบบฝึก"] = [
         {"โจทย์": "(ทำตาม) Σ วันนี้×พรุ่งนี้ 438.04 · Σ วันนี้² 535.44 · 19 แถว → φ · SE ลัด · ช่วง 95% · Half-life สองปลาย",
          "คำตอบ": hand["บน"]},

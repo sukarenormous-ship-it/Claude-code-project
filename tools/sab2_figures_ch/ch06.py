@@ -19,7 +19,7 @@ import math
 
 import sab_book as SB
 
-Q_SDS = (0, 0.003, 0.01, 0.03, 0.1)     # SD ของการขยับของ h ต่อวันที่ "บอก" ตัวกรอง → q = sd²
+Q_SDS = (0, 0.01, 0.03, 0.1)     # SD ของการขยับของ h ต่อวันที่ "บอก" ตัวกรอง → q = sd²
 WINDOWS = (20, 60, 120)
 START = 120                             # วันแรกที่ทุกวิธีมีค่า (rolling 120 ต้องใช้ 120 วันก่อน) · index ของการขยับ
 FEE = 0.0005                            # ค่าธรรมเนียมต่อขาที่ปรับ (เท่า sab2_engine.run ค่าเริ่มต้น)
@@ -54,6 +54,8 @@ def extend(data, D, q):
     fig1 = SB.load_figures("sab")
     v1 = fig1["ch14"]["v2"]["ไม้บรรทัดเลื่อน"]
     s13 = fig1["ch13"]["v2"]["sdหน้า"][1]
+    out["ปีKalman"] = 1960
+    out["เส้นเข้าที่จะลอง"] = [1.5, 2, 2.5]
     out["เล่ม1"] = {"ช้า": v1["ช้า"], "X": v1["X"], "ช่วงช้าMean": [r["Mean"] for r in v1["ช่วงช้า"]],
                     "ช่วงช้าระยะ": [r["ระยะ"] for r in v1["ช่วงช้า"]],
                     "บท13": {k: s13[k] for k in ("phi", "แรงสะบัด", "phiกำลังสองปัด", "แรงสะบัดกำลังสอง", "sdกำลังสอง", "sd", "หดเหลือ")}}
@@ -108,6 +110,7 @@ def extend(data, D, q):
     k_ss = pp / (pp + 4)
     five["Pนิ่ง"] = _r(pp)
     five["Kนิ่ง"] = _r(k_ss)
+    five["Pนิ่งบวกR"] = _r(_r(pp) + 4)
     five["Pหลังนิ่ง"] = _r((1 - _r(k_ss)) * _r(pp))
     five["อายุเฉลี่ย"] = _r((1 - _r(k_ss)) / _r(k_ss))
     five["หน้าต่างเทียบ"] = _r(2 / _r(k_ss) - 1, 1)
@@ -133,7 +136,8 @@ def extend(data, D, q):
         avg = sum(hist) / len(hist)
         assert abs(m - avg) < D("1e-12")
         zrows.append({"เห็น": x, "Pทาย": float(qd(P / (1 - K), 2)), "K": float(qd(K, 2)), "Kเศษส่วน": f"1/{len(hist)}",
-                      "ใหม่": float(qd(m, 2)), "Mean": float(qd(avg, 2)), "รวม": int(sum(hist)), "จำนวน": len(hist)})
+                      "ใหม่": float(qd(m, 2)), "Mean": float(qd(avg, 2)), "รวม": int(sum(hist)), "จำนวน": len(hist),
+                      "PบวกR": float(qd(qd(P / (1 - K), 2) + R, 2))})
     out["Qศูนย์"] = {"เริ่ม": 10, "P": 4, "R": 4, "แถว": zrows}
 
     # ตาราง K นิ่งตาม Q ÷ R (R = 4)
@@ -171,11 +175,11 @@ def extend(data, D, q):
         hrows.append({"B": float(x), "A": float(y), "Pทาย": float(Pp), "อ่าน": float(reading), "Bกำลังสอง": float(x * x),
                       "Rหาร": float(Rr), "PบวกRหาร": float(qd(Pp + Rr, 2)), "K": float(K), "เดิม": float(h), "ห่าง": float(gap),
                       "เลื่อน": float(move), "ใหม่": float(h_new), "Pใหม่": float(P_new),
-                      "Kเงิน": float(qd(Kc, 3)), "พลาดเงิน": float(qd(y - h * x, 2)), "ใหม่แบบเงิน": float(qd(h_code, 2))})
+                      "หนึ่งลบK": float(qd(1 - K, 2)), "Kเงิน": float(qd(Kc, 3)), "พลาดเงิน": float(qd(y - h * x, 2)), "ใหม่แบบเงิน": float(qd(h_code, 2))})
         assert abs(h_code - h_new) <= D("0.011"), (h_code, h_new)
         h, Ph = h_new, P_new
     kfh = S.kalman_hedge([2.0, 0.5, -3.0], [2.4, 1.0, -3.3], q=0.01, r=1.0, beta0=0.8, p0=0.24)
-    out["hมือ"] = {"Q": 0.01, "R": 1, "sdQ": 0.1, "sdR": 1, "เริ่ม": 0.8, "Pเริ่ม": 0.24, "sdเริ่ม": _r(math.sqrt(0.24)), "วัน": hrows,
+    out["hมือ"] = {"ตัวอย่างh": 0.8, "ตัวอย่างB": 2, "ตัวอย่างทาย": 1.6, "Q": 0.01, "R": 1, "sdQ": 0.1, "sdR": 1, "เริ่ม": 0.8, "Pเริ่ม": 0.24, "sdเริ่ม": _r(math.sqrt(0.24)), "วัน": hrows,
                   "py": [_r(v) for v in kfh["beta"]]}
 
     # ════════════ ตอน ข · 2 🎲 โลกที่ h ไหล และโลกที่ h คงที่ ════════════
@@ -253,6 +257,7 @@ def extend(data, D, q):
         tf, tv = turn(hs, START, nf), turn(hs, nf, len(a))
         tab[key] = {"sdเลือก": _r(sd_pnl(hs, START, nf), 0), "sdตรวจ": _r(sd_pnl(hs, nf, len(a)), 0),
                     "เปลี่ยนต่อวันเลือก": _r(tf, 3), "เปลี่ยนต่อวันตรวจ": _r(tv, 3),
+                    "ซื้อขายต่อวันเลือก": _r(tf * NOTIONAL, 0), "ซื้อขายต่อวันตรวจ": _r(tv * NOTIONAL, 0),
                     "ค่าธรรมเนียมต่อปีเลือก": _r(tf * NOTIONAL * FEE * 365, 0),
                     "ค่าธรรมเนียมต่อปีตรวจ": _r(tv * NOTIONAL * FEE * 365, 0),
                     "ต่ำสุดตรวจ": _r(min(hs[nf:]), 2), "สูงสุดตรวจ": _r(max(hs[nf:]), 2),
@@ -263,7 +268,8 @@ def extend(data, D, q):
             "เริ่มวัด": dd[START], "จบเลือก": df[-1], "เริ่มตรวจ": dv[0], "จบตรวจ": dv[-1],
             "hเลือก": _r(o["slope"]), "R2เลือก": _r(o["r2"]), "sdRเปอร์เซ็นต์": _r(o["sigma"] * 100), "R": _r(r * 10000, 1),
             "hตรวจ": _r(ov["slope"]), "ตาราง": tab, "ดีสุดเลือก": best_f, "ดีสุดตรวจ": best_v,
-            "ค่าธรรมเนียม": FEE * 100, "ขา": NOTIONAL}
+            "ค่าธรรมเนียม": FEE * 100, "ขา": NOTIONAL, "แบบที่ลอง": len(Q_SDS) + len(WINDOWS),
+            "Kalmanที่ลอง": len(Q_SDS)}
     # K ในหน่วยเดียวกับตอน ข (สัดส่วนที่เลื่อนเข้าหาค่าที่อ่านได้) ของวันที่ ETH ขยับ 1%: P ÷ (P + R ÷ x²)
     for s in Q_SDS:
         Pm = S.mean(kres[s]["P"][START:nf]) + s * s
@@ -285,7 +291,8 @@ def extend(data, D, q):
     # ตารางตัวอย่างหนึ่งแถวทุก 73 วัน (ช่วงเลือก) + วันแรก/วันสุดท้ายของช่วงตรวจ
     rows = []
     for i in list(range(START, nf, 73))[:8] + [nf, len(a) - 1]:
-        rows.append({"วัน": dd[i], "BTC": _r(a[i] * 100), "ETH": _r(b[i] * 100), "r60": _r(meth["r60"][i]),
+        rows.append({"วัน": dd[i], "BTC": _r(a[i] * 100), "ETH": _r(b[i] * 100), "อ่าน": _r(_r(a[i] * 100) / _r(b[i] * 100)),
+                     "r60": _r(meth["r60"][i]),
                      "k001": _r(meth["k001"][i]), "k01": _r(meth["k01"][i])})
     real["แถว"] = rows
     # วันที่ Kalman เร็วกระโดดมากที่สุดในช่วงเลือก
@@ -305,6 +312,8 @@ def extend(data, D, q):
                     "r60": [_r(meth["r60"][i], 3) for i in gi], "k001": [_r(meth["k001"][i], 3) for i in gi],
                     "k01": [_r(meth["k01"][i], 3) for i in gi], "ปีป้าย": [[i - START, dd[i][:7]] for i in range(START, len(a)) if dd[i][5:10] in ("01-01", "07-01")]}
     # เทียบกับ "ไม่ปรับเลย" ในช่วงตรวจ: ลดลงกี่เปอร์เซ็นต์
+    real["ซื้อขายต่อวันk01"] = tab["k01"]["ซื้อขายต่อวันตรวจ"]
+    real["ค่าธรรมเนียมต่อวันk01"] = _r(tab["k01"]["ซื้อขายต่อวันตรวจ"] * FEE)
     real["ลดตรวจk001"] = _r((1 - tab["k001"]["sdตรวจ"] / tab["คงที่"]["sdตรวจ"]) * 100, 0)
     real["ลดตรวจr60"] = _r((1 - tab["r60"]["sdตรวจ"] / tab["คงที่"]["sdตรวจ"]) * 100, 0)
     real["เพิ่มเลือกk01"] = _r((tab["k01"]["sdเลือก"] / tab["k0"]["sdเลือก"] - 1) * 100, 0)
@@ -337,12 +346,15 @@ def extend(data, D, q):
     K6 = qd(Pp6 / (Pp6 + R), 2)
     gap6 = qd(D(14) - D(str(d5["ใหม่"])), 2)
     m6 = qd(D(str(d5["ใหม่"])) + qd(K6 * gap6, 2), 2)
-    ex["ข้อ1"] = {"เห็น": 14, "Pทาย": float(Pp6), "K": float(K6), "ห่าง": float(gap6), "ใหม่": float(m6)}
+    ex["ข้อ1"] = {"เห็น": 14, "Pทาย": float(Pp6), "K": float(K6), "ห่าง": float(gap6), "ใหม่": float(m6),
+                 "เลื่อน": float(qd(K6 * gap6, 2)), "PบวกR": float(qd(Pp6 + R, 2)),
+                 "ลืมQตัวหาร": float(qd(D(str(d5["Pใหม่"])) + R, 2)), "ลืมQ": float(qd(D(str(d5["Pใหม่"])) / (D(str(d5["Pใหม่"])) + R), 2))}
     # ข้อ 2: เปลี่ยน R เป็น 1 (เครื่องอ่านแม่นขึ้น) ที่วันที่ 1 ของห้าวัน
     Pp = qd(D("0.8") + Q, 2)
     K2 = qd(Pp / (Pp + 1), 2)
     ex["ข้อ2"] = {"R": 1, "Pทาย": float(Pp), "K": float(K2), "ใหม่": float(qd(D("10.6") + K2 * (D(12) - D("10.6")), 2)),
-                 "Kเดิม": days[0]["K"], "ใหม่เดิม": days[0]["ใหม่"]}
+                 "Kเดิม": days[0]["K"], "ใหม่เดิม": days[0]["ใหม่"], "ลืมQ": float(qd(D("0.8") / D("1.8"), 2)),
+                 "เลื่อน": float(qd(K2 * D("1.4"), 2)), "PบวกR": float(qd(Pp + 1, 2))}
     # ข้อ 3: เริ่มไม่มั่นใจ P 4 (Q 1 R 4) → K วันแรก
     m, P = D("10.6"), D(4)
     ks = []

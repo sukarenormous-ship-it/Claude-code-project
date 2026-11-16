@@ -98,7 +98,7 @@ FORBIDDEN_SYMBOLS = ["Π", "κ", "τ", "σ", "Σ", "E["]
 FORBIDDEN_LATIN = ["b", "C", "V", "K", "d", "G", "ln", "log"]   # ตัวเดี่ยวตามขอบคำ ASCII
 if NEXT_VOL:                                      # เล่ม 2 สอน log ราคา · การถดถอย (a, b) · σ ในบท 1–4 → ห้ามเฉพาะที่ยังไม่สอน
     FORBIDDEN_SYMBOLS = ["Π", "κ", "τ", "E["]
-    FORBIDDEN_LATIN = ["C", "V", "K", "G", "ln"]
+    FORBIDDEN_LATIN = ["C", "V", "G", "ln"]        # K สอนในบท 6 (Kalman Gain) จึงไม่ห้ามในเล่ม 2
 SOURCE_TAGS = ("🔢", "🎲", "📡", "📱")
 
 

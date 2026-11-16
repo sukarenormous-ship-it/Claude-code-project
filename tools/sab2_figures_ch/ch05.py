@@ -31,6 +31,7 @@ FEE = E.FEE                                   # 0.05% ต่อ fill (ฐาน�
 
 # ═══ โลกจำลองและข้อมูลจริง ═══
 F_SIM, T_SIM, SIM_SETS = 250, 360, 5          # เท่าโลกจำลองของบท 12 (ช่วงเลือก 250 วัน + ช่วงเทรด 360 วัน · 5 ชุด)
+PHI_SIM = 0.9                                 # เชือกของ X ในโลกจำลอง
 WORLDS = (("คงที่", 2.0), ("ไหลช้า", 2.2), ("ไหลเร็ว", 2.5))
 WINDOWS = (60, 120)
 PAIRS = (("BTC", "ETH", 0.01, 0), ("LTC", "DOT", 10, 2))   # (A, B, ชุด, ทศนิยมของ h ตรึง) · BTC–ETH ตรงบท 12
@@ -100,6 +101,7 @@ def _hand():
     # หน้าต่างวันที่ 3–6 แต่ยังใช้ h 2
     xs_h2 = [A[k] - 2 * B[k] for k in range(2, 6)]
     hand = {"A": A, "B": B, "หน้าต่าง": w, "หน้าต่างต่อวัน": wins, "h": hs,
+            "Xh2": [_r(a - 2 * b) for a, b in zip(A, B)], "MeanAเปลี่ยน56": _r(w6["MeanA"] - w5["MeanA"]),
             "วัน6": {"Xเดิม": _r(x6_old), "Zตรึง": _r(z_fixed), "SDตรึง": _r(w5["SD"]),
                      "Zตรึงจากเลขปัด": _r(x6_old / w5["SD"]), "Zเลื่อนจากเลขปัด": _r((w6["X"][-1] - w6["MeanX"]) / w6["SD"]),
                      "Xh2หน้าต่าง": [_r(v) for v in xs_h2], "Meanh2": _r(S.mean(xs_h2)),
@@ -172,7 +174,7 @@ def _sim():
         trades = {k: [] for k in res}
         redef, creb, nreb, rng60, rng120 = [], [], [], [], []
         for sd_ in M.ROBUST_SEEDS:
-            w = M.drifting_price_pair(seed=sd_, n=F_SIM + T_SIM, h0=2.0, h1=h1)
+            w = M.drifting_price_pair(seed=sd_, n=F_SIM + T_SIM, h0=2.0, h1=h1, phi=PHI_SIM)
             a, b, hp = w["A"], w["B"], w["true"]["h_path"]
             hf = S.ols(b[:F_SIM], a[:F_SIM])["slope"]
             r = _fixed(a[:F_SIM], b[:F_SIM], a[F_SIM:], b[F_SIM:], hf, SIM_SETS)
@@ -215,6 +217,7 @@ def _sim():
     out["กราฟ"] = example["ไหลช้า"]
     out["กราฟ"]["วันแบ่ง"] = F_SIM
     out["ช่วงเลือก"], out["ช่วงเทรด"], out["ชุด"], out["โลก"] = F_SIM, T_SIM, SIM_SETS, len(M.ROBUST_SEEDS)
+    out["วันรวม"] = F_SIM + T_SIM
     return out
 
 
@@ -277,7 +280,7 @@ def extend(data, D, q):
     v14 = fig1["ch14"]["v2"]["ไม้บรรทัดเฉลี่ย4"]
     vol1 = {"takerเปอร์เซ็นต์": v11["ต้นทุน"]["อัตราtakerเปอร์เซ็นต์"],
             "ปรับhedgeมูลค่า": v11["ปรับhedge"]["มูลค่าที่ซื้อคืน"], "ปรับhedgeค่าธรรมเนียม": v11["ปรับhedge"]["ค่าธรรมเนียม"],
-            "ปรับhedgeEquity": v11["ปรับhedge"]["equityหลังค่าธรรมเนียม"],
+            "ปรับhedgeEquity": v11["ปรับhedge"]["equityหลังค่าธรรมเนียม"], "ปรับhedge_hใหม่": fig1["ch11"]["hเปลี่ยน"]["hใหม่"],
             "MA4Mean": v14["แถว"][2]["Mean"], "MA4Z": v14["แถว"][2]["Z"], "MA4X": v14["X"], "MA4สุทธิ": v14["สุทธิ"]}
     ch1 = data.get("ch01", {}).get("จริง", {})
     if ch1.get("หน้าต่าง60"):
@@ -289,8 +292,13 @@ def extend(data, D, q):
 
     be, ld = real["BTC-ETH"], real["LTC-DOT"]
     looks = 2 * (1 + len(WINDOWS))
+    ch3 = data.get("ch03", {}).get("จริง", {}).get("คู่", {}).get("LTC-DOT", {}).get("ช่วงเลือก", {})
+    ref3 = {"hlogLTCDOT": ch3.get("h")}                      # อ้างบท 3: h บน log ของ LTC บน DOT (คัดลอกค่า)
+    w7 = hand["หน้าต่างต่อวัน"][3]
+    ex1 = {"รวมX": _r(sum(w7["X"])), "หารผิด": _r(w7["รวมdBคูณdA"] / 10),
+           "MeanXผิด": _r(w7["MeanA"] - w7["h"] * hand["หน้าต่างต่อวัน"][2]["MeanB"])}
     ch = {"เล่ม1": vol1, "มือ": hand, "บัญชี": ledger, "จำลอง": sim, "จริง": real,
-          "ดูช่วงตรวจ": looks, "แบบฝึก2": ex2, "แบบฝึก3": ex3}
+          "ดูช่วงตรวจ": looks, "อ้างบท3": ref3, "หน้าต่าง": list(WINDOWS), "phiจำลอง": PHI_SIM, "แบบฝึก1": ex1, "แบบฝึก2": ex2, "แบบฝึก3": ex3}
     ch["_แบบฝึก"] = [
         {"โจทย์": "(ทำตาม) หน้าต่างวันที่ 4–7: Σ dB·dA 30.8 ÷ Σ dB² 14 → h · Mean ของ X", "คำตอบ": hand["หน้าต่างต่อวัน"][3]["h"]},
         {"โจทย์": "(เปลี่ยนเลข) A วันที่ 6 = 101.5 → h ของหน้าต่างวันที่ 3–6 และผลจากการนิยามใหม่", "คำตอบ": ex2["h"]},

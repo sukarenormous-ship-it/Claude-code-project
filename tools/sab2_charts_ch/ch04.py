@@ -66,22 +66,22 @@ def _stack(values, width):
 def _bias_thirty(fig):
     c = fig["ch04"]["สามสิบโลก"]
     true = fig["ch04"]["มือ"]["phiจริง"]
-    W, H, L, R = 760, 400, 96, 24
+    W, H, L, R = 760, 440, 96, 24
     lo, hi = 0.3, 1.05
     out = [text(16, 24, "φ ที่ประมาณได้ของ 30 โลก (ทุกโลกมี φ จริง 0.95)", 12.5, INK, weight=700)]
-    X = _axis(out, lo, hi, 0.1, 360, L, R, W, top=44)
-    out.append(f'<line x1="{X(true):.1f}" y1="44" x2="{X(true):.1f}" y2="360" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
+    X = _axis(out, lo, hi, 0.1, 400, L, R, W, top=44)
+    out.append(f'<line x1="{X(true):.1f}" y1="44" x2="{X(true):.1f}" y2="400" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
     out.append(text(X(true) - 4, 40, f"φ จริง {B.fmt(true)}", 10.5, C["green"], "end", 700))
     for i, d in enumerate(c["วัน"]):
-        y0 = 130 + 105 * i
+        y0 = 140 + 120 * i
         vals = c["phiทุกโลก"][i]
         out.append(text(L - 10, y0 - 4, f"{d} วัน", 12, INK, "end", 700))
         out.append(f'<line x1="{L}" y1="{y0}" x2="{W - R}" y2="{y0}" stroke="{AXIS}" stroke-dasharray="2 3"/>')
         for (bv, k), v in zip(_stack(vals, 0.02), vals):
             col = C["amber"] if v < true else C["blue"]
-            out.append(f'<circle cx="{X(bv):.1f}" cy="{y0 - 6 - 8 * k:.1f}" r="3.6" fill="{col}" fill-opacity=".85"/>')
+            out.append(f'<circle cx="{X(bv):.1f}" cy="{y0 - 6 - 7 * k:.1f}" r="3.4" fill="{col}" fill-opacity=".85"/>')
         m = c["มัธยฐานphi"][i]
-        out.append(f'<line x1="{X(m):.1f}" y1="{y0 - 62}" x2="{X(m):.1f}" y2="{y0 + 4}" stroke="{C["purple"]}" stroke-width="2.4"/>')
+        out.append(f'<line x1="{X(m):.1f}" y1="{y0 - 80}" x2="{X(m):.1f}" y2="{y0 + 4}" stroke="{C["purple"]}" stroke-width="2.4"/>')
         out.append(text(X(m) - 5, y0 + 16, f"Median {B.fmt(m)} · ต่ำกว่าจริง {c['ต่ำกว่าจริง'][i]} โลก", 10.5, C["purple"], "end", 700))
     alt = (f"จุด 30 จุดต่อแถว สามแถว 20 60 และ 250 วัน Median ของ φ ที่ประมาณได้คือ {B.fmt(c['มัธยฐานphi'][0])} "
            f"{B.fmt(c['มัธยฐานphi'][1])} และ {B.fmt(c['มัธยฐานphi'][2])} ต่ำกว่า φ จริง 0.95 ทุกแถว "
@@ -105,8 +105,8 @@ def _hl_real(fig):
     X = _axis(out, lo, hi, 20, 340, L, R, W, top=46)
     k = j["เกณฑ์วัน"]
     out.append(f'<line x1="{X(k):.1f}" y1="46" x2="{X(k):.1f}" y2="340" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
-    out.append(text(X(k) + 4, 58, f"เกณฑ์ {k} วัน", 10.5, C["green"], "start", 700))
-    out.append(text(W - R, 358, "เกิน 120 วัน = ลูกศร", 10, GREY, "end"))
+    out.append(text(X(k) - 4, 58, f"เกณฑ์ {k} วัน", 10.5, C["green"], "end", 700))
+    out.append(text(W - R, 40, "ลูกศร = ปลายบนเกิน 120 วันหรือไม่มีที่สิ้นสุด", 10, GREY, "end"))
     for i, (name, d) in enumerate(rows):
         y = 88 + 58 * i
         a, m = d["ครึ่งชีวิตล่าง"], d["ครึ่งชีวิต"]
@@ -123,7 +123,7 @@ def _hl_real(fig):
         if m <= hi:
             out.append(f'<circle cx="{X(m):.1f}" cy="{y}" r="5.5" fill="{C["purple"]}"/>')
         lab = f"{B.fmt(m)} [{B.fmt(a)}, {'∞' if b is None else B.fmt(b)}]"
-        out.append(text(X(a), y - 12, lab, 10.5, MUTED))
+        out.append(text(X(min(m, hi)), y - 13, lab, 10.5, INK, "middle").replace("<text ", '<text stroke="#fff" stroke-width="4" paint-order="stroke" ', 1))
     alt = ("ช่วง Half-life ห้าแถว " + " · ".join(
         f"{n} {B.fmt(d['ครึ่งชีวิต'])} วัน ช่วง {B.fmt(d['ครึ่งชีวิตล่าง'])} ถึง {'อนันต์' if d['ครึ่งชีวิตบน'] is None else B.fmt(d['ครึ่งชีวิตบน'])}"
         for n, d in rows))
