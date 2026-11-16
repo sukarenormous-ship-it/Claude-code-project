@@ -20,7 +20,7 @@ def _ic_bars(cats, fvals, vvals, ticks, title, band=None):
     if band is not None:
         out.append(f'<rect x="{L}" y="{Y(band):.1f}" width="{W - L - R}" height="{Y(-band) - Y(band):.1f}" fill="{C["grid"]}" '
                    f'stroke="{C["axis"]}" stroke-dasharray="4 3"/>')
-        out.append(text(W - R - 4, Y(-band) - 5, f"แถบที่โชคให้ได้ในช่วงตรวจ (±{B.fmt(band)})", 10.5, GREY, "end"))
+        out.append(text(W - R - 4, Y(band) + 14, f"แถบที่โชคให้ได้ในช่วงตรวจ (±{B.fmt(band)})", 10.5, GREY, "end"))
     for g in ticks:
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" '
                    f'stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
@@ -72,7 +72,9 @@ def _blend_hand(fig):
     for d in days:
         col = C["green"] if d["ผล"] > 0 else C["red"]
         out.append(f'<circle cx="{X(d["รวมสอง"]):.1f}" cy="{Y(d["ผล"]):.1f}" r="5.5" fill="{col}"/>')
-        out.append(text(X(d["รวมสอง"]) + 8, Y(d["ผล"]) + 4, f"วัน {d['วัน']}", 10.5, col, "start", 700))
+        right = d["รวมสอง"] < xhi - 0.5
+        out.append(text(X(d["รวมสอง"]) + (8 if right else -8), Y(d["ผล"]) + (4 if right else -10), f"วัน {d['วัน']}", 10.5, col,
+                        "start" if right else "end", 700))
     alt = ("จุดแปดจุดของแปดวัน แกนนอนคือคะแนนรวมจาก -2.5 ถึง 3 แกนตั้งคือผลห้าวันข้างหน้าจาก -2.4 ถึง 1.8 "
            "เส้นประม่วงคือผลที่คาดเท่ากับครึ่งหนึ่งของคะแนน แถบเทากลางคือคะแนนระหว่าง -0.4 ถึง 0.4 ที่ผลที่คาดไม่ถึงต้นทุนไปกลับ")
     return wrap(W, H, alt, out, "แปดวันตัวอย่างของบท · ผลที่คาดจากความชันของ Regression · ต้นทุนไปกลับ 0.2% ของขาหนึ่ง", "สอน")
