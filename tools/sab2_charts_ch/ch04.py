@@ -3,7 +3,10 @@
 sab2-ci-ladder   : 🎲 โลกเดียว φ 0.95 · 20 / 60 / 250 วันแรก · จุด = φ ที่ประมาณได้ · เส้น = ช่วง 95% · เส้นประ = φ จริง · เส้นทึบ = 1
 sab2-bias-thirty : 🎲 30 โลก φ 0.95 · จุด φ ที่ประมาณได้ของทุกโลกที่ 20 / 60 / 250 วัน · เส้นประ = φ จริง · ขีดม่วง = Median
 sab2-hl-real     : 📡 ช่วง 95% ของ Half-life (วัน) ของ LTC เดี่ยว · LTC–DOT · BTC–ETH ช่วงเลือก และช่วงตรวจแบบตรึง h · เส้นเกณฑ์ 30 วัน
+sab2-hl-curve    : เส้น Half-life = LN(0.5) ÷ LN(φ) · ช่วง φ ของ 250 วัน (0.91 · 0.95 · 0.99) ส่องขึ้นเส้นแล้วอ่าน Half-life 7 · 12.6 · 52
 """
+
+import math
 
 from sab_charts import B, C, chart, text, wrap
 
@@ -129,3 +132,62 @@ def _hl_real(fig):
         for n, d in rows))
     cap = "log ราคาปิดรายวัน Binance · AR(1) มีค่าคงที่ · ช่วง 95% แปลงจากช่วงของ φ · ช่วงตรวจใช้ h จากช่วงเลือก (ไม่แตะช่วงทดสอบสุดท้าย)"
     return wrap(W, H, alt, out, cap, "จริง")
+
+
+@chart("sab2-hl-curve")
+def _hl_curve(fig):
+    c = fig["ch04"]["บันได"]
+    k = 2                                           # แถว 250 วัน
+    hl_lo, hl_mid, hl_hi = c["ครึ่งชีวิตล่าง"][k], c["ครึ่งชีวิต"][k], c["ครึ่งชีวิตบน"][k]
+    p_lo, p_mid, p_hi = c["ล่าง"][k], c["phi"][k], c["บน"][k]
+    hl = lambda p: math.log(0.5) / math.log(p)      # noqa: E731
+    at = lambda d: 0.5 ** (1 / d)                   # noqa: E731  ตำแหน่ง φ เต็มที่ให้ Half-life นี้ (ป้ายพิมพ์ค่าปัดของหน้า)
+    W, H, L, R, T, Bm = 760, 360, 70, 220, 56, 300
+    x0, x1, y0, y1 = 0.8, 1.0, 0, 80
+    X = lambda v: L + (v - x0) / (x1 - x0) * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (min(v, y1) - y0) / (y1 - y0) * (Bm - T)  # noqa: E731
+    out = [text(16, 26, "φ ห่างจากจุดกลางพอ ๆ กันสองฝั่ง แต่ Half-life ฝั่งช้ายืดยาวกว่ามาก", 13.5, INK, weight=700)]
+    for g in (0, 20, 40, 60, 80):
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 10.5, GREY, "end"))
+    for g in (0.8, 0.85, 0.9, 0.95, 1.0):
+        out.append(text(X(g), Bm + 17, B.fmt(round(g, 2)), 10.5, GREY, "middle"))
+    out.append(text((L + W - R) / 2, Bm + 38, "φ (ระยะห่างที่เหลือต่อวัน)", 11.5, MUTED, "middle", 700))
+    out.append(text(16, T - 12, "Half-life (วัน)", 11.5, MUTED, "start", 700))
+    a_lo, a_mid, a_hi = at(hl_lo), at(hl_mid), at(hl_hi)
+    # แถบช่วงของ φ บนแกนนอน และแถบช่วงของ Half-life บนแกนตั้ง
+    out.append(f'<rect x="{X(a_lo):.1f}" y="{T}" width="{X(a_hi) - X(a_lo):.1f}" height="{Bm - T}" fill="{C["blue"]}" fill-opacity=".06"/>')
+    out.append(f'<line x1="{X(a_lo):.1f}" y1="{Bm - 4}" x2="{X(a_hi):.1f}" y2="{Bm - 4}" stroke="{C["blue"]}" stroke-width="4"/>')
+    out.append(f'<line x1="{L + 4}" y1="{Y(hl_lo):.1f}" x2="{L + 4}" y2="{Y(hl_hi):.1f}" stroke="{C["purple"]}" stroke-width="4"/>')
+    # เส้น φ = 1
+    out.append(f'<line x1="{X(1):.1f}" y1="{T}" x2="{X(1):.1f}" y2="{Bm}" stroke="{C["red"]}" stroke-width="1.4"/>')
+    out.append(text(X(1) + 5, Bm - 12, "1 = ไม่มีเชือก", 10.5, C["red"], "start", 700))
+    pts = []
+    for i in range(121):
+        p = x0 + i * (0.9935 - x0) / 120
+        pts.append((X(p), Y(hl(p))))
+    out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round"/>')
+    # เส้นส่องจากปลายช่วงขึ้นไปที่เส้นโค้ง แล้วไปทางซ้ายถึงแกนตั้ง
+    for a, d, lab, col in ((a_lo, hl_lo, B.fmt(p_lo), C["blue"]), (a_mid, hl_mid, B.fmt(p_mid), C["purple"]), (a_hi, hl_hi, B.fmt(p_hi), C["blue"])):
+        out.append(f'<polyline points="{X(a):.1f},{Bm - 4} {X(a):.1f},{Y(d):.1f} {L + 4},{Y(d):.1f}" fill="none" stroke="{col}" '
+                   f'stroke-width="1.3" stroke-dasharray="4 3"/>')
+        out.append(f'<circle cx="{X(a):.1f}" cy="{Y(d):.1f}" r="4.5" fill="{col}"/>')
+        out.append(text(X(a) - 6, Y(d) - 7, f"φ {lab} → {B.fmt(d)} วัน", 11, col, "end", 700).replace("<text ", '<text stroke="#fff" stroke-width="4" paint-order="stroke" ', 1))
+    lx = W - R + 18
+    out.append(text(lx, T + 16, f"ข้อมูล {c['วัน'][k]} วันแรก (ตาราง ตอน ข)", 11, INK, weight=700))
+    out.append(f'<line x1="{lx}" y1="{T + 36}" x2="{lx + 26}" y2="{T + 36}" stroke="{C["blue"]}" stroke-width="4"/>')
+    out.append(text(lx + 32, T + 40, f"ช่วง φ {B.fmt(p_lo)} ถึง {B.fmt(p_hi)}", 11, C["blue"], weight=700))
+    out.append(f'<line x1="{lx + 13}" y1="{T + 54}" x2="{lx + 13}" y2="{T + 70}" stroke="{C["purple"]}" stroke-width="4"/>')
+    out.append(text(lx + 32, T + 66, f"ช่วง Half-life {B.fmt(hl_lo)} ถึง {B.fmt(hl_hi)} วัน", 11, C["purple"], weight=700))
+    out.append(f'<line x1="{lx}" y1="{T + 92}" x2="{lx + 26}" y2="{T + 92}" stroke="{INK}" stroke-width="2.4"/>')
+    out.append(text(lx + 32, T + 96, "Half-life ของแต่ละ φ", 11, INK))
+    out.append(text(lx, T + 126, "จุดวางตามค่าเต็มก่อนปัด", 10, MUTED))
+    out.append(text(lx, T + 140, "จึงอาจเหลื่อมจากขีดบนแกนเล็กน้อย", 10, MUTED))
+    alt = (f"เส้นโค้ง Half-life เทียบ φ จาก 0.8 ถึง 1 ที่ชันขึ้นเร็วเมื่อเข้าใกล้ 1 ช่วง φ {B.fmt(p_lo)} ถึง {B.fmt(p_hi)} "
+           f"ส่องขึ้นเส้นได้ Half-life {B.fmt(hl_lo)} {B.fmt(hl_mid)} และ {B.fmt(hl_hi)} วัน ส่วนบนของช่วง Half-life ยาวกว่าส่วนล่างมาก")
+    cap = f"โลกเชือก φ {B.fmt(fig['ch04']['มือ']['phiจริง'])} หนึ่งโลก (seed 1032) · {c['วัน'][k]} วันแรก · เส้นโค้งคือ LN(0.5) ÷ LN(φ) · ตัดแกนตั้งที่ 80 วัน"
+    return wrap(W, H, alt, out, cap, "จำลอง")
+
+
+def _poly(pts):
+    return " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)

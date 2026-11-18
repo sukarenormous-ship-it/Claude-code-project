@@ -5,6 +5,7 @@ sab2-ruler2  : 📡 Z-score ทุกวันของช่วงเลือ�
 sab2-coins   : 📡 จำนวน ETH ต่อ BTC หนึ่งเหรียญ ถ้าถือตาม h แบบ log (h × ราคา BTC ÷ ราคา ETH) ทุกวันของช่วงเลือก
                เทียบเส้นคงที่ของ h แบบราคา (23.69)
 sab2-zmax    : 🎲 Z สูงสุดของปีหลังใน 30 โลกที่เชือกอยู่บนเปอร์เซ็นต์ (ราคา เทียบ log) + 📡 ค่าของ BTC–ETH · แกนนอนแบบ log
+sab2-log-ladder : 🔢 สองเส้นทางจาก 100 (+10% สองครั้ง · +20 สองครั้ง) บนไม้บรรทัดดอลลาร์ เทียบบันได 100 × LN
 """
 
 import math
@@ -138,3 +139,43 @@ def _zmax(fig):
     cap = (f"โลกเชือกบนเปอร์เซ็นต์ h {B.fmt(s['h'])} บน log ราคา φ {B.fmt(s['phi'])} · {B.fmt(s['วัน'])} วัน · "
            f"สุ่มซ้ำ {B.fmt(s['ชุด'])} ชุด · ไม้บรรทัดจากปีแรก · สี่เหลี่ยมคือข้อมูลจริงช่วงเลือก")
     return wrap(W, H, alt, out, cap, "จำลอง")
+
+
+@chart("sab2-log-ladder")
+def _log_ladder(fig):
+    c = fig["ch02"]["สองทาง"]
+    ln = fig["ch02"]["ประกอบ"]["ร้อยLN"]
+    W, H, L, R = 760, 372, 150, 40
+    paths = [("+10% สองครั้ง", c["คูณ"], ln["สองทาง_คูณ"], c["คูณ_ดอลลาร์"], [ln["ก้าวคูณ"], ln["ก้าวคูณ2"]], C["blue"]),
+             ("+20 สองครั้ง", c["บวก"], ln["สองทาง_บวก"], c["บวก_ดอลลาร์"], ln["ก้าวบวก"], C["amber"])]
+    out = [text(16, 26, 'ก้าวเท่ากันหรือไม่ ขึ้นกับไม้บรรทัด: บันได LN นับ "คูณ 1.1" ยาวเท่ากันทุกก้าว', 13.5, INK, weight=700)]
+    panels = [("ไม้บรรทัดดอลลาร์ (ราคา)", 95, 145, (100, 110, 120, 130, 140), 1, 3),
+              ("บันได 100 × LN(ราคา)", 457, 497, (460, 470, 480, 490), 2, 4)]
+    tops = [58, 216]
+    for (title, lo, hi, ticks, vi, si), t0 in zip(panels, tops):
+        X = lambda v, lo=lo, hi=hi: L + (v - lo) / (hi - lo) * (W - L - R)  # noqa: E731
+        out.append(text(16, t0 + 6, title, 12, INK, weight=700))
+        axis_y = t0 + 116
+        out.append(f'<line x1="{L}" y1="{axis_y}" x2="{W - R}" y2="{axis_y}" stroke="{C["axis"]}"/>')
+        for tv in ticks:
+            out.append(f'<line x1="{X(tv):.1f}" y1="{t0 + 14}" x2="{X(tv):.1f}" y2="{axis_y}" stroke="{C["grid"]}"/>')
+            out.append(text(X(tv), axis_y + 15, B.fmt(tv), 10.5, GREY, "middle"))
+        for j, p in enumerate(paths):
+            name, prices, col = p[0], p[1], p[5]
+            vals = prices if vi == 1 else p[2]
+            stepv = p[3] if si == 3 else p[4]
+            y = t0 + 36 + 48 * j
+            out.append(text(L - 14, y + 4, name, 11.5, col, "end", 700))
+            for a, b, st in zip(vals, vals[1:], stepv):
+                out.append(f'<line x1="{X(a):.1f}" y1="{y}" x2="{X(b):.1f}" y2="{y}" stroke="{col}" stroke-width="3" stroke-linecap="round"/>')
+                out.append(text((X(a) + X(b)) / 2, y - 8, f"ก้าว {B.fmt(st)}", 11, INK, "middle", 700))
+            for v, pr in zip(vals, prices):
+                out.append(f'<circle cx="{X(v):.1f}" cy="{y}" r="5" fill="#fff" stroke="{col}" stroke-width="2.4"/>')
+                out.append(text(X(v), y + 18, f"ราคา {B.fmt(int(pr))}", 10, MUTED, "middle"))
+    out.append(text(16, H - 8, "บนไม้บรรทัดดอลลาร์ เส้นทาง +20 ก้าวเท่ากัน · บนบันได LN เส้นทาง +10% ก้าวเท่ากัน และสองก้าวรวมกันได้ "
+                    f"{B.fmt(ln['รวมคูณ'])} = 100 × LN(1.21)", 10.5, MUTED))
+    alt = (f"สองแผง แผงบนเป็นไม้บรรทัดดอลลาร์ เส้นทาง +10% สองครั้งจาก 100 ไป 110 และ 121 ก้าว 10 กับ 11 "
+           f"เส้นทาง +20 สองครั้งไป 120 และ 140 ก้าว 20 กับ 20 แผงล่างเป็นบันได 100 × LN เส้นทางแรกก้าว "
+           f"{B.fmt(ln['ก้าวคูณ'])} เท่ากันสองก้าว เส้นทางที่สองก้าว {B.fmt(ln['ก้าวบวก'][0])} แล้ว {B.fmt(ln['ก้าวบวก'][1])}")
+    cap = "สองเส้นทางสมมติจากราคา 100 ในตอน ก · 2 · บันไดคูณ LN ด้วย 100 แบบตารางในหน้า"
+    return wrap(W, H, alt, out, cap, "สอน")

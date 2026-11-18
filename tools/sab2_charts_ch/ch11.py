@@ -2,10 +2,17 @@
 
 sab2-basket-sim   : 🎲 โลกตะกร้าที่รู้คำตอบหนึ่งโลก · X ของคู่ A บน B เทียบ X ของตะกร้า A บน B กับ D (ช่วงเลือก 731 วัน)
 sab2-basket-crit  : 🎲 เส้น 5% ของ Engle–Granger ตามจำนวนเหรียญในตะกร้า (โลกเดินสุ่ม) · ค่าสถิติตะกร้า 9 เหรียญของต้น
+sab2-basket-hand  : หกวันสอนของตอน ก · X ของคู่ (h 0.5) · 0.5 × dD · X ของตะกร้า (0.5 · 0.5)
 sab2-basket-real  : 📡 Z-score ของตะกร้า XRP บน BTC กับ BNB และคู่ XRP บน BTC · ไม้บรรทัดตรึงจากช่วงเลือก · ช่วงเลือก + ช่วงตรวจ
 """
 
 from sab_charts import B, C, Frame, chart, nice_ticks, text, wrap
+
+INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+
+
+def _n(v):
+    return B.fmt(int(v)) if float(v).is_integer() else B.fmt(v)
 
 
 def _poly(pts, col, w=2.0, dash=None):
@@ -109,3 +116,43 @@ def _real(fig):
     cap = (f"Binance ราคาปิดรายวัน · ช่วงเลือก {r['เริ่มเลือก']} ถึง {r['จบเลือก']} · ช่วงตรวจ {r['เริ่มตรวจ']} ถึง "
            f"{r['จบตรวจ']} · จุดละ {every} วัน")
     return wrap(W, H, alt, out, cap, "จริง")
+
+
+@chart("sab2-basket-hand")
+def _hand(fig):
+    m = fig["ch11"]["มือ"]
+    pair, bask = m["Xคู่"], m["Xตะกร้า"]
+    half_d = [m["wD"] * v for v in m["dD"]]          # ส่วนของ D ที่ค้างอยู่ใน X ของคู่ (0.5 × dD)
+    W, H, L, R, T, Bm = 760, 360, 64, 150, 110, 320
+    lo, hi = -3.6, 3.6
+    X = lambda i: L + 30 + i / 5 * (W - L - R - 60)  # noqa: E731
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 24, "หกวันของตอน ก: X ของคู่เดินตาม D ส่วน X ของตะกร้าสลับข้างรอบศูนย์", 13.5, INK, weight=700)]
+    for g in (-3, -2, -1, 0, 1, 2, 3):
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}" '
+                   f'stroke-width="{1.5 if g == 0 else 1}"/>')
+        out.append(text(L - 8, Y(g) + 4, _n(g) if g >= 0 else "−" + _n(-g), 10.5, GREY, "end"))
+    for i in range(6):
+        out.append(text(X(i), Bm + 18, f"วัน {i + 1}", 10.5, GREY, "middle"))
+    rows = ((half_d, GREY, "5 4", 1.8, 3.2, f"{_n(m['wD'])} × dD (ส่วนของ D)"),
+            (pair, C["amber"], None, 2.6, 4.5, f"X ของคู่ · ผลรวมกำลังสอง {_n(m['SSRคู่'])} · ข้าม Mean {_n(m['ข้ามคู่'])} ครั้ง"),
+            (bask, C["blue"], None, 2.6, 4.5, f"X ของตะกร้า · ผลรวมกำลังสอง {_n(m['SSRตะกร้า'])} · ข้าม Mean {_n(m['ข้ามตะกร้า'])} ครั้ง"))
+    for vals, col, dash, sw, r, _ in rows:
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(vals))
+        out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="{sw}" stroke-linejoin="round"{d}/>')
+        for i, v in enumerate(vals):
+            out.append(f'<circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="{r}" fill="{col}"/>')
+    for k, (_, col, dash, sw, _, name) in enumerate(rows[::-1]):
+        yy = 48 + 20 * k
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        out.append(f'<line x1="{L}" y1="{yy - 4}" x2="{L + 24}" y2="{yy - 4}" stroke="{col}" stroke-width="{sw}"{d}/>')
+        out.append(text(L + 32, yy, name, 11.5, INK if col != GREY else MUTED))
+    xe = W - R + 10
+    out.append(text(xe, Y(pair[-1]) - 6, "คู่: สามวันแรกติดลบ", 11, C["amber"], "start", 700))
+    out.append(text(xe, Y(pair[-1]) + 9, "สามวันหลังเป็นบวก", 11, C["amber"], "start", 700))
+    out.append(text(xe, Y(bask[-1]) + 20, "ตะกร้า: 1 กับ −1", 11, C["blue"], "start", 700))
+    alt = ("เส้นสามเส้นหกวัน X ของคู่ −2 −3 −2 แล้ว 2 3 2 เดินขนานกับเส้นประของครึ่งหนึ่งของ dD ที่ไต่จาก −3 ถึง 3 "
+           "ส่วน X ของตะกร้าสลับ 1 กับ −1 รอบศูนย์")
+    cap = "หกวันสอนของตอน ก · log ราคา × 100 วัดจาก Mean ของแต่ละเหรียญ · คู่ A บน B ได้ h 0.5 · ตะกร้า A บน B กับ D ได้น้ำหนัก 0.5 กับ 0.5"
+    return wrap(W, H, alt, out, cap, "สอน")

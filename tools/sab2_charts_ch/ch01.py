@@ -7,6 +7,7 @@ sab2-btceth   : 📡 731 วันของช่วงเลือก แกน
                 กับเส้นจากทิศ B บน A (27.46)
 sab2-windows  : 🎲 h ที่ประมาณได้จากโลกที่รู้คำตอบ (h = 2) ที่ 20 / 60 / 250 / 731 วัน · 30 ชุดสุ่ม
 sab2-resid3   : Residual หารด้วย SD ของตัวเอง สามแผง: 🎲 มีเชือก · 🎲 ไม่มีเชือก · 📡 BTC/ETH
+sab2-two-dirs : หกจุดเดิม สองแผง: A บน B (ก้านแนวตั้ง · เส้น 2.5) กับ B บน A (ก้านแนวนอน · เส้น 68 ÷ 25 = 2.72)
 """
 
 from sab_charts import chart, wrap, text, C, B
@@ -110,8 +111,10 @@ def _bowl(fig):
         b, s = t["ความชัน"], t["รวมกำลังสอง"]
         col = C["purple"] if key == "2.5" else INK
         out.append(f'<circle cx="{X(b):.1f}" cy="{Y(s):.1f}" r="{6 if key == "2.5" else 4.5}" fill="{col}"/>')
-        out.append(text(X(b) + dx, Y(s) + dy, f"{_n(b)} → {_n(s)}", 11, col, anc, 700))
-    out.append(f'<line x1="{X(b0):.1f}" y1="{Y(m):.1f}" x2="{X(b0):.1f}" y2="{Bm}" stroke="{C["purple"]}" stroke-dasharray="4 4"/>')
+        out.append(text(X(b) + dx, Y(s) + dy, f"{_n(b)} → {_n(s)}", 11, col, anc, 700)
+                   .replace("<text ", '<text stroke="#fff" stroke-width="4" paint-order="stroke" ', 1))
+    # เส้นประก้นชามเริ่มใต้ป้าย 2.5 → 5.5 เพื่อไม่ให้ทับตัวอักษร
+    out.insert(-2, f'<line x1="{X(b0):.1f}" y1="{Y(m) + 32:.1f}" x2="{X(b0):.1f}" y2="{Bm}" stroke="{C["purple"]}" stroke-dasharray="4 4"/>')
     alt = ("เส้นโค้งรูปชาม แกนนอนความชัน 1.75 ถึง 3.25 แกนตั้งผลรวมกำลังสองของระยะพลาด จุดที่ลอง 2 ได้ 8 "
            "2.4 ได้ 5.6 2.5 ได้ 5.5 ซึ่งต่ำสุด 2.6 ได้ 5.6 และ 3 ได้ 8")
     cap = f"เส้นโค้งคือ {B.fmt(k)} × (ความชัน − {B.fmt(b0)})² + {B.fmt(m)} ของหกวันในตอน ก · จุดคือค่าที่คิดด้วยมือในตาราง"
@@ -229,3 +232,56 @@ def _resid3(fig):
            f"แผงกลางโลกไม่มีเชือกเดินเป็นคลื่นยาว ข้าม {s['ไม่มีเชือก']['ข้ามMean']} ครั้ง แผงล่าง BTC บน ETH เดินเป็นคลื่นยาวและพุ่งขึ้นช่วงท้าย ข้าม {r['ข้ามMean']} ครั้ง")
     cap = "แผงบนและกลางคือโลกจำลองตัวอย่างหนึ่งชุด (h จริง = 2) · แผงล่างคือข้อมูลจริงช่วงเลือก · ทุกแผงตัดที่ ±4"
     return wrap(W, H, alt, out, cap, "จริง")
+
+
+@chart("sab2-two-dirs")
+def _two_dirs(fig):
+    h = fig["ch01"]["หกวัน"]
+    A, Bv = h["A"], h["B"]
+    mA, mB = h["MeanA"], h["MeanB"]
+    hab, hba = h["ลอง"]["2.5"]["ความชัน"], h["hจากBบนA"]
+    W, H, T, Bm = 760, 380, 76, 316
+    x0, x1, y0, y1 = 47.5, 52.5, 93, 107
+    panels = [(60, 360), (440, 740)]
+    out = [text(16, 26, "ข้อมูลหกวันชุดเดียว วัดระยะพลาดคนละแนว ได้เส้นคนละเส้น", 13.5, INK, weight=700)]
+    heads = [(f"A บน B: วัดแนวตั้ง (ดอลลาร์ของ A) · h {_n(hab)}", C["purple"]),
+             (f"B บน A: วัดแนวนอน (ดอลลาร์ของ B) · h {_n(h['ผลรวมdAกำลังสอง'])} ÷ {_n(h['ผลรวมdBคูณdA'])} = {_n(hba)}", INK)]
+    for k, (L, Rx) in enumerate(panels):
+        X = lambda v, L=L, Rx=Rx: L + (v - x0) / (x1 - x0) * (Rx - L)  # noqa: E731
+        Y = lambda v: Bm - (v - y0) / (y1 - y0) * (Bm - T)  # noqa: E731
+        out.append(text(L, T - 22, heads[k][0], 11.5, heads[k][1], weight=700))
+        for b in sorted(set(Bv)):
+            out.append(f'<line x1="{X(b):.1f}" y1="{T}" x2="{X(b):.1f}" y2="{Bm}" stroke="{C["grid"]}"/>')
+            out.append(text(X(b), Bm + 17, B.fmt(b), 10.5, GREY, "middle"))
+        for a in (95, 100, 105):
+            out.append(f'<line x1="{L}" y1="{Y(a):.1f}" x2="{Rx}" y2="{Y(a):.1f}" stroke="{C["grid"]}"/>')
+            out.append(text(L - 6, Y(a) + 4, B.fmt(a), 10.5, GREY, "end"))
+        out.append(text((L + Rx) / 2, Bm + 36, "ราคา B", 11, MUTED, "middle", 700))
+        out.append(text(L - 6, T - 4, "ราคา A", 10.5, MUTED, "end", 700))
+        ba, bb = x0 + 0.25, x1 - 0.25
+        line_ab = (X(ba), Y(mA + hab * (ba - mB)), X(bb), Y(mA + hab * (bb - mB)))
+        line_ba = (X(ba), Y(mA + hba * (ba - mB)), X(bb), Y(mA + hba * (bb - mB)))
+        if k == 0:
+            out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="2.6"/>' % (line_ab + (C["purple"],)))
+            for i, (b, a) in enumerate(zip(Bv, A)):
+                dx = -7 if i == 3 else 0
+                fit = mA + hab * (b - mB)
+                out.append(f'<line x1="{X(b) + dx:.1f}" y1="{Y(fit):.1f}" x2="{X(b) + dx:.1f}" y2="{Y(a):.1f}" stroke="{C["red"]}" stroke-width="2"/>')
+        else:
+            out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.2" stroke-opacity=".45"/>'
+                       % (line_ab + (C["purple"],)))
+            out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="2" stroke-dasharray="6 4"/>'
+                       % (line_ba + (INK,)))
+            for i, (b, a) in enumerate(zip(Bv, A)):
+                fitb = mB + (a - mA) / hba
+                out.append(f'<line x1="{X(fitb):.1f}" y1="{Y(a):.1f}" x2="{X(b):.1f}" y2="{Y(a):.1f}" stroke="{C["red"]}" stroke-width="2"/>')
+            out.append(text(Rx - 4, Bm - 10, f"เส้นม่วงจาง = เส้น {_n(hab)} ของแผงซ้าย", 10, C["purple"], "end"))
+        for i, (b, a) in enumerate(zip(Bv, A)):
+            dx = -7 if (i == 3 and k == 0) else 0
+            out.append(f'<circle cx="{X(b) + dx:.1f}" cy="{Y(a):.1f}" r="4.6" fill="{C["blue"]}"/>')
+    out.append(text(16, H - 8, f"ก้านแดง = ระยะพลาดที่แต่ละทิศพยายามทำให้ผลรวมกำลังสองน้อยที่สุด · {_n(hab)} ÷ {_n(hba)} ≈ R² {B.fmt(h['R2'])}",
+                    10.5, MUTED))
+    alt = (f"สองแผงของหกจุดเดิม แผงซ้ายเส้นม่วง A บน B เอียง {_n(hab)} มีก้านแดงแนวตั้ง แผงขวาเส้นประ B บน A "
+           f"เอียง {_n(hba)} ชันกว่า มีก้านแดงแนวนอน และเส้น {_n(hab)} จาง ๆ ให้เทียบ")
+    cap = "หกวันสมมติของคู่ A–B ในตอน ก · แผงซ้ายเลื่อนจุดวันที่ 4 ไปซ้ายเล็กน้อยเหมือนภาพหกจุด"
+    return wrap(W, H, alt, out, cap, "สอน")

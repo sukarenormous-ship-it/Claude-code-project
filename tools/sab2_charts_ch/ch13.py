@@ -2,6 +2,7 @@
 
 sab2-hand-loop    : X ของคู่ A–B สิบวัน · เส้นเข้า 2 กับเส้นออก 0.5 · จุดสัญญาณ (วันที่ 3 · 7) กับจุดได้ราคา (วันที่ 4 · 8)
 sab2-ton-fixes    : ผลของสเปรดชีตต้นหลังแก้ทีละจุด · โลกตัวอย่าง เทียบมัธยฐาน 30 โลก (โลกที่ไม่มีเชือกให้เก็บ)
+sab2-survivors    : 🎲 100 เหรียญเดินสุ่ม · ราคาปลาย ÷ ราคาเริ่ม เป็นจุดซ้อน · รอด (ทึบ) / ถูกถอด (กลวง) · มัธยฐานสองแบบ
 sab2-real-equity  : Equity รายสัปดาห์บน BTC–ETH ช่วงตรวจ · เครื่องซื่อ เทียบชีตแบบต้น (ค่าจากทั้งสองช่วง + ได้ราคาวันสัญญาณ)
 """
 
@@ -73,7 +74,7 @@ def _real_equity(fig):
     a, b, days = ln["ซื่อ"], ln["ต้นเดิม"], ln["วัน"]
     ticks = r["แกนกราฟ"]
     W, H, L, R, T, Bm = 760, 340, 70, 30, 66, 290
-    lo, hi = ticks[0], ticks[-1] + 60
+    lo, hi = ticks[0] - 40, ticks[-1] + 60      # เผื่อใต้ 600 ให้ป้ายจุดต่ำสุดไม่ชนป้ายวันที่
     X = lambda i: L + i / (len(a) - 1) * (W - L - R)  # noqa: E731
     Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
     out = [text(16, 26, "Equity รายสัปดาห์ของคู่ BTC–ETH ในช่วงตรวจ (ทุนเริ่ม 1,000)", 13, INK, weight=700)]
@@ -86,7 +87,7 @@ def _real_equity(fig):
         out.append(f'<polyline points="{_poly([(X(i), Y(v)) for i, v in enumerate(s)])}" fill="none" stroke="{col}" '
                    f'stroke-width="2.4" stroke-linejoin="round"/>')
     lx = L
-    for name, col in (("เครื่องซื่อ (ค่าจากช่วงเลือก · ได้ราคาวันถัดไป)", C["blue"]), ("ชีตแบบต้น", C["amber"])):
+    for name, col in (("เครื่องซื่อ (ค่าจากช่วงเลือก · ได้ราคาวันถัดไป)", C["blue"]), ("ชีตแบบต้น (โกงครบสามจุด)", C["amber"])):
         out.append(f'<rect x="{lx}" y="{T - 22}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 12, name, 11.5, MUTED))
         lx += 34 + 7.2 * len(name)
@@ -99,3 +100,49 @@ def _real_equity(fig):
            "เส้นส้มของชีตแบบต้นแกว่งน้อยกว่าและจบเหนือ 1,000")
     return wrap(W, H, alt, out, "ราคาปิดรายวัน Binance spot (UTC) ช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · 0.01 BTC คู่ ETH 0.24 · "
                 "จุดรายสัปดาห์ (ทุก 7 วัน + วันสุดท้าย)", "จริง")
+
+
+@chart("sab2-survivors")
+def _survivors(fig):
+    s = fig["ch13"]["v2"]["ผู้รอด"]
+    g = s["กราฟ"]
+    ratios, alive = g["ราคาปลาย"], g["รอด"]
+    W, H, L, R, T, Bm = 760, 360, 40, 30, 96, 316
+    step, top = 0.25, 6.75                       # ช่องละ 0.25 เท่าของราคาเริ่ม
+    X = lambda v: L + v / top * (W - L - R)  # noqa: E731
+    dy = 11.5
+    out = [text(16, 24, f"{s['เหรียญ']} เหรียญที่ไม่มีใครเก่งกว่าใคร: ราคาปลาย ÷ ราคาเริ่ม (จุดละหนึ่งเหรียญ)", 13.5, INK, weight=700)]
+    out.append(f'<line x1="{L}" y1="{Bm}" x2="{W - R}" y2="{Bm}" stroke="{C["axis"]}" stroke-width="1.4"/>')
+    for k in range(0, 7):
+        out.append(f'<line x1="{X(k):.1f}" y1="{Bm}" x2="{X(k):.1f}" y2="{Bm + 5}" stroke="{C["axis"]}"/>')
+        out.append(text(X(k), Bm + 18, f"{k} เท่า", 10.5, GREY, "middle"))
+    out.append(text((L + W - R) / 2, Bm + 36, "ราคาปลาย ÷ ราคาเริ่ม (1 เท่า = ราคาเท่าเดิม)", 11, MUTED, "middle", 700))
+    for v, col, lab, yy, anc in ((s["มัธยฐานทุกเหรียญ"], INK, f"มัธยฐานทุก {s['เหรียญ']} เหรียญ {B.fmt(s['มัธยฐานทุกเหรียญ'])}", T - 20, "start"),
+                                 (s["มัธยฐานเฉพาะที่รอด"], C["blue"], f"มัธยฐานเฉพาะ {s['รอด']} เหรียญที่รอด {B.fmt(s['มัธยฐานเฉพาะที่รอด'])}", T - 2, "start")):
+        out.append(f'<line x1="{X(v):.1f}" y1="{yy + 6}" x2="{X(v):.1f}" y2="{Bm}" stroke="{col}" stroke-dasharray="5 4" stroke-width="1.8"/>')
+        out.append(text(X(v) + (-6 if anc == "end" else 6), yy, lab, 11, col, anc, 700))
+    bins = {}
+    for r, a in sorted(zip(ratios, alive), key=lambda t: (not t[1], t[0])):   # ที่รอดซ้อนล่าง ที่ถูกถอดซ้อนบน
+        bins.setdefault(int(r / step), []).append(a)
+    for b, col in bins.items():
+        cx = X((b + 0.5) * step)
+        for k, a in enumerate(col):
+            cy = Bm - 7 - k * dy
+            if a:
+                out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="4.6" fill="{C["blue"]}"/>')
+            else:
+                out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="4" fill="#fff" stroke="{C["red"]}" stroke-width="1.8"/>')
+    lx = L
+    for name, filled in ((f"รอดอยู่ในรายชื่อ ณ วันจบ ({s['รอด']} เหรียญ)", True),
+                         (f"ถูกถอด เพราะราคาเคยลงต่ำกว่า {s['เกณฑ์ถอดเปอร์เซ็นต์']}% ของราคาเริ่ม ({s['ถูกถอด']} เหรียญ)", False)):
+        if filled:
+            out.append(f'<circle cx="{lx + 5}" cy="48" r="4.6" fill="{C["blue"]}"/>')
+        else:
+            out.append(f'<circle cx="{lx + 5}" cy="48" r="4" fill="#fff" stroke="{C["red"]}" stroke-width="1.8"/>')
+        out.append(text(lx + 16, 52, name, 11.5, MUTED))
+        lx += 40 + 7.0 * len(name)
+    alt = (f"จุดของ {s['เหรียญ']} เหรียญเรียงตามราคาปลายเทียบราคาเริ่ม จุดกลวงสีแดงของเหรียญที่ถูกถอดกองอยู่ทางซ้ายใต้ 1 เท่าเกือบทั้งหมด "
+           f"เมื่อตัดทิ้ง มัธยฐานขยับจาก {B.fmt(s['มัธยฐานทุกเหรียญ'])} เป็น {B.fmt(s['มัธยฐานเฉพาะที่รอด'])}")
+    cap = (f"{s['เหรียญ']} เหรียญจำลอง เดินสุ่มราว 3% ต่อวัน {B.fmt(s['วัน'])} วัน · เริ่มราคาเดียวกัน · "
+           f"ช่องละ {B.fmt(step)} เท่า · ถูกถอดตัดสินจากราคาระหว่างทาง ไม่ใช่ราคาปลาย")
+    return wrap(W, H, alt, out, cap, "จำลอง")

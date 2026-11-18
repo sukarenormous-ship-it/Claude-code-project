@@ -1,13 +1,18 @@
 """บท 12 เล่ม 2 — จัดเงินหลายกลยุทธ์ · สเปกกราฟของบท (อ่านตัวเลขจาก docs/sab2-figures.json เท่านั้น)
 
+sab2-six-months     : หกเดือนสอน funding carry · คู่ · พอร์ตรวม (หนึ่งหน่วยต่อหนึ่งหน่วย) · เดือนที่ 3 และ 5 สวนกัน
 sab2-mix-ratio      : ผลต่อความเสี่ยง (Mean ÷ SD) ของสองหน่วยที่แบ่งระหว่าง funding carry กับคู่ · หกเดือนสอน · ρ −0.5 / 0 / 0.5
 sab2-weight-spread  : น้ำหนักคู่ที่ประมาณจาก 24 เดือนใน 30 โลกที่รู้คำตอบ · Mean–Variance เต็ม / หด Mean ครึ่งทาง / ไม่ใช้ Mean
 sab2-kelly-curve    : เงินคูณเท่าไรหลังสิบตาของเกมฉลาก ตามสัดส่วนที่ยอมเสียในตาที่แย่ที่สุด · โอกาสที่เชื่อ เทียบโอกาสที่แย่กว่า
 """
 
-from sab_charts import B, C, chart, text, wrap
+from sab_charts import B, C, Frame, chart, grouped_bars, text, wrap
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+
+
+def _n(v):
+    return B.fmt(int(v)) if float(v).is_integer() else B.fmt(v)
 
 
 def _lines(xs, series, title, xlabel, yticks, xticks, marks, W=760, H=340, L=64, R=24, T=70, Bm=270):
@@ -103,3 +108,26 @@ def _kelly_curve(fig):
     alt = ("เส้นน้ำเงินของเงินหลังสิบตาขึ้นจาก 100 สูงสุดที่ 14 เปอร์เซ็นต์ราว 105.8 แล้วลดลงต่ำกว่า 100 หลังราว 28 เปอร์เซ็นต์ "
            "เส้นแดงเมื่อโอกาสจริงแย่กว่าสูงสุดที่ราว 4 เปอร์เซ็นต์และต่ำกว่า 100 ที่ 14 เปอร์เซ็นต์")
     return wrap(760, 340, alt, parts, "เกมฉลากสิบใบของเล่ม 1 บท 2 (+4 / −2 / −5) · ขนาดตาเป็นสัดส่วนของเงินที่มี · สิบตาออกตามสัดส่วน", "สอน")
+
+
+@chart("sab2-six-months")
+def _six_months(fig):
+    h, p = fig["ch12"]["หกเดือน"], fig["ch12"]["พอร์ต"]
+    F, P, S = h["funding"]["ผล"], h["คู่"]["ผล"], p["รวม"]
+    W, H = 760, 290
+    cats = [f"เดือน {i + 1}" for i in range(len(F))]
+    vals = F + P + S
+    f = Frame(min(vals + [0]), max(vals + [0]), W, H, T=70)
+    gw = (W - f.L - f.R) / len(cats)
+    band = []
+    for m in (3, 5):    # เดือนที่คู่เสียแต่ funding carry ได้มากกว่าปกติ
+        x0 = f.L + gw * (m - 1)
+        band.append(f'<rect x="{x0 + 4:.1f}" y="{f.T - 8}" width="{gw - 8:.1f}" height="{f.Bm - f.T + 8}" rx="4" fill="#fef3c7" opacity="0.7"/>')
+    parts = grouped_bars(cats, [("funding carry", F, C["blue"]), ("คู่", P, C["amber"]), ("พอร์ต (สองงานรวมกัน)", S, C["green"])],
+                         "หกเดือนสอน: เดือนที่คู่เสีย funding carry มักได้มากกว่าปกติ", W=W, H=H)
+    parts.append(text(W - f.R, f.T - 20, "พื้นเหลือง = เดือนที่สองงานสวนกัน", 10.5, C["amber"], "end", 700))
+    alt = ("แท่งสามสีหกเดือน เดือนที่ 3 คู่เสีย 4 แต่ funding carry ได้ 4 พอร์ตจึงเป็นศูนย์ เดือนที่ 5 คู่เสีย 2 funding carry ได้ 5 "
+           "พอร์ตได้ 3 เดือนที่ 2 คู่ได้ 12 แต่ funding carry ได้ 0 แท่งเขียวของพอร์ตจึงไม่ลงลึกเท่าแท่งส้มของคู่")
+    cap = (f"หกเดือนสอนของบทนี้ · หนึ่งหน่วยต่อหนึ่งหน่วย · funding carry Mean {_n(h['funding']['Mean'])} · คู่ Mean {_n(h['คู่']['Mean'])} · พอร์ต Mean {_n(p['Meanรวม'])} · "
+           f"พอร์ต SD {_n(p['SDรวม'])} เทียบ {_n(p['บวกSD'])} ถ้าบวก SD ตรง ๆ")
+    return wrap(W, H, alt, band + parts, cap, "สอน")

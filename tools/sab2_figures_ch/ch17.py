@@ -410,4 +410,5 @@ def extend(data, D, q):
             "optionsจริง": opt, "optionsโลก": osim, "คนทำงานจริง": prac,
             "นับรอบ": {"ดูช่วงตรวจ_บทนี้": looks}, "ทวน": prev,
             "ค่า": {"หางเปอร์เซ็นต์": q(100 * TAIL, 0), "กลุ่ม": GROUPS, "ทุน": 1000, "เส้นสาม": 3, "วันโลกยาว": LONG_N,
-                    "ขาBTC": POS_BTC, "ขาETH": POS_ETH}}
+                    "ขาBTC": POS_BTC, "ขาETH": POS_ETH},
+            "แกนเพดาน": [-40, -20, 0, 20]}   # กราฟ sab2-cap-payoff (แกนตั้ง)

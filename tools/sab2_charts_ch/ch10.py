@@ -3,6 +3,7 @@
 sab2-pca-rotate   : ซ้าย หกวันของสองเหรียญ (แกนนอน A · แกนตั้ง B) กับแกน PC1 (0.8, 0.6) และ PC2 (−0.6, 0.8) ·
                     ขวา ผลรวมกำลังสองของค่าบนแกนเมื่อหมุนทิศ 0°–180° พร้อมหกทิศที่ลองในหน้า
 sab2-pca-loadings : 📡 loading ของ 10 เหรียญ ช่วงเลือกเทียบช่วงตรวจ · แผงบน PC1 · แผงล่าง PC2
+sab2-pc1-index    : 📡 ผลตอบแทน log สะสมของช่วงเลือก · พอร์ต PC1 (เงินตาม loading) · Equal-weight Index · BTC
 sab2-pca-sim      : 🎲 สองโลกที่รู้คำตอบเทียบข้อมูลจริง · ซ้าย สัดส่วนของ PC2 · ขวา ความตรงทิศของ PC2 ข้ามช่วง
 sab2-pca-rolling  : 📡 หน้าต่าง 90 วันเลื่อนทีละ 30 วัน · ความตรงทิศของ PC1 และ PC2 กับ PC ของช่วงเลือกทั้งช่วง
 """
@@ -21,7 +22,7 @@ def _n(v):
 @chart("sab2-pca-rotate")
 def _rotate(fig):
     s = fig["ch10"]["สองเหรียญ"]
-    W, H = 760, 380
+    W, H = 760, 392
     out = [text(16, 24, "หมุนแกนผ่านกองจุด แล้ววัดว่าค่าบนแกนแกว่งมากแค่ไหน", 13.5, INK, weight=700)]
     # ── แผงซ้าย: จุดหกวัน ──
     cx, cy, sc = 190, 210, 15.5            # จุดกำเนิด · พิกเซลต่อ 1%
@@ -51,7 +52,10 @@ def _rotate(fig):
             out.append(text(tx - 6, ty + 2, f"{lab} ({_n(a)}, {_n(b)})", 11, col, "end", 700))
     for i, (a, b) in enumerate(zip(s["A"], s["B"])):
         out.append(f'<circle cx="{cx + a * sc:.1f}" cy="{cy - b * sc:.1f}" r="5" fill="{C["blue"]}"/>')
-        out.append(text(cx + a * sc + 7, cy - b * sc + 4, f"วัน {i + 1}", 9.5, MUTED))
+        if -2 < a < 0:   # จุดชิดแกนตั้งด้านซ้าย (วันที่ 5): ป้ายไว้ซ้ายจุด ไม่ให้แกนพาดทับ
+            out.append(text(cx + a * sc - 7, cy - b * sc + 4, f"วัน {i + 1}", 9.5, MUTED, "end"))
+        else:
+            out.append(text(cx + a * sc + 7, cy - b * sc + 4, f"วัน {i + 1}", 9.5, MUTED))
     # ── แผงขวา: ผลรวมกำลังสองตามมุม ──
     L2, R2, T2, B2 = 430, 740, 70, 320
     curve = s["เส้นโค้ง"]
@@ -193,4 +197,45 @@ def _rolling(fig):
            f"{B.fmt(j['ตรงpc2ต่ำสุด'])} ถึง {B.fmt(j['ตรงpc2สูงสุด'])} และต่ำกว่า 0.5 ใน {j['หน้าต่างครึ่งต่ำ']} จาก {j['หน้าต่างจำนวน']} หน้าต่าง")
     cap = (f"Binance ราคาปิดรายวัน 10 เหรียญ · หน้าต่าง {j['หน้าต่างวัน']} วันเลื่อนทีละ {j['หน้าต่างเลื่อน']} วัน · "
            f"{j['หน้าต่างจำนวน']} หน้าต่าง · {j['หน้าต่างในตรวจ']} หน้าต่างจบในช่วงตรวจ · 1 = ทิศเดียวกัน 0 = ตั้งฉาก")
+    return wrap(W, H, alt, out, cap, "จริง")
+
+
+@chart("sab2-pc1-index")
+def _pc1_index(fig):
+    j = fig["ch10"]["จริง"]
+    c = j["สะสม"]
+    ticks = c["แกน"]
+    W, H, L, R, T, Bm = 760, 340, 64, 120, 84, 280
+    lo, hi = ticks[0] - 25, ticks[-1] + 20
+    n = len(c["วัน"])
+    X = lambda i: L + i / (n - 1) * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 24, "ตัวแทนตลาดสามแบบในช่วงเลือก: ผลตอบแทน log สะสม (%)", 13.5, INK, weight=700)]
+    for g in ticks:
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}" '
+                   f'stroke-width="{1.4 if g == 0 else 1}"/>')
+        out.append(text(L - 8, Y(g) + 4, f"{_n(g)}%", 10.5, GREY, "end"))
+    for k, i in enumerate(c["ป้ายวัน"]):
+        out.append(text(X(i), Bm + 18, c["วัน"][i], 10.5, GREY, "start" if k == 0 else ("end" if i == n - 1 else "middle")))
+    series = (("btc", C["amber"], None, "BTC ตัวเดียว"), ("pc1", C["purple"], None, "พอร์ต PC1 (เงินตาม loading)"),
+              ("ew", C["green"], "6 4", "Equal-weight Index (ถือสิบเหรียญเท่ากัน)"))
+    for key, col, dash, _ in series:
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(c[key]))
+        out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.4" stroke-linejoin="round"{d}/>')
+    lx, ly = L, 50
+    for key, col, dash, name in series:
+        d = f' stroke-dasharray="{dash}"' if dash else ""
+        out.append(f'<line x1="{lx}" y1="{ly - 4}" x2="{lx + 22}" y2="{ly - 4}" stroke="{col}" stroke-width="2.6"{d}/>')
+        out.append(text(lx + 28, ly, name, 11.5, MUTED))
+        lx += 44 + 7.4 * len(name)
+    xe = W - R + 8
+    out.append(text(xe, Y(c["btc"][-1]) + 4, "BTC", 11.5, C["amber"], "start", 700))
+    ym = (Y(c["pc1"][-1]) + Y(c["ew"][-1])) / 2
+    out.append(text(xe, ym - 3, "PC1 กับ", 11.5, C["purple"], "start", 700))
+    out.append(text(xe, ym + 12, "ตะกร้าเท่ากัน", 11.5, C["green"], "start", 700))
+    alt = (f"เส้นสะสมของพอร์ต PC1 กับ Equal-weight Index แทบทับกันตลอดสองปี จบราว {_n(c['จบ']['pc1'])} และ {_n(c['จบ']['ew'])} เปอร์เซ็นต์ "
+           f"ส่วน BTC แยกออกไปจบราว {_n(c['จบ']['btc'])} เปอร์เซ็นต์")
+    cap = (f"Binance ราคาปิดรายวัน 10 เหรียญ · ช่วงเลือก {j['เริ่มเลือก']} ถึง {j['จบเลือก']} · ผลตอบแทน log รายวันบวกสะสม · "
+           f"พอร์ต PC1 ถือเงินตาม loading รวมเป็นหนึ่งหน่วย (เหรียญละ {_n(c['น้ำหนักpc1ต่ำสุด'])}% ถึง {_n(c['น้ำหนักpc1สูงสุด'])}%) · จุดละ 7 วัน")
     return wrap(W, H, alt, out, cap, "จริง")

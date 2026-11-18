@@ -20,7 +20,7 @@ def _ic_bars(cats, fvals, vvals, ticks, title, band=None):
     if band is not None:
         out.append(f'<rect x="{L}" y="{Y(band):.1f}" width="{W - L - R}" height="{Y(-band) - Y(band):.1f}" fill="{C["grid"]}" '
                    f'stroke="{C["axis"]}" stroke-dasharray="4 3"/>')
-        out.append(text(W - R - 4, Y(band) + 14, f"แถบที่โชคให้ได้ในช่วงตรวจ (±{B.fmt(band)})", 10.5, GREY, "end"))
+        out.append(text(W - R - 4, Y(-band) - 6, f"แถบที่โชคให้ได้ในช่วงตรวจ (±{B.fmt(band)})", 10.5, GREY, "end"))
     for g in ticks:
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" '
                    f'stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
@@ -110,3 +110,47 @@ def _blend_real(fig):
            "ช่วงตรวจทุกแท่งอยู่ใต้ศูนย์หรือใกล้ศูนย์ และอยู่ในแถบที่โชคให้ได้")
     return wrap(W, H, alt, out, "ราคาปิดรายวัน Binance spot (UTC) · funding Deribit · ช่วงเลือก 2022-11-15 ถึง 2024-11-14 · "
                 "ช่วงตรวจ 2024-11-15 ถึง 2025-11-14 · ผล 5 วันข้างหน้า", "จริง")
+
+
+@chart("sab2-leak-timeline")
+def _leak_timeline(fig):
+    k = fig["ch16"]["รั่วมือ"]
+    hz = fig["ch16"]["ค่า"]["ป้ายวัน"]
+    days, last, test = k["วัน"], k["เรียนถึง"], k["ทดสอบ"]
+    W, L, R, T, rh = 760, 160, 24, 96, 34
+    H = T + rh * len(k["แถว"]) + 70
+    dw = (W - L - R) / len(days)
+    X = lambda d: L + (d - days[0]) * dw + dw / 2  # noqa: E731
+    out = [text(16, 26, f"ป้ายคำตอบของแถววันที่ d ใช้ราคาปิดวันที่ d + {hz}: แถวท้ายช่วงเรียนรู้ป้ายหลังวันทดสอบ", 13, INK, weight=700)]
+    yb = T + rh * len(k["แถว"])
+    x0, x1 = X(days[0]) - dw / 2, X(last) + dw / 2
+    out.append(f'<rect x="{x0:.1f}" y="{T - 30}" width="{x1 - x0:.1f}" height="{yb - T + 34:.1f}" fill="#dbeafe" fill-opacity="0.45"/>')
+    out.append(text((x0 + x1) / 2, T - 14, f"ช่วงเรียน วันที่ {days[0]}–{last}", 11.5, C["blue"], "middle", 700))
+    xt = X(test) - dw / 2
+    out.append(f'<rect x="{xt:.1f}" y="{T - 30}" width="{dw:.1f}" height="{yb - T + 34:.1f}" fill="#fef3c7" stroke="{C["amber"]}"/>')
+    out.append(text(X(test), T - 34, f"ทดสอบวันที่ {test}", 11.5, C["amber"], "middle", 700))
+    for d in days:
+        out.append(text(X(d), yb + 20, f"{d}", 10.5, GREY, "middle"))
+    out.append(text((L + W - R) / 2, yb + 40, "วันที่ (ราคาปิด)", 11, GREY, "middle"))
+    bad = 0
+    for i, d in enumerate(k["แถว"]):
+        y = T + rh * i + rh / 2
+        known = d + hz
+        ok = known <= last
+        bad += 0 if ok else 1
+        col = C["green"] if ok else C["red"]
+        out.append(text(16, y - 2, f"แถวของวันที่ {d}", 11.5, INK, weight=700))
+        out.append(text(16, y + 12, f"รู้ป้ายหลังปิดวันที่ {known}" + (" · ใช้ได้" if ok else " · ใช้ไม่ได้"), 10.5, col))
+        out.append(f'<line x1="{X(d):.1f}" y1="{y:.1f}" x2="{X(known):.1f}" y2="{y:.1f}" stroke="{col}" stroke-width="5" stroke-linecap="round" stroke-opacity="0.75"/>')
+        out.append(f'<rect x="{X(d) - 5:.1f}" y="{y - 5:.1f}" width="10" height="10" rx="2" fill="{C["blue"]}"/>')
+        out.append(f'<circle cx="{X(known):.1f}" cy="{y:.1f}" r="5.5" fill="#ffffff" stroke="{col}" stroke-width="2.4"/>')
+    ly = H - 12
+    out.append(f'<rect x="16" y="{ly - 9}" width="10" height="10" rx="2" fill="{C["blue"]}"/>')
+    out.append(text(32, ly, "วันตัดสินใจ (ตัวแปรทำนายรู้ได้)", 11, MUTED))
+    out.append(f'<circle cx="262" cy="{ly - 4}" r="5" fill="#ffffff" stroke="{GREY}" stroke-width="2.2"/>')
+    out.append(text(274, ly, f"วันที่ป้ายคำตอบรู้ได้ (ผล {hz} วันข้างหน้า)", 11, MUTED))
+    out.append(text(W - R, ly, f"ต้องตัด {bad} แถวท้ายก่อนทดสอบ", 11.5, C["red"], "end", 700))
+    alt = (f"เส้นเวลาวันที่ {days[0]} ถึง {days[-1]} ช่วงเรียนคือวันที่ {days[0]} ถึง {last} วันทดสอบคือ {test} "
+           f"แถวของวันที่ {k['แถว'][0]} ถึง {k['แถว'][-1]} แต่ละแถวมีแท่งจากวันตัดสินใจไปถึงวันที่ป้ายคำตอบรู้ได้ {hz} วันถัดไป "
+           f"แถวของวันที่ {k['แถว'][0]} รู้ได้วันที่ {k['แถว'][0] + hz} จึงใช้ได้ อีก {bad} แถวรู้ได้หลังวันทดสอบ จึงต้องตัดทิ้ง")
+    return wrap(W, H, alt, out, f"ตัวอย่างของบท · ช่วงเรียนวันที่ {days[0]}–{last} · ทดสอบวันที่ {test} · ป้ายคำตอบคือผล {hz} วันข้างหน้า", "แนวคิด")

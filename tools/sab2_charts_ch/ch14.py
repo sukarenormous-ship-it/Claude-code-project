@@ -115,4 +115,51 @@ def _wf_worlds(fig):
     alt = ("แท่งคู่สามกลุ่ม แท่งเทาคือที่ช่วงเลือกสัญญา แท่งน้ำเงินหรือแดงคือที่ walk-forward ได้จริง "
            "โลกมีเชือกสัญญาราว 219 ได้ราว 74 โลกไม่มีเชือกสัญญาราว 195 ได้ติดลบราว 33 ส่วน LTC–DOT สัญญาราว 531 ได้ราว 209")
     return wrap(W, H, alt, out, "walk-forward สามหน้าต่าง: ช่วงเลือก 365 วัน → ช่วงทดสอบ 121 วัน · เลือก h ไม้บรรทัด และแบบจาก 25 แบบในทุกหน้าต่าง · "
-                "10 ชุด · ค่าธรรมเนียม 0.05% ต่อ fill · โลกจำลองเป็นคู่บนราคาแบบบท 7 (SD นิ่งของ X = 3)", "จำลอง")
+                "10 ชุด · ค่าธรรมเนียม 0.05% ต่อ fill · สองกลุ่มซ้ายเป็นโลกจำลองคู่บนราคาแบบบท 7 (SD นิ่งของ X = 3) · กลุ่มขวาเป็น 📡 ข้อมูลจริง LTC–DOT", "จำลอง")
+
+
+@chart("sab2-luck-ruler")
+def _luck_ruler(fig):
+    c = fig["ch14"]
+    r, sim = c["จริง"], c["จำลอง"]
+    pk, vb = r["ยอด"], r["ยอดตรวจ"]
+    ticks = c["แกนเส้นโชค"]
+    W, H, L, R = 760, 360, 170, 60
+    lo, hi = ticks[0], ticks[-1]
+    X = lambda v: L + (v - lo) / (hi - lo) * (W - L - R)  # noqa: E731
+    out = [text(16, 26, "ยอดเขาผ่านเส้นโชคของช่วงเลือก แต่โลกที่ไม่มีเชือกก็ผ่านได้ และปีถัดไปไม่มีแบบไหนผ่าน", 13, INK, weight=700)]
+    rows = [(118, "ช่วงเลือก 24 เดือน", f"เส้นโชค 25 แบบ = {B.fmt(r['เส้นโชคเลือก']['ดีสุดจากโชค'])} ÷ {B.fmt(r['เส้นโชคเลือก']['ราก'])}",
+             r["เส้นโชคเลือก"]["เส้น"]),
+            (268, "ช่วงตรวจ 12 เดือน", f"เส้นโชค 25 แบบ = {B.fmt(r['เส้นโชคตรวจ']['ดีสุดจากโชค'])} ÷ {B.fmt(r['เส้นโชคตรวจ']['ราก'])}",
+             r["เส้นโชคตรวจ"]["เส้น"])]
+    for g in ticks:
+        out.append(f'<line x1="{X(g):.1f}" y1="64" x2="{X(g):.1f}" y2="312" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
+        out.append(text(X(g), 330, B.fmt(g), 11, GREY, "middle"))
+    out.append(text((L + W - R) / 2, 350, "Sharpe รายเดือน (Mean ÷ SD ของผลรายเดือน)", 11, MUTED, "middle"))
+    for y, lab, sub_, line in rows:
+        out.append(f'<rect x="{X(lo):.1f}" y="{y - 40}" width="{X(line) - X(lo):.1f}" height="70" fill="{C["grid"]}"/>')
+        out.append(f'<line x1="{X(line):.1f}" y1="{y - 46}" x2="{X(line):.1f}" y2="{y + 30}" stroke="{C["amber"]}" stroke-width="2" stroke-dasharray="6 4"/>')
+        out.append(text(X(line) + 6, y - 32, f"เส้นโชค {B.fmt(line)}", 11, C["amber"], "start", 700))
+        out.append(text(X(lo) + 6, y + 26, "โชคล้วน ๆ ให้ได้", 10.5, GREY))
+        out.append(text(L - 12, y - 4, lab, 12, INK, "end", 700))
+        out.append(text(L - 12, y + 13, sub_, 10.5, GREY, "end"))
+        out.append(f'<line x1="{X(lo):.1f}" y1="{y + 4}" x2="{X(hi):.1f}" y2="{y + 4}" stroke="{C["axis"]}"/>')
+    t3 = sim["เส้นt3"]
+    out.append(f'<line x1="{X(t3):.1f}" y1="72" x2="{X(t3):.1f}" y2="122" stroke="{C["red"]}" stroke-width="1.6" stroke-dasharray="3 3"/>')
+    out.append(text(X(t3) + 6, 80, f"เส้น t 3 = {B.fmt(t3)}", 10.5, C["red"], "start", 700))
+
+    def dot(v, y, col, lab, anc, dy):
+        out.append(f'<circle cx="{X(v):.1f}" cy="{y + 4}" r="7" fill="{col}"/>')
+        dx = {"start": 10, "end": -10, "middle": 0}[anc]
+        if dy > 30:
+            out.append(f'<line x1="{X(v):.1f}" y1="{y + 12}" x2="{X(v):.1f}" y2="{y + dy - 10}" stroke="{col}"/>')
+        out.append(text(X(v) + dx, y + 4 + dy, lab, 11, col, anc, 700))
+    dot(sim["ไม่มีเชือก"]["Sharpeยอดมัธยฐาน"], 118, GREY, f"🎲 ไม่มีเชือก: ยอดเขากลาง {B.fmt(sim['ไม่มีเชือก']['Sharpeยอดมัธยฐาน'])}", "middle", 42)
+    dot(pk["Sharpeเลือก"], 118, C["purple"], f"LTC–DOT {B.fmt(pk['Sharpeเลือก'])}", "start", -14)
+    dot(sim["มีเชือก"]["Sharpeยอดมัธยฐาน"], 118, C["green"], f"🎲 มีเชือก {B.fmt(sim['มีเชือก']['Sharpeยอดมัธยฐาน'])}", "start", 24)
+    dot(pk["Sharpeตรวจ"], 268, C["purple"], f"ยอดเขาเดิม {B.fmt(pk['Sharpeตรวจ'])}", "middle", -14)
+    dot(vb["Sharpeตรวจ"], 268, C["amber"], f"ยอดของช่วงตรวจ {B.fmt(vb['Sharpeตรวจ'])}", "middle", 24)
+    alt = (f"เส้นจำนวนสองแถวของ Sharpe รายเดือน แถวบนคือช่วงเลือก เส้นโชค {B.fmt(r['เส้นโชคเลือก']['เส้น'])} เส้น t 3 {B.fmt(t3)} "
+           f"ยอดเขา LTC–DOT {B.fmt(pk['Sharpeเลือก'])} ผ่านทั้งสองเส้น ยอดเขาของโลกไม่มีเชือกมัธยฐาน {B.fmt(sim['ไม่มีเชือก']['Sharpeยอดมัธยฐาน'])} ก็ผ่านเส้นโชค "
+           f"แถวล่างคือช่วงตรวจ เส้นโชค {B.fmt(r['เส้นโชคตรวจ']['เส้น'])} ยอดเขาเดิม {B.fmt(pk['Sharpeตรวจ'])} และยอดของช่วงตรวจ {B.fmt(vb['Sharpeตรวจ'])} อยู่ใต้เส้นทั้งคู่")
+    return wrap(W, H, alt, out, "LTC บน DOT · 25 แบบ · ไม้บรรทัดจากช่วงเลือก · เดือนละ 30 วัน · จุด 🎲 คือมัธยฐานของยอดเขาใน 30 โลกจำลองแบบตอน ก", "จริง")

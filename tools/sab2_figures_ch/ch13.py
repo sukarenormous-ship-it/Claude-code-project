@@ -347,7 +347,10 @@ def _survivors(q):
     return {"เหรียญ": len(ratios), "ถูกถอด": len(ratios) - len(surv), "รอด": len(surv),
             "เกณฑ์ถอดเปอร์เซ็นต์": q(SURV_DROP * 100, 0), "วัน": SURV_DAYS,
             "มัธยฐานทุกเหรียญ": q(statistics.median(ratios), 2), "มัธยฐานเฉพาะที่รอด": q(statistics.median(surv), 2),
-            "บวกทุกเหรียญ": sum(1 for r in ratios if r > 1), "บวกเฉพาะที่รอด": sum(1 for r in surv if r > 1)}
+            "บวกทุกเหรียญ": sum(1 for r in ratios if r > 1), "บวกเฉพาะที่รอด": sum(1 for r in surv if r > 1),
+            # กราฟ sab2-survivors: ราคาปลาย ÷ ราคาเริ่มของทุกเหรียญ (เรียงตาม seed) กับสถานะรอด/ถูกถอด
+            "กราฟ": {"ราคาปลาย": [q(r, 2) for r in ratios], "รอด": alive,
+                     "สูงสุดถูกถอด": q(max(r for r, a in zip(ratios, alive) if not a), 2)}}
 
 
 def extend(data, D, q):

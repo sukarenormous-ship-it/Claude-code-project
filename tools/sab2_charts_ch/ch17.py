@@ -8,6 +8,10 @@ sab2-cap-months  : 12 ไม้ short X ของ BTC–ETH ในช่วง�
 from sab_charts import B, C, chart, text, wrap
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+def _i(v):
+    return int(v) if float(v).is_integer() else v
+
+
 TH_MONTH = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 
 
@@ -115,3 +119,94 @@ def _cap_months(fig):
            f"เดือนที่นิ่ง แท่งน้ำเงินแย่กว่าเพราะค่าพรีเมียม รวมทั้งปีไม่มีเพดาน {t['ไม่มีเพดาน']} มีเพดาน {t['มีเพดาน']}")
     return wrap(W, H, alt, out, "ราคาปิดรายวัน Binance spot (UTC) ช่วงตรวจ · short BTC 0.01 long ETH 0.24 · ค่าพรีเมียมจากแบบจำลอง "
                 "Black-Scholes ด้วยความผันผวนของช่วงเลือก ดอกเบี้ยศูนย์ ไม่ใช่ราคาตลาด · ไม่รวมค่าธรรมเนียม", "จริง")
+
+
+@chart("sab2-two-copulas")
+def _two_copulas(fig):
+    m = fig["ch17"]["มือ"]
+    n, g = m["n"], m["กลุ่ม"]
+    per = m["วันต่อกลุ่ม"]
+    W, H = 760, 412
+    side, T = 250, 74
+    panels = [("ตกพร้อมกัน", "โลกตกพร้อมกัน", 90), ("หางแยก", "โลกหางแยก", 450)]
+    out = [text(16, 26, f"สองโลก Rank Correlation {B.fmt(m['ตกพร้อมกัน']['rank'])} เท่ากัน แต่วันที่ A แย่สุด B ไปคนละทาง", 13, INK, weight=700)]
+    cell = side / g
+    for key, name, L in panels:
+        w = m[key]
+        P = lambda r: (r - 0.5) / n * side  # noqa: E731
+        out.append(text(L, T - 18, name, 12.5, INK, weight=700))
+        for i in range(g):
+            for j in range(g):
+                fill = "#fee2e2" if (i, j) == (0, 0) else ("#f9fafb" if (i + j) % 2 else "#ffffff")
+                out.append(f'<rect x="{L + j * cell:.1f}" y="{T + side - (i + 1) * cell:.1f}" width="{cell:.1f}" height="{cell:.1f}" '
+                           f'fill="{fill}" stroke="{C["grid"]}"/>')
+        out.append(f'<rect x="{L}" y="{T}" width="{side}" height="{side}" fill="none" stroke="{C["axis"]}"/>')
+        out.append(f'<rect x="{L:.1f}" y="{T + side - cell:.1f}" width="{side:.1f}" height="{cell:.1f}" fill="none" '
+                   f'stroke="{C["red"]}" stroke-width="1.4" stroke-dasharray="4 3"/>')
+        for r in (1, n):
+            out.append(text(L + P(r), T + side + 16, f"{r}", 10.5, GREY, "middle"))
+            out.append(text(L - 8, T + side - P(r) + 4, f"{r}", 10.5, GREY, "end"))
+        out.append(text(L + side / 2, T + side + 32, "อันดับของ B (1 = แย่สุด)", 11, MUTED, "middle"))
+        out.append(text(L - 8, T - 4, "อันดับ A", 11, MUTED, "end"))
+        worst = set(w["วันแย่สุดของA"])
+        for d in w["วัน"]:
+            col = C["red"] if d["วัน"] in worst else C["blue"]
+            cx, cy = L + P(d["อันดับB"]), T + side - P(d["อันดับA"])
+            out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="6.5" fill="{col}" fill-opacity="0.85"/>')
+            if d["วัน"] in worst:
+                out.append(text(cx + 10, cy + 4, f"วัน {d['วัน']}", 10.5, col, "start", 700))
+        k_ = w["ไปด้วยกันล่าง"]
+        out.append(text(L, T + side + 54, f"B แย่สุดด้วย {k_} จาก {per} วัน ({B.fmt(w['ความน่าจะเป็นล่าง'])}%)", 12, C["red"] if k_ == 0 else INK, weight=700))
+        tot = w["คู่ในวันแย่สุดรวม"]
+        out.append(text(L, T + side + 72, f"long A short B ในสองวันนั้น: {'+' if tot > 0 else ''}{B.fmt(tot)}", 11.5,
+                        C["green"] if tot > 0 else C["red"], weight=700))
+    alt = (f"สองแผงของจุดสิบจุด แกนนอนคืออันดับของ B แกนตั้งคืออันดับของ A จุดแดงคือวันที่ A แย่สุดสองวัน "
+           f"โลกตกพร้อมกันจุดแดงอยู่ในช่องมุมล่างซ้ายที่ B แย่สุดด้วยทั้ง {m['ตกพร้อมกัน']['ไปด้วยกันล่าง']} วัน ชุด long A short B ได้ {B.fmt(m['ตกพร้อมกัน']['คู่ในวันแย่สุดรวม'])} "
+           f"โลกหางแยกจุดแดงหลุดออกนอกช่อง {m['หางแยก']['ไปด้วยกันล่าง']} วันในช่อง ชุดเสีย {B.fmt(m['หางแยก']['คู่ในวันแย่สุดรวม'])} ทั้งที่ Rank Correlation {B.fmt(m['ตกพร้อมกัน']['rank'])} เท่ากัน")
+    return wrap(W, H, alt, out, f"สิบวันตัวอย่างของบท · ห้ากลุ่ม กลุ่มละ {per} วัน · โลกหางแยกสลับ B สี่วัน (วันที่ 2, 4, 6 และ 9)", "สอน")
+
+
+@chart("sab2-cap-payoff")
+def _cap_payoff(fig):
+    t = fig["ch17"]["ต้นไม้"]
+    cp = t["เพดาน"]
+    rows = cp["แถว"]
+    ticks = fig["ch17"]["แกนเพดาน"]
+    start = t["ราคาเริ่ม"]
+    strike = start + cp["ห่างราคาใช้สิทธิ์"]
+    W, H, L, R, T, Bm = 760, 350, 64, 30, 70, 290
+    xa, xb = rows[0]["A"], rows[-1]["A"]
+    X = lambda a: L + (a - xa) / (xb - xa) * (W - L - R)  # noqa: E731
+    lo, hi = ticks[0] - 6, ticks[-1] + 6
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 26, f"short A ที่ {start} คู่กับ Call ราคาใช้สิทธิ์ {strike}: ขาดทุนหยุดที่ −{B.fmt(_i(cp['ขาดทุนสูงสุด']))}", 13, INK, weight=700)]
+    for g in ticks:
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}" '
+                   f'stroke-width="{1.5 if g == 0 else 1}"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
+    for r in rows:
+        out.append(text(X(r["A"]), Bm + 18, f"{r['A']}", 10.5, GREY, "middle"))
+    out.append(text((L + W - R) / 2, Bm + 38, "ราคา A วันหมดอายุ", 11, GREY, "middle"))
+    out.append(text(L, T - 14, "ผลรวม ณ วันหมดอายุ (ดอลลาร์)", 11, GREY))
+    out.append(f'<line x1="{X(strike):.1f}" y1="{T}" x2="{X(strike):.1f}" y2="{Bm}" stroke="{C["purple"]}" stroke-dasharray="3 3"/>')
+    out.append(text(X(strike) + 6, T + 12, f"ราคาใช้สิทธิ์ {strike}", 11, C["purple"], "start", 700))
+    short = " ".join(f"{X(r['A']):.1f},{Y(r['short']):.1f}" for r in rows)
+    capd = " ".join(f"{X(r['A']):.1f},{Y(r['รวม']):.1f}" for r in rows)
+    out.append(f'<polyline points="{short}" fill="none" stroke="{GREY}" stroke-width="2.2" stroke-dasharray="7 5"/>')
+    out.append(f'<polyline points="{capd}" fill="none" stroke="{C["blue"]}" stroke-width="2.8" stroke-linejoin="round"/>')
+    last = rows[-1]
+    out.append(text(X(last["A"]) - 4, Y(last["short"]) + 14, f"short อย่างเดียว: {B.fmt(_i(cp['ไม่มีเพดานที่140']))}", 11, GREY, "end", 700))
+    out.append(text(X(last["A"]) - 4, Y(last["รวม"]) - 10, f"มี Call: −{B.fmt(_i(cp['ขาดทุนสูงสุด']))} ทุกราคาตั้งแต่ {strike}", 11, C["blue"], "end", 700))
+    first = rows[0]
+    xg = (first["A"] + strike) / 2
+    yg_s, yg_c = start - xg, start - xg - cp["พรีเมียม"]
+    out.append(f'<line x1="{X(xg):.1f}" y1="{Y(yg_s) + 3:.1f}" x2="{X(xg):.1f}" y2="{Y(yg_c) - 3:.1f}" stroke="{INK}" stroke-width="1.4"/>')
+    out.append(text(X(xg) - 8, Y(yg_c) + 24, f"ห่างกัน {B.fmt(_i(cp['พรีเมียม']))} = ค่าพรีเมียมที่จ่าย", 11, INK, "end", 700))
+    lx = W - R - 330
+    out.append(f'<line x1="{lx}" y1="{T - 18}" x2="{lx + 22}" y2="{T - 18}" stroke="{GREY}" stroke-width="2.2" stroke-dasharray="7 5"/>')
+    out.append(text(lx + 28, T - 14, "short A อย่างเดียว", 11, MUTED))
+    out.append(f'<line x1="{lx + 150}" y1="{T - 18}" x2="{lx + 172}" y2="{T - 18}" stroke="{C["blue"]}" stroke-width="2.8"/>')
+    out.append(text(lx + 178, T - 14, f"short A + Call (จ่าย {B.fmt(_i(cp['พรีเมียม']))})", 11, MUTED))
+    alt = (f"แกนนอนคือราคา A วันหมดอายุจาก {xa} ถึง {xb} เส้นประเทาคือ short A อย่างเดียว จาก +{B.fmt(first['short'])} ลงไป {B.fmt(_i(cp['ไม่มีเพดานที่140']))} "
+           f"เส้นน้ำเงินคือ short A คู่กับ Call ราคาใช้สิทธิ์ {strike} หักค่าพรีเมียม {B.fmt(_i(cp['พรีเมียม']))} แล้ว ลงไปหยุดที่ −{B.fmt(_i(cp['ขาดทุนสูงสุด']))} ตั้งแต่ราคา {strike} ขึ้นไป")
+    return wrap(W, H, alt, out, f"ตัวเลขกลมของบท · A เริ่มที่ {start} · Call ราคาใช้สิทธิ์ {strike} ค่าพรีเมียม {B.fmt(_i(cp['พรีเมียม']))} จากต้นไม้สองทาง ±20", "สอน")

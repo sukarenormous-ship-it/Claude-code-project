@@ -9,7 +9,7 @@ sab2-final-funding   : 📡 แผนภูมิควบคุมของบ�
 
 from sab_charts import B, C, chart, text, wrap
 
-INK, GREY = C["ink"], C["grey"]
+INK, GREY, MUTED = C["ink"], C["grey"], C["muted"]
 
 
 def _poly(pts):
@@ -133,3 +133,52 @@ def _funding(fig):
            f"แต่สูงกว่าเส้นลงมือ {B.fmt(b['ปลายลงมือ'])} ETH แตะเส้นลงมือเดือนที่ {e['ลงมือเดือนแรก']} และจบที่ {B.fmt(e['ปลายสะสม'])} "
            f"ขณะที่ที่คาดคือ {B.fmt(e['ปลายคาด'])}")
     return wrap(W, H, alt, out, "Deribit BTC-PERPETUAL และ ETH-PERPETUAL · % ของมูลค่าที่ถือ · ค่าคาดและเส้นจาก Mean และ SD ช่วงเลือก 24 เดือน · เส้นเตือน 1 SD × √n · เส้นลงมือ 2 SD × √n", "จริง")
+
+
+@chart("sab2-decide-map")
+def _decide_map(fig):
+    c = fig["ch18"]
+    pre, card = c["ลงทะเบียน"], c["สุดท้าย"]["การ์ด"]
+    xt, yt = c["แกน"]["แผนที่x"], c["แกน"]["แผนที่y"]
+    bar = pre["เส้นเลื่อนขั้น"]["เส้น"]
+    rng = pre["ช่วงการ์ด"]
+    W, H, L, R, T, Bm = 760, 380, 70, 30, 60, 300
+    X = lambda v: L + (v - xt[0]) / (xt[-1] - xt[0]) * (W - L - R)  # noqa: E731
+    Y = lambda v: Bm - (v - yt[0]) / (yt[-1] - yt[0]) * (Bm - T)  # noqa: E731
+    out = [text(16, 26, "แผนที่ตัดสินใจของการ์ด เขียนก่อนเปิด แล้วค่อยวางผลจริงลงไป", 13, INK, weight=700)]
+    zones = [(xt[0], 0, yt[0], yt[-1], "#fee2e2", "ปลดการ์ด", "สุทธิไม่เกิน 0", C["red"]),
+             (0, xt[-1], yt[0], bar, "#fef3c7", "คงไว้บนกระดาษอีกหนึ่งปี", f"สุทธิเกิน 0 แต่ Sharpe ไม่ถึง {B.fmt(bar)}", C["amber"]),
+             (0, xt[-1], bar, yt[-1], "#dcfce7", "เลื่อนเป็นเงินจริงขนาดเล็ก", f"สุทธิเกิน 0 · Sharpe ถึง {B.fmt(bar)} · บรรทัดเตือนไม่ติด", C["green"])]
+    for x0, x1, y0, y1, fill, name, rule, col in zones:
+        out.append(f'<rect x="{X(x0):.1f}" y="{Y(y1):.1f}" width="{X(x1) - X(x0):.1f}" height="{Y(y0) - Y(y1):.1f}" fill="{fill}"/>')
+    for g in yt:
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="#ffffff" stroke-opacity="0.7"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
+    for g in xt:
+        out.append(text(X(g), Bm + 18, B.fmt(g), 10.5, GREY, "middle"))
+    out.append(f'<line x1="{X(0):.1f}" y1="{T}" x2="{X(0):.1f}" y2="{Bm}" stroke="{C["ink"]}" stroke-width="1.4"/>')
+    out.append(f'<line x1="{X(0):.1f}" y1="{Y(bar):.1f}" x2="{W - R}" y2="{Y(bar):.1f}" stroke="{C["purple"]}" stroke-width="1.8" stroke-dasharray="6 4"/>')
+    out.append(text(W - R - 4, Y(bar) - 6, f"เส้นเลื่อนขั้น {B.fmt(bar)} = 2 ÷ √12", 11, C["purple"], "end", 700))
+    out.append(text((L + W - R) / 2, Bm + 38, "สุทธิหลังค่าธรรมเนียมของปีทดสอบ (ดอลลาร์ ทุน 1,000)", 11, GREY, "middle"))
+    out.append(text(L, T - 10, "Sharpe รายเดือน (12 เดือน)", 11, GREY))
+    zx = {"ปลดการ์ด": X(xt[0]) + 10, "คงไว้บนกระดาษอีกหนึ่งปี": X(400), "เลื่อนเป็นเงินจริงขนาดเล็ก": X(400)}
+    zy = {"ปลดการ์ด": Y(yt[-1]) + 20, "คงไว้บนกระดาษอีกหนึ่งปี": Y(0) + 10, "เลื่อนเป็นเงินจริงขนาดเล็ก": Y(yt[-1]) + 20}
+    for x0, x1, y0, y1, fill, name, rule, col in zones:
+        out.append(text(zx[name], zy[name], name, 12, col, "start", 700))
+        out.append(text(zx[name], zy[name] + 15, rule, 10.5, MUTED))
+    v, s = card["สุทธิ"], card["Sharpe"]
+    e = card["สองSDหนึ่งไม้"]
+    out.append(f'<line x1="{X(v - e):.1f}" y1="{Y(s):.1f}" x2="{X(v + e):.1f}" y2="{Y(s):.1f}" stroke="{C["blue"]}" stroke-width="2"/>')
+    for xx in (v - e, v + e):
+        out.append(f'<line x1="{X(xx):.1f}" y1="{Y(s) - 6:.1f}" x2="{X(xx):.1f}" y2="{Y(s) + 6:.1f}" stroke="{C["blue"]}" stroke-width="2"/>')
+    out.append(f'<circle cx="{X(v):.1f}" cy="{Y(s):.1f}" r="7" fill="{C["blue"]}"/>')
+    out.append(text(X(v) + 12, Y(s) - 12, f"ผลจริง +{B.fmt(v)} · Sharpe {B.fmt(s)}", 11.5, C["blue"], "start", 700))
+    out.append(text(X(v + e) + 8, Y(s) + 16, f"ไม้เดียวสั่นได้ ±{B.fmt(e)}", 10.5, C["blue"], "start"))
+    yr = Bm - 12
+    out.append(f'<line x1="{X(rng["ล่าง"]):.1f}" y1="{yr}" x2="{X(rng["บน"]):.1f}" y2="{yr}" stroke="{GREY}" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7"/>')
+    out.append(text(X(rng["ล่าง"]), yr - 8, f"ช่วงผลก่อนต้นทุนที่ลงทะเบียน {B.fmt(rng['ล่าง'])} ถึง +{B.fmt(rng['บน'])}", 10.5, MUTED))
+    alt = (f"แผนที่สามโซน แกนนอนคือสุทธิของปีทดสอบ แกนตั้งคือ Sharpe รายเดือน ซ้ายของศูนย์คือปลดการ์ด ขวาของศูนย์ใต้เส้น {B.fmt(bar)} คือคงกระดาษ "
+           f"เหนือเส้นคือเลื่อนเป็นเงินจริง ผลจริง +{B.fmt(v)} Sharpe {B.fmt(s)} ตกในโซนคงกระดาษ แต่ไม้เดียวสั่นได้ ±{B.fmt(e)} ข้ามไปถึงโซนปลด "
+           f"ช่วงผลที่ลงทะเบียนไว้ {B.fmt(rng['ล่าง'])} ถึง {B.fmt(rng['บน'])} คลุมทั้งสองโซน")
+    return wrap(W, H, alt, out, "การ์ด LTC–DOT ในช่วงทดสอบสุดท้าย 1 ไม้ · สามโซนคือกติกาที่เขียนไว้ก่อนเปิดในตอน ข · "
+                f"บรรทัดเตือนติดวันที่ {card['บรรทัดเตือนวัน']} ด้วย (ติดแล้วต่อให้ Sharpe ถึงเส้นก็คงกระดาษ)", "จริง")

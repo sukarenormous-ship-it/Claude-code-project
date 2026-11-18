@@ -4,11 +4,13 @@ sab2-hand-split : ไม้มือ short X 10 ชุด · วันที่ 
                   และผลต่างที่มาจากการนิยามใหม่
 sab2-sim-hpath  : 🎲 โลก h ไหล 2 → 2.2 (seed ตัวอย่าง) · h จริง · h ตรึงจาก 250 วันแรก · หน้าต่าง 60 / 120 วัน
 sab2-btc-rollh  : 📡 BTC–ETH h หน้าต่าง 60 / 120 วัน ตลอดช่วงเลือก + ช่วงตรวจ เทียบ h ของทั้งช่วงเลือก
+sab2-ruler-day6 : 🔢 ไม้บรรทัดของวันที่ 6 สองแบบบนแกนเดียวกัน · ตรึง (h 2 · หน้าต่างวันที่ 2–5) เทียบเลื่อน (h 2.2 · วันที่ 3–6)
+                  แถบ Mean ± 2 SD · วันที่ 6 อยู่นอกหน้าต่างของไม้ตรึง แต่อยู่ในหน้าต่างของไม้ที่เลื่อน
 """
 
 from sab_charts import B, C, chart, grouped_bars, lines, text, wrap
 
-GREY = C["grey"]
+GREY, INK, MUTED = C["grey"], C["ink"], C["muted"]
 
 
 @chart("sab2-hand-split")
@@ -89,5 +91,54 @@ def _btc_rollh(fig):
     parts.append(text(W - R, Bm + 16, "จบช่วงตรวจ", 10.5, GREY, "end"))
     alt = ("กราฟเส้น h ของ BTC บน ETH จากหน้าต่าง 60 วัน (ส้ม) และ 120 วัน (น้ำเงิน) ตลอดช่วงเลือกและช่วงตรวจ "
            f"เทียบเส้นเทาที่ {B.fmt(g['ตรึง'])} เส้นส้มแกว่งตั้งแต่ต่ำกว่าศูนย์จนเกิน 30 เส้นน้ำเงินแกว่งน้อยกว่าแต่ยังกว้าง")
-    cap = f"ราคาปิดรายวัน Binance · h บนราคา · จุดทุก 5 วัน · {g['วันรวม']} วัน (ไม่แตะช่วงทดสอบสุดท้าย)"
+    cap = f"ราคาปิดรายวัน Binance · h บนราคา · จุดทุก 5 วัน · {B.fmt(g['วันรวม'])} วัน (ไม่แตะช่วงทดสอบสุดท้าย)"
     return wrap(760, 320, alt, parts, cap, "จริง")
+
+
+@chart("sab2-ruler-day6")
+def _ruler_day6(fig):
+    m = fig["ch05"]["มือ"]
+    wf, wr = m["หน้าต่างต่อวัน"][1], m["หน้าต่างต่อวัน"][2]     # ไม้ตรึง = หน้าต่างของวันที่ 5 · ไม้เลื่อน = หน้าต่างของวันที่ 6
+    d6 = m["วัน6"]
+    W, H, L, T, Bm = 760, 390, 70, 76, 316
+    lo, hi = -13, 5
+    Y = lambda v: Bm - (v - lo) / (hi - lo) * (Bm - T)  # noqa: E731
+    out = [text(16, 26, "ไม้บรรทัดของวันที่ 6: ตรึงไว้เห็นหลุดกรอบ ส่วนไม้ที่เลื่อนกลืนวันนั้นเข้าไปในหน้าต่าง", 13.5, INK, weight=700)]
+    for g in (-12, -9, -6, -3, 0, 3):
+        out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - 20}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
+        out.append(text(L - 8, Y(g) + 4, B.fmt(g), 10.5, GREY, "end"))
+    out.append(text(16, T - 30, "X ของชุด", 11.5, MUTED, "start", 700))
+    groups = [(f"ตรึง: h {B.fmt(m['h'][4])} · ไม้บรรทัดจากวันที่ {wf['วันที่'][0]}–{wf['วันที่'][-1]}", wf, d6["Xเดิม"],
+               d6["Zตรึงจากเลขปัด"], [2, 3, 4, 5, 6], 120, 56, GREY),
+              (f"เลื่อน: h {B.fmt(wr['h'])} · ไม้บรรทัดจากวันที่ {wr['วันที่'][0]}–{wr['วันที่'][-1]}", wr, wr["X"][-1],
+               m["วัน6"]["Zเลื่อนจากเลขปัด"], [3, 4, 5, 6], 470, 62, C["blue"])]
+    for title, w, x6, z6, days, x0, step, col in groups:
+        X = lambda dd, x0=x0, days=days, step=step: x0 + (dd - days[0]) * step  # noqa: E731
+        xa, xb = X(w["วันที่"][0]) - 24, X(w["วันที่"][-1]) + 24
+        mean, sd = w["MeanX"], w["SD"]
+        out.append(text(x0 - 24, T - 30, title, 11.5, INK, weight=700))
+        # แถบ Mean ± 2 SD กว้างตลอดกลุ่ม · ช่วงหน้าต่างเข้มกว่า
+        xend = X(days[-1]) + 30
+        out.append(f'<rect x="{xa:.1f}" y="{Y(mean + 2 * sd):.1f}" width="{xend - xa:.1f}" height="{Y(mean - 2 * sd) - Y(mean + 2 * sd):.1f}" '
+                   f'fill="{col}" fill-opacity=".14"/>')
+        out.append(f'<line x1="{xa:.1f}" y1="{Y(mean):.1f}" x2="{xend:.1f}" y2="{Y(mean):.1f}" stroke="{col}" stroke-width="2"/>')
+        out.append(text(xend + 4, Y(mean) + 4, f"Mean {B.fmt(mean)}", 10.5, INK, "start", 700))
+        # วงเล็บหน้าต่างใต้กลุ่ม
+        yb = Bm + 30
+        out.append(f'<path d="M{xa:.1f},{yb - 6} L{xa:.1f},{yb} L{xb:.1f},{yb} L{xb:.1f},{yb - 6}" fill="none" stroke="{col}" stroke-width="1.6"/>')
+        out.append(text((xa + xb) / 2, yb + 15, "หน้าต่างที่ใช้วัด", 10, MUTED, "middle"))
+        for dd in days:
+            out.append(text(X(dd), Bm + 16, f"วันที่ {dd}", 10.5, GREY, "middle"))
+        for dd, v in zip(w["วันที่"], w["X"]):
+            if dd == 6:
+                continue
+            out.append(f'<circle cx="{X(dd):.1f}" cy="{Y(v):.1f}" r="4.5" fill="{INK if col == GREY else col}" fill-opacity=".85"/>')
+        out.append(f'<circle cx="{X(6):.1f}" cy="{Y(x6):.1f}" r="6.5" fill="{C["purple"]}"/>')
+        out.append(text(X(6) - 10, Y(x6) - 12, f"วันที่ 6: X {B.fmt(x6)} · Z {B.fmt(z6)}", 11, C["purple"], "end", 700)
+                   .replace("<text ", '<text stroke="#fff" stroke-width="4" paint-order="stroke" ', 1))
+    out.append(text(16, H - 8, "แถบ = Mean ± 2 SD ของหน้าต่าง (เส้นเข้า 2 ของการ์ดเล่ม 1) · แกนตั้งเดียวกันทั้งสองกลุ่ม", 10.5, MUTED))
+    alt = (f"สองกลุ่มบนแกนเดียวกัน กลุ่มซ้ายไม้บรรทัดตรึง h {B.fmt(m['h'][4])} Mean {B.fmt(wf['MeanX'])} วันที่ 6 มี X {B.fmt(d6['Xเดิม'])} "
+           f"อยู่นอกแถบ Z {B.fmt(d6['Zตรึงจากเลขปัด'])} กลุ่มขวาไม้บรรทัดเลื่อน h {B.fmt(wr['h'])} วัดจากวันที่ 3 ถึง 6 "
+           f"Mean ตกไปที่ {B.fmt(wr['MeanX'])} วันที่ 6 มี X {B.fmt(wr['X'][-1])} อยู่ในแถบ Z {B.fmt(d6['Zเลื่อนจากเลขปัด'])}")
+    cap = "เจ็ดวันสมมติของคู่ A–B ในตอน ก · ไม้บรรทัดหน้าต่าง 4 วัน · SD แบบ STDEV (หารด้วย 3)"
+    return wrap(W, H, alt, out, cap, "สอน")

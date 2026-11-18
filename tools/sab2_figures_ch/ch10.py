@@ -293,6 +293,20 @@ def extend(data, D, q):
         "ดูช่วงตรวจ": 2,
     }
 
+    # กราฟ sab2-pc1-index: ผลตอบแทน log สะสม (%) ของพอร์ต PC1 (เงินตาม loading รวมเป็นหนึ่งหน่วย) · ตะกร้าเท่ากัน · BTC
+    # ช่วงเลือกเท่านั้น · จุดทุก 7 วัน + วันสุดท้าย (ผลตอบแทน log บวกกันได้ตามบท 2)
+    w1 = [v / math.fsum(pF["vectors"][0]) for v in pF["vectors"][0]]
+    cum = {"pc1": [0.0], "ew": [0.0], "btc": [0.0]}
+    for t in range(len(Rf[0])):
+        cum["pc1"].append(cum["pc1"][-1] + math.fsum(w1[i] * Rf[i][t] for i in range(N_COINS)))
+        cum["ew"].append(cum["ew"][-1] + ew[t])
+        cum["btc"].append(cum["btc"][-1] + Rf[0][t])
+    idx = list(range(0, len(fd), 7)) + ([len(fd) - 1] if (len(fd) - 1) % 7 else [])
+    out["จริง"]["สะสม"] = {"วัน": [fd[i] for i in idx], **{k: [_r(v[i], 1) for i in idx] for k, v in cum.items()},
+                          "จบ": {k: _r(v[-1], 1) for k, v in cum.items()},
+                          "น้ำหนักpc1ต่ำสุด": _r(100 * min(w1), 1), "น้ำหนักpc1สูงสุด": _r(100 * max(w1), 1),
+                          "แกน": [0, 50, 100, 150], "ป้ายวัน": [0, 26, 52, 78, len(idx) - 1]}
+
     # ════════════ ตอน ค 🎲 โลกที่รู้คำตอบ ════════════
     betas = [round(0.6 + 0.8 * i / (N_COINS - 1), 3) for i in range(N_COINS)]
 
