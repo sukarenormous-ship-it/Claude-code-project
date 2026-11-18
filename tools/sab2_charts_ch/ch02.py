@@ -40,7 +40,7 @@ def _ruler2(fig):
         out.append(text(L, t0 - 8, name, 11.5, INK, weight=700))
         out.append(f'<rect x="{X(half):.1f}" y="{t0}" width="{X(n - 1) - X(half):.1f}" height="{ph}" fill="{C["grid"]}" fill-opacity=".45"/>')
         for gv in (-2, 0, 2, 4, 6, 8):
-            stroke = C["axis"] if gv == 0 else (C["red"] if abs(gv) == 2 else C["grid"])
+            stroke = C["axis"] if gv == 0 else (INK if abs(gv) == 2 else C["grid"])
             dash = ' stroke-dasharray="4 4"' if abs(gv) == 2 else ""
             out.append(f'<line x1="{L}" y1="{Y(gv):.1f}" x2="{W - R}" y2="{Y(gv):.1f}" stroke="{stroke}"{dash}/>')
             out.append(text(L - 8, Y(gv) + 4, B.fmt(gv), 10, GREY, "end"))
@@ -55,7 +55,7 @@ def _ruler2(fig):
         out.append(text(lx, t0 + 80, f"h ปีหลัง {B.fmt(m['hปีหลัง'])}", 11, MUTED))
         if m["Zสูงสุด"] > hi:
             out.append(text(lx, t0 + 100, f"(ภาพตัดที่ {hi})", 10.5, col))
-    out.append(text(L, H - 6, f"แกนนอน = {B.fmt(r['วัน'])} วันของช่วงเลือก · แกนตั้ง = Z-score · เส้นประแดง = ±2", 10.5, MUTED))
+    out.append(text(L, H - 6, f"แกนนอน = {B.fmt(r['วัน'])} วันของช่วงเลือก · แกนตั้ง = Z-score · เส้นประเทาเข้ม = ±2", 10.5, MUTED))
     alt = (f"สองแผงเส้น Z-score {r['วัน']} วัน ไม้บรรทัดวัดจากปีแรก แผงบน X แบบราคา ปีหลังพุ่งขึ้นถึง {mp['Zสูงสุด']} "
            f"อยู่นอก ±2 {mp['นอกสองเปอร์เซ็นต์']}% ของวัน แผงล่าง X แบบ log ปีหลังขึ้นถึง {ml['Zสูงสุด']} "
            f"อยู่นอก ±2 {ml['นอกสองเปอร์เซ็นต์']}% ของวัน")
@@ -114,7 +114,7 @@ def _zmax(fig):
     top, bot = 56, 250
     for gv in (0.5, 1, 2, 5, 10, 20, 50, 100):
         dash = ' stroke-dasharray="4 4"' if gv == 2 else ""
-        out.append(f'<line x1="{X(gv):.1f}" y1="{top}" x2="{X(gv):.1f}" y2="{bot}" stroke="{C["red"] if gv == 2 else C["grid"]}"{dash}/>')
+        out.append(f'<line x1="{X(gv):.1f}" y1="{top}" x2="{X(gv):.1f}" y2="{bot}" stroke="{INK if gv == 2 else C["grid"]}"{dash}/>')
         out.append(text(X(gv), bot + 18, B.fmt(gv), 11, GREY, "middle"))
     out.append(text((L + W - R) / 2, bot + 38, "Z สูงสุดในปีหลัง (แกนแบบ log: แต่ละช่องคูณ 2 ถึง 2.5 เท่า)", 11.5, MUTED, "middle", 700))
     rows = [("🎲 วัดด้วยราคา", zp, C["amber"], s["สุ่มซ้ำ"]["Zสูงสุดราคา"]["มัธยฐาน"]),
@@ -131,7 +131,7 @@ def _zmax(fig):
     for v, col, lab, dy in ((r["ราคา"]["Zสูงสุด"], C["amber"], "ราคา", -12), (r["log"]["Zสูงสุด"], C["blue"], "log", -12)):
         out.append(f'<rect x="{X(v) - 5:.1f}" y="{y - 5}" width="10" height="10" fill="{col}"/>')
         out.append(text(X(v), y + dy, f"{lab} {B.fmt(v)}", 10.5, col, "middle", 700))
-    out.append(text(X(2) + 4, top - 4, "เส้น 2", 10.5, C["red"], "start", 700))
+    out.append(text(X(2) + 4, top - 4, "เส้น 2", 10.5, INK, "start", 700))
     alt = (f"จุด {s['ชุด']} จุดต่อแถว แกนนอนแบบ log จาก 0.5 ถึง 100 โลกที่วัดด้วยราคามี Z สูงสุดกระจายตั้งแต่ "
            f"{s['สุ่มซ้ำ']['Zสูงสุดราคา']['ต่ำสุด']} ถึง {s['สุ่มซ้ำ']['Zสูงสุดราคา']['สูงสุด']} มัธยฐาน {s['สุ่มซ้ำ']['Zสูงสุดราคา']['มัธยฐาน']} "
            f"วัดด้วย log กระจาย {s['สุ่มซ้ำ']['Zสูงสุดlog']['ต่ำสุด']} ถึง {s['สุ่มซ้ำ']['Zสูงสุดlog']['สูงสุด']} มัธยฐาน "

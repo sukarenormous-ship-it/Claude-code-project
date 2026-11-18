@@ -40,7 +40,7 @@ def _rotate(fig):
     best = s["ดีสุด"]
     p2 = s["pc2"]
     for (a, b), col, dash, lab, ss in (((best["a"], best["b"]), C["purple"], None, "PC1", best["ss"]),
-                                       ((p2["a"], p2["b"]), C["amber"], "6 4", "PC2", p2["ss"])):
+                                       ((p2["a"], p2["b"]), MUTED, "6 4", "PC2", p2["ss"])):
         L = 7.2
         d = f' stroke-dasharray="{dash}"' if dash else ""
         out.append(f'<line x1="{cx - a * L * sc:.1f}" y1="{cy + b * L * sc:.1f}" x2="{cx + a * L * sc:.1f}" y2="{cy - b * L * sc:.1f}" '
@@ -76,8 +76,8 @@ def _rotate(fig):
     out.append(f'<circle cx="{X(best["มุม"]):.1f}" cy="{Y(best["ss"]):.1f}" r="6.5" fill="none" stroke="{C["purple"]}" stroke-width="2.4"/>')
     out.append(text(X(best["มุม"]) + 8, Y(best["ss"]) - 9, f"ยอด {_n(best['ss'])} ที่ {best['มุม']}°", 11, C["purple"], "start", 700))
     a2 = round(math.degrees(math.atan2(p2["b"], p2["a"])))
-    out.append(f'<circle cx="{X(a2):.1f}" cy="{Y(p2["ss"]):.1f}" r="6.5" fill="none" stroke="{C["amber"]}" stroke-width="2.4"/>')
-    out.append(text(X(a2), Y(p2["ss"]) + 22, f"ต่ำสุด {_n(p2['ss'])} ที่ {a2}°", 11, C["amber"], "middle", 700))
+    out.append(f'<circle cx="{X(a2):.1f}" cy="{Y(p2["ss"]):.1f}" r="6.5" fill="none" stroke="{MUTED}" stroke-width="2.4"/>')
+    out.append(text(X(a2), Y(p2["ss"]) + 22, f"ต่ำสุด {_n(p2['ss'])} ที่ {a2}°", 11, MUTED, "middle", 700))
     alt = (f"หกจุดของสองเหรียญเรียงเอียงขึ้นขวา แกน PC1 ทิศ ({_n(best['a'])}, {_n(best['b'])}) ผ่านแนวยาวของกองจุด ผลรวมกำลังสองบนแกนนี้ "
            f"{_n(best['ss'])} สูงสุด แกน PC2 ตั้งฉากได้ {_n(p2['ss'])} ต่ำสุด เมื่อหมุนแกนจาก 0 ถึง 180 องศา ค่าขึ้นลงเป็นคลื่นเดียว")
     cap = f"สองเหรียญสมมติ หกวัน Mean เป็นศูนย์ · จุดน้ำเงินทางขวาคือหกทิศที่ลองในตาราง · ผลรวมทั้งหมด {_n(s['รวม'])} ทุกมุมของคู่แกนที่ตั้งฉากกัน"
@@ -180,7 +180,7 @@ def _rolling(fig):
     for g in (0, 0.25, 0.5, 0.75, 1):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
         out.append(text(L - 8, Y(g) + 4, B.fmt(g), 10.5, GREY, "end"))
-    for key, col, lab in (("ตรงpc1", C["purple"], "PC1"), ("ตรงpc2", C["amber"], "PC2")):
+    for key, col, lab in (("ตรงpc1", C["purple"], "PC1"), ("ตรงpc2", MUTED, "PC2")):
         pts = " ".join(f"{X(i):.1f},{Y(r[key]):.1f}" for i, r in enumerate(rows))
         out.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.4"/>')
         for i, r in enumerate(rows):
@@ -189,7 +189,7 @@ def _rolling(fig):
         out.append(text(X(i), Bm + 18, rows[i]["จบ"][:7], 10, GREY, "middle"))
     out.append(text((L + W - R) / 2, Bm + 36, "เดือนที่หน้าต่างจบ", 11, MUTED, "middle", 700))
     lx = L
-    for nm, col in (("PC1 ของหน้าต่าง", C["purple"]), ("PC2 ของหน้าต่าง", C["amber"])):
+    for nm, col in (("PC1 ของหน้าต่าง", C["purple"]), ("PC2 ของหน้าต่าง", MUTED)):
         out.append(f'<rect x="{lx}" y="{T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 20, nm, 11.5, MUTED))
         lx += 150
@@ -218,7 +218,7 @@ def _pc1_index(fig):
     for k, i in enumerate(c["ป้ายวัน"]):
         out.append(text(X(i), Bm + 18, c["วัน"][i], 10.5, GREY, "start" if k == 0 else ("end" if i == n - 1 else "middle")))
     series = (("btc", C["amber"], None, "BTC ตัวเดียว"), ("pc1", C["purple"], None, "พอร์ต PC1 (เงินตาม loading)"),
-              ("ew", C["green"], "6 4", "Equal-weight Index (ถือสิบเหรียญเท่ากัน)"))
+              ("ew", INK, "6 4", "Equal-weight Index (ถือสิบเหรียญเท่ากัน)"))
     for key, col, dash, _ in series:
         d = f' stroke-dasharray="{dash}"' if dash else ""
         pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(c[key]))
@@ -233,7 +233,7 @@ def _pc1_index(fig):
     out.append(text(xe, Y(c["btc"][-1]) + 4, "BTC", 11.5, C["amber"], "start", 700))
     ym = (Y(c["pc1"][-1]) + Y(c["ew"][-1])) / 2
     out.append(text(xe, ym - 3, "PC1 กับ", 11.5, C["purple"], "start", 700))
-    out.append(text(xe, ym + 12, "ดัชนีเท่ากัน", 11.5, C["green"], "start", 700))
+    out.append(text(xe, ym + 12, "ดัชนีเท่ากัน", 11.5, INK, "start", 700))
     alt = (f"เส้นสะสมของพอร์ต PC1 กับ Equal-weight Index แทบทับกันตลอดสองปี จบราว {_n(c['จบ']['pc1'])} และ {_n(c['จบ']['ew'])} เปอร์เซ็นต์ "
            f"ส่วน BTC แยกออกไปจบราว {_n(c['จบ']['btc'])} เปอร์เซ็นต์")
     cap = (f"Binance ราคาปิดรายวัน 10 เหรียญ · ช่วงเลือก {j['เริ่มเลือก']} ถึง {j['จบเลือก']} · ผลตอบแทน log รายวันบวกสะสม · "

@@ -9,6 +9,7 @@ sab2-kelly-curve    : เงินคูณเท่าไรหลังสิ�
 from sab_charts import B, C, Frame, chart, grouped_bars, text, wrap
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+BLUE_LIGHT, BLUE_DARK = "#60a5fa", "#1e40af"   # ชุดที่เป็นลำดับ = ไล่เฉดน้ำเงิน (README: Graded series)
 
 
 def _n(v):
@@ -47,17 +48,17 @@ def _lines(xs, series, title, xlabel, yticks, xticks, marks, W=760, H=340, L=64,
 def _mix_ratio(fig):
     c = fig["ch12"]["ผสม"]
     xs = [r["ส่วนคู่"] for r in c["เส้น"]]
-    ser = [("ρ −0.5 (หกเดือนของบทนี้)", [r["-0.5"] for r in c["เส้น"]], C["blue"]),
-           ("ρ 0", [r["0"] for r in c["เส้น"]], C["amber"]),
-           ("ρ 0.5", [r["0.5"] for r in c["เส้น"]], C["red"])]
+    ser = [("ρ −0.5 (หกเดือนของบทนี้)", [r["-0.5"] for r in c["เส้น"]], BLUE_DARK),
+           ("ρ 0", [r["0"] for r in c["เส้น"]], C["blue"]),
+           ("ρ 0.5", [r["0.5"] for r in c["เส้น"]], BLUE_LIGHT)]
     best = c["ดีสุด"]
     share = best["P"] / (best["F"] + best["P"])
     marks = [(share, best["ratio"], f"funding {B.fmt(best['F'])} กับคู่ {B.fmt(best['P'])} หน่วย · {B.fmt(best['ratio'])}")]
     ticks = [(v / 100, f"{v}%") for v in c["แกน"]]
     parts = _lines(xs, ser, "ผลต่อความเสี่ยง (Mean ÷ SD) เมื่อแบ่งสองหน่วยระหว่าง funding carry กับคู่",
                    "ส่วนของคู่ในสองหน่วย", c["แกนy"], ticks, marks)
-    alt = ("เส้นสามเส้นของผลต่อความเสี่ยงตามส่วนของคู่ เส้นน้ำเงินที่ correlation −0.5 ขึ้นสูงสุดราว 2.1 เมื่อคู่เป็นหนึ่งในสี่ "
-           "เส้นส้มที่ correlation 0 สูงสุดราว 1.5 เส้นแดงที่ correlation 0.5 แทบไม่สูงกว่าการถือ funding carry อย่างเดียว "
+    alt = ("เส้นสามเส้นของผลต่อความเสี่ยงตามส่วนของคู่ เส้นน้ำเงินเข้มที่ correlation −0.5 ขึ้นสูงสุดราว 2.1 เมื่อคู่เป็นหนึ่งในสี่ "
+           "เส้นน้ำเงินที่ correlation 0 สูงสุดราว 1.5 เส้นฟ้าที่ correlation 0.5 แทบไม่สูงกว่าการถือ funding carry อย่างเดียว "
            "และทุกเส้นลดลงเมื่อคู่เกินครึ่ง")
     return wrap(760, 340, alt, parts, "หกเดือนสอนของบทนี้ · funding carry Mean 3 SD 2.37 · คู่ Mean 6 SD 7.16 ต่อหน่วยต่อเดือน", "สอน")
 
@@ -66,17 +67,17 @@ def _mix_ratio(fig):
 def _weight_spread(fig):
     w = fig["ch12"]["โลก"]
     true = w["จริง"]["น้ำหนักคู่ที่ถูกเปอร์เซ็นต์"]
-    rows = [("Mean–Variance (ใช้ Mean ตามที่ประมาณ)", w["เต็ม"], C["blue"]),
-            ("หด Mean ของสองงานเข้าหากันครึ่งทาง", w["หดครึ่ง"], C["amber"]),
-            ("ไม่ใช้ Mean (ดูแค่ SD กับ correlation)", w["ไม่ใช้Mean"], C["green"])]
+    rows = [("Mean–Variance (ใช้ Mean ตามที่ประมาณ)", w["เต็ม"], BLUE_LIGHT),
+            ("หด Mean ของสองงานเข้าหากันครึ่งทาง", w["หดครึ่ง"], C["blue"]),
+            ("ไม่ใช้ Mean (ดูแค่ SD กับ correlation)", w["ไม่ใช้Mean"], BLUE_DARK)]
     W, H, L, R = 760, 268, 290, 40
     lo, hi = 0, max(r[1]["สูงสุด"] for r in rows) + 2
     X = lambda v: L + (v - lo) / (hi - lo) * (W - L - R)  # noqa: E731
     out = [text(16, 28, f"น้ำหนักของคู่ที่ประมาณจาก {w['จริง']['เดือน']} เดือน ใน {w['โลก']} โลกที่รู้คำตอบ", 13, INK, weight=700)]
     top, bot = 62, 62 + 62 * len(rows) - 20
-    out.append(f'<line x1="{X(true):.1f}" y1="{top - 14}" x2="{X(true):.1f}" y2="{bot + 6}" stroke="{C["purple"]}" '
+    out.append(f'<line x1="{X(true):.1f}" y1="{top - 14}" x2="{X(true):.1f}" y2="{bot + 6}" stroke="{INK}" '
                f'stroke-width="2" stroke-dasharray="5 4"/>')
-    out.append(text(X(true) + 6, top - 18, f"คำตอบที่ถูก {B.fmt(true)}%", 11, C["purple"], "start", 700))
+    out.append(text(X(true) + 6, top - 18, f"คำตอบที่ถูก {B.fmt(true)}%", 11, INK, "start", 700))
     for i, (name, r, col) in enumerate(rows):
         y = top + 20 + 62 * i
         out.append(text(16, y + 4, name, 11.5, INK))
@@ -88,7 +89,7 @@ def _weight_spread(fig):
         out.append(text(X(r["สูงสุด"]) + 8, y + 4, f"{B.fmt(r['สูงสุด'])}%", 10.5, GREY))
     alt = (f"แถบช่วงสามแถบของน้ำหนักคู่ที่ประมาณได้ใน 30 โลก แบบใช้ Mean ตามที่ประมาณกว้างตั้งแต่ {w['เต็ม']['ต่ำสุด']} ถึง "
            f"{w['เต็ม']['สูงสุด']} เปอร์เซ็นต์ อีกสองแบบแคบกว่า ราว {w['หดครึ่ง']['ต่ำสุด']} ถึง {w['หดครึ่ง']['สูงสุด']} "
-           f"เส้นประม่วงคือคำตอบที่ถูก {true} เปอร์เซ็นต์")
+           f"เส้นประเทาเข้มคือคำตอบที่ถูก {true} เปอร์เซ็นต์")
     return wrap(W, H, alt, out, f"30 โลก × {w['จริง']['เดือน']} เดือน · funding carry Mean 0.6% SD 0.7% · คู่ Mean 1% SD 6% · "
                 "correlation −0.15 · แถบ = ต่ำสุดถึงสูงสุด", "จำลอง")
 
@@ -122,10 +123,10 @@ def _six_months(fig):
     band = []
     for m in (3, 5):    # เดือนที่คู่เสียแต่ funding carry ได้มากกว่าปกติ
         x0 = f.L + gw * (m - 1)
-        band.append(f'<rect x="{x0 + 4:.1f}" y="{f.T - 8}" width="{gw - 8:.1f}" height="{f.Bm - f.T + 8}" rx="4" fill="#fef3c7" opacity="0.7"/>')
+        band.append(f'<rect x="{x0 + 4:.1f}" y="{f.T - 8}" width="{gw - 8:.1f}" height="{f.Bm - f.T + 8}" rx="4" fill="#ede9fe" opacity="0.8"/>')
     parts = grouped_bars(cats, [("funding carry", F, C["blue"]), ("คู่", P, C["amber"]), ("พอร์ต (สองงานรวมกัน)", S, C["green"])],
                          "หกเดือนสอน: เดือนที่คู่เสีย funding carry มักได้มากกว่าปกติ", W=W, H=H)
-    parts.append(text(W - f.R, f.T - 20, "พื้นเหลือง = เดือนที่สองงานสวนกัน", 10.5, C["amber"], "end", 700))
+    parts.append(text(W - f.R, f.T - 20, "พื้นม่วงอ่อน = เดือนที่สองงานสวนกัน", 10.5, C["purple"], "end", 700))
     alt = ("แท่งสามสีหกเดือน เดือนที่ 3 คู่เสีย 4 แต่ funding carry ได้ 4 พอร์ตจึงเป็นศูนย์ เดือนที่ 5 คู่เสีย 2 funding carry ได้ 5 "
            "พอร์ตได้ 3 เดือนที่ 2 คู่ได้ 12 แต่ funding carry ได้ 0 แท่งเขียวของพอร์ตจึงไม่ลงลึกเท่าแท่งส้มของคู่")
     cap = (f"หกเดือนสอนของบทนี้ · หนึ่งหน่วยต่อหนึ่งหน่วย · funding carry Mean {_n(h['funding']['Mean'])} · คู่ Mean {_n(h['คู่']['Mean'])} · พอร์ต Mean {_n(p['Meanรวม'])} · "

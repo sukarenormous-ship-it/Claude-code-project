@@ -71,8 +71,8 @@ def _crit(fig):
         out.append(text(cx, f.Bm + 22, B.fmt(v), 11.5, C["purple"] if k == t["ขา"] else C["ink"], "middle", 700))
         out.append(text(cx, f.y(0) - 6, f"{k} เหรียญ", 10.5, C["muted"], "middle"))
     xr = W - f.R + 8
-    for v, col, dash, l1, l2 in ((c["Mac2"], C["green"], "3 3", "เส้น 5% ของคู่", f"ที่บท 3 ใช้ {B.fmt(c['Mac2'])}"),
-                                 (t["stat"], C["red"], "6 4", f"ตะกร้า {B.fmt(t['ขา'])} เหรียญ", f"ของต้น {B.fmt(t['stat'])}")):
+    for v, col, dash, l1, l2 in ((c["Mac2"], C["ink"], "3 3", "เส้น 5% ของคู่", f"ที่บท 3 ใช้ {B.fmt(c['Mac2'])}"),
+                                 (t["stat"], C["purple"], "6 4", f"ตะกร้า {B.fmt(t['ขา'])} เหรียญ", f"ของต้น {B.fmt(t['stat'])}")):
         yy = f.y(v)
         out.append(f'<line x1="{f.L}" y1="{yy:.1f}" x2="{W - f.R}" y2="{yy:.1f}" stroke="{col}" stroke-dasharray="{dash}" stroke-width="1.8"/>')
         out.append(text(xr, yy - 2, l1, 11.5, col, weight=700))

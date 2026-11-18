@@ -70,7 +70,7 @@ def _grid_scatter(fig):
         out.append(f'<circle cx="{X(c["เลือก"]):.1f}" cy="{Y(c["ตรวจ"]):.1f}" r="5" fill="{C["blue"]}" fill-opacity="0.55"/>')
     marks = [(pk, f"ยอดเขาช่วงเลือก: เส้น {B.fmt(pk['เส้น'])} ถือ {pk['ถือ']} วัน", C["purple"], pk["เลือก"], pk["ตรวจ"], "end", -12),
              (vb, f"ยอดของช่วงตรวจ: เส้น {B.fmt(vb['เส้น'])} ถือ {vb['ถือ']} วัน", C["amber"], vb["เลือก"], vb["ตรวจ"], "start", -12),
-             (cd, f"การ์ดเดิม: เส้น {B.fmt(cd['เส้น'])} ถือ {cd['ถือ']} วัน", C["green"], cd["เลือก"], cd["ตรวจ"], "start", -9)]
+             (cd, f"การ์ดเดิม: เส้น {B.fmt(cd['เส้น'])} ถือ {cd['ถือ']} วัน", INK, cd["เลือก"], cd["ตรวจ"], "start", -9)]
     for _, lab, col, x, y, anc, dy in marks:
         out.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="7" fill="{col}"/>')
         dx = -10 if anc == "end" else 10
@@ -97,7 +97,7 @@ def _wf_worlds(fig):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
         out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
     lx = L
-    for name, col in (("ที่ช่วงเลือกสัญญา (ผลของแบบที่ชนะ ย่อเหลือ 121 วันต่อหน้าต่าง)", C["grey"]), ("walk-forward ได้จริง", C["blue"])):
+    for name, col in (("ที่ช่วงเลือกสัญญา (ผลของแบบที่ชนะ ย่อเหลือ 121 วันต่อหน้าต่าง)", C["blue"]), ("walk-forward ได้จริง", C["amber"])):
         out.append(f'<rect x="{lx}" y="{T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, T - 20, name, 11.5, MUTED))
         lx += 40 + 6.4 * len(name)
@@ -105,14 +105,14 @@ def _wf_worlds(fig):
     bw = 70
     for i, (cat, a, b) in enumerate(zip(cats, promise, got)):
         x0 = L + i * gw + gw / 2 - bw - 4
-        for j, (v, col) in enumerate(((a, C["grey"]), (b, C["blue"] if b >= 0 else C["red"]))):
+        for j, (v, col) in enumerate(((a, C["blue"]), (b, C["amber"]))):
             x = x0 + j * (bw + 8)
             y1, y2 = sorted((Y(0), Y(v)))
             out.append(f'<rect x="{x:.1f}" y="{y1:.1f}" width="{bw}" height="{max(y2 - y1, 1):.1f}" rx="3" fill="{col}"/>')
             ty = Y(v) - 6 if v >= 0 else Y(v) + 15
             out.append(text(x + bw / 2, ty, B.fmt(v), 11.5, INK, "middle", 700))
         out.append(text(L + i * gw + gw / 2, Bm + 22, cat, 11, MUTED, "middle"))
-    alt = ("แท่งคู่สามกลุ่ม แท่งเทาคือที่ช่วงเลือกสัญญา แท่งน้ำเงินหรือแดงคือที่ walk-forward ได้จริง "
+    alt = ("แท่งคู่สามกลุ่ม แท่งน้ำเงินคือที่ช่วงเลือกสัญญา แท่งส้มคือที่ walk-forward ได้จริง "
            "โลกมีเชือกสัญญาราว 219 ได้ราว 74 โลกไม่มีเชือกสัญญาราว 195 ได้ติดลบราว 33 ส่วน LTC–DOT สัญญาราว 531 ได้ราว 209")
     return wrap(W, H, alt, out, "walk-forward สามหน้าต่าง: ช่วงเลือก 365 วัน → ช่วงทดสอบ 121 วัน · เลือก h ไม้บรรทัด และแบบจาก 25 แบบในทุกหน้าต่าง · "
                 "10 ชุด · ค่าธรรมเนียม 0.05% ต่อ fill · สองกลุ่มซ้ายเป็นโลกจำลองคู่บนราคาแบบบท 7 (SD นิ่งของ X = 3) · กลุ่มขวาเป็น 📡 ข้อมูลจริง LTC–DOT", "จำลอง")
@@ -138,15 +138,15 @@ def _luck_ruler(fig):
     out.append(text((L + W - R) / 2, 350, "Sharpe รายเดือน (Mean ÷ SD ของผลรายเดือน)", 11, MUTED, "middle"))
     for y, lab, sub_, line in rows:
         out.append(f'<rect x="{X(lo):.1f}" y="{y - 40}" width="{X(line) - X(lo):.1f}" height="70" fill="{C["grid"]}"/>')
-        out.append(f'<line x1="{X(line):.1f}" y1="{y - 46}" x2="{X(line):.1f}" y2="{y + 30}" stroke="{C["amber"]}" stroke-width="2" stroke-dasharray="6 4"/>')
-        out.append(text(X(line) + 6, y - 32, f"เส้นโชค {B.fmt(line)}", 11, C["amber"], "start", 700))
+        out.append(f'<line x1="{X(line):.1f}" y1="{y - 46}" x2="{X(line):.1f}" y2="{y + 30}" stroke="{INK}" stroke-width="2" stroke-dasharray="6 4"/>')
+        out.append(text(X(line) + 6, y - 32, f"เส้นโชค {B.fmt(line)}", 11, INK, "start", 700))
         out.append(text(X(lo) + 6, y + 26, "โชคล้วน ๆ ให้ได้", 10.5, GREY))
         out.append(text(L - 12, y - 4, lab, 12, INK, "end", 700))
         out.append(text(L - 12, y + 13, sub_, 10.5, GREY, "end"))
         out.append(f'<line x1="{X(lo):.1f}" y1="{y + 4}" x2="{X(hi):.1f}" y2="{y + 4}" stroke="{C["axis"]}"/>')
     t3 = sim["เส้นt3"]
-    out.append(f'<line x1="{X(t3):.1f}" y1="72" x2="{X(t3):.1f}" y2="122" stroke="{C["red"]}" stroke-width="1.6" stroke-dasharray="3 3"/>')
-    out.append(text(X(t3) + 6, 80, f"เส้น t 3 = {B.fmt(t3)}", 10.5, C["red"], "start", 700))
+    out.append(f'<line x1="{X(t3):.1f}" y1="72" x2="{X(t3):.1f}" y2="122" stroke="{MUTED}" stroke-width="1.6" stroke-dasharray="3 3"/>')
+    out.append(text(X(t3) + 6, 80, f"เส้น t 3 = {B.fmt(t3)}", 10.5, MUTED, "start", 700))
 
     def dot(v, y, col, lab, anc, dy):
         out.append(f'<circle cx="{X(v):.1f}" cy="{y + 4}" r="7" fill="{col}"/>')

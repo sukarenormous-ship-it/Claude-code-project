@@ -8,6 +8,7 @@ sab2-tracking-funnel : แผนภูมิควบคุมของ ETH ช�
 from sab_charts import B, C, chart, text, wrap
 
 INK, GREY, MUTED = C["ink"], C["grey"], C["muted"]
+RED_LIGHT, RED_DARK = "#f87171", "#991b1b"   # ส่วนที่หายสามระดับ = ไล่เฉดแดง (README: Graded series)
 
 
 def _poly(pts):
@@ -43,7 +44,7 @@ def _capacity(fig):
     out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{C["blue"]}" stroke-width="2.6" stroke-linejoin="round"/>')
     marks = [(1000, rows[1000]["สุทธิ"], "ขาละ 1,000", C["blue"], 22, "start"),
              (c["จุดสูงสุด"], c["สุทธิสูงสุด"], "ยอด 7,500", C["purple"], 24, "middle"),
-             (c["คุ้มทุน"], 0, "คุ้มทุน 15,000", C["amber"], -12, "middle"),
+             (c["คุ้มทุน"], 0, "คุ้มทุน 15,000", INK, -12, "middle"),
              (20000, int(rows[20000]["สุทธิ"]), "ขาละ 20,000", C["red"], 22, "end")]
     for s, v, lab, col, dy, anc in marks:
         out.append(f'<circle cx="{X(s):.1f}" cy="{Y(v):.1f}" r="5" fill="{col}"/>')
@@ -107,13 +108,13 @@ def _funnel(fig):
         d_ = f' stroke-dasharray="{dash}"' if dash else ""
         return f'<polyline points="{_poly(pts)}" fill="none" stroke="{col}" stroke-width="{width}"{d_} stroke-linejoin="round"/>'
     out.append(line("คาด", GREY, None))
-    out.append(line("เตือน", C["amber"], "6 4"))
-    out.append(line("ลงมือ", C["red"], "6 4"))
+    out.append(line("เตือน", MUTED, "6 4"))
+    out.append(line("ลงมือ", INK, "6 4"))
     out.append(line("สะสม", C["blue"], None, 2.8))
     last = rows[-1]
     out.append(text(X(n) - 4, Y(last["คาด"]) - 8, f"ที่คาด {B.fmt(last['คาด'])}", 11, GREY, "end", 700))
-    out.append(text(X(n) - 4, Y(last["เตือน"]) - 8, f"เส้นเตือน {B.fmt(last['เตือน'])}", 11, C["amber"], "end", 700))
-    out.append(text(X(n - 2), Y(rows[n - 3]["ลงมือ"]) + 20, f"เส้นลงมือ {B.fmt(last['ลงมือ'])}", 11, C["red"], "middle", 700))
+    out.append(text(X(n) - 4, Y(last["เตือน"]) - 8, f"เส้นเตือน {B.fmt(last['เตือน'])}", 11, MUTED, "end", 700))
+    out.append(text(X(n - 2), Y(rows[n - 3]["ลงมือ"]) + 20, f"เส้นลงมือ {B.fmt(last['ลงมือ'])}", 11, INK, "middle", 700))
     out.append(text(X(n) - 4, Y(last["สะสม"]) - 8, f"ผลจริง {B.fmt(last['สะสม'])}", 11, C["blue"], "end", 700))
     w = rows[e["เตือนเดือน"] - 1]
     out.append(f'<circle cx="{X(w["เดือน"]):.1f}" cy="{Y(w["สะสม"]):.1f}" r="6.5" fill="none" stroke="{C["purple"]}" stroke-width="2.4"/>')
@@ -142,11 +143,11 @@ def _wait_curve(fig):
     out.append(text(L, T - 12, "ห่างจากที่คาด (% ของมูลค่าที่ถือ)", 11, GREY))
     band = [(X(i / 4), Y(two_sd * (i / 4) ** 0.5)) for i in range(0, 4 * xmax + 1)]
     out.append(f'<polygon points="{X(0):.1f},{Y(0):.1f} {_poly(band)} {X(xmax):.1f},{Y(0):.1f}" fill="{C["grid"]}"/>')
-    out.append(f'<polyline points="{_poly(band)}" fill="none" stroke="{C["red"]}" stroke-width="2.4" stroke-dasharray="6 4"/>')
+    out.append(f'<polyline points="{_poly(band)}" fill="none" stroke="{INK}" stroke-width="2.4" stroke-dasharray="6 4"/>')
     bx, by = X(14.5), Y(4) + 16
-    out.append(text(bx, by, f"เส้นประแดง: ระยะถึงเส้นลงมือ = {B.fmt(two_sd)} × √n", 11, C["red"], "start", 700))
+    out.append(text(bx, by, f"เส้นประเทาเข้ม: ระยะถึงเส้นลงมือ = {B.fmt(two_sd)} × √n", 11, INK, "start", 700))
     out.append(text(bx, by + 17, "ใต้เส้นประ: แยกจากความแกว่งปกติไม่ออก", 10.5, GREY))
-    cols = {"หายครึ่ง": C["amber"], "หายหมด": C["purple"], "กลับทิศ": C["blue"]}
+    cols = {"หายครึ่ง": RED_LIGHT, "หายหมด": C["red"], "กลับทิศ": RED_DARK}
     names = {"หายครึ่ง": "หายครึ่ง", "หายหมด": "หายหมด", "กลับทิศ": "กลับทิศ"}
     for k in t["ต้องรอ"]:
         d, n, col = k["Δ"], k["เดือน"], cols[k["ชื่อ"]]
@@ -163,6 +164,6 @@ def _wait_curve(fig):
         yy = by + 42 + 17 * i
         out.append(f'<circle cx="{bx + 5:.1f}" cy="{yy - 4:.1f}" r="4.5" fill="#ffffff" stroke="{cols[k["ชื่อ"]]}" stroke-width="2.2"/>')
         out.append(text(bx + 16, yy, f"{names[k['ชื่อ']]} {B.fmt(k['Δ'])} ต่อเดือน: ตัดที่เดือน {B.fmt(k['เดือน'])}", 11, INK))
-    alt = (f"เส้นประแดงคือระยะถึงเส้นลงมือ {B.fmt(two_sd)} คูณรากที่สองของจำนวนเดือน เส้นตรงสามเส้นคือส่วนที่หายสะสม "
+    alt = (f"เส้นประเทาเข้มคือระยะถึงเส้นลงมือ {B.fmt(two_sd)} คูณรากที่สองของจำนวนเดือน เส้นตรงสามเส้นคือส่วนที่หายสะสม "
            + " ".join(f"{k['ชื่อ']} {B.fmt(k['Δ'])} ต่อเดือนตัดเส้นประที่เดือน {B.fmt(k['เดือน'])}" for k in t["ต้องรอ"]))
     return wrap(W, H, alt, out, "backtest คาดเดือนละ 0.6 SD 0.7 · เส้นลงมือ 2 SD × √n · เดือนที่ตัดคือค่าเฉลี่ยโดยประมาณ (2 × SD ÷ Δ)²", "สอน")

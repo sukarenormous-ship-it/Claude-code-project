@@ -9,6 +9,8 @@ sab2-pipe-groups : 📡 กำไรเฉลี่ยช่วงตรวจ�
 
 from sab_charts import B, C, Frame, chart, nice_ticks, text, wrap
 
+GREEN_LIGHT = "#86efac"   # Half-life สั้น = เขียวอ่อน · ยาว = เขียว (ไล่เฉดสีเดียว · README)
+
 
 @chart("sab2-pipe-cost")
 def _cost(fig):
@@ -26,23 +28,23 @@ def _cost(fig):
     bw = 46
     for i, rho in enumerate(rhos):
         cx = f.L + gw * i + gw / 2
-        for j, (v, col) in enumerate(((h2[i], C["amber"]), (h5[i], C["blue"]))):
+        for j, (v, col) in enumerate(((h2[i], GREEN_LIGHT), (h5[i], C["green"]))):
             x = cx - (bw + 4) + j * (bw + 4)
             out.append(f'<rect x="{x:.1f}" y="{f.y(v):.1f}" width="{bw}" height="{max(1, f.y(0) - f.y(v)):.1f}" rx="2" fill="{col}"/>')
-            out.append(text(x + bw / 2, f.y(v) - 6, B.fmt(v), 10.5, col, "middle", 700))
+            out.append(text(x + bw / 2, f.y(v) - 6, B.fmt(v), 10.5, C["ink"], "middle", 700))
         out.append(text(cx, f.Bm + 30, f"correlation {B.fmt(rho)}", 11.5, C["muted"], "middle"))
     legend_lines = []
-    for v, lab, col, dy in ((t["เล่มดอลลาร์"], f"ต้นทุนเล่ม {int(t['เล่มดอลลาร์'])} ดอลลาร์", C["green"], 14),
-                            (t["แอปดอลลาร์"], f"ต้นทุนแอป {int(t['แอปดอลลาร์'])} ดอลลาร์", C["red"], -5)):
-        out.append(f'<line x1="{f.L}" y1="{f.y(v):.1f}" x2="{W - f.R}" y2="{f.y(v):.1f}" stroke="{col}" stroke-dasharray="5 4" stroke-width="1.6"/>')
-        legend_lines.append((lab, col))
+    for v, lab, col, dy, dash in ((t["เล่มดอลลาร์"], f"ต้นทุนเล่ม {int(t['เล่มดอลลาร์'])} ดอลลาร์", C["ink"], 14, "5 4"),
+                            (t["แอปดอลลาร์"], f"ต้นทุนแอป {int(t['แอปดอลลาร์'])} ดอลลาร์", C["muted"], -5, "2 3")):
+        out.append(f'<line x1="{f.L}" y1="{f.y(v):.1f}" x2="{W - f.R}" y2="{f.y(v):.1f}" stroke="{col}" stroke-dasharray="{dash}" stroke-width="1.8"/>')
+        legend_lines.append((lab, col, dash))
     lx = f.L
-    for name, col in (("Half-life 2 วัน", C["amber"]), ("Half-life 5 วัน", C["blue"])):
+    for name, col in (("Half-life 2 วัน", GREEN_LIGHT), ("Half-life 5 วัน", C["green"])):
         out.append(f'<rect x="{lx}" y="{f.T - 30}" width="11" height="11" rx="2" fill="{col}"/>')
         out.append(text(lx + 16, f.T - 20, name, 11.5, C["muted"]))
         lx += 130
-    for name, col in legend_lines:
-        out.append(f'<line x1="{lx}" y1="{f.T - 25}" x2="{lx + 18}" y2="{f.T - 25}" stroke="{col}" stroke-dasharray="5 3" stroke-width="2"/>')
+    for name, col, dash in legend_lines:
+        out.append(f'<line x1="{lx}" y1="{f.T - 25}" x2="{lx + 18}" y2="{f.T - 25}" stroke="{col}" stroke-dasharray="{dash}" stroke-width="2"/>')
         out.append(text(lx + 24, f.T - 20, name, 11.5, col, weight=700))
         lx += 140
     out.append(text(f.L, f.T - 48, f"กำไรต่อไม้ (ดอลลาร์ ขาละ {B.fmt(t['ขา'])}) เมื่อเข้าที่ 2 SD ออกที่ 0.5 SD", 13, C["ink"], weight=700))
@@ -139,7 +141,7 @@ def _ssd(fig):
                 out.append(text(x0 - 8, y(t) + 4, B.fmt(t), 11, C["grey"], "end"))
         xs = [x0 + 18 + i * (pw - 36) / 4 for i in range(5)]
         ym = y(r["Mean"])
-        out.append(f'<line x1="{x0}" y1="{ym:.1f}" x2="{x0 + pw}" y2="{ym:.1f}" stroke="{C["amber"]}" stroke-width="1.6" stroke-dasharray="6 4"/>')
+        out.append(f'<line x1="{x0}" y1="{ym:.1f}" x2="{x0 + pw}" y2="{ym:.1f}" stroke="{C["ink"]}" stroke-width="1.6" stroke-dasharray="6 4"/>')
         pts = " ".join(f"{x:.1f},{y(v):.1f}" for x, v in zip(xs, r["ห่าง"]))
         out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.2" stroke-linejoin="round"/>')
         for x, v in zip(xs, r["ห่าง"]):
@@ -150,7 +152,7 @@ def _ssd(fig):
         out.append(text(x0 + pw / 2, top - 50, f"= 5 × Mean² {num(r['nMean2'])} + แกว่ง {num(r['ส่วนแกว่ง'])}", 11, C["muted"], "middle"))
         out.append(text(x0 + pw / 2, top - 34, f"ตัดผ่าน Mean {num(r['ข้าม'])} ครั้ง", 11, C["ink"], "middle"))
         out.append(text(x0 + pw / 2, top - 18, notes[name][0], 11, notes[name][1], "middle", 700))
-    out.append(text(L0 + 1.5 * pw + gap, bm + 32, "วันที่ 1–5 ของแต่ละคู่ · เส้นทึบน้ำเงิน = ระยะห่าง (%) · เส้นประส้ม = Mean ของระยะ",
+    out.append(text(L0 + 1.5 * pw + gap, bm + 32, "วันที่ 1–5 ของแต่ละคู่ · เส้นทึบน้ำเงิน = ระยะห่าง (%) · เส้นประเทาเข้ม = Mean ของระยะ",
                     11, C["muted"], "middle"))
     out.append(text(L0, top - 90, "SSD ลงโทษทั้ง \"ห่างคงที่\" และ \"แกว่ง\" แต่เงินของการ์ดมาจากการแกว่งเท่านั้น", 13, C["ink"], weight=700))
     alt = ("สามคู่ห้าวัน คู่ P ห่าง 1 ทุกวัน SSD 5 ไม่เคยตัดผ่าน Mean คู่ Q ห่าง 4 กับ −4 สลับกัน SSD 64 ตัดผ่านสามครั้ง "

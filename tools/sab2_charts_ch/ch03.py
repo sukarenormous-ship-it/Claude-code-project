@@ -1,7 +1,7 @@
 """เล่ม 2 บท 3 — มีเชือกจริงไหม · สเปกกราฟของบท (อ่านตัวเลขจาก docs/sab2-figures.json คีย์ ch03 เท่านั้น)
 
 sab2-rw-thirty   : 30 โลกเดินสุ่ม 10 แถว · แถวบน slope ของการเปลี่ยนบนระดับ · แถวล่างค่าสถิติ (slope ÷ SE)
-                   โลกของพี่ฝน (seed 16) สีม่วง · โลกที่แรงเท่าหรือแรงกว่าสีแดง · เส้น 5% ของตาราง
+                   โลกของพี่ฝน (seed 16) สีม่วง · โลกที่แรงเท่าหรือแรงกว่าสีเทาเข้ม · เส้น 5% ของตาราง
 sab2-pass-length : จำนวนโลก (จาก 30) ที่ผ่าน ADF ที่เส้น 5% · เดินสุ่ม / เชือก φ 0.95 / เชือก φ 0.99 · 60 / 250 / 731 วัน
 sab2-ltc-dot     : 📡 log LTC เดี่ยว (ลบ Mean ช่วงเลือก) กับ X ของ LTC–DOT (h ตรึงจากช่วงเลือก) · ช่วงเลือก + ช่วงตรวจ
 sab2-ten-rows    : 🎲 สิบแถวของโลกที่ 16 · แกนนอน X วันนี้ แกนตั้งการเปลี่ยน · เส้น slope −0.77 เทียบเส้น 0 · แถว 7 กับ 5 เด่น
@@ -10,6 +10,7 @@ sab2-ten-rows    : 🎲 สิบแถวของโลกที่ 16 · แ�
 from sab_charts import B, C, chart, grouped_bars, lines, text, wrap
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+GREEN_LIGHT = "#86efac"   # เชือกอ่อน (φ ใกล้ 1) = เขียวอ่อน · ไล่เฉดสีเดียว (README)
 
 
 def _stack(values, width):
@@ -36,7 +37,7 @@ def _strip(out, vals, hand_i, lo, hi, y0, title, width, marks, W=760, L=40, R=30
         out.append(f'<line x1="{X(v):.1f}" y1="{y0 - 66}" x2="{X(v):.1f}" y2="{y0}" stroke="{col}" stroke-dasharray="4 3" stroke-width="1.4"/>')
         out.append(text(X(v) + 4, y0 - 58 + dy, lab, 10.5, col, "start", 700))
     for i, ((bv, k), v) in enumerate(zip(_stack(vals, width), vals)):
-        col = C["purple"] if i == hand_i else (C["red"] if red_le is not None and v <= red_le else GREY)
+        col = C["purple"] if i == hand_i else (INK if red_le is not None and v <= red_le else GREY)
         r = 5.2 if i == hand_i else 4.2
         cx = X(v) if i == hand_i else X(bv)   # จุดม่วงวางที่ค่าจริงให้ตรงกับเส้นประของมัน
         out.append(f'<circle cx="{cx:.1f}" cy="{y0 - 7 - 10 * k:.1f}" r="{r}" fill="{col}" fill-opacity=".85"/>')
@@ -53,7 +54,7 @@ def _rw_thirty(fig):
            0.1, [(0, "ศูนย์ = ไม่มีแรงดึง", MUTED, 0), (h["slope"], f"โลกพี่ฝน {B.fmt(h['slope'])}", C["purple"], 14)],
            red_le=h["slope"])
     _strip(out, t["stat"], i, -4.5, 1.0, 290, f"แถวล่าง: ค่าสถิติ slope ÷ SE (แรงเท่าหรือแรงกว่าโลกพี่ฝน {t['statแรงเท่ามือ']} โลก)",
-           0.25, [(h["เส้น5"], f"เส้น 5% {B.fmt(h['เส้น5'])}", C["red"], 0), (h["stat"], f"โลกพี่ฝน {B.fmt(h['stat'])}", C["purple"], 14)],
+           0.25, [(h["เส้น5"], f"เส้น 5% {B.fmt(h['เส้น5'])}", INK, 0), (h["stat"], f"โลกพี่ฝน {B.fmt(h['stat'])}", C["purple"], 14)],
            red_le=h["stat"])
     alt = (f"จุด 30 จุดสองแถว แถวบนคือ slope ของ 30 โลกเดินสุ่ม {t['ลบ']} โลกติดลบ โลกของพี่ฝน {B.fmt(h['slope'])} "
            f"แถวล่างคือค่าสถิติ โลกพี่ฝน {B.fmt(h['stat'])} มี {t['statแรงเท่ามือ']} โลกที่แรงเท่าหรือแรงกว่า "
@@ -68,7 +69,7 @@ def _pass_length(fig):
     cats = [f"{n} วัน" for n in c["วัน"]]
     series = [("เดินสุ่ม (ไม่มีเชือก)", c["เดินสุ่ม"], GREY),
               ("เชือก φ 0.95", c["เชือก095"], C["green"]),
-              ("เชือก φ 0.99", c["เชือก099"], C["amber"])]
+              ("เชือก φ 0.99", c["เชือก099"], GREEN_LIGHT)]
     parts = grouped_bars(cats, series, "ผ่าน ADF ที่เส้น 5% กี่โลก จาก 30 โลก")
     parts = [t.replace('font-weight="700" font-family="Sarabun,sans-serif">+', 'font-weight="700" font-family="Sarabun,sans-serif">')
              for t in parts]                   # จำนวนโลกไม่ใช่กำไร จึงไม่ใส่เครื่องหมาย +
@@ -85,8 +86,8 @@ def _ltc_dot(fig):
     g = fig["ch03"]["จริง"]["กราฟ"]
     step, split = g["ทุก"], g["แบ่ง"]
     xs = [k * step for k in range(len(g["LTC"]))]
-    series = [("log LTC เดี่ยว ลบ Mean (%)", g["LTC"], C["blue"]),
-              ("X ของ LTC–DOT (%)", g["X"], C["amber"])]
+    series = [("log LTC เดี่ยว ลบ Mean (%)", g["LTC"], C["amber"]),
+              ("X ของ LTC–DOT (%)", g["X"], C["blue"])]
     parts = lines(xs, series, "LTC เดี่ยว กับ X ของคู่ LTC–DOT: เกือบเป็นเส้นเดียวกัน", unit="%",
                   xticks=[(0, ""), (split, "เริ่มช่วงตรวจ")])
     # เส้นแบ่งช่วงเลือก | ช่วงตรวจ
@@ -96,7 +97,7 @@ def _ltc_dot(fig):
     parts.append(text(sx + 6, T + 14, "h ตรึงจากช่วงเลือก →", 11, C["purple"], weight=700))
     parts.append(text(L, Bm + 16, "เริ่มช่วงเลือก", 10.5, GREY, "start"))
     parts.append(text(W - R, Bm + 16, "จบช่วงตรวจ", 10.5, GREY, "end"))
-    alt = (f"กราฟเส้นสองเส้นตลอด {g['วันรวม']} วัน เส้นน้ำเงินคือ log ราคา LTC ลบ Mean เส้นส้มคือ X ของคู่ LTC–DOT "
+    alt = (f"กราฟเส้นสองเส้นตลอด {g['วันรวม']} วัน เส้นส้มคือ log ราคา LTC ลบ Mean เส้นน้ำเงินคือ X ของคู่ LTC–DOT "
            f"สองเส้นขึ้นลงเกือบพร้อมกันทั้งช่วง สหสัมพันธ์ {B.fmt(g['corr'])} เส้นประม่วงแบ่งช่วงเลือกกับช่วงตรวจ")
     cap = f"ราคาปิดรายวัน Binance · จุดทุก {step} วัน · ช่วงเลือก {split} วัน แล้วต่อด้วยช่วงตรวจ (ไม่แตะช่วงทดสอบสุดท้าย)"
     return wrap(760, 320, alt, parts, cap, "จริง")
@@ -125,12 +126,12 @@ def _ten_rows(fig):
     out.append(text((L + W - R) / 2, Bm + 36, "X วันนี้ (%, ลบ Mean แล้ว)", 11.5, MUTED, "middle", 700))
     out.append(text(16, T - 12, "การเปลี่ยนไปพรุ่งนี้", 11.5, MUTED, "start", 700))
     # เส้นศูนย์ = คำตอบจริงของโลกนี้ · เส้นที่ Regression ได้
-    out.append(f'<line x1="{L}" y1="{Y(0):.1f}" x2="{W - R}" y2="{Y(0):.1f}" stroke="{GREY}" stroke-width="2" stroke-dasharray="6 4"/>')
+    out.append(f'<line x1="{L}" y1="{Y(0):.1f}" x2="{W - R}" y2="{Y(0):.1f}" stroke="{INK}" stroke-width="2" stroke-dasharray="6 4"/>')
     sl, c0 = h["slope3"], h["Meanเปลี่ยน"]
     out.append(f'<line x1="{X(x0):.1f}" y1="{Y(c0 + sl * x0):.1f}" x2="{X(x1):.1f}" y2="{Y(c0 + sl * x1):.1f}" stroke="{C["blue"]}" stroke-width="2.6"/>')
     big = {6: (10, 4, "start"), 4: (-10, 4, "end")}        # แถว 7 กับแถว 5 (ลำดับ 6 กับ 4)
     for i, (x, y) in enumerate(zip(xs, ys)):
-        col = C["purple"] if i in big else C["blue"]
+        col = C["purple"] if i in big else GREY
         out.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="{6 if i in big else 4.5}" fill="{col}" fill-opacity="{1 if i in big else .8}"/>')
         if i in big:
             dx, dy, anc = big[i]
@@ -141,14 +142,14 @@ def _ten_rows(fig):
     out.append(f'<line x1="{lx}" y1="{T + 16}" x2="{lx + 26}" y2="{T + 16}" stroke="{C["blue"]}" stroke-width="2.6"/>')
     out.append(text(lx + 32, T + 20, f"Regression: slope {B.fmt(h['slope'])}", 11, C["blue"], weight=700))
     out.append(text(lx + 32, T + 36, f"({B.fmt(h['รวมคูณ'])} ÷ {B.fmt(h['รวมกำลังสอง'])})", 10.5, MUTED))
-    out.append(f'<line x1="{lx}" y1="{T + 62}" x2="{lx + 26}" y2="{T + 62}" stroke="{GREY}" stroke-width="2" stroke-dasharray="6 4"/>')
+    out.append(f'<line x1="{lx}" y1="{T + 62}" x2="{lx + 26}" y2="{T + 62}" stroke="{INK}" stroke-width="2" stroke-dasharray="6 4"/>')
     out.append(text(lx + 32, T + 66, "slope 0 = คำตอบจริง", 11, INK, weight=700))
     out.append(text(lx + 32, T + 82, "(เดินสุ่ม ไม่มีเชือก)", 10.5, MUTED))
     out.append(text(lx, T + 116, f"แถว 7 แถวเดียวให้ {B.fmt(prod[6])}", 10.5, INK))
     out.append(text(lx, T + 132, f"จากผลรวม {B.fmt(h['รวมคูณ'])}", 10.5, INK))
     out.append(text(lx, T + 152, "ตัวเลขข้างจุด = แถวในตาราง", 10, MUTED))
     alt = (f"กราฟจุดสิบจุด แกนนอนคือ X วันนี้ แกนตั้งคือการเปลี่ยนไปพรุ่งนี้ เส้นน้ำเงินเอียงลง slope {B.fmt(h['slope'])} "
-           f"เส้นประเทาคือ slope 0 ซึ่งเป็นคำตอบจริง จุดแถว 7 อยู่ซ้ายบน (−5.4 แล้วขึ้น 6.3) และแถว 5 อยู่ขวาล่าง (2 แล้วลง 7.3) "
+           f"เส้นประเทาเข้มคือ slope 0 ซึ่งเป็นคำตอบจริง จุดแถว 7 อยู่ซ้ายบน (−5.4 แล้วขึ้น 6.3) และแถว 5 อยู่ขวาล่าง (2 แล้วลง 7.3) "
            "สองจุดนี้อยู่ในมุมที่ขยับเข้าหา Mean และดึงเส้นให้เอียงลง")
     cap = f"โลกเดินสุ่มที่ {h['seed']} ของพี่ฝน · {h['แถว']} แถว · จุดเดียวกับตารางในตอน ก · 1"
     return wrap(W, H, alt, out, cap, "จำลอง")

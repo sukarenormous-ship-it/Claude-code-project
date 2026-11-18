@@ -13,6 +13,7 @@ sab2-two-dirs : หกจุดเดิม สองแผง: A บน B (ก�
 from sab_charts import chart, wrap, text, C, B
 
 INK, MUTED, GREY = C["ink"], C["muted"], C["grey"]
+BLUE_LIGHT, BLUE_DARK = "#60a5fa", "#1e40af"   # ไล่เฉดสีเดียว (README: Graded series)
 
 
 def _n(v):
@@ -140,7 +141,7 @@ def _btceth(fig):
     out.append(text((L + W - R) / 2, Bm + 38, "ราคา ETH (B · ดอลลาร์)", 11.5, MUTED, "middle", 700))
     out.append(text(L - 8, T - 12, "ราคา BTC (A)", 11.5, MUTED, "end", 700))
     for i, (e, b) in enumerate(zip(eth, btc)):
-        col = C["blue"] if i < half else C["amber"]
+        col = BLUE_LIGHT if i < half else BLUE_DARK
         out.append(f'<circle cx="{X(e):.1f}" cy="{Y(b):.1f}" r="2.1" fill="{col}" fill-opacity=".55"/>')
     # เส้น A บน B
     hab, a = r["hAบนB"], r["InterceptAบนB"]
@@ -159,7 +160,7 @@ def _btceth(fig):
         d = f' stroke-dasharray="{dash}"' if dash else ""
         out.append(f'<line x1="{lx}" y1="{yy}" x2="{lx + 26}" y2="{yy}" stroke="{col}" stroke-width="2.4"{d}/>')
         out.append(text(lx + 32, yy + 4, lab, 11.5, col, weight=700))
-    for j, (col, lab) in enumerate([(C["blue"], f"ปีแรก ถึง {r['ครึ่งแรก']['จบ']}"), (C["amber"], f"ปีหลัง จาก {r['ครึ่งหลัง']['เริ่ม']}")]):
+    for j, (col, lab) in enumerate([(BLUE_LIGHT, f"ปีแรก ถึง {r['ครึ่งแรก']['จบ']}"), (BLUE_DARK, f"ปีหลัง จาก {r['ครึ่งหลัง']['เริ่ม']}")]):
         yy = T + 80 + 22 * j
         out.append(f'<circle cx="{lx + 13}" cy="{yy}" r="4.5" fill="{col}"/>')
         out.append(text(lx + 24, yy + 4, lab, 10.5, MUTED))
@@ -184,15 +185,15 @@ def _windows(fig):
         if g == 1.5:
             continue
         out.append(f'<line x1="{X(g):.1f}" y1="{top}" x2="{X(g):.1f}" y2="{bot}" stroke="{C["grid"]}"/>')
-    out.append(f'<line x1="{X(true_h):.1f}" y1="{top - 6}" x2="{X(true_h):.1f}" y2="{bot}" stroke="{C["green"]}" stroke-width="2" stroke-dasharray="5 4"/>')
-    out.append(text(X(true_h), top - 12, f"คำตอบจริง h = {B.fmt(true_h)}", 11, C["green"], "middle", 700))
+    out.append(f'<line x1="{X(true_h):.1f}" y1="{top - 6}" x2="{X(true_h):.1f}" y2="{bot}" stroke="{INK}" stroke-width="2" stroke-dasharray="5 4"/>')
+    out.append(text(X(true_h), top - 12, f"คำตอบจริง h = {B.fmt(true_h)}", 11, INK, "middle", 700))
     for i, nn in enumerate(days):
         r = w[str(nn)]
         y = top + 28 + 52 * i
         out.append(text(16, y + 4, f"ข้อมูล {B.fmt(nn)} วัน", 12, INK, weight=700))
-        out.append(f'<line x1="{X(r["ต่ำสุด"]):.1f}" y1="{y}" x2="{X(r["สูงสุด"]):.1f}" y2="{y}" stroke="{C["blue"]}" '
+        out.append(f'<line x1="{X(r["ต่ำสุด"]):.1f}" y1="{y}" x2="{X(r["สูงสุด"]):.1f}" y2="{y}" stroke="{C["green"]}" '
                    f'stroke-width="9" stroke-opacity=".28" stroke-linecap="round"/>')
-        out.append(f'<line x1="{X(r["มัธยฐาน"]):.1f}" y1="{y - 9}" x2="{X(r["มัธยฐาน"]):.1f}" y2="{y + 9}" stroke="{C["blue"]}" stroke-width="3"/>')
+        out.append(f'<line x1="{X(r["มัธยฐาน"]):.1f}" y1="{y - 9}" x2="{X(r["มัธยฐาน"]):.1f}" y2="{y + 9}" stroke="{C["green"]}" stroke-width="3"/>')
         out.append(text(X(r["ต่ำสุด"]) - 10, y + 4, B.fmt(r["ต่ำสุด"]), 11, MUTED, "end", 700))
         out.append(text(X(r["สูงสุด"]) + 10, y + 4, B.fmt(r["สูงสุด"]), 11, MUTED, "start", 700))
     out.append(text(16, bot + 30, f"แถบ = ต่ำสุดถึงสูงสุดจาก {B.fmt(s['ชุด'])} โลกสุ่ม · ขีดตั้ง = มัธยฐาน", 10.5, MUTED))
@@ -206,7 +207,7 @@ def _windows(fig):
 def _resid3(fig):
     c = fig["ch01"]
     s, r = c["จำลอง"], c["จริง"]
-    panels = [("🎲 โลกมีเชือก", s["ชุดกราฟ"]["z_มีเชือก"], C["amber"], f"{B.fmt(s['ตัวอย่าง']['R2เปอร์เซ็นต์'])}%", s["ตัวอย่าง"]["ข้ามMean"]),
+    panels = [("🎲 โลกมีเชือก", s["ชุดกราฟ"]["z_มีเชือก"], C["green"], f"{B.fmt(s['ตัวอย่าง']['R2เปอร์เซ็นต์'])}%", s["ตัวอย่าง"]["ข้ามMean"]),
               ("🎲 โลกไม่มีเชือก", s["ชุดกราฟ"]["z_ไม่มีเชือก"], GREY, f"{B.fmt(s['ไม่มีเชือก']['R2เปอร์เซ็นต์'])}%", s["ไม่มีเชือก"]["ข้ามMean"]),
               ("📡 BTC บน ETH", r["ชุดกราฟ"]["z"], C["blue"], f"{B.fmt(r['R2เปอร์เซ็นต์'])}%", r["ข้ามMean"])]
     W, L, R = 760, 70, 200

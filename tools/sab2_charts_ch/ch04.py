@@ -11,6 +11,7 @@ import math
 from sab_charts import B, C, chart, text, wrap
 
 INK, MUTED, GREY, AXIS = C["ink"], C["muted"], C["grey"], C["axis"]
+GREEN_LIGHT = "#86efac"   # โลกมีเชือก = เขียว · เฉดอ่อน/เข้มแยกสองกลุ่มในโลกเดียวกัน (README)
 
 
 def _axis(out, lo, hi, step, y0, L, R, W, fmt=None, top=None):
@@ -34,10 +35,10 @@ def _ci_ladder(fig):
     lo, hi = 0.5, 1.1
     out = [text(16, 24, "φ ที่ประมาณได้ และช่วง 95% จากโลกเดียวกัน", 12.5, INK, weight=700)]
     X = _axis(out, lo, hi, 0.1, 250, L, R, W, top=46)
-    out.append(f'<line x1="{X(true):.1f}" y1="46" x2="{X(true):.1f}" y2="250" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
-    out.append(text(X(true), 42, f"φ จริง {B.fmt(true)}", 10.5, C["green"], "middle", 700))
-    out.append(f'<line x1="{X(1):.1f}" y1="46" x2="{X(1):.1f}" y2="250" stroke="{C["red"]}" stroke-width="1.4"/>')
-    out.append(text(X(1) + 4, 60, "1 = ไม่มีเชือก", 10.5, C["red"], "start", 700))
+    out.append(f'<line x1="{X(true):.1f}" y1="46" x2="{X(true):.1f}" y2="250" stroke="{INK}" stroke-dasharray="5 4" stroke-width="1.6"/>')
+    out.append(text(X(true), 42, f"φ จริง {B.fmt(true)}", 10.5, INK, "middle", 700))
+    out.append(f'<line x1="{X(1):.1f}" y1="46" x2="{X(1):.1f}" y2="250" stroke="{GREY}" stroke-width="1.8"/>')
+    out.append(text(X(1) + 4, 60, "1 = ไม่มีเชือก", 10.5, MUTED, "start", 700))
     for i, d in enumerate(c["วัน"]):
         y = 95 + 60 * i
         a, b, p = c["ล่าง"][i], c["บน"][i], c["phi"][i]
@@ -73,15 +74,15 @@ def _bias_thirty(fig):
     lo, hi = 0.3, 1.05
     out = [text(16, 24, "φ ที่ประมาณได้ของ 30 โลก (ทุกโลกมี φ จริง 0.95)", 12.5, INK, weight=700)]
     X = _axis(out, lo, hi, 0.1, 400, L, R, W, top=44)
-    out.append(f'<line x1="{X(true):.1f}" y1="44" x2="{X(true):.1f}" y2="400" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
-    out.append(text(X(true) - 4, 40, f"φ จริง {B.fmt(true)}", 10.5, C["green"], "end", 700))
+    out.append(f'<line x1="{X(true):.1f}" y1="44" x2="{X(true):.1f}" y2="400" stroke="{INK}" stroke-dasharray="5 4" stroke-width="1.6"/>')
+    out.append(text(X(true) - 4, 40, f"φ จริง {B.fmt(true)}", 10.5, INK, "end", 700))
     for i, d in enumerate(c["วัน"]):
         y0 = 140 + 120 * i
         vals = c["phiทุกโลก"][i]
         out.append(text(L - 10, y0 - 4, f"{d} วัน", 12, INK, "end", 700))
         out.append(f'<line x1="{L}" y1="{y0}" x2="{W - R}" y2="{y0}" stroke="{AXIS}" stroke-dasharray="2 3"/>')
         for (bv, k), v in zip(_stack(vals, 0.02), vals):
-            col = C["amber"] if v < true else C["blue"]
+            col = C["green"] if v < true else GREEN_LIGHT
             out.append(f'<circle cx="{X(bv):.1f}" cy="{y0 - 6 - 7 * k:.1f}" r="3.4" fill="{col}" fill-opacity=".85"/>')
         m = c["มัธยฐานphi"][i]
         out.append(f'<line x1="{X(m):.1f}" y1="{y0 - 80}" x2="{X(m):.1f}" y2="{y0 + 4}" stroke="{C["purple"]}" stroke-width="2.4"/>')
@@ -89,7 +90,7 @@ def _bias_thirty(fig):
     alt = (f"จุด 30 จุดต่อแถว สามแถว 20 60 และ 250 วัน Median ของ φ ที่ประมาณได้คือ {B.fmt(c['มัธยฐานphi'][0])} "
            f"{B.fmt(c['มัธยฐานphi'][1])} และ {B.fmt(c['มัธยฐานphi'][2])} ต่ำกว่า φ จริง 0.95 ทุกแถว "
            f"จำนวนโลกที่ต่ำกว่าจริง {c['ต่ำกว่าจริง'][0]} {c['ต่ำกว่าจริง'][1]} และ {c['ต่ำกว่าจริง'][2]} จาก 30")
-    cap = "30 โลก (seed 1–30) · เชือก φ 0.95 · จุดส้ม = ต่ำกว่าค่าจริง (ดูกลับเร็วเกินจริง) · จุดน้ำเงิน = สูงกว่าหรือเท่า"
+    cap = "30 โลก (seed 1–30) · เชือก φ 0.95 · จุดเขียวเข้ม = ต่ำกว่าค่าจริง (ดูกลับเร็วเกินจริง) · จุดเขียวอ่อน = สูงกว่าหรือเท่า"
     return wrap(W, H, alt, out, cap, "จำลอง")
 
 
@@ -107,14 +108,14 @@ def _hl_real(fig):
     out = [text(16, 24, "Half-life (วัน) และช่วง 95% ของข้อมูลจริง", 12.5, INK, weight=700)]
     X = _axis(out, lo, hi, 20, 340, L, R, W, top=46)
     k = j["เกณฑ์วัน"]
-    out.append(f'<line x1="{X(k):.1f}" y1="46" x2="{X(k):.1f}" y2="340" stroke="{C["green"]}" stroke-dasharray="5 4" stroke-width="1.6"/>')
-    out.append(text(X(k) - 4, 58, f"เกณฑ์ {k} วัน", 10.5, C["green"], "end", 700))
+    out.append(f'<line x1="{X(k):.1f}" y1="46" x2="{X(k):.1f}" y2="340" stroke="{INK}" stroke-dasharray="5 4" stroke-width="1.6"/>')
+    out.append(text(X(k) - 4, 58, f"เกณฑ์ {k} วัน", 10.5, INK, "end", 700))
     out.append(text(W - R, 40, "ลูกศร = ปลายบนเกิน 120 วันหรือไม่มีที่สิ้นสุด", 10, GREY, "end"))
     for i, (name, d) in enumerate(rows):
         y = 88 + 58 * i
         a, m = d["ครึ่งชีวิตล่าง"], d["ครึ่งชีวิต"]
         b = d["ครึ่งชีวิตบน"]
-        col = C["red"] if b is None else C["blue"]
+        col = GREY if b is None else C["blue"]
         out.append(text(L - 12, y + 4, name, 11.5, INK, "end", 700))
         end = hi if (b is None or b > hi) else b
         out.append(f'<line x1="{X(a):.1f}" y1="{y}" x2="{X(end):.1f}" y2="{y}" stroke="{col}" stroke-width="3"/>')
@@ -160,8 +161,8 @@ def _hl_curve(fig):
     out.append(f'<line x1="{X(a_lo):.1f}" y1="{Bm - 4}" x2="{X(a_hi):.1f}" y2="{Bm - 4}" stroke="{C["blue"]}" stroke-width="4"/>')
     out.append(f'<line x1="{L + 4}" y1="{Y(hl_lo):.1f}" x2="{L + 4}" y2="{Y(hl_hi):.1f}" stroke="{C["purple"]}" stroke-width="4"/>')
     # เส้น φ = 1
-    out.append(f'<line x1="{X(1):.1f}" y1="{T}" x2="{X(1):.1f}" y2="{Bm}" stroke="{C["red"]}" stroke-width="1.4"/>')
-    out.append(text(X(1) + 5, Bm - 12, "1 = ไม่มีเชือก", 10.5, C["red"], "start", 700))
+    out.append(f'<line x1="{X(1):.1f}" y1="{T}" x2="{X(1):.1f}" y2="{Bm}" stroke="{GREY}" stroke-width="1.8"/>')
+    out.append(text(X(1) + 5, Bm - 12, "1 = ไม่มีเชือก", 10.5, MUTED, "start", 700))
     pts = []
     for i in range(121):
         p = x0 + i * (0.9935 - x0) / 120

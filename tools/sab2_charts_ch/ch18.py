@@ -40,16 +40,16 @@ def _authors(fig):
         out.append(f'<line x1="{X(g):.1f}" y1="{T}" x2="{X(g):.1f}" y2="{Bm}" stroke="{C["grid"]}"/>')
         out.append(text(X(g), Bm + 18, B.fmt(g), 11, GREY, "middle"))
     out.append(text((L + W - R) / 2, Bm + 38, "Sharpe รายเดือนที่ดีที่สุดของผู้เขียนแต่ละคน (12 เดือน)", 11, GREY, "middle"))
-    _strip(out, w["ดีสุด"], X, Bm - 8, C["blue"])
-    for v, lab, col, dy in ((c["Sharpe"], f"งานในกลุ่มแชตอ้าง {B.fmt(c['Sharpe'])}", C["red"], 46),
-                            (c["เส้นโชค"]["เส้น"], f"เส้นโชคจากสูตร {B.fmt(c['เส้นโชค']['เส้น'])}", C["amber"], 64),
+    _strip(out, w["ดีสุด"], X, Bm - 8, GREY)
+    for v, lab, col, dy in ((c["Sharpe"], f"งานในกลุ่มแชตอ้าง {B.fmt(c['Sharpe'])}", MUTED, 46),
+                            (c["เส้นโชค"]["เส้น"], f"เส้นโชคจากสูตร {B.fmt(c['เส้นโชค']['เส้น'])}", INK, 64),
                             (w["ดีสุดมัธยฐาน"], f"มัธยฐานของ 30 คน {B.fmt(w['ดีสุดมัธยฐาน'])}", C["purple"], 82)):
         out.append(f'<line x1="{X(v):.1f}" y1="{T - 18}" x2="{X(v):.1f}" y2="{Bm}" stroke="{col}" stroke-width="1.8" stroke-dasharray="5 4"/>')
-    out.append(text(X(c["Sharpe"]) - 6, T - 22, f"อ้าง {B.fmt(c['Sharpe'])}", 11, C["red"], "end", 700))
-    out.append(text(X(c["เส้นโชค"]["เส้น"]) + 4, T - 22, f"เส้นโชค {B.fmt(c['เส้นโชค']['เส้น'])}", 11, C["amber"], "start", 700))
+    out.append(text(X(c["Sharpe"]) - 6, T - 22, f"อ้าง {B.fmt(c['Sharpe'])}", 11, MUTED, "end", 700))
+    out.append(text(X(c["เส้นโชค"]["เส้น"]) + 4, T - 22, f"เส้นโชค {B.fmt(c['เส้นโชค']['เส้น'])}", 11, INK, "start", 700))
     out.append(text(X(w["ดีสุดมัธยฐาน"]) + 6, T - 4, f"มัธยฐาน {B.fmt(w['ดีสุดมัธยฐาน'])}", 11, C["purple"], "start", 700))
     out.append(text(W - R, T - 4, f"ถึง {B.fmt(c['Sharpe'])} ได้ {w['ถึงที่อ้าง']} จาก {w['คน']} คน", 11.5, INK, "end", 700))
-    alt = (f"จุดสีน้ำเงิน 30 จุดคือ Sharpe ที่ดีที่สุดของผู้เขียนที่ไม่มีฝีมือแต่ละคน ต่ำสุด {B.fmt(w['ต่ำสุด'])} สูงสุด {B.fmt(w['สูงสุด'])} "
+    alt = (f"จุดสีเทา 30 จุดคือ Sharpe ที่ดีที่สุดของผู้เขียนที่ไม่มีฝีมือแต่ละคน ต่ำสุด {B.fmt(w['ต่ำสุด'])} สูงสุด {B.fmt(w['สูงสุด'])} "
            f"มัธยฐาน {B.fmt(w['ดีสุดมัธยฐาน'])} สูงกว่าเส้นโชคจากสูตร {B.fmt(c['เส้นโชค']['เส้น'])} และ {w['ถึงที่อ้าง']} คนถึง {B.fmt(c['Sharpe'])} ที่งานในกลุ่มแชตอ้าง")
     return wrap(W, H, alt, out, "ผลรายเดือนสุ่มจากการแจกแจงปกติที่ Mean 0 · คนละ 190 แบบ แบบละ 12 เดือน · 30 คน", "จำลอง")
 
@@ -75,8 +75,8 @@ def _worlds(fig):
         out.append(text(L - 10, y - 6, lab, 11.5, INK, "end", 700))
         out.append(text(L - 10, y + 10, f"ถึงเส้น {s['ถึงเส้นเลื่อนขั้น']} จาก {s['โลก']}", 10.5, GREY, "end"))
         _strip(out, s["Sharpeทุกโลก"], X, y, col, step=7)
-    out.append(f'<line x1="{X(bar):.1f}" y1="58" x2="{X(bar):.1f}" y2="312" stroke="{C["purple"]}" stroke-width="1.8" stroke-dasharray="6 4"/>')
-    out.append(text(X(bar) + 6, 64, f"เส้นเลื่อนขั้น {B.fmt(bar)}", 11, C["purple"], "start", 700))
+    out.append(f'<line x1="{X(bar):.1f}" y1="58" x2="{X(bar):.1f}" y2="312" stroke="{INK}" stroke-width="1.8" stroke-dasharray="6 4"/>')
+    out.append(text(X(bar) + 6, 64, f"เส้นเลื่อนขั้น {B.fmt(bar)}", 11, INK, "start", 700))
     v = card["Sharpe"]
     out.append(f'<line x1="{X(v):.1f}" y1="58" x2="{X(v):.1f}" y2="312" stroke="{C["blue"]}" stroke-width="2.2"/>')
     out.append(text(X(v) - 6, 64, f"ผลจริง {B.fmt(v)}", 11, C["blue"], "end", 700))
@@ -97,6 +97,8 @@ def _funding(fig):
     n = 24
     X = lambda m: L + (m - 1) / (n - 1) * (W - L - R)  # noqa: E731
     out = [text(16, 26, "funding carry: ผลสะสม 24 เดือนเทียบที่คาดจากช่วงเลือก", 13, INK, weight=700)]
+    out.append(text(W - R, 26, "ผลจริงช่วงตรวจ", 11, C["amber"], "end", 700))
+    out.append(text(W - R, 42, "ผลจริงช่วงทดสอบสุดท้าย", 11, C["purple"], "end", 700))
     panels = [("BTC", 56, 270), ("ETH", 316, 530)]
     for coin, T, Bm in panels:
         Y = lambda v, T=T, Bm=Bm: Bm - (v - lo) / (hi - lo) * (Bm - T - 20)  # noqa: E731
@@ -109,17 +111,22 @@ def _funding(fig):
         out.append(f'<line x1="{xm:.1f}" y1="{T + 14}" x2="{xm:.1f}" y2="{Bm}" stroke="{GREY}" stroke-dasharray="3 3"/>')
         out.append(text(xm - 6, T + 26, "ช่วงตรวจ", 10.5, GREY, "end"))
         out.append(text(xm + 6, T + 26, "ช่วงทดสอบสุดท้าย", 10.5, GREY, "start"))
-        for key, col, dash, wd in (("คาด", GREY, None, 2), ("เตือน", C["amber"], "6 4", 2), ("ลงมือ", C["red"], "6 4", 2),
-                                   ("สะสม", C["blue"], None, 2.8)):
+        for key, col, dash, wd in (("คาด", GREY, None, 2), ("เตือน", MUTED, "6 4", 2), ("ลงมือ", INK, "6 4", 2)):
             pts = [(X(r["เดือน"]), Y(r[key])) for r in rows]
             d_ = f' stroke-dasharray="{dash}"' if dash else ""
             out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{col}" stroke-width="{wd}"{d_} stroke-linejoin="round"/>')
+        # ผลจริง: สีตามช่วง (README · ช่วงตรวจ = ส้ม · ช่วงทดสอบสุดท้าย = ม่วง) ต่อกันที่เส้นแบ่งเดือน 12.5
+        r12, r13 = rows[11], rows[12]
+        mid = (xm, Y((r12["สะสม"] + r13["สะสม"]) / 2))
+        for seg, col, head, tail in ((rows[:12], C["amber"], [], [mid]), (rows[12:], C["purple"], [mid], [])):
+            pts = head + [(X(r["เดือน"]), Y(r["สะสม"])) for r in seg] + tail
+            out.append(f'<polyline points="{_poly(pts)}" fill="none" stroke="{col}" stroke-width="2.8" stroke-linejoin="round"/>')
         last = rows[-1]
         out.append(text(X(n) - 4, Y(last["คาด"]) - 8, f"ที่คาด {B.fmt(last['คาด'])}", 11, GREY, "end", 700))
         m_lab = 15 if coin == "BTC" else 19                 # ตำแหน่งป้ายเส้น: ห่างจากเส้นผลจริงของแต่ละแผง
-        out.append(text(X(m_lab), Y(rows[m_lab - 1]["เตือน"]) + (20 if coin == "BTC" else -14), f"เส้นเตือน (เดือน 24: {B.fmt(last['เตือน'])})", 11, C["amber"], "middle", 700))
-        out.append(text(X(m_lab), Y(rows[m_lab - 1]["ลงมือ"]) + (20 if coin == "BTC" else -12), f"เส้นลงมือ (เดือน 24: {B.fmt(last['ลงมือ'])})", 11, C["red"], "middle", 700))
-        out.append(text(X(n) - 4, Y(last["สะสม"]) + 18, f"ผลจริง {B.fmt(last['สะสม'])}", 11, C["blue"], "end", 700))
+        out.append(text(X(m_lab), Y(rows[m_lab - 1]["เตือน"]) + (20 if coin == "BTC" else -14), f"เส้นเตือน (เดือน 24: {B.fmt(last['เตือน'])})", 11, MUTED, "middle", 700))
+        out.append(text(X(m_lab), Y(rows[m_lab - 1]["ลงมือ"]) + (20 if coin == "BTC" else -12), f"เส้นลงมือ (เดือน 24: {B.fmt(last['ลงมือ'])})", 11, INK, "middle", 700))
+        out.append(text(X(n) - 4, Y(last["สะสม"]) + 18, f"ผลจริง {B.fmt(last['สะสม'])}", 11, C["purple"], "end", 700))
         a = f[coin]["ลงมือเดือนแรก"]
         if a:
             r = rows[a - 1]
@@ -157,8 +164,8 @@ def _decide_map(fig):
     for g in xt:
         out.append(text(X(g), Bm + 18, B.fmt(g), 10.5, GREY, "middle"))
     out.append(f'<line x1="{X(0):.1f}" y1="{T}" x2="{X(0):.1f}" y2="{Bm}" stroke="{C["ink"]}" stroke-width="1.4"/>')
-    out.append(f'<line x1="{X(0):.1f}" y1="{Y(bar):.1f}" x2="{W - R}" y2="{Y(bar):.1f}" stroke="{C["purple"]}" stroke-width="1.8" stroke-dasharray="6 4"/>')
-    out.append(text(W - R - 4, Y(bar) - 6, f"เส้นเลื่อนขั้น {B.fmt(bar)} = 2 ÷ √12", 11, C["purple"], "end", 700))
+    out.append(f'<line x1="{X(0):.1f}" y1="{Y(bar):.1f}" x2="{W - R}" y2="{Y(bar):.1f}" stroke="{INK}" stroke-width="1.8" stroke-dasharray="6 4"/>')
+    out.append(text(W - R - 4, Y(bar) - 6, f"เส้นเลื่อนขั้น {B.fmt(bar)} = 2 ÷ √12", 11, INK, "end", 700))
     out.append(text((L + W - R) / 2, Bm + 38, "สุทธิหลังค่าธรรมเนียมของปีทดสอบ (ดอลลาร์ ทุน 1,000)", 11, GREY, "middle"))
     out.append(text(L, T - 10, "Sharpe รายเดือน (12 เดือน)", 11, GREY))
     zx = {"ปลดการ์ด": X(xt[0]) + 10, "คงไว้บนกระดาษอีกหนึ่งปี": X(400), "เลื่อนเป็นเงินจริงขนาดเล็ก": X(400)}

@@ -29,10 +29,10 @@ def _hand_loop(fig):
         out.append(f'<line x1="{L}" y1="{Y(g):.1f}" x2="{W - R}" y2="{Y(g):.1f}" stroke="{C["axis"] if g == 0 else C["grid"]}"/>')
         out.append(text(L - 8, Y(g) + 4, B.fmt(g), 11, GREY, "end"))
     enter, leave = 2, 0.5
-    out.append(f'<line x1="{L}" y1="{Y(enter):.1f}" x2="{W - R}" y2="{Y(enter):.1f}" stroke="{C["red"]}" stroke-dasharray="5 4"/>')
-    out.append(text(W - R, Y(enter) - 6, "เส้นเข้า Z 2", 11, C["red"], "end", 700))
-    out.append(f'<line x1="{L}" y1="{Y(leave):.1f}" x2="{W - R}" y2="{Y(leave):.1f}" stroke="{C["green"]}" stroke-dasharray="5 4"/>')
-    out.append(text(W - R, Y(leave) + 15, "เส้นออก Z 0.5", 11, C["green"], "end", 700))
+    out.append(f'<line x1="{L}" y1="{Y(enter):.1f}" x2="{W - R}" y2="{Y(enter):.1f}" stroke="{INK}" stroke-dasharray="5 4"/>')
+    out.append(text(W - R, Y(enter) - 6, "เส้นเข้า Z 2", 11, INK, "end", 700))
+    out.append(f'<line x1="{L}" y1="{Y(leave):.1f}" x2="{W - R}" y2="{Y(leave):.1f}" stroke="{MUTED}" stroke-dasharray="2 3" stroke-width="1.6"/>')
+    out.append(text(W - R, Y(leave) + 15, "เส้นออก Z 0.5", 11, MUTED, "end", 700))
     for i, d in enumerate(days):
         out.append(text(X(i), Bm + 20, f"วัน {d['วัน']}", 10.5, GREY, "middle"))
     pts = [(X(i), Y(v)) for i, v in enumerate(xs)]
@@ -40,9 +40,9 @@ def _hand_loop(fig):
     for x, y in pts:
         out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="{C["blue"]}"/>')
     marks = [(c["สัญญาณเข้า"]["วัน"], "สัญญาณ short", C["purple"], -12),
-             (c["fillเข้า"]["วัน"], "ได้ราคา", C["amber"], 22),
+             (c["fillเข้า"]["วัน"], "ได้ราคา", INK, 22),
              (c["สัญญาณออก"]["วัน"], "สัญญาณปิด", C["purple"], 22),
-             (c["fillออก"]["วัน"], "ได้ราคา", C["amber"], -12)]
+             (c["fillออก"]["วัน"], "ได้ราคา", INK, -12)]
     for day, lab, col, dy in marks:
         i = day - 1
         out.append(f'<circle cx="{X(i):.1f}" cy="{Y(xs[i]):.1f}" r="6.5" fill="none" stroke="{col}" stroke-width="2.4"/>')
