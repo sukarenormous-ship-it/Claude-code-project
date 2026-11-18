@@ -136,7 +136,7 @@ def _ten_rows(fig):
             dx, dy, anc = big[i]
             out.append(text(X(x) + dx, Y(y) + dy, f"แถว {i + 1} · ผลคูณ {B.fmt(prod[i])}", 10.5, C["purple"], anc, 700))
         else:
-            out.append(text(X(x) + 7, Y(y) - 6, str(i + 1), 9.5, MUTED))
+            out.append(text(X(x) + 7, Y(y) + (14 if i == 2 else -6), str(i + 1), 9.5, MUTED))   # แถว 3 ป้ายอยู่ใต้จุด (เส้นผ่านด้านบน)
     lx = W - R + 18
     out.append(f'<line x1="{lx}" y1="{T + 16}" x2="{lx + 26}" y2="{T + 16}" stroke="{C["blue"]}" stroke-width="2.6"/>')
     out.append(text(lx + 32, T + 20, f"Regression: slope {B.fmt(h['slope'])}", 11, C["blue"], weight=700))

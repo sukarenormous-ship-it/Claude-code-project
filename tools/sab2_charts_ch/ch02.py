@@ -159,7 +159,10 @@ def _log_ladder(fig):
         out.append(f'<line x1="{L}" y1="{axis_y}" x2="{W - R}" y2="{axis_y}" stroke="{C["axis"]}"/>')
         for tv in ticks:
             out.append(f'<line x1="{X(tv):.1f}" y1="{t0 + 14}" x2="{X(tv):.1f}" y2="{axis_y}" stroke="{C["grid"]}"/>')
-            out.append(text(X(tv), axis_y + 15, B.fmt(tv), 10.5, GREY, "middle"))
+            if vi == 1:                       # บันได LN ไม่พิมพ์ตัวเลขขีด (อ่านจากความยาวก้าวแทน)
+                out.append(text(X(tv), axis_y + 15, B.fmt(tv), 10.5, GREY, "middle"))
+        if vi == 2:
+            out.append(text(L, axis_y + 15, f"ตำแหน่งบนบันได = 100 × LN(ราคา) · ราคา 100 อยู่ที่ {B.fmt(ln['สองทาง_คูณ'][0])}", 10.5, GREY))
         for j, p in enumerate(paths):
             name, prices, col = p[0], p[1], p[5]
             vals = prices if vi == 1 else p[2]
