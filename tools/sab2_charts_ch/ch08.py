@@ -3,6 +3,7 @@
 sab2-pipe-cost   : กำไรต่อไม้ (ดอลลาร์ต่อขา 500) ที่ correlation 0.80 / 0.95 / 0.98 / 0.99 · Half-life 2 กับ 5 วัน · เส้นต้นทุนไปกลับของเล่ม
                    (1 ดอลลาร์) กับแบบแอป (3 ดอลลาร์)
 sab2-pipe-sim    : 🎲 โลกปัจจัยที่รู้คำตอบ · จำนวนคู่ที่เหลือแต่ละขั้นของสายพาน (มัธยฐานของ 30 โลก) แยกคู่มีเชือกกับคู่อื่น
+sab2-pipe-ssd    : สามคู่สมมติห้าวันของตอน ค · 1 (P · Q · R) · ระยะห่างแต่ละวัน · Mean ของระยะ · SSD = 5 × Mean² + ส่วนแกว่ง · Zero Crossing
 sab2-pipe-groups : 📡 กำไรเฉลี่ยช่วงตรวจของกลุ่มคู่ที่คัดด้วยตัวกรองต่าง ๆ จากช่วงเลือก (การ์ดเล่ม 1 ไม้บรรทัดตรึง)
 """
 
@@ -113,3 +114,46 @@ def _groups(fig):
     cap = (f"Binance ราคาปิดรายวัน · คัดด้วยช่วงเลือก {r['เริ่มเลือก']} ถึง {r['จบเลือก']} · วัดผลช่วงตรวจ {r['เริ่มตรวจ']} ถึง "
            f"{r['จบตรวจ']} · การ์ดเล่ม 1 ไม้บรรทัดตรึง · ค่าธรรมเนียม {B.fmt(fig['ch08']['ต้นทุน']['เล่มต่อfill'])}% ต่อ fill")
     return wrap(W, H, alt, out, cap, "จริง")
+
+
+@chart("sab2-pipe-ssd")
+def _ssd(fig):
+    d = fig["ch08"]["ระยะ"]
+    ticks = fig["ch08"]["ระยะแกน"]
+    W, H = 760, 320
+    top, bm = 112, 272
+    lo, hi = min(ticks), max(ticks)
+    y = lambda v: bm - (v - lo) / (hi - lo) * (bm - top)  # noqa: E731
+    out = []
+    pw, gap, L0 = 206, 22, 64
+    num = lambda v: B.fmt(int(v)) if float(v) == int(v) else B.fmt(v)  # noqa: E731
+    notes = {"P": ("Distance Method เลือกก่อน", C["red"]), "Q": ("คู่เดียวที่การ์ดทำเงินได้", C["green"]),
+             "R": ("ห่างออกไปเรื่อย ๆ", C["muted"])}
+    for k, name in enumerate(("P", "Q", "R")):
+        r = d[name]
+        x0 = L0 + k * (pw + gap)
+        for t in ticks:
+            out.append(f'<line x1="{x0}" y1="{y(t):.1f}" x2="{x0 + pw}" y2="{y(t):.1f}" stroke="{C["axis"] if t == 0 else C["grid"]}" '
+                       f'stroke-width="{1.5 if t == 0 else 1}"/>')
+            if k == 0:
+                out.append(text(x0 - 8, y(t) + 4, B.fmt(t), 11, C["grey"], "end"))
+        xs = [x0 + 18 + i * (pw - 36) / 4 for i in range(5)]
+        ym = y(r["Mean"])
+        out.append(f'<line x1="{x0}" y1="{ym:.1f}" x2="{x0 + pw}" y2="{ym:.1f}" stroke="{C["amber"]}" stroke-width="1.6" stroke-dasharray="6 4"/>')
+        pts = " ".join(f"{x:.1f},{y(v):.1f}" for x, v in zip(xs, r["ห่าง"]))
+        out.append(f'<polyline points="{pts}" fill="none" stroke="{C["blue"]}" stroke-width="2.2" stroke-linejoin="round"/>')
+        for x, v in zip(xs, r["ห่าง"]):
+            out.append(f'<circle cx="{x:.1f}" cy="{y(v):.1f}" r="3.6" fill="{C["blue"]}"/>')
+        for i, x in enumerate(xs):
+            out.append(text(x, bm + 15, str(i + 1), 10, C["grey"], "middle"))
+        out.append(text(x0 + pw / 2, top - 66, f"คู่ {name} · SSD {num(r['SSD'])}", 12.5, C["ink"], "middle", 700))
+        out.append(text(x0 + pw / 2, top - 50, f"= 5 × Mean² {num(r['nMean2'])} + แกว่ง {num(r['ส่วนแกว่ง'])}", 11, C["muted"], "middle"))
+        out.append(text(x0 + pw / 2, top - 34, f"ตัดผ่าน Mean {num(r['ข้าม'])} ครั้ง", 11, C["ink"], "middle"))
+        out.append(text(x0 + pw / 2, top - 18, notes[name][0], 11, notes[name][1], "middle", 700))
+    out.append(text(L0 + 1.5 * pw + gap, bm + 32, "วันที่ 1–5 ของแต่ละคู่ · เส้นทึบน้ำเงิน = ระยะห่าง (%) · เส้นประส้ม = Mean ของระยะ",
+                    11, C["muted"], "middle"))
+    out.append(text(L0, top - 90, "SSD ลงโทษทั้ง \"ห่างคงที่\" และ \"แกว่ง\" แต่เงินของการ์ดมาจากการแกว่งเท่านั้น", 13, C["ink"], weight=700))
+    alt = ("สามคู่ห้าวัน คู่ P ห่าง 1 ทุกวัน SSD 5 ไม่เคยตัดผ่าน Mean คู่ Q ห่าง 4 กับ −4 สลับกัน SSD 64 ตัดผ่านสามครั้ง "
+           "คู่ R ห่าง 6 ถึง 10 SSD 330 ตัดผ่านครั้งเดียว")
+    cap = "สามคู่สมมติของตอน ค · 1 · ระยะห่างเป็นเปอร์เซ็นต์ · SSD = ผลรวมของระยะยกกำลังสอง"
+    return wrap(W, H, alt, out, cap, "สอน")

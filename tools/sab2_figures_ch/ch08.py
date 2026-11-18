@@ -358,6 +358,7 @@ def extend(data, D, q):
                    "ข้าม": _crossings(g, float(m)) if k != "P" else 0}
         assert D(ssd) == len(g) * m * m + dev
     out["ระยะ"] = dist
+    out["ระยะแกน"] = [-4, 0, 4, 8, 12]            # เส้นแกนของกราฟ sab2-pipe-ssd
 
     # ── Hurst แนวคิด ──
     out["เฮิร์สต์"] = {"เดินสุ่ม": [1, 2, 4], "ช่วง": [1, 4, 16], "เชือก": [1, 1.6, 2],

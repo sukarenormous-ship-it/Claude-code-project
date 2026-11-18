@@ -321,6 +321,16 @@ def extend(data, D, q):
     ou = _ou()
     out["ou"] = ou
     out["มีกรอบ"] = _threshold()
+    # กราฟ sab2-entry-thr: แรงดึงกลับที่คาดต่อวัน (1 − φ) × |X| ของโลกที่มีกรอบกับแฝด OU · X ทุก 0.05 จาก −4 ถึง 4
+    thr = out["มีกรอบ"]
+    xs = [_r(-4 + 0.05 * i) for i in range(161)]
+    out["แรงดึงกรอบ"] = {
+        "X": xs,
+        "มีกรอบ": [0.0 if abs(x) <= THR_BAND else _r((1 - THR_PHI_OUT) * abs(x), 3) for x in xs],
+        "แฝด": [_r((1 - thr["phiประมาณ3"]) * abs(x), 3) for x in xs],
+        "ดึงแฝดเปอร์เซ็นต์": _r((1 - thr["phiประมาณ"]) * 100, 0), "ดึงนอกเปอร์เซ็นต์": _r((1 - THR_PHI_OUT) * 100, 0),
+        "เส้นเข้าX": [{"เส้น": z, "X": _r(z * thr["sdยาว"], 2)} for z in (2, 2.5)],
+        "แกนy": [0, 0.2, 0.4, 0.6, 0.8], "แกนx": [-4, -2, 0, 2, 4]}
     out["สลับ"] = _regime()
     real = _real()
     out["จริง"] = real
