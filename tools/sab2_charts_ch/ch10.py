@@ -233,7 +233,7 @@ def _pc1_index(fig):
     out.append(text(xe, Y(c["btc"][-1]) + 4, "BTC", 11.5, C["amber"], "start", 700))
     ym = (Y(c["pc1"][-1]) + Y(c["ew"][-1])) / 2
     out.append(text(xe, ym - 3, "PC1 กับ", 11.5, C["purple"], "start", 700))
-    out.append(text(xe, ym + 12, "ตะกร้าเท่ากัน", 11.5, C["green"], "start", 700))
+    out.append(text(xe, ym + 12, "ดัชนีเท่ากัน", 11.5, C["green"], "start", 700))
     alt = (f"เส้นสะสมของพอร์ต PC1 กับ Equal-weight Index แทบทับกันตลอดสองปี จบราว {_n(c['จบ']['pc1'])} และ {_n(c['จบ']['ew'])} เปอร์เซ็นต์ "
            f"ส่วน BTC แยกออกไปจบราว {_n(c['จบ']['btc'])} เปอร์เซ็นต์")
     cap = (f"Binance ราคาปิดรายวัน 10 เหรียญ · ช่วงเลือก {j['เริ่มเลือก']} ถึง {j['จบเลือก']} · ผลตอบแทน log รายวันบวกสะสม · "
