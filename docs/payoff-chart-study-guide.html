@@ -110,6 +110,13 @@ tr:hover td { background: var(--blue-bg); }
 /* Page break hint */
 .page-break { page-break-before: always; }
 
+/* ===== SMALL SCREENS ===== */
+@media (max-width: 640px) {
+  body { padding: 24px 16px; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { min-width: 6em; }
+}
+
 /* ===== PRINT STYLES ===== */
 @media print {
   body { font-size: 11pt; padding: 0; max-width: 100%; color: #000; }
@@ -207,7 +214,7 @@ tr:hover td { background: var(--blue-bg); }
     <li><a href="#ch10">บทที่ 10: Risk Management ของ Grid — แก้รูปกราฟทีละส่วน</a>
       <div class="toc-sub">
         <a href="#ch10-1">10.1 แผนที่ความเสี่ยง</a> ·
-        <a href="#ch10-2">10.2 กำหนดขนาดจาก Max Loss</a> ·
+        <a href="#ch10-2">10.2 กำหนดขนาดจากงบขาดทุน</a> ·
         <a href="#ch10-3">10.3 Stop-loss</a> ·
         <a href="#ch10-4">10.4 Hedge Delta</a> ·
         <a href="#ch10-5">10.5 ออกแบบชั้น</a> ·
@@ -223,7 +230,7 @@ tr:hover td { background: var(--blue-bg); }
       <div class="toc-sub">
         <a href="#ch11-1">11.1 เก็บลำตัว ซื้อหาง</a> ·
         <a href="#ch11-2">11.2 Grid + Long Put</a> ·
-        <a href="#ch11-3">11.3 ลดค่าประกัน</a> ·
+        <a href="#ch11-3">11.3 ลดค่าปีก</a> ·
         <a href="#ch11-4">11.4 Iron Condor</a> ·
         <a href="#ch11-5">11.5 Grid + Long Straddle</a> ·
         <a href="#ch11-6">11.6 Short Put แทนคำสั่งซื้อ</a> ·
@@ -694,13 +701,13 @@ tr:hover td { background: var(--blue-bg); }
   </tr>
   <tr>
     <td>Long Put (K)</td>
-    <td style="color:var(--green)"><strong>+1</strong> ต่อ slope (ทางซ้าย)</td>
-    <td>ที่ Strike K (ยิ่งไปซ้ายยิ่งชัน = slope -1 จากขวาไปซ้าย)</td>
+    <td style="color:var(--green)"><strong>+1</strong> ต่อ slope</td>
+    <td>ที่ Strike K (ทางซ้ายของ K มี slope -1 พอผ่าน K ไปทางขวากลายเป็น 0)</td>
   </tr>
   <tr>
     <td>Short Put (K)</td>
-    <td style="color:var(--red)"><strong>-1</strong> ต่อ slope (ทางซ้าย)</td>
-    <td>ที่ Strike K</td>
+    <td style="color:var(--red)"><strong>-1</strong> ต่อ slope</td>
+    <td>ที่ Strike K (ทางซ้ายของ K มี slope +1 พอผ่าน K ไปทางขวากลายเป็น 0)</td>
   </tr>
 </table>
 
@@ -710,9 +717,10 @@ tr:hover td { background: var(--blue-bg); }
   <ul>
     <li>Long Call ที่ K → slope เพิ่ม +1</li>
     <li>Short Call ที่ K → slope ลด -1</li>
-    <li>Long Put ที่ K → slope ลด -1 (เพราะ put มี slope -1 ทางซ้ายของ K ซึ่งหายไปทางขวา)</li>
-    <li>Short Put ที่ K → slope เพิ่ม +1</li>
+    <li>Long Put ที่ K → slope เพิ่ม +1 (ทางซ้ายของ K มี slope -1 ซึ่งหายไปเมื่อผ่าน K)</li>
+    <li>Short Put ที่ K → slope ลด -1 (ทางซ้ายของ K มี slope +1 ซึ่งหายไปเมื่อผ่าน K)</li>
   </ul>
+  <p>สรุปสั้น ๆ: <strong>Long Option ทุกตัวเพิ่ม slope +1 ที่ Strike ของมัน และ Short Option ทุกตัวลด slope -1</strong> ไม่ว่าจะเป็น Call หรือ Put สิ่งที่ Put ต่างออกไปคือ slope ตั้งต้นที่ซ้ายสุดของกราฟ: Long Put แต่ละตัวทำให้เริ่มที่ -1 และ Short Put แต่ละตัวทำให้เริ่มที่ +1 (ถ้ามีแต่ Call ซ้ายสุดเริ่มที่ 0)</p>
   <p>วิธีนี้ช่วยให้คุณวาดรูปร่าง Payoff ได้โดยไม่ต้องคำนวณทุกจุด!</p>
 </div>
 
@@ -944,9 +952,9 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-blue">
   <div class="box-title">ส่วนประกอบ (4 ขา)</div>
   <p><span class="formula">Bull Put Spread + Bear Call Spread</span></p>
-  <p>= Short Put K₁ + Long Put K₂ + Short Call K₃ + Long Call K₄</p>
+  <p>= Long Put K₁ + Short Put K₂ + Short Call K₃ + Long Call K₄</p>
   <p>(K₁ &lt; K₂ &lt; K₃ &lt; K₄ โดยปกติ K₂ และ K₃ ใกล้ ATM)</p>
-  <p>หรือแบบง่าย: Long Put K₁ + Short Put K₂ + Short Call K₃ + Long Call K₄</p>
+  <p>Bull Put Spread คือ Long Put K₁ + Short Put K₂ ส่วน Bear Call Spread คือ Short Call K₃ + Long Call K₄</p>
 </div>
 
 <p><strong>แนวคิด:</strong> คุณเชื่อว่าราคาจะ <strong>นิ่ง</strong> อยู่ในกรอบ K₂ ถึง K₃ รับ Premium จากการขาย แล้วซื้อ Options ด้านนอกเพื่อจำกัดความเสี่ยง</p>
@@ -1868,17 +1876,19 @@ tr:hover td { background: var(--blue-bg); }
 <!-- ตาราง 3: ภาค 2 -->
 <h3 id="ch8-grid">ตาราง 3: Grid และการเทรดบน Payoff Chart (สรุปภาค 2)</h3>
 
+<p>ตารางนี้สรุปบทที่ 9–12 ควรอ่านหลังจบภาค 2 ตัวแปรที่ใช้: u = ขนาดต่อชั้น · g = ระยะห่างระหว่างเส้น Grid · n = จำนวนก้าวที่ราคาเดิน · k = จำนวนช่องที่ราคาจบห่างจากจุดเริ่ม · m = จำนวนชั้นซื้อ · L = กรอบล่าง · S = ราคาปัจจุบัน</p>
+
 <table>
   <tr><th>เรื่อง</th><th>สรุป</th><th>อ่านเพิ่ม</th></tr>
   <tr><td><strong>หลักแปลง</strong></td><td>ของในมือ = ความชัน · Limit Order = จุดหักคว่ำ · Stop Order = จุดหักหงาย</td><td><a href="#ch9-2" style="color:var(--blue)">9.2</a>, <a href="#ch12-1" style="color:var(--blue)">12.1</a></td></tr>
-  <tr><td><strong>Grid เทียบ Option</strong></td><td>Spot Grid = Short Put Ladder · Neutral Grid &asymp; Short Strangle · Reverse Grid &asymp; Long Straddle</td><td><a href="#ch9-4" style="color:var(--blue)">9.4</a>, <a href="#ch12-3" style="color:var(--blue)">12.3</a></td></tr>
-  <tr><td><strong>P&amp;L ของ Grid</strong></td><td>(u&Delta;/2) &times; (n - k&sup2;) กำไรเมื่อราคาจบห่างจุดเริ่มไม่เกิน &radic;n เส้น</td><td><a href="#ch9-6" style="color:var(--blue)">9.6</a></td></tr>
-  <tr><td><strong>กำไรต่อรอบ</strong></td><td>u &times; &Delta; หักค่าธรรมเนียม 2 ข้าง · &Delta; / S ต้องมากกว่า 2 เท่าของอัตราค่าธรรมเนียม</td><td><a href="#ch9-8" style="color:var(--blue)">9.8</a></td></tr>
-  <tr><td><strong>ขนาดต่อชั้น</strong></td><td>u = งบขาดทุน / [ &Delta; &times; N(N-1)/2 + N &times; (L - Stop) ]</td><td><a href="#ch10-2" style="color:var(--blue)">10.2</a></td></tr>
-  <tr><td><strong>Margin</strong></td><td>ราคา Liquidation ต้องไกลกว่า Stop · วางอย่างน้อย 2–3 เท่าของขาดทุนที่ Stop</td><td><a href="#ch10-8" style="color:var(--blue)">10.8</a></td></tr>
-  <tr><td><strong>กันหาง</strong></td><td>Stop: ไม่เสียเงินก่อน แต่ไม่กัน Gap และโดน Whipsaw · Long Put: จ่าย Premium แต่กันได้ทั้งคู่</td><td><a href="#ch10-3" style="color:var(--blue)">10.3</a>, <a href="#ch11-2" style="color:var(--blue)">11.2</a></td></tr>
-  <tr><td><strong>วัด RV จาก Grid</strong></td><td>RV ต่อปี &asymp; (&Delta; / S) &times; &radic;(จำนวนครั้งที่ข้ามเส้นต่อวัน &times; 365)</td><td><a href="#ch11-8" style="color:var(--blue)">11.8</a></td></tr>
-  <tr><td><strong>IV เทียบ RV</strong></td><td>IV ต่ำกว่า RV: ซื้อปีกหรือ Straddle · IV สูงกว่า RV: ใช้ Put Spread, ขายชั้นไกล, ลดขนาด</td><td><a href="#ch11-8" style="color:var(--blue)">11.8</a></td></tr>
+  <tr><td><strong>Grid เทียบ Option</strong></td><td>Spot Grid = Short Put Ladder · Neutral Grid = Short Strangle เป็นขั้น · Reverse Grid &asymp; Long Straddle</td><td><a href="#ch9-4" style="color:var(--blue)">9.4</a>, <a href="#ch12-3" style="color:var(--blue)">12.3</a></td></tr>
+  <tr><td><strong>P&amp;L ของ Grid</strong></td><td>(u &times; g / 2) &times; (n - k&sup2;) สำหรับ Grid ที่เริ่มโดยไม่มีของในมือ กำไรเมื่อจบห่างจุดเริ่มน้อยกว่า &radic;n ช่อง · ถ้ามีของตั้งต้น ให้บวก ของตั้งต้น &times; (ราคาจบ - ราคาเริ่ม)</td><td><a href="#ch9-6" style="color:var(--blue)">9.6</a></td></tr>
+  <tr><td><strong>กำไรต่อรอบ</strong></td><td>u &times; g หักค่าธรรมเนียม 2 ข้าง · g / S ควรมากกว่าค่าธรรมเนียมรวมหลายเท่า</td><td><a href="#ch9-8" style="color:var(--blue)">9.8</a></td></tr>
+  <tr><td><strong>จำนวนก้าวต่อวัน</strong></td><td>ประมาณ (ความผันผวนต่อวัน &times; S / g)&sup2; · กลับสูตรเพื่อวัด RV: RV ต่อปี &asymp; (g / S) &times; &radic;(จำนวนก้าวต่อวัน &times; 365)</td><td><a href="#ch9-6" style="color:var(--blue)">9.6</a>, <a href="#ch11-8" style="color:var(--blue)">11.8</a></td></tr>
+  <tr><td><strong>ขนาดต่อชั้น</strong></td><td>Grid ฝั่งซื้อที่เริ่มโดยไม่มีของ: u = งบขาดทุน / [ g &times; m(m-1)/2 + m &times; (L - Stop) ] · ถ้ามีของตั้งต้น ต้องนับขาดทุนของเหรียญก้อนนั้นเพิ่ม</td><td><a href="#ch10-2" style="color:var(--blue)">10.2</a></td></tr>
+  <tr><td><strong>Margin</strong></td><td>ราคา Liquidation ต้องไกลกว่า Stop · วัดระยะเป็น % ของราคา ไม่ใช่เป็นจำนวนเท่าของขาดทุน</td><td><a href="#ch10-8" style="color:var(--blue)">10.8</a></td></tr>
+  <tr><td><strong>กันหาง</strong></td><td>Stop: ไม่เสียเงินก่อน แต่ไม่กัน Gap และโดน Whipsaw · Long Put: จ่าย Premium ทุกครั้งที่ต่ออายุ กันได้ทั้งคู่เมื่อ Grid ไม่ถูก Liquidation ก่อนวันหมดอายุ</td><td><a href="#ch10-3" style="color:var(--blue)">10.3</a>, <a href="#ch11-2" style="color:var(--blue)">11.2</a></td></tr>
+  <tr><td><strong>IV เทียบ RV</strong></td><td>IV ต่ำกว่า RV: ซื้อปีกหรือ Straddle · IV สูงกว่า RV: ใช้ Put Spread, ขายชั้นไกล, ลดขนาด · ทั้งสองทางต้องถามก่อนว่าทำไม IV จึงเป็นเช่นนั้น</td><td><a href="#ch11-8" style="color:var(--blue)">11.8</a></td></tr>
   <tr><td><strong>แผนที่ 4 ช่อง</strong></td><td>โค้งคว่ำหรือโค้งหงาย · จ่ายล่วงหน้า (Implied) หรือระหว่างทาง (Realized)</td><td><a href="#ch12-7" style="color:var(--blue)">12.7</a></td></tr>
 </table>
 
@@ -1912,6 +1922,18 @@ tr:hover td { background: var(--blue-bg); }
 
 <p>Grid Trading คือการวาง Limit Order ไว้เป็นชั้น ๆ ตามระดับราคา ราคาลงถึงชั้นไหนก็ซื้อ ราคาขึ้นถึงชั้นไหนก็ขาย คนส่วนใหญ่มองมันเป็น "บอทเก็บกำไรรอบสั้น" แต่ถ้าวาดออกมาเป็น Payoff Chart จะเห็นว่ามันคือ <strong>การขาย Option เป็นขั้นบันได</strong> ซึ่งทำให้เรายืมความรู้ทั้งหมดจากบทที่ 2–5 มาใช้กับ Grid ได้ทันที</p>
 
+<div class="box-blue">
+  <div class="box-title">ศัพท์ตลาดที่ใช้ตลอดภาค 2</div>
+  <ul>
+    <li><strong>Spot:</strong> การซื้อขายเหรียญจริง จ่ายเงินเต็มจำนวน ถือได้น้อยสุดคือศูนย์ ถือติดลบไม่ได้</li>
+    <li><strong>Limit Order:</strong> คำสั่งที่ระบุราคาไว้ล่วงหน้า แล้วรอให้ราคาตลาดมาถึง</li>
+    <li><strong>Perpetual Futures:</strong> สัญญาที่ราคาวิ่งตามเหรียญและไม่มีวันหมดอายุ เปิดได้ทั้งฝั่งซื้อ (Long) และฝั่งขาย (Short) Payoff เป็นเส้นตรงเหมือนการถือหรือขายสินทรัพย์ในบทที่ 2.6 ภาคนี้เรียกสั้น ๆ ว่า Futures</li>
+    <li><strong>Margin และ Leverage:</strong> Margin คือเงินประกันที่วางเพื่อเปิดสถานะ Futures ส่วน Leverage คือมูลค่าสถานะหารด้วย Margin</li>
+    <li><strong>Liquidation:</strong> การถูกบังคับปิดสถานะเมื่อขาดทุนกิน Margin จนเกือบหมด</li>
+    <li><strong>Funding:</strong> เงินที่ฝั่ง Long กับฝั่ง Short ของ Perpetual Futures จ่ายให้กันเป็นระยะ เมื่อ Funding เป็นบวก ฝั่ง Long เป็นผู้จ่าย</li>
+  </ul>
+</div>
+
 <!-- 9.1 -->
 <h3 id="ch9-1">9.1 กายวิภาคของ Grid</h3>
 
@@ -1921,18 +1943,29 @@ tr:hover td { background: var(--blue-bg); }
   <tr><th>ตัวแปร</th><th>ความหมาย</th><th>ตัวอย่างหลักของบทนี้ (BTC)</th></tr>
   <tr><td><strong>กรอบบน (U)</strong></td><td>ราคาสูงสุดที่ Grid ทำงาน</td><td>100,000 USD</td></tr>
   <tr><td><strong>กรอบล่าง (L)</strong></td><td>ราคาต่ำสุดที่ Grid ทำงาน</td><td>90,000 USD</td></tr>
-  <tr><td><strong>ระยะห่าง (&Delta;)</strong></td><td>ระยะระหว่างเส้น Grid ที่ติดกัน</td><td>2,000 USD</td></tr>
+  <tr><td><strong>ระยะห่าง (g)</strong></td><td>ระยะระหว่างเส้น Grid ที่ติดกัน</td><td>2,000 USD</td></tr>
   <tr><td><strong>ขนาดต่อชั้น (u)</strong></td><td>จำนวนเหรียญที่ซื้อหรือขายต่อ 1 ชั้น</td><td>0.01 BTC</td></tr>
-  <tr><td><strong>ประเภท</strong></td><td>Spot (ถือได้แค่ Long), Futures Long, Futures Short หรือ Neutral</td><td>Spot เริ่มที่ขอบบน</td></tr>
+  <tr><td><strong>ประเภท</strong></td><td>Spot (ถือได้แค่ Long), Futures Long, Futures Short หรือ Neutral</td><td>Spot เริ่มที่ขอบบน ไม่มีของตั้งต้น</td></tr>
 </table>
 
-<p>กติกาของ Grid มีข้อเดียว: <strong>ซื้อที่เส้นไหน ให้ตั้งขายที่เส้นถัดขึ้นไป 1 เส้น</strong> ทุกคู่ "ซื้อ–ขาย" ที่ครบรอบได้กำไรเท่ากันเสมอ:</p>
+<p>กติกาของ Grid มีสองครึ่ง: <strong>ซื้อได้ที่เส้นไหน ให้ตั้งขายที่เส้นถัดขึ้นไป 1 เส้น และเมื่อขายได้แล้ว ให้ตั้งซื้อกลับที่เส้นเดิม</strong> คำสั่งจึงวนทำงานได้ไม่จำกัดครั้ง และทุกคู่ "ซื้อ–ขาย" ที่ครบรอบได้กำไรเท่ากันเสมอ:</p>
 
 <div class="formula-block">
-  กำไรต่อรอบ = u &times; &Delta; = 0.01 &times; 2,000 = 20 USD
+  กำไรต่อรอบ = u &times; g = 0.01 &times; 2,000 = 20 USD
 </div>
 
-<p>ในตัวอย่างหลัก BTC เริ่มที่ 100,000 เราวางคำสั่งซื้อไว้ 5 ชั้น ที่ 98,000 · 96,000 · 94,000 · 92,000 · 90,000 ชั้นละ 0.01 BTC</p>
+<p>ในตัวอย่างหลัก BTC เริ่มที่ 100,000 เราวางคำสั่งซื้อไว้ 5 ชั้น ที่ 98,000 · 96,000 · 94,000 · 92,000 · 90,000 ชั้นละ 0.01 BTC โดยยังไม่ถือ BTC เลย ต่อจากนี้เรียก Grid ตัวนี้ว่า <strong>Grid หลัก</strong></p>
+
+<div class="box-amber">
+  <div class="box-title">คำนับ 5 คำที่ใช้ตลอดภาค 2</div>
+  <ul>
+    <li><strong>เส้น:</strong> ระดับราคาที่วางคำสั่ง เช่น เส้น 98,000</li>
+    <li><strong>ช่อง:</strong> ระยะระหว่างสองเส้นที่ติดกัน กว้าง g</li>
+    <li><strong>ชั้น:</strong> คำสั่งหนึ่งตัว หรือเหรียญหนึ่งก้อนที่ซื้อมาจากคำสั่งนั้น ขนาด u</li>
+    <li><strong>ก้าว:</strong> การที่ราคาเดินจากเส้นหนึ่งไปถึงเส้นที่ติดกัน จะขึ้นหรือลงก็ได้ การแกว่งรอบเส้นเดิมโดยยังไปไม่ถึงเส้นถัดไปไม่นับเป็นก้าว</li>
+    <li><strong>รอบ:</strong> การซื้อและขายครบหนึ่งคู่ ใช้ 2 ก้าว คือลง 1 ก้าวและขึ้น 1 ก้าว</li>
+  </ul>
+</div>
 
 <!-- 9.2 -->
 <h3 id="ch9-2">9.2 หลักแปลง: จาก Order เป็น Payoff Chart</h3>
@@ -1943,10 +1976,10 @@ tr:hover td { background: var(--blue-bg); }
   <tr><th>สิ่งที่ทำในการเทรด</th><th>สิ่งที่เห็นบน Payoff Chart</th></tr>
   <tr><td>จำนวนเหรียญที่ถือ ณ ราคา S</td><td><strong>ความชัน</strong> ของกราฟ (= Delta)</td></tr>
   <tr><td>ของในมือเปลี่ยนเมื่อราคาเปลี่ยน</td><td><strong>ความโค้ง</strong> ของกราฟ (= Gamma)</td></tr>
-  <tr><td>Limit Order แต่ละตัว</td><td><strong>จุดหักมุม</strong> ทำหน้าที่เหมือน Strike</td></tr>
+  <tr><td>Limit Order แต่ละตัว</td><td><strong>จุดหักมุม</strong> (ภาค 1 เรียกว่าจุดหักศอก) ทำหน้าที่เหมือน Strike</td></tr>
 </table>
 
-<p>วิธีวาดมี 2 ขั้น ขั้นแรกวาด "ของในมือ" เป็นขั้นบันได ขั้นที่สองสะสมกำไรขาดทุนของของที่ถืออยู่ไปทีละช่วงราคา:</p>
+<p>วิธีวาดมี 2 ขั้น ขั้นแรกวาด "ของในมือ" เป็นขั้นบันได ขั้นที่สองไล่ราคาลงมาทีละช่อง แล้วสะสมขาดทุนของเหรียญที่ถืออยู่ระหว่างเดินผ่านช่องนั้น ซึ่งเท่ากับจำนวนที่ถือคูณความกว้างของช่อง:</p>
 
 <svg viewBox="0 0 480 420" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -1999,21 +2032,22 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="416" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD) — เส้นประ = เส้น Grid = Strike</text>
 </svg>
 
-<p>ตารางคำนวณของกราฟล่าง สมมติว่าราคาลงมาถึงระดับนั้นเป็นครั้งแรก:</p>
+<p>ตารางคำนวณของกราฟล่าง สมมติว่าราคาลงมาถึงแต่ละเส้นเป็นครั้งแรก แต่ละแถวคือการเดินลงมา 1 ช่อง (2,000 USD) จากแถวก่อนหน้า:</p>
 
 <table>
-  <tr><th>ราคา BTC</th><th>ของในมือ</th><th>วิธีคิด</th><th>Floating P&amp;L</th></tr>
-  <tr><td>98,000 ขึ้นไป</td><td>0 ถึง 0.01</td><td>เพิ่งซื้อชั้นแรกที่ราคานี้ ยังไม่ขาดทุน</td><td><strong>0</strong></td></tr>
-  <tr><td>96,000</td><td>0.02</td><td>ชั้น 98k ขาดทุน 2,000 &times; 0.01</td><td><strong>-20</strong></td></tr>
-  <tr><td>94,000</td><td>0.03</td><td>(4,000 + 2,000) &times; 0.01</td><td><strong>-60</strong></td></tr>
-  <tr><td>92,000</td><td>0.04</td><td>(6,000 + 4,000 + 2,000) &times; 0.01</td><td><strong>-120</strong></td></tr>
-  <tr><td>90,000</td><td>0.05</td><td>(8,000 + 6,000 + 4,000 + 2,000) &times; 0.01</td><td><strong>-200</strong></td></tr>
-  <tr><td>86,000</td><td>0.05 (เต็มมือ)</td><td>-200 - 0.05 &times; 4,000</td><td><strong>-400</strong></td></tr>
+  <tr><th>ราคามาถึง</th><th>ถือระหว่างเดินผ่านช่องนี้</th><th>ขาดทุนเพิ่มในช่องนี้</th><th>Floating P&amp;L สะสม</th><th>ของในมือหลังซื้อที่เส้นนี้</th></tr>
+  <tr><td>เหนือ 98,000</td><td>0</td><td>0</td><td><strong>0</strong></td><td>0</td></tr>
+  <tr><td>98,000</td><td>0</td><td>0</td><td><strong>0</strong></td><td>0.01</td></tr>
+  <tr><td>96,000</td><td>0.01</td><td>0.01 &times; 2,000 = 20</td><td><strong>-20</strong></td><td>0.02</td></tr>
+  <tr><td>94,000</td><td>0.02</td><td>0.02 &times; 2,000 = 40</td><td><strong>-60</strong></td><td>0.03</td></tr>
+  <tr><td>92,000</td><td>0.03</td><td>0.03 &times; 2,000 = 60</td><td><strong>-120</strong></td><td>0.04</td></tr>
+  <tr><td>90,000</td><td>0.04</td><td>0.04 &times; 2,000 = 80</td><td><strong>-200</strong></td><td>0.05 (เต็มมือ)</td></tr>
+  <tr><td>86,000 (หลุดกรอบ 2 ช่อง)</td><td>0.05</td><td>0.05 &times; 4,000 = 200</td><td><strong>-400</strong></td><td>0.05 (ไม่มีคำสั่งซื้อเหลือ)</td></tr>
 </table>
 
 <div class="box-amber">
   <div class="box-title">สังเกตรูปร่าง</div>
-  <p>แบน → ลาดลงชันขึ้นทีละขั้น → เส้นตรงชันสุดเมื่อหลุดกรอบ ถ้าเดินจากซ้ายไปขวาตามวิธีในบทที่ 3 ความชันลดลง 0.01 ทุกครั้งที่ผ่านเส้น Grid ซึ่งเป็นพฤติกรรมเดียวกับการผ่าน Strike ของ <strong>Short Put</strong> ทีละตัว</p>
+  <p>ไล่ตามราคาที่ลดลง (จากขวามาซ้าย): แบน แล้วลาดลงชันขึ้นทีละขั้น แล้วเป็นเส้นตรงชันสุดเมื่อหลุดกรอบ ถ้าไล่จากซ้ายไปขวาตามวิธีในบทที่ 3 ความชันจะลดลง 0.01 ทุกครั้งที่ผ่านเส้น Grid จาก 0.05 จนเหลือ 0 ซึ่งเป็นพฤติกรรมเดียวกับการผ่าน Strike ของ <strong>Short Put</strong> ทีละตัว</p>
 </div>
 
 <!-- 9.3 -->
@@ -2025,7 +2059,7 @@ tr:hover td { background: var(--blue-bg); }
   <tr><th>ก้อน</th><th>มาจากไหน</th><th>ขึ้นกับอะไร</th><th>เทียบกับ Option</th></tr>
   <tr>
     <td style="color:var(--green)"><strong>Grid Profit</strong></td>
-    <td>คู่ซื้อ–ขายที่ครบรอบแล้ว รอบละ u &times; &Delta;</td>
+    <td>คู่ซื้อ–ขายที่ครบรอบแล้ว รอบละ u &times; g</td>
     <td>เส้นทางที่ราคาเดิน (นับจำนวนรอบ)</td>
     <td>Premium ที่ทยอยได้รับ</td>
   </tr>
@@ -2037,7 +2071,7 @@ tr:hover td { background: var(--blue-bg); }
   </tr>
 </table>
 
-<p>ตัวอย่างเส้นทางราคา 8 ช่วง ใช้ Grid ตัวเดิม:</p>
+<p>ตัวอย่าง: ราคาเดิน 8 ก้าวบน Grid หลัก:</p>
 
 <svg viewBox="0 0 480 260" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
   <!-- grid lines -->
@@ -2058,7 +2092,7 @@ tr:hover td { background: var(--blue-bg); }
   <g fill="#dc2626">
     <path d="M205,89 l6,-10 h-12 z"/><path d="M340,134 l6,-10 h-12 z"/><path d="M385,89 l6,-10 h-12 z"/>
   </g>
-  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="700">
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a" text-anchor="middle" font-weight="700">
     <text x="205" y="73">+20</text><text x="340" y="118">+20</text><text x="385" y="73">+20</text>
   </g>
   <!-- legend -->
@@ -2066,8 +2100,20 @@ tr:hover td { background: var(--blue-bg); }
   <text x="82" y="236" font-family="Sarabun, sans-serif" font-size="11" fill="#374151">ซื้อ 0.01 BTC</text>
   <path d="M190,236 l6,-10 h-12 z" fill="#dc2626"/>
   <text x="202" y="236" font-family="Sarabun, sans-serif" font-size="11" fill="#374151">ขาย 0.01 BTC (ครบรอบ ได้ 20 USD)</text>
-  <text x="250" y="254" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">เวลา → ราคาเดินข้ามเส้น Grid 8 ครั้ง จบที่ 96k</text>
+  <text x="250" y="254" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">เวลา → ราคาเดิน 8 ก้าว จบที่ 96k</text>
 </svg>
+
+<table>
+  <tr><th>ก้าวที่</th><th>ราคาไปถึง</th><th>คำสั่งที่ทำงาน</th><th>ของในมือ</th><th>Grid Profit สะสม</th></tr>
+  <tr><td>1</td><td>98,000</td><td>ซื้อ</td><td>0.01</td><td>0</td></tr>
+  <tr><td>2</td><td>96,000</td><td>ซื้อ</td><td>0.02</td><td>0</td></tr>
+  <tr><td>3</td><td>98,000</td><td style="color:var(--green)">ขายชั้นที่ซื้อ 96k (ครบรอบ)</td><td>0.01</td><td>20</td></tr>
+  <tr><td>4</td><td>96,000</td><td>ซื้อ</td><td>0.02</td><td>20</td></tr>
+  <tr><td>5</td><td>94,000</td><td>ซื้อ</td><td>0.03</td><td>20</td></tr>
+  <tr><td>6</td><td>96,000</td><td style="color:var(--green)">ขายชั้นที่ซื้อ 94k (ครบรอบ)</td><td>0.02</td><td>40</td></tr>
+  <tr><td>7</td><td>98,000</td><td style="color:var(--green)">ขายชั้นที่ซื้อ 96k (ครบรอบ)</td><td>0.01</td><td>60</td></tr>
+  <tr><td>8</td><td>96,000</td><td>ซื้อ</td><td>0.02</td><td>60</td></tr>
+</table>
 
 <ul>
   <li><strong>Grid Profit:</strong> ครบ 3 รอบ = 3 &times; 20 = <span style="color:var(--green)"><strong>+60 USD</strong></span></li>
@@ -2081,13 +2127,23 @@ tr:hover td { background: var(--blue-bg); }
     <li>Payoff ของ Option คือผลลัพธ์ ณ วันหมดอายุ ส่วนกราฟของ Grid คือ <strong>ภาพถ่าย ณ ราคาปัจจุบัน</strong> เพราะ Grid ไม่มีวันหมดอายุ</li>
     <li>กราฟวาดได้เฉพาะก้อน Floating P&amp;L ส่วน Grid Profit ขึ้นกับเส้นทางราคา (path-dependent) จึงบอกล่วงหน้าไม่ได้ว่าจะได้กี่รอบ</li>
     <li>ระหว่างเส้น Grid สองเส้น ของในมืออาจต่างกัน 1 ชั้น ขึ้นกับว่าราคามาจากด้านบนหรือด้านล่าง กราฟจึงแม่นที่เส้น Grid และคลาดได้ไม่เกินกำไร 1 รอบในช่องระหว่างเส้น</li>
+    <li>ตัวเลข Grid Profit หรืออัตราผลตอบแทนที่หน้าจอของบอทแสดง มักนับเฉพาะก้อนแรก ต้องรวม Floating P&amp;L เองจึงจะได้ P&amp;L จริง</li>
   </ul>
 </div>
 
 <!-- 9.4 -->
 <h3 id="ch9-4">9.4 พจนานุกรม Grid → Option</h3>
 
-<p>คำสั่งซื้อแบบ Limit ที่ราคา K คือการบอกตลาดว่า "ใครอยากขายให้ฉันที่ K มาได้เลย" ซึ่งเป็นภาระเดียวกับคน <strong>Short Put ที่ Strike K</strong> (บทที่ 2.4) ต่างกันแค่ Limit Order ไม่ได้รับ Premium ล่วงหน้า Grid ทั้งชุดจึงแปลได้ดังนี้:</p>
+<p>คำสั่งซื้อแบบ Limit ที่ราคา K คือการบอกตลาดว่า "ใครอยากขายให้ฉันที่ K มาได้เลย" ซึ่งเป็นภาระแบบเดียวกับคน <strong>Short Put ที่ Strike K</strong> (บทที่ 2.4) และกำไรก็ถูกจำกัดแบบเดียวกัน: ชั้นที่ซื้อที่ K ถูกตั้งขายที่ K + g เสมอ กำไรของชั้นนั้นจึงไม่เกิน u &times; g เหมือน Short Put ที่กำไรไม่เกิน Premium ส่วนขาลงขาดทุนได้ลึกเท่ากัน</p>
+
+<p>สองอย่างนี้ไม่ได้เหมือนกันทุกประการ ข้อต่างมี 3 ข้อ และจะกลับมาสำคัญในบทที่ 11:</p>
+<ul>
+  <li>Limit Order ไม่ได้รับ Premium ล่วงหน้า รายได้มาจาก Grid Profit ซึ่งต้องรอให้ราคาแกว่ง</li>
+  <li>Limit Order ทำงานทันทีที่ราคาแตะ ส่วน Short Put ตัดสินกันที่ราคา ณ วันหมดอายุเท่านั้น</li>
+  <li>Limit Order ไม่มีวันหมดอายุ</li>
+</ul>
+
+<p>Grid ทั้งชุดจึงแปลได้ดังนี้:</p>
 
 <table>
   <tr><th>ประเภท Grid</th><th>ของในมือ</th><th>เทียบเท่า</th><th>รูปร่าง</th></tr>
@@ -2106,20 +2162,22 @@ tr:hover td { background: var(--blue-bg); }
   <tr>
     <td><strong>Neutral Grid</strong></td>
     <td>Long ใต้ราคาเริ่ม Short เหนือราคาเริ่ม</td>
-    <td>Short Put Ladder + Short Call Ladder &asymp; Short Strangle / Short Straddle</td>
+    <td>Short Put Ladder + Short Call Ladder = Short Strangle หลายคู่ซ้อนกัน</td>
     <td>โค้งคว่ำทั้งสองด้าน</td>
   </tr>
 </table>
 
 <div class="box-blue">
-  <div class="box-title">Grid ที่เริ่มกลางกรอบ = Covered Call Ladder</div>
-  <p>บอทส่วนใหญ่เริ่มกลางกรอบ โดยซื้อของไว้ก่อนเพื่อตั้งขายชั้นบน เช่น กรอบ 90,000–110,000 เริ่มที่ 100,000 ซื้อไว้ 0.05 BTC ตั้งขายที่ 102k ถึง 110k และตั้งซื้อที่ 98k ถึง 90k</p>
+  <div class="box-title">Grid กลางกรอบ = Covered Call Ladder</div>
+  <p>บอทส่วนใหญ่เริ่มกลางกรอบ โดยซื้อของไว้ก่อนเพื่อตั้งขายชั้นบน เช่น กรอบ 90,000–110,000 เริ่มที่ 100,000 ซื้อไว้ 0.05 BTC ตั้งขายที่ 102k ถึง 110k และตั้งซื้อที่ 98k ถึง 90k ต่อจากนี้เรียก Grid ตัวนี้ว่า <strong>Grid กลางกรอบ</strong> เพื่อแยกจาก Grid หลักที่เริ่มโดยไม่มีของ</p>
   <ul>
-    <li>ราคาขึ้นถึง 110,000: ขายหมด กำไร <strong>+300 USD</strong> และไม่เพิ่มอีกแม้ราคาไปต่อ</li>
-    <li>ราคาลงถึง 90,000: ถือ 0.10 BTC ขาดทุนลอยตัว <strong>-700 USD</strong></li>
+    <li>ราคาขึ้นถึง 110,000: ขายของตั้งต้นหมดทีละชั้น กำไร 0.01 &times; (2,000 + 4,000 + 6,000 + 8,000 + 10,000) = <strong>+300 USD</strong> และไม่เพิ่มอีกแม้ราคาไปต่อ</li>
+    <li>ราคาลงถึง 90,000: ถือ 0.10 BTC ของตั้งต้นขาดทุน 0.05 &times; 10,000 = 500 บวกขาดทุนของ 5 ชั้นที่ซื้อเพิ่มอีก 200 รวม <strong>-700 USD</strong></li>
   </ul>
-  <p>ครึ่งบนคือ "ถือของ + ขายทำกำไรเป็นชั้น" ซึ่งก็คือ Covered Call และจาก Synthetic Positions ในบทที่ 2.6 เรารู้ว่า Long Stock + Short Call = Short Put กราฟทั้งเส้นจึงยังเป็น Short Put Ladder ตัวเดิม เพียงแต่จุดเริ่มต้นย้ายมาอยู่กลางโค้ง</p>
+  <p>ครึ่งบนคือ "ถือของ + ขายทำกำไรเป็นชั้น" ซึ่งก็คือ Covered Call และถ้ากลับเครื่องหมายของ Synthetic Long Put ในบทที่ 2.6 (Short Stock + Long Call) จะได้ว่า Long Stock + Short Call = Short Put กราฟทั้งเส้นจึงยังเป็น Short Put Ladder ตัวเดิม เพียงแต่จุดเริ่มต้นย้ายมาอยู่กลางโค้ง</p>
 </div>
+
+<p>Neutral Grid คือ Short Strangle หลายคู่ซ้อนกันเป็นขั้น เมื่อเส้น Grid ถี่มาก รูปรวมจะโค้งมนใกล้กับ Short Straddle ก่อนหมดอายุ (บทที่ 5.1) ต่อจากนี้จึงเทียบกับ Short Straddle เมื่อพูดถึง Greeks</p>
 
 <h4>ตัวอย่าง Neutral Grid บน ETH</h4>
 <p>สมมติ ETH เริ่มที่ 3,000 USD ใช้ Futures วาง Grid ห่างกัน 50 USD ชั้นละ 0.1 ETH ด้านละ 5 ชั้น ซื้อเมื่อราคาลง Short เมื่อราคาขึ้น กำไรต่อรอบ = 0.1 &times; 50 = 5 USD</p>
@@ -2159,7 +2217,7 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="276" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา ETH (USD) — นอกเส้นประคือนอกกรอบ ชัน 0.5 ETH</text>
 </svg>
 
-<p>เส้นแดงคือ Floating P&amp;L มีหน้าตาเหมือน Short Strangle ที่ไม่ได้รับ Premium เส้นเขียวประคือกราฟเดียวกันหลังเก็บ Grid Profit ได้ 6 รอบ กราฟทั้งเส้น <strong>ยกตัวขึ้น</strong> 30 USD และจุดคุ้มทุนขยับออกไปที่ 2,800 กับ 3,200 นี่คือกลไกเดียวกับที่ Premium ยกกราฟ Short Straddle ขึ้นเหนือศูนย์ ต่างกันที่ Grid ต้องรอให้ราคาแกว่งจึงจะได้เงินก้อนนี้</p>
+<p>เส้นแดงคือ Floating P&amp;L มีหน้าตาเหมือน Short Strangle ที่ไม่ได้รับ Premium เส้นเขียวประคือกราฟเดียวกันหลังเก็บ Grid Profit ได้ 6 รอบ กราฟทั้งเส้น <strong>ยกตัวขึ้น</strong> 30 USD และจุดคุ้มทุนขยับออกไปที่ 2,800 กับ 3,200 นี่คือกลไกเดียวกับที่ Premium ยกกราฟ Short Strangle ขึ้นเหนือศูนย์ ต่างกันที่ Grid ต้องรอให้ราคาแกว่งจึงจะได้เงินก้อนนี้</p>
 
 <!-- 9.5 -->
 <h3 id="ch9-5">9.5 Greeks ของ Grid</h3>
@@ -2167,28 +2225,28 @@ tr:hover td { background: var(--blue-bg); }
 <p>เมื่อ Grid คือ Short Option เป็นขั้นบันได Greeks จากบทที่ 5 ก็ใช้ได้ทั้งชุด:</p>
 
 <table>
-  <tr><th>Greek</th><th>ความหมายสำหรับ Grid</th><th>ตัวอย่าง BTC (u = 0.01, &Delta; = 2,000)</th><th>เทียบ Short Straddle</th></tr>
+  <tr><th>Greek</th><th>ความหมายสำหรับ Grid</th><th>ตัวอย่าง BTC (u = 0.01, g = 2,000)</th><th>เทียบ Short Straddle</th></tr>
   <tr>
     <td><strong>Delta</strong></td>
     <td>จำนวนเหรียญที่ถืออยู่ตอนนี้</td>
-    <td>ราคาลงมา 3 ชั้น = +0.03 BTC</td>
+    <td>ราคาลงมา 3 ช่อง = +0.03 BTC</td>
     <td>เหมือนกัน: ราคาลงยิ่ง Long</td>
   </tr>
   <tr>
     <td><strong>Gamma</strong></td>
-    <td style="color:var(--red)">-u / &Delta; (ติดลบเสมอในกรอบ)</td>
+    <td style="color:var(--red)">-u / g (ติดลบเสมอในกรอบ)</td>
     <td>ราคาลงทุก 2,000 USD Delta เพิ่ม 0.01 BTC</td>
     <td>เหมือนกัน: Short Gamma</td>
   </tr>
   <tr>
     <td><strong>Theta</strong></td>
-    <td style="color:var(--green)">Grid Profit ที่เก็บได้ต่อวัน</td>
-    <td>ประมาณ 10 USD ต่อการข้ามเส้น 1 ครั้ง (ดูหัวข้อ 9.6)</td>
+    <td style="color:var(--green)">รายได้จากการแกว่งที่เก็บได้ต่อวัน</td>
+    <td>ทุก 1 ก้าวมีค่าเท่ากับครึ่งรอบ คือ 10 USD (ที่มาอยู่ในหัวข้อ 9.6)</td>
     <td>Straddle ได้แน่นอนทุกวัน Grid ได้เมื่อราคาแกว่ง</td>
   </tr>
   <tr>
     <td><strong>Vega</strong></td>
-    <td>ไม่มี เพราะไม่ได้ถือ Option ราคาของ IV ไม่กระทบ</td>
+    <td>ไม่มี เพราะไม่ได้ถือ Option IV จะขึ้นหรือลงก็ไม่กระทบ P&amp;L ของ Grid</td>
     <td>-</td>
     <td>Straddle เสียเมื่อ IV ขึ้น Grid ไม่รู้สึก</td>
   </tr>
@@ -2198,31 +2256,54 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">Grid กับ Short Straddle รับเงินจากความผันผวนคนละตัว</div>
   <ul>
     <li><strong>คนขาย Straddle</strong> รับ Premium ล่วงหน้าตาม <strong>Implied Volatility</strong> (ความผันผวนที่ตลาดคาด)</li>
-    <li><strong>คนทำ Grid</strong> ทยอยรับ Grid Profit ตาม <strong>Realized Volatility</strong> (ความผันผวนที่เกิดจริง)</li>
+    <li><strong>คนทำ Grid</strong> ทยอยรับ Grid Profit ตาม <strong>Realized Volatility (RV)</strong> คือความผันผวนที่เกิดจริง</li>
   </ul>
   <p>ทั้งคู่เป็น Short Gamma เหมือนกัน จึงแพ้สิ่งเดียวกัน คือราคาที่วิ่งไปทางเดียวไกล ๆ</p>
+  <p>RV คือสิ่งเดียวกับ Historical Volatility (HV) ในบทที่ 5.5 ต่างกันที่มุมมอง: HV มองย้อนหลัง ส่วน RV คือความผันผวนที่เกิดขึ้นจริงระหว่างที่เราถือสถานะ</p>
 </div>
 
 <!-- 9.6 -->
 <h3 id="ch9-6">9.6 สูตรหลักและกฎ &radic;n</h3>
 
-<p><strong>อ่านเป็นภาษาคนก่อน:</strong> ทุกครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นถัดไป Grid ได้ "แต้ม" ครึ่งรอบ แต่ยิ่งราคาจบห่างจากจุดเริ่ม Grid ยิ่งเสียแต้ม และเสียแบบ <strong>ยกกำลังสอง</strong> ไกล 2 เท่าเสีย 4 เท่า</p>
+<p><strong>อ่านเป็นภาษาคนก่อน:</strong> ทุกก้าวที่ราคาเดิน Grid ได้ "แต้ม" ครึ่งรอบ ไม่ว่าจะเดินขึ้นหรือลง แต่ยิ่งราคาจบห่างจากจุดเริ่ม Grid ยิ่งเสียแต้ม และเสียแบบ <strong>ยกกำลังสอง</strong> ไกล 2 เท่าเสีย 4 เท่า</p>
 
 <div class="formula-block">
-  P&amp;L รวม = (u &times; &Delta; / 2) &times; (n - k&sup2;)<br><br>
-  n = จำนวนครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นที่ติดกัน<br>
-  k = จำนวนเส้นที่ราคาตอนจบห่างจากจุดเริ่ม
+  P&amp;L รวม = (u &times; g / 2) &times; (n - k&sup2;)<br><br>
+  n = จำนวนก้าวทั้งหมดที่ราคาเดิน (นิยามของก้าวอยู่ในหัวข้อ 9.1)<br>
+  k = จำนวนช่องที่ราคาตอนจบห่างจากจุดเริ่ม
 </div>
 
-<p>สูตรนี้ใช้ได้ตราบใดที่ราคายังอยู่ในกรอบ และยังไม่หักค่าธรรมเนียม ที่มาของสูตรอยู่ใน <a href="#appendix-grid" style="color:var(--blue)">Appendix</a></p>
+<p>สูตรนี้คือผลรวมของสองก้อนในหัวข้อ 9.3 ซึ่งคิดแยกกันได้:</p>
 
-<p><strong>ตรวจกับตัวอย่างในหัวข้อ 9.3:</strong> u &times; &Delta; / 2 = 10 USD ราคาข้ามเส้น n = 8 ครั้ง จบห่างจากจุดเริ่ม k = 2 เส้น จะได้ 10 &times; (8 - 4) = <strong>+40 USD</strong> ตรงกับที่นับมือ</p>
+<div class="formula-block">
+  จำนวนรอบที่ครบ = (n - k) / 2<br>
+  Grid Profit = u &times; g &times; (n - k) / 2<br>
+  Floating P&amp;L = -u &times; g &times; k(k - 1) / 2
+</div>
+
+<p><strong>ตรวจกับตัวอย่างในหัวข้อ 9.3:</strong> u &times; g = 20 USD ราคาเดิน n = 8 ก้าว จบห่างจากจุดเริ่ม k = 2 ช่อง</p>
+<ul>
+  <li>จำนวนรอบ = (8 - 2) / 2 = 3 รอบ ได้ Grid Profit 60 USD</li>
+  <li>Floating P&amp;L = -20 &times; (2 &times; 1) / 2 = -20 USD</li>
+  <li>รวม = 10 &times; (8 - 4) = <strong>+40 USD</strong> ตรงกับที่นับมือ</li>
+</ul>
+
+<div class="box-amber">
+  <div class="box-title">ขอบเขตของสูตร</div>
+  <ul>
+    <li>ใช้กับ Grid ที่ <strong>เริ่มโดยไม่มีของในมือ</strong> ขนาดและระยะห่างเท่ากันทุกชั้น และราคายังอยู่ในกรอบ ตัวเลขยังไม่หักค่าธรรมเนียม</li>
+    <li>ถ้าเริ่มด้วยของตั้งต้น เช่น Grid กลางกรอบในหัวข้อ 9.4 ให้บวกกำไรขาดทุนของเหรียญก้อนนั้นเพิ่ม คือ ของตั้งต้น &times; (ราคาตอนจบ - ราคาเริ่ม) จุดคุ้มทุนจะไม่อยู่ที่ &radic;n อีกต่อไป</li>
+    <li>Grid หลักมีแต่ฝั่งซื้อ จึงนับเฉพาะก้าวที่เกิดในกรอบ คือระหว่าง 90,000 ถึง 100,000</li>
+    <li>n กับ k เป็นเลขคู่ทั้งคู่หรือเลขคี่ทั้งคู่เสมอ เพราะก้าวที่ไม่ใช่การเดินสุทธิต้องจับคู่กันเป็นรอบ</li>
+    <li>ที่มาของสูตรอยู่ใน <a href="#appendix-grid" style="color:var(--blue)">Appendix</a></li>
+  </ul>
+</div>
 
 <div class="box-green">
   <div class="box-title">กฎ &radic;n — จุดคุ้มทุนของ Grid</div>
   <p>Grid กำไรเมื่อ k&sup2; &lt; n หรือพูดอีกแบบ:</p>
-  <p><span class="formula">ราคาข้ามเส้น Grid ไป n ครั้ง → กำไรถ้าจบห่างจากจุดเริ่มไม่เกิน &radic;n เส้น</span></p>
-  <p>ข้าม 25 ครั้ง ต้องจบภายใน 5 เส้น ข้าม 100 ครั้ง ต้องจบภายใน 10 เส้น</p>
+  <p><span class="formula">ราคาเดิน n ก้าว → กำไรถ้าจบห่างจากจุดเริ่มน้อยกว่า &radic;n ช่อง</span></p>
+  <p>เดิน 25 ก้าว ต้องจบห่างน้อยกว่า 5 ช่อง เดิน 100 ก้าว ต้องจบห่างน้อยกว่า 10 ช่อง ถ้าจบห่างเท่ากับ &radic;n พอดีจะเท่าทุน</p>
 </div>
 
 <svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
@@ -2253,29 +2334,38 @@ tr:hover td { background: var(--blue-bg); }
   <circle cx="250" cy="60" r="3.5" fill="#16a34a"/>
   <text x="262" y="56" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a">จบที่จุดเริ่ม: +360</text>
   <circle cx="74" cy="220" r="3.5" fill="#dc2626"/>
-  <text x="74" y="240" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">เทรนด์ 8 เส้น: -280</text>
+  <text x="74" y="240" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">จบห่าง 8 ช่อง: -280</text>
   <!-- x ticks -->
   <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
     <text x="66" y="166">-8</text><text x="128" y="166">-6</text><text x="372" y="166">+6</text><text x="434" y="166">+8</text>
   </g>
-  <text x="250" y="278" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">k = จำนวนเส้นที่ราคาจบห่างจากจุดเริ่ม (กรณี n = 36, u&Delta;/2 = 10 USD)</text>
+  <text x="250" y="278" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">k = จำนวนช่องที่ราคาจบห่างจากจุดเริ่ม (กรณี n = 36 ก้าว, u &times; g / 2 = 10 USD)</text>
 </svg>
 
-<p>กราฟนี้คือ Payoff Chart ของ Grid ในอีกมุมหนึ่ง แกนนอนเปลี่ยนจากราคาเป็น "ระยะที่ราคาจบห่างจากจุดเริ่ม" และรูปร่างเป็นพาราโบลาคว่ำ ซึ่งเป็นรูปเดียวกับ Short Straddle ก่อนหมดอายุ</p>
+<p>กราฟนี้คือ Payoff Chart ของ Grid ในอีกมุมหนึ่ง แกนนอนเปลี่ยนจากราคาเป็น "ระยะที่ราคาจบห่างจากจุดเริ่ม" และรูปร่างเป็นพาราโบลาคว่ำ ซึ่งเป็นรูปเดียวกับ Short Straddle ก่อนหมดอายุ เส้นลากต่อเนื่องเพื่อให้เห็นรูป จุดที่เกิดได้จริงเมื่อ n = 36 คือ k ที่เป็นเลขคู่</p>
 
 <div class="box-red">
   <div class="box-title">ความจริงที่ต้องรู้: Grid ไม่ได้มีกำไรในตัวเอง</div>
-  <p>ถ้าราคาเดินแบบสุ่มล้วน ๆ (Random Walk) ค่าเฉลี่ยของ k&sup2; จะเท่ากับ n พอดี กำไรคาดหวังของ Grid จึง <strong>เท่ากับศูนย์</strong> ก่อนค่าธรรมเนียม และติดลบหลังค่าธรรมเนียม</p>
+  <p>ถ้าราคาเดินแบบสุ่มล้วน ๆ (Random Walk) คือแต่ละก้าวมีโอกาสขึ้นหรือลงเท่ากัน ค่าเฉลี่ยของ k&sup2; จะเท่ากับ n พอดี กำไรคาดหวังของ Grid จึง <strong>เท่ากับศูนย์</strong> ก่อนค่าธรรมเนียม และติดลบหลังค่าธรรมเนียม</p>
+  <p>ลองกับการโยนเหรียญ 4 ครั้ง ให้หัวคือขึ้น 1 ช่อง และก้อยคือลง 1 ช่อง ผลที่เป็นไปได้มี 16 แบบ: จบห่าง 0 ช่อง 6 แบบ ห่าง 2 ช่อง 8 แบบ ห่าง 4 ช่อง 2 แบบ ค่าเฉลี่ยของ k&sup2; = (0 &times; 6 + 4 &times; 8 + 16 &times; 2) / 16 = 4 ซึ่งเท่ากับ n พอดี</p>
+  <p>ตัวอย่างเดียวกันบอกอีกเรื่องหนึ่ง: Grid กำไร 6 แบบ เท่าทุน 8 แบบ และขาดทุนแค่ 2 แบบ แต่ 2 แบบนั้นขาดทุนมากพอจะลบกำไรของ 6 แบบจนหมด Grid จึง <strong>ชนะบ่อยครั้งละน้อย และแพ้นาน ๆ ครั้งแต่หนัก</strong> แม้ในตลาดที่ไม่มีอะไรให้เก็บ ผลกำไรช่วงสั้น ๆ จึงยังไม่ใช่หลักฐานว่า Grid ได้เปรียบ</p>
   <p>Grid ทำเงินได้เฉพาะเมื่อตลาด <strong>แกว่งกลับมากกว่าการเดินสุ่ม</strong> (mean-reverting) และเสียเงินเมื่อตลาดเป็นเทรนด์มากกว่าการเดินสุ่ม การเปิด Grid จึงเป็นการเดิมพันว่าตลาดจะอยู่ในกรอบ ไม่ใช่เครื่องผลิตเงิน</p>
 </div>
 
-<h4>ตัวอย่างเทียบ 2 ตลาด (BTC, n = 30 ครั้งเท่ากัน)</h4>
+<h4>ตัวอย่างเทียบ 2 ตลาด (BTC, เดิน 30 ก้าวเท่ากัน, u &times; g = 20 USD)</h4>
 <table>
-  <tr><th>สภาพตลาด</th><th>n</th><th>k</th><th>Grid Profit</th><th>Floating P&amp;L</th><th>P&amp;L รวม = 10 &times; (n - k&sup2;)</th></tr>
-  <tr><td>แกว่งในกรอบ จบห่างจุดเริ่ม 2 เส้น</td><td>30</td><td>2</td><td style="color:var(--green)">14 รอบ = +280</td><td style="color:var(--red)">-20</td><td style="color:var(--green)"><strong>+260</strong></td></tr>
-  <tr><td>ไหลลงเป็นเทรนด์ จบห่างจุดเริ่ม 10 เส้น</td><td>30</td><td>10</td><td style="color:var(--green)">10 รอบ = +200</td><td style="color:var(--red)">-900</td><td style="color:var(--red)"><strong>-700</strong></td></tr>
+  <tr><th>สภาพตลาด</th><th>n</th><th>k</th><th>จำนวนรอบ = (n - k) / 2</th><th>Grid Profit</th><th>Floating P&amp;L = -20 &times; k(k - 1) / 2</th><th>P&amp;L รวม = 10 &times; (n - k&sup2;)</th></tr>
+  <tr><td>แกว่งในกรอบ จบห่างจุดเริ่ม 2 ช่อง</td><td>30</td><td>2</td><td>14</td><td style="color:var(--green)">+280</td><td style="color:var(--red)">-20</td><td style="color:var(--green)"><strong>+260</strong></td></tr>
+  <tr><td>ไหลลงเป็นเทรนด์ จบห่างจุดเริ่ม 10 ช่อง</td><td>30</td><td>10</td><td>10</td><td style="color:var(--green)">+200</td><td style="color:var(--red)">-900</td><td style="color:var(--red)"><strong>-700</strong></td></tr>
 </table>
 <p>ราคาขยับเท่ากันทั้งสองกรณี สิ่งที่ต่างคือ "ขยับแล้วไปจบที่ไหน" กรณีหลังต้องมี Grid อย่างน้อย 10 ชั้น ถ้ากรอบแคบกว่านั้นราคาจะหลุดกรอบและขาดทุนเป็นเส้นตรงแทน</p>
+
+<h4>ประมาณจำนวนก้าวต่อวันจากความผันผวน</h4>
+<p>ก้าวเกิดขึ้นทุกครั้งที่ราคาเคลื่อนไปได้ระยะ g ตลาดยิ่งผันผวน หรือ g ยิ่งแคบ ก้าวยิ่งถี่ ความสัมพันธ์โดยประมาณคือ:</p>
+<div class="formula-block">
+  จำนวนก้าวต่อวัน &asymp; (ความผันผวนต่อวัน &times; S / g)&sup2;
+</div>
+<p>ตัวอย่าง: BTC ที่ 100,000 USD ความผันผวน 50% ต่อปี เท่ากับประมาณ 2.6% ต่อวัน (50% หารด้วย &radic;365) หรือประมาณ 2,600 USD ต่อวัน เมื่อ g = 2,000 จะได้ (2,600 / 2,000)&sup2; &asymp; <strong>1.7 ก้าวต่อวัน</strong> ตัวเลขนี้จะกลับมาใช้ในบทที่ 11 เพื่อเทียบรายได้ของ Grid กับราคาของ Option</p>
 
 <!-- 9.7 -->
 <h3 id="ch9-7">9.7 ระยะห่างแบบเลขคณิต กับ แบบเรขาคณิต</h3>
@@ -2288,11 +2378,7 @@ tr:hover td { background: var(--blue-bg); }
   <tr><td><strong>เหมาะกับ</strong></td><td>กรอบแคบ ราคาไม่เปลี่ยนเป็นเท่าตัว</td><td>กรอบกว้าง เช่น BTC 50,000–150,000</td></tr>
 </table>
 
-<p>ถ้ากรอบแคบ (บนกับล่างห่างกันไม่เกิน 20–30%) สองแบบให้ผลใกล้กันมาก บทนี้จึงใช้แบบเลขคณิตทั้งหมดเพื่อให้คิดเลขง่าย สำหรับแบบเรขาคณิตที่ใส่เงินเท่ากันทุกชั้น Floating P&amp;L มีรูป:</p>
-
-<div class="formula-block">
-  Floating P&amp;L &prop; ln(S / S₀) - (S - S₀) / S₀
-</div>
+<p>ถ้ากรอบแคบ (บนกับล่างห่างกันไม่เกิน 20–30%) สองแบบให้ผลใกล้กันมาก บทนี้จึงใช้แบบเลขคณิตทั้งหมดเพื่อให้คิดเลขง่าย สูตรของแบบเรขาคณิตอยู่ใน <a href="#appendix-grid-more" style="color:var(--blue)">Appendix</a></p>
 
 <!-- 9.8 -->
 <h3 id="ch9-8">9.8 ต้นทุนจริงของ Grid</h3>
@@ -2306,22 +2392,28 @@ tr:hover td { background: var(--blue-bg); }
 </ul>
 
 <div class="formula-block">
-  เงื่อนไขขั้นต่ำ: &Delta; / S &gt; 2 &times; อัตราค่าธรรมเนียม<br>
-  ที่ 0.1% ต่อข้าง และ BTC = 100,000 → &Delta; ต้องมากกว่า 200 USD
+  จุดเท่าทุนของหนึ่งรอบ: g / S = 2 &times; อัตราค่าธรรมเนียม<br>
+  ที่ 0.1% ต่อข้าง และ BTC = 100,000 → g = 200 USD
 </div>
 
-<h4>ทางเลือกของ &Delta;</h4>
+<p>ระยะห่างที่ใช้จริงต้องกว้างกว่าจุดเท่าทุนนี้หลายเท่า ใน Grid หลัก g / S = 2% คือ 10 เท่าของค่าธรรมเนียมรวม 0.2% ค่าธรรมเนียมจึงกินกำไรต่อรอบไป 10%</p>
+
+<p>อัตราค่าธรรมเนียมจริงต่างกันมากระหว่างตลาด และคำสั่งที่ตั้งรอไว้ (Maker) มักเสียถูกกว่าคำสั่งที่จับคู่ทันที (Taker) คำสั่งของ Grid ส่วนใหญ่เป็น Maker ส่วนการซื้อของตั้งต้นและคำสั่ง Stop เป็น Taker</p>
+
+<h4>ทางเลือกของ g</h4>
 <table>
-  <tr><th></th><th>&Delta; แคบ</th><th>&Delta; กว้าง</th></tr>
-  <tr><td>จำนวนรอบ</td><td>มาก เก็บการแกว่งเล็ก ๆ ได้</td><td>น้อย การแกว่งที่เล็กกว่า &Delta; หลุดมือ</td></tr>
+  <tr><th></th><th>g แคบ</th><th>g กว้าง</th></tr>
+  <tr><td>จำนวนรอบ</td><td>มาก เก็บการแกว่งเล็ก ๆ ได้</td><td>น้อย การแกว่งที่เล็กกว่า g หลุดมือ</td></tr>
   <tr><td>ค่าธรรมเนียมเทียบกำไร</td><td>กินสัดส่วนสูง</td><td>กินสัดส่วนต่ำ</td></tr>
-  <tr><td>Gamma (u / &Delta;)</td><td>ติดลบมาก ของสะสมเร็ว</td><td>ติดลบน้อย ของสะสมช้า</td></tr>
+  <tr><td>Gamma (u / g)</td><td>ติดลบมาก ของสะสมเร็ว</td><td>ติดลบน้อย ของสะสมช้า</td></tr>
 </table>
+
+<p>ตารางนี้เทียบโดยให้ขนาดต่อชั้น u เท่าเดิม ซึ่งทำให้ g ที่แคบลงเพิ่มทั้งรายได้และความเสี่ยงไปพร้อมกัน ถ้าลด g และ u ลงครึ่งหนึ่งพร้อมกัน รายได้คาดหวังและความเสี่ยงจะใกล้เคียงเดิม แต่จ่ายค่าธรรมเนียมรวมเพิ่มเป็น 2 เท่า จำง่าย ๆ ว่า <strong>u / g เป็นตัวปรับความเสี่ยงและรายได้ ส่วน g เป็นตัวปรับความละเอียดและค่าธรรมเนียม</strong></p>
 
 <h4>เงินทุนและต้นทุนอื่น</h4>
 <ul>
   <li><strong>เงินที่ต้องกัน (Spot):</strong> ผลรวมของคำสั่งซื้อทุกชั้น ในตัวอย่างหลัก = 0.01 &times; (98,000 + 96,000 + 94,000 + 92,000 + 90,000) = <strong>4,700 USD</strong> เงินก้อนนี้นอนรออยู่เฉย ๆ จนกว่าราคาจะลงถึง</li>
-  <li><strong>Funding (Perpetual Futures):</strong> ฝั่งที่ถืออยู่อาจต้องจ่ายหรือได้รับ Funding เป็นระยะ ถ้าถือ Long ค้างนานในช่วงที่ Funding เป็นบวก ต้นทุนนี้จะกิน Grid Profit</li>
+  <li><strong>Funding (Perpetual Futures):</strong> ฝั่งที่ถืออยู่อาจต้องจ่ายหรือได้รับ Funding เป็นระยะ สมมติ Funding 0.01% ทุก 8 ชั่วโมง โดยฝั่ง Long เป็นผู้จ่าย ของเต็มมือ 0.05 BTC มูลค่าประมาณ 5,000 USD จะจ่ายประมาณ 1.5 USD ต่อวัน หรือราว 11% ต่อปีของมูลค่าสถานะ ในช่วงตลาดร้อนแรง Funding ขึ้นได้หลายเท่าของระดับนี้ และกลับเป็นลบได้ในช่วงตลาดร่วง ซึ่งทำให้ฝั่ง Short เป็นผู้จ่าย</li>
   <li><strong>Leverage:</strong> ลดเงินที่ต้องกัน แต่เพิ่มราคา Liquidation เข้ามาในกราฟ ซึ่งเป็นเรื่องของบทที่ 10</li>
 </ul>
 
@@ -2332,9 +2424,9 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">สรุปบทที่ 9</div>
   <ol>
     <li><strong>ของในมือ = ความชัน</strong> และ <strong>Limit Order = Strike</strong> กลยุทธ์ที่ถือของตามระดับราคาจึงวาดเป็น Payoff Chart ได้เสมอ</li>
-    <li><strong>Grid = Short Option เป็นขั้นบันได</strong> Spot Grid คือ Short Put Ladder และ Neutral Grid คือ Short Strangle</li>
+    <li><strong>Grid = Short Option เป็นขั้นบันได</strong> Spot Grid คือ Short Put Ladder และ Neutral Grid คือ Short Strangle เป็นขั้น</li>
     <li><strong>P&amp;L มี 2 ก้อน</strong> Grid Profit ทำหน้าที่เป็น Premium ส่วน Floating P&amp;L คือ Payoff ของ Short Option</li>
-    <li><strong>P&amp;L รวม = (u&Delta;/2) &times; (n - k&sup2;)</strong> กำไรเมื่อราคาจบห่างจากจุดเริ่มไม่เกิน &radic;n เส้น</li>
+    <li><strong>P&amp;L รวม = (u &times; g / 2) &times; (n - k&sup2;)</strong> สำหรับ Grid ที่เริ่มโดยไม่มีของในมือ กำไรเมื่อราคาจบห่างจากจุดเริ่มน้อยกว่า &radic;n ช่อง</li>
     <li><strong>Grid ได้เงินจาก Realized Volatility</strong> และแพ้เทรนด์ ถ้าราคาเดินสุ่มกำไรคาดหวังเป็นศูนย์</li>
   </ol>
 </div>
@@ -2343,9 +2435,10 @@ tr:hover td { background: var(--blue-bg); }
 <ol>
   <li>ETH เริ่มที่ 3,000 USD วาง Spot Grid ซื้อ 4 ชั้นที่ 2,950 · 2,900 · 2,850 · 2,800 ชั้นละ 0.2 ETH จงหา Floating P&amp;L เมื่อราคาลงมาถึง 2,800 เป็นครั้งแรก และเมื่อราคาลงต่อถึง 2,700</li>
   <li>Grid ในข้อ 1 เทียบเท่ากับ Option ตำแหน่งใดบ้าง ระบุ Strike และจำนวน</li>
-  <li>Grid ตัวหนึ่งมี u &times; &Delta; = 20 USD ราคาข้ามเส้นไป 50 ครั้ง แล้วจบห่างจากจุดเริ่ม 4 เส้น P&amp;L รวมเป็นเท่าไร และถ้าจบห่าง 8 เส้นจะเป็นเท่าไร</li>
-  <li>ถ้าราคาข้ามเส้นไป 49 ครั้ง ราคาจบห่างจากจุดเริ่มได้มากที่สุดกี่เส้นโดยที่ Grid ยังไม่ขาดทุน</li>
-  <li>BTC อยู่ที่ 100,000 USD ค่าธรรมเนียมข้างละ 0.05% ถ้าตั้ง &Delta; = 500 USD ค่าธรรมเนียมกินกำไรต่อรอบไปกี่เปอร์เซ็นต์</li>
+  <li>Grid ตัวหนึ่งเริ่มโดยไม่มีของในมือ มี u &times; g = 20 USD ราคาเดิน 50 ก้าว แล้วจบห่างจากจุดเริ่ม 4 ช่อง P&amp;L รวมเป็นเท่าไร และถ้าจบห่าง 8 ช่องจะเป็นเท่าไร</li>
+  <li>ถ้าราคาเดิน 49 ก้าว ราคาจบห่างจากจุดเริ่มได้มากที่สุดกี่ช่องโดยที่ Grid ยังไม่ขาดทุน</li>
+  <li>BTC อยู่ที่ 100,000 USD ค่าธรรมเนียมข้างละ 0.05% ถ้าตั้ง g = 500 USD ค่าธรรมเนียมกินกำไรต่อรอบไปกี่เปอร์เซ็นต์</li>
+  <li>ราคา BTC เดินผ่านเส้นของ Grid หลักตามลำดับ 100k · 98k · 96k · 98k · 100k · 98k · 96k · 94k · 96k จงหา n, k, จำนวนรอบที่ครบ, Grid Profit และ Floating P&amp;L แล้วตรวจกับสูตร</li>
 </ol>
 
 <div class="box-amber">
@@ -2353,9 +2446,10 @@ tr:hover td { background: var(--blue-bg); }
   <ol>
     <li>ที่ 2,800: (150 + 100 + 50 + 0) &times; 0.2 = <strong>-60 USD</strong> ที่ 2,700: -60 - 0.8 &times; 100 = <strong>-140 USD</strong></li>
     <li>Short Put 4 ตัว ที่ Strike 2,950 · 2,900 · 2,850 · 2,800 ตัวละ 0.2 ETH โดยไม่ได้รับ Premium</li>
-    <li>จบห่าง 4 เส้น: 10 &times; (50 - 16) = <strong>+340 USD</strong> จบห่าง 8 เส้น: 10 &times; (50 - 64) = <strong>-140 USD</strong></li>
-    <li>&radic;49 = 7 จึงจบห่างได้มากที่สุด <strong>7 เส้น</strong> ซึ่งเท่าทุนพอดี เพราะ n - k&sup2; = 49 - 49 = 0</li>
+    <li>จบห่าง 4 ช่อง: 10 &times; (50 - 16) = <strong>+340 USD</strong> จบห่าง 8 ช่อง: 10 &times; (50 - 64) = <strong>-140 USD</strong></li>
+    <li>&radic;49 = 7 จึงจบห่างได้มากที่สุด <strong>7 ช่อง</strong> ซึ่งเท่าทุนพอดี เพราะ n - k&sup2; = 49 - 49 = 0</li>
     <li>กำไรต่อรอบคิดเป็น 500 / 100,000 = 0.5% ของมูลค่า ค่าธรรมเนียม 2 ข้าง = 0.1% จึงกินไป <strong>20%</strong> ของกำไรต่อรอบ</li>
+    <li>ราคาเดิน <strong>n = 8 ก้าว</strong> จบที่ 96k ซึ่งห่างจากจุดเริ่ม <strong>k = 2 ช่อง</strong> ครบ (8 - 2) / 2 = <strong>3 รอบ</strong> ได้ Grid Profit 60 USD ตอนจบถือชั้นที่ซื้อ 98k (ขาดทุน 20) กับชั้นที่ซื้อ 96k (ขาดทุน 0) Floating P&amp;L = <strong>-20 USD</strong> รวม +40 USD ตรงกับ 10 &times; (8 - 4)</li>
   </ol>
 </div>
 
@@ -2363,9 +2457,11 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">ศัพท์ใหม่ในบทนี้</div>
   <ul>
     <li><strong>Grid Profit:</strong> กำไรที่รับรู้แล้วจากคู่ซื้อ–ขายที่ครบรอบ</li>
-    <li><strong>Floating P&amp;L:</strong> กำไรขาดทุนที่ยังไม่รับรู้ของของที่ถืออยู่</li>
+    <li><strong>Floating P&amp;L:</strong> กำไรขาดทุนที่ยังไม่รับรู้ของเหรียญที่ถืออยู่</li>
     <li><strong>Path-dependent:</strong> ผลลัพธ์ขึ้นกับเส้นทางที่ราคาเดิน ไม่ใช่แค่ราคาตอนจบ</li>
-    <li><strong>Realized Volatility:</strong> ความผันผวนที่เกิดขึ้นจริงระหว่างที่ถือสถานะ</li>
+    <li><strong>Realized Volatility (RV):</strong> ความผันผวนที่เกิดขึ้นจริงระหว่างที่ถือสถานะ</li>
+    <li><strong>ก้าว:</strong> การที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นที่ติดกัน</li>
+    <li><strong>Grid หลัก / Grid กลางกรอบ:</strong> Grid ตัวอย่างสองตัวของภาคนี้ ตัวแรกเริ่มที่ขอบบนโดยไม่มีของ ตัวที่สองเริ่มกลางกรอบโดยถือของไว้ครึ่งหนึ่ง</li>
     <li><strong>Mean-reverting:</strong> ตลาดที่ราคามีแนวโน้มแกว่งกลับเข้าหาระดับเดิม</li>
     <li><strong>Short Put Ladder:</strong> Short Put หลายตัวที่ Strike เรียงกันเป็นขั้น</li>
   </ul>
@@ -2388,7 +2484,20 @@ tr:hover td { background: var(--blue-bg); }
 <!-- 10.1 -->
 <h3 id="ch10-1">10.1 แผนที่ความเสี่ยง: 3 โซนบนกราฟ</h3>
 
-<p>ใช้ Grid ที่เริ่มกลางกรอบจากบทที่ 9.4: BTC กรอบ 90,000–110,000 เริ่มที่ 100,000 ถือ 0.05 BTC ชั้นละ 0.01 BTC ห่างกัน 2,000 USD กราฟแบ่งได้เป็น 3 โซนที่มีความเสี่ยงคนละแบบ:</p>
+<p>บทนี้ใช้ Grid ตัวอย่างสองตัวจากบทที่ 9 สลับกัน ทั้งคู่ใช้ชั้นละ 0.01 BTC ห่างกัน 2,000 USD และราคาเริ่มที่ 100,000 ตัวเลขของสองตัวนี้ต่างกันมาก จึงควรดูให้ชัดก่อนว่าหัวข้อไหนใช้ตัวไหน:</p>
+
+<table>
+  <tr><th></th><th>Grid หลัก (บทที่ 9.1)</th><th>Grid กลางกรอบ (บทที่ 9.4)</th></tr>
+  <tr><td>กรอบ</td><td>90,000–100,000</td><td>90,000–110,000</td></tr>
+  <tr><td>ของตั้งต้นที่ราคา 100,000</td><td>0</td><td>0.05 BTC</td></tr>
+  <tr><td>ของเต็มมือ</td><td>0.05 BTC</td><td>0.10 BTC</td></tr>
+  <tr><td>P&amp;L ที่ 110,000</td><td>0</td><td style="color:var(--green)">+300</td></tr>
+  <tr><td>P&amp;L ที่ 90,000</td><td style="color:var(--red)">-200</td><td style="color:var(--red)">-700</td></tr>
+  <tr><td>P&amp;L ที่ 80,000</td><td style="color:var(--red)">-700</td><td style="color:var(--red)">-1,700</td></tr>
+  <tr><td>ใช้ในหัวข้อ</td><td>10.2, 10.3, 10.5, 10.8, 10.9</td><td>10.1, 10.4</td></tr>
+</table>
+
+<p>กราฟของ Grid กลางกรอบแบ่งได้เป็น 3 โซนที่มีความเสี่ยงคนละแบบ:</p>
 
 <svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
   <defs><marker id="ah10a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
@@ -2399,7 +2508,7 @@ tr:hover td { background: var(--blue-bg); }
   <!-- Axes -->
   <line x1="60" y1="100" x2="448" y2="100" stroke="#374151" stroke-width="1" marker-end="url(#ah10a)"/>
   <line x1="60" y1="246" x2="60" y2="22" stroke="#374151" stroke-width="1" marker-end="url(#ah10a)"/>
-  <text x="66" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">Floating P&amp;L (USD)</text>
+  <text x="66" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">P&amp;L เทียบกับจุดเริ่ม (USD)</text>
   <text x="452" y="98" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
   <!-- curve -->
   <polyline points="60,230 131.25,170 155,152 178.75,136 202.5,122 226.25,110 250,100 273.75,90 297.5,82 321.25,76 345,72 368.75,70 440,70" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
@@ -2423,33 +2532,37 @@ tr:hover td { background: var(--blue-bg); }
   <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
     <text x="131.25" y="261">90k</text><text x="250" y="261">100k</text><text x="368.75" y="261">110k</text>
   </g>
-  <text x="250" y="279" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD)</text>
+  <text x="250" y="279" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD) — Grid กลางกรอบ ยังไม่รวมรอบที่เก็บได้ระหว่างทาง</text>
 </svg>
 
 <table>
   <tr><th>โซน</th><th>เกิดอะไรขึ้น</th><th>ความเสี่ยง</th><th>เครื่องมือในบทนี้</th></tr>
   <tr><td style="color:var(--red)"><strong>หาง</strong> (ใต้กรอบ)</td><td>ถือของเต็มมือ ไม่มีรอบให้เก็บแล้ว</td><td>ขาดทุนเป็นเส้นตรง ไม่มีพื้น</td><td>กำหนดขนาด (10.2), Stop (10.3), Leverage (10.8)</td></tr>
-  <tr><td style="color:var(--amber)"><strong>ลำตัว</strong> (ในกรอบ)</td><td>Grid ทำงานปกติ</td><td>แพ้เทรนด์ตามกฎ &radic;n</td><td>Hedge Delta (10.4), ออกแบบชั้น (10.5), ตัวกรองตลาด (10.7)</td></tr>
+  <tr><td style="color:var(--amber)"><strong>ลำตัว</strong> (ในกรอบ)</td><td>Grid ทำงานปกติ</td><td>ขาลง: แพ้ตามกฎ &radic;n บวกขาดทุนของเหรียญตั้งต้น · ขาขึ้น: กำไรแต่มีเพดาน</td><td>Hedge Delta (10.4), ออกแบบชั้น (10.5), ตัวกรองตลาด (10.7)</td></tr>
   <tr><td style="color:var(--gray-600)"><strong>เพดาน</strong> (เหนือกรอบ)</td><td>ขายหมด ไม่มีของ</td><td>ไม่ขาดทุน แต่เสียโอกาส</td><td>แผนเมื่อหลุดกรอบ (10.6)</td></tr>
 </table>
 
 <!-- 10.2 -->
-<h3 id="ch10-2">10.2 กำหนดขนาดจาก Max Loss</h3>
+<h3 id="ch10-2">10.2 กำหนดขนาดจากงบขาดทุน</h3>
 
 <p><strong>อ่านเป็นภาษาคนก่อน:</strong> คนส่วนใหญ่ตั้ง Grid โดยเริ่มจาก "มีเงินเท่าไร" แล้วหารจำนวนชั้น วิธีที่ Payoff Chart แนะนำกลับกัน คือเริ่มจาก "ยอมเสียได้เท่าไร ณ จุดที่จะเลิก" แล้วย้อนหาขนาดต่อชั้น</p>
 
-<p>สำหรับ Grid ฝั่งซื้อ N ชั้น ขาดทุนลอยตัวที่ราคา Stop (ซึ่งอยู่ที่หรือใต้กรอบล่าง L) คือ:</p>
+<p>จุดที่จะเลิกเรียกว่า <strong>ราคา Stop</strong> คือราคาที่ตั้งใจจะปิดทุกอย่าง (รายละเอียดในหัวข้อ 10.3) และจำนวนเงินที่ยอมเสีย ณ จุดนั้นเรียกว่า <strong>งบขาดทุน</strong> งบนี้ไม่ใช่ Max Loss แบบ Option ในภาค 1 เพราะถ้าราคาเคลื่อนเร็วจนปิดไม่ทัน จะเสียมากกว่างบได้</p>
+
+<p>สำหรับ Grid ฝั่งซื้อ m ชั้นที่เริ่มโดยไม่มีของในมือ เช่น Grid หลัก ขาดทุนลอยตัวที่ราคา Stop (ซึ่งอยู่ที่หรือใต้กรอบล่าง L) คือ:</p>
 
 <div class="formula-block">
-  ขาดทุนที่ Stop = u &times; [ &Delta; &times; N(N - 1) / 2 + N &times; (L - Stop) ]<br><br>
-  u = งบขาดทุน / [ &Delta; &times; N(N - 1) / 2 + N &times; (L - Stop) ]
+  ขาดทุนที่ Stop = u &times; [ g &times; m(m - 1) / 2 + m &times; (L - Stop) ]<br><br>
+  u = งบขาดทุน / [ g &times; m(m - 1) / 2 + m &times; (L - Stop) ]
 </div>
 
-<p>ก้อนแรกในวงเล็บคือขาดทุนสะสมตอนราคาถึงกรอบล่าง ก้อนที่สองคือขาดทุนเพิ่มของของเต็มมือ N ชั้น ระหว่างกรอบล่างถึงจุด Stop</p>
+<p>ก้อนแรกในวงเล็บคือขาดทุนสะสมตอนราคาถึงกรอบล่าง ซึ่งก็คือสูตร Floating P&amp;L ในบทที่ 9.6 เมื่อ k = m ก้อนที่สองคือขาดทุนเพิ่มของเหรียญเต็มมือ m ชั้น ระหว่างกรอบล่างถึงจุด Stop</p>
+
+<p>ถ้า Grid เริ่มด้วยของตั้งต้น ต้องบวกขาดทุนของเหรียญก้อนนั้นเพิ่ม คือ ของตั้งต้น &times; (ราคาเริ่ม - Stop) เช่น Grid กลางกรอบที่ตั้ง Stop 88,000 ด้วย u = 0.01 จะขาดทุน 300 + 0.05 &times; 12,000 = <strong>900 USD</strong> ไม่ใช่ 300 USD</p>
 
 <div class="box-blue">
   <div class="box-title">ตัวอย่าง: หา u ของ Grid หลัก</div>
-  <p>ทุน 10,000 USD ยอมเสียได้ 3% ต่อ Grid หนึ่งตัว = 300 USD ใช้ Grid ซื้อ 5 ชั้น (98k ถึง 90k) ห่างกัน 2,000 USD ตั้ง Stop ที่ 88,000</p>
+  <p>ทุน 10,000 USD ยอมเสียได้ 3% ต่อ Grid หนึ่งตัว = 300 USD ใช้ Grid หลัก (ซื้อ 5 ชั้น 98k ถึง 90k ห่างกัน 2,000 USD) ตั้ง Stop ที่ 88,000</p>
   <ul>
     <li>ก้อนแรก: 2,000 &times; (5 &times; 4 / 2) = 20,000</li>
     <li>ก้อนที่สอง: 5 &times; (90,000 - 88,000) = 10,000</li>
@@ -2460,7 +2573,7 @@ tr:hover td { background: var(--blue-bg); }
 
 <div class="box-red">
   <div class="box-title">กรอบกว้างขึ้นไม่ได้แปลว่าปลอดภัยขึ้น</div>
-  <p>ขาดทุนที่กรอบล่างโตตาม N(N - 1) / 2 ซึ่งเกือบเท่ากับ N ยกกำลังสอง ถ้าขยาย Grid หลักจาก 5 ชั้นเป็น 10 ชั้น (ลงไปถึง 80,000) ด้วยขนาดต่อชั้นเท่าเดิม ขาดทุนที่กรอบล่างจะเพิ่มจาก 200 เป็น <strong>900 USD</strong> ชั้นเพิ่ม 2 เท่า แต่ขาดทุนเพิ่ม 4.5 เท่า</p>
+  <p>ขาดทุนที่กรอบล่างโตตาม m(m - 1) / 2 ซึ่งโตในอัตราเดียวกับ m ยกกำลังสอง ถ้าขยาย Grid หลักจาก 5 ชั้นเป็น 10 ชั้น (ลงไปถึง 80,000) ด้วยขนาดต่อชั้นเท่าเดิม ขาดทุนที่กรอบล่างจะเพิ่มจาก 200 เป็น <strong>900 USD</strong> ชั้นเพิ่ม 2 เท่า แต่ขาดทุนเพิ่ม 4.5 เท่า</p>
   <p>การขยายกรอบจึงเป็นการเลื่อนจุดเจ็บออกไปและทำให้มันใหญ่ขึ้น ถ้าจะขยายกรอบต้องลด u ลงตามสูตรข้างบนเสมอ</p>
 </div>
 
@@ -2498,7 +2611,7 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="282" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD) — Grid หลัก ตั้ง Stop ที่ 88,000</text>
 </svg>
 
-<p>รูปที่ได้คือ "โค้งลงแล้วแบน" คล้าย Bull Put Spread ในเชิงรูปร่าง แต่ Stop มีจุดอ่อน 2 ข้อที่ Option ไม่มี:</p>
+<p>รูปที่ได้คล้ายรูป "บันไดขึ้น" ของ Bull Call Spread ในบทที่ 4.1 ที่จมอยู่ใต้ศูนย์ทั้งเส้น แต่ Stop มีจุดอ่อน 2 ข้อที่ Option ไม่มี:</p>
 
 <table>
   <tr><th>จุดอ่อน</th><th>เกิดอะไร</th><th>ตัวอย่าง</th></tr>
@@ -2506,29 +2619,42 @@ tr:hover td { background: var(--blue-bg); }
   <tr><td><strong>Whipsaw</strong></td><td>ราคาแตะ Stop แล้วเด้งกลับ ขาดทุนถูกรับรู้ไปแล้ว และ Grid ปิดไปแล้ว</td><td>แตะ 88k เสีย 300 แล้วราคากลับไป 100k โดยไม่มีเราอยู่</td></tr>
 </table>
 
+<p>ตลาดคริปโตเปิดตลอด 24 ชั่วโมง จึงไม่มี Gap ข้ามคืนแบบตลาดหุ้น คำว่า <strong>Gap</strong> ในภาคนี้หมายถึงช่วงที่ราคาเคลื่อนเร็วจนคำสั่งจับคู่ไม่ทัน เช่น ช่วงที่สถานะ Leverage จำนวนมากถูกบังคับปิดต่อเนื่องกัน หรือช่วงที่ระบบของตลาดทำงานช้า</p>
+
+<div class="box-blue">
+  <div class="box-title">Stop ไม่ได้มีแบบเดียว และไม่ใช่การรับประกัน</div>
+  <ul>
+    <li><strong>Stop-Market:</strong> เมื่อถึงราคาที่ตั้ง จะปิดที่ราคาตลาดทันที ได้ปิดแน่ แต่ราคาอาจแย่กว่าที่ตั้ง</li>
+    <li><strong>Stop-Limit:</strong> เมื่อถึงราคาที่ตั้ง จะส่งคำสั่ง Limit ราคาไม่แย่กว่าที่กำหนด แต่ถ้าราคาร่วงผ่านไปเร็ว คำสั่งจะไม่ถูกจับคู่เลย และสถานะยังอยู่ครบ</li>
+    <li><strong>ราคาที่ใช้กระตุ้น:</strong> บางตลาดให้เลือกระหว่างราคาซื้อขายล่าสุดกับราคาอ้างอิงของตลาด (Mark Price) ราคาซื้อขายล่าสุดถูกกระตุ้นจากการร่วงชั่วครู่ได้ง่ายกว่า</li>
+    <li>Stop ที่ตั้งในบอทเป็นการตั้งค่าของระบบ ควรอ่านเงื่อนไขของตลาดที่ใช้ว่าเมื่อ Stop ทำงานแล้วบอทขายของให้หรือไม่ และขายด้วยคำสั่งแบบใด</li>
+  </ul>
+</div>
+
 <h4>Stop หนึ่งครั้งเท่ากับกี่รอบ</h4>
 <p>ตัวเลขที่ควรรู้ก่อนเปิด Grid คืออัตราส่วนระหว่างขาดทุนที่ Stop กับกำไรสุทธิต่อรอบ ใน Grid หลัก กำไรสุทธิต่อรอบคือ 18 USD (หลังค่าธรรมเนียม จากบทที่ 9.8):</p>
 <div class="formula-block">
   จำนวนรอบที่ต้องเก็บเพื่อชดเชย Stop 1 ครั้ง = 300 / 18 &asymp; 17 รอบ
 </div>
-<p>ถ้าประเมินแล้วว่าโดยเฉลี่ยจะเก็บได้ไม่ถึง 17 รอบก่อนโดน Stop หนึ่งครั้ง Grid ตัวนี้ขาดทุนในระยะยาว ทางแก้คือขยับ Stop ให้ใกล้ขึ้น ลดจำนวนชั้น หรือไม่เปิด</p>
+<p>ถ้าโดยเฉลี่ยเก็บได้ไม่ถึง 17 รอบก่อนโดน Stop หนึ่งครั้ง Grid ตัวนี้ขาดทุนในระยะยาว และตัวเลขนี้ <strong>ไม่ได้ดีขึ้นจากการขยับ Stop</strong> ถ้าราคาเดินสุ่ม จำนวนรอบที่คาดว่าจะเก็บได้ก่อนโดน Stop หนึ่งครั้งคือ 300 / 20 = 15 รอบพอดี เพราะกำไรคาดหวังก่อนค่าธรรมเนียมเป็นศูนย์ตามบทที่ 9.6 ซึ่งน้อยกว่า 17 รอบที่ต้องใช้ ส่วนต่าง 2 รอบคือค่าธรรมเนียม</p>
+<p>การขยับ Stop ให้ใกล้ขึ้นลดขาดทุนต่อครั้ง แต่ทำให้โดน Stop บ่อยขึ้นในสัดส่วนเดียวกัน Stop จึงเปลี่ยนได้แค่ว่าจะแพ้บ่อยครั้งละน้อย หรือแพ้นาน ๆ ครั้งแต่มาก สิ่งที่ทำให้ Grid คุ้มจริงมี 3 อย่างเท่านั้น คือตลาดที่แกว่งกลับมากกว่าการเดินสุ่ม ค่าธรรมเนียมที่ต่ำเมื่อเทียบกับ g หรือการไม่เปิดเมื่อสองอย่างแรกไม่มี</p>
 
 <div class="box-amber">
   <div class="box-title">วาง Stop ตรงไหน</div>
   <ul>
     <li>วาง <strong>ใต้กรอบล่าง</strong> เว้นระยะอย่างน้อย 1 ช่อง ถ้าวางที่กรอบล่างพอดี ชั้นสุดท้ายจะซื้อแล้วโดน Stop ทันที</li>
     <li>ระดับ Stop ต้องมาจากงบขาดทุนในหัวข้อ 10.2 ไม่ใช่จากความรู้สึกว่า "ราคาไม่น่าลงถึง"</li>
-    <li>คิดเผื่อ Gap ไว้ในงบ เช่น ถือว่าขาดทุนจริงอาจเป็น 1.5 เท่าของที่กราฟบอก</li>
+    <li>คิดเผื่อราคาที่ได้แย่กว่าที่ตั้งไว้ในงบ โดยคิดเป็น % ของราคา คูณกับของเต็มมือ เช่น เผื่อ 3% ของราคา 88,000 กับของ 0.05 BTC เท่ากับเผื่อเพิ่มประมาณ 130 USD</li>
   </ul>
 </div>
 
 <!-- 10.4 -->
-<h3 id="ch10-4">10.4 Hedge Delta: เปลี่ยนความเอียงของกราฟ</h3>
+<h3 id="ch10-4">10.4 Hedge Delta: เปลี่ยนความชันของทั้งกราฟ</h3>
 
-<p>Spot Grid ที่เริ่มกลางกรอบถือของตั้งแต่ 0 ถึง 0.10 BTC จึง <strong>เอียงขาขึ้นเสมอ</strong> (Delta เป็นบวกตลอด) ถ้าไม่ต้องการเดิมพันทิศทาง ให้ Short Perpetual Futures เท่ากับครึ่งหนึ่งของของสูงสุด คือ 0.05 BTC แล้วใช้หลักบวก Payoff จากบทที่ 3:</p>
+<p>Grid กลางกรอบถือของตั้งแต่ 0 ถึง 0.10 BTC ความชันของกราฟจึง <strong>เป็นบวกเสมอ</strong> (Delta เป็นบวกตลอด) เท่ากับเดิมพันขาขึ้นอยู่ตลอดเวลา ถ้าไม่ต้องการเดิมพันทิศทาง ให้ Short Perpetual Futures เท่ากับครึ่งหนึ่งของจำนวนที่ถือสูงสุด คือ 0.05 BTC แล้วใช้หลักบวก Payoff จากบทที่ 3:</p>
 
 <table>
-  <tr><th>ราคา BTC</th><th>Spot Grid</th><th>Short 0.05 BTC</th><th>รวม</th><th>Delta รวม</th></tr>
+  <tr><th>ราคา BTC</th><th>Grid กลางกรอบ</th><th>Short 0.05 BTC</th><th>รวม</th><th>Delta รวม</th></tr>
   <tr><td>80,000</td><td style="color:var(--red)">-1,700</td><td style="color:var(--green)">+1,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>+0.05</td></tr>
   <tr><td>90,000</td><td style="color:var(--red)">-700</td><td style="color:var(--green)">+500</td><td style="color:var(--red)"><strong>-200</strong></td><td>+0.05</td></tr>
   <tr><td>100,000</td><td>0</td><td>0</td><td><strong>0</strong></td><td>0</td></tr>
@@ -2551,7 +2677,7 @@ tr:hover td { background: var(--blue-bg); }
   <polyline points="60,182 155,152 174,147.2 193,143.6 212,141.2 231,140 250,140 269,140 288,141.2 307,143.6 326,147.2 345,152 440,182" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linejoin="round" stroke-linecap="round"/>
   <!-- labels -->
   <text x="66" y="72" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a">Short 0.05 BTC</text>
-  <text x="96" y="236" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">Spot Grid เดิม</text>
+  <text x="96" y="236" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">Grid กลางกรอบ</text>
   <text x="250" y="170" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb" text-anchor="middle" font-weight="700">รวม = Neutral Grid</text>
   <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
     <text x="60" y="270">80k</text><text x="155" y="270">90k</text><text x="250" y="270">100k</text><text x="345" y="270">110k</text><text x="440" y="270">120k</text>
@@ -2563,20 +2689,29 @@ tr:hover td { background: var(--blue-bg); }
 
 <ul>
   <li><strong>ได้:</strong> ขาดทุนที่กรอบล่างลดจาก 700 เหลือ 200 และหางล่างชันน้อยลงครึ่งหนึ่ง</li>
-  <li><strong>เสีย:</strong> กำไร 300 ที่กรอบบนกลายเป็นขาดทุน 200 และมีหางบนที่ไม่มีเพดาน ซึ่งเดิมไม่มี</li>
-  <li><strong>ต้นทุนเพิ่ม:</strong> ต้องวาง Margin ให้ขา Short มี Funding ที่อาจได้หรืออาจเสีย และขา Short มีราคา Liquidation ของตัวเอง</li>
+  <li><strong>เสีย:</strong> กำไร 300 ที่กรอบบนกลายเป็นขาดทุน 200 และเกิดหางบนขึ้นมาใหม่ ซึ่งขาดทุนไม่มีพื้นเหมือนหางล่าง</li>
 </ul>
 
+<div class="box-red">
+  <div class="box-title">ความเสี่ยงของขา Hedge</div>
+  <ul>
+    <li><strong>เงินอยู่คนละกระเป๋า:</strong> กำไรจากการขาย Spot ไม่ได้ไปค้ำขา Short โดยอัตโนมัติ ต้องวาง Margin ให้ขา Short แยกต่างหาก และขานี้มีราคา Liquidation ของตัวเอง</li>
+    <li><strong>เหนือกรอบบนไม่มีของเหลือ:</strong> เมื่อ Grid ขายหมดแล้ว ขา Short ไม่มีอะไรรองรับ ต้องตั้ง Stop ฝั่งซื้อคืน (Buy Stop) ไว้เหนือกรอบบน และวาง Margin ให้รอดถึงจุดนั้น</li>
+    <li><strong>Funding:</strong> ขา Short ได้รับเมื่อ Funding เป็นบวก และต้องจ่ายเมื่อ Funding เป็นลบ ซึ่งมักเกิดในช่วงตลาดร่วง</li>
+    <li><strong>ขา Hedge หายเองได้:</strong> ในวันที่ตลาดเคลื่อนไหวรุนแรง ตลาด Futures บางแห่งมีกลไกบังคับลดสถานะของฝั่งที่กำไร (Auto-Deleveraging) ขา Short อาจถูกปิดโดยที่เราไม่ได้สั่ง เหลือแต่ Grid ที่ไม่มี Hedge ในเวลาที่ต้องการมันที่สุด</li>
+  </ul>
+</div>
+
 <div class="box-amber">
-  <div class="box-title">Hedge ได้แค่ความเอียง ไม่ได้ความโค้ง</div>
+  <div class="box-title">Hedge ได้แค่ความชัน ไม่ได้ความโค้ง</div>
   <p>Futures มี Payoff เป็นเส้นตรง การบวกเส้นตรงเข้าไปเปลี่ยนได้แค่ความชัน กราฟยังโค้งคว่ำเท่าเดิม คือยังเป็น Short Gamma เท่าเดิม ถ้าไล่ Hedge Delta ให้เป็นศูนย์ทุกครั้งที่ราคาขยับ จะเท่ากับสั่งซื้อขายสวนทางกับ Grid ทุกคำสั่ง ผลคือไม่เหลือ Grid เลย</p>
-  <p>การลดความโค้งทำได้ 2 ทางเท่านั้น คือลดขนาด Grid เอง หรือซื้อ Option ซึ่งเป็นเรื่องของบทที่ 11</p>
+  <p>การลดความโค้งต้องใช้สิ่งที่มีความโค้งในตัวเอง ทางตรงที่สุดคือลดขนาด Grid (ลด u หรือเพิ่ม g) หรือซื้อ Option ซึ่งเป็นเรื่องของบทที่ 11</p>
 </div>
 
 <!-- 10.5 -->
 <h3 id="ch10-5">10.5 ออกแบบชั้น: ขนาดและระยะห่างที่ไม่เท่ากัน</h3>
 
-<p>Grid ไม่จำเป็นต้องมีขนาดและระยะห่างเท่ากันทุกชั้น จากบทที่ 9.5 Gamma ของ Grid คือ -u / &Delta; ดังนั้นการเปลี่ยน u หรือ &Delta; เฉพาะบางช่วงคือการเลือกว่าจะให้กราฟโค้งมากตรงไหน เทียบ 3 แบบ โดยทุกแบบเริ่มซื้อที่ 98,000:</p>
+<p>Grid ไม่จำเป็นต้องมีขนาดและระยะห่างเท่ากันทุกชั้น จากบทที่ 9.5 Gamma ของ Grid คือ -u / g ดังนั้นการเปลี่ยน u หรือ g เฉพาะบางช่วงคือการเลือกว่าจะให้กราฟโค้งมากตรงไหน เทียบ 3 แบบ โดยทุกแบบเริ่มซื้อที่ 98,000:</p>
 
 <table>
   <tr><th>แบบ</th><th>ชั้นซื้อ</th><th>เงินที่ต้องกัน</th><th>ขาดทุนที่ 90k</th><th>ขาดทุนที่ 80k</th><th>ของเต็มมือ</th></tr>
@@ -2598,11 +2733,13 @@ tr:hover td { background: var(--blue-bg); }
 </table>
 
 <ul>
-  <li><strong>แบบ B (Martingale)</strong> ทำให้ต้นทุนเฉลี่ยต่ำลงเร็ว ราคาเด้งนิดเดียวก็คุ้มทุน แต่กราฟโค้งคว่ำแรงขึ้นทุกชั้น ที่ 80k เสียมากกว่าแบบ A เกือบ 3 เท่า</li>
+  <li><strong>แบบ B (ตระกูล Martingale แบบบวกเพิ่มทีละขั้น)</strong> ทำให้ต้นทุนเฉลี่ยต่ำลงเร็ว ราคาเด้งนิดเดียวก็คุ้มทุน แต่กราฟโค้งคว่ำแรงขึ้นทุกชั้น ที่ 80k เสียมากกว่าแบบ A เกือบ 3 เท่า</li>
   <li><strong>แบบ C</strong> เก็บรอบถี่ใกล้ราคาปัจจุบันซึ่งเป็นจุดที่ราคาอยู่บ่อย และสะสมของช้าลงเมื่อราคาลงลึก หางจึงเบากว่า แลกกับรอบที่น้อยลงถ้าราคาไปแกว่งอยู่ด้านล่าง</li>
 </ul>
 
-<p>การใส่มุมมองตลาดทำได้ด้วยวิธีเดียวกัน ถ้ามองขาขึ้นให้เริ่มด้วยของในมือมากขึ้น (กราฟเอียงขึ้น) ถ้ามองขาลงให้เริ่มด้วยของน้อยลงหรือ Hedge บางส่วนตามหัวข้อ 10.4</p>
+<p>การใส่มุมมองตลาดทำได้ด้วยวิธีเดียวกัน ถ้ามองขาขึ้นให้เริ่มด้วยของในมือมากขึ้น (ความชันเป็นบวกมากขึ้น) ถ้ามองขาลงให้เริ่มด้วยของน้อยลงหรือ Hedge บางส่วนตามหัวข้อ 10.4</p>
+
+<p>บอทสำเร็จรูปของตลาดส่วนใหญ่ตั้งได้เฉพาะขนาดและระยะห่างที่เท่ากันทุกชั้น แบบ B และ C จึงต้องวางคำสั่งเอง หรือใช้เครื่องมือที่ปรับรายชั้นได้</p>
 
 <!-- 10.6 -->
 <h3 id="ch10-6">10.6 แผนเมื่อราคาหลุดกรอบ</h3>
@@ -2633,11 +2770,11 @@ tr:hover td { background: var(--blue-bg); }
 <!-- 10.7 -->
 <h3 id="ch10-7">10.7 ตัวกรองสภาวะตลาดด้วยกฎ &radic;n</h3>
 
-<p>กฎ &radic;n จากบทที่ 9.6 ใช้ย้อนดูอดีตได้ว่าตลาดช่วงที่ผ่านมาเป็นมิตรกับ Grid หรือไม่ วิธีทำคือเอาราคาย้อนหลังมานับด้วย &Delta; ที่จะใช้จริง:</p>
+<p>กฎ &radic;n จากบทที่ 9.6 ใช้ย้อนดูอดีตได้ว่าตลาดช่วงที่ผ่านมาเป็นมิตรกับ Grid หรือไม่ วิธีทำคือเอาราคาย้อนหลังมานับด้วย g ที่จะใช้จริง:</p>
 
 <ol>
-  <li>นับ n = จำนวนครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นที่ติดกัน ในช่วงเวลาที่ดู</li>
-  <li>นับ k = จำนวนเส้นที่ราคาปลายช่วงห่างจากราคาต้นช่วง</li>
+  <li>นับ n = จำนวนก้าวที่ราคาเดินในช่วงเวลาที่ดู ตามนิยามในบทที่ 9.1 โดยสมมติว่ามีเส้น Grid ต่อเนื่องไม่จำกัดกรอบ</li>
+  <li>นับ k = จำนวนช่องที่ราคาปลายช่วงห่างจากราคาต้นช่วง</li>
   <li>เทียบ k&sup2; กับ n</li>
 </ol>
 
@@ -2648,7 +2785,9 @@ tr:hover td { background: var(--blue-bg); }
   <tr><td style="color:var(--red)">k&sup2; มากกว่า n</td><td>เป็นเทรนด์</td><td>Grid ขาดทุน</td></tr>
 </table>
 
-<p>ตัวอย่าง: 30 วันที่ผ่านมา ราคาข้ามเส้น 40 ครั้ง ถ้าจบห่างจากต้นช่วง 2 เส้น (k&sup2; = 4) ตลาดแกว่งกลับชัดเจน ถ้าจบห่าง 8 เส้น (k&sup2; = 64) ตลาดเป็นเทรนด์</p>
+<p>ตัวอย่าง: 30 วันที่ผ่านมา ราคาเดิน 40 ก้าว ถ้าจบห่างจากต้นช่วง 8 ช่อง (k&sup2; = 64) ช่วงนั้นเป็นเทรนด์และ Grid ขาดทุน ถ้าจบห่าง 2 ช่อง (k&sup2; = 4) ช่วงนั้น Grid ได้กำไร</p>
+
+<p>แต่กำไรช่วงเดียวยังสรุปไม่ได้ว่าตลาดแกว่งกลับจริง เพราะแม้ราคาเดินสุ่มล้วน ๆ 40 ก้าว ก็จบห่างไม่เกิน 2 ช่องได้ประมาณ 36% ของครั้ง และมี k&sup2; น้อยกว่า n ประมาณ 73% ของครั้ง ช่วงเวลาเดียวจึงเป็นตัวอย่างเพียงตัวเดียว ควรดูหลายช่วงที่ไม่ซ้อนกันก่อนสรุป</p>
 
 <div class="box-red">
   <div class="box-title">ตัวกรองไม่ใช่ตัวทำนาย</div>
@@ -2658,20 +2797,35 @@ tr:hover td { background: var(--blue-bg); }
 <!-- 10.8 -->
 <h3 id="ch10-8">10.8 Leverage และราคา Liquidation</h3>
 
-<p>เมื่อทำ Grid บน Futures ด้วย Leverage จะมีเส้นใหม่เพิ่มบนกราฟ คือราคา Liquidation ซึ่งหาได้จาก Payoff Chart โดยตรง: <strong>Liquidation เกิดเมื่อขาดทุนลอยตัวกิน Margin ที่วางไว้จนหมด</strong> (ค่าประมาณ ในทางปฏิบัติจะโดนเร็วกว่านี้เล็กน้อยเพราะมี Maintenance Margin)</p>
+<p>เมื่อทำ Grid บน Futures ด้วย Leverage จะมีเส้นใหม่เพิ่มบนกราฟ คือราคา Liquidation ซึ่งหาได้จาก Payoff Chart โดยตรง: <strong>Liquidation เกิดเมื่อขาดทุนลอยตัวกิน Margin ที่วางไว้จนหมด</strong> (ค่าประมาณ ในทางปฏิบัติจะโดนเร็วกว่านี้ เพราะตลาดกำหนดเงินประกันขั้นต่ำที่ต้องเหลืออยู่เสมอ เรียกว่า Maintenance Margin)</p>
 
-<p>Grid หลักบน Futures มีขาดทุนใต้กรอบล่างเท่ากับ 200 + 0.05 &times; (90,000 - ราคา) ตั้ง Stop ที่ 88,000 (ขาดทุน 300):</p>
+<p>Grid หลักบน Futures มีขาดทุนใต้กรอบล่างเท่ากับ 200 + 0.05 &times; (90,000 - ราคา) ตั้ง Stop ที่ 88,000 (ขาดทุน 300) ตารางคิดจาก 2 บรรทัดนี้:</p>
+
+<div class="formula-block">
+  Leverage ตอนของเต็มมือ = มูลค่าของเต็มมือ 4,700 USD / Margin<br>
+  ราคา Liquidation: แก้ 200 + 0.05 &times; (90,000 - ราคา) = Margin<br>
+  เช่น Margin 1,000 → 0.05 &times; (90,000 - ราคา) = 800 → ราคา = 74,000
+</div>
 
 <table>
-  <tr><th>Margin ที่วาง</th><th>Leverage ตอนของเต็มมือ</th><th>ราคา Liquidation โดยประมาณ</th><th>เทียบกับ Stop ที่ 88k</th></tr>
-  <tr><td>1,000 USD</td><td>ประมาณ 4.7 เท่า</td><td>74,000</td><td style="color:var(--green)">ห่างมาก Stop ทำงานก่อนแน่นอน</td></tr>
-  <tr><td>400 USD</td><td>ประมาณ 12 เท่า</td><td>86,000</td><td style="color:var(--amber)">ห่างแค่ 2,000 Gap เดียวก็ถึง</td></tr>
-  <tr><td>300 USD</td><td>ประมาณ 16 เท่า</td><td>88,000</td><td style="color:var(--red)">ทับจุด Stop พอดี Stop ไม่มีความหมาย</td></tr>
+  <tr><th>Margin ที่วาง</th><th>Leverage ตอนของเต็มมือ</th><th>ราคา Liquidation โดยประมาณ</th><th>ระยะจาก Stop (88,000) ถึง Liquidation</th></tr>
+  <tr><td>1,000 USD</td><td>ประมาณ 4.7 เท่า</td><td>74,000</td><td style="color:var(--green)">ประมาณ 16% ของราคา Stop ทำงานก่อน</td></tr>
+  <tr><td>400 USD</td><td>ประมาณ 12 เท่า</td><td>86,000</td><td style="color:var(--amber)">ประมาณ 2% ราคาร่วงเร็วครั้งเดียวก็ถึง</td></tr>
+  <tr><td>300 USD</td><td>ประมาณ 16 เท่า</td><td>88,000</td><td style="color:var(--red)">0% ทับจุด Stop พอดี Stop ไม่มีความหมาย</td></tr>
 </table>
 
 <div class="box-green">
   <div class="box-title">หลักการวาง Margin</div>
-  <p>ราคา Liquidation ต้องอยู่ <strong>ไกลกว่า</strong> จุด Stop เสมอ และควรไกลพอที่จะรองรับ Gap แนวทางที่ใช้ได้คือวาง Margin อย่างน้อย 2–3 เท่าของขาดทุนที่ Stop ถ้าโดน Liquidation ก่อน Stop แปลว่าตลาดเป็นคนเลือกจุดออกแทนเรา และมักได้ราคาแย่กว่า</p>
+  <p>ราคา Liquidation ต้องอยู่ <strong>ไกลกว่า</strong> จุด Stop เสมอ และให้วัดระยะนั้นเป็น <strong>% ของราคา</strong> ไม่ใช่เป็นจำนวนเท่าของขาดทุน เพราะ Grid ที่แคบมีขาดทุนที่ Stop เล็กมาก Margin ที่ดูเหมือนมากกว่าขาดทุนหลายเท่าอาจให้ระยะเพียง 1–2% ซึ่ง BTC เคลื่อนไหวได้ภายในวันเดียว</p>
+  <p>คำถามที่ควรถามคือ: ถ้า Stop พลาด ราคาต้องไปต่ออีกกี่ % จึงจะโดน Liquidation และระยะนั้นมากกว่าที่ราคาเคยเคลื่อนในวันที่แย่ที่สุดหรือไม่ ถ้าโดน Liquidation ก่อน Stop แปลว่าตลาดเป็นคนเลือกจุดออกแทนเรา และมักได้ราคาแย่กว่า</p>
+</div>
+
+<div class="box-blue">
+  <div class="box-title">สองเรื่องที่ทำให้ราคา Liquidation ต่างจากที่คำนวณ</div>
+  <ul>
+    <li><strong>Margin แบบแยกกับแบบรวม:</strong> แบบแยก (Isolated) จำกัดขาดทุนไว้ที่เงินประกันของสถานะนั้น แบบรวม (Cross) ใช้เงินทั้งบัญชีค้ำ ราคา Liquidation จึงไกลกว่า แต่ถ้าโดนจะเสียได้ทั้งบัญชี</li>
+    <li><strong>ราคาที่ใช้ตัดสิน:</strong> Liquidation ใช้ราคาอ้างอิงของตลาด (Mark Price) ซึ่งอาจไม่ตรงกับราคาที่คำสั่ง Stop ใช้กระตุ้น</li>
+  </ul>
 </div>
 
 <!-- 10.9 -->
@@ -2681,10 +2835,10 @@ tr:hover td { background: var(--blue-bg); }
 
 <table>
   <tr><th>Scenario</th><th>ผลลัพธ์</th><th>บทเรียน</th></tr>
-  <tr><td>แกว่งในกรอบ ข้ามเส้น 40 ครั้ง จบห่างจุดเริ่ม 2 เส้น</td><td style="color:var(--green)"><strong>+322</strong> (ก่อนค่าธรรมเนียม +360)</td><td>กรณีที่ Grid ออกแบบมาเพื่อสิ่งนี้</td></tr>
-  <tr><td>ไหลลงช้า ๆ ถึง 88,000 โดน Stop</td><td style="color:var(--red)"><strong>-300</strong> หักด้วย Grid Profit ที่เก็บได้ระหว่างทาง</td><td>ขาดทุนตามแผน</td></tr>
-  <tr><td>Gap ลงถึง 80,000 Stop ได้ราคา 80,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>Stop ไม่ได้การันตีราคา เสียจริง 2.3 เท่าของแผน</td></tr>
-  <tr><td>ไส้เทียนลงถึง 87,000 แล้วกลับไป 100,000 (มี Stop)</td><td style="color:var(--red)"><strong>-300</strong> และไม่ได้อยู่ตอนราคาเด้ง</td><td>ต้นทุนของ Stop คือ Whipsaw</td></tr>
+  <tr><td>แกว่งในกรอบ เดิน 40 ก้าว จบห่างจุดเริ่ม 2 ช่อง</td><td style="color:var(--green)"><strong>+320</strong> คือ (40 - 2) / 2 = 19 รอบ &times; 18 = 342 หัก Floating 20 และค่าธรรมเนียมซื้อของ 2 ชั้นที่ยังถืออยู่อีก 2</td><td>กรณีที่ Grid ออกแบบมาเพื่อสิ่งนี้</td></tr>
+  <tr><td>ไหลลงช้า ๆ ถึง 88,000 โดน Stop</td><td style="color:var(--red)"><strong>-300</strong> แล้วบวกกลับด้วย Grid Profit ที่เก็บได้ระหว่างทาง</td><td>ขาดทุนตามแผน</td></tr>
+  <tr><td>ราคาร่วงเร็ว (Gap) จน Stop ได้ราคา 80,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>Stop ไม่ได้การันตีราคา เสียจริง 2.3 เท่าของแผน</td></tr>
+  <tr><td>ราคาร่วงชั่วครู่ถึง 87,000 แล้วเด้งกลับไป 100,000 (มี Stop)</td><td style="color:var(--red)"><strong>-300</strong> และไม่ได้อยู่ตอนราคาเด้ง</td><td>ต้นทุนของ Stop คือ Whipsaw</td></tr>
   <tr><td>เหตุการณ์เดียวกัน แต่ไม่มี Stop</td><td style="color:var(--green)"><strong>+90</strong> (ครบ 5 รอบ)</td><td>ไม่มี Stop ชนะในกรณีนี้ แต่แพ้หนักในกรณี Gap</td></tr>
   <tr><td>ราคาขึ้นจาก 100,000 ไป 120,000</td><td><strong>0</strong></td><td>ไม่ขาดทุน แต่ถ้าถือ 0.05 BTC เฉย ๆ จะได้ +1,000</td></tr>
 </table>
@@ -2711,12 +2865,12 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">Checklist ก่อนเปิด Grid</div>
   <ol>
     <li><strong>งบขาดทุน:</strong> ยอมเสียได้เท่าไรต่อ Grid ตัวนี้ และรวมทุก Grid แล้วเป็นเท่าไร</li>
-    <li><strong>ขนาดต่อชั้น:</strong> คำนวณ u จากงบขาดทุนและจุด Stop ไม่ใช่จากเงินที่มี</li>
-    <li><strong>Stop:</strong> อยู่ใต้กรอบล่าง และคิดเผื่อ Gap แล้ว</li>
+    <li><strong>ขนาดต่อชั้น:</strong> คำนวณ u จากงบขาดทุนและจุด Stop ไม่ใช่จากเงินที่มี และนับขาดทุนของเหรียญตั้งต้นด้วยถ้ามี</li>
+    <li><strong>Stop:</strong> อยู่ใต้กรอบล่าง รู้ว่าเป็น Stop แบบใด และคิดเผื่อราคาที่ได้แย่กว่าที่ตั้งแล้ว ถ้ามีขา Short ต้องมี Stop เหนือกรอบบนด้วย</li>
     <li><strong>อัตราส่วน Stop ต่อรอบ:</strong> ต้องเก็บกี่รอบเพื่อชดเชย Stop หนึ่งครั้ง และเป็นไปได้จริงหรือไม่</li>
-    <li><strong>ความเอียง:</strong> ต้องการ Delta เป็นบวก เป็นกลาง หรือ Hedge บางส่วน</li>
+    <li><strong>ความชัน:</strong> ต้องการ Delta เป็นบวก เป็นกลาง หรือ Hedge บางส่วน</li>
     <li><strong>แผนหลุดกรอบ:</strong> เขียนทางออกของทั้งด้านล่างและด้านบนไว้แล้ว</li>
-    <li><strong>Margin:</strong> ราคา Liquidation อยู่ไกลกว่า Stop อย่างน้อย 2–3 เท่าของขาดทุนที่ Stop</li>
+    <li><strong>Margin:</strong> ราคา Liquidation อยู่ไกลกว่าจุด Stop โดยวัดระยะเป็น % ของราคา และรู้ว่าใช้ Margin แบบแยกหรือแบบรวม</li>
     <li><strong>Stress Test:</strong> ไล่ตาราง Scenario แล้ว และรู้ว่ากรณีไหนที่แผนป้องกันไม่ได้</li>
   </ol>
 </div>
@@ -2735,7 +2889,7 @@ tr:hover td { background: var(--blue-bg); }
   <ol>
     <li>ก้อนแรก: 50 &times; (4 &times; 3 / 2) = 300 ก้อนที่สอง: 4 &times; (2,800 - 2,750) = 200 จะได้ u = 200 / 500 = <strong>0.4 ETH ต่อชั้น</strong></li>
     <li>ที่ 2,600: 0.4 &times; [300 + 4 &times; 200] = <strong>-440 USD</strong> หรือ 2.2 เท่าของงบ</li>
-    <li>Short <strong>1 ETH</strong> (ครึ่งหนึ่งของของสูงสุด) ที่กรอบบนของในมือเป็น 0 จึงเหลือ Delta = <strong>-1 ETH</strong></li>
+    <li>Short <strong>1 ETH</strong> (ครึ่งหนึ่งของจำนวนที่ถือสูงสุด) ที่กรอบบนของในมือเป็น 0 จึงเหลือ Delta = <strong>-1 ETH</strong></li>
     <li>450 / 9 = <strong>50 รอบ</strong></li>
     <li>ขาดทุน = 60 + 0.8 &times; (2,800 - ราคา) = 300 จะได้ราคา = 2,800 - 300 = <strong>2,500 USD</strong></li>
   </ol>
@@ -2744,8 +2898,11 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-blue">
   <div class="box-title">ศัพท์ใหม่ในบทนี้</div>
   <ul>
-    <li><strong>Max Loss:</strong> ขาดทุนสูงสุดตามแผน ณ จุดที่ตั้งใจจะเลิก</li>
-    <li><strong>Gap / Slippage:</strong> ราคากระโดดข้ามระดับที่ตั้งคำสั่ง ทำให้ได้ราคาแย่กว่าที่ตั้ง</li>
+    <li><strong>งบขาดทุน:</strong> ขาดทุนตามแผน ณ ราคา Stop ซึ่งเกินได้ถ้าปิดสถานะไม่ทัน</li>
+    <li><strong>Gap / Slippage:</strong> ราคาเคลื่อนเร็วจนคำสั่งจับคู่ไม่ทัน ทำให้ได้ราคาแย่กว่าที่ตั้ง</li>
+    <li><strong>Stop-Market / Stop-Limit:</strong> Stop ที่ปิดด้วยราคาตลาด กับ Stop ที่ปิดด้วยคำสั่ง Limit</li>
+    <li><strong>Maintenance Margin:</strong> เงินประกันขั้นต่ำที่ต้องเหลืออยู่ ถ้าต่ำกว่านี้จะโดน Liquidation</li>
+    <li><strong>Auto-Deleveraging:</strong> กลไกของตลาด Futures ที่บังคับลดสถานะของฝั่งที่กำไรในภาวะตลาดรุนแรง</li>
     <li><strong>Whipsaw:</strong> ราคาแตะจุด Stop แล้วกลับตัว ทำให้ขาดทุนโดยที่ทิศทางเดิมถูก</li>
     <li><strong>Roll:</strong> ปิด Grid เดิมแล้วเปิดใหม่ที่กรอบอื่น</li>
     <li><strong>Martingale:</strong> การเพิ่มขนาดทุกครั้งที่ราคาสวนทาง</li>
@@ -2756,7 +2913,7 @@ tr:hover td { background: var(--blue-bg); }
 
 <div class="box-amber">
   <div class="box-title">บทถัดไป</div>
-  <p>เครื่องมือทุกตัวในบทนี้มีจุดร่วมกัน คือไม่มีตัวไหนกัน Gap ได้ และไม่มีตัวไหนลดความโค้งของกราฟได้โดยไม่ลดขนาด Grid บทที่ 11 จะนำ Option จริงเข้ามาเสริม: ซื้อปีกกันหาง เปลี่ยนชั้นไกลเป็น Short Option และเลือกเครื่องมือจาก IV เทียบ RV</p>
+  <p>เครื่องมือทุกตัวในบทนี้มีจุดร่วมกัน คือไม่มีตัวไหนกัน Gap ได้ และไม่มีตัวไหนลดความโค้งของกราฟได้โดยไม่ลดขนาด Grid บทที่ 11 จะนำ Option จริงเข้ามาเสริม: ซื้อ Option กันหาง เปลี่ยนชั้นไกลเป็น Short Option และเลือกเครื่องมือโดยเทียบ Implied Volatility กับ Realized Volatility</p>
 </div>
 
 <hr class="section-break">
@@ -2766,11 +2923,12 @@ tr:hover td { background: var(--blue-bg); }
 <!-- ============================================================ -->
 <h2 id="ch11" class="page-break">บทที่ 11: Grid + Option — ให้ Grid ทำงาน แล้วใช้ Option เสริม</h2>
 
-<p>บทที่ 10 จบด้วยข้อจำกัด 2 ข้อของเครื่องมือฝั่ง Grid: ไม่มีตัวไหนกัน Gap ได้ และไม่มีตัวไหนลดความโค้งของกราฟได้โดยไม่ลดขนาด Grid ทั้งสองข้อแก้ได้ด้วย Option เพราะ Option เป็นเครื่องมือเดียวที่มี <strong>ความโค้งเป็นบวก</strong> ให้ซื้อ บทนี้ปล่อยให้ Grid ทำงานตามเดิม แล้วนำ Option จากบทที่ 2–6 มาวางซ้อน</p>
+<p>บทที่ 10 จบด้วยข้อจำกัด 2 ข้อของเครื่องมือฝั่ง Grid: ไม่มีตัวไหนกัน Gap ได้ และไม่มีตัวไหนลดความโค้งของกราฟได้โดยไม่ลดขนาด Grid ทั้งสองข้อแก้ได้ด้วย Option เพราะ Option เป็นเครื่องมือเดียวที่ให้ <strong>ความโค้งเป็นบวก</strong> โดยรู้ต้นทุนล่วงหน้า และคุ้มครองได้แม้ราคาเคลื่อนเร็วจนปิดสถานะไม่ทัน บทนี้ปล่อยให้ Grid ทำงานตามเดิม แล้วนำ Option จากบทที่ 2–6 มาวางซ้อน</p>
 
 <div class="box-blue">
   <div class="box-title">ราคา Option ในบทนี้</div>
   <p>ทุกราคาเป็น <strong>ค่าสมมติ</strong> คำนวณจากสูตร Black-Scholes ใน Appendix ที่ BTC = 100,000 USD อายุ 30 วัน IV = 50% ต่อปี เท่ากันทุก Strike และปัดเศษแล้ว ราคาตลาดจริงจะต่างจากนี้ โดยเฉพาะ Put ที่ไกลจากราคาปัจจุบันซึ่งมักแพงกว่าที่สูตรให้ในช่วงที่ตลาดกลัวขาลง</p>
+  <p>Option ของ BTC และ ETH บนตลาดคริปโตเป็นแบบ European คือใช้สิทธิ์ได้เฉพาะวันหมดอายุ และไม่มีการส่งมอบเหรียญ ตลาดจ่ายเฉพาะส่วนต่างราคา เมื่อบทนี้พูดว่า "รับของ" หรือ "ของถูกขาย" จึงหมายถึงผลทางการเงินที่เท่ากัน ไม่ใช่การรับส่งเหรียญจริง</p>
 </div>
 
 <table>
@@ -2791,7 +2949,7 @@ tr:hover td { background: var(--blue-bg); }
   <p>Grid เป็น Short Gamma ทั้งกราฟ ให้ <strong>เก็บ Short Gamma ไว้ที่ลำตัว</strong> ซึ่งเป็นที่ที่ Grid เก็บ Realized Volatility ได้ดี แล้ว <strong>ใช้ Option ซื้อ Gamma คืนที่หาง</strong> และที่จุดที่ Grid ทำเองไม่ได้ คือ Gap</p>
 </div>
 
-<p>เหตุที่ไม่ซื้อ Option ปิดทั้งกราฟ: ถ้าซื้อ Option จนความโค้งหายหมด สิ่งที่เหลือคือส่วนต่างระหว่างความผันผวนที่เกิดจริงกับความผันผวนที่จ่ายไปใน Premium (รายละเอียดในหัวข้อ 11.5) การเสริมด้วย Option ทุกแบบจึงเป็นการเลือกว่า <strong>จะจ่ายค่าประกันตรงไหน และจะรับความเสี่ยงเองตรงไหน</strong> ไม่มีแบบไหนที่ได้ฟรี</p>
+<p>เหตุที่ไม่ซื้อ Option ปิดทั้งกราฟ: Option ที่ซื้อเสีย Time Decay ทุกวัน ถ้าซื้อจนความโค้งหายหมด รายได้จากการแกว่งของ Grid จะถูก Time Decay กินไปเกือบพอดี (รายละเอียดในหัวข้อ 11.5) การเสริมด้วย Option ทุกแบบจึงเป็นการเลือกว่า <strong>จะจ่ายเงินซื้อความคุ้มครองตรงไหน และจะรับความเสี่ยงเองตรงไหน</strong> ไม่มีแบบไหนที่ได้ฟรี</p>
 
 <table>
   <tr><th>เป้าหมาย</th><th>Option ที่ใช้</th><th>หัวข้อ</th></tr>
@@ -2802,6 +2960,8 @@ tr:hover td { background: var(--blue-bg); }
 
 <!-- 11.2 -->
 <h3 id="ch11-2">11.2 ซื้อปีกกันหางล่าง: Grid + Long Put</h3>
+
+<p><strong>ปีก (Wings)</strong> คือ Option ที่ซื้อไว้นอกกรอบเพื่อจำกัดขาดทุนที่หาง ทำหน้าที่เหมือนประกัน Premium ที่จ่ายซื้อปีกจึงเรียกว่า <strong>ค่าปีก</strong></p>
 
 <p>ใช้ Grid หลักตัวเดิม: ซื้อ 5 ชั้นที่ 98k ถึง 90k ชั้นละ 0.01 BTC ของเต็มมือ 0.05 BTC แทนที่จะตั้ง Stop ที่ 88,000 ให้ <strong>ซื้อ Put Strike 88,000 จำนวน 0.05 BTC</strong> จ่าย Premium 68.5 USD</p>
 
@@ -2825,7 +2985,7 @@ tr:hover td { background: var(--blue-bg); }
   <polyline points="440,77 370.9,77 336.4,82 301.8,92 267.3,107 232.7,127 198.2,152 60,152" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linejoin="round" stroke-linecap="round"/>
   <circle cx="198.2" cy="152" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/>
   <!-- labels -->
-  <text x="70" y="145" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb">Grid + Put: พื้นที่ -368.5</text>
+  <text x="70" y="145" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb">Grid + Put: พื้น -368.5</text>
   <text x="104" y="240" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">Grid อย่างเดียว</text>
   <text x="436" y="94" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb" text-anchor="end">จ่าย Premium -68.5</text>
   <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
@@ -2834,21 +2994,24 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="282" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC ณ วันหมดอายุของ Put (ยังไม่รวม Grid Profit)</text>
 </svg>
 
-<p>กราฟทั้งเส้นเลื่อนลง 68.5 USD (ค่า Premium) แลกกับพื้นที่ -368.5 USD ซึ่ง <strong>ไม่ขึ้นกับว่าราคาลงแบบไหน</strong> เทียบกับ Stop ในบทที่ 10.3:</p>
+<p>กราฟทั้งเส้นเลื่อนลง 68.5 USD (ค่าปีก) แลกกับการที่ขาดทุน ณ วันหมดอายุมีพื้นอยู่ที่ -368.5 USD <strong>ไม่ว่าราคาจะลงเร็วหรือช้า</strong> เทียบกับ Stop ในบทที่ 10.3:</p>
 
 <table>
   <tr><th>เหตุการณ์</th><th>Grid + Stop ที่ 88k</th><th>Grid + Put 88k</th></tr>
   <tr><td>ราคาอยู่เหนือ 98,000 ตลอด</td><td>0</td><td style="color:var(--red)">-68.5</td></tr>
   <tr><td>ไหลลงช้า ๆ ถึง 85,000</td><td style="color:var(--red)">-300</td><td style="color:var(--red)">-368.5</td></tr>
-  <tr><td>Gap ลงถึง 80,000</td><td style="color:var(--red)"><strong>-700</strong></td><td style="color:var(--green)"><strong>-368.5</strong></td></tr>
-  <tr><td>ไส้เทียนลง 87,000 แล้วกลับไป 100,000</td><td style="color:var(--red)">-300 และ Grid ปิดไปแล้ว</td><td style="color:var(--green)">+21.5 (ครบ 5 รอบ +90 หัก Premium)</td></tr>
+  <tr><td>ราคาร่วงเร็ว (Gap) ถึง 80,000</td><td style="color:var(--red)"><strong>-700</strong></td><td style="color:var(--green)"><strong>-368.5</strong></td></tr>
+  <tr><td>ราคาร่วงชั่วครู่ถึง 87,000 แล้วเด้งกลับไป 100,000</td><td style="color:var(--red)">-300 และ Grid ปิดไปแล้ว</td><td style="color:var(--green)">+21.5 (ครบ 5 รอบ +90 หัก Premium)</td></tr>
 </table>
 
-<p>Put แพ้ Stop ในวันปกติเพราะต้องจ่าย Premium ทุกเดือน และชนะใน 2 กรณีที่ Stop ป้องกันไม่ได้ คือ Gap กับ Whipsaw เพราะ Put ไม่บังคับให้ปิด Grid</p>
+<p>Put แพ้ Stop ในวันปกติเพราะต้องจ่ายค่าปีกทุกเดือน และชนะใน 2 กรณีที่ Stop ป้องกันไม่ได้ คือ Gap กับ Whipsaw เพราะ Put ไม่บังคับให้ปิด Grid</p>
+
+<p>พื้นนี้เป็นผล ณ วันหมดอายุของ Put และจริงเมื่อ Grid เป็น Spot ที่ไม่ใช้ Leverage ถ้าเป็น Futures Grid ที่ใช้ Leverage Grid อาจโดน Liquidation ระหว่างทางก่อนที่ Put จะจ่าย เงื่อนไขนี้อธิบายในหัวข้อ 11.4</p>
 
 <div class="box-amber">
-  <div class="box-title">ค่าประกันเท่ากับกี่รอบ</div>
-  <p>Premium 68.5 USD ต่อ 30 วัน เทียบกับกำไรสุทธิ 18 USD ต่อรอบ เท่ากับ <strong>ประมาณ 4 รอบต่อเดือน</strong> ที่ต้องเก็บเพื่อจ่ายค่าปีก ถ้า Grid เก็บได้ต่ำกว่านี้เป็นประจำ การซื้อปีกเต็มจำนวนจะกินกำไรหมด</p>
+  <div class="box-title">ค่าปีกเท่ากับกี่รอบ</div>
+  <p>ค่าปีก 68.5 USD ต่อ 30 วัน เทียบกับกำไรสุทธิ 18 USD ต่อรอบ เท่ากับ <strong>ประมาณ 4 รอบต่อเดือน</strong> ที่ต้องเก็บเพื่อจ่ายค่าปีก ถ้า Grid เก็บได้ต่ำกว่านี้เป็นประจำ การซื้อปีกเต็มจำนวนจะกินกำไรหมด</p>
+  <p>Stop จ่ายครั้งเดียวตอนโดน ส่วน Put เป็นค่าใช้จ่ายประจำที่ต้องต่ออายุ และ <strong>ค่าต่ออายุแพงขึ้นหลังราคาลง</strong> เช่น ถ้า Put ตัวแรกหมดอายุตอนราคาอยู่ที่ 85,000 จะได้เงินคืน 150 USD แต่ Put Strike 88,000 ตัวใหม่อายุ 30 วันราคาประมาณ 330 USD ส่วนต่าง 180 USD คือค่าปีกของเดือนถัดไป มากกว่าเดือนแรกประมาณ 2.6 เท่า</p>
 </div>
 
 <div class="box-green">
@@ -2857,28 +3020,28 @@ tr:hover td { background: var(--blue-bg); }
 </div>
 
 <!-- 11.3 -->
-<h3 id="ch11-3">11.3 ลดค่าประกัน: เลือก Strike และ Put Spread</h3>
+<h3 id="ch11-3">11.3 ลดค่าปีก: เลือก Strike และ Put Spread</h3>
 
-<p>ค่าประกันปรับได้ 2 ทาง ทางแรกคือเลื่อน Strike ทางที่สองคือขาย Put ที่ต่ำกว่าเพื่อเอา Premium มาหัก ซึ่งได้ Bear Put Spread จากบทที่ 4.2 ทุกแบบใช้จำนวน 0.05 BTC:</p>
+<p>ค่าปีกปรับได้ 2 ทาง ทางแรกคือเลื่อน Strike ทางที่สองคือขาย Put ที่ต่ำกว่าเพื่อเอา Premium มาหัก ซึ่งได้ Bear Put Spread จากบทที่ 4.2 ทุกแบบใช้จำนวน 0.05 BTC:</p>
 
 <table>
-  <tr><th>แบบ</th><th>ค่าประกัน</th><th>ขาดทุนสูงสุดถึง 80k</th><th>ที่ 70k</th><th>กัน Gap</th></tr>
-  <tr><td>ไม่มีประกัน ไม่มี Stop</td><td>0</td><td style="color:var(--red)">-700</td><td style="color:var(--red)">-1,200</td><td>ไม่</td></tr>
+  <tr><th>แบบ</th><th>ค่าปีก</th><th>P&amp;L แย่สุดถ้าราคาไม่ต่ำกว่า 80k</th><th>P&amp;L ที่ 70k</th><th>กัน Gap</th></tr>
+  <tr><td>ไม่มีปีก ไม่มี Stop</td><td>0</td><td style="color:var(--red)">-700</td><td style="color:var(--red)">-1,200</td><td>ไม่</td></tr>
   <tr><td>Long Put 90,000</td><td>91.5</td><td>-291.5</td><td>-291.5</td><td>ได้ทั้งหมด</td></tr>
   <tr><td>Long Put 88,000</td><td>68.5</td><td>-368.5</td><td>-368.5</td><td>ได้ทั้งหมด</td></tr>
   <tr><td>Put Spread 88,000 / 80,000</td><td>52</td><td>-352</td><td style="color:var(--red)">-852</td><td>ได้ถึง 80k</td></tr>
 </table>
 
 <ul>
-  <li><strong>Strike ยิ่งต่ำ ค่าประกันยิ่งถูก</strong> แต่ช่วงระหว่างกรอบล่างถึง Strike เป็นส่วนที่รับผิดเอง ทำหน้าที่เหมือนค่าเสียหายส่วนแรกของประกันรถ</li>
+  <li><strong>Strike ยิ่งต่ำ ค่าปีกยิ่งถูก</strong> แต่ช่วงระหว่างกรอบล่างถึง Strike เป็นส่วนที่ต้องรับขาดทุนเอง ทำหน้าที่เหมือนค่าเสียหายส่วนแรกของประกันรถ</li>
   <li><strong>Put Spread ถูกที่สุด</strong> และกันช่วงที่มีโอกาสเกิดมากกว่า แต่ถ้าราคาลงทะลุ Strike ล่าง ขาดทุนจะกลับมาเป็นเส้นตรงอีกครั้ง</li>
-  <li><strong>ไม่จำเป็นต้องกันเต็มจำนวน</strong> ซื้อ Put ครึ่งหนึ่งของของเต็มมือ จะได้หางที่ชันครึ่งเดียวในราคาครึ่งเดียว</li>
+  <li><strong>ไม่จำเป็นต้องกันเต็มจำนวน</strong> ซื้อ Put ครึ่งหนึ่งของจำนวนที่ถือเต็มมือ จะได้หางที่ชันครึ่งเดียวในราคาครึ่งเดียว</li>
 </ul>
 
 <!-- 11.4 -->
 <h3 id="ch11-4">11.4 ปีกสองด้าน: Neutral Grid กลายเป็น Iron Condor</h3>
 
-<p>Neutral Grid จากบทที่ 10.4 (Spot Grid กรอบ 90,000–110,000 + Short 0.05 BTC) มีหางสองด้าน ด้านละ 0.05 BTC ซื้อปีกทั้งสองด้านที่ขอบกรอบ:</p>
+<p>Neutral Grid จากบทที่ 10.4 (Grid กลางกรอบ + Short 0.05 BTC) มีหางสองด้าน ด้านละ 0.05 BTC ซื้อปีกทั้งสองด้านที่ขอบกรอบ:</p>
 
 <div class="box-blue">
   <div class="box-title">ส่วนประกอบ</div>
@@ -2910,11 +3073,22 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="272" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC ณ วันหมดอายุ (ยังไม่รวม Grid Profit)</text>
 </svg>
 
-<p>รูปที่ได้คือ <strong>Iron Condor</strong> จากบทที่ 4.5 กลับหัวมาอยู่ใต้ศูนย์ทั้งเส้น เพราะ Iron Condor ของจริงได้รับ Premium จากการขาย Option ตรงกลาง ส่วน Grid ยังไม่ได้รับอะไรจนกว่าราคาจะแกว่ง Grid Profit คือสิ่งที่ต้องยกกราฟนี้ขึ้นเหนือศูนย์:</p>
+<p>รูปที่ได้คือ <strong>Iron Condor</strong> จากบทที่ 4.5 รูปเดิม แต่จมอยู่ใต้ศูนย์ทั้งเส้น เพราะ Iron Condor ของจริงได้รับ Premium จากการขาย Option ตรงกลาง ส่วน Grid ยังไม่ได้รับอะไรจนกว่าราคาจะแกว่ง Grid Profit คือสิ่งที่ต้องยกกราฟนี้ขึ้นเหนือศูนย์:</p>
 
 <div class="formula-block">
   จำนวนรอบขั้นต่ำต่อเดือนเพื่อให้คุ้มค่าปีก = 205.5 / 18 &asymp; 12 รอบ<br>
-  ขาดทุนสูงสุด = 405.5 USD ไม่ว่าราคาจะไปทางไหน ไกลแค่ไหน หรือ Gap หรือไม่
+  ขาดทุนสูงสุด ณ วันหมดอายุ = 405.5 USD ไม่ว่าราคาจะไปทางไหนหรือไกลแค่ไหน ถ้าทุกขายังอยู่ครบ
+</div>
+
+<div class="box-red">
+  <div class="box-title">เงื่อนไขของพื้น: ทุกขาต้องรอดถึงวันหมดอายุ</div>
+  <p>ปีกจ่ายเงินตอนหมดอายุ แต่ขา Futures ถูกคิดกำไรขาดทุนทุกขณะ ถ้าขา Futures โดน Liquidation ก่อน ปีกจะคุ้มครองสิ่งที่ไม่มีอยู่แล้ว</p>
+  <p>ตัวอย่าง: วาง Margin ให้ขา Short 900 USD ขานี้จะโดน Liquidation ที่ราคาประมาณ 118,000 ถ้าราคาพุ่งไปถึงระดับนั้นแล้วกลับมาจบที่ 100,000 ณ วันหมดอายุ Call จะหมดค่า และผลรวมคือขา Short -900 · Grid +300 จากการขายขาขึ้น และ -200 จากของที่ซื้อกลับขาลง · ค่าปีก -205.5 รวมขาดทุน <strong>ประมาณ 1,000 USD</strong> ไม่ใช่ 405.5 USD</p>
+  <ul>
+    <li>พื้นจึงจริงเมื่อ Grid เป็น Spot ที่ไม่ใช้ Leverage หรือวาง Margin ของขา Futures ให้รอดถึงราคาไกลที่สุดที่อาจเกิดก่อนวันหมดอายุ หรือใช้ตลาดที่คิด Margin รวมทุกขาในบัญชีเดียว (Portfolio Margin)</li>
+    <li>การเปลี่ยนจาก Stop มาเป็นปีกจึงต้องใช้ Margin <strong>มากขึ้น</strong> ไม่ใช่น้อยลง</li>
+    <li>Funding ของขา Short ตลอด 30 วันไม่ได้รวมอยู่ใน 405.5 USD</li>
+  </ul>
 </div>
 
 <p>สำหรับ Spot Grid ที่ไม่ได้ Hedge หางบนไม่ใช่ขาดทุนแต่เป็นการตกรถ การซื้อ Call เหนือกรอบบนจึงเป็นทางเลือก ไม่ใช่ความจำเป็น ถ้าซื้อ กราฟด้านบนจะเชิดขึ้นแทนที่จะแบน</p>
@@ -2922,17 +3096,42 @@ tr:hover td { background: var(--blue-bg); }
 <!-- 11.5 -->
 <h3 id="ch11-5">11.5 ลดความโค้งที่ลำตัว: Grid + Long Straddle</h3>
 
-<p><strong>อ่านเป็นภาษาคนก่อน:</strong> Long Straddle โค้งหงาย Grid โค้งคว่ำ เมื่อวางซ้อนกันในขนาดที่พอดี ความโค้งหักล้างกัน สิ่งที่เหลือคือการแข่งกันระหว่างเงิน 2 ก้อน: Grid Profit ที่ได้ทุกครั้งที่ราคาข้ามเส้น กับ Time Decay ที่ Straddle เสียทุกวัน</p>
+<p><strong>อ่านเป็นภาษาคนก่อน:</strong> หัวข้อนี้ไม่ได้ดูกราฟ ณ วันหมดอายุเหมือนสองหัวข้อก่อน แต่ดูเส้นโค้งก่อนหมดอายุแบบบทที่ 5.1 ซึ่ง Long Straddle เป็นรูปตัว U โค้งหงาย ไม่ใช่ตัว V ส่วน Grid โค้งคว่ำ เมื่อวางซ้อนกันในขนาดที่พอดี ความโค้งหักล้างกัน สิ่งที่เหลือคือการแข่งกันระหว่างเงิน 2 ก้อน: รายได้จากการแกว่งที่ Grid ได้ทุกก้าว กับ Time Decay ที่ Straddle เสียทุกวัน</p>
 
-<p>คำนวณกับ Neutral Grid (u = 0.01 BTC, &Delta; = 2,000 USD):</p>
+<svg viewBox="0 0 480 300" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ah11c" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+  <!-- Axes -->
+  <line x1="50" y1="150" x2="448" y2="150" stroke="#374151" stroke-width="1" marker-end="url(#ah11c)"/>
+  <line x1="50" y1="262" x2="50" y2="14" stroke="#374151" stroke-width="1" marker-end="url(#ah11c)"/>
+  <text x="56" y="14" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">P&amp;L ก่อนหมดอายุ (USD)</text>
+  <text x="452" y="148" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <line x1="114.3" y1="30" x2="114.3" y2="262" stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <line x1="385.7" y1="30" x2="385.7" y2="262" stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <!-- straddle before expiry -->
+  <polyline points="60.0,47.1 73.6,61.8 87.1,75.5 100.7,88.2 114.3,99.9 127.9,110.4 141.4,119.8 155.0,127.9 168.6,134.9 182.1,140.6 195.7,145.0 209.3,148.2 222.9,150.1 236.4,150.7 250.0,150.0 263.6,148.1 277.1,145.0 290.7,140.6 304.3,135.1 317.9,128.5 331.4,120.7 345.0,112.0 358.6,102.2 372.1,91.4 385.7,79.7 399.3,67.2 412.9,53.8 426.4,39.7 440.0,24.8" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-dasharray="6,4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- grid -->
+  <polyline points="60.0,250.0 73.6,237.5 87.1,225.0 100.7,212.5 114.3,200.0 127.9,190.0 141.4,180.0 155.0,172.5 168.6,165.0 182.1,160.0 195.7,155.0 209.3,152.5 222.9,150.0 236.4,150.0 250.0,150.0 263.6,150.0 277.1,150.0 290.7,152.5 304.3,155.0 317.9,160.0 331.4,165.0 345.0,172.5 358.6,180.0 372.1,190.0 385.7,200.0 399.3,212.5 412.9,225.0 426.4,237.5 440.0,250.0" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- sum -->
+  <polyline points="60.0,147.1 73.6,149.3 87.1,150.5 100.7,150.7 114.3,149.9 127.9,150.4 141.4,149.8 155.0,150.4 168.6,149.9 182.1,150.6 195.7,150.0 209.3,150.7 222.9,150.1 236.4,150.7 250.0,150.0 263.6,148.1 277.1,145.0 290.7,143.1 304.3,140.1 317.9,138.5 331.4,135.7 345.0,134.5 358.6,132.2 372.1,131.4 385.7,129.7 399.3,129.7 412.9,128.8 426.4,127.2 440.0,124.8" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="250" y="62" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a" text-anchor="middle">Long Straddle 0.09 BTC: โค้งหงาย</text>
+  <text x="250" y="238" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626" text-anchor="middle">Neutral Grid: โค้งคว่ำ</text>
+  <text x="250" y="170" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb" text-anchor="middle" font-weight="700">รวม: เกือบแบน</text>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="114.3" y="277">90k</text><text x="250.0" y="277">100k</text><text x="385.7" y="277">110k</text>
+  </g>
+  <text x="250" y="294" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC ถ้าเคลื่อนทันทีในวันแรก (ยังไม่มี Time Decay และยังไม่รวมรายได้จากการแกว่ง)</text>
+</svg>
+
+<p>เส้นรวมเกือบแบนตลอดกรอบ ความโค้งหายไป (เส้นเอียงขึ้นทางขวาเล็กน้อย เพราะ Straddle ที่ Strike เท่ากับราคาปัจจุบันมี Delta เป็นบวกอยู่เล็กน้อย) คำนวณกับ Neutral Grid (u = 0.01 BTC, g = 2,000 USD) และ Straddle อายุ 30 วัน:</p>
 
 <table>
   <tr><th>รายการ</th><th>ค่า</th><th>ที่มา</th></tr>
-  <tr><td>Gamma ของ Grid</td><td>-0.01 BTC ต่อ 2,000 USD</td><td>-u / &Delta; จากบทที่ 9.5</td></tr>
-  <tr><td>Straddle ที่ต้องซื้อเพื่อหักล้างพอดี</td><td>ประมาณ 0.09 BTC</td><td>จากสูตร Gamma ใน Appendix</td></tr>
+  <tr><td>Gamma ของ Grid</td><td>-0.01 BTC ต่อ 2,000 USD</td><td>-u / g จากบทที่ 9.5</td></tr>
+  <tr><td>Gamma ของ Straddle 1 BTC</td><td>ประมาณ +0.11 BTC ต่อ 2,000 USD</td><td>สูตร Gamma ใน Appendix รวม Call กับ Put</td></tr>
+  <tr><td>Straddle ที่ต้องซื้อเพื่อหักล้างพอดี</td><td>0.01 / 0.11 &asymp; 0.09 BTC</td><td>ทำให้ Gamma รวมเป็นศูนย์</td></tr>
   <tr><td>Premium ที่จ่าย</td><td>ประมาณ 1,030 USD</td><td>0.09 &times; 11,430</td></tr>
-  <tr><td style="color:var(--red)">Time Decay ของ Straddle ช่วงแรก</td><td style="color:var(--red)">ประมาณ -17 USD ต่อวัน</td><td>จากสูตร Theta ใน Appendix</td></tr>
-  <tr><td style="color:var(--green)">Grid Profit ถ้าตลาดผันผวนจริง 50% ต่อปี</td><td style="color:var(--green)">ประมาณ +17 USD ต่อวัน</td><td>ข้ามเส้นเฉลี่ย 1.7 ครั้งต่อวัน ครั้งละ 10 USD</td></tr>
+  <tr><td style="color:var(--red)">Time Decay ของ Straddle ช่วงแรก</td><td style="color:var(--red)">ประมาณ -17 USD ต่อวัน</td><td>Straddle 1 BTC เสียประมาณ 190 USD ต่อวัน (สูตร Theta ใน Appendix) คูณ 0.09</td></tr>
+  <tr><td style="color:var(--green)">รายได้จากการแกว่งของ Grid ถ้าตลาดผันผวนจริง 50% ต่อปี</td><td style="color:var(--green)">ประมาณ +17 USD ต่อวัน</td><td>เดินเฉลี่ย 1.7 ก้าวต่อวัน (บทที่ 9.6) ก้าวละ 10 USD</td></tr>
 </table>
 
 <p>สองตัวเลขสุดท้ายเท่ากันพอดี ซึ่งไม่ใช่เรื่องบังเอิญ Premium ของ Straddle ถูกตั้งราคาจาก IV 50% ถ้าตลาดผันผวนจริง 50% เท่ากัน Grid ก็เก็บคืนได้เท่าที่ Straddle เสีย</p>
@@ -2941,19 +3140,31 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">Grid + Long Straddle = Gamma Scalping</div>
   <p><span class="formula">กำไรเมื่อ Realized Volatility &gt; Implied Volatility ที่จ่ายไป</span></p>
   <ul>
-    <li>ถ้าตลาดผันผวนจริง 70% Grid ข้ามเส้นประมาณ 3.4 ครั้งต่อวัน ได้ประมาณ 34 USD ต่อวัน ชนะ Time Decay 17 USD</li>
-    <li>ถ้าตลาดผันผวนจริง 40% Grid ข้ามเส้นประมาณ 1.1 ครั้งต่อวัน ได้ประมาณ 11 USD ต่อวัน แพ้ Time Decay</li>
-    <li>ไม่มีหางเสี่ยงทั้งสองด้าน และไม่แพ้เทรนด์ เพราะ Straddle กำไรเมื่อราคาวิ่งไกล</li>
+    <li>ถ้าตลาดผันผวนจริง 70% ราคาเดินประมาณ 3.4 ก้าวต่อวัน Grid ได้ประมาณ 34 USD ต่อวัน ชนะ Time Decay 17 USD</li>
+    <li>ถ้าตลาดผันผวนจริง 40% ราคาเดินประมาณ 1.1 ก้าวต่อวัน Grid ได้ประมาณ 11 USD ต่อวัน แพ้ Time Decay</li>
   </ul>
 </div>
 
 <p>นี่คือกลยุทธ์ที่ผู้ค้า Option เรียกว่า Gamma Scalping: ถือ Option ที่มี Gamma เป็นบวก แล้วซื้อขายสินทรัพย์สวนราคาเป็นชั้น ๆ เพื่อเก็บการแกว่ง ซึ่ง "การซื้อขายสวนราคาเป็นชั้น ๆ" ก็คือ Grid</p>
 
+<h4>ชุดนี้แพ้เมื่อไร</h4>
+<p>ชุดนี้ไม่แพ้การเคลื่อนไหวที่เร็วและไกล แต่แพ้ตลาดที่เงียบ และแพ้เทรนด์ที่มาช้า เพราะทั้งสองกรณีคือ RV ที่ต่ำกว่า IV ที่จ่ายไป ตารางนี้คือผล ณ วันหมดอายุ ถ้าราคาไหลไปทางเดียวโดยแทบไม่แกว่ง:</p>
+
+<table>
+  <tr><th>ราคา ณ วันหมดอายุ</th><th>Grid</th><th>Straddle 0.09 BTC</th><th>รวม</th></tr>
+  <tr><td>100,000 (นิ่งสนิท)</td><td>0</td><td style="color:var(--red)">-1,030</td><td style="color:var(--red)"><strong>-1,030</strong></td></tr>
+  <tr><td>90,000 หรือ 110,000</td><td style="color:var(--red)">-200</td><td style="color:var(--red)">-130</td><td style="color:var(--red)"><strong>-330</strong></td></tr>
+  <tr><td>80,000 หรือ 120,000</td><td style="color:var(--red)">-700</td><td style="color:var(--green)">+770</td><td style="color:var(--green)"><strong>+70</strong></td></tr>
+</table>
+
+<p>กรณีแย่ที่สุดคือราคาไม่ไปไหนเลย ซึ่งเสีย Premium ทั้งก้อน มากกว่าขาดทุนที่ขอบกรอบของ Grid เปล่า ๆ (200 USD) ถึง 5 เท่า</p>
+
 <div class="box-amber">
   <div class="box-title">ข้อควรรู้ก่อนใช้</div>
   <ul>
-    <li><strong>ซื้อบางส่วนได้:</strong> ซื้อ Straddle 30–50% ของขนาดที่หักล้างพอดี จะลดความโค้งลงตามสัดส่วน และเสีย Time Decay ตามสัดส่วน</li>
-    <li><strong>การหักล้างไม่คงที่:</strong> Gamma ของ Grid คงที่ตลอดกรอบ แต่ Gamma ของ Straddle สูงสุดที่ Strike ลดลงเมื่อราคาออกห่าง และเปลี่ยนตามเวลาที่เหลือ ตัวเลขข้างบนจึงแม่นเฉพาะช่วงแรกและใกล้ Strike</li>
+    <li><strong>หางหายไปก็ต่อเมื่อ Straddle ใหญ่กว่าของเต็มมือ:</strong> ในตัวอย่าง Straddle 0.09 BTC มากกว่าของเต็มมือ 0.05 BTC นอกกรอบจึงเป็นกำไรสุทธิ ถ้าซื้อเพียง 30–50% ของขนาดที่หักล้างพอดี (0.027–0.045 BTC) ความโค้งและ Time Decay จะลดตามสัดส่วน แต่หางนอกกรอบยังเป็นขาดทุนอยู่ และการคุ้มครองทั้งหมดมีอยู่ถึงวันหมดอายุเท่านั้น</li>
+    <li><strong>การหักล้างไม่คงที่:</strong> Gamma ของ Grid คงที่ตลอดกรอบ แต่ Gamma ของ Straddle สูงสุดที่ Strike ลดลงเมื่อราคาออกห่าง และเปลี่ยนตามเวลาที่เหลือ ตัวเลขในตารางแรกจึงแม่นเฉพาะช่วงแรกและใกล้ Strike</li>
+    <li><strong>อายุสั้นไม่ได้ถูกกว่าต่อวัน:</strong> เมื่อซื้อในขนาดที่หักล้าง Gamma ของ Grid พอดี Time Decay ต่อวันจะเท่ากันไม่ว่าเลือกอายุเท่าไร Straddle อายุสั้นใช้ Premium น้อยกว่า แต่หักล้างได้เฉพาะใกล้ Strike และขนาดที่ต้องซื้อเล็กจนไม่พอปิดหาง</li>
     <li><strong>ใช้เงินมาก:</strong> Premium 1,030 USD มากกว่าขาดทุนที่กรอบล่างของ Grid เอง (200 USD) หลายเท่า แบบนี้จึงเป็นการเปลี่ยนเดิมพัน จาก "ตลาดจะอยู่ในกรอบ" เป็น "ตลาดจะผันผวนกว่าที่ Option ตั้งราคาไว้"</li>
   </ul>
 </div>
@@ -2961,7 +3172,7 @@ tr:hover td { background: var(--blue-bg); }
 <!-- 11.6 -->
 <h3 id="ch11-6">11.6 ขยายจุดดี: เปลี่ยนคำสั่งซื้อชั้นไกลเป็น Short Put</h3>
 
-<p>จากบทที่ 9.4 คำสั่งซื้อแบบ Limit ที่ K คือ Short Put ที่ K ซึ่งไม่ได้รับ Premium เงินที่กันไว้สำหรับชั้นไกลนอนรออยู่เฉย ๆ ถ้าขาย Put จริงที่ Strike เดียวกัน จะรับภาระเดียวกันแต่ได้ Premium ทันที</p>
+<p>จากบทที่ 9.4 คำสั่งซื้อแบบ Limit ที่ K คือ Short Put ที่ K ซึ่งไม่ได้รับ Premium เงินที่กันไว้สำหรับชั้นไกลนอนรออยู่เฉย ๆ ถ้าขาย Put จริงที่ Strike เดียวกัน จะได้ Payoff ณ วันหมดอายุแบบเดียวกัน และได้ Premium ทันที แต่ระหว่างทางไม่เหมือนกัน: Short Put ต้องวาง Margin และโดน Liquidation ได้ ส่วนคำสั่ง Limit ใน Spot ไม่มีวันโดน</p>
 
 <p>ตัวอย่าง: ใน Grid หลัก เก็บคำสั่งซื้อ 3 ชั้นบน (98k · 96k · 94k) ไว้ตามเดิม และเปลี่ยน 2 ชั้นล่างเป็น Short Put อย่างละ 0.01 BTC:</p>
 
@@ -2972,11 +3183,11 @@ tr:hover td { background: var(--blue-bg); }
 </div>
 
 <table>
-  <tr><th>เหตุการณ์ใน 30 วัน (เฉพาะ 2 ชั้นล่าง)</th><th>คำสั่งซื้อ Limit</th><th>Short Put</th></tr>
+  <tr><th>เหตุการณ์ใน 30 วัน (เฉพาะ 2 ชั้นล่าง)</th><th>คำสั่งซื้อ Limit (หักค่าธรรมเนียมแล้ว)</th><th>Short Put (ยังไม่รวมค่าธรรมเนียม Option)</th></tr>
   <tr><td>ราคาไม่ลงถึง 92,000 เลย</td><td>0</td><td style="color:var(--green)"><strong>+42.2</strong></td></tr>
   <tr><td>ราคาลงถึง 90,000 หนึ่งครั้ง แล้วกลับขึ้นไปเหนือ 94,000 จนหมดอายุ</td><td style="color:var(--green)">+36 (2 รอบ)</td><td style="color:var(--green)">+42.2</td></tr>
   <tr><td>ราคาแกว่งระหว่าง 90,000 กับ 94,000 ไปมา 5 เที่ยว</td><td style="color:var(--green)"><strong>+180</strong> (10 รอบ)</td><td>+42.2</td></tr>
-  <tr><td>ราคาจบที่ 85,000</td><td style="color:var(--red)">-120</td><td style="color:var(--red)">-77.8</td></tr>
+  <tr><td>ราคาจบที่ 85,000</td><td style="color:var(--red)">-122</td><td style="color:var(--red)">-77.8</td></tr>
 </table>
 
 <p>Short Put ชนะเมื่อราคาไม่มาถึงหรือมาถึงครั้งเดียว และแพ้เมื่อราคามาแกว่งอยู่ตรงนั้นหลายเที่ยว เพราะ Option ชำระครั้งเดียวตอนหมดอายุ จึงไม่ได้เก็บการเด้งระหว่างทาง</p>
@@ -2993,6 +3204,7 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-red">
   <div class="box-title">วิธีนี้ไม่ได้ลดความเสี่ยง</div>
   <p>Short Put เพิ่มรายได้ แต่หางล่างยังอยู่ครบเท่าเดิม และ Short Put เป็น Short Vega ด้วย เมื่อตลาดร่วงและ IV พุ่ง มูลค่าขาดทุนก่อนหมดอายุจะมากกว่าคำสั่ง Limit ที่ราคาเดียวกัน ถ้าใช้วิธีนี้ ควรใช้คู่กับปีกในหัวข้อ 11.2 โดย Premium ที่ได้รับ 42.2 USD จ่ายค่า Put 88,000 (68.5 USD) ได้เกินครึ่ง</p>
+  <p>ขานี้ต้องกันเงินไว้เต็มจำนวนที่ Strike ในบัญชีของตลาด Option (Cash-Secured) และไม่ใช้ Leverage ผลิตภัณฑ์สำเร็จรูปของบางตลาดที่ให้ฝากเงินเพื่อ "ซื้อเมื่อราคาลงถึงเป้า" มีโครงสร้างเดียวกับ Cash-Secured Put แต่เงื่อนไขและราคาต่างกันไปในแต่ละตลาด</p>
 </div>
 
 <!-- 11.7 -->
@@ -3013,32 +3225,41 @@ tr:hover td { background: var(--blue-bg); }
     <td><strong>Calendar Spread</strong></td>
     <td>บทที่ 6.3</td>
     <td>ขาย Option อายุสั้น ซื้ออายุยาว ที่ Strike 100k</td>
-    <td>ราคานิ่งใกล้ Strike และได้เพิ่มเมื่อ IV ขึ้น</td>
+    <td>ราคานิ่งใกล้ Strike จนตัวอายุสั้นหมดอายุ</td>
     <td>เงินสุทธิที่จ่าย</td>
   </tr>
 </table>
 
 <ul>
   <li><strong>Butterfly</strong> จ่ายเงินตาม "ราคาจบที่ไหน" ส่วน Grid จ่ายตาม "ระหว่างทางแกว่งแค่ไหน" สองตัวนี้จึงเสริมกัน ถ้าราคาแกว่งแล้วกลับมาจบใกล้จุดเริ่ม ได้ทั้งสองทาง</li>
-  <li><strong>Calendar Spread</strong> เป็น Long Vega จึงได้ประโยชน์เมื่อตลาดเริ่มตื่นและ IV ขึ้น ซึ่งมักเป็นช่วงเดียวกับที่ Grid เริ่มลำบาก</li>
+  <li><strong>Calendar Spread</strong> ได้ประโยชน์เมื่อราคานิ่งใกล้ Strike เช่นเดียวกับ Grid จึงเป็นการเพิ่มน้ำหนักเดิมพันเดิม ไม่ใช่ตัวหักล้าง แม้จะเป็น Long Vega แต่ได้ประโยชน์จาก IV ที่ขึ้นเฉพาะตอนราคายังอยู่ใกล้ Strike เมื่อราคาวิ่งแรงออกไป Calendar จะเสียพร้อมกับ Grid เพราะ Option อายุสั้นที่ขายไว้มักแพงขึ้นเร็วกว่าตัวอายุยาวที่ถือ</li>
   <li>ทั้งสองตัวใช้เงินน้อยและเสียได้ไม่เกินที่จ่าย แต่ <strong>ไม่ได้กันหาง</strong> ของ Grid จึงใช้แทนปีกไม่ได้</li>
 </ul>
 
 <!-- 11.8 -->
 <h3 id="ch11-8">11.8 เลือกเครื่องมือจาก IV เทียบ RV</h3>
 
-<p>ทุกหัวข้อที่ผ่านมาวนกลับมาที่คำถามเดียว: Option ตอนนี้ถูกหรือแพงเมื่อเทียบกับความผันผวนที่ Grid เก็บได้จริง Grid ให้วิธีวัด Realized Volatility (RV) จากจำนวนครั้งที่ราคาข้ามเส้นโดยตรง:</p>
+<p>ทุกหัวข้อที่ผ่านมาวนกลับมาที่คำถามเดียว: Option ตอนนี้ถูกหรือแพงเมื่อเทียบกับความผันผวนที่ Grid เก็บได้จริง Grid ให้วิธีวัด RV โดยตรง ด้วยการกลับสูตรจำนวนก้าวต่อวันในบทที่ 9.6:</p>
 
 <div class="formula-block">
-  RV ต่อปี &asymp; (&Delta; / S) &times; &radic;(จำนวนครั้งที่ข้ามเส้นต่อวัน &times; 365)
+  RV ต่อปี &asymp; (g / S) &times; &radic;(จำนวนก้าวต่อวัน &times; 365)
 </div>
 
 <table>
-  <tr><th>ข้ามเส้นเฉลี่ยต่อวัน (&Delta; = 2,000, S = 100,000)</th><th>RV ต่อปีโดยประมาณ</th></tr>
-  <tr><td>1.1 ครั้ง</td><td>40%</td></tr>
-  <tr><td>1.7 ครั้ง</td><td>50%</td></tr>
-  <tr><td>3.4 ครั้ง</td><td>70%</td></tr>
+  <tr><th>จำนวนก้าวเฉลี่ยต่อวัน (g = 2,000, S = 100,000)</th><th>RV ต่อปีโดยประมาณ</th></tr>
+  <tr><td>1.1 ก้าว</td><td>40%</td></tr>
+  <tr><td>1.7 ก้าว</td><td>50%</td></tr>
+  <tr><td>3.4 ก้าว</td><td>70%</td></tr>
 </table>
+
+<div class="box-amber">
+  <div class="box-title">นับก้าวให้ถูก</div>
+  <ul>
+    <li>นับตามนิยามในบทที่ 9.1 คือนับเมื่อราคาไปถึงเส้นที่ต่างจากเส้นล่าสุดที่แตะ ถ้านับทุกครั้งที่ราคาตัดผ่านเส้นเดิมไปมา จะได้ RV สูงเกินจริงหลายเท่า</li>
+    <li>นับจากข้อมูลราคาโดยสมมติว่าเส้น Grid ต่อเนื่องไม่จำกัดกรอบ จำนวนคำสั่งที่บอทจับคู่ได้จะนับขาดเมื่อราคาอยู่นอกกรอบ</li>
+    <li>ค่าที่ได้จากช่วงเดียวคลาดเคลื่อนได้ เช่น ช่วง 30 วันอาจคลาดได้ราว 3 จุดเปอร์เซ็นต์ จึงใช้เทียบแบบหยาบ ไม่ใช่ตัวเลขชี้ขาด</li>
+  </ul>
+</div>
 
 <p>นำ RV ที่วัดได้ไปเทียบกับ IV ของ Option อายุใกล้เคียงกับช่วงที่จะเปิด Grid:</p>
 
@@ -3046,7 +3267,7 @@ tr:hover td { background: var(--blue-bg); }
   <tr><th>สภาวะ</th><th>ความหมาย</th><th>แนวทาง</th></tr>
   <tr>
     <td style="color:var(--green)"><strong>IV ต่ำกว่า RV</strong></td>
-    <td>ประกันถูกเมื่อเทียบกับสิ่งที่ Grid เก็บได้</td>
+    <td>ปีกถูกเมื่อเทียบกับสิ่งที่ Grid เก็บได้</td>
     <td>ซื้อปีกเต็มจำนวน (11.2, 11.4) หรือทำ Grid + Long Straddle (11.5)</td>
   </tr>
   <tr>
@@ -3056,15 +3277,31 @@ tr:hover td { background: var(--blue-bg); }
   </tr>
   <tr>
     <td style="color:var(--red)"><strong>IV สูงกว่า RV</strong></td>
-    <td>ประกันแพง และการขาย Option ได้ราคาดี</td>
+    <td>ปีกแพง และการขาย Option ได้ราคาดี</td>
     <td>ใช้ Put Spread แทน Put (11.3), เปลี่ยนชั้นไกลเป็น Short Put (11.6), พึ่งการลดขนาดและ Stop จากบทที่ 10 มากขึ้น</td>
   </tr>
 </table>
 
 <div class="box-red">
-  <div class="box-title">IV สูงมักมีเหตุผล</div>
-  <p>RV ที่วัดได้มาจากอดีต ส่วน IV คือราคาที่ตลาดให้กับอนาคต ช่วงที่ IV สูงกว่า RV มาก มักเป็นช่วงก่อนเหตุการณ์ที่ตลาดรู้ล่วงหน้าว่าอาจทำให้ราคาเคลื่อนแรง การเห็นว่า "ประกันแพง" จึงไม่ได้แปลว่าไม่ต้องมีประกัน ถ้าไม่ซื้อปีกในช่วงนั้น ให้ลดขนาด Grid แทน</p>
+  <div class="box-title">IV ที่ดูแพงหรือดูถูก มักมีเหตุผล</div>
+  <ul>
+    <li><strong>IV สูงกว่า RV มาก:</strong> RV ที่วัดได้มาจากอดีต ส่วน IV คือราคาที่ตลาดให้กับอนาคต ช่วงที่ IV สูงมากมักเป็นช่วงก่อนเหตุการณ์ที่ตลาดรู้ล่วงหน้าว่าอาจทำให้ราคาเคลื่อนแรง การเห็นว่าปีกแพงจึงไม่ได้แปลว่าไม่ต้องมีปีก ถ้าไม่ซื้อในช่วงนั้น ให้ลดขนาด Grid แทน</li>
+    <li><strong>IV ต่ำกว่า RV:</strong> โดยทั่วไป IV มักสูงกว่า RV ที่เกิดตามมา เพราะผู้ขาย Option ต้องการค่าตอบแทนจากการรับความเสี่ยง ช่วงที่ IV ต่ำกว่า RV ย้อนหลังมักเกิดหลังตลาดเพิ่งผันผวนแรง และตลาดคาดว่าความผันผวนจะลดลง Option จึงอาจไม่ได้ถูกจริง</li>
+    <li><strong>ต้นทุนการซื้อขาย:</strong> ส่วนต่างราคาเสนอซื้อ–ขายและค่าธรรมเนียมของ Option กินส่วนต่างระหว่าง RV กับ IV ได้ทั้งหมด โดยเฉพาะกับ Grid + Long Straddle ขนาดเล็ก</li>
+  </ul>
 </div>
+
+<h4>IV บอกด้วยว่ากรอบแคบไปหรือไม่</h4>
+<p>IV ใช้ประมาณโอกาสที่ราคาจะไปถึงระดับหนึ่งภายในเวลาที่กำหนดได้ (สูตรอยู่ใน <a href="#appendix-grid-more" style="color:var(--blue)">Appendix</a>) ที่ IV 50% และราคา 100,000:</p>
+
+<table>
+  <tr><th>ระดับราคา</th><th>ความหมายสำหรับ Grid หลัก</th><th>โอกาสที่ราคาจะแตะภายใน 30 วัน</th></tr>
+  <tr><td>90,000</td><td>ของเต็มมือ</td><td>ประมาณ 46%</td></tr>
+  <tr><td>88,000</td><td>จุด Stop หรือ Strike ของปีก</td><td>ประมาณ 37%</td></tr>
+  <tr><td>80,000</td><td>Strike ล่างของ Put Spread</td><td>ประมาณ 12%</td></tr>
+</table>
+
+<p>ที่ความผันผวนระดับนี้ Grid หลักมีโอกาสเกือบครึ่งที่จะถือของเต็มมือภายในเดือนเดียว และมากกว่าหนึ่งในสามที่จะไปถึงจุด Stop กรอบกว้าง 10% จึงแคบสำหรับตลาดที่ผันผวน 50% ต่อปี ตัวเลขชุดนี้ควรดูก่อนเลือกกรอบ ไม่ใช่หลังจากเปิดไปแล้ว</p>
 
 <!-- 11.9 -->
 <h3 id="ch11-9">11.9 แผนตามวงจรชีวิตของ Grid</h3>
@@ -3077,25 +3314,25 @@ tr:hover td { background: var(--blue-bg); }
   </tr>
   <tr>
     <td><strong>เลือกอายุของปีก</strong></td>
-    <td>อายุยาว (2–3 เดือน) เสีย Time Decay ต่อวันน้อยกว่า เหมาะกับการกันหาง อายุสั้น (1–2 สัปดาห์) มี Gamma สูงกว่า เหมาะกับ Grid + Long Straddle</td>
+    <td>สำหรับปีกกันหาง อายุยาว (2–3 เดือน) จ่ายมากกว่าตอนซื้อ แต่เสีย Time Decay ต่อวันน้อยกว่าและไม่ต้องต่ออายุบ่อย สำหรับ Grid + Long Straddle การเลือกอายุไม่ได้เปลี่ยน Time Decay ต่อวัน (ดูหัวข้อ 11.5)</td>
   </tr>
   <tr>
     <td><strong>ระหว่างทาง</strong></td>
-    <td>ต่ออายุปีก (Roll) ก่อนหมดอายุ ไม่ปล่อยให้มีช่วงที่ไม่มีประกัน และถ้าย้ายกรอบของ Grid ต้องย้าย Strike ของปีกตาม</td>
+    <td>ต่ออายุปีก (Roll) ก่อนหมดอายุ ไม่ปล่อยให้มีช่วงที่ไม่มีปีก ค่าต่ออายุแพงขึ้นหลังราคาลง (ดูหัวข้อ 11.2) และถ้าย้ายกรอบของ Grid ต้องย้าย Strike ของปีกตาม</td>
   </tr>
   <tr>
     <td><strong>หลุดกรอบล่าง</strong> (ของเต็มมือ)</td>
-    <td>ถ้ามี Put: ขาดทุนถูกจำกัดแล้ว เลือกได้ว่าจะปิดทั้งชุดหรือถือต่อโดยมีพื้น ถ้าถือของต่อ ขาย Call บนของที่ถืออยู่ (Covered Call) เพื่อรับ Premium ระหว่างรอ</td>
+    <td>ถ้ามี Put: ขาดทุนถูกจำกัดแล้ว เลือกได้ว่าจะปิดทั้งชุดหรือถือต่อโดยมีพื้น ถ้าถือของต่อ ขาย Call บนของที่ถืออยู่ (Covered Call) เพื่อรับ Premium ระหว่างรอได้ แต่ <strong>ต้องหยุด Grid หรือยกเลิกคำสั่งขายของจำนวนเดียวกันก่อน</strong> มิฉะนั้นเมื่อราคาเด้ง Grid จะขายของออกไป และ Call ที่ขายไว้จะไม่มีของรองรับ</td>
   </tr>
   <tr>
     <td><strong>หลุดกรอบบน</strong> (ของหมด)</td>
-    <td>ขาย Put ที่ราคาที่ยินดีรับของกลับ (Cash-Secured Put) ได้ Premium ระหว่างรอราคาย่อ แทนการไล่ซื้อ</td>
+    <td>ขาย Put ที่ราคาที่ยินดีซื้อของกลับ (Cash-Secured Put) ได้ Premium ระหว่างรอราคาย่อ แทนการไล่ซื้อ ถ้าราคาลงต่ำกว่า Strike จะรับขาดทุนเท่ากับการซื้อที่ราคานั้น</td>
   </tr>
 </table>
 
 <div class="box-amber">
   <div class="box-title">Covered Call บนของที่ติด: เลือก Strike ให้ไม่ต่ำกว่าต้นทุน</div>
-  <p>ใน Grid หลัก ของเต็มมือ 0.05 BTC มีต้นทุนเฉลี่ย 94,000 USD ถ้าขาย Call ที่ Strike ต่ำกว่าต้นทุน เช่น 90,000 แล้วราคาเด้งกลับแรง ของจะถูกขายออกในราคาที่ขาดทุน เท่ากับล็อกขาดทุนไว้เอง Strike ที่ไม่ต่ำกว่าต้นทุนเฉลี่ยได้ Premium น้อยกว่า แต่ไม่ปิดทางฟื้น</p>
+  <p>ใน Grid หลัก ของเต็มมือ 0.05 BTC มีต้นทุนเฉลี่ย 94,000 USD ถ้าขาย Call ที่ Strike ต่ำกว่าต้นทุน เช่น 90,000 แล้วราคาเด้งกลับแรง ต้องจ่ายส่วนต่างเหนือ Strike ทั้งหมด กำไรของเหรียญที่ถือจึงถูกจำกัดไว้ที่ Strike ซึ่งต่ำกว่าต้นทุน เท่ากับล็อกขาดทุนไว้เอง Strike ที่ไม่ต่ำกว่าต้นทุนเฉลี่ยได้ Premium น้อยกว่า แต่ไม่ปิดทางฟื้น</p>
 </div>
 
 <!-- 11.10 -->
@@ -3103,13 +3340,16 @@ tr:hover td { background: var(--blue-bg); }
 
 <table>
   <tr><th>เรื่อง</th><th>สิ่งที่ต้องรู้</th></tr>
-  <tr><td><strong>ขนาดสัญญา</strong></td><td>ขนาดขั้นต่ำของ Option มักใหญ่กว่าขนาดต่อชั้นของ Grid รายย่อย ตัวอย่างในบทนี้ใช้ 0.05 BTC เพื่อให้ต่อเนื่องกับบทก่อน ในการใช้จริงต้องออกแบบขนาด Grid ให้ของเต็มมือลงตัวกับสัญญาขั้นต่ำของตลาดที่ใช้</td></tr>
-  <tr><td><strong>การชำระราคา</strong></td><td>Option ของ BTC และ ETH ในตลาดหลักเป็นแบบ European ใช้สิทธิ์ได้เฉพาะวันหมดอายุ และชำระเป็นเงินสด ไม่มีการส่งมอบเหรียญ Short Put ในหัวข้อ 11.6 จึงไม่ได้ "รับของ" จริง ถ้าต้องการของต้องซื้อเองในตลาด Spot</td></tr>
+  <tr><td><strong>ขนาดสัญญา</strong></td><td>ขนาดขั้นต่ำของ Option ต่างกันตามตลาด โดยทั่วไปอยู่ในช่วงประมาณ 0.01 ถึง 0.1 BTC ต่อคำสั่ง ซึ่งมักใหญ่กว่าขนาดต่อชั้นของ Grid รายย่อย ตัวอย่างในบทนี้ใช้ 0.05 BTC เพื่อให้ต่อเนื่องกับบทก่อน ในการใช้จริงต้องตรวจสเปกสัญญาปัจจุบันของตลาดที่ใช้ แล้วออกแบบขนาด Grid ให้ของเต็มมือลงตัวกับสัญญาขั้นต่ำ</td></tr>
+  <tr><td><strong>การชำระราคา</strong></td><td>ไม่มีการส่งมอบเหรียญ ตลาดจ่ายเฉพาะส่วนต่าง Short Put ในหัวข้อ 11.6 จึงไม่ได้ "รับของ" จริง ถ้าต้องการของต้องซื้อเองในตลาด Spot และสกุลที่ใช้ชำระต่างกันตามตลาดและชนิดสัญญา บางแบบชำระเป็น BTC หรือ ETH บางแบบชำระเป็น Stablecoin ถ้าหลักประกันเป็นเหรียญ มูลค่าหลักประกันจะลดลงพร้อมกับที่ Short Put ขาดทุน</td></tr>
+  <tr><td><strong>Option บน ETF</strong></td><td>Option บนกองทุน ETF ของ BTC ในตลาดหุ้นสหรัฐเป็นอีกแบบหนึ่ง ใช้สิทธิ์ก่อนหมดอายุได้และส่งมอบหน่วยกองทุนจริง ไม่อยู่ในขอบเขตของบทนี้</td></tr>
+  <tr><td><strong>ค่าธรรมเนียมของ Option</strong></td><td>มักคิดจากมูลค่าสินทรัพย์อ้างอิง ไม่ใช่จาก Premium จึงสูงเมื่อเทียบกับ Option ที่ราคาถูก สมมติคิด 0.03% ของ 100,000 USD คือ 30 USD ต่อ 1 BTC เทียบกับ Premium 330 USD ของ Put Strike 80,000 เท่ากับประมาณ 9% และกลยุทธ์หลายขาอย่าง Butterfly ต้องจ่ายทุกขา</td></tr>
   <tr><td><strong>สภาพคล่อง</strong></td><td>Strike ที่ไกลและอายุที่ไม่ใช่รอบหลักมีส่วนต่างราคาเสนอซื้อ–ขายกว้าง ต้นทุนจริงของปีกจึงสูงกว่าราคากลาง</td></tr>
   <tr><td><strong>Skew</strong></td><td>IV ของแต่ละ Strike ไม่เท่ากัน ตารางราคาต้นบทใช้ IV เท่ากันทุก Strike ซึ่งเป็นการทำให้ง่าย</td></tr>
   <tr><td><strong>ราคาอ้างอิง</strong></td><td>Option ชำระตามดัชนีราคาของตลาด Option ซึ่งอาจต่างจากราคาในตลาดที่ Grid ทำงานอยู่ ช่วงตลาดผันผวนส่วนต่างนี้กว้างขึ้นได้</td></tr>
   <tr><td><strong>Margin ของฝั่งขาย</strong></td><td>Short Put และ Short Call ต้องวาง Margin และ Margin ที่ต้องใช้เพิ่มขึ้นเมื่อราคาวิ่งสวนหรือ IV พุ่ง ต้องนับรวมในการคำนวณ Liquidation ของทั้งบัญชี (บทที่ 10.8)</td></tr>
   <tr><td><strong>ต้นทุนสะสม</strong></td><td>ในปีที่ตลาดเงียบ ค่าปีกที่จ่ายทุกเดือนโดยไม่ได้ใช้จะกิน Grid Profit ไปเรื่อย ๆ เป็นต้นทุนที่ต้องยอมรับตั้งแต่ต้น</td></tr>
+  <tr><td><strong>การเข้าถึงและคู่สัญญา</strong></td><td>ตลาดที่มี Futures และ Option ของคริปโตส่วนใหญ่อยู่ต่างประเทศ ผู้อ่านในไทยต้องตรวจกฎของสำนักงาน ก.ล.ต. และสถานะของแพลตฟอร์ม ณ เวลาที่จะใช้ และควรนับความเสี่ยงที่ตลาดล้มหรือระงับการถอน กับความเสี่ยงที่ Stablecoin หลุดมูลค่า ไว้ในงบขาดทุนด้วย</td></tr>
 </table>
 
 <!-- 11.11 -->
@@ -3117,10 +3357,10 @@ tr:hover td { background: var(--blue-bg); }
 
 <table>
   <tr><th>จุดด้อยหรือจุดดีของ Grid</th><th>Option ที่เสริม</th><th>รูปหลังเสริม</th><th>ข้อแลก</th></tr>
-  <tr><td>หางล่างไม่มีพื้น และ Gap</td><td>Long Put</td><td>Put Spread Ladder มีพื้นแน่นอน</td><td>Premium ทุกรอบอายุ</td></tr>
-  <tr><td>ค่าประกันแพง</td><td>Put Spread หรือ Strike ต่ำลง</td><td>มีพื้นเป็นช่วง</td><td>ทะลุช่วงแล้วขาดทุนต่อ</td></tr>
-  <tr><td>หางสองด้านของ Neutral Grid</td><td>Long Put + Long Call</td><td>Iron Condor</td><td>ต้องเก็บรอบให้พอจ่ายค่าปีก</td></tr>
-  <tr><td>แพ้เทรนด์ในกรอบ</td><td>Long Straddle</td><td>โค้งคว่ำตื้นลง หรือหายไป</td><td>เดิมพันเปลี่ยนเป็น RV เทียบ IV</td></tr>
+  <tr><td>หางล่างไม่มีพื้น และ Gap</td><td>Long Put</td><td>มีพื้น ณ วันหมดอายุ เมื่อ Grid ไม่ใช้ Leverage</td><td>ค่าปีกทุกครั้งที่ต่ออายุ</td></tr>
+  <tr><td>ค่าปีกแพง</td><td>Put Spread หรือ Strike ต่ำลง</td><td>มีพื้นเป็นช่วง</td><td>ทะลุช่วงแล้วขาดทุนต่อ</td></tr>
+  <tr><td>หางสองด้านของ Neutral Grid</td><td>Long Put + Long Call</td><td>Iron Condor</td><td>ต้องเก็บรอบให้พอจ่ายค่าปีก และขา Futures ต้องรอดถึงวันหมดอายุ</td></tr>
+  <tr><td>แพ้เทรนด์ในกรอบ</td><td>Long Straddle</td><td>โค้งคว่ำตื้นลง หรือหายไป</td><td>เดิมพันเปลี่ยนเป็น RV เทียบ IV และแพ้ตลาดเงียบ</td></tr>
   <tr><td>เงินชั้นไกลนอนเฉย</td><td>Short Put แทนคำสั่งซื้อ</td><td>รูปเดิม ยกขึ้นด้วย Premium</td><td>ไม่ได้เก็บการเด้งระหว่างทาง</td></tr>
   <tr><td>มุมมองว่าราคาอยู่ในกรอบ</td><td>Long Butterfly, Calendar</td><td>ได้เพิ่มที่กลางกรอบ</td><td>ไม่ได้กันหาง</td></tr>
 </table>
@@ -3129,20 +3369,20 @@ tr:hover td { background: var(--blue-bg); }
   <div class="box-title">สรุปบทที่ 11</div>
   <ol>
     <li><strong>เก็บลำตัว ซื้อหาง</strong> ให้ Grid เก็บการแกว่งในกรอบ และใช้ Option ซื้อความโค้งคืนตรงที่ Grid เจ็บ</li>
-    <li><strong>Put กัน Gap และ Whipsaw ได้ Stop กันไม่ได้</strong> แลกกับ Premium ที่ต้องจ่ายทุกรอบอายุ</li>
-    <li><strong>แปลงค่าประกันเป็นจำนวนรอบเสมอ</strong> เพื่อดูว่า Grid เก็บได้พอจ่ายหรือไม่</li>
-    <li><strong>Grid + Long Straddle คือ Gamma Scalping</strong> กำไรเมื่อ RV มากกว่า IV</li>
+    <li><strong>Put กัน Gap และ Whipsaw ได้ Stop กันไม่ได้</strong> แลกกับค่าปีกที่ต้องจ่ายทุกครั้งที่ต่ออายุ และพื้นนี้จริงเมื่อ Grid ไม่ถูก Liquidation ก่อนวันหมดอายุ</li>
+    <li><strong>แปลงค่าปีกเป็นจำนวนรอบเสมอ</strong> เพื่อดูว่า Grid เก็บได้พอจ่ายหรือไม่</li>
+    <li><strong>Grid + Long Straddle คือ Gamma Scalping</strong> กำไรเมื่อ RV มากกว่า IV และแพ้ตลาดที่เงียบหรือไหลช้า</li>
     <li><strong>คำสั่ง Limit คือ Option ที่แจกฟรี</strong> ชั้นไกลเปลี่ยนเป็น Short Option ได้ แต่ความเสี่ยงไม่ได้ลดลง</li>
-    <li><strong>IV เทียบ RV เป็นตัวเลือกเครื่องมือ</strong> และ Grid วัด RV ได้จากจำนวนครั้งที่ราคาข้ามเส้น</li>
+    <li><strong>IV เทียบ RV เป็นตัวเลือกเครื่องมือ</strong> Grid วัด RV ได้จากจำนวนก้าวต่อวัน และ IV บอกได้ว่ากรอบที่เลือกแคบไปหรือไม่</li>
   </ol>
 </div>
 
 <h4>แบบฝึกหัด</h4>
 <p>ใช้ตารางราคา Option ต้นบท และ Grid หลัก (ซื้อ 5 ชั้น 98k ถึง 90k ชั้นละ 0.01 BTC)</p>
 <ol>
-  <li>ถ้าซื้อ Put Strike 90,000 จำนวน 0.05 BTC แทน Strike 88,000 ขาดทุนสูงสุด ณ วันหมดอายุเป็นเท่าไร และค่าประกันเท่ากับกี่รอบของ Grid (กำไรสุทธิรอบละ 18 USD)</li>
-  <li>ถ้าซื้อ Put Strike 88,000 เพียง 0.025 BTC (ครึ่งหนึ่งของของเต็มมือ) P&amp;L ณ วันหมดอายุที่ราคา 80,000 เป็นเท่าไร</li>
-  <li>Grid ตัวหนึ่งบน ETH ใช้ &Delta; = 60 USD ที่ราคา 3,000 USD ราคาข้ามเส้นเฉลี่ย 2 ครั้งต่อวัน RV ต่อปีโดยประมาณเป็นเท่าไร ถ้า IV ของ Option อยู่ที่ 70% ควรเลือกแนวทางใดจากตารางในหัวข้อ 11.8</li>
+  <li>ถ้าใช้ Put Spread 88,000 / 80,000 จำนวน 0.05 BTC แล้วราคาจบที่ 75,000 ณ วันหมดอายุ P&amp;L เป็นเท่าไร และค่าปีกเท่ากับกี่รอบของ Grid (กำไรสุทธิรอบละ 18 USD)</li>
+  <li>ถ้าซื้อ Put Strike 88,000 เพียง 0.03 BTC (น้อยกว่าของเต็มมือ 0.05 BTC) P&amp;L ณ วันหมดอายุที่ราคา 80,000 เป็นเท่าไร</li>
+  <li>Grid ตัวหนึ่งบน ETH ใช้ g = 60 USD ที่ราคา 3,000 USD ราคาเดินเฉลี่ย 2 ก้าวต่อวัน RV ต่อปีโดยประมาณเป็นเท่าไร ถ้า IV ของ Option อยู่ที่ 70% ควรเลือกแนวทางใดจากตารางในหัวข้อ 11.8</li>
   <li>จากตารางในหัวข้อ 11.6 ราคาต้องแกว่งระหว่าง 90,000 กับ 94,000 กี่เที่ยว คำสั่ง Limit จึงเริ่มได้มากกว่า Short Put</li>
   <li>อธิบายว่าทำไม Long Butterfly ใช้แทน Long Put ในการกันหางของ Grid ไม่ได้</li>
 </ol>
@@ -3150,9 +3390,9 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-amber">
   <div class="box-title">เฉลย</div>
   <ol>
-    <li>ขาดทุนของ Grid ที่ 90,000 คือ 200 บวก Premium 91.5 จะได้ขาดทุนสูงสุด <strong>291.5 USD</strong> ค่าประกันเท่ากับ 91.5 / 18 &asymp; <strong>5 รอบ</strong></li>
-    <li>Grid: -700 · Put: 0.025 &times; 8,000 = +200 · Premium: -34.25 รวม <strong>-534.25 USD</strong></li>
-    <li>RV &asymp; (60 / 3,000) &times; &radic;(2 &times; 365) = 0.02 &times; 27 = <strong>54%</strong> ซึ่งต่ำกว่า IV 70% ประกันแพง จึงใช้ Put Spread แทน Put เปลี่ยนชั้นไกลเป็น Short Put หรือลดขนาด Grid</li>
+    <li>Grid ที่ 75,000: -200 - 0.05 &times; 15,000 = -950 · Put Spread จ่ายเต็มช่วง 0.05 &times; 8,000 = +400 · ค่าปีก -52 รวม <strong>-602 USD</strong> ค่าปีกเท่ากับ 52 / 18 &asymp; <strong>3 รอบ</strong></li>
+    <li>Grid: -700 · Put: 0.03 &times; 8,000 = +240 · ค่าปีก: 0.03 &times; 1,370 = -41.1 รวม <strong>-501.1 USD</strong></li>
+    <li>RV &asymp; (60 / 3,000) &times; &radic;(2 &times; 365) = 0.02 &times; 27 = <strong>54%</strong> ซึ่งต่ำกว่า IV 70% ปีกแพง จึงใช้ Put Spread แทน Put เปลี่ยนชั้นไกลเป็น Short Put หรือลดขนาด Grid</li>
     <li>1 เที่ยวได้ 2 รอบ = 36 USD ยังน้อยกว่า 42.2 USD ต้องแกว่ง <strong>2 เที่ยว</strong> (4 รอบ = 72 USD) จึงมากกว่า</li>
     <li>Long Butterfly มี Payoff แบนทั้งสองด้านนอก Strike ริม จึงไม่มีความชันไปหักล้างของเต็มมือเมื่อราคาหลุดกรอบ ขาดทุนของ Grid ยังเป็นเส้นตรงเหมือนเดิม ส่วน Long Put มีความชันติดลบใต้ Strike ซึ่งหักล้างของเต็มมือได้พอดี</li>
   </ol>
@@ -3166,7 +3406,7 @@ tr:hover td { background: var(--blue-bg); }
     <li><strong>Cash-Secured Put:</strong> Short Put ที่กันเงินไว้ครบสำหรับซื้อของที่ Strike</li>
     <li><strong>Covered Call:</strong> Short Call ที่มีของในมือรองรับ</li>
     <li><strong>Skew:</strong> การที่ IV ของแต่ละ Strike ไม่เท่ากัน</li>
-    <li><strong>European / Cash-Settled:</strong> Option ที่ใช้สิทธิ์ได้เฉพาะวันหมดอายุ และชำระส่วนต่างเป็นเงินสด</li>
+    <li><strong>European / Cash-Settled:</strong> Option ที่ใช้สิทธิ์ได้เฉพาะวันหมดอายุ และชำระเฉพาะส่วนต่าง ไม่ส่งมอบสินทรัพย์</li>
     <li><strong>Roll:</strong> ในบทนี้หมายถึงการปิด Option ที่ใกล้หมดอายุแล้วเปิดตัวใหม่ที่อายุไกลขึ้น</li>
   </ul>
 </div>
@@ -3207,11 +3447,17 @@ tr:hover td { background: var(--blue-bg); }
 </table>
 
 <div class="box-green">
-  <div class="box-title">วิธีถอด 3 ขั้น</div>
+  <div class="box-title">วิธีถอด 4 ขั้น</div>
   <ol>
     <li><strong>วาดรูป</strong> Payoff ที่ต้องการเป็นเส้นตรงต่อกันเป็นช่วง ๆ</li>
-    <li><strong>อ่านความชัน</strong> ของแต่ละช่วง ซึ่งคือของในมือที่ต้องถือเมื่อราคาอยู่ในช่วงนั้น</li>
-    <li><strong>หาผลต่าง</strong> ของความชันที่แต่ละจุดหักมุม ผลต่างคือขนาดคำสั่ง ถ้าหักคว่ำใช้ Limit ถ้าหักหงายใช้ Stop</li>
+    <li><strong>อ่านความชัน</strong> ของแต่ละช่วง ซึ่งคือของในมือที่ต้องถือเมื่อราคาอยู่ในช่วงนั้น ความชันของช่วงที่ราคาปัจจุบันอยู่คือของที่ต้องถือตั้งต้น</li>
+    <li><strong>หาผลต่าง</strong> ของความชันที่แต่ละจุดหักมุม โดยไล่จากซ้ายไปขวาเสมอ ขนาดของผลต่างคือขนาดคำสั่ง ถ้าความชันลดลงเป็นจุดหักคว่ำ ถ้าเพิ่มขึ้นเป็นจุดหักหงาย</li>
+    <li><strong>เลือกคำสั่ง</strong> ตามตำแหน่งของจุดหักมุมเทียบกับราคาปัจจุบัน:
+      <ul>
+        <li>ใต้ราคาปัจจุบัน: หักคว่ำใช้ Buy Limit · หักหงายใช้ Sell Stop</li>
+        <li>เหนือราคาปัจจุบัน: หักคว่ำใช้ Sell Limit · หักหงายใช้ Buy Stop</li>
+      </ul>
+    </li>
   </ol>
 </div>
 
@@ -3223,22 +3469,21 @@ tr:hover td { background: var(--blue-bg); }
     <li><strong>จุดหักหงาย (Stop)</strong> เสียเงินทุกครั้งที่ราคาแกว่งผ่าน เรียกว่า Whipsaw และเสียเพิ่มเมื่อราคา Gap</li>
   </ul>
   <p>ก้อนนี้คือสิ่งที่มาแทน Premium ของ Option รูปโค้งคว่ำได้รับ รูปโค้งหงายต้องจ่าย</p>
+  <p>คำสั่งแต่ละตัวทำงานครั้งเดียว ถ้าต้องการให้รูปคงอยู่เมื่อราคากลับมา ต้องตั้งคำสั่งกลับทิศใหม่ทุกครั้ง: Limit ตั้งกลับห่างไป 1 ช่อง ซึ่งได้กำไร 1 รอบ ส่วน Stop ตั้งกลับที่ระดับเดิม ซึ่งเป็นที่มาของ Whipsaw</p>
 </div>
 
 <!-- 12.2 -->
-<h3 id="ch12-2">12.2 ตัวอย่าง: ถอดรูป "ที่ราบสูงกลับหัว"</h3>
+<h3 id="ch12-2">12.2 ตัวอย่าง: ถอดรูป "ที่ราบสูงใต้ศูนย์"</h3>
 
-<p>เป้าหมาย: ต้องการ Neutral Grid บน BTC ที่ขาดทุนแบนทั้งสองด้านเมื่อราคาออกนอกกรอบ รูปเดียวกับ Iron Condor ในบทที่ 11.4 แต่ไม่ใช้ Option ราคาเริ่ม 100,000 USD</p>
+<p>เป้าหมาย: ต้องการ Neutral Grid บน BTC ที่ขาดทุนแบนทั้งสองด้านเมื่อราคาออกนอกกรอบ รูปเดียวกับ Iron Condor ในบทที่ 11.4 แต่ไม่ใช้ Option ราคาเริ่ม 100,000 USD ไล่จุดหักมุมจากซ้ายไปขวา:</p>
 
 <table>
-  <tr><th>ช่วงราคา</th><th>ความชันที่ต้องการ (BTC)</th><th>จุดหักมุมที่ขอบล่างของช่วง</th><th>คำสั่งที่ต้องวาง</th></tr>
-  <tr><td>ต่ำกว่า 88,000</td><td>0</td><td>-</td><td>-</td></tr>
-  <tr><td>88,000–90,000</td><td>+0.05</td><td>หักหงายที่ 88,000 ขนาด 0.05</td><td style="color:var(--green)">Sell Stop 0.05 ที่ 88,000</td></tr>
-  <tr><td>90,000–98,000</td><td>+0.04 ลดลงทีละ 0.01 จนถึง +0.01</td><td>หักคว่ำที่ 90k · 92k · 94k · 96k · 98k</td><td style="color:var(--red)">Buy Limit 0.01 ทุกเส้น</td></tr>
-  <tr><td>98,000–102,000</td><td>0</td><td>-</td><td>-</td></tr>
-  <tr><td>102,000–110,000</td><td>-0.01 เพิ่มทีละ 0.01 จนถึง -0.04</td><td>หักคว่ำที่ 102k · 104k · 106k · 108k · 110k</td><td style="color:var(--red)">Sell Limit 0.01 ทุกเส้น (เปิด Short)</td></tr>
-  <tr><td>110,000–112,000</td><td>-0.05</td><td>-</td><td>-</td></tr>
-  <tr><td>สูงกว่า 112,000</td><td>0</td><td>หักหงายที่ 112,000 ขนาด 0.05</td><td style="color:var(--green)">Buy Stop 0.05 ที่ 112,000</td></tr>
+  <tr><th>จุดหักมุมที่ราคา</th><th>ความชันทางซ้าย (BTC)</th><th>ความชันทางขวา (BTC)</th><th>เปลี่ยน</th><th>คำสั่งที่ต้องวาง</th></tr>
+  <tr><td>88,000</td><td>0</td><td>+0.05</td><td style="color:var(--green)">+0.05 หักหงาย</td><td style="color:var(--green)">Sell Stop 0.05</td></tr>
+  <tr><td>90,000 · 92,000 · 94,000 · 96,000 · 98,000</td><td>เริ่มที่ +0.05</td><td>ลดลงเส้นละ 0.01 จนเหลือ 0</td><td style="color:var(--red)">-0.01 ต่อเส้น หักคว่ำ</td><td style="color:var(--red)">Buy Limit 0.01 ทุกเส้น</td></tr>
+  <tr><td>100,000 (ราคาปัจจุบัน)</td><td>0</td><td>0</td><td>ไม่เปลี่ยน</td><td>ไม่ต้องถือของตั้งต้น</td></tr>
+  <tr><td>102,000 · 104,000 · 106,000 · 108,000 · 110,000</td><td>เริ่มที่ 0</td><td>ติดลบเพิ่มเส้นละ 0.01 จนถึง -0.05</td><td style="color:var(--red)">-0.01 ต่อเส้น หักคว่ำ</td><td style="color:var(--red)">Sell Limit 0.01 ทุกเส้น (เปิด Short)</td></tr>
+  <tr><td>112,000</td><td>-0.05</td><td>0</td><td style="color:var(--green)">+0.05 หักหงาย</td><td style="color:var(--green)">Buy Stop 0.05</td></tr>
 </table>
 
 <p>ผลที่ได้คือ Neutral Grid จากบทที่ 9.4 บวก Stop สองด้านจากบทที่ 10.3 การถอดแบบนี้ทำให้เห็นว่า <strong>ลำตัวสร้างจาก Limit Order และปีกสร้างจาก Stop Order</strong> ซึ่งตรงกับ Iron Condor ที่ลำตัวคือ Short Option และปีกคือ Long Option</p>
@@ -3249,14 +3494,23 @@ tr:hover td { background: var(--blue-bg); }
   <tr><td>Long Option (บทที่ 11)</td><td>Premium ล่วงหน้า</td><td>ได้</td></tr>
 </table>
 
+<div class="box-amber">
+  <div class="box-title">ข้อควรระวังเมื่อวางคำสั่งชุดนี้เอง</div>
+  <ul>
+    <li>Stop สองตัวนี้เป็นทางออกถาวร หลัง Stop ทำงาน กราฟจะแบนตลอดไปจนกว่าจะเปิดชุดใหม่</li>
+    <li>เมื่อ Stop ทำงาน ต้องยกเลิกคำสั่ง Limit ที่เหลือทั้งหมด มิฉะนั้นเมื่อราคาเด้งกลับ คำสั่งขายที่ค้างอยู่จะเปิดสถานะ Short ใหม่โดยไม่ตั้งใจ</li>
+    <li>บน Futures ให้ตั้ง Stop เป็นแบบลดสถานะเท่านั้น (Reduce-Only) เพื่อไม่ให้ Stop เปิดสถานะฝั่งตรงข้าม</li>
+  </ul>
+</div>
+
 <!-- 12.3 -->
 <h3 id="ch12-3">12.3 Reverse Grid: กระจกเงาของ Grid</h3>
 
-<p>ถ้ากลับคำสั่งทุกตัวของ Grid จาก Limit เป็น Stop คือ <strong>ซื้อเพิ่มทุกครั้งที่ราคาขึ้นหนึ่งเส้น และขายทุกครั้งที่ราคาลงหนึ่งเส้น</strong> จะได้กลยุทธ์ตามเทรนด์ที่เรียกว่า Reverse Grid ทุกอย่างกลับเครื่องหมาย:</p>
+<p>ถ้ากลับคำสั่งทุกตัวของ Grid จาก Limit เป็น Stop คือ <strong>ซื้อเพิ่มทุกครั้งที่ราคาขึ้นหนึ่งช่อง และขายทุกครั้งที่ราคาลงหนึ่งช่อง</strong> จะได้กลยุทธ์ตามเทรนด์ที่เรียกว่า Reverse Grid ทุกอย่างกลับเครื่องหมาย:</p>
 
 <div class="formula-block">
-  Grid: P&amp;L = (u &times; &Delta; / 2) &times; (n - k&sup2;)<br>
-  Reverse Grid: P&amp;L = (u &times; &Delta; / 2) &times; (k&sup2; - n)
+  Grid: P&amp;L = (u &times; g / 2) &times; (n - k&sup2;)<br>
+  Reverse Grid: P&amp;L = (u &times; g / 2) &times; (k&sup2; - n)
 </div>
 
 <svg viewBox="0 0 480 300" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
@@ -3276,7 +3530,7 @@ tr:hover td { background: var(--blue-bg); }
   <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
     <text x="66" y="166">-8</text><text x="100" y="146">-6</text><text x="400" y="146">+6</text><text x="434" y="166">+8</text>
   </g>
-  <text x="250" y="288" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">k = จำนวนเส้นที่ราคาจบห่างจากจุดเริ่ม (กรณี n = 36, u&Delta;/2 = 10 USD)</text>
+  <text x="250" y="288" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">k = จำนวนช่องที่ราคาจบห่างจากจุดเริ่ม (กรณี n = 36 ก้าว, u &times; g / 2 = 10 USD)</text>
 </svg>
 
 <table>
@@ -3318,7 +3572,7 @@ tr:hover td { background: var(--blue-bg); }
     <td>คือ Grid ที่ไม่มี Take-profit ไม่ได้ Grid Profit แต่ได้ขาขึ้นเต็มจำนวนถ้าราคากลับ</td>
   </tr>
   <tr>
-    <td><strong>Martingale</strong> (เพิ่มขนาดเป็นเท่าตัวเมื่อราคาสวน)</td>
+    <td><strong>Martingale แบบคูณสอง</strong> (เพิ่มขนาดเป็นเท่าตัวเมื่อราคาสวน)</td>
     <td>ราคาลง ถือเพิ่มเร็วขึ้นเรื่อย ๆ</td>
     <td style="color:var(--red)">โค้งคว่ำที่ชันขึ้นทุกชั้น</td>
     <td>Short Gamma ที่โตตามความลึก ดูตัวเลขด้านล่าง</td>
@@ -3345,11 +3599,11 @@ tr:hover td { background: var(--blue-bg); }
 
 <p>การซื้อถัวตามเวลา (DCA ทุกเดือนไม่ว่าราคาเท่าไร) ไม่อยู่ในตาราง เพราะของในมือขึ้นกับเวลา ไม่ได้ขึ้นกับราคา จึงวาดเป็น Payoff Chart ตามราคาไม่ได้</p>
 
-<h4>Martingale บน Payoff Chart</h4>
-<p>เทียบ Grid หลัก (ชั้นละ 0.01 BTC เท่ากัน) กับ Martingale ที่เพิ่มขนาดเป็นเท่าตัวทุกชั้น ซื้อที่ 98k ถึง 90k เหมือนกัน:</p>
+<h4>Martingale แบบคูณสองบน Payoff Chart</h4>
+<p>เทียบ Grid หลัก (ชั้นละ 0.01 BTC เท่ากัน) กับ Martingale ที่เพิ่มขนาดเป็นเท่าตัวทุกชั้น ซึ่งแรงกว่าแบบ B ในบทที่ 10.5 ที่เพิ่มขนาดทีละขั้น ซื้อที่ 98k ถึง 90k เหมือนกัน:</p>
 
 <table>
-  <tr><th></th><th>ขนาดเท่ากัน</th><th>Martingale (0.01 · 0.02 · 0.04 · 0.08 · 0.16)</th></tr>
+  <tr><th></th><th>ขนาดเท่ากัน</th><th>Martingale แบบคูณสอง (0.01 · 0.02 · 0.04 · 0.08 · 0.16)</th></tr>
   <tr><td>ของเต็มมือ</td><td>0.05 BTC</td><td style="color:var(--red)">0.31 BTC</td></tr>
   <tr><td>เงินที่ต้องกัน</td><td>4,700 USD</td><td style="color:var(--red)">28,420 USD</td></tr>
   <tr><td>ต้นทุนเฉลี่ย</td><td>94,000</td><td style="color:var(--green)">ประมาณ 91,680</td></tr>
@@ -3358,17 +3612,19 @@ tr:hover td { background: var(--blue-bg); }
   <tr><td>ขาดทุนที่ 80,000</td><td>-700</td><td style="color:var(--red)"><strong>-3,620</strong></td></tr>
 </table>
 
-<p>สองแถวสีเขียวคือเหตุผลที่ Martingale ดูน่าใช้: ราคาเด้งนิดเดียวก็คุ้มทุน จึงชนะแทบทุกครั้ง แถวสุดท้ายคือราคาที่จ่าย: เมื่อราคาไม่เด้ง ขาดทุนมากกว่า 5 เท่า ทั้งสองอย่างคือสิ่งเดียวกันบนกราฟ คือความโค้งคว่ำที่ชันขึ้นทุกชั้น</p>
+<p>แถวต้นทุนเฉลี่ยและแถวราคาต้องเด้งคือเหตุผลที่ Martingale ดูน่าใช้: ราคาเด้งนิดเดียวก็คุ้มทุน จึงชนะแทบทุกครั้ง แถวสุดท้ายคือราคาที่จ่าย: เมื่อราคาไม่เด้ง ขาดทุนมากกว่า 5 เท่า ทั้งสองอย่างคือสิ่งเดียวกันบนกราฟ คือความโค้งคว่ำที่ชันขึ้นทุกชั้น</p>
 
 <!-- 12.5 -->
 <h3 id="ch12-5">12.5 AMM: Grid ที่ละเอียดจนเป็นเส้นโค้ง</h3>
 
-<p>การให้สภาพคล่อง (Liquidity Provision) ในตลาดแบบ AMM เช่น การฝาก ETH คู่กับ Stablecoin คือ Grid ที่ระยะห่างระหว่างชั้นเล็กจนเป็นเส้นต่อเนื่อง Pool ขาย ETH ออกเมื่อราคาขึ้นและรับ ETH เข้าเมื่อราคาลงโดยอัตโนมัติ สำหรับ Pool แบบ Constant Product ที่ไม่จำกัดกรอบ:</p>
+<p>AMM (Automated Market Maker) คือตลาดที่ไม่มีสมุดคำสั่งซื้อขาย ผู้ฝากนำเหรียญสองชนิดมากองรวมกันเรียกว่า Pool เช่น ETH กับ Stablecoin ซึ่งเป็นเหรียญที่ตรึงมูลค่าไว้กับ USD แล้วให้คนอื่นมาแลกกับ Pool ตามราคาที่สูตรกำหนด ผู้ฝากเรียกว่า Liquidity Provider (LP) และได้ค่าธรรมเนียมจากทุกการแลก</p>
+
+<p>การเป็น LP คือ Grid ที่ระยะห่างระหว่างชั้นเล็กจนเป็นเส้นต่อเนื่อง Pool ขาย ETH ออกเมื่อราคาขึ้นและรับ ETH เข้าเมื่อราคาลงโดยอัตโนมัติ สำหรับ Pool แบบพื้นฐานที่สุดซึ่งไม่จำกัดกรอบราคา (เรียกว่า Constant Product):</p>
 
 <div class="formula-block">
   มูลค่าของ LP = มูลค่าเริ่มต้น &times; &radic;(S / S₀)<br>
   มูลค่าถ้าถือเฉย ๆ = มูลค่าเริ่มต้น &times; (1 + S / S₀) / 2<br>
-  Impermanent Loss = 2&radic;r / (1 + r) - 1 &nbsp; โดย r = S / S₀
+  Impermanent Loss = 2&radic;x / (1 + x) - 1 &nbsp; โดย x = S / S₀
 </div>
 
 <svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
@@ -3386,6 +3642,7 @@ tr:hover td { background: var(--blue-bg); }
   <!-- LP -->
   <polyline points="60,240 75.8,204.6 91.7,190 123.3,169.3 155,153.4 186.7,140 250,117.5 313.3,98.6 376.7,81.9 440,66.8" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linejoin="round" stroke-linecap="round"/>
   <circle cx="186.7" cy="140" r="4" fill="#2563eb"/>
+  <text x="100" y="226" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">ส่วนแรเงา = Impermanent Loss</text>
   <!-- IL marker at r=2 -->
   <line x1="313.3" y1="90" x2="313.3" y2="98.6" stroke="#dc2626" stroke-width="2"/>
   <line x1="313.3" y1="98.6" x2="313.3" y2="128" stroke="#dc2626" stroke-width="1" stroke-dasharray="2,2"/>
@@ -3401,33 +3658,41 @@ tr:hover td { background: var(--blue-bg); }
   <text x="250" y="276" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา ETH เทียบกับราคาตอนฝาก (S / S₀) — ยังไม่รวมค่าธรรมเนียมที่ได้รับ</text>
 </svg>
 
-<p>เส้นโค้งของ LP อยู่ใต้เส้นตรงของการถือเฉย ๆ ทุกจุดยกเว้นจุดเริ่ม ช่องว่างสีแดงคือ Impermanent Loss ซึ่งเป็น Floating P&amp;L รูปโค้งคว่ำแบบเดียวกับ Grid: ราคาไป 2 เท่าหรือเหลือครึ่งหนึ่ง ตามหลัง 5.7% ราคาไป 4 เท่าหรือเหลือหนึ่งในสี่ ตามหลัง 20%</p>
+<p>กราฟนี้แกนตั้งเป็นมูลค่ารวม ไม่ใช่ P&amp;L เหมือนกราฟก่อนหน้า เส้นโค้งของ LP อยู่ใต้เส้นตรงของการถือเฉย ๆ ทุกจุดยกเว้นจุดเริ่ม ส่วนแรเงาคือ Impermanent Loss ซึ่งเป็น Floating P&amp;L รูปโค้งคว่ำแบบเดียวกับ Grid: ราคาไป 2 เท่าหรือเหลือครึ่งหนึ่ง ตามหลังการถือเฉย ๆ 5.7% ราคาไป 4 เท่าหรือเหลือหนึ่งในสี่ ตามหลัง 20%</p>
+
+<p>ตัวเลขนี้เทียบกับการถือเฉย ๆ ไม่ใช่ขาดทุนเป็นเงิน ถ้าราคาเหลือครึ่งหนึ่ง มูลค่าของ LP ลดลงประมาณ 29% ขณะที่การถือเฉย ๆ ลดลง 25%</p>
 
 <table>
   <tr><th>Grid</th><th>AMM LP</th></tr>
   <tr><td>กรอบบน–ล่าง</td><td>ช่วงราคาที่วางสภาพคล่อง (ใน Pool แบบเลือกช่วงได้)</td></tr>
-  <tr><td>ระยะห่าง &Delta;</td><td>เล็กมากจนต่อเนื่อง</td></tr>
-  <tr><td style="color:var(--green)">Grid Profit</td><td style="color:var(--green)">ค่าธรรมเนียมที่ได้รับจากผู้มาแลกเปลี่ยน</td></tr>
+  <tr><td>ระยะห่าง g</td><td>เล็กมากจนต่อเนื่อง</td></tr>
+  <tr><td style="color:var(--green)">Grid Profit (แน่นอนต่อรอบ)</td><td style="color:var(--green)">ค่าธรรมเนียมที่ได้รับจากผู้มาแลกเปลี่ยน (ไม่แน่นอน)</td></tr>
   <tr><td style="color:var(--red)">Floating P&amp;L โค้งคว่ำ</td><td style="color:var(--red)">Impermanent Loss</td></tr>
   <tr><td>หลุดกรอบล่าง: ถือของเต็มมือ</td><td>ราคาต่ำกว่าช่วง: เหลือแต่เหรียญ ไม่ได้ค่าธรรมเนียม</td></tr>
   <tr><td>หลุดกรอบบน: ของหมด</td><td>ราคาสูงกว่าช่วง: เหลือแต่ Stablecoin ไม่ได้ค่าธรรมเนียม</td></tr>
 </table>
 
 <div class="box-amber">
-  <div class="box-title">สิ่งที่ยกมาใช้ได้ทันที</div>
-  <p>LP ที่เลือกช่วงราคาได้มีรูป Payoff เดียวกับ Spot Grid คือ Short Put Ladder ที่ละเอียดมาก เครื่องมือของบทที่ 10 และ 11 จึงใช้ได้ทั้งหมด: คำนวณขาดทุนที่ขอบล่างก่อนฝาก ช่วงยิ่งแคบ Gamma ยิ่งติดลบมาก (ได้ค่าธรรมเนียมเข้มข้นขึ้นและ Impermanent Loss เร็วขึ้น) และกันหางได้ด้วย Long Put เหมือนกัน</p>
+  <div class="box-title">สิ่งที่ยกมาใช้ได้ และสิ่งที่ต่างจาก Grid</div>
+  <p>LP ที่เลือกช่วงราคาได้มีรูป Payoff เดียวกับ Spot Grid คือ Short Put Ladder ที่ละเอียดมาก แนวคิดของบทที่ 10 และ 11 จึงนำมาใช้ได้: คำนวณขาดทุนที่ขอบล่างก่อนฝาก ช่วงยิ่งแคบ Gamma ยิ่งติดลบมาก (ได้ค่าธรรมเนียมเข้มข้นขึ้นและ Impermanent Loss เร็วขึ้น) และกันหางได้ด้วย Long Put เหมือนกัน</p>
+  <p>แต่การเทียบนี้เป็นการเทียบรูปร่าง ข้อต่างที่ต้องรู้มี 3 ข้อ:</p>
+  <ul>
+    <li><strong>รายได้ไม่ได้มาจากการแกว่งโดยตรง:</strong> Grid ได้กำไร 1 ช่องทุกรอบโดยโครงสร้าง ส่วน LP ซื้อและขายบนเส้นโค้งเดียวกัน ถ้าไม่มีค่าธรรมเนียม LP จะไม่ได้อะไรจากการแกว่งเลย ส่วนต่างนั้นตกเป็นของผู้ที่เข้ามาแลกเพื่อปรับราคาของ Pool ให้ตรงกับตลาด สำหรับ Pool ไม่จำกัดกรอบ ส่วนที่เสียไปนี้อยู่ที่ประมาณ &sigma;&sup2; / 8 ของมูลค่า Pool ต่อปี เช่น ที่ความผันผวน 50% คือประมาณ 3% ต่อปี</li>
+    <li><strong>ค่าธรรมเนียมขึ้นกับสิ่งที่คุมไม่ได้:</strong> ได้มากหรือน้อยขึ้นกับปริมาณการแลก อัตราค่าธรรมเนียมของ Pool และส่วนแบ่งของเราในช่วงราคานั้น และต้องมากกว่าส่วนที่เสียไปในข้อแรกจึงจะคุ้ม</li>
+    <li><strong>ไม่มีคำสั่ง Stop ในตัว:</strong> การออกต้องทำเองหรือใช้เครื่องมือเสริม และยังมีค่าธรรมเนียมเครือข่ายกับความเสี่ยงของสัญญาอัจฉริยะเพิ่มเข้ามา</li>
+  </ul>
 </div>
 
 <!-- 12.6 -->
-<h3 id="ch12-6">12.6 Grid ที่ปรับตัวได้ และ Grid บนส่วนต่างราคา</h3>
+<h3 id="ch12-6">12.6 Grid ที่ปรับตัวได้ และ Grid บนอัตราส่วนราคา</h3>
 
 <table>
   <tr><th>รูปแบบ</th><th>ทำอะไร</th><th>ความหมายบน Payoff Chart</th><th>ข้อควรระวัง</th></tr>
   <tr>
-    <td><strong>&Delta; ตามความผันผวน</strong></td>
-    <td>ตลาดผันผวนมากตั้ง &Delta; กว้าง ผันผวนน้อยตั้งแคบ</td>
-    <td>รักษาจำนวนครั้งที่ข้ามเส้นต่อวันให้ใกล้เคียงเดิม และลด Gamma เมื่อตลาดแรง</td>
-    <td>การเปลี่ยน &Delta; กลางทางคือการ Roll ต้องรับรู้ P&amp;L ของชุดเดิม</td>
+    <td><strong>g ตามความผันผวน</strong></td>
+    <td>ตลาดผันผวนมากตั้ง g กว้าง ผันผวนน้อยตั้งแคบ</td>
+    <td>รักษาจำนวนก้าวต่อวันให้ใกล้เคียงเดิม และลด Gamma เมื่อตลาดแรง</td>
+    <td>การเปลี่ยน g กลางทางคือการ Roll ต้องรับรู้ P&amp;L ของชุดเดิม</td>
   </tr>
   <tr>
     <td><strong>Trailing Grid</strong></td>
@@ -3442,19 +3707,19 @@ tr:hover td { background: var(--blue-bg); }
     <td>กำไรต่อรอบเล็กลง และหางล่างยังอยู่ครบ</td>
   </tr>
   <tr>
-    <td><strong>Grid บนส่วนต่างราคา</strong></td>
+    <td><strong>Grid บนอัตราส่วนราคาของสองสินทรัพย์</strong></td>
     <td>ทำ Grid บนอัตราส่วนของสองสินทรัพย์ เช่น ETH/BTC โดย Long ตัวหนึ่ง Short อีกตัว</td>
     <td>กราฟเดิมทุกอย่าง แต่แกนนอนเป็นอัตราส่วน ไม่ใช่ราคา</td>
-    <td>อัตราส่วนมักแกว่งกลับมากกว่าราคาเดี่ยว แต่เมื่อความสัมพันธ์เปลี่ยนถาวร หางจะยาวและไม่กลับ</td>
+    <td>อัตราส่วนมักผันผวนน้อยกว่าราคาเดี่ยว แต่ไม่ได้แกว่งกลับเสมอ ETH/BTC เคยลดลงต่อเนื่องหลายปี จากประมาณ 0.08 ในปี 2022 เหลือต่ำกว่า 0.02 ในปี 2025 Grid บนอัตราส่วนในช่วงนั้นจะถือฝั่งที่แพ้เต็มมือ</td>
   </tr>
 </table>
 
 <p>ทุกรูปแบบในตารางยังเป็น Short Gamma เหมือนเดิม การปรับตัวเปลี่ยนได้ว่าความโค้งอยู่ตรงไหนและมากแค่ไหน แต่ไม่เปลี่ยนเครื่องหมายของมัน</p>
 
 <!-- 12.7 -->
-<h3 id="ch12-7">12.7 แผนที่รวม: ทุกกลยุทธ์อยู่ใน 4 ช่อง</h3>
+<h3 id="ch12-7">12.7 แผนที่รวม: จัดกลยุทธ์ลง 4 ช่อง</h3>
 
-<p>กลยุทธ์ทั้งหมดในหนังสือเล่มนี้ ทั้งที่ใช้ Option และไม่ใช้ จัดได้ด้วยคำถาม 2 ข้อ: กราฟโค้งทางไหน และเงินก้อนที่มาคู่กับความโค้งถูกจ่ายเมื่อไร</p>
+<p>กลยุทธ์ส่วนใหญ่ในหนังสือเล่มนี้ ทั้งที่ใช้ Option และไม่ใช้ จัดได้ด้วยคำถาม 2 ข้อ: กราฟโค้งทางไหน และเงินก้อนที่มาคู่กับความโค้งถูกจ่ายเมื่อไร กลยุทธ์ที่มีทั้งขาซื้อและขาขาย เช่น Spread, Butterfly และ Iron Condor มีความโค้งสองแบบในกราฟเดียว ให้จัดตามความโค้งของช่วงที่ราคาอยู่ตอนนี้</p>
 
 <table>
   <tr>
@@ -3479,7 +3744,7 @@ tr:hover td { background: var(--blue-bg); }
   <ul>
     <li><strong>แถวเดียวกันมีความเสี่ยงชนิดเดียวกัน</strong> ถือ Grid พร้อมกับ Short Strangle และ AMM LP ไม่ใช่การกระจายความเสี่ยง ทั้งสามแพ้ในวันเดียวกัน</li>
     <li><strong>คนละแถวหักล้างกัน</strong> Grid + Long Put (บทที่ 11.2) และ Grid + Long Straddle (บทที่ 11.5) คือการจับคู่ข้ามแถว</li>
-    <li><strong>คอลัมน์บอกว่าจ่ายด้วยอะไร</strong> คอลัมน์ซ้ายรู้ต้นทุนล่วงหน้าและกัน Gap ได้ คอลัมน์ขวาไม่ต้องจ่ายก่อนแต่ต้นทุนไม่แน่นอน การเลือกคอลัมน์คือการเทียบ IV กับ RV (บทที่ 11.8)</li>
+    <li><strong>คอลัมน์บอกว่าจ่ายด้วยอะไร</strong> คอลัมน์ซ้ายตกลงเงินก้อนนั้นกันล่วงหน้า ฝั่งซื้อ Option จึงรู้ต้นทุนแน่นอนและได้รับการคุ้มครองแม้ราคา Gap ส่วนฝั่งขาย Option รู้รายได้ล่วงหน้าแต่รับ Gap เต็ม ๆ คอลัมน์ขวาไม่มีการจ่ายล่วงหน้าและจำนวนเงินไม่แน่นอน การเลือกคอลัมน์คือการเทียบ IV กับ RV (บทที่ 11.8)</li>
   </ul>
 </div>
 
@@ -3492,7 +3757,7 @@ tr:hover td { background: var(--blue-bg); }
     <li><strong>ทุกจุดหักมุมคือคำสั่งหนึ่งตัว</strong> หักคว่ำใช้ Limit หักหงายใช้ Stop ขนาดเท่ากับความชันที่เปลี่ยน</li>
     <li><strong>Limit คือ Short Option ที่ได้เงินจากการแกว่ง Stop คือ Long Option ที่จ่ายด้วย Whipsaw</strong></li>
     <li><strong>Reverse Grid คือกระจกเงาของ Grid</strong> กฎ &radic;n เป็นเส้นแบ่งว่าตลาดช่วงนั้นเป็นของฝั่งไหน</li>
-    <li><strong>Martingale, Rebalancing และ AMM LP คือ Grid ในรูปอื่น</strong> ความเสี่ยงชนิดเดียวกัน ต่างกันที่ความชันของความโค้ง</li>
+    <li><strong>Martingale, Rebalancing และ AMM LP มี Payoff ตระกูลเดียวกับ Grid</strong> ความเสี่ยงชนิดเดียวกัน ต่างกันที่ความแรงของความโค้งและที่มาของรายได้</li>
     <li><strong>ไม่มีรูป Payoff ไหนได้มาฟรี</strong> ความโค้งทุกแบบมีเงินก้อนหนึ่งมาคู่กันเสมอ ไม่จ่ายล่วงหน้าก็ทยอยจ่ายระหว่างทาง</li>
   </ol>
 </div>
@@ -3501,7 +3766,7 @@ tr:hover td { background: var(--blue-bg); }
 <ol>
   <li>ต้องการ Payoff บน ETH ดังนี้: ต่ำกว่า 2,800 ความชัน +2 ETH · ระหว่าง 2,800 ถึง 2,900 ความชัน +1 ETH · สูงกว่า 2,900 ความชัน 0 ราคาตอนนี้ 3,000 ต้องวางคำสั่งอะไรบ้าง</li>
   <li>ถือ 1 BTC ที่ราคา 100,000 ต้องการให้ขาดทุนแบนเมื่อราคาต่ำกว่า 95,000 ต้องวางคำสั่งอะไร คำสั่งนี้เทียบเท่า Option ตำแหน่งใด และมีต้นทุนแฝงอะไร</li>
-  <li>Reverse Grid ตัวหนึ่งมี u &times; &Delta; = 20 USD ราคาข้ามเส้น 36 ครั้ง จบห่างจากจุดเริ่ม 10 เส้น P&amp;L รวมเป็นเท่าไร และถ้าจบห่าง 2 เส้นจะเป็นเท่าไร</li>
+  <li>Reverse Grid ตัวหนึ่งมี u &times; g = 20 USD ราคาเดิน 36 ก้าว จบห่างจากจุดเริ่ม 10 ช่อง P&amp;L รวมเป็นเท่าไร และถ้าจบห่าง 2 ช่องจะเป็นเท่าไร</li>
   <li>ฝาก ETH คู่กับ Stablecoin ใน Pool แบบ Constant Product แล้วราคา ETH ขึ้นเป็น 4 เท่า มูลค่าของ LP เป็นกี่เท่าของเงินเริ่มต้น และถ้าถือเฉย ๆ จะเป็นกี่เท่า</li>
   <li>นักลงทุนคนหนึ่งเปิด Spot Grid บน BTC, ฝาก LP คู่ ETH กับ Stablecoin และขาย Put ของ BTC พร้อมกัน เขาบอกว่ากระจายความเสี่ยงแล้ว 3 กลยุทธ์ จงใช้แผนที่ในหัวข้อ 12.7 อธิบายว่าทำไมไม่จริง และเสนอวิธีแก้ 1 วิธี</li>
 </ol>
@@ -3509,9 +3774,9 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-amber">
   <div class="box-title">เฉลย</div>
   <ol>
-    <li>เดินจากขวาไปซ้าย ความชันเพิ่มจาก 0 เป็น +1 ที่ 2,900 และจาก +1 เป็น +2 ที่ 2,800 เป็นจุดหักคว่ำทั้งคู่ จึงวาง <strong>Buy Limit 1 ETH ที่ 2,900 และ Buy Limit 1 ETH ที่ 2,800</strong></li>
+    <li>ไล่จากซ้ายไปขวา ความชันลดจาก +2 เป็น +1 ที่ 2,800 และจาก +1 เป็น 0 ที่ 2,900 จึงเป็นจุดหักคว่ำทั้งคู่ ทั้งสองจุดอยู่ใต้ราคาปัจจุบัน และความชันที่ราคาปัจจุบันเป็น 0 จึงไม่ต้องถือของตั้งต้น วาง <strong>Buy Limit 1 ETH ที่ 2,800 และ Buy Limit 1 ETH ที่ 2,900</strong></li>
     <li>วาง <strong>Sell Stop 1 BTC ที่ 95,000</strong> เป็นจุดหักหงาย เทียบเท่า Long Put Strike 95,000 และกราฟรวมมีรูปของ Long Call ต้นทุนแฝงคือ Whipsaw เมื่อราคาแตะแล้วกลับ และการได้ราคาแย่กว่า 95,000 เมื่อราคา Gap</li>
-    <li>จบห่าง 10 เส้น: 10 &times; (100 - 36) = <strong>+640 USD</strong> จบห่าง 2 เส้น: 10 &times; (4 - 36) = <strong>-320 USD</strong></li>
+    <li>จบห่าง 10 ช่อง: 10 &times; (100 - 36) = <strong>+640 USD</strong> จบห่าง 2 ช่อง: 10 &times; (4 - 36) = <strong>-320 USD</strong></li>
     <li>LP: &radic;4 = <strong>2 เท่า</strong> ถือเฉย ๆ: (1 + 4) / 2 = <strong>2.5 เท่า</strong> LP ตามหลัง 20%</li>
     <li>ทั้งสามอยู่ในแถวโค้งคว่ำ (Short Gamma) จึงขาดทุนพร้อมกันเมื่อตลาดร่วงแรง วิธีแก้คือเพิ่มกลยุทธ์จากแถวโค้งหงาย เช่น ซื้อ Put กันหาง หรือลดขนาดรวมของทั้งสามให้ขาดทุนรวมที่จุด Stop อยู่ในงบ</li>
   </ol>
@@ -3524,6 +3789,7 @@ tr:hover td { background: var(--blue-bg); }
     <li><strong>Stop Order:</strong> คำสั่งที่ทำงานเมื่อราคาทะลุระดับในทิศที่ได้ราคาแย่ลง (ซื้อแพงขึ้น ขายถูกลง)</li>
     <li><strong>Reverse Grid:</strong> Grid ที่ซื้อเมื่อราคาขึ้นและขายเมื่อราคาลง</li>
     <li><strong>Pyramiding:</strong> การเพิ่มขนาดเมื่อสถานะมีกำไร</li>
+    <li><strong>Reduce-Only:</strong> คำสั่งที่ทำได้แค่ลดสถานะที่มีอยู่ ไม่เปิดสถานะฝั่งตรงข้าม</li>
     <li><strong>AMM (Automated Market Maker):</strong> ตลาดที่ราคาถูกกำหนดด้วยสูตรจากปริมาณสินทรัพย์ใน Pool</li>
     <li><strong>Impermanent Loss:</strong> ส่วนที่มูลค่าของ LP ตามหลังการถือสินทรัพย์เฉย ๆ</li>
     <li><strong>Rebalancing:</strong> การปรับสัดส่วนสินทรัพย์กลับสู่เป้าหมายเป็นระยะ</li>
@@ -3588,18 +3854,34 @@ N'(x) = Standard Normal PDF = (1/&radic;2&pi;) &middot; e<sup>-x&sup2;/2</sup>
 
 <h3 id="appendix-grid">สูตร P&amp;L ของ Grid (บทที่ 9)</h3>
 <div class="formula-block">
-<strong>สูตร:</strong> P&amp;L รวม = (u &times; &Delta; / 2) &times; (n - k&sup2;)<br><br>
-<strong>Grid Profit</strong> = u &times; &Delta; &times; (n - k) / 2<br>
-<strong>Floating P&amp;L</strong> = -u &times; &Delta; &times; k(k - 1) / 2<br><br>
-<strong>แบบต่อเนื่อง:</strong> P&amp;L = u &times; [ QV - (S<sub>T</sub> - S₀)&sup2; ] / (2&Delta;)
+<strong>สูตร:</strong> P&amp;L รวม = (u &times; g / 2) &times; (n - k&sup2;)<br><br>
+<strong>จำนวนรอบที่ครบ</strong> = (n - k) / 2<br>
+<strong>Grid Profit</strong> = u &times; g &times; (n - k) / 2<br>
+<strong>Floating P&amp;L</strong> = -u &times; g &times; k(k - 1) / 2<br><br>
+<strong>ถ้ามีของตั้งต้น q₀:</strong> บวกเพิ่ม q₀ &times; (S<sub>T</sub> - S₀)
 </div>
-<p><strong>ที่มา:</strong> ให้ราคาเดินจากเส้นหนึ่งไปเส้นที่ติดกันรวม n ครั้ง และจบห่างจากจุดเริ่ม k เส้น</p>
+<p>u = ขนาดต่อชั้น · g = ระยะห่างระหว่างเส้น Grid · n = จำนวนก้าวที่ราคาเดิน · k = จำนวนช่องที่ราคาจบห่างจากจุดเริ่ม · S₀ = ราคาเริ่ม · S<sub>T</sub> = ราคาตอนจบ</p>
+<p><strong>เงื่อนไข:</strong> Grid เริ่มโดยไม่มีของในมือ ขนาดและระยะห่างเท่ากันทุกชั้น ราคายังอยู่ในกรอบ และยังไม่หักค่าธรรมเนียม n กับ k เป็นเลขคู่ทั้งคู่หรือเลขคี่ทั้งคู่เสมอ</p>
+<p><strong>ที่มา:</strong> ให้ราคาเดินรวม n ก้าว และจบห่างจากจุดเริ่ม k ช่อง</p>
 <ul>
-  <li>ใน n ครั้งนั้น มี k ครั้งที่เป็นการเดินสุทธิออกจากจุดเริ่ม ที่เหลือ n - k ครั้งจับคู่กันเป็นรอบซื้อ–ขายได้ (n - k) / 2 รอบ รอบละ u &times; &Delta;</li>
-  <li>ของที่ยังถืออยู่ k ชั้น ซื้อมาที่ระยะ 1, 2, ..., k เส้นจากจุดเริ่ม ตอนราคาอยู่ที่เส้น k แต่ละชั้นขาดทุน k - 1, k - 2, ..., 0 ช่อง รวมเป็น k(k - 1) / 2 ช่อง ช่องละ u &times; &Delta;</li>
-  <li>บวกสองก้อน: (u&Delta;/2) &times; [ (n - k) - k(k - 1) ] = (u&Delta;/2) &times; (n - k&sup2;)</li>
+  <li>ใน n ก้าวนั้น มี k ก้าวที่เป็นการเดินสุทธิออกจากจุดเริ่ม ที่เหลือ n - k ก้าวจับคู่กันเป็นรอบซื้อ–ขายได้ (n - k) / 2 รอบ รอบละ u &times; g</li>
+  <li>เหรียญที่ยังถืออยู่ k ชั้น ซื้อมาที่ระยะ 1, 2, ..., k ช่องจากจุดเริ่ม ตอนราคาอยู่ห่าง k ช่อง แต่ละชั้นขาดทุน k - 1, k - 2, ..., 0 ช่อง รวมเป็น k(k - 1) / 2 ช่อง ช่องละ u &times; g</li>
+  <li>บวกสองก้อน: (u &times; g / 2) &times; [ (n - k) - k(k - 1) ] = (u &times; g / 2) &times; (n - k&sup2;)</li>
 </ul>
-<p>ในแบบต่อเนื่อง QV คือผลรวมของการเปลี่ยนแปลงราคายกกำลังสอง (Quadratic Variation) ซึ่งเท่ากับ n &times; &Delta;&sup2; และ (S<sub>T</sub> - S₀)&sup2; เท่ากับ k&sup2; &times; &Delta;&sup2; สูตรทั้งสองจึงเป็นสูตรเดียวกัน</p>
+<p><strong>รูปแบบต่อเนื่อง:</strong> ผลรวมของระยะที่ราคาเดินแต่ละก้าวยกกำลังสองคือ n &times; g&sup2; ซึ่งเป็นค่าประมาณของ Quadratic Variation (QV) ของราคา ยิ่งเส้น Grid ถี่ยิ่งใกล้ค่าจริง และ (S<sub>T</sub> - S₀)&sup2; เท่ากับ k&sup2; &times; g&sup2; สูตรจึงเขียนได้อีกแบบว่า</p>
+<div class="formula-block">
+P&amp;L &asymp; u &times; [ QV - (S<sub>T</sub> - S₀)&sup2; ] / (2g)
+</div>
+
+<h3 id="appendix-grid-more">สูตรอื่นของภาค 2</h3>
+<div class="formula-block">
+<strong>จำนวนก้าวต่อวัน (บทที่ 9.6):</strong> n ต่อวัน &asymp; (&sigma;<sub>วัน</sub> &times; S / g)&sup2; &nbsp; โดย &sigma;<sub>วัน</sub> = &sigma;<sub>ปี</sub> / &radic;365<br><br>
+<strong>วัด RV จาก Grid (บทที่ 11.8):</strong> RV ต่อปี &asymp; (g / S) &times; &radic;(n ต่อวัน &times; 365)<br><br>
+<strong>โอกาสที่ราคาแตะระดับ L ภายในเวลา T (บทที่ 11.8):</strong> &asymp; 2 &times; N( ln(L / S) / (&sigma;&radic;T) ) สำหรับ L ที่ต่ำกว่า S<br><br>
+<strong>Grid แบบเรขาคณิต ใส่เงินเท่ากันทุกชั้น (บทที่ 9.7):</strong> Floating P&amp;L แปรผันตาม ln(S / S₀) - (S - S₀) / S₀<br><br>
+<strong>AMM แบบ Constant Product (บทที่ 12.5):</strong> มูลค่า LP = มูลค่าเริ่มต้น &times; &radic;(S / S₀)
+</div>
+<p>ln คือลอการิทึมธรรมชาติ และ N( ) คือ Cumulative Standard Normal Distribution ตัวเดียวกับในสูตร Black-Scholes ข้างบน สูตรจำนวนก้าวและโอกาสแตะเป็นค่าประมาณที่ไม่คิดแนวโน้มของราคา</p>
 
 <div class="box-amber" style="margin-top:2em;">
   <div class="box-title">เกี่ยวกับเอกสารนี้</div>
