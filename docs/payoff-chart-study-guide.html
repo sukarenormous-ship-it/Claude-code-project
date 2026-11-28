@@ -135,7 +135,7 @@ tr:hover td { background: var(--blue-bg); }
 <div class="cover" id="cover">
   <h1>คู่มือประกอบการเรียน:<br>Payoff Chart สำหรับ Options</h1>
   <p class="subtitle">จากพื้นฐานสู่ขั้นสูง — เข้าใจหลักการ ไม่ใช่แค่ท่องจำ</p>
-  <p class="meta">เอกสารประกอบบทเรียน Interactive Payoff Chart<br>เวอร์ชัน 1.0 | เมษายน 2026</p>
+  <p class="meta">เอกสารประกอบบทเรียน Interactive Payoff Chart<br>เวอร์ชัน 1.1 | พฤศจิกายน 2026</p>
 </div>
 
 <!-- ===== TABLE OF CONTENTS ===== -->
@@ -191,6 +191,19 @@ tr:hover td { background: var(--blue-bg); }
       </div>
     </li>
     <li><a href="#ch8">บทที่ 8: Cheat Sheet — ตารางสรุปรวม</a></li>
+    <li><a href="#ch9">บทที่ 9: Grid บน Payoff Chart — เมื่อ Order ธรรมดากลายเป็น Option</a>
+      <div class="toc-sub">
+        <a href="#ch9-1">9.1 กายวิภาคของ Grid</a> ·
+        <a href="#ch9-2">9.2 หลักแปลง</a> ·
+        <a href="#ch9-3">9.3 P&amp;L 2 ก้อน</a> ·
+        <a href="#ch9-4">9.4 พจนานุกรม Grid → Option</a> ·
+        <a href="#ch9-5">9.5 Greeks ของ Grid</a> ·
+        <a href="#ch9-6">9.6 สูตรหลักและกฎ &radic;n</a> ·
+        <a href="#ch9-7">9.7 เลขคณิต vs เรขาคณิต</a> ·
+        <a href="#ch9-8">9.8 ต้นทุนจริง</a> ·
+        <a href="#ch9-9">9.9 สรุปและแบบฝึกหัด</a>
+      </div>
+    </li>
     <li><a href="#appendix">Appendix: สูตรสำคัญ</a></li>
   </ol>
 </div>
@@ -1828,6 +1841,485 @@ tr:hover td { background: var(--blue-bg); }
 <hr class="section-break">
 
 <!-- ============================================================ -->
+<!-- บทที่ 9 -->
+<!-- ============================================================ -->
+<h2 id="ch9" class="page-break">บทที่ 9: Grid บน Payoff Chart — เมื่อ Order ธรรมดากลายเป็น Option</h2>
+
+<div class="box-blue">
+  <div class="box-title">ภาค 2: เทรดบน Payoff Chart</div>
+  <p>บทที่ 1–8 ใช้ Payoff Chart อ่านกลยุทธ์ Options ภาคนี้ใช้เครื่องมือเดียวกันอ่านกลยุทธ์ที่ <strong>ไม่มี Option เลยสักตัว</strong> เริ่มจาก Grid Trading ซึ่งนิยมมากในตลาด BTC และ ETH</p>
+  <p>ตัวเลขราคาในบทนี้เป็น <strong>ค่าสมมติ</strong> เพื่อให้คิดเลขง่าย ไม่ใช่ราคาตลาดจริง</p>
+</div>
+
+<p>Grid Trading คือการวาง Limit Order ไว้เป็นชั้น ๆ ตามระดับราคา ราคาลงถึงชั้นไหนก็ซื้อ ราคาขึ้นถึงชั้นไหนก็ขาย คนส่วนใหญ่มองมันเป็น "บอทเก็บกำไรรอบสั้น" แต่ถ้าวาดออกมาเป็น Payoff Chart จะเห็นว่ามันคือ <strong>การขาย Option เป็นขั้นบันได</strong> ซึ่งทำให้เรายืมความรู้ทั้งหมดจากบทที่ 2–5 มาใช้กับ Grid ได้ทันที</p>
+
+<!-- 9.1 -->
+<h3 id="ch9-1">9.1 กายวิภาคของ Grid</h3>
+
+<p>Grid ทุกตัวกำหนดด้วยตัวแปร 5 ตัว:</p>
+
+<table>
+  <tr><th>ตัวแปร</th><th>ความหมาย</th><th>ตัวอย่างหลักของบทนี้ (BTC)</th></tr>
+  <tr><td><strong>กรอบบน (U)</strong></td><td>ราคาสูงสุดที่ Grid ทำงาน</td><td>100,000 USD</td></tr>
+  <tr><td><strong>กรอบล่าง (L)</strong></td><td>ราคาต่ำสุดที่ Grid ทำงาน</td><td>90,000 USD</td></tr>
+  <tr><td><strong>ระยะห่าง (&Delta;)</strong></td><td>ระยะระหว่างเส้น Grid ที่ติดกัน</td><td>2,000 USD</td></tr>
+  <tr><td><strong>ขนาดต่อชั้น (u)</strong></td><td>จำนวนเหรียญที่ซื้อหรือขายต่อ 1 ชั้น</td><td>0.01 BTC</td></tr>
+  <tr><td><strong>ประเภท</strong></td><td>Spot (ถือได้แค่ Long), Futures Long, Futures Short หรือ Neutral</td><td>Spot เริ่มที่ขอบบน</td></tr>
+</table>
+
+<p>กติกาของ Grid มีข้อเดียว: <strong>ซื้อที่เส้นไหน ให้ตั้งขายที่เส้นถัดขึ้นไป 1 เส้น</strong> ทุกคู่ "ซื้อ–ขาย" ที่ครบรอบได้กำไรเท่ากันเสมอ:</p>
+
+<div class="formula-block">
+  กำไรต่อรอบ = u &times; &Delta; = 0.01 &times; 2,000 = 20 USD
+</div>
+
+<p>ในตัวอย่างหลัก BTC เริ่มที่ 100,000 เราวางคำสั่งซื้อไว้ 5 ชั้น ที่ 98,000 · 96,000 · 94,000 · 92,000 · 90,000 ชั้นละ 0.01 BTC</p>
+
+<!-- 9.2 -->
+<h3 id="ch9-2">9.2 หลักแปลง: จาก Order เป็น Payoff Chart</h3>
+
+<p>ในบทที่ 3 เราอ่านรูปร่างจากความชัน (Slope Analysis) และในบทที่ 5 เรารู้ว่าความชันคือ Delta หลักเดียวกันนี้ใช้แปลงกลยุทธ์อะไรก็ได้ที่ถือของตามระดับราคา:</p>
+
+<table>
+  <tr><th>สิ่งที่ทำในการเทรด</th><th>สิ่งที่เห็นบน Payoff Chart</th></tr>
+  <tr><td>จำนวนเหรียญที่ถือ ณ ราคา S</td><td><strong>ความชัน</strong> ของกราฟ (= Delta)</td></tr>
+  <tr><td>ของในมือเปลี่ยนเมื่อราคาเปลี่ยน</td><td><strong>ความโค้ง</strong> ของกราฟ (= Gamma)</td></tr>
+  <tr><td>Limit Order แต่ละตัว</td><td><strong>จุดหักมุม</strong> ทำหน้าที่เหมือน Strike</td></tr>
+</table>
+
+<p>วิธีวาดมี 2 ขั้น ขั้นแรกวาด "ของในมือ" เป็นขั้นบันได ขั้นที่สองสะสมกำไรขาดทุนของของที่ถืออยู่ไปทีละช่วงราคา:</p>
+
+<svg viewBox="0 0 480 420" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah9a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker>
+    <linearGradient id="g9dn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dc2626" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#dc2626" stop-opacity="0.26"/></linearGradient>
+  </defs>
+  <!-- grid lines (strikes) -->
+  <g stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.25">
+    <line x1="155" y1="30" x2="155" y2="385"/>
+    <line x1="202.5" y1="30" x2="202.5" y2="385"/>
+    <line x1="250" y1="30" x2="250" y2="385"/>
+    <line x1="297.5" y1="30" x2="297.5" y2="385"/>
+    <line x1="345" y1="30" x2="345" y2="385"/>
+  </g>
+  <!-- Panel 1: inventory -->
+  <text x="60" y="18" font-family="Sarabun, sans-serif" font-size="12" fill="#374151" font-weight="700">ของในมือ (BTC) = ความชัน</text>
+  <line x1="60" y1="150" x2="440" y2="150" stroke="#374151" stroke-width="1" marker-end="url(#ah9a)"/>
+  <line x1="60" y1="160" x2="60" y2="28" stroke="#374151" stroke-width="1"/>
+  <path d="M60,40 H155 V62 H202.5 V84 H250 V106 H297.5 V128 H345 V150 H432" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="105" y="35" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0.05</text>
+  <text x="179" y="57" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0.04</text>
+  <text x="226" y="79" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0.03</text>
+  <text x="274" y="101" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0.02</text>
+  <text x="321" y="123" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0.01</text>
+  <text x="392" y="143" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb" text-anchor="middle">0</text>
+  <!-- Panel 2: floating P&L -->
+  <text x="60" y="196" font-family="Sarabun, sans-serif" font-size="12" fill="#374151" font-weight="700">Floating P&amp;L (USD) = Payoff Chart</text>
+  <line x1="60" y1="215" x2="440" y2="215" stroke="#374151" stroke-width="1" marker-end="url(#ah9a)"/>
+  <line x1="60" y1="385" x2="60" y2="205" stroke="#374151" stroke-width="1"/>
+  <path d="M60,215 L345,215 L297.5,223 L250,239 L202.5,263 L155,295 L60,375 Z" fill="url(#g9dn)"/>
+  <polyline points="432,215 345,215 297.5,223 250,239 202.5,263 155,295 60,375" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <g fill="#dc2626">
+    <circle cx="297.5" cy="223" r="3"/><circle cx="250" cy="239" r="3"/><circle cx="202.5" cy="263" r="3"/><circle cx="155" cy="295" r="3"/>
+  </g>
+  <circle cx="345" cy="215" r="3" fill="#374151"/>
+  <text x="305" y="238" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-20</text>
+  <text x="258" y="254" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-60</text>
+  <text x="211" y="278" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-120</text>
+  <text x="164" y="308" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-200</text>
+  <text x="128" y="345" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">หลุดกรอบ: เส้นตรง</text>
+  <text x="128" y="358" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">ชัน 0.05 BTC</text>
+  <text x="392" y="232" font-family="Sarabun, sans-serif" font-size="10" fill="#374151" text-anchor="middle">ยังไม่มีของ = แบน</text>
+  <!-- x labels -->
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="155" y="400">90k</text><text x="202.5" y="400">92k</text><text x="250" y="400">94k</text><text x="297.5" y="400">96k</text><text x="345" y="400">98k</text><text x="392.5" y="400">100k</text>
+  </g>
+  <text x="445" y="213" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <text x="250" y="416" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD) — เส้นประ = เส้น Grid = Strike</text>
+</svg>
+
+<p>ตารางคำนวณของกราฟล่าง สมมติว่าราคาลงมาถึงระดับนั้นเป็นครั้งแรก:</p>
+
+<table>
+  <tr><th>ราคา BTC</th><th>ของในมือ</th><th>วิธีคิด</th><th>Floating P&amp;L</th></tr>
+  <tr><td>98,000 ขึ้นไป</td><td>0 ถึง 0.01</td><td>เพิ่งซื้อชั้นแรกที่ราคานี้ ยังไม่ขาดทุน</td><td><strong>0</strong></td></tr>
+  <tr><td>96,000</td><td>0.02</td><td>ชั้น 98k ขาดทุน 2,000 &times; 0.01</td><td><strong>-20</strong></td></tr>
+  <tr><td>94,000</td><td>0.03</td><td>(4,000 + 2,000) &times; 0.01</td><td><strong>-60</strong></td></tr>
+  <tr><td>92,000</td><td>0.04</td><td>(6,000 + 4,000 + 2,000) &times; 0.01</td><td><strong>-120</strong></td></tr>
+  <tr><td>90,000</td><td>0.05</td><td>(8,000 + 6,000 + 4,000 + 2,000) &times; 0.01</td><td><strong>-200</strong></td></tr>
+  <tr><td>86,000</td><td>0.05 (เต็มมือ)</td><td>-200 - 0.05 &times; 4,000</td><td><strong>-400</strong></td></tr>
+</table>
+
+<div class="box-amber">
+  <div class="box-title">สังเกตรูปร่าง</div>
+  <p>แบน → ลาดลงชันขึ้นทีละขั้น → เส้นตรงชันสุดเมื่อหลุดกรอบ ถ้าเดินจากซ้ายไปขวาตามวิธีในบทที่ 3 ความชันลดลง 0.01 ทุกครั้งที่ผ่านเส้น Grid ซึ่งเป็นพฤติกรรมเดียวกับการผ่าน Strike ของ <strong>Short Put</strong> ทีละตัว</p>
+</div>
+
+<!-- 9.3 -->
+<h3 id="ch9-3">9.3 P&amp;L ของ Grid มี 2 ก้อน</h3>
+
+<p>กราฟในหัวข้อ 9.2 ยังไม่ใช่ทั้งหมด เพราะ Grid ทำเงินจากการที่ราคา <strong>แกว่งกลับ</strong> ด้วย P&amp;L รวมจึงแยกเป็น 2 ก้อนที่มีนิสัยต่างกัน:</p>
+
+<table>
+  <tr><th>ก้อน</th><th>มาจากไหน</th><th>ขึ้นกับอะไร</th><th>เทียบกับ Option</th></tr>
+  <tr>
+    <td style="color:var(--green)"><strong>Grid Profit</strong></td>
+    <td>คู่ซื้อ–ขายที่ครบรอบแล้ว รอบละ u &times; &Delta;</td>
+    <td>เส้นทางที่ราคาเดิน (นับจำนวนรอบ)</td>
+    <td>Premium ที่ทยอยได้รับ</td>
+  </tr>
+  <tr>
+    <td style="color:var(--red)"><strong>Floating P&amp;L</strong></td>
+    <td>ของที่ยังถืออยู่ ตีมูลค่าตามราคาตอนนี้</td>
+    <td>ราคาปัจจุบันอย่างเดียว</td>
+    <td>Payoff ของ Short Option</td>
+  </tr>
+</table>
+
+<p>ตัวอย่างเส้นทางราคา 8 ช่วง ใช้ Grid ตัวเดิม:</p>
+
+<svg viewBox="0 0 480 260" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <!-- grid lines -->
+  <g stroke="#d1d5db" stroke-width="1">
+    <line x1="60" y1="50" x2="445" y2="50"/><line x1="60" y1="95" x2="445" y2="95"/><line x1="60" y1="140" x2="445" y2="140"/><line x1="60" y1="185" x2="445" y2="185"/>
+  </g>
+  <g font-family="Sarabun, sans-serif" font-size="11" fill="#374151" text-anchor="end">
+    <text x="54" y="54">100k</text><text x="54" y="99">98k</text><text x="54" y="144">96k</text><text x="54" y="189">94k</text>
+  </g>
+  <!-- price path -->
+  <polyline points="70,50 115,95 160,140 205,95 250,140 295,185 340,140 385,95 430,140" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="70" cy="50" r="3.5" fill="#2563eb"/>
+  <!-- buys (green up triangles below point) -->
+  <g fill="#16a34a">
+    <path d="M115,101 l6,10 h-12 z"/><path d="M160,146 l6,10 h-12 z"/><path d="M250,146 l6,10 h-12 z"/><path d="M295,191 l6,10 h-12 z"/><path d="M430,146 l6,10 h-12 z"/>
+  </g>
+  <!-- sells (red down triangles above point) -->
+  <g fill="#dc2626">
+    <path d="M205,89 l6,-10 h-12 z"/><path d="M340,134 l6,-10 h-12 z"/><path d="M385,89 l6,-10 h-12 z"/>
+  </g>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626" text-anchor="middle" font-weight="700">
+    <text x="205" y="73">+20</text><text x="340" y="118">+20</text><text x="385" y="73">+20</text>
+  </g>
+  <!-- legend -->
+  <path d="M70,226 l6,10 h-12 z" fill="#16a34a"/>
+  <text x="82" y="236" font-family="Sarabun, sans-serif" font-size="11" fill="#374151">ซื้อ 0.01 BTC</text>
+  <path d="M190,236 l6,-10 h-12 z" fill="#dc2626"/>
+  <text x="202" y="236" font-family="Sarabun, sans-serif" font-size="11" fill="#374151">ขาย 0.01 BTC (ครบรอบ ได้ 20 USD)</text>
+  <text x="250" y="254" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">เวลา → ราคาเดินข้ามเส้น Grid 8 ครั้ง จบที่ 96k</text>
+</svg>
+
+<ul>
+  <li><strong>Grid Profit:</strong> ครบ 3 รอบ = 3 &times; 20 = <span style="color:var(--green)"><strong>+60 USD</strong></span></li>
+  <li><strong>Floating P&amp;L:</strong> ตอนจบถือ 2 ชั้น คือชั้นที่ซื้อ 98k (ขาดทุน 20) กับชั้นที่เพิ่งซื้อ 96k (ขาดทุน 0) = <span style="color:var(--red)"><strong>-20 USD</strong></span></li>
+  <li><strong>รวม:</strong> +60 - 20 = <strong>+40 USD</strong></li>
+</ul>
+
+<div class="box-red">
+  <div class="box-title">Payoff Chart ของ Grid ต่างจากของ Option ตรงไหน</div>
+  <ul>
+    <li>Payoff ของ Option คือผลลัพธ์ ณ วันหมดอายุ ส่วนกราฟของ Grid คือ <strong>ภาพถ่าย ณ ราคาปัจจุบัน</strong> เพราะ Grid ไม่มีวันหมดอายุ</li>
+    <li>กราฟวาดได้เฉพาะก้อน Floating P&amp;L ส่วน Grid Profit ขึ้นกับเส้นทางราคา (path-dependent) จึงบอกล่วงหน้าไม่ได้ว่าจะได้กี่รอบ</li>
+    <li>ระหว่างเส้น Grid สองเส้น ของในมืออาจต่างกัน 1 ชั้น ขึ้นกับว่าราคามาจากด้านบนหรือด้านล่าง กราฟจึงแม่นที่เส้น Grid และคลาดได้ไม่เกินกำไร 1 รอบในช่องระหว่างเส้น</li>
+  </ul>
+</div>
+
+<!-- 9.4 -->
+<h3 id="ch9-4">9.4 พจนานุกรม Grid → Option</h3>
+
+<p>คำสั่งซื้อแบบ Limit ที่ราคา K คือการบอกตลาดว่า "ใครอยากขายให้ฉันที่ K มาได้เลย" ซึ่งเป็นภาระเดียวกับคน <strong>Short Put ที่ Strike K</strong> (บทที่ 2.4) ต่างกันแค่ Limit Order ไม่ได้รับ Premium ล่วงหน้า Grid ทั้งชุดจึงแปลได้ดังนี้:</p>
+
+<table>
+  <tr><th>ประเภท Grid</th><th>ของในมือ</th><th>เทียบเท่า</th><th>รูปร่าง</th></tr>
+  <tr>
+    <td><strong>Spot Grid / Futures Long Grid</strong></td>
+    <td>ราคาลงยิ่งถือมาก ราคาขึ้นจนของหมด</td>
+    <td>Short Put หลาย Strike เรียงเป็นขั้น (Short Put Ladder)</td>
+    <td>แบนด้านบน โค้งลงด้านล่าง</td>
+  </tr>
+  <tr>
+    <td><strong>Futures Short Grid</strong></td>
+    <td>ราคาขึ้นยิ่ง Short มาก</td>
+    <td>Short Call Ladder</td>
+    <td>แบนด้านล่าง โค้งลงด้านบน</td>
+  </tr>
+  <tr>
+    <td><strong>Neutral Grid</strong></td>
+    <td>Long ใต้ราคาเริ่ม Short เหนือราคาเริ่ม</td>
+    <td>Short Put Ladder + Short Call Ladder &asymp; Short Strangle / Short Straddle</td>
+    <td>โค้งคว่ำทั้งสองด้าน</td>
+  </tr>
+</table>
+
+<div class="box-blue">
+  <div class="box-title">Grid ที่เริ่มกลางกรอบ = Covered Call Ladder</div>
+  <p>บอทส่วนใหญ่เริ่มกลางกรอบ โดยซื้อของไว้ก่อนเพื่อตั้งขายชั้นบน เช่น กรอบ 90,000–110,000 เริ่มที่ 100,000 ซื้อไว้ 0.05 BTC ตั้งขายที่ 102k ถึง 110k และตั้งซื้อที่ 98k ถึง 90k</p>
+  <ul>
+    <li>ราคาขึ้นถึง 110,000: ขายหมด กำไร <strong>+300 USD</strong> และไม่เพิ่มอีกแม้ราคาไปต่อ</li>
+    <li>ราคาลงถึง 90,000: ถือ 0.10 BTC ขาดทุนลอยตัว <strong>-700 USD</strong></li>
+  </ul>
+  <p>ครึ่งบนคือ "ถือของ + ขายทำกำไรเป็นชั้น" ซึ่งก็คือ Covered Call และจาก Synthetic Positions ในบทที่ 2.6 เรารู้ว่า Long Stock + Short Call = Short Put กราฟทั้งเส้นจึงยังเป็น Short Put Ladder ตัวเดิม เพียงแต่จุดเริ่มต้นย้ายมาอยู่กลางโค้ง</p>
+</div>
+
+<h4>ตัวอย่าง Neutral Grid บน ETH</h4>
+<p>สมมติ ETH เริ่มที่ 3,000 USD ใช้ Futures วาง Grid ห่างกัน 50 USD ชั้นละ 0.1 ETH ด้านละ 5 ชั้น ซื้อเมื่อราคาลง Short เมื่อราคาขึ้น กำไรต่อรอบ = 0.1 &times; 50 = 5 USD</p>
+
+<svg viewBox="0 0 480 280" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah9b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker>
+    <linearGradient id="g9dn2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dc2626" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#dc2626" stop-opacity="0.24"/></linearGradient>
+  </defs>
+  <!-- Axes -->
+  <line x1="50" y1="100" x2="445" y2="100" stroke="#374151" stroke-width="1" marker-end="url(#ah9b)"/>
+  <line x1="50" y1="245" x2="50" y2="22" stroke="#374151" stroke-width="1" marker-end="url(#ah9b)"/>
+  <text x="56" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">P&amp;L (USD)</text>
+  <text x="450" y="98" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <!-- range edges -->
+  <line x1="114.3" y1="40" x2="114.3" y2="245" stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <line x1="385.7" y1="40" x2="385.7" y2="245" stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- floating area + line -->
+  <path d="M60,100 L60,220 L114.3,160 L141.4,136 L168.6,118 L195.7,106 L222.9,100 L277.1,100 L304.3,106 L331.4,118 L358.6,136 L385.7,160 L440,220 L440,100 Z" fill="url(#g9dn2)"/>
+  <polyline points="60,220 114.3,160 141.4,136 168.6,118 195.7,106 222.9,100 277.1,100 304.3,106 331.4,118 358.6,136 385.7,160 440,220" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- shifted by grid profit +30 -->
+  <polyline points="60,184 114.3,124 141.4,100 168.6,82 195.7,70 222.9,64 277.1,64 304.3,70 331.4,82 358.6,100 385.7,124 440,184" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- BE dots on shifted -->
+  <circle cx="141.4" cy="100" r="4" fill="#2563eb"/><circle cx="358.6" cy="100" r="4" fill="#2563eb"/>
+  <text x="141.4" y="92" font-family="Sarabun, sans-serif" font-size="11" fill="#2563eb" text-anchor="end">BE</text>
+  <text x="362" y="92" font-family="Sarabun, sans-serif" font-size="11" fill="#2563eb">BE</text>
+  <!-- labels -->
+  <text x="250" y="56" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a" text-anchor="middle">รวม Grid Profit 6 รอบ (+30)</text>
+  <text x="250" y="118" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626" text-anchor="middle">Floating P&amp;L อย่างเดียว</text>
+  <text x="120" y="176" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-50</text>
+  <text x="380" y="176" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626" text-anchor="end">-50</text>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="114.3" y="260">2,750</text><text x="250" y="260">3,000</text><text x="385.7" y="260">3,250</text>
+  </g>
+  <text x="250" y="276" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา ETH (USD) — นอกเส้นประคือนอกกรอบ ชัน 0.5 ETH</text>
+</svg>
+
+<p>เส้นแดงคือ Floating P&amp;L มีหน้าตาเหมือน Short Strangle ที่ไม่ได้รับ Premium เส้นเขียวประคือกราฟเดียวกันหลังเก็บ Grid Profit ได้ 6 รอบ กราฟทั้งเส้น <strong>ยกตัวขึ้น</strong> 30 USD และจุดคุ้มทุนขยับออกไปที่ 2,800 กับ 3,200 นี่คือกลไกเดียวกับที่ Premium ยกกราฟ Short Straddle ขึ้นเหนือศูนย์ ต่างกันที่ Grid ต้องรอให้ราคาแกว่งจึงจะได้เงินก้อนนี้</p>
+
+<!-- 9.5 -->
+<h3 id="ch9-5">9.5 Greeks ของ Grid</h3>
+
+<p>เมื่อ Grid คือ Short Option เป็นขั้นบันได Greeks จากบทที่ 5 ก็ใช้ได้ทั้งชุด:</p>
+
+<table>
+  <tr><th>Greek</th><th>ความหมายสำหรับ Grid</th><th>ตัวอย่าง BTC (u = 0.01, &Delta; = 2,000)</th><th>เทียบ Short Straddle</th></tr>
+  <tr>
+    <td><strong>Delta</strong></td>
+    <td>จำนวนเหรียญที่ถืออยู่ตอนนี้</td>
+    <td>ราคาลงมา 3 ชั้น = +0.03 BTC</td>
+    <td>เหมือนกัน: ราคาลงยิ่ง Long</td>
+  </tr>
+  <tr>
+    <td><strong>Gamma</strong></td>
+    <td style="color:var(--red)">-u / &Delta; (ติดลบเสมอในกรอบ)</td>
+    <td>ราคาลงทุก 2,000 USD Delta เพิ่ม 0.01 BTC</td>
+    <td>เหมือนกัน: Short Gamma</td>
+  </tr>
+  <tr>
+    <td><strong>Theta</strong></td>
+    <td style="color:var(--green)">Grid Profit ที่เก็บได้ต่อวัน</td>
+    <td>ประมาณ 10 USD ต่อการข้ามเส้น 1 ครั้ง (ดูหัวข้อ 9.6)</td>
+    <td>Straddle ได้แน่นอนทุกวัน Grid ได้เมื่อราคาแกว่ง</td>
+  </tr>
+  <tr>
+    <td><strong>Vega</strong></td>
+    <td>ไม่มี เพราะไม่ได้ถือ Option ราคาของ IV ไม่กระทบ</td>
+    <td>-</td>
+    <td>Straddle เสียเมื่อ IV ขึ้น Grid ไม่รู้สึก</td>
+  </tr>
+</table>
+
+<div class="box-green">
+  <div class="box-title">Grid กับ Short Straddle รับเงินจากความผันผวนคนละตัว</div>
+  <ul>
+    <li><strong>คนขาย Straddle</strong> รับ Premium ล่วงหน้าตาม <strong>Implied Volatility</strong> (ความผันผวนที่ตลาดคาด)</li>
+    <li><strong>คนทำ Grid</strong> ทยอยรับ Grid Profit ตาม <strong>Realized Volatility</strong> (ความผันผวนที่เกิดจริง)</li>
+  </ul>
+  <p>ทั้งคู่เป็น Short Gamma เหมือนกัน จึงแพ้สิ่งเดียวกัน คือราคาที่วิ่งไปทางเดียวไกล ๆ</p>
+</div>
+
+<!-- 9.6 -->
+<h3 id="ch9-6">9.6 สูตรหลักและกฎ &radic;n</h3>
+
+<p><strong>อ่านเป็นภาษาคนก่อน:</strong> ทุกครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นถัดไป Grid ได้ "แต้ม" ครึ่งรอบ แต่ยิ่งราคาจบห่างจากจุดเริ่ม Grid ยิ่งเสียแต้ม และเสียแบบ <strong>ยกกำลังสอง</strong> ไกล 2 เท่าเสีย 4 เท่า</p>
+
+<div class="formula-block">
+  P&amp;L รวม = (u &times; &Delta; / 2) &times; (n - k&sup2;)<br><br>
+  n = จำนวนครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นที่ติดกัน<br>
+  k = จำนวนเส้นที่ราคาตอนจบห่างจากจุดเริ่ม
+</div>
+
+<p>สูตรนี้ใช้ได้ตราบใดที่ราคายังอยู่ในกรอบ และยังไม่หักค่าธรรมเนียม ที่มาของสูตรอยู่ใน <a href="#appendix-grid" style="color:var(--blue)">Appendix</a></p>
+
+<p><strong>ตรวจกับตัวอย่างในหัวข้อ 9.3:</strong> u &times; &Delta; / 2 = 10 USD ราคาข้ามเส้น n = 8 ครั้ง จบห่างจากจุดเริ่ม k = 2 เส้น จะได้ 10 &times; (8 - 4) = <strong>+40 USD</strong> ตรงกับที่นับมือ</p>
+
+<div class="box-green">
+  <div class="box-title">กฎ &radic;n — จุดคุ้มทุนของ Grid</div>
+  <p>Grid กำไรเมื่อ k&sup2; &lt; n หรือพูดอีกแบบ:</p>
+  <p><span class="formula">ราคาข้ามเส้น Grid ไป n ครั้ง → กำไรถ้าจบห่างจากจุดเริ่มไม่เกิน &radic;n เส้น</span></p>
+  <p>ข้าม 25 ครั้ง ต้องจบภายใน 5 เส้น ข้าม 100 ครั้ง ต้องจบภายใน 10 เส้น</p>
+</div>
+
+<svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah9c" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker>
+    <linearGradient id="g9up" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16a34a" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#16a34a" stop-opacity="0.03"/></linearGradient>
+    <linearGradient id="g9dn3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dc2626" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#dc2626" stop-opacity="0.26"/></linearGradient>
+  </defs>
+  <!-- Axes -->
+  <line x1="50" y1="150" x2="448" y2="150" stroke="#374151" stroke-width="1" marker-end="url(#ah9c)"/>
+  <line x1="250" y1="255" x2="250" y2="24" stroke="#374151" stroke-width="1" marker-end="url(#ah9c)"/>
+  <text x="258" y="24" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">P&amp;L รวม (USD)</text>
+  <!-- areas -->
+  <path d="M118,150 L140,122.5 L162,100 L184,82.5 L206,70 L228,62.5 L250,60 L272,62.5 L294,70 L316,82.5 L338,100 L360,122.5 L382,150 Z" fill="url(#g9up)"/>
+  <path d="M74,150 L74,220 L96,182.5 L118,150 Z" fill="url(#g9dn3)"/>
+  <path d="M382,150 L404,182.5 L426,220 L426,150 Z" fill="url(#g9dn3)"/>
+  <!-- curve -->
+  <polyline points="74,220 96,182.5 118,150 140,122.5 162,100 184,82.5 206,70 228,62.5 250,60 272,62.5 294,70 316,82.5 338,100 360,122.5 382,150 404,182.5 426,220" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- BE -->
+  <circle cx="118" cy="150" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/>
+  <circle cx="382" cy="150" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="112" y="142" font-family="Sarabun, sans-serif" font-size="11" fill="#2563eb" text-anchor="end">BE = &radic;36</text>
+  <text x="388" y="142" font-family="Sarabun, sans-serif" font-size="11" fill="#2563eb">BE = &radic;36</text>
+  <circle cx="250" cy="60" r="3.5" fill="#16a34a"/>
+  <text x="262" y="56" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a">จบที่จุดเริ่ม: +360</text>
+  <circle cx="74" cy="220" r="3.5" fill="#dc2626"/>
+  <text x="74" y="240" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">เทรนด์ 8 เส้น: -280</text>
+  <!-- x ticks -->
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="66" y="166">-8</text><text x="128" y="166">-6</text><text x="372" y="166">+6</text><text x="434" y="166">+8</text>
+  </g>
+  <text x="250" y="278" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">k = จำนวนเส้นที่ราคาจบห่างจากจุดเริ่ม (กรณี n = 36, u&Delta;/2 = 10 USD)</text>
+</svg>
+
+<p>กราฟนี้คือ Payoff Chart ของ Grid ในอีกมุมหนึ่ง แกนนอนเปลี่ยนจากราคาเป็น "ระยะที่ราคาจบห่างจากจุดเริ่ม" และรูปร่างเป็นพาราโบลาคว่ำ ซึ่งเป็นรูปเดียวกับ Short Straddle ก่อนหมดอายุ</p>
+
+<div class="box-red">
+  <div class="box-title">ความจริงที่ต้องรู้: Grid ไม่ได้มีกำไรในตัวเอง</div>
+  <p>ถ้าราคาเดินแบบสุ่มล้วน ๆ (Random Walk) ค่าเฉลี่ยของ k&sup2; จะเท่ากับ n พอดี กำไรคาดหวังของ Grid จึง <strong>เท่ากับศูนย์</strong> ก่อนค่าธรรมเนียม และติดลบหลังค่าธรรมเนียม</p>
+  <p>Grid ทำเงินได้เฉพาะเมื่อตลาด <strong>แกว่งกลับมากกว่าการเดินสุ่ม</strong> (mean-reverting) และเสียเงินเมื่อตลาดเป็นเทรนด์มากกว่าการเดินสุ่ม การเปิด Grid จึงเป็นการเดิมพันว่าตลาดจะอยู่ในกรอบ ไม่ใช่เครื่องผลิตเงิน</p>
+</div>
+
+<h4>ตัวอย่างเทียบ 2 ตลาด (BTC, n = 30 ครั้งเท่ากัน)</h4>
+<table>
+  <tr><th>สภาพตลาด</th><th>n</th><th>k</th><th>Grid Profit</th><th>Floating P&amp;L</th><th>P&amp;L รวม = 10 &times; (n - k&sup2;)</th></tr>
+  <tr><td>แกว่งในกรอบ จบห่างจุดเริ่ม 2 เส้น</td><td>30</td><td>2</td><td style="color:var(--green)">14 รอบ = +280</td><td style="color:var(--red)">-20</td><td style="color:var(--green)"><strong>+260</strong></td></tr>
+  <tr><td>ไหลลงเป็นเทรนด์ จบห่างจุดเริ่ม 10 เส้น</td><td>30</td><td>10</td><td style="color:var(--green)">10 รอบ = +200</td><td style="color:var(--red)">-900</td><td style="color:var(--red)"><strong>-700</strong></td></tr>
+</table>
+<p>ราคาขยับเท่ากันทั้งสองกรณี สิ่งที่ต่างคือ "ขยับแล้วไปจบที่ไหน" กรณีหลังต้องมี Grid อย่างน้อย 10 ชั้น ถ้ากรอบแคบกว่านั้นราคาจะหลุดกรอบและขาดทุนเป็นเส้นตรงแทน</p>
+
+<!-- 9.7 -->
+<h3 id="ch9-7">9.7 ระยะห่างแบบเลขคณิต กับ แบบเรขาคณิต</h3>
+
+<table>
+  <tr><th></th><th>เลขคณิต (Arithmetic)</th><th>เรขาคณิต (Geometric)</th></tr>
+  <tr><td><strong>ระยะห่าง</strong></td><td>เท่ากันเป็น USD เช่น ทุก 2,000 USD</td><td>เท่ากันเป็น % เช่น ทุก 2%</td></tr>
+  <tr><td><strong>กำไรต่อรอบ</strong></td><td>เท่ากันเป็น USD</td><td>เท่ากันเป็น %</td></tr>
+  <tr><td><strong>รูป Payoff ในกรอบ</strong></td><td>พาราโบลาคว่ำ</td><td>โค้งคว่ำแบบ log ด้านล่างชันกว่าด้านบน</td></tr>
+  <tr><td><strong>เหมาะกับ</strong></td><td>กรอบแคบ ราคาไม่เปลี่ยนเป็นเท่าตัว</td><td>กรอบกว้าง เช่น BTC 50,000–150,000</td></tr>
+</table>
+
+<p>ถ้ากรอบแคบ (บนกับล่างห่างกันไม่เกิน 20–30%) สองแบบให้ผลใกล้กันมาก บทนี้จึงใช้แบบเลขคณิตทั้งหมดเพื่อให้คิดเลขง่าย สำหรับแบบเรขาคณิตที่ใส่เงินเท่ากันทุกชั้น Floating P&amp;L มีรูป:</p>
+
+<div class="formula-block">
+  Floating P&amp;L &prop; ln(S / S₀) - (S - S₀) / S₀
+</div>
+
+<!-- 9.8 -->
+<h3 id="ch9-8">9.8 ต้นทุนจริงของ Grid</h3>
+
+<h4>ค่าธรรมเนียม</h4>
+<p>ทุกรอบต้องจ่ายค่าธรรมเนียม 2 ข้าง (ซื้อ 1 ขาย 1) สมมติค่าธรรมเนียมข้างละ 0.1%:</p>
+<ul>
+  <li>มูลค่าต่อชั้น = 0.01 BTC &times; 100,000 = 1,000 USD</li>
+  <li>ค่าธรรมเนียมต่อรอบ = 2 &times; 0.1% &times; 1,000 = 2 USD</li>
+  <li>กำไรสุทธิต่อรอบ = 20 - 2 = <strong>18 USD</strong></li>
+</ul>
+
+<div class="formula-block">
+  เงื่อนไขขั้นต่ำ: &Delta; / S &gt; 2 &times; อัตราค่าธรรมเนียม<br>
+  ที่ 0.1% ต่อข้าง และ BTC = 100,000 → &Delta; ต้องมากกว่า 200 USD
+</div>
+
+<h4>ทางเลือกของ &Delta;</h4>
+<table>
+  <tr><th></th><th>&Delta; แคบ</th><th>&Delta; กว้าง</th></tr>
+  <tr><td>จำนวนรอบ</td><td>มาก เก็บการแกว่งเล็ก ๆ ได้</td><td>น้อย การแกว่งที่เล็กกว่า &Delta; หลุดมือ</td></tr>
+  <tr><td>ค่าธรรมเนียมเทียบกำไร</td><td>กินสัดส่วนสูง</td><td>กินสัดส่วนต่ำ</td></tr>
+  <tr><td>Gamma (u / &Delta;)</td><td>ติดลบมาก ของสะสมเร็ว</td><td>ติดลบน้อย ของสะสมช้า</td></tr>
+</table>
+
+<h4>เงินทุนและต้นทุนอื่น</h4>
+<ul>
+  <li><strong>เงินที่ต้องกัน (Spot):</strong> ผลรวมของคำสั่งซื้อทุกชั้น ในตัวอย่างหลัก = 0.01 &times; (98,000 + 96,000 + 94,000 + 92,000 + 90,000) = <strong>4,700 USD</strong> เงินก้อนนี้นอนรออยู่เฉย ๆ จนกว่าราคาจะลงถึง</li>
+  <li><strong>Funding (Perpetual Futures):</strong> ฝั่งที่ถืออยู่อาจต้องจ่ายหรือได้รับ Funding เป็นระยะ ถ้าถือ Long ค้างนานในช่วงที่ Funding เป็นบวก ต้นทุนนี้จะกิน Grid Profit</li>
+  <li><strong>Leverage:</strong> ลดเงินที่ต้องกัน แต่เพิ่มราคา Liquidation เข้ามาในกราฟ ซึ่งเป็นเรื่องของบทที่ 10</li>
+</ul>
+
+<!-- 9.9 -->
+<h3 id="ch9-9">9.9 สรุปและแบบฝึกหัด</h3>
+
+<div class="box-green" style="border-left-width:6px;">
+  <div class="box-title">สรุปบทที่ 9</div>
+  <ol>
+    <li><strong>ของในมือ = ความชัน</strong> และ <strong>Limit Order = Strike</strong> กลยุทธ์ที่ถือของตามระดับราคาจึงวาดเป็น Payoff Chart ได้เสมอ</li>
+    <li><strong>Grid = Short Option เป็นขั้นบันได</strong> Spot Grid คือ Short Put Ladder และ Neutral Grid คือ Short Strangle</li>
+    <li><strong>P&amp;L มี 2 ก้อน</strong> Grid Profit ทำหน้าที่เป็น Premium ส่วน Floating P&amp;L คือ Payoff ของ Short Option</li>
+    <li><strong>P&amp;L รวม = (u&Delta;/2) &times; (n - k&sup2;)</strong> กำไรเมื่อราคาจบห่างจากจุดเริ่มไม่เกิน &radic;n เส้น</li>
+    <li><strong>Grid ได้เงินจาก Realized Volatility</strong> และแพ้เทรนด์ ถ้าราคาเดินสุ่มกำไรคาดหวังเป็นศูนย์</li>
+  </ol>
+</div>
+
+<h4>แบบฝึกหัด</h4>
+<ol>
+  <li>ETH เริ่มที่ 3,000 USD วาง Spot Grid ซื้อ 4 ชั้นที่ 2,950 · 2,900 · 2,850 · 2,800 ชั้นละ 0.2 ETH จงหา Floating P&amp;L เมื่อราคาลงมาถึง 2,800 เป็นครั้งแรก และเมื่อราคาลงต่อถึง 2,700</li>
+  <li>Grid ในข้อ 1 เทียบเท่ากับ Option ตำแหน่งใดบ้าง ระบุ Strike และจำนวน</li>
+  <li>Grid ตัวหนึ่งมี u &times; &Delta; = 20 USD ราคาข้ามเส้นไป 50 ครั้ง แล้วจบห่างจากจุดเริ่ม 4 เส้น P&amp;L รวมเป็นเท่าไร และถ้าจบห่าง 8 เส้นจะเป็นเท่าไร</li>
+  <li>ถ้าราคาข้ามเส้นไป 49 ครั้ง ราคาจบห่างจากจุดเริ่มได้มากที่สุดกี่เส้นโดยที่ Grid ยังไม่ขาดทุน</li>
+  <li>BTC อยู่ที่ 100,000 USD ค่าธรรมเนียมข้างละ 0.05% ถ้าตั้ง &Delta; = 500 USD ค่าธรรมเนียมกินกำไรต่อรอบไปกี่เปอร์เซ็นต์</li>
+</ol>
+
+<div class="box-amber">
+  <div class="box-title">เฉลย</div>
+  <ol>
+    <li>ที่ 2,800: (150 + 100 + 50 + 0) &times; 0.2 = <strong>-60 USD</strong> ที่ 2,700: -60 - 0.8 &times; 100 = <strong>-140 USD</strong></li>
+    <li>Short Put 4 ตัว ที่ Strike 2,950 · 2,900 · 2,850 · 2,800 ตัวละ 0.2 ETH โดยไม่ได้รับ Premium</li>
+    <li>จบห่าง 4 เส้น: 10 &times; (50 - 16) = <strong>+340 USD</strong> จบห่าง 8 เส้น: 10 &times; (50 - 64) = <strong>-140 USD</strong></li>
+    <li>&radic;49 = 7 จึงจบห่างได้มากที่สุด <strong>7 เส้น</strong> ซึ่งเท่าทุนพอดี เพราะ n - k&sup2; = 49 - 49 = 0</li>
+    <li>กำไรต่อรอบคิดเป็น 500 / 100,000 = 0.5% ของมูลค่า ค่าธรรมเนียม 2 ข้าง = 0.1% จึงกินไป <strong>20%</strong> ของกำไรต่อรอบ</li>
+  </ol>
+</div>
+
+<div class="box-blue">
+  <div class="box-title">ศัพท์ใหม่ในบทนี้</div>
+  <ul>
+    <li><strong>Grid Profit:</strong> กำไรที่รับรู้แล้วจากคู่ซื้อ–ขายที่ครบรอบ</li>
+    <li><strong>Floating P&amp;L:</strong> กำไรขาดทุนที่ยังไม่รับรู้ของของที่ถืออยู่</li>
+    <li><strong>Path-dependent:</strong> ผลลัพธ์ขึ้นกับเส้นทางที่ราคาเดิน ไม่ใช่แค่ราคาตอนจบ</li>
+    <li><strong>Realized Volatility:</strong> ความผันผวนที่เกิดขึ้นจริงระหว่างที่ถือสถานะ</li>
+    <li><strong>Mean-reverting:</strong> ตลาดที่ราคามีแนวโน้มแกว่งกลับเข้าหาระดับเดิม</li>
+    <li><strong>Short Put Ladder:</strong> Short Put หลายตัวที่ Strike เรียงกันเป็นขั้น</li>
+  </ul>
+</div>
+
+<div class="box-amber">
+  <div class="box-title">บทถัดไป</div>
+  <p>Payoff Chart ของ Grid บอกชัดว่าความเสี่ยงอยู่ที่ไหน: หางสองข้างที่ขาดทุนเป็นเส้นตรงไม่มีพื้น บทที่ 10 จะใช้กราฟนี้กำหนดขนาด วาง Stop และ Hedge Delta ก่อนที่บทที่ 11 จะนำ Option จริงเข้ามาเสริม</p>
+</div>
+
+<hr class="section-break">
+
+<!-- ============================================================ -->
 <!-- Appendix -->
 <!-- ============================================================ -->
 <h2 id="appendix" class="page-break">Appendix: สูตรสำคัญ</h2>
@@ -1875,6 +2367,21 @@ N'(x) = Standard Normal PDF = (1/&radic;2&pi;) &middot; e<sup>-x&sup2;/2</sup>
 <strong>Short Put:</strong> Premium - max(0, K - S)<br><br>
 <strong>หลักการ:</strong> Short Payoff = -1 &times; Long Payoff (เสมอ)
 </div>
+
+<h3 id="appendix-grid">สูตร P&amp;L ของ Grid (บทที่ 9)</h3>
+<div class="formula-block">
+<strong>สูตร:</strong> P&amp;L รวม = (u &times; &Delta; / 2) &times; (n - k&sup2;)<br><br>
+<strong>Grid Profit</strong> = u &times; &Delta; &times; (n - k) / 2<br>
+<strong>Floating P&amp;L</strong> = -u &times; &Delta; &times; k(k - 1) / 2<br><br>
+<strong>แบบต่อเนื่อง:</strong> P&amp;L = u &times; [ QV - (S<sub>T</sub> - S₀)&sup2; ] / (2&Delta;)
+</div>
+<p><strong>ที่มา:</strong> ให้ราคาเดินจากเส้นหนึ่งไปเส้นที่ติดกันรวม n ครั้ง และจบห่างจากจุดเริ่ม k เส้น</p>
+<ul>
+  <li>ใน n ครั้งนั้น มี k ครั้งที่เป็นการเดินสุทธิออกจากจุดเริ่ม ที่เหลือ n - k ครั้งจับคู่กันเป็นรอบซื้อ–ขายได้ (n - k) / 2 รอบ รอบละ u &times; &Delta;</li>
+  <li>ของที่ยังถืออยู่ k ชั้น ซื้อมาที่ระยะ 1, 2, ..., k เส้นจากจุดเริ่ม ตอนราคาอยู่ที่เส้น k แต่ละชั้นขาดทุน k - 1, k - 2, ..., 0 ช่อง รวมเป็น k(k - 1) / 2 ช่อง ช่องละ u &times; &Delta;</li>
+  <li>บวกสองก้อน: (u&Delta;/2) &times; [ (n - k) - k(k - 1) ] = (u&Delta;/2) &times; (n - k&sup2;)</li>
+</ul>
+<p>ในแบบต่อเนื่อง QV คือผลรวมของการเปลี่ยนแปลงราคายกกำลังสอง (Quadratic Variation) ซึ่งเท่ากับ n &times; &Delta;&sup2; และ (S<sub>T</sub> - S₀)&sup2; เท่ากับ k&sup2; &times; &Delta;&sup2; สูตรทั้งสองจึงเป็นสูตรเดียวกัน</p>
 
 <div class="box-amber" style="margin-top:2em;">
   <div class="box-title">เกี่ยวกับเอกสารนี้</div>
