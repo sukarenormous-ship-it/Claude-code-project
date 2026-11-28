@@ -204,6 +204,21 @@ tr:hover td { background: var(--blue-bg); }
         <a href="#ch9-9">9.9 สรุปและแบบฝึกหัด</a>
       </div>
     </li>
+    <li><a href="#ch10">บทที่ 10: Risk Management ของ Grid — แก้รูปกราฟทีละส่วน</a>
+      <div class="toc-sub">
+        <a href="#ch10-1">10.1 แผนที่ความเสี่ยง</a> ·
+        <a href="#ch10-2">10.2 กำหนดขนาดจาก Max Loss</a> ·
+        <a href="#ch10-3">10.3 Stop-loss</a> ·
+        <a href="#ch10-4">10.4 Hedge Delta</a> ·
+        <a href="#ch10-5">10.5 ออกแบบชั้น</a> ·
+        <a href="#ch10-6">10.6 แผนเมื่อหลุดกรอบ</a> ·
+        <a href="#ch10-7">10.7 ตัวกรองสภาวะตลาด</a> ·
+        <a href="#ch10-8">10.8 Leverage และ Liquidation</a> ·
+        <a href="#ch10-9">10.9 Stress Test</a> ·
+        <a href="#ch10-10">10.10 หลาย Grid</a> ·
+        <a href="#ch10-11">10.11 สรุปและแบบฝึกหัด</a>
+      </div>
+    </li>
     <li><a href="#appendix">Appendix: สูตรสำคัญ</a></li>
   </ol>
 </div>
@@ -2315,6 +2330,389 @@ tr:hover td { background: var(--blue-bg); }
 <div class="box-amber">
   <div class="box-title">บทถัดไป</div>
   <p>Payoff Chart ของ Grid บอกชัดว่าความเสี่ยงอยู่ที่ไหน: หางสองข้างที่ขาดทุนเป็นเส้นตรงไม่มีพื้น บทที่ 10 จะใช้กราฟนี้กำหนดขนาด วาง Stop และ Hedge Delta ก่อนที่บทที่ 11 จะนำ Option จริงเข้ามาเสริม</p>
+</div>
+
+<hr class="section-break">
+
+<!-- ============================================================ -->
+<!-- บทที่ 10 -->
+<!-- ============================================================ -->
+<h2 id="ch10" class="page-break">บทที่ 10: Risk Management ของ Grid — แก้รูปกราฟทีละส่วน</h2>
+
+<p>บทที่ 9 จบด้วยข้อสรุปว่า Grid คือ Short Option เป็นขั้นบันได และไม่ได้มีกำไรในตัวเอง บทนี้ใช้ Payoff Chart ตัวเดิมตอบคำถามเดียว: <strong>ถ้าตลาดไม่เป็นอย่างที่คิด จะเสียเท่าไร และจะจำกัดมันอย่างไร</strong> โดยใช้เฉพาะเครื่องมือของ Grid เอง ยังไม่ใช้ Option (ซึ่งเป็นเรื่องของบทที่ 11)</p>
+
+<!-- 10.1 -->
+<h3 id="ch10-1">10.1 แผนที่ความเสี่ยง: 3 โซนบนกราฟ</h3>
+
+<p>ใช้ Grid ที่เริ่มกลางกรอบจากบทที่ 9.4: BTC กรอบ 90,000–110,000 เริ่มที่ 100,000 ถือ 0.05 BTC ชั้นละ 0.01 BTC ห่างกัน 2,000 USD กราฟแบ่งได้เป็น 3 โซนที่มีความเสี่ยงคนละแบบ:</p>
+
+<svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ah10a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+  <!-- zones -->
+  <rect x="60" y="34" width="71.25" height="212" fill="#dc2626" opacity="0.09"/>
+  <rect x="131.25" y="34" width="237.5" height="212" fill="#d97706" opacity="0.08"/>
+  <rect x="368.75" y="34" width="71.25" height="212" fill="#6b7280" opacity="0.10"/>
+  <!-- Axes -->
+  <line x1="60" y1="100" x2="448" y2="100" stroke="#374151" stroke-width="1" marker-end="url(#ah10a)"/>
+  <line x1="60" y1="246" x2="60" y2="22" stroke="#374151" stroke-width="1" marker-end="url(#ah10a)"/>
+  <text x="66" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">Floating P&amp;L (USD)</text>
+  <text x="452" y="98" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <!-- curve -->
+  <polyline points="60,230 131.25,170 155,152 178.75,136 202.5,122 226.25,110 250,100 273.75,90 297.5,82 321.25,76 345,72 368.75,70 440,70" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="250" cy="100" r="4" fill="#2563eb"/>
+  <text x="256" y="114" font-family="Sarabun, sans-serif" font-size="10" fill="#2563eb">จุดเริ่ม</text>
+  <text x="404" y="64" font-family="Sarabun, sans-serif" font-size="10" fill="#16a34a" text-anchor="middle">+300</text>
+  <text x="137" y="186" font-family="Sarabun, sans-serif" font-size="10" fill="#dc2626">-700</text>
+  <!-- zone labels -->
+  <g font-family="Sarabun, sans-serif" font-size="11" font-weight="700" text-anchor="middle">
+    <text x="95.6" y="50" fill="#dc2626">หาง</text>
+    <text x="250" y="50" fill="#d97706">ลำตัว</text>
+    <text x="404.4" y="50" fill="#4b5563">เพดาน</text>
+  </g>
+  <g font-family="Sarabun, sans-serif" font-size="10" text-anchor="middle">
+    <text x="250" y="206" fill="#92400e">โค้งคว่ำ มี Grid Profit ชดเชย</text>
+    <text x="404.4" y="206" fill="#4b5563">ของหมด</text>
+    <text x="404.4" y="219" fill="#4b5563">เสียโอกาส</text>
+    <text x="95.6" y="128" fill="#dc2626">เส้นตรง</text>
+    <text x="95.6" y="141" fill="#dc2626">ไม่มีพื้น</text>
+  </g>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="131.25" y="261">90k</text><text x="250" y="261">100k</text><text x="368.75" y="261">110k</text>
+  </g>
+  <text x="250" y="279" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD)</text>
+</svg>
+
+<table>
+  <tr><th>โซน</th><th>เกิดอะไรขึ้น</th><th>ความเสี่ยง</th><th>เครื่องมือในบทนี้</th></tr>
+  <tr><td style="color:var(--red)"><strong>หาง</strong> (ใต้กรอบ)</td><td>ถือของเต็มมือ ไม่มีรอบให้เก็บแล้ว</td><td>ขาดทุนเป็นเส้นตรง ไม่มีพื้น</td><td>กำหนดขนาด (10.2), Stop (10.3), Leverage (10.8)</td></tr>
+  <tr><td style="color:var(--amber)"><strong>ลำตัว</strong> (ในกรอบ)</td><td>Grid ทำงานปกติ</td><td>แพ้เทรนด์ตามกฎ &radic;n</td><td>Hedge Delta (10.4), ออกแบบชั้น (10.5), ตัวกรองตลาด (10.7)</td></tr>
+  <tr><td style="color:var(--gray-600)"><strong>เพดาน</strong> (เหนือกรอบ)</td><td>ขายหมด ไม่มีของ</td><td>ไม่ขาดทุน แต่เสียโอกาส</td><td>แผนเมื่อหลุดกรอบ (10.6)</td></tr>
+</table>
+
+<!-- 10.2 -->
+<h3 id="ch10-2">10.2 กำหนดขนาดจาก Max Loss</h3>
+
+<p><strong>อ่านเป็นภาษาคนก่อน:</strong> คนส่วนใหญ่ตั้ง Grid โดยเริ่มจาก "มีเงินเท่าไร" แล้วหารจำนวนชั้น วิธีที่ Payoff Chart แนะนำกลับกัน คือเริ่มจาก "ยอมเสียได้เท่าไร ณ จุดที่จะเลิก" แล้วย้อนหาขนาดต่อชั้น</p>
+
+<p>สำหรับ Grid ฝั่งซื้อ N ชั้น ขาดทุนลอยตัวที่ราคา Stop (ซึ่งอยู่ที่หรือใต้กรอบล่าง L) คือ:</p>
+
+<div class="formula-block">
+  ขาดทุนที่ Stop = u &times; [ &Delta; &times; N(N - 1) / 2 + N &times; (L - Stop) ]<br><br>
+  u = งบขาดทุน / [ &Delta; &times; N(N - 1) / 2 + N &times; (L - Stop) ]
+</div>
+
+<p>ก้อนแรกในวงเล็บคือขาดทุนสะสมตอนราคาถึงกรอบล่าง ก้อนที่สองคือขาดทุนเพิ่มของของเต็มมือ N ชั้น ระหว่างกรอบล่างถึงจุด Stop</p>
+
+<div class="box-blue">
+  <div class="box-title">ตัวอย่าง: หา u ของ Grid หลัก</div>
+  <p>ทุน 10,000 USD ยอมเสียได้ 3% ต่อ Grid หนึ่งตัว = 300 USD ใช้ Grid ซื้อ 5 ชั้น (98k ถึง 90k) ห่างกัน 2,000 USD ตั้ง Stop ที่ 88,000</p>
+  <ul>
+    <li>ก้อนแรก: 2,000 &times; (5 &times; 4 / 2) = 20,000</li>
+    <li>ก้อนที่สอง: 5 &times; (90,000 - 88,000) = 10,000</li>
+    <li>u = 300 / 30,000 = <strong>0.01 BTC ต่อชั้น</strong></li>
+  </ul>
+  <p>ตรวจกลับ: ที่ 88,000 ขาดทุน 200 + 0.05 &times; 2,000 = 300 USD พอดี และใช้เงินซื้อเต็มทุกชั้น 4,700 USD หรือ 47% ของทุน</p>
+</div>
+
+<div class="box-red">
+  <div class="box-title">กรอบกว้างขึ้นไม่ได้แปลว่าปลอดภัยขึ้น</div>
+  <p>ขาดทุนที่กรอบล่างโตตาม N(N - 1) / 2 ซึ่งเกือบเท่ากับ N ยกกำลังสอง ถ้าขยาย Grid หลักจาก 5 ชั้นเป็น 10 ชั้น (ลงไปถึง 80,000) ด้วยขนาดต่อชั้นเท่าเดิม ขาดทุนที่กรอบล่างจะเพิ่มจาก 200 เป็น <strong>900 USD</strong> ชั้นเพิ่ม 2 เท่า แต่ขาดทุนเพิ่ม 4.5 เท่า</p>
+  <p>การขยายกรอบจึงเป็นการเลื่อนจุดเจ็บออกไปและทำให้มันใหญ่ขึ้น ถ้าจะขยายกรอบต้องลด u ลงตามสูตรข้างบนเสมอ</p>
+</div>
+
+<!-- 10.3 -->
+<h3 id="ch10-3">10.3 Stop-loss บน Payoff Chart</h3>
+
+<p>Stop-loss คือคำสั่งปิดทุกอย่างเมื่อราคาถึงจุดที่กำหนด บนกราฟมันทำหน้าที่ <strong>ตัดหางให้แบน</strong> ขาดทุนหยุดที่ระดับเดียวไม่ว่าราคาจะลงต่อแค่ไหน</p>
+
+<svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ah10b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+  <!-- Axes -->
+  <line x1="60" y1="60" x2="448" y2="60" stroke="#374151" stroke-width="1" marker-end="url(#ah10b)"/>
+  <line x1="60" y1="250" x2="60" y2="22" stroke="#374151" stroke-width="1" marker-end="url(#ah10b)"/>
+  <text x="66" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">Floating P&amp;L (USD)</text>
+  <text x="452" y="58" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <!-- stop vertical -->
+  <line x1="198.2" y1="40" x2="198.2" y2="250" stroke="#374151" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- no-stop tail dashed -->
+  <polyline points="198.2,135 60,235" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6,4" stroke-linecap="round"/>
+  <!-- with stop -->
+  <polyline points="440,60 370.9,60 336.4,65 301.8,75 267.3,90 232.7,110 198.2,135 60,135" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="198.2" cy="135" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/>
+  <!-- gap point -->
+  <line x1="146.4" y1="135" x2="146.4" y2="172.5" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <circle cx="146.4" cy="172.5" r="4" fill="#d97706"/>
+  <line x1="151" y1="172.5" x2="214" y2="172.5" stroke="#d97706" stroke-width="1"/>
+  <text x="218" y="170" font-family="Sarabun, sans-serif" font-size="10.5" fill="#b45309">Gap: Stop ได้ราคา 85k</text>
+  <text x="218" y="184" font-family="Sarabun, sans-serif" font-size="10.5" fill="#b45309">เสียจริง -450</text>
+  <!-- labels -->
+  <text x="70" y="128" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb">มี Stop: แบนที่ -300</text>
+  <text x="104" y="240" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">ไม่มี Stop: ลงต่อไม่มีพื้น</text>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="146.4" y="265">85k</text><text x="198.2" y="265">88k</text><text x="232.7" y="265">90k</text><text x="405.5" y="265">100k</text>
+  </g>
+  <text x="250" y="282" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD) — Grid หลัก ตั้ง Stop ที่ 88,000</text>
+</svg>
+
+<p>รูปที่ได้คือ "โค้งลงแล้วแบน" คล้าย Bull Put Spread ในเชิงรูปร่าง แต่ Stop มีจุดอ่อน 2 ข้อที่ Option ไม่มี:</p>
+
+<table>
+  <tr><th>จุดอ่อน</th><th>เกิดอะไร</th><th>ตัวอย่าง</th></tr>
+  <tr><td><strong>Gap / Slippage</strong></td><td>ราคากระโดดข้ามจุด Stop คำสั่งได้ราคาแย่กว่าที่ตั้ง</td><td>ตั้ง 88k แต่ได้ 85k เสีย 450 แทน 300 (1.5 เท่า)</td></tr>
+  <tr><td><strong>Whipsaw</strong></td><td>ราคาแตะ Stop แล้วเด้งกลับ ขาดทุนถูกรับรู้ไปแล้ว และ Grid ปิดไปแล้ว</td><td>แตะ 88k เสีย 300 แล้วราคากลับไป 100k โดยไม่มีเราอยู่</td></tr>
+</table>
+
+<h4>Stop หนึ่งครั้งเท่ากับกี่รอบ</h4>
+<p>ตัวเลขที่ควรรู้ก่อนเปิด Grid คืออัตราส่วนระหว่างขาดทุนที่ Stop กับกำไรสุทธิต่อรอบ ใน Grid หลัก กำไรสุทธิต่อรอบคือ 18 USD (หลังค่าธรรมเนียม จากบทที่ 9.8):</p>
+<div class="formula-block">
+  จำนวนรอบที่ต้องเก็บเพื่อชดเชย Stop 1 ครั้ง = 300 / 18 &asymp; 17 รอบ
+</div>
+<p>ถ้าประเมินแล้วว่าโดยเฉลี่ยจะเก็บได้ไม่ถึง 17 รอบก่อนโดน Stop หนึ่งครั้ง Grid ตัวนี้ขาดทุนในระยะยาว ทางแก้คือขยับ Stop ให้ใกล้ขึ้น ลดจำนวนชั้น หรือไม่เปิด</p>
+
+<div class="box-amber">
+  <div class="box-title">วาง Stop ตรงไหน</div>
+  <ul>
+    <li>วาง <strong>ใต้กรอบล่าง</strong> เว้นระยะอย่างน้อย 1 ช่อง ถ้าวางที่กรอบล่างพอดี ชั้นสุดท้ายจะซื้อแล้วโดน Stop ทันที</li>
+    <li>ระดับ Stop ต้องมาจากงบขาดทุนในหัวข้อ 10.2 ไม่ใช่จากความรู้สึกว่า "ราคาไม่น่าลงถึง"</li>
+    <li>คิดเผื่อ Gap ไว้ในงบ เช่น ถือว่าขาดทุนจริงอาจเป็น 1.5 เท่าของที่กราฟบอก</li>
+  </ul>
+</div>
+
+<!-- 10.4 -->
+<h3 id="ch10-4">10.4 Hedge Delta: เปลี่ยนความเอียงของกราฟ</h3>
+
+<p>Spot Grid ที่เริ่มกลางกรอบถือของตั้งแต่ 0 ถึง 0.10 BTC จึง <strong>เอียงขาขึ้นเสมอ</strong> (Delta เป็นบวกตลอด) ถ้าไม่ต้องการเดิมพันทิศทาง ให้ Short Perpetual Futures เท่ากับครึ่งหนึ่งของของสูงสุด คือ 0.05 BTC แล้วใช้หลักบวก Payoff จากบทที่ 3:</p>
+
+<table>
+  <tr><th>ราคา BTC</th><th>Spot Grid</th><th>Short 0.05 BTC</th><th>รวม</th><th>Delta รวม</th></tr>
+  <tr><td>80,000</td><td style="color:var(--red)">-1,700</td><td style="color:var(--green)">+1,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>+0.05</td></tr>
+  <tr><td>90,000</td><td style="color:var(--red)">-700</td><td style="color:var(--green)">+500</td><td style="color:var(--red)"><strong>-200</strong></td><td>+0.05</td></tr>
+  <tr><td>100,000</td><td>0</td><td>0</td><td><strong>0</strong></td><td>0</td></tr>
+  <tr><td>110,000</td><td style="color:var(--green)">+300</td><td style="color:var(--red)">-500</td><td style="color:var(--red)"><strong>-200</strong></td><td>-0.05</td></tr>
+  <tr><td>120,000</td><td style="color:var(--green)">+300</td><td style="color:var(--red)">-1,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>-0.05</td></tr>
+</table>
+
+<svg viewBox="0 0 480 290" style="width:100%; max-width:480px; display:block; margin:20px auto;" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ah10c" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#374151"/></marker></defs>
+  <!-- Axes -->
+  <line x1="50" y1="140" x2="448" y2="140" stroke="#374151" stroke-width="1" marker-end="url(#ah10c)"/>
+  <line x1="50" y1="255" x2="50" y2="22" stroke="#374151" stroke-width="1" marker-end="url(#ah10c)"/>
+  <text x="56" y="20" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">P&amp;L (USD)</text>
+  <text x="452" y="138" font-family="Sarabun, sans-serif" font-size="12" fill="#374151">S</text>
+  <!-- hedge leg -->
+  <polyline points="60,80 440,200" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+  <!-- original grid -->
+  <polyline points="60,242 155,182 174,171.2 193,161.6 212,153.2 231,146 250,140 269,134 288,129.2 307,125.6 326,123.2 345,122 440,122" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+  <!-- combined -->
+  <polyline points="60,182 155,152 174,147.2 193,143.6 212,141.2 231,140 250,140 269,140 288,141.2 307,143.6 326,147.2 345,152 440,182" fill="none" stroke="#2563eb" stroke-width="2.75" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- labels -->
+  <text x="66" y="72" font-family="Sarabun, sans-serif" font-size="10.5" fill="#16a34a">Short 0.05 BTC</text>
+  <text x="96" y="236" font-family="Sarabun, sans-serif" font-size="10.5" fill="#dc2626">Spot Grid เดิม</text>
+  <text x="250" y="170" font-family="Sarabun, sans-serif" font-size="10.5" fill="#2563eb" text-anchor="middle" font-weight="700">รวม = Neutral Grid</text>
+  <g font-family="Sarabun, sans-serif" font-size="10.5" fill="#374151" text-anchor="middle">
+    <text x="60" y="270">80k</text><text x="155" y="270">90k</text><text x="250" y="270">100k</text><text x="345" y="270">110k</text><text x="440" y="270">120k</text>
+  </g>
+  <text x="250" y="286" font-family="Sarabun, sans-serif" font-size="10.5" fill="#4b5563" text-anchor="middle">ราคา BTC (USD)</text>
+</svg>
+
+<p>ผลรวมสมมาตรสองด้าน เป็นรูป Short Strangle แบบเดียวกับ Neutral Grid ในบทที่ 9.4 สิ่งที่ได้และเสีย:</p>
+
+<ul>
+  <li><strong>ได้:</strong> ขาดทุนที่กรอบล่างลดจาก 700 เหลือ 200 และหางล่างชันน้อยลงครึ่งหนึ่ง</li>
+  <li><strong>เสีย:</strong> กำไร 300 ที่กรอบบนกลายเป็นขาดทุน 200 และมีหางบนที่ไม่มีเพดาน ซึ่งเดิมไม่มี</li>
+  <li><strong>ต้นทุนเพิ่ม:</strong> ต้องวาง Margin ให้ขา Short มี Funding ที่อาจได้หรืออาจเสีย และขา Short มีราคา Liquidation ของตัวเอง</li>
+</ul>
+
+<div class="box-amber">
+  <div class="box-title">Hedge ได้แค่ความเอียง ไม่ได้ความโค้ง</div>
+  <p>Futures มี Payoff เป็นเส้นตรง การบวกเส้นตรงเข้าไปเปลี่ยนได้แค่ความชัน กราฟยังโค้งคว่ำเท่าเดิม คือยังเป็น Short Gamma เท่าเดิม ถ้าไล่ Hedge Delta ให้เป็นศูนย์ทุกครั้งที่ราคาขยับ จะเท่ากับสั่งซื้อขายสวนทางกับ Grid ทุกคำสั่ง ผลคือไม่เหลือ Grid เลย</p>
+  <p>การลดความโค้งทำได้ 2 ทางเท่านั้น คือลดขนาด Grid เอง หรือซื้อ Option ซึ่งเป็นเรื่องของบทที่ 11</p>
+</div>
+
+<!-- 10.5 -->
+<h3 id="ch10-5">10.5 ออกแบบชั้น: ขนาดและระยะห่างที่ไม่เท่ากัน</h3>
+
+<p>Grid ไม่จำเป็นต้องมีขนาดและระยะห่างเท่ากันทุกชั้น จากบทที่ 9.5 Gamma ของ Grid คือ -u / &Delta; ดังนั้นการเปลี่ยน u หรือ &Delta; เฉพาะบางช่วงคือการเลือกว่าจะให้กราฟโค้งมากตรงไหน เทียบ 3 แบบ โดยทุกแบบเริ่มซื้อที่ 98,000:</p>
+
+<table>
+  <tr><th>แบบ</th><th>ชั้นซื้อ</th><th>เงินที่ต้องกัน</th><th>ขาดทุนที่ 90k</th><th>ขาดทุนที่ 80k</th><th>ของเต็มมือ</th></tr>
+  <tr>
+    <td><strong>A. เท่ากันหมด</strong></td>
+    <td>98 · 96 · 94 · 92 · 90k ชั้นละ 0.01</td>
+    <td>4,700</td><td>-200</td><td>-700</td><td>0.05 BTC</td>
+  </tr>
+  <tr>
+    <td style="color:var(--red)"><strong>B. เพิ่มขนาดตามความลึก</strong></td>
+    <td>ราคาเดียวกับ A ขนาด 0.01 · 0.02 · 0.03 · 0.04 · 0.05</td>
+    <td>13,900</td><td style="color:var(--red)">-400</td><td style="color:var(--red)">-1,900</td><td style="color:var(--red)">0.15 BTC</td>
+  </tr>
+  <tr>
+    <td style="color:var(--green)"><strong>C. ยิ่งลึกยิ่งห่าง</strong></td>
+    <td>98 · 96 · 93 · 89k ชั้นละ 0.01</td>
+    <td>3,760</td><td style="color:var(--green)">-170</td><td style="color:var(--green)">-560</td><td style="color:var(--green)">0.04 BTC</td>
+  </tr>
+</table>
+
+<ul>
+  <li><strong>แบบ B (Martingale)</strong> ทำให้ต้นทุนเฉลี่ยต่ำลงเร็ว ราคาเด้งนิดเดียวก็คุ้มทุน แต่กราฟโค้งคว่ำแรงขึ้นทุกชั้น ที่ 80k เสียมากกว่าแบบ A เกือบ 3 เท่า</li>
+  <li><strong>แบบ C</strong> เก็บรอบถี่ใกล้ราคาปัจจุบันซึ่งเป็นจุดที่ราคาอยู่บ่อย และสะสมของช้าลงเมื่อราคาลงลึก หางจึงเบากว่า แลกกับรอบที่น้อยลงถ้าราคาไปแกว่งอยู่ด้านล่าง</li>
+</ul>
+
+<p>การใส่มุมมองตลาดทำได้ด้วยวิธีเดียวกัน ถ้ามองขาขึ้นให้เริ่มด้วยของในมือมากขึ้น (กราฟเอียงขึ้น) ถ้ามองขาลงให้เริ่มด้วยของน้อยลงหรือ Hedge บางส่วนตามหัวข้อ 10.4</p>
+
+<!-- 10.6 -->
+<h3 id="ch10-6">10.6 แผนเมื่อราคาหลุดกรอบ</h3>
+
+<p>เมื่อราคาหลุดกรอบ Grid หยุดทำงาน และสถานะที่เหลือไม่ใช่ Grid อีกต่อไป ทางเลือกทั้งหมดมีดังนี้:</p>
+
+<h4>หลุดกรอบล่าง: ถือของเต็มมือ</h4>
+<table>
+  <tr><th>ทางเลือก</th><th>ความหมายบน Payoff Chart</th><th>ข้อแลก</th></tr>
+  <tr><td><strong>ปิดทั้งหมด</strong> (Stop)</td><td>ตัดหาง กราฟแบน</td><td>รับรู้ขาดทุน เสี่ยง Whipsaw</td></tr>
+  <tr><td><strong>ถือรอ</strong></td><td>กลายเป็น Long ธรรมดา เส้นตรงชันเท่าของเต็มมือ</td><td>ไม่มี Grid Profit ชดเชยอีก ขาดทุนไม่มีพื้น</td></tr>
+  <tr><td><strong>ปิดแล้วเปิดกรอบใหม่ที่ต่ำกว่า</strong> (Roll Down)</td><td>รับรู้ขาดทุน แล้วย้าย Strike ทั้งชุดลงมา</td><td>ต้องเก็บรอบชดเชยขาดทุนเดิม (ดูอัตราส่วนในหัวข้อ 10.3)</td></tr>
+  <tr><td style="color:var(--red)"><strong>เพิ่มชั้นต่อลงไป</strong></td><td>ยืดโค้งคว่ำให้ลึกขึ้น ของเต็มมือมากขึ้น</td><td>ขาดทุนโตแบบยกกำลังสองตามหัวข้อ 10.2</td></tr>
+</table>
+
+<h4>หลุดกรอบบน: ของหมด</h4>
+<table>
+  <tr><th>ทางเลือก</th><th>ความหมายบน Payoff Chart</th><th>ข้อแลก</th></tr>
+  <tr><td><strong>รอให้ราคากลับเข้ากรอบ</strong></td><td>กราฟแบนต่อไป</td><td>เสียโอกาสถ้าราคาไปต่อ</td></tr>
+  <tr><td><strong>เปิดกรอบใหม่ที่สูงกว่า</strong> (Roll Up)</td><td>ย้าย Strike ทั้งชุดขึ้น</td><td>ซื้อของกลับในราคาสูงกว่าที่ขายไป ถ้าราคากลับตัวจะรับหางล่างของกรอบใหม่</td></tr>
+</table>
+
+<div class="box-green">
+  <div class="box-title">หลักข้อเดียว</div>
+  <p>เลือกทางออกของทั้งสองด้าน <strong>ก่อนเปิด Grid</strong> และเขียนไว้ เพราะตอนราคาหลุดกรอบล่างคือตอนที่ขาดทุนมากที่สุด และเป็นตอนที่ตัดสินใจได้แย่ที่สุด ทางเลือก "เพิ่มชั้นต่อลงไป" มักถูกเลือกในตอนนั้น ทั้งที่เป็นทางที่เพิ่มความเสี่ยงมากที่สุด</p>
+</div>
+
+<!-- 10.7 -->
+<h3 id="ch10-7">10.7 ตัวกรองสภาวะตลาดด้วยกฎ &radic;n</h3>
+
+<p>กฎ &radic;n จากบทที่ 9.6 ใช้ย้อนดูอดีตได้ว่าตลาดช่วงที่ผ่านมาเป็นมิตรกับ Grid หรือไม่ วิธีทำคือเอาราคาย้อนหลังมานับด้วย &Delta; ที่จะใช้จริง:</p>
+
+<ol>
+  <li>นับ n = จำนวนครั้งที่ราคาเดินจากเส้น Grid หนึ่งไปถึงเส้นที่ติดกัน ในช่วงเวลาที่ดู</li>
+  <li>นับ k = จำนวนเส้นที่ราคาปลายช่วงห่างจากราคาต้นช่วง</li>
+  <li>เทียบ k&sup2; กับ n</li>
+</ol>
+
+<table>
+  <tr><th>ผลที่ได้</th><th>ตลาดช่วงนั้นเป็นแบบไหน</th><th>ความหมายต่อ Grid</th></tr>
+  <tr><td style="color:var(--green)">k&sup2; น้อยกว่า n มาก</td><td>แกว่งกลับ (mean-reverting)</td><td>Grid ได้กำไร</td></tr>
+  <tr><td>k&sup2; ใกล้เคียง n</td><td>ใกล้การเดินสุ่ม</td><td>เท่าทุนก่อนค่าธรรมเนียม ขาดทุนหลังค่าธรรมเนียม</td></tr>
+  <tr><td style="color:var(--red)">k&sup2; มากกว่า n</td><td>เป็นเทรนด์</td><td>Grid ขาดทุน</td></tr>
+</table>
+
+<p>ตัวอย่าง: 30 วันที่ผ่านมา ราคาข้ามเส้น 40 ครั้ง ถ้าจบห่างจากต้นช่วง 2 เส้น (k&sup2; = 4) ตลาดแกว่งกลับชัดเจน ถ้าจบห่าง 8 เส้น (k&sup2; = 64) ตลาดเป็นเทรนด์</p>
+
+<div class="box-red">
+  <div class="box-title">ตัวกรองไม่ใช่ตัวทำนาย</div>
+  <p>ผลของช่วงที่ผ่านมาไม่รับประกันช่วงถัดไป ตลาดที่แกว่งในกรอบมานานมักจบด้วยการทะลุกรอบแรง ๆ ตัวกรองจึงใช้ได้ดีในทาง <strong>ปิด</strong> มากกว่าทางเปิด คือเมื่อ k&sup2; เริ่มมากกว่า n ในช่วงล่าสุด ให้ถือเป็นสัญญาณลดขนาดหรือหยุด Grid ส่วนการที่ k&sup2; น้อยกว่า n ไม่ได้แปลว่าเปิดแล้วจะปลอดภัย</p>
+</div>
+
+<!-- 10.8 -->
+<h3 id="ch10-8">10.8 Leverage และราคา Liquidation</h3>
+
+<p>เมื่อทำ Grid บน Futures ด้วย Leverage จะมีเส้นใหม่เพิ่มบนกราฟ คือราคา Liquidation ซึ่งหาได้จาก Payoff Chart โดยตรง: <strong>Liquidation เกิดเมื่อขาดทุนลอยตัวกิน Margin ที่วางไว้จนหมด</strong> (ค่าประมาณ ในทางปฏิบัติจะโดนเร็วกว่านี้เล็กน้อยเพราะมี Maintenance Margin)</p>
+
+<p>Grid หลักบน Futures มีขาดทุนใต้กรอบล่างเท่ากับ 200 + 0.05 &times; (90,000 - ราคา) ตั้ง Stop ที่ 88,000 (ขาดทุน 300):</p>
+
+<table>
+  <tr><th>Margin ที่วาง</th><th>Leverage ตอนของเต็มมือ</th><th>ราคา Liquidation โดยประมาณ</th><th>เทียบกับ Stop ที่ 88k</th></tr>
+  <tr><td>1,000 USD</td><td>ประมาณ 4.7 เท่า</td><td>74,000</td><td style="color:var(--green)">ห่างมาก Stop ทำงานก่อนแน่นอน</td></tr>
+  <tr><td>400 USD</td><td>ประมาณ 12 เท่า</td><td>86,000</td><td style="color:var(--amber)">ห่างแค่ 2,000 Gap เดียวก็ถึง</td></tr>
+  <tr><td>300 USD</td><td>ประมาณ 16 เท่า</td><td>88,000</td><td style="color:var(--red)">ทับจุด Stop พอดี Stop ไม่มีความหมาย</td></tr>
+</table>
+
+<div class="box-green">
+  <div class="box-title">หลักการวาง Margin</div>
+  <p>ราคา Liquidation ต้องอยู่ <strong>ไกลกว่า</strong> จุด Stop เสมอ และควรไกลพอที่จะรองรับ Gap แนวทางที่ใช้ได้คือวาง Margin อย่างน้อย 2–3 เท่าของขาดทุนที่ Stop ถ้าโดน Liquidation ก่อน Stop แปลว่าตลาดเป็นคนเลือกจุดออกแทนเรา และมักได้ราคาแย่กว่า</p>
+</div>
+
+<!-- 10.9 -->
+<h3 id="ch10-9">10.9 Stress Test: ตาราง Scenario</h3>
+
+<p>ก่อนเปิด Grid ให้ไล่ Scenario บน Payoff Chart ทีละกรณี ตัวอย่างสำหรับ Grid หลัก (ซื้อ 5 ชั้น 98k ถึง 90k ชั้นละ 0.01 BTC, Stop ที่ 88,000, กำไรสุทธิต่อรอบ 18 USD):</p>
+
+<table>
+  <tr><th>Scenario</th><th>ผลลัพธ์</th><th>บทเรียน</th></tr>
+  <tr><td>แกว่งในกรอบ ข้ามเส้น 40 ครั้ง จบห่างจุดเริ่ม 2 เส้น</td><td style="color:var(--green)"><strong>+322</strong> (ก่อนค่าธรรมเนียม +360)</td><td>กรณีที่ Grid ออกแบบมาเพื่อสิ่งนี้</td></tr>
+  <tr><td>ไหลลงช้า ๆ ถึง 88,000 โดน Stop</td><td style="color:var(--red)"><strong>-300</strong> หักด้วย Grid Profit ที่เก็บได้ระหว่างทาง</td><td>ขาดทุนตามแผน</td></tr>
+  <tr><td>Gap ลงถึง 80,000 Stop ได้ราคา 80,000</td><td style="color:var(--red)"><strong>-700</strong></td><td>Stop ไม่ได้การันตีราคา เสียจริง 2.3 เท่าของแผน</td></tr>
+  <tr><td>ไส้เทียนลงถึง 87,000 แล้วกลับไป 100,000 (มี Stop)</td><td style="color:var(--red)"><strong>-300</strong> และไม่ได้อยู่ตอนราคาเด้ง</td><td>ต้นทุนของ Stop คือ Whipsaw</td></tr>
+  <tr><td>เหตุการณ์เดียวกัน แต่ไม่มี Stop</td><td style="color:var(--green)"><strong>+90</strong> (ครบ 5 รอบ)</td><td>ไม่มี Stop ชนะในกรณีนี้ แต่แพ้หนักในกรณี Gap</td></tr>
+  <tr><td>ราคาขึ้นจาก 100,000 ไป 120,000</td><td><strong>0</strong></td><td>ไม่ขาดทุน แต่ถ้าถือ 0.05 BTC เฉย ๆ จะได้ +1,000</td></tr>
+</table>
+
+<p>ตารางนี้ไม่ได้บอกว่าจะเกิดกรณีไหน แต่ทำให้เห็นก่อนว่าแต่ละกรณีเสียเท่าไร และกรณีไหนที่แผนปัจจุบัน <strong>ป้องกันไม่ได้</strong> ซึ่งในตารางนี้คือกรณี Gap</p>
+
+<!-- 10.10 -->
+<h3 id="ch10-10">10.10 หลาย Grid พร้อมกัน</h3>
+
+<p>เมื่อเปิดหลาย Grid ให้ใช้หลักบวก Payoff จากบทที่ 3 กับทั้งพอร์ต โดยแปลงทุกอย่างเป็น USD ก่อน:</p>
+
+<ul>
+  <li><strong>งบขาดทุนรวม = ผลบวกของขาดทุนที่ Stop ของทุก Grid</strong> อย่าหักลดด้วยเหตุผลว่ากระจายความเสี่ยงแล้ว เพราะในวันที่ตลาดคริปโตร่วงแรง BTC กับ ETH มักลงพร้อมกัน ทุก Grid จะถึงกรอบล่างในวันเดียวกัน</li>
+  <li><strong>Delta รวมเป็น USD</strong> = ผลบวกของ (จำนวนเหรียญ &times; ราคา) ของทุก Grid ตัวเลขนี้บอกว่าตอนนี้พอร์ตเดิมพันทิศทางอยู่เท่าไร</li>
+  <li><strong>ของเต็มมือรวมเป็น USD</strong> คือความชันของหางรวม ใช้ตัวเลขนี้คำนวณ Margin และราคา Liquidation ของทั้งบัญชี ไม่ใช่ราย Grid</li>
+</ul>
+
+<p>การกระจายที่ได้ผลจริงสำหรับ Grid คือกระจาย <strong>ช่วงเวลาและระดับราคา</strong> เช่น เปิดคนละช่วง คนละกรอบ มากกว่ากระจายเหรียญที่เคลื่อนไหวไปด้วยกัน</p>
+
+<!-- 10.11 -->
+<h3 id="ch10-11">10.11 สรุปและแบบฝึกหัด</h3>
+
+<div class="box-green" style="border-left-width:6px;">
+  <div class="box-title">Checklist ก่อนเปิด Grid</div>
+  <ol>
+    <li><strong>งบขาดทุน:</strong> ยอมเสียได้เท่าไรต่อ Grid ตัวนี้ และรวมทุก Grid แล้วเป็นเท่าไร</li>
+    <li><strong>ขนาดต่อชั้น:</strong> คำนวณ u จากงบขาดทุนและจุด Stop ไม่ใช่จากเงินที่มี</li>
+    <li><strong>Stop:</strong> อยู่ใต้กรอบล่าง และคิดเผื่อ Gap แล้ว</li>
+    <li><strong>อัตราส่วน Stop ต่อรอบ:</strong> ต้องเก็บกี่รอบเพื่อชดเชย Stop หนึ่งครั้ง และเป็นไปได้จริงหรือไม่</li>
+    <li><strong>ความเอียง:</strong> ต้องการ Delta เป็นบวก เป็นกลาง หรือ Hedge บางส่วน</li>
+    <li><strong>แผนหลุดกรอบ:</strong> เขียนทางออกของทั้งด้านล่างและด้านบนไว้แล้ว</li>
+    <li><strong>Margin:</strong> ราคา Liquidation อยู่ไกลกว่า Stop อย่างน้อย 2–3 เท่าของขาดทุนที่ Stop</li>
+    <li><strong>Stress Test:</strong> ไล่ตาราง Scenario แล้ว และรู้ว่ากรณีไหนที่แผนป้องกันไม่ได้</li>
+  </ol>
+</div>
+
+<h4>แบบฝึกหัด</h4>
+<ol>
+  <li>ETH เริ่มที่ 3,000 USD วาง Grid ซื้อ 4 ชั้นที่ 2,950 · 2,900 · 2,850 · 2,800 ตั้ง Stop ที่ 2,750 ยอมเสียได้ 200 USD จงหาขนาดต่อชั้น u</li>
+  <li>จากข้อ 1 ถ้าราคา Gap ลงไปถึง 2,600 ก่อนที่ Stop จะได้ราคา จะเสียจริงเท่าไร และเป็นกี่เท่าของงบ</li>
+  <li>Spot Grid ตัวหนึ่งถือของตั้งแต่ 0 ถึง 2 ETH ต้อง Short Futures เท่าไรจึงจะได้ Neutral Grid และหลัง Hedge แล้ว Delta ที่กรอบบนเป็นเท่าไร</li>
+  <li>Grid ตัวหนึ่งขาดทุน 450 USD เมื่อโดน Stop และได้กำไรสุทธิรอบละ 9 USD ต้องเก็บกี่รอบเพื่อชดเชย Stop หนึ่งครั้ง</li>
+  <li>Futures Grid ตัวหนึ่งขาดทุนที่กรอบล่าง (2,800) เท่ากับ 60 USD และถือ 0.8 ETH เมื่อของเต็มมือ ถ้าวาง Margin 300 USD ราคา Liquidation โดยประมาณคือเท่าไร</li>
+</ol>
+
+<div class="box-amber">
+  <div class="box-title">เฉลย</div>
+  <ol>
+    <li>ก้อนแรก: 50 &times; (4 &times; 3 / 2) = 300 ก้อนที่สอง: 4 &times; (2,800 - 2,750) = 200 จะได้ u = 200 / 500 = <strong>0.4 ETH ต่อชั้น</strong></li>
+    <li>ที่ 2,600: 0.4 &times; [300 + 4 &times; 200] = <strong>-440 USD</strong> หรือ 2.2 เท่าของงบ</li>
+    <li>Short <strong>1 ETH</strong> (ครึ่งหนึ่งของของสูงสุด) ที่กรอบบนของในมือเป็น 0 จึงเหลือ Delta = <strong>-1 ETH</strong></li>
+    <li>450 / 9 = <strong>50 รอบ</strong></li>
+    <li>ขาดทุน = 60 + 0.8 &times; (2,800 - ราคา) = 300 จะได้ราคา = 2,800 - 300 = <strong>2,500 USD</strong></li>
+  </ol>
+</div>
+
+<div class="box-blue">
+  <div class="box-title">ศัพท์ใหม่ในบทนี้</div>
+  <ul>
+    <li><strong>Max Loss:</strong> ขาดทุนสูงสุดตามแผน ณ จุดที่ตั้งใจจะเลิก</li>
+    <li><strong>Gap / Slippage:</strong> ราคากระโดดข้ามระดับที่ตั้งคำสั่ง ทำให้ได้ราคาแย่กว่าที่ตั้ง</li>
+    <li><strong>Whipsaw:</strong> ราคาแตะจุด Stop แล้วกลับตัว ทำให้ขาดทุนโดยที่ทิศทางเดิมถูก</li>
+    <li><strong>Roll:</strong> ปิด Grid เดิมแล้วเปิดใหม่ที่กรอบอื่น</li>
+    <li><strong>Martingale:</strong> การเพิ่มขนาดทุกครั้งที่ราคาสวนทาง</li>
+    <li><strong>Liquidation:</strong> การถูกบังคับปิดสถานะเมื่อ Margin ไม่พอ</li>
+    <li><strong>Stress Test:</strong> การไล่คำนวณผลลัพธ์ในกรณีเลวร้ายก่อนเกิดจริง</li>
+  </ul>
+</div>
+
+<div class="box-amber">
+  <div class="box-title">บทถัดไป</div>
+  <p>เครื่องมือทุกตัวในบทนี้มีจุดร่วมกัน คือไม่มีตัวไหนกัน Gap ได้ และไม่มีตัวไหนลดความโค้งของกราฟได้โดยไม่ลดขนาด Grid บทที่ 11 จะนำ Option จริงเข้ามาเสริม: ซื้อปีกกันหาง เปลี่ยนชั้นไกลเป็น Short Option และเลือกเครื่องมือจาก IV เทียบ RV</p>
 </div>
 
 <hr class="section-break">
